@@ -1,0 +1,38 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+build
+admin.conf
+coordinatorConfig.json
+coordinator-*
+
+# VS Code configuration folder
+.vscode
+# Debug and testing files
+debug/
+
+# Images
+images/aws/kernel/build/*
+images/aws/kernel/sed*
+images/aws/enclave/userland/build/*
+images/aws/enclave/userland/privatekey
+images/aws/enclave/userland/publickey
+images/aws/enclave/.build-*
+images/*.ign
+images/fcos/build/*
+images/fcos/dependencies/coordinator
+images/fcos/images/*
+images/fcos/cosa.lock

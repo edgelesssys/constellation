@@ -1,0 +1,135 @@
+SRC_PATH                          = $(CURDIR)
+BASE_PATH                        ?= $(SRC_PATH)
+DEPENDENCIES                     ?= $(BASE_PATH)/dependencies
+COREOS_BUILD_PATH                ?= $(BASE_PATH)/build
+OVERRIDES                        ?= $(COREOS_BUILD_PATH)/overrides
+OVERRIDES_RPM                    ?= $(OVERRIDES)/rpm
+OVERRIDES_ROOTFS                 ?= $(OVERRIDES)/rootfs
+COORDINATOR_OVERRIDE_PATH        ?= $(OVERRIDES_ROOTFS)/usr/bin/coordinator
+KERNEL_RPM                       ?= $(OVERRIDES_RPM)/kernel.rpm
+KERNEL_CORE_RPM                  ?= $(OVERRIDES_RPM)/kernel-core.rpm
+KERNEL_MODULES_RPM               ?= $(OVERRIDES_RPM)/kernel-modules.rpm
+OVERRIDE_KERNEL                  ?= n
+KERNEL_RPM_URL                   ?= "https://kojipkgs.fedoraproject.org/packages/kernel/5.17.0/0.rc3.89.fc36/x86_64/kernel-5.17.0-0.rc3.89.fc36.x86_64.rpm"
+KERNEL_CORE_RPM_URL              ?= "https://kojipkgs.fedoraproject.org/packages/kernel/5.17.0/0.rc3.89.fc36/x86_64/kernel-core-5.17.0-0.rc3.89.fc36.x86_64.rpm"
+KERNEL_MODULES_RPM_URL           ?= "https://kojipkgs.fedoraproject.org/packages/kernel/5.17.0/0.rc3.89.fc36/x86_64/kernel-modules-5.17.0-0.rc3.89.fc36.x86_64.rpm"
+DOWNLOAD_COORDINATOR             ?= y
+COORDINATOR_BINARY               ?= $(DEPENDENCIES)/coordinator
+COORDINATOR_URL                  ?= https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/coordinator/coordinator-090232f06302957f47ab86207bd96f413eda07d9534afc12524a97363b7d203d863d52cbb1780fb76c6874df6df0387f89021b3140d5769d6a8aec1739515a66
+IMAGES_PATH                      ?= $(BASE_PATH)/images
+CONTAINER_ENGINE                 ?= podman
+COSA_ENV                         ?= $(BASE_PATH)/$(CONTAINER_ENGINE).env
+COSA_INIT_REPO                   ?= "https://github.com/edgelesssys/constellation-fedora-coreos-config"
+COSA_INIT_BRANCH                 ?= "constellation"
+COSA_LOCKFILE                    ?= $(BASE_PATH)/cosa.lock
+NETRC                            ?= ~/.netrc
+GCP_BUCKET                       ?= constellation_testing
+GCP_IMAGE_NAME                   ?= constellation-coreos
+GCP_IMAGE_FILENAME               ?= $(GCP_IMAGE_NAME)_gcp.tar.gz
+GCP_IMAGE_PATH                   ?= $(IMAGES_PATH)/$(GCP_IMAGE_FILENAME)
+AZURE_IMAGE_NAME                 ?= constellation-coreos
+AZURE_IMAGE_FILENAME             ?= $(AZURE_IMAGE_NAME)_azure.vhd
+AZURE_IMAGE_PATH                 ?= $(IMAGES_PATH)/$(AZURE_IMAGE_FILENAME)
+AZURE_RESOURCE_GROUP_NAME        ?= CONSTELLATION-IMAGES
+AZURE_REGION                     ?= northeurope
+AZURE_GALLERY_NAME               ?= Constellation
+AZURE_IMAGE_DEFINITION           ?= $(AZURE_IMAGE_NAME)
+AZURE_IMAGE_OFFER                ?= $(AZURE_IMAGE_DEFINITION)
+AZURE_IMAGE_VERSION              ?= 0.0.1
+AZURE_PUBLISHER                  ?= edgelesssys
+AZURE_SKU                        ?= constellation-coreos
+
+.PHONY: clean all kernel coreos run shell cosa-init cosa-fetch images image-gcp upload-gcp image-azure upload-azure-non-cvm
+SHELL := /bin/bash
+
+all: coreos images
+
+ifeq ($(DOWNLOAD_COORDINATOR), y)
+$(COORDINATOR_BINARY):
+	wget -q $(COORDINATOR_URL) -O $@
+endif
+
+$(COORDINATOR_OVERRIDE_PATH): $(COORDINATOR_BINARY) | cosa-init
+	mkdir -p $(COREOS_BUILD_PATH)/overrides/rootfs/usr/bin
+	cp $(COORDINATOR_BINARY) $@
+	chmod +x $@
+
+cosa-init:
+	-flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa init --branch $(COSA_INIT_BRANCH) $(COSA_INIT_REPO)'
+
+cosa-fetch: cosa-init kernel $(COORDINATOR_OVERRIDE_PATH)
+	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa fetch'
+
+coreos: cosa-fetch $(COORDINATOR_OVERRIDE_PATH)
+	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa build'
+
+run: $(COORDINATOR_OVERRIDE_PATH)
+	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa run --devshell-console'
+
+shell: $(COORDINATOR_OVERRIDE_PATH)
+	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa shell'
+
+$(GCP_IMAGE_PATH): coreos
+	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa buildextend-gcp'
+	cp $(COREOS_BUILD_PATH)/builds/latest/x86_64/fedora-coreos-*.dev.*-gcp.x86_64.tar.gz $@
+	$(BASE_PATH)/dm-verity/recalculate-dm-verity.sh gcp $@
+
+$(AZURE_IMAGE_PATH): coreos
+	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa buildextend-azure'
+	cp $(COREOS_BUILD_PATH)/builds/latest/x86_64/fedora-coreos-*.dev.*-azure.x86_64.vhd $@
+	$(BASE_PATH)/dm-verity/recalculate-dm-verity.sh azure $@
+
+images: image-gcp image-azure
+
+image-gcp: $(GCP_IMAGE_PATH)
+
+upload-gcp: $(GCP_IMAGE_PATH)
+	-gsutil mb gs://$(GCP_BUCKET)
+	gsutil pap set enforced gs://$(GCP_BUCKET)
+	gsutil cp $(GCP_IMAGE_PATH) gs://$(GCP_BUCKET)
+	gcloud compute images create $(GCP_IMAGE_NAME) --source-uri=gs://$(GCP_BUCKET)/$(GCP_IMAGE_FILENAME) --guest-os-features=GVNIC,SEV_CAPABLE,VIRTIO_SCSI_MULTIQUEUE,UEFI_COMPATIBLE --labels=coordinator-sha1=$$(shasum $(COORDINATOR_OVERRIDE_PATH) | cut -d " " -f 1)
+
+image-azure: $(AZURE_IMAGE_PATH)
+
+# reference: https://docs.microsoft.com/en-us/azure/virtual-machines/linux/disks-upload-vhd-to-managed-disk-cli
+# reference: https://docs.microsoft.com/en-us/azure/virtual-machines/linux/upload-vhd
+# reference: https://docs.microsoft.com/en-us/azure/virtual-machines/image-version
+upload-azure: $(AZURE_IMAGE_PATH)
+	$(eval SIZE := $(shell cat $(AZURE_IMAGE_PATH) | wc -c))
+	@echo "creating disk of size $(SIZE)"
+	az disk create -n $(AZURE_IMAGE_NAME) -g $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --hyper-v-generation V2 --os-type Linux --for-upload --upload-size-bytes $(SIZE) --sku standard_lrs --tags coordinator-sha512=$$(sha512sum $(COORDINATOR_OVERRIDE_PATH) | cut -d " " -f 1)
+	@echo "waiting for disk to be created"
+	az disk wait --created -n $(AZURE_IMAGE_NAME) -g $(AZURE_RESOURCE_GROUP_NAME)
+	@echo "created disk $(AZURE_IMAGE_NAME)"
+	az disk list --output table --query "[?name == '$(AZURE_IMAGE_NAME)' && resourceGroup == '$(AZURE_RESOURCE_GROUP_NAME)']"
+	@echo "Granting temporary write access on disk $(AZURE_IMAGE_NAME)"
+	@echo "Copying $(AZURE_IMAGE_PATH) to disk $(AZURE_IMAGE_NAME)"
+	azcopy copy "$(AZURE_IMAGE_PATH)" "$$(az disk grant-access -n $(AZURE_IMAGE_NAME) -g $(AZURE_RESOURCE_GROUP_NAME) --access-level Write --duration-in-seconds 86400 | jq -r .accessSas)" --blob-type PageBlob
+	@echo "Revoking write access"
+	az disk revoke-access -n $(AZURE_IMAGE_NAME) -g $(AZURE_RESOURCE_GROUP_NAME)
+	az image create -g $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) -n $(AZURE_IMAGE_NAME) --hyper-v-generation V2 --os-type Linux --tags coordinator-sha512=$$(sha512sum $(COORDINATOR_OVERRIDE_PATH) | cut -d " " -f 1) --source "$$(az disk list --query "[?name == '$(AZURE_IMAGE_NAME)' && resourceGroup == '$(AZURE_RESOURCE_GROUP_NAME)'] | [0].id" --output json | jq -r)"
+	@echo "Create shared image gallery (if it does not exist yet)"
+	-az sig create -l $(AZURE_REGION) --gallery-name $(AZURE_GALLERY_NAME) --resource-group $(AZURE_RESOURCE_GROUP_NAME)
+	@echo "Create image definition (if it does not exist yet)"
+	-az sig image-definition create --resource-group $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --gallery-name $(AZURE_GALLERY_NAME) --gallery-image-definition $(AZURE_IMAGE_DEFINITION) --publisher $(AZURE_PUBLISHER) --offer $(AZURE_IMAGE_OFFER) --sku $(AZURE_SKU) --os-type Linux --os-state generalized --hyper-v-generation V2 --features SecurityType=TrustedLaunch
+	az sig image-version create --resource-group $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --gallery-name $(AZURE_GALLERY_NAME) --gallery-image-definition $(AZURE_IMAGE_DEFINITION) --gallery-image-version $(AZURE_IMAGE_VERSION) --target-regions $(AZURE_REGION) --replica-count 1 --tags coordinator-sha512=$$(sha512sum $(COORDINATOR_OVERRIDE_PATH) | cut -d " " -f 1) --managed-image "$$(az image list --query "[?name == '$(AZURE_IMAGE_NAME)' && resourceGroup == '$(AZURE_RESOURCE_GROUP_NAME)'] | [0].id" --output json | jq -r)"
+
+ifeq ($(OVERRIDE_KERNEL), y)
+kernel: $(KERNEL_RPM) $(KERNEL_CORE_RPM) $(KERNEL_MODULES_RPM)
+$(KERNEL_RPM): | cosa-init
+	-mkdir -p $$(dirname $@)
+	wget -q $(KERNEL_RPM_URL) -O $@
+$(KERNEL_CORE_RPM): | cosa-init
+	-mkdir -p $$(dirname $@)
+	wget -q $(KERNEL_CORE_RPM_URL) -O $@
+$(KERNEL_MODULES_RPM): | cosa-init
+	-mkdir -p $$(dirname $@)
+	wget -q $(KERNEL_MODULES_RPM_URL) -O $@
+else
+kernel:
+endif
+
+clean:
+	-rm $(COSA_LOCKFILE)
+	-rm $(IMAGES_PATH)/*
+	-. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && cosa clean

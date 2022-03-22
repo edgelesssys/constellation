@@ -1,0 +1,79 @@
+name: Build and Upload CoreOS debug image
+env:
+  REGISTRY: ghcr.io
+on:
+  workflow_dispatch:
+jobs:
+  build-enclave:
+    name: "Build CoreOS debug image using customized COSA"
+    runs-on: [self-hosted, linux, nested-virt]
+    permissions:
+      contents: read
+      packages: read
+    defaults:
+      run:
+        shell: bash
+    env:
+      working-directory: ${{ github.workspace }}/images/fcos
+      SHELL: /bin/bash
+      GOPATH: /home/github-actions-runner-user/go
+      GOCACHE: /home/github-actions-runner-user/.cache/go-build
+      GOMODCACHE: /home/github-actions-runner-user/.cache/go-mod
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          token: ${{ secrets.CI_GITHUB_REPOSITORY }}
+
+      - name: Log in to the Container registry
+        id: docker-login
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Install azure CLI"
+        run: |
+          # use pip since azure cli repository is not working as expected
+          # https://github.com/Azure/azure-cli/issues/21532
+          # curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip
+          sudo pip install azure-cli
+          wget -q https://aka.ms/downloadazcopy-v10-linux -O azcopy.tar.gz
+          tar --strip-components 1 -xf azcopy.tar.gz
+          rm azcopy.tar.gz
+          echo "$(pwd)" >> $GITHUB_PATH
+
+      - uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Setup Go environment
+        uses: actions/setup-go@v2.2.0
+        with:
+          go-version: "1.18"
+
+      - name: "Compile debugd"
+        run: GOCACHE=/home/github-actions-runner-user/.cache/go-build GOPATH=/home/github-actions-runner-user/go GOPRIVATE=github.com/edgelesssys GOMODCACHE=/home/github-actions-runner-user/.cache/go-mod go build -o constellation-debugd debugd.go
+        working-directory: ${{ github.workspace }}/debugd/debugd/cmd/debugd
+
+      - name: "Store GH token to be mounted by cosa"
+        run: echo "machine github.com login api password ${{ secrets.CI_GITHUB_REPOSITORY }}" > /tmp/.netrc
+
+      - name: "Set image timestamp"
+        run: |
+          TIMESTAMP=$(date +%s)
+          echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_ENV
+          echo "IMAGE_TIMESTAMP=constellation-coreos-debugd-${TIMESTAMP}" >> $GITHUB_ENV
+          echo "IMAGE_VERSION=0.0.${TIMESTAMP}" >> $GITHUB_ENV
+
+      - name: "Build and Upload"
+        run: >
+          make -j$(nproc) CONTAINER_ENGINE=docker NETRC=/tmp/.netrc GCP_IMAGE_NAME="${{ env.IMAGE_TIMESTAMP }}" AZURE_IMAGE_NAME="${{ env.IMAGE_TIMESTAMP }}"
+          AZURE_IMAGE_DEFINITION="constellation-coreos-debugd" AZURE_IMAGE_VERSION="${{env.IMAGE_VERSION }}" DOWNLOAD_COORDINATOR=n COORDINATOR_BINARY="${{ github.workspace }}/debugd/debugd/cmd/debugd/constellation-debugd"
+          image-gcp image-azure upload-gcp upload-azure
+        working-directory: ${{ env.working-directory }}

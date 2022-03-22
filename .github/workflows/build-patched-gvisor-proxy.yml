@@ -1,0 +1,47 @@
+name: Patch gvisor-tap-vsock and Upload to S3
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "gvisor version"
+        required: true
+        default: 0.3.0
+jobs:
+  build:
+    name: "Build"
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+      working-directory: ec2
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v2
+
+      - name: Prepare Download
+        id: prepare
+        run: sudo apt-get update && sudo apt-get -y install wget tar make
+
+      - name: Download and unpack sources
+        id: unpack
+        run: wget -c https://github.com/containers/gvisor-tap-vsock/archive/refs/tags/v${{ github.event.inputs.version }}.tar.gz -O - | tar xz
+        working-directory: ${{ github.workspace }}
+
+      - name: Install go
+        uses: actions/setup-go@v2
+        with:
+          go-version: go1.17.6
+
+      - name: Patch source code
+        run: patch --ignore-whitespace ${{ github.workspace }}/gvisor-tap-vsock-${{ github.event.inputs.version }}/pkg/services/forwarder/tcp.go < ${{ github.workspace }}/images/aws/ec2/patches/remove_link_local.patch
+        working-directory: ${{ env.working-directory }}
+
+      - name: Build gvisor
+        id: build
+        run: make -C ${{ github.workspace }}/gvisor-tap-vsock-${{ github.event.inputs.version }}/
+
+      - name: Upload gvproxy
+        id: upload_gvproxy
+        run: aws s3 cp ${{ github.workspace }}/gvisor-tap-vsock-${{ github.event.inputs.version }}/bin/gvproxy s3://${{ secrets.BUCKET_NAME }}/gvproxy/gvproxy --quiet

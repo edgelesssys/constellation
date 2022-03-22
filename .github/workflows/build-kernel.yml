@@ -1,0 +1,36 @@
+name: Build the Kernel
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'kernel/**'
+  workflow_dispatch:
+jobs:
+  compile-and-upload-kernel:
+    name: "Compile and upload the Kernel"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install build dependencies
+        id: install
+        run: sudo apt-get update && sudo apt-get install -y git build-essential fakeroot libncurses5-dev libssl-dev ccache bison flex libelf-dev dwarves
+
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v2
+
+      - name: Compile using make
+        id: compile
+        run: make -C ${{ github.workspace }}/images/aws/kernel/
+
+      - name: Install AWS CLI
+        id: prepare
+        run: sudo apt-get -y install awscli
+
+      - name: Upload bzImage, init and nsm.ko to AWS S3 Bucket
+        id: upload
+        run: aws s3 cp ${{ github.workspace }}/images/aws/kernel/build/blobs/ s3://${{ secrets.BUCKET_NAME }}/blobs/ --recursive --quiet
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}

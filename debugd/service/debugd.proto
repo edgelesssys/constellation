@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+option go_package = "github.com/edgelesssys/constellation/debugd/service";
+
+package debugd;
+
+service Debugd {
+    rpc UploadAuthorizedKeys(UploadAuthorizedKeysRequest) returns (UploadAuthorizedKeysResponse) {}
+    rpc UploadCoordinator(stream Chunk) returns (UploadCoordinatorResponse) {}
+    rpc DownloadCoordinator(DownloadCoordinatorRequest) returns (stream Chunk) {}
+    rpc UploadSystemServiceUnits(UploadSystemdServiceUnitsRequest) returns (UploadSystemdServiceUnitsResponse) {}
+}
+
+message DownloadCoordinatorRequest {}
+
+message AuthorizedKey {
+    string username = 1;
+    string key_value = 2;
+}
+
+message UploadAuthorizedKeysRequest {
+    repeated AuthorizedKey keys = 1;
+}
+
+message UploadAuthorizedKeysResponse {
+    UploadAuthorizedKeysStatus status = 1;
+}
+
+enum UploadAuthorizedKeysStatus {
+    UPLOAD_AUTHORIZED_KEYS_SUCCESS = 0;
+    UPLOAD_AUTHORIZED_KEYS_FAILURE = 1;
+}
+
+message Chunk {
+    bytes content = 1;
+}
+
+message UploadCoordinatorResponse {
+    UploadCoordinatorStatus status = 1;
+}
+
+enum UploadCoordinatorStatus {
+    UPLOAD_COORDINATOR_SUCCESS = 0;
+    UPLOAD_COORDINATOR_UPLOAD_FAILED = 1;
+    UPLOAD_COORDINATOR_START_FAILED = 2;
+}
+
+message ServiceUnit {
+    string name = 1;
+    string contents = 2;
+}
+
+message UploadSystemdServiceUnitsRequest {
+    repeated ServiceUnit units = 1;
+}
+
+message UploadSystemdServiceUnitsResponse {
+    UploadSystemdServiceUnitsStatus status = 1;
+}
+
+enum UploadSystemdServiceUnitsStatus {
+    UPLOAD_SYSTEMD_SERVICE_UNITS_SUCCESS = 0;
+    UPLOAD_SYSTEMD_SERVICE_UNITS_FAILURE = 1;
+}

@@ -1,0 +1,413 @@
+package client
+
+import (
+	"context"
+	"time"
+
+	"github.com/googleapis/gax-go/v2"
+	"google.golang.org/api/iterator"
+	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
+	adminpb "google.golang.org/genproto/googleapis/iam/admin/v1"
+	iampb "google.golang.org/genproto/googleapis/iam/v1"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
+)
+
+type stubOperation struct {
+	*computepb.Operation
+}
+
+func (o *stubOperation) Proto() *computepb.Operation {
+	return o.Operation
+}
+
+type stubInstanceAPI struct {
+	listIterator *stubInstanceIterator
+}
+
+func (a stubInstanceAPI) Close() error {
+	return nil
+}
+
+func (a stubInstanceAPI) List(ctx context.Context, req *computepb.ListInstancesRequest,
+	opts ...gax.CallOption,
+) InstanceIterator {
+	return a.listIterator
+}
+
+type stubInstanceIterator struct {
+	instances []*computepb.Instance
+	nextErr   error
+
+	internalCounter int
+}
+
+func (i *stubInstanceIterator) Next() (*computepb.Instance, error) {
+	if i.nextErr != nil {
+		return nil, i.nextErr
+	}
+	if i.internalCounter >= len(i.instances) {
+		i.internalCounter = 0
+		return nil, iterator.Done
+	}
+	resp := i.instances[i.internalCounter]
+	i.internalCounter++
+	return resp, nil
+}
+
+type stubOperationZoneAPI struct {
+	waitErr error
+}
+
+func (a stubOperationZoneAPI) Close() error {
+	return nil
+}
+
+func (a stubOperationZoneAPI) Wait(ctx context.Context, req *computepb.WaitZoneOperationRequest,
+	opts ...gax.CallOption,
+) (*computepb.Operation, error) {
+	if a.waitErr != nil {
+		return nil, a.waitErr
+	}
+	return &computepb.Operation{
+		Status: computepb.Operation_DONE.Enum(),
+	}, nil
+}
+
+type stubOperationRegionAPI struct {
+	waitErr error
+}
+
+func (a stubOperationRegionAPI) Close() error {
+	return nil
+}
+
+func (a stubOperationRegionAPI) Wait(ctx context.Context, req *computepb.WaitRegionOperationRequest,
+	opts ...gax.CallOption,
+) (*computepb.Operation, error) {
+	if a.waitErr != nil {
+		return nil, a.waitErr
+	}
+	return &computepb.Operation{
+		Status: computepb.Operation_DONE.Enum(),
+	}, nil
+}
+
+type stubOperationGlobalAPI struct {
+	waitErr error
+}
+
+func (a stubOperationGlobalAPI) Close() error {
+	return nil
+}
+
+func (a stubOperationGlobalAPI) Wait(ctx context.Context, req *computepb.WaitGlobalOperationRequest,
+	opts ...gax.CallOption,
+) (*computepb.Operation, error) {
+	if a.waitErr != nil {
+		return nil, a.waitErr
+	}
+	return &computepb.Operation{
+		Status: computepb.Operation_DONE.Enum(),
+	}, nil
+}
+
+type stubFirewallsAPI struct {
+	deleteErr error
+	insertErr error
+}
+
+func (a stubFirewallsAPI) Close() error {
+	return nil
+}
+
+func (a stubFirewallsAPI) Delete(ctx context.Context, req *computepb.DeleteFirewallRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	if a.deleteErr != nil {
+		return nil, a.deleteErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Name: proto.String("name"),
+		},
+	}, nil
+}
+
+func (a stubFirewallsAPI) Insert(ctx context.Context, req *computepb.InsertFirewallRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	if a.insertErr != nil {
+		return nil, a.insertErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Name: proto.String("name"),
+		},
+	}, nil
+}
+
+type stubNetworksAPI struct {
+	insertErr error
+	deleteErr error
+}
+
+func (a stubNetworksAPI) Close() error {
+	return nil
+}
+
+func (a stubNetworksAPI) Insert(ctx context.Context, req *computepb.InsertNetworkRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	if a.insertErr != nil {
+		return nil, a.insertErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Name: proto.String("name"),
+		},
+	}, nil
+}
+
+func (a stubNetworksAPI) Delete(ctx context.Context, req *computepb.DeleteNetworkRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	if a.deleteErr != nil {
+		return nil, a.deleteErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Name: proto.String("name"),
+		},
+	}, nil
+}
+
+type stubSubnetworksAPI struct {
+	insertErr error
+	deleteErr error
+}
+
+func (a stubSubnetworksAPI) Close() error {
+	return nil
+}
+
+func (a stubSubnetworksAPI) Insert(ctx context.Context, req *computepb.InsertSubnetworkRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	if a.insertErr != nil {
+		return nil, a.insertErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Name:   proto.String("name"),
+			Region: proto.String("region"),
+		},
+	}, nil
+}
+
+func (a stubSubnetworksAPI) Delete(ctx context.Context, req *computepb.DeleteSubnetworkRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	if a.deleteErr != nil {
+		return nil, a.deleteErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Name:   proto.String("name"),
+			Region: proto.String("region"),
+		},
+	}, nil
+}
+
+type stubInstanceTemplateAPI struct {
+	deleteErr error
+	insertErr error
+}
+
+func (a stubInstanceTemplateAPI) Close() error {
+	return nil
+}
+
+func (a stubInstanceTemplateAPI) Delete(ctx context.Context, req *computepb.DeleteInstanceTemplateRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	if a.deleteErr != nil {
+		return nil, a.deleteErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Name: proto.String("name"),
+		},
+	}, nil
+}
+
+func (a stubInstanceTemplateAPI) Insert(ctx context.Context, req *computepb.InsertInstanceTemplateRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	if a.insertErr != nil {
+		return nil, a.insertErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Name: proto.String("name"),
+		},
+	}, nil
+}
+
+type stubInstanceGroupManagersAPI struct {
+	listIterator *stubManagedInstanceIterator
+
+	deleteErr error
+	insertErr error
+}
+
+func (a stubInstanceGroupManagersAPI) Close() error {
+	return nil
+}
+
+func (a stubInstanceGroupManagersAPI) Delete(ctx context.Context, req *computepb.DeleteInstanceGroupManagerRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	if a.deleteErr != nil {
+		return nil, a.deleteErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Zone: proto.String("zone"),
+			Name: proto.String("name"),
+		},
+	}, nil
+}
+
+func (a stubInstanceGroupManagersAPI) Insert(ctx context.Context, req *computepb.InsertInstanceGroupManagerRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	if a.insertErr != nil {
+		return nil, a.insertErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Zone: proto.String("zone"),
+			Name: proto.String("name"),
+		},
+	}, nil
+}
+
+func (a stubInstanceGroupManagersAPI) ListManagedInstances(ctx context.Context, req *computepb.ListManagedInstancesInstanceGroupManagersRequest,
+	opts ...gax.CallOption,
+) ManagedInstanceIterator {
+	return a.listIterator
+}
+
+type stubIAMAPI struct {
+	serviceAccountKeyData   []byte
+	createErr               error
+	createKeyErr            error
+	deleteServiceAccountErr error
+}
+
+func (a stubIAMAPI) Close() error {
+	return nil
+}
+
+func (a stubIAMAPI) CreateServiceAccount(ctx context.Context, req *adminpb.CreateServiceAccountRequest, opts ...gax.CallOption) (*adminpb.ServiceAccount, error) {
+	if a.createErr != nil {
+		return nil, a.createErr
+	}
+	return &adminpb.ServiceAccount{
+		Name:           "name",
+		ProjectId:      "project-id",
+		UniqueId:       "unique-id",
+		Email:          "email",
+		DisplayName:    "display-name",
+		Description:    "description",
+		Oauth2ClientId: "oauth2-client-id",
+		Disabled:       false,
+	}, nil
+}
+
+func (a stubIAMAPI) CreateServiceAccountKey(ctx context.Context, req *adminpb.CreateServiceAccountKeyRequest, opts ...gax.CallOption) (*adminpb.ServiceAccountKey, error) {
+	if a.createKeyErr != nil {
+		return nil, a.createKeyErr
+	}
+	return &adminpb.ServiceAccountKey{
+		Name:            "name",
+		PrivateKeyType:  adminpb.ServiceAccountPrivateKeyType_TYPE_GOOGLE_CREDENTIALS_FILE,
+		KeyAlgorithm:    adminpb.ServiceAccountKeyAlgorithm_KEY_ALG_RSA_2048,
+		PrivateKeyData:  a.serviceAccountKeyData,
+		PublicKeyData:   []byte("public-key-data"),
+		ValidAfterTime:  timestamppb.New(time.Time{}),
+		ValidBeforeTime: timestamppb.New(time.Time{}),
+		KeyOrigin:       adminpb.ServiceAccountKeyOrigin_GOOGLE_PROVIDED,
+		KeyType:         adminpb.ListServiceAccountKeysRequest_USER_MANAGED,
+	}, nil
+}
+
+func (a stubIAMAPI) DeleteServiceAccount(ctx context.Context, req *adminpb.DeleteServiceAccountRequest, opts ...gax.CallOption) error {
+	return a.deleteServiceAccountErr
+}
+
+type stubProjectsAPI struct {
+	getPolicyErr error
+	setPolicyErr error
+}
+
+func (a stubProjectsAPI) Close() error {
+	return nil
+}
+
+func (a stubProjectsAPI) GetIamPolicy(ctx context.Context, req *iampb.GetIamPolicyRequest, opts ...gax.CallOption) (*iampb.Policy, error) {
+	if a.getPolicyErr != nil {
+		return nil, a.getPolicyErr
+	}
+	return &iampb.Policy{
+		Version: 3,
+		Bindings: []*iampb.Binding{
+			{
+				Role: "role",
+				Members: []string{
+					"member",
+				},
+			},
+		},
+		Etag: []byte("etag"),
+	}, nil
+}
+
+func (a stubProjectsAPI) SetIamPolicy(ctx context.Context, req *iampb.SetIamPolicyRequest, opts ...gax.CallOption) (*iampb.Policy, error) {
+	if a.setPolicyErr != nil {
+		return nil, a.setPolicyErr
+	}
+	return &iampb.Policy{
+		Version: 3,
+		Bindings: []*iampb.Binding{
+			{
+				Role: "role",
+				Members: []string{
+					"member",
+				},
+			},
+		},
+		Etag: []byte("etag"),
+	}, nil
+}
+
+type stubManagedInstanceIterator struct {
+	instances []*computepb.ManagedInstance
+	nextErr   error
+
+	internalCounter int
+}
+
+func (i *stubManagedInstanceIterator) Next() (*computepb.ManagedInstance, error) {
+	if i.nextErr != nil {
+		return nil, i.nextErr
+	}
+	if i.internalCounter >= len(i.instances) {
+		i.internalCounter = 0
+		return nil, iterator.Done
+	}
+	resp := i.instances[i.internalCounter]
+	i.internalCounter++
+	return resp, nil
+}

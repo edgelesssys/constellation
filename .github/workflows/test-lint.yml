@@ -1,0 +1,23 @@
+name: Golangci-lint
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  # Allow read access to pull request. Use with `only-new-issues` option.
+  pull-requests: read
+
+jobs:
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+    env:
+      GOPRIVATE: github.com/edgelesssys/*
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          only-new-issues: true

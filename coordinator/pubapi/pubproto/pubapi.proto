@@ -1,0 +1,90 @@
+syntax = "proto3";
+
+package pubapi;
+
+option go_package = "github.com/edgelesssys/constellation/coordinator/pubapi/pubproto";
+
+service API {
+  rpc GetState(GetStateRequest) returns (GetStateResponse);
+  rpc ActivateAsCoordinator(ActivateAsCoordinatorRequest) returns (stream ActivateAsCoordinatorResponse);
+  rpc ActivateAsNode(ActivateAsNodeRequest) returns (ActivateAsNodeResponse);
+  rpc ActivateAdditionalNodes(ActivateAdditionalNodesRequest) returns (stream ActivateAdditionalNodesResponse);
+  rpc JoinCluster(JoinClusterRequest) returns (JoinClusterResponse);
+  rpc TriggerNodeUpdate(TriggerNodeUpdateRequest) returns (TriggerNodeUpdateResponse);
+}
+
+message GetStateRequest {
+}
+
+message GetStateResponse {
+  uint32 state = 1;
+}
+
+message ActivateAsCoordinatorRequest {
+  bytes admin_vpn_pub_key = 1;
+  repeated string node_public_endpoints = 2;
+  repeated string autoscaling_node_groups = 3;
+  bytes master_secret = 4;
+  string kms_uri = 5;
+  string storage_uri = 6;
+  string key_encryption_key_id = 7;
+  bool use_existing_kek = 8;
+  string cloud_service_account_uri = 9;
+}
+
+message ActivateAsCoordinatorResponse {
+  oneof content {
+    AdminConfig admin_config = 1;
+    Log log = 2;
+  }
+}
+
+message ActivateAsNodeRequest {
+  string node_vpn_ip = 1;
+  repeated Peer peers = 2;
+  bytes owner_id = 3;
+  bytes cluster_id = 4;
+}
+
+message ActivateAsNodeResponse {
+  bytes node_vpn_pub_key = 1;
+}
+
+message ActivateAdditionalNodesRequest {
+  repeated string node_public_endpoints = 1;
+}
+
+message ActivateAdditionalNodesResponse {
+    Log log = 1;
+}
+
+message JoinClusterRequest {
+}
+
+message JoinClusterResponse {
+}
+
+message TriggerNodeUpdateRequest {
+}
+
+message TriggerNodeUpdateResponse {
+}
+
+message AdminConfig {
+  string admin_vpn_ip = 1;
+  bytes coordinator_vpn_pub_key = 2;
+  bytes kubeconfig = 3;
+  bytes owner_id = 4;
+  bytes cluster_id = 5;
+}
+
+message Log {
+  string message = 1;
+}
+
+message Peer {
+  string public_endpoint = 1;
+  string vpn_ip = 2;
+  bytes vpn_pub_key = 3;
+  uint32 role = 4;
+}

@@ -1,0 +1,31 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+#ignore build files
+/build
+admin.conf
+coordinatorConfig.json
+coordinator-*
+
+/debugd
+/images
+
+# Dockerfiles
+Dockerfile
+Dockerfile.*
+
+# GitHub actions
+.github
+
+# VS Code configuration folder
+.vscode
