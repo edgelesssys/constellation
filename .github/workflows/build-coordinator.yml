@@ -95,7 +95,6 @@ jobs:
       BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
       PUBLIC_BUCKET_NAME: ${{ secrets.PUBLIC_BUCKET_NAME }}
       SSH_PUB_KEY: ${{ secrets.SSH_PUB_KEY }}
-      SSH_PUB_KEY_PATH: ${{ secrets.SSH_PUB_KEY_PATH }}
 
   call-aws-ami:
     needs: call-aws-enclave
