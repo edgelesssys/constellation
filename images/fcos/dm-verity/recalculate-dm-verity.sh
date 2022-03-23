@@ -163,7 +163,7 @@ repack () {
 
     gcp)
         echo "📥 Repacking GCP image..."
-        tar --owner=0 --group=0 -C "${unpacked_image_dir}" -Sch --format=oldgnu -f "${tmp_tar_file}" "${unpacked_image_filename}"
+        tar --use-compress-program=pigz --owner=0 --group=0 -C "${unpacked_image_dir}" -Sch --format=oldgnu -f "${tmp_tar_file}" "${unpacked_image_filename}"
         "${PV}" "${tmp_tar_file}" | gzip -9c  > "${packed_image}"
         rm "${tmp_tar_file}"
         echo "  Repacked image stored in ${packed_image}"
