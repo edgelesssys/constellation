@@ -28,8 +28,6 @@ on:
         required: true
       SSH_PUB_KEY:
         required: true
-      SSH_PUB_KEY_PATH:
-        required: true
 
 
 jobs:
