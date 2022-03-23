@@ -38,6 +38,12 @@ func NewFileStreamer(fs afero.Fs) *FileStreamer {
 
 // WriteStream opens a file to write to and streams chunks from a gRPC stream into the file.
 func (f *FileStreamer) WriteStream(filename string, stream ReadChunkStream, showProgress bool) error {
+	// try to read from stream once before acquiring write lock
+	chunk, err := stream.Recv()
+	if err != nil {
+		return fmt.Errorf("reading stream failed: %w", err)
+	}
+
 	f.mux.Lock()
 	defer f.mux.Unlock()
 	file, err := f.fs.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o755)
@@ -58,19 +64,23 @@ func (f *FileStreamer) WriteStream(filename string, stream ReadChunkStream, show
 	}
 
 	for {
-		chunk, err := stream.Recv()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
 			}
+			_ = file.Close()
+			_ = f.fs.Remove(filename)
 			return fmt.Errorf("reading stream failed: %w", err)
 		}
 		if _, err := file.Write(chunk.Content); err != nil {
+			_ = file.Close()
+			_ = f.fs.Remove(filename)
 			return fmt.Errorf("writing chunk to disk failed: %w", err)
 		}
 		if showProgress {
 			_ = bar.Add(len(chunk.Content))
 		}
+		chunk, err = stream.Recv()
 	}
 
 	return nil
@@ -78,10 +88,14 @@ func (f *FileStreamer) WriteStream(filename string, stream ReadChunkStream, show
 
 // ReadStream opens a file to read from and streams its contents chunkwise over gRPC.
 func (f *FileStreamer) ReadStream(filename string, stream WriteChunkStream, chunksize uint, showProgress bool) error {
-	f.mux.RLock()
-	defer f.mux.RUnlock()
 	if chunksize == 0 {
 		return errors.New("invalid chunksize")
+	}
+	// fail if file is currently RW locked
+	if f.mux.TryRLock() {
+		defer f.mux.RUnlock()
+	} else {
+		return errors.New("file is opened for writing cannot be read at this time")
 	}
 	file, err := f.fs.OpenFile(filename, os.O_RDONLY, 0o755)
 	if err != nil {
