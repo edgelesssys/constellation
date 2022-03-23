@@ -28,6 +28,7 @@ debug/
 images/aws/kernel/build/*
 images/aws/kernel/sed*
 images/aws/enclave/userland/build/*
+images/aws/enclave/userland/dependencies/blobs/*
 images/aws/enclave/userland/privatekey
 images/aws/enclave/userland/publickey
 images/aws/enclave/.build-*
