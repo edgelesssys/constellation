@@ -114,39 +114,41 @@ az login
 
 By default, `constellation create ...` will spawn cloud provider instances with a pre-baked coordinator binary.
 For testing, you can use the constellation debug daemon (debugd) to upload your local coordinator binary to running instances and to obtain SSH access.
-See this introduction on how to install and setup `cdbg`: https://github.com/edgelesssys/constellation/debugd/#readme
-# constellation-debugd
+[Follow this introduction on how to install and setup `cdbg`](#debugd-debug-daemon)
 
-## Prerequisites
+# debug daemon (debugd)
+
+## debugd Prerequisites
 
 * Go 1.18
 
-## Build
+## Build debugd
 
 ```
-git clone https://github.com/edgelesssys/constellation/debugd
-cd constellation-debugd
-go build -o constellation-debugd debugd/cmd/debugd.go
-go build -o constellation-cdbg cdbg/cdbg.go
+mkdir -p build
+go build -o build/debugd debugd/debugd/cmd/debugd/debugd.go
 ```
 
-## Install cdbg
+## Build & install cdbg
+
+The go install command for cdbg only works inside the checked out repository due to replace directives in the `go.mod` file.
 
 ```
-go install github.com/edgelesssys/constellation/debugd/cdbg@latest
+git clone https://github.com/edgelesssys/constellation && cd constellation
+go install github.com/edgelesssys/constellation/debugd/cdbg
 ```
 
-## Usage
+## debugd & cdbg usage
 
 With `cdbg` installed in your path:
 
-1. Run `constellation --dev-config /path/to/dev-config create […]` while specifying a cloud-provider image with the debugd already included. See [Configuration](#configuration) for a dev-config with a custom image and firewall rules to allow incoming connection on the debugd default port 4000.
+1. Run `constellation --dev-config /path/to/dev-config create […]` while specifying a cloud-provider image with the debugd already included. See [Configuration](#debugd-configuration) for a dev-config with a custom image and firewall rules to allow incoming connection on the debugd default port 4000.
 2. Run `cdbg deploy --dev-config /path/to/dev-config`
 3.  Run `constellation init […]` as usual
 
 
 
-### GCP image
+### debugd GCP image
 
 For GCP, run the following command to get a list of all constellation images, sorted by their creation date:
 ```
@@ -154,7 +156,7 @@ gcloud compute images list --filter="name~'constellation-.+'" --sort-by=~creatio
 ```
 Choose the newest debugd image with the naming scheme `constellation-coreos-debugd-<timestamp>`.
 
-### Azure Image
+### debugd Azure Image
 
 For Azure, run the following command to get a list of all constellation debugd images, sorted by their creation date:
 ```
@@ -162,9 +164,9 @@ az sig image-version list --resource-group constellation-images --gallery-name C
 ```
 Choose the newest debugd image and copy the full URI.
 
-## Configuration
+## debugd Configuration
 
-You should first locate the newest debugd image for your cloud provider ([GCP](#gcp-image), [Azure](#azure-image)).
+You should first locate the newest debugd image for your cloud provider ([GCP](#debugd-gcp-image), [Azure](#debugd-azure-image)).
 
 This tool uses the dev-config file from `constellation-coordinator` and extends it with more fields.
 See this example on what the possible settings are and how to setup the constellation cli to use a cloud-provider image and firewall rules with support for debugd:
