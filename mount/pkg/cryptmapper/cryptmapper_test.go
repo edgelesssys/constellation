@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/mount/pkg/kms"
-	"github.com/martinjungblut/go-cryptsetup"
+	cryptsetup "github.com/martinjungblut/go-cryptsetup"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -50,7 +50,7 @@ func (c *stubCryptDevice) Free() bool {
 	return true
 }
 
-func (c *stubCryptDevice) Load() error {
+func (c *stubCryptDevice) Load(cryptsetup.DeviceType) error {
 	return c.loadErr
 }
 

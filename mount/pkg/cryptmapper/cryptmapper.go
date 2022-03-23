@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/martinjungblut/go-cryptsetup"
+	cryptsetup "github.com/martinjungblut/go-cryptsetup"
 	"k8s.io/klog"
 	mount "k8s.io/mount-utils"
 	utilexec "k8s.io/utils/exec"
@@ -53,7 +53,7 @@ type KeyCreator interface {
 // DeviceMapper is an interface for device mapper methods.
 type DeviceMapper interface {
 	// Init initializes a crypt device backed by 'devicePath'.
-	// Sets the devieMapper to the newly allocated Device or returns any error encountered.
+	// Sets the deviceMapper to the newly allocated Device or returns any error encountered.
 	// C equivalent: crypt_init
 	Init(devicePath string) error
 	// ActivateByVolumeKey activates a device by using a volume key.
@@ -74,7 +74,7 @@ type DeviceMapper interface {
 	// Load loads crypt device parameters from the on-disk header.
 	// Returns nil on success, or an error otherwise.
 	// C equivalent: crypt_load
-	Load() error
+	Load(cryptsetup.DeviceType) error
 	// Wipe removes existing data and clears the device for use with dm-integrity.
 	// Returns nil on success, or an error otherwise.
 	// C equivalent: crypt_wipe
@@ -88,7 +88,7 @@ type CryptDevice struct {
 
 // Init initializes a crypt device backed by 'devicePath'.
 // Sets the cryptDevice's deviceMapper to the newly allocated Device or returns any error encountered.
-// C equivalent: crypt_init
+// C equivalent: crypt_init.
 func (c *CryptDevice) Init(devicePath string) error {
 	device, err := cryptsetup.Init(devicePath)
 	if err != nil {
@@ -99,7 +99,7 @@ func (c *CryptDevice) Init(devicePath string) error {
 }
 
 // Free releases crypt device context and used memory.
-// C equivalent: crypt_free
+// C equivalent: crypt_free.
 func (c *CryptDevice) Free() bool {
 	res := c.Device.Free()
 	c.Device = nil
@@ -216,7 +216,7 @@ func openCryptDevice(device DeviceMapper, source, volumeID, dek string, integrit
 	needWipe := false
 	// Try to load LUKS headers
 	// If this fails, the device is either not formatted at all, or already formatted with a different FS
-	if err := device.Load(); err != nil {
+	if err := device.Load(nil); err != nil {
 		klog.V(4).Infof("Device %q is not formatted as LUKS2 partition, checking for existing format...", source)
 		format, err := diskInfo(source)
 		if err != nil {

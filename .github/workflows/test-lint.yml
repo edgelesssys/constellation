@@ -17,6 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Install Dependencies
+        run: sudo apt-get update && sudo apt-get -y install libcryptsetup-dev
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
         with:
