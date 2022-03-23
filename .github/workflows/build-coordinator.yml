@@ -77,8 +77,6 @@ jobs:
       AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
       BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
       PUBLIC_BUCKET_NAME: ${{ secrets.PUBLIC_BUCKET_NAME }}
-      SSH_PUB_KEY: ${{ secrets.SSH_PUB_KEY }}
-      SSH_PUB_KEY_PATH: ${{ secrets.SSH_PUB_KEY_PATH }}
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
 
   call-aws-enclave:

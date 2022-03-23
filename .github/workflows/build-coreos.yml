@@ -28,10 +28,6 @@ on:
         required: true
       PUBLIC_BUCKET_NAME:
         required: true
-      SSH_PUB_KEY:
-        required: true
-      SSH_PUB_KEY_PATH:
-        required: true
       AZURE_CREDENTIALS:
         required: true
 
