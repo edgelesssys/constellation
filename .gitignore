@@ -18,6 +18,7 @@ build
 admin.conf
 coordinatorConfig.json
 coordinator-*
+util/pcr-reader/pcrs/
 
 # VS Code configuration folder
 .vscode
