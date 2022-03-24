@@ -31,9 +31,14 @@ const (
 // VaultSuffix is the suffix added to a Vault name to create a valid Vault URL.
 type VaultSuffix string
 
+type kmsClientAPI interface {
+	SetSecret(ctx context.Context, secretName string, value string, options *azsecrets.SetSecretOptions) (azsecrets.SetSecretResponse, error)
+	GetSecret(ctx context.Context, secretName string, options *azsecrets.GetSecretOptions) (azsecrets.GetSecretResponse, error)
+}
+
 // KMSClient implements the CloudKMS interface for Azure Key Vault.
 type KMSClient struct {
-	client  *azsecrets.Client
+	client  kmsClientAPI
 	storage kms.Storage
 	opts    *Opts
 }

@@ -18,16 +18,28 @@ import (
 	"github.com/edgelesssys/constellation/kms/storage"
 )
 
+type hsmClientAPI interface {
+	CreateOCTKey(ctx context.Context, name string, options *azkeys.CreateOCTKeyOptions) (azkeys.CreateOCTKeyResponse, error)
+	ImportKey(ctx context.Context, keyName string, key azkeys.JSONWebKey, options *azkeys.ImportKeyOptions) (azkeys.ImportKeyResponse, error)
+	GetKey(ctx context.Context, keyName string, options *azkeys.GetKeyOptions) (azkeys.GetKeyResponse, error)
+}
+
+type cryptoClientAPI interface {
+	UnwrapKey(ctx context.Context, alg crypto.KeyWrapAlgorithm, encryptedKey []byte, options *crypto.UnwrapKeyOptions) (crypto.UnwrapKeyResponse, error)
+	WrapKey(ctx context.Context, alg crypto.KeyWrapAlgorithm, key []byte, options *crypto.WrapKeyOptions) (crypto.WrapKeyResponse, error)
+}
+
 // Suffix for HSM Vaults.
 const HSMDefaultCloud VaultSuffix = ".managedhsm.azure.net/"
 
 // HSMClient implements the CloudKMS interface for Azure managed HSM.
 type HSMClient struct {
-	credentials azcore.TokenCredential
-	client      *azkeys.Client
-	storage     kms.Storage
-	vaultURL    string
-	opts        *Opts
+	credentials     azcore.TokenCredential
+	client          hsmClientAPI
+	storage         kms.Storage
+	vaultURL        string
+	newCryptoClient func(keyURL string, credential azcore.TokenCredential, options *crypto.ClientOptions) (cryptoClientAPI, error)
+	opts            *crypto.ClientOptions
 }
 
 // NewHSM initializes a KMS client for Azure manged HSM Key Vault.
@@ -58,7 +70,14 @@ func NewHSM(ctx context.Context, vaultName string, store kms.Storage, opts *Opts
 		store = storage.NewMemMapStorage()
 	}
 
-	return &HSMClient{vaultURL: vaultURL, client: client, credentials: cred, storage: store, opts: opts}, nil
+	return &HSMClient{
+		vaultURL:        vaultURL,
+		client:          client,
+		credentials:     cred,
+		storage:         store,
+		opts:            (*crypto.ClientOptions)(opts.client),
+		newCryptoClient: cryptoClientFactory,
+	}, nil
 }
 
 // CreateKEK creates a new Key Encryption Key using Azure managed HSM.
@@ -125,7 +144,7 @@ func (c *HSMClient) GetDEK(ctx context.Context, kekID string, keyID string, dekS
 		return nil, fmt.Errorf("unable to detect key version: %w", err)
 	}
 
-	cryptoClient, err := crypto.NewClient(fmt.Sprintf("%skeys/%s/%s", c.vaultURL, kekID, version), c.credentials, (*crypto.ClientOptions)(c.opts.client))
+	cryptoClient, err := c.newCryptoClient(fmt.Sprintf("%skeys/%s/%s", c.vaultURL, kekID, version), c.credentials, c.opts)
 	if err != nil {
 		return nil, fmt.Errorf("creating crypto client for KEK: %s: %w", kekID, err)
 	}
@@ -144,7 +163,7 @@ func (c *HSMClient) putDEK(ctx context.Context, kekID, keyID string, plainDEK []
 	if err != nil {
 		return fmt.Errorf("unable to detect key version: %w", err)
 	}
-	cryptoClient, err := crypto.NewClient(fmt.Sprintf("%skeys/%s/%s", c.vaultURL, kekID, version), c.credentials, nil)
+	cryptoClient, err := c.newCryptoClient(fmt.Sprintf("%skeys/%s/%s", c.vaultURL, kekID, version), c.credentials, c.opts)
 	if err != nil {
 		return fmt.Errorf("creating crypto client for KEK: %s: %w", kekID, err)
 	}
@@ -175,4 +194,8 @@ func (c *HSMClient) getKeyVersion(ctx context.Context, kekID string) (string, er
 	}
 
 	return path[1], nil
+}
+
+func cryptoClientFactory(keyURL string, credential azcore.TokenCredential, options *crypto.ClientOptions) (cryptoClientAPI, error) {
+	return crypto.NewClient(keyURL, credential, options)
 }
