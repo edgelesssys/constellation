@@ -7,6 +7,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"strconv"
@@ -224,11 +225,13 @@ func (m *fakeAWSClient) Encrypt(ctx context.Context, params *kms.EncryptInput, o
 	return nil, errors.New("Not implemented")
 }
 
-type stubKeyPolicyProducer struct{}
+type stubKeyPolicyProducer struct {
+	createKeyPolicyErr error
+}
 
 // CreateKeyPolicy creates a key policy.
 func (m *stubKeyPolicyProducer) CreateKeyPolicy(keyID string) (string, error) {
-	return "", nil
+	return "", m.createKeyPolicyErr
 }
 
 func TestAWSKMSClient(t *testing.T) {
@@ -280,4 +283,223 @@ func TestAWSKMSClient(t *testing.T) {
 	dek2Copy, err := client.GetDEK(ctx, testKEK2ID, "volume02", config.SymmetricKeyLength)
 	assert.NoError(err)
 	assert.Equal(dek2, dek2Copy)
+}
+
+func TestCreateKEK(t *testing.T) {
+	someErr := errors.New("error")
+	importKey := []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+	importPubKey, _ := pem.Decode([]byte(`-----BEGIN PUBLIC KEY-----
+MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAu+OepfHCTiTi27nkTGke
+dn+AIkiM1AIWWDwqfqG85aNulcj60mGQGXIYV8LoEVkyKOhYBIUmJUaVczB4ltqq
+ZhR7l46RQw2vnv+XiUmfK555d4ZDInyjTusO69hE6tkuYKdXLlG1HzcrhJ254LE2
+wXtE1Yf9DygOsWet+S32gmpfH2whUY1mRTdwW4zoY4c3qtmmWImhVVNr6qR8Z95X
+Y49EteCoNIomQNEZH7EnMlBsh34L7doOsckh1aTvQcrJorQSrBkWKbdV6kvuBKZp
+fLK0DZiOh9BwZCZANtOqgH3V+AuNk338iON8eKCFRjoiQ40YGM6xKH3E6PHVnuKt
+uIO0MPvE0qdV8Lvs+nCCrvwP5sJKZuciM40ioEO1pV1y3491xIxYhx3OfN4gg2h8
+cgdKob/R8qwxqTrfceO36FBFb1vXCUApsm5oy6WxmUtIUgoYhK+6JYpVWDyOJYwP
+iMJhdJA65n2ZliN8NxEhsaFoMgw76BOiD0wkt/CKPmNbOm5MGS3/fiZCt6A6u3cn
+Ubhn4tvjy/q5XzVqZtBeoseW2TyyrsAN53LBkSqag5tG/264CQDigQ6Y/OADOE2x
+n08MyrFHIL/wFMscOvJo7c2Eo4EW1yXkEkAy5tF5PZgnfRObakj4gdqPeq18FNzc
+Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
+-----END PUBLIC KEY-----`))
+
+	testCases := map[string]struct {
+		client          *stubAWSClient
+		policyProducer  KeyPolicyProducer
+		importKey       []byte
+		cleanupRequired bool
+		errExpected     bool
+	}{
+		"create new kek successful": {
+			client:         &stubAWSClient{createKeyID: "key-id"},
+			policyProducer: &stubKeyPolicyProducer{},
+		},
+		"CreateKeyPolicy fails on existing": {
+			client:         &stubAWSClient{},
+			policyProducer: &stubKeyPolicyProducer{createKeyPolicyErr: someErr},
+			errExpected:    true,
+		},
+		"CreateKeyPolicy fails on new": {
+			client:          &stubAWSClient{describeKeyErr: &types.NotFoundException{}},
+			policyProducer:  &stubKeyPolicyProducer{createKeyPolicyErr: someErr},
+			cleanupRequired: true,
+			errExpected:     true,
+		},
+		"PutKeyPolicy fails on new": {
+			client: &stubAWSClient{
+				describeKeyErr:  &types.NotFoundException{},
+				putKeyPolicyErr: someErr,
+				createKeyID:     "key-id",
+			},
+			policyProducer:  &stubKeyPolicyProducer{},
+			cleanupRequired: true,
+			errExpected:     true,
+		},
+		"CreateAlias fails on new": {
+			client: &stubAWSClient{
+				describeKeyErr: &types.NotFoundException{},
+				createAliasErr: someErr,
+				createKeyID:    "key-id",
+			},
+			policyProducer:  &stubKeyPolicyProducer{},
+			cleanupRequired: true,
+			errExpected:     true,
+		},
+		"CreateKey fails on new": {
+			client:         &stubAWSClient{describeKeyErr: &types.NotFoundException{}, createKeyErr: someErr},
+			policyProducer: &stubKeyPolicyProducer{},
+			errExpected:    true,
+		},
+		"DescribeKey fails": {
+			client:         &stubAWSClient{describeKeyErr: someErr},
+			policyProducer: &stubKeyPolicyProducer{},
+			errExpected:    true,
+		},
+		"DescribeKey fails with not found error": {
+			client:         &stubAWSClient{describeKeyErr: &types.NotFoundException{}},
+			policyProducer: &stubKeyPolicyProducer{},
+		},
+		"import kek successful": {
+			client:         &stubAWSClient{getParametersForImportPubKey: importPubKey.Bytes},
+			policyProducer: &stubKeyPolicyProducer{},
+			importKey:      importKey,
+		},
+		"GetParametersForImport fails on new": {
+			client: &stubAWSClient{
+				describeKeyErr:            &types.NotFoundException{},
+				getParametersForImportErr: someErr,
+				createKeyID:               "key-id",
+			},
+			policyProducer:  &stubKeyPolicyProducer{},
+			importKey:       importKey,
+			cleanupRequired: true,
+			errExpected:     true,
+		},
+		"ImportKeyMaterial fails on new": {
+			client: &stubAWSClient{
+				describeKeyErr:       &types.NotFoundException{},
+				importKeyMaterialErr: someErr,
+				createKeyID:          "key-id",
+			},
+			policyProducer:  &stubKeyPolicyProducer{},
+			importKey:       importKey,
+			cleanupRequired: true,
+			errExpected:     true,
+		},
+		"GetParametersForImport fails on existing": {
+			client:         &stubAWSClient{getParametersForImportErr: someErr},
+			policyProducer: &stubKeyPolicyProducer{},
+			importKey:      importKey,
+			errExpected:    true,
+		},
+		"ImportKeyMaterial fails on existing": {
+			client:         &stubAWSClient{importKeyMaterialErr: someErr},
+			policyProducer: &stubKeyPolicyProducer{},
+			importKey:      importKey,
+			errExpected:    true,
+		},
+		"errors during cleanup don't stop execution": {
+			client: &stubAWSClient{
+				describeKeyErr: &types.NotFoundException{},
+				deleteAliasErr: someErr,
+				createKeyID:    "key-id",
+			},
+			policyProducer:  &stubKeyPolicyProducer{createKeyPolicyErr: someErr},
+			cleanupRequired: true,
+			errExpected:     true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			client := KMSClient{
+				awsClient:      tc.client,
+				storage:        storage.NewMemMapStorage(),
+				policyProducer: tc.policyProducer,
+			}
+
+			err := client.CreateKEK(context.Background(), "test-key", tc.importKey)
+			if tc.errExpected {
+				assert.Error(err)
+				if tc.cleanupRequired {
+					assert.True(tc.client.cleanUpCalled, "failed to clean up")
+				} else {
+					assert.False(tc.client.cleanUpCalled, "cleaned up when not necessary")
+				}
+			} else {
+				assert.NoError(err)
+			}
+		})
+	}
+}
+
+type stubAWSClient struct {
+	cleanUpCalled                      bool
+	createAliasErr                     error
+	createKeyErr                       error
+	createKeyID                        string
+	decryptErr                         error
+	deleteAliasErr                     error
+	describeKeyErr                     error
+	encryptErr                         error
+	generateDataKeyErr                 error
+	generateDataKeyWithoutPlaintextErr error
+	getParametersForImportErr          error
+	getParametersForImportPubKey       []byte
+	importKeyMaterialErr               error
+	putKeyPolicyErr                    error
+	scheduleKeyDeletionErr             error
+}
+
+func (s *stubAWSClient) CreateAlias(ctx context.Context, params *kms.CreateAliasInput, optFns ...func(*kms.Options)) (*kms.CreateAliasOutput, error) {
+	return &kms.CreateAliasOutput{}, s.createAliasErr
+}
+
+func (s *stubAWSClient) CreateKey(ctx context.Context, params *kms.CreateKeyInput, optFns ...func(*kms.Options)) (*kms.CreateKeyOutput, error) {
+	return &kms.CreateKeyOutput{KeyMetadata: &types.KeyMetadata{KeyId: aws.String(s.createKeyID)}}, s.createKeyErr
+}
+
+func (s *stubAWSClient) Decrypt(ctx context.Context, params *kms.DecryptInput, optFns ...func(*kms.Options)) (*kms.DecryptOutput, error) {
+	return &kms.DecryptOutput{}, s.decryptErr
+}
+
+func (s *stubAWSClient) DeleteAlias(ctx context.Context, params *kms.DeleteAliasInput, optFns ...func(*kms.Options)) (*kms.DeleteAliasOutput, error) {
+	return &kms.DeleteAliasOutput{}, s.deleteAliasErr
+}
+
+func (s *stubAWSClient) DescribeKey(ctx context.Context, params *kms.DescribeKeyInput, optFns ...func(*kms.Options)) (*kms.DescribeKeyOutput, error) {
+	return &kms.DescribeKeyOutput{KeyMetadata: &types.KeyMetadata{KeyId: params.KeyId}}, s.describeKeyErr
+}
+
+func (s *stubAWSClient) Encrypt(ctx context.Context, params *kms.EncryptInput, optFns ...func(*kms.Options)) (*kms.EncryptOutput, error) {
+	return &kms.EncryptOutput{}, s.encryptErr
+}
+
+func (s *stubAWSClient) GenerateDataKey(ctx context.Context, params *kms.GenerateDataKeyInput, optFns ...func(*kms.Options)) (*kms.GenerateDataKeyOutput, error) {
+	return &kms.GenerateDataKeyOutput{}, s.generateDataKeyErr
+}
+
+func (s *stubAWSClient) GenerateDataKeyWithoutPlaintext(ctx context.Context, params *kms.GenerateDataKeyWithoutPlaintextInput, optFns ...func(*kms.Options)) (*kms.GenerateDataKeyWithoutPlaintextOutput, error) {
+	return &kms.GenerateDataKeyWithoutPlaintextOutput{}, s.generateDataKeyWithoutPlaintextErr
+}
+
+func (s *stubAWSClient) GetParametersForImport(ctx context.Context, params *kms.GetParametersForImportInput, optFns ...func(*kms.Options)) (*kms.GetParametersForImportOutput, error) {
+	return &kms.GetParametersForImportOutput{
+		PublicKey: s.getParametersForImportPubKey,
+	}, s.getParametersForImportErr
+}
+
+func (s *stubAWSClient) ImportKeyMaterial(ctx context.Context, params *kms.ImportKeyMaterialInput, optFns ...func(*kms.Options)) (*kms.ImportKeyMaterialOutput, error) {
+	return &kms.ImportKeyMaterialOutput{}, s.importKeyMaterialErr
+}
+
+func (s *stubAWSClient) PutKeyPolicy(ctx context.Context, params *kms.PutKeyPolicyInput, optFns ...func(*kms.Options)) (*kms.PutKeyPolicyOutput, error) {
+	return &kms.PutKeyPolicyOutput{}, s.putKeyPolicyErr
+}
+
+func (s *stubAWSClient) ScheduleKeyDeletion(ctx context.Context, params *kms.ScheduleKeyDeletionInput, optFns ...func(*kms.Options)) (*kms.ScheduleKeyDeletionOutput, error) {
+	s.cleanUpCalled = true
+	return &kms.ScheduleKeyDeletionOutput{}, s.scheduleKeyDeletionErr
 }
