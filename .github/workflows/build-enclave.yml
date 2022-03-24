@@ -56,7 +56,7 @@ jobs:
 
       - name: Download Coordinator
         id: download-coordinator
-        run: aws s3 cp s3://${{ secrets.PUBLIC_BUCKET_NAME }}/coordinator/${{ inputs.coordinator-name }} ${{ github.workspace }}/images/aws/enclave/userland/build/coordinator
+        run: aws s3 cp s3://${{ secrets.PUBLIC_BUCKET_NAME }}/coordinator/${{ inputs.coordinator-name }}${{ github.event.inputs.coordinator-name }} ${{ github.workspace }}/images/aws/enclave/userland/build/coordinator
 
       - name: Write ssh public key to file
         run: echo $SSH_PUB_KEY >> ${{ env.SSH_PUB_KEY_PATH }} && chmod 644 ${{ env.SSH_PUB_KEY_PATH }}
