@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/edgelesssys/constellation/mount/pkg/cryptmapper"
-	"github.com/edgelesssys/constellation/mount/pkg/kms"
+	"github.com/edgelesssys/constellation/mount/cryptmapper"
+	"github.com/edgelesssys/constellation/mount/kms"
 	"k8s.io/klog"
 )
 

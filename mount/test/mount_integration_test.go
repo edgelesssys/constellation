@@ -9,8 +9,8 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/edgelesssys/constellation/mount/pkg/cryptmapper"
-	"github.com/edgelesssys/constellation/mount/pkg/kms"
+	"github.com/edgelesssys/constellation/mount/cryptmapper"
+	"github.com/edgelesssys/constellation/mount/kms"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/klog"

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/mount/pkg/kms"
+	"github.com/edgelesssys/constellation/mount/kms"
 	cryptsetup "github.com/martinjungblut/go-cryptsetup"
 	"github.com/stretchr/testify/assert"
 )
