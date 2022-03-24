@@ -24,7 +24,7 @@ func NewConstellationKMS(coordinatorEndpoint string) *ConstellationKMS {
 }
 
 // GetDEK connects to the Constellation Coordinators VPN API to request a data encryption key derived from the Constellation's master secret.
-func (k *ConstellationKMS) GetDEK(ctx context.Context, kekID, dekID string, dekSize int) ([]byte, error) {
+func (k *ConstellationKMS) GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error) {
 	conn, err := grpc.DialContext(ctx, k.endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err

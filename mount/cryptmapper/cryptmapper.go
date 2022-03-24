@@ -31,23 +31,20 @@ var packageLock = sync.Mutex{}
 type CryptMapper struct {
 	mapper DeviceMapper
 	kms    KeyCreator
-	kekID  string
 }
 
 // New initializes a new CryptMapper with the given kms client and key-encryption-key ID.
 // kms is used to fetch data encryption keys for the dm-crypt volumes.
-// kekID is the ID of the key used to encrypt the data encryption keys.
-func New(kms KeyCreator, kekID string, mapper DeviceMapper) *CryptMapper {
+func New(kms KeyCreator, mapper DeviceMapper) *CryptMapper {
 	return &CryptMapper{
 		mapper: mapper,
 		kms:    kms,
-		kekID:  kekID,
 	}
 }
 
 // KeyCreator is an interface to create data encryption keys.
 type KeyCreator interface {
-	GetDEK(ctx context.Context, kekID, dekID string, dekSize int) ([]byte, error)
+	GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error)
 }
 
 // DeviceMapper is an interface for device mapper methods.
@@ -175,7 +172,7 @@ func (c *CryptMapper) OpenCryptDevice(ctx context.Context, source, volumeID stri
 	if integrity {
 		keySize = keySizeIntegrity
 	}
-	dek, err := c.kms.GetDEK(ctx, c.kekID, volumeID, keySize)
+	dek, err := c.kms.GetDEK(ctx, volumeID, keySize)
 	if err != nil {
 		return "", err
 	}

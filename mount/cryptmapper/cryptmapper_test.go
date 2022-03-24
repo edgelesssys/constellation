@@ -94,7 +94,7 @@ func TestCloseCryptDevice(t *testing.T) {
 		})
 	}
 
-	mapper := New(kms.NewStaticKMS(), "", &stubCryptDevice{})
+	mapper := New(kms.NewStaticKMS(), &stubCryptDevice{})
 	err := mapper.CloseCryptDevice("volume01-unit-test")
 	assert.NoError(t, err)
 }
@@ -227,7 +227,7 @@ func TestOpenCryptDevice(t *testing.T) {
 		})
 	}
 
-	mapper := New(kms.NewStaticKMS(), "", &stubCryptDevice{})
+	mapper := New(kms.NewStaticKMS(), &stubCryptDevice{})
 	_, err := mapper.OpenCryptDevice(context.Background(), "/dev/some-device", "volume01", false)
 	assert.NoError(t, err)
 }

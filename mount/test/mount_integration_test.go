@@ -49,7 +49,7 @@ func TestOpenAndClose(t *testing.T) {
 	defer teardown()
 
 	kms := kms.NewStaticKMS()
-	mapper := cryptmapper.New(kms, "", &cryptmapper.CryptDevice{})
+	mapper := cryptmapper.New(kms, &cryptmapper.CryptDevice{})
 
 	newPath, err := mapper.OpenCryptDevice(context.Background(), DevicePath, DeviceName, false)
 	require.NoError(err)
@@ -76,7 +76,7 @@ func TestOpenAndCloseIntegrity(t *testing.T) {
 	defer teardown()
 
 	kms := kms.NewStaticKMS()
-	mapper := cryptmapper.New(kms, "", &cryptmapper.CryptDevice{})
+	mapper := cryptmapper.New(kms, &cryptmapper.CryptDevice{})
 
 	newPath, err := mapper.OpenCryptDevice(context.Background(), DevicePath, DeviceName, true)
 	require.NoError(err)

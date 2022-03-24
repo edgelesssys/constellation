@@ -15,7 +15,7 @@ func NewStaticKMS() *staticKMS {
 }
 
 // GetDEK returns the key of staticKMS.
-func (k *staticKMS) GetDEK(ctx context.Context, kekID, dekID string, dekSize int) ([]byte, error) {
+func (k *staticKMS) GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error) {
 	key := make([]byte, dekSize)
 	for i := range key {
 		key[i] = 0x41
