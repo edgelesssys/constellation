@@ -51,9 +51,7 @@ for the termination. However, to keep the code clean, we accept this tradeoff an
 */
 
 const (
-	coordinatorAddr           = "127.0.0.1"
-	nodeAPVNPort              = "9000"
-	dockerExposedPort         = "9001"
+	publicgRPCPort            = "9000"
 	constellationImageName    = "constellation:latest"
 	etcdImageName             = "bitnami/etcd:3.5.1"
 	etcdOverlayNetwork        = "constellationIntegrationTest"
@@ -65,18 +63,15 @@ const (
 
 var (
 	hostconfigMaster = &container.HostConfig{
-		Binds:           []string{"/dev/net/tun:/dev/net/tun"}, // necessary for wireguard interface creation
-		CapAdd:          strslice.StrSlice{"NET_ADMIN"},        // necessary for wireguard interface creation
-		AutoRemove:      true,
-		PortBindings:    makeBinding(":::", nodeAPVNPort, dockerExposedPort), // ::: for bidirectional connection, 0.0.0.0 would be unidirectional
-		PublishAllPorts: true,
+		Binds:      []string{"/dev/net/tun:/dev/net/tun"}, // necessary for wireguard interface creation
+		CapAdd:     strslice.StrSlice{"NET_ADMIN"},        // necessary for wireguard interface creation
+		AutoRemove: true,
 	}
 	configMaster = &container.Config{
 		Image:        constellationImageName,
-		ExposedPorts: nat.PortSet{nodeAPVNPort + "/tcp": struct{}{}}, // expose the nodeAPVNPort to the host
-		AttachStdout: true,                                           // necessary to attach to the container log
-		AttachStderr: true,                                           // necessary to attach to the container log
-		Tty:          true,                                           // necessary to attach to the container log
+		AttachStdout: true, // necessary to attach to the container log
+		AttachStderr: true, // necessary to attach to the container log
+		Tty:          true, // necessary to attach to the container log
 	}
 
 	hostconfigNode = &container.HostConfig{
@@ -142,7 +137,8 @@ func TestMain(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	activeContainers := make(map[string]peerInfo)
+	activePeers := make(map[string]peerInfo)
+	var activeCoordinators []string
 
 	defer goleak.VerifyNone(t,
 		// https://github.com/census-instrumentation/opencensus-go/issues/1262
@@ -197,7 +193,7 @@ func TestMain(t *testing.T) {
 	require.NoError(err)
 	defer etcdstore.Close()
 
-	defer killDockerContainers(ctx, cli, activeContainers)
+	defer killDockerContainers(ctx, cli, activePeers)
 	// setup coordinator container
 	t.Log("create coordinator container...")
 	resp, err := cli.ContainerCreate(ctx, configMaster, hostconfigMaster, nil, nil, "master")
@@ -208,68 +204,68 @@ func TestMain(t *testing.T) {
 	}
 	coordinatorData, err := cli.ContainerInspect(ctx, resp.ID)
 	require.NoError(err)
-	activeContainers[coordinatorData.NetworkSettings.DefaultNetworkSettings.IPAddress] = peerInfo{dockerData: resp, isCoordinator: true}
-
+	activePeers[coordinatorData.NetworkSettings.DefaultNetworkSettings.IPAddress] = peerInfo{dockerData: resp, isCoordinator: true}
+	activeCoordinators = append(activeCoordinators, coordinatorData.NetworkSettings.DefaultNetworkSettings.IPAddress)
 	require.NoError(cli.NetworkConnect(ctx, dockerNetwork.ID, resp.ID, nil))
 
 	// 1st activation phase
-	endpoints, err := spawnContainers(ctx, cli, numberFirstActivation, activeContainers)
+	endpoints, err := spawnContainers(ctx, cli, numberFirstActivation, activePeers)
 	require.NoError(err)
 
 	t.Logf("node endpoints: %v", endpoints)
 	t.Log("activate coordinator...")
 	start := time.Now()
-	assert.NoError(startCoordinator(ctx, endpoints))
+	assert.NoError(startCoordinator(ctx, activeCoordinators[0], endpoints))
 	elapsed := time.Since(start)
 	t.Logf("activation took %v", elapsed)
-	require.NoError(updateVPNIPs(activeContainers, etcdstore))
+	require.NoError(updateVPNIPs(activePeers, etcdstore))
 
 	t.Log("count peers in instances")
-	countPeersTest(ctx, t, cli, wgExecConfig, activeContainers)
+	countPeersTest(ctx, t, cli, wgExecConfig, activePeers)
 	t.Log("start ping test")
-	pingTest(ctx, t, cli, pingExecConfig, activeContainers, etcdstore)
+	pingTest(ctx, t, cli, pingExecConfig, activePeers, etcdstore)
 
 	// 2nd activation phase
-	endpoints, err = spawnContainers(ctx, cli, numberSecondaryActivation, activeContainers)
+	endpoints, err = spawnContainers(ctx, cli, numberSecondaryActivation, activePeers)
 	require.NoError(err)
 	t.Logf("node endpoints: %v", endpoints)
 	t.Log("add additional nodes")
 	start = time.Now()
-	assert.NoError(addNewNodesToCoordinator(ctx, endpoints))
+	assert.NoError(addNewNodesToCoordinator(ctx, activeCoordinators[0], endpoints))
 	elapsed = time.Since(start)
 	t.Logf("adding took %v", elapsed)
-	require.NoError(updateVPNIPs(activeContainers, etcdstore))
+	require.NoError(updateVPNIPs(activePeers, etcdstore))
 
 	t.Log("count peers in instances")
-	countPeersTest(ctx, t, cli, wgExecConfig, activeContainers)
+	countPeersTest(ctx, t, cli, wgExecConfig, activePeers)
 	t.Log("start ping test")
-	pingTest(ctx, t, cli, pingExecConfig, activeContainers, etcdstore)
+	pingTest(ctx, t, cli, pingExecConfig, activePeers, etcdstore)
 
 	// 3rd activation phase
-	endpoints, err = spawnContainers(ctx, cli, numberThirdActivation, activeContainers)
+	endpoints, err = spawnContainers(ctx, cli, numberThirdActivation, activePeers)
 	require.NoError(err)
 	t.Logf("node endpoints: %v", endpoints)
 	t.Log("add additional nodes")
 	start = time.Now()
-	assert.NoError(addNewNodesToCoordinator(ctx, endpoints))
+	assert.NoError(addNewNodesToCoordinator(ctx, activeCoordinators[0], endpoints))
 	elapsed = time.Since(start)
 	t.Logf("adding took %v", elapsed)
-	require.NoError(updateVPNIPs(activeContainers, etcdstore))
+	require.NoError(updateVPNIPs(activePeers, etcdstore))
 
 	t.Log("count peers in instances")
-	countPeersTest(ctx, t, cli, wgExecConfig, activeContainers)
+	countPeersTest(ctx, t, cli, wgExecConfig, activePeers)
 	t.Log("start ping test")
-	pingTest(ctx, t, cli, pingExecConfig, activeContainers, etcdstore)
+	pingTest(ctx, t, cli, pingExecConfig, activePeers, etcdstore)
 }
 
 // helper methods
-func startCoordinator(ctx context.Context, endpoints []string) error {
+func startCoordinator(ctx context.Context, coordinatorAddr string, endpoints []string) error {
 	tlsConfig, err := atls.CreateAttestationClientTLSConfig([]atls.Validator{&core.MockValidator{}})
 	if err != nil {
 		return err
 	}
 
-	conn, err := grpc.DialContext(ctx, net.JoinHostPort(coordinatorAddr, dockerExposedPort), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	conn, err := grpc.DialContext(ctx, net.JoinHostPort(coordinatorAddr, publicgRPCPort), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	if err != nil {
 		return err
 	}
@@ -306,13 +302,13 @@ func startCoordinator(ctx context.Context, endpoints []string) error {
 	}
 }
 
-func addNewNodesToCoordinator(ctx context.Context, endpoints []string) error {
+func addNewNodesToCoordinator(ctx context.Context, coordinatorAddr string, endpoints []string) error {
 	tlsConfig, err := atls.CreateAttestationClientTLSConfig([]atls.Validator{&core.MockValidator{}})
 	if err != nil {
 		return err
 	}
 
-	conn, err := grpc.DialContext(ctx, net.JoinHostPort(coordinatorAddr, dockerExposedPort), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	conn, err := grpc.DialContext(ctx, net.JoinHostPort(coordinatorAddr, publicgRPCPort), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	if err != nil {
 		return err
 	}
@@ -493,7 +489,7 @@ func createNewNode(ctx context.Context, cli *client.Client) (*newNodeData, error
 		return nil, err
 	}
 	fmt.Printf("created Node %v\n", containerData.ID)
-	return &newNodeData{resp, net.JoinHostPort(containerData.NetworkSettings.IPAddress, nodeAPVNPort)}, nil
+	return &newNodeData{resp, net.JoinHostPort(containerData.NetworkSettings.IPAddress, publicgRPCPort)}, nil
 }
 
 func awaitPeerResponse(ctx context.Context, endpoint string, tlsConfig *tls.Config) error {
