@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/kms/pkg/config"
-	"github.com/edgelesssys/constellation/kms/pkg/kms/azure"
-	"github.com/edgelesssys/constellation/kms/pkg/storage"
+	"github.com/edgelesssys/constellation/kms/config"
+	"github.com/edgelesssys/constellation/kms/kms/azure"
+	"github.com/edgelesssys/constellation/kms/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

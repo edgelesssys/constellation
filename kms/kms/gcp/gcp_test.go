@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edgelesssys/constellation/kms/pkg/config"
-	kmsInterface "github.com/edgelesssys/constellation/kms/pkg/kms"
-	"github.com/edgelesssys/constellation/kms/pkg/kms/util"
-	"github.com/edgelesssys/constellation/kms/pkg/storage"
+	"github.com/edgelesssys/constellation/kms/config"
+	kmsInterface "github.com/edgelesssys/constellation/kms/kms"
+	"github.com/edgelesssys/constellation/kms/kms/util"
+	"github.com/edgelesssys/constellation/kms/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/api/option"
@@ -191,7 +191,6 @@ func TestGoogleKMS(t *testing.T) {
 	// load responses
 	mockKeyManagement.resps = []proto.Message{
 		&kmspb.CryptoKey{
-
 			Name: fmt.Sprintf("projects/%s/locations/%s/keyRings/%s/cryptoKeys/%s", project, location, keyRing, kekName),
 		},
 		&kmspb.EncryptResponse{

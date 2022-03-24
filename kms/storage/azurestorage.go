@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
-	"github.com/edgelesssys/constellation/kms/pkg/config"
+	"github.com/edgelesssys/constellation/kms/config"
 )
 
 // AzureStorage is an implementation of the Storage interface, storing keys in the Azure Blob Store.

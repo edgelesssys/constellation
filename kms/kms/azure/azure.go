@@ -10,10 +10,10 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets"
-	"github.com/edgelesssys/constellation/kms/pkg/config"
-	"github.com/edgelesssys/constellation/kms/pkg/kms"
-	"github.com/edgelesssys/constellation/kms/pkg/kms/util"
-	"github.com/edgelesssys/constellation/kms/pkg/storage"
+	"github.com/edgelesssys/constellation/kms/config"
+	"github.com/edgelesssys/constellation/kms/kms"
+	"github.com/edgelesssys/constellation/kms/kms/util"
+	"github.com/edgelesssys/constellation/kms/storage"
 )
 
 const (

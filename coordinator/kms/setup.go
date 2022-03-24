@@ -6,11 +6,11 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/edgelesssys/constellation/kms/pkg/kms"
-	"github.com/edgelesssys/constellation/kms/pkg/kms/aws"
-	"github.com/edgelesssys/constellation/kms/pkg/kms/azure"
-	"github.com/edgelesssys/constellation/kms/pkg/kms/gcp"
-	"github.com/edgelesssys/constellation/kms/pkg/storage"
+	"github.com/edgelesssys/constellation/kms/kms"
+	"github.com/edgelesssys/constellation/kms/kms/aws"
+	"github.com/edgelesssys/constellation/kms/kms/azure"
+	"github.com/edgelesssys/constellation/kms/kms/gcp"
+	"github.com/edgelesssys/constellation/kms/storage"
 	kmspb "google.golang.org/genproto/googleapis/cloud/kms/v1"
 )
 

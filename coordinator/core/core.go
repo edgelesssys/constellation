@@ -14,7 +14,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/store"
 	"github.com/edgelesssys/constellation/coordinator/storewrapper"
 	"github.com/edgelesssys/constellation/coordinator/util"
-	"github.com/edgelesssys/constellation/kms/pkg/kms"
+	"github.com/edgelesssys/constellation/kms/kms"
 	"go.uber.org/zap"
 )
 
