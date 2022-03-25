@@ -142,7 +142,8 @@ func main() {
 		kube = &core.ClusterFake{}
 		metadata = &core.ProviderMetadataFake{}
 		cloudControllerManager = &core.CloudControllerManagerFake{}
-		autoscaler = &core.CloudControllerManagerFake{}
+		cloudNodeManager = &core.CloudNodeManagerFake{}
+		autoscaler = &core.ClusterAutoscalerFake{}
 		bindIP = defaultIP
 		bindPort = defaultPort
 		etcdEndpoint = "etcd-storage:2379"
