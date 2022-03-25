@@ -21,6 +21,9 @@ type Marshaler interface {
 
 // MarshalK8SResources marshals every field of a struct into a k8s resource YAML.
 func MarshalK8SResources(resources interface{}) ([]byte, error) {
+	if resources == nil {
+		return nil, errors.New("marshal on nil called")
+	}
 	serializer := json.NewYAMLSerializer(json.DefaultMetaFactory, nil, nil)
 	var buf bytes.Buffer
 
@@ -63,6 +66,9 @@ func MarshalK8SResources(resources interface{}) ([]byte, error) {
 
 // UnmarshalK8SResources takes YAML and converts it into a k8s resources struct.
 func UnmarshalK8SResources(data []byte, into interface{}) error {
+	if into == nil {
+		return errors.New("unmarshal on nil called")
+	}
 	// reflect over struct containing fields that are k8s resources
 	value := reflect.ValueOf(into).Elem()
 	if value.Kind() != reflect.Struct {
@@ -99,6 +105,25 @@ func UnmarshalK8SResources(data []byte, into interface{}) error {
 	}
 
 	return nil
+}
+
+// MarshalK8SResourcesList marshals every element of a slice into a k8s resource YAML.
+func MarshalK8SResourcesList(resources []runtime.Object) ([]byte, error) {
+	serializer := json.NewYAMLSerializer(json.DefaultMetaFactory, nil, nil)
+	var buf bytes.Buffer
+
+	for i, obj := range resources {
+		if i > 0 {
+			// separate YAML documents
+			buf.Write([]byte("---\n"))
+		}
+		// serialize k8s resource
+		if err := serializer.Encode(obj, &buf); err != nil {
+			return nil, err
+		}
+	}
+
+	return buf.Bytes(), nil
 }
 
 // splitYAML splits a YAML multidoc into a slice of multiple YAML docs.
