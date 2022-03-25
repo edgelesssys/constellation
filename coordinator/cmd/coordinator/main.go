@@ -75,6 +75,7 @@ func main() {
 		kube = kubernetes.New(&k8sapi.KubernetesUtil{}, &k8sapi.AWSConfiguration{}, kubectl.New())
 		metadata = awscloud.Metadata{}
 		cloudControllerManager = awscloud.CloudControllerManager{}
+		cloudNodeManager = &awscloud.CloudNodeManager{}
 		autoscaler = awscloud.Autoscaler{}
 		bindIP = gvisorIP
 		bindPort = defaultPort
