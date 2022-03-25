@@ -9,6 +9,8 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const defaultCIDR = "10.244.0.0/16"
+
 type cloudControllerManagerDeployment struct {
 	ServiceAccount     k8s.ServiceAccount
 	ClusterRoleBinding rbac.ClusterRoleBinding
@@ -19,7 +21,58 @@ type cloudControllerManagerDeployment struct {
 // https://raw.githubusercontent.com/kubernetes/website/main/content/en/examples/admin/cloud/ccm-example.yaml
 // https://kubernetes.io/docs/tasks/administer-cluster/running-cloud-controller/#cloud-controller-manager
 
-func NewDefaultCloudControllerManagerDeployment(cloudProvider string, image string, path string) *cloudControllerManagerDeployment {
+// NewDefaultCloudControllerManagerDeployment creates a new *cloudControllerManagerDeployment, customized for the CSP.
+func NewDefaultCloudControllerManagerDeployment(cloudProvider, image, path string, extraArgs []string, extraVolumes []k8s.Volume, extraVolumeMounts []k8s.VolumeMount, env []k8s.EnvVar) *cloudControllerManagerDeployment {
+	command := []string{
+		path,
+		fmt.Sprintf("--cloud-provider=%s", cloudProvider),
+		"--leader-elect=true",
+		"--allocate-node-cidrs=false",
+		"--configure-cloud-routes=false",
+		fmt.Sprintf("--cluster-cidr=%s", defaultCIDR),
+		"-v=2",
+	}
+	command = append(command, extraArgs...)
+	volumes := []k8s.Volume{
+		{
+			Name: "etckubernetes",
+			VolumeSource: k8s.VolumeSource{
+				HostPath: &k8s.HostPathVolumeSource{Path: "/etc/kubernetes"},
+			},
+		},
+		{
+			Name: "etcssl",
+			VolumeSource: k8s.VolumeSource{
+				HostPath: &k8s.HostPathVolumeSource{Path: "/etc/ssl"},
+			},
+		},
+		{
+			Name: "etcpki",
+			VolumeSource: k8s.VolumeSource{
+				HostPath: &k8s.HostPathVolumeSource{Path: "/etc/pki"},
+			},
+		},
+	}
+	volumes = append(volumes, extraVolumes...)
+	volumeMounts := []k8s.VolumeMount{
+		{
+			MountPath: "/etc/kubernetes",
+			Name:      "etckubernetes",
+			ReadOnly:  true,
+		},
+		{
+			MountPath: "/etc/ssl",
+			Name:      "etcssl",
+			ReadOnly:  true,
+		},
+		{
+			MountPath: "/etc/pki",
+			Name:      "etcpki",
+			ReadOnly:  true,
+		},
+	}
+	volumeMounts = append(volumeMounts, extraVolumeMounts...)
+
 	return &cloudControllerManagerDeployment{
 		ServiceAccount: k8s.ServiceAccount{
 			TypeMeta: meta.TypeMeta{
@@ -80,69 +133,14 @@ func NewDefaultCloudControllerManagerDeployment(cloudProvider string, image stri
 						ServiceAccountName: "cloud-controller-manager",
 						Containers: []k8s.Container{
 							{
-								Name:  "cloud-controller-manager",
-								Image: image,
-								Command: []string{
-									path,
-									fmt.Sprintf("--cloud-provider=%s", cloudProvider),
-									"--leader-elect=true",
-									"--allocate-node-cidrs=false",
-									"--configure-cloud-routes=false",
-									"--controllers=cloud-node,cloud-node-lifecycle",
-									"--use-service-account-credentials",
-									"--cluster-cidr=10.244.0.0/16",
-									"-v=2",
-								},
-								VolumeMounts: []k8s.VolumeMount{
-									{
-										MountPath: "/etc/kubernetes",
-										Name:      "etckubernetes",
-										ReadOnly:  true,
-									},
-									{
-										MountPath: "/etc/ssl",
-										Name:      "etcssl",
-										ReadOnly:  true,
-									},
-									{
-										MountPath: "/etc/pki",
-										Name:      "etcpki",
-										ReadOnly:  true,
-									},
-									{
-										MountPath: "/etc/gce.conf",
-										Name:      "gceconf",
-										ReadOnly:  true,
-									},
-								},
+								Name:         "cloud-controller-manager",
+								Image:        image,
+								Command:      command,
+								VolumeMounts: volumeMounts,
+								Env:          env,
 							},
 						},
-						Volumes: []k8s.Volume{
-							{
-								Name: "etckubernetes",
-								VolumeSource: k8s.VolumeSource{
-									HostPath: &k8s.HostPathVolumeSource{Path: "/etc/kubernetes"},
-								},
-							},
-							{
-								Name: "etcssl",
-								VolumeSource: k8s.VolumeSource{
-									HostPath: &k8s.HostPathVolumeSource{Path: "/etc/ssl"},
-								},
-							},
-							{
-								Name: "etcpki",
-								VolumeSource: k8s.VolumeSource{
-									HostPath: &k8s.HostPathVolumeSource{Path: "/etc/pki"},
-								},
-							},
-							{
-								Name: "gceconf",
-								VolumeSource: k8s.VolumeSource{
-									HostPath: &k8s.HostPathVolumeSource{Path: "/etc/gce.conf"},
-								},
-							},
-						},
+						Volumes: volumes,
 						Tolerations: []k8s.Toleration{
 							{
 								Key:    "node.cloudprovider.kubernetes.io/uninitialized",

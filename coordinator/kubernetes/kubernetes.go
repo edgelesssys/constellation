@@ -72,15 +72,20 @@ func (k *KubeWrapper) InitCluster(in InitClusterInput) (*kubeadm.BootstrapTokenD
 		return nil, fmt.Errorf("setup of pod network failed: %w", err)
 	}
 
+	if in.SupportsCloudControllerManager {
+		cloudControllerManagerConfiguration := resources.NewDefaultCloudControllerManagerDeployment(
+			in.CloudControllerManagerName, in.CloudControllerManagerImage, in.CloudControllerManagerPath, in.CloudControllerManagerExtraArgs,
+			in.CloudControllerManagerVolumes, in.CloudControllerManagerVolumeMounts, in.CloudControllerManagerEnv,
+		)
+		if err := k.clusterUtil.SetupCloudControllerManager(k.client, cloudControllerManagerConfiguration, in.CloudControllerManagerConfigMaps, in.CloudControllerManagerSecrets); err != nil {
+			return nil, fmt.Errorf("failed to setup cloud-controller-manager: %w", err)
+		}
+	}
 	if in.SupportClusterAutoscaler {
 		clusterAutoscalerConfiguration := resources.NewDefaultAutoscalerDeployment()
 		clusterAutoscalerConfiguration.SetAutoscalerCommand(in.AutoscalingCloudprovider, in.AutoscalingNodeGroups)
 		if err := k.clusterUtil.SetupAutoscaling(k.client, clusterAutoscalerConfiguration); err != nil {
 			return nil, fmt.Errorf("failed to setup cluster-autoscaler: %w", err)
-		}
-		cloudControllerManagerConfiguration := resources.NewDefaultCloudControllerManagerDeployment(in.CloudControllerManagerName, in.CloudControllerManagerImage, in.CloudControllerManagerPath)
-		if err := k.clusterUtil.SetupCloudControllerManager(k.client, cloudControllerManagerConfiguration); err != nil {
-			return nil, fmt.Errorf("failed to setup cloud-controller-manager: %w", err)
 		}
 	}
 

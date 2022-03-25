@@ -66,7 +66,7 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 		return status.Errorf(codes.Internal, "%v", err)
 	}
 
-	kubeconfig, err := a.core.InitCluster(in.AutoscalingNodeGroups)
+	kubeconfig, err := a.core.InitCluster(in.AutoscalingNodeGroups, in.CloudServiceAccountUri)
 	if err != nil {
 		return status.Errorf(codes.Internal, "%v", err)
 	}

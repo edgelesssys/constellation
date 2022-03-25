@@ -7,9 +7,11 @@ import (
 
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes"
+	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	k8s "k8s.io/api/core/v1"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
@@ -36,6 +38,7 @@ func TestInitCluster(t *testing.T) {
 				SupportsCloudControllerManager: false,
 				SupportClusterAutoscaler:       false,
 				AutoscalingNodeGroups:          []string{"someNodeGroup"},
+				CloudControllerManagerEnv:      []k8s.EnvVar{},
 			},
 			expectErr: false,
 		},
@@ -56,6 +59,7 @@ func TestInitCluster(t *testing.T) {
 				ProviderID:                     "fake://providerid",
 				SupportsCloudControllerManager: false,
 				SupportClusterAutoscaler:       false,
+				CloudControllerManagerEnv:      []k8s.EnvVar{},
 			},
 			expectErr: false,
 		},
@@ -85,6 +89,7 @@ func TestInitCluster(t *testing.T) {
 				SupportClusterAutoscaler:       true,
 				AutoscalingCloudprovider:       "some-name",
 				AutoscalingNodeGroups:          []string{"someNodeGroup"},
+				CloudControllerManagerEnv:      []k8s.EnvVar{},
 			},
 			expectErr: false,
 		},
@@ -106,6 +111,7 @@ func TestInitCluster(t *testing.T) {
 				CloudControllerManagerName:     "some-name",
 				CloudControllerManagerImage:    "someImage",
 				CloudControllerManagerPath:     "/some/path",
+				CloudControllerManagerEnv:      []k8s.EnvVar{},
 			},
 			expectErr: false,
 		},
@@ -136,6 +142,7 @@ func TestInitCluster(t *testing.T) {
 			expectErr: false,
 			expectedInitClusterInput: kubernetes.InitClusterInput{
 				APIServerAdvertiseIP: "10.118.0.1",
+				CloudControllerManagerEnv: []k8s.EnvVar{},
 			},
 		},
 		"getting kubeconfig fail detected": {
@@ -162,7 +169,7 @@ func TestInitCluster(t *testing.T) {
 			core, err := NewCore(&stubVPN{}, &tc.cluster, &tc.metadata, &tc.cloudControllerManager, &tc.clusterAutoscaler, zapLogger, vtpm.OpenSimulatedTPM, nil)
 			require.NoError(err)
 
-			kubeconfig, err := core.InitCluster(tc.autoscalingNodeGroups)
+			kubeconfig, err := core.InitCluster(tc.autoscalingNodeGroups, "cloud-service-account-uri")
 
 			if tc.expectErr {
 				assert.Error(err)
@@ -368,6 +375,13 @@ type stubCloudControllerManager struct {
 	pathRes            string
 	nameRes            string
 	prepareInstanceRes error
+	extraArgsRes       []string
+	configMapsRes      resources.ConfigMaps
+	configMapsErr      error
+	secretsRes         resources.Secrets
+	secretsErr         error
+	volumesRes         []k8s.Volume
+	volumeMountRes     []k8s.VolumeMount
 	supportedRes       bool
 
 	prepareInstanceRequests []prepareInstanceRequest
@@ -391,6 +405,30 @@ func (s *stubCloudControllerManager) PrepareInstance(instance Instance, vpnIP st
 		vpnIP:    vpnIP,
 	})
 	return s.prepareInstanceRes
+}
+
+func (s *stubCloudControllerManager) ExtraArgs() []string {
+	return s.extraArgsRes
+}
+
+func (s *stubCloudControllerManager) ConfigMaps(instance Instance) (resources.ConfigMaps, error) {
+	return s.configMapsRes, s.configMapsErr
+}
+
+func (s *stubCloudControllerManager) Secrets(instance Instance, cloudServiceAccountURI string) (resources.Secrets, error) {
+	return s.secretsRes, s.secretsErr
+}
+
+func (s *stubCloudControllerManager) Volumes() []k8s.Volume {
+	return s.volumesRes
+}
+
+func (s *stubCloudControllerManager) VolumeMounts() []k8s.VolumeMount {
+	return s.volumeMountRes
+}
+
+func (s *stubCloudControllerManager) Env() []k8s.EnvVar {
+	return []k8s.EnvVar{}
 }
 
 func (s *stubCloudControllerManager) Supported() bool {

@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/coordinator/role"
+	k8s "k8s.io/api/core/v1"
 )
 
 var ErrUnimplemented = errors.New("unimplemented")
@@ -52,6 +54,21 @@ type CloudControllerManager interface {
 	Path() string
 	// Name returns the cloud-provider name as used by k8s cloud-controller-manager (k8s.gcr.io/cloud-controller-manager).
 	Name() string
+	// ExtraArgs returns a list of arguments to append to the cloud-controller-manager command.
+	ExtraArgs() []string
+	// ConfigMaps returns a list of ConfigMaps to deploy together with the k8s cloud-controller-manager
+	// Reference: https://kubernetes.io/docs/concepts/configuration/configmap/ .
+	ConfigMaps(instance Instance) (resources.ConfigMaps, error)
+	// Secrets returns a list of secrets to deploy together with the k8s cloud-controller-manager.
+	// Reference: https://kubernetes.io/docs/concepts/configuration/secret/ .
+	Secrets(instance Instance, cloudServiceAccountURI string) (resources.Secrets, error)
+	// Volumes returns a list of volumes to deploy together with the k8s cloud-controller-manager.
+	// Reference: https://kubernetes.io/docs/concepts/storage/volumes/ .
+	Volumes() []k8s.Volume
+	// VolumeMounts a list of of volume mounts to deploy together with the k8s cloud-controller-manager.
+	VolumeMounts() []k8s.VolumeMount
+	// Env returns a list of k8s environment key-value pairs to deploy together with the k8s cloud-controller-manager.
+	Env() []k8s.EnvVar
 	// PrepareInstance is called on every instance before deploying the cloud-controller-manager.
 	// Allows for cloud-provider specific hooks.
 	PrepareInstance(instance Instance, vpnIP string) error
@@ -151,6 +168,30 @@ func (f *CloudControllerManagerFake) Path() string {
 
 func (f *CloudControllerManagerFake) Name() string {
 	return "fake"
+}
+
+func (f *CloudControllerManagerFake) ExtraArgs() []string {
+	return []string{}
+}
+
+func (f *CloudControllerManagerFake) ConfigMaps(instance Instance) (resources.ConfigMaps, error) {
+	return []*k8s.ConfigMap{}, nil
+}
+
+func (f *CloudControllerManagerFake) Secrets(instance Instance, cloudServiceAccountURI string) (resources.Secrets, error) {
+	return []*k8s.Secret{}, nil
+}
+
+func (f *CloudControllerManagerFake) Volumes() []k8s.Volume {
+	return []k8s.Volume{}
+}
+
+func (f *CloudControllerManagerFake) VolumeMounts() []k8s.VolumeMount {
+	return []k8s.VolumeMount{}
+}
+
+func (f *CloudControllerManagerFake) Env() []k8s.EnvVar {
+	return []k8s.EnvVar{}
 }
 
 func (f *CloudControllerManagerFake) PrepareInstance(instance Instance, vpnIP string) error {

@@ -250,7 +250,7 @@ func TestGetObjects(t *testing.T) {
 			expectErr:         false,
 		},
 		"GetObjects works on cloud-controller-manager deployment": {
-			expectedResources: resources.NewDefaultCloudControllerManagerDeployment("someProvider", "someImage", "somePath"),
+			expectedResources: resources.NewDefaultCloudControllerManagerDeployment("someProvider", "someImage", "somePath", nil, nil, nil, nil),
 			resourcesYAML:     string(nginxDeplYAML),
 			expectErr:         false,
 		},

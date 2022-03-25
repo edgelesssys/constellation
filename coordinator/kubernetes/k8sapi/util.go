@@ -26,7 +26,7 @@ type ClusterUtil interface {
 	JoinCluster(joinConfig []byte) error
 	SetupPodNetwork(kubectl Client, podNetworkConfiguration resources.Marshaler) error
 	SetupAutoscaling(kubectl Client, clusterAutoscalerConfiguration resources.Marshaler) error
-	SetupCloudControllerManager(kubectl Client, cloudControllerManagerConfiguration resources.Marshaler) error
+	SetupCloudControllerManager(kubectl Client, cloudControllerManagerConfiguration resources.Marshaler, configMaps resources.Marshaler, secrets resources.Marshaler) error
 	RestartKubelet() error
 }
 
@@ -96,12 +96,24 @@ func (k *KubernetesUtil) SetupPodNetwork(kubectl Client, podNetworkConfiguration
 	return exec.Command("kubectl", "--kubeconfig", kubeConfig, "-n", "kube-system", "patch", "deployment", "coredns", "--type", "json", "-p", "[{\"op\":\"add\",\"path\":\"/spec/template/spec/tolerations/-\",\"value\":{\"key\":\"node.kubernetes.io/network-unavailable\",\"value\":\"\",\"effect\":\"NoSchedule\"}}]").Run()
 }
 
+// SetupAutoscaling deploys the k8s cluster autoscaler.
 func (k *KubernetesUtil) SetupAutoscaling(kubectl Client, clusterAutoscalerConfiguration resources.Marshaler) error {
 	return kubectl.Apply(clusterAutoscalerConfiguration, true)
 }
 
-func (k *KubernetesUtil) SetupCloudControllerManager(kubectl Client, cloudControllerManagerConfiguration resources.Marshaler) error {
-	return kubectl.Apply(cloudControllerManagerConfiguration, true)
+// SetupCloudControllerManager deploys the k8s cloud-controller-manager.
+func (k *KubernetesUtil) SetupCloudControllerManager(kubectl Client, cloudControllerManagerConfiguration resources.Marshaler, configMaps resources.Marshaler, secrets resources.Marshaler) error {
+	if err := kubectl.Apply(configMaps, true); err != nil {
+		return fmt.Errorf("applying ccm ConfigMaps failed: %w", err)
+	}
+	if err := kubectl.Apply(secrets, true); err != nil {
+		return fmt.Errorf("applying ccm Secrets failed: %w", err)
+	}
+	if err := kubectl.Apply(cloudControllerManagerConfiguration, true); err != nil {
+		return fmt.Errorf("applying ccm failed: %w", err)
+	}
+	return nil
+}
 }
 
 // JoinCluster joins existing kubernetes cluster using kubeadm join.

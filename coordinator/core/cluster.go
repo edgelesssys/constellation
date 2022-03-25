@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/edgelesssys/constellation/coordinator/kubernetes"
+	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"go.uber.org/zap"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
@@ -16,12 +17,17 @@ func (c *Core) GetK8sJoinArgs() (*kubeadm.BootstrapTokenDiscovery, error) {
 }
 
 // InitCluster initializes the cluster, stores the join args, and returns the kubeconfig.
-func (c *Core) InitCluster(autoscalingNodeGroups []string) ([]byte, error) {
+func (c *Core) InitCluster(autoscalingNodeGroups []string, cloudServiceAccountURI string) ([]byte, error) {
 	var nodeName string
 	var providerID string
+	var instance Instance
+	var ccmConfigMaps resources.ConfigMaps
+	var ccmSecrets resources.Secrets
+	var err error
+	nodeIP := coordinatorVPNIP.String()
+	var err error
 	if c.metadata.Supported() {
-		var err error
-		instance, err := c.metadata.Self(context.TODO())
+		instance, err = c.metadata.Self(context.TODO())
 		if err != nil {
 			c.zaplogger.Error("Retrieving own instance metadata failed", zap.Error(err))
 			return nil, err
@@ -33,25 +39,41 @@ func (c *Core) InitCluster(autoscalingNodeGroups []string) ([]byte, error) {
 	}
 	if c.cloudControllerManager.Supported() && c.metadata.Supported() {
 		c.zaplogger.Info("Preparing node for cloud-controller-manager")
-
 		if err := PrepareInstanceForCCM(context.TODO(), c.metadata, c.cloudControllerManager, coordinatorVPNIP.String()); err != nil {
 			c.zaplogger.Error("Preparing node for CCM failed", zap.Error(err))
+			return nil, err
+		}
+		ccmConfigMaps, err = c.cloudControllerManager.ConfigMaps(instance)
+		if err != nil {
+			c.zaplogger.Error("Defining ConfigMaps for CCM failed", zap.Error(err))
+			return nil, err
+		}
+		ccmSecrets, err = c.cloudControllerManager.Secrets(instance, cloudServiceAccountURI)
+		if err != nil {
+			c.zaplogger.Error("Defining Secrets for CCM failed", zap.Error(err))
 			return nil, err
 		}
 	}
 
 	c.zaplogger.Info("Initializing cluster")
 	joinCommand, err := c.kube.InitCluster(kubernetes.InitClusterInput{
-		APIServerAdvertiseIP:           coordinatorVPNIP.String(),
-		NodeName:                       k8sCompliantHostname(nodeName),
-		ProviderID:                     providerID,
-		SupportClusterAutoscaler:       c.clusterAutoscaler.Supported(),
-		AutoscalingCloudprovider:       c.clusterAutoscaler.Name(),
-		AutoscalingNodeGroups:          autoscalingNodeGroups,
-		SupportsCloudControllerManager: c.cloudControllerManager.Supported(),
-		CloudControllerManagerName:     c.cloudControllerManager.Name(),
-		CloudControllerManagerImage:    c.cloudControllerManager.Image(),
-		CloudControllerManagerPath:     c.cloudControllerManager.Path(),
+		APIServerAdvertiseIP:               coordinatorVPNIP.String(),
+		NodeIP:                             nodeIP,
+		NodeName:                           k8sCompliantHostname(nodeName),
+		ProviderID:                         providerID,
+		SupportClusterAutoscaler:           c.clusterAutoscaler.Supported(),
+		AutoscalingCloudprovider:           c.clusterAutoscaler.Name(),
+		AutoscalingNodeGroups:              autoscalingNodeGroups,
+		SupportsCloudControllerManager:     c.cloudControllerManager.Supported(),
+		CloudControllerManagerName:         c.cloudControllerManager.Name(),
+		CloudControllerManagerImage:        c.cloudControllerManager.Image(),
+		CloudControllerManagerPath:         c.cloudControllerManager.Path(),
+		CloudControllerManagerExtraArgs:    c.cloudControllerManager.ExtraArgs(),
+		CloudControllerManagerConfigMaps:   ccmConfigMaps,
+		CloudControllerManagerSecrets:      ccmSecrets,
+		CloudControllerManagerVolumes:      c.cloudControllerManager.Volumes(),
+		CloudControllerManagerVolumeMounts: c.cloudControllerManager.VolumeMounts(),
+		CloudControllerManagerEnv:          c.cloudControllerManager.Env(),
 	})
 	if err != nil {
 		c.zaplogger.Error("Initializing cluster failed", zap.Error(err))
