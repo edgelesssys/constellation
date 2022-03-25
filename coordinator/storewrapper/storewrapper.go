@@ -356,23 +356,3 @@ func (s StoreWrapper) PopNextFreeNodeIP() (string, error) {
 	}
 	return vpnIP, nil
 }
-
-// _put is the default method for marshaling and saving data to store.
-func (s StoreWrapper) _put(requestType, requestResource string, target interface{}) error {
-	request := requestType + ":" + requestResource
-	rawData, err := json.Marshal(target)
-	if err != nil {
-		return err
-	}
-	return s.Store.Put(request, rawData)
-}
-
-// _get is the default method for loading and unmarshaling data from store.
-func (s StoreWrapper) _get(requestType, requestResource string, target interface{}) error {
-	request := requestType + ":" + requestResource
-	rawData, err := s.Store.Get(request)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(rawData, target)
-}
