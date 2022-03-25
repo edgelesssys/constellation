@@ -1,107 +1,222 @@
 package storage
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"io"
-	"os"
 	"testing"
-	"time"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
+	"cloud.google.com/go/storage"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"google.golang.org/api/option"
 )
 
-const storageEmulator = "gcr.io/cloud-devrel-public-resources/storage-testbench"
-
-func TestGoogleCloudStorage(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	ctx := context.Background()
-
-	// Set up the Storage Emulator
-	t.Log("Creating storage emulator...")
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	require.NoError(err)
-	emulator, err := setupEmulator(ctx, cli, storageEmulator)
-	require.NoError(err)
-	defer cli.ContainerStop(ctx, emulator.ID, nil)
-
-	// Run the actual test
-	t.Setenv("STORAGE_EMULATOR_HOST", "localhost:9000")
-
-	bucketName := "test-bucket"
-	projectName := "test-project"
-
-	t.Log("Running test...")
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*50)
-	defer cancel()
-	storage, err := NewGoogleCloudStorage(ctx, projectName, bucketName, nil, option.WithoutAuthentication())
-	require.NoError(err)
-
-	testDEK1 := []byte("test DEK")
-	testDEK2 := []byte("more test DEK")
-
-	// request unset value
-	_, err = storage.Get(ctx, "test:input")
-	assert.Error(err)
-
-	// test Put method
-	assert.NoError(storage.Put(ctx, "volume01", testDEK1))
-	assert.NoError(storage.Put(ctx, "volume02", testDEK2))
-
-	// make sure values have been set
-	val, err := storage.Get(ctx, "volume01")
-	assert.NoError(err)
-	assert.Equal(testDEK1, val)
-	val, err = storage.Get(ctx, "volume02")
-	assert.NoError(err)
-	assert.Equal(testDEK2, val)
-
-	_, err = storage.Get(ctx, "invalid:key")
-	assert.Error(err)
-	assert.ErrorIs(err, ErrDEKUnset)
+type stubGCPStorageAPI struct {
+	newClientErr       error
+	attrsErr           error
+	createBucketErr    error
+	createBucketCalled bool
+	newReaderErr       error
+	newReaderOutput    []byte
+	writer             *stubWriteCloser
 }
 
-func setupEmulator(ctx context.Context, cli *client.Client, imageName string) (container.ContainerCreateCreatedBody, error) {
-	reader, err := cli.ImagePull(ctx, imageName, types.ImagePullOptions{})
-	if err != nil {
-		return container.ContainerCreateCreatedBody{}, err
-	}
-	if _, err := io.Copy(os.Stdout, reader); err != nil {
-		return container.ContainerCreateCreatedBody{}, err
-	}
-	if err := reader.Close(); err != nil {
-		return container.ContainerCreateCreatedBody{}, err
+func (s *stubGCPStorageAPI) stubClientFactory(ctx context.Context, opts ...option.ClientOption) (gcpStorageAPI, error) {
+	return s, s.newClientErr
+}
+
+func (s *stubGCPStorageAPI) Attrs(ctx context.Context, bucketName string) (*storage.BucketAttrs, error) {
+	return &storage.BucketAttrs{}, s.attrsErr
+}
+
+func (s *stubGCPStorageAPI) Close() error {
+	return nil
+}
+
+func (s *stubGCPStorageAPI) CreateBucket(ctx context.Context, bucketName, projectID string, attrs *storage.BucketAttrs) error {
+	s.createBucketCalled = true
+	return s.createBucketErr
+}
+
+func (s *stubGCPStorageAPI) NewWriter(ctx context.Context, bucketName, objectName string) io.WriteCloser {
+	return s.writer
+}
+
+func (s *stubGCPStorageAPI) NewReader(ctx context.Context, bucketName, objectName string) (io.ReadCloser, error) {
+	return io.NopCloser(bytes.NewReader(s.newReaderOutput)), s.newReaderErr
+}
+
+type stubWriteCloser struct {
+	result   *[]byte
+	writeErr error
+	writeN   int
+}
+
+func (s stubWriteCloser) Write(p []byte) (int, error) {
+	*s.result = p
+	return s.writeN, s.writeErr
+}
+
+func (s stubWriteCloser) Close() error {
+	return nil
+}
+
+func TestGCPGet(t *testing.T) {
+	someErr := errors.New("error")
+
+	testCases := map[string]struct {
+		client      *stubGCPStorageAPI
+		unsetError  bool
+		errExpected bool
+	}{
+		"success": {
+			client: &stubGCPStorageAPI{newReaderOutput: []byte("test-data")},
+		},
+		"creating client fails": {
+			client:      &stubGCPStorageAPI{newClientErr: someErr},
+			errExpected: true,
+		},
+		"NewReader fails": {
+			client:      &stubGCPStorageAPI{newReaderErr: someErr},
+			errExpected: true,
+		},
+		"ErrObjectNotExist error": {
+			client:      &stubGCPStorageAPI{newReaderErr: storage.ErrObjectNotExist},
+			unsetError:  true,
+			errExpected: true,
+		},
 	}
 
-	// the 3 true statements are necessary to attach later to the container log
-	containerConfig := &container.Config{
-		Image:        storageEmulator,
-		AttachStdout: true,
-		AttachStderr: true,
-		Tty:          true,
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			client := &GoogleCloudStorage{
+				newClient:  tc.client.stubClientFactory,
+				projectID:  "test",
+				bucketName: "test",
+			}
+
+			out, err := client.Get(context.Background(), "test-key")
+			if tc.errExpected {
+				assert.Error(err)
+
+				if tc.unsetError {
+					assert.ErrorIs(err, ErrDEKUnset)
+				} else {
+					assert.False(errors.Is(err, ErrDEKUnset))
+				}
+
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.client.newReaderOutput, out)
+			}
+		})
 	}
-	emulator, err := cli.ContainerCreate(ctx, containerConfig, &container.HostConfig{NetworkMode: container.NetworkMode("host"), AutoRemove: true}, nil, nil, "google-cloud-storage-test")
-	if err != nil {
-		return emulator, err
-	}
-	err = cli.ContainerStart(ctx, emulator.ID, types.ContainerStartOptions{})
-	if err != nil {
-		return emulator, err
+}
+
+func TestGCPPut(t *testing.T) {
+	someErr := errors.New("error")
+	testCases := map[string]struct {
+		client      *stubGCPStorageAPI
+		unsetError  bool
+		errExpected bool
+	}{
+		"success": {
+			client: &stubGCPStorageAPI{
+				writer: &stubWriteCloser{
+					result: new([]byte),
+				},
+			},
+		},
+		"creating client fails": {
+			client:      &stubGCPStorageAPI{newClientErr: someErr},
+			errExpected: true,
+		},
+		"NewWriter fails": {
+			client: &stubGCPStorageAPI{
+				writer: &stubWriteCloser{
+					result:   new([]byte),
+					writeErr: someErr,
+				},
+			},
+			errExpected: true,
+		},
 	}
 
-	logs, err := cli.ContainerLogs(ctx, emulator.ID, types.ContainerLogsOptions{
-		ShowStdout: true,
-		Follow:     true,
-	})
-	if err != nil {
-		return emulator, err
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			client := &GoogleCloudStorage{
+				newClient:  tc.client.stubClientFactory,
+				projectID:  "test",
+				bucketName: "test",
+			}
+			testData := []byte{0x1, 0x2, 0x3}
+
+			err := client.Put(context.Background(), "test-key", testData)
+			if tc.errExpected {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(testData, *tc.client.writer.result)
+			}
+		})
 	}
-	go io.Copy(os.Stdout, logs)
-	return emulator, nil
+}
+
+func TestGCPCreateContainerOrContinue(t *testing.T) {
+	someErr := errors.New("error")
+	testCases := map[string]struct {
+		client          *stubGCPStorageAPI
+		createNewBucket bool
+		errExpected     bool
+	}{
+		"success": {
+			client: &stubGCPStorageAPI{},
+		},
+		"container does not exist": {
+			client:          &stubGCPStorageAPI{attrsErr: storage.ErrBucketNotExist},
+			createNewBucket: true,
+		},
+		"creating client fails": {
+			client:      &stubGCPStorageAPI{newClientErr: someErr},
+			errExpected: true,
+		},
+		"Attrs fails": {
+			client:      &stubGCPStorageAPI{attrsErr: someErr},
+			errExpected: true,
+		},
+		"CreateBucket fails": {
+			client: &stubGCPStorageAPI{
+				attrsErr:        storage.ErrBucketNotExist,
+				createBucketErr: someErr,
+			},
+			errExpected: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			client := &GoogleCloudStorage{
+				newClient:  tc.client.stubClientFactory,
+				projectID:  "test",
+				bucketName: "test",
+			}
+
+			err := client.createContainerOrContinue(context.Background(), nil)
+			if tc.errExpected {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				if tc.createNewBucket {
+					assert.True(tc.client.createBucketCalled)
+				}
+			}
+		})
+	}
 }
