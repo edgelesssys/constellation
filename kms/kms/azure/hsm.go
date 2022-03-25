@@ -46,7 +46,7 @@ func NewHSM(ctx context.Context, vaultName string, store kms.Storage, opts *Opts
 		return nil, fmt.Errorf("creating HSM client: %w", err)
 	}
 
-	// `azkeys.NewClient()` does not error if the vault is non existant
+	// `azkeys.NewClient()` does not error if the vault is non existent
 	// Test here if we can reach the vault, and error otherwise
 	pager := client.ListKeys(&azkeys.ListKeysOptions{MaxResults: to.Int32Ptr(2)})
 	pager.NextPage(ctx)

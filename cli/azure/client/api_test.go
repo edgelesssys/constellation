@@ -380,7 +380,7 @@ type stubRoleAssignmentsAPI struct {
 }
 
 func (a *stubRoleAssignmentsAPI) Create(ctx context.Context, scope string, roleAssignmentName string, parameters authorization.RoleAssignmentCreateParameters) (authorization.RoleAssignment, error) {
-	a.createCounter += 1
+	a.createCounter++
 	if len(a.createErrors) == 0 {
 		return authorization.RoleAssignment{}, nil
 	}

@@ -40,8 +40,7 @@ func (m *fakeAWSClient) GenerateDataKey(ctx context.Context, params *kms.Generat
 	}
 
 	kekID := *params.KeyId
-	_, ok := m.kekPool[kekID]
-	if !ok {
+	if _, ok := m.kekPool[kekID]; !ok {
 		return nil, kmsInterface.ErrKEKUnknown
 	}
 
@@ -100,7 +99,7 @@ func (m *fakeAWSClient) DescribeKey(ctx context.Context, params *kms.DescribeKey
 
 // CreateKey stores a key in fakeKMSStore.
 func (m *fakeAWSClient) CreateKey(ctx context.Context, params *kms.CreateKeyInput, optFns ...func(*kms.Options)) (*kms.CreateKeyOutput, error) {
-	m.keyIDCount += 1
+	m.keyIDCount++
 	kekID := strconv.Itoa(m.keyIDCount)
 
 	if _, ok := m.kekPool[kekID]; ok {
