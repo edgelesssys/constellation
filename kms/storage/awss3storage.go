@@ -13,10 +13,16 @@ import (
 	"github.com/edgelesssys/constellation/kms/config"
 )
 
+type awsS3ClientAPI interface {
+	GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error)
+	PutObject(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error)
+	CreateBucket(ctx context.Context, params *s3.CreateBucketInput, optFns ...func(*s3.Options)) (*s3.CreateBucketOutput, error)
+}
+
 // AWSS3Storage is an implementation of the Storage interface, storing keys in AWS S3 buckets.
 type AWSS3Storage struct {
 	bucketID string
-	client   *s3.Client
+	client   awsS3ClientAPI
 	optFns   []func(*s3.Options)
 }
 
@@ -31,22 +37,13 @@ func NewAWSS3Storage(ctx context.Context, bucketID string, optFns ...func(*s3.Op
 	}
 	client := s3.NewFromConfig(cfg, optFns...)
 
+	store := &AWSS3Storage{client: client, bucketID: bucketID, optFns: optFns}
+
 	// Try to create new bucket, continue if bucket already exists
-	createBucketInput := &s3.CreateBucketInput{
-		Bucket: &bucketID,
-		CreateBucketConfiguration: &types.CreateBucketConfiguration{
-			LocationConstraint: types.BucketLocationConstraint(cfg.Region),
-		},
+	if err := store.createBucket(ctx, bucketID, cfg.Region, optFns...); err != nil {
+		return nil, err
 	}
-	_, err = client.CreateBucket(ctx, createBucketInput, optFns...)
-	if err != nil {
-		var bne *types.BucketAlreadyExists
-		var baowby *types.BucketAlreadyOwnedByYou
-		if !(errors.As(err, &bne) || errors.As(err, &baowby)) {
-			return nil, fmt.Errorf("creating storage container: %w", err)
-		}
-	}
-	return &AWSS3Storage{client: client, bucketID: bucketID, optFns: optFns}, nil
+	return store, nil
 }
 
 // Get returns a DEK from from AWS S3 Storage by key ID.
@@ -76,6 +73,23 @@ func (s *AWSS3Storage) Put(ctx context.Context, keyID string, data []byte) error
 	}
 	if _, err := s.client.PutObject(ctx, putObjectInput, s.optFns...); err != nil {
 		return fmt.Errorf("uploading DEK to storage: %w", err)
+	}
+	return nil
+}
+
+func (s *AWSS3Storage) createBucket(ctx context.Context, bucketID, region string, optFns ...func(*s3.Options)) error {
+	createBucketInput := &s3.CreateBucketInput{
+		Bucket: &bucketID,
+		CreateBucketConfiguration: &types.CreateBucketConfiguration{
+			LocationConstraint: types.BucketLocationConstraint(region),
+		},
+	}
+	if _, err := s.client.CreateBucket(ctx, createBucketInput, optFns...); err != nil {
+		var bne *types.BucketAlreadyExists
+		var baowby *types.BucketAlreadyOwnedByYou
+		if !(errors.As(err, &bne) || errors.As(err, &baowby)) {
+			return fmt.Errorf("creating storage container: %w", err)
+		}
 	}
 	return nil
 }
