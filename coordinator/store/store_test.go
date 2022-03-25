@@ -65,7 +65,7 @@ func testBasic(t *testing.T) {
 
 	_, err = store.Get("invalid:key")
 	assert.Error(err)
-	var unsetErr *StoreValueUnsetError
+	var unsetErr *ValueUnsetError
 	assert.ErrorAs(err, &unsetErr)
 	assert.NoError(store.Delete("test:input"))
 	assert.NoError(store.Delete("another:input"))

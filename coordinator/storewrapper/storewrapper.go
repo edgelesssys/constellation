@@ -107,7 +107,7 @@ func (s StoreWrapper) GetPeers() ([]peer.Peer, error) {
 // Should be called in a transaction together with Add/Remove operation(s).
 func (s StoreWrapper) IncrementPeersResourceVersion() error {
 	val, err := s.GetPeersResourceVersion()
-	var unsetErr *store.StoreValueUnsetError
+	var unsetErr *store.ValueUnsetError
 	if errors.As(err, &unsetErr) {
 		val = 0
 	} else if err != nil {

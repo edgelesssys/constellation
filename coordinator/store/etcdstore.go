@@ -73,7 +73,7 @@ func (s *EtcdStore) Get(request string) ([]byte, error) {
 		return nil, err
 	}
 	if values.Count == 0 {
-		return nil, &StoreValueUnsetError{requestedValue: request}
+		return nil, &ValueUnsetError{requestedValue: request}
 	}
 	if values.Count == 1 {
 		return values.Kvs[0].Value, nil
@@ -150,7 +150,7 @@ func (t *EtcdTransaction) Get(request string) ([]byte, error) {
 		return value, nil
 	}
 	if _, ok := t.dataDelete[request]; ok {
-		return nil, &StoreValueUnsetError{requestedValue: request}
+		return nil, &ValueUnsetError{requestedValue: request}
 	}
 	return t.store.Get(request)
 }

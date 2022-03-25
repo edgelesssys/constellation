@@ -30,7 +30,7 @@ func (s *StdStore) Get(request string) ([]byte, error) {
 	if ok {
 		return []byte(value), nil
 	}
-	return nil, &StoreValueUnsetError{requestedValue: request}
+	return nil, &ValueUnsetError{requestedValue: request}
 }
 
 // Put saves a value in StdStore by Type and Name.
@@ -119,7 +119,7 @@ func (t *stdTransaction) Get(request string) ([]byte, error) {
 	if value, ok := t.data[request]; ok {
 		return []byte(value), nil
 	}
-	return nil, &StoreValueUnsetError{requestedValue: request}
+	return nil, &ValueUnsetError{requestedValue: request}
 }
 
 // Put saves a value.

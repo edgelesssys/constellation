@@ -44,12 +44,12 @@ type Iterator interface {
 	HasNext() bool
 }
 
-// StoreValueUnsetError is an error raised by unset values in the store.
-type StoreValueUnsetError struct {
+// ValueUnsetError is an error raised by unset values in the store.
+type ValueUnsetError struct {
 	requestedValue string
 }
 
 // Error implements the Error interface.
-func (s *StoreValueUnsetError) Error() string {
+func (s *ValueUnsetError) Error() string {
 	return fmt.Sprintf("store: requested value not set: %s", s.requestedValue)
 }
