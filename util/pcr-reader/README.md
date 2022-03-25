@@ -87,3 +87,33 @@ PCRs:
   "9": "gse53SjsqREEdOpImJH4KAb0b8PqIgwI+Ps/XSiFnN4="
 }
 ```
+
+## Meaning of PCR values
+
+An overview about what data is measured into the different registers can be found [in the TPM spec](https://trustedcomputinggroup.org/wp-content/uploads/TCG_PCClient_PFP_r1p05_v23_pub.pdf#%5B%7B%22num%22%3A157%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C33%2C400%2C0%5D).
+
+We use the TPM and its PCRs to verify all nodes of a Constellation run with the same firmware and OS software.
+
+### Azure trusted launch
+
+PCR[0] measures the firmware volume (FV). Changes to FV also change PCR[0], making it unreliable for attestation.
+PCR[6] measures the VM ID. This is unusable for cluster attestation for two reasons:
+1. The Coordinator does not know the VM ID of nodes wanting to join the cluster, so it can not compute the expected PCR[6] for the joining VM
+2. A user may attest any node of the cluster without knowing the VM ID
+
+PCR[10] is used by Linux Integrity Measurement Architecture (IMA).
+IMA creates runtime measurements based on a measurement policy (which is obsolete for Constellation, since we use dm-verity).
+The first entry of the runtime measurements is the `boot_aggregate`. It is a SHA1 hash over PCRs 0 to 7.
+As detailed earlier, PCR[6] is different for every VM in Azure, therefore PCR[10] will also be different since it includes PCR[6], meaning we can not use it for attestation.
+IMA writing its measurements into PCR[10] can not be disabled without rebuilding the kernel.
+
+### Azure flexible deployment and attestation (FDA)
+
+With FDA CVMs measuring all of the firmware, it should be possible to use all PCRs for attestation since we know, and can choose, what firmware is running.
+
+### GCP confidential VM
+
+GCP uses confidential VMs based on AMD SEV-ES with a vTPM interface.
+
+PCR[0] contains the measurement of a string marking the VM as using ADM SEV-ES.
+All firmware measurements seem to be constant.
