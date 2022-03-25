@@ -1,35 +1,23 @@
 package gcp
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider"
 	"github.com/edgelesssys/constellation/coordinator/core"
-	"github.com/spf13/afero"
+	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	k8s "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ConfigWriter abstracts writing of the /etc/gce.conf config file.
-type ConfigWriter interface {
-	// WriteGCEConf writes the config to the filesystem of the current instance.
-	WriteGCEConf(config string) error
-}
-
 // CloudControllerManager holds the gcp cloud-controller-manager configuration.
-type CloudControllerManager struct {
-	writer ConfigWriter
-}
-
-// NewCCM creates a new CloudControllerManager.
-func NewCCM() *CloudControllerManager {
-	return &CloudControllerManager{
-		writer: &Writer{fs: afero.Afero{Fs: afero.NewOsFs()}},
-	}
-}
+type CloudControllerManager struct{}
 
 // Image returns the container image used to provide cloud-controller-manager for the cloud-provider.
 func (c *CloudControllerManager) Image() string {
-	// TODO: use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available
-	return "ghcr.io/malt3/cloud-provider-gcp:latest"
+	return cloudprovider.CloudControllerManagerImageGCP
 }
 
 // Path returns the path used by cloud-controller-manager executable within the container image.
@@ -42,21 +30,130 @@ func (c *CloudControllerManager) Name() string {
 	return "gce"
 }
 
-// PrepareInstance is called on every instance before deploying the cloud-controller-manager.
-// Allows for cloud-provider specific hooks.
-func (c *CloudControllerManager) PrepareInstance(instance core.Instance, vpnIP string) error {
-	// GCP CCM expects "/etc/gce.conf" to contain the GCP project-id and other configuration.
+// ExtraArgs returns a list of arguments to append to the cloud-controller-manager command.
+func (c *CloudControllerManager) ExtraArgs() []string {
+	return []string{
+		"--use-service-account-credentials",
+		"--controllers=cloud-node,cloud-node-lifecycle",
+		"--cloud-config=/etc/gce/gce.conf",
+	}
+}
+
+// ConfigMaps returns a list of ConfigMaps to deploy together with the k8s cloud-controller-manager
+// Reference: https://kubernetes.io/docs/concepts/configuration/configmap/ .
+func (c *CloudControllerManager) ConfigMaps(instance core.Instance) (resources.ConfigMaps, error) {
+	// GCP CCM expects cloud config to contain the GCP project-id and other configuration.
 	// reference: https://github.com/kubernetes/cloud-provider-gcp/blob/master/cluster/gce/gci/configure-helper.sh#L791-L892
 	var config strings.Builder
 	config.WriteString("[global]\n")
 	projectID, _, _, err := splitProviderID(instance.ProviderID)
 	if err != nil {
-		return fmt.Errorf("retrieving GCP project-id failed: %w", err)
+		return resources.ConfigMaps{}, err
 	}
 	config.WriteString(fmt.Sprintf("project-id = %s\n", projectID))
 	config.WriteString("use-metadata-server = false\n")
 
-	return c.writer.WriteGCEConf(config.String())
+	return resources.ConfigMaps{
+		&k8s.ConfigMap{
+			TypeMeta: v1.TypeMeta{
+				Kind:       "ConfigMap",
+				APIVersion: "v1",
+			},
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "gceconf",
+				Namespace: "kube-system",
+			},
+			Data: map[string]string{
+				"gce.conf": config.String(),
+			},
+		},
+	}, nil
+}
+
+// Secrets returns a list of secrets to deploy together with the k8s cloud-controller-manager.
+// Reference: https://kubernetes.io/docs/concepts/configuration/secret/ .
+func (c *CloudControllerManager) Secrets(instance core.Instance, cloudServiceAccountURI string) (resources.Secrets, error) {
+	serviceAccountKey, err := getServiceAccountKey(cloudServiceAccountURI)
+	if err != nil {
+		return resources.Secrets{}, err
+	}
+	rawKey, err := json.Marshal(serviceAccountKey)
+	if err != nil {
+		return resources.Secrets{}, err
+	}
+
+	return resources.Secrets{
+		&k8s.Secret{
+			TypeMeta: v1.TypeMeta{
+				Kind:       "Secret",
+				APIVersion: "v1",
+			},
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "gcekey",
+				Namespace: "kube-system",
+			},
+			Data: map[string][]byte{
+				"key.json": rawKey,
+			},
+		},
+	}, nil
+}
+
+// Volumes returns a list of volumes to deploy together with the k8s cloud-controller-manager.
+// Reference: https://kubernetes.io/docs/concepts/storage/volumes/ .
+func (c *CloudControllerManager) Volumes() []k8s.Volume {
+	return []k8s.Volume{
+		{
+			Name: "gceconf",
+			VolumeSource: k8s.VolumeSource{
+				ConfigMap: &k8s.ConfigMapVolumeSource{
+					LocalObjectReference: k8s.LocalObjectReference{
+						Name: "gceconf",
+					},
+				},
+			},
+		},
+		{
+			Name: "gcekey",
+			VolumeSource: k8s.VolumeSource{
+				Secret: &k8s.SecretVolumeSource{
+					SecretName: "gcekey",
+				},
+			},
+		},
+	}
+}
+
+// VolumeMounts returns a list of volume mounts to deploy together with the k8s cloud-controller-manager.
+func (c *CloudControllerManager) VolumeMounts() []k8s.VolumeMount {
+	return []k8s.VolumeMount{
+		{
+			Name:      "gceconf",
+			ReadOnly:  true,
+			MountPath: "/etc/gce",
+		},
+		{
+			Name:      "gcekey",
+			ReadOnly:  true,
+			MountPath: "/var/secrets/google",
+		},
+	}
+}
+
+// Env returns a list of k8s environment key-value pairs to deploy together with the k8s cloud-controller-manager.
+func (c *CloudControllerManager) Env() []k8s.EnvVar {
+	return []k8s.EnvVar{
+		{
+			Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+			Value: "/var/secrets/google/key.json",
+		},
+	}
+}
+
+// PrepareInstance is called on every instance before deploying the cloud-controller-manager.
+// Allows for cloud-provider specific hooks.
+func (c *CloudControllerManager) PrepareInstance(instance core.Instance, vpnIP string) error {
+	return nil
 }
 
 // Supported is used to determine if cloud controller manager is implemented for this cloud provider.

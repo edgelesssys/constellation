@@ -2,7 +2,6 @@ package gcp
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -267,7 +266,7 @@ func splitProviderID(providerID string) (project, zone, instance string, err err
 	providerIDregex := regexp.MustCompile(`^gce://([^/]+)/([^/]+)/([^/]+)$`)
 	matches := providerIDregex.FindStringSubmatch(providerID)
 	if len(matches) != 4 {
-		return "", "", "", errors.New("error splitting providerID")
+		return "", "", "", fmt.Errorf("error splitting providerID: %v", providerID)
 	}
 	return matches[1], matches[2], matches[3], nil
 }

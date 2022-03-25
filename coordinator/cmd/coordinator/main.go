@@ -106,7 +106,8 @@ func main() {
 			log.Fatalf("creating GCP client failed: %v\n", err)
 		}
 		metadata = gcpcloud.New(gcpClient)
-		cloudControllerManager = gcpcloud.NewCCM()
+		cloudControllerManager = &gcpcloud.CloudControllerManager{}
+		cloudNodeManager = &gcpcloud.CloudNodeManager{}
 		autoscaler = &gcpcloud.Autoscaler{}
 		bindIP = defaultIP
 		bindPort = defaultPort
