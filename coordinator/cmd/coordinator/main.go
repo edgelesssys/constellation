@@ -57,7 +57,11 @@ func main() {
 	}
 	zapLoggerCore := zapLogger.Named("core")
 
-	wg := wireguard.New()
+	wg, err := wireguard.New()
+	if err != nil {
+		zapLogger.Panic("error opening wgctrl client")
+	}
+	defer wg.Close()
 
 	var issuer core.QuoteIssuer
 	var validator core.QuoteValidator

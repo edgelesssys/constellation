@@ -12,6 +12,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/kms"
+	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/pubapi"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/store"
@@ -337,6 +338,19 @@ func (v *fakeVPN) AddPeer(pubKey []byte, publicIP string, vpnIP string) error {
 
 func (v *fakeVPN) RemovePeer(pubKey []byte) error {
 	panic("dummy")
+}
+
+func (v *fakeVPN) UpdatePeers(peers []peer.Peer) error {
+	for _, peer := range peers {
+		peerIP, _, err := net.SplitHostPort(peer.PublicEndpoint)
+		if err != nil {
+			return err
+		}
+		if err := v.AddPeer(peer.VPNPubKey, peerIP, peer.VPNIP); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (v *fakeVPN) send(dst string, data string) {

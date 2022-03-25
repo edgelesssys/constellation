@@ -5,7 +5,6 @@ import (
 
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/storewrapper"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -78,45 +77,5 @@ func (c *Core) AddPeer(peer peer.Peer) error {
 
 // UpdatePeers synchronizes the peers known to the store and the vpn with the passed peers.
 func (c *Core) UpdatePeers(peers []peer.Peer) error {
-	// exclude myself
-	myIP, err := c.vpn.GetInterfaceIP()
-	if err != nil {
-		return err
-	}
-	for i, p := range peers {
-		if p.VPNIP == myIP {
-			peers = append(peers[:i], peers[i+1:]...)
-			break
-		}
-	}
-
-	tx, err := c.store.BeginTransaction()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	added, removed, err := storewrapper.StoreWrapper{Store: tx}.UpdatePeers(peers)
-	if err != nil {
-		return err
-	}
-
-	// perform remove and add on the vpn
-	var vpnErr error
-	for _, p := range removed {
-		vpnErr = multierr.Append(vpnErr, c.vpn.RemovePeer(p.VPNPubKey))
-	}
-	for _, p := range added {
-		publicIP, _, err := net.SplitHostPort(p.PublicEndpoint)
-		if err != nil {
-			vpnErr = multierr.Append(vpnErr, err)
-			continue
-		}
-		vpnErr = multierr.Append(vpnErr, c.vpn.AddPeer(p.VPNPubKey, publicIP, p.VPNIP))
-	}
-	if vpnErr != nil {
-		return vpnErr
-	}
-
-	return tx.Commit()
+	return c.vpn.UpdatePeers(peers)
 }

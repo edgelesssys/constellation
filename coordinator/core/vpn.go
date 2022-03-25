@@ -3,6 +3,9 @@ package core
 import (
 	"bytes"
 	"errors"
+	"net"
+
+	"github.com/edgelesssys/constellation/coordinator/peer"
 )
 
 type VPN interface {
@@ -12,6 +15,7 @@ type VPN interface {
 	SetInterfaceIP(ip string) error
 	AddPeer(pubKey []byte, publicIP string, vpnIP string) error
 	RemovePeer(pubKey []byte) error
+	UpdatePeers(peers []peer.Peer) error
 }
 
 type stubVPN struct {
@@ -55,6 +59,19 @@ func (v *stubVPN) RemovePeer(pubKey []byte) error {
 	}
 	v.peers = newPeerList
 	return v.removePeerErr
+}
+
+func (v *stubVPN) UpdatePeers(peers []peer.Peer) error {
+	for _, peer := range peers {
+		peerIP, _, err := net.SplitHostPort(peer.PublicEndpoint)
+		if err != nil {
+			return err
+		}
+		if err := v.AddPeer(peer.VPNPubKey, peerIP, peer.VPNIP); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type stubVPNPeer struct {
