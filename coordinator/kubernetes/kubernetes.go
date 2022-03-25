@@ -49,7 +49,7 @@ func New(clusterUtil k8sapi.ClusterUtil, configProvider configurationProvider, c
 func (k *KubeWrapper) InitCluster(in InitClusterInput) (*kubeadm.BootstrapTokenDiscovery, error) {
 	initConfig := k.configProvider.InitConfiguration()
 	initConfig.SetApiServerAdvertiseAddress(in.APIServerAdvertiseIP)
-	initConfig.SetNodeIP(in.APIServerAdvertiseIP)
+	initConfig.SetNodeIP(in.NodeIP)
 	initConfig.SetNodeName(in.NodeName)
 	initConfig.SetPodNetworkCIDR(podNetworkCidr)
 	initConfig.SetServiceCIDR(serviceCidr)

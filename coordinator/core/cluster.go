@@ -33,6 +33,9 @@ func (c *Core) InitCluster(autoscalingNodeGroups []string, cloudServiceAccountUR
 		}
 		nodeName = instance.Name
 		providerID = instance.ProviderID
+		if len(instance.IPs) > 0 {
+			nodeIP = instance.IPs[0]
+		}
 	} else {
 		nodeName = coordinatorVPNIP.String()
 	}
@@ -117,6 +120,7 @@ func (c *Core) JoinCluster(args kubeadm.BootstrapTokenDiscovery) error {
 	}
 	var nodeName string
 	var providerID string
+	nodeIP := nodeVPNIP
 	if c.metadata.Supported() {
 		instance, err := c.metadata.Self(context.TODO())
 		if err != nil {
@@ -125,6 +129,9 @@ func (c *Core) JoinCluster(args kubeadm.BootstrapTokenDiscovery) error {
 		}
 		providerID = instance.ProviderID
 		nodeName = instance.Name
+		if len(instance.IPs) > 0 {
+			nodeIP = instance.IPs[0]
+		}
 	} else {
 		nodeName = nodeVPNIP
 	}
@@ -136,7 +143,7 @@ func (c *Core) JoinCluster(args kubeadm.BootstrapTokenDiscovery) error {
 		}
 	}
 
-	if err := c.kube.JoinCluster(&args, k8sCompliantHostname(nodeName), nodeVPNIP, providerID); err != nil {
+	if err := c.kube.JoinCluster(&args, k8sCompliantHostname(nodeName), nodeIP, providerID); err != nil {
 		c.zaplogger.Error("Joining kubernetes cluster failed", zap.Error(err))
 		return err
 	}

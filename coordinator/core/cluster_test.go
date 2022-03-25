@@ -35,6 +35,7 @@ func TestInitCluster(t *testing.T) {
 			autoscalingNodeGroups: []string{"someNodeGroup"},
 			expectedInitClusterInput: kubernetes.InitClusterInput{
 				APIServerAdvertiseIP:           "10.118.0.1",
+				NodeIP:                         "10.118.0.1",
 				NodeName:                       "10.118.0.1",
 				SupportsCloudControllerManager: false,
 				SupportClusterAutoscaler:       false,
@@ -56,6 +57,7 @@ func TestInitCluster(t *testing.T) {
 			},
 			expectedInitClusterInput: kubernetes.InitClusterInput{
 				APIServerAdvertiseIP:           "10.118.0.1",
+				NodeIP:                         "10.118.0.1",
 				NodeName:                       "some-name",
 				ProviderID:                     "fake://providerid",
 				SupportsCloudControllerManager: false,
@@ -85,6 +87,7 @@ func TestInitCluster(t *testing.T) {
 			autoscalingNodeGroups: []string{"someNodeGroup"},
 			expectedInitClusterInput: kubernetes.InitClusterInput{
 				APIServerAdvertiseIP:           "10.118.0.1",
+				NodeIP:                         "10.118.0.1",
 				NodeName:                       "10.118.0.1",
 				SupportsCloudControllerManager: false,
 				SupportClusterAutoscaler:       true,
@@ -106,6 +109,7 @@ func TestInitCluster(t *testing.T) {
 			},
 			expectedInitClusterInput: kubernetes.InitClusterInput{
 				APIServerAdvertiseIP:           "10.118.0.1",
+				NodeIP:                         "10.118.0.1",
 				NodeName:                       "10.118.0.1",
 				SupportsCloudControllerManager: true,
 				SupportClusterAutoscaler:       false,
@@ -142,7 +146,8 @@ func TestInitCluster(t *testing.T) {
 			},
 			expectErr: false,
 			expectedInitClusterInput: kubernetes.InitClusterInput{
-				APIServerAdvertiseIP: "10.118.0.1",
+				APIServerAdvertiseIP:      "10.118.0.1",
+				NodeIP:                    "10.118.0.1",
 				CloudControllerManagerEnv: []k8s.EnvVar{},
 			},
 		},
