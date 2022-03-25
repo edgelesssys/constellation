@@ -221,6 +221,7 @@ func (f *fakeDbusConn) StartUnitContext(ctx context.Context, name string, mode s
 
 	return f.jobID, f.actionErr
 }
+
 func (f *fakeDbusConn) StopUnitContext(ctx context.Context, name string, mode string, ch chan<- string) (int, error) {
 	f.inputs = append(f.inputs, dbusConnActionInput{name: name, mode: mode})
 	go func() {
@@ -228,6 +229,7 @@ func (f *fakeDbusConn) StopUnitContext(ctx context.Context, name string, mode st
 	}()
 	return f.jobID, f.actionErr
 }
+
 func (f *fakeDbusConn) RestartUnitContext(ctx context.Context, name string, mode string, ch chan<- string) (int, error) {
 	f.inputs = append(f.inputs, dbusConnActionInput{name: name, mode: mode})
 	go func() {
@@ -235,6 +237,7 @@ func (f *fakeDbusConn) RestartUnitContext(ctx context.Context, name string, mode
 	}()
 	return f.jobID, f.actionErr
 }
+
 func (s *fakeDbusConn) ReloadContext(ctx context.Context) error {
 	return s.actionErr
 }

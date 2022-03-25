@@ -36,7 +36,7 @@ func New(dialer Dialer, serviceManager serviceManager, writer streamToFileWriter
 func (d *Download) DownloadCoordinator(ctx context.Context, ip string) error {
 	serverAddr := net.JoinHostPort(ip, debugd.DebugdPort)
 	// only retry download from same endpoint after backoff
-	if lastAttempt, ok := d.attemptedDownloads[serverAddr]; ok && time.Now().Sub(lastAttempt) < debugd.CoordinatorDownloadRetryBackoff {
+	if lastAttempt, ok := d.attemptedDownloads[serverAddr]; ok && time.Since(lastAttempt) < debugd.CoordinatorDownloadRetryBackoff {
 		return nil
 	}
 	log.Printf("Trying to download coordinator from %s\n", ip)

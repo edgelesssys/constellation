@@ -69,7 +69,7 @@ func (f *FileStreamer) WriteStream(filename string, stream ReadChunkStream, show
 			return fmt.Errorf("writing chunk to disk failed: %w", err)
 		}
 		if showProgress {
-			bar.Add(len(chunk.Content))
+			_ = bar.Add(len(chunk.Content))
 		}
 	}
 
@@ -118,7 +118,7 @@ func (f *FileStreamer) ReadStream(filename string, stream WriteChunkStream, chun
 			return fmt.Errorf("sending chunk failed: %w", err)
 		}
 		if showProgress {
-			bar.Add(n)
+			_ = bar.Add(n)
 		}
 	}
 }

@@ -47,7 +47,7 @@ func TestSchedulerStart(t *testing.T) {
 
 			expectedDebugdDownloads: []string{"192.0.2.1", "192.0.2.2"},
 		},
-		"if download is successfull, second download is not attempted": {
+		"if download is successful, second download is not attempted": {
 			fetcher: stubFetcher{
 				ips: []string{"192.0.2.1", "192.0.2.2"},
 			},

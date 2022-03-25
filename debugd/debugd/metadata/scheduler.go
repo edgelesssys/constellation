@@ -103,7 +103,7 @@ func (s *Scheduler) downloadCoordinator(ctx context.Context, ips []string) {
 	for _, ip := range ips {
 		err := s.downloader.DownloadCoordinator(ctx, ip)
 		if err != nil {
-			log.Printf("error occured while downloading coordinator from %v: %v\n", ip, err)
+			log.Printf("error occurred while downloading coordinator from %v: %v\n", ip, err)
 			continue
 		}
 		// early exit since coordinator should only be downloaded once
@@ -116,7 +116,7 @@ func (s *Scheduler) deploySSHKeys(ctx context.Context, keys []ssh.SSHKey) {
 	for _, key := range keys {
 		err := s.ssh.DeploySSHAuthorizedKey(ctx, key)
 		if err != nil {
-			log.Printf("error occured while deploying ssh key %v: %v\n", key, err)
+			log.Printf("error occurred while deploying ssh key %v: %v\n", key, err)
 			continue
 		}
 	}

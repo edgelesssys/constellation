@@ -49,7 +49,9 @@ func main() {
 	}
 	sched := metadata.NewScheduler(fetcher, ssh, download)
 	serv := server.New(ssh, serviceManager, streamer)
-	deploy.DeployDefaultServiceUnit(ctx, serviceManager)
+	if err := deploy.DeployDefaultServiceUnit(ctx, serviceManager); err != nil {
+		panic(err)
+	}
 
 	wg.Add(1)
 	go sched.Start(ctx, wg)

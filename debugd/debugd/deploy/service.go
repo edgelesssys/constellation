@@ -137,8 +137,8 @@ func (s *ServiceManager) WriteSystemdUnitFile(ctx context.Context, unit SystemdU
 }
 
 // DeployDefaultServiceUnit will write the default "constellation.service" unit file.
-func DeployDefaultServiceUnit(ctx context.Context, serviceManager *ServiceManager) {
-	serviceManager.WriteSystemdUnitFile(ctx, SystemdUnit{
+func DeployDefaultServiceUnit(ctx context.Context, serviceManager *ServiceManager) error {
+	return serviceManager.WriteSystemdUnitFile(ctx, SystemdUnit{
 		Name:     debugd.CoordinatorSystemdUnitName,
 		Contents: debugd.CoordinatorSystemdUnitContents,
 	})

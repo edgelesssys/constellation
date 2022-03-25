@@ -25,7 +25,7 @@ func GetScalingGroupsFromConfig(stat state.ConstellationState, config *configc.C
 	}
 }
 
-func getAWSInstances(stat state.ConstellationState, config *configc.Config) (coordinators, nodes cmdc.ScalingGroup, err error) {
+func getAWSInstances(stat state.ConstellationState, _ *configc.Config) (coordinators, nodes cmdc.ScalingGroup, err error) {
 	coordinatorID, coordinator, err := stat.EC2Instances.GetOne()
 	if err != nil {
 		return
@@ -77,7 +77,7 @@ func getGCPInstances(stat state.ConstellationState, config *configc.Config) (coo
 	return
 }
 
-func getAzureInstances(stat state.ConstellationState, config *configc.Config) (coordinators, nodes cmdc.ScalingGroup, err error) {
+func getAzureInstances(stat state.ConstellationState, _ *configc.Config) (coordinators, nodes cmdc.ScalingGroup, err error) {
 	_, coordinator, err := stat.AzureCoordinators.GetOne()
 	if err != nil {
 		return

@@ -71,7 +71,6 @@ func (l *LinuxUserManager) getLinuxUser(username string) (LinuxUser, error) {
 		Uid:      uid,
 		Gid:      gid,
 	}, nil
-
 }
 
 // EnsureLinuxUserExists will try to create the user specified by username and call GetLinuxUser to retrieve user information.

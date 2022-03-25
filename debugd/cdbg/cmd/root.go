@@ -15,13 +15,12 @@ It connects to CoreOS instances running debugd and deploys a self-compiled versi
 
 // Execute starts the CLI.
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
+	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
 func init() {
 	rootCmd.PersistentFlags().String("dev-config", "", "debugd config file (required)")
-	rootCmd.MarkPersistentFlagRequired("dev-config")
+	_ = rootCmd.MarkPersistentFlagRequired("dev-config")
 }

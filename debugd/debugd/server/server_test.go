@@ -159,7 +159,7 @@ func TestUploadCoordinator(t *testing.T) {
 			client := pb.NewDebugdClient(conn)
 			stream, err := client.UploadCoordinator(context.Background())
 			require.NoError(err)
-			fakeWrite(stream, tc.uploadChunks)
+			require.NoError(fakeWrite(stream, tc.uploadChunks))
 			resp, err := stream.CloseAndRecv()
 
 			grpcServ.GracefulStop()
@@ -390,7 +390,9 @@ func (f *fakeStreamer) WriteStream(filename string, stream coordinator.ReadChunk
 func (f *fakeStreamer) ReadStream(filename string, stream coordinator.WriteChunkStream, chunksize uint, showProgress bool) error {
 	f.readStreamFilename = filename
 	for _, chunk := range f.readStreamChunks {
-		stream.Send(&pb.Chunk{Content: chunk})
+		if err := stream.Send(&pb.Chunk{Content: chunk}); err != nil {
+			panic(err)
+		}
 	}
 	return f.readStreamErr
 }
