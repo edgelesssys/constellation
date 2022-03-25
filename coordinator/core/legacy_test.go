@@ -140,12 +140,13 @@ func newMockCoreWithDialer(dialer *bufconnDialer) (*Core, *pubapi.API, error) {
 	kubeFake := &ClusterFake{}
 	metadataFake := &ProviderMetadataFake{}
 	ccmFake := &CloudControllerManagerFake{}
+	cnmFake := &CloudNodeManagerFake{}
 	autoscalerFake := &ClusterAutoscalerFake{}
 
 	getPublicAddr := func() (string, error) {
 		return "192.0.2.1", nil
 	}
-	core, err := NewCore(vpn, kubeFake, metadataFake, ccmFake, autoscalerFake, zapLogger, vtpm.OpenSimulatedTPM, &fakeStoreFactory{})
+	core, err := NewCore(vpn, kubeFake, metadataFake, ccmFake, cnmFake, autoscalerFake, zapLogger, vtpm.OpenSimulatedTPM, &fakeStoreFactory{})
 	if err != nil {
 		return nil, nil, err
 	}

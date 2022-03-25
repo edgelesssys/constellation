@@ -51,7 +51,7 @@ func TestGetPeers(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil)
+			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil)
 			require.NoError(err)
 
 			// prepare store
@@ -119,7 +119,7 @@ func TestAddPeer(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			core, err := NewCore(&tc.vpn, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil)
+			core, err := NewCore(&tc.vpn, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil)
 			require.NoError(err)
 
 			err = core.AddPeer(tc.peer)

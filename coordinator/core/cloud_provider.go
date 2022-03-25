@@ -76,6 +76,18 @@ type CloudControllerManager interface {
 	Supported() bool
 }
 
+// CloudNodeManager implementers provide configuration for the k8s cloud-node-manager.
+type CloudNodeManager interface {
+	// Image returns the container image used to provide cloud-node-manager for the cloud-provider.
+	Image() string
+	// Path returns the path used by cloud-node-manager executable within the container image.
+	Path() string
+	// ExtraArgs returns a list of arguments to append to the cloud-node-manager command.
+	ExtraArgs() []string
+	// Supported is used to determine if cloud node manager is implemented for this cloud provider.
+	Supported() bool
+}
+
 // ClusterAutoscaler implementers provide configuration for the k8s cluster-autoscaler.
 type ClusterAutoscaler interface {
 	// Name returns the cloud-provider name as used by k8s cluster-autoscaler.
@@ -199,6 +211,24 @@ func (f *CloudControllerManagerFake) PrepareInstance(instance Instance, vpnIP st
 }
 
 func (f *CloudControllerManagerFake) Supported() bool {
+	return false
+}
+
+type CloudNodeManagerFake struct{}
+
+func (f *CloudNodeManagerFake) Image() string {
+	return "fake-image:latest"
+}
+
+func (f *CloudNodeManagerFake) Path() string {
+	return "/fake-cloud-node-manager"
+}
+
+func (f *CloudNodeManagerFake) ExtraArgs() []string {
+	return []string{}
+}
+
+func (f *CloudNodeManagerFake) Supported() bool {
 	return false
 }
 

@@ -25,7 +25,6 @@ func (c *Core) InitCluster(autoscalingNodeGroups []string, cloudServiceAccountUR
 	var ccmSecrets resources.Secrets
 	var err error
 	nodeIP := coordinatorVPNIP.String()
-	var err error
 	if c.metadata.Supported() {
 		instance, err = c.metadata.Self(context.TODO())
 		if err != nil {
@@ -74,6 +73,10 @@ func (c *Core) InitCluster(autoscalingNodeGroups []string, cloudServiceAccountUR
 		CloudControllerManagerVolumes:      c.cloudControllerManager.Volumes(),
 		CloudControllerManagerVolumeMounts: c.cloudControllerManager.VolumeMounts(),
 		CloudControllerManagerEnv:          c.cloudControllerManager.Env(),
+		SupportsCloudNodeManager:           c.cloudNodeManager.Supported(),
+		CloudNodeManagerImage:              c.cloudNodeManager.Image(),
+		CloudNodeManagerPath:               c.cloudNodeManager.Path(),
+		CloudNodeManagerExtraArgs:          c.cloudNodeManager.ExtraArgs(),
 	})
 	if err != nil {
 		c.zaplogger.Error("Initializing cluster failed", zap.Error(err))

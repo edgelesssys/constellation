@@ -29,6 +29,7 @@ type Core struct {
 	kube                   Cluster
 	metadata               ProviderMetadata
 	cloudControllerManager CloudControllerManager
+	cloudNodeManager       CloudNodeManager
 	clusterAutoscaler      ClusterAutoscaler
 	kms                    kms.CloudKMS
 	zaplogger              *zap.Logger
@@ -38,7 +39,7 @@ type Core struct {
 
 // NewCore creates and initializes a new Core object.
 func NewCore(vpn VPN, kube Cluster,
-	metadata ProviderMetadata, cloudControllerManager CloudControllerManager, clusterAutoscaler ClusterAutoscaler,
+	metadata ProviderMetadata, cloudControllerManager CloudControllerManager, cloudNodeManager CloudNodeManager, clusterAutoscaler ClusterAutoscaler,
 	zapLogger *zap.Logger, openTPM vtpm.TPMOpenFunc, persistentStoreFactory PersistentStoreFactory,
 ) (*Core, error) {
 	stor := store.NewStdStore()
@@ -48,6 +49,7 @@ func NewCore(vpn VPN, kube Cluster,
 		vpn:                    vpn,
 		kube:                   kube,
 		metadata:               metadata,
+		cloudNodeManager:       cloudNodeManager,
 		cloudControllerManager: cloudControllerManager,
 		clusterAutoscaler:      clusterAutoscaler,
 		zaplogger:              zapLogger,

@@ -39,6 +39,7 @@ func main() {
 	var kube core.Cluster
 	var metadata core.ProviderMetadata
 	var cloudControllerManager core.CloudControllerManager
+	var cloudNodeManager core.CloudNodeManager
 	var autoscaler core.ClusterAutoscaler
 	cfg := zap.NewDevelopmentConfig()
 
@@ -148,5 +149,5 @@ func main() {
 
 	dialer := &net.Dialer{}
 	run(validator, issuer, wg, openTPM, util.GetIPAddr, dialer, kube,
-		metadata, cloudControllerManager, autoscaler, etcdEndpoint, enforceEtcdTls, bindIP, bindPort, zapLoggerCore)
+		metadata, cloudControllerManager, cloudNodeManager, autoscaler, etcdEndpoint, enforceEtcdTls, bindIP, bindPort, zapLoggerCore)
 }

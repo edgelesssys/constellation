@@ -81,6 +81,16 @@ func (k *KubeWrapper) InitCluster(in InitClusterInput) (*kubeadm.BootstrapTokenD
 			return nil, fmt.Errorf("failed to setup cloud-controller-manager: %w", err)
 		}
 	}
+
+	if in.SupportsCloudNodeManager {
+		cloudNodeManagerConfiguration := resources.NewDefaultCloudNodeManagerDeployment(
+			in.CloudNodeManagerImage, in.CloudNodeManagerPath, in.CloudNodeManagerExtraArgs,
+		)
+		if err := k.clusterUtil.SetupCloudNodeManager(k.client, cloudNodeManagerConfiguration); err != nil {
+			return nil, fmt.Errorf("failed to setup cloud-node-manager: %w", err)
+		}
+	}
+
 	if in.SupportClusterAutoscaler {
 		clusterAutoscalerConfiguration := resources.NewDefaultAutoscalerDeployment()
 		clusterAutoscalerConfiguration.SetAutoscalerCommand(in.AutoscalingCloudprovider, in.AutoscalingNodeGroups)

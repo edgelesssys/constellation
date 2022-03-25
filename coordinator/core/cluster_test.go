@@ -22,6 +22,7 @@ func TestInitCluster(t *testing.T) {
 		cluster                  clusterStub
 		metadata                 stubMetadata
 		cloudControllerManager   stubCloudControllerManager
+		cloudNodeManager         stubCloudNodeManager
 		clusterAutoscaler        stubClusterAutoscaler
 		autoscalingNodeGroups    []string
 		expectErr                bool
@@ -166,7 +167,7 @@ func TestInitCluster(t *testing.T) {
 
 			zapLogger, err := zap.NewDevelopment()
 			require.NoError(err)
-			core, err := NewCore(&stubVPN{}, &tc.cluster, &tc.metadata, &tc.cloudControllerManager, &tc.clusterAutoscaler, zapLogger, vtpm.OpenSimulatedTPM, nil)
+			core, err := NewCore(&stubVPN{}, &tc.cluster, &tc.metadata, &tc.cloudControllerManager, &tc.cloudNodeManager, &tc.clusterAutoscaler, zapLogger, vtpm.OpenSimulatedTPM, nil)
 			require.NoError(err)
 
 			kubeconfig, err := core.InitCluster(tc.autoscalingNodeGroups, "cloud-service-account-uri")
@@ -190,6 +191,7 @@ func TestJoinCluster(t *testing.T) {
 		cluster                 clusterStub
 		metadata                stubMetadata
 		cloudControllerManager  stubCloudControllerManager
+		cloudNodeManager        stubCloudNodeManager
 		clusterAutoscaler       stubClusterAutoscaler
 		vpn                     stubVPN
 		expectErr               bool
@@ -280,7 +282,7 @@ func TestJoinCluster(t *testing.T) {
 
 			zapLogger, err := zap.NewDevelopment()
 			require.NoError(err)
-			core, err := NewCore(&tc.vpn, &tc.cluster, &tc.metadata, &tc.cloudControllerManager, &tc.clusterAutoscaler, zapLogger, vtpm.OpenSimulatedTPM, nil)
+			core, err := NewCore(&tc.vpn, &tc.cluster, &tc.metadata, &tc.cloudControllerManager, &tc.cloudNodeManager, &tc.clusterAutoscaler, zapLogger, vtpm.OpenSimulatedTPM, nil)
 			require.NoError(err)
 
 			joinReq := kubeadm.BootstrapTokenDiscovery{
@@ -432,6 +434,39 @@ func (s *stubCloudControllerManager) Env() []k8s.EnvVar {
 }
 
 func (s *stubCloudControllerManager) Supported() bool {
+	return s.supportedRes
+}
+
+type stubCloudNodeManager struct {
+	imageRes           string
+	pathRes            string
+	nameRes            string
+	prepareInstanceRes error
+	extraArgsRes       []string
+	configMapsRes      resources.ConfigMaps
+	configMapsErr      error
+	secretsRes         resources.Secrets
+	secretsErr         error
+	volumesRes         []k8s.Volume
+	volumeMountRes     []k8s.VolumeMount
+	supportedRes       bool
+
+	prepareInstanceRequests []prepareInstanceRequest
+}
+
+func (s *stubCloudNodeManager) Image() string {
+	return s.imageRes
+}
+
+func (s *stubCloudNodeManager) Path() string {
+	return s.pathRes
+}
+
+func (s *stubCloudNodeManager) ExtraArgs() []string {
+	return s.extraArgsRes
+}
+
+func (s *stubCloudNodeManager) Supported() bool {
 	return s.supportedRes
 }
 

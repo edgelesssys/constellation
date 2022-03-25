@@ -27,6 +27,7 @@ type ClusterUtil interface {
 	SetupPodNetwork(kubectl Client, podNetworkConfiguration resources.Marshaler) error
 	SetupAutoscaling(kubectl Client, clusterAutoscalerConfiguration resources.Marshaler) error
 	SetupCloudControllerManager(kubectl Client, cloudControllerManagerConfiguration resources.Marshaler, configMaps resources.Marshaler, secrets resources.Marshaler) error
+	SetupCloudNodeManager(kubectl Client, cloudNodeManagerConfiguration resources.Marshaler) error
 	RestartKubelet() error
 }
 
@@ -114,6 +115,10 @@ func (k *KubernetesUtil) SetupCloudControllerManager(kubectl Client, cloudContro
 	}
 	return nil
 }
+
+// SetupCloudNodeManager deploys the k8s cloud-node-manager.
+func (k *KubernetesUtil) SetupCloudNodeManager(kubectl Client, cloudNodeManagerConfiguration resources.Marshaler) error {
+	return kubectl.Apply(cloudNodeManagerConfiguration, true)
 }
 
 // JoinCluster joins existing kubernetes cluster using kubeadm join.

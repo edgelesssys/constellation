@@ -24,4 +24,8 @@ type InitClusterInput struct {
 	CloudControllerManagerVolumes      []k8s.Volume
 	CloudControllerManagerVolumeMounts []k8s.VolumeMount
 	CloudControllerManagerEnv          []k8s.EnvVar
+	SupportsCloudNodeManager           bool
+	CloudNodeManagerImage              string
+	CloudNodeManagerPath               string
+	CloudNodeManagerExtraArgs          []string
 }

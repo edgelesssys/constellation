@@ -189,7 +189,7 @@ func TestConcurrent(t *testing.T) {
 
 func spawnPeer(require *require.Assertions, logger *zap.Logger, dialer *testdialer.BufconnDialer, netw *network, endpoint string) (*grpc.Server, *pubapi.API, *fakeVPN) {
 	vpn := newVPN(netw, endpoint)
-	cor, err := core.NewCore(vpn, &core.ClusterFake{}, &core.ProviderMetadataFake{}, &core.CloudControllerManagerFake{}, &core.ClusterAutoscalerFake{}, logger, vtpm.OpenSimulatedTPM, fakeStoreFactory{})
+	cor, err := core.NewCore(vpn, &core.ClusterFake{}, &core.ProviderMetadataFake{}, &core.CloudControllerManagerFake{}, &core.CloudNodeManagerFake{}, &core.ClusterAutoscalerFake{}, logger, vtpm.OpenSimulatedTPM, fakeStoreFactory{})
 	require.NoError(err)
 
 	getPublicAddr := func() (string, error) {
