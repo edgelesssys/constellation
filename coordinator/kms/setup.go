@@ -113,7 +113,7 @@ func getKMS(ctx context.Context, kmsURI string, store kms.Storage) (kms.CloudKMS
 		if err != nil {
 			return nil, err
 		}
-		return gcp.New(project, location, keyRing, store, kmspb.ProtectionLevel(protectionLvl)), nil
+		return gcp.New(ctx, project, location, keyRing, store, kmspb.ProtectionLevel(protectionLvl))
 
 	case "cluster-kms":
 		return &ClusterKMS{}, nil

@@ -3,28 +3,20 @@ package gcp
 import (
 	"context"
 	"errors"
-	"fmt"
-	"net"
-	"strings"
 	"testing"
 
-	"github.com/edgelesssys/constellation/kms/config"
 	kmsInterface "github.com/edgelesssys/constellation/kms/kms"
 	"github.com/edgelesssys/constellation/kms/kms/util"
 	"github.com/edgelesssys/constellation/kms/storage"
+	"github.com/googleapis/gax-go/v2"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"google.golang.org/api/option"
 	kmspb "google.golang.org/genproto/googleapis/cloud/kms/v1"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/protobuf/proto"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-var (
-	testKey    = []byte{0x52, 0xFD, 0xFC, 0x07, 0x21, 0x82, 0x65, 0x4F, 0x16, 0x3F, 0x5F, 0x0F, 0x9A, 0x62, 0x1D, 0x72, 0x95, 0x66, 0xC7, 0x4D, 0x10, 0x03, 0x7C, 0x4D, 0x7B, 0xBB, 0x04, 0x07, 0xD1, 0xE2, 0xC6, 0x49}
-	testKeyRSA = `-----BEGIN PUBLIC KEY-----
+var testKeyRSA = `-----BEGIN PUBLIC KEY-----
 MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAu+OepfHCTiTi27nkTGke
 dn+AIkiM1AIWWDwqfqG85aNulcj60mGQGXIYV8LoEVkyKOhYBIUmJUaVczB4ltqq
 ZhR7l46RQw2vnv+XiUmfK555d4ZDInyjTusO69hE6tkuYKdXLlG1HzcrhJ254LE2
@@ -38,310 +30,346 @@ Ubhn4tvjy/q5XzVqZtBeoseW2TyyrsAN53LBkSqag5tG/264CQDigQ6Y/OADOE2x
 n08MyrFHIL/wFMscOvJo7c2Eo4EW1yXkEkAy5tF5PZgnfRObakj4gdqPeq18FNzc
 Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 -----END PUBLIC KEY-----`
-)
 
-// Google KMS testing implementation taken from: https://github.com/googleapis/google-cloud-go/blob/kms/v1.1.0/kms/apiv1/mock_test.go
-//
-// To keep the tests simple this only implements the methods required by our Google KMS client.
-// More methods can be added as needed.
-type mockKeyManagementServer struct {
-	// Embed for forward compatibility.
-	// Tests will keep working if more methods are added
-	// in the future.
-	kmspb.KeyManagementServiceServer
-
-	reqs []proto.Message
-
-	// If set, all calls return this error.
-	err error
-
-	// responses to return if err == nil
-	resps []proto.Message
+type stubGCPClient struct {
+	createErr                           error
+	createCryptoKeyCalled               bool
+	createCryptoKeyErr                  error
+	createImportJobErr                  error
+	decryptResponse                     []byte
+	decryptErr                          error
+	encryptErr                          error
+	getKeyRingErr                       error
+	importCryptoKeyVersionErr           error
+	updateCryptoKeyPrimaryVersionCalled bool
+	updateCryptoKeyPrimaryVersionErr    error
+	getImportJobErr                     error
+	getImportJobResponse                *kmspb.ImportJob
 }
 
-// CreateCryptoKey creates a new KEK.
-func (s *mockKeyManagementServer) CreateCryptoKey(ctx context.Context, req *kmspb.CreateCryptoKeyRequest) (*kmspb.CryptoKey, error) {
-	md, _ := metadata.FromIncomingContext(ctx)
-	if xg := md["x-goog-api-client"]; len(xg) == 0 || !strings.Contains(xg[0], "gl-go/") {
-		return nil, fmt.Errorf("x-goog-api-client = %v, expected gl-go key", xg)
+func newStubGCPClientFactory(stub *stubGCPClient) func(ctx context.Context, opts ...option.ClientOption) (clientAPI, error) {
+	return func(ctx context.Context, opts ...option.ClientOption) (clientAPI, error) {
+		return stub, stub.createErr
 	}
-	s.reqs = append(s.reqs, req)
-	if s.err != nil {
-		return nil, s.err
-	}
-	return s.popResponse().(*kmspb.CryptoKey), nil
 }
 
-// Decrypt performs decryption.
-func (s *mockKeyManagementServer) Decrypt(ctx context.Context, req *kmspb.DecryptRequest) (*kmspb.DecryptResponse, error) {
-	md, _ := metadata.FromIncomingContext(ctx)
-	if xg := md["x-goog-api-client"]; len(xg) == 0 || !strings.Contains(xg[0], "gl-go/") {
-		return nil, fmt.Errorf("x-goog-api-client = %v, expected gl-go key", xg)
-	}
-	s.reqs = append(s.reqs, req)
-	if s.err != nil {
-		return nil, s.err
-	}
-	res := s.popResponse().(*kmspb.DecryptResponse)
-	res.Plaintext = make([]byte, len(req.Ciphertext))
-	for i, v := range req.Ciphertext {
-		res.Plaintext[len(res.Plaintext)-1-i] = v
-	}
-	return res, nil
+func (s *stubGCPClient) Close() error {
+	return nil
 }
 
-// Encrypt performs encryption.
-func (s *mockKeyManagementServer) Encrypt(ctx context.Context, req *kmspb.EncryptRequest) (*kmspb.EncryptResponse, error) {
-	md, _ := metadata.FromIncomingContext(ctx)
-	if xg := md["x-goog-api-client"]; len(xg) == 0 || !strings.Contains(xg[0], "gl-go/") {
-		return nil, fmt.Errorf("x-goog-api-client = %v, expected gl-go key", xg)
-	}
-	s.reqs = append(s.reqs, req)
-	if s.err != nil {
-		return nil, s.err
-	}
-	res := s.popResponse().(*kmspb.EncryptResponse)
-	// Reverse the input string to generate a ciphertext
-	res.Ciphertext = make([]byte, len(req.Plaintext))
-	for i, v := range req.Plaintext {
-		res.Ciphertext[len(res.Ciphertext)-1-i] = v
-	}
-	return res, nil
+func (s *stubGCPClient) CreateCryptoKey(ctx context.Context, req *kmspb.CreateCryptoKeyRequest, opts ...gax.CallOption) (*kmspb.CryptoKey, error) {
+	s.createCryptoKeyCalled = true
+	return &kmspb.CryptoKey{}, s.createCryptoKeyErr
 }
 
-// CreateImportJob creates a new import job.
-func (s *mockKeyManagementServer) CreateImportJob(ctx context.Context, req *kmspb.CreateImportJobRequest) (*kmspb.ImportJob, error) {
-	md, _ := metadata.FromIncomingContext(ctx)
-	if xg := md["x-goog-api-client"]; len(xg) == 0 || !strings.Contains(xg[0], "gl-go/") {
-		return nil, fmt.Errorf("x-goog-api-client = %v, expected gl-go key", xg)
-	}
-	s.reqs = append(s.reqs, req)
-	if s.err != nil {
-		return nil, s.err
-	}
-	return s.popResponse().(*kmspb.ImportJob), nil
+func (s *stubGCPClient) CreateImportJob(ctx context.Context, req *kmspb.CreateImportJobRequest, opts ...gax.CallOption) (*kmspb.ImportJob, error) {
+	return &kmspb.ImportJob{}, s.createImportJobErr
 }
 
-// ImportCryptoKeyVersion imports a KEK using an import job.
-func (s *mockKeyManagementServer) ImportCryptoKeyVersion(ctx context.Context, req *kmspb.ImportCryptoKeyVersionRequest) (*kmspb.CryptoKeyVersion, error) {
-	md, _ := metadata.FromIncomingContext(ctx)
-	if xg := md["x-goog-api-client"]; len(xg) == 0 || !strings.Contains(xg[0], "gl-go/") {
-		return nil, fmt.Errorf("x-goog-api-client = %v, expected gl-go key", xg)
-	}
-	s.reqs = append(s.reqs, req)
-	if s.err != nil {
-		return nil, s.err
-	}
-	return s.popResponse().(*kmspb.CryptoKeyVersion), nil
+func (s *stubGCPClient) Decrypt(ctx context.Context, req *kmspb.DecryptRequest, opts ...gax.CallOption) (*kmspb.DecryptResponse, error) {
+	return &kmspb.DecryptResponse{Plaintext: s.decryptResponse}, s.decryptErr
 }
 
-// UpdateCryptoKeyPrimaryVersion sets the primary version of a KEK.
-func (s *mockKeyManagementServer) UpdateCryptoKeyPrimaryVersion(ctx context.Context, req *kmspb.UpdateCryptoKeyPrimaryVersionRequest) (*kmspb.CryptoKey, error) {
-	md, _ := metadata.FromIncomingContext(ctx)
-	if xg := md["x-goog-api-client"]; len(xg) == 0 || !strings.Contains(xg[0], "gl-go/") {
-		return nil, fmt.Errorf("x-goog-api-client = %v, expected gl-go key", xg)
-	}
-	s.reqs = append(s.reqs, req)
-	if s.err != nil {
-		return nil, s.err
-	}
-	return s.popResponse().(*kmspb.CryptoKey), nil
+func (s *stubGCPClient) Encrypt(ctx context.Context, req *kmspb.EncryptRequest, opts ...gax.CallOption) (*kmspb.EncryptResponse, error) {
+	return &kmspb.EncryptResponse{}, s.encryptErr
 }
 
-// GetImportJob returns information about a running import job.
-func (s *mockKeyManagementServer) GetImportJob(ctx context.Context, req *kmspb.GetImportJobRequest) (*kmspb.ImportJob, error) {
-	md, _ := metadata.FromIncomingContext(ctx)
-	if xg := md["x-goog-api-client"]; len(xg) == 0 || !strings.Contains(xg[0], "gl-go/") {
-		return nil, fmt.Errorf("x-goog-api-client = %v, expected gl-go key", xg)
-	}
-	s.reqs = append(s.reqs, req)
-	if s.err != nil {
-		return nil, s.err
-	}
-	return s.popResponse().(*kmspb.ImportJob), nil
+func (s *stubGCPClient) GetKeyRing(ctx context.Context, req *kmspb.GetKeyRingRequest, opts ...gax.CallOption) (*kmspb.KeyRing, error) {
+	return &kmspb.KeyRing{}, s.getKeyRingErr
 }
 
-func (s *mockKeyManagementServer) popResponse() proto.Message {
-	resp := s.resps[0]
-	if len(s.resps) > 1 {
-		s.resps = s.resps[1:]
-	}
-	return resp
+func (s *stubGCPClient) ImportCryptoKeyVersion(ctx context.Context, req *kmspb.ImportCryptoKeyVersionRequest, opts ...gax.CallOption) (*kmspb.CryptoKeyVersion, error) {
+	return &kmspb.CryptoKeyVersion{}, s.importCryptoKeyVersionErr
 }
 
-func TestGoogleKMS(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
+func (s *stubGCPClient) UpdateCryptoKeyPrimaryVersion(ctx context.Context, req *kmspb.UpdateCryptoKeyPrimaryVersionRequest, opts ...gax.CallOption) (*kmspb.CryptoKey, error) {
+	s.updateCryptoKeyPrimaryVersionCalled = true
+	return &kmspb.CryptoKey{}, s.updateCryptoKeyPrimaryVersionErr
+}
 
-	serv := grpc.NewServer()
-	defer serv.GracefulStop()
-	var mockKeyManagement mockKeyManagementServer
-	kmspb.RegisterKeyManagementServiceServer(serv, &mockKeyManagement)
-	lis, err := net.Listen("tcp", "localhost:0")
-	require.NoError(err)
-	go serv.Serve(lis)
+func (s *stubGCPClient) GetImportJob(ctx context.Context, req *kmspb.GetImportJobRequest, opts ...gax.CallOption) (*kmspb.ImportJob, error) {
+	return s.getImportJobResponse, s.getImportJobErr
+}
 
-	project := "test-project"
-	location := "global"
-	keyRing := "test-key-ring"
-	kekName := "test-kek"
-	dekName := "test-dek"
-	plainDEK := []byte("plain DEK")
+type stubStorage struct {
+	key    []byte
+	getErr error
+	putErr error
+}
 
-	// load responses
-	mockKeyManagement.resps = []proto.Message{
-		&kmspb.CryptoKey{
-			Name: fmt.Sprintf("projects/%s/locations/%s/keyRings/%s/cryptoKeys/%s", project, location, keyRing, kekName),
+func (s *stubStorage) Get(context.Context, string) ([]byte, error) {
+	return s.key, s.getErr
+}
+
+func (s *stubStorage) Put(context.Context, string, []byte) error {
+	return s.putErr
+}
+
+func TestCreateKEK(t *testing.T) {
+	someErr := errors.New("error")
+	importKey := []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+
+	testCases := map[string]struct {
+		client      *stubGCPClient
+		importKey   []byte
+		errExpected bool
+	}{
+		"create new kek successful": {
+			client: &stubGCPClient{},
 		},
-		&kmspb.EncryptResponse{
-			Name: dekName,
-		},
-		&kmspb.DecryptResponse{
-			Plaintext: plainDEK,
-		},
-		&kmspb.CryptoKey{
-			Name: fmt.Sprintf("projects/%s/locations/%s/keyRings/%s/cryptoKeys/%s", project, location, keyRing, kekName),
-		},
-		&kmspb.ImportJob{
-			Name: "import-job",
-		},
-		&kmspb.ImportJob{
-			Name:  "import-job",
-			State: kmspb.ImportJob_ACTIVE,
-			PublicKey: &kmspb.ImportJob_WrappingPublicKey{
-				Pem: testKeyRSA,
+		"import kek successful": {
+			client: &stubGCPClient{
+				getImportJobResponse: &kmspb.ImportJob{
+					PublicKey: &kmspb.ImportJob_WrappingPublicKey{
+						Pem: testKeyRSA,
+					},
+					State: kmspb.ImportJob_ACTIVE,
+				},
 			},
+			importKey: importKey,
 		},
-		&kmspb.CryptoKeyVersion{
-			Name: fmt.Sprintf("projects/%s/locations/%s/keyRings/%s/cryptoKeys/%s/cryptoKeyVersions/1", project, location, keyRing, kekName),
+		"CreateCryptoKey fails": {
+			client:      &stubGCPClient{createCryptoKeyErr: someErr},
+			errExpected: true,
 		},
-		&kmspb.CryptoKey{
-			Name: fmt.Sprintf("projects/%s/locations/%s/keyRings/%s/cryptoKeys/%s", project, location, keyRing, kekName),
+		"CreatCryptoKey fails on import": {
+			client: &stubGCPClient{
+				createCryptoKeyErr: someErr,
+				getImportJobResponse: &kmspb.ImportJob{
+					PublicKey: &kmspb.ImportJob_WrappingPublicKey{
+						Pem: testKeyRSA,
+					},
+					State: kmspb.ImportJob_ACTIVE,
+				},
+			},
+			importKey:   importKey,
+			errExpected: true,
+		},
+		"CreateImportJob fails": {
+			client:      &stubGCPClient{createImportJobErr: someErr},
+			importKey:   importKey,
+			errExpected: true,
+		},
+		"ImportCryptoKeyVersion fails": {
+			client: &stubGCPClient{
+				getImportJobResponse: &kmspb.ImportJob{
+					PublicKey: &kmspb.ImportJob_WrappingPublicKey{
+						Pem: testKeyRSA,
+					},
+					State: kmspb.ImportJob_ACTIVE,
+				},
+				importCryptoKeyVersionErr: someErr,
+			},
+			importKey:   importKey,
+			errExpected: true,
+		},
+		"UpdateCryptoKeyPrimaryVersion fails": {
+			client: &stubGCPClient{
+				getImportJobResponse: &kmspb.ImportJob{
+					PublicKey: &kmspb.ImportJob_WrappingPublicKey{
+						Pem: testKeyRSA,
+					},
+					State: kmspb.ImportJob_ACTIVE,
+				},
+				updateCryptoKeyPrimaryVersionErr: someErr,
+			},
+			importKey:   importKey,
+			errExpected: true,
+		},
+		"GetImportJob fails during waitBackoff": {
+			client:      &stubGCPClient{getImportJobErr: someErr},
+			importKey:   importKey,
+			errExpected: true,
+		},
+		"GetImportJob returns no key": {
+			client: &stubGCPClient{
+				getImportJobResponse: &kmspb.ImportJob{
+					State: kmspb.ImportJob_ACTIVE,
+				},
+			},
+			importKey:   importKey,
+			errExpected: true,
+		},
+		"waitBackoff times out": {
+			client: &stubGCPClient{
+				getImportJobResponse: &kmspb.ImportJob{
+					PublicKey: &kmspb.ImportJob_WrappingPublicKey{
+						Pem: testKeyRSA,
+					},
+					State: kmspb.ImportJob_PENDING_GENERATION,
+				},
+			},
+			importKey:   importKey,
+			errExpected: true,
+		},
+		"creating client fails": {
+			client:      &stubGCPClient{createErr: someErr},
+			errExpected: true,
 		},
 	}
 
-	store := storage.NewMemMapStorage()
-	client := New(project, location, keyRing, store, kmspb.ProtectionLevel_SOFTWARE)
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
 
-	// redirect client calls to mock kms
-	// since the connection is closed after each call, we need to reset this option every time
-	client.clientOpts = []option.ClientOption{getConnection(lis.Addr().String(), require)}
-	ctx := context.Background()
+			client := &KMSClient{
+				projectID:        "test-project",
+				locationID:       "global",
+				keyRingID:        "test-ring",
+				newClient:        newStubGCPClientFactory(tc.client),
+				protectionLevel:  kmspb.ProtectionLevel_SOFTWARE,
+				waitBackoffLimit: 1,
+			}
 
-	// Create KEK
-	assert.NoError(client.CreateKEK(ctx, kekName, nil))
-
-	// Encrypt and save new DEK
-	client.clientOpts = []option.ClientOption{getConnection(lis.Addr().String(), require)}
-	err = client.putDEK(ctx, kekName, dekName, plainDEK)
-	assert.NoError(err)
-	savedDEK, err := store.Get(ctx, dekName)
-	require.NoError(err)
-	assert.NotEqual(plainDEK, savedDEK)
-
-	// Decrypt DEK
-	client.clientOpts = []option.ClientOption{getConnection(lis.Addr().String(), require)}
-	res, err := client.GetDEK(ctx, kekName, dekName, config.SymmetricKeyLength)
-	assert.NoError(err)
-	assert.Equal(plainDEK, res)
-
-	// Import a key
-	client.clientOpts = []option.ClientOption{getConnection(lis.Addr().String(), require)}
-	assert.NoError(client.CreateKEK(ctx, kekName, testKey))
+			err := client.CreateKEK(context.Background(), "test-key", tc.importKey)
+			if tc.errExpected {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				if len(tc.importKey) != 0 {
+					assert.True(tc.client.updateCryptoKeyPrimaryVersionCalled)
+				} else {
+					assert.True(tc.client.createCryptoKeyCalled)
+				}
+			}
+		})
+	}
 }
 
-func TestGetNewDEK(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
+func TestGetDEK(t *testing.T) {
+	someErr := errors.New("error")
+	testKey := []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 
-	serv := grpc.NewServer()
-	defer serv.GracefulStop()
-	var mockKeyManagement mockKeyManagementServer
-	kmspb.RegisterKeyManagementServiceServer(serv, &mockKeyManagement)
-	lis, err := net.Listen("tcp", "localhost:0")
-	require.NoError(err)
-	go serv.Serve(lis)
-
-	project := "test-project"
-	location := "global"
-	keyRing := "test-key-ring"
-	kekName := "test-kek"
-	dekName := "test-dek"
-	largeDEKName := "test-dek-large"
-
-	store := storage.NewMemMapStorage()
-	client := New(project, location, keyRing, store, kmspb.ProtectionLevel_SOFTWARE)
-
-	mockKeyManagement.resps = []proto.Message{
-		&kmspb.EncryptResponse{
-			Name: dekName,
+	testCases := map[string]struct {
+		client      *stubGCPClient
+		storage     kmsInterface.Storage
+		errExpected bool
+	}{
+		"GetDEK successful for new key": {
+			client:  &stubGCPClient{},
+			storage: &stubStorage{getErr: storage.ErrDEKUnset},
 		},
-		&kmspb.DecryptResponse{},
-		&kmspb.EncryptResponse{
-			Name: largeDEKName,
+		"GetDEK successful for existing key": {
+			client:  &stubGCPClient{decryptResponse: testKey},
+			storage: &stubStorage{key: testKey},
+		},
+		"Get from storage fails": {
+			client:      &stubGCPClient{},
+			storage:     &stubStorage{getErr: someErr},
+			errExpected: true,
+		},
+		"Encrypt fails": {
+			client:      &stubGCPClient{encryptErr: someErr},
+			storage:     &stubStorage{getErr: storage.ErrDEKUnset},
+			errExpected: true,
+		},
+		"Encrypt fails with notfound error": {
+			client:      &stubGCPClient{encryptErr: status.Error(codes.NotFound, "error")},
+			storage:     &stubStorage{getErr: storage.ErrDEKUnset},
+			errExpected: true,
+		},
+		"Put to storage fails": {
+			client: &stubGCPClient{},
+			storage: &stubStorage{
+				getErr: storage.ErrDEKUnset,
+				putErr: someErr,
+			},
+			errExpected: true,
+		},
+		"Decrypt fails": {
+			client:      &stubGCPClient{decryptErr: someErr},
+			storage:     &stubStorage{key: testKey},
+			errExpected: true,
+		},
+		"Decrypt fails with notfound error": {
+			client:      &stubGCPClient{decryptErr: status.Error(codes.NotFound, "error")},
+			storage:     &stubStorage{key: testKey},
+			errExpected: true,
+		},
+		"creating client fails": {
+			client:      &stubGCPClient{createErr: someErr},
+			storage:     &stubStorage{getErr: storage.ErrDEKUnset},
+			errExpected: true,
 		},
 	}
-	ctx := context.Background()
 
-	// Requesting an unset DEK should generate a new one, which we can then fetch in a second request
-	client.clientOpts = []option.ClientOption{getConnection(lis.Addr().String(), require)}
-	res1, err := client.GetDEK(ctx, kekName, dekName, config.SymmetricKeyLength)
-	assert.NoError(err)
-	client.clientOpts = []option.ClientOption{getConnection(lis.Addr().String(), require)}
-	res2, err := client.GetDEK(ctx, kekName, dekName, config.SymmetricKeyLength)
-	assert.NoError(err)
-	assert.Equal(res1, res2)
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
 
-	// Requesting larger key sizes should be possible
-	client.clientOpts = []option.ClientOption{getConnection(lis.Addr().String(), require)}
-	res3, err := client.GetDEK(ctx, kekName, largeDEKName, 96)
-	assert.NoError(err)
-	assert.Len(res3, 96)
+			client := &KMSClient{
+				projectID:        "test-project",
+				locationID:       "global",
+				keyRingID:        "test-ring",
+				newClient:        newStubGCPClientFactory(tc.client),
+				protectionLevel:  kmspb.ProtectionLevel_SOFTWARE,
+				waitBackoffLimit: 1,
+				storage:          tc.storage,
+			}
+
+			dek, err := client.GetDEK(context.Background(), "test-key", "volume-01", 32)
+			if tc.errExpected {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Len(dek, 32)
+			}
+		})
+	}
 }
 
-func TestUnknownKEK(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
+func TestConnection(t *testing.T) {
+	someErr := errors.New("error")
+	testCases := map[string]struct {
+		client      *stubGCPClient
+		errExpected bool
+	}{
+		"success": {
+			client: &stubGCPClient{},
+		},
+		"newClient fails": {
+			client:      &stubGCPClient{createErr: someErr},
+			errExpected: true,
+		},
+		"GetKeyRing fails": {
+			client:      &stubGCPClient{getKeyRingErr: someErr},
+			errExpected: true,
+		},
+	}
 
-	serv := grpc.NewServer()
-	defer serv.GracefulStop()
-	var mockKeyManagement mockKeyManagementServer
-	kmspb.RegisterKeyManagementServiceServer(serv, &mockKeyManagement)
-	lis, err := net.Listen("tcp", "localhost:0")
-	require.NoError(err)
-	go serv.Serve(lis)
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
 
-	mockKeyManagement.err = errors.New("rpc error: code = NotFound")
+			client := &KMSClient{
+				projectID:        "test-project",
+				locationID:       "global",
+				keyRingID:        "test-ring",
+				newClient:        newStubGCPClientFactory(tc.client),
+				protectionLevel:  kmspb.ProtectionLevel_SOFTWARE,
+				waitBackoffLimit: 1,
+			}
 
-	store := storage.NewMemMapStorage()
-	client := New("test-project", "global", "test-key-ring", store, kmspb.ProtectionLevel_SOFTWARE)
-	ctx := context.Background()
-
-	client.clientOpts = []option.ClientOption{getConnection(lis.Addr().String(), require)}
-	err = client.putDEK(ctx, "invalid-kek", "test-dek", []byte("dek"))
-	assert.Error(err)
-	assert.ErrorIs(err, kmsInterface.ErrKEKUnknown)
-
-	require.NoError(store.Put(ctx, "test-dek", []byte("Test Key")))
-	client.clientOpts = []option.ClientOption{getConnection(lis.Addr().String(), require)}
-	_, err = client.GetDEK(ctx, "invalid-kek", "test-dek", config.SymmetricKeyLength)
-	assert.Error(err)
-	assert.ErrorIs(err, kmsInterface.ErrKEKUnknown)
+			err := client.testConnection(context.Background())
+			if tc.errExpected {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+			}
+		})
+	}
 }
 
-func getConnection(lisAddr string, r *require.Assertions) option.ClientOption {
-	conn, err := grpc.Dial(lisAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	r.NoError(err)
-	return option.WithGRPCConn(conn)
-}
-
-func TestWrapKeyRSA(t *testing.T) {
+func TestWrapCryptoKey(t *testing.T) {
 	assert := assert.New(t)
 
 	rsaPub, err := util.ParsePEMtoPublicKeyRSA([]byte(testKeyRSA))
 	assert.NoError(err)
 
-	res, err := wrapCryptoKey(testKey, rsaPub)
+	res, err := wrapCryptoKey([]byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), rsaPub)
 	assert.NoError(err)
 	assert.Equal(552, len(res))
+
+	_, err = wrapCryptoKey([]byte{0x1}, rsaPub)
+	assert.Error(err)
 }
