@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,7 +18,7 @@ func TestMemMapStorage(t *testing.T) {
 
 	// request unset value
 	_, err := storage.Get(ctx, "test:input")
-	assert.Error(err)
+	assert.ErrorIs(err, ErrDEKUnset)
 
 	// test Put method
 	assert.NoError(storage.Put(ctx, "volume01", testDEK1))
@@ -34,6 +33,5 @@ func TestMemMapStorage(t *testing.T) {
 	assert.Equal(testDEK2, val)
 
 	_, err = storage.Get(ctx, "invalid:key")
-	assert.Error(err)
-	assert.True(errors.Is(err, ErrDEKUnset))
+	assert.ErrorIs(err, ErrDEKUnset)
 }
