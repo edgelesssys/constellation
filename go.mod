@@ -53,13 +53,14 @@ require (
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11
 	github.com/Azure/go-autorest/autorest/date v0.3.0
 	github.com/Azure/go-autorest/autorest/to v0.4.0
-	github.com/aws/aws-sdk-go-v2 v1.15.0
-	github.com/aws/aws-sdk-go-v2/config v1.15.0
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.0
+	github.com/aws/aws-sdk-go-v2 v1.16.1
+	github.com/aws/aws-sdk-go-v2/config v1.15.2
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.2
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.2
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.32.0
 	github.com/aws/aws-sdk-go-v2/service/kms v1.16.0
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.26.0
-	github.com/aws/smithy-go v1.11.1
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.26.2
+	github.com/aws/smithy-go v1.11.2
 	github.com/coreos/go-systemd/v22 v22.3.2
 	github.com/docker/docker v20.10.13+incompatible
 	github.com/docker/go-connections v0.4.0
@@ -116,17 +117,17 @@ require (
 	github.com/Microsoft/hcsshim v0.9.2 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.0 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.10.0 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.6 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.0 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.7 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.11.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.16.0 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.1 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.11.1 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.8 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.2 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.9 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.11.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.16.2 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/containerd/cgroups v1.0.3 // indirect
 	github.com/containerd/containerd v1.6.0 // indirect
