@@ -79,8 +79,23 @@ func (k *KubernetesUtil) InitCluster(initConfig []byte) (*kubeadm.BootstrapToken
 
 	// Splits the string into a slice, where earch slice-element contains one line from the previous string
 	splittedJoinCommand := strings.SplitN(joinCommand, "\n", 2)
+	joinConfig, err := ParseJoinCommand(splittedJoinCommand[0])
+	if err != nil {
+		return nil, err
+	}
 
-	return ParseJoinCommand(splittedJoinCommand[0])
+	// create extra join token without expiration
+	cmd = exec.Command("kubeadm", "token", "create", "--ttl", "0")
+	joinToken, err := cmd.Output()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return nil, fmt.Errorf("kubeadm token create failed (code %v) with: %s", exitErr.ExitCode(), exitErr.Stderr)
+		}
+		return nil, fmt.Errorf("kubeadm token create failed: %w", err)
+	}
+	joinConfig.Token = strings.TrimSpace(string(joinToken))
+	return joinConfig, nil
 }
 
 // SetupPodNetwork sets up the flannel pod network.
