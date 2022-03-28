@@ -363,6 +363,7 @@ func TestConvertToCloudServiceAccountURI(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 	key := ApplicationCredentials{
+		TenantID:     "tenant-id",
 		ClientID:     "client-id",
 		ClientSecret: "client-secret",
 	}
@@ -374,6 +375,7 @@ func TestConvertToCloudServiceAccountURI(t *testing.T) {
 	assert.Equal("serviceaccount", uri.Scheme)
 	assert.Equal("azure", uri.Host)
 	assert.Equal(url.Values{
+		"tenant_id":     []string{"tenant-id"},
 		"client_id":     []string{"client-id"},
 		"client_secret": []string{"client-secret"},
 	}, query)

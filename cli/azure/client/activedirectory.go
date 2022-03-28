@@ -48,6 +48,7 @@ func (c *Client) CreateServicePrincipal(ctx context.Context) (string, error) {
 	}
 
 	return ApplicationCredentials{
+		TenantID:     c.tenantID,
 		ClientID:     createAppRes.AppID,
 		ClientSecret: clientSecret,
 	}.ConvertToCloudServiceAccountURI(), nil
@@ -165,6 +166,7 @@ func (c *Client) assignResourceGroupRole(ctx context.Context, principalID, roleD
 // ApplicationCredentials is a set of Azure AD application credentials.
 // It is the equivalent of a service account key in other cloud providers.
 type ApplicationCredentials struct {
+	TenantID     string
 	ClientID     string
 	ClientSecret string
 }
@@ -172,6 +174,7 @@ type ApplicationCredentials struct {
 // ConvertToCloudServiceAccountURI converts the ApplicationCredentials into a cloud service account URI.
 func (c ApplicationCredentials) ConvertToCloudServiceAccountURI() string {
 	query := url.Values{}
+	query.Add("tenant_id", c.TenantID)
 	query.Add("client_id", c.ClientID)
 	query.Add("client_secret", c.ClientSecret)
 	uri := url.URL{

@@ -128,8 +128,9 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		cloudControllerManager = azurecloud.CloudControllerManager{}
-		autoscaler = azurecloud.Autoscaler{}
+		cloudControllerManager = &azurecloud.CloudControllerManager{}
+		cloudNodeManager = &azurecloud.CloudNodeManager{}
+		autoscaler = &azurecloud.Autoscaler{}
 		bindIP = defaultIP
 		bindPort = defaultPort
 		etcdEndpoint = defaultEtcdEndpoint
