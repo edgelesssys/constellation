@@ -96,7 +96,7 @@ func TestInitialize(t *testing.T) {
 		{
 			kubeconfig:        "kubeconfig",
 			clientVpnIp:       "vpnIp",
-			coordinatorVpnKey: "coordKey",
+			coordinatorVpnKey: testKey,
 			ownerID:           "ownerID",
 			clusterID:         "clusterID",
 		},
@@ -109,7 +109,7 @@ func TestInitialize(t *testing.T) {
 		client                protoClient
 		serviceAccountCreator stubServiceAccountCreator
 		waiter                statusWaiter
-		pubKey                string
+		privKey               string
 		errExpected           bool
 	}{
 		"initialize some ec2 instances": {
@@ -117,30 +117,30 @@ func TestInitialize(t *testing.T) {
 			client: &fakeProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter: stubStatusWaiter{},
-			pubKey: testKey,
+			waiter:  stubStatusWaiter{},
+			privKey: testKey,
 		},
 		"initialize some gcp instances": {
 			existingState: testGcpState,
 			client: &fakeProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter: stubStatusWaiter{},
-			pubKey: testKey,
+			waiter:  stubStatusWaiter{},
+			privKey: testKey,
 		},
 		"initialize some azure instances": {
 			existingState: testAzureState,
 			client: &fakeProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter: stubStatusWaiter{},
-			pubKey: testKey,
+			waiter:  stubStatusWaiter{},
+			privKey: testKey,
 		},
 		"no state exists": {
 			existingState: state.ConstellationState{},
 			client:        &stubProtoClient{},
 			waiter:        stubStatusWaiter{},
-			pubKey:        testKey,
+			privKey:       testKey,
 			errExpected:   true,
 		},
 		"no instances to pick one": {
@@ -150,7 +150,7 @@ func TestInitialize(t *testing.T) {
 			},
 			client:      &stubProtoClient{},
 			waiter:      stubStatusWaiter{},
-			pubKey:      testKey,
+			privKey:     testKey,
 			errExpected: true,
 		},
 		"only one instance": {
@@ -160,91 +160,91 @@ func TestInitialize(t *testing.T) {
 			},
 			client:      &stubProtoClient{},
 			waiter:      stubStatusWaiter{},
-			pubKey:      testKey,
+			privKey:     testKey,
 			errExpected: true,
 		},
 		"public key to short": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{},
 			waiter:        stubStatusWaiter{},
-			pubKey:        base64.StdEncoding.EncodeToString([]byte("tooShortKey")),
+			privKey:       base64.StdEncoding.EncodeToString([]byte("tooShortKey")),
 			errExpected:   true,
 		},
 		"public key to long": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{},
 			waiter:        stubStatusWaiter{},
-			pubKey:        base64.StdEncoding.EncodeToString([]byte("thisWireguardKeyIsToLongAndHasTooManyBytes")),
+			privKey:       base64.StdEncoding.EncodeToString([]byte("thisWireguardKeyIsToLongAndHasTooManyBytes")),
 			errExpected:   true,
 		},
 		"public key not base64": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{},
 			waiter:        stubStatusWaiter{},
-			pubKey:        "this is not base64 encoded",
+			privKey:       "this is not base64 encoded",
 			errExpected:   true,
 		},
 		"fail Connect": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{connectErr: someErr},
 			waiter:        stubStatusWaiter{},
-			pubKey:        testKey,
+			privKey:       testKey,
 			errExpected:   true,
 		},
 		"fail Activate": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{activateErr: someErr},
 			waiter:        stubStatusWaiter{},
-			pubKey:        testKey,
+			privKey:       testKey,
 			errExpected:   true,
 		},
 		"fail respClient WriteLogStream": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{writeLogStreamErr: someErr}},
 			waiter:        stubStatusWaiter{},
-			pubKey:        testKey,
+			privKey:       testKey,
 			errExpected:   true,
 		},
 		"fail respClient getKubeconfig": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getKubeconfigErr: someErr}},
 			waiter:        stubStatusWaiter{},
-			pubKey:        testKey,
+			privKey:       testKey,
 			errExpected:   true,
 		},
 		"fail respClient getCoordinatorVpnKey": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getCoordinatorVpnKeyErr: someErr}},
 			waiter:        stubStatusWaiter{},
-			pubKey:        testKey,
+			privKey:       testKey,
 			errExpected:   true,
 		},
 		"fail respClient getClientVpnIp": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getClientVpnIpErr: someErr}},
 			waiter:        stubStatusWaiter{},
-			pubKey:        testKey,
+			privKey:       testKey,
 			errExpected:   true,
 		},
 		"fail respClient getOwnerID": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getOwnerIDErr: someErr}},
 			waiter:        stubStatusWaiter{},
-			pubKey:        testKey,
+			privKey:       testKey,
 			errExpected:   true,
 		},
 		"fail respClient getClusterID": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getClusterIDErr: someErr}},
 			waiter:        stubStatusWaiter{},
-			pubKey:        testKey,
+			privKey:       testKey,
 			errExpected:   true,
 		},
 		"fail to wait for required status": {
 			existingState: testGcpState,
 			client:        &stubProtoClient{},
 			waiter:        stubStatusWaiter{waitForAllErr: someErr},
-			pubKey:        testKey,
+			privKey:       testKey,
 			errExpected:   true,
 		},
 		"fail to create service account": {
@@ -254,7 +254,7 @@ func TestInitialize(t *testing.T) {
 				createErr: someErr,
 			},
 			waiter:      stubStatusWaiter{},
-			pubKey:      testKey,
+			privKey:     testKey,
 			errExpected: true,
 		},
 	}
@@ -274,8 +274,8 @@ func TestInitialize(t *testing.T) {
 			require.NoError(fileHandler.WriteJSON(*config.StatePath, tc.existingState, false))
 
 			// Write key file to filesystem and set path in flag.
-			require.NoError(afero.Afero{Fs: fs}.WriteFile("pubKPath", []byte(tc.pubKey), 0o600))
-			require.NoError(cmd.Flags().Set("publickey", "pubKPath"))
+			require.NoError(afero.Afero{Fs: fs}.WriteFile("privK", []byte(tc.privKey), 0o600))
+			require.NoError(cmd.Flags().Set("privatekey", "privK"))
 			ctx := context.Background()
 			ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 			defer cancel()
@@ -287,7 +287,6 @@ func TestInitialize(t *testing.T) {
 			} else {
 				require.NoError(err)
 				assert.Contains(out.String(), "vpnIp")
-				assert.Contains(out.String(), "coordKey")
 				assert.Contains(out.String(), "ownerID")
 				assert.Contains(out.String(), "clusterID")
 			}
@@ -345,19 +344,6 @@ func TestIpsToEndpoints(t *testing.T) {
 	assert.Equal([]string{"192.0.2.1:8080", "192.0.2.2:8080", "192.0.2.3:8080"}, endpoints)
 }
 
-func TestCheckBase64WGKEy(t *testing.T) {
-	assert := assert.New(t)
-
-	key := []byte(base64.StdEncoding.EncodeToString([]byte("32bytesWireGuardKeyForTheTesting")))
-	assert.NoError(checkBase64WGKey(key))
-	key = []byte(base64.StdEncoding.EncodeToString([]byte("shortKey")))
-	assert.Error(checkBase64WGKey(key))
-	key = []byte(base64.StdEncoding.EncodeToString([]byte("looooooooooongKeyWithMoreThan32Bytes")))
-	assert.Error(checkBase64WGKey(key))
-	key = []byte("noBase 64")
-	assert.Error(checkBase64WGKey(key))
-}
-
 func TestInitCompletion(t *testing.T) {
 	testCases := map[string]struct {
 		args            []string
@@ -397,35 +383,24 @@ func TestInitCompletion(t *testing.T) {
 	}
 }
 
-func TestReadVpnKey(t *testing.T) {
+func TestReadOrGenerateVPNKey(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	testKeyA := []byte(base64.StdEncoding.EncodeToString([]byte("32bytesWireGuardKeyForTheTesting")))
-	testKeyB := []byte(base64.StdEncoding.EncodeToString([]byte("anotherWireGuardKeyForTheTesting")))
+	testKey := []byte(base64.StdEncoding.EncodeToString([]byte("32bytesWireGuardKeyForTheTesting")))
 	fileHandler := file.NewHandler(afero.NewMemMapFs())
-	require.NoError(fileHandler.Write("testKeyA", testKeyA, false))
-	require.NoError(fileHandler.Write("testKeyB", testKeyB, false))
+	require.NoError(fileHandler.Write("testKey", testKey, false))
 
-	// provide privK
-	privK, _, err := readVpnKey(fileHandler, "testKeyA", "")
+	privK, pubK, err := readOrGenerateVPNKey(fileHandler, "testKey")
 	assert.NoError(err)
-	assert.Equal(testKeyA, privK)
-
-	// provide pubK
-	_, pubK, err := readVpnKey(fileHandler, "", "testKeyA")
-	assert.NoError(err)
-	assert.Equal(testKeyA, pubK)
-
-	// provide both, privK should be used, pubK ignored
-	privK, pubK, err = readVpnKey(fileHandler, "testKeyA", "testKeyB")
-	assert.NoError(err)
-	assert.Equal(testKeyA, privK)
-	assert.NotEqual(testKeyB, pubK)
+	assert.Equal(testKey, privK)
+	assert.NotEmpty(pubK)
 
 	// no path provided
-	_, _, err = readVpnKey(fileHandler, "", "")
-	assert.Error(err)
+	privK, pubK, err = readOrGenerateVPNKey(fileHandler, "")
+	assert.NoError(err)
+	assert.NotEmpty(privK)
+	assert.NotEmpty(pubK)
 }
 
 func TestReadOrGeneratedMasterSecret(t *testing.T) {
@@ -583,7 +558,7 @@ func TestAutoscaleFlag(t *testing.T) {
 		{
 			kubeconfig:        "kubeconfig",
 			clientVpnIp:       "vpnIp",
-			coordinatorVpnKey: "coordKey",
+			coordinatorVpnKey: testKey,
 			ownerID:           "ownerID",
 			clusterID:         "clusterID",
 		},
@@ -596,7 +571,7 @@ func TestAutoscaleFlag(t *testing.T) {
 		client                *stubProtoClient
 		serviceAccountCreator stubServiceAccountCreator
 		waiter                statusWaiter
-		pubKey                string
+		privKey               string
 	}{
 		"initialize some ec2 instances without autoscale flag": {
 			autoscaleFlag: false,
@@ -604,8 +579,8 @@ func TestAutoscaleFlag(t *testing.T) {
 			client: &stubProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter: stubStatusWaiter{},
-			pubKey: testKey,
+			waiter:  stubStatusWaiter{},
+			privKey: testKey,
 		},
 		"initialize some gcp instances without autoscale flag": {
 			autoscaleFlag: false,
@@ -613,8 +588,8 @@ func TestAutoscaleFlag(t *testing.T) {
 			client: &stubProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter: stubStatusWaiter{},
-			pubKey: testKey,
+			waiter:  stubStatusWaiter{},
+			privKey: testKey,
 		},
 		"initialize some azure instances without autoscale flag": {
 			autoscaleFlag: false,
@@ -622,8 +597,8 @@ func TestAutoscaleFlag(t *testing.T) {
 			client: &stubProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter: stubStatusWaiter{},
-			pubKey: testKey,
+			waiter:  stubStatusWaiter{},
+			privKey: testKey,
 		},
 		"initialize some ec2 instances with autoscale flag": {
 			autoscaleFlag: true,
@@ -631,8 +606,8 @@ func TestAutoscaleFlag(t *testing.T) {
 			client: &stubProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter: stubStatusWaiter{},
-			pubKey: testKey,
+			waiter:  stubStatusWaiter{},
+			privKey: testKey,
 		},
 		"initialize some gcp instances with autoscale flag": {
 			autoscaleFlag: true,
@@ -640,8 +615,8 @@ func TestAutoscaleFlag(t *testing.T) {
 			client: &stubProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter: stubStatusWaiter{},
-			pubKey: testKey,
+			waiter:  stubStatusWaiter{},
+			privKey: testKey,
 		},
 		"initialize some azure instances with autoscale flag": {
 			autoscaleFlag: true,
@@ -649,8 +624,8 @@ func TestAutoscaleFlag(t *testing.T) {
 			client: &stubProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter: stubStatusWaiter{},
-			pubKey: testKey,
+			waiter:  stubStatusWaiter{},
+			privKey: testKey,
 		},
 	}
 
@@ -669,8 +644,8 @@ func TestAutoscaleFlag(t *testing.T) {
 			require.NoError(fileHandler.WriteJSON(*config.StatePath, tc.existingState, false))
 
 			// Write key file to filesystem and set path in flag.
-			require.NoError(afero.Afero{Fs: fs}.WriteFile("pubKPath", []byte(tc.pubKey), 0o600))
-			require.NoError(cmd.Flags().Set("publickey", "pubKPath"))
+			require.NoError(afero.Afero{Fs: fs}.WriteFile("privK", []byte(tc.privKey), 0o600))
+			require.NoError(cmd.Flags().Set("privatekey", "privK"))
 
 			require.NoError(cmd.Flags().Set("autoscale", strconv.FormatBool(tc.autoscaleFlag)))
 			ctx := context.Background()

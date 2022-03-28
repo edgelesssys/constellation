@@ -35,8 +35,8 @@ func newInitCmd() *cobra.Command {
 		RunE:              runInitialize,
 	}
 	cmd.Flags().String("privatekey", "", "path to your private key.")
-	cmd.Flags().String("publickey", "", "path to your public key.")
 	cmd.Flags().String("master-secret", "", "path to base64 encoded master secret.")
+	cmd.Flags().Bool("wg-autoconfig", false, "enable automatic configuration of WireGuard interface")
 	cmd.Flags().Bool("autoscale", false, "enable kubernetes cluster-autoscaler")
 	return cmd
 }
@@ -228,11 +228,11 @@ func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler, config *config.C
 	if err != nil {
 		return flagArgs{}, err
 	}
-	userPublicKeyPath, err := cmd.Flags().GetString("publickey")
+	userPrivKey, userPubKey, err := readOrGenerateVPNKey(fileHandler, userPrivKeyPath)
 	if err != nil {
 		return flagArgs{}, err
 	}
-	userPrivKey, userPubKey, err := readVpnKey(fileHandler, userPrivKeyPath, userPublicKeyPath)
+	autoconfigureWG, err := cmd.Flags().GetBool("wg-autoconfig")
 	if err != nil {
 		return flagArgs{}, err
 	}
@@ -252,7 +252,7 @@ func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler, config *config.C
 	return flagArgs{
 		userPrivKey:     userPrivKey,
 		userPubKey:      userPubKey,
-		autoconfigureWG: userPrivKeyPath != "",
+		autoconfigureWG: autoconfigureWG,
 		autoscale:       autoscale,
 		masterSecret:    masterSecret,
 	}, nil
@@ -267,28 +267,27 @@ type flagArgs struct {
 	autoscale       bool
 }
 
-func readVpnKey(fileHandler file.Handler, privKeyPath, publicKeyPath string) (privKey, pubKey []byte, err error) {
-	if privKeyPath != "" {
+func readOrGenerateVPNKey(fileHandler file.Handler, privKeyPath string) (privKey, pubKey []byte, err error) {
+	var privKeyParsed wgtypes.Key
+	if privKeyPath == "" {
+		privKeyParsed, err = wgtypes.GeneratePrivateKey()
+		if err != nil {
+			return nil, nil, err
+		}
+		privKey = []byte(privKeyParsed.String())
+	} else {
 		privKey, err = fileHandler.Read(privKeyPath)
 		if err != nil {
 			return nil, nil, err
 		}
-		privKeyParsed, err := wgtypes.ParseKey(string(privKey))
+		privKeyParsed, err = wgtypes.ParseKey(string(privKey))
 		if err != nil {
 			return nil, nil, err
 		}
-		pubKey = []byte(privKeyParsed.PublicKey().String())
-	} else if publicKeyPath != "" {
-		pubKey, err = fileHandler.Read(publicKeyPath)
-		if err != nil {
-			return nil, nil, err
-		}
-		if err := checkBase64WGKey(pubKey); err != nil {
-			return nil, nil, fmt.Errorf("wireguard public key is invalid: %w", err)
-		}
-	} else {
-		return nil, nil, errors.New("neither path to public nor private key provided")
 	}
+
+	pubKey = []byte(privKeyParsed.PublicKey().String())
+
 	return privKey, pubKey, nil
 }
 
@@ -306,17 +305,6 @@ func ipsToEndpoints(ips []string, port string) []string {
 		endpoints = append(endpoints, net.JoinHostPort(ip, port))
 	}
 	return endpoints
-}
-
-func checkBase64WGKey(b []byte) error {
-	keyStr, err := base64.StdEncoding.DecodeString(string(b))
-	if err != nil {
-		return errors.New("key can't be decoded")
-	}
-	if length := len(keyStr); length != wireguardKeyLength {
-		return fmt.Errorf("key has invalid length %d", length)
-	}
-	return nil
 }
 
 // readOrGeneratedMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
