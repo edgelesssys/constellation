@@ -40,7 +40,6 @@ func TestInitCluster(t *testing.T) {
 				SupportsCloudControllerManager: false,
 				SupportClusterAutoscaler:       false,
 				AutoscalingNodeGroups:          []string{"someNodeGroup"},
-				CloudControllerManagerEnv:      []k8s.EnvVar{},
 			},
 			expectErr: false,
 		},
@@ -62,7 +61,6 @@ func TestInitCluster(t *testing.T) {
 				ProviderID:                     "fake://providerid",
 				SupportsCloudControllerManager: false,
 				SupportClusterAutoscaler:       false,
-				CloudControllerManagerEnv:      []k8s.EnvVar{},
 			},
 			expectErr: false,
 		},
@@ -93,7 +91,6 @@ func TestInitCluster(t *testing.T) {
 				SupportClusterAutoscaler:       true,
 				AutoscalingCloudprovider:       "some-name",
 				AutoscalingNodeGroups:          []string{"someNodeGroup"},
-				CloudControllerManagerEnv:      []k8s.EnvVar{},
 			},
 			expectErr: false,
 		},
@@ -116,7 +113,6 @@ func TestInitCluster(t *testing.T) {
 				CloudControllerManagerName:     "some-name",
 				CloudControllerManagerImage:    "someImage",
 				CloudControllerManagerPath:     "/some/path",
-				CloudControllerManagerEnv:      []k8s.EnvVar{},
 			},
 			expectErr: false,
 		},
@@ -146,9 +142,8 @@ func TestInitCluster(t *testing.T) {
 			},
 			expectErr: false,
 			expectedInitClusterInput: kubernetes.InitClusterInput{
-				APIServerAdvertiseIP:      "10.118.0.1",
-				NodeIP:                    "10.118.0.1",
-				CloudControllerManagerEnv: []k8s.EnvVar{},
+				APIServerAdvertiseIP: "10.118.0.1",
+				NodeIP:               "10.118.0.1",
 			},
 		},
 		"getting kubeconfig fail detected": {
@@ -389,6 +384,7 @@ type stubCloudControllerManager struct {
 	secretsErr         error
 	volumesRes         []k8s.Volume
 	volumeMountRes     []k8s.VolumeMount
+	envRes             []k8s.EnvVar
 	supportedRes       bool
 
 	prepareInstanceRequests []prepareInstanceRequest
@@ -435,7 +431,7 @@ func (s *stubCloudControllerManager) VolumeMounts() []k8s.VolumeMount {
 }
 
 func (s *stubCloudControllerManager) Env() []k8s.EnvVar {
-	return []k8s.EnvVar{}
+	return s.envRes
 }
 
 func (s *stubCloudControllerManager) Supported() bool {
@@ -443,20 +439,10 @@ func (s *stubCloudControllerManager) Supported() bool {
 }
 
 type stubCloudNodeManager struct {
-	imageRes           string
-	pathRes            string
-	nameRes            string
-	prepareInstanceRes error
-	extraArgsRes       []string
-	configMapsRes      resources.ConfigMaps
-	configMapsErr      error
-	secretsRes         resources.Secrets
-	secretsErr         error
-	volumesRes         []k8s.Volume
-	volumeMountRes     []k8s.VolumeMount
-	supportedRes       bool
-
-	prepareInstanceRequests []prepareInstanceRequest
+	imageRes     string
+	pathRes      string
+	extraArgsRes []string
+	supportedRes bool
 }
 
 func (s *stubCloudNodeManager) Image() string {
