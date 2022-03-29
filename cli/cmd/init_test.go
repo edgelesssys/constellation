@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 func TestInitArgumentValidation(t *testing.T) {
@@ -95,7 +96,7 @@ func TestInitialize(t *testing.T) {
 		{log: "testlog2"},
 		{
 			kubeconfig:        "kubeconfig",
-			clientVpnIp:       "vpnIp",
+			clientVpnIp:       "192.0.2.2",
 			coordinatorVpnKey: testKey,
 			ownerID:           "ownerID",
 			clusterID:         "clusterID",
@@ -286,7 +287,7 @@ func TestInitialize(t *testing.T) {
 				assert.Error(err)
 			} else {
 				require.NoError(err)
-				assert.Contains(out.String(), "vpnIp")
+				assert.Contains(out.String(), "192.0.2.2")
 				assert.Contains(out.String(), "ownerID")
 				assert.Contains(out.String(), "clusterID")
 			}
@@ -557,7 +558,7 @@ func TestAutoscaleFlag(t *testing.T) {
 		{log: "testlog2"},
 		{
 			kubeconfig:        "kubeconfig",
-			clientVpnIp:       "vpnIp",
+			clientVpnIp:       "192.0.2.2",
 			coordinatorVpnKey: testKey,
 			ownerID:           "ownerID",
 			clusterID:         "clusterID",
@@ -655,6 +656,79 @@ func TestAutoscaleFlag(t *testing.T) {
 				assert.Len(tc.client.activateAutoscalingNodeGroups, 1)
 			} else {
 				assert.Len(tc.client.activateAutoscalingNodeGroups, 0)
+			}
+		})
+	}
+}
+
+func TestWriteWGQuickFile(t *testing.T) {
+	require := require.New(t)
+
+	testKey, err := wgtypes.GeneratePrivateKey()
+	require.NoError(err)
+
+	testCases := map[string]struct {
+		coordinatorPubKey string
+		coordinatorPubIP  string
+		clientVpnIp       string
+		fileHandler       file.Handler
+		config            *config.Config
+		clientPrivKey     string
+		wantErr           bool
+	}{
+		"write wg quick file": {
+			coordinatorPubKey: testKey.PublicKey().String(),
+			coordinatorPubIP:  "192.0.2.1",
+			clientVpnIp:       "192.0.2.2",
+			fileHandler:       file.NewHandler(afero.NewMemMapFs()),
+			config:            &config.Config{WGQuickConfigPath: func(s string) *string { return &s }("a.conf")},
+			clientPrivKey:     testKey.String(),
+		},
+		"invalid coordinator public key": {
+			coordinatorPubIP: "192.0.2.1",
+			clientVpnIp:      "192.0.2.2",
+			fileHandler:      file.NewHandler(afero.NewMemMapFs()),
+			config:           &config.Config{WGQuickConfigPath: func(s string) *string { return &s }("a.conf")},
+			clientPrivKey:    testKey.String(),
+			wantErr:          true,
+		},
+		"invalid client vpn ip": {
+			coordinatorPubKey: testKey.PublicKey().String(),
+			coordinatorPubIP:  "192.0.2.1",
+			fileHandler:       file.NewHandler(afero.NewMemMapFs()),
+			config:            &config.Config{WGQuickConfigPath: func(s string) *string { return &s }("a.conf")},
+			clientPrivKey:     testKey.String(),
+			wantErr:           true,
+		},
+		"write fails": {
+			coordinatorPubKey: testKey.PublicKey().String(),
+			coordinatorPubIP:  "192.0.2.1",
+			clientVpnIp:       "192.0.2.2",
+			fileHandler:       file.NewHandler(afero.NewReadOnlyFs(afero.NewMemMapFs())),
+			config:            &config.Config{WGQuickConfigPath: func(s string) *string { return &s }("a.conf")},
+			clientPrivKey:     testKey.String(),
+			wantErr:           true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			result := activationResult{
+				coordinatorPubKey: tc.coordinatorPubKey,
+				coordinatorPubIP:  tc.coordinatorPubIP,
+				clientVpnIP:       tc.clientVpnIp,
+			}
+			err := result.writeWGQuickFile(tc.fileHandler, tc.config, tc.clientPrivKey)
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				file, err := tc.fileHandler.Read(*tc.config.WGQuickConfigPath)
+				assert.NoError(err)
+				assert.NotEmpty(file)
 			}
 		})
 	}

@@ -49,6 +49,7 @@ type Config struct {
 	StatePath                *string         `json:"statepath,omitempty"`
 	AdminConfPath            *string         `json:"adminconfpath,omitempty"`
 	MasterSecretPath         *string         `json:"mastersecretpath,omitempty"`
+	WGQuickConfigPath        *string         `json:"wgquickconfigpath,omitempty"`
 	CoordinatorPort          *string         `json:"coordinatorport,omitempty"`
 	AutoscalingNodeGroupsMin *int            `json:"autoscalingnodegroupsmin,omitempty"`
 	AutoscalingNodeGroupsMax *int            `json:"autoscalingnodegroupsmax,omitempty"`
@@ -61,6 +62,7 @@ func Default() *Config {
 		StatePath:                proto.String("constellation-state.json"),
 		AdminConfPath:            proto.String("constellation-admin.conf"),
 		MasterSecretPath:         proto.String("constellation-mastersecret.base64"),
+		WGQuickConfigPath:        proto.String("wg0.conf"),
 		CoordinatorPort:          proto.String(strconv.Itoa(coordinatorPort)),
 		AutoscalingNodeGroupsMin: intPtr(1),
 		AutoscalingNodeGroupsMax: intPtr(10),

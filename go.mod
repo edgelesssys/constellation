@@ -32,6 +32,8 @@ replace (
 	k8s.io/sample-controller => k8s.io/sample-controller v0.23.1
 )
 
+replace github.com/nmiculinic/wg-quick-go v0.1.3 => github.com/katexochen/wg-quick-go v0.1.3-beta.0
+
 require (
 	cloud.google.com/go/compute v1.5.0
 	cloud.google.com/go/iam v0.3.0
@@ -170,6 +172,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
+	github.com/nmiculinic/wg-quick-go v0.1.3
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.0 // indirect

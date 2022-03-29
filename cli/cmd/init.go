@@ -135,6 +135,10 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, vpn
 		return err
 	}
 
+	if err := result.writeWGQuickFile(fileHandler, config, string(flagArgs.userPrivKey)); err != nil {
+		return fmt.Errorf("write wg-quick file: %w", err)
+	}
+
 	if flagArgs.autoconfigureWG {
 		if err := configureVpn(vpnCl, result.clientVpnIP, result.coordinatorPubKey, result.coordinatorPubIP, flagArgs.userPrivKey); err != nil {
 			return err
@@ -207,17 +211,34 @@ type activationResult struct {
 	clusterID         string
 }
 
-func (res activationResult) writeOutput(w io.Writer, fileHandler file.Handler, config *config.Config) error {
+// writeWGQuickFile writes the wg-quick file to the default path.
+func (r activationResult) writeWGQuickFile(fileHandler file.Handler, config *config.Config, clientPrivKey string) error {
+	wgConf, err := vpn.NewConfig(r.coordinatorPubKey, r.coordinatorPubIP, clientPrivKey)
+	if err != nil {
+		return fmt.Errorf("create wg config: %w", err)
+	}
+	data, err := vpn.NewWGQuickConfig(wgConf, r.clientVpnIP)
+	if err != nil {
+		return fmt.Errorf("create wg-quick config: %w", err)
+	}
+	return fileHandler.Write(*config.WGQuickConfigPath, data, false)
+}
+
+func (r activationResult) writeOutput(w io.Writer, fileHandler file.Handler, config *config.Config) error {
 	fmt.Fprintln(w, "Your Constellation was successfully initialized.")
-	fmt.Fprintf(w, "Your WireGuard IP is %s\n", res.clientVpnIP)
-	fmt.Fprintf(w, "The Coordinator's public IP is %s\n", res.coordinatorPubIP)
-	fmt.Fprintf(w, "The Coordinator's public key is %s\n", res.coordinatorPubKey)
-	fmt.Fprintf(w, "The Constellation's owner identifier is %s\n", res.ownerID)
-	fmt.Fprintf(w, "The Constellation's unique identifier is %s\n", res.clusterID)
-	if err := fileHandler.Write(*config.AdminConfPath, []byte(res.kubeconfig), false); err != nil {
+	fmt.Fprintf(w, "Your WireGuard IP is %s\n", r.clientVpnIP)
+	fmt.Fprintf(w, "The Coordinator's public IP is %s\n", r.coordinatorPubIP)
+	fmt.Fprintf(w, "The Coordinator's public key is %s\n", r.coordinatorPubKey)
+	fmt.Fprintf(w, "The Constellation's owner identifier is %s\n", r.ownerID)
+	fmt.Fprintf(w, "The Constellation's unique identifier is %s\n", r.clusterID)
+	fmt.Fprintf(w, "Your WireGuard configuration file was written to %s\n", *config.WGQuickConfigPath)
+	if err := fileHandler.Write(*config.AdminConfPath, []byte(r.kubeconfig), false); err != nil {
 		return err
 	}
 	fmt.Fprintf(w, "Your Constellation Kubernetes configuration was successfully written to %s\n", *config.AdminConfPath)
+	fmt.Fprintln(w, "\nYou can now connect to your Constellation by executing:")
+	fmt.Fprintf(w, "wg-quick up ./%s\n", *config.WGQuickConfigPath)
+	fmt.Fprintf(w, "export KUBECONFIG=\"$PWD/%s\"\n", *config.AdminConfPath)
 	return nil
 }
 

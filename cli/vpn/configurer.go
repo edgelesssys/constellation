@@ -1,9 +1,11 @@
 package vpn
 
 import (
+	"fmt"
 	"net"
 	"time"
 
+	wgquick "github.com/nmiculinic/wg-quick-go"
 	"github.com/vishvananda/netlink"
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
@@ -76,7 +78,8 @@ func New(netLink networkLink, vpn vpn) (*Configurer, error) {
 // WireGuard will listen on its default port.
 // The peer must have the IP 10.118.0.1 in the vpn.
 func (c *Configurer) Configure(clientVpnIp, coordinatorPubKey, coordinatorPubIP, clientPrivKey string) error {
-	if err := c.netLink.LinkAdd(&netlink.Wireguard{LinkAttrs: netlink.LinkAttrs{Name: interfaceName}}); err != nil {
+	wgLink := &netlink.Wireguard{LinkAttrs: netlink.LinkAttrs{Name: interfaceName}}
+	if err := c.netLink.LinkAdd(wgLink); err != nil {
 		return err
 	}
 
@@ -95,14 +98,24 @@ func (c *Configurer) Configure(clientVpnIp, coordinatorPubKey, coordinatorPubIP,
 		return err
 	}
 
-	_, allowedIPs, err := net.ParseCIDR("10.118.0.1/32")
+	config, err := NewConfig(coordinatorPubKey, coordinatorPubIP, clientPrivKey)
 	if err != nil {
 		return err
 	}
 
+	return c.vpn.ConfigureDevice(interfaceName, config)
+}
+
+// NewConfig creates a new WireGuard configuration.
+func NewConfig(coordinatorPubKey, coordinatorPubIP, clientPrivKey string) (wgtypes.Config, error) {
+	_, allowedIPs, err := net.ParseCIDR("10.118.0.1/32")
+	if err != nil {
+		return wgtypes.Config{}, fmt.Errorf("parsing CIDR: %w", err)
+	}
+
 	coordinatorPubKeyParsed, err := wgtypes.ParseKey(coordinatorPubKey)
 	if err != nil {
-		return err
+		return wgtypes.Config{}, fmt.Errorf("parsing coordinator public key: %w", err)
 	}
 
 	var endpoint *net.UDPAddr
@@ -113,12 +126,12 @@ func (c *Configurer) Configure(clientVpnIp, coordinatorPubKey, coordinatorPubIP,
 	}
 	clientPrivKeyParsed, err := wgtypes.ParseKey(clientPrivKey)
 	if err != nil {
-		return err
+		return wgtypes.Config{}, fmt.Errorf("parsing client private key: %w", err)
 	}
 	listenPort := wireguardPort
 
 	keepAlive := 10 * time.Second
-	err = c.vpn.ConfigureDevice(interfaceName, wgtypes.Config{
+	return wgtypes.Config{
 		PrivateKey:   &clientPrivKeyParsed,
 		ListenPort:   &listenPort,
 		ReplacePeers: false,
@@ -131,10 +144,22 @@ func (c *Configurer) Configure(clientVpnIp, coordinatorPubKey, coordinatorPubIP,
 				PersistentKeepaliveInterval: &keepAlive,
 			},
 		},
-	})
-	if err != nil {
-		return err
-	}
+	}, nil
+}
 
-	return nil
+// NewWGQuickConfig create a new WireGuard wg-quick configuration file and mashals it to bytes.
+func NewWGQuickConfig(config wgtypes.Config, clientVPNIP string) ([]byte, error) {
+	clientIP := net.ParseIP(clientVPNIP)
+	if clientIP == nil {
+		return nil, fmt.Errorf("invalid client vpn ip '%s'", clientVPNIP)
+	}
+	quickfile := wgquick.Config{
+		Config:  config,
+		Address: []net.IPNet{{IP: clientIP, Mask: []byte{255, 255, 0, 0}}},
+	}
+	data, err := quickfile.MarshalText()
+	if err != nil {
+		return nil, fmt.Errorf("marshal wg-quick config: %w", err)
+	}
+	return data, nil
 }

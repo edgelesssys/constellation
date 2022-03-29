@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"go.uber.org/multierr"
 
 	azure "github.com/edgelesssys/constellation/cli/azure/client"
 	ec2 "github.com/edgelesssys/constellation/cli/ec2/client"
@@ -79,14 +80,20 @@ func terminate(cmd *cobra.Command, fileHandler file.Handler, config *config.Conf
 
 	cmd.Println("Your Constellation was terminated successfully.")
 
+	var retErr error
 	if err := fileHandler.Remove(*config.StatePath); err != nil {
-		return fmt.Errorf("failed to remove file '%s', please remove manually", *config.StatePath)
+		retErr = multierr.Append(err, fmt.Errorf("failed to remove file '%s', please remove manually", *config.StatePath))
 	}
 
 	if err := fileHandler.Remove(*config.AdminConfPath); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to remove file '%s', please remove manually", *config.AdminConfPath)
+		retErr = multierr.Append(err, fmt.Errorf("failed to remove file '%s', please remove manually", *config.AdminConfPath))
 	}
-	return nil
+
+	if err := fileHandler.Remove(*config.WGQuickConfigPath); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		retErr = multierr.Append(err, fmt.Errorf("failed to remove file '%s', please remove manually", *config.WGQuickConfigPath))
+	}
+
+	return retErr
 }
 
 func terminateAzure(cmd *cobra.Command, cl azureclient, stat state.ConstellationState) error {
