@@ -75,7 +75,7 @@ func TestConfigurer(t *testing.T) {
 
 	link := newStubNetworkLink()
 	vpn := newStubVPN()
-	client, err := New(link, vpn)
+	client, err := NewConfigurer(link, vpn)
 	require.NoError(err)
 	coordinatorPubKey, err := wgtypes.GenerateKey()
 	require.NoError(err)

@@ -59,8 +59,8 @@ type Configurer struct {
 	vpn     vpn
 }
 
-// NewWithDefaults creates a new vpn client.
-func NewWithDefaults() (*Configurer, error) {
+// NewConfigurerWithDefaults creates a new vpn client.
+func NewConfigurerWithDefaults() (*Configurer, error) {
 	vpn, err := wgctrl.New()
 	if err != nil {
 		return nil, err
@@ -68,9 +68,9 @@ func NewWithDefaults() (*Configurer, error) {
 	return &Configurer{netLink: newNetLink(), vpn: vpn}, nil
 }
 
-// New creates a new vpn client with the provided
+// NewConfigurer creates a new vpn client with the provided
 // network link and vpn interface.
-func New(netLink networkLink, vpn vpn) (*Configurer, error) {
+func NewConfigurer(netLink networkLink, vpn vpn) (*Configurer, error) {
 	return &Configurer{netLink: netLink, vpn: vpn}, nil
 }
 

@@ -55,7 +55,7 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 
 	protoClient := proto.NewClient(*config.Provider.GCP.PCRs)
 	defer protoClient.Close()
-	vpnClient, err := vpn.NewWithDefaults()
+	vpnClient, err := vpn.NewConfigurerWithDefaults()
 	if err != nil {
 		return err
 	}
