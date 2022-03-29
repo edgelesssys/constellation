@@ -36,7 +36,7 @@ func NewWaiter(gcpPCRs map[uint32][]byte) Waiter {
 
 // WaitFor waits for a PeerStatusServer, which is reachable under the given endpoint
 // to reach the specified state.
-func (w Waiter) WaitFor(ctx context.Context, status state.State, endpoint string) error {
+func (w Waiter) WaitFor(ctx context.Context, endpoint string, status ...state.State) error {
 	ticker := time.NewTicker(w.interval)
 	defer ticker.Stop()
 
@@ -45,7 +45,7 @@ func (w Waiter) WaitFor(ctx context.Context, status state.State, endpoint string
 	if err != nil && grpcstatus.Code(err) != grpccodes.Unavailable {
 		return err
 	}
-	if resp != nil && resp.State == uint32(status) {
+	if resp != nil && containsState(state.State(resp.State), status...) {
 		return nil
 	}
 
@@ -61,7 +61,7 @@ func (w Waiter) WaitFor(ctx context.Context, status state.State, endpoint string
 			if err != nil {
 				return err
 			}
-			if resp.State == uint32(status) {
+			if containsState(state.State(resp.State), status...) {
 				return nil
 			}
 		case <-ctx.Done():
@@ -84,9 +84,9 @@ func (w Waiter) probe(ctx context.Context, endpoint string) (*pubproto.GetStateR
 
 // WaitForAll waits for a list of PeerStatusServers, which listen on the handed
 // endpoints, to reach the specified state.
-func (w Waiter) WaitForAll(ctx context.Context, status state.State, endpoints []string) error {
+func (w Waiter) WaitForAll(ctx context.Context, endpoints []string, status ...state.State) error {
 	for _, endpoint := range endpoints {
-		if err := w.WaitFor(ctx, status, endpoint); err != nil {
+		if err := w.WaitFor(ctx, endpoint, status...); err != nil {
 			return err
 		}
 	}
@@ -118,4 +118,14 @@ func newAttestedConnGenerator(gcpPCRs map[uint32][]byte) func(ctx context.Contex
 type ClientConn interface {
 	grpc.ClientConnInterface
 	io.Closer
+}
+
+// containsState checks if current state is one of the given states.
+func containsState(s state.State, states ...state.State) bool {
+	for _, state := range states {
+		if state == s {
+			return true
+		}
+	}
+	return false
 }

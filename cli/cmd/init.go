@@ -107,7 +107,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, vpn
 	}
 
 	endpoints := ipsToEndpoints(append(coordinators.PublicIPs(), nodes.PublicIPs()...), *config.CoordinatorPort)
-	if err := waiter.WaitForAll(ctx, coordinatorstate.AcceptingInit, endpoints); err != nil {
+	if err := waiter.WaitForAll(ctx, endpoints, coordinatorstate.AcceptingInit); err != nil {
 		return fmt.Errorf("failed to wait for peer status: %w", err)
 	}
 

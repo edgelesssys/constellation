@@ -19,7 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/coordinator/oid"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
-	coordinatorstate "github.com/edgelesssys/constellation/coordinator/state"
+	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/spf13/afero"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -42,21 +42,21 @@ func main() {
 
 	// wait for coordinator to come online
 	waiter := status.NewWaiter(map[uint32][]byte{})
-	if err := waiter.WaitFor(ctx, coordinatorstate.AcceptingInit, addr); err != nil {
+	if err := waiter.WaitFor(ctx, addr, state.AcceptingInit, state.ActivatingNodes, state.IsNode, state.NodeWaitingForClusterJoin); err != nil {
 		log.Fatal(err)
 	}
 
-	attDocRaw := &[]byte{}
+	attDocRaw := []byte{}
 	tlsConfig, err := atls.CreateUnverifiedClientTLSConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
-	tlsConfig.VerifyPeerCertificate = getVerifyPeerCertificateFunc(attDocRaw)
+	tlsConfig.VerifyPeerCertificate = getVerifyPeerCertificateFunc(&attDocRaw)
 	if err := connectToCoordinator(ctx, addr, tlsConfig); err != nil {
 		log.Fatal(err)
 	}
 
-	pcrs, err := validatePCRAttDoc(*attDocRaw)
+	pcrs, err := validatePCRAttDoc(attDocRaw)
 	if err != nil {
 		log.Fatal(err)
 	}

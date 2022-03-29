@@ -6,21 +6,13 @@ trap 'terminate $?' ERR
 terminate() {
     echo "error: $1"
     constellation terminate
-    popd || exit 1
     exit 1
 }
 
 main() {
-    if ! command -v constellation &> /dev/null
-    then
-        echo "constellation is not in path"
-        exit 1
-    fi
-    if ! command -v go &> /dev/null
-    then
-        echo "go is not in path"
-        exit 1
-    fi
+    command -v constellation > /dev/null
+    command -v go > /dev/null
+    command -v jq > /dev/null
 
     mkdir -p ./pcrs
 

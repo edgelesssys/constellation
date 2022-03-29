@@ -7,5 +7,5 @@ import (
 )
 
 type statusWaiter interface {
-	WaitForAll(ctx context.Context, status state.State, endpoints []string) error
+	WaitForAll(ctx context.Context, endpoints []string, status ...state.State) error
 }

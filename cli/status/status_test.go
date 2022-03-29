@@ -18,7 +18,7 @@ func TestWaitForAndWaitForAll(t *testing.T) {
 
 	testCases := map[string]struct {
 		waiter       Waiter
-		waitForState state.State
+		waitForState []state.State
 		wantErr      bool
 	}{
 		"successful wait": {
@@ -27,7 +27,15 @@ func TestWaitForAndWaitForAll(t *testing.T) {
 				newConn:   stubNewConnFunc(noErr),
 				newClient: stubNewClientFunc(&stubPeerStatusClient{state: state.IsNode}),
 			},
-			waitForState: state.IsNode,
+			waitForState: []state.State{state.IsNode},
+		},
+		"successful wait multi states": {
+			waiter: Waiter{
+				interval:  time.Millisecond,
+				newConn:   stubNewConnFunc(noErr),
+				newClient: stubNewClientFunc(&stubPeerStatusClient{state: state.IsNode}),
+			},
+			waitForState: []state.State{state.IsNode, state.ActivatingNodes},
 		},
 		"expect timeout": {
 			waiter: Waiter{
@@ -35,7 +43,7 @@ func TestWaitForAndWaitForAll(t *testing.T) {
 				newConn:   stubNewConnFunc(noErr),
 				newClient: stubNewClientFunc(&stubPeerStatusClient{state: state.AcceptingInit}),
 			},
-			waitForState: state.IsNode,
+			waitForState: []state.State{state.IsNode},
 			wantErr:      true,
 		},
 		"fail to check call": {
@@ -44,7 +52,7 @@ func TestWaitForAndWaitForAll(t *testing.T) {
 				newConn:   stubNewConnFunc(noErr),
 				newClient: stubNewClientFunc(&stubPeerStatusClient{checkErr: someErr}),
 			},
-			waitForState: state.IsNode,
+			waitForState: []state.State{state.IsNode},
 			wantErr:      true,
 		},
 		"fail to create conn": {
@@ -53,7 +61,7 @@ func TestWaitForAndWaitForAll(t *testing.T) {
 				newConn:   stubNewConnFunc(someErr),
 				newClient: stubNewClientFunc(&stubPeerStatusClient{}),
 			},
-			waitForState: state.IsNode,
+			waitForState: []state.State{state.IsNode},
 			wantErr:      true,
 		},
 	}
@@ -67,7 +75,7 @@ func TestWaitForAndWaitForAll(t *testing.T) {
 				ctx, cancel := context.WithTimeout(ctx, 50*time.Millisecond)
 				defer cancel()
 
-				err := tc.waiter.WaitFor(ctx, tc.waitForState, "someIP")
+				err := tc.waiter.WaitFor(ctx, "someIP", tc.waitForState...)
 
 				if tc.wantErr {
 					assert.Error(err)
@@ -88,7 +96,7 @@ func TestWaitForAndWaitForAll(t *testing.T) {
 				defer cancel()
 
 				endpoints := []string{"192.0.2.1", "192.0.2.2", "192.0.2.3"}
-				err := tc.waiter.WaitForAll(ctx, tc.waitForState, endpoints)
+				err := tc.waiter.WaitForAll(ctx, endpoints, tc.waitForState...)
 
 				if tc.wantErr {
 					assert.Error(err)
@@ -135,4 +143,50 @@ type stubPeerStatusClient struct {
 func (c *stubPeerStatusClient) GetState(ctx context.Context, in *pubproto.GetStateRequest, opts ...grpc.CallOption) (*pubproto.GetStateResponse, error) {
 	resp := &pubproto.GetStateResponse{State: uint32(c.state)}
 	return resp, c.checkErr
+}
+
+func TestContainsState(t *testing.T) {
+	testCases := map[string]struct {
+		s       state.State
+		states  []state.State
+		success bool
+	}{
+		"is state": {
+			s: state.IsNode,
+			states: []state.State{
+				state.IsNode,
+			},
+			success: true,
+		},
+		"is state multi": {
+			s: state.AcceptingInit,
+			states: []state.State{
+				state.AcceptingInit,
+				state.ActivatingNodes,
+			},
+			success: true,
+		},
+		"is not state": {
+			s: state.NodeWaitingForClusterJoin,
+			states: []state.State{
+				state.AcceptingInit,
+			},
+		},
+		"is not state multi": {
+			s: state.NodeWaitingForClusterJoin,
+			states: []state.State{
+				state.AcceptingInit,
+				state.ActivatingNodes,
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			res := containsState(tc.s, tc.states...)
+			assert.Equal(tc.success, res)
+		})
+	}
 }
