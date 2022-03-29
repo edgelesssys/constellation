@@ -38,9 +38,8 @@ func TestSetGetState(t *testing.T) {
 				AzureTenant:               "tenant",
 				AzureSubnet:               "azure-subnet",
 				AzureNetworkSecurityGroup: "network-security-group",
-				// TODO: un-deprecate as soon as scale sets are available
-				// AzureNodesScaleSet:        "node-scale-set",
-				// AzureCoordinatorsScaleSet: "coordinator-scale-set",
+				AzureNodesScaleSet:        "node-scale-set",
+				AzureCoordinatorsScaleSet: "coordinator-scale-set",
 			},
 		},
 		"missing nodes": {
@@ -303,61 +302,60 @@ func TestSetGetState(t *testing.T) {
 			},
 			errExpected: true,
 		},
-		// TODO: un-deprecate as soon as scale sets are available
-		// "missing node scale set": {
-		// 	state: state.ConstellationState{
-		// 		CloudProvider: cloudprovider.Azure.String(),
-		// 		AzureNodes: azure.Instances{
-		// 			"0": {
-		// 				PublicIP:  "ip1",
-		// 				PrivateIP: "ip2",
-		// 			},
-		// 		},
-		// 		AzureCoordinators: azure.Instances{
-		// 			"0": {
-		// 				PublicIP:  "ip3",
-		// 				PrivateIP: "ip4",
-		// 			},
-		// 		},
-		//      Name:                      "name",
-		// 		UID:                       "uid",
-		// 		AzureResourceGroup:        "resource-group",
-		// 		AzureLocation:             "location",
-		// 		AzureSubscription:         "subscription",
-		//      AzureTenant:               "tenant",
-		// 		AzureSubnet:               "azure-subnet",
-		// 		AzureNetworkSecurityGroup: "network-security-group",
-		// 		AzureCoordinatorsScaleSet: "coordinator-scale-set",
-		// 	},
-		// 	errExpected: true,
-		// },
-		// "missing coordinator scale set": {
-		// 	state: state.ConstellationState{
-		// 		CloudProvider: cloudprovider.Azure.String(),
-		// 		AzureNodes: azure.Instances{
-		// 			"0": {
-		// 				PublicIP:  "ip1",
-		// 				PrivateIP: "ip2",
-		// 			},
-		// 		},
-		// 		AzureCoordinators: azure.Instances{
-		// 			"0": {
-		// 				PublicIP:  "ip3",
-		// 				PrivateIP: "ip4",
-		// 			},
-		// 		},
-		//      Name:                      "name",
-		// 		UID:                       "uid",
-		// 		AzureResourceGroup:        "resource-group",
-		// 		AzureLocation:             "location",
-		// 		AzureSubscription:         "subscription",
-		//      AzureTenant:               "tenant",
-		// 		AzureSubnet:               "azure-subnet",
-		// 		AzureNetworkSecurityGroup: "network-security-group",
-		// 		AzureNodesScaleSet:        "node-scale-set",
-		// 	},
-		// 	errExpected: true,
-		// },
+		"missing node scale set": {
+			state: state.ConstellationState{
+				CloudProvider: cloudprovider.Azure.String(),
+				AzureNodes: azure.Instances{
+					"0": {
+						PublicIP:  "ip1",
+						PrivateIP: "ip2",
+					},
+				},
+				AzureCoordinators: azure.Instances{
+					"0": {
+						PublicIP:  "ip3",
+						PrivateIP: "ip4",
+					},
+				},
+				Name:                      "name",
+				UID:                       "uid",
+				AzureResourceGroup:        "resource-group",
+				AzureLocation:             "location",
+				AzureSubscription:         "subscription",
+				AzureTenant:               "tenant",
+				AzureSubnet:               "azure-subnet",
+				AzureNetworkSecurityGroup: "network-security-group",
+				AzureCoordinatorsScaleSet: "coordinator-scale-set",
+			},
+			errExpected: true,
+		},
+		"missing coordinator scale set": {
+			state: state.ConstellationState{
+				CloudProvider: cloudprovider.Azure.String(),
+				AzureNodes: azure.Instances{
+					"0": {
+						PublicIP:  "ip1",
+						PrivateIP: "ip2",
+					},
+				},
+				AzureCoordinators: azure.Instances{
+					"0": {
+						PublicIP:  "ip3",
+						PrivateIP: "ip4",
+					},
+				},
+				Name:                      "name",
+				UID:                       "uid",
+				AzureResourceGroup:        "resource-group",
+				AzureLocation:             "location",
+				AzureSubscription:         "subscription",
+				AzureTenant:               "tenant",
+				AzureSubnet:               "azure-subnet",
+				AzureNetworkSecurityGroup: "network-security-group",
+				AzureNodesScaleSet:        "node-scale-set",
+			},
+			errExpected: true,
+		},
 	}
 
 	t.Run("SetState", func(t *testing.T) {

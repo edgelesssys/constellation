@@ -165,15 +165,14 @@ func (c *Client) GetState() (state.ConstellationState, error) {
 		return state.ConstellationState{}, errors.New("client has no network security group")
 	}
 	stat.AzureNetworkSecurityGroup = c.networkSecurityGroup
-	// TODO: un-deprecate as soon as scale sets are available
-	// if len(c.nodesScaleSet) == 0 {
-	// 	return state.ConstellationState{}, errors.New("client has no nodes scale set")
-	// }
-	// stat.AzureNodesScaleSet = c.nodesScaleSet
-	// if len(c.coordinatorsScaleSet) == 0 {
-	// 	return state.ConstellationState{}, errors.New("client has no coordinators scale set")
-	// }
-	// stat.AzureCoordinatorsScaleSet = c.coordinatorsScaleSet
+	if len(c.nodesScaleSet) == 0 {
+		return state.ConstellationState{}, errors.New("client has no nodes scale set")
+	}
+	stat.AzureNodesScaleSet = c.nodesScaleSet
+	if len(c.coordinatorsScaleSet) == 0 {
+		return state.ConstellationState{}, errors.New("client has no coordinators scale set")
+	}
+	stat.AzureCoordinatorsScaleSet = c.coordinatorsScaleSet
 	if len(c.nodes) == 0 {
 		return state.ConstellationState{}, errors.New("client has no nodes")
 	}
@@ -225,15 +224,14 @@ func (c *Client) SetState(stat state.ConstellationState) error {
 		return errors.New("state has no subnet")
 	}
 	c.networkSecurityGroup = stat.AzureNetworkSecurityGroup
-	// TODO: un-deprecate as soon as scale sets are available
-	//if len(stat.AzureNodesScaleSet) == 0 {
-	//	return errors.New("state has no nodes scale set")
-	//}
-	//c.nodesScaleSet = stat.AzureNodesScaleSet
-	//if len(stat.AzureCoordinatorsScaleSet) == 0 {
-	//	return errors.New("state has no nodes scale set")
-	//}
-	//c.coordinatorsScaleSet = stat.AzureCoordinatorsScaleSet
+	if len(stat.AzureNodesScaleSet) == 0 {
+		return errors.New("state has no nodes scale set")
+	}
+	c.nodesScaleSet = stat.AzureNodesScaleSet
+	if len(stat.AzureCoordinatorsScaleSet) == 0 {
+		return errors.New("state has no nodes scale set")
+	}
+	c.coordinatorsScaleSet = stat.AzureCoordinatorsScaleSet
 	if len(stat.AzureNodes) == 0 {
 		return errors.New("state has no coordinator scale set")
 	}

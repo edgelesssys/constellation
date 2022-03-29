@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 
+	"github.com/edgelesssys/constellation/cli/azure"
 	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/cli/gcp"
 	"github.com/edgelesssys/constellation/cli/proto"
@@ -355,7 +356,7 @@ func getScalingGroupsFromConfig(stat state.ConstellationState, config *config.Co
 	case len(stat.GCPCoordinators) != 0:
 		return getGCPInstances(stat, config)
 	case len(stat.AzureCoordinators) != 0:
-		return getAzureInstances(stat)
+		return getAzureInstances(stat, config)
 	default:
 		return ScalingGroup{}, ScalingGroup{}, errors.New("no instances to init")
 	}
@@ -413,7 +414,7 @@ func getGCPInstances(stat state.ConstellationState, config *config.Config) (coor
 	return
 }
 
-func getAzureInstances(stat state.ConstellationState) (coordinators, nodes ScalingGroup, err error) {
+func getAzureInstances(stat state.ConstellationState, config *config.Config) (coordinators, nodes ScalingGroup, err error) {
 	_, coordinator, err := stat.AzureCoordinators.GetOne()
 	if err != nil {
 		return
@@ -434,7 +435,7 @@ func getAzureInstances(stat state.ConstellationState) (coordinators, nodes Scali
 	// TODO: make min / max configurable and abstract autoscaling for different cloud providers
 	nodes = ScalingGroup{
 		Instances: nodeInstances,
-		GroupID:   "",
+		GroupID:   azure.AutoscalingNodeGroup(stat.AzureNodesScaleSet, *config.AutoscalingNodeGroupsMin, *config.AutoscalingNodeGroupsMax),
 	}
 	return
 }
