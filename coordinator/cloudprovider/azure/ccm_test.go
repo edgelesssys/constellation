@@ -20,7 +20,7 @@ func TestSecrets(t *testing.T) {
 	}{
 		"Secrets works": {
 			instance:               core.Instance{ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name"},
-			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret",
+			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret&location=location",
 			expectedSecrets: resources.Secrets{
 				&k8s.Secret{
 					TypeMeta: meta.TypeMeta{
@@ -32,14 +32,14 @@ func TestSecrets(t *testing.T) {
 						Namespace: "kube-system",
 					},
 					Data: map[string][]byte{
-						"azure.json": []byte(`{"cloud":"AzurePublicCloud","tenantId":"tenant-id","subscriptionId":"subscription-id","resourceGroup":"resource-group","useInstanceMetadata":true,"vmType":"standard","aadClientId":"client-id","aadClientSecret":"client-secret"}`),
+						"azure.json": []byte(`{"cloud":"AzurePublicCloud","tenantId":"tenant-id","subscriptionId":"subscription-id","resourceGroup":"resource-group","location":"location","useInstanceMetadata":true,"vmType":"standard","aadClientId":"client-id","aadClientSecret":"client-secret"}`),
 					},
 				},
 			},
 		},
 		"Secrets works for scale sets": {
 			instance:               core.Instance{ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"},
-			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret",
+			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret&location=location",
 			expectedSecrets: resources.Secrets{
 				&k8s.Secret{
 					TypeMeta: meta.TypeMeta{
@@ -51,7 +51,7 @@ func TestSecrets(t *testing.T) {
 						Namespace: "kube-system",
 					},
 					Data: map[string][]byte{
-						"azure.json": []byte(`{"cloud":"AzurePublicCloud","tenantId":"tenant-id","subscriptionId":"subscription-id","resourceGroup":"resource-group","useInstanceMetadata":true,"vmType":"vmss","aadClientId":"client-id","aadClientSecret":"client-secret"}`),
+						"azure.json": []byte(`{"cloud":"AzurePublicCloud","tenantId":"tenant-id","subscriptionId":"subscription-id","resourceGroup":"resource-group","location":"location","useInstanceMetadata":true,"vmType":"vmss","aadClientId":"client-id","aadClientSecret":"client-secret"}`),
 					},
 				},
 			},

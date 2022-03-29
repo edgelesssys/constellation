@@ -13,6 +13,7 @@ func TestGetApplicationCredentials(t *testing.T) {
 		TenantID:     "tenant-id",
 		ClientID:     "client-id",
 		ClientSecret: "client-secret",
+		Location:     "location",
 	}
 	testCases := map[string]struct {
 		cloudServiceAccountURI string
@@ -20,7 +21,7 @@ func TestGetApplicationCredentials(t *testing.T) {
 		expectErr              bool
 	}{
 		"getApplicationCredentials works": {
-			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret",
+			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret&location=location",
 			expectedCreds:          creds,
 		},
 		"invalid URI fails": {

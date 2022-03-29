@@ -69,6 +69,7 @@ func (c *CloudControllerManager) Secrets(instance core.Instance, cloudServiceAcc
 		ResourceGroup:       resourceGroup,
 		UseInstanceMetadata: true,
 		VmType:              vmType,
+		Location:            creds.Location,
 		AADClientID:         creds.ClientID,
 		AADClientSecret:     creds.ClientSecret,
 	}

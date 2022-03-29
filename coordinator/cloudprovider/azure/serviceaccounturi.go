@@ -24,5 +24,6 @@ func getApplicationCredentials(cloudServiceAccountURI string) (client.Applicatio
 		TenantID:     query.Get("tenant_id"),
 		ClientID:     query.Get("client_id"),
 		ClientSecret: query.Get("client_secret"),
+		Location:     query.Get("location"),
 	}, nil
 }

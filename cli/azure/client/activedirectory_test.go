@@ -366,6 +366,7 @@ func TestConvertToCloudServiceAccountURI(t *testing.T) {
 		TenantID:     "tenant-id",
 		ClientID:     "client-id",
 		ClientSecret: "client-secret",
+		Location:     "location",
 	}
 
 	cloudServiceAccountURI := key.ConvertToCloudServiceAccountURI()
@@ -378,5 +379,6 @@ func TestConvertToCloudServiceAccountURI(t *testing.T) {
 		"tenant_id":     []string{"tenant-id"},
 		"client_id":     []string{"client-id"},
 		"client_secret": []string{"client-secret"},
+		"location":      []string{"location"},
 	}, query)
 }

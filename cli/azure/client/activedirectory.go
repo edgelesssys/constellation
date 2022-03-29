@@ -51,6 +51,7 @@ func (c *Client) CreateServicePrincipal(ctx context.Context) (string, error) {
 		TenantID:     c.tenantID,
 		ClientID:     createAppRes.AppID,
 		ClientSecret: clientSecret,
+		Location:     c.location,
 	}.ConvertToCloudServiceAccountURI(), nil
 }
 
@@ -169,6 +170,7 @@ type ApplicationCredentials struct {
 	TenantID     string
 	ClientID     string
 	ClientSecret string
+	Location     string
 }
 
 // ConvertToCloudServiceAccountURI converts the ApplicationCredentials into a cloud service account URI.
@@ -177,6 +179,7 @@ func (c ApplicationCredentials) ConvertToCloudServiceAccountURI() string {
 	query.Add("tenant_id", c.TenantID)
 	query.Add("client_id", c.ClientID)
 	query.Add("client_secret", c.ClientSecret)
+	query.Add("location", c.Location)
 	uri := url.URL{
 		Scheme:   "serviceaccount",
 		Host:     "azure",
