@@ -23,6 +23,7 @@ func (c *Core) InitCluster(autoscalingNodeGroups []string, cloudServiceAccountUR
 	var instance Instance
 	var ccmConfigMaps resources.ConfigMaps
 	var ccmSecrets resources.Secrets
+	var caSecrets resources.Secrets
 	var err error
 	nodeIP := coordinatorVPNIP.String()
 	if c.metadata.Supported() {
@@ -56,6 +57,13 @@ func (c *Core) InitCluster(autoscalingNodeGroups []string, cloudServiceAccountUR
 			return nil, err
 		}
 	}
+	if c.clusterAutoscaler.Supported() {
+		caSecrets, err = c.clusterAutoscaler.Secrets(instance, cloudServiceAccountURI)
+		if err != nil {
+			c.zaplogger.Error("Defining Secrets for cluster-autoscaler failed", zap.Error(err))
+			return nil, err
+		}
+	}
 
 	c.zaplogger.Info("Initializing cluster")
 	joinCommand, err := c.kube.InitCluster(kubernetes.InitClusterInput{
@@ -65,6 +73,10 @@ func (c *Core) InitCluster(autoscalingNodeGroups []string, cloudServiceAccountUR
 		ProviderID:                         providerID,
 		SupportClusterAutoscaler:           c.clusterAutoscaler.Supported(),
 		AutoscalingCloudprovider:           c.clusterAutoscaler.Name(),
+		AutoscalingSecrets:                 caSecrets,
+		AutoscalingVolumes:                 c.clusterAutoscaler.Volumes(),
+		AutoscalingVolumeMounts:            c.clusterAutoscaler.VolumeMounts(),
+		AutoscalingEnv:                     c.clusterAutoscaler.Env(),
 		AutoscalingNodeGroups:              autoscalingNodeGroups,
 		SupportsCloudControllerManager:     c.cloudControllerManager.Supported(),
 		CloudControllerManagerName:         c.cloudControllerManager.Name(),

@@ -14,6 +14,10 @@ type InitClusterInput struct {
 	SupportClusterAutoscaler           bool
 	AutoscalingCloudprovider           string
 	AutoscalingNodeGroups              []string
+	AutoscalingSecrets                 resources.Secrets
+	AutoscalingVolumes                 []k8s.Volume
+	AutoscalingVolumeMounts            []k8s.VolumeMount
+	AutoscalingEnv                     []k8s.EnvVar
 	SupportsCloudControllerManager     bool
 	CloudControllerManagerName         string
 	CloudControllerManagerImage        string

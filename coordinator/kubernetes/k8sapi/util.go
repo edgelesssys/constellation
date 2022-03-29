@@ -25,7 +25,7 @@ type ClusterUtil interface {
 	InitCluster(initConfig []byte) (*kubeadm.BootstrapTokenDiscovery, error)
 	JoinCluster(joinConfig []byte) error
 	SetupPodNetwork(kubectl Client, podNetworkConfiguration resources.Marshaler) error
-	SetupAutoscaling(kubectl Client, clusterAutoscalerConfiguration resources.Marshaler) error
+	SetupAutoscaling(kubectl Client, clusterAutoscalerConfiguration resources.Marshaler, secrets resources.Marshaler) error
 	SetupCloudControllerManager(kubectl Client, cloudControllerManagerConfiguration resources.Marshaler, configMaps resources.Marshaler, secrets resources.Marshaler) error
 	SetupCloudNodeManager(kubectl Client, cloudNodeManagerConfiguration resources.Marshaler) error
 	RestartKubelet() error
@@ -113,7 +113,10 @@ func (k *KubernetesUtil) SetupPodNetwork(kubectl Client, podNetworkConfiguration
 }
 
 // SetupAutoscaling deploys the k8s cluster autoscaler.
-func (k *KubernetesUtil) SetupAutoscaling(kubectl Client, clusterAutoscalerConfiguration resources.Marshaler) error {
+func (k *KubernetesUtil) SetupAutoscaling(kubectl Client, clusterAutoscalerConfiguration resources.Marshaler, secrets resources.Marshaler) error {
+	if err := kubectl.Apply(secrets, true); err != nil {
+		return fmt.Errorf("applying cluster-autoscaler Secrets failed: %w", err)
+	}
 	return kubectl.Apply(clusterAutoscalerConfiguration, true)
 }
 

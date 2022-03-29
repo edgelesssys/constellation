@@ -92,9 +92,9 @@ func (k *KubeWrapper) InitCluster(in InitClusterInput) (*kubeadm.BootstrapTokenD
 	}
 
 	if in.SupportClusterAutoscaler {
-		clusterAutoscalerConfiguration := resources.NewDefaultAutoscalerDeployment()
+		clusterAutoscalerConfiguration := resources.NewDefaultAutoscalerDeployment(in.AutoscalingVolumes, in.AutoscalingVolumeMounts, in.AutoscalingEnv)
 		clusterAutoscalerConfiguration.SetAutoscalerCommand(in.AutoscalingCloudprovider, in.AutoscalingNodeGroups)
-		if err := k.clusterUtil.SetupAutoscaling(k.client, clusterAutoscalerConfiguration); err != nil {
+		if err := k.clusterUtil.SetupAutoscaling(k.client, clusterAutoscalerConfiguration, in.AutoscalingSecrets); err != nil {
 			return nil, fmt.Errorf("failed to setup cluster-autoscaler: %w", err)
 		}
 	}

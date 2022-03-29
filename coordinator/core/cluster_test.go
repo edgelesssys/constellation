@@ -462,12 +462,33 @@ func (s *stubCloudNodeManager) Supported() bool {
 }
 
 type stubClusterAutoscaler struct {
-	nameRes      string
-	supportedRes bool
+	nameRes        string
+	supportedRes   bool
+	secretsRes     resources.Secrets
+	secretsErr     error
+	volumesRes     []k8s.Volume
+	volumeMountRes []k8s.VolumeMount
+	envRes         []k8s.EnvVar
 }
 
 func (s *stubClusterAutoscaler) Name() string {
 	return s.nameRes
+}
+
+func (s *stubClusterAutoscaler) Secrets(instance Instance, cloudServiceAccountURI string) (resources.Secrets, error) {
+	return s.secretsRes, s.secretsErr
+}
+
+func (s *stubClusterAutoscaler) Volumes() []k8s.Volume {
+	return s.volumesRes
+}
+
+func (s *stubClusterAutoscaler) VolumeMounts() []k8s.VolumeMount {
+	return s.volumeMountRes
+}
+
+func (s *stubClusterAutoscaler) Env() []k8s.EnvVar {
+	return s.envRes
 }
 
 func (s *stubClusterAutoscaler) Supported() bool {

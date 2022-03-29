@@ -92,6 +92,14 @@ type CloudNodeManager interface {
 type ClusterAutoscaler interface {
 	// Name returns the cloud-provider name as used by k8s cluster-autoscaler.
 	Name() string
+	// Secrets returns a list of secrets to deploy together with the k8s cluster-autoscaler.
+	Secrets(instance Instance, cloudServiceAccountURI string) (resources.Secrets, error)
+	// Volumes returns a list of volumes to deploy together with the k8s cluster-autoscaler.
+	Volumes() []k8s.Volume
+	// VolumeMounts returns a list of volume mounts to deploy together with the k8s cluster-autoscaler.
+	VolumeMounts() []k8s.VolumeMount
+	// Env returns a list of k8s environment key-value pairs to deploy together with the k8s cluster-autoscaler.
+	Env() []k8s.EnvVar
 	// Supported is used to determine if cluster autoscaler is implemented for this cloud provider.
 	Supported() bool
 }
@@ -236,6 +244,26 @@ type ClusterAutoscalerFake struct{}
 
 func (f *ClusterAutoscalerFake) Name() string {
 	return "fake"
+}
+
+// Secrets returns a list of secrets to deploy together with the k8s cluster-autoscaler.
+func (f *ClusterAutoscalerFake) Secrets(instance Instance, cloudServiceAccountURI string) (resources.Secrets, error) {
+	return resources.Secrets{}, nil
+}
+
+// Volumes returns a list of volumes to deploy together with the k8s cluster-autoscaler.
+func (f *ClusterAutoscalerFake) Volumes() []k8s.Volume {
+	return []k8s.Volume{}
+}
+
+// VolumeMounts returns a list of volume mounts to deploy together with the k8s cluster-autoscaler.
+func (f *ClusterAutoscalerFake) VolumeMounts() []k8s.VolumeMount {
+	return []k8s.VolumeMount{}
+}
+
+// Env returns a list of k8s environment key-value pairs to deploy together with the k8s cluster-autoscaler.
+func (f *ClusterAutoscalerFake) Env() []k8s.EnvVar {
+	return []k8s.EnvVar{}
 }
 
 func (f *ClusterAutoscalerFake) Supported() bool {

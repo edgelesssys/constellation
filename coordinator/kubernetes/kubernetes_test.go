@@ -43,7 +43,7 @@ func (s *stubClusterUtil) SetupPodNetwork(kubectl k8sapi.Client, podNetworkConfi
 	return s.setupPodNetworkErr
 }
 
-func (s *stubClusterUtil) SetupAutoscaling(kubectl k8sapi.Client, clusterAutoscalerConfiguration resources.Marshaler) error {
+func (s *stubClusterUtil) SetupAutoscaling(kubectl k8sapi.Client, clusterAutoscalerConfiguration resources.Marshaler, secrets resources.Marshaler) error {
 	return s.setupAutoscalingError
 }
 
