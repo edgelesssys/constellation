@@ -30,6 +30,11 @@ func TestWrapKeyAES(t *testing.T) {
 	key192 := []byte{0x58, 0x40, 0xdf, 0x6e, 0x29, 0xb0, 0x2a, 0xf1, 0xab, 0x49, 0x3b, 0x70, 0x5b, 0xf1, 0x6e, 0xa1, 0xae, 0x83, 0x38, 0xf4, 0xdc, 0xc1, 0x76, 0xa8}
 	_, err = WrapAES(testDEK, key192)
 	assert.Error(err)
+
+	// Make sure we can wrap large keys. For example AES-XTS uses 512 bit keys
+	largeKey := []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+	_, err = WrapAES(largeKey, testKEK)
+	assert.NoError(err)
 }
 
 func TestParsePEM(t *testing.T) {
