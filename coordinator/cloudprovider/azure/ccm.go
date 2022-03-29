@@ -57,12 +57,18 @@ func (c *CloudControllerManager) Secrets(instance core.Instance, cloudServiceAcc
 		return resources.Secrets{}, err
 	}
 
+	vmType := "standard"
+	if _, _, _, _, err := splitScaleSetProviderID(instance.ProviderID); err == nil {
+		vmType = "vmss"
+	}
+
 	config := cloudConfig{
 		Cloud:               "AzurePublicCloud",
 		TenantID:            creds.TenantID,
 		SubscriptionID:      subscriptionID,
 		ResourceGroup:       resourceGroup,
 		UseInstanceMetadata: true,
+		VmType:              vmType,
 		AADClientID:         creds.ClientID,
 		AADClientSecret:     creds.ClientSecret,
 	}
@@ -145,6 +151,7 @@ type cloudConfig struct {
 	VNetResourceGroup          string `json:"vnetResourceGroup,omitempty"`
 	CloudProviderBackoff       bool   `json:"cloudProviderBackoff,omitempty"`
 	UseInstanceMetadata        bool   `json:"useInstanceMetadata,omitempty"`
+	VmType                     string `json:"vmType,omitempty"`
 	AADClientID                string `json:"aadClientId,omitempty"`
 	AADClientSecret            string `json:"aadClientSecret,omitempty"`
 }
