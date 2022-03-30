@@ -40,6 +40,10 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 	// AdvanceState MUST be called before any other functions that are not sanity checks or otherwise required
 	// This ensures the node is marked as initialzed before the node is in a state that allows code execution
 	// Any new additions to ActivateAsNode MUST come after
+	if err := a.core.InitializeStoreIPs(); err != nil {
+		return status.Errorf(codes.Internal, "failed to initialize store IPs %v", err)
+	}
+
 	ownerID, clusterID, err := a.core.GetIDs(in.MasterSecret)
 	if err != nil {
 		return status.Errorf(codes.Internal, "%v", err)
@@ -166,7 +170,7 @@ func (a *API) activateNodes(logToCLI logFunc, nodePublicEndpoints []string, coor
 	// Activate all nodes.
 	for num, nodePublicEndpoint := range nodePublicEndpoints {
 		logToCLI("activating node %3d out of %3d nodes", num+1, len(nodePublicEndpoints))
-		nodeVPNIP, err := a.core.GenerateNextIP()
+		nodeVPNIP, err := a.core.GetNextNodeIP()
 		if err != nil {
 			a.logger.Error("generation of vpn ips failed", zap.Error(err))
 			return err

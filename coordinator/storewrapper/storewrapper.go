@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
+	"net/netip"
 	"strconv"
 	"strings"
 
@@ -15,18 +15,29 @@ import (
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
+// variables which will be used as a store-prefix start with prefix[...].
+// variables which will be used as a store-key start with key[...].
 const (
-	requestMasterSecret          = "masterSecret"
-	requestClusterID             = "clusterID"
-	requestVPNPubKey             = "vpnKey"
-	requestKubernetesJoinCommand = "kubeJoin"
-	requestKubeConfig            = "kubeConfig"
-	requestKEKID                 = "kekID"
-	peerLocationPrefix           = "PeerPrefix"
-	peersResourceVersion         = "peersResourceVersion"
-	adminLocation                = "externalAdmin"
-	freeNodeIP                   = "freeNodeVPNIPs"
-	lastNodeIP                   = "LastNodeIPPrefix"
+	keyHighestAvailableCoordinatorIP = "highestAvailableCoordinatorIP"
+	keyHighestAvailableNodeIP        = "highestAvailableNodeIP"
+	keyKubernetesJoinCommand         = "kubeJoin"
+	keyPeersResourceVersion          = "peersResourceVersion"
+	keyMasterSecret                  = "masterSecret"
+	keyKubeConfig                    = "kubeConfig"
+	keyClusterID                     = "clusterID"
+	keyVPNPubKey                     = "vpnKey"
+	keyKEKID                         = "kekID"
+	prefixFreeCoordinatorIPs         = "freeCoordinatorVPNIPs"
+	prefixAdminLocation              = "externalAdminsData"
+	prefixPeerLocation               = "peerPrefix"
+	prefixFreeNodeIPs                = "freeNodeVPNIPs"
+)
+
+var (
+	coordinatorIPRangeStart = netip.AddrFrom4([4]byte{10, 118, 0, 1})
+	coordinatorIPRangeEnd   = netip.AddrFrom4([4]byte{10, 118, 0, 10})
+	nodeIPRangeStart        = netip.AddrFrom4([4]byte{10, 118, 0, 11})
+	nodeIPRangeEnd          = netip.AddrFrom4([4]byte{10, 118, 255, 254})
 )
 
 // StoreWrapper is a wrapper for the store interface.
@@ -62,34 +73,34 @@ func (s StoreWrapper) PutState(currState state.State) error {
 
 // GetVPNKey returns the VPN pubKey from Store.
 func (s StoreWrapper) GetVPNKey() ([]byte, error) {
-	return s.Store.Get(requestVPNPubKey)
+	return s.Store.Get(keyVPNPubKey)
 }
 
 // PutVPNKey saves the VPN pubKey to store.
 func (s StoreWrapper) PutVPNKey(key []byte) error {
-	return s.Store.Put(requestVPNPubKey, key)
+	return s.Store.Put(keyVPNPubKey, key)
 }
 
 // PutPeer puts a single peer in the store, with a unique key derived form the VPNIP.
 func (s StoreWrapper) PutPeer(peer peer.Peer) error {
 	if len(peer.VPNIP) == 0 {
-		return fmt.Errorf("unique ID of peer not set")
+		return errors.New("unique ID of peer not set")
 	}
 	jsonPeer, err := json.Marshal(peer)
 	if err != nil {
 		return err
 	}
-	return s.Store.Put(peerLocationPrefix+peer.VPNIP, jsonPeer)
+	return s.Store.Put(prefixPeerLocation+peer.VPNIP, jsonPeer)
 }
 
 // RemovePeer removes a peer from the store.
 func (s StoreWrapper) RemovePeer(peer peer.Peer) error {
-	return s.Store.Delete(peerLocationPrefix + peer.VPNIP)
+	return s.Store.Delete(prefixPeerLocation + peer.VPNIP)
 }
 
 // GetPeer returns a peer requested by the given VPN IP address.
 func (s StoreWrapper) GetPeer(vpnIP string) (peer.Peer, error) {
-	bytePeer, err := s.Store.Get(peerLocationPrefix + vpnIP)
+	bytePeer, err := s.Store.Get(prefixPeerLocation + vpnIP)
 	if err != nil {
 		return peer.Peer{}, err
 	}
@@ -100,7 +111,7 @@ func (s StoreWrapper) GetPeer(vpnIP string) (peer.Peer, error) {
 
 // GetPeers returns all peers in the store.
 func (s StoreWrapper) GetPeers() ([]peer.Peer, error) {
-	return s.getPeersByPrefix(peerLocationPrefix)
+	return s.getPeersByPrefix(prefixPeerLocation)
 }
 
 // IncrementPeersResourceVersion increments the version of the stored peers.
@@ -113,12 +124,12 @@ func (s StoreWrapper) IncrementPeersResourceVersion() error {
 	} else if err != nil {
 		return err
 	}
-	return s.Store.Put(peersResourceVersion, []byte(strconv.Itoa(val+1)))
+	return s.Store.Put(keyPeersResourceVersion, []byte(strconv.Itoa(val+1)))
 }
 
 // GetPeersResourceVersion returns the current version of the stored peers.
 func (s StoreWrapper) GetPeersResourceVersion() (int, error) {
-	raw, err := s.Store.Get(peersResourceVersion)
+	raw, err := s.Store.Get(keyPeersResourceVersion)
 	if err != nil {
 		return 0, err
 	}
@@ -137,7 +148,7 @@ func (s StoreWrapper) UpdatePeers(peers []peer.Peer) (added, removed []peer.Peer
 		updatedPeers[p.VPNIP] = p
 	}
 
-	it, err := s.Store.Iterator(peerLocationPrefix)
+	it, err := s.Store.Iterator(prefixPeerLocation)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -177,7 +188,7 @@ func (s StoreWrapper) UpdatePeers(peers []peer.Peer) (added, removed []peer.Peer
 
 	// perform remove and add
 	for _, p := range removed {
-		if err := s.Store.Delete(peerLocationPrefix + p.VPNIP); err != nil {
+		if err := s.Store.Delete(prefixPeerLocation + p.VPNIP); err != nil {
 			return nil, nil, err
 		}
 	}
@@ -186,7 +197,7 @@ func (s StoreWrapper) UpdatePeers(peers []peer.Peer) (added, removed []peer.Peer
 		if err != nil {
 			return nil, nil, err
 		}
-		if err := s.Store.Put(peerLocationPrefix+p.VPNIP, data); err != nil {
+		if err := s.Store.Put(prefixPeerLocation+p.VPNIP, data); err != nil {
 			return nil, nil, err
 		}
 	}
@@ -200,7 +211,29 @@ func (s StoreWrapper) PutAdmin(peer peer.AdminData) error {
 	if err != nil {
 		return err
 	}
-	return s.Store.Put(adminLocation+peer.VPNIP, jsonPeer)
+	return s.Store.Put(prefixAdminLocation+peer.VPNIP, jsonPeer)
+}
+
+// GetAdmin gets a single admin from the store.
+// TODO: extend if we want to have multiple admins.
+func (s StoreWrapper) GetAdmin() (peer.AdminData, error) {
+	iter, err := s.Store.Iterator(prefixAdminLocation)
+	if err != nil {
+		return peer.AdminData{}, err
+	}
+	key, err := iter.GetNext()
+	if err != nil {
+		return peer.AdminData{}, err
+	}
+	value, err := s.Store.Get(key)
+	if err != nil {
+		return peer.AdminData{}, err
+	}
+	var adminData peer.AdminData
+	if err := json.Unmarshal(value, &adminData); err != nil {
+		return peer.AdminData{}, err
+	}
+	return adminData, nil
 }
 
 func (s StoreWrapper) getPeersByPrefix(prefix string) ([]peer.Peer, error) {
@@ -228,30 +261,9 @@ func (s StoreWrapper) getPeersByPrefix(prefix string) ([]peer.Peer, error) {
 	return peers, nil
 }
 
-// PutFreedNodeVPNIP stores a VPNIP in the store at a unique key.
-func (s StoreWrapper) PutFreedNodeVPNIP(vpnIP string) error {
-	return s.Store.Put(freeNodeIP+vpnIP, nil)
-}
-
-// GetFreedNodeVPNIP reclaims a VPNIP from the store and removes it from there.
-func (s StoreWrapper) GetFreedNodeVPNIP() (string, error) {
-	iter, err := s.Store.Iterator(freeNodeIP)
-	if err != nil {
-		return "", err
-	}
-	if !iter.HasNext() {
-		return "", nil
-	}
-	vpnIP, err := iter.GetNext()
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimPrefix(vpnIP, freeNodeIP), s.Store.Delete(vpnIP)
-}
-
 // GetKubernetesJoinArgs returns the Kubernetes join command from store.
 func (s StoreWrapper) GetKubernetesJoinArgs() (*kubeadm.BootstrapTokenDiscovery, error) {
-	rawJoinCommand, err := s.Store.Get(requestKubernetesJoinCommand)
+	rawJoinCommand, err := s.Store.Get(keyKubernetesJoinCommand)
 	if err != nil {
 		return nil, err
 	}
@@ -268,91 +280,167 @@ func (s StoreWrapper) PutKubernetesJoinArgs(args *kubeadm.BootstrapTokenDiscover
 	if err != nil {
 		return err
 	}
-	return s.Store.Put(requestKubernetesJoinCommand, j)
+	return s.Store.Put(keyKubernetesJoinCommand, j)
 }
 
 // GetKubernetesConfig returns the Kubernetes kubeconfig file to authenticate with the kubernetes API.
 func (s StoreWrapper) GetKubernetesConfig() ([]byte, error) {
-	return s.Store.Get(requestKubeConfig)
+	return s.Store.Get(keyKubeConfig)
 }
 
 // PutKubernetesConfig saves the Kubernetes kubeconfig file command to store.
 func (s StoreWrapper) PutKubernetesConfig(kubeConfig []byte) error {
-	return s.Store.Put(requestKubeConfig, kubeConfig)
+	return s.Store.Put(keyKubeConfig, kubeConfig)
 }
 
 // GetMasterSecret returns the Constellation master secret from store.
 func (s StoreWrapper) GetMasterSecret() ([]byte, error) {
-	return s.Store.Get(requestMasterSecret)
+	return s.Store.Get(keyMasterSecret)
 }
 
 // PutMasterSecret saves the Constellation master secret to store.
 func (s StoreWrapper) PutMasterSecret(masterSecret []byte) error {
-	return s.Store.Put(requestMasterSecret, masterSecret)
+	return s.Store.Put(keyMasterSecret, masterSecret)
 }
 
 // GetKEKID returns the key encryption key ID from store.
 func (s StoreWrapper) GetKEKID() (string, error) {
-	kekID, err := s.Store.Get(requestKEKID)
+	kekID, err := s.Store.Get(keyKEKID)
 	return string(kekID), err
 }
 
 // PutKEKID saves the key encryption key ID to store.
 func (s StoreWrapper) PutKEKID(kekID string) error {
-	return s.Store.Put(requestKEKID, []byte(kekID))
+	return s.Store.Put(keyKEKID, []byte(kekID))
 }
 
 // GetClusterID returns the unique identifier of the cluster from store.
 func (s StoreWrapper) GetClusterID() ([]byte, error) {
-	return s.Store.Get(requestClusterID)
+	return s.Store.Get(keyClusterID)
 }
 
 // PutClusterID saves the unique identifier of the cluster to store.
 func (s StoreWrapper) PutClusterID(clusterID []byte) error {
-	return s.Store.Put(requestClusterID, clusterID)
+	return s.Store.Put(keyClusterID, clusterID)
 }
 
-// PutLastNodeIP puts the last used ip to the store.
-func (s StoreWrapper) PutLastNodeIP(ip []byte) error {
-	return s.Store.Put(lastNodeIP, ip)
+func (s StoreWrapper) InitializeStoreIPs() error {
+	if err := s.PutNextNodeIP(nodeIPRangeStart); err != nil {
+		return err
+	}
+	return s.PutNextCoordinatorIP(coordinatorIPRangeStart)
 }
 
-// GetLastNodeIP gets the last used ip from the store.
-func (s StoreWrapper) GetLastNodeIP() ([]byte, error) {
-	return s.Store.Get(lastNodeIP)
+// PutNextCoordinatorIP puts the last used ip into the store.
+func (s StoreWrapper) PutNextCoordinatorIP(ip netip.Addr) error {
+	return s.Store.Put(keyHighestAvailableCoordinatorIP, ip.AsSlice())
 }
 
-// generateNextNodeIP generates addresses from a /16 subnet.
-func (s StoreWrapper) generateNextNodeIP() (string, error) {
-	ip, err := s.GetLastNodeIP()
+// getNextCoordinatorIP generates addresses from a /16 subnet.
+func (s StoreWrapper) getNextCoordinatorIP() (netip.Addr, error) {
+	byteIP, err := s.Store.Get(keyHighestAvailableCoordinatorIP)
 	if err != nil {
-		return "", fmt.Errorf("could not obtain IP from store")
+		return netip.Addr{}, errors.New("could not obtain IP from store")
 	}
-	if ip[3] < 255 && ip[2] < 255 || ip[3] < 254 {
-		ip[3]++
-	} else if ip[2] < 255 {
-		ip[3] = 0
-		ip[2]++
-	} else {
-		return "", fmt.Errorf("no IPs left to assign")
+	ip, ok := netip.AddrFromSlice(byteIP)
+	if !ok {
+		return netip.Addr{}, fmt.Errorf("ip addr malformed %v", byteIP)
 	}
+	if !ip.IsValid() || ip.Compare(coordinatorIPRangeEnd) == 1 {
+		return netip.Addr{}, errors.New("no ips left to assign")
+	}
+	nextIP := ip.Next()
+	if err := s.PutNextCoordinatorIP(nextIP); err != nil {
+		return netip.Addr{}, errors.New("could not put IP to store")
+	}
+	return ip, nil
+}
 
-	err = s.PutLastNodeIP(ip)
-	if err != nil {
-		return "", fmt.Errorf("could not put IP to store")
+// PopNextFreeCoordinatorIP return the next free IP, these could be a old one from a removed peer
+// or a newly generated IP.
+func (s StoreWrapper) PopNextFreeCoordinatorIP() (netip.Addr, error) {
+	vpnIP, err := s.getFreedVPNIP(prefixFreeCoordinatorIPs)
+	var noElementsError *store.NoElementsLeftError
+	if errors.As(err, &noElementsError) {
+		return s.getNextCoordinatorIP()
 	}
-	return net.IPv4(ip[0], ip[1], ip[2], ip[3]).String(), nil
+	if err != nil {
+		return netip.Addr{}, err
+	}
+	return vpnIP, nil
+}
+
+// PutFreedCoordinatorVPNIP puts a already generated VPNIP (IP < highestAvailableCoordinatorIP ),
+// which is currently unused, into the store.
+// The IP is saved at a specific prefix and will be used with priority when we
+// request a new Coordinator IP.
+func (s StoreWrapper) PutFreedCoordinatorVPNIP(vpnIP string) error {
+	return s.Store.Put(prefixFreeCoordinatorIPs+vpnIP, nil)
+}
+
+// PutNextNodeIP puts the last used ip into the store.
+func (s StoreWrapper) PutNextNodeIP(ip netip.Addr) error {
+	return s.Store.Put(keyHighestAvailableNodeIP, ip.AsSlice())
+}
+
+// getNextNodeIP generates addresses from a /16 subnet.
+func (s StoreWrapper) getNextNodeIP() (netip.Addr, error) {
+	byteIP, err := s.Store.Get(keyHighestAvailableNodeIP)
+	if err != nil {
+		return netip.Addr{}, errors.New("could not obtain IP from store")
+	}
+	ip, ok := netip.AddrFromSlice(byteIP)
+	if !ok {
+		return netip.Addr{}, fmt.Errorf("ip addr malformed %v", byteIP)
+	}
+	if !ip.IsValid() || ip.Compare(nodeIPRangeEnd) == 1 {
+		return netip.Addr{}, errors.New("no ips left to assign")
+	}
+	nextIP := ip.Next()
+
+	if err := s.PutNextNodeIP(nextIP); err != nil {
+		return netip.Addr{}, errors.New("could not put IP to store")
+	}
+	return ip, nil
 }
 
 // PopNextFreeNodeIP return the next free IP, these could be a old one from a removed peer
 // or a newly generated IP.
-func (s StoreWrapper) PopNextFreeNodeIP() (string, error) {
-	vpnIP, err := s.GetFreedNodeVPNIP()
-	if err != nil {
-		return "", err
+func (s StoreWrapper) PopNextFreeNodeIP() (netip.Addr, error) {
+	vpnIP, err := s.getFreedVPNIP(prefixFreeNodeIPs)
+	var noElementsError *store.NoElementsLeftError
+	if errors.As(err, &noElementsError) {
+		return s.getNextNodeIP()
 	}
-	if len(vpnIP) == 0 {
-		return s.generateNextNodeIP()
+	if err != nil {
+		return netip.Addr{}, err
 	}
 	return vpnIP, nil
+}
+
+// PutFreedNodeVPNIP puts a already generated VPNIP (IP < highestAvailableNodeIP ),
+// which is currently unused, into the store.
+// The IP is saved at a specific prefix and will be used with priority when we
+// request a new Node IP.
+func (s StoreWrapper) PutFreedNodeVPNIP(vpnIP string) error {
+	return s.Store.Put(prefixFreeNodeIPs+vpnIP, nil)
+}
+
+// getFreedVPNIP reclaims a VPNIP from the store and removes it from there.
+func (s StoreWrapper) getFreedVPNIP(prefix string) (netip.Addr, error) {
+	iter, err := s.Store.Iterator(prefix)
+	if err != nil {
+		return netip.Addr{}, err
+	}
+	vpnIPWithPrefix, err := iter.GetNext()
+	if err != nil {
+		return netip.Addr{}, err
+	}
+	stringVPNIP := strings.TrimPrefix(vpnIPWithPrefix, prefix)
+	vpnIP, err := netip.ParseAddr(stringVPNIP)
+	if err != nil {
+		return netip.Addr{}, fmt.Errorf("ip addr malformed %v, %w", stringVPNIP, err)
+	}
+
+	return vpnIP, s.Store.Delete(vpnIPWithPrefix)
 }

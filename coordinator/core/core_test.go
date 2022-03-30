@@ -30,6 +30,7 @@ func TestAddAdmin(t *testing.T) {
 	vpn := &stubVPN{}
 	core, err := NewCore(vpn, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil)
 	require.NoError(err)
+	require.NoError(core.InitializeStoreIPs())
 
 	pubKey := []byte{2, 3, 4}
 
@@ -39,41 +40,46 @@ func TestAddAdmin(t *testing.T) {
 	assert.Equal([]stubVPNPeer{{pubKey: pubKey, vpnIP: vpnIP}}, vpn.peers)
 }
 
-func TestGenerateNextIP(t *testing.T) {
+func TestGetNextNodeIP(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
 	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil)
 	require.NoError(err)
+	require.NoError(core.InitializeStoreIPs())
 
-	ip, err := core.GenerateNextIP()
+	ip, err := core.GetNextNodeIP()
 	assert.NoError(err)
-	assert.Equal("10.118.0.2", ip)
+	assert.Equal("10.118.0.11", ip)
 
-	ip, err = core.GenerateNextIP()
+	ip, err = core.GetNextNodeIP()
 	assert.NoError(err)
-	assert.Equal("10.118.0.3", ip)
+	assert.Equal("10.118.0.12", ip)
 
-	require.NoError(core.data().PutFreedNodeVPNIP("10.118.0.2"))
-	require.NoError(core.data().PutFreedNodeVPNIP("10.118.0.3"))
+	ip, err = core.GetNextNodeIP()
+	assert.NoError(err)
+	assert.Equal("10.118.0.13", ip)
+
+	require.NoError(core.data().PutFreedNodeVPNIP("10.118.0.12"))
+	require.NoError(core.data().PutFreedNodeVPNIP("10.118.0.13"))
 	ipsInStore := map[string]struct{}{
-		"10.118.0.3": {},
-		"10.118.0.2": {},
+		"10.118.0.13": {},
+		"10.118.0.12": {},
 	}
 
-	ip, err = core.GenerateNextIP()
+	ip, err = core.GetNextNodeIP()
 	assert.NoError(err)
 	assert.Contains(ipsInStore, ip)
 	delete(ipsInStore, ip)
 
-	ip, err = core.GenerateNextIP()
+	ip, err = core.GetNextNodeIP()
 	assert.NoError(err)
 	assert.Contains(ipsInStore, ip)
 	delete(ipsInStore, ip)
 
-	ip, err = core.GenerateNextIP()
+	ip, err = core.GetNextNodeIP()
 	assert.NoError(err)
-	assert.Equal("10.118.0.4", ip)
+	assert.Equal("10.118.0.14", ip)
 }
 
 func TestSwitchToPersistentStore(t *testing.T) {

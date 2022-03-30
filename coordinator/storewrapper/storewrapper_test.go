@@ -1,6 +1,7 @@
 package storewrapper
 
 import (
+	"net/netip"
 	"testing"
 
 	"github.com/edgelesssys/constellation/coordinator/peer"
@@ -142,96 +143,76 @@ func TestStoreWrapperPeerInterface(t *testing.T) {
 	assert.Error(stwrapper.PutPeer(invalidPeer))
 }
 
-func TestStoreWrapperGetVPNIP(t *testing.T) {
+func TestGenerateNextNodeIP(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
 	stor := store.NewStdStore()
 	stwrapper := StoreWrapper{Store: stor}
-	require.NoError(stwrapper.PutFreedNodeVPNIP("203.0.113.1"))
-	require.NoError(stwrapper.PutFreedNodeVPNIP("203.0.113.2"))
-	ipsInStore := map[string]struct{}{
-		"203.0.113.1": {},
-		"203.0.113.2": {},
-	}
+	require.NoError(stwrapper.PutNextNodeIP(netip.AddrFrom4([4]byte{10, 118, 0, 11})))
 
-	ip, err := stwrapper.GetFreedNodeVPNIP()
-	require.NoError(err)
-	assert.Contains(ipsInStore, ip)
-	delete(ipsInStore, ip)
-
-	ip, err = stwrapper.GetFreedNodeVPNIP()
-	require.NoError(err)
-	assert.Contains(ipsInStore, ip)
-	delete(ipsInStore, ip)
-
-	ip, err = stwrapper.GetFreedNodeVPNIP()
+	ip, err := stwrapper.getNextNodeIP()
 	assert.NoError(err)
-	assert.Len(ip, 0)
-}
+	assert.Equal(netip.AddrFrom4([4]byte{10, 118, 0, 11}), ip)
 
-func TestGenerateNextIP(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	stor := store.NewStdStore()
-	stwrapper := StoreWrapper{Store: stor}
-	require.NoError(stwrapper.PutLastNodeIP([]byte{10, 118, 0, 1}))
-
-	ip, err := stwrapper.generateNextNodeIP()
+	ip, err = stwrapper.getNextNodeIP()
 	assert.NoError(err)
-	assert.Equal(ip, "10.118.0.2")
+	assert.Equal(netip.AddrFrom4([4]byte{10, 118, 0, 12}), ip)
 
-	ip, err = stwrapper.generateNextNodeIP()
+	ip, err = stwrapper.getNextNodeIP()
 	assert.NoError(err)
-	assert.Equal(ip, "10.118.0.3")
+	assert.Equal(netip.AddrFrom4([4]byte{10, 118, 0, 13}), ip)
 
-	for i := 0; i < 256*256-7; i++ {
-		ip, err = stwrapper.generateNextNodeIP()
+	for i := 0; i < 256*256-17; i++ {
+		ip, err = stwrapper.getNextNodeIP()
 		assert.NoError(err)
 		assert.NotEmpty(ip)
 	}
 
-	ip, err = stwrapper.generateNextNodeIP()
+	ip, err = stwrapper.getNextNodeIP()
 	assert.NoError(err)
-	assert.Equal(ip, "10.118.255.253")
+	assert.Equal(netip.AddrFrom4([4]byte{10, 118, 255, 253}), ip)
 
-	ip, err = stwrapper.generateNextNodeIP()
+	ip, err = stwrapper.getNextNodeIP()
 	assert.NoError(err)
-	assert.Equal(ip, "10.118.255.254")
+	assert.Equal(netip.AddrFrom4([4]byte{10, 118, 255, 254}), ip)
 
 	// 10.118.255.255 (broadcast IP) should not be returned
-	ip, err = stwrapper.generateNextNodeIP()
+	ip, err = stwrapper.getNextNodeIP()
 	assert.Error(err)
 	assert.Empty(ip)
 
 	// error should still persist
-	ip, err = stwrapper.generateNextNodeIP()
+	ip, err = stwrapper.getNextNodeIP()
 	assert.Error(err)
 	assert.Empty(ip)
 }
 
-func TestPopNextFreeIP(t *testing.T) {
+func TestPopNextFreeNodeIP(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
 	stor := store.NewStdStore()
 	stwrapper := StoreWrapper{Store: stor}
-	require.NoError(stwrapper.PutLastNodeIP([]byte{10, 118, 0, 1}))
+	require.NoError(stwrapper.PutNextNodeIP(netip.AddrFrom4([4]byte{10, 118, 0, 11})))
 
 	ip, err := stwrapper.PopNextFreeNodeIP()
 	assert.NoError(err)
-	assert.Equal("10.118.0.2", ip)
+	assert.Equal(netip.AddrFrom4([4]byte{10, 118, 0, 11}), ip)
 
 	ip, err = stwrapper.PopNextFreeNodeIP()
 	assert.NoError(err)
-	assert.Equal("10.118.0.3", ip)
+	assert.Equal(netip.AddrFrom4([4]byte{10, 118, 0, 12}), ip)
 
-	require.NoError(stwrapper.PutFreedNodeVPNIP("10.118.0.3"))
-	require.NoError(stwrapper.PutFreedNodeVPNIP("10.118.0.2"))
-	ipsInStore := map[string]struct{}{
-		"10.118.0.3": {},
-		"10.118.0.2": {},
+	ip, err = stwrapper.PopNextFreeNodeIP()
+	assert.NoError(err)
+	assert.Equal(netip.AddrFrom4([4]byte{10, 118, 0, 13}), ip)
+
+	require.NoError(stwrapper.PutFreedNodeVPNIP("10.118.0.13"))
+	require.NoError(stwrapper.PutFreedNodeVPNIP("10.118.0.12"))
+	ipsInStore := map[netip.Addr]struct{}{
+		netip.AddrFrom4([4]byte{10, 118, 0, 12}): {},
+		netip.AddrFrom4([4]byte{10, 118, 0, 13}): {},
 	}
 
 	ip, err = stwrapper.PopNextFreeNodeIP()
@@ -246,5 +227,122 @@ func TestPopNextFreeIP(t *testing.T) {
 
 	ip, err = stwrapper.PopNextFreeNodeIP()
 	assert.NoError(err)
-	assert.Equal("10.118.0.4", ip)
+	assert.Equal(netip.AddrFrom4([4]byte{10, 118, 0, 14}), ip)
+}
+
+func TestGenerateNextCoordinatorIP(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	stor := store.NewStdStore()
+	stwrapper := StoreWrapper{Store: stor}
+	require.NoError(stwrapper.PutNextCoordinatorIP(netip.AddrFrom4([4]byte{10, 118, 0, 1})))
+
+	ip, err := stwrapper.getNextCoordinatorIP()
+	assert.NoError(err)
+	assert.Equal(netip.AddrFrom4([4]byte{10, 118, 0, 1}), ip)
+
+	ip, err = stwrapper.getNextCoordinatorIP()
+	assert.NoError(err)
+	assert.Equal(netip.AddrFrom4([4]byte{10, 118, 0, 2}), ip)
+
+	ip, err = stwrapper.getNextCoordinatorIP()
+	assert.NoError(err)
+	assert.Equal(netip.AddrFrom4([4]byte{10, 118, 0, 3}), ip)
+
+	for i := 0; i < 7; i++ {
+		ip, err = stwrapper.getNextCoordinatorIP()
+		assert.NoError(err)
+		assert.NotEmpty(ip)
+	}
+
+	// 10.118.0.11 (first Node IP) should not be returned
+	ip, err = stwrapper.getNextCoordinatorIP()
+	assert.Error(err)
+	assert.Empty(ip)
+
+	// error should still persist
+	ip, err = stwrapper.getNextCoordinatorIP()
+	assert.Error(err)
+	assert.Empty(ip)
+}
+
+func TestPopNextFreeCoordinatorIP(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	stor := store.NewStdStore()
+	stwrapper := StoreWrapper{Store: stor}
+	require.NoError(stwrapper.PutNextCoordinatorIP(netip.AddrFrom4([4]byte{10, 118, 0, 1})))
+
+	ip, err := stwrapper.PopNextFreeCoordinatorIP()
+	assert.NoError(err)
+	assert.Equal(netip.AddrFrom4([4]byte{10, 118, 0, 1}), ip)
+
+	ip, err = stwrapper.PopNextFreeCoordinatorIP()
+	assert.NoError(err)
+	assert.Equal(netip.AddrFrom4([4]byte{10, 118, 0, 2}), ip)
+
+	ip, err = stwrapper.PopNextFreeCoordinatorIP()
+	assert.NoError(err)
+	assert.Equal(netip.AddrFrom4([4]byte{10, 118, 0, 3}), ip)
+
+	for i := 0; i < 7; i++ {
+		_, err = stwrapper.PopNextFreeCoordinatorIP()
+		require.NoError(err)
+	}
+
+	ip, err = stwrapper.PopNextFreeCoordinatorIP()
+	assert.Error(err)
+	assert.Empty(ip)
+
+	require.NoError(stwrapper.PutFreedCoordinatorVPNIP("10.118.0.3"))
+	require.NoError(stwrapper.PutFreedCoordinatorVPNIP("10.118.0.2"))
+	ipsInStore := map[netip.Addr]struct{}{
+		netip.AddrFrom4([4]byte{10, 118, 0, 3}): {},
+		netip.AddrFrom4([4]byte{10, 118, 0, 2}): {},
+	}
+
+	ip, err = stwrapper.PopNextFreeCoordinatorIP()
+	assert.NoError(err)
+	assert.Contains(ipsInStore, ip)
+	delete(ipsInStore, ip)
+
+	ip, err = stwrapper.PopNextFreeCoordinatorIP()
+	assert.NoError(err)
+	assert.Contains(ipsInStore, ip)
+	delete(ipsInStore, ip)
+
+	ip, err = stwrapper.PopNextFreeCoordinatorIP()
+	assert.Error(err)
+	assert.Equal(netip.Addr{}, ip)
+}
+
+func TestGetFreedVPNIP(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	stor := store.NewStdStore()
+	stwrapper := StoreWrapper{Store: stor}
+	require.NoError(stwrapper.PutFreedCoordinatorVPNIP("203.0.113.1"))
+	require.NoError(stwrapper.PutFreedCoordinatorVPNIP("203.0.113.2"))
+	ipsInStore := map[netip.Addr]struct{}{
+		netip.AddrFrom4([4]byte{203, 0, 113, 1}): {},
+		netip.AddrFrom4([4]byte{203, 0, 113, 2}): {},
+	}
+
+	ip, err := stwrapper.getFreedVPNIP(prefixFreeCoordinatorIPs)
+	require.NoError(err)
+	assert.Contains(ipsInStore, ip)
+	delete(ipsInStore, ip)
+
+	ip, err = stwrapper.getFreedVPNIP(prefixFreeCoordinatorIPs)
+	require.NoError(err)
+	assert.Contains(ipsInStore, ip)
+	delete(ipsInStore, ip)
+
+	ip, err = stwrapper.getFreedVPNIP(prefixFreeCoordinatorIPs)
+	var noElementsError *store.NoElementsLeftError
+	assert.ErrorAs(err, &noElementsError)
+	assert.Equal(netip.Addr{}, ip)
 }

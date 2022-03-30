@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"net/netip"
 	"sync"
 	"time"
 
@@ -18,7 +19,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var coordinatorVPNIP = net.IP{10, 118, 0, 1}
+var coordinatorVPNIP = netip.AddrFrom4([4]byte{10, 118, 0, 1})
 
 type Core struct {
 	state                  state.State
@@ -57,11 +58,6 @@ func NewCore(vpn VPN, kube Cluster,
 		persistentStoreFactory: persistentStoreFactory,
 		lastHeartbeats:         make(map[string]time.Time),
 	}
-
-	if err := c.data().PutLastNodeIP(coordinatorVPNIP.To4()); err != nil {
-		return nil, err
-	}
-
 	if err := c.data().IncrementPeersResourceVersion(); err != nil {
 		return nil, err
 	}
@@ -90,6 +86,11 @@ func (c *Core) GetVPNPubKey() ([]byte, error) {
 	return c.data().GetVPNKey()
 }
 
+// GetVPNPubKey returns the peer's VPN public key.
+func (c *Core) InitializeStoreIPs() error {
+	return c.data().InitializeStoreIPs()
+}
+
 // SetVPNIP sets the peer's VPN IP.
 func (c *Core) SetVPNIP(ip string) error {
 	return c.vpn.SetInterfaceIP(ip)
@@ -102,7 +103,7 @@ func (*Core) GetCoordinatorVPNIP() string {
 
 // AddAdmin adds an admin to the VPN.
 func (c *Core) AddAdmin(pubKey []byte) (string, error) {
-	vpnIP, err := c.GenerateNextIP()
+	vpnIP, err := c.GetNextNodeIP()
 	if err != nil {
 		return "", err
 	}
@@ -112,8 +113,8 @@ func (c *Core) AddAdmin(pubKey []byte) (string, error) {
 	return vpnIP, nil
 }
 
-// GenerateNextIP gets the next free IP-Addr.
-func (c *Core) GenerateNextIP() (string, error) {
+// GetNextNodeIP gets the next free IP-Addr.
+func (c *Core) GetNextNodeIP() (string, error) {
 	tx, err := c.store.BeginTransaction()
 	if err != nil {
 		return "", err
@@ -123,7 +124,7 @@ func (c *Core) GenerateNextIP() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return ip, tx.Commit()
+	return ip.String(), tx.Commit()
 }
 
 // SwitchToPersistentStore creates a new store using the persistentStoreFactory and transfers the initial temporary store into it.

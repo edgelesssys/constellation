@@ -12,8 +12,9 @@ type Core interface {
 	GetVPNPubKey() ([]byte, error)
 	SetVPNIP(string) error
 	GetCoordinatorVPNIP() string
+	InitializeStoreIPs() error
 	AddAdmin(pubKey []byte) (string, error)
-	GenerateNextIP() (string, error)
+	GetNextNodeIP() (string, error)
 	SwitchToPersistentStore() error
 	GetIDs(masterSecret []byte) (ownerID []byte, clusterID []byte, err error)
 	SetUpKMS(ctx context.Context, storageURI, kmsURI, kekID string, useExisting bool) error

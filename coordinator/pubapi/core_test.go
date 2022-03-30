@@ -41,6 +41,10 @@ func (c *fakeCore) SetVPNIP(ip string) error {
 	return c.setVPNIPErr
 }
 
+func (c *fakeCore) InitializeStoreIPs() error {
+	return nil
+}
+
 func (*fakeCore) GetCoordinatorVPNIP() string {
 	return "192.0.2.100"
 }
@@ -50,7 +54,7 @@ func (c *fakeCore) AddAdmin(pubKey []byte) (string, error) {
 	return "192.0.2.99", nil
 }
 
-func (c *fakeCore) GenerateNextIP() (string, error) {
+func (c *fakeCore) GetNextNodeIP() (string, error) {
 	c.nextIP++
 	return fmt.Sprintf("192.0.2.%v", 100+c.nextIP), nil
 }
