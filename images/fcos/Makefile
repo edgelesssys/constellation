@@ -23,10 +23,11 @@ COSA_INIT_REPO                   ?= "https://github.com/edgelesssys/constellatio
 COSA_INIT_BRANCH                 ?= "constellation"
 COSA_LOCKFILE                    ?= $(BASE_PATH)/cosa.lock
 NETRC                            ?= ~/.netrc
-GCP_BUCKET                       ?= constellation_testing
+GCP_BUCKET                       ?= constellation-images
 GCP_IMAGE_NAME                   ?= constellation-coreos
 GCP_IMAGE_FILENAME               ?= $(GCP_IMAGE_NAME)_gcp.tar.gz
 GCP_IMAGE_PATH                   ?= $(IMAGES_PATH)/$(GCP_IMAGE_FILENAME)
+GCP_REGION                       ?= europe-west3
 AZURE_IMAGE_NAME                 ?= constellation-coreos
 AZURE_IMAGE_FILENAME             ?= $(AZURE_IMAGE_NAME)_azure.vhd
 AZURE_IMAGE_PATH                 ?= $(IMAGES_PATH)/$(AZURE_IMAGE_FILENAME)
@@ -84,10 +85,11 @@ images: image-gcp image-azure
 image-gcp: $(GCP_IMAGE_PATH)
 
 upload-gcp: $(GCP_IMAGE_PATH)
-	-gsutil mb gs://$(GCP_BUCKET)
+	-gsutil mb -l $(GCP_REGION) gs://$(GCP_BUCKET)
 	gsutil pap set enforced gs://$(GCP_BUCKET)
 	gsutil cp $(GCP_IMAGE_PATH) gs://$(GCP_BUCKET)
-	gcloud compute images create $(GCP_IMAGE_NAME) --source-uri=gs://$(GCP_BUCKET)/$(GCP_IMAGE_FILENAME) --guest-os-features=GVNIC,SEV_CAPABLE,VIRTIO_SCSI_MULTIQUEUE,UEFI_COMPATIBLE --labels=coordinator-sha1=$$(shasum $(COORDINATOR_OVERRIDE_PATH) | cut -d " " -f 1)
+	gcloud compute images create $(GCP_IMAGE_NAME) --source-uri=gs://$(GCP_BUCKET)/$(GCP_IMAGE_FILENAME) --guest-os-features=GVNIC,SEV_CAPABLE,VIRTIO_SCSI_MULTIQUEUE,UEFI_COMPATIBLE --labels=coordinator-sha1=$$(shasum $(COORDINATOR_OVERRIDE_PATH) | cut -d " " -f 1),coordinator-sha512=$$(sha512sum $(COORDINATOR_OVERRIDE_PATH) | cut -d " " -f 1 | cut -c-63)
+	gsutil rm gs://$(GCP_BUCKET)/$(GCP_IMAGE_FILENAME)
 
 image-azure: $(AZURE_IMAGE_PATH)
 

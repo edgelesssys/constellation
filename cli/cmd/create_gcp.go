@@ -35,8 +35,8 @@ func runCreateGCP(cmd *cobra.Command, args []string) error {
 	count, _ := strconv.Atoi(args[0]) // err already checked in args validation
 	size := strings.ToLower(args[1])
 	project := "constellation-331613" // TODO: This will be user input
-	zone := "us-central1-c"           // TODO: This will be user input
-	region := "us-central1"           // TODO: This will be user input
+	zone := "europe-west3-b"          // TODO: This will be user input
+	region := "europe-west3"          // TODO: This will be user input
 
 	name, err := cmd.Flags().GetString("name")
 	if err != nil {
