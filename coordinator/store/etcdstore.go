@@ -90,13 +90,16 @@ func (s *EtcdStore) Put(request string, requestData []byte) error {
 // Iterator returns an Iterator for a given prefix.
 func (s *EtcdStore) Iterator(prefix string) (Iterator, error) {
 	resp, err := s.client.Get(context.TODO(), etcdPrefix+prefix, clientv3.WithPrefix(), clientv3.WithKeysOnly())
+	if err != nil {
+		return nil, err
+	}
 	keys := make([]string, 0, len(resp.Kvs))
 	for _, kv := range resp.Kvs {
 		key := strings.TrimPrefix(string(kv.Key), etcdPrefix)
 		keys = append(keys, key)
 	}
 	output := &EtcdIterator{keys: keys}
-	return output, err
+	return output, nil
 }
 
 // TODO: Implement this function, currently this function is never called.
