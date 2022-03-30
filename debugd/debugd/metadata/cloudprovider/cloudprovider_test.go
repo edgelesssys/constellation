@@ -34,7 +34,7 @@ func TestDiscoverDebugIPs(t *testing.T) {
 				},
 			},
 			expectedIPs: []string{
-				"192.0.2.0", "192.0.2.1", "192.0.2.2",
+				"192.0.2.1", "192.0.2.2",
 			},
 		},
 		"retrieve fails": {

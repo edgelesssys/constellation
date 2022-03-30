@@ -49,9 +49,20 @@ func NewAzure(ctx context.Context) (*Fetcher, error) {
 
 // DiscoverDebugdIPs will query the metadata of all instances and return any ips of instances already set up for debugging.
 func (f *Fetcher) DiscoverDebugdIPs(ctx context.Context) ([]string, error) {
+	self, err := f.metaAPI.Self(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving own instance failed: %w", err)
+	}
 	instances, err := f.metaAPI.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving instances failed: %w", err)
+	}
+	// filter own instance from instance list
+	for i, instance := range instances {
+		if instance.ProviderID == self.ProviderID {
+			instances = append(instances[:i], instances[i+1:]...)
+			break
+		}
 	}
 	var ips []string
 	for _, instance := range instances {
