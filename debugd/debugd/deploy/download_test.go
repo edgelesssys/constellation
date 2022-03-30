@@ -52,10 +52,7 @@ func TestDownloadCoordinator(t *testing.T) {
 			attemptedDownloads: map[string]time.Time{
 				"192.0.2.0:4000": time.Now(),
 			},
-			expectDownloadErr:   false,
-			expectFile:          false,
-			expectSystemdAction: false,
-			expectDeployed:      false,
+			expectDownloadErr: true,
 		},
 		"download rpc call error is detected": {
 			server: fakeOnlyDownloadServer{

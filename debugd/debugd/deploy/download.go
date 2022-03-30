@@ -37,7 +37,7 @@ func (d *Download) DownloadCoordinator(ctx context.Context, ip string) error {
 	serverAddr := net.JoinHostPort(ip, debugd.DebugdPort)
 	// only retry download from same endpoint after backoff
 	if lastAttempt, ok := d.attemptedDownloads[serverAddr]; ok && time.Since(lastAttempt) < debugd.CoordinatorDownloadRetryBackoff {
-		return nil
+		return fmt.Errorf("download failed too recently: %v / %v", time.Since(lastAttempt), debugd.CoordinatorDownloadRetryBackoff)
 	}
 	log.Printf("Trying to download coordinator from %s\n", ip)
 	d.attemptedDownloads[serverAddr] = time.Now()
