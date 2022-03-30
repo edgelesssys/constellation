@@ -53,3 +53,14 @@ type ValueUnsetError struct {
 func (s *ValueUnsetError) Error() string {
 	return fmt.Sprintf("store: requested value not set: %s", s.requestedValue)
 }
+
+// NoElementsLeftError occurs when trying to get an element from an interator that
+// doesn't have elements left.
+type NoElementsLeftError struct {
+	idx int
+}
+
+// Error implements the Error interface.
+func (n *NoElementsLeftError) Error() string {
+	return fmt.Sprintf("index out of range [%d]", n.idx)
+}

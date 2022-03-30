@@ -1,7 +1,6 @@
 package store
 
 import (
-	"fmt"
 	"strings"
 	"sync"
 )
@@ -170,11 +169,11 @@ type StdIterator struct {
 // GetNext returns the next element of the iterator.
 func (i *StdIterator) GetNext() (string, error) {
 	if i.idx >= len(i.keys) {
-		return "", fmt.Errorf("index out of range [%d] with length %d", i.idx, len(i.keys))
+		return "", &NoElementsLeftError{idx: i.idx}
 	}
-	val := i.keys[i.idx]
+	key := i.keys[i.idx]
 	i.idx++
-	return val, nil
+	return key, nil
 }
 
 // HasNext returns true if there are elements left to get with GetNext().

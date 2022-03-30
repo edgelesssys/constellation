@@ -243,10 +243,10 @@ type EtcdIterator struct {
 	keys []string
 }
 
-// GetNext gets the next element.
+// GetNext returns the next element of the iterator.
 func (i *EtcdIterator) GetNext() (string, error) {
 	if i.idx >= len(i.keys) {
-		return "", fmt.Errorf("index out of range [%d] with length %d", i.idx, len(i.keys))
+		return "", &NoElementsLeftError{idx: i.idx}
 	}
 	key := i.keys[i.idx]
 	i.idx++
