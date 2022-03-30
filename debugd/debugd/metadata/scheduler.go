@@ -2,6 +2,8 @@ package metadata
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"log"
 	"sync"
 	"time"
@@ -49,7 +51,9 @@ func (s *Scheduler) discoveryLoop(ctx context.Context, wg *sync.WaitGroup) {
 	if err != nil {
 		log.Printf("error occurred while discovering debugd IPs: %v\n", err)
 	} else {
-		s.downloadCoordinator(ctx, ips)
+		if s.downloadCoordinator(ctx, ips) {
+			return
+		}
 	}
 
 	ticker := time.NewTicker(debugd.DiscoverDebugdInterval)
@@ -63,8 +67,10 @@ func (s *Scheduler) discoveryLoop(ctx context.Context, wg *sync.WaitGroup) {
 				log.Printf("error occurred while discovering debugd IPs: %v\n", err)
 				continue
 			}
-			s.downloadCoordinator(ctx, ips)
-
+			log.Printf("discovered instances: %v\n", ips)
+			if s.downloadCoordinator(ctx, ips) {
+				return
+			}
 		case <-ctx.Done():
 			return
 		}
@@ -99,16 +105,20 @@ func (s *Scheduler) sshLoop(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 // downloadCoordinator tries to download coordinator from a list of ips and logs errors encountered.
-func (s *Scheduler) downloadCoordinator(ctx context.Context, ips []string) {
+func (s *Scheduler) downloadCoordinator(ctx context.Context, ips []string) (success bool) {
 	for _, ip := range ips {
 		err := s.downloader.DownloadCoordinator(ctx, ip)
-		if err != nil {
-			log.Printf("error occurred while downloading coordinator from %v: %v\n", ip, err)
-			continue
+		if err == nil {
+			// early exit with success since coordinator should only be downloaded once
+			return true
 		}
-		// early exit since coordinator should only be downloaded once
-		return
+		if errors.Is(err, fs.ErrExist) {
+			// coordinator was already uploaded
+			return true
+		}
+		log.Printf("error occurred while downloading coordinator from %v: %v\n", ip, err)
 	}
+	return false
 }
 
 // deploySSHKeys tries to deploy a list of SSH keys and logs errors encountered.
