@@ -148,7 +148,7 @@ func NewConfig(coordinatorPubKey, coordinatorPubIP, clientPrivKey string) (wgtyp
 }
 
 // NewWGQuickConfig create a new WireGuard wg-quick configuration file and mashals it to bytes.
-func NewWGQuickConfig(config wgtypes.Config, clientVPNIP string) ([]byte, error) {
+func NewWGQuickConfig(config wgtypes.Config, clientVPNIP string, mtu int) ([]byte, error) {
 	clientIP := net.ParseIP(clientVPNIP)
 	if clientIP == nil {
 		return nil, fmt.Errorf("invalid client vpn ip '%s'", clientVPNIP)
@@ -156,6 +156,7 @@ func NewWGQuickConfig(config wgtypes.Config, clientVPNIP string) ([]byte, error)
 	quickfile := wgquick.Config{
 		Config:  config,
 		Address: []net.IPNet{{IP: clientIP, Mask: []byte{255, 255, 0, 0}}},
+		MTU:     mtu,
 	}
 	data, err := quickfile.MarshalText()
 	if err != nil {

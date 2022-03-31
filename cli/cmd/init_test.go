@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -728,7 +729,7 @@ func TestWriteWGQuickFile(t *testing.T) {
 				assert.NoError(err)
 				file, err := tc.fileHandler.Read(*tc.config.WGQuickConfigPath)
 				assert.NoError(err)
-				assert.NotEmpty(file)
+				assert.Contains(string(file), fmt.Sprint("MTU = ", wireguardAdminMTU))
 			}
 		})
 	}

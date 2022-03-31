@@ -217,7 +217,7 @@ func (r activationResult) writeWGQuickFile(fileHandler file.Handler, config *con
 	if err != nil {
 		return fmt.Errorf("create wg config: %w", err)
 	}
-	data, err := vpn.NewWGQuickConfig(wgConf, r.clientVpnIP)
+	data, err := vpn.NewWGQuickConfig(wgConf, r.clientVpnIP, wireguardAdminMTU)
 	if err != nil {
 		return fmt.Errorf("create wg-quick config: %w", err)
 	}

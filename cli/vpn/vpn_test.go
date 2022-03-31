@@ -192,7 +192,8 @@ func TestNewWGQuickConfig(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			quickFile, err := NewWGQuickConfig(tc.config, tc.clientVPNIP)
+			const mtu = 2
+			quickFile, err := NewWGQuickConfig(tc.config, tc.clientVPNIP, mtu)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -202,6 +203,7 @@ func TestNewWGQuickConfig(t *testing.T) {
 				assert.NoError(quickConfig.UnmarshalText(quickFile))
 				assert.Equal(tc.config.PrivateKey, quickConfig.PrivateKey)
 				assert.Equal(tc.clientVPNIP, quickConfig.Address[0].IP.String())
+				assert.Equal(mtu, quickConfig.MTU)
 			}
 		})
 	}
