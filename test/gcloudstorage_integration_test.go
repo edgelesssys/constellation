@@ -1,6 +1,6 @@
 //go:build integration
 
-package storage
+package integration
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/edgelesssys/constellation/kms/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/api/option"
@@ -23,15 +24,15 @@ func TestGoogleCloudStorage(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	ctx := context.Background()
+	containerCtx := context.Background()
 
 	// Set up the Storage Emulator
 	t.Log("Creating storage emulator...")
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	require.NoError(err)
-	emulator, err := setupEmulator(ctx, cli, storageEmulator)
+	emulator, err := setupEmulator(containerCtx, cli, storageEmulator)
 	require.NoError(err)
-	defer func() { _ = cli.ContainerStop(ctx, emulator.ID, nil) }()
+	defer func() { _ = cli.ContainerStop(containerCtx, emulator.ID, nil) }()
 
 	// Run the actual test
 	t.Setenv("STORAGE_EMULATOR_HOST", "localhost:9000")
@@ -42,31 +43,31 @@ func TestGoogleCloudStorage(t *testing.T) {
 	t.Log("Running test...")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*50)
 	defer cancel()
-	storage, err := NewGoogleCloudStorage(ctx, projectName, bucketName, nil, option.WithoutAuthentication())
+	store, err := storage.NewGoogleCloudStorage(ctx, projectName, bucketName, nil, option.WithoutAuthentication())
 	require.NoError(err)
 
 	testDEK1 := []byte("test DEK")
 	testDEK2 := []byte("more test DEK")
 
 	// request unset value
-	_, err = storage.Get(ctx, "test:input")
+	_, err = store.Get(ctx, "test:input")
 	assert.Error(err)
 
 	// test Put method
-	assert.NoError(storage.Put(ctx, "volume01", testDEK1))
-	assert.NoError(storage.Put(ctx, "volume02", testDEK2))
+	assert.NoError(store.Put(ctx, "volume01", testDEK1))
+	assert.NoError(store.Put(ctx, "volume02", testDEK2))
 
 	// make sure values have been set
-	val, err := storage.Get(ctx, "volume01")
+	val, err := store.Get(ctx, "volume01")
 	assert.NoError(err)
 	assert.Equal(testDEK1, val)
-	val, err = storage.Get(ctx, "volume02")
+	val, err = store.Get(ctx, "volume02")
 	assert.NoError(err)
 	assert.Equal(testDEK2, val)
 
-	_, err = storage.Get(ctx, "invalid:key")
+	_, err = store.Get(ctx, "invalid:key")
 	assert.Error(err)
-	assert.ErrorIs(err, ErrDEKUnset)
+	assert.ErrorIs(err, storage.ErrDEKUnset)
 }
 
 func setupEmulator(ctx context.Context, cli *client.Client, imageName string) (container.ContainerCreateCreatedBody, error) {
@@ -92,8 +93,7 @@ func setupEmulator(ctx context.Context, cli *client.Client, imageName string) (c
 	if err != nil {
 		return emulator, err
 	}
-	err = cli.ContainerStart(ctx, emulator.ID, types.ContainerStartOptions{})
-	if err != nil {
+	if err := cli.ContainerStart(ctx, emulator.ID, types.ContainerStartOptions{}); err != nil {
 		return emulator, err
 	}
 
