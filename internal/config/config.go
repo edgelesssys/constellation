@@ -68,7 +68,7 @@ func Default() *Config {
 		AutoscalingNodeGroupsMax: intPtr(10),
 		Provider: &ProviderConfig{
 			EC2: &EC2Config{
-				Image: proto.String("ami-0a65281ea1fb605d3"),
+				Image: proto.String("ami-07d3864beb84157d3"),
 				Tags: &[]ec2.Tag{
 					{
 						Key:   "responsible",
