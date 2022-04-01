@@ -1,3 +1,30 @@
+# constellation-kms-client
+
+This library provides an interface for the key management services used with constellation.
+It's intendet for the Constellation CSI Plugins and the CLI.
+
+## KMS
+
+The Cloud KMS is where we store our key encryption key (KEK).
+It should be initiated by the CLI and provided with a key release policy.
+The CSP Plugin can request to encrypt data encryption keys (DEK) with the DEK to safely store them on persistent memory.
+The [kms](pkg/kms) package interacts with the Cloud KMS APIs.
+Currently planned are KMS are:
+
+* AWS KMS
+* GCP CKM
+* Azure Key Vault
+
+
+## Storage
+
+Storage is where the CSI Plugin stores the encrypted DEKs.
+Currently planned are:
+
+* AWS S3, SSP
+* GCP GCS
+* Azure Blob
+
 # Credentials
 
 Each Plugin requires credentials to authenticate itself to a CSP.
