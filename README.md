@@ -5,7 +5,7 @@
 
 ### Ubuntu 20.04
 ```sh
-sudo apt install build-essential cmake libssl-dev
+sudo apt install build-essential cmake libssl-dev pkg-config libcryptsetup12 libcryptsetup-dev
 curl https://sh.rustup.rs -sSf | sh
 ```
 
