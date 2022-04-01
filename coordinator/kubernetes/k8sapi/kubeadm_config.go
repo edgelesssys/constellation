@@ -24,7 +24,7 @@ func (c *CoreOSConfiguration) InitConfiguration() KubeadmInitYAML {
 				Kind:       "InitConfiguration",
 			},
 			NodeRegistration: kubeadm.NodeRegistrationOptions{
-				CRISocket: "/var/run/crio/crio.sock",
+				CRISocket: "/run/containerd/containerd.sock",
 				KubeletExtraArgs: map[string]string{
 					"cloud-provider": "external",
 					"network-plugin": "cni",
@@ -71,7 +71,7 @@ func (c *CoreOSConfiguration) JoinConfiguration() KubeadmJoinYAML {
 				Kind:       "JoinConfiguration",
 			},
 			NodeRegistration: kubeadm.NodeRegistrationOptions{
-				CRISocket: "/var/run/crio/crio.sock",
+				CRISocket: "/run/containerd/containerd.sock",
 				KubeletExtraArgs: map[string]string{
 					"cloud-provider": "external",
 				},
