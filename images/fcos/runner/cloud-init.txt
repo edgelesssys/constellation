@@ -32,4 +32,4 @@ runcmd:
  - [chown, -R, github-actions-runner-user:github-actions-runner-user, /actions-runner]
  - [sudo, -u, github-actions-runner-user, /bin/bash, -c, "cd /actions-runner && /actions-runner/config.sh --url https://github.com/edgelesssys/constellation-images --ephemeral --labels nested-virt --replace --unattended --token $(curl -u api:$(gcloud secrets versions access latest --secret=constellation-images-coreos-builder-github-token) -X POST -H 'Accept: application/vnd.github.v3+json' https://api.github.com/repos/edgelesssys/constellation-images/actions/runners/registration-token | jq -r .token)"]
  - [/bin/bash, -c, "cd /actions-runner && ./svc.sh install"]
- - [systemctl, enable, --now, actions.runner.edgelesssys-constellation-images.coreos-builder.service]
+ - [/bin/bash, -c, "systemctl enable --now actions.runner.edgelesssys-constellation.$(hostname).service"]

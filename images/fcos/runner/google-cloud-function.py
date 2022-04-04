@@ -3,6 +3,8 @@ import sys
 import re
 import hmac
 import hashlib
+import random
+import string
 import google.cloud.compute_v1 as compute_v1
 
 LABEL="nested-virt"
@@ -55,8 +57,9 @@ def job_queued(workflow_job) -> str:
     if not LABEL in workflow_job['labels']:
         return f'unexpected job labels: {workflow_job["labels"]}'
     cloud_init = generate_cloud_init()
+    instance_uid = ''.join(random.choice(string.ascii_lowercase + string.digits) for i in range(6))
     try:
-        create_instance(metadata={'user-data': cloud_init})
+        create_instance(metadata={'user-data': cloud_init}, instance_name=f'coreos-builder-{instance_uid}')
     except Exception as e:
         return f'creating instance failed: {e}'
     return 'success'
@@ -64,8 +67,9 @@ def job_queued(workflow_job) -> str:
 def job_completed(workflow_job) -> str:
     if not LABEL in workflow_job['labels']:
         return f'unexpected job labels: {workflow_job["labels"]}'
+    instance_name = workflow_job["runner_name"]
     try:
-        delete_instance()
+        delete_instance(machine_name=instance_name)
     except Exception as e:
         return f'deleting instance failed: {e}'
     return 'success'
