@@ -146,7 +146,8 @@ func TestCreateInstances(t *testing.T) {
 			resourceGroupAPI:   newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI: &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				Count:                3,
+				CountCoordinators:    3,
+				CountNodes:           3,
 				InstanceType:         "type",
 				Image:                "image",
 				UserAssingedIdentity: "identity",
@@ -159,7 +160,8 @@ func TestCreateInstances(t *testing.T) {
 			resourceGroupAPI:     newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				Count:                3,
+				CountCoordinators:    3,
+				CountNodes:           3,
 				InstanceType:         "type",
 				Image:                "image",
 				UserAssingedIdentity: "identity",
@@ -173,7 +175,8 @@ func TestCreateInstances(t *testing.T) {
 			resourceGroupAPI:     newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				Count:                3,
+				CountCoordinators:    3,
+				CountNodes:           3,
 				InstanceType:         "type",
 				Image:                "image",
 				UserAssingedIdentity: "identity",
@@ -187,7 +190,7 @@ func TestCreateInstances(t *testing.T) {
 			resourceGroupAPI:     newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				Count:                3,
+				CountNodes:           3,
 				InstanceType:         "type",
 				Image:                "image",
 				UserAssingedIdentity: "identity",
@@ -219,8 +222,8 @@ func TestCreateInstances(t *testing.T) {
 				assert.Error(client.CreateInstances(ctx, tc.createInstancesInput))
 			} else {
 				assert.NoError(client.CreateInstances(ctx, tc.createInstancesInput))
-				assert.Equal(1, len(client.coordinators))
-				assert.Equal(tc.createInstancesInput.Count-1, len(client.nodes))
+				assert.Equal(tc.createInstancesInput.CountCoordinators, len(client.coordinators))
+				assert.Equal(tc.createInstancesInput.CountNodes, len(client.nodes))
 				assert.NotEmpty(client.nodes["0"].PrivateIP)
 				assert.NotEmpty(client.nodes["0"].PublicIP)
 				assert.NotEmpty(client.coordinators["0"].PrivateIP)
@@ -257,9 +260,10 @@ func TestCreateInstancesVMs(t *testing.T) {
 			resourceGroupAPI:   newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI: &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				Count:        3,
-				InstanceType: "type",
-				Image:        "image",
+				CountCoordinators: 3,
+				CountNodes:        3,
+				InstanceType:      "type",
+				Image:             "image",
 			},
 		},
 		"error when creating scale set": {
@@ -269,9 +273,10 @@ func TestCreateInstancesVMs(t *testing.T) {
 			resourceGroupAPI:     newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				Count:        3,
-				InstanceType: "type",
-				Image:        "image",
+				CountCoordinators: 3,
+				CountNodes:        3,
+				InstanceType:      "type",
+				Image:             "image",
 			},
 			errExpected: true,
 		},
@@ -282,9 +287,10 @@ func TestCreateInstancesVMs(t *testing.T) {
 			resourceGroupAPI:     newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				Count:        3,
-				InstanceType: "type",
-				Image:        "image",
+				CountCoordinators: 3,
+				CountNodes:        3,
+				InstanceType:      "type",
+				Image:             "image",
 			},
 			errExpected: true,
 		},
@@ -295,9 +301,10 @@ func TestCreateInstancesVMs(t *testing.T) {
 			resourceGroupAPI:     newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				Count:        3,
-				InstanceType: "type",
-				Image:        "image",
+				CountCoordinators: 3,
+				CountNodes:        3,
+				InstanceType:      "type",
+				Image:             "image",
 			},
 			errExpected: true,
 		},
@@ -308,9 +315,10 @@ func TestCreateInstancesVMs(t *testing.T) {
 			resourceGroupAPI:     newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				Count:        3,
-				InstanceType: "type",
-				Image:        "image",
+				CountCoordinators: 3,
+				CountNodes:        3,
+				InstanceType:      "type",
+				Image:             "image",
 			},
 			errExpected: true,
 		},
@@ -321,9 +329,10 @@ func TestCreateInstancesVMs(t *testing.T) {
 			resourceGroupAPI:     newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				Count:        3,
-				InstanceType: "type",
-				Image:        "image",
+				CountCoordinators: 3,
+				CountNodes:        3,
+				InstanceType:      "type",
+				Image:             "image",
 			},
 			errExpected: true,
 		},
@@ -355,8 +364,8 @@ func TestCreateInstancesVMs(t *testing.T) {
 			}
 
 			require.NoError(client.CreateInstancesVMs(ctx, tc.createInstancesInput))
-			assert.Equal(1, len(client.coordinators))
-			assert.Equal(tc.createInstancesInput.Count-1, len(client.nodes))
+			assert.Equal(tc.createInstancesInput.CountCoordinators, len(client.coordinators))
+			assert.Equal(tc.createInstancesInput.CountNodes, len(client.nodes))
 			assert.NotEmpty(client.nodes["0"].PrivateIP)
 			assert.NotEmpty(client.nodes["0"].PublicIP)
 			assert.NotEmpty(client.coordinators["0"].PrivateIP)

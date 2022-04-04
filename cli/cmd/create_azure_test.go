@@ -21,15 +21,17 @@ func TestCreateAzureCmdArgumentValidation(t *testing.T) {
 		args      []string
 		expectErr bool
 	}{
-		"valid create 1":              {[]string{"3", "Standard_DC2as_v5"}, false},
-		"valid create 2":              {[]string{"7", "Standard_DC4as_v5"}, false},
-		"valid create 3":              {[]string{"2", "Standard_DC8as_v5"}, false},
-		"invalid to many arguments":   {[]string{"2", "Standard_DC2as_v5", "Standard_DC2as_v5"}, true},
-		"invalid to many arguments 2": {[]string{"2", "Standard_DC2as_v5", "2"}, true},
-		"invalidOnlyOneInstance":      {[]string{"1", "Standard_DC2as_v5"}, true},
-		"invalid first is no int":     {[]string{"Standard_DC2as_v5", "Standard_DC2as_v5"}, true},
-		"invalid second is no size":   {[]string{"2", "2"}, true},
-		"invalid wrong order":         {[]string{"Standard_DC2as_v5", "2"}, true},
+		"valid create 1":              {[]string{"3", "3", "Standard_DC2as_v5"}, false},
+		"valid create 2":              {[]string{"3", "7", "Standard_DC4as_v5"}, false},
+		"valid create 3":              {[]string{"1", "2", "Standard_DC8as_v5"}, false},
+		"invalid to many arguments":   {[]string{"3", "2", "Standard_DC2as_v5", "Standard_DC2as_v5"}, true},
+		"invalid to many arguments 2": {[]string{"3", "2", "Standard_DC2as_v5", "2"}, true},
+		"invalid no coordinators":     {[]string{"0", "1", "Standard_DC2as_v5"}, true},
+		"invalid no nodes":            {[]string{"1", "0", "Standard_DC2as_v5"}, true},
+		"invalid first is no int":     {[]string{"Standard_DC2as_v5", "1", "Standard_DC2as_v5"}, true},
+		"invalid second is no int":    {[]string{"1", "Standard_DC2as_v5", "Standard_DC2as_v5"}, true},
+		"invalid third is no size":    {[]string{"2", "2", "2"}, true},
+		"invalid wrong order":         {[]string{"Standard_DC2as_v5", "2", "2"}, true},
 	}
 
 	cmd := newCreateAzureCmd()
@@ -62,6 +64,14 @@ func TestCreateAzure(t *testing.T) {
 		},
 		AzureCoordinators: azure.Instances{
 			"0": {
+				PrivateIP: "192.0.2.1",
+				PublicIP:  "192.0.2.1",
+			},
+			"1": {
+				PrivateIP: "192.0.2.1",
+				PublicIP:  "192.0.2.1",
+			},
+			"2": {
 				PrivateIP: "192.0.2.1",
 				PublicIP:  "192.0.2.1",
 			},
@@ -148,7 +158,7 @@ func TestCreateAzure(t *testing.T) {
 				require.NoError(fileHandler.WriteJSON(*config.StatePath, *tc.existingState, false))
 			}
 
-			err := createAzure(cmd, tc.client, fileHandler, config, "Standard_D2s_v3", 3)
+			err := createAzure(cmd, tc.client, fileHandler, config, "Standard_D2s_v3", 3, 2)
 			if tc.errExpected {
 				assert.Error(err)
 				if stubClient, ok := tc.client.(*stubAzureClient); ok {
@@ -181,12 +191,18 @@ func TestCreateAzureCompletion(t *testing.T) {
 		},
 		"second arg": {
 			args:            []string{"23"},
+			toComplete:      "21",
+			resultExpected:  []string{},
+			shellCDExpected: cobra.ShellCompDirectiveNoFileComp,
+		},
+		"third arg": {
+			args:            []string{"23", "24"},
 			toComplete:      "Standard_D",
 			resultExpected:  azure.InstanceTypes,
 			shellCDExpected: cobra.ShellCompDirectiveDefault,
 		},
-		"third arg": {
-			args:            []string{"23", "Standard_D2s_v3"},
+		"fourth arg": {
+			args:            []string{"23", "24", "Standard_D2s_v3"},
 			toComplete:      "Standard_D",
 			resultExpected:  []string{},
 			shellCDExpected: cobra.ShellCompDirectiveError,

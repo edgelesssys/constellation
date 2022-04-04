@@ -21,15 +21,17 @@ func TestCreateGCPCmdArgumentValidation(t *testing.T) {
 		args      []string
 		expectErr bool
 	}{
-		"valid create 1":              {[]string{"3", "n2d-standard-2"}, false},
-		"valid create 2":              {[]string{"7", "n2d-standard-16"}, false},
-		"valid create 3":              {[]string{"2", "n2d-standard-96"}, false},
-		"invalid to many arguments":   {[]string{"2", "n2d-standard-2", "n2d-standard-2"}, true},
-		"invalid to many arguments 2": {[]string{"2", "n2d-standard-2", "2"}, true},
-		"invalidOnlyOneInstance":      {[]string{"1", "n2d-standard-2"}, true},
-		"invalid first is no int":     {[]string{"n2d-standard-2", "n2d-standard-2"}, true},
-		"invalid second is no size":   {[]string{"2", "2"}, true},
-		"invalid wrong order":         {[]string{"n2d-standard-2", "2"}, true},
+		"valid create 1":               {[]string{"3", "3", "n2d-standard-2"}, false},
+		"valid create 2":               {[]string{"3", "7", "n2d-standard-16"}, false},
+		"valid create 3":               {[]string{"1", "2", "n2d-standard-96"}, false},
+		"invalid too many arguments":   {[]string{"3", "2", "n2d-standard-2", "n2d-standard-2"}, true},
+		"invalid too many arguments 2": {[]string{"3", "2", "n2d-standard-2", "2"}, true},
+		"invalid no coordinators":      {[]string{"0", "1", "n2d-standard-2"}, true},
+		"invalid no nodes":             {[]string{"1", "0", "n2d-standard-2"}, true},
+		"invalid first is no int":      {[]string{"n2d-standard-2", "1", "n2d-standard-2"}, true},
+		"invalid second is no int":     {[]string{"3", "n2d-standard-2", "n2d-standard-2"}, true},
+		"invalid third is no size":     {[]string{"2", "2", "2"}, true},
+		"invalid wrong order":          {[]string{"n2d-standard-2", "2", "2"}, true},
 	}
 
 	cmd := newCreateGCPCmd()
@@ -61,7 +63,15 @@ func TestCreateGCP(t *testing.T) {
 			},
 		},
 		GCPCoordinators: gcp.Instances{
-			"id-c": {
+			"id-0": {
+				PrivateIP: "192.0.2.1",
+				PublicIP:  "192.0.2.1",
+			},
+			"id-1": {
+				PrivateIP: "192.0.2.1",
+				PublicIP:  "192.0.2.1",
+			},
+			"id-2": {
 				PrivateIP: "192.0.2.1",
 				PublicIP:  "192.0.2.1",
 			},
@@ -146,7 +156,7 @@ func TestCreateGCP(t *testing.T) {
 				require.NoError(fileHandler.WriteJSON(*config.StatePath, *tc.existingState, false))
 			}
 
-			err := createGCP(cmd, tc.client, fileHandler, config, "n2d-standard-2", 3)
+			err := createGCP(cmd, tc.client, fileHandler, config, "n2d-standard-2", 3, 2)
 			if tc.errExpected {
 				assert.Error(err)
 				if stubClient, ok := tc.client.(*stubGcpClient); ok {
@@ -181,12 +191,18 @@ func TestCreateGCPCompletion(t *testing.T) {
 		},
 		"second arg": {
 			args:            []string{"23"},
+			toComplete:      "21",
+			resultExpected:  []string{},
+			shellCDExpected: cobra.ShellCompDirectiveNoFileComp,
+		},
+		"third arg": {
+			args:            []string{"23", "24"},
 			toComplete:      "n2d-stan",
 			resultExpected:  gcp.InstanceTypes,
 			shellCDExpected: cobra.ShellCompDirectiveDefault,
 		},
-		"third arg": {
-			args:            []string{"23", "n2d-standard-2"},
+		"fourth arg": {
+			args:            []string{"23", "24", "n2d-standard-2"},
 			toComplete:      "n2d-stan",
 			resultExpected:  []string{},
 			shellCDExpected: cobra.ShellCompDirectiveError,

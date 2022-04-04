@@ -21,11 +21,21 @@ func isIntArg(arg int) cobra.PositionalArgs {
 	}
 }
 
-// isIntGreaterArg checks if argument at position arg is and integer and greater i.
+// isIntGreaterArg checks if argument at position arg is an integer and greater i.
 func isIntGreaterArg(arg int, i int) cobra.PositionalArgs {
 	return cobra.MatchAll(isIntArg(arg), func(cmd *cobra.Command, args []string) error {
 		if v, _ := strconv.Atoi(args[arg]); v <= i {
 			return fmt.Errorf("argument %d must be greater %d, but it's %d", arg, i, v)
+		}
+		return nil
+	})
+}
+
+// isValidAWSCoordinatorCount checks if argument at position arg is an integer exactly 1.
+func isValidAWSCoordinatorCount(arg int) cobra.PositionalArgs {
+	return cobra.MatchAll(isIntArg(arg), func(cmd *cobra.Command, args []string) error {
+		if v, _ := strconv.Atoi(args[arg]); v != 1 {
+			return fmt.Errorf("argument %d is %d, that is not a valid coordinator count for AWS, currently the only supported coordinator count is 1", arg, v)
 		}
 		return nil
 	})

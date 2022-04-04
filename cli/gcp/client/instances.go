@@ -72,7 +72,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 	ops = []Operation{}
 
 	nodeGroupInput := instanceGroupManagerInput{
-		Count:    input.Count - 1,
+		Count:    input.CountNodes,
 		Name:     strings.Join([]string{c.name, "worker", c.uid}, "-"),
 		Template: c.nodeTemplate,
 		UID:      c.uid,
@@ -87,7 +87,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 	c.nodesInstanceGroup = nodeGroupInput.Name
 
 	coordinatorGroupInput := instanceGroupManagerInput{
-		Count:    1,
+		Count:    input.CountCoordinators,
 		Name:     strings.Join([]string{c.name, "control-plane", c.uid}, "-"),
 		Template: c.coordinatorTemplate,
 		UID:      c.uid,
@@ -287,12 +287,13 @@ func (i *instanceGroupManagerInput) InsertInstanceGroupManagerRequest() computep
 
 // CreateInstancesInput is the input for a CreatInstances operation.
 type CreateInstancesInput struct {
-	Count           int
-	ImageId         string
-	InstanceType    string
-	StateDiskSizeGB int
-	KubeEnv         string
-	DisableCVM      bool
+	CountNodes        int
+	CountCoordinators int
+	ImageId           string
+	InstanceType      string
+	StateDiskSizeGB   int
+	KubeEnv           string
+	DisableCVM        bool
 }
 
 type insertInstanceTemplateInput struct {

@@ -83,24 +83,30 @@ func (c *fakeAzureClient) CreateInstances(ctx context.Context, input client.Crea
 	c.coordinatorsScaleSet = "coordinators-scale-set"
 	c.nodesScaleSet = "nodes-scale-set"
 	c.nodes = make(azure.Instances)
-	for i := 0; i < input.Count-1; i++ {
+	for i := 0; i < input.CountNodes; i++ {
 		id := strconv.Itoa(i)
 		c.nodes[id] = azure.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
 	}
 	c.coordinators = make(azure.Instances)
-	c.coordinators["0"] = azure.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
+	for i := 0; i < input.CountCoordinators; i++ {
+		id := strconv.Itoa(i)
+		c.coordinators[id] = azure.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
+	}
 	return nil
 }
 
 // TODO: deprecate as soon as scale sets are available.
 func (c *fakeAzureClient) CreateInstancesVMs(ctx context.Context, input client.CreateInstancesInput) error {
 	c.nodes = make(azure.Instances)
-	for i := 0; i < input.Count-1; i++ {
+	for i := 0; i < input.CountNodes; i++ {
 		id := strconv.Itoa(i)
 		c.nodes[id] = azure.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
 	}
 	c.coordinators = make(azure.Instances)
-	c.coordinators["0"] = azure.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
+	for i := 0; i < input.CountCoordinators; i++ {
+		id := strconv.Itoa(i)
+		c.coordinators[id] = azure.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
+	}
 	return nil
 }
 

@@ -16,13 +16,14 @@ import (
 
 func newCreateAzureCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "azure",
-		Short: "Create a Constellation of NUMBER nodes of SIZE on Azure.",
-		Long:  "Create a Constellation of NUMBER nodes of SIZE on Azure.",
+		Use:   "azure C_COUNT N_COUNT TYPE",
+		Short: "Create a Constellation of C_COUNT coordinators and N_COUNT nodes of TYPE on Azure.",
+		Long:  "Create a Constellation of C_COUNT coordinators and N_COUNT nodes of TYPE on Azure.",
 		Args: cobra.MatchAll(
-			cobra.ExactArgs(2),
-			isIntGreaterArg(0, 1),
-			isAzureInstanceType(1),
+			cobra.ExactArgs(3),
+			isIntGreaterZeroArg(0),
+			isIntGreaterZeroArg(1),
+			isAzureInstanceType(2),
 		),
 		ValidArgsFunction: createAzureCompletion,
 		RunE:              runCreateAzure,
@@ -32,8 +33,9 @@ func newCreateAzureCmd() *cobra.Command {
 
 // runCreateAzure runs the create command.
 func runCreateAzure(cmd *cobra.Command, args []string) error {
-	count, _ := strconv.Atoi(args[0]) // err already checked in args validation
-	size := strings.ToLower(args[1])
+	countNodes, _ := strconv.Atoi(args[0])        // err already checked in args validation
+	countCoordinators, _ := strconv.Atoi(args[1]) // err already checked in args validation
+	size := strings.ToLower(args[2])
 	subscriptionID := "0d202bbb-4fa7-4af8-8125-58c269a05435" // TODO: This will be user input
 	tenantID := "adb650a8-5da3-4b15-b4b0-3daf65ff7626"       // TODO: This will be user input
 	location := "North Europe"                               // TODO: This will be user input
@@ -65,10 +67,10 @@ func runCreateAzure(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return createAzure(cmd, client, fileHandler, config, size, count)
+	return createAzure(cmd, client, fileHandler, config, size, countCoordinators, countNodes)
 }
 
-func createAzure(cmd *cobra.Command, cl azureclient, fileHandler file.Handler, config *config.Config, size string, count int) (retErr error) {
+func createAzure(cmd *cobra.Command, cl azureclient, fileHandler file.Handler, config *config.Config, size string, countCoordinators, countNodes int) (retErr error) {
 	if err := checkDirClean(fileHandler, config); err != nil {
 		return err
 	}
@@ -80,7 +82,8 @@ func createAzure(cmd *cobra.Command, cl azureclient, fileHandler file.Handler, c
 	if !ok {
 		// Ask user to confirm action.
 		cmd.Printf("The following Constellation will be created:\n")
-		cmd.Printf("%d nodes of size %s will be created.\n", count, size)
+		cmd.Printf("%d coordinators of size %s will be created.\n", countCoordinators, size)
+		cmd.Printf("%d nodes of size %s will be created.\n", countNodes, size)
 		ok, err := askToConfirm(cmd, "Do you want to create this Constellation?")
 		if err != nil {
 			return err
@@ -103,7 +106,8 @@ func createAzure(cmd *cobra.Command, cl azureclient, fileHandler file.Handler, c
 		return err
 	}
 	if err := cl.CreateInstances(cmd.Context(), client.CreateInstancesInput{
-		Count:                count,
+		CountCoordinators:    countCoordinators,
+		CountNodes:           countNodes,
 		InstanceType:         size,
 		StateDiskSizeGB:      *config.StateDiskSizeGB,
 		Image:                *config.Provider.Azure.Image,
@@ -131,6 +135,8 @@ func createAzureCompletion(cmd *cobra.Command, args []string, toComplete string)
 	case 0:
 		return []string{}, cobra.ShellCompDirectiveNoFileComp
 	case 1:
+		return []string{}, cobra.ShellCompDirectiveNoFileComp
+	case 2:
 		return azure.InstanceTypes, cobra.ShellCompDirectiveDefault
 	default:
 		return []string{}, cobra.ShellCompDirectiveError

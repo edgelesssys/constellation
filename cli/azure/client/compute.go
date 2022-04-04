@@ -15,7 +15,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 	createNodesInput := CreateScaleSetInput{
 		Name:                 "constellation-scale-set-nodes-" + c.uid,
 		NamePrefix:           c.name + "-worker-" + c.uid + "-",
-		Count:                input.Count - 1,
+		Count:                input.CountNodes,
 		InstanceType:         input.InstanceType,
 		StateDiskSizeGB:      int32(input.StateDiskSizeGB),
 		Image:                input.Image,
@@ -32,7 +32,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 	createCoordinatorsInput := CreateScaleSetInput{
 		Name:                 "constellation-scale-set-coordinators-" + c.uid,
 		NamePrefix:           c.name + "-control-plane-" + c.uid + "-",
-		Count:                1,
+		Count:                input.CountCoordinators,
 		InstanceType:         input.InstanceType,
 		StateDiskSizeGB:      int32(input.StateDiskSizeGB),
 		Image:                input.Image,
@@ -63,7 +63,8 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 
 // CreateInstancesInput is the input for a CreateInstances operation.
 type CreateInstancesInput struct {
-	Count                int
+	CountNodes           int
+	CountCoordinators    int
 	InstanceType         string
 	StateDiskSizeGB      int
 	Image                string
@@ -78,23 +79,25 @@ func (c *Client) CreateInstancesVMs(ctx context.Context, input CreateInstancesIn
 		return err
 	}
 
-	vm := azure.VMInstance{
-		Name:         c.name + "-control-plane-" + c.uid,
-		Username:     "constell",
-		Password:     pw,
-		Location:     c.location,
-		InstanceType: input.InstanceType,
-		Image:        input.Image,
-	}
-	instance, err := c.createInstanceVM(ctx, vm)
-	if err != nil {
-		return err
-	}
-	c.coordinators = azure.Instances{"0": instance}
-
-	for i := 0; i < input.Count-1; i++ {
+	for i := 0; i < input.CountCoordinators; i++ {
 		vm := azure.VMInstance{
-			Name:         c.name + "-node-" + strconv.Itoa(i) + c.uid,
+			Name:         c.name + "-control-plane-" + c.uid + "-" + strconv.Itoa(i),
+			Username:     "constell",
+			Password:     pw,
+			Location:     c.location,
+			InstanceType: input.InstanceType,
+			Image:        input.Image,
+		}
+		instance, err := c.createInstanceVM(ctx, vm)
+		if err != nil {
+			return err
+		}
+		c.coordinators[strconv.Itoa(i)] = instance
+	}
+
+	for i := 0; i < input.CountNodes; i++ {
+		vm := azure.VMInstance{
+			Name:         c.name + "-node-" + c.uid + "-" + strconv.Itoa(i),
 			Username:     "constell",
 			Password:     pw,
 			Location:     c.location,

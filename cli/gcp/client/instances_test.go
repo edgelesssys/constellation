@@ -41,10 +41,11 @@ func TestCreateInstances(t *testing.T) {
 		{CurrentAction: proto.String(computepb.ManagedInstance_NONE.String())},
 	}
 	testInput := CreateInstancesInput{
-		Count:        3,
-		ImageId:      "img",
-		InstanceType: "n2d-standard-2",
-		KubeEnv:      "kube-env",
+		CountCoordinators: 3,
+		CountNodes:        4,
+		ImageId:           "img",
+		InstanceType:      "n2d-standard-2",
+		KubeEnv:           "kube-env",
 	}
 	someErr := errors.New("failed")
 

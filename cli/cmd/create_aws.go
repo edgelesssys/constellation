@@ -17,14 +17,15 @@ import (
 
 func newCreateAWSCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "aws NUMBER SIZE",
-		Short:   "Create a Constellation of NUMBER nodes of SIZE on AWS.",
-		Long:    "Create a Constellation of NUMBER nodes of SIZE on AWS.",
-		Example: "aws 4 2xlarge",
+		Use:     "aws C_COUNT N_COUNT TYPE",
+		Short:   "Create a Constellation of C_COUNT coordinators and N_COUNT nodes of TYPE on AWS.",
+		Long:    "Create a Constellation of C_COUNT coordinators and N_COUNT nodes of TYPE on AWS.",
+		Example: "aws 1 4 2xlarge",
 		Args: cobra.MatchAll(
-			cobra.ExactArgs(2),
-			isIntGreaterArg(0, 1),
-			isEC2InstanceType(1),
+			cobra.ExactArgs(3),
+			isValidAWSCoordinatorCount(0),
+			isIntGreaterArg(1, 1),
+			isEC2InstanceType(2),
 		),
 		ValidArgsFunction: createAWSCompletion,
 		RunE:              runCreateAWS,
@@ -35,7 +36,7 @@ func newCreateAWSCmd() *cobra.Command {
 // runCreateAWS runs the create command.
 func runCreateAWS(cmd *cobra.Command, args []string) error {
 	count, _ := strconv.Atoi(args[0]) // err already checked in args validation
-	size := strings.ToLower(args[1])
+	size := strings.ToLower(args[2])
 
 	name, err := cmd.Flags().GetString("name")
 	if err != nil {
@@ -125,6 +126,8 @@ func createAWSCompletion(cmd *cobra.Command, args []string, toComplete string) (
 	case 0:
 		return []string{}, cobra.ShellCompDirectiveNoFileComp
 	case 1:
+		return []string{}, cobra.ShellCompDirectiveNoFileComp
+	case 2:
 		return []string{
 			"4xlarge",
 			"8xlarge",

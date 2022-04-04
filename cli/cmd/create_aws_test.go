@@ -21,21 +21,23 @@ func TestCreateAWSCmdArgumentValidation(t *testing.T) {
 		args      []string
 		expectErr bool
 	}{
-		"valid size 4XL":              {[]string{"5", "4xlarge"}, false},
-		"valid size 8XL":              {[]string{"4", "8xlarge"}, false},
-		"valid size 12XL":             {[]string{"3", "12xlarge"}, false},
-		"valid size 16XL":             {[]string{"2", "16xlarge"}, false},
-		"valid size 24XL":             {[]string{"2", "24xlarge"}, false},
-		"valid short 12XL":            {[]string{"4", "12xl"}, false},
-		"valid short 24XL":            {[]string{"2", "24xl"}, false},
-		"valid capitalized":           {[]string{"3", "24XlARge"}, false},
-		"valid short capitalized":     {[]string{"4", "16XL"}, false},
-		"invalid to many arguments":   {[]string{"2", "4xl", "2xl"}, true},
-		"invalid to many arguments 2": {[]string{"2", "4xl", "2"}, true},
-		"invalidOnlyOneInstance":      {[]string{"1", "4xl"}, true},
-		"invalid first is no int":     {[]string{"xl", "4xl"}, true},
-		"invalid second is no size":   {[]string{"2", "2"}, true},
-		"invalid wrong order":         {[]string{"4xl", "2"}, true},
+		"valid size 4XL":              {[]string{"1", "5", "4xlarge"}, false},
+		"valid size 8XL":              {[]string{"1", "4", "8xlarge"}, false},
+		"valid size 12XL":             {[]string{"1", "3", "12xlarge"}, false},
+		"valid size 16XL":             {[]string{"1", "2", "16xlarge"}, false},
+		"valid size 24XL":             {[]string{"1", "2", "24xlarge"}, false},
+		"valid short 12XL":            {[]string{"1", "4", "12xl"}, false},
+		"valid short 24XL":            {[]string{"1", "2", "24xl"}, false},
+		"valid capitalized":           {[]string{"1", "3", "24XlARge"}, false},
+		"valid short capitalized":     {[]string{"1", "4", "16XL"}, false},
+		"invalid to many arguments":   {[]string{"1", "2", "4xl", "2xl"}, true},
+		"invalid to many arguments 2": {[]string{"1", "2", "4xl", "2"}, true},
+		"invalidOnlyOneInstance":      {[]string{"1", "1", "4xl"}, true},
+		"invalid first is no int":     {[]string{"xl", "2", "4xl"}, true},
+		"invalid first is not 1":      {[]string{"2", "2", "4xl"}, true},
+		"invalid second is no int":    {[]string{"1", "xl", "4xl"}, true},
+		"invalid third is no size":    {[]string{"2", "1", "2"}, true},
+		"invalid wrong order":         {[]string{"4xl", "1", "2"}, true},
 	}
 
 	cmd := newCreateAWSCmd()
@@ -173,7 +175,13 @@ func TestCreateAWSCompletion(t *testing.T) {
 			shellCDExpected: cobra.ShellCompDirectiveNoFileComp,
 		},
 		"second arg": {
-			args:       []string{"23"},
+			args:            []string{"23"},
+			toComplete:      "21",
+			resultExpected:  []string{},
+			shellCDExpected: cobra.ShellCompDirectiveNoFileComp,
+		},
+		"third arg": {
+			args:       []string{"23", "24"},
 			toComplete: "4xl",
 			resultExpected: []string{
 				"4xlarge",
@@ -184,8 +192,8 @@ func TestCreateAWSCompletion(t *testing.T) {
 			},
 			shellCDExpected: cobra.ShellCompDirectiveDefault,
 		},
-		"third arg": {
-			args:            []string{"23", "4xlarge"},
+		"fourth arg": {
+			args:            []string{"23", "24", "4xlarge"},
 			toComplete:      "xl",
 			resultExpected:  []string{},
 			shellCDExpected: cobra.ShellCompDirectiveError,

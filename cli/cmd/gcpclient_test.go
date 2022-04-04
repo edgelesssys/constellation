@@ -92,12 +92,15 @@ func (c *fakeGcpClient) CreateInstances(ctx context.Context, input client.Create
 	c.nodeTemplate = "node-template"
 	c.coordinatorTemplate = "coordinator-template"
 	c.nodes = make(gcp.Instances)
-	for i := 0; i < input.Count-1; i++ {
-		id := "id-" + strconv.Itoa(len(c.nodes))
+	for i := 0; i < input.CountNodes; i++ {
+		id := "id-" + strconv.Itoa(i)
 		c.nodes[id] = gcp.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
 	}
 	c.coordinators = make(gcp.Instances)
-	c.coordinators["id-c"] = gcp.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
+	for i := 0; i < input.CountCoordinators; i++ {
+		id := "id-" + strconv.Itoa(i)
+		c.coordinators[id] = gcp.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
+	}
 	return nil
 }
 

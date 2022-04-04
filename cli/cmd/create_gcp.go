@@ -16,13 +16,14 @@ import (
 
 func newCreateGCPCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "gcp",
-		Short: "Create a Constellation of NUMBER nodes of SIZE on Google Cloud Platform.",
-		Long:  "Create a Constellation of NUMBER nodes of SIZE on Google Cloud Platform.",
+		Use:   "gcp C_COUNT N_COUNT TYPE",
+		Short: "Create a Constellation of C_COUNT coordinators and N_COUNT nodes of TYPE on Google Cloud Platform.",
+		Long:  "Create a Constellation of C_COUNT coordinators and N_COUNT nodes of TYPE on Google Cloud Platform.",
 		Args: cobra.MatchAll(
-			cobra.ExactArgs(2),
-			isIntGreaterArg(0, 1),
-			isGCPInstanceType(1),
+			cobra.ExactArgs(3),
+			isIntGreaterZeroArg(0),
+			isIntGreaterZeroArg(1),
+			isGCPInstanceType(2),
 		),
 		ValidArgsFunction: createGCPCompletion,
 		RunE:              runCreateGCP,
@@ -32,8 +33,9 @@ func newCreateGCPCmd() *cobra.Command {
 
 // runCreateGCP runs the create command.
 func runCreateGCP(cmd *cobra.Command, args []string) error {
-	count, _ := strconv.Atoi(args[0]) // err already checked in args validation
-	size := strings.ToLower(args[1])
+	countNodes, _ := strconv.Atoi(args[0])        // err already checked in args validation
+	countCoordinators, _ := strconv.Atoi(args[1]) // err already checked in args validation
+	size := strings.ToLower(args[2])
 	project := "constellation-331613" // TODO: This will be user input
 	zone := "europe-west3-b"          // TODO: This will be user input
 	region := "europe-west3"          // TODO: This will be user input
@@ -59,21 +61,22 @@ func runCreateGCP(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	return createGCP(cmd, client, fileHandler, config, size, count)
+	return createGCP(cmd, client, fileHandler, config, size, countCoordinators, countNodes)
 }
 
-func createGCP(cmd *cobra.Command, cl gcpclient, fileHandler file.Handler, config *config.Config, size string, count int) (retErr error) {
+func createGCP(cmd *cobra.Command, cl gcpclient, fileHandler file.Handler, config *config.Config, size string, countCoordinators, countNodes int) (retErr error) {
 	if err := checkDirClean(fileHandler, config); err != nil {
 		return err
 	}
 
 	createInput := client.CreateInstancesInput{
-		Count:           count,
-		ImageId:         *config.Provider.GCP.Image,
-		InstanceType:    size,
-		StateDiskSizeGB: *config.StateDiskSizeGB,
-		KubeEnv:         gcp.KubeEnv,
-		DisableCVM:      *config.Provider.GCP.DisableCVM,
+		CountNodes:        countNodes,
+		CountCoordinators: countCoordinators,
+		ImageId:           *config.Provider.GCP.Image,
+		InstanceType:      size,
+		StateDiskSizeGB:   *config.StateDiskSizeGB,
+		KubeEnv:           gcp.KubeEnv,
+		DisableCVM:        *config.Provider.GCP.DisableCVM,
 	}
 
 	ok, err := cmd.Flags().GetBool("yes")
@@ -83,7 +86,7 @@ func createGCP(cmd *cobra.Command, cl gcpclient, fileHandler file.Handler, confi
 	if !ok {
 		// Ask user to confirm action.
 		cmd.Printf("The following Constellation will be created:\n")
-		cmd.Printf("%d nodes of size %s will be created.\n", count, size)
+		cmd.Printf("%d coordinators and %d nodes of size %s will be created.\n", countCoordinators, countNodes, size)
 		ok, err := askToConfirm(cmd, "Do you want to create this Constellation?")
 		if err != nil {
 			return err
@@ -126,6 +129,8 @@ func createGCPCompletion(cmd *cobra.Command, args []string, toComplete string) (
 	case 0:
 		return []string{}, cobra.ShellCompDirectiveNoFileComp
 	case 1:
+		return []string{}, cobra.ShellCompDirectiveNoFileComp
+	case 2:
 		return gcp.InstanceTypes, cobra.ShellCompDirectiveDefault
 	default:
 		return []string{}, cobra.ShellCompDirectiveError
