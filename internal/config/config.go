@@ -115,7 +115,7 @@ func Default() *Config {
 				},
 			},
 			Azure: &AzureConfig{
-				Image: proto.String("/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos/versions/0.0.1648560610"),
+				Image: proto.String("/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos/versions/0.0.1649063903"),
 				NetworkSecurityGroupInput: &azureClient.NetworkSecurityGroupInput{
 					Ingress: cloudtypes.Firewall{
 						{
@@ -145,7 +145,7 @@ func Default() *Config {
 				UserAssignedIdentity: proto.String("/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-dev-identity"),
 			},
 			GCP: &GCPConfig{
-				Image: proto.String("constellation-coreos-1648560610"),
+				Image: proto.String("constellation-coreos-1649063903"),
 				FirewallInput: &gcpClient.FirewallInput{
 					Ingress: cloudtypes.Firewall{
 						{
