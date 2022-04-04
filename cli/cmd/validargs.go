@@ -31,19 +31,29 @@ func isIntGreaterArg(arg int, i int) cobra.PositionalArgs {
 	})
 }
 
-// isValidAWSCoordinatorCount checks if argument at position arg is an integer exactly 1.
-func isValidAWSCoordinatorCount(arg int) cobra.PositionalArgs {
-	return cobra.MatchAll(isIntArg(arg), func(cmd *cobra.Command, args []string) error {
-		if v, _ := strconv.Atoi(args[arg]); v != 1 {
-			return fmt.Errorf("argument %d is %d, that is not a valid coordinator count for AWS, currently the only supported coordinator count is 1", arg, v)
+// isValidAWSCoordinatorCount checks additional conditions for the AWS coordinator count.
+func isValidAWSCoordinatorCount(coordCountPos, providerPos int) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if strings.ToLower(args[providerPos]) != "aws" {
+			return nil
+		}
+		v, err := strconv.Atoi(args[coordCountPos])
+		if err != nil {
+			return fmt.Errorf("argument %d must be an integer", coordCountPos)
+		}
+		if v != 1 {
+			return fmt.Errorf(
+				"argument %d is %d, invalid coordinator count for AWS, has to be 1",
+				coordCountPos, v,
+			)
 		}
 		return nil
-	})
+	}
 }
 
 // isIntGreaterZeroArg checks if argument at position arg is a positive non zero integer.
 func isIntGreaterZeroArg(arg int) cobra.PositionalArgs {
-	return cobra.MatchAll(isIntGreaterArg(arg, 0))
+	return isIntGreaterArg(arg, 0)
 }
 
 // isEC2InstanceType checks if argument at position arg is a key in m.
@@ -76,5 +86,39 @@ func isAzureInstanceType(arg int) cobra.PositionalArgs {
 			}
 		}
 		return fmt.Errorf("argument %s isn't a valid Azure instance type", args[arg])
+	}
+}
+
+// isInstanceTypeForProvider returns a argument validation function that checks if the argument
+// at position typePos is a valid instance type for the cloud provider string at position
+// providerPos.
+func isInstanceTypeForProvider(typePos, providerPos int) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if len(args) < 2 {
+			return fmt.Errorf("requires 2 arguments, but only %d are provided", len(args))
+		}
+		if len(args) <= typePos {
+			return fmt.Errorf(
+				"%d arguments provided, but index %d of typePos is out of bound",
+				len(args), typePos,
+			)
+		}
+		if len(args) <= providerPos {
+			return fmt.Errorf(
+				"%d arguments provided, but index %d of providerPos is out of bound",
+				len(args), providerPos,
+			)
+		}
+
+		switch strings.ToLower(args[providerPos]) {
+		case "aws":
+			return isEC2InstanceType(typePos)(cmd, args)
+		case "gcp":
+			return isGCPInstanceType(typePos)(cmd, args)
+		case "azure":
+			return isAzureInstanceType(typePos)(cmd, args)
+		default:
+			return fmt.Errorf("argument %s isn't a valid cloud platform", args[0])
+		}
 	}
 }

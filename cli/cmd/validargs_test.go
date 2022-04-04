@@ -8,12 +8,6 @@ import (
 )
 
 func TestIsIntArg(t *testing.T) {
-	testCmd := &cobra.Command{
-		Use:  "test",
-		Args: isIntArg(0),
-		Run:  func(cmd *cobra.Command, args []string) {},
-	}
-
 	testCases := map[string]struct {
 		args      []string
 		expectErr bool
@@ -32,7 +26,11 @@ func TestIsIntArg(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+
+			testCmd := &cobra.Command{Args: isIntArg(0)}
+
 			err := testCmd.ValidateArgs(tc.args)
+
 			if tc.expectErr {
 				assert.Error(err)
 			} else {
@@ -43,12 +41,6 @@ func TestIsIntArg(t *testing.T) {
 }
 
 func TestIsIntGreaterArg(t *testing.T) {
-	testCmd := &cobra.Command{
-		Use:  "test",
-		Args: isIntGreaterArg(0, 12),
-		Run:  func(cmd *cobra.Command, args []string) {},
-	}
-
 	testCases := map[string]struct {
 		args      []string
 		expectErr bool
@@ -64,7 +56,11 @@ func TestIsIntGreaterArg(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+
+			testCmd := &cobra.Command{Args: isIntGreaterArg(0, 12)}
+
 			err := testCmd.ValidateArgs(tc.args)
+
 			if tc.expectErr {
 				assert.Error(err)
 			} else {
@@ -75,12 +71,6 @@ func TestIsIntGreaterArg(t *testing.T) {
 }
 
 func TestIsIntGreaterZeroArg(t *testing.T) {
-	testCmd := &cobra.Command{
-		Use:  "test",
-		Args: isIntGreaterZeroArg(0),
-		Run:  func(cmd *cobra.Command, args []string) {},
-	}
-
 	testCases := map[string]struct {
 		args      []string
 		expectErr bool
@@ -96,7 +86,11 @@ func TestIsIntGreaterZeroArg(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+
+			testCmd := &cobra.Command{Args: isIntGreaterZeroArg(0)}
+
 			err := testCmd.ValidateArgs(tc.args)
+
 			if tc.expectErr {
 				assert.Error(err)
 			} else {
@@ -107,26 +101,24 @@ func TestIsIntGreaterZeroArg(t *testing.T) {
 }
 
 func TestIsEC2InstanceType(t *testing.T) {
-	testCmd := &cobra.Command{
-		Use:  "test",
-		Args: isEC2InstanceType(0),
-		Run:  func(cmd *cobra.Command, args []string) {},
-	}
-
 	testCases := map[string]struct {
 		args      []string
 		expectErr bool
 	}{
 		"is instance type 1":    {[]string{"4xl"}, false},
 		"is instance type 2":    {[]string{"12xlarge", "something else"}, false},
-		"isn't instance type 1": {[]string{"notanInstanceType"}, true},
+		"isn't instance type 1": {[]string{"notAnInstanceType"}, true},
 		"isn't instance type 2": {[]string{"Hello World!"}, true},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+
+			testCmd := &cobra.Command{Args: isEC2InstanceType(0)}
+
 			err := testCmd.ValidateArgs(tc.args)
+
 			if tc.expectErr {
 				assert.Error(err)
 			} else {
@@ -137,26 +129,24 @@ func TestIsEC2InstanceType(t *testing.T) {
 }
 
 func TestIsGCPInstanceType(t *testing.T) {
-	testCmd := &cobra.Command{
-		Use:  "test",
-		Args: isGCPInstanceType(0),
-		Run:  func(cmd *cobra.Command, args []string) {},
-	}
-
 	testCases := map[string]struct {
 		args      []string
 		expectErr bool
 	}{
 		"is instance type 1":    {[]string{"n2d-standard-4"}, false},
 		"is instance type 2":    {[]string{"n2d-standard-16", "something else"}, false},
-		"isn't instance type 1": {[]string{"notanInstanceType"}, true},
+		"isn't instance type 1": {[]string{"notAnInstanceType"}, true},
 		"isn't instance type 2": {[]string{"Hello World!"}, true},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+
+			testCmd := &cobra.Command{Args: isGCPInstanceType(0)}
+
 			err := testCmd.ValidateArgs(tc.args)
+
 			if tc.expectErr {
 				assert.Error(err)
 			} else {
@@ -167,26 +157,65 @@ func TestIsGCPInstanceType(t *testing.T) {
 }
 
 func TestIsAzureInstanceType(t *testing.T) {
-	testCmd := &cobra.Command{
-		Use:  "test",
-		Args: isAzureInstanceType(0),
-		Run:  func(cmd *cobra.Command, args []string) {},
-	}
-
 	testCases := map[string]struct {
 		args      []string
 		expectErr bool
 	}{
 		"is instance type 1":    {[]string{"Standard_DC2as_v5"}, false},
 		"is instance type 2":    {[]string{"Standard_DC8as_v5", "something else"}, false},
-		"isn't instance type 1": {[]string{"notanInstanceType"}, true},
+		"isn't instance type 1": {[]string{"notAnInstanceType"}, true},
 		"isn't instance type 2": {[]string{"Hello World!"}, true},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+
+			testCmd := &cobra.Command{Args: isAzureInstanceType(0)}
+
 			err := testCmd.ValidateArgs(tc.args)
+
+			if tc.expectErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+			}
+		})
+	}
+}
+
+func TestIsInstanceTypeForProvider(t *testing.T) {
+	testCases := map[string]struct {
+		typePos     int
+		providerPos int
+		args        []string
+		expectErr   bool
+	}{
+		"valid ec2 type 1":          {1, 0, []string{"aws", "4xl"}, false},
+		"valid ec2 type 2":          {1, 0, []string{"aws", "12xlarge", "foo"}, false},
+		"valid gcp type 1":          {1, 0, []string{"gcp", "n2d-standard-4"}, false},
+		"valid gcp type 2":          {1, 0, []string{"gcp", "n2d-standard-16", "foo"}, false},
+		"valid azure type 1":        {1, 0, []string{"azure", "Standard_DC2as_v5"}, false},
+		"valid azure type 2":        {1, 0, []string{"azure", "Standard_DC8as_v5", "foo"}, false},
+		"mixed order 1":             {0, 3, []string{"4xl", "", "foo", "aws"}, false},
+		"mixed order 2":             {2, 1, []string{"", "gcp", "n2d-standard-4", "foo", "bar"}, false},
+		"invalid ec2 type":          {1, 0, []string{"aws", "foo"}, true},
+		"invalid gcp type":          {1, 0, []string{"gcp", "foo"}, true},
+		"invalid azure type":        {1, 0, []string{"azure", "foo"}, true},
+		"args to short":             {2, 0, []string{"foo"}, true},
+		"provider position invalid": {1, 2, []string{"gcp", "n2d-standard-4"}, true},
+		"type position invalid":     {2, 0, []string{"gcp", "n2d-standard-4"}, true},
+		"unknown provider":          {1, 0, []string{"foo", "n2d-standard-4"}, true},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			testCmd := &cobra.Command{Args: isInstanceTypeForProvider(tc.typePos, tc.providerPos)}
+
+			err := testCmd.ValidateArgs(tc.args)
+
 			if tc.expectErr {
 				assert.Error(err)
 			} else {
