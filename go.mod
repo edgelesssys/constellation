@@ -71,6 +71,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/googleapis/gax-go/v2 v2.2.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
+	github.com/kr/text v0.2.0
 	github.com/martinjungblut/go-cryptsetup v0.0.0-20220317181052-e70d6b615049
 	github.com/schollz/progressbar/v3 v3.8.6
 	github.com/spf13/afero v1.8.2

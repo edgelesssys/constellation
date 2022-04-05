@@ -9,10 +9,6 @@ import (
 	"io/fs"
 	"net"
 
-	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
-	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
-
 	"github.com/edgelesssys/constellation/cli/azure"
 	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/cli/gcp"
@@ -23,6 +19,10 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/util"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/state"
+	"github.com/kr/text"
+	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
+	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 func newInitCmd() *cobra.Command {
@@ -94,6 +94,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, vpn
 		}
 	}
 
+	cmd.Println("Creating service account ...")
 	serviceAccount, stat, err := serviceAccountCr.createServiceAccount(ctx, stat, config)
 	if err != nil {
 		return err
@@ -108,6 +109,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, vpn
 	}
 
 	endpoints := ipsToEndpoints(append(coordinators.PublicIPs(), nodes.PublicIPs()...), *config.CoordinatorPort)
+	cmd.Println("Waiting for cloud provider to finish resource creation ...")
 	if err := waiter.WaitForAll(ctx, endpoints, coordinatorstate.AcceptingInit); err != nil {
 		return fmt.Errorf("failed to wait for peer status: %w", err)
 	}
@@ -158,7 +160,9 @@ func activate(ctx context.Context, cmd *cobra.Command, client protoClient, input
 		return activationResult{}, err
 	}
 
-	if err := respCl.WriteLogStream(cmd.OutOrStdout()); err != nil {
+	indentOut := text.NewIndentWriter(cmd.OutOrStdout(), []byte{'\t'})
+	cmd.Println("Activating the cluster ...")
+	if err := respCl.WriteLogStream(indentOut); err != nil {
 		return activationResult{}, err
 	}
 

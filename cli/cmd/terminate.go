@@ -48,6 +48,8 @@ func terminate(cmd *cobra.Command, fileHandler file.Handler, config *config.Conf
 		return err
 	}
 
+	cmd.Println("Terminating ...")
+
 	if len(stat.EC2Instances) != 0 || stat.EC2SecurityGroup != "" {
 		ec2client, err := ec2.NewFromDefault(cmd.Context())
 		if err != nil {
