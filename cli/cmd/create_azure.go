@@ -105,6 +105,7 @@ func createAzure(cmd *cobra.Command, cl azureclient, fileHandler file.Handler, c
 	if err := cl.CreateInstances(cmd.Context(), client.CreateInstancesInput{
 		Count:                count,
 		InstanceType:         size,
+		StateDiskSizeGB:      *config.StateDiskSizeGB,
 		Image:                *config.Provider.Azure.Image,
 		UserAssingedIdentity: *config.Provider.Azure.UserAssignedIdentity,
 	}); err != nil {

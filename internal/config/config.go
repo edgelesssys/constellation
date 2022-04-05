@@ -53,6 +53,7 @@ type Config struct {
 	CoordinatorPort          *string         `json:"coordinatorport,omitempty"`
 	AutoscalingNodeGroupsMin *int            `json:"autoscalingnodegroupsmin,omitempty"`
 	AutoscalingNodeGroupsMax *int            `json:"autoscalingnodegroupsmax,omitempty"`
+	StateDiskSizeGB          *int            `json:"statedisksizegb,omitempty"`
 	Provider                 *ProviderConfig `json:"provider,omitempty"`
 }
 
@@ -66,6 +67,7 @@ func Default() *Config {
 		CoordinatorPort:          proto.String(strconv.Itoa(coordinatorPort)),
 		AutoscalingNodeGroupsMin: intPtr(1),
 		AutoscalingNodeGroupsMax: intPtr(10),
+		StateDiskSizeGB:          intPtr(30),
 		Provider: &ProviderConfig{
 			EC2: &EC2Config{
 				Image: proto.String("ami-07d3864beb84157d3"),

@@ -14,6 +14,7 @@ type ScaleSet struct {
 	NamePrefix           string
 	Location             string
 	InstanceType         string
+	StateDiskSizeGB      int32
 	Count                int64
 	Username             string
 	SubnetID             string
@@ -51,6 +52,13 @@ func (s ScaleSet) Azure() armcompute.VirtualMachineScaleSet {
 				StorageProfile: &armcompute.VirtualMachineScaleSetStorageProfile{
 					ImageReference: &armcompute.ImageReference{
 						ID: to.StringPtr(s.Image),
+					},
+					DataDisks: []*armcompute.VirtualMachineScaleSetDataDisk{
+						{
+							CreateOption: armcompute.DiskCreateOptionTypesEmpty.ToPtr(),
+							DiskSizeGB:   to.Int32Ptr(s.StateDiskSizeGB),
+							Lun:          to.Int32Ptr(0),
+						},
 					},
 				},
 				NetworkProfile: &armcompute.VirtualMachineScaleSetNetworkProfile{

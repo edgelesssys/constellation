@@ -68,11 +68,12 @@ func createGCP(cmd *cobra.Command, cl gcpclient, fileHandler file.Handler, confi
 	}
 
 	createInput := client.CreateInstancesInput{
-		Count:        count,
-		ImageId:      *config.Provider.GCP.Image,
-		InstanceType: size,
-		KubeEnv:      gcp.KubeEnv,
-		DisableCVM:   *config.Provider.GCP.DisableCVM,
+		Count:           count,
+		ImageId:         *config.Provider.GCP.Image,
+		InstanceType:    size,
+		StateDiskSizeGB: *config.StateDiskSizeGB,
+		KubeEnv:         gcp.KubeEnv,
+		DisableCVM:      *config.Provider.GCP.DisableCVM,
 	}
 
 	ok, err := cmd.Flags().GetBool("yes")

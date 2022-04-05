@@ -17,6 +17,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		NamePrefix:           c.name + "-worker-" + c.uid + "-",
 		Count:                input.Count - 1,
 		InstanceType:         input.InstanceType,
+		StateDiskSizeGB:      int32(input.StateDiskSizeGB),
 		Image:                input.Image,
 		UserAssingedIdentity: input.UserAssingedIdentity,
 	}
@@ -33,6 +34,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		NamePrefix:           c.name + "-control-plane-" + c.uid + "-",
 		Count:                1,
 		InstanceType:         input.InstanceType,
+		StateDiskSizeGB:      int32(input.StateDiskSizeGB),
 		Image:                input.Image,
 		UserAssingedIdentity: input.UserAssingedIdentity,
 	}
@@ -63,6 +65,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 type CreateInstancesInput struct {
 	Count                int
 	InstanceType         string
+	StateDiskSizeGB      int
 	Image                string
 	UserAssingedIdentity string
 }
@@ -165,6 +168,7 @@ func (c *Client) createScaleSet(ctx context.Context, input CreateScaleSetInput) 
 		NamePrefix:           input.NamePrefix,
 		Location:             c.location,
 		InstanceType:         input.InstanceType,
+		StateDiskSizeGB:      input.StateDiskSizeGB,
 		Count:                int64(input.Count),
 		Username:             "constellation",
 		SubnetID:             c.subnetID,
@@ -239,6 +243,7 @@ type CreateScaleSetInput struct {
 	NamePrefix           string
 	Count                int
 	InstanceType         string
+	StateDiskSizeGB      int32
 	Image                string
 	UserAssingedIdentity string
 }

@@ -31,6 +31,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		Subnetwork:                   c.subnetwork,
 		ImageId:                      input.ImageId,
 		InstanceType:                 input.InstanceType,
+		StateDiskSizeGB:              int64(input.StateDiskSizeGB),
 		KubeEnv:                      input.KubeEnv,
 		Project:                      c.project,
 		Zone:                         c.zone,
@@ -46,17 +47,18 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 	c.nodeTemplate = nodeTemplateInput.Name
 
 	coordinatorTemplateInput := insertInstanceTemplateInput{
-		Name:         c.name + "-control-plane-" + c.uid,
-		Network:      c.network,
-		Subnetwork:   c.subnetwork,
-		ImageId:      input.ImageId,
-		InstanceType: input.InstanceType,
-		KubeEnv:      input.KubeEnv,
-		Project:      c.project,
-		Zone:         c.zone,
-		Region:       c.region,
-		UID:          c.uid,
-		DisableCVM:   input.DisableCVM,
+		Name:            c.name + "-control-plane-" + c.uid,
+		Network:         c.network,
+		Subnetwork:      c.subnetwork,
+		ImageId:         input.ImageId,
+		InstanceType:    input.InstanceType,
+		StateDiskSizeGB: int64(input.StateDiskSizeGB),
+		KubeEnv:         input.KubeEnv,
+		Project:         c.project,
+		Zone:            c.zone,
+		Region:          c.region,
+		UID:             c.uid,
+		DisableCVM:      input.DisableCVM,
 	}
 	op, err = c.insertInstanceTemplate(ctx, coordinatorTemplateInput)
 	if err != nil {
@@ -285,11 +287,12 @@ func (i *instanceGroupManagerInput) InsertInstanceGroupManagerRequest() computep
 
 // CreateInstancesInput is the input for a CreatInstances operation.
 type CreateInstancesInput struct {
-	Count        int
-	ImageId      string
-	InstanceType string
-	KubeEnv      string
-	DisableCVM   bool
+	Count           int
+	ImageId         string
+	InstanceType    string
+	StateDiskSizeGB int
+	KubeEnv         string
+	DisableCVM      bool
 }
 
 type insertInstanceTemplateInput struct {
@@ -299,6 +302,7 @@ type insertInstanceTemplateInput struct {
 	SecondarySubnetworkRangeName string
 	ImageId                      string
 	InstanceType                 string
+	StateDiskSizeGB              int64
 	KubeEnv                      string
 	Project                      string
 	Zone                         string
@@ -326,6 +330,15 @@ func (i insertInstanceTemplateInput) insertInstanceTemplateRequest() *computepb.
 						AutoDelete: proto.Bool(true),
 						Boot:       proto.Bool(true),
 						Mode:       proto.String(computepb.AttachedDisk_READ_WRITE.String()),
+					},
+					{
+						InitializeParams: &computepb.AttachedDiskInitializeParams{
+							DiskSizeGb: proto.Int64(i.StateDiskSizeGB),
+						},
+						AutoDelete: proto.Bool(true),
+						DeviceName: proto.String("state-disk"),
+						Mode:       proto.String(computepb.AttachedDisk_READ_WRITE.String()),
+						Type:       proto.String(computepb.AttachedDisk_PERSISTENT.String()),
 					},
 				},
 				MachineType: proto.String(i.InstanceType),
