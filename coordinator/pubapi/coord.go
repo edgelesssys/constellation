@@ -29,6 +29,18 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 		return status.Error(codes.InvalidArgument, "missing master secret")
 	}
 
+	logToCLI := a.newLogToCLIFunc(func(msg string) error {
+		return srv.Send(&pubproto.ActivateAsCoordinatorResponse{
+			Content: &pubproto.ActivateAsCoordinatorResponse_Log{
+				Log: &pubproto.Log{
+					Message: msg,
+				},
+			},
+		})
+	})
+
+	logToCLI("Initializing first Coordinator ...")
+
 	// If any of the following actions fail, we cannot revert
 	// Thus, mark this peer as failed.
 	defer func() {
@@ -70,6 +82,7 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 		return status.Errorf(codes.Internal, "%v", err)
 	}
 
+	logToCLI("Initializing Kubernetes ...")
 	kubeconfig, err := a.core.InitCluster(in.AutoscalingNodeGroups, in.CloudServiceAccountUri)
 	if err != nil {
 		return status.Errorf(codes.Internal, "%v", err)
@@ -86,16 +99,6 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 			panic(err)
 		}
 	}()
-
-	logToCLI := a.newLogToCLIFunc(func(msg string) error {
-		return srv.Send(&pubproto.ActivateAsCoordinatorResponse{
-			Content: &pubproto.ActivateAsCoordinatorResponse_Log{
-				Log: &pubproto.Log{
-					Message: msg,
-				},
-			},
-		})
-	})
 
 	// TODO: check performance and maybe make concurrent
 	if err := a.activateNodes(logToCLI, in.NodePublicEndpoints, coordPeer); err != nil {
@@ -169,7 +172,7 @@ func (a *API) activateNodes(logToCLI logFunc, nodePublicEndpoints []string, coor
 
 	// Activate all nodes.
 	for num, nodePublicEndpoint := range nodePublicEndpoints {
-		logToCLI("activating node %3d out of %3d nodes", num+1, len(nodePublicEndpoints))
+		logToCLI("Activating node %3d out of %3d ...", num+1, len(nodePublicEndpoints))
 		nodeVPNIP, err := a.core.GetNextNodeIP()
 		if err != nil {
 			a.logger.Error("generation of vpn ips failed", zap.Error(err))

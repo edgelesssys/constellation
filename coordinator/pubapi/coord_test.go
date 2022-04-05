@@ -152,11 +152,11 @@ func TestActivateAsCoordinator(t *testing.T) {
 			require.NoError(err)
 
 			// Coordinator streams logs and admin conf
-			require.Len(stream.sent, len(tc.nodes)+1)
-			for i := 0; i < len(tc.nodes); i++ {
+			require.Greater(len(stream.sent), len(tc.nodes))
+			for i := 0; i < len(stream.sent)-1; i++ {
 				assert.NotEmpty(stream.sent[i].GetLog().Message)
 			}
-			adminConfig := stream.sent[len(tc.nodes)].GetAdminConfig()
+			adminConfig := stream.sent[len(stream.sent)-1].GetAdminConfig()
 			assert.Equal("192.0.2.99", adminConfig.AdminVpnIp)
 			assert.Equal(coordinatorPubKey, adminConfig.CoordinatorVpnPubKey)
 			assert.Equal(core.kubeconfig, adminConfig.Kubeconfig)
