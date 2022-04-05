@@ -27,6 +27,14 @@ set(NITRO_CFLAGS '-I${CMAKE_BINARY_DIR}/nitro/${CARGOTARGET} -I${CMAKE_BINARY_DI
 set(NITRO_LDFLAGS '${CMAKE_BINARY_DIR}/nitro/${CARGOTARGET}/libnitro.a ${RUST_STATICLIB_LDFLAGS}')
 
 #
+# core-os disk-mapper
+#
+add_custom_target(disk-mapper
+  go build -o ${CMAKE_BINARY_DIR}/disk-mapper -ldflags "-s -w"
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/state/cmd
+)
+
+#
 # coordinator
 #
 
