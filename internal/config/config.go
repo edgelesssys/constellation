@@ -11,13 +11,11 @@ import (
 	"github.com/edgelesssys/constellation/cli/file"
 	gcpClient "github.com/edgelesssys/constellation/cli/gcp/client"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"google.golang.org/protobuf/proto"
 )
 
 var (
-	// Version is the CLI Version. Left as a separate variable to allow override during build.
-	Version = "0.0.0"
-
 	// gcpPCRs is a map of the expected PCR values for a GCP Constellation node.
 	// TODO: Get a full list once we have stable releases.
 	gcpPCRs = map[uint32][]byte{
@@ -34,22 +32,10 @@ var (
 	}
 )
 
-const (
-	coordinatorPort = 9000
-	enclaveSSHPort  = 2222
-	sshPort         = 22
-	wireguardPort   = 51820
-	nvmeOverTCPPort = 8009
-)
-
 // Config defines a configuration used by the CLI.
 // All fields in this struct and its child structs have pointer types
 // to ensure the default values of the actual type is not confused with an omitted value.
 type Config struct {
-	StatePath                *string         `json:"statepath,omitempty"`
-	AdminConfPath            *string         `json:"adminconfpath,omitempty"`
-	MasterSecretPath         *string         `json:"mastersecretpath,omitempty"`
-	WGQuickConfigPath        *string         `json:"wgquickconfigpath,omitempty"`
 	CoordinatorPort          *string         `json:"coordinatorport,omitempty"`
 	AutoscalingNodeGroupsMin *int            `json:"autoscalingnodegroupsmin,omitempty"`
 	AutoscalingNodeGroupsMax *int            `json:"autoscalingnodegroupsmax,omitempty"`
@@ -60,11 +46,7 @@ type Config struct {
 // Default returns a struct with the default config.
 func Default() *Config {
 	return &Config{
-		StatePath:                proto.String("constellation-state.json"),
-		AdminConfPath:            proto.String("constellation-admin.conf"),
-		MasterSecretPath:         proto.String("constellation-mastersecret.base64"),
-		WGQuickConfigPath:        proto.String("wg0.conf"),
-		CoordinatorPort:          proto.String(strconv.Itoa(coordinatorPort)),
+		CoordinatorPort:          proto.String(strconv.Itoa(constants.CoordinatorPort)),
 		AutoscalingNodeGroupsMin: intPtr(1),
 		AutoscalingNodeGroupsMax: intPtr(10),
 		StateDiskSizeGB:          intPtr(30),
@@ -87,37 +69,40 @@ func Default() *Config {
 							Description: "Coordinator default port",
 							Protocol:    "TCP",
 							IPRange:     "0.0.0.0/0",
-							Port:        coordinatorPort,
+							Port:        constants.CoordinatorPort,
 						},
 						{
 							Description: "Enclave SSH",
 							Protocol:    "TCP",
 							IPRange:     "0.0.0.0/0",
-							Port:        enclaveSSHPort,
+							Port:        constants.EnclaveSSHPort,
 						},
 						{
 							Description: "WireGuard default port",
 							Protocol:    "UDP",
 							IPRange:     "0.0.0.0/0",
-							Port:        wireguardPort,
+							Port:        constants.WireguardPort,
 						},
 						{
 							Description: "SSH",
 							Protocol:    "TCP",
 							IPRange:     "0.0.0.0/0",
-							Port:        sshPort,
+							Port:        constants.SSHPort,
 						},
 						{
 							Description: "NVMe over TCP",
 							Protocol:    "TCP",
 							IPRange:     "0.0.0.0/0",
-							Port:        nvmeOverTCPPort,
+							Port:        constants.NVMEOverTCPPort,
 						},
 					},
 				},
 			},
 			Azure: &AzureConfig{
-				Image: proto.String("/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos/versions/0.0.1649852687"),
+				SubscriptionID: proto.String("0d202bbb-4fa7-4af8-8125-58c269a05435"),
+				TenantID:       proto.String("adb650a8-5da3-4b15-b4b0-3daf65ff7626"),
+				Location:       proto.String("North Europe"),
+				Image:          proto.String("/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos/versions/0.0.1649852687"),
 				NetworkSecurityGroupInput: &azureClient.NetworkSecurityGroupInput{
 					Ingress: cloudtypes.Firewall{
 						{
@@ -125,21 +110,21 @@ func Default() *Config {
 							Description: "Coordinator default port",
 							Protocol:    "tcp",
 							IPRange:     "0.0.0.0/0",
-							Port:        coordinatorPort,
+							Port:        constants.CoordinatorPort,
 						},
 						{
 							Name:        "wireguard",
 							Description: "WireGuard default port",
 							Protocol:    "udp",
 							IPRange:     "0.0.0.0/0",
-							Port:        wireguardPort,
+							Port:        constants.WireguardPort,
 						},
 						{
 							Name:        "ssh",
 							Description: "SSH",
 							Protocol:    "tcp",
 							IPRange:     "0.0.0.0/0",
-							Port:        sshPort,
+							Port:        constants.SSHPort,
 						},
 					},
 				},
@@ -147,26 +132,29 @@ func Default() *Config {
 				UserAssignedIdentity: proto.String("/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-dev-identity"),
 			},
 			GCP: &GCPConfig{
-				Image: proto.String("constellation-coreos-1649852687"),
+				Project: proto.String("constellation-331613"),
+				Region:  proto.String("europe-west3"),
+				Zone:    proto.String("europe-west3-b"),
+				Image:   proto.String("constellation-coreos-1649852687"),
 				FirewallInput: &gcpClient.FirewallInput{
 					Ingress: cloudtypes.Firewall{
 						{
 							Name:        "coordinator",
 							Description: "Coordinator default port",
 							Protocol:    "tcp",
-							Port:        coordinatorPort,
+							Port:        constants.CoordinatorPort,
 						},
 						{
 							Name:        "wireguard",
 							Description: "WireGuard default port",
 							Protocol:    "udp",
-							Port:        wireguardPort,
+							Port:        constants.WireguardPort,
 						},
 						{
 							Name:        "ssh",
 							Description: "SSH",
 							Protocol:    "tcp",
-							Port:        sshPort,
+							Port:        constants.SSHPort,
 						},
 					},
 				},
@@ -218,6 +206,9 @@ type EC2Config struct {
 
 // AzureConfig are Azure specific configuration values used by the CLI.
 type AzureConfig struct {
+	SubscriptionID            *string                                `json:"subscription,omitempty"` // TODO: This will be user input
+	TenantID                  *string                                `json:"tenant,omitempty"`       // TODO: This will be user input
+	Location                  *string                                `json:"location,omitempty"`     // TODO: This will be user input
 	Image                     *string                                `json:"image,omitempty"`
 	NetworkSecurityGroupInput *azureClient.NetworkSecurityGroupInput `json:"networksecuritygroupinput,omitempty"`
 	PCRs                      *map[uint32][]byte                     `json:"pcrs,omitempty"`
@@ -226,6 +217,9 @@ type AzureConfig struct {
 
 // GCPConfig are GCP specific configuration values used by the CLI.
 type GCPConfig struct {
+	Project             *string                  `json:"project,omitempty"` // TODO: This will be user input
+	Region              *string                  `json:"region,omitempty"`  // TODO: This will be user input
+	Zone                *string                  `json:"zone,omitempty"`    // TODO: This will be user input
 	Image               *string                  `json:"image,omitempty"`
 	FirewallInput       *gcpClient.FirewallInput `json:"firewallinput,omitempty"`
 	VPCsInput           *gcpClient.VPCsInput     `json:"vpcsinput,omitempty"`

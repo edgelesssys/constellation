@@ -9,6 +9,7 @@ import (
 	"github.com/edgelesssys/constellation/cli/ec2"
 	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/internal/config"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/state"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -138,7 +139,7 @@ func TestCreateAWS(t *testing.T) {
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
 			if tc.existingState != nil {
-				require.NoError(fileHandler.WriteJSON(*config.StatePath, *tc.existingState, file.OptNone))
+				require.NoError(fileHandler.WriteJSON(constants.StateFilename, *tc.existingState, file.OptNone))
 			}
 
 			err := createAWS(cmd, tc.client, fileHandler, config, "xlarge", "name", 3)
@@ -152,7 +153,7 @@ func TestCreateAWS(t *testing.T) {
 			} else {
 				assert.NoError(err)
 				var stat state.ConstellationState
-				err := fileHandler.ReadJSON(*config.StatePath, &stat)
+				err := fileHandler.ReadJSON(constants.StateFilename, &stat)
 				assert.NoError(err)
 				assert.Equal(tc.stateExpected, stat)
 			}

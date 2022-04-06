@@ -49,9 +49,9 @@ func TestFromFile(t *testing.T) {
 		wantErr           bool
 	}{
 		"overwrite fields": {
-			from:              &Config{StatePath: proto.String("test")},
+			from:              &Config{CoordinatorPort: proto.String("1000")},
 			configName:        configName,
-			wantResultMutator: func(c *Config) { c.StatePath = proto.String("test") },
+			wantResultMutator: func(c *Config) { c.CoordinatorPort = proto.String("1000") },
 		},
 		"overwrite slices": {
 			from:              &Config{Provider: someProviderConfig},
@@ -87,9 +87,6 @@ func TestFromFile(t *testing.T) {
 				require.NoError(err)
 				wantResult := Default()
 				tc.wantResultMutator(wantResult)
-				assert.EqualValues(wantResult.StatePath, result.StatePath)
-				assert.EqualValues(wantResult.AdminConfPath, result.AdminConfPath)
-				assert.EqualValues(wantResult.MasterSecretPath, result.MasterSecretPath)
 				assert.EqualValues(wantResult.CoordinatorPort, result.CoordinatorPort)
 				assert.EqualValues(wantResult.AutoscalingNodeGroupsMin, result.AutoscalingNodeGroupsMin)
 				assert.EqualValues(wantResult.AutoscalingNodeGroupsMax, result.AutoscalingNodeGroupsMax)

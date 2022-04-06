@@ -6,7 +6,7 @@ import (
 	"io/fs"
 
 	"github.com/edgelesssys/constellation/cli/file"
-	"github.com/edgelesssys/constellation/internal/config"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/spf13/cobra"
 )
 
@@ -26,15 +26,15 @@ func newCreateCmd() *cobra.Command {
 }
 
 // checkDirClean checks if files of a previous Constellation are left in the current working dir.
-func checkDirClean(fileHandler file.Handler, config *config.Config) error {
-	if _, err := fileHandler.Stat(*config.StatePath); !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("file '%s' already exists in working directory, run 'constellation terminate' before creating a new one", *config.StatePath)
+func checkDirClean(fileHandler file.Handler) error {
+	if _, err := fileHandler.Stat(constants.StateFilename); !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("file '%s' already exists in working directory, run 'constellation terminate' before creating a new one", constants.StateFilename)
 	}
-	if _, err := fileHandler.Stat(*config.AdminConfPath); !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("file '%s' already exists in working directory, run 'constellation terminate' before creating a new one", *config.AdminConfPath)
+	if _, err := fileHandler.Stat(constants.AdminConfFilename); !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("file '%s' already exists in working directory, run 'constellation terminate' before creating a new one", constants.AdminConfFilename)
 	}
-	if _, err := fileHandler.Stat(*config.MasterSecretPath); !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("file '%s' already exists in working directory, clean it up first", *config.MasterSecretPath)
+	if _, err := fileHandler.Stat(constants.MasterSecretFilename); !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("file '%s' already exists in working directory, clean it up first", constants.MasterSecretFilename)
 	}
 
 	return nil

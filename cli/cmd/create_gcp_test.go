@@ -9,6 +9,7 @@ import (
 	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/cli/gcp"
 	"github.com/edgelesssys/constellation/internal/config"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/state"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -153,7 +154,7 @@ func TestCreateGCP(t *testing.T) {
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
 			if tc.existingState != nil {
-				require.NoError(fileHandler.WriteJSON(*config.StatePath, *tc.existingState, file.OptNone))
+				require.NoError(fileHandler.WriteJSON(constants.StateFilename, *tc.existingState, file.OptNone))
 			}
 
 			err := createGCP(cmd, tc.client, fileHandler, config, "n2d-standard-2", 3, 2)
@@ -168,7 +169,7 @@ func TestCreateGCP(t *testing.T) {
 			} else {
 				assert.NoError(err)
 				var stat state.ConstellationState
-				err := fileHandler.ReadJSON(*config.StatePath, &stat)
+				err := fileHandler.ReadJSON(constants.StateFilename, &stat)
 				assert.NoError(err)
 				assert.Equal(tc.stateExpected, stat)
 			}

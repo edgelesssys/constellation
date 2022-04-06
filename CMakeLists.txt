@@ -57,7 +57,7 @@ add_dependencies(coordinator nitro)
 add_custom_target(cli ALL
   ${CMAKE_COMMAND} -E env CGO_CFLAGS=${NITRO_CFLAGS}
   ${CMAKE_COMMAND} -E env CGO_LDFLAGS=${NITRO_LDFLAGS}
-  go build -o ${CMAKE_BINARY_DIR}/constellation -buildvcs=false -tags=aws,gcp -ldflags "-buildid='' -X github.com/edgelesssys/constellation/cli/defaults.Version=${PROJECT_VERSION}"
+  go build -o ${CMAKE_BINARY_DIR}/constellation -buildvcs=false -tags=aws,gcp -ldflags "-buildid='' -X github.com/edgelesssys/constellation/internal/constants.CliVersion=${PROJECT_VERSION}"
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/cli)
 
 add_dependencies(cli nitro)

@@ -16,6 +16,7 @@ import (
 	depl "github.com/edgelesssys/constellation/debugd/debugd/deploy"
 	pb "github.com/edgelesssys/constellation/debugd/service"
 	"github.com/edgelesssys/constellation/debugd/ssh"
+	"github.com/edgelesssys/constellation/internal/constants"
 	statec "github.com/edgelesssys/constellation/internal/state"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -66,7 +67,7 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, config *config.CDBGCon
 		ips = overrideIPs
 	} else {
 		var stat statec.ConstellationState
-		err := fileHandler.ReadJSON(*config.StatePath, &stat)
+		err := fileHandler.ReadJSON(constants.StateFilename, &stat)
 		if errors.Is(err, fs.ErrNotExist) {
 			log.Println("Unable to load statefile. Maybe you forgot to run \"constellation create ...\" first?")
 			return fmt.Errorf("loading statefile failed: %w", err)

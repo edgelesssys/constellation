@@ -5,7 +5,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/edgelesssys/constellation/internal/config"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,5 +21,5 @@ func TestVersionCmd(t *testing.T) {
 
 	s, err := io.ReadAll(b)
 	assert.NoError(err)
-	assert.Contains(string(s), config.Version)
+	assert.Contains(string(s), constants.CliVersion)
 }

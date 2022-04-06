@@ -19,6 +19,7 @@ import (
 	coordinatorstate "github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/util"
 	"github.com/edgelesssys/constellation/internal/config"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/state"
 	"github.com/kr/text"
 	wgquick "github.com/nmiculinic/wg-quick-go"
@@ -72,13 +73,13 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, serviceAccountCr serviceAccountCreator,
 	fileHandler file.Handler, config *config.Config, waiter statusWaiter, vpnHandler vpnHandler,
 ) error {
-	flagArgs, err := evalFlagArgs(cmd, fileHandler, config)
+	flagArgs, err := evalFlagArgs(cmd, fileHandler)
 	if err != nil {
 		return err
 	}
 
 	var stat state.ConstellationState
-	err = fileHandler.ReadJSON(*config.StatePath, &stat)
+	err = fileHandler.ReadJSON(constants.StateFilename, &stat)
 	if errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("nothing to initialize: %w", err)
 	} else if err != nil {
@@ -101,7 +102,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 	if err != nil {
 		return err
 	}
-	if err := fileHandler.WriteJSON(*config.StatePath, stat, file.OptOverwrite); err != nil {
+	if err := fileHandler.WriteJSON(constants.StateFilename, stat, file.OptOverwrite); err != nil {
 		return err
 	}
 
@@ -134,7 +135,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		return err
 	}
 
-	err = result.writeOutput(cmd.OutOrStdout(), fileHandler, config)
+	err = result.writeOutput(cmd.OutOrStdout(), fileHandler)
 	if err != nil {
 		return err
 	}
@@ -144,7 +145,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		return err
 	}
 
-	if err := writeWGQuickFile(fileHandler, config, vpnHandler, vpnConfig); err != nil {
+	if err := writeWGQuickFile(fileHandler, vpnHandler, vpnConfig); err != nil {
 		return fmt.Errorf("write wg-quick file: %w", err)
 	}
 
@@ -223,15 +224,15 @@ type activationResult struct {
 }
 
 // writeWGQuickFile writes the wg-quick file to the default path.
-func writeWGQuickFile(fileHandler file.Handler, config *config.Config, vpnHandler vpnHandler, vpnConfig *wgquick.Config) error {
+func writeWGQuickFile(fileHandler file.Handler, vpnHandler vpnHandler, vpnConfig *wgquick.Config) error {
 	data, err := vpnHandler.Marshal(vpnConfig)
 	if err != nil {
 		return err
 	}
-	return fileHandler.Write(*config.WGQuickConfigPath, data, file.OptNone)
+	return fileHandler.Write(constants.WGQuickConfigFilename, data, file.OptNone)
 }
 
-func (r activationResult) writeOutput(wr io.Writer, fileHandler file.Handler, config *config.Config) error {
+func (r activationResult) writeOutput(wr io.Writer, fileHandler file.Handler) error {
 	fmt.Fprint(wr, "Your Constellation was successfully initialized.\n\n")
 
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
@@ -240,18 +241,18 @@ func (r activationResult) writeOutput(wr io.Writer, fileHandler file.Handler, co
 	writeRow(tw, "Coordinator's public key", r.coordinatorPubKey)
 	writeRow(tw, "Constellation's owner identifier", r.ownerID)
 	writeRow(tw, "Constellation's unique identifier", r.clusterID)
-	writeRow(tw, "WireGuard configuration file", *config.WGQuickConfigPath)
-	writeRow(tw, "Kubernetes configuration", *config.AdminConfPath)
+	writeRow(tw, "WireGuard configuration file", constants.WGQuickConfigFilename)
+	writeRow(tw, "Kubernetes configuration", constants.AdminConfFilename)
 	tw.Flush()
 	fmt.Fprintln(wr)
 
-	if err := fileHandler.Write(*config.AdminConfPath, []byte(r.kubeconfig), file.OptNone); err != nil {
+	if err := fileHandler.Write(constants.AdminConfFilename, []byte(r.kubeconfig), file.OptNone); err != nil {
 		return fmt.Errorf("write kubeconfig: %w", err)
 	}
 
 	fmt.Fprintln(wr, "You can now connect to your Constellation by executing:")
-	fmt.Fprintf(wr, "\twg-quick up ./%s\n", *config.WGQuickConfigPath)
-	fmt.Fprintf(wr, "\texport KUBECONFIG=\"$PWD/%s\"\n", *config.AdminConfPath)
+	fmt.Fprintf(wr, "\twg-quick up ./%s\n", constants.WGQuickConfigFilename)
+	fmt.Fprintf(wr, "\texport KUBECONFIG=\"$PWD/%s\"\n", constants.AdminConfFilename)
 	return nil
 }
 
@@ -261,7 +262,7 @@ func writeRow(wr io.Writer, col1 string, col2 string) {
 
 // evalFlagArgs gets the flag values and does preprocessing of these values like
 // reading the content from file path flags and deriving other values from flag combinations.
-func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler, config *config.Config) (flagArgs, error) {
+func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (flagArgs, error) {
 	userPrivKeyPath, err := cmd.Flags().GetString("privatekey")
 	if err != nil {
 		return flagArgs{}, err
@@ -278,7 +279,7 @@ func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler, config *config.C
 	if err != nil {
 		return flagArgs{}, err
 	}
-	masterSecret, err := readOrGeneratedMasterSecret(cmd.OutOrStdout(), fileHandler, masterSecretPath, config)
+	masterSecret, err := readOrGeneratedMasterSecret(cmd.OutOrStdout(), fileHandler, masterSecretPath)
 	if err != nil {
 		return flagArgs{}, err
 	}
@@ -338,7 +339,7 @@ func ipsToEndpoints(ips []string, port string) []string {
 }
 
 // readOrGeneratedMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
-func readOrGeneratedMasterSecret(w io.Writer, fileHandler file.Handler, filename string, config *config.Config) ([]byte, error) {
+func readOrGeneratedMasterSecret(w io.Writer, fileHandler file.Handler, filename string) ([]byte, error) {
 	if filename != "" {
 		// Try to read the base64 secret from file
 		encodedSecret, err := fileHandler.Read(filename)
@@ -360,10 +361,10 @@ func readOrGeneratedMasterSecret(w io.Writer, fileHandler file.Handler, filename
 	if err != nil {
 		return nil, err
 	}
-	if err := fileHandler.Write(*config.MasterSecretPath, []byte(base64.StdEncoding.EncodeToString(masterSecret)), file.OptNone); err != nil {
+	if err := fileHandler.Write(constants.MasterSecretFilename, []byte(base64.StdEncoding.EncodeToString(masterSecret)), file.OptNone); err != nil {
 		return nil, err
 	}
-	fmt.Fprintf(w, "Your Constellation master secret was successfully written to ./%s\n", *config.MasterSecretPath)
+	fmt.Fprintf(w, "Your Constellation master secret was successfully written to ./%s\n", constants.MasterSecretFilename)
 	return masterSecret, nil
 }
 

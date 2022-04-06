@@ -14,6 +14,7 @@ import (
 	"github.com/edgelesssys/constellation/cli/file"
 	gcp "github.com/edgelesssys/constellation/cli/gcp/client"
 	"github.com/edgelesssys/constellation/internal/config"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/state"
 )
 
@@ -44,7 +45,7 @@ func runTerminate(cmd *cobra.Command, args []string) error {
 
 func terminate(cmd *cobra.Command, fileHandler file.Handler, config *config.Config) error {
 	var stat state.ConstellationState
-	if err := fileHandler.ReadJSON(*config.StatePath, &stat); err != nil {
+	if err := fileHandler.ReadJSON(constants.StateFilename, &stat); err != nil {
 		return err
 	}
 
@@ -83,16 +84,16 @@ func terminate(cmd *cobra.Command, fileHandler file.Handler, config *config.Conf
 	cmd.Println("Your Constellation was terminated successfully.")
 
 	var retErr error
-	if err := fileHandler.Remove(*config.StatePath); err != nil {
-		retErr = multierr.Append(err, fmt.Errorf("failed to remove file '%s', please remove manually", *config.StatePath))
+	if err := fileHandler.Remove(constants.StateFilename); err != nil {
+		retErr = multierr.Append(err, fmt.Errorf("failed to remove file '%s', please remove manually", constants.StateFilename))
 	}
 
-	if err := fileHandler.Remove(*config.AdminConfPath); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		retErr = multierr.Append(err, fmt.Errorf("failed to remove file '%s', please remove manually", *config.AdminConfPath))
+	if err := fileHandler.Remove(constants.AdminConfFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		retErr = multierr.Append(err, fmt.Errorf("failed to remove file '%s', please remove manually", constants.AdminConfFilename))
 	}
 
-	if err := fileHandler.Remove(*config.WGQuickConfigPath); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		retErr = multierr.Append(err, fmt.Errorf("failed to remove file '%s', please remove manually", *config.WGQuickConfigPath))
+	if err := fileHandler.Remove(constants.WGQuickConfigFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		retErr = multierr.Append(err, fmt.Errorf("failed to remove file '%s', please remove manually", constants.WGQuickConfigFilename))
 	}
 
 	return retErr

@@ -15,6 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/cli/gcp"
 	"github.com/edgelesssys/constellation/internal/config"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/state"
 	wgquick "github.com/nmiculinic/wg-quick-go"
 	"github.com/spf13/afero"
@@ -336,7 +337,7 @@ func TestInitialize(t *testing.T) {
 			cmd.SetErr(&errOut)
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
-			require.NoError(fileHandler.WriteJSON(*config.StatePath, tc.existingState, file.OptNone))
+			require.NoError(fileHandler.WriteJSON(constants.StateFilename, tc.existingState, file.OptNone))
 
 			// Write key file to filesystem and set path in flag.
 			require.NoError(afero.Afero{Fs: fs}.WriteFile("privK", []byte(tc.privKey), 0o600))
@@ -376,16 +377,15 @@ func TestWriteOutput(t *testing.T) {
 	var out bytes.Buffer
 	testFs := afero.NewMemMapFs()
 	fileHandler := file.NewHandler(testFs)
-	config := config.Default()
 
-	err := result.writeOutput(&out, fileHandler, config)
+	err := result.writeOutput(&out, fileHandler)
 	assert.NoError(err)
 	assert.Contains(out.String(), result.clientVpnIP)
 	assert.Contains(out.String(), result.coordinatorPubIP)
 	assert.Contains(out.String(), result.coordinatorPubKey)
 
 	afs := afero.Afero{Fs: testFs}
-	adminConf, err := afs.ReadFile(*config.AdminConfPath)
+	adminConf, err := afs.ReadFile(constants.AdminConfFilename)
 	assert.NoError(err)
 	assert.Equal(result.kubeconfig, string(adminConf))
 }
@@ -522,14 +522,13 @@ func TestReadOrGeneratedMasterSecret(t *testing.T) {
 			require := require.New(t)
 
 			fileHandler := file.NewHandler(tc.fs())
-			config := config.Default()
 
 			if tc.createFile {
 				require.NoError(fileHandler.Write(tc.filename, []byte(tc.filecontent), file.OptNone))
 			}
 
 			var out bytes.Buffer
-			secret, err := readOrGeneratedMasterSecret(&out, fileHandler, tc.filename, config)
+			secret, err := readOrGeneratedMasterSecret(&out, fileHandler, tc.filename)
 
 			if tc.errExpected {
 				assert.Error(err)
@@ -537,7 +536,7 @@ func TestReadOrGeneratedMasterSecret(t *testing.T) {
 				assert.NoError(err)
 
 				if tc.filename == "" {
-					require.Contains(out.String(), *config.MasterSecretPath)
+					require.Contains(out.String(), constants.MasterSecretFilename)
 					filename := strings.Split(out.String(), "./")
 					tc.filename = strings.Trim(filename[1], "\n")
 				}
@@ -697,7 +696,7 @@ func TestAutoscaleFlag(t *testing.T) {
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
 			vpnHandler := stubVPNHandler{}
-			require.NoError(fileHandler.WriteJSON(*config.StatePath, tc.existingState, file.OptNone))
+			require.NoError(fileHandler.WriteJSON(constants.StateFilename, tc.existingState, file.OptNone))
 
 			// Write key file to filesystem and set path in flag.
 			require.NoError(afero.Afero{Fs: fs}.WriteFile("privK", []byte(tc.privKey), 0o600))
@@ -719,25 +718,21 @@ func TestAutoscaleFlag(t *testing.T) {
 func TestWriteWGQuickFile(t *testing.T) {
 	testCases := map[string]struct {
 		fileHandler file.Handler
-		config      *config.Config
 		vpnHandler  *stubVPNHandler
 		vpnConfig   *wgquick.Config
 		wantErr     bool
 	}{
 		"write wg quick file": {
 			fileHandler: file.NewHandler(afero.NewMemMapFs()),
-			config:      &config.Config{WGQuickConfigPath: func(s string) *string { return &s }("a.conf")},
 			vpnHandler:  &stubVPNHandler{marshalRes: "config"},
 		},
 		"marshal failed": {
 			fileHandler: file.NewHandler(afero.NewMemMapFs()),
-			config:      &config.Config{WGQuickConfigPath: func(s string) *string { return &s }("a.conf")},
 			vpnHandler:  &stubVPNHandler{marshalErr: errors.New("some err")},
 			wantErr:     true,
 		},
 		"write fails": {
 			fileHandler: file.NewHandler(afero.NewReadOnlyFs(afero.NewMemMapFs())),
-			config:      &config.Config{WGQuickConfigPath: func(s string) *string { return &s }("a.conf")},
 			vpnHandler:  &stubVPNHandler{marshalRes: "config"},
 			wantErr:     true,
 		},
@@ -747,13 +742,13 @@ func TestWriteWGQuickFile(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			err := writeWGQuickFile(tc.fileHandler, tc.config, tc.vpnHandler, tc.vpnConfig)
+			err := writeWGQuickFile(tc.fileHandler, tc.vpnHandler, tc.vpnConfig)
 
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				file, err := tc.fileHandler.Read(*tc.config.WGQuickConfigPath)
+				file, err := tc.fileHandler.Read(constants.WGQuickConfigFilename)
 				assert.NoError(err)
 				assert.Contains(string(file), tc.vpnHandler.marshalRes)
 			}

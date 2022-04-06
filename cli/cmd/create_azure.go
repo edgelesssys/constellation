@@ -10,6 +10,7 @@ import (
 	"github.com/edgelesssys/constellation/cli/azure/client"
 	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/internal/config"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -71,7 +72,7 @@ func runCreateAzure(cmd *cobra.Command, args []string) error {
 }
 
 func createAzure(cmd *cobra.Command, cl azureclient, fileHandler file.Handler, config *config.Config, size string, countCoordinators, countNodes int) (retErr error) {
-	if err := checkDirClean(fileHandler, config); err != nil {
+	if err := checkDirClean(fileHandler); err != nil {
 		return err
 	}
 
@@ -120,7 +121,7 @@ func createAzure(cmd *cobra.Command, cl azureclient, fileHandler file.Handler, c
 	if err != nil {
 		return err
 	}
-	if err := fileHandler.WriteJSON(*config.StatePath, stat, file.OptNone); err != nil {
+	if err := fileHandler.WriteJSON(constants.StateFilename, stat, file.OptNone); err != nil {
 		return err
 	}
 

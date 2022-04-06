@@ -13,6 +13,7 @@ import (
 	"github.com/edgelesssys/constellation/cli/ec2/client"
 	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/internal/config"
+	"github.com/edgelesssys/constellation/internal/constants"
 )
 
 func newCreateAWSCmd() *cobra.Command {
@@ -23,7 +24,7 @@ func newCreateAWSCmd() *cobra.Command {
 		Example: "aws 1 4 2xlarge",
 		Args: cobra.MatchAll(
 			cobra.ExactArgs(3),
-			isValidAWSCoordinatorCount(0),
+			isValidAWSCoordinatorCount(0, 1),
 			isIntGreaterZeroArg(1),
 			isEC2InstanceType(2),
 		),
@@ -64,7 +65,7 @@ func runCreateAWS(cmd *cobra.Command, args []string) error {
 // After the instances are running, they are tagged with the default tags.
 // On success, the state of the client is saved to the state file.
 func createAWS(cmd *cobra.Command, cl ec2client, fileHandler file.Handler, config *config.Config, size, name string, count int) (retErr error) {
-	if err := checkDirClean(fileHandler, config); err != nil {
+	if err := checkDirClean(fileHandler); err != nil {
 		return err
 	}
 
@@ -112,7 +113,7 @@ func createAWS(cmd *cobra.Command, cl ec2client, fileHandler file.Handler, confi
 	if err != nil {
 		return err
 	}
-	if err := fileHandler.WriteJSON(*config.StatePath, stat, file.OptNone); err != nil {
+	if err := fileHandler.WriteJSON(constants.StateFilename, stat, file.OptNone); err != nil {
 		return err
 	}
 

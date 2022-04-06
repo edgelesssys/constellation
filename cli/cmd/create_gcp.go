@@ -10,6 +10,7 @@ import (
 	"github.com/edgelesssys/constellation/cli/gcp"
 	"github.com/edgelesssys/constellation/cli/gcp/client"
 	"github.com/edgelesssys/constellation/internal/config"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -65,7 +66,7 @@ func runCreateGCP(cmd *cobra.Command, args []string) error {
 }
 
 func createGCP(cmd *cobra.Command, cl gcpclient, fileHandler file.Handler, config *config.Config, size string, countCoordinators, countNodes int) (retErr error) {
-	if err := checkDirClean(fileHandler, config); err != nil {
+	if err := checkDirClean(fileHandler); err != nil {
 		return err
 	}
 
@@ -114,7 +115,7 @@ func createGCP(cmd *cobra.Command, cl gcpclient, fileHandler file.Handler, confi
 		return err
 	}
 
-	if err := fileHandler.WriteJSON(*config.StatePath, stat, file.OptNone); err != nil {
+	if err := fileHandler.WriteJSON(constants.StateFilename, stat, file.OptNone); err != nil {
 		return err
 	}
 

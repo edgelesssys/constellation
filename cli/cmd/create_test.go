@@ -4,15 +4,13 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/cli/file"
-	"github.com/edgelesssys/constellation/internal/config"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCheckDirClean(t *testing.T) {
-	config := config.Default()
-
 	testCases := map[string]struct {
 		fileHandler   file.Handler
 		existingFiles []string
@@ -23,22 +21,22 @@ func TestCheckDirClean(t *testing.T) {
 		},
 		"adminconf exists": {
 			fileHandler:   file.NewHandler(afero.NewMemMapFs()),
-			existingFiles: []string{*config.AdminConfPath},
+			existingFiles: []string{constants.AdminConfFilename},
 			wantErr:       true,
 		},
 		"master secret exists": {
 			fileHandler:   file.NewHandler(afero.NewMemMapFs()),
-			existingFiles: []string{*config.MasterSecretPath},
+			existingFiles: []string{constants.MasterSecretFilename},
 			wantErr:       true,
 		},
 		"state file exists": {
 			fileHandler:   file.NewHandler(afero.NewMemMapFs()),
-			existingFiles: []string{*config.StatePath},
+			existingFiles: []string{constants.StateFilename},
 			wantErr:       true,
 		},
 		"multiple exist": {
 			fileHandler:   file.NewHandler(afero.NewMemMapFs()),
-			existingFiles: []string{*config.AdminConfPath, *config.MasterSecretPath, *config.StatePath},
+			existingFiles: []string{constants.AdminConfFilename, constants.MasterSecretFilename, constants.StateFilename},
 			wantErr:       true,
 		},
 	}
@@ -52,7 +50,7 @@ func TestCheckDirClean(t *testing.T) {
 				require.NoError(tc.fileHandler.Write(f, []byte{1, 2, 3}, file.OptNone))
 			}
 
-			err := checkDirClean(tc.fileHandler, config)
+			err := checkDirClean(tc.fileHandler)
 
 			if tc.wantErr {
 				assert.Error(err)
