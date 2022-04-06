@@ -33,8 +33,8 @@ func newCreateAzureCmd() *cobra.Command {
 
 // runCreateAzure runs the create command.
 func runCreateAzure(cmd *cobra.Command, args []string) error {
-	countNodes, _ := strconv.Atoi(args[0])        // err already checked in args validation
-	countCoordinators, _ := strconv.Atoi(args[1]) // err already checked in args validation
+	countCoordinators, _ := strconv.Atoi(args[0]) // err already checked in args validation
+	countNodes, _ := strconv.Atoi(args[1])        // err already checked in args validation
 	size := strings.ToLower(args[2])
 	subscriptionID := "0d202bbb-4fa7-4af8-8125-58c269a05435" // TODO: This will be user input
 	tenantID := "adb650a8-5da3-4b15-b4b0-3daf65ff7626"       // TODO: This will be user input

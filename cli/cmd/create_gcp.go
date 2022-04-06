@@ -33,8 +33,8 @@ func newCreateGCPCmd() *cobra.Command {
 
 // runCreateGCP runs the create command.
 func runCreateGCP(cmd *cobra.Command, args []string) error {
-	countNodes, _ := strconv.Atoi(args[0])        // err already checked in args validation
-	countCoordinators, _ := strconv.Atoi(args[1]) // err already checked in args validation
+	countCoordinators, _ := strconv.Atoi(args[0]) // err already checked in args validation
+	countNodes, _ := strconv.Atoi(args[1])        // err already checked in args validation
 	size := strings.ToLower(args[2])
 	project := "constellation-331613" // TODO: This will be user input
 	zone := "europe-west3-b"          // TODO: This will be user input
