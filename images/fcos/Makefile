@@ -16,6 +16,8 @@ KERNEL_MODULES_RPM_URL           ?= "https://kojipkgs.fedoraproject.org/packages
 DOWNLOAD_COORDINATOR             ?= y
 COORDINATOR_BINARY               ?= $(DEPENDENCIES)/coordinator
 COORDINATOR_URL                  ?= https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/coordinator/coordinator-090232f06302957f47ab86207bd96f413eda07d9534afc12524a97363b7d203d863d52cbb1780fb76c6874df6df0387f89021b3140d5769d6a8aec1739515a66
+DISK_MAPPER_BINARY				 ?= $(BASE_PATH)/../../build/disk-mapper
+DISK_MAPPER_OVERRIDE_PATH		 ?= $(OVERRIDES_ROOTFS)/usr/sbin/disk-mapper
 IMAGES_PATH                      ?= $(BASE_PATH)/images
 CONTAINER_ENGINE                 ?= podman
 COSA_ENV                         ?= $(BASE_PATH)/$(CONTAINER_ENGINE).env
@@ -40,7 +42,7 @@ AZURE_IMAGE_VERSION              ?= 0.0.1
 AZURE_PUBLISHER                  ?= edgelesssys
 AZURE_SKU                        ?= constellation-coreos
 
-.PHONY: clean all kernel coreos run shell cosa-init cosa-fetch images image-gcp upload-gcp image-azure upload-azure-non-cvm
+.PHONY: clean all kernel coreos run shell cosa-init cosa-fetch images image-gcp upload-gcp image-azure upload-azure-non-cvm $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH)
 SHELL := /bin/bash
 
 all: coreos images
@@ -55,19 +57,24 @@ $(COORDINATOR_OVERRIDE_PATH): $(COORDINATOR_BINARY) | cosa-init
 	cp $(COORDINATOR_BINARY) $@
 	chmod +x $@
 
+$(DISK_MAPPER_OVERRIDE_PATH): $(DISK_MAPPER_BINARY) | cosa-init
+	mkdir -p $(COREOS_BUILD_PATH)/overrides/rootfs/usr/sbin
+	cp $(DISK_MAPPER_BINARY) $@
+	chmod +x $@
+
 cosa-init:
 	-flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa init --branch $(COSA_INIT_BRANCH) $(COSA_INIT_REPO)'
 
-cosa-fetch: cosa-init kernel $(COORDINATOR_OVERRIDE_PATH)
+cosa-fetch: cosa-init kernel $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH)
 	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa fetch'
 
-coreos: cosa-fetch $(COORDINATOR_OVERRIDE_PATH)
+coreos: cosa-fetch $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH)
 	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa build'
 
-run: $(COORDINATOR_OVERRIDE_PATH)
+run: $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH)
 	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa run --devshell-console'
 
-shell: $(COORDINATOR_OVERRIDE_PATH)
+shell: $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH)
 	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa shell'
 
 $(GCP_IMAGE_PATH): coreos

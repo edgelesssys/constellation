@@ -77,6 +77,20 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Setup Go environment
+        uses: actions/setup-go@v2.2.0
+        with:
+          go-version: "1.18"
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libcryptsetup12 libcryptsetup-dev
+
+      - name: "Compile disk-mapper"
+        run: |
+          mkdir -p ${{ github.workspace }}/build
+          GOCACHE=/home/github-actions-runner-user/.cache/go-build GOPATH=/home/github-actions-runner-user/go GOPRIVATE=github.com/edgelesssys GOMODCACHE=/home/github-actions-runner-user/.cache/go-mod go build -o ${{ github.workspace }}/build/disk-mapper -ldflags "-s -w"
+        working-directory: ${{ github.workspace }}/state/cmd
+
       - name: "Store GH token to be mounted by cosa"
         run: echo "machine github.com login api password ${{ secrets.CI_GITHUB_REPOSITORY }}" > /tmp/.netrc
 
