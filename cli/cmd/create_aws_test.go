@@ -32,7 +32,6 @@ func TestCreateAWSCmdArgumentValidation(t *testing.T) {
 		"valid short capitalized":     {[]string{"1", "4", "16XL"}, false},
 		"invalid to many arguments":   {[]string{"1", "2", "4xl", "2xl"}, true},
 		"invalid to many arguments 2": {[]string{"1", "2", "4xl", "2"}, true},
-		"invalidOnlyOneInstance":      {[]string{"1", "1", "4xl"}, true},
 		"invalid first is no int":     {[]string{"xl", "2", "4xl"}, true},
 		"invalid first is not 1":      {[]string{"2", "2", "4xl"}, true},
 		"invalid second is no int":    {[]string{"1", "xl", "4xl"}, true},

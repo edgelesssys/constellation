@@ -24,7 +24,7 @@ func newCreateAWSCmd() *cobra.Command {
 		Args: cobra.MatchAll(
 			cobra.ExactArgs(3),
 			isValidAWSCoordinatorCount(0),
-			isIntGreaterArg(1, 1),
+			isIntGreaterZeroArg(1),
 			isEC2InstanceType(2),
 		),
 		ValidArgsFunction: createAWSCompletion,
