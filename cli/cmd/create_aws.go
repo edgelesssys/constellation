@@ -36,6 +36,7 @@ func newCreateAWSCmd() *cobra.Command {
 // runCreateAWS runs the create command.
 func runCreateAWS(cmd *cobra.Command, args []string) error {
 	count, _ := strconv.Atoi(args[1]) // err already checked in args validation
+	count++                           // single coordinator
 	size := strings.ToLower(args[2])
 
 	name, err := cmd.Flags().GetString("name")
