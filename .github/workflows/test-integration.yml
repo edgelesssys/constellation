@@ -19,5 +19,20 @@ jobs:
         with:
           go-version: "1.18"
 
-      - name: Run Integration Test
+      - name: Install Dependencies
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libcryptsetup12 libcryptsetup-dev
+
+      - name: Integration Test Coordinator
         run: DEBUG=true go test -v -tags integration ./test/
+
+      - name: Integration Test mount
+        run: |
+          go test -tags integration -c ./test/
+          sudo ./test.test -test.v -v 9
+        working-directory: mount
+
+      - name: Integration Test disk-mapper
+        run: |
+          go test -tags integration -c ./test/
+          sudo ./test.test -test.v
+        working-directory: state
