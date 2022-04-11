@@ -3,15 +3,8 @@ package mapper
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
 
 	cryptsetup "github.com/martinjungblut/go-cryptsetup"
-)
-
-const (
-	gcpStateDiskPath   = "/dev/disk/by-id/google-state-disk"
-	azureStateDiskPath = "/dev/disk/azure/scsi1/lun0"
-	fallBackPath       = "/dev/disk/by-id/state-disk"
 )
 
 // Mapper handles actions for formating and mapping crypt devices.
@@ -88,29 +81,4 @@ func (m *Mapper) MapDisk(target, passphrase string) error {
 // UnmapDisk removes the mapping of target.
 func (m *Mapper) UnmapDisk(target string) error {
 	return m.device.Deactivate(target)
-}
-
-// GetDiskPath returns the device path of the data disk by cloud provider.
-//
-// For GCP a symlink to the disk is expected at /dev/disk/by-id/google-state-disk
-// For Azure a symlink to the disk is expected at /dev/disk/azure/scsi1/lun0
-// If no symlink can be found at the given path, or if no known cloud provider is supplied,
-// we instead return the device path of the os-disk stateful partition at /dev/disk/by-partlabel/stateful.
-func GetDiskPath(csp string) (string, error) {
-	var diskPath string
-	var err error
-
-	switch csp {
-	case "gcp":
-		diskPath, err = filepath.EvalSymlinks(gcpStateDiskPath)
-	case "azure":
-		diskPath, err = filepath.EvalSymlinks(azureStateDiskPath)
-	default:
-		diskPath = fallBackPath
-	}
-
-	if err != nil {
-		return filepath.EvalSymlinks(fallBackPath)
-	}
-	return diskPath, nil
 }

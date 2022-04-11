@@ -36,7 +36,7 @@ RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_o
 
 ## disk-mapper keyservice api
 WORKDIR /disk-mapper
-COPY state/keyservice/proto/*.proto /disk-mapper
+COPY state/keyservice/keyproto/*.proto /disk-mapper
 RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
 
 ## debugd service
@@ -48,5 +48,5 @@ RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_o
 FROM scratch as export
 COPY --from=build /pubapi/*.go coordinator/pubapi/pubproto/
 COPY --from=build /vpnapi/*.go coordinator/vpnapi/vpnproto/
-COPY --from=build /disk-mapper/*.go state/keyservice/proto/
+COPY --from=build /disk-mapper/*.go state/keyservice/keyproto/
 COPY --from=build /service/*.go debugd/service/

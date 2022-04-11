@@ -3,15 +3,24 @@
 package integration
 
 import (
+	"context"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"testing"
+	"time"
 
+	"github.com/edgelesssys/constellation/coordinator/atls"
+	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/state/keyservice"
+	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"github.com/edgelesssys/constellation/state/mapper"
 	"github.com/martinjungblut/go-cryptsetup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -61,4 +70,43 @@ func TestMapper(t *testing.T) {
 
 	// Try to map disk with incorrect passphrase
 	assert.Error(mapper.MapDisk(mappedDevice, "invalid-passphrase"), "was able to map disk with incorrect passphrase")
+}
+
+func TestKeyAPI(t *testing.T) {
+	require := require.New(t)
+	assert := assert.New(t)
+
+	testKey := []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+
+	// get a free port on localhost to run the test on
+	listener, err := net.Listen("tcp", "localhost:0")
+	require.NoError(err)
+	apiAddr := listener.Addr().String()
+	listener.Close()
+
+	api := keyservice.New(core.NewMockIssuer(), &core.ProviderMetadataFake{}, 20*time.Second)
+
+	// send a key to the server
+	go func() {
+		// wait 2 seconds before sending the key
+		time.Sleep(2 * time.Second)
+
+		clientCfg, err := atls.CreateUnverifiedClientTLSConfig()
+		require.NoError(err)
+		conn, err := grpc.Dial(apiAddr, grpc.WithTransportCredentials(credentials.NewTLS(clientCfg)))
+		require.NoError(err)
+		defer conn.Close()
+
+		client := keyproto.NewAPIClient(conn)
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+		_, err = client.PushStateDiskKey(ctx, &keyproto.PushStateDiskKeyRequest{
+			StateDiskKey: testKey,
+		})
+		require.NoError(err)
+	}()
+
+	key, err := api.WaitForDecryptionKey("12345678-1234-1234-1234-123456789ABC", apiAddr)
+	assert.NoError(err)
+	assert.Equal(testKey, key)
 }

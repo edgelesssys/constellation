@@ -2,22 +2,16 @@ package keyservice
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/tls"
-	"crypto/x509"
-	"crypto/x509/pkix"
 	"errors"
 	"net"
 	"testing"
 	"time"
 
+	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/core"
-	"github.com/edgelesssys/constellation/coordinator/oid"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
-	"github.com/edgelesssys/constellation/coordinator/util"
+	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -25,7 +19,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 )
 
-func TestRequestLoop(t *testing.T) {
+func TestRequestKeyLoop(t *testing.T) {
 	defaultInstance := core.Instance{
 		Name:       "test-instance",
 		ProviderID: "/test/provider",
@@ -77,11 +71,11 @@ func TestRequestLoop(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			keyReceived := make(chan bool, 1)
+			keyReceived := make(chan struct{}, 1)
 			listener := bufconn.Listen(1)
 			defer listener.Close()
 
-			tlsConfig, err := stubTLSConfig()
+			tlsConfig, err := atls.CreateAttestationServerTLSConfig(core.NewMockIssuer())
 			require.NoError(err)
 			s := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
 			pubproto.RegisterAPIServer(s, tc.server)
@@ -90,7 +84,7 @@ func TestRequestLoop(t *testing.T) {
 				go func() { require.NoError(s.Serve(listener)) }()
 			}
 
-			keyWaiter := &keyAPI{
+			keyWaiter := &KeyAPI{
 				metadata:    stubMetadata{listResponse: tc.listResponse},
 				keyReceived: keyReceived,
 				timeout:     500 * time.Millisecond,
@@ -99,10 +93,10 @@ func TestRequestLoop(t *testing.T) {
 			// notify the API a key was received after 1 second
 			go func() {
 				time.Sleep(1 * time.Second)
-				keyReceived <- true
+				keyReceived <- struct{}{}
 			}()
 
-			err = keyWaiter.requestKeyFromCoordinator(
+			err = keyWaiter.requestKeyLoop(
 				"1234",
 				grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
 					return listener.DialContext(ctx)
@@ -113,6 +107,54 @@ func TestRequestLoop(t *testing.T) {
 			s.Stop()
 		})
 	}
+}
+
+func TestPushStateDiskKey(t *testing.T) {
+	testCases := map[string]struct {
+		testAPI     *KeyAPI
+		request     *keyproto.PushStateDiskKeyRequest
+		errExpected bool
+	}{
+		"success": {
+			testAPI: &KeyAPI{keyReceived: make(chan struct{}, 1)},
+			request: &keyproto.PushStateDiskKeyRequest{StateDiskKey: []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")},
+		},
+		"key already set": {
+			testAPI: &KeyAPI{
+				keyReceived: make(chan struct{}, 1),
+				key:         []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
+			},
+			request:     &keyproto.PushStateDiskKeyRequest{StateDiskKey: []byte("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")},
+			errExpected: true,
+		},
+		"incorrect size of pushed key": {
+			testAPI:     &KeyAPI{keyReceived: make(chan struct{}, 1)},
+			request:     &keyproto.PushStateDiskKeyRequest{StateDiskKey: []byte("AAAAAAAAAAAAAAAA")},
+			errExpected: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			_, err := tc.testAPI.PushStateDiskKey(context.Background(), tc.request)
+			if tc.errExpected {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.request.StateDiskKey, tc.testAPI.key)
+			}
+		})
+	}
+}
+
+func TestResetKey(t *testing.T) {
+	api := New(nil, nil, time.Second)
+
+	api.key = []byte{0x1, 0x2, 0x3}
+	api.ResetKey()
+	assert.Nil(t, api.key)
 }
 
 type stubAPIServer struct {
@@ -149,30 +191,30 @@ func (s *stubAPIServer) RequestStateDiskKey(ctx context.Context, in *pubproto.Re
 	return s.requestStateDiskKeyResp, s.requestStateDiskKeyErr
 }
 
-func stubTLSConfig() (*tls.Config, error) {
-	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		return nil, err
-	}
-	getCertificate := func(chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
-		serialNumber, err := util.GenerateCertificateSerialNumber()
-		if err != nil {
-			return nil, err
-		}
-		now := time.Now()
-		template := &x509.Certificate{
-			SerialNumber:    serialNumber,
-			Subject:         pkix.Name{CommonName: "Constellation"},
-			NotBefore:       now.Add(-2 * time.Hour),
-			NotAfter:        now.Add(2 * time.Hour),
-			ExtraExtensions: []pkix.Extension{{Id: oid.Dummy{}.OID(), Value: []byte{0x1, 0x2, 0x3}}},
-		}
-		cert, err := x509.CreateCertificate(rand.Reader, template, template, &priv.PublicKey, priv)
-		if err != nil {
-			return nil, err
-		}
+type stubMetadata struct {
+	listResponse []core.Instance
+}
 
-		return &tls.Certificate{Certificate: [][]byte{cert}, PrivateKey: priv}, nil
-	}
-	return &tls.Config{GetCertificate: getCertificate, MinVersion: tls.VersionTLS12}, nil
+func (s stubMetadata) List(ctx context.Context) ([]core.Instance, error) {
+	return s.listResponse, nil
+}
+
+func (s stubMetadata) Self(ctx context.Context) (core.Instance, error) {
+	return core.Instance{}, nil
+}
+
+func (s stubMetadata) GetInstance(ctx context.Context, providerID string) (core.Instance, error) {
+	return core.Instance{}, nil
+}
+
+func (s stubMetadata) SignalRole(ctx context.Context, role role.Role) error {
+	return nil
+}
+
+func (s stubMetadata) SetVPNIP(ctx context.Context, vpnIP string) error {
+	return nil
+}
+
+func (s stubMetadata) Supported() bool {
+	return true
 }
