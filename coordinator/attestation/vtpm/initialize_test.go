@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/go-tpm-tools/client"
+	"github.com/google/go-tpm/tpm2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -46,4 +47,53 @@ func TestFailOpener(t *testing.T) {
 	assert := assert.New(t)
 
 	assert.Error(MarkNodeAsInitialized(func() (io.ReadWriteCloser, error) { return nil, errors.New("failed") }, []byte{0x0, 0x1, 0x2, 0x3}, []byte{0x0, 0x1, 0x2, 0x3}))
+}
+
+func TestIsNodeInitialized(t *testing.T) {
+	testCases := map[string]struct {
+		pcrValueOwnerID   []byte
+		pcrValueClusterID []byte
+		expectInitialized bool
+		expectErr         bool
+	}{
+		"uninitialized PCRs results in uninitialized node": {},
+		"initializing PCRs result in initialized node": {
+			pcrValueOwnerID:   []byte{0x0, 0x1, 0x2, 0x3},
+			pcrValueClusterID: []byte{0x4, 0x5, 0x6, 0x7},
+			expectInitialized: true,
+		},
+		"initializing ownerID alone fails": {
+			pcrValueOwnerID: []byte{0x0, 0x1, 0x2, 0x3},
+			expectErr:       true,
+		},
+		"initializing clusterID alone fails": {
+			pcrValueClusterID: []byte{0x4, 0x5, 0x6, 0x7},
+			expectErr:         true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := require.New(t)
+			require := require.New(t)
+			tpm, err := OpenSimulatedTPM()
+			require.NoError(err)
+			defer tpm.Close()
+			if tc.pcrValueOwnerID != nil {
+				require.NoError(tpm2.PCREvent(tpm, PCRIndexOwnerID, tc.pcrValueOwnerID))
+			}
+			if tc.pcrValueClusterID != nil {
+				require.NoError(tpm2.PCREvent(tpm, PCRIndexClusterID, tc.pcrValueClusterID))
+			}
+			initialized, err := IsNodeInitialized(func() (io.ReadWriteCloser, error) {
+				return &simTPMNOPCloser{tpm}, nil
+			})
+			if tc.expectErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+			require.Equal(tc.expectInitialized, initialized)
+		})
+	}
 }
