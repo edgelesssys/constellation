@@ -43,3 +43,31 @@ func (t nopTPM) Write(p []byte) (int, error) {
 func (t nopTPM) Close() error {
 	return nil
 }
+
+type simulatedTPM struct {
+	openSimulatedTPM io.ReadWriteCloser
+}
+
+// NewSimulatedTPMOpenFunc returns a TPMOpenFunc that opens a simulated TPM.
+func NewSimulatedTPMOpenFunc() (TPMOpenFunc, io.Closer) {
+	tpm, err := OpenSimulatedTPM()
+	if err != nil {
+		panic(err)
+	}
+	return func() (io.ReadWriteCloser, error) {
+		return &simulatedTPM{tpm}, nil
+	}, tpm
+}
+
+func (t *simulatedTPM) Read(p []byte) (int, error) {
+	return t.openSimulatedTPM.Read(p)
+}
+
+func (t *simulatedTPM) Write(p []byte) (int, error) {
+	return t.openSimulatedTPM.Write(p)
+}
+
+func (t *simulatedTPM) Close() error {
+	// never close the underlying simulated TPM to allow calling the TPMOpenFunc again
+	return nil
+}
