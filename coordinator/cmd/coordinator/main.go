@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/coordinator/attestation/aws"
 	"github.com/edgelesssys/constellation/coordinator/attestation/azure"
 	"github.com/edgelesssys/constellation/coordinator/attestation/gcp"
@@ -23,6 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/util"
 	"github.com/edgelesssys/constellation/coordinator/wireguard"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )
 
@@ -67,6 +69,7 @@ func main() {
 	var issuer core.QuoteIssuer
 	var validator core.QuoteValidator
 	var openTPM vtpm.TPMOpenFunc
+	var fs afero.Fs
 
 	switch strings.ToLower(os.Getenv(config.ConstellationCSP)) {
 	case "aws":
@@ -82,6 +85,7 @@ func main() {
 		etcdEndpoint = defaultEtcdEndpoint
 		enforceEtcdTls = true
 		openTPM = vtpm.OpenNOPTPM
+		fs = afero.NewOsFs()
 	case "gcp":
 		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.GCPPCRSelection)
 		if err != nil {
@@ -114,6 +118,7 @@ func main() {
 		etcdEndpoint = defaultEtcdEndpoint
 		enforceEtcdTls = true
 		openTPM = vtpm.OpenVTPM
+		fs = afero.NewOsFs()
 	case "azure":
 		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.AzurePCRSelection)
 		if err != nil {
@@ -136,6 +141,7 @@ func main() {
 		etcdEndpoint = defaultEtcdEndpoint
 		enforceEtcdTls = true
 		openTPM = vtpm.OpenVTPM
+		fs = afero.NewOsFs()
 	default:
 		issuer = core.NewMockIssuer()
 		validator = core.NewMockValidator()
@@ -148,10 +154,14 @@ func main() {
 		bindPort = defaultPort
 		etcdEndpoint = "etcd-storage:2379"
 		enforceEtcdTls = false
-		openTPM = vtpm.OpenNOPTPM
+		var simulatedTPMCloser io.Closer
+		openTPM, simulatedTPMCloser = vtpm.NewSimulatedTPMOpenFunc()
+		defer simulatedTPMCloser.Close()
+		fs = afero.NewMemMapFs()
 	}
 
+	fileHandler := file.NewHandler(fs)
 	dialer := &net.Dialer{}
-	run(validator, issuer, wg, openTPM, util.GetIPAddr, dialer, kube,
+	run(validator, issuer, wg, openTPM, util.GetIPAddr, dialer, fileHandler, kube,
 		metadata, cloudControllerManager, cloudNodeManager, autoscaler, etcdEndpoint, enforceEtcdTls, bindIP, bindPort, zapLoggerCore)
 }

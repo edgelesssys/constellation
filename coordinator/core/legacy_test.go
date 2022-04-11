@@ -9,13 +9,16 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/coordinator/kms"
 	"github.com/edgelesssys/constellation/coordinator/pubapi"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
+	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -145,8 +148,11 @@ func newMockCoreWithDialer(dialer *bufconnDialer) (*Core, *pubapi.API, error) {
 	getPublicAddr := func() (string, error) {
 		return "192.0.2.1", nil
 	}
-	core, err := NewCore(vpn, kubeFake, metadataFake, ccmFake, cnmFake, autoscalerFake, zapLogger, vtpm.OpenSimulatedTPM, &fakeStoreFactory{})
+	core, err := NewCore(vpn, kubeFake, metadataFake, ccmFake, cnmFake, autoscalerFake, zapLogger, vtpm.OpenSimulatedTPM, &fakeStoreFactory{}, file.NewHandler(afero.NewMemMapFs()))
 	if err != nil {
+		return nil, nil, err
+	}
+	if err := core.AdvanceState(state.AcceptingInit, nil, nil); err != nil {
 		return nil, nil, err
 	}
 

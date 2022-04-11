@@ -6,8 +6,14 @@ import (
 	"net"
 	"testing"
 
+	"github.com/edgelesssys/constellation/cli/file"
+	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
+	"github.com/edgelesssys/constellation/coordinator/nodestate"
+	"github.com/edgelesssys/constellation/coordinator/role"
+	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/store"
 	"github.com/edgelesssys/constellation/coordinator/storewrapper"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -28,7 +34,7 @@ func TestAddAdmin(t *testing.T) {
 	require := require.New(t)
 
 	vpn := &stubVPN{}
-	core, err := NewCore(vpn, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil)
+	core, err := NewCore(vpn, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(afero.NewMemMapFs()))
 	require.NoError(err)
 	require.NoError(core.InitializeStoreIPs())
 
@@ -44,7 +50,7 @@ func TestGetNextNodeIP(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil)
+	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(afero.NewMemMapFs()))
 	require.NoError(err)
 	require.NoError(core.InitializeStoreIPs())
 
@@ -87,7 +93,7 @@ func TestSwitchToPersistentStore(t *testing.T) {
 	require := require.New(t)
 
 	storeFactory := &fakeStoreFactory{}
-	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, storeFactory)
+	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, storeFactory, file.NewHandler(afero.NewMemMapFs()))
 	require.NoError(err)
 
 	require.NoError(core.SwitchToPersistentStore())
@@ -101,7 +107,7 @@ func TestGetIDs(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil)
+	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(afero.NewMemMapFs()))
 	require.NoError(err)
 
 	_, _, err = core.GetIDs(nil)
@@ -125,7 +131,7 @@ func TestNotifyNodeHeartbeat(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil)
+	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(afero.NewMemMapFs()))
 	require.NoError(err)
 
 	const ip = "192.0.2.1"
@@ -138,7 +144,7 @@ func TestDeriveKey(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil)
+	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(afero.NewMemMapFs()))
 	require.NoError(err)
 
 	// error when no kms is set up
@@ -163,6 +169,80 @@ func TestDeriveKey(t *testing.T) {
 	kms.getDEKErr = errors.New("error")
 	_, err = core.GetDataKey(context.Background(), "key-1", 32)
 	assert.Error(err)
+}
+
+func TestInitialize(t *testing.T) {
+	testCases := map[string]struct {
+		initializePCRs  bool
+		writeNodeState  bool
+		role            role.Role
+		expectActivated bool
+		expectedState   state.State
+		expectPanic     bool
+		expectErr       bool
+	}{
+		"fresh node": {
+			expectedState: state.AcceptingInit,
+		},
+		"activated coordinator": {
+			initializePCRs:  true,
+			writeNodeState:  true,
+			role:            role.Coordinator,
+			expectPanic:     true, // TODO: adapt test case once restart is implemented
+			expectActivated: true,
+			expectedState:   state.ActivatingNodes,
+		},
+		"activated node": {
+			initializePCRs:  true,
+			writeNodeState:  true,
+			role:            role.Node,
+			expectPanic:     true, // TODO: adapt test case once restart is implemented
+			expectActivated: true,
+			expectedState:   state.IsNode,
+		},
+		"activated node with no node state": {
+			initializePCRs: true,
+			writeNodeState: false,
+			expectErr:      true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			openTPM, simulatedTPMCloser := vtpm.NewSimulatedTPMOpenFunc()
+			defer simulatedTPMCloser.Close()
+			if tc.initializePCRs {
+				require.NoError(vtpm.MarkNodeAsInitialized(openTPM, []byte{0x0, 0x1, 0x2, 0x3}, []byte{0x4, 0x5, 0x6, 0x7}))
+			}
+			fileHandler := file.NewHandler(afero.NewMemMapFs())
+			if tc.writeNodeState {
+				require.NoError((&nodestate.NodeState{
+					Role:       tc.role,
+					VPNPrivKey: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7},
+				}).ToFile(fileHandler))
+			}
+
+			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), openTPM, nil, fileHandler)
+			require.NoError(err)
+
+			if tc.expectPanic {
+				assert.Panics(func() { _, _ = core.Initialize() })
+				return
+			}
+
+			nodeActivated, err := core.Initialize()
+			if tc.expectErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+			assert.Equal(tc.expectActivated, nodeActivated)
+			assert.Equal(tc.expectedState, core.state)
+		})
+	}
 }
 
 type fakeStoreFactory struct {

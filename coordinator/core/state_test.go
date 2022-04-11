@@ -5,8 +5,10 @@ import (
 	"io"
 	"testing"
 
+	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/coordinator/state"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
@@ -63,9 +65,9 @@ func TestAdvanceState(t *testing.T) {
 				return vtpm.OpenSimulatedTPM()
 			}
 
-			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), openTPM, nil)
+			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), openTPM, nil, file.NewHandler(afero.NewMemMapFs()))
 			require.NoError(err)
-			assert.Equal(state.AcceptingInit, core.GetState())
+			assert.Equal(state.Uninitialized, core.GetState())
 			core.state = tc.initialState
 
 			err = core.AdvanceState(tc.newState, []byte("secret"), []byte("cluster"))

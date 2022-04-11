@@ -3,14 +3,18 @@ package core
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/netip"
 	"sync"
 	"time"
 
+	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/coordinator/config"
 	kmsSetup "github.com/edgelesssys/constellation/coordinator/kms"
+	"github.com/edgelesssys/constellation/coordinator/nodestate"
+	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/store"
 	"github.com/edgelesssys/constellation/coordinator/storewrapper"
@@ -36,12 +40,13 @@ type Core struct {
 	zaplogger              *zap.Logger
 	persistentStoreFactory PersistentStoreFactory
 	lastHeartbeats         map[string]time.Time
+	fileHandler            file.Handler
 }
 
 // NewCore creates and initializes a new Core object.
 func NewCore(vpn VPN, kube Cluster,
 	metadata ProviderMetadata, cloudControllerManager CloudControllerManager, cloudNodeManager CloudNodeManager, clusterAutoscaler ClusterAutoscaler,
-	zapLogger *zap.Logger, openTPM vtpm.TPMOpenFunc, persistentStoreFactory PersistentStoreFactory,
+	zapLogger *zap.Logger, openTPM vtpm.TPMOpenFunc, persistentStoreFactory PersistentStoreFactory, fileHandler file.Handler,
 ) (*Core, error) {
 	stor := store.NewStdStore()
 	c := &Core{
@@ -57,6 +62,7 @@ func NewCore(vpn VPN, kube Cluster,
 		kms:                    nil, // KMS is set up during init phase
 		persistentStoreFactory: persistentStoreFactory,
 		lastHeartbeats:         make(map[string]time.Time),
+		fileHandler:            fileHandler,
 	}
 	if err := c.data().IncrementPeersResourceVersion(); err != nil {
 		return nil, err
@@ -75,8 +81,6 @@ func NewCore(vpn VPN, kube Cluster,
 	if err := c.data().PutVPNKey(pubk); err != nil {
 		return nil, err
 	}
-
-	c.state.Advance(state.AcceptingInit)
 
 	return c, nil
 }
@@ -181,6 +185,49 @@ func (c *Core) NotifyNodeHeartbeat(addr net.Addr) {
 	c.mut.Lock()
 	c.lastHeartbeats[ip] = now
 	c.mut.Unlock()
+}
+
+// Initialize initializes the state machine of the core and handles re-joining the VPN.
+// Blocks until the core is ready to be used.
+func (c *Core) Initialize() (nodeActivated bool, err error) {
+	nodeActivated, err = vtpm.IsNodeInitialized(c.openTPM)
+	if err != nil {
+		return false, fmt.Errorf("failed to check for previous activation using vTPM: %w", err)
+	}
+	if !nodeActivated {
+		c.zaplogger.Info("Node was never activated. Allowing node to be activated.")
+		c.state.Advance(state.AcceptingInit)
+		return false, nil
+	}
+	c.zaplogger.Info("Node was previously activated. Attempting re-join.")
+	nodeState, err := nodestate.FromFile(c.fileHandler)
+	if err != nil {
+		return false, fmt.Errorf("failed to read node state: %w", err)
+	}
+	var initialState state.State
+	switch nodeState.Role {
+	case role.Coordinator:
+		initialState = state.ActivatingNodes
+	case role.Node:
+		initialState = state.IsNode
+	default:
+		return false, fmt.Errorf("invalid node role for initialized node: %v", nodeState.Role)
+	}
+	// TODO: if node was previously initialized, attempt to re-join wireguard here.
+	// Steps to rejoining should include:
+	// - retrieve list of coordinators from cloud provider API
+	// - attempt to retrieve list of wireguard public keys from any other coordinator while checking for correct PCRs in ATLS
+	// - re-establish wireguard connections
+	// - call update function successfully at least once
+	// - advance state to IsNode or ActivatingNodes respectively
+	// - restart update loop
+	// This procedure can be retried until it succeeds.
+	// The node must be put into the correct state before the update loop is started.
+	panic("not implemented")
+
+	//nolint:govet // this code is unreachable as long as the above is unimplemented
+	c.state.Advance(initialState)
+	return nodeActivated, nil
 }
 
 // SetUpKMS sets the Coordinators key management service and key encryption key ID.

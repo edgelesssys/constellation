@@ -7,6 +7,7 @@ import (
 	"net"
 	"sync"
 
+	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/coordinator/core"
@@ -25,7 +26,7 @@ import (
 
 var version = "0.0.0"
 
-func run(validator core.QuoteValidator, issuer core.QuoteIssuer, vpn core.VPN, openTPM vtpm.TPMOpenFunc, getPublicIPAddr func() (string, error), dialer pubapi.Dialer,
+func run(validator core.QuoteValidator, issuer core.QuoteIssuer, vpn core.VPN, openTPM vtpm.TPMOpenFunc, getPublicIPAddr func() (string, error), dialer pubapi.Dialer, fileHandler file.Handler,
 	kube core.Cluster, metadata core.ProviderMetadata, cloudControllerManager core.CloudControllerManager, cloudNodeManager core.CloudNodeManager, clusterAutoscaler core.ClusterAutoscaler, etcdEndpoint string, etcdTLS bool, bindIP, bindPort string, zapLoggerCore *zap.Logger,
 ) {
 	defer zapLoggerCore.Sync()
@@ -41,10 +42,16 @@ func run(validator core.QuoteValidator, issuer core.QuoteIssuer, vpn core.VPN, o
 		ForceTLS: etcdTLS,
 		Logger:   zapLoggerCore.WithOptions(zap.IncreaseLevel(zap.WarnLevel)).Named("etcd"),
 	}
-	core, err := core.NewCore(vpn, kube, metadata, cloudControllerManager, cloudNodeManager, clusterAutoscaler, zapLoggerCore, openTPM, etcdStoreFactory)
+	core, err := core.NewCore(vpn, kube, metadata, cloudControllerManager, cloudNodeManager, clusterAutoscaler, zapLoggerCore, openTPM, etcdStoreFactory, fileHandler)
 	if err != nil {
 		zapLoggerCore.Fatal("failed to create core", zap.Error(err))
 	}
+	// initialize state machine and wait for re-joining of the VPN (if applicable)
+	nodeActivated, err := core.Initialize()
+	if err != nil {
+		zapLoggerCore.Fatal("failed to initialize core", zap.Error(err))
+	}
+
 	vapiServer := &vpnAPIServer{logger: zapLoggerCore.Named("vpnapi"), core: core}
 	zapLoggerPubapi := zapLoggerCore.Named("pubapi")
 	papi := pubapi.New(zapLoggerPubapi, core, dialer, vapiServer, validator, getPublicIPAddr)
@@ -80,9 +87,11 @@ func run(validator core.QuoteValidator, issuer core.QuoteIssuer, vpn core.VPN, o
 		}
 	}()
 
-	zapLoggerStartupJoin := zapLoggerCore.Named("startup-join")
-	if err := tryJoinClusterOnStartup(getPublicIPAddr, metadata, bindPort, zapLoggerStartupJoin); err != nil {
-		zapLoggerStartupJoin.Info("joining existing cluster on startup failed. Waiting for connection.", zap.Error(err))
+	if !nodeActivated {
+		zapLoggerStartupJoin := zapLoggerCore.Named("startup-join")
+		if err := tryJoinClusterOnStartup(getPublicIPAddr, metadata, bindPort, zapLoggerStartupJoin); err != nil {
+			zapLoggerStartupJoin.Info("joining existing cluster on startup failed. Waiting for connection.", zap.Error(err))
+		}
 	}
 }
 

@@ -5,9 +5,11 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -167,7 +169,7 @@ func TestInitCluster(t *testing.T) {
 
 			zapLogger, err := zap.NewDevelopment()
 			require.NoError(err)
-			core, err := NewCore(&stubVPN{}, &tc.cluster, &tc.metadata, &tc.cloudControllerManager, &tc.cloudNodeManager, &tc.clusterAutoscaler, zapLogger, vtpm.OpenSimulatedTPM, nil)
+			core, err := NewCore(&stubVPN{}, &tc.cluster, &tc.metadata, &tc.cloudControllerManager, &tc.cloudNodeManager, &tc.clusterAutoscaler, zapLogger, vtpm.OpenSimulatedTPM, nil, file.NewHandler(afero.NewMemMapFs()))
 			require.NoError(err)
 
 			kubeconfig, err := core.InitCluster(tc.autoscalingNodeGroups, "cloud-service-account-uri")
@@ -282,7 +284,7 @@ func TestJoinCluster(t *testing.T) {
 
 			zapLogger, err := zap.NewDevelopment()
 			require.NoError(err)
-			core, err := NewCore(&tc.vpn, &tc.cluster, &tc.metadata, &tc.cloudControllerManager, &tc.cloudNodeManager, &tc.clusterAutoscaler, zapLogger, vtpm.OpenSimulatedTPM, nil)
+			core, err := NewCore(&tc.vpn, &tc.cluster, &tc.metadata, &tc.cloudControllerManager, &tc.cloudNodeManager, &tc.clusterAutoscaler, zapLogger, vtpm.OpenSimulatedTPM, nil, file.NewHandler(afero.NewMemMapFs()))
 			require.NoError(err)
 
 			joinReq := kubeadm.BootstrapTokenDiscovery{
