@@ -7,10 +7,12 @@ import (
 	"net"
 	"time"
 
+	"github.com/edgelesssys/constellation/coordinator/config"
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
+	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -185,17 +187,31 @@ func (a *API) ActivateAdditionalNodes(in *pubproto.ActivateAdditionalNodesReques
 
 // RequestStateDiskKey triggers the Coordinator to return a key derived from the Constellation's master secret to the caller.
 func (a *API) RequestStateDiskKey(ctx context.Context, in *pubproto.RequestStateDiskKeyRequest) (*pubproto.RequestStateDiskKeyResponse, error) {
-	// TODO: Add Coordinator call to restarting node and deliver the key
-	/*
-		if err := a.core.RequireState(state.IsNode, state.ActivatingNodes); err != nil {
-			return nil, err
-		}
-		_, err := a.core.GetDataKey(ctx, in.DiskUuid, 32)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "")
-		}
-	*/
-	return &pubproto.RequestStateDiskKeyResponse{}, errors.New("unimplemented")
+	if err := a.core.RequireState(state.ActivatingNodes); err != nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "%v", err)
+	}
+	key, err := a.core.GetDataKey(ctx, in.DiskUuid, config.RNGLengthDefault)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "unable to load key: %v", err)
+	}
+
+	peer, err := a.peerFromContext(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "%v", err)
+	}
+
+	conn, err := a.dial(ctx, peer)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "%v", err)
+	}
+	defer conn.Close()
+
+	client := keyproto.NewAPIClient(conn)
+	if _, err := client.PushStateDiskKey(ctx, &keyproto.PushStateDiskKeyRequest{StateDiskKey: key}); err != nil {
+		return nil, status.Errorf(codes.Internal, "pushing key to peer %q: %v", peer, err)
+	}
+
+	return &pubproto.RequestStateDiskKeyResponse{}, nil
 }
 
 func (a *API) activateNodes(logToCLI logFunc, nodePublicIPs []string) error {

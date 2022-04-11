@@ -145,7 +145,7 @@ func newMockCoreWithDialer(dialer *bufconnDialer) (*Core, *pubapi.API, error) {
 	}
 
 	vapiServer := &fakeVPNAPIServer{logger: zapLogger, core: core, dialer: dialer}
-	papi := pubapi.New(zapLogger, core, dialer, vapiServer, validator, getPublicAddr)
+	papi := pubapi.New(zapLogger, core, dialer, vapiServer, validator, getPublicAddr, nil)
 
 	return core, papi, nil
 }

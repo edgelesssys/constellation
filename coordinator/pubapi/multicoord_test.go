@@ -66,7 +66,7 @@ func TestActivateAsCoordinators(t *testing.T) {
 				return "192.0.2.1", nil
 			}
 
-			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, fakeValidator{}, getPublicIPAddr)
+			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, fakeValidator{}, getPublicIPAddr, nil)
 			defer api.Close()
 
 			// spawn coordinator
@@ -133,7 +133,7 @@ func TestTriggerCoordinatorUpdate(t *testing.T) {
 			}
 			dialer := testdialer.NewBufconnDialer()
 
-			api := New(logger, core, dialer, nil, nil, nil)
+			api := New(logger, core, dialer, nil, nil, nil, nil)
 
 			_, err := api.TriggerCoordinatorUpdate(context.Background(), &pubproto.TriggerCoordinatorUpdateRequest{})
 			if tc.expectErr {
@@ -202,7 +202,7 @@ func TestActivateAdditionalCoordinators(t *testing.T) {
 				return "192.0.2.1", nil
 			}
 
-			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, fakeValidator{}, getPublicIPAddr)
+			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, fakeValidator{}, getPublicIPAddr, nil)
 			defer api.Close()
 
 			// spawn coordinator

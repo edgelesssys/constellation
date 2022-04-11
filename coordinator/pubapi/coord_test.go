@@ -2,6 +2,7 @@ package pubapi
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net"
@@ -9,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/coordinator/atls"
+	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
+	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/kms"
 	"github.com/edgelesssys/constellation/coordinator/oid"
 	"github.com/edgelesssys/constellation/coordinator/peer"
@@ -16,11 +19,13 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
+	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	grpcpeer "google.golang.org/grpc/peer"
 )
 
 func TestActivateAsCoordinator(t *testing.T) {
@@ -126,7 +131,7 @@ func TestActivateAsCoordinator(t *testing.T) {
 				return "192.0.2.1", nil
 			}
 
-			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, fakeValidator{}, getPublicIPAddr)
+			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, fakeValidator{}, getPublicIPAddr, nil)
 			defer api.Close()
 
 			// spawn nodes
@@ -257,7 +262,7 @@ func TestActivateAdditionalNodes(t *testing.T) {
 				return "192.0.2.1", nil
 			}
 
-			api := New(zaptest.NewLogger(t), core, dialer, nil, fakeValidator{}, getPublicIPAddr)
+			api := New(zaptest.NewLogger(t), core, dialer, nil, fakeValidator{}, getPublicIPAddr, nil)
 			defer api.Close()
 			// spawn nodes
 			var nodePublicIPs []string
@@ -306,7 +311,7 @@ func TestAssemblePeerStruct(t *testing.T) {
 
 	vpnPubKey := []byte{2, 3, 4}
 	core := &fakeCore{vpnPubKey: vpnPubKey}
-	api := New(zaptest.NewLogger(t), core, nil, nil, nil, getPublicIPAddr)
+	api := New(zaptest.NewLogger(t), core, nil, nil, nil, getPublicIPAddr, nil)
 	defer api.Close()
 
 	vpnIP, err := core.GetVPNIP()
@@ -432,4 +437,108 @@ type stubActivateAdditionalNodesServer struct {
 func (s *stubActivateAdditionalNodesServer) Send(req *pubproto.ActivateAdditionalNodesResponse) error {
 	s.sent = append(s.sent, req)
 	return nil
+}
+
+func TestRequestStateDiskKey(t *testing.T) {
+	defaultKey := []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+	someErr := errors.New("error")
+	testCases := map[string]struct {
+		state         state.State
+		dataKey       []byte
+		getDataKeyErr error
+		pushKeyErr    error
+		errExpected   bool
+	}{
+		"success": {
+			state:   state.ActivatingNodes,
+			dataKey: defaultKey,
+		},
+		"Coordinator in wrong state": {
+			state:       state.IsNode,
+			dataKey:     defaultKey,
+			errExpected: true,
+		},
+		"GetDataKey fails": {
+			state:         state.ActivatingNodes,
+			dataKey:       defaultKey,
+			getDataKeyErr: someErr,
+			errExpected:   true,
+		},
+		"key pushing fails": {
+			state:       state.ActivatingNodes,
+			dataKey:     defaultKey,
+			pushKeyErr:  someErr,
+			errExpected: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			issuer := core.NewMockIssuer()
+
+			stateDiskServer := &stubStateDiskServer{pushKeyErr: tc.pushKeyErr}
+
+			// we can not use a bufconn here, since we rely on grpcpeer.FromContext() to connect to the caller
+			listener, err := net.Listen("tcp", ":")
+			require.NoError(err)
+			defer listener.Close()
+
+			tlsConfig, err := atls.CreateAttestationServerTLSConfig(issuer)
+			require.NoError(err)
+			s := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
+			keyproto.RegisterAPIServer(s, stateDiskServer)
+			defer s.GracefulStop()
+			go s.Serve(listener)
+
+			ctx := grpcpeer.NewContext(context.Background(), &grpcpeer.Peer{Addr: listener.Addr()})
+			getPeerFromContext := func(ctx context.Context) (string, error) {
+				peer, ok := grpcpeer.FromContext(ctx)
+				if !ok {
+					return "", errors.New("unable to get peer from context")
+				}
+				return peer.Addr.String(), nil
+			}
+
+			core := &fakeCore{
+				state:         tc.state,
+				dataKey:       tc.dataKey,
+				getDataKeyErr: tc.getDataKeyErr,
+			}
+			api := New(zaptest.NewLogger(t), core, &net.Dialer{}, nil, dummyValidator{}, nil, getPeerFromContext)
+
+			_, err = api.RequestStateDiskKey(ctx, &pubproto.RequestStateDiskKeyRequest{})
+			if tc.errExpected {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.dataKey, stateDiskServer.receivedRequest.StateDiskKey)
+			}
+		})
+	}
+}
+
+type dummyValidator struct {
+	oid.Dummy
+}
+
+func (d dummyValidator) Validate(attdoc []byte, nonce []byte) ([]byte, error) {
+	var attestation vtpm.AttestationDocument
+	if err := json.Unmarshal(attdoc, &attestation); err != nil {
+		return nil, err
+	}
+	return attestation.UserData, nil
+}
+
+type stubStateDiskServer struct {
+	receivedRequest *keyproto.PushStateDiskKeyRequest
+	pushKeyErr      error
+	keyproto.UnimplementedAPIServer
+}
+
+func (s *stubStateDiskServer) PushStateDiskKey(ctx context.Context, in *keyproto.PushStateDiskKeyRequest) (*keyproto.PushStateDiskKeyResponse, error) {
+	s.receivedRequest = in
+	return &keyproto.PushStateDiskKeyResponse{}, s.pushKeyErr
 }

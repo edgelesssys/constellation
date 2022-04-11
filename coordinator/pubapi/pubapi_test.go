@@ -1,9 +1,13 @@
 package pubapi
 
 import (
+	"context"
+	"net"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
+	grpcpeer "google.golang.org/grpc/peer"
 )
 
 func TestMain(m *testing.M) {
@@ -13,4 +17,21 @@ func TestMain(m *testing.M) {
 		// https://github.com/kubernetes/klog/issues/282, https://github.com/kubernetes/klog/issues/188
 		goleak.IgnoreTopFunction("k8s.io/klog/v2.(*loggingT).flushDaemon"),
 	)
+}
+
+func TestGetRecoveryPeerFromContext(t *testing.T) {
+	assert := assert.New(t)
+	testIP := "192.0.2.1"
+	testPort := 1234
+	expectedPeer := net.JoinHostPort(testIP, "9000")
+
+	addr := &net.TCPAddr{IP: net.ParseIP(testIP), Port: testPort}
+	ctx := grpcpeer.NewContext(context.Background(), &grpcpeer.Peer{Addr: addr})
+
+	peer, err := GetRecoveryPeerFromContext(ctx)
+	assert.NoError(err)
+	assert.Equal(expectedPeer, peer)
+
+	_, err = GetRecoveryPeerFromContext(context.Background())
+	assert.Error(err)
 }

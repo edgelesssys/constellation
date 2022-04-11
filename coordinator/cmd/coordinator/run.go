@@ -54,7 +54,7 @@ func run(validator core.QuoteValidator, issuer core.QuoteIssuer, vpn core.VPN, o
 
 	vapiServer := &vpnAPIServer{logger: zapLoggerCore.Named("vpnapi"), core: core}
 	zapLoggerPubapi := zapLoggerCore.Named("pubapi")
-	papi := pubapi.New(zapLoggerPubapi, core, dialer, vapiServer, validator, getPublicIPAddr)
+	papi := pubapi.New(zapLoggerPubapi, core, dialer, vapiServer, validator, getPublicIPAddr, pubapi.GetRecoveryPeerFromContext)
 
 	zapLoggergRPC := zapLoggerPubapi.Named("gRPC")
 

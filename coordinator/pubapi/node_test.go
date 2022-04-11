@@ -129,7 +129,7 @@ func TestActivateAsNode(t *testing.T) {
 			cor := &fakeCore{state: tc.state, vpnPubKey: vpnPubKey, setVPNIPErr: tc.setVPNIPErr}
 			dialer := testdialer.NewBufconnDialer()
 
-			api := New(logger, cor, dialer, nil, nil, nil)
+			api := New(logger, cor, dialer, nil, nil, nil, nil)
 			defer api.Close()
 
 			vserver := grpc.NewServer()
@@ -217,7 +217,7 @@ func TestTriggerNodeUpdate(t *testing.T) {
 			core := &fakeCore{state: tc.state}
 			dialer := testdialer.NewBufconnDialer()
 
-			api := New(logger, core, dialer, nil, nil, nil)
+			api := New(logger, core, dialer, nil, nil, nil, nil)
 
 			vserver := grpc.NewServer()
 			vapi := &stubVPNAPI{
@@ -292,7 +292,7 @@ func TestJoinCluster(t *testing.T) {
 			core := &fakeCore{state: tc.state, joinClusterErr: tc.joinClusterErr}
 			dialer := testdialer.NewBufconnDialer()
 
-			api := New(logger, core, dialer, nil, nil, nil)
+			api := New(logger, core, dialer, nil, nil, nil, nil)
 
 			vserver := grpc.NewServer()
 			vapi := &stubVPNAPI{

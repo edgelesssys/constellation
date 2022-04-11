@@ -211,7 +211,7 @@ func spawnPeer(require *require.Assertions, logger *zap.Logger, dialer *testdial
 	}
 
 	vapiServer := &fakeVPNAPIServer{logger: logger.Named("vpnapi"), core: cor, dialer: dialer}
-	papi := pubapi.New(logger, cor, dialer, vapiServer, &core.MockValidator{}, getPublicAddr)
+	papi := pubapi.New(logger, cor, dialer, vapiServer, &core.MockValidator{}, getPublicAddr, nil)
 
 	tlsConfig, err := atls.CreateAttestationServerTLSConfig(&core.MockIssuer{})
 	require.NoError(err)
