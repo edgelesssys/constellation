@@ -78,27 +78,3 @@ jobs:
       BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
       PUBLIC_BUCKET_NAME: ${{ secrets.PUBLIC_BUCKET_NAME }}
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-
-  call-aws-enclave:
-    needs: build-coordinator
-    if: startsWith(needs.build-coordinator.outputs.coordinator-name, 'coordinator-')
-    uses: ./.github/workflows/build-enclave.yml
-    with:
-      coordinator-name: ${{ needs.build-coordinator.outputs.coordinator-name }}
-    secrets:
-      CI_GITHUB_REPOSITORY: ${{ secrets.CI_GITHUB_REPOSITORY }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-      BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
-      PUBLIC_BUCKET_NAME: ${{ secrets.PUBLIC_BUCKET_NAME }}
-      SSH_PUB_KEY: ${{ secrets.SSH_PUB_KEY }}
-
-  call-aws-ami:
-    needs: call-aws-enclave
-    uses: ./.github/workflows/build-ami.yml
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-      BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
