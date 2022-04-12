@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/state"
 	"github.com/kr/text"
+	wgquick "github.com/nmiculinic/wg-quick-go"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
@@ -45,6 +46,7 @@ func newInitCmd() *cobra.Command {
 // runInitialize runs the initialize command.
 func runInitialize(cmd *cobra.Command, args []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
+	vpnHandler := vpn.NewConfigHandler()
 	devConfigName, err := cmd.Flags().GetString("dev-config")
 	if err != nil {
 		return err
@@ -56,20 +58,19 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 
 	protoClient := proto.NewClient(*config.Provider.GCP.PCRs)
 	defer protoClient.Close()
-	vpnClient, err := vpn.NewConfigurerWithDefaults()
 	if err != nil {
 		return err
 	}
 
 	// We have to parse the context separately, since cmd.Context()
 	// returns nil during the tests otherwise.
-	return initialize(cmd.Context(), cmd, protoClient, vpnClient, serviceAccountClient{}, fileHandler, config, status.NewWaiter(*config.Provider.GCP.PCRs))
+	return initialize(cmd.Context(), cmd, protoClient, serviceAccountClient{}, fileHandler, config, status.NewWaiter(*config.Provider.GCP.PCRs), vpnHandler)
 }
 
 // initialize initializes a Constellation. Coordinator instances are activated as Coordinators and will
 // themself activate the other peers as nodes.
-func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, vpnCl vpnConfigurer, serviceAccountCr serviceAccountCreator,
-	fileHandler file.Handler, config *config.Config, waiter statusWaiter,
+func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, serviceAccountCr serviceAccountCreator,
+	fileHandler file.Handler, config *config.Config, waiter statusWaiter, vpnHandler vpnHandler,
 ) error {
 	flagArgs, err := evalFlagArgs(cmd, fileHandler, config)
 	if err != nil {
@@ -138,12 +139,17 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, vpn
 		return err
 	}
 
-	if err := result.writeWGQuickFile(fileHandler, config, string(flagArgs.userPrivKey)); err != nil {
+	vpnConfig, err := vpnHandler.Create(result.coordinatorPubKey, result.coordinatorPubIP, string(flagArgs.userPrivKey), result.clientVpnIP, wireguardAdminMTU)
+	if err != nil {
+		return err
+	}
+
+	if err := writeWGQuickFile(fileHandler, config, vpnHandler, vpnConfig); err != nil {
 		return fmt.Errorf("write wg-quick file: %w", err)
 	}
 
 	if flagArgs.autoconfigureWG {
-		if err := configureVpn(vpnCl, result.clientVpnIP, result.coordinatorPubKey, result.coordinatorPubIP, flagArgs.userPrivKey); err != nil {
+		if err := vpnHandler.Apply(vpnConfig); err != nil {
 			return err
 		}
 	}
@@ -217,14 +223,10 @@ type activationResult struct {
 }
 
 // writeWGQuickFile writes the wg-quick file to the default path.
-func (r activationResult) writeWGQuickFile(fileHandler file.Handler, config *config.Config, clientPrivKey string) error {
-	wgConf, err := vpn.NewConfig(r.coordinatorPubKey, r.coordinatorPubIP, clientPrivKey)
+func writeWGQuickFile(fileHandler file.Handler, config *config.Config, vpnHandler vpnHandler, vpnConfig *wgquick.Config) error {
+	data, err := vpnHandler.Marshal(vpnConfig)
 	if err != nil {
-		return fmt.Errorf("create wg config: %w", err)
-	}
-	data, err := vpn.NewWGQuickConfig(wgConf, r.clientVpnIP, wireguardAdminMTU)
-	if err != nil {
-		return fmt.Errorf("create wg-quick config: %w", err)
+		return err
 	}
 	return fileHandler.Write(*config.WGQuickConfigPath, data, false)
 }
@@ -325,14 +327,6 @@ func readOrGenerateVPNKey(fileHandler file.Handler, privKeyPath string) (privKey
 	pubKey = []byte(privKeyParsed.PublicKey().String())
 
 	return privKey, pubKey, nil
-}
-
-func configureVpn(vpnCl vpnConfigurer, clientVpnIp, coordinatorPubKey, coordinatorPublicIp string, privKey []byte) error {
-	err := vpnCl.Configure(clientVpnIp, coordinatorPubKey, coordinatorPublicIp, string(privKey))
-	if err != nil {
-		return fmt.Errorf("could not configure WireGuard automatically: %w", err)
-	}
-	return nil
 }
 
 func ipsToEndpoints(ips []string, port string) []string {

@@ -6,8 +6,6 @@ import (
 	"time"
 
 	wgquick "github.com/nmiculinic/wg-quick-go"
-	"github.com/vishvananda/netlink"
-	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
@@ -16,98 +14,34 @@ const (
 	wireguardPort = 51820
 )
 
-type vpn interface {
-	ConfigureDevice(name string, cfg wgtypes.Config) error
+type ConfigHandler struct {
+	up func(cfg *wgquick.Config, iface string) error
 }
 
-type networkLink interface {
-	LinkAdd(link netlink.Link) error
-	LinkByName(name string) (netlink.Link, error)
-	ParseAddr(s string) (*netlink.Addr, error)
-	AddrAdd(link netlink.Link, addr *netlink.Addr) error
-	LinkSetUp(link netlink.Link) error
+func NewConfigHandler() *ConfigHandler {
+	return &ConfigHandler{up: wgquick.Up}
 }
 
-type netLink struct{}
-
-func newNetLink() *netLink {
-	return &netLink{}
+func (h *ConfigHandler) Create(coordinatorPubKey, coordinatorPubIP, clientPrivKey, clientVPNIP string, mtu int) (*wgquick.Config, error) {
+	return NewWGQuickConfig(coordinatorPubKey, coordinatorPubIP, clientPrivKey, clientVPNIP, mtu)
 }
 
-func (n *netLink) LinkAdd(link netlink.Link) error {
-	return netlink.LinkAdd(link)
+// Apply applies the generated WireGuard quick config.
+func (h *ConfigHandler) Apply(conf *wgquick.Config) error {
+	return h.up(conf, interfaceName)
 }
 
-func (n *netLink) LinkByName(name string) (netlink.Link, error) {
-	return netlink.LinkByName(name)
-}
-
-func (n *netLink) ParseAddr(s string) (*netlink.Addr, error) {
-	return netlink.ParseAddr(s)
-}
-
-func (n *netLink) AddrAdd(link netlink.Link, addr *netlink.Addr) error {
-	return netlink.AddrAdd(link, addr)
-}
-
-func (n *netLink) LinkSetUp(link netlink.Link) error {
-	return netlink.LinkSetUp(link)
-}
-
-type Configurer struct {
-	netLink networkLink
-	vpn     vpn
-}
-
-// NewConfigurerWithDefaults creates a new vpn client.
-func NewConfigurerWithDefaults() (*Configurer, error) {
-	vpn, err := wgctrl.New()
+// GetBytes returns the the bytes of the config.
+func (h *ConfigHandler) Marshal(conf *wgquick.Config) ([]byte, error) {
+	data, err := conf.MarshalText()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("marshal wg-quick config: %w", err)
 	}
-	return &Configurer{netLink: newNetLink(), vpn: vpn}, nil
+	return data, nil
 }
 
-// NewConfigurer creates a new vpn client with the provided
-// network link and vpn interface.
-func NewConfigurer(netLink networkLink, vpn vpn) (*Configurer, error) {
-	return &Configurer{netLink: netLink, vpn: vpn}, nil
-}
-
-// Configure configures a WireGuard interface
-// WireGuard will listen on its default port.
-// The peer must have the IP 10.118.0.1 in the vpn.
-func (c *Configurer) Configure(clientVpnIp, coordinatorPubKey, coordinatorPubIP, clientPrivKey string) error {
-	wgLink := &netlink.Wireguard{LinkAttrs: netlink.LinkAttrs{Name: interfaceName}}
-	if err := c.netLink.LinkAdd(wgLink); err != nil {
-		return err
-	}
-
-	link, err := c.netLink.LinkByName(interfaceName)
-	if err != nil {
-		return err
-	}
-	addr, err := c.netLink.ParseAddr(clientVpnIp + "/16")
-	if err != nil {
-		return err
-	}
-	if err := c.netLink.AddrAdd(link, addr); err != nil {
-		return err
-	}
-	if err := c.netLink.LinkSetUp(link); err != nil {
-		return err
-	}
-
-	config, err := NewConfig(coordinatorPubKey, coordinatorPubIP, clientPrivKey)
-	if err != nil {
-		return err
-	}
-
-	return c.vpn.ConfigureDevice(interfaceName, config)
-}
-
-// NewConfig creates a new WireGuard configuration.
-func NewConfig(coordinatorPubKey, coordinatorPubIP, clientPrivKey string) (wgtypes.Config, error) {
+// newConfig creates a new WireGuard configuration.
+func newConfig(coordinatorPubKey, coordinatorPubIP, clientPrivKey string) (wgtypes.Config, error) {
 	_, allowedIPs, err := net.ParseCIDR("10.118.0.1/32")
 	if err != nil {
 		return wgtypes.Config{}, fmt.Errorf("parsing CIDR: %w", err)
@@ -148,7 +82,12 @@ func NewConfig(coordinatorPubKey, coordinatorPubIP, clientPrivKey string) (wgtyp
 }
 
 // NewWGQuickConfig create a new WireGuard wg-quick configuration file and mashals it to bytes.
-func NewWGQuickConfig(config wgtypes.Config, clientVPNIP string, mtu int) ([]byte, error) {
+func NewWGQuickConfig(coordinatorPubKey, coordinatorPubIP, clientPrivKey, clientVPNIP string, mtu int) (*wgquick.Config, error) {
+	config, err := newConfig(coordinatorPubKey, coordinatorPubIP, clientPrivKey)
+	if err != nil {
+		return nil, err
+	}
+
 	clientIP := net.ParseIP(clientVPNIP)
 	if clientIP == nil {
 		return nil, fmt.Errorf("invalid client vpn ip '%s'", clientVPNIP)
@@ -158,9 +97,5 @@ func NewWGQuickConfig(config wgtypes.Config, clientVPNIP string, mtu int) ([]byt
 		Address: []net.IPNet{{IP: clientIP, Mask: []byte{255, 255, 0, 0}}},
 		MTU:     mtu,
 	}
-	data, err := quickfile.MarshalText()
-	if err != nil {
-		return nil, fmt.Errorf("marshal wg-quick config: %w", err)
-	}
-	return data, nil
+	return &quickfile, nil
 }

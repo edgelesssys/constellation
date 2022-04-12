@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -17,11 +16,11 @@ import (
 	"github.com/edgelesssys/constellation/cli/gcp"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/state"
+	wgquick "github.com/nmiculinic/wg-quick-go"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 func TestInitArgumentValidation(t *testing.T) {
@@ -112,6 +111,8 @@ func TestInitialize(t *testing.T) {
 		serviceAccountCreator stubServiceAccountCreator
 		waiter                statusWaiter
 		privKey               string
+		vpnHandler            vpnHandler
+		initVPN               bool
 		errExpected           bool
 	}{
 		"initialize some ec2 instances": {
@@ -119,30 +120,77 @@ func TestInitialize(t *testing.T) {
 			client: &fakeProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter:  stubStatusWaiter{},
-			privKey: testKey,
+			waiter:     stubStatusWaiter{},
+			vpnHandler: &stubVPNHandler{},
+			privKey:    testKey,
 		},
 		"initialize some gcp instances": {
 			existingState: testGcpState,
 			client: &fakeProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter:  stubStatusWaiter{},
-			privKey: testKey,
+			waiter:     stubStatusWaiter{},
+			vpnHandler: &stubVPNHandler{},
+			privKey:    testKey,
 		},
 		"initialize some azure instances": {
 			existingState: testAzureState,
 			client: &fakeProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter:  stubStatusWaiter{},
-			privKey: testKey,
+			waiter:     stubStatusWaiter{},
+			vpnHandler: &stubVPNHandler{},
+			privKey:    testKey,
+		},
+		"initialize vpn": {
+			existingState: testAzureState,
+			client: &fakeProtoClient{
+				respClient: &fakeActivationRespClient{responses: testActivationResps},
+			},
+			waiter:     stubStatusWaiter{},
+			vpnHandler: &stubVPNHandler{},
+			initVPN:    true,
+			privKey:    testKey,
+		},
+		"invalid initialize vpn": {
+			existingState: testAzureState,
+			client: &fakeProtoClient{
+				respClient: &fakeActivationRespClient{responses: testActivationResps},
+			},
+			waiter:      stubStatusWaiter{},
+			vpnHandler:  &stubVPNHandler{applyErr: someErr},
+			initVPN:     true,
+			privKey:     testKey,
+			errExpected: true,
+		},
+		"invalid create vpn config": {
+			existingState: testAzureState,
+			client: &fakeProtoClient{
+				respClient: &fakeActivationRespClient{responses: testActivationResps},
+			},
+			waiter:      stubStatusWaiter{},
+			vpnHandler:  &stubVPNHandler{createErr: someErr},
+			initVPN:     true,
+			privKey:     testKey,
+			errExpected: true,
+		},
+		"invalid write vpn config": {
+			existingState: testAzureState,
+			client: &fakeProtoClient{
+				respClient: &fakeActivationRespClient{responses: testActivationResps},
+			},
+			waiter:      stubStatusWaiter{},
+			vpnHandler:  &stubVPNHandler{marshalErr: someErr},
+			initVPN:     true,
+			privKey:     testKey,
+			errExpected: true,
 		},
 		"no state exists": {
 			existingState: state.ConstellationState{},
 			client:        &stubProtoClient{},
 			waiter:        stubStatusWaiter{},
 			privKey:       testKey,
+			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
 		},
 		"no instances to pick one": {
@@ -153,6 +201,7 @@ func TestInitialize(t *testing.T) {
 			client:      &stubProtoClient{},
 			waiter:      stubStatusWaiter{},
 			privKey:     testKey,
+			vpnHandler:  &stubVPNHandler{},
 			errExpected: true,
 		},
 		"only one instance": {
@@ -163,6 +212,7 @@ func TestInitialize(t *testing.T) {
 			client:      &stubProtoClient{},
 			waiter:      stubStatusWaiter{},
 			privKey:     testKey,
+			vpnHandler:  &stubVPNHandler{},
 			errExpected: true,
 		},
 		"public key to short": {
@@ -170,6 +220,7 @@ func TestInitialize(t *testing.T) {
 			client:        &stubProtoClient{},
 			waiter:        stubStatusWaiter{},
 			privKey:       base64.StdEncoding.EncodeToString([]byte("tooShortKey")),
+			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
 		},
 		"public key to long": {
@@ -177,6 +228,7 @@ func TestInitialize(t *testing.T) {
 			client:        &stubProtoClient{},
 			waiter:        stubStatusWaiter{},
 			privKey:       base64.StdEncoding.EncodeToString([]byte("thisWireguardKeyIsToLongAndHasTooManyBytes")),
+			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
 		},
 		"public key not base64": {
@@ -184,6 +236,7 @@ func TestInitialize(t *testing.T) {
 			client:        &stubProtoClient{},
 			waiter:        stubStatusWaiter{},
 			privKey:       "this is not base64 encoded",
+			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
 		},
 		"fail Connect": {
@@ -191,6 +244,7 @@ func TestInitialize(t *testing.T) {
 			client:        &stubProtoClient{connectErr: someErr},
 			waiter:        stubStatusWaiter{},
 			privKey:       testKey,
+			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
 		},
 		"fail Activate": {
@@ -198,6 +252,7 @@ func TestInitialize(t *testing.T) {
 			client:        &stubProtoClient{activateErr: someErr},
 			waiter:        stubStatusWaiter{},
 			privKey:       testKey,
+			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
 		},
 		"fail respClient WriteLogStream": {
@@ -205,6 +260,7 @@ func TestInitialize(t *testing.T) {
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{writeLogStreamErr: someErr}},
 			waiter:        stubStatusWaiter{},
 			privKey:       testKey,
+			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
 		},
 		"fail respClient getKubeconfig": {
@@ -212,6 +268,7 @@ func TestInitialize(t *testing.T) {
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getKubeconfigErr: someErr}},
 			waiter:        stubStatusWaiter{},
 			privKey:       testKey,
+			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
 		},
 		"fail respClient getCoordinatorVpnKey": {
@@ -219,6 +276,7 @@ func TestInitialize(t *testing.T) {
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getCoordinatorVpnKeyErr: someErr}},
 			waiter:        stubStatusWaiter{},
 			privKey:       testKey,
+			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
 		},
 		"fail respClient getClientVpnIp": {
@@ -226,6 +284,7 @@ func TestInitialize(t *testing.T) {
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getClientVpnIpErr: someErr}},
 			waiter:        stubStatusWaiter{},
 			privKey:       testKey,
+			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
 		},
 		"fail respClient getOwnerID": {
@@ -233,6 +292,7 @@ func TestInitialize(t *testing.T) {
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getOwnerIDErr: someErr}},
 			waiter:        stubStatusWaiter{},
 			privKey:       testKey,
+			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
 		},
 		"fail respClient getClusterID": {
@@ -240,6 +300,7 @@ func TestInitialize(t *testing.T) {
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getClusterIDErr: someErr}},
 			waiter:        stubStatusWaiter{},
 			privKey:       testKey,
+			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
 		},
 		"fail to wait for required status": {
@@ -247,6 +308,7 @@ func TestInitialize(t *testing.T) {
 			client:        &stubProtoClient{},
 			waiter:        stubStatusWaiter{waitForAllErr: someErr},
 			privKey:       testKey,
+			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
 		},
 		"fail to create service account": {
@@ -257,6 +319,7 @@ func TestInitialize(t *testing.T) {
 			},
 			waiter:      stubStatusWaiter{},
 			privKey:     testKey,
+			vpnHandler:  &stubVPNHandler{},
 			errExpected: true,
 		},
 	}
@@ -278,37 +341,27 @@ func TestInitialize(t *testing.T) {
 			// Write key file to filesystem and set path in flag.
 			require.NoError(afero.Afero{Fs: fs}.WriteFile("privK", []byte(tc.privKey), 0o600))
 			require.NoError(cmd.Flags().Set("privatekey", "privK"))
+			if tc.initVPN {
+				require.NoError(cmd.Flags().Set("wg-autoconfig", "true"))
+			}
+
 			ctx := context.Background()
 			ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 			defer cancel()
 
-			err := initialize(ctx, cmd, tc.client, &dummyVPNConfigurer{}, &tc.serviceAccountCreator, fileHandler, config, tc.waiter)
+			err := initialize(ctx, cmd, tc.client, &tc.serviceAccountCreator, fileHandler, config, tc.waiter, tc.vpnHandler)
 
 			if tc.errExpected {
 				assert.Error(err)
 			} else {
 				require.NoError(err)
+				assert.Equal(tc.initVPN, tc.vpnHandler.(*stubVPNHandler).configured)
 				assert.Contains(out.String(), "192.0.2.2")
 				assert.Contains(out.String(), "ownerID")
 				assert.Contains(out.String(), "clusterID")
 			}
 		})
 	}
-}
-
-func TestConfigureVPN(t *testing.T) {
-	assert := assert.New(t)
-
-	key := []byte(base64.StdEncoding.EncodeToString([]byte("32bytesWireGuardKeyForTheTesting")))
-	ip := "192.0.2.1"
-	someErr := errors.New("failed")
-
-	configurer := stubVPNConfigurer{}
-	assert.NoError(configureVpn(&configurer, ip, string(key), ip, key))
-	assert.True(configurer.configured)
-
-	configurer = stubVPNConfigurer{configureErr: someErr}
-	assert.Error(configureVpn(&configurer, ip, string(key), ip, key))
 }
 
 func TestWriteOutput(t *testing.T) {
@@ -643,6 +696,7 @@ func TestAutoscaleFlag(t *testing.T) {
 			cmd.SetErr(&errOut)
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
+			vpnHandler := stubVPNHandler{}
 			require.NoError(fileHandler.WriteJSON(*config.StatePath, tc.existingState, false))
 
 			// Write key file to filesystem and set path in flag.
@@ -652,7 +706,7 @@ func TestAutoscaleFlag(t *testing.T) {
 			require.NoError(cmd.Flags().Set("autoscale", strconv.FormatBool(tc.autoscaleFlag)))
 			ctx := context.Background()
 
-			require.NoError(initialize(ctx, cmd, tc.client, &dummyVPNConfigurer{}, &tc.serviceAccountCreator, fileHandler, config, tc.waiter))
+			require.NoError(initialize(ctx, cmd, tc.client, &tc.serviceAccountCreator, fileHandler, config, tc.waiter, &vpnHandler))
 			if tc.autoscaleFlag {
 				assert.Len(tc.client.activateAutoscalingNodeGroups, 1)
 			} else {
@@ -663,52 +717,29 @@ func TestAutoscaleFlag(t *testing.T) {
 }
 
 func TestWriteWGQuickFile(t *testing.T) {
-	require := require.New(t)
-
-	testKey, err := wgtypes.GeneratePrivateKey()
-	require.NoError(err)
-
 	testCases := map[string]struct {
-		coordinatorPubKey string
-		coordinatorPubIP  string
-		clientVpnIp       string
-		fileHandler       file.Handler
-		config            *config.Config
-		clientPrivKey     string
-		wantErr           bool
+		fileHandler file.Handler
+		config      *config.Config
+		vpnHandler  *stubVPNHandler
+		vpnConfig   *wgquick.Config
+		wantErr     bool
 	}{
 		"write wg quick file": {
-			coordinatorPubKey: testKey.PublicKey().String(),
-			coordinatorPubIP:  "192.0.2.1",
-			clientVpnIp:       "192.0.2.2",
-			fileHandler:       file.NewHandler(afero.NewMemMapFs()),
-			config:            &config.Config{WGQuickConfigPath: func(s string) *string { return &s }("a.conf")},
-			clientPrivKey:     testKey.String(),
+			fileHandler: file.NewHandler(afero.NewMemMapFs()),
+			config:      &config.Config{WGQuickConfigPath: func(s string) *string { return &s }("a.conf")},
+			vpnHandler:  &stubVPNHandler{marshalRes: "config"},
 		},
-		"invalid coordinator public key": {
-			coordinatorPubIP: "192.0.2.1",
-			clientVpnIp:      "192.0.2.2",
-			fileHandler:      file.NewHandler(afero.NewMemMapFs()),
-			config:           &config.Config{WGQuickConfigPath: func(s string) *string { return &s }("a.conf")},
-			clientPrivKey:    testKey.String(),
-			wantErr:          true,
-		},
-		"invalid client vpn ip": {
-			coordinatorPubKey: testKey.PublicKey().String(),
-			coordinatorPubIP:  "192.0.2.1",
-			fileHandler:       file.NewHandler(afero.NewMemMapFs()),
-			config:            &config.Config{WGQuickConfigPath: func(s string) *string { return &s }("a.conf")},
-			clientPrivKey:     testKey.String(),
-			wantErr:           true,
+		"marshal failed": {
+			fileHandler: file.NewHandler(afero.NewMemMapFs()),
+			config:      &config.Config{WGQuickConfigPath: func(s string) *string { return &s }("a.conf")},
+			vpnHandler:  &stubVPNHandler{marshalErr: errors.New("some err")},
+			wantErr:     true,
 		},
 		"write fails": {
-			coordinatorPubKey: testKey.PublicKey().String(),
-			coordinatorPubIP:  "192.0.2.1",
-			clientVpnIp:       "192.0.2.2",
-			fileHandler:       file.NewHandler(afero.NewReadOnlyFs(afero.NewMemMapFs())),
-			config:            &config.Config{WGQuickConfigPath: func(s string) *string { return &s }("a.conf")},
-			clientPrivKey:     testKey.String(),
-			wantErr:           true,
+			fileHandler: file.NewHandler(afero.NewReadOnlyFs(afero.NewMemMapFs())),
+			config:      &config.Config{WGQuickConfigPath: func(s string) *string { return &s }("a.conf")},
+			vpnHandler:  &stubVPNHandler{marshalRes: "config"},
+			wantErr:     true,
 		},
 	}
 
@@ -716,12 +747,7 @@ func TestWriteWGQuickFile(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			result := activationResult{
-				coordinatorPubKey: tc.coordinatorPubKey,
-				coordinatorPubIP:  tc.coordinatorPubIP,
-				clientVpnIP:       tc.clientVpnIp,
-			}
-			err := result.writeWGQuickFile(tc.fileHandler, tc.config, tc.clientPrivKey)
+			err := writeWGQuickFile(tc.fileHandler, tc.config, tc.vpnHandler, tc.vpnConfig)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -729,7 +755,7 @@ func TestWriteWGQuickFile(t *testing.T) {
 				assert.NoError(err)
 				file, err := tc.fileHandler.Read(*tc.config.WGQuickConfigPath)
 				assert.NoError(err)
-				assert.Contains(string(file), fmt.Sprint("MTU = ", wireguardAdminMTU))
+				assert.Contains(string(file), tc.vpnHandler.marshalRes)
 			}
 		})
 	}
