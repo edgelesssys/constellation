@@ -147,7 +147,7 @@ type EtcdTransaction struct {
 
 func (t *EtcdTransaction) Get(request string) ([]byte, error) {
 	if !t.ongoingTransaction {
-		return nil, fmt.Errorf("EtcdTransaction Pointer is nil, but Get function is called")
+		return nil, &TransactionAlreadyCommittedError{op: "Get"}
 	}
 	if value, ok := t.dataInsert[request]; ok {
 		return value, nil
@@ -161,7 +161,7 @@ func (t *EtcdTransaction) Get(request string) ([]byte, error) {
 // Put saves a value.
 func (t *EtcdTransaction) Put(request string, requestData []byte) error {
 	if !t.ongoingTransaction {
-		return fmt.Errorf("EtcdTransaction Pointer is nil, but Put function is called")
+		return &TransactionAlreadyCommittedError{op: "Put"}
 	}
 	t.dataInsert[request] = requestData
 	return nil
@@ -170,7 +170,7 @@ func (t *EtcdTransaction) Put(request string, requestData []byte) error {
 // Delete deletes the key if it exists. Only errors if there is no ongoing Transaction.
 func (t *EtcdTransaction) Delete(key string) error {
 	if !t.ongoingTransaction {
-		return fmt.Errorf("EtcdTransaction Pointer is nil, but Delete function is called")
+		return &TransactionAlreadyCommittedError{op: "Delete"}
 	}
 	delete(t.dataInsert, key)
 	t.dataDelete[key] = struct{}{}

@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	etcdImageName = "bitnami/etcd:3.5.1"
+	etcdImageName = "bitnami/etcd:3.5.2"
 )
 
 func TestEtcdStore(t *testing.T) {
@@ -72,9 +72,21 @@ func TestEtcdStore(t *testing.T) {
 
 	// TODO: since the etcd store does network, it should be canceled with a timeout.
 	testStore(t, func() (Store, error) {
+		clearStore(require, store)
 		return store, nil
 	})
 
 	// Usually call it with a defer statement. However this causes problems with the construct above
 	require.NoError(dockerClient.ContainerStop(ctx, createResp.ID, nil))
+}
+
+func clearStore(require *require.Assertions, store Store) {
+	iter, err := store.Iterator("")
+	require.NoError(err)
+	for iter.HasNext() {
+		key, err := iter.GetNext()
+		require.NoError(err)
+		err = store.Delete(key)
+		require.NoError(err)
+	}
 }

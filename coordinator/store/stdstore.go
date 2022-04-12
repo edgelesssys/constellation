@@ -74,7 +74,11 @@ func (s *StdStore) Iterator(prefix string) (Iterator, error) {
 
 // BeginTransaction starts a new transaction.
 func (s *StdStore) BeginTransaction() (Transaction, error) {
-	tx := stdTransaction{store: s, data: map[string]string{}}
+	tx := stdTransaction{
+		store:              s,
+		data:               map[string]string{},
+		ongoingTransaction: true,
+	}
 	s.txmut.Lock()
 
 	s.mut.Lock()
@@ -109,12 +113,16 @@ func (s *StdStore) Transfer(newstore Store) error {
 }
 
 type stdTransaction struct {
-	store *StdStore
-	data  map[string]string
+	store              *StdStore
+	data               map[string]string
+	ongoingTransaction bool
 }
 
 // Get retrieves a value.
 func (t *stdTransaction) Get(request string) ([]byte, error) {
+	if !t.ongoingTransaction {
+		return nil, &TransactionAlreadyCommittedError{op: "Get"}
+	}
 	if value, ok := t.data[request]; ok {
 		return []byte(value), nil
 	}
@@ -123,11 +131,17 @@ func (t *stdTransaction) Get(request string) ([]byte, error) {
 
 // Put saves a value.
 func (t *stdTransaction) Put(request string, requestData []byte) error {
+	if !t.ongoingTransaction {
+		return &TransactionAlreadyCommittedError{op: "Put"}
+	}
 	t.data[request] = string(requestData)
 	return nil
 }
 
 func (t *stdTransaction) Delete(key string) error {
+	if !t.ongoingTransaction {
+		return &TransactionAlreadyCommittedError{op: "Delete"}
+	}
 	delete(t.data, key)
 	return nil
 }
@@ -150,6 +164,7 @@ func (t *stdTransaction) Commit() error {
 		return err
 	}
 	t.store = nil
+	t.ongoingTransaction = false
 	return nil
 }
 

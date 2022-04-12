@@ -6,18 +6,18 @@ import (
 
 // Store is the interface for persistence.
 type Store interface {
-	// BeginTransaction starts a new transaction.
-	BeginTransaction() (Transaction, error)
 	// Get returns a value from store by key.
 	Get(string) ([]byte, error)
 	// Put saves a value to store by key.
 	Put(string, []byte) error
-	// Iterator returns an Iterator for a given prefix.
-	Iterator(string) (Iterator, error)
-	// Transfer copies the whole store Database.
-	Transfer(Store) error
 	// Delete deletes the key.
 	Delete(string) error
+	// Iterator returns an Iterator for a given prefix.
+	Iterator(string) (Iterator, error)
+	// BeginTransaction starts a new transaction.
+	BeginTransaction() (Transaction, error)
+	// Transfer copies the whole store Database.
+	Transfer(Store) error
 }
 
 // Transaction is a Store transaction.
@@ -63,4 +63,14 @@ type NoElementsLeftError struct {
 // Error implements the Error interface.
 func (n *NoElementsLeftError) Error() string {
 	return fmt.Sprintf("index out of range [%d]", n.idx)
+}
+
+// TransactionAlreadyCommittedError occurs when further operations:
+// Get, Put, Delete or Iterate are called on a committed transaction.
+type TransactionAlreadyCommittedError struct {
+	op string
+}
+
+func (t *TransactionAlreadyCommittedError) Error() string {
+	return fmt.Sprintf("transaction is already committed, but %s is called", t.op)
 }

@@ -53,7 +53,7 @@ for the termination. However, to keep the code clean, we accept this tradeoff an
 const (
 	publicgRPCPort            = "9000"
 	constellationImageName    = "constellation:latest"
-	etcdImageName             = "bitnami/etcd:3.5.1"
+	etcdImageName             = "bitnami/etcd:3.5.2"
 	etcdOverlayNetwork        = "constellationIntegrationTest"
 	masterSecret              = "ConstellationIntegrationTest"
 	numberFirstActivation     = 3
