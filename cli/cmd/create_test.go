@@ -103,7 +103,7 @@ func TestCreate(t *testing.T) {
 			provider:            cloudprovider.GCP,
 			controllerCountFlag: intPtr(1),
 			workerCountFlag:     intPtr(1),
-			nameFlag:            strings.Repeat("a", constellationNameLength+1),
+			nameFlag:            strings.Repeat("a", constants.ConstellationNameLength+1),
 			wantErr:             true,
 		},
 		"flag control-plane-count invalid": {

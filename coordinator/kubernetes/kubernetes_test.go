@@ -27,6 +27,7 @@ type stubClusterUtil struct {
 	setupAutoscalingError            error
 	setupCloudControllerManagerError error
 	setupCloudNodeManagerError       error
+	setupKMSError                    error
 	joinClusterErr                   error
 	startKubeletErr                  error
 	restartKubeletErr                error
@@ -56,6 +57,10 @@ func (s *stubClusterUtil) SetupAutoscaling(kubectl k8sapi.Client, clusterAutosca
 
 func (s *stubClusterUtil) SetupCloudControllerManager(kubectl k8sapi.Client, cloudControllerManagerConfiguration resources.Marshaler, configMaps resources.Marshaler, secrets resources.Marshaler) error {
 	return s.setupCloudControllerManagerError
+}
+
+func (s *stubClusterUtil) SetupKMS(kubectl k8sapi.Client, kmsDeployment resources.Marshaler) error {
+	return s.setupKMSError
 }
 
 func (s *stubClusterUtil) SetupCloudNodeManager(kubectl k8sapi.Client, cloudNodeManagerConfiguration resources.Marshaler) error {

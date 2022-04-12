@@ -122,7 +122,7 @@ func (c *fakeCore) UpdatePeers(peers []peer.Peer) error {
 	return c.UpdatePeersErr
 }
 
-func (c *fakeCore) InitCluster(autoscalingNodeGroups []string, cloudServiceAccountURI string) ([]byte, error) {
+func (c *fakeCore) InitCluster(autoscalingNodeGroups []string, cloudServiceAccountURI string, masterSecret []byte) ([]byte, error) {
 	c.autoscalingNodeGroups = autoscalingNodeGroups
 	return c.kubeconfig, nil
 }

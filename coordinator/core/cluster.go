@@ -24,7 +24,7 @@ func (c *Core) GetK8SCertificateKey() (string, error) {
 }
 
 // InitCluster initializes the cluster, stores the join args, and returns the kubeconfig.
-func (c *Core) InitCluster(autoscalingNodeGroups []string, cloudServiceAccountURI string) ([]byte, error) {
+func (c *Core) InitCluster(autoscalingNodeGroups []string, cloudServiceAccountURI string, masterSecret []byte) ([]byte, error) {
 	var nodeName string
 	var providerID string
 	var instance Instance
@@ -99,6 +99,7 @@ func (c *Core) InitCluster(autoscalingNodeGroups []string, cloudServiceAccountUR
 		CloudNodeManagerImage:              c.cloudNodeManager.Image(),
 		CloudNodeManagerPath:               c.cloudNodeManager.Path(),
 		CloudNodeManagerExtraArgs:          c.cloudNodeManager.ExtraArgs(),
+		MasterSecret:                       masterSecret,
 	}); err != nil {
 		c.zaplogger.Error("Initializing cluster failed", zap.Error(err))
 		return nil, err

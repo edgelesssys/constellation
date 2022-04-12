@@ -35,6 +35,7 @@ type ClusterUtil interface {
 	SetupAutoscaling(kubectl Client, clusterAutoscalerConfiguration resources.Marshaler, secrets resources.Marshaler) error
 	SetupCloudControllerManager(kubectl Client, cloudControllerManagerConfiguration resources.Marshaler, configMaps resources.Marshaler, secrets resources.Marshaler) error
 	SetupCloudNodeManager(kubectl Client, cloudNodeManagerConfiguration resources.Marshaler) error
+	SetupKMS(kubectl Client, kmsConfiguration resources.Marshaler) error
 	StartKubelet() error
 	RestartKubelet() error
 	GetControlPlaneJoinCertificateKey() (string, error)
@@ -169,6 +170,14 @@ func (k *KubernetesUtil) JoinCluster(joinConfig []byte) error {
 			return fmt.Errorf("kubeadm join failed (code %v) with: %s", exitErr.ExitCode(), exitErr.Stderr)
 		}
 		return fmt.Errorf("kubeadm join failed: %w", err)
+	}
+	return nil
+}
+
+// SetupKMS deploys the KMS deployment.
+func (k *KubernetesUtil) SetupKMS(kubectl Client, kmsConfiguration resources.Marshaler) error {
+	if err := kubectl.Apply(kmsConfiguration, true); err != nil {
+		return fmt.Errorf("applying KMS configuration failed: %w", err)
 	}
 	return nil
 }

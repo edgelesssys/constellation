@@ -32,4 +32,5 @@ type InitClusterInput struct {
 	CloudNodeManagerImage              string
 	CloudNodeManagerPath               string
 	CloudNodeManagerExtraArgs          []string
+	MasterSecret                       []byte
 }

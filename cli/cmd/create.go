@@ -133,10 +133,10 @@ func parseCreateFlags(cmd *cobra.Command, provider cloudprovider.Provider) (crea
 	if err != nil {
 		return createFlags{}, err
 	}
-	if len(name) > constellationNameLength {
+	if len(name) > constants.ConstellationNameLength {
 		return createFlags{}, fmt.Errorf(
 			"name for Constellation cluster too long, maximum length is %d, got %d: %s",
-			constellationNameLength, len(name), name,
+			constants.ConstellationNameLength, len(name), name,
 		)
 	}
 

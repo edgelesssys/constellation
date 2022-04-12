@@ -1,0 +1,29 @@
+FROM ubuntu@sha256:7cc0576c7c0ec2384de5cbf245f41567e922aab1b075f3e8ad565f508032df17 as build
+
+ENV DEBIAN_FRONTEND="noninteractive"
+RUN apt-get update && apt-get install wget git -y
+
+# Install Go
+ARG GO_VER=1.18
+RUN wget https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz
+RUN tar -C /usr/local -xzf go${GO_VER}.linux-amd64.tar.gz && rm go${GO_VER}.linux-amd64.tar.gz
+ENV PATH ${PATH}:/usr/local/go/bin
+
+# Download go dependencies
+WORKDIR /constellation/
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod download all
+
+# Copy Repo
+COPY . /constellation
+RUN rm -rf ./hack/ go.work.sum go.work
+
+# Build
+RUN mkdir -p /constellation/build
+WORKDIR /constellation/kms/server/cmd
+RUN CGO_ENABLED=0 go build -o /constellation/build/kmsserver
+
+FROM scratch as release
+COPY --from=build /constellation/build/kmsserver /kmsserver
+ENTRYPOINT ["/kmsserver"]

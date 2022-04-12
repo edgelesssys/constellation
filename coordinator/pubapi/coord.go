@@ -99,7 +99,7 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 	}
 
 	logToCLI("Initializing Kubernetes ...")
-	kubeconfig, err := a.core.InitCluster(in.AutoscalingNodeGroups, in.CloudServiceAccountUri)
+	kubeconfig, err := a.core.InitCluster(in.AutoscalingNodeGroups, in.CloudServiceAccountUri, in.MasterSecret)
 	if err != nil {
 		return status.Errorf(codes.Internal, "initializing Kubernetes cluster failed: %v", err)
 	}

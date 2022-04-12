@@ -23,12 +23,15 @@ import (
 func TestInitCluster(t *testing.T) {
 	someErr := errors.New("someErr")
 
+	testMS := []byte{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8}
+
 	testCases := map[string]struct {
 		cluster                clusterStub
 		metadata               stubMetadata
 		cloudControllerManager stubCloudControllerManager
 		cloudNodeManager       stubCloudNodeManager
 		clusterAutoscaler      stubClusterAutoscaler
+		masterSecret           []byte
 		autoscalingNodeGroups  []string
 		wantErr                bool
 		wantInitClusterInput   kubernetes.InitClusterInput
@@ -38,6 +41,7 @@ func TestInitCluster(t *testing.T) {
 				kubeconfig: []byte("kubeconfig"),
 			},
 			autoscalingNodeGroups: []string{"someNodeGroup"},
+			masterSecret:          testMS,
 			wantInitClusterInput: kubernetes.InitClusterInput{
 				APIServerAdvertiseIP:           "10.118.0.1",
 				NodeIP:                         "10.118.0.1",
@@ -45,6 +49,7 @@ func TestInitCluster(t *testing.T) {
 				SupportsCloudControllerManager: false,
 				SupportClusterAutoscaler:       false,
 				AutoscalingNodeGroups:          []string{"someNodeGroup"},
+				MasterSecret:                   testMS,
 			},
 			wantErr: false,
 		},
@@ -52,6 +57,7 @@ func TestInitCluster(t *testing.T) {
 			cluster: clusterStub{
 				kubeconfig: []byte("kubeconfig"),
 			},
+			masterSecret: testMS,
 			metadata: stubMetadata{
 				selfRes: Instance{
 					Name:       "some-name",
@@ -66,6 +72,7 @@ func TestInitCluster(t *testing.T) {
 				ProviderID:                     "fake://providerid",
 				SupportsCloudControllerManager: false,
 				SupportClusterAutoscaler:       false,
+				MasterSecret:                   testMS,
 			},
 			wantErr: false,
 		},
@@ -87,6 +94,7 @@ func TestInitCluster(t *testing.T) {
 				nameRes:      "some-name",
 				supportedRes: true,
 			},
+			masterSecret:          testMS,
 			autoscalingNodeGroups: []string{"someNodeGroup"},
 			wantInitClusterInput: kubernetes.InitClusterInput{
 				APIServerAdvertiseIP:           "10.118.0.1",
@@ -96,6 +104,7 @@ func TestInitCluster(t *testing.T) {
 				SupportClusterAutoscaler:       true,
 				AutoscalingCloudprovider:       "some-name",
 				AutoscalingNodeGroups:          []string{"someNodeGroup"},
+				MasterSecret:                   testMS,
 			},
 			wantErr: false,
 		},
@@ -103,6 +112,7 @@ func TestInitCluster(t *testing.T) {
 			cluster: clusterStub{
 				kubeconfig: []byte("kubeconfig"),
 			},
+			masterSecret: testMS,
 			cloudControllerManager: stubCloudControllerManager{
 				supportedRes: true,
 				nameRes:      "some-name",
@@ -118,6 +128,7 @@ func TestInitCluster(t *testing.T) {
 				CloudControllerManagerName:     "some-name",
 				CloudControllerManagerImage:    "someImage",
 				CloudControllerManagerPath:     "/some/path",
+				MasterSecret:                   testMS,
 			},
 			wantErr: false,
 		},
@@ -141,6 +152,7 @@ func TestInitCluster(t *testing.T) {
 			cluster: clusterStub{
 				kubeconfig: []byte("kubeconfig"),
 			},
+			masterSecret: testMS,
 			metadata: stubMetadata{
 				signalRoleErr: errors.New("updating role fails"),
 				supportedRes:  true,
@@ -149,6 +161,7 @@ func TestInitCluster(t *testing.T) {
 			wantInitClusterInput: kubernetes.InitClusterInput{
 				APIServerAdvertiseIP: "10.118.0.1",
 				NodeIP:               "10.118.0.1",
+				MasterSecret:         testMS,
 			},
 		},
 		"getting kubeconfig fail detected": {
@@ -176,7 +189,7 @@ func TestInitCluster(t *testing.T) {
 			core, err := NewCore(&stubVPN{}, &tc.cluster, &tc.metadata, &tc.cloudControllerManager, &tc.cloudNodeManager, &tc.clusterAutoscaler, nil, zapLogger, simulator.OpenSimulatedTPM, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 
-			kubeconfig, err := core.InitCluster(tc.autoscalingNodeGroups, "cloud-service-account-uri")
+			kubeconfig, err := core.InitCluster(tc.autoscalingNodeGroups, "cloud-service-account-uri", tc.masterSecret)
 
 			if tc.wantErr {
 				assert.Error(err)

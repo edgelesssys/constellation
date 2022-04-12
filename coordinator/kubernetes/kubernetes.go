@@ -79,6 +79,11 @@ func (k *KubeWrapper) InitCluster(in InitClusterInput) error {
 		return fmt.Errorf("setup of pod network failed: %w", err)
 	}
 
+	kms := resources.NewKMSDeployment(in.MasterSecret)
+	if err = k.clusterUtil.SetupKMS(k.client, kms); err != nil {
+		return fmt.Errorf("setup of kms failed: %w", err)
+	}
+
 	if in.SupportsCloudControllerManager {
 		cloudControllerManagerConfiguration := resources.NewDefaultCloudControllerManagerDeployment(
 			in.CloudControllerManagerName, in.CloudControllerManagerImage, in.CloudControllerManagerPath, in.CloudControllerManagerExtraArgs,

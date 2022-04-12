@@ -153,7 +153,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		return err
 	}
 
-	vpnConfig, err := vpnHandler.Create(result.coordinatorPubKey, result.coordinatorPubIP, string(flags.userPrivKey), result.clientVpnIP, wireguardAdminMTU)
+	vpnConfig, err := vpnHandler.Create(result.coordinatorPubKey, result.coordinatorPubIP, string(flags.userPrivKey), result.clientVpnIP, constants.WireguardAdminMTU)
 	if err != nil {
 		return err
 	}
@@ -374,14 +374,14 @@ func readOrGeneratedMasterSecret(w io.Writer, fileHandler file.Handler, filename
 		if err != nil {
 			return nil, err
 		}
-		if len(decoded) < masterSecretLengthMin {
+		if len(decoded) < constants.MasterSecretLengthMin {
 			return nil, errors.New("provided master secret is smaller than the required minimum of 16 Bytes")
 		}
 		return decoded, nil
 	}
 
 	// No file given, generate a new secret, and save it to disk
-	masterSecret, err := util.GenerateRandomBytes(masterSecretLengthDefault)
+	masterSecret, err := util.GenerateRandomBytes(constants.MasterSecretLengthDefault)
 	if err != nil {
 		return nil, err
 	}
