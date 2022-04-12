@@ -27,6 +27,8 @@ type fakeCore struct {
 	joinArgs                   []kubeadm.BootstrapTokenDiscovery
 	joinClusterErr             error
 	kekID                      string
+	dataKey                    []byte
+	getDataKeyErr              error
 }
 
 func (c *fakeCore) GetVPNPubKey() ([]byte, error) {
@@ -109,4 +111,8 @@ func (c *fakeCore) JoinCluster(args kubeadm.BootstrapTokenDiscovery) error {
 func (c *fakeCore) SetUpKMS(ctx context.Context, storageURI, kmsURI, kekID string, useExisting bool) error {
 	c.kekID = kekID
 	return nil
+}
+
+func (c *fakeCore) GetDataKey(ctx context.Context, keyID string, length int) ([]byte, error) {
+	return c.dataKey, c.getDataKeyErr
 }

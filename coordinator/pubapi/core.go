@@ -18,6 +18,7 @@ type Core interface {
 	SwitchToPersistentStore() error
 	GetIDs(masterSecret []byte) (ownerID []byte, clusterID []byte, err error)
 	SetUpKMS(ctx context.Context, storageURI, kmsURI, kekID string, useExisting bool) error
+	GetDataKey(ctx context.Context, keyID string, length int) ([]byte, error)
 
 	GetState() state.State
 	RequireState(...state.State) error

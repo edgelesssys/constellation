@@ -6,7 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/edgelesssys/constellation/coordinator/config"
 	"github.com/edgelesssys/constellation/internal/utils"
+	"github.com/edgelesssys/constellation/state/keyservice"
 	"github.com/edgelesssys/constellation/state/mapper"
 )
 
@@ -30,11 +32,24 @@ func main() {
 	}
 	defer mapper.Close()
 
+	if mapper.IsLUKSDevice() {
+		uuid := mapper.DiskUUID()
+		_, err = keyservice.WaitForDecryptionKey(*csp, uuid)
+	} else {
+		err = formatDisk(mapper)
+	}
+
+	if err != nil {
+		utils.KernelPanic(err)
+	}
+}
+
+func formatDisk(mapper *mapper.Mapper) error {
 	// generate and save temporary passphrase
 	if err := os.MkdirAll(keyPath, os.ModePerm); err != nil {
 		utils.KernelPanic(err)
 	}
-	passphrase := make([]byte, 32)
+	passphrase := make([]byte, config.RNGLengthDefault)
 	if _, err := rand.Read(passphrase); err != nil {
 		utils.KernelPanic(err)
 	}
@@ -48,4 +63,6 @@ func main() {
 	if err := mapper.MapDisk("state", string(passphrase)); err != nil {
 		utils.KernelPanic(err)
 	}
+
+	return nil
 }

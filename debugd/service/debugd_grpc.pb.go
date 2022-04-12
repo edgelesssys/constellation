@@ -267,5 +267,5 @@ var Debugd_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "service/debugd.proto",
+	Metadata: "debugd.proto",
 }

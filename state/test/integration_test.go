@@ -49,10 +49,16 @@ func TestMapper(t *testing.T) {
 	require.NoError(err, "failed to initialize crypt device")
 	defer func() { require.NoError(mapper.Close(), "failed to close crypt device") }()
 
+	assert.False(mapper.IsLUKSDevice())
+
+	// Format and map disk
 	passphrase := "unit-test"
 	require.NoError(mapper.FormatDisk(passphrase), "failed to format disk")
 	require.NoError(mapper.MapDisk(mappedDevice, passphrase), "failed to map disk")
-
 	require.NoError(mapper.UnmapDisk(mappedDevice), "failed to remove disk mapping")
+
+	assert.True(mapper.IsLUKSDevice())
+
+	// Try to map disk with incorrect passphrase
 	assert.Error(mapper.MapDisk(mappedDevice, "invalid-passphrase"), "was able to map disk with incorrect passphrase")
 }

@@ -2,6 +2,7 @@ package pubapi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"time"
@@ -159,6 +160,21 @@ func (a *API) ActivateAdditionalNodes(in *pubproto.ActivateAdditionalNodesReques
 			Message: "success",
 		},
 	})
+}
+
+// RequestStateDiskKey triggers the Coordinator to return a key derived from the Constellation's master secret to the caller.
+func (a *API) RequestStateDiskKey(ctx context.Context, in *pubproto.RequestStateDiskKeyRequest) (*pubproto.RequestStateDiskKeyResponse, error) {
+	// TODO: Add Coordinator call to restarting node and deliver the key
+	/*
+		if err := a.core.RequireState(state.IsNode, state.ActivatingNodes); err != nil {
+			return nil, err
+		}
+		_, err := a.core.GetDataKey(ctx, in.DiskUuid, 32)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "")
+		}
+	*/
+	return &pubproto.RequestStateDiskKeyResponse{}, errors.New("unimplemented")
 }
 
 func (a *API) activateNodes(logToCLI logFunc, nodePublicEndpoints []string, coordPeer peer.Peer) error {

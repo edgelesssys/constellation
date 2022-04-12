@@ -24,6 +24,7 @@ type APIClient interface {
 	ActivateAdditionalNodes(ctx context.Context, in *ActivateAdditionalNodesRequest, opts ...grpc.CallOption) (API_ActivateAdditionalNodesClient, error)
 	JoinCluster(ctx context.Context, in *JoinClusterRequest, opts ...grpc.CallOption) (*JoinClusterResponse, error)
 	TriggerNodeUpdate(ctx context.Context, in *TriggerNodeUpdateRequest, opts ...grpc.CallOption) (*TriggerNodeUpdateResponse, error)
+	RequestStateDiskKey(ctx context.Context, in *RequestStateDiskKeyRequest, opts ...grpc.CallOption) (*RequestStateDiskKeyResponse, error)
 }
 
 type aPIClient struct {
@@ -134,6 +135,15 @@ func (c *aPIClient) TriggerNodeUpdate(ctx context.Context, in *TriggerNodeUpdate
 	return out, nil
 }
 
+func (c *aPIClient) RequestStateDiskKey(ctx context.Context, in *RequestStateDiskKeyRequest, opts ...grpc.CallOption) (*RequestStateDiskKeyResponse, error) {
+	out := new(RequestStateDiskKeyResponse)
+	err := c.cc.Invoke(ctx, "/pubapi.API/RequestStateDiskKey", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // APIServer is the server API for API service.
 // All implementations must embed UnimplementedAPIServer
 // for forward compatibility
@@ -144,6 +154,7 @@ type APIServer interface {
 	ActivateAdditionalNodes(*ActivateAdditionalNodesRequest, API_ActivateAdditionalNodesServer) error
 	JoinCluster(context.Context, *JoinClusterRequest) (*JoinClusterResponse, error)
 	TriggerNodeUpdate(context.Context, *TriggerNodeUpdateRequest) (*TriggerNodeUpdateResponse, error)
+	RequestStateDiskKey(context.Context, *RequestStateDiskKeyRequest) (*RequestStateDiskKeyResponse, error)
 	mustEmbedUnimplementedAPIServer()
 }
 
@@ -168,6 +179,9 @@ func (UnimplementedAPIServer) JoinCluster(context.Context, *JoinClusterRequest) 
 }
 func (UnimplementedAPIServer) TriggerNodeUpdate(context.Context, *TriggerNodeUpdateRequest) (*TriggerNodeUpdateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerNodeUpdate not implemented")
+}
+func (UnimplementedAPIServer) RequestStateDiskKey(context.Context, *RequestStateDiskKeyRequest) (*RequestStateDiskKeyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestStateDiskKey not implemented")
 }
 func (UnimplementedAPIServer) mustEmbedUnimplementedAPIServer() {}
 
@@ -296,6 +310,24 @@ func _API_TriggerNodeUpdate_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _API_RequestStateDiskKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestStateDiskKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIServer).RequestStateDiskKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pubapi.API/RequestStateDiskKey",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIServer).RequestStateDiskKey(ctx, req.(*RequestStateDiskKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // API_ServiceDesc is the grpc.ServiceDesc for API service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -318,6 +350,10 @@ var API_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TriggerNodeUpdate",
 			Handler:    _API_TriggerNodeUpdate_Handler,
+		},
+		{
+			MethodName: "RequestStateDiskKey",
+			Handler:    _API_RequestStateDiskKey_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

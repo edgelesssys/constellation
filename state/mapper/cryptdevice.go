@@ -18,6 +18,9 @@ type cryptDevice interface {
 	// Free releases crypt device context and used memory.
 	// C equivalent: crypt_free
 	Free() bool
+	// GetUUID gets the device's UUID.
+	// C equivalent: crypt_get_uuid
+	GetUUID() string
 	// Load loads crypt device parameters from the on-disk header.
 	// Returns nil on success, or an error otherwise.
 	// C equivalent: crypt_load
