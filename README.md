@@ -114,7 +114,7 @@ az login
 
 By default, `constellation create ...` will spawn cloud provider instances with a pre-baked coordinator binary.
 For testing, you can use the constellation debug daemon (debugd) to upload your local coordinator binary to running instances and to obtain SSH access.
-[Follow this introduction on how to install and setup `cdbg`](#debugd-debug-daemon)
+[Follow this introduction on how to install and setup `cdbg`](#debug-daemon-debugd)
 
 # debug daemon (debugd)
 
