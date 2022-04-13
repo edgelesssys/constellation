@@ -77,7 +77,7 @@ func TestFromFile(t *testing.T) {
 			require := require.New(t)
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
-			require.NoError(fileHandler.WriteJSON(configName, tc.from, false))
+			require.NoError(fileHandler.WriteJSON(configName, tc.from, file.OptNone))
 
 			result, err := FromFile(fileHandler, tc.configName)
 

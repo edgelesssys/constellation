@@ -9,8 +9,26 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path"
 
 	"github.com/spf13/afero"
+)
+
+// Option is a bitmask of options for file operations.
+type Option uint
+
+// Has determines if a set of options contains the given options.
+func (o Option) Has(op Option) bool {
+	return o&op == op
+}
+
+const (
+	// OptNone is a no-op.
+	OptNone Option = 1 << iota / 2
+	// OptOverwrite overwrites an existing file.
+	OptOverwrite
+	// OptMkdirAll creates the path to the file.
+	OptMkdirAll
 )
 
 // Handler handles file interaction.
@@ -35,11 +53,14 @@ func (h *Handler) Read(name string) ([]byte, error) {
 }
 
 // Write writes the data bytes into the file with the given name.
-// If a file already exists at path and overwrite is true, the file will be
-// overwritten. Otherwise, an error is returned.
-func (h *Handler) Write(name string, data []byte, overwrite bool) error {
+func (h *Handler) Write(name string, data []byte, options Option) error {
+	if options.Has(OptMkdirAll) {
+		if err := h.fs.MkdirAll(path.Dir(name), os.ModePerm); err != nil {
+			return err
+		}
+	}
 	flags := os.O_WRONLY | os.O_CREATE | os.O_EXCL
-	if overwrite {
+	if options.Has(OptOverwrite) {
 		flags = os.O_WRONLY | os.O_CREATE | os.O_TRUNC
 	}
 	file, err := h.fs.OpenFile(name, flags, 0o644)
@@ -64,14 +85,12 @@ func (h *Handler) ReadJSON(name string, content interface{}) error {
 }
 
 // WriteJSON marshals the content interface to JSON and writes it to the path with the given name.
-// If a file already exists and overwrite is true, the file will be
-// overwritten. Otherwise, an error is returned.
-func (h *Handler) WriteJSON(name string, content interface{}, overwrite bool) error {
+func (h *Handler) WriteJSON(name string, content interface{}, options Option) error {
 	jsonData, err := json.MarshalIndent(content, "", "\t")
 	if err != nil {
 		return err
 	}
-	return h.Write(name, jsonData, overwrite)
+	return h.Write(name, jsonData, options)
 }
 
 // Remove deletes the file with the given name.

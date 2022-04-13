@@ -49,7 +49,7 @@ func TestCheckDirClean(t *testing.T) {
 			require := require.New(t)
 
 			for _, f := range tc.existingFiles {
-				require.NoError(tc.fileHandler.Write(f, []byte{1, 2, 3}, false))
+				require.NoError(tc.fileHandler.Write(f, []byte{1, 2, 3}, file.OptNone))
 			}
 
 			err := checkDirClean(tc.fileHandler, config)

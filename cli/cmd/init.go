@@ -101,7 +101,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 	if err != nil {
 		return err
 	}
-	if err := fileHandler.WriteJSON(*config.StatePath, stat, true); err != nil {
+	if err := fileHandler.WriteJSON(*config.StatePath, stat, file.OptOverwrite); err != nil {
 		return err
 	}
 
@@ -228,7 +228,7 @@ func writeWGQuickFile(fileHandler file.Handler, config *config.Config, vpnHandle
 	if err != nil {
 		return err
 	}
-	return fileHandler.Write(*config.WGQuickConfigPath, data, false)
+	return fileHandler.Write(*config.WGQuickConfigPath, data, file.OptNone)
 }
 
 func (r activationResult) writeOutput(wr io.Writer, fileHandler file.Handler, config *config.Config) error {
@@ -245,7 +245,7 @@ func (r activationResult) writeOutput(wr io.Writer, fileHandler file.Handler, co
 	tw.Flush()
 	fmt.Fprintln(wr)
 
-	if err := fileHandler.Write(*config.AdminConfPath, []byte(r.kubeconfig), false); err != nil {
+	if err := fileHandler.Write(*config.AdminConfPath, []byte(r.kubeconfig), file.OptNone); err != nil {
 		return fmt.Errorf("write kubeconfig: %w", err)
 	}
 
@@ -360,7 +360,7 @@ func readOrGeneratedMasterSecret(w io.Writer, fileHandler file.Handler, filename
 	if err != nil {
 		return nil, err
 	}
-	if err := fileHandler.Write(*config.MasterSecretPath, []byte(base64.StdEncoding.EncodeToString(masterSecret)), false); err != nil {
+	if err := fileHandler.Write(*config.MasterSecretPath, []byte(base64.StdEncoding.EncodeToString(masterSecret)), file.OptNone); err != nil {
 		return nil, err
 	}
 	fmt.Fprintf(w, "Your Constellation master secret was successfully written to ./%s\n", *config.MasterSecretPath)

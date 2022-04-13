@@ -155,7 +155,7 @@ func TestCreateAzure(t *testing.T) {
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
 			if tc.existingState != nil {
-				require.NoError(fileHandler.WriteJSON(*config.StatePath, *tc.existingState, false))
+				require.NoError(fileHandler.WriteJSON(*config.StatePath, *tc.existingState, file.OptNone))
 			}
 
 			err := createAzure(cmd, tc.client, fileHandler, config, "Standard_D2s_v3", 3, 2)

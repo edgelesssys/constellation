@@ -336,7 +336,7 @@ func TestInitialize(t *testing.T) {
 			cmd.SetErr(&errOut)
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
-			require.NoError(fileHandler.WriteJSON(*config.StatePath, tc.existingState, false))
+			require.NoError(fileHandler.WriteJSON(*config.StatePath, tc.existingState, file.OptNone))
 
 			// Write key file to filesystem and set path in flag.
 			require.NoError(afero.Afero{Fs: fs}.WriteFile("privK", []byte(tc.privKey), 0o600))
@@ -444,7 +444,7 @@ func TestReadOrGenerateVPNKey(t *testing.T) {
 
 	testKey := []byte(base64.StdEncoding.EncodeToString([]byte("32bytesWireGuardKeyForTheTesting")))
 	fileHandler := file.NewHandler(afero.NewMemMapFs())
-	require.NoError(fileHandler.Write("testKey", testKey, false))
+	require.NoError(fileHandler.Write("testKey", testKey, file.OptNone))
 
 	privK, pubK, err := readOrGenerateVPNKey(fileHandler, "testKey")
 	assert.NoError(err)
@@ -525,7 +525,7 @@ func TestReadOrGeneratedMasterSecret(t *testing.T) {
 			config := config.Default()
 
 			if tc.createFile {
-				require.NoError(fileHandler.Write(tc.filename, []byte(tc.filecontent), false))
+				require.NoError(fileHandler.Write(tc.filename, []byte(tc.filecontent), file.OptNone))
 			}
 
 			var out bytes.Buffer
@@ -697,7 +697,7 @@ func TestAutoscaleFlag(t *testing.T) {
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
 			vpnHandler := stubVPNHandler{}
-			require.NoError(fileHandler.WriteJSON(*config.StatePath, tc.existingState, false))
+			require.NoError(fileHandler.WriteJSON(*config.StatePath, tc.existingState, file.OptNone))
 
 			// Write key file to filesystem and set path in flag.
 			require.NoError(afero.Afero{Fs: fs}.WriteFile("privK", []byte(tc.privKey), 0o600))

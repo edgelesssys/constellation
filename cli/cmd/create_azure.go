@@ -120,7 +120,7 @@ func createAzure(cmd *cobra.Command, cl azureclient, fileHandler file.Handler, c
 	if err != nil {
 		return err
 	}
-	if err := fileHandler.WriteJSON(*config.StatePath, stat, false); err != nil {
+	if err := fileHandler.WriteJSON(*config.StatePath, stat, file.OptNone); err != nil {
 		return err
 	}
 

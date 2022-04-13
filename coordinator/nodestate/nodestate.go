@@ -27,5 +27,5 @@ func FromFile(fileHandler file.Handler) (*NodeState, error) {
 
 // ToFile writes a NodeState to disk.
 func (nodeState *NodeState) ToFile(fileHandler file.Handler) error {
-	return fileHandler.WriteJSON(nodeStatePath, nodeState, false)
+	return fileHandler.WriteJSON(nodeStatePath, nodeState, false, true)
 }

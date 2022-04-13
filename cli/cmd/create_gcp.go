@@ -114,7 +114,7 @@ func createGCP(cmd *cobra.Command, cl gcpclient, fileHandler file.Handler, confi
 		return err
 	}
 
-	if err := fileHandler.WriteJSON(*config.StatePath, stat, false); err != nil {
+	if err := fileHandler.WriteJSON(*config.StatePath, stat, file.OptNone); err != nil {
 		return err
 	}
 

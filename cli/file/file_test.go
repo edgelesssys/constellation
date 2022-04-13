@@ -80,12 +80,12 @@ func TestWriteJSON(t *testing.T) {
 	notMarshalableContent := struct{ Foo chan int }{Foo: make(chan int)}
 
 	testCases := map[string]struct {
-		fs        afero.Fs
-		setupFs   func(af afero.Afero) error
-		name      string
-		content   interface{}
-		overwrite bool
-		wantErr   bool
+		fs      afero.Fs
+		setupFs func(af afero.Afero) error
+		name    string
+		content interface{}
+		options Option
+		wantErr bool
 	}{
 		"successful write": {
 			fs:      afero.NewMemMapFs(),
@@ -93,11 +93,11 @@ func TestWriteJSON(t *testing.T) {
 			content: someContent,
 		},
 		"successful overwrite": {
-			fs:        afero.NewMemMapFs(),
-			setupFs:   func(af afero.Afero) error { return af.WriteFile("test/statefile", []byte{}, 0o644) },
-			name:      "test/statefile",
-			content:   someContent,
-			overwrite: true,
+			fs:      afero.NewMemMapFs(),
+			setupFs: func(af afero.Afero) error { return af.WriteFile("test/statefile", []byte{}, 0o644) },
+			name:    "test/statefile",
+			content: someContent,
+			options: OptOverwrite,
 		},
 		"read only fs": {
 			fs:      afero.NewReadOnlyFs(afero.NewMemMapFs()),
@@ -118,6 +118,15 @@ func TestWriteJSON(t *testing.T) {
 			content: notMarshalableContent,
 			wantErr: true,
 		},
+		"mkdirAll works": {
+			fs:      afero.NewMemMapFs(),
+			name:    "test/statefile",
+			content: someContent,
+			options: OptMkdirAll,
+		},
+		// TODO: add tests for mkdirAll actually creating the necessary folders when https://github.com/spf13/afero/issues/270 is fixed.
+		// Currently, MemMapFs will create files in nonexistent directories due to a bug in afero,
+		// making it impossible to test the actual behavior of the mkdirAll parameter.
 	}
 
 	for name, tc := range testCases {
@@ -131,9 +140,9 @@ func TestWriteJSON(t *testing.T) {
 			}
 
 			if tc.wantErr {
-				assert.Error(handler.WriteJSON(tc.name, tc.content, tc.overwrite))
+				assert.Error(handler.WriteJSON(tc.name, tc.content, tc.options))
 			} else {
-				assert.NoError(handler.WriteJSON(tc.name, tc.content, tc.overwrite))
+				assert.NoError(handler.WriteJSON(tc.name, tc.content, tc.options))
 				resultContent := &testContent{}
 				assert.NoError(handler.ReadJSON(tc.name, resultContent))
 				assert.Equal(tc.content, *resultContent)

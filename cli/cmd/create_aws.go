@@ -112,7 +112,7 @@ func createAWS(cmd *cobra.Command, cl ec2client, fileHandler file.Handler, confi
 	if err != nil {
 		return err
 	}
-	if err := fileHandler.WriteJSON(*config.StatePath, stat, false); err != nil {
+	if err := fileHandler.WriteJSON(*config.StatePath, stat, file.OptNone); err != nil {
 		return err
 	}
 

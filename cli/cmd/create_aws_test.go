@@ -138,7 +138,7 @@ func TestCreateAWS(t *testing.T) {
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
 			if tc.existingState != nil {
-				require.NoError(fileHandler.WriteJSON(*config.StatePath, *tc.existingState, false))
+				require.NoError(fileHandler.WriteJSON(*config.StatePath, *tc.existingState, file.OptNone))
 			}
 
 			err := createAWS(cmd, tc.client, fileHandler, config, "xlarge", "name", 3)
