@@ -49,37 +49,32 @@ func newInitCmd() *cobra.Command {
 func runInitialize(cmd *cobra.Command, args []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	vpnHandler := vpn.NewConfigHandler()
-	devConfigName, err := cmd.Flags().GetString("dev-config")
-	if err != nil {
-		return err
-	}
-	config, err := config.FromFile(fileHandler, devConfigName)
-	if err != nil {
-		return err
-	}
-
-	protoClient := proto.NewClient(*config.Provider.GCP.PCRs)
-	defer protoClient.Close()
-	if err != nil {
-		return err
-	}
-
 	serviceAccountCreator := cloudcmd.NewServiceAccountCreator()
+	waiter := status.NewWaiter()
+	protoClient := &proto.Client{}
+	defer protoClient.Close()
 
 	// We have to parse the context separately, since cmd.Context()
 	// returns nil during the tests otherwise.
-	return initialize(cmd.Context(), cmd, protoClient, serviceAccountCreator, fileHandler, config, status.NewWaiter(*config.Provider.GCP.PCRs), vpnHandler)
+	return initialize(cmd.Context(), cmd, protoClient, serviceAccountCreator, fileHandler, waiter, vpnHandler)
 }
 
 // initialize initializes a Constellation. Coordinator instances are activated as Coordinators and will
 // themself activate the other peers as nodes.
 func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, serviceAccCreator serviceAccountCreator,
-	fileHandler file.Handler, config *config.Config, waiter statusWaiter, vpnHandler vpnHandler,
+	fileHandler file.Handler, waiter statusWaiter, vpnHandler vpnHandler,
 ) error {
-	flagArgs, err := evalFlagArgs(cmd, fileHandler)
+	flags, err := evalFlagArgs(cmd, fileHandler)
 	if err != nil {
 		return err
 	}
+
+	config, err := config.FromFile(fileHandler, flags.devConfigPath)
+	if err != nil {
+		return err
+	}
+
+	waiter.InitializePCRs(*config.Provider.GCP.PCRs, *config.Provider.Azure.PCRs)
 
 	var stat state.ConstellationState
 	err = fileHandler.ReadJSON(constants.StateFilename, &stat)
@@ -121,14 +116,14 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 	}
 
 	var autoscalingNodeGroups []string
-	if flagArgs.autoscale {
+	if flags.autoscale {
 		autoscalingNodeGroups = append(autoscalingNodeGroups, nodes.GroupID)
 	}
 
 	input := activationInput{
 		coordinatorPubIP:       coordinators.PublicIPs()[0],
-		pubKey:                 flagArgs.userPubKey,
-		masterSecret:           flagArgs.masterSecret,
+		pubKey:                 flags.userPubKey,
+		masterSecret:           flags.masterSecret,
 		nodePrivIPs:            nodes.PrivateIPs(),
 		autoscalingNodeGroups:  autoscalingNodeGroups,
 		cloudServiceAccountURI: serviceAccount,
@@ -143,7 +138,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		return err
 	}
 
-	vpnConfig, err := vpnHandler.Create(result.coordinatorPubKey, result.coordinatorPubIP, string(flagArgs.userPrivKey), result.clientVpnIP, wireguardAdminMTU)
+	vpnConfig, err := vpnHandler.Create(result.coordinatorPubKey, result.coordinatorPubIP, string(flags.userPrivKey), result.clientVpnIP, wireguardAdminMTU)
 	if err != nil {
 		return err
 	}
@@ -152,7 +147,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		return fmt.Errorf("write wg-quick file: %w", err)
 	}
 
-	if flagArgs.autoconfigureWG {
+	if flags.autoconfigureWG {
 		if err := vpnHandler.Apply(vpnConfig); err != nil {
 			return err
 		}
@@ -162,7 +157,13 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 }
 
 func activate(ctx context.Context, cmd *cobra.Command, client protoClient, input activationInput, config *config.Config) (activationResult, error) {
-	if err := client.Connect(input.coordinatorPubIP, *config.CoordinatorPort); err != nil {
+	err := client.Connect(
+		input.coordinatorPubIP,
+		*config.CoordinatorPort,
+		*config.Provider.GCP.PCRs,
+		*config.Provider.Azure.PCRs,
+	)
+	if err != nil {
 		return activationResult{}, err
 	}
 
@@ -265,33 +266,38 @@ func writeRow(wr io.Writer, col1 string, col2 string) {
 
 // evalFlagArgs gets the flag values and does preprocessing of these values like
 // reading the content from file path flags and deriving other values from flag combinations.
-func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (flagArgs, error) {
+func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (initFlags, error) {
 	userPrivKeyPath, err := cmd.Flags().GetString("privatekey")
 	if err != nil {
-		return flagArgs{}, err
+		return initFlags{}, err
 	}
 	userPrivKey, userPubKey, err := readOrGenerateVPNKey(fileHandler, userPrivKeyPath)
 	if err != nil {
-		return flagArgs{}, err
+		return initFlags{}, err
 	}
 	autoconfigureWG, err := cmd.Flags().GetBool("wg-autoconfig")
 	if err != nil {
-		return flagArgs{}, err
+		return initFlags{}, err
 	}
 	masterSecretPath, err := cmd.Flags().GetString("master-secret")
 	if err != nil {
-		return flagArgs{}, err
+		return initFlags{}, err
 	}
 	masterSecret, err := readOrGeneratedMasterSecret(cmd.OutOrStdout(), fileHandler, masterSecretPath)
 	if err != nil {
-		return flagArgs{}, err
+		return initFlags{}, err
 	}
 	autoscale, err := cmd.Flags().GetBool("autoscale")
 	if err != nil {
-		return flagArgs{}, err
+		return initFlags{}, err
+	}
+	devConfigPath, err := cmd.Flags().GetString("dev-config")
+	if err != nil {
+		return initFlags{}, err
 	}
 
-	return flagArgs{
+	return initFlags{
+		devConfigPath:   devConfigPath,
 		userPrivKey:     userPrivKey,
 		userPubKey:      userPubKey,
 		autoconfigureWG: autoconfigureWG,
@@ -300,8 +306,9 @@ func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (flagArgs, error
 	}, nil
 }
 
-// flagArgs are the resulting values of flag preprocessing.
-type flagArgs struct {
+// initFlags are the resulting values of flag preprocessing.
+type initFlags struct {
+	devConfigPath   string
 	userPrivKey     []byte
 	userPubKey      []byte
 	masterSecret    []byte

@@ -7,7 +7,6 @@ import (
 	"net"
 
 	"github.com/edgelesssys/constellation/coordinator/atls"
-	"github.com/edgelesssys/constellation/coordinator/attestation/aws"
 	"github.com/edgelesssys/constellation/coordinator/attestation/azure"
 	"github.com/edgelesssys/constellation/coordinator/attestation/gcp"
 	"github.com/edgelesssys/constellation/coordinator/kms"
@@ -21,31 +20,25 @@ import (
 // The client offers a method to activate the connected
 // AVPNServer as Coordinator.
 type Client struct {
-	conn       *grpc.ClientConn
-	avpn       pubproto.APIClient
-	validators []atls.Validator
+	conn *grpc.ClientConn
+	avpn pubproto.APIClient
 }
 
-// NewClient creates a Client without a connection.
-func NewClient(gcpPCRs map[uint32][]byte) *Client {
-	return &Client{
-		validators: []atls.Validator{
-			aws.NewValidator(aws.NaAdGetVerifiedPayloadAsJson),
-			gcp.NewValidator(gcpPCRs),
-			gcp.NewNonCVMValidator(map[uint32][]byte{}), // TODO: Remove once we no longer use non cvms
-			azure.NewValidator(map[uint32][]byte{}),
-		},
-	}
-}
-
-// Connect connects the client to a given server.
+// Connect connects the client to a given server, using the handed
+// Validators for the attestation of the connection.
 // The connection must be closed using Close(). If connect is
 // called on a client that already has a connection, the old
 // connection is closed.
-func (c *Client) Connect(ip string, port string) error {
+func (c *Client) Connect(ip, port string, gcpPCRs, AzurePCRs map[uint32][]byte) error {
 	addr := net.JoinHostPort(ip, port)
 
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig(c.validators)
+	validators := []atls.Validator{
+		gcp.NewValidator(gcpPCRs),
+		gcp.NewNonCVMValidator(map[uint32][]byte{}), // TODO: Remove once we no longer use non cvms
+		azure.NewValidator(map[uint32][]byte{}),
+	}
+
+	tlsConfig, err := atls.CreateAttestationClientTLSConfig(validators)
 	if err != nil {
 		return err
 	}

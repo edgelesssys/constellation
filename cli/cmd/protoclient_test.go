@@ -23,7 +23,7 @@ type stubProtoClient struct {
 	cloudServiceAccountURI        string
 }
 
-func (c *stubProtoClient) Connect(ip string, port string) error {
+func (c *stubProtoClient) Connect(_, _ string, _, _ map[uint32][]byte) error {
 	c.conn = true
 	return c.connectErr
 }
@@ -89,7 +89,7 @@ type fakeProtoClient struct {
 	respClient proto.ActivationResponseClient
 }
 
-func (c *fakeProtoClient) Connect(ip string, port string) error {
+func (c *fakeProtoClient) Connect(_, _ string, _, _ map[uint32][]byte) error {
 	c.conn = true
 	return nil
 }

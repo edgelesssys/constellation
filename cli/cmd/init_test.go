@@ -14,7 +14,6 @@ import (
 	"github.com/edgelesssys/constellation/cli/ec2"
 	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/cli/gcp"
-	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/state"
 	wgquick "github.com/nmiculinic/wg-quick-go"
@@ -35,7 +34,6 @@ func TestInitArgumentValidation(t *testing.T) {
 
 func TestInitialize(t *testing.T) {
 	testKey := base64.StdEncoding.EncodeToString([]byte("32bytesWireGuardKeyForTheTesting"))
-	config := config.Default()
 	testEc2State := state.ConstellationState{
 		CloudProvider: "AWS",
 		EC2Instances: ec2.Instances{
@@ -56,39 +54,21 @@ func TestInitialize(t *testing.T) {
 	}
 	testGcpState := state.ConstellationState{
 		GCPNodes: gcp.Instances{
-			"id-0": {
-				PrivateIP: "192.0.2.1",
-				PublicIP:  "192.0.2.1",
-			},
-			"id-1": {
-				PrivateIP: "192.0.2.1",
-				PublicIP:  "192.0.2.1",
-			},
+			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
+			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
 		GCPCoordinators: gcp.Instances{
-			"id-c": {
-				PrivateIP: "192.0.2.1",
-				PublicIP:  "192.0.2.1",
-			},
+			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
 	}
 	testAzureState := state.ConstellationState{
 		CloudProvider: "Azure",
 		AzureNodes: azure.Instances{
-			"id-0": {
-				PrivateIP: "192.0.2.1",
-				PublicIP:  "192.0.2.1",
-			},
-			"id-1": {
-				PrivateIP: "192.0.2.1",
-				PublicIP:  "192.0.2.1",
-			},
+			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
+			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
 		AzureCoordinators: azure.Instances{
-			"id-c": {
-				PrivateIP: "192.0.2.1",
-				PublicIP:  "192.0.2.1",
-			},
+			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
 		AzureResourceGroup: "test",
 	}
@@ -121,7 +101,7 @@ func TestInitialize(t *testing.T) {
 			client: &fakeProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter:     stubStatusWaiter{},
+			waiter:     &stubStatusWaiter{},
 			vpnHandler: &stubVPNHandler{},
 			privKey:    testKey,
 		},
@@ -130,7 +110,7 @@ func TestInitialize(t *testing.T) {
 			client: &fakeProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter:     stubStatusWaiter{},
+			waiter:     &stubStatusWaiter{},
 			vpnHandler: &stubVPNHandler{},
 			privKey:    testKey,
 		},
@@ -139,7 +119,7 @@ func TestInitialize(t *testing.T) {
 			client: &fakeProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter:     stubStatusWaiter{},
+			waiter:     &stubStatusWaiter{},
 			vpnHandler: &stubVPNHandler{},
 			privKey:    testKey,
 		},
@@ -148,7 +128,7 @@ func TestInitialize(t *testing.T) {
 			client: &fakeProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter:     stubStatusWaiter{},
+			waiter:     &stubStatusWaiter{},
 			vpnHandler: &stubVPNHandler{},
 			initVPN:    true,
 			privKey:    testKey,
@@ -158,7 +138,7 @@ func TestInitialize(t *testing.T) {
 			client: &fakeProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter:      stubStatusWaiter{},
+			waiter:      &stubStatusWaiter{},
 			vpnHandler:  &stubVPNHandler{applyErr: someErr},
 			initVPN:     true,
 			privKey:     testKey,
@@ -169,7 +149,7 @@ func TestInitialize(t *testing.T) {
 			client: &fakeProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter:      stubStatusWaiter{},
+			waiter:      &stubStatusWaiter{},
 			vpnHandler:  &stubVPNHandler{createErr: someErr},
 			initVPN:     true,
 			privKey:     testKey,
@@ -180,7 +160,7 @@ func TestInitialize(t *testing.T) {
 			client: &fakeProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter:      stubStatusWaiter{},
+			waiter:      &stubStatusWaiter{},
 			vpnHandler:  &stubVPNHandler{marshalErr: someErr},
 			initVPN:     true,
 			privKey:     testKey,
@@ -189,7 +169,7 @@ func TestInitialize(t *testing.T) {
 		"no state exists": {
 			existingState: state.ConstellationState{},
 			client:        &stubProtoClient{},
-			waiter:        stubStatusWaiter{},
+			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
@@ -200,7 +180,7 @@ func TestInitialize(t *testing.T) {
 				EC2SecurityGroup: "sg-test",
 			},
 			client:      &stubProtoClient{},
-			waiter:      stubStatusWaiter{},
+			waiter:      &stubStatusWaiter{},
 			privKey:     testKey,
 			vpnHandler:  &stubVPNHandler{},
 			errExpected: true,
@@ -211,7 +191,7 @@ func TestInitialize(t *testing.T) {
 				EC2SecurityGroup: "sg-test",
 			},
 			client:      &stubProtoClient{},
-			waiter:      stubStatusWaiter{},
+			waiter:      &stubStatusWaiter{},
 			privKey:     testKey,
 			vpnHandler:  &stubVPNHandler{},
 			errExpected: true,
@@ -219,7 +199,7 @@ func TestInitialize(t *testing.T) {
 		"public key to short": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{},
-			waiter:        stubStatusWaiter{},
+			waiter:        &stubStatusWaiter{},
 			privKey:       base64.StdEncoding.EncodeToString([]byte("tooShortKey")),
 			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
@@ -227,7 +207,7 @@ func TestInitialize(t *testing.T) {
 		"public key to long": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{},
-			waiter:        stubStatusWaiter{},
+			waiter:        &stubStatusWaiter{},
 			privKey:       base64.StdEncoding.EncodeToString([]byte("thisWireguardKeyIsToLongAndHasTooManyBytes")),
 			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
@@ -235,7 +215,7 @@ func TestInitialize(t *testing.T) {
 		"public key not base64": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{},
-			waiter:        stubStatusWaiter{},
+			waiter:        &stubStatusWaiter{},
 			privKey:       "this is not base64 encoded",
 			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
@@ -243,7 +223,7 @@ func TestInitialize(t *testing.T) {
 		"fail Connect": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{connectErr: someErr},
-			waiter:        stubStatusWaiter{},
+			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
@@ -251,7 +231,7 @@ func TestInitialize(t *testing.T) {
 		"fail Activate": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{activateErr: someErr},
-			waiter:        stubStatusWaiter{},
+			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
@@ -259,7 +239,7 @@ func TestInitialize(t *testing.T) {
 		"fail respClient WriteLogStream": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{writeLogStreamErr: someErr}},
-			waiter:        stubStatusWaiter{},
+			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
@@ -267,7 +247,7 @@ func TestInitialize(t *testing.T) {
 		"fail respClient getKubeconfig": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getKubeconfigErr: someErr}},
-			waiter:        stubStatusWaiter{},
+			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
@@ -275,7 +255,7 @@ func TestInitialize(t *testing.T) {
 		"fail respClient getCoordinatorVpnKey": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getCoordinatorVpnKeyErr: someErr}},
-			waiter:        stubStatusWaiter{},
+			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
@@ -283,7 +263,7 @@ func TestInitialize(t *testing.T) {
 		"fail respClient getClientVpnIp": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getClientVpnIpErr: someErr}},
-			waiter:        stubStatusWaiter{},
+			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
@@ -291,7 +271,7 @@ func TestInitialize(t *testing.T) {
 		"fail respClient getOwnerID": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getOwnerIDErr: someErr}},
-			waiter:        stubStatusWaiter{},
+			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
@@ -299,7 +279,7 @@ func TestInitialize(t *testing.T) {
 		"fail respClient getClusterID": {
 			existingState: testEc2State,
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getClusterIDErr: someErr}},
-			waiter:        stubStatusWaiter{},
+			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
@@ -307,7 +287,7 @@ func TestInitialize(t *testing.T) {
 		"fail to wait for required status": {
 			existingState: testGcpState,
 			client:        &stubProtoClient{},
-			waiter:        stubStatusWaiter{waitForAllErr: someErr},
+			waiter:        &stubStatusWaiter{waitForAllErr: someErr},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
 			errExpected:   true,
@@ -318,7 +298,7 @@ func TestInitialize(t *testing.T) {
 			serviceAccountCreator: stubServiceAccountCreator{
 				createErr: someErr,
 			},
-			waiter:      stubStatusWaiter{},
+			waiter:      &stubStatusWaiter{},
 			privKey:     testKey,
 			vpnHandler:  &stubVPNHandler{},
 			errExpected: true,
@@ -335,6 +315,7 @@ func TestInitialize(t *testing.T) {
 			cmd.SetOut(&out)
 			var errOut bytes.Buffer
 			cmd.SetErr(&errOut)
+			cmd.Flags().String("dev-config", "", "") // register persisten flag manually
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
 			require.NoError(fileHandler.WriteJSON(constants.StateFilename, tc.existingState, file.OptNone))
@@ -350,7 +331,7 @@ func TestInitialize(t *testing.T) {
 			ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 			defer cancel()
 
-			err := initialize(ctx, cmd, tc.client, &tc.serviceAccountCreator, fileHandler, config, tc.waiter, tc.vpnHandler)
+			err := initialize(ctx, cmd, tc.client, &tc.serviceAccountCreator, fileHandler, tc.waiter, tc.vpnHandler)
 
 			if tc.errExpected {
 				assert.Error(err)
@@ -551,58 +532,30 @@ func TestReadOrGeneratedMasterSecret(t *testing.T) {
 
 func TestAutoscaleFlag(t *testing.T) {
 	testKey := base64.StdEncoding.EncodeToString([]byte("32bytesWireGuardKeyForTheTesting"))
-	config := config.Default()
 	testEc2State := state.ConstellationState{
 		EC2Instances: ec2.Instances{
-			"id-0": {
-				PrivateIP: "192.0.2.1",
-				PublicIP:  "192.0.2.2",
-			},
-			"id-1": {
-				PrivateIP: "192.0.2.1",
-				PublicIP:  "192.0.2.2",
-			},
-			"id-2": {
-				PrivateIP: "192.0.2.1",
-				PublicIP:  "192.0.2.2",
-			},
+			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.2"},
+			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.2"},
+			"id-2": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.2"},
 		},
 		EC2SecurityGroup: "sg-test",
 	}
 	testGcpState := state.ConstellationState{
 		GCPNodes: gcp.Instances{
-			"id-0": {
-				PrivateIP: "192.0.2.1",
-				PublicIP:  "192.0.2.1",
-			},
-			"id-1": {
-				PrivateIP: "192.0.2.1",
-				PublicIP:  "192.0.2.1",
-			},
+			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
+			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
 		GCPCoordinators: gcp.Instances{
-			"id-c": {
-				PrivateIP: "192.0.2.1",
-				PublicIP:  "192.0.2.1",
-			},
+			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
 	}
 	testAzureState := state.ConstellationState{
 		AzureNodes: azure.Instances{
-			"id-0": {
-				PrivateIP: "192.0.2.1",
-				PublicIP:  "192.0.2.1",
-			},
-			"id-1": {
-				PrivateIP: "192.0.2.1",
-				PublicIP:  "192.0.2.1",
-			},
+			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
+			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
 		AzureCoordinators: azure.Instances{
-			"id-c": {
-				PrivateIP: "192.0.2.1",
-				PublicIP:  "192.0.2.1",
-			},
+			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
 		AzureResourceGroup: "test",
 	}
@@ -633,7 +586,7 @@ func TestAutoscaleFlag(t *testing.T) {
 			client: &stubProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter:  stubStatusWaiter{},
+			waiter:  &stubStatusWaiter{},
 			privKey: testKey,
 		},
 		"initialize some gcp instances without autoscale flag": {
@@ -642,7 +595,7 @@ func TestAutoscaleFlag(t *testing.T) {
 			client: &stubProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter:  stubStatusWaiter{},
+			waiter:  &stubStatusWaiter{},
 			privKey: testKey,
 		},
 		"initialize some azure instances without autoscale flag": {
@@ -651,7 +604,7 @@ func TestAutoscaleFlag(t *testing.T) {
 			client: &stubProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter:  stubStatusWaiter{},
+			waiter:  &stubStatusWaiter{},
 			privKey: testKey,
 		},
 		"initialize some ec2 instances with autoscale flag": {
@@ -660,7 +613,7 @@ func TestAutoscaleFlag(t *testing.T) {
 			client: &stubProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter:  stubStatusWaiter{},
+			waiter:  &stubStatusWaiter{},
 			privKey: testKey,
 		},
 		"initialize some gcp instances with autoscale flag": {
@@ -669,7 +622,7 @@ func TestAutoscaleFlag(t *testing.T) {
 			client: &stubProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter:  stubStatusWaiter{},
+			waiter:  &stubStatusWaiter{},
 			privKey: testKey,
 		},
 		"initialize some azure instances with autoscale flag": {
@@ -678,7 +631,7 @@ func TestAutoscaleFlag(t *testing.T) {
 			client: &stubProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter:  stubStatusWaiter{},
+			waiter:  &stubStatusWaiter{},
 			privKey: testKey,
 		},
 	}
@@ -693,6 +646,7 @@ func TestAutoscaleFlag(t *testing.T) {
 			cmd.SetOut(&out)
 			var errOut bytes.Buffer
 			cmd.SetErr(&errOut)
+			cmd.Flags().String("dev-config", "", "") // register persisten flag manually
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
 			vpnHandler := stubVPNHandler{}
@@ -705,7 +659,7 @@ func TestAutoscaleFlag(t *testing.T) {
 			require.NoError(cmd.Flags().Set("autoscale", strconv.FormatBool(tc.autoscaleFlag)))
 			ctx := context.Background()
 
-			require.NoError(initialize(ctx, cmd, tc.client, &tc.serviceAccountCreator, fileHandler, config, tc.waiter, &vpnHandler))
+			require.NoError(initialize(ctx, cmd, tc.client, &tc.serviceAccountCreator, fileHandler, tc.waiter, &vpnHandler))
 			if tc.autoscaleFlag {
 				assert.Len(tc.client.activateAutoscalingNodeGroups, 1)
 			} else {

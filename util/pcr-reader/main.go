@@ -41,7 +41,8 @@ func main() {
 	defer cancel()
 
 	// wait for coordinator to come online
-	waiter := status.NewWaiter(map[uint32][]byte{})
+	waiter := status.NewWaiter()
+	waiter.InitializePCRs(map[uint32][]byte{}, map[uint32][]byte{})
 	if err := waiter.WaitFor(ctx, addr, state.AcceptingInit, state.ActivatingNodes, state.IsNode, state.NodeWaitingForClusterJoin); err != nil {
 		log.Fatal(err)
 	}

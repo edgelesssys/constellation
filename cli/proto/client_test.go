@@ -21,7 +21,7 @@ func TestClose(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	client := NewClient(map[uint32][]byte{})
+	client := Client{}
 
 	// Create a connection.
 	listener := bufconn.Listen(4)

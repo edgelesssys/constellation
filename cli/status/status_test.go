@@ -12,6 +12,21 @@ import (
 	"google.golang.org/grpc"
 )
 
+func TestInitializeValidators(t *testing.T) {
+	assert := assert.New(t)
+
+	waiter := Waiter{
+		interval:  time.Millisecond,
+		newClient: stubNewClientFunc(&stubPeerStatusClient{state: state.IsNode}),
+	}
+
+	// Uninitialized waiter fails.
+	assert.Error(waiter.WaitFor(context.Background(), "someIP", state.IsNode))
+
+	waiter.InitializeValidators(nil)
+	assert.NoError(waiter.WaitFor(context.Background(), "someIP", state.IsNode))
+}
+
 func TestWaitForAndWaitForAll(t *testing.T) {
 	var noErr error
 	someErr := errors.New("failed")
@@ -23,43 +38,48 @@ func TestWaitForAndWaitForAll(t *testing.T) {
 	}{
 		"successful wait": {
 			waiter: Waiter{
-				interval:  time.Millisecond,
-				newConn:   stubNewConnFunc(noErr),
-				newClient: stubNewClientFunc(&stubPeerStatusClient{state: state.IsNode}),
+				initialized: true,
+				interval:    time.Millisecond,
+				newConn:     stubNewConnFunc(noErr),
+				newClient:   stubNewClientFunc(&stubPeerStatusClient{state: state.IsNode}),
 			},
 			waitForState: []state.State{state.IsNode},
 		},
 		"successful wait multi states": {
 			waiter: Waiter{
-				interval:  time.Millisecond,
-				newConn:   stubNewConnFunc(noErr),
-				newClient: stubNewClientFunc(&stubPeerStatusClient{state: state.IsNode}),
+				initialized: true,
+				interval:    time.Millisecond,
+				newConn:     stubNewConnFunc(noErr),
+				newClient:   stubNewClientFunc(&stubPeerStatusClient{state: state.IsNode}),
 			},
 			waitForState: []state.State{state.IsNode, state.ActivatingNodes},
 		},
 		"expect timeout": {
 			waiter: Waiter{
-				interval:  time.Millisecond,
-				newConn:   stubNewConnFunc(noErr),
-				newClient: stubNewClientFunc(&stubPeerStatusClient{state: state.AcceptingInit}),
+				initialized: true,
+				interval:    time.Millisecond,
+				newConn:     stubNewConnFunc(noErr),
+				newClient:   stubNewClientFunc(&stubPeerStatusClient{state: state.AcceptingInit}),
 			},
 			waitForState: []state.State{state.IsNode},
 			wantErr:      true,
 		},
 		"fail to check call": {
 			waiter: Waiter{
-				interval:  time.Millisecond,
-				newConn:   stubNewConnFunc(noErr),
-				newClient: stubNewClientFunc(&stubPeerStatusClient{checkErr: someErr}),
+				initialized: true,
+				interval:    time.Millisecond,
+				newConn:     stubNewConnFunc(noErr),
+				newClient:   stubNewClientFunc(&stubPeerStatusClient{checkErr: someErr}),
 			},
 			waitForState: []state.State{state.IsNode},
 			wantErr:      true,
 		},
 		"fail to create conn": {
 			waiter: Waiter{
-				interval:  time.Millisecond,
-				newConn:   stubNewConnFunc(someErr),
-				newClient: stubNewClientFunc(&stubPeerStatusClient{}),
+				initialized: true,
+				interval:    time.Millisecond,
+				newConn:     stubNewConnFunc(someErr),
+				newClient:   stubNewClientFunc(&stubPeerStatusClient{}),
 			},
 			waitForState: []state.State{state.IsNode},
 			wantErr:      true,
