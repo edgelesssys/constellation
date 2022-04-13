@@ -70,7 +70,7 @@ func TestCreate(t *testing.T) {
 	testCases := map[string]struct {
 		setupFs       func(*require.Assertions) afero.Fs
 		creator       *stubCloudCreator
-		provider      cloudprovider.CloudProvider
+		provider      cloudprovider.Provider
 		yesFlag       bool
 		devConfigFlag string
 		nameFlag      string

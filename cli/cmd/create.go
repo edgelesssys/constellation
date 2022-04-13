@@ -53,7 +53,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 }
 
 func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler,
-	countCoord, countNode int, provider cloudprovider.CloudProvider, insType string,
+	countCoord, countNode int, provider cloudprovider.Provider, insType string,
 ) (retErr error) {
 	flags, err := parseCreateFlags(cmd)
 	if err != nil {

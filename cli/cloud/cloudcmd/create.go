@@ -35,7 +35,7 @@ func NewCreator(out io.Writer) *Creator {
 }
 
 // Create creates the handed amount of instances and all the needed resources.
-func (c *Creator) Create(ctx context.Context, provider cloudprovider.CloudProvider, config *config.Config, name, insType string, coordCount, nodeCount int,
+func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, config *config.Config, name, insType string, coordCount, nodeCount int,
 ) (state.ConstellationState, error) {
 	switch provider {
 	case cloudprovider.GCP:

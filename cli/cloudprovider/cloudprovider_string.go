@@ -18,8 +18,8 @@ const _CloudProvider_name = "UnknownAWSAzureGCP"
 
 var _CloudProvider_index = [...]uint8{0, 7, 10, 15, 18}
 
-func (i CloudProvider) String() string {
-	if i >= CloudProvider(len(_CloudProvider_index)-1) {
+func (i Provider) String() string {
+	if i >= Provider(len(_CloudProvider_index)-1) {
 		return "CloudProvider(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
 	return _CloudProvider_name[_CloudProvider_index[i]:_CloudProvider_index[i+1]]

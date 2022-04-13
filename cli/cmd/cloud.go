@@ -11,7 +11,7 @@ import (
 type cloudCreator interface {
 	Create(
 		ctx context.Context,
-		provider cloudprovider.CloudProvider,
+		provider cloudprovider.Provider,
 		config *config.Config,
 		name, insType string,
 		coordCount, nodeCount int,

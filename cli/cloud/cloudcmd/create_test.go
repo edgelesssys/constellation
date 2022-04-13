@@ -61,7 +61,7 @@ func TestCreator(t *testing.T) {
 		newGCPClientErr   error
 		azureclient       azureclient
 		newAzureClientErr error
-		provider          cloudprovider.CloudProvider
+		provider          cloudprovider.Provider
 		config            *config.Config
 		wantState         state.ConstellationState
 		wantErr           bool
