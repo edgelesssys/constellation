@@ -14,6 +14,7 @@ const (
 	Unknown Role = iota
 	Coordinator
 	Node
+	Admin
 )
 
 // MarshalJSON marshals the Role to JSON string.
@@ -30,9 +31,10 @@ func (r *Role) UnmarshalJSON(b []byte) error {
 	switch strings.ToLower(roleString) {
 	case "coordinator":
 		*r = Coordinator
-
 	case "node":
 		*r = Node
+	case "admin":
+		*r = Admin
 	default:
 		*r = Unknown
 	}

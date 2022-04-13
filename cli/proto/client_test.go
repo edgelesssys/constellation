@@ -72,42 +72,42 @@ func TestActivate(t *testing.T) {
 	testCases := map[string]struct {
 		avpn          *stubAVPNClient
 		userPublicKey string
-		endpoints     []string
+		ips           []string
 		errExpected   bool
 	}{
 		"normal activation": {
 			avpn:          &stubAVPNClient{},
 			userPublicKey: testKey,
-			endpoints:     []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
+			ips:           []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
 			errExpected:   false,
 		},
 		"client without avpn": {
 			userPublicKey: testKey,
-			endpoints:     []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
+			ips:           []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
 			errExpected:   true,
 		},
 		"empty public key parameter": {
 			avpn:          &stubAVPNClient{},
 			userPublicKey: "",
-			endpoints:     []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
+			ips:           []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
 			errExpected:   true,
 		},
 		"invalid public key parameter": {
 			avpn:          &stubAVPNClient{},
 			userPublicKey: "invalid Key",
-			endpoints:     []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
+			ips:           []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
 			errExpected:   true,
 		},
 		"empty ips parameter": {
 			avpn:          &stubAVPNClient{},
 			userPublicKey: testKey,
-			endpoints:     []string{},
+			ips:           []string{},
 			errExpected:   true,
 		},
 		"fail ActivateAsCoordinator": {
 			avpn:          &stubAVPNClient{activateAsCoordinatorErr: someErr},
 			userPublicKey: testKey,
-			endpoints:     []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
+			ips:           []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
 			errExpected:   true,
 		},
 	}
@@ -120,13 +120,13 @@ func TestActivate(t *testing.T) {
 			if tc.avpn != nil {
 				client.avpn = tc.avpn
 			}
-			_, err := client.Activate(context.Background(), []byte(tc.userPublicKey), []byte("Constellation"), tc.endpoints, nil, "serviceaccount://test")
+			_, err := client.Activate(context.Background(), []byte(tc.userPublicKey), []byte("Constellation"), tc.ips, nil, "serviceaccount://test")
 			if tc.errExpected {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
 				assert.Equal("32bytesWireGuardKeyForTheTesting", string(tc.avpn.activateAsCoordinatorReqKey))
-				assert.Equal(tc.endpoints, tc.avpn.activateAsCoordinatorReqEndpoints)
+				assert.Equal(tc.ips, tc.avpn.activateAsCoordinatorReqIPs)
 				assert.Equal("Constellation", string(tc.avpn.activateAsCoordinatorMasterSecret))
 				assert.Equal("serviceaccount://test", tc.avpn.activateCloudServiceAccountURI)
 			}
@@ -135,13 +135,13 @@ func TestActivate(t *testing.T) {
 }
 
 type stubAVPNClient struct {
-	activateAsCoordinatorErr            error
-	activateAdditionalNodesErr          error
-	activateAsCoordinatorReqKey         []byte
-	activateAsCoordinatorReqEndpoints   []string
-	activateAsCoordinatorMasterSecret   []byte
-	activateAdditionalNodesReqEndpoints []string
-	activateCloudServiceAccountURI      string
+	activateAsCoordinatorErr          error
+	activateAdditionalNodesErr        error
+	activateAsCoordinatorReqKey       []byte
+	activateAsCoordinatorReqIPs       []string
+	activateAsCoordinatorMasterSecret []byte
+	activateAdditionalNodesReqIPs     []string
+	activateCloudServiceAccountURI    string
 	pubproto.APIClient
 }
 
@@ -149,7 +149,7 @@ func (s *stubAVPNClient) ActivateAsCoordinator(ctx context.Context, in *pubproto
 	opts ...grpc.CallOption,
 ) (pubproto.API_ActivateAsCoordinatorClient, error) {
 	s.activateAsCoordinatorReqKey = in.AdminVpnPubKey
-	s.activateAsCoordinatorReqEndpoints = in.NodePublicEndpoints
+	s.activateAsCoordinatorReqIPs = in.NodePublicIps
 	s.activateAsCoordinatorMasterSecret = in.MasterSecret
 	s.activateCloudServiceAccountURI = in.CloudServiceAccountUri
 	return dummyAVPNActivateAsCoordinatorClient{}, s.activateAsCoordinatorErr
@@ -158,6 +158,6 @@ func (s *stubAVPNClient) ActivateAsCoordinator(ctx context.Context, in *pubproto
 func (s *stubAVPNClient) ActivateAdditionalNodes(ctx context.Context, in *pubproto.ActivateAdditionalNodesRequest,
 	opts ...grpc.CallOption,
 ) (pubproto.API_ActivateAdditionalNodesClient, error) {
-	s.activateAdditionalNodesReqEndpoints = in.NodePublicEndpoints
+	s.activateAdditionalNodesReqIPs = in.NodePublicIps
 	return dummyAVPNActivateAdditionalNodesClient{}, s.activateAdditionalNodesErr
 }

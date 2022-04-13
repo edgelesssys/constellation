@@ -162,7 +162,7 @@ func activate(ctx context.Context, cmd *cobra.Command, client protoClient, input
 		return activationResult{}, err
 	}
 
-	respCl, err := client.Activate(ctx, input.pubKey, input.masterSecret, ipsToEndpoints(input.nodePrivIPs, *config.CoordinatorPort), input.autoscalingNodeGroups, input.cloudServiceAccountURI)
+	respCl, err := client.Activate(ctx, input.pubKey, input.masterSecret, input.nodePrivIPs, input.autoscalingNodeGroups, input.cloudServiceAccountURI)
 	if err != nil {
 		return activationResult{}, err
 	}

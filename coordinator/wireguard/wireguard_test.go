@@ -15,20 +15,20 @@ func TestUpdatePeer(t *testing.T) {
 
 	firstKey, err := wgtypes.GenerateKey()
 	requirePre.NoError(err)
-	peer1 := peer.Peer{PublicEndpoint: "192.0.2.11:2000", VPNIP: "192.0.2.21", VPNPubKey: firstKey[:]}
+	peer1 := peer.Peer{PublicIP: "192.0.2.11", VPNIP: "192.0.2.21", VPNPubKey: firstKey[:]}
 	firstKeyUpd, err := wgtypes.GenerateKey()
 	requirePre.NoError(err)
-	peer1KeyUpd := peer.Peer{PublicEndpoint: "192.0.2.11:2000", VPNIP: "192.0.2.21", VPNPubKey: firstKeyUpd[:]}
-	peer1EndpUpd := peer.Peer{PublicEndpoint: "192.0.2.110:2000", VPNIP: "192.0.2.21", VPNPubKey: firstKey[:]}
+	peer1KeyUpd := peer.Peer{PublicIP: "192.0.2.11", VPNIP: "192.0.2.21", VPNPubKey: firstKeyUpd[:]}
 	secondKey, err := wgtypes.GenerateKey()
 	requirePre.NoError(err)
-	peer2 := peer.Peer{PublicEndpoint: "192.0.2.12:2000", VPNIP: "192.0.2.22", VPNPubKey: secondKey[:]}
+	peer2 := peer.Peer{PublicIP: "192.0.2.12", VPNIP: "192.0.2.22", VPNPubKey: secondKey[:]}
 	thirdKey, err := wgtypes.GenerateKey()
 	requirePre.NoError(err)
-	peer3 := peer.Peer{PublicEndpoint: "192.0.2.13:2000", VPNIP: "192.0.2.23", VPNPubKey: thirdKey[:]}
+	peer3 := peer.Peer{PublicIP: "192.0.2.13", VPNIP: "192.0.2.23", VPNPubKey: thirdKey[:]}
 	fourthKey, err := wgtypes.GenerateKey()
 	requirePre.NoError(err)
-	peerSelf := peer.Peer{PublicEndpoint: "192.0.2.10:2000", VPNIP: "192.0.2.20", VPNPubKey: fourthKey[:]}
+	peerAdmin := peer.Peer{PublicIP: "192.0.2.10", VPNIP: "192.0.2.25", VPNPubKey: fourthKey[:]}
+	peerAdminNoEndp := peer.Peer{VPNIP: "192.0.2.25", VPNPubKey: fourthKey[:]}
 
 	checkError := func(peers []wgtypes.Peer, err error) []wgtypes.Peer {
 		requirePre.NoError(err)
@@ -38,37 +38,33 @@ func TestUpdatePeer(t *testing.T) {
 	testCases := map[string]struct {
 		storePeers       []peer.Peer
 		vpnPeers         []wgtypes.Peer
+		excludedIP       map[string]struct{}
 		expectErr        bool
 		expectedVPNPeers []wgtypes.Peer
 	}{
 		"basic": {
 			storePeers:       []peer.Peer{peer1, peer3},
-			vpnPeers:         checkError(transformToWgpeer([]peer.Peer{peer1, peer2}, "")),
-			expectedVPNPeers: checkError(transformToWgpeer([]peer.Peer{peer1, peer3}, "")),
+			vpnPeers:         checkError(transformToWgpeer([]peer.Peer{peer1, peer2})),
+			expectedVPNPeers: checkError(transformToWgpeer([]peer.Peer{peer1, peer3})),
 		},
 		"previously empty": {
 			storePeers:       []peer.Peer{peer1, peer2},
-			expectedVPNPeers: checkError(transformToWgpeer([]peer.Peer{peer1, peer2}, "")),
+			expectedVPNPeers: checkError(transformToWgpeer([]peer.Peer{peer1, peer2})),
 		},
 		"no changes": {
 			storePeers:       []peer.Peer{peer1, peer2},
-			vpnPeers:         checkError(transformToWgpeer([]peer.Peer{peer1, peer2}, "")),
-			expectedVPNPeers: checkError(transformToWgpeer([]peer.Peer{peer1, peer2}, "")),
+			vpnPeers:         checkError(transformToWgpeer([]peer.Peer{peer1, peer2})),
+			expectedVPNPeers: checkError(transformToWgpeer([]peer.Peer{peer1, peer2})),
 		},
 		"key update": {
 			storePeers:       []peer.Peer{peer1KeyUpd, peer3},
-			vpnPeers:         checkError(transformToWgpeer([]peer.Peer{peer1, peer2}, "")),
-			expectedVPNPeers: checkError(transformToWgpeer([]peer.Peer{peer1KeyUpd, peer3}, "")),
+			vpnPeers:         checkError(transformToWgpeer([]peer.Peer{peer1, peer2})),
+			expectedVPNPeers: checkError(transformToWgpeer([]peer.Peer{peer1KeyUpd, peer3})),
 		},
-		"public endpoint update": {
-			storePeers:       []peer.Peer{peer1EndpUpd, peer3},
-			vpnPeers:         checkError(transformToWgpeer([]peer.Peer{peer1, peer2}, "")),
-			expectedVPNPeers: checkError(transformToWgpeer([]peer.Peer{peer1EndpUpd, peer3}, "")),
-		},
-		"dont add self": {
-			storePeers:       []peer.Peer{peerSelf, peer3},
-			vpnPeers:         checkError(transformToWgpeer([]peer.Peer{peer2, peer3}, "")),
-			expectedVPNPeers: checkError(transformToWgpeer([]peer.Peer{peer3}, "")),
+		"not update Endpoint changes": {
+			storePeers:       []peer.Peer{peerAdminNoEndp, peer3},
+			vpnPeers:         checkError(transformToWgpeer([]peer.Peer{peerAdmin, peer3})),
+			expectedVPNPeers: checkError(transformToWgpeer([]peer.Peer{peerAdmin, peer3})),
 		},
 	}
 
@@ -79,9 +75,7 @@ func TestUpdatePeer(t *testing.T) {
 
 			fakewg := fakewgClient{}
 			fakewg.devices = make(map[string]*wgtypes.Device)
-			wg := Wireguard{client: &fakewg, getInterfaceIP: func(s string) (string, error) {
-				return "192.0.2.20", nil
-			}}
+			wg := Wireguard{client: &fakewg}
 
 			fakewg.devices[netInterface] = &wgtypes.Device{Peers: tc.vpnPeers}
 

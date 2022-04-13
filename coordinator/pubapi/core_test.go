@@ -3,7 +3,7 @@ package pubapi
 import (
 	"context"
 	"errors"
-	"fmt"
+	"net/netip"
 
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/role"
@@ -15,8 +15,8 @@ type fakeCore struct {
 	vpnPubKey                  []byte
 	vpnIP                      string
 	setVPNIPErr                error
-	adminPubKey                []byte
-	nextIP                     int
+	nextNodeIP                 netip.Addr
+	nextCoordinatorIP          netip.Addr
 	switchToPersistentStoreErr error
 	state                      state.State
 	ownerID                    []byte
@@ -27,6 +27,8 @@ type fakeCore struct {
 	autoscalingNodeGroups      []string
 	joinArgs                   []kubeadm.BootstrapTokenDiscovery
 	joinClusterErr             error
+	UpdatePeersErr             error
+	GetPeersErr                error
 	persistNodeStateRoles      []role.Role
 	persistNodeStateErr        error
 	kekID                      string
@@ -47,21 +49,25 @@ func (c *fakeCore) SetVPNIP(ip string) error {
 }
 
 func (c *fakeCore) InitializeStoreIPs() error {
+	c.nextCoordinatorIP = netip.AddrFrom4([4]byte{10, 118, 0, 1})
+	c.nextNodeIP = netip.AddrFrom4([4]byte{10, 118, 0, 11})
 	return nil
 }
 
-func (*fakeCore) GetCoordinatorVPNIP() string {
-	return "192.0.2.100"
-}
-
-func (c *fakeCore) AddAdmin(pubKey []byte) (string, error) {
-	c.adminPubKey = pubKey
-	return "192.0.2.99", nil
+func (c *fakeCore) GetVPNIP() (string, error) {
+	return c.vpnIP, nil
 }
 
 func (c *fakeCore) GetNextNodeIP() (string, error) {
-	c.nextIP++
-	return fmt.Sprintf("192.0.2.%v", 100+c.nextIP), nil
+	ip := c.nextNodeIP.String()
+	c.nextNodeIP = c.nextNodeIP.Next()
+	return ip, nil
+}
+
+func (c *fakeCore) GetNextCoordinatorIP() (string, error) {
+	ip := c.nextCoordinatorIP.String()
+	c.nextCoordinatorIP = c.nextCoordinatorIP.Next()
+	return ip, nil
 }
 
 func (c *fakeCore) SwitchToPersistentStore() error {
@@ -87,8 +93,8 @@ func (c *fakeCore) AdvanceState(newState state.State, ownerID, clusterID []byte)
 	return nil
 }
 
-func (*fakeCore) GetPeers(resourceVersion int) (int, []peer.Peer, error) {
-	return 0, nil, nil
+func (c *fakeCore) GetPeers(resourceVersion int) (int, []peer.Peer, error) {
+	return 1, c.peers, c.GetPeersErr
 }
 
 func (c *fakeCore) AddPeer(peer peer.Peer) error {
@@ -96,9 +102,19 @@ func (c *fakeCore) AddPeer(peer peer.Peer) error {
 	return nil
 }
 
+func (c *fakeCore) AddPeerToStore(peer peer.Peer) error {
+	c.peers = append(c.peers, peer)
+	return nil
+}
+
+func (c *fakeCore) AddPeerToVPN(peer peer.Peer) error {
+	c.peers = append(c.peers, peer)
+	return nil
+}
+
 func (c *fakeCore) UpdatePeers(peers []peer.Peer) error {
 	c.updatedPeers = append(c.updatedPeers, peers)
-	return nil
+	return c.UpdatePeersErr
 }
 
 func (c *fakeCore) InitCluster(autoscalingNodeGroups []string, cloudServiceAccountURI string) ([]byte, error) {

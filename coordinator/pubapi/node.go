@@ -80,7 +80,7 @@ func (a *API) JoinCluster(ctx context.Context, in *pubproto.JoinClusterRequest) 
 		return nil, status.Errorf(codes.FailedPrecondition, "%v", err)
 	}
 
-	conn, err := a.dialInsecure(ctx, net.JoinHostPort(a.core.GetCoordinatorVPNIP(), vpnAPIPort))
+	conn, err := a.dialInsecure(ctx, net.JoinHostPort(in.CoordinatorVpnIp, vpnAPIPort))
 	if err != nil {
 		return nil, status.Errorf(codes.Unavailable, "%v", err)
 	}
@@ -142,7 +142,8 @@ func (a *API) update(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, deadlineDuration)
 	defer cancel()
 
-	conn, err := a.dialInsecure(ctx, net.JoinHostPort(a.core.GetCoordinatorVPNIP(), vpnAPIPort))
+	// TODO: replace hardcoded IP
+	conn, err := a.dialInsecure(ctx, net.JoinHostPort("10.118.0.1", vpnAPIPort))
 	if err != nil {
 		return err
 	}

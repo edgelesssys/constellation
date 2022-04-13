@@ -77,17 +77,17 @@ func (c *Client) Close() error {
 }
 
 // Activate activates the Constellation coordinator via a grpc call.
-// The handed endpoints must be the private endpoints of running AWS or GCP instances,
+// The handed IP addresses must be the private IP addresses of running AWS or GCP instances,
 // and the userPublicKey is the VPN key of the users WireGuard interface.
-func (c *Client) Activate(ctx context.Context, userPublicKey, masterSecret []byte, endpoints, autoscalingNodeGroups []string, cloudServiceAccountURI string) (ActivationResponseClient, error) {
+func (c *Client) Activate(ctx context.Context, userPublicKey, masterSecret []byte, ips, autoscalingNodeGroups []string, cloudServiceAccountURI string) (ActivationResponseClient, error) {
 	if c.avpn == nil {
 		return nil, errors.New("client is not connected")
 	}
 	if len(userPublicKey) == 0 {
 		return nil, errors.New("parameter userPublicKey is empty")
 	}
-	if len(endpoints) == 0 {
-		return nil, errors.New("parameter endpoints is empty")
+	if len(ips) == 0 {
+		return nil, errors.New("parameter ips is empty")
 	}
 
 	pubKey, err := wgtypes.ParseKey(string(userPublicKey))
@@ -97,7 +97,7 @@ func (c *Client) Activate(ctx context.Context, userPublicKey, masterSecret []byt
 
 	avpnRequest := &pubproto.ActivateAsCoordinatorRequest{
 		AdminVpnPubKey:         pubKey[:],
-		NodePublicEndpoints:    endpoints,
+		NodePublicIps:          ips,
 		AutoscalingNodeGroups:  autoscalingNodeGroups,
 		MasterSecret:           masterSecret,
 		KmsUri:                 kms.ClusterKMSURI,

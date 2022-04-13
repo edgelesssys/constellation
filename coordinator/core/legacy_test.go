@@ -47,33 +47,34 @@ func TestLegacyActivateCoordinator(t *testing.T) {
 	require.NoError(err)
 	defer nodeAPI3.Close()
 
-	nodeEndpoints := []string{"addr-1:10", "addr-2:20", "addr-3:30"}
-	coordinatorEndpoint := "addr-0:15"
-
-	nodeServer1, err := spawnNode(nodeEndpoints[0], nodeAPI1, bufDialer)
+	nodeIPs := []string{"192.0.2.11", "192.0.2.12", "192.0.2.13"}
+	coordinatorIP := "192.0.2.1"
+	bindPort := "9000"
+	nodeServer1, err := spawnNode(net.JoinHostPort(nodeIPs[0], bindPort), nodeAPI1, bufDialer)
 	require.NoError(err)
 	defer nodeServer1.GracefulStop()
-	nodeServer2, err := spawnNode(nodeEndpoints[1], nodeAPI2, bufDialer)
+	nodeServer2, err := spawnNode(net.JoinHostPort(nodeIPs[1], bindPort), nodeAPI2, bufDialer)
 	require.NoError(err)
 	defer nodeServer2.GracefulStop()
-	nodeServer3, err := spawnNode(nodeEndpoints[2], nodeAPI3, bufDialer)
+	nodeServer3, err := spawnNode(net.JoinHostPort(nodeIPs[2], bindPort), nodeAPI3, bufDialer)
 	require.NoError(err)
 	defer nodeServer3.GracefulStop()
 
 	coordinatorCore, coordinatorAPI, err := newMockCoreWithDialer(bufDialer)
 	require.NoError(err)
+	require.NoError(coordinatorCore.SetVPNIP("10.118.0.1"))
 	defer coordinatorAPI.Close()
-	coordinatorServer, err := spawnNode(coordinatorEndpoint, coordinatorAPI, bufDialer)
+	coordinatorServer, err := spawnNode(net.JoinHostPort(coordinatorIP, bindPort), coordinatorAPI, bufDialer)
 	require.NoError(err)
 	defer coordinatorServer.GracefulStop()
 
 	// activate coordinator
 	activationReq := &pubproto.ActivateAsCoordinatorRequest{
-		AdminVpnPubKey:      adminVPNKey,
-		NodePublicEndpoints: nodeEndpoints,
-		MasterSecret:        []byte("Constellation"),
-		KmsUri:              kms.ClusterKMSURI,
-		StorageUri:          kms.NoStoreURI,
+		AdminVpnPubKey: adminVPNKey,
+		NodePublicIps:  nodeIPs,
+		MasterSecret:   []byte("Constellation"),
+		KmsUri:         kms.ClusterKMSURI,
+		StorageUri:     kms.NoStoreURI,
 	}
 	testActivationSvr := &stubAVPNActivateCoordinatorServer{}
 	assert.NoError(coordinatorAPI.ActivateAsCoordinator(activationReq, testActivationSvr))
@@ -100,9 +101,9 @@ func TestLegacyActivateCoordinator(t *testing.T) {
 	nodeResp, err := nodeAPI3.ActivateAsNode(context.TODO(), &pubproto.ActivateAsNodeRequest{
 		NodeVpnIp: "192.0.2.1:9004",
 		Peers: []*pubproto.Peer{{
-			VpnPubKey:      coordinatorKey,
-			PublicEndpoint: coordinatorEndpoint,
-			VpnIp:          "10.118.0.1",
+			VpnPubKey: coordinatorKey,
+			PublicIp:  coordinatorIP,
+			VpnIp:     "10.118.0.1",
 		}},
 		OwnerId:   []byte("ownerID"),
 		ClusterId: []byte("clusterID"),

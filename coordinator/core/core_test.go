@@ -29,23 +29,6 @@ func TestMain(m *testing.M) {
 	)
 }
 
-func TestAddAdmin(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	vpn := &stubVPN{}
-	core, err := NewCore(vpn, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(afero.NewMemMapFs()))
-	require.NoError(err)
-	require.NoError(core.InitializeStoreIPs())
-
-	pubKey := []byte{2, 3, 4}
-
-	vpnIP, err := core.AddAdmin(pubKey)
-	require.NoError(err)
-	assert.NotNil(net.ParseIP(vpnIP))
-	assert.Equal([]stubVPNPeer{{pubKey: pubKey, vpnIP: vpnIP}}, vpn.peers)
-}
-
 func TestGetNextNodeIP(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)

@@ -22,8 +22,7 @@ const (
 )
 
 type Wireguard struct {
-	client         wgClient
-	getInterfaceIP func(string) (string, error)
+	client wgClient
 }
 
 func New() (*Wireguard, error) {
@@ -31,7 +30,7 @@ func New() (*Wireguard, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Wireguard{client: client, getInterfaceIP: util.GetInterfaceIP}, nil
+	return &Wireguard{client: client}, nil
 }
 
 func (w *Wireguard) Setup(privKey []byte) ([]byte, error) {
@@ -73,7 +72,7 @@ func (w *Wireguard) GetPublicKey(privKey []byte) ([]byte, error) {
 }
 
 func (w *Wireguard) GetInterfaceIP() (string, error) {
-	return w.getInterfaceIP(netInterface)
+	return util.GetInterfaceIP(netInterface)
 }
 
 // SetInterfaceIP sets the ip interface ip.
@@ -146,11 +145,7 @@ func prettyWgError(err error) error {
 }
 
 func (w *Wireguard) UpdatePeers(peers []peer.Peer) error {
-	ownVPNIP, err := w.getInterfaceIP(netInterface)
-	if err != nil {
-		return fmt.Errorf("failed to obtain vpn ip: %w", err)
-	}
-	wgPeers, err := transformToWgpeer(peers, ownVPNIP)
+	wgPeers, err := transformToWgpeer(peers)
 	if err != nil {
 		return fmt.Errorf("failed to transform peers to wireguard-peers: %w", err)
 	}
@@ -166,13 +161,9 @@ func (w *Wireguard) UpdatePeers(peers []peer.Peer) error {
 	}
 	var added []wgtypes.Peer
 	var removed []wgtypes.Peer
-	var updated []wgtypes.Peer
 
 	for _, interfacePeer := range deviceData.Peers {
 		if updPeer, ok := storePeers[interfacePeer.AllowedIPs[0].String()]; ok {
-			if updPeer.Endpoint.String() != interfacePeer.Endpoint.String() {
-				updated = append(updated, updPeer)
-			}
 			if !bytes.Equal(updPeer.PublicKey[:], interfacePeer.PublicKey[:]) {
 				added = append(added, updPeer)
 				removed = append(removed, interfacePeer)
@@ -194,14 +185,6 @@ func (w *Wireguard) UpdatePeers(peers []peer.Peer) error {
 			// pub Key for remove matching is enought
 			PublicKey: peer.PublicKey,
 			Remove:    true,
-		})
-	}
-	for _, peer := range updated {
-		newPeerConfig = append(newPeerConfig, wgtypes.PeerConfig{
-			PublicKey:  peer.PublicKey,
-			Remove:     false,
-			UpdateOnly: true,
-			Endpoint:   peer.Endpoint,
 		})
 	}
 	for _, peer := range added {
@@ -236,12 +219,9 @@ type wgClient interface {
 	ConfigureDevice(name string, cfg wgtypes.Config) error
 }
 
-func transformToWgpeer(corePeers []peer.Peer, excludedIP string) ([]wgtypes.Peer, error) {
+func transformToWgpeer(corePeers []peer.Peer) ([]wgtypes.Peer, error) {
 	var wgPeers []wgtypes.Peer
 	for _, peer := range corePeers {
-		if peer.VPNIP == excludedIP {
-			continue
-		}
 		key, err := wgtypes.NewKey(peer.VPNPubKey)
 		if err != nil {
 			return nil, err
@@ -250,13 +230,8 @@ func transformToWgpeer(corePeers []peer.Peer, excludedIP string) ([]wgtypes.Peer
 		if err != nil {
 			return nil, err
 		}
-
-		publicIP, _, err := net.SplitHostPort(peer.PublicEndpoint)
-		if err != nil {
-			return nil, err
-		}
 		var endpoint *net.UDPAddr
-		if ip := net.ParseIP(publicIP); ip != nil {
+		if ip := net.ParseIP(peer.PublicIP); ip != nil {
 			endpoint = &net.UDPAddr{IP: ip, Port: port}
 		}
 		wgPeers = append(wgPeers, wgtypes.Peer{

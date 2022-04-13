@@ -21,6 +21,10 @@ func TestMarshal(t *testing.T) {
 			role:         Node,
 			jsonExpected: `"Node"`,
 		},
+		"admin role": {
+			role:         Admin,
+			jsonExpected: `"Admin"`,
+		},
 		"unknown role": {
 			role:         Unknown,
 			jsonExpected: `"Unknown"`,
@@ -65,6 +69,14 @@ func TestUnmarshal(t *testing.T) {
 		"lowercase node can be unmarshaled": {
 			json:         `"node"`,
 			expectedRole: Node,
+		},
+		"Admin can be unmarshaled": {
+			json:         `"Admin"`,
+			expectedRole: Admin,
+		},
+		"lowercase admin can be unmarshaled": {
+			json:         `"admin"`,
+			expectedRole: Admin,
 		},
 		"other strings unmarshal to the unknown role": {
 			json:         `"anything"`,

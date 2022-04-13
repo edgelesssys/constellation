@@ -100,21 +100,9 @@ func (c *Core) SetVPNIP(ip string) error {
 	return c.vpn.SetInterfaceIP(ip)
 }
 
-// GetCoordinatorVPNIP returns the VPN IP designated for the Coordinator.
-func (*Core) GetCoordinatorVPNIP() string {
-	return coordinatorVPNIP.String()
-}
-
-// AddAdmin adds an admin to the VPN.
-func (c *Core) AddAdmin(pubKey []byte) (string, error) {
-	vpnIP, err := c.GetNextNodeIP()
-	if err != nil {
-		return "", err
-	}
-	if err := c.vpn.AddPeer(pubKey, "", vpnIP); err != nil {
-		return "", err
-	}
-	return vpnIP, nil
+// GetVPNIP returns the cores VPN IP.
+func (c *Core) GetVPNIP() (string, error) {
+	return c.vpn.GetInterfaceIP()
 }
 
 // GetNextNodeIP gets the next free IP-Addr.
@@ -125,6 +113,20 @@ func (c *Core) GetNextNodeIP() (string, error) {
 	}
 	txwrapper := storewrapper.StoreWrapper{Store: tx}
 	ip, err := txwrapper.PopNextFreeNodeIP()
+	if err != nil {
+		return "", err
+	}
+	return ip.String(), tx.Commit()
+}
+
+// GetNextCoordinatorIP gets the next free IP-Addr.
+func (c *Core) GetNextCoordinatorIP() (string, error) {
+	tx, err := c.store.BeginTransaction()
+	if err != nil {
+		return "", err
+	}
+	txwrapper := storewrapper.StoreWrapper{Store: tx}
+	ip, err := txwrapper.PopNextFreeCoordinatorIP()
 	if err != nil {
 		return "", err
 	}

@@ -13,8 +13,8 @@ import (
 )
 
 func TestGetPeers(t *testing.T) {
-	peer1 := peer.Peer{PublicEndpoint: "192.0.2.11:2000", VPNIP: "192.0.2.21", VPNPubKey: []byte{1, 2, 3}}
-	peer2 := peer.Peer{PublicEndpoint: "192.0.2.12:2000", VPNIP: "192.0.2.22", VPNPubKey: []byte{2, 3, 4}}
+	peer1 := peer.Peer{PublicIP: "192.0.2.11", VPNIP: "192.0.2.21", VPNPubKey: []byte{1, 2, 3}}
+	peer2 := peer.Peer{PublicIP: "192.0.2.12", VPNIP: "192.0.2.22", VPNPubKey: []byte{2, 3, 4}}
 
 	testCases := map[string]struct {
 		storePeers      []peer.Peer
@@ -74,9 +74,9 @@ func TestGetPeers(t *testing.T) {
 func TestAddPeer(t *testing.T) {
 	someErr := errors.New("failed")
 	testPeer := peer.Peer{
-		PublicEndpoint: "192.0.2.11:2000",
-		VPNIP:          "192.0.2.21",
-		VPNPubKey:      []byte{2, 3, 4},
+		PublicIP:  "192.0.2.11",
+		VPNIP:     "192.0.2.21",
+		VPNPubKey: []byte{2, 3, 4},
 	}
 	expectedVPNPeers := []stubVPNPeer{{
 		pubKey:   testPeer.VPNPubKey,
@@ -100,14 +100,6 @@ func TestAddPeer(t *testing.T) {
 			peer:               testPeer,
 			vpn:                stubVPN{interfaceIP: testPeer.VPNIP},
 			expectedStorePeers: []peer.Peer{testPeer},
-		},
-		"public endpoint without port": {
-			peer: peer.Peer{
-				PublicEndpoint: "192.0.2.11",
-				VPNIP:          "192.0.2.21",
-				VPNPubKey:      []byte{2, 3, 4},
-			},
-			expectErr: true,
 		},
 		"vpn add peer error": {
 			peer:      testPeer,

@@ -28,7 +28,6 @@ const (
 	keyVPNPubKey                     = "vpnKey"
 	keyKEKID                         = "kekID"
 	prefixFreeCoordinatorIPs         = "freeCoordinatorVPNIPs"
-	prefixAdminLocation              = "externalAdminsData"
 	prefixPeerLocation               = "peerPrefix"
 	prefixFreeNodeIPs                = "freeNodeVPNIPs"
 )
@@ -98,17 +97,6 @@ func (s StoreWrapper) RemovePeer(peer peer.Peer) error {
 	return s.Store.Delete(prefixPeerLocation + peer.VPNIP)
 }
 
-// GetPeer returns a peer requested by the given VPN IP address.
-func (s StoreWrapper) GetPeer(vpnIP string) (peer.Peer, error) {
-	bytePeer, err := s.Store.Get(prefixPeerLocation + vpnIP)
-	if err != nil {
-		return peer.Peer{}, err
-	}
-	var peer peer.Peer
-	err = json.Unmarshal(bytePeer, &peer)
-	return peer, err
-}
-
 // GetPeers returns all peers in the store.
 func (s StoreWrapper) GetPeers() ([]peer.Peer, error) {
 	return s.getPeersByPrefix(prefixPeerLocation)
@@ -169,7 +157,7 @@ func (s StoreWrapper) UpdatePeers(peers []peer.Peer) (added, removed []peer.Peer
 		}
 
 		if updPeer, ok := updatedPeers[storedPeer.VPNIP]; ok {
-			if updPeer.PublicEndpoint != storedPeer.PublicEndpoint || !bytes.Equal(updPeer.VPNPubKey, storedPeer.VPNPubKey) {
+			if updPeer.PublicIP != storedPeer.PublicIP || !bytes.Equal(updPeer.VPNPubKey, storedPeer.VPNPubKey) {
 				// stored peer must be updated, so mark for addition AND removal
 				added = append(added, updPeer)
 				removed = append(removed, storedPeer)
@@ -203,37 +191,6 @@ func (s StoreWrapper) UpdatePeers(peers []peer.Peer) (added, removed []peer.Peer
 	}
 
 	return added, removed, nil
-}
-
-// PutAdmin puts a single admin in the store, with a unique key derived form the VPNIP.
-func (s StoreWrapper) PutAdmin(peer peer.AdminData) error {
-	jsonPeer, err := json.Marshal(peer)
-	if err != nil {
-		return err
-	}
-	return s.Store.Put(prefixAdminLocation+peer.VPNIP, jsonPeer)
-}
-
-// GetAdmin gets a single admin from the store.
-// TODO: extend if we want to have multiple admins.
-func (s StoreWrapper) GetAdmin() (peer.AdminData, error) {
-	iter, err := s.Store.Iterator(prefixAdminLocation)
-	if err != nil {
-		return peer.AdminData{}, err
-	}
-	key, err := iter.GetNext()
-	if err != nil {
-		return peer.AdminData{}, err
-	}
-	value, err := s.Store.Get(key)
-	if err != nil {
-		return peer.AdminData{}, err
-	}
-	var adminData peer.AdminData
-	if err := json.Unmarshal(value, &adminData); err != nil {
-		return peer.AdminData{}, err
-	}
-	return adminData, nil
 }
 
 func (s StoreWrapper) getPeersByPrefix(prefix string) ([]peer.Peer, error) {

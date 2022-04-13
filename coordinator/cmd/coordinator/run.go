@@ -89,18 +89,17 @@ func run(validator core.QuoteValidator, issuer core.QuoteIssuer, vpn core.VPN, o
 
 	if !nodeActivated {
 		zapLoggerStartupJoin := zapLoggerCore.Named("startup-join")
-		if err := tryJoinClusterOnStartup(getPublicIPAddr, metadata, bindPort, zapLoggerStartupJoin); err != nil {
+		if err := tryJoinClusterOnStartup(getPublicIPAddr, metadata, zapLoggerStartupJoin); err != nil {
 			zapLoggerStartupJoin.Info("joining existing cluster on startup failed. Waiting for connection.", zap.Error(err))
 		}
 	}
 }
 
-func tryJoinClusterOnStartup(getPublicIPAddr func() (string, error), metadata core.ProviderMetadata, bindPort string, logger *zap.Logger) error {
+func tryJoinClusterOnStartup(getPublicIPAddr func() (string, error), metadata core.ProviderMetadata, logger *zap.Logger) error {
 	nodePublicIP, err := getPublicIPAddr()
 	if err != nil {
 		return fmt.Errorf("failed to retrieve own public ip: %w", err)
 	}
-	nodeEndpoint := net.JoinHostPort(nodePublicIP, bindPort)
 	if !metadata.Supported() {
 		logger.Info("Metadata API not implemented for cloud provider")
 		return errors.New("metadata API not implemented")
@@ -128,7 +127,7 @@ func tryJoinClusterOnStartup(getPublicIPAddr func() (string, error), metadata co
 		defer conn.Close()
 		client := pubproto.NewAPIClient(conn)
 		logger.Info("Activating as node on startup")
-		_, err = client.ActivateAdditionalNodes(context.Background(), &pubproto.ActivateAdditionalNodesRequest{NodePublicEndpoints: []string{nodeEndpoint}})
+		_, err = client.ActivateAdditionalNodes(context.Background(), &pubproto.ActivateAdditionalNodesRequest{NodePublicIps: []string{nodePublicIP}})
 		return err
 	}
 

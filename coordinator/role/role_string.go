@@ -11,11 +11,12 @@ func _() {
 	_ = x[Unknown-0]
 	_ = x[Coordinator-1]
 	_ = x[Node-2]
+	_ = x[Admin-3]
 }
 
-const _Role_name = "UnknownCoordinatorNode"
+const _Role_name = "UnknownCoordinatorNodeAdmin"
 
-var _Role_index = [...]uint8{0, 7, 18, 22}
+var _Role_index = [...]uint8{0, 7, 18, 22, 27}
 
 func (i Role) String() string {
 	if i >= Role(len(_Role_index)-1) {

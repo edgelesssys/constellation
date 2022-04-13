@@ -123,22 +123,22 @@ func TestStoreWrapperPeerInterface(t *testing.T) {
 	internalIP := "10.118.2.0"
 
 	validPeer := peer.Peer{
-		PublicEndpoint: ip,
-		VPNPubKey:      key[:],
-		VPNIP:          internalIP,
+		PublicIP:  ip,
+		VPNPubKey: key[:],
+		VPNIP:     internalIP,
 	}
 	require.NoError(stwrapper.PutPeer(validPeer))
 	data, err := stwrapper.GetPeers()
 	require.NoError(err)
 	require.Equal(1, len(data))
-	assert.Equal(ip, data[0].PublicEndpoint)
+	assert.Equal(ip, data[0].PublicIP)
 	assert.Equal(key[:], data[0].VPNPubKey)
 	assert.Equal(internalIP, data[0].VPNIP)
 
 	invalidPeer := peer.Peer{
-		PublicEndpoint: ip,
-		VPNPubKey:      key[:],
-		VPNIP:          "",
+		PublicIP:  ip,
+		VPNPubKey: key[:],
+		VPNIP:     "",
 	}
 	assert.Error(stwrapper.PutPeer(invalidPeer))
 }

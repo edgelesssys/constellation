@@ -26,9 +26,9 @@ func TestMain(m *testing.M) {
 func TestGetUpdate(t *testing.T) {
 	someErr := errors.New("failed")
 	clientIP := &net.IPAddr{IP: net.ParseIP("192.0.2.1")}
-	peer1 := peer.Peer{PublicEndpoint: "192.0.2.11:2000", VPNIP: "192.0.2.21", VPNPubKey: []byte{1, 2, 3}}
-	peer2 := peer.Peer{PublicEndpoint: "192.0.2.12:2000", VPNIP: "192.0.2.22", VPNPubKey: []byte{2, 3, 4}}
-	peer3 := peer.Peer{PublicEndpoint: "192.0.2.13:2000", VPNIP: "192.0.2.23", VPNPubKey: []byte{3, 4, 5}}
+	peer1 := peer.Peer{PublicIP: "192.0.2.11", VPNIP: "192.0.2.21", VPNPubKey: []byte{1, 2, 3}}
+	peer2 := peer.Peer{PublicIP: "192.0.2.12", VPNIP: "192.0.2.22", VPNPubKey: []byte{2, 3, 4}}
+	peer3 := peer.Peer{PublicIP: "192.0.2.13", VPNIP: "192.0.2.23", VPNPubKey: []byte{3, 4, 5}}
 
 	testCases := map[string]struct {
 		clientAddr  net.Addr
@@ -95,7 +95,7 @@ func TestGetUpdate(t *testing.T) {
 			require.Len(resp.Peers, len(tc.peers))
 			for i, actual := range resp.Peers {
 				expected := tc.peers[i]
-				assert.EqualValues(expected.PublicEndpoint, actual.PublicEndpoint)
+				assert.EqualValues(expected.PublicIP, actual.PublicIp)
 				assert.EqualValues(expected.VPNIP, actual.VpnIp)
 				assert.Equal(expected.VPNPubKey, actual.VpnPubKey)
 			}

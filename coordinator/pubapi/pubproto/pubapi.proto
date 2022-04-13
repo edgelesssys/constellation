@@ -9,8 +9,11 @@ service API {
   rpc ActivateAsCoordinator(ActivateAsCoordinatorRequest) returns (stream ActivateAsCoordinatorResponse);
   rpc ActivateAsNode(ActivateAsNodeRequest) returns (ActivateAsNodeResponse);
   rpc ActivateAdditionalNodes(ActivateAdditionalNodesRequest) returns (stream ActivateAdditionalNodesResponse);
+  rpc ActivateAsAdditionalCoordinator(ActivateAsAdditionalCoordinatorRequest) returns (ActivateAsAdditionalCoordinatorResponse);
+  rpc ActivateAdditionalCoordinator(ActivateAdditionalCoordinatorRequest) returns (ActivateAdditionalCoordinatorResponse);
   rpc JoinCluster(JoinClusterRequest) returns (JoinClusterResponse);
   rpc TriggerNodeUpdate(TriggerNodeUpdateRequest) returns (TriggerNodeUpdateResponse);
+  rpc TriggerCoordinatorUpdate(TriggerCoordinatorUpdateRequest) returns (TriggerCoordinatorUpdateResponse);
   rpc RequestStateDiskKey(RequestStateDiskKeyRequest) returns (RequestStateDiskKeyResponse);
 }
 
@@ -23,7 +26,7 @@ message GetStateResponse {
 
 message ActivateAsCoordinatorRequest {
   bytes admin_vpn_pub_key = 1;
-  repeated string node_public_endpoints = 2;
+  repeated string node_public_ips = 2;
   repeated string autoscaling_node_groups = 3;
   bytes master_secret = 4;
   string kms_uri = 5;
@@ -52,14 +55,33 @@ message ActivateAsNodeResponse {
 }
 
 message ActivateAdditionalNodesRequest {
-  repeated string node_public_endpoints = 1;
+  repeated string node_public_ips = 1;
 }
 
 message ActivateAdditionalNodesResponse {
     Log log = 1;
 }
 
+message ActivateAsAdditionalCoordinatorRequest {
+  string assigned_vpn_ip = 1;
+  Peer activating_coordinator_data = 2;
+  bytes owner_id = 3;
+  bytes cluster_id = 4;
+}
+
+message ActivateAsAdditionalCoordinatorResponse {
+}
+
+message ActivateAdditionalCoordinatorRequest {
+  string coordinator_public_ip = 1;
+}
+
+message ActivateAdditionalCoordinatorResponse {
+
+}
+
 message JoinClusterRequest {
+  string coordinator_vpn_ip = 1;
 }
 
 message JoinClusterResponse {
@@ -69,6 +91,12 @@ message TriggerNodeUpdateRequest {
 }
 
 message TriggerNodeUpdateResponse {
+}
+
+message TriggerCoordinatorUpdateRequest {
+}
+
+message TriggerCoordinatorUpdateResponse {
 }
 
 message RequestStateDiskKeyRequest {
@@ -91,7 +119,7 @@ message Log {
 }
 
 message Peer {
-  string public_endpoint = 1;
+  string public_ip = 1;
   string vpn_ip = 2;
   bytes vpn_pub_key = 3;
   uint32 role = 4;

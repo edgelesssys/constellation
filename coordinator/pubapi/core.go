@@ -12,10 +12,10 @@ import (
 type Core interface {
 	GetVPNPubKey() ([]byte, error)
 	SetVPNIP(string) error
-	GetCoordinatorVPNIP() string
+	GetVPNIP() (string, error)
 	InitializeStoreIPs() error
-	AddAdmin(pubKey []byte) (string, error)
 	GetNextNodeIP() (string, error)
+	GetNextCoordinatorIP() (string, error)
 	SwitchToPersistentStore() error
 	GetIDs(masterSecret []byte) (ownerID []byte, clusterID []byte, err error)
 	PersistNodeState(role role.Role, ownerID []byte, clusterID []byte) error
@@ -28,6 +28,8 @@ type Core interface {
 
 	GetPeers(resourceVersion int) (int, []peer.Peer, error)
 	AddPeer(peer.Peer) error
+	AddPeerToStore(peer.Peer) error
+	AddPeerToVPN(peer.Peer) error
 	UpdatePeers([]peer.Peer) error
 
 	InitCluster(autoscalingNodeGroups []string, cloudServiceAccountURI string) ([]byte, error)

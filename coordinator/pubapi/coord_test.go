@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"sync"
 	"testing"
 
 	"github.com/edgelesssys/constellation/coordinator/atls"
@@ -24,71 +25,77 @@ import (
 func TestActivateAsCoordinator(t *testing.T) {
 	someErr := errors.New("failed")
 	coordinatorPubKey := []byte{6, 7, 8}
-	testNode1 := &stubNode{publicIP: "192.0.2.11", pubKey: []byte{1, 2, 3}}
-	testNode2 := &stubNode{publicIP: "192.0.2.12", pubKey: []byte{2, 3, 4}}
-	testNode3 := &stubNode{publicIP: "192.0.2.13", pubKey: []byte{3, 4, 5}}
-	expectedNode1 := peer.Peer{PublicEndpoint: "192.0.2.11:9000", VPNIP: "192.0.2.101", VPNPubKey: []byte{1, 2, 3}, Role: role.Node}
-	expectedNode2 := peer.Peer{PublicEndpoint: "192.0.2.12:9000", VPNIP: "192.0.2.102", VPNPubKey: []byte{2, 3, 4}, Role: role.Node}
-	expectedNode3 := peer.Peer{PublicEndpoint: "192.0.2.13:9000", VPNIP: "192.0.2.103", VPNPubKey: []byte{3, 4, 5}, Role: role.Node}
-	expectedCoord := peer.Peer{PublicEndpoint: "192.0.2.1:9000", VPNIP: "192.0.2.100", VPNPubKey: coordinatorPubKey, Role: role.Coordinator}
+	testNode1 := &stubPeer{peer: peer.Peer{PublicIP: "192.0.2.11", VPNPubKey: []byte{1, 2, 3}}}
+	testNode2 := &stubPeer{peer: peer.Peer{PublicIP: "192.0.2.12", VPNPubKey: []byte{2, 3, 4}}}
+	testNode3 := &stubPeer{peer: peer.Peer{PublicIP: "192.0.2.13", VPNPubKey: []byte{3, 4, 5}}}
+	expectedNode1 := peer.Peer{PublicIP: "192.0.2.11", VPNIP: "10.118.0.11", VPNPubKey: []byte{1, 2, 3}, Role: role.Node}
+	expectedNode2 := peer.Peer{PublicIP: "192.0.2.12", VPNIP: "10.118.0.12", VPNPubKey: []byte{2, 3, 4}, Role: role.Node}
+	expectedNode3 := peer.Peer{PublicIP: "192.0.2.13", VPNIP: "10.118.0.13", VPNPubKey: []byte{3, 4, 5}, Role: role.Node}
+	expectedCoord := peer.Peer{PublicIP: "192.0.2.1", VPNIP: "10.118.0.1", VPNPubKey: coordinatorPubKey, Role: role.Coordinator}
+	adminPeer := peer.Peer{VPNPubKey: []byte{7, 8, 9}, Role: role.Admin}
 
 	testCases := map[string]struct {
-		nodes                      []*stubNode
+		nodes                      []*stubPeer
 		state                      state.State
 		switchToPersistentStoreErr error
 		expectErr                  bool
 		expectedPeers              []peer.Peer
 		expectedState              state.State
+		adminVPNIP                 string
 	}{
 		"0 nodes": {
 			state:         state.AcceptingInit,
 			expectedPeers: []peer.Peer{expectedCoord},
 			expectedState: state.ActivatingNodes,
+			adminVPNIP:    "10.118.0.11",
 		},
 		"1 node": {
-			nodes:         []*stubNode{testNode1},
+			nodes:         []*stubPeer{testNode1},
 			state:         state.AcceptingInit,
 			expectedPeers: []peer.Peer{expectedCoord, expectedNode1},
 			expectedState: state.ActivatingNodes,
+			adminVPNIP:    "10.118.0.12",
 		},
 		"2 nodes": {
-			nodes:         []*stubNode{testNode1, testNode2},
+			nodes:         []*stubPeer{testNode1, testNode2},
 			state:         state.AcceptingInit,
 			expectedPeers: []peer.Peer{expectedCoord, expectedNode1, expectedNode2},
 			expectedState: state.ActivatingNodes,
+			adminVPNIP:    "10.118.0.13",
 		},
 		"3 nodes": {
-			nodes:         []*stubNode{testNode1, testNode2, testNode3},
+			nodes:         []*stubPeer{testNode1, testNode2, testNode3},
 			state:         state.AcceptingInit,
 			expectedPeers: []peer.Peer{expectedCoord, expectedNode1, expectedNode2, expectedNode3},
 			expectedState: state.ActivatingNodes,
+			adminVPNIP:    "10.118.0.14",
 		},
 		"already activated": {
-			nodes:         []*stubNode{testNode1},
+			nodes:         []*stubPeer{testNode1},
 			state:         state.ActivatingNodes,
 			expectErr:     true,
 			expectedState: state.ActivatingNodes,
 		},
 		"wrong peer kind": {
-			nodes:         []*stubNode{testNode1},
+			nodes:         []*stubPeer{testNode1},
 			state:         state.IsNode,
 			expectErr:     true,
 			expectedState: state.IsNode,
 		},
 		"node activation error": {
-			nodes:         []*stubNode{testNode1, {activateErr: someErr}, testNode3},
+			nodes:         []*stubPeer{testNode1, {activateErr: someErr}, testNode3},
 			state:         state.AcceptingInit,
 			expectErr:     true,
 			expectedState: state.Failed,
 		},
 		"node join error": {
-			nodes:         []*stubNode{testNode1, {joinErr: someErr}, testNode3},
+			nodes:         []*stubPeer{testNode1, {joinErr: someErr}, testNode3},
 			state:         state.AcceptingInit,
 			expectErr:     true,
 			expectedState: state.Failed,
 		},
 		"SwitchToPersistentStore error": {
-			nodes:                      []*stubNode{testNode1},
+			nodes:                      []*stubPeer{testNode1},
 			state:                      state.AcceptingInit,
 			switchToPersistentStoreErr: someErr,
 			expectErr:                  true,
@@ -101,7 +108,6 @@ func TestActivateAsCoordinator(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			adminPubKey := []byte{7, 8, 9}
 			autoscalingNodeGroups := []string{"ang1", "ang2"}
 			keyEncryptionKeyID := "constellation"
 
@@ -120,21 +126,28 @@ func TestActivateAsCoordinator(t *testing.T) {
 			}
 
 			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, fakeValidator{}, getPublicIPAddr)
+			defer api.Close()
 
 			// spawn nodes
-			var nodePublicEndpoints []string
+			var nodePublicIPs []string
+			var wg sync.WaitGroup
 			for _, n := range tc.nodes {
-				publicEndpoint := net.JoinHostPort(n.publicIP, endpointAVPNPort)
-				nodePublicEndpoints = append(nodePublicEndpoints, publicEndpoint)
+				nodePublicIPs = append(nodePublicIPs, n.peer.PublicIP)
 				server := n.newServer()
-				go server.Serve(dialer.GetListener(publicEndpoint))
+				wg.Add(1)
+				go func(endpoint string) {
+					listener := dialer.GetListener(endpoint)
+					wg.Done()
+					_ = server.Serve(listener)
+				}(net.JoinHostPort(n.peer.PublicIP, endpointAVPNPort))
 				defer server.GracefulStop()
 			}
+			wg.Wait()
 
 			stream := &stubActivateAsCoordinatorServer{}
 			err := api.ActivateAsCoordinator(&pubproto.ActivateAsCoordinatorRequest{
-				AdminVpnPubKey:        adminPubKey,
-				NodePublicEndpoints:   nodePublicEndpoints,
+				AdminVpnPubKey:        adminPeer.VPNPubKey,
+				NodePublicIps:         nodePublicIPs,
 				AutoscalingNodeGroups: autoscalingNodeGroups,
 				MasterSecret:          []byte("Constellation"),
 				KeyEncryptionKeyId:    keyEncryptionKeyID,
@@ -157,16 +170,19 @@ func TestActivateAsCoordinator(t *testing.T) {
 				assert.NotEmpty(stream.sent[i].GetLog().Message)
 			}
 			adminConfig := stream.sent[len(stream.sent)-1].GetAdminConfig()
-			assert.Equal("192.0.2.99", adminConfig.AdminVpnIp)
+			assert.Equal(tc.adminVPNIP, adminConfig.AdminVpnIp)
 			assert.Equal(coordinatorPubKey, adminConfig.CoordinatorVpnPubKey)
 			assert.Equal(core.kubeconfig, adminConfig.Kubeconfig)
 			assert.Equal(core.ownerID, adminConfig.OwnerId)
 			assert.Equal(core.clusterID, adminConfig.ClusterId)
 
 			// Core is updated
-			assert.Equal(adminPubKey, core.adminPubKey)
-			assert.Equal(core.GetCoordinatorVPNIP(), core.vpnIP)
-			assert.Equal(tc.expectedPeers, core.peers)
+			vpnIP, err := core.GetVPNIP()
+			require.NoError(err)
+			assert.Equal(vpnIP, core.vpnIP)
+			// construct full list of expected peers
+			adminPeer.VPNIP = tc.adminVPNIP
+			assert.Equal(append(tc.expectedPeers, adminPeer), core.peers)
 			assert.Equal(autoscalingNodeGroups, core.autoscalingNodeGroups)
 			assert.Equal(keyEncryptionKeyID, core.kekID)
 			assert.Equal([]role.Role{role.Coordinator}, core.persistNodeStateRoles)
@@ -176,15 +192,15 @@ func TestActivateAsCoordinator(t *testing.T) {
 
 func TestActivateAdditionalNodes(t *testing.T) {
 	someErr := errors.New("failed")
-	testNode1 := &stubNode{publicIP: "192.0.2.11", pubKey: []byte{1, 2, 3}}
-	testNode2 := &stubNode{publicIP: "192.0.2.12", pubKey: []byte{2, 3, 4}}
-	testNode3 := &stubNode{publicIP: "192.0.2.13", pubKey: []byte{3, 4, 5}}
-	expectedNode1 := peer.Peer{PublicEndpoint: "192.0.2.11:9000", VPNIP: "192.0.2.101", VPNPubKey: []byte{1, 2, 3}, Role: role.Node}
-	expectedNode2 := peer.Peer{PublicEndpoint: "192.0.2.12:9000", VPNIP: "192.0.2.102", VPNPubKey: []byte{2, 3, 4}, Role: role.Node}
-	expectedNode3 := peer.Peer{PublicEndpoint: "192.0.2.13:9000", VPNIP: "192.0.2.103", VPNPubKey: []byte{3, 4, 5}, Role: role.Node}
+	testNode1 := &stubPeer{peer: peer.Peer{PublicIP: "192.0.2.11", VPNPubKey: []byte{1, 2, 3}}}
+	testNode2 := &stubPeer{peer: peer.Peer{PublicIP: "192.0.2.12", VPNPubKey: []byte{2, 3, 4}}}
+	testNode3 := &stubPeer{peer: peer.Peer{PublicIP: "192.0.2.13", VPNPubKey: []byte{3, 4, 5}}}
+	expectedNode1 := peer.Peer{PublicIP: "192.0.2.11", VPNIP: "10.118.0.11", VPNPubKey: []byte{1, 2, 3}, Role: role.Node}
+	expectedNode2 := peer.Peer{PublicIP: "192.0.2.12", VPNIP: "10.118.0.12", VPNPubKey: []byte{2, 3, 4}, Role: role.Node}
+	expectedNode3 := peer.Peer{PublicIP: "192.0.2.13", VPNIP: "10.118.0.13", VPNPubKey: []byte{3, 4, 5}, Role: role.Node}
 
 	testCases := map[string]struct {
-		nodes         []*stubNode
+		nodes         []*stubPeer
 		state         state.State
 		expectErr     bool
 		expectedPeers []peer.Peer
@@ -193,36 +209,36 @@ func TestActivateAdditionalNodes(t *testing.T) {
 			state: state.ActivatingNodes,
 		},
 		"1 node": {
-			nodes:         []*stubNode{testNode1},
+			nodes:         []*stubPeer{testNode1},
 			state:         state.ActivatingNodes,
 			expectedPeers: []peer.Peer{expectedNode1},
 		},
 		"2 nodes": {
-			nodes:         []*stubNode{testNode1, testNode2},
+			nodes:         []*stubPeer{testNode1, testNode2},
 			state:         state.ActivatingNodes,
 			expectedPeers: []peer.Peer{expectedNode1, expectedNode2},
 		},
 		"3 nodes": {
-			nodes:         []*stubNode{testNode1, testNode2, testNode3},
+			nodes:         []*stubPeer{testNode1, testNode2, testNode3},
 			state:         state.ActivatingNodes,
 			expectedPeers: []peer.Peer{expectedNode1, expectedNode2, expectedNode3},
 		},
 		"uninitialized": {
-			nodes:     []*stubNode{testNode1},
+			nodes:     []*stubPeer{testNode1},
 			expectErr: true,
 		},
 		"wrong peer kind": {
-			nodes:     []*stubNode{testNode1},
+			nodes:     []*stubPeer{testNode1},
 			state:     state.IsNode,
 			expectErr: true,
 		},
 		"node activation error": {
-			nodes:     []*stubNode{testNode1, {activateErr: someErr}, testNode3},
+			nodes:     []*stubPeer{testNode1, {activateErr: someErr}, testNode3},
 			state:     state.ActivatingNodes,
 			expectErr: true,
 		},
 		"node join error": {
-			nodes:     []*stubNode{testNode1, {joinErr: someErr}, testNode3},
+			nodes:     []*stubPeer{testNode1, {joinErr: someErr}, testNode3},
 			state:     state.ActivatingNodes,
 			expectErr: true,
 		},
@@ -241,19 +257,26 @@ func TestActivateAdditionalNodes(t *testing.T) {
 			}
 
 			api := New(zaptest.NewLogger(t), core, dialer, nil, fakeValidator{}, getPublicIPAddr)
-
+			defer api.Close()
 			// spawn nodes
-			var nodePublicEndpoints []string
+			var nodePublicIPs []string
+			var wg sync.WaitGroup
 			for _, n := range tc.nodes {
-				publicEndpoint := net.JoinHostPort(n.publicIP, endpointAVPNPort)
-				nodePublicEndpoints = append(nodePublicEndpoints, publicEndpoint)
+				nodePublicIPs = append(nodePublicIPs, n.peer.PublicIP)
 				server := n.newServer()
-				go server.Serve(dialer.GetListener(publicEndpoint))
+				wg.Add(1)
+				go func(endpoint string) {
+					listener := dialer.GetListener(endpoint)
+					wg.Done()
+					_ = server.Serve(listener)
+				}(net.JoinHostPort(n.peer.PublicIP, endpointAVPNPort))
 				defer server.GracefulStop()
 			}
-
+			wg.Wait()
+			// since we are not activating the coordinator, initialize the store with IP's
+			require.NoError(core.InitializeStoreIPs())
 			stream := &stubActivateAdditionalNodesServer{}
-			err := api.ActivateAdditionalNodes(&pubproto.ActivateAdditionalNodesRequest{NodePublicEndpoints: nodePublicEndpoints}, stream)
+			err := api.ActivateAdditionalNodes(&pubproto.ActivateAdditionalNodesRequest{NodePublicIps: nodePublicIPs}, stream)
 			if tc.expectErr {
 				assert.Error(err)
 				return
@@ -272,7 +295,7 @@ func TestActivateAdditionalNodes(t *testing.T) {
 	}
 }
 
-func TestMakeCoordinatorPeer(t *testing.T) {
+func TestAssemblePeerStruct(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
@@ -283,40 +306,46 @@ func TestMakeCoordinatorPeer(t *testing.T) {
 	vpnPubKey := []byte{2, 3, 4}
 	core := &fakeCore{vpnPubKey: vpnPubKey}
 	api := New(zaptest.NewLogger(t), core, nil, nil, nil, getPublicIPAddr)
+	defer api.Close()
 
+	vpnIP, err := core.GetVPNIP()
+	require.NoError(err)
 	expected := peer.Peer{
-		PublicEndpoint: "192.0.2.1:9000",
-		VPNIP:          core.GetCoordinatorVPNIP(),
-		VPNPubKey:      vpnPubKey,
-		Role:           role.Coordinator,
+		PublicIP:  "192.0.2.1",
+		VPNIP:     vpnIP,
+		VPNPubKey: vpnPubKey,
+		Role:      role.Coordinator,
 	}
 
-	actual, err := api.makeCoordinatorPeer()
+	actual, err := api.assemblePeerStruct(vpnIP, role.Coordinator)
 	require.NoError(err)
 	assert.Equal(expected, actual)
 }
 
-type stubNode struct {
-	publicIP    string
-	pubKey      []byte
+type stubPeer struct {
+	peer        peer.Peer
 	activateErr error
 	joinErr     error
 	pubproto.UnimplementedAPIServer
 }
 
-func (n *stubNode) ActivateAsNode(ctx context.Context, in *pubproto.ActivateAsNodeRequest) (*pubproto.ActivateAsNodeResponse, error) {
-	return &pubproto.ActivateAsNodeResponse{NodeVpnPubKey: n.pubKey}, n.activateErr
+func (n *stubPeer) ActivateAsNode(ctx context.Context, in *pubproto.ActivateAsNodeRequest) (*pubproto.ActivateAsNodeResponse, error) {
+	return &pubproto.ActivateAsNodeResponse{NodeVpnPubKey: n.peer.VPNPubKey}, n.activateErr
 }
 
-func (*stubNode) TriggerNodeUpdate(ctx context.Context, in *pubproto.TriggerNodeUpdateRequest) (*pubproto.TriggerNodeUpdateResponse, error) {
+func (n *stubPeer) ActivateAsAdditionalCoordinator(ctx context.Context, in *pubproto.ActivateAsAdditionalCoordinatorRequest) (*pubproto.ActivateAsAdditionalCoordinatorResponse, error) {
+	return &pubproto.ActivateAsAdditionalCoordinatorResponse{}, n.activateErr
+}
+
+func (*stubPeer) TriggerNodeUpdate(ctx context.Context, in *pubproto.TriggerNodeUpdateRequest) (*pubproto.TriggerNodeUpdateResponse, error) {
 	return &pubproto.TriggerNodeUpdateResponse{}, nil
 }
 
-func (n *stubNode) JoinCluster(ctx context.Context, in *pubproto.JoinClusterRequest) (*pubproto.JoinClusterResponse, error) {
+func (n *stubPeer) JoinCluster(ctx context.Context, in *pubproto.JoinClusterRequest) (*pubproto.JoinClusterResponse, error) {
 	return &pubproto.JoinClusterResponse{}, n.joinErr
 }
 
-func (n *stubNode) newServer() *grpc.Server {
+func (n *stubPeer) newServer() *grpc.Server {
 	tlsConfig, err := atls.CreateAttestationServerTLSConfig(fakeIssuer{})
 	if err != nil {
 		panic(err)

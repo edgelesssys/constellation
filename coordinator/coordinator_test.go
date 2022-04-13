@@ -46,27 +46,28 @@ func TestCoordinator(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	nodeEndpoints := []string{"addr-1:10", "addr-2:20", "addr-3:30"}
-	coordinatorEndpoint := "addr-0:15"
+	nodeIPs := []string{"192.0.2.11", "192.0.2.12", "192.0.2.13"}
+	coordinatorIP := "192.0.2.1"
+	bindPort := "9000"
 	logger := zaptest.NewLogger(t)
 	dialer := testdialer.NewBufconnDialer()
 	netw := newNetwork()
 
 	// spawn 4 peers: 1 designated coordinator and 3 nodes
-	coordServer, coordPAPI, _ := spawnPeer(require, logger.Named("coord"), dialer, netw, coordinatorEndpoint)
+	coordServer, coordPAPI, _ := spawnPeer(require, logger.Named("coord"), dialer, netw, net.JoinHostPort(coordinatorIP, bindPort))
 	defer coordPAPI.Close()
 	defer coordServer.GracefulStop()
-	nodeServer1, nodePAPI1, nodeVPN1 := spawnPeer(require, logger.Named("node1"), dialer, netw, nodeEndpoints[0])
+	nodeServer1, nodePAPI1, nodeVPN1 := spawnPeer(require, logger.Named("node1"), dialer, netw, net.JoinHostPort(nodeIPs[0], bindPort))
 	defer nodePAPI1.Close()
 	defer nodeServer1.GracefulStop()
-	nodeServer2, nodePAPI2, nodeVPN2 := spawnPeer(require, logger.Named("node2"), dialer, netw, nodeEndpoints[1])
+	nodeServer2, nodePAPI2, nodeVPN2 := spawnPeer(require, logger.Named("node2"), dialer, netw, net.JoinHostPort(nodeIPs[1], bindPort))
 	defer nodePAPI2.Close()
 	defer nodeServer2.GracefulStop()
-	nodeServer3, nodePAPI3, nodeVPN3 := spawnPeer(require, logger.Named("node3"), dialer, netw, nodeEndpoints[2])
+	nodeServer3, nodePAPI3, nodeVPN3 := spawnPeer(require, logger.Named("node3"), dialer, netw, net.JoinHostPort(nodeIPs[2], bindPort))
 	defer nodePAPI3.Close()
 	defer nodeServer3.GracefulStop()
 
-	require.NoError(activateCoordinator(require, dialer, coordinatorEndpoint, nodeEndpoints))
+	require.NoError(activateCoordinator(require, dialer, coordinatorIP, bindPort, nodeIPs))
 
 	// send something from node 1 to node 2
 
@@ -89,20 +90,21 @@ func TestConcurrent(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	nodeEndpoints := []string{"addr-1:10", "addr-2:20"}
-	coordinatorEndpoint := "addr-0:15"
+	nodeIPs := []string{"192.0.2.11", "192.0.2.12", "192.0.2.13"}
+	coordinatorIP := "192.0.2.1"
+	bindPort := "9000"
 	logger := zaptest.NewLogger(t)
 	dialer := testdialer.NewBufconnDialer()
 	netw := newNetwork()
 
 	// spawn peers
-	coordServer, coordPAPI, _ := spawnPeer(require, logger.Named("coord"), dialer, netw, coordinatorEndpoint)
+	coordServer, coordPAPI, _ := spawnPeer(require, logger.Named("coord"), dialer, netw, net.JoinHostPort(coordinatorIP, bindPort))
 	defer coordPAPI.Close()
 	defer coordServer.GracefulStop()
-	nodeServer1, nodePAPI1, _ := spawnPeer(require, logger.Named("node1"), dialer, netw, nodeEndpoints[0])
+	nodeServer1, nodePAPI1, _ := spawnPeer(require, logger.Named("node1"), dialer, netw, net.JoinHostPort(nodeIPs[0], bindPort))
 	defer nodePAPI1.Close()
 	defer nodeServer1.GracefulStop()
-	nodeServer2, nodePAPI2, _ := spawnPeer(require, logger.Named("node2"), dialer, netw, nodeEndpoints[1])
+	nodeServer2, nodePAPI2, _ := spawnPeer(require, logger.Named("node2"), dialer, netw, net.JoinHostPort(nodeIPs[1], bindPort))
 	defer nodePAPI2.Close()
 	defer nodeServer2.GracefulStop()
 
@@ -110,7 +112,7 @@ func TestConcurrent(t *testing.T) {
 
 	actCoord := func() {
 		defer wg.Done()
-		_ = activateCoordinator(require, dialer, coordinatorEndpoint, nodeEndpoints)
+		_ = activateCoordinator(require, dialer, coordinatorIP, bindPort, nodeIPs)
 	}
 
 	actNode := func(papi *pubapi.API) {
@@ -214,18 +216,18 @@ func spawnPeer(require *require.Assertions, logger *zap.Logger, dialer *testdial
 	return server, papi, vpn
 }
 
-func activateCoordinator(require *require.Assertions, dialer pubapi.Dialer, coordinatorEndpoint string, nodeEndpoints []string) error {
+func activateCoordinator(require *require.Assertions, dialer pubapi.Dialer, coordinatorIP, bindPort string, nodeIPs []string) error {
 	ctx := context.Background()
-	conn, err := dialGRPC(ctx, dialer, coordinatorEndpoint)
+	conn, err := dialGRPC(ctx, dialer, net.JoinHostPort(coordinatorIP, bindPort))
 	require.NoError(err)
 	defer conn.Close()
 
 	client := pubproto.NewAPIClient(conn)
 	stream, err := client.ActivateAsCoordinator(ctx, &pubproto.ActivateAsCoordinatorRequest{
-		NodePublicEndpoints: nodeEndpoints,
-		MasterSecret:        []byte("Constellation"),
-		KmsUri:              kms.ClusterKMSURI,
-		StorageUri:          kms.NoStoreURI,
+		NodePublicIps: nodeIPs,
+		MasterSecret:  []byte("Constellation"),
+		KmsUri:        kms.ClusterKMSURI,
+		StorageUri:    kms.NoStoreURI,
 	})
 	require.NoError(err)
 
@@ -350,11 +352,7 @@ func (v *fakeVPN) RemovePeer(pubKey []byte) error {
 
 func (v *fakeVPN) UpdatePeers(peers []peer.Peer) error {
 	for _, peer := range peers {
-		peerIP, _, err := net.SplitHostPort(peer.PublicEndpoint)
-		if err != nil {
-			return err
-		}
-		if err := v.AddPeer(peer.VPNPubKey, peerIP, peer.VPNIP); err != nil {
+		if err := v.AddPeer(peer.VPNPubKey, peer.PublicIP, peer.VPNIP); err != nil {
 			return err
 		}
 	}

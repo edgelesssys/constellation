@@ -29,7 +29,7 @@ message GetK8sJoinArgsResponse {
 }
 
 message Peer {
-  string public_endpoint = 1;
+  string public_ip = 1;
   string vpn_ip = 2;
   bytes vpn_pub_key = 3;
   uint32 role = 4;

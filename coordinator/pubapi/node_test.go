@@ -21,8 +21,8 @@ import (
 
 func TestActivateAsNode(t *testing.T) {
 	someErr := errors.New("failed")
-	peer1 := peer.Peer{PublicEndpoint: "192.0.2.11:2000", VPNIP: "192.0.2.21", VPNPubKey: []byte{1, 2, 3}}
-	peer2 := peer.Peer{PublicEndpoint: "192.0.2.12:2000", VPNIP: "192.0.2.22", VPNPubKey: []byte{2, 3, 4}}
+	peer1 := peer.Peer{PublicIP: "192.0.2.11:2000", VPNIP: "192.0.2.21", VPNPubKey: []byte{1, 2, 3}}
+	peer2 := peer.Peer{PublicIP: "192.0.2.12:2000", VPNIP: "192.0.2.22", VPNPubKey: []byte{2, 3, 4}}
 
 	testCases := map[string]struct {
 		initialPeers  []peer.Peer
@@ -90,7 +90,7 @@ func TestActivateAsNode(t *testing.T) {
 			vserver := grpc.NewServer()
 			vapi := &stubVPNAPI{peers: tc.updatedPeers, getUpdateErr: tc.getUpdateErr}
 			vpnproto.RegisterAPIServer(vserver, vapi)
-			go vserver.Serve(dialer.GetListener(net.JoinHostPort(core.GetCoordinatorVPNIP(), vpnAPIPort)))
+			go vserver.Serve(dialer.GetListener(net.JoinHostPort("10.118.0.1", vpnAPIPort)))
 			defer vserver.GracefulStop()
 
 			resp, err := api.ActivateAsNode(context.Background(), &pubproto.ActivateAsNodeRequest{
@@ -130,8 +130,8 @@ func TestActivateAsNode(t *testing.T) {
 func TestTriggerNodeUpdate(t *testing.T) {
 	someErr := errors.New("failed")
 	peers := []peer.Peer{
-		{PublicEndpoint: "192.0.2.11:2000", VPNIP: "192.0.2.21", VPNPubKey: []byte{1, 2, 3}},
-		{PublicEndpoint: "192.0.2.12:2000", VPNIP: "192.0.2.22", VPNPubKey: []byte{2, 3, 4}},
+		{PublicIP: "192.0.2.11:2000", VPNIP: "192.0.2.21", VPNPubKey: []byte{1, 2, 3}},
+		{PublicIP: "192.0.2.12:2000", VPNIP: "192.0.2.22", VPNPubKey: []byte{2, 3, 4}},
 	}
 
 	testCases := map[string]struct {
@@ -179,7 +179,7 @@ func TestTriggerNodeUpdate(t *testing.T) {
 				getUpdateErr: tc.getUpdateErr,
 			}
 			vpnproto.RegisterAPIServer(vserver, vapi)
-			go vserver.Serve(dialer.GetListener(net.JoinHostPort(core.GetCoordinatorVPNIP(), vpnAPIPort)))
+			go vserver.Serve(dialer.GetListener(net.JoinHostPort("10.118.0.1", vpnAPIPort)))
 			defer vserver.GracefulStop()
 
 			_, err := api.TriggerNodeUpdate(context.Background(), &pubproto.TriggerNodeUpdateRequest{})
@@ -258,10 +258,10 @@ func TestJoinCluster(t *testing.T) {
 				getJoinArgsErr: tc.getJoinArgsErr,
 			}
 			vpnproto.RegisterAPIServer(vserver, vapi)
-			go vserver.Serve(dialer.GetListener(net.JoinHostPort(core.GetCoordinatorVPNIP(), vpnAPIPort)))
+			go vserver.Serve(dialer.GetListener(net.JoinHostPort("192.0.2.1", vpnAPIPort)))
 			defer vserver.GracefulStop()
 
-			_, err := api.JoinCluster(context.Background(), &pubproto.JoinClusterRequest{})
+			_, err := api.JoinCluster(context.Background(), &pubproto.JoinClusterRequest{CoordinatorVpnIp: "192.0.2.1"})
 
 			assert.Equal(tc.expectedState, core.state)
 

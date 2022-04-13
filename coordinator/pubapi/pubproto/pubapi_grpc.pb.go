@@ -22,8 +22,11 @@ type APIClient interface {
 	ActivateAsCoordinator(ctx context.Context, in *ActivateAsCoordinatorRequest, opts ...grpc.CallOption) (API_ActivateAsCoordinatorClient, error)
 	ActivateAsNode(ctx context.Context, in *ActivateAsNodeRequest, opts ...grpc.CallOption) (*ActivateAsNodeResponse, error)
 	ActivateAdditionalNodes(ctx context.Context, in *ActivateAdditionalNodesRequest, opts ...grpc.CallOption) (API_ActivateAdditionalNodesClient, error)
+	ActivateAsAdditionalCoordinator(ctx context.Context, in *ActivateAsAdditionalCoordinatorRequest, opts ...grpc.CallOption) (*ActivateAsAdditionalCoordinatorResponse, error)
+	ActivateAdditionalCoordinator(ctx context.Context, in *ActivateAdditionalCoordinatorRequest, opts ...grpc.CallOption) (*ActivateAdditionalCoordinatorResponse, error)
 	JoinCluster(ctx context.Context, in *JoinClusterRequest, opts ...grpc.CallOption) (*JoinClusterResponse, error)
 	TriggerNodeUpdate(ctx context.Context, in *TriggerNodeUpdateRequest, opts ...grpc.CallOption) (*TriggerNodeUpdateResponse, error)
+	TriggerCoordinatorUpdate(ctx context.Context, in *TriggerCoordinatorUpdateRequest, opts ...grpc.CallOption) (*TriggerCoordinatorUpdateResponse, error)
 	RequestStateDiskKey(ctx context.Context, in *RequestStateDiskKeyRequest, opts ...grpc.CallOption) (*RequestStateDiskKeyResponse, error)
 }
 
@@ -117,6 +120,24 @@ func (x *aPIActivateAdditionalNodesClient) Recv() (*ActivateAdditionalNodesRespo
 	return m, nil
 }
 
+func (c *aPIClient) ActivateAsAdditionalCoordinator(ctx context.Context, in *ActivateAsAdditionalCoordinatorRequest, opts ...grpc.CallOption) (*ActivateAsAdditionalCoordinatorResponse, error) {
+	out := new(ActivateAsAdditionalCoordinatorResponse)
+	err := c.cc.Invoke(ctx, "/pubapi.API/ActivateAsAdditionalCoordinator", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aPIClient) ActivateAdditionalCoordinator(ctx context.Context, in *ActivateAdditionalCoordinatorRequest, opts ...grpc.CallOption) (*ActivateAdditionalCoordinatorResponse, error) {
+	out := new(ActivateAdditionalCoordinatorResponse)
+	err := c.cc.Invoke(ctx, "/pubapi.API/ActivateAdditionalCoordinator", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *aPIClient) JoinCluster(ctx context.Context, in *JoinClusterRequest, opts ...grpc.CallOption) (*JoinClusterResponse, error) {
 	out := new(JoinClusterResponse)
 	err := c.cc.Invoke(ctx, "/pubapi.API/JoinCluster", in, out, opts...)
@@ -129,6 +150,15 @@ func (c *aPIClient) JoinCluster(ctx context.Context, in *JoinClusterRequest, opt
 func (c *aPIClient) TriggerNodeUpdate(ctx context.Context, in *TriggerNodeUpdateRequest, opts ...grpc.CallOption) (*TriggerNodeUpdateResponse, error) {
 	out := new(TriggerNodeUpdateResponse)
 	err := c.cc.Invoke(ctx, "/pubapi.API/TriggerNodeUpdate", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aPIClient) TriggerCoordinatorUpdate(ctx context.Context, in *TriggerCoordinatorUpdateRequest, opts ...grpc.CallOption) (*TriggerCoordinatorUpdateResponse, error) {
+	out := new(TriggerCoordinatorUpdateResponse)
+	err := c.cc.Invoke(ctx, "/pubapi.API/TriggerCoordinatorUpdate", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -152,8 +182,11 @@ type APIServer interface {
 	ActivateAsCoordinator(*ActivateAsCoordinatorRequest, API_ActivateAsCoordinatorServer) error
 	ActivateAsNode(context.Context, *ActivateAsNodeRequest) (*ActivateAsNodeResponse, error)
 	ActivateAdditionalNodes(*ActivateAdditionalNodesRequest, API_ActivateAdditionalNodesServer) error
+	ActivateAsAdditionalCoordinator(context.Context, *ActivateAsAdditionalCoordinatorRequest) (*ActivateAsAdditionalCoordinatorResponse, error)
+	ActivateAdditionalCoordinator(context.Context, *ActivateAdditionalCoordinatorRequest) (*ActivateAdditionalCoordinatorResponse, error)
 	JoinCluster(context.Context, *JoinClusterRequest) (*JoinClusterResponse, error)
 	TriggerNodeUpdate(context.Context, *TriggerNodeUpdateRequest) (*TriggerNodeUpdateResponse, error)
+	TriggerCoordinatorUpdate(context.Context, *TriggerCoordinatorUpdateRequest) (*TriggerCoordinatorUpdateResponse, error)
 	RequestStateDiskKey(context.Context, *RequestStateDiskKeyRequest) (*RequestStateDiskKeyResponse, error)
 	mustEmbedUnimplementedAPIServer()
 }
@@ -174,11 +207,20 @@ func (UnimplementedAPIServer) ActivateAsNode(context.Context, *ActivateAsNodeReq
 func (UnimplementedAPIServer) ActivateAdditionalNodes(*ActivateAdditionalNodesRequest, API_ActivateAdditionalNodesServer) error {
 	return status.Errorf(codes.Unimplemented, "method ActivateAdditionalNodes not implemented")
 }
+func (UnimplementedAPIServer) ActivateAsAdditionalCoordinator(context.Context, *ActivateAsAdditionalCoordinatorRequest) (*ActivateAsAdditionalCoordinatorResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ActivateAsAdditionalCoordinator not implemented")
+}
+func (UnimplementedAPIServer) ActivateAdditionalCoordinator(context.Context, *ActivateAdditionalCoordinatorRequest) (*ActivateAdditionalCoordinatorResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ActivateAdditionalCoordinator not implemented")
+}
 func (UnimplementedAPIServer) JoinCluster(context.Context, *JoinClusterRequest) (*JoinClusterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method JoinCluster not implemented")
 }
 func (UnimplementedAPIServer) TriggerNodeUpdate(context.Context, *TriggerNodeUpdateRequest) (*TriggerNodeUpdateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerNodeUpdate not implemented")
+}
+func (UnimplementedAPIServer) TriggerCoordinatorUpdate(context.Context, *TriggerCoordinatorUpdateRequest) (*TriggerCoordinatorUpdateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TriggerCoordinatorUpdate not implemented")
 }
 func (UnimplementedAPIServer) RequestStateDiskKey(context.Context, *RequestStateDiskKeyRequest) (*RequestStateDiskKeyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestStateDiskKey not implemented")
@@ -274,6 +316,42 @@ func (x *aPIActivateAdditionalNodesServer) Send(m *ActivateAdditionalNodesRespon
 	return x.ServerStream.SendMsg(m)
 }
 
+func _API_ActivateAsAdditionalCoordinator_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ActivateAsAdditionalCoordinatorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIServer).ActivateAsAdditionalCoordinator(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pubapi.API/ActivateAsAdditionalCoordinator",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIServer).ActivateAsAdditionalCoordinator(ctx, req.(*ActivateAsAdditionalCoordinatorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _API_ActivateAdditionalCoordinator_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ActivateAdditionalCoordinatorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIServer).ActivateAdditionalCoordinator(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pubapi.API/ActivateAdditionalCoordinator",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIServer).ActivateAdditionalCoordinator(ctx, req.(*ActivateAdditionalCoordinatorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _API_JoinCluster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(JoinClusterRequest)
 	if err := dec(in); err != nil {
@@ -306,6 +384,24 @@ func _API_TriggerNodeUpdate_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(APIServer).TriggerNodeUpdate(ctx, req.(*TriggerNodeUpdateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _API_TriggerCoordinatorUpdate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TriggerCoordinatorUpdateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIServer).TriggerCoordinatorUpdate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pubapi.API/TriggerCoordinatorUpdate",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIServer).TriggerCoordinatorUpdate(ctx, req.(*TriggerCoordinatorUpdateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -344,12 +440,24 @@ var API_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _API_ActivateAsNode_Handler,
 		},
 		{
+			MethodName: "ActivateAsAdditionalCoordinator",
+			Handler:    _API_ActivateAsAdditionalCoordinator_Handler,
+		},
+		{
+			MethodName: "ActivateAdditionalCoordinator",
+			Handler:    _API_ActivateAdditionalCoordinator_Handler,
+		},
+		{
 			MethodName: "JoinCluster",
 			Handler:    _API_JoinCluster_Handler,
 		},
 		{
 			MethodName: "TriggerNodeUpdate",
 			Handler:    _API_TriggerNodeUpdate_Handler,
+		},
+		{
+			MethodName: "TriggerCoordinatorUpdate",
+			Handler:    _API_TriggerCoordinatorUpdate_Handler,
 		},
 		{
 			MethodName: "RequestStateDiskKey",
