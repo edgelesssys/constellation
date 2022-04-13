@@ -1,4 +1,4 @@
-package cmd
+package cloudcmd
 
 import (
 	"context"
@@ -46,15 +46,4 @@ type rollbackerAzure struct {
 
 func (r *rollbackerAzure) rollback(ctx context.Context) error {
 	return r.client.TerminateResourceGroup(ctx)
-}
-
-type rollbackerAWS struct {
-	client ec2client
-}
-
-func (r *rollbackerAWS) rollback(ctx context.Context) error {
-	var err error
-	err = multierr.Append(err, r.client.TerminateInstances(ctx))
-	err = multierr.Append(err, r.client.DeleteSecurityGroup(ctx))
-	return err
 }

@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/edgelesssys/constellation/cli/azure"
+	"github.com/edgelesssys/constellation/cli/cloudprovider"
 	"github.com/edgelesssys/constellation/cli/ec2"
 	"github.com/edgelesssys/constellation/cli/gcp"
 	"github.com/spf13/cobra"
@@ -31,21 +33,11 @@ func isIntGreaterArg(arg int, i int) cobra.PositionalArgs {
 	})
 }
 
-// isValidAWSCoordinatorCount checks additional conditions for the AWS coordinator count.
-func isValidAWSCoordinatorCount(coordCountPos, providerPos int) cobra.PositionalArgs {
+// warnAWS warns that AWS isn't supported.
+func warnAWS(providerPos int) cobra.PositionalArgs {
 	return func(cmd *cobra.Command, args []string) error {
-		if strings.ToLower(args[providerPos]) != "aws" {
-			return nil
-		}
-		v, err := strconv.Atoi(args[coordCountPos])
-		if err != nil {
-			return fmt.Errorf("argument %d must be an integer", coordCountPos)
-		}
-		if v != 1 {
-			return fmt.Errorf(
-				"argument %d is %d, invalid coordinator count for AWS, has to be 1",
-				coordCountPos, v,
-			)
+		if cloudprovider.FromString(args[providerPos]) == cloudprovider.AWS {
+			return errors.New("AWS isn't supported")
 		}
 		return nil
 	}
@@ -110,15 +102,13 @@ func isInstanceTypeForProvider(typePos, providerPos int) cobra.PositionalArgs {
 			)
 		}
 
-		switch strings.ToLower(args[providerPos]) {
-		case "aws":
-			return isEC2InstanceType(typePos)(cmd, args)
-		case "gcp":
+		switch cloudprovider.FromString(args[providerPos]) {
+		case cloudprovider.GCP:
 			return isGCPInstanceType(typePos)(cmd, args)
-		case "azure":
+		case cloudprovider.Azure:
 			return isAzureInstanceType(typePos)(cmd, args)
 		default:
-			return fmt.Errorf("argument %s isn't a valid cloud platform", args[0])
+			return fmt.Errorf("argument %s isn't a valid cloud platform", args[providerPos])
 		}
 	}
 }

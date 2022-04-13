@@ -186,7 +186,7 @@ func TestPrintLogStream(t *testing.T) {
 		},
 	}
 	client := NewActivationRespClient(respClient)
-	out := bytes.NewBufferString("")
+	out := &bytes.Buffer{}
 	assert.NoError(client.WriteLogStream(out))
 	assert.Equal(out.Len(), 10*11) // 10 messages * (len(message) + 1 newline)
 
@@ -198,8 +198,7 @@ func TestPrintLogStream(t *testing.T) {
 		recvErr: someErr,
 	}
 	client = NewActivationRespClient(respClient)
-	out = bytes.NewBufferString("")
-	assert.Error(client.WriteLogStream(out))
+	assert.Error(client.WriteLogStream(&bytes.Buffer{}))
 }
 
 func TestGetKubeconfig(t *testing.T) {

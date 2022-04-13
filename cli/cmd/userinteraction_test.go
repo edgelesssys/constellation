@@ -46,10 +46,9 @@ func TestAskToConfirm(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			out := bytes.NewBufferString("")
+			out := &bytes.Buffer{}
 			cmd.SetOut(out)
-			errOut := bytes.NewBufferString("")
-			cmd.SetErr(errOut)
+			cmd.SetErr(&bytes.Buffer{})
 			in := bytes.NewBufferString(tc.input)
 			cmd.SetIn(in)
 

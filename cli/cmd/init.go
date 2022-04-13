@@ -11,6 +11,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/edgelesssys/constellation/cli/azure"
+	"github.com/edgelesssys/constellation/cli/cloud/cloudcmd"
 	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/cli/gcp"
 	"github.com/edgelesssys/constellation/cli/proto"
@@ -63,14 +64,16 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	serviceAccountCreator := cloudcmd.NewServiceAccountCreator()
+
 	// We have to parse the context separately, since cmd.Context()
 	// returns nil during the tests otherwise.
-	return initialize(cmd.Context(), cmd, protoClient, serviceAccountClient{}, fileHandler, config, status.NewWaiter(*config.Provider.GCP.PCRs), vpnHandler)
+	return initialize(cmd.Context(), cmd, protoClient, serviceAccountCreator, fileHandler, config, status.NewWaiter(*config.Provider.GCP.PCRs), vpnHandler)
 }
 
 // initialize initializes a Constellation. Coordinator instances are activated as Coordinators and will
 // themself activate the other peers as nodes.
-func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, serviceAccountCr serviceAccountCreator,
+func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, serviceAccCreator serviceAccountCreator,
 	fileHandler file.Handler, config *config.Config, waiter statusWaiter, vpnHandler vpnHandler,
 ) error {
 	flagArgs, err := evalFlagArgs(cmd, fileHandler)
@@ -98,7 +101,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 	}
 
 	cmd.Println("Creating service account ...")
-	serviceAccount, stat, err := serviceAccountCr.createServiceAccount(ctx, stat, config)
+	serviceAccount, stat, err := serviceAccCreator.Create(ctx, stat, config)
 	if err != nil {
 		return err
 	}

@@ -191,15 +191,12 @@ func TestIsInstanceTypeForProvider(t *testing.T) {
 		args        []string
 		expectErr   bool
 	}{
-		"valid ec2 type 1":          {1, 0, []string{"aws", "4xl"}, false},
-		"valid ec2 type 2":          {1, 0, []string{"aws", "12xlarge", "foo"}, false},
 		"valid gcp type 1":          {1, 0, []string{"gcp", "n2d-standard-4"}, false},
 		"valid gcp type 2":          {1, 0, []string{"gcp", "n2d-standard-16", "foo"}, false},
 		"valid azure type 1":        {1, 0, []string{"azure", "Standard_DC2as_v5"}, false},
 		"valid azure type 2":        {1, 0, []string{"azure", "Standard_DC8as_v5", "foo"}, false},
-		"mixed order 1":             {0, 3, []string{"4xl", "", "foo", "aws"}, false},
+		"mixed order 1":             {0, 3, []string{"n2d-standard-4", "", "foo", "gcp"}, false},
 		"mixed order 2":             {2, 1, []string{"", "gcp", "n2d-standard-4", "foo", "bar"}, false},
-		"invalid ec2 type":          {1, 0, []string{"aws", "foo"}, true},
 		"invalid gcp type":          {1, 0, []string{"gcp", "foo"}, true},
 		"invalid azure type":        {1, 0, []string{"azure", "foo"}, true},
 		"args to short":             {2, 0, []string{"foo"}, true},
