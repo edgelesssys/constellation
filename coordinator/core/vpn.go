@@ -10,6 +10,7 @@ import (
 
 type VPN interface {
 	Setup(privKey []byte) ([]byte, error)
+	GetPrivateKey() ([]byte, error)
 	GetPublicKey(privKey []byte) ([]byte, error)
 	GetInterfaceIP() (string, error)
 	SetInterfaceIP(ip string) error
@@ -21,13 +22,19 @@ type VPN interface {
 type stubVPN struct {
 	peers             []stubVPNPeer
 	interfaceIP       string
+	privateKey        []byte
 	addPeerErr        error
 	removePeerErr     error
 	getInterfaceIPErr error
+	getPrivateKeyErr  error
 }
 
 func (*stubVPN) Setup(privKey []byte) ([]byte, error) {
 	return []byte{2, 3, 4}, nil
+}
+
+func (v *stubVPN) GetPrivateKey() ([]byte, error) {
+	return v.privateKey, v.getPrivateKeyErr
 }
 
 func (*stubVPN) GetPublicKey(privKey []byte) ([]byte, error) {

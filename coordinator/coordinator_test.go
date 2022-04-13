@@ -322,6 +322,10 @@ func (*fakeVPN) Setup(privKey []byte) ([]byte, error) {
 	return nil, nil
 }
 
+func (*fakeVPN) GetPrivateKey() ([]byte, error) {
+	return nil, nil
+}
+
 func (*fakeVPN) GetPublicKey(privKey []byte) ([]byte, error) {
 	return nil, nil
 }

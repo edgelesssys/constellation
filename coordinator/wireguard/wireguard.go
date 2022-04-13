@@ -54,6 +54,15 @@ func (w *Wireguard) Setup(privKey []byte) ([]byte, error) {
 	return key[:], nil
 }
 
+// GetPrivateKey returns the private key of the wireguard interface.
+func (w *Wireguard) GetPrivateKey() ([]byte, error) {
+	device, err := w.client.Device(netInterface)
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve wireguard private key from device %v: %w", netInterface, err)
+	}
+	return device.PrivateKey[:], nil
+}
+
 func (w *Wireguard) GetPublicKey(privKey []byte) ([]byte, error) {
 	key, err := wgtypes.NewKey(privKey)
 	if err != nil {
