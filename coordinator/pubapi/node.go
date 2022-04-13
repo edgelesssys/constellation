@@ -7,6 +7,7 @@ import (
 
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
+	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
 	"go.uber.org/zap"
@@ -55,6 +56,11 @@ func (a *API) ActivateAsNode(ctx context.Context, in *pubproto.ActivateAsNodeReq
 
 	// add initial peers
 	if err := a.core.UpdatePeers(peer.FromPubProto(in.Peers)); err != nil {
+		return nil, status.Errorf(codes.Internal, "%v", err)
+	}
+
+	// persist node state on disk
+	if err := a.core.PersistNodeState(role.Node, in.OwnerId, in.ClusterId); err != nil {
 		return nil, status.Errorf(codes.Internal, "%v", err)
 	}
 

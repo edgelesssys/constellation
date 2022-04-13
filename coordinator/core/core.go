@@ -230,6 +230,21 @@ func (c *Core) Initialize() (nodeActivated bool, err error) {
 	return nodeActivated, nil
 }
 
+// PersistNodeState persists node state to disk.
+func (c *Core) PersistNodeState(role role.Role, ownerID []byte, clusterID []byte) error {
+	vpnPrivKey, err := c.vpn.GetPrivateKey()
+	if err != nil {
+		return fmt.Errorf("failed to retrieve VPN private key: %w", err)
+	}
+	nodeState := nodestate.NodeState{
+		Role:       role,
+		VPNPrivKey: vpnPrivKey,
+		OwnerID:    ownerID,
+		ClusterID:  clusterID,
+	}
+	return nodeState.ToFile(c.fileHandler)
+}
+
 // SetUpKMS sets the Coordinators key management service and key encryption key ID.
 // Creates a new key encryption key in the KMS, if requested.
 // Otherwise the KEK is assumed to already exist in the KMS.

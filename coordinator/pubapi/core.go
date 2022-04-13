@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/edgelesssys/constellation/coordinator/peer"
+	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
@@ -17,6 +18,7 @@ type Core interface {
 	GetNextNodeIP() (string, error)
 	SwitchToPersistentStore() error
 	GetIDs(masterSecret []byte) (ownerID []byte, clusterID []byte, err error)
+	PersistNodeState(role role.Role, ownerID []byte, clusterID []byte) error
 	SetUpKMS(ctx context.Context, storageURI, kmsURI, kekID string, useExisting bool) error
 	GetDataKey(ctx context.Context, keyID string, length int) ([]byte, error)
 

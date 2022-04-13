@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/coordinator/peer"
+	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
@@ -26,6 +27,8 @@ type fakeCore struct {
 	autoscalingNodeGroups      []string
 	joinArgs                   []kubeadm.BootstrapTokenDiscovery
 	joinClusterErr             error
+	persistNodeStateRoles      []role.Role
+	persistNodeStateErr        error
 	kekID                      string
 	dataKey                    []byte
 	getDataKeyErr              error
@@ -106,6 +109,11 @@ func (c *fakeCore) InitCluster(autoscalingNodeGroups []string, cloudServiceAccou
 func (c *fakeCore) JoinCluster(args kubeadm.BootstrapTokenDiscovery) error {
 	c.joinArgs = append(c.joinArgs, args)
 	return c.joinClusterErr
+}
+
+func (c *fakeCore) PersistNodeState(role role.Role, ownerID []byte, clusterID []byte) error {
+	c.persistNodeStateRoles = append(c.persistNodeStateRoles, role)
+	return c.persistNodeStateErr
 }
 
 func (c *fakeCore) SetUpKMS(ctx context.Context, storageURI, kmsURI, kekID string, useExisting bool) error {

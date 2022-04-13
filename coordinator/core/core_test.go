@@ -245,6 +245,64 @@ func TestInitialize(t *testing.T) {
 	}
 }
 
+func TestPersistNodeState(t *testing.T) {
+	testCases := map[string]struct {
+		vpn            VPN
+		touchStateFile bool
+		errExpected    bool
+	}{
+		"persisting works": {
+			vpn: &stubVPN{
+				privateKey: []byte("private-key"),
+			},
+		},
+		"retrieving VPN key fails": {
+			vpn: &stubVPN{
+				getPrivateKeyErr: errors.New("error"),
+			},
+			errExpected: true,
+		},
+		"writing node state over existing file fails": {
+			vpn: &stubVPN{
+				privateKey: []byte("private-key"),
+			},
+			touchStateFile: true,
+			errExpected:    true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			fs := afero.NewMemMapFs()
+			fileHandler := file.NewHandler(fs)
+			if tc.touchStateFile {
+				file, err := fs.Create("/run/state/constellation/node_state.json")
+				require.NoError(err)
+				require.NoError(file.Close())
+			}
+			core, err := NewCore(tc.vpn, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, fileHandler)
+			require.NoError(err)
+			err = core.PersistNodeState(role.Coordinator, []byte("owner-id"), []byte("cluster-id"))
+			if tc.errExpected {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+			nodeState, err := nodestate.FromFile(fileHandler)
+			assert.NoError(err)
+			assert.Equal(nodestate.NodeState{
+				Role:       role.Coordinator,
+				VPNPrivKey: []byte("private-key"),
+				OwnerID:    []byte("owner-id"),
+				ClusterID:  []byte("cluster-id"),
+			}, *nodeState)
+		})
+	}
+}
+
 type fakeStoreFactory struct {
 	store store.Store
 }

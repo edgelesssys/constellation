@@ -111,6 +111,11 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 		return status.Errorf(codes.Internal, "%v", err)
 	}
 
+	// persist node state on disk
+	if err := a.core.PersistNodeState(role.Coordinator, ownerID, clusterID); err != nil {
+		return status.Errorf(codes.Internal, "%v", err)
+	}
+
 	// This effectively gives code execution, so we do this last.
 	adminVPNIP, err := a.core.AddAdmin(in.AdminVpnPubKey)
 	if err != nil {

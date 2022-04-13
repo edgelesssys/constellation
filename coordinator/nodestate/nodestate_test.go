@@ -18,10 +18,12 @@ func TestFromFile(t *testing.T) {
 		errExpected   bool
 	}{
 		"nodestate exists": {
-			fileContents: `{	"Role": "Coordinator",	"VPNPrivKey": "dGVzdA=="	}`,
+			fileContents: `{	"Role": "Coordinator",	"VPNPrivKey": "dGVzdA==", "OwnerID": "T3duZXJJRA==", "ClusterID": "Q2x1c3RlcklE"	}`,
 			expectedState: &NodeState{
 				Role:       role.Coordinator,
 				VPNPrivKey: []byte("test"),
+				OwnerID:    []byte("OwnerID"),
+				ClusterID:  []byte("ClusterID"),
 			},
 		},
 		"nodestate file does not exist": {
@@ -62,10 +64,14 @@ func TestToFile(t *testing.T) {
 			state: &NodeState{
 				Role:       role.Coordinator,
 				VPNPrivKey: []byte("test"),
+				OwnerID:    []byte("OwnerID"),
+				ClusterID:  []byte("ClusterID"),
 			},
 			expectedFile: `{
 	"Role": "Coordinator",
-	"VPNPrivKey": "dGVzdA=="
+	"VPNPrivKey": "dGVzdA==",
+	"OwnerID": "T3duZXJJRA==",
+	"ClusterID": "Q2x1c3RlcklE"
 }`,
 		},
 		"file exists already": {
@@ -80,8 +86,8 @@ func TestToFile(t *testing.T) {
 			require := require.New(t)
 
 			fs := afero.NewMemMapFs()
-			require.NoError(fs.MkdirAll(filepath.Dir(nodeStatePath), 0o755))
 			if tc.precreateFile {
+				require.NoError(fs.MkdirAll(filepath.Dir(nodeStatePath), 0o755))
 				require.NoError(afero.WriteFile(fs, nodeStatePath, []byte("pre-existing"), 0o644))
 			}
 			fileHandler := file.NewHandler(fs)

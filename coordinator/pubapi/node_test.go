@@ -8,6 +8,7 @@ import (
 
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
+	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
@@ -121,6 +122,7 @@ func TestActivateAsNode(t *testing.T) {
 				require.Len(core.updatedPeers, 1)
 			}
 			assert.Equal(tc.initialPeers, core.updatedPeers[0])
+			assert.Equal([]role.Role{role.Node}, core.persistNodeStateRoles)
 		})
 	}
 }

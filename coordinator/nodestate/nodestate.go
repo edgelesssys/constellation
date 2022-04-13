@@ -14,6 +14,8 @@ const nodeStatePath = "/run/state/constellation/node_state.json"
 type NodeState struct {
 	Role       role.Role
 	VPNPrivKey []byte
+	OwnerID    []byte
+	ClusterID  []byte
 }
 
 // FromFile reads a NodeState from disk.
@@ -27,5 +29,5 @@ func FromFile(fileHandler file.Handler) (*NodeState, error) {
 
 // ToFile writes a NodeState to disk.
 func (nodeState *NodeState) ToFile(fileHandler file.Handler) error {
-	return fileHandler.WriteJSON(nodeStatePath, nodeState, false, true)
+	return fileHandler.WriteJSON(nodeStatePath, nodeState, file.OptMkdirAll)
 }

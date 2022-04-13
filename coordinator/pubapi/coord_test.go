@@ -169,6 +169,7 @@ func TestActivateAsCoordinator(t *testing.T) {
 			assert.Equal(tc.expectedPeers, core.peers)
 			assert.Equal(autoscalingNodeGroups, core.autoscalingNodeGroups)
 			assert.Equal(keyEncryptionKeyID, core.kekID)
+			assert.Equal([]role.Role{role.Coordinator}, core.persistNodeStateRoles)
 		})
 	}
 }
