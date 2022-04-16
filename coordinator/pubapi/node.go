@@ -22,7 +22,7 @@ func (a *API) ActivateAsNode(ctx context.Context, in *pubproto.ActivateAsNodeReq
 	defer a.mut.Unlock()
 
 	if err := a.core.RequireState(state.AcceptingInit); err != nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "%v", err)
+		return nil, status.Errorf(codes.FailedPrecondition, "node is not in required state for activation: %v", err)
 	}
 
 	if len(in.OwnerId) == 0 || len(in.ClusterId) == 0 {
@@ -42,26 +42,26 @@ func (a *API) ActivateAsNode(ctx context.Context, in *pubproto.ActivateAsNodeReq
 	// This ensures the node is marked as initialzed before the node is in a state that allows code execution
 	// Any new additions to ActivateAsNode MUST come after
 	if err := a.core.AdvanceState(state.NodeWaitingForClusterJoin, in.OwnerId, in.ClusterId); err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "advance node state: %v", err)
 	}
 
 	vpnPubKey, err := a.core.GetVPNPubKey()
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "get vpn publicKey: %v", err)
 	}
 
 	if err := a.core.SetVPNIP(in.NodeVpnIp); err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "setting node vpn IP address: %v", err)
 	}
 
 	// add initial peers
 	if err := a.core.UpdatePeers(peer.FromPubProto(in.Peers)); err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "synchronizing peers with vpn state: %v", err)
 	}
 
 	// persist node state on disk
 	if err := a.core.PersistNodeState(role.Node, in.OwnerId, in.ClusterId); err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "persist node state: %v", err)
 	}
 
 	// regularly get (peer) updates from Coordinator
@@ -77,17 +77,17 @@ func (a *API) JoinCluster(ctx context.Context, in *pubproto.JoinClusterRequest) 
 	defer a.mut.Unlock()
 
 	if err := a.core.RequireState(state.NodeWaitingForClusterJoin); err != nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "%v", err)
+		return nil, status.Errorf(codes.FailedPrecondition, "node is not in required state for cluster join: %v", err)
 	}
 
 	conn, err := a.dialInsecure(ctx, net.JoinHostPort(in.CoordinatorVpnIp, vpnAPIPort))
 	if err != nil {
-		return nil, status.Errorf(codes.Unavailable, "%v", err)
+		return nil, status.Errorf(codes.Unavailable, "dial coordinator: %v", err)
 	}
 	resp, err := vpnproto.NewAPIClient(conn).GetK8SJoinArgs(ctx, &vpnproto.GetK8SJoinArgsRequest{})
 	conn.Close()
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "request K8s join string: %v", err)
 	}
 
 	err = a.core.JoinCluster(kubeadm.BootstrapTokenDiscovery{
@@ -97,11 +97,11 @@ func (a *API) JoinCluster(ctx context.Context, in *pubproto.JoinClusterRequest) 
 	})
 	if err != nil {
 		_ = a.core.AdvanceState(state.Failed, nil, nil)
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "joining kubernetes cluster: %v", err)
 	}
 
 	if err := a.core.AdvanceState(state.IsNode, nil, nil); err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "advance state to IsNode: %v", err)
 	}
 
 	return &pubproto.JoinClusterResponse{}, nil
@@ -110,10 +110,10 @@ func (a *API) JoinCluster(ctx context.Context, in *pubproto.JoinClusterRequest) 
 // TriggerNodeUpdate is the RPC call to request this node to get an update from the Coordinator.
 func (a *API) TriggerNodeUpdate(ctx context.Context, in *pubproto.TriggerNodeUpdateRequest) (*pubproto.TriggerNodeUpdateResponse, error) {
 	if err := a.core.RequireState(state.IsNode); err != nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "%v", err)
+		return nil, status.Errorf(codes.FailedPrecondition, "node is not in required state for receiving update command: %v", err)
 	}
 	if err := a.update(ctx); err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "node update: %v", err)
 	}
 	return &pubproto.TriggerNodeUpdateResponse{}, nil
 }

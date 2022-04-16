@@ -21,7 +21,7 @@ func (a *API) ActivateAsAdditionalCoordinator(ctx context.Context, in *pubproto.
 	defer a.mut.Unlock()
 
 	if err := a.core.RequireState(state.AcceptingInit); err != nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "%v", err)
+		return nil, status.Errorf(codes.FailedPrecondition, "node is not in required state: %v", err)
 	}
 	// Some of the following actions can't be reverted (yet). If there's an
 	// error, we may be in a weird state. Thus, mark this peer as failed.
@@ -35,23 +35,23 @@ func (a *API) ActivateAsAdditionalCoordinator(ctx context.Context, in *pubproto.
 	// This ensures the node is marked as initialzed before the node is in a state that allows code execution
 	// Any new additions to ActivateAsAdditionalCoordinator MUST come after
 	if err := a.core.AdvanceState(state.ActivatingNodes, in.OwnerId, in.ClusterId); err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "advance state to ActivatingNodes: %v", err)
 	}
 
 	// TODO: add KMS functions
 
 	// add one coordinator to the VPN
 	if err := a.core.SetVPNIP(in.AssignedVpnIp); err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "set vpn IP address: %v", err)
 	}
 
 	if err := a.core.AddPeerToVPN(peer.FromPubProto([]*pubproto.Peer{in.ActivatingCoordinatorData})[0]); err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "adding initial peers to vpn: %v", err)
 	}
 
 	// run the VPN-API server
 	if err := a.vpnAPIServer.Listen(net.JoinHostPort(in.AssignedVpnIp, vpnAPIPort)); err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "start vpnAPIServer: %v", err)
 	}
 	a.wgClose.Add(1)
 	go func() {
@@ -65,7 +65,7 @@ func (a *API) ActivateAsAdditionalCoordinator(ctx context.Context, in *pubproto.
 
 	// ATTENTION: STORE HAS TO BE EMPTY (NO OVERLAPPING KEYS) WHEN THIS FUNCTION IS CALLED
 	if err := a.core.SwitchToPersistentStore(); err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "switch to persistent store: %v", err)
 	}
 	a.logger.Info("Transition to persistent store successful")
 
@@ -74,28 +74,28 @@ func (a *API) ActivateAsAdditionalCoordinator(ctx context.Context, in *pubproto.
 
 	thisPeer, err := a.assemblePeerStruct(in.AssignedVpnIp, role.Coordinator)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "assembling coordinator peer struct: %v", err)
 	}
 	if err := a.core.AddPeerToStore(thisPeer); err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "adding new coordinator to persistent store: %v", err)
 	}
 
 	resourceVersion, peers, err := a.core.GetPeers(0)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "get peers from store: %v", err)
 	}
 	a.resourceVersion = resourceVersion
 
 	err = a.core.UpdatePeers(peers)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "synchronizing peers with vpn state: %v", err)
 	}
 	// Manually trigger an update operation on all peers.
 	// This may be expendable in the future, depending on whether it's acceptable that it takes
 	// some seconds until the nodes get all peer data via their regular update requests.
 	_, peers, err = a.core.GetPeers(0)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "get peers from store: %v", err)
 	}
 	a.logger.Info("", zap.Any("peers", peers))
 	for _, p := range peers {
@@ -120,28 +120,28 @@ func (a *API) ActivateAdditionalCoordinator(ctx context.Context, in *pubproto.Ac
 	defer cancel()
 
 	if err := a.core.RequireState(state.ActivatingNodes); err != nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "%v", err)
+		return nil, status.Errorf(codes.FailedPrecondition, "coordinator is not in required state: %v", err)
 	}
 	assignedVPNIP, err := a.core.GetNextCoordinatorIP()
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "requesting new coordinator vpn IP address: %v", err)
 	}
 	vpnIP, err := a.core.GetVPNIP()
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "get own vpn IP address: %v", err)
 	}
 	thisPeer, err := a.assemblePeerStruct(vpnIP, role.Coordinator)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "assembling coordinator peer struct: %v", err)
 	}
 	ownerID, clusterID, err := a.core.GetIDs(nil)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "get owner and cluster ID: %v", err)
 	}
 
 	conn, err := a.dial(ctx, net.JoinHostPort(in.CoordinatorPublicIp, endpointAVPNPort))
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "dialing new coordinator: %v", err)
 	}
 	defer conn.Close()
 
@@ -155,7 +155,7 @@ func (a *API) ActivateAdditionalCoordinator(ctx context.Context, in *pubproto.Ac
 	})
 	if err != nil {
 		a.logger.Error("coordinator activation failed", zap.Error(err))
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "activate new coordinator: %v", err)
 	}
 
 	return &pubproto.ActivateAdditionalCoordinatorResponse{}, nil
@@ -163,19 +163,19 @@ func (a *API) ActivateAdditionalCoordinator(ctx context.Context, in *pubproto.Ac
 
 func (a *API) TriggerCoordinatorUpdate(ctx context.Context, in *pubproto.TriggerCoordinatorUpdateRequest) (*pubproto.TriggerCoordinatorUpdateResponse, error) {
 	if err := a.core.RequireState(state.ActivatingNodes); err != nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "%v", err)
+		return nil, status.Errorf(codes.FailedPrecondition, "coordinator is not in required state for updating state: %v", err)
 	}
 	resourceVersion, peers, err := a.core.GetPeers(a.resourceVersion)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "get peers from store: %v", err)
 	}
 	if resourceVersion == a.resourceVersion {
-		a.logger.Info("coordinator: ressource version identical, no need to update")
+		a.logger.Info("ressource version identical, no need to update")
 		return &pubproto.TriggerCoordinatorUpdateResponse{}, nil
 	}
 	err = a.core.UpdatePeers(peers)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "%v", err)
+		return nil, status.Errorf(codes.Internal, "synchronizing peers with vpn state: %v", err)
 	}
 	a.resourceVersion = resourceVersion
 	return &pubproto.TriggerCoordinatorUpdateResponse{}, nil

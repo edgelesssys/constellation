@@ -22,7 +22,7 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 	defer a.mut.Unlock()
 
 	if err := a.core.RequireState(state.AcceptingInit); err != nil {
-		return status.Errorf(codes.FailedPrecondition, "%v", err)
+		return status.Errorf(codes.FailedPrecondition, "node is not in required state: %v", err)
 	}
 
 	if len(in.MasterSecret) == 0 {
@@ -54,7 +54,7 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 	// This ensures the node is marked as initialzed before the node is in a state that allows code execution
 	// Any new additions to ActivateAsNode MUST come after
 	if err := a.core.InitializeStoreIPs(); err != nil {
-		return status.Errorf(codes.Internal, "failed to initialize store IPs %v", err)
+		return status.Errorf(codes.Internal, "initialize store IPs: %v", err)
 	}
 
 	ownerID, clusterID, err := a.core.GetIDs(in.MasterSecret)
@@ -62,39 +62,39 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 		return status.Errorf(codes.Internal, "%v", err)
 	}
 	if err := a.core.AdvanceState(state.ActivatingNodes, ownerID, clusterID); err != nil {
-		return status.Errorf(codes.Internal, "%v", err)
+		return status.Errorf(codes.Internal, "advance state to ActivatingNodes: %v", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	if err := a.core.SetUpKMS(ctx, in.StorageUri, in.KmsUri, in.KeyEncryptionKeyId, in.UseExistingKek); err != nil {
-		return status.Errorf(codes.Internal, "%v", err)
+		return status.Errorf(codes.Internal, "setting up KMS: %v", err)
 	}
 	vpnIP, err := a.core.GetNextCoordinatorIP()
 	if err != nil {
-		return status.Errorf(codes.Internal, "could not obtain coordinator vpn ip%v", err)
+		return status.Errorf(codes.Internal, "get coordinator vpn IP address: %v", err)
 	}
 	coordPeer, err := a.assemblePeerStruct(vpnIP, role.Coordinator)
 	if err != nil {
-		return status.Errorf(codes.Internal, "%v", err)
+		return status.Errorf(codes.Internal, "assembling the coordinator peer struct: %v", err)
 	}
 
 	if err := a.core.SetVPNIP(coordPeer.VPNIP); err != nil {
-		return status.Errorf(codes.Internal, "%v", err)
+		return status.Errorf(codes.Internal, "set the vpn IP address: %v", err)
 	}
 	if err := a.core.AddPeer(coordPeer); err != nil {
-		return status.Errorf(codes.Internal, "%v", err)
+		return status.Errorf(codes.Internal, "adding the coordinator to store/vpn: %v", err)
 	}
 
 	logToCLI("Initializing Kubernetes ...")
 	kubeconfig, err := a.core.InitCluster(in.AutoscalingNodeGroups, in.CloudServiceAccountUri)
 	if err != nil {
-		return status.Errorf(codes.Internal, "%v", err)
+		return status.Errorf(codes.Internal, "initializing kubernetes cluster failed: %v", err)
 	}
 
 	// run the VPN-API server
 	if err := a.vpnAPIServer.Listen(net.JoinHostPort(coordPeer.VPNIP, vpnAPIPort)); err != nil {
-		return status.Errorf(codes.Internal, "%v", err)
+		return status.Errorf(codes.Internal, "start vpnAPIServer: %v", err)
 	}
 	a.wgClose.Add(1)
 	go func() {
@@ -106,20 +106,20 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 	// TODO: check performance and maybe make concurrent
 	if err := a.activateNodes(logToCLI, in.NodePublicIps); err != nil {
 		a.logger.Error("node activation failed", zap.Error(err))
-		return status.Errorf(codes.Internal, "%v", err)
+		return status.Errorf(codes.Internal, "node initialization: %v", err)
 	}
 
 	if err := a.core.SwitchToPersistentStore(); err != nil {
-		return status.Errorf(codes.Internal, "%v", err)
+		return status.Errorf(codes.Internal, "switch to persistent store: %v", err)
 	}
 
 	// persist node state on disk
 	if err := a.core.PersistNodeState(role.Coordinator, ownerID, clusterID); err != nil {
-		return status.Errorf(codes.Internal, "%v", err)
+		return status.Errorf(codes.Internal, "persist node state: %v", err)
 	}
 	adminVPNIP, err := a.core.GetNextNodeIP()
 	if err != nil {
-		return status.Errorf(codes.Internal, "%v", err)
+		return status.Errorf(codes.Internal, "requesting node IP address: %v", err)
 	}
 	// This effectively gives code execution, so we do this last.
 	err = a.core.AddPeer(peer.Peer{
@@ -128,7 +128,7 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 		Role:      role.Admin,
 	})
 	if err != nil {
-		return status.Errorf(codes.Internal, "%v", err)
+		return status.Errorf(codes.Internal, "add peer to store/vpn: %v", err)
 	}
 
 	return srv.Send(&pubproto.ActivateAsCoordinatorResponse{
@@ -161,7 +161,7 @@ func (a *API) ActivateAdditionalNodes(in *pubproto.ActivateAdditionalNodesReques
 	// TODO: check performance and maybe make concurrent
 	if err := a.activateNodes(logToCLI, in.NodePublicIps); err != nil {
 		a.logger.Error("node activation failed", zap.Error(err))
-		return status.Errorf(codes.Internal, "%v", err)
+		return status.Errorf(codes.Internal, "activating nodes: %v", err)
 	}
 
 	return srv.Send(&pubproto.ActivateAdditionalNodesResponse{
