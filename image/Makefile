@@ -6,6 +6,7 @@ OVERRIDES                        ?= $(COREOS_BUILD_PATH)/overrides
 OVERRIDES_RPM                    ?= $(OVERRIDES)/rpm
 OVERRIDES_ROOTFS                 ?= $(OVERRIDES)/rootfs
 COORDINATOR_OVERRIDE_PATH        ?= $(OVERRIDES_ROOTFS)/usr/bin/coordinator
+CILIUM_CLI_OVERRIDE_PATH         ?= $(OVERRIDES_ROOTFS)/usr/bin/cilium
 KERNEL_RPM                       ?= $(OVERRIDES_RPM)/kernel.rpm
 KERNEL_CORE_RPM                  ?= $(OVERRIDES_RPM)/kernel-core.rpm
 KERNEL_MODULES_RPM               ?= $(OVERRIDES_RPM)/kernel-modules.rpm
@@ -15,9 +16,11 @@ KERNEL_CORE_RPM_URL              ?= "https://kojipkgs.fedoraproject.org/packages
 KERNEL_MODULES_RPM_URL           ?= "https://kojipkgs.fedoraproject.org/packages/kernel/5.17.0/0.rc3.89.fc36/x86_64/kernel-modules-5.17.0-0.rc3.89.fc36.x86_64.rpm"
 DOWNLOAD_COORDINATOR             ?= y
 COORDINATOR_BINARY               ?= $(DEPENDENCIES)/coordinator
-COORDINATOR_URL                  ?= https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/coordinator/coordinator-090232f06302957f47ab86207bd96f413eda07d9534afc12524a97363b7d203d863d52cbb1780fb76c6874df6df0387f89021b3140d5769d6a8aec1739515a66
-DISK_MAPPER_BINARY				 ?= $(BASE_PATH)/../build/disk-mapper
-DISK_MAPPER_OVERRIDE_PATH		 ?= $(OVERRIDES_ROOTFS)/usr/sbin/disk-mapper
+COORDINATOR_URL                  ?= "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/coordinator/coordinator-090232f06302957f47ab86207bd96f413eda07d9534afc12524a97363b7d203d863d52cbb1780fb76c6874df6df0387f89021b3140d5769d6a8aec1739515a66"
+CILIUM_CLI_BINARY                ?= $(DEPENDENCIES)/cilium
+CILIUM_CLI_URL                   ?= "https://github.com/cilium/cilium-cli/releases/download/v0.11.1/cilium-linux-amd64.tar.gz"
+DISK_MAPPER_BINARY               ?= $(BASE_PATH)/../build/disk-mapper
+DISK_MAPPER_OVERRIDE_PATH        ?= $(OVERRIDES_ROOTFS)/usr/sbin/disk-mapper
 IMAGES_PATH                      ?= $(BASE_PATH)/images
 CONTAINER_ENGINE                 ?= podman
 COSA_ENV                         ?= $(BASE_PATH)/$(CONTAINER_ENGINE).env
@@ -42,7 +45,7 @@ AZURE_IMAGE_VERSION              ?= 0.0.1
 AZURE_PUBLISHER                  ?= edgelesssys
 AZURE_SKU                        ?= constellation-coreos
 
-.PHONY: clean all kernel coreos run shell cosa-init cosa-fetch images image-gcp upload-gcp image-azure upload-azure-non-cvm $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH)
+.PHONY: clean all kernel coreos run shell cosa-init cosa-fetch images image-gcp upload-gcp image-azure upload-azure-non-cvm $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
 SHELL := /bin/bash
 
 all: coreos images
@@ -57,6 +60,16 @@ $(COORDINATOR_OVERRIDE_PATH): $(COORDINATOR_BINARY) | cosa-init
 	cp $(COORDINATOR_BINARY) $@
 	chmod +x $@
 
+$(CILIUM_CLI_BINARY):
+	wget -q $(CILIUM_CLI_URL) -O cilium.tar.gz
+	tar xzfC cilium.tar.gz $(DEPENDENCIES)
+	rm cilium.tar.gz
+
+$(CILIUM_CLI_OVERRIDE_PATH): $(CILIUM_CLI_BINARY) | cosa-init
+	mkdir -p $(COREOS_BUILD_PATH)/overrides/rootfs/usr/bin
+	cp $(CILIUM_CLI_BINARY) $@
+	chmod +x $@
+
 $(DISK_MAPPER_OVERRIDE_PATH): $(DISK_MAPPER_BINARY) | cosa-init
 	mkdir -p $(COREOS_BUILD_PATH)/overrides/rootfs/usr/sbin
 	cp $(DISK_MAPPER_BINARY) $@
@@ -65,16 +78,16 @@ $(DISK_MAPPER_OVERRIDE_PATH): $(DISK_MAPPER_BINARY) | cosa-init
 cosa-init:
 	-flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa init --branch $(COSA_INIT_BRANCH) $(COSA_INIT_REPO)'
 
-cosa-fetch: cosa-init kernel $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH)
+cosa-fetch: cosa-init kernel $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
 	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa fetch'
 
-coreos: cosa-fetch $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH)
+coreos: cosa-fetch $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
 	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa build'
 
-run: $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH)
+run: $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
 	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa run --devshell-console'
 
-shell: $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH)
+shell: $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
 	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa shell'
 
 $(GCP_IMAGE_PATH): coreos
