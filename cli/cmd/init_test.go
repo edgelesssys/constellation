@@ -34,25 +34,8 @@ func TestInitArgumentValidation(t *testing.T) {
 
 func TestInitialize(t *testing.T) {
 	testKey := base64.StdEncoding.EncodeToString([]byte("32bytesWireGuardKeyForTheTesting"))
-	testEc2State := state.ConstellationState{
-		CloudProvider: "AWS",
-		EC2Instances: ec2.Instances{
-			"id-0": {
-				PrivateIP: "192.0.2.1",
-				PublicIP:  "192.0.2.2",
-			},
-			"id-1": {
-				PrivateIP: "192.0.2.1",
-				PublicIP:  "192.0.2.2",
-			},
-			"id-2": {
-				PrivateIP: "192.0.2.1",
-				PublicIP:  "192.0.2.2",
-			},
-		},
-		EC2SecurityGroup: "sg-test",
-	}
 	testGcpState := state.ConstellationState{
+		CloudProvider: "GCP",
 		GCPNodes: gcp.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
@@ -96,15 +79,6 @@ func TestInitialize(t *testing.T) {
 		initVPN               bool
 		errExpected           bool
 	}{
-		"initialize some ec2 instances": {
-			existingState: testEc2State,
-			client: &fakeProtoClient{
-				respClient: &fakeActivationRespClient{responses: testActivationResps},
-			},
-			waiter:     &stubStatusWaiter{},
-			vpnHandler: &stubVPNHandler{},
-			privKey:    testKey,
-		},
 		"initialize some gcp instances": {
 			existingState: testGcpState,
 			client: &fakeProtoClient{
@@ -185,19 +159,8 @@ func TestInitialize(t *testing.T) {
 			vpnHandler:  &stubVPNHandler{},
 			errExpected: true,
 		},
-		"only one instance": {
-			existingState: state.ConstellationState{
-				EC2Instances:     ec2.Instances{"id-1": {}},
-				EC2SecurityGroup: "sg-test",
-			},
-			client:      &stubProtoClient{},
-			waiter:      &stubStatusWaiter{},
-			privKey:     testKey,
-			vpnHandler:  &stubVPNHandler{},
-			errExpected: true,
-		},
 		"public key to short": {
-			existingState: testEc2State,
+			existingState: testGcpState,
 			client:        &stubProtoClient{},
 			waiter:        &stubStatusWaiter{},
 			privKey:       base64.StdEncoding.EncodeToString([]byte("tooShortKey")),
@@ -205,7 +168,7 @@ func TestInitialize(t *testing.T) {
 			errExpected:   true,
 		},
 		"public key to long": {
-			existingState: testEc2State,
+			existingState: testGcpState,
 			client:        &stubProtoClient{},
 			waiter:        &stubStatusWaiter{},
 			privKey:       base64.StdEncoding.EncodeToString([]byte("thisWireguardKeyIsToLongAndHasTooManyBytes")),
@@ -213,7 +176,7 @@ func TestInitialize(t *testing.T) {
 			errExpected:   true,
 		},
 		"public key not base64": {
-			existingState: testEc2State,
+			existingState: testGcpState,
 			client:        &stubProtoClient{},
 			waiter:        &stubStatusWaiter{},
 			privKey:       "this is not base64 encoded",
@@ -221,7 +184,7 @@ func TestInitialize(t *testing.T) {
 			errExpected:   true,
 		},
 		"fail Connect": {
-			existingState: testEc2State,
+			existingState: testGcpState,
 			client:        &stubProtoClient{connectErr: someErr},
 			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
@@ -229,7 +192,7 @@ func TestInitialize(t *testing.T) {
 			errExpected:   true,
 		},
 		"fail Activate": {
-			existingState: testEc2State,
+			existingState: testGcpState,
 			client:        &stubProtoClient{activateErr: someErr},
 			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
@@ -237,7 +200,7 @@ func TestInitialize(t *testing.T) {
 			errExpected:   true,
 		},
 		"fail respClient WriteLogStream": {
-			existingState: testEc2State,
+			existingState: testGcpState,
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{writeLogStreamErr: someErr}},
 			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
@@ -245,7 +208,7 @@ func TestInitialize(t *testing.T) {
 			errExpected:   true,
 		},
 		"fail respClient getKubeconfig": {
-			existingState: testEc2State,
+			existingState: testGcpState,
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getKubeconfigErr: someErr}},
 			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
@@ -253,7 +216,7 @@ func TestInitialize(t *testing.T) {
 			errExpected:   true,
 		},
 		"fail respClient getCoordinatorVpnKey": {
-			existingState: testEc2State,
+			existingState: testGcpState,
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getCoordinatorVpnKeyErr: someErr}},
 			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
@@ -261,7 +224,7 @@ func TestInitialize(t *testing.T) {
 			errExpected:   true,
 		},
 		"fail respClient getClientVpnIp": {
-			existingState: testEc2State,
+			existingState: testGcpState,
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getClientVpnIpErr: someErr}},
 			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
@@ -269,7 +232,7 @@ func TestInitialize(t *testing.T) {
 			errExpected:   true,
 		},
 		"fail respClient getOwnerID": {
-			existingState: testEc2State,
+			existingState: testGcpState,
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getOwnerIDErr: someErr}},
 			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
@@ -277,7 +240,7 @@ func TestInitialize(t *testing.T) {
 			errExpected:   true,
 		},
 		"fail respClient getClusterID": {
-			existingState: testEc2State,
+			existingState: testGcpState,
 			client:        &stubProtoClient{respClient: &stubActivationRespClient{getClusterIDErr: someErr}},
 			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
@@ -293,15 +256,13 @@ func TestInitialize(t *testing.T) {
 			errExpected:   true,
 		},
 		"fail to create service account": {
-			existingState: testGcpState,
-			client:        &stubProtoClient{},
-			serviceAccountCreator: stubServiceAccountCreator{
-				createErr: someErr,
-			},
-			waiter:      &stubStatusWaiter{},
-			privKey:     testKey,
-			vpnHandler:  &stubVPNHandler{},
-			errExpected: true,
+			existingState:         testGcpState,
+			client:                &stubProtoClient{},
+			serviceAccountCreator: stubServiceAccountCreator{createErr: someErr},
+			waiter:                &stubStatusWaiter{},
+			privKey:               testKey,
+			vpnHandler:            &stubVPNHandler{},
+			errExpected:           true,
 		},
 	}
 
@@ -532,15 +493,8 @@ func TestReadOrGeneratedMasterSecret(t *testing.T) {
 
 func TestAutoscaleFlag(t *testing.T) {
 	testKey := base64.StdEncoding.EncodeToString([]byte("32bytesWireGuardKeyForTheTesting"))
-	testEc2State := state.ConstellationState{
-		EC2Instances: ec2.Instances{
-			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.2"},
-			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.2"},
-			"id-2": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.2"},
-		},
-		EC2SecurityGroup: "sg-test",
-	}
 	testGcpState := state.ConstellationState{
+		CloudProvider: "gcp",
 		GCPNodes: gcp.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
@@ -550,6 +504,7 @@ func TestAutoscaleFlag(t *testing.T) {
 		},
 	}
 	testAzureState := state.ConstellationState{
+		CloudProvider: "azure",
 		AzureNodes: azure.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
@@ -580,15 +535,6 @@ func TestAutoscaleFlag(t *testing.T) {
 		waiter                statusWaiter
 		privKey               string
 	}{
-		"initialize some ec2 instances without autoscale flag": {
-			autoscaleFlag: false,
-			existingState: testEc2State,
-			client: &stubProtoClient{
-				respClient: &fakeActivationRespClient{responses: testActivationResps},
-			},
-			waiter:  &stubStatusWaiter{},
-			privKey: testKey,
-		},
 		"initialize some gcp instances without autoscale flag": {
 			autoscaleFlag: false,
 			existingState: testGcpState,
@@ -601,15 +547,6 @@ func TestAutoscaleFlag(t *testing.T) {
 		"initialize some azure instances without autoscale flag": {
 			autoscaleFlag: false,
 			existingState: testAzureState,
-			client: &stubProtoClient{
-				respClient: &fakeActivationRespClient{responses: testActivationResps},
-			},
-			waiter:  &stubStatusWaiter{},
-			privKey: testKey,
-		},
-		"initialize some ec2 instances with autoscale flag": {
-			autoscaleFlag: true,
-			existingState: testEc2State,
 			client: &stubProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},

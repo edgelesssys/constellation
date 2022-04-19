@@ -7,8 +7,6 @@ import (
 	"net"
 
 	"github.com/edgelesssys/constellation/coordinator/atls"
-	"github.com/edgelesssys/constellation/coordinator/attestation/azure"
-	"github.com/edgelesssys/constellation/coordinator/attestation/gcp"
 	"github.com/edgelesssys/constellation/coordinator/kms"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
@@ -29,14 +27,8 @@ type Client struct {
 // The connection must be closed using Close(). If connect is
 // called on a client that already has a connection, the old
 // connection is closed.
-func (c *Client) Connect(ip, port string, gcpPCRs, AzurePCRs map[uint32][]byte) error {
+func (c *Client) Connect(ip, port string, validators []atls.Validator) error {
 	addr := net.JoinHostPort(ip, port)
-
-	validators := []atls.Validator{
-		gcp.NewValidator(gcpPCRs),
-		gcp.NewNonCVMValidator(map[uint32][]byte{}), // TODO: Remove once we no longer use non cvms
-		azure.NewValidator(map[uint32][]byte{}),
-	}
 
 	tlsConfig, err := atls.CreateAttestationClientTLSConfig(validators)
 	if err != nil {

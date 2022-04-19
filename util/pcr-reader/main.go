@@ -42,7 +42,7 @@ func main() {
 
 	// wait for coordinator to come online
 	waiter := status.NewWaiter()
-	waiter.InitializePCRs(map[uint32][]byte{}, map[uint32][]byte{})
+	waiter.InitializeValidators(nil)
 	if err := waiter.WaitFor(ctx, addr, state.AcceptingInit, state.ActivatingNodes, state.IsNode, state.NodeWaitingForClusterJoin); err != nil {
 		log.Fatal(err)
 	}

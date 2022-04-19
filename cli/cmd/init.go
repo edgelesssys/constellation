@@ -12,11 +12,13 @@ import (
 
 	"github.com/edgelesssys/constellation/cli/azure"
 	"github.com/edgelesssys/constellation/cli/cloud/cloudcmd"
+	"github.com/edgelesssys/constellation/cli/cloudprovider"
 	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/cli/gcp"
 	"github.com/edgelesssys/constellation/cli/proto"
 	"github.com/edgelesssys/constellation/cli/status"
 	"github.com/edgelesssys/constellation/cli/vpn"
+	"github.com/edgelesssys/constellation/coordinator/atls"
 	coordinatorstate "github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/util"
 	"github.com/edgelesssys/constellation/internal/config"
@@ -74,8 +76,6 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		return err
 	}
 
-	waiter.InitializePCRs(*config.Provider.GCP.PCRs, *config.Provider.Azure.PCRs)
-
 	var stat state.ConstellationState
 	err = fileHandler.ReadJSON(constants.StateFilename, &stat)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -84,16 +84,11 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		return err
 	}
 
-	switch stat.CloudProvider {
-	case "GCP":
-		if err := warnAboutPCRs(cmd, *config.Provider.GCP.PCRs, true); err != nil {
-			return err
-		}
-	case "Azure":
-		if err := warnAboutPCRs(cmd, *config.Provider.Azure.PCRs, true); err != nil {
-			return err
-		}
+	validators, err := cloudcmd.NewValidators(cloudprovider.FromString(stat.CloudProvider), config)
+	if err != nil {
+		return err
 	}
+	cmd.Print(validators.WarningsIncludeInit())
 
 	cmd.Println("Creating service account ...")
 	serviceAccount, stat, err := serviceAccCreator.Create(ctx, stat, config)
@@ -110,7 +105,9 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 	}
 
 	endpoints := ipsToEndpoints(append(coordinators.PublicIPs(), nodes.PublicIPs()...), *config.CoordinatorPort)
+
 	cmd.Println("Waiting for cloud provider to finish resource creation ...")
+	waiter.InitializeValidators(validators.V())
 	if err := waiter.WaitForAll(ctx, endpoints, coordinatorstate.AcceptingInit); err != nil {
 		return fmt.Errorf("failed to wait for peer status: %w", err)
 	}
@@ -128,7 +125,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		autoscalingNodeGroups:  autoscalingNodeGroups,
 		cloudServiceAccountURI: serviceAccount,
 	}
-	result, err := activate(ctx, cmd, protCl, input, config)
+	result, err := activate(ctx, cmd, protCl, input, config, validators.V())
 	if err != nil {
 		return err
 	}
@@ -156,13 +153,10 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 	return nil
 }
 
-func activate(ctx context.Context, cmd *cobra.Command, client protoClient, input activationInput, config *config.Config) (activationResult, error) {
-	err := client.Connect(
-		input.coordinatorPubIP,
-		*config.CoordinatorPort,
-		*config.Provider.GCP.PCRs,
-		*config.Provider.Azure.PCRs,
-	)
+func activate(ctx context.Context, cmd *cobra.Command, client protoClient, input activationInput,
+	config *config.Config, validators []atls.Validator,
+) (activationResult, error) {
+	err := client.Connect(input.coordinatorPubIP, *config.CoordinatorPort, validators)
 	if err != nil {
 		return activationResult{}, err
 	}

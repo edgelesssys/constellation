@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/state"
 )
 
@@ -12,7 +13,7 @@ type stubStatusWaiter struct {
 	waitForAllErr error
 }
 
-func (s *stubStatusWaiter) InitializePCRs(gcpPCRs, azurePCRs map[uint32][]byte) {
+func (s *stubStatusWaiter) InitializeValidators([]atls.Validator) {
 	s.initialized = true
 }
 

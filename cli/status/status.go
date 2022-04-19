@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/coordinator/atls"
-	"github.com/edgelesssys/constellation/coordinator/attestation/azure"
-	"github.com/edgelesssys/constellation/coordinator/attestation/gcp"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"google.golang.org/grpc"
@@ -35,9 +33,9 @@ func NewWaiter() *Waiter {
 	}
 }
 
-// InitializePCRs initializes the PCRs for the attestation validators.
-func (w *Waiter) InitializePCRs(gcpPCRs, azurePCRs map[uint32][]byte) {
-	w.newConn = newAttestedConnGenerator(gcpPCRs, azurePCRs)
+// InitializeValidators initializes the validators for the attestation.
+func (w *Waiter) InitializeValidators(validators []atls.Validator) {
+	w.newConn = newAttestedConnGenerator(validators)
 	w.initialized = true
 }
 
@@ -109,14 +107,8 @@ func (w *Waiter) WaitForAll(ctx context.Context, endpoints []string, status ...s
 }
 
 // newAttestedConnGenerator creates a function returning a default attested grpc connection.
-func newAttestedConnGenerator(gcpPCRs map[uint32][]byte, azurePCRs map[uint32][]byte) func(ctx context.Context, target string, opts ...grpc.DialOption) (ClientConn, error) {
+func newAttestedConnGenerator(validators []atls.Validator) func(ctx context.Context, target string, opts ...grpc.DialOption) (ClientConn, error) {
 	return func(ctx context.Context, target string, opts ...grpc.DialOption) (ClientConn, error) {
-		validators := []atls.Validator{
-			gcp.NewValidator(gcpPCRs),
-			gcp.NewNonCVMValidator(map[uint32][]byte{}), // TODO: Remove once we no longer use non cvms
-			azure.NewValidator(azurePCRs),
-		}
-
 		tlsConfig, err := atls.CreateAttestationClientTLSConfig(validators)
 		if err != nil {
 			return nil, err

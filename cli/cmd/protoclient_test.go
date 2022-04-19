@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/edgelesssys/constellation/cli/proto"
+	"github.com/edgelesssys/constellation/coordinator/atls"
 )
 
 type stubProtoClient struct {
@@ -23,7 +24,7 @@ type stubProtoClient struct {
 	cloudServiceAccountURI        string
 }
 
-func (c *stubProtoClient) Connect(_, _ string, _, _ map[uint32][]byte) error {
+func (c *stubProtoClient) Connect(_, _ string, _ []atls.Validator) error {
 	c.conn = true
 	return c.connectErr
 }
@@ -89,7 +90,13 @@ type fakeProtoClient struct {
 	respClient proto.ActivationResponseClient
 }
 
-func (c *fakeProtoClient) Connect(_, _ string, _, _ map[uint32][]byte) error {
+func (c *fakeProtoClient) Connect(ip, port string, validators []atls.Validator) error {
+	if ip == "" || port == "" {
+		return errors.New("ip or port is empty")
+	}
+	if len(validators) == 0 {
+		return errors.New("validators is empty")
+	}
 	c.conn = true
 	return nil
 }

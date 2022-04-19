@@ -4,10 +4,11 @@ import (
 	"context"
 
 	"github.com/edgelesssys/constellation/cli/proto"
+	"github.com/edgelesssys/constellation/coordinator/atls"
 )
 
 type protoClient interface {
-	Connect(ip, port string, gcpPCRs, azurePCRs map[uint32][]byte) error
+	Connect(ip, port string, validators []atls.Validator) error
 	Close() error
 	Activate(ctx context.Context, userPublicKey, masterSecret []byte, endpoints, autoscalingNodeGroups []string, cloudServiceAccountURI string) (proto.ActivationResponseClient, error)
 }
