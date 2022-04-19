@@ -14,7 +14,7 @@ jobs:
       run:
         shell: bash
     env:
-      working-directory: ${{ github.workspace }}/images/fcos
+      working-directory: ${{ github.workspace }}/image
       SHELL: /bin/bash
       GOPATH: /home/github-actions-runner-user/go
       GOCACHE: /home/github-actions-runner-user/.cache/go-build

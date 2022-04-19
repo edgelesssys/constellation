@@ -17,7 +17,7 @@ admin.conf
 coordinatorConfig.json
 coordinator-*
 
-/images
+/image
 
 # Dockerfiles
 Dockerfile

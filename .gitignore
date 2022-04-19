@@ -25,16 +25,9 @@ util/pcr-reader/pcrs/
 # Debug and testing files
 debug/
 
-# Images
-images/aws/kernel/build/*
-images/aws/kernel/sed*
-images/aws/enclave/userland/build/*
-images/aws/enclave/userland/dependencies/blobs/*
-images/aws/enclave/userland/privatekey
-images/aws/enclave/userland/publickey
-images/aws/enclave/.build-*
-images/*.ign
-images/fcos/build/*
-images/fcos/dependencies/coordinator
-images/fcos/images/*
-images/fcos/cosa.lock
+# Image
+image/*.ign
+image/build/*
+image/dependencies/coordinator
+image/images/*
+image/cosa.lock
