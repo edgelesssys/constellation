@@ -3,9 +3,12 @@ package pubapi
 import (
 	"context"
 	"errors"
+	"io"
 	"net"
 	"testing"
 
+	"github.com/edgelesssys/constellation/coordinator/atls"
+	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
@@ -16,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
@@ -25,13 +29,14 @@ func TestActivateAsNode(t *testing.T) {
 	peer2 := peer.Peer{PublicIP: "192.0.2.12:2000", VPNIP: "192.0.2.22", VPNPubKey: []byte{2, 3, 4}}
 
 	testCases := map[string]struct {
-		initialPeers  []peer.Peer
-		updatedPeers  []peer.Peer
-		state         state.State
-		getUpdateErr  error
-		setVPNIPErr   error
-		expectErr     bool
-		expectedState state.State
+		initialPeers            []peer.Peer
+		updatedPeers            []peer.Peer
+		state                   state.State
+		getUpdateErr            error
+		setVPNIPErr             error
+		messageSequenceOverride []string
+		expectErr               bool
+		expectedState           state.State
 	}{
 		"basic": {
 			initialPeers:  []peer.Peer{peer1},
@@ -68,6 +73,38 @@ func TestActivateAsNode(t *testing.T) {
 			expectErr:     true,
 			expectedState: state.Failed,
 		},
+		"no messages sent to node": {
+			initialPeers:            []peer.Peer{peer1},
+			updatedPeers:            []peer.Peer{peer2},
+			state:                   state.AcceptingInit,
+			messageSequenceOverride: []string{},
+			expectErr:               true,
+			expectedState:           state.AcceptingInit,
+		},
+		"only initial message sent to node": {
+			initialPeers:            []peer.Peer{peer1},
+			updatedPeers:            []peer.Peer{peer2},
+			state:                   state.AcceptingInit,
+			messageSequenceOverride: []string{"initialRequest"},
+			expectErr:               true,
+			expectedState:           state.Failed,
+		},
+		"wrong initial message sent to node": {
+			initialPeers:            []peer.Peer{peer1},
+			updatedPeers:            []peer.Peer{peer2},
+			state:                   state.AcceptingInit,
+			messageSequenceOverride: []string{"stateDiskKey"},
+			expectErr:               true,
+			expectedState:           state.AcceptingInit,
+		},
+		"initial message sent twice to node": {
+			initialPeers:            []peer.Peer{peer1},
+			updatedPeers:            []peer.Peer{peer2},
+			state:                   state.AcceptingInit,
+			messageSequenceOverride: []string{"initialRequest", "initialRequest"},
+			expectErr:               true,
+			expectedState:           state.Failed,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -75,16 +112,24 @@ func TestActivateAsNode(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			const nodeVPNIP = "192.0.2.2"
+			const (
+				nodeIP    = "192.0.2.2"
+				nodeVPNIP = "10.118.0.2"
+			)
 			vpnPubKey := []byte{7, 8, 9}
 			ownerID := []byte("ownerID")
 			clusterID := []byte("clusterID")
+			stateDiskKey := []byte("stateDiskKey")
+			messageSequence := []string{"initialRequest", "stateDiskKey"}
+			if tc.messageSequenceOverride != nil {
+				messageSequence = tc.messageSequenceOverride
+			}
 
 			logger := zaptest.NewLogger(t)
-			core := &fakeCore{state: tc.state, vpnPubKey: vpnPubKey, setVPNIPErr: tc.setVPNIPErr}
+			cor := &fakeCore{state: tc.state, vpnPubKey: vpnPubKey, setVPNIPErr: tc.setVPNIPErr}
 			dialer := testdialer.NewBufconnDialer()
 
-			api := New(logger, core, dialer, nil, nil, nil)
+			api := New(logger, cor, dialer, nil, nil, nil)
 			defer api.Close()
 
 			vserver := grpc.NewServer()
@@ -93,14 +138,15 @@ func TestActivateAsNode(t *testing.T) {
 			go vserver.Serve(dialer.GetListener(net.JoinHostPort("10.118.0.1", vpnAPIPort)))
 			defer vserver.GracefulStop()
 
-			resp, err := api.ActivateAsNode(context.Background(), &pubproto.ActivateAsNodeRequest{
-				NodeVpnIp: nodeVPNIP,
-				Peers:     peer.ToPubProto(tc.initialPeers),
-				OwnerId:   ownerID,
-				ClusterId: clusterID,
-			})
+			tlsConfig, err := atls.CreateAttestationServerTLSConfig(&core.MockIssuer{})
+			require.NoError(err)
+			pubserver := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
+			pubproto.RegisterAPIServer(pubserver, api)
+			go pubserver.Serve(dialer.GetListener(net.JoinHostPort(nodeIP, endpointAVPNPort)))
+			defer pubserver.GracefulStop()
 
-			assert.Equal(tc.expectedState, core.state)
+			_, nodeVPNPubKey, err := activateNode(require, dialer, messageSequence, nodeIP, "9000", nodeVPNIP, peer.ToPubProto(tc.initialPeers), ownerID, clusterID, stateDiskKey)
+			assert.Equal(tc.expectedState, cor.state)
 
 			if tc.expectErr {
 				assert.Error(err)
@@ -108,21 +154,21 @@ func TestActivateAsNode(t *testing.T) {
 			}
 			require.NoError(err)
 
-			assert.Equal(vpnPubKey, resp.NodeVpnPubKey)
-			assert.Equal(nodeVPNIP, core.vpnIP)
-			assert.Equal(ownerID, core.ownerID)
-			assert.Equal(clusterID, core.clusterID)
+			assert.Equal(vpnPubKey, nodeVPNPubKey)
+			assert.Equal(nodeVPNIP, cor.vpnIP)
+			assert.Equal(ownerID, cor.ownerID)
+			assert.Equal(clusterID, cor.clusterID)
 
 			api.Close() // blocks until update loop finished
 
 			if tc.getUpdateErr == nil {
-				require.Len(core.updatedPeers, 2)
-				assert.Equal(tc.updatedPeers, core.updatedPeers[1])
+				require.Len(cor.updatedPeers, 2)
+				assert.Equal(tc.updatedPeers, cor.updatedPeers[1])
 			} else {
-				require.Len(core.updatedPeers, 1)
+				require.Len(cor.updatedPeers, 1)
 			}
-			assert.Equal(tc.initialPeers, core.updatedPeers[0])
-			assert.Equal([]role.Role{role.Node}, core.persistNodeStateRoles)
+			assert.Equal(tc.initialPeers, cor.updatedPeers[0])
+			assert.Equal([]role.Role{role.Node}, cor.persistNodeStateRoles)
 		})
 	}
 }
@@ -274,6 +320,83 @@ func TestJoinCluster(t *testing.T) {
 			assert.Equal([]kubeadm.BootstrapTokenDiscovery{vapi.joinArgs}, core.joinArgs)
 		})
 	}
+}
+
+func activateNode(require *require.Assertions, dialer Dialer, messageSequence []string, nodeIP, bindPort, nodeVPNIP string, peers []*pubproto.Peer, ownerID, clusterID, stateDiskKey []byte) (string, []byte, error) {
+	ctx := context.Background()
+	conn, err := dialGRPC(ctx, dialer, net.JoinHostPort(nodeIP, bindPort))
+	require.NoError(err)
+	defer conn.Close()
+
+	client := pubproto.NewAPIClient(conn)
+	stream, err := client.ActivateAsNode(ctx)
+	if err != nil {
+		return "", nil, err
+	}
+
+	for _, message := range messageSequence {
+		switch message {
+		case "initialRequest":
+			err = stream.Send(&pubproto.ActivateAsNodeRequest{
+				Request: &pubproto.ActivateAsNodeRequest_InitialRequest{
+					InitialRequest: &pubproto.ActivateAsNodeInitialRequest{
+						NodeVpnIp: nodeVPNIP,
+						Peers:     peers,
+						OwnerId:   ownerID,
+						ClusterId: clusterID,
+					},
+				},
+			})
+			if err != nil {
+				return "", nil, err
+			}
+		case "stateDiskKey":
+			err = stream.Send(&pubproto.ActivateAsNodeRequest{
+				Request: &pubproto.ActivateAsNodeRequest_StateDiskKey{
+					StateDiskKey: stateDiskKey,
+				},
+			})
+			if err != nil {
+				return "", nil, err
+			}
+		default:
+			panic("unknown message in activation")
+		}
+	}
+	require.NoError(stream.CloseSend())
+
+	diskUUIDReq, err := stream.Recv()
+	if err != nil {
+		return "", nil, err
+	}
+	diskUUID := diskUUIDReq.GetStateDiskUuid()
+
+	vpnPubKeyReq, err := stream.Recv()
+	if err != nil {
+		return "", nil, err
+	}
+	nodeVPNPubKey := vpnPubKeyReq.GetNodeVpnPubKey()
+
+	_, err = stream.Recv()
+	if err != io.EOF {
+		return "", nil, err
+	}
+
+	return diskUUID, nodeVPNPubKey, nil
+}
+
+func dialGRPC(ctx context.Context, dialer Dialer, target string) (*grpc.ClientConn, error) {
+	tlsConfig, err := atls.CreateAttestationClientTLSConfig([]atls.Validator{&core.MockValidator{}})
+	if err != nil {
+		return nil, err
+	}
+
+	return grpc.DialContext(ctx, target,
+		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			return dialer.DialContext(ctx, "tcp", addr)
+		}),
+		grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
+	)
 }
 
 type stubVPNAPI struct {

@@ -117,6 +117,18 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 	if err := a.core.PersistNodeState(role.Coordinator, ownerID, clusterID); err != nil {
 		return status.Errorf(codes.Internal, "persist node state: %v", err)
 	}
+	diskUUID, err := a.core.GetDiskUUID()
+	if err != nil {
+		return status.Errorf(codes.Internal, "getting disk uuid: %v", err)
+	}
+	diskKey, err := a.core.GetDataKey(ctx, diskUUID, 32)
+	if err != nil {
+		return status.Errorf(codes.Internal, "getting disk key: %v", err)
+	}
+	if err := a.core.UpdateDiskPassphrase(string(diskKey)); err != nil {
+		return status.Errorf(codes.Internal, "updating disk key: %v", err)
+	}
+
 	adminVPNIP, err := a.core.GetNextNodeIP()
 	if err != nil {
 		return status.Errorf(codes.Internal, "requesting node IP address: %v", err)
@@ -273,18 +285,78 @@ func (a *API) activateNode(nodePublicIP string, nodeVPNIP string, initialPeers [
 
 	client := pubproto.NewAPIClient(conn)
 
-	resp, err := client.ActivateAsNode(ctx, &pubproto.ActivateAsNodeRequest{
-		NodeVpnIp: nodeVPNIP,
-		Peers:     initialPeers,
-		OwnerId:   ownerID,
-		ClusterId: clusterID,
-	})
+	stream, err := client.ActivateAsNode(ctx)
 	if err != nil {
-		a.logger.Error("node activation failed", zap.Error(err))
+		a.logger.Error("connecting to node for activation failed", zap.Error(err))
 		return nil, err
 	}
 
-	return resp.NodeVpnPubKey, nil
+	/*
+		coordinator -> initial request -> node
+	*/
+	if err := stream.Send(&pubproto.ActivateAsNodeRequest{
+		Request: &pubproto.ActivateAsNodeRequest_InitialRequest{
+			InitialRequest: &pubproto.ActivateAsNodeInitialRequest{
+				NodeVpnIp: nodeVPNIP,
+				Peers:     initialPeers,
+				OwnerId:   ownerID,
+				ClusterId: clusterID,
+			},
+		},
+	}); err != nil {
+		a.logger.Error("sending initial message to node for activation failed", zap.Error(err))
+		return nil, err
+	}
+
+	/*
+		coordinator <- state disk uuid <- node
+	*/
+	// wait for message containing the nodes disk UUID to send back the permanent encryption key
+	message, err := stream.Recv()
+	if err != nil {
+		a.logger.Error("expected disk UUID message but no message received", zap.Error(err))
+		return nil, err
+	}
+	diskUUID, ok := message.GetResponse().(*pubproto.ActivateAsNodeResponse_StateDiskUuid)
+	if !ok {
+		a.logger.Error("expected disk UUID message but got different message")
+		return nil, errors.New("expected state disk UUID but got different message type")
+	}
+	diskKey, err := a.core.GetDataKey(ctx, diskUUID.StateDiskUuid, 32)
+	if err != nil {
+		a.logger.Error("failed to derive node's disk key")
+		return nil, err
+	}
+
+	/*
+		coordinator -> state disk key -> node
+	*/
+	// send back state disk encryption key
+	if err := stream.Send(&pubproto.ActivateAsNodeRequest{
+		Request: &pubproto.ActivateAsNodeRequest_StateDiskKey{
+			StateDiskKey: diskKey,
+		},
+	}); err != nil {
+		a.logger.Error("sending state disk key to node on activation failed", zap.Error(err))
+		return nil, err
+	}
+
+	/*
+		coordinator <- VPN public key <- node
+	*/
+	// wait for message containing the node VPN pubkey
+	message, err = stream.Recv()
+	if err != nil {
+		a.logger.Error("expected node VPN pubkey but no message received", zap.Error(err))
+		return nil, err
+	}
+	vpnPubKey, ok := message.GetResponse().(*pubproto.ActivateAsNodeResponse_NodeVpnPubKey)
+	if !ok {
+		a.logger.Error("expected node VPN pubkey but got different message")
+		return nil, errors.New("expected node VPN pub key but got different message type")
+	}
+
+	return vpnPubKey.NodeVpnPubKey, nil
 }
 
 // assemblePeerStruct combines all information of this peer into a peer struct.

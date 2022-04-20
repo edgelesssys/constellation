@@ -3,6 +3,7 @@ package pubapi
 import (
 	"context"
 	"errors"
+	"io"
 	"net"
 	"sync"
 	"testing"
@@ -25,9 +26,9 @@ import (
 func TestActivateAsCoordinator(t *testing.T) {
 	someErr := errors.New("failed")
 	coordinatorPubKey := []byte{6, 7, 8}
-	testNode1 := &stubPeer{peer: peer.Peer{PublicIP: "192.0.2.11", VPNPubKey: []byte{1, 2, 3}}}
-	testNode2 := &stubPeer{peer: peer.Peer{PublicIP: "192.0.2.12", VPNPubKey: []byte{2, 3, 4}}}
-	testNode3 := &stubPeer{peer: peer.Peer{PublicIP: "192.0.2.13", VPNPubKey: []byte{3, 4, 5}}}
+	testNode1 := newStubPeer("192.0.2.11", []byte{1, 2, 3})
+	testNode2 := newStubPeer("192.0.2.12", []byte{2, 3, 4})
+	testNode3 := newStubPeer("192.0.2.13", []byte{3, 4, 5})
 	expectedNode1 := peer.Peer{PublicIP: "192.0.2.11", VPNIP: "10.118.0.11", VPNPubKey: []byte{1, 2, 3}, Role: role.Node}
 	expectedNode2 := peer.Peer{PublicIP: "192.0.2.12", VPNIP: "10.118.0.12", VPNPubKey: []byte{2, 3, 4}, Role: role.Node}
 	expectedNode3 := peer.Peer{PublicIP: "192.0.2.13", VPNIP: "10.118.0.13", VPNPubKey: []byte{3, 4, 5}, Role: role.Node}
@@ -192,9 +193,9 @@ func TestActivateAsCoordinator(t *testing.T) {
 
 func TestActivateAdditionalNodes(t *testing.T) {
 	someErr := errors.New("failed")
-	testNode1 := &stubPeer{peer: peer.Peer{PublicIP: "192.0.2.11", VPNPubKey: []byte{1, 2, 3}}}
-	testNode2 := &stubPeer{peer: peer.Peer{PublicIP: "192.0.2.12", VPNPubKey: []byte{2, 3, 4}}}
-	testNode3 := &stubPeer{peer: peer.Peer{PublicIP: "192.0.2.13", VPNPubKey: []byte{3, 4, 5}}}
+	testNode1 := newStubPeer("192.0.2.11", []byte{1, 2, 3})
+	testNode2 := newStubPeer("192.0.2.12", []byte{2, 3, 4})
+	testNode3 := newStubPeer("192.0.2.13", []byte{3, 4, 5})
 	expectedNode1 := peer.Peer{PublicIP: "192.0.2.11", VPNIP: "10.118.0.11", VPNPubKey: []byte{1, 2, 3}, Role: role.Node}
 	expectedNode2 := peer.Peer{PublicIP: "192.0.2.12", VPNIP: "10.118.0.12", VPNPubKey: []byte{2, 3, 4}, Role: role.Node}
 	expectedNode3 := peer.Peer{PublicIP: "192.0.2.13", VPNIP: "10.118.0.13", VPNPubKey: []byte{3, 4, 5}, Role: role.Node}
@@ -323,14 +324,43 @@ func TestAssemblePeerStruct(t *testing.T) {
 }
 
 type stubPeer struct {
-	peer        peer.Peer
-	activateErr error
-	joinErr     error
+	peer                   peer.Peer
+	activateAsNodeMessages []*pubproto.ActivateAsNodeResponse
+	activateAsNodeReceive  int
+	activateErr            error
+	joinErr                error
 	pubproto.UnimplementedAPIServer
 }
 
-func (n *stubPeer) ActivateAsNode(ctx context.Context, in *pubproto.ActivateAsNodeRequest) (*pubproto.ActivateAsNodeResponse, error) {
-	return &pubproto.ActivateAsNodeResponse{NodeVpnPubKey: n.peer.VPNPubKey}, n.activateErr
+func newStubPeer(publicIP string, vpnPubKey []byte) *stubPeer {
+	return &stubPeer{
+		peer: peer.Peer{PublicIP: publicIP, VPNPubKey: vpnPubKey},
+		activateAsNodeMessages: []*pubproto.ActivateAsNodeResponse{
+			{Response: &pubproto.ActivateAsNodeResponse_StateDiskUuid{StateDiskUuid: "state-disk-uuid"}},
+			{Response: &pubproto.ActivateAsNodeResponse_NodeVpnPubKey{NodeVpnPubKey: vpnPubKey}},
+		},
+		activateAsNodeReceive: 2,
+	}
+}
+
+func (n *stubPeer) ActivateAsNode(stream pubproto.API_ActivateAsNodeServer) error {
+	for _, message := range n.activateAsNodeMessages {
+		err := stream.Send(message)
+		if err != nil {
+			return err
+		}
+	}
+	for i := 0; i < n.activateAsNodeReceive; i++ {
+		_, err := stream.Recv()
+		if err != nil {
+			return err
+		}
+	}
+	if _, err := stream.Recv(); err != io.EOF {
+		return err
+	}
+
+	return n.activateErr
 }
 
 func (n *stubPeer) ActivateAsAdditionalCoordinator(ctx context.Context, in *pubproto.ActivateAsAdditionalCoordinatorRequest) (*pubproto.ActivateAsAdditionalCoordinatorResponse, error) {

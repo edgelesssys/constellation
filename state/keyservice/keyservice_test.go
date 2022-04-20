@@ -129,8 +129,8 @@ func (s *stubAPIServer) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinator
 	return nil
 }
 
-func (s *stubAPIServer) ActivateAsNode(ctx context.Context, in *pubproto.ActivateAsNodeRequest) (*pubproto.ActivateAsNodeResponse, error) {
-	return nil, nil
+func (s *stubAPIServer) ActivateAsNode(pubproto.API_ActivateAsNodeServer) error {
+	return nil
 }
 
 func (s *stubAPIServer) ActivateAdditionalNodes(in *pubproto.ActivateAdditionalNodesRequest, srv pubproto.API_ActivateAdditionalNodesServer) error {

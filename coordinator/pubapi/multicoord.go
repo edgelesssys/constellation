@@ -74,6 +74,25 @@ func (a *API) ActivateAsAdditionalCoordinator(ctx context.Context, in *pubproto.
 		return nil, status.Errorf(codes.Internal, "%v", err)
 	}
 
+	// persist node state on disk
+	if err := a.core.PersistNodeState(role.Coordinator, in.OwnerId, in.ClusterId); err != nil {
+		return nil, status.Errorf(codes.Internal, "persist node state: %v", err)
+	}
+	diskUUID, err := a.core.GetDiskUUID()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "getting disk uuid: %v", err)
+	}
+	diskKey, err := a.core.GetDataKey(ctx, diskUUID, 32)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "getting disk key: %v", err)
+	}
+	if err := a.core.UpdateDiskPassphrase(string(diskKey)); err != nil {
+		return nil, status.Errorf(codes.Internal, "updating disk key: %v", err)
+	}
+
+	// regularly get (peer) updates from etcd
+	// start update before manual peer add to omit race conditions when multiple coordinator are activating nodes
+
 	thisPeer, err := a.assemblePeerStruct(in.AssignedVpnIp, role.Coordinator)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "assembling coordinator peer struct: %v", err)

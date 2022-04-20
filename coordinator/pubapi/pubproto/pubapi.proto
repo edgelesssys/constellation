@@ -7,7 +7,7 @@ option go_package = "github.com/edgelesssys/constellation/coordinator/pubapi/pub
 service API {
   rpc GetState(GetStateRequest) returns (GetStateResponse);
   rpc ActivateAsCoordinator(ActivateAsCoordinatorRequest) returns (stream ActivateAsCoordinatorResponse);
-  rpc ActivateAsNode(ActivateAsNodeRequest) returns (ActivateAsNodeResponse);
+  rpc ActivateAsNode(stream ActivateAsNodeRequest) returns (stream ActivateAsNodeResponse);
   rpc ActivateAdditionalNodes(ActivateAdditionalNodesRequest) returns (stream ActivateAdditionalNodesResponse);
   rpc ActivateAsAdditionalCoordinator(ActivateAsAdditionalCoordinatorRequest) returns (ActivateAsAdditionalCoordinatorResponse);
   rpc ActivateAdditionalCoordinator(ActivateAdditionalCoordinatorRequest) returns (ActivateAdditionalCoordinatorResponse);
@@ -44,6 +44,13 @@ message ActivateAsCoordinatorResponse {
 }
 
 message ActivateAsNodeRequest {
+  oneof request {
+    ActivateAsNodeInitialRequest initial_request = 1;
+    bytes state_disk_key = 2;
+  }
+}
+
+message ActivateAsNodeInitialRequest {
   string node_vpn_ip = 1;
   repeated Peer peers = 2;
   bytes owner_id = 3;
@@ -51,7 +58,10 @@ message ActivateAsNodeRequest {
 }
 
 message ActivateAsNodeResponse {
-  bytes node_vpn_pub_key = 1;
+  oneof response {
+    bytes node_vpn_pub_key = 1;
+    string state_disk_uuid = 2;
+  }
 }
 
 message ActivateAdditionalNodesRequest {

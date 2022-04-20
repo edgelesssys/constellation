@@ -20,7 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 type APIClient interface {
 	GetState(ctx context.Context, in *GetStateRequest, opts ...grpc.CallOption) (*GetStateResponse, error)
 	ActivateAsCoordinator(ctx context.Context, in *ActivateAsCoordinatorRequest, opts ...grpc.CallOption) (API_ActivateAsCoordinatorClient, error)
-	ActivateAsNode(ctx context.Context, in *ActivateAsNodeRequest, opts ...grpc.CallOption) (*ActivateAsNodeResponse, error)
+	ActivateAsNode(ctx context.Context, opts ...grpc.CallOption) (API_ActivateAsNodeClient, error)
 	ActivateAdditionalNodes(ctx context.Context, in *ActivateAdditionalNodesRequest, opts ...grpc.CallOption) (API_ActivateAdditionalNodesClient, error)
 	ActivateAsAdditionalCoordinator(ctx context.Context, in *ActivateAsAdditionalCoordinatorRequest, opts ...grpc.CallOption) (*ActivateAsAdditionalCoordinatorResponse, error)
 	ActivateAdditionalCoordinator(ctx context.Context, in *ActivateAdditionalCoordinatorRequest, opts ...grpc.CallOption) (*ActivateAdditionalCoordinatorResponse, error)
@@ -79,17 +79,39 @@ func (x *aPIActivateAsCoordinatorClient) Recv() (*ActivateAsCoordinatorResponse,
 	return m, nil
 }
 
-func (c *aPIClient) ActivateAsNode(ctx context.Context, in *ActivateAsNodeRequest, opts ...grpc.CallOption) (*ActivateAsNodeResponse, error) {
-	out := new(ActivateAsNodeResponse)
-	err := c.cc.Invoke(ctx, "/pubapi.API/ActivateAsNode", in, out, opts...)
+func (c *aPIClient) ActivateAsNode(ctx context.Context, opts ...grpc.CallOption) (API_ActivateAsNodeClient, error) {
+	stream, err := c.cc.NewStream(ctx, &API_ServiceDesc.Streams[1], "/pubapi.API/ActivateAsNode", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &aPIActivateAsNodeClient{stream}
+	return x, nil
+}
+
+type API_ActivateAsNodeClient interface {
+	Send(*ActivateAsNodeRequest) error
+	Recv() (*ActivateAsNodeResponse, error)
+	grpc.ClientStream
+}
+
+type aPIActivateAsNodeClient struct {
+	grpc.ClientStream
+}
+
+func (x *aPIActivateAsNodeClient) Send(m *ActivateAsNodeRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *aPIActivateAsNodeClient) Recv() (*ActivateAsNodeResponse, error) {
+	m := new(ActivateAsNodeResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *aPIClient) ActivateAdditionalNodes(ctx context.Context, in *ActivateAdditionalNodesRequest, opts ...grpc.CallOption) (API_ActivateAdditionalNodesClient, error) {
-	stream, err := c.cc.NewStream(ctx, &API_ServiceDesc.Streams[1], "/pubapi.API/ActivateAdditionalNodes", opts...)
+	stream, err := c.cc.NewStream(ctx, &API_ServiceDesc.Streams[2], "/pubapi.API/ActivateAdditionalNodes", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +202,7 @@ func (c *aPIClient) RequestStateDiskKey(ctx context.Context, in *RequestStateDis
 type APIServer interface {
 	GetState(context.Context, *GetStateRequest) (*GetStateResponse, error)
 	ActivateAsCoordinator(*ActivateAsCoordinatorRequest, API_ActivateAsCoordinatorServer) error
-	ActivateAsNode(context.Context, *ActivateAsNodeRequest) (*ActivateAsNodeResponse, error)
+	ActivateAsNode(API_ActivateAsNodeServer) error
 	ActivateAdditionalNodes(*ActivateAdditionalNodesRequest, API_ActivateAdditionalNodesServer) error
 	ActivateAsAdditionalCoordinator(context.Context, *ActivateAsAdditionalCoordinatorRequest) (*ActivateAsAdditionalCoordinatorResponse, error)
 	ActivateAdditionalCoordinator(context.Context, *ActivateAdditionalCoordinatorRequest) (*ActivateAdditionalCoordinatorResponse, error)
@@ -201,8 +223,8 @@ func (UnimplementedAPIServer) GetState(context.Context, *GetStateRequest) (*GetS
 func (UnimplementedAPIServer) ActivateAsCoordinator(*ActivateAsCoordinatorRequest, API_ActivateAsCoordinatorServer) error {
 	return status.Errorf(codes.Unimplemented, "method ActivateAsCoordinator not implemented")
 }
-func (UnimplementedAPIServer) ActivateAsNode(context.Context, *ActivateAsNodeRequest) (*ActivateAsNodeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ActivateAsNode not implemented")
+func (UnimplementedAPIServer) ActivateAsNode(API_ActivateAsNodeServer) error {
+	return status.Errorf(codes.Unimplemented, "method ActivateAsNode not implemented")
 }
 func (UnimplementedAPIServer) ActivateAdditionalNodes(*ActivateAdditionalNodesRequest, API_ActivateAdditionalNodesServer) error {
 	return status.Errorf(codes.Unimplemented, "method ActivateAdditionalNodes not implemented")
@@ -277,22 +299,30 @@ func (x *aPIActivateAsCoordinatorServer) Send(m *ActivateAsCoordinatorResponse) 
 	return x.ServerStream.SendMsg(m)
 }
 
-func _API_ActivateAsNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ActivateAsNodeRequest)
-	if err := dec(in); err != nil {
+func _API_ActivateAsNode_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(APIServer).ActivateAsNode(&aPIActivateAsNodeServer{stream})
+}
+
+type API_ActivateAsNodeServer interface {
+	Send(*ActivateAsNodeResponse) error
+	Recv() (*ActivateAsNodeRequest, error)
+	grpc.ServerStream
+}
+
+type aPIActivateAsNodeServer struct {
+	grpc.ServerStream
+}
+
+func (x *aPIActivateAsNodeServer) Send(m *ActivateAsNodeResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *aPIActivateAsNodeServer) Recv() (*ActivateAsNodeRequest, error) {
+	m := new(ActivateAsNodeRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(APIServer).ActivateAsNode(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/pubapi.API/ActivateAsNode",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(APIServer).ActivateAsNode(ctx, req.(*ActivateAsNodeRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
 func _API_ActivateAdditionalNodes_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -436,10 +466,6 @@ var API_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _API_GetState_Handler,
 		},
 		{
-			MethodName: "ActivateAsNode",
-			Handler:    _API_ActivateAsNode_Handler,
-		},
-		{
 			MethodName: "ActivateAsAdditionalCoordinator",
 			Handler:    _API_ActivateAsAdditionalCoordinator_Handler,
 		},
@@ -469,6 +495,12 @@ var API_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "ActivateAsCoordinator",
 			Handler:       _API_ActivateAsCoordinator_Handler,
 			ServerStreams: true,
+		},
+		{
+			StreamName:    "ActivateAsNode",
+			Handler:       _API_ActivateAsNode_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 		{
 			StreamName:    "ActivateAdditionalNodes",

@@ -115,9 +115,17 @@ func TestConcurrent(t *testing.T) {
 		_ = activateCoordinator(require, dialer, coordinatorIP, bindPort, nodeIPs)
 	}
 
-	actNode := func(papi *pubapi.API) {
+	actNode := func(target string) {
 		defer wg.Done()
-		_, err := papi.ActivateAsNode(context.Background(), &pubproto.ActivateAsNodeRequest{})
+		conn, _ := dialGRPC(context.Background(), dialer, target)
+		defer conn.Close()
+		client := pubproto.NewAPIClient(conn)
+		stream, err := client.ActivateAsNode(context.Background())
+		assert.NoError(err)
+		assert.NoError(stream.Send(&pubproto.ActivateAsNodeRequest{
+			Request: &pubproto.ActivateAsNodeRequest_InitialRequest{},
+		}))
+		_, err = stream.Recv()
 		assert.Error(err)
 	}
 
@@ -165,12 +173,12 @@ func TestConcurrent(t *testing.T) {
 	wg.Add(26)
 	go actCoord()
 	go actCoord()
-	go actNode(coordPAPI)
-	go actNode(coordPAPI)
-	go actNode(nodePAPI1)
-	go actNode(nodePAPI1)
-	go actNode(nodePAPI2)
-	go actNode(nodePAPI2)
+	go actNode(net.JoinHostPort(coordinatorIP, bindPort))
+	go actNode(net.JoinHostPort(coordinatorIP, bindPort))
+	go actNode(net.JoinHostPort(nodeIPs[0], bindPort))
+	go actNode(net.JoinHostPort(nodeIPs[0], bindPort))
+	go actNode(net.JoinHostPort(nodeIPs[1], bindPort))
+	go actNode(net.JoinHostPort(nodeIPs[1], bindPort))
 	go updNode(coordPAPI, false)
 	go updNode(coordPAPI, false)
 	go updNode(nodePAPI1, true)

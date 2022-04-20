@@ -97,20 +97,6 @@ func TestLegacyActivateCoordinator(t *testing.T) {
 	// Coordinator cannot be activated a second time
 	assert.Error(coordinatorAPI.ActivateAsCoordinator(activationReq, testActivationSvr))
 
-	// Node cannot be activated a second time
-	nodeResp, err := nodeAPI3.ActivateAsNode(context.TODO(), &pubproto.ActivateAsNodeRequest{
-		NodeVpnIp: "192.0.2.1:9004",
-		Peers: []*pubproto.Peer{{
-			VpnPubKey: coordinatorKey,
-			PublicIp:  coordinatorIP,
-			VpnIp:     "10.118.0.1",
-		}},
-		OwnerId:   []byte("ownerID"),
-		ClusterId: []byte("clusterID"),
-	})
-	assert.Error(err)
-	assert.Nil(nodeResp)
-
 	// Assert Coordinator
 	peers := coordinatorCore.vpn.(*stubVPN).peers
 	assert.Less(3, len(peers))
