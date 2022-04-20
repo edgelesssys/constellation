@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
+	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -63,6 +64,48 @@ func TestClose(t *testing.T) {
 	assert.NoError(client.Close())
 	assert.Empty(client.conn)
 	assert.Equal(connectivity.Shutdown, conn.GetState())
+}
+
+func TestGetState(t *testing.T) {
+	someErr := errors.New("some error")
+
+	testCases := map[string]struct {
+		pubAPIClient pubproto.APIClient
+		wantErr      bool
+		wantState    state.State
+	}{
+		"success": {
+			pubAPIClient: &stubPubAPIClient{getStateState: state.IsNode},
+			wantState:    state.IsNode,
+		},
+		"getState error": {
+			pubAPIClient: &stubPubAPIClient{getStateErr: someErr},
+			wantErr:      true,
+		},
+		"uninitialized": {
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			client := Client{}
+			if tc.pubAPIClient != nil {
+				client.pubapi = tc.pubAPIClient
+			}
+
+			state, err := client.GetState(context.Background())
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.wantState, state)
+			}
+		})
+	}
 }
 
 func TestActivate(t *testing.T) {
@@ -135,6 +178,8 @@ func TestActivate(t *testing.T) {
 }
 
 type stubPubAPIClient struct {
+	getStateState                     state.State
+	getStateErr                       error
 	activateAsCoordinatorErr          error
 	activateAdditionalNodesErr        error
 	activateAsCoordinatorReqKey       []byte
@@ -143,6 +188,10 @@ type stubPubAPIClient struct {
 	activateAdditionalNodesReqIPs     []string
 	activateCloudServiceAccountURI    string
 	pubproto.APIClient
+}
+
+func (s *stubPubAPIClient) GetState(ctx context.Context, in *pubproto.GetStateRequest, opts ...grpc.CallOption) (*pubproto.GetStateResponse, error) {
+	return &pubproto.GetStateResponse{State: uint32(s.getStateState)}, s.getStateErr
 }
 
 func (s *stubPubAPIClient) ActivateAsCoordinator(ctx context.Context, in *pubproto.ActivateAsCoordinatorRequest,

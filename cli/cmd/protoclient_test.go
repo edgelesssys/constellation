@@ -8,6 +8,7 @@ import (
 
 	"github.com/edgelesssys/constellation/cli/proto"
 	"github.com/edgelesssys/constellation/coordinator/atls"
+	"github.com/edgelesssys/constellation/coordinator/state"
 )
 
 type stubProtoClient struct {
@@ -15,8 +16,10 @@ type stubProtoClient struct {
 	respClient  proto.ActivationResponseClient
 	connectErr  error
 	closeErr    error
+	getStateErr error
 	activateErr error
 
+	getStateState                 state.State
 	activateUserPublicKey         []byte
 	activateMasterSecret          []byte
 	activateNodeIPs               []string
@@ -33,6 +36,10 @@ func (c *stubProtoClient) Connect(_, _ string, _ []atls.Validator) error {
 func (c *stubProtoClient) Close() error {
 	c.conn = false
 	return c.closeErr
+}
+
+func (c *stubProtoClient) GetState(_ context.Context) (state.State, error) {
+	return c.getStateState, c.getStateErr
 }
 
 func (c *stubProtoClient) Activate(ctx context.Context, userPublicKey, masterSecret []byte, nodeIPs, coordinatorIPs []string, autoscalingNodeGroups []string, cloudServiceAccountURI string) (proto.ActivationResponseClient, error) {
@@ -112,7 +119,14 @@ func (c *fakeProtoClient) Close() error {
 	return nil
 }
 
-func (c *fakeProtoClient) Activate(ctx context.Context, userPublicKey, masterSecret []byte, nodeIPs, coordinatorIPs []string, autoscalingNodeGroups []string, cloudServiceAccountURI string) (proto.ActivationResponseClient, error) {
+func (c *fakeProtoClient) GetState(_ context.Context) (state.State, error) {
+	if !c.conn {
+		return state.Uninitialized, errors.New("client is not connected")
+	}
+	return state.IsNode, nil
+}
+
+func (c *fakeProtoClient) Activate(ctx context.Context, userPublicKey, masterSecret []byte, nodeIPs, coordinatorIPs, autoscalingNodeGroups []string, cloudServiceAccountURI string) (proto.ActivationResponseClient, error) {
 	if !c.conn {
 		return nil, errors.New("client is not connected")
 	}

@@ -9,6 +9,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/kms"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
+	"github.com/edgelesssys/constellation/coordinator/state"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -57,6 +58,19 @@ func (c *Client) Close() error {
 	}
 	c.conn = nil
 	return nil
+}
+
+// GetState returns the state of the connected server.
+func (c *Client) GetState(ctx context.Context) (state.State, error) {
+	if c.pubapi == nil {
+		return state.Uninitialized, errors.New("client is not connected")
+	}
+
+	resp, err := c.pubapi.GetState(ctx, &pubproto.GetStateRequest{})
+	if err != nil {
+		return state.Uninitialized, err
+	}
+	return state.State(resp.State), nil
 }
 
 // Activate activates the Constellation coordinator via a grpc call.
