@@ -1,21 +1,13 @@
 FROM ubuntu@sha256:7cc0576c7c0ec2384de5cbf245f41567e922aab1b075f3e8ad565f508032df17 as build
 
 ENV DEBIAN_FRONTEND="noninteractive"
-RUN apt-get update && apt-get install cmake iproute2 iputils-ping wget curl git jq libssl-dev musl-tools=1.1.24-1 -y
+RUN apt-get update && apt-get install pkg-config cmake iproute2 iputils-ping wget git jq libssl-dev libcryptsetup12 libcryptsetup-dev -y
 
 # Install Go
 ARG GO_VER=1.18
 RUN wget https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz
 RUN tar -C /usr/local -xzf go${GO_VER}.linux-amd64.tar.gz && rm go${GO_VER}.linux-amd64.tar.gz
 ENV PATH ${PATH}:/usr/local/go/bin
-
-# Install Rust
-ARG RUST_VER=1.58.0
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-ENV PATH /root/.cargo/bin:${PATH}
-RUN rustup install ${RUST_VER}
-RUN rustup override set ${RUST_VER}
-RUN rustup target add x86_64-unknown-linux-musl
 
 # Download go dependencies
 WORKDIR /constellation/
@@ -29,7 +21,7 @@ COPY . /constellation
 # Build
 RUN mkdir -p /constellation/build
 WORKDIR /constellation/build
-RUN cmake -DCMAKE_BUILD_TYPE=Release -DCOORDINATOR_STATIC_MUSL=ON .. && make coordinator
+RUN cmake .. && make coordinator
 
 RUN mv coordinator coordinator-$(sha512sum coordinator | cut -d " " -f 1)
 

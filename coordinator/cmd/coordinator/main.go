@@ -10,11 +10,9 @@ import (
 	"strings"
 
 	"github.com/edgelesssys/constellation/cli/file"
-	"github.com/edgelesssys/constellation/coordinator/attestation/aws"
 	"github.com/edgelesssys/constellation/coordinator/attestation/azure"
 	"github.com/edgelesssys/constellation/coordinator/attestation/gcp"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
-	awscloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/aws"
 	azurecloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/azure"
 	gcpcloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/gcp"
 	"github.com/edgelesssys/constellation/coordinator/config"
@@ -30,7 +28,6 @@ import (
 )
 
 const (
-	gvisorIP            = "192.168.127.2"
 	defaultIP           = "0.0.0.0"
 	defaultPort         = "9000"
 	defaultEtcdEndpoint = "127.0.0.1:2379"
@@ -74,19 +71,7 @@ func main() {
 
 	switch strings.ToLower(os.Getenv(config.ConstellationCSP)) {
 	case "aws":
-		issuer = aws.NewIssuer()
-		validator = aws.NewValidator(aws.NaAdGetVerifiedPayloadAsJson)
-		kube = kubernetes.New(&k8sapi.KubernetesUtil{}, &k8sapi.AWSConfiguration{}, kubectl.New())
-		metadata = awscloud.Metadata{}
-		cloudControllerManager = awscloud.CloudControllerManager{}
-		cloudNodeManager = &awscloud.CloudNodeManager{}
-		autoscaler = awscloud.Autoscaler{}
-		bindIP = gvisorIP
-		bindPort = defaultPort
-		etcdEndpoint = defaultEtcdEndpoint
-		enforceEtcdTls = true
-		openTPM = vtpm.OpenNOPTPM
-		fs = afero.NewOsFs()
+		panic("AWS cloud provider currently unsupported")
 	case "gcp":
 		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.GCPPCRSelection)
 		if err != nil {

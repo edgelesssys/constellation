@@ -1,7 +1,7 @@
 FROM golang:1.18
 ENV GOPRIVATE=github.com/edgelesssys/*
 
-RUN apt-get update && apt-get install cmake iproute2 iputils-ping libssl-dev -y
+RUN apt-get update && apt-get install  pkg-config cmake iproute2 iputils-ping libssl-dev libcryptsetup12 libcryptsetup-dev -y
 
 WORKDIR /constellation
 COPY go.mod .
