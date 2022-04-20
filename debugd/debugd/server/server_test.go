@@ -125,7 +125,7 @@ func TestUploadCoordinator(t *testing.T) {
 				writeStreamErr: errors.New("recv error"),
 			},
 			expectedResponseStatus: pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_UPLOAD_FAILED,
-			expectFile:             true,
+			expectErr:              true,
 		},
 		"starting coordinator fails": {
 			uploadChunks: [][]byte{

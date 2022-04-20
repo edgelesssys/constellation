@@ -2,6 +2,9 @@ package server
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"io/fs"
 	"log"
 	"net"
 	"sync"
@@ -53,31 +56,38 @@ func (s *debugdServer) UploadCoordinator(stream pb.Debugd_UploadCoordinatorServe
 		Unit:   debugd.CoordinatorSystemdUnitName,
 		Action: deploy.Stop,
 	})
-	log.Println("Starting coordinator upload")
-	if err := s.streamer.WriteStream(debugd.CoordinatorDeployFilename, stream, true); err != nil {
-		log.Printf("Uploading coordinator failed: %v\n", err)
-		return stream.SendAndClose(&pb.UploadCoordinatorResponse{
-			Status: pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_UPLOAD_FAILED,
-		})
-	}
-
-	log.Println("Successfully uploaded coordinator")
-
-	// after the upload succeeds, try to restart the coordinator
 	restartAction := deploy.ServiceManagerRequest{
 		Unit:   debugd.CoordinatorSystemdUnitName,
 		Action: deploy.Restart,
 	}
-	if err := s.serviceManager.SystemdAction(stream.Context(), restartAction); err != nil {
-		log.Printf("Starting uploaded coordinator failed: %v\n", err)
-		return stream.SendAndClose(&pb.UploadCoordinatorResponse{
-			Status: pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_START_FAILED,
+	var responseStatus pb.UploadCoordinatorStatus
+	defer func() {
+		if err := s.serviceManager.SystemdAction(stream.Context(), restartAction); err != nil {
+			log.Printf("Starting uploaded coordinator failed: %v\n", err)
+			if responseStatus == pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_SUCCESS {
+				responseStatus = pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_START_FAILED
+			}
+		}
+		stream.SendAndClose(&pb.UploadCoordinatorResponse{
+			Status: responseStatus,
 		})
+	}()
+	log.Println("Starting coordinator upload")
+	if err := s.streamer.WriteStream(debugd.CoordinatorDeployFilename, stream, true); err != nil {
+		if errors.Is(err, fs.ErrExist) {
+			// coordinator was already uploaded
+			log.Println("Coordinator already uploaded")
+			responseStatus = pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_FILE_EXISTS
+			return nil
+		}
+		log.Printf("Uploading coordinator failed: %v\n", err)
+		responseStatus = pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_UPLOAD_FAILED
+		return fmt.Errorf("uploading coordinator failed: %w", err)
 	}
 
-	return stream.SendAndClose(&pb.UploadCoordinatorResponse{
-		Status: pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_SUCCESS,
-	})
+	log.Println("Successfully uploaded coordinator")
+	responseStatus = pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_SUCCESS
+	return nil
 }
 
 // DownloadCoordinator streams the local coordinator binary to other instances.

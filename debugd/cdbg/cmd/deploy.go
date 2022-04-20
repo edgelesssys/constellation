@@ -149,15 +149,20 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	if err != nil {
 		return fmt.Errorf("starting coordinator upload to instance %v failed: %w", in.debugdEndpoint, err)
 	}
-	if err := in.reader.ReadStream(in.coordinatorPath, stream, debugd.Chunksize, true); err != nil {
-		return fmt.Errorf("streaming coordinator to instance failed: %w", err)
+	streamErr := in.reader.ReadStream(in.coordinatorPath, stream, debugd.Chunksize, true)
+
+	uploadResponse, closeErr := stream.CloseAndRecv()
+	if closeErr != nil {
+		return fmt.Errorf("closing upload stream after uploading coordinator to %v failed: %w", in.debugdEndpoint, closeErr)
 	}
-	uploadResponse, err := stream.CloseAndRecv()
-	if uploadResponse.Status != pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_SUCCESS || err != nil {
-		return fmt.Errorf("uploading coordinator to instance %v failed: %v / %w", in.debugdEndpoint, uploadResponse, err)
+	if uploadResponse.Status == pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_FILE_EXISTS {
+		log.Println("Coordinator was already uploaded")
+		return nil
+	}
+	if uploadResponse.Status != pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_SUCCESS || streamErr != nil {
+		return fmt.Errorf("uploading coordinator to instance %v failed: %v / %w", in.debugdEndpoint, uploadResponse, streamErr)
 	}
 	log.Println("Uploaded coordinator")
-
 	return nil
 }
 
