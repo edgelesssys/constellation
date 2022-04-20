@@ -36,6 +36,7 @@ type Core struct {
 	cloudControllerManager CloudControllerManager
 	cloudNodeManager       CloudNodeManager
 	clusterAutoscaler      ClusterAutoscaler
+	encryptedDisk          EncryptedDisk
 	kms                    kms.CloudKMS
 	zaplogger              *zap.Logger
 	persistentStoreFactory PersistentStoreFactory
@@ -46,7 +47,7 @@ type Core struct {
 // NewCore creates and initializes a new Core object.
 func NewCore(vpn VPN, kube Cluster,
 	metadata ProviderMetadata, cloudControllerManager CloudControllerManager, cloudNodeManager CloudNodeManager, clusterAutoscaler ClusterAutoscaler,
-	zapLogger *zap.Logger, openTPM vtpm.TPMOpenFunc, persistentStoreFactory PersistentStoreFactory, fileHandler file.Handler,
+	encryptedDisk EncryptedDisk, zapLogger *zap.Logger, openTPM vtpm.TPMOpenFunc, persistentStoreFactory PersistentStoreFactory, fileHandler file.Handler,
 ) (*Core, error) {
 	stor := store.NewStdStore()
 	c := &Core{
@@ -58,6 +59,7 @@ func NewCore(vpn VPN, kube Cluster,
 		cloudNodeManager:       cloudNodeManager,
 		cloudControllerManager: cloudControllerManager,
 		clusterAutoscaler:      clusterAutoscaler,
+		encryptedDisk:          encryptedDisk,
 		zaplogger:              zapLogger,
 		kms:                    nil, // KMS is set up during init phase
 		persistentStoreFactory: persistentStoreFactory,

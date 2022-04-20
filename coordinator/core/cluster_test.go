@@ -169,7 +169,7 @@ func TestInitCluster(t *testing.T) {
 
 			zapLogger, err := zap.NewDevelopment()
 			require.NoError(err)
-			core, err := NewCore(&stubVPN{}, &tc.cluster, &tc.metadata, &tc.cloudControllerManager, &tc.cloudNodeManager, &tc.clusterAutoscaler, zapLogger, vtpm.OpenSimulatedTPM, nil, file.NewHandler(afero.NewMemMapFs()))
+			core, err := NewCore(&stubVPN{}, &tc.cluster, &tc.metadata, &tc.cloudControllerManager, &tc.cloudNodeManager, &tc.clusterAutoscaler, nil, zapLogger, vtpm.OpenSimulatedTPM, nil, file.NewHandler(afero.NewMemMapFs()))
 			require.NoError(err)
 
 			kubeconfig, err := core.InitCluster(tc.autoscalingNodeGroups, "cloud-service-account-uri")
@@ -284,7 +284,7 @@ func TestJoinCluster(t *testing.T) {
 
 			zapLogger, err := zap.NewDevelopment()
 			require.NoError(err)
-			core, err := NewCore(&tc.vpn, &tc.cluster, &tc.metadata, &tc.cloudControllerManager, &tc.cloudNodeManager, &tc.clusterAutoscaler, zapLogger, vtpm.OpenSimulatedTPM, nil, file.NewHandler(afero.NewMemMapFs()))
+			core, err := NewCore(&tc.vpn, &tc.cluster, &tc.metadata, &tc.cloudControllerManager, &tc.cloudNodeManager, &tc.clusterAutoscaler, nil, zapLogger, vtpm.OpenSimulatedTPM, nil, file.NewHandler(afero.NewMemMapFs()))
 			require.NoError(err)
 
 			joinReq := kubeadm.BootstrapTokenDiscovery{

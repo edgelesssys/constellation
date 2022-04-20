@@ -145,11 +145,12 @@ func newMockCoreWithDialer(dialer *bufconnDialer) (*Core, *pubapi.API, error) {
 	ccmFake := &CloudControllerManagerFake{}
 	cnmFake := &CloudNodeManagerFake{}
 	autoscalerFake := &ClusterAutoscalerFake{}
+	encryptedDiskFake := &EncryptedDiskFake{}
 
 	getPublicAddr := func() (string, error) {
 		return "192.0.2.1", nil
 	}
-	core, err := NewCore(vpn, kubeFake, metadataFake, ccmFake, cnmFake, autoscalerFake, zapLogger, vtpm.OpenSimulatedTPM, &fakeStoreFactory{}, file.NewHandler(afero.NewMemMapFs()))
+	core, err := NewCore(vpn, kubeFake, metadataFake, ccmFake, cnmFake, autoscalerFake, encryptedDiskFake, zapLogger, vtpm.OpenSimulatedTPM, &fakeStoreFactory{}, file.NewHandler(afero.NewMemMapFs()))
 	if err != nil {
 		return nil, nil, err
 	}

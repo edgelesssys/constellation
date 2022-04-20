@@ -145,3 +145,11 @@ func (c *fakeCore) GetKMSInfo() (kms.KMSInformation, error) {
 func (c *fakeCore) GetDataKey(ctx context.Context, keyID string, length int) ([]byte, error) {
 	return c.dataKey, c.getDataKeyErr
 }
+
+func (c *fakeCore) GetDiskUUID() (string, error) {
+	return "fake-disk-uuid", nil
+}
+
+func (c *fakeCore) UpdateDiskPassphrase(passphrase string) error {
+	return nil
+}

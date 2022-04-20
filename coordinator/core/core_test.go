@@ -33,7 +33,7 @@ func TestGetNextNodeIP(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(afero.NewMemMapFs()))
+	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(afero.NewMemMapFs()))
 	require.NoError(err)
 	require.NoError(core.InitializeStoreIPs())
 
@@ -76,7 +76,7 @@ func TestSwitchToPersistentStore(t *testing.T) {
 	require := require.New(t)
 
 	storeFactory := &fakeStoreFactory{}
-	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, storeFactory, file.NewHandler(afero.NewMemMapFs()))
+	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, storeFactory, file.NewHandler(afero.NewMemMapFs()))
 	require.NoError(err)
 
 	require.NoError(core.SwitchToPersistentStore())
@@ -90,7 +90,7 @@ func TestGetIDs(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(afero.NewMemMapFs()))
+	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(afero.NewMemMapFs()))
 	require.NoError(err)
 
 	_, _, err = core.GetIDs(nil)
@@ -114,7 +114,7 @@ func TestNotifyNodeHeartbeat(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(afero.NewMemMapFs()))
+	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(afero.NewMemMapFs()))
 	require.NoError(err)
 
 	const ip = "192.0.2.1"
@@ -127,7 +127,7 @@ func TestDeriveKey(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(afero.NewMemMapFs()))
+	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(afero.NewMemMapFs()))
 	require.NoError(err)
 
 	// error when no kms is set up
@@ -208,7 +208,7 @@ func TestInitialize(t *testing.T) {
 				}).ToFile(fileHandler))
 			}
 
-			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), openTPM, nil, fileHandler)
+			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), openTPM, nil, fileHandler)
 			require.NoError(err)
 
 			if tc.expectPanic {
@@ -266,7 +266,7 @@ func TestPersistNodeState(t *testing.T) {
 				require.NoError(err)
 				require.NoError(file.Close())
 			}
-			core, err := NewCore(tc.vpn, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, fileHandler)
+			core, err := NewCore(tc.vpn, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, fileHandler)
 			require.NoError(err)
 			err = core.PersistNodeState(role.Coordinator, []byte("owner-id"), []byte("cluster-id"))
 			if tc.errExpected {

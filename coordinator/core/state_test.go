@@ -65,7 +65,7 @@ func TestAdvanceState(t *testing.T) {
 				return vtpm.OpenSimulatedTPM()
 			}
 
-			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, zaptest.NewLogger(t), openTPM, nil, file.NewHandler(afero.NewMemMapFs()))
+			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), openTPM, nil, file.NewHandler(afero.NewMemMapFs()))
 			require.NoError(err)
 			assert.Equal(state.Uninitialized, core.GetState())
 			core.state = tc.initialState

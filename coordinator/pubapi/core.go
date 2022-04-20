@@ -23,6 +23,8 @@ type Core interface {
 	SetUpKMS(ctx context.Context, storageURI, kmsURI, kekID string, useExisting bool) error
 	GetKMSInfo() (kms.KMSInformation, error)
 	GetDataKey(ctx context.Context, keyID string, length int) ([]byte, error)
+	GetDiskUUID() (string, error)
+	UpdateDiskPassphrase(passphrase string) error
 
 	GetState() state.State
 	RequireState(...state.State) error

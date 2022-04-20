@@ -17,6 +17,7 @@ import (
 	gcpcloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/gcp"
 	"github.com/edgelesssys/constellation/coordinator/config"
 	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/coordinator/diskencryption"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/kubectl"
@@ -41,6 +42,7 @@ func main() {
 	var cloudControllerManager core.CloudControllerManager
 	var cloudNodeManager core.CloudNodeManager
 	var autoscaler core.ClusterAutoscaler
+	var encryptedDisk core.EncryptedDisk
 	cfg := zap.NewDevelopmentConfig()
 
 	logLevelUser := flag.Bool("debug", false, "enables gRPC debug output")
@@ -99,6 +101,7 @@ func main() {
 		cloudControllerManager = &gcpcloud.CloudControllerManager{}
 		cloudNodeManager = &gcpcloud.CloudNodeManager{}
 		autoscaler = &gcpcloud.Autoscaler{}
+		encryptedDisk = diskencryption.New()
 		bindIP = defaultIP
 		bindPort = defaultPort
 		etcdEndpoint = defaultEtcdEndpoint
@@ -122,6 +125,7 @@ func main() {
 		cloudControllerManager = &azurecloud.CloudControllerManager{}
 		cloudNodeManager = &azurecloud.CloudNodeManager{}
 		autoscaler = &azurecloud.Autoscaler{}
+		encryptedDisk = diskencryption.New()
 		bindIP = defaultIP
 		bindPort = defaultPort
 		etcdEndpoint = defaultEtcdEndpoint
@@ -136,6 +140,7 @@ func main() {
 		cloudControllerManager = &core.CloudControllerManagerFake{}
 		cloudNodeManager = &core.CloudNodeManagerFake{}
 		autoscaler = &core.ClusterAutoscalerFake{}
+		encryptedDisk = &core.EncryptedDiskFake{}
 		bindIP = defaultIP
 		bindPort = defaultPort
 		etcdEndpoint = "etcd-storage:2379"
@@ -149,5 +154,5 @@ func main() {
 	fileHandler := file.NewHandler(fs)
 	dialer := &net.Dialer{}
 	run(validator, issuer, wg, openTPM, util.GetIPAddr, dialer, fileHandler, kube,
-		metadata, cloudControllerManager, cloudNodeManager, autoscaler, etcdEndpoint, enforceEtcdTls, bindIP, bindPort, zapLoggerCore)
+		metadata, cloudControllerManager, cloudNodeManager, autoscaler, encryptedDisk, etcdEndpoint, enforceEtcdTls, bindIP, bindPort, zapLoggerCore)
 }
