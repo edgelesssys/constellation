@@ -1,7 +1,6 @@
 package storewrapper
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/edgelesssys/constellation/coordinator/kms"
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/store"
@@ -26,6 +26,7 @@ const (
 	keyKubeConfig                    = "kubeConfig"
 	keyClusterID                     = "clusterID"
 	keyVPNPubKey                     = "vpnKey"
+	keyKMSData                       = "KMSData"
 	keyKEKID                         = "kekID"
 	prefixFreeCoordinatorIPs         = "freeCoordinatorVPNIPs"
 	prefixPeerLocation               = "peerPrefix"
@@ -128,71 +129,6 @@ func (s StoreWrapper) GetPeersResourceVersion() (int, error) {
 	return val, nil
 }
 
-// UpdatePeers synchronizes the stored peers with the passed peers, returning added and removed peers.
-func (s StoreWrapper) UpdatePeers(peers []peer.Peer) (added, removed []peer.Peer, err error) {
-	// convert to map for easier lookup
-	updatedPeers := make(map[string]peer.Peer)
-	for _, p := range peers {
-		updatedPeers[p.VPNIP] = p
-	}
-
-	it, err := s.Store.Iterator(prefixPeerLocation)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// collect peers that need to be added or removed
-	for it.HasNext() {
-		key, err := it.GetNext()
-		if err != nil {
-			return nil, nil, err
-		}
-		val, err := s.Store.Get(key)
-		if err != nil {
-			return nil, nil, err
-		}
-		var storedPeer peer.Peer
-		if err := json.Unmarshal(val, &storedPeer); err != nil {
-			return nil, nil, err
-		}
-
-		if updPeer, ok := updatedPeers[storedPeer.VPNIP]; ok {
-			if updPeer.PublicIP != storedPeer.PublicIP || !bytes.Equal(updPeer.VPNPubKey, storedPeer.VPNPubKey) {
-				// stored peer must be updated, so mark for addition AND removal
-				added = append(added, updPeer)
-				removed = append(removed, storedPeer)
-			}
-			delete(updatedPeers, updPeer.VPNIP)
-		} else {
-			// stored peer is not contained in the updated peers, so mark for removal
-			removed = append(removed, storedPeer)
-		}
-	}
-
-	// remaining updated peers were not in the store, so mark for addition
-	for _, p := range updatedPeers {
-		added = append(added, p)
-	}
-
-	// perform remove and add
-	for _, p := range removed {
-		if err := s.Store.Delete(prefixPeerLocation + p.VPNIP); err != nil {
-			return nil, nil, err
-		}
-	}
-	for _, p := range added {
-		data, err := json.Marshal(p)
-		if err != nil {
-			return nil, nil, err
-		}
-		if err := s.Store.Put(prefixPeerLocation+p.VPNIP, data); err != nil {
-			return nil, nil, err
-		}
-	}
-
-	return added, removed, nil
-}
-
 func (s StoreWrapper) getPeersByPrefix(prefix string) ([]peer.Peer, error) {
 	peerKeys, err := s.Store.Iterator(prefix)
 	if err != nil {
@@ -269,6 +205,28 @@ func (s StoreWrapper) GetKEKID() (string, error) {
 // PutKEKID saves the key encryption key ID to store.
 func (s StoreWrapper) PutKEKID(kekID string) error {
 	return s.Store.Put(keyKEKID, []byte(kekID))
+}
+
+// GetKMSData returns the KMSData from the store.
+func (s StoreWrapper) GetKMSData() (kms.KMSInformation, error) {
+	storeData, err := s.Store.Get(keyKMSData)
+	if err != nil {
+		return kms.KMSInformation{}, err
+	}
+	data := kms.KMSInformation{}
+	if err := json.Unmarshal(storeData, &data); err != nil {
+		return kms.KMSInformation{}, err
+	}
+	return data, nil
+}
+
+// PutKMSData puts the KMSData in the store.
+func (s StoreWrapper) PutKMSData(kmsInfo kms.KMSInformation) error {
+	byteKMSInfo, err := json.Marshal(kmsInfo)
+	if err != nil {
+		return err
+	}
+	return s.Store.Put(keyKMSData, byteKMSInfo)
 }
 
 // GetClusterID returns the unique identifier of the cluster from store.

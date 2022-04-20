@@ -37,9 +37,6 @@ func (a *API) ActivateAsAdditionalCoordinator(ctx context.Context, in *pubproto.
 	if err := a.core.AdvanceState(state.ActivatingNodes, in.OwnerId, in.ClusterId); err != nil {
 		return nil, status.Errorf(codes.Internal, "advance state to ActivatingNodes: %v", err)
 	}
-
-	// TODO: add KMS functions
-
 	// add one coordinator to the VPN
 	if err := a.core.SetVPNIP(in.AssignedVpnIp); err != nil {
 		return nil, status.Errorf(codes.Internal, "set vpn IP address: %v", err)
@@ -69,8 +66,13 @@ func (a *API) ActivateAsAdditionalCoordinator(ctx context.Context, in *pubproto.
 	}
 	a.logger.Info("Transition to persistent store successful")
 
-	// regularly get (peer) updates from etcd
-	// start update before manual peer add to omit race conditions when multiple coordinator are activating nodes
+	kmsData, err := a.core.GetKMSInfo()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "%v", err)
+	}
+	if err := a.core.SetUpKMS(ctx, kmsData.StorageUri, kmsData.KmsUri, kmsData.KeyEncryptionKeyID, false); err != nil {
+		return nil, status.Errorf(codes.Internal, "%v", err)
+	}
 
 	thisPeer, err := a.assemblePeerStruct(in.AssignedVpnIp, role.Coordinator)
 	if err != nil {

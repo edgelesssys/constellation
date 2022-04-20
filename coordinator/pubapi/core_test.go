@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/netip"
 
+	"github.com/edgelesssys/constellation/coordinator/kms"
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
@@ -135,6 +136,10 @@ func (c *fakeCore) PersistNodeState(role role.Role, ownerID []byte, clusterID []
 func (c *fakeCore) SetUpKMS(ctx context.Context, storageURI, kmsURI, kekID string, useExisting bool) error {
 	c.kekID = kekID
 	return nil
+}
+
+func (c *fakeCore) GetKMSInfo() (kms.KMSInformation, error) {
+	return kms.KMSInformation{}, nil
 }
 
 func (c *fakeCore) GetDataKey(ctx context.Context, keyID string, length int) ([]byte, error) {

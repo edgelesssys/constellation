@@ -26,6 +26,12 @@ const (
 	NoStoreURI    = "storage://no-store"
 )
 
+type KMSInformation struct {
+	KmsUri             string
+	StorageUri         string
+	KeyEncryptionKeyID string
+}
+
 // SetUpKMS creates a KMS and key store from the given parameters.
 func SetUpKMS(ctx context.Context, storageURI, kmsURI string) (kms.CloudKMS, error) {
 	store, err := getStore(ctx, storageURI)

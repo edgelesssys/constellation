@@ -3,6 +3,7 @@ package pubapi
 import (
 	"context"
 
+	"github.com/edgelesssys/constellation/coordinator/kms"
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
@@ -20,6 +21,7 @@ type Core interface {
 	GetIDs(masterSecret []byte) (ownerID []byte, clusterID []byte, err error)
 	PersistNodeState(role role.Role, ownerID []byte, clusterID []byte) error
 	SetUpKMS(ctx context.Context, storageURI, kmsURI, kekID string, useExisting bool) error
+	GetKMSInfo() (kms.KMSInformation, error)
 	GetDataKey(ctx context.Context, keyID string, length int) ([]byte, error)
 
 	GetState() state.State

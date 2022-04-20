@@ -250,29 +250,36 @@ func (c *Core) PersistNodeState(role role.Role, ownerID []byte, clusterID []byte
 // SetUpKMS sets the Coordinators key management service and key encryption key ID.
 // Creates a new key encryption key in the KMS, if requested.
 // Otherwise the KEK is assumed to already exist in the KMS.
-func (c *Core) SetUpKMS(ctx context.Context, storageURI, kmsURI, kekID string, useExisting bool) error {
+func (c *Core) SetUpKMS(ctx context.Context, storageURI, kmsURI, kekID string, useExistingKEK bool) error {
 	kms, err := kmsSetup.SetUpKMS(ctx, storageURI, kmsURI)
 	if err != nil {
 		return err
 	}
+	c.kms = kms
 
-	if !useExisting {
-		// import Constellation master secret as key encryption key
-		kek, err := c.data().GetMasterSecret()
-		if err != nil {
-			return err
-		}
-		if err := kms.CreateKEK(ctx, kekID, kek); err != nil {
-			return err
-		}
+	if useExistingKEK {
+		return nil
 	}
-
+	// import Constellation master secret as key encryption key
+	kek, err := c.data().GetMasterSecret()
+	if err != nil {
+		return err
+	}
+	if err := kms.CreateKEK(ctx, kekID, kek); err != nil {
+		return err
+	}
 	if err := c.data().PutKEKID(kekID); err != nil {
 		return err
 	}
-
-	c.kms = kms
+	bundeldedKMSInfo := kmsSetup.KMSInformation{KmsUri: kmsURI, KeyEncryptionKeyID: kekID, StorageUri: storageURI}
+	if err := c.data().PutKMSData(bundeldedKMSInfo); err != nil {
+		return err
+	}
 	return nil
+}
+
+func (c *Core) GetKMSInfo() (kmsSetup.KMSInformation, error) {
+	return c.data().GetKMSData()
 }
 
 // GetDataKey derives a key of length from the Constellation's master secret.
