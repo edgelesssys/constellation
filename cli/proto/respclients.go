@@ -11,7 +11,7 @@ import (
 )
 
 // ActivationRespClient has methods to read messages from a stream of
-// ActivateAsCoordinatorResponses. It wraps an AVPN_ActivateAsCoordinatorClient.
+// ActivateAsCoordinatorResponses. It wraps an API_ActivateAsCoordinatorClient.
 type ActivationRespClient struct {
 	client            pubproto.API_ActivateAsCoordinatorClient
 	kubeconfig        string
@@ -22,7 +22,7 @@ type ActivationRespClient struct {
 }
 
 // NewActivationRespClient creates a new ActivationRespClient with the handed
-// AVPN_ActivateAsCoordinatorClient.
+// API_ActivateAsCoordinatorClient.
 func NewActivationRespClient(client pubproto.API_ActivateAsCoordinatorClient) *ActivationRespClient {
 	return &ActivationRespClient{
 		client: client,

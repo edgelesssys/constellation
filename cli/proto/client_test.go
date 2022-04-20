@@ -70,42 +70,42 @@ func TestActivate(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		avpn          *stubAVPNClient
+		pubAPIClient  *stubPubAPIClient
 		userPublicKey string
 		ips           []string
 		wantErr       bool
 	}{
 		"normal activation": {
-			avpn:          &stubAVPNClient{},
+			pubAPIClient:  &stubPubAPIClient{},
 			userPublicKey: testKey,
 			ips:           []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
 			wantErr:       false,
 		},
-		"client without avpn": {
+		"client without pubAPIClient": {
 			userPublicKey: testKey,
 			ips:           []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
 			wantErr:       true,
 		},
 		"empty public key parameter": {
-			avpn:          &stubAVPNClient{},
+			pubAPIClient:  &stubPubAPIClient{},
 			userPublicKey: "",
 			ips:           []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
 			wantErr:       true,
 		},
 		"invalid public key parameter": {
-			avpn:          &stubAVPNClient{},
+			pubAPIClient:  &stubPubAPIClient{},
 			userPublicKey: "invalid Key",
 			ips:           []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
 			wantErr:       true,
 		},
 		"empty ips parameter": {
-			avpn:          &stubAVPNClient{},
+			pubAPIClient:  &stubPubAPIClient{},
 			userPublicKey: testKey,
 			ips:           []string{},
 			wantErr:       true,
 		},
 		"fail ActivateAsCoordinator": {
-			avpn:          &stubAVPNClient{activateAsCoordinatorErr: someErr},
+			pubAPIClient:  &stubPubAPIClient{activateAsCoordinatorErr: someErr},
 			userPublicKey: testKey,
 			ips:           []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
 			wantErr:       true,
@@ -117,24 +117,24 @@ func TestActivate(t *testing.T) {
 			assert := assert.New(t)
 
 			client := Client{}
-			if tc.avpn != nil {
-				client.avpn = tc.avpn
+			if tc.pubAPIClient != nil {
+				client.pubapi = tc.pubAPIClient
 			}
 			_, err := client.Activate(context.Background(), []byte(tc.userPublicKey), []byte("Constellation"), tc.ips, nil, nil, "serviceaccount://test")
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				assert.Equal("32bytesWireGuardKeyForTheTesting", string(tc.avpn.activateAsCoordinatorReqKey))
-				assert.Equal(tc.ips, tc.avpn.activateAsCoordinatorReqIPs)
-				assert.Equal("Constellation", string(tc.avpn.activateAsCoordinatorMasterSecret))
-				assert.Equal("serviceaccount://test", tc.avpn.activateCloudServiceAccountURI)
+				assert.Equal("32bytesWireGuardKeyForTheTesting", string(tc.pubAPIClient.activateAsCoordinatorReqKey))
+				assert.Equal(tc.ips, tc.pubAPIClient.activateAsCoordinatorReqIPs)
+				assert.Equal("Constellation", string(tc.pubAPIClient.activateAsCoordinatorMasterSecret))
+				assert.Equal("serviceaccount://test", tc.pubAPIClient.activateCloudServiceAccountURI)
 			}
 		})
 	}
 }
 
-type stubAVPNClient struct {
+type stubPubAPIClient struct {
 	activateAsCoordinatorErr          error
 	activateAdditionalNodesErr        error
 	activateAsCoordinatorReqKey       []byte
@@ -145,19 +145,19 @@ type stubAVPNClient struct {
 	pubproto.APIClient
 }
 
-func (s *stubAVPNClient) ActivateAsCoordinator(ctx context.Context, in *pubproto.ActivateAsCoordinatorRequest,
+func (s *stubPubAPIClient) ActivateAsCoordinator(ctx context.Context, in *pubproto.ActivateAsCoordinatorRequest,
 	opts ...grpc.CallOption,
 ) (pubproto.API_ActivateAsCoordinatorClient, error) {
 	s.activateAsCoordinatorReqKey = in.AdminVpnPubKey
 	s.activateAsCoordinatorReqIPs = in.NodePublicIps
 	s.activateAsCoordinatorMasterSecret = in.MasterSecret
 	s.activateCloudServiceAccountURI = in.CloudServiceAccountUri
-	return dummyAVPNActivateAsCoordinatorClient{}, s.activateAsCoordinatorErr
+	return dummyActivateAsCoordinatorClient{}, s.activateAsCoordinatorErr
 }
 
-func (s *stubAVPNClient) ActivateAdditionalNodes(ctx context.Context, in *pubproto.ActivateAdditionalNodesRequest,
+func (s *stubPubAPIClient) ActivateAdditionalNodes(ctx context.Context, in *pubproto.ActivateAdditionalNodesRequest,
 	opts ...grpc.CallOption,
 ) (pubproto.API_ActivateAdditionalNodesClient, error) {
 	s.activateAdditionalNodesReqIPs = in.NodePublicIps
-	return dummyAVPNActivateAdditionalNodesClient{}, s.activateAdditionalNodesErr
+	return dummyActivateAdditionalNodesClient{}, s.activateAdditionalNodesErr
 }

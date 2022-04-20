@@ -11,34 +11,34 @@ import (
 	"google.golang.org/grpc"
 )
 
-// dummyAVPNActivateAsCoordinatorClient is a dummy and panics if Recv() is called.
-type dummyAVPNActivateAsCoordinatorClient struct {
+// dummyActivateAsCoordinatorClient is a dummy and panics if Recv() is called.
+type dummyActivateAsCoordinatorClient struct {
 	grpc.ClientStream
 }
 
-func (c dummyAVPNActivateAsCoordinatorClient) Recv() (*pubproto.ActivateAsCoordinatorResponse, error) {
+func (c dummyActivateAsCoordinatorClient) Recv() (*pubproto.ActivateAsCoordinatorResponse, error) {
 	panic("i'm a dummy, Recv() not implemented")
 }
 
-// dummyAVPNActivateAsCoordinatorClient is a dummy and panics if Recv() is called.
-type dummyAVPNActivateAdditionalNodesClient struct {
+// dummyActivateAsCoordinatorClient is a dummy and panics if Recv() is called.
+type dummyActivateAdditionalNodesClient struct {
 	grpc.ClientStream
 }
 
-func (c dummyAVPNActivateAdditionalNodesClient) Recv() (*pubproto.ActivateAdditionalNodesResponse, error) {
+func (c dummyActivateAdditionalNodesClient) Recv() (*pubproto.ActivateAdditionalNodesResponse, error) {
 	panic("i'm a dummy, Recv() not implemented")
 }
 
-// stubAVPNActivationAsCoordinatorClient recives responses from an predefined
+// stubActivationAsCoordinatorClient recives responses from an predefined
 // response stream iterator or a stub error.
-type stubAVPNActivationAsCoordinatorClient struct {
+type stubActivationAsCoordinatorClient struct {
 	grpc.ClientStream
 
 	stream  *stubActivateAsCoordinatorResponseIter
 	recvErr error
 }
 
-func (c stubAVPNActivationAsCoordinatorClient) Recv() (*pubproto.ActivateAsCoordinatorResponse, error) {
+func (c stubActivationAsCoordinatorClient) Recv() (*pubproto.ActivateAsCoordinatorResponse, error) {
 	if c.recvErr != nil {
 		return nil, c.recvErr
 	}
@@ -122,7 +122,7 @@ func TestNextLog(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			respClient := stubAVPNActivationAsCoordinatorClient{
+			respClient := stubActivationAsCoordinatorClient{
 				stream: &stubActivateAsCoordinatorResponseIter{
 					msgs: tc.msgs,
 				},
@@ -180,7 +180,7 @@ func TestPrintLogStream(t *testing.T) {
 			},
 		})
 	}
-	respClient := stubAVPNActivationAsCoordinatorClient{
+	respClient := stubActivationAsCoordinatorClient{
 		stream: &stubActivateAsCoordinatorResponseIter{
 			msgs: msgs,
 		},
@@ -194,7 +194,7 @@ func TestPrintLogStream(t *testing.T) {
 	// Check error handling.
 	//
 	someErr := errors.New("failed")
-	respClient = stubAVPNActivationAsCoordinatorClient{
+	respClient = stubActivationAsCoordinatorClient{
 		recvErr: someErr,
 	}
 	client = NewActivationRespClient(respClient)
@@ -204,7 +204,7 @@ func TestPrintLogStream(t *testing.T) {
 func TestGetKubeconfig(t *testing.T) {
 	assert := assert.New(t)
 
-	client := NewActivationRespClient(dummyAVPNActivateAsCoordinatorClient{})
+	client := NewActivationRespClient(dummyActivateAsCoordinatorClient{})
 	_, err := client.GetKubeconfig()
 	assert.Error(err)
 
@@ -217,7 +217,7 @@ func TestGetKubeconfig(t *testing.T) {
 func TestGetCoordinatorVpnKey(t *testing.T) {
 	assert := assert.New(t)
 
-	client := NewActivationRespClient(dummyAVPNActivateAsCoordinatorClient{})
+	client := NewActivationRespClient(dummyActivateAsCoordinatorClient{})
 	_, err := client.GetCoordinatorVpnKey()
 	assert.Error(err)
 
@@ -230,7 +230,7 @@ func TestGetCoordinatorVpnKey(t *testing.T) {
 func TestGetClientVpnIp(t *testing.T) {
 	assert := assert.New(t)
 
-	client := NewActivationRespClient(dummyAVPNActivateAsCoordinatorClient{})
+	client := NewActivationRespClient(dummyActivateAsCoordinatorClient{})
 	_, err := client.GetClientVpnIp()
 	assert.Error(err)
 

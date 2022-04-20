@@ -14,12 +14,10 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-// Client wraps a AVPNClient and the connection to it.
-// The client offers a method to activate the connected
-// AVPNServer as Coordinator.
+// Client wraps a PubAPI client and the connection to it.
 type Client struct {
-	conn *grpc.ClientConn
-	avpn pubproto.APIClient
+	conn   *grpc.ClientConn
+	pubapi pubproto.APIClient
 }
 
 // Connect connects the client to a given server, using the handed
@@ -43,7 +41,7 @@ func (c *Client) Connect(ip, port string, validators []atls.Validator) error {
 		c.conn.Close()
 	}
 	c.conn = conn
-	c.avpn = pubproto.NewAPIClient(conn)
+	c.pubapi = pubproto.NewAPIClient(conn)
 	return nil
 }
 
@@ -65,7 +63,7 @@ func (c *Client) Close() error {
 // The handed IP addresses must be the private IP addresses of running AWS or GCP instances,
 // and the userPublicKey is the VPN key of the users WireGuard interface.
 func (c *Client) Activate(ctx context.Context, userPublicKey, masterSecret []byte, nodeIPs, coordinatorIPs, autoscalingNodeGroups []string, cloudServiceAccountURI string) (ActivationResponseClient, error) {
-	if c.avpn == nil {
+	if c.pubapi == nil {
 		return nil, errors.New("client is not connected")
 	}
 	if len(userPublicKey) == 0 {
@@ -80,7 +78,7 @@ func (c *Client) Activate(ctx context.Context, userPublicKey, masterSecret []byt
 		return nil, err
 	}
 
-	avpnRequest := &pubproto.ActivateAsCoordinatorRequest{
+	req := &pubproto.ActivateAsCoordinatorRequest{
 		AdminVpnPubKey:         pubKey[:],
 		NodePublicIps:          nodeIPs,
 		CoordinatorPublicIps:   coordinatorIPs,
@@ -93,7 +91,7 @@ func (c *Client) Activate(ctx context.Context, userPublicKey, masterSecret []byt
 		CloudServiceAccountUri: cloudServiceAccountURI,
 	}
 
-	client, err := c.avpn.ActivateAsCoordinator(ctx, avpnRequest)
+	client, err := c.pubapi.ActivateAsCoordinator(ctx, req)
 	if err != nil {
 		return nil, err
 	}
