@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/edgelesssys/constellation/coordinator/attestation/azure"
 	"github.com/edgelesssys/constellation/coordinator/attestation/gcp"
+	"github.com/edgelesssys/constellation/coordinator/attestation/qemu"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	azurecloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/azure"
 	gcpcloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/gcp"
@@ -25,13 +27,15 @@ import (
 const (
 	gcpStateDiskPath   = "/dev/disk/by-id/google-state-disk"
 	azureStateDiskPath = "/dev/disk/azure/scsi1/lun0"
-	fallBackPath       = "/dev/disk/by-id/state-disk"
+	qemuStateDiskPath  = "/dev/vda"
 )
 
 var csp = flag.String("csp", "", "Cloud Service Provider the image is running on")
 
 func main() {
 	flag.Parse()
+
+	log.Printf("Starting disk-mapper for csp %q\n", *csp)
 
 	// set up metadata API and quote issuer for aTLS connections
 	var err error
@@ -57,21 +61,17 @@ func main() {
 		}
 		metadata = gcpcloud.New(gcpClient)
 
-	default:
-		diskPath, err = filepath.EvalSymlinks(fallBackPath)
-		if err != nil {
-			utils.KernelPanic(err)
-		}
-		issuer = core.NewMockIssuer()
-		fmt.Fprintf(os.Stderr, "warning: csp %q is not supported, unable to automatically request decryption keys on reboot\n", *csp)
+	case "qemu":
+		diskPath = qemuStateDiskPath
+		issuer = qemu.NewIssuer()
+		fmt.Fprintf(os.Stderr, "warning: cloud services are not supported for csp %q\n", *csp)
 		metadata = &core.ProviderMetadataFake{}
+
+	default:
+		diskPathErr = fmt.Errorf("csp %q is not supported by Constellation", *csp)
 	}
 	if diskPathErr != nil {
-		fmt.Fprintf(os.Stderr, "warning: no attached disk detected, trying to use boot-disk state partition as fallback")
-		diskPath, err = filepath.EvalSymlinks(fallBackPath)
-		if err != nil {
-			utils.KernelPanic(err)
-		}
+		utils.KernelPanic(fmt.Errorf("unable to determine state disk path: %w", diskPathErr))
 	}
 
 	// initialize device mapper
