@@ -35,6 +35,12 @@ func (Azure) OID() asn1.ObjectIdentifier {
 	return asn1.ObjectIdentifier{1, 3, 9900, 4}
 }
 
+type QEMU struct{}
+
+func (QEMU) OID() asn1.ObjectIdentifier {
+	return asn1.ObjectIdentifier{1, 3, 9900, 5}
+}
+
 // TODO: Remove once we no longer use non cvms.
 type GCPNonCVM struct{}
 

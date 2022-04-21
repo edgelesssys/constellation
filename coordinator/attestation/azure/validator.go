@@ -8,16 +8,13 @@ import (
 	"github.com/google/go-tpm/tpm2"
 )
 
-// PCRs are the expected PCR values for uninitialized Azure Constellation nodes.
-var PCRs = map[uint32][]byte{}
-
-// Validator for GCP confindetial VM attestation.
+// Validator for Azure confidential VM attestation.
 type Validator struct {
 	oid.Azure
 	*vtpm.Validator
 }
 
-// NewValidator initializes a new GCP validator with the provided PCR values.
+// NewValidator initializes a new Azure validator with the provided PCR values.
 func NewValidator(pcrs map[uint32][]byte) *Validator {
 	return &Validator{
 		Validator: vtpm.NewValidator(

@@ -12,7 +12,7 @@ import (
 	"github.com/google/go-tpm-tools/proto/attest"
 )
 
-// Issuer for GCP confindetial VM attestation.
+// Issuer for GCP confidential VM attestation.
 type Issuer struct {
 	oid.GCP
 	*vtpm.Issuer
