@@ -57,6 +57,7 @@ const (
 	etcdImageName             = "bitnami/etcd:3.5.2"
 	etcdOverlayNetwork        = "constellationIntegrationTest"
 	masterSecret              = "ConstellationIntegrationTest"
+	localLogDirectory         = "/tmp/coordinator/logs"
 	numberFirstActivation     = 3
 	numberSecondaryActivation = 3
 	numberThirdActivation     = 3
@@ -115,6 +116,8 @@ var (
 		AttachStderr: true,
 	}
 	activeCoordinators []string
+	coordinatorCounter int
+	nodeCounter        int
 )
 
 type peerInfo struct {
@@ -136,14 +139,13 @@ func TestMain(t *testing.T) {
 		goleak.IgnoreTopFunction("k8s.io/klog/v2.(*loggingT).flushDaemon"),
 	)
 
-	debugMode := os.Getenv("DEBUG")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	cwd, err := os.Getwd()
 	require.NoError(err)
 	require.NoError(os.Chdir(filepath.Join(cwd, "..")))
-
+	require.NoError(createTempDir())
 	// setup Docker containers
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	require.NoError(err)
@@ -153,7 +155,7 @@ func TestMain(t *testing.T) {
 	require.NoError(err)
 	t.Logf("start integration test, local docker version %v", versionInfo.ServerVersion)
 
-	require.NoError(imageBuild(ctx, cli, debugMode))
+	require.NoError(imageBuild(ctx, cli))
 	defer cli.ImageRemove(ctx, constellationImageName, types.ImageRemoveOptions{Force: true, PruneChildren: true})
 
 	reader, err := cli.ImagePull(ctx, etcdImageName, types.ImagePullOptions{})
@@ -185,9 +187,9 @@ func TestMain(t *testing.T) {
 	defer killDockerContainers(ctx, cli, activePeers)
 	// setup coordinator containers
 	t.Log("create 1st coordinator container...")
-	require.NoError(createCoordinatorContainer(ctx, cli, debugMode, "master-1", dockerNetwork.ID, activePeers))
+	require.NoError(createCoordinatorContainer(ctx, cli, "master-1", dockerNetwork.ID, activePeers))
 	t.Log("create 2nd coordinator container...")
-	require.NoError(createCoordinatorContainer(ctx, cli, debugMode, "master-2", dockerNetwork.ID, activePeers))
+	require.NoError(createCoordinatorContainer(ctx, cli, "master-2", dockerNetwork.ID, activePeers))
 	// 1st activation phase
 	ips, err := spawnContainers(ctx, cli, numberFirstActivation, activePeers)
 	require.NoError(err)
@@ -225,7 +227,7 @@ func TestMain(t *testing.T) {
 
 	// ----------------------------------------------------------------
 	t.Log("create 3nd coordinator container...")
-	require.NoError(createCoordinatorContainer(ctx, cli, debugMode, "master-3", dockerNetwork.ID, activePeers))
+	require.NoError(createCoordinatorContainer(ctx, cli, "master-3", dockerNetwork.ID, activePeers))
 	// activate additional coordinator
 	require.NoError(addNewCoordinatorToCoordinator(ctx, activeCoordinators[2], activeCoordinators[1]))
 	require.NoError(updateVPNIPs(activePeers, etcdstore))
@@ -291,6 +293,13 @@ func startCoordinator(ctx context.Context, coordinatorAddr string, ips []string)
 	}
 }
 
+func createTempDir() error {
+	if err := os.RemoveAll(localLogDirectory); err != nil && !os.IsNotExist(err) {
+		return err
+	} 		
+	return os.MkdirAll(localLogDirectory, 0o755)
+}
+
 func addNewCoordinatorToCoordinator(ctx context.Context, newCoordinatorAddr, oldCoordinatorAddr string) error {
 	tlsConfig, err := atls.CreateAttestationClientTLSConfig([]atls.Validator{&core.MockValidator{}})
 	if err != nil {
@@ -351,6 +360,7 @@ func spawnContainers(ctx context.Context, cli *client.Client, count int, activeC
 		if err != nil {
 			return nil, err
 		}
+		attachDockerContainerStdoutStderrToFile(ctx, cli, resp.containerResponse.ID, role.Node)
 		tmpPeerIPs = append(tmpPeerIPs, resp.dockerIPAddr)
 		containerData, err := cli.ContainerInspect(ctx, resp.containerResponse.ID)
 		if err != nil {
@@ -361,7 +371,7 @@ func spawnContainers(ctx context.Context, cli *client.Client, count int, activeC
 	return tmpPeerIPs, blockUntilUp(ctx, tmpPeerIPs)
 }
 
-func createCoordinatorContainer(ctx context.Context, cli *client.Client, debugMode, name, dockerNetworkID string, activePeers map[string]peerInfo) error {
+func createCoordinatorContainer(ctx context.Context, cli *client.Client, name, dockerNetworkID string, activePeers map[string]peerInfo) error {
 	resp, err := cli.ContainerCreate(ctx, configConstellationPeer, hostconfigConstellationPeer, nil, nil, name)
 	if err != nil {
 		return err
@@ -370,9 +380,7 @@ func createCoordinatorContainer(ctx context.Context, cli *client.Client, debugMo
 	if err != nil {
 		return err
 	}
-	if debugMode == "true" {
-		attachDockerContainerStdout(ctx, cli, resp.ID)
-	}
+	attachDockerContainerStdoutStderrToFile(ctx, cli, resp.ID, role.Coordinator)
 	coordinatorData, err := cli.ContainerInspect(ctx, resp.ID)
 	if err != nil {
 		return err
@@ -407,16 +415,29 @@ func killDockerContainer(ctx context.Context, cli *client.Client, container cont
 	fmt.Println("Success")
 }
 
-func attachDockerContainerStdout(ctx context.Context, cli *client.Client, id string) {
+func attachDockerContainerStdoutStderrToFile(ctx context.Context, cli *client.Client, id string, peerRole role.Role) {
 	resp, err := cli.ContainerLogs(ctx, id, containerLogConfig)
 	if err != nil {
 		panic(err)
 	}
-
-	go io.Copy(os.Stdout, resp) // TODO: this goroutine leaks
+	var file *os.File
+	switch peerRole {
+	case role.Node:
+		file, err = os.Create(fmt.Sprintf("%s/node-%d", localLogDirectory, nodeCounter))
+		nodeCounter += 1
+	case role.Coordinator:
+		file, err = os.Create(fmt.Sprintf("%s/coordinator-%d", localLogDirectory, coordinatorCounter))
+		coordinatorCounter += 1
+	default:
+		panic("invalid role")
+	}
+	if err != nil {
+		panic(err)
+	}
+	go io.Copy(file, resp) // TODO: this goroutine leaks
 }
 
-func imageBuild(ctx context.Context, dockerClient *client.Client, debugMode string) error {
+func imageBuild(ctx context.Context, dockerClient *client.Client) error {
 	// Docker need a BuildContext, generate it...
 	tar, err := archive.TarWithOptions(".", &archive.TarOptions{})
 	if err != nil {
@@ -428,11 +449,8 @@ func imageBuild(ctx context.Context, dockerClient *client.Client, debugMode stri
 		return err
 	}
 	defer resp.Body.Close()
-
-	if debugMode == "true" {
-		if _, err := io.Copy(os.Stdout, resp.Body); err != nil {
-			return err
-		}
+	if _, err := io.Copy(os.Stdout, resp.Body); err != nil {
+		return err
 	}
 	// Block until EOF, so the build has finished if we continue
 	_, err = io.Copy(io.Discard, resp.Body)
@@ -457,9 +475,6 @@ func countPeersTest(ctx context.Context, t *testing.T, cli *client.Client, execC
 			fmt.Printf("% 3d peers in container %s [%s] out of % 3d total nodes \n", countedPeers, id.dockerData.ID, ip, len(activeContainers))
 
 			assert.Equal(len(activeContainers), countedPeers)
-			if (len(activeContainers)) != countedPeers {
-				attachDockerContainerStdout(ctx, cli, id.dockerData.ID)
-			}
 		}
 	})
 }

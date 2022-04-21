@@ -23,7 +23,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y pkg-config libcryptsetup12 libcryptsetup-dev
 
       - name: Integration Test Coordinator
-        run: DEBUG=true go test -v -tags integration ./test/
+        run: go test -v -tags integration ./test/
 
       - name: Integration Test mount
         run: |
@@ -36,3 +36,9 @@ jobs:
           go test -tags integration -c ./test/
           sudo ./test.test -test.v
         working-directory: state
+
+      - uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: coordinator-integrationtest-logs
+          path: /tmp/coordinator/logs/
