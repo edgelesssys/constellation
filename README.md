@@ -6,13 +6,6 @@
 ### Ubuntu 20.04
 ```sh
 sudo apt install build-essential cmake libssl-dev pkg-config libcryptsetup12 libcryptsetup-dev
-curl https://sh.rustup.rs -sSf | sh
-```
-
-### Amazon Linux
-```sh
-sudo yum install cmake3 gcc make
-curl https://sh.rustup.rs -sSf | sh
 ```
 
 ## Build
@@ -21,46 +14,6 @@ mkdir build
 cd build
 cmake ..
 make -j`nproc`
-```
-
-## CMake build options:
-
-### Release build
-
-This options leaves out debug symbols and turns on more compiler optimizations.
-
-```sh
-cmake -DCMAKE_BUILD_TYPE=Release ..
-```
-
-### Static build (coordinator as static binary, no dependencies on libc or other libraries)
-
-Install the musl-toolchain
-
-Ubuntu / Debian:
-```sh
-sudo apt install -y musl-tools
-rustup target add x86_64-unknown-linux-musl
-```
-
-From source (Amazon-Linux):
-```sh
-wget https://musl.libc.org/releases/musl-1.2.2.tar.gz
-tar xfz musl-1.2.2.tar.gz
-cd musl-1.2.2
-./configure
-make -j `nproc`
-sudo make install
-rustup target add x86_64-unknown-linux-musl
-```
-Add `musl-gcc` to your PATH:
-```sh
-export PATH=$PATH:/usr/loca/musl/bin/
-```
-
-Compile the coordinator
-```sh
-cmake -DCOORDINATOR_STATIC_MUSL=ON ..
 ```
 
 ## Cloud credentials

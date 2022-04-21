@@ -14,10 +14,6 @@ ENV PATH ${PATH}:/usr/local/go/bin
 # Install wireguard-tools
 RUN git clone -b v1.0.20210914 --depth=1 https://git.zx2c4.com/wireguard-tools && make -C wireguard-tools/src -j`nproc` && make -C wireguard-tools/src install
 
-# Install Rust
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-ENV PATH /root/.cargo/bin:${PATH}
-
 # Setup CLI
 RUN wg genkey | (umask 0077 && tee /privatekey) | wg pubkey > /publickey
 RUN mkdir -p /root/.config/constellation && touch /root/.config/constellation/config.json
