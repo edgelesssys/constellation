@@ -12,10 +12,12 @@ import (
 	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/coordinator/attestation/azure"
 	"github.com/edgelesssys/constellation/coordinator/attestation/gcp"
+	"github.com/edgelesssys/constellation/coordinator/attestation/qemu"
 	"github.com/edgelesssys/constellation/coordinator/attestation/simulator"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	azurecloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/azure"
 	gcpcloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/gcp"
+	qemucloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/qemu"
 	"github.com/edgelesssys/constellation/coordinator/config"
 	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/diskencryption"
@@ -127,6 +129,30 @@ func main() {
 		cloudControllerManager = &azurecloud.CloudControllerManager{}
 		cloudNodeManager = &azurecloud.CloudNodeManager{}
 		autoscaler = &azurecloud.Autoscaler{}
+		encryptedDisk = diskencryption.New()
+		bindIP = defaultIP
+		bindPort = defaultPort
+		etcdEndpoint = defaultEtcdEndpoint
+		enforceEtcdTls = true
+		openTPM = vtpm.OpenVTPM
+		fs = afero.NewOsFs()
+	case "qemu":
+		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.QEMUPCRSelection)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		issuer = qemu.NewIssuer()
+		validator = qemu.NewValidator(pcrs)
+
+		kube = kubernetes.New(&k8sapi.KubernetesUtil{}, &k8sapi.CoreOSConfiguration{}, kubectl.New())
+
+		// no support for cloud services in qemu
+		metadata = &qemucloud.Metadata{}
+		cloudControllerManager = &qemucloud.CloudControllerManager{}
+		cloudNodeManager = &qemucloud.CloudNodeManager{}
+		autoscaler = &qemucloud.Autoscaler{}
+
 		encryptedDisk = diskencryption.New()
 		bindIP = defaultIP
 		bindPort = defaultPort
