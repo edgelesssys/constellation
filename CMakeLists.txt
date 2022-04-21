@@ -6,7 +6,7 @@ enable_testing()
 #
 # core-os disk-mapper
 #
-add_custom_target(disk-mapper
+add_custom_target(disk-mapper ALL
   go build -o ${CMAKE_BINARY_DIR}/disk-mapper -ldflags "-s -w"
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/state/cmd
 )
