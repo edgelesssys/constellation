@@ -72,7 +72,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.2.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/kr/text v0.2.0
-	github.com/martinjungblut/go-cryptsetup v0.0.0-20220317181052-e70d6b615049
+	github.com/martinjungblut/go-cryptsetup v0.0.0-20220421194528-92e17766b2e7
 	github.com/schollz/progressbar/v3 v3.8.6
 	github.com/spf13/afero v1.8.2
 	github.com/spf13/cobra v1.4.0
@@ -212,5 +212,3 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.13.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 )
-
-replace github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-cryptsetup v0.0.0-20220414083925-585f9cbb005d
