@@ -104,6 +104,6 @@ jobs:
       - name: "Build and Upload"
         run: >
           make -j$(nproc) CONTAINER_ENGINE=docker NETRC=/tmp/.netrc GCP_IMAGE_NAME="${{ env.IMAGE_TIMESTAMP }}" AZURE_IMAGE_NAME="${{ env.IMAGE_TIMESTAMP }}"
-          AZURE_IMAGE_DEFINITION="constellation-coreos" AZURE_IMAGE_VERSION="${{env.IMAGE_VERSION }}" COORDINATOR_URL="https://${{ secrets.PUBLIC_BUCKET_NAME }}.s3.us-east-2.amazonaws.com/coordinator/${{ inputs.coordinator-name }}"
+          AZURE_IMAGE_DEFINITION="constellation-coreos" AZURE_IMAGE_VERSION="${{env.IMAGE_VERSION }}" COORDINATOR_URL="https://${{ secrets.PUBLIC_BUCKET_NAME }}.s3.us-east-2.amazonaws.com/coordinator/${{ inputs.coordinator-name }}${{ github.event.inputs.coordinator-name }}"
           image-gcp image-azure upload-gcp upload-azure
         working-directory: ${{ env.working-directory }}
