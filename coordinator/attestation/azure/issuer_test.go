@@ -3,6 +3,7 @@ package azure
 import (
 	"testing"
 
+	"github.com/edgelesssys/constellation/coordinator/attestation/simulator"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,7 +15,7 @@ func TestGetSNPAttestation(t *testing.T) {
 		errExpected bool
 	}{
 		"success": {
-			tpmFunc:     vtpm.OpenSimulatedTPM,
+			tpmFunc:     simulator.OpenSimulatedTPM,
 			errExpected: false,
 		},
 	}

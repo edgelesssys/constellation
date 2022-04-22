@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/cli/file"
-	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
+	"github.com/edgelesssys/constellation/coordinator/attestation/simulator"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -62,7 +62,7 @@ func TestAdvanceState(t *testing.T) {
 				if tc.openTPMErr != nil {
 					return nil, tc.openTPMErr
 				}
-				return vtpm.OpenSimulatedTPM()
+				return simulator.OpenSimulatedTPM()
 			}
 
 			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), openTPM, nil, file.NewHandler(afero.NewMemMapFs()))

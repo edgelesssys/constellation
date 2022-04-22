@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/cli/file"
+	"github.com/edgelesssys/constellation/coordinator/attestation/simulator"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/coordinator/nodestate"
 	"github.com/edgelesssys/constellation/coordinator/role"
@@ -195,7 +196,7 @@ func TestInitialize(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			openTPM, simulatedTPMCloser := vtpm.NewSimulatedTPMOpenFunc()
+			openTPM, simulatedTPMCloser := simulator.NewSimulatedTPMOpenFunc()
 			defer simulatedTPMCloser.Close()
 			if tc.initializePCRs {
 				require.NoError(vtpm.MarkNodeAsInitialized(openTPM, []byte{0x0, 0x1, 0x2, 0x3}, []byte{0x4, 0x5, 0x6, 0x7}))

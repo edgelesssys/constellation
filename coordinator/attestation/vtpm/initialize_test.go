@@ -5,6 +5,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/edgelesssys/constellation/coordinator/attestation/simulator"
 	"github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm/tpm2"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +25,7 @@ func TestMarkNodeAsInitialized(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	tpm, err := OpenSimulatedTPM()
+	tpm, err := simulator.OpenSimulatedTPM()
 	require.NoError(err)
 	defer tpm.Close()
 	pcrs, err := client.ReadAllPCRs(tpm)
@@ -76,7 +77,7 @@ func TestIsNodeInitialized(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := require.New(t)
 			require := require.New(t)
-			tpm, err := OpenSimulatedTPM()
+			tpm, err := simulator.OpenSimulatedTPM()
 			require.NoError(err)
 			defer tpm.Close()
 			if tc.pcrValueOwnerID != nil {

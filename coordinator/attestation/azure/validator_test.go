@@ -3,6 +3,7 @@ package azure
 import (
 	"testing"
 
+	"github.com/edgelesssys/constellation/coordinator/attestation/simulator"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/google/go-tpm-tools/client"
 	"github.com/stretchr/testify/assert"
@@ -12,7 +13,7 @@ import (
 func TestTrustedKeyFromSNP(t *testing.T) {
 	require := require.New(t)
 
-	tpm, err := vtpm.OpenSimulatedTPM()
+	tpm, err := simulator.OpenSimulatedTPM()
 	require.NoError(err)
 	defer tpm.Close()
 	key, err := client.AttestationKeyRSA(tpm)

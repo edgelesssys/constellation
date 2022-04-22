@@ -12,6 +12,7 @@ import (
 	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/coordinator/attestation/azure"
 	"github.com/edgelesssys/constellation/coordinator/attestation/gcp"
+	"github.com/edgelesssys/constellation/coordinator/attestation/simulator"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	azurecloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/azure"
 	gcpcloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/gcp"
@@ -146,7 +147,7 @@ func main() {
 		etcdEndpoint = "etcd-storage:2379"
 		enforceEtcdTls = false
 		var simulatedTPMCloser io.Closer
-		openTPM, simulatedTPMCloser = vtpm.NewSimulatedTPMOpenFunc()
+		openTPM, simulatedTPMCloser = simulator.NewSimulatedTPMOpenFunc()
 		defer simulatedTPMCloser.Close()
 		fs = afero.NewMemMapFs()
 	}

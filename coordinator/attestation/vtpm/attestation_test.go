@@ -7,6 +7,7 @@ import (
 	"io"
 	"testing"
 
+	tpmsim "github.com/edgelesssys/constellation/coordinator/attestation/simulator"
 	tpmclient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm-tools/proto/tpm"
@@ -332,18 +333,18 @@ func TestGetSelectedPCRs(t *testing.T) {
 			errExpected: true,
 		},
 		"3 PCRs": {
-			openFunc: OpenSimulatedTPM,
+			openFunc: tpmsim.OpenSimulatedTPM,
 			pcrSelection: tpm2.PCRSelection{
 				Hash: tpm2.AlgSHA256,
 				PCRs: []int{0, 1, 2},
 			},
 		},
 		"Azure PCRS": {
-			openFunc:     OpenSimulatedTPM,
+			openFunc:     tpmsim.OpenSimulatedTPM,
 			pcrSelection: AzurePCRSelection,
 		},
 		"GCP PCRs": {
-			openFunc:     OpenSimulatedTPM,
+			openFunc:     tpmsim.OpenSimulatedTPM,
 			pcrSelection: GCPPCRSelection,
 		},
 	}
