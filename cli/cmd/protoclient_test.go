@@ -19,7 +19,8 @@ type stubProtoClient struct {
 
 	activateUserPublicKey         []byte
 	activateMasterSecret          []byte
-	activateEndpoints             []string
+	activateNodeIPs               []string
+	activateCoordinatorIPs        []string
 	activateAutoscalingNodeGroups []string
 	cloudServiceAccountURI        string
 }
@@ -34,14 +35,19 @@ func (c *stubProtoClient) Close() error {
 	return c.closeErr
 }
 
-func (c *stubProtoClient) Activate(ctx context.Context, userPublicKey, masterSecret []byte, endpoints []string, autoscalingNodeGroups []string, cloudServiceAccountURI string) (proto.ActivationResponseClient, error) {
+func (c *stubProtoClient) Activate(ctx context.Context, userPublicKey, masterSecret []byte, nodeIPs, coordinatorIPs []string, autoscalingNodeGroups []string, cloudServiceAccountURI string) (proto.ActivationResponseClient, error) {
 	c.activateUserPublicKey = userPublicKey
 	c.activateMasterSecret = masterSecret
-	c.activateEndpoints = endpoints
+	c.activateNodeIPs = nodeIPs
+	c.activateCoordinatorIPs = coordinatorIPs
 	c.activateAutoscalingNodeGroups = autoscalingNodeGroups
 	c.cloudServiceAccountURI = cloudServiceAccountURI
 
 	return c.respClient, c.activateErr
+}
+
+func (c *stubProtoClient) ActivateAdditionalCoordinators(ctx context.Context, ips []string) error {
+	return c.activateErr
 }
 
 type stubActivationRespClient struct {
@@ -106,11 +112,18 @@ func (c *fakeProtoClient) Close() error {
 	return nil
 }
 
-func (c *fakeProtoClient) Activate(ctx context.Context, userPublicKey, masterSecret []byte, endpoints []string, autoscalingNodeGroups []string, cloudServiceAccountURI string) (proto.ActivationResponseClient, error) {
+func (c *fakeProtoClient) Activate(ctx context.Context, userPublicKey, masterSecret []byte, nodeIPs, coordinatorIPs []string, autoscalingNodeGroups []string, cloudServiceAccountURI string) (proto.ActivationResponseClient, error) {
 	if !c.conn {
 		return nil, errors.New("client is not connected")
 	}
 	return c.respClient, nil
+}
+
+func (c *fakeProtoClient) ActivateAdditionalCoordinators(ctx context.Context, ips []string) error {
+	if !c.conn {
+		return errors.New("client is not connected")
+	}
+	return nil
 }
 
 type fakeActivationRespClient struct {

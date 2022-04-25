@@ -122,6 +122,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		pubKey:                 flags.userPubKey,
 		masterSecret:           flags.masterSecret,
 		nodePrivIPs:            nodes.PrivateIPs(),
+		coordinatorPrivIPs:     coordinators.PrivateIPs()[1:],
 		autoscalingNodeGroups:  autoscalingNodeGroups,
 		cloudServiceAccountURI: serviceAccount,
 	}
@@ -161,7 +162,7 @@ func activate(ctx context.Context, cmd *cobra.Command, client protoClient, input
 		return activationResult{}, err
 	}
 
-	respCl, err := client.Activate(ctx, input.pubKey, input.masterSecret, input.nodePrivIPs, input.autoscalingNodeGroups, input.cloudServiceAccountURI)
+	respCl, err := client.Activate(ctx, input.pubKey, input.masterSecret, input.nodePrivIPs, input.coordinatorPrivIPs, input.autoscalingNodeGroups, input.cloudServiceAccountURI)
 	if err != nil {
 		return activationResult{}, err
 	}
@@ -208,6 +209,7 @@ type activationInput struct {
 	pubKey                 []byte
 	masterSecret           []byte
 	nodePrivIPs            []string
+	coordinatorPrivIPs     []string
 	autoscalingNodeGroups  []string
 	cloudServiceAccountURI string
 }
@@ -386,12 +388,20 @@ func getScalingGroupsFromConfig(stat state.ConstellationState, config *config.Co
 }
 
 func getAWSInstances(stat state.ConstellationState) (coordinators, nodes ScalingGroup, err error) {
-	coordinatorID, coordinator, err := stat.EC2Instances.GetOne()
+	coordinatorID, _, err := stat.EC2Instances.GetOne()
 	if err != nil {
 		return
 	}
+	coordinatorMap := stat.EC2Instances
+	var coordinatorInstances Instances
+	for _, node := range coordinatorMap {
+		coordinatorInstances = append(coordinatorInstances, Instance(node))
+	}
 	// GroupID of coordinators is empty, since they currently do not scale.
-	coordinators = ScalingGroup{Instances: Instances{Instance(coordinator)}, GroupID: ""}
+	coordinators = ScalingGroup{
+		Instances: coordinatorInstances,
+		GroupID:   "",
+	}
 
 	nodeMap := stat.EC2Instances.GetOthers(coordinatorID)
 	if len(nodeMap) == 0 {
@@ -411,12 +421,19 @@ func getAWSInstances(stat state.ConstellationState) (coordinators, nodes Scaling
 }
 
 func getGCPInstances(stat state.ConstellationState, config *config.Config) (coordinators, nodes ScalingGroup, err error) {
-	_, coordinator, err := stat.GCPCoordinators.GetOne()
-	if err != nil {
-		return
+	coordinatorMap := stat.GCPCoordinators
+	if len(coordinatorMap) == 0 {
+		return ScalingGroup{}, ScalingGroup{}, errors.New("no coordinators available, can't create Constellation without any instance")
+	}
+	var coordinatorInstances Instances
+	for _, node := range coordinatorMap {
+		coordinatorInstances = append(coordinatorInstances, Instance(node))
 	}
 	// GroupID of coordinators is empty, since they currently do not scale.
-	coordinators = ScalingGroup{Instances: Instances{Instance(coordinator)}, GroupID: ""}
+	coordinators = ScalingGroup{
+		Instances: coordinatorInstances,
+		GroupID:   "",
+	}
 
 	nodeMap := stat.GCPNodes
 	if len(nodeMap) == 0 {
@@ -438,13 +455,19 @@ func getGCPInstances(stat state.ConstellationState, config *config.Config) (coor
 }
 
 func getAzureInstances(stat state.ConstellationState, config *config.Config) (coordinators, nodes ScalingGroup, err error) {
-	_, coordinator, err := stat.AzureCoordinators.GetOne()
-	if err != nil {
-		return
+	coordinatorMap := stat.AzureCoordinators
+	if len(coordinatorMap) == 0 {
+		return ScalingGroup{}, ScalingGroup{}, errors.New("no coordinators available, can't create Constellation without any instance")
+	}
+	var coordinatorInstances Instances
+	for _, node := range coordinatorMap {
+		coordinatorInstances = append(coordinatorInstances, Instance(node))
 	}
 	// GroupID of coordinators is empty, since they currently do not scale.
-	coordinators = ScalingGroup{Instances: Instances{Instance(coordinator)}, GroupID: ""}
-
+	coordinators = ScalingGroup{
+		Instances: coordinatorInstances,
+		GroupID:   "",
+	}
 	nodeMap := stat.AzureNodes
 	if len(nodeMap) == 0 {
 		return ScalingGroup{}, ScalingGroup{}, errors.New("no nodes available, can't create Constellation with one instance")

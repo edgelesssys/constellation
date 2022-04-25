@@ -120,7 +120,7 @@ func TestActivate(t *testing.T) {
 			if tc.avpn != nil {
 				client.avpn = tc.avpn
 			}
-			_, err := client.Activate(context.Background(), []byte(tc.userPublicKey), []byte("Constellation"), tc.ips, nil, "serviceaccount://test")
+			_, err := client.Activate(context.Background(), []byte(tc.userPublicKey), []byte("Constellation"), tc.ips, nil, nil, "serviceaccount://test")
 			if tc.errExpected {
 				assert.Error(err)
 			} else {
