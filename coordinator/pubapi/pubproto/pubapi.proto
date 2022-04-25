@@ -14,6 +14,7 @@ service API {
   rpc JoinCluster(JoinClusterRequest) returns (JoinClusterResponse);
   rpc TriggerNodeUpdate(TriggerNodeUpdateRequest) returns (TriggerNodeUpdateResponse);
   rpc TriggerCoordinatorUpdate(TriggerCoordinatorUpdateRequest) returns (TriggerCoordinatorUpdateResponse);
+  rpc GetPeerVPNPublicKey(GetPeerVPNPublicKeyRequest) returns (GetPeerVPNPublicKeyResponse);
   rpc RequestStateDiskKey(RequestStateDiskKeyRequest) returns (RequestStateDiskKeyResponse);
 }
 
@@ -27,13 +28,14 @@ message GetStateResponse {
 message ActivateAsCoordinatorRequest {
   bytes admin_vpn_pub_key = 1;
   repeated string node_public_ips = 2;
-  repeated string autoscaling_node_groups = 3;
-  bytes master_secret = 4;
-  string kms_uri = 5;
-  string storage_uri = 6;
-  string key_encryption_key_id = 7;
-  bool use_existing_kek = 8;
-  string cloud_service_account_uri = 9;
+  repeated string coordinator_public_ips = 3;
+  repeated string autoscaling_node_groups = 4;
+  bytes master_secret = 5;
+  string kms_uri = 6;
+  string storage_uri = 7;
+  string key_encryption_key_id = 8;
+  bool use_existing_kek = 9;
+  string cloud_service_account_uri = 10;
 }
 
 message ActivateAsCoordinatorResponse {
@@ -75,8 +77,9 @@ message ActivateAdditionalNodesResponse {
 message ActivateAsAdditionalCoordinatorRequest {
   string assigned_vpn_ip = 1;
   Peer activating_coordinator_data = 2;
-  bytes owner_id = 3;
-  bytes cluster_id = 4;
+  repeated Peer peers = 3;
+  bytes owner_id = 4;
+  bytes cluster_id = 5;
 }
 
 message ActivateAsAdditionalCoordinatorResponse {
@@ -114,6 +117,13 @@ message RequestStateDiskKeyRequest {
 }
 
 message RequestStateDiskKeyResponse {
+}
+
+message GetPeerVPNPublicKeyRequest {
+}
+
+message GetPeerVPNPublicKeyResponse {
+  bytes coordinator_pub_key = 1;
 }
 
 message AdminConfig {

@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 type APIClient interface {
 	GetUpdate(ctx context.Context, in *GetUpdateRequest, opts ...grpc.CallOption) (*GetUpdateResponse, error)
 	GetK8SJoinArgs(ctx context.Context, in *GetK8SJoinArgsRequest, opts ...grpc.CallOption) (*GetK8SJoinArgsResponse, error)
+	GetK8SCertificateKey(ctx context.Context, in *GetK8SCertificateKeyRequest, opts ...grpc.CallOption) (*GetK8SCertificateKeyResponse, error)
 	GetDataKey(ctx context.Context, in *GetDataKeyRequest, opts ...grpc.CallOption) (*GetDataKeyResponse, error)
 }
 
@@ -49,6 +50,15 @@ func (c *aPIClient) GetK8SJoinArgs(ctx context.Context, in *GetK8SJoinArgsReques
 	return out, nil
 }
 
+func (c *aPIClient) GetK8SCertificateKey(ctx context.Context, in *GetK8SCertificateKeyRequest, opts ...grpc.CallOption) (*GetK8SCertificateKeyResponse, error) {
+	out := new(GetK8SCertificateKeyResponse)
+	err := c.cc.Invoke(ctx, "/vpnapi.API/GetK8sCertificateKey", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *aPIClient) GetDataKey(ctx context.Context, in *GetDataKeyRequest, opts ...grpc.CallOption) (*GetDataKeyResponse, error) {
 	out := new(GetDataKeyResponse)
 	err := c.cc.Invoke(ctx, "/vpnapi.API/GetDataKey", in, out, opts...)
@@ -64,6 +74,7 @@ func (c *aPIClient) GetDataKey(ctx context.Context, in *GetDataKeyRequest, opts 
 type APIServer interface {
 	GetUpdate(context.Context, *GetUpdateRequest) (*GetUpdateResponse, error)
 	GetK8SJoinArgs(context.Context, *GetK8SJoinArgsRequest) (*GetK8SJoinArgsResponse, error)
+	GetK8SCertificateKey(context.Context, *GetK8SCertificateKeyRequest) (*GetK8SCertificateKeyResponse, error)
 	GetDataKey(context.Context, *GetDataKeyRequest) (*GetDataKeyResponse, error)
 	mustEmbedUnimplementedAPIServer()
 }
@@ -77,6 +88,9 @@ func (UnimplementedAPIServer) GetUpdate(context.Context, *GetUpdateRequest) (*Ge
 }
 func (UnimplementedAPIServer) GetK8SJoinArgs(context.Context, *GetK8SJoinArgsRequest) (*GetK8SJoinArgsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetK8SJoinArgs not implemented")
+}
+func (UnimplementedAPIServer) GetK8SCertificateKey(context.Context, *GetK8SCertificateKeyRequest) (*GetK8SCertificateKeyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetK8SCertificateKey not implemented")
 }
 func (UnimplementedAPIServer) GetDataKey(context.Context, *GetDataKeyRequest) (*GetDataKeyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDataKey not implemented")
@@ -130,6 +144,24 @@ func _API_GetK8SJoinArgs_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _API_GetK8SCertificateKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetK8SCertificateKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIServer).GetK8SCertificateKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/vpnapi.API/GetK8sCertificateKey",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIServer).GetK8SCertificateKey(ctx, req.(*GetK8SCertificateKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _API_GetDataKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetDataKeyRequest)
 	if err := dec(in); err != nil {
@@ -162,6 +194,10 @@ var API_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetK8sJoinArgs",
 			Handler:    _API_GetK8SJoinArgs_Handler,
+		},
+		{
+			MethodName: "GetK8sCertificateKey",
+			Handler:    _API_GetK8SCertificateKey_Handler,
 		},
 		{
 			MethodName: "GetDataKey",
