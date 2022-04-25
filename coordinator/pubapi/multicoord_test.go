@@ -14,29 +14,40 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
+	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
-func TestActivateAsCoordinators(t *testing.T) {
+func TestActivateAsAdditionalCoordinator(t *testing.T) {
 	coordinatorPubKey := []byte{6, 7, 8}
 	testCoord1 := stubPeer{peer: peer.Peer{PublicIP: "192.0.2.11", VPNPubKey: []byte{1, 2, 3}, VPNIP: "10.118.0.1", Role: role.Coordinator}}
+	stubVPN := stubVPNAPI{joinArgs: kubeadm.BootstrapTokenDiscovery{
+		APIServerEndpoint: "endp",
+		Token:             "token",
+		CACertHashes:      []string{"dis"},
+	}}
 
 	someErr := errors.New("some error")
 	testCases := map[string]struct {
 		coordinators               stubPeer
 		state                      state.State
-		switchToPersistentStoreErr error
-		expectErr                  bool
 		expectedState              state.State
+		vpnapi                     stubVPNAPI
+		expectErr                  bool
+		switchToPersistentStoreErr error
+		k8sJoinargsErr             error
+		k8sCertKeyErr              error
 	}{
 		"basic": {
 			coordinators:  testCoord1,
 			state:         state.AcceptingInit,
 			expectedState: state.ActivatingNodes,
+			vpnapi:        stubVPN,
 		},
 		"already activated": {
 			state:         state.ActivatingNodes,
 			expectErr:     true,
 			expectedState: state.ActivatingNodes,
+			vpnapi:        stubVPN,
 		},
 		"SwitchToPersistentStore error": {
 			coordinators:               testCoord1,
@@ -44,6 +55,25 @@ func TestActivateAsCoordinators(t *testing.T) {
 			switchToPersistentStoreErr: someErr,
 			expectErr:                  true,
 			expectedState:              state.Failed,
+			vpnapi:                     stubVPN,
+		},
+		"GetK8SJoinArgs error": {
+			coordinators:               testCoord1,
+			state:                      state.AcceptingInit,
+			switchToPersistentStoreErr: someErr,
+			expectErr:                  true,
+			expectedState:              state.Failed,
+			vpnapi:                     stubVPN,
+			k8sJoinargsErr:             someErr,
+		},
+		"GetK8SCertificateKeyErr error": {
+			coordinators:               testCoord1,
+			state:                      state.AcceptingInit,
+			switchToPersistentStoreErr: someErr,
+			expectErr:                  true,
+			expectedState:              state.Failed,
+			vpnapi:                     stubVPN,
+			k8sCertKeyErr:              someErr,
 		},
 	}
 
@@ -52,6 +82,8 @@ func TestActivateAsCoordinators(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
+			tc.vpnapi.getJoinArgsErr = tc.k8sJoinargsErr
+			tc.vpnapi.getK8SCertKeyErr = tc.k8sCertKeyErr
 			core := &fakeCore{
 				state:                      tc.state,
 				vpnPubKey:                  coordinatorPubKey,
@@ -69,10 +101,10 @@ func TestActivateAsCoordinators(t *testing.T) {
 			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, fakeValidator{}, getPublicIPAddr, nil)
 			defer api.Close()
 
-			// spawn coordinator
-			server := tc.coordinators.newServer()
-			go server.Serve(dialer.GetListener(tc.coordinators.peer.PublicIP))
-			defer server.GracefulStop()
+			// spawn vpnServer
+			vpnapiServer := tc.vpnapi.newServer()
+			go vpnapiServer.Serve(dialer.GetListener(net.JoinHostPort(tc.coordinators.peer.VPNIP, vpnAPIPort)))
+			defer vpnapiServer.GracefulStop()
 
 			_, err := api.ActivateAsAdditionalCoordinator(context.Background(), &pubproto.ActivateAsAdditionalCoordinatorRequest{
 				AssignedVpnIp:             "10.118.0.2",
@@ -158,11 +190,12 @@ func TestActivateAdditionalCoordinators(t *testing.T) {
 	testCoord1 := stubPeer{peer: peer.Peer{PublicIP: "192.0.2.11", VPNPubKey: []byte{1, 2, 3}, VPNIP: "10.118.0.1", Role: role.Coordinator}}
 
 	testCases := map[string]struct {
-		coordinators  stubPeer
-		state         state.State
-		activateErr   error
-		expectErr     bool
-		expectedState state.State
+		coordinators    stubPeer
+		state           state.State
+		activateErr     error
+		getPublicKeyErr error
+		expectErr       bool
+		expectedState   state.State
 	}{
 		"basic": {
 			coordinators:  testCoord1,
@@ -181,6 +214,13 @@ func TestActivateAdditionalCoordinators(t *testing.T) {
 			state:         state.AcceptingInit,
 			expectedState: state.AcceptingInit,
 			expectErr:     true,
+		},
+		"getPeerPublicKey error": {
+			coordinators:    testCoord1,
+			state:           state.ActivatingNodes,
+			expectedState:   state.ActivatingNodes,
+			getPublicKeyErr: someErr,
+			expectErr:       true,
 		},
 	}
 
@@ -207,6 +247,7 @@ func TestActivateAdditionalCoordinators(t *testing.T) {
 
 			// spawn coordinator
 			tc.coordinators.activateErr = tc.activateErr
+			tc.coordinators.getPubKeyErr = tc.getPublicKeyErr
 			server := tc.coordinators.newServer()
 			go server.Serve(dialer.GetListener(net.JoinHostPort(tc.coordinators.peer.PublicIP, endpointAVPNPort)))
 			defer server.GracefulStop()
@@ -220,6 +261,55 @@ func TestActivateAdditionalCoordinators(t *testing.T) {
 				return
 			}
 			require.NoError(err)
+		})
+	}
+}
+
+func TestGetPeerVPNPublicKey(t *testing.T) {
+	someErr := errors.New("failed")
+	testCoord := stubPeer{peer: peer.Peer{PublicIP: "192.0.2.11", VPNPubKey: []byte{1, 2, 3}, VPNIP: "10.118.0.1", Role: role.Coordinator}}
+
+	testCases := map[string]struct {
+		coordinator     stubPeer
+		getVPNPubKeyErr error
+		expectErr       bool
+	}{
+		"basic": {
+			coordinator: testCoord,
+		},
+		"Activation Err": {
+			coordinator:     testCoord,
+			getVPNPubKeyErr: someErr,
+			expectErr:       true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			core := &fakeCore{
+				vpnPubKey:       tc.coordinator.peer.VPNPubKey,
+				getvpnPubKeyErr: tc.getVPNPubKeyErr,
+			}
+			dialer := testdialer.NewBufconnDialer()
+
+			getPublicIPAddr := func() (string, error) {
+				return "192.0.2.1", nil
+			}
+
+			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, fakeValidator{}, getPublicIPAddr, nil)
+			defer api.Close()
+
+			resp, err := api.GetPeerVPNPublicKey(context.Background(), &pubproto.GetPeerVPNPublicKeyRequest{})
+
+			if tc.expectErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+			assert.Equal(tc.coordinator.peer.VPNPubKey, resp.CoordinatorPubKey)
 		})
 	}
 }

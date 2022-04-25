@@ -105,16 +105,20 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 			panic(err)
 		}
 	}()
+	if err := a.core.SwitchToPersistentStore(); err != nil {
+		return status.Errorf(codes.Internal, "switch to persistent store: %v", err)
+	}
+
+	// TODO: check performance and maybe make concurrent
+	if err := a.activateCoordinators(logToCLI, in.CoordinatorPublicIps); err != nil {
+		a.logger.Error("coordinator activation failed", zap.Error(err))
+		return status.Errorf(codes.Internal, "coordinator initialization: %v", err)
+	}
 	// TODO: check performance and maybe make concurrent
 	if err := a.activateNodes(logToCLI, in.NodePublicIps); err != nil {
 		a.logger.Error("node activation failed", zap.Error(err))
 		return status.Errorf(codes.Internal, "node initialization: %v", err)
 	}
-
-	if err := a.core.SwitchToPersistentStore(); err != nil {
-		return status.Errorf(codes.Internal, "switch to persistent store: %v", err)
-	}
-
 	// persist node state on disk
 	if err := a.core.PersistNodeState(role.Coordinator, ownerID, clusterID); err != nil {
 		return status.Errorf(codes.Internal, "persist node state: %v", err)

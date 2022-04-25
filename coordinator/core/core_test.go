@@ -13,7 +13,6 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/store"
-	"github.com/edgelesssys/constellation/coordinator/storewrapper"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -78,13 +77,13 @@ func TestSwitchToPersistentStore(t *testing.T) {
 
 	storeFactory := &fakeStoreFactory{}
 	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, storeFactory, file.NewHandler(afero.NewMemMapFs()))
+	require.NoError(core.store.Put("test", []byte("test")))
 	require.NoError(err)
 
 	require.NoError(core.SwitchToPersistentStore())
-
-	key, err := storewrapper.StoreWrapper{Store: storeFactory.store}.GetVPNKey()
-	require.NoError(err)
-	assert.NotEmpty(key)
+	value, err := core.store.Get("test")
+	assert.NoError(err)
+	assert.Equal("test", string(value))
 }
 
 func TestGetIDs(t *testing.T) {

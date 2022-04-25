@@ -328,15 +328,15 @@ func newVPN(netw *network, publicEndpoint string) *fakeVPN {
 	}
 }
 
-func (*fakeVPN) Setup(privKey []byte) ([]byte, error) {
-	return nil, nil
+func (*fakeVPN) Setup(privKey []byte) error {
+	return nil
 }
 
 func (*fakeVPN) GetPrivateKey() ([]byte, error) {
 	return nil, nil
 }
 
-func (*fakeVPN) GetPublicKey(privKey []byte) ([]byte, error) {
+func (*fakeVPN) GetPublicKey() ([]byte, error) {
 	return nil, nil
 }
 

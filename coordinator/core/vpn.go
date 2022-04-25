@@ -2,15 +2,14 @@ package core
 
 import (
 	"bytes"
-	"errors"
 
 	"github.com/edgelesssys/constellation/coordinator/peer"
 )
 
 type VPN interface {
-	Setup(privKey []byte) ([]byte, error)
+	Setup(privKey []byte) error
 	GetPrivateKey() ([]byte, error)
-	GetPublicKey(privKey []byte) ([]byte, error)
+	GetPublicKey() ([]byte, error)
 	GetInterfaceIP() (string, error)
 	SetInterfaceIP(ip string) error
 	AddPeer(pubKey []byte, publicIP string, vpnIP string) error
@@ -28,19 +27,16 @@ type stubVPN struct {
 	getPrivateKeyErr  error
 }
 
-func (*stubVPN) Setup(privKey []byte) ([]byte, error) {
-	return []byte{2, 3, 4}, nil
+func (*stubVPN) Setup(privKey []byte) error {
+	return nil
 }
 
 func (v *stubVPN) GetPrivateKey() ([]byte, error) {
 	return v.privateKey, v.getPrivateKeyErr
 }
 
-func (*stubVPN) GetPublicKey(privKey []byte) ([]byte, error) {
-	if bytes.Equal(privKey, []byte{2, 3, 4}) {
-		return []byte{3, 4, 5}, nil
-	}
-	return nil, errors.New("unexpected privKey")
+func (*stubVPN) GetPublicKey() ([]byte, error) {
+	return []byte{3, 4, 5}, nil
 }
 
 func (v *stubVPN) GetInterfaceIP() (string, error) {

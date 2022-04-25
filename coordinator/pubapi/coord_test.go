@@ -334,6 +334,7 @@ type stubPeer struct {
 	activateAsNodeReceive  int
 	activateErr            error
 	joinErr                error
+	getPubKeyErr           error
 	pubproto.UnimplementedAPIServer
 }
 
@@ -378,6 +379,10 @@ func (*stubPeer) TriggerNodeUpdate(ctx context.Context, in *pubproto.TriggerNode
 
 func (n *stubPeer) JoinCluster(ctx context.Context, in *pubproto.JoinClusterRequest) (*pubproto.JoinClusterResponse, error) {
 	return &pubproto.JoinClusterResponse{}, n.joinErr
+}
+
+func (n *stubPeer) GetPeerVPNPublicKey(ctx context.Context, in *pubproto.GetPeerVPNPublicKeyRequest) (*pubproto.GetPeerVPNPublicKeyResponse, error) {
+	return &pubproto.GetPeerVPNPublicKeyResponse{CoordinatorPubKey: n.peer.VPNPubKey}, n.getPubKeyErr
 }
 
 func (n *stubPeer) newServer() *grpc.Server {

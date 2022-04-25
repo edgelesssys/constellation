@@ -27,15 +27,11 @@ func TestStoreWrapper(t *testing.T) {
 
 	curState := state.IsNode
 
-	key := []byte{2, 3, 4}
 	masterSecret := []byte("Constellation")
 
 	stor := store.NewStdStore()
 	stwrapper := StoreWrapper{Store: stor}
 	assert.NoError(stwrapper.PutState(state.AcceptingInit))
-	dummyKey, err := wgtypes.GenerateKey()
-	assert.NoError(err)
-	assert.NoError(stwrapper.PutVPNKey(dummyKey[:]))
 	assert.NoError(stwrapper.PutMasterSecret(masterSecret))
 
 	// save values to store
@@ -43,16 +39,12 @@ func TestStoreWrapper(t *testing.T) {
 	assert.NoError(err)
 	txdata := StoreWrapper{tx}
 	assert.NoError(txdata.PutState(curState))
-	assert.NoError(txdata.PutVPNKey(key))
 	assert.NoError(tx.Commit())
 
 	// see if we can retrieve them again
 	savedState, err := stwrapper.GetState()
 	assert.NoError(err)
 	assert.Equal(curState, savedState)
-	savedKey, err := stwrapper.GetVPNKey()
-	assert.NoError(err)
-	assert.Equal(key, savedKey)
 	savedSecret, err := stwrapper.GetMasterSecret()
 	assert.NoError(err)
 	assert.Equal(masterSecret, savedSecret)
@@ -64,19 +56,10 @@ func TestStoreWrapperDefaults(t *testing.T) {
 	stor := store.NewStdStore()
 	stwrapper := StoreWrapper{Store: stor}
 	assert.NoError(stwrapper.PutState(state.AcceptingInit))
-	dummyKey, err := wgtypes.GenerateKey()
-	assert.NoError(err)
-	assert.NoError(stwrapper.PutVPNKey(dummyKey[:]))
 
 	statevalue, err := stwrapper.GetState()
 	assert.NoError(err)
 	assert.Equal(state.AcceptingInit, statevalue)
-
-	k, err := stwrapper.GetVPNKey()
-	assert.NoError(err)
-	assert.NotEmpty(k)
-
-	// Nothing else was set, should always return error
 }
 
 func TestStoreWrapperRollback(t *testing.T) {
@@ -85,26 +68,25 @@ func TestStoreWrapperRollback(t *testing.T) {
 	stor := store.NewStdStore()
 	stwrapper := StoreWrapper{Store: stor}
 	assert.NoError(stwrapper.PutState(state.AcceptingInit))
-	dummyKey, err := wgtypes.GenerateKey()
-	assert.NoError(err)
-	assert.NoError(stwrapper.PutVPNKey(dummyKey[:]))
 
-	k1 := []byte{2, 3, 4}
-	k2 := []byte{3, 4, 5}
+	assert.NoError(stwrapper.PutClusterID([]byte{1, 2, 3}))
+
+	c1 := []byte{2, 3, 4}
+	c2 := []byte{3, 4, 5}
 
 	tx, err := stor.BeginTransaction()
 	assert.NoError(err)
-	assert.NoError(StoreWrapper{tx}.PutVPNKey(k1))
+	assert.NoError(StoreWrapper{tx}.PutClusterID(c1))
 	assert.NoError(tx.Commit())
 
 	tx, err = stor.BeginTransaction()
 	assert.NoError(err)
-	assert.NoError(StoreWrapper{tx}.PutVPNKey(k2))
+	assert.NoError(StoreWrapper{tx}.PutClusterID(c2))
 	tx.Rollback()
 
-	val, err := stwrapper.GetVPNKey()
+	val, err := stwrapper.GetClusterID()
 	assert.NoError(err)
-	assert.Equal(k1, val)
+	assert.Equal(c1, val)
 }
 
 func TestStoreWrapperPeerInterface(t *testing.T) {
@@ -114,9 +96,6 @@ func TestStoreWrapperPeerInterface(t *testing.T) {
 	stor := store.NewStdStore()
 	stwrapper := StoreWrapper{Store: stor}
 	assert.NoError(stwrapper.PutState(state.AcceptingInit))
-	dummyKey, err := wgtypes.GenerateKey()
-	assert.NoError(err)
-	assert.NoError(stwrapper.PutVPNKey(dummyKey[:]))
 
 	key, err := wgtypes.GeneratePrivateKey()
 	assert.NoError(err)

@@ -25,7 +25,6 @@ const (
 	keyMasterSecret                  = "masterSecret"
 	keyKubeConfig                    = "kubeConfig"
 	keyClusterID                     = "clusterID"
-	keyVPNPubKey                     = "vpnKey"
 	keyKMSData                       = "KMSData"
 	keyKEKID                         = "kekID"
 	prefixFreeCoordinatorIPs         = "freeCoordinatorVPNIPs"
@@ -69,16 +68,6 @@ func (s StoreWrapper) GetState() (state.State, error) {
 func (s StoreWrapper) PutState(currState state.State) error {
 	rawState := []byte(strconv.Itoa(int(currState)))
 	return s.Store.Put("state", rawState)
-}
-
-// GetVPNKey returns the VPN pubKey from Store.
-func (s StoreWrapper) GetVPNKey() ([]byte, error) {
-	return s.Store.Get(keyVPNPubKey)
-}
-
-// PutVPNKey saves the VPN pubKey to store.
-func (s StoreWrapper) PutVPNKey(key []byte) error {
-	return s.Store.Put(keyVPNPubKey, key)
 }
 
 // PutPeer puts a single peer in the store, with a unique key derived form the VPNIP.

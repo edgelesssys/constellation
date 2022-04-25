@@ -400,10 +400,11 @@ func dialGRPC(ctx context.Context, dialer Dialer, target string) (*grpc.ClientCo
 }
 
 type stubVPNAPI struct {
-	peers          []peer.Peer
-	getUpdateErr   error
-	joinArgs       kubeadm.BootstrapTokenDiscovery
-	getJoinArgsErr error
+	peers            []peer.Peer
+	joinArgs         kubeadm.BootstrapTokenDiscovery
+	getUpdateErr     error
+	getJoinArgsErr   error
+	getK8SCertKeyErr error
 	vpnproto.UnimplementedAPIServer
 }
 
@@ -417,4 +418,14 @@ func (a *stubVPNAPI) GetK8SJoinArgs(ctx context.Context, in *vpnproto.GetK8SJoin
 		Token:                    a.joinArgs.Token,
 		DiscoveryTokenCaCertHash: a.joinArgs.CACertHashes[0],
 	}, a.getJoinArgsErr
+}
+
+func (a *stubVPNAPI) GetK8SCertificateKey(ctx context.Context, in *vpnproto.GetK8SCertificateKeyRequest) (*vpnproto.GetK8SCertificateKeyResponse, error) {
+	return &vpnproto.GetK8SCertificateKeyResponse{CertificateKey: "dummyCertKey"}, a.getK8SCertKeyErr
+}
+
+func (a *stubVPNAPI) newServer() *grpc.Server {
+	server := grpc.NewServer()
+	vpnproto.RegisterAPIServer(server, a)
+	return server
 }

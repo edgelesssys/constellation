@@ -143,6 +143,46 @@ func TestGetDataKey(t *testing.T) {
 	assert.Nil(res)
 }
 
+func TestGetK8SCertificateKey(t *testing.T) {
+	someErr := errors.New("someErr")
+	certKey := "kubeadmKey"
+
+	testCases := map[string]struct {
+		certKey       string
+		getCertKeyErr error
+		expectErr     bool
+	}{
+		"basic": {
+			certKey: certKey,
+		},
+		"error": {
+			getCertKeyErr: someErr,
+			expectErr:     true,
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			core := &stubCore{
+				kubeadmCertificateKey: certKey,
+				getCertKeyErr:         tc.getCertKeyErr,
+			}
+
+			api := New(zaptest.NewLogger(t), core)
+			resp, err := api.GetK8SCertificateKey(context.Background(), &vpnproto.GetK8SCertificateKeyRequest{})
+
+			if tc.expectErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+			assert.Equal(certKey, resp.CertificateKey)
+		})
+	}
+}
+
 type stubCore struct {
 	peers                  []peer.Peer
 	serverResourceVersion  int
@@ -150,6 +190,8 @@ type stubCore struct {
 	clientResourceVersions []int
 	heartbeats             []net.Addr
 	joinArgs               kubeadm.BootstrapTokenDiscovery
+	kubeadmCertificateKey  string
+	getCertKeyErr          error
 	derivedKey             []byte
 	deriveKeyErr           error
 }
@@ -165,6 +207,10 @@ func (c *stubCore) NotifyNodeHeartbeat(addr net.Addr) {
 
 func (c *stubCore) GetK8sJoinArgs() (*kubeadm.BootstrapTokenDiscovery, error) {
 	return &c.joinArgs, nil
+}
+
+func (c *stubCore) GetK8SCertificateKey() (string, error) {
+	return c.kubeadmCertificateKey, c.getCertKeyErr
 }
 
 func (c *stubCore) GetDataKey(ctx context.Context, dataKeyID string, length int) ([]byte, error) {

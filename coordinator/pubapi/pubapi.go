@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	deadlineDuration = time.Minute
+	deadlineDuration = 5 * time.Minute
 	endpointAVPNPort = "9000"
 	vpnAPIPort       = "9027"
 	updateInterval   = 10 * time.Second

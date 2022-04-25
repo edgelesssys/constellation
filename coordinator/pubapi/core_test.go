@@ -14,6 +14,7 @@ import (
 
 type fakeCore struct {
 	vpnPubKey                  []byte
+	getvpnPubKeyErr            error
 	vpnIP                      string
 	setVPNIPErr                error
 	nextNodeIP                 netip.Addr
@@ -38,7 +39,7 @@ type fakeCore struct {
 }
 
 func (c *fakeCore) GetVPNPubKey() ([]byte, error) {
-	return c.vpnPubKey, nil
+	return c.vpnPubKey, c.getvpnPubKeyErr
 }
 
 func (c *fakeCore) SetVPNIP(ip string) error {
@@ -123,8 +124,8 @@ func (c *fakeCore) InitCluster(autoscalingNodeGroups []string, cloudServiceAccou
 	return c.kubeconfig, nil
 }
 
-func (c *fakeCore) JoinCluster(args kubeadm.BootstrapTokenDiscovery) error {
-	c.joinArgs = append(c.joinArgs, args)
+func (c *fakeCore) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, _ string, _ role.Role) error {
+	c.joinArgs = append(c.joinArgs, *args)
 	return c.joinClusterErr
 }
 

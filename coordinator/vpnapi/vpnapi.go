@@ -58,6 +58,15 @@ func (a *API) GetK8SJoinArgs(ctx context.Context, in *vpnproto.GetK8SJoinArgsReq
 	}, nil
 }
 
+// GetK8SCertificateKey is the RPC call to get the K8s certificateKey necessary for control-plane join.
+func (a *API) GetK8SCertificateKey(ctx context.Context, in *vpnproto.GetK8SCertificateKeyRequest) (*vpnproto.GetK8SCertificateKeyResponse, error) {
+	certKey, err := a.core.GetK8SCertificateKey()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "%v", err)
+	}
+	return &vpnproto.GetK8SCertificateKeyResponse{CertificateKey: certKey}, nil
+}
+
 // GetDataKey returns a data key derived from the Constellation's master secret.
 func (a *API) GetDataKey(ctx context.Context, in *vpnproto.GetDataKeyRequest) (*vpnproto.GetDataKeyResponse, error) {
 	key, err := a.core.GetDataKey(ctx, in.DataKeyId, int(in.Length))
@@ -71,5 +80,6 @@ type Core interface {
 	GetPeers(resourceVersion int) (int, []peer.Peer, error)
 	NotifyNodeHeartbeat(net.Addr)
 	GetK8sJoinArgs() (*kubeadm.BootstrapTokenDiscovery, error)
+	GetK8SCertificateKey() (string, error)
 	GetDataKey(ctx context.Context, dataKeyID string, length int) ([]byte, error)
 }

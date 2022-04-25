@@ -33,7 +33,7 @@ func New() (*Wireguard, error) {
 	return &Wireguard{client: client}, nil
 }
 
-func (w *Wireguard) Setup(privKey []byte) ([]byte, error) {
+func (w *Wireguard) Setup(privKey []byte) error {
 	var key wgtypes.Key
 	var err error
 	if len(privKey) == 0 {
@@ -42,15 +42,10 @@ func (w *Wireguard) Setup(privKey []byte) ([]byte, error) {
 		key, err = wgtypes.NewKey(privKey)
 	}
 	if err != nil {
-		return nil, err
+		return err
 	}
-
 	listenPort := port
-	if err := w.client.ConfigureDevice(netInterface, wgtypes.Config{PrivateKey: &key, ListenPort: &listenPort}); err != nil {
-		return nil, prettyWgError(err)
-	}
-
-	return key[:], nil
+	return w.client.ConfigureDevice(netInterface, wgtypes.Config{PrivateKey: &key, ListenPort: &listenPort})
 }
 
 // GetPrivateKey returns the private key of the wireguard interface.
@@ -62,13 +57,21 @@ func (w *Wireguard) GetPrivateKey() ([]byte, error) {
 	return device.PrivateKey[:], nil
 }
 
-func (w *Wireguard) GetPublicKey(privKey []byte) ([]byte, error) {
+func (w *Wireguard) DerivePublicKey(privKey []byte) ([]byte, error) {
 	key, err := wgtypes.NewKey(privKey)
 	if err != nil {
 		return nil, err
 	}
 	pubkey := key.PublicKey()
 	return pubkey[:], nil
+}
+
+func (w *Wireguard) GetPublicKey() ([]byte, error) {
+	deviceData, err := w.client.Device(netInterface)
+	if err != nil {
+		return nil, err
+	}
+	return deviceData.PublicKey[:], nil
 }
 
 func (w *Wireguard) GetInterfaceIP() (string, error) {

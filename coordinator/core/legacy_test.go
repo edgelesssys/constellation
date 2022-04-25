@@ -79,16 +79,11 @@ func TestLegacyActivateCoordinator(t *testing.T) {
 	testActivationSvr := &stubAVPNActivateCoordinatorServer{}
 	assert.NoError(coordinatorAPI.ActivateAsCoordinator(activationReq, testActivationSvr))
 
-	// Coordinator sets own key
-	coordinatorKey, err := coordinatorCore.data().GetVPNKey()
-	assert.NoError(err)
-
 	// Coordinator streams admin conf
 	require.NotEmpty(testActivationSvr.sent)
 	adminConfig := testActivationSvr.sent[len(testActivationSvr.sent)-1].GetAdminConfig()
 	require.NotNil(adminConfig)
 	assert.NotEmpty(adminConfig.AdminVpnIp)
-	assert.Equal(coordinatorKey, adminConfig.CoordinatorVpnPubKey)
 	assert.NotNil(adminConfig.Kubeconfig)
 	require.NotNil(testActivationSvr.sent[0])
 	require.NotNil(testActivationSvr.sent[0].GetLog())
@@ -114,7 +109,6 @@ func TestLegacyActivateCoordinator(t *testing.T) {
 	peers = nodeCore1.vpn.(*stubVPN).peers
 	assert.Less(0, len(peers))
 	assert.NotEmpty(peers[0].publicIP)
-	assert.Equal(coordinatorKey, peers[0].pubKey)
 }
 
 // newMockCoreWithDialer creates a new core object with attestation mock and provided dialer for testing.

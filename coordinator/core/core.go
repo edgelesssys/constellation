@@ -70,17 +70,7 @@ func NewCore(vpn VPN, kube Cluster,
 		return nil, err
 	}
 
-	privk, err := vpn.Setup(nil)
-	if err != nil {
-		return nil, err
-	}
-
-	pubk, err := vpn.GetPublicKey(privk)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := c.data().PutVPNKey(pubk); err != nil {
+	if err := vpn.Setup(nil); err != nil {
 		return nil, err
 	}
 
@@ -89,7 +79,7 @@ func NewCore(vpn VPN, kube Cluster,
 
 // GetVPNPubKey returns the peer's VPN public key.
 func (c *Core) GetVPNPubKey() ([]byte, error) {
-	return c.data().GetVPNKey()
+	return c.vpn.GetPublicKey()
 }
 
 // GetVPNPubKey returns the peer's VPN public key.

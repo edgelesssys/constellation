@@ -37,5 +37,5 @@ type Core interface {
 	UpdatePeers([]peer.Peer) error
 
 	InitCluster(autoscalingNodeGroups []string, cloudServiceAccountURI string) ([]byte, error)
-	JoinCluster(kubeadm.BootstrapTokenDiscovery) error
+	JoinCluster(joinToken *kubeadm.BootstrapTokenDiscovery, certificateKey string, role role.Role) error
 }

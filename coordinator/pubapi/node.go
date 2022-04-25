@@ -178,11 +178,11 @@ func (a *API) JoinCluster(ctx context.Context, in *pubproto.JoinClusterRequest) 
 		return nil, status.Errorf(codes.Internal, "request K8s join string: %v", err)
 	}
 
-	err = a.core.JoinCluster(kubeadm.BootstrapTokenDiscovery{
+	err = a.core.JoinCluster(&kubeadm.BootstrapTokenDiscovery{
 		APIServerEndpoint: resp.ApiServerEndpoint,
 		Token:             resp.Token,
 		CACertHashes:      []string{resp.DiscoveryTokenCaCertHash},
-	})
+	}, "", role.Node)
 	if err != nil {
 		_ = a.core.AdvanceState(state.Failed, nil, nil)
 		return nil, status.Errorf(codes.Internal, "joining kubernetes cluster: %v", err)
