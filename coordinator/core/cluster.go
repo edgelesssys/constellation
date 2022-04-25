@@ -16,6 +16,11 @@ func (c *Core) GetK8sJoinArgs() (*kubeadm.BootstrapTokenDiscovery, error) {
 	return c.data().GetKubernetesJoinArgs()
 }
 
+// GetK8SCertificateKey returns the key needed by a Coordinator to join the cluster.
+func (c *Core) GetK8SCertificateKey() (string, error) {
+	return c.kube.GetKubeadmCertificateKey()
+}
+
 // InitCluster initializes the cluster, stores the join args, and returns the kubeconfig.
 func (c *Core) InitCluster(autoscalingNodeGroups []string, cloudServiceAccountURI string) ([]byte, error) {
 	var nodeName string
@@ -123,7 +128,7 @@ func (c *Core) InitCluster(autoscalingNodeGroups []string, cloudServiceAccountUR
 }
 
 // JoinCluster lets a Node join the cluster.
-func (c *Core) JoinCluster(args kubeadm.BootstrapTokenDiscovery) error {
+func (c *Core) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, certKey string, peerRole role.Role) error {
 	c.zaplogger.Info("Joining kubernetes cluster")
 	nodeVPNIP, err := c.vpn.GetInterfaceIP()
 	if err != nil {
@@ -155,14 +160,16 @@ func (c *Core) JoinCluster(args kubeadm.BootstrapTokenDiscovery) error {
 		}
 	}
 
-	if err := c.kube.JoinCluster(&args, k8sCompliantHostname(nodeName), nodeIP, providerID); err != nil {
+	c.zaplogger.Info("k8s Join data", zap.String("nodename", nodeName), zap.String("nodeIP", nodeIP), zap.String("nodeVPNIP", nodeVPNIP), zap.String("provid", providerID))
+	// we need to pass the VPNIP for another control-plane, otherwise etcd will bind itself to the wrong IP address and fails
+	if err := c.kube.JoinCluster(args, k8sCompliantHostname(nodeName), nodeIP, nodeVPNIP, providerID, certKey, peerRole); err != nil {
 		c.zaplogger.Error("Joining kubernetes cluster failed", zap.Error(err))
 		return err
 	}
 	c.zaplogger.Info("Joined kubernetes cluster")
 	// set role in cloud provider metadata for autoconfiguration
 	if c.metadata.Supported() {
-		if err := c.metadata.SignalRole(context.TODO(), role.Node); err != nil {
+		if err := c.metadata.SignalRole(context.TODO(), peerRole); err != nil {
 			c.zaplogger.Info("unable to update role in cloud provider metadata", zap.Error(err))
 		}
 	}
@@ -175,9 +182,11 @@ type Cluster interface {
 	// InitCluster bootstraps a new cluster with the current node being the master, returning the arguments required to join the cluster.
 	InitCluster(kubernetes.InitClusterInput) (*kubeadm.BootstrapTokenDiscovery, error)
 	// JoinCluster will join the current node to an existing cluster.
-	JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeName, nodeIP, providerID string) error
+	JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeName, nodeIP, nodeVPNIP, providerID, certKey string, peerRole role.Role) error
 	// GetKubeconfig reads the kubeconfig from the filesystem. Only succeeds after cluster is initialized.
 	GetKubeconfig() ([]byte, error)
+	// GetKubeadmCertificateKey returns the 64-byte hex string key needed to join the cluster as control-plane. This function must be executed on a control-plane.
+	GetKubeadmCertificateKey() (string, error)
 }
 
 // ClusterFake behaves like a real cluster, but does not actually initialize or join kubernetes.
@@ -193,13 +202,18 @@ func (c *ClusterFake) InitCluster(kubernetes.InitClusterInput) (*kubeadm.Bootstr
 }
 
 // JoinCluster will fake joining the current node to an existing cluster.
-func (c *ClusterFake) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeName, nodeIP, providerID string) error {
+func (c *ClusterFake) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeName, nodeIP, nodeVPNIP, providerID, certKey string, _ role.Role) error {
 	return nil
 }
 
 // GetKubeconfig fakes reading the kubeconfig from the filesystem. Only succeeds after cluster is initialized.
 func (c *ClusterFake) GetKubeconfig() ([]byte, error) {
 	return []byte("kubeconfig"), nil
+}
+
+// GetKubeadmCertificateKey fakes generating a certificateKey.
+func (c *ClusterFake) GetKubeadmCertificateKey() (string, error) {
+	return "controlPlaneCertficateKey", nil
 }
 
 // k8sCompliantHostname transforms a hostname to an RFC 1123 compliant, lowercase subdomain as required by kubernetes node names.

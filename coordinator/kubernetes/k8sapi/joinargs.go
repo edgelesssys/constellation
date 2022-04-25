@@ -32,6 +32,7 @@ func ParseJoinCommand(joinCommand string) (*kubeadm.BootstrapTokenDiscovery, err
 	flags.StringVar(&result.Token, "token", "", "")
 	flags.StringVar(&caCertHash, "discovery-token-ca-cert-hash", "", "")
 	flags.Bool("control-plane", false, "")
+	flags.String("certificate-key", "", "")
 	if err := flags.Parse(argv[3:]); err != nil {
 		return nil, fmt.Errorf("parsing flag arguments failed: %v %w", argv, err)
 	}

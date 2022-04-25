@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
@@ -29,6 +30,7 @@ type ClusterUtil interface {
 	SetupCloudControllerManager(kubectl Client, cloudControllerManagerConfiguration resources.Marshaler, configMaps resources.Marshaler, secrets resources.Marshaler) error
 	SetupCloudNodeManager(kubectl Client, cloudNodeManagerConfiguration resources.Marshaler) error
 	RestartKubelet() error
+	GetControlPlaneJoinCertificateKey() (string, error)
 }
 
 type KubernetesUtil struct{}
@@ -166,4 +168,30 @@ func (k *KubernetesUtil) JoinCluster(joinConfig []byte) error {
 // RestartKubelet restarts a kubelet.
 func (k *KubernetesUtil) RestartKubelet() error {
 	return RestartSystemdUnit("kubelet.service")
+}
+
+// GetControlPlaneJoinCertificateKey return the key which can be used in combination with the joinArgs
+// to join the Cluster as control-plane.
+func (k *KubernetesUtil) GetControlPlaneJoinCertificateKey() (string, error) {
+	// Key will be valid for 1h (no option to reduce the duration).
+	// https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init-phase/#cmd-phase-upload-certs
+	output, err := exec.Command("kubeadm", "init", "phase", "upload-certs", "--upload-certs").Output()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return "", fmt.Errorf("kubeadm upload-certs failed (code %v) with: %s", exitErr.ExitCode(), exitErr.Stderr)
+		}
+		return "", fmt.Errorf("kubeadm upload-certs failed: %w", err)
+	}
+	// Example output:
+	/*
+		[upload-certs] Storing the certificates in ConfigMap "kubeadm-certs" in the "kube-system" Namespace
+		[upload-certs] Using certificate key:
+		9555b74008f24687eb964bd90a164ecb5760a89481d9c55a77c129b7db438168
+	*/
+	key := regexp.MustCompile("[a-f0-9]{64}").FindString(string(output))
+	if key == "" {
+		return "", fmt.Errorf("failed to parse kubeadm output: %s", string(output))
+	}
+	return key, nil
 }

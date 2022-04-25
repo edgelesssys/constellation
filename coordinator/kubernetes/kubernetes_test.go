@@ -6,6 +6,7 @@ import (
 
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -62,6 +63,10 @@ func (s *stubClusterUtil) JoinCluster(joinConfig []byte) error {
 
 func (s *stubClusterUtil) RestartKubelet() error {
 	return s.restartKubeletErr
+}
+
+func (s *stubClusterUtil) GetControlPlaneJoinCertificateKey() (string, error) {
+	return "", nil
 }
 
 type stubConfigProvider struct {
@@ -236,7 +241,7 @@ func TestJoinCluster(t *testing.T) {
 			require := require.New(t)
 
 			kube := New(&tc.clusterUtil, &stubConfigProvider{}, &client)
-			err := kube.JoinCluster(joinCommand, instanceName, nodeVPNIP, coordinatorProviderID)
+			err := kube.JoinCluster(joinCommand, instanceName, nodeVPNIP, nodeVPNIP, coordinatorProviderID, "", role.Node)
 			if tc.expectErr {
 				assert.Error(err)
 				return

@@ -6,6 +6,7 @@ import (
 
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/spf13/afero"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
@@ -103,14 +104,17 @@ func (k *KubeWrapper) InitCluster(in InitClusterInput) (*kubeadm.BootstrapTokenD
 }
 
 // JoinCluster joins existing kubernetes cluster.
-func (k *KubeWrapper) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeName, nodeIP, providerID string) error {
+func (k *KubeWrapper) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeName, nodeInternalIP, nodeVPNIP, providerID, certKey string, peerRole role.Role) error {
 	joinConfig := k.configProvider.JoinConfiguration()
 	joinConfig.SetApiServerEndpoint(args.APIServerEndpoint)
 	joinConfig.SetToken(args.Token)
 	joinConfig.AppendDiscoveryTokenCaCertHash(args.CACertHashes[0])
-	joinConfig.SetNodeIP(nodeIP)
+	joinConfig.SetNodeIP(nodeInternalIP)
 	joinConfig.SetNodeName(nodeName)
 	joinConfig.SetProviderID(providerID)
+	if peerRole == role.Coordinator {
+		joinConfig.SetControlPlane(nodeVPNIP, certKey)
+	}
 	joinConfigYAML, err := joinConfig.Marshal()
 	if err != nil {
 		return fmt.Errorf("encoding kubeadm join configuration as YAML failed: %w", err)
@@ -133,6 +137,11 @@ func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
 	// 127.0.0.1:16443 is the high availability balancer nginx endpoint, runnining localy on all nodes
 	// alternatively one could also start a local high availability balancer.
 	return []byte(strings.ReplaceAll(string(kubeconf), "127.0.0.1:16443", "10.118.0.1:6443")), nil
+}
+
+// GetKubeadmCertificateKey return the key needed to join the Cluster as Control-Plane (has to be executed on a control-plane; errors otherwise).
+func (k *KubeWrapper) GetKubeadmCertificateKey() (string, error) {
+	return k.clusterUtil.GetControlPlaneJoinCertificateKey()
 }
 
 type fakeK8SClient struct {

@@ -179,6 +179,16 @@ func (k *KubeadmJoinYAML) SetProviderID(providerID string) {
 	k.KubeletConfiguration.ProviderID = providerID
 }
 
+func (k *KubeadmJoinYAML) SetControlPlane(advertiseAddress string, certificateKey string) {
+	k.JoinConfiguration.ControlPlane = &kubeadm.JoinControlPlane{
+		LocalAPIEndpoint: kubeadm.APIEndpoint{
+			AdvertiseAddress: advertiseAddress,
+			BindPort:         6443,
+		},
+		CertificateKey: certificateKey,
+	}
+}
+
 func (k *KubeadmJoinYAML) Marshal() ([]byte, error) {
 	return resources.MarshalK8SResources(k)
 }

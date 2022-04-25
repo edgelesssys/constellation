@@ -9,6 +9,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/attestation/simulator"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -287,12 +288,12 @@ func TestJoinCluster(t *testing.T) {
 			core, err := NewCore(&tc.vpn, &tc.cluster, &tc.metadata, &tc.cloudControllerManager, &tc.cloudNodeManager, &tc.clusterAutoscaler, nil, zapLogger, simulator.OpenSimulatedTPM, nil, file.NewHandler(afero.NewMemMapFs()))
 			require.NoError(err)
 
-			joinReq := kubeadm.BootstrapTokenDiscovery{
+			joinReq := &kubeadm.BootstrapTokenDiscovery{
 				APIServerEndpoint: "192.0.2.0:6443",
 				Token:             "someToken",
 				CACertHashes:      []string{"someHash"},
 			}
-			err = core.JoinCluster(joinReq)
+			err = core.JoinCluster(joinReq, "", role.Node)
 
 			if tc.expectErr {
 				assert.Error(err)
@@ -354,7 +355,7 @@ func (c *clusterStub) InitCluster(in kubernetes.InitClusterInput) (*kubeadm.Boot
 	return &c.initJoinArgs, c.initErr
 }
 
-func (c *clusterStub) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeName, nodeIP, providerID string) error {
+func (c *clusterStub) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeName, nodeIP, nodeVPNIP, providerID, certKey string, _ role.Role) error {
 	c.joinClusterArgs = append(c.joinClusterArgs, joinClusterArgs{
 		args:       args,
 		nodeName:   nodeName,
@@ -367,6 +368,10 @@ func (c *clusterStub) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeNam
 
 func (c *clusterStub) GetKubeconfig() ([]byte, error) {
 	return c.kubeconfig, c.getKubeconfigErr
+}
+
+func (c *clusterStub) GetKubeadmCertificateKey() (string, error) {
+	return "dummy", nil
 }
 
 type prepareInstanceRequest struct {
