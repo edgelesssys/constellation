@@ -26,13 +26,20 @@ func GetScalingGroupsFromConfig(stat state.ConstellationState, config *configc.C
 }
 
 func getAWSInstances(stat state.ConstellationState, _ *configc.Config) (coordinators, nodes cmdc.ScalingGroup, err error) {
-	coordinatorID, coordinator, err := stat.EC2Instances.GetOne()
+	coordinatorID, _, err := stat.EC2Instances.GetOne()
 	if err != nil {
 		return
 	}
+	coordinatorMap := stat.EC2Instances
+	var coordinatorInstances cmdc.Instances
+	for _, node := range coordinatorMap {
+		coordinatorInstances = append(coordinatorInstances, cmdc.Instance(node))
+	}
 	// GroupID of coordinators is empty, since they currently do not scale.
-	coordinators = cmdc.ScalingGroup{Instances: cmdc.Instances{cmdc.Instance(coordinator)}, GroupID: ""}
-
+	coordinators = cmdc.ScalingGroup{
+		Instances: coordinatorInstances,
+		GroupID:   "",
+	}
 	nodeMap := stat.EC2Instances.GetOthers(coordinatorID)
 	if len(nodeMap) == 0 {
 		return cmdc.ScalingGroup{}, cmdc.ScalingGroup{}, errors.New("no nodes available, can't create Constellation with one instance")
@@ -51,12 +58,19 @@ func getAWSInstances(stat state.ConstellationState, _ *configc.Config) (coordina
 }
 
 func getGCPInstances(stat state.ConstellationState, config *configc.Config) (coordinators, nodes cmdc.ScalingGroup, err error) {
-	_, coordinator, err := stat.GCPCoordinators.GetOne()
-	if err != nil {
-		return
+	coordinatorMap := stat.GCPCoordinators
+	if len(coordinatorMap) == 0 {
+		return cmdc.ScalingGroup{}, cmdc.ScalingGroup{}, errors.New("no coordinators available, can't create Constellation without any instance")
+	}
+	var coordinatorInstances cmdc.Instances
+	for _, node := range coordinatorMap {
+		coordinatorInstances = append(coordinatorInstances, cmdc.Instance(node))
 	}
 	// GroupID of coordinators is empty, since they currently do not scale.
-	coordinators = cmdc.ScalingGroup{Instances: cmdc.Instances{cmdc.Instance(coordinator)}, GroupID: ""}
+	coordinators = cmdc.ScalingGroup{
+		Instances: coordinatorInstances,
+		GroupID:   "",
+	}
 
 	nodeMap := stat.GCPNodes
 	if len(nodeMap) == 0 {
@@ -78,13 +92,19 @@ func getGCPInstances(stat state.ConstellationState, config *configc.Config) (coo
 }
 
 func getAzureInstances(stat state.ConstellationState, _ *configc.Config) (coordinators, nodes cmdc.ScalingGroup, err error) {
-	_, coordinator, err := stat.AzureCoordinators.GetOne()
-	if err != nil {
-		return
+	coordinatorMap := stat.AzureCoordinators
+	if len(coordinatorMap) == 0 {
+		return cmdc.ScalingGroup{}, cmdc.ScalingGroup{}, errors.New("no coordinators available, can't create Constellation without any instance")
+	}
+	var coordinatorInstances cmdc.Instances
+	for _, node := range coordinatorMap {
+		coordinatorInstances = append(coordinatorInstances, cmdc.Instance(node))
 	}
 	// GroupID of coordinators is empty, since they currently do not scale.
-	coordinators = cmdc.ScalingGroup{Instances: cmdc.Instances{cmdc.Instance(coordinator)}, GroupID: ""}
-
+	coordinators = cmdc.ScalingGroup{
+		Instances: coordinatorInstances,
+		GroupID:   "",
+	}
 	nodeMap := stat.AzureNodes
 	if len(nodeMap) == 0 {
 		return cmdc.ScalingGroup{}, cmdc.ScalingGroup{}, errors.New("no nodes available, can't create Constellation with one instance")
