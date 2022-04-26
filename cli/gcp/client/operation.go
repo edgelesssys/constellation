@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
@@ -12,6 +13,8 @@ import (
 func (c *Client) waitForOperations(ctx context.Context, ops []Operation) error {
 	for _, op := range ops {
 		switch {
+		case op.Proto() == nil:
+			return errors.New("proto of operation is nil")
 		case op.Proto().Zone != nil:
 			if err := c.waitForZoneOperation(ctx, op); err != nil {
 				return err

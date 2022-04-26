@@ -97,6 +97,7 @@ func TestTerminateVPCs(t *testing.T) {
 		networksAPI        networksAPI
 		subnetworksAPI     subnetworksAPI
 		firewalls          []string
+		subnetwork         string
 		wantErr            bool
 	}{
 		"successful terminate": {
@@ -104,6 +105,14 @@ func TestTerminateVPCs(t *testing.T) {
 			operationRegionAPI: stubOperationRegionAPI{},
 			networksAPI:        stubNetworksAPI{},
 			subnetworksAPI:     stubSubnetworksAPI{},
+			subnetwork:         "subnetwork-id-1",
+		},
+		"subnetwork empty": {
+			operationGlobalAPI: stubOperationGlobalAPI{},
+			operationRegionAPI: stubOperationRegionAPI{},
+			networksAPI:        stubNetworksAPI{},
+			subnetworksAPI:     stubSubnetworksAPI{},
+			subnetwork:         "",
 		},
 		"failed wait global op": {
 			operationGlobalAPI: stubOperationGlobalAPI{waitErr: someErr},
@@ -111,6 +120,7 @@ func TestTerminateVPCs(t *testing.T) {
 			networksAPI:        stubNetworksAPI{},
 			subnetworksAPI:     stubSubnetworksAPI{},
 			wantErr:            true,
+			subnetwork:         "subnetwork-id-1",
 		},
 		"failed delete networks": {
 			operationGlobalAPI: stubOperationGlobalAPI{},
@@ -118,6 +128,7 @@ func TestTerminateVPCs(t *testing.T) {
 			networksAPI:        stubNetworksAPI{deleteErr: someErr},
 			subnetworksAPI:     stubSubnetworksAPI{},
 			wantErr:            true,
+			subnetwork:         "subnetwork-id-1",
 		},
 		"failed delete subnetworks": {
 			operationGlobalAPI: stubOperationGlobalAPI{},
@@ -125,6 +136,7 @@ func TestTerminateVPCs(t *testing.T) {
 			networksAPI:        stubNetworksAPI{},
 			subnetworksAPI:     stubSubnetworksAPI{deleteErr: someErr},
 			wantErr:            true,
+			subnetwork:         "subnetwork-id-1",
 		},
 		"must delete firewalls first": {
 			firewalls:          []string{"firewall-1", "firewall-2"},
@@ -133,6 +145,7 @@ func TestTerminateVPCs(t *testing.T) {
 			networksAPI:        stubNetworksAPI{},
 			subnetworksAPI:     stubSubnetworksAPI{},
 			wantErr:            true,
+			subnetwork:         "subnetwork-id-1",
 		},
 	}
 
@@ -152,7 +165,7 @@ func TestTerminateVPCs(t *testing.T) {
 				subnetworksAPI:     tc.subnetworksAPI,
 				firewalls:          tc.firewalls,
 				network:            "network-id-1",
-				subnetwork:         "subnetwork-id-1",
+				subnetwork:         tc.subnetwork,
 			}
 
 			if tc.wantErr {

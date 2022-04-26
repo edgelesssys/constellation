@@ -124,7 +124,7 @@ func (c *Client) TerminateVPCs(ctx context.Context) error {
 		return errors.New("client has firewalls, which must be deleted first")
 	}
 
-	if err := c.terminateSubnets(ctx); err != nil {
+	if err := c.terminateSubnet(ctx); err != nil {
 		return err
 	}
 
@@ -183,23 +183,18 @@ func (c *Client) createSubnet(ctx context.Context, name, cidr, network, secondar
 	return c.subnetworksAPI.Insert(ctx, req)
 }
 
-func (c *Client) terminateSubnets(ctx context.Context) error {
-	var op Operation
-	var err error
-	if c.subnetwork != "" {
-		op, err = c.terminateSubnet(ctx, c.subnetwork)
-		if err != nil {
-			return err
-		}
+func (c *Client) terminateSubnet(ctx context.Context) error {
+	if c.subnetwork == "" {
+		return nil
 	}
-	return c.waitForOperations(ctx, []Operation{op})
-}
-
-func (c *Client) terminateSubnet(ctx context.Context, name string) (Operation, error) {
 	req := &computepb.DeleteSubnetworkRequest{
 		Project:    c.project,
 		Region:     c.region,
-		Subnetwork: name,
+		Subnetwork: c.subnetwork,
 	}
-	return c.subnetworksAPI.Delete(ctx, req)
+	op, err := c.subnetworksAPI.Delete(ctx, req)
+	if err != nil {
+		return err
+	}
+	return c.waitForOperations(ctx, []Operation{op})
 }
