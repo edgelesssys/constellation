@@ -90,7 +90,7 @@ func TestConcurrent(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	nodeIPs := []string{"192.0.2.11", "192.0.2.12", "192.0.2.13"}
+	nodeIPs := []string{"192.0.2.11", "192.0.2.12"}
 	coordinatorIP := "192.0.2.1"
 	bindPort := "9000"
 	logger := zaptest.NewLogger(t)
@@ -110,13 +110,19 @@ func TestConcurrent(t *testing.T) {
 
 	var wg sync.WaitGroup
 
-	actCoord := func() {
+	// This test is a rather rough check for concurrency errors in the pubapi. To this end, various funcs of the pubapi
+	// are called concurrently. As a minimal verification, returned errors are checked.
+	// The coverage of this test alone isn't sufficient. Not all funcs of the pubapi are tested, and arguments are constant.
+	// In the future, we should have something more sophisticated.
+
+	actCoord := func(retErr chan error) {
 		defer wg.Done()
-		_ = activateCoordinator(require, dialer, coordinatorIP, bindPort, nodeIPs)
+		retErr <- activateCoordinator(require, dialer, coordinatorIP, bindPort, nodeIPs)
 	}
 
 	actNode := func(papi *pubapi.API) {
 		defer wg.Done()
+		// actNode is called on already activated nodes, so this will fail due to wrong state.
 		assert.Error(papi.ActivateAsNode(nil))
 	}
 
@@ -130,20 +136,27 @@ func TestConcurrent(t *testing.T) {
 
 	getState := func(papi *pubapi.API) {
 		defer wg.Done()
+		// GetState should always succeed, regardless of what happened to the peer before.
 		_, err := papi.GetState(context.Background(), &pubproto.GetStateRequest{})
 		assert.NoError(err)
 	}
 
 	join := func(papi *pubapi.API) {
 		defer wg.Done()
+		// For now, we always pass an empty JoinClusterRequest, so JoinCluster
+		// is expected to fail even if the peer is in the required state.
 		_, err := papi.JoinCluster(context.Background(), &pubproto.JoinClusterRequest{})
 		assert.Error(err)
 	}
 
 	// activate coordinator and make some other calls concurrently
 	wg.Add(16)
-	go actCoord()
-	go actCoord()
+	actCoordErrs := make(chan error, 2)
+	go actCoord(actCoordErrs)
+	go actCoord(actCoordErrs)
+	// updNode on unactivated node should fail.
+	// updNode on Coordinator should fail.
+	// updNode on Node should succeed, but we don't know whether the node is already activated or not, so we can't expect no error.
 	go updNode(coordPAPI, false)
 	go updNode(coordPAPI, false)
 	go updNode(nodePAPI1, false)
@@ -159,11 +172,14 @@ func TestConcurrent(t *testing.T) {
 	go join(coordPAPI)
 	go join(coordPAPI)
 	wg.Wait()
+	actCoord1HasErr := <-actCoordErrs != nil
+	actCoord2HasErr := <-actCoordErrs != nil
+	require.NotEqual(actCoord1HasErr, actCoord2HasErr, "exactly one actCoord call should succeed")
 
 	// make some concurrent calls on the activated peers
 	wg.Add(26)
-	go actCoord()
-	go actCoord()
+	go actCoord(actCoordErrs)
+	go actCoord(actCoordErrs)
 	go actNode(coordPAPI)
 	go actNode(coordPAPI)
 	go actNode(nodePAPI1)
@@ -189,6 +205,9 @@ func TestConcurrent(t *testing.T) {
 	go join(nodePAPI2)
 	go join(nodePAPI2)
 	wg.Wait()
+	// One Coordinator is already activated, following both activation calls will fail now.
+	assert.Error(<-actCoordErrs)
+	assert.Error(<-actCoordErrs)
 }
 
 func spawnPeer(require *require.Assertions, logger *zap.Logger, dialer *testdialer.BufconnDialer, netw *network, endpoint string) (*grpc.Server, *pubapi.API, *fakeVPN) {
