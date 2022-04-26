@@ -24,7 +24,7 @@ type clientGenerator interface {
 	NewClient(kubeconfig []byte) (Client, error)
 }
 
-// Kubectl implements kubernetes.Apply interface and acts like the kubernetes "kubectl" tool.
+// Kubectl implements kubernetes.Apply interface and acts like the Kubernetes "kubectl" tool.
 type Kubectl struct {
 	clientGenerator
 	kubeconfig []byte

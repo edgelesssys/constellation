@@ -16,7 +16,7 @@ import (
 
 const fieldManager = "constellation-coordinator"
 
-// Client implements k8sapi.Client interface and talks to the kubernetes API.
+// Client implements k8sapi.Client interface and talks to the Kubernetes API.
 type Client struct {
 	clientset kubernetes.Interface
 	builder   *resource.Builder

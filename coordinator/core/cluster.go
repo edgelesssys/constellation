@@ -104,7 +104,7 @@ func (c *Core) InitCluster(autoscalingNodeGroups []string, cloudServiceAccountUR
 	}
 
 	if err := c.data().PutKubernetesJoinArgs(joinCommand); err != nil {
-		c.zaplogger.Error("Storing kubernetes join command failed", zap.Error(err))
+		c.zaplogger.Error("Storing Kubernetes join command failed", zap.Error(err))
 		return nil, err
 	}
 
@@ -129,7 +129,7 @@ func (c *Core) InitCluster(autoscalingNodeGroups []string, cloudServiceAccountUR
 
 // JoinCluster lets a Node join the cluster.
 func (c *Core) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, certKey string, peerRole role.Role) error {
-	c.zaplogger.Info("Joining kubernetes cluster")
+	c.zaplogger.Info("Joining Kubernetes cluster")
 	nodeVPNIP, err := c.vpn.GetInterfaceIP()
 	if err != nil {
 		c.zaplogger.Error("Retrieving vpn ip failed", zap.Error(err))
@@ -163,10 +163,10 @@ func (c *Core) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, certKey string
 	c.zaplogger.Info("k8s Join data", zap.String("nodename", nodeName), zap.String("nodeIP", nodeIP), zap.String("nodeVPNIP", nodeVPNIP), zap.String("provid", providerID))
 	// we need to pass the VPNIP for another control-plane, otherwise etcd will bind itself to the wrong IP address and fails
 	if err := c.kube.JoinCluster(args, k8sCompliantHostname(nodeName), nodeIP, nodeVPNIP, providerID, certKey, peerRole); err != nil {
-		c.zaplogger.Error("Joining kubernetes cluster failed", zap.Error(err))
+		c.zaplogger.Error("Joining Kubernetes cluster failed", zap.Error(err))
 		return err
 	}
-	c.zaplogger.Info("Joined kubernetes cluster")
+	c.zaplogger.Info("Joined Kubernetes cluster")
 	// set role in cloud provider metadata for autoconfiguration
 	if c.metadata.Supported() {
 		if err := c.metadata.SignalRole(context.TODO(), peerRole); err != nil {
@@ -189,7 +189,7 @@ type Cluster interface {
 	GetKubeadmCertificateKey() (string, error)
 }
 
-// ClusterFake behaves like a real cluster, but does not actually initialize or join kubernetes.
+// ClusterFake behaves like a real cluster, but does not actually initialize or join Kubernetes.
 type ClusterFake struct{}
 
 // InitCluster fakes bootstrapping a new cluster with the current node being the master, returning the arguments required to join the cluster.
@@ -216,7 +216,7 @@ func (c *ClusterFake) GetKubeadmCertificateKey() (string, error) {
 	return "controlPlaneCertficateKey", nil
 }
 
-// k8sCompliantHostname transforms a hostname to an RFC 1123 compliant, lowercase subdomain as required by kubernetes node names.
+// k8sCompliantHostname transforms a hostname to an RFC 1123 compliant, lowercase subdomain as required by Kubernetes node names.
 // The following regex is used by k8s for validation: /^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$/ .
 // Only a simple heuristic is used for now (to lowercase, replace underscores).
 func k8sCompliantHostname(in string) string {

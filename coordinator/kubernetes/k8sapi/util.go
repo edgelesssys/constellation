@@ -12,7 +12,7 @@ import (
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
-// kubeConfig is the path to the kubernetes admin config (used for authentication).
+// kubeConfig is the path to the Kubernetes admin config (used for authentication).
 const kubeConfig = "/etc/kubernetes/admin.conf"
 
 // Client provides the functionality of `kubectl apply`.
@@ -141,7 +141,7 @@ func (k *KubernetesUtil) SetupCloudNodeManager(kubectl Client, cloudNodeManagerC
 	return kubectl.Apply(cloudNodeManagerConfiguration, true)
 }
 
-// JoinCluster joins existing kubernetes cluster using kubeadm join.
+// JoinCluster joins existing Kubernetes cluster using kubeadm join.
 func (k *KubernetesUtil) JoinCluster(joinConfig []byte) error {
 	joinConfigFile, err := os.CreateTemp("", "kubeadm-join.*.yaml")
 	if err != nil {
@@ -153,7 +153,7 @@ func (k *KubernetesUtil) JoinCluster(joinConfig []byte) error {
 		return fmt.Errorf("writing kubeadm init yaml config %v failed: %w", joinConfigFile.Name(), err)
 	}
 
-	// run `kubeadm join` to join a worker node to an existing kubernetes cluster
+	// run `kubeadm join` to join a worker node to an existing Kubernetes cluster
 	cmd := exec.Command("kubeadm", "join", "--config", joinConfigFile.Name())
 	if _, err := cmd.Output(); err != nil {
 		var exitErr *exec.ExitError

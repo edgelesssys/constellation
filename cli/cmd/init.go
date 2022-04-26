@@ -43,7 +43,7 @@ func newInitCmd() *cobra.Command {
 	cmd.Flags().String("privatekey", "", "path to your private key.")
 	cmd.Flags().String("master-secret", "", "path to base64 encoded master secret.")
 	cmd.Flags().Bool("wg-autoconfig", false, "enable automatic configuration of WireGuard interface")
-	cmd.Flags().Bool("autoscale", false, "enable kubernetes cluster-autoscaler")
+	cmd.Flags().Bool("autoscale", false, "enable Kubernetes cluster-autoscaler")
 	return cmd
 }
 

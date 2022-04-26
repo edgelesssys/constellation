@@ -46,7 +46,7 @@ func New(clusterUtil k8sapi.ClusterUtil, configProvider configurationProvider, c
 	}
 }
 
-// InitCluster initializes a new kubernetes cluster and applies pod network provider.
+// InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(in InitClusterInput) (*kubeadm.BootstrapTokenDiscovery, error) {
 	initConfig := k.configProvider.InitConfiguration()
 	initConfig.SetApiServerAdvertiseAddress(in.APIServerAdvertiseIP)
@@ -103,7 +103,7 @@ func (k *KubeWrapper) InitCluster(in InitClusterInput) (*kubeadm.BootstrapTokenD
 	return joinK8SClusterRequest, nil
 }
 
-// JoinCluster joins existing kubernetes cluster.
+// JoinCluster joins existing Kubernetes cluster.
 func (k *KubeWrapper) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeName, nodeInternalIP, nodeVPNIP, providerID, certKey string, peerRole role.Role) error {
 	joinConfig := k.configProvider.JoinConfiguration()
 	joinConfig.SetApiServerEndpoint(args.APIServerEndpoint)
@@ -153,7 +153,7 @@ func NewFakeK8SClient([]byte) (k8sapi.Client, error) {
 	return &fakeK8SClient{}, nil
 }
 
-// Apply fakes applying kubernetes resources.
+// Apply fakes applying Kubernetes resources.
 func (f *fakeK8SClient) Apply(resources resources.Marshaler, forceConflicts bool) error {
 	return nil
 }

@@ -91,7 +91,7 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 	logToCLI("Initializing Kubernetes ...")
 	kubeconfig, err := a.core.InitCluster(in.AutoscalingNodeGroups, in.CloudServiceAccountUri)
 	if err != nil {
-		return status.Errorf(codes.Internal, "initializing kubernetes cluster failed: %v", err)
+		return status.Errorf(codes.Internal, "initializing Kubernetes cluster failed: %v", err)
 	}
 
 	// run the VPN-API server

@@ -185,7 +185,7 @@ func (a *API) JoinCluster(ctx context.Context, in *pubproto.JoinClusterRequest) 
 	}, "", role.Node)
 	if err != nil {
 		_ = a.core.AdvanceState(state.Failed, nil, nil)
-		return nil, status.Errorf(codes.Internal, "joining kubernetes cluster: %v", err)
+		return nil, status.Errorf(codes.Internal, "joining Kubernetes cluster: %v", err)
 	}
 
 	if err := a.core.AdvanceState(state.IsNode, nil, nil); err != nil {
