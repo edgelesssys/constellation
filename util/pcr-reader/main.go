@@ -16,6 +16,8 @@ import (
 
 	"github.com/edgelesssys/constellation/cli/status"
 	"github.com/edgelesssys/constellation/coordinator/atls"
+	"github.com/edgelesssys/constellation/coordinator/attestation/azure"
+	"github.com/edgelesssys/constellation/coordinator/attestation/gcp"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/coordinator/oid"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
@@ -30,6 +32,7 @@ var (
 	coordinatorPort = flag.String("coord-port", "9000", "Port of the Coordinator's pub API")
 	export          = flag.String("o", "", "Write PCRs, formatted as Go code, to file")
 	quiet           = flag.Bool("q", false, "Set to disable output")
+	timeout         = flag.Duration("timeout", 2*time.Minute, "Wait this duration for the Coordinator to become available")
 )
 
 func main() {
@@ -37,12 +40,16 @@ func main() {
 
 	fmt.Printf("connecting to Coordinator at %s:%s\n", *coordIP, *coordinatorPort)
 	addr := net.JoinHostPort(*coordIP, *coordinatorPort)
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 
 	// wait for coordinator to come online
 	waiter := status.NewWaiter()
-	waiter.InitializeValidators(nil)
+	waiter.InitializeValidators([]atls.Validator{
+		azure.NewValidator(map[uint32][]byte{}),
+		gcp.NewValidator(map[uint32][]byte{}),
+		gcp.NewNonCVMValidator(map[uint32][]byte{}),
+	})
 	if err := waiter.WaitFor(ctx, addr, state.AcceptingInit, state.ActivatingNodes, state.IsNode, state.NodeWaitingForClusterJoin); err != nil {
 		log.Fatal(err)
 	}
