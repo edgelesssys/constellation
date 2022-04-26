@@ -19,51 +19,51 @@ func TestDeploySSHAuthorizedKey(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		fs                   afero.Fs
-		userCreator          *stubUserCreator
-		passwdContents       string
-		alreadyDeployed      bool
-		readonly             bool
-		expectErr            bool
-		expectFile           bool
-		expectedFileContents string
+		fs               afero.Fs
+		userCreator      *stubUserCreator
+		passwdContents   string
+		alreadyDeployed  bool
+		readonly         bool
+		wantErr          bool
+		wantFile         bool
+		wantFileContents string
 	}{
 		"deploy works": {
-			fs:                   afero.NewMemMapFs(),
-			userCreator:          &stubUserCreator{},
-			passwdContents:       "user:x:1000:1000:user:/home/user:/bin/bash\n",
-			expectErr:            false,
-			expectFile:           true,
-			expectedFileContents: "ssh-rsa testkey user\n",
+			fs:               afero.NewMemMapFs(),
+			userCreator:      &stubUserCreator{},
+			passwdContents:   "user:x:1000:1000:user:/home/user:/bin/bash\n",
+			wantErr:          false,
+			wantFile:         true,
+			wantFileContents: "ssh-rsa testkey user\n",
 		},
 		"appending ssh key works": {
-			fs:                   memMapFsWithFile("/home/user/.ssh/authorized_keys.d/debugd", "ssh-rsa preexistingkey user\n"),
-			userCreator:          &stubUserCreator{},
-			passwdContents:       "user:x:1000:1000:user:/home/user:/bin/bash\n",
-			expectErr:            false,
-			expectFile:           true,
-			expectedFileContents: "ssh-rsa preexistingkey user\nssh-rsa testkey user\n",
+			fs:               memMapFsWithFile("/home/user/.ssh/authorized_keys.d/debugd", "ssh-rsa preexistingkey user\n"),
+			userCreator:      &stubUserCreator{},
+			passwdContents:   "user:x:1000:1000:user:/home/user:/bin/bash\n",
+			wantErr:          false,
+			wantFile:         true,
+			wantFileContents: "ssh-rsa preexistingkey user\nssh-rsa testkey user\n",
 		},
 		"redeployment avoided": {
 			fs:              afero.NewMemMapFs(),
 			userCreator:     &stubUserCreator{},
 			passwdContents:  "user:x:1000:1000:user:/home/user:/bin/bash\n",
-			expectErr:       false,
+			wantErr:         false,
 			alreadyDeployed: true,
-			expectFile:      false,
+			wantFile:        false,
 		},
 		"user does not exist": {
 			fs:             afero.NewMemMapFs(),
 			userCreator:    &stubUserCreator{},
 			passwdContents: "",
-			expectErr:      true,
+			wantErr:        true,
 		},
 		"readonly fs": {
 			fs:             afero.NewMemMapFs(),
 			userCreator:    &stubUserCreator{},
 			passwdContents: "user:x:1000:1000:user:/home/user:/bin/bash\n",
 			readonly:       true,
-			expectErr:      true,
+			wantErr:        true,
 		},
 	}
 
@@ -92,15 +92,15 @@ func TestDeploySSHAuthorizedKey(t *testing.T) {
 			}
 			err := sshAccess.DeploySSHAuthorizedKey(context.Background(), authorizedKey)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			if tc.expectFile {
+			if tc.wantFile {
 				fileContents, err := afero.ReadFile(tc.fs, "/home/user/.ssh/authorized_keys.d/debugd")
 				assert.NoError(err)
-				assert.Equal(tc.expectedFileContents, string(fileContents))
+				assert.Equal(tc.wantFileContents, string(fileContents))
 			} else {
 				exists, err := afero.Exists(tc.fs, "/home/user/.ssh/authorized_keys.d/debugd")
 				assert.NoError(err)

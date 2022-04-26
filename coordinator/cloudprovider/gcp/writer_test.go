@@ -12,22 +12,22 @@ func TestWriteGCEConf(t *testing.T) {
 	config := "someConfig"
 
 	testCases := map[string]struct {
-		fs            afero.Afero
-		expectedValue string
-		expectErr     bool
+		fs        afero.Afero
+		wantValue string
+		wantErr   bool
 	}{
 		"write works": {
 			fs: afero.Afero{
 				Fs: afero.NewMemMapFs(),
 			},
-			expectedValue: config,
-			expectErr:     false,
+			wantValue: config,
+			wantErr:   false,
 		},
 		"write fails": {
 			fs: afero.Afero{
 				Fs: afero.NewReadOnlyFs(afero.NewMemMapFs()),
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 	}
 
@@ -41,14 +41,14 @@ func TestWriteGCEConf(t *testing.T) {
 			}
 			err := writer.WriteGCEConf(config)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
 			value, err := tc.fs.ReadFile("/etc/gce.conf")
 			assert.NoError(err)
-			assert.Equal(tc.expectedValue, string(value))
+			assert.Equal(tc.wantValue, string(value))
 		})
 	}
 }

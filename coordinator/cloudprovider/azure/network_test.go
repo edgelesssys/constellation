@@ -12,7 +12,7 @@ import (
 )
 
 func TestGetVMInterfaces(t *testing.T) {
-	expectedConfigs := []*armnetwork.InterfaceIPConfiguration{
+	wantConfigs := []*armnetwork.InterfaceIPConfiguration{
 		{
 			Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
 				PrivateIPAddress: to.StringPtr("192.0.2.0"),
@@ -33,23 +33,23 @@ func TestGetVMInterfaces(t *testing.T) {
 	testCases := map[string]struct {
 		vm                   armcompute.VirtualMachine
 		networkInterfacesAPI networkInterfacesAPI
-		expectErr            bool
-		expectedConfigs      []*armnetwork.InterfaceIPConfiguration
+		wantErr              bool
+		wantConfigs          []*armnetwork.InterfaceIPConfiguration
 	}{
 		"retrieval works": {
 			vm:                   vm,
 			networkInterfacesAPI: newNetworkInterfacesStub(),
-			expectedConfigs:      expectedConfigs,
+			wantConfigs:          wantConfigs,
 		},
 		"vm can have 0 interfaces": {
 			vm:                   armcompute.VirtualMachine{},
 			networkInterfacesAPI: newNetworkInterfacesStub(),
-			expectedConfigs:      []*armnetwork.InterfaceIPConfiguration{},
+			wantConfigs:          []*armnetwork.InterfaceIPConfiguration{},
 		},
 		"interface retrieval fails": {
 			vm:                   vm,
 			networkInterfacesAPI: newFailingNetworkInterfacesStub(),
-			expectErr:            true,
+			wantErr:              true,
 		},
 	}
 
@@ -63,18 +63,18 @@ func TestGetVMInterfaces(t *testing.T) {
 			}
 			configs, err := metadata.getVMInterfaces(context.Background(), tc.vm, "resource-group")
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedConfigs, configs)
+			assert.Equal(tc.wantConfigs, configs)
 		})
 	}
 }
 
 func TestGetScaleSetVMInterfaces(t *testing.T) {
-	expectedConfigs := []*armnetwork.InterfaceIPConfiguration{
+	wantConfigs := []*armnetwork.InterfaceIPConfiguration{
 		{
 			Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
 				PrivateIPAddress: to.StringPtr("192.0.2.0"),
@@ -95,23 +95,23 @@ func TestGetScaleSetVMInterfaces(t *testing.T) {
 	testCases := map[string]struct {
 		vm                   armcompute.VirtualMachineScaleSetVM
 		networkInterfacesAPI networkInterfacesAPI
-		expectErr            bool
-		expectedConfigs      []*armnetwork.InterfaceIPConfiguration
+		wantErr              bool
+		wantConfigs          []*armnetwork.InterfaceIPConfiguration
 	}{
 		"retrieval works": {
 			vm:                   vm,
 			networkInterfacesAPI: newNetworkInterfacesStub(),
-			expectedConfigs:      expectedConfigs,
+			wantConfigs:          wantConfigs,
 		},
 		"vm can have 0 interfaces": {
 			vm:                   armcompute.VirtualMachineScaleSetVM{},
 			networkInterfacesAPI: newNetworkInterfacesStub(),
-			expectedConfigs:      []*armnetwork.InterfaceIPConfiguration{},
+			wantConfigs:          []*armnetwork.InterfaceIPConfiguration{},
 		},
 		"interface retrieval fails": {
 			vm:                   vm,
 			networkInterfacesAPI: newFailingNetworkInterfacesStub(),
-			expectErr:            true,
+			wantErr:              true,
 		},
 	}
 
@@ -125,12 +125,12 @@ func TestGetScaleSetVMInterfaces(t *testing.T) {
 			}
 			configs, err := metadata.getScaleSetVMInterfaces(context.Background(), tc.vm, "resource-group", "scale-set-name", "instance-id")
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedConfigs, configs)
+			assert.Equal(tc.wantConfigs, configs)
 		})
 	}
 }
@@ -138,7 +138,7 @@ func TestGetScaleSetVMInterfaces(t *testing.T) {
 func TestExtractPrivateIPs(t *testing.T) {
 	testCases := map[string]struct {
 		interfaceIPConfigs []*armnetwork.InterfaceIPConfiguration
-		expectedIPs        []string
+		wantIPs            []string
 	}{
 		"extraction works": {
 			interfaceIPConfigs: []*armnetwork.InterfaceIPConfiguration{
@@ -148,7 +148,7 @@ func TestExtractPrivateIPs(t *testing.T) {
 					},
 				},
 			},
-			expectedIPs: []string{"192.0.2.0"},
+			wantIPs: []string{"192.0.2.0"},
 		},
 		"can be empty": {
 			interfaceIPConfigs: []*armnetwork.InterfaceIPConfiguration{},
@@ -166,15 +166,15 @@ func TestExtractPrivateIPs(t *testing.T) {
 
 			ips := extractPrivateIPs(tc.interfaceIPConfigs)
 
-			assert.ElementsMatch(tc.expectedIPs, ips)
+			assert.ElementsMatch(tc.wantIPs, ips)
 		})
 	}
 }
 
 func TestExtractInterfaceNamesFromInterfaceReferences(t *testing.T) {
 	testCases := map[string]struct {
-		references    []*armcompute.NetworkInterfaceReference
-		expectedNames []string
+		references []*armcompute.NetworkInterfaceReference
+		wantNames  []string
 	}{
 		"extraction with individual interface reference works": {
 			references: []*armcompute.NetworkInterfaceReference{
@@ -182,7 +182,7 @@ func TestExtractInterfaceNamesFromInterfaceReferences(t *testing.T) {
 					ID: to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Network/networkInterfaces/interface-name"),
 				},
 			},
-			expectedNames: []string{"interface-name"},
+			wantNames: []string{"interface-name"},
 		},
 		"extraction with scale set interface reference works": {
 			references: []*armcompute.NetworkInterfaceReference{
@@ -190,7 +190,7 @@ func TestExtractInterfaceNamesFromInterfaceReferences(t *testing.T) {
 					ID: to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id/networkInterfaces/interface-name"),
 				},
 			},
-			expectedNames: []string{"interface-name"},
+			wantNames: []string{"interface-name"},
 		},
 		"can be empty": {
 			references: []*armcompute.NetworkInterfaceReference{},
@@ -208,7 +208,7 @@ func TestExtractInterfaceNamesFromInterfaceReferences(t *testing.T) {
 
 			names := extractInterfaceNamesFromInterfaceReferences(tc.references)
 
-			assert.ElementsMatch(tc.expectedNames, names)
+			assert.ElementsMatch(tc.wantNames, names)
 		})
 	}
 }

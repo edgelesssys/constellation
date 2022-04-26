@@ -14,23 +14,23 @@ func TestOpenClose(t *testing.T) {
 	testCases := map[string]struct {
 		initByNameErr error
 		operations    []string
-		errExpected   bool
+		wantErr       bool
 	}{
 		"open and close work": {
 			operations: []string{"open", "close"},
 		},
 		"opening twice fails": {
-			operations:  []string{"open", "open"},
-			errExpected: true,
+			operations: []string{"open", "open"},
+			wantErr:    true,
 		},
 		"closing first fails": {
-			operations:  []string{"close"},
-			errExpected: true,
+			operations: []string{"close"},
+			wantErr:    true,
 		},
 		"initByName failure detected": {
 			initByNameErr: errors.New("initByNameErr"),
 			operations:    []string{"open"},
-			errExpected:   true,
+			wantErr:       true,
 		},
 	}
 
@@ -47,7 +47,7 @@ func TestOpenClose(t *testing.T) {
 			}
 
 			err := executeOperations(&crypt, tc.operations)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -58,20 +58,20 @@ func TestOpenClose(t *testing.T) {
 
 func TestUUID(t *testing.T) {
 	testCases := map[string]struct {
-		open         bool
-		expectedUUID string
-		errExpected  bool
+		open     bool
+		wantUUID string
+		wantErr  bool
 	}{
 		"getting uuid works": {
-			open:         true,
-			expectedUUID: "uuid",
+			open:     true,
+			wantUUID: "uuid",
 		},
 		"getting uuid on closed device fails": {
-			errExpected: true,
+			wantErr: true,
 		},
 		"empty uuid is detected": {
-			open:        true,
-			errExpected: true,
+			open:    true,
+			wantErr: true,
 		},
 	}
 
@@ -83,7 +83,7 @@ func TestUUID(t *testing.T) {
 			crypt := Cryptsetup{
 				fs: afero.NewMemMapFs(),
 				initByName: func(name string) (cryptdevice, error) {
-					return &stubCryptdevice{uuid: tc.expectedUUID}, nil
+					return &stubCryptdevice{uuid: tc.wantUUID}, nil
 				},
 			}
 
@@ -92,12 +92,12 @@ func TestUUID(t *testing.T) {
 				defer crypt.Close()
 			}
 			uuid, err := crypt.UUID()
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedUUID, uuid)
+			assert.Equal(tc.wantUUID, uuid)
 		})
 	}
 }
@@ -107,24 +107,24 @@ func TestUpdatePassphrase(t *testing.T) {
 		writePassphrase              bool
 		open                         bool
 		keyslotChangeByPassphraseErr error
-		errExpected                  bool
+		wantErr                      bool
 	}{
 		"updating passphrase works": {
 			writePassphrase: true,
 			open:            true,
 		},
 		"updating passphrase on closed device fails": {
-			errExpected: true,
+			wantErr: true,
 		},
 		"reading initial passphrase can fail": {
-			open:        true,
-			errExpected: true,
+			open:    true,
+			wantErr: true,
 		},
 		"changing keyslot passphrase can fail": {
 			open:                         true,
 			writePassphrase:              true,
 			keyslotChangeByPassphraseErr: errors.New("keyslotChangeByPassphraseErr"),
-			errExpected:                  true,
+			wantErr:                      true,
 		},
 	}
 
@@ -151,7 +151,7 @@ func TestUpdatePassphrase(t *testing.T) {
 				defer crypt.Close()
 			}
 			err := crypt.UpdatePassphrase("new-key")
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}

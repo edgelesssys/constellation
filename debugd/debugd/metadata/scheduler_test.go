@@ -13,12 +13,12 @@ import (
 
 func TestSchedulerStart(t *testing.T) {
 	testCases := map[string]struct {
-		fetcher                 stubFetcher
-		ssh                     stubSSHDeployer
-		downloader              stubDownloader
-		timeout                 time.Duration
-		expectedSSHKeys         []ssh.SSHKey
-		expectedDebugdDownloads []string
+		fetcher             stubFetcher
+		ssh                 stubSSHDeployer
+		downloader          stubDownloader
+		timeout             time.Duration
+		wantSSHKeys         []ssh.SSHKey
+		wantDebugdDownloads []string
 	}{
 		"scheduler works and calls fetcher functions at least once": {},
 		"ssh keys are fetched": {
@@ -30,7 +30,7 @@ func TestSchedulerStart(t *testing.T) {
 					},
 				},
 			},
-			expectedSSHKeys: []ssh.SSHKey{
+			wantSSHKeys: []ssh.SSHKey{
 				{
 					Username: "test",
 					KeyValue: "testkey",
@@ -45,14 +45,14 @@ func TestSchedulerStart(t *testing.T) {
 				err: errors.New("download fails"),
 			},
 
-			expectedDebugdDownloads: []string{"192.0.2.1", "192.0.2.2"},
+			wantDebugdDownloads: []string{"192.0.2.1", "192.0.2.2"},
 		},
 		"if download is successful, second download is not attempted": {
 			fetcher: stubFetcher{
 				ips: []string{"192.0.2.1", "192.0.2.2"},
 			},
 
-			expectedDebugdDownloads: []string{"192.0.2.1"},
+			wantDebugdDownloads: []string{"192.0.2.1"},
 		},
 		"endpoint discovery can fail": {
 			fetcher: stubFetcher{
@@ -82,8 +82,8 @@ func TestSchedulerStart(t *testing.T) {
 			go scheduler.Start(ctx, wg)
 
 			wg.Wait()
-			assert.Equal(tc.expectedSSHKeys, tc.ssh.sshKeys)
-			assert.Equal(tc.expectedDebugdDownloads, tc.downloader.ips)
+			assert.Equal(tc.wantSSHKeys, tc.ssh.sshKeys)
+			assert.Equal(tc.wantDebugdDownloads, tc.downloader.ips)
 			assert.Greater(tc.fetcher.discoverCalls, 0)
 			assert.Greater(tc.fetcher.fetchSSHKeysCalls, 0)
 		})

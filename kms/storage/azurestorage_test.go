@@ -59,9 +59,9 @@ func TestAzureGet(t *testing.T) {
 	someErr := errors.New("error")
 
 	testCases := map[string]struct {
-		client      stubAzureContainerAPI
-		unsetError  bool
-		errExpected bool
+		client     stubAzureContainerAPI
+		unsetError bool
+		wantErr    bool
 	}{
 		"success": {
 			client: stubAzureContainerAPI{
@@ -69,14 +69,14 @@ func TestAzureGet(t *testing.T) {
 			},
 		},
 		"creating client fails": {
-			client:      stubAzureContainerAPI{newClientErr: someErr},
-			errExpected: true,
+			client:  stubAzureContainerAPI{newClientErr: someErr},
+			wantErr: true,
 		},
 		"DownloadBlobToBuffer fails": {
 			client: stubAzureContainerAPI{
 				blockBlobAPI: stubAzureBlockBlobAPI{downloadBlobToWriterAtErr: someErr},
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"BlobNotFound error": {
 			client: stubAzureContainerAPI{
@@ -86,8 +86,8 @@ func TestAzureGet(t *testing.T) {
 					},
 				},
 			},
-			unsetError:  true,
-			errExpected: true,
+			unsetError: true,
+			wantErr:    true,
 		},
 	}
 
@@ -103,7 +103,7 @@ func TestAzureGet(t *testing.T) {
 			}
 
 			out, err := client.Get(context.Background(), "test-key")
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 
 				if tc.unsetError {
@@ -124,21 +124,21 @@ func TestAzurePut(t *testing.T) {
 	someErr := errors.New("error")
 
 	testCases := map[string]struct {
-		client      stubAzureContainerAPI
-		errExpected bool
+		client  stubAzureContainerAPI
+		wantErr bool
 	}{
 		"success": {
 			client: stubAzureContainerAPI{},
 		},
 		"creating client fails": {
-			client:      stubAzureContainerAPI{newClientErr: someErr},
-			errExpected: true,
+			client:  stubAzureContainerAPI{newClientErr: someErr},
+			wantErr: true,
 		},
 		"Upload fails": {
 			client: stubAzureContainerAPI{
 				blockBlobAPI: stubAzureBlockBlobAPI{uploadErr: someErr},
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 
@@ -157,7 +157,7 @@ func TestAzurePut(t *testing.T) {
 			}
 
 			err := client.Put(context.Background(), "test-key", testData)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -170,8 +170,8 @@ func TestAzurePut(t *testing.T) {
 func TestCreateContainerOrContinue(t *testing.T) {
 	someErr := errors.New("error")
 	testCases := map[string]struct {
-		client      stubAzureContainerAPI
-		errExpected bool
+		client  stubAzureContainerAPI
+		wantErr bool
 	}{
 		"success": {
 			client: stubAzureContainerAPI{},
@@ -180,12 +180,12 @@ func TestCreateContainerOrContinue(t *testing.T) {
 			client: stubAzureContainerAPI{createErr: &azblob.StorageError{ErrorCode: azblob.StorageErrorCodeContainerAlreadyExists}},
 		},
 		"creating client fails": {
-			client:      stubAzureContainerAPI{newClientErr: someErr},
-			errExpected: true,
+			client:  stubAzureContainerAPI{newClientErr: someErr},
+			wantErr: true,
 		},
 		"Create fails": {
-			client:      stubAzureContainerAPI{createErr: someErr},
-			errExpected: true,
+			client:  stubAzureContainerAPI{createErr: someErr},
+			wantErr: true,
 		},
 	}
 
@@ -202,7 +202,7 @@ func TestCreateContainerOrContinue(t *testing.T) {
 			}
 
 			err := client.createContainerOrContinue(context.Background())
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)

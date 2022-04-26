@@ -15,13 +15,13 @@ func TestAutoscalerSecrets(t *testing.T) {
 	testCases := map[string]struct {
 		instance               core.Instance
 		cloudServiceAccountURI string
-		expectedSecrets        resources.Secrets
-		expectErr              bool
+		wantSecrets            resources.Secrets
+		wantErr                bool
 	}{
 		"Secrets works": {
 			instance:               core.Instance{ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name"},
 			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret",
-			expectedSecrets: resources.Secrets{
+			wantSecrets: resources.Secrets{
 				&k8s.Secret{
 					TypeMeta: meta.TypeMeta{
 						Kind:       "Secret",
@@ -43,13 +43,13 @@ func TestAutoscalerSecrets(t *testing.T) {
 			},
 		},
 		"invalid providerID fails": {
-			instance:  core.Instance{ProviderID: "invalid"},
-			expectErr: true,
+			instance: core.Instance{ProviderID: "invalid"},
+			wantErr:  true,
 		},
 		"invalid cloudServiceAccountURI fails": {
 			instance:               core.Instance{ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name"},
 			cloudServiceAccountURI: "invalid",
-			expectErr:              true,
+			wantErr:                true,
 		},
 	}
 
@@ -60,12 +60,12 @@ func TestAutoscalerSecrets(t *testing.T) {
 
 			autoscaler := Autoscaler{}
 			secrets, err := autoscaler.Secrets(tc.instance, tc.cloudServiceAccountURI)
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedSecrets, secrets)
+			assert.Equal(tc.wantSecrets, secrets)
 		})
 	}
 }

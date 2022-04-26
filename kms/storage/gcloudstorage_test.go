@@ -66,25 +66,25 @@ func TestGCPGet(t *testing.T) {
 	someErr := errors.New("error")
 
 	testCases := map[string]struct {
-		client      *stubGCPStorageAPI
-		unsetError  bool
-		errExpected bool
+		client     *stubGCPStorageAPI
+		unsetError bool
+		wantErr    bool
 	}{
 		"success": {
 			client: &stubGCPStorageAPI{newReaderOutput: []byte("test-data")},
 		},
 		"creating client fails": {
-			client:      &stubGCPStorageAPI{newClientErr: someErr},
-			errExpected: true,
+			client:  &stubGCPStorageAPI{newClientErr: someErr},
+			wantErr: true,
 		},
 		"NewReader fails": {
-			client:      &stubGCPStorageAPI{newReaderErr: someErr},
-			errExpected: true,
+			client:  &stubGCPStorageAPI{newReaderErr: someErr},
+			wantErr: true,
 		},
 		"ErrObjectNotExist error": {
-			client:      &stubGCPStorageAPI{newReaderErr: storage.ErrObjectNotExist},
-			unsetError:  true,
-			errExpected: true,
+			client:     &stubGCPStorageAPI{newReaderErr: storage.ErrObjectNotExist},
+			unsetError: true,
+			wantErr:    true,
 		},
 	}
 
@@ -99,7 +99,7 @@ func TestGCPGet(t *testing.T) {
 			}
 
 			out, err := client.Get(context.Background(), "test-key")
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 
 				if tc.unsetError {
@@ -119,9 +119,9 @@ func TestGCPGet(t *testing.T) {
 func TestGCPPut(t *testing.T) {
 	someErr := errors.New("error")
 	testCases := map[string]struct {
-		client      *stubGCPStorageAPI
-		unsetError  bool
-		errExpected bool
+		client     *stubGCPStorageAPI
+		unsetError bool
+		wantErr    bool
 	}{
 		"success": {
 			client: &stubGCPStorageAPI{
@@ -131,8 +131,8 @@ func TestGCPPut(t *testing.T) {
 			},
 		},
 		"creating client fails": {
-			client:      &stubGCPStorageAPI{newClientErr: someErr},
-			errExpected: true,
+			client:  &stubGCPStorageAPI{newClientErr: someErr},
+			wantErr: true,
 		},
 		"NewWriter fails": {
 			client: &stubGCPStorageAPI{
@@ -141,7 +141,7 @@ func TestGCPPut(t *testing.T) {
 					writeErr: someErr,
 				},
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 
@@ -157,7 +157,7 @@ func TestGCPPut(t *testing.T) {
 			testData := []byte{0x1, 0x2, 0x3}
 
 			err := client.Put(context.Background(), "test-key", testData)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -172,7 +172,7 @@ func TestGCPCreateContainerOrContinue(t *testing.T) {
 	testCases := map[string]struct {
 		client          *stubGCPStorageAPI
 		createNewBucket bool
-		errExpected     bool
+		wantErr         bool
 	}{
 		"success": {
 			client: &stubGCPStorageAPI{},
@@ -182,19 +182,19 @@ func TestGCPCreateContainerOrContinue(t *testing.T) {
 			createNewBucket: true,
 		},
 		"creating client fails": {
-			client:      &stubGCPStorageAPI{newClientErr: someErr},
-			errExpected: true,
+			client:  &stubGCPStorageAPI{newClientErr: someErr},
+			wantErr: true,
 		},
 		"Attrs fails": {
-			client:      &stubGCPStorageAPI{attrsErr: someErr},
-			errExpected: true,
+			client:  &stubGCPStorageAPI{attrsErr: someErr},
+			wantErr: true,
 		},
 		"CreateBucket fails": {
 			client: &stubGCPStorageAPI{
 				attrsErr:        storage.ErrBucketNotExist,
 				createBucketErr: someErr,
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 
@@ -209,7 +209,7 @@ func TestGCPCreateContainerOrContinue(t *testing.T) {
 			}
 
 			err := client.createContainerOrContinue(context.Background(), nil)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)

@@ -10,29 +10,29 @@ import (
 
 func TestExtractRole(t *testing.T) {
 	testCases := map[string]struct {
-		metadata     map[string]string
-		expectedRole role.Role
+		metadata map[string]string
+		wantRole role.Role
 	}{
 		"coordinator role": {
 			metadata: map[string]string{
 				core.RoleMetadataKey: role.Coordinator.String(),
 			},
-			expectedRole: role.Coordinator,
+			wantRole: role.Coordinator,
 		},
 		"node role": {
 			metadata: map[string]string{
 				core.RoleMetadataKey: role.Node.String(),
 			},
-			expectedRole: role.Node,
+			wantRole: role.Node,
 		},
 		"unknown role": {
 			metadata: map[string]string{
 				core.RoleMetadataKey: "some-unknown-role",
 			},
-			expectedRole: role.Unknown,
+			wantRole: role.Unknown,
 		},
 		"no role": {
-			expectedRole: role.Unknown,
+			wantRole: role.Unknown,
 		},
 	}
 
@@ -42,7 +42,7 @@ func TestExtractRole(t *testing.T) {
 
 			role := ExtractRole(tc.metadata)
 
-			assert.Equal(tc.expectedRole, role)
+			assert.Equal(tc.wantRole, role)
 		})
 	}
 }

@@ -43,21 +43,21 @@ func (s *stubAWSS3StorageClient) CreateBucket(ctx context.Context, params *s3.Cr
 
 func TestAWSS3Get(t *testing.T) {
 	testCases := map[string]struct {
-		client      *stubAWSS3StorageClient
-		unsetError  bool
-		errExpected bool
+		client     *stubAWSS3StorageClient
+		unsetError bool
+		wantErr    bool
 	}{
 		"Get successful": {
 			client: &stubAWSS3StorageClient{getObjectOutputData: []byte("test-data")},
 		},
 		"GetObject fails": {
-			client:      &stubAWSS3StorageClient{getObjectErr: errors.New("error")},
-			errExpected: true,
+			client:  &stubAWSS3StorageClient{getObjectErr: errors.New("error")},
+			wantErr: true,
 		},
 		"GetObject fails with NoSuchKey": {
-			client:      &stubAWSS3StorageClient{getObjectErr: &types.NoSuchKey{}},
-			errExpected: true,
-			unsetError:  true,
+			client:     &stubAWSS3StorageClient{getObjectErr: &types.NoSuchKey{}},
+			wantErr:    true,
+			unsetError: true,
 		},
 	}
 
@@ -70,7 +70,7 @@ func TestAWSS3Get(t *testing.T) {
 			}
 
 			out, err := store.Get(context.Background(), "test-key")
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 
 				if tc.unsetError {
@@ -89,15 +89,15 @@ func TestAWSS3Get(t *testing.T) {
 
 func TestAWSS3Put(t *testing.T) {
 	testCases := map[string]struct {
-		client      *stubAWSS3StorageClient
-		errExpected bool
+		client  *stubAWSS3StorageClient
+		wantErr bool
 	}{
 		"Put successful": {
 			client: &stubAWSS3StorageClient{},
 		},
 		"PutObject fails": {
-			client:      &stubAWSS3StorageClient{putObjectErr: errors.New("error")},
-			errExpected: true,
+			client:  &stubAWSS3StorageClient{putObjectErr: errors.New("error")},
+			wantErr: true,
 		},
 	}
 
@@ -112,7 +112,7 @@ func TestAWSS3Put(t *testing.T) {
 			testData := []byte{0x1, 0x2, 0x3}
 
 			err := store.Put(context.Background(), "test-key", testData)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -124,23 +124,23 @@ func TestAWSS3Put(t *testing.T) {
 
 func TestAWSS3CreateBucket(t *testing.T) {
 	testCases := map[string]struct {
-		client      *stubAWSS3StorageClient
-		errExpected bool
+		client  *stubAWSS3StorageClient
+		wantErr bool
 	}{
 		"CreateBucket successful": {
 			client: &stubAWSS3StorageClient{},
 		},
 		"CreateBucket fails": {
-			client:      &stubAWSS3StorageClient{createBucketErr: errors.New("error")},
-			errExpected: true,
+			client:  &stubAWSS3StorageClient{createBucketErr: errors.New("error")},
+			wantErr: true,
 		},
 		"CreateBucket fails with BucketAlreadyExists": {
-			client:      &stubAWSS3StorageClient{createBucketErr: &types.BucketAlreadyExists{}},
-			errExpected: false,
+			client:  &stubAWSS3StorageClient{createBucketErr: &types.BucketAlreadyExists{}},
+			wantErr: false,
 		},
 		"CreateBucket fails with BucketAlreadyOwnedByYou": {
-			client:      &stubAWSS3StorageClient{createBucketErr: &types.BucketAlreadyOwnedByYou{}},
-			errExpected: false,
+			client:  &stubAWSS3StorageClient{createBucketErr: &types.BucketAlreadyOwnedByYou{}},
+			wantErr: false,
 		},
 	}
 
@@ -153,7 +153,7 @@ func TestAWSS3CreateBucket(t *testing.T) {
 			}
 
 			err := store.createBucket(context.Background(), "test-bucket", "test-region")
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)

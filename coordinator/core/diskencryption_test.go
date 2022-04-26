@@ -13,21 +13,21 @@ import (
 
 func TestGetDiskUUID(t *testing.T) {
 	testCases := map[string]struct {
-		expectedUUID string
-		openErr      error
-		uuidErr      error
-		errExpected  bool
+		wantUUID string
+		openErr  error
+		uuidErr  error
+		wantErr  bool
 	}{
 		"getting uuid works": {
-			expectedUUID: "uuid",
+			wantUUID: "uuid",
 		},
 		"open can fail": {
-			openErr:     errors.New("open-error"),
-			errExpected: true,
+			openErr: errors.New("open-error"),
+			wantErr: true,
 		},
 		"getting disk uuid can fail": {
-			uuidErr:     errors.New("uuid-err"),
-			errExpected: true,
+			uuidErr: errors.New("uuid-err"),
+			wantErr: true,
 		},
 	}
 
@@ -41,18 +41,18 @@ func TestGetDiskUUID(t *testing.T) {
 			diskStub := encryptedDiskStub{
 				openErr: tc.openErr,
 				uuidErr: tc.uuidErr,
-				uuid:    tc.expectedUUID,
+				uuid:    tc.wantUUID,
 			}
 			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, &diskStub, zapLogger, nil, nil, file.NewHandler(afero.NewMemMapFs()))
 			require.NoError(err)
 			uuid, err := core.GetDiskUUID()
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
 
-			assert.Equal(tc.expectedUUID, uuid)
+			assert.Equal(tc.wantUUID, uuid)
 		})
 	}
 }
@@ -61,16 +61,16 @@ func TestUpdateDiskPassphrase(t *testing.T) {
 	testCases := map[string]struct {
 		openErr             error
 		updatePassphraseErr error
-		errExpected         bool
+		wantErr             bool
 	}{
 		"updating passphrase works": {},
 		"open can fail": {
-			openErr:     errors.New("open-error"),
-			errExpected: true,
+			openErr: errors.New("open-error"),
+			wantErr: true,
 		},
 		"updating disk passphrase can fail": {
 			updatePassphraseErr: errors.New("update-err"),
-			errExpected:         true,
+			wantErr:             true,
 		},
 	}
 
@@ -88,7 +88,7 @@ func TestUpdateDiskPassphrase(t *testing.T) {
 			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, &diskStub, zapLogger, nil, nil, file.NewHandler(afero.NewMemMapFs()))
 			require.NoError(err)
 			err = core.UpdateDiskPassphrase("passphrase")
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}

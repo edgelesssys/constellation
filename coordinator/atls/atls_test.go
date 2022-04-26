@@ -22,7 +22,7 @@ func TestTLSConfig(t *testing.T) {
 	testCases := map[string]struct {
 		issuer     Issuer
 		validators []Validator
-		expectErr  bool
+		wantErr    bool
 	}{
 		"basic": {
 			issuer:     fakeIssuer{fakeOID: oid1},
@@ -35,12 +35,12 @@ func TestTLSConfig(t *testing.T) {
 		"validate error": {
 			issuer:     fakeIssuer{fakeOID: oid1},
 			validators: []Validator{fakeValidator{fakeOID: oid1, err: errors.New("failed")}},
-			expectErr:  true,
+			wantErr:    true,
 		},
 		"unknown oid": {
 			issuer:     fakeIssuer{fakeOID: oid1},
 			validators: []Validator{fakeValidator{fakeOID: oid2}},
-			expectErr:  true,
+			wantErr:    true,
 		},
 	}
 
@@ -79,7 +79,7 @@ func TestTLSConfig(t *testing.T) {
 			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL, http.NoBody)
 			require.NoError(err)
 			resp, err := client.Do(req)
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}

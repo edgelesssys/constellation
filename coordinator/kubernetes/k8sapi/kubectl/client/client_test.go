@@ -176,25 +176,25 @@ func marshalYAML(obj runtime.Object) ([]byte, error) {
 func TestApplyOneObject(t *testing.T) {
 	testCases := map[string]struct {
 		httpResponseData map[string]string
-		expectedObj      runtime.Object
+		wantObj          runtime.Object
 		resourcesYAML    string
 		failingClient    bool
-		expectErr        bool
+		wantErr          bool
 	}{
 		"apply works": {
 			httpResponseData: map[string]string{
 				"/deployments/my-nginx?fieldManager=constellation-coordinator&force=true": string(nginxDeplJSON),
 			},
-			expectedObj:   nginxDeployment,
+			wantObj:       nginxDeployment,
 			resourcesYAML: string(nginxDeplYAML),
-			expectErr:     false,
+			wantErr:       false,
 		},
 		"apply fails": {
 			httpResponseData: map[string]string{},
-			expectedObj:      nginxDeployment,
+			wantObj:          nginxDeployment,
 			resourcesYAML:    string(nginxDeplYAML),
 			failingClient:    true,
-			expectErr:        true,
+			wantErr:          true,
 		},
 	}
 
@@ -205,9 +205,9 @@ func TestApplyOneObject(t *testing.T) {
 
 			var client Client
 			if tc.failingClient {
-				client = newFailingClient(tc.expectedObj)
+				client = newFailingClient(tc.wantObj)
 			} else {
-				client = newClientWithFakes(t, tc.httpResponseData, tc.expectedObj)
+				client = newClientWithFakes(t, tc.httpResponseData, tc.wantObj)
 			}
 
 			reader := bytes.NewReader([]byte(tc.resourcesYAML))
@@ -223,7 +223,7 @@ func TestApplyOneObject(t *testing.T) {
 
 			err = client.ApplyOneObject(infos[0], true)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -234,30 +234,30 @@ func TestApplyOneObject(t *testing.T) {
 
 func TestGetObjects(t *testing.T) {
 	testCases := map[string]struct {
-		expectedResources resources.Marshaler
-		httpResponseData  map[string]string
-		resourcesYAML     string
-		expectErr         bool
+		wantResources    resources.Marshaler
+		httpResponseData map[string]string
+		resourcesYAML    string
+		wantErr          bool
 	}{
 		"GetObjects works on flannel deployment": {
-			expectedResources: resources.NewDefaultFlannelDeployment(),
-			resourcesYAML:     string(nginxDeplYAML),
-			expectErr:         false,
+			wantResources: resources.NewDefaultFlannelDeployment(),
+			resourcesYAML: string(nginxDeplYAML),
+			wantErr:       false,
 		},
 		"GetObjects works on cluster-autoscaler deployment": {
-			expectedResources: resources.NewDefaultFlannelDeployment(),
-			resourcesYAML:     string(nginxDeplYAML),
-			expectErr:         false,
+			wantResources: resources.NewDefaultFlannelDeployment(),
+			resourcesYAML: string(nginxDeplYAML),
+			wantErr:       false,
 		},
 		"GetObjects works on cloud-controller-manager deployment": {
-			expectedResources: resources.NewDefaultCloudControllerManagerDeployment("someProvider", "someImage", "somePath", nil, nil, nil, nil),
-			resourcesYAML:     string(nginxDeplYAML),
-			expectErr:         false,
+			wantResources: resources.NewDefaultCloudControllerManagerDeployment("someProvider", "someImage", "somePath", nil, nil, nil, nil),
+			resourcesYAML: string(nginxDeplYAML),
+			wantErr:       false,
 		},
 		"GetObjects Marshal failure detected": {
-			expectedResources: &unmarshableResource{},
-			resourcesYAML:     string(nginxDeplYAML),
-			expectErr:         true,
+			wantResources: &unmarshableResource{},
+			resourcesYAML: string(nginxDeplYAML),
+			wantErr:       true,
 		},
 	}
 
@@ -267,9 +267,9 @@ func TestGetObjects(t *testing.T) {
 			require := require.New(t)
 
 			client := newClientWithFakes(t, tc.httpResponseData)
-			infos, err := client.GetObjects(tc.expectedResources)
+			infos, err := client.GetObjects(tc.wantResources)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}

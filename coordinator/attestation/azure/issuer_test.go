@@ -11,12 +11,12 @@ import (
 
 func TestGetSNPAttestation(t *testing.T) {
 	testCases := map[string]struct {
-		tpmFunc     vtpm.TPMOpenFunc
-		errExpected bool
+		tpmFunc vtpm.TPMOpenFunc
+		wantErr bool
 	}{
 		"success": {
-			tpmFunc:     simulator.OpenSimulatedTPM,
-			errExpected: false,
+			tpmFunc: simulator.OpenSimulatedTPM,
+			wantErr: false,
 		},
 	}
 
@@ -30,7 +30,7 @@ func TestGetSNPAttestation(t *testing.T) {
 			defer tpm.Close()
 
 			_, err = getSNPAttestation(tpm)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)

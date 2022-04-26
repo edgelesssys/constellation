@@ -23,7 +23,7 @@ func TestCreateVPCs(t *testing.T) {
 		operationRegionAPI operationRegionAPI
 		networksAPI        networksAPI
 		subnetworksAPI     subnetworksAPI
-		errExpected        bool
+		wantErr            bool
 	}{
 		"successful create": {
 			operationGlobalAPI: stubOperationGlobalAPI{},
@@ -36,28 +36,28 @@ func TestCreateVPCs(t *testing.T) {
 			operationRegionAPI: stubOperationRegionAPI{},
 			networksAPI:        stubNetworksAPI{},
 			subnetworksAPI:     stubSubnetworksAPI{},
-			errExpected:        true,
+			wantErr:            true,
 		},
 		"failed wait region op": {
 			operationGlobalAPI: stubOperationGlobalAPI{},
 			operationRegionAPI: stubOperationRegionAPI{waitErr: someErr},
 			networksAPI:        stubNetworksAPI{},
 			subnetworksAPI:     stubSubnetworksAPI{},
-			errExpected:        true,
+			wantErr:            true,
 		},
 		"failed insert networks": {
 			operationGlobalAPI: stubOperationGlobalAPI{},
 			operationRegionAPI: stubOperationRegionAPI{},
 			networksAPI:        stubNetworksAPI{insertErr: someErr},
 			subnetworksAPI:     stubSubnetworksAPI{},
-			errExpected:        true,
+			wantErr:            true,
 		},
 		"failed insert subnetworks": {
 			operationGlobalAPI: stubOperationGlobalAPI{},
 			operationRegionAPI: stubOperationRegionAPI{},
 			networksAPI:        stubNetworksAPI{},
 			subnetworksAPI:     stubSubnetworksAPI{insertErr: someErr},
-			errExpected:        true,
+			wantErr:            true,
 		},
 	}
 
@@ -79,7 +79,7 @@ func TestCreateVPCs(t *testing.T) {
 				coordinators:       make(gcp.Instances),
 			}
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(client.CreateVPCs(ctx, testInput))
 			} else {
 				assert.NoError(client.CreateVPCs(ctx, testInput))
@@ -97,7 +97,7 @@ func TestTerminateVPCs(t *testing.T) {
 		networksAPI        networksAPI
 		subnetworksAPI     subnetworksAPI
 		firewalls          []string
-		errExpected        bool
+		wantErr            bool
 	}{
 		"successful terminate": {
 			operationGlobalAPI: stubOperationGlobalAPI{},
@@ -110,21 +110,21 @@ func TestTerminateVPCs(t *testing.T) {
 			operationRegionAPI: stubOperationRegionAPI{},
 			networksAPI:        stubNetworksAPI{},
 			subnetworksAPI:     stubSubnetworksAPI{},
-			errExpected:        true,
+			wantErr:            true,
 		},
 		"failed delete networks": {
 			operationGlobalAPI: stubOperationGlobalAPI{},
 			operationRegionAPI: stubOperationRegionAPI{},
 			networksAPI:        stubNetworksAPI{deleteErr: someErr},
 			subnetworksAPI:     stubSubnetworksAPI{},
-			errExpected:        true,
+			wantErr:            true,
 		},
 		"failed delete subnetworks": {
 			operationGlobalAPI: stubOperationGlobalAPI{},
 			operationRegionAPI: stubOperationRegionAPI{},
 			networksAPI:        stubNetworksAPI{},
 			subnetworksAPI:     stubSubnetworksAPI{deleteErr: someErr},
-			errExpected:        true,
+			wantErr:            true,
 		},
 		"must delete firewalls first": {
 			firewalls:          []string{"firewall-1", "firewall-2"},
@@ -132,7 +132,7 @@ func TestTerminateVPCs(t *testing.T) {
 			operationGlobalAPI: stubOperationGlobalAPI{},
 			networksAPI:        stubNetworksAPI{},
 			subnetworksAPI:     stubSubnetworksAPI{},
-			errExpected:        true,
+			wantErr:            true,
 		},
 	}
 
@@ -155,7 +155,7 @@ func TestTerminateVPCs(t *testing.T) {
 				subnetwork:         "subnetwork-id-1",
 			}
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(client.TerminateVPCs(ctx))
 			} else {
 				assert.NoError(client.TerminateVPCs(ctx))
@@ -192,7 +192,7 @@ func TestCreateFirewall(t *testing.T) {
 		operationGlobalAPI operationGlobalAPI
 		firewallsAPI       firewallsAPI
 		firewallInput      FirewallInput
-		errExpected        bool
+		wantErr            bool
 	}{
 		"successful create": {
 			network:            "network",
@@ -203,18 +203,18 @@ func TestCreateFirewall(t *testing.T) {
 			network:            "network",
 			operationGlobalAPI: stubOperationGlobalAPI{waitErr: someErr},
 			firewallsAPI:       stubFirewallsAPI{},
-			errExpected:        true,
+			wantErr:            true,
 		},
 		"failed insert networks": {
 			network:            "network",
 			operationGlobalAPI: stubOperationGlobalAPI{},
 			firewallsAPI:       stubFirewallsAPI{insertErr: someErr},
-			errExpected:        true,
+			wantErr:            true,
 		},
 		"no network set": {
 			operationGlobalAPI: stubOperationGlobalAPI{},
 			firewallsAPI:       stubFirewallsAPI{},
-			errExpected:        true,
+			wantErr:            true,
 		},
 	}
 
@@ -233,7 +233,7 @@ func TestCreateFirewall(t *testing.T) {
 				firewallsAPI:       tc.firewallsAPI,
 			}
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(client.CreateFirewall(ctx, testFirewallInput))
 			} else {
 				assert.NoError(client.CreateFirewall(ctx, testFirewallInput))
@@ -250,7 +250,7 @@ func TestTerminateFirewall(t *testing.T) {
 		operationGlobalAPI operationGlobalAPI
 		firewallsAPI       firewallsAPI
 		firewalls          []string
-		errExpected        bool
+		wantErr            bool
 	}{
 		"successful terminate": {
 			operationGlobalAPI: stubOperationGlobalAPI{},
@@ -266,13 +266,13 @@ func TestTerminateFirewall(t *testing.T) {
 			operationGlobalAPI: stubOperationGlobalAPI{waitErr: someErr},
 			firewallsAPI:       stubFirewallsAPI{},
 			firewalls:          []string{"firewall-1", "firewall-2"},
-			errExpected:        true,
+			wantErr:            true,
 		},
 		"failed to delete firewalls": {
 			operationGlobalAPI: stubOperationGlobalAPI{},
 			firewallsAPI:       stubFirewallsAPI{deleteErr: someErr},
 			firewalls:          []string{"firewall-1", "firewall-2"},
-			errExpected:        true,
+			wantErr:            true,
 		},
 	}
 
@@ -291,7 +291,7 @@ func TestTerminateFirewall(t *testing.T) {
 				firewallsAPI:       tc.firewallsAPI,
 			}
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(client.TerminateFirewall(ctx))
 			} else {
 				assert.NoError(client.TerminateFirewall(ctx))

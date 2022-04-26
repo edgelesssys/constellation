@@ -22,16 +22,16 @@ func (c *stubVPNClient) GetDataKey(context.Context, *vpnproto.GetDataKeyRequest,
 
 func TestConstellationKMS(t *testing.T) {
 	testCases := map[string]struct {
-		vpn         *stubVPNClient
-		errExpected bool
+		vpn     *stubVPNClient
+		wantErr bool
 	}{
 		"GetDataKey success": {
-			vpn:         &stubVPNClient{dataKey: []byte{0x1, 0x2, 0x3}},
-			errExpected: false,
+			vpn:     &stubVPNClient{dataKey: []byte{0x1, 0x2, 0x3}},
+			wantErr: false,
 		},
 		"GetDataKey error": {
-			vpn:         &stubVPNClient{getDataKeyErr: errors.New("error")},
-			errExpected: true,
+			vpn:     &stubVPNClient{getDataKeyErr: errors.New("error")},
+			wantErr: true,
 		},
 	}
 
@@ -48,7 +48,7 @@ func TestConstellationKMS(t *testing.T) {
 			}
 			res, err := kms.GetDEK(context.Background(), "data-key", 64)
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 				assert.Nil(res)
 			} else {

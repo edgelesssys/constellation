@@ -12,15 +12,15 @@ func TestParse(t *testing.T) {
 	filename := "/etc/passwd"
 
 	testCases := map[string]struct {
-		passwdContents  string
-		createFile      bool
-		expectedEntries Entries
-		expectErr       bool
+		passwdContents string
+		createFile     bool
+		wantEntries    Entries
+		wantErr        bool
 	}{
 		"parse works": {
 			passwdContents: "root:x:0:0:root:/root:/bin/bash\n",
 			createFile:     true,
-			expectedEntries: Entries{
+			wantEntries: Entries{
 				"root": {
 					Pass:  "x",
 					Uid:   "0",
@@ -30,16 +30,16 @@ func TestParse(t *testing.T) {
 					Shell: "/bin/bash",
 				},
 			},
-			expectErr: false,
+			wantErr: false,
 		},
 		"passwd is corrupt": {
 			passwdContents: "too:few:fields\n",
 			createFile:     true,
-			expectErr:      true,
+			wantErr:        true,
 		},
 		"file does not exist": {
 			createFile: false,
-			expectErr:  true,
+			wantErr:    true,
 		},
 	}
 
@@ -55,12 +55,12 @@ func TestParse(t *testing.T) {
 			passwd := Passwd{}
 			entries, err := passwd.Parse(fs)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedEntries, entries)
+			assert.Equal(tc.wantEntries, entries)
 		})
 	}
 }

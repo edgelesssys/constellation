@@ -23,7 +23,7 @@ func TestCreateServicePrincipal(t *testing.T) {
 		servicePrincipalsAPI servicePrincipalsAPI
 		roleAssignmentsAPI   roleAssignmentsAPI
 		resourceGroupAPI     resourceGroupAPI
-		errExpected          bool
+		wantErr              bool
 	}{
 		"successful create": {
 			applicationsAPI:      stubApplicationsAPI{},
@@ -39,14 +39,14 @@ func TestCreateServicePrincipal(t *testing.T) {
 			applicationsAPI: stubApplicationsAPI{
 				createErr: someErr,
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"failed service principal create": {
 			applicationsAPI: stubApplicationsAPI{},
 			servicePrincipalsAPI: stubServicePrincipalsAPI{
 				createErr: someErr,
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"failed role assignment": {
 			applicationsAPI:      stubApplicationsAPI{},
@@ -59,7 +59,7 @@ func TestCreateServicePrincipal(t *testing.T) {
 					ID: to.StringPtr("resource-group-id"),
 				},
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"failed update creds": {
 			applicationsAPI: stubApplicationsAPI{
@@ -72,7 +72,7 @@ func TestCreateServicePrincipal(t *testing.T) {
 					ID: to.StringPtr("resource-group-id"),
 				},
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 	for name, tc := range testCases {
@@ -93,7 +93,7 @@ func TestCreateServicePrincipal(t *testing.T) {
 			}
 
 			_, err := client.CreateServicePrincipal(ctx)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -107,7 +107,7 @@ func TestTerminateServicePrincipal(t *testing.T) {
 	testCases := map[string]struct {
 		appObjectID     string
 		applicationsAPI applicationsAPI
-		errExpected     bool
+		wantErr         bool
 	}{
 		"successful terminate": {
 			appObjectID:     "object-id",
@@ -121,7 +121,7 @@ func TestTerminateServicePrincipal(t *testing.T) {
 			applicationsAPI: stubApplicationsAPI{
 				deleteErr: someErr,
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 	for name, tc := range testCases {
@@ -139,7 +139,7 @@ func TestTerminateServicePrincipal(t *testing.T) {
 			}
 
 			err := client.TerminateServicePrincipal(ctx)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -152,7 +152,7 @@ func TestCreateADApplication(t *testing.T) {
 	someErr := errors.New("failed")
 	testCases := map[string]struct {
 		applicationsAPI applicationsAPI
-		errExpected     bool
+		wantErr         bool
 	}{
 		"successful create": {
 			applicationsAPI: stubApplicationsAPI{},
@@ -161,7 +161,7 @@ func TestCreateADApplication(t *testing.T) {
 			applicationsAPI: stubApplicationsAPI{
 				createErr: someErr,
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"app create returns invalid appid": {
 			applicationsAPI: stubApplicationsAPI{
@@ -169,7 +169,7 @@ func TestCreateADApplication(t *testing.T) {
 					ObjectID: proto.String("00000000-0000-0000-0000-000000000001"),
 				},
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"app create returns invalid objectid": {
 			applicationsAPI: stubApplicationsAPI{
@@ -177,7 +177,7 @@ func TestCreateADApplication(t *testing.T) {
 					AppID: proto.String("00000000-0000-0000-0000-000000000000"),
 				},
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 	for name, tc := range testCases {
@@ -193,7 +193,7 @@ func TestCreateADApplication(t *testing.T) {
 			}
 
 			appCredentials, err := client.createADApplication(ctx)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -207,7 +207,7 @@ func TestCreateAppServicePrincipal(t *testing.T) {
 	someErr := errors.New("failed")
 	testCases := map[string]struct {
 		servicePrincipalsAPI servicePrincipalsAPI
-		errExpected          bool
+		wantErr              bool
 	}{
 		"successful create": {
 			servicePrincipalsAPI: stubServicePrincipalsAPI{},
@@ -216,13 +216,13 @@ func TestCreateAppServicePrincipal(t *testing.T) {
 			servicePrincipalsAPI: stubServicePrincipalsAPI{
 				createErr: someErr,
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"service principal create returns invalid objectid": {
 			servicePrincipalsAPI: stubServicePrincipalsAPI{
 				createServicePrincipal: &graphrbac.ServicePrincipal{},
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 	for name, tc := range testCases {
@@ -238,7 +238,7 @@ func TestCreateAppServicePrincipal(t *testing.T) {
 			}
 
 			_, err := client.createAppServicePrincipal(ctx, "app-id")
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -252,7 +252,7 @@ func TestAssignOwnerOfResourceGroup(t *testing.T) {
 	testCases := map[string]struct {
 		roleAssignmentsAPI roleAssignmentsAPI
 		resourceGroupAPI   resourceGroupAPI
-		errExpected        bool
+		wantErr            bool
 	}{
 		"successful assign": {
 			roleAssignmentsAPI: &stubRoleAssignmentsAPI{},
@@ -271,21 +271,21 @@ func TestAssignOwnerOfResourceGroup(t *testing.T) {
 					ID: to.StringPtr("resource-group-id"),
 				},
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"failed resource group get": {
 			roleAssignmentsAPI: &stubRoleAssignmentsAPI{},
 			resourceGroupAPI: stubResourceGroupAPI{
 				getErr: someErr,
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"resource group get returns invalid id": {
 			roleAssignmentsAPI: &stubRoleAssignmentsAPI{},
 			resourceGroupAPI: stubResourceGroupAPI{
 				getResourceGroup: armresources.ResourceGroup{},
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"create returns PrincipalNotFound the first time": {
 			roleAssignmentsAPI: &stubRoleAssignmentsAPI{
@@ -313,7 +313,7 @@ func TestAssignOwnerOfResourceGroup(t *testing.T) {
 					ID: to.StringPtr("resource-group-id"),
 				},
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"create service error code is unknown": {
 			roleAssignmentsAPI: &stubRoleAssignmentsAPI{
@@ -331,7 +331,7 @@ func TestAssignOwnerOfResourceGroup(t *testing.T) {
 					ID: to.StringPtr("resource-group-id"),
 				},
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 	for name, tc := range testCases {
@@ -350,7 +350,7 @@ func TestAssignOwnerOfResourceGroup(t *testing.T) {
 			}
 
 			err := client.assignResourceGroupRole(ctx, "principal-id", "role-definition-id")
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}

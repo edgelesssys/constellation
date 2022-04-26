@@ -54,22 +54,22 @@ func TestIsNodeInitialized(t *testing.T) {
 	testCases := map[string]struct {
 		pcrValueOwnerID   []byte
 		pcrValueClusterID []byte
-		expectInitialized bool
-		expectErr         bool
+		wantInitialized   bool
+		wantErr           bool
 	}{
 		"uninitialized PCRs results in uninitialized node": {},
 		"initializing PCRs result in initialized node": {
 			pcrValueOwnerID:   []byte{0x0, 0x1, 0x2, 0x3},
 			pcrValueClusterID: []byte{0x4, 0x5, 0x6, 0x7},
-			expectInitialized: true,
+			wantInitialized:   true,
 		},
 		"initializing ownerID alone fails": {
 			pcrValueOwnerID: []byte{0x0, 0x1, 0x2, 0x3},
-			expectErr:       true,
+			wantErr:         true,
 		},
 		"initializing clusterID alone fails": {
 			pcrValueClusterID: []byte{0x4, 0x5, 0x6, 0x7},
-			expectErr:         true,
+			wantErr:           true,
 		},
 	}
 
@@ -89,12 +89,12 @@ func TestIsNodeInitialized(t *testing.T) {
 			initialized, err := IsNodeInitialized(func() (io.ReadWriteCloser, error) {
 				return &simTPMNOPCloser{tpm}, nil
 			})
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			require.Equal(tc.expectInitialized, initialized)
+			require.Equal(tc.wantInitialized, initialized)
 		})
 	}
 }

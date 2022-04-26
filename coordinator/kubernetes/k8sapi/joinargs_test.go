@@ -10,43 +10,43 @@ import (
 
 func TestParseJoinCommand(t *testing.T) {
 	testCases := map[string]struct {
-		joinCommand      string
-		expectedJoinArgs kubeadm.BootstrapTokenDiscovery
-		expectErr        bool
+		joinCommand  string
+		wantJoinArgs kubeadm.BootstrapTokenDiscovery
+		wantErr      bool
 	}{
 		"join command can be parsed": {
 			joinCommand: "kubeadm join 192.0.2.0:8443 --token dummy-token --discovery-token-ca-cert-hash sha512:dummy-hash --control-plane",
-			expectedJoinArgs: kubeadm.BootstrapTokenDiscovery{
+			wantJoinArgs: kubeadm.BootstrapTokenDiscovery{
 				APIServerEndpoint: "192.0.2.0:8443",
 				Token:             "dummy-token",
 				CACertHashes:      []string{"sha512:dummy-hash"},
 			},
-			expectErr: false,
+			wantErr: false,
 		},
 		"incorrect join command returns error": {
 			joinCommand: "some string",
-			expectErr:   true,
+			wantErr:     true,
 		},
 		"missing api server endpoint is checked": {
 			joinCommand: "kubeadm join --token dummy-token --discovery-token-ca-cert-hash sha512:dummy-hash --control-plane",
-			expectErr:   true,
+			wantErr:     true,
 		},
 		"missing token is checked": {
 			joinCommand: "kubeadm join 192.0.2.0:8443 --discovery-token-ca-cert-hash sha512:dummy-hash --control-plane",
-			expectErr:   true,
+			wantErr:     true,
 		},
 		"missing discovery-token-ca-cert-hash is checked": {
 			joinCommand: "kubeadm join 192.0.2.0:8443 --token dummy-token --control-plane",
-			expectErr:   true,
+			wantErr:     true,
 		},
 		"missing control-plane": {
 			joinCommand: "kubeadm join 192.0.2.0:8443 --token dummy-token --discovery-token-ca-cert-hash sha512:dummy-hash",
-			expectedJoinArgs: kubeadm.BootstrapTokenDiscovery{
+			wantJoinArgs: kubeadm.BootstrapTokenDiscovery{
 				APIServerEndpoint: "192.0.2.0:8443",
 				Token:             "dummy-token",
 				CACertHashes:      []string{"sha512:dummy-hash"},
 			},
-			expectErr: false,
+			wantErr: false,
 		},
 	}
 
@@ -57,13 +57,13 @@ func TestParseJoinCommand(t *testing.T) {
 
 			joinArgs, err := ParseJoinCommand(tc.joinCommand)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
 
-			assert.Equal(&tc.expectedJoinArgs, joinArgs)
+			assert.Equal(&tc.wantJoinArgs, joinArgs)
 		})
 	}
 }

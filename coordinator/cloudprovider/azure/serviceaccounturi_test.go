@@ -17,24 +17,24 @@ func TestGetApplicationCredentials(t *testing.T) {
 	}
 	testCases := map[string]struct {
 		cloudServiceAccountURI string
-		expectedCreds          client.ApplicationCredentials
-		expectErr              bool
+		wantCreds              client.ApplicationCredentials
+		wantErr                bool
 	}{
 		"getApplicationCredentials works": {
 			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret&location=location",
-			expectedCreds:          creds,
+			wantCreds:              creds,
 		},
 		"invalid URI fails": {
 			cloudServiceAccountURI: "\x00",
-			expectErr:              true,
+			wantErr:                true,
 		},
 		"incorrect URI scheme fails": {
 			cloudServiceAccountURI: "invalid",
-			expectErr:              true,
+			wantErr:                true,
 		},
 		"incorrect URI host fails": {
 			cloudServiceAccountURI: "serviceaccount://incorrect",
-			expectErr:              true,
+			wantErr:                true,
 		},
 	}
 
@@ -44,12 +44,12 @@ func TestGetApplicationCredentials(t *testing.T) {
 			require := require.New(t)
 
 			creds, err := getApplicationCredentials(tc.cloudServiceAccountURI)
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedCreds, creds)
+			assert.Equal(tc.wantCreds, creds)
 		})
 	}
 }

@@ -17,14 +17,14 @@ func TestGetLinuxUser(t *testing.T) {
 	testCases := map[string]struct {
 		userCreator    *stubUserCreator
 		passwdContents string
-		expectErr      bool
-		expectedUser   LinuxUser
+		wantErr        bool
+		wantUser       LinuxUser
 	}{
 		"get works": {
 			userCreator:    &stubUserCreator{},
 			passwdContents: "user:x:1000:1000:user:/home/user:/bin/bash\n",
-			expectErr:      false,
-			expectedUser: LinuxUser{
+			wantErr:        false,
+			wantUser: LinuxUser{
 				Username: "user",
 				Home:     "/home/user",
 				Uid:      1000,
@@ -34,22 +34,22 @@ func TestGetLinuxUser(t *testing.T) {
 		"user does not exist": {
 			userCreator:    &stubUserCreator{},
 			passwdContents: "",
-			expectErr:      true,
+			wantErr:        true,
 		},
 		"parse fails": {
 			userCreator:    &stubUserCreator{},
 			passwdContents: "invalid contents\n",
-			expectErr:      true,
+			wantErr:        true,
 		},
 		"invalid uid": {
 			userCreator:    &stubUserCreator{},
 			passwdContents: "user:x:invalid:1000:user:/home/user:/bin/bash\n",
-			expectErr:      true,
+			wantErr:        true,
 		},
 		"invalid gid": {
 			userCreator:    &stubUserCreator{},
 			passwdContents: "user:x:1000:invalid:user:/home/user:/bin/bash\n",
-			expectErr:      true,
+			wantErr:        true,
 		},
 	}
 
@@ -67,12 +67,12 @@ func TestGetLinuxUser(t *testing.T) {
 			}
 			user, err := manager.getLinuxUser(username)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedUser, user)
+			assert.Equal(tc.wantUser, user)
 		})
 	}
 }
@@ -83,14 +83,14 @@ func TestEnsureLinuxUserExists(t *testing.T) {
 	testCases := map[string]struct {
 		userCreator    *stubUserCreator
 		passwdContents string
-		expectErr      bool
-		expectedUser   LinuxUser
+		wantErr        bool
+		wantUser       LinuxUser
 	}{
 		"create works": {
 			userCreator:    &stubUserCreator{},
 			passwdContents: "user:x:1000:1000:user:/home/user:/bin/bash\n",
-			expectErr:      false,
-			expectedUser: LinuxUser{
+			wantErr:        false,
+			wantUser: LinuxUser{
 				Username: "user",
 				Home:     "/home/user",
 				Uid:      1000,
@@ -102,7 +102,7 @@ func TestEnsureLinuxUserExists(t *testing.T) {
 				createUserErr: errors.New("create fails"),
 			},
 			passwdContents: "user:x:1000:1000:user:/home/user:/bin/bash\n",
-			expectErr:      true,
+			wantErr:        true,
 		},
 	}
 
@@ -120,12 +120,12 @@ func TestEnsureLinuxUserExists(t *testing.T) {
 			}
 			user, err := manager.EnsureLinuxUserExists(context.Background(), username)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedUser, user)
+			assert.Equal(tc.wantUser, user)
 			assert.ElementsMatch([]string{username}, tc.userCreator.usernames)
 		})
 	}

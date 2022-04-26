@@ -22,21 +22,21 @@ func TestInitCluster(t *testing.T) {
 	someErr := errors.New("someErr")
 
 	testCases := map[string]struct {
-		cluster                  clusterStub
-		metadata                 stubMetadata
-		cloudControllerManager   stubCloudControllerManager
-		cloudNodeManager         stubCloudNodeManager
-		clusterAutoscaler        stubClusterAutoscaler
-		autoscalingNodeGroups    []string
-		expectErr                bool
-		expectedInitClusterInput kubernetes.InitClusterInput
+		cluster                clusterStub
+		metadata               stubMetadata
+		cloudControllerManager stubCloudControllerManager
+		cloudNodeManager       stubCloudNodeManager
+		clusterAutoscaler      stubClusterAutoscaler
+		autoscalingNodeGroups  []string
+		wantErr                bool
+		wantInitClusterInput   kubernetes.InitClusterInput
 	}{
 		"InitCluster works": {
 			cluster: clusterStub{
 				kubeconfig: []byte("kubeconfig"),
 			},
 			autoscalingNodeGroups: []string{"someNodeGroup"},
-			expectedInitClusterInput: kubernetes.InitClusterInput{
+			wantInitClusterInput: kubernetes.InitClusterInput{
 				APIServerAdvertiseIP:           "10.118.0.1",
 				NodeIP:                         "10.118.0.1",
 				NodeName:                       "10.118.0.1",
@@ -44,7 +44,7 @@ func TestInitCluster(t *testing.T) {
 				SupportClusterAutoscaler:       false,
 				AutoscalingNodeGroups:          []string{"someNodeGroup"},
 			},
-			expectErr: false,
+			wantErr: false,
 		},
 		"Instance metadata is retrieved": {
 			cluster: clusterStub{
@@ -57,7 +57,7 @@ func TestInitCluster(t *testing.T) {
 				},
 				supportedRes: true,
 			},
-			expectedInitClusterInput: kubernetes.InitClusterInput{
+			wantInitClusterInput: kubernetes.InitClusterInput{
 				APIServerAdvertiseIP:           "10.118.0.1",
 				NodeIP:                         "10.118.0.1",
 				NodeName:                       "some-name",
@@ -65,7 +65,7 @@ func TestInitCluster(t *testing.T) {
 				SupportsCloudControllerManager: false,
 				SupportClusterAutoscaler:       false,
 			},
-			expectErr: false,
+			wantErr: false,
 		},
 		"metadata of self retrieval error is checked": {
 			cluster: clusterStub{
@@ -75,7 +75,7 @@ func TestInitCluster(t *testing.T) {
 				supportedRes: true,
 				selfErr:      errors.New("metadata retrieval error"),
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 		"Autoscaler is prepared when supported": {
 			cluster: clusterStub{
@@ -86,7 +86,7 @@ func TestInitCluster(t *testing.T) {
 				supportedRes: true,
 			},
 			autoscalingNodeGroups: []string{"someNodeGroup"},
-			expectedInitClusterInput: kubernetes.InitClusterInput{
+			wantInitClusterInput: kubernetes.InitClusterInput{
 				APIServerAdvertiseIP:           "10.118.0.1",
 				NodeIP:                         "10.118.0.1",
 				NodeName:                       "10.118.0.1",
@@ -95,7 +95,7 @@ func TestInitCluster(t *testing.T) {
 				AutoscalingCloudprovider:       "some-name",
 				AutoscalingNodeGroups:          []string{"someNodeGroup"},
 			},
-			expectErr: false,
+			wantErr: false,
 		},
 		"Node is prepared for CCM if supported": {
 			cluster: clusterStub{
@@ -107,7 +107,7 @@ func TestInitCluster(t *testing.T) {
 				imageRes:     "someImage",
 				pathRes:      "/some/path",
 			},
-			expectedInitClusterInput: kubernetes.InitClusterInput{
+			wantInitClusterInput: kubernetes.InitClusterInput{
 				APIServerAdvertiseIP:           "10.118.0.1",
 				NodeIP:                         "10.118.0.1",
 				NodeName:                       "10.118.0.1",
@@ -117,7 +117,7 @@ func TestInitCluster(t *testing.T) {
 				CloudControllerManagerImage:    "someImage",
 				CloudControllerManagerPath:     "/some/path",
 			},
-			expectErr: false,
+			wantErr: false,
 		},
 		"Node preparation for CCM can fail": {
 			cluster: clusterStub{
@@ -133,7 +133,7 @@ func TestInitCluster(t *testing.T) {
 				pathRes:            "/some/path",
 				prepareInstanceRes: errors.New("preparing node for CCM failed"),
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 		"updating role fails without error": {
 			cluster: clusterStub{
@@ -143,8 +143,8 @@ func TestInitCluster(t *testing.T) {
 				signalRoleErr: errors.New("updating role fails"),
 				supportedRes:  true,
 			},
-			expectErr: false,
-			expectedInitClusterInput: kubernetes.InitClusterInput{
+			wantErr: false,
+			wantInitClusterInput: kubernetes.InitClusterInput{
 				APIServerAdvertiseIP: "10.118.0.1",
 				NodeIP:               "10.118.0.1",
 			},
@@ -153,13 +153,13 @@ func TestInitCluster(t *testing.T) {
 			cluster: clusterStub{
 				getKubeconfigErr: errors.New("getting kubeconfig fails"),
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 		"InitCluster fail detected": {
 			cluster: clusterStub{
 				initErr: someErr,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 	}
 
@@ -175,13 +175,13 @@ func TestInitCluster(t *testing.T) {
 
 			kubeconfig, err := core.InitCluster(tc.autoscalingNodeGroups, "cloud-service-account-uri")
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
 			require.Len(tc.cluster.initInputs, 1)
-			assert.Equal(tc.expectedInitClusterInput, tc.cluster.initInputs[0])
+			assert.Equal(tc.wantInitClusterInput, tc.cluster.initInputs[0])
 			assert.Equal(tc.cluster.kubeconfig, kubeconfig)
 		})
 	}
@@ -191,20 +191,20 @@ func TestJoinCluster(t *testing.T) {
 	someErr := errors.New("someErr")
 
 	testCases := map[string]struct {
-		cluster                 clusterStub
-		metadata                stubMetadata
-		cloudControllerManager  stubCloudControllerManager
-		cloudNodeManager        stubCloudNodeManager
-		clusterAutoscaler       stubClusterAutoscaler
-		vpn                     stubVPN
-		expectErr               bool
-		expectedJoinClusterArgs joinClusterArgs
+		cluster                clusterStub
+		metadata               stubMetadata
+		cloudControllerManager stubCloudControllerManager
+		cloudNodeManager       stubCloudNodeManager
+		clusterAutoscaler      stubClusterAutoscaler
+		vpn                    stubVPN
+		wantErr                bool
+		wantJoinClusterArgs    joinClusterArgs
 	}{
 		"JoinCluster works": {
 			vpn: stubVPN{
 				interfaceIP: "192.0.2.0",
 			},
-			expectedJoinClusterArgs: joinClusterArgs{
+			wantJoinClusterArgs: joinClusterArgs{
 				args: &kubeadm.BootstrapTokenDiscovery{
 					APIServerEndpoint: "192.0.2.0:6443",
 					Token:             "someToken",
@@ -218,13 +218,13 @@ func TestJoinCluster(t *testing.T) {
 			cluster: clusterStub{
 				joinErr: someErr,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 		"retrieving vpn ip failure detected": {
 			vpn: stubVPN{
 				getInterfaceIPErr: errors.New("retrieving interface ip error"),
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 		"Instance metadata is retrieved": {
 			metadata: stubMetadata{
@@ -234,7 +234,7 @@ func TestJoinCluster(t *testing.T) {
 				},
 				supportedRes: true,
 			},
-			expectedJoinClusterArgs: joinClusterArgs{
+			wantJoinClusterArgs: joinClusterArgs{
 				args: &kubeadm.BootstrapTokenDiscovery{
 					APIServerEndpoint: "192.0.2.0:6443",
 					Token:             "someToken",
@@ -243,14 +243,14 @@ func TestJoinCluster(t *testing.T) {
 				nodeName:   "some-name",
 				providerID: "fake://providerid",
 			},
-			expectErr: false,
+			wantErr: false,
 		},
 		"Instance metadata retrieval can fail": {
 			metadata: stubMetadata{
 				supportedRes: true,
 				selfErr:      errors.New("metadata retrieval error"),
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 		"CCM preparation failure is detected": {
 			metadata: stubMetadata{
@@ -260,15 +260,15 @@ func TestJoinCluster(t *testing.T) {
 				supportedRes:       true,
 				prepareInstanceRes: errors.New("ccm prepare fails"),
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 		"updating role fails without error": {
 			metadata: stubMetadata{
 				signalRoleErr: errors.New("updating role fails"),
 				supportedRes:  true,
 			},
-			expectErr: false,
-			expectedJoinClusterArgs: joinClusterArgs{
+			wantErr: false,
+			wantJoinClusterArgs: joinClusterArgs{
 				args: &kubeadm.BootstrapTokenDiscovery{
 					APIServerEndpoint: "192.0.2.0:6443",
 					Token:             "someToken",
@@ -295,13 +295,13 @@ func TestJoinCluster(t *testing.T) {
 			}
 			err = core.JoinCluster(joinReq, "", role.Node)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
 			require.Len(tc.cluster.joinClusterArgs, 1)
-			assert.Equal(tc.expectedJoinClusterArgs, tc.cluster.joinClusterArgs[0])
+			assert.Equal(tc.wantJoinClusterArgs, tc.cluster.joinClusterArgs[0])
 		})
 	}
 }
@@ -309,20 +309,20 @@ func TestJoinCluster(t *testing.T) {
 func TestK8sCompliantHostname(t *testing.T) {
 	compliantHostname := regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
 	testCases := map[string]struct {
-		hostname         string
-		expectedHostname string
+		hostname     string
+		wantHostname string
 	}{
 		"azure scale set names work": {
-			hostname:         "constellation-scale-set-coordinators-name_0",
-			expectedHostname: "constellation-scale-set-coordinators-name-0",
+			hostname:     "constellation-scale-set-coordinators-name_0",
+			wantHostname: "constellation-scale-set-coordinators-name-0",
 		},
 		"compliant hostname is not modified": {
-			hostname:         "abcd-123",
-			expectedHostname: "abcd-123",
+			hostname:     "abcd-123",
+			wantHostname: "abcd-123",
 		},
 		"uppercase hostnames are lowercased": {
-			hostname:         "ABCD",
-			expectedHostname: "abcd",
+			hostname:     "ABCD",
+			wantHostname: "abcd",
 		},
 	}
 
@@ -332,7 +332,7 @@ func TestK8sCompliantHostname(t *testing.T) {
 
 			hostname := k8sCompliantHostname(tc.hostname)
 
-			assert.Equal(tc.expectedHostname, hostname)
+			assert.Equal(tc.wantHostname, hostname)
 			assert.Regexp(compliantHostname, hostname)
 		})
 	}

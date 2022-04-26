@@ -28,8 +28,8 @@ func TestList(t *testing.T) {
 		client             stubGCPClient
 		instancesGenerator func() *[]core.Instance
 		instancesMutator   func(*[]core.Instance)
-		expectErr          bool
-		expectedInstances  []core.Instance
+		wantErr            bool
+		wantInstances      []core.Instance
 	}{
 		"retrieve works": {
 			client: stubGCPClient{
@@ -40,7 +40,7 @@ func TestList(t *testing.T) {
 				},
 			},
 			instancesGenerator: instancesGenerator,
-			expectedInstances: []core.Instance{
+			wantInstances: []core.Instance{
 				{
 					Name:       "someInstance",
 					ProviderID: "gce://someProject/someZone/someInstance",
@@ -58,21 +58,21 @@ func TestList(t *testing.T) {
 				retrieveInstancesErr: err,
 			},
 			instancesGenerator: instancesGenerator,
-			expectErr:          true,
+			wantErr:            true,
 		},
 		"project metadata retrieval error is detected": {
 			client: stubGCPClient{
 				retrieveProjectIDErr: err,
 			},
 			instancesGenerator: instancesGenerator,
-			expectErr:          true,
+			wantErr:            true,
 		},
 		"zone retrieval error is detected": {
 			client: stubGCPClient{
 				retrieveZoneErr: err,
 			},
 			instancesGenerator: instancesGenerator,
-			expectErr:          true,
+			wantErr:            true,
 		},
 	}
 
@@ -88,12 +88,12 @@ func TestList(t *testing.T) {
 			metadata := New(&tc.client)
 			instances, err := metadata.List(context.Background())
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.ElementsMatch(tc.expectedInstances, instances)
+			assert.ElementsMatch(tc.wantInstances, instances)
 		})
 	}
 }
@@ -103,9 +103,9 @@ func TestSelf(t *testing.T) {
 	uid := "1234"
 
 	testCases := map[string]struct {
-		client           stubGCPClient
-		expectErr        bool
-		expectedInstance core.Instance
+		client       stubGCPClient
+		wantErr      bool
+		wantInstance core.Instance
 	}{
 		"retrieve works": {
 			client: stubGCPClient{
@@ -117,7 +117,7 @@ func TestSelf(t *testing.T) {
 					IPs:        []string{"192.0.2.0"},
 				},
 			},
-			expectedInstance: core.Instance{
+			wantInstance: core.Instance{
 				Name:       "someInstance",
 				ProviderID: "gce://someProject/someZone/someInstance",
 				IPs:        []string{"192.0.2.0"},
@@ -132,25 +132,25 @@ func TestSelf(t *testing.T) {
 				},
 				retrieveInstanceErr: err,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 		"project id retrieval error is detected": {
 			client: stubGCPClient{
 				retrieveProjectIDErr: err,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 		"zone retrieval error is detected": {
 			client: stubGCPClient{
 				retrieveZoneErr: err,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 		"instance name retrieval error is detected": {
 			client: stubGCPClient{
 				retrieveInstanceNameErr: err,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 	}
 
@@ -162,12 +162,12 @@ func TestSelf(t *testing.T) {
 			cloud := New(&tc.client)
 			instance, err := cloud.Self(context.Background())
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedInstance, instance)
+			assert.Equal(tc.wantInstance, instance)
 		})
 	}
 }
@@ -176,10 +176,10 @@ func TestGetInstance(t *testing.T) {
 	err := errors.New("some err")
 
 	testCases := map[string]struct {
-		providerID       string
-		client           stubGCPClient
-		expectErr        bool
-		expectedInstance core.Instance
+		providerID   string
+		client       stubGCPClient
+		wantErr      bool
+		wantInstance core.Instance
 	}{
 		"retrieve works": {
 			providerID: "gce://someProject/someZone/someInstance",
@@ -190,7 +190,7 @@ func TestGetInstance(t *testing.T) {
 					IPs:        []string{"192.0.2.0"},
 				},
 			},
-			expectedInstance: core.Instance{
+			wantInstance: core.Instance{
 				Name:       "someInstance",
 				ProviderID: "gce://someProject/someZone/someInstance",
 				IPs:        []string{"192.0.2.0"},
@@ -201,15 +201,15 @@ func TestGetInstance(t *testing.T) {
 			client: stubGCPClient{
 				retrieveInstanceErr: err,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 		"malformed providerID with too many fields is detected": {
 			providerID: "gce://someProject/someZone/someInstance/tooMany/fields",
-			expectErr:  true,
+			wantErr:    true,
 		},
 		"malformed providerID with too few fields is detected": {
 			providerID: "gce://someProject",
-			expectErr:  true,
+			wantErr:    true,
 		},
 	}
 
@@ -221,12 +221,12 @@ func TestGetInstance(t *testing.T) {
 			cloud := New(&tc.client)
 			instance, err := cloud.GetInstance(context.Background(), tc.providerID)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedInstance, instance)
+			assert.Equal(tc.wantInstance, instance)
 		})
 	}
 }
@@ -235,9 +235,9 @@ func TestSignalRole(t *testing.T) {
 	err := errors.New("some err")
 
 	testCases := map[string]struct {
-		client       stubGCPClient
-		expectErr    bool
-		expectedRole role.Role
+		client   stubGCPClient
+		wantErr  bool
+		wantRole role.Role
 	}{
 		"signaling role works": {
 			client: stubGCPClient{
@@ -245,25 +245,25 @@ func TestSignalRole(t *testing.T) {
 				zone:         "someZone",
 				instanceName: "someName",
 			},
-			expectedRole: role.Coordinator,
+			wantRole: role.Coordinator,
 		},
 		"project metadata retrieval error is detected": {
 			client: stubGCPClient{
 				retrieveProjectIDErr: err,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 		"instance zone retrieval error is detected": {
 			client: stubGCPClient{
 				retrieveZoneErr: err,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 		"instance name retrieval error is detected": {
 			client: stubGCPClient{
 				retrieveInstanceNameErr: err,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 	}
 
@@ -273,9 +273,9 @@ func TestSignalRole(t *testing.T) {
 			require := require.New(t)
 
 			cloud := New(&tc.client)
-			err := cloud.SignalRole(context.Background(), tc.expectedRole)
+			err := cloud.SignalRole(context.Background(), tc.wantRole)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -285,7 +285,7 @@ func TestSignalRole(t *testing.T) {
 			assert.ElementsMatch([]string{"someZone"}, tc.client.instanceMetadataZones)
 			assert.ElementsMatch([]string{"someName"}, tc.client.instanceMetadataInstanceNames)
 			assert.ElementsMatch([]string{core.RoleMetadataKey}, tc.client.instanceMetadataKeys)
-			assert.ElementsMatch([]string{tc.expectedRole.String()}, tc.client.instanceMetadataValues)
+			assert.ElementsMatch([]string{tc.wantRole.String()}, tc.client.instanceMetadataValues)
 		})
 	}
 }
@@ -294,9 +294,9 @@ func TestSetVPNIP(t *testing.T) {
 	err := errors.New("some err")
 
 	testCases := map[string]struct {
-		client        stubGCPClient
-		expectErr     bool
-		expectedVPNIP string
+		client    stubGCPClient
+		wantErr   bool
+		wantVPNIP string
 	}{
 		"signaling role works": {
 			client: stubGCPClient{
@@ -304,25 +304,25 @@ func TestSetVPNIP(t *testing.T) {
 				zone:         "someZone",
 				instanceName: "someName",
 			},
-			expectedVPNIP: "192.0.2.0",
+			wantVPNIP: "192.0.2.0",
 		},
 		"project metadata retrieval error is detected": {
 			client: stubGCPClient{
 				retrieveProjectIDErr: err,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 		"instance zone retrieval error is detected": {
 			client: stubGCPClient{
 				retrieveZoneErr: err,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 		"instance name retrieval error is detected": {
 			client: stubGCPClient{
 				retrieveInstanceNameErr: err,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 	}
 
@@ -332,9 +332,9 @@ func TestSetVPNIP(t *testing.T) {
 			require := require.New(t)
 
 			cloud := New(&tc.client)
-			err := cloud.SetVPNIP(context.Background(), tc.expectedVPNIP)
+			err := cloud.SetVPNIP(context.Background(), tc.wantVPNIP)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -344,7 +344,7 @@ func TestSetVPNIP(t *testing.T) {
 			assert.ElementsMatch([]string{"someZone"}, tc.client.instanceMetadataZones)
 			assert.ElementsMatch([]string{"someName"}, tc.client.instanceMetadataInstanceNames)
 			assert.ElementsMatch([]string{core.VPNIPMetadataKey}, tc.client.instanceMetadataKeys)
-			assert.ElementsMatch([]string{tc.expectedVPNIP}, tc.client.instanceMetadataValues)
+			assert.ElementsMatch([]string{tc.wantVPNIP}, tc.client.instanceMetadataValues)
 		})
 	}
 }

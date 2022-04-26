@@ -13,13 +13,13 @@ import (
 
 func TestFromFile(t *testing.T) {
 	testCases := map[string]struct {
-		fileContents  string
-		expectedState *NodeState
-		errExpected   bool
+		fileContents string
+		wantState    *NodeState
+		wantErr      bool
 	}{
 		"nodestate exists": {
 			fileContents: `{	"Role": "Coordinator",	"VPNPrivKey": "dGVzdA==", "OwnerID": "T3duZXJJRA==", "ClusterID": "Q2x1c3RlcklE"	}`,
-			expectedState: &NodeState{
+			wantState: &NodeState{
 				Role:       role.Coordinator,
 				VPNPrivKey: []byte("test"),
 				OwnerID:    []byte("OwnerID"),
@@ -27,7 +27,7 @@ func TestFromFile(t *testing.T) {
 			},
 		},
 		"nodestate file does not exist": {
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 
@@ -43,12 +43,12 @@ func TestFromFile(t *testing.T) {
 			}
 			fileHandler := file.NewHandler(fs)
 			state, err := FromFile(fileHandler)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedState, state)
+			assert.Equal(tc.wantState, state)
 		})
 	}
 }
@@ -57,8 +57,8 @@ func TestToFile(t *testing.T) {
 	testCases := map[string]struct {
 		precreateFile bool
 		state         *NodeState
-		expectedFile  string
-		errExpected   bool
+		wantFile      string
+		wantErr       bool
 	}{
 		"writing works": {
 			state: &NodeState{
@@ -67,7 +67,7 @@ func TestToFile(t *testing.T) {
 				OwnerID:    []byte("OwnerID"),
 				ClusterID:  []byte("ClusterID"),
 			},
-			expectedFile: `{
+			wantFile: `{
 	"Role": "Coordinator",
 	"VPNPrivKey": "dGVzdA==",
 	"OwnerID": "T3duZXJJRA==",
@@ -76,7 +76,7 @@ func TestToFile(t *testing.T) {
 		},
 		"file exists already": {
 			precreateFile: true,
-			errExpected:   true,
+			wantErr:       true,
 		},
 	}
 
@@ -92,7 +92,7 @@ func TestToFile(t *testing.T) {
 			}
 			fileHandler := file.NewHandler(fs)
 			err := tc.state.ToFile(fileHandler)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -100,7 +100,7 @@ func TestToFile(t *testing.T) {
 
 			fileContents, err := afero.ReadFile(fs, nodeStatePath)
 			require.NoError(err)
-			assert.Equal(tc.expectedFile, string(fileContents))
+			assert.Equal(tc.wantFile, string(fileContents))
 		})
 	}
 }

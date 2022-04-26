@@ -23,60 +23,60 @@ func TestGetServiceAccountKey(t *testing.T) {
 	}
 	testCases := map[string]struct {
 		cloudServiceAccountURI string
-		expectedKey            client.ServiceAccountKey
-		expectErr              bool
+		wantKey                client.ServiceAccountKey
+		wantErr                bool
 	}{
 		"getServiceAccountKey works": {
 			cloudServiceAccountURI: "serviceaccount://gcp?type=type&project_id=project-id&private_key_id=private-key-id&private_key=private-key&client_email=client-email&client_id=client-id&auth_uri=auth-uri&token_uri=token-uri&auth_provider_x509_cert_url=auth-provider-x509-cert-url&client_x509_cert_url=client-x509-cert-url",
-			expectedKey:            serviceAccountKey,
+			wantKey:                serviceAccountKey,
 		},
 		"missing type": {
 			cloudServiceAccountURI: "serviceaccount://gcp?project_id=project-id&private_key_id=private-key-id&private_key=private-key&client_email=client-email&client_id=client-id&auth_uri=auth-uri&token_uri=token-uri&auth_provider_x509_cert_url=auth-provider-x509-cert-url&client_x509_cert_url=client-x509-cert-url",
-			expectErr:              true,
+			wantErr:                true,
 		},
 		"missing project_id": {
 			cloudServiceAccountURI: "serviceaccount://gcp?type=type&private_key_id=private-key-id&private_key=private-key&client_email=client-email&client_id=client-id&auth_uri=auth-uri&token_uri=token-uri&auth_provider_x509_cert_url=auth-provider-x509-cert-url&client_x509_cert_url=client-x509-cert-url",
-			expectErr:              true,
+			wantErr:                true,
 		},
 		"missing private_key_id": {
 			cloudServiceAccountURI: "serviceaccount://gcp?type=type&project_id=project-id&private_key=private-key&client_email=client-email&client_id=client-id&auth_uri=auth-uri&token_uri=token-uri&auth_provider_x509_cert_url=auth-provider-x509-cert-url&client_x509_cert_url=client-x509-cert-url",
-			expectErr:              true,
+			wantErr:                true,
 		},
 		"missing private_key": {
 			cloudServiceAccountURI: "serviceaccount://gcp?type=type&project_id=project-id&private_key_id=private-key-id&client_email=client-email&client_id=client-id&auth_uri=auth-uri&token_uri=token-uri&auth_provider_x509_cert_url=auth-provider-x509-cert-url&client_x509_cert_url=client-x509-cert-url",
-			expectErr:              true,
+			wantErr:                true,
 		},
 		"missing client_email": {
 			cloudServiceAccountURI: "serviceaccount://gcp?type=type&project_id=project-id&private_key_id=private-key-id&private_key=private-key&client_id=client-id&auth_uri=auth-uri&token_uri=token-uri&auth_provider_x509_cert_url=auth-provider-x509-cert-url&client_x509_cert_url=client-x509-cert-url",
-			expectErr:              true,
+			wantErr:                true,
 		},
 		"missing client_id": {
 			cloudServiceAccountURI: "serviceaccount://gcp?type=type&project_id=project-id&private_key_id=private-key-id&private_key=private-key&client_email=client-email&auth_uri=auth-uri&token_uri=token-uri&auth_provider_x509_cert_url=auth-provider-x509-cert-url&client_x509_cert_url=client-x509-cert-url",
-			expectErr:              true,
+			wantErr:                true,
 		},
 		"missing token_uri": {
 			cloudServiceAccountURI: "serviceaccount://gcp?type=type&project_id=project-id&private_key_id=private-key-id&private_key=private-key&client_email=client-email&client_id=client-id&auth_uri=auth-uri&auth_provider_x509_cert_url=auth-provider-x509-cert-url&client_x509_cert_url=client-x509-cert-url",
-			expectErr:              true,
+			wantErr:                true,
 		},
 		"missing auth_provider_x509_cert_url": {
 			cloudServiceAccountURI: "serviceaccount://gcp?type=type&project_id=project-id&private_key_id=private-key-id&private_key=private-key&client_email=client-email&client_id=client-id&auth_uri=auth-uri&token_uri=token-uri&client_x509_cert_url=client-x509-cert-url",
-			expectErr:              true,
+			wantErr:                true,
 		},
 		"missing client_x509_cert_url": {
 			cloudServiceAccountURI: "serviceaccount://gcp?type=type&project_id=project-id&private_key_id=private-key-id&private_key=private-key&client_email=client-email&client_id=client-id&auth_uri=auth-uri&token_uri=token-uri&auth_provider_x509_cert_url=auth-provider-x509-cert-url",
-			expectErr:              true,
+			wantErr:                true,
 		},
 		"invalid URI fails": {
 			cloudServiceAccountURI: "\x00",
-			expectErr:              true,
+			wantErr:                true,
 		},
 		"incorrect URI scheme fails": {
 			cloudServiceAccountURI: "invalid",
-			expectErr:              true,
+			wantErr:                true,
 		},
 		"incorrect URI host fails": {
 			cloudServiceAccountURI: "serviceaccount://incorrect",
-			expectErr:              true,
+			wantErr:                true,
 		},
 	}
 
@@ -86,12 +86,12 @@ func TestGetServiceAccountKey(t *testing.T) {
 			require := require.New(t)
 
 			key, err := getServiceAccountKey(tc.cloudServiceAccountURI)
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedKey, key)
+			assert.Equal(tc.wantKey, key)
 		})
 	}
 }

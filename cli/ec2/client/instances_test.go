@@ -41,7 +41,7 @@ func TestCreateInstances(t *testing.T) {
 		api           stubAPI
 		instances     ec2.Instances
 		securityGroup string
-		errExpected   bool
+		wantErr       bool
 		wantInstances ec2.Instances
 	}{
 		"create": {
@@ -69,7 +69,7 @@ func TestCreateInstances(t *testing.T) {
 			api:           stubAPI{instances: testInstances},
 			instances:     ec2.Instances{"id-1": {}, "id-4": {}, "id-5": {}},
 			securityGroup: "sg-test",
-			errExpected:   false,
+			wantErr:       false,
 			wantInstances: ec2.Instances{
 				"id-1": {PublicIP: "192.0.2.1", PrivateIP: "192.0.2.2"},
 				"id-2": {PublicIP: "192.0.2.3", PrivateIP: "192.0.2.4"},
@@ -79,23 +79,23 @@ func TestCreateInstances(t *testing.T) {
 			},
 		},
 		"client has no security group": {
-			api:         stubAPI{},
-			errExpected: true,
+			api:     stubAPI{},
+			wantErr: true,
 		},
 		"run API error": {
 			api:           stubAPI{runInstancesErr: someErr},
 			securityGroup: "sg-test",
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"runDryRun API error": {
 			api:           stubAPI{runInstancesDryRunErr: &someErr},
 			securityGroup: "sg-test",
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"runDryRun missing expected API error": {
 			api:           stubAPI{runInstancesDryRunErr: &noErr},
 			securityGroup: "sg-test",
-			errExpected:   true,
+			wantErr:       true,
 		},
 	}
 
@@ -120,7 +120,7 @@ func TestCreateInstances(t *testing.T) {
 
 			err := client.CreateInstances(context.Background(), input)
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -142,32 +142,32 @@ func TestTerminateInstances(t *testing.T) {
 	var noErr error
 
 	testCases := map[string]struct {
-		api         stubAPI
-		instances   ec2.Instances
-		errExpected bool
+		api       stubAPI
+		instances ec2.Instances
+		wantErr   bool
 	}{
 		"client with instances": {
-			api:         stubAPI{instances: testAWSInstances},
-			instances:   ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
-			errExpected: false,
+			api:       stubAPI{instances: testAWSInstances},
+			instances: ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
+			wantErr:   false,
 		},
 		"client no instances set": {
 			api: stubAPI{},
 		},
 		"terminate API error": {
-			api:         stubAPI{terminateInstancesErr: someErr},
-			instances:   ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
-			errExpected: true,
+			api:       stubAPI{terminateInstancesErr: someErr},
+			instances: ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
+			wantErr:   true,
 		},
 		"terminateDryRun API error": {
-			api:         stubAPI{terminateInstancesDryRunErr: &someErr},
-			instances:   ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
-			errExpected: true,
+			api:       stubAPI{terminateInstancesDryRunErr: &someErr},
+			instances: ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
+			wantErr:   true,
 		},
 		"terminateDryRun miss expected API error": {
-			api:         stubAPI{terminateInstancesDryRunErr: &noErr},
-			instances:   ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
-			errExpected: true,
+			api:       stubAPI{terminateInstancesDryRunErr: &noErr},
+			instances: ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
+			wantErr:   true,
 		},
 	}
 
@@ -185,7 +185,7 @@ func TestTerminateInstances(t *testing.T) {
 			}
 
 			err := client.TerminateInstances(context.Background())
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -197,9 +197,9 @@ func TestTerminateInstances(t *testing.T) {
 
 func TestWaitStateRunning(t *testing.T) {
 	testCases := map[string]struct {
-		api         api
-		instances   ec2.Instances
-		errExpected bool
+		api       api
+		instances ec2.Instances
+		wantErr   bool
 	}{
 		"instances are running": {
 			api: stubAPI{instances: []types.Instance{
@@ -216,8 +216,8 @@ func TestWaitStateRunning(t *testing.T) {
 					State:      &stateRunning,
 				},
 			}},
-			instances:   ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
-			errExpected: false,
+			instances: ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
+			wantErr:   false,
 		},
 		"one instance running, rest nil": {
 			api: stubAPI{instances: []types.Instance{
@@ -228,8 +228,8 @@ func TestWaitStateRunning(t *testing.T) {
 				{InstanceId: aws.String("id-2")},
 				{InstanceId: aws.String("id-3")},
 			}},
-			instances:   ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
-			errExpected: false,
+			instances: ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
+			wantErr:   false,
 		},
 		"one instance terminated, rest nil": {
 			api: stubAPI{instances: []types.Instance{
@@ -240,8 +240,8 @@ func TestWaitStateRunning(t *testing.T) {
 				{InstanceId: aws.String("id-2")},
 				{InstanceId: aws.String("id-3")},
 			}},
-			instances:   ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
-			errExpected: true,
+			instances: ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
+			wantErr:   true,
 		},
 		"instances with different state": {
 			api: stubAPI{instances: []types.Instance{
@@ -255,8 +255,8 @@ func TestWaitStateRunning(t *testing.T) {
 				},
 				{InstanceId: aws.String("id-3")},
 			}},
-			instances:   ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
-			errExpected: true,
+			instances: ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
+			wantErr:   true,
 		},
 		"all instances have nil state": {
 			api: stubAPI{instances: []types.Instance{
@@ -264,12 +264,12 @@ func TestWaitStateRunning(t *testing.T) {
 				{InstanceId: aws.String("id-2")},
 				{InstanceId: aws.String("id-3")},
 			}},
-			instances:   ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
-			errExpected: true,
+			instances: ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
+			wantErr:   true,
 		},
 		"client has no instances": {
-			api:         &stubAPI{},
-			errExpected: true,
+			api:     &stubAPI{},
+			wantErr: true,
 		},
 	}
 
@@ -286,7 +286,7 @@ func TestWaitStateRunning(t *testing.T) {
 			}
 
 			err := client.waitStateRunning(context.Background())
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -297,9 +297,9 @@ func TestWaitStateRunning(t *testing.T) {
 
 func TestWaitStateTerminated(t *testing.T) {
 	testCases := map[string]struct {
-		api         api
-		instances   ec2.Instances
-		errExpected bool
+		api       api
+		instances ec2.Instances
+		wantErr   bool
 	}{
 		"instances are terminated": {
 			api: stubAPI{instances: []types.Instance{
@@ -316,8 +316,8 @@ func TestWaitStateTerminated(t *testing.T) {
 					State:      &stateTerminated,
 				},
 			}},
-			instances:   ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
-			errExpected: false,
+			instances: ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
+			wantErr:   false,
 		},
 		"one instance terminated, rest nil": {
 			api: stubAPI{instances: []types.Instance{
@@ -328,8 +328,8 @@ func TestWaitStateTerminated(t *testing.T) {
 				{InstanceId: aws.String("id-2")},
 				{InstanceId: aws.String("id-3")},
 			}},
-			instances:   ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
-			errExpected: false,
+			instances: ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
+			wantErr:   false,
 		},
 		"one instance running, rest nil": {
 			api: stubAPI{instances: []types.Instance{
@@ -340,8 +340,8 @@ func TestWaitStateTerminated(t *testing.T) {
 				{InstanceId: aws.String("id-2")},
 				{InstanceId: aws.String("id-3")},
 			}},
-			instances:   ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
-			errExpected: true,
+			instances: ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
+			wantErr:   true,
 		},
 		"instances with different state": {
 			api: stubAPI{instances: []types.Instance{
@@ -355,8 +355,8 @@ func TestWaitStateTerminated(t *testing.T) {
 				},
 				{InstanceId: aws.String("id-3")},
 			}},
-			instances:   ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
-			errExpected: true,
+			instances: ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
+			wantErr:   true,
 		},
 		"all instances have nil state": {
 			api: stubAPI{instances: []types.Instance{
@@ -364,12 +364,12 @@ func TestWaitStateTerminated(t *testing.T) {
 				{InstanceId: aws.String("id-2")},
 				{InstanceId: aws.String("id-3")},
 			}},
-			instances:   ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
-			errExpected: true,
+			instances: ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
+			wantErr:   true,
 		},
 		"client has no instances": {
-			api:         &stubAPI{},
-			errExpected: true,
+			api:     &stubAPI{},
+			wantErr: true,
 		},
 	}
 
@@ -387,7 +387,7 @@ func TestWaitStateTerminated(t *testing.T) {
 			}
 
 			err := client.waitStateTerminated(context.Background())
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -403,23 +403,23 @@ func TestTagInstances(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		api         stubAPI
-		instances   ec2.Instances
-		errExpected bool
+		api       stubAPI
+		instances ec2.Instances
+		wantErr   bool
 	}{
 		"tag": {
-			api:         stubAPI{},
-			instances:   ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
-			errExpected: false,
+			api:       stubAPI{},
+			instances: ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
+			wantErr:   false,
 		},
 		"client without instances": {
-			api:         stubAPI{createTagsErr: errors.New("failed")},
-			errExpected: true,
+			api:     stubAPI{createTagsErr: errors.New("failed")},
+			wantErr: true,
 		},
 		"tag API error": {
-			api:         stubAPI{createTagsErr: errors.New("failed")},
-			instances:   ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
-			errExpected: true,
+			api:       stubAPI{createTagsErr: errors.New("failed")},
+			instances: ec2.Instances{"id-1": {}, "id-2": {}, "id-3": {}},
+			wantErr:   true,
 		},
 	}
 	for name, tc := range testCases {
@@ -436,7 +436,7 @@ func TestTagInstances(t *testing.T) {
 			}
 
 			err := client.tagInstances(context.Background(), testTags)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -449,8 +449,8 @@ func TestEc2RunInstanceInput(t *testing.T) {
 	assert := assert.New(t)
 
 	testCases := []struct {
-		in          CreateInput
-		outExpected awsec2.RunInstancesInput
+		in         CreateInput
+		wantOutput awsec2.RunInstancesInput
 	}{
 		{
 			in: CreateInput{
@@ -459,7 +459,7 @@ func TestEc2RunInstanceInput(t *testing.T) {
 				Count:            13,
 				securityGroupIds: []string{"test-sec-group"},
 			},
-			outExpected: awsec2.RunInstancesInput{
+			wantOutput: awsec2.RunInstancesInput{
 				ImageId:          aws.String("test-image"),
 				InstanceType:     types.InstanceTypeC5a4xlarge,
 				MinCount:         aws.Int32(int32(13)),
@@ -475,7 +475,7 @@ func TestEc2RunInstanceInput(t *testing.T) {
 				Count:            2,
 				securityGroupIds: []string{"test-sec-group-2"},
 			},
-			outExpected: awsec2.RunInstancesInput{
+			wantOutput: awsec2.RunInstancesInput{
 				ImageId:          aws.String("test-image-2"),
 				InstanceType:     types.InstanceTypeC5a12xlarge,
 				MinCount:         aws.Int32(int32(2)),
@@ -488,6 +488,6 @@ func TestEc2RunInstanceInput(t *testing.T) {
 
 	for _, tc := range testCases {
 		out := tc.in.AWS()
-		assert.Equal(tc.outExpected, *out)
+		assert.Equal(tc.wantOutput, *out)
 	}
 }

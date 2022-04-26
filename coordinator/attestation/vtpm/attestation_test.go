@@ -83,16 +83,16 @@ func TestValidate(t *testing.T) {
 	require.Equal(challenge, out)
 
 	testCases := map[string]struct {
-		validator   *Validator
-		attDoc      []byte
-		nonce       []byte
-		errExpected bool
+		validator *Validator
+		attDoc    []byte
+		nonce     []byte
+		wantErr   bool
 	}{
 		"invalid nonce": {
-			validator:   NewValidator(fakeTrustedPcrs, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15),
-			attDoc:      mustMarshalAttestation(attDoc, require),
-			nonce:       []byte{4, 3, 2, 1},
-			errExpected: true,
+			validator: NewValidator(fakeTrustedPcrs, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15),
+			attDoc:    mustMarshalAttestation(attDoc, require),
+			nonce:     []byte{4, 3, 2, 1},
+			wantErr:   true,
 		},
 		"invalid signature": {
 			validator: NewValidator(fakeTrustedPcrs, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15),
@@ -102,8 +102,8 @@ func TestValidate(t *testing.T) {
 				UserData:          []byte("wrong data"),
 				UserDataSignature: attDoc.UserDataSignature,
 			}, require),
-			nonce:       nonce,
-			errExpected: true,
+			nonce:   nonce,
+			wantErr: true,
 		},
 		"untrusted attestation public key": {
 			validator: NewValidator(
@@ -112,9 +112,9 @@ func TestValidate(t *testing.T) {
 					return nil, errors.New("untrusted")
 				},
 				fakeValidateCVM, VerifyPKCS1v15),
-			attDoc:      mustMarshalAttestation(attDoc, require),
-			nonce:       nonce,
-			errExpected: true,
+			attDoc:  mustMarshalAttestation(attDoc, require),
+			nonce:   nonce,
+			wantErr: true,
 		},
 		"not a CVM": {
 			validator: NewValidator(
@@ -124,9 +124,9 @@ func TestValidate(t *testing.T) {
 					return errors.New("untrusted")
 				},
 				VerifyPKCS1v15),
-			attDoc:      mustMarshalAttestation(attDoc, require),
-			nonce:       nonce,
-			errExpected: true,
+			attDoc:  mustMarshalAttestation(attDoc, require),
+			nonce:   nonce,
+			wantErr: true,
 		},
 		"untrusted PCRs": {
 			validator: NewValidator(
@@ -136,9 +136,9 @@ func TestValidate(t *testing.T) {
 				fakeGetTrustedKey,
 				fakeValidateCVM,
 				VerifyPKCS1v15),
-			attDoc:      mustMarshalAttestation(attDoc, require),
-			nonce:       nonce,
-			errExpected: true,
+			attDoc:  mustMarshalAttestation(attDoc, require),
+			nonce:   nonce,
+			wantErr: true,
 		},
 		"no sha256 quote": {
 			validator: NewValidator(fakeTrustedPcrs, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15),
@@ -155,14 +155,14 @@ func TestValidate(t *testing.T) {
 				UserData:          attDoc.UserData,
 				UserDataSignature: attDoc.UserDataSignature,
 			}, require),
-			nonce:       nonce,
-			errExpected: true,
+			nonce:   nonce,
+			wantErr: true,
 		},
 		"invalid attestation document": {
-			validator:   NewValidator(fakeTrustedPcrs, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15),
-			attDoc:      []byte("invalid attestation"),
-			nonce:       nonce,
-			errExpected: true,
+			validator: NewValidator(fakeTrustedPcrs, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15),
+			attDoc:    []byte("invalid attestation"),
+			nonce:     nonce,
+			wantErr:   true,
 		},
 	}
 
@@ -171,7 +171,7 @@ func TestValidate(t *testing.T) {
 			assert := assert.New(t)
 
 			_, err = tc.validator.Validate(tc.attDoc, tc.nonce)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -248,9 +248,9 @@ func TestFailIssuer(t *testing.T) {
 
 func TestGetSHA256QuoteIndex(t *testing.T) {
 	testCases := map[string]struct {
-		quotes      []*tpm.Quote
-		idxExpected int
-		errExpected bool
+		quotes  []*tpm.Quote
+		wantIdx int
+		wantErr bool
 	}{
 		"idx 0 is valid": {
 			quotes: []*tpm.Quote{
@@ -260,8 +260,8 @@ func TestGetSHA256QuoteIndex(t *testing.T) {
 					},
 				},
 			},
-			idxExpected: 0,
-			errExpected: false,
+			wantIdx: 0,
+			wantErr: false,
 		},
 		"idx 1 is valid": {
 			quotes: []*tpm.Quote{
@@ -276,16 +276,16 @@ func TestGetSHA256QuoteIndex(t *testing.T) {
 					},
 				},
 			},
-			idxExpected: 1,
-			errExpected: false,
+			wantIdx: 1,
+			wantErr: false,
 		},
 		"no quotes": {
-			quotes:      nil,
-			errExpected: true,
+			quotes:  nil,
+			wantErr: true,
 		},
 		"quotes is nil": {
-			quotes:      make([]*tpm.Quote, 2),
-			errExpected: true,
+			quotes:  make([]*tpm.Quote, 2),
+			wantErr: true,
 		},
 		"pcrs is nil": {
 			quotes: []*tpm.Quote{
@@ -298,7 +298,7 @@ func TestGetSHA256QuoteIndex(t *testing.T) {
 					Pcrs: nil,
 				},
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 
@@ -307,12 +307,12 @@ func TestGetSHA256QuoteIndex(t *testing.T) {
 			assert := assert.New(t)
 
 			idx, err := GetSHA256QuoteIndex(tc.quotes)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 				assert.Equal(0, idx)
 			} else {
 				assert.NoError(err)
-				assert.Equal(tc.idxExpected, idx)
+				assert.Equal(tc.wantIdx, idx)
 			}
 		})
 	}
@@ -322,7 +322,7 @@ func TestGetSelectedPCRs(t *testing.T) {
 	testCases := map[string]struct {
 		openFunc     TPMOpenFunc
 		pcrSelection tpm2.PCRSelection
-		errExpected  bool
+		wantErr      bool
 	}{
 		"error": {
 			openFunc: func() (io.ReadWriteCloser, error) { return nil, errors.New("error") },
@@ -330,7 +330,7 @@ func TestGetSelectedPCRs(t *testing.T) {
 				Hash: tpm2.AlgSHA256,
 				PCRs: []int{0, 1, 2},
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"3 PCRs": {
 			openFunc: tpmsim.OpenSimulatedTPM,
@@ -355,7 +355,7 @@ func TestGetSelectedPCRs(t *testing.T) {
 			assert := assert.New(t)
 
 			pcrs, err := GetSelectedPCRs(tc.openFunc, tc.pcrSelection)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				require.NoError(err)

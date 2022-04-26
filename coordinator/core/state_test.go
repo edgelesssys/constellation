@@ -18,21 +18,21 @@ func TestAdvanceState(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		initialState        state.State
-		newState            state.State
-		openTPMErr          error
-		expectErr           bool
-		expectOpenTPMCalled bool
+		initialState      state.State
+		newState          state.State
+		openTPMErr        error
+		wantErr           bool
+		wantOpenTPMCalled bool
 	}{
 		"init -> coordinator": {
-			initialState:        state.AcceptingInit,
-			newState:            state.ActivatingNodes,
-			expectOpenTPMCalled: true,
+			initialState:      state.AcceptingInit,
+			newState:          state.ActivatingNodes,
+			wantOpenTPMCalled: true,
 		},
 		"init -> node": {
-			initialState:        state.AcceptingInit,
-			newState:            state.IsNode,
-			expectOpenTPMCalled: true,
+			initialState:      state.AcceptingInit,
+			newState:          state.IsNode,
+			wantOpenTPMCalled: true,
 		},
 		"init -> failed": {
 			initialState: state.AcceptingInit,
@@ -43,11 +43,11 @@ func TestAdvanceState(t *testing.T) {
 			newState:     state.AcceptingInit,
 		},
 		"openTPM error": {
-			initialState:        state.AcceptingInit,
-			newState:            state.ActivatingNodes,
-			openTPMErr:          someErr,
-			expectErr:           true,
-			expectOpenTPMCalled: true,
+			initialState:      state.AcceptingInit,
+			newState:          state.ActivatingNodes,
+			openTPMErr:        someErr,
+			wantErr:           true,
+			wantOpenTPMCalled: true,
 		},
 	}
 
@@ -71,9 +71,9 @@ func TestAdvanceState(t *testing.T) {
 			core.state = tc.initialState
 
 			err = core.AdvanceState(tc.newState, []byte("secret"), []byte("cluster"))
-			assert.Equal(tc.expectOpenTPMCalled, openTPMCalled)
+			assert.Equal(tc.wantOpenTPMCalled, openTPMCalled)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				assert.Equal(tc.initialState, core.GetState())
 				return

@@ -33,7 +33,7 @@ func TestCreateServiceAccount(t *testing.T) {
 		iamAPI      iamAPI
 		projectsAPI stubProjectsAPI
 		input       ServiceAccountInput
-		errExpected bool
+		wantErr     bool
 	}{
 		"successful create": {
 			iamAPI: stubIAMAPI{serviceAccountKeyData: keyData},
@@ -45,30 +45,30 @@ func TestCreateServiceAccount(t *testing.T) {
 			iamAPI: stubIAMAPI{serviceAccountKeyData: keyData},
 		},
 		"creating account fails": {
-			iamAPI:      stubIAMAPI{createErr: someErr},
-			errExpected: true,
+			iamAPI:  stubIAMAPI{createErr: someErr},
+			wantErr: true,
 		},
 		"creating account key fails": {
-			iamAPI:      stubIAMAPI{createKeyErr: someErr},
-			errExpected: true,
+			iamAPI:  stubIAMAPI{createKeyErr: someErr},
+			wantErr: true,
 		},
 		"key data missing": {
-			iamAPI:      stubIAMAPI{},
-			errExpected: true,
+			iamAPI:  stubIAMAPI{},
+			wantErr: true,
 		},
 		"key data corrupt": {
-			iamAPI:      stubIAMAPI{serviceAccountKeyData: []byte("invalid key data")},
-			errExpected: true,
+			iamAPI:  stubIAMAPI{serviceAccountKeyData: []byte("invalid key data")},
+			wantErr: true,
 		},
 		"retrieving iam policy bindings fails": {
 			iamAPI:      stubIAMAPI{},
 			projectsAPI: stubProjectsAPI{getPolicyErr: someErr},
-			errExpected: true,
+			wantErr:     true,
 		},
 		"setting iam policy bindings fails": {
 			iamAPI:      stubIAMAPI{},
 			projectsAPI: stubProjectsAPI{setPolicyErr: someErr},
-			errExpected: true,
+			wantErr:     true,
 		},
 	}
 
@@ -87,7 +87,7 @@ func TestCreateServiceAccount(t *testing.T) {
 			}
 
 			serviceAccountKey, err := client.CreateServiceAccount(ctx, tc.input)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -100,8 +100,8 @@ func TestCreateServiceAccount(t *testing.T) {
 
 func TestTerminateServiceAccount(t *testing.T) {
 	testCases := map[string]struct {
-		iamAPI      iamAPI
-		errExpected bool
+		iamAPI  iamAPI
+		wantErr bool
 	}{
 		"delete works": {
 			iamAPI: stubIAMAPI{},
@@ -110,7 +110,7 @@ func TestTerminateServiceAccount(t *testing.T) {
 			iamAPI: stubIAMAPI{
 				deleteServiceAccountErr: errors.New("someErr"),
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 
@@ -129,7 +129,7 @@ func TestTerminateServiceAccount(t *testing.T) {
 			}
 
 			err := client.TerminateServiceAccount(ctx)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)

@@ -36,35 +36,35 @@ func TestUpdatePeer(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		storePeers       []peer.Peer
-		vpnPeers         []wgtypes.Peer
-		excludedIP       map[string]struct{}
-		expectErr        bool
-		expectedVPNPeers []wgtypes.Peer
+		storePeers   []peer.Peer
+		vpnPeers     []wgtypes.Peer
+		excludedIP   map[string]struct{}
+		wantErr      bool
+		wantVPNPeers []wgtypes.Peer
 	}{
 		"basic": {
-			storePeers:       []peer.Peer{peer1, peer3},
-			vpnPeers:         checkError(transformToWgpeer([]peer.Peer{peer1, peer2})),
-			expectedVPNPeers: checkError(transformToWgpeer([]peer.Peer{peer1, peer3})),
+			storePeers:   []peer.Peer{peer1, peer3},
+			vpnPeers:     checkError(transformToWgpeer([]peer.Peer{peer1, peer2})),
+			wantVPNPeers: checkError(transformToWgpeer([]peer.Peer{peer1, peer3})),
 		},
 		"previously empty": {
-			storePeers:       []peer.Peer{peer1, peer2},
-			expectedVPNPeers: checkError(transformToWgpeer([]peer.Peer{peer1, peer2})),
+			storePeers:   []peer.Peer{peer1, peer2},
+			wantVPNPeers: checkError(transformToWgpeer([]peer.Peer{peer1, peer2})),
 		},
 		"no changes": {
-			storePeers:       []peer.Peer{peer1, peer2},
-			vpnPeers:         checkError(transformToWgpeer([]peer.Peer{peer1, peer2})),
-			expectedVPNPeers: checkError(transformToWgpeer([]peer.Peer{peer1, peer2})),
+			storePeers:   []peer.Peer{peer1, peer2},
+			vpnPeers:     checkError(transformToWgpeer([]peer.Peer{peer1, peer2})),
+			wantVPNPeers: checkError(transformToWgpeer([]peer.Peer{peer1, peer2})),
 		},
 		"key update": {
-			storePeers:       []peer.Peer{peer1KeyUpd, peer3},
-			vpnPeers:         checkError(transformToWgpeer([]peer.Peer{peer1, peer2})),
-			expectedVPNPeers: checkError(transformToWgpeer([]peer.Peer{peer1KeyUpd, peer3})),
+			storePeers:   []peer.Peer{peer1KeyUpd, peer3},
+			vpnPeers:     checkError(transformToWgpeer([]peer.Peer{peer1, peer2})),
+			wantVPNPeers: checkError(transformToWgpeer([]peer.Peer{peer1KeyUpd, peer3})),
 		},
 		"not update Endpoint changes": {
-			storePeers:       []peer.Peer{peerAdminNoEndp, peer3},
-			vpnPeers:         checkError(transformToWgpeer([]peer.Peer{peerAdmin, peer3})),
-			expectedVPNPeers: checkError(transformToWgpeer([]peer.Peer{peerAdmin, peer3})),
+			storePeers:   []peer.Peer{peerAdminNoEndp, peer3},
+			vpnPeers:     checkError(transformToWgpeer([]peer.Peer{peerAdmin, peer3})),
+			wantVPNPeers: checkError(transformToWgpeer([]peer.Peer{peerAdmin, peer3})),
 		},
 	}
 
@@ -81,13 +81,13 @@ func TestUpdatePeer(t *testing.T) {
 
 			updateErr := wg.UpdatePeers(tc.storePeers)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(updateErr)
 				return
 			}
 			require.NoError(updateErr)
 
-			assert.ElementsMatch(tc.expectedVPNPeers, fakewg.devices[netInterface].Peers)
+			assert.ElementsMatch(tc.wantVPNPeers, fakewg.devices[netInterface].Peers)
 		})
 	}
 }

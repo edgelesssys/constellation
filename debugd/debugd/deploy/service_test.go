@@ -16,9 +16,9 @@ func TestSystemdAction(t *testing.T) {
 	unitName := "example.service"
 
 	testCases := map[string]struct {
-		dbus      stubDbus
-		action    SystemdAction
-		expectErr bool
+		dbus    stubDbus
+		action  SystemdAction
+		wantErr bool
 	}{
 		"start works": {
 			dbus: stubDbus{
@@ -26,8 +26,8 @@ func TestSystemdAction(t *testing.T) {
 					result: "done",
 				},
 			},
-			action:    Start,
-			expectErr: false,
+			action:  Start,
+			wantErr: false,
 		},
 		"stop works": {
 			dbus: stubDbus{
@@ -35,8 +35,8 @@ func TestSystemdAction(t *testing.T) {
 					result: "done",
 				},
 			},
-			action:    Stop,
-			expectErr: false,
+			action:  Stop,
+			wantErr: false,
 		},
 		"restart works": {
 			dbus: stubDbus{
@@ -44,22 +44,22 @@ func TestSystemdAction(t *testing.T) {
 					result: "done",
 				},
 			},
-			action:    Restart,
-			expectErr: false,
+			action:  Restart,
+			wantErr: false,
 		},
 		"reload works": {
 			dbus: stubDbus{
 				conn: &fakeDbusConn{},
 			},
-			action:    Reload,
-			expectErr: false,
+			action:  Reload,
+			wantErr: false,
 		},
 		"unknown action": {
 			dbus: stubDbus{
 				conn: &fakeDbusConn{},
 			},
-			action:    Unknown,
-			expectErr: true,
+			action:  Unknown,
+			wantErr: true,
 		},
 		"action fails": {
 			dbus: stubDbus{
@@ -67,8 +67,8 @@ func TestSystemdAction(t *testing.T) {
 					actionErr: errors.New("action fails"),
 				},
 			},
-			action:    Start,
-			expectErr: true,
+			action:  Start,
+			wantErr: true,
 		},
 		"action result is failure": {
 			dbus: stubDbus{
@@ -76,15 +76,15 @@ func TestSystemdAction(t *testing.T) {
 					result: "failure",
 				},
 			},
-			action:    Start,
-			expectErr: true,
+			action:  Start,
+			wantErr: true,
 		},
 		"newConn fails": {
 			dbus: stubDbus{
 				connErr: errors.New("newConn fails"),
 			},
-			action:    Start,
-			expectErr: true,
+			action:  Start,
+			wantErr: true,
 		},
 	}
 
@@ -104,7 +104,7 @@ func TestSystemdAction(t *testing.T) {
 				Action: tc.action,
 			})
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -115,11 +115,11 @@ func TestSystemdAction(t *testing.T) {
 
 func TestWriteSystemdUnitFile(t *testing.T) {
 	testCases := map[string]struct {
-		dbus                 stubDbus
-		unit                 SystemdUnit
-		readonly             bool
-		expectErr            bool
-		expectedFileContents string
+		dbus             stubDbus
+		unit             SystemdUnit
+		readonly         bool
+		wantErr          bool
+		wantFileContents string
 	}{
 		"start works": {
 			dbus: stubDbus{
@@ -131,8 +131,8 @@ func TestWriteSystemdUnitFile(t *testing.T) {
 				Name:     "test.service",
 				Contents: "testservicefilecontents",
 			},
-			expectErr:            false,
-			expectedFileContents: "testservicefilecontents",
+			wantErr:          false,
+			wantFileContents: "testservicefilecontents",
 		},
 		"write fails": {
 			dbus: stubDbus{
@@ -144,8 +144,8 @@ func TestWriteSystemdUnitFile(t *testing.T) {
 				Name:     "test.service",
 				Contents: "testservicefilecontents",
 			},
-			readonly:  true,
-			expectErr: true,
+			readonly: true,
+			wantErr:  true,
 		},
 		"systemd reload fails": {
 			dbus: stubDbus{
@@ -157,8 +157,8 @@ func TestWriteSystemdUnitFile(t *testing.T) {
 				Name:     "test.service",
 				Contents: "testservicefilecontents",
 			},
-			readonly:  false,
-			expectErr: true,
+			readonly: false,
+			wantErr:  true,
 		},
 	}
 
@@ -179,14 +179,14 @@ func TestWriteSystemdUnitFile(t *testing.T) {
 			}
 			err := manager.WriteSystemdUnitFile(context.Background(), tc.unit)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
 			fileContents, err := afero.ReadFile(fs, fmt.Sprintf("%s/%s", systemdUnitFolder, tc.unit.Name))
 			assert.NoError(err)
-			assert.Equal(tc.expectedFileContents, string(fileContents))
+			assert.Equal(tc.wantFileContents, string(fileContents))
 		})
 	}
 }

@@ -29,7 +29,7 @@ func TestRequestKeyLoop(t *testing.T) {
 
 	testCases := map[string]struct {
 		server          *stubAPIServer
-		expectedCalls   int
+		wantCalls       int
 		listResponse    []core.Instance
 		dontStartServer bool
 	}{
@@ -111,9 +111,9 @@ func TestRequestKeyLoop(t *testing.T) {
 
 func TestPushStateDiskKey(t *testing.T) {
 	testCases := map[string]struct {
-		testAPI     *KeyAPI
-		request     *keyproto.PushStateDiskKeyRequest
-		errExpected bool
+		testAPI *KeyAPI
+		request *keyproto.PushStateDiskKeyRequest
+		wantErr bool
 	}{
 		"success": {
 			testAPI: &KeyAPI{keyReceived: make(chan struct{}, 1)},
@@ -124,13 +124,13 @@ func TestPushStateDiskKey(t *testing.T) {
 				keyReceived: make(chan struct{}, 1),
 				key:         []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
 			},
-			request:     &keyproto.PushStateDiskKeyRequest{StateDiskKey: []byte("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")},
-			errExpected: true,
+			request: &keyproto.PushStateDiskKeyRequest{StateDiskKey: []byte("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")},
+			wantErr: true,
 		},
 		"incorrect size of pushed key": {
-			testAPI:     &KeyAPI{keyReceived: make(chan struct{}, 1)},
-			request:     &keyproto.PushStateDiskKeyRequest{StateDiskKey: []byte("AAAAAAAAAAAAAAAA")},
-			errExpected: true,
+			testAPI: &KeyAPI{keyReceived: make(chan struct{}, 1)},
+			request: &keyproto.PushStateDiskKeyRequest{StateDiskKey: []byte("AAAAAAAAAAAAAAAA")},
+			wantErr: true,
 		},
 	}
 
@@ -139,7 +139,7 @@ func TestPushStateDiskKey(t *testing.T) {
 			assert := assert.New(t)
 
 			_, err := tc.testAPI.PushStateDiskKey(context.Background(), tc.request)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)

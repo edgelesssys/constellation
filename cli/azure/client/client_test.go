@@ -12,8 +12,8 @@ import (
 
 func TestSetGetState(t *testing.T) {
 	testCases := map[string]struct {
-		state       state.ConstellationState
-		errExpected bool
+		state   state.ConstellationState
+		wantErr bool
 	}{
 		"valid state": {
 			state: state.ConstellationState{
@@ -62,7 +62,7 @@ func TestSetGetState(t *testing.T) {
 				AzureNodesScaleSet:        "node-scale-set",
 				AzureCoordinatorsScaleSet: "coordinator-scale-set",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing coordinator": {
 			state: state.ConstellationState{
@@ -84,7 +84,7 @@ func TestSetGetState(t *testing.T) {
 				AzureNodesScaleSet:        "node-scale-set",
 				AzureCoordinatorsScaleSet: "coordinator-scale-set",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing name": {
 			state: state.ConstellationState{
@@ -111,7 +111,7 @@ func TestSetGetState(t *testing.T) {
 				AzureNodesScaleSet:        "node-scale-set",
 				AzureCoordinatorsScaleSet: "coordinator-scale-set",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing uid": {
 			state: state.ConstellationState{
@@ -138,7 +138,7 @@ func TestSetGetState(t *testing.T) {
 				AzureNodesScaleSet:        "node-scale-set",
 				AzureCoordinatorsScaleSet: "coordinator-scale-set",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing resource group": {
 			state: state.ConstellationState{
@@ -165,7 +165,7 @@ func TestSetGetState(t *testing.T) {
 				AzureNodesScaleSet:        "node-scale-set",
 				AzureCoordinatorsScaleSet: "coordinator-scale-set",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing location": {
 			state: state.ConstellationState{
@@ -192,7 +192,7 @@ func TestSetGetState(t *testing.T) {
 				AzureNodesScaleSet:        "node-scale-set",
 				AzureCoordinatorsScaleSet: "coordinator-scale-set",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing subscription": {
 			state: state.ConstellationState{
@@ -219,7 +219,7 @@ func TestSetGetState(t *testing.T) {
 				AzureNodesScaleSet:        "node-scale-set",
 				AzureCoordinatorsScaleSet: "coordinator-scale-set",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing tenant": {
 			state: state.ConstellationState{
@@ -246,7 +246,7 @@ func TestSetGetState(t *testing.T) {
 				AzureNodesScaleSet:        "node-scale-set",
 				AzureCoordinatorsScaleSet: "coordinator-scale-set",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing subnet": {
 			state: state.ConstellationState{
@@ -273,7 +273,7 @@ func TestSetGetState(t *testing.T) {
 				AzureNodesScaleSet:        "node-scale-set",
 				AzureCoordinatorsScaleSet: "coordinator-scale-set",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing network security group": {
 			state: state.ConstellationState{
@@ -300,7 +300,7 @@ func TestSetGetState(t *testing.T) {
 				AzureNodesScaleSet:        "node-scale-set",
 				AzureCoordinatorsScaleSet: "coordinator-scale-set",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing node scale set": {
 			state: state.ConstellationState{
@@ -327,7 +327,7 @@ func TestSetGetState(t *testing.T) {
 				AzureNetworkSecurityGroup: "network-security-group",
 				AzureCoordinatorsScaleSet: "coordinator-scale-set",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing coordinator scale set": {
 			state: state.ConstellationState{
@@ -354,7 +354,7 @@ func TestSetGetState(t *testing.T) {
 				AzureNetworkSecurityGroup: "network-security-group",
 				AzureNodesScaleSet:        "node-scale-set",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 
@@ -364,7 +364,7 @@ func TestSetGetState(t *testing.T) {
 				assert := assert.New(t)
 
 				client := Client{}
-				if tc.errExpected {
+				if tc.wantErr {
 					assert.Error(client.SetState(tc.state))
 				} else {
 					assert.NoError(client.SetState(tc.state))
@@ -404,7 +404,7 @@ func TestSetGetState(t *testing.T) {
 					nodesScaleSet:        tc.state.AzureNodesScaleSet,
 					coordinatorsScaleSet: tc.state.AzureCoordinatorsScaleSet,
 				}
-				if tc.errExpected {
+				if tc.wantErr {
 					_, err := client.GetState()
 					assert.Error(err)
 				} else {

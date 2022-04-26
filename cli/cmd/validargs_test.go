@@ -9,8 +9,8 @@ import (
 
 func TestIsIntArg(t *testing.T) {
 	testCases := map[string]struct {
-		args      []string
-		expectErr bool
+		args    []string
+		wantErr bool
 	}{
 		"valid int 1":                {[]string{"1"}, false},
 		"valid int 2":                {[]string{"42"}, false},
@@ -31,7 +31,7 @@ func TestIsIntArg(t *testing.T) {
 
 			err := testCmd.ValidateArgs(tc.args)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -42,8 +42,8 @@ func TestIsIntArg(t *testing.T) {
 
 func TestIsIntGreaterArg(t *testing.T) {
 	testCases := map[string]struct {
-		args      []string
-		expectErr bool
+		args    []string
+		wantErr bool
 	}{
 		"valid int 1":                  {[]string{"13"}, false},
 		"valid int 2":                  {[]string{"42"}, false},
@@ -61,7 +61,7 @@ func TestIsIntGreaterArg(t *testing.T) {
 
 			err := testCmd.ValidateArgs(tc.args)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -72,8 +72,8 @@ func TestIsIntGreaterArg(t *testing.T) {
 
 func TestIsIntGreaterZeroArg(t *testing.T) {
 	testCases := map[string]struct {
-		args      []string
-		expectErr bool
+		args    []string
+		wantErr bool
 	}{
 		"valid int 1":                {[]string{"13"}, false},
 		"valid int 2":                {[]string{"42"}, false},
@@ -91,7 +91,7 @@ func TestIsIntGreaterZeroArg(t *testing.T) {
 
 			err := testCmd.ValidateArgs(tc.args)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -102,8 +102,8 @@ func TestIsIntGreaterZeroArg(t *testing.T) {
 
 func TestIsEC2InstanceType(t *testing.T) {
 	testCases := map[string]struct {
-		args      []string
-		expectErr bool
+		args    []string
+		wantErr bool
 	}{
 		"is instance type 1":    {[]string{"4xl"}, false},
 		"is instance type 2":    {[]string{"12xlarge", "something else"}, false},
@@ -119,7 +119,7 @@ func TestIsEC2InstanceType(t *testing.T) {
 
 			err := testCmd.ValidateArgs(tc.args)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -130,8 +130,8 @@ func TestIsEC2InstanceType(t *testing.T) {
 
 func TestIsGCPInstanceType(t *testing.T) {
 	testCases := map[string]struct {
-		args      []string
-		expectErr bool
+		args    []string
+		wantErr bool
 	}{
 		"is instance type 1":    {[]string{"n2d-standard-4"}, false},
 		"is instance type 2":    {[]string{"n2d-standard-16", "something else"}, false},
@@ -147,7 +147,7 @@ func TestIsGCPInstanceType(t *testing.T) {
 
 			err := testCmd.ValidateArgs(tc.args)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -158,8 +158,8 @@ func TestIsGCPInstanceType(t *testing.T) {
 
 func TestIsAzureInstanceType(t *testing.T) {
 	testCases := map[string]struct {
-		args      []string
-		expectErr bool
+		args    []string
+		wantErr bool
 	}{
 		"is instance type 1":    {[]string{"Standard_DC2as_v5"}, false},
 		"is instance type 2":    {[]string{"Standard_DC8as_v5", "something else"}, false},
@@ -175,7 +175,7 @@ func TestIsAzureInstanceType(t *testing.T) {
 
 			err := testCmd.ValidateArgs(tc.args)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -189,7 +189,7 @@ func TestIsInstanceTypeForProvider(t *testing.T) {
 		typePos     int
 		providerPos int
 		args        []string
-		expectErr   bool
+		wantErr     bool
 	}{
 		"valid gcp type 1":          {1, 0, []string{"gcp", "n2d-standard-4"}, false},
 		"valid gcp type 2":          {1, 0, []string{"gcp", "n2d-standard-16", "foo"}, false},
@@ -213,7 +213,7 @@ func TestIsInstanceTypeForProvider(t *testing.T) {
 
 			err := testCmd.ValidateArgs(tc.args)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)

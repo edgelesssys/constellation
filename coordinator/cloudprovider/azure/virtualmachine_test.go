@@ -14,7 +14,7 @@ import (
 )
 
 func TestGetVM(t *testing.T) {
-	expectedInstance := core.Instance{
+	wantInstance := core.Instance{
 		Name:       "instance-name",
 		ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
 		IPs:        []string{"192.0.2.0"},
@@ -24,35 +24,35 @@ func TestGetVM(t *testing.T) {
 		providerID           string
 		networkInterfacesAPI networkInterfacesAPI
 		virtualMachinesAPI   virtualMachinesAPI
-		expectErr            bool
-		expectedInstance     core.Instance
+		wantErr              bool
+		wantInstance         core.Instance
 	}{
 		"getVM for individual instance works": {
 			providerID:           "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
 			networkInterfacesAPI: newNetworkInterfacesStub(),
 			virtualMachinesAPI:   newVirtualMachinesStub(),
-			expectedInstance:     expectedInstance,
+			wantInstance:         wantInstance,
 		},
 		"getVM for scale set instance must fail": {
 			providerID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-			expectErr:  true,
+			wantErr:    true,
 		},
 		"Get fails": {
 			providerID:         "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
 			virtualMachinesAPI: newFailingGetVirtualMachinesStub(),
-			expectErr:          true,
+			wantErr:            true,
 		},
 		"retrieving interfaces fails": {
 			providerID:           "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
 			virtualMachinesAPI:   newVirtualMachinesStub(),
 			networkInterfacesAPI: newFailingNetworkInterfacesStub(),
-			expectErr:            true,
+			wantErr:              true,
 		},
 		"conversion fails": {
 			providerID:           "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
 			virtualMachinesAPI:   newGetInvalidVirtualMachinesStub(),
 			networkInterfacesAPI: newNetworkInterfacesStub(),
-			expectErr:            true,
+			wantErr:              true,
 		},
 	}
 
@@ -67,18 +67,18 @@ func TestGetVM(t *testing.T) {
 			}
 			instance, err := metadata.getVM(context.Background(), tc.providerID)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedInstance, instance)
+			assert.Equal(tc.wantInstance, instance)
 		})
 	}
 }
 
 func TestListVMs(t *testing.T) {
-	expectedInstances := []core.Instance{
+	wantInstances := []core.Instance{
 		{
 			Name:       "instance-name",
 			ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
@@ -90,38 +90,38 @@ func TestListVMs(t *testing.T) {
 		imdsAPI              imdsAPI
 		networkInterfacesAPI networkInterfacesAPI
 		virtualMachinesAPI   virtualMachinesAPI
-		expectErr            bool
-		expectedInstances    []core.Instance
+		wantErr              bool
+		wantInstances        []core.Instance
 	}{
 		"listVMs works": {
 			imdsAPI:              newIMDSStub(),
 			networkInterfacesAPI: newNetworkInterfacesStub(),
 			virtualMachinesAPI:   newVirtualMachinesStub(),
-			expectedInstances:    expectedInstances,
+			wantInstances:        wantInstances,
 		},
 		"listVMs can return 0 VMs": {
 			imdsAPI:              newIMDSStub(),
 			networkInterfacesAPI: newNetworkInterfacesStub(),
 			virtualMachinesAPI:   &stubVirtualMachinesAPI{},
-			expectedInstances:    []core.Instance{},
+			wantInstances:        []core.Instance{},
 		},
 		"can skip nil in VM list": {
 			imdsAPI:              newIMDSStub(),
 			networkInterfacesAPI: newNetworkInterfacesStub(),
 			virtualMachinesAPI:   newListContainingNilVirtualMachinesStub(),
-			expectedInstances:    expectedInstances,
+			wantInstances:        wantInstances,
 		},
 		"retrieving network interfaces fails": {
 			imdsAPI:              newIMDSStub(),
 			networkInterfacesAPI: newFailingNetworkInterfacesStub(),
 			virtualMachinesAPI:   newVirtualMachinesStub(),
-			expectErr:            true,
+			wantErr:              true,
 		},
 		"converting instance fails": {
 			imdsAPI:              newIMDSStub(),
 			networkInterfacesAPI: newNetworkInterfacesStub(),
 			virtualMachinesAPI:   newListContainingInvalidVirtualMachinesStub(),
-			expectErr:            true,
+			wantErr:              true,
 		},
 	}
 
@@ -137,35 +137,35 @@ func TestListVMs(t *testing.T) {
 			}
 			instances, err := metadata.listVMs(context.Background(), "resource-group")
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.ElementsMatch(tc.expectedInstances, instances)
+			assert.ElementsMatch(tc.wantInstances, instances)
 		})
 	}
 }
 
 func TestSetTag(t *testing.T) {
 	testCases := map[string]struct {
-		imdsAPI   imdsAPI
-		tagsAPI   tagsAPI
-		expectErr bool
+		imdsAPI imdsAPI
+		tagsAPI tagsAPI
+		wantErr bool
 	}{
 		"setTag works": {
 			imdsAPI: newIMDSStub(),
 			tagsAPI: newTagsStub(),
 		},
 		"retrieving resource ID fails": {
-			imdsAPI:   newFailingIMDSStub(),
-			tagsAPI:   newTagsStub(),
-			expectErr: true,
+			imdsAPI: newFailingIMDSStub(),
+			tagsAPI: newTagsStub(),
+			wantErr: true,
 		},
 		"updating tags fails": {
-			imdsAPI:   newIMDSStub(),
-			tagsAPI:   newFailingTagsStub(),
-			expectErr: true,
+			imdsAPI: newIMDSStub(),
+			tagsAPI: newFailingTagsStub(),
+			wantErr: true,
 		},
 	}
 
@@ -180,7 +180,7 @@ func TestSetTag(t *testing.T) {
 			}
 			err := metadata.setTag(context.Background(), "key", "value")
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -191,25 +191,25 @@ func TestSetTag(t *testing.T) {
 
 func TestSplitVMProviderID(t *testing.T) {
 	testCases := map[string]struct {
-		providerID             string
-		expectErr              bool
-		expectedSubscriptionID string
-		expectedResourceGroup  string
-		expectedInstanceName   string
+		providerID         string
+		wantErr            bool
+		wantSubscriptionID string
+		wantResourceGroup  string
+		wantInstanceName   string
 	}{
 		"providerID for individual instance works": {
-			providerID:             "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
-			expectedSubscriptionID: "subscription-id",
-			expectedResourceGroup:  "resource-group",
-			expectedInstanceName:   "instance-name",
+			providerID:         "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
+			wantSubscriptionID: "subscription-id",
+			wantResourceGroup:  "resource-group",
+			wantInstanceName:   "instance-name",
 		},
 		"providerID for scale set instance must fail": {
 			providerID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-			expectErr:  true,
+			wantErr:    true,
 		},
 		"providerID is malformed": {
 			providerID: "malformed-provider-id",
-			expectErr:  true,
+			wantErr:    true,
 		},
 	}
 
@@ -220,14 +220,14 @@ func TestSplitVMProviderID(t *testing.T) {
 
 			subscriptionID, resourceGroup, instanceName, err := splitVMProviderID(tc.providerID)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedSubscriptionID, subscriptionID)
-			assert.Equal(tc.expectedResourceGroup, resourceGroup)
-			assert.Equal(tc.expectedInstanceName, instanceName)
+			assert.Equal(tc.wantSubscriptionID, subscriptionID)
+			assert.Equal(tc.wantResourceGroup, resourceGroup)
+			assert.Equal(tc.wantInstanceName, instanceName)
 		})
 	}
 }
@@ -236,8 +236,8 @@ func TestConvertVMToCoreInstance(t *testing.T) {
 	testCases := map[string]struct {
 		inVM                 armcompute.VirtualMachine
 		inInterfaceIPConfigs []*armnetwork.InterfaceIPConfiguration
-		expectErr            bool
-		expectedInstance     core.Instance
+		wantErr              bool
+		wantInstance         core.Instance
 	}{
 		"conversion works": {
 			inVM: armcompute.VirtualMachine{
@@ -266,7 +266,7 @@ func TestConvertVMToCoreInstance(t *testing.T) {
 					},
 				},
 			},
-			expectedInstance: core.Instance{
+			wantInstance: core.Instance{
 				Name:       "instance-name",
 				ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
 				IPs:        []string{"192.0.2.0"},
@@ -286,7 +286,7 @@ func TestConvertVMToCoreInstance(t *testing.T) {
 					},
 				},
 			},
-			expectedInstance: core.Instance{
+			wantInstance: core.Instance{
 				Name:       "instance-name",
 				ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
 				IPs:        []string{"192.0.2.0"},
@@ -294,8 +294,8 @@ func TestConvertVMToCoreInstance(t *testing.T) {
 			},
 		},
 		"invalid instance": {
-			inVM:      armcompute.VirtualMachine{},
-			expectErr: true,
+			inVM:    armcompute.VirtualMachine{},
+			wantErr: true,
 		},
 	}
 
@@ -306,12 +306,12 @@ func TestConvertVMToCoreInstance(t *testing.T) {
 
 			instance, err := convertVMToCoreInstance(tc.inVM, tc.inInterfaceIPConfigs)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedInstance, instance)
+			assert.Equal(tc.wantInstance, instance)
 		})
 	}
 }

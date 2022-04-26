@@ -25,12 +25,12 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 	testCases := map[string]struct {
 		key          []byte
 		instanceInfo []byte
-		errExpected  bool
+		wantErr      bool
 	}{
 		"success": {
 			key:          akPub,
 			instanceInfo: []byte{},
-			errExpected:  false,
+			wantErr:      false,
 		},
 	}
 
@@ -39,7 +39,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			assert := assert.New(t)
 
 			key, err := trustedKeyFromSNP(tc.key, tc.instanceInfo)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -51,12 +51,12 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 
 func TestValidateAzureCVM(t *testing.T) {
 	testCases := map[string]struct {
-		attDoc      vtpm.AttestationDocument
-		errExpected bool
+		attDoc  vtpm.AttestationDocument
+		wantErr bool
 	}{
 		"success": {
-			attDoc:      vtpm.AttestationDocument{},
-			errExpected: false,
+			attDoc:  vtpm.AttestationDocument{},
+			wantErr: false,
 		},
 	}
 
@@ -65,7 +65,7 @@ func TestValidateAzureCVM(t *testing.T) {
 			assert := assert.New(t)
 
 			err := validateAzureCVM(tc.attDoc)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)

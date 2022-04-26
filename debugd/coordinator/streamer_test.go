@@ -18,8 +18,8 @@ func TestWriteStream(t *testing.T) {
 		readChunkStream fakeReadChunkStream
 		fs              afero.Fs
 		showProgress    bool
-		expectedFile    []byte
-		expectErr       bool
+		wantFile        []byte
+		wantErr         bool
 	}{
 		"stream works": {
 			readChunkStream: fakeReadChunkStream{
@@ -27,9 +27,9 @@ func TestWriteStream(t *testing.T) {
 					[]byte("test"),
 				},
 			},
-			fs:           afero.NewMemMapFs(),
-			expectedFile: []byte("test"),
-			expectErr:    false,
+			fs:       afero.NewMemMapFs(),
+			wantFile: []byte("test"),
+			wantErr:  false,
 		},
 		"chunking works": {
 			readChunkStream: fakeReadChunkStream{
@@ -38,9 +38,9 @@ func TestWriteStream(t *testing.T) {
 					[]byte("st"),
 				},
 			},
-			fs:           afero.NewMemMapFs(),
-			expectedFile: []byte("test"),
-			expectErr:    false,
+			fs:       afero.NewMemMapFs(),
+			wantFile: []byte("test"),
+			wantErr:  false,
 		},
 		"showProgress works": {
 			readChunkStream: fakeReadChunkStream{
@@ -50,19 +50,19 @@ func TestWriteStream(t *testing.T) {
 			},
 			fs:           afero.NewMemMapFs(),
 			showProgress: true,
-			expectedFile: []byte("test"),
-			expectErr:    false,
+			wantFile:     []byte("test"),
+			wantErr:      false,
 		},
 		"Open fails": {
-			fs:        afero.NewReadOnlyFs(afero.NewMemMapFs()),
-			expectErr: true,
+			fs:      afero.NewReadOnlyFs(afero.NewMemMapFs()),
+			wantErr: true,
 		},
 		"recv fails": {
 			readChunkStream: fakeReadChunkStream{
 				recvErr: errors.New("someErr"),
 			},
-			fs:        afero.NewMemMapFs(),
-			expectErr: true,
+			fs:      afero.NewMemMapFs(),
+			wantErr: true,
 		},
 	}
 
@@ -74,14 +74,14 @@ func TestWriteStream(t *testing.T) {
 			writer := NewFileStreamer(tc.fs)
 			err := writer.WriteStream(filename, &tc.readChunkStream, tc.showProgress)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
 			fileContents, err := afero.ReadFile(tc.fs, filename)
 			require.NoError(err)
-			assert.Equal(tc.expectedFile, fileContents)
+			assert.Equal(tc.wantFile, fileContents)
 		})
 	}
 }
@@ -94,48 +94,48 @@ func TestReadStream(t *testing.T) {
 		filename         string
 		chunksize        uint
 		showProgress     bool
-		expectedChunks   [][]byte
-		expectErr        bool
+		wantChunks       [][]byte
+		wantErr          bool
 	}{
 		"stream works": {
 			writeChunkStream: stubWriteChunkStream{},
 			filename:         correctFilename,
 			chunksize:        4,
-			expectedChunks: [][]byte{
+			wantChunks: [][]byte{
 				[]byte("test"),
 			},
-			expectErr: false,
+			wantErr: false,
 		},
 		"chunking works": {
 			writeChunkStream: stubWriteChunkStream{},
 			filename:         correctFilename,
 			chunksize:        2,
-			expectedChunks: [][]byte{
+			wantChunks: [][]byte{
 				[]byte("te"),
 				[]byte("st"),
 			},
-			expectErr: false,
+			wantErr: false,
 		},
 		"chunksize of 0 detected": {
 			writeChunkStream: stubWriteChunkStream{},
 			filename:         correctFilename,
 			chunksize:        0,
-			expectErr:        true,
+			wantErr:          true,
 		},
 		"showProgress works": {
 			writeChunkStream: stubWriteChunkStream{},
 			filename:         correctFilename,
 			chunksize:        4,
 			showProgress:     true,
-			expectedChunks: [][]byte{
+			wantChunks: [][]byte{
 				[]byte("test"),
 			},
-			expectErr: false,
+			wantErr: false,
 		},
 		"Open fails": {
 			filename:  "incorrect-filename",
 			chunksize: 4,
-			expectErr: true,
+			wantErr:   true,
 		},
 		"send fails": {
 			writeChunkStream: stubWriteChunkStream{
@@ -143,7 +143,7 @@ func TestReadStream(t *testing.T) {
 			},
 			filename:  correctFilename,
 			chunksize: 4,
-			expectErr: true,
+			wantErr:   true,
 		},
 	}
 
@@ -157,12 +157,12 @@ func TestReadStream(t *testing.T) {
 			reader := NewFileStreamer(fs)
 			err := reader.ReadStream(tc.filename, &tc.writeChunkStream, tc.chunksize, tc.showProgress)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedChunks, tc.writeChunkStream.chunks)
+			assert.Equal(tc.wantChunks, tc.writeChunkStream.chunks)
 		})
 	}
 }

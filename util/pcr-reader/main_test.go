@@ -24,18 +24,18 @@ import (
 
 func TestGetVerifyPeerCertificateFunc(t *testing.T) {
 	testCases := map[string]struct {
-		rawCerts    [][]byte
-		errExpected bool
+		rawCerts [][]byte
+		wantErr  bool
 	}{
 		"no certificates": {
-			rawCerts:    nil,
-			errExpected: true,
+			rawCerts: nil,
+			wantErr:  true,
 		},
 		"invalid certificate": {
 			rawCerts: [][]byte{
 				{0x1, 0x2, 0x3},
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"no extension": {
 			rawCerts: [][]byte{
@@ -43,7 +43,7 @@ func TestGetVerifyPeerCertificateFunc(t *testing.T) {
 					SerialNumber: big.NewInt(123),
 				}),
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"certificate with attestation": {
 			rawCerts: [][]byte{
@@ -58,7 +58,7 @@ func TestGetVerifyPeerCertificateFunc(t *testing.T) {
 					},
 				}),
 			},
-			errExpected: false,
+			wantErr: false,
 		},
 	}
 
@@ -71,7 +71,7 @@ func TestGetVerifyPeerCertificateFunc(t *testing.T) {
 			verify := getVerifyPeerCertificateFunc(attDoc)
 
 			err := verify(tc.rawCerts, nil)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				require.NoError(err)
@@ -96,9 +96,9 @@ func mustGenerateTestCert(t *testing.T, template *x509.Certificate) []byte {
 
 func TestExportToFile(t *testing.T) {
 	testCases := map[string]struct {
-		pcrs        map[uint32][]byte
-		fs          *afero.Afero
-		errExpected bool
+		pcrs    map[uint32][]byte
+		fs      *afero.Afero
+		wantErr bool
 	}{
 		"file not writeable": {
 			pcrs: map[uint32][]byte{
@@ -106,8 +106,8 @@ func TestExportToFile(t *testing.T) {
 				1: {0x1, 0x2, 0x3},
 				2: {0x1, 0x2, 0x3},
 			},
-			fs:          &afero.Afero{Fs: afero.NewReadOnlyFs(afero.NewMemMapFs())},
-			errExpected: true,
+			fs:      &afero.Afero{Fs: afero.NewReadOnlyFs(afero.NewMemMapFs())},
+			wantErr: true,
 		},
 		"file writeable": {
 			pcrs: map[uint32][]byte{
@@ -115,8 +115,8 @@ func TestExportToFile(t *testing.T) {
 				1: {0x1, 0x2, 0x3},
 				2: {0x1, 0x2, 0x3},
 			},
-			fs:          &afero.Afero{Fs: afero.NewMemMapFs()},
-			errExpected: false,
+			fs:      &afero.Afero{Fs: afero.NewMemMapFs()},
+			wantErr: false,
 		},
 	}
 
@@ -127,7 +127,7 @@ func TestExportToFile(t *testing.T) {
 
 			path := "test-file"
 			err := exportToFile(path, tc.pcrs, tc.fs)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -146,22 +146,22 @@ func TestExportToFile(t *testing.T) {
 
 func TestValidatePCRAttDoc(t *testing.T) {
 	testCases := map[string]struct {
-		attDocRaw   []byte
-		errExpected bool
+		attDocRaw []byte
+		wantErr   bool
 	}{
 		"invalid attestation document": {
-			attDocRaw:   []byte{0x1, 0x2, 0x3},
-			errExpected: true,
+			attDocRaw: []byte{0x1, 0x2, 0x3},
+			wantErr:   true,
 		},
 		"nil attestation": {
-			attDocRaw:   mustMarshalAttDoc(t, vtpm.AttestationDocument{}),
-			errExpected: true,
+			attDocRaw: mustMarshalAttDoc(t, vtpm.AttestationDocument{}),
+			wantErr:   true,
 		},
 		"nil quotes": {
 			attDocRaw: mustMarshalAttDoc(t, vtpm.AttestationDocument{
 				Attestation: &attest.Attestation{},
 			}),
-			errExpected: true,
+			wantErr: true,
 		},
 		"invalid PCRs": {
 			attDocRaw: mustMarshalAttDoc(t, vtpm.AttestationDocument{
@@ -178,7 +178,7 @@ func TestValidatePCRAttDoc(t *testing.T) {
 					},
 				},
 			}),
-			errExpected: true,
+			wantErr: true,
 		},
 		"valid PCRs": {
 			attDocRaw: mustMarshalAttDoc(t, vtpm.AttestationDocument{
@@ -195,7 +195,7 @@ func TestValidatePCRAttDoc(t *testing.T) {
 					},
 				},
 			}),
-			errExpected: false,
+			wantErr: false,
 		},
 	}
 
@@ -205,7 +205,7 @@ func TestValidatePCRAttDoc(t *testing.T) {
 			require := require.New(t)
 
 			pcrs, err := validatePCRAttDoc(tc.attDocRaw)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				require.NoError(err)

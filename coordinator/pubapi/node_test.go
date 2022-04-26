@@ -35,75 +35,75 @@ func TestActivateAsNode(t *testing.T) {
 		getUpdateErr            error
 		setVPNIPErr             error
 		messageSequenceOverride []string
-		expectErr               bool
-		expectedState           state.State
+		wantErr                 bool
+		wantState               state.State
 	}{
 		"basic": {
-			initialPeers:  []peer.Peer{peer1},
-			updatedPeers:  []peer.Peer{peer2},
-			state:         state.AcceptingInit,
-			expectedState: state.NodeWaitingForClusterJoin,
+			initialPeers: []peer.Peer{peer1},
+			updatedPeers: []peer.Peer{peer2},
+			state:        state.AcceptingInit,
+			wantState:    state.NodeWaitingForClusterJoin,
 		},
 		"already activated": {
-			initialPeers:  []peer.Peer{peer1},
-			updatedPeers:  []peer.Peer{peer2},
-			state:         state.IsNode,
-			expectErr:     true,
-			expectedState: state.IsNode,
+			initialPeers: []peer.Peer{peer1},
+			updatedPeers: []peer.Peer{peer2},
+			state:        state.IsNode,
+			wantErr:      true,
+			wantState:    state.IsNode,
 		},
 		"wrong peer kind": {
-			initialPeers:  []peer.Peer{peer1},
-			updatedPeers:  []peer.Peer{peer2},
-			state:         state.ActivatingNodes,
-			expectErr:     true,
-			expectedState: state.ActivatingNodes,
+			initialPeers: []peer.Peer{peer1},
+			updatedPeers: []peer.Peer{peer2},
+			state:        state.ActivatingNodes,
+			wantErr:      true,
+			wantState:    state.ActivatingNodes,
 		},
 		"GetUpdate error": {
-			initialPeers:  []peer.Peer{peer1},
-			updatedPeers:  []peer.Peer{peer2},
-			state:         state.AcceptingInit,
-			getUpdateErr:  someErr,
-			expectedState: state.NodeWaitingForClusterJoin,
+			initialPeers: []peer.Peer{peer1},
+			updatedPeers: []peer.Peer{peer2},
+			state:        state.AcceptingInit,
+			getUpdateErr: someErr,
+			wantState:    state.NodeWaitingForClusterJoin,
 		},
 		"SetVPNIP error": {
-			initialPeers:  []peer.Peer{peer1},
-			updatedPeers:  []peer.Peer{peer2},
-			state:         state.AcceptingInit,
-			setVPNIPErr:   someErr,
-			expectErr:     true,
-			expectedState: state.Failed,
+			initialPeers: []peer.Peer{peer1},
+			updatedPeers: []peer.Peer{peer2},
+			state:        state.AcceptingInit,
+			setVPNIPErr:  someErr,
+			wantErr:      true,
+			wantState:    state.Failed,
 		},
 		"no messages sent to node": {
 			initialPeers:            []peer.Peer{peer1},
 			updatedPeers:            []peer.Peer{peer2},
 			state:                   state.AcceptingInit,
 			messageSequenceOverride: []string{},
-			expectErr:               true,
-			expectedState:           state.AcceptingInit,
+			wantErr:                 true,
+			wantState:               state.AcceptingInit,
 		},
 		"only initial message sent to node": {
 			initialPeers:            []peer.Peer{peer1},
 			updatedPeers:            []peer.Peer{peer2},
 			state:                   state.AcceptingInit,
 			messageSequenceOverride: []string{"initialRequest"},
-			expectErr:               true,
-			expectedState:           state.Failed,
+			wantErr:                 true,
+			wantState:               state.Failed,
 		},
 		"wrong initial message sent to node": {
 			initialPeers:            []peer.Peer{peer1},
 			updatedPeers:            []peer.Peer{peer2},
 			state:                   state.AcceptingInit,
 			messageSequenceOverride: []string{"stateDiskKey"},
-			expectErr:               true,
-			expectedState:           state.AcceptingInit,
+			wantErr:                 true,
+			wantState:               state.AcceptingInit,
 		},
 		"initial message sent twice to node": {
 			initialPeers:            []peer.Peer{peer1},
 			updatedPeers:            []peer.Peer{peer2},
 			state:                   state.AcceptingInit,
 			messageSequenceOverride: []string{"initialRequest", "initialRequest"},
-			expectErr:               true,
-			expectedState:           state.Failed,
+			wantErr:                 true,
+			wantState:               state.Failed,
 		},
 	}
 
@@ -146,9 +146,9 @@ func TestActivateAsNode(t *testing.T) {
 			defer pubserver.GracefulStop()
 
 			_, nodeVPNPubKey, err := activateNode(require, dialer, messageSequence, nodeIP, "9000", nodeVPNIP, peer.ToPubProto(tc.initialPeers), ownerID, clusterID, stateDiskKey)
-			assert.Equal(tc.expectedState, cor.state)
+			assert.Equal(tc.wantState, cor.state)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -184,27 +184,27 @@ func TestTriggerNodeUpdate(t *testing.T) {
 		peers        []peer.Peer
 		state        state.State
 		getUpdateErr error
-		expectErr    bool
+		wantErr      bool
 	}{
 		"basic": {
 			peers: peers,
 			state: state.IsNode,
 		},
 		"not activated": {
-			peers:     peers,
-			state:     state.AcceptingInit,
-			expectErr: true,
+			peers:   peers,
+			state:   state.AcceptingInit,
+			wantErr: true,
 		},
 		"wrong peer kind": {
-			peers:     peers,
-			state:     state.ActivatingNodes,
-			expectErr: true,
+			peers:   peers,
+			state:   state.ActivatingNodes,
+			wantErr: true,
 		},
 		"GetUpdate error": {
 			peers:        peers,
 			state:        state.IsNode,
 			getUpdateErr: someErr,
-			expectErr:    true,
+			wantErr:      true,
 		},
 	}
 
@@ -229,7 +229,7 @@ func TestTriggerNodeUpdate(t *testing.T) {
 			defer vserver.GracefulStop()
 
 			_, err := api.TriggerNodeUpdate(context.Background(), &pubproto.TriggerNodeUpdateRequest{})
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -252,34 +252,34 @@ func TestJoinCluster(t *testing.T) {
 		state          state.State
 		getJoinArgsErr error
 		joinClusterErr error
-		expectErr      bool
-		expectedState  state.State
+		wantErr        bool
+		wantState      state.State
 	}{
 		"basic": {
-			state:         state.NodeWaitingForClusterJoin,
-			expectedState: state.IsNode,
+			state:     state.NodeWaitingForClusterJoin,
+			wantState: state.IsNode,
 		},
 		"not activated": {
-			state:         state.AcceptingInit,
-			expectErr:     true,
-			expectedState: state.AcceptingInit,
+			state:     state.AcceptingInit,
+			wantErr:   true,
+			wantState: state.AcceptingInit,
 		},
 		"wrong peer kind": {
-			state:         state.ActivatingNodes,
-			expectErr:     true,
-			expectedState: state.ActivatingNodes,
+			state:     state.ActivatingNodes,
+			wantErr:   true,
+			wantState: state.ActivatingNodes,
 		},
 		"GetK8sJoinArgs error": {
 			state:          state.NodeWaitingForClusterJoin,
 			getJoinArgsErr: someErr,
-			expectErr:      true,
-			expectedState:  state.NodeWaitingForClusterJoin,
+			wantErr:        true,
+			wantState:      state.NodeWaitingForClusterJoin,
 		},
 		"JoinCluster error": {
 			state:          state.NodeWaitingForClusterJoin,
 			joinClusterErr: someErr,
-			expectErr:      true,
-			expectedState:  state.Failed,
+			wantErr:        true,
+			wantState:      state.Failed,
 		},
 	}
 
@@ -309,9 +309,9 @@ func TestJoinCluster(t *testing.T) {
 
 			_, err := api.JoinCluster(context.Background(), &pubproto.JoinClusterRequest{CoordinatorVpnIp: "192.0.2.1"})
 
-			assert.Equal(tc.expectedState, core.state)
+			assert.Equal(tc.wantState, core.state)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}

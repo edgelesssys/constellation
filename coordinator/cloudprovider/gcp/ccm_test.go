@@ -15,13 +15,13 @@ import (
 
 func TestConfigMaps(t *testing.T) {
 	testCases := map[string]struct {
-		instance           core.Instance
-		expectedConfigMaps resources.ConfigMaps
-		expectErr          bool
+		instance       core.Instance
+		wantConfigMaps resources.ConfigMaps
+		wantErr        bool
 	}{
 		"ConfigMaps works": {
 			instance: core.Instance{ProviderID: "gce://project-id/zone/instance-name"},
-			expectedConfigMaps: resources.ConfigMaps{
+			wantConfigMaps: resources.ConfigMaps{
 				&k8s.ConfigMap{
 					TypeMeta: v1.TypeMeta{
 						Kind:       "ConfigMap",
@@ -41,8 +41,8 @@ use-metadata-server = false
 			},
 		},
 		"invalid providerID fails": {
-			instance:  core.Instance{ProviderID: "invalid"},
-			expectErr: true,
+			instance: core.Instance{ProviderID: "invalid"},
+			wantErr:  true,
 		},
 	}
 
@@ -54,12 +54,12 @@ use-metadata-server = false
 			cloud := CloudControllerManager{}
 			configMaps, err := cloud.ConfigMaps(tc.instance)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedConfigMaps, configMaps)
+			assert.Equal(tc.wantConfigMaps, configMaps)
 		})
 	}
 }
@@ -82,12 +82,12 @@ func TestSecrets(t *testing.T) {
 	testCases := map[string]struct {
 		instance               core.Instance
 		cloudServiceAccountURI string
-		expectedSecrets        resources.Secrets
-		expectErr              bool
+		wantSecrets            resources.Secrets
+		wantErr                bool
 	}{
 		"Secrets works": {
 			cloudServiceAccountURI: "serviceaccount://gcp?type=type&project_id=project-id&private_key_id=private-key-id&private_key=private-key&client_email=client-email&client_id=client-id&auth_uri=auth-uri&token_uri=token-uri&auth_provider_x509_cert_url=auth-provider-x509-cert-url&client_x509_cert_url=client-x509-cert-url",
-			expectedSecrets: resources.Secrets{
+			wantSecrets: resources.Secrets{
 				&k8s.Secret{
 					TypeMeta: v1.TypeMeta{
 						Kind:       "Secret",
@@ -105,7 +105,7 @@ func TestSecrets(t *testing.T) {
 		},
 		"invalid serviceAccountKey fails": {
 			cloudServiceAccountURI: "invalid",
-			expectErr:              true,
+			wantErr:                true,
 		},
 	}
 
@@ -116,12 +116,12 @@ func TestSecrets(t *testing.T) {
 
 			cloud := CloudControllerManager{}
 			secrets, err := cloud.Secrets(tc.instance, tc.cloudServiceAccountURI)
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedSecrets, secrets)
+			assert.Equal(tc.wantSecrets, secrets)
 		})
 	}
 }

@@ -23,40 +23,40 @@ import (
 
 func TestVerify(t *testing.T) {
 	testCases := map[string]struct {
-		connErr     error
-		checkErr    error
-		state       state.State
-		errExpected bool
+		connErr  error
+		checkErr error
+		state    state.State
+		wantErr  bool
 	}{
 		"connection error": {
-			connErr:     errors.New("connection error"),
-			checkErr:    nil,
-			state:       0,
-			errExpected: true,
+			connErr:  errors.New("connection error"),
+			checkErr: nil,
+			state:    0,
+			wantErr:  true,
 		},
 		"check error": {
-			connErr:     nil,
-			checkErr:    errors.New("check error"),
-			state:       0,
-			errExpected: true,
+			connErr:  nil,
+			checkErr: errors.New("check error"),
+			state:    0,
+			wantErr:  true,
 		},
 		"check error, rpc status": {
-			connErr:     nil,
-			checkErr:    rpcStatus.Error(codes.Unavailable, "check error"),
-			state:       0,
-			errExpected: true,
+			connErr:  nil,
+			checkErr: rpcStatus.Error(codes.Unavailable, "check error"),
+			state:    0,
+			wantErr:  true,
 		},
 		"verify on worker node": {
-			connErr:     nil,
-			checkErr:    nil,
-			state:       state.IsNode,
-			errExpected: false,
+			connErr:  nil,
+			checkErr: nil,
+			state:    state.IsNode,
+			wantErr:  false,
 		},
 		"verify on master node": {
-			connErr:     nil,
-			checkErr:    nil,
-			state:       state.ActivatingNodes,
-			errExpected: false,
+			connErr:  nil,
+			checkErr: nil,
+			state:    state.ActivatingNodes,
+			wantErr:  false,
 		},
 	}
 
@@ -81,7 +81,7 @@ func TestVerify(t *testing.T) {
 			}
 			err := verify(ctx, &out, "", []atls.Validator{gcp.NewValidator(pcrs)}, verifier)
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -130,29 +130,29 @@ func (c *stubPeerStatusClient) GetState(ctx context.Context, in *pubproto.GetSta
 
 func TestPrepareValidator(t *testing.T) {
 	testCases := map[string]struct {
-		ownerID     string
-		clusterID   string
-		errExpected bool
+		ownerID   string
+		clusterID string
+		wantErr   bool
 	}{
 		"no input": {
-			ownerID:     "",
-			clusterID:   "",
-			errExpected: true,
+			ownerID:   "",
+			clusterID: "",
+			wantErr:   true,
 		},
 		"unencoded secret ID": {
-			ownerID:     "owner-id",
-			clusterID:   base64.StdEncoding.EncodeToString([]byte("unique-id")),
-			errExpected: true,
+			ownerID:   "owner-id",
+			clusterID: base64.StdEncoding.EncodeToString([]byte("unique-id")),
+			wantErr:   true,
 		},
 		"unencoded cluster ID": {
-			ownerID:     base64.StdEncoding.EncodeToString([]byte("owner-id")),
-			clusterID:   "unique-id",
-			errExpected: true,
+			ownerID:   base64.StdEncoding.EncodeToString([]byte("owner-id")),
+			clusterID: "unique-id",
+			wantErr:   true,
 		},
 		"correct input": {
-			ownerID:     base64.StdEncoding.EncodeToString([]byte("owner-id")),
-			clusterID:   base64.StdEncoding.EncodeToString([]byte("unique-id")),
-			errExpected: false,
+			ownerID:   base64.StdEncoding.EncodeToString([]byte("owner-id")),
+			clusterID: base64.StdEncoding.EncodeToString([]byte("unique-id")),
+			wantErr:   false,
 		},
 	}
 
@@ -177,7 +177,7 @@ func TestPrepareValidator(t *testing.T) {
 			}
 
 			err := prepareValidator(cmd, pcrs)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -204,60 +204,60 @@ func TestAddOrSkipPcr(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		pcrMap          map[uint32][]byte
-		pcrIndex        uint32
-		encoded         string
-		expectedEntries int
-		errExpected     bool
+		pcrMap      map[uint32][]byte
+		pcrIndex    uint32
+		encoded     string
+		wantEntries int
+		wantErr     bool
 	}{
 		"empty input, empty map": {
-			pcrMap:          emptyMap,
-			pcrIndex:        10,
-			encoded:         "",
-			expectedEntries: 0,
-			errExpected:     false,
+			pcrMap:      emptyMap,
+			pcrIndex:    10,
+			encoded:     "",
+			wantEntries: 0,
+			wantErr:     false,
 		},
 		"empty input, default map": {
-			pcrMap:          defaultMap,
-			pcrIndex:        10,
-			encoded:         "",
-			expectedEntries: len(defaultMap),
-			errExpected:     false,
+			pcrMap:      defaultMap,
+			pcrIndex:    10,
+			encoded:     "",
+			wantEntries: len(defaultMap),
+			wantErr:     false,
 		},
 		"correct input, empty map": {
-			pcrMap:          emptyMap,
-			pcrIndex:        10,
-			encoded:         base64.StdEncoding.EncodeToString([]byte("Constellation")),
-			expectedEntries: 1,
-			errExpected:     false,
+			pcrMap:      emptyMap,
+			pcrIndex:    10,
+			encoded:     base64.StdEncoding.EncodeToString([]byte("Constellation")),
+			wantEntries: 1,
+			wantErr:     false,
 		},
 		"correct input, default map": {
-			pcrMap:          defaultMap,
-			pcrIndex:        10,
-			encoded:         base64.StdEncoding.EncodeToString([]byte("Constellation")),
-			expectedEntries: len(defaultMap) + 1,
-			errExpected:     false,
+			pcrMap:      defaultMap,
+			pcrIndex:    10,
+			encoded:     base64.StdEncoding.EncodeToString([]byte("Constellation")),
+			wantEntries: len(defaultMap) + 1,
+			wantErr:     false,
 		},
 		"unencoded input, empty map": {
-			pcrMap:          emptyMap,
-			pcrIndex:        10,
-			encoded:         "Constellation",
-			expectedEntries: 0,
-			errExpected:     true,
+			pcrMap:      emptyMap,
+			pcrIndex:    10,
+			encoded:     "Constellation",
+			wantEntries: 0,
+			wantErr:     true,
 		},
 		"unencoded input, default map": {
-			pcrMap:          defaultMap,
-			pcrIndex:        10,
-			encoded:         "Constellation",
-			expectedEntries: len(defaultMap),
-			errExpected:     true,
+			pcrMap:      defaultMap,
+			pcrIndex:    10,
+			encoded:     "Constellation",
+			wantEntries: len(defaultMap),
+			wantErr:     true,
 		},
 		"empty input at occupied index": {
-			pcrMap:          defaultMap,
-			pcrIndex:        0,
-			encoded:         "",
-			expectedEntries: len(defaultMap) - 1,
-			errExpected:     false,
+			pcrMap:      defaultMap,
+			pcrIndex:    0,
+			encoded:     "",
+			wantEntries: len(defaultMap) - 1,
+			wantErr:     false,
 		},
 	}
 
@@ -272,12 +272,12 @@ func TestAddOrSkipPcr(t *testing.T) {
 
 			err := addOrSkipPCR(res, tc.pcrIndex, tc.encoded)
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
 			}
-			assert.Len(res, tc.expectedEntries)
+			assert.Len(res, tc.wantEntries)
 			for _, v := range res {
 				assert.Len(v, 32)
 			}
@@ -287,28 +287,28 @@ func TestAddOrSkipPcr(t *testing.T) {
 
 func TestVerifyCompletion(t *testing.T) {
 	testCases := map[string]struct {
-		args            []string
-		toComplete      string
-		resultExpected  []string
-		shellCDExpected cobra.ShellCompDirective
+		args        []string
+		toComplete  string
+		wantResult  []string
+		wantShellCD cobra.ShellCompDirective
 	}{
 		"first arg": {
-			args:            []string{},
-			toComplete:      "192.0.2.1",
-			resultExpected:  []string{},
-			shellCDExpected: cobra.ShellCompDirectiveNoFileComp,
+			args:        []string{},
+			toComplete:  "192.0.2.1",
+			wantResult:  []string{},
+			wantShellCD: cobra.ShellCompDirectiveNoFileComp,
 		},
 		"second arg": {
-			args:            []string{"192.0.2.1"},
-			toComplete:      "443",
-			resultExpected:  []string{},
-			shellCDExpected: cobra.ShellCompDirectiveNoFileComp,
+			args:        []string{"192.0.2.1"},
+			toComplete:  "443",
+			wantResult:  []string{},
+			wantShellCD: cobra.ShellCompDirectiveNoFileComp,
 		},
 		"third arg": {
-			args:            []string{"192.0.2.1", "443"},
-			toComplete:      "./file",
-			resultExpected:  []string{},
-			shellCDExpected: cobra.ShellCompDirectiveError,
+			args:        []string{"192.0.2.1", "443"},
+			toComplete:  "./file",
+			wantResult:  []string{},
+			wantShellCD: cobra.ShellCompDirectiveError,
 		},
 	}
 
@@ -318,8 +318,8 @@ func TestVerifyCompletion(t *testing.T) {
 
 			cmd := &cobra.Command{}
 			result, shellCD := verifyCompletion(cmd, tc.args, tc.toComplete)
-			assert.Equal(tc.resultExpected, result)
-			assert.Equal(tc.shellCDExpected, shellCD)
+			assert.Equal(tc.wantResult, result)
+			assert.Equal(tc.wantShellCD, shellCD)
 		})
 	}
 }

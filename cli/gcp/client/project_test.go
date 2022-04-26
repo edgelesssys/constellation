@@ -16,7 +16,7 @@ func TestAddIAMPolicyBindings(t *testing.T) {
 	testCases := map[string]struct {
 		projectsAPI stubProjectsAPI
 		input       AddIAMPolicyBindingInput
-		errExpected bool
+		wantErr     bool
 	}{
 		"successful set without new bindings": {
 			input: AddIAMPolicyBindingInput{
@@ -37,13 +37,13 @@ func TestAddIAMPolicyBindings(t *testing.T) {
 			projectsAPI: stubProjectsAPI{
 				getPolicyErr: someErr,
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"setting iam policy fails": {
 			projectsAPI: stubProjectsAPI{
 				setPolicyErr: someErr,
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 
@@ -61,7 +61,7 @@ func TestAddIAMPolicyBindings(t *testing.T) {
 			}
 
 			err := client.addIAMPolicyBindings(ctx, tc.input)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -72,10 +72,10 @@ func TestAddIAMPolicyBindings(t *testing.T) {
 
 func TestAddIAMPolicy(t *testing.T) {
 	testCases := map[string]struct {
-		binding        PolicyBinding
-		policy         *iampb.Policy
-		errExpected    bool
-		policyExpected *iampb.Policy
+		binding    PolicyBinding
+		policy     *iampb.Policy
+		wantErr    bool
+		wantPolicy *iampb.Policy
 	}{
 		"successful on empty policy": {
 			binding: PolicyBinding{
@@ -85,7 +85,7 @@ func TestAddIAMPolicy(t *testing.T) {
 			policy: &iampb.Policy{
 				Bindings: []*iampb.Binding{},
 			},
-			policyExpected: &iampb.Policy{
+			wantPolicy: &iampb.Policy{
 				Bindings: []*iampb.Binding{
 					{
 						Role:    "role",
@@ -107,7 +107,7 @@ func TestAddIAMPolicy(t *testing.T) {
 					},
 				},
 			},
-			policyExpected: &iampb.Policy{
+			wantPolicy: &iampb.Policy{
 				Bindings: []*iampb.Binding{
 					{
 						Role:    "other-role",
@@ -133,7 +133,7 @@ func TestAddIAMPolicy(t *testing.T) {
 					},
 				},
 			},
-			policyExpected: &iampb.Policy{
+			wantPolicy: &iampb.Policy{
 				Bindings: []*iampb.Binding{
 					{
 						Role:    "role",
@@ -155,7 +155,7 @@ func TestAddIAMPolicy(t *testing.T) {
 					},
 				},
 			},
-			policyExpected: &iampb.Policy{
+			wantPolicy: &iampb.Policy{
 				Bindings: []*iampb.Binding{
 					{
 						Role:    "role",
@@ -171,7 +171,7 @@ func TestAddIAMPolicy(t *testing.T) {
 			assert := assert.New(t)
 
 			addIAMPolicy(tc.policy, tc.binding)
-			assert.True(proto.Equal(tc.policyExpected, tc.policy))
+			assert.True(proto.Equal(tc.wantPolicy, tc.policy))
 		})
 	}
 }

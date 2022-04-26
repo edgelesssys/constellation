@@ -67,14 +67,14 @@ func TestRetrieveInstances(t *testing.T) {
 		metadata            stubMetadataClient
 		instanceIter        *stubInstanceIterator
 		instanceIterMutator func(*stubInstanceIterator)
-		expectedInstances   []core.Instance
-		expectErr           bool
+		wantInstances       []core.Instance
+		wantErr             bool
 	}{
 		"retrieve works": {
 			client:       stubInstancesClient{},
 			metadata:     stubMetadataClient{InstanceValue: uid},
 			instanceIter: newTestIter(),
-			expectedInstances: []core.Instance{
+			wantInstances: []core.Instance{
 				{
 					Name:       "someInstance",
 					ProviderID: "gce://someProject/someZone/someInstance",
@@ -89,14 +89,14 @@ func TestRetrieveInstances(t *testing.T) {
 			metadata:            stubMetadataClient{InstanceValue: uid},
 			instanceIter:        newTestIter(),
 			instanceIterMutator: func(sii *stubInstanceIterator) { sii.instances[0].Name = nil },
-			expectErr:           true,
+			wantErr:             true,
 		},
 		"no instance with network ip": {
 			client:              stubInstancesClient{},
 			metadata:            stubMetadataClient{InstanceValue: uid},
 			instanceIter:        newTestIter(),
 			instanceIterMutator: func(sii *stubInstanceIterator) { sii.instances[0].NetworkInterfaces = nil },
-			expectedInstances: []core.Instance{
+			wantInstances: []core.Instance{
 				{
 					Name:       "someInstance",
 					ProviderID: "gce://someProject/someZone/someInstance",
@@ -111,7 +111,7 @@ func TestRetrieveInstances(t *testing.T) {
 			metadata:            stubMetadataClient{InstanceValue: uid},
 			instanceIter:        newTestIter(),
 			instanceIterMutator: func(sii *stubInstanceIterator) { sii.instances[0].NetworkInterfaces[0].NetworkIP = nil },
-			expectedInstances: []core.Instance{
+			wantInstances: []core.Instance{
 				{
 					Name:       "someInstance",
 					ProviderID: "gce://someProject/someZone/someInstance",
@@ -126,20 +126,20 @@ func TestRetrieveInstances(t *testing.T) {
 			metadata:            stubMetadataClient{InstanceValue: uid},
 			instanceIter:        newTestIter(),
 			instanceIterMutator: func(sii *stubInstanceIterator) { sii.instances[0].Metadata.Items[2].Key = proto.String("") },
-			expectedInstances:   []core.Instance{},
+			wantInstances:       []core.Instance{},
 		},
 		"constellation retrieval fails": {
 			client:       stubInstancesClient{},
 			metadata:     stubMetadataClient{InstanceErr: someErr},
 			instanceIter: newTestIter(),
-			expectErr:    true,
+			wantErr:      true,
 		},
 		"role is not set": {
 			client:              stubInstancesClient{},
 			metadata:            stubMetadataClient{InstanceValue: uid},
 			instanceIter:        newTestIter(),
 			instanceIterMutator: func(sii *stubInstanceIterator) { sii.instances[0].Metadata.Items[3].Key = proto.String("") },
-			expectedInstances: []core.Instance{
+			wantInstances: []core.Instance{
 				{
 					Name:       "someInstance",
 					ProviderID: "gce://someProject/someZone/someInstance",
@@ -153,7 +153,7 @@ func TestRetrieveInstances(t *testing.T) {
 			client:       stubInstancesClient{},
 			metadata:     stubMetadataClient{InstanceValue: uid},
 			instanceIter: &stubInstanceIterator{nextErr: someErr},
-			expectErr:    true,
+			wantErr:      true,
 		},
 	}
 
@@ -173,12 +173,12 @@ func TestRetrieveInstances(t *testing.T) {
 
 			instances, err := client.RetrieveInstances(context.Background(), "someProject", "someZone")
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedInstances, instances)
+			assert.Equal(tc.wantInstances, instances)
 		})
 	}
 }
@@ -209,13 +209,13 @@ func TestRetrieveInstance(t *testing.T) {
 		client                stubInstancesClient
 		clientInstance        *computepb.Instance
 		clientInstanceMutator func(*computepb.Instance)
-		expectedInstance      core.Instance
-		expectErr             bool
+		wantInstance          core.Instance
+		wantErr               bool
 	}{
 		"retrieve works": {
 			client:         stubInstancesClient{},
 			clientInstance: newTestInstance(),
-			expectedInstance: core.Instance{
+			wantInstance: core.Instance{
 				Name:       "someInstance",
 				ProviderID: "gce://someProject/someZone/someInstance",
 				IPs:        []string{"192.0.2.0"},
@@ -229,7 +229,7 @@ func TestRetrieveInstance(t *testing.T) {
 				i.Metadata.Items[0].Key = proto.String("ssh-keys")
 				i.Metadata.Items[0].Value = proto.String("bob:ssh-rsa bobskey")
 			},
-			expectedInstance: core.Instance{
+			wantInstance: core.Instance{
 				Name:       "someInstance",
 				ProviderID: "gce://someProject/someZone/someInstance",
 				IPs:        []string{"192.0.2.0"},
@@ -243,7 +243,7 @@ func TestRetrieveInstance(t *testing.T) {
 				i.Metadata.Items[0].Key = proto.String(core.RoleMetadataKey)
 				i.Metadata.Items[0].Value = proto.String(role.Coordinator.String())
 			},
-			expectedInstance: core.Instance{
+			wantInstance: core.Instance{
 				Name:       "someInstance",
 				ProviderID: "gce://someProject/someZone/someInstance",
 				Role:       role.Coordinator,
@@ -256,13 +256,13 @@ func TestRetrieveInstance(t *testing.T) {
 				GetErr: errors.New("retrieve error"),
 			},
 			clientInstance: nil,
-			expectErr:      true,
+			wantErr:        true,
 		},
 		"metadata item is null": {
 			client:                stubInstancesClient{},
 			clientInstance:        newTestInstance(),
 			clientInstanceMutator: func(i *computepb.Instance) { i.Metadata.Items[0] = nil },
-			expectedInstance: core.Instance{
+			wantInstance: core.Instance{
 				Name:       "someInstance",
 				ProviderID: "gce://someProject/someZone/someInstance",
 				IPs:        []string{"192.0.2.0"},
@@ -273,7 +273,7 @@ func TestRetrieveInstance(t *testing.T) {
 			client:                stubInstancesClient{},
 			clientInstance:        newTestInstance(),
 			clientInstanceMutator: func(i *computepb.Instance) { i.Metadata.Items[0].Key = nil },
-			expectedInstance: core.Instance{
+			wantInstance: core.Instance{
 				Name:       "someInstance",
 				ProviderID: "gce://someProject/someZone/someInstance",
 				IPs:        []string{"192.0.2.0"},
@@ -284,7 +284,7 @@ func TestRetrieveInstance(t *testing.T) {
 			client:                stubInstancesClient{},
 			clientInstance:        newTestInstance(),
 			clientInstanceMutator: func(i *computepb.Instance) { i.Metadata.Items[0].Value = nil },
-			expectedInstance: core.Instance{
+			wantInstance: core.Instance{
 				Name:       "someInstance",
 				ProviderID: "gce://someProject/someZone/someInstance",
 				IPs:        []string{"192.0.2.0"},
@@ -295,7 +295,7 @@ func TestRetrieveInstance(t *testing.T) {
 			client:                stubInstancesClient{},
 			clientInstance:        newTestInstance(),
 			clientInstanceMutator: func(i *computepb.Instance) { i.NetworkInterfaces[0] = nil },
-			expectedInstance: core.Instance{
+			wantInstance: core.Instance{
 				Name:       "someInstance",
 				ProviderID: "gce://someProject/someZone/someInstance",
 				IPs:        []string{},
@@ -306,7 +306,7 @@ func TestRetrieveInstance(t *testing.T) {
 			client:                stubInstancesClient{},
 			clientInstance:        newTestInstance(),
 			clientInstanceMutator: func(i *computepb.Instance) { i.NetworkInterfaces[0].NetworkIP = nil },
-			expectedInstance: core.Instance{
+			wantInstance: core.Instance{
 				Name:       "someInstance",
 				ProviderID: "gce://someProject/someZone/someInstance",
 				IPs:        []string{},
@@ -328,12 +328,12 @@ func TestRetrieveInstance(t *testing.T) {
 
 			instance, err := client.RetrieveInstance(context.Background(), "someProject", "someZone", "someInstance")
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedInstance, instance)
+			assert.Equal(tc.wantInstance, instance)
 		})
 	}
 }
@@ -342,17 +342,17 @@ func TestRetrieveProjectID(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		client        stubMetadataClient
-		expectedValue string
-		expectErr     bool
+		client    stubMetadataClient
+		wantValue string
+		wantErr   bool
 	}{
 		"retrieve works": {
-			client:        stubMetadataClient{ProjectIDValue: "someProjectID"},
-			expectedValue: "someProjectID",
+			client:    stubMetadataClient{ProjectIDValue: "someProjectID"},
+			wantValue: "someProjectID",
 		},
 		"retrieve fails": {
-			client:    stubMetadataClient{ProjectIDErr: someErr},
-			expectErr: true,
+			client:  stubMetadataClient{ProjectIDErr: someErr},
+			wantErr: true,
 		},
 	}
 
@@ -364,12 +364,12 @@ func TestRetrieveProjectID(t *testing.T) {
 			client := Client{metadataAPI: tc.client}
 			value, err := client.RetrieveProjectID()
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedValue, value)
+			assert.Equal(tc.wantValue, value)
 		})
 	}
 }
@@ -378,17 +378,17 @@ func TestRetrieveZone(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		client        stubMetadataClient
-		expectedValue string
-		expectErr     bool
+		client    stubMetadataClient
+		wantValue string
+		wantErr   bool
 	}{
 		"retrieve works": {
-			client:        stubMetadataClient{ZoneValue: "someZone"},
-			expectedValue: "someZone",
+			client:    stubMetadataClient{ZoneValue: "someZone"},
+			wantValue: "someZone",
 		},
 		"retrieve fails": {
-			client:    stubMetadataClient{ZoneErr: someErr},
-			expectErr: true,
+			client:  stubMetadataClient{ZoneErr: someErr},
+			wantErr: true,
 		},
 	}
 
@@ -400,12 +400,12 @@ func TestRetrieveZone(t *testing.T) {
 			client := Client{metadataAPI: tc.client}
 			value, err := client.RetrieveZone()
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedValue, value)
+			assert.Equal(tc.wantValue, value)
 		})
 	}
 }
@@ -414,17 +414,17 @@ func TestRetrieveInstanceName(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		client        stubMetadataClient
-		expectedValue string
-		expectErr     bool
+		client    stubMetadataClient
+		wantValue string
+		wantErr   bool
 	}{
 		"retrieve works": {
-			client:        stubMetadataClient{InstanceNameValue: "someInstanceName"},
-			expectedValue: "someInstanceName",
+			client:    stubMetadataClient{InstanceNameValue: "someInstanceName"},
+			wantValue: "someInstanceName",
 		},
 		"retrieve fails": {
-			client:    stubMetadataClient{InstanceNameErr: someErr},
-			expectErr: true,
+			client:  stubMetadataClient{InstanceNameErr: someErr},
+			wantErr: true,
 		},
 	}
 
@@ -436,12 +436,12 @@ func TestRetrieveInstanceName(t *testing.T) {
 			client := Client{metadataAPI: tc.client}
 			value, err := client.RetrieveInstanceName()
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedValue, value)
+			assert.Equal(tc.wantValue, value)
 		})
 	}
 }
@@ -451,24 +451,24 @@ func TestRetrieveInstanceMetadata(t *testing.T) {
 	attr := "someAttribute"
 
 	testCases := map[string]struct {
-		client        stubMetadataClient
-		attr          string
-		expectedValue string
-		expectErr     bool
+		client    stubMetadataClient
+		attr      string
+		wantValue string
+		wantErr   bool
 	}{
 		"retrieve works": {
 			client: stubMetadataClient{
 				InstanceValue: "someValue",
 				InstanceErr:   nil,
 			},
-			expectedValue: "someValue",
+			wantValue: "someValue",
 		},
 		"retrieve fails": {
 			client: stubMetadataClient{
 				InstanceValue: "",
 				InstanceErr:   someErr,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 	}
 
@@ -480,12 +480,12 @@ func TestRetrieveInstanceMetadata(t *testing.T) {
 			client := Client{metadataAPI: tc.client}
 			value, err := client.RetrieveInstanceMetadata(attr)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedValue, value)
+			assert.Equal(tc.wantValue, value)
 		})
 	}
 }
@@ -494,8 +494,8 @@ func TestSetInstanceMetadata(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		client    stubInstancesClient
-		expectErr bool
+		client  stubInstancesClient
+		wantErr bool
 	}{
 		"set works": {
 			client: stubInstancesClient{
@@ -512,10 +512,10 @@ func TestSetInstanceMetadata(t *testing.T) {
 			client: stubInstancesClient{
 				GetErr: someErr,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 		"retrieve returns nil": {
-			expectErr: true,
+			wantErr: true,
 		},
 		"setting fails": {
 			client: stubInstancesClient{
@@ -528,7 +528,7 @@ func TestSetInstanceMetadata(t *testing.T) {
 				},
 				SetMetadataErr: someErr,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 	}
 
@@ -540,7 +540,7 @@ func TestSetInstanceMetadata(t *testing.T) {
 			client := Client{instanceAPI: tc.client}
 			err := client.SetInstanceMetadata(context.Background(), "project", "zone", "instanceName", "key", "value")
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -553,8 +553,8 @@ func TestUnsetInstanceMetadata(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		client    stubInstancesClient
-		expectErr bool
+		client  stubInstancesClient
+		wantErr bool
 	}{
 		"unset works": {
 			client: stubInstancesClient{
@@ -584,11 +584,11 @@ func TestUnsetInstanceMetadata(t *testing.T) {
 			},
 		},
 		"retrieve fails": {
-			client:    stubInstancesClient{GetErr: someErr},
-			expectErr: true,
+			client:  stubInstancesClient{GetErr: someErr},
+			wantErr: true,
 		},
 		"retrieve returns nil": {
-			expectErr: true,
+			wantErr: true,
 		},
 		"setting fails": {
 			client: stubInstancesClient{
@@ -601,7 +601,7 @@ func TestUnsetInstanceMetadata(t *testing.T) {
 				},
 				SetMetadataErr: someErr,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 	}
 
@@ -613,7 +613,7 @@ func TestUnsetInstanceMetadata(t *testing.T) {
 			client := Client{instanceAPI: tc.client}
 			err := client.UnsetInstanceMetadata(context.Background(), "project", "zone", "instanceName", "key")
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -636,36 +636,36 @@ func TestClose(t *testing.T) {
 
 func TestFetchSSHKeys(t *testing.T) {
 	testCases := map[string]struct {
-		metadata     map[string]string
-		expectedKeys map[string][]string
+		metadata map[string]string
+		wantKeys map[string][]string
 	}{
 		"fetch works": {
-			metadata:     map[string]string{"ssh-keys": "bob:ssh-rsa bobskey"},
-			expectedKeys: map[string][]string{"bob": {"ssh-rsa bobskey"}},
+			metadata: map[string]string{"ssh-keys": "bob:ssh-rsa bobskey"},
+			wantKeys: map[string][]string{"bob": {"ssh-rsa bobskey"}},
 		},
 		"google ssh key metadata is ignored": {
-			metadata:     map[string]string{"ssh-keys": "bob:ssh-rsa bobskey google-ssh {\"userName\":\"bob\",\"expireOn\":\"2021-06-14T16:59:03+0000\"}"},
-			expectedKeys: map[string][]string{"bob": {"ssh-rsa bobskey"}},
+			metadata: map[string]string{"ssh-keys": "bob:ssh-rsa bobskey google-ssh {\"userName\":\"bob\",\"expireOn\":\"2021-06-14T16:59:03+0000\"}"},
+			wantKeys: map[string][]string{"bob": {"ssh-rsa bobskey"}},
 		},
 		"ssh key format error is ignored": {
-			metadata:     map[string]string{"ssh-keys": "incorrect-format"},
-			expectedKeys: map[string][]string{},
+			metadata: map[string]string{"ssh-keys": "incorrect-format"},
+			wantKeys: map[string][]string{},
 		},
 		"ssh key format space error is ignored": {
-			metadata:     map[string]string{"ssh-keys": "user:incorrect-key-format"},
-			expectedKeys: map[string][]string{},
+			metadata: map[string]string{"ssh-keys": "user:incorrect-key-format"},
+			wantKeys: map[string][]string{},
 		},
 		"metadata field empty": {
-			metadata:     map[string]string{"ssh-keys": ""},
-			expectedKeys: map[string][]string{},
+			metadata: map[string]string{"ssh-keys": ""},
+			wantKeys: map[string][]string{},
 		},
 		"metadata field missing": {
-			metadata:     map[string]string{},
-			expectedKeys: map[string][]string{},
+			metadata: map[string]string{},
+			wantKeys: map[string][]string{},
 		},
 		"multiple keys": {
 			metadata: map[string]string{"ssh-keys": "bob:ssh-rsa bobskey\nalice:ssh-rsa alicekey"},
-			expectedKeys: map[string][]string{
+			wantKeys: map[string][]string{
 				"bob":   {"ssh-rsa bobskey"},
 				"alice": {"ssh-rsa alicekey"},
 			},
@@ -677,7 +677,7 @@ func TestFetchSSHKeys(t *testing.T) {
 			assert := assert.New(t)
 
 			keys := extractSSHKeys(tc.metadata)
-			assert.Equal(tc.expectedKeys, keys)
+			assert.Equal(tc.wantKeys, keys)
 		})
 	}
 }

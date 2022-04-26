@@ -110,9 +110,9 @@ func TestCreateKEK(t *testing.T) {
 	importKey := []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 
 	testCases := map[string]struct {
-		client      *stubGCPClient
-		importKey   []byte
-		errExpected bool
+		client    *stubGCPClient
+		importKey []byte
+		wantErr   bool
 	}{
 		"create new kek successful": {
 			client: &stubGCPClient{},
@@ -129,8 +129,8 @@ func TestCreateKEK(t *testing.T) {
 			importKey: importKey,
 		},
 		"CreateCryptoKey fails": {
-			client:      &stubGCPClient{createCryptoKeyErr: someErr},
-			errExpected: true,
+			client:  &stubGCPClient{createCryptoKeyErr: someErr},
+			wantErr: true,
 		},
 		"CreatCryptoKey fails on import": {
 			client: &stubGCPClient{
@@ -142,13 +142,13 @@ func TestCreateKEK(t *testing.T) {
 					State: kmspb.ImportJob_ACTIVE,
 				},
 			},
-			importKey:   importKey,
-			errExpected: true,
+			importKey: importKey,
+			wantErr:   true,
 		},
 		"CreateImportJob fails": {
-			client:      &stubGCPClient{createImportJobErr: someErr},
-			importKey:   importKey,
-			errExpected: true,
+			client:    &stubGCPClient{createImportJobErr: someErr},
+			importKey: importKey,
+			wantErr:   true,
 		},
 		"ImportCryptoKeyVersion fails": {
 			client: &stubGCPClient{
@@ -160,8 +160,8 @@ func TestCreateKEK(t *testing.T) {
 				},
 				importCryptoKeyVersionErr: someErr,
 			},
-			importKey:   importKey,
-			errExpected: true,
+			importKey: importKey,
+			wantErr:   true,
 		},
 		"UpdateCryptoKeyPrimaryVersion fails": {
 			client: &stubGCPClient{
@@ -173,13 +173,13 @@ func TestCreateKEK(t *testing.T) {
 				},
 				updateCryptoKeyPrimaryVersionErr: someErr,
 			},
-			importKey:   importKey,
-			errExpected: true,
+			importKey: importKey,
+			wantErr:   true,
 		},
 		"GetImportJob fails during waitBackoff": {
-			client:      &stubGCPClient{getImportJobErr: someErr},
-			importKey:   importKey,
-			errExpected: true,
+			client:    &stubGCPClient{getImportJobErr: someErr},
+			importKey: importKey,
+			wantErr:   true,
 		},
 		"GetImportJob returns no key": {
 			client: &stubGCPClient{
@@ -187,8 +187,8 @@ func TestCreateKEK(t *testing.T) {
 					State: kmspb.ImportJob_ACTIVE,
 				},
 			},
-			importKey:   importKey,
-			errExpected: true,
+			importKey: importKey,
+			wantErr:   true,
 		},
 		"waitBackoff times out": {
 			client: &stubGCPClient{
@@ -199,12 +199,12 @@ func TestCreateKEK(t *testing.T) {
 					State: kmspb.ImportJob_PENDING_GENERATION,
 				},
 			},
-			importKey:   importKey,
-			errExpected: true,
+			importKey: importKey,
+			wantErr:   true,
 		},
 		"creating client fails": {
-			client:      &stubGCPClient{createErr: someErr},
-			errExpected: true,
+			client:  &stubGCPClient{createErr: someErr},
+			wantErr: true,
 		},
 	}
 
@@ -222,7 +222,7 @@ func TestCreateKEK(t *testing.T) {
 			}
 
 			err := client.CreateKEK(context.Background(), "test-key", tc.importKey)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -241,9 +241,9 @@ func TestGetDEK(t *testing.T) {
 	testKey := []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 
 	testCases := map[string]struct {
-		client      *stubGCPClient
-		storage     kmsInterface.Storage
-		errExpected bool
+		client  *stubGCPClient
+		storage kmsInterface.Storage
+		wantErr bool
 	}{
 		"GetDEK successful for new key": {
 			client:  &stubGCPClient{},
@@ -254,19 +254,19 @@ func TestGetDEK(t *testing.T) {
 			storage: &stubStorage{key: testKey},
 		},
 		"Get from storage fails": {
-			client:      &stubGCPClient{},
-			storage:     &stubStorage{getErr: someErr},
-			errExpected: true,
+			client:  &stubGCPClient{},
+			storage: &stubStorage{getErr: someErr},
+			wantErr: true,
 		},
 		"Encrypt fails": {
-			client:      &stubGCPClient{encryptErr: someErr},
-			storage:     &stubStorage{getErr: storage.ErrDEKUnset},
-			errExpected: true,
+			client:  &stubGCPClient{encryptErr: someErr},
+			storage: &stubStorage{getErr: storage.ErrDEKUnset},
+			wantErr: true,
 		},
 		"Encrypt fails with notfound error": {
-			client:      &stubGCPClient{encryptErr: status.Error(codes.NotFound, "error")},
-			storage:     &stubStorage{getErr: storage.ErrDEKUnset},
-			errExpected: true,
+			client:  &stubGCPClient{encryptErr: status.Error(codes.NotFound, "error")},
+			storage: &stubStorage{getErr: storage.ErrDEKUnset},
+			wantErr: true,
 		},
 		"Put to storage fails": {
 			client: &stubGCPClient{},
@@ -274,22 +274,22 @@ func TestGetDEK(t *testing.T) {
 				getErr: storage.ErrDEKUnset,
 				putErr: someErr,
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"Decrypt fails": {
-			client:      &stubGCPClient{decryptErr: someErr},
-			storage:     &stubStorage{key: testKey},
-			errExpected: true,
+			client:  &stubGCPClient{decryptErr: someErr},
+			storage: &stubStorage{key: testKey},
+			wantErr: true,
 		},
 		"Decrypt fails with notfound error": {
-			client:      &stubGCPClient{decryptErr: status.Error(codes.NotFound, "error")},
-			storage:     &stubStorage{key: testKey},
-			errExpected: true,
+			client:  &stubGCPClient{decryptErr: status.Error(codes.NotFound, "error")},
+			storage: &stubStorage{key: testKey},
+			wantErr: true,
 		},
 		"creating client fails": {
-			client:      &stubGCPClient{createErr: someErr},
-			storage:     &stubStorage{getErr: storage.ErrDEKUnset},
-			errExpected: true,
+			client:  &stubGCPClient{createErr: someErr},
+			storage: &stubStorage{getErr: storage.ErrDEKUnset},
+			wantErr: true,
 		},
 	}
 
@@ -308,7 +308,7 @@ func TestGetDEK(t *testing.T) {
 			}
 
 			dek, err := client.GetDEK(context.Background(), "test-key", "volume-01", 32)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -321,19 +321,19 @@ func TestGetDEK(t *testing.T) {
 func TestConnection(t *testing.T) {
 	someErr := errors.New("error")
 	testCases := map[string]struct {
-		client      *stubGCPClient
-		errExpected bool
+		client  *stubGCPClient
+		wantErr bool
 	}{
 		"success": {
 			client: &stubGCPClient{},
 		},
 		"newClient fails": {
-			client:      &stubGCPClient{createErr: someErr},
-			errExpected: true,
+			client:  &stubGCPClient{createErr: someErr},
+			wantErr: true,
 		},
 		"GetKeyRing fails": {
-			client:      &stubGCPClient{getKeyRingErr: someErr},
-			errExpected: true,
+			client:  &stubGCPClient{getKeyRingErr: someErr},
+			wantErr: true,
 		},
 	}
 
@@ -351,7 +351,7 @@ func TestConnection(t *testing.T) {
 			}
 
 			err := client.testConnection(context.Background())
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)

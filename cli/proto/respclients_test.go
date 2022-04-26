@@ -89,32 +89,32 @@ func TestNextLog(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		msgs           []*pubproto.ActivateAsCoordinatorResponse
-		logLenExpected int
-		stateExpected  bool
-		recvErr        error
-		errExpected    bool
+		msgs       []*pubproto.ActivateAsCoordinatorResponse
+		wantLogLen int
+		wantState  bool
+		recvErr    error
+		wantErr    bool
 	}{
 		"some logs": {
-			msgs:           []*pubproto.ActivateAsCoordinatorResponse{testLogResp, testLogResp, testLogResp},
-			logLenExpected: 3,
+			msgs:       []*pubproto.ActivateAsCoordinatorResponse{testLogResp, testLogResp, testLogResp},
+			wantLogLen: 3,
 		},
 		"only admin config": {
-			msgs:          []*pubproto.ActivateAsCoordinatorResponse{testConfigResp},
-			stateExpected: true,
+			msgs:      []*pubproto.ActivateAsCoordinatorResponse{testConfigResp},
+			wantState: true,
 		},
 		"logs and configs": {
-			msgs:           []*pubproto.ActivateAsCoordinatorResponse{testLogResp, testConfigResp, testLogResp, testConfigResp},
-			logLenExpected: 2,
-			stateExpected:  true,
+			msgs:       []*pubproto.ActivateAsCoordinatorResponse{testLogResp, testConfigResp, testLogResp, testConfigResp},
+			wantLogLen: 2,
+			wantState:  true,
 		},
 		"no response": {
-			msgs:           []*pubproto.ActivateAsCoordinatorResponse{},
-			logLenExpected: 0,
+			msgs:       []*pubproto.ActivateAsCoordinatorResponse{},
+			wantLogLen: 0,
 		},
 		"recv fail": {
-			recvErr:     someErr,
-			errExpected: true,
+			recvErr: someErr,
+			wantErr: true,
 		},
 	}
 
@@ -141,15 +141,15 @@ func TestNextLog(t *testing.T) {
 			}
 
 			assert.Error(err)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.NotErrorIs(err, io.EOF)
 				return
 			}
 
 			assert.ErrorIs(err, io.EOF)
-			assert.Len(logs, tc.logLenExpected)
+			assert.Len(logs, tc.wantLogLen)
 
-			if tc.stateExpected {
+			if tc.wantState {
 				ip, err := client.GetClientVpnIp()
 				assert.NoError(err)
 				assert.Equal(testClientVpnIp, ip)

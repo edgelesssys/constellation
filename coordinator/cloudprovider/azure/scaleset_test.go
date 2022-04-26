@@ -15,7 +15,7 @@ import (
 )
 
 func TestGetScaleSetVM(t *testing.T) {
-	expectedInstance := core.Instance{
+	wantInstance := core.Instance{
 		Name:       "scale-set-name-instance-id",
 		ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 		IPs:        []string{"192.0.2.0"},
@@ -25,35 +25,35 @@ func TestGetScaleSetVM(t *testing.T) {
 		providerID                   string
 		networkInterfacesAPI         networkInterfacesAPI
 		virtualMachineScaleSetVMsAPI virtualMachineScaleSetVMsAPI
-		expectErr                    bool
-		expectedInstance             core.Instance
+		wantErr                      bool
+		wantInstance                 core.Instance
 	}{
 		"getVM for scale set instance works": {
 			providerID:                   "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachineScaleSetVMsAPI: newVirtualMachineScaleSetsVMsStub(),
-			expectedInstance:             expectedInstance,
+			wantInstance:                 wantInstance,
 		},
 		"getVM for individual instance must fail": {
 			providerID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
-			expectErr:  true,
+			wantErr:    true,
 		},
 		"Get fails": {
 			providerID:                   "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 			virtualMachineScaleSetVMsAPI: newFailingGetScaleSetVirtualMachinesStub(),
-			expectErr:                    true,
+			wantErr:                      true,
 		},
 		"retrieving interfaces fails": {
 			providerID:                   "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 			virtualMachineScaleSetVMsAPI: newVirtualMachineScaleSetsVMsStub(),
 			networkInterfacesAPI:         newFailingNetworkInterfacesStub(),
-			expectErr:                    true,
+			wantErr:                      true,
 		},
 		"conversion fails": {
 			providerID:                   "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 			virtualMachineScaleSetVMsAPI: newGetInvalidScaleSetVirtualMachinesStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
-			expectErr:                    true,
+			wantErr:                      true,
 		},
 	}
 
@@ -68,18 +68,18 @@ func TestGetScaleSetVM(t *testing.T) {
 			}
 			instance, err := metadata.getScaleSetVM(context.Background(), tc.providerID)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedInstance, instance)
+			assert.Equal(tc.wantInstance, instance)
 		})
 	}
 }
 
 func TestListScaleSetVMs(t *testing.T) {
-	expectedInstances := []core.Instance{
+	wantInstances := []core.Instance{
 		{
 			Name:       "scale-set-name-instance-id",
 			ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
@@ -92,50 +92,50 @@ func TestListScaleSetVMs(t *testing.T) {
 		networkInterfacesAPI         networkInterfacesAPI
 		virtualMachineScaleSetVMsAPI virtualMachineScaleSetVMsAPI
 		scaleSetsAPI                 scaleSetsAPI
-		expectErr                    bool
-		expectedInstances            []core.Instance
+		wantErr                      bool
+		wantInstances                []core.Instance
 	}{
 		"listVMs works": {
 			imdsAPI:                      newIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachineScaleSetVMsAPI: newVirtualMachineScaleSetsVMsStub(),
 			scaleSetsAPI:                 newScaleSetsStub(),
-			expectedInstances:            expectedInstances,
+			wantInstances:                wantInstances,
 		},
 		"invalid scale sets are skipped": {
 			imdsAPI:                      newIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachineScaleSetVMsAPI: newVirtualMachineScaleSetsVMsStub(),
 			scaleSetsAPI:                 newListContainingNilScaleSetStub(),
-			expectedInstances:            expectedInstances,
+			wantInstances:                wantInstances,
 		},
 		"listVMs can return 0 VMs": {
 			imdsAPI:                      newIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachineScaleSetVMsAPI: &stubVirtualMachineScaleSetVMsAPI{},
 			scaleSetsAPI:                 newScaleSetsStub(),
-			expectedInstances:            []core.Instance{},
+			wantInstances:                []core.Instance{},
 		},
 		"can skip nil in VM list": {
 			imdsAPI:                      newIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachineScaleSetVMsAPI: newListContainingNilScaleSetVirtualMachinesStub(),
 			scaleSetsAPI:                 newScaleSetsStub(),
-			expectedInstances:            expectedInstances,
+			wantInstances:                wantInstances,
 		},
 		"retrieving network interfaces fails": {
 			imdsAPI:                      newIMDSStub(),
 			networkInterfacesAPI:         newFailingNetworkInterfacesStub(),
 			virtualMachineScaleSetVMsAPI: newVirtualMachineScaleSetsVMsStub(),
 			scaleSetsAPI:                 newScaleSetsStub(),
-			expectErr:                    true,
+			wantErr:                      true,
 		},
 		"converting instance fails": {
 			imdsAPI:                      newIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachineScaleSetVMsAPI: newListContainingInvalidScaleSetVirtualMachinesStub(),
 			scaleSetsAPI:                 newScaleSetsStub(),
-			expectErr:                    true,
+			wantErr:                      true,
 		},
 	}
 
@@ -152,39 +152,39 @@ func TestListScaleSetVMs(t *testing.T) {
 			}
 			instances, err := metadata.listScaleSetVMs(context.Background(), "resource-group")
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.ElementsMatch(tc.expectedInstances, instances)
+			assert.ElementsMatch(tc.wantInstances, instances)
 		})
 	}
 }
 
 func TestSplitScaleSetProviderID(t *testing.T) {
 	testCases := map[string]struct {
-		providerID             string
-		expectErr              bool
-		expectedSubscriptionID string
-		expectedResourceGroup  string
-		expectedScaleSet       string
-		expectedInstanceID     string
+		providerID         string
+		wantErr            bool
+		wantSubscriptionID string
+		wantResourceGroup  string
+		wantScaleSet       string
+		wantInstanceID     string
 	}{
 		"providerID for scale set instance works": {
-			providerID:             "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-			expectedSubscriptionID: "subscription-id",
-			expectedResourceGroup:  "resource-group",
-			expectedScaleSet:       "scale-set-name",
-			expectedInstanceID:     "instance-id",
+			providerID:         "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
+			wantSubscriptionID: "subscription-id",
+			wantResourceGroup:  "resource-group",
+			wantScaleSet:       "scale-set-name",
+			wantInstanceID:     "instance-id",
 		},
 		"providerID for individual instance must fail": {
 			providerID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
-			expectErr:  true,
+			wantErr:    true,
 		},
 		"providerID is malformed": {
 			providerID: "malformed-provider-id",
-			expectErr:  true,
+			wantErr:    true,
 		},
 	}
 
@@ -195,15 +195,15 @@ func TestSplitScaleSetProviderID(t *testing.T) {
 
 			subscriptionID, resourceGroup, scaleSet, instanceID, err := splitScaleSetProviderID(tc.providerID)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedSubscriptionID, subscriptionID)
-			assert.Equal(tc.expectedResourceGroup, resourceGroup)
-			assert.Equal(tc.expectedScaleSet, scaleSet)
-			assert.Equal(tc.expectedInstanceID, instanceID)
+			assert.Equal(tc.wantSubscriptionID, subscriptionID)
+			assert.Equal(tc.wantResourceGroup, resourceGroup)
+			assert.Equal(tc.wantScaleSet, scaleSet)
+			assert.Equal(tc.wantInstanceID, instanceID)
 		})
 	}
 }
@@ -212,8 +212,8 @@ func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 	testCases := map[string]struct {
 		inVM                 armcompute.VirtualMachineScaleSetVM
 		inInterfaceIPConfigs []*armnetwork.InterfaceIPConfiguration
-		expectErr            bool
-		expectedInstance     core.Instance
+		wantErr              bool
+		wantInstance         core.Instance
 	}{
 		"conversion works": {
 			inVM: armcompute.VirtualMachineScaleSetVM{
@@ -233,7 +233,7 @@ func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 					},
 				},
 			},
-			expectedInstance: core.Instance{
+			wantInstance: core.Instance{
 				Name:       "scale-set-name-instance-id",
 				ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 				IPs:        []string{"192.0.2.0"},
@@ -241,8 +241,8 @@ func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 			},
 		},
 		"invalid instance": {
-			inVM:      armcompute.VirtualMachineScaleSetVM{},
-			expectErr: true,
+			inVM:    armcompute.VirtualMachineScaleSetVM{},
+			wantErr: true,
 		},
 	}
 
@@ -253,32 +253,32 @@ func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 
 			instance, err := convertScaleSetVMToCoreInstance("scale-set", tc.inVM, tc.inInterfaceIPConfigs)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedInstance, instance)
+			assert.Equal(tc.wantInstance, instance)
 		})
 	}
 }
 
 func TestExtractScaleSetVMRole(t *testing.T) {
 	testCases := map[string]struct {
-		scaleSet     string
-		expectedRole role.Role
+		scaleSet string
+		wantRole role.Role
 	}{
 		"coordinator role": {
-			scaleSet:     "constellation-scale-set-coordinators-abcd123",
-			expectedRole: role.Coordinator,
+			scaleSet: "constellation-scale-set-coordinators-abcd123",
+			wantRole: role.Coordinator,
 		},
 		"node role": {
-			scaleSet:     "constellation-scale-set-nodes-abcd123",
-			expectedRole: role.Node,
+			scaleSet: "constellation-scale-set-nodes-abcd123",
+			wantRole: role.Node,
 		},
 		"unknown role": {
-			scaleSet:     "unknown",
-			expectedRole: role.Unknown,
+			scaleSet: "unknown",
+			wantRole: role.Unknown,
 		},
 	}
 
@@ -288,7 +288,7 @@ func TestExtractScaleSetVMRole(t *testing.T) {
 
 			role := extractScaleSetVMRole(tc.scaleSet)
 
-			assert.Equal(tc.expectedRole, role)
+			assert.Equal(tc.wantRole, role)
 		})
 	}
 }

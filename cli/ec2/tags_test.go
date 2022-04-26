@@ -21,7 +21,7 @@ func TestTagsAws(t *testing.T) {
 			Value: "Bar",
 		},
 	}
-	expected := []types.Tag{
+	wantTags := []types.Tag{
 		{
 			Key:   aws.String("Name"),
 			Value: aws.String("Test"),
@@ -33,5 +33,5 @@ func TestTagsAws(t *testing.T) {
 	}
 
 	awsTags := testTags.AWS()
-	assert.Equal(expected, awsTags)
+	assert.Equal(wantTags, awsTags)
 }

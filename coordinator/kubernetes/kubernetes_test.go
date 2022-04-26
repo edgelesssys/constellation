@@ -131,7 +131,7 @@ func TestInitCluster(t *testing.T) {
 		kubeconfigReader stubKubeconfigReader
 		initConfig       k8sapi.KubeadmInitYAML
 		joinConfig       k8sapi.KubeadmJoinYAML
-		expectErr        bool
+		wantErr          bool
 	}{
 		"kubeadm init works": {
 			clusterUtil: stubClusterUtil{
@@ -144,7 +144,7 @@ func TestInitCluster(t *testing.T) {
 			kubeconfigReader: stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
-			expectErr: false,
+			wantErr: false,
 		},
 		"kubeadm init errors": {
 			clusterUtil: stubClusterUtil{
@@ -154,7 +154,7 @@ func TestInitCluster(t *testing.T) {
 			kubeconfigReader: stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 		"pod network setup errors": {
 			clusterUtil: stubClusterUtil{
@@ -164,7 +164,7 @@ func TestInitCluster(t *testing.T) {
 			kubeconfigReader: stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 	}
 
@@ -193,7 +193,7 @@ func TestInitCluster(t *testing.T) {
 				},
 			)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -223,15 +223,15 @@ func TestJoinCluster(t *testing.T) {
 
 	testCases := map[string]struct {
 		clusterUtil stubClusterUtil
-		expectErr   bool
+		wantErr     bool
 	}{
 		"kubeadm join works": {
 			clusterUtil: stubClusterUtil{},
-			expectErr:   false,
+			wantErr:     false,
 		},
 		"kubeadm join errors": {
 			clusterUtil: stubClusterUtil{joinClusterErr: someErr},
-			expectErr:   true,
+			wantErr:     true,
 		},
 	}
 
@@ -242,7 +242,7 @@ func TestJoinCluster(t *testing.T) {
 
 			kube := New(&tc.clusterUtil, &stubConfigProvider{}, &client)
 			err := kube.JoinCluster(joinCommand, instanceName, nodeVPNIP, nodeVPNIP, coordinatorProviderID, "", role.Node)
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -262,7 +262,7 @@ func TestJoinCluster(t *testing.T) {
 func TestGetKubeconfig(t *testing.T) {
 	testCases := map[string]struct {
 		Kubewrapper KubeWrapper
-		expectErr   bool
+		wantErr     bool
 	}{
 		"check single replacement": {
 			Kubewrapper: KubeWrapper{kubeconfigReader: &stubKubeconfigReader{

@@ -88,25 +88,25 @@ func TestHSMCreateKEK(t *testing.T) {
 	importKey := []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 
 	testCases := map[string]struct {
-		client      *stubHSMClient
-		importKey   []byte
-		errExpected bool
+		client    *stubHSMClient
+		importKey []byte
+		wantErr   bool
 	}{
 		"create new kek successful": {
 			client: &stubHSMClient{},
 		},
 		"CreateOCTKey fails": {
-			client:      &stubHSMClient{createOCTKeyErr: someErr},
-			errExpected: true,
+			client:  &stubHSMClient{createOCTKeyErr: someErr},
+			wantErr: true,
 		},
 		"import key successful": {
 			client:    &stubHSMClient{},
 			importKey: importKey,
 		},
 		"ImportKey fails": {
-			client:      &stubHSMClient{importKeyErr: someErr},
-			importKey:   importKey,
-			errExpected: true,
+			client:    &stubHSMClient{importKeyErr: someErr},
+			importKey: importKey,
+			wantErr:   true,
 		},
 	}
 
@@ -120,7 +120,7 @@ func TestHSMCreateKEK(t *testing.T) {
 			}
 
 			err := client.CreateKEK(context.Background(), "test-key", tc.importKey)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -138,7 +138,7 @@ func TestHSMGetNewDEK(t *testing.T) {
 		client       hsmClientAPI
 		storage      kms.Storage
 		cryptoClient *stubCryptoClient
-		errExpected  bool
+		wantErr      bool
 	}{
 		"successful": {
 			client:       &stubHSMClient{keyVersion: keyVersion},
@@ -149,7 +149,7 @@ func TestHSMGetNewDEK(t *testing.T) {
 			client:       &stubHSMClient{keyVersion: keyVersion},
 			cryptoClient: &stubCryptoClient{},
 			storage:      &stubStorage{getErr: someErr},
-			errExpected:  true,
+			wantErr:      true,
 		},
 		"Put to storage fails": {
 			client:       &stubHSMClient{keyVersion: keyVersion},
@@ -158,25 +158,25 @@ func TestHSMGetNewDEK(t *testing.T) {
 				getErr: storage.ErrDEKUnset,
 				putErr: someErr,
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"GetKey fails": {
 			client:       &stubHSMClient{getKeyErr: someErr},
 			cryptoClient: &stubCryptoClient{},
 			storage:      storage.NewMemMapStorage(),
-			errExpected:  true,
+			wantErr:      true,
 		},
 		"WrapKey fails": {
 			client:       &stubHSMClient{keyVersion: keyVersion},
 			cryptoClient: &stubCryptoClient{wrapKeyErr: someErr},
 			storage:      storage.NewMemMapStorage(),
-			errExpected:  true,
+			wantErr:      true,
 		},
 		"creating crypto client fails": {
 			client:       &stubHSMClient{keyVersion: keyVersion},
 			cryptoClient: &stubCryptoClient{createErr: someErr},
 			storage:      storage.NewMemMapStorage(),
-			errExpected:  true,
+			wantErr:      true,
 		},
 	}
 
@@ -192,7 +192,7 @@ func TestHSMGetNewDEK(t *testing.T) {
 			}
 
 			dek, err := client.GetDEK(context.Background(), "test-key", "volume-01", 32)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.Len(dek, 32)
@@ -210,7 +210,7 @@ func TestHSMGetExistingDEK(t *testing.T) {
 	testCases := map[string]struct {
 		client       hsmClientAPI
 		cryptoClient *stubCryptoClient
-		errExpected  bool
+		wantErr      bool
 	}{
 		"successful": {
 			client:       &stubHSMClient{keyVersion: keyVersion},
@@ -222,17 +222,17 @@ func TestHSMGetExistingDEK(t *testing.T) {
 				getKeyErr:  someErr,
 			},
 			cryptoClient: &stubCryptoClient{},
-			errExpected:  true,
+			wantErr:      true,
 		},
 		"UnwrapKey fails": {
 			client:       &stubHSMClient{keyVersion: keyVersion},
 			cryptoClient: &stubCryptoClient{unwrapKeyErr: someErr},
-			errExpected:  true,
+			wantErr:      true,
 		},
 		"creating crypto client fails": {
 			client:       &stubHSMClient{keyVersion: keyVersion},
 			cryptoClient: &stubCryptoClient{createErr: someErr},
-			errExpected:  true,
+			wantErr:      true,
 		},
 	}
 
@@ -253,7 +253,7 @@ func TestHSMGetExistingDEK(t *testing.T) {
 			}
 
 			dek, err := client.GetDEK(context.Background(), "test-key", keyID, len(testKey))
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.Len(dek, len(testKey))
@@ -266,23 +266,23 @@ func TestHSMGetExistingDEK(t *testing.T) {
 func TestGetKeyVersion(t *testing.T) {
 	testVersion := "test-key-version"
 	testCases := map[string]struct {
-		client      *stubHSMClient
-		errExpected bool
+		client  *stubHSMClient
+		wantErr bool
 	}{
 		"valid key version": {
 			client: &stubHSMClient{keyVersion: fmt.Sprintf("https://test.managedhsm.azure.net/keys/test-key/%s", testVersion)},
 		},
 		"GetKey fails": {
-			client:      &stubHSMClient{getKeyErr: errors.New("error")},
-			errExpected: true,
+			client:  &stubHSMClient{getKeyErr: errors.New("error")},
+			wantErr: true,
 		},
 		"key ID is not an URL": {
-			client:      &stubHSMClient{keyVersion: string([]byte{0x0, 0x1, 0x2})},
-			errExpected: true,
+			client:  &stubHSMClient{keyVersion: string([]byte{0x0, 0x1, 0x2})},
+			wantErr: true,
 		},
 		"invalid key ID URL": {
-			client:      &stubHSMClient{keyVersion: "https://test.managedhsm.azure.net/keys/test-key/test-key-version/another-version/and-another-one"},
-			errExpected: true,
+			client:  &stubHSMClient{keyVersion: "https://test.managedhsm.azure.net/keys/test-key/test-key-version/another-version/and-another-one"},
+			wantErr: true,
 		},
 	}
 
@@ -293,7 +293,7 @@ func TestGetKeyVersion(t *testing.T) {
 			client := HSMClient{client: tc.client}
 
 			keyVersion, err := client.getKeyVersion(context.Background(), "test")
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)

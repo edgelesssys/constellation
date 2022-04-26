@@ -26,7 +26,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 		mounter      *stubMounter
 		openTPM      vtpm.TPMOpenFunc
 		missingState bool
-		errExpected  bool
+		wantErr      bool
 	}{
 		"success": {
 			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
@@ -36,12 +36,12 @@ func TestPrepareExistingDisk(t *testing.T) {
 			openTPM:   vtpm.OpenNOPTPM,
 		},
 		"WaitForDecryptionKey fails": {
-			fs:          afero.Afero{Fs: afero.NewMemMapFs()},
-			keyWaiter:   &stubKeyWaiter{waitErr: someErr},
-			mapper:      &stubMapper{uuid: "test"},
-			mounter:     &stubMounter{},
-			openTPM:     vtpm.OpenNOPTPM,
-			errExpected: true,
+			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
+			keyWaiter: &stubKeyWaiter{waitErr: someErr},
+			mapper:    &stubMapper{uuid: "test"},
+			mounter:   &stubMounter{},
+			openTPM:   vtpm.OpenNOPTPM,
+			wantErr:   true,
 		},
 		"MapDisk fails causes a repeat": {
 			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
@@ -51,41 +51,41 @@ func TestPrepareExistingDisk(t *testing.T) {
 				mapDiskErr:           someErr,
 				mapDiskRepeatedCalls: 2,
 			},
-			mounter:     &stubMounter{},
-			openTPM:     vtpm.OpenNOPTPM,
-			errExpected: false,
+			mounter: &stubMounter{},
+			openTPM: vtpm.OpenNOPTPM,
+			wantErr: false,
 		},
 		"MkdirAll fails": {
-			fs:          afero.Afero{Fs: afero.NewMemMapFs()},
-			keyWaiter:   &stubKeyWaiter{},
-			mapper:      &stubMapper{uuid: "test"},
-			mounter:     &stubMounter{mkdirAllErr: someErr},
-			openTPM:     vtpm.OpenNOPTPM,
-			errExpected: true,
+			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
+			keyWaiter: &stubKeyWaiter{},
+			mapper:    &stubMapper{uuid: "test"},
+			mounter:   &stubMounter{mkdirAllErr: someErr},
+			openTPM:   vtpm.OpenNOPTPM,
+			wantErr:   true,
 		},
 		"Mount fails": {
-			fs:          afero.Afero{Fs: afero.NewMemMapFs()},
-			keyWaiter:   &stubKeyWaiter{},
-			mapper:      &stubMapper{uuid: "test"},
-			mounter:     &stubMounter{mountErr: someErr},
-			openTPM:     vtpm.OpenNOPTPM,
-			errExpected: true,
+			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
+			keyWaiter: &stubKeyWaiter{},
+			mapper:    &stubMapper{uuid: "test"},
+			mounter:   &stubMounter{mountErr: someErr},
+			openTPM:   vtpm.OpenNOPTPM,
+			wantErr:   true,
 		},
 		"Unmount fails": {
-			fs:          afero.Afero{Fs: afero.NewMemMapFs()},
-			keyWaiter:   &stubKeyWaiter{},
-			mapper:      &stubMapper{uuid: "test"},
-			mounter:     &stubMounter{unmountErr: someErr},
-			openTPM:     vtpm.OpenNOPTPM,
-			errExpected: true,
+			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
+			keyWaiter: &stubKeyWaiter{},
+			mapper:    &stubMapper{uuid: "test"},
+			mounter:   &stubMounter{unmountErr: someErr},
+			openTPM:   vtpm.OpenNOPTPM,
+			wantErr:   true,
 		},
 		"MarkNodeAsInitialized fails": {
-			fs:          afero.Afero{Fs: afero.NewMemMapFs()},
-			keyWaiter:   &stubKeyWaiter{},
-			mapper:      &stubMapper{uuid: "test"},
-			mounter:     &stubMounter{unmountErr: someErr},
-			openTPM:     failOpener,
-			errExpected: true,
+			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
+			keyWaiter: &stubKeyWaiter{},
+			mapper:    &stubMapper{uuid: "test"},
+			mounter:   &stubMounter{unmountErr: someErr},
+			openTPM:   failOpener,
+			wantErr:   true,
 		},
 		"no state file": {
 			fs:           afero.Afero{Fs: afero.NewMemMapFs()},
@@ -94,7 +94,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 			mounter:      &stubMounter{},
 			openTPM:      vtpm.OpenNOPTPM,
 			missingState: true,
-			errExpected:  true,
+			wantErr:      true,
 		},
 	}
 
@@ -110,7 +110,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 			setupManager := New("test", tc.fs, tc.keyWaiter, tc.mapper, tc.mounter, tc.openTPM)
 
 			err := setupManager.PrepareExistingDisk()
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -131,18 +131,18 @@ func failOpener() (io.ReadWriteCloser, error) {
 func TestPrepareNewDisk(t *testing.T) {
 	someErr := errors.New("error")
 	testCases := map[string]struct {
-		fs          afero.Afero
-		mapper      *stubMapper
-		errExpected bool
+		fs      afero.Afero
+		mapper  *stubMapper
+		wantErr bool
 	}{
 		"success": {
 			fs:     afero.Afero{Fs: afero.NewMemMapFs()},
 			mapper: &stubMapper{uuid: "test"},
 		},
 		"creating directory fails": {
-			fs:          afero.Afero{Fs: afero.NewReadOnlyFs(afero.NewMemMapFs())},
-			mapper:      &stubMapper{},
-			errExpected: true,
+			fs:      afero.Afero{Fs: afero.NewReadOnlyFs(afero.NewMemMapFs())},
+			mapper:  &stubMapper{},
+			wantErr: true,
 		},
 		"FormatDisk fails": {
 			fs: afero.Afero{Fs: afero.NewMemMapFs()},
@@ -150,7 +150,7 @@ func TestPrepareNewDisk(t *testing.T) {
 				uuid:          "test",
 				formatDiskErr: someErr,
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"MapDisk fails": {
 			fs: afero.Afero{Fs: afero.NewMemMapFs()},
@@ -159,7 +159,7 @@ func TestPrepareNewDisk(t *testing.T) {
 				mapDiskErr:           someErr,
 				mapDiskRepeatedCalls: 1,
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 
@@ -170,7 +170,7 @@ func TestPrepareNewDisk(t *testing.T) {
 			setupManager := New("test", tc.fs, nil, tc.mapper, nil, nil)
 
 			err := setupManager.PrepareNewDisk()
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -187,11 +187,11 @@ func TestPrepareNewDisk(t *testing.T) {
 
 func TestReadInitSecrets(t *testing.T) {
 	testCases := map[string]struct {
-		fs          afero.Afero
-		ownerID     string
-		clusterID   string
-		writeFile   bool
-		errExpected bool
+		fs        afero.Afero
+		ownerID   string
+		clusterID string
+		writeFile bool
+		wantErr   bool
 	}{
 		"success": {
 			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
@@ -200,25 +200,25 @@ func TestReadInitSecrets(t *testing.T) {
 			writeFile: true,
 		},
 		"no state file": {
-			fs:          afero.Afero{Fs: afero.NewMemMapFs()},
-			errExpected: true,
+			fs:      afero.Afero{Fs: afero.NewMemMapFs()},
+			wantErr: true,
 		},
 		"missing ownerID": {
-			fs:          afero.Afero{Fs: afero.NewMemMapFs()},
-			clusterID:   "clusterID",
-			writeFile:   true,
-			errExpected: true,
+			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
+			clusterID: "clusterID",
+			writeFile: true,
+			wantErr:   true,
 		},
 		"missing clusterID": {
-			fs:          afero.Afero{Fs: afero.NewMemMapFs()},
-			ownerID:     "ownerID",
-			writeFile:   true,
-			errExpected: true,
+			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
+			ownerID:   "ownerID",
+			writeFile: true,
+			wantErr:   true,
 		},
 		"no IDs": {
-			fs:          afero.Afero{Fs: afero.NewMemMapFs()},
-			writeFile:   true,
-			errExpected: true,
+			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
+			writeFile: true,
+			wantErr:   true,
 		},
 	}
 
@@ -236,7 +236,7 @@ func TestReadInitSecrets(t *testing.T) {
 			setupManager := New("test", tc.fs, nil, nil, nil, nil)
 
 			ownerID, clusterID, err := setupManager.readInitSecrets("/tmp/test-state.json")
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)

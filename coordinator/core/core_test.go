@@ -156,37 +156,37 @@ func TestDeriveKey(t *testing.T) {
 
 func TestInitialize(t *testing.T) {
 	testCases := map[string]struct {
-		initializePCRs  bool
-		writeNodeState  bool
-		role            role.Role
-		expectActivated bool
-		expectedState   state.State
-		expectPanic     bool
-		expectErr       bool
+		initializePCRs bool
+		writeNodeState bool
+		role           role.Role
+		wantActivated  bool
+		wantState      state.State
+		wantPanic      bool
+		wantErr        bool
 	}{
 		"fresh node": {
-			expectedState: state.AcceptingInit,
+			wantState: state.AcceptingInit,
 		},
 		"activated coordinator": {
-			initializePCRs:  true,
-			writeNodeState:  true,
-			role:            role.Coordinator,
-			expectPanic:     true, // TODO: adapt test case once restart is implemented
-			expectActivated: true,
-			expectedState:   state.ActivatingNodes,
+			initializePCRs: true,
+			writeNodeState: true,
+			role:           role.Coordinator,
+			wantPanic:      true, // TODO: adapt test case once restart is implemented
+			wantActivated:  true,
+			wantState:      state.ActivatingNodes,
 		},
 		"activated node": {
-			initializePCRs:  true,
-			writeNodeState:  true,
-			role:            role.Node,
-			expectPanic:     true, // TODO: adapt test case once restart is implemented
-			expectActivated: true,
-			expectedState:   state.IsNode,
+			initializePCRs: true,
+			writeNodeState: true,
+			role:           role.Node,
+			wantPanic:      true, // TODO: adapt test case once restart is implemented
+			wantActivated:  true,
+			wantState:      state.IsNode,
 		},
 		"activated node with no node state": {
 			initializePCRs: true,
 			writeNodeState: false,
-			expectErr:      true,
+			wantErr:        true,
 		},
 	}
 
@@ -211,19 +211,19 @@ func TestInitialize(t *testing.T) {
 			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), openTPM, nil, fileHandler)
 			require.NoError(err)
 
-			if tc.expectPanic {
+			if tc.wantPanic {
 				assert.Panics(func() { _, _ = core.Initialize() })
 				return
 			}
 
 			nodeActivated, err := core.Initialize()
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectActivated, nodeActivated)
-			assert.Equal(tc.expectedState, core.state)
+			assert.Equal(tc.wantActivated, nodeActivated)
+			assert.Equal(tc.wantState, core.state)
 		})
 	}
 }
@@ -232,7 +232,7 @@ func TestPersistNodeState(t *testing.T) {
 	testCases := map[string]struct {
 		vpn            VPN
 		touchStateFile bool
-		errExpected    bool
+		wantErr        bool
 	}{
 		"persisting works": {
 			vpn: &stubVPN{
@@ -243,14 +243,14 @@ func TestPersistNodeState(t *testing.T) {
 			vpn: &stubVPN{
 				getPrivateKeyErr: errors.New("error"),
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"writing node state over existing file fails": {
 			vpn: &stubVPN{
 				privateKey: []byte("private-key"),
 			},
 			touchStateFile: true,
-			errExpected:    true,
+			wantErr:        true,
 		},
 	}
 
@@ -269,7 +269,7 @@ func TestPersistNodeState(t *testing.T) {
 			core, err := NewCore(tc.vpn, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, fileHandler)
 			require.NoError(err)
 			err = core.PersistNodeState(role.Coordinator, []byte("owner-id"), []byte("cluster-id"))
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}

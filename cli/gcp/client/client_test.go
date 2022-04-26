@@ -13,8 +13,8 @@ import (
 
 func TestSetGetState(t *testing.T) {
 	testCases := map[string]struct {
-		state       state.ConstellationState
-		errExpected bool
+		state   state.ConstellationState
+		wantErr bool
 	}{
 		"valid state": {
 			state: state.ConstellationState{
@@ -68,7 +68,7 @@ func TestSetGetState(t *testing.T) {
 				GCPNodeInstanceTemplate:        "temp-id",
 				GCPCoordinatorInstanceTemplate: "temp-id",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing coordinator": {
 			state: state.ConstellationState{
@@ -92,7 +92,7 @@ func TestSetGetState(t *testing.T) {
 				GCPNodeInstanceTemplate:        "temp-id",
 				GCPCoordinatorInstanceTemplate: "temp-id",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing node group": {
 			state: state.ConstellationState{
@@ -121,7 +121,7 @@ func TestSetGetState(t *testing.T) {
 				GCPNodeInstanceTemplate:        "temp-id",
 				GCPCoordinatorInstanceTemplate: "temp-id",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing coordinator group": {
 			state: state.ConstellationState{
@@ -150,7 +150,7 @@ func TestSetGetState(t *testing.T) {
 				GCPNodeInstanceTemplate:        "temp-id",
 				GCPCoordinatorInstanceTemplate: "temp-id",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing project id": {
 			state: state.ConstellationState{
@@ -179,7 +179,7 @@ func TestSetGetState(t *testing.T) {
 				GCPNodeInstanceTemplate:        "temp-id",
 				GCPCoordinatorInstanceTemplate: "temp-id",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing zone": {
 			state: state.ConstellationState{
@@ -208,7 +208,7 @@ func TestSetGetState(t *testing.T) {
 				GCPNodeInstanceTemplate:        "temp-id",
 				GCPCoordinatorInstanceTemplate: "temp-id",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing region": {
 			state: state.ConstellationState{
@@ -237,7 +237,7 @@ func TestSetGetState(t *testing.T) {
 				GCPNodeInstanceTemplate:        "temp-id",
 				GCPCoordinatorInstanceTemplate: "temp-id",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing name": {
 			state: state.ConstellationState{
@@ -265,7 +265,7 @@ func TestSetGetState(t *testing.T) {
 				GCPNodeInstanceTemplate:        "temp-id",
 				GCPCoordinatorInstanceTemplate: "temp-id",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing uid": {
 			state: state.ConstellationState{
@@ -294,7 +294,7 @@ func TestSetGetState(t *testing.T) {
 				GCPNodeInstanceTemplate:        "temp-id",
 				GCPCoordinatorInstanceTemplate: "temp-id",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing firewalls": {
 			state: state.ConstellationState{
@@ -323,7 +323,7 @@ func TestSetGetState(t *testing.T) {
 				GCPNodeInstanceTemplate:        "temp-id",
 				GCPCoordinatorInstanceTemplate: "temp-id",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing network": {
 			state: state.ConstellationState{
@@ -351,7 +351,7 @@ func TestSetGetState(t *testing.T) {
 				GCPNodeInstanceTemplate:        "temp-id",
 				GCPCoordinatorInstanceTemplate: "temp-id",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing external network": {
 			state: state.ConstellationState{
@@ -380,7 +380,7 @@ func TestSetGetState(t *testing.T) {
 				GCPNodeInstanceTemplate:        "temp-id",
 				GCPCoordinatorInstanceTemplate: "temp-id",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing subnetwork": {
 			state: state.ConstellationState{
@@ -409,7 +409,7 @@ func TestSetGetState(t *testing.T) {
 				GCPNodeInstanceTemplate:        "temp-id",
 				GCPCoordinatorInstanceTemplate: "temp-id",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing external subnetwork": {
 			state: state.ConstellationState{
@@ -438,7 +438,7 @@ func TestSetGetState(t *testing.T) {
 				GCPNodeInstanceTemplate:        "temp-id",
 				GCPCoordinatorInstanceTemplate: "temp-id",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing node template": {
 			state: state.ConstellationState{
@@ -467,7 +467,7 @@ func TestSetGetState(t *testing.T) {
 				GCPFirewalls:                   []string{"fw-1", "fw-2"},
 				GCPCoordinatorInstanceTemplate: "temp-id",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing coordinator template": {
 			state: state.ConstellationState{
@@ -496,7 +496,7 @@ func TestSetGetState(t *testing.T) {
 				GCPFirewalls:                []string{"fw-1", "fw-2"},
 				GCPNodeInstanceTemplate:     "temp-id",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 
@@ -506,7 +506,7 @@ func TestSetGetState(t *testing.T) {
 				assert := assert.New(t)
 
 				client := Client{}
-				if tc.errExpected {
+				if tc.wantErr {
 					assert.Error(client.SetState(tc.state))
 				} else {
 					assert.NoError(client.SetState(tc.state))
@@ -550,7 +550,7 @@ func TestSetGetState(t *testing.T) {
 					coordinatorTemplate:      tc.state.GCPCoordinatorInstanceTemplate,
 					serviceAccount:           tc.state.GCPServiceAccount,
 				}
-				if tc.errExpected {
+				if tc.wantErr {
 					_, err := client.GetState()
 					assert.Error(err)
 				} else {

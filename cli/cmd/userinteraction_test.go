@@ -30,8 +30,8 @@ func TestAskToConfirm(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		input       string
-		expectedErr error
+		input   string
+		wantErr error
 	}{
 		"user confirms":                       {"y\n", nil},
 		"user confirms long":                  {"yes\n", nil},
@@ -53,7 +53,7 @@ func TestAskToConfirm(t *testing.T) {
 			cmd.SetIn(in)
 
 			err := cmd.Execute()
-			assert.ErrorIs(err, tc.expectedErr)
+			assert.ErrorIs(err, tc.wantErr)
 
 			output, err := io.ReadAll(out)
 			assert.NoError(err)
@@ -66,10 +66,10 @@ func TestWarnAboutPCRs(t *testing.T) {
 	zero := []byte("00000000000000000000000000000000")
 
 	testCases := map[string]struct {
-		pcrs             map[uint32][]byte
-		dontWarnInit     bool
-		expectedWarnings []string
-		errExpected      bool
+		pcrs         map[uint32][]byte
+		dontWarnInit bool
+		wantWarnings []string
+		wantErr      bool
 	}{
 		"no warnings": {
 			pcrs: map[uint32][]byte{
@@ -114,7 +114,7 @@ func TestWarnAboutPCRs(t *testing.T) {
 				11: zero,
 				12: zero,
 			},
-			expectedWarnings: []string{"BIOS"},
+			wantWarnings: []string{"BIOS"},
 		},
 		"warn for OPROM": {
 			pcrs: map[uint32][]byte{
@@ -128,7 +128,7 @@ func TestWarnAboutPCRs(t *testing.T) {
 				11: zero,
 				12: zero,
 			},
-			expectedWarnings: []string{"OPROM"},
+			wantWarnings: []string{"OPROM"},
 		},
 		"warn for MBR": {
 			pcrs: map[uint32][]byte{
@@ -142,7 +142,7 @@ func TestWarnAboutPCRs(t *testing.T) {
 				11: zero,
 				12: zero,
 			},
-			expectedWarnings: []string{"MBR"},
+			wantWarnings: []string{"MBR"},
 		},
 		"warn for kernel": {
 			pcrs: map[uint32][]byte{
@@ -156,7 +156,7 @@ func TestWarnAboutPCRs(t *testing.T) {
 				11: zero,
 				12: zero,
 			},
-			expectedWarnings: []string{"kernel"},
+			wantWarnings: []string{"kernel"},
 		},
 		"warn for initrd": {
 			pcrs: map[uint32][]byte{
@@ -170,7 +170,7 @@ func TestWarnAboutPCRs(t *testing.T) {
 				11: zero,
 				12: zero,
 			},
-			expectedWarnings: []string{"initrd"},
+			wantWarnings: []string{"initrd"},
 		},
 		"warn for initialization": {
 			pcrs: map[uint32][]byte{
@@ -184,8 +184,8 @@ func TestWarnAboutPCRs(t *testing.T) {
 				9:  zero,
 				11: zero,
 			},
-			dontWarnInit:     false,
-			expectedWarnings: []string{"initialization"},
+			dontWarnInit: false,
+			wantWarnings: []string{"initialization"},
 		},
 		"don't warn for initialization": {
 			pcrs: map[uint32][]byte{
@@ -203,7 +203,7 @@ func TestWarnAboutPCRs(t *testing.T) {
 		},
 		"multi warning": {
 			pcrs: map[uint32][]byte{},
-			expectedWarnings: []string{
+			wantWarnings: []string{
 				"BIOS",
 				"OPROM",
 				"MBR",
@@ -216,7 +216,7 @@ func TestWarnAboutPCRs(t *testing.T) {
 			pcrs: map[uint32][]byte{
 				0: []byte("000"),
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 
@@ -231,14 +231,14 @@ func TestWarnAboutPCRs(t *testing.T) {
 			cmd.SetErr(&errOut)
 
 			err := warnAboutPCRs(cmd, tc.pcrs, !tc.dontWarnInit)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				if len(tc.expectedWarnings) == 0 {
+				if len(tc.wantWarnings) == 0 {
 					assert.Empty(errOut.String())
 				} else {
-					for _, warning := range tc.expectedWarnings {
+					for _, warning := range tc.wantWarnings {
 						assert.Contains(errOut.String(), warning)
 					}
 				}

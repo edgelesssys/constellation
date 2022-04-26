@@ -9,25 +9,25 @@ import (
 
 func TestMarshal(t *testing.T) {
 	testCases := map[string]struct {
-		role         Role
-		jsonExpected string
-		errExpected  bool
+		role     Role
+		wantJson string
+		wantErr  bool
 	}{
 		"coordinator role": {
-			role:         Coordinator,
-			jsonExpected: `"Coordinator"`,
+			role:     Coordinator,
+			wantJson: `"Coordinator"`,
 		},
 		"node role": {
-			role:         Node,
-			jsonExpected: `"Node"`,
+			role:     Node,
+			wantJson: `"Node"`,
 		},
 		"admin role": {
-			role:         Admin,
-			jsonExpected: `"Admin"`,
+			role:     Admin,
+			wantJson: `"Admin"`,
 		},
 		"unknown role": {
-			role:         Unknown,
-			jsonExpected: `"Unknown"`,
+			role:     Unknown,
+			wantJson: `"Unknown"`,
 		},
 	}
 
@@ -37,54 +37,54 @@ func TestMarshal(t *testing.T) {
 			require := require.New(t)
 
 			jsonRole, err := tc.role.MarshalJSON()
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 
 			require.NoError(err)
-			assert.Equal(tc.jsonExpected, string(jsonRole))
+			assert.Equal(tc.wantJson, string(jsonRole))
 		})
 	}
 }
 
 func TestUnmarshal(t *testing.T) {
 	testCases := map[string]struct {
-		json         string
-		expectedRole Role
-		errExpected  bool
+		json     string
+		wantRole Role
+		wantErr  bool
 	}{
 		"Coordinator can be unmarshaled": {
-			json:         `"Coordinator"`,
-			expectedRole: Coordinator,
+			json:     `"Coordinator"`,
+			wantRole: Coordinator,
 		},
 		"lowercase coordinator can be unmarshaled": {
-			json:         `"coordinator"`,
-			expectedRole: Coordinator,
+			json:     `"coordinator"`,
+			wantRole: Coordinator,
 		},
 		"Node can be unmarshaled": {
-			json:         `"Node"`,
-			expectedRole: Node,
+			json:     `"Node"`,
+			wantRole: Node,
 		},
 		"lowercase node can be unmarshaled": {
-			json:         `"node"`,
-			expectedRole: Node,
+			json:     `"node"`,
+			wantRole: Node,
 		},
 		"Admin can be unmarshaled": {
-			json:         `"Admin"`,
-			expectedRole: Admin,
+			json:     `"Admin"`,
+			wantRole: Admin,
 		},
 		"lowercase admin can be unmarshaled": {
-			json:         `"admin"`,
-			expectedRole: Admin,
+			json:     `"admin"`,
+			wantRole: Admin,
 		},
 		"other strings unmarshal to the unknown role": {
-			json:         `"anything"`,
-			expectedRole: Unknown,
+			json:     `"anything"`,
+			wantRole: Unknown,
 		},
 		"invalid json fails": {
-			json:        `"unterminated string literal`,
-			errExpected: true,
+			json:    `"unterminated string literal`,
+			wantErr: true,
 		},
 	}
 
@@ -96,13 +96,13 @@ func TestUnmarshal(t *testing.T) {
 			var role Role
 			err := role.UnmarshalJSON([]byte(tc.json))
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 
 			require.NoError(err)
-			assert.Equal(tc.expectedRole, role)
+			assert.Equal(tc.wantRole, role)
 		})
 	}
 }

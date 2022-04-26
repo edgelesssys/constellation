@@ -34,7 +34,7 @@ func TestGetUpdate(t *testing.T) {
 		clientAddr  net.Addr
 		peers       []peer.Peer
 		getPeersErr error
-		expectErr   bool
+		wantErr     bool
 	}{
 		"0 peers": {
 			clientAddr: clientIP,
@@ -59,7 +59,7 @@ func TestGetUpdate(t *testing.T) {
 		"getPeers error": {
 			clientAddr:  clientIP,
 			getPeersErr: someErr,
-			expectErr:   true,
+			wantErr:     true,
 		},
 		"missing client addr": {
 			peers: []peer.Peer{peer1},
@@ -83,7 +83,7 @@ func TestGetUpdate(t *testing.T) {
 			}
 
 			resp, err := api.GetUpdate(ctx, &vpnproto.GetUpdateRequest{ResourceVersion: clientResourceVersion})
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -94,10 +94,10 @@ func TestGetUpdate(t *testing.T) {
 
 			require.Len(resp.Peers, len(tc.peers))
 			for i, actual := range resp.Peers {
-				expected := tc.peers[i]
-				assert.EqualValues(expected.PublicIP, actual.PublicIp)
-				assert.EqualValues(expected.VPNIP, actual.VpnIp)
-				assert.Equal(expected.VPNPubKey, actual.VpnPubKey)
+				want := tc.peers[i]
+				assert.EqualValues(want.PublicIP, actual.PublicIp)
+				assert.EqualValues(want.VPNIP, actual.VpnIp)
+				assert.Equal(want.VPNPubKey, actual.VpnPubKey)
 			}
 
 			if tc.clientAddr == nil {
@@ -150,14 +150,14 @@ func TestGetK8SCertificateKey(t *testing.T) {
 	testCases := map[string]struct {
 		certKey       string
 		getCertKeyErr error
-		expectErr     bool
+		wantErr       bool
 	}{
 		"basic": {
 			certKey: certKey,
 		},
 		"error": {
 			getCertKeyErr: someErr,
-			expectErr:     true,
+			wantErr:       true,
 		},
 	}
 	for name, tc := range testCases {
@@ -173,7 +173,7 @@ func TestGetK8SCertificateKey(t *testing.T) {
 			api := New(zaptest.NewLogger(t), core)
 			resp, err := api.GetK8SCertificateKey(context.Background(), &vpnproto.GetK8SCertificateKeyRequest{})
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}

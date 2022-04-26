@@ -23,19 +23,19 @@ func TestRetrieve(t *testing.T) {
 		},
 	}
 	testCases := map[string]struct {
-		server           httpBufconnServer
-		expectErr        bool
-		expectedResponse metadataResponse
+		server       httpBufconnServer
+		wantErr      bool
+		wantResponse metadataResponse
 	}{
 		"metadata response parsed": {
-			server:           newHTTPBufconnServerWithMetadataResponse(response),
-			expectedResponse: response,
+			server:       newHTTPBufconnServerWithMetadataResponse(response),
+			wantResponse: response,
 		},
 		"invalid imds response detected": {
 			server: newHTTPBufconnServer(func(writer http.ResponseWriter, request *http.Request) {
 				fmt.Fprintln(writer, "invalid-result")
 			}),
-			expectErr: true,
+			wantErr: true,
 		},
 	}
 
@@ -59,12 +59,12 @@ func TestRetrieve(t *testing.T) {
 			}
 			resp, err := iClient.Retrieve(context.Background())
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedResponse, resp)
+			assert.Equal(tc.wantResponse, resp)
 		})
 	}
 }

@@ -15,8 +15,8 @@ import (
 
 func TestTerminateCmdArgumentValidation(t *testing.T) {
 	testCases := map[string]struct {
-		args      []string
-		expectErr bool
+		args    []string
+		wantErr bool
 	}{
 		"no args":         {[]string{}, false},
 		"some args":       {[]string{"hello", "test"}, true},
@@ -30,7 +30,7 @@ func TestTerminateCmdArgumentValidation(t *testing.T) {
 			cmd := newTerminateCmd()
 			err := cmd.ValidateArgs(tc.args)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)

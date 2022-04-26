@@ -15,7 +15,7 @@ import (
 )
 
 func TestList(t *testing.T) {
-	expectedInstances := []core.Instance{
+	wantInstances := []core.Instance{
 		{
 			Name:       "instance-name",
 			ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
@@ -36,8 +36,8 @@ func TestList(t *testing.T) {
 		virtualMachinesAPI           virtualMachinesAPI
 		virtualMachineScaleSetVMsAPI virtualMachineScaleSetVMsAPI
 		tagsAPI                      tagsAPI
-		expectErr                    bool
-		expectedInstances            []core.Instance
+		wantErr                      bool
+		wantInstances                []core.Instance
 	}{
 		"List works": {
 			imdsAPI:                      newIMDSStub(),
@@ -46,20 +46,20 @@ func TestList(t *testing.T) {
 			virtualMachinesAPI:           newVirtualMachinesStub(),
 			virtualMachineScaleSetVMsAPI: newVirtualMachineScaleSetsVMsStub(),
 			tagsAPI:                      newTagsStub(),
-			expectedInstances:            expectedInstances,
+			wantInstances:                wantInstances,
 		},
 		"providerID cannot be retrieved": {
-			imdsAPI:   &stubIMDSAPI{retrieveErr: errors.New("imds err")},
-			expectErr: true,
+			imdsAPI: &stubIMDSAPI{retrieveErr: errors.New("imds err")},
+			wantErr: true,
 		},
 		"providerID cannot be parsed": {
-			imdsAPI:   newInvalidIMDSStub(),
-			expectErr: true,
+			imdsAPI: newInvalidIMDSStub(),
+			wantErr: true,
 		},
 		"listVMs fails": {
 			imdsAPI:            newIMDSStub(),
 			virtualMachinesAPI: newFailingListsVirtualMachinesStub(),
-			expectErr:          true,
+			wantErr:            true,
 		},
 		"listScaleSetVMs fails": {
 			imdsAPI:                      newIMDSStub(),
@@ -68,7 +68,7 @@ func TestList(t *testing.T) {
 			virtualMachinesAPI:           newVirtualMachinesStub(),
 			virtualMachineScaleSetVMsAPI: newFailingListsVirtualMachineScaleSetsVMsStub(),
 			tagsAPI:                      newTagsStub(),
-			expectErr:                    true,
+			wantErr:                      true,
 		},
 	}
 
@@ -87,24 +87,24 @@ func TestList(t *testing.T) {
 			}
 			instances, err := metadata.List(context.Background())
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.ElementsMatch(tc.expectedInstances, instances)
+			assert.ElementsMatch(tc.wantInstances, instances)
 		})
 	}
 }
 
 func TestSelf(t *testing.T) {
-	expectedVMInstance := core.Instance{
+	wantVMInstance := core.Instance{
 		Name:       "instance-name",
 		ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
 		IPs:        []string{"192.0.2.0"},
 		SSHKeys:    map[string][]string{"user": {"key-data"}},
 	}
-	expectedScaleSetInstance := core.Instance{
+	wantScaleSetInstance := core.Instance{
 		Name:       "scale-set-name-instance-id",
 		ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 		IPs:        []string{"192.0.2.0"},
@@ -115,31 +115,31 @@ func TestSelf(t *testing.T) {
 		networkInterfacesAPI         networkInterfacesAPI
 		virtualMachinesAPI           virtualMachinesAPI
 		virtualMachineScaleSetVMsAPI virtualMachineScaleSetVMsAPI
-		expectErr                    bool
-		expectedInstance             core.Instance
+		wantErr                      bool
+		wantInstance                 core.Instance
 	}{
 		"self for individual instance works": {
 			imdsAPI:                      newIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachinesAPI:           newVirtualMachinesStub(),
 			virtualMachineScaleSetVMsAPI: newVirtualMachineScaleSetsVMsStub(),
-			expectedInstance:             expectedVMInstance,
+			wantInstance:                 wantVMInstance,
 		},
 		"self for scale set instance works": {
 			imdsAPI:                      newScaleSetIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachinesAPI:           newVirtualMachinesStub(),
 			virtualMachineScaleSetVMsAPI: newVirtualMachineScaleSetsVMsStub(),
-			expectedInstance:             expectedScaleSetInstance,
+			wantInstance:                 wantScaleSetInstance,
 		},
 		"providerID cannot be retrieved": {
-			imdsAPI:   &stubIMDSAPI{retrieveErr: errors.New("imds err")},
-			expectErr: true,
+			imdsAPI: &stubIMDSAPI{retrieveErr: errors.New("imds err")},
+			wantErr: true,
 		},
 		"GetInstance fails": {
 			imdsAPI:            newIMDSStub(),
 			virtualMachinesAPI: newFailingGetVirtualMachinesStub(),
-			expectErr:          true,
+			wantErr:            true,
 		},
 	}
 
@@ -156,21 +156,21 @@ func TestSelf(t *testing.T) {
 			}
 			instance, err := metadata.Self(context.Background())
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedInstance, instance)
+			assert.Equal(tc.wantInstance, instance)
 		})
 	}
 }
 
 func TestSignalRole(t *testing.T) {
 	testCases := map[string]struct {
-		imdsAPI   imdsAPI
-		tagsAPI   tagsAPI
-		expectErr bool
+		imdsAPI imdsAPI
+		tagsAPI tagsAPI
+		wantErr bool
 	}{
 		"SignalRole works": {
 			imdsAPI: newIMDSStub(),
@@ -180,13 +180,13 @@ func TestSignalRole(t *testing.T) {
 			imdsAPI: newScaleSetIMDSStub(),
 		},
 		"providerID cannot be retrieved": {
-			imdsAPI:   &stubIMDSAPI{retrieveErr: errors.New("imds err")},
-			expectErr: true,
+			imdsAPI: &stubIMDSAPI{retrieveErr: errors.New("imds err")},
+			wantErr: true,
 		},
 		"setting tag fails": {
-			imdsAPI:   newIMDSStub(),
-			tagsAPI:   newFailingTagsStub(),
-			expectErr: true,
+			imdsAPI: newIMDSStub(),
+			tagsAPI: newFailingTagsStub(),
+			wantErr: true,
 		},
 	}
 
@@ -201,7 +201,7 @@ func TestSignalRole(t *testing.T) {
 			}
 			err := metadata.SignalRole(context.Background(), role.Coordinator)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -224,21 +224,21 @@ func TestMetadataSupported(t *testing.T) {
 
 func TestProviderID(t *testing.T) {
 	testCases := map[string]struct {
-		imdsAPI            imdsAPI
-		expectErr          bool
-		expectedProviderID string
+		imdsAPI        imdsAPI
+		wantErr        bool
+		wantProviderID string
 	}{
 		"providerID for individual instance works": {
-			imdsAPI:            newIMDSStub(),
-			expectedProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
+			imdsAPI:        newIMDSStub(),
+			wantProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
 		},
 		"providerID for scale set instance works": {
-			imdsAPI:            newScaleSetIMDSStub(),
-			expectedProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
+			imdsAPI:        newScaleSetIMDSStub(),
+			wantProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 		},
 		"imds retrieval fails": {
-			imdsAPI:   &stubIMDSAPI{retrieveErr: errors.New("imds err")},
-			expectErr: true,
+			imdsAPI: &stubIMDSAPI{retrieveErr: errors.New("imds err")},
+			wantErr: true,
 		},
 	}
 
@@ -252,36 +252,36 @@ func TestProviderID(t *testing.T) {
 			}
 			providerID, err := metadata.providerID(context.Background())
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedProviderID, providerID)
+			assert.Equal(tc.wantProviderID, providerID)
 		})
 	}
 }
 
 func TestExtractBasicsFromProviderID(t *testing.T) {
 	testCases := map[string]struct {
-		providerID             string
-		expectErr              bool
-		expectedSubscriptionID string
-		expectedResourceGroup  string
+		providerID         string
+		wantErr            bool
+		wantSubscriptionID string
+		wantResourceGroup  string
 	}{
 		"providerID for individual instance works": {
-			providerID:             "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
-			expectedSubscriptionID: "subscription-id",
-			expectedResourceGroup:  "resource-group",
+			providerID:         "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
+			wantSubscriptionID: "subscription-id",
+			wantResourceGroup:  "resource-group",
 		},
 		"providerID for scale set instance works": {
-			providerID:             "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-			expectedSubscriptionID: "subscription-id",
-			expectedResourceGroup:  "resource-group",
+			providerID:         "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
+			wantSubscriptionID: "subscription-id",
+			wantResourceGroup:  "resource-group",
 		},
 		"providerID is malformed": {
 			providerID: "malformed-provider-id",
-			expectErr:  true,
+			wantErr:    true,
 		},
 	}
 
@@ -292,29 +292,29 @@ func TestExtractBasicsFromProviderID(t *testing.T) {
 
 			subscriptionID, resourceGroup, err := extractBasicsFromProviderID(tc.providerID)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedSubscriptionID, subscriptionID)
-			assert.Equal(tc.expectedResourceGroup, resourceGroup)
+			assert.Equal(tc.wantSubscriptionID, subscriptionID)
+			assert.Equal(tc.wantResourceGroup, resourceGroup)
 		})
 	}
 }
 
 func TestExtractInstanceTags(t *testing.T) {
 	testCases := map[string]struct {
-		in           map[string]*string
-		expectedTags map[string]string
+		in       map[string]*string
+		wantTags map[string]string
 	}{
 		"tags are extracted": {
-			in:           map[string]*string{"key": to.StringPtr("value")},
-			expectedTags: map[string]string{"key": "value"},
+			in:       map[string]*string{"key": to.StringPtr("value")},
+			wantTags: map[string]string{"key": "value"},
 		},
 		"nil values are skipped": {
-			in:           map[string]*string{"key": nil},
-			expectedTags: map[string]string{},
+			in:       map[string]*string{"key": nil},
+			wantTags: map[string]string{},
 		},
 	}
 
@@ -324,15 +324,15 @@ func TestExtractInstanceTags(t *testing.T) {
 
 			tags := extractInstanceTags(tc.in)
 
-			assert.Equal(tc.expectedTags, tags)
+			assert.Equal(tc.wantTags, tags)
 		})
 	}
 }
 
 func TestExtractSSHKeys(t *testing.T) {
 	testCases := map[string]struct {
-		in           armcompute.SSHConfiguration
-		expectedKeys map[string][]string
+		in       armcompute.SSHConfiguration
+		wantKeys map[string][]string
 	}{
 		"ssh key is extracted": {
 			in: armcompute.SSHConfiguration{
@@ -343,7 +343,7 @@ func TestExtractSSHKeys(t *testing.T) {
 					},
 				},
 			},
-			expectedKeys: map[string][]string{"user": {"key-data"}},
+			wantKeys: map[string][]string{"user": {"key-data"}},
 		},
 		"invalid path is skipped": {
 			in: armcompute.SSHConfiguration{
@@ -354,7 +354,7 @@ func TestExtractSSHKeys(t *testing.T) {
 					},
 				},
 			},
-			expectedKeys: map[string][]string{},
+			wantKeys: map[string][]string{},
 		},
 		"key data is nil": {
 			in: armcompute.SSHConfiguration{
@@ -364,7 +364,7 @@ func TestExtractSSHKeys(t *testing.T) {
 					},
 				},
 			},
-			expectedKeys: map[string][]string{},
+			wantKeys: map[string][]string{},
 		},
 		"path is nil": {
 			in: armcompute.SSHConfiguration{
@@ -374,11 +374,11 @@ func TestExtractSSHKeys(t *testing.T) {
 					},
 				},
 			},
-			expectedKeys: map[string][]string{},
+			wantKeys: map[string][]string{},
 		},
 		"public keys are nil": {
-			in:           armcompute.SSHConfiguration{},
-			expectedKeys: map[string][]string{},
+			in:       armcompute.SSHConfiguration{},
+			wantKeys: map[string][]string{},
 		},
 	}
 
@@ -388,7 +388,7 @@ func TestExtractSSHKeys(t *testing.T) {
 
 			keys := extractSSHKeys(tc.in)
 
-			assert.Equal(tc.expectedKeys, keys)
+			assert.Equal(tc.wantKeys, keys)
 		})
 	}
 }

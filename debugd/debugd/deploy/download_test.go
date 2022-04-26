@@ -22,28 +22,28 @@ func TestDownloadCoordinator(t *testing.T) {
 	filename := "/opt/coordinator"
 
 	testCases := map[string]struct {
-		server              fakeOnlyDownloadServer
-		downloadClient      stubDownloadClient
-		serviceManager      stubServiceManager
-		attemptedDownloads  map[string]time.Time
-		expectedChunks      [][]byte
-		expectDownloadErr   bool
-		expectFile          bool
-		expectSystemdAction bool
-		expectDeployed      bool
+		server             fakeOnlyDownloadServer
+		downloadClient     stubDownloadClient
+		serviceManager     stubServiceManager
+		attemptedDownloads map[string]time.Time
+		wantChunks         [][]byte
+		wantDownloadErr    bool
+		wantFile           bool
+		wantSystemdAction  bool
+		wantDeployed       bool
 	}{
 		"download works": {
 			server: fakeOnlyDownloadServer{
 				chunks: [][]byte{[]byte("test")},
 			},
 			attemptedDownloads: map[string]time.Time{},
-			expectedChunks: [][]byte{
+			wantChunks: [][]byte{
 				[]byte("test"),
 			},
-			expectDownloadErr:   false,
-			expectFile:          true,
-			expectSystemdAction: true,
-			expectDeployed:      true,
+			wantDownloadErr:   false,
+			wantFile:          true,
+			wantSystemdAction: true,
+			wantDeployed:      true,
 		},
 		"second download is not attempted twice": {
 			server: fakeOnlyDownloadServer{
@@ -52,14 +52,14 @@ func TestDownloadCoordinator(t *testing.T) {
 			attemptedDownloads: map[string]time.Time{
 				"192.0.2.0:4000": time.Now(),
 			},
-			expectDownloadErr: true,
+			wantDownloadErr: true,
 		},
 		"download rpc call error is detected": {
 			server: fakeOnlyDownloadServer{
 				downladErr: errors.New("download rpc error"),
 			},
 			attemptedDownloads: map[string]time.Time{},
-			expectDownloadErr:  true,
+			wantDownloadErr:    true,
 		},
 		"service restart error is detected": {
 			server: fakeOnlyDownloadServer{
@@ -69,13 +69,13 @@ func TestDownloadCoordinator(t *testing.T) {
 				systemdActionErr: errors.New("systemd error"),
 			},
 			attemptedDownloads: map[string]time.Time{},
-			expectedChunks: [][]byte{
+			wantChunks: [][]byte{
 				[]byte("test"),
 			},
-			expectDownloadErr:   true,
-			expectFile:          true,
-			expectDeployed:      true,
-			expectSystemdAction: false,
+			wantDownloadErr:   true,
+			wantFile:          true,
+			wantDeployed:      true,
+			wantSystemdAction: false,
 		},
 	}
 
@@ -101,17 +101,17 @@ func TestDownloadCoordinator(t *testing.T) {
 			err := download.DownloadCoordinator(context.Background(), ip)
 			grpcServ.GracefulStop()
 
-			if tc.expectDownloadErr {
+			if tc.wantDownloadErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
 			}
 
-			if tc.expectFile {
-				assert.Equal(tc.expectedChunks, writer.chunks)
+			if tc.wantFile {
+				assert.Equal(tc.wantChunks, writer.chunks)
 				assert.Equal(filename, writer.filename)
 			}
-			if tc.expectSystemdAction {
+			if tc.wantSystemdAction {
 				assert.ElementsMatch(
 					[]ServiceManagerRequest{
 						{Unit: debugd.CoordinatorSystemdUnitName, Action: Restart},

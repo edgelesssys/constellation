@@ -12,36 +12,36 @@ import (
 
 func TestGetStore(t *testing.T) {
 	testCases := map[string]struct {
-		uri         string
-		errExpected bool
+		uri     string
+		wantErr bool
 	}{
 		"no store": {
-			uri:         NoStoreURI,
-			errExpected: false,
+			uri:     NoStoreURI,
+			wantErr: false,
 		},
 		"aws s3": {
-			uri:         fmt.Sprintf(AWSS3URI, ""),
-			errExpected: true,
+			uri:     fmt.Sprintf(AWSS3URI, ""),
+			wantErr: true,
 		},
 		"azure blob": {
-			uri:         fmt.Sprintf(AzureBlobURI, "", ""),
-			errExpected: true,
+			uri:     fmt.Sprintf(AzureBlobURI, "", ""),
+			wantErr: true,
 		},
 		"gcp storage": {
-			uri:         fmt.Sprintf(GCPStorageURI, "", ""),
-			errExpected: true,
+			uri:     fmt.Sprintf(GCPStorageURI, "", ""),
+			wantErr: true,
 		},
 		"unknown store": {
-			uri:         "storage://unknown",
-			errExpected: true,
+			uri:     "storage://unknown",
+			wantErr: true,
 		},
 		"invalid scheme": {
-			uri:         ClusterKMSURI,
-			errExpected: true,
+			uri:     ClusterKMSURI,
+			wantErr: true,
 		},
 		"not a url": {
-			uri:         ":/123",
-			errExpected: true,
+			uri:     ":/123",
+			wantErr: true,
 		},
 	}
 
@@ -50,7 +50,7 @@ func TestGetStore(t *testing.T) {
 			assert := assert.New(t)
 
 			_, err := getStore(context.Background(), tc.uri)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -61,40 +61,40 @@ func TestGetStore(t *testing.T) {
 
 func TestGetKMS(t *testing.T) {
 	testCases := map[string]struct {
-		uri         string
-		errExpected bool
+		uri     string
+		wantErr bool
 	}{
 		"cluster kms": {
-			uri:         ClusterKMSURI,
-			errExpected: false,
+			uri:     ClusterKMSURI,
+			wantErr: false,
 		},
 		"aws kms": {
-			uri:         fmt.Sprintf(AWSKMSURI, ""),
-			errExpected: true,
+			uri:     fmt.Sprintf(AWSKMSURI, ""),
+			wantErr: true,
 		},
 		"azure kms": {
-			uri:         fmt.Sprintf(AzureKMSURI, "", ""),
-			errExpected: true,
+			uri:     fmt.Sprintf(AzureKMSURI, "", ""),
+			wantErr: true,
 		},
 		"azure hsm": {
-			uri:         fmt.Sprintf(AzureHSMURI, ""),
-			errExpected: true,
+			uri:     fmt.Sprintf(AzureHSMURI, ""),
+			wantErr: true,
 		},
 		"gcp kms": {
-			uri:         fmt.Sprintf(GCPKMSURI, "", "", "", ""),
-			errExpected: true,
+			uri:     fmt.Sprintf(GCPKMSURI, "", "", "", ""),
+			wantErr: true,
 		},
 		"unknown kms": {
-			uri:         "kms://unknown",
-			errExpected: true,
+			uri:     "kms://unknown",
+			wantErr: true,
 		},
 		"invalid scheme": {
-			uri:         NoStoreURI,
-			errExpected: true,
+			uri:     NoStoreURI,
+			wantErr: true,
 		},
 		"not a url": {
-			uri:         ":/123",
-			errExpected: true,
+			uri:     ":/123",
+			wantErr: true,
 		},
 	}
 
@@ -103,7 +103,7 @@ func TestGetKMS(t *testing.T) {
 			assert := assert.New(t)
 
 			kms, err := getKMS(context.Background(), tc.uri, nil)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -182,34 +182,34 @@ func TestGetConfig(t *testing.T) {
 	const testUri = "test://config?name=test-name&data=test-data&value=test-value"
 
 	testCases := map[string]struct {
-		uri         string
-		keys        []string
-		errExpected bool
+		uri     string
+		keys    []string
+		wantErr bool
 	}{
 		"success": {
-			uri:         testUri,
-			keys:        []string{"name", "data", "value"},
-			errExpected: false,
+			uri:     testUri,
+			keys:    []string{"name", "data", "value"},
+			wantErr: false,
 		},
 		"less keys than capture groups": {
-			uri:         testUri,
-			keys:        []string{"name", "data"},
-			errExpected: false,
+			uri:     testUri,
+			keys:    []string{"name", "data"},
+			wantErr: false,
 		},
 		"invalid regex": {
-			uri:         testUri,
-			keys:        []string{"name", "data", "test-value"},
-			errExpected: true,
+			uri:     testUri,
+			keys:    []string{"name", "data", "test-value"},
+			wantErr: true,
 		},
 		"missing value": {
-			uri:         "test://config?name=test-name&data=test-data&value",
-			keys:        []string{"name", "data", "value"},
-			errExpected: true,
+			uri:     "test://config?name=test-name&data=test-data&value",
+			keys:    []string{"name", "data", "value"},
+			wantErr: true,
 		},
 		"more keys than expected": {
-			uri:         testUri,
-			keys:        []string{"name", "data", "value", "anotherValue"},
-			errExpected: true,
+			uri:     testUri,
+			keys:    []string{"name", "data", "value", "anotherValue"},
+			wantErr: true,
 		},
 	}
 
@@ -222,7 +222,7 @@ func TestGetConfig(t *testing.T) {
 			require.NoError(err)
 
 			res, err := getConfig(uri.Query(), tc.keys)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 				assert.Len(res, len(tc.keys))
 			} else {

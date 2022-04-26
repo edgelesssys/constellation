@@ -77,7 +77,7 @@ func TestInitialize(t *testing.T) {
 		privKey               string
 		vpnHandler            vpnHandler
 		initVPN               bool
-		errExpected           bool
+		wantErr               bool
 	}{
 		"initialize some gcp instances": {
 			existingState: testGcpState,
@@ -112,33 +112,33 @@ func TestInitialize(t *testing.T) {
 			client: &fakeProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter:      &stubStatusWaiter{},
-			vpnHandler:  &stubVPNHandler{applyErr: someErr},
-			initVPN:     true,
-			privKey:     testKey,
-			errExpected: true,
+			waiter:     &stubStatusWaiter{},
+			vpnHandler: &stubVPNHandler{applyErr: someErr},
+			initVPN:    true,
+			privKey:    testKey,
+			wantErr:    true,
 		},
 		"invalid create vpn config": {
 			existingState: testAzureState,
 			client: &fakeProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter:      &stubStatusWaiter{},
-			vpnHandler:  &stubVPNHandler{createErr: someErr},
-			initVPN:     true,
-			privKey:     testKey,
-			errExpected: true,
+			waiter:     &stubStatusWaiter{},
+			vpnHandler: &stubVPNHandler{createErr: someErr},
+			initVPN:    true,
+			privKey:    testKey,
+			wantErr:    true,
 		},
 		"invalid write vpn config": {
 			existingState: testAzureState,
 			client: &fakeProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
-			waiter:      &stubStatusWaiter{},
-			vpnHandler:  &stubVPNHandler{marshalErr: someErr},
-			initVPN:     true,
-			privKey:     testKey,
-			errExpected: true,
+			waiter:     &stubStatusWaiter{},
+			vpnHandler: &stubVPNHandler{marshalErr: someErr},
+			initVPN:    true,
+			privKey:    testKey,
+			wantErr:    true,
 		},
 		"no state exists": {
 			existingState: state.ConstellationState{},
@@ -146,18 +146,18 @@ func TestInitialize(t *testing.T) {
 			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"no instances to pick one": {
 			existingState: state.ConstellationState{
 				EC2Instances:     ec2.Instances{},
 				EC2SecurityGroup: "sg-test",
 			},
-			client:      &stubProtoClient{},
-			waiter:      &stubStatusWaiter{},
-			privKey:     testKey,
-			vpnHandler:  &stubVPNHandler{},
-			errExpected: true,
+			client:     &stubProtoClient{},
+			waiter:     &stubStatusWaiter{},
+			privKey:    testKey,
+			vpnHandler: &stubVPNHandler{},
+			wantErr:    true,
 		},
 		"public key to short": {
 			existingState: testGcpState,
@@ -165,7 +165,7 @@ func TestInitialize(t *testing.T) {
 			waiter:        &stubStatusWaiter{},
 			privKey:       base64.StdEncoding.EncodeToString([]byte("tooShortKey")),
 			vpnHandler:    &stubVPNHandler{},
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"public key to long": {
 			existingState: testGcpState,
@@ -173,7 +173,7 @@ func TestInitialize(t *testing.T) {
 			waiter:        &stubStatusWaiter{},
 			privKey:       base64.StdEncoding.EncodeToString([]byte("thisWireguardKeyIsToLongAndHasTooManyBytes")),
 			vpnHandler:    &stubVPNHandler{},
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"public key not base64": {
 			existingState: testGcpState,
@@ -181,7 +181,7 @@ func TestInitialize(t *testing.T) {
 			waiter:        &stubStatusWaiter{},
 			privKey:       "this is not base64 encoded",
 			vpnHandler:    &stubVPNHandler{},
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"fail Connect": {
 			existingState: testGcpState,
@@ -189,7 +189,7 @@ func TestInitialize(t *testing.T) {
 			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"fail Activate": {
 			existingState: testGcpState,
@@ -197,7 +197,7 @@ func TestInitialize(t *testing.T) {
 			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"fail respClient WriteLogStream": {
 			existingState: testGcpState,
@@ -205,7 +205,7 @@ func TestInitialize(t *testing.T) {
 			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"fail respClient getKubeconfig": {
 			existingState: testGcpState,
@@ -213,7 +213,7 @@ func TestInitialize(t *testing.T) {
 			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"fail respClient getCoordinatorVpnKey": {
 			existingState: testGcpState,
@@ -221,7 +221,7 @@ func TestInitialize(t *testing.T) {
 			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"fail respClient getClientVpnIp": {
 			existingState: testGcpState,
@@ -229,7 +229,7 @@ func TestInitialize(t *testing.T) {
 			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"fail respClient getOwnerID": {
 			existingState: testGcpState,
@@ -237,7 +237,7 @@ func TestInitialize(t *testing.T) {
 			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"fail respClient getClusterID": {
 			existingState: testGcpState,
@@ -245,7 +245,7 @@ func TestInitialize(t *testing.T) {
 			waiter:        &stubStatusWaiter{},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"fail to wait for required status": {
 			existingState: testGcpState,
@@ -253,7 +253,7 @@ func TestInitialize(t *testing.T) {
 			waiter:        &stubStatusWaiter{waitForAllErr: someErr},
 			privKey:       testKey,
 			vpnHandler:    &stubVPNHandler{},
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"fail to create service account": {
 			existingState:         testGcpState,
@@ -262,7 +262,7 @@ func TestInitialize(t *testing.T) {
 			waiter:                &stubStatusWaiter{},
 			privKey:               testKey,
 			vpnHandler:            &stubVPNHandler{},
-			errExpected:           true,
+			wantErr:               true,
 		},
 	}
 
@@ -294,7 +294,7 @@ func TestInitialize(t *testing.T) {
 
 			err := initialize(ctx, cmd, tc.client, &tc.serviceAccountCreator, fileHandler, tc.waiter, tc.vpnHandler)
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				require.NoError(err)
@@ -343,28 +343,28 @@ func TestIpsToEndpoints(t *testing.T) {
 
 func TestInitCompletion(t *testing.T) {
 	testCases := map[string]struct {
-		args            []string
-		toComplete      string
-		resultExpected  []string
-		shellCDExpected cobra.ShellCompDirective
+		args        []string
+		toComplete  string
+		wantResult  []string
+		wantShellCD cobra.ShellCompDirective
 	}{
 		"first arg": {
-			args:            []string{},
-			toComplete:      "hello",
-			resultExpected:  []string{},
-			shellCDExpected: cobra.ShellCompDirectiveDefault,
+			args:        []string{},
+			toComplete:  "hello",
+			wantResult:  []string{},
+			wantShellCD: cobra.ShellCompDirectiveDefault,
 		},
 		"secnod arg": {
-			args:            []string{"23"},
-			toComplete:      "/test/h",
-			resultExpected:  []string{},
-			shellCDExpected: cobra.ShellCompDirectiveError,
+			args:        []string{"23"},
+			toComplete:  "/test/h",
+			wantResult:  []string{},
+			wantShellCD: cobra.ShellCompDirectiveError,
 		},
 		"third arg": {
-			args:            []string{"./file", "sth"},
-			toComplete:      "./file",
-			resultExpected:  []string{},
-			shellCDExpected: cobra.ShellCompDirectiveError,
+			args:        []string{"./file", "sth"},
+			toComplete:  "./file",
+			wantResult:  []string{},
+			wantShellCD: cobra.ShellCompDirectiveError,
 		},
 	}
 
@@ -374,8 +374,8 @@ func TestInitCompletion(t *testing.T) {
 
 			cmd := &cobra.Command{}
 			result, shellCD := initCompletion(cmd, tc.args, tc.toComplete)
-			assert.Equal(tc.resultExpected, result)
-			assert.Equal(tc.shellCDExpected, shellCD)
+			assert.Equal(tc.wantResult, result)
+			assert.Equal(tc.wantShellCD, shellCD)
 		})
 	}
 }
@@ -406,55 +406,55 @@ func TestReadOrGeneratedMasterSecret(t *testing.T) {
 		filecontent string
 		createFile  bool
 		fs          func() afero.Fs
-		errExpected bool
+		wantErr     bool
 	}{
 		"file with secret exists": {
 			filename:    "someSecret",
 			filecontent: base64.StdEncoding.EncodeToString([]byte("ConstellationSecret")),
 			createFile:  true,
 			fs:          afero.NewMemMapFs,
-			errExpected: false,
+			wantErr:     false,
 		},
 		"no file given": {
 			filename:    "",
 			filecontent: "",
 			fs:          afero.NewMemMapFs,
-			errExpected: false,
+			wantErr:     false,
 		},
 		"file does not exist": {
 			filename:    "nonExistingSecret",
 			filecontent: "",
 			createFile:  false,
 			fs:          afero.NewMemMapFs,
-			errExpected: true,
+			wantErr:     true,
 		},
 		"file is empty": {
 			filename:    "emptySecret",
 			filecontent: "",
 			createFile:  true,
 			fs:          afero.NewMemMapFs,
-			errExpected: true,
+			wantErr:     true,
 		},
 		"secret too short": {
 			filename:    "shortSecret",
 			filecontent: base64.StdEncoding.EncodeToString([]byte("short")),
 			createFile:  true,
 			fs:          afero.NewMemMapFs,
-			errExpected: true,
+			wantErr:     true,
 		},
 		"secret not encoded": {
 			filename:    "unencodedSecret",
 			filecontent: "Constellation",
 			createFile:  true,
 			fs:          afero.NewMemMapFs,
-			errExpected: true,
+			wantErr:     true,
 		},
 		"file not writeable": {
 			filename:    "",
 			filecontent: "",
 			createFile:  false,
 			fs:          func() afero.Fs { return afero.NewReadOnlyFs(afero.NewMemMapFs()) },
-			errExpected: true,
+			wantErr:     true,
 		},
 	}
 
@@ -472,7 +472,7 @@ func TestReadOrGeneratedMasterSecret(t *testing.T) {
 			var out bytes.Buffer
 			secret, err := readOrGeneratedMasterSecret(&out, fileHandler, tc.filename)
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)

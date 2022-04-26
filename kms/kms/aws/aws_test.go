@@ -308,7 +308,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 		policyProducer  KeyPolicyProducer
 		importKey       []byte
 		cleanupRequired bool
-		errExpected     bool
+		wantErr         bool
 	}{
 		"create new kek successful": {
 			client:         &stubAWSClient{createKeyID: "key-id"},
@@ -317,13 +317,13 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 		"CreateKeyPolicy fails on existing": {
 			client:         &stubAWSClient{},
 			policyProducer: &stubKeyPolicyProducer{createKeyPolicyErr: someErr},
-			errExpected:    true,
+			wantErr:        true,
 		},
 		"CreateKeyPolicy fails on new": {
 			client:          &stubAWSClient{describeKeyErr: &types.NotFoundException{}},
 			policyProducer:  &stubKeyPolicyProducer{createKeyPolicyErr: someErr},
 			cleanupRequired: true,
-			errExpected:     true,
+			wantErr:         true,
 		},
 		"PutKeyPolicy fails on new": {
 			client: &stubAWSClient{
@@ -333,7 +333,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 			},
 			policyProducer:  &stubKeyPolicyProducer{},
 			cleanupRequired: true,
-			errExpected:     true,
+			wantErr:         true,
 		},
 		"CreateAlias fails on new": {
 			client: &stubAWSClient{
@@ -343,17 +343,17 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 			},
 			policyProducer:  &stubKeyPolicyProducer{},
 			cleanupRequired: true,
-			errExpected:     true,
+			wantErr:         true,
 		},
 		"CreateKey fails on new": {
 			client:         &stubAWSClient{describeKeyErr: &types.NotFoundException{}, createKeyErr: someErr},
 			policyProducer: &stubKeyPolicyProducer{},
-			errExpected:    true,
+			wantErr:        true,
 		},
 		"DescribeKey fails": {
 			client:         &stubAWSClient{describeKeyErr: someErr},
 			policyProducer: &stubKeyPolicyProducer{},
-			errExpected:    true,
+			wantErr:        true,
 		},
 		"DescribeKey fails with not found error": {
 			client:         &stubAWSClient{describeKeyErr: &types.NotFoundException{}},
@@ -373,7 +373,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 			policyProducer:  &stubKeyPolicyProducer{},
 			importKey:       importKey,
 			cleanupRequired: true,
-			errExpected:     true,
+			wantErr:         true,
 		},
 		"ImportKeyMaterial fails on new": {
 			client: &stubAWSClient{
@@ -384,19 +384,19 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 			policyProducer:  &stubKeyPolicyProducer{},
 			importKey:       importKey,
 			cleanupRequired: true,
-			errExpected:     true,
+			wantErr:         true,
 		},
 		"GetParametersForImport fails on existing": {
 			client:         &stubAWSClient{getParametersForImportErr: someErr},
 			policyProducer: &stubKeyPolicyProducer{},
 			importKey:      importKey,
-			errExpected:    true,
+			wantErr:        true,
 		},
 		"ImportKeyMaterial fails on existing": {
 			client:         &stubAWSClient{importKeyMaterialErr: someErr},
 			policyProducer: &stubKeyPolicyProducer{},
 			importKey:      importKey,
-			errExpected:    true,
+			wantErr:        true,
 		},
 		"errors during cleanup don't stop execution": {
 			client: &stubAWSClient{
@@ -406,7 +406,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 			},
 			policyProducer:  &stubKeyPolicyProducer{createKeyPolicyErr: someErr},
 			cleanupRequired: true,
-			errExpected:     true,
+			wantErr:         true,
 		},
 	}
 
@@ -421,7 +421,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 			}
 
 			err := client.CreateKEK(context.Background(), "test-key", tc.importKey)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 				if tc.cleanupRequired {
 					assert.True(tc.client.cleanUpCalled, "failed to clean up")

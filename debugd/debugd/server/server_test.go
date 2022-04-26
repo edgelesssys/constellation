@@ -23,12 +23,12 @@ func TestUploadAuthorizedKeys(t *testing.T) {
 	endpoint := "192.0.2.1:4000"
 
 	testCases := map[string]struct {
-		ssh                    stubSSHDeployer
-		serviceManager         stubServiceManager
-		request                *pb.UploadAuthorizedKeysRequest
-		expectErr              bool
-		expectedResponseStatus pb.UploadAuthorizedKeysStatus
-		expectedKeys           []ssh.SSHKey
+		ssh                stubSSHDeployer
+		serviceManager     stubServiceManager
+		request            *pb.UploadAuthorizedKeysRequest
+		wantErr            bool
+		wantResponseStatus pb.UploadAuthorizedKeysStatus
+		wantKeys           []ssh.SSHKey
 	}{
 		"upload authorized keys works": {
 			request: &pb.UploadAuthorizedKeysRequest{
@@ -39,8 +39,8 @@ func TestUploadAuthorizedKeys(t *testing.T) {
 					},
 				},
 			},
-			expectedResponseStatus: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_SUCCESS,
-			expectedKeys: []ssh.SSHKey{
+			wantResponseStatus: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_SUCCESS,
+			wantKeys: []ssh.SSHKey{
 				{
 					Username: "testuser",
 					KeyValue: "teskey",
@@ -56,9 +56,9 @@ func TestUploadAuthorizedKeys(t *testing.T) {
 					},
 				},
 			},
-			ssh:                    stubSSHDeployer{deployErr: errors.New("ssh key deployment error")},
-			expectedResponseStatus: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_FAILURE,
-			expectedKeys: []ssh.SSHKey{
+			ssh:                stubSSHDeployer{deployErr: errors.New("ssh key deployment error")},
+			wantResponseStatus: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_FAILURE,
+			wantKeys: []ssh.SSHKey{
 				{
 					Username: "testuser",
 					KeyValue: "teskey",
@@ -86,13 +86,13 @@ func TestUploadAuthorizedKeys(t *testing.T) {
 
 			grpcServ.GracefulStop()
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedResponseStatus, resp.Status)
-			assert.ElementsMatch(tc.ssh.sshKeys, tc.expectedKeys)
+			assert.Equal(tc.wantResponseStatus, resp.Status)
+			assert.ElementsMatch(tc.ssh.sshKeys, tc.wantKeys)
 		})
 	}
 }
@@ -101,31 +101,31 @@ func TestUploadCoordinator(t *testing.T) {
 	endpoint := "192.0.2.1:4000"
 
 	testCases := map[string]struct {
-		ssh                    stubSSHDeployer
-		serviceManager         stubServiceManager
-		streamer               fakeStreamer
-		uploadChunks           [][]byte
-		expectErr              bool
-		expectedResponseStatus pb.UploadCoordinatorStatus
-		expectFile             bool
-		expectedChunks         [][]byte
+		ssh                stubSSHDeployer
+		serviceManager     stubServiceManager
+		streamer           fakeStreamer
+		uploadChunks       [][]byte
+		wantErr            bool
+		wantResponseStatus pb.UploadCoordinatorStatus
+		wantFile           bool
+		wantChunks         [][]byte
 	}{
 		"upload works": {
 			uploadChunks: [][]byte{
 				[]byte("test"),
 			},
-			expectFile: true,
-			expectedChunks: [][]byte{
+			wantFile: true,
+			wantChunks: [][]byte{
 				[]byte("test"),
 			},
-			expectedResponseStatus: pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_SUCCESS,
+			wantResponseStatus: pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_SUCCESS,
 		},
 		"recv fails": {
 			streamer: fakeStreamer{
 				writeStreamErr: errors.New("recv error"),
 			},
-			expectedResponseStatus: pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_UPLOAD_FAILED,
-			expectErr:              true,
+			wantResponseStatus: pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_UPLOAD_FAILED,
+			wantErr:            true,
 		},
 		"starting coordinator fails": {
 			uploadChunks: [][]byte{
@@ -134,11 +134,11 @@ func TestUploadCoordinator(t *testing.T) {
 			serviceManager: stubServiceManager{
 				systemdActionErr: errors.New("starting coordinator error"),
 			},
-			expectFile: true,
-			expectedChunks: [][]byte{
+			wantFile: true,
+			wantChunks: [][]byte{
 				[]byte("test"),
 			},
-			expectedResponseStatus: pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_START_FAILED,
+			wantResponseStatus: pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_START_FAILED,
 		},
 	}
 
@@ -164,14 +164,14 @@ func TestUploadCoordinator(t *testing.T) {
 
 			grpcServ.GracefulStop()
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedResponseStatus, resp.Status)
-			if tc.expectFile {
-				assert.Equal(tc.expectedChunks, tc.streamer.writeStreamChunks)
+			assert.Equal(tc.wantResponseStatus, resp.Status)
+			if tc.wantFile {
+				assert.Equal(tc.wantChunks, tc.streamer.writeStreamChunks)
 				assert.Equal("/opt/coordinator", tc.streamer.writeStreamFilename)
 			} else {
 				assert.Empty(tc.streamer.writeStreamChunks)
@@ -188,8 +188,8 @@ func TestDownloadCoordinator(t *testing.T) {
 		serviceManager stubServiceManager
 		request        *pb.DownloadCoordinatorRequest
 		streamer       fakeStreamer
-		expectErr      bool
-		expectedChunks [][]byte
+		wantErr        bool
+		wantChunks     [][]byte
 	}{
 		"download works": {
 			request: &pb.DownloadCoordinatorRequest{},
@@ -198,8 +198,8 @@ func TestDownloadCoordinator(t *testing.T) {
 					[]byte("test"),
 				},
 			},
-			expectErr: false,
-			expectedChunks: [][]byte{
+			wantErr: false,
+			wantChunks: [][]byte{
 				[]byte("test"),
 			},
 		},
@@ -208,7 +208,7 @@ func TestDownloadCoordinator(t *testing.T) {
 			streamer: fakeStreamer{
 				readStreamErr: errors.New("read coordinator fails"),
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 	}
 
@@ -232,12 +232,12 @@ func TestDownloadCoordinator(t *testing.T) {
 			chunks, err := fakeRead(stream)
 			grpcServ.GracefulStop()
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.expectedChunks, chunks)
+			assert.Equal(tc.wantChunks, chunks)
 			assert.Equal("/opt/coordinator", tc.streamer.readStreamFilename)
 		})
 	}
@@ -246,12 +246,12 @@ func TestDownloadCoordinator(t *testing.T) {
 func TestUploadSystemServiceUnits(t *testing.T) {
 	endpoint := "192.0.2.1:4000"
 	testCases := map[string]struct {
-		ssh                    stubSSHDeployer
-		serviceManager         stubServiceManager
-		request                *pb.UploadSystemdServiceUnitsRequest
-		expectErr              bool
-		expectedResponseStatus pb.UploadSystemdServiceUnitsStatus
-		expectedUnitFiles      []deploy.SystemdUnit
+		ssh                stubSSHDeployer
+		serviceManager     stubServiceManager
+		request            *pb.UploadSystemdServiceUnitsRequest
+		wantErr            bool
+		wantResponseStatus pb.UploadSystemdServiceUnitsStatus
+		wantUnitFiles      []deploy.SystemdUnit
 	}{
 		"upload systemd service units": {
 			request: &pb.UploadSystemdServiceUnitsRequest{
@@ -262,8 +262,8 @@ func TestUploadSystemServiceUnits(t *testing.T) {
 					},
 				},
 			},
-			expectedResponseStatus: pb.UploadSystemdServiceUnitsStatus_UPLOAD_SYSTEMD_SERVICE_UNITS_SUCCESS,
-			expectedUnitFiles: []deploy.SystemdUnit{
+			wantResponseStatus: pb.UploadSystemdServiceUnitsStatus_UPLOAD_SYSTEMD_SERVICE_UNITS_SUCCESS,
+			wantUnitFiles: []deploy.SystemdUnit{
 				{
 					Name:     "test.service",
 					Contents: "testcontents",
@@ -282,8 +282,8 @@ func TestUploadSystemServiceUnits(t *testing.T) {
 			serviceManager: stubServiceManager{
 				writeSystemdUnitFileErr: errors.New("write error"),
 			},
-			expectedResponseStatus: pb.UploadSystemdServiceUnitsStatus_UPLOAD_SYSTEMD_SERVICE_UNITS_FAILURE,
-			expectedUnitFiles: []deploy.SystemdUnit{
+			wantResponseStatus: pb.UploadSystemdServiceUnitsStatus_UPLOAD_SYSTEMD_SERVICE_UNITS_FAILURE,
+			wantUnitFiles: []deploy.SystemdUnit{
 				{
 					Name:     "test.service",
 					Contents: "testcontents",
@@ -310,14 +310,14 @@ func TestUploadSystemServiceUnits(t *testing.T) {
 
 			grpcServ.GracefulStop()
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
 			require.NotNil(resp.Status)
-			assert.Equal(tc.expectedResponseStatus, resp.Status)
-			assert.ElementsMatch(tc.expectedUnitFiles, tc.serviceManager.unitFiles)
+			assert.Equal(tc.wantResponseStatus, resp.Status)
+			assert.ElementsMatch(tc.wantUnitFiles, tc.serviceManager.unitFiles)
 		})
 	}
 }

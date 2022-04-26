@@ -57,7 +57,7 @@ func TestCreateInstances(t *testing.T) {
 		instanceGroupManagersAPI instanceGroupManagersAPI
 		input                    CreateInstancesInput
 		network                  string
-		errExpected              bool
+		wantErr                  bool
 	}{
 		"successful create": {
 			instanceAPI:              stubInstanceAPI{listIterator: &stubInstanceIterator{instances: testInstances}},
@@ -75,7 +75,7 @@ func TestCreateInstances(t *testing.T) {
 			instanceTemplateAPI:      stubInstanceTemplateAPI{},
 			instanceGroupManagersAPI: stubInstanceGroupManagersAPI{listIterator: &stubManagedInstanceIterator{instances: testManagedInstances}},
 			input:                    testInput,
-			errExpected:              true,
+			wantErr:                  true,
 		},
 		"failed wait zonal op": {
 			instanceAPI:              stubInstanceAPI{listIterator: &stubInstanceIterator{instances: testInstances}},
@@ -85,7 +85,7 @@ func TestCreateInstances(t *testing.T) {
 			instanceGroupManagersAPI: stubInstanceGroupManagersAPI{listIterator: &stubManagedInstanceIterator{instances: testManagedInstances}},
 			network:                  "network",
 			input:                    testInput,
-			errExpected:              true,
+			wantErr:                  true,
 		},
 		"failed wait global op": {
 			instanceAPI:              stubInstanceAPI{listIterator: &stubInstanceIterator{instances: testInstances}},
@@ -95,7 +95,7 @@ func TestCreateInstances(t *testing.T) {
 			instanceGroupManagersAPI: stubInstanceGroupManagersAPI{listIterator: &stubManagedInstanceIterator{instances: testManagedInstances}},
 			network:                  "network",
 			input:                    testInput,
-			errExpected:              true,
+			wantErr:                  true,
 		},
 		"failed insert template": {
 			instanceAPI:              stubInstanceAPI{listIterator: &stubInstanceIterator{instances: testInstances}},
@@ -105,7 +105,7 @@ func TestCreateInstances(t *testing.T) {
 			instanceGroupManagersAPI: stubInstanceGroupManagersAPI{listIterator: &stubManagedInstanceIterator{instances: testManagedInstances}},
 			input:                    testInput,
 			network:                  "network",
-			errExpected:              true,
+			wantErr:                  true,
 		},
 		"failed insert instanceGroupManager": {
 			instanceAPI:              stubInstanceAPI{listIterator: &stubInstanceIterator{instances: testInstances}},
@@ -115,7 +115,7 @@ func TestCreateInstances(t *testing.T) {
 			instanceGroupManagersAPI: stubInstanceGroupManagersAPI{insertErr: someErr},
 			network:                  "network",
 			input:                    testInput,
-			errExpected:              true,
+			wantErr:                  true,
 		},
 		"failed instanceGroupManager iterator": {
 			instanceAPI:              stubInstanceAPI{listIterator: &stubInstanceIterator{instances: testInstances}},
@@ -125,7 +125,7 @@ func TestCreateInstances(t *testing.T) {
 			instanceGroupManagersAPI: stubInstanceGroupManagersAPI{listIterator: &stubManagedInstanceIterator{nextErr: someErr}},
 			network:                  "network",
 			input:                    testInput,
-			errExpected:              true,
+			wantErr:                  true,
 		},
 		"failed instance iterator": {
 			instanceAPI:              stubInstanceAPI{listIterator: &stubInstanceIterator{nextErr: someErr}},
@@ -135,7 +135,7 @@ func TestCreateInstances(t *testing.T) {
 			instanceGroupManagersAPI: stubInstanceGroupManagersAPI{listIterator: &stubManagedInstanceIterator{instances: testManagedInstances}},
 			network:                  "network",
 			input:                    testInput,
-			errExpected:              true,
+			wantErr:                  true,
 		},
 	}
 
@@ -161,7 +161,7 @@ func TestCreateInstances(t *testing.T) {
 				coordinators:             make(gcp.Instances),
 			}
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(client.CreateInstances(ctx, tc.input))
 			} else {
 				assert.NoError(client.CreateInstances(ctx, tc.input))
@@ -187,7 +187,7 @@ func TestTerminateInstances(t *testing.T) {
 		instanceGroupManagersAPI instanceGroupManagersAPI
 
 		missingNodeInstanceGroup bool
-		errExpected              bool
+		wantErr                  bool
 	}{
 		"successful terminate": {
 			operationZoneAPI:         stubOperationZoneAPI{},
@@ -207,14 +207,14 @@ func TestTerminateInstances(t *testing.T) {
 			operationGlobalAPI:       stubOperationGlobalAPI{},
 			instanceTemplateAPI:      stubInstanceTemplateAPI{},
 			instanceGroupManagersAPI: stubInstanceGroupManagersAPI{deleteErr: someErr},
-			errExpected:              true,
+			wantErr:                  true,
 		},
 		"fail delete instanceTemplate": {
 			operationZoneAPI:         stubOperationZoneAPI{},
 			operationGlobalAPI:       stubOperationGlobalAPI{},
 			instanceTemplateAPI:      stubInstanceTemplateAPI{deleteErr: someErr},
 			instanceGroupManagersAPI: stubInstanceGroupManagersAPI{},
-			errExpected:              true,
+			wantErr:                  true,
 		},
 	}
 	for name, tc := range testCases {
@@ -245,7 +245,7 @@ func TestTerminateInstances(t *testing.T) {
 				client.nodes = gcp.Instances{}
 			}
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(client.TerminateInstances(ctx))
 			} else {
 				assert.NoError(client.TerminateInstances(ctx))

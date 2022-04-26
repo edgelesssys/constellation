@@ -75,7 +75,7 @@ func TestFirewallAzure(t *testing.T) {
 			Port:        4433,
 		},
 	}
-	expectedOutput := []*armnetwork.SecurityRule{
+	wantOutput := []*armnetwork.SecurityRule{
 		{
 			Name: proto.String("perm1"),
 			Properties: &armnetwork.SecurityRulePropertiesFormat{
@@ -121,7 +121,7 @@ func TestFirewallAzure(t *testing.T) {
 	}
 
 	out := input.Azure()
-	assert.Equal(expectedOutput, out)
+	assert.Equal(wantOutput, out)
 }
 
 func TestIPPermissonsToAWS(t *testing.T) {
@@ -147,7 +147,7 @@ func TestIPPermissonsToAWS(t *testing.T) {
 			Port:        4433,
 		},
 	}
-	expectedOutput := []ec2types.IpPermission{
+	wantOutput := []ec2types.IpPermission{
 		{
 			FromPort:   proto.Int32(int32(22)),
 			ToPort:     proto.Int32(int32(22)),
@@ -184,5 +184,5 @@ func TestIPPermissonsToAWS(t *testing.T) {
 	}
 
 	out := input.AWS()
-	assert.Equal(expectedOutput, out)
+	assert.Equal(wantOutput, out)
 }

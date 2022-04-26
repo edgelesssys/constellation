@@ -11,29 +11,29 @@ import (
 
 func TestGetGCPNonCVMValidator(t *testing.T) {
 	testCases := map[string]struct {
-		ownerID     string
-		clusterID   string
-		errExpected bool
+		ownerID   string
+		clusterID string
+		wantErr   bool
 	}{
 		"no input": {
-			ownerID:     "",
-			clusterID:   "",
-			errExpected: true,
+			ownerID:   "",
+			clusterID: "",
+			wantErr:   true,
 		},
 		"unencoded secret ID": {
-			ownerID:     "owner-id",
-			clusterID:   base64.StdEncoding.EncodeToString([]byte("unique-id")),
-			errExpected: true,
+			ownerID:   "owner-id",
+			clusterID: base64.StdEncoding.EncodeToString([]byte("unique-id")),
+			wantErr:   true,
 		},
 		"unencoded cluster ID": {
-			ownerID:     base64.StdEncoding.EncodeToString([]byte("owner-id")),
-			clusterID:   "unique-id",
-			errExpected: true,
+			ownerID:   base64.StdEncoding.EncodeToString([]byte("owner-id")),
+			clusterID: "unique-id",
+			wantErr:   true,
 		},
 		"correct input": {
-			ownerID:     base64.StdEncoding.EncodeToString([]byte("owner-id")),
-			clusterID:   base64.StdEncoding.EncodeToString([]byte("unique-id")),
-			errExpected: false,
+			ownerID:   base64.StdEncoding.EncodeToString([]byte("owner-id")),
+			clusterID: base64.StdEncoding.EncodeToString([]byte("unique-id")),
+			wantErr:   false,
 		},
 	}
 
@@ -53,7 +53,7 @@ func TestGetGCPNonCVMValidator(t *testing.T) {
 			cmd.SetErr(&errOut)
 
 			_, err := getGCPNonCVMValidator(cmd, map[uint32][]byte{})
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)

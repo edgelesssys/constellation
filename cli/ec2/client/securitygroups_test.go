@@ -41,55 +41,55 @@ func TestCreateSecurityGroup(t *testing.T) {
 	var noErr error
 
 	testCases := map[string]struct {
-		api                   stubAPI
-		securityGroup         string
-		input                 SecurityGroupInput
-		errExpected           bool
-		securityGroupExpected string
+		api               stubAPI
+		securityGroup     string
+		input             SecurityGroupInput
+		wantErr           bool
+		wantSecurityGroup string
 	}{
 		"create security group": {
-			api:                   stubAPI{securityGroup: types.SecurityGroup{GroupId: aws.String("sg-test")}},
-			input:                 testInput,
-			securityGroupExpected: "sg-test",
+			api:               stubAPI{securityGroup: types.SecurityGroup{GroupId: aws.String("sg-test")}},
+			input:             testInput,
+			wantSecurityGroup: "sg-test",
 		},
 		"create security group without permissions": {
-			api:                   stubAPI{securityGroup: types.SecurityGroup{GroupId: aws.String("sg-test")}},
-			input:                 SecurityGroupInput{},
-			securityGroupExpected: "sg-test",
+			api:               stubAPI{securityGroup: types.SecurityGroup{GroupId: aws.String("sg-test")}},
+			input:             SecurityGroupInput{},
+			wantSecurityGroup: "sg-test",
 		},
 		"client already has security group": {
 			api:           stubAPI{},
 			securityGroup: "sg-test",
 			input:         testInput,
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"create returns nil security group ID": {
-			api:         stubAPI{securityGroup: types.SecurityGroup{GroupId: nil}},
-			input:       testInput,
-			errExpected: true,
+			api:     stubAPI{securityGroup: types.SecurityGroup{GroupId: nil}},
+			input:   testInput,
+			wantErr: true,
 		},
 		"create API error": {
-			api:         stubAPI{createSecurityGroupErr: someErr},
-			input:       testInput,
-			errExpected: true,
+			api:     stubAPI{createSecurityGroupErr: someErr},
+			input:   testInput,
+			wantErr: true,
 		},
 		"create DryRun API error": {
-			api:         stubAPI{createSecurityGroupDryRunErr: &someErr},
-			input:       testInput,
-			errExpected: true,
+			api:     stubAPI{createSecurityGroupDryRunErr: &someErr},
+			input:   testInput,
+			wantErr: true,
 		},
 		"create DryRun missing expected error": {
-			api:         stubAPI{createSecurityGroupDryRunErr: &noErr},
-			input:       testInput,
-			errExpected: true,
+			api:     stubAPI{createSecurityGroupDryRunErr: &noErr},
+			input:   testInput,
+			wantErr: true,
 		},
 		"authorize error": {
 			api: stubAPI{
 				securityGroup:                    types.SecurityGroup{GroupId: aws.String("sg-test")},
 				authorizeSecurityGroupIngressErr: someErr,
 			},
-			input:       testInput,
-			errExpected: true,
+			input:   testInput,
+			wantErr: true,
 		},
 	}
 
@@ -103,11 +103,11 @@ func TestCreateSecurityGroup(t *testing.T) {
 			client.securityGroup = tc.securityGroup
 
 			err = client.CreateSecurityGroup(context.Background(), tc.input)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				assert.Equal(tc.securityGroupExpected, client.securityGroup)
+				assert.Equal(tc.wantSecurityGroup, client.securityGroup)
 			}
 		})
 	}
@@ -120,7 +120,7 @@ func TestDeleteSecurityGroup(t *testing.T) {
 	testCases := map[string]struct {
 		api           stubAPI
 		securityGroup string
-		errExpected   bool
+		wantErr       bool
 	}{
 		"delete security group": {
 			api:           stubAPI{},
@@ -132,17 +132,17 @@ func TestDeleteSecurityGroup(t *testing.T) {
 		"delete API error": {
 			api:           stubAPI{deleteSecurityGroupErr: someErr},
 			securityGroup: "sg-test",
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"delete DryRun API error": {
 			api:           stubAPI{deleteSecurityGroupDryRunErr: &someErr},
 			securityGroup: "sg-test",
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"delete DryRun missing expected error": {
 			api:           stubAPI{deleteSecurityGroupDryRunErr: &noErr},
 			securityGroup: "sg-test",
-			errExpected:   true,
+			wantErr:       true,
 		},
 	}
 
@@ -156,7 +156,7 @@ func TestDeleteSecurityGroup(t *testing.T) {
 			client.securityGroup = tc.securityGroup
 
 			err = client.DeleteSecurityGroup(context.Background())
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -198,54 +198,54 @@ func TestAuthorizeSecurityGroup(t *testing.T) {
 		api           stubAPI
 		securityGroup string
 		input         SecurityGroupInput
-		errExpected   bool
+		wantErr       bool
 	}{
 		"authorize": {
 			api:           stubAPI{},
 			securityGroup: "sg-test",
 			input:         testInput,
-			errExpected:   false,
+			wantErr:       false,
 		},
 		"client without security group": {
-			api:         stubAPI{},
-			input:       testInput,
-			errExpected: true,
+			api:     stubAPI{},
+			input:   testInput,
+			wantErr: true,
 		},
 		"authorizeIngress API error": {
 			api:           stubAPI{authorizeSecurityGroupIngressErr: someErr},
 			securityGroup: "sg-test",
 			input:         testInput,
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"authorizeIngress DryRun API error": {
 			api:           stubAPI{authorizeSecurityGroupIngressDryRunErr: &someErr},
 			securityGroup: "sg-test",
 			input:         testInput,
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"authorizeIngress DryRun missing expected error": {
 			api:           stubAPI{authorizeSecurityGroupIngressDryRunErr: &noErr},
 			securityGroup: "sg-test",
 			input:         testInput,
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"authorizeEgress API error": {
 			api:           stubAPI{authorizeSecurityGroupEgressErr: someErr},
 			securityGroup: "sg-test",
 			input:         testInput,
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"authorizeEgress DryRun API error": {
 			api:           stubAPI{authorizeSecurityGroupEgressDryRunErr: &someErr},
 			securityGroup: "sg-test",
 			input:         testInput,
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"authorizeEgress DryRun missing expected error": {
 			api:           stubAPI{authorizeSecurityGroupEgressDryRunErr: &noErr},
 			securityGroup: "sg-test",
 			input:         testInput,
-			errExpected:   true,
+			wantErr:       true,
 		},
 	}
 
@@ -259,7 +259,7 @@ func TestAuthorizeSecurityGroup(t *testing.T) {
 			client.securityGroup = tc.securityGroup
 
 			err = client.authorizeSecurityGroup(context.Background(), tc.input)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)

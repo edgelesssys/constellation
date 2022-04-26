@@ -30,39 +30,39 @@ func TestActivateAsAdditionalCoordinator(t *testing.T) {
 	testCases := map[string]struct {
 		coordinators               stubPeer
 		state                      state.State
-		expectedState              state.State
+		wantState                  state.State
 		vpnapi                     stubVPNAPI
-		expectErr                  bool
+		wantErr                    bool
 		switchToPersistentStoreErr error
 		k8sJoinargsErr             error
 		k8sCertKeyErr              error
 	}{
 		"basic": {
-			coordinators:  testCoord1,
-			state:         state.AcceptingInit,
-			expectedState: state.ActivatingNodes,
-			vpnapi:        stubVPN,
+			coordinators: testCoord1,
+			state:        state.AcceptingInit,
+			wantState:    state.ActivatingNodes,
+			vpnapi:       stubVPN,
 		},
 		"already activated": {
-			state:         state.ActivatingNodes,
-			expectErr:     true,
-			expectedState: state.ActivatingNodes,
-			vpnapi:        stubVPN,
+			state:     state.ActivatingNodes,
+			wantErr:   true,
+			wantState: state.ActivatingNodes,
+			vpnapi:    stubVPN,
 		},
 		"SwitchToPersistentStore error": {
 			coordinators:               testCoord1,
 			state:                      state.AcceptingInit,
 			switchToPersistentStoreErr: someErr,
-			expectErr:                  true,
-			expectedState:              state.Failed,
+			wantErr:                    true,
+			wantState:                  state.Failed,
 			vpnapi:                     stubVPN,
 		},
 		"GetK8SJoinArgs error": {
 			coordinators:               testCoord1,
 			state:                      state.AcceptingInit,
 			switchToPersistentStoreErr: someErr,
-			expectErr:                  true,
-			expectedState:              state.Failed,
+			wantErr:                    true,
+			wantState:                  state.Failed,
 			vpnapi:                     stubVPN,
 			k8sJoinargsErr:             someErr,
 		},
@@ -70,8 +70,8 @@ func TestActivateAsAdditionalCoordinator(t *testing.T) {
 			coordinators:               testCoord1,
 			state:                      state.AcceptingInit,
 			switchToPersistentStoreErr: someErr,
-			expectErr:                  true,
-			expectedState:              state.Failed,
+			wantErr:                    true,
+			wantState:                  state.Failed,
 			vpnapi:                     stubVPN,
 			k8sCertKeyErr:              someErr,
 		},
@@ -113,9 +113,9 @@ func TestActivateAsAdditionalCoordinator(t *testing.T) {
 				ClusterId:                 core.clusterID,
 			})
 
-			assert.Equal(tc.expectedState, core.state)
+			assert.Equal(tc.wantState, core.state)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -135,21 +135,21 @@ func TestTriggerCoordinatorUpdate(t *testing.T) {
 		peers        []peer.Peer
 		state        state.State
 		getUpdateErr error
-		expectErr    bool
+		wantErr      bool
 	}{
 		"basic": {
 			peers: peers,
 			state: state.ActivatingNodes,
 		},
 		"not activated": {
-			peers:     peers,
-			state:     state.AcceptingInit,
-			expectErr: true,
+			peers:   peers,
+			state:   state.AcceptingInit,
+			wantErr: true,
 		},
 		"wrong peer kind": {
-			peers:     peers,
-			state:     state.IsNode,
-			expectErr: true,
+			peers:   peers,
+			state:   state.IsNode,
+			wantErr: true,
 		},
 	}
 
@@ -168,7 +168,7 @@ func TestTriggerCoordinatorUpdate(t *testing.T) {
 			api := New(logger, core, dialer, nil, nil, nil, nil)
 
 			_, err := api.TriggerCoordinatorUpdate(context.Background(), &pubproto.TriggerCoordinatorUpdateRequest{})
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -194,33 +194,33 @@ func TestActivateAdditionalCoordinators(t *testing.T) {
 		state           state.State
 		activateErr     error
 		getPublicKeyErr error
-		expectErr       bool
-		expectedState   state.State
+		wantErr         bool
+		wantState       state.State
 	}{
 		"basic": {
-			coordinators:  testCoord1,
-			state:         state.ActivatingNodes,
-			expectedState: state.ActivatingNodes,
+			coordinators: testCoord1,
+			state:        state.ActivatingNodes,
+			wantState:    state.ActivatingNodes,
 		},
 		"Activation Err": {
-			coordinators:  testCoord1,
-			state:         state.ActivatingNodes,
-			expectedState: state.ActivatingNodes,
-			activateErr:   someErr,
-			expectErr:     true,
+			coordinators: testCoord1,
+			state:        state.ActivatingNodes,
+			wantState:    state.ActivatingNodes,
+			activateErr:  someErr,
+			wantErr:      true,
 		},
 		"Not in exprected state": {
-			coordinators:  testCoord1,
-			state:         state.AcceptingInit,
-			expectedState: state.AcceptingInit,
-			expectErr:     true,
+			coordinators: testCoord1,
+			state:        state.AcceptingInit,
+			wantState:    state.AcceptingInit,
+			wantErr:      true,
 		},
 		"getPeerPublicKey error": {
 			coordinators:    testCoord1,
 			state:           state.ActivatingNodes,
-			expectedState:   state.ActivatingNodes,
+			wantState:       state.ActivatingNodes,
 			getPublicKeyErr: someErr,
-			expectErr:       true,
+			wantErr:         true,
 		},
 	}
 
@@ -254,9 +254,9 @@ func TestActivateAdditionalCoordinators(t *testing.T) {
 
 			_, err := api.ActivateAdditionalCoordinator(context.Background(), &pubproto.ActivateAdditionalCoordinatorRequest{CoordinatorPublicIp: tc.coordinators.peer.PublicIP})
 
-			assert.Equal(tc.expectedState, core.state)
+			assert.Equal(tc.wantState, core.state)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
@@ -272,7 +272,7 @@ func TestGetPeerVPNPublicKey(t *testing.T) {
 	testCases := map[string]struct {
 		coordinator     stubPeer
 		getVPNPubKeyErr error
-		expectErr       bool
+		wantErr         bool
 	}{
 		"basic": {
 			coordinator: testCoord,
@@ -280,7 +280,7 @@ func TestGetPeerVPNPublicKey(t *testing.T) {
 		"Activation Err": {
 			coordinator:     testCoord,
 			getVPNPubKeyErr: someErr,
-			expectErr:       true,
+			wantErr:         true,
 		},
 	}
 
@@ -304,7 +304,7 @@ func TestGetPeerVPNPublicKey(t *testing.T) {
 
 			resp, err := api.GetPeerVPNPublicKey(context.Background(), &pubproto.GetPeerVPNPublicKeyRequest{})
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}

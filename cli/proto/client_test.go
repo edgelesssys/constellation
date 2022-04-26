@@ -73,42 +73,42 @@ func TestActivate(t *testing.T) {
 		avpn          *stubAVPNClient
 		userPublicKey string
 		ips           []string
-		errExpected   bool
+		wantErr       bool
 	}{
 		"normal activation": {
 			avpn:          &stubAVPNClient{},
 			userPublicKey: testKey,
 			ips:           []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
-			errExpected:   false,
+			wantErr:       false,
 		},
 		"client without avpn": {
 			userPublicKey: testKey,
 			ips:           []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"empty public key parameter": {
 			avpn:          &stubAVPNClient{},
 			userPublicKey: "",
 			ips:           []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"invalid public key parameter": {
 			avpn:          &stubAVPNClient{},
 			userPublicKey: "invalid Key",
 			ips:           []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"empty ips parameter": {
 			avpn:          &stubAVPNClient{},
 			userPublicKey: testKey,
 			ips:           []string{},
-			errExpected:   true,
+			wantErr:       true,
 		},
 		"fail ActivateAsCoordinator": {
 			avpn:          &stubAVPNClient{activateAsCoordinatorErr: someErr},
 			userPublicKey: testKey,
 			ips:           []string{"192.0.2.1", "192.0.2.1", "192.0.2.1"},
-			errExpected:   true,
+			wantErr:       true,
 		},
 	}
 
@@ -121,7 +121,7 @@ func TestActivate(t *testing.T) {
 				client.avpn = tc.avpn
 			}
 			_, err := client.Activate(context.Background(), []byte(tc.userPublicKey), []byte("Constellation"), tc.ips, nil, nil, "serviceaccount://test")
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)

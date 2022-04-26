@@ -19,8 +19,8 @@ import (
 
 func TestGceNonHostInfoEvent(t *testing.T) {
 	testCases := map[string]struct {
-		attDoc      vtpm.AttestationDocument
-		errExpected bool
+		attDoc  vtpm.AttestationDocument
+		wantErr bool
 	}{
 		"is cvm": {
 			attDoc: vtpm.AttestationDocument{
@@ -33,7 +33,7 @@ func TestGceNonHostInfoEvent(t *testing.T) {
 			attDoc: vtpm.AttestationDocument{
 				Attestation: nil,
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"missing GCE Non-Host info event": {
 			attDoc: vtpm.AttestationDocument{
@@ -41,7 +41,7 @@ func TestGceNonHostInfoEvent(t *testing.T) {
 					EventLog: []byte("No GCE Event"),
 				},
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"not a cvm": {
 			attDoc: vtpm.AttestationDocument{
@@ -49,7 +49,7 @@ func TestGceNonHostInfoEvent(t *testing.T) {
 					EventLog: []byte("\x00\x00\x00GCE NonHostInfo\x00\x00\x00\x00"),
 				},
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 
@@ -57,7 +57,7 @@ func TestGceNonHostInfoEvent(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 			err := gceNonHostInfoEvent(tc.attDoc)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -85,7 +85,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 	testCases := map[string]struct {
 		instanceInfo []byte
 		getClient    func(ctx context.Context, opts ...option.ClientOption) (gcpRestClient, error)
-		errExpected  bool
+		wantErr      bool
 	}{
 		"success": {
 			instanceInfo: mustMarshal(attest.GCEInstanceInfo{}, require.New(t)),
@@ -94,7 +94,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 					EkPub: proto.String(testPubK),
 				},
 			}, nil, nil),
-			errExpected: false,
+			wantErr: false,
 		},
 		"Unmarshal error": {
 			instanceInfo: []byte("error"),
@@ -103,12 +103,12 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 					EkPub: proto.String(testPubK),
 				},
 			}, nil, nil),
-			errExpected: true,
+			wantErr: true,
 		},
 		"empty signing key": {
 			instanceInfo: mustMarshal(attest.GCEInstanceInfo{}, require.New(t)),
 			getClient:    prepareFakeClient(&computepb.ShieldedInstanceIdentity{}, nil, nil),
-			errExpected:  true,
+			wantErr:      true,
 		},
 		"new client error": {
 			instanceInfo: mustMarshal(attest.GCEInstanceInfo{}, require.New(t)),
@@ -117,7 +117,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 					EkPub: proto.String(testPubK),
 				},
 			}, errors.New("error"), nil),
-			errExpected: true,
+			wantErr: true,
 		},
 		"GetShieldedInstanceIdentity error": {
 			instanceInfo: mustMarshal(attest.GCEInstanceInfo{}, require.New(t)),
@@ -126,7 +126,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 					EkPub: proto.String(testPubK),
 				},
 			}, nil, errors.New("error")),
-			errExpected: true,
+			wantErr: true,
 		},
 		"Decode error": {
 			instanceInfo: mustMarshal(attest.GCEInstanceInfo{}, require.New(t)),
@@ -135,7 +135,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 					EkPub: proto.String("Not a public key"),
 				},
 			}, nil, nil),
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 
@@ -145,7 +145,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 
 			out, err := trustedKeyFromGCEAPI(tc.getClient)(nil, tc.instanceInfo)
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)

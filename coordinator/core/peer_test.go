@@ -19,32 +19,32 @@ func TestGetPeers(t *testing.T) {
 	testCases := map[string]struct {
 		storePeers      []peer.Peer
 		resourceVersion int
-		expectedPeers   []peer.Peer
+		wantPeers       []peer.Peer
 	}{
 		"request version 0": { // store has version 2
 			storePeers:      []peer.Peer{peer1, peer2},
 			resourceVersion: 0,
-			expectedPeers:   []peer.Peer{peer1, peer2},
+			wantPeers:       []peer.Peer{peer1, peer2},
 		},
 		"request version 1": {
 			storePeers:      []peer.Peer{peer1, peer2},
 			resourceVersion: 1,
-			expectedPeers:   []peer.Peer{peer1, peer2},
+			wantPeers:       []peer.Peer{peer1, peer2},
 		},
 		"request version 2": {
 			storePeers:      []peer.Peer{peer1, peer2},
 			resourceVersion: 2,
-			expectedPeers:   nil,
+			wantPeers:       nil,
 		},
 		"request version 3": {
 			storePeers:      []peer.Peer{peer1, peer2},
 			resourceVersion: 3,
-			expectedPeers:   []peer.Peer{peer1, peer2},
+			wantPeers:       []peer.Peer{peer1, peer2},
 		},
 		"request version 4": {
 			storePeers:      []peer.Peer{peer1, peer2},
 			resourceVersion: 4,
-			expectedPeers:   []peer.Peer{peer1, peer2},
+			wantPeers:       []peer.Peer{peer1, peer2},
 		},
 	}
 
@@ -66,7 +66,7 @@ func TestGetPeers(t *testing.T) {
 			require.NoError(err)
 
 			assert.Equal(2, resourceVersion)
-			assert.ElementsMatch(tc.expectedPeers, peers)
+			assert.ElementsMatch(tc.wantPeers, peers)
 		})
 	}
 }
@@ -78,33 +78,33 @@ func TestAddPeer(t *testing.T) {
 		VPNIP:     "192.0.2.21",
 		VPNPubKey: []byte{2, 3, 4},
 	}
-	expectedVPNPeers := []stubVPNPeer{{
+	wantVPNPeers := []stubVPNPeer{{
 		pubKey:   testPeer.VPNPubKey,
 		publicIP: "192.0.2.11",
 		vpnIP:    testPeer.VPNIP,
 	}}
 
 	testCases := map[string]struct {
-		peer               peer.Peer
-		vpn                stubVPN
-		expectErr          bool
-		expectedVPNPeers   []stubVPNPeer
-		expectedStorePeers []peer.Peer
+		peer           peer.Peer
+		vpn            stubVPN
+		wantErr        bool
+		wantVPNPeers   []stubVPNPeer
+		wantStorePeers []peer.Peer
 	}{
 		"add peer": {
-			peer:               testPeer,
-			expectedVPNPeers:   expectedVPNPeers,
-			expectedStorePeers: []peer.Peer{testPeer},
+			peer:           testPeer,
+			wantVPNPeers:   wantVPNPeers,
+			wantStorePeers: []peer.Peer{testPeer},
 		},
 		"don't add self to vpn": {
-			peer:               testPeer,
-			vpn:                stubVPN{interfaceIP: testPeer.VPNIP},
-			expectedStorePeers: []peer.Peer{testPeer},
+			peer:           testPeer,
+			vpn:            stubVPN{interfaceIP: testPeer.VPNIP},
+			wantStorePeers: []peer.Peer{testPeer},
 		},
 		"vpn add peer error": {
-			peer:      testPeer,
-			vpn:       stubVPN{addPeerErr: someErr},
-			expectErr: true,
+			peer:    testPeer,
+			vpn:     stubVPN{addPeerErr: someErr},
+			wantErr: true,
 		},
 	}
 
@@ -118,17 +118,17 @@ func TestAddPeer(t *testing.T) {
 
 			err = core.AddPeer(tc.peer)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
 
-			assert.Equal(tc.expectedVPNPeers, tc.vpn.peers)
+			assert.Equal(tc.wantVPNPeers, tc.vpn.peers)
 
 			actualStorePeers, err := core.data().GetPeers()
 			require.NoError(err)
-			assert.Equal(tc.expectedStorePeers, actualStorePeers)
+			assert.Equal(tc.wantStorePeers, actualStorePeers)
 		})
 	}
 }

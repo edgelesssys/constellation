@@ -13,8 +13,8 @@ import (
 
 func TestGetGCEInstanceInfo(t *testing.T) {
 	testCases := map[string]struct {
-		client      fakeMetadataClient
-		errExpected bool
+		client  fakeMetadataClient
+		wantErr bool
 	}{
 		"success": {
 			client: fakeMetadataClient{
@@ -22,7 +22,7 @@ func TestGetGCEInstanceInfo(t *testing.T) {
 				instanceNameString: "instanceName",
 				zoneString:         "zone",
 			},
-			errExpected: false,
+			wantErr: false,
 		},
 		"projectID error": {
 			client: fakeMetadataClient{
@@ -31,7 +31,7 @@ func TestGetGCEInstanceInfo(t *testing.T) {
 				zoneString:         "zone",
 				projecIdErr:        errors.New("error"),
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"instanceName error": {
 			client: fakeMetadataClient{
@@ -40,7 +40,7 @@ func TestGetGCEInstanceInfo(t *testing.T) {
 				zoneString:         "zone",
 				instanceNameErr:    errors.New("error"),
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"zone error": {
 			client: fakeMetadataClient{
@@ -49,7 +49,7 @@ func TestGetGCEInstanceInfo(t *testing.T) {
 				zoneString:         "zone",
 				zoneErr:            errors.New("error"),
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 
@@ -60,7 +60,7 @@ func TestGetGCEInstanceInfo(t *testing.T) {
 			var tpm io.ReadWriteCloser
 
 			out, err := getGCEInstanceInfo(tc.client)(tpm)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)

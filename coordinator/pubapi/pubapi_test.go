@@ -23,14 +23,14 @@ func TestGetRecoveryPeerFromContext(t *testing.T) {
 	assert := assert.New(t)
 	testIP := "192.0.2.1"
 	testPort := 1234
-	expectedPeer := net.JoinHostPort(testIP, "9000")
+	wantPeer := net.JoinHostPort(testIP, "9000")
 
 	addr := &net.TCPAddr{IP: net.ParseIP(testIP), Port: testPort}
 	ctx := grpcpeer.NewContext(context.Background(), &grpcpeer.Peer{Addr: addr})
 
 	peer, err := GetRecoveryPeerFromContext(ctx)
 	assert.NoError(err)
-	assert.Equal(expectedPeer, peer)
+	assert.Equal(wantPeer, peer)
 
 	_, err = GetRecoveryPeerFromContext(context.Background())
 	assert.Error(err)

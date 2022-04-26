@@ -14,9 +14,9 @@ func TestCoordinatorEndpoints(t *testing.T) {
 	err := errors.New("some err")
 
 	testCases := map[string]struct {
-		metadata          stubMetadata
-		expectErr         bool
-		expectedEndpoints []string
+		metadata      stubMetadata
+		wantErr       bool
+		wantEndpoints []string
 	}{
 		"getting coordinator endpoints works and role is checked": {
 			metadata: stubMetadata{
@@ -36,19 +36,19 @@ func TestCoordinatorEndpoints(t *testing.T) {
 				},
 				supportedRes: true,
 			},
-			expectErr:         false,
-			expectedEndpoints: []string{"192.0.2.1:9000"},
+			wantErr:       false,
+			wantEndpoints: []string{"192.0.2.1:9000"},
 		},
 		"List fails": {
 			metadata: stubMetadata{
 				listErr:      err,
 				supportedRes: true,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 		"metadata API unsupported": {
-			metadata:  stubMetadata{},
-			expectErr: true,
+			metadata: stubMetadata{},
+			wantErr:  true,
 		},
 	}
 
@@ -59,13 +59,13 @@ func TestCoordinatorEndpoints(t *testing.T) {
 
 			endpoints, err := CoordinatorEndpoints(context.Background(), &tc.metadata)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
 
-			assert.ElementsMatch(tc.expectedEndpoints, endpoints)
+			assert.ElementsMatch(tc.wantEndpoints, endpoints)
 		})
 	}
 }
@@ -74,20 +74,20 @@ func TestPrepareInstanceForCCM(t *testing.T) {
 	err := errors.New("some err")
 
 	testCases := map[string]struct {
-		metadata  stubMetadata
-		vpnIP     string
-		expectErr bool
+		metadata stubMetadata
+		vpnIP    string
+		wantErr  bool
 	}{
 		"updating role works": {
-			metadata:  stubMetadata{},
-			vpnIP:     "192.0.2.1",
-			expectErr: false,
+			metadata: stubMetadata{},
+			vpnIP:    "192.0.2.1",
+			wantErr:  false,
 		},
 		"setting VPN IP fails": {
 			metadata: stubMetadata{
 				setVPNIPErr: err,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 	}
 
@@ -98,7 +98,7 @@ func TestPrepareInstanceForCCM(t *testing.T) {
 
 			err := PrepareInstanceForCCM(context.Background(), &tc.metadata, &CloudControllerManagerFake{}, tc.vpnIP)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}

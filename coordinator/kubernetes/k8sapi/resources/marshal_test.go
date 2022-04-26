@@ -13,9 +13,9 @@ import (
 
 func TestMarshalK8SResources(t *testing.T) {
 	testCases := map[string]struct {
-		resources    interface{}
-		expectErr    bool
-		expectedYAML string
+		resources interface{}
+		wantErr   bool
+		wantYAML  string
 	}{
 		"ConfigMap as only field can be marshaled": {
 			resources: &struct {
@@ -31,7 +31,7 @@ func TestMarshalK8SResources(t *testing.T) {
 					},
 				},
 			},
-			expectedYAML: `apiVersion: v1
+			wantYAML: `apiVersion: v1
 data:
   key: value
 kind: ConfigMap
@@ -63,7 +63,7 @@ metadata:
 					},
 				},
 			},
-			expectedYAML: `apiVersion: v1
+			wantYAML: `apiVersion: v1
 data:
   key: value
 kind: ConfigMap
@@ -80,11 +80,11 @@ metadata:
 		},
 		"Non-pointer is detected": {
 			resources: "non-pointer",
-			expectErr: true,
+			wantErr:   true,
 		},
 		"Nil resource pointer is detected": {
 			resources: nil,
-			expectErr: true,
+			wantErr:   true,
 		},
 		"Non-pointer field is ignored": {
 			resources: &struct{ String string }{String: "somestring"},
@@ -105,23 +105,23 @@ metadata:
 
 			yaml, err := MarshalK8SResources(tc.resources)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
 
-			assert.Equal(tc.expectedYAML, string(yaml))
+			assert.Equal(tc.wantYAML, string(yaml))
 		})
 	}
 }
 
 func TestUnmarshalK8SResources(t *testing.T) {
 	testCases := map[string]struct {
-		data        string
-		into        interface{}
-		expectedObj interface{}
-		expectErr   bool
+		data    string
+		into    interface{}
+		wantObj interface{}
+		wantErr bool
 	}{
 		"ConfigMap as only field can be unmarshaled": {
 			data: `apiVersion: v1
@@ -134,7 +134,7 @@ metadata:
 			into: &struct {
 				ConfigMap k8s.ConfigMap
 			}{},
-			expectedObj: &struct {
+			wantObj: &struct {
 				ConfigMap k8s.ConfigMap
 			}{
 				ConfigMap: k8s.ConfigMap{
@@ -167,7 +167,7 @@ metadata:
 				ConfigMap k8s.ConfigMap
 				Secret    k8s.Secret
 			}{},
-			expectedObj: &struct {
+			wantObj: &struct {
 				ConfigMap k8s.ConfigMap
 				Secret    k8s.Secret
 			}{
@@ -209,15 +209,15 @@ metadata:
 			into: &struct {
 				ConfigMap k8s.ConfigMap
 			}{},
-			expectErr: true,
+			wantErr: true,
 		},
 		"Non-struct pointer is detected": {
-			into:      proto.String("test"),
-			expectErr: true,
+			into:    proto.String("test"),
+			wantErr: true,
 		},
 		"Nil into is detected": {
-			into:      nil,
-			expectErr: true,
+			into:    nil,
+			wantErr: true,
 		},
 		"Invalid yaml is detected": {
 			data: `duplicateKey: value
@@ -225,7 +225,7 @@ metadata:
 			into: &struct {
 				ConfigMap k8s.ConfigMap
 			}{},
-			expectErr: true,
+			wantErr: true,
 		},
 		"Struct field cannot interface with runtime.Object": {
 			data: `apiVersion: v1
@@ -238,7 +238,7 @@ metadata:
 			into: &struct {
 				String string
 			}{},
-			expectErr: true,
+			wantErr: true,
 		},
 		"Struct field mismatch": {
 			data: `apiVersion: v1
@@ -251,7 +251,7 @@ metadata:
 			into: &struct {
 				Secret k8s.Secret
 			}{},
-			expectErr: true,
+			wantErr: true,
 		},
 	}
 
@@ -262,22 +262,22 @@ metadata:
 
 			err := UnmarshalK8SResources([]byte(tc.data), tc.into)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
 
-			assert.Equal(tc.expectedObj, tc.into)
+			assert.Equal(tc.wantObj, tc.into)
 		})
 	}
 }
 
 func TestMarshalK8SResourcesList(t *testing.T) {
 	testCases := map[string]struct {
-		resources    []runtime.Object
-		expectErr    bool
-		expectedYAML string
+		resources []runtime.Object
+		wantErr   bool
+		wantYAML  string
 	}{
 		"ConfigMap as only element be marshaled": {
 			resources: []runtime.Object{
@@ -291,7 +291,7 @@ func TestMarshalK8SResourcesList(t *testing.T) {
 					},
 				},
 			},
-			expectedYAML: `apiVersion: v1
+			wantYAML: `apiVersion: v1
 data:
   key: value
 kind: ConfigMap
@@ -320,7 +320,7 @@ metadata:
 					},
 				},
 			},
-			expectedYAML: `apiVersion: v1
+			wantYAML: `apiVersion: v1
 data:
   key: value
 kind: ConfigMap
@@ -336,8 +336,8 @@ metadata:
 `,
 		},
 		"Nil resource pointer is encodes": {
-			resources:    []runtime.Object{nil},
-			expectedYAML: "null\n",
+			resources: []runtime.Object{nil},
+			wantYAML:  "null\n",
 		},
 	}
 
@@ -348,13 +348,13 @@ metadata:
 
 			yaml, err := MarshalK8SResourcesList(tc.resources)
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
 
-			assert.Equal(tc.expectedYAML, string(yaml))
+			assert.Equal(tc.wantYAML, string(yaml))
 		})
 	}
 }

@@ -36,9 +36,9 @@ func TestKMSCreateKEK(t *testing.T) {
 	importKey := []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 
 	testCases := map[string]struct {
-		client      *stubAzureClient
-		importKey   []byte
-		errExpected bool
+		client    *stubAzureClient
+		importKey []byte
+		wantErr   bool
 	}{
 		"create new kek successful": {
 			client: &stubAzureClient{},
@@ -48,13 +48,13 @@ func TestKMSCreateKEK(t *testing.T) {
 			importKey: importKey,
 		},
 		"SetSecret fails on new": {
-			client:      &stubAzureClient{setSecretErr: someErr},
-			errExpected: true,
+			client:  &stubAzureClient{setSecretErr: someErr},
+			wantErr: true,
 		},
 		"SetSecret fails on import": {
-			client:      &stubAzureClient{setSecretErr: someErr},
-			importKey:   importKey,
-			errExpected: true,
+			client:    &stubAzureClient{setSecretErr: someErr},
+			importKey: importKey,
+			wantErr:   true,
 		},
 	}
 
@@ -68,7 +68,7 @@ func TestKMSCreateKEK(t *testing.T) {
 			}
 
 			err := client.CreateKEK(context.Background(), "test-key", tc.importKey)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -83,9 +83,9 @@ func TestKMSGetDEK(t *testing.T) {
 	wrapKey := []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 
 	testCases := map[string]struct {
-		client      kmsClientAPI
-		storage     kms.Storage
-		errExpected bool
+		client  kmsClientAPI
+		storage kms.Storage
+		wantErr bool
 	}{
 		"successful for new key": {
 			client:  &stubAzureClient{secret: wrapKey},
@@ -97,9 +97,9 @@ func TestKMSGetDEK(t *testing.T) {
 			storage: &stubStorage{key: []byte{0x14, 0x48, 0xC4, 0xEA, 0x4B, 0x4B, 0xCA, 0xE4, 0x5A, 0xD4, 0xCC, 0xE3, 0xF7, 0xDD, 0xD5, 0x78, 0xA5, 0xA9, 0xEF, 0x9A, 0x93, 0x36, 0x09, 0xD6, 0x23, 0x01, 0xF5, 0x5F, 0xE1, 0x20, 0xDD, 0xFC, 0xBC, 0xF3, 0xA9, 0x67, 0x8B, 0x89, 0x54, 0x96}},
 		},
 		"Get from storage fails": {
-			client:      &stubAzureClient{},
-			storage:     &stubStorage{getErr: someErr},
-			errExpected: true,
+			client:  &stubAzureClient{},
+			storage: &stubStorage{getErr: someErr},
+			wantErr: true,
 		},
 		"Put to storage fails": {
 			client: &stubAzureClient{secret: wrapKey},
@@ -107,27 +107,27 @@ func TestKMSGetDEK(t *testing.T) {
 				getErr: storage.ErrDEKUnset,
 				putErr: someErr,
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"GetSecret fails": {
-			client:      &stubAzureClient{getSecretErr: someErr},
-			storage:     storage.NewMemMapStorage(),
-			errExpected: true,
+			client:  &stubAzureClient{getSecretErr: someErr},
+			storage: storage.NewMemMapStorage(),
+			wantErr: true,
 		},
 		"GetSecret fails with unknown kek": {
-			client:      &stubAzureClient{getSecretErr: errors.New("SecretNotFound")},
-			storage:     storage.NewMemMapStorage(),
-			errExpected: true,
+			client:  &stubAzureClient{getSecretErr: errors.New("SecretNotFound")},
+			storage: storage.NewMemMapStorage(),
+			wantErr: true,
 		},
 		"key wrapping fails": {
-			client:      &stubAzureClient{secret: []byte{0x1}},
-			storage:     storage.NewMemMapStorage(),
-			errExpected: true,
+			client:  &stubAzureClient{secret: []byte{0x1}},
+			storage: storage.NewMemMapStorage(),
+			wantErr: true,
 		},
 		"key unwrapping fails": {
-			client:      &stubAzureClient{secret: wrapKey},
-			storage:     &stubStorage{key: []byte{0x1}},
-			errExpected: true,
+			client:  &stubAzureClient{secret: wrapKey},
+			storage: &stubStorage{key: []byte{0x1}},
+			wantErr: true,
 		},
 	}
 
@@ -142,7 +142,7 @@ func TestKMSGetDEK(t *testing.T) {
 			}
 
 			dek, err := client.GetDEK(context.Background(), "test-key", "volume-01", 32)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.Len(dek, 32)

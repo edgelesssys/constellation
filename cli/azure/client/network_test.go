@@ -14,18 +14,18 @@ func TestCreateVirtualNetwork(t *testing.T) {
 	someErr := errors.New("failed")
 	testCases := map[string]struct {
 		networksAPI networksAPI
-		errExpected bool
+		wantErr     bool
 	}{
 		"successful create": {
 			networksAPI: stubNetworksAPI{},
 		},
 		"failed to get response from successful create": {
 			networksAPI: stubNetworksAPI{stubResponse: stubVirtualNetworksCreateOrUpdatePollerResponse{pollerErr: someErr}},
-			errExpected: true,
+			wantErr:     true,
 		},
 		"failed create": {
 			networksAPI: stubNetworksAPI{createErr: someErr},
-			errExpected: true,
+			wantErr:     true,
 		},
 	}
 
@@ -44,7 +44,7 @@ func TestCreateVirtualNetwork(t *testing.T) {
 				coordinators:  make(azure.Instances),
 			}
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(client.CreateVirtualNetwork(ctx))
 			} else {
 				assert.NoError(client.CreateVirtualNetwork(ctx))
@@ -78,18 +78,18 @@ func TestCreateSecurityGroup(t *testing.T) {
 
 	testCases := map[string]struct {
 		networkSecurityGroupsAPI networkSecurityGroupsAPI
-		errExpected              bool
+		wantErr                  bool
 	}{
 		"successful create": {
 			networkSecurityGroupsAPI: stubNetworkSecurityGroupsAPI{},
 		},
 		"failed to get response from successful create": {
 			networkSecurityGroupsAPI: stubNetworkSecurityGroupsAPI{stubPoller: stubNetworkSecurityGroupsCreateOrUpdatePollerResponse{pollerErr: someErr}},
-			errExpected:              true,
+			wantErr:                  true,
 		},
 		"failed create": {
 			networkSecurityGroupsAPI: stubNetworkSecurityGroupsAPI{createErr: someErr},
-			errExpected:              true,
+			wantErr:                  true,
 		},
 	}
 
@@ -108,7 +108,7 @@ func TestCreateSecurityGroup(t *testing.T) {
 				networkSecurityGroupsAPI: tc.networkSecurityGroupsAPI,
 			}
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(client.CreateSecurityGroup(ctx, testNetworkSecurityGroupInput))
 			} else {
 				assert.NoError(client.CreateSecurityGroup(ctx, testNetworkSecurityGroupInput))
@@ -126,7 +126,7 @@ func TestCreateNIC(t *testing.T) {
 		networkInterfacesAPI networkInterfacesAPI
 		name                 string
 		publicIPAddressID    string
-		errExpected          bool
+		wantErr              bool
 	}{
 		"successful create": {
 			networkInterfacesAPI: stubNetworkInterfacesAPI{},
@@ -135,11 +135,11 @@ func TestCreateNIC(t *testing.T) {
 		},
 		"failed to get response from successful create": {
 			networkInterfacesAPI: stubNetworkInterfacesAPI{stubResp: stubInterfacesClientCreateOrUpdatePollerResponse{pollErr: someErr}},
-			errExpected:          true,
+			wantErr:              true,
 		},
 		"failed create": {
 			networkInterfacesAPI: stubNetworkInterfacesAPI{createErr: someErr},
-			errExpected:          true,
+			wantErr:              true,
 		},
 	}
 
@@ -159,7 +159,7 @@ func TestCreateNIC(t *testing.T) {
 			}
 
 			ip, id, err := client.createNIC(ctx, tc.name, tc.publicIPAddressID)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
@@ -177,7 +177,7 @@ func TestCreatePublicIPAddress(t *testing.T) {
 	testCases := map[string]struct {
 		publicIPAddressesAPI publicIPAddressesAPI
 		name                 string
-		errExpected          bool
+		wantErr              bool
 	}{
 		"successful create": {
 			publicIPAddressesAPI: stubPublicIPAddressesAPI{},
@@ -185,11 +185,11 @@ func TestCreatePublicIPAddress(t *testing.T) {
 		},
 		"failed to get response from successful create": {
 			publicIPAddressesAPI: stubPublicIPAddressesAPI{stubCreateResponse: stubPublicIPAddressesClientCreateOrUpdatePollerResponse{pollErr: someErr}},
-			errExpected:          true,
+			wantErr:              true,
 		},
 		"failed create": {
 			publicIPAddressesAPI: stubPublicIPAddressesAPI{createErr: someErr},
-			errExpected:          true,
+			wantErr:              true,
 		},
 	}
 
@@ -209,7 +209,7 @@ func TestCreatePublicIPAddress(t *testing.T) {
 			}
 
 			id, err := client.createPublicIPAddress(ctx, tc.name)
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)

@@ -15,9 +15,9 @@ func TestDiscoverDebugIPs(t *testing.T) {
 	err := errors.New("some err")
 
 	testCases := map[string]struct {
-		meta        stubMetadata
-		expectedIPs []string
-		expectErr   bool
+		meta    stubMetadata
+		wantIPs []string
+		wantErr bool
 	}{
 		"disovery works": {
 			meta: stubMetadata{
@@ -33,7 +33,7 @@ func TestDiscoverDebugIPs(t *testing.T) {
 					},
 				},
 			},
-			expectedIPs: []string{
+			wantIPs: []string{
 				"192.0.2.1", "192.0.2.2",
 			},
 		},
@@ -41,7 +41,7 @@ func TestDiscoverDebugIPs(t *testing.T) {
 			meta: stubMetadata{
 				listErr: err,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 	}
 
@@ -55,12 +55,12 @@ func TestDiscoverDebugIPs(t *testing.T) {
 			}
 			ips, err := fetcher.DiscoverDebugdIPs(context.Background())
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.ElementsMatch(tc.expectedIPs, ips)
+			assert.ElementsMatch(tc.wantIPs, ips)
 		})
 	}
 }
@@ -69,9 +69,9 @@ func TestFetchSSHKeys(t *testing.T) {
 	err := errors.New("some err")
 
 	testCases := map[string]struct {
-		meta         stubMetadata
-		expectedKeys []ssh.SSHKey
-		expectErr    bool
+		meta     stubMetadata
+		wantKeys []ssh.SSHKey
+		wantErr  bool
 	}{
 		"fetch works": {
 			meta: stubMetadata{
@@ -81,7 +81,7 @@ func TestFetchSSHKeys(t *testing.T) {
 					SSHKeys:    map[string][]string{"bob": {"ssh-rsa bobskey"}},
 				},
 			},
-			expectedKeys: []ssh.SSHKey{
+			wantKeys: []ssh.SSHKey{
 				{
 					Username: "bob",
 					KeyValue: "ssh-rsa bobskey",
@@ -92,7 +92,7 @@ func TestFetchSSHKeys(t *testing.T) {
 			meta: stubMetadata{
 				selfErr: err,
 			},
-			expectErr: true,
+			wantErr: true,
 		},
 	}
 
@@ -106,12 +106,12 @@ func TestFetchSSHKeys(t *testing.T) {
 			}
 			keys, err := fetcher.FetchSSHKeys(context.Background())
 
-			if tc.expectErr {
+			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.ElementsMatch(tc.expectedKeys, keys)
+			assert.ElementsMatch(tc.wantKeys, keys)
 		})
 	}
 }

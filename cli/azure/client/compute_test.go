@@ -17,14 +17,14 @@ func TestCreateResourceGroup(t *testing.T) {
 	someErr := errors.New("failed")
 	testCases := map[string]struct {
 		resourceGroupAPI resourceGroupAPI
-		errExpected      bool
+		wantErr          bool
 	}{
 		"successful create": {
 			resourceGroupAPI: stubResourceGroupAPI{},
 		},
 		"failed create": {
 			resourceGroupAPI: stubResourceGroupAPI{createErr: someErr},
-			errExpected:      true,
+			wantErr:          true,
 		},
 	}
 	for name, tc := range testCases {
@@ -42,7 +42,7 @@ func TestCreateResourceGroup(t *testing.T) {
 				coordinators:     make(azure.Instances),
 			}
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(client.CreateResourceGroup(ctx))
 			} else {
 				assert.NoError(client.CreateResourceGroup(ctx))
@@ -77,7 +77,7 @@ func TestTerminateResourceGroup(t *testing.T) {
 		resourceGroup    string
 		resourceGroupAPI resourceGroupAPI
 		client           Client
-		errExpected      bool
+		wantErr          bool
 	}{
 		"successful terminate": {
 			resourceGroupAPI: stubResourceGroupAPI{},
@@ -91,12 +91,12 @@ func TestTerminateResourceGroup(t *testing.T) {
 		"failed terminate": {
 			resourceGroupAPI: stubResourceGroupAPI{terminateErr: someErr},
 			client:           clientWithResourceGroup,
-			errExpected:      true,
+			wantErr:          true,
 		},
 		"failed to poll terminate response": {
 			resourceGroupAPI: stubResourceGroupAPI{stubResponse: stubResourceGroupsDeletePollerResponse{pollerErr: someErr}},
 			client:           clientWithResourceGroup,
-			errExpected:      true,
+			wantErr:          true,
 		},
 	}
 	for name, tc := range testCases {
@@ -105,7 +105,7 @@ func TestTerminateResourceGroup(t *testing.T) {
 			tc.client.resourceGroupAPI = tc.resourceGroupAPI
 			ctx := context.Background()
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(tc.client.TerminateResourceGroup(ctx))
 				return
 			}
@@ -129,7 +129,7 @@ func TestCreateInstances(t *testing.T) {
 		resourceGroupAPI     resourceGroupAPI
 		roleAssignmentsAPI   roleAssignmentsAPI
 		createInstancesInput CreateInstancesInput
-		errExpected          bool
+		wantErr              bool
 	}{
 		"successful create": {
 			publicIPAddressesAPI: stubPublicIPAddressesAPI{},
@@ -166,7 +166,7 @@ func TestCreateInstances(t *testing.T) {
 				Image:                "image",
 				UserAssingedIdentity: "identity",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"error when polling create scale set response": {
 			publicIPAddressesAPI: stubPublicIPAddressesAPI{},
@@ -181,7 +181,7 @@ func TestCreateInstances(t *testing.T) {
 				Image:                "image",
 				UserAssingedIdentity: "identity",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"error when retrieving private IPs": {
 			publicIPAddressesAPI: stubPublicIPAddressesAPI{},
@@ -195,7 +195,7 @@ func TestCreateInstances(t *testing.T) {
 				Image:                "image",
 				UserAssingedIdentity: "identity",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 	for name, tc := range testCases {
@@ -218,7 +218,7 @@ func TestCreateInstances(t *testing.T) {
 				coordinators:         make(azure.Instances),
 			}
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(client.CreateInstances(ctx, tc.createInstancesInput))
 			} else {
 				assert.NoError(client.CreateInstances(ctx, tc.createInstancesInput))
@@ -243,7 +243,7 @@ func TestCreateInstancesVMs(t *testing.T) {
 		resourceGroupAPI     resourceGroupAPI
 		roleAssignmentsAPI   roleAssignmentsAPI
 		createInstancesInput CreateInstancesInput
-		errExpected          bool
+		wantErr              bool
 	}{
 		"successful create": {
 			publicIPAddressesAPI: stubPublicIPAddressesAPI{},
@@ -278,7 +278,7 @@ func TestCreateInstancesVMs(t *testing.T) {
 				InstanceType:      "type",
 				Image:             "image",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"error when polling create scale set response": {
 			publicIPAddressesAPI: stubPublicIPAddressesAPI{},
@@ -292,7 +292,7 @@ func TestCreateInstancesVMs(t *testing.T) {
 				InstanceType:      "type",
 				Image:             "image",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"error when creating NIC": {
 			publicIPAddressesAPI: stubPublicIPAddressesAPI{},
@@ -306,7 +306,7 @@ func TestCreateInstancesVMs(t *testing.T) {
 				InstanceType:      "type",
 				Image:             "image",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"error when creating public IP": {
 			publicIPAddressesAPI: stubPublicIPAddressesAPI{createErr: someErr},
@@ -320,7 +320,7 @@ func TestCreateInstancesVMs(t *testing.T) {
 				InstanceType:      "type",
 				Image:             "image",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 		"error when retrieving public IP": {
 			publicIPAddressesAPI: stubPublicIPAddressesAPI{getErr: someErr},
@@ -334,7 +334,7 @@ func TestCreateInstancesVMs(t *testing.T) {
 				InstanceType:      "type",
 				Image:             "image",
 			},
-			errExpected: true,
+			wantErr: true,
 		},
 	}
 	for name, tc := range testCases {
@@ -358,7 +358,7 @@ func TestCreateInstancesVMs(t *testing.T) {
 				coordinators:         make(azure.Instances),
 			}
 
-			if tc.errExpected {
+			if tc.wantErr {
 				assert.Error(client.CreateInstancesVMs(ctx, tc.createInstancesInput))
 				return
 			}
