@@ -20,18 +20,19 @@ func TestFirewallGCP(t *testing.T) {
 			Description: "This is the Test-1 Permission",
 			Protocol:    "tcp",
 			IPRange:     "",
-			Port:        9000,
+			FromPort:    9000,
 		},
 		{
 			Name:        "test-2",
 			Description: "This is the Test-2 Permission",
 			Protocol:    "udp",
 			IPRange:     "",
-			Port:        51820,
+			FromPort:    51820,
 		},
 	}
 
-	firewalls := testFw.GCP()
+	firewalls, err := testFw.GCP()
+	assert.NoError(err)
 	assert.Equal(2, len(firewalls))
 
 	// Check permissions
@@ -41,7 +42,7 @@ func TestFirewallGCP(t *testing.T) {
 
 		actualPort, err := strconv.Atoi(actualPermission1.GetPorts()[0])
 		require.NoError(err)
-		assert.Equal(testFw[i].Port, actualPort)
+		assert.Equal(testFw[i].FromPort, actualPort)
 		assert.Equal(testFw[i].Protocol, actualPermission1.GetIPProtocol())
 
 		assert.Equal(testFw[i].Name, firewall1.GetName())
@@ -58,21 +59,21 @@ func TestFirewallAzure(t *testing.T) {
 			Description: "perm1 description",
 			Protocol:    "TCP",
 			IPRange:     "192.0.2.0/24",
-			Port:        22,
+			FromPort:    22,
 		},
 		{
 			Name:        "perm2",
 			Description: "perm2 description",
 			Protocol:    "udp",
 			IPRange:     "192.0.2.0/24",
-			Port:        4433,
+			FromPort:    4433,
 		},
 		{
 			Name:        "perm3",
 			Description: "perm3 description",
 			Protocol:    "tcp",
 			IPRange:     "192.0.2.0/24",
-			Port:        4433,
+			FromPort:    4433,
 		},
 	}
 	wantOutput := []*armnetwork.SecurityRule{
@@ -120,7 +121,8 @@ func TestFirewallAzure(t *testing.T) {
 		},
 	}
 
-	out := input.Azure()
+	out, err := input.Azure()
+	assert.NoError(err)
 	assert.Equal(wantOutput, out)
 }
 
@@ -132,19 +134,22 @@ func TestIPPermissonsToAWS(t *testing.T) {
 			Description: "perm1",
 			Protocol:    "TCP",
 			IPRange:     "192.0.2.0/24",
-			Port:        22,
+			FromPort:    22,
+			ToPort:      22,
 		},
 		{
 			Description: "perm2",
 			Protocol:    "UDP",
 			IPRange:     "192.0.2.0/24",
-			Port:        4433,
+			FromPort:    4433,
+			ToPort:      4433,
 		},
 		{
 			Description: "perm3",
 			Protocol:    "TCP",
 			IPRange:     "192.0.2.0/24",
-			Port:        4433,
+			FromPort:    4433,
+			ToPort:      4433,
 		},
 	}
 	wantOutput := []ec2types.IpPermission{
@@ -185,4 +190,74 @@ func TestIPPermissonsToAWS(t *testing.T) {
 
 	out := input.AWS()
 	assert.Equal(wantOutput, out)
+}
+
+func TestPortOrRange(t *testing.T) {
+	testCases := map[string]struct {
+		fromPort int
+		toPort   int
+		result   string
+		wantErr  bool
+	}{
+		"ssh": {
+			fromPort: 22,
+			result:   "22",
+		},
+		"https": {
+			fromPort: 443,
+			result:   "443",
+		},
+		"nodePorts": {
+			fromPort: 30000,
+			toPort:   32767,
+			result:   "30000-32767",
+		},
+		"negative fromPort": {
+			fromPort: -1,
+			wantErr:  true,
+		},
+		"negative toPort": {
+			toPort:  -1,
+			wantErr: true,
+		},
+		"same value no range": {
+			fromPort: 22,
+			toPort:   22,
+			result:   "22",
+		},
+		"from zero to ssh": {
+			toPort: 22,
+			result: "0-22",
+		},
+		"from max": {
+			fromPort: MaxPort,
+			result:   "65535",
+		},
+		"from max+1": {
+			fromPort: MaxPort + 1,
+			wantErr:  true,
+		},
+		"to max": {
+			toPort: MaxPort,
+			result: "0-65535",
+		},
+		"to max+1": {
+			toPort:  MaxPort + 1,
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			got, err := portOrRange(tc.fromPort, tc.toPort)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal(tc.result, got)
+		})
+	}
 }

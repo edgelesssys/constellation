@@ -14,6 +14,10 @@ const (
 	SSHPort         = 22
 	WireguardPort   = 51820
 	NVMEOverTCPPort = 8009
+	// Default NodePort Range
+	// https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
+	NodePortFrom = 30000
+	NodePortTo   = 32767
 
 	//
 	// Filenames.

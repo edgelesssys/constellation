@@ -16,7 +16,10 @@ func (c *Client) CreateFirewall(ctx context.Context, input FirewallInput) error 
 	if c.network == "" {
 		return errors.New("client has not network")
 	}
-	firewallRules := input.Ingress.GCP()
+	firewallRules, err := input.Ingress.GCP()
+	if err != nil {
+		return err
+	}
 	var ops []Operation
 	for _, rule := range firewallRules {
 		c.firewalls = append(c.firewalls, rule.GetName())

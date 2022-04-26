@@ -19,13 +19,13 @@ func TestCreateSecurityGroup(t *testing.T) {
 				Description: "perm1",
 				Protocol:    "TCP",
 				IPRange:     "192.0.2.0/24",
-				Port:        22,
+				FromPort:    22,
 			},
 			{
 				Description: "perm2",
 				Protocol:    "UDP",
 				IPRange:     "192.0.2.0/24",
-				Port:        4433,
+				FromPort:    4433,
 			},
 		},
 		Outbound: cloudtypes.Firewall{
@@ -33,7 +33,7 @@ func TestCreateSecurityGroup(t *testing.T) {
 				Description: "perm3",
 				Protocol:    "TCP",
 				IPRange:     "192.0.2.0/24",
-				Port:        4040,
+				FromPort:    4040,
 			},
 		},
 	}
@@ -173,13 +173,13 @@ func TestAuthorizeSecurityGroup(t *testing.T) {
 				Description: "perm1",
 				Protocol:    "TCP",
 				IPRange: " 	192.0.2.0/24",
-				Port: 22,
+				FromPort: 22,
 			},
 			{
 				Description: "perm2",
 				Protocol:    "UDP",
 				IPRange:     "192.0.2.0/24",
-				Port:        4433,
+				FromPort:    4433,
 			},
 		},
 		Outbound: cloudtypes.Firewall{
@@ -187,7 +187,7 @@ func TestAuthorizeSecurityGroup(t *testing.T) {
 				Description: "perm3",
 				Protocol:    "TCP",
 				IPRange:     "192.0.2.0/24",
-				Port:        4040,
+				FromPort:    4040,
 			},
 		},
 	}

@@ -65,7 +65,10 @@ type createNetworkSecurityGroupInput struct {
 
 // CreateSecurityGroup creates a security group containing firewall rules.
 func (c *Client) CreateSecurityGroup(ctx context.Context, input NetworkSecurityGroupInput) error {
-	rules := input.Ingress.Azure()
+	rules, err := input.Ingress.Azure()
+	if err != nil {
+		return err
+	}
 
 	createNetworkSecurityGroupInput := createNetworkSecurityGroupInput{
 		name:     "constellation-security-group-" + c.uid,
