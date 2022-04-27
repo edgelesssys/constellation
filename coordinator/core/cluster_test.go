@@ -355,7 +355,7 @@ func (c *clusterStub) InitCluster(in kubernetes.InitClusterInput) (*kubeadm.Boot
 	return &c.initJoinArgs, c.initErr
 }
 
-func (c *clusterStub) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeName, nodeIP, nodeVPNIP, providerID, certKey string, _ role.Role) error {
+func (c *clusterStub) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeName, nodeIP, nodeVPNIP, providerID, certKey string, _ bool, _ role.Role) error {
 	c.joinClusterArgs = append(c.joinClusterArgs, joinClusterArgs{
 		args:       args,
 		nodeName:   nodeName,

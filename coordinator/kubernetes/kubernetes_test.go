@@ -74,11 +74,11 @@ type stubConfigProvider struct {
 	JoinConfig k8sapi.KubeadmJoinYAML
 }
 
-func (s *stubConfigProvider) InitConfiguration() k8sapi.KubeadmInitYAML {
+func (s *stubConfigProvider) InitConfiguration(_ bool) k8sapi.KubeadmInitYAML {
 	return s.InitConfig
 }
 
-func (s *stubConfigProvider) JoinConfiguration() k8sapi.KubeadmJoinYAML {
+func (s *stubConfigProvider) JoinConfiguration(_ bool) k8sapi.KubeadmJoinYAML {
 	s.JoinConfig = k8sapi.KubeadmJoinYAML{
 		JoinConfiguration: kubeadm.JoinConfiguration{
 			Discovery: kubeadm.Discovery{
@@ -241,7 +241,7 @@ func TestJoinCluster(t *testing.T) {
 			require := require.New(t)
 
 			kube := New(&tc.clusterUtil, &stubConfigProvider{}, &client)
-			err := kube.JoinCluster(joinCommand, instanceName, nodeVPNIP, nodeVPNIP, coordinatorProviderID, "", role.Node)
+			err := kube.JoinCluster(joinCommand, instanceName, nodeVPNIP, nodeVPNIP, coordinatorProviderID, "", true, role.Node)
 			if tc.wantErr {
 				assert.Error(err)
 				return

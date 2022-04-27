@@ -38,11 +38,11 @@ func TestInitConfiguration(t *testing.T) {
 			}(),
 		},
 		"CoreOS init config can be created": {
-			config: coreOSConfig.InitConfiguration(),
+			config: coreOSConfig.InitConfiguration(true),
 		},
 		"CoreOS init config with all fields can be created": {
 			config: func() KubeadmInitYAML {
-				c := coreOSConfig.InitConfiguration()
+				c := coreOSConfig.InitConfiguration(true)
 				c.SetApiServerAdvertiseAddress("192.0.2.0")
 				c.SetNodeIP("192.0.2.0")
 				c.SetNodeName("node")
@@ -92,11 +92,11 @@ func TestJoinConfiguration(t *testing.T) {
 			}(),
 		},
 		"CoreOS join config can be created": {
-			config: coreOSConfig.JoinConfiguration(),
+			config: coreOSConfig.JoinConfiguration(true),
 		},
 		"CoreOS join config with all fields can be created": {
 			config: func() KubeadmJoinYAML {
-				c := coreOSConfig.JoinConfiguration()
+				c := coreOSConfig.JoinConfiguration(true)
 				c.SetApiServerEndpoint("192.0.2.0:6443")
 				c.SetNodeIP("192.0.2.0")
 				c.SetNodeName("node")

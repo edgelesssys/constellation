@@ -162,7 +162,7 @@ func (c *Core) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, certKey string
 
 	c.zaplogger.Info("k8s Join data", zap.String("nodename", nodeName), zap.String("nodeIP", nodeIP), zap.String("nodeVPNIP", nodeVPNIP), zap.String("provid", providerID))
 	// we need to pass the VPNIP for another control-plane, otherwise etcd will bind itself to the wrong IP address and fails
-	if err := c.kube.JoinCluster(args, k8sCompliantHostname(nodeName), nodeIP, nodeVPNIP, providerID, certKey, peerRole); err != nil {
+	if err := c.kube.JoinCluster(args, k8sCompliantHostname(nodeName), nodeIP, nodeVPNIP, providerID, certKey, c.cloudControllerManager.Supported(), peerRole); err != nil {
 		c.zaplogger.Error("Joining Kubernetes cluster failed", zap.Error(err))
 		return err
 	}
@@ -182,7 +182,7 @@ type Cluster interface {
 	// InitCluster bootstraps a new cluster with the current node being the master, returning the arguments required to join the cluster.
 	InitCluster(kubernetes.InitClusterInput) (*kubeadm.BootstrapTokenDiscovery, error)
 	// JoinCluster will join the current node to an existing cluster.
-	JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeName, nodeIP, nodeVPNIP, providerID, certKey string, peerRole role.Role) error
+	JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeName, nodeIP, nodeVPNIP, providerID, certKey string, ccmSupported bool, peerRole role.Role) error
 	// GetKubeconfig reads the kubeconfig from the filesystem. Only succeeds after cluster is initialized.
 	GetKubeconfig() ([]byte, error)
 	// GetKubeadmCertificateKey returns the 64-byte hex string key needed to join the cluster as control-plane. This function must be executed on a control-plane.
@@ -202,7 +202,7 @@ func (c *ClusterFake) InitCluster(kubernetes.InitClusterInput) (*kubeadm.Bootstr
 }
 
 // JoinCluster will fake joining the current node to an existing cluster.
-func (c *ClusterFake) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeName, nodeIP, nodeVPNIP, providerID, certKey string, _ role.Role) error {
+func (c *ClusterFake) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeName, nodeIP, nodeVPNIP, providerID, certKey string, _ bool, _ role.Role) error {
 	return nil
 }
 

@@ -16,7 +16,11 @@ const (
 
 type CoreOSConfiguration struct{}
 
-func (c *CoreOSConfiguration) InitConfiguration() KubeadmInitYAML {
+func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool) KubeadmInitYAML {
+	var cloudProvider string
+	if externalCloudProvider {
+		cloudProvider = "external"
+	}
 	return KubeadmInitYAML{
 		InitConfiguration: kubeadm.InitConfiguration{
 			TypeMeta: v1.TypeMeta{
@@ -26,7 +30,7 @@ func (c *CoreOSConfiguration) InitConfiguration() KubeadmInitYAML {
 			NodeRegistration: kubeadm.NodeRegistrationOptions{
 				CRISocket: "/run/containerd/containerd.sock",
 				KubeletExtraArgs: map[string]string{
-					"cloud-provider": "external",
+					"cloud-provider": cloudProvider,
 					"network-plugin": "cni",
 				},
 			},
@@ -47,7 +51,7 @@ func (c *CoreOSConfiguration) InitConfiguration() KubeadmInitYAML {
 			ControllerManager: kubeadm.ControlPlaneComponent{
 				ExtraArgs: map[string]string{
 					"flex-volume-plugin-dir": "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/",
-					"cloud-provider":         "external",
+					"cloud-provider":         cloudProvider,
 					"configure-cloud-routes": "false",
 				},
 			},
@@ -63,7 +67,11 @@ func (c *CoreOSConfiguration) InitConfiguration() KubeadmInitYAML {
 	}
 }
 
-func (c *CoreOSConfiguration) JoinConfiguration() KubeadmJoinYAML {
+func (c *CoreOSConfiguration) JoinConfiguration(externalCloudProvider bool) KubeadmJoinYAML {
+	var cloudProvider string
+	if externalCloudProvider {
+		cloudProvider = "external"
+	}
 	return KubeadmJoinYAML{
 		JoinConfiguration: kubeadm.JoinConfiguration{
 			TypeMeta: v1.TypeMeta{
@@ -73,7 +81,7 @@ func (c *CoreOSConfiguration) JoinConfiguration() KubeadmJoinYAML {
 			NodeRegistration: kubeadm.NodeRegistrationOptions{
 				CRISocket: "/run/containerd/containerd.sock",
 				KubeletExtraArgs: map[string]string{
-					"cloud-provider": "external",
+					"cloud-provider": cloudProvider,
 				},
 			},
 			Discovery: kubeadm.Discovery{

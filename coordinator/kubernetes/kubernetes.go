@@ -24,8 +24,8 @@ type configReader interface {
 
 // configurationProvider provides kubeadm init and join configuration.
 type configurationProvider interface {
-	InitConfiguration() k8sapi.KubeadmInitYAML
-	JoinConfiguration() k8sapi.KubeadmJoinYAML
+	InitConfiguration(externalCloudProvider bool) k8sapi.KubeadmInitYAML
+	JoinConfiguration(externalCloudProvider bool) k8sapi.KubeadmJoinYAML
 }
 
 // KubeWrapper implements ClusterWrapper interface.
@@ -48,7 +48,7 @@ func New(clusterUtil k8sapi.ClusterUtil, configProvider configurationProvider, c
 
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(in InitClusterInput) (*kubeadm.BootstrapTokenDiscovery, error) {
-	initConfig := k.configProvider.InitConfiguration()
+	initConfig := k.configProvider.InitConfiguration(in.SupportsCloudControllerManager)
 	initConfig.SetApiServerAdvertiseAddress(in.APIServerAdvertiseIP)
 	initConfig.SetNodeIP(in.NodeIP)
 	initConfig.SetNodeName(in.NodeName)
@@ -104,8 +104,8 @@ func (k *KubeWrapper) InitCluster(in InitClusterInput) (*kubeadm.BootstrapTokenD
 }
 
 // JoinCluster joins existing Kubernetes cluster.
-func (k *KubeWrapper) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeName, nodeInternalIP, nodeVPNIP, providerID, certKey string, peerRole role.Role) error {
-	joinConfig := k.configProvider.JoinConfiguration()
+func (k *KubeWrapper) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeName, nodeInternalIP, nodeVPNIP, providerID, certKey string, ccmSupported bool, peerRole role.Role) error {
+	joinConfig := k.configProvider.JoinConfiguration(ccmSupported)
 	joinConfig.SetApiServerEndpoint(args.APIServerEndpoint)
 	joinConfig.SetToken(args.Token)
 	joinConfig.AppendDiscoveryTokenCaCertHash(args.CACertHashes[0])
