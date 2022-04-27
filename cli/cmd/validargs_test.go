@@ -100,6 +100,66 @@ func TestIsIntGreaterZeroArg(t *testing.T) {
 	}
 }
 
+func TestIsPort(t *testing.T) {
+	testCases := map[string]struct {
+		args    []string
+		wantErr bool
+	}{
+		"valid port 1":   {[]string{"80"}, false},
+		"valid port 2":   {[]string{"8080"}, false},
+		"valid port 3":   {[]string{"65535"}, false},
+		"invalid port 1": {[]string{"foo"}, true},
+		"invalid port 2": {[]string{"65536"}, true},
+		"invalid port 3": {[]string{"-1"}, true},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			testCmd := &cobra.Command{Args: isPort(0)}
+
+			err := testCmd.ValidateArgs(tc.args)
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+			}
+		})
+	}
+}
+
+func TestIsIP(t *testing.T) {
+	testCases := map[string]struct {
+		args    []string
+		wantErr bool
+	}{
+		"valid ip 1":   {[]string{"192.168.0.2"}, false},
+		"valid ip 2":   {[]string{"127.0.0.1"}, false},
+		"valid ip 3":   {[]string{"8.8.8.8"}, false},
+		"invalid ip 1": {[]string{"foo"}, true},
+		"invalid ip 2": {[]string{"foo.bar.baz.1"}, true},
+		"invalid ip 3": {[]string{"800.800.800.800"}, true},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			testCmd := &cobra.Command{Args: isIP(0)}
+
+			err := testCmd.ValidateArgs(tc.args)
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+			}
+		})
+	}
+}
+
 func TestIsEC2InstanceType(t *testing.T) {
 	testCases := map[string]struct {
 		args    []string
@@ -172,6 +232,36 @@ func TestIsAzureInstanceType(t *testing.T) {
 			assert := assert.New(t)
 
 			testCmd := &cobra.Command{Args: isAzureInstanceType(0)}
+
+			err := testCmd.ValidateArgs(tc.args)
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+			}
+		})
+	}
+}
+
+func TestIsCloudProvider(t *testing.T) {
+	testCases := map[string]struct {
+		pos     int
+		args    []string
+		wantErr bool
+	}{
+		"gcp":     {0, []string{"gcp"}, false},
+		"azure":   {1, []string{"foo", "azure"}, false},
+		"foo":     {0, []string{"foo"}, true},
+		"empty":   {0, []string{""}, true},
+		"unknown": {0, []string{"unknown"}, true},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			testCmd := &cobra.Command{Args: isCloudProvider(tc.pos)}
 
 			err := testCmd.ValidateArgs(tc.args)
 

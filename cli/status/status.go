@@ -15,6 +15,8 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 )
 
+// TODO(katexochen): Use protoClient for waiter?
+
 // Waiter waits for PeerStatusServer to reach a specific state. The waiter needs
 // to be initialized before usage.
 type Waiter struct {

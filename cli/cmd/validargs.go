@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 
@@ -33,6 +34,15 @@ func isIntGreaterArg(arg int, i int) cobra.PositionalArgs {
 	})
 }
 
+func isIntLessArg(arg int, i int) cobra.PositionalArgs {
+	return cobra.MatchAll(isIntArg(arg), func(cmd *cobra.Command, args []string) error {
+		if v, _ := strconv.Atoi(args[arg]); v >= i {
+			return fmt.Errorf("argument %d must be less %d, but it's %d", arg, i, v)
+		}
+		return nil
+	})
+}
+
 // warnAWS warns that AWS isn't supported.
 func warnAWS(providerPos int) cobra.PositionalArgs {
 	return func(cmd *cobra.Command, args []string) error {
@@ -46,6 +56,22 @@ func warnAWS(providerPos int) cobra.PositionalArgs {
 // isIntGreaterZeroArg checks if argument at position arg is a positive non zero integer.
 func isIntGreaterZeroArg(arg int) cobra.PositionalArgs {
 	return isIntGreaterArg(arg, 0)
+}
+
+func isPort(arg int) cobra.PositionalArgs {
+	return cobra.MatchAll(
+		isIntGreaterArg(arg, -1),
+		isIntLessArg(arg, 65536),
+	)
+}
+
+func isIP(arg int) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if ip := net.ParseIP(args[arg]); ip == nil {
+			return fmt.Errorf("argument %s isn't a valid IP address", args[arg])
+		}
+		return nil
+	}
 }
 
 // isEC2InstanceType checks if argument at position arg is a key in m.
@@ -78,6 +104,15 @@ func isAzureInstanceType(arg int) cobra.PositionalArgs {
 			}
 		}
 		return fmt.Errorf("argument %s isn't a valid Azure instance type", args[arg])
+	}
+}
+
+func isCloudProvider(arg int) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if provider := cloudprovider.FromString(args[arg]); provider == cloudprovider.Unknown {
+			return fmt.Errorf("argument %s isn't a valid cloud provider", args[arg])
+		}
+		return nil
 	}
 }
 
