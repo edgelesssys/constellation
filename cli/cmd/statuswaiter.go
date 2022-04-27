@@ -8,6 +8,6 @@ import (
 )
 
 type statusWaiter interface {
-	InitializeValidators([]atls.Validator)
+	InitializeValidators([]atls.Validator) error
 	WaitForAll(ctx context.Context, endpoints []string, status ...state.State) error
 }

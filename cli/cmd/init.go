@@ -107,7 +107,9 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 	endpoints := ipsToEndpoints(append(coordinators.PublicIPs(), nodes.PublicIPs()...), *config.CoordinatorPort)
 
 	cmd.Println("Waiting for cloud provider to finish resource creation ...")
-	waiter.InitializeValidators(validators.V())
+	if err := waiter.InitializeValidators(validators.V()); err != nil {
+		return err
+	}
 	if err := waiter.WaitForAll(ctx, endpoints, coordinatorstate.AcceptingInit); err != nil {
 		return fmt.Errorf("failed to wait for peer status: %w", err)
 	}

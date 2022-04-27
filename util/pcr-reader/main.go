@@ -45,11 +45,13 @@ func main() {
 
 	// wait for coordinator to come online
 	waiter := status.NewWaiter()
-	waiter.InitializeValidators([]atls.Validator{
+	if err := waiter.InitializeValidators([]atls.Validator{
 		azure.NewValidator(map[uint32][]byte{}),
 		gcp.NewValidator(map[uint32][]byte{}),
 		gcp.NewNonCVMValidator(map[uint32][]byte{}),
-	})
+	}); err != nil {
+		log.Fatal(err)
+	}
 	if err := waiter.WaitFor(ctx, addr, state.AcceptingInit, state.ActivatingNodes, state.IsNode, state.NodeWaitingForClusterJoin); err != nil {
 		log.Fatal(err)
 	}

@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edgelesssys/constellation/coordinator/atls"
+	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/stretchr/testify/assert"
@@ -23,7 +25,11 @@ func TestInitializeValidators(t *testing.T) {
 	// Uninitialized waiter fails.
 	assert.Error(waiter.WaitFor(context.Background(), "someIP", state.IsNode))
 
-	waiter.InitializeValidators(nil)
+	// Initializing waiter with no validators fails
+	assert.Error(waiter.InitializeValidators(nil))
+
+	// Initialized waiter succeeds
+	assert.NoError(waiter.InitializeValidators([]atls.Validator{core.NewMockValidator()}))
 	assert.NoError(waiter.WaitFor(context.Background(), "someIP", state.IsNode))
 }
 

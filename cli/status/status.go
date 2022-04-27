@@ -34,9 +34,13 @@ func NewWaiter() *Waiter {
 }
 
 // InitializeValidators initializes the validators for the attestation.
-func (w *Waiter) InitializeValidators(validators []atls.Validator) {
+func (w *Waiter) InitializeValidators(validators []atls.Validator) error {
+	if len(validators) == 0 {
+		return errors.New("no validators provided to initialize status waiter")
+	}
 	w.newConn = newAttestedConnGenerator(validators)
 	w.initialized = true
+	return nil
 }
 
 // WaitFor waits for a PeerStatusServer, which is reachable under the given endpoint

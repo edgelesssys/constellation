@@ -10,11 +10,13 @@ import (
 
 type stubStatusWaiter struct {
 	initialized   bool
+	initializeErr error
 	waitForAllErr error
 }
 
-func (s *stubStatusWaiter) InitializeValidators([]atls.Validator) {
+func (s *stubStatusWaiter) InitializeValidators([]atls.Validator) error {
 	s.initialized = true
+	return s.initializeErr
 }
 
 func (s *stubStatusWaiter) WaitForAll(ctx context.Context, endpoints []string, status ...state.State) error {
