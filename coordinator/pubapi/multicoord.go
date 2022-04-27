@@ -156,7 +156,7 @@ func (a *API) ActivateAdditionalCoordinator(ctx context.Context, in *pubproto.Ac
 func (a *API) activateCoordinators(logToCLI logFunc, coordinatorPublicIPs []string) error {
 	// Activate all coordinators.
 	for num, coordinatorPublicIP := range coordinatorPublicIPs {
-		logToCLI("activating coordinator %3d out of %3d coordinators ...", num+2, len(coordinatorPublicIPs)+1)
+		logToCLI("Activating control-plane node %3d out of %3d ...", num+2, len(coordinatorPublicIPs)+1)
 		if err := a.activateCoordinator(context.TODO(), coordinatorPublicIP); err != nil {
 			return err
 		}

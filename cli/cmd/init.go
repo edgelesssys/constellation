@@ -61,8 +61,8 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 	return initialize(cmd.Context(), cmd, protoClient, serviceAccountCreator, fileHandler, waiter, vpnHandler)
 }
 
-// initialize initializes a Constellation. Coordinator instances are activated as Coordinators and will
-// themself activate the other peers as nodes.
+// initialize initializes a Constellation. Coordinator instances are activated as contole-plane nodes and will
+// themself activate the other peers as workers.
 func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, serviceAccCreator serviceAccountCreator,
 	fileHandler file.Handler, waiter statusWaiter, vpnHandler vpnHandler,
 ) error {
@@ -106,7 +106,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 
 	endpoints := ipsToEndpoints(append(coordinators.PublicIPs(), nodes.PublicIPs()...), *config.CoordinatorPort)
 
-	cmd.Println("Waiting for cloud provider to finish resource creation ...")
+	cmd.Println("Waiting for cloud provider resource creation and boot ...")
 	if err := waiter.InitializeValidators(validators.V()); err != nil {
 		return err
 	}
@@ -235,12 +235,12 @@ func writeWGQuickFile(fileHandler file.Handler, vpnHandler vpnHandler, vpnConfig
 }
 
 func (r activationResult) writeOutput(wr io.Writer, fileHandler file.Handler) error {
-	fmt.Fprint(wr, "Your Constellation was successfully initialized.\n\n")
+	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
 	writeRow(tw, "Your WireGuard IP", r.clientVpnIP)
-	writeRow(tw, "Coordinator's public IP", r.coordinatorPubIP)
-	writeRow(tw, "Coordinator's public key", r.coordinatorPubKey)
+	writeRow(tw, "Control plane's public IP", r.coordinatorPubIP)
+	writeRow(tw, "Control plane's public key", r.coordinatorPubKey)
 	writeRow(tw, "Constellation's owner identifier", r.ownerID)
 	writeRow(tw, "Constellation's unique identifier", r.clusterID)
 	writeRow(tw, "WireGuard configuration file", constants.WGQuickConfigFilename)
@@ -252,7 +252,7 @@ func (r activationResult) writeOutput(wr io.Writer, fileHandler file.Handler) er
 		return fmt.Errorf("write kubeconfig: %w", err)
 	}
 
-	fmt.Fprintln(wr, "You can now connect to your Constellation by executing:")
+	fmt.Fprintln(wr, "You can now connect to your Constellation cluster by executing:")
 	fmt.Fprintf(wr, "\twg-quick up ./%s\n", constants.WGQuickConfigFilename)
 	fmt.Fprintf(wr, "\texport KUBECONFIG=\"$PWD/%s\"\n", constants.AdminConfFilename)
 	return nil
@@ -387,7 +387,7 @@ func getScalingGroupsFromConfig(stat state.ConstellationState, config *config.Co
 	case len(stat.QEMUCoordinators) != 0:
 		return getQEMUInstances(stat, config)
 	default:
-		return ScalingGroup{}, ScalingGroup{}, errors.New("no instances to init")
+		return ScalingGroup{}, ScalingGroup{}, errors.New("no instances to initialize")
 	}
 }
 
@@ -409,7 +409,7 @@ func getAWSInstances(stat state.ConstellationState) (coordinators, nodes Scaling
 
 	nodeMap := stat.EC2Instances.GetOthers(coordinatorID)
 	if len(nodeMap) == 0 {
-		return ScalingGroup{}, ScalingGroup{}, errors.New("no nodes available, can't create Constellation with one instance")
+		return ScalingGroup{}, ScalingGroup{}, errors.New("no worker nodes available, can't create Constellation cluster with one instance")
 	}
 
 	var nodeInstances Instances
@@ -418,7 +418,7 @@ func getAWSInstances(stat state.ConstellationState) (coordinators, nodes Scaling
 	}
 
 	// TODO: make min / max configurable and abstract autoscaling for different cloud providers
-	// TODO: GroupID of nodes is empty, since they currently do not scale.
+	// TODO: GroupID of workers is empty, since they currently do not scale.
 	nodes = ScalingGroup{Instances: nodeInstances, GroupID: ""}
 
 	return
@@ -427,7 +427,7 @@ func getAWSInstances(stat state.ConstellationState) (coordinators, nodes Scaling
 func getGCPInstances(stat state.ConstellationState, config *config.Config) (coordinators, nodes ScalingGroup, err error) {
 	coordinatorMap := stat.GCPCoordinators
 	if len(coordinatorMap) == 0 {
-		return ScalingGroup{}, ScalingGroup{}, errors.New("no coordinators available, can't create Constellation without any instance")
+		return ScalingGroup{}, ScalingGroup{}, errors.New("no control-plane nodes available, can't create Constellation without any instance")
 	}
 	var coordinatorInstances Instances
 	for _, node := range coordinatorMap {
@@ -441,7 +441,7 @@ func getGCPInstances(stat state.ConstellationState, config *config.Config) (coor
 
 	nodeMap := stat.GCPNodes
 	if len(nodeMap) == 0 {
-		return ScalingGroup{}, ScalingGroup{}, errors.New("no nodes available, can't create Constellation with one instance")
+		return ScalingGroup{}, ScalingGroup{}, errors.New("no worker nodes available, can't create Constellation with one instance")
 	}
 
 	var nodeInstances Instances
@@ -461,7 +461,7 @@ func getGCPInstances(stat state.ConstellationState, config *config.Config) (coor
 func getAzureInstances(stat state.ConstellationState, config *config.Config) (coordinators, nodes ScalingGroup, err error) {
 	coordinatorMap := stat.AzureCoordinators
 	if len(coordinatorMap) == 0 {
-		return ScalingGroup{}, ScalingGroup{}, errors.New("no coordinators available, can't create Constellation without any instance")
+		return ScalingGroup{}, ScalingGroup{}, errors.New("no control-plane nodes available, can't create Constellation without any instance")
 	}
 	var coordinatorInstances Instances
 	for _, node := range coordinatorMap {
@@ -474,7 +474,7 @@ func getAzureInstances(stat state.ConstellationState, config *config.Config) (co
 	}
 	nodeMap := stat.AzureNodes
 	if len(nodeMap) == 0 {
-		return ScalingGroup{}, ScalingGroup{}, errors.New("no nodes available, can't create Constellation with one instance")
+		return ScalingGroup{}, ScalingGroup{}, errors.New("no worker nodes available, can't create Constellation cluster with one instance")
 	}
 
 	var nodeInstances Instances

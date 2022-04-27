@@ -20,10 +20,10 @@ import (
 
 func newCreateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "create {aws|gcp|azure} C_COUNT N_COUNT TYPE",
+		Use:   "create {aws|gcp|azure} C_COUNT W_COUNT TYPE",
 		Short: "Create instances on a cloud platform for your Constellation.",
 		Long: `Create instances on a cloud platform for your Constellation.
-A Constellation with C_COUNT Coordinators and N_COUNT Nodes is created.
+A Constellation with C_COUNT control-plane nodes and W_COUNT workers is created.
 TYPE is the instance type used for all instances.`,
 		Args: cobra.MatchAll(
 			cobra.ExactArgs(4),
@@ -72,8 +72,8 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler,
 	if !flags.yes {
 		// Ask user to confirm action.
 		cmd.Printf("The following Constellation will be created:\n")
-		cmd.Printf("%d coordinators of type %s will be created.\n", countCoord, insType)
-		cmd.Printf("%d nodes of type %s will be created.\n", countNode, insType)
+		cmd.Printf("%d control-planes nodes of type %s will be created.\n", countCoord, insType)
+		cmd.Printf("%d worker nodes of type %s will be created.\n", countNode, insType)
 		ok, err := askToConfirm(cmd, "Do you want to create this Constellation?")
 		if err != nil {
 			return err
@@ -105,7 +105,7 @@ func parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	}
 	if len(name) > constellationNameLength {
 		return createFlags{}, fmt.Errorf(
-			"name for constellation too long, maximum length is %d, got %d: %s",
+			"name for Constellation too long, maximum length is %d, got %d: %s",
 			constellationNameLength, len(name), name,
 		)
 	}

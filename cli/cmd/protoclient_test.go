@@ -186,7 +186,7 @@ func (c *fakeActivationRespClient) GetKubeconfig() (string, error) {
 
 func (c *fakeActivationRespClient) GetCoordinatorVpnKey() (string, error) {
 	if c.coordinatorVpnKey == "" {
-		return "", errors.New("coordinator public VPN key is empty")
+		return "", errors.New("control-plane public VPN key is empty")
 	}
 	return c.coordinatorVpnKey, nil
 }

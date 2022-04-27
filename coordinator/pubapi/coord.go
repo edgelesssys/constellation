@@ -42,7 +42,7 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 		})
 	})
 
-	logToCLI("Initializing first Coordinator ...")
+	logToCLI("Initializing first control-plane node ...")
 
 	// If any of the following actions fail, we cannot revert
 	// Thus, mark this peer as failed.
@@ -226,7 +226,7 @@ func (a *API) activateNodes(logToCLI logFunc, nodePublicIPs []string) error {
 
 	// Activate all nodes.
 	for num, nodePublicIP := range nodePublicIPs {
-		logToCLI("activating node %3d out of %3d nodes ...", num+1, len(nodePublicIPs))
+		logToCLI("Activating worker node %3d out of %3d ...", num+1, len(nodePublicIPs))
 		nodeVPNIP, err := a.core.GetNextNodeIP()
 		if err != nil {
 			a.logger.Error("generation of vpn ips failed", zap.Error(err))
