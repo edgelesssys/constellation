@@ -29,5 +29,6 @@ debug/
 image/*.ign
 image/build/*
 image/dependencies/coordinator
+image/dependencies/cilium
 image/images/*
 image/cosa.lock
