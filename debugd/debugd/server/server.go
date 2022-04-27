@@ -51,18 +51,13 @@ func (s *debugdServer) UploadAuthorizedKeys(ctx context.Context, in *pb.UploadAu
 
 // UploadCoordinator receives a coordinator binary in a stream of chunks and writes to a file.
 func (s *debugdServer) UploadCoordinator(stream pb.Debugd_UploadCoordinatorServer) error {
-	// try to stop the coordinator before upload but ignore failure since there might be no coordinator running yet.
-	_ = s.serviceManager.SystemdAction(stream.Context(), deploy.ServiceManagerRequest{
+	startAction := deploy.ServiceManagerRequest{
 		Unit:   debugd.CoordinatorSystemdUnitName,
-		Action: deploy.Stop,
-	})
-	restartAction := deploy.ServiceManagerRequest{
-		Unit:   debugd.CoordinatorSystemdUnitName,
-		Action: deploy.Restart,
+		Action: deploy.Start,
 	}
 	var responseStatus pb.UploadCoordinatorStatus
 	defer func() {
-		if err := s.serviceManager.SystemdAction(stream.Context(), restartAction); err != nil {
+		if err := s.serviceManager.SystemdAction(stream.Context(), startAction); err != nil {
 			log.Printf("Starting uploaded coordinator failed: %v\n", err)
 			if responseStatus == pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_SUCCESS {
 				responseStatus = pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_START_FAILED
