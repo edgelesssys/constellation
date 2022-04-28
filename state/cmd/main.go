@@ -17,7 +17,6 @@ import (
 	azurecloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/azure"
 	gcpcloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/gcp"
 	"github.com/edgelesssys/constellation/coordinator/core"
-	"github.com/edgelesssys/constellation/internal/utils"
 	"github.com/edgelesssys/constellation/state/keyservice"
 	"github.com/edgelesssys/constellation/state/mapper"
 	"github.com/edgelesssys/constellation/state/setup"
@@ -48,7 +47,7 @@ func main() {
 		diskPath, diskPathErr = filepath.EvalSymlinks(azureStateDiskPath)
 		metadata, err = azurecloud.NewMetadata(context.Background())
 		if err != nil {
-			utils.KernelPanic(err)
+			exit(err)
 		}
 		issuer = azure.NewIssuer()
 
@@ -57,7 +56,7 @@ func main() {
 		issuer = gcp.NewIssuer()
 		gcpClient, err := gcpcloud.NewClient(context.Background())
 		if err != nil {
-			utils.KernelPanic(err)
+			exit(err)
 		}
 		metadata = gcpcloud.New(gcpClient)
 
@@ -71,13 +70,13 @@ func main() {
 		diskPathErr = fmt.Errorf("csp %q is not supported by Constellation", *csp)
 	}
 	if diskPathErr != nil {
-		utils.KernelPanic(fmt.Errorf("unable to determine state disk path: %w", diskPathErr))
+		exit(fmt.Errorf("unable to determine state disk path: %w", diskPathErr))
 	}
 
 	// initialize device mapper
 	mapper, err := mapper.New(diskPath)
 	if err != nil {
-		utils.KernelPanic(err)
+		exit(err)
 	}
 	defer mapper.Close()
 
@@ -96,8 +95,13 @@ func main() {
 	} else {
 		err = setupManger.PrepareNewDisk()
 	}
+	exit(err)
+}
 
+func exit(err error) {
 	if err != nil {
-		utils.KernelPanic(err)
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
 	}
+	os.Exit(0)
 }
