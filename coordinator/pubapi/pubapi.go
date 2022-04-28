@@ -4,6 +4,7 @@ package pubapi
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -53,6 +54,21 @@ func New(logger *zap.Logger, core Core, dialer Dialer, vpnAPIServer VPNAPIServer
 // GetState is the RPC call to get the peer's state.
 func (a *API) GetState(ctx context.Context, in *pubproto.GetStateRequest) (*pubproto.GetStateResponse, error) {
 	return &pubproto.GetStateResponse{State: uint32(a.core.GetState())}, nil
+}
+
+// StartVPNAPIServer starts the VPN-API server.
+func (a *API) StartVPNAPIServer(vpnIP string) error {
+	if err := a.vpnAPIServer.Listen(net.JoinHostPort(vpnIP, vpnAPIPort)); err != nil {
+		return fmt.Errorf("start vpnAPIServer: %v", err)
+	}
+	a.wgClose.Add(1)
+	go func() {
+		defer a.wgClose.Done()
+		if err := a.vpnAPIServer.Serve(); err != nil {
+			panic(err)
+		}
+	}()
+	return nil
 }
 
 // Close closes the API.

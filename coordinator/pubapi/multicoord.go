@@ -50,16 +50,9 @@ func (a *API) ActivateAsAdditionalCoordinator(ctx context.Context, in *pubproto.
 	}
 
 	// run the VPN-API server
-	if err := a.vpnAPIServer.Listen(net.JoinHostPort(in.AssignedVpnIp, vpnAPIPort)); err != nil {
+	if err := a.StartVPNAPIServer(in.AssignedVpnIp); err != nil {
 		return nil, status.Errorf(codes.Internal, "start vpnAPIServer: %v", err)
 	}
-	a.wgClose.Add(1)
-	go func() {
-		defer a.wgClose.Done()
-		if err := a.vpnAPIServer.Serve(); err != nil {
-			panic(err)
-		}
-	}()
 
 	a.logger.Info("retrieving k8s join information ")
 	joinArgs, certKey, err := a.getk8SCoordinatorJoinArgs(ctx, in.ActivatingCoordinatorData.VpnIp, vpnAPIPort)

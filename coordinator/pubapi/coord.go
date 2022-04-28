@@ -95,16 +95,9 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 	}
 
 	// run the VPN-API server
-	if err := a.vpnAPIServer.Listen(net.JoinHostPort(coordPeer.VPNIP, vpnAPIPort)); err != nil {
+	if err := a.StartVPNAPIServer(coordPeer.VPNIP); err != nil {
 		return status.Errorf(codes.Internal, "start vpnAPIServer: %v", err)
 	}
-	a.wgClose.Add(1)
-	go func() {
-		defer a.wgClose.Done()
-		if err := a.vpnAPIServer.Serve(); err != nil {
-			panic(err)
-		}
-	}()
 	if err := a.core.SwitchToPersistentStore(); err != nil {
 		return status.Errorf(codes.Internal, "switch to persistent store: %v", err)
 	}

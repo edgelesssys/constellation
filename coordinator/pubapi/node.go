@@ -142,8 +142,7 @@ func (a *API) ActivateAsNode(stream pubproto.API_ActivateAsNodeServer) (reterr e
 	}
 
 	// regularly get (peer) updates from Coordinator
-	a.wgClose.Add(1)
-	go a.updateLoop()
+	a.StartUpdateLoop()
 
 	/*
 		coordinator <- VPN public key <- node
@@ -204,6 +203,12 @@ func (a *API) TriggerNodeUpdate(ctx context.Context, in *pubproto.TriggerNodeUpd
 		return nil, status.Errorf(codes.Internal, "node update: %v", err)
 	}
 	return &pubproto.TriggerNodeUpdateResponse{}, nil
+}
+
+// StartUpdateLoop starts a loop that will periodically request updates from the Coordinator.
+func (a *API) StartUpdateLoop() {
+	a.wgClose.Add(1)
+	go a.updateLoop()
 }
 
 func (a *API) updateLoop() {
