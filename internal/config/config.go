@@ -109,7 +109,7 @@ func Default() *Config {
 				SubscriptionID: proto.String("0d202bbb-4fa7-4af8-8125-58c269a05435"),
 				TenantID:       proto.String("adb650a8-5da3-4b15-b4b0-3daf65ff7626"),
 				Location:       proto.String("North Europe"),
-				Image:          proto.String("/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos/versions/0.0.1650966229"),
+				Image:          proto.String("/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos/versions/0.0.1651150807"),
 				NetworkSecurityGroupInput: &azureClient.NetworkSecurityGroupInput{
 					Ingress: cloudtypes.Firewall{
 						{
@@ -150,7 +150,7 @@ func Default() *Config {
 				Project: proto.String("constellation-331613"),
 				Region:  proto.String("europe-west3"),
 				Zone:    proto.String("europe-west3-b"),
-				Image:   proto.String("constellation-coreos-1650966229"),
+				Image:   proto.String("constellation-coreos-1651150807"),
 				FirewallInput: &gcpClient.FirewallInput{
 					Ingress: cloudtypes.Firewall{
 						{
