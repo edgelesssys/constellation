@@ -113,7 +113,7 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 		return status.Errorf(codes.Internal, "node initialization: %v", err)
 	}
 	// persist node state on disk
-	if err := a.core.PersistNodeState(role.Coordinator, ownerID, clusterID); err != nil {
+	if err := a.core.PersistNodeState(role.Coordinator, coordPeer.VPNIP, ownerID, clusterID); err != nil {
 		return status.Errorf(codes.Internal, "persist node state: %v", err)
 	}
 	diskUUID, err := a.core.GetDiskUUID()

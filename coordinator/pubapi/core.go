@@ -19,7 +19,7 @@ type Core interface {
 	GetNextCoordinatorIP() (string, error)
 	SwitchToPersistentStore() error
 	GetIDs(masterSecret []byte) (ownerID []byte, clusterID []byte, err error)
-	PersistNodeState(role role.Role, ownerID []byte, clusterID []byte) error
+	PersistNodeState(role role.Role, vpnIP string, ownerID []byte, clusterID []byte) error
 	SetUpKMS(ctx context.Context, storageURI, kmsURI, kekID string, useExisting bool) error
 	GetKMSInfo() (kms.KMSInformation, error)
 	GetDataKey(ctx context.Context, keyID string, length int) ([]byte, error)

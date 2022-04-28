@@ -225,13 +225,14 @@ func (c *Core) Initialize() (nodeActivated bool, err error) {
 }
 
 // PersistNodeState persists node state to disk.
-func (c *Core) PersistNodeState(role role.Role, ownerID []byte, clusterID []byte) error {
+func (c *Core) PersistNodeState(role role.Role, vpnIP string, ownerID []byte, clusterID []byte) error {
 	vpnPrivKey, err := c.vpn.GetPrivateKey()
 	if err != nil {
 		return fmt.Errorf("failed to retrieve VPN private key: %w", err)
 	}
 	nodeState := nodestate.NodeState{
 		Role:       role,
+		VPNIP:      vpnIP,
 		VPNPrivKey: vpnPrivKey,
 		OwnerID:    ownerID,
 		ClusterID:  clusterID,

@@ -85,7 +85,7 @@ func (a *API) ActivateAsAdditionalCoordinator(ctx context.Context, in *pubproto.
 	}
 
 	// persist node state on disk
-	if err := a.core.PersistNodeState(role.Coordinator, in.OwnerId, in.ClusterId); err != nil {
+	if err := a.core.PersistNodeState(role.Coordinator, in.AssignedVpnIp, in.OwnerId, in.ClusterId); err != nil {
 		return nil, status.Errorf(codes.Internal, "persist node state: %v", err)
 	}
 	diskUUID, err := a.core.GetDiskUUID()

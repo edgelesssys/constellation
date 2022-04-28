@@ -268,7 +268,7 @@ func TestPersistNodeState(t *testing.T) {
 			}
 			core, err := NewCore(tc.vpn, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, fileHandler)
 			require.NoError(err)
-			err = core.PersistNodeState(role.Coordinator, []byte("owner-id"), []byte("cluster-id"))
+			err = core.PersistNodeState(role.Coordinator, "192.0.2.1", []byte("owner-id"), []byte("cluster-id"))
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -278,6 +278,7 @@ func TestPersistNodeState(t *testing.T) {
 			assert.NoError(err)
 			assert.Equal(nodestate.NodeState{
 				Role:       role.Coordinator,
+				VPNIP:      "192.0.2.1",
 				VPNPrivKey: []byte("private-key"),
 				OwnerID:    []byte("owner-id"),
 				ClusterID:  []byte("cluster-id"),

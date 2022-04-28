@@ -13,6 +13,7 @@ const nodeStatePath = "/run/state/constellation/node_state.json"
 // Can be persisted to disk and reloaded later.
 type NodeState struct {
 	Role       role.Role
+	VPNIP      string
 	VPNPrivKey []byte
 	OwnerID    []byte
 	ClusterID  []byte

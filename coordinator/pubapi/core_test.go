@@ -129,7 +129,7 @@ func (c *fakeCore) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, _ string, 
 	return c.joinClusterErr
 }
 
-func (c *fakeCore) PersistNodeState(role role.Role, ownerID []byte, clusterID []byte) error {
+func (c *fakeCore) PersistNodeState(role role.Role, vpnIP string, ownerID []byte, clusterID []byte) error {
 	c.persistNodeStateRoles = append(c.persistNodeStateRoles, role)
 	return c.persistNodeStateErr
 }

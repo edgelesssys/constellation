@@ -106,7 +106,7 @@ func (a *API) ActivateAsNode(stream pubproto.API_ActivateAsNodeServer) (reterr e
 	}
 
 	// persist node state on disk
-	if err := a.core.PersistNodeState(role.Node, in.OwnerId, in.ClusterId); err != nil {
+	if err := a.core.PersistNodeState(role.Node, in.NodeVpnIp, in.OwnerId, in.ClusterId); err != nil {
 		return status.Errorf(codes.Internal, "persist node state: %v", err)
 	}
 
