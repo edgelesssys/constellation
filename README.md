@@ -149,25 +149,32 @@ See this example on what the possible settings are and how to setup the constell
             "Name": "coordinator",
             "Description": "Coordinator default port",
             "Protocol": "tcp",
-            "Port": 9000
+            "FromPort": 9000
           },
           {
             "Name": "wireguard",
             "Description": "WireGuard default port",
             "Protocol": "udp",
-            "Port": 51820
+            "FromPort": 51820
           },
           {
             "Name": "ssh",
             "Description": "SSH",
             "Protocol": "tcp",
-            "Port": 22
+            "FromPort": 22
+          },
+          {
+            "Name": "nodeport",
+            "Description": "NodePort",
+            "Protocol": "tcp",
+            "FromPort": 30000,
+            "ToPort": 32767
           },
           {
             "Name": "debugd",
             "Description": "debugd default port",
             "Protocol": "tcp",
-            "Port": 4000
+            "FromPort": 4000
           }
         ]
       }
@@ -181,28 +188,36 @@ See this example on what the possible settings are and how to setup the constell
             "Description": "Coordinator default port",
             "Protocol": "tcp",
             "IPRange": "0.0.0.0/0",
-            "Port": 9000
+            "FromPort": 9000
           },
           {
             "Name": "wireguard",
             "Description": "WireGuard default port",
             "Protocol": "udp",
             "IPRange": "0.0.0.0/0",
-            "Port": 51820
+            "FromPort": 51820
           },
           {
             "Name": "ssh",
             "Description": "SSH",
             "Protocol": "tcp",
             "IPRange": "0.0.0.0/0",
-            "Port": 22
+            "FromPort": 22
+          },
+          {
+            "Name": "nodeport",
+            "Description": "NodePort",
+            "Protocol": "tcp",
+            "IPRange": "0.0.0.0/0",
+            "FromPort": 30000,
+            "ToPort": 32767
           },
           {
             "Name": "debugd",
             "Description": "debugd default port",
             "Protocol": "tcp",
             "IPRange": "0.0.0.0/0",
-            "Port": 4000
+            "FromPort": 4000
           }
         ]
       }
