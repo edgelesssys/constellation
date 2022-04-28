@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/store"
+	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
 	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
@@ -210,7 +211,7 @@ func TestConcurrent(t *testing.T) {
 	assert.Error(<-actCoordErrs)
 }
 
-func spawnPeer(require *require.Assertions, logger *zap.Logger, dialer *testdialer.BufconnDialer, netw *network, endpoint string) (*grpc.Server, *pubapi.API, *fakeVPN) {
+func spawnPeer(require *require.Assertions, logger *zap.Logger, netDialer *testdialer.BufconnDialer, netw *network, endpoint string) (*grpc.Server, *pubapi.API, *fakeVPN) {
 	vpn := newVPN(netw, endpoint)
 	cor, err := core.NewCore(vpn, &core.ClusterFake{}, &core.ProviderMetadataFake{}, &core.CloudControllerManagerFake{}, &core.CloudNodeManagerFake{}, &core.ClusterAutoscalerFake{}, &core.EncryptedDiskFake{}, logger, simulator.OpenSimulatedTPM, fakeStoreFactory{}, file.NewHandler(afero.NewMemMapFs()))
 	require.NoError(err)
@@ -219,22 +220,23 @@ func spawnPeer(require *require.Assertions, logger *zap.Logger, dialer *testdial
 	getPublicAddr := func() (string, error) {
 		return "192.0.2.1", nil
 	}
+	dialer := grpcutil.NewDialer(&core.MockValidator{}, netDialer)
+	vapiServer := &fakeVPNAPIServer{logger: logger.Named("vpnapi"), core: cor, dialer: netDialer}
 
-	vapiServer := &fakeVPNAPIServer{logger: logger.Named("vpnapi"), core: cor, dialer: dialer}
-	papi := pubapi.New(logger, cor, dialer, vapiServer, &core.MockValidator{}, getPublicAddr, nil)
+	papi := pubapi.New(logger, cor, dialer, vapiServer, getPublicAddr, nil)
 
 	tlsConfig, err := atls.CreateAttestationServerTLSConfig(&core.MockIssuer{})
 	require.NoError(err)
 	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
 	pubproto.RegisterAPIServer(server, papi)
 
-	listener := dialer.GetListener(endpoint)
+	listener := netDialer.GetListener(endpoint)
 	go server.Serve(listener)
 
 	return server, papi, vpn
 }
 
-func activateCoordinator(require *require.Assertions, dialer pubapi.Dialer, coordinatorIP, bindPort string, nodeIPs []string) error {
+func activateCoordinator(require *require.Assertions, dialer netDialer, coordinatorIP, bindPort string, nodeIPs []string) error {
 	ctx := context.Background()
 	conn, err := dialGRPC(ctx, dialer, net.JoinHostPort(coordinatorIP, bindPort))
 	require.NoError(err)
@@ -260,7 +262,7 @@ func activateCoordinator(require *require.Assertions, dialer pubapi.Dialer, coor
 	}
 }
 
-func dialGRPC(ctx context.Context, dialer pubapi.Dialer, target string) (*grpc.ClientConn, error) {
+func dialGRPC(ctx context.Context, dialer netDialer, target string) (*grpc.ClientConn, error) {
 	tlsConfig, err := atls.CreateAttestationClientTLSConfig([]atls.Validator{&core.MockValidator{}})
 	if err != nil {
 		return nil, err
@@ -397,4 +399,8 @@ func (v *fakeVPN) recv() *packet {
 		}
 	}
 	return &packet
+}
+
+type netDialer interface {
+	DialContext(ctx context.Context, network, address string) (net.Conn, error)
 }

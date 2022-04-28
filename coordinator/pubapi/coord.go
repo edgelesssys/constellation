@@ -204,7 +204,7 @@ func (a *API) RequestStateDiskKey(ctx context.Context, in *pubproto.RequestState
 		return nil, status.Errorf(codes.Internal, "%v", err)
 	}
 
-	conn, err := a.dial(ctx, peer)
+	conn, err := a.dialer.Dial(ctx, peer)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "%v", err)
 	}
@@ -297,7 +297,7 @@ func (a *API) activateNode(nodePublicIP string, nodeVPNIP string, initialPeers [
 	ctx, cancel := context.WithTimeout(context.Background(), deadlineDuration)
 	defer cancel()
 
-	conn, err := a.dial(ctx, net.JoinHostPort(nodePublicIP, endpointAVPNPort))
+	conn, err := a.dialer.Dial(ctx, net.JoinHostPort(nodePublicIP, endpointAVPNPort))
 	if err != nil {
 		return nil, err
 	}
@@ -417,7 +417,7 @@ func (a *API) joinCluster(nodePublicIP string) error {
 	}
 	// We don't verify the peer certificate here, since JoinCluster triggers a connection over VPN
 	// The target of the rpc needs to already be part of the VPN to process the request, meaning it is trusted
-	conn, err := a.dialNoVerify(ctx, net.JoinHostPort(nodePublicIP, endpointAVPNPort))
+	conn, err := a.dialer.DialNoVerify(ctx, net.JoinHostPort(nodePublicIP, endpointAVPNPort))
 	if err != nil {
 		return err
 	}
@@ -455,7 +455,7 @@ func (a *API) triggerNodeUpdate(nodePublicIP string) error {
 
 	// We don't verify the peer certificate here, since TriggerNodeUpdate triggers a connection over VPN
 	// The target of the rpc needs to already be part of the VPN to process the request, meaning it is trusted
-	conn, err := a.dialNoVerify(ctx, net.JoinHostPort(nodePublicIP, endpointAVPNPort))
+	conn, err := a.dialer.DialNoVerify(ctx, net.JoinHostPort(nodePublicIP, endpointAVPNPort))
 	if err != nil {
 		return err
 	}

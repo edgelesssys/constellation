@@ -8,10 +8,10 @@ import (
 	"net"
 	"testing"
 
+	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
 	"github.com/edgelesssys/constellation/debugd/coordinator"
 	"github.com/edgelesssys/constellation/debugd/debugd/deploy"
 	pb "github.com/edgelesssys/constellation/debugd/service"
-	"github.com/edgelesssys/constellation/debugd/service/testdialer"
 	"github.com/edgelesssys/constellation/debugd/ssh"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -351,11 +351,11 @@ func (s *stubServiceManager) WriteSystemdUnitFile(ctx context.Context, unit depl
 	return s.writeSystemdUnitFileErr
 }
 
-type dialer interface {
+type netDialer interface {
 	DialContext(ctx context.Context, network, address string) (net.Conn, error)
 }
 
-func dial(ctx context.Context, dialer dialer, target string) (*grpc.ClientConn, error) {
+func dial(ctx context.Context, dialer netDialer, target string) (*grpc.ClientConn, error) {
 	return grpc.DialContext(ctx, target,
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
 			return dialer.DialContext(ctx, "tcp", addr)

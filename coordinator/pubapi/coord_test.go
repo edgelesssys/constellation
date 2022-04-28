@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
+	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
 	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"github.com/stretchr/testify/assert"
@@ -125,13 +126,14 @@ func TestActivateAsCoordinator(t *testing.T) {
 				ownerID:                    []byte("ownerID"),
 				clusterID:                  []byte("clusterID"),
 			}
-			dialer := testdialer.NewBufconnDialer()
+			netDialer := testdialer.NewBufconnDialer()
+			dialer := grpcutil.NewDialer(fakeValidator{}, netDialer)
 
 			getPublicIPAddr := func() (string, error) {
 				return "192.0.2.1", nil
 			}
 
-			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, fakeValidator{}, getPublicIPAddr, nil)
+			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, getPublicIPAddr, nil)
 			defer api.Close()
 
 			// spawn nodes
@@ -142,7 +144,7 @@ func TestActivateAsCoordinator(t *testing.T) {
 				server := n.newServer()
 				wg.Add(1)
 				go func(endpoint string) {
-					listener := dialer.GetListener(endpoint)
+					listener := netDialer.GetListener(endpoint)
 					wg.Done()
 					_ = server.Serve(listener)
 				}(net.JoinHostPort(n.peer.PublicIP, endpointAVPNPort))
@@ -256,13 +258,14 @@ func TestActivateAdditionalNodes(t *testing.T) {
 			require := require.New(t)
 
 			core := &fakeCore{state: tc.state}
-			dialer := testdialer.NewBufconnDialer()
+			netDialer := testdialer.NewBufconnDialer()
+			dialer := grpcutil.NewDialer(fakeValidator{}, netDialer)
 
 			getPublicIPAddr := func() (string, error) {
 				return "192.0.2.1", nil
 			}
 
-			api := New(zaptest.NewLogger(t), core, dialer, nil, fakeValidator{}, getPublicIPAddr, nil)
+			api := New(zaptest.NewLogger(t), core, dialer, nil, getPublicIPAddr, nil)
 			defer api.Close()
 			// spawn nodes
 			var nodePublicIPs []string
@@ -272,7 +275,7 @@ func TestActivateAdditionalNodes(t *testing.T) {
 				server := n.newServer()
 				wg.Add(1)
 				go func(endpoint string) {
-					listener := dialer.GetListener(endpoint)
+					listener := netDialer.GetListener(endpoint)
 					wg.Done()
 					_ = server.Serve(listener)
 				}(net.JoinHostPort(n.peer.PublicIP, endpointAVPNPort))
@@ -311,7 +314,7 @@ func TestAssemblePeerStruct(t *testing.T) {
 
 	vpnPubKey := []byte{2, 3, 4}
 	core := &fakeCore{vpnPubKey: vpnPubKey}
-	api := New(zaptest.NewLogger(t), core, nil, nil, nil, getPublicIPAddr, nil)
+	api := New(zaptest.NewLogger(t), core, nil, nil, getPublicIPAddr, nil)
 	defer api.Close()
 
 	vpnIP, err := core.GetVPNIP()
@@ -512,7 +515,8 @@ func TestRequestStateDiskKey(t *testing.T) {
 				dataKey:       tc.dataKey,
 				getDataKeyErr: tc.getDataKeyErr,
 			}
-			api := New(zaptest.NewLogger(t), core, &net.Dialer{}, nil, dummyValidator{}, nil, getPeerFromContext)
+
+			api := New(zaptest.NewLogger(t), core, grpcutil.NewDialer(dummyValidator{}, &net.Dialer{}), nil, nil, getPeerFromContext)
 
 			_, err = api.RequestStateDiskKey(ctx, &pubproto.RequestStateDiskKeyRequest{})
 			if tc.wantErr {

@@ -14,6 +14,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/store"
+	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -26,7 +27,7 @@ import (
 
 var version = "0.0.0"
 
-func run(validator core.QuoteValidator, issuer core.QuoteIssuer, vpn core.VPN, openTPM vtpm.TPMOpenFunc, getPublicIPAddr func() (string, error), dialer pubapi.Dialer, fileHandler file.Handler,
+func run(issuer core.QuoteIssuer, vpn core.VPN, openTPM vtpm.TPMOpenFunc, getPublicIPAddr func() (string, error), dialer *grpcutil.Dialer, fileHandler file.Handler,
 	kube core.Cluster, metadata core.ProviderMetadata, cloudControllerManager core.CloudControllerManager, cloudNodeManager core.CloudNodeManager, clusterAutoscaler core.ClusterAutoscaler, encryptedDisk core.EncryptedDisk, etcdEndpoint string, etcdTLS bool, bindIP, bindPort string, zapLoggerCore *zap.Logger,
 ) {
 	defer zapLoggerCore.Sync()
@@ -46,15 +47,15 @@ func run(validator core.QuoteValidator, issuer core.QuoteIssuer, vpn core.VPN, o
 	if err != nil {
 		zapLoggerCore.Fatal("failed to create core", zap.Error(err))
 	}
+
+	vapiServer := &vpnAPIServer{logger: zapLoggerCore.Named("vpnapi"), core: core}
+	zapLoggerPubapi := zapLoggerCore.Named("pubapi")
+	papi := pubapi.New(zapLoggerPubapi, core, dialer, vapiServer, getPublicIPAddr, pubapi.GetRecoveryPeerFromContext)
 	// initialize state machine and wait for re-joining of the VPN (if applicable)
 	nodeActivated, err := core.Initialize()
 	if err != nil {
 		zapLoggerCore.Fatal("failed to initialize core", zap.Error(err))
 	}
-
-	vapiServer := &vpnAPIServer{logger: zapLoggerCore.Named("vpnapi"), core: core}
-	zapLoggerPubapi := zapLoggerCore.Named("pubapi")
-	papi := pubapi.New(zapLoggerPubapi, core, dialer, vapiServer, validator, getPublicIPAddr, pubapi.GetRecoveryPeerFromContext)
 
 	zapLoggergRPC := zapLoggerPubapi.Named("gRPC")
 

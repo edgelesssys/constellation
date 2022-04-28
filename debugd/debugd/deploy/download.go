@@ -16,14 +16,14 @@ import (
 
 // Download downloads a coordinator from a given debugd instance.
 type Download struct {
-	dialer             Dialer
+	dialer             NetDialer
 	writer             streamToFileWriter
 	serviceManager     serviceManager
 	attemptedDownloads map[string]time.Time
 }
 
 // New creates a new Download.
-func New(dialer Dialer, serviceManager serviceManager, writer streamToFileWriter) *Download {
+func New(dialer NetDialer, serviceManager serviceManager, writer streamToFileWriter) *Download {
 	return &Download{
 		dialer:             dialer,
 		writer:             writer,
@@ -91,6 +91,7 @@ type streamToFileWriter interface {
 	WriteStream(filename string, stream coordinator.ReadChunkStream, showProgress bool) error
 }
 
-type Dialer interface {
+// NetDialer can open a net.Conn.
+type NetDialer interface {
 	DialContext(ctx context.Context, network, address string) (net.Conn, error)
 }

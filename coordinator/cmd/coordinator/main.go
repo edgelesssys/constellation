@@ -23,6 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/kubectl"
 	"github.com/edgelesssys/constellation/coordinator/util"
+	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
 	"github.com/edgelesssys/constellation/coordinator/wireguard"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/spf13/afero"
@@ -153,7 +154,8 @@ func main() {
 	}
 
 	fileHandler := file.NewHandler(fs)
-	dialer := &net.Dialer{}
-	run(validator, issuer, wg, openTPM, util.GetIPAddr, dialer, fileHandler, kube,
+	netDialer := &net.Dialer{}
+	dialer := grpcutil.NewDialer(validator, netDialer)
+	run(issuer, wg, openTPM, util.GetIPAddr, dialer, fileHandler, kube,
 		metadata, cloudControllerManager, cloudNodeManager, autoscaler, encryptedDisk, etcdEndpoint, enforceEtcdTls, bindIP, bindPort, zapLoggerCore)
 }

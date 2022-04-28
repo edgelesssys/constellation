@@ -168,7 +168,7 @@ func (a *API) JoinCluster(ctx context.Context, in *pubproto.JoinClusterRequest) 
 		return nil, status.Errorf(codes.FailedPrecondition, "node is not in required state for cluster join: %v", err)
 	}
 
-	conn, err := a.dialInsecure(ctx, net.JoinHostPort(in.CoordinatorVpnIp, vpnAPIPort))
+	conn, err := a.dialer.DialInsecure(ctx, net.JoinHostPort(in.CoordinatorVpnIp, vpnAPIPort))
 	if err != nil {
 		return nil, status.Errorf(codes.Unavailable, "dial coordinator: %v", err)
 	}
@@ -231,7 +231,7 @@ func (a *API) update(ctx context.Context) error {
 	defer cancel()
 
 	// TODO: replace hardcoded IP
-	conn, err := a.dialInsecure(ctx, net.JoinHostPort("10.118.0.1", vpnAPIPort))
+	conn, err := a.dialer.DialInsecure(ctx, net.JoinHostPort("10.118.0.1", vpnAPIPort))
 	if err != nil {
 		return err
 	}

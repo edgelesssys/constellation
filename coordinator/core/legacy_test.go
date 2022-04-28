@@ -16,6 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/state"
+	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
 	"github.com/spf13/afero"
@@ -112,13 +113,13 @@ func TestLegacyActivateCoordinator(t *testing.T) {
 }
 
 // newMockCoreWithDialer creates a new core object with attestation mock and provided dialer for testing.
-func newMockCoreWithDialer(dialer *bufconnDialer) (*Core, *pubapi.API, error) {
+func newMockCoreWithDialer(bufDialer *bufconnDialer) (*Core, *pubapi.API, error) {
 	zapLogger, err := zap.NewDevelopment()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	validator := NewMockValidator()
+	dialer := grpcutil.NewDialer(NewMockValidator(), bufDialer)
 	vpn := &stubVPN{}
 	kubeFake := &ClusterFake{}
 	metadataFake := &ProviderMetadataFake{}
@@ -138,8 +139,8 @@ func newMockCoreWithDialer(dialer *bufconnDialer) (*Core, *pubapi.API, error) {
 		return nil, nil, err
 	}
 
-	vapiServer := &fakeVPNAPIServer{logger: zapLogger, core: core, dialer: dialer}
-	papi := pubapi.New(zapLogger, core, dialer, vapiServer, validator, getPublicAddr, nil)
+	vapiServer := &fakeVPNAPIServer{logger: zapLogger, core: core, dialer: bufDialer}
+	papi := pubapi.New(zapLogger, core, dialer, vapiServer, getPublicAddr, nil)
 
 	return core, papi, nil
 }

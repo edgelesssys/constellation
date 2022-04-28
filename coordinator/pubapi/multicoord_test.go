@@ -10,6 +10,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
+	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
 	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -92,18 +93,19 @@ func TestActivateAsAdditionalCoordinator(t *testing.T) {
 				ownerID:                    []byte("ownerID"),
 				clusterID:                  []byte("clusterID"),
 			}
-			dialer := testdialer.NewBufconnDialer()
+			netDialer := testdialer.NewBufconnDialer()
+			dialer := grpcutil.NewDialer(fakeValidator{}, netDialer)
 
 			getPublicIPAddr := func() (string, error) {
 				return "192.0.2.1", nil
 			}
 
-			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, fakeValidator{}, getPublicIPAddr, nil)
+			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, getPublicIPAddr, nil)
 			defer api.Close()
 
 			// spawn vpnServer
 			vpnapiServer := tc.vpnapi.newServer()
-			go vpnapiServer.Serve(dialer.GetListener(net.JoinHostPort(tc.coordinators.peer.VPNIP, vpnAPIPort)))
+			go vpnapiServer.Serve(netDialer.GetListener(net.JoinHostPort(tc.coordinators.peer.VPNIP, vpnAPIPort)))
 			defer vpnapiServer.GracefulStop()
 
 			_, err := api.ActivateAsAdditionalCoordinator(context.Background(), &pubproto.ActivateAsAdditionalCoordinatorRequest{
@@ -163,9 +165,9 @@ func TestTriggerCoordinatorUpdate(t *testing.T) {
 				state: tc.state,
 				peers: tc.peers,
 			}
-			dialer := testdialer.NewBufconnDialer()
+			dialer := grpcutil.NewDialer(fakeValidator{}, nil)
 
-			api := New(logger, core, dialer, nil, nil, nil, nil)
+			api := New(logger, core, dialer, nil, nil, nil)
 
 			_, err := api.TriggerCoordinatorUpdate(context.Background(), &pubproto.TriggerCoordinatorUpdateRequest{})
 			if tc.wantErr {
@@ -236,20 +238,21 @@ func TestActivateAdditionalCoordinators(t *testing.T) {
 				ownerID:    []byte("ownerID"),
 				clusterID:  []byte("clusterID"),
 			}
-			dialer := testdialer.NewBufconnDialer()
+			netDialer := testdialer.NewBufconnDialer()
+			dialer := grpcutil.NewDialer(fakeValidator{}, netDialer)
 
 			getPublicIPAddr := func() (string, error) {
 				return "192.0.2.1", nil
 			}
 
-			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, fakeValidator{}, getPublicIPAddr, nil)
+			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, getPublicIPAddr, nil)
 			defer api.Close()
 
 			// spawn coordinator
 			tc.coordinators.activateErr = tc.activateErr
 			tc.coordinators.getPubKeyErr = tc.getPublicKeyErr
 			server := tc.coordinators.newServer()
-			go server.Serve(dialer.GetListener(net.JoinHostPort(tc.coordinators.peer.PublicIP, endpointAVPNPort)))
+			go server.Serve(netDialer.GetListener(net.JoinHostPort(tc.coordinators.peer.PublicIP, endpointAVPNPort)))
 			defer server.GracefulStop()
 
 			_, err := api.ActivateAdditionalCoordinator(context.Background(), &pubproto.ActivateAdditionalCoordinatorRequest{CoordinatorPublicIp: tc.coordinators.peer.PublicIP})
@@ -293,13 +296,13 @@ func TestGetPeerVPNPublicKey(t *testing.T) {
 				vpnPubKey:       tc.coordinator.peer.VPNPubKey,
 				getvpnPubKeyErr: tc.getVPNPubKeyErr,
 			}
-			dialer := testdialer.NewBufconnDialer()
+			dialer := grpcutil.NewDialer(fakeValidator{}, testdialer.NewBufconnDialer())
 
 			getPublicIPAddr := func() (string, error) {
 				return "192.0.2.1", nil
 			}
 
-			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, fakeValidator{}, getPublicIPAddr, nil)
+			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, getPublicIPAddr, nil)
 			defer api.Close()
 
 			resp, err := api.GetPeerVPNPublicKey(context.Background(), &pubproto.GetPeerVPNPublicKeyRequest{})

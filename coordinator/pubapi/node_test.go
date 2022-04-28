@@ -13,6 +13,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
+	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
 	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
 	"github.com/stretchr/testify/assert"
@@ -127,25 +128,26 @@ func TestActivateAsNode(t *testing.T) {
 
 			logger := zaptest.NewLogger(t)
 			cor := &fakeCore{state: tc.state, vpnPubKey: vpnPubKey, setVPNIPErr: tc.setVPNIPErr}
-			dialer := testdialer.NewBufconnDialer()
+			netDialer := testdialer.NewBufconnDialer()
+			dialer := grpcutil.NewDialer(fakeValidator{}, netDialer)
 
-			api := New(logger, cor, dialer, nil, nil, nil, nil)
+			api := New(logger, cor, dialer, nil, nil, nil)
 			defer api.Close()
 
 			vserver := grpc.NewServer()
 			vapi := &stubVPNAPI{peers: tc.updatedPeers, getUpdateErr: tc.getUpdateErr}
 			vpnproto.RegisterAPIServer(vserver, vapi)
-			go vserver.Serve(dialer.GetListener(net.JoinHostPort("10.118.0.1", vpnAPIPort)))
+			go vserver.Serve(netDialer.GetListener(net.JoinHostPort("10.118.0.1", vpnAPIPort)))
 			defer vserver.GracefulStop()
 
 			tlsConfig, err := atls.CreateAttestationServerTLSConfig(&core.MockIssuer{})
 			require.NoError(err)
 			pubserver := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
 			pubproto.RegisterAPIServer(pubserver, api)
-			go pubserver.Serve(dialer.GetListener(net.JoinHostPort(nodeIP, endpointAVPNPort)))
+			go pubserver.Serve(netDialer.GetListener(net.JoinHostPort(nodeIP, endpointAVPNPort)))
 			defer pubserver.GracefulStop()
 
-			_, nodeVPNPubKey, err := activateNode(require, dialer, messageSequence, nodeIP, "9000", nodeVPNIP, peer.ToPubProto(tc.initialPeers), ownerID, clusterID, stateDiskKey)
+			_, nodeVPNPubKey, err := activateNode(require, netDialer, messageSequence, nodeIP, "9000", nodeVPNIP, peer.ToPubProto(tc.initialPeers), ownerID, clusterID, stateDiskKey)
 			assert.Equal(tc.wantState, cor.state)
 
 			if tc.wantErr {
@@ -215,9 +217,10 @@ func TestTriggerNodeUpdate(t *testing.T) {
 
 			logger := zaptest.NewLogger(t)
 			core := &fakeCore{state: tc.state}
-			dialer := testdialer.NewBufconnDialer()
+			netDialer := testdialer.NewBufconnDialer()
+			dialer := grpcutil.NewDialer(fakeValidator{}, netDialer)
 
-			api := New(logger, core, dialer, nil, nil, nil, nil)
+			api := New(logger, core, dialer, nil, nil, nil)
 
 			vserver := grpc.NewServer()
 			vapi := &stubVPNAPI{
@@ -225,7 +228,7 @@ func TestTriggerNodeUpdate(t *testing.T) {
 				getUpdateErr: tc.getUpdateErr,
 			}
 			vpnproto.RegisterAPIServer(vserver, vapi)
-			go vserver.Serve(dialer.GetListener(net.JoinHostPort("10.118.0.1", vpnAPIPort)))
+			go vserver.Serve(netDialer.GetListener(net.JoinHostPort("10.118.0.1", vpnAPIPort)))
 			defer vserver.GracefulStop()
 
 			_, err := api.TriggerNodeUpdate(context.Background(), &pubproto.TriggerNodeUpdateRequest{})
@@ -290,9 +293,10 @@ func TestJoinCluster(t *testing.T) {
 
 			logger := zaptest.NewLogger(t)
 			core := &fakeCore{state: tc.state, joinClusterErr: tc.joinClusterErr}
-			dialer := testdialer.NewBufconnDialer()
+			netDialer := testdialer.NewBufconnDialer()
+			dialer := grpcutil.NewDialer(fakeValidator{}, netDialer)
 
-			api := New(logger, core, dialer, nil, nil, nil, nil)
+			api := New(logger, core, dialer, nil, nil, nil)
 
 			vserver := grpc.NewServer()
 			vapi := &stubVPNAPI{
@@ -304,7 +308,7 @@ func TestJoinCluster(t *testing.T) {
 				getJoinArgsErr: tc.getJoinArgsErr,
 			}
 			vpnproto.RegisterAPIServer(vserver, vapi)
-			go vserver.Serve(dialer.GetListener(net.JoinHostPort("192.0.2.1", vpnAPIPort)))
+			go vserver.Serve(netDialer.GetListener(net.JoinHostPort("192.0.2.1", vpnAPIPort)))
 			defer vserver.GracefulStop()
 
 			_, err := api.JoinCluster(context.Background(), &pubproto.JoinClusterRequest{CoordinatorVpnIp: "192.0.2.1"})
@@ -322,7 +326,7 @@ func TestJoinCluster(t *testing.T) {
 	}
 }
 
-func activateNode(require *require.Assertions, dialer Dialer, messageSequence []string, nodeIP, bindPort, nodeVPNIP string, peers []*pubproto.Peer, ownerID, clusterID, stateDiskKey []byte) (string, []byte, error) {
+func activateNode(require *require.Assertions, dialer netDialer, messageSequence []string, nodeIP, bindPort, nodeVPNIP string, peers []*pubproto.Peer, ownerID, clusterID, stateDiskKey []byte) (string, []byte, error) {
 	ctx := context.Background()
 	conn, err := dialGRPC(ctx, dialer, net.JoinHostPort(nodeIP, bindPort))
 	require.NoError(err)
@@ -385,7 +389,7 @@ func activateNode(require *require.Assertions, dialer Dialer, messageSequence []
 	return diskUUID, nodeVPNPubKey, nil
 }
 
-func dialGRPC(ctx context.Context, dialer Dialer, target string) (*grpc.ClientConn, error) {
+func dialGRPC(ctx context.Context, dialer netDialer, target string) (*grpc.ClientConn, error) {
 	tlsConfig, err := atls.CreateAttestationClientTLSConfig([]atls.Validator{&core.MockValidator{}})
 	if err != nil {
 		return nil, err
@@ -428,4 +432,8 @@ func (a *stubVPNAPI) newServer() *grpc.Server {
 	server := grpc.NewServer()
 	vpnproto.RegisterAPIServer(server, a)
 	return server
+}
+
+type netDialer interface {
+	DialContext(ctx context.Context, network, address string) (net.Conn, error)
 }

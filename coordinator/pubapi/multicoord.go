@@ -199,7 +199,7 @@ func (a *API) activateCoordinator(ctx context.Context, coordinatorIP string) err
 		return err
 	}
 
-	conn, err := a.dial(ctx, net.JoinHostPort(coordinatorIP, endpointAVPNPort))
+	conn, err := a.dialer.Dial(ctx, net.JoinHostPort(coordinatorIP, endpointAVPNPort))
 	if err != nil {
 		return fmt.Errorf("dialing new coordinator: %v", err)
 	}
@@ -271,7 +271,7 @@ func (a *API) triggerCoordinatorUpdate(ctx context.Context, publicIP string) err
 
 	// We don't verify the peer certificate here, since TriggerNodeUpdate triggers a connection over VPN
 	// The target of the rpc needs to already be part of the VPN to process the request, meaning it is trusted
-	conn, err := a.dialNoVerify(ctx, net.JoinHostPort(publicIP, endpointAVPNPort))
+	conn, err := a.dialer.DialNoVerify(ctx, net.JoinHostPort(publicIP, endpointAVPNPort))
 	if err != nil {
 		return err
 	}
@@ -284,7 +284,7 @@ func (a *API) triggerCoordinatorUpdate(ctx context.Context, publicIP string) err
 }
 
 func (a *API) getk8SCoordinatorJoinArgs(ctx context.Context, coordinatorIP, port string) (*kubeadm.BootstrapTokenDiscovery, string, error) {
-	conn, err := a.dialInsecure(ctx, net.JoinHostPort(coordinatorIP, port))
+	conn, err := a.dialer.DialInsecure(ctx, net.JoinHostPort(coordinatorIP, port))
 	if err != nil {
 		return nil, "", err
 	}
