@@ -1,9 +1,9 @@
 FROM ubuntu@sha256:7cc0576c7c0ec2384de5cbf245f41567e922aab1b075f3e8ad565f508032df17 as build
 
 ARG GO_VER=1.18
-ARG GEN_GO_VER=1.27.1
-ARG GEN_GO_GRPC_VER=1.1
-ARG PB_VER=3.17.3
+ARG GEN_GO_VER=1.28.0
+ARG GEN_GO_GRPC_VER=1.2.0
+ARG PB_VER=3.20.1
 
 ENV DEBIAN_FRONTEND="noninteractive"
 RUN apt-get update && apt-get install -y wget tar unzip
