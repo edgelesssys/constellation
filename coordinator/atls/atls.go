@@ -148,7 +148,7 @@ type Validator interface {
 	Validate(attDoc []byte, nonce []byte) ([]byte, error)
 }
 
-func hashPublicKey(pub interface{}) ([]byte, error) {
+func hashPublicKey(pub any) ([]byte, error) {
 	pubBytes, err := x509.MarshalPKIXPublicKey(pub)
 	if err != nil {
 		return nil, err

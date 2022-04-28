@@ -140,7 +140,7 @@ func (m *fakeAWSClient) GetParametersForImport(ctx context.Context, params *kms.
 	if err != nil {
 		return nil, errors.New("Error generating Key Pair")
 	}
-	var pki interface{} = &m.keyPairStruct.PublicKey
+	var pki any = &m.keyPairStruct.PublicKey
 	publicKeyBytes, err := x509.MarshalPKIXPublicKey(pki)
 	if err != nil {
 		return nil, err

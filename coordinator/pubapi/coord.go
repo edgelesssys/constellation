@@ -393,7 +393,7 @@ func (a *API) assemblePeerStruct(vpnIP string, _ role.Role) (peer.Peer, error) {
 }
 
 func (a *API) newLogToCLIFunc(send func(string) error) logFunc {
-	return func(format string, v ...interface{}) {
+	return func(format string, v ...any) {
 		if err := send(fmt.Sprintf(format, v...)); err != nil {
 			a.logger.Error("logging to CLI failed", zap.Error(err))
 		}
@@ -460,4 +460,4 @@ func (a *API) triggerNodeUpdate(nodePublicIP string) error {
 	return err
 }
 
-type logFunc func(format string, v ...interface{})
+type logFunc func(format string, v ...any)

@@ -155,6 +155,6 @@ func (v *Validators) checkPCRs(pcrs map[uint32][]byte) error {
 	return nil
 }
 
-func writeFmt(sb *strings.Builder, fmtStr string, args ...interface{}) {
+func writeFmt(sb *strings.Builder, fmtStr string, args ...any) {
 	sb.WriteString(fmt.Sprintf(fmtStr, args...))
 }

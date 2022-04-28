@@ -142,7 +142,7 @@ func stubNewConnFunc(errStub error) func(ctx context.Context, target string, opt
 
 type stubClientConn struct{}
 
-func (c *stubClientConn) Invoke(ctx context.Context, method string, args interface{}, reply interface{}, opts ...grpc.CallOption) error {
+func (c *stubClientConn) Invoke(ctx context.Context, method string, args any, reply any, opts ...grpc.CallOption) error {
 	return nil
 }
 

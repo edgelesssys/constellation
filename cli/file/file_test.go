@@ -25,7 +25,7 @@ func TestReadJSON(t *testing.T) {
 		fs          afero.Fs
 		setupFs     func(fs *afero.Afero) error
 		name        string
-		wantContent interface{}
+		wantContent any
 		wantErr     bool
 	}{
 		"successful read": {
@@ -83,7 +83,7 @@ func TestWriteJSON(t *testing.T) {
 		fs      afero.Fs
 		setupFs func(af afero.Afero) error
 		name    string
-		content interface{}
+		content any
 		options Option
 		wantErr bool
 	}{

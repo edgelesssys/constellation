@@ -76,7 +76,7 @@ func (h *Handler) Write(name string, data []byte, options Option) error {
 
 // ReadJSON reads a JSON file from name and unmarshals it into the content interface.
 // The interface content must be a pointer to a JSON marchalable object.
-func (h *Handler) ReadJSON(name string, content interface{}) error {
+func (h *Handler) ReadJSON(name string, content any) error {
 	data, err := h.Read(name)
 	if err != nil {
 		return err
@@ -85,7 +85,7 @@ func (h *Handler) ReadJSON(name string, content interface{}) error {
 }
 
 // WriteJSON marshals the content interface to JSON and writes it to the path with the given name.
-func (h *Handler) WriteJSON(name string, content interface{}, options Option) error {
+func (h *Handler) WriteJSON(name string, content any, options Option) error {
 	jsonData, err := json.MarshalIndent(content, "", "\t")
 	if err != nil {
 		return err

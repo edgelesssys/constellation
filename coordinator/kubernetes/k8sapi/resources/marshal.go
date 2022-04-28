@@ -20,7 +20,7 @@ type Marshaler interface {
 }
 
 // MarshalK8SResources marshals every field of a struct into a k8s resource YAML.
-func MarshalK8SResources(resources interface{}) ([]byte, error) {
+func MarshalK8SResources(resources any) ([]byte, error) {
 	if resources == nil {
 		return nil, errors.New("marshal on nil called")
 	}
@@ -37,7 +37,7 @@ func MarshalK8SResources(resources interface{}) ([]byte, error) {
 		// iterate over all struct fields
 		for i := 0; i < elem.NumField(); i++ {
 			field := elem.Field(i)
-			var inter interface{}
+			var inter any
 			// check if value can be converted to interface
 			if field.CanInterface() {
 				inter = field.Addr().Interface()
@@ -65,7 +65,7 @@ func MarshalK8SResources(resources interface{}) ([]byte, error) {
 }
 
 // UnmarshalK8SResources takes YAML and converts it into a k8s resources struct.
-func UnmarshalK8SResources(data []byte, into interface{}) error {
+func UnmarshalK8SResources(data []byte, into any) error {
 	if into == nil {
 		return errors.New("unmarshal on nil called")
 	}
@@ -86,7 +86,7 @@ func UnmarshalK8SResources(data []byte, into interface{}) error {
 
 	for i := 0; i < value.NumField(); i++ {
 		field := value.Field(i)
-		var inter interface{}
+		var inter any
 		// check if value can be converted to interface
 		if !field.CanInterface() {
 			return fmt.Errorf("cannot use struct field %v as interface", i)
@@ -131,7 +131,7 @@ func splitYAML(resources []byte) ([][]byte, error) {
 	dec := yaml.NewDecoder(bytes.NewReader(resources))
 	var res [][]byte
 	for {
-		var value interface{}
+		var value any
 		err := dec.Decode(&value)
 		if errors.Is(err, io.EOF) {
 			break

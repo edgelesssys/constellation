@@ -13,7 +13,7 @@ import (
 
 func TestMarshalK8SResources(t *testing.T) {
 	testCases := map[string]struct {
-		resources interface{}
+		resources any
 		wantErr   bool
 		wantYAML  string
 	}{
@@ -119,8 +119,8 @@ metadata:
 func TestUnmarshalK8SResources(t *testing.T) {
 	testCases := map[string]struct {
 		data    string
-		into    interface{}
-		wantObj interface{}
+		into    any
+		wantObj any
 		wantErr bool
 	}{
 		"ConfigMap as only field can be unmarshaled": {

@@ -156,7 +156,7 @@ Y+t5OxL3kL15VzY1Ob0d5cMCAwEAAQ==
 	}
 }
 
-func mustMarshal(in interface{}, require *require.Assertions) []byte {
+func mustMarshal(in any, require *require.Assertions) []byte {
 	out, err := json.Marshal(in)
 	require.NoError(err)
 	return out
