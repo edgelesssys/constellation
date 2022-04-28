@@ -28,6 +28,7 @@ type APIClient interface {
 	TriggerNodeUpdate(ctx context.Context, in *TriggerNodeUpdateRequest, opts ...grpc.CallOption) (*TriggerNodeUpdateResponse, error)
 	TriggerCoordinatorUpdate(ctx context.Context, in *TriggerCoordinatorUpdateRequest, opts ...grpc.CallOption) (*TriggerCoordinatorUpdateResponse, error)
 	GetPeerVPNPublicKey(ctx context.Context, in *GetPeerVPNPublicKeyRequest, opts ...grpc.CallOption) (*GetPeerVPNPublicKeyResponse, error)
+	GetVPNPeers(ctx context.Context, in *GetVPNPeersRequest, opts ...grpc.CallOption) (*GetVPNPeersResponse, error)
 	RequestStateDiskKey(ctx context.Context, in *RequestStateDiskKeyRequest, opts ...grpc.CallOption) (*RequestStateDiskKeyResponse, error)
 }
 
@@ -197,6 +198,15 @@ func (c *aPIClient) GetPeerVPNPublicKey(ctx context.Context, in *GetPeerVPNPubli
 	return out, nil
 }
 
+func (c *aPIClient) GetVPNPeers(ctx context.Context, in *GetVPNPeersRequest, opts ...grpc.CallOption) (*GetVPNPeersResponse, error) {
+	out := new(GetVPNPeersResponse)
+	err := c.cc.Invoke(ctx, "/pubapi.API/GetVPNPeers", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *aPIClient) RequestStateDiskKey(ctx context.Context, in *RequestStateDiskKeyRequest, opts ...grpc.CallOption) (*RequestStateDiskKeyResponse, error) {
 	out := new(RequestStateDiskKeyResponse)
 	err := c.cc.Invoke(ctx, "/pubapi.API/RequestStateDiskKey", in, out, opts...)
@@ -220,6 +230,7 @@ type APIServer interface {
 	TriggerNodeUpdate(context.Context, *TriggerNodeUpdateRequest) (*TriggerNodeUpdateResponse, error)
 	TriggerCoordinatorUpdate(context.Context, *TriggerCoordinatorUpdateRequest) (*TriggerCoordinatorUpdateResponse, error)
 	GetPeerVPNPublicKey(context.Context, *GetPeerVPNPublicKeyRequest) (*GetPeerVPNPublicKeyResponse, error)
+	GetVPNPeers(context.Context, *GetVPNPeersRequest) (*GetVPNPeersResponse, error)
 	RequestStateDiskKey(context.Context, *RequestStateDiskKeyRequest) (*RequestStateDiskKeyResponse, error)
 	mustEmbedUnimplementedAPIServer()
 }
@@ -257,6 +268,9 @@ func (UnimplementedAPIServer) TriggerCoordinatorUpdate(context.Context, *Trigger
 }
 func (UnimplementedAPIServer) GetPeerVPNPublicKey(context.Context, *GetPeerVPNPublicKeyRequest) (*GetPeerVPNPublicKeyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPeerVPNPublicKey not implemented")
+}
+func (UnimplementedAPIServer) GetVPNPeers(context.Context, *GetVPNPeersRequest) (*GetVPNPeersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetVPNPeers not implemented")
 }
 func (UnimplementedAPIServer) RequestStateDiskKey(context.Context, *RequestStateDiskKeyRequest) (*RequestStateDiskKeyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestStateDiskKey not implemented")
@@ -468,6 +482,24 @@ func _API_GetPeerVPNPublicKey_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _API_GetVPNPeers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetVPNPeersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIServer).GetVPNPeers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pubapi.API/GetVPNPeers",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIServer).GetVPNPeers(ctx, req.(*GetVPNPeersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _API_RequestStateDiskKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestStateDiskKeyRequest)
 	if err := dec(in); err != nil {
@@ -520,6 +552,10 @@ var API_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPeerVPNPublicKey",
 			Handler:    _API_GetPeerVPNPublicKey_Handler,
+		},
+		{
+			MethodName: "GetVPNPeers",
+			Handler:    _API_GetVPNPeers_Handler,
 		},
 		{
 			MethodName: "RequestStateDiskKey",

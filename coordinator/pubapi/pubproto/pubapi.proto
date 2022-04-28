@@ -15,6 +15,7 @@ service API {
   rpc TriggerNodeUpdate(TriggerNodeUpdateRequest) returns (TriggerNodeUpdateResponse);
   rpc TriggerCoordinatorUpdate(TriggerCoordinatorUpdateRequest) returns (TriggerCoordinatorUpdateResponse);
   rpc GetPeerVPNPublicKey(GetPeerVPNPublicKeyRequest) returns (GetPeerVPNPublicKeyResponse);
+  rpc GetVPNPeers(GetVPNPeersRequest) returns (GetVPNPeersResponse);
   rpc RequestStateDiskKey(RequestStateDiskKeyRequest) returns (RequestStateDiskKeyResponse);
 }
 
@@ -124,6 +125,13 @@ message GetPeerVPNPublicKeyRequest {
 
 message GetPeerVPNPublicKeyResponse {
   bytes coordinator_pub_key = 1;
+}
+
+message GetVPNPeersRequest {
+}
+
+message GetVPNPeersResponse {
+  repeated Peer peers = 1;
 }
 
 message AdminConfig {
