@@ -22,7 +22,7 @@ const (
 	keyFilepath      = "/etc/kubernetes/pki/etcd/peer.key"
 	caCertFilepath   = "/etc/kubernetes/pki/etcd/server.crt"
 	etcdPrefix       = "constellationRegion"
-	dialTimeout      = 10 * time.Second
+	dialTimeout      = 60 * time.Second
 )
 
 type EtcdStore struct {

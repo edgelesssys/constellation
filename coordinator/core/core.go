@@ -21,27 +21,29 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/util"
 	"github.com/edgelesssys/constellation/kms/kms"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 var coordinatorVPNIP = netip.AddrFrom4([4]byte{10, 118, 0, 1})
 
 type Core struct {
-	state                  state.State
-	openTPM                vtpm.TPMOpenFunc
-	mut                    sync.Mutex
-	store                  store.Store
-	vpn                    VPN
-	kube                   Cluster
-	metadata               ProviderMetadata
-	cloudControllerManager CloudControllerManager
-	cloudNodeManager       CloudNodeManager
-	clusterAutoscaler      ClusterAutoscaler
-	encryptedDisk          EncryptedDisk
-	kms                    kms.CloudKMS
-	zaplogger              *zap.Logger
-	persistentStoreFactory PersistentStoreFactory
-	lastHeartbeats         map[string]time.Time
-	fileHandler            file.Handler
+	state                    state.State
+	openTPM                  vtpm.TPMOpenFunc
+	mut                      sync.Mutex
+	store                    store.Store
+	vpn                      VPN
+	kube                     Cluster
+	metadata                 ProviderMetadata
+	cloudControllerManager   CloudControllerManager
+	cloudNodeManager         CloudNodeManager
+	clusterAutoscaler        ClusterAutoscaler
+	encryptedDisk            EncryptedDisk
+	kms                      kms.CloudKMS
+	zaplogger                *zap.Logger
+	persistentStoreFactory   PersistentStoreFactory
+	initialVPNPeersRetriever initialVPNPeersRetriever
+	lastHeartbeats           map[string]time.Time
+	fileHandler              file.Handler
 }
 
 // NewCore creates and initializes a new Core object.
@@ -51,26 +53,23 @@ func NewCore(vpn VPN, kube Cluster,
 ) (*Core, error) {
 	stor := store.NewStdStore()
 	c := &Core{
-		openTPM:                openTPM,
-		store:                  stor,
-		vpn:                    vpn,
-		kube:                   kube,
-		metadata:               metadata,
-		cloudNodeManager:       cloudNodeManager,
-		cloudControllerManager: cloudControllerManager,
-		clusterAutoscaler:      clusterAutoscaler,
-		encryptedDisk:          encryptedDisk,
-		zaplogger:              zapLogger,
-		kms:                    nil, // KMS is set up during init phase
-		persistentStoreFactory: persistentStoreFactory,
-		lastHeartbeats:         make(map[string]time.Time),
-		fileHandler:            fileHandler,
+		openTPM:                  openTPM,
+		store:                    stor,
+		vpn:                      vpn,
+		kube:                     kube,
+		metadata:                 metadata,
+		cloudNodeManager:         cloudNodeManager,
+		cloudControllerManager:   cloudControllerManager,
+		clusterAutoscaler:        clusterAutoscaler,
+		encryptedDisk:            encryptedDisk,
+		zaplogger:                zapLogger,
+		kms:                      nil, // KMS is set up during init phase
+		persistentStoreFactory:   persistentStoreFactory,
+		initialVPNPeersRetriever: getInitialVPNPeers,
+		lastHeartbeats:           make(map[string]time.Time),
+		fileHandler:              fileHandler,
 	}
 	if err := c.data().IncrementPeersResourceVersion(); err != nil {
-		return nil, err
-	}
-
-	if err := vpn.Setup(nil); err != nil {
 		return nil, err
 	}
 
@@ -183,13 +182,16 @@ func (c *Core) NotifyNodeHeartbeat(addr net.Addr) {
 
 // Initialize initializes the state machine of the core and handles re-joining the VPN.
 // Blocks until the core is ready to be used.
-func (c *Core) Initialize() (nodeActivated bool, err error) {
+func (c *Core) Initialize(ctx context.Context, dialer Dialer, api PubAPI) (nodeActivated bool, err error) {
 	nodeActivated, err = vtpm.IsNodeInitialized(c.openTPM)
 	if err != nil {
 		return false, fmt.Errorf("failed to check for previous activation using vTPM: %w", err)
 	}
 	if !nodeActivated {
 		c.zaplogger.Info("Node was never activated. Allowing node to be activated.")
+		if err := c.vpn.Setup(nil); err != nil {
+			return false, fmt.Errorf("failed to setup VPN: %w", err)
+		}
 		c.state.Advance(state.AcceptingInit)
 		return false, nil
 	}
@@ -198,28 +200,25 @@ func (c *Core) Initialize() (nodeActivated bool, err error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to read node state: %w", err)
 	}
+	if err := c.vpn.Setup(nodeState.VPNPrivKey); err != nil {
+		return false, fmt.Errorf("failed to setup VPN: %w", err)
+	}
 	var initialState state.State
 	switch nodeState.Role {
 	case role.Coordinator:
 		initialState = state.ActivatingNodes
+		err = c.ReinitializeAsCoordinator(ctx, dialer, nodeState.VPNIP, api, retrieveInitialVPNPeersRetryBackoff)
 	case role.Node:
 		initialState = state.IsNode
+		err = c.ReinitializeAsNode(ctx, dialer, nodeState.VPNIP, api, retrieveInitialVPNPeersRetryBackoff)
 	default:
 		return false, fmt.Errorf("invalid node role for initialized node: %v", nodeState.Role)
 	}
-	// TODO: if node was previously initialized, attempt to re-join wireguard here.
-	// Steps to rejoining should include:
-	// - retrieve list of coordinators from cloud provider API
-	// - attempt to retrieve list of wireguard public keys from any other coordinator while checking for correct PCRs in ATLS
-	// - re-establish wireguard connections
-	// - call update function successfully at least once
-	// - advance state to IsNode or ActivatingNodes respectively
-	// - restart update loop
-	// This procedure can be retried until it succeeds.
-	// The node must be put into the correct state before the update loop is started.
-	panic("not implemented")
+	if err != nil {
+		return false, fmt.Errorf("reinit failed: %w", err)
+	}
+	c.zaplogger.Info("Re-join successful.")
 
-	//nolint:govet // this code is unreachable as long as the above is unimplemented
 	c.state.Advance(initialState)
 	return nodeActivated, nil
 }
@@ -302,4 +301,9 @@ type PersistentStoreFactory interface {
 func deriveOwnerID(masterSecret []byte) ([]byte, error) {
 	// TODO: Choose a way to salt the key derivation
 	return util.DeriveKey(masterSecret, []byte("Constellation"), []byte("id"), config.RNGLengthDefault)
+}
+
+// Dialer can open grpc client connections with different levels of ATLS encryption / verification.
+type Dialer interface {
+	Dial(ctx context.Context, target string) (*grpc.ClientConn, error)
 }

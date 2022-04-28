@@ -9,14 +9,19 @@ import (
 	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/coordinator/attestation/simulator"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
+	"github.com/edgelesssys/constellation/coordinator/kms"
 	"github.com/edgelesssys/constellation/coordinator/nodestate"
+	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/store"
+	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
+	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 )
 
@@ -161,7 +166,6 @@ func TestInitialize(t *testing.T) {
 		role           role.Role
 		wantActivated  bool
 		wantState      state.State
-		wantPanic      bool
 		wantErr        bool
 	}{
 		"fresh node": {
@@ -171,7 +175,6 @@ func TestInitialize(t *testing.T) {
 			initializePCRs: true,
 			writeNodeState: true,
 			role:           role.Coordinator,
-			wantPanic:      true, // TODO: adapt test case once restart is implemented
 			wantActivated:  true,
 			wantState:      state.ActivatingNodes,
 		},
@@ -179,7 +182,6 @@ func TestInitialize(t *testing.T) {
 			initializePCRs: true,
 			writeNodeState: true,
 			role:           role.Node,
-			wantPanic:      true, // TODO: adapt test case once restart is implemented
 			wantActivated:  true,
 			wantState:      state.IsNode,
 		},
@@ -207,16 +209,15 @@ func TestInitialize(t *testing.T) {
 					VPNPrivKey: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7},
 				}).ToFile(fileHandler))
 			}
-
-			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), openTPM, nil, fileHandler)
+			core, err := NewCore(&stubVPN{}, nil, &ProviderMetadataFake{}, nil, nil, nil, nil, zaptest.NewLogger(t), openTPM, &fakeStoreFactory{}, fileHandler)
 			require.NoError(err)
+			core.initialVPNPeersRetriever = fakeInitializeVPNPeersRetriever
+			// prepare store to emulate initialized KMS
+			require.NoError(core.data().PutKMSData(kms.KMSInformation{StorageUri: kms.NoStoreURI, KmsUri: kms.ClusterKMSURI}))
+			require.NoError(core.data().PutMasterSecret([]byte("master-secret")))
+			dialer := grpcutil.NewDialer(&MockValidator{}, testdialer.NewBufconnDialer())
 
-			if tc.wantPanic {
-				assert.Panics(func() { _, _ = core.Initialize() })
-				return
-			}
-
-			nodeActivated, err := core.Initialize()
+			nodeActivated, err := core.Initialize(context.Background(), dialer, &stubPubAPI{})
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -315,4 +316,18 @@ func (k *fakeKMS) GetDEK(ctx context.Context, kekID, keyID string, length int) (
 		return nil, errors.New("error")
 	}
 	return k.dek, nil
+}
+
+type stubPubAPI struct {
+	startVPNAPIErr error
+}
+
+func (p *stubPubAPI) StartVPNAPIServer(vpnIP string) error {
+	return p.startVPNAPIErr
+}
+
+func (p *stubPubAPI) StartUpdateLoop() {}
+
+func fakeInitializeVPNPeersRetriever(ctx context.Context, dialer Dialer, logger *zap.Logger, metadata ProviderMetadata, ownCoordinatorEndpoint *string) ([]peer.Peer, error) {
+	return []peer.Peer{}, nil
 }

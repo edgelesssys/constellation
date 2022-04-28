@@ -52,7 +52,7 @@ func run(issuer core.QuoteIssuer, vpn core.VPN, openTPM vtpm.TPMOpenFunc, getPub
 	zapLoggerPubapi := zapLoggerCore.Named("pubapi")
 	papi := pubapi.New(zapLoggerPubapi, core, dialer, vapiServer, getPublicIPAddr, pubapi.GetRecoveryPeerFromContext)
 	// initialize state machine and wait for re-joining of the VPN (if applicable)
-	nodeActivated, err := core.Initialize()
+	nodeActivated, err := core.Initialize(context.TODO(), dialer, papi)
 	if err != nil {
 		zapLoggerCore.Fatal("failed to initialize core", zap.Error(err))
 	}
