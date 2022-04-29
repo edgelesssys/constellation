@@ -16,7 +16,7 @@ add_custom_target(disk-mapper ALL
 #
 
 add_custom_target(coordinator ALL
-  go build -o ${CMAKE_BINARY_DIR} -tags=gcp -buildvcs=false -ldflags "-s -w -buildid='' -X main.version=${PROJECT_VERSION}"
+  go build -o ${CMAKE_BINARY_DIR} -tags=gcp,disable_tpm_simulator -buildvcs=false -ldflags "-s -w -buildid='' -X main.version=${PROJECT_VERSION}"
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/coordinator/cmd/coordinator)
 
 
