@@ -93,7 +93,6 @@ func (v *Validators) updateValidators() {
 	case cloudprovider.GCP:
 		v.validators = []atls.Validator{
 			gcp.NewValidator(v.pcrs),
-			gcp.NewNonCVMValidator(map[uint32][]byte{}), // TODO: Remove once we no longer use non CVMs.
 		}
 	case cloudprovider.Azure:
 		v.validators = []atls.Validator{

@@ -84,18 +84,9 @@ func main() {
 			log.Fatal(err)
 		}
 
-		// TODO: Remove once we no longer use non cvms
-		isCVM, err := gcp.IsCVM()
-		if err != nil {
-			log.Fatal(err)
-		}
-		if isCVM {
-			issuer = gcp.NewIssuer()
-			validator = gcp.NewValidator(pcrs)
-		} else {
-			issuer = gcp.NewNonCVMIssuer()
-			validator = gcp.NewNonCVMValidator(pcrs)
-		}
+		issuer = gcp.NewIssuer()
+		validator = gcp.NewValidator(pcrs)
+
 		kube = kubernetes.New(&k8sapi.KubernetesUtil{}, &k8sapi.CoreOSConfiguration{}, kubectl.New())
 		gcpClient, err := gcpcloud.NewClient(context.Background())
 		if err != nil {

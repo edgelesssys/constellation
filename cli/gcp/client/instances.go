@@ -37,7 +37,6 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		Zone:                         c.zone,
 		Region:                       c.region,
 		UID:                          c.uid,
-		DisableCVM:                   input.DisableCVM,
 	}
 	op, err := c.insertInstanceTemplate(ctx, nodeTemplateInput)
 	if err != nil {
@@ -58,7 +57,6 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		Zone:            c.zone,
 		Region:          c.region,
 		UID:             c.uid,
-		DisableCVM:      input.DisableCVM,
 	}
 	op, err = c.insertInstanceTemplate(ctx, coordinatorTemplateInput)
 	if err != nil {
@@ -293,7 +291,6 @@ type CreateInstancesInput struct {
 	InstanceType      string
 	StateDiskSizeGB   int
 	KubeEnv           string
-	DisableCVM        bool
 }
 
 type insertInstanceTemplateInput struct {
@@ -309,7 +306,6 @@ type insertInstanceTemplateInput struct {
 	Zone                         string
 	Region                       string
 	UID                          string
-	DisableCVM                   bool
 }
 
 func (i insertInstanceTemplateInput) insertInstanceTemplateRequest() *computepb.InsertInstanceTemplateRequest {
@@ -319,7 +315,7 @@ func (i insertInstanceTemplateInput) insertInstanceTemplateRequest() *computepb.
 			Name:        proto.String(i.Name),
 			Properties: &computepb.InstanceProperties{
 				ConfidentialInstanceConfig: &computepb.ConfidentialInstanceConfig{
-					EnableConfidentialCompute: proto.Bool(!i.DisableCVM),
+					EnableConfidentialCompute: proto.Bool(true),
 				},
 				Description: proto.String("This instance belongs to a Constellation."),
 				Disks: []*computepb.AttachedDisk{

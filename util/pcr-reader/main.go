@@ -48,7 +48,6 @@ func main() {
 	if err := waiter.InitializeValidators([]atls.Validator{
 		azure.NewValidator(map[uint32][]byte{}),
 		gcp.NewValidator(map[uint32][]byte{}),
-		gcp.NewNonCVMValidator(map[uint32][]byte{}),
 	}); err != nil {
 		log.Fatal(err)
 	}
@@ -110,7 +109,7 @@ func getVerifyPeerCertificateFunc(attDoc *[]byte) func(rawCerts [][]byte, verifi
 		}
 
 		for _, ex := range cert.Extensions {
-			if ex.Id.Equal(oid.Azure{}.OID()) || ex.Id.Equal(oid.GCP{}.OID()) || ex.Id.Equal(oid.GCPNonCVM{}.OID()) {
+			if ex.Id.Equal(oid.Azure{}.OID()) || ex.Id.Equal(oid.GCP{}.OID()) {
 				if err := json.Unmarshal(ex.Value, attDoc); err != nil {
 					*attDoc = ex.Value
 				}

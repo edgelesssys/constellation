@@ -278,7 +278,6 @@ func TestValidatorsV(t *testing.T) {
 			pcrs:     newTestPCRs(),
 			wantVs: []atls.Validator{
 				gcp.NewValidator(newTestPCRs()),
-				gcp.NewNonCVMValidator(map[uint32][]byte{}), // TODO: remove when not longer needed.
 			},
 		},
 		"azure": {

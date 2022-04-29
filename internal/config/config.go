@@ -191,8 +191,7 @@ func Default() *Config {
 					"roles/storage.admin",
 					"roles/iam.serviceAccountUser",
 				},
-				DisableCVM: proto.Bool(false),
-				PCRs:       pcrPtr(gcpPCRs),
+				PCRs: pcrPtr(gcpPCRs),
 			},
 		},
 	}
@@ -247,7 +246,6 @@ type GCPConfig struct {
 	VPCsInput           *gcpClient.VPCsInput     `json:"vpcsinput,omitempty"`
 	ServiceAccountRoles *[]string                `json:"serviceaccountroles,omitempty"`
 	PCRs                *map[uint32][]byte       `json:"pcrs,omitempty"`
-	DisableCVM          *bool                    `json:"disableCVM"`
 }
 
 func pcrPtr(pcrs map[uint32][]byte) *map[uint32][]byte {

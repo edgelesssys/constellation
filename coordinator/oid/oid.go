@@ -51,12 +51,3 @@ type QEMU struct{}
 func (QEMU) OID() asn1.ObjectIdentifier {
 	return asn1.ObjectIdentifier{1, 3, 9900, 5}
 }
-
-// GCPNonCVM returns the GCP OID for non CVMs.
-// TODO: Remove once we no longer use non cvms.
-type GCPNonCVM struct{}
-
-// OID returns the struct's object identifier.
-func (GCPNonCVM) OID() asn1.ObjectIdentifier {
-	return asn1.ObjectIdentifier{1, 3, 9900, 99}
-}

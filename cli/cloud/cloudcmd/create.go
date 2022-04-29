@@ -85,7 +85,6 @@ func (c *Creator) createGCP(ctx context.Context, cl gcpclient, config *config.Co
 		InstanceType:      insType,
 		StateDiskSizeGB:   *config.StateDiskSizeGB,
 		KubeEnv:           gcp.KubeEnv,
-		DisableCVM:        *config.Provider.GCP.DisableCVM,
 	}
 	if err := cl.CreateInstances(ctx, createInput); err != nil {
 		return state.ConstellationState{}, err
