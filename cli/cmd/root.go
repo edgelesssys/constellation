@@ -52,10 +52,8 @@ func signalContext(ctx context.Context, sig os.Signal) (context.Context, context
 
 func init() {
 	cobra.EnableCommandSorting = false
-	// Set output of cmd.Print to stdout.
+	// Set output of cmd.Print to stdout. (By default, it's stderr.)
 	rootCmd.SetOut(os.Stdout)
-	// Disable --no-description flag for completion command.
-	rootCmd.CompletionOptions.DisableNoDescFlag = true
 	rootCmd.PersistentFlags().String("dev-config", "", "Set this flag to create the Constellation using settings from a development config.")
 	rootCmd.AddCommand(newCreateCmd())
 	rootCmd.AddCommand(newInitCmd())
