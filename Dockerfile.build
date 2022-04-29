@@ -1,12 +1,14 @@
-FROM ubuntu@sha256:7cc0576c7c0ec2384de5cbf245f41567e922aab1b075f3e8ad565f508032df17 as build
+FROM fedora@sha256:36af84ba69e21c9ef86a0424a090674c433b2b80c2462e57503886f1d823abe8 as build
 
-ENV DEBIAN_FRONTEND="noninteractive"
-RUN apt-get update && apt-get install pkg-config cmake iproute2 iputils-ping wget git jq libssl-dev libcryptsetup12 libcryptsetup-dev -y
+RUN dnf -y update && \
+    dnf -y install @development-tools pkg-config cmake iproute iputils wget git jq openssl-devel cryptsetup-libs cryptsetup-devel && \
+    dnf clean all
 
 # Install Go
 ARG GO_VER=1.18
-RUN wget https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz
-RUN tar -C /usr/local -xzf go${GO_VER}.linux-amd64.tar.gz && rm go${GO_VER}.linux-amd64.tar.gz
+RUN wget https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go${GO_VER}.linux-amd64.tar.gz && \
+    rm go${GO_VER}.linux-amd64.tar.gz
 ENV PATH ${PATH}:/usr/local/go/bin
 
 # Download go dependencies
