@@ -116,9 +116,9 @@ func TestVerify(t *testing.T) {
 
 			cmd := newVerifyCmd()
 			cmd.Flags().String("dev-config", "", "") // register persisten flag manually
-			out := bytes.NewBufferString("")
+			out := &bytes.Buffer{}
 			cmd.SetOut(out)
-			cmd.SetErr(bytes.NewBufferString(""))
+			cmd.SetErr(&bytes.Buffer{})
 			if tc.devConfigFlag != "" {
 				require.NoError(cmd.Flags().Set("dev-config", tc.devConfigFlag))
 			}
