@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	cryptsetup "github.com/martinjungblut/go-cryptsetup"
 	"k8s.io/klog"
@@ -293,9 +294,28 @@ func performWipe(device DeviceMapper, volumeID, dek string) error {
 			return 0
 		}
 	} else {
-		// No terminal available, disable callbacks to not fill up logs with large amount of progress updates
-		klog.V(4).Info("Progress updates not available")
-		progressCallback = nil
+		// No terminal available, limit callbacks to once every 30 seconds to not fill up logs with large amount of progress updates
+		ticker := time.NewTicker(30 * time.Second)
+		firstReq := make(chan struct{}, 1)
+		firstReq <- struct{}{}
+		defer ticker.Stop()
+
+		logProgress := func(size, offset uint64) {
+			prog := (float64(offset) / float64(size)) * 100
+			klog.V(4).Infof("Wipe in progress: %.2f%%", prog)
+		}
+
+		progressCallback = func(size, offset uint64) int {
+			select {
+			case <-firstReq:
+				logProgress(size, offset)
+			case <-ticker.C:
+				logProgress(size, offset)
+			default:
+			}
+
+			return 0
+		}
 	}
 
 	// Wipe the device using the same options as used in cryptsetup: https://gitlab.com/cryptsetup/cryptsetup/-/blob/master/src/cryptsetup.c#L1178

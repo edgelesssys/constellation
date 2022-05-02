@@ -12,8 +12,8 @@ sudo apt install libcryptsetup-dev
 
 ## Testing
 
-A small test programm is available in `test/main.go`.
-To build the programm run:
+A small test program is available in `test/main.go`.
+To build the program run:
 ```shell
 go build -o test/crypt ./test/
 ```
