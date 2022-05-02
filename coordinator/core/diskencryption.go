@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"strings"
 )
 
 // GetDiskUUID gets the disk's UUID.
@@ -14,7 +15,7 @@ func (c *Core) GetDiskUUID() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("cannot retrieve uuid of disk: %w", err)
 	}
-	return uuid, nil
+	return strings.ToLower(uuid), nil
 }
 
 // UpdateDiskPassphrase switches the initial random passphrase of the encrypted disk to a permanent passphrase.

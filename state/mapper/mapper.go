@@ -3,6 +3,7 @@ package mapper
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	cryptsetup "github.com/martinjungblut/go-cryptsetup"
 )
@@ -36,7 +37,7 @@ func (m *Mapper) IsLUKSDevice() bool {
 
 // GetUUID gets the device's UUID.
 func (m *Mapper) DiskUUID() string {
-	return m.device.GetUUID()
+	return strings.ToLower(m.device.GetUUID())
 }
 
 // FormatDisk formats the disk and adds passphrase in keyslot 0.
