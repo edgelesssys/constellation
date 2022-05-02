@@ -27,6 +27,11 @@ const (
 	AdminConfFilename     = "constellation-admin.conf"
 	MasterSecretFilename  = "constellation-mastersecret.base64"
 	WGQuickConfigFilename = "wg0.conf"
+
+	//
+	// Cryptographic constants.
+	//
+	StateDiskKeyLength = 32
 )
 
 // CliVersion is the version of the CLI. Left as a separate variable to allow override during build.
