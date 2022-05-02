@@ -2,7 +2,7 @@ package cloudprovider
 
 import "strings"
 
-//go:generate stringer -type=CloudProvider
+//go:generate stringer -type=Provider
 
 // Provider is cloud provider used by the CLI.
 type Provider uint32
@@ -12,6 +12,7 @@ const (
 	AWS
 	Azure
 	GCP
+	QEMU
 )
 
 // FromString returns cloud provider from string.
@@ -24,6 +25,8 @@ func FromString(s string) Provider {
 		return Azure
 	case "gcp":
 		return GCP
+	case "qemu":
+		return QEMU
 	default:
 		return Unknown
 	}
