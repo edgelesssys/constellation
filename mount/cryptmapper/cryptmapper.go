@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	cryptsetup "github.com/martinjungblut/go-cryptsetup"
@@ -16,10 +17,11 @@ import (
 )
 
 const (
-	cryptPrefix      = "/dev/mapper/"
-	integritySuffix  = "_dif"
-	keySizeIntegrity = 96
-	keySizeCrypt     = 64
+	cryptPrefix       = "/dev/mapper/"
+	integritySuffix   = "_dif"
+	integrityFSSuffix = "-integrity"
+	keySizeIntegrity  = 96
+	keySizeCrypt      = 64
 )
 
 // packageLock is needed to block concurrent use of package functions, since libcryptsetup is not thread safe.
@@ -310,4 +312,13 @@ func performWipe(device DeviceMapper, volumeID, dek string) error {
 
 	klog.V(4).Info("dm-integrity successfully initiated")
 	return nil
+}
+
+// IsIntegrityFS checks if the fstype string contains an integrity suffix.
+// If yes, returns the trimmed fstype and true, fstype and false otherwise.
+func IsIntegrityFS(fstype string) (string, bool) {
+	if strings.HasSuffix(fstype, integrityFSSuffix) {
+		return strings.TrimSuffix(fstype, integrityFSSuffix), true
+	}
+	return fstype, false
 }

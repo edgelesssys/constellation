@@ -231,3 +231,48 @@ func TestOpenCryptDevice(t *testing.T) {
 	_, err := mapper.OpenCryptDevice(context.Background(), "/dev/some-device", "volume01", false)
 	assert.NoError(t, err)
 }
+
+func TestIsIntegrityFS(t *testing.T) {
+	testCases := map[string]struct {
+		wantIntegrity bool
+		fstype        string
+	}{
+		"plain ext4": {
+			wantIntegrity: false,
+			fstype:        "ext4",
+		},
+		"integrity ext4": {
+			wantIntegrity: true,
+			fstype:        "ext4",
+		},
+		"integrity fs": {
+			wantIntegrity: false,
+			fstype:        "integrity",
+		},
+		"double integrity": {
+			wantIntegrity: true,
+			fstype:        "ext4-integrity",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			request := tc.fstype
+			if tc.wantIntegrity {
+				request = tc.fstype + integrityFSSuffix
+			}
+
+			fstype, isIntegrity := IsIntegrityFS(request)
+
+			if tc.wantIntegrity {
+				assert.True(isIntegrity)
+				assert.Equal(tc.fstype, fstype)
+			} else {
+				assert.False(isIntegrity)
+				assert.Equal(tc.fstype, fstype)
+			}
+		})
+	}
+}
