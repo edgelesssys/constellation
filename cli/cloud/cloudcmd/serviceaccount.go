@@ -58,6 +58,8 @@ func (c *ServiceAccountCreator) Create(ctx context.Context, stat state.Constella
 		}
 
 		return serviceAccount, stat, err
+	case cloudprovider.QEMU:
+		return "unsupported://qemu", stat, nil
 	default:
 		return "", state.ConstellationState{}, fmt.Errorf("unsupported provider: %s", provider)
 	}

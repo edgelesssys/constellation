@@ -126,6 +126,11 @@ func TestServiceAccountCreator(t *testing.T) {
 			config:  config.Default(),
 			wantErr: true,
 		},
+		"qemu": {
+			state:            state.ConstellationState{CloudProvider: "qemu"},
+			wantStateMutator: func(cs *state.ConstellationState) {},
+			config:           config.Default(),
+		},
 		"unknown cloud provider": {
 			state:   state.ConstellationState{},
 			config:  config.Default(),

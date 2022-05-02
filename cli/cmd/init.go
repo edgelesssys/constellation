@@ -384,6 +384,8 @@ func getScalingGroupsFromConfig(stat state.ConstellationState, config *config.Co
 		return getGCPInstances(stat, config)
 	case len(stat.AzureCoordinators) != 0:
 		return getAzureInstances(stat, config)
+	case len(stat.QEMUCoordinators) != 0:
+		return getQEMUInstances(stat, config)
 	default:
 		return ScalingGroup{}, ScalingGroup{}, errors.New("no instances to init")
 	}
@@ -484,6 +486,38 @@ func getAzureInstances(stat state.ConstellationState, config *config.Config) (co
 	nodes = ScalingGroup{
 		Instances: nodeInstances,
 		GroupID:   azure.AutoscalingNodeGroup(stat.AzureNodesScaleSet, *config.AutoscalingNodeGroupsMin, *config.AutoscalingNodeGroupsMax),
+	}
+	return
+}
+
+func getQEMUInstances(stat state.ConstellationState, config *config.Config) (coordinators, nodes ScalingGroup, err error) {
+	coordinatorMap := stat.QEMUCoordinators
+	if len(coordinatorMap) == 0 {
+		return ScalingGroup{}, ScalingGroup{}, errors.New("no coordinators available, can't create Constellation without any instance")
+	}
+	var coordinatorInstances Instances
+	for _, node := range coordinatorMap {
+		coordinatorInstances = append(coordinatorInstances, Instance(node))
+	}
+	// QEMU does not support autoscaling
+	coordinators = ScalingGroup{
+		Instances: coordinatorInstances,
+		GroupID:   "",
+	}
+	nodeMap := stat.QEMUNodes
+	if len(nodeMap) == 0 {
+		return ScalingGroup{}, ScalingGroup{}, errors.New("no nodes available, can't create Constellation with one instance")
+	}
+
+	var nodeInstances Instances
+	for _, node := range nodeMap {
+		nodeInstances = append(nodeInstances, Instance(node))
+	}
+
+	// QEMU does not support autoscaling
+	nodes = ScalingGroup{
+		Instances: nodeInstances,
+		GroupID:   "",
 	}
 	return
 }

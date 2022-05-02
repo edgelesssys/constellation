@@ -11,6 +11,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/attestation/azure"
 	"github.com/edgelesssys/constellation/coordinator/attestation/gcp"
+	"github.com/edgelesssys/constellation/coordinator/attestation/qemu"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/config"
 )
@@ -78,6 +79,12 @@ func (v *Validators) setPCRs(config *config.Config) error {
 			return err
 		}
 		v.pcrs = azurePCRs
+	case cloudprovider.QEMU:
+		qemuPCRs := *config.Provider.QEMU.PCRs
+		if err := v.checkPCRs(qemuPCRs); err != nil {
+			return err
+		}
+		v.pcrs = qemuPCRs
 	}
 	return nil
 }
@@ -97,6 +104,10 @@ func (v *Validators) updateValidators() {
 	case cloudprovider.Azure:
 		v.validators = []atls.Validator{
 			azure.NewValidator(v.pcrs),
+		}
+	case cloudprovider.QEMU:
+		v.validators = []atls.Validator{
+			qemu.NewValidator(v.pcrs),
 		}
 	}
 }

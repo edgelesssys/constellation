@@ -9,6 +9,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/attestation/azure"
 	"github.com/edgelesssys/constellation/coordinator/attestation/gcp"
+	"github.com/edgelesssys/constellation/coordinator/attestation/qemu"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/stretchr/testify/assert"
@@ -40,6 +41,10 @@ func TestNewValidators(t *testing.T) {
 			provider: cloudprovider.Azure,
 			pcrs:     testPCRs,
 		},
+		"qemu": {
+			provider: cloudprovider.QEMU,
+			pcrs:     testPCRs,
+		},
 		"no pcrs provided": {
 			provider: cloudprovider.Azure,
 			pcrs:     map[uint32][]byte{},
@@ -67,6 +72,9 @@ func TestNewValidators(t *testing.T) {
 			}
 			if tc.provider == cloudprovider.Azure {
 				conf.Provider.Azure = &config.AzureConfig{PCRs: &tc.pcrs}
+			}
+			if tc.provider == cloudprovider.QEMU {
+				conf.Provider.QEMU = &config.QEMUConfig{PCRs: &tc.pcrs}
 			}
 
 			validators, err := NewValidators(tc.provider, conf)
@@ -285,6 +293,13 @@ func TestValidatorsV(t *testing.T) {
 			pcrs:     newTestPCRs(),
 			wantVs: []atls.Validator{
 				azure.NewValidator(newTestPCRs()),
+			},
+		},
+		"qemu": {
+			provider: cloudprovider.QEMU,
+			pcrs:     newTestPCRs(),
+			wantVs: []atls.Validator{
+				qemu.NewValidator(newTestPCRs()),
 			},
 		},
 	}

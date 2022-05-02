@@ -4,6 +4,7 @@ import (
 	"github.com/edgelesssys/constellation/cli/azure"
 	"github.com/edgelesssys/constellation/cli/ec2"
 	"github.com/edgelesssys/constellation/cli/gcp"
+	"github.com/edgelesssys/constellation/cli/qemu"
 )
 
 // ConstellationState is the state of a Constellation.
@@ -40,4 +41,7 @@ type ConstellationState struct {
 	AzureNodesScaleSet        string          `json:"azurenodesscaleset,omitempty"`
 	AzureCoordinatorsScaleSet string          `json:"azurecoordinatorsscaleset,omitempty"`
 	AzureADAppObjectID        string          `json:"azureadappobjectid,omitempty"`
+
+	QEMUNodes        qemu.Instances `json:"qemunodes,omitempty"`
+	QEMUCoordinators qemu.Instances `json:"qemucoordinators,omitempty"`
 }

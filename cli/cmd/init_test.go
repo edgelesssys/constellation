@@ -14,6 +14,7 @@ import (
 	"github.com/edgelesssys/constellation/cli/ec2"
 	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/cli/gcp"
+	"github.com/edgelesssys/constellation/cli/qemu"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/state"
 	wgquick "github.com/nmiculinic/wg-quick-go"
@@ -55,6 +56,16 @@ func TestInitialize(t *testing.T) {
 		},
 		AzureResourceGroup: "test",
 	}
+	testQemuState := state.ConstellationState{
+		CloudProvider: "QEMU",
+		QEMUNodes: qemu.Instances{
+			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
+			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
+		},
+		QEMUCoordinators: qemu.Instances{
+			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
+		},
+	}
 	testActivationResps := []fakeActivationRespMessage{
 		{log: "testlog1"},
 		{log: "testlog2"},
@@ -90,6 +101,15 @@ func TestInitialize(t *testing.T) {
 		},
 		"initialize some azure instances": {
 			existingState: testAzureState,
+			client: &fakeProtoClient{
+				respClient: &fakeActivationRespClient{responses: testActivationResps},
+			},
+			waiter:     &stubStatusWaiter{},
+			vpnHandler: &stubVPNHandler{},
+			privKey:    testKey,
+		},
+		"initialize some qemu instances": {
+			existingState: testQemuState,
 			client: &fakeProtoClient{
 				respClient: &fakeActivationRespClient{responses: testActivationResps},
 			},
