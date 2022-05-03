@@ -1,0 +1,25 @@
+name: build
+description: "Runs cmake & default make target in build folder."
+runs:
+  using: 'composite'
+  steps:
+  - name: Install build dependencies
+    run: |
+      sudo apt-get update
+      sudo apt-get install \
+        build-essential cmake \
+        -y
+    shell: bash
+  - name: Install Go
+    uses: actions/setup-go@v3
+    with:
+      go-version: '1.18.1'
+  - name: Build CLI
+    run: |
+      mkdir build
+      cd build
+      cmake ..
+      make -j`nproc` cli
+      echo "$(pwd)" >> $GITHUB_PATH
+      export PATH="$PATH:$(pwd)"
+    shell: bash

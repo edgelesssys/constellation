@@ -1,0 +1,20 @@
+name: gcp_login
+description: "Login to GCP & configure gcloud CLI."
+inputs:
+  gcp_service_account_json:
+    description: 'Service account with permissions to create Constellation on GCP.'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+  # As described at:
+  # https://github.com/google-github-actions/setup-gcloud#service-account-key-json
+  - name: Authorize GCP access
+    uses: google-github-actions/auth@v0
+    with:
+      credentials_json: ${{ inputs.gcp_service_account_json }}
+  - name: Set up Cloud SDK
+    uses: google-github-actions/setup-gcloud@v0
+  - name: Verify logged in
+    run: gcloud info
+    shell: bash

@@ -1,0 +1,8 @@
+name: constellation_destroy
+description: "Destroy a running Constellation cluster."
+runs:
+  using: 'composite'
+  steps:
+  - name: Constellation terminate
+    run: constellation terminate
+    shell: bash

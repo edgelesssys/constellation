@@ -1,0 +1,34 @@
+name: sonobuoy
+description: "Executed the e2e test framework sonobuoy."
+inputs:
+  sonobuoyVersion:
+    description: 'Version of sonobuoy test CLI to use.'
+    default: '0.56.4'
+    required: true
+  sonobuoyTestSuiteCmd:
+    description: 'Which tests should be run?'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+  - name: Install sonobuoy
+    run: |
+      curl -LO https://github.com/vmware-tanzu/sonobuoy/releases/download/v${{ inputs.sonobuoyVersion }}/sonobuoy_${{ inputs.sonobuoyVersion }}_linux_amd64.tar.gz
+      tar -xzf sonobuoy_${{ inputs.sonobuoyVersion }}_linux_amd64.tar.gz
+      install sonobuoy /usr/local/bin
+    shell: bash
+  - name: Sonobuoy version
+    run: sonobuoy version
+    shell: bash
+
+  - name: Run quick e2e test
+    run: sonobuoy run --wait ${{ inputs.sonobuoyTestSuiteCmd }} --kubeconfig constellation-admin.conf
+    shell: bash
+  - name: Download results
+    run: sonobuoy retrieve -x --kubeconfig constellation-admin.conf
+    shell: bash
+  - name: Publish test results
+    uses: mikepenz/action-junit-report@v3
+    if: always() # always run even if the previous step fails
+    with:
+      report_paths: '**/junit_01.xml'

@@ -1,0 +1,47 @@
+name: constellation_create
+description: "Create a new Constellation cluster."
+inputs:
+  workerNodesCount:
+    description: "Number of worker nodes to spawn."
+    required: true
+  controlNodesCount:
+    description: "Number of control-plane nodes to spawn."
+    required: true
+  autoscale:
+    description: "Enable / Disable autoscaling."
+    required: true
+  cloudProvider:
+    description: "Either 'gcp' or 'azure'."
+    required: true
+  machineType:
+    description: "Machine type of VM to spawn."
+    required: true
+runs:
+  using: 'composite'
+  steps:
+  - name: Install wireguard
+    run: sudo apt-get update && sudo apt-get install wireguard iproute2 -y
+    shell: bash
+  - name: Install kubectl
+    run: |
+      curl -LO https://dl.k8s.io/release/v1.23.0/bin/linux/amd64/kubectl
+      install kubectl /usr/local/bin
+    shell: bash
+  - name: Constellation create
+    run: |
+      constellation create ${{ inputs.cloudProvider }} ${{ inputs.controlNodesCount }} ${{ inputs.workerNodesCount }} ${{ inputs.machineType }} --name e2e-test -y
+    shell: bash
+  - name: Upload constellation-state.json
+    uses: actions/upload-artifact@v3
+    with:
+      name: constellation-state.json
+      path: constellation-state.json
+  - name: Constellation init
+    run: |
+      if [ ${{ inputs.autoscale }} = true ]; then autoscale=--autoscale; fi
+      constellation init ${autoscale}
+    shell: bash
+
+  - name: Configure VPN connection
+    run: wg-quick up ./wg0.conf
+    shell: bash

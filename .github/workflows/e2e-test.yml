@@ -1,0 +1,69 @@
+name: e2e Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      workerNodesCount:
+        description: 'Number of worker nodes to spawn.'
+        default: '2'
+        required: true
+      controlNodesCount:
+        description: 'Number of control-plane nodes to spawn.'
+        default: '1'
+        required: true
+      autoscale:
+        description: 'Enable / Disable autoscaling.'
+        type: boolean
+        default: false
+        required: true
+      cloudProvider:
+        description: 'Which cloud provider to use.'
+        type: choice
+        options:
+          - 'gcp'
+          - 'azure_not_yet_supported'
+        default: 'gcp'
+        required: true
+      machineType:
+        description: 'VM machine type. Make sure it matches selected cloud provider!'
+        type: choice
+        options:
+          - 'n2d-standard-2' # GCP
+          - 'Standard_D4s_v3' # Azure
+        default: 'n2d-standard-2'
+        required: true
+      sonobuoyTestSuiteCmd:
+        description: 'Which tests should be run? Check README for guidance!'
+        default: '--mode quick'
+        required: true
+jobs:
+  e2e-test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v3
+    - name: Build CLI
+      uses: ./.github/actions/build_cli
+
+    - name: Login to GCP
+      uses: ./.github/actions/gcp_login
+      with:
+        gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      if: ${{ github.event.inputs.cloudProvider == 'gcp' }}
+
+    - name: Create cluster
+      uses: ./.github/actions/constellation_create
+      with:
+        cloudProvider: ${{ github.event.inputs.cloudProvider }}
+        autoscale: ${{ github.event.inputs.autoscale }}
+        workerNodesCount: ${{ github.event.inputs.workerNodesCount }}
+        controlNodesCount: ${{ github.event.inputs.controlNodesCount }}
+        machineType: ${{ github.event.inputs.machineType }}
+    - name: Run e2e tests
+      uses: ./.github/actions/sonobuoy
+      with:
+        sonobuoyTestSuiteCmd: ${{ github.event.inputs.sonobuoyTestSuiteCmd }}
+
+    - name: Always terminate cluster
+      if: always()
+      uses: ./.github/actions/constellation_destroy
