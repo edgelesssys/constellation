@@ -4,12 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"strconv"
+	"strings"
 
 	"github.com/edgelesssys/constellation/cli/cloud/cloudcmd"
 	"github.com/edgelesssys/constellation/cli/cloudprovider"
 	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/cli/proto"
 	"github.com/edgelesssys/constellation/internal/config"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	rpcStatus "google.golang.org/grpc/status"
@@ -17,33 +21,32 @@ import (
 
 func newVerifyCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "verify {azure|gcp} IP PORT",
-		Short: "Verify the confidential properties of your Constellation.",
-		Long:  "Verify the confidential properties of your Constellation.",
+		Use:   "verify {aws|azure|gcp}",
+		Short: "Verify the confidential properties of your Constellation cluster.",
+		Long:  "Verify the confidential properties of your Constellation cluster.",
 		Args: cobra.MatchAll(
-			cobra.ExactArgs(3),
+			cobra.ExactArgs(1),
 			isCloudProvider(0),
-			isIP(1),
-			isPort(2),
+			warnAWS(0),
 		),
 		RunE: runVerify,
 	}
-	cmd.Flags().String("owner-id", "", "verify the Constellation using the owner identity derived from the master secret.")
-	cmd.Flags().String("unique-id", "", "verify the Constellation using the unique cluster identity.")
+	cmd.Flags().String("owner-id", "", "Verify using the owner identity derived from the master secret.")
+	cmd.Flags().String("unique-id", "", "Verify using the unique cluster identity.")
+	cmd.Flags().StringP("node-endpoint", "e", "", "Endpoint of the node to verify. Form: HOST[:PORT]")
+	must(cmd.MarkFlagRequired("node-endpoint"))
 	return cmd
 }
 
 func runVerify(cmd *cobra.Command, args []string) error {
 	provider := cloudprovider.FromString(args[0])
-	ip := args[1]
-	port := args[2]
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	protoClient := &proto.Client{}
 	defer protoClient.Close()
-	return verify(cmd.Context(), cmd, provider, ip, port, fileHandler, protoClient)
+	return verify(cmd.Context(), cmd, provider, fileHandler, protoClient)
 }
 
-func verify(ctx context.Context, cmd *cobra.Command, provider cloudprovider.Provider, ip, port string, fileHandler file.Handler, protoClient protoClient) error {
+func verify(ctx context.Context, cmd *cobra.Command, provider cloudprovider.Provider, fileHandler file.Handler, protoClient protoClient) error {
 	flags, err := parseVerifyFlags(cmd)
 	if err != nil {
 		return err
@@ -66,7 +69,7 @@ func verify(ctx context.Context, cmd *cobra.Command, provider cloudprovider.Prov
 		cmd.Print(validators.Warnings())
 	}
 
-	if err := protoClient.Connect(ip, port, validators.V()); err != nil {
+	if err := protoClient.Connect(flags.nodeHost, flags.nodePort, validators.V()); err != nil {
 		return err
 	}
 	if _, err := protoClient.GetState(ctx); err != nil {
@@ -93,12 +96,27 @@ func parseVerifyFlags(cmd *cobra.Command) (verifyFlags, error) {
 		return verifyFlags{}, errors.New("neither owner ID nor unique ID provided to verify the Constellation")
 	}
 
+	endpoint, err := cmd.Flags().GetString("node-endpoint")
+	if err != nil {
+		return verifyFlags{}, err
+	}
+	host, port, err := net.SplitHostPort(endpoint)
+	if err != nil {
+		if !strings.Contains(err.Error(), "missing port in address") {
+			return verifyFlags{}, err
+		}
+		host = endpoint
+		port = strconv.Itoa(constants.CoordinatorPort)
+	}
+
 	devConfigPath, err := cmd.Flags().GetString("dev-config")
 	if err != nil {
 		return verifyFlags{}, err
 	}
 
 	return verifyFlags{
+		nodeHost:      host,
+		nodePort:      port,
 		devConfigPath: devConfigPath,
 		ownerID:       ownerID,
 		clusterID:     clusterID,
@@ -106,6 +124,8 @@ func parseVerifyFlags(cmd *cobra.Command) (verifyFlags, error) {
 }
 
 type verifyFlags struct {
+	nodeHost      string
+	nodePort      string
 	ownerID       string
 	clusterID     string
 	devConfigPath string
@@ -117,8 +137,6 @@ func verifyCompletion(cmd *cobra.Command, args []string, toComplete string) ([]s
 	switch len(args) {
 	case 0:
 		return []string{"gcp", "azure"}, cobra.ShellCompDirectiveNoFileComp
-	case 1, 2:
-		return []string{}, cobra.ShellCompDirectiveNoFileComp
 	default:
 		return []string{}, cobra.ShellCompDirectiveError
 	}

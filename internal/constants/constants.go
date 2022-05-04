@@ -32,6 +32,13 @@ const (
 	// Cryptographic constants.
 	//
 	StateDiskKeyLength = 32
+
+	//
+	// CLI.
+	//
+
+	MinControllerCount = 1
+	MinWorkerCount     = 1
 )
 
 // CliVersion is the version of the CLI. Left as a separate variable to allow override during build.

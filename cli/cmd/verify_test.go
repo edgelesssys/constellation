@@ -22,15 +22,10 @@ func TestVerifyCmdArgumentValidation(t *testing.T) {
 		args    []string
 		wantErr bool
 	}{
-		"no args":              {[]string{}, true},
-		"valid azure":          {[]string{"azure", "192.0.2.1", "1234"}, false},
-		"valid gcp":            {[]string{"gcp", "192.0.2.1", "1234"}, false},
-		"invalid provider":     {[]string{"invalid", "192.0.2.1", "1234"}, true},
-		"invalid ip":           {[]string{"gcp", "invalid", "1234"}, true},
-		"invalid port":         {[]string{"gcp", "192.0.2.1", "invalid"}, true},
-		"invalid port 2":       {[]string{"gcp", "192.0.2.1", "65536"}, true},
-		"not enough arguments": {[]string{"gcp", "192.0.2.1"}, true},
-		"too many arguments":   {[]string{"gcp", "192.0.2.1", "1234", "5678"}, true},
+		"no args":          {[]string{}, true},
+		"valid azure":      {[]string{"azure"}, false},
+		"valid gcp":        {[]string{"gcp"}, false},
+		"invalid provider": {[]string{"invalid", "192.0.2.1", "1234"}, true},
 	}
 
 	for name, tc := range testCases {
@@ -54,58 +49,81 @@ func TestVerify(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		setupFs       func(*require.Assertions) afero.Fs
-		provider      cloudprovider.Provider
-		protoClient   protoClient
-		devConfigFlag string
-		ownerIDFlag   string
-		clusterIDFlag string
-		wantErr       bool
+		setupFs          func(*require.Assertions) afero.Fs
+		provider         cloudprovider.Provider
+		protoClient      protoClient
+		nodeEndpointFlag string
+		devConfigFlag    string
+		ownerIDFlag      string
+		clusterIDFlag    string
+		wantErr          bool
 	}{
 		"gcp": {
-			setupFs:     func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
-			provider:    cloudprovider.GCP,
-			ownerIDFlag: zeroBase64,
-			protoClient: &stubProtoClient{},
+			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			provider:         cloudprovider.GCP,
+			nodeEndpointFlag: "192.0.2.1:1234",
+			ownerIDFlag:      zeroBase64,
+			protoClient:      &stubProtoClient{},
 		},
 		"azure": {
-			setupFs:     func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
-			provider:    cloudprovider.Azure,
-			ownerIDFlag: zeroBase64,
-			protoClient: &stubProtoClient{},
+			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			provider:         cloudprovider.Azure,
+			nodeEndpointFlag: "192.0.2.1:1234",
+			ownerIDFlag:      zeroBase64,
+			protoClient:      &stubProtoClient{},
+		},
+		"default port": {
+			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			provider:         cloudprovider.GCP,
+			nodeEndpointFlag: "192.0.2.1",
+			ownerIDFlag:      zeroBase64,
+			protoClient:      &stubProtoClient{},
+		},
+		"invalid endpoint": {
+			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			provider:         cloudprovider.GCP,
+			nodeEndpointFlag: ":::::",
+			ownerIDFlag:      zeroBase64,
+			protoClient:      &stubProtoClient{},
+			wantErr:          true,
 		},
 		"neither owner id nor cluster id set": {
-			setupFs:  func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
-			provider: cloudprovider.GCP,
-			wantErr:  true,
+			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			provider:         cloudprovider.GCP,
+			nodeEndpointFlag: "192.0.2.1:1234",
+			wantErr:          true,
 		},
 		"dev config file not existing": {
-			setupFs:       func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
-			provider:      cloudprovider.GCP,
-			ownerIDFlag:   zeroBase64,
-			devConfigFlag: "./file",
-			wantErr:       true,
+			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			provider:         cloudprovider.GCP,
+			ownerIDFlag:      zeroBase64,
+			nodeEndpointFlag: "192.0.2.1:1234",
+			devConfigFlag:    "./file",
+			wantErr:          true,
 		},
 		"error protoClient Connect": {
-			setupFs:     func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
-			provider:    cloudprovider.Azure,
-			ownerIDFlag: zeroBase64,
-			protoClient: &stubProtoClient{connectErr: someErr},
-			wantErr:     true,
+			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			provider:         cloudprovider.Azure,
+			nodeEndpointFlag: "192.0.2.1:1234",
+			ownerIDFlag:      zeroBase64,
+			protoClient:      &stubProtoClient{connectErr: someErr},
+			wantErr:          true,
 		},
 		"error protoClient GetState": {
-			setupFs:     func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
-			provider:    cloudprovider.Azure,
-			ownerIDFlag: zeroBase64,
-			protoClient: &stubProtoClient{getStateErr: rpcStatus.Error(codes.Internal, "failed")},
-			wantErr:     true,
+			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			provider:         cloudprovider.Azure,
+			nodeEndpointFlag: "192.0.2.1:1234",
+			ownerIDFlag:      zeroBase64,
+			protoClient:      &stubProtoClient{getStateErr: rpcStatus.Error(codes.Internal, "failed")},
+			wantErr:          true,
 		},
 		"error protoClient GetState not rpc": {
-			setupFs:     func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
-			provider:    cloudprovider.Azure,
-			ownerIDFlag: zeroBase64,
-			protoClient: &stubProtoClient{getStateErr: someErr},
-			wantErr:     true,
+			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			provider:         cloudprovider.Azure,
+			nodeEndpointFlag: "192.0.2.1:1234",
+			ownerIDFlag:      zeroBase64,
+			protoClient:      &stubProtoClient{getStateErr: someErr},
+			wantErr:          true,
 		},
 	}
 
@@ -128,10 +146,13 @@ func TestVerify(t *testing.T) {
 			if tc.clusterIDFlag != "" {
 				require.NoError(cmd.Flags().Set("cluster-id", tc.clusterIDFlag))
 			}
+			if tc.nodeEndpointFlag != "" {
+				require.NoError(cmd.Flags().Set("node-endpoint", tc.nodeEndpointFlag))
+			}
 			fileHandler := file.NewHandler(tc.setupFs(require))
 
 			ctx := context.Background()
-			err := verify(ctx, cmd, tc.provider, "192.0.2.1", "1234", fileHandler, tc.protoClient)
+			err := verify(ctx, cmd, tc.provider, fileHandler, tc.protoClient)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -156,21 +177,8 @@ func TestVerifyCompletion(t *testing.T) {
 			wantResult:  []string{"gcp", "azure"},
 			wantShellCD: cobra.ShellCompDirectiveNoFileComp,
 		},
-		"second arg": {
-			args:        []string{"gcp"},
-			toComplete:  "192.0.2.1",
-			wantResult:  []string{},
-			wantShellCD: cobra.ShellCompDirectiveNoFileComp,
-		},
-		"third arg": {
-			args:        []string{"gcp", "192.0.2.1"},
-			toComplete:  "443",
-			wantResult:  []string{},
-			wantShellCD: cobra.ShellCompDirectiveNoFileComp,
-		},
 		"additional arg": {
-			args:        []string{"gcp", "192.0.2.1", "443"},
-			toComplete:  "./file",
+			args:        []string{"gcp", "foo"},
 			wantResult:  []string{},
 			wantShellCD: cobra.ShellCompDirectiveError,
 		},

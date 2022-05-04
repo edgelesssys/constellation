@@ -32,9 +32,9 @@ func newRecoverCmd() *cobra.Command {
 		RunE: runRecover,
 	}
 	cmd.Flags().String("ip", "", "Instance IP address.")
-	_ = cmd.MarkFlagRequired("ip")
+	must(cmd.MarkFlagRequired("ip"))
 	cmd.Flags().String("disk-uuid", "", "Disk UUID of the encrypted state disk.")
-	_ = cmd.MarkFlagRequired("disk-uuid")
+	must(cmd.MarkFlagRequired("disk-uuid"))
 	cmd.Flags().String("master-secret", "", "Path to base64 encoded master secret.")
 	return cmd
 }

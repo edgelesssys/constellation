@@ -54,11 +54,18 @@ func init() {
 	cobra.EnableCommandSorting = false
 	// Set output of cmd.Print to stdout. (By default, it's stderr.)
 	rootCmd.SetOut(os.Stdout)
-	rootCmd.PersistentFlags().String("dev-config", "", "Set this flag to create the Constellation using settings from a development config.")
+	rootCmd.PersistentFlags().String("dev-config", "", "Set this flag to create the Constellation cluster using settings from a development config.")
+	must(rootCmd.MarkPersistentFlagFilename("dev-config", "json"))
 	rootCmd.AddCommand(newCreateCmd())
 	rootCmd.AddCommand(newInitCmd())
 	rootCmd.AddCommand(newVerifyCmd())
 	rootCmd.AddCommand(newRecoverCmd())
 	rootCmd.AddCommand(newTerminateCmd())
 	rootCmd.AddCommand(newVersionCmd())
+}
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
 }

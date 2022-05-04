@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -23,29 +24,10 @@ func TestCreateArgumentValidation(t *testing.T) {
 		args    []string
 		wantErr bool
 	}{
-		"gcp valid create 1":                {[]string{"gcp", "3", "3", "n2d-standard-2"}, false},
-		"gcp valid create 2":                {[]string{"gcp", "3", "7", "n2d-standard-16"}, false},
-		"gcp valid create 3":                {[]string{"gcp", "1", "2", "n2d-standard-96"}, false},
-		"gcp invalid too many arguments":    {[]string{"gcp", "3", "2", "n2d-standard-2", "n2d-standard-2"}, true},
-		"gcp invalid too many arguments 2":  {[]string{"gcp", "3", "2", "n2d-standard-2", "2"}, true},
-		"gcp invalid no control planes":     {[]string{"gcp", "0", "1", "n2d-standard-2"}, true},
-		"gcp invalid no workers":            {[]string{"gcp", "1", "0", "n2d-standard-2"}, true},
-		"gcp invalid first is no int":       {[]string{"gcp", "n2d-standard-2", "1", "n2d-standard-2"}, true},
-		"gcp invalid second is no int":      {[]string{"gcp", "3", "n2d-standard-2", "n2d-standard-2"}, true},
-		"gcp invalid third is no size":      {[]string{"gcp", "2", "2", "2"}, true},
-		"gcp invalid wrong order":           {[]string{"gcp", "n2d-standard-2", "2", "2"}, true},
-		"azure valid create 1":              {[]string{"azure", "3", "3", "Standard_DC2as_v5"}, false},
-		"azure valid create 2":              {[]string{"azure", "3", "7", "Standard_DC4as_v5"}, false},
-		"azure valid create 3":              {[]string{"azure", "1", "2", "Standard_DC8as_v5"}, false},
-		"azure invalid to many arguments":   {[]string{"azure", "3", "2", "Standard_DC2as_v5", "Standard_DC2as_v5"}, true},
-		"azure invalid to many arguments 2": {[]string{"azure", "3", "2", "Standard_DC2as_v5", "2"}, true},
-		"azure invalid no control planes":   {[]string{"azure", "0", "1", "Standard_DC2as_v5"}, true},
-		"azure invalid no workers":          {[]string{"azure", "1", "0", "Standard_DC2as_v5"}, true},
-		"azure invalid first is no int":     {[]string{"azure", "Standard_DC2as_v5", "1", "Standard_DC2as_v5"}, true},
-		"azure invalid second is no int":    {[]string{"azure", "1", "Standard_DC2as_v5", "Standard_DC2as_v5"}, true},
-		"azure invalid third is no size":    {[]string{"azure", "2", "2", "2"}, true},
-		"azure invalid wrong order":         {[]string{"azure", "Standard_DC2as_v5", "2", "2"}, true},
-		"aws waring":                        {[]string{"aws", "1", "2", "4xlarge"}, true},
+		"gcp":           {[]string{"gcp"}, false},
+		"azure":         {[]string{"azure"}, false},
+		"aws waring":    {[]string{"aws"}, true},
+		"too many args": {[]string{"gcp", "1", "2"}, true},
 	}
 
 	for name, tc := range testCases {
@@ -68,15 +50,18 @@ func TestCreate(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		setupFs       func(*require.Assertions) afero.Fs
-		creator       *stubCloudCreator
-		provider      cloudprovider.Provider
-		yesFlag       bool
-		devConfigFlag string
-		nameFlag      string
-		stdin         string
-		wantErr       bool
-		wantAbbort    bool
+		setupFs             func(*require.Assertions) afero.Fs
+		creator             *stubCloudCreator
+		provider            cloudprovider.Provider
+		yesFlag             bool
+		controllerCountFlag *int
+		workerCountFlag     *int
+		insTypeFlag         string
+		devConfigFlag       string
+		nameFlag            string
+		stdin               string
+		wantErr             bool
+		wantAbbort          bool
 	}{
 		"create": {
 			setupFs:  func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
@@ -87,7 +72,7 @@ func TestCreate(t *testing.T) {
 		"interactive": {
 			setupFs:  func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			creator:  &stubCloudCreator{state: testState},
-			provider: cloudprovider.GCP,
+			provider: cloudprovider.Azure,
 			stdin:    "yes\n",
 		},
 		"interactive abort": {
@@ -110,6 +95,43 @@ func TestCreate(t *testing.T) {
 			provider: cloudprovider.GCP,
 			nameFlag: strings.Repeat("a", constellationNameLength+1),
 			wantErr:  true,
+		},
+		"flag control-plane-count invalid": {
+			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			creator:             &stubCloudCreator{},
+			provider:            cloudprovider.GCP,
+			controllerCountFlag: intPtr(0),
+			workerCountFlag:     intPtr(3),
+			wantErr:             true,
+		},
+		"flag worker-count invalid": {
+			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			creator:             &stubCloudCreator{},
+			provider:            cloudprovider.GCP,
+			controllerCountFlag: intPtr(3),
+			workerCountFlag:     intPtr(-1),
+			wantErr:             true,
+		},
+		"flag control-plane-count missing": {
+			setupFs:         func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			creator:         &stubCloudCreator{},
+			provider:        cloudprovider.GCP,
+			workerCountFlag: intPtr(3),
+			wantErr:         true,
+		},
+		"flag worker-count missing": {
+			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			creator:             &stubCloudCreator{},
+			provider:            cloudprovider.GCP,
+			controllerCountFlag: intPtr(3),
+			wantErr:             true,
+		},
+		"flag invalid instance-type": {
+			setupFs:     func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			creator:     &stubCloudCreator{},
+			provider:    cloudprovider.GCP,
+			insTypeFlag: "invalid",
+			wantErr:     true,
 		},
 		"old state in directory": {
 			setupFs: func(require *require.Assertions) afero.Fs {
@@ -180,10 +202,10 @@ func TestCreate(t *testing.T) {
 			require := require.New(t)
 
 			cmd := newCreateCmd()
-			cmd.Flags().String("dev-config", "", "") // register persisten flag manually
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
+			cmd.Flags().String("dev-config", "", "") // register persisten flag manually
 			if tc.yesFlag {
 				require.NoError(cmd.Flags().Set("yes", "true"))
 			}
@@ -193,9 +215,19 @@ func TestCreate(t *testing.T) {
 			if tc.devConfigFlag != "" {
 				require.NoError(cmd.Flags().Set("dev-config", tc.devConfigFlag))
 			}
+			if tc.controllerCountFlag != nil {
+				require.NoError(cmd.Flags().Set("control-plane-nodes", fmt.Sprint(*tc.controllerCountFlag)))
+			}
+			if tc.workerCountFlag != nil {
+				require.NoError(cmd.Flags().Set("worker-nodes", fmt.Sprint(*tc.workerCountFlag)))
+			}
+			if tc.insTypeFlag != "" {
+				require.NoError(cmd.Flags().Set("instance-type", tc.insTypeFlag))
+			}
+
 			fileHandler := file.NewHandler(tc.setupFs(require))
 
-			err := create(cmd, tc.creator, fileHandler, 3, 3, tc.provider, "type")
+			err := create(cmd, tc.creator, fileHandler, tc.provider)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -277,38 +309,7 @@ func TestCreateCompletion(t *testing.T) {
 			wantShellCD: cobra.ShellCompDirectiveNoFileComp,
 		},
 		"second arg": {
-			args:        []string{"gcp"},
-			wantResult:  []string{},
-			wantShellCD: cobra.ShellCompDirectiveNoFileComp,
-		},
-		"third arg": {
-			args:        []string{"gcp", "1"},
-			wantResult:  []string{},
-			wantShellCD: cobra.ShellCompDirectiveNoFileComp,
-		},
-		"fourth arg aws": {
-			args: []string{"aws", "1", "2"},
-			wantResult: []string{
-				"4xlarge",
-				"8xlarge",
-				"12xlarge",
-				"16xlarge",
-				"24xlarge",
-			},
-			wantShellCD: cobra.ShellCompDirectiveNoFileComp,
-		},
-		"fourth arg gcp": {
-			args:        []string{"gcp", "1", "2"},
-			wantResult:  gcp.InstanceTypes,
-			wantShellCD: cobra.ShellCompDirectiveNoFileComp,
-		},
-		"fourth arg azure": {
-			args:        []string{"azure", "1", "2"},
-			wantResult:  azure.InstanceTypes,
-			wantShellCD: cobra.ShellCompDirectiveNoFileComp,
-		},
-		"fifth arg": {
-			args:        []string{"aws", "1", "2", "4xlarge"},
+			args:        []string{"gcp", "foo"},
 			wantResult:  []string{},
 			wantShellCD: cobra.ShellCompDirectiveError,
 		},
@@ -324,4 +325,49 @@ func TestCreateCompletion(t *testing.T) {
 			assert.Equal(tc.wantShellCD, shellCD)
 		})
 	}
+}
+
+func TestInstanceTypeCompletion(t *testing.T) {
+	testCases := map[string]struct {
+		args        []string
+		wantResult  []string
+		wantShellCD cobra.ShellCompDirective
+	}{
+		"azure": {
+			args:        []string{"azure"},
+			wantResult:  azure.InstanceTypes,
+			wantShellCD: cobra.ShellCompDirectiveNoFileComp,
+		},
+		"gcp": {
+			args:        []string{"gcp"},
+			wantResult:  gcp.InstanceTypes,
+			wantShellCD: cobra.ShellCompDirectiveNoFileComp,
+		},
+		"empty args": {
+			args:        []string{},
+			wantResult:  []string{},
+			wantShellCD: cobra.ShellCompDirectiveError,
+		},
+		"unknown provider": {
+			args:        []string{"foo"},
+			wantResult:  []string{},
+			wantShellCD: cobra.ShellCompDirectiveError,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			cmd := &cobra.Command{}
+			result, shellCD := instanceTypeCompletion(cmd, tc.args, "")
+
+			assert.Equal(tc.wantResult, result)
+			assert.Equal(tc.wantShellCD, shellCD)
+		})
+	}
+}
+
+func intPtr(i int) *int {
+	return &i
 }
