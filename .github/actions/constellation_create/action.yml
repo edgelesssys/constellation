@@ -29,7 +29,7 @@ runs:
     shell: bash
   - name: Constellation create
     run: |
-      constellation create ${{ inputs.cloudProvider }} ${{ inputs.controlNodesCount }} ${{ inputs.workerNodesCount }} ${{ inputs.machineType }} --name e2e-test -y
+      constellation create ${{ inputs.cloudProvider }} -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} -t ${{ inputs.machineType }} --name e2e-test -y
     shell: bash
   - name: Upload constellation-state.json
     uses: actions/upload-artifact@v3
