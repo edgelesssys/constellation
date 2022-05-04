@@ -18,8 +18,8 @@ import (
 func newTerminateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "terminate",
-		Short: "Terminate an existing Constellation.",
-		Long:  "Terminate an existing Constellation. The Constellation can't be started again, and all persistent storage will be lost.",
+		Short: "Terminate an existing Constellation cluster.",
+		Long:  "Terminate an existing Constellation cluster. The cluster can't be started again, and all persistent storage will be lost.",
 		Args:  cobra.NoArgs,
 		RunE:  runTerminate,
 	}
@@ -46,7 +46,7 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 		return err
 	}
 
-	cmd.Println("Your Constellation was terminated successfully.")
+	cmd.Println("Your Constellation cluster was terminated successfully.")
 
 	var retErr error
 	if err := fileHandler.Remove(constants.StateFilename); err != nil {

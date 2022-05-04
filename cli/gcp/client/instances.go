@@ -311,13 +311,13 @@ type insertInstanceTemplateInput struct {
 func (i insertInstanceTemplateInput) insertInstanceTemplateRequest() *computepb.InsertInstanceTemplateRequest {
 	req := computepb.InsertInstanceTemplateRequest{
 		InstanceTemplateResource: &computepb.InstanceTemplate{
-			Description: proto.String("This instance belongs to a Constellation."),
+			Description: proto.String("This instance belongs to a Constellation cluster."),
 			Name:        proto.String(i.Name),
 			Properties: &computepb.InstanceProperties{
 				ConfidentialInstanceConfig: &computepb.ConfidentialInstanceConfig{
 					EnableConfidentialCompute: proto.Bool(true),
 				},
-				Description: proto.String("This instance belongs to a Constellation."),
+				Description: proto.String("This instance belongs to a Constellation cluster."),
 				Disks: []*computepb.AttachedDisk{
 					{
 						InitializeParams: &computepb.AttachedDiskInitializeParams{

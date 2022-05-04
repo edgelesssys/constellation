@@ -19,8 +19,8 @@ import (
 func newCreateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create {aws|gcp|azure}",
-		Short: "Create instances on a cloud platform for your Constellation.",
-		Long:  "Create instances on a cloud platform for your Constellation.",
+		Short: "Create instances on a cloud platform for your Constellation cluster.",
+		Long:  "Create instances on a cloud platform for your Constellation cluster.",
 		Args: cobra.MatchAll(
 			cobra.ExactArgs(1),
 			isCloudProvider(0),
@@ -66,15 +66,15 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 
 	if !flags.yes {
 		// Ask user to confirm action.
-		cmd.Printf("The following Constellation will be created:\n")
+		cmd.Printf("The following Constellation cluster will be created:\n")
 		cmd.Printf("%d control-planes nodes of type %s will be created.\n", flags.controllerCount, flags.insType)
 		cmd.Printf("%d worker nodes of type %s will be created.\n", flags.workerCount, flags.insType)
-		ok, err := askToConfirm(cmd, "Do you want to create this Constellation?")
+		ok, err := askToConfirm(cmd, "Do you want to create this cluster?")
 		if err != nil {
 			return err
 		}
 		if !ok {
-			cmd.Println("The creation of the Constellation was aborted.")
+			cmd.Println("The creation of the cluster was aborted.")
 			return nil
 		}
 	}
@@ -88,7 +88,7 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 		return err
 	}
 
-	cmd.Println("Your Constellation was created successfully.")
+	cmd.Println("Your Constellation cluster was created successfully.")
 	return nil
 }
 
@@ -127,7 +127,7 @@ func parseCreateFlags(cmd *cobra.Command, provider cloudprovider.Provider) (crea
 	}
 	if len(name) > constellationNameLength {
 		return createFlags{}, fmt.Errorf(
-			"name for Constellation too long, maximum length is %d, got %d: %s",
+			"name for Constellation cluster too long, maximum length is %d, got %d: %s",
 			constellationNameLength, len(name), name,
 		)
 	}

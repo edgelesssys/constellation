@@ -15,7 +15,7 @@ func (c *Client) CreateServiceAccount(ctx context.Context, input ServiceAccountI
 		Project:     c.project,
 		AccountID:   "constellation-app-" + c.uid,
 		DisplayName: "constellation-app-" + c.uid,
-		Description: "This service account belongs to a Constellation.",
+		Description: "This service account belongs to a Constellation cluster.",
 	}
 
 	email, err := c.insertServiceAccount(ctx, insertInput)

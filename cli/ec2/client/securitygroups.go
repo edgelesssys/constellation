@@ -18,7 +18,7 @@ func (c *Client) CreateSecurityGroup(ctx context.Context, input SecurityGroupInp
 
 	id := uuid.New()
 	createInput := &awsec2.CreateSecurityGroupInput{
-		Description: aws.String("Security group of Constellation. This group was generated through the Constellation CLI."),
+		Description: aws.String("Security group of Constellation cluster. This group was generated through the Constellation CLI."),
 		GroupName:   aws.String("Constellation-" + id.String()),
 		DryRun:      aws.Bool(true),
 	}

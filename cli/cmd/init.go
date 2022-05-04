@@ -34,17 +34,17 @@ import (
 func newInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "init",
-		Short:             "Initialize the Constellation. Start your confidential Kubernetes cluster.",
-		Long:              "Initialize the Constellation. Start your confidential Kubernetes cluster.",
+		Short:             "Initialize the Constellation cluster. Start your confidential Kubernetes.",
+		Long:              "Initialize the Constellation cluster. Start your confidential Kubernetes.",
 		ValidArgsFunction: initCompletion,
 		Args:              cobra.ExactArgs(0),
 		RunE:              runInitialize,
 	}
-	cmd.Flags().String("privatekey", "", "path to your private key.")
-	cmd.Flags().String("master-secret", "", "path to base64 encoded master secret.")
-	cmd.Flags().Bool("wg-autoconfig", false, "enable automatic configuration of WireGuard interface")
+	cmd.Flags().String("privatekey", "", "Path to your private key.")
+	cmd.Flags().String("master-secret", "", "Path to base64 encoded master secret.")
+	cmd.Flags().Bool("wg-autoconfig", false, "Enable automatic configuration of WireGuard interface.")
 	must(cmd.Flags().MarkHidden("wg-autoconfig"))
-	cmd.Flags().Bool("autoscale", false, "enable Kubernetes cluster-autoscaler")
+	cmd.Flags().Bool("autoscale", false, "Enable Kubernetes cluster-autoscaler.")
 	return cmd
 }
 
@@ -242,8 +242,8 @@ func (r activationResult) writeOutput(wr io.Writer, fileHandler file.Handler) er
 	writeRow(tw, "Your WireGuard IP", r.clientVpnIP)
 	writeRow(tw, "Control plane's public IP", r.coordinatorPubIP)
 	writeRow(tw, "Control plane's public key", r.coordinatorPubKey)
-	writeRow(tw, "Constellation's owner identifier", r.ownerID)
-	writeRow(tw, "Constellation's unique identifier", r.clusterID)
+	writeRow(tw, "Constellation cluster's owner identifier", r.ownerID)
+	writeRow(tw, "Constellation cluster's unique identifier", r.clusterID)
 	writeRow(tw, "WireGuard configuration file", constants.WGQuickConfigFilename)
 	writeRow(tw, "Kubernetes configuration", constants.AdminConfFilename)
 	tw.Flush()
@@ -253,7 +253,7 @@ func (r activationResult) writeOutput(wr io.Writer, fileHandler file.Handler) er
 		return fmt.Errorf("write kubeconfig: %w", err)
 	}
 
-	fmt.Fprintln(wr, "You can now connect to your Constellation cluster by executing:")
+	fmt.Fprintln(wr, "You can now connect to your cluster by executing:")
 	fmt.Fprintf(wr, "\twg-quick up ./%s\n", constants.WGQuickConfigFilename)
 	fmt.Fprintf(wr, "\texport KUBECONFIG=\"$PWD/%s\"\n", constants.AdminConfFilename)
 	return nil
@@ -462,7 +462,7 @@ func getGCPInstances(stat state.ConstellationState, config *config.Config) (coor
 func getAzureInstances(stat state.ConstellationState, config *config.Config) (coordinators, nodes ScalingGroup, err error) {
 	coordinatorMap := stat.AzureCoordinators
 	if len(coordinatorMap) == 0 {
-		return ScalingGroup{}, ScalingGroup{}, errors.New("no control-plane nodes available, can't create Constellation without any instance")
+		return ScalingGroup{}, ScalingGroup{}, errors.New("no control-plane nodes available, can't create Constellation cluster without any instance")
 	}
 	var coordinatorInstances Instances
 	for _, node := range coordinatorMap {

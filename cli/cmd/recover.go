@@ -25,8 +25,8 @@ var diskUUIDRegexp = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA
 func newRecoverCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "recover",
-		Short: "Recover a Constellation.",
-		Long: "Recover a Constellation by sending a recovery key to an instance in the boot stage." +
+		Short: "Recover a Constellation cluster.",
+		Long: "Recover a Constellation cluster by sending a recovery key to an instance in the boot stage." +
 			"\nThis is only required if instances restart without other instances available for bootstrapping.",
 		Args: cobra.ExactArgs(0),
 		RunE: runRecover,

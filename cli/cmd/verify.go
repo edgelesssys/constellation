@@ -93,7 +93,7 @@ func parseVerifyFlags(cmd *cobra.Command) (verifyFlags, error) {
 		return verifyFlags{}, err
 	}
 	if ownerID == "" && clusterID == "" {
-		return verifyFlags{}, errors.New("neither owner ID nor unique ID provided to verify the Constellation")
+		return verifyFlags{}, errors.New("neither owner ID nor unique ID provided to verify the cluster")
 	}
 
 	endpoint, err := cmd.Flags().GetString("node-endpoint")

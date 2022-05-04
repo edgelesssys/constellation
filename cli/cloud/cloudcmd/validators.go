@@ -16,7 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/config"
 )
 
-const warningStr = "Warning: not verifying the Constellation's %s measurements\n"
+const warningStr = "Warning: not verifying the Constellation cluster's %s measurements\n"
 
 type Validators struct {
 	provider   cloudprovider.Provider
