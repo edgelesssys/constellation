@@ -29,6 +29,6 @@ runs:
     shell: bash
   - name: Publish test results
     uses: mikepenz/action-junit-report@v3
-    if: always() # always run even if the previous step fails
+    if: ${{ !env.ACT }}
     with:
       report_paths: '**/junit_01.xml'

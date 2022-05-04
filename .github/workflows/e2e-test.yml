@@ -12,7 +12,7 @@ on:
         default: '1'
         required: true
       autoscale:
-        description: 'Enable / Disable autoscaling.'
+        description: 'Autoscale?'
         type: boolean
         default: false
         required: true
@@ -21,7 +21,7 @@ on:
         type: choice
         options:
           - 'gcp'
-          - 'azure_not_yet_supported'
+          - 'azure'
         default: 'gcp'
         required: true
       machineType:
@@ -50,6 +50,10 @@ jobs:
       with:
         gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
       if: ${{ github.event.inputs.cloudProvider == 'gcp' }}
+    - name: Login to Azure
+      uses: ./.github/actions/azure_login
+      with:
+        azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
 
     - name: Create cluster
       uses: ./.github/actions/constellation_create

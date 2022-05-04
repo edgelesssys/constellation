@@ -36,6 +36,7 @@ runs:
     with:
       name: constellation-state.json
       path: constellation-state.json
+    if: ${{ !env.ACT }}
   - name: Constellation init
     run: |
       if [ ${{ inputs.autoscale }} = true ]; then autoscale=--autoscale; fi
