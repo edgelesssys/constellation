@@ -15,10 +15,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m,
-		// https://github.com/kubernetes/klog/issues/282, https://github.com/kubernetes/klog/issues/188
-		goleak.IgnoreTopFunction("k8s.io/klog/v2.(*loggingT).flushDaemon"),
-	)
+	goleak.VerifyTestMain(m)
 }
 
 type stubClusterUtil struct {

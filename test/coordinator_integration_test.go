@@ -135,8 +135,6 @@ func TestMain(t *testing.T) {
 	defer goleak.VerifyNone(t,
 		// https://github.com/census-instrumentation/opencensus-go/issues/1262
 		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
-		// https://github.com/kubernetes/klog/issues/282, https://github.com/kubernetes/klog/issues/188
-		goleak.IgnoreTopFunction("k8s.io/klog/v2.(*loggingT).flushDaemon"),
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -296,7 +294,7 @@ func startCoordinator(ctx context.Context, coordinatorAddr string, ips []string)
 func createTempDir() error {
 	if err := os.RemoveAll(localLogDirectory); err != nil && !os.IsNotExist(err) {
 		return err
-	} 		
+	}
 	return os.MkdirAll(localLogDirectory, 0o755)
 }
 
