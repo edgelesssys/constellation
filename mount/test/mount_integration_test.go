@@ -13,7 +13,7 @@ import (
 	"github.com/edgelesssys/constellation/mount/kms"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 const (

@@ -8,7 +8,7 @@ import (
 
 	"github.com/edgelesssys/constellation/mount/cryptmapper"
 	"github.com/edgelesssys/constellation/mount/kms"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 var (
