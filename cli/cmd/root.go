@@ -10,10 +10,10 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:          "constellation",
-	Short:        "Manage your Constellation cluster",
-	Long:         "Manage your Constellation cluster.",
-	SilenceUsage: true,
+	Use:              "constellation",
+	Short:            "Manage your Constellation cluster",
+	Long:             "Manage your Constellation cluster.",
+	PersistentPreRun: preRunRoot,
 }
 
 // Execute starts the CLI.
@@ -62,6 +62,10 @@ func init() {
 	rootCmd.AddCommand(newRecoverCmd())
 	rootCmd.AddCommand(newTerminateCmd())
 	rootCmd.AddCommand(newVersionCmd())
+}
+
+func preRunRoot(cmd *cobra.Command, args []string) {
+	cmd.SilenceUsage = true
 }
 
 func must(err error) {
