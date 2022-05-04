@@ -3,7 +3,7 @@ package cmd
 import (
 	"bytes"
 	"errors"
-	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -64,37 +64,47 @@ func TestCreate(t *testing.T) {
 		wantAbbort          bool
 	}{
 		"create": {
-			setupFs:  func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
-			creator:  &stubCloudCreator{state: testState},
-			provider: cloudprovider.GCP,
-			yesFlag:  true,
+			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			creator:             &stubCloudCreator{state: testState},
+			provider:            cloudprovider.GCP,
+			controllerCountFlag: intPtr(1),
+			workerCountFlag:     intPtr(2),
+			yesFlag:             true,
 		},
 		"interactive": {
-			setupFs:  func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
-			creator:  &stubCloudCreator{state: testState},
-			provider: cloudprovider.Azure,
-			stdin:    "yes\n",
+			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			creator:             &stubCloudCreator{state: testState},
+			provider:            cloudprovider.Azure,
+			controllerCountFlag: intPtr(2),
+			workerCountFlag:     intPtr(1),
+			stdin:               "yes\n",
 		},
 		"interactive abort": {
-			setupFs:    func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
-			creator:    &stubCloudCreator{},
-			provider:   cloudprovider.GCP,
-			stdin:      "no\n",
-			wantAbbort: true,
+			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			creator:             &stubCloudCreator{},
+			provider:            cloudprovider.GCP,
+			controllerCountFlag: intPtr(1),
+			workerCountFlag:     intPtr(1),
+			stdin:               "no\n",
+			wantAbbort:          true,
 		},
 		"interactive error": {
-			setupFs:  func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
-			creator:  &stubCloudCreator{},
-			provider: cloudprovider.GCP,
-			stdin:    "foo\nfoo\nfoo\n",
-			wantErr:  true,
+			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			creator:             &stubCloudCreator{},
+			provider:            cloudprovider.GCP,
+			controllerCountFlag: intPtr(1),
+			workerCountFlag:     intPtr(1),
+			stdin:               "foo\nfoo\nfoo\n",
+			wantErr:             true,
 		},
 		"flag name to long": {
-			setupFs:  func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
-			creator:  &stubCloudCreator{},
-			provider: cloudprovider.GCP,
-			nameFlag: strings.Repeat("a", constellationNameLength+1),
-			wantErr:  true,
+			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			creator:             &stubCloudCreator{},
+			provider:            cloudprovider.GCP,
+			controllerCountFlag: intPtr(1),
+			workerCountFlag:     intPtr(1),
+			nameFlag:            strings.Repeat("a", constellationNameLength+1),
+			wantErr:             true,
 		},
 		"flag control-plane-count invalid": {
 			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
@@ -109,7 +119,7 @@ func TestCreate(t *testing.T) {
 			creator:             &stubCloudCreator{},
 			provider:            cloudprovider.GCP,
 			controllerCountFlag: intPtr(3),
-			workerCountFlag:     intPtr(-1),
+			workerCountFlag:     intPtr(0),
 			wantErr:             true,
 		},
 		"flag control-plane-count missing": {
@@ -127,11 +137,13 @@ func TestCreate(t *testing.T) {
 			wantErr:             true,
 		},
 		"flag invalid instance-type": {
-			setupFs:     func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
-			creator:     &stubCloudCreator{},
-			provider:    cloudprovider.GCP,
-			insTypeFlag: "invalid",
-			wantErr:     true,
+			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			creator:             &stubCloudCreator{},
+			provider:            cloudprovider.GCP,
+			controllerCountFlag: intPtr(1),
+			workerCountFlag:     intPtr(1),
+			insTypeFlag:         "invalid",
+			wantErr:             true,
 		},
 		"old state in directory": {
 			setupFs: func(require *require.Assertions) afero.Fs {
@@ -140,10 +152,12 @@ func TestCreate(t *testing.T) {
 				require.NoError(fileHandler.Write(constants.StateFilename, []byte{1}, file.OptNone))
 				return fs
 			},
-			creator:  &stubCloudCreator{},
-			provider: cloudprovider.GCP,
-			yesFlag:  true,
-			wantErr:  true,
+			creator:             &stubCloudCreator{},
+			provider:            cloudprovider.GCP,
+			controllerCountFlag: intPtr(1),
+			workerCountFlag:     intPtr(1),
+			yesFlag:             true,
+			wantErr:             true,
 		},
 		"old adminConf in directory": {
 			setupFs: func(require *require.Assertions) afero.Fs {
@@ -152,10 +166,12 @@ func TestCreate(t *testing.T) {
 				require.NoError(fileHandler.Write(constants.AdminConfFilename, []byte{1}, file.OptNone))
 				return fs
 			},
-			creator:  &stubCloudCreator{},
-			provider: cloudprovider.GCP,
-			yesFlag:  true,
-			wantErr:  true,
+			creator:             &stubCloudCreator{},
+			provider:            cloudprovider.GCP,
+			controllerCountFlag: intPtr(1),
+			workerCountFlag:     intPtr(1),
+			yesFlag:             true,
+			wantErr:             true,
 		},
 		"old masterSecret in directory": {
 			setupFs: func(require *require.Assertions) afero.Fs {
@@ -164,35 +180,43 @@ func TestCreate(t *testing.T) {
 				require.NoError(fileHandler.Write(constants.MasterSecretFilename, []byte{1}, file.OptNone))
 				return fs
 			},
-			creator:  &stubCloudCreator{},
-			provider: cloudprovider.GCP,
-			yesFlag:  true,
-			wantErr:  true,
+			creator:             &stubCloudCreator{},
+			provider:            cloudprovider.GCP,
+			controllerCountFlag: intPtr(1),
+			workerCountFlag:     intPtr(1),
+			yesFlag:             true,
+			wantErr:             true,
 		},
 		"dev config does not exist": {
-			setupFs:       func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
-			creator:       &stubCloudCreator{},
-			provider:      cloudprovider.GCP,
-			yesFlag:       true,
-			devConfigFlag: "dev-config.json",
-			wantErr:       true,
+			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			creator:             &stubCloudCreator{},
+			provider:            cloudprovider.GCP,
+			controllerCountFlag: intPtr(1),
+			workerCountFlag:     intPtr(1),
+			yesFlag:             true,
+			devConfigFlag:       "dev-config.json",
+			wantErr:             true,
 		},
 		"create error": {
-			setupFs:  func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
-			creator:  &stubCloudCreator{createErr: someErr},
-			provider: cloudprovider.GCP,
-			yesFlag:  true,
-			wantErr:  true,
+			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			creator:             &stubCloudCreator{createErr: someErr},
+			provider:            cloudprovider.GCP,
+			controllerCountFlag: intPtr(1),
+			workerCountFlag:     intPtr(1),
+			yesFlag:             true,
+			wantErr:             true,
 		},
 		"write state error": {
 			setupFs: func(require *require.Assertions) afero.Fs {
 				fs := afero.NewMemMapFs()
 				return afero.NewReadOnlyFs(fs)
 			},
-			creator:  &stubCloudCreator{},
-			provider: cloudprovider.GCP,
-			yesFlag:  true,
-			wantErr:  true,
+			creator:             &stubCloudCreator{},
+			provider:            cloudprovider.GCP,
+			controllerCountFlag: intPtr(1),
+			workerCountFlag:     intPtr(1),
+			yesFlag:             true,
+			wantErr:             true,
 		},
 	}
 
@@ -216,10 +240,10 @@ func TestCreate(t *testing.T) {
 				require.NoError(cmd.Flags().Set("dev-config", tc.devConfigFlag))
 			}
 			if tc.controllerCountFlag != nil {
-				require.NoError(cmd.Flags().Set("control-plane-nodes", fmt.Sprint(*tc.controllerCountFlag)))
+				require.NoError(cmd.Flags().Set("control-plane-nodes", strconv.Itoa(*tc.controllerCountFlag)))
 			}
 			if tc.workerCountFlag != nil {
-				require.NoError(cmd.Flags().Set("worker-nodes", fmt.Sprint(*tc.workerCountFlag)))
+				require.NoError(cmd.Flags().Set("worker-nodes", strconv.Itoa(*tc.workerCountFlag)))
 			}
 			if tc.insTypeFlag != "" {
 				require.NoError(cmd.Flags().Set("instance-type", tc.insTypeFlag))

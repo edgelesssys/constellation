@@ -31,9 +31,9 @@ func newCreateCmd() *cobra.Command {
 	}
 	cmd.Flags().String("name", "constell", "create the cluster with the specified name")
 	cmd.Flags().BoolP("yes", "y", false, "create the cluster without further confirmation")
-	cmd.Flags().IntP("control-plane-nodes", "c", 1, "number of control-plane nodes (required)")
+	cmd.Flags().IntP("control-plane-nodes", "c", 0, "number of control-plane nodes (required)")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "control-plane-nodes"))
-	cmd.Flags().IntP("worker-nodes", "w", 1, "number of worker nodes (required)")
+	cmd.Flags().IntP("worker-nodes", "w", 0, "number of worker nodes (required)")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "worker-nodes"))
 	cmd.Flags().StringP("instance-type", "t", "", "instance type of cluster nodes")
 	must(cmd.RegisterFlagCompletionFunc("instance-type", instanceTypeCompletion))
