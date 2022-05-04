@@ -156,15 +156,6 @@ func (s StoreWrapper) GetKubernetesJoinArgs() (*kubeadm.BootstrapTokenDiscovery,
 	return &joinCommand, nil
 }
 
-// PutKubernetesJoinArgs saves the Kubernetes join command to store.
-func (s StoreWrapper) PutKubernetesJoinArgs(args *kubeadm.BootstrapTokenDiscovery) error {
-	j, err := json.Marshal(args)
-	if err != nil {
-		return err
-	}
-	return s.Store.Put(keyKubernetesJoinCommand, j)
-}
-
 // GetKubernetesConfig returns the Kubernetes kubeconfig file to authenticate with the Kubernetes API.
 func (s StoreWrapper) GetKubernetesConfig() ([]byte, error) {
 	return s.Store.Get(keyKubeConfig)

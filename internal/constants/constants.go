@@ -4,6 +4,8 @@ Constants should never be overwritable by command line flags or configuration fi
 */
 package constants
 
+import "time"
+
 const (
 	//
 	// Ports.
@@ -46,6 +48,7 @@ const (
 
 	// KubernetesVersion installed by kubeadm.
 	KubernetesVersion = "stable-1.23"
+	KubernetesJoinTokenTTL = 15 * time.Minute
 )
 
 // CliVersion is the version of the CLI. Left as a separate variable to allow override during build.

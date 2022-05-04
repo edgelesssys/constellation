@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
@@ -47,7 +48,7 @@ func New(clusterUtil k8sapi.ClusterUtil, configProvider configurationProvider, c
 }
 
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
-func (k *KubeWrapper) InitCluster(in InitClusterInput) (*kubeadm.BootstrapTokenDiscovery, error) {
+func (k *KubeWrapper) InitCluster(in InitClusterInput) error {
 	initConfig := k.configProvider.InitConfiguration(in.SupportsCloudControllerManager)
 	initConfig.SetApiServerAdvertiseAddress(in.APIServerAdvertiseIP)
 	initConfig.SetNodeIP(in.NodeIP)
@@ -57,20 +58,19 @@ func (k *KubeWrapper) InitCluster(in InitClusterInput) (*kubeadm.BootstrapTokenD
 	initConfig.SetProviderID(in.ProviderID)
 	initConfigYAML, err := initConfig.Marshal()
 	if err != nil {
-		return nil, fmt.Errorf("encoding kubeadm init configuration as YAML failed: %w", err)
+		return fmt.Errorf("encoding kubeadm init configuration as YAML failed: %w", err)
 	}
-	joinK8SClusterRequest, err := k.clusterUtil.InitCluster(initConfigYAML)
-	if err != nil {
-		return nil, fmt.Errorf("kubeadm init failed: %w", err)
+	if err := k.clusterUtil.InitCluster(initConfigYAML); err != nil {
+		return fmt.Errorf("kubeadm init failed: %w", err)
 	}
 	kubeConfig, err := k.GetKubeconfig()
 	if err != nil {
-		return nil, fmt.Errorf("reading kubeconfig after cluster initialization failed: %w", err)
+		return fmt.Errorf("reading kubeconfig after cluster initialization failed: %w", err)
 	}
 	k.client.SetKubeconfig(kubeConfig)
 	flannel := resources.NewDefaultFlannelDeployment()
 	if err = k.clusterUtil.SetupPodNetwork(k.client, flannel); err != nil {
-		return nil, fmt.Errorf("setup of pod network failed: %w", err)
+		return fmt.Errorf("setup of pod network failed: %w", err)
 	}
 
 	if in.SupportsCloudControllerManager {
@@ -79,7 +79,7 @@ func (k *KubeWrapper) InitCluster(in InitClusterInput) (*kubeadm.BootstrapTokenD
 			in.CloudControllerManagerVolumes, in.CloudControllerManagerVolumeMounts, in.CloudControllerManagerEnv,
 		)
 		if err := k.clusterUtil.SetupCloudControllerManager(k.client, cloudControllerManagerConfiguration, in.CloudControllerManagerConfigMaps, in.CloudControllerManagerSecrets); err != nil {
-			return nil, fmt.Errorf("failed to setup cloud-controller-manager: %w", err)
+			return fmt.Errorf("failed to setup cloud-controller-manager: %w", err)
 		}
 	}
 
@@ -88,7 +88,7 @@ func (k *KubeWrapper) InitCluster(in InitClusterInput) (*kubeadm.BootstrapTokenD
 			in.CloudNodeManagerImage, in.CloudNodeManagerPath, in.CloudNodeManagerExtraArgs,
 		)
 		if err := k.clusterUtil.SetupCloudNodeManager(k.client, cloudNodeManagerConfiguration); err != nil {
-			return nil, fmt.Errorf("failed to setup cloud-node-manager: %w", err)
+			return fmt.Errorf("failed to setup cloud-node-manager: %w", err)
 		}
 	}
 
@@ -96,11 +96,11 @@ func (k *KubeWrapper) InitCluster(in InitClusterInput) (*kubeadm.BootstrapTokenD
 		clusterAutoscalerConfiguration := resources.NewDefaultAutoscalerDeployment(in.AutoscalingVolumes, in.AutoscalingVolumeMounts, in.AutoscalingEnv)
 		clusterAutoscalerConfiguration.SetAutoscalerCommand(in.AutoscalingCloudprovider, in.AutoscalingNodeGroups)
 		if err := k.clusterUtil.SetupAutoscaling(k.client, clusterAutoscalerConfiguration, in.AutoscalingSecrets); err != nil {
-			return nil, fmt.Errorf("failed to setup cluster-autoscaler: %w", err)
+			return fmt.Errorf("failed to setup cluster-autoscaler: %w", err)
 		}
 	}
 
-	return joinK8SClusterRequest, nil
+	return nil
 }
 
 // JoinCluster joins existing Kubernetes cluster.
@@ -142,6 +142,11 @@ func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
 // GetKubeadmCertificateKey return the key needed to join the Cluster as Control-Plane (has to be executed on a control-plane; errors otherwise).
 func (k *KubeWrapper) GetKubeadmCertificateKey() (string, error) {
 	return k.clusterUtil.GetControlPlaneJoinCertificateKey()
+}
+
+// GetJoinToken returns a bootstrap (join) token.
+func (k *KubeWrapper) GetJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error) {
+	return k.clusterUtil.CreateJoinToken(ttl)
 }
 
 type fakeK8SClient struct {

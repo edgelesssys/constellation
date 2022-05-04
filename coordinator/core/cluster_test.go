@@ -4,6 +4,7 @@ import (
 	"errors"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/coordinator/attestation/simulator"
@@ -339,20 +340,21 @@ func TestK8sCompliantHostname(t *testing.T) {
 }
 
 type clusterStub struct {
-	initJoinArgs     kubeadm.BootstrapTokenDiscovery
-	initErr          error
-	joinErr          error
-	kubeconfig       []byte
-	getKubeconfigErr error
+	initErr              error
+	joinErr              error
+	kubeconfig           []byte
+	getKubeconfigErr     error
+	getJoinTokenResponse *kubeadm.BootstrapTokenDiscovery
+	getJoinTokenErr      error
 
 	initInputs      []kubernetes.InitClusterInput
 	joinClusterArgs []joinClusterArgs
 }
 
-func (c *clusterStub) InitCluster(in kubernetes.InitClusterInput) (*kubeadm.BootstrapTokenDiscovery, error) {
+func (c *clusterStub) InitCluster(in kubernetes.InitClusterInput) error {
 	c.initInputs = append(c.initInputs, in)
 
-	return &c.initJoinArgs, c.initErr
+	return c.initErr
 }
 
 func (c *clusterStub) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeName, nodeIP, nodeVPNIP, providerID, certKey string, _ bool, _ role.Role) error {
@@ -372,6 +374,10 @@ func (c *clusterStub) GetKubeconfig() ([]byte, error) {
 
 func (c *clusterStub) GetKubeadmCertificateKey() (string, error) {
 	return "dummy", nil
+}
+
+func (c *clusterStub) GetJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error) {
+	return c.getJoinTokenResponse, c.getJoinTokenErr
 }
 
 type prepareInstanceRequest struct {

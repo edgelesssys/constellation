@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
@@ -19,7 +20,6 @@ func TestMain(m *testing.M) {
 }
 
 type stubClusterUtil struct {
-	joinClusterRequest               *kubeadm.BootstrapTokenDiscovery
 	initClusterErr                   error
 	setupPodNetworkErr               error
 	setupAutoscalingError            error
@@ -27,14 +27,16 @@ type stubClusterUtil struct {
 	setupCloudNodeManagerError       error
 	joinClusterErr                   error
 	restartKubeletErr                error
+	createJoinTokenResponse          *kubeadm.BootstrapTokenDiscovery
+	createJoinTokenErr               error
 
 	initConfigs [][]byte
 	joinConfigs [][]byte
 }
 
-func (s *stubClusterUtil) InitCluster(initConfig []byte) (*kubeadm.BootstrapTokenDiscovery, error) {
+func (s *stubClusterUtil) InitCluster(initConfig []byte) error {
 	s.initConfigs = append(s.initConfigs, initConfig)
-	return s.joinClusterRequest, s.initClusterErr
+	return s.initClusterErr
 }
 
 func (s *stubClusterUtil) SetupPodNetwork(kubectl k8sapi.Client, podNetworkConfiguration resources.Marshaler) error {
@@ -64,6 +66,10 @@ func (s *stubClusterUtil) RestartKubelet() error {
 
 func (s *stubClusterUtil) GetControlPlaneJoinCertificateKey() (string, error) {
 	return "", nil
+}
+
+func (s *stubClusterUtil) CreateJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error) {
+	return s.createJoinTokenResponse, s.createJoinTokenErr
 }
 
 type stubConfigProvider struct {
@@ -131,33 +137,21 @@ func TestInitCluster(t *testing.T) {
 		wantErr          bool
 	}{
 		"kubeadm init works": {
-			clusterUtil: stubClusterUtil{
-				joinClusterRequest: &kubeadm.BootstrapTokenDiscovery{
-					APIServerEndpoint: "192.0.2.0",
-					Token:             "kube-fake-token",
-					CACertHashes:      []string{"sha256:a60ebe9b0879090edd83b40a4df4bebb20506bac1e51d518ff8f4505a721930f"},
-				},
-			},
+			clusterUtil: stubClusterUtil{},
 			kubeconfigReader: stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
 			wantErr: false,
 		},
 		"kubeadm init errors": {
-			clusterUtil: stubClusterUtil{
-				joinClusterRequest: nil,
-				initClusterErr:     someErr,
-			},
+			clusterUtil: stubClusterUtil{initClusterErr: someErr},
 			kubeconfigReader: stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
 			wantErr: true,
 		},
 		"pod network setup errors": {
-			clusterUtil: stubClusterUtil{
-				joinClusterRequest: nil,
-				setupPodNetworkErr: someErr,
-			},
+			clusterUtil: stubClusterUtil{setupPodNetworkErr: someErr},
 			kubeconfigReader: stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
@@ -176,7 +170,7 @@ func TestInitCluster(t *testing.T) {
 				client:           &tc.kubeCTL,
 				kubeconfigReader: &tc.kubeconfigReader,
 			}
-			joinCommand, err := kube.InitCluster(
+			err := kube.InitCluster(
 				InitClusterInput{
 					APIServerAdvertiseIP:        coordinatorVPNIP,
 					NodeName:                    instanceName,
@@ -195,7 +189,6 @@ func TestInitCluster(t *testing.T) {
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.clusterUtil.joinClusterRequest, joinCommand)
 
 			var kubeadmConfig k8sapi.KubeadmInitYAML
 			require.NoError(resources.UnmarshalK8SResources(tc.clusterUtil.initConfigs[0], &kubeadmConfig))

@@ -6,7 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
-	"strings"
+	"time"
 
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
@@ -23,7 +23,7 @@ type Client interface {
 }
 
 type ClusterUtil interface {
-	InitCluster(initConfig []byte) (*kubeadm.BootstrapTokenDiscovery, error)
+	InitCluster(initConfig []byte) error
 	JoinCluster(joinConfig []byte) error
 	SetupPodNetwork(kubectl Client, podNetworkConfiguration resources.Marshaler) error
 	SetupAutoscaling(kubectl Client, clusterAutoscalerConfiguration resources.Marshaler, secrets resources.Marshaler) error
@@ -31,73 +31,32 @@ type ClusterUtil interface {
 	SetupCloudNodeManager(kubectl Client, cloudNodeManagerConfiguration resources.Marshaler) error
 	RestartKubelet() error
 	GetControlPlaneJoinCertificateKey() (string, error)
+	CreateJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error)
 }
 
 type KubernetesUtil struct{}
 
-func (k *KubernetesUtil) InitCluster(initConfig []byte) (*kubeadm.BootstrapTokenDiscovery, error) {
+func (k *KubernetesUtil) InitCluster(initConfig []byte) error {
 	initConfigFile, err := os.CreateTemp("", "kubeadm-init.*.yaml")
 	if err != nil {
-		return nil, fmt.Errorf("failed to create init config file %v: %w", initConfigFile.Name(), err)
+		return fmt.Errorf("failed to create init config file %v: %w", initConfigFile.Name(), err)
 	}
 	defer os.Remove(initConfigFile.Name())
 
 	if _, err := initConfigFile.Write(initConfig); err != nil {
-		return nil, fmt.Errorf("writing kubeadm init yaml config %v failed: %w", initConfigFile.Name(), err)
+		return fmt.Errorf("writing kubeadm init yaml config %v failed: %w", initConfigFile.Name(), err)
 	}
 
 	cmd := exec.Command("kubeadm", "init", "--config", initConfigFile.Name())
-	stdout, err := cmd.Output()
+	_, err = cmd.Output()
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			return nil, fmt.Errorf("kubeadm init failed (code %v) with: %s", exitErr.ExitCode(), exitErr.Stderr)
+			return fmt.Errorf("kubeadm init failed (code %v) with: %s", exitErr.ExitCode(), exitErr.Stderr)
 		}
-		return nil, fmt.Errorf("kubeadm init failed: %w", err)
+		return fmt.Errorf("kubeadm init failed: %w", err)
 	}
-
-	stdoutStr := string(stdout)
-	indexKubeadmJoin := strings.Index(stdoutStr, "kubeadm join")
-	if indexKubeadmJoin < 0 {
-		return nil, errors.New("kubeadm init did not return join command")
-	}
-
-	joinCommand := strings.ReplaceAll(stdoutStr[indexKubeadmJoin:], "\\\n", " ")
-	// `kubeadm init` returns the two join commands, each broken up into two lines with backslash + newline in between.
-	// The following functions assume that stdoutStr[indexKubeadmJoin:] look like the following string.
-
-	// -----------------------------------------------------------------------------------------------
-	// --- When modifying the kubeadm.InitConfiguration make sure that this assumption still holds ---
-	// -----------------------------------------------------------------------------------------------
-
-	// "kubeadm join 127.0.0.1:16443 --token vlhjr4.9l6lhek0b9v65m67 \
-	//	--discovery-token-ca-cert-hash sha256:2b5343a162e31b70602e3cab3d87189dc10431e869633c4db63c3bfcd038dee6 \
-	//	--control-plane
-	//
-	// Then you can join any number of worker nodes by running the following on each as root:
-	//
-	// kubeadm join 127.0.0.1:16443 --token vlhjr4.9l6lhek0b9v65m67 \
-	//  --discovery-token-ca-cert-hash sha256:2b5343a162e31b70602e3cab3d87189dc10431e869633c4db63c3bfcd038dee6"
-
-	// Splits the string into a slice, where earch slice-element contains one line from the previous string
-	splittedJoinCommand := strings.SplitN(joinCommand, "\n", 2)
-	joinConfig, err := ParseJoinCommand(splittedJoinCommand[0])
-	if err != nil {
-		return nil, err
-	}
-
-	// create extra join token without expiration
-	cmd = exec.Command("kubeadm", "token", "create", "--ttl", "0")
-	joinToken, err := cmd.Output()
-	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			return nil, fmt.Errorf("kubeadm token create failed (code %v) with: %s", exitErr.ExitCode(), exitErr.Stderr)
-		}
-		return nil, fmt.Errorf("kubeadm token create failed: %w", err)
-	}
-	joinConfig.Token = strings.TrimSpace(string(joinToken))
-	return joinConfig, nil
+	return nil
 }
 
 // SetupPodNetwork sets up the flannel pod network.
@@ -194,4 +153,15 @@ func (k *KubernetesUtil) GetControlPlaneJoinCertificateKey() (string, error) {
 		return "", fmt.Errorf("failed to parse kubeadm output: %s", string(output))
 	}
 	return key, nil
+}
+
+// CreateJoinToken creates a new bootstrap (join) token.
+func (k *KubernetesUtil) CreateJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error) {
+	output, err := exec.Command("kubeadm", "token", "create", "--ttl", ttl.String(), "--print-join-command").Output()
+	if err != nil {
+		return nil, fmt.Errorf("kubeadm token create failed: %w", err)
+	}
+	// `kubeadm token create [...] --print-join-command` outputs the following format:
+	// kubeadm join [API_SERVER_ENDPOINT] --token [TOKEN] --discovery-token-ca-cert-hash [DISCOVERY_TOKEN_CA_CERT_HASH]
+	return ParseJoinCommand(string(output))
 }
