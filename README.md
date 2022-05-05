@@ -288,6 +288,10 @@ View the VMs by running the following
 sudo tmux attach -t constellation-vm-<i>
 ```
 
+# Development Guides
+
+- [Upgrading Kubernetes](/docs/upgrade-kubernetes.md)
+
 # Deployment Guides
 
 - [Onboarding Customers](/docs/onboarding-customers.md)
