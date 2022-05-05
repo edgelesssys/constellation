@@ -39,6 +39,13 @@ const (
 
 	MinControllerCount = 1
 	MinWorkerCount     = 1
+
+	//
+	// Kubernetes.
+	//
+
+	// KubernetesVersion installed by kubeadm.
+	KubernetesVersion = "stable-1.23"
 )
 
 // CliVersion is the version of the CLI. Left as a separate variable to allow override during build.

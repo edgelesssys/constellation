@@ -2,6 +2,7 @@ package k8sapi
 
 import (
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/internal/constants"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeletconf "k8s.io/kubelet/config/v1beta1"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
@@ -44,6 +45,7 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool) Kube
 				Kind:       "ClusterConfiguration",
 				APIVersion: kubeadm.SchemeGroupVersion.String(),
 			},
+			KubernetesVersion: constants.KubernetesVersion,
 			// necessary to be able to access the kubeapi server through localhost
 			APIServer: kubeadm.APIServer{
 				CertSANs: []string{"127.0.0.1", "10.118.0.1"},
