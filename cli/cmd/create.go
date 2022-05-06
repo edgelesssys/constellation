@@ -19,7 +19,7 @@ import (
 func newCreateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create {aws|gcp|azure}",
-		Short: "Create instances on a cloud platform for your Constellation cluster.",
+		Short: "Create instances on a cloud platform for your Constellation cluster",
 		Long:  "Create instances on a cloud platform for your Constellation cluster.",
 		Args: cobra.MatchAll(
 			cobra.ExactArgs(1),
@@ -29,13 +29,13 @@ func newCreateCmd() *cobra.Command {
 		ValidArgsFunction: createCompletion,
 		RunE:              runCreate,
 	}
-	cmd.Flags().String("name", "constell", "Create the Constellation cluster with the specified name.")
-	cmd.Flags().BoolP("yes", "y", false, "Create the Constellation cluster without further confirmation.")
-	cmd.Flags().IntP("control-plane-nodes", "c", 1, "Number of control-plane nodes.")
+	cmd.Flags().String("name", "constell", "create the Constellation cluster with the specified name")
+	cmd.Flags().BoolP("yes", "y", false, "create the Constellation cluster without further confirmation")
+	cmd.Flags().IntP("control-plane-nodes", "c", 1, "number of control-plane nodes (required)")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "control-plane-nodes"))
-	cmd.Flags().IntP("worker-nodes", "w", 1, "Number of worker nodes.")
+	cmd.Flags().IntP("worker-nodes", "w", 1, "number of worker nodes (required)")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "worker-nodes"))
-	cmd.Flags().StringP("instance-type", "t", "", "Instance type of cluster nodes.")
+	cmd.Flags().StringP("instance-type", "t", "", "instance type of cluster nodes")
 	must(cmd.RegisterFlagCompletionFunc("instance-type", instanceTypeCompletion))
 	return cmd
 }

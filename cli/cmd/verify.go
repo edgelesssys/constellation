@@ -19,7 +19,7 @@ import (
 func newVerifyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "verify {aws|azure|gcp}",
-		Short: "Verify the confidential properties of your Constellation cluster.",
+		Short: "Verify the confidential properties of your Constellation cluster",
 		Long:  "Verify the confidential properties of your Constellation cluster.",
 		Args: cobra.MatchAll(
 			cobra.ExactArgs(1),
@@ -28,9 +28,9 @@ func newVerifyCmd() *cobra.Command {
 		),
 		RunE: runVerify,
 	}
-	cmd.Flags().String("owner-id", "", "Verify using the owner identity derived from the master secret.")
-	cmd.Flags().String("unique-id", "", "Verify using the unique cluster identity.")
-	cmd.Flags().StringP("node-endpoint", "e", "", "Endpoint of the node to verify. Form: HOST[:PORT]")
+	cmd.Flags().String("owner-id", "", "verify using the owner identity derived from the master secret")
+	cmd.Flags().String("unique-id", "", "verify using the unique cluster identity")
+	cmd.Flags().StringP("node-endpoint", "e", "", "endpoint of the node to verify, passed as HOST[:PORT] (required)")
 	must(cmd.MarkFlagRequired("node-endpoint"))
 	return cmd
 }

@@ -24,17 +24,17 @@ var diskUUIDRegexp = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA
 func newRecoverCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "recover",
-		Short: "Recover a Constellation cluster.",
+		Short: "Recover a Constellation cluster",
 		Long: "Recover a Constellation cluster by sending a recovery key to an instance in the boot stage." +
 			"\nThis is only required if instances restart without other instances available for bootstrapping.",
 		Args: cobra.ExactArgs(0),
 		RunE: runRecover,
 	}
-	cmd.Flags().StringP("endpoint", "e", "", "Endpoint of the instance. Form: HOST[:PORT]")
+	cmd.Flags().StringP("endpoint", "e", "", "endpoint of the instance, passed as HOST[:PORT] (required)")
 	must(cmd.MarkFlagRequired("endpoint"))
-	cmd.Flags().String("disk-uuid", "", "Disk UUID of the encrypted state disk.")
+	cmd.Flags().String("disk-uuid", "", "disk UUID of the encrypted state disk (required)")
 	must(cmd.MarkFlagRequired("disk-uuid"))
-	cmd.Flags().String("master-secret", "", "Path to base64 encoded master secret.")
+	cmd.Flags().String("master-secret", "", "path to base64 encoded master secret")
 	return cmd
 }
 

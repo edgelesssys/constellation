@@ -34,17 +34,17 @@ import (
 func newInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "init",
-		Short:             "Initialize the Constellation cluster. Start your confidential Kubernetes.",
+		Short:             "Initialize the Constellation cluster",
 		Long:              "Initialize the Constellation cluster. Start your confidential Kubernetes.",
 		ValidArgsFunction: initCompletion,
 		Args:              cobra.ExactArgs(0),
 		RunE:              runInitialize,
 	}
-	cmd.Flags().String("privatekey", "", "Path to your private key.")
-	cmd.Flags().String("master-secret", "", "Path to base64 encoded master secret.")
-	cmd.Flags().Bool("wg-autoconfig", false, "Enable automatic configuration of WireGuard interface.")
+	cmd.Flags().String("privatekey", "", "path to your private key")
+	cmd.Flags().String("master-secret", "", "path to base64 encoded master secret")
+	cmd.Flags().Bool("wg-autoconfig", false, "enable automatic configuration of WireGuard interface")
 	must(cmd.Flags().MarkHidden("wg-autoconfig"))
-	cmd.Flags().Bool("autoscale", false, "Enable Kubernetes cluster-autoscaler.")
+	cmd.Flags().Bool("autoscale", false, "enable Kubernetes cluster-autoscaler")
 	return cmd
 }
 

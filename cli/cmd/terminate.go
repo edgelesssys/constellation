@@ -18,7 +18,7 @@ import (
 func newTerminateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "terminate",
-		Short: "Terminate an existing Constellation cluster.",
+		Short: "Terminate an existing Constellation cluster",
 		Long:  "Terminate an existing Constellation cluster. The cluster can't be started again, and all persistent storage will be lost.",
 		Args:  cobra.NoArgs,
 		RunE:  runTerminate,
