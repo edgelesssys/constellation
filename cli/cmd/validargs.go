@@ -3,6 +3,9 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"net"
+	"strconv"
+	"strings"
 
 	"github.com/edgelesssys/constellation/cli/azure"
 	"github.com/edgelesssys/constellation/cli/cloudprovider"
@@ -48,4 +51,17 @@ func validInstanceTypeForProvider(insType string, provider cloudprovider.Provide
 	default:
 		return fmt.Errorf("%s isn't a valid cloud platform", provider)
 	}
+}
+
+func validateEndpoint(endpoint string, defaultPort int) (string, error) {
+	_, _, err := net.SplitHostPort(endpoint)
+	if err == nil {
+		return endpoint, nil
+	}
+
+	if strings.Contains(err.Error(), "missing port in address") {
+		return net.JoinHostPort(endpoint, strconv.Itoa(defaultPort)), nil
+	}
+
+	return "", err
 }

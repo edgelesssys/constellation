@@ -28,7 +28,7 @@ type stubProtoClient struct {
 	cloudServiceAccountURI        string
 }
 
-func (c *stubProtoClient) Connect(_, _ string, _ []atls.Validator) error {
+func (c *stubProtoClient) Connect(_ string, _ []atls.Validator) error {
 	c.conn = true
 	return c.connectErr
 }
@@ -103,9 +103,9 @@ type fakeProtoClient struct {
 	respClient proto.ActivationResponseClient
 }
 
-func (c *fakeProtoClient) Connect(ip, port string, validators []atls.Validator) error {
-	if ip == "" || port == "" {
-		return errors.New("ip or port is empty")
+func (c *fakeProtoClient) Connect(endpoint string, validators []atls.Validator) error {
+	if endpoint == "" {
+		return errors.New("endpoint is empty")
 	}
 	if len(validators) == 0 {
 		return errors.New("validators is empty")

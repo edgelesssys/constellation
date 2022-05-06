@@ -160,7 +160,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 func activate(ctx context.Context, cmd *cobra.Command, client protoClient, input activationInput,
 	config *config.Config, validators []atls.Validator,
 ) (activationResult, error) {
-	err := client.Connect(input.coordinatorPubIP, *config.CoordinatorPort, validators)
+	err := client.Connect(net.JoinHostPort(input.coordinatorPubIP, *config.CoordinatorPort), validators)
 	if err != nil {
 		return activationResult{}, err
 	}

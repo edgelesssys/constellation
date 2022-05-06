@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
-	"net"
 	"regexp"
 	"strings"
 
@@ -31,8 +30,8 @@ func newRecoverCmd() *cobra.Command {
 		Args: cobra.ExactArgs(0),
 		RunE: runRecover,
 	}
-	cmd.Flags().String("ip", "", "Instance IP address.")
-	must(cmd.MarkFlagRequired("ip"))
+	cmd.Flags().StringP("endpoint", "e", "", "Endpoint of the instance. Form: HOST[:PORT]")
+	must(cmd.MarkFlagRequired("endpoint"))
 	cmd.Flags().String("disk-uuid", "", "Disk UUID of the encrypted state disk.")
 	must(cmd.MarkFlagRequired("disk-uuid"))
 	cmd.Flags().String("master-secret", "", "Path to base64 encoded master secret.")
@@ -68,7 +67,7 @@ func recover(ctx context.Context, cmd *cobra.Command, fileHandler file.Handler, 
 	}
 	cmd.Print(validators.WarningsIncludeInit())
 
-	if err := recoveryClient.Connect(flags.ip, *config.CoordinatorPort, validators.V()); err != nil {
+	if err := recoveryClient.Connect(flags.endpoint, validators.V()); err != nil {
 		return err
 	}
 
@@ -86,12 +85,13 @@ func recover(ctx context.Context, cmd *cobra.Command, fileHandler file.Handler, 
 }
 
 func parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFlags, error) {
-	ip, err := cmd.Flags().GetString("ip")
+	endpoint, err := cmd.Flags().GetString("endpoint")
 	if err != nil {
 		return recoverFlags{}, err
 	}
-	if netIP := net.ParseIP(ip); netIP == nil {
-		return recoverFlags{}, errors.New("flag '--ip' isn't a valid IP address")
+	endpoint, err = validateEndpoint(endpoint, constants.CoordinatorPort)
+	if err != nil {
+		return recoverFlags{}, err
 	}
 
 	diskUUID, err := cmd.Flags().GetString("disk-uuid")
@@ -121,7 +121,7 @@ func parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFla
 	}
 
 	return recoverFlags{
-		ip:            ip,
+		endpoint:      endpoint,
 		diskUUID:      diskUUID,
 		masterSecret:  masterSecret,
 		devConfigPath: devConfigPath,
@@ -129,7 +129,7 @@ func parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFla
 }
 
 type recoverFlags struct {
-	ip            string
+	endpoint      string
 	diskUUID      string
 	masterSecret  []byte
 	devConfigPath string

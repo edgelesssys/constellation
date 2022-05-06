@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"net"
 
 	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/kms"
@@ -26,15 +25,13 @@ type Client struct {
 // The connection must be closed using Close(). If connect is
 // called on a client that already has a connection, the old
 // connection is closed.
-func (c *Client) Connect(ip, port string, validators []atls.Validator) error {
-	addr := net.JoinHostPort(ip, port)
-
+func (c *Client) Connect(endpoint string, validators []atls.Validator) error {
 	tlsConfig, err := atls.CreateAttestationClientTLSConfig(validators)
 	if err != nil {
 		return err
 	}
 
-	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	conn, err := grpc.Dial(endpoint, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	if err != nil {
 		return err
 	}

@@ -47,7 +47,7 @@ func TestRecover(t *testing.T) {
 		setupFs          func(*require.Assertions) afero.Fs
 		existingState    state.ConstellationState
 		client           *stubRecoveryClient
-		ipFlag           string
+		endpointFlag     string
 		diskUUIDFlag     string
 		masterSecretFlag string
 		devConfigFlag    string
@@ -63,7 +63,7 @@ func TestRecover(t *testing.T) {
 			},
 			existingState: validState,
 			client:        &stubRecoveryClient{},
-			ipFlag:        "192.0.2.1",
+			endpointFlag:  "192.0.2.1",
 			diskUUIDFlag:  "00000000-0000-0000-0000-000000000000",
 			wantKey:       []byte{0x2e, 0x4d, 0x40, 0x3a, 0x90, 0x96, 0x6e, 0xd, 0x42, 0x3, 0x98, 0xd, 0xce, 0xc5, 0x73, 0x26, 0xf4, 0x87, 0xcf, 0x85, 0x73, 0xe1, 0xb7, 0xd6, 0xb2, 0x82, 0x4c, 0xd9, 0xbc, 0xa5, 0x7c, 0x32},
 		},
@@ -75,7 +75,7 @@ func TestRecover(t *testing.T) {
 			},
 			existingState: validState,
 			client:        &stubRecoveryClient{},
-			ipFlag:        "192.0.2.1",
+			endpointFlag:  "192.0.2.1",
 			diskUUIDFlag:  "ABCDEFAB-CDEF-ABCD-ABCD-ABCDEFABCDEF",
 			wantKey:       []byte{0xa9, 0x4, 0x3a, 0x74, 0x53, 0xeb, 0x23, 0xb2, 0xbc, 0x88, 0xce, 0xa7, 0x4e, 0xa9, 0xda, 0x9f, 0x11, 0x85, 0xc4, 0x2f, 0x1f, 0x25, 0x10, 0xc9, 0xec, 0xfe, 0xa, 0x6c, 0xa2, 0x6f, 0x53, 0x34},
 		},
@@ -87,7 +87,7 @@ func TestRecover(t *testing.T) {
 			},
 			existingState: validState,
 			client:        &stubRecoveryClient{},
-			ipFlag:        "192.0.2.1",
+			endpointFlag:  "192.0.2.1",
 			diskUUIDFlag:  "abcdefab-cdef-abcd-abcd-abcdefabcdef",
 			wantKey:       []byte{0xa9, 0x4, 0x3a, 0x74, 0x53, 0xeb, 0x23, 0xb2, 0xbc, 0x88, 0xce, 0xa7, 0x4e, 0xa9, 0xda, 0x9f, 0x11, 0x85, 0xc4, 0x2f, 0x1f, 0x25, 0x10, 0xc9, 0xec, 0xfe, 0xa, 0x6c, 0xa2, 0x6f, 0x53, 0x34},
 		},
@@ -101,7 +101,7 @@ func TestRecover(t *testing.T) {
 				require.NoError(afero.WriteFile(fs, "constellation-mastersecret.base64", []byte("Y29uc3RlbGxhdGlvbi1tYXN0ZXItc2VjcmV0LWxlbmc="), 0o777))
 				return fs
 			},
-			ipFlag:        "192.0.2.1",
+			endpointFlag:  "192.0.2.1",
 			diskUUIDFlag:  "00000000-0000-0000-0000-000000000000",
 			devConfigFlag: "nonexistent-dev-config",
 			wantErr:       true,
@@ -113,7 +113,7 @@ func TestRecover(t *testing.T) {
 				return fs
 			},
 			existingState: validState,
-			ipFlag:        "192.0.2.1",
+			endpointFlag:  "192.0.2.1",
 			diskUUIDFlag:  "00000000-0000-0000-0000-000000000000",
 			stateless:     true,
 			wantErr:       true,
@@ -125,7 +125,7 @@ func TestRecover(t *testing.T) {
 				return fs
 			},
 			existingState: invalidCSPState,
-			ipFlag:        "192.0.2.1",
+			endpointFlag:  "192.0.2.1",
 			diskUUIDFlag:  "00000000-0000-0000-0000-000000000000",
 			wantErr:       true,
 		},
@@ -137,7 +137,7 @@ func TestRecover(t *testing.T) {
 			},
 			existingState: validState,
 			client:        &stubRecoveryClient{connectErr: errors.New("connect failed")},
-			ipFlag:        "192.0.2.1",
+			endpointFlag:  "192.0.2.1",
 			diskUUIDFlag:  "00000000-0000-0000-0000-000000000000",
 			wantErr:       true,
 		},
@@ -149,7 +149,7 @@ func TestRecover(t *testing.T) {
 			},
 			existingState: validState,
 			client:        &stubRecoveryClient{pushStateDiskKeyErr: errors.New("pushing key failed")},
-			ipFlag:        "192.0.2.1",
+			endpointFlag:  "192.0.2.1",
 			diskUUIDFlag:  "00000000-0000-0000-0000-000000000000",
 			wantErr:       true,
 		},
@@ -165,8 +165,8 @@ func TestRecover(t *testing.T) {
 			out := &bytes.Buffer{}
 			cmd.SetOut(out)
 			cmd.SetErr(&bytes.Buffer{})
-			if tc.ipFlag != "" {
-				require.NoError(cmd.Flags().Set("ip", tc.ipFlag))
+			if tc.endpointFlag != "" {
+				require.NoError(cmd.Flags().Set("endpoint", tc.endpointFlag))
 			}
 			if tc.diskUUIDFlag != "" {
 				require.NoError(cmd.Flags().Set("disk-uuid", tc.diskUUIDFlag))
@@ -207,41 +207,41 @@ func TestParseRecoverFlags(t *testing.T) {
 			wantErr: true,
 		},
 		"invalid ip": {
-			args:    []string{"--ip", "invalid", "--disk-uuid", "12345678-1234-1234-1234-123456789012"},
+			args:    []string{"-e", "192.0.2.1:2:2", "--disk-uuid", "12345678-1234-1234-1234-123456789012"},
 			wantErr: true,
 		},
 		"invalid disk uuid": {
-			args:    []string{"--ip", "192.0.2.1", "--disk-uuid", "invalid"},
+			args:    []string{"-e", "192.0.2.1:2", "--disk-uuid", "invalid"},
 			wantErr: true,
 		},
 		"invalid master secret path": {
-			args:    []string{"--ip", "192.0.2.1", "--disk-uuid", "12345678-1234-1234-1234-123456789012", "--master-secret", "invalid"},
+			args:    []string{"-e", "192.0.2.1:2", "--disk-uuid", "12345678-1234-1234-1234-123456789012", "--master-secret", "invalid"},
 			wantErr: true,
 		},
 		"minimal args set": {
-			args: []string{"--ip", "192.0.2.1", "--disk-uuid", "12345678-1234-1234-1234-123456789012"},
+			args: []string{"-e", "192.0.2.1:2", "--disk-uuid", "12345678-1234-1234-1234-123456789012"},
 			wantFlags: recoverFlags{
-				ip:           "192.0.2.1",
+				endpoint:     "192.0.2.1:2",
 				diskUUID:     "12345678-1234-1234-1234-123456789012",
 				masterSecret: []byte("constellation-master-secret-leng"),
 			},
 		},
 		"all args set": {
 			args: []string{
-				"--ip", "192.0.2.1", "--disk-uuid", "12345678-1234-1234-1234-123456789012",
+				"-e", "192.0.2.1:2", "--disk-uuid", "12345678-1234-1234-1234-123456789012",
 				"--master-secret", "constellation-mastersecret.base64", "--dev-config", "dev-config-path",
 			},
 			wantFlags: recoverFlags{
-				ip:            "192.0.2.1",
+				endpoint:      "192.0.2.1:2",
 				diskUUID:      "12345678-1234-1234-1234-123456789012",
 				masterSecret:  []byte("constellation-master-secret-leng"),
 				devConfigPath: "dev-config-path",
 			},
 		},
 		"uppercase disk-uuid is converted to lowercase": {
-			args: []string{"--ip", "192.0.2.1", "--disk-uuid", "ABCDEFAB-CDEF-ABCD-ABCD-ABCDEFABCDEF"},
+			args: []string{"-e", "192.0.2.1:2", "--disk-uuid", "ABCDEFAB-CDEF-ABCD-ABCD-ABCDEFABCDEF"},
 			wantFlags: recoverFlags{
-				ip:           "192.0.2.1",
+				endpoint:     "192.0.2.1:2",
 				diskUUID:     "abcdefab-cdef-abcd-abcd-abcdefabcdef",
 				masterSecret: []byte("constellation-master-secret-leng"),
 			},

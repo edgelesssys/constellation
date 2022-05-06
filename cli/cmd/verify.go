@@ -4,9 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
-	"strconv"
-	"strings"
 
 	"github.com/edgelesssys/constellation/cli/cloud/cloudcmd"
 	"github.com/edgelesssys/constellation/cli/cloudprovider"
@@ -69,7 +66,7 @@ func verify(ctx context.Context, cmd *cobra.Command, provider cloudprovider.Prov
 		cmd.Print(validators.Warnings())
 	}
 
-	if err := protoClient.Connect(flags.nodeHost, flags.nodePort, validators.V()); err != nil {
+	if err := protoClient.Connect(flags.endpoint, validators.V()); err != nil {
 		return err
 	}
 	if _, err := protoClient.GetState(ctx); err != nil {
@@ -100,13 +97,9 @@ func parseVerifyFlags(cmd *cobra.Command) (verifyFlags, error) {
 	if err != nil {
 		return verifyFlags{}, err
 	}
-	host, port, err := net.SplitHostPort(endpoint)
+	endpoint, err = validateEndpoint(endpoint, constants.CoordinatorPort)
 	if err != nil {
-		if !strings.Contains(err.Error(), "missing port in address") {
-			return verifyFlags{}, err
-		}
-		host = endpoint
-		port = strconv.Itoa(constants.CoordinatorPort)
+		return verifyFlags{}, err
 	}
 
 	devConfigPath, err := cmd.Flags().GetString("dev-config")
@@ -115,8 +108,7 @@ func parseVerifyFlags(cmd *cobra.Command) (verifyFlags, error) {
 	}
 
 	return verifyFlags{
-		nodeHost:      host,
-		nodePort:      port,
+		endpoint:      endpoint,
 		devConfigPath: devConfigPath,
 		ownerID:       ownerID,
 		clusterID:     clusterID,
@@ -124,8 +116,7 @@ func parseVerifyFlags(cmd *cobra.Command) (verifyFlags, error) {
 }
 
 type verifyFlags struct {
-	nodeHost      string
-	nodePort      string
+	endpoint      string
 	ownerID       string
 	clusterID     string
 	devConfigPath string

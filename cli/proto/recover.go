@@ -3,7 +3,6 @@ package proto
 import (
 	"context"
 	"errors"
-	"net"
 
 	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
@@ -22,15 +21,13 @@ type KeyClient struct {
 // The connection must be closed using Close(). If connect is
 // called on a client that already has a connection, the old
 // connection is closed.
-func (c *KeyClient) Connect(ip, port string, validators []atls.Validator) error {
-	addr := net.JoinHostPort(ip, port)
-
+func (c *KeyClient) Connect(endpoint string, validators []atls.Validator) error {
 	tlsConfig, err := atls.CreateAttestationClientTLSConfig(validators)
 	if err != nil {
 		return err
 	}
 
-	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	conn, err := grpc.Dial(endpoint, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	if err != nil {
 		return err
 	}

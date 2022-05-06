@@ -9,7 +9,7 @@ import (
 )
 
 type protoClient interface {
-	Connect(ip, port string, validators []atls.Validator) error
+	Connect(endpoint string, validators []atls.Validator) error
 	Close() error
 	GetState(ctx context.Context) (state.State, error)
 	Activate(ctx context.Context, userPublicKey, masterSecret []byte, nodeIPs, coordinatorIPs, autoscalingNodeGroups []string, cloudServiceAccountURI string) (proto.ActivationResponseClient, error)
