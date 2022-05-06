@@ -148,7 +148,7 @@ func Default() *Config {
 						},
 					},
 				},
-				PCRs:                 pcrPtr(azurePCRs),
+				Measurements:         pcrPtr(azurePCRs),
 				UserAssignedIdentity: proto.String("/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-dev-identity"),
 			},
 			GCP: &GCPConfig{
@@ -196,7 +196,7 @@ func Default() *Config {
 					"roles/storage.admin",
 					"roles/iam.serviceAccountUser",
 				},
-				PCRs: pcrPtr(gcpPCRs),
+				Measurements: pcrPtr(gcpPCRs),
 			},
 			QEMU: &QEMUConfig{
 				PCRs: pcrPtr(qemuPCRs),
@@ -241,7 +241,7 @@ type AzureConfig struct {
 	Location                  *string                                `json:"location,omitempty"`     // TODO: This will be user input
 	Image                     *string                                `json:"image,omitempty"`
 	NetworkSecurityGroupInput *azureClient.NetworkSecurityGroupInput `json:"networksecuritygroupinput,omitempty"`
-	PCRs                      *map[uint32][]byte                     `json:"pcrs,omitempty"`
+	Measurements              *map[uint32][]byte                     `json:"measurements,omitempty"`
 	UserAssignedIdentity      *string                                `json:"userassignedidentity,omitempty"`
 }
 
@@ -254,7 +254,7 @@ type GCPConfig struct {
 	FirewallInput       *gcpClient.FirewallInput `json:"firewallinput,omitempty"`
 	VPCsInput           *gcpClient.VPCsInput     `json:"vpcsinput,omitempty"`
 	ServiceAccountRoles *[]string                `json:"serviceaccountroles,omitempty"`
-	PCRs                *map[uint32][]byte       `json:"pcrs,omitempty"`
+	Measurements        *map[uint32][]byte       `json:"measurements,omitempty"`
 }
 
 type QEMUConfig struct {

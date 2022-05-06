@@ -68,13 +68,13 @@ func (v *Validators) updatePCR(pcrIndex uint32, encoded string) error {
 func (v *Validators) setPCRs(config *config.Config) error {
 	switch v.provider {
 	case cloudprovider.GCP:
-		gcpPCRs := *config.Provider.GCP.PCRs
+		gcpPCRs := *config.Provider.GCP.Measurements
 		if err := v.checkPCRs(gcpPCRs); err != nil {
 			return err
 		}
 		v.pcrs = gcpPCRs
 	case cloudprovider.Azure:
-		azurePCRs := *config.Provider.Azure.PCRs
+		azurePCRs := *config.Provider.Azure.Measurements
 		if err := v.checkPCRs(azurePCRs); err != nil {
 			return err
 		}
