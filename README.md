@@ -287,3 +287,7 @@ View the VMs by running the following
 ```shell
 sudo tmux attach -t constellation-vm-<i>
 ```
+
+# Deployment Guides
+
+- [Onboarding Customers](/docs/onboarding-customers.md)
