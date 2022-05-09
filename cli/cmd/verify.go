@@ -19,8 +19,8 @@ import (
 func newVerifyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "verify {aws|azure|gcp}",
-		Short: "Verify the confidential properties of your Constellation cluster",
-		Long:  "Verify the confidential properties of your Constellation cluster.",
+		Short: "Verify the confidential properties of a Constellation cluster",
+		Long:  "Verify the confidential properties of a Constellation cluster.",
 		Args: cobra.MatchAll(
 			cobra.ExactArgs(1),
 			isCloudProvider(0),

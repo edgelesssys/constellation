@@ -29,8 +29,8 @@ func newCreateCmd() *cobra.Command {
 		ValidArgsFunction: createCompletion,
 		RunE:              runCreate,
 	}
-	cmd.Flags().String("name", "constell", "create the Constellation cluster with the specified name")
-	cmd.Flags().BoolP("yes", "y", false, "create the Constellation cluster without further confirmation")
+	cmd.Flags().String("name", "constell", "create the cluster with the specified name")
+	cmd.Flags().BoolP("yes", "y", false, "create the cluster without further confirmation")
 	cmd.Flags().IntP("control-plane-nodes", "c", 1, "number of control-plane nodes (required)")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "control-plane-nodes"))
 	cmd.Flags().IntP("worker-nodes", "w", 1, "number of worker nodes (required)")

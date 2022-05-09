@@ -11,8 +11,8 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:          "constellation",
-	Short:        "Set up your Constellation cluster",
-	Long:         "Set up your Constellation cluster.",
+	Short:        "Manage your Constellation cluster",
+	Long:         "Manage your Constellation cluster.",
 	SilenceUsage: true,
 }
 
@@ -54,7 +54,7 @@ func init() {
 	cobra.EnableCommandSorting = false
 	// Set output of cmd.Print to stdout. (By default, it's stderr.)
 	rootCmd.SetOut(os.Stdout)
-	rootCmd.PersistentFlags().String("dev-config", "", "create the Constellation cluster using settings from a development config")
+	rootCmd.PersistentFlags().String("dev-config", "", "use settings from a development config")
 	must(rootCmd.MarkPersistentFlagFilename("dev-config", "json"))
 	rootCmd.AddCommand(newCreateCmd())
 	rootCmd.AddCommand(newInitCmd())
