@@ -48,13 +48,33 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool) Kube
 			KubernetesVersion: constants.KubernetesVersion,
 			// necessary to be able to access the kubeapi server through localhost
 			APIServer: kubeadm.APIServer{
+				ControlPlaneComponent: kubeadm.ControlPlaneComponent{
+					ExtraArgs: map[string]string{
+						"profiling": "false", // CIS benchmark
+						"tls-cipher-suites": "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256," +
+							"TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256," +
+							"TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384," +
+							"TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256," +
+							"TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256," +
+							"TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305," +
+							"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,TLS_RSA_WITH_3DES_EDE_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA," +
+							"TLS_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_256_GCM_SHA384", // CIS benchmark
+					},
+				},
 				CertSANs: []string{"127.0.0.1", "10.118.0.1"},
 			},
 			ControllerManager: kubeadm.ControlPlaneComponent{
 				ExtraArgs: map[string]string{
-					"flex-volume-plugin-dir": "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/",
-					"cloud-provider":         cloudProvider,
-					"configure-cloud-routes": "false",
+					"flex-volume-plugin-dir":      "/opt/libexec/kubernetes/kubelet-plugins/volume/exec/",
+					"cloud-provider":              cloudProvider,
+					"configure-cloud-routes":      "false",
+					"profiling":                   "false", // CIS benchmark
+					"terminated-pod-gc-threshold": "1000",  // CIS benchmark - Default value of Rancher
+				},
+			},
+			Scheduler: kubeadm.ControlPlaneComponent{
+				ExtraArgs: map[string]string{
+					"profiling": "false",
 				},
 			},
 			ControlPlaneEndpoint: "127.0.0.1:16443",
