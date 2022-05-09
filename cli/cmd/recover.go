@@ -34,7 +34,7 @@ func newRecoverCmd() *cobra.Command {
 	must(cmd.MarkFlagRequired("endpoint"))
 	cmd.Flags().String("disk-uuid", "", "disk UUID of the encrypted state disk (required)")
 	must(cmd.MarkFlagRequired("disk-uuid"))
-	cmd.Flags().String("master-secret", "", "path to base64 encoded master secret")
+	cmd.Flags().String("master-secret", constants.MasterSecretFilename, "path to base64 encoded master secret")
 	return cmd
 }
 
@@ -106,9 +106,6 @@ func parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFla
 	masterSecretPath, err := cmd.Flags().GetString("master-secret")
 	if err != nil {
 		return recoverFlags{}, err
-	}
-	if masterSecretPath == "" {
-		masterSecretPath = constants.MasterSecretFilename
 	}
 	masterSecret, err := readMasterSecret(fileHandler, masterSecretPath)
 	if err != nil {
