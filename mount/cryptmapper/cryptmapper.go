@@ -30,6 +30,61 @@ const (
 // 		https://stackoverflow.com/questions/30553386/cryptsetup-backend-safe-with-multithreading
 var packageLock = sync.Mutex{}
 
+// KeyCreator is an interface to create data encryption keys.
+type KeyCreator interface {
+	GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error)
+}
+
+// DeviceMapper is an interface for device mapper methods.
+type DeviceMapper interface {
+	// Init initializes a crypt device backed by 'devicePath'.
+	// Sets the deviceMapper to the newly allocated Device or returns any error encountered.
+	Init(devicePath string) error
+	// ActivateByVolumeKey activates a device by using a volume key.
+	// Returns nil on success, or an error otherwise.
+	ActivateByVolumeKey(deviceName, volumeKey string, volumeKeySize, flags int) error
+	// Deactivate deactivates a device.
+	// Returns nil on success, or an error otherwise.
+	Deactivate(deviceName string) error
+	// Format formats a Device, using a specific device type, and type-independent parameters.
+	// Returns nil on success, or an error otherwise.
+	Format(deviceType cryptsetup.DeviceType, genericParams cryptsetup.GenericParams) error
+	// Free releases crypt device context and used memory.
+	Free() bool
+	// Load loads crypt device parameters from the on-disk header.
+	// Returns nil on success, or an error otherwise.
+	Load(cryptsetup.DeviceType) error
+	// Wipe removes existing data and clears the device for use with dm-integrity.
+	// Returns nil on success, or an error otherwise.
+	Wipe(devicePath string, pattern int, offset, length uint64, wipeBlockSize int, flags int, progress func(size, offset uint64) int) error
+	// Resize the crypt device.
+	// Returns nil on success, or an error otherwise.
+	Resize(name string, newSize uint64) error
+}
+
+// cryptDevice is a wrapper for cryptsetup.Device.
+type CryptDevice struct {
+	*cryptsetup.Device
+}
+
+// Init initializes a crypt device backed by 'devicePath'.
+// Sets the cryptDevice's deviceMapper to the newly allocated Device or returns any error encountered.
+func (c *CryptDevice) Init(devicePath string) error {
+	device, err := cryptsetup.Init(devicePath)
+	if err != nil {
+		return err
+	}
+	c.Device = device
+	return nil
+}
+
+// Free releases crypt device context and used memory.
+func (c *CryptDevice) Free() bool {
+	res := c.Device.Free()
+	c.Device = nil
+	return res
+}
+
 // CryptMapper manages dm-crypt volumes.
 type CryptMapper struct {
 	mapper DeviceMapper
@@ -43,67 +98,6 @@ func New(kms KeyCreator, mapper DeviceMapper) *CryptMapper {
 		mapper: mapper,
 		kms:    kms,
 	}
-}
-
-// KeyCreator is an interface to create data encryption keys.
-type KeyCreator interface {
-	GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error)
-}
-
-// DeviceMapper is an interface for device mapper methods.
-type DeviceMapper interface {
-	// Init initializes a crypt device backed by 'devicePath'.
-	// Sets the deviceMapper to the newly allocated Device or returns any error encountered.
-	// C equivalent: crypt_init
-	Init(devicePath string) error
-	// ActivateByVolumeKey activates a device by using a volume key.
-	// Returns nil on success, or an error otherwise.
-	// C equivalent: crypt_activate_by_volume_key
-	ActivateByVolumeKey(deviceName, volumeKey string, volumeKeySize, flags int) error
-	// Deactivate deactivates a device.
-	// Returns nil on success, or an error otherwise.
-	// C equivalent: crypt_deactivate
-	Deactivate(deviceName string) error
-	// Format formats a Device, using a specific device type, and type-independent parameters.
-	// Returns nil on success, or an error otherwise.
-	// C equivalent: crypt_format
-	Format(deviceType cryptsetup.DeviceType, genericParams cryptsetup.GenericParams) error
-	// Free releases crypt device context and used memory.
-	// C equivalent: crypt_free
-	Free() bool
-	// Load loads crypt device parameters from the on-disk header.
-	// Returns nil on success, or an error otherwise.
-	// C equivalent: crypt_load
-	Load(cryptsetup.DeviceType) error
-	// Wipe removes existing data and clears the device for use with dm-integrity.
-	// Returns nil on success, or an error otherwise.
-	// C equivalent: crypt_wipe
-	Wipe(devicePath string, pattern int, offset, length uint64, wipeBlockSize int, flags int, progress func(size, offset uint64) int) error
-}
-
-// cryptDevice is a wrapper for cryptsetup.Device.
-type CryptDevice struct {
-	*cryptsetup.Device
-}
-
-// Init initializes a crypt device backed by 'devicePath'.
-// Sets the cryptDevice's deviceMapper to the newly allocated Device or returns any error encountered.
-// C equivalent: crypt_init.
-func (c *CryptDevice) Init(devicePath string) error {
-	device, err := cryptsetup.Init(devicePath)
-	if err != nil {
-		return err
-	}
-	c.Device = device
-	return nil
-}
-
-// Free releases crypt device context and used memory.
-// C equivalent: crypt_free.
-func (c *CryptDevice) Free() bool {
-	res := c.Device.Free()
-	c.Device = nil
-	return res
 }
 
 // CloseCryptDevice closes the crypt device mapped for volumeID.
@@ -143,6 +137,24 @@ func (c *CryptMapper) CloseCryptDevice(volumeID string) error {
 	return nil
 }
 
+// OpenCryptDevice maps the volume at source to the crypt device identified by volumeID.
+// The key used to encrypt the volume is fetched using CryptMapper's kms client.
+func (c *CryptMapper) OpenCryptDevice(ctx context.Context, source, volumeID string, integrity bool) (string, error) {
+	klog.V(4).Infof("Fetching data encryption key for volume %q", volumeID)
+
+	keySize := keySizeCrypt
+	if integrity {
+		keySize = keySizeIntegrity
+	}
+	dek, err := c.kms.GetDEK(ctx, volumeID, keySize)
+	if err != nil {
+		return "", err
+	}
+
+	m := &mount.SafeFormatAndMount{Exec: utilexec.New()}
+	return openCryptDevice(c.mapper, source, volumeID, string(dek), integrity, m.GetDiskFormat)
+}
+
 // closeCryptDevice closes the crypt device mapped for volumeID.
 func closeCryptDevice(device DeviceMapper, source, volumeID, deviceType string) error {
 	packageLock.Lock()
@@ -164,24 +176,6 @@ func closeCryptDevice(device DeviceMapper, source, volumeID, deviceType string) 
 
 	klog.V(4).Infof("Successfully unmapped dm-%s volume %q for device %q", deviceType, cryptPrefix+volumeID, source)
 	return nil
-}
-
-// OpenCryptDevice maps the volume at source to the crypt device identified by volumeID.
-// The key used to encrypt the volume is fetched using CryptMapper's kms client.
-func (c *CryptMapper) OpenCryptDevice(ctx context.Context, source, volumeID string, integrity bool) (string, error) {
-	klog.V(4).Infof("Fetching data encryption key for volume %q", volumeID)
-
-	keySize := keySizeCrypt
-	if integrity {
-		keySize = keySizeIntegrity
-	}
-	dek, err := c.kms.GetDEK(ctx, volumeID, keySize)
-	if err != nil {
-		return "", err
-	}
-
-	m := &mount.SafeFormatAndMount{Exec: utilexec.New()}
-	return openCryptDevice(c.mapper, source, volumeID, string(dek), integrity, m.GetDiskFormat)
 }
 
 // openCryptDevice maps the volume at source to the crypt device identified by volumeID.
@@ -216,7 +210,7 @@ func openCryptDevice(device DeviceMapper, source, volumeID, dek string, integrit
 	needWipe := false
 	// Try to load LUKS headers
 	// If this fails, the device is either not formatted at all, or already formatted with a different FS
-	if err := device.Load(nil); err != nil {
+	if err := device.Load(cryptsetup.LUKS2{}); err != nil {
 		klog.V(4).Infof("Device %q is not formatted as LUKS2 partition, checking for existing format...", source)
 		format, err := diskInfo(source)
 		if err != nil {
