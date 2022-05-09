@@ -1,0 +1,25 @@
+name: e2e Test Azure
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+jobs:
+  e2e-test-azure:
+    runs-on: [self-hosted, edgserver]
+    container:
+      image: ghcr.io/catthehacker/ubuntu:act-latest
+      options: --privileged
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v3
+    - name: Run Azure E2E test
+      uses: ./.github/actions/e2e_test
+      with:
+        workerNodesCount: '2'
+        controlNodesCount: '1'
+        autoscale: 'false'
+        cloudProvider: 'azure'
+        machineType: 'Standard_D4s_v3'
+        azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
+        sonobuoyTestSuiteCmd: '--mode certified-conformance'
+        msTeamsWebhook: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}

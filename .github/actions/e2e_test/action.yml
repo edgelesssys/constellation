@@ -1,0 +1,77 @@
+name: e2e_test
+description: "Run Constellation e2e test."
+inputs:
+  workerNodesCount:
+    description: 'Number of worker nodes to spawn.'
+    required: true
+  controlNodesCount:
+    description: 'Number of control-plane nodes to spawn.'
+    required: true
+  autoscale:
+    description: 'Autoscale?'
+    required: true
+  cloudProvider:
+    description: 'Which cloud provider to use.'
+    required: true
+  machineType:
+    description: 'VM machine type. Make sure it matches selected cloud provider!'
+    required: true
+  gcp_service_account_json:
+    description: 'Service account with permissions to create Constellation on GCP.'
+    required: false
+  azure_credentials:
+    description: 'Credentials authorized to create Constellation on Azure.'
+    required: false
+  sonobuoyTestSuiteCmd:
+    description: 'Which tests should be run? Check README for guidance!'
+    required: true
+  msTeamsWebhook:
+    description: 'WebHook used to notify of failure'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+  - name: Build CLI
+    uses: ./.github/actions/build_cli
+
+  - name: Login to GCP
+    uses: ./.github/actions/gcp_login
+    with:
+      gcp_service_account_json: ${{ inputs.gcp_service_account_json }}
+    if: ${{ inputs.cloudProvider == 'gcp' }}
+  - name: Login to Azure
+    uses: ./.github/actions/azure_login
+    with:
+      azure_credentials: ${{ inputs.azure_credentials }}
+    if: ${{ inputs.cloudProvider == 'azure' }}
+
+  - name: Create cluster
+    uses: ./.github/actions/constellation_create
+    with:
+      cloudProvider: ${{ inputs.cloudProvider }}
+      autoscale: ${{ inputs.autoscale }}
+      workerNodesCount: ${{ inputs.workerNodesCount }}
+      controlNodesCount: ${{ inputs.controlNodesCount }}
+      machineType: ${{ inputs.machineType }}
+  - name: Run e2e tests
+    uses: ./.github/actions/sonobuoy
+    with:
+      sonobuoyTestSuiteCmd: ${{ inputs.sonobuoyTestSuiteCmd }}
+
+  - name: Notify teams channel
+    if: failure()
+    run: |
+      sudo apt-get install gettext-base -y
+      export TEAMS_JOB_NAME=${{ inputs.cloudProvider }}
+      export TEAMS_RUN_ID=${{ github.run_id }}
+      envsubst < teams-payload.json > to-be-send.json
+      curl                                          \
+        -H "Content-Type: application/json"         \
+        -d @to-be-send.json                         \
+        "${{ inputs.msTeamsWebhook }}"
+    shell: bash
+    working-directory: .github/actions/e2e_test
+
+  - name: Always terminate cluster
+    if: always()
+    uses: ./.github/actions/constellation_destroy

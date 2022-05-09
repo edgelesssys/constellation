@@ -1,4 +1,4 @@
-name: e2e Test
+name: e2e Test Manual
 
 on:
   workflow_dispatch:
@@ -37,37 +37,20 @@ on:
         default: '--mode quick'
         required: true
 jobs:
-  e2e-test:
+  e2e-test-manual:
     runs-on: ubuntu-latest
     steps:
     - name: Check out repository
       uses: actions/checkout@v3
-    - name: Build CLI
-      uses: ./.github/actions/build_cli
-
-    - name: Login to GCP
-      uses: ./.github/actions/gcp_login
+    - name: Run manual E2E test
+      uses: ./.github/actions/e2e_test
       with:
-        gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-      if: ${{ github.event.inputs.cloudProvider == 'gcp' }}
-    - name: Login to Azure
-      uses: ./.github/actions/azure_login
-      with:
-        azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
-
-    - name: Create cluster
-      uses: ./.github/actions/constellation_create
-      with:
-        cloudProvider: ${{ github.event.inputs.cloudProvider }}
-        autoscale: ${{ github.event.inputs.autoscale }}
         workerNodesCount: ${{ github.event.inputs.workerNodesCount }}
         controlNodesCount: ${{ github.event.inputs.controlNodesCount }}
+        autoscale: ${{ github.event.inputs.autoscale }}
+        cloudProvider: ${{ github.event.inputs.cloudProvider }}
         machineType: ${{ github.event.inputs.machineType }}
-    - name: Run e2e tests
-      uses: ./.github/actions/sonobuoy
-      with:
+        gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+        azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
         sonobuoyTestSuiteCmd: ${{ github.event.inputs.sonobuoyTestSuiteCmd }}
-
-    - name: Always terminate cluster
-      if: always()
-      uses: ./.github/actions/constellation_destroy
+        msTeamsWebhook: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}

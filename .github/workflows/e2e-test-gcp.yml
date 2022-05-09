@@ -1,0 +1,25 @@
+name: e2e Test GCP
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+jobs:
+  e2e-test-gcp:
+    runs-on: [self-hosted, edgserver]
+    container:
+      image: ghcr.io/catthehacker/ubuntu:act-latest
+      options: --privileged
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v3
+    - name: Run GCP E2E test
+      uses: ./.github/actions/e2e_test
+      with:
+        workerNodesCount: '2'
+        controlNodesCount: '1'
+        autoscale: 'false'
+        cloudProvider: 'gcp'
+        machineType: 'n2d-standard-2'
+        gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+        sonobuoyTestSuiteCmd: '--mode certified-conformance'
+        msTeamsWebhook: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
