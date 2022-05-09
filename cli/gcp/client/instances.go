@@ -322,7 +322,7 @@ func (i insertInstanceTemplateInput) insertInstanceTemplateRequest() *computepb.
 					{
 						InitializeParams: &computepb.AttachedDiskInitializeParams{
 							DiskSizeGb:  proto.Int64(10),
-							SourceImage: proto.String("projects/" + i.Project + "/global/images/" + i.ImageId),
+							SourceImage: proto.String(i.ImageId),
 						},
 						AutoDelete: proto.Bool(true),
 						Boot:       proto.Bool(true),

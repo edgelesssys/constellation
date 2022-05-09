@@ -155,7 +155,7 @@ func Default() *Config {
 				Project: proto.String("constellation-331613"),
 				Region:  proto.String("europe-west3"),
 				Zone:    proto.String("europe-west3-b"),
-				Image:   proto.String("constellation-coreos-1651150807"),
+				Image:   proto.String("projects/constellation-images/global/images/constellation-coreos-1651150807"),
 				FirewallInput: &gcpClient.FirewallInput{
 					Ingress: cloudtypes.Firewall{
 						{

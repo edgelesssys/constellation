@@ -82,7 +82,7 @@ jobs:
 
       - name: "Build and Upload"
         run: >
-          make -j$(nproc) CONTAINER_ENGINE=docker NETRC=/tmp/.netrc GCP_IMAGE_NAME="${{ env.IMAGE_TIMESTAMP }}" AZURE_IMAGE_NAME="${{ env.IMAGE_TIMESTAMP }}"
+          make -j$(nproc) CONTAINER_ENGINE=docker NETRC=/tmp/.netrc GCP_IMAGE_NAME="${{ env.IMAGE_TIMESTAMP }}" GCP_IMAGE_FAMILY="constellation-debug" AZURE_IMAGE_NAME="${{ env.IMAGE_TIMESTAMP }}"
           AZURE_IMAGE_DEFINITION="constellation-coreos-debugd" AZURE_IMAGE_VERSION="${{env.IMAGE_VERSION }}" DOWNLOAD_COORDINATOR=n COORDINATOR_BINARY="${{ github.workspace }}/debugd/debugd/cmd/debugd/constellation-debugd"
           image-gcp image-azure upload-gcp upload-azure
         working-directory: ${{ env.working-directory }}
