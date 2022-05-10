@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edgelesssys/constellation/internal/constants"
 	cryptsetup "github.com/martinjungblut/go-cryptsetup"
 	"k8s.io/klog/v2"
 	mount "k8s.io/mount-utils"
@@ -30,6 +31,11 @@ const (
 // 		https://stackoverflow.com/questions/30553386/cryptsetup-backend-safe-with-multithreading
 var packageLock = sync.Mutex{}
 
+func init() {
+	cryptsetup.SetDebugLevel(cryptsetup.CRYPT_LOG_NORMAL)
+	cryptsetup.SetLogCallback(func(level int, message string) { klog.V(4).Infof("libcryptsetup: %s", message) })
+}
+
 // KeyCreator is an interface to create data encryption keys.
 type KeyCreator interface {
 	GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error)
@@ -40,9 +46,15 @@ type DeviceMapper interface {
 	// Init initializes a crypt device backed by 'devicePath'.
 	// Sets the deviceMapper to the newly allocated Device or returns any error encountered.
 	Init(devicePath string) error
+	// InitByName initializes a crypt device from provided active device 'name'.
+	// Sets the deviceMapper to the newly allocated Device or returns any error encountered.
+	InitByName(name string) error
+	// ActivateByPassphrase activates a device by using a passphrase from a specific keyslot.
+	// Returns nil on success, or an error otherwise.
+	ActivateByPassphrase(deviceName string, keyslot int, passphrase string, flags int) error
 	// ActivateByVolumeKey activates a device by using a volume key.
 	// Returns nil on success, or an error otherwise.
-	ActivateByVolumeKey(deviceName, volumeKey string, volumeKeySize, flags int) error
+	ActivateByVolumeKey(deviceName string, volumeKey string, volumeKeySize int, flags int) error
 	// Deactivate deactivates a device.
 	// Returns nil on success, or an error otherwise.
 	Deactivate(deviceName string) error
@@ -54,6 +66,9 @@ type DeviceMapper interface {
 	// Load loads crypt device parameters from the on-disk header.
 	// Returns nil on success, or an error otherwise.
 	Load(cryptsetup.DeviceType) error
+	// KeyslotAddByVolumeKey adds a key slot using a volume key to perform the required security check.
+	// Returns nil on success, or an error otherwise.
+	KeyslotAddByVolumeKey(keyslot int, volumeKey string, passphrase string) error
 	// Wipe removes existing data and clears the device for use with dm-integrity.
 	// Returns nil on success, or an error otherwise.
 	Wipe(devicePath string, pattern int, offset, length uint64, wipeBlockSize int, flags int, progress func(size, offset uint64) int) error
@@ -71,6 +86,17 @@ type CryptDevice struct {
 // Sets the cryptDevice's deviceMapper to the newly allocated Device or returns any error encountered.
 func (c *CryptDevice) Init(devicePath string) error {
 	device, err := cryptsetup.Init(devicePath)
+	if err != nil {
+		return err
+	}
+	c.Device = device
+	return nil
+}
+
+// InitByName initializes a crypt device from provided active device 'name'.
+// Sets the deviceMapper to the newly allocated Device or returns any error encountered.
+func (c *CryptDevice) InitByName(name string) error {
+	device, err := cryptsetup.InitByName(name)
 	if err != nil {
 		return err
 	}
@@ -142,17 +168,31 @@ func (c *CryptMapper) CloseCryptDevice(volumeID string) error {
 func (c *CryptMapper) OpenCryptDevice(ctx context.Context, source, volumeID string, integrity bool) (string, error) {
 	klog.V(4).Infof("Fetching data encryption key for volume %q", volumeID)
 
-	keySize := keySizeCrypt
-	if integrity {
-		keySize = keySizeIntegrity
-	}
-	dek, err := c.kms.GetDEK(ctx, volumeID, keySize)
+	passphrase, err := c.kms.GetDEK(ctx, volumeID, constants.StateDiskKeyLength)
 	if err != nil {
 		return "", err
 	}
+	if len(passphrase) != constants.StateDiskKeyLength {
+		return "", fmt.Errorf("expected key length to be [%d] but got [%d]", constants.StateDiskKeyLength, len(passphrase))
+	}
 
 	m := &mount.SafeFormatAndMount{Exec: utilexec.New()}
-	return openCryptDevice(c.mapper, source, volumeID, string(dek), integrity, m.GetDiskFormat)
+	return openCryptDevice(c.mapper, source, volumeID, string(passphrase), integrity, m.GetDiskFormat)
+}
+
+// ResizeCryptDevice resizes the underlying crypt device and returns the mapped device path.
+func (c *CryptMapper) ResizeCryptDevice(ctx context.Context, volumeID string) (string, error) {
+	dek, err := c.kms.GetDEK(ctx, volumeID, constants.StateDiskKeyLength)
+	if err != nil {
+		return "", err
+	}
+	klog.V(4).Infof("Resizing LUKS2 partition %q", cryptPrefix+volumeID)
+
+	if err := resizeCryptDevice(c.mapper, volumeID, string(dek)); err != nil {
+		return "", err
+	}
+
+	return cryptPrefix + volumeID, nil
 }
 
 // closeCryptDevice closes the crypt device mapped for volumeID.
@@ -161,9 +201,8 @@ func closeCryptDevice(device DeviceMapper, source, volumeID, deviceType string) 
 	defer packageLock.Unlock()
 
 	klog.V(4).Infof("Unmapping dm-%s volume %q for device %q", deviceType, cryptPrefix+volumeID, source)
-	cryptsetup.SetLogCallback(func(level int, message string) { klog.V(4).Infof("libcryptsetup: %s", message) })
 
-	if err := device.Init(source); err != nil {
+	if err := device.InitByName(volumeID); err != nil {
 		klog.Errorf("Could not initialize dm-%s to unmap device %q: %s", deviceType, source, err)
 		return fmt.Errorf("could not initialize dm-%s to unmap device %q: %w", deviceType, source, err)
 	}
@@ -179,26 +218,18 @@ func closeCryptDevice(device DeviceMapper, source, volumeID, deviceType string) 
 }
 
 // openCryptDevice maps the volume at source to the crypt device identified by volumeID.
-func openCryptDevice(device DeviceMapper, source, volumeID, dek string, integrity bool, diskInfo func(disk string) (string, error)) (string, error) {
+func openCryptDevice(device DeviceMapper, source, volumeID, passphrase string, integrity bool, diskInfo func(disk string) (string, error)) (string, error) {
 	packageLock.Lock()
 	defer packageLock.Unlock()
 
 	var integrityType string
-	keySize := len(dek)
-
+	keySize := keySizeCrypt
 	if integrity {
-		if len(dek) != keySizeIntegrity {
-			return "", fmt.Errorf("invalid key size for crypt with integrity: expected [%d], got [%d]", keySizeIntegrity, len(dek))
-		}
 		integrityType = "hmac(sha256)"
-	}
-
-	if !integrity && (len(dek) != keySizeCrypt) {
-		return "", fmt.Errorf("invalid key length for plain crypt: expected [%d], got [%d]", keySizeCrypt, len(dek))
+		keySize = keySizeIntegrity
 	}
 
 	klog.V(4).Infof("Mapping device %q to dm-crypt volume %q", source, cryptPrefix+volumeID)
-	cryptsetup.SetLogCallback(func(level int, message string) { klog.V(4).Infof("libcryptsetup: %s", message) })
 
 	// Initialize the block device
 	if err := device.Init(source); err != nil {
@@ -240,24 +271,28 @@ func openCryptDevice(device DeviceMapper, source, volumeID, dek string, integrit
 			cryptsetup.GenericParams{
 				Cipher:        "aes",
 				CipherMode:    "xts-plain64",
-				VolumeKey:     dek,
 				VolumeKeySize: keySize,
 			}); err != nil {
 			klog.Errorf("Formatting device %q failed: %s", source, err)
 			return "", fmt.Errorf("formatting device %q failed: %w", source, err)
 		}
+
+		// Add a new keyslot using the internal volume key
+		if err := device.KeyslotAddByVolumeKey(0, "", passphrase); err != nil {
+			return "", fmt.Errorf("adding keyslot: %w", err)
+		}
 		needWipe = true
 	}
 
 	if integrity && needWipe {
-		if err := performWipe(device, volumeID, dek); err != nil {
+		if err := performWipe(device, volumeID); err != nil {
 			return "", fmt.Errorf("wiping device: %w", err)
 		}
 	}
 
 	klog.V(4).Infof("Activating LUKS2 device %q", cryptPrefix+volumeID)
 
-	if err := device.ActivateByVolumeKey(volumeID, dek, keySize, 0); err != nil {
+	if err := device.ActivateByPassphrase(volumeID, 0, passphrase, 0); err != nil {
 		klog.Errorf("Trying to activate dm-crypt volume: %s", err)
 		return "", fmt.Errorf("trying to activate dm-crypt volume: %w", err)
 	}
@@ -268,12 +303,12 @@ func openCryptDevice(device DeviceMapper, source, volumeID, dek string, integrit
 }
 
 // performWipe handles setting up parameters and clearing the device for dm-integrity.
-func performWipe(device DeviceMapper, volumeID, dek string) error {
+func performWipe(device DeviceMapper, volumeID string) error {
 	klog.V(4).Infof("Preparing device for dm-integrity. This may take while...")
 	tmpDevice := "temporary-cryptsetup-" + volumeID
 
 	// Active as temporary device
-	if err := device.ActivateByVolumeKey(tmpDevice, dek, len(dek), (cryptsetup.CRYPT_ACTIVATE_PRIVATE | cryptsetup.CRYPT_ACTIVATE_NO_JOURNAL)); err != nil {
+	if err := device.ActivateByVolumeKey(tmpDevice, "", 0, (cryptsetup.CRYPT_ACTIVATE_PRIVATE | cryptsetup.CRYPT_ACTIVATE_NO_JOURNAL)); err != nil {
 		klog.Errorf("Trying to activate temporary dm-crypt volume: %s", err)
 		return fmt.Errorf("trying to activate temporary dm-crypt volume: %w", err)
 	}
@@ -284,7 +319,7 @@ func performWipe(device DeviceMapper, volumeID, dek string) error {
 		// If we are printing to a terminal we can show continues updates
 		progressCallback = func(size, offset uint64) int {
 			prog := (float64(offset) / float64(size)) * 100
-			fmt.Printf("\033[2K\rWipe in progress: %.2f%%", prog)
+			fmt.Printf("\033[1A\033[2K\rWipe in progress: %.2f%%\n", prog)
 			return 0
 		}
 	} else {
@@ -312,11 +347,10 @@ func performWipe(device DeviceMapper, volumeID, dek string) error {
 		}
 	}
 
-	// Wipe the device using the same options as used in cryptsetup: https://gitlab.com/cryptsetup/cryptsetup/-/blob/master/src/cryptsetup.c#L1178
+	// Wipe the device using the same options as used in cryptsetup: https://gitlab.com/cryptsetup/cryptsetup/-/blob/v2.4.3/src/cryptsetup.c#L1345
 	if err := device.Wipe(cryptPrefix+tmpDevice, cryptsetup.CRYPT_WIPE_ZERO, 0, 0, 1024*1024, 0, progressCallback); err != nil {
 		return err
 	}
-	fmt.Println()
 
 	// Deactivate the temporary device
 	if err := device.Deactivate(tmpDevice); err != nil {
@@ -325,6 +359,33 @@ func performWipe(device DeviceMapper, volumeID, dek string) error {
 	}
 
 	klog.V(4).Info("dm-integrity successfully initiated")
+	return nil
+}
+
+func resizeCryptDevice(device DeviceMapper, name, passphrase string) error {
+	packageLock.Lock()
+	defer packageLock.Unlock()
+
+	if err := device.InitByName(name); err != nil {
+		return fmt.Errorf("initializing device: %w", err)
+	}
+	defer device.Free()
+
+	if err := device.Load(cryptsetup.LUKS2{}); err != nil {
+		return fmt.Errorf("loading device: %w", err)
+	}
+
+	if err := device.ActivateByPassphrase("", 0, passphrase, cryptsetup.CRYPT_ACTIVATE_KEYRING_KEY); err != nil {
+		klog.Errorf("Unable to activate keyring for crypt device %q with passphrase: %s", name, err)
+		return fmt.Errorf("activating keyrung for crypt device %q with passphrase: %w", name, err)
+	}
+
+	if err := device.Resize(name, 0); err != nil {
+		klog.Errorf("Unable to resize crypt device: %s", err)
+		return fmt.Errorf("resizing device: %w", err)
+	}
+	klog.V(4).Infof("Successfully resized LUKS2 partition for %q", cryptPrefix+name)
+
 	return nil
 }
 

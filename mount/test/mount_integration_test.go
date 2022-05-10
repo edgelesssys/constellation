@@ -29,9 +29,13 @@ func teardown() {
 	exec.Command("/bin/rm", "-f", DevicePath).Run()
 }
 
+func resize() {
+	exec.Command("/bin/dd", "if=/dev/zero", fmt.Sprintf("of=%s", DevicePath), "bs=32M", "count=1", "oflag=append", "conv=notrunc").Run()
+}
+
 func TestMain(m *testing.M) {
 	if os.Getuid() != 0 {
-		fmt.Printf("This test suite requires root privileges, as libcrypsetup uses the kernel's device mapper.\n")
+		fmt.Printf("This test suite requires root privileges, as libcryptsetup uses the kernel's device mapper.\n")
 		os.Exit(1)
 	}
 
@@ -53,7 +57,7 @@ func TestOpenAndClose(t *testing.T) {
 
 	newPath, err := mapper.OpenCryptDevice(context.Background(), DevicePath, DeviceName, false)
 	require.NoError(err)
-	assert.Equal(newPath, "/dev/mapper/"+DeviceName)
+	assert.Equal("/dev/mapper/"+DeviceName, newPath)
 
 	// assert crypt device got created
 	_, err = os.Stat(newPath)
@@ -61,6 +65,13 @@ func TestOpenAndClose(t *testing.T) {
 	// assert no integrity device got created
 	_, err = os.Stat(newPath + "_dif")
 	assert.True(os.IsNotExist(err))
+
+	// Resize the device
+	resize()
+
+	resizedPath, err := mapper.ResizeCryptDevice(context.Background(), DeviceName)
+	require.NoError(err)
+	assert.Equal("/dev/mapper/"+DeviceName, resizedPath)
 
 	assert.NoError(mapper.CloseCryptDevice(DeviceName))
 
@@ -80,7 +91,7 @@ func TestOpenAndCloseIntegrity(t *testing.T) {
 
 	newPath, err := mapper.OpenCryptDevice(context.Background(), DevicePath, DeviceName, true)
 	require.NoError(err)
-	assert.Equal(newPath, "/dev/mapper/"+DeviceName)
+	assert.Equal("/dev/mapper/"+DeviceName, newPath)
 
 	// assert crypt device got created
 	_, err = os.Stat(newPath)
@@ -88,6 +99,11 @@ func TestOpenAndCloseIntegrity(t *testing.T) {
 	// assert integrity device got created
 	_, err = os.Stat(newPath + "_dif")
 	assert.NoError(err)
+
+	// integrity devices do not support resizing
+	resize()
+	_, err = mapper.ResizeCryptDevice(context.Background(), DeviceName)
+	assert.Error(err)
 
 	assert.NoError(mapper.CloseCryptDevice(DeviceName))
 
