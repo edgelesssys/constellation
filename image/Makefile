@@ -110,7 +110,7 @@ upload-gcp: $(GCP_IMAGE_PATH)
 	gsutil pap set enforced gs://$(GCP_BUCKET)
 	gsutil cp $(GCP_IMAGE_PATH) gs://$(GCP_BUCKET)
 	gcloud compute images create $(GCP_IMAGE_NAME) \
-		--family $(GCP_IMAGE_FAMILY)
+		--family $(GCP_IMAGE_FAMILY) \
 		--source-uri=gs://$(GCP_BUCKET)/$(GCP_IMAGE_FILENAME) \
 		--guest-os-features=GVNIC,SEV_CAPABLE,VIRTIO_SCSI_MULTIQUEUE,UEFI_COMPATIBLE \
 		--labels=coordinator-sha1=$$(shasum $(COORDINATOR_OVERRIDE_PATH) | cut -d " " -f 1),coordinator-sha512=$$(sha512sum $(COORDINATOR_OVERRIDE_PATH) | cut -d " " -f 1 | cut -c-63) \
