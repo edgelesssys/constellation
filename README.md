@@ -105,7 +105,7 @@ With `cdbg` installed in your path:
 
 For GCP, run the following command to get a list of all constellation images, sorted by their creation date:
 ```
-gcloud compute images list --filter="name~'constellation-.+'" --sort-by=~creationTimestamp
+gcloud compute images list --filter="name~'constellation-.+'" --sort-by=~creationTimestamp --project constellation-images
 ```
 Choose the newest debugd image with the naming scheme `constellation-coreos-debugd-<timestamp>`.
 
@@ -142,7 +142,7 @@ See this example on what the possible settings are and how to setup the constell
    },
    "provider": {
     "gcpconfig": {
-      "image": "constellation-coreos-debugd-TIMESTAMP",
+      "image": "projects/constellation-images/global/images/constellation-coreos-debugd-TIMESTAMP",
       "firewallinput": {
         "Ingress": [
           {
