@@ -29,8 +29,4 @@ type cryptDevice interface {
 	// Returns nil on success, or an error otherwise.
 	// C equivalent: crypt_keyslot_add_by_volume_key
 	KeyslotAddByVolumeKey(keyslot int, volumeKey string, passphrase string) error
-	// KeyslotChangeByPassphrase changes a defined a key slot using a previously added passphrase to perform the required security check.
-	// Returns nil on success, or an error otherwise.
-	// C equivalent: crypt_keyslot_change_by_passphrase
-	KeyslotChangeByPassphrase(currentKeyslot int, newKeyslot int, currentPassphrase string, newPassphrase string) error
 }
