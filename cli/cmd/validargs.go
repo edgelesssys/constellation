@@ -32,7 +32,7 @@ func isCloudProvider(arg int) cobra.PositionalArgs {
 	}
 }
 
-func validInstanceTypeForProvider(insType string, provider cloudprovider.Provider) error {
+func validInstanceTypeForProvider(cmd *cobra.Command, insType string, provider cloudprovider.Provider) error {
 	switch provider {
 	case cloudprovider.GCP:
 		for _, instanceType := range gcp.InstanceTypes {
@@ -40,6 +40,8 @@ func validInstanceTypeForProvider(insType string, provider cloudprovider.Provide
 				return nil
 			}
 		}
+		cmd.SetUsageTemplate("GCP instance types:\n" + formatInstanceTypes(gcp.InstanceTypes))
+		cmd.SilenceUsage = false
 		return fmt.Errorf("%s isn't a valid GCP instance type", insType)
 	case cloudprovider.Azure:
 		for _, instanceType := range azure.InstanceTypes {
@@ -47,6 +49,8 @@ func validInstanceTypeForProvider(insType string, provider cloudprovider.Provide
 				return nil
 			}
 		}
+		cmd.SetUsageTemplate("Azure instance types:\n" + formatInstanceTypes(azure.InstanceTypes))
+		cmd.SilenceUsage = false
 		return fmt.Errorf("%s isn't a valid Azure instance type", insType)
 	default:
 		return fmt.Errorf("%s isn't a valid cloud platform", provider)

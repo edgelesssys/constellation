@@ -37,6 +37,15 @@ func newCreateCmd() *cobra.Command {
 	must(cobra.MarkFlagRequired(cmd.Flags(), "worker-nodes"))
 	cmd.Flags().StringP("instance-type", "t", "", "instance type of cluster nodes")
 	must(cmd.RegisterFlagCompletionFunc("instance-type", instanceTypeCompletion))
+
+	cmd.SetHelpTemplate(cmd.HelpTemplate() + fmt.Sprintf(`
+Azure instance types:
+%v
+
+GCP instance types:
+%v
+`, formatInstanceTypes(azure.InstanceTypes), formatInstanceTypes(gcp.InstanceTypes)))
+
 	return cmd
 }
 
@@ -117,7 +126,7 @@ func parseCreateFlags(cmd *cobra.Command, provider cloudprovider.Provider) (crea
 	if insType == "" {
 		insType = defaultInstanceType(provider)
 	}
-	if err := validInstanceTypeForProvider(insType, provider); err != nil {
+	if err := validInstanceTypeForProvider(cmd, insType, provider); err != nil {
 		return createFlags{}, err
 	}
 
