@@ -100,7 +100,7 @@ func main() {
 
 func exit(err error) {
 	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 	os.Exit(0)
