@@ -7,12 +7,12 @@ import (
 
 	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/coordinator/atls"
-	"github.com/edgelesssys/constellation/coordinator/kms"
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
 	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
+	kms "github.com/edgelesssys/constellation/kms/server/setup"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

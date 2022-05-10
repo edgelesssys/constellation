@@ -1,4 +1,4 @@
-package kms
+package setup
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"github.com/edgelesssys/constellation/kms/kms"
 	"github.com/edgelesssys/constellation/kms/kms/aws"
 	"github.com/edgelesssys/constellation/kms/kms/azure"
+	"github.com/edgelesssys/constellation/kms/kms/cluster"
 	"github.com/edgelesssys/constellation/kms/kms/gcp"
 	"github.com/edgelesssys/constellation/kms/storage"
 	kmspb "google.golang.org/genproto/googleapis/cloud/kms/v1"
@@ -122,7 +123,7 @@ func getKMS(ctx context.Context, kmsURI string, store kms.Storage) (kms.CloudKMS
 		return gcp.New(ctx, project, location, keyRing, store, kmspb.ProtectionLevel(protectionLvl))
 
 	case "cluster-kms":
-		return &ClusterKMS{}, nil
+		return &cluster.ClusterKMS{}, nil
 
 	default:
 		return nil, fmt.Errorf("unknown KMS type: %s", uri.Host)

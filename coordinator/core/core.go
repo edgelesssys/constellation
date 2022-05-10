@@ -12,7 +12,6 @@ import (
 	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/coordinator/config"
-	kmsSetup "github.com/edgelesssys/constellation/coordinator/kms"
 	"github.com/edgelesssys/constellation/coordinator/nodestate"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
@@ -20,6 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/storewrapper"
 	"github.com/edgelesssys/constellation/coordinator/util"
 	"github.com/edgelesssys/constellation/kms/kms"
+	kmsSetup "github.com/edgelesssys/constellation/kms/server/setup"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )

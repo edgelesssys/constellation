@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package kmsapi;
+
+option go_package = "github.com/edgelesssys/constellation/kms/server/kmsapi/kmsproto";
+
+service API {
+    rpc GetDataKey(GetDataKeyRequest) returns (GetDataKeyResponse);
+}
+
+message GetDataKeyRequest {
+    string data_key_id = 1;
+    uint32 length = 2;
+}
+
+message GetDataKeyResponse {
+    bytes data_key = 1;
+}

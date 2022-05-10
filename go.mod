@@ -104,6 +104,12 @@ require (
 )
 
 require (
+	github.com/fsnotify/fsnotify v1.5.1 // indirect
+	github.com/onsi/ginkgo v1.16.5 // indirect
+	github.com/onsi/gomega v1.17.0 // indirect
+)
+
+require (
 	cloud.google.com/go v0.100.2 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v0.9.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/internal v0.2.1 // indirect

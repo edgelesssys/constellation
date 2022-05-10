@@ -33,7 +33,8 @@ const (
 	//
 	// Cryptographic constants.
 	//
-	StateDiskKeyLength = 32
+	StateDiskKeyLength      = 32
+	DerivedKeyLengthDefault = 32
 
 	//
 	// CLI.
@@ -47,7 +48,7 @@ const (
 	//
 
 	// KubernetesVersion installed by kubeadm.
-	KubernetesVersion = "stable-1.23"
+	KubernetesVersion      = "stable-1.23"
 	KubernetesJoinTokenTTL = 15 * time.Minute
 )
 
