@@ -6,12 +6,14 @@ package file
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"io/fs"
 	"os"
 	"path"
 
 	"github.com/spf13/afero"
+	"gopkg.in/yaml.v3"
 )
 
 // Option is a bitmask of options for file operations.
@@ -91,6 +93,30 @@ func (h *Handler) WriteJSON(name string, content any, options Option) error {
 		return err
 	}
 	return h.Write(name, jsonData, options)
+}
+
+// ReadYAML reads a YAML file from name and unmarshals it into the content interface.
+// The interface content must be a pointer to a YAML marchalable object.
+func (h *Handler) ReadYAML(name string, content any) error {
+	data, err := h.Read(name)
+	if err != nil {
+		return err
+	}
+	return yaml.Unmarshal(data, content)
+}
+
+// WriteYAML marshals the content interface to YAML and writes it to the path with the given name.
+func (h *Handler) WriteYAML(name string, content any, options Option) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New("recovered from panic")
+		}
+	}()
+	data, err := yaml.Marshal(content)
+	if err != nil {
+		return err
+	}
+	return h.Write(name, data, options)
 }
 
 // Remove deletes the file with the given name.

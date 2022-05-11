@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 )
 
 func TestReadJSON(t *testing.T) {
@@ -145,6 +146,148 @@ func TestWriteJSON(t *testing.T) {
 				assert.NoError(handler.WriteJSON(tc.name, tc.content, tc.options))
 				resultContent := &testContent{}
 				assert.NoError(handler.ReadJSON(tc.name, resultContent))
+				assert.Equal(tc.content, *resultContent)
+			}
+		})
+	}
+}
+
+func TestReadYAML(t *testing.T) {
+	type testContent struct {
+		First  string
+		Second int
+	}
+	someContent := testContent{
+		First:  "first",
+		Second: 2,
+	}
+	yamlContent, err := yaml.Marshal(someContent)
+	require.NoError(t, err)
+
+	testCases := map[string]struct {
+		fs          afero.Fs
+		setupFs     func(fs *afero.Afero) error
+		name        string
+		wantContent any
+		wantErr     bool
+	}{
+		"successful read": {
+			fs:          afero.NewMemMapFs(),
+			name:        "test/config.yaml",
+			setupFs:     func(fs *afero.Afero) error { return fs.WriteFile("test/config.yaml", yamlContent, 0o755) },
+			wantContent: someContent,
+		},
+		"file not existent": {
+			fs:      afero.NewMemMapFs(),
+			name:    "test/config.yaml",
+			wantErr: true,
+		},
+		"file not yaml": {
+			fs:      afero.NewMemMapFs(),
+			name:    "test/config.yaml",
+			setupFs: func(fs *afero.Afero) error { return fs.WriteFile("test/config.yaml", []byte{0x1}, 0o755) },
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			handler := NewHandler(tc.fs)
+			if tc.setupFs != nil {
+				require.NoError(tc.setupFs(handler.fs))
+			}
+
+			resultContent := &testContent{}
+			if tc.wantErr {
+				assert.Error(handler.ReadYAML(tc.name, resultContent))
+			} else {
+				assert.NoError(handler.ReadYAML(tc.name, resultContent))
+				assert.Equal(tc.wantContent, *resultContent)
+			}
+		})
+	}
+}
+
+func TestWriteYAML(t *testing.T) {
+	type testContent struct {
+		First  string
+		Second int
+	}
+	someContent := testContent{
+		First:  "first",
+		Second: 2,
+	}
+	notMarshalableContent := struct{ Foo chan int }{Foo: make(chan int)}
+
+	testCases := map[string]struct {
+		fs      afero.Fs
+		setupFs func(af afero.Afero) error
+		name    string
+		content any
+		options Option
+		wantErr bool
+	}{
+		"successful write": {
+			fs:      afero.NewMemMapFs(),
+			name:    "test/statefile",
+			content: someContent,
+		},
+		"successful overwrite": {
+			fs:      afero.NewMemMapFs(),
+			setupFs: func(af afero.Afero) error { return af.WriteFile("test/statefile", []byte{}, 0o644) },
+			name:    "test/statefile",
+			content: someContent,
+			options: OptOverwrite,
+		},
+		"read only fs": {
+			fs:      afero.NewReadOnlyFs(afero.NewMemMapFs()),
+			name:    "test/statefile",
+			content: someContent,
+			wantErr: true,
+		},
+		"file already exists": {
+			fs:      afero.NewMemMapFs(),
+			setupFs: func(af afero.Afero) error { return af.WriteFile("test/statefile", []byte{}, 0o644) },
+			name:    "test/statefile",
+			content: someContent,
+			wantErr: true,
+		},
+		"marshal error": {
+			fs:      afero.NewMemMapFs(),
+			name:    "test/statefile",
+			content: notMarshalableContent,
+			wantErr: true,
+		},
+		"mkdirAll works": {
+			fs:      afero.NewMemMapFs(),
+			name:    "test/statefile",
+			content: someContent,
+			options: OptMkdirAll,
+		},
+		// TODO: add tests for mkdirAll actually creating the necessary folders when https://github.com/spf13/afero/issues/270 is fixed.
+		// Currently, MemMapFs will create files in nonexistent directories due to a bug in afero,
+		// making it impossible to test the actual behavior of the mkdirAll parameter.
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			handler := NewHandler(tc.fs)
+			if tc.setupFs != nil {
+				require.NoError(tc.setupFs(afero.Afero{Fs: tc.fs}))
+			}
+
+			if tc.wantErr {
+				assert.Error(handler.WriteYAML(tc.name, tc.content, tc.options))
+			} else {
+				assert.NoError(handler.WriteYAML(tc.name, tc.content, tc.options))
+				resultContent := &testContent{}
+				assert.NoError(handler.ReadYAML(tc.name, resultContent))
 				assert.Equal(tc.content, *resultContent)
 			}
 		})

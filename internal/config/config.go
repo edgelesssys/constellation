@@ -41,11 +41,11 @@ var (
 // All fields in this struct and its child structs have pointer types
 // to ensure the default values of the actual type is not confused with an omitted value.
 type Config struct {
-	CoordinatorPort          *string         `json:"coordinatorport,omitempty"`
-	AutoscalingNodeGroupsMin *int            `json:"autoscalingnodegroupsmin,omitempty"`
-	AutoscalingNodeGroupsMax *int            `json:"autoscalingnodegroupsmax,omitempty"`
-	StateDiskSizeGB          *int            `json:"statedisksizegb,omitempty"`
-	Provider                 *ProviderConfig `json:"provider,omitempty"`
+	CoordinatorPort          *string         `yaml:"coordinatorPort,omitempty"`
+	AutoscalingNodeGroupsMin *int            `yaml:"autoscalingNodeGroupsMin,omitempty"`
+	AutoscalingNodeGroupsMax *int            `yaml:"autoscalingNodeGroupsMax,omitempty"`
+	StateDiskSizeGB          *int            `yaml:"StateDisksizeGB,omitempty"`
+	Provider                 *ProviderConfig `yaml:"provider,omitempty"`
 }
 
 // Default returns a struct with the default config.
@@ -213,7 +213,7 @@ func FromFile(fileHandler file.Handler, name string) (*Config, error) {
 		return conf, nil
 	}
 
-	if err := fileHandler.ReadJSON(name, conf); err != nil {
+	if err := fileHandler.ReadYAML(name, conf); err != nil {
 		return nil, fmt.Errorf("could not load config from file %s: %w", name, err)
 	}
 	return conf, nil
@@ -221,44 +221,44 @@ func FromFile(fileHandler file.Handler, name string) (*Config, error) {
 
 // ProviderConfig are cloud-provider specific configuration values used by the CLI.
 type ProviderConfig struct {
-	EC2   *EC2Config   `json:"ec2config,omitempty"`
-	Azure *AzureConfig `json:"azureconfig,omitempty"`
-	GCP   *GCPConfig   `json:"gcpconfig,omitempty"`
-	QEMU  *QEMUConfig  `json:"qemuconfig,omitempty"`
+	EC2   *EC2Config   `yaml:"ec2Config,omitempty"`
+	Azure *AzureConfig `yaml:"azureConfig,omitempty"`
+	GCP   *GCPConfig   `yaml:"gcpConfig,omitempty"`
+	QEMU  *QEMUConfig  `yaml:"qemuConfig,omitempty"`
 }
 
 // EC2Config are AWS EC2 specific configuration values used by the CLI.
 type EC2Config struct {
-	Image              *string                       `json:"image,omitempty"`
-	Tags               *[]ec2.Tag                    `json:"tags,omitempty"`
-	SecurityGroupInput *awsClient.SecurityGroupInput `json:"securitygroupinput,omitempty"`
+	Image              *string                       `yaml:"image,omitempty"`
+	Tags               *[]ec2.Tag                    `yaml:"tags,omitempty"`
+	SecurityGroupInput *awsClient.SecurityGroupInput `yaml:"securityGroupInput,omitempty"`
 }
 
 // AzureConfig are Azure specific configuration values used by the CLI.
 type AzureConfig struct {
-	SubscriptionID            *string                                `json:"subscription,omitempty"` // TODO: This will be user input
-	TenantID                  *string                                `json:"tenant,omitempty"`       // TODO: This will be user input
-	Location                  *string                                `json:"location,omitempty"`     // TODO: This will be user input
-	Image                     *string                                `json:"image,omitempty"`
-	NetworkSecurityGroupInput *azureClient.NetworkSecurityGroupInput `json:"networksecuritygroupinput,omitempty"`
-	Measurements              *map[uint32][]byte                     `json:"measurements,omitempty"`
-	UserAssignedIdentity      *string                                `json:"userassignedidentity,omitempty"`
+	SubscriptionID            *string                                `yaml:"subscription,omitempty"` // TODO: This will be user input
+	TenantID                  *string                                `yaml:"tenant,omitempty"`       // TODO: This will be user input
+	Location                  *string                                `yaml:"location,omitempty"`     // TODO: This will be user input
+	Image                     *string                                `yaml:"image,omitempty"`
+	NetworkSecurityGroupInput *azureClient.NetworkSecurityGroupInput `yaml:"networkSecurityGroupInput,omitempty"`
+	Measurements              *map[uint32][]byte                     `yaml:"measurements,omitempty"`
+	UserAssignedIdentity      *string                                `yaml:"userassignedIdentity,omitempty"`
 }
 
 // GCPConfig are GCP specific configuration values used by the CLI.
 type GCPConfig struct {
-	Project             *string                  `json:"project,omitempty"` // TODO: This will be user input
-	Region              *string                  `json:"region,omitempty"`  // TODO: This will be user input
-	Zone                *string                  `json:"zone,omitempty"`    // TODO: This will be user input
-	Image               *string                  `json:"image,omitempty"`
-	FirewallInput       *gcpClient.FirewallInput `json:"firewallinput,omitempty"`
-	VPCsInput           *gcpClient.VPCsInput     `json:"vpcsinput,omitempty"`
-	ServiceAccountRoles *[]string                `json:"serviceaccountroles,omitempty"`
-	Measurements        *map[uint32][]byte       `json:"measurements,omitempty"`
+	Project             *string                  `yaml:"project,omitempty"` // TODO: This will be user input
+	Region              *string                  `yaml:"region,omitempty"`  // TODO: This will be user input
+	Zone                *string                  `yaml:"zone,omitempty"`    // TODO: This will be user input
+	Image               *string                  `yaml:"image,omitempty"`
+	FirewallInput       *gcpClient.FirewallInput `yaml:"firewallInput,omitempty"`
+	VPCsInput           *gcpClient.VPCsInput     `yaml:"vpcsInput,omitempty"`
+	ServiceAccountRoles *[]string                `yaml:"serviceAccountRoles,omitempty"`
+	Measurements        *map[uint32][]byte       `yaml:"measurements,omitempty"`
 }
 
 type QEMUConfig struct {
-	PCRs *map[uint32][]byte `json:"pcrs,omitempty"`
+	PCRs *map[uint32][]byte `yaml:"pcrs,omitempty"`
 }
 
 func pcrPtr(pcrs map[uint32][]byte) *map[uint32][]byte {
