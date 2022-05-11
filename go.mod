@@ -104,9 +104,11 @@ require (
 )
 
 require (
+	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.17.0 // indirect
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 )
 
 require (

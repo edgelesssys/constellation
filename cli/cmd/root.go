@@ -9,18 +9,37 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var rootCmd = &cobra.Command{
-	Use:              "constellation",
-	Short:            "Manage your Constellation cluster",
-	Long:             "Manage your Constellation cluster.",
-	PersistentPreRun: preRunRoot,
-}
-
 // Execute starts the CLI.
 func Execute() error {
+	rootCmd := NewRootCmd()
 	ctx, cancel := signalContext(context.Background(), os.Interrupt)
 	defer cancel()
 	return rootCmd.ExecuteContext(ctx)
+}
+
+// NewRootCmd creates the root command.
+func NewRootCmd() *cobra.Command {
+	rootCmd := &cobra.Command{
+		Use:              "constellation",
+		Short:            "Manage your Constellation cluster",
+		Long:             "Manage your Constellation cluster.",
+		PersistentPreRun: preRunRoot,
+	}
+
+	// Set output of cmd.Print to stdout. (By default, it's stderr.)
+	rootCmd.SetOut(os.Stdout)
+
+	rootCmd.PersistentFlags().String("dev-config", "", "use settings from a development config")
+	must(rootCmd.MarkPersistentFlagFilename("dev-config", "json"))
+
+	rootCmd.AddCommand(newCreateCmd())
+	rootCmd.AddCommand(newInitCmd())
+	rootCmd.AddCommand(newVerifyCmd())
+	rootCmd.AddCommand(newRecoverCmd())
+	rootCmd.AddCommand(newTerminateCmd())
+	rootCmd.AddCommand(newVersionCmd())
+
+	return rootCmd
 }
 
 // signalContext returns a context that is canceled on the handed signal.
@@ -48,20 +67,6 @@ func signalContext(ctx context.Context, sig os.Signal) (context.Context, context
 	}
 
 	return sigCtx, cancelFunc
-}
-
-func init() {
-	cobra.EnableCommandSorting = false
-	// Set output of cmd.Print to stdout. (By default, it's stderr.)
-	rootCmd.SetOut(os.Stdout)
-	rootCmd.PersistentFlags().String("dev-config", "", "use settings from a development config")
-	must(rootCmd.MarkPersistentFlagFilename("dev-config", "json"))
-	rootCmd.AddCommand(newCreateCmd())
-	rootCmd.AddCommand(newInitCmd())
-	rootCmd.AddCommand(newVerifyCmd())
-	rootCmd.AddCommand(newRecoverCmd())
-	rootCmd.AddCommand(newTerminateCmd())
-	rootCmd.AddCommand(newVersionCmd())
 }
 
 func preRunRoot(cmd *cobra.Command, args []string) {
