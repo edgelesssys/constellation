@@ -64,6 +64,10 @@ func (c *stubCryptDevice) Free() bool {
 	return true
 }
 
+func (c *stubCryptDevice) GetDeviceName() string {
+	return c.deviceName
+}
+
 func (c *stubCryptDevice) Load(cryptsetup.DeviceType) error {
 	return c.loadErr
 }
@@ -309,6 +313,49 @@ func TestResizeCryptDevice(t *testing.T) {
 			} else {
 				assert.NoError(err)
 				assert.Equal(cryptPrefix+tc.volumeID, res)
+			}
+		})
+	}
+}
+
+func TestGetDevicePath(t *testing.T) {
+	volumeID := "pvc-123"
+	someErr := errors.New("error")
+	testCases := map[string]struct {
+		volumeID string
+		device   *stubCryptDevice
+		wantErr  bool
+	}{
+		"success": {
+			volumeID: volumeID,
+			device:   &stubCryptDevice{deviceName: volumeID},
+		},
+		"InitByName fails": {
+			volumeID: volumeID,
+			device:   &stubCryptDevice{initByNameErr: someErr},
+			wantErr:  true,
+		},
+		"GetDeviceName returns nothing": {
+			volumeID: volumeID,
+			device:   &stubCryptDevice{},
+			wantErr:  true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			mapper := &CryptMapper{
+				mapper: tc.device,
+			}
+
+			res, err := mapper.GetDevicePath(tc.volumeID)
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.device.deviceName, res)
 			}
 		})
 	}

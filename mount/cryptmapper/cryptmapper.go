@@ -63,6 +63,8 @@ type DeviceMapper interface {
 	Format(deviceType cryptsetup.DeviceType, genericParams cryptsetup.GenericParams) error
 	// Free releases crypt device context and used memory.
 	Free() bool
+	// GetDeviceName gets the path to the underlying device.
+	GetDeviceName() string
 	// Load loads crypt device parameters from the on-disk header.
 	// Returns nil on success, or an error otherwise.
 	Load(cryptsetup.DeviceType) error
@@ -193,6 +195,11 @@ func (c *CryptMapper) ResizeCryptDevice(ctx context.Context, volumeID string) (s
 	}
 
 	return cryptPrefix + volumeID, nil
+}
+
+// GetDeviceName returns the real device name of a mapped crypt device.
+func (c *CryptMapper) GetDevicePath(volumeID string) (string, error) {
+	return getDevicePath(c.mapper, strings.TrimPrefix(volumeID, cryptPrefix))
 }
 
 // closeCryptDevice closes the crypt device mapped for volumeID.
@@ -387,6 +394,22 @@ func resizeCryptDevice(device DeviceMapper, name, passphrase string) error {
 	klog.V(4).Infof("Successfully resized LUKS2 partition for %q", cryptPrefix+name)
 
 	return nil
+}
+
+func getDevicePath(device DeviceMapper, name string) (string, error) {
+	packageLock.Lock()
+	defer packageLock.Unlock()
+
+	if err := device.InitByName(name); err != nil {
+		return "", fmt.Errorf("initializing device: %w", err)
+	}
+	defer device.Free()
+
+	deviceName := device.GetDeviceName()
+	if deviceName == "" {
+		return "", errors.New("unable to determine device name")
+	}
+	return deviceName, nil
 }
 
 // IsIntegrityFS checks if the fstype string contains an integrity suffix.
