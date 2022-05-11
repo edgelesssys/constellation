@@ -141,9 +141,9 @@ See this example on what the possible settings are and how to setup the constell
       ]
    },
    "provider": {
-    "gcpconfig": {
+    "gcpConfig": {
       "image": "projects/constellation-images/global/images/constellation-coreos-debugd-TIMESTAMP",
-      "firewallinput": {
+      "firewallInput": {
         "Ingress": [
           {
             "Name": "coordinator",
@@ -179,9 +179,9 @@ See this example on what the possible settings are and how to setup the constell
         ]
       }
     },
-    "azureconfig": {
+    "azureConfig": {
       "image": "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos-debugd/versions/0.0.TIMESTAMP",
-      "networksecuritygroupinput": {
+      "networkSecurityGroupInput": {
         "Ingress": [
           {
             "Name": "coordinator",
