@@ -144,37 +144,37 @@ See this example on what the possible settings are and how to setup the constell
     "gcpConfig": {
       "image": "projects/constellation-images/global/images/constellation-coreos-debugd-TIMESTAMP",
       "firewallInput": {
-        "Ingress": [
+        "ingress": [
           {
-            "Name": "coordinator",
-            "Description": "Coordinator default port",
-            "Protocol": "tcp",
-            "FromPort": 9000
+            "name": "coordinator",
+            "description": "Coordinator default port",
+            "protocol": "tcp",
+            "fromport": 9000
           },
           {
-            "Name": "wireguard",
-            "Description": "WireGuard default port",
-            "Protocol": "udp",
-            "FromPort": 51820
+            "name": "wireguard",
+            "description": "WireGuard default port",
+            "protocol": "udp",
+            "fromport": 51820
           },
           {
-            "Name": "ssh",
-            "Description": "SSH",
-            "Protocol": "tcp",
-            "FromPort": 22
+            "name": "ssh",
+            "description": "SSH",
+            "protocol": "tcp",
+            "fromport": 22
           },
           {
-            "Name": "nodeport",
-            "Description": "NodePort",
-            "Protocol": "tcp",
-            "FromPort": 30000,
-            "ToPort": 32767
+            "name": "nodeport",
+            "description": "NodePort",
+            "protocol": "tcp",
+            "fromport": 30000,
+            "toport": 32767
           },
           {
-            "Name": "debugd",
-            "Description": "debugd default port",
-            "Protocol": "tcp",
-            "FromPort": 4000
+            "name": "debugd",
+            "description": "debugd default port",
+            "protocol": "tcp",
+            "fromport": 4000
           }
         ]
       }
@@ -182,42 +182,42 @@ See this example on what the possible settings are and how to setup the constell
     "azureConfig": {
       "image": "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos-debugd/versions/0.0.TIMESTAMP",
       "networkSecurityGroupInput": {
-        "Ingress": [
+        "ingress": [
           {
-            "Name": "coordinator",
-            "Description": "Coordinator default port",
-            "Protocol": "tcp",
-            "IPRange": "0.0.0.0/0",
-            "FromPort": 9000
+            "name": "coordinator",
+            "description": "Coordinator default port",
+            "protocol": "tcp",
+            "iprange": "0.0.0.0/0",
+            "fromport": 9000
           },
           {
-            "Name": "wireguard",
-            "Description": "WireGuard default port",
-            "Protocol": "udp",
-            "IPRange": "0.0.0.0/0",
-            "FromPort": 51820
+            "name": "wireguard",
+            "description": "WireGuard default port",
+            "protocol": "udp",
+            "iprange": "0.0.0.0/0",
+            "fromport": 51820
           },
           {
-            "Name": "ssh",
-            "Description": "SSH",
-            "Protocol": "tcp",
-            "IPRange": "0.0.0.0/0",
-            "FromPort": 22
+            "name": "ssh",
+            "description": "SSH",
+            "protocol": "tcp",
+            "iprange": "0.0.0.0/0",
+            "fromport": 22
           },
           {
-            "Name": "nodeport",
-            "Description": "NodePort",
-            "Protocol": "tcp",
-            "IPRange": "0.0.0.0/0",
-            "FromPort": 30000,
-            "ToPort": 32767
+            "name": "nodeport",
+            "description": "NodePort",
+            "protocol": "tcp",
+            "iprange": "0.0.0.0/0",
+            "fromport": 30000,
+            "toport": 32767
           },
           {
-            "Name": "debugd",
-            "Description": "debugd default port",
-            "Protocol": "tcp",
-            "IPRange": "0.0.0.0/0",
-            "FromPort": 4000
+            "name": "debugd",
+            "description": "debugd default port",
+            "protocol": "tcp",
+            "iprange": "0.0.0.0/0",
+            "fromport": 4000
           }
         ]
       }
