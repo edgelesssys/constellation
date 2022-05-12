@@ -68,13 +68,16 @@ func TestNewValidators(t *testing.T) {
 
 			conf := &config.Config{Provider: &config.ProviderConfig{}}
 			if tc.provider == cloudprovider.GCP {
-				conf.Provider.GCP = &config.GCPConfig{Measurements: &tc.pcrs}
+				measurements := config.Measurements(tc.pcrs)
+				conf.Provider.GCP = &config.GCPConfig{Measurements: &measurements}
 			}
 			if tc.provider == cloudprovider.Azure {
-				conf.Provider.Azure = &config.AzureConfig{Measurements: &tc.pcrs}
+				measurements := config.Measurements(tc.pcrs)
+				conf.Provider.Azure = &config.AzureConfig{Measurements: &measurements}
 			}
 			if tc.provider == cloudprovider.QEMU {
-				conf.Provider.QEMU = &config.QEMUConfig{PCRs: &tc.pcrs}
+				measurements := config.Measurements(tc.pcrs)
+				conf.Provider.QEMU = &config.QEMUConfig{PCRs: &measurements}
 			}
 
 			validators, err := NewValidators(tc.provider, conf)
