@@ -72,7 +72,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		return err
 	}
 
-	config, err := config.FromFile(fileHandler, flags.devConfigPath)
+	config, err := config.FromFile(fileHandler, flags.configPath)
 	if err != nil {
 		return err
 	}
@@ -290,13 +290,13 @@ func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (initFlags, erro
 	if err != nil {
 		return initFlags{}, err
 	}
-	devConfigPath, err := cmd.Flags().GetString("dev-config")
+	configPath, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return initFlags{}, err
 	}
 
 	return initFlags{
-		devConfigPath:   devConfigPath,
+		configPath:      configPath,
 		userPrivKey:     userPrivKey,
 		userPubKey:      userPubKey,
 		autoconfigureWG: autoconfigureWG,
@@ -307,7 +307,7 @@ func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (initFlags, erro
 
 // initFlags are the resulting values of flag preprocessing.
 type initFlags struct {
-	devConfigPath   string
+	configPath      string
 	userPrivKey     []byte
 	userPubKey      []byte
 	masterSecret    []byte

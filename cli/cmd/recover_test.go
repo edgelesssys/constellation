@@ -50,7 +50,7 @@ func TestRecover(t *testing.T) {
 		endpointFlag     string
 		diskUUIDFlag     string
 		masterSecretFlag string
-		devConfigFlag    string
+		configFlag       string
 		stateless        bool
 		wantErr          bool
 		wantKey          []byte
@@ -95,16 +95,16 @@ func TestRecover(t *testing.T) {
 			setupFs: func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			wantErr: true,
 		},
-		"missing dev-config": {
+		"missing config": {
 			setupFs: func(require *require.Assertions) afero.Fs {
 				fs := afero.NewMemMapFs()
 				require.NoError(afero.WriteFile(fs, "constellation-mastersecret.base64", []byte("Y29uc3RlbGxhdGlvbi1tYXN0ZXItc2VjcmV0LWxlbmc="), 0o777))
 				return fs
 			},
-			endpointFlag:  "192.0.2.1",
-			diskUUIDFlag:  "00000000-0000-0000-0000-000000000000",
-			devConfigFlag: "nonexistent-dev-config",
-			wantErr:       true,
+			endpointFlag: "192.0.2.1",
+			diskUUIDFlag: "00000000-0000-0000-0000-000000000000",
+			configFlag:   "nonexistent-config",
+			wantErr:      true,
 		},
 		"missing state": {
 			setupFs: func(require *require.Assertions) afero.Fs {
@@ -161,7 +161,7 @@ func TestRecover(t *testing.T) {
 			require := require.New(t)
 
 			cmd := newRecoverCmd()
-			cmd.Flags().String("dev-config", "", "") // register persisten flag manually
+			cmd.Flags().String("config", "", "") // register persisten flag manually
 			out := &bytes.Buffer{}
 			cmd.SetOut(out)
 			cmd.SetErr(&bytes.Buffer{})
@@ -174,8 +174,8 @@ func TestRecover(t *testing.T) {
 			if tc.masterSecretFlag != "" {
 				require.NoError(cmd.Flags().Set("master-secret", tc.masterSecretFlag))
 			}
-			if tc.devConfigFlag != "" {
-				require.NoError(cmd.Flags().Set("dev-config", tc.devConfigFlag))
+			if tc.configFlag != "" {
+				require.NoError(cmd.Flags().Set("config", tc.configFlag))
 			}
 			fileHandler := file.NewHandler(tc.setupFs(require))
 			if !tc.stateless {
@@ -229,13 +229,13 @@ func TestParseRecoverFlags(t *testing.T) {
 		"all args set": {
 			args: []string{
 				"-e", "192.0.2.1:2", "--disk-uuid", "12345678-1234-1234-1234-123456789012",
-				"--master-secret", "constellation-mastersecret.base64", "--dev-config", "dev-config-path",
+				"--master-secret", "constellation-mastersecret.base64", "--config", "config-path",
 			},
 			wantFlags: recoverFlags{
-				endpoint:      "192.0.2.1:2",
-				diskUUID:      "12345678-1234-1234-1234-123456789012",
-				masterSecret:  []byte("constellation-master-secret-leng"),
-				devConfigPath: "dev-config-path",
+				endpoint:     "192.0.2.1:2",
+				diskUUID:     "12345678-1234-1234-1234-123456789012",
+				masterSecret: []byte("constellation-master-secret-leng"),
+				configPath:   "config-path",
 			},
 		},
 		"uppercase disk-uuid is converted to lowercase": {
@@ -256,7 +256,7 @@ func TestParseRecoverFlags(t *testing.T) {
 			fs := afero.NewMemMapFs()
 			require.NoError(afero.WriteFile(fs, "constellation-mastersecret.base64", []byte("Y29uc3RlbGxhdGlvbi1tYXN0ZXItc2VjcmV0LWxlbmc="), 0o777))
 			cmd := newRecoverCmd()
-			cmd.Flags().String("dev-config", "", "") // register persistent flag manually
+			cmd.Flags().String("config", "", "") // register persistent flag manually
 			require.NoError(cmd.ParseFlags(tc.args))
 			flags, err := parseRecoverFlags(cmd, file.NewHandler(fs))
 

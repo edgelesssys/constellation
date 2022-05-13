@@ -95,10 +95,10 @@ go install github.com/edgelesssys/constellation/debugd/cdbg
 
 With `cdbg` installed in your path:
 
-1. Run `constellation --dev-config /path/to/dev-config create […]` while specifying a cloud-provider image with the debugd already included. See [Configuration](#debugd-configuration) for a dev-config with a custom image and firewall rules to allow incoming connection on the debugd default port 4000.
-2. Run `cdbg deploy --dev-config /path/to/dev-config`
+0. (optional) Run `constellation config generate` to create a new default configuration
+1. Run `constellation create […]` while specifying a cloud-provider image with the debugd already included. See [Configuration](#debugd-configuration) for a config with a custom image and firewall rules to allow incoming connection on the debugd default port 4000.
+2. Run `cdbg deploy`
 3.  Run `constellation init […]` as usual
-
 
 
 ### debugd GCP image
@@ -121,109 +121,92 @@ Choose the newest debugd image and copy the full URI.
 
 You should first locate the newest debugd image for your cloud provider ([GCP](#debugd-gcp-image), [Azure](#debugd-azure-image)).
 
-This tool uses the dev-config file from `constellation-coordinator` and extends it with more fields.
+This tool uses the config file from `constellation` and extends it with more fields.
 See this example on what the possible settings are and how to setup the constellation cli to use a cloud-provider image and firewall rules with support for debugd:
-```json
-{
-   "cdbg":{
-      "authorized_keys":[
-         {
-            "user":"my-username",
-            "pubkey":"ssh-rsa AAAAB…LJuM="
-         }
-      ],
-      "coordinator_path":"/path/to/coordinator",
-      "systemd_units":[
-         {
-            "name":"some-custom.service",
-            "contents":"[Unit]\nDescription=…"
-         }
-      ]
-   },
-   "provider": {
-    "gcpConfig": {
-      "image": "projects/constellation-images/global/images/constellation-coreos-debugd-TIMESTAMP",
-      "firewallInput": {
-        "ingress": [
-          {
-            "name": "coordinator",
-            "description": "Coordinator default port",
-            "protocol": "tcp",
-            "fromport": 9000
-          },
-          {
-            "name": "wireguard",
-            "description": "WireGuard default port",
-            "protocol": "udp",
-            "fromport": 51820
-          },
-          {
-            "name": "ssh",
-            "description": "SSH",
-            "protocol": "tcp",
-            "fromport": 22
-          },
-          {
-            "name": "nodeport",
-            "description": "NodePort",
-            "protocol": "tcp",
-            "fromport": 30000,
-            "toport": 32767
-          },
-          {
-            "name": "debugd",
-            "description": "debugd default port",
-            "protocol": "tcp",
-            "fromport": 4000
-          }
-        ]
-      }
-    },
-    "azureConfig": {
-      "image": "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos-debugd/versions/0.0.TIMESTAMP",
-      "networkSecurityGroupInput": {
-        "ingress": [
-          {
-            "name": "coordinator",
-            "description": "Coordinator default port",
-            "protocol": "tcp",
-            "iprange": "0.0.0.0/0",
-            "fromport": 9000
-          },
-          {
-            "name": "wireguard",
-            "description": "WireGuard default port",
-            "protocol": "udp",
-            "iprange": "0.0.0.0/0",
-            "fromport": 51820
-          },
-          {
-            "name": "ssh",
-            "description": "SSH",
-            "protocol": "tcp",
-            "iprange": "0.0.0.0/0",
-            "fromport": 22
-          },
-          {
-            "name": "nodeport",
-            "description": "NodePort",
-            "protocol": "tcp",
-            "iprange": "0.0.0.0/0",
-            "fromport": 30000,
-            "toport": 32767
-          },
-          {
-            "name": "debugd",
-            "description": "debugd default port",
-            "protocol": "tcp",
-            "iprange": "0.0.0.0/0",
-            "fromport": 4000
-          }
-        ]
-      }
-    }
-  }
-}
+```yaml
+cdbg:
+  authorizedKeys:
+    - user: my-username
+      pubkey: ssh-rsa AAAAB…LJuM=
+  coordinatorPath: "/path/to/coordinator"
+  systemdUnits:
+    - name: some-custom.service
+      contents: |-
+        [Unit]
+        Description=…
+provider:
+  # Add Azure image
+  azureConfig:
+    image: /subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos/versions/0.0.TIMESTAMP
+    networkSecurityGroupInput:
+      ingress:
+        - name: coordinator
+          description: Coordinator default port
+          protocol: tcp
+          iprange: 0.0.0.0/0
+          fromport: 9000
+          toport: 0
+        - name: wireguard
+          description: WireGuard default port
+          protocol: udp
+          iprange: 0.0.0.0/0
+          fromport: 51820
+          toport: 0
+        - name: ssh
+          description: SSH
+          protocol: tcp
+          iprange: 0.0.0.0/0
+          fromport: 22
+          toport: 0
+        - name: nodeport
+          description: NodePort
+          protocol: tcp
+          iprange: 0.0.0.0/0
+          fromport: 30000
+          toport: 32767
+        # Add debug port
+        - name: debugd
+          description: debugd default port
+          protocol: tcp
+          iprange: 0.0.0.0/0
+          fromport: 4000
+          toport: 0
+  gcpConfig:
+    # Add GCP image
+    image: projects/constellation-images/global/images/constellation-coreos-debugd-TIMESTAMP
+    firewallInput:
+      ingress:
+        - name: coordinator
+          description: Coordinator default port
+          protocol: tcp
+          iprange: ""
+          fromport: 9000
+          toport: 0
+        - name: wireguard
+          description: WireGuard default port
+          protocol: udp
+          iprange: ""
+          fromport: 51820
+          toport: 0
+        - name: ssh
+          description: SSH
+          protocol: tcp
+          iprange: ""
+          fromport: 22
+          toport: 0
+        - name: nodeport
+          description: NodePort
+          protocol: tcp
+          iprange: ""
+          fromport: 30000
+          toport: 32767
+        # Add debugd port
+        - name: debugd
+          description: debugd default port
+          protocol: tcp
+          iprange: ""
+          fromport: 4000
+          toport: 0
 ```
 
 # Local image testing with QEMU

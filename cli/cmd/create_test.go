@@ -57,7 +57,7 @@ func TestCreate(t *testing.T) {
 		controllerCountFlag *int
 		workerCountFlag     *int
 		insTypeFlag         string
-		devConfigFlag       string
+		configFlag          string
 		nameFlag            string
 		stdin               string
 		wantErr             bool
@@ -187,14 +187,14 @@ func TestCreate(t *testing.T) {
 			yesFlag:             true,
 			wantErr:             true,
 		},
-		"dev config does not exist": {
+		"config does not exist": {
 			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			creator:             &stubCloudCreator{},
 			provider:            cloudprovider.GCP,
 			controllerCountFlag: intPtr(1),
 			workerCountFlag:     intPtr(1),
 			yesFlag:             true,
-			devConfigFlag:       "dev-config.json",
+			configFlag:          constants.ConfigFilename,
 			wantErr:             true,
 		},
 		"create error": {
@@ -229,15 +229,15 @@ func TestCreate(t *testing.T) {
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
-			cmd.Flags().String("dev-config", "", "") // register persisten flag manually
+			cmd.Flags().String("config", "", "") // register persisten flag manually
 			if tc.yesFlag {
 				require.NoError(cmd.Flags().Set("yes", "true"))
 			}
 			if tc.nameFlag != "" {
 				require.NoError(cmd.Flags().Set("name", tc.nameFlag))
 			}
-			if tc.devConfigFlag != "" {
-				require.NoError(cmd.Flags().Set("dev-config", tc.devConfigFlag))
+			if tc.configFlag != "" {
+				require.NoError(cmd.Flags().Set("config", tc.configFlag))
 			}
 			if tc.controllerCountFlag != nil {
 				require.NoError(cmd.Flags().Set("control-plane-nodes", strconv.Itoa(*tc.controllerCountFlag)))

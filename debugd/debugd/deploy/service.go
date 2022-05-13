@@ -34,8 +34,8 @@ type ServiceManagerRequest struct {
 
 // SystemdUnit describes a systemd service file including the unit name and contents.
 type SystemdUnit struct {
-	Name     string `json:"name"`
-	Contents string `json:"contents"`
+	Name     string `yaml:"name"`
+	Contents string `yaml:"contents"`
 }
 
 // ServiceManager receives ServiceManagerRequests and units via channels and performs the requests / creates the unit files.

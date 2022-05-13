@@ -16,7 +16,7 @@ RUN git clone -b v1.0.20210914 --depth=1 https://git.zx2c4.com/wireguard-tools &
 
 # Setup CLI
 RUN wg genkey | (umask 0077 && tee /privatekey) | wg pubkey > /publickey
-RUN mkdir -p /root/.config/constellation && touch /root/.config/constellation/config.json
+RUN mkdir -p /root/.config/constellation && touch /root/.config/constellation/constellation-conf.yaml
 
 # Setup AWS config
 RUN mkdir -p /root/.aws && echo "[default]\nregion = us-east-2" > /root/.aws/config && echo "[default]" >>  /root/.aws/credentials

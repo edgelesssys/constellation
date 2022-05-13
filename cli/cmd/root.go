@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/spf13/cobra"
 )
 
@@ -29,8 +30,8 @@ func NewRootCmd() *cobra.Command {
 	// Set output of cmd.Print to stdout. (By default, it's stderr.)
 	rootCmd.SetOut(os.Stdout)
 
-	rootCmd.PersistentFlags().String("dev-config", "", "use settings from a development config")
-	must(rootCmd.MarkPersistentFlagFilename("dev-config", "json"))
+	rootCmd.PersistentFlags().String("config", constants.ConfigFilename, "use settings from a config")
+	must(rootCmd.MarkPersistentFlagFilename("config", "json"))
 
 	rootCmd.AddCommand(newCreateCmd())
 	rootCmd.AddCommand(newInitCmd())

@@ -53,7 +53,7 @@ func TestVerify(t *testing.T) {
 		provider         cloudprovider.Provider
 		protoClient      protoClient
 		nodeEndpointFlag string
-		devConfigFlag    string
+		configFlag       string
 		ownerIDFlag      string
 		clusterIDFlag    string
 		wantErr          bool
@@ -93,12 +93,12 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1:1234",
 			wantErr:          true,
 		},
-		"dev config file not existing": {
+		"config file not existing": {
 			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			provider:         cloudprovider.GCP,
 			ownerIDFlag:      zeroBase64,
 			nodeEndpointFlag: "192.0.2.1:1234",
-			devConfigFlag:    "./file",
+			configFlag:       "./file",
 			wantErr:          true,
 		},
 		"error protoClient Connect": {
@@ -133,12 +133,12 @@ func TestVerify(t *testing.T) {
 			require := require.New(t)
 
 			cmd := newVerifyCmd()
-			cmd.Flags().String("dev-config", "", "") // register persisten flag manually
+			cmd.Flags().String("config", "", "") // register persisten flag manually
 			out := &bytes.Buffer{}
 			cmd.SetOut(out)
 			cmd.SetErr(&bytes.Buffer{})
-			if tc.devConfigFlag != "" {
-				require.NoError(cmd.Flags().Set("dev-config", tc.devConfigFlag))
+			if tc.configFlag != "" {
+				require.NoError(cmd.Flags().Set("config", tc.configFlag))
 			}
 			if tc.ownerIDFlag != "" {
 				require.NoError(cmd.Flags().Set("owner-id", tc.ownerIDFlag))

@@ -68,7 +68,7 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 		return err
 	}
 
-	config, err := config.FromFile(fileHandler, flags.devConfigPath)
+	config, err := config.FromFile(fileHandler, flags.configPath)
 	if err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func parseCreateFlags(cmd *cobra.Command, provider cloudprovider.Provider) (crea
 		return createFlags{}, err
 	}
 
-	devConfigPath, err := cmd.Flags().GetString("dev-config")
+	configPath, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return createFlags{}, err
 	}
@@ -156,7 +156,7 @@ func parseCreateFlags(cmd *cobra.Command, provider cloudprovider.Provider) (crea
 		workerCount:     workerCount,
 		insType:         insType,
 		name:            name,
-		devConfigPath:   devConfigPath,
+		configPath:      configPath,
 		yes:             yes,
 	}, nil
 }
@@ -167,7 +167,7 @@ type createFlags struct {
 	workerCount     int
 	insType         string
 	name            string
-	devConfigPath   string
+	configPath      string
 	yes             bool
 }
 

@@ -28,20 +28,20 @@ var deployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploys a self-compiled coordinator binary and SSH keys on the current constellation",
 	Long: `Deploys a self-compiled coordinator binary and SSH keys on the current constellation.
-Uses dev-config provided by --dev-config and reads constellation config from its default location.
+Uses config provided by --config and reads constellation config from its default location.
 If required, you can override the IP addresses that are used for a deployment by specifying "--ips" and a list of IP addresses.
 Specifying --coordinator will upload the coordinator from the specified path.`,
 	RunE:    runDeploy,
-	Example: "cdbg deploy --dev-config /path/to/dev-config\ncdbg deploy --coordinator /path/to/coordinator --ips 192.0.2.1,192.0.2.2,192.0.2.3 --dev-config /path/to/dev-config",
+	Example: "cdbg deploy --config /path/to/config\ncdbg deploy --coordinator /path/to/coordinator --ips 192.0.2.1,192.0.2.2,192.0.2.3 --config /path/to/config",
 }
 
 func runDeploy(cmd *cobra.Command, args []string) error {
-	devConfigName, err := cmd.Flags().GetString("dev-config")
+	configName, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return err
 	}
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	config, err := config.FromFile(fileHandler, devConfigName)
+	config, err := config.FromFile(fileHandler, configName)
 	if err != nil {
 		return err
 	}
@@ -178,7 +178,7 @@ func init() {
 	rootCmd.AddCommand(deployCmd)
 
 	deployCmd.Flags().StringSlice("ips", nil, "override the ips that the coordinator will be uploaded to (defaults to ips from constellation config)")
-	deployCmd.Flags().String("coordinator", "", "override the path to the coordinator binary uploaded to instances (defaults to path set in dev-config)")
+	deployCmd.Flags().String("coordinator", "", "override the path to the coordinator binary uploaded to instances (defaults to path set in config)")
 }
 
 type fileToStreamReader interface {

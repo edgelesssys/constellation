@@ -14,7 +14,6 @@
 #ignore build files
 /build
 admin.conf
-coordinatorConfig.json
 coordinator-*
 
 /image

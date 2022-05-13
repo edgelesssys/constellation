@@ -1,7 +1,9 @@
 package config
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"strconv"
 
 	azureClient "github.com/edgelesssys/constellation/cli/azure/client"
@@ -214,6 +216,9 @@ func FromFile(fileHandler file.Handler, name string) (*Config, error) {
 	}
 
 	if err := fileHandler.ReadYAML(name, conf); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, fmt.Errorf("unable to find %s - use `constellation config generate` to generate it first", constants.ConfigFilename)
+		}
 		return nil, fmt.Errorf("could not load config from file %s: %w", name, err)
 	}
 	return conf, nil

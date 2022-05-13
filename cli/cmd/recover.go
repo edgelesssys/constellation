@@ -51,7 +51,7 @@ func recover(ctx context.Context, cmd *cobra.Command, fileHandler file.Handler, 
 		return err
 	}
 
-	config, err := config.FromFile(fileHandler, flags.devConfigPath)
+	config, err := config.FromFile(fileHandler, flags.configPath)
 	if err != nil {
 		return err
 	}
@@ -112,24 +112,24 @@ func parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFla
 		return recoverFlags{}, err
 	}
 
-	devConfigPath, err := cmd.Flags().GetString("dev-config")
+	configPath, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return recoverFlags{}, err
 	}
 
 	return recoverFlags{
-		endpoint:      endpoint,
-		diskUUID:      diskUUID,
-		masterSecret:  masterSecret,
-		devConfigPath: devConfigPath,
+		endpoint:     endpoint,
+		diskUUID:     diskUUID,
+		masterSecret: masterSecret,
+		configPath:   configPath,
 	}, nil
 }
 
 type recoverFlags struct {
-	endpoint      string
-	diskUUID      string
-	masterSecret  []byte
-	devConfigPath string
+	endpoint     string
+	diskUUID     string
+	masterSecret []byte
+	configPath   string
 }
 
 // readMasterSecret reads a base64 encoded master secret from file.

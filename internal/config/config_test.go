@@ -6,6 +6,7 @@ import (
 	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/cli/gcp/client"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,8 +41,6 @@ func TestFromFile(t *testing.T) {
 		},
 	}
 
-	configName := "config.json"
-
 	testCases := map[string]struct {
 		from              *Config
 		configName        string
@@ -50,12 +49,12 @@ func TestFromFile(t *testing.T) {
 	}{
 		"overwrite fields": {
 			from:              &Config{CoordinatorPort: proto.String("1000")},
-			configName:        configName,
+			configName:        constants.ConfigFilename,
 			wantResultMutator: func(c *Config) { c.CoordinatorPort = proto.String("1000") },
 		},
 		"overwrite slices": {
 			from:              &Config{Provider: someProviderConfig},
-			configName:        configName,
+			configName:        constants.ConfigFilename,
 			wantResultMutator: func(c *Config) { c.Provider = someProviderConfig },
 		},
 		"default with empty name": {
@@ -77,7 +76,7 @@ func TestFromFile(t *testing.T) {
 			require := require.New(t)
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
-			require.NoError(fileHandler.WriteYAML(configName, tc.from, file.OptNone))
+			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, tc.from, file.OptNone))
 
 			result, err := FromFile(fileHandler, tc.configName)
 

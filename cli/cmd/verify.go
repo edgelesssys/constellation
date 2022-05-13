@@ -49,7 +49,7 @@ func verify(ctx context.Context, cmd *cobra.Command, provider cloudprovider.Prov
 		return err
 	}
 
-	config, err := config.FromFile(fileHandler, flags.devConfigPath)
+	config, err := config.FromFile(fileHandler, flags.configPath)
 	if err != nil {
 		return err
 	}
@@ -102,24 +102,24 @@ func parseVerifyFlags(cmd *cobra.Command) (verifyFlags, error) {
 		return verifyFlags{}, err
 	}
 
-	devConfigPath, err := cmd.Flags().GetString("dev-config")
+	configPath, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return verifyFlags{}, err
 	}
 
 	return verifyFlags{
-		endpoint:      endpoint,
-		devConfigPath: devConfigPath,
-		ownerID:       ownerID,
-		clusterID:     clusterID,
+		endpoint:   endpoint,
+		configPath: configPath,
+		ownerID:    ownerID,
+		clusterID:  clusterID,
 	}, nil
 }
 
 type verifyFlags struct {
-	endpoint      string
-	ownerID       string
-	clusterID     string
-	devConfigPath string
+	endpoint   string
+	ownerID    string
+	clusterID  string
+	configPath string
 }
 
 // verifyCompletion handels the completion of CLI arguments. It is frequently called

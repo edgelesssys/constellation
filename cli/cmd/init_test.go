@@ -296,7 +296,7 @@ func TestInitialize(t *testing.T) {
 			cmd.SetOut(&out)
 			var errOut bytes.Buffer
 			cmd.SetErr(&errOut)
-			cmd.Flags().String("dev-config", "", "") // register persisten flag manually
+			cmd.Flags().String("config", "", "") // register persisten flag manually
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
 			require.NoError(fileHandler.WriteJSON(constants.StateFilename, tc.existingState, file.OptNone))
@@ -603,7 +603,7 @@ func TestAutoscaleFlag(t *testing.T) {
 			cmd.SetOut(&out)
 			var errOut bytes.Buffer
 			cmd.SetErr(&errOut)
-			cmd.Flags().String("dev-config", "", "") // register persisten flag manually
+			cmd.Flags().String("config", "", "") // register persisten flag manually
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
 			vpnHandler := stubVPNHandler{}

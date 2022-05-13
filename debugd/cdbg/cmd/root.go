@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +22,5 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().String("dev-config", "", "debugd config file (required)")
-	_ = rootCmd.MarkPersistentFlagRequired("dev-config")
+	rootCmd.PersistentFlags().String("config", constants.ConfigFilename, "debugd config file")
 }
