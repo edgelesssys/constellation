@@ -19,6 +19,9 @@ import (
 )
 
 const (
+	// LUKSHeaderSize is the amount of bytes taken up by the header of a LUKS2 partition.
+	// The header is 16MiB (1048576 Bytes * 16).
+	LUKSHeaderSize    = 16777216
 	cryptPrefix       = "/dev/mapper/"
 	integritySuffix   = "_dif"
 	integrityFSSuffix = "-integrity"
