@@ -17,7 +17,7 @@ import (
 func warnAWS(providerPos int) cobra.PositionalArgs {
 	return func(cmd *cobra.Command, args []string) error {
 		if cloudprovider.FromString(args[providerPos]) == cloudprovider.AWS {
-			return errors.New("AWS isn't supported")
+			return errors.New("AWS isn't supported by this version of Constellation")
 		}
 		return nil
 	}
