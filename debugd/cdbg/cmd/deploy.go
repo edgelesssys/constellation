@@ -16,6 +16,7 @@ import (
 	depl "github.com/edgelesssys/constellation/debugd/debugd/deploy"
 	pb "github.com/edgelesssys/constellation/debugd/service"
 	"github.com/edgelesssys/constellation/debugd/ssh"
+	configc "github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
 	statec "github.com/edgelesssys/constellation/internal/state"
 	"github.com/spf13/afero"
@@ -32,7 +33,7 @@ Uses config provided by --config and reads constellation config from its default
 If required, you can override the IP addresses that are used for a deployment by specifying "--ips" and a list of IP addresses.
 Specifying --coordinator will upload the coordinator from the specified path.`,
 	RunE:    runDeploy,
-	Example: "cdbg deploy --config /path/to/config\ncdbg deploy --coordinator /path/to/coordinator --ips 192.0.2.1,192.0.2.2,192.0.2.3 --config /path/to/config",
+	Example: "cdbg deploy\ncdbg deploy --config /path/to/config\ncdbg deploy --coordinator /path/to/coordinator --ips 192.0.2.1,192.0.2.2,192.0.2.3 --config /path/to/config",
 }
 
 func runDeploy(cmd *cobra.Command, args []string) error {
@@ -41,21 +42,25 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	config, err := config.FromFile(fileHandler, configName)
+	debugConfig, err := config.FromFile(fileHandler, configName)
+	if err != nil {
+		return err
+	}
+	constellationConfig, err := configc.FromFile(fileHandler, constants.ConfigFilename)
 	if err != nil {
 		return err
 	}
 
-	return deploy(cmd, fileHandler, config, coordinator.NewFileStreamer(afero.NewOsFs()))
+	return deploy(cmd, fileHandler, constellationConfig, debugConfig, coordinator.NewFileStreamer(afero.NewOsFs()))
 }
 
-func deploy(cmd *cobra.Command, fileHandler file.Handler, config *config.CDBGConfig, reader fileToStreamReader) error {
+func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *configc.Config, debugConfig *config.CDBGConfig, reader fileToStreamReader) error {
 	overrideCoordinatorPath, err := cmd.Flags().GetString("coordinator")
 	if err != nil {
 		return err
 	}
 	if len(overrideCoordinatorPath) > 0 {
-		config.ConstellationDebugConfig.CoordinatorPath = overrideCoordinatorPath
+		debugConfig.ConstellationDebugConfig.CoordinatorPath = overrideCoordinatorPath
 	}
 
 	overrideIPs, err := cmd.Flags().GetStringSlice("ips")
@@ -74,7 +79,7 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, config *config.CDBGCon
 		} else if err != nil {
 			return fmt.Errorf("loading statefile failed: %w", err)
 		}
-		ips, err = getIPsFromConfig(stat, *config)
+		ips, err = getIPsFromConfig(stat, *constellationConfig)
 		if err != nil {
 			return err
 		}
@@ -83,10 +88,10 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, config *config.CDBGCon
 	for _, ip := range ips {
 		input := deployOnEndpointInput{
 			debugdEndpoint:  net.JoinHostPort(ip, debugd.DebugdPort),
-			coordinatorPath: config.ConstellationDebugConfig.CoordinatorPath,
+			coordinatorPath: debugConfig.ConstellationDebugConfig.CoordinatorPath,
 			reader:          reader,
-			authorizedKeys:  config.ConstellationDebugConfig.AuthorizedKeys,
-			systemdUnits:    config.ConstellationDebugConfig.SystemdUnits,
+			authorizedKeys:  debugConfig.ConstellationDebugConfig.AuthorizedKeys,
+			systemdUnits:    debugConfig.ConstellationDebugConfig.SystemdUnits,
 		}
 		if err := deployOnEndpoint(cmd.Context(), input); err != nil {
 			return err
@@ -166,8 +171,8 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	return nil
 }
 
-func getIPsFromConfig(stat statec.ConstellationState, config config.CDBGConfig) ([]string, error) {
-	coordinators, nodes, err := state.GetScalingGroupsFromConfig(stat, &config.Config)
+func getIPsFromConfig(stat statec.ConstellationState, config configc.Config) ([]string, error) {
+	coordinators, nodes, err := state.GetScalingGroupsFromConfig(stat, &config)
 	if err != nil {
 		return nil, err
 	}

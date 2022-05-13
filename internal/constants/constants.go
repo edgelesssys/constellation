@@ -27,6 +27,7 @@ const (
 
 	StateFilename         = "constellation-state.json"
 	ConfigFilename        = "constellation-conf.yaml"
+	DebugdConfigFilename  = "cdbg-conf.yaml"
 	AdminConfFilename     = "constellation-admin.conf"
 	MasterSecretFilename  = "constellation-mastersecret.base64"
 	WGQuickConfigFilename = "wg0.conf"

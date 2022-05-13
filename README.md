@@ -93,12 +93,61 @@ go install github.com/edgelesssys/constellation/debugd/cdbg
 
 ## debugd & cdbg usage
 
-With `cdbg` installed in your path:
+With `cdbg` and `yq` installed in your path:
 
-0. (optional) Run `constellation config generate` to create a new default configuration
-1. Run `constellation create […]` while specifying a cloud-provider image with the debugd already included. See [Configuration](#debugd-configuration) for a config with a custom image and firewall rules to allow incoming connection on the debugd default port 4000.
-2. Run `cdbg deploy`
-3.  Run `constellation init […]` as usual
+0. Write the configuration file for cdbg `cdbg-conf.yaml`:
+   ```yaml
+   cdbg:
+     authorizedKeys:
+       - user: my-username
+         pubkey: ssh-rsa AAAAB…LJuM=
+     coordinatorPath: "./coordinator"
+     systemdUnits:
+       - name: some-custom.service
+         contents: |-
+           [Unit]
+           Description=…
+   ```
+1. Run `constellation config generate` to create a new default configuration
+2. Locate the latest debugd images for [GCP](#debugd-gcp-image) and [Azure](#debugd-azure-image)
+3. Modify the `constellation-conf.yaml` to use an image with the debugd already included and add required firewall rules:
+   ```shell-session
+   # Set timestamp from cloud provider image name
+   export TIMESTAMP=01234
+
+   yq -i \
+       ".provider.azureConfig.image = \"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos-debugd/versions/0.0.${TIMESTAMP}\"" \
+       constellation-conf.yaml
+
+   yq -i \
+       ".provider.gcpConfig.image = \"projects/constellation-images/global/images/constellation-coreos-debugd-${TIMESTAMP}\"" \
+       constellation-conf.yaml
+
+   yq -i \
+       ".provider.azureConfig.networkSecurityGroupInput.ingress += {
+           \"name\": \"debugd\",
+           \"description\": \"debugd default port\",
+           \"protocol\": \"tcp\",
+           \"iprange\": \"0.0.0.0/0\",
+           \"fromport\": 4000,
+           \"toport\": 0
+       }" \
+       constellation-conf.yaml
+
+   yq -i \
+       ".provider.gcpConfig.firewallInput.ingress += {
+           \"name\": \"debugd\",
+           \"description\": \"debugd default port\",
+           \"protocol\": \"tcp\",
+           \"iprange\": \"0.0.0.0/0\",
+           \"fromport\": 4000,
+           \"toport\": 0
+       }" \
+       constellation-conf.yaml
+   ```
+4. Run `constellation create […]`
+5. Run `cdbg deploy`
+6.  Run `constellation init […]` as usual
 
 
 ### debugd GCP image
@@ -116,98 +165,6 @@ For Azure, run the following command to get a list of all constellation debugd i
 az sig image-version list --resource-group constellation-images --gallery-name Constellation --gallery-image-definition constellation-coreos-debugd --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table
 ```
 Choose the newest debugd image and copy the full URI.
-
-## debugd Configuration
-
-You should first locate the newest debugd image for your cloud provider ([GCP](#debugd-gcp-image), [Azure](#debugd-azure-image)).
-
-This tool uses the config file from `constellation` and extends it with more fields.
-See this example on what the possible settings are and how to setup the constellation cli to use a cloud-provider image and firewall rules with support for debugd:
-```yaml
-cdbg:
-  authorizedKeys:
-    - user: my-username
-      pubkey: ssh-rsa AAAAB…LJuM=
-  coordinatorPath: "/path/to/coordinator"
-  systemdUnits:
-    - name: some-custom.service
-      contents: |-
-        [Unit]
-        Description=…
-provider:
-  # Add Azure image
-  azureConfig:
-    image: /subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos/versions/0.0.TIMESTAMP
-    networkSecurityGroupInput:
-      ingress:
-        - name: coordinator
-          description: Coordinator default port
-          protocol: tcp
-          iprange: 0.0.0.0/0
-          fromport: 9000
-          toport: 0
-        - name: wireguard
-          description: WireGuard default port
-          protocol: udp
-          iprange: 0.0.0.0/0
-          fromport: 51820
-          toport: 0
-        - name: ssh
-          description: SSH
-          protocol: tcp
-          iprange: 0.0.0.0/0
-          fromport: 22
-          toport: 0
-        - name: nodeport
-          description: NodePort
-          protocol: tcp
-          iprange: 0.0.0.0/0
-          fromport: 30000
-          toport: 32767
-        # Add debug port
-        - name: debugd
-          description: debugd default port
-          protocol: tcp
-          iprange: 0.0.0.0/0
-          fromport: 4000
-          toport: 0
-  gcpConfig:
-    # Add GCP image
-    image: projects/constellation-images/global/images/constellation-coreos-debugd-TIMESTAMP
-    firewallInput:
-      ingress:
-        - name: coordinator
-          description: Coordinator default port
-          protocol: tcp
-          iprange: ""
-          fromport: 9000
-          toport: 0
-        - name: wireguard
-          description: WireGuard default port
-          protocol: udp
-          iprange: ""
-          fromport: 51820
-          toport: 0
-        - name: ssh
-          description: SSH
-          protocol: tcp
-          iprange: ""
-          fromport: 22
-          toport: 0
-        - name: nodeport
-          description: NodePort
-          protocol: tcp
-          iprange: ""
-          fromport: 30000
-          toport: 32767
-        # Add debugd port
-        - name: debugd
-          description: debugd default port
-          protocol: tcp
-          iprange: ""
-          fromport: 4000
-          toport: 0
-```
 
 # Local image testing with QEMU
 

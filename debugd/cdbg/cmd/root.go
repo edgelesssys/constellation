@@ -22,5 +22,5 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().String("config", constants.ConfigFilename, "debugd config file")
+	rootCmd.PersistentFlags().String("config", constants.DebugdConfigFilename, "debugd config file")
 }
