@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"net"
+	"strconv"
 	"text/tabwriter"
 
 	"github.com/edgelesssys/constellation/cli/azure"
@@ -105,7 +106,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		return err
 	}
 
-	endpoints := ipsToEndpoints(append(coordinators.PublicIPs(), nodes.PublicIPs()...), *config.CoordinatorPort)
+	endpoints := ipsToEndpoints(append(coordinators.PublicIPs(), nodes.PublicIPs()...), strconv.Itoa(constants.CoordinatorPort))
 
 	cmd.Println("Waiting for cloud provider resource creation and boot ...")
 	if err := waiter.InitializeValidators(validators.V()); err != nil {
@@ -129,7 +130,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		autoscalingNodeGroups:  autoscalingNodeGroups,
 		cloudServiceAccountURI: serviceAccount,
 	}
-	result, err := activate(ctx, cmd, protCl, input, config, validators.V())
+	result, err := activate(ctx, cmd, protCl, input, validators.V())
 	if err != nil {
 		return err
 	}
@@ -158,9 +159,9 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 }
 
 func activate(ctx context.Context, cmd *cobra.Command, client protoClient, input activationInput,
-	config *config.Config, validators []atls.Validator,
+	validators []atls.Validator,
 ) (activationResult, error) {
-	err := client.Connect(net.JoinHostPort(input.coordinatorPubIP, *config.CoordinatorPort), validators)
+	err := client.Connect(net.JoinHostPort(input.coordinatorPubIP, strconv.Itoa(constants.CoordinatorPort)), validators)
 	if err != nil {
 		return activationResult{}, err
 	}

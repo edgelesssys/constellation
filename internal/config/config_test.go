@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/proto"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -47,11 +46,6 @@ func TestFromFile(t *testing.T) {
 		wantResultMutator func(c *Config) //  mutates the Default() config to the expected result.
 		wantErr           bool
 	}{
-		"overwrite fields": {
-			from:              &Config{CoordinatorPort: proto.String("1000")},
-			configName:        constants.ConfigFilename,
-			wantResultMutator: func(c *Config) { c.CoordinatorPort = proto.String("1000") },
-		},
 		"overwrite slices": {
 			from:              &Config{Provider: someProviderConfig},
 			configName:        constants.ConfigFilename,
@@ -86,7 +80,6 @@ func TestFromFile(t *testing.T) {
 				require.NoError(err)
 				wantResult := Default()
 				tc.wantResultMutator(wantResult)
-				assert.EqualValues(wantResult.CoordinatorPort, result.CoordinatorPort)
 				assert.EqualValues(wantResult.AutoscalingNodeGroupsMin, result.AutoscalingNodeGroupsMin)
 				assert.EqualValues(wantResult.AutoscalingNodeGroupsMax, result.AutoscalingNodeGroupsMax)
 				require.NotNil(wantResult.Provider)

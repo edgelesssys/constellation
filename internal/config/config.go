@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"strconv"
 
 	azureClient "github.com/edgelesssys/constellation/cli/azure/client"
 	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
@@ -43,7 +42,6 @@ var (
 // All fields in this struct and its child structs have pointer types
 // to ensure the default values of the actual type is not confused with an omitted value.
 type Config struct {
-	CoordinatorPort          *string         `yaml:"coordinatorPort,omitempty"`
 	AutoscalingNodeGroupsMin *int            `yaml:"autoscalingNodeGroupsMin,omitempty"`
 	AutoscalingNodeGroupsMax *int            `yaml:"autoscalingNodeGroupsMax,omitempty"`
 	StateDiskSizeGB          *int            `yaml:"StateDisksizeGB,omitempty"`
@@ -53,7 +51,6 @@ type Config struct {
 // Default returns a struct with the default config.
 func Default() *Config {
 	return &Config{
-		CoordinatorPort:          proto.String(strconv.Itoa(constants.CoordinatorPort)),
 		AutoscalingNodeGroupsMin: intPtr(1),
 		AutoscalingNodeGroupsMax: intPtr(10),
 		StateDiskSizeGB:          intPtr(30),
