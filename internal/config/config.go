@@ -198,7 +198,7 @@ func Default() *Config {
 				Measurements: &gcpPCRs,
 			},
 			QEMU: &QEMUConfig{
-				PCRs: &qemuPCRs,
+				Measurements: &qemuPCRs,
 			},
 		},
 	}
@@ -260,7 +260,7 @@ type GCPConfig struct {
 }
 
 type QEMUConfig struct {
-	PCRs *Measurements `yaml:"pcrs,omitempty"`
+	Measurements *Measurements `yaml:"measurements,omitempty"`
 }
 
 // intPtr returns a pointer to the copied value of in.

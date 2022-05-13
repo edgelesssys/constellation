@@ -77,7 +77,7 @@ func TestNewValidators(t *testing.T) {
 			}
 			if tc.provider == cloudprovider.QEMU {
 				measurements := config.Measurements(tc.pcrs)
-				conf.Provider.QEMU = &config.QEMUConfig{PCRs: &measurements}
+				conf.Provider.QEMU = &config.QEMUConfig{Measurements: &measurements}
 			}
 
 			validators, err := NewValidators(tc.provider, conf)

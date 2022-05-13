@@ -80,7 +80,7 @@ func (v *Validators) setPCRs(config *config.Config) error {
 		}
 		v.pcrs = azurePCRs
 	case cloudprovider.QEMU:
-		qemuPCRs := *config.Provider.QEMU.PCRs
+		qemuPCRs := *config.Provider.QEMU.Measurements
 		if err := v.checkPCRs(qemuPCRs); err != nil {
 			return err
 		}
