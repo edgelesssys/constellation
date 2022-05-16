@@ -37,16 +37,20 @@ Specifying --coordinator will upload the coordinator from the specified path.`,
 }
 
 func runDeploy(cmd *cobra.Command, args []string) error {
+	debugConfigName, err := cmd.Flags().GetString("cdbg-config")
+	if err != nil {
+		return err
+	}
 	configName, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return err
 	}
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	debugConfig, err := config.FromFile(fileHandler, configName)
+	debugConfig, err := config.FromFile(fileHandler, debugConfigName)
 	if err != nil {
 		return err
 	}
-	constellationConfig, err := configc.FromFile(fileHandler, constants.ConfigFilename)
+	constellationConfig, err := configc.FromFile(fileHandler, configName)
 	if err != nil {
 		return err
 	}

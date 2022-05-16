@@ -22,5 +22,6 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().String("config", constants.DebugdConfigFilename, "debugd config file")
+	rootCmd.PersistentFlags().String("config", constants.ConfigFilename, "Constellation config file")
+	rootCmd.PersistentFlags().String("cdbg-config", constants.DebugdConfigFilename, "debugd config file")
 }
