@@ -27,6 +27,10 @@ runs:
       curl -LO https://dl.k8s.io/release/v1.23.0/bin/linux/amd64/kubectl
       install kubectl /usr/local/bin
     shell: bash
+  - name: Constellation config generate
+    run: |
+      constellation config generate
+    shell: bash
   - name: Constellation create
     run: |
       constellation create ${{ inputs.cloudProvider }} -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} -t ${{ inputs.machineType }} --name e2e-test -y
