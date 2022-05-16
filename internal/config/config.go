@@ -214,7 +214,7 @@ func FromFile(fileHandler file.Handler, name string) (*Config, error) {
 
 	if err := fileHandler.ReadYAML(name, conf); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return nil, fmt.Errorf("unable to find %s - use `constellation config generate` to generate it first", constants.ConfigFilename)
+			return nil, fmt.Errorf("unable to find %s - use `constellation config generate` to generate it first", name)
 		}
 		return nil, fmt.Errorf("could not load config from file %s: %w", name, err)
 	}
