@@ -9,9 +9,9 @@ import (
 
 	"github.com/edgelesssys/constellation/cli/azure"
 	"github.com/edgelesssys/constellation/cli/cloudprovider"
-	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/cli/gcp"
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/state"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"

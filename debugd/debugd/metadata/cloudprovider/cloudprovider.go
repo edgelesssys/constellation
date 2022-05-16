@@ -7,7 +7,7 @@ import (
 	azurecloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/azure"
 	gcpcloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/gcp"
 	"github.com/edgelesssys/constellation/coordinator/core"
-	"github.com/edgelesssys/constellation/debugd/ssh"
+	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 )
 
 type providerMetadata interface {
@@ -72,16 +72,16 @@ func (f *Fetcher) DiscoverDebugdIPs(ctx context.Context) ([]string, error) {
 }
 
 // FetchSSHKeys will query the metadata of the current instance and deploys any SSH keys found.
-func (f *Fetcher) FetchSSHKeys(ctx context.Context) ([]ssh.SSHKey, error) {
+func (f *Fetcher) FetchSSHKeys(ctx context.Context) ([]ssh.UserKey, error) {
 	self, err := f.metaAPI.Self(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving ssh keys from cloud provider metadata failed: %w", err)
 	}
 
-	keys := []ssh.SSHKey{}
+	keys := []ssh.UserKey{}
 	for username, userKeys := range self.SSHKeys {
 		for _, keyValue := range userKeys {
-			keys = append(keys, ssh.SSHKey{Username: username, KeyValue: keyValue})
+			keys = append(keys, ssh.UserKey{Username: username, PublicKey: keyValue})
 		}
 	}
 

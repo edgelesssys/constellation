@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/coordinator/core"
-	"github.com/edgelesssys/constellation/debugd/ssh"
+	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -70,7 +70,7 @@ func TestFetchSSHKeys(t *testing.T) {
 
 	testCases := map[string]struct {
 		meta     stubMetadata
-		wantKeys []ssh.SSHKey
+		wantKeys []ssh.UserKey
 		wantErr  bool
 	}{
 		"fetch works": {
@@ -81,10 +81,10 @@ func TestFetchSSHKeys(t *testing.T) {
 					SSHKeys:    map[string][]string{"bob": {"ssh-rsa bobskey"}},
 				},
 			},
-			wantKeys: []ssh.SSHKey{
+			wantKeys: []ssh.UserKey{
 				{
-					Username: "bob",
-					KeyValue: "ssh-rsa bobskey",
+					Username:  "bob",
+					PublicKey: "ssh-rsa bobskey",
 				},
 			},
 		},

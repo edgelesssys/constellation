@@ -13,7 +13,7 @@ import (
 	"github.com/edgelesssys/constellation/debugd/debugd"
 	"github.com/edgelesssys/constellation/debugd/debugd/deploy"
 	pb "github.com/edgelesssys/constellation/debugd/service"
-	"github.com/edgelesssys/constellation/debugd/ssh"
+	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"google.golang.org/grpc"
 )
 
@@ -37,7 +37,7 @@ func New(ssh sshDeployer, serviceManager serviceManager, streamer streamer) pb.D
 func (s *debugdServer) UploadAuthorizedKeys(ctx context.Context, in *pb.UploadAuthorizedKeysRequest) (*pb.UploadAuthorizedKeysResponse, error) {
 	log.Println("Uploading authorized keys")
 	for _, key := range in.Keys {
-		if err := s.ssh.DeploySSHAuthorizedKey(ctx, ssh.SSHKey{Username: key.Username, KeyValue: key.KeyValue}); err != nil {
+		if err := s.ssh.DeploySSHAuthorizedKey(ctx, ssh.UserKey{Username: key.Username, PublicKey: key.KeyValue}); err != nil {
 			log.Printf("Uploading authorized keys failed: %v\n", err)
 			return &pb.UploadAuthorizedKeysResponse{
 				Status: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_FAILURE,
@@ -117,7 +117,7 @@ func Start(wg *sync.WaitGroup, serv pb.DebugdServer) {
 }
 
 type sshDeployer interface {
-	DeploySSHAuthorizedKey(ctx context.Context, sshKey ssh.SSHKey) error
+	DeploySSHAuthorizedKey(ctx context.Context, sshKey ssh.UserKey) error
 }
 
 type serviceManager interface {

@@ -5,13 +5,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
 	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
+	"github.com/edgelesssys/constellation/internal/deploy/user"
+	"github.com/edgelesssys/constellation/internal/file"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -79,7 +80,8 @@ func TestReinitializeAsNode(t *testing.T) {
 			go server.Serve(netDialer.GetListener("192.0.2.1:9000"))
 			defer server.Stop()
 			vpn := &stubVPN{}
-			core, err := NewCore(vpn, nil, &stubMetadata{listRes: coordinators, supportedRes: true}, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(afero.NewMemMapFs()))
+			fs := afero.NewMemMapFs()
+			core, err := NewCore(vpn, nil, &stubMetadata{listRes: coordinators, supportedRes: true}, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 			err = core.ReinitializeAsNode(context.Background(), dialer, vpnIP, &stubPubAPI{}, 0)
 
@@ -151,7 +153,8 @@ func TestReinitializeAsCoordinator(t *testing.T) {
 			go server.Serve(netDialer.GetListener("192.0.2.1:9000"))
 			defer server.Stop()
 			vpn := &stubVPN{}
-			core, err := NewCore(vpn, nil, &stubMetadata{listRes: coordinators, supportedRes: true}, nil, nil, nil, nil, zaptest.NewLogger(t), nil, &fakeStoreFactory{}, file.NewHandler(afero.NewMemMapFs()))
+			fs := afero.NewMemMapFs()
+			core, err := NewCore(vpn, nil, &stubMetadata{listRes: coordinators, supportedRes: true}, nil, nil, nil, nil, zaptest.NewLogger(t), nil, &fakeStoreFactory{}, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 			// prepare store to emulate initialized KMS
 			require.NoError(core.data().PutKMSData(kms.KMSInformation{StorageUri: kms.NoStoreURI, KmsUri: kms.ClusterKMSURI}))

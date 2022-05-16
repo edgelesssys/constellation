@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/coordinator/config"
 	"github.com/edgelesssys/constellation/coordinator/nodestate"
@@ -18,6 +17,8 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/store"
 	"github.com/edgelesssys/constellation/coordinator/storewrapper"
 	"github.com/edgelesssys/constellation/coordinator/util"
+	"github.com/edgelesssys/constellation/internal/deploy/user"
+	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/kms/kms"
 	kmsSetup "github.com/edgelesssys/constellation/kms/server/setup"
 	"go.uber.org/zap"
@@ -44,12 +45,13 @@ type Core struct {
 	initialVPNPeersRetriever initialVPNPeersRetriever
 	lastHeartbeats           map[string]time.Time
 	fileHandler              file.Handler
+	linuxUserManager         user.LinuxUserManager
 }
 
 // NewCore creates and initializes a new Core object.
 func NewCore(vpn VPN, kube Cluster,
 	metadata ProviderMetadata, cloudControllerManager CloudControllerManager, cloudNodeManager CloudNodeManager, clusterAutoscaler ClusterAutoscaler,
-	encryptedDisk EncryptedDisk, zapLogger *zap.Logger, openTPM vtpm.TPMOpenFunc, persistentStoreFactory PersistentStoreFactory, fileHandler file.Handler,
+	encryptedDisk EncryptedDisk, zapLogger *zap.Logger, openTPM vtpm.TPMOpenFunc, persistentStoreFactory PersistentStoreFactory, fileHandler file.Handler, linuxUserManager user.LinuxUserManager,
 ) (*Core, error) {
 	stor := store.NewStdStore()
 	c := &Core{
@@ -68,6 +70,7 @@ func NewCore(vpn VPN, kube Cluster,
 		initialVPNPeersRetriever: getInitialVPNPeers,
 		lastHeartbeats:           make(map[string]time.Time),
 		fileHandler:              fileHandler,
+		linuxUserManager:         linuxUserManager,
 	}
 	if err := c.data().IncrementPeersResourceVersion(); err != nil {
 		return nil, err

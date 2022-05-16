@@ -14,16 +14,18 @@ import (
 	"github.com/edgelesssys/constellation/cli/azure"
 	"github.com/edgelesssys/constellation/cli/cloud/cloudcmd"
 	"github.com/edgelesssys/constellation/cli/cloudprovider"
-	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/cli/gcp"
 	"github.com/edgelesssys/constellation/cli/proto"
 	"github.com/edgelesssys/constellation/cli/status"
 	"github.com/edgelesssys/constellation/cli/vpn"
 	"github.com/edgelesssys/constellation/coordinator/atls"
+	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	coordinatorstate "github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/util"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/deploy/ssh"
+	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/state"
 	"github.com/kr/text"
 	wgquick "github.com/nmiculinic/wg-quick-go"
@@ -78,6 +80,8 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		return err
 	}
 
+	protoSSHUserKeys := ssh.ToProtoSlice(config.SSHUsers)
+
 	var stat state.ConstellationState
 	err = fileHandler.ReadJSON(constants.StateFilename, &stat)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -129,6 +133,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		coordinatorPrivIPs:     coordinators.PrivateIPs()[1:],
 		autoscalingNodeGroups:  autoscalingNodeGroups,
 		cloudServiceAccountURI: serviceAccount,
+		sshUserKeys:            protoSSHUserKeys,
 	}
 	result, err := activate(ctx, cmd, protCl, input, validators.V())
 	if err != nil {
@@ -166,7 +171,7 @@ func activate(ctx context.Context, cmd *cobra.Command, client protoClient, input
 		return activationResult{}, err
 	}
 
-	respCl, err := client.Activate(ctx, input.pubKey, input.masterSecret, input.nodePrivIPs, input.coordinatorPrivIPs, input.autoscalingNodeGroups, input.cloudServiceAccountURI)
+	respCl, err := client.Activate(ctx, input.pubKey, input.masterSecret, input.nodePrivIPs, input.coordinatorPrivIPs, input.autoscalingNodeGroups, input.cloudServiceAccountURI, input.sshUserKeys)
 	if err != nil {
 		return activationResult{}, err
 	}
@@ -216,6 +221,7 @@ type activationInput struct {
 	coordinatorPrivIPs     []string
 	autoscalingNodeGroups  []string
 	cloudServiceAccountURI string
+	sshUserKeys            []*pubproto.SSHUserKey
 }
 
 type activationResult struct {

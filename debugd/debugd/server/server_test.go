@@ -12,7 +12,7 @@ import (
 	"github.com/edgelesssys/constellation/debugd/coordinator"
 	"github.com/edgelesssys/constellation/debugd/debugd/deploy"
 	pb "github.com/edgelesssys/constellation/debugd/service"
-	"github.com/edgelesssys/constellation/debugd/ssh"
+	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -28,7 +28,7 @@ func TestUploadAuthorizedKeys(t *testing.T) {
 		request            *pb.UploadAuthorizedKeysRequest
 		wantErr            bool
 		wantResponseStatus pb.UploadAuthorizedKeysStatus
-		wantKeys           []ssh.SSHKey
+		wantKeys           []ssh.UserKey
 	}{
 		"upload authorized keys works": {
 			request: &pb.UploadAuthorizedKeysRequest{
@@ -40,10 +40,10 @@ func TestUploadAuthorizedKeys(t *testing.T) {
 				},
 			},
 			wantResponseStatus: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_SUCCESS,
-			wantKeys: []ssh.SSHKey{
+			wantKeys: []ssh.UserKey{
 				{
-					Username: "testuser",
-					KeyValue: "teskey",
+					Username:  "testuser",
+					PublicKey: "teskey",
 				},
 			},
 		},
@@ -58,10 +58,10 @@ func TestUploadAuthorizedKeys(t *testing.T) {
 			},
 			ssh:                stubSSHDeployer{deployErr: errors.New("ssh key deployment error")},
 			wantResponseStatus: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_FAILURE,
-			wantKeys: []ssh.SSHKey{
+			wantKeys: []ssh.UserKey{
 				{
-					Username: "testuser",
-					KeyValue: "teskey",
+					Username:  "testuser",
+					PublicKey: "teskey",
 				},
 			},
 		},
@@ -323,12 +323,12 @@ func TestUploadSystemServiceUnits(t *testing.T) {
 }
 
 type stubSSHDeployer struct {
-	sshKeys []ssh.SSHKey
+	sshKeys []ssh.UserKey
 
 	deployErr error
 }
 
-func (s *stubSSHDeployer) DeploySSHAuthorizedKey(ctx context.Context, sshKey ssh.SSHKey) error {
+func (s *stubSSHDeployer) DeploySSHAuthorizedKey(ctx context.Context, sshKey ssh.UserKey) error {
 	s.sshKeys = append(s.sshKeys, sshKey)
 
 	return s.deployErr

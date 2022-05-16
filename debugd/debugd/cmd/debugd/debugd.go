@@ -13,6 +13,8 @@ import (
 	"github.com/edgelesssys/constellation/debugd/debugd/metadata/cloudprovider"
 	"github.com/edgelesssys/constellation/debugd/debugd/metadata/fallback"
 	"github.com/edgelesssys/constellation/debugd/debugd/server"
+	"github.com/edgelesssys/constellation/internal/deploy/ssh"
+	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/spf13/afero"
 	"golang.org/x/net/context"
 )
@@ -20,9 +22,10 @@ import (
 func main() {
 	wg := &sync.WaitGroup{}
 
-	streamer := coordinator.NewFileStreamer(afero.NewOsFs())
+	fs := afero.NewOsFs()
+	streamer := coordinator.NewFileStreamer(fs)
 	serviceManager := deploy.NewServiceManager()
-	ssh := deploy.NewSSHAccess(afero.NewOsFs())
+	ssh := ssh.NewSSHAccess(user.NewLinuxUserManager(fs))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

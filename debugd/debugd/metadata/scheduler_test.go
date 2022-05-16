@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/debugd/ssh"
+	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,23 +17,23 @@ func TestSchedulerStart(t *testing.T) {
 		ssh                 stubSSHDeployer
 		downloader          stubDownloader
 		timeout             time.Duration
-		wantSSHKeys         []ssh.SSHKey
+		wantSSHKeys         []ssh.UserKey
 		wantDebugdDownloads []string
 	}{
 		"scheduler works and calls fetcher functions at least once": {},
 		"ssh keys are fetched": {
 			fetcher: stubFetcher{
-				keys: []ssh.SSHKey{
+				keys: []ssh.UserKey{
 					{
-						Username: "test",
-						KeyValue: "testkey",
+						Username:  "test",
+						PublicKey: "testkey",
 					},
 				},
 			},
-			wantSSHKeys: []ssh.SSHKey{
+			wantSSHKeys: []ssh.UserKey{
 				{
-					Username: "test",
-					KeyValue: "testkey",
+					Username:  "test",
+					PublicKey: "testkey",
 				},
 			},
 		},
@@ -95,7 +95,7 @@ type stubFetcher struct {
 	fetchSSHKeysCalls int
 
 	ips             []string
-	keys            []ssh.SSHKey
+	keys            []ssh.UserKey
 	discoverErr     error
 	fetchSSHKeysErr error
 }
@@ -105,18 +105,18 @@ func (s *stubFetcher) DiscoverDebugdIPs(ctx context.Context) ([]string, error) {
 	return s.ips, s.discoverErr
 }
 
-func (s *stubFetcher) FetchSSHKeys(ctx context.Context) ([]ssh.SSHKey, error) {
+func (s *stubFetcher) FetchSSHKeys(ctx context.Context) ([]ssh.UserKey, error) {
 	s.fetchSSHKeysCalls++
 	return s.keys, s.fetchSSHKeysErr
 }
 
 type stubSSHDeployer struct {
-	sshKeys []ssh.SSHKey
+	sshKeys []ssh.UserKey
 
 	deployErr error
 }
 
-func (s *stubSSHDeployer) DeploySSHAuthorizedKey(ctx context.Context, sshKey ssh.SSHKey) error {
+func (s *stubSSHDeployer) DeploySSHAuthorizedKey(ctx context.Context, sshKey ssh.UserKey) error {
 	s.sshKeys = append(s.sshKeys, sshKey)
 
 	return s.deployErr

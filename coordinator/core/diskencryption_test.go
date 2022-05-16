@@ -4,7 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/cli/file"
+	"github.com/edgelesssys/constellation/internal/deploy/user"
+	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -43,7 +44,8 @@ func TestGetDiskUUID(t *testing.T) {
 				uuidErr: tc.uuidErr,
 				uuid:    tc.wantUUID,
 			}
-			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, &diskStub, zapLogger, nil, nil, file.NewHandler(afero.NewMemMapFs()))
+			fs := afero.NewMemMapFs()
+			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, &diskStub, zapLogger, nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 			uuid, err := core.GetDiskUUID()
 			if tc.wantErr {
@@ -85,7 +87,8 @@ func TestUpdateDiskPassphrase(t *testing.T) {
 				openErr:             tc.openErr,
 				updatePassphraseErr: tc.updatePassphraseErr,
 			}
-			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, &diskStub, zapLogger, nil, nil, file.NewHandler(afero.NewMemMapFs()))
+			fs := afero.NewMemMapFs()
+			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, &diskStub, zapLogger, nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 			err = core.UpdateDiskPassphrase("passphrase")
 			if tc.wantErr {

@@ -163,7 +163,7 @@ func TestActivate(t *testing.T) {
 			if tc.pubAPIClient != nil {
 				client.pubapi = tc.pubAPIClient
 			}
-			_, err := client.Activate(context.Background(), []byte(tc.userPublicKey), []byte("Constellation"), tc.ips, nil, nil, "serviceaccount://test")
+			_, err := client.Activate(context.Background(), []byte(tc.userPublicKey), []byte("Constellation"), tc.ips, nil, nil, "serviceaccount://test", nil)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

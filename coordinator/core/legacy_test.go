@@ -9,7 +9,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/attestation/simulator"
 	"github.com/edgelesssys/constellation/coordinator/pubapi"
@@ -18,6 +17,8 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
+	"github.com/edgelesssys/constellation/internal/deploy/user"
+	"github.com/edgelesssys/constellation/internal/file"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -131,7 +132,8 @@ func newMockCoreWithDialer(bufDialer *bufconnDialer) (*Core, *pubapi.API, error)
 	getPublicAddr := func() (string, error) {
 		return "192.0.2.1", nil
 	}
-	core, err := NewCore(vpn, kubeFake, metadataFake, ccmFake, cnmFake, autoscalerFake, encryptedDiskFake, zapLogger, simulator.OpenSimulatedTPM, &fakeStoreFactory{}, file.NewHandler(afero.NewMemMapFs()))
+	fs := afero.NewMemMapFs()
+	core, err := NewCore(vpn, kubeFake, metadataFake, ccmFake, cnmFake, autoscalerFake, encryptedDiskFake, zapLogger, simulator.OpenSimulatedTPM, &fakeStoreFactory{}, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 	if err != nil {
 		return nil, nil, err
 	}

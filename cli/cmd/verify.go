@@ -7,10 +7,10 @@ import (
 
 	"github.com/edgelesssys/constellation/cli/cloud/cloudcmd"
 	"github.com/edgelesssys/constellation/cli/cloudprovider"
-	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/cli/proto"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	rpcStatus "google.golang.org/grpc/status"

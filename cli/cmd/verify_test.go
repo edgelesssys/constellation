@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/cli/cloudprovider"
-	"github.com/edgelesssys/constellation/cli/file"
+	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"

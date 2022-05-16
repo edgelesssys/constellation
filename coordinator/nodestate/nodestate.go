@@ -3,8 +3,8 @@ package nodestate
 import (
 	"fmt"
 
-	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/coordinator/role"
+	"github.com/edgelesssys/constellation/internal/file"
 )
 
 const nodeStatePath = "/run/state/constellation/node_state.json"

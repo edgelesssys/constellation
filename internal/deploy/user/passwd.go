@@ -1,4 +1,4 @@
-package passwd
+package user
 
 import (
 	"github.com/spf13/afero"

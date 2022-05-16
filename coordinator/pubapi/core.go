@@ -6,6 +6,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
+	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
@@ -35,6 +36,8 @@ type Core interface {
 	AddPeerToStore(peer.Peer) error
 	AddPeerToVPN(peer.Peer) error
 	UpdatePeers([]peer.Peer) error
+
+	CreateSSHUsers([]ssh.UserKey) error
 
 	InitCluster(autoscalingNodeGroups []string, cloudServiceAccountURI string) ([]byte, error)
 	JoinCluster(joinToken *kubeadm.BootstrapTokenDiscovery, certificateKey string, role role.Role) error

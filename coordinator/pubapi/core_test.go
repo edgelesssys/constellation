@@ -8,6 +8,8 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
+	"github.com/edgelesssys/constellation/internal/deploy/ssh"
+	"github.com/edgelesssys/constellation/internal/deploy/user"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
@@ -36,6 +38,7 @@ type fakeCore struct {
 	kekID                      string
 	dataKey                    []byte
 	getDataKeyErr              error
+	linuxUserManager           user.LinuxUserManager
 }
 
 func (c *fakeCore) GetVPNPubKey() ([]byte, error) {
@@ -152,5 +155,18 @@ func (c *fakeCore) GetDiskUUID() (string, error) {
 }
 
 func (c *fakeCore) UpdateDiskPassphrase(passphrase string) error {
+	return nil
+}
+
+func (c *fakeCore) CreateSSHUsers(sshUserKeys []ssh.UserKey) error {
+	sshAccess := ssh.NewSSHAccess(c.linuxUserManager)
+	ctx := context.Background()
+
+	for _, pair := range sshUserKeys {
+		if err := sshAccess.DeploySSHAuthorizedKey(ctx, pair); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

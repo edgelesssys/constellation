@@ -73,7 +73,7 @@ func (c *Client) GetState(ctx context.Context) (state.State, error) {
 // Activate activates the Constellation coordinator via a grpc call.
 // The handed IP addresses must be the private IP addresses of running AWS or GCP instances,
 // and the userPublicKey is the VPN key of the users WireGuard interface.
-func (c *Client) Activate(ctx context.Context, userPublicKey, masterSecret []byte, nodeIPs, coordinatorIPs, autoscalingNodeGroups []string, cloudServiceAccountURI string) (ActivationResponseClient, error) {
+func (c *Client) Activate(ctx context.Context, userPublicKey, masterSecret []byte, nodeIPs, coordinatorIPs, autoscalingNodeGroups []string, cloudServiceAccountURI string, sshUserKeys []*pubproto.SSHUserKey) (ActivationResponseClient, error) {
 	if c.pubapi == nil {
 		return nil, errors.New("client is not connected")
 	}
@@ -100,6 +100,7 @@ func (c *Client) Activate(ctx context.Context, userPublicKey, masterSecret []byt
 		KeyEncryptionKeyId:     "",
 		UseExistingKek:         false,
 		CloudServiceAccountUri: cloudServiceAccountURI,
+		SshUserKeys:            sshUserKeys,
 	}
 
 	client, err := c.pubapi.ActivateAsCoordinator(ctx, req)

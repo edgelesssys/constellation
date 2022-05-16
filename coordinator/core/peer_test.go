@@ -4,8 +4,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/coordinator/peer"
+	"github.com/edgelesssys/constellation/internal/deploy/user"
+	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,7 +54,8 @@ func TestGetPeers(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(afero.NewMemMapFs()))
+			fs := afero.NewMemMapFs()
+			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 
 			// prepare store
@@ -113,7 +115,8 @@ func TestAddPeer(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			core, err := NewCore(&tc.vpn, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(afero.NewMemMapFs()))
+			fs := afero.NewMemMapFs()
+			core, err := NewCore(&tc.vpn, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 
 			err = core.AddPeer(tc.peer)

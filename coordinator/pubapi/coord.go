@@ -12,6 +12,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
+	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -86,6 +87,15 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 	}
 	if err := a.core.AddPeer(coordPeer); err != nil {
 		return status.Errorf(codes.Internal, "adding the coordinator to store/vpn: %v", err)
+	}
+
+	// Setup SSH users for the first coordinator, if defined
+	if len(in.SshUserKeys) != 0 {
+		logToCLI("Creating SSH users on first control-plane node...")
+		sshUserKeys := ssh.FromProtoSlice(in.SshUserKeys)
+		if err := a.core.CreateSSHUsers(sshUserKeys); err != nil {
+			return status.Errorf(codes.Internal, "creating SSH users: %v", err)
+		}
 	}
 
 	logToCLI("Initializing Kubernetes ...")

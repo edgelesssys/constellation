@@ -8,6 +8,7 @@ import (
 
 	"github.com/edgelesssys/constellation/cli/proto"
 	"github.com/edgelesssys/constellation/coordinator/atls"
+	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/state"
 )
 
@@ -26,6 +27,7 @@ type stubProtoClient struct {
 	activateCoordinatorIPs        []string
 	activateAutoscalingNodeGroups []string
 	cloudServiceAccountURI        string
+	sshUserKeys                   []*pubproto.SSHUserKey
 }
 
 func (c *stubProtoClient) Connect(_ string, _ []atls.Validator) error {
@@ -42,13 +44,14 @@ func (c *stubProtoClient) GetState(_ context.Context) (state.State, error) {
 	return c.getStateState, c.getStateErr
 }
 
-func (c *stubProtoClient) Activate(ctx context.Context, userPublicKey, masterSecret []byte, nodeIPs, coordinatorIPs []string, autoscalingNodeGroups []string, cloudServiceAccountURI string) (proto.ActivationResponseClient, error) {
+func (c *stubProtoClient) Activate(ctx context.Context, userPublicKey, masterSecret []byte, nodeIPs, coordinatorIPs []string, autoscalingNodeGroups []string, cloudServiceAccountURI string, sshUserKeys []*pubproto.SSHUserKey) (proto.ActivationResponseClient, error) {
 	c.activateUserPublicKey = userPublicKey
 	c.activateMasterSecret = masterSecret
 	c.activateNodeIPs = nodeIPs
 	c.activateCoordinatorIPs = coordinatorIPs
 	c.activateAutoscalingNodeGroups = autoscalingNodeGroups
 	c.cloudServiceAccountURI = cloudServiceAccountURI
+	c.sshUserKeys = sshUserKeys
 
 	return c.respClient, c.activateErr
 }
@@ -126,7 +129,7 @@ func (c *fakeProtoClient) GetState(_ context.Context) (state.State, error) {
 	return state.IsNode, nil
 }
 
-func (c *fakeProtoClient) Activate(ctx context.Context, userPublicKey, masterSecret []byte, nodeIPs, coordinatorIPs, autoscalingNodeGroups []string, cloudServiceAccountURI string) (proto.ActivationResponseClient, error) {
+func (c *fakeProtoClient) Activate(ctx context.Context, userPublicKey, masterSecret []byte, nodeIPs, coordinatorIPs, autoscalingNodeGroups []string, cloudServiceAccountURI string, sshUserKeys []*pubproto.SSHUserKey) (proto.ActivationResponseClient, error) {
 	if !c.conn {
 		return nil, errors.New("client is not connected")
 	}

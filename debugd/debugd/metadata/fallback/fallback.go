@@ -3,7 +3,7 @@ package fallback
 import (
 	"context"
 
-	"github.com/edgelesssys/constellation/debugd/ssh"
+	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 )
 
 // Fetcher implements metadata.Fetcher interface but does not actually fetch cloud provider metadata.
@@ -14,7 +14,7 @@ func (f Fetcher) DiscoverDebugdIPs(ctx context.Context) ([]string, error) {
 	return nil, nil
 }
 
-func (f Fetcher) FetchSSHKeys(ctx context.Context) ([]ssh.SSHKey, error) {
+func (f Fetcher) FetchSSHKeys(ctx context.Context) ([]ssh.UserKey, error) {
 	// Fallback fetcher does not try to fetch ssh keys
 	return nil, nil
 }

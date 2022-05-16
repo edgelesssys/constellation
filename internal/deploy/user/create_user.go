@@ -1,4 +1,4 @@
-package createuser
+package user
 
 import (
 	"context"

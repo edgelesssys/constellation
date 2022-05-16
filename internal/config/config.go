@@ -9,10 +9,11 @@ import (
 	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/cli/ec2"
 	awsClient "github.com/edgelesssys/constellation/cli/ec2/client"
-	"github.com/edgelesssys/constellation/cli/file"
 	gcpClient "github.com/edgelesssys/constellation/cli/gcp/client"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/deploy/ssh"
+	"github.com/edgelesssys/constellation/internal/file"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -46,6 +47,7 @@ type Config struct {
 	AutoscalingNodeGroupsMax *int            `yaml:"autoscalingNodeGroupsMax,omitempty"`
 	StateDiskSizeGB          *int            `yaml:"StateDisksizeGB,omitempty"`
 	Provider                 *ProviderConfig `yaml:"provider,omitempty"`
+	SSHUsers                 []*ssh.UserKey  `yaml:"sshUsers,omitempty"`
 }
 
 // Default returns a struct with the default config.

@@ -1,11 +1,10 @@
-package deploy
+package user
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/debugd/debugd/deploy/passwd"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,13 +14,11 @@ func TestGetLinuxUser(t *testing.T) {
 	username := "user"
 
 	testCases := map[string]struct {
-		userCreator    *stubUserCreator
 		passwdContents string
 		wantErr        bool
 		wantUser       LinuxUser
 	}{
 		"get works": {
-			userCreator:    &stubUserCreator{},
 			passwdContents: "user:x:1000:1000:user:/home/user:/bin/bash\n",
 			wantErr:        false,
 			wantUser: LinuxUser{
@@ -32,22 +29,18 @@ func TestGetLinuxUser(t *testing.T) {
 			},
 		},
 		"user does not exist": {
-			userCreator:    &stubUserCreator{},
 			passwdContents: "",
 			wantErr:        true,
 		},
 		"parse fails": {
-			userCreator:    &stubUserCreator{},
 			passwdContents: "invalid contents\n",
 			wantErr:        true,
 		},
 		"invalid uid": {
-			userCreator:    &stubUserCreator{},
 			passwdContents: "user:x:invalid:1000:user:/home/user:/bin/bash\n",
 			wantErr:        true,
 		},
 		"invalid gid": {
-			userCreator:    &stubUserCreator{},
 			passwdContents: "user:x:1000:invalid:user:/home/user:/bin/bash\n",
 			wantErr:        true,
 		},
@@ -60,11 +53,7 @@ func TestGetLinuxUser(t *testing.T) {
 
 			fs := afero.NewMemMapFs()
 			assert.NoError(afero.WriteFile(fs, "/etc/passwd", []byte(tc.passwdContents), 0o755))
-			manager := LinuxUserManager{
-				fs:      fs,
-				passwd:  passwd.Passwd{},
-				creator: tc.userCreator,
-			}
+			manager := NewLinuxUserManagerFake(fs)
 			user, err := manager.getLinuxUser(username)
 
 			if tc.wantErr {
@@ -81,15 +70,13 @@ func TestEnsureLinuxUserExists(t *testing.T) {
 	username := "user"
 
 	testCases := map[string]struct {
-		userCreator    *stubUserCreator
-		passwdContents string
-		wantErr        bool
-		wantUser       LinuxUser
+		userCreator *StubUserCreator
+		wantErr     bool
+		wantUser    LinuxUser
 	}{
 		"create works": {
-			userCreator:    &stubUserCreator{},
-			passwdContents: "user:x:1000:1000:user:/home/user:/bin/bash\n",
-			wantErr:        false,
+			userCreator: &StubUserCreator{},
+			wantErr:     false,
 			wantUser: LinuxUser{
 				Username: "user",
 				Home:     "/home/user",
@@ -98,11 +85,10 @@ func TestEnsureLinuxUserExists(t *testing.T) {
 			},
 		},
 		"create fails": {
-			userCreator: &stubUserCreator{
+			userCreator: &StubUserCreator{
 				createUserErr: errors.New("create fails"),
 			},
-			passwdContents: "user:x:1000:1000:user:/home/user:/bin/bash\n",
-			wantErr:        true,
+			wantErr: true,
 		},
 	}
 
@@ -112,12 +98,9 @@ func TestEnsureLinuxUserExists(t *testing.T) {
 			require := require.New(t)
 
 			fs := afero.NewMemMapFs()
-			assert.NoError(afero.WriteFile(fs, "/etc/passwd", []byte(tc.passwdContents), 0o755))
-			manager := LinuxUserManager{
-				fs:      fs,
-				passwd:  passwd.Passwd{},
-				creator: tc.userCreator,
-			}
+			manager := NewLinuxUserManagerFake(fs)
+			tc.userCreator.fs = fs
+			manager.Creator = tc.userCreator
 			user, err := manager.EnsureLinuxUserExists(context.Background(), username)
 
 			if tc.wantErr {
@@ -131,12 +114,10 @@ func TestEnsureLinuxUserExists(t *testing.T) {
 	}
 }
 
-type stubUserCreator struct {
-	usernames     []string
-	createUserErr error
-}
+func TestStringInSlice(t *testing.T) {
+	assert := assert.New(t)
+	testSlice := []string{"abc", "efg", "xyz"}
 
-func (s *stubUserCreator) CreateUser(ctx context.Context, username string) error {
-	s.usernames = append(s.usernames, username)
-	return s.createUserErr
+	assert.True(stringInSlice("efg", testSlice))
+	assert.False(stringInSlice("hij", testSlice))
 }

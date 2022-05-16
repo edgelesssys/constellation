@@ -6,11 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/coordinator/attestation/simulator"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/coordinator/role"
+	"github.com/edgelesssys/constellation/internal/deploy/user"
+	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -171,7 +172,8 @@ func TestInitCluster(t *testing.T) {
 
 			zapLogger, err := zap.NewDevelopment()
 			require.NoError(err)
-			core, err := NewCore(&stubVPN{}, &tc.cluster, &tc.metadata, &tc.cloudControllerManager, &tc.cloudNodeManager, &tc.clusterAutoscaler, nil, zapLogger, simulator.OpenSimulatedTPM, nil, file.NewHandler(afero.NewMemMapFs()))
+			fs := afero.NewMemMapFs()
+			core, err := NewCore(&stubVPN{}, &tc.cluster, &tc.metadata, &tc.cloudControllerManager, &tc.cloudNodeManager, &tc.clusterAutoscaler, nil, zapLogger, simulator.OpenSimulatedTPM, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 
 			kubeconfig, err := core.InitCluster(tc.autoscalingNodeGroups, "cloud-service-account-uri")
@@ -286,7 +288,8 @@ func TestJoinCluster(t *testing.T) {
 
 			zapLogger, err := zap.NewDevelopment()
 			require.NoError(err)
-			core, err := NewCore(&tc.vpn, &tc.cluster, &tc.metadata, &tc.cloudControllerManager, &tc.cloudNodeManager, &tc.clusterAutoscaler, nil, zapLogger, simulator.OpenSimulatedTPM, nil, file.NewHandler(afero.NewMemMapFs()))
+			fs := afero.NewMemMapFs()
+			core, err := NewCore(&tc.vpn, &tc.cluster, &tc.metadata, &tc.cloudControllerManager, &tc.cloudNodeManager, &tc.clusterAutoscaler, nil, zapLogger, simulator.OpenSimulatedTPM, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 
 			joinReq := &kubeadm.BootstrapTokenDiscovery{

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -19,8 +20,11 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
 	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
+	"github.com/edgelesssys/constellation/internal/deploy/ssh"
+	"github.com/edgelesssys/constellation/internal/deploy/user"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
@@ -40,6 +44,14 @@ func TestActivateAsCoordinator(t *testing.T) {
 	wantNode3 := peer.Peer{PublicIP: "192.0.2.13", VPNIP: "10.118.0.13", VPNPubKey: []byte{3, 4, 5}, Role: role.Node}
 	wantCoord := peer.Peer{PublicIP: "192.0.2.1", VPNIP: "10.118.0.1", VPNPubKey: coordinatorPubKey, Role: role.Coordinator}
 	adminPeer := peer.Peer{VPNPubKey: []byte{7, 8, 9}, Role: role.Admin}
+	sshUser1 := &ssh.UserKey{
+		Username:  "test-user-1",
+		PublicKey: "ssh-rsa abcdefg",
+	}
+	sshUser2 := &ssh.UserKey{
+		Username:  "test-user-2",
+		PublicKey: "ssh-ed25519 hijklmn",
+	}
 
 	testCases := map[string]struct {
 		nodes                      []*stubPeer
@@ -49,6 +61,7 @@ func TestActivateAsCoordinator(t *testing.T) {
 		wantPeers                  []peer.Peer
 		wantState                  state.State
 		adminVPNIP                 string
+		sshKeys                    []*ssh.UserKey
 	}{
 		"0 nodes": {
 			state:      state.AcceptingInit,
@@ -76,6 +89,13 @@ func TestActivateAsCoordinator(t *testing.T) {
 			wantPeers:  []peer.Peer{wantCoord, wantNode1, wantNode2, wantNode3},
 			wantState:  state.ActivatingNodes,
 			adminVPNIP: "10.118.0.14",
+		},
+		"coordinator with SSH users": {
+			state:      state.AcceptingInit,
+			wantPeers:  []peer.Peer{wantCoord},
+			wantState:  state.ActivatingNodes,
+			adminVPNIP: "10.118.0.11",
+			sshKeys:    []*ssh.UserKey{sshUser1, sshUser2},
 		},
 		"already activated": {
 			nodes:     []*stubPeer{testNode1},
@@ -117,7 +137,7 @@ func TestActivateAsCoordinator(t *testing.T) {
 
 			autoscalingNodeGroups := []string{"ang1", "ang2"}
 			keyEncryptionKeyID := "constellation"
-
+			fs := afero.NewMemMapFs()
 			core := &fakeCore{
 				state:                      tc.state,
 				vpnPubKey:                  coordinatorPubKey,
@@ -125,7 +145,9 @@ func TestActivateAsCoordinator(t *testing.T) {
 				kubeconfig:                 []byte("kubeconfig"),
 				ownerID:                    []byte("ownerID"),
 				clusterID:                  []byte("clusterID"),
+				linuxUserManager:           user.NewLinuxUserManagerFake(fs),
 			}
+
 			netDialer := testdialer.NewBufconnDialer()
 			dialer := grpcutil.NewDialer(fakeValidator{}, netDialer)
 
@@ -162,6 +184,7 @@ func TestActivateAsCoordinator(t *testing.T) {
 				UseExistingKek:        false,
 				KmsUri:                kms.ClusterKMSURI,
 				StorageUri:            kms.NoStoreURI,
+				SshUserKeys:           ssh.ToProtoSlice(tc.sshKeys),
 			}, stream)
 
 			assert.Equal(tc.wantState, core.state)
@@ -194,6 +217,25 @@ func TestActivateAsCoordinator(t *testing.T) {
 			assert.Equal(autoscalingNodeGroups, core.autoscalingNodeGroups)
 			assert.Equal(keyEncryptionKeyID, core.kekID)
 			assert.Equal([]role.Role{role.Coordinator}, core.persistNodeStateRoles)
+
+			// Test SSH user & key creation. Both cases: "supposed to add" and "not supposed to add"
+			// This slightly differs from a real environment (e.g. missing /home) but should be fine in the stub context with a virtual file system
+			if tc.sshKeys != nil {
+				passwd := user.Passwd{}
+				entries, err := passwd.Parse(fs)
+				require.NoError(err)
+				for _, singleEntry := range entries {
+					username := singleEntry.Gecos
+					_, err := fs.Stat(fmt.Sprintf("/home/%s/.ssh/authorized_keys.d/ssh-keys", username))
+					assert.NoError(err)
+				}
+			} else {
+				passwd := user.Passwd{}
+				_, err := passwd.Parse(fs)
+				assert.EqualError(err, "open /etc/passwd: file does not exist")
+				_, err = fs.Stat("/home")
+				assert.EqualError(err, "open /home: file does not exist")
+			}
 		})
 	}
 }

@@ -37,6 +37,7 @@ message ActivateAsCoordinatorRequest {
   string key_encryption_key_id = 8;
   bool use_existing_kek = 9;
   string cloud_service_account_uri = 10;
+  repeated SSHUserKey ssh_user_keys = 11;
 }
 
 message ActivateAsCoordinatorResponse {
@@ -151,4 +152,9 @@ message Peer {
   string vpn_ip = 2;
   bytes vpn_pub_key = 3;
   uint32 role = 4;
+}
+
+message SSHUserKey {
+  string username = 1;
+  string public_key = 2;
 }

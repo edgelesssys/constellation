@@ -8,16 +8,16 @@ import (
 	"log"
 	"net"
 
-	"github.com/edgelesssys/constellation/cli/file"
 	"github.com/edgelesssys/constellation/debugd/cdbg/config"
 	"github.com/edgelesssys/constellation/debugd/cdbg/state"
 	"github.com/edgelesssys/constellation/debugd/coordinator"
 	"github.com/edgelesssys/constellation/debugd/debugd"
 	depl "github.com/edgelesssys/constellation/debugd/debugd/deploy"
 	pb "github.com/edgelesssys/constellation/debugd/service"
-	"github.com/edgelesssys/constellation/debugd/ssh"
 	configc "github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/deploy/ssh"
+	"github.com/edgelesssys/constellation/internal/file"
 	statec "github.com/edgelesssys/constellation/internal/state"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -105,7 +105,7 @@ type deployOnEndpointInput struct {
 	debugdEndpoint  string
 	coordinatorPath string
 	reader          fileToStreamReader
-	authorizedKeys  []ssh.SSHKey
+	authorizedKeys  []ssh.UserKey
 	systemdUnits    []depl.SystemdUnit
 }
 
@@ -126,7 +126,7 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	for _, key := range in.authorizedKeys {
 		pbKeys = append(pbKeys, &pb.AuthorizedKey{
 			Username: key.Username,
-			KeyValue: key.KeyValue,
+			KeyValue: key.PublicKey,
 		})
 	}
 	authorizedKeysResponse, err := client.UploadAuthorizedKeys(ctx, &pb.UploadAuthorizedKeysRequest{Keys: pbKeys}, grpc.WaitForReady(true))

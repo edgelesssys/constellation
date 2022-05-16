@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/debugd/debugd"
-	"github.com/edgelesssys/constellation/debugd/ssh"
+	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 )
 
 // Fetcher retrieves other debugd IPs and SSH keys from cloud provider metadata.
 type Fetcher interface {
 	DiscoverDebugdIPs(ctx context.Context) ([]string, error)
-	FetchSSHKeys(ctx context.Context) ([]ssh.SSHKey, error)
+	FetchSSHKeys(ctx context.Context) ([]ssh.UserKey, error)
 }
 
 // Scheduler schedules fetching of metadata using timers.
@@ -122,7 +122,7 @@ func (s *Scheduler) downloadCoordinator(ctx context.Context, ips []string) (succ
 }
 
 // deploySSHKeys tries to deploy a list of SSH keys and logs errors encountered.
-func (s *Scheduler) deploySSHKeys(ctx context.Context, keys []ssh.SSHKey) {
+func (s *Scheduler) deploySSHKeys(ctx context.Context, keys []ssh.UserKey) {
 	for _, key := range keys {
 		err := s.ssh.DeploySSHAuthorizedKey(ctx, key)
 		if err != nil {
@@ -137,5 +137,5 @@ type downloader interface {
 }
 
 type sshDeployer interface {
-	DeploySSHAuthorizedKey(ctx context.Context, sshKey ssh.SSHKey) error
+	DeploySSHAuthorizedKey(ctx context.Context, sshKey ssh.UserKey) error
 }
