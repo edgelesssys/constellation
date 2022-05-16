@@ -6,20 +6,14 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/edgelesssys/constellation/internal/config"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
 )
 
-type FirewallRule struct {
-	Name        string
-	Description string
-	Protocol    string
-	IPRange     string
-	FromPort    int
-	ToPort      int
-}
+type FirewallRule = config.FirewallRule
 
-type Firewall []FirewallRule
+type Firewall config.Firewall
 
 func (f Firewall) GCP() ([]*computepb.Firewall, error) {
 	var fw []*computepb.Firewall

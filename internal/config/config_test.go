@@ -3,8 +3,6 @@ package config
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
-	"github.com/edgelesssys/constellation/cli/gcp/client"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"
@@ -19,48 +17,57 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestFromFile(t *testing.T) {
-	someProviderConfig := &ProviderConfig{
-		GCP: &GCPConfig{
-			FirewallInput: &client.FirewallInput{
-				Ingress: cloudtypes.Firewall{
-					{
-						Name:        "firstFirewallRule",
-						Description: "firstFirewallRule description",
-						Protocol:    "tcp",
-						FromPort:    4444,
-					},
-					{
-						Name:        "secondFirewallRule",
-						Description: "secondFirewallRule description",
-						Protocol:    "udp",
-						FromPort:    5555,
-					},
-				},
+	testCases := map[string]struct {
+		config     *Config
+		configName string
+		wantResult *Config
+		wantErr    bool
+	}{
+		"default config from default file": {
+			config:     Default(),
+			configName: constants.ConfigFilename,
+			wantResult: Default(),
+		},
+		"default config from different path": {
+			config:     Default(),
+			configName: "other-config.yaml",
+			wantResult: Default(),
+		},
+		"default config when path empty": {
+			config:     nil,
+			configName: "",
+			wantResult: Default(),
+		},
+		"err when path not exist": {
+			config:     nil,
+			configName: "wrong-name.yaml",
+			wantErr:    true,
+		},
+		"custom config from default file": {
+			config: &Config{
+				AutoscalingNodeGroupsMin: 42,
+				AutoscalingNodeGroupsMax: 1337,
+			},
+			configName: constants.ConfigFilename,
+			wantResult: &Config{
+				AutoscalingNodeGroupsMin: 42,
+				AutoscalingNodeGroupsMax: 1337,
 			},
 		},
-	}
-
-	testCases := map[string]struct {
-		from              *Config
-		configName        string
-		wantResultMutator func(c *Config) //  mutates the Default() config to the expected result.
-		wantErr           bool
-	}{
-		"overwrite slices": {
-			from:              &Config{Provider: someProviderConfig},
-			configName:        constants.ConfigFilename,
-			wantResultMutator: func(c *Config) { c.Provider = someProviderConfig },
-		},
-		"default with empty name": {
-			from:              &Config{},
-			configName:        "",
-			wantResultMutator: func(c *Config) {},
-		},
-		"err with wrong name": {
-			from:              &Config{},
-			configName:        "wrongName.json",
-			wantResultMutator: func(c *Config) {},
-			wantErr:           true,
+		"modify default config": {
+			config: func() *Config {
+				conf := Default()
+				conf.Provider.GCP.Region = "eu-north1"
+				conf.Provider.GCP.Zone = "eu-north1-a"
+				return conf
+			}(),
+			configName: constants.ConfigFilename,
+			wantResult: func() *Config {
+				conf := Default()
+				conf.Provider.GCP.Region = "eu-north1"
+				conf.Provider.GCP.Zone = "eu-north1-a"
+				return conf
+			}(),
 		},
 	}
 
@@ -70,7 +77,9 @@ func TestFromFile(t *testing.T) {
 			require := require.New(t)
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
-			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, tc.from, file.OptNone))
+			if tc.config != nil {
+				require.NoError(fileHandler.WriteYAML(tc.configName, tc.config, file.OptNone))
+			}
 
 			result, err := FromFile(fileHandler, tc.configName)
 
@@ -78,14 +87,7 @@ func TestFromFile(t *testing.T) {
 				assert.Error(err)
 			} else {
 				require.NoError(err)
-				wantResult := Default()
-				tc.wantResultMutator(wantResult)
-				assert.EqualValues(wantResult.AutoscalingNodeGroupsMin, result.AutoscalingNodeGroupsMin)
-				assert.EqualValues(wantResult.AutoscalingNodeGroupsMax, result.AutoscalingNodeGroupsMax)
-				require.NotNil(wantResult.Provider)
-				require.NotNil(wantResult.Provider.GCP, result.Provider.GCP)
-				require.NotNil(wantResult.Provider.GCP.FirewallInput, result.Provider.GCP.FirewallInput)
-				assert.Equal(len(wantResult.Provider.GCP.FirewallInput.Ingress), len(result.Provider.GCP.FirewallInput.Ingress))
+				assert.Equal(tc.wantResult, result)
 			}
 		})
 	}

@@ -73,7 +73,7 @@ func (c *ServiceAccountCreator) createServiceAccountGCP(ctx context.Context, cl 
 	}
 
 	input := gcpcl.ServiceAccountInput{
-		Roles: *config.Provider.GCP.ServiceAccountRoles,
+		Roles: config.Provider.GCP.ServiceAccountRoles,
 	}
 	serviceAccount, err := cl.CreateServiceAccount(ctx, input)
 	if err != nil {

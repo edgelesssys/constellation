@@ -6,6 +6,7 @@ import (
 	"io"
 
 	azurecl "github.com/edgelesssys/constellation/cli/azure/client"
+	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/cli/cloudprovider"
 	"github.com/edgelesssys/constellation/cli/gcp"
 	"github.com/edgelesssys/constellation/cli/gcp/client"
@@ -41,9 +42,9 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 	case cloudprovider.GCP:
 		cl, err := c.newGCPClient(
 			ctx,
-			*config.Provider.GCP.Project,
-			*config.Provider.GCP.Zone,
-			*config.Provider.GCP.Region,
+			config.Provider.GCP.Project,
+			config.Provider.GCP.Zone,
+			config.Provider.GCP.Region,
 			name,
 		)
 		if err != nil {
@@ -53,10 +54,10 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 		return c.createGCP(ctx, cl, config, insType, coordCount, nodeCount)
 	case cloudprovider.Azure:
 		cl, err := c.newAzureClient(
-			*config.Provider.Azure.SubscriptionID,
-			*config.Provider.Azure.TenantID,
+			config.Provider.Azure.SubscriptionID,
+			config.Provider.Azure.TenantID,
 			name,
-			*config.Provider.Azure.Location,
+			config.Provider.Azure.Location,
 		)
 		if err != nil {
 			return state.ConstellationState{}, err
@@ -71,19 +72,22 @@ func (c *Creator) createGCP(ctx context.Context, cl gcpclient, config *config.Co
 ) (stat state.ConstellationState, retErr error) {
 	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerGCP{client: cl})
 
-	if err := cl.CreateVPCs(ctx, *config.Provider.GCP.VPCsInput); err != nil {
+	if err := cl.CreateVPCs(ctx); err != nil {
 		return state.ConstellationState{}, err
 	}
-	if err := cl.CreateFirewall(ctx, *config.Provider.GCP.FirewallInput); err != nil {
+	if err := cl.CreateFirewall(ctx, gcpcl.FirewallInput{
+		Ingress: cloudtypes.Firewall(config.IngressFirewall),
+		Egress:  cloudtypes.Firewall(config.EgressFirewall),
+	}); err != nil {
 		return state.ConstellationState{}, err
 	}
 
 	createInput := client.CreateInstancesInput{
 		CountCoordinators: coordCount,
 		CountNodes:        nodeCount,
-		ImageId:           *config.Provider.GCP.Image,
+		ImageId:           config.Provider.GCP.Image,
 		InstanceType:      insType,
-		StateDiskSizeGB:   *config.StateDiskSizeGB,
+		StateDiskSizeGB:   config.StateDiskSizeGB,
 		KubeEnv:           gcp.KubeEnv,
 	}
 	if err := cl.CreateInstances(ctx, createInput); err != nil {
@@ -103,16 +107,20 @@ func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *confi
 	if err := cl.CreateVirtualNetwork(ctx); err != nil {
 		return state.ConstellationState{}, err
 	}
-	if err := cl.CreateSecurityGroup(ctx, *config.Provider.Azure.NetworkSecurityGroupInput); err != nil {
+
+	if err := cl.CreateSecurityGroup(ctx, azurecl.NetworkSecurityGroupInput{
+		Ingress: cloudtypes.Firewall(config.IngressFirewall),
+		Egress:  cloudtypes.Firewall(config.EgressFirewall),
+	}); err != nil {
 		return state.ConstellationState{}, err
 	}
 	createInput := azurecl.CreateInstancesInput{
 		CountCoordinators:    coordCount,
 		CountNodes:           nodeCount,
 		InstanceType:         insType,
-		StateDiskSizeGB:      *config.StateDiskSizeGB,
-		Image:                *config.Provider.Azure.Image,
-		UserAssingedIdentity: *config.Provider.Azure.UserAssignedIdentity,
+		StateDiskSizeGB:      config.StateDiskSizeGB,
+		Image:                config.Provider.Azure.Image,
+		UserAssingedIdentity: config.Provider.Azure.UserAssignedIdentity,
 	}
 	if err := cl.CreateInstances(ctx, createInput); err != nil {
 		return state.ConstellationState{}, err

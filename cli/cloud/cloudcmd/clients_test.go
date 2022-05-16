@@ -261,7 +261,7 @@ func (c *fakeGcpClient) SetState(stat state.ConstellationState) error {
 	return nil
 }
 
-func (c *fakeGcpClient) CreateVPCs(ctx context.Context, input gcpcl.VPCsInput) error {
+func (c *fakeGcpClient) CreateVPCs(ctx context.Context) error {
 	c.network = "network"
 	c.subnetwork = "subnetwork"
 	return nil
@@ -377,7 +377,7 @@ func (c *stubGcpClient) SetState(state.ConstellationState) error {
 	return c.setStateErr
 }
 
-func (c *stubGcpClient) CreateVPCs(ctx context.Context, input gcpcl.VPCsInput) error {
+func (c *stubGcpClient) CreateVPCs(ctx context.Context) error {
 	return c.createVPCsErr
 }
 

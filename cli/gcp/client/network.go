@@ -78,14 +78,8 @@ type FirewallInput struct {
 	Egress  cloudtypes.Firewall
 }
 
-// VPCsInput defines the VPC configuration.
-type VPCsInput struct {
-	SubnetCIDR    string
-	SubnetExtCIDR string
-}
-
 // CreateVPCs creates all necessary VPC networks.
-func (c *Client) CreateVPCs(ctx context.Context, input VPCsInput) error {
+func (c *Client) CreateVPCs(ctx context.Context) error {
 	c.network = c.name + "-" + c.uid
 
 	op, err := c.createVPC(ctx, c.network)
@@ -96,7 +90,7 @@ func (c *Client) CreateVPCs(ctx context.Context, input VPCsInput) error {
 		return err
 	}
 
-	if err := c.createSubnets(ctx, input.SubnetCIDR); err != nil {
+	if err := c.createSubnets(ctx); err != nil {
 		return err
 	}
 
@@ -152,11 +146,11 @@ func (c *Client) terminateVPC(ctx context.Context, network string) (Operation, e
 	return c.networksAPI.Delete(ctx, req)
 }
 
-func (c *Client) createSubnets(ctx context.Context, subnetCIDR string) error {
+func (c *Client) createSubnets(ctx context.Context) error {
 	c.subnetwork = "node-net-" + c.uid
 	c.secondarySubnetworkRange = "net-ext" + c.uid
 
-	op, err := c.createSubnet(ctx, c.subnetwork, subnetCIDR, c.network, c.secondarySubnetworkRange)
+	op, err := c.createSubnet(ctx, c.subnetwork, c.network, c.secondarySubnetworkRange)
 	if err != nil {
 		return err
 	}
@@ -164,12 +158,12 @@ func (c *Client) createSubnets(ctx context.Context, subnetCIDR string) error {
 	return c.waitForOperations(ctx, []Operation{op})
 }
 
-func (c *Client) createSubnet(ctx context.Context, name, cidr, network, secondaryRangeName string) (Operation, error) {
+func (c *Client) createSubnet(ctx context.Context, name, network, secondaryRangeName string) (Operation, error) {
 	req := &computepb.InsertSubnetworkRequest{
 		Project: c.project,
 		Region:  c.region,
 		SubnetworkResource: &computepb.Subnetwork{
-			IpCidrRange: proto.String(cidr),
+			IpCidrRange: proto.String("192.168.178.0/24"),
 			Name:        proto.String(name),
 			Network:     proto.String("projects/" + c.project + "/global/networks/" + network),
 			SecondaryIpRanges: []*computepb.SubnetworkSecondaryRange{

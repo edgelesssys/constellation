@@ -13,11 +13,6 @@ import (
 func TestCreateVPCs(t *testing.T) {
 	someErr := errors.New("failed")
 
-	testInput := VPCsInput{
-		SubnetCIDR:    "192.0.2.0/24",
-		SubnetExtCIDR: "198.51.100.0/24",
-	}
-
 	testCases := map[string]struct {
 		operationGlobalAPI operationGlobalAPI
 		operationRegionAPI operationRegionAPI
@@ -80,9 +75,9 @@ func TestCreateVPCs(t *testing.T) {
 			}
 
 			if tc.wantErr {
-				assert.Error(client.CreateVPCs(ctx, testInput))
+				assert.Error(client.CreateVPCs(ctx))
 			} else {
-				assert.NoError(client.CreateVPCs(ctx, testInput))
+				assert.NoError(client.CreateVPCs(ctx))
 				assert.NotNil(client.network)
 			}
 		})

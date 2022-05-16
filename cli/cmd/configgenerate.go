@@ -6,7 +6,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
+	"github.com/talos-systems/talos/pkg/machinery/config/encoder"
 )
 
 func newConfigGenerateCmd() *cobra.Command {
@@ -38,7 +38,12 @@ func configGenerate(cmd *cobra.Command, fileHandler file.Handler) error {
 	}
 
 	if flags.file == "-" {
-		return yaml.NewEncoder(cmd.OutOrStdout()).Encode(config.Default())
+		content, err := encoder.NewEncoder(config.Default()).Encode()
+		if err != nil {
+			return err
+		}
+		_, err = cmd.OutOrStdout().Write(content)
+		return err
 	}
 
 	return fileHandler.WriteYAML(flags.file, config.Default(), 0o644)

@@ -13,12 +13,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func defaultConfigAsYAML(t *testing.T) string {
-	var readBuffer bytes.Buffer
-	require.NoError(t, yaml.NewEncoder(&readBuffer).Encode(config.Default()))
-	return readBuffer.String()
-}
-
 func TestConfigGenerateDefault(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
@@ -28,9 +22,10 @@ func TestConfigGenerateDefault(t *testing.T) {
 
 	require.NoError(configGenerate(cmd, fileHandler))
 
-	readYAML, err := fileHandler.Read(constants.ConfigFilename)
+	var readConfig config.Config
+	err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)
 	assert.NoError(err)
-	assert.Equal(defaultConfigAsYAML(t), string(readYAML))
+	assert.Equal(*config.Default(), readConfig)
 }
 
 func TestConfigGenerateDefaultExists(t *testing.T) {
@@ -66,5 +61,8 @@ func TestConfigGenerateStdOut(t *testing.T) {
 
 	require.NoError(configGenerate(cmd, fileHandler))
 
-	assert.Equal(defaultConfigAsYAML(t), outBuffer.String())
+	var readConfig config.Config
+	require.NoError(yaml.NewDecoder(&outBuffer).Decode(&readConfig))
+
+	assert.Equal(*config.Default(), readConfig)
 }

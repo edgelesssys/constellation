@@ -1,3 +1,6 @@
+//go:generate docgen ./config.go ./config_doc.go Configuration
+// This binary can be build from siderolabs/talos projects. Located at:
+// https://github.com/siderolabs/talos/tree/master/hack/docgen
 package config
 
 import (
@@ -5,267 +8,207 @@ import (
 	"fmt"
 	"io/fs"
 
-	azureClient "github.com/edgelesssys/constellation/cli/azure/client"
-	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
-	"github.com/edgelesssys/constellation/cli/ec2"
-	awsClient "github.com/edgelesssys/constellation/cli/ec2/client"
-	gcpClient "github.com/edgelesssys/constellation/cli/gcp/client"
-	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/file"
-	"google.golang.org/protobuf/proto"
 )
 
-var (
-	// gcpPCRs is a map of the expected PCR values for a GCP Constellation node.
-	// TODO: Get a full list once we have stable releases.
-	gcpPCRs = Measurements{
-		0:                              {0x0F, 0x35, 0xC2, 0x14, 0x60, 0x8D, 0x93, 0xC7, 0xA6, 0xE6, 0x8A, 0xE7, 0x35, 0x9B, 0x4A, 0x8B, 0xE5, 0xA0, 0xE9, 0x9E, 0xEA, 0x91, 0x07, 0xEC, 0xE4, 0x27, 0xC4, 0xDE, 0xA4, 0xE4, 0x39, 0xCF},
-		uint32(vtpm.PCRIndexOwnerID):   {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-		uint32(vtpm.PCRIndexClusterID): {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-	}
-
-	// azurePCRs is a map of the expected PCR values for an Azure Constellation node.
-	// TODO: Get a full list once we have a working setup with stable releases.
-	azurePCRs = Measurements{
-		uint32(vtpm.PCRIndexOwnerID):   {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-		uint32(vtpm.PCRIndexClusterID): {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-	}
-
-	qemuPCRs = Measurements{
-		uint32(vtpm.PCRIndexOwnerID):   {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-		uint32(vtpm.PCRIndexClusterID): {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-	}
-)
-
-// Config defines a configuration used by the CLI.
-// All fields in this struct and its child structs have pointer types
-// to ensure the default values of the actual type is not confused with an omitted value.
+// Config defines configuration used by CLI.
 type Config struct {
-	AutoscalingNodeGroupsMin *int            `yaml:"autoscalingNodeGroupsMin,omitempty"`
-	AutoscalingNodeGroupsMax *int            `yaml:"autoscalingNodeGroupsMax,omitempty"`
-	StateDiskSizeGB          *int            `yaml:"StateDisksizeGB,omitempty"`
-	Provider                 *ProviderConfig `yaml:"provider,omitempty"`
-	SSHUsers                 []*ssh.UserKey  `yaml:"sshUsers,omitempty"`
+	// description: |
+	//   Minimum number of nodes in autoscaling group.
+	//   worker nodes.
+	AutoscalingNodeGroupsMin int `yaml:"autoscalingNodeGroupsMin"`
+	// description: |
+	//   Maximum number of nodes in autoscaling group.
+	//   worker nodes.
+	AutoscalingNodeGroupsMax int `yaml:"autoscalingNodeGroupsMax"`
+	// description: |
+	//   Size (in GB) of data disk used for nodes.
+	StateDiskSizeGB int `yaml:"stateDisksizeGB"`
+	// description: |
+	//   Ingress firewall rules for node network.
+	IngressFirewall Firewall `yaml:"ingressFirewall,omitempty"`
+	// description: |
+	//   Egress firewall rules for node network.
+	EgressFirewall Firewall `yaml:"egressFirewall,omitempty"`
+	// description: |
+	//   Supported cloud providers & their specific configurations.
+	Provider ProviderConfig `yaml:"provider"`
+	// description: |
+	//   Create SSH users on Constellation nodes.
+	SSHUsers []*ssh.UserKey `yaml:"sshUsers,omitempty"`
+}
+
+type FirewallRule struct {
+	// description: |
+	//   Name of rule.
+	Name string `yaml:"name"`
+	// description: |
+	//   Description for rule.
+	Description string `yaml:"description"`
+	// description: |
+	//   Protocol, such as 'udp' or 'tcp'.
+	Protocol string `yaml:"protocol"`
+	// description: |
+	//   CIDR range for which this rule is applied.
+	IPRange string `yaml:"iprange"`
+	// description: |
+	//   Port of start port of a range.
+	FromPort int `yaml:"fromport"`
+	// description: |
+	//   End port of a range, or 0 if a single port is given by FromPort.
+	ToPort int `yaml:"toport"`
+}
+
+type Firewall []FirewallRule
+
+// ProviderConfig are cloud-provider specific configuration values used by the CLI.
+// Fields should remain pointer-types so custom specific configs can nil them
+// if not required.
+type ProviderConfig struct {
+	// description: |
+	//   Configuration for Azure as provider.
+	Azure *AzureConfig `yaml:"azureConfig,omitempty"`
+	// description: |
+	//   Configuration for Google Cloud as provider.
+	GCP *GCPConfig `yaml:"gcpConfig,omitempty"`
+	// description: |
+	//   Configuration for QEMU as provider.
+	QEMU *QEMUConfig `yaml:"qemuConfig,omitempty"`
+}
+
+// AzureConfig are Azure specific configuration values used by the CLI.
+type AzureConfig struct {
+	// description: |
+	//   Subscription ID of the used Azure account. See: https://docs.microsoft.com/en-us/azure/azure-portal/get-subscription-tenant-id#find-your-azure-subscription
+	SubscriptionID string `yaml:"subscription"`
+	// description: |
+	//   Tenant ID of the used Azure account. See: https://docs.microsoft.com/en-us/azure/azure-portal/get-subscription-tenant-id#find-your-azure-ad-tenant
+	TenantID string `yaml:"tenant"`
+	// description: |
+	//   Azure datacenter region to be used. See: https://docs.microsoft.com/en-us/azure/availability-zones/az-overview#azure-regions-with-availability-zones
+	Location string `yaml:"location"`
+	// description: |
+	//   Machine image used to create Constellation nodes.
+	Image string `yaml:"image"`
+	// description: |
+	//   Expected confidential VM measurements.
+	Measurements Measurements `yaml:"measurements"`
+	// description: |
+	//   Authorize spawned VMs to access Azure API. See: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=azure
+	UserAssignedIdentity string `yaml:"userassignedIdentity"`
+}
+
+// GCPConfig are GCP specific configuration values used by the CLI.
+type GCPConfig struct {
+	// description: |
+	//   GCP project. See: https://support.google.com/googleapi/answer/7014113?hl=en
+	Project string `yaml:"project"`
+	// description: |
+	//   GCP datacenter region. See: https://cloud.google.com/compute/docs/regions-zones#available
+	Region string `yaml:"region"`
+	// description: |
+	//   GCP datacenter zone. See: https://cloud.google.com/compute/docs/regions-zones#available
+	Zone string `yaml:"zone"`
+	// description: |
+	//   Machine image used to create Constellation nodes.
+	Image string `yaml:"image"`
+	// description: |
+	//   Roles added to service account.
+	ServiceAccountRoles []string `yaml:"serviceAccountRoles"`
+	// description: |
+	//   Measurement used to enable measured boot.
+	Measurements Measurements `yaml:"measurements"`
+}
+
+type QEMUConfig struct {
+	// description: |
+	//   Measurement used to enable measured boot.
+	Measurements Measurements `yaml:"measurements"`
 }
 
 // Default returns a struct with the default config.
 func Default() *Config {
 	return &Config{
-		AutoscalingNodeGroupsMin: intPtr(1),
-		AutoscalingNodeGroupsMax: intPtr(10),
-		StateDiskSizeGB:          intPtr(30),
-		Provider: &ProviderConfig{
-			EC2: &EC2Config{
-				Image: proto.String("ami-07d3864beb84157d3"),
-				Tags: &[]ec2.Tag{
-					{
-						Key:   "responsible",
-						Value: "cli",
-					},
-					{
-						Key:   "Name",
-						Value: "Constellation",
-					},
-				},
-				SecurityGroupInput: &awsClient.SecurityGroupInput{
-					Inbound: cloudtypes.Firewall{
-						{
-							Description: "Coordinator default port",
-							Protocol:    "TCP",
-							IPRange:     "0.0.0.0/0",
-							FromPort:    constants.CoordinatorPort,
-						},
-						{
-							Description: "Enclave SSH",
-							Protocol:    "TCP",
-							IPRange:     "0.0.0.0/0",
-							FromPort:    constants.EnclaveSSHPort,
-						},
-						{
-							Description: "WireGuard default port",
-							Protocol:    "UDP",
-							IPRange:     "0.0.0.0/0",
-							FromPort:    constants.WireguardPort,
-						},
-						{
-							Description: "SSH",
-							Protocol:    "TCP",
-							IPRange:     "0.0.0.0/0",
-							FromPort:    constants.SSHPort,
-						},
-						{
-							Description: "NVMe over TCP",
-							Protocol:    "TCP",
-							IPRange:     "0.0.0.0/0",
-							FromPort:    constants.NVMEOverTCPPort,
-						},
-						{
-							Description: "NodePort",
-							Protocol:    "TCP",
-							IPRange:     "0.0.0.0/0",
-							FromPort:    constants.NodePortFrom,
-							ToPort:      constants.NodePortTo,
-						},
-					},
-				},
+		AutoscalingNodeGroupsMin: 1,
+		AutoscalingNodeGroupsMax: 10,
+		StateDiskSizeGB:          30,
+		IngressFirewall: Firewall{
+			{
+				Name:        "coordinator",
+				Description: "Coordinator default port",
+				Protocol:    "tcp",
+				IPRange:     "0.0.0.0/0",
+				FromPort:    constants.CoordinatorPort,
 			},
+			{
+				Name:        "wireguard",
+				Description: "WireGuard default port",
+				Protocol:    "udp",
+				IPRange:     "0.0.0.0/0",
+				FromPort:    constants.WireguardPort,
+			},
+			{
+				Name:        "ssh",
+				Description: "SSH",
+				Protocol:    "tcp",
+				IPRange:     "0.0.0.0/0",
+				FromPort:    constants.SSHPort,
+			},
+			{
+				Name:        "nodeport",
+				Description: "NodePort",
+				Protocol:    "tcp",
+				IPRange:     "0.0.0.0/0",
+				FromPort:    constants.NodePortFrom,
+				ToPort:      constants.NodePortTo,
+			},
+		},
+		Provider: ProviderConfig{
 			Azure: &AzureConfig{
-				SubscriptionID: proto.String("0d202bbb-4fa7-4af8-8125-58c269a05435"),
-				TenantID:       proto.String("adb650a8-5da3-4b15-b4b0-3daf65ff7626"),
-				Location:       proto.String("North Europe"),
-				Image:          proto.String("/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos/versions/0.0.1651150807"),
-				NetworkSecurityGroupInput: &azureClient.NetworkSecurityGroupInput{
-					Ingress: cloudtypes.Firewall{
-						{
-							Name:        "coordinator",
-							Description: "Coordinator default port",
-							Protocol:    "tcp",
-							IPRange:     "0.0.0.0/0",
-							FromPort:    constants.CoordinatorPort,
-						},
-						{
-							Name:        "wireguard",
-							Description: "WireGuard default port",
-							Protocol:    "udp",
-							IPRange:     "0.0.0.0/0",
-							FromPort:    constants.WireguardPort,
-						},
-						{
-							Name:        "ssh",
-							Description: "SSH",
-							Protocol:    "tcp",
-							IPRange:     "0.0.0.0/0",
-							FromPort:    constants.SSHPort,
-						},
-						{
-							Name:        "nodeport",
-							Description: "NodePort",
-							Protocol:    "tcp",
-							IPRange:     "0.0.0.0/0",
-							FromPort:    constants.NodePortFrom,
-							ToPort:      constants.NodePortTo,
-						},
-					},
-				},
-				Measurements:         &azurePCRs,
-				UserAssignedIdentity: proto.String("/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-dev-identity"),
+				SubscriptionID:       "0d202bbb-4fa7-4af8-8125-58c269a05435",
+				TenantID:             "adb650a8-5da3-4b15-b4b0-3daf65ff7626",
+				Location:             "North Europe",
+				Image:                "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos/versions/0.0.1651150807",
+				Measurements:         azurePCRs,
+				UserAssignedIdentity: "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-dev-identity",
 			},
 			GCP: &GCPConfig{
-				Project: proto.String("constellation-331613"),
-				Region:  proto.String("europe-west3"),
-				Zone:    proto.String("europe-west3-b"),
-				Image:   proto.String("projects/constellation-images/global/images/constellation-coreos-1651150807"),
-				FirewallInput: &gcpClient.FirewallInput{
-					Ingress: cloudtypes.Firewall{
-						{
-							Name:        "coordinator",
-							Description: "Coordinator default port",
-							Protocol:    "tcp",
-							FromPort:    constants.CoordinatorPort,
-						},
-						{
-							Name:        "wireguard",
-							Description: "WireGuard default port",
-							Protocol:    "udp",
-							FromPort:    constants.WireguardPort,
-						},
-						{
-							Name:        "ssh",
-							Description: "SSH",
-							Protocol:    "tcp",
-							FromPort:    constants.SSHPort,
-						},
-						{
-							Name:        "nodeport",
-							Description: "NodePort",
-							Protocol:    "tcp",
-							FromPort:    constants.NodePortFrom,
-							ToPort:      constants.NodePortTo,
-						},
-					},
-				},
-				VPCsInput: &gcpClient.VPCsInput{
-					SubnetCIDR:    "192.168.178.0/24",
-					SubnetExtCIDR: "10.10.0.0/16",
-				},
-				ServiceAccountRoles: &[]string{
+				Project: "constellation-331613",
+				Region:  "europe-west3",
+				Zone:    "europe-west3-b",
+				Image:   "projects/constellation-images/global/images/constellation-coreos-1651150807",
+				ServiceAccountRoles: []string{
 					"roles/compute.instanceAdmin.v1",
 					"roles/compute.networkAdmin",
 					"roles/compute.securityAdmin",
 					"roles/storage.admin",
 					"roles/iam.serviceAccountUser",
 				},
-				Measurements: &gcpPCRs,
+				Measurements: gcpPCRs,
 			},
 			QEMU: &QEMUConfig{
-				Measurements: &qemuPCRs,
+				Measurements: qemuPCRs,
 			},
 		},
 	}
 }
 
-// FromFile returns a default config that has been merged with a config file.
-// If name is empty, the defaults are returned.
+// FromFile returns config file with `name` read from `fileHandler` by parsing
+// it as YAML.
+// If name is empty, the default configuration is returned.
 func FromFile(fileHandler file.Handler, name string) (*Config, error) {
-	conf := Default()
 	if name == "" {
-		return conf, nil
+		return Default(), nil
 	}
 
-	if err := fileHandler.ReadYAML(name, conf); err != nil {
+	var emptyConf Config
+	if err := fileHandler.ReadYAML(name, &emptyConf); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, fmt.Errorf("unable to find %s - use `constellation config generate` to generate it first", name)
 		}
 		return nil, fmt.Errorf("could not load config from file %s: %w", name, err)
 	}
-	return conf, nil
-}
-
-// ProviderConfig are cloud-provider specific configuration values used by the CLI.
-type ProviderConfig struct {
-	EC2   *EC2Config   `yaml:"ec2Config,omitempty"`
-	Azure *AzureConfig `yaml:"azureConfig,omitempty"`
-	GCP   *GCPConfig   `yaml:"gcpConfig,omitempty"`
-	QEMU  *QEMUConfig  `yaml:"qemuConfig,omitempty"`
-}
-
-// EC2Config are AWS EC2 specific configuration values used by the CLI.
-type EC2Config struct {
-	Image              *string                       `yaml:"image,omitempty"`
-	Tags               *[]ec2.Tag                    `yaml:"tags,omitempty"`
-	SecurityGroupInput *awsClient.SecurityGroupInput `yaml:"securityGroupInput,omitempty"`
-}
-
-// AzureConfig are Azure specific configuration values used by the CLI.
-type AzureConfig struct {
-	SubscriptionID            *string                                `yaml:"subscription,omitempty"` // TODO: This will be user input
-	TenantID                  *string                                `yaml:"tenant,omitempty"`       // TODO: This will be user input
-	Location                  *string                                `yaml:"location,omitempty"`     // TODO: This will be user input
-	Image                     *string                                `yaml:"image,omitempty"`
-	NetworkSecurityGroupInput *azureClient.NetworkSecurityGroupInput `yaml:"networkSecurityGroupInput,omitempty"`
-	Measurements              *Measurements                          `yaml:"measurements,omitempty"`
-	UserAssignedIdentity      *string                                `yaml:"userassignedIdentity,omitempty"`
-}
-
-// GCPConfig are GCP specific configuration values used by the CLI.
-type GCPConfig struct {
-	Project             *string                  `yaml:"project,omitempty"` // TODO: This will be user input
-	Region              *string                  `yaml:"region,omitempty"`  // TODO: This will be user input
-	Zone                *string                  `yaml:"zone,omitempty"`    // TODO: This will be user input
-	Image               *string                  `yaml:"image,omitempty"`
-	FirewallInput       *gcpClient.FirewallInput `yaml:"firewallInput,omitempty"`
-	VPCsInput           *gcpClient.VPCsInput     `yaml:"vpcsInput,omitempty"`
-	ServiceAccountRoles *[]string                `yaml:"serviceAccountRoles,omitempty"`
-	Measurements        *Measurements            `yaml:"measurements,omitempty"`
-}
-
-type QEMUConfig struct {
-	Measurements *Measurements `yaml:"measurements,omitempty"`
-}
-
-// intPtr returns a pointer to the copied value of in.
-func intPtr(in int) *int {
-	return &in
+	return &emptyConf, nil
 }

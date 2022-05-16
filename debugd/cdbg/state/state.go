@@ -85,7 +85,7 @@ func getGCPInstances(stat state.ConstellationState, config *configc.Config) (coo
 	// TODO: make min / max configurable and abstract autoscaling for different cloud providers
 	nodes = cmdc.ScalingGroup{
 		Instances: nodeInstances,
-		GroupID:   gcp.AutoscalingNodeGroup(stat.GCPProject, stat.GCPZone, stat.GCPNodeInstanceGroup, *config.AutoscalingNodeGroupsMin, *config.AutoscalingNodeGroupsMax),
+		GroupID:   gcp.AutoscalingNodeGroup(stat.GCPProject, stat.GCPZone, stat.GCPNodeInstanceGroup, config.AutoscalingNodeGroupsMin, config.AutoscalingNodeGroupsMax),
 	}
 
 	return

@@ -11,7 +11,7 @@ import (
 type gcpclient interface {
 	GetState() (state.ConstellationState, error)
 	SetState(state.ConstellationState) error
-	CreateVPCs(ctx context.Context, input gcpcl.VPCsInput) error
+	CreateVPCs(ctx context.Context) error
 	CreateFirewall(ctx context.Context, input gcpcl.FirewallInput) error
 	CreateInstances(ctx context.Context, input gcpcl.CreateInstancesInput) error
 	CreateServiceAccount(ctx context.Context, input gcpcl.ServiceAccountInput) (string, error)

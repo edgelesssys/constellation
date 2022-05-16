@@ -13,6 +13,7 @@ import (
 	"path"
 
 	"github.com/spf13/afero"
+	"github.com/talos-systems/talos/pkg/machinery/config/encoder"
 	"gopkg.in/yaml.v3"
 )
 
@@ -112,7 +113,7 @@ func (h *Handler) WriteYAML(name string, content any, options Option) (err error
 			err = errors.New("recovered from panic")
 		}
 	}()
-	data, err := yaml.Marshal(content)
+	data, err := encoder.NewEncoder(content).Encode()
 	if err != nil {
 		return err
 	}
