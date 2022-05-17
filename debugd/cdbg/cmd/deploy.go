@@ -16,7 +16,6 @@ import (
 	pb "github.com/edgelesssys/constellation/debugd/service"
 	configc "github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
-	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/file"
 	statec "github.com/edgelesssys/constellation/internal/state"
 	"github.com/spf13/afero"
@@ -109,7 +108,7 @@ type deployOnEndpointInput struct {
 	debugdEndpoint  string
 	coordinatorPath string
 	reader          fileToStreamReader
-	authorizedKeys  []ssh.UserKey
+	authorizedKeys  []configc.UserKey
 	systemdUnits    []depl.SystemdUnit
 }
 

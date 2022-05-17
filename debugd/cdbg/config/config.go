@@ -6,7 +6,7 @@ import (
 	"io/fs"
 
 	"github.com/edgelesssys/constellation/debugd/debugd/deploy"
-	"github.com/edgelesssys/constellation/internal/deploy/ssh"
+	configc "github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/file"
 )
 
@@ -17,7 +17,7 @@ type CDBGConfig struct {
 
 // ConstellationDebugdConfig is the cdbg specific configuration.
 type ConstellationDebugdConfig struct {
-	AuthorizedKeys  []ssh.UserKey        `yaml:"authorizedKeys"`
+	AuthorizedKeys  []configc.UserKey    `yaml:"authorizedKeys"`
 	CoordinatorPath string               `yaml:"coordinatorPath"`
 	SystemdUnits    []deploy.SystemdUnit `yaml:"systemdUnits,omitempty"`
 }
