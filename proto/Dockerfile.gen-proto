@@ -55,4 +55,4 @@ COPY --from=build /pubapi/*.go coordinator/pubapi/pubproto/
 COPY --from=build /vpnapi/*.go coordinator/vpnapi/vpnproto/
 COPY --from=build /disk-mapper/*.go state/keyservice/keyproto/
 COPY --from=build /service/*.go debugd/service/
-COPY --from=build /kms/*.go kms/server/kmsproto/
+COPY --from=build /kms/*.go kms/server/kmsapi/kmsproto/
