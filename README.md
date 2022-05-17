@@ -124,18 +124,7 @@ With `cdbg` and `yq` installed in your path:
        constellation-conf.yaml
 
    yq -i \
-       ".provider.azureConfig.networkSecurityGroupInput.ingress += {
-           \"name\": \"debugd\",
-           \"description\": \"debugd default port\",
-           \"protocol\": \"tcp\",
-           \"iprange\": \"0.0.0.0/0\",
-           \"fromport\": 4000,
-           \"toport\": 0
-       }" \
-       constellation-conf.yaml
-
-   yq -i \
-       ".provider.gcpConfig.firewallInput.ingress += {
+       ".ingressFirewall += {
            \"name\": \"debugd\",
            \"description\": \"debugd default port\",
            \"protocol\": \"tcp\",
