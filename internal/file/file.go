@@ -47,7 +47,7 @@ func NewHandler(fs afero.Fs) Handler {
 
 // Read reads the file given name and returns the bytes read.
 func (h *Handler) Read(name string) ([]byte, error) {
-	file, err := h.fs.OpenFile(name, os.O_RDONLY, 0o644)
+	file, err := h.fs.OpenFile(name, os.O_RDONLY, 0o600)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (h *Handler) Write(name string, data []byte, options Option) error {
 	if options.Has(OptOverwrite) {
 		flags = os.O_WRONLY | os.O_CREATE | os.O_TRUNC
 	}
-	file, err := h.fs.OpenFile(name, flags, 0o644)
+	file, err := h.fs.OpenFile(name, flags, 0o600)
 	if err != nil {
 		return err
 	}
