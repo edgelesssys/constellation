@@ -99,8 +99,8 @@ With `cdbg` and `yq` installed in your path:
    ```yaml
    cdbg:
      authorizedKeys:
-       - user: my-username
-         pubkey: ssh-rsa AAAAB…LJuM=
+       - username: my-username
+         publicKey: ssh-rsa AAAAB…LJuM=
      coordinatorPath: "./coordinator"
      systemdUnits:
        - name: some-custom.service
