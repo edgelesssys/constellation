@@ -3,6 +3,7 @@ package pubapi
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"testing"
@@ -16,6 +17,9 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
 	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
+	"github.com/edgelesssys/constellation/internal/deploy/ssh"
+	"github.com/edgelesssys/constellation/internal/deploy/user"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
@@ -28,6 +32,14 @@ func TestActivateAsNode(t *testing.T) {
 	someErr := errors.New("failed")
 	peer1 := peer.Peer{PublicIP: "192.0.2.11:2000", VPNIP: "192.0.2.21", VPNPubKey: []byte{1, 2, 3}}
 	peer2 := peer.Peer{PublicIP: "192.0.2.12:2000", VPNIP: "192.0.2.22", VPNPubKey: []byte{2, 3, 4}}
+	sshUser1 := &ssh.UserKey{
+		Username:  "test-user-1",
+		PublicKey: "ssh-rsa abcdefg",
+	}
+	sshUser2 := &ssh.UserKey{
+		Username:  "test-user-2",
+		PublicKey: "ssh-ed25519 hijklmn",
+	}
 
 	testCases := map[string]struct {
 		initialPeers            []peer.Peer
@@ -38,12 +50,20 @@ func TestActivateAsNode(t *testing.T) {
 		messageSequenceOverride []string
 		wantErr                 bool
 		wantState               state.State
+		sshKeys                 []*ssh.UserKey
 	}{
 		"basic": {
 			initialPeers: []peer.Peer{peer1},
 			updatedPeers: []peer.Peer{peer2},
 			state:        state.AcceptingInit,
 			wantState:    state.NodeWaitingForClusterJoin,
+		},
+		"basic with SSH users": {
+			initialPeers: []peer.Peer{peer1},
+			updatedPeers: []peer.Peer{peer2},
+			state:        state.AcceptingInit,
+			wantState:    state.NodeWaitingForClusterJoin,
+			sshKeys:      []*ssh.UserKey{sshUser1, sshUser2},
 		},
 		"already activated": {
 			initialPeers: []peer.Peer{peer1},
@@ -127,7 +147,9 @@ func TestActivateAsNode(t *testing.T) {
 			}
 
 			logger := zaptest.NewLogger(t)
-			cor := &fakeCore{state: tc.state, vpnPubKey: vpnPubKey, setVPNIPErr: tc.setVPNIPErr}
+			fs := afero.NewMemMapFs()
+			linuxUserManager := user.NewLinuxUserManagerFake(fs)
+			cor := &fakeCore{state: tc.state, vpnPubKey: vpnPubKey, setVPNIPErr: tc.setVPNIPErr, linuxUserManager: linuxUserManager}
 			netDialer := testdialer.NewBufconnDialer()
 			dialer := grpcutil.NewDialer(fakeValidator{}, netDialer)
 
@@ -147,7 +169,7 @@ func TestActivateAsNode(t *testing.T) {
 			go pubserver.Serve(netDialer.GetListener(net.JoinHostPort(nodeIP, endpointAVPNPort)))
 			defer pubserver.GracefulStop()
 
-			_, nodeVPNPubKey, err := activateNode(require, netDialer, messageSequence, nodeIP, "9000", nodeVPNIP, peer.ToPubProto(tc.initialPeers), ownerID, clusterID, stateDiskKey)
+			_, nodeVPNPubKey, err := activateNode(require, netDialer, messageSequence, nodeIP, "9000", nodeVPNIP, peer.ToPubProto(tc.initialPeers), ownerID, clusterID, stateDiskKey, ssh.ToProtoSlice(tc.sshKeys))
 			assert.Equal(tc.wantState, cor.state)
 
 			if tc.wantErr {
@@ -171,6 +193,25 @@ func TestActivateAsNode(t *testing.T) {
 			}
 			assert.Equal(tc.initialPeers, cor.updatedPeers[0])
 			assert.Equal([]role.Role{role.Node}, cor.persistNodeStateRoles)
+
+			// Test SSH user & key creation. Both cases: "supposed to add" and "not supposed to add"
+			// This slightly differs from a real environment (e.g. missing /home) but should be fine in the stub context with a virtual file system
+			if tc.sshKeys != nil {
+				passwd := user.Passwd{}
+				entries, err := passwd.Parse(fs)
+				require.NoError(err)
+				for _, singleEntry := range entries {
+					username := singleEntry.Gecos
+					_, err := fs.Stat(fmt.Sprintf("/home/%s/.ssh/authorized_keys.d/ssh-keys", username))
+					assert.NoError(err)
+				}
+			} else {
+				passwd := user.Passwd{}
+				_, err := passwd.Parse(fs)
+				assert.EqualError(err, "open /etc/passwd: file does not exist")
+				_, err = fs.Stat("/home")
+				assert.EqualError(err, "open /home: file does not exist")
+			}
 		})
 	}
 }
@@ -326,7 +367,7 @@ func TestJoinCluster(t *testing.T) {
 	}
 }
 
-func activateNode(require *require.Assertions, dialer netDialer, messageSequence []string, nodeIP, bindPort, nodeVPNIP string, peers []*pubproto.Peer, ownerID, clusterID, stateDiskKey []byte) (string, []byte, error) {
+func activateNode(require *require.Assertions, dialer netDialer, messageSequence []string, nodeIP, bindPort, nodeVPNIP string, peers []*pubproto.Peer, ownerID, clusterID, stateDiskKey []byte, sshUserKeys []*pubproto.SSHUserKey) (string, []byte, error) {
 	ctx := context.Background()
 	conn, err := dialGRPC(ctx, dialer, net.JoinHostPort(nodeIP, bindPort))
 	require.NoError(err)
@@ -344,10 +385,11 @@ func activateNode(require *require.Assertions, dialer netDialer, messageSequence
 			err = stream.Send(&pubproto.ActivateAsNodeRequest{
 				Request: &pubproto.ActivateAsNodeRequest_InitialRequest{
 					InitialRequest: &pubproto.ActivateAsNodeInitialRequest{
-						NodeVpnIp: nodeVPNIP,
-						Peers:     peers,
-						OwnerId:   ownerID,
-						ClusterId: clusterID,
+						NodeVpnIp:   nodeVPNIP,
+						Peers:       peers,
+						OwnerId:     ownerID,
+						ClusterId:   clusterID,
+						SshUserKeys: sshUserKeys,
 					},
 				},
 			})
