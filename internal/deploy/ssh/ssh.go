@@ -12,8 +12,8 @@ import (
 
 // UserKey describes an user that should be created with a corresponding public SSH key.
 type UserKey struct {
-	Username  string `yaml:"user"`
-	PublicKey string `yaml:"pubkey"`
+	Username  string
+	PublicKey string
 }
 
 // SSHAccess reads ssh public keys from a channel, creates the specified users if required and writes the public keys to the users authorized_keys file.

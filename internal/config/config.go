@@ -9,7 +9,6 @@ import (
 	"io/fs"
 
 	"github.com/edgelesssys/constellation/internal/constants"
-	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/file"
 )
 
@@ -31,13 +30,36 @@ type Config struct {
 	IngressFirewall Firewall `yaml:"ingressFirewall,omitempty"`
 	// description: |
 	//   Egress firewall rules for node network.
+	// examples:
+	//   - value: 'Firewall{
+	//     {
+	//       Name: "rule#1",
+	//       Description: "the first rule",
+	//       Protocol: "tcp",
+	//       IPRange: "0.0.0.0/0",
+	//       FromPort: 443,
+	//       ToPort: 443,
+	//     },
+	//   }'
 	EgressFirewall Firewall `yaml:"egressFirewall,omitempty"`
 	// description: |
 	//   Supported cloud providers & their specific configurations.
 	Provider ProviderConfig `yaml:"provider"`
 	// description: |
 	//   Create SSH users on Constellation nodes.
-	SSHUsers []*ssh.UserKey `yaml:"sshUsers,omitempty"`
+	// examples:
+	//   - value: '[]UserKey{ { Username:  "Alice", PublicKey: "ssh-rsa AAAAB3NzaC...5QXHKW1rufgtJeSeJ8= alice@domain.com" } }'
+	SSHUsers []UserKey `yaml:"sshUsers,omitempty"`
+}
+
+// UserKey describes a user that should be created with corresponding public SSH key.
+type UserKey struct {
+	// description: |
+	//   Username of new SSH user.
+	Username string `yaml:"username"`
+	// description: |
+	//   Public key of new SSH user.
+	PublicKey string `yaml:"publicKey"`
 }
 
 type FirewallRule struct {

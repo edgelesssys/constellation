@@ -12,6 +12,8 @@ import (
 
 var (
 	ConfigDoc         encoder.Doc
+	UserKeyDoc        encoder.Doc
+	FirewallRuleDoc   encoder.Doc
 	ProviderConfigDoc encoder.Doc
 	AzureConfigDoc    encoder.Doc
 	GCPConfigDoc      encoder.Doc
@@ -22,7 +24,7 @@ func init() {
 	ConfigDoc.Type = "Config"
 	ConfigDoc.Comments[encoder.LineComment] = "Config defines configuration used by CLI."
 	ConfigDoc.Description = "Config defines configuration used by CLI."
-	ConfigDoc.Fields = make([]encoder.Doc, 4)
+	ConfigDoc.Fields = make([]encoder.Doc, 7)
 	ConfigDoc.Fields[0].Name = "autoscalingNodeGroupsMin"
 	ConfigDoc.Fields[0].Type = "int"
 	ConfigDoc.Fields[0].Note = ""
@@ -33,20 +35,97 @@ func init() {
 	ConfigDoc.Fields[1].Note = ""
 	ConfigDoc.Fields[1].Description = "Maximum number of nodes in autoscaling group.\nworker nodes."
 	ConfigDoc.Fields[1].Comments[encoder.LineComment] = "Maximum number of nodes in autoscaling group."
-	ConfigDoc.Fields[2].Name = "StateDisksizeGB"
+	ConfigDoc.Fields[2].Name = "stateDisksizeGB"
 	ConfigDoc.Fields[2].Type = "int"
 	ConfigDoc.Fields[2].Note = ""
-	ConfigDoc.Fields[2].Description = "Size (in GB) of root disk used for nodes."
-	ConfigDoc.Fields[2].Comments[encoder.LineComment] = "Size (in GB) of root disk used for nodes."
-	ConfigDoc.Fields[3].Name = "provider"
-	ConfigDoc.Fields[3].Type = "ProviderConfig"
+	ConfigDoc.Fields[2].Description = "Size (in GB) of data disk used for nodes."
+	ConfigDoc.Fields[2].Comments[encoder.LineComment] = "Size (in GB) of data disk used for nodes."
+	ConfigDoc.Fields[3].Name = "ingressFirewall"
+	ConfigDoc.Fields[3].Type = "Firewall"
 	ConfigDoc.Fields[3].Note = ""
-	ConfigDoc.Fields[3].Description = "Supported cloud providers & their specific configurations."
-	ConfigDoc.Fields[3].Comments[encoder.LineComment] = "Supported cloud providers & their specific configurations."
+	ConfigDoc.Fields[3].Description = "Ingress firewall rules for node network."
+	ConfigDoc.Fields[3].Comments[encoder.LineComment] = "Ingress firewall rules for node network."
+	ConfigDoc.Fields[4].Name = "egressFirewall"
+	ConfigDoc.Fields[4].Type = "Firewall"
+	ConfigDoc.Fields[4].Note = ""
+	ConfigDoc.Fields[4].Description = "Egress firewall rules for node network."
+	ConfigDoc.Fields[4].Comments[encoder.LineComment] = "Egress firewall rules for node network."
+
+	ConfigDoc.Fields[4].AddExample("", Firewall{{Name: "rule#1", Description: "the first rule", Protocol: "tcp", IPRange: "0.0.0.0/0", FromPort: 443, ToPort: 443}})
+	ConfigDoc.Fields[5].Name = "provider"
+	ConfigDoc.Fields[5].Type = "ProviderConfig"
+	ConfigDoc.Fields[5].Note = ""
+	ConfigDoc.Fields[5].Description = "Supported cloud providers & their specific configurations."
+	ConfigDoc.Fields[5].Comments[encoder.LineComment] = "Supported cloud providers & their specific configurations."
+	ConfigDoc.Fields[6].Name = "sshUsers"
+	ConfigDoc.Fields[6].Type = "[]UserKey"
+	ConfigDoc.Fields[6].Note = ""
+	ConfigDoc.Fields[6].Description = "Create SSH users on Constellation nodes."
+	ConfigDoc.Fields[6].Comments[encoder.LineComment] = "Create SSH users on Constellation nodes."
+
+	ConfigDoc.Fields[6].AddExample("", []UserKey{{Username: "Alice", PublicKey: "ssh-rsa AAAAB3NzaC...5QXHKW1rufgtJeSeJ8= alice@domain.com"}})
+
+	UserKeyDoc.Type = "UserKey"
+	UserKeyDoc.Comments[encoder.LineComment] = "UserKey describes a user that should be created with corresponding public SSH key."
+	UserKeyDoc.Description = "UserKey describes a user that should be created with corresponding public SSH key."
+
+	UserKeyDoc.AddExample("", []UserKey{{Username: "Alice", PublicKey: "ssh-rsa AAAAB3NzaC...5QXHKW1rufgtJeSeJ8= alice@domain.com"}})
+	UserKeyDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "Config",
+			FieldName: "sshUsers",
+		},
+	}
+	UserKeyDoc.Fields = make([]encoder.Doc, 2)
+	UserKeyDoc.Fields[0].Name = "username"
+	UserKeyDoc.Fields[0].Type = "string"
+	UserKeyDoc.Fields[0].Note = ""
+	UserKeyDoc.Fields[0].Description = "Username of new SSH user."
+	UserKeyDoc.Fields[0].Comments[encoder.LineComment] = "Username of new SSH user."
+	UserKeyDoc.Fields[1].Name = "publicKey"
+	UserKeyDoc.Fields[1].Type = "string"
+	UserKeyDoc.Fields[1].Note = ""
+	UserKeyDoc.Fields[1].Description = "Public key of new SSH user."
+	UserKeyDoc.Fields[1].Comments[encoder.LineComment] = "Public key of new SSH user."
+
+	FirewallRuleDoc.Type = "FirewallRule"
+	FirewallRuleDoc.Comments[encoder.LineComment] = ""
+	FirewallRuleDoc.Description = ""
+	FirewallRuleDoc.Fields = make([]encoder.Doc, 6)
+	FirewallRuleDoc.Fields[0].Name = "name"
+	FirewallRuleDoc.Fields[0].Type = "string"
+	FirewallRuleDoc.Fields[0].Note = ""
+	FirewallRuleDoc.Fields[0].Description = "Name of rule."
+	FirewallRuleDoc.Fields[0].Comments[encoder.LineComment] = "Name of rule."
+	FirewallRuleDoc.Fields[1].Name = "description"
+	FirewallRuleDoc.Fields[1].Type = "string"
+	FirewallRuleDoc.Fields[1].Note = ""
+	FirewallRuleDoc.Fields[1].Description = "Description for rule."
+	FirewallRuleDoc.Fields[1].Comments[encoder.LineComment] = "Description for rule."
+	FirewallRuleDoc.Fields[2].Name = "protocol"
+	FirewallRuleDoc.Fields[2].Type = "string"
+	FirewallRuleDoc.Fields[2].Note = ""
+	FirewallRuleDoc.Fields[2].Description = "Protocol, such as 'udp' or 'tcp'."
+	FirewallRuleDoc.Fields[2].Comments[encoder.LineComment] = "Protocol, such as 'udp' or 'tcp'."
+	FirewallRuleDoc.Fields[3].Name = "iprange"
+	FirewallRuleDoc.Fields[3].Type = "string"
+	FirewallRuleDoc.Fields[3].Note = ""
+	FirewallRuleDoc.Fields[3].Description = "CIDR range for which this rule is applied."
+	FirewallRuleDoc.Fields[3].Comments[encoder.LineComment] = "CIDR range for which this rule is applied."
+	FirewallRuleDoc.Fields[4].Name = "fromport"
+	FirewallRuleDoc.Fields[4].Type = "int"
+	FirewallRuleDoc.Fields[4].Note = ""
+	FirewallRuleDoc.Fields[4].Description = "Port of start port of a range."
+	FirewallRuleDoc.Fields[4].Comments[encoder.LineComment] = "Port of start port of a range."
+	FirewallRuleDoc.Fields[5].Name = "toport"
+	FirewallRuleDoc.Fields[5].Type = "int"
+	FirewallRuleDoc.Fields[5].Note = ""
+	FirewallRuleDoc.Fields[5].Description = "End port of a range, or 0 if a single port is given by FromPort."
+	FirewallRuleDoc.Fields[5].Comments[encoder.LineComment] = "End port of a range, or 0 if a single port is given by FromPort."
 
 	ProviderConfigDoc.Type = "ProviderConfig"
 	ProviderConfigDoc.Comments[encoder.LineComment] = "ProviderConfig are cloud-provider specific configuration values used by the CLI."
-	ProviderConfigDoc.Description = "ProviderConfig are cloud-provider specific configuration values used by the CLI."
+	ProviderConfigDoc.Description = "ProviderConfig are cloud-provider specific configuration values used by the CLI.\nFields should remain pointer-types so custom specific configs can nil them\nif not required.\n"
 	ProviderConfigDoc.AppearsIn = []encoder.Appearance{
 		{
 			TypeName:  "Config",
@@ -79,7 +158,7 @@ func init() {
 			FieldName: "azureConfig",
 		},
 	}
-	AzureConfigDoc.Fields = make([]encoder.Doc, 7)
+	AzureConfigDoc.Fields = make([]encoder.Doc, 6)
 	AzureConfigDoc.Fields[0].Name = "subscription"
 	AzureConfigDoc.Fields[0].Type = "string"
 	AzureConfigDoc.Fields[0].Note = ""
@@ -100,21 +179,16 @@ func init() {
 	AzureConfigDoc.Fields[3].Note = ""
 	AzureConfigDoc.Fields[3].Description = "Machine image used to create Constellation nodes."
 	AzureConfigDoc.Fields[3].Comments[encoder.LineComment] = "Machine image used to create Constellation nodes."
-	AzureConfigDoc.Fields[4].Name = "networkSecurityGroupInput"
-	AzureConfigDoc.Fields[4].Type = "NetworkSecurityGroupInput"
+	AzureConfigDoc.Fields[4].Name = "measurements"
+	AzureConfigDoc.Fields[4].Type = "Measurements"
 	AzureConfigDoc.Fields[4].Note = ""
-	AzureConfigDoc.Fields[4].Description = "Firewall rules."
-	AzureConfigDoc.Fields[4].Comments[encoder.LineComment] = "Firewall rules."
-	AzureConfigDoc.Fields[5].Name = "measurements"
-	AzureConfigDoc.Fields[5].Type = "Measurements"
+	AzureConfigDoc.Fields[4].Description = "Expected confidential VM measurements."
+	AzureConfigDoc.Fields[4].Comments[encoder.LineComment] = "Expected confidential VM measurements."
+	AzureConfigDoc.Fields[5].Name = "userassignedIdentity"
+	AzureConfigDoc.Fields[5].Type = "string"
 	AzureConfigDoc.Fields[5].Note = ""
-	AzureConfigDoc.Fields[5].Description = "Measurement used to enable measured boot."
-	AzureConfigDoc.Fields[5].Comments[encoder.LineComment] = "Measurement used to enable measured boot."
-	AzureConfigDoc.Fields[6].Name = "userassignedIdentity"
-	AzureConfigDoc.Fields[6].Type = "string"
-	AzureConfigDoc.Fields[6].Note = ""
-	AzureConfigDoc.Fields[6].Description = "Why is this needed? Docs only say that it is needed. (TODO) See: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=azure"
-	AzureConfigDoc.Fields[6].Comments[encoder.LineComment] = "Why is this needed? Docs only say that it is needed. (TODO) See: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=azure"
+	AzureConfigDoc.Fields[5].Description = "Authorize spawned VMs to access Azure API. See: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=azure"
+	AzureConfigDoc.Fields[5].Comments[encoder.LineComment] = "Authorize spawned VMs to access Azure API. See: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=azure"
 
 	GCPConfigDoc.Type = "GCPConfig"
 	GCPConfigDoc.Comments[encoder.LineComment] = "GCPConfig are GCP specific configuration values used by the CLI."
@@ -125,7 +199,7 @@ func init() {
 			FieldName: "gcpConfig",
 		},
 	}
-	GCPConfigDoc.Fields = make([]encoder.Doc, 8)
+	GCPConfigDoc.Fields = make([]encoder.Doc, 6)
 	GCPConfigDoc.Fields[0].Name = "project"
 	GCPConfigDoc.Fields[0].Type = "string"
 	GCPConfigDoc.Fields[0].Note = ""
@@ -146,26 +220,16 @@ func init() {
 	GCPConfigDoc.Fields[3].Note = ""
 	GCPConfigDoc.Fields[3].Description = "Machine image used to create Constellation nodes."
 	GCPConfigDoc.Fields[3].Comments[encoder.LineComment] = "Machine image used to create Constellation nodes."
-	GCPConfigDoc.Fields[4].Name = "firewallInput"
-	GCPConfigDoc.Fields[4].Type = "FirewallInput"
+	GCPConfigDoc.Fields[4].Name = "serviceAccountRoles"
+	GCPConfigDoc.Fields[4].Type = "[]string"
 	GCPConfigDoc.Fields[4].Note = ""
-	GCPConfigDoc.Fields[4].Description = "Firewall rules."
-	GCPConfigDoc.Fields[4].Comments[encoder.LineComment] = "Firewall rules."
-	GCPConfigDoc.Fields[5].Name = "vpcsInput"
-	GCPConfigDoc.Fields[5].Type = "VPCsInput"
+	GCPConfigDoc.Fields[4].Description = "Roles added to service account."
+	GCPConfigDoc.Fields[4].Comments[encoder.LineComment] = "Roles added to service account."
+	GCPConfigDoc.Fields[5].Name = "measurements"
+	GCPConfigDoc.Fields[5].Type = "Measurements"
 	GCPConfigDoc.Fields[5].Note = ""
-	GCPConfigDoc.Fields[5].Description = "Virtual Private Cloud settings."
-	GCPConfigDoc.Fields[5].Comments[encoder.LineComment] = "Virtual Private Cloud settings."
-	GCPConfigDoc.Fields[6].Name = "serviceAccountRoles"
-	GCPConfigDoc.Fields[6].Type = "[]string"
-	GCPConfigDoc.Fields[6].Note = ""
-	GCPConfigDoc.Fields[6].Description = "Roles added to service account."
-	GCPConfigDoc.Fields[6].Comments[encoder.LineComment] = "Roles added to service account."
-	GCPConfigDoc.Fields[7].Name = "measurements"
-	GCPConfigDoc.Fields[7].Type = "Measurements"
-	GCPConfigDoc.Fields[7].Note = ""
-	GCPConfigDoc.Fields[7].Description = "Measurement used to enable measured boot."
-	GCPConfigDoc.Fields[7].Comments[encoder.LineComment] = "Measurement used to enable measured boot."
+	GCPConfigDoc.Fields[5].Description = "Measurement used to enable measured boot."
+	GCPConfigDoc.Fields[5].Comments[encoder.LineComment] = "Measurement used to enable measured boot."
 
 	QEMUConfigDoc.Type = "QEMUConfig"
 	QEMUConfigDoc.Comments[encoder.LineComment] = ""
@@ -188,6 +252,14 @@ func (_ Config) Doc() *encoder.Doc {
 	return &ConfigDoc
 }
 
+func (_ UserKey) Doc() *encoder.Doc {
+	return &UserKeyDoc
+}
+
+func (_ FirewallRule) Doc() *encoder.Doc {
+	return &FirewallRuleDoc
+}
+
 func (_ ProviderConfig) Doc() *encoder.Doc {
 	return &ProviderConfigDoc
 }
@@ -208,9 +280,11 @@ func (_ QEMUConfig) Doc() *encoder.Doc {
 func GetConfigurationDoc() *encoder.FileDoc {
 	return &encoder.FileDoc{
 		Name:        "Configuration",
-		Description: "",
+		Description: "This binary can be build from siderolabs/talos projects. Located at:\nhttps://github.com/siderolabs/talos/tree/master/hack/docgen\n",
 		Structs: []*encoder.Doc{
 			&ConfigDoc,
+			&UserKeyDoc,
+			&FirewallRuleDoc,
 			&ProviderConfigDoc,
 			&AzureConfigDoc,
 			&GCPConfigDoc,

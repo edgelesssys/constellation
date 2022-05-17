@@ -80,7 +80,15 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		return err
 	}
 
-	protoSSHUserKeys := ssh.ToProtoSlice(config.SSHUsers)
+	var sshUsers []*ssh.UserKey
+	for _, user := range config.SSHUsers {
+		sshUsers = append(sshUsers, &ssh.UserKey{
+			Username:  user.Username,
+			PublicKey: user.PublicKey,
+		})
+	}
+
+	protoSSHUserKeys := ssh.ToProtoSlice(sshUsers)
 
 	var stat state.ConstellationState
 	err = fileHandler.ReadJSON(constants.StateFilename, &stat)
