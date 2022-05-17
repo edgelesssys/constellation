@@ -59,6 +59,7 @@ message ActivateAsNodeInitialRequest {
   repeated Peer peers = 2;
   bytes owner_id = 3;
   bytes cluster_id = 4;
+  repeated SSHUserKey ssh_user_keys = 5;
 }
 
 message ActivateAsNodeResponse {
@@ -70,6 +71,7 @@ message ActivateAsNodeResponse {
 
 message ActivateAdditionalNodesRequest {
   repeated string node_public_ips = 1;
+  repeated SSHUserKey ssh_user_keys = 2;
 }
 
 message ActivateAdditionalNodesResponse {
@@ -82,6 +84,7 @@ message ActivateAsAdditionalCoordinatorRequest {
   repeated Peer peers = 3;
   bytes owner_id = 4;
   bytes cluster_id = 5;
+  repeated SSHUserKey ssh_user_keys = 6;
 }
 
 message ActivateAsAdditionalCoordinatorResponse {
@@ -89,6 +92,7 @@ message ActivateAsAdditionalCoordinatorResponse {
 
 message ActivateAdditionalCoordinatorRequest {
   string coordinator_public_ip = 1;
+  repeated SSHUserKey ssh_user_keys = 2;
 }
 
 message ActivateAdditionalCoordinatorResponse {

@@ -113,12 +113,12 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 	}
 
 	// TODO: check performance and maybe make concurrent
-	if err := a.activateCoordinators(logToCLI, in.CoordinatorPublicIps); err != nil {
+	if err := a.activateCoordinators(logToCLI, in.CoordinatorPublicIps, in.SshUserKeys); err != nil {
 		a.logger.Error("coordinator activation failed", zap.Error(err))
 		return status.Errorf(codes.Internal, "coordinator initialization: %v", err)
 	}
 	// TODO: check performance and maybe make concurrent
-	if err := a.activateNodes(logToCLI, in.NodePublicIps); err != nil {
+	if err := a.activateNodes(logToCLI, in.NodePublicIps, in.SshUserKeys); err != nil {
 		a.logger.Error("node activation failed", zap.Error(err))
 		return status.Errorf(codes.Internal, "node initialization: %v", err)
 	}
@@ -180,7 +180,7 @@ func (a *API) ActivateAdditionalNodes(in *pubproto.ActivateAdditionalNodesReques
 	})
 
 	// TODO: check performance and maybe make concurrent
-	if err := a.activateNodes(logToCLI, in.NodePublicIps); err != nil {
+	if err := a.activateNodes(logToCLI, in.NodePublicIps, in.SshUserKeys); err != nil {
 		a.logger.Error("node activation failed", zap.Error(err))
 		return status.Errorf(codes.Internal, "activating nodes: %v", err)
 	}
@@ -221,7 +221,7 @@ func (a *API) RequestStateDiskKey(ctx context.Context, in *pubproto.RequestState
 	return &pubproto.RequestStateDiskKeyResponse{}, nil
 }
 
-func (a *API) activateNodes(logToCLI logFunc, nodePublicIPs []string) error {
+func (a *API) activateNodes(logToCLI logFunc, nodePublicIPs []string, sshUserKeys []*pubproto.SSHUserKey) error {
 	_, peers, err := a.core.GetPeers(0)
 	if err != nil {
 		return err
@@ -242,7 +242,7 @@ func (a *API) activateNodes(logToCLI logFunc, nodePublicIPs []string) error {
 			a.logger.Error("generation of vpn ips failed", zap.Error(err))
 			return err
 		}
-		nodeVpnPubKey, err := a.activateNode(nodePublicIP, nodeVPNIP, initialPeers, ownerID, clusterID)
+		nodeVpnPubKey, err := a.activateNode(nodePublicIP, nodeVPNIP, initialPeers, ownerID, clusterID, sshUserKeys)
 		if err != nil {
 			return err
 		}
@@ -296,7 +296,7 @@ func (a *API) activateNodes(logToCLI logFunc, nodePublicIPs []string) error {
 	return nil
 }
 
-func (a *API) activateNode(nodePublicIP string, nodeVPNIP string, initialPeers []*pubproto.Peer, ownerID, clusterID []byte) ([]byte, error) {
+func (a *API) activateNode(nodePublicIP string, nodeVPNIP string, initialPeers []*pubproto.Peer, ownerID, clusterID []byte, sshUserKeys []*pubproto.SSHUserKey) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), deadlineDuration)
 	defer cancel()
 
@@ -320,10 +320,11 @@ func (a *API) activateNode(nodePublicIP string, nodeVPNIP string, initialPeers [
 	if err := stream.Send(&pubproto.ActivateAsNodeRequest{
 		Request: &pubproto.ActivateAsNodeRequest_InitialRequest{
 			InitialRequest: &pubproto.ActivateAsNodeInitialRequest{
-				NodeVpnIp: nodeVPNIP,
-				Peers:     initialPeers,
-				OwnerId:   ownerID,
-				ClusterId: clusterID,
+				NodeVpnIp:   nodeVPNIP,
+				Peers:       initialPeers,
+				OwnerId:     ownerID,
+				ClusterId:   clusterID,
+				SshUserKeys: sshUserKeys,
 			},
 		},
 	}); err != nil {

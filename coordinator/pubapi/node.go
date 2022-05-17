@@ -10,6 +10,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
+	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -89,6 +90,14 @@ func (a *API) ActivateAsNode(stream pubproto.API_ActivateAsNodeServer) (reterr e
 	// Any new additions to ActivateAsNode MUST come after
 	if err := a.core.AdvanceState(state.NodeWaitingForClusterJoin, in.OwnerId, in.ClusterId); err != nil {
 		return status.Errorf(codes.Internal, "advance node state: %v", err)
+	}
+
+	// Setup SSH users for the node, if defined
+	if len(in.SshUserKeys) != 0 {
+		sshUserKeys := ssh.FromProtoSlice(in.SshUserKeys)
+		if err := a.core.CreateSSHUsers(sshUserKeys); err != nil {
+			return status.Errorf(codes.Internal, "creating SSH users on node: %v", err)
+		}
 	}
 
 	vpnPubKey, err := a.core.GetVPNPubKey()

@@ -10,6 +10,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
+	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -39,6 +40,14 @@ func (a *API) ActivateAsAdditionalCoordinator(ctx context.Context, in *pubproto.
 	// Any new additions to ActivateAsAdditionalCoordinator MUST come after
 	if err := a.core.AdvanceState(state.ActivatingNodes, in.OwnerId, in.ClusterId); err != nil {
 		return nil, status.Errorf(codes.Internal, "advance state to ActivatingNodes: %v", err)
+	}
+
+	// Setup SSH users on subsequent coordinator, if defined
+	if len(in.SshUserKeys) != 0 {
+		sshUserKeys := ssh.FromProtoSlice(in.SshUserKeys)
+		if err := a.core.CreateSSHUsers(sshUserKeys); err != nil {
+			return nil, status.Errorf(codes.Internal, "creating SSH users on additional coordinators: %v", err)
+		}
 	}
 	// add one coordinator to the VPN
 	if err := a.core.SetVPNIP(in.AssignedVpnIp); err != nil {
@@ -145,7 +154,7 @@ func (a *API) ActivateAsAdditionalCoordinator(ctx context.Context, in *pubproto.
 }
 
 func (a *API) ActivateAdditionalCoordinator(ctx context.Context, in *pubproto.ActivateAdditionalCoordinatorRequest) (*pubproto.ActivateAdditionalCoordinatorResponse, error) {
-	err := a.activateCoordinator(ctx, in.CoordinatorPublicIp)
+	err := a.activateCoordinator(ctx, in.CoordinatorPublicIp, in.SshUserKeys)
 	if err != nil {
 		a.logger.Error("coordinator activation failed", zap.Error(err))
 		return nil, status.Errorf(codes.Internal, "activate new coordinator: %v", err)
@@ -153,18 +162,18 @@ func (a *API) ActivateAdditionalCoordinator(ctx context.Context, in *pubproto.Ac
 	return &pubproto.ActivateAdditionalCoordinatorResponse{}, nil
 }
 
-func (a *API) activateCoordinators(logToCLI logFunc, coordinatorPublicIPs []string) error {
+func (a *API) activateCoordinators(logToCLI logFunc, coordinatorPublicIPs []string, sshUserKeys []*pubproto.SSHUserKey) error {
 	// Activate all coordinators.
 	for num, coordinatorPublicIP := range coordinatorPublicIPs {
 		logToCLI("Activating control-plane node %3d out of %3d ...", num+2, len(coordinatorPublicIPs)+1)
-		if err := a.activateCoordinator(context.TODO(), coordinatorPublicIP); err != nil {
+		if err := a.activateCoordinator(context.TODO(), coordinatorPublicIP, sshUserKeys); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (a *API) activateCoordinator(ctx context.Context, coordinatorIP string) error {
+func (a *API) activateCoordinator(ctx context.Context, coordinatorIP string, sshUserKeys []*pubproto.SSHUserKey) error {
 	ctx, cancel := context.WithTimeout(ctx, deadlineDuration)
 	defer cancel()
 
@@ -225,6 +234,7 @@ func (a *API) activateCoordinator(ctx context.Context, coordinatorIP string) err
 		Peers:                     peer.ToPubProto(peers),
 		OwnerId:                   ownerID,
 		ClusterId:                 clusterID,
+		SshUserKeys:               sshUserKeys,
 	})
 	return err
 }
