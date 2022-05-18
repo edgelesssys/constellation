@@ -3,6 +3,7 @@ package config
 import (
 	"testing"
 
+	"github.com/edgelesssys/constellation/cli/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"
@@ -89,6 +90,47 @@ func TestFromFile(t *testing.T) {
 				require.NoError(err)
 				assert.Equal(tc.wantResult, result)
 			}
+		})
+	}
+}
+
+func TestConfigRemoveProviderExcept(t *testing.T) {
+	testCases := map[string]struct {
+		removeExcept cloudprovider.Provider
+		wantAzure    *AzureConfig
+		wantGCP      *GCPConfig
+		wantQEMU     *QEMUConfig
+	}{
+		"except azure": {
+			removeExcept: cloudprovider.Azure,
+			wantAzure:    Default().Provider.Azure,
+		},
+		"except gcp": {
+			removeExcept: cloudprovider.GCP,
+			wantGCP:      Default().Provider.GCP,
+		},
+		"except qemu": {
+			removeExcept: cloudprovider.QEMU,
+			wantQEMU:     Default().Provider.QEMU,
+		},
+		"unknown provider": {
+			removeExcept: cloudprovider.Unknown,
+			wantAzure:    Default().Provider.Azure,
+			wantGCP:      Default().Provider.GCP,
+			wantQEMU:     Default().Provider.QEMU,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			conf := Default()
+			conf.RemoveProviderExcept(tc.removeExcept)
+
+			assert.Equal(tc.wantAzure, conf.Provider.Azure)
+			assert.Equal(tc.wantGCP, conf.Provider.GCP)
+			assert.Equal(tc.wantQEMU, conf.Provider.QEMU)
 		})
 	}
 }

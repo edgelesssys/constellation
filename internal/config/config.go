@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/fs"
 
+	"github.com/edgelesssys/constellation/cli/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 )
@@ -214,6 +215,24 @@ func Default() *Config {
 				Measurements: qemuPCRs,
 			},
 		},
+	}
+}
+
+// RemoveProviderExcept removes all provider specific configurations, i.e.,
+// sets them to nil, except the one specified.
+// If an unknown provider is passed, the same configuration is returned.
+func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
+	currentProviderConfigs := c.Provider
+	c.Provider = ProviderConfig{}
+	switch provider {
+	case cloudprovider.Azure:
+		c.Provider.Azure = currentProviderConfigs.Azure
+	case cloudprovider.GCP:
+		c.Provider.GCP = currentProviderConfigs.GCP
+	case cloudprovider.QEMU:
+		c.Provider.QEMU = currentProviderConfigs.QEMU
+	default:
+		c.Provider = currentProviderConfigs
 	}
 }
 

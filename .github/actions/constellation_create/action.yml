@@ -29,7 +29,7 @@ runs:
     shell: bash
   - name: Constellation config generate
     run: |
-      constellation config generate
+      constellation config generate ${{ inputs.cloudProvider }}
     shell: bash
   - name: Constellation create
     run: |
