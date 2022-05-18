@@ -1,14 +1,42 @@
-# constellation-coordinator
+# Constellation
 
-## Prerequisites
-* Go 1.18
+This is the main repository of Constellation.
 
-### Ubuntu 20.04
-```sh
-sudo apt install build-essential cmake libssl-dev pkg-config libcryptsetup12 libcryptsetup-dev
-```
+Core components:
+
+* [cli](cli): The CLI is used to manage a Constellation cluster
+* [coordinator](coordinator): The Coordinator is a node agent whose most important task is to bootstrap a node
+* [image](image): Build files for the Constellation disk image
+* [kms](kms): Constellation's key management client and server
+* [mount](mount): Package used by CSI plugins to create and mount encrypted block devices
+* [state](state): Contains the disk-mapper that maps the encrypted node data disk during boot
+
+Development components:
+
+* [conformance](conformance): Kubernetes conformance tests
+* [debugd](debugd): Debug daemon and client
+* [hack](hack): Development tools
+* [proto](proto): Proto files generator
+* [test](test): Integration test
+
+Additional repositories:
+
+* [constellation-docs](https://github.com/edgelesssys/constellation-docs): End-user documentation
+* [constellation-coreos-assembler](https://github.com/edgelesssys/constellation-coreos-assembler): Build environment for CoreOS images with changes for Constellation
+* [constellation-fedora-coreos-config](https://github.com/edgelesssys/constellation-fedora-coreos-config): CoreOS build configuration with changes for Constellation
+* [edg-azuredisk-csi-driver](https://github.com/edgelesssys/edg-azuredisk-csi-driver): Azure CSI driver with encryption on node
+* [edg-gcp-compute-persistent-disk-csi-driver](https://github.com/edgelesssys/edg-gcp-compute-persistent-disk-csi-driver): GCP CSI driver with encryption on node
 
 ## Build
+
+Prerequisites:
+
+* Go 1.18
+* Packages on Ubuntu:
+  ```sh
+  sudo apt install build-essential cmake libssl-dev pkg-config libcryptsetup12 libcryptsetup-dev
+  ```
+
 ```sh
 mkdir build
 cd build
@@ -18,209 +46,19 @@ make -j`nproc`
 
 ## Cloud credentials
 
-Using the CLI or debug-CLI requires the user to make authorized API calls to the AWS or GCP API.
+Using the CLI requires the user to make authorized API calls to the CSP API. See the [docs](https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=cloud-credentials) for configuration.
 
-### Google Cloud Platform (GCP)
-
-If you are running from within a Google VM, and the VM is allowed to access the necessary APIs, no further configuration is needed.
-
-Otherwise you have a couple options:
-
-1. Use the `gcloud` CLI tool
-
-    ```shell
-    gcloud auth application-default login
-    ```
-    This will ask you to log into your Google account, and then create your credentials.
-    The Constellation CLI will automatically load these credentials when needed.
-
-2. Set up a service account and pass the credentials manually
-
-    Follow [Google's guide](https://cloud.google.com/docs/authentication/production#manually) for setting up your credentials.
-
-### Amazon Web Services (AWS)
-
-To use the CLI with an Constellation cluster on AWS configure the following files:
-
-
-```bash
-$ cat ~/.aws/credentials
-[default]
-aws_access_key_id = XXXXX
-aws_secret_access_key = XXXXX
-```
-
-```bash
-$ cat ~/.aws/config
-[default]
-region = us-east-2
-```
-
-### Azure
-
-To use the CLI with an Constellation cluster on Azure execute:
-```bash
-az login
-```
-
-### Deploying a locally compiled coordinator binary
+## Deploying a locally compiled coordinator binary
 
 By default, `constellation create ...` will spawn cloud provider instances with a pre-baked coordinator binary.
 For testing, you can use the constellation debug daemon (debugd) to upload your local coordinator binary to running instances and to obtain SSH access.
-[Follow this introduction on how to install and setup `cdbg`](#debug-daemon-debugd)
+[Follow this introduction on how to install and setup `cdbg`](debugd/README.md)
 
-# debug daemon (debugd)
-
-## debugd Prerequisites
-
-* Go 1.18
-
-## Build debugd
-
-```
-mkdir -p build
-go build -o build/debugd debugd/debugd/cmd/debugd/debugd.go
-```
-
-## Build & install cdbg
-
-The go install command for cdbg only works inside the checked out repository due to replace directives in the `go.mod` file.
-
-```
-git clone https://github.com/edgelesssys/constellation && cd constellation
-go install github.com/edgelesssys/constellation/debugd/cdbg
-```
-
-## debugd & cdbg usage
-
-With `cdbg` and `yq` installed in your path:
-
-0. Write the configuration file for cdbg `cdbg-conf.yaml`:
-   ```yaml
-   cdbg:
-     authorizedKeys:
-       - username: my-username
-         publicKey: ssh-rsa AAAAB…LJuM=
-     coordinatorPath: "./coordinator"
-     systemdUnits:
-       - name: some-custom.service
-         contents: |-
-           [Unit]
-           Description=…
-   ```
-1. Run `constellation config generate` to create a new default configuration
-2. Locate the latest debugd images for [GCP](#debugd-gcp-image) and [Azure](#debugd-azure-image)
-3. Modify the `constellation-conf.yaml` to use an image with the debugd already included and add required firewall rules:
-   ```shell-session
-   # Set timestamp from cloud provider image name
-   export TIMESTAMP=01234
-
-   yq -i \
-       ".provider.azureConfig.image = \"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos-debugd/versions/0.0.${TIMESTAMP}\"" \
-       constellation-conf.yaml
-
-   yq -i \
-       ".provider.gcpConfig.image = \"projects/constellation-images/global/images/constellation-coreos-debugd-${TIMESTAMP}\"" \
-       constellation-conf.yaml
-
-   yq -i \
-       ".ingressFirewall += {
-           \"name\": \"debugd\",
-           \"description\": \"debugd default port\",
-           \"protocol\": \"tcp\",
-           \"iprange\": \"0.0.0.0/0\",
-           \"fromport\": 4000,
-           \"toport\": 0
-       }" \
-       constellation-conf.yaml
-   ```
-4. Run `constellation create […]`
-5. Run `cdbg deploy`
-6.  Run `constellation init […]` as usual
-
-
-### debugd GCP image
-
-For GCP, run the following command to get a list of all constellation images, sorted by their creation date:
-```
-gcloud compute images list --filter="name~'constellation-.+'" --sort-by=~creationTimestamp --project constellation-images
-```
-Choose the newest debugd image with the naming scheme `constellation-coreos-debugd-<timestamp>`.
-
-### debugd Azure Image
-
-For Azure, run the following command to get a list of all constellation debugd images, sorted by their creation date:
-```
-az sig image-version list --resource-group constellation-images --gallery-name Constellation --gallery-image-definition constellation-coreos-debugd --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table
-```
-Choose the newest debugd image and copy the full URI.
-
-# Local image testing with QEMU
-
-To build our images we use the [CoreOS-Assembler (COSA)](https://github.com/edgelesssys/constellation-coreos-assembler).
-COSA comes with support to test images locally. After building your image with `make coreos` you can run the image with `make run`.
-
-Our fork adds extra utility by providing scripts to run an image in QEMU with a vTPM attached, or boot multiple VMs to simulate your own local Constellation cluster.
-
-Begin by starting a COSA docker container
-```shell
-docker run -it --rm \
-    --entrypoint bash \
-    --device /dev/kvm \
-    --device /dev/net/tun \
-    --privileged \
-    -v </path/to/constellation-image.qcow2>:/constellation-image.qcow2 \
-    ghcr.io/edgelesssys/constellation-coreos-assembler
-```
-
-## Run a single image
-
-Using the `run-image` script we can launch a single VM with an attached vTPM.
-The script expects an image and a name to run. Optionally one may also provide the path to an existing state disk, if none provided a new disk will be created.
-
-Additionally one may configure QEMU CPU (qemu -smp flag, default=2) and memory (qemu -m flag, default=2G) settings, as well as the size of the created state disk in GB (default 2) using environment variables.
-
-To customize CPU settings use `CONSTELL_CPU=[[cpus=]n][,maxcpus=maxcpus][,sockets=sockets][,dies=dies][,cores=cores][,threads=threads]` \
-To customize memory settings use `CONSTELL_MEM=[size=]megs[,slots=n,maxmem=size]` \
-To customize state disk size use `CONSTELL_STATE_SIZE=n`
-
-Use the following command to boot a VM with 2 CPUs, 2G RAM, a 4GB state disk with the image in `/constellation/coreos.qcow2`.
-Logs and state files will be written to `/tmp/test-vm-01`.
-```shell
-sudo CONSTELL_CPU=2 CONSTELL_MEM=2G CONSTELL_STATE_SIZE=4 run-image /constellation/coreos.qcow2 test-vm-01
-```
-
-The command will create a network bridge and add the VM to the bridge, so the host may communicate with the guest VM, as well as allowing the VM to access the internet.
-
-Press <kbd>Ctrl</kbd>+<kbd>A</kbd> <kbd>X</kbd> to stop the VM, this will remove the VM from the bridge but will keep the bridge alive.
-
-Run the following to remove the bridge.
-```shell
-sudo delete_network_bridge br-constell-0
-```
-
-## Create a local cluster
-
-Using the `create-constellation` script we can create multiple VMs using the same image and connected in one network.
-
-The same environment variables as for `run-image` can be used to configure cpu, memory, and state disk size.
-
-Use the following command to create a cluster of 4 VMs, where each VM has 3 CPUs, 4GB RAM and a 5GB state disk.
-Logs and state files will be written to `/tmp/constellation`.
-```shell
-sudo CONSTELL_CPU=3 CONSTELL_MEM=4G CONSTELL_STATE_SIZE=5 create-constellation 4 /constellation/coreos.qcow2
-```
-
-The command will use the `run-image` script launch each VM in its own `tmux` session.
-View the VMs by running the following
-```shell
-sudo tmux attach -t constellation-vm-<i>
-```
-
-# Development Guides
+## Development Guides
 
 - [Upgrading Kubernetes](/docs/upgrade-kubernetes.md)
+- [Local image testing](/docs/local-image-testing.md)
 
-# Deployment Guides
+## Deployment Guides
 
 - [Onboarding Customers](/docs/onboarding-customers.md)
