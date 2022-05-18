@@ -8,20 +8,7 @@ cmake ..
 ctest
 ```
 
-### E2E Test
-
-Requirement: Kernel WireGuard, Docker
-```sh
-docker build -f Dockerfile.e2e -t constellation-e2e .
-```
-For the AWS test run
-```sh
-docker run -it --cap-add=NET_ADMIN --env GITHUB_TOKEN="$(cat ~/.netrc)" --env BRANCH="main" --env aws_access_key_id=XXX --env aws_secret_access_key=XXX constellation-e2e /initiateAWS.sh
-```
-For the gcp test run
-```sh
-docker run -it --cap-add=NET_ADMIN --env GITHUB_TOKEN="$(cat ~/.netrc)" --env BRANCH="main" --env GCLOUD_CREDENTIALS="$(cat ./constellation-keyfile.json)" constellation-e2e /initiategcloud.sh
-```
+[Run CI e2e tests](/.github/docs/README.md)
 
 ## Linting
 
