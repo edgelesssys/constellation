@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -209,6 +210,26 @@ func TestReadYAML(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReadYAMLStrictUnknownFieldFails(t *testing.T) {
+	assert := assert.New(t)
+
+	type SampleConfig struct {
+		Version string `yaml:"version"`
+		Value   string `yaml:"value"`
+	}
+	yamlConfig := `
+	version: "1.0.0"
+	value: "foobar"
+	sneakyValue: "superSecret"
+	`
+
+	handler := NewHandler(afero.NewMemMapFs())
+	assert.NoError(handler.Write(constants.ConfigFilename, []byte(yamlConfig), OptNone))
+
+	var readInConfig SampleConfig
+	assert.Error(handler.ReadYAMLStrict(constants.ConfigFilename, &readInConfig))
 }
 
 func TestWriteYAML(t *testing.T) {

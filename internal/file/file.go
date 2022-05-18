@@ -5,6 +5,7 @@ and file system abstraction.
 package file
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
@@ -99,11 +100,23 @@ func (h *Handler) WriteJSON(name string, content any, options Option) error {
 // ReadYAML reads a YAML file from name and unmarshals it into the content interface.
 // The interface content must be a pointer to a YAML marchalable object.
 func (h *Handler) ReadYAML(name string, content any) error {
+	return h.readYAML(name, content, false)
+}
+
+// ReadYAMLStrict does the same as ReadYAML, but fails if YAML contains fields
+// that are not specified in content.
+func (h *Handler) ReadYAMLStrict(name string, content any) error {
+	return h.readYAML(name, content, true)
+}
+
+func (h *Handler) readYAML(name string, content any, strict bool) error {
 	data, err := h.Read(name)
 	if err != nil {
 		return err
 	}
-	return yaml.Unmarshal(data, content)
+	decoder := yaml.NewDecoder(bytes.NewBuffer(data))
+	decoder.KnownFields(strict)
+	return decoder.Decode(content)
 }
 
 // WriteYAML marshals the content interface to YAML and writes it to the path with the given name.

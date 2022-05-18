@@ -13,8 +13,15 @@ import (
 	"github.com/edgelesssys/constellation/internal/file"
 )
 
+const (
+	Version1 = "v1"
+)
+
 // Config defines configuration used by CLI.
 type Config struct {
+	// description: |
+	//   Schema version of this configuration file.
+	Version string `yaml:"version"`
 	// description: |
 	//   Minimum number of nodes in autoscaling group.
 	//   worker nodes.
@@ -154,6 +161,7 @@ type QEMUConfig struct {
 // Default returns a struct with the default config.
 func Default() *Config {
 	return &Config{
+		Version:                  Version1,
 		AutoscalingNodeGroupsMin: 1,
 		AutoscalingNodeGroupsMax: 10,
 		StateDiskSizeGB:          30,
@@ -245,11 +253,14 @@ func FromFile(fileHandler file.Handler, name string) (*Config, error) {
 	}
 
 	var emptyConf Config
-	if err := fileHandler.ReadYAML(name, &emptyConf); err != nil {
+	if err := fileHandler.ReadYAMLStrict(name, &emptyConf); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, fmt.Errorf("unable to find %s - use `constellation config generate` to generate it first", name)
 		}
 		return nil, fmt.Errorf("could not load config from file %s: %w", name, err)
+	}
+	if emptyConf.Version != Version1 {
+		return nil, fmt.Errorf("config version (%s) is not supported - only version %s is supported", emptyConf.Version, Version1)
 	}
 	return &emptyConf, nil
 }

@@ -46,11 +46,13 @@ func TestFromFile(t *testing.T) {
 		},
 		"custom config from default file": {
 			config: &Config{
+				Version:                  Version1,
 				AutoscalingNodeGroupsMin: 42,
 				AutoscalingNodeGroupsMax: 1337,
 			},
 			configName: constants.ConfigFilename,
 			wantResult: &Config{
+				Version:                  Version1,
 				AutoscalingNodeGroupsMin: 42,
 				AutoscalingNodeGroupsMax: 1337,
 			},
@@ -94,6 +96,51 @@ func TestFromFile(t *testing.T) {
 	}
 }
 
+func TestFromFileStrictErrors(t *testing.T) {
+	testCases := map[string]struct {
+		yamlConfig string
+		wantErr    bool
+	}{
+		"valid config": {
+			yamlConfig: `
+			autoscalingNodeGroupsMin: 5
+			autoscalingNodeGroupsMax: 10
+			stateDisksizeGB: 25
+			`,
+		},
+		"typo": {
+			yamlConfig: `
+			autoscalingNodeGroupsMini: 5
+			autoscalingNodeGroupsMax: 10
+			stateDisksizeGB: 25
+			`,
+			wantErr: true,
+		},
+		"unsupported version": {
+			yamlConfig: `
+			version: v5
+			autoscalingNodeGroupsMin: 1
+			autoscalingNodeGroupsMax: 10
+			stateDisksizeGB: 30
+			`,
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			fileHandler := file.NewHandler(afero.NewMemMapFs())
+			err := fileHandler.Write(constants.ConfigFilename, []byte(tc.yamlConfig), file.OptNone)
+			assert.NoError(err)
+
+			_, err = FromFile(fileHandler, constants.ConfigFilename)
+			assert.Error(err)
+		})
+	}
+}
+
 func TestConfigRemoveProviderExcept(t *testing.T) {
 	testCases := map[string]struct {
 		removeExcept cloudprovider.Provider
@@ -133,4 +180,9 @@ func TestConfigRemoveProviderExcept(t *testing.T) {
 			assert.Equal(tc.wantQEMU, conf.Provider.QEMU)
 		})
 	}
+}
+
+func TestConfigGeneratedDocsFresh(t *testing.T) {
+	assert := assert.New(t)
+	assert.Len(ConfigDoc.Fields, 8, "remember to re-generate config docs!")
 }
