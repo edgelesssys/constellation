@@ -1,6 +1,7 @@
 package kubernetes
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -49,6 +50,11 @@ func New(clusterUtil k8sapi.ClusterUtil, configProvider configurationProvider, c
 
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(in InitClusterInput) error {
+	// TODO: k8s version should be user input
+	if err := k.clusterUtil.InstallComponents(context.TODO(), "1.23.6"); err != nil {
+		return err
+	}
+
 	initConfig := k.configProvider.InitConfiguration(in.SupportsCloudControllerManager)
 	initConfig.SetApiServerAdvertiseAddress(in.APIServerAdvertiseIP)
 	initConfig.SetNodeIP(in.NodeIP)
@@ -105,6 +111,11 @@ func (k *KubeWrapper) InitCluster(in InitClusterInput) error {
 
 // JoinCluster joins existing Kubernetes cluster.
 func (k *KubeWrapper) JoinCluster(args *kubeadm.BootstrapTokenDiscovery, nodeName, nodeInternalIP, nodeVPNIP, providerID, certKey string, ccmSupported bool, peerRole role.Role) error {
+	// TODO: k8s version should be user input
+	if err := k.clusterUtil.InstallComponents(context.TODO(), "1.23.6"); err != nil {
+		return err
+	}
+
 	joinConfig := k.configProvider.JoinConfiguration(ccmSupported)
 	joinConfig.SetApiServerEndpoint(args.APIServerEndpoint)
 	joinConfig.SetToken(args.Token)
@@ -147,6 +158,11 @@ func (k *KubeWrapper) GetKubeadmCertificateKey() (string, error) {
 // GetJoinToken returns a bootstrap (join) token.
 func (k *KubeWrapper) GetJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error) {
 	return k.clusterUtil.CreateJoinToken(ttl)
+}
+
+// StartKubelet starts the kubelet service.
+func (k *KubeWrapper) StartKubelet() error {
+	return k.clusterUtil.StartKubelet()
 }
 
 type fakeK8SClient struct {

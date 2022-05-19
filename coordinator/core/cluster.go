@@ -185,6 +185,8 @@ type Cluster interface {
 	GetKubeadmCertificateKey() (string, error)
 	// GetJoinToken returns a bootstrap (join) token.
 	GetJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error)
+	// StartKubelet starts the kubelet service.
+	StartKubelet() error
 }
 
 // ClusterFake behaves like a real cluster, but does not actually initialize or join Kubernetes.
@@ -217,6 +219,11 @@ func (c *ClusterFake) GetJoinToken(_ time.Duration) (*kubeadm.BootstrapTokenDisc
 		Token:             "kube-fake-token",
 		CACertHashes:      []string{"sha256:a60ebe9b0879090edd83b40a4df4bebb20506bac1e51d518ff8f4505a721930f"},
 	}, nil
+}
+
+// StartKubelet starts the kubelet service.
+func (c *ClusterFake) StartKubelet() error {
+	return nil
 }
 
 // k8sCompliantHostname transforms a hostname to an RFC 1123 compliant, lowercase subdomain as required by Kubernetes node names.

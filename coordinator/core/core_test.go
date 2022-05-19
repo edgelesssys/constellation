@@ -214,7 +214,7 @@ func TestInitialize(t *testing.T) {
 					VPNPrivKey: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7},
 				}).ToFile(fileHandler))
 			}
-			core, err := NewCore(&stubVPN{}, nil, &ProviderMetadataFake{}, nil, nil, nil, nil, zaptest.NewLogger(t), openTPM, &fakeStoreFactory{}, fileHandler, user.NewLinuxUserManagerFake(fs))
+			core, err := NewCore(&stubVPN{}, &clusterStub{}, &ProviderMetadataFake{}, nil, nil, nil, nil, zaptest.NewLogger(t), openTPM, &fakeStoreFactory{}, fileHandler, user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 			core.initialVPNPeersRetriever = fakeInitializeVPNPeersRetriever
 			// prepare store to emulate initialized KMS

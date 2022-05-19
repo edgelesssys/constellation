@@ -87,7 +87,7 @@ func main() {
 		issuer = gcp.NewIssuer()
 		validator = gcp.NewValidator(pcrs)
 
-		kube = kubernetes.New(&k8sapi.KubernetesUtil{}, &k8sapi.CoreOSConfiguration{}, kubectl.New())
+		kube = kubernetes.New(k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New())
 		gcpClient, err := gcpcloud.NewClient(context.Background())
 		if err != nil {
 			log.Fatalf("creating GCP client failed: %v\n", err)
@@ -112,7 +112,7 @@ func main() {
 		issuer = azure.NewIssuer()
 		validator = azure.NewValidator(pcrs)
 
-		kube = kubernetes.New(&k8sapi.KubernetesUtil{}, &k8sapi.CoreOSConfiguration{}, kubectl.New())
+		kube = kubernetes.New(k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New())
 		metadata, err = azurecloud.NewMetadata(context.Background())
 		if err != nil {
 			log.Fatal(err)
@@ -136,7 +136,7 @@ func main() {
 		issuer = qemu.NewIssuer()
 		validator = qemu.NewValidator(pcrs)
 
-		kube = kubernetes.New(&k8sapi.KubernetesUtil{}, &k8sapi.CoreOSConfiguration{}, kubectl.New())
+		kube = kubernetes.New(k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New())
 
 		// no support for cloud services in qemu
 		metadata = &qemucloud.Metadata{}

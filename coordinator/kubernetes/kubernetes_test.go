@@ -1,6 +1,7 @@
 package kubernetes
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -20,18 +21,24 @@ func TestMain(m *testing.M) {
 }
 
 type stubClusterUtil struct {
+	installComponentsErr             error
 	initClusterErr                   error
 	setupPodNetworkErr               error
 	setupAutoscalingError            error
 	setupCloudControllerManagerError error
 	setupCloudNodeManagerError       error
 	joinClusterErr                   error
+	startKubeletErr                  error
 	restartKubeletErr                error
 	createJoinTokenResponse          *kubeadm.BootstrapTokenDiscovery
 	createJoinTokenErr               error
 
 	initConfigs [][]byte
 	joinConfigs [][]byte
+}
+
+func (s *stubClusterUtil) InstallComponents(ctx context.Context, version string) error {
+	return s.installComponentsErr
 }
 
 func (s *stubClusterUtil) InitCluster(initConfig []byte) error {
@@ -58,6 +65,10 @@ func (s *stubClusterUtil) SetupCloudNodeManager(kubectl k8sapi.Client, cloudNode
 func (s *stubClusterUtil) JoinCluster(joinConfig []byte) error {
 	s.joinConfigs = append(s.joinConfigs, joinConfig)
 	return s.joinClusterErr
+}
+
+func (s *stubClusterUtil) StartKubelet() error {
+	return s.startKubeletErr
 }
 
 func (s *stubClusterUtil) RestartKubelet() error {

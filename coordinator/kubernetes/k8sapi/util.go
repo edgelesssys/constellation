@@ -1,6 +1,7 @@
 package k8sapi
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -12,8 +13,12 @@ import (
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
-// kubeConfig is the path to the Kubernetes admin config (used for authentication).
-const kubeConfig = "/etc/kubernetes/admin.conf"
+const (
+	// kubeConfig is the path to the Kubernetes admin config (used for authentication).
+	kubeConfig = "/etc/kubernetes/admin.conf"
+	// kubeletStartTimeout is the maximum time given to the kubelet service to (re)start.
+	kubeletStartTimeout = 10 * time.Minute
+)
 
 // Client provides the functionality of `kubectl apply`.
 type Client interface {
@@ -23,18 +28,44 @@ type Client interface {
 }
 
 type ClusterUtil interface {
+	InstallComponents(ctx context.Context, version string) error
 	InitCluster(initConfig []byte) error
 	JoinCluster(joinConfig []byte) error
 	SetupPodNetwork(kubectl Client, podNetworkConfiguration resources.Marshaler) error
 	SetupAutoscaling(kubectl Client, clusterAutoscalerConfiguration resources.Marshaler, secrets resources.Marshaler) error
 	SetupCloudControllerManager(kubectl Client, cloudControllerManagerConfiguration resources.Marshaler, configMaps resources.Marshaler, secrets resources.Marshaler) error
 	SetupCloudNodeManager(kubectl Client, cloudNodeManagerConfiguration resources.Marshaler) error
+	StartKubelet() error
 	RestartKubelet() error
 	GetControlPlaneJoinCertificateKey() (string, error)
 	CreateJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error)
 }
 
-type KubernetesUtil struct{}
+// KubernetesUtil provides low level management of the kubernetes cluster.
+type KubernetesUtil struct {
+	inst installer
+}
+
+// NewKubernetesUtils creates a new KubernetesUtil.
+func NewKubernetesUtil() *KubernetesUtil {
+	return &KubernetesUtil{
+		inst: newOSInstaller(),
+	}
+}
+
+// InstallComponents installs kubernetes components in the version specified.
+func (k *KubernetesUtil) InstallComponents(ctx context.Context, version string) error {
+	var versionConf kubernetesVersion
+	var ok bool
+	if versionConf, ok = versionConfigs[version]; !ok {
+		return fmt.Errorf("unsupported kubernetes version %q", version)
+	}
+	if err := versionConf.installK8sComponents(ctx, k.inst); err != nil {
+		return err
+	}
+
+	return enableSystemdUnit(ctx, kubeletServiceEtcPath)
+}
 
 func (k *KubernetesUtil) InitCluster(initConfig []byte) error {
 	// TODO: audit policy should be user input
@@ -56,7 +87,7 @@ func (k *KubernetesUtil) InitCluster(initConfig []byte) error {
 		return fmt.Errorf("writing kubeadm init yaml config %v failed: %w", initConfigFile.Name(), err)
 	}
 
-	cmd := exec.Command("kubeadm", "init", "--config", initConfigFile.Name())
+	cmd := exec.Command(kubeadmPath, "init", "--config", initConfigFile.Name())
 	_, err = cmd.Output()
 	if err != nil {
 		var exitErr *exec.ExitError
@@ -75,11 +106,11 @@ func (k *KubernetesUtil) SetupPodNetwork(kubectl Client, podNetworkConfiguration
 	}
 
 	// allow coredns to run on uninitialized nodes (required by cloud-controller-manager)
-	err := exec.Command("kubectl", "--kubeconfig", kubeConfig, "-n", "kube-system", "patch", "deployment", "coredns", "--type", "json", "-p", "[{\"op\":\"add\",\"path\":\"/spec/template/spec/tolerations/-\",\"value\":{\"key\":\"node.cloudprovider.kubernetes.io/uninitialized\",\"value\":\"true\",\"effect\":\"NoSchedule\"}}]").Run()
+	err := exec.Command(kubectlPath, "--kubeconfig", kubeConfig, "-n", "kube-system", "patch", "deployment", "coredns", "--type", "json", "-p", "[{\"op\":\"add\",\"path\":\"/spec/template/spec/tolerations/-\",\"value\":{\"key\":\"node.cloudprovider.kubernetes.io/uninitialized\",\"value\":\"true\",\"effect\":\"NoSchedule\"}}]").Run()
 	if err != nil {
 		return err
 	}
-	return exec.Command("kubectl", "--kubeconfig", kubeConfig, "-n", "kube-system", "patch", "deployment", "coredns", "--type", "json", "-p", "[{\"op\":\"add\",\"path\":\"/spec/template/spec/tolerations/-\",\"value\":{\"key\":\"node.kubernetes.io/network-unavailable\",\"value\":\"\",\"effect\":\"NoSchedule\"}}]").Run()
+	return exec.Command(kubectlPath, "--kubeconfig", kubeConfig, "-n", "kube-system", "patch", "deployment", "coredns", "--type", "json", "-p", "[{\"op\":\"add\",\"path\":\"/spec/template/spec/tolerations/-\",\"value\":{\"key\":\"node.kubernetes.io/network-unavailable\",\"value\":\"\",\"effect\":\"NoSchedule\"}}]").Run()
 }
 
 // SetupAutoscaling deploys the k8s cluster autoscaler.
@@ -131,7 +162,7 @@ func (k *KubernetesUtil) JoinCluster(joinConfig []byte) error {
 	}
 
 	// run `kubeadm join` to join a worker node to an existing Kubernetes cluster
-	cmd := exec.Command("kubeadm", "join", "--config", joinConfigFile.Name())
+	cmd := exec.Command(kubeadmPath, "join", "--config", joinConfigFile.Name())
 	if _, err := cmd.Output(); err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
@@ -142,9 +173,21 @@ func (k *KubernetesUtil) JoinCluster(joinConfig []byte) error {
 	return nil
 }
 
+// StartKubelet enables and starts the kubelet systemd unit.
+func (k *KubernetesUtil) StartKubelet() error {
+	ctx, cancel := context.WithTimeout(context.TODO(), kubeletStartTimeout)
+	defer cancel()
+	if err := enableSystemdUnit(ctx, kubeletServiceEtcPath); err != nil {
+		return fmt.Errorf("enabling kubelet systemd unit failed: %w", err)
+	}
+	return startSystemdUnit(ctx, "kubelet.service")
+}
+
 // RestartKubelet restarts a kubelet.
 func (k *KubernetesUtil) RestartKubelet() error {
-	return RestartSystemdUnit("kubelet.service")
+	ctx, cancel := context.WithTimeout(context.TODO(), kubeletStartTimeout)
+	defer cancel()
+	return restartSystemdUnit(ctx, "kubelet.service")
 }
 
 // GetControlPlaneJoinCertificateKey return the key which can be used in combination with the joinArgs
@@ -152,7 +195,7 @@ func (k *KubernetesUtil) RestartKubelet() error {
 func (k *KubernetesUtil) GetControlPlaneJoinCertificateKey() (string, error) {
 	// Key will be valid for 1h (no option to reduce the duration).
 	// https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init-phase/#cmd-phase-upload-certs
-	output, err := exec.Command("kubeadm", "init", "phase", "upload-certs", "--upload-certs").Output()
+	output, err := exec.Command(kubeadmPath, "init", "phase", "upload-certs", "--upload-certs").Output()
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
@@ -175,7 +218,7 @@ func (k *KubernetesUtil) GetControlPlaneJoinCertificateKey() (string, error) {
 
 // CreateJoinToken creates a new bootstrap (join) token.
 func (k *KubernetesUtil) CreateJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error) {
-	output, err := exec.Command("kubeadm", "token", "create", "--ttl", ttl.String(), "--print-join-command").Output()
+	output, err := exec.Command(kubeadmPath, "token", "create", "--ttl", ttl.String(), "--print-join-command").Output()
 	if err != nil {
 		return nil, fmt.Errorf("kubeadm token create failed: %w", err)
 	}

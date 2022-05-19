@@ -349,6 +349,7 @@ type clusterStub struct {
 	getKubeconfigErr     error
 	getJoinTokenResponse *kubeadm.BootstrapTokenDiscovery
 	getJoinTokenErr      error
+	startKubeletErr      error
 
 	initInputs      []kubernetes.InitClusterInput
 	joinClusterArgs []joinClusterArgs
@@ -381,6 +382,10 @@ func (c *clusterStub) GetKubeadmCertificateKey() (string, error) {
 
 func (c *clusterStub) GetJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error) {
 	return c.getJoinTokenResponse, c.getJoinTokenErr
+}
+
+func (c *clusterStub) StartKubelet() error {
+	return c.startKubeletErr
 }
 
 type prepareInstanceRequest struct {

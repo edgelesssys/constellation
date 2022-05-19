@@ -206,6 +206,12 @@ func (c *Core) Initialize(ctx context.Context, dialer Dialer, api PubAPI) (nodeA
 	if err := c.vpn.Setup(nodeState.VPNPrivKey); err != nil {
 		return false, fmt.Errorf("failed to setup VPN: %w", err)
 	}
+
+	// restart kubernetes
+	if err := c.kube.StartKubelet(); err != nil {
+		return false, fmt.Errorf("failed to start kubelet service: %w", err)
+	}
+
 	var initialState state.State
 	switch nodeState.Role {
 	case role.Coordinator:
