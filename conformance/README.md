@@ -54,3 +54,13 @@ wg-quick down ./wg0.conf
 ./constellation terminate
 rm constellation-mastersecret.base64
 ```
+
+## Run CIS Benchmark Tests
+
+```sh
+# Runs for <1 min.
+sonobuoy run --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-plugin.yaml --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-master-plugin.yaml --wait
+# ... download & display results.
+outfile=$(sonobuoy retrieve)
+sonobuoy results $outfiles
+```

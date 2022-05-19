@@ -21,5 +21,5 @@ jobs:
         cloudProvider: 'gcp'
         machineType: 'n2d-standard-2'
         gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-        sonobuoyTestSuiteCmd: '--mode certified-conformance'
+        sonobuoyTestSuiteCmd: '--mode certified-conformance --plugin e2e --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-plugin.yaml --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-master-plugin.yaml'
         msTeamsWebhook: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
