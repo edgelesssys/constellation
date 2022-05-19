@@ -10,19 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testDEK = []byte{
-	0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-	0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-	0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-	0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-	0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-	0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-	0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-	0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
-}
-
 type stubCryptDevice struct {
 	deviceName       string
+	uuid             string
 	initErr          error
 	initByNameErr    error
 	activateErr      error
@@ -66,6 +56,10 @@ func (c *stubCryptDevice) Free() bool {
 
 func (c *stubCryptDevice) GetDeviceName() string {
 	return c.deviceName
+}
+
+func (c *stubCryptDevice) GetUUID() string {
+	return c.uuid
 }
 
 func (c *stubCryptDevice) Load(cryptsetup.DeviceType) error {
@@ -124,116 +118,156 @@ func TestCloseCryptDevice(t *testing.T) {
 
 func TestOpenCryptDevice(t *testing.T) {
 	someErr := errors.New("error")
+	getKeyFunc := func(context.Context, string, int) ([]byte, error) {
+		return []byte{
+			0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+			0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+			0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+			0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+		}, nil
+	}
 
 	testCases := map[string]struct {
-		source     string
-		volumeID   string
-		passphrase string
-		integrity  bool
-		mapper     *stubCryptDevice
-		diskInfo   func(disk string) (string, error)
-		wantErr    bool
+		source    string
+		volumeID  string
+		integrity bool
+		mapper    *stubCryptDevice
+		getKey    func(context.Context, string, int) ([]byte, error)
+		diskInfo  func(disk string) (string, error)
+		wantErr   bool
 	}{
 		"success with Load": {
-			source:     "/dev/some-device",
-			volumeID:   "volume0",
-			passphrase: string(testDEK),
-			mapper:     &stubCryptDevice{},
-			diskInfo:   func(disk string) (string, error) { return "", nil },
-			wantErr:    false,
+			source:   "/dev/some-device",
+			volumeID: "volume0",
+			mapper:   &stubCryptDevice{},
+			getKey:   getKeyFunc,
+			diskInfo: func(disk string) (string, error) { return "", nil },
+			wantErr:  false,
 		},
 		"success with error on Load": {
-			source:     "/dev/some-device",
-			volumeID:   "volume0",
-			passphrase: string(testDEK),
-			mapper:     &stubCryptDevice{loadErr: someErr},
-			diskInfo:   func(disk string) (string, error) { return "", nil },
-			wantErr:    false,
+			source:   "/dev/some-device",
+			volumeID: "volume0",
+			mapper:   &stubCryptDevice{loadErr: someErr},
+			getKey:   getKeyFunc,
+			diskInfo: func(disk string) (string, error) { return "", nil },
+			wantErr:  false,
 		},
 		"success with integrity": {
-			source:     "/dev/some-device",
-			volumeID:   "volume0",
-			passphrase: string(append(testDEK, testDEK[:32]...)),
-			integrity:  true,
-			mapper:     &stubCryptDevice{loadErr: someErr},
-			diskInfo:   func(disk string) (string, error) { return "", nil },
-			wantErr:    false,
+			source:    "/dev/some-device",
+			volumeID:  "volume0",
+			integrity: true,
+			mapper:    &stubCryptDevice{loadErr: someErr},
+			getKey:    getKeyFunc,
+			diskInfo:  func(disk string) (string, error) { return "", nil },
+			wantErr:   false,
 		},
 		"error on Init": {
-			source:     "/dev/some-device",
-			volumeID:   "volume0",
-			passphrase: string(testDEK),
-			mapper:     &stubCryptDevice{initErr: someErr},
-			diskInfo:   func(disk string) (string, error) { return "", nil },
-			wantErr:    true,
+			source:   "/dev/some-device",
+			volumeID: "volume0",
+			mapper:   &stubCryptDevice{initErr: someErr},
+			getKey:   getKeyFunc,
+			diskInfo: func(disk string) (string, error) { return "", nil },
+			wantErr:  true,
 		},
 		"error on Format": {
-			source:     "/dev/some-device",
-			volumeID:   "volume0",
-			passphrase: string(testDEK),
-			mapper:     &stubCryptDevice{loadErr: someErr, formatErr: someErr},
-			diskInfo:   func(disk string) (string, error) { return "", nil },
-			wantErr:    true,
+			source:   "/dev/some-device",
+			volumeID: "volume0",
+			mapper:   &stubCryptDevice{loadErr: someErr, formatErr: someErr},
+			getKey:   getKeyFunc,
+			diskInfo: func(disk string) (string, error) { return "", nil },
+			wantErr:  true,
 		},
 		"error on Activate": {
-			source:     "/dev/some-device",
-			volumeID:   "volume0",
-			passphrase: string(testDEK),
-			mapper:     &stubCryptDevice{activatePassErr: someErr},
-			diskInfo:   func(disk string) (string, error) { return "", nil },
-			wantErr:    true,
+			source:   "/dev/some-device",
+			volumeID: "volume0",
+			mapper:   &stubCryptDevice{activatePassErr: someErr},
+			getKey:   getKeyFunc,
+			diskInfo: func(disk string) (string, error) { return "", nil },
+			wantErr:  true,
 		},
 		"error on diskInfo": {
-			source:     "/dev/some-device",
-			volumeID:   "volume0",
-			passphrase: string(testDEK),
-			mapper:     &stubCryptDevice{loadErr: someErr},
-			diskInfo:   func(disk string) (string, error) { return "", someErr },
-			wantErr:    true,
+			source:   "/dev/some-device",
+			volumeID: "volume0",
+			mapper:   &stubCryptDevice{loadErr: someErr},
+			getKey:   getKeyFunc,
+			diskInfo: func(disk string) (string, error) { return "", someErr },
+			wantErr:  true,
 		},
 		"disk is already formatted": {
-			source:     "/dev/some-device",
-			volumeID:   "volume0",
-			passphrase: string(testDEK),
-			mapper:     &stubCryptDevice{loadErr: someErr},
-			diskInfo:   func(disk string) (string, error) { return "ext4", nil },
-			wantErr:    true,
+			source:   "/dev/some-device",
+			volumeID: "volume0",
+			mapper:   &stubCryptDevice{loadErr: someErr},
+			getKey:   getKeyFunc,
+			diskInfo: func(disk string) (string, error) { return "ext4", nil },
+			wantErr:  true,
 		},
 		"error with integrity on wipe": {
-			source:     "/dev/some-device",
-			volumeID:   "volume0",
-			passphrase: string(append(testDEK, testDEK[:32]...)),
-			integrity:  true,
-			mapper:     &stubCryptDevice{loadErr: someErr, wipeErr: someErr},
-			diskInfo:   func(disk string) (string, error) { return "", nil },
-			wantErr:    true,
+			source:    "/dev/some-device",
+			volumeID:  "volume0",
+			integrity: true,
+			mapper:    &stubCryptDevice{loadErr: someErr, wipeErr: someErr},
+			getKey:    getKeyFunc,
+			diskInfo:  func(disk string) (string, error) { return "", nil },
+			wantErr:   true,
 		},
 		"error with integrity on activate": {
-			source:     "/dev/some-device",
-			volumeID:   "volume0",
-			passphrase: string(append(testDEK, testDEK[:32]...)),
-			integrity:  true,
-			mapper:     &stubCryptDevice{loadErr: someErr, activateErr: someErr},
-			diskInfo:   func(disk string) (string, error) { return "", nil },
-			wantErr:    true,
+			source:    "/dev/some-device",
+			volumeID:  "volume0",
+			integrity: true,
+			mapper:    &stubCryptDevice{loadErr: someErr, activateErr: someErr},
+			getKey:    getKeyFunc,
+			diskInfo:  func(disk string) (string, error) { return "", nil },
+			wantErr:   true,
 		},
 		"error with integrity on deactivate": {
-			source:     "/dev/some-device",
-			volumeID:   "volume0",
-			passphrase: string(append(testDEK, testDEK[:32]...)),
-			integrity:  true,
-			mapper:     &stubCryptDevice{loadErr: someErr, deactivateErr: someErr},
-			diskInfo:   func(disk string) (string, error) { return "", nil },
-			wantErr:    true,
+			source:    "/dev/some-device",
+			volumeID:  "volume0",
+			integrity: true,
+			mapper:    &stubCryptDevice{loadErr: someErr, deactivateErr: someErr},
+			getKey:    getKeyFunc,
+			diskInfo:  func(disk string) (string, error) { return "", nil },
+			wantErr:   true,
 		},
 		"error on adding keyslot": {
-			source:     "/dev/some-device",
-			volumeID:   "volume0",
-			passphrase: string(testDEK),
+			source:   "/dev/some-device",
+			volumeID: "volume0",
 			mapper: &stubCryptDevice{
 				loadErr:       someErr,
 				keySlotAddErr: someErr,
 			},
+			getKey:   getKeyFunc,
+			diskInfo: func(disk string) (string, error) { return "", nil },
+			wantErr:  true,
+		},
+		"incorrect key length": {
+			source:   "/dev/some-device",
+			volumeID: "volume0",
+			mapper:   &stubCryptDevice{},
+			getKey:   func(ctx context.Context, s string, i int) ([]byte, error) { return []byte{0x1, 0x2, 0x3}, nil },
+			diskInfo: func(disk string) (string, error) { return "", nil },
+			wantErr:  true,
+		},
+		"incorrect key length with error on Load": {
+			source:   "/dev/some-device",
+			volumeID: "volume0",
+			mapper:   &stubCryptDevice{loadErr: someErr},
+			getKey:   func(ctx context.Context, s string, i int) ([]byte, error) { return []byte{0x1, 0x2, 0x3}, nil },
+			diskInfo: func(disk string) (string, error) { return "", nil },
+			wantErr:  true,
+		},
+		"getKey fails": {
+			source:   "/dev/some-device",
+			volumeID: "volume0",
+			mapper:   &stubCryptDevice{},
+			getKey:   func(ctx context.Context, s string, i int) ([]byte, error) { return nil, someErr },
+			diskInfo: func(disk string) (string, error) { return "", nil },
+			wantErr:  true,
+		},
+		"getKey fails with error on Load": {
+			source:   "/dev/some-device",
+			volumeID: "volume0",
+			mapper:   &stubCryptDevice{loadErr: someErr},
+			getKey:   func(ctx context.Context, s string, i int) ([]byte, error) { return nil, someErr },
 			diskInfo: func(disk string) (string, error) { return "", nil },
 			wantErr:  true,
 		},
@@ -243,7 +277,15 @@ func TestOpenCryptDevice(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			out, err := openCryptDevice(tc.mapper, tc.source, tc.volumeID, tc.passphrase, tc.integrity, tc.diskInfo)
+			out, err := openCryptDevice(
+				context.Background(),
+				tc.mapper,
+				tc.source,
+				tc.volumeID,
+				tc.integrity,
+				tc.getKey,
+				tc.diskInfo,
+			)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

@@ -68,6 +68,8 @@ type DeviceMapper interface {
 	Free() bool
 	// GetDeviceName gets the path to the underlying device.
 	GetDeviceName() string
+	// GetUUID gets the devices UUID
+	GetUUID() string
 	// Load loads crypt device parameters from the on-disk header.
 	// Returns nil on success, or an error otherwise.
 	Load(cryptsetup.DeviceType) error
@@ -171,18 +173,8 @@ func (c *CryptMapper) CloseCryptDevice(volumeID string) error {
 // OpenCryptDevice maps the volume at source to the crypt device identified by volumeID.
 // The key used to encrypt the volume is fetched using CryptMapper's kms client.
 func (c *CryptMapper) OpenCryptDevice(ctx context.Context, source, volumeID string, integrity bool) (string, error) {
-	klog.V(4).Infof("Fetching data encryption key for volume %q", volumeID)
-
-	passphrase, err := c.kms.GetDEK(ctx, volumeID, constants.StateDiskKeyLength)
-	if err != nil {
-		return "", err
-	}
-	if len(passphrase) != constants.StateDiskKeyLength {
-		return "", fmt.Errorf("expected key length to be [%d] but got [%d]", constants.StateDiskKeyLength, len(passphrase))
-	}
-
 	m := &mount.SafeFormatAndMount{Exec: utilexec.New()}
-	return openCryptDevice(c.mapper, source, volumeID, string(passphrase), integrity, m.GetDiskFormat)
+	return openCryptDevice(ctx, c.mapper, source, volumeID, integrity, c.kms.GetDEK, m.GetDiskFormat)
 }
 
 // ResizeCryptDevice resizes the underlying crypt device and returns the mapped device path.
@@ -228,7 +220,9 @@ func closeCryptDevice(device DeviceMapper, source, volumeID, deviceType string) 
 }
 
 // openCryptDevice maps the volume at source to the crypt device identified by volumeID.
-func openCryptDevice(device DeviceMapper, source, volumeID, passphrase string, integrity bool, diskInfo func(disk string) (string, error)) (string, error) {
+func openCryptDevice(ctx context.Context, device DeviceMapper, source, volumeID string, integrity bool,
+	getKey func(ctx context.Context, keyID string, keySize int) ([]byte, error), diskInfo func(disk string) (string, error),
+) (string, error) {
 	packageLock.Lock()
 	defer packageLock.Unlock()
 
@@ -248,7 +242,7 @@ func openCryptDevice(device DeviceMapper, source, volumeID, passphrase string, i
 	}
 	defer device.Free()
 
-	needWipe := false
+	var passphrase []byte
 	// Try to load LUKS headers
 	// If this fails, the device is either not formatted at all, or already formatted with a different FS
 	if err := device.Load(cryptsetup.LUKS2{}); err != nil {
@@ -287,22 +281,41 @@ func openCryptDevice(device DeviceMapper, source, volumeID, passphrase string, i
 			return "", fmt.Errorf("formatting device %q failed: %w", source, err)
 		}
 
+		uuid := device.GetUUID()
+		klog.V(4).Infof("Fetching data encryption key for volume %q", volumeID)
+		passphrase, err = getKey(ctx, uuid, constants.StateDiskKeyLength)
+		if err != nil {
+			return "", err
+		}
+		if len(passphrase) != constants.StateDiskKeyLength {
+			return "", fmt.Errorf("expected key length to be [%d] but got [%d]", constants.StateDiskKeyLength, len(passphrase))
+		}
+
 		// Add a new keyslot using the internal volume key
-		if err := device.KeyslotAddByVolumeKey(0, "", passphrase); err != nil {
+		if err := device.KeyslotAddByVolumeKey(0, "", string(passphrase)); err != nil {
 			return "", fmt.Errorf("adding keyslot: %w", err)
 		}
-		needWipe = true
-	}
 
-	if integrity && needWipe {
-		if err := performWipe(device, volumeID); err != nil {
-			return "", fmt.Errorf("wiping device: %w", err)
+		if integrity {
+			if err := performWipe(device, volumeID); err != nil {
+				return "", fmt.Errorf("wiping device: %w", err)
+			}
+		}
+	} else {
+		uuid := device.GetUUID()
+		klog.V(4).Infof("Fetching data encryption key for volume %q", volumeID)
+		passphrase, err = getKey(ctx, uuid, constants.StateDiskKeyLength)
+		if err != nil {
+			return "", err
+		}
+		if len(passphrase) != constants.StateDiskKeyLength {
+			return "", fmt.Errorf("expected key length to be [%d] but got [%d]", constants.StateDiskKeyLength, len(passphrase))
 		}
 	}
 
 	klog.V(4).Infof("Activating LUKS2 device %q", cryptPrefix+volumeID)
 
-	if err := device.ActivateByPassphrase(volumeID, 0, passphrase, 0); err != nil {
+	if err := device.ActivateByPassphrase(volumeID, 0, string(passphrase), 0); err != nil {
 		klog.Errorf("Trying to activate dm-crypt volume: %s", err)
 		return "", fmt.Errorf("trying to activate dm-crypt volume: %w", err)
 	}

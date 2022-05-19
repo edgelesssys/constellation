@@ -25,8 +25,12 @@ func setup() {
 	exec.Command("/bin/dd", "if=/dev/zero", fmt.Sprintf("of=%s", DevicePath), "bs=64M", "count=1").Run()
 }
 
-func teardown() {
-	exec.Command("/bin/rm", "-f", DevicePath).Run()
+func teardown(devicePath string) {
+	exec.Command("/bin/rm", "-f", devicePath).Run()
+}
+
+func copy(source, target string) error {
+	return exec.Command("cp", source, target).Run()
 }
 
 func resize() {
@@ -50,7 +54,7 @@ func TestOpenAndClose(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 	setup()
-	defer teardown()
+	defer teardown(DevicePath)
 
 	kms := kms.NewStaticKMS()
 	mapper := cryptmapper.New(kms, &cryptmapper.CryptDevice{})
@@ -78,13 +82,18 @@ func TestOpenAndClose(t *testing.T) {
 	// assert crypt device got removed
 	_, err = os.Stat(newPath)
 	assert.True(os.IsNotExist(err))
+
+	// check if we can reopen the device
+	_, err = mapper.OpenCryptDevice(context.Background(), DevicePath, DeviceName, true)
+	assert.NoError(err)
+	assert.NoError(mapper.CloseCryptDevice(DeviceName))
 }
 
 func TestOpenAndCloseIntegrity(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 	setup()
-	defer teardown()
+	defer teardown(DevicePath)
 
 	kms := kms.NewStaticKMS()
 	mapper := cryptmapper.New(kms, &cryptmapper.CryptDevice{})
@@ -113,4 +122,40 @@ func TestOpenAndCloseIntegrity(t *testing.T) {
 	// assert integrity device got removed
 	_, err = os.Stat(newPath + "_dif")
 	assert.True(os.IsNotExist(err))
+
+	// check if we can reopen the device
+	_, err = mapper.OpenCryptDevice(context.Background(), DevicePath, DeviceName, true)
+	assert.NoError(err)
+	assert.NoError(mapper.CloseCryptDevice(DeviceName))
+}
+
+func TestDeviceCloning(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+	setup()
+	defer teardown(DevicePath)
+
+	mapper := cryptmapper.New(&dynamicKMS{}, &cryptmapper.CryptDevice{})
+
+	_, err := mapper.OpenCryptDevice(context.Background(), DevicePath, DeviceName, false)
+	assert.NoError(err)
+
+	require.NoError(copy(DevicePath, DevicePath+"-copy"))
+	defer teardown(DevicePath + "-copy")
+
+	_, err = mapper.OpenCryptDevice(context.Background(), DevicePath+"-copy", DeviceName+"-copy", false)
+	assert.NoError(err)
+
+	assert.NoError(mapper.CloseCryptDevice(DeviceName))
+	assert.NoError(mapper.CloseCryptDevice(DeviceName + "-copy"))
+}
+
+type dynamicKMS struct{}
+
+func (k *dynamicKMS) GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error) {
+	key := make([]byte, dekSize)
+	for i := range key {
+		key[i] = 0x41 ^ dekID[i%len(dekID)]
+	}
+	return key, nil
 }
