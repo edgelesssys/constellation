@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/cli/gcp"
+	"github.com/edgelesssys/constellation/coordinator/role"
 	"google.golang.org/api/iterator"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
@@ -32,6 +33,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		ImageId:                      input.ImageId,
 		InstanceType:                 input.InstanceType,
 		StateDiskSizeGB:              int64(input.StateDiskSizeGB),
+		Role:                         role.Node.String(),
 		KubeEnv:                      input.KubeEnv,
 		Project:                      c.project,
 		Zone:                         c.zone,
@@ -52,6 +54,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		ImageId:         input.ImageId,
 		InstanceType:    input.InstanceType,
 		StateDiskSizeGB: int64(input.StateDiskSizeGB),
+		Role:            role.Coordinator.String(),
 		KubeEnv:         input.KubeEnv,
 		Project:         c.project,
 		Zone:            c.zone,
@@ -301,6 +304,7 @@ type insertInstanceTemplateInput struct {
 	ImageId                      string
 	InstanceType                 string
 	StateDiskSizeGB              int64
+	Role                         string
 	KubeEnv                      string
 	Project                      string
 	Zone                         string
@@ -348,6 +352,10 @@ func (i insertInstanceTemplateInput) insertInstanceTemplateRequest() *computepb.
 						{
 							Key:   proto.String("constellation-uid"),
 							Value: proto.String(i.UID),
+						},
+						{
+							Key:   proto.String("constellation-role"),
+							Value: proto.String(i.Role),
 						},
 					},
 				},
