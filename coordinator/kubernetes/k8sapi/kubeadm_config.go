@@ -1,9 +1,12 @@
 package k8sapi
 
 import (
+	"path/filepath"
+
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/constants"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeletconf "k8s.io/kubelet/config/v1beta1"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
@@ -12,7 +15,10 @@ import (
 // Slimmed down to the fields we require
 
 const (
-	bindPort = 6443
+	bindPort        = 6443
+	auditLogDir     = "/var/log/kubernetes/audit/"
+	auditLogFile    = "audit.log"
+	auditPolicyPath = "/etc/kubernetes/audit-policy.yaml"
 )
 
 type CoreOSConfiguration struct{}
@@ -24,7 +30,7 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool) Kube
 	}
 	return KubeadmInitYAML{
 		InitConfiguration: kubeadm.InitConfiguration{
-			TypeMeta: v1.TypeMeta{
+			TypeMeta: metav1.TypeMeta{
 				APIVersion: kubeadm.SchemeGroupVersion.String(),
 				Kind:       "InitConfiguration",
 			},
@@ -41,7 +47,7 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool) Kube
 			},
 		},
 		ClusterConfiguration: kubeadm.ClusterConfiguration{
-			TypeMeta: v1.TypeMeta{
+			TypeMeta: metav1.TypeMeta{
 				Kind:       "ClusterConfiguration",
 				APIVersion: kubeadm.SchemeGroupVersion.String(),
 			},
@@ -50,7 +56,12 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool) Kube
 			APIServer: kubeadm.APIServer{
 				ControlPlaneComponent: kubeadm.ControlPlaneComponent{
 					ExtraArgs: map[string]string{
-						"profiling": "false", // CIS benchmark
+						"audit-policy-file":   auditPolicyPath,
+						"audit-log-path":      filepath.Join(auditLogDir, auditLogFile), // CIS benchmark
+						"audit-log-maxage":    "30",                                     // CIS benchmark - Default value of Rancher
+						"audit-log-maxbackup": "10",                                     // CIS benchmark - Default value of Rancher
+						"audit-log-maxsize":   "100",                                    // CIS benchmark - Default value of Rancher
+						"profiling":           "false",                                  // CIS benchmark
 						"tls-cipher-suites": "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256," +
 							"TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256," +
 							"TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384," +
@@ -59,6 +70,22 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool) Kube
 							"TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305," +
 							"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,TLS_RSA_WITH_3DES_EDE_CBC_SHA,TLS_RSA_WITH_AES_128_CBC_SHA," +
 							"TLS_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_256_GCM_SHA384", // CIS benchmark
+					},
+					ExtraVolumes: []kubeadm.HostPathMount{
+						{
+							Name:      "audit-log",
+							HostPath:  auditLogDir,
+							MountPath: auditLogDir,
+							ReadOnly:  false,
+							PathType:  corev1.HostPathDirectoryOrCreate,
+						},
+						{
+							Name:      "audit",
+							HostPath:  auditPolicyPath,
+							MountPath: auditPolicyPath,
+							ReadOnly:  true,
+							PathType:  corev1.HostPathFile,
+						},
 					},
 				},
 				CertSANs: []string{"127.0.0.1", "10.118.0.1"},
@@ -92,7 +119,7 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool) Kube
 				"TLS_RSA_WITH_AES_256_GCM_SHA384",
 				"TLS_RSA_WITH_AES_128_GCM_SHA256",
 			}, // CIS benchmark
-			TypeMeta: v1.TypeMeta{
+			TypeMeta: metav1.TypeMeta{
 				APIVersion: kubeletconf.SchemeGroupVersion.String(),
 				Kind:       "KubeletConfiguration",
 			},
@@ -107,7 +134,7 @@ func (c *CoreOSConfiguration) JoinConfiguration(externalCloudProvider bool) Kube
 	}
 	return KubeadmJoinYAML{
 		JoinConfiguration: kubeadm.JoinConfiguration{
-			TypeMeta: v1.TypeMeta{
+			TypeMeta: metav1.TypeMeta{
 				APIVersion: kubeadm.SchemeGroupVersion.String(),
 				Kind:       "JoinConfiguration",
 			},
@@ -122,7 +149,7 @@ func (c *CoreOSConfiguration) JoinConfiguration(externalCloudProvider bool) Kube
 			},
 		},
 		KubeletConfiguration: kubeletconf.KubeletConfiguration{
-			TypeMeta: v1.TypeMeta{
+			TypeMeta: metav1.TypeMeta{
 				APIVersion: kubeletconf.SchemeGroupVersion.String(),
 				Kind:       "KubeletConfiguration",
 			},
@@ -135,7 +162,7 @@ type AWSConfiguration struct{}
 func (a *AWSConfiguration) InitConfiguration() KubeadmInitYAML {
 	return KubeadmInitYAML{
 		InitConfiguration: kubeadm.InitConfiguration{
-			TypeMeta: v1.TypeMeta{
+			TypeMeta: metav1.TypeMeta{
 				APIVersion: kubeadm.SchemeGroupVersion.String(),
 				Kind:       "InitConfiguration",
 			},
@@ -146,7 +173,7 @@ func (a *AWSConfiguration) InitConfiguration() KubeadmInitYAML {
 			LocalAPIEndpoint: kubeadm.APIEndpoint{BindPort: bindPort},
 		},
 		ClusterConfiguration: kubeadm.ClusterConfiguration{
-			TypeMeta: v1.TypeMeta{
+			TypeMeta: metav1.TypeMeta{
 				APIVersion: kubeadm.SchemeGroupVersion.String(),
 				Kind:       "ClusterConfiguration",
 			},
@@ -155,7 +182,7 @@ func (a *AWSConfiguration) InitConfiguration() KubeadmInitYAML {
 			},
 		},
 		KubeletConfiguration: kubeletconf.KubeletConfiguration{
-			TypeMeta: v1.TypeMeta{
+			TypeMeta: metav1.TypeMeta{
 				APIVersion: kubeletconf.SchemeGroupVersion.String(),
 				Kind:       "KubeletConfiguration",
 			},
@@ -166,7 +193,7 @@ func (a *AWSConfiguration) InitConfiguration() KubeadmInitYAML {
 func (a *AWSConfiguration) JoinConfiguration() KubeadmJoinYAML {
 	return KubeadmJoinYAML{
 		JoinConfiguration: kubeadm.JoinConfiguration{
-			TypeMeta: v1.TypeMeta{
+			TypeMeta: metav1.TypeMeta{
 				APIVersion: kubeadm.SchemeGroupVersion.String(),
 				Kind:       "JoinConfiguration",
 			},
@@ -179,7 +206,7 @@ func (a *AWSConfiguration) JoinConfiguration() KubeadmJoinYAML {
 			},
 		},
 		KubeletConfiguration: kubeletconf.KubeletConfiguration{
-			TypeMeta: v1.TypeMeta{
+			TypeMeta: metav1.TypeMeta{
 				APIVersion: kubeletconf.SchemeGroupVersion.String(),
 				Kind:       "KubeletConfiguration",
 			},

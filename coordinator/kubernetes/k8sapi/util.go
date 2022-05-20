@@ -37,6 +37,15 @@ type ClusterUtil interface {
 type KubernetesUtil struct{}
 
 func (k *KubernetesUtil) InitCluster(initConfig []byte) error {
+	// TODO: audit policy should be user input
+	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
+	if err != nil {
+		return fmt.Errorf("failed to generate default audit policy: %w", err)
+	}
+	if err := os.WriteFile(auditPolicyPath, auditPolicy, 0o644); err != nil {
+		return fmt.Errorf("failed to write default audit policy: %w", err)
+	}
+
 	initConfigFile, err := os.CreateTemp("", "kubeadm-init.*.yaml")
 	if err != nil {
 		return fmt.Errorf("failed to create init config file %v: %w", initConfigFile.Name(), err)
@@ -102,6 +111,15 @@ func (k *KubernetesUtil) SetupCloudNodeManager(kubectl Client, cloudNodeManagerC
 
 // JoinCluster joins existing Kubernetes cluster using kubeadm join.
 func (k *KubernetesUtil) JoinCluster(joinConfig []byte) error {
+	// TODO: audit policy should be user input
+	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
+	if err != nil {
+		return fmt.Errorf("failed to generate default audit policy: %w", err)
+	}
+	if err := os.WriteFile(auditPolicyPath, auditPolicy, 0o644); err != nil {
+		return fmt.Errorf("failed to write default audit policy: %w", err)
+	}
+
 	joinConfigFile, err := os.CreateTemp("", "kubeadm-join.*.yaml")
 	if err != nil {
 		return fmt.Errorf("failed to create join config file %v: %w", joinConfigFile.Name(), err)
