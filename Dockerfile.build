@@ -1,7 +1,7 @@
 FROM fedora@sha256:36af84ba69e21c9ef86a0424a090674c433b2b80c2462e57503886f1d823abe8 as build
 
 RUN dnf -y update && \
-    dnf -y install @development-tools pkg-config cmake iproute iputils wget git jq openssl-devel cryptsetup-libs cryptsetup-devel && \
+    dnf -y install @development-tools pkg-config iproute iputils wget git jq openssl-devel cryptsetup-libs cryptsetup-devel && \
     dnf clean all
 
 # Install Go
@@ -15,17 +15,34 @@ ENV PATH ${PATH}:/usr/local/go/bin
 WORKDIR /constellation/
 COPY go.mod ./
 COPY go.sum ./
+COPY go.work ./
+COPY go.work.sum ./
+COPY hack/go.mod ./hack/go.mod
+COPY hack/go.sum ./hack/go.sum
 RUN go mod download all
 
 # Copy Repo
 COPY . /constellation
 
-# Build
-RUN mkdir -p /constellation/build
-WORKDIR /constellation/build
-RUN cmake .. && make coordinator
+FROM build AS build-coordinator
+WORKDIR /constellation/coordinator/
 
+ARG PROJECT_VERSION
+RUN go build -o coordinator -tags=gcp,disable_tpm_simulator -buildvcs=false -ldflags "-s -w -buildid='' -X main.version=${PROJECT_VERSION}" ./cmd/coordinator/
+
+FROM build-coordinator AS hash-coordinator
 RUN mv coordinator coordinator-$(sha512sum coordinator | cut -d " " -f 1)
 
-FROM scratch AS export
-COPY --from=build /constellation/build/coordinator-* /
+FROM build AS build-disk-mapper
+WORKDIR /constellation/state/
+
+RUN go build -o disk-mapper -ldflags "-s -w" ./cmd/
+
+FROM scratch AS coordinator
+COPY --from=build-coordinator /constellation/coordinator/coordinator /
+
+FROM scratch AS coordinator-hashed
+COPY --from=hash-coordinator /constellation/coordinator/coordinator-* /
+
+FROM scratch AS disk-mapper
+COPY --from=build-disk-mapper /constellation/state/disk-mapper /

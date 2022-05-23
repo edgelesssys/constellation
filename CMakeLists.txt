@@ -7,8 +7,9 @@ enable_testing()
 # core-os disk-mapper
 #
 add_custom_target(disk-mapper ALL
-  go build -o ${CMAKE_BINARY_DIR}/disk-mapper -ldflags "-s -w"
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/state/cmd
+  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} -f Dockerfile.build --target disk-mapper .
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  BYPRODUCTS disk-mapper
 )
 
 #
@@ -16,8 +17,10 @@ add_custom_target(disk-mapper ALL
 #
 
 add_custom_target(coordinator ALL
-  go build -o ${CMAKE_BINARY_DIR} -tags=gcp,disable_tpm_simulator -buildvcs=false -ldflags "-s -w -buildid='' -X main.version=${PROJECT_VERSION}"
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/coordinator/cmd/coordinator)
+  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION=${PROJECT_VERSION} -f Dockerfile.build --target coordinator .
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  BYPRODUCTS coordinator
+)
 
 
 #
@@ -26,15 +29,20 @@ add_custom_target(coordinator ALL
 
 add_custom_target(cli ALL
   CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/constellation -buildvcs=false -tags=gcp -ldflags "-buildid='' -X github.com/edgelesssys/constellation/internal/constants.CliVersion=${PROJECT_VERSION}"
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/cli)
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/cli
+  BYPRODUCTS constellation
+)
 
 #
 # testing / debugging
 #
 
-add_custom_target(debug_coordinator ALL
+add_custom_target(debug_coordinator
   go build -o ${CMAKE_BINARY_DIR}/debug_coordinator -buildvcs=false -ldflags "-buildid='' -X main.version=${PROJECT_VERSION}"
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/coordinator/cmd/coordinator)
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/coordinator/cmd/coordinator
+  BYPRODUCTS debug_coordinator
+)
+
 
 add_test(NAME unittest COMMAND go test -race -count=3 ./... WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME integrationtest COMMAND go test -v -tags integration ./test/  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

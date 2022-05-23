@@ -31,10 +31,18 @@ Additional repositories:
 
 Prerequisites:
 
-* Go 1.18
+* [Go 1.18](https://go.dev/doc/install)
+* [Docker](https://docs.docker.com/engine/install/)
 * Packages on Ubuntu:
+
   ```sh
   sudo apt install build-essential cmake libssl-dev pkg-config libcryptsetup12 libcryptsetup-dev
+  ```
+
+* Packages on Fedora:
+
+  ```sh
+  sudo dnf install @development-tools pkg-config cmake openssl-devel cryptsetup-libs cryptsetup-devel
   ```
 
 ```sh
@@ -56,9 +64,9 @@ For testing, you can use the constellation debug daemon (debugd) to upload your 
 
 ## Development Guides
 
-- [Upgrading Kubernetes](/docs/upgrade-kubernetes.md)
-- [Local image testing](/docs/local-image-testing.md)
+* [Upgrading Kubernetes](/docs/upgrade-kubernetes.md)
+* [Local image testing](/docs/local-image-testing.md)
 
 ## Deployment Guides
 
-- [Onboarding Customers](/docs/onboarding-customers.md)
+* [Onboarding Customers](/docs/onboarding-customers.md)
