@@ -75,7 +75,17 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		return err
 	}
 
-	config, err := config.FromFile(fileHandler, flags.configPath)
+	var stat state.ConstellationState
+	err = fileHandler.ReadJSON(constants.StateFilename, &stat)
+	if errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("nothing to initialize: %w", err)
+	} else if err != nil {
+		return err
+	}
+
+	provider := cloudprovider.FromString(stat.CloudProvider)
+
+	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath, provider)
 	if err != nil {
 		return err
 	}
@@ -88,17 +98,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		})
 	}
 
-	protoSSHUserKeys := ssh.ToProtoSlice(sshUsers)
-
-	var stat state.ConstellationState
-	err = fileHandler.ReadJSON(constants.StateFilename, &stat)
-	if errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("nothing to initialize: %w", err)
-	} else if err != nil {
-		return err
-	}
-
-	validators, err := cloudcmd.NewValidators(cloudprovider.FromString(stat.CloudProvider), config)
+	validators, err := cloudcmd.NewValidators(provider, config)
 	if err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		coordinatorPrivIPs:     coordinators.PrivateIPs()[1:],
 		autoscalingNodeGroups:  autoscalingNodeGroups,
 		cloudServiceAccountURI: serviceAccount,
-		sshUserKeys:            protoSSHUserKeys,
+		sshUserKeys:            ssh.ToProtoSlice(sshUsers),
 	}
 	result, err := activate(ctx, cmd, protCl, input, validators.V())
 	if err != nil {

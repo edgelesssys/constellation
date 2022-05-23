@@ -8,7 +8,6 @@ import (
 	"github.com/edgelesssys/constellation/cli/cloud/cloudcmd"
 	"github.com/edgelesssys/constellation/cli/cloudprovider"
 	"github.com/edgelesssys/constellation/cli/proto"
-	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"
@@ -49,7 +48,7 @@ func verify(ctx context.Context, cmd *cobra.Command, provider cloudprovider.Prov
 		return err
 	}
 
-	config, err := config.FromFile(fileHandler, flags.configPath)
+	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath, provider)
 	if err != nil {
 		return err
 	}

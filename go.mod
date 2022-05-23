@@ -64,6 +64,9 @@ require (
 	github.com/coreos/go-systemd/v22 v22.3.2
 	github.com/docker/docker v20.10.13+incompatible
 	github.com/docker/go-connections v0.4.0
+	github.com/go-playground/locales v0.14.0
+	github.com/go-playground/universal-translator v0.18.0
+	github.com/go-playground/validator/v10 v10.11.0
 	github.com/google/go-tpm v0.3.3
 	github.com/google/go-tpm-tools v0.3.5
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
@@ -104,8 +107,6 @@ require (
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 	sigs.k8s.io/yaml v1.3.0
 )
-
-require github.com/hashicorp/errwrap v1.1.0 // indirect
 
 require (
 	cloud.google.com/go v0.100.2 // indirect
@@ -161,6 +162,7 @@ require (
 	github.com/google/go-cmp v0.5.7 // indirect
 	github.com/google/go-tspi v0.3.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
+	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/icholy/replace v0.5.0
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
@@ -169,6 +171,7 @@ require (
 	github.com/josharian/native v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
+	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/mdlayher/genetlink v1.2.0 // indirect

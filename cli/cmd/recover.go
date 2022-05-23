@@ -11,7 +11,6 @@ import (
 	"github.com/edgelesssys/constellation/cli/cloudprovider"
 	"github.com/edgelesssys/constellation/cli/proto"
 	"github.com/edgelesssys/constellation/coordinator/util"
-	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/state"
@@ -51,17 +50,19 @@ func recover(ctx context.Context, cmd *cobra.Command, fileHandler file.Handler, 
 		return err
 	}
 
-	config, err := config.FromFile(fileHandler, flags.configPath)
-	if err != nil {
-		return err
-	}
-
 	var stat state.ConstellationState
 	if err := fileHandler.ReadJSON(constants.StateFilename, &stat); err != nil {
 		return err
 	}
 
-	validators, err := cloudcmd.NewValidators(cloudprovider.FromString(stat.CloudProvider), config)
+	provider := cloudprovider.FromString(stat.CloudProvider)
+
+	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath, provider)
+	if err != nil {
+		return err
+	}
+
+	validators, err := cloudcmd.NewValidators(provider, config)
 	if err != nil {
 		return err
 	}

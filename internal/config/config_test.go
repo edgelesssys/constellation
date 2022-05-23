@@ -141,6 +141,61 @@ func TestFromFileStrictErrors(t *testing.T) {
 	}
 }
 
+func TestValidate(t *testing.T) {
+	testCases := map[string]struct {
+		cnf          *Config
+		wantMsgCount int
+	}{
+		"default config is valid": {
+			cnf:          Default(),
+			wantMsgCount: 0,
+		},
+		"config with 1 error": {
+			cnf: func() *Config {
+				cnf := Default()
+				cnf.Version = "v0"
+				return cnf
+			}(),
+			wantMsgCount: 1,
+		},
+		"config with 2 errors": {
+			cnf: func() *Config {
+				cnf := Default()
+				cnf.Version = "v0"
+				cnf.StateDiskSizeGB = -1
+				return cnf
+			}(),
+			wantMsgCount: 2,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			msgs, err := tc.cnf.Validate()
+			require.NoError(err)
+			assert.Len(msgs, tc.wantMsgCount)
+		})
+	}
+}
+
+func TestHasProvider(t *testing.T) {
+	assert := assert.New(t)
+	assert.False((&Config{}).HasProvider(cloudprovider.Unknown))
+	assert.False((&Config{}).HasProvider(cloudprovider.Azure))
+	assert.False((&Config{}).HasProvider(cloudprovider.GCP))
+	assert.False((&Config{}).HasProvider(cloudprovider.QEMU))
+	assert.False(Default().HasProvider(cloudprovider.Unknown))
+	assert.True(Default().HasProvider(cloudprovider.Azure))
+	assert.True(Default().HasProvider(cloudprovider.GCP))
+	cnfWithAzure := Config{Provider: ProviderConfig{Azure: &AzureConfig{}}}
+	assert.False(cnfWithAzure.HasProvider(cloudprovider.Unknown))
+	assert.True(cnfWithAzure.HasProvider(cloudprovider.Azure))
+	assert.False(cnfWithAzure.HasProvider(cloudprovider.GCP))
+}
+
 func TestConfigRemoveProviderExcept(t *testing.T) {
 	testCases := map[string]struct {
 		removeExcept cloudprovider.Provider

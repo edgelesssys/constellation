@@ -11,6 +11,10 @@ import (
 	"github.com/edgelesssys/constellation/cli/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/go-playground/locales/en"
+	ut "github.com/go-playground/universal-translator"
+	"github.com/go-playground/validator/v10"
+	en_translations "github.com/go-playground/validator/v10/translations/en"
 )
 
 const (
@@ -21,21 +25,21 @@ const (
 type Config struct {
 	// description: |
 	//   Schema version of this configuration file.
-	Version string `yaml:"version"`
+	Version string `yaml:"version" validate:"eq=v1"`
 	// description: |
 	//   Minimum number of nodes in autoscaling group.
 	//   worker nodes.
-	AutoscalingNodeGroupsMin int `yaml:"autoscalingNodeGroupsMin"`
+	AutoscalingNodeGroupsMin int `yaml:"autoscalingNodeGroupsMin" validate:"min=0"`
 	// description: |
 	//   Maximum number of nodes in autoscaling group.
 	//   worker nodes.
-	AutoscalingNodeGroupsMax int `yaml:"autoscalingNodeGroupsMax"`
+	AutoscalingNodeGroupsMax int `yaml:"autoscalingNodeGroupsMax" validate:"gtefield=AutoscalingNodeGroupsMin"`
 	// description: |
 	//   Size (in GB) of data disk used for nodes.
-	StateDiskSizeGB int `yaml:"stateDisksizeGB"`
+	StateDiskSizeGB int `yaml:"stateDisksizeGB" validate:"min=0"`
 	// description: |
 	//   Ingress firewall rules for node network.
-	IngressFirewall Firewall `yaml:"ingressFirewall,omitempty"`
+	IngressFirewall Firewall `yaml:"ingressFirewall,omitempty" validate:"dive"`
 	// description: |
 	//   Egress firewall rules for node network.
 	// examples:
@@ -49,46 +53,46 @@ type Config struct {
 	//       ToPort: 443,
 	//     },
 	//   }'
-	EgressFirewall Firewall `yaml:"egressFirewall,omitempty"`
+	EgressFirewall Firewall `yaml:"egressFirewall,omitempty" validate:"dive"`
 	// description: |
 	//   Supported cloud providers & their specific configurations.
-	Provider ProviderConfig `yaml:"provider"`
+	Provider ProviderConfig `yaml:"provider" validate:"dive"`
 	// description: |
 	//   Create SSH users on Constellation nodes.
 	// examples:
 	//   - value: '[]UserKey{ { Username:  "Alice", PublicKey: "ssh-rsa AAAAB3NzaC...5QXHKW1rufgtJeSeJ8= alice@domain.com" } }'
-	SSHUsers []UserKey `yaml:"sshUsers,omitempty"`
+	SSHUsers []UserKey `yaml:"sshUsers,omitempty" validate:"dive"`
 }
 
 // UserKey describes a user that should be created with corresponding public SSH key.
 type UserKey struct {
 	// description: |
 	//   Username of new SSH user.
-	Username string `yaml:"username"`
+	Username string `yaml:"username" validate:"required"`
 	// description: |
 	//   Public key of new SSH user.
-	PublicKey string `yaml:"publicKey"`
+	PublicKey string `yaml:"publicKey" validate:"required"`
 }
 
 type FirewallRule struct {
 	// description: |
 	//   Name of rule.
-	Name string `yaml:"name"`
+	Name string `yaml:"name" validate:"required"`
 	// description: |
 	//   Description for rule.
 	Description string `yaml:"description"`
 	// description: |
 	//   Protocol, such as 'udp' or 'tcp'.
-	Protocol string `yaml:"protocol"`
+	Protocol string `yaml:"protocol" validate:"required"`
 	// description: |
 	//   CIDR range for which this rule is applied.
-	IPRange string `yaml:"iprange"`
+	IPRange string `yaml:"iprange" validate:"required"`
 	// description: |
 	//   Port of start port of a range.
-	FromPort int `yaml:"fromport"`
+	FromPort int `yaml:"fromport" validate:"min=0,max=65535"`
 	// description: |
 	//   End port of a range, or 0 if a single port is given by FromPort.
-	ToPort int `yaml:"toport"`
+	ToPort int `yaml:"toport" validate:"omitempty,gtefield=FromPort,max=65535"`
 }
 
 type Firewall []FirewallRule
@@ -99,51 +103,51 @@ type Firewall []FirewallRule
 type ProviderConfig struct {
 	// description: |
 	//   Configuration for Azure as provider.
-	Azure *AzureConfig `yaml:"azureConfig,omitempty"`
+	Azure *AzureConfig `yaml:"azureConfig,omitempty" validate:"omitempty,dive"`
 	// description: |
 	//   Configuration for Google Cloud as provider.
-	GCP *GCPConfig `yaml:"gcpConfig,omitempty"`
+	GCP *GCPConfig `yaml:"gcpConfig,omitempty" validate:"omitempty,dive"`
 	// description: |
 	//   Configuration for QEMU as provider.
-	QEMU *QEMUConfig `yaml:"qemuConfig,omitempty"`
+	QEMU *QEMUConfig `yaml:"qemuConfig,omitempty" validate:"omitempty,dive"`
 }
 
 // AzureConfig are Azure specific configuration values used by the CLI.
 type AzureConfig struct {
 	// description: |
 	//   Subscription ID of the used Azure account. See: https://docs.microsoft.com/en-us/azure/azure-portal/get-subscription-tenant-id#find-your-azure-subscription
-	SubscriptionID string `yaml:"subscription"`
+	SubscriptionID string `yaml:"subscription" validate:"uuid"`
 	// description: |
 	//   Tenant ID of the used Azure account. See: https://docs.microsoft.com/en-us/azure/azure-portal/get-subscription-tenant-id#find-your-azure-ad-tenant
-	TenantID string `yaml:"tenant"`
+	TenantID string `yaml:"tenant" validate:"uuid"`
 	// description: |
 	//   Azure datacenter region to be used. See: https://docs.microsoft.com/en-us/azure/availability-zones/az-overview#azure-regions-with-availability-zones
-	Location string `yaml:"location"`
+	Location string `yaml:"location" validate:"required"`
 	// description: |
 	//   Machine image used to create Constellation nodes.
-	Image string `yaml:"image"`
+	Image string `yaml:"image" validate:"required"`
 	// description: |
 	//   Expected confidential VM measurements.
 	Measurements Measurements `yaml:"measurements"`
 	// description: |
 	//   Authorize spawned VMs to access Azure API. See: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=azure
-	UserAssignedIdentity string `yaml:"userassignedIdentity"`
+	UserAssignedIdentity string `yaml:"userassignedIdentity" validate:"required"`
 }
 
 // GCPConfig are GCP specific configuration values used by the CLI.
 type GCPConfig struct {
 	// description: |
 	//   GCP project. See: https://support.google.com/googleapi/answer/7014113?hl=en
-	Project string `yaml:"project"`
+	Project string `yaml:"project" validate:"required"`
 	// description: |
 	//   GCP datacenter region. See: https://cloud.google.com/compute/docs/regions-zones#available
-	Region string `yaml:"region"`
+	Region string `yaml:"region" validate:"required"`
 	// description: |
 	//   GCP datacenter zone. See: https://cloud.google.com/compute/docs/regions-zones#available
-	Zone string `yaml:"zone"`
+	Zone string `yaml:"zone" validate:"required"`
 	// description: |
 	//   Machine image used to create Constellation nodes.
-	Image string `yaml:"image"`
+	Image string `yaml:"image" validate:"required"`
 	// description: |
 	//   Roles added to service account.
 	ServiceAccountRoles []string `yaml:"serviceAccountRoles"`
@@ -226,6 +230,45 @@ func Default() *Config {
 	}
 }
 
+// Validate checks the config values and returns validation error messages.
+// The function only returns an error if the validation itself fails.
+func (c *Config) Validate() ([]string, error) {
+	trans := ut.New(en.New()).GetFallback()
+	validate := validator.New()
+	if err := en_translations.RegisterDefaultTranslations(validate, trans); err != nil {
+		return nil, err
+	}
+
+	err := validate.Struct(c)
+	if err == nil {
+		return nil, nil
+	}
+
+	var errs validator.ValidationErrors
+	if !errors.As(err, &errs) {
+		return nil, err
+	}
+
+	var msgs []string
+	for _, e := range errs {
+		msgs = append(msgs, e.Translate(trans))
+	}
+	return msgs, nil
+}
+
+// HasProvider checks whether the config contains the provider.
+func (c *Config) HasProvider(provider cloudprovider.Provider) bool {
+	switch provider {
+	case cloudprovider.Azure:
+		return c.Provider.Azure != nil
+	case cloudprovider.GCP:
+		return c.Provider.GCP != nil
+	case cloudprovider.QEMU:
+		return c.Provider.QEMU != nil
+	}
+	return false
+}
+
 // RemoveProviderExcept removes all provider specific configurations, i.e.,
 // sets them to nil, except the one specified.
 // If an unknown provider is passed, the same configuration is returned.
@@ -258,9 +301,6 @@ func FromFile(fileHandler file.Handler, name string) (*Config, error) {
 			return nil, fmt.Errorf("unable to find %s - use `constellation config generate` to generate it first", name)
 		}
 		return nil, fmt.Errorf("could not load config from file %s: %w", name, err)
-	}
-	if emptyConf.Version != Version1 {
-		return nil, fmt.Errorf("config version (%s) is not supported - only version %s is supported", emptyConf.Version, Version1)
 	}
 	return &emptyConf, nil
 }
