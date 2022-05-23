@@ -37,12 +37,17 @@ const (
 	// Filenames.
 	//
 
-	StateFilename         = "constellation-state.json"
-	ConfigFilename        = "constellation-conf.yaml"
-	DebugdConfigFilename  = "cdbg-conf.yaml"
-	AdminConfFilename     = "constellation-admin.conf"
-	MasterSecretFilename  = "constellation-mastersecret.base64"
-	WGQuickConfigFilename = "wg0.conf"
+	StateFilename           = "constellation-state.json"
+	ConfigFilename          = "constellation-conf.yaml"
+	DebugdConfigFilename    = "cdbg-conf.yaml"
+	AdminConfFilename       = "constellation-admin.conf"
+	MasterSecretFilename    = "constellation-mastersecret.base64"
+	WGQuickConfigFilename   = "wg0.conf"
+	CoreOSAdminConfFilename = "/etc/kubernetes/admin.conf"
+
+	// Filenames for the Activation service.
+	ActivationMeasurementsFilename = "/var/config/measurements"
+	ActivationIDFilename           = "/var/config/id"
 
 	//
 	// Cryptographic constants.

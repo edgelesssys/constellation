@@ -16,6 +16,8 @@
 admin.conf
 coordinator-*
 
+go.work
+go.work.sum
 /image
 
 # Dockerfiles

@@ -20,6 +20,7 @@ replace (
 	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.24.0
 	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.24.0
 	k8s.io/kube-proxy => k8s.io/kube-proxy v0.24.0
+	k8s.io/kube-proxy v0.0.0 => k8s.io/kube-proxy v0.24.0
 	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.24.0
 	k8s.io/kubectl => k8s.io/kubectl v0.24.0
 	k8s.io/kubelet => k8s.io/kubelet v0.24.0
@@ -68,6 +69,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.3.2
 	github.com/docker/docker v20.10.13+incompatible
 	github.com/docker/go-connections v0.4.0
+	github.com/fsnotify/fsnotify v1.5.4
 	github.com/go-playground/locales v0.14.0
 	github.com/go-playground/universal-translator v0.18.0
 	github.com/go-playground/validator/v10 v10.11.0
@@ -103,8 +105,10 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20220512140231-539c8e751b99
 	k8s.io/api v0.24.0
 	k8s.io/apimachinery v0.24.0
+	k8s.io/apiserver v0.24.0
 	k8s.io/cli-runtime v0.24.0
 	k8s.io/client-go v0.24.0
+	k8s.io/cluster-bootstrap v0.0.0
 	k8s.io/klog/v2 v2.60.1
 	k8s.io/kubelet v0.0.0
 	k8s.io/kubernetes v1.24.0
@@ -154,7 +158,6 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
-	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-errors/errors v1.4.2 // indirect
 	github.com/go-logr/logr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
@@ -215,7 +218,7 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220309155454-6242fa91716a // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20220310020820-b874c991c1a5 // indirect
+	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7
 	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65 // indirect
@@ -224,8 +227,6 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	k8s.io/apiserver v0.24.0
-	k8s.io/cluster-bootstrap v0.0.0 // indirect
 	k8s.io/component-base v0.24.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 // indirect
 	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect

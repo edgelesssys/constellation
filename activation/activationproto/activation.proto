@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package pubapi;
+
+option go_package = "github.com/edgelesssys/constellation/activation/server/activationproto";
+
+service API {
+    rpc ActivateNode(ActivateNodeRequest) returns (ActivateNodeResponse);
+    rpc ActivateCoordinator(ActivateCoordinatorRequest) returns (ActivateCoordinatorResponse);
+}
+
+
+message ActivateNodeRequest {
+    string disk_uuid = 1;
+}
+
+message ActivateNodeResponse {
+    bytes state_disk_key = 1;
+    bytes owner_id = 2;
+    bytes cluster_id = 3;
+    string api_server_endpoint = 4;
+    string token = 5;
+    string discovery_token_ca_cert_hash = 6;
+}
+
+
+message ActivateCoordinatorRequest {
+}
+  
+message ActivateCoordinatorResponse {  
+}
