@@ -1,23 +1,11 @@
 # debug daemon (debugd)
 
-## debugd Prerequisites
-
-* Go 1.18
-
-## Build debugd
+## Build cdbg
 
 ```
 mkdir -p build
-go build -o build/debugd debugd/debugd/cmd/debugd/debugd.go
-```
-
-## Build & install cdbg
-
-The go install command for cdbg only works inside the checked out repository due to replace directives in the `go.mod` file.
-
-```
-git clone https://github.com/edgelesssys/constellation && cd constellation
-go install github.com/edgelesssys/constellation/debugd/cdbg
+cmake ..
+make cdbg
 ```
 
 ## debugd & cdbg usage
@@ -64,7 +52,7 @@ With `cdbg` and `yq` installed in your path:
        constellation-conf.yaml
    ```
 4. Run `constellation create […]`
-5. Run `cdbg deploy`
+5. Run `./cdbg deploy`
 6.  Run `constellation init […]` as usual
 
 

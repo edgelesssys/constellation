@@ -43,6 +43,25 @@ add_custom_target(debug_coordinator
   BYPRODUCTS debug_coordinator
 )
 
+#
+# debugd
+#
+
+add_custom_target(debugd ALL
+  CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/debugd -buildvcs=false -ldflags "-buildid=''"
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/debugd/debugd/cmd/debugd
+  BYPRODUCTS debugd
+)
+
+#
+# cdbg
+#
+
+add_custom_target(cdbg ALL
+  CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/cdbg -buildvcs=false -ldflags "-buildid=''"
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/debugd/cdbg
+  BYPRODUCTS cdbg
+)
 
 add_test(NAME unittest COMMAND go test -race -count=3 ./... WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME integrationtest COMMAND go test -v -tags integration ./test/  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
