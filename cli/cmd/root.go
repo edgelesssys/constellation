@@ -30,16 +30,16 @@ func NewRootCmd() *cobra.Command {
 	// Set output of cmd.Print to stdout. (By default, it's stderr.)
 	rootCmd.SetOut(os.Stdout)
 
-	rootCmd.PersistentFlags().String("config", constants.ConfigFilename, "use settings from a config")
+	rootCmd.PersistentFlags().String("config", constants.ConfigFilename, "path to the configuration file")
 	must(rootCmd.MarkPersistentFlagFilename("config", "json"))
 
+	rootCmd.AddCommand(newConfigCmd())
 	rootCmd.AddCommand(newCreateCmd())
 	rootCmd.AddCommand(newInitCmd())
 	rootCmd.AddCommand(newVerifyCmd())
 	rootCmd.AddCommand(newRecoverCmd())
 	rootCmd.AddCommand(newTerminateCmd())
 	rootCmd.AddCommand(newVersionCmd())
-	rootCmd.AddCommand(newConfigCmd())
 
 	return rootCmd
 }

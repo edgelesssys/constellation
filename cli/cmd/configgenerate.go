@@ -23,7 +23,7 @@ func newConfigGenerateCmd() *cobra.Command {
 		ValidArgsFunction: generateCompletion,
 		RunE:              runConfigGenerate,
 	}
-	cmd.Flags().StringP("file", "f", constants.ConfigFilename, "output file")
+	cmd.Flags().StringP("file", "f", constants.ConfigFilename, "path to output file, or '-' for stdout")
 
 	return cmd
 }

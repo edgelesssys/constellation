@@ -7,10 +7,12 @@ import (
 	"regexp"
 
 	"github.com/edgelesssys/constellation/cli/cmd"
+	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 )
 
 func main() {
+	cobra.EnableCommandSorting = false
 	rootCmd := cmd.NewRootCmd()
 	rootCmd.DisableAutoGenTag = true
 
