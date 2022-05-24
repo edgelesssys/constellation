@@ -88,7 +88,7 @@ func TestDial(t *testing.T) {
 
 func newServer(tls bool) *grpc.Server {
 	if tls {
-		tlsConfig, err := atls.CreateAttestationServerTLSConfig(&core.MockIssuer{})
+		tlsConfig, err := atls.CreateAttestationServerTLSConfig(&core.MockIssuer{}, nil)
 		if err != nil {
 			panic(err)
 		}

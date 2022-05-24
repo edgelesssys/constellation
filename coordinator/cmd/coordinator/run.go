@@ -36,7 +36,7 @@ func run(issuer core.QuoteIssuer, vpn core.VPN, openTPM vtpm.TPMOpenFunc, getPub
 	defer zapLoggerCore.Sync()
 	zapLoggerCore.Info("starting coordinator", zap.String("version", version))
 
-	tlsConfig, err := atls.CreateAttestationServerTLSConfig(issuer)
+	tlsConfig, err := atls.CreateAttestationServerTLSConfig(issuer, nil)
 	if err != nil {
 		zapLoggerCore.Fatal("failed to create server TLS config", zap.Error(err))
 	}
@@ -117,7 +117,7 @@ func tryJoinClusterOnStartup(getPublicIPAddr func() (string, error), metadata co
 
 	// We create an client unverified connection, since the node does not need to verify the Coordinator.
 	// ActivateAdditionalNodes triggers the Coordinator to call ActivateAsNode. This rpc lets the Coordinator verify the node.
-	tlsClientConfig, err := atls.CreateUnverifiedClientTLSConfig()
+	tlsClientConfig, err := atls.CreateAttestationClientTLSConfig(nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create client TLS config: %w", err)
 	}

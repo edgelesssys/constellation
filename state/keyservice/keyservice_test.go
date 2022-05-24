@@ -75,7 +75,7 @@ func TestRequestKeyLoop(t *testing.T) {
 			listener := bufconn.Listen(1)
 			defer listener.Close()
 
-			tlsConfig, err := atls.CreateAttestationServerTLSConfig(core.NewMockIssuer())
+			tlsConfig, err := atls.CreateAttestationServerTLSConfig(core.NewMockIssuer(), nil)
 			require.NoError(err)
 			s := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
 			pubproto.RegisterAPIServer(s, tc.server)

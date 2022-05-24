@@ -56,7 +56,7 @@ func main() {
 	}
 
 	attDocRaw := []byte{}
-	tlsConfig, err := atls.CreateUnverifiedClientTLSConfig()
+	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, nil)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -26,7 +26,7 @@ func NewDialer(validator atls.Validator, netDialer NetDialer) *Dialer {
 
 // Dial creates a new grpc client connection to the given target using the atls validator.
 func (d *Dialer) Dial(ctx context.Context, target string) (*grpc.ClientConn, error) {
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig([]atls.Validator{d.validator})
+	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, []atls.Validator{d.validator})
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (d *Dialer) DialInsecure(ctx context.Context, target string) (*grpc.ClientC
 
 // DialNoVerify creates a new grpc client connection to the given target without verifying the server's attestation.
 func (d *Dialer) DialNoVerify(ctx context.Context, target string) (*grpc.ClientConn, error) {
-	tlsConfig, err := atls.CreateUnverifiedClientTLSConfig()
+	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, nil)
 	if err != nil {
 		return nil, err
 	}

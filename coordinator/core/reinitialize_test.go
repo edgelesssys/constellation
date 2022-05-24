@@ -258,7 +258,7 @@ func TestGetInitialVPNPeers(t *testing.T) {
 }
 
 func newPubAPIServer() *grpc.Server {
-	tlsConfig, err := atls.CreateAttestationServerTLSConfig(&MockIssuer{})
+	tlsConfig, err := atls.CreateAttestationServerTLSConfig(&MockIssuer{}, nil)
 	if err != nil {
 		panic(err)
 	}

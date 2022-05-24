@@ -63,7 +63,7 @@ func (a *KeyAPI) WaitForDecryptionKey(uuid, listenAddr string) ([]byte, error) {
 		return nil, errors.New("received no disk UUID")
 	}
 
-	tlsConfig, err := atls.CreateAttestationServerTLSConfig(a.issuer)
+	tlsConfig, err := atls.CreateAttestationServerTLSConfig(a.issuer, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (a *KeyAPI) ResetKey() {
 func (a *KeyAPI) requestKeyLoop(uuid string, opts ...grpc.DialOption) error {
 	// we do not perform attestation, since the restarting node does not need to care about notifying the correct Coordinator
 	// if an incorrect key is pushed by a malicious actor, decrypting the disk will fail, and the node will not start
-	tlsClientConfig, err := atls.CreateUnverifiedClientTLSConfig()
+	tlsClientConfig, err := atls.CreateAttestationClientTLSConfig(nil, nil)
 	if err != nil {
 		return err
 	}

@@ -115,7 +115,7 @@ func (w *Waiter) WaitForAll(ctx context.Context, endpoints []string, status ...s
 // newAttestedConnGenerator creates a function returning a default attested grpc connection.
 func newAttestedConnGenerator(validators []atls.Validator) func(ctx context.Context, target string, opts ...grpc.DialOption) (ClientConn, error) {
 	return func(ctx context.Context, target string, opts ...grpc.DialOption) (ClientConn, error) {
-		tlsConfig, err := atls.CreateAttestationClientTLSConfig(validators)
+		tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, validators)
 		if err != nil {
 			return nil, err
 		}

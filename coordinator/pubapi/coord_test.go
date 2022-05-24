@@ -431,7 +431,7 @@ func (n *stubPeer) GetPeerVPNPublicKey(ctx context.Context, in *pubproto.GetPeer
 }
 
 func (n *stubPeer) newServer() *grpc.Server {
-	tlsConfig, err := atls.CreateAttestationServerTLSConfig(fakeIssuer{})
+	tlsConfig, err := atls.CreateAttestationServerTLSConfig(fakeIssuer{}, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -536,7 +536,7 @@ func TestRequestStateDiskKey(t *testing.T) {
 			require.NoError(err)
 			defer listener.Close()
 
-			tlsConfig, err := atls.CreateAttestationServerTLSConfig(issuer)
+			tlsConfig, err := atls.CreateAttestationServerTLSConfig(issuer, nil)
 			require.NoError(err)
 			s := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
 			keyproto.RegisterAPIServer(s, stateDiskServer)

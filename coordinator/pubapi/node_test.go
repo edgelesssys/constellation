@@ -162,7 +162,7 @@ func TestActivateAsNode(t *testing.T) {
 			go vserver.Serve(netDialer.GetListener(net.JoinHostPort("10.118.0.1", vpnAPIPort)))
 			defer vserver.GracefulStop()
 
-			tlsConfig, err := atls.CreateAttestationServerTLSConfig(&core.MockIssuer{})
+			tlsConfig, err := atls.CreateAttestationServerTLSConfig(&core.MockIssuer{}, nil)
 			require.NoError(err)
 			pubserver := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
 			pubproto.RegisterAPIServer(pubserver, api)
@@ -432,7 +432,7 @@ func activateNode(require *require.Assertions, dialer netDialer, messageSequence
 }
 
 func dialGRPC(ctx context.Context, dialer netDialer, target string) (*grpc.ClientConn, error) {
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig([]atls.Validator{&core.MockValidator{}})
+	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, []atls.Validator{&core.MockValidator{}})
 	if err != nil {
 		return nil, err
 	}

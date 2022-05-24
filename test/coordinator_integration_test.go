@@ -249,7 +249,7 @@ func TestMain(t *testing.T) {
 
 // helper methods
 func startCoordinator(ctx context.Context, coordinatorAddr string, ips []string) error {
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig([]atls.Validator{&core.MockValidator{}})
+	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, []atls.Validator{&core.MockValidator{}})
 	if err != nil {
 		return err
 	}
@@ -299,7 +299,7 @@ func createTempDir() error {
 }
 
 func addNewCoordinatorToCoordinator(ctx context.Context, newCoordinatorAddr, oldCoordinatorAddr string) error {
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig([]atls.Validator{&core.MockValidator{}})
+	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, []atls.Validator{&core.MockValidator{}})
 	if err != nil {
 		return err
 	}
@@ -322,7 +322,7 @@ func addNewCoordinatorToCoordinator(ctx context.Context, newCoordinatorAddr, old
 }
 
 func addNewNodesToCoordinator(ctx context.Context, coordinatorAddr string, ips []string) error {
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig([]atls.Validator{&core.MockValidator{}})
+	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, []atls.Validator{&core.MockValidator{}})
 	if err != nil {
 		return err
 	}
@@ -545,7 +545,7 @@ func awaitPeerResponse(ctx context.Context, ip string, tlsConfig *tls.Config) er
 }
 
 func blockUntilUp(ctx context.Context, peerIPs []string) error {
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig([]atls.Validator{&core.MockValidator{}})
+	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, []atls.Validator{&core.MockValidator{}})
 	if err != nil {
 		return err
 	}

@@ -173,7 +173,7 @@ func (b *bufconnDialer) addListener(endpoint string, listener *bufconn.Listener)
 }
 
 func spawnNode(endpoint string, testNodeCore *pubapi.API, bufDialer *bufconnDialer) (*grpc.Server, error) {
-	tlsConfig, err := atls.CreateAttestationServerTLSConfig(&MockIssuer{})
+	tlsConfig, err := atls.CreateAttestationServerTLSConfig(&MockIssuer{}, nil)
 	if err != nil {
 		return nil, err
 	}

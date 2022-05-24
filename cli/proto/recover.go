@@ -22,7 +22,7 @@ type KeyClient struct {
 // called on a client that already has a connection, the old
 // connection is closed.
 func (c *KeyClient) Connect(endpoint string, validators []atls.Validator) error {
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig(validators)
+	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, validators)
 	if err != nil {
 		return err
 	}

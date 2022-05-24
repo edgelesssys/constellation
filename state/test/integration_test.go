@@ -91,7 +91,7 @@ func TestKeyAPI(t *testing.T) {
 		// wait 2 seconds before sending the key
 		time.Sleep(2 * time.Second)
 
-		clientCfg, err := atls.CreateUnverifiedClientTLSConfig()
+		clientCfg, err := atls.CreateAttestationClientTLSConfig(nil, nil)
 		require.NoError(err)
 		conn, err := grpc.Dial(apiAddr, grpc.WithTransportCredentials(credentials.NewTLS(clientCfg)))
 		require.NoError(err)

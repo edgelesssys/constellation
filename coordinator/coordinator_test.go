@@ -225,7 +225,7 @@ func spawnPeer(require *require.Assertions, logger *zap.Logger, netDialer *testd
 
 	papi := pubapi.New(logger, cor, dialer, vapiServer, getPublicAddr, nil)
 
-	tlsConfig, err := atls.CreateAttestationServerTLSConfig(&core.MockIssuer{})
+	tlsConfig, err := atls.CreateAttestationServerTLSConfig(&core.MockIssuer{}, nil)
 	require.NoError(err)
 	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
 	pubproto.RegisterAPIServer(server, papi)
@@ -263,7 +263,7 @@ func activateCoordinator(require *require.Assertions, dialer netDialer, coordina
 }
 
 func dialGRPC(ctx context.Context, dialer netDialer, target string) (*grpc.ClientConn, error) {
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig([]atls.Validator{&core.MockValidator{}})
+	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, []atls.Validator{&core.MockValidator{}})
 	if err != nil {
 		return nil, err
 	}

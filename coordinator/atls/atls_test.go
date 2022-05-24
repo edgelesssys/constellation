@@ -20,27 +20,102 @@ func TestTLSConfig(t *testing.T) {
 	oid2 := fakeOID{1, 3, 9900, 2}
 
 	testCases := map[string]struct {
-		issuer     Issuer
-		validators []Validator
-		wantErr    bool
+		clientIssuer     Issuer
+		clientValidators []Validator
+		serverIssuer     Issuer
+		serverValidators []Validator
+		wantErr          bool
 	}{
-		"basic": {
-			issuer:     fakeIssuer{fakeOID: oid1},
-			validators: []Validator{fakeValidator{fakeOID: oid1}},
+		"client->server basic": {
+			serverIssuer:     fakeIssuer{fakeOID: oid1},
+			clientValidators: []Validator{fakeValidator{fakeOID: oid1}},
 		},
-		"multiple validators": {
-			issuer:     fakeIssuer{fakeOID: oid2},
-			validators: []Validator{fakeValidator{fakeOID: oid1}, fakeValidator{fakeOID: oid2}},
+		"client->server multiple validators": {
+			serverIssuer:     fakeIssuer{fakeOID: oid2},
+			clientValidators: []Validator{fakeValidator{fakeOID: oid1}, fakeValidator{fakeOID: oid2}},
 		},
-		"validate error": {
-			issuer:     fakeIssuer{fakeOID: oid1},
-			validators: []Validator{fakeValidator{fakeOID: oid1, err: errors.New("failed")}},
-			wantErr:    true,
+		"client->server validate error": {
+			serverIssuer:     fakeIssuer{fakeOID: oid1},
+			clientValidators: []Validator{fakeValidator{fakeOID: oid1, err: errors.New("failed")}},
+			wantErr:          true,
 		},
-		"unknown oid": {
-			issuer:     fakeIssuer{fakeOID: oid1},
-			validators: []Validator{fakeValidator{fakeOID: oid2}},
-			wantErr:    true,
+		"client->server unknown oid": {
+			serverIssuer:     fakeIssuer{fakeOID: oid1},
+			clientValidators: []Validator{fakeValidator{fakeOID: oid2}},
+			wantErr:          true,
+		},
+		"client->server client cert is not verified": {
+			serverIssuer:     fakeIssuer{fakeOID: oid1},
+			clientIssuer:     fakeIssuer{fakeOID: oid1},
+			clientValidators: []Validator{fakeValidator{fakeOID: oid1}},
+		},
+		"server->client basic": {
+			serverIssuer:     fakeIssuer{fakeOID: oid1},
+			serverValidators: []Validator{fakeValidator{fakeOID: oid1}},
+			clientIssuer:     fakeIssuer{fakeOID: oid1},
+		},
+		"server->client multiple validators": {
+			serverIssuer:     fakeIssuer{fakeOID: oid1},
+			serverValidators: []Validator{fakeValidator{fakeOID: oid1}, fakeValidator{fakeOID: oid2}},
+			clientIssuer:     fakeIssuer{fakeOID: oid2},
+		},
+		"server->client validate error": {
+			serverIssuer:     fakeIssuer{fakeOID: oid1},
+			serverValidators: []Validator{fakeValidator{fakeOID: oid1, err: errors.New("failed")}},
+			clientIssuer:     fakeIssuer{fakeOID: oid1},
+			wantErr:          true,
+		},
+		"server->client unknown oid": {
+			serverIssuer:     fakeIssuer{fakeOID: oid2},
+			serverValidators: []Validator{fakeValidator{fakeOID: oid2}},
+			clientIssuer:     fakeIssuer{fakeOID: oid1},
+			wantErr:          true,
+		},
+		"mutual basic": {
+			serverIssuer:     fakeIssuer{fakeOID: oid1},
+			serverValidators: []Validator{fakeValidator{fakeOID: oid1}},
+			clientIssuer:     fakeIssuer{fakeOID: oid1},
+			clientValidators: []Validator{fakeValidator{fakeOID: oid1}},
+		},
+		"mutual multiple validators": {
+			serverIssuer:     fakeIssuer{fakeOID: oid2},
+			serverValidators: []Validator{fakeValidator{fakeOID: oid1}, fakeValidator{fakeOID: oid2}},
+			clientIssuer:     fakeIssuer{fakeOID: oid2},
+			clientValidators: []Validator{fakeValidator{fakeOID: oid1}, fakeValidator{fakeOID: oid2}},
+		},
+		"mutual fails if client sends no cert": {
+			serverIssuer:     fakeIssuer{fakeOID: oid1},
+			serverValidators: []Validator{fakeValidator{fakeOID: oid1}},
+			clientValidators: []Validator{fakeValidator{fakeOID: oid1}},
+			wantErr:          true,
+		},
+		"mutual validate error client side": {
+			serverIssuer:     fakeIssuer{fakeOID: oid1},
+			serverValidators: []Validator{fakeValidator{fakeOID: oid1}},
+			clientIssuer:     fakeIssuer{fakeOID: oid1},
+			clientValidators: []Validator{fakeValidator{fakeOID: oid1, err: errors.New("failed")}},
+			wantErr:          true,
+		},
+		"mutual validate error server side": {
+			serverIssuer:     fakeIssuer{fakeOID: oid1},
+			serverValidators: []Validator{fakeValidator{fakeOID: oid1, err: errors.New("failed")}},
+			clientIssuer:     fakeIssuer{fakeOID: oid1},
+			clientValidators: []Validator{fakeValidator{fakeOID: oid1}},
+			wantErr:          true,
+		},
+		"mutual unknown oid from client": {
+			serverIssuer:     fakeIssuer{fakeOID: oid1},
+			serverValidators: []Validator{fakeValidator{fakeOID: oid1}},
+			clientIssuer:     fakeIssuer{fakeOID: oid2},
+			clientValidators: []Validator{fakeValidator{fakeOID: oid1}},
+			wantErr:          true,
+		},
+		"mutual unknown oid from server": {
+			serverIssuer:     fakeIssuer{fakeOID: oid2},
+			serverValidators: []Validator{fakeValidator{fakeOID: oid1}},
+			clientIssuer:     fakeIssuer{fakeOID: oid1},
+			clientValidators: []Validator{fakeValidator{fakeOID: oid1}},
+			wantErr:          true,
 		},
 	}
 
@@ -53,7 +128,7 @@ func TestTLSConfig(t *testing.T) {
 			// Create server
 			//
 
-			serverConfig, err := CreateAttestationServerTLSConfig(tc.issuer)
+			serverConfig, err := CreateAttestationServerTLSConfig(tc.serverIssuer, tc.serverValidators)
 			require.NoError(err)
 
 			server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +140,7 @@ func TestTLSConfig(t *testing.T) {
 			// Create client
 			//
 
-			clientConfig, err := CreateAttestationClientTLSConfig(tc.validators)
+			clientConfig, err := CreateAttestationClientTLSConfig(tc.clientIssuer, tc.clientValidators)
 			require.NoError(err)
 			client := http.Client{Transport: &http.Transport{TLSClientConfig: clientConfig}}
 
