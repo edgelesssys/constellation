@@ -17,6 +17,8 @@ Development components:
 * [debugd](debugd): Debug daemon and client
 * [hack](hack): Development tools
 * [proto](proto): Proto files generator
+* [terraform](terraform): Infrastructure management using terraform (instead of `constellation create/destroy`)
+  * [libvirt](terraform/libvirt): Deploy local cluster using terraform, libvirt and QEMU
 * [test](test): Integration test
 
 Additional repositories:
@@ -65,7 +67,7 @@ For testing, you can use the constellation debug daemon (debugd) to upload your 
 ## Development Guides
 
 * [Upgrading Kubernetes](/docs/upgrade-kubernetes.md)
-* [Local image testing](/docs/local-image-testing.md)
+* [Manual local image testing](/docs/local-image-testing.md)
 
 ## Deployment Guides
 

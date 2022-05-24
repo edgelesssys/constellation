@@ -1,5 +1,7 @@
 # Local image testing with QEMU
 
+> Note: This document describes a manual method of deploying VMs with QEMU look at [terraform/libvirt](/terraform/libvirt) for an automated alternative.
+
 To build our images we use the [CoreOS-Assembler (COSA)](https://github.com/edgelesssys/constellation-coreos-assembler).
 COSA comes with support to test images locally. After building your image with `make coreos` you can run the image with `make run`.
 
@@ -40,22 +42,4 @@ Press <kbd>Ctrl</kbd>+<kbd>A</kbd> <kbd>X</kbd> to stop the VM, this will remove
 Run the following to remove the bridge.
 ```shell
 sudo delete_network_bridge br-constell-0
-```
-
-## Create a local cluster
-
-Using the `create-constellation` script we can create multiple VMs using the same image and connected in one network.
-
-The same environment variables as for `run-image` can be used to configure cpu, memory, and state disk size.
-
-Use the following command to create a cluster of 4 VMs, where each VM has 3 CPUs, 4GB RAM and a 5GB state disk.
-Logs and state files will be written to `/tmp/constellation`.
-```shell
-sudo CONSTELL_CPU=3 CONSTELL_MEM=4G CONSTELL_STATE_SIZE=5 create-constellation 4 /constellation/coreos.qcow2
-```
-
-The command will use the `run-image` script launch each VM in its own `tmux` session.
-View the VMs by running the following
-```shell
-sudo tmux attach -t constellation-vm-<i>
 ```
