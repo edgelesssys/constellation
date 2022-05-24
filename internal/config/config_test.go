@@ -46,15 +46,15 @@ func TestFromFile(t *testing.T) {
 		},
 		"custom config from default file": {
 			config: &Config{
-				Version:                  Version1,
-				AutoscalingNodeGroupsMin: 42,
-				AutoscalingNodeGroupsMax: 1337,
+				Version:                 Version1,
+				AutoscalingNodeGroupMin: 42,
+				AutoscalingNodeGroupMax: 1337,
 			},
 			configName: constants.ConfigFilename,
 			wantResult: &Config{
-				Version:                  Version1,
-				AutoscalingNodeGroupsMin: 42,
-				AutoscalingNodeGroupsMax: 1337,
+				Version:                 Version1,
+				AutoscalingNodeGroupMin: 42,
+				AutoscalingNodeGroupMax: 1337,
 			},
 		},
 		"modify default config": {
@@ -103,15 +103,15 @@ func TestFromFileStrictErrors(t *testing.T) {
 	}{
 		"valid config": {
 			yamlConfig: `
-			autoscalingNodeGroupsMin: 5
-			autoscalingNodeGroupsMax: 10
+			autoscalingNodeGroupMin: 5
+			autoscalingNodeGroupMax: 10
 			stateDisksizeGB: 25
 			`,
 		},
 		"typo": {
 			yamlConfig: `
-			autoscalingNodeGroupsMini: 5
-			autoscalingNodeGroupsMax: 10
+			autoscalingNodeGroupMini: 5
+			autoscalingNodeGroupMax: 10
 			stateDisksizeGB: 25
 			`,
 			wantErr: true,
@@ -119,8 +119,8 @@ func TestFromFileStrictErrors(t *testing.T) {
 		"unsupported version": {
 			yamlConfig: `
 			version: v5
-			autoscalingNodeGroupsMin: 1
-			autoscalingNodeGroupsMax: 10
+			autoscalingNodeGroupMin: 1
+			autoscalingNodeGroupMax: 10
 			stateDisksizeGB: 30
 			`,
 			wantErr: true,

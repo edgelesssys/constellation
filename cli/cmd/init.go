@@ -468,7 +468,7 @@ func getGCPInstances(stat state.ConstellationState, config *config.Config) (coor
 	// TODO: make min / max configurable and abstract autoscaling for different cloud providers
 	nodes = ScalingGroup{
 		Instances: nodeInstances,
-		GroupID:   gcp.AutoscalingNodeGroup(stat.GCPProject, stat.GCPZone, stat.GCPNodeInstanceGroup, config.AutoscalingNodeGroupsMin, config.AutoscalingNodeGroupsMax),
+		GroupID:   gcp.AutoscalingNodeGroup(stat.GCPProject, stat.GCPZone, stat.GCPNodeInstanceGroup, config.AutoscalingNodeGroupMin, config.AutoscalingNodeGroupMax),
 	}
 
 	return
@@ -501,7 +501,7 @@ func getAzureInstances(stat state.ConstellationState, config *config.Config) (co
 	// TODO: make min / max configurable and abstract autoscaling for different cloud providers
 	nodes = ScalingGroup{
 		Instances: nodeInstances,
-		GroupID:   azure.AutoscalingNodeGroup(stat.AzureNodesScaleSet, config.AutoscalingNodeGroupsMin, config.AutoscalingNodeGroupsMax),
+		GroupID:   azure.AutoscalingNodeGroup(stat.AzureNodesScaleSet, config.AutoscalingNodeGroupMin, config.AutoscalingNodeGroupMax),
 	}
 	return
 }

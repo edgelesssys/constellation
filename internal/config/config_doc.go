@@ -30,21 +30,21 @@ func init() {
 	ConfigDoc.Fields[0].Note = ""
 	ConfigDoc.Fields[0].Description = "Schema version of this configuration file."
 	ConfigDoc.Fields[0].Comments[encoder.LineComment] = "Schema version of this configuration file."
-	ConfigDoc.Fields[1].Name = "autoscalingNodeGroupsMin"
+	ConfigDoc.Fields[1].Name = "autoscalingNodeGroupMin"
 	ConfigDoc.Fields[1].Type = "int"
 	ConfigDoc.Fields[1].Note = ""
-	ConfigDoc.Fields[1].Description = "Minimum number of nodes in autoscaling group.\nworker nodes."
-	ConfigDoc.Fields[1].Comments[encoder.LineComment] = "Minimum number of nodes in autoscaling group."
-	ConfigDoc.Fields[2].Name = "autoscalingNodeGroupsMax"
+	ConfigDoc.Fields[1].Description = "Minimum number of worker nodes in autoscaling group."
+	ConfigDoc.Fields[1].Comments[encoder.LineComment] = "Minimum number of worker nodes in autoscaling group."
+	ConfigDoc.Fields[2].Name = "autoscalingNodeGroupMax"
 	ConfigDoc.Fields[2].Type = "int"
 	ConfigDoc.Fields[2].Note = ""
-	ConfigDoc.Fields[2].Description = "Maximum number of nodes in autoscaling group.\nworker nodes."
-	ConfigDoc.Fields[2].Comments[encoder.LineComment] = "Maximum number of nodes in autoscaling group."
-	ConfigDoc.Fields[3].Name = "stateDisksizeGB"
+	ConfigDoc.Fields[2].Description = "Maximum number of worker nodes in autoscaling group."
+	ConfigDoc.Fields[2].Comments[encoder.LineComment] = "Maximum number of worker nodes in autoscaling group."
+	ConfigDoc.Fields[3].Name = "stateDiskSizeGB"
 	ConfigDoc.Fields[3].Type = "int"
 	ConfigDoc.Fields[3].Note = ""
-	ConfigDoc.Fields[3].Description = "Size (in GB) of data disk used for nodes."
-	ConfigDoc.Fields[3].Comments[encoder.LineComment] = "Size (in GB) of data disk used for nodes."
+	ConfigDoc.Fields[3].Description = "Size (in GB) of a node's disk to store the non-volatile state."
+	ConfigDoc.Fields[3].Comments[encoder.LineComment] = "Size (in GB) of a node's disk to store the non-volatile state."
 	ConfigDoc.Fields[4].Name = "ingressFirewall"
 	ConfigDoc.Fields[4].Type = "Firewall"
 	ConfigDoc.Fields[4].Note = ""
@@ -60,8 +60,8 @@ func init() {
 	ConfigDoc.Fields[6].Name = "provider"
 	ConfigDoc.Fields[6].Type = "ProviderConfig"
 	ConfigDoc.Fields[6].Note = ""
-	ConfigDoc.Fields[6].Description = "Supported cloud providers & their specific configurations."
-	ConfigDoc.Fields[6].Comments[encoder.LineComment] = "Supported cloud providers & their specific configurations."
+	ConfigDoc.Fields[6].Description = "Supported cloud providers and their specific configurations."
+	ConfigDoc.Fields[6].Comments[encoder.LineComment] = "Supported cloud providers and their specific configurations."
 	ConfigDoc.Fields[7].Name = "sshUsers"
 	ConfigDoc.Fields[7].Type = "[]UserKey"
 	ConfigDoc.Fields[7].Note = ""
@@ -120,13 +120,13 @@ func init() {
 	FirewallRuleDoc.Fields[4].Name = "fromport"
 	FirewallRuleDoc.Fields[4].Type = "int"
 	FirewallRuleDoc.Fields[4].Note = ""
-	FirewallRuleDoc.Fields[4].Description = "Port of start port of a range."
-	FirewallRuleDoc.Fields[4].Comments[encoder.LineComment] = "Port of start port of a range."
+	FirewallRuleDoc.Fields[4].Description = "Start port of a range."
+	FirewallRuleDoc.Fields[4].Comments[encoder.LineComment] = "Start port of a range."
 	FirewallRuleDoc.Fields[5].Name = "toport"
 	FirewallRuleDoc.Fields[5].Type = "int"
 	FirewallRuleDoc.Fields[5].Note = ""
-	FirewallRuleDoc.Fields[5].Description = "End port of a range, or 0 if a single port is given by FromPort."
-	FirewallRuleDoc.Fields[5].Comments[encoder.LineComment] = "End port of a range, or 0 if a single port is given by FromPort."
+	FirewallRuleDoc.Fields[5].Description = "End port of a range, or 0 if a single port is given by fromport."
+	FirewallRuleDoc.Fields[5].Comments[encoder.LineComment] = "End port of a range, or 0 if a single port is given by fromport."
 
 	ProviderConfigDoc.Type = "ProviderConfig"
 	ProviderConfigDoc.Comments[encoder.LineComment] = "ProviderConfig are cloud-provider specific configuration values used by the CLI."
@@ -138,17 +138,17 @@ func init() {
 		},
 	}
 	ProviderConfigDoc.Fields = make([]encoder.Doc, 3)
-	ProviderConfigDoc.Fields[0].Name = "azureConfig"
+	ProviderConfigDoc.Fields[0].Name = "azure"
 	ProviderConfigDoc.Fields[0].Type = "AzureConfig"
 	ProviderConfigDoc.Fields[0].Note = ""
 	ProviderConfigDoc.Fields[0].Description = "Configuration for Azure as provider."
 	ProviderConfigDoc.Fields[0].Comments[encoder.LineComment] = "Configuration for Azure as provider."
-	ProviderConfigDoc.Fields[1].Name = "gcpConfig"
+	ProviderConfigDoc.Fields[1].Name = "gcp"
 	ProviderConfigDoc.Fields[1].Type = "GCPConfig"
 	ProviderConfigDoc.Fields[1].Note = ""
 	ProviderConfigDoc.Fields[1].Description = "Configuration for Google Cloud as provider."
 	ProviderConfigDoc.Fields[1].Comments[encoder.LineComment] = "Configuration for Google Cloud as provider."
-	ProviderConfigDoc.Fields[2].Name = "qemuConfig"
+	ProviderConfigDoc.Fields[2].Name = "qemu"
 	ProviderConfigDoc.Fields[2].Type = "QEMUConfig"
 	ProviderConfigDoc.Fields[2].Note = ""
 	ProviderConfigDoc.Fields[2].Description = "Configuration for QEMU as provider."
@@ -160,7 +160,7 @@ func init() {
 	AzureConfigDoc.AppearsIn = []encoder.Appearance{
 		{
 			TypeName:  "ProviderConfig",
-			FieldName: "azureConfig",
+			FieldName: "azure",
 		},
 	}
 	AzureConfigDoc.Fields = make([]encoder.Doc, 6)
@@ -189,7 +189,7 @@ func init() {
 	AzureConfigDoc.Fields[4].Note = ""
 	AzureConfigDoc.Fields[4].Description = "Expected confidential VM measurements."
 	AzureConfigDoc.Fields[4].Comments[encoder.LineComment] = "Expected confidential VM measurements."
-	AzureConfigDoc.Fields[5].Name = "userassignedIdentity"
+	AzureConfigDoc.Fields[5].Name = "userAssignedIdentity"
 	AzureConfigDoc.Fields[5].Type = "string"
 	AzureConfigDoc.Fields[5].Note = ""
 	AzureConfigDoc.Fields[5].Description = "Authorize spawned VMs to access Azure API. See: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=azure"
@@ -201,7 +201,7 @@ func init() {
 	GCPConfigDoc.AppearsIn = []encoder.Appearance{
 		{
 			TypeName:  "ProviderConfig",
-			FieldName: "gcpConfig",
+			FieldName: "gcp",
 		},
 	}
 	GCPConfigDoc.Fields = make([]encoder.Doc, 6)
@@ -233,8 +233,8 @@ func init() {
 	GCPConfigDoc.Fields[5].Name = "measurements"
 	GCPConfigDoc.Fields[5].Type = "Measurements"
 	GCPConfigDoc.Fields[5].Note = ""
-	GCPConfigDoc.Fields[5].Description = "Measurement used to enable measured boot."
-	GCPConfigDoc.Fields[5].Comments[encoder.LineComment] = "Measurement used to enable measured boot."
+	GCPConfigDoc.Fields[5].Description = "Expected confidential VM measurements."
+	GCPConfigDoc.Fields[5].Comments[encoder.LineComment] = "Expected confidential VM measurements."
 
 	QEMUConfigDoc.Type = "QEMUConfig"
 	QEMUConfigDoc.Comments[encoder.LineComment] = ""
@@ -242,7 +242,7 @@ func init() {
 	QEMUConfigDoc.AppearsIn = []encoder.Appearance{
 		{
 			TypeName:  "ProviderConfig",
-			FieldName: "qemuConfig",
+			FieldName: "qemu",
 		},
 	}
 	QEMUConfigDoc.Fields = make([]encoder.Doc, 1)

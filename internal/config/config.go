@@ -27,16 +27,14 @@ type Config struct {
 	//   Schema version of this configuration file.
 	Version string `yaml:"version" validate:"eq=v1"`
 	// description: |
-	//   Minimum number of nodes in autoscaling group.
-	//   worker nodes.
-	AutoscalingNodeGroupsMin int `yaml:"autoscalingNodeGroupsMin" validate:"min=0"`
+	//   Minimum number of worker nodes in autoscaling group.
+	AutoscalingNodeGroupMin int `yaml:"autoscalingNodeGroupMin" validate:"min=0"`
 	// description: |
-	//   Maximum number of nodes in autoscaling group.
-	//   worker nodes.
-	AutoscalingNodeGroupsMax int `yaml:"autoscalingNodeGroupsMax" validate:"gtefield=AutoscalingNodeGroupsMin"`
+	//   Maximum number of worker nodes in autoscaling group.
+	AutoscalingNodeGroupMax int `yaml:"autoscalingNodeGroupMax" validate:"gtefield=AutoscalingNodeGroupMin"`
 	// description: |
-	//   Size (in GB) of data disk used for nodes.
-	StateDiskSizeGB int `yaml:"stateDisksizeGB" validate:"min=0"`
+	//   Size (in GB) of a node's disk to store the non-volatile state.
+	StateDiskSizeGB int `yaml:"stateDiskSizeGB" validate:"min=0"`
 	// description: |
 	//   Ingress firewall rules for node network.
 	IngressFirewall Firewall `yaml:"ingressFirewall,omitempty" validate:"dive"`
@@ -55,7 +53,7 @@ type Config struct {
 	//   }'
 	EgressFirewall Firewall `yaml:"egressFirewall,omitempty" validate:"dive"`
 	// description: |
-	//   Supported cloud providers & their specific configurations.
+	//   Supported cloud providers and their specific configurations.
 	Provider ProviderConfig `yaml:"provider" validate:"dive"`
 	// description: |
 	//   Create SSH users on Constellation nodes.
@@ -88,10 +86,10 @@ type FirewallRule struct {
 	//   CIDR range for which this rule is applied.
 	IPRange string `yaml:"iprange" validate:"required"`
 	// description: |
-	//   Port of start port of a range.
+	//   Start port of a range.
 	FromPort int `yaml:"fromport" validate:"min=0,max=65535"`
 	// description: |
-	//   End port of a range, or 0 if a single port is given by FromPort.
+	//   End port of a range, or 0 if a single port is given by fromport.
 	ToPort int `yaml:"toport" validate:"omitempty,gtefield=FromPort,max=65535"`
 }
 
@@ -103,13 +101,13 @@ type Firewall []FirewallRule
 type ProviderConfig struct {
 	// description: |
 	//   Configuration for Azure as provider.
-	Azure *AzureConfig `yaml:"azureConfig,omitempty" validate:"omitempty,dive"`
+	Azure *AzureConfig `yaml:"azure,omitempty" validate:"omitempty,dive"`
 	// description: |
 	//   Configuration for Google Cloud as provider.
-	GCP *GCPConfig `yaml:"gcpConfig,omitempty" validate:"omitempty,dive"`
+	GCP *GCPConfig `yaml:"gcp,omitempty" validate:"omitempty,dive"`
 	// description: |
 	//   Configuration for QEMU as provider.
-	QEMU *QEMUConfig `yaml:"qemuConfig,omitempty" validate:"omitempty,dive"`
+	QEMU *QEMUConfig `yaml:"qemu,omitempty" validate:"omitempty,dive"`
 }
 
 // AzureConfig are Azure specific configuration values used by the CLI.
@@ -131,7 +129,7 @@ type AzureConfig struct {
 	Measurements Measurements `yaml:"measurements"`
 	// description: |
 	//   Authorize spawned VMs to access Azure API. See: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=azure
-	UserAssignedIdentity string `yaml:"userassignedIdentity" validate:"required"`
+	UserAssignedIdentity string `yaml:"userAssignedIdentity" validate:"required"`
 }
 
 // GCPConfig are GCP specific configuration values used by the CLI.
@@ -152,7 +150,7 @@ type GCPConfig struct {
 	//   Roles added to service account.
 	ServiceAccountRoles []string `yaml:"serviceAccountRoles"`
 	// description: |
-	//   Measurement used to enable measured boot.
+	//   Expected confidential VM measurements.
 	Measurements Measurements `yaml:"measurements"`
 }
 
@@ -165,10 +163,10 @@ type QEMUConfig struct {
 // Default returns a struct with the default config.
 func Default() *Config {
 	return &Config{
-		Version:                  Version1,
-		AutoscalingNodeGroupsMin: 1,
-		AutoscalingNodeGroupsMax: 10,
-		StateDiskSizeGB:          30,
+		Version:                 Version1,
+		AutoscalingNodeGroupMin: 1,
+		AutoscalingNodeGroupMax: 10,
+		StateDiskSizeGB:         30,
 		IngressFirewall: Firewall{
 			{
 				Name:        "coordinator",
@@ -201,6 +199,7 @@ func Default() *Config {
 			},
 		},
 		Provider: ProviderConfig{
+			// TODO remove our subscriptions from the default config
 			Azure: &AzureConfig{
 				SubscriptionID:       "0d202bbb-4fa7-4af8-8125-58c269a05435",
 				TenantID:             "adb650a8-5da3-4b15-b4b0-3daf65ff7626",
