@@ -5,16 +5,16 @@ import (
 	"fmt"
 
 	azurecloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/azure"
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	gcpcloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/gcp"
-	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 )
 
 type providerMetadata interface {
 	// List retrieves all instances belonging to the current constellation.
-	List(ctx context.Context) ([]core.Instance, error)
+	List(ctx context.Context) ([]cloudtypes.Instance, error)
 	// Self retrieves the current instance.
-	Self(ctx context.Context) (core.Instance, error)
+	Self(ctx context.Context) (cloudtypes.Instance, error)
 }
 
 // Fetcher checks the metadata service to search for instances that were set up for debugging and cloud provider specific SSH keys.
@@ -66,7 +66,7 @@ func (f *Fetcher) DiscoverDebugdIPs(ctx context.Context) ([]string, error) {
 	}
 	var ips []string
 	for _, instance := range instances {
-		ips = append(ips, instance.IPs...)
+		ips = append(ips, instance.PrivateIPs...)
 	}
 	return ips, nil
 }

@@ -45,7 +45,7 @@ func TestGetDiskUUID(t *testing.T) {
 				uuid:    tc.wantUUID,
 			}
 			fs := afero.NewMemMapFs()
-			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, &diskStub, zapLogger, nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
+			core, err := NewCore(&stubVPN{}, nil, nil, &diskStub, zapLogger, nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 			uuid, err := core.GetDiskUUID()
 			if tc.wantErr {
@@ -88,7 +88,7 @@ func TestUpdateDiskPassphrase(t *testing.T) {
 				updatePassphraseErr: tc.updatePassphraseErr,
 			}
 			fs := afero.NewMemMapFs()
-			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, &diskStub, zapLogger, nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
+			core, err := NewCore(&stubVPN{}, nil, nil, &diskStub, zapLogger, nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 			err = core.UpdateDiskPassphrase("passphrase")
 			if tc.wantErr {

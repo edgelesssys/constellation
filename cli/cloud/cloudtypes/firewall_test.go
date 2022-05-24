@@ -29,11 +29,18 @@ func TestFirewallGCP(t *testing.T) {
 			IPRange:     "",
 			FromPort:    51820,
 		},
+		{
+			Name:        "test-3",
+			Description: "This is the Test-3 Permission",
+			Protocol:    "tcp",
+			IPRange:     "192.0.2.0/24",
+			FromPort:    4000,
+		},
 	}
 
 	firewalls, err := testFw.GCP()
 	assert.NoError(err)
-	assert.Equal(2, len(firewalls))
+	assert.Equal(len(testFw), len(firewalls))
 
 	// Check permissions
 	for i := 0; i < len(testFw); i++ {
@@ -47,6 +54,11 @@ func TestFirewallGCP(t *testing.T) {
 
 		assert.Equal(testFw[i].Name, firewall1.GetName())
 		assert.Equal(testFw[i].Description, firewall1.GetDescription())
+
+		if testFw[i].IPRange != "" {
+			require.Len(firewall1.GetSourceRanges(), 1)
+			assert.Equal(testFw[i].IPRange, firewall1.GetSourceRanges()[0])
+		}
 	}
 }
 

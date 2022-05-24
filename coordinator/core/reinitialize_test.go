@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/coordinator/atls"
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
@@ -71,7 +72,7 @@ func TestReinitializeAsNode(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			coordinators := []Instance{{IPs: []string{"192.0.2.1"}, Role: role.Coordinator}}
+			coordinators := []cloudtypes.Instance{{PrivateIPs: []string{"192.0.2.1"}, Role: role.Coordinator}}
 			netDialer := testdialer.NewBufconnDialer()
 			dialer := grpcutil.NewDialer(&MockValidator{}, netDialer)
 			server := newPubAPIServer()
@@ -81,7 +82,7 @@ func TestReinitializeAsNode(t *testing.T) {
 			defer server.Stop()
 			vpn := &stubVPN{}
 			fs := afero.NewMemMapFs()
-			core, err := NewCore(vpn, nil, &stubMetadata{listRes: coordinators, supportedRes: true}, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
+			core, err := NewCore(vpn, nil, &stubMetadata{listRes: coordinators, supportedRes: true}, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 			err = core.ReinitializeAsNode(context.Background(), dialer, vpnIP, &stubPubAPI{}, 0)
 
@@ -144,7 +145,7 @@ func TestReinitializeAsCoordinator(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			coordinators := []Instance{{IPs: []string{"192.0.2.1"}, Role: role.Coordinator}}
+			coordinators := []cloudtypes.Instance{{PrivateIPs: []string{"192.0.2.1"}, Role: role.Coordinator}}
 			netDialer := testdialer.NewBufconnDialer()
 			dialer := grpcutil.NewDialer(&MockValidator{}, netDialer)
 			server := newPubAPIServer()
@@ -154,7 +155,7 @@ func TestReinitializeAsCoordinator(t *testing.T) {
 			defer server.Stop()
 			vpn := &stubVPN{}
 			fs := afero.NewMemMapFs()
-			core, err := NewCore(vpn, nil, &stubMetadata{listRes: coordinators, supportedRes: true}, nil, nil, nil, nil, zaptest.NewLogger(t), nil, &fakeStoreFactory{}, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
+			core, err := NewCore(vpn, nil, &stubMetadata{listRes: coordinators, supportedRes: true}, nil, zaptest.NewLogger(t), nil, &fakeStoreFactory{}, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 			// prepare store to emulate initialized KMS
 			require.NoError(core.data().PutKMSData(kms.KMSInformation{StorageUri: kms.NoStoreURI, KmsUri: kms.ClusterKMSURI}))
@@ -224,10 +225,10 @@ func TestGetInitialVPNPeers(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			coordinators := func(ips []string) []Instance {
-				instances := []Instance{}
+			coordinators := func(ips []string) []cloudtypes.Instance {
+				instances := []cloudtypes.Instance{}
 				for _, ip := range ips {
-					instances = append(instances, Instance{IPs: []string{ip}, Role: role.Coordinator})
+					instances = append(instances, cloudtypes.Instance{PrivateIPs: []string{ip}, Role: role.Coordinator})
 				}
 				return instances
 			}(tc.coordinatorIPs)

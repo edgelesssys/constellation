@@ -48,18 +48,19 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 	c.nodeTemplate = nodeTemplateInput.Name
 
 	coordinatorTemplateInput := insertInstanceTemplateInput{
-		Name:            c.name + "-control-plane-" + c.uid,
-		Network:         c.network,
-		Subnetwork:      c.subnetwork,
-		ImageId:         input.ImageId,
-		InstanceType:    input.InstanceType,
-		StateDiskSizeGB: int64(input.StateDiskSizeGB),
-		Role:            role.Coordinator.String(),
-		KubeEnv:         input.KubeEnv,
-		Project:         c.project,
-		Zone:            c.zone,
-		Region:          c.region,
-		UID:             c.uid,
+		Name:                         c.name + "-control-plane-" + c.uid,
+		Network:                      c.network,
+		Subnetwork:                   c.subnetwork,
+		SecondarySubnetworkRangeName: c.secondarySubnetworkRange,
+		ImageId:                      input.ImageId,
+		InstanceType:                 input.InstanceType,
+		StateDiskSizeGB:              int64(input.StateDiskSizeGB),
+		Role:                         role.Coordinator.String(),
+		KubeEnv:                      input.KubeEnv,
+		Project:                      c.project,
+		Zone:                         c.zone,
+		Region:                       c.region,
+		UID:                          c.uid,
 	}
 	op, err = c.insertInstanceTemplate(ctx, coordinatorTemplateInput)
 	if err != nil {
@@ -71,6 +72,21 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		return err
 	}
 	ops = []Operation{}
+
+	coordinatorGroupInput := instanceGroupManagerInput{
+		Count:    input.CountCoordinators,
+		Name:     strings.Join([]string{c.name, "control-plane", c.uid}, "-"),
+		Template: c.coordinatorTemplate,
+		UID:      c.uid,
+		Project:  c.project,
+		Zone:     c.zone,
+	}
+	op, err = c.insertInstanceGroupManger(ctx, coordinatorGroupInput)
+	if err != nil {
+		return fmt.Errorf("inserting instanceGroupManager failed: %w", err)
+	}
+	ops = append(ops, op)
+	c.coordinatorInstanceGroup = coordinatorGroupInput.Name
 
 	nodeGroupInput := instanceGroupManagerInput{
 		Count:    input.CountNodes,
@@ -87,20 +103,6 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 	ops = append(ops, op)
 	c.nodesInstanceGroup = nodeGroupInput.Name
 
-	coordinatorGroupInput := instanceGroupManagerInput{
-		Count:    input.CountCoordinators,
-		Name:     strings.Join([]string{c.name, "control-plane", c.uid}, "-"),
-		Template: c.coordinatorTemplate,
-		UID:      c.uid,
-		Project:  c.project,
-		Zone:     c.zone,
-	}
-	op, err = c.insertInstanceGroupManger(ctx, coordinatorGroupInput)
-	if err != nil {
-		return fmt.Errorf("inserting instanceGroupManager failed: %w", err)
-	}
-	ops = append(ops, op)
-	c.coordinatorInstanceGroup = coordinatorGroupInput.Name
 	if err := c.waitForOperations(ctx, ops); err != nil {
 		return err
 	}
@@ -390,7 +392,7 @@ func (i insertInstanceTemplateInput) insertInstanceTemplateRequest() *computepb.
 					EnableVtpm:                proto.Bool(true),
 				},
 				Tags: &computepb.Tags{
-					Items: []string{"constellation"},
+					Items: []string{"constellation-" + i.UID},
 				},
 			},
 		},

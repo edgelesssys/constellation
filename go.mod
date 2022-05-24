@@ -32,7 +32,10 @@ replace (
 	k8s.io/sample-controller => k8s.io/sample-controller v0.24.0
 )
 
-replace github.com/nmiculinic/wg-quick-go v0.1.3 => github.com/katexochen/wg-quick-go v0.1.3-beta.1
+replace (
+	github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-cryptsetup v0.0.0-20220511084044-b537356aa24b
+	github.com/nmiculinic/wg-quick-go v0.1.3 => github.com/katexochen/wg-quick-go v0.1.3-beta.1
+)
 
 require (
 	cloud.google.com/go/compute v1.5.0
@@ -105,7 +108,6 @@ require (
 	k8s.io/kubernetes v1.24.0
 	k8s.io/mount-utils v0.24.0
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
-	sigs.k8s.io/yaml v1.3.0
 )
 
 require (
@@ -223,6 +225,5 @@ require (
 	sigs.k8s.io/kustomize/api v0.11.4 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.13.6 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
+	sigs.k8s.io/yaml v1.3.0 // indirect
 )
-
-replace github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-cryptsetup v0.0.0-20220511084044-b537356aa24b

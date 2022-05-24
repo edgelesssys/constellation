@@ -3,7 +3,7 @@ package qemu
 import (
 	"context"
 
-	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/role"
 )
 
@@ -16,17 +16,17 @@ func (m *Metadata) Supported() bool {
 }
 
 // List retrieves all instances belonging to the current constellation.
-func (m *Metadata) List(ctx context.Context) ([]core.Instance, error) {
+func (m *Metadata) List(ctx context.Context) ([]cloudtypes.Instance, error) {
 	panic("function *Metadata.List not implemented")
 }
 
 // Self retrieves the current instance.
-func (m *Metadata) Self(ctx context.Context) (core.Instance, error) {
+func (m *Metadata) Self(ctx context.Context) (cloudtypes.Instance, error) {
 	panic("function *Metdata.Self not implemented")
 }
 
 // GetInstance retrieves an instance using its providerID.
-func (m Metadata) GetInstance(ctx context.Context, providerID string) (core.Instance, error) {
+func (m Metadata) GetInstance(ctx context.Context, providerID string) (cloudtypes.Instance, error) {
 	panic("function *Metadata.GetInstance not implemented")
 }
 
@@ -38,4 +38,19 @@ func (m Metadata) SignalRole(ctx context.Context, role role.Role) error {
 // SetVPNIP stores the internally used VPN IP in cloud provider metadata (if supported and required for autoscaling by the CSP, otherwise does nothing).
 func (m Metadata) SetVPNIP(ctx context.Context, vpnIP string) error {
 	panic("function *Metadata.SetVPNIP not implemented")
+}
+
+// SupportsLoadBalancer returns true if the cloud provider supports load balancers.
+func (m Metadata) SupportsLoadBalancer() bool {
+	return false
+}
+
+// GetLoadBalancerIP returns the IP of the load balancer.
+func (m Metadata) GetLoadBalancerIP(ctx context.Context) (string, error) {
+	panic("function *Metadata.GetLoadBalancerIP not implemented")
+}
+
+// GetSubnetworkCIDR retrieves the subnetwork CIDR from cloud provider metadata.
+func (m Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
+	panic("function *Metadata.GetSubnetworkCIDR not implemented")
 }

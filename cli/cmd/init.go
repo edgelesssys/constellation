@@ -357,6 +357,9 @@ func readOrGenerateVPNKey(fileHandler file.Handler, privKeyPath string) (privKey
 func ipsToEndpoints(ips []string, port string) []string {
 	var endpoints []string
 	for _, ip := range ips {
+		if ip == "" {
+			continue
+		}
 		endpoints = append(endpoints, net.JoinHostPort(ip, port))
 	}
 	return endpoints

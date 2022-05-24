@@ -13,27 +13,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestInitConfiguration(t *testing.T) {
-	awsConfig := AWSConfiguration{}
 	coreOSConfig := CoreOSConfiguration{}
 
 	testCases := map[string]struct {
 		config KubeadmInitYAML
 	}{
-		"AWS init config can be created": {
-			config: awsConfig.InitConfiguration(),
-		},
-		"AWS init config with all fields can be created": {
-			config: func() KubeadmInitYAML {
-				c := awsConfig.InitConfiguration()
-				c.SetApiServerAdvertiseAddress("192.0.2.0")
-				c.SetNodeIP("192.0.2.0")
-				c.SetNodeName("node")
-				c.SetPodNetworkCIDR("10.244.0.0/16")
-				c.SetServiceCIDR("10.245.0.0/24")
-				c.SetProviderID("somecloudprovider://instance-id")
-				return c
-			}(),
-		},
 		"CoreOS init config can be created": {
 			config: coreOSConfig.InitConfiguration(true),
 		},
@@ -67,27 +51,11 @@ func TestInitConfiguration(t *testing.T) {
 }
 
 func TestJoinConfiguration(t *testing.T) {
-	awsConfig := AWSConfiguration{}
 	coreOSConfig := CoreOSConfiguration{}
 
 	testCases := map[string]struct {
 		config KubeadmJoinYAML
 	}{
-		"AWS join config can be created": {
-			config: awsConfig.JoinConfiguration(),
-		},
-		"AWS join config with all fields can be created": {
-			config: func() KubeadmJoinYAML {
-				c := awsConfig.JoinConfiguration()
-				c.SetApiServerEndpoint("192.0.2.0:6443")
-				c.SetNodeIP("192.0.2.0")
-				c.SetNodeName("node")
-				c.SetToken("token")
-				c.AppendDiscoveryTokenCaCertHash("discovery-token-ca-cert-hash")
-				c.SetProviderID("somecloudprovider://instance-id")
-				return c
-			}(),
-		},
 		"CoreOS join config can be created": {
 			config: coreOSConfig.JoinConfiguration(true),
 		},

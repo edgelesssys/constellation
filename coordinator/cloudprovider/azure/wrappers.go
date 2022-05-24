@@ -8,6 +8,22 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 )
 
+type virtualNetworksClient struct {
+	*armnetwork.VirtualNetworksClient
+}
+
+func (c *virtualNetworksClient) List(resourceGroupName string, options *armnetwork.VirtualNetworksClientListOptions) virtualNetworksClientListPager {
+	return c.VirtualNetworksClient.List(resourceGroupName, options)
+}
+
+type securityGroupsClient struct {
+	*armnetwork.SecurityGroupsClient
+}
+
+func (c *securityGroupsClient) List(resourceGroupName string, options *armnetwork.SecurityGroupsClientListOptions) securityGroupsClientListPager {
+	return c.SecurityGroupsClient.List(resourceGroupName, options)
+}
+
 type networkInterfacesClient struct {
 	*armnetwork.InterfacesClient
 }
@@ -23,6 +39,32 @@ func (c *networkInterfacesClient) Get(ctx context.Context, resourceGroupName str
 	options *armnetwork.InterfacesClientGetOptions,
 ) (armnetwork.InterfacesClientGetResponse, error) {
 	return c.InterfacesClient.Get(ctx, resourceGroupName, networkInterfaceName, options)
+}
+
+type publicIPAddressesClient struct {
+	*armnetwork.PublicIPAddressesClient
+}
+
+func (c *publicIPAddressesClient) GetVirtualMachineScaleSetPublicIPAddress(ctx context.Context, resourceGroupName string,
+	virtualMachineScaleSetName string, virtualmachineIndex string, networkInterfaceName string,
+	ipConfigurationName string, publicIPAddressName string,
+	options *armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressOptions,
+) (armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResponse, error) {
+	return c.PublicIPAddressesClient.GetVirtualMachineScaleSetPublicIPAddress(ctx, resourceGroupName, virtualMachineScaleSetName, virtualmachineIndex, networkInterfaceName, ipConfigurationName, publicIPAddressName, options)
+}
+
+func (c *publicIPAddressesClient) Get(ctx context.Context, resourceGroupName string, publicIPAddressName string,
+	options *armnetwork.PublicIPAddressesClientGetOptions,
+) (armnetwork.PublicIPAddressesClientGetResponse, error) {
+	return c.PublicIPAddressesClient.Get(ctx, resourceGroupName, publicIPAddressName, options)
+}
+
+type loadBalancersClient struct {
+	*armnetwork.LoadBalancersClient
+}
+
+func (c *loadBalancersClient) List(resourceGroupName string, options *armnetwork.LoadBalancersClientListOptions) loadBalancersClientListPager {
+	return c.LoadBalancersClient.List(resourceGroupName, options)
 }
 
 type virtualMachinesClient struct {

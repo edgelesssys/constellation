@@ -124,16 +124,13 @@ func newMockCoreWithDialer(bufDialer *bufconnDialer) (*Core, *pubapi.API, error)
 	vpn := &stubVPN{}
 	kubeFake := &ClusterFake{}
 	metadataFake := &ProviderMetadataFake{}
-	ccmFake := &CloudControllerManagerFake{}
-	cnmFake := &CloudNodeManagerFake{}
-	autoscalerFake := &ClusterAutoscalerFake{}
 	encryptedDiskFake := &EncryptedDiskFake{}
 
 	getPublicAddr := func() (string, error) {
 		return "192.0.2.1", nil
 	}
 	fs := afero.NewMemMapFs()
-	core, err := NewCore(vpn, kubeFake, metadataFake, ccmFake, cnmFake, autoscalerFake, encryptedDiskFake, zapLogger, simulator.OpenSimulatedTPM, &fakeStoreFactory{}, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
+	core, err := NewCore(vpn, kubeFake, metadataFake, encryptedDiskFake, zapLogger, simulator.OpenSimulatedTPM, &fakeStoreFactory{}, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 	if err != nil {
 		return nil, nil, err
 	}

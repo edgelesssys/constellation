@@ -82,6 +82,45 @@ func (c *Creator) createGCP(ctx context.Context, cl gcpclient, config *config.Co
 		return state.ConstellationState{}, err
 	}
 
+	// additionally create allow-internal rules
+	internalFirewallInput := gcpcl.FirewallInput{
+		Ingress: cloudtypes.Firewall{
+			{
+				Name:     "allow-cluster-internal-tcp",
+				Protocol: "tcp",
+				IPRange:  gcpcl.SubnetExtCIDR,
+			},
+			{
+				Name:     "allow-cluster-internal-udp",
+				Protocol: "udp",
+				IPRange:  gcpcl.SubnetExtCIDR,
+			},
+			{
+				Name:     "allow-cluster-internal-icmp",
+				Protocol: "icmp",
+				IPRange:  gcpcl.SubnetExtCIDR,
+			},
+			{
+				Name:     "allow-node-internal-tcp",
+				Protocol: "tcp",
+				IPRange:  gcpcl.SubnetCIDR,
+			},
+			{
+				Name:     "allow-node-internal-udp",
+				Protocol: "udp",
+				IPRange:  gcpcl.SubnetCIDR,
+			},
+			{
+				Name:     "allow-node-internal-icmp",
+				Protocol: "icmp",
+				IPRange:  gcpcl.SubnetCIDR,
+			},
+		},
+	}
+	if err := cl.CreateFirewall(ctx, internalFirewallInput); err != nil {
+		return state.ConstellationState{}, err
+	}
+
 	createInput := client.CreateInstancesInput{
 		CountCoordinators: coordCount,
 		CountNodes:        nodeCount,
@@ -102,6 +141,9 @@ func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *confi
 	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerAzure{client: cl})
 
 	if err := cl.CreateResourceGroup(ctx); err != nil {
+		return state.ConstellationState{}, err
+	}
+	if err := cl.CreateExternalLoadBalancer(ctx); err != nil {
 		return state.ConstellationState{}, err
 	}
 	if err := cl.CreateVirtualNetwork(ctx); err != nil {

@@ -3,7 +3,7 @@ package azure
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,13 +13,13 @@ import (
 
 func TestAutoscalerSecrets(t *testing.T) {
 	testCases := map[string]struct {
-		instance               core.Instance
+		instance               cloudtypes.Instance
 		cloudServiceAccountURI string
 		wantSecrets            resources.Secrets
 		wantErr                bool
 	}{
 		"Secrets works": {
-			instance:               core.Instance{ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name"},
+			instance:               cloudtypes.Instance{ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name"},
 			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret",
 			wantSecrets: resources.Secrets{
 				&k8s.Secret{
@@ -43,11 +43,11 @@ func TestAutoscalerSecrets(t *testing.T) {
 			},
 		},
 		"invalid providerID fails": {
-			instance: core.Instance{ProviderID: "invalid"},
+			instance: cloudtypes.Instance{ProviderID: "invalid"},
 			wantErr:  true,
 		},
 		"invalid cloudServiceAccountURI fails": {
-			instance:               core.Instance{ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name"},
+			instance:               cloudtypes.Instance{ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name"},
 			cloudServiceAccountURI: "invalid",
 			wantErr:                true,
 		},

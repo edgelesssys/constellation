@@ -11,6 +11,8 @@ import (
 	"github.com/spf13/cobra/doc"
 )
 
+var seeAlsoRegexp = regexp.MustCompile(`(?s)### SEE ALSO\n.+?\n\n`)
+
 func main() {
 	cobra.EnableCommandSorting = false
 	rootCmd := cmd.NewRootCmd()
@@ -28,7 +30,7 @@ func main() {
 	}
 
 	// Remove "see also" sections. They list parent and child commands, which is not interesting for us.
-	cleanedBody := regexp.MustCompile(`(?s)### SEE ALSO\n.+?\n\n`).ReplaceAll(body.Bytes(), nil)
+	cleanedBody := seeAlsoRegexp.ReplaceAll(body.Bytes(), nil)
 
 	fmt.Printf("Commands:\n\n%s\n%s", cmdList, cleanedBody)
 }

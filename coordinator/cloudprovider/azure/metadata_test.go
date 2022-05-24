@@ -8,24 +8,24 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
-	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestList(t *testing.T) {
-	wantInstances := []core.Instance{
+	wantInstances := []cloudtypes.Instance{
 		{
 			Name:       "instance-name",
 			ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
-			IPs:        []string{"192.0.2.0"},
+			PrivateIPs: []string{"192.0.2.0"},
 			SSHKeys:    map[string][]string{"user": {"key-data"}},
 		},
 		{
 			Name:       "scale-set-name-instance-id",
 			ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-			IPs:        []string{"192.0.2.0"},
+			PrivateIPs: []string{"192.0.2.0"},
 			SSHKeys:    map[string][]string{"user": {"key-data"}},
 		},
 	}
@@ -37,7 +37,7 @@ func TestList(t *testing.T) {
 		virtualMachineScaleSetVMsAPI virtualMachineScaleSetVMsAPI
 		tagsAPI                      tagsAPI
 		wantErr                      bool
-		wantInstances                []core.Instance
+		wantInstances                []cloudtypes.Instance
 	}{
 		"List works": {
 			imdsAPI:                      newIMDSStub(),
@@ -98,16 +98,16 @@ func TestList(t *testing.T) {
 }
 
 func TestSelf(t *testing.T) {
-	wantVMInstance := core.Instance{
+	wantVMInstance := cloudtypes.Instance{
 		Name:       "instance-name",
 		ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
-		IPs:        []string{"192.0.2.0"},
+		PrivateIPs: []string{"192.0.2.0"},
 		SSHKeys:    map[string][]string{"user": {"key-data"}},
 	}
-	wantScaleSetInstance := core.Instance{
+	wantScaleSetInstance := cloudtypes.Instance{
 		Name:       "scale-set-name-instance-id",
 		ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-		IPs:        []string{"192.0.2.0"},
+		PrivateIPs: []string{"192.0.2.0"},
 		SSHKeys:    map[string][]string{"user": {"key-data"}},
 	}
 	testCases := map[string]struct {
@@ -116,7 +116,7 @@ func TestSelf(t *testing.T) {
 		virtualMachinesAPI           virtualMachinesAPI
 		virtualMachineScaleSetVMsAPI virtualMachineScaleSetVMsAPI
 		wantErr                      bool
-		wantInstance                 core.Instance
+		wantInstance                 cloudtypes.Instance
 	}{
 		"self for individual instance works": {
 			imdsAPI:                      newIMDSStub(),
@@ -206,6 +206,349 @@ func TestSignalRole(t *testing.T) {
 				return
 			}
 			require.NoError(err)
+		})
+	}
+}
+
+func TestGetNetworkSecurityGroupName(t *testing.T) {
+	name := "network-security-group-name"
+	testCases := map[string]struct {
+		securityGroupsAPI securityGroupsAPI
+		imdsAPI           imdsAPI
+		wantName          string
+		wantErr           bool
+	}{
+		"GetNetworkSecurityGroupName works": {
+			imdsAPI: newIMDSStub(),
+			securityGroupsAPI: &stubSecurityGroupsAPI{
+				listPages: [][]*armnetwork.SecurityGroup{
+					{
+						{
+							Name: to.StringPtr(name),
+						},
+					},
+				},
+			},
+			wantName: name,
+		},
+		"no security group": {
+			imdsAPI:           newIMDSStub(),
+			securityGroupsAPI: &stubSecurityGroupsAPI{},
+			wantErr:           true,
+		},
+		"missing name in security group struct": {
+			imdsAPI:           newIMDSStub(),
+			securityGroupsAPI: &stubSecurityGroupsAPI{listPages: [][]*armnetwork.SecurityGroup{{{}}}},
+			wantErr:           true,
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			metadata := Metadata{
+				imdsAPI:           tc.imdsAPI,
+				securityGroupsAPI: tc.securityGroupsAPI,
+			}
+			name, err := metadata.GetNetworkSecurityGroupName(context.Background())
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+			assert.Equal(tc.wantName, name)
+		})
+	}
+}
+
+func TestGetSubnetworkCIDR(t *testing.T) {
+	subnetworkCIDR := "192.0.2.0/24"
+	name := "name"
+	testCases := map[string]struct {
+		virtualNetworksAPI virtualNetworksAPI
+		imdsAPI            imdsAPI
+		wantNetworkCIDR    string
+		wantErr            bool
+	}{
+		"GetSubnetworkCIDR works": {
+			imdsAPI: newIMDSStub(),
+			virtualNetworksAPI: &stubVirtualNetworksAPI{listPages: [][]*armnetwork.VirtualNetwork{
+				{
+					{
+						Name: to.StringPtr(name),
+						Properties: &armnetwork.VirtualNetworkPropertiesFormat{
+							Subnets: []*armnetwork.Subnet{
+								{Properties: &armnetwork.SubnetPropertiesFormat{AddressPrefix: to.StringPtr(subnetworkCIDR)}},
+							},
+						},
+					},
+				},
+			}},
+			wantNetworkCIDR: subnetworkCIDR,
+		},
+		"no virtual networks found": {
+			imdsAPI: newIMDSStub(),
+			virtualNetworksAPI: &stubVirtualNetworksAPI{listPages: [][]*armnetwork.VirtualNetwork{
+				{},
+			}},
+			wantErr:         true,
+			wantNetworkCIDR: subnetworkCIDR,
+		},
+		"malformed network struct": {
+			imdsAPI: newIMDSStub(),
+			virtualNetworksAPI: &stubVirtualNetworksAPI{listPages: [][]*armnetwork.VirtualNetwork{
+				{
+					{},
+				},
+			}},
+			wantErr:         true,
+			wantNetworkCIDR: subnetworkCIDR,
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			metadata := Metadata{
+				imdsAPI:            tc.imdsAPI,
+				virtualNetworksAPI: tc.virtualNetworksAPI,
+			}
+			subnetworkCIDR, err := metadata.GetSubnetworkCIDR(context.Background())
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+			assert.Equal(tc.wantNetworkCIDR, subnetworkCIDR)
+		})
+	}
+}
+
+func TestGetLoadBalancerName(t *testing.T) {
+	loadBalancerName := "load-balancer-name"
+	testCases := map[string]struct {
+		loadBalancerAPI loadBalancerAPI
+		imdsAPI         imdsAPI
+		wantName        string
+		wantErr         bool
+	}{
+		"GetLoadBalancerName works": {
+			imdsAPI: newIMDSStub(),
+			loadBalancerAPI: &stubLoadBalancersAPI{
+				listPages: [][]*armnetwork.LoadBalancer{
+					{
+						{
+							Name:       to.StringPtr(loadBalancerName),
+							Properties: &armnetwork.LoadBalancerPropertiesFormat{},
+						},
+					},
+				},
+			},
+			wantName: loadBalancerName,
+		},
+		"invalid load balancer struct": {
+			imdsAPI:         newIMDSStub(),
+			loadBalancerAPI: &stubLoadBalancersAPI{listPages: [][]*armnetwork.LoadBalancer{{{}}}},
+			wantErr:         true,
+		},
+		"invalid missing name": {
+			imdsAPI: newIMDSStub(),
+			loadBalancerAPI: &stubLoadBalancersAPI{listPages: [][]*armnetwork.LoadBalancer{{{
+				Properties: &armnetwork.LoadBalancerPropertiesFormat{},
+			}}}},
+			wantErr: true,
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			metadata := Metadata{
+				imdsAPI:         tc.imdsAPI,
+				loadBalancerAPI: tc.loadBalancerAPI,
+			}
+			loadbalancerName, err := metadata.GetLoadBalancerName(context.Background())
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+			assert.Equal(tc.wantName, loadbalancerName)
+		})
+	}
+}
+
+func TestGetLoadBalancerIP(t *testing.T) {
+	loadBalancerName := "load-balancer-name"
+	publicIP := "192.0.2.1"
+	correctPublicIPID := "/subscriptions/subscription/resourceGroups/resourceGroup/providers/Microsoft.Network/publicIPAddresses/pubIPName"
+	someErr := errors.New("some error")
+	testCases := map[string]struct {
+		loadBalancerAPI      loadBalancerAPI
+		publicIPAddressesAPI publicIPAddressesAPI
+		imdsAPI              imdsAPI
+		wantIP               string
+		wantErr              bool
+	}{
+		"GetLoadBalancerIP works": {
+			imdsAPI: newIMDSStub(),
+			loadBalancerAPI: &stubLoadBalancersAPI{
+				listPages: [][]*armnetwork.LoadBalancer{
+					{
+						{
+							Name: to.StringPtr(loadBalancerName),
+							Properties: &armnetwork.LoadBalancerPropertiesFormat{
+								FrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{
+									{
+										Properties: &armnetwork.FrontendIPConfigurationPropertiesFormat{
+											PublicIPAddress: &armnetwork.PublicIPAddress{
+												ID: &correctPublicIPID,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			publicIPAddressesAPI: &stubPublicIPAddressesAPI{getResponse: armnetwork.PublicIPAddressesClientGetResponse{
+				PublicIPAddressesClientGetResult: armnetwork.PublicIPAddressesClientGetResult{
+					PublicIPAddress: armnetwork.PublicIPAddress{
+						Properties: &armnetwork.PublicIPAddressPropertiesFormat{
+							IPAddress: &publicIP,
+						},
+					},
+				},
+			}},
+			wantIP: publicIP,
+		},
+		"no load balancer": {
+			imdsAPI: newIMDSStub(),
+			loadBalancerAPI: &stubLoadBalancersAPI{
+				listPages: [][]*armnetwork.LoadBalancer{
+					{},
+				},
+			},
+			wantErr: true,
+		},
+		"load balancer missing public IP reference": {
+			imdsAPI: newIMDSStub(),
+			loadBalancerAPI: &stubLoadBalancersAPI{
+				listPages: [][]*armnetwork.LoadBalancer{
+					{
+						{
+							Name: to.StringPtr(loadBalancerName),
+							Properties: &armnetwork.LoadBalancerPropertiesFormat{
+								FrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{},
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		"public IP reference has wrong format": {
+			imdsAPI: newIMDSStub(),
+			loadBalancerAPI: &stubLoadBalancersAPI{
+				listPages: [][]*armnetwork.LoadBalancer{
+					{
+						{
+							Name: to.StringPtr(loadBalancerName),
+							Properties: &armnetwork.LoadBalancerPropertiesFormat{
+								FrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{
+									{
+										Properties: &armnetwork.FrontendIPConfigurationPropertiesFormat{
+											PublicIPAddress: &armnetwork.PublicIPAddress{
+												ID: to.StringPtr("wrong-format"),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		"no public IP address found": {
+			imdsAPI: newIMDSStub(),
+			loadBalancerAPI: &stubLoadBalancersAPI{
+				listPages: [][]*armnetwork.LoadBalancer{
+					{
+						{
+							Name: to.StringPtr(loadBalancerName),
+							Properties: &armnetwork.LoadBalancerPropertiesFormat{
+								FrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{
+									{
+										Properties: &armnetwork.FrontendIPConfigurationPropertiesFormat{
+											PublicIPAddress: &armnetwork.PublicIPAddress{
+												ID: &correctPublicIPID,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			publicIPAddressesAPI: &stubPublicIPAddressesAPI{getErr: someErr},
+			wantErr:              true,
+		},
+		"found public IP has no address field": {
+			imdsAPI: newIMDSStub(),
+			loadBalancerAPI: &stubLoadBalancersAPI{
+				listPages: [][]*armnetwork.LoadBalancer{
+					{
+						{
+							Name: to.StringPtr(loadBalancerName),
+							Properties: &armnetwork.LoadBalancerPropertiesFormat{
+								FrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{
+									{
+										Properties: &armnetwork.FrontendIPConfigurationPropertiesFormat{
+											PublicIPAddress: &armnetwork.PublicIPAddress{
+												ID: &correctPublicIPID,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			publicIPAddressesAPI: &stubPublicIPAddressesAPI{getResponse: armnetwork.PublicIPAddressesClientGetResponse{
+				PublicIPAddressesClientGetResult: armnetwork.PublicIPAddressesClientGetResult{
+					PublicIPAddress: armnetwork.PublicIPAddress{
+						Properties: &armnetwork.PublicIPAddressPropertiesFormat{},
+					},
+				},
+			}},
+			wantErr: true,
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			metadata := Metadata{
+				imdsAPI:              tc.imdsAPI,
+				loadBalancerAPI:      tc.loadBalancerAPI,
+				publicIPAddressesAPI: tc.publicIPAddressesAPI,
+			}
+			loadbalancerName, err := metadata.GetLoadBalancerIP(context.Background())
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+			assert.Equal(tc.wantIP, loadbalancerName)
 		})
 	}
 }

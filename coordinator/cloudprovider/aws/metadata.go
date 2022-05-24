@@ -6,7 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
-	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/role"
 )
 
@@ -14,30 +14,30 @@ import (
 type Metadata struct{}
 
 // List retrieves all instances belonging to the current constellation.
-func (m Metadata) List(ctx context.Context) ([]core.Instance, error) {
+func (m Metadata) List(ctx context.Context) ([]cloudtypes.Instance, error) {
 	// TODO: implement using https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/ec2#Client.DescribeInstances
 	// And using AWS ec2 instance tags
 	panic("function *Metadata.List not implemented")
 }
 
 // Self retrieves the current instance.
-func (m Metadata) Self(ctx context.Context) (core.Instance, error) {
+func (m Metadata) Self(ctx context.Context) (cloudtypes.Instance, error) {
 	identityDocument, err := retrieveIdentityDocument(ctx)
 	if err != nil {
-		return core.Instance{}, err
+		return cloudtypes.Instance{}, err
 	}
 	// TODO: implement metadata using AWS ec2 instance tags
-	return core.Instance{
+	return cloudtypes.Instance{
 		Name:       identityDocument.InstanceID,
 		ProviderID: providerID(identityDocument),
-		IPs: []string{
+		PrivateIPs: []string{
 			identityDocument.PrivateIP,
 		},
 	}, nil
 }
 
 // GetInstance retrieves an instance using its providerID.
-func (m Metadata) GetInstance(ctx context.Context, providerID string) (core.Instance, error) {
+func (m Metadata) GetInstance(ctx context.Context, providerID string) (cloudtypes.Instance, error) {
 	// TODO: implement using https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/ec2#DescribeInstancesAPIClient.DescribeInstances
 	// And using AWS ec2 instance tags
 	// Filter request to only return info on this instance

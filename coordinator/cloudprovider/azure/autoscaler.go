@@ -1,7 +1,7 @@
 package azure
 
 import (
-	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
 	k8s "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,7 +16,7 @@ func (a *Autoscaler) Name() string {
 }
 
 // Secrets returns a list of secrets to deploy together with the k8s cluster-autoscaler.
-func (a *Autoscaler) Secrets(instance core.Instance, cloudServiceAccountURI string) (resources.Secrets, error) {
+func (a *Autoscaler) Secrets(instance cloudtypes.Instance, cloudServiceAccountURI string) (resources.Secrets, error) {
 	subscriptionID, resourceGroup, err := extractBasicsFromProviderID(instance.ProviderID)
 	if err != nil {
 		return resources.Secrets{}, err

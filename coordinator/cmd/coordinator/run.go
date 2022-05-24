@@ -30,7 +30,7 @@ import (
 var version = "0.0.0"
 
 func run(issuer core.QuoteIssuer, vpn core.VPN, openTPM vtpm.TPMOpenFunc, getPublicIPAddr func() (string, error), dialer *grpcutil.Dialer, fileHandler file.Handler,
-	kube core.Cluster, metadata core.ProviderMetadata, cloudControllerManager core.CloudControllerManager, cloudNodeManager core.CloudNodeManager, clusterAutoscaler core.ClusterAutoscaler, encryptedDisk core.EncryptedDisk, etcdEndpoint string, etcdTLS bool, bindIP, bindPort string, zapLoggerCore *zap.Logger,
+	kube core.Cluster, metadata core.ProviderMetadata, encryptedDisk core.EncryptedDisk, etcdEndpoint string, etcdTLS bool, bindIP, bindPort string, zapLoggerCore *zap.Logger,
 	fs afero.Fs,
 ) {
 	defer zapLoggerCore.Sync()
@@ -47,7 +47,7 @@ func run(issuer core.QuoteIssuer, vpn core.VPN, openTPM vtpm.TPMOpenFunc, getPub
 		Logger:   zapLoggerCore.WithOptions(zap.IncreaseLevel(zap.WarnLevel)).Named("etcd"),
 	}
 	linuxUserManager := user.NewLinuxUserManager(fs)
-	core, err := core.NewCore(vpn, kube, metadata, cloudControllerManager, cloudNodeManager, clusterAutoscaler, encryptedDisk, zapLoggerCore, openTPM, etcdStoreFactory, fileHandler, linuxUserManager)
+	core, err := core.NewCore(vpn, kube, metadata, encryptedDisk, zapLoggerCore, openTPM, etcdStoreFactory, fileHandler, linuxUserManager)
 	if err != nil {
 		zapLoggerCore.Fatal("failed to create core", zap.Error(err))
 	}

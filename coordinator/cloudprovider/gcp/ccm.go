@@ -1,12 +1,13 @@
 package gcp
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/edgelesssys/constellation/coordinator/cloudprovider"
-	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
 	k8s "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,14 +35,17 @@ func (c *CloudControllerManager) Name() string {
 func (c *CloudControllerManager) ExtraArgs() []string {
 	return []string{
 		"--use-service-account-credentials",
-		"--controllers=cloud-node,cloud-node-lifecycle",
+		"--controllers=cloud-node,cloud-node-lifecycle,nodeipam,service,route",
 		"--cloud-config=/etc/gce/gce.conf",
+		"--cidr-allocator-type=CloudAllocator",
+		"--allocate-node-cidrs=true",
+		"--configure-cloud-routes=false",
 	}
 }
 
 // ConfigMaps returns a list of ConfigMaps to deploy together with the k8s cloud-controller-manager
 // Reference: https://kubernetes.io/docs/concepts/configuration/configmap/ .
-func (c *CloudControllerManager) ConfigMaps(instance core.Instance) (resources.ConfigMaps, error) {
+func (c *CloudControllerManager) ConfigMaps(instance cloudtypes.Instance) (resources.ConfigMaps, error) {
 	// GCP CCM expects cloud config to contain the GCP project-id and other configuration.
 	// reference: https://github.com/kubernetes/cloud-provider-gcp/blob/master/cluster/gce/gci/configure-helper.sh#L791-L892
 	var config strings.Builder
@@ -51,7 +55,10 @@ func (c *CloudControllerManager) ConfigMaps(instance core.Instance) (resources.C
 		return resources.ConfigMaps{}, err
 	}
 	config.WriteString(fmt.Sprintf("project-id = %s\n", projectID))
-	config.WriteString("use-metadata-server = false\n")
+	config.WriteString("use-metadata-server = true\n")
+
+	nameParts := strings.Split(instance.Name, "-")
+	config.WriteString("node-tags = constellation-" + nameParts[len(nameParts)-2] + "\n")
 
 	return resources.ConfigMaps{
 		&k8s.ConfigMap{
@@ -72,7 +79,7 @@ func (c *CloudControllerManager) ConfigMaps(instance core.Instance) (resources.C
 
 // Secrets returns a list of secrets to deploy together with the k8s cloud-controller-manager.
 // Reference: https://kubernetes.io/docs/concepts/configuration/secret/ .
-func (c *CloudControllerManager) Secrets(instance core.Instance, cloudServiceAccountURI string) (resources.Secrets, error) {
+func (c *CloudControllerManager) Secrets(ctx context.Context, instance cloudtypes.Instance, cloudServiceAccountURI string) (resources.Secrets, error) {
 	serviceAccountKey, err := getServiceAccountKey(cloudServiceAccountURI)
 	if err != nil {
 		return resources.Secrets{}, err
@@ -148,12 +155,6 @@ func (c *CloudControllerManager) Env() []k8s.EnvVar {
 			Value: "/var/secrets/google/key.json",
 		},
 	}
-}
-
-// PrepareInstance is called on every instance before deploying the cloud-controller-manager.
-// Allows for cloud-provider specific hooks.
-func (c *CloudControllerManager) PrepareInstance(instance core.Instance, vpnIP string) error {
-	return nil
 }
 
 // Supported is used to determine if cloud controller manager is implemented for this cloud provider.

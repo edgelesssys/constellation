@@ -216,6 +216,7 @@ func TestCreateInstances(t *testing.T) {
 				roleAssignmentsAPI:   tc.roleAssignmentsAPI,
 				nodes:                make(azure.Instances),
 				coordinators:         make(azure.Instances),
+				loadBalancerPubIP:    "lbip",
 			}
 
 			if tc.wantErr {
@@ -227,7 +228,7 @@ func TestCreateInstances(t *testing.T) {
 				assert.NotEmpty(client.nodes["0"].PrivateIP)
 				assert.NotEmpty(client.nodes["0"].PublicIP)
 				assert.NotEmpty(client.coordinators["0"].PrivateIP)
-				assert.NotEmpty(client.coordinators["0"].PublicIP)
+				assert.Equal("lbip", client.coordinators["0"].PublicIP)
 			}
 		})
 	}

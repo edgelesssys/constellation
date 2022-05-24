@@ -16,6 +16,12 @@ type instanceAPI interface {
 	Close() error
 }
 
+type subnetworkAPI interface {
+	List(ctx context.Context, req *computepb.ListSubnetworksRequest, opts ...gax.CallOption) SubnetworkIterator
+	Get(ctx context.Context, req *computepb.GetSubnetworkRequest, opts ...gax.CallOption) (*computepb.Subnetwork, error)
+	Close() error
+}
+
 type metadataAPI interface {
 	InstanceAttributeValue(attr string) (string, error)
 	ProjectID() (string, error)
@@ -29,4 +35,8 @@ type Operation interface {
 
 type InstanceIterator interface {
 	Next() (*computepb.Instance, error)
+}
+
+type SubnetworkIterator interface {
+	Next() (*computepb.Subnetwork, error)
 }

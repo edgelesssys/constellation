@@ -55,7 +55,7 @@ func TestGetPeers(t *testing.T) {
 			require := require.New(t)
 
 			fs := afero.NewMemMapFs()
-			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
+			core, err := NewCore(&stubVPN{}, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 
 			// prepare store
@@ -116,7 +116,7 @@ func TestAddPeer(t *testing.T) {
 			require := require.New(t)
 
 			fs := afero.NewMemMapFs()
-			core, err := NewCore(&tc.vpn, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
+			core, err := NewCore(&tc.vpn, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 
 			err = core.AddPeer(tc.peer)

@@ -8,16 +8,16 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
-	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGetVM(t *testing.T) {
-	wantInstance := core.Instance{
+	wantInstance := cloudtypes.Instance{
 		Name:       "instance-name",
 		ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
-		IPs:        []string{"192.0.2.0"},
+		PrivateIPs: []string{"192.0.2.0"},
 		SSHKeys:    map[string][]string{"user": {"key-data"}},
 	}
 	testCases := map[string]struct {
@@ -25,7 +25,7 @@ func TestGetVM(t *testing.T) {
 		networkInterfacesAPI networkInterfacesAPI
 		virtualMachinesAPI   virtualMachinesAPI
 		wantErr              bool
-		wantInstance         core.Instance
+		wantInstance         cloudtypes.Instance
 	}{
 		"getVM for individual instance works": {
 			providerID:           "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
@@ -78,11 +78,11 @@ func TestGetVM(t *testing.T) {
 }
 
 func TestListVMs(t *testing.T) {
-	wantInstances := []core.Instance{
+	wantInstances := []cloudtypes.Instance{
 		{
 			Name:       "instance-name",
 			ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
-			IPs:        []string{"192.0.2.0"},
+			PrivateIPs: []string{"192.0.2.0"},
 			SSHKeys:    map[string][]string{"user": {"key-data"}},
 		},
 	}
@@ -91,7 +91,7 @@ func TestListVMs(t *testing.T) {
 		networkInterfacesAPI networkInterfacesAPI
 		virtualMachinesAPI   virtualMachinesAPI
 		wantErr              bool
-		wantInstances        []core.Instance
+		wantInstances        []cloudtypes.Instance
 	}{
 		"listVMs works": {
 			imdsAPI:              newIMDSStub(),
@@ -103,7 +103,7 @@ func TestListVMs(t *testing.T) {
 			imdsAPI:              newIMDSStub(),
 			networkInterfacesAPI: newNetworkInterfacesStub(),
 			virtualMachinesAPI:   &stubVirtualMachinesAPI{},
-			wantInstances:        []core.Instance{},
+			wantInstances:        []cloudtypes.Instance{},
 		},
 		"can skip nil in VM list": {
 			imdsAPI:              newIMDSStub(),
@@ -234,10 +234,10 @@ func TestSplitVMProviderID(t *testing.T) {
 
 func TestConvertVMToCoreInstance(t *testing.T) {
 	testCases := map[string]struct {
-		inVM                 armcompute.VirtualMachine
-		inInterfaceIPConfigs []*armnetwork.InterfaceIPConfiguration
-		wantErr              bool
-		wantInstance         core.Instance
+		inVM         armcompute.VirtualMachine
+		inInterface  []armnetwork.Interface
+		wantErr      bool
+		wantInstance cloudtypes.Instance
 	}{
 		"conversion works": {
 			inVM: armcompute.VirtualMachine{
@@ -259,17 +259,25 @@ func TestConvertVMToCoreInstance(t *testing.T) {
 					},
 				},
 			},
-			inInterfaceIPConfigs: []*armnetwork.InterfaceIPConfiguration{
+			inInterface: []armnetwork.Interface{
 				{
-					Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
-						PrivateIPAddress: to.StringPtr("192.0.2.0"),
+					Name: to.StringPtr("interface-name"),
+					ID:   to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Network/networkInterfaces/interface-name"),
+					Properties: &armnetwork.InterfacePropertiesFormat{
+						IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
+							{
+								Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+									PrivateIPAddress: to.StringPtr("192.0.2.0"),
+								},
+							},
+						},
 					},
 				},
 			},
-			wantInstance: core.Instance{
+			wantInstance: cloudtypes.Instance{
 				Name:       "instance-name",
 				ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
-				IPs:        []string{"192.0.2.0"},
+				PrivateIPs: []string{"192.0.2.0"},
 				SSHKeys:    map[string][]string{"user": {"key-data"}},
 			},
 		},
@@ -279,17 +287,25 @@ func TestConvertVMToCoreInstance(t *testing.T) {
 				ID:   to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name"),
 				Tags: map[string]*string{"tag-key": to.StringPtr("tag-value")},
 			},
-			inInterfaceIPConfigs: []*armnetwork.InterfaceIPConfiguration{
+			inInterface: []armnetwork.Interface{
 				{
-					Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
-						PrivateIPAddress: to.StringPtr("192.0.2.0"),
+					Name: to.StringPtr("interface-name"),
+					ID:   to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Network/networkInterfaces/interface-name"),
+					Properties: &armnetwork.InterfacePropertiesFormat{
+						IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
+							{
+								Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+									PrivateIPAddress: to.StringPtr("192.0.2.0"),
+								},
+							},
+						},
 					},
 				},
 			},
-			wantInstance: core.Instance{
+			wantInstance: cloudtypes.Instance{
 				Name:       "instance-name",
 				ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
-				IPs:        []string{"192.0.2.0"},
+				PrivateIPs: []string{"192.0.2.0"},
 				SSHKeys:    map[string][]string{},
 			},
 		},
@@ -304,7 +320,7 @@ func TestConvertVMToCoreInstance(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			instance, err := convertVMToCoreInstance(tc.inVM, tc.inInterfaceIPConfigs)
+			instance, err := convertVMToCoreInstance(tc.inVM, tc.inInterface)
 
 			if tc.wantErr {
 				assert.Error(err)

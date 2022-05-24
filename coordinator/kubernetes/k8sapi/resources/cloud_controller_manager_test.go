@@ -12,7 +12,7 @@ func TestCloudControllerMarshalUnmarshal(t *testing.T) {
 	require := require.New(t)
 	assert := assert.New(t)
 
-	cloudControllerManagerDepl := NewDefaultCloudControllerManagerDeployment("dummy-cloudprovider", "some-image:latest", "/dummy_path", []string{}, []k8s.Volume{}, []k8s.VolumeMount{}, nil)
+	cloudControllerManagerDepl := NewDefaultCloudControllerManagerDeployment("dummy-cloudprovider", "some-image:latest", "/dummy_path", "192.0.2.0/24", []string{}, []k8s.Volume{}, []k8s.VolumeMount{}, nil)
 	data, err := cloudControllerManagerDepl.Marshal()
 	require.NoError(err)
 

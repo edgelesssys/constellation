@@ -26,6 +26,7 @@ type azureclient interface {
 	GetState() (state.ConstellationState, error)
 	SetState(state.ConstellationState) error
 	CreateResourceGroup(ctx context.Context) error
+	CreateExternalLoadBalancer(ctx context.Context) error
 	CreateVirtualNetwork(ctx context.Context) error
 	CreateSecurityGroup(ctx context.Context, input azurecl.NetworkSecurityGroupInput) error
 	CreateInstances(ctx context.Context, input azurecl.CreateInstancesInput) error

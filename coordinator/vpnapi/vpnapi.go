@@ -47,7 +47,7 @@ func (a *API) GetUpdate(ctx context.Context, in *vpnproto.GetUpdateRequest) (*vp
 
 // GetK8SJoinArgs is the RPC call to get the K8s join args.
 func (a *API) GetK8SJoinArgs(ctx context.Context, in *vpnproto.GetK8SJoinArgsRequest) (*vpnproto.GetK8SJoinArgsResponse, error) {
-	args, err := a.core.GetK8sJoinArgs()
+	args, err := a.core.GetK8sJoinArgs(context.TODO())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "%v", err)
 	}
@@ -60,7 +60,7 @@ func (a *API) GetK8SJoinArgs(ctx context.Context, in *vpnproto.GetK8SJoinArgsReq
 
 // GetK8SCertificateKey is the RPC call to get the K8s certificateKey necessary for control-plane join.
 func (a *API) GetK8SCertificateKey(ctx context.Context, in *vpnproto.GetK8SCertificateKeyRequest) (*vpnproto.GetK8SCertificateKeyResponse, error) {
-	certKey, err := a.core.GetK8SCertificateKey()
+	certKey, err := a.core.GetK8SCertificateKey(context.TODO())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "%v", err)
 	}
@@ -79,7 +79,7 @@ func (a *API) GetDataKey(ctx context.Context, in *vpnproto.GetDataKeyRequest) (*
 type Core interface {
 	GetPeers(resourceVersion int) (int, []peer.Peer, error)
 	NotifyNodeHeartbeat(net.Addr)
-	GetK8sJoinArgs() (*kubeadm.BootstrapTokenDiscovery, error)
-	GetK8SCertificateKey() (string, error)
+	GetK8sJoinArgs(ctx context.Context) (*kubeadm.BootstrapTokenDiscovery, error)
+	GetK8SCertificateKey(ctx context.Context) (string, error)
 	GetDataKey(ctx context.Context, dataKeyID string, length int) ([]byte, error)
 }

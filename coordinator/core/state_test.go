@@ -67,7 +67,7 @@ func TestAdvanceState(t *testing.T) {
 			}
 
 			fs := afero.NewMemMapFs()
-			core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), openTPM, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
+			core, err := NewCore(&stubVPN{}, nil, nil, nil, zaptest.NewLogger(t), openTPM, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 			assert.Equal(state.Uninitialized, core.GetState())
 			core.state = tc.initialState

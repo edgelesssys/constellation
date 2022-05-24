@@ -10,15 +10,25 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/role"
+)
+
+var (
+	publicIPAddressRegexp = regexp.MustCompile(`/subscriptions/[^/]+/resourceGroups/[^/]+/providers/Microsoft.Network/publicIPAddresses/(?P<IPname>[^/]+)`)
+	keyPathRegexp         = regexp.MustCompile(`^\/home\/([^\/]+)\/\.ssh\/authorized_keys$`)
 )
 
 // Metadata implements azure metadata APIs.
 type Metadata struct {
 	imdsAPI
+	virtualNetworksAPI
+	securityGroupsAPI
 	networkInterfacesAPI
+	publicIPAddressesAPI
 	scaleSetsAPI
+	loadBalancerAPI
 	virtualMachinesAPI
 	virtualMachineScaleSetVMsAPI
 	tagsAPI
@@ -44,15 +54,23 @@ func NewMetadata(ctx context.Context) (*Metadata, error) {
 	if err != nil {
 		return nil, err
 	}
+	virtualNetworksAPI := armnetwork.NewVirtualNetworksClient(subscriptionID, cred, nil)
 	networkInterfacesAPI := armnetwork.NewInterfacesClient(subscriptionID, cred, nil)
+	publicIPAddressesAPI := armnetwork.NewPublicIPAddressesClient(subscriptionID, cred, nil)
+	securityGroupsAPI := armnetwork.NewSecurityGroupsClient(subscriptionID, cred, nil)
 	scaleSetsAPI := armcompute.NewVirtualMachineScaleSetsClient(subscriptionID, cred, nil)
+	loadBalancerAPI := armnetwork.NewLoadBalancersClient(subscriptionID, cred, nil)
 	virtualMachinesAPI := armcompute.NewVirtualMachinesClient(subscriptionID, cred, nil)
 	virtualMachineScaleSetVMsAPI := armcompute.NewVirtualMachineScaleSetVMsClient(subscriptionID, cred, nil)
 	tagsAPI := armresources.NewTagsClient(subscriptionID, cred, nil)
 
 	return &Metadata{
 		imdsAPI:                      &imdsAPI,
+		virtualNetworksAPI:           &virtualNetworksClient{virtualNetworksAPI},
 		networkInterfacesAPI:         &networkInterfacesClient{networkInterfacesAPI},
+		securityGroupsAPI:            &securityGroupsClient{securityGroupsAPI},
+		publicIPAddressesAPI:         &publicIPAddressesClient{publicIPAddressesAPI},
+		loadBalancerAPI:              &loadBalancersClient{loadBalancerAPI},
 		scaleSetsAPI:                 &scaleSetsClient{scaleSetsAPI},
 		virtualMachinesAPI:           &virtualMachinesClient{virtualMachinesAPI},
 		virtualMachineScaleSetVMsAPI: &virtualMachineScaleSetVMsClient{virtualMachineScaleSetVMsAPI},
@@ -61,7 +79,7 @@ func NewMetadata(ctx context.Context) (*Metadata, error) {
 }
 
 // List retrieves all instances belonging to the current constellation.
-func (m *Metadata) List(ctx context.Context) ([]core.Instance, error) {
+func (m *Metadata) List(ctx context.Context) ([]cloudtypes.Instance, error) {
 	providerID, err := m.providerID(ctx)
 	if err != nil {
 		return nil, err
@@ -78,23 +96,23 @@ func (m *Metadata) List(ctx context.Context) ([]core.Instance, error) {
 	if err != nil {
 		return nil, err
 	}
-	instances := make([]core.Instance, 0, len(singleInstances)+len(scaleSetInstances))
+	instances := make([]cloudtypes.Instance, 0, len(singleInstances)+len(scaleSetInstances))
 	instances = append(instances, singleInstances...)
 	instances = append(instances, scaleSetInstances...)
 	return instances, nil
 }
 
 // Self retrieves the current instance.
-func (m *Metadata) Self(ctx context.Context) (core.Instance, error) {
+func (m *Metadata) Self(ctx context.Context) (cloudtypes.Instance, error) {
 	providerID, err := m.providerID(ctx)
 	if err != nil {
-		return core.Instance{}, err
+		return cloudtypes.Instance{}, err
 	}
 	return m.GetInstance(ctx, providerID)
 }
 
 // GetInstance retrieves an instance using its providerID.
-func (m *Metadata) GetInstance(ctx context.Context, providerID string) (core.Instance, error) {
+func (m *Metadata) GetInstance(ctx context.Context, providerID string) (cloudtypes.Instance, error) {
 	instance, singleErr := m.getVM(ctx, providerID)
 	if singleErr == nil {
 		return instance, nil
@@ -103,7 +121,7 @@ func (m *Metadata) GetInstance(ctx context.Context, providerID string) (core.Ins
 	if scaleSetErr == nil {
 		return instance, nil
 	}
-	return core.Instance{}, fmt.Errorf("could not retrieve instance given providerID %v as either single vm or scale set vm: %v %v", providerID, singleErr, scaleSetErr)
+	return cloudtypes.Instance{}, fmt.Errorf("could not retrieve instance given providerID %v as either single vm or scale set vm: %v %v", providerID, singleErr, scaleSetErr)
 }
 
 // SignalRole signals the constellation role via cloud provider metadata.
@@ -118,6 +136,135 @@ func (m *Metadata) SignalRole(ctx context.Context, role role.Role) error {
 		return nil
 	}
 	return m.setTag(ctx, core.RoleMetadataKey, role.String())
+}
+
+// GetNetworkSecurityGroupName returns the security group name of the resource group.
+func (m *Metadata) GetNetworkSecurityGroupName(ctx context.Context) (string, error) {
+	providerID, err := m.providerID(ctx)
+	if err != nil {
+		return "", err
+	}
+	_, resourceGroup, err := extractBasicsFromProviderID(providerID)
+	if err != nil {
+		return "", err
+	}
+
+	nsg, err := m.getNetworkSecurityGroup(ctx, resourceGroup)
+	if err != nil {
+		return "", err
+	}
+	if nsg == nil || nsg.Name == nil {
+		return "", fmt.Errorf("could not dereference network security group name")
+	}
+	return *nsg.Name, nil
+}
+
+// GetSubnetworkCIDR retrieves the subnetwork CIDR from cloud provider metadata.
+func (m *Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
+	providerID, err := m.providerID(ctx)
+	if err != nil {
+		return "", err
+	}
+	_, resourceGroup, err := extractBasicsFromProviderID(providerID)
+	if err != nil {
+		return "", err
+	}
+	virtualNetwork, err := m.getVirtualNetwork(ctx, resourceGroup)
+	if err != nil {
+		return "", err
+	}
+	if virtualNetwork == nil || virtualNetwork.Properties == nil || len(virtualNetwork.Properties.Subnets) == 0 ||
+		virtualNetwork.Properties.Subnets[0].Properties == nil || virtualNetwork.Properties.Subnets[0].Properties.AddressPrefix == nil {
+		return "", fmt.Errorf("could not retrieve subnetwork CIDR from virtual network %v", virtualNetwork)
+	}
+
+	return *virtualNetwork.Properties.Subnets[0].Properties.AddressPrefix, nil
+}
+
+// getLoadBalancer retrieves the load balancer from cloud provider metadata.
+func (m *Metadata) getLoadBalancer(ctx context.Context) (*armnetwork.LoadBalancer, error) {
+	providerID, err := m.providerID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	_, resourceGroup, err := extractBasicsFromProviderID(providerID)
+	if err != nil {
+		return nil, err
+	}
+	pager := m.loadBalancerAPI.List(resourceGroup, nil)
+
+	for pager.NextPage(ctx) {
+		for _, lb := range pager.PageResponse().Value {
+			if lb != nil && lb.Properties != nil {
+				return lb, nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("could not get any load balancer")
+}
+
+// SupportsLoadBalancer returns true if the cloud provider supports load balancers.
+func (m *Metadata) SupportsLoadBalancer() bool {
+	return true
+}
+
+// GetLoadBalancerName returns the load balancer name of the resource group.
+func (m *Metadata) GetLoadBalancerName(ctx context.Context) (string, error) {
+	lb, err := m.getLoadBalancer(ctx)
+	if err != nil {
+		return "", err
+	}
+	if lb == nil || lb.Name == nil {
+		return "", fmt.Errorf("could not dereference load balancer name")
+	}
+	return *lb.Name, nil
+}
+
+// GetLoadBalancerIP retrieves the first load balancer IP from cloud provider metadata.
+func (m *Metadata) GetLoadBalancerIP(ctx context.Context) (string, error) {
+	lb, err := m.getLoadBalancer(ctx)
+	if err != nil {
+		return "", err
+	}
+	if lb == nil || lb.Properties == nil {
+		return "", fmt.Errorf("could not dereference load balancer IP configuration")
+	}
+
+	var pubIPID string
+	for _, fipConf := range lb.Properties.FrontendIPConfigurations {
+		if fipConf == nil || fipConf.Properties == nil || fipConf.Properties.PublicIPAddress == nil || fipConf.Properties.PublicIPAddress.ID == nil {
+			continue
+		}
+		pubIPID = *fipConf.Properties.PublicIPAddress.ID
+		break
+	}
+
+	if pubIPID == "" {
+		return "", fmt.Errorf("could not find public IP address reference in load balancer")
+	}
+
+	matches := publicIPAddressRegexp.FindStringSubmatch(pubIPID)
+	if len(matches) != 2 {
+		return "", fmt.Errorf("could not find public IP address name in load balancer: %v", pubIPID)
+	}
+	pubIPName := matches[1]
+
+	providerID, err := m.providerID(ctx)
+	if err != nil {
+		return "", err
+	}
+	_, resourceGroup, err := extractBasicsFromProviderID(providerID)
+	if err != nil {
+		return "", err
+	}
+	resp, err := m.publicIPAddressesAPI.Get(ctx, resourceGroup, pubIPName, nil)
+	if err != nil {
+		return "", fmt.Errorf("could not retrieve public IP address: %w", err)
+	}
+	if resp.Properties == nil || resp.Properties.IPAddress == nil {
+		return "", fmt.Errorf("could not resolve public IP address reference for load balancer")
+	}
+	return *resp.Properties.IPAddress, nil
 }
 
 // SetVPNIP stores the internally used VPN IP in cloud provider metadata (not required on azure).
@@ -166,7 +313,6 @@ func extractInstanceTags(tags map[string]*string) map[string]string {
 
 // extractSSHKeys extracts SSH public keys from azure instance OS Profile.
 func extractSSHKeys(sshConfig armcompute.SSHConfiguration) map[string][]string {
-	keyPathRegexp := regexp.MustCompile(`^\/home\/([^\/]+)\/\.ssh\/authorized_keys$`)
 	sshKeys := map[string][]string{}
 	for _, key := range sshConfig.PublicKeys {
 		if key == nil || key.Path == nil || key.KeyData == nil {

@@ -23,6 +23,26 @@ func (c *instanceClient) List(ctx context.Context, req *computepb.ListInstancesR
 	return c.InstancesClient.List(ctx, req)
 }
 
+type subnetworkClient struct {
+	*compute.SubnetworksClient
+}
+
+func (c *subnetworkClient) Close() error {
+	return c.SubnetworksClient.Close()
+}
+
+func (c *subnetworkClient) List(ctx context.Context, req *computepb.ListSubnetworksRequest,
+	opts ...gax.CallOption,
+) SubnetworkIterator {
+	return c.SubnetworksClient.List(ctx, req)
+}
+
+func (c *subnetworkClient) Get(ctx context.Context, req *computepb.GetSubnetworkRequest,
+	opts ...gax.CallOption,
+) (*computepb.Subnetwork, error) {
+	return c.SubnetworksClient.Get(ctx, req)
+}
+
 type metadataClient struct{}
 
 func (c *metadataClient) InstanceAttributeValue(attr string) (string, error) {

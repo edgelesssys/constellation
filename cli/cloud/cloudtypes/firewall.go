@@ -19,25 +19,30 @@ type Firewall config.Firewall
 func (f Firewall) GCP() ([]*computepb.Firewall, error) {
 	var fw []*computepb.Firewall
 	for _, rule := range f {
-		var destRange []string = nil
+		var srcRange []string
 		if rule.IPRange != "" {
-			destRange = append(destRange, rule.IPRange)
+			srcRange = []string{rule.IPRange}
 		}
 
-		ports, err := portOrRange(rule.FromPort, rule.ToPort)
-		if err != nil {
-			return nil, err
+		var ports []string
+		if rule.FromPort != 0 || rule.ToPort != 0 {
+			port, err := portOrRange(rule.FromPort, rule.ToPort)
+			if err != nil {
+				return nil, err
+			}
+			ports = []string{port}
 		}
+
 		fw = append(fw, &computepb.Firewall{
 			Allowed: []*computepb.Allowed{
 				{
 					IPProtocol: proto.String(rule.Protocol),
-					Ports:      []string{ports},
+					Ports:      ports,
 				},
 			},
-			Description:       proto.String(rule.Description),
-			DestinationRanges: destRange,
-			Name:              proto.String(rule.Name),
+			Description:  proto.String(rule.Description),
+			SourceRanges: srcRange,
+			Name:         proto.String(rule.Name),
 		})
 	}
 	return fw, nil

@@ -239,18 +239,13 @@ func TestGetObjects(t *testing.T) {
 		resourcesYAML    string
 		wantErr          bool
 	}{
-		"GetObjects works on flannel deployment": {
-			wantResources: resources.NewDefaultFlannelDeployment(),
-			resourcesYAML: string(nginxDeplYAML),
-			wantErr:       false,
-		},
 		"GetObjects works on cluster-autoscaler deployment": {
-			wantResources: resources.NewDefaultFlannelDeployment(),
+			wantResources: resources.NewDefaultAutoscalerDeployment(nil, nil, nil),
 			resourcesYAML: string(nginxDeplYAML),
 			wantErr:       false,
 		},
 		"GetObjects works on cloud-controller-manager deployment": {
-			wantResources: resources.NewDefaultCloudControllerManagerDeployment("someProvider", "someImage", "somePath", nil, nil, nil, nil),
+			wantResources: resources.NewDefaultCloudControllerManagerDeployment("someProvider", "someImage", "somePath", "someCIDR", nil, nil, nil, nil),
 			resourcesYAML: string(nginxDeplYAML),
 			wantErr:       false,
 		},

@@ -8,17 +8,17 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
-	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGetScaleSetVM(t *testing.T) {
-	wantInstance := core.Instance{
+	wantInstance := cloudtypes.Instance{
 		Name:       "scale-set-name-instance-id",
 		ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-		IPs:        []string{"192.0.2.0"},
+		PrivateIPs: []string{"192.0.2.0"},
 		SSHKeys:    map[string][]string{"user": {"key-data"}},
 	}
 	testCases := map[string]struct {
@@ -26,7 +26,7 @@ func TestGetScaleSetVM(t *testing.T) {
 		networkInterfacesAPI         networkInterfacesAPI
 		virtualMachineScaleSetVMsAPI virtualMachineScaleSetVMsAPI
 		wantErr                      bool
-		wantInstance                 core.Instance
+		wantInstance                 cloudtypes.Instance
 	}{
 		"getVM for scale set instance works": {
 			providerID:                   "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
@@ -79,11 +79,11 @@ func TestGetScaleSetVM(t *testing.T) {
 }
 
 func TestListScaleSetVMs(t *testing.T) {
-	wantInstances := []core.Instance{
+	wantInstances := []cloudtypes.Instance{
 		{
 			Name:       "scale-set-name-instance-id",
 			ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-			IPs:        []string{"192.0.2.0"},
+			PrivateIPs: []string{"192.0.2.0"},
 			SSHKeys:    map[string][]string{"user": {"key-data"}},
 		},
 	}
@@ -93,7 +93,7 @@ func TestListScaleSetVMs(t *testing.T) {
 		virtualMachineScaleSetVMsAPI virtualMachineScaleSetVMsAPI
 		scaleSetsAPI                 scaleSetsAPI
 		wantErr                      bool
-		wantInstances                []core.Instance
+		wantInstances                []cloudtypes.Instance
 	}{
 		"listVMs works": {
 			imdsAPI:                      newIMDSStub(),
@@ -114,7 +114,7 @@ func TestListScaleSetVMs(t *testing.T) {
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachineScaleSetVMsAPI: &stubVirtualMachineScaleSetVMsAPI{},
 			scaleSetsAPI:                 newScaleSetsStub(),
-			wantInstances:                []core.Instance{},
+			wantInstances:                []cloudtypes.Instance{},
 		},
 		"can skip nil in VM list": {
 			imdsAPI:                      newIMDSStub(),
@@ -210,10 +210,11 @@ func TestSplitScaleSetProviderID(t *testing.T) {
 
 func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 	testCases := map[string]struct {
-		inVM                 armcompute.VirtualMachineScaleSetVM
-		inInterfaceIPConfigs []*armnetwork.InterfaceIPConfiguration
-		wantErr              bool
-		wantInstance         core.Instance
+		inVM         armcompute.VirtualMachineScaleSetVM
+		inInterface  []armnetwork.Interface
+		inPublicIPs  []string
+		wantErr      bool
+		wantInstance cloudtypes.Instance
 	}{
 		"conversion works": {
 			inVM: armcompute.VirtualMachineScaleSetVM{
@@ -226,17 +227,27 @@ func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 					},
 				},
 			},
-			inInterfaceIPConfigs: []*armnetwork.InterfaceIPConfiguration{
+			inInterface: []armnetwork.Interface{
 				{
-					Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
-						PrivateIPAddress: to.StringPtr("192.0.2.0"),
+					Name: to.StringPtr("scale-set-name_instance-id"),
+					ID:   to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Network/networkInterfaces/interface-name"),
+					Properties: &armnetwork.InterfacePropertiesFormat{
+						IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
+							{
+								Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+									PrivateIPAddress: to.StringPtr("192.0.2.0"),
+								},
+							},
+						},
 					},
 				},
 			},
-			wantInstance: core.Instance{
+			inPublicIPs: []string{"192.0.2.100", "192.0.2.101"},
+			wantInstance: cloudtypes.Instance{
 				Name:       "scale-set-name-instance-id",
 				ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-				IPs:        []string{"192.0.2.0"},
+				PrivateIPs: []string{"192.0.2.0"},
+				PublicIPs:  []string{"192.0.2.100", "192.0.2.101"},
 				SSHKeys:    map[string][]string{},
 			},
 		},
@@ -251,7 +262,7 @@ func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			instance, err := convertScaleSetVMToCoreInstance("scale-set", tc.inVM, tc.inInterfaceIPConfigs)
+			instance, err := convertScaleSetVMToCoreInstance("scale-set", tc.inVM, tc.inInterface, tc.inPublicIPs)
 
 			if tc.wantErr {
 				assert.Error(err)

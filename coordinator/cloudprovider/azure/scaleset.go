@@ -7,31 +7,41 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
-	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/role"
 )
 
+var (
+	azureVMSSProviderIDRegexp = regexp.MustCompile(`^azure:///subscriptions/([^/]+)/resourceGroups/([^/]+)/providers/Microsoft.Compute/virtualMachineScaleSets/([^/]+)/virtualMachines/([^/]+)$`)
+	coordinatorScaleSetRegexp = regexp.MustCompile(`constellation-scale-set-coordinators-[0-9a-zA-Z]+$`)
+	nodeScaleSetRegexp        = regexp.MustCompile(`constellation-scale-set-nodes-[0-9a-zA-Z]+$`)
+)
+
 // getScaleSetVM tries to get an azure vm belonging to a scale set.
-func (m *Metadata) getScaleSetVM(ctx context.Context, providerID string) (core.Instance, error) {
+func (m *Metadata) getScaleSetVM(ctx context.Context, providerID string) (cloudtypes.Instance, error) {
 	_, resourceGroup, scaleSet, instanceID, err := splitScaleSetProviderID(providerID)
 	if err != nil {
-		return core.Instance{}, err
+		return cloudtypes.Instance{}, err
 	}
 	vmResp, err := m.virtualMachineScaleSetVMsAPI.Get(ctx, resourceGroup, scaleSet, instanceID, nil)
 	if err != nil {
-		return core.Instance{}, err
+		return cloudtypes.Instance{}, err
 	}
-	interfaceIPConfigurations, err := m.getScaleSetVMInterfaces(ctx, vmResp.VirtualMachineScaleSetVM, resourceGroup, scaleSet, instanceID)
+	networkInterfaces, err := m.getScaleSetVMInterfaces(ctx, vmResp.VirtualMachineScaleSetVM, resourceGroup, scaleSet, instanceID)
 	if err != nil {
-		return core.Instance{}, err
+		return cloudtypes.Instance{}, err
+	}
+	publicIPAddresses, err := m.getScaleSetVMPublicIPAddresses(ctx, resourceGroup, scaleSet, instanceID, networkInterfaces)
+	if err != nil {
+		return cloudtypes.Instance{}, err
 	}
 
-	return convertScaleSetVMToCoreInstance(scaleSet, vmResp.VirtualMachineScaleSetVM, interfaceIPConfigurations)
+	return convertScaleSetVMToCoreInstance(scaleSet, vmResp.VirtualMachineScaleSetVM, networkInterfaces, publicIPAddresses)
 }
 
 // listScaleSetVMs lists all scale set VMs in the current resource group.
-func (m *Metadata) listScaleSetVMs(ctx context.Context, resourceGroup string) ([]core.Instance, error) {
-	instances := []core.Instance{}
+func (m *Metadata) listScaleSetVMs(ctx context.Context, resourceGroup string) ([]cloudtypes.Instance, error) {
+	instances := []cloudtypes.Instance{}
 	scaleSetPager := m.scaleSetsAPI.List(resourceGroup, nil)
 	for scaleSetPager.NextPage(ctx) {
 		for _, scaleSet := range scaleSetPager.PageResponse().Value {
@@ -48,7 +58,7 @@ func (m *Metadata) listScaleSetVMs(ctx context.Context, resourceGroup string) ([
 					if err != nil {
 						return nil, err
 					}
-					instance, err := convertScaleSetVMToCoreInstance(*scaleSet.Name, *vm, interfaces)
+					instance, err := convertScaleSetVMToCoreInstance(*scaleSet.Name, *vm, interfaces, nil)
 					if err != nil {
 						return nil, err
 					}
@@ -64,9 +74,7 @@ func (m *Metadata) listScaleSetVMs(ctx context.Context, resourceGroup string) ([
 // A providerID for scale set VMs is build after the following schema:
 // - 'azure:///subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Compute/virtualMachineScaleSets/<scale-set-name>/virtualMachines/<instance-id>'
 func splitScaleSetProviderID(providerID string) (subscriptionID, resourceGroup, scaleSet, instanceID string, err error) {
-	// providerIDregex is a regex matching an azure scaleset vm providerID with each part of the URI being a submatch.
-	providerIDregex := regexp.MustCompile(`^azure:///subscriptions/([^/]+)/resourceGroups/([^/]+)/providers/Microsoft.Compute/virtualMachineScaleSets/([^/]+)/virtualMachines/([^/]+)$`)
-	matches := providerIDregex.FindStringSubmatch(providerID)
+	matches := azureVMSSProviderIDRegexp.FindStringSubmatch(providerID)
 	if len(matches) != 5 {
 		return "", "", "", "", errors.New("error splitting providerID")
 	}
@@ -74,12 +82,12 @@ func splitScaleSetProviderID(providerID string) (subscriptionID, resourceGroup, 
 }
 
 // convertScaleSetVMToCoreInstance converts an azure scale set virtual machine with interface configurations into a core.Instance.
-func convertScaleSetVMToCoreInstance(scaleSet string, vm armcompute.VirtualMachineScaleSetVM, interfaceIPConfigs []*armnetwork.InterfaceIPConfiguration) (core.Instance, error) {
+func convertScaleSetVMToCoreInstance(scaleSet string, vm armcompute.VirtualMachineScaleSetVM, networkInterfaces []armnetwork.Interface, publicIPAddresses []string) (cloudtypes.Instance, error) {
 	if vm.ID == nil {
-		return core.Instance{}, errors.New("retrieving instance from armcompute API client returned no instance ID")
+		return cloudtypes.Instance{}, errors.New("retrieving instance from armcompute API client returned no instance ID")
 	}
 	if vm.Properties == nil || vm.Properties.OSProfile == nil || vm.Properties.OSProfile.ComputerName == nil {
-		return core.Instance{}, errors.New("retrieving instance from armcompute API client returned no computer name")
+		return cloudtypes.Instance{}, errors.New("retrieving instance from armcompute API client returned no computer name")
 	}
 	var sshKeys map[string][]string
 	if vm.Properties.OSProfile.LinuxConfiguration == nil || vm.Properties.OSProfile.LinuxConfiguration.SSH == nil {
@@ -87,19 +95,18 @@ func convertScaleSetVMToCoreInstance(scaleSet string, vm armcompute.VirtualMachi
 	} else {
 		sshKeys = extractSSHKeys(*vm.Properties.OSProfile.LinuxConfiguration.SSH)
 	}
-	return core.Instance{
+	return cloudtypes.Instance{
 		Name:       *vm.Properties.OSProfile.ComputerName,
 		ProviderID: "azure://" + *vm.ID,
 		Role:       extractScaleSetVMRole(scaleSet),
-		IPs:        extractPrivateIPs(interfaceIPConfigs),
+		PrivateIPs: extractPrivateIPs(networkInterfaces),
+		PublicIPs:  publicIPAddresses,
 		SSHKeys:    sshKeys,
 	}, nil
 }
 
 // extractScaleSetVMRole extracts the constellation role of a scale set using its name.
 func extractScaleSetVMRole(scaleSet string) role.Role {
-	coordinatorScaleSetRegexp := regexp.MustCompile(`constellation-scale-set-coordinators-[0-9a-zA-Z]+$`)
-	nodeScaleSetRegexp := regexp.MustCompile(`constellation-scale-set-nodes-[0-9a-zA-Z]+$`)
 	if coordinatorScaleSetRegexp.MatchString(scaleSet) {
 		return role.Coordinator
 	}

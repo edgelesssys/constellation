@@ -33,6 +33,7 @@ type Client struct {
 	scaleSetsAPI
 	publicIPAddressesAPI
 	networkInterfacesAPI
+	loadBalancersAPI
 	virtualMachinesAPI
 	applicationsAPI
 	servicePrincipalsAPI
@@ -53,6 +54,8 @@ type Client struct {
 	subnetID             string
 	coordinatorsScaleSet string
 	nodesScaleSet        string
+	loadBalancerName     string
+	loadBalancerPubIP    string
 	networkSecurityGroup string
 	adAppObjectID        string
 }
@@ -77,6 +80,7 @@ func NewFromDefault(subscriptionID, tenantID string) (*Client, error) {
 	scaleSetAPI := armcompute.NewVirtualMachineScaleSetsClient(subscriptionID, cred, nil)
 	publicIPAddressesAPI := armnetwork.NewPublicIPAddressesClient(subscriptionID, cred, nil)
 	networkInterfacesAPI := armnetwork.NewInterfacesClient(subscriptionID, cred, nil)
+	loadBalancersAPI := armnetwork.NewLoadBalancersClient(subscriptionID, cred, nil)
 	virtualMachinesAPI := armcompute.NewVirtualMachinesClient(subscriptionID, cred, nil)
 	applicationsAPI := graphrbac.NewApplicationsClient(tenantID)
 	applicationsAPI.Authorizer = graphAuthorizer
@@ -92,6 +96,7 @@ func NewFromDefault(subscriptionID, tenantID string) (*Client, error) {
 		scaleSetsAPI:                    &virtualMachineScaleSetsClient{scaleSetAPI},
 		publicIPAddressesAPI:            &publicIPAddressesClient{publicIPAddressesAPI},
 		networkInterfacesAPI:            &networkInterfacesClient{networkInterfacesAPI},
+		loadBalancersAPI:                &loadBalancersClient{loadBalancersAPI},
 		applicationsAPI:                 &applicationsClient{&applicationsAPI},
 		servicePrincipalsAPI:            &servicePrincipalsClient{&servicePrincipalsAPI},
 		roleAssignmentsAPI:              &roleAssignmentsClient{&roleAssignmentsAPI},
@@ -233,7 +238,7 @@ func (c *Client) SetState(stat state.ConstellationState) error {
 	}
 	c.coordinatorsScaleSet = stat.AzureCoordinatorsScaleSet
 	if len(stat.AzureNodes) == 0 {
-		return errors.New("state has no coordinator scale set")
+		return errors.New("state has no nodes")
 	}
 	c.nodes = stat.AzureNodes
 	if len(stat.AzureCoordinators) == 0 {

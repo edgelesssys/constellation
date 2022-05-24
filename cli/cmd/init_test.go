@@ -355,7 +355,7 @@ func TestWriteOutput(t *testing.T) {
 func TestIpsToEndpoints(t *testing.T) {
 	assert := assert.New(t)
 
-	ips := []string{"192.0.2.1", "192.0.2.2", "192.0.2.3"}
+	ips := []string{"192.0.2.1", "192.0.2.2", "", "192.0.2.3"}
 	port := "8080"
 	endpoints := ipsToEndpoints(ips, port)
 	assert.Equal([]string{"192.0.2.1:8080", "192.0.2.2:8080", "192.0.2.3:8080"}, endpoints)

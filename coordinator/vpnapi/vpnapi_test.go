@@ -202,11 +202,11 @@ func (c *stubCore) NotifyNodeHeartbeat(addr net.Addr) {
 	c.heartbeats = append(c.heartbeats, addr)
 }
 
-func (c *stubCore) GetK8sJoinArgs() (*kubeadm.BootstrapTokenDiscovery, error) {
+func (c *stubCore) GetK8sJoinArgs(context.Context) (*kubeadm.BootstrapTokenDiscovery, error) {
 	return &c.joinArgs, nil
 }
 
-func (c *stubCore) GetK8SCertificateKey() (string, error) {
+func (c *stubCore) GetK8SCertificateKey(context.Context) (string, error) {
 	return c.kubeadmCertificateKey, c.getCertKeyErr
 }
 

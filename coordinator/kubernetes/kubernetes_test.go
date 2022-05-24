@@ -3,9 +3,11 @@ package kubernetes
 import (
 	"context"
 	"errors"
+	"regexp"
 	"testing"
 	"time"
 
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/coordinator/role"
@@ -13,11 +15,482 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
-	"sigs.k8s.io/yaml"
 )
 
 func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
+}
+
+func TestInitCluster(t *testing.T) {
+	someErr := errors.New("failed")
+	coordinatorVPNIP := "192.0.2.0"
+	serviceAccountUri := "some-service-account-uri"
+	masterSecret := []byte("some-master-secret")
+	autoscalingNodeGroups := []string{"0,10,autoscaling_group_0"}
+
+	nodeName := "node-name"
+	providerID := "provider-id"
+	privateIP := "192.0.2.1"
+	publicIP := "192.0.2.2"
+	loadbalancerIP := "192.0.2.3"
+	aliasIPRange := "192.0.2.0/24"
+
+	testCases := map[string]struct {
+		clusterUtil            stubClusterUtil
+		kubeCTL                stubKubeCTL
+		providerMetadata       ProviderMetadata
+		CloudControllerManager CloudControllerManager
+		CloudNodeManager       CloudNodeManager
+		ClusterAutoscaler      ClusterAutoscaler
+		kubeconfigReader       configReader
+		wantConfig             k8sapi.KubeadmInitYAML
+		wantErr                bool
+	}{
+		"kubeadm init works without metadata": {
+			clusterUtil: stubClusterUtil{},
+			kubeconfigReader: &stubKubeconfigReader{
+				Kubeconfig: []byte("someKubeconfig"),
+			},
+			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
+			CloudControllerManager: &stubCloudControllerManager{},
+			CloudNodeManager:       &stubCloudNodeManager{SupportedResp: false},
+			ClusterAutoscaler:      &stubClusterAutoscaler{},
+			wantConfig: k8sapi.KubeadmInitYAML{
+				InitConfiguration: kubeadm.InitConfiguration{
+					NodeRegistration: kubeadm.NodeRegistrationOptions{
+						KubeletExtraArgs: map[string]string{
+							"node-ip":     "",
+							"provider-id": "",
+						},
+						Name: coordinatorVPNIP,
+					},
+				},
+				ClusterConfiguration: kubeadm.ClusterConfiguration{},
+			},
+		},
+		"kubeadm init works with metadata and loadbalancer": {
+			clusterUtil: stubClusterUtil{},
+			kubeconfigReader: &stubKubeconfigReader{
+				Kubeconfig: []byte("someKubeconfig"),
+			},
+			providerMetadata: &stubProviderMetadata{
+				SupportedResp: true,
+				SelfResp: cloudtypes.Instance{
+					Name:          nodeName,
+					ProviderID:    providerID,
+					PrivateIPs:    []string{privateIP},
+					PublicIPs:     []string{publicIP},
+					AliasIPRanges: []string{aliasIPRange},
+				},
+				GetLoadBalancerIPResp:    loadbalancerIP,
+				SupportsLoadBalancerResp: true,
+			},
+			CloudControllerManager: &stubCloudControllerManager{},
+			CloudNodeManager:       &stubCloudNodeManager{SupportedResp: false},
+			ClusterAutoscaler:      &stubClusterAutoscaler{},
+			wantConfig: k8sapi.KubeadmInitYAML{
+				InitConfiguration: kubeadm.InitConfiguration{
+					NodeRegistration: kubeadm.NodeRegistrationOptions{
+						KubeletExtraArgs: map[string]string{
+							"node-ip":     privateIP,
+							"provider-id": providerID,
+						},
+						Name: nodeName,
+					},
+				},
+				ClusterConfiguration: kubeadm.ClusterConfiguration{
+					ControlPlaneEndpoint: loadbalancerIP,
+					APIServer: kubeadm.APIServer{
+						CertSANs: []string{publicIP, privateIP},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		"kubeadm init fails when retrieving metadata self": {
+			clusterUtil: stubClusterUtil{},
+			kubeconfigReader: &stubKubeconfigReader{
+				Kubeconfig: []byte("someKubeconfig"),
+			},
+			providerMetadata: &stubProviderMetadata{
+				SelfErr:       someErr,
+				SupportedResp: true,
+			},
+			CloudControllerManager: &stubCloudControllerManager{},
+			CloudNodeManager:       &stubCloudNodeManager{},
+			ClusterAutoscaler:      &stubClusterAutoscaler{},
+			wantErr:                true,
+		},
+		"kubeadm init fails when retrieving metadata subnetwork cidr": {
+			clusterUtil: stubClusterUtil{},
+			kubeconfigReader: &stubKubeconfigReader{
+				Kubeconfig: []byte("someKubeconfig"),
+			},
+			providerMetadata: &stubProviderMetadata{
+				GetSubnetworkCIDRErr: someErr,
+				SupportedResp:        true,
+			},
+			CloudControllerManager: &stubCloudControllerManager{},
+			CloudNodeManager:       &stubCloudNodeManager{},
+			ClusterAutoscaler:      &stubClusterAutoscaler{},
+			wantErr:                true,
+		},
+		"kubeadm init fails when retrieving metadata loadbalancer ip": {
+			clusterUtil: stubClusterUtil{},
+			kubeconfigReader: &stubKubeconfigReader{
+				Kubeconfig: []byte("someKubeconfig"),
+			},
+			providerMetadata: &stubProviderMetadata{
+				GetLoadBalancerIPErr:     someErr,
+				SupportsLoadBalancerResp: true,
+				SupportedResp:            true,
+			},
+			CloudControllerManager: &stubCloudControllerManager{},
+			CloudNodeManager:       &stubCloudNodeManager{},
+			ClusterAutoscaler:      &stubClusterAutoscaler{},
+			wantErr:                true,
+		},
+		"kubeadm init fails when applying the init config": {
+			clusterUtil: stubClusterUtil{initClusterErr: someErr},
+			kubeconfigReader: &stubKubeconfigReader{
+				Kubeconfig: []byte("someKubeconfig"),
+			},
+			providerMetadata:       &stubProviderMetadata{},
+			CloudControllerManager: &stubCloudControllerManager{},
+			CloudNodeManager:       &stubCloudNodeManager{},
+			ClusterAutoscaler:      &stubClusterAutoscaler{},
+			wantErr:                true,
+		},
+		"kubeadm init fails when setting up the pod network": {
+			clusterUtil: stubClusterUtil{setupPodNetworkErr: someErr},
+			kubeconfigReader: &stubKubeconfigReader{
+				Kubeconfig: []byte("someKubeconfig"),
+			},
+			providerMetadata:       &stubProviderMetadata{},
+			CloudControllerManager: &stubCloudControllerManager{},
+			CloudNodeManager:       &stubCloudNodeManager{},
+			ClusterAutoscaler:      &stubClusterAutoscaler{},
+			wantErr:                true,
+		},
+		"kubeadm init fails when setting the cloud contoller manager": {
+			clusterUtil: stubClusterUtil{setupCloudControllerManagerError: someErr},
+			kubeconfigReader: &stubKubeconfigReader{
+				Kubeconfig: []byte("someKubeconfig"),
+			},
+			providerMetadata:       &stubProviderMetadata{},
+			CloudControllerManager: &stubCloudControllerManager{SupportedResp: true},
+			CloudNodeManager:       &stubCloudNodeManager{},
+			ClusterAutoscaler:      &stubClusterAutoscaler{},
+			wantErr:                true,
+		},
+		"kubeadm init fails when setting the cloud node manager": {
+			clusterUtil: stubClusterUtil{setupCloudNodeManagerError: someErr},
+			kubeconfigReader: &stubKubeconfigReader{
+				Kubeconfig: []byte("someKubeconfig"),
+			},
+			providerMetadata:       &stubProviderMetadata{},
+			CloudControllerManager: &stubCloudControllerManager{},
+			CloudNodeManager:       &stubCloudNodeManager{SupportedResp: true},
+			ClusterAutoscaler:      &stubClusterAutoscaler{},
+			wantErr:                true,
+		},
+		"kubeadm init fails when setting the cluster autoscaler": {
+			clusterUtil: stubClusterUtil{setupAutoscalingError: someErr},
+			kubeconfigReader: &stubKubeconfigReader{
+				Kubeconfig: []byte("someKubeconfig"),
+			},
+			providerMetadata:       &stubProviderMetadata{},
+			CloudControllerManager: &stubCloudControllerManager{},
+			CloudNodeManager:       &stubCloudNodeManager{},
+			ClusterAutoscaler:      &stubClusterAutoscaler{SupportedResp: true},
+			wantErr:                true,
+		},
+		"kubeadm init fails when reading kubeconfig": {
+			clusterUtil: stubClusterUtil{},
+			kubeconfigReader: &stubKubeconfigReader{
+				ReadErr: someErr,
+			},
+			providerMetadata:       &stubProviderMetadata{},
+			CloudControllerManager: &stubCloudControllerManager{},
+			CloudNodeManager:       &stubCloudNodeManager{},
+			ClusterAutoscaler:      &stubClusterAutoscaler{},
+			wantErr:                true,
+		},
+		"kubeadm init fails when setting up the kms": {
+			clusterUtil: stubClusterUtil{setupKMSError: someErr},
+			kubeconfigReader: &stubKubeconfigReader{
+				Kubeconfig: []byte("someKubeconfig"),
+			},
+			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
+			CloudControllerManager: &stubCloudControllerManager{},
+			CloudNodeManager:       &stubCloudNodeManager{SupportedResp: false},
+			ClusterAutoscaler:      &stubClusterAutoscaler{},
+			wantErr:                true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			kube := KubeWrapper{
+				clusterUtil:            &tc.clusterUtil,
+				providerMetadata:       tc.providerMetadata,
+				cloudControllerManager: tc.CloudControllerManager,
+				cloudNodeManager:       tc.CloudNodeManager,
+				clusterAutoscaler:      tc.ClusterAutoscaler,
+				configProvider:         &stubConfigProvider{InitConfig: k8sapi.KubeadmInitYAML{}},
+				client:                 &tc.kubeCTL,
+				kubeconfigReader:       tc.kubeconfigReader,
+			}
+			err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountUri, coordinatorVPNIP, masterSecret)
+
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+
+			var kubeadmConfig k8sapi.KubeadmInitYAML
+			require.NoError(resources.UnmarshalK8SResources(tc.clusterUtil.initConfigs[0], &kubeadmConfig))
+			require.Equal(tc.wantConfig.ClusterConfiguration, kubeadmConfig.ClusterConfiguration)
+			require.Equal(tc.wantConfig.InitConfiguration, kubeadmConfig.InitConfiguration)
+		})
+	}
+}
+
+func TestJoinCluster(t *testing.T) {
+	someErr := errors.New("failed")
+	joinCommand := &kubeadm.BootstrapTokenDiscovery{
+		APIServerEndpoint: "192.0.2.0:6443",
+		Token:             "kube-fake-token",
+		CACertHashes:      []string{"sha256:a60ebe9b0879090edd83b40a4df4bebb20506bac1e51d518ff8f4505a721930f"},
+	}
+
+	nodeVPNIP := "192.0.2.0"
+	certKey := "cert-key"
+
+	testCases := map[string]struct {
+		clusterUtil            stubClusterUtil
+		providerMetadata       ProviderMetadata
+		CloudControllerManager CloudControllerManager
+		wantConfig             kubeadm.JoinConfiguration
+		role                   role.Role
+		wantErr                bool
+	}{
+		"kubeadm join worker works without metadata": {
+			clusterUtil:            stubClusterUtil{},
+			providerMetadata:       &stubProviderMetadata{},
+			CloudControllerManager: &stubCloudControllerManager{},
+			role:                   role.Node,
+			wantConfig: kubeadm.JoinConfiguration{
+				Discovery: kubeadm.Discovery{
+					BootstrapToken: joinCommand,
+				},
+				NodeRegistration: kubeadm.NodeRegistrationOptions{
+					Name:             nodeVPNIP,
+					KubeletExtraArgs: map[string]string{"node-ip": "192.0.2.0"},
+				},
+			},
+		},
+		"kubeadm join worker works with metadata": {
+			clusterUtil: stubClusterUtil{},
+			providerMetadata: &stubProviderMetadata{
+				SupportedResp: true,
+				SelfResp: cloudtypes.Instance{
+					ProviderID: "provider-id",
+					Name:       "metadata-name",
+					PrivateIPs: []string{"192.0.2.1"},
+				},
+			},
+			CloudControllerManager: &stubCloudControllerManager{},
+			role:                   role.Node,
+			wantConfig: kubeadm.JoinConfiguration{
+				Discovery: kubeadm.Discovery{
+					BootstrapToken: joinCommand,
+				},
+				NodeRegistration: kubeadm.NodeRegistrationOptions{
+					Name:             "metadata-name",
+					KubeletExtraArgs: map[string]string{"node-ip": "192.0.2.1"},
+				},
+			},
+		},
+		"kubeadm join worker works with metadata and cloud controller manager": {
+			clusterUtil: stubClusterUtil{},
+			providerMetadata: &stubProviderMetadata{
+				SupportedResp: true,
+				SelfResp: cloudtypes.Instance{
+					ProviderID: "provider-id",
+					Name:       "metadata-name",
+					PrivateIPs: []string{"192.0.2.1"},
+				},
+			},
+			CloudControllerManager: &stubCloudControllerManager{
+				SupportedResp: true,
+			},
+			role: role.Node,
+			wantConfig: kubeadm.JoinConfiguration{
+				Discovery: kubeadm.Discovery{
+					BootstrapToken: joinCommand,
+				},
+				NodeRegistration: kubeadm.NodeRegistrationOptions{
+					Name:             "metadata-name",
+					KubeletExtraArgs: map[string]string{"node-ip": "192.0.2.1"},
+				},
+			},
+		},
+		"kubeadm join control-plane node works with metadata": {
+			clusterUtil: stubClusterUtil{},
+			providerMetadata: &stubProviderMetadata{
+				SupportedResp: true,
+				SelfResp: cloudtypes.Instance{
+					ProviderID: "provider-id",
+					Name:       "metadata-name",
+					PrivateIPs: []string{"192.0.2.1"},
+				},
+			},
+			CloudControllerManager: &stubCloudControllerManager{},
+			role:                   role.Coordinator,
+			wantConfig: kubeadm.JoinConfiguration{
+				Discovery: kubeadm.Discovery{
+					BootstrapToken: joinCommand,
+				},
+				NodeRegistration: kubeadm.NodeRegistrationOptions{
+					Name:             "metadata-name",
+					KubeletExtraArgs: map[string]string{"node-ip": "192.0.2.1"},
+				},
+				ControlPlane: &kubeadm.JoinControlPlane{
+					LocalAPIEndpoint: kubeadm.APIEndpoint{
+						AdvertiseAddress: "192.0.2.1",
+						BindPort:         6443,
+					},
+					CertificateKey: certKey,
+				},
+			},
+		},
+		"kubeadm join worker fails when retrieving self metadata": {
+			clusterUtil: stubClusterUtil{},
+			providerMetadata: &stubProviderMetadata{
+				SupportedResp: true,
+				SelfErr:       someErr,
+			},
+			CloudControllerManager: &stubCloudControllerManager{},
+			role:                   role.Node,
+			wantErr:                true,
+		},
+		"kubeadm join worker fails when applying the join config": {
+			clusterUtil:            stubClusterUtil{joinClusterErr: someErr},
+			providerMetadata:       &stubProviderMetadata{},
+			CloudControllerManager: &stubCloudControllerManager{},
+			role:                   role.Node,
+			wantErr:                true,
+		},
+		"kubeadm join worker works fails when setting the metadata for the cloud controller manager": {
+			clusterUtil: stubClusterUtil{},
+			providerMetadata: &stubProviderMetadata{
+				SupportedResp: true,
+				SelfResp: cloudtypes.Instance{
+					ProviderID: "provider-id",
+					Name:       "metadata-name",
+					PrivateIPs: []string{"192.0.2.1"},
+				},
+				SetVPNIPErr: someErr,
+			},
+			CloudControllerManager: &stubCloudControllerManager{
+				SupportedResp: true,
+			},
+			role:    role.Node,
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			kube := KubeWrapper{
+				clusterUtil:            &tc.clusterUtil,
+				providerMetadata:       tc.providerMetadata,
+				cloudControllerManager: tc.CloudControllerManager,
+				configProvider:         &stubConfigProvider{},
+			}
+
+			err := kube.JoinCluster(context.Background(), joinCommand, nodeVPNIP, certKey, tc.role)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+
+			var joinYaml k8sapi.KubeadmJoinYAML
+			joinYaml, err = joinYaml.Unmarshal(tc.clusterUtil.joinConfigs[0])
+			require.NoError(err)
+
+			assert.Equal(tc.wantConfig, joinYaml.JoinConfiguration)
+		})
+	}
+}
+
+func TestGetKubeconfig(t *testing.T) {
+	testCases := map[string]struct {
+		Kubewrapper KubeWrapper
+		wantErr     bool
+	}{
+		"check single replacement": {
+			Kubewrapper: KubeWrapper{kubeconfigReader: &stubKubeconfigReader{
+				Kubeconfig: []byte("127.0.0.1:16443"),
+			}},
+		},
+		"check multiple replacement": {
+			Kubewrapper: KubeWrapper{kubeconfigReader: &stubKubeconfigReader{
+				Kubeconfig: []byte("127.0.0.1:16443...127.0.0.1:16443"),
+			}},
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+			data, err := tc.Kubewrapper.GetKubeconfig()
+			require.NoError(err)
+			assert.NotContains(string(data), "127.0.0.1:16443")
+			assert.Contains(string(data), "10.118.0.1:6443")
+		})
+	}
+}
+
+func TestK8sCompliantHostname(t *testing.T) {
+	compliantHostname := regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
+	testCases := map[string]struct {
+		hostname     string
+		wantHostname string
+	}{
+		"azure scale set names work": {
+			hostname:     "constellation-scale-set-coordinators-name_0",
+			wantHostname: "constellation-scale-set-coordinators-name-0",
+		},
+		"compliant hostname is not modified": {
+			hostname:     "abcd-123",
+			wantHostname: "abcd-123",
+		},
+		"uppercase hostnames are lowercased": {
+			hostname:     "ABCD",
+			wantHostname: "abcd",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			hostname := k8sCompliantHostname(tc.hostname)
+
+			assert.Equal(tc.wantHostname, hostname)
+			assert.Regexp(compliantHostname, hostname)
+		})
+	}
 }
 
 type stubClusterUtil struct {
@@ -42,12 +515,12 @@ func (s *stubClusterUtil) InstallComponents(ctx context.Context, version string)
 	return s.installComponentsErr
 }
 
-func (s *stubClusterUtil) InitCluster(initConfig []byte) error {
+func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte) error {
 	s.initConfigs = append(s.initConfigs, initConfig)
 	return s.initClusterErr
 }
 
-func (s *stubClusterUtil) SetupPodNetwork(kubectl k8sapi.Client, podNetworkConfiguration resources.Marshaler) error {
+func (s *stubClusterUtil) SetupPodNetwork(context.Context, k8sapi.SetupPodNetworkInput) error {
 	return s.setupPodNetworkErr
 }
 
@@ -67,7 +540,7 @@ func (s *stubClusterUtil) SetupCloudNodeManager(kubectl k8sapi.Client, cloudNode
 	return s.setupCloudNodeManagerError
 }
 
-func (s *stubClusterUtil) JoinCluster(joinConfig []byte) error {
+func (s *stubClusterUtil) JoinCluster(ctx context.Context, joinConfig []byte) error {
 	s.joinConfigs = append(s.joinConfigs, joinConfig)
 	return s.joinClusterErr
 }
@@ -80,11 +553,11 @@ func (s *stubClusterUtil) RestartKubelet() error {
 	return s.restartKubeletErr
 }
 
-func (s *stubClusterUtil) GetControlPlaneJoinCertificateKey() (string, error) {
+func (s *stubClusterUtil) GetControlPlaneJoinCertificateKey(context.Context) (string, error) {
 	return "", nil
 }
 
-func (s *stubClusterUtil) CreateJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error) {
+func (s *stubClusterUtil) CreateJoinToken(ctx context.Context, ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error) {
 	return s.createJoinTokenResponse, s.createJoinTokenErr
 }
 
@@ -131,164 +604,4 @@ type stubKubeconfigReader struct {
 
 func (s *stubKubeconfigReader) ReadKubeconfig() ([]byte, error) {
 	return s.Kubeconfig, s.ReadErr
-}
-
-func TestInitCluster(t *testing.T) {
-	someErr := errors.New("failed")
-	coordinatorVPNIP := "192.0.2.0"
-	coordinatorProviderID := "somecloudprovider://instance-id"
-	instanceName := "instance-id"
-	supportsClusterAutoscaler := false
-	cloudprovider := "some-cloudprovider"
-	cloudControllerManagerImage := "some-image:latest"
-	cloudControllerManagerPath := "/some_path"
-	autoscalingNodeGroups := []string{"0,10,autoscaling_group_0"}
-
-	testCases := map[string]struct {
-		clusterUtil      stubClusterUtil
-		kubeCTL          stubKubeCTL
-		kubeconfigReader stubKubeconfigReader
-		initConfig       k8sapi.KubeadmInitYAML
-		joinConfig       k8sapi.KubeadmJoinYAML
-		wantErr          bool
-	}{
-		"kubeadm init works": {
-			clusterUtil: stubClusterUtil{},
-			kubeconfigReader: stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
-			},
-			wantErr: false,
-		},
-		"kubeadm init errors": {
-			clusterUtil: stubClusterUtil{initClusterErr: someErr},
-			kubeconfigReader: stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
-			},
-			wantErr: true,
-		},
-		"pod network setup errors": {
-			clusterUtil: stubClusterUtil{setupPodNetworkErr: someErr},
-			kubeconfigReader: stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
-			},
-			wantErr: true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			kube := KubeWrapper{
-				clusterUtil:      &tc.clusterUtil,
-				configProvider:   &stubConfigProvider{InitConfig: k8sapi.KubeadmInitYAML{}},
-				client:           &tc.kubeCTL,
-				kubeconfigReader: &tc.kubeconfigReader,
-			}
-			err := kube.InitCluster(
-				InitClusterInput{
-					APIServerAdvertiseIP:        coordinatorVPNIP,
-					NodeName:                    instanceName,
-					ProviderID:                  coordinatorProviderID,
-					SupportClusterAutoscaler:    supportsClusterAutoscaler,
-					AutoscalingCloudprovider:    cloudprovider,
-					AutoscalingNodeGroups:       autoscalingNodeGroups,
-					CloudControllerManagerName:  cloudprovider,
-					CloudControllerManagerImage: cloudControllerManagerImage,
-					CloudControllerManagerPath:  cloudControllerManagerPath,
-				},
-			)
-
-			if tc.wantErr {
-				assert.Error(err)
-				return
-			}
-			require.NoError(err)
-
-			var kubeadmConfig k8sapi.KubeadmInitYAML
-			require.NoError(resources.UnmarshalK8SResources(tc.clusterUtil.initConfigs[0], &kubeadmConfig))
-			assert.Equal(kubeadmConfig.InitConfiguration.LocalAPIEndpoint.AdvertiseAddress, "192.0.2.0")
-			assert.Equal(kubeadmConfig.ClusterConfiguration.Networking.PodSubnet, "10.244.0.0/16")
-		})
-	}
-}
-
-func TestJoinCluster(t *testing.T) {
-	someErr := errors.New("failed")
-	joinCommand := &kubeadm.BootstrapTokenDiscovery{
-		APIServerEndpoint: "192.0.2.0:6443",
-		Token:             "kube-fake-token",
-		CACertHashes:      []string{"sha256:a60ebe9b0879090edd83b40a4df4bebb20506bac1e51d518ff8f4505a721930f"},
-	}
-
-	nodeVPNIP := "192.0.2.0"
-	coordinatorProviderID := "somecloudprovider://instance-id"
-	instanceName := "instance-id"
-	client := fakeK8SClient{}
-
-	testCases := map[string]struct {
-		clusterUtil stubClusterUtil
-		wantErr     bool
-	}{
-		"kubeadm join works": {
-			clusterUtil: stubClusterUtil{},
-			wantErr:     false,
-		},
-		"kubeadm join errors": {
-			clusterUtil: stubClusterUtil{joinClusterErr: someErr},
-			wantErr:     true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			kube := New(&tc.clusterUtil, &stubConfigProvider{}, &client)
-			err := kube.JoinCluster(joinCommand, instanceName, nodeVPNIP, nodeVPNIP, coordinatorProviderID, "", true, role.Node)
-			if tc.wantErr {
-				assert.Error(err)
-				return
-			}
-			require.NoError(err)
-
-			var joinConfig kubeadm.JoinConfiguration
-			require.NoError(yaml.Unmarshal(tc.clusterUtil.joinConfigs[0], &joinConfig))
-
-			assert.Equal("192.0.2.0:6443", joinConfig.Discovery.BootstrapToken.APIServerEndpoint)
-			assert.Equal("kube-fake-token", joinConfig.Discovery.BootstrapToken.Token)
-			assert.Equal([]string{"sha256:a60ebe9b0879090edd83b40a4df4bebb20506bac1e51d518ff8f4505a721930f"}, joinConfig.Discovery.BootstrapToken.CACertHashes)
-			assert.Equal(map[string]string{"node-ip": "192.0.2.0"}, joinConfig.NodeRegistration.KubeletExtraArgs)
-		})
-	}
-}
-
-func TestGetKubeconfig(t *testing.T) {
-	testCases := map[string]struct {
-		Kubewrapper KubeWrapper
-		wantErr     bool
-	}{
-		"check single replacement": {
-			Kubewrapper: KubeWrapper{kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("127.0.0.1:16443"),
-			}},
-		},
-		"check multiple replacement": {
-			Kubewrapper: KubeWrapper{kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("127.0.0.1:16443...127.0.0.1:16443"),
-			}},
-		},
-	}
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-			data, err := tc.Kubewrapper.GetKubeconfig()
-			require.NoError(err)
-			assert.NotContains(string(data), "127.0.0.1:16443")
-			assert.Contains(string(data), "10.118.0.1:6443")
-		})
-	}
 }

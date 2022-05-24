@@ -34,6 +34,18 @@ type networkSecurityGroupsAPI interface {
 		networkSecurityGroupsCreateOrUpdatePollerResponse, error)
 }
 
+type loadBalancersClientCreateOrUpdatePollerResponse interface {
+	PollUntilDone(ctx context.Context, freq time.Duration) (armnetwork.LoadBalancersClientCreateOrUpdateResponse, error)
+}
+
+type loadBalancersAPI interface {
+	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string,
+		loadBalancerName string, parameters armnetwork.LoadBalancer,
+		options *armnetwork.LoadBalancersClientBeginCreateOrUpdateOptions) (
+		loadBalancersClientCreateOrUpdatePollerResponse, error,
+	)
+}
+
 type virtualMachineScaleSetsCreateOrUpdatePollerResponse interface {
 	PollUntilDone(ctx context.Context, freq time.Duration) (armcompute.VirtualMachineScaleSetsClientCreateOrUpdateResponse, error)
 }

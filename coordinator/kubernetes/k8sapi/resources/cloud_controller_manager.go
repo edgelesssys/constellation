@@ -9,8 +9,6 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const defaultCIDR = "10.244.0.0/16"
-
 type cloudControllerManagerDeployment struct {
 	ServiceAccount     k8s.ServiceAccount
 	ClusterRoleBinding rbac.ClusterRoleBinding
@@ -22,14 +20,12 @@ type cloudControllerManagerDeployment struct {
 // https://kubernetes.io/docs/tasks/administer-cluster/running-cloud-controller/#cloud-controller-manager
 
 // NewDefaultCloudControllerManagerDeployment creates a new *cloudControllerManagerDeployment, customized for the CSP.
-func NewDefaultCloudControllerManagerDeployment(cloudProvider, image, path string, extraArgs []string, extraVolumes []k8s.Volume, extraVolumeMounts []k8s.VolumeMount, env []k8s.EnvVar) *cloudControllerManagerDeployment {
+func NewDefaultCloudControllerManagerDeployment(cloudProvider, image, path, podCIDR string, extraArgs []string, extraVolumes []k8s.Volume, extraVolumeMounts []k8s.VolumeMount, env []k8s.EnvVar) *cloudControllerManagerDeployment {
 	command := []string{
 		path,
 		fmt.Sprintf("--cloud-provider=%s", cloudProvider),
 		"--leader-elect=true",
-		"--allocate-node-cidrs=false",
-		"--configure-cloud-routes=false",
-		fmt.Sprintf("--cluster-cidr=%s", defaultCIDR),
+		fmt.Sprintf("--cluster-cidr=%s", podCIDR),
 		"-v=2",
 	}
 	command = append(command, extraArgs...)
@@ -149,6 +145,10 @@ func NewDefaultCloudControllerManagerDeployment(cloudProvider, image, path strin
 							},
 							{
 								Key:    "node-role.kubernetes.io/master",
+								Effect: k8s.TaintEffectNoSchedule,
+							},
+							{
+								Key:    "node.kubernetes.io/not-ready",
 								Effect: k8s.TaintEffectNoSchedule,
 							},
 						},

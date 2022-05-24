@@ -20,26 +20,16 @@ const (
 	kubeletStartTimeout = 10 * time.Minute
 )
 
+var (
+	kubernetesKeyRegexp = regexp.MustCompile("[a-f0-9]{64}")
+	providerIDRegex     = regexp.MustCompile(`^azure:///subscriptions/([^/]+)/resourceGroups/([^/]+)/providers/Microsoft.Compute/virtualMachineScaleSets/([^/]+)/virtualMachines/([^/]+)$`)
+)
+
 // Client provides the functionality of `kubectl apply`.
 type Client interface {
 	Apply(resources resources.Marshaler, forceConflicts bool) error
 	SetKubeconfig(kubeconfig []byte)
 	// TODO: add tolerations
-}
-
-type ClusterUtil interface {
-	InstallComponents(ctx context.Context, version string) error
-	InitCluster(initConfig []byte) error
-	JoinCluster(joinConfig []byte) error
-	SetupPodNetwork(kubectl Client, podNetworkConfiguration resources.Marshaler) error
-	SetupAutoscaling(kubectl Client, clusterAutoscalerConfiguration resources.Marshaler, secrets resources.Marshaler) error
-	SetupCloudControllerManager(kubectl Client, cloudControllerManagerConfiguration resources.Marshaler, configMaps resources.Marshaler, secrets resources.Marshaler) error
-	SetupCloudNodeManager(kubectl Client, cloudNodeManagerConfiguration resources.Marshaler) error
-	SetupKMS(kubectl Client, kmsConfiguration resources.Marshaler) error
-	StartKubelet() error
-	RestartKubelet() error
-	GetControlPlaneJoinCertificateKey() (string, error)
-	CreateJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error)
 }
 
 // KubernetesUtil provides low level management of the kubernetes cluster.
@@ -68,7 +58,7 @@ func (k *KubernetesUtil) InstallComponents(ctx context.Context, version string) 
 	return enableSystemdUnit(ctx, kubeletServiceEtcPath)
 }
 
-func (k *KubernetesUtil) InitCluster(initConfig []byte) error {
+func (k *KubernetesUtil) InitCluster(ctx context.Context, initConfig []byte) error {
 	// TODO: audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
 	if err != nil {
@@ -88,7 +78,7 @@ func (k *KubernetesUtil) InitCluster(initConfig []byte) error {
 		return fmt.Errorf("writing kubeadm init yaml config %v failed: %w", initConfigFile.Name(), err)
 	}
 
-	cmd := exec.Command(kubeadmPath, "init", "--config", initConfigFile.Name())
+	cmd := exec.CommandContext(ctx, kubeadmPath, "init", "--config", initConfigFile.Name())
 	_, err = cmd.Output()
 	if err != nil {
 		var exitErr *exec.ExitError
@@ -100,18 +90,84 @@ func (k *KubernetesUtil) InitCluster(initConfig []byte) error {
 	return nil
 }
 
-// SetupPodNetwork sets up the flannel pod network.
-func (k *KubernetesUtil) SetupPodNetwork(kubectl Client, podNetworkConfiguration resources.Marshaler) error {
-	if err := kubectl.Apply(podNetworkConfiguration, true); err != nil {
+type SetupPodNetworkInput struct {
+	CloudProvider     string
+	NodeName          string
+	FirstNodePodCIDR  string
+	SubnetworkPodCIDR string
+	ProviderID        string
+}
+
+// SetupPodNetwork sets up the cilium pod network.
+func (k *KubernetesUtil) SetupPodNetwork(ctx context.Context, in SetupPodNetworkInput) error {
+	switch in.CloudProvider {
+	case "gcp":
+		return k.setupGCPPodNetwork(ctx, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR)
+	case "azure":
+		return k.setupAzurePodNetwork(ctx, in.ProviderID, in.SubnetworkPodCIDR)
+	case "qemu":
+		return k.setupQemuPodNetwork(ctx)
+	default:
+		return fmt.Errorf("unsupported cloud provider %q", in.CloudProvider)
+	}
+}
+
+func (k *KubernetesUtil) setupAzurePodNetwork(ctx context.Context, providerID, subnetworkPodCIDR string) error {
+	matches := providerIDRegex.FindStringSubmatch(providerID)
+	if len(matches) != 5 {
+		return fmt.Errorf("error splitting providerID %q", providerID)
+	}
+
+	ciliumInstall := exec.CommandContext(ctx, "cilium", "install", "--azure-resource-group", matches[2], "--encryption", "wireguard", "--ipam", "azure",
+		"--helm-set",
+		"tunnel=disabled,enableIPv4Masquerade=true,azure.enabled=true,debug.enabled=true,ipv4NativeRoutingCIDR="+subnetworkPodCIDR+
+			",endpointRoutes.enabled=true,encryption.enabled=true,encryption.type=wireguard,l7Proxy=false,egressMasqueradeInterfaces=eth0")
+	ciliumInstall.Env = append(os.Environ(), "KUBECONFIG="+kubeConfig)
+	out, err := ciliumInstall.CombinedOutput()
+	if err != nil {
+		err = errors.New(string(out))
+		return err
+	}
+	return nil
+}
+
+func (k *KubernetesUtil) setupGCPPodNetwork(ctx context.Context, nodeName, nodePodCIDR, subnetworkPodCIDR string) error {
+	out, err := exec.CommandContext(ctx, kubectlPath, "--kubeconfig", kubeConfig, "patch", "node", nodeName, "-p", "{\"spec\":{\"podCIDR\": \""+nodePodCIDR+"\"}}").CombinedOutput()
+	if err != nil {
+		err = errors.New(string(out))
 		return err
 	}
 
 	// allow coredns to run on uninitialized nodes (required by cloud-controller-manager)
-	err := exec.Command(kubectlPath, "--kubeconfig", kubeConfig, "-n", "kube-system", "patch", "deployment", "coredns", "--type", "json", "-p", "[{\"op\":\"add\",\"path\":\"/spec/template/spec/tolerations/-\",\"value\":{\"key\":\"node.cloudprovider.kubernetes.io/uninitialized\",\"value\":\"true\",\"effect\":\"NoSchedule\"}}]").Run()
+	err = exec.CommandContext(ctx, kubectlPath, "--kubeconfig", kubeConfig, "-n", "kube-system", "patch", "deployment", "coredns", "--type", "json", "-p", "[{\"op\":\"add\",\"path\":\"/spec/template/spec/tolerations/-\",\"value\":{\"key\":\"node.cloudprovider.kubernetes.io/uninitialized\",\"value\":\"true\",\"effect\":\"NoSchedule\"}},{\"op\":\"add\",\"path\":\"/spec/template/spec/nodeSelector\",\"value\":{\"node-role.kubernetes.io/control-plane\":\"\"}}]").Run()
 	if err != nil {
 		return err
 	}
-	return exec.Command(kubectlPath, "--kubeconfig", kubeConfig, "-n", "kube-system", "patch", "deployment", "coredns", "--type", "json", "-p", "[{\"op\":\"add\",\"path\":\"/spec/template/spec/tolerations/-\",\"value\":{\"key\":\"node.kubernetes.io/network-unavailable\",\"value\":\"\",\"effect\":\"NoSchedule\"}}]").Run()
+
+	err = exec.CommandContext(ctx, kubectlPath, "--kubeconfig", kubeConfig, "-n", "kube-system", "patch", "deployment", "coredns", "--type", "json", "-p", "[{\"op\":\"add\",\"path\":\"/spec/template/spec/tolerations/-\",\"value\":{\"key\":\"node.kubernetes.io/network-unavailable\",\"value\":\"\",\"effect\":\"NoSchedule\"}}]").Run()
+	if err != nil {
+		return err
+	}
+
+	ciliumInstall := exec.CommandContext(ctx, "cilium", "install", "--encryption", "wireguard", "--ipam", "kubernetes", "--ipv4-native-routing-cidr", subnetworkPodCIDR, "--helm-set", "endpointRoutes.enabled=true,tunnel=disabled")
+	ciliumInstall.Env = append(os.Environ(), "KUBECONFIG="+kubeConfig)
+	out, err = ciliumInstall.CombinedOutput()
+	if err != nil {
+		err = errors.New(string(out))
+		return err
+	}
+	return nil
+}
+
+func (k *KubernetesUtil) setupQemuPodNetwork(ctx context.Context) error {
+	ciliumInstall := exec.CommandContext(ctx, "cilium", "install", "--encryption", "wireguard", "--helm-set", "ipam.operator.clusterPoolIPv4PodCIDRList=10.244.0.0/16,endpointRoutes.enabled=true")
+	ciliumInstall.Env = append(os.Environ(), "KUBECONFIG="+kubeConfig)
+	out, err := ciliumInstall.CombinedOutput()
+	if err != nil {
+		err = errors.New(string(out))
+		return err
+	}
+	return nil
 }
 
 // SetupAutoscaling deploys the k8s cluster autoscaler.
@@ -142,7 +198,7 @@ func (k *KubernetesUtil) SetupCloudNodeManager(kubectl Client, cloudNodeManagerC
 }
 
 // JoinCluster joins existing Kubernetes cluster using kubeadm join.
-func (k *KubernetesUtil) JoinCluster(joinConfig []byte) error {
+func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte) error {
 	// TODO: audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
 	if err != nil {
@@ -163,7 +219,7 @@ func (k *KubernetesUtil) JoinCluster(joinConfig []byte) error {
 	}
 
 	// run `kubeadm join` to join a worker node to an existing Kubernetes cluster
-	cmd := exec.Command(kubeadmPath, "join", "--config", joinConfigFile.Name())
+	cmd := exec.CommandContext(ctx, kubeadmPath, "join", "--config", joinConfigFile.Name())
 	if _, err := cmd.Output(); err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
@@ -201,10 +257,10 @@ func (k *KubernetesUtil) RestartKubelet() error {
 
 // GetControlPlaneJoinCertificateKey return the key which can be used in combination with the joinArgs
 // to join the Cluster as control-plane.
-func (k *KubernetesUtil) GetControlPlaneJoinCertificateKey() (string, error) {
+func (k *KubernetesUtil) GetControlPlaneJoinCertificateKey(ctx context.Context) (string, error) {
 	// Key will be valid for 1h (no option to reduce the duration).
 	// https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init-phase/#cmd-phase-upload-certs
-	output, err := exec.Command(kubeadmPath, "init", "phase", "upload-certs", "--upload-certs").Output()
+	output, err := exec.CommandContext(ctx, kubeadmPath, "init", "phase", "upload-certs", "--upload-certs").Output()
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
@@ -218,7 +274,7 @@ func (k *KubernetesUtil) GetControlPlaneJoinCertificateKey() (string, error) {
 		[upload-certs] Using certificate key:
 		9555b74008f24687eb964bd90a164ecb5760a89481d9c55a77c129b7db438168
 	*/
-	key := regexp.MustCompile("[a-f0-9]{64}").FindString(string(output))
+	key := kubernetesKeyRegexp.FindString(string(output))
 	if key == "" {
 		return "", fmt.Errorf("failed to parse kubeadm output: %s", string(output))
 	}
@@ -226,8 +282,8 @@ func (k *KubernetesUtil) GetControlPlaneJoinCertificateKey() (string, error) {
 }
 
 // CreateJoinToken creates a new bootstrap (join) token.
-func (k *KubernetesUtil) CreateJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error) {
-	output, err := exec.Command(kubeadmPath, "token", "create", "--ttl", ttl.String(), "--print-join-command").Output()
+func (k *KubernetesUtil) CreateJoinToken(ctx context.Context, ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error) {
+	output, err := exec.CommandContext(ctx, kubeadmPath, "token", "create", "--ttl", ttl.String(), "--print-join-command").Output()
 	if err != nil {
 		return nil, fmt.Errorf("kubeadm token create failed: %w", err)
 	}

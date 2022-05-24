@@ -9,6 +9,11 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+const (
+	SubnetCIDR    = "192.168.178.0/24"
+	SubnetExtCIDR = "10.10.0.0/16"
+)
+
 // CreateFirewall creates a set of firewall rules for the client's network.
 //
 // The client must have a VPC network to set firewall rules.
@@ -163,13 +168,13 @@ func (c *Client) createSubnet(ctx context.Context, name, network, secondaryRange
 		Project: c.project,
 		Region:  c.region,
 		SubnetworkResource: &computepb.Subnetwork{
-			IpCidrRange: proto.String("192.168.178.0/24"),
+			IpCidrRange: proto.String(SubnetCIDR),
 			Name:        proto.String(name),
 			Network:     proto.String("projects/" + c.project + "/global/networks/" + network),
 			SecondaryIpRanges: []*computepb.SubnetworkSecondaryRange{
 				{
 					RangeName:   proto.String(secondaryRangeName),
-					IpCidrRange: proto.String("10.10.0.0/16"),
+					IpCidrRange: proto.String(SubnetExtCIDR),
 				},
 			},
 		},

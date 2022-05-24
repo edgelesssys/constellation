@@ -42,10 +42,7 @@ func main() {
 	var bindIP, bindPort, etcdEndpoint string
 	var enforceEtcdTls bool
 	var kube core.Cluster
-	var metadata core.ProviderMetadata
-	var cloudControllerManager core.CloudControllerManager
-	var cloudNodeManager core.CloudNodeManager
-	var autoscaler core.ClusterAutoscaler
+	var coreMetadata core.ProviderMetadata
 	var encryptedDisk core.EncryptedDisk
 	cfg := zap.NewDevelopmentConfig()
 
@@ -87,15 +84,13 @@ func main() {
 		issuer = gcp.NewIssuer()
 		validator = gcp.NewValidator(pcrs)
 
-		kube = kubernetes.New(k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New())
 		gcpClient, err := gcpcloud.NewClient(context.Background())
 		if err != nil {
 			log.Fatalf("creating GCP client failed: %v\n", err)
 		}
-		metadata = gcpcloud.New(gcpClient)
-		cloudControllerManager = &gcpcloud.CloudControllerManager{}
-		cloudNodeManager = &gcpcloud.CloudNodeManager{}
-		autoscaler = &gcpcloud.Autoscaler{}
+		metadata := gcpcloud.New(gcpClient)
+		coreMetadata = metadata
+		kube = kubernetes.New("gcp", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &gcpcloud.CloudControllerManager{}, &gcpcloud.CloudNodeManager{}, &gcpcloud.Autoscaler{}, metadata)
 		encryptedDisk = diskencryption.New()
 		bindIP = defaultIP
 		bindPort = defaultPort
@@ -112,14 +107,13 @@ func main() {
 		issuer = azure.NewIssuer()
 		validator = azure.NewValidator(pcrs)
 
-		kube = kubernetes.New(k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New())
-		metadata, err = azurecloud.NewMetadata(context.Background())
+		metadata, err := azurecloud.NewMetadata(context.Background())
 		if err != nil {
 			log.Fatal(err)
 		}
-		cloudControllerManager = &azurecloud.CloudControllerManager{}
-		cloudNodeManager = &azurecloud.CloudNodeManager{}
-		autoscaler = &azurecloud.Autoscaler{}
+		coreMetadata = metadata
+		kube = kubernetes.New("azure", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), azurecloud.NewCloudControllerManager(metadata), &azurecloud.CloudNodeManager{}, &azurecloud.Autoscaler{}, metadata)
+
 		encryptedDisk = diskencryption.New()
 		bindIP = defaultIP
 		bindPort = defaultPort
@@ -136,13 +130,10 @@ func main() {
 		issuer = qemu.NewIssuer()
 		validator = qemu.NewValidator(pcrs)
 
-		kube = kubernetes.New(k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New())
-
 		// no support for cloud services in qemu
-		metadata = &qemucloud.Metadata{}
-		cloudControllerManager = &qemucloud.CloudControllerManager{}
-		cloudNodeManager = &qemucloud.CloudNodeManager{}
-		autoscaler = &qemucloud.Autoscaler{}
+		metadata := &qemucloud.Metadata{}
+		kube = kubernetes.New("qemu", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &qemucloud.CloudControllerManager{}, &qemucloud.CloudNodeManager{}, &qemucloud.Autoscaler{}, metadata)
+		coreMetadata = metadata
 
 		encryptedDisk = diskencryption.New()
 		bindIP = defaultIP
@@ -155,10 +146,7 @@ func main() {
 		issuer = core.NewMockIssuer()
 		validator = core.NewMockValidator()
 		kube = &core.ClusterFake{}
-		metadata = &core.ProviderMetadataFake{}
-		cloudControllerManager = &core.CloudControllerManagerFake{}
-		cloudNodeManager = &core.CloudNodeManagerFake{}
-		autoscaler = &core.ClusterAutoscalerFake{}
+		coreMetadata = &core.ProviderMetadataFake{}
 		encryptedDisk = &core.EncryptedDiskFake{}
 		bindIP = defaultIP
 		bindPort = defaultPort
@@ -174,5 +162,5 @@ func main() {
 	netDialer := &net.Dialer{}
 	dialer := grpcutil.NewDialer(validator, netDialer)
 	run(issuer, wg, openTPM, util.GetIPAddr, dialer, fileHandler, kube,
-		metadata, cloudControllerManager, cloudNodeManager, autoscaler, encryptedDisk, etcdEndpoint, enforceEtcdTls, bindIP, bindPort, zapLoggerCore, fs)
+		coreMetadata, encryptedDisk, etcdEndpoint, enforceEtcdTls, bindIP, bindPort, zapLoggerCore, fs)
 }

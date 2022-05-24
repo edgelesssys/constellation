@@ -170,7 +170,6 @@ func TestCreateNIC(t *testing.T) {
 	}
 }
 
-// TODO: deprecate as soon as scale sets are available.
 func TestCreatePublicIPAddress(t *testing.T) {
 	someErr := errors.New("failed")
 
@@ -214,6 +213,61 @@ func TestCreatePublicIPAddress(t *testing.T) {
 			} else {
 				assert.NoError(err)
 				assert.NotEmpty(id)
+			}
+		})
+	}
+}
+
+func TestCreateExternalLoadBalancer(t *testing.T) {
+	someErr := errors.New("failed")
+
+	testCases := map[string]struct {
+		publicIPAddressesAPI publicIPAddressesAPI
+		loadBalancersAPI     loadBalancersAPI
+		wantErr              bool
+	}{
+		"successful create": {
+			publicIPAddressesAPI: stubPublicIPAddressesAPI{stubCreateResponse: stubPublicIPAddressesClientCreateOrUpdatePollerResponse{}},
+			loadBalancersAPI:     stubLoadBalancersAPI{},
+		},
+		"failed to get response from successful create": {
+			loadBalancersAPI:     stubLoadBalancersAPI{stubResponse: stubLoadBalancersClientCreateOrUpdatePollerResponse{pollErr: someErr}},
+			publicIPAddressesAPI: stubPublicIPAddressesAPI{},
+			wantErr:              true,
+		},
+		"failed create": {
+			loadBalancersAPI:     stubLoadBalancersAPI{createErr: someErr},
+			publicIPAddressesAPI: stubPublicIPAddressesAPI{},
+			wantErr:              true,
+		},
+		"cannot create public IP": {
+			publicIPAddressesAPI: stubPublicIPAddressesAPI{createErr: someErr},
+			loadBalancersAPI:     stubLoadBalancersAPI{},
+			wantErr:              true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			ctx := context.Background()
+			client := Client{
+				resourceGroup:        "resource-group",
+				location:             "location",
+				name:                 "name",
+				uid:                  "uid",
+				nodes:                make(azure.Instances),
+				coordinators:         make(azure.Instances),
+				loadBalancersAPI:     tc.loadBalancersAPI,
+				publicIPAddressesAPI: tc.publicIPAddressesAPI,
+			}
+
+			err := client.CreateExternalLoadBalancer(ctx)
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
 			}
 		})
 	}

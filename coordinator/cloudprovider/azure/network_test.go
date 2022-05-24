@@ -2,6 +2,7 @@ package azure
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
@@ -12,10 +13,17 @@ import (
 )
 
 func TestGetVMInterfaces(t *testing.T) {
-	wantConfigs := []*armnetwork.InterfaceIPConfiguration{
+	wantNetworkInterfaces := []armnetwork.Interface{
 		{
-			Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
-				PrivateIPAddress: to.StringPtr("192.0.2.0"),
+			Name: to.StringPtr("interface-name"),
+			Properties: &armnetwork.InterfacePropertiesFormat{
+				IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
+					{
+						Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+							PrivateIPAddress: to.StringPtr("192.0.2.0"),
+						},
+					},
+				},
 			},
 		},
 	}
@@ -31,25 +39,53 @@ func TestGetVMInterfaces(t *testing.T) {
 		},
 	}
 	testCases := map[string]struct {
-		vm                   armcompute.VirtualMachine
-		networkInterfacesAPI networkInterfacesAPI
-		wantErr              bool
-		wantConfigs          []*armnetwork.InterfaceIPConfiguration
+		vm                    armcompute.VirtualMachine
+		networkInterfacesAPI  networkInterfacesAPI
+		wantErr               bool
+		wantNetworkInterfaces []armnetwork.Interface
 	}{
 		"retrieval works": {
-			vm:                   vm,
-			networkInterfacesAPI: newNetworkInterfacesStub(),
-			wantConfigs:          wantConfigs,
+			vm: vm,
+			networkInterfacesAPI: &stubNetworkInterfacesAPI{
+				getInterface: armnetwork.Interface{
+					Name: to.StringPtr("interface-name"),
+					Properties: &armnetwork.InterfacePropertiesFormat{
+						IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
+							{
+								Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+									PrivateIPAddress: to.StringPtr("192.0.2.0"),
+								},
+							},
+						},
+					},
+				},
+			},
+			wantNetworkInterfaces: wantNetworkInterfaces,
 		},
 		"vm can have 0 interfaces": {
-			vm:                   armcompute.VirtualMachine{},
-			networkInterfacesAPI: newNetworkInterfacesStub(),
-			wantConfigs:          []*armnetwork.InterfaceIPConfiguration{},
+			vm: armcompute.VirtualMachine{},
+			networkInterfacesAPI: &stubNetworkInterfacesAPI{
+				getInterface: armnetwork.Interface{
+					Name: to.StringPtr("interface-name"),
+					Properties: &armnetwork.InterfacePropertiesFormat{
+						IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
+							{
+								Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+									PrivateIPAddress: to.StringPtr("192.0.2.0"),
+								},
+							},
+						},
+					},
+				},
+			},
+			wantNetworkInterfaces: []armnetwork.Interface{},
 		},
 		"interface retrieval fails": {
-			vm:                   vm,
-			networkInterfacesAPI: newFailingNetworkInterfacesStub(),
-			wantErr:              true,
+			vm: vm,
+			networkInterfacesAPI: &stubNetworkInterfacesAPI{
+				getErr: errors.New("get err"),
+			},
+			wantErr: true,
 		},
 	}
 
@@ -61,23 +97,30 @@ func TestGetVMInterfaces(t *testing.T) {
 			metadata := Metadata{
 				networkInterfacesAPI: tc.networkInterfacesAPI,
 			}
-			configs, err := metadata.getVMInterfaces(context.Background(), tc.vm, "resource-group")
+			vmNetworkInteraces, err := metadata.getVMInterfaces(context.Background(), tc.vm, "resource-group")
 
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.wantConfigs, configs)
+			assert.Equal(tc.wantNetworkInterfaces, vmNetworkInteraces)
 		})
 	}
 }
 
 func TestGetScaleSetVMInterfaces(t *testing.T) {
-	wantConfigs := []*armnetwork.InterfaceIPConfiguration{
+	wantNetworkInterfaces := []armnetwork.Interface{
 		{
-			Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
-				PrivateIPAddress: to.StringPtr("192.0.2.0"),
+			Name: to.StringPtr("interface-name"),
+			Properties: &armnetwork.InterfacePropertiesFormat{
+				IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
+					{
+						Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+							PrivateIPAddress: to.StringPtr("192.0.2.0"),
+						},
+					},
+				},
 			},
 		},
 	}
@@ -93,25 +136,53 @@ func TestGetScaleSetVMInterfaces(t *testing.T) {
 		},
 	}
 	testCases := map[string]struct {
-		vm                   armcompute.VirtualMachineScaleSetVM
-		networkInterfacesAPI networkInterfacesAPI
-		wantErr              bool
-		wantConfigs          []*armnetwork.InterfaceIPConfiguration
+		vm                    armcompute.VirtualMachineScaleSetVM
+		networkInterfacesAPI  networkInterfacesAPI
+		wantErr               bool
+		wantNetworkInterfaces []armnetwork.Interface
 	}{
 		"retrieval works": {
-			vm:                   vm,
-			networkInterfacesAPI: newNetworkInterfacesStub(),
-			wantConfigs:          wantConfigs,
+			vm: vm,
+			networkInterfacesAPI: &stubNetworkInterfacesAPI{
+				getInterface: armnetwork.Interface{
+					Name: to.StringPtr("interface-name"),
+					Properties: &armnetwork.InterfacePropertiesFormat{
+						IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
+							{
+								Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+									PrivateIPAddress: to.StringPtr("192.0.2.0"),
+								},
+							},
+						},
+					},
+				},
+			},
+			wantNetworkInterfaces: wantNetworkInterfaces,
 		},
 		"vm can have 0 interfaces": {
-			vm:                   armcompute.VirtualMachineScaleSetVM{},
-			networkInterfacesAPI: newNetworkInterfacesStub(),
-			wantConfigs:          []*armnetwork.InterfaceIPConfiguration{},
+			vm: armcompute.VirtualMachineScaleSetVM{},
+			networkInterfacesAPI: &stubNetworkInterfacesAPI{
+				getInterface: armnetwork.Interface{
+					Name: to.StringPtr("interface-name"),
+					Properties: &armnetwork.InterfacePropertiesFormat{
+						IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
+							{
+								Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+									PrivateIPAddress: to.StringPtr("192.0.2.0"),
+								},
+							},
+						},
+					},
+				},
+			},
+			wantNetworkInterfaces: []armnetwork.Interface{},
 		},
 		"interface retrieval fails": {
-			vm:                   vm,
-			networkInterfacesAPI: newFailingNetworkInterfacesStub(),
-			wantErr:              true,
+			vm: vm,
+			networkInterfacesAPI: &stubNetworkInterfacesAPI{
+				getErr: errors.New("get err"),
+			},
+			wantErr: true,
 		},
 	}
 
@@ -130,33 +201,147 @@ func TestGetScaleSetVMInterfaces(t *testing.T) {
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.wantConfigs, configs)
+			assert.Equal(tc.wantNetworkInterfaces, configs)
+		})
+	}
+}
+
+func TestGetScaleSetVMPublicIPAddresses(t *testing.T) {
+	someErr := errors.New("some err")
+	newNetworkInterfaces := func() []armnetwork.Interface {
+		return []armnetwork.Interface{{
+			Name: to.StringPtr("interface-name"),
+			Properties: &armnetwork.InterfacePropertiesFormat{
+				IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
+					{
+						Name: to.StringPtr("ip-config-name"),
+						Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+							PublicIPAddress: &armnetwork.PublicIPAddress{
+								ID: to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Network/publicIPAddresses/public-ip-name"),
+							},
+						},
+					},
+				},
+			},
+		}, {
+			Name: to.StringPtr("interface-name2"),
+			Properties: &armnetwork.InterfacePropertiesFormat{
+				IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
+					{
+						Name: to.StringPtr("ip-config-name2"),
+						Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+							PublicIPAddress: &armnetwork.PublicIPAddress{
+								ID: to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Network/publicIPAddresses/public-ip-name2"),
+							},
+						},
+					},
+				},
+			},
+		}}
+	}
+
+	testCases := map[string]struct {
+		networkInterfacesMutator func(*[]armnetwork.Interface)
+		networkInterfaces        []armnetwork.Interface
+		publicIPAddressesAPI     publicIPAddressesAPI
+		wantIPs                  []string
+		wantErr                  bool
+	}{
+		"retrieval works": {
+			publicIPAddressesAPI: &stubPublicIPAddressesAPI{getVirtualMachineScaleSetPublicIPAddressResponse: armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResponse{
+				PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResult: armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResult{
+					PublicIPAddress: armnetwork.PublicIPAddress{
+						Properties: &armnetwork.PublicIPAddressPropertiesFormat{
+							IPAddress: to.StringPtr("192.0.2.1"),
+						},
+					},
+				},
+			}},
+			networkInterfaces: newNetworkInterfaces(),
+			wantIPs:           []string{"192.0.2.1", "192.0.2.1"},
+		},
+		"retrieval works for no valid interfaces": {
+			publicIPAddressesAPI: &stubPublicIPAddressesAPI{getVirtualMachineScaleSetPublicIPAddressResponse: armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResponse{
+				PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResult: armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResult{
+					PublicIPAddress: armnetwork.PublicIPAddress{
+						Properties: &armnetwork.PublicIPAddressPropertiesFormat{
+							IPAddress: to.StringPtr("192.0.2.1"),
+						},
+					},
+				},
+			}},
+			networkInterfaces: newNetworkInterfaces(),
+			networkInterfacesMutator: func(nets *[]armnetwork.Interface) {
+				(*nets)[0].Properties.IPConfigurations = []*armnetwork.InterfaceIPConfiguration{nil}
+				(*nets)[1] = armnetwork.Interface{Name: nil}
+			},
+		},
+		"fail to get public IP": {
+			publicIPAddressesAPI: &stubPublicIPAddressesAPI{getErr: someErr},
+			networkInterfaces:    newNetworkInterfaces(),
+			wantErr:              true,
+		},
+		"fail to parse IPv4 address of public IP": {
+			publicIPAddressesAPI: &stubPublicIPAddressesAPI{getVirtualMachineScaleSetPublicIPAddressResponse: armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResponse{
+				PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResult: armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResult{
+					PublicIPAddress: armnetwork.PublicIPAddress{},
+				},
+			}},
+			networkInterfaces: newNetworkInterfaces(),
+			wantErr:           true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+			if tc.networkInterfacesMutator != nil {
+				tc.networkInterfacesMutator(&tc.networkInterfaces)
+			}
+
+			metadata := Metadata{
+				publicIPAddressesAPI: tc.publicIPAddressesAPI,
+			}
+
+			ips, err := metadata.getScaleSetVMPublicIPAddresses(context.Background(), "resource-group", "scale-set-name", "instance-id", tc.networkInterfaces)
+
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+			assert.Equal(tc.wantIPs, ips)
 		})
 	}
 }
 
 func TestExtractPrivateIPs(t *testing.T) {
 	testCases := map[string]struct {
-		interfaceIPConfigs []*armnetwork.InterfaceIPConfiguration
-		wantIPs            []string
+		networkInterfaces []armnetwork.Interface
+		wantIPs           []string
 	}{
 		"extraction works": {
-			interfaceIPConfigs: []*armnetwork.InterfaceIPConfiguration{
+			networkInterfaces: []armnetwork.Interface{
 				{
-					Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
-						PrivateIPAddress: to.StringPtr("192.0.2.0"),
+					Properties: &armnetwork.InterfacePropertiesFormat{
+						IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
+							{
+								Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+									PrivateIPAddress: to.StringPtr("192.0.2.0"),
+								},
+							},
+						},
 					},
 				},
 			},
 			wantIPs: []string{"192.0.2.0"},
 		},
 		"can be empty": {
-			interfaceIPConfigs: []*armnetwork.InterfaceIPConfiguration{},
+			networkInterfaces: []armnetwork.Interface{},
 		},
 		"invalid interface is skipped": {
-			interfaceIPConfigs: []*armnetwork.InterfaceIPConfiguration{
-				{},
-			},
+			networkInterfaces: []armnetwork.Interface{{}},
 		},
 	}
 
@@ -164,7 +349,7 @@ func TestExtractPrivateIPs(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			ips := extractPrivateIPs(tc.interfaceIPConfigs)
+			ips := extractPrivateIPs(tc.networkInterfaces)
 
 			assert.ElementsMatch(tc.wantIPs, ips)
 		})

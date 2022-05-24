@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/stretchr/testify/assert"
@@ -14,22 +15,22 @@ import (
 func TestList(t *testing.T) {
 	err := errors.New("some err")
 	uid := "1234"
-	instancesGenerator := func() *[]core.Instance {
-		return &[]core.Instance{
+	instancesGenerator := func() *[]cloudtypes.Instance {
+		return &[]cloudtypes.Instance{
 			{
 				Name:       "someInstance",
 				ProviderID: "gce://someProject/someZone/someInstance",
-				IPs:        []string{"192.0.2.0"},
+				PrivateIPs: []string{"192.0.2.0"},
 			},
 		}
 	}
 
 	testCases := map[string]struct {
 		client             stubGCPClient
-		instancesGenerator func() *[]core.Instance
-		instancesMutator   func(*[]core.Instance)
+		instancesGenerator func() *[]cloudtypes.Instance
+		instancesMutator   func(*[]cloudtypes.Instance)
 		wantErr            bool
-		wantInstances      []core.Instance
+		wantInstances      []cloudtypes.Instance
 	}{
 		"retrieve works": {
 			client: stubGCPClient{
@@ -40,11 +41,11 @@ func TestList(t *testing.T) {
 				},
 			},
 			instancesGenerator: instancesGenerator,
-			wantInstances: []core.Instance{
+			wantInstances: []cloudtypes.Instance{
 				{
 					Name:       "someInstance",
 					ProviderID: "gce://someProject/someZone/someInstance",
-					IPs:        []string{"192.0.2.0"},
+					PrivateIPs: []string{"192.0.2.0"},
 				},
 			},
 		},
@@ -105,22 +106,22 @@ func TestSelf(t *testing.T) {
 	testCases := map[string]struct {
 		client       stubGCPClient
 		wantErr      bool
-		wantInstance core.Instance
+		wantInstance cloudtypes.Instance
 	}{
 		"retrieve works": {
 			client: stubGCPClient{
 				projectID: "someProjectID",
 				zone:      "someZone",
-				retrieveInstanceValue: core.Instance{
+				retrieveInstanceValue: cloudtypes.Instance{
 					Name:       "someInstance",
 					ProviderID: "gce://someProject/someZone/someInstance",
-					IPs:        []string{"192.0.2.0"},
+					PrivateIPs: []string{"192.0.2.0"},
 				},
 			},
-			wantInstance: core.Instance{
+			wantInstance: cloudtypes.Instance{
 				Name:       "someInstance",
 				ProviderID: "gce://someProject/someZone/someInstance",
-				IPs:        []string{"192.0.2.0"},
+				PrivateIPs: []string{"192.0.2.0"},
 			},
 		},
 		"retrieve error is detected": {
@@ -179,21 +180,21 @@ func TestGetInstance(t *testing.T) {
 		providerID   string
 		client       stubGCPClient
 		wantErr      bool
-		wantInstance core.Instance
+		wantInstance cloudtypes.Instance
 	}{
 		"retrieve works": {
 			providerID: "gce://someProject/someZone/someInstance",
 			client: stubGCPClient{
-				retrieveInstanceValue: core.Instance{
+				retrieveInstanceValue: cloudtypes.Instance{
 					Name:       "someInstance",
 					ProviderID: "gce://someProject/someZone/someInstance",
-					IPs:        []string{"192.0.2.0"},
+					PrivateIPs: []string{"192.0.2.0"},
 				},
 			},
-			wantInstance: core.Instance{
+			wantInstance: cloudtypes.Instance{
 				Name:       "someInstance",
 				ProviderID: "gce://someProject/someZone/someInstance",
-				IPs:        []string{"192.0.2.0"},
+				PrivateIPs: []string{"192.0.2.0"},
 			},
 		},
 		"retrieve error is detected": {
@@ -357,12 +358,13 @@ func TestTrivialMetadataFunctions(t *testing.T) {
 }
 
 type stubGCPClient struct {
-	retrieveInstanceValue        core.Instance
+	retrieveInstanceValue        cloudtypes.Instance
 	retrieveInstanceErr          error
-	retrieveInstancesValues      []core.Instance
+	retrieveInstancesValues      []cloudtypes.Instance
 	retrieveInstancesErr         error
 	retrieveInstanceMetadaValues map[string]string
 	retrieveInstanceMetadataErr  error
+	retrieveSubentworkAliasErr   error
 	projectID                    string
 	zone                         string
 	instanceName                 string
@@ -384,11 +386,11 @@ type stubGCPClient struct {
 	unsetMetadataKeys          []string
 }
 
-func (s *stubGCPClient) RetrieveInstances(ctx context.Context, project, zone string) ([]core.Instance, error) {
+func (s *stubGCPClient) RetrieveInstances(ctx context.Context, project, zone string) ([]cloudtypes.Instance, error) {
 	return s.retrieveInstancesValues, s.retrieveInstancesErr
 }
 
-func (s *stubGCPClient) RetrieveInstance(ctx context.Context, project, zone string, instanceName string) (core.Instance, error) {
+func (s *stubGCPClient) RetrieveInstance(ctx context.Context, project, zone string, instanceName string) (cloudtypes.Instance, error) {
 	return s.retrieveInstanceValue, s.retrieveInstanceErr
 }
 
@@ -425,4 +427,8 @@ func (s *stubGCPClient) UnsetInstanceMetadata(ctx context.Context, project, zone
 	s.unsetMetadataKeys = append(s.unsetMetadataKeys, key)
 
 	return s.unsetInstanceMetadataErr
+}
+
+func (s *stubGCPClient) RetrieveSubnetworkAliasCIDR(ctx context.Context, project, zone, instanceName string) (string, error) {
+	return "", s.retrieveSubentworkAliasErr
 }

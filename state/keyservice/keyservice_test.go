@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/coordinator/atls"
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
@@ -20,33 +21,33 @@ import (
 )
 
 func TestRequestKeyLoop(t *testing.T) {
-	defaultInstance := core.Instance{
+	defaultInstance := cloudtypes.Instance{
 		Name:       "test-instance",
 		ProviderID: "/test/provider",
 		Role:       role.Coordinator,
-		IPs:        []string{"192.0.2.1"},
+		PrivateIPs: []string{"192.0.2.1"},
 	}
 
 	testCases := map[string]struct {
 		server          *stubAPIServer
 		wantCalls       int
-		listResponse    []core.Instance
+		listResponse    []cloudtypes.Instance
 		dontStartServer bool
 	}{
 		"success": {
 			server:       &stubAPIServer{requestStateDiskKeyResp: &pubproto.RequestStateDiskKeyResponse{}},
-			listResponse: []core.Instance{defaultInstance},
+			listResponse: []cloudtypes.Instance{defaultInstance},
 		},
 		"no error if server throws an error": {
 			server: &stubAPIServer{
 				requestStateDiskKeyResp: &pubproto.RequestStateDiskKeyResponse{},
 				requestStateDiskKeyErr:  errors.New("error"),
 			},
-			listResponse: []core.Instance{defaultInstance},
+			listResponse: []cloudtypes.Instance{defaultInstance},
 		},
 		"no error if the server can not be reached": {
 			server:          &stubAPIServer{requestStateDiskKeyResp: &pubproto.RequestStateDiskKeyResponse{}},
-			listResponse:    []core.Instance{defaultInstance},
+			listResponse:    []cloudtypes.Instance{defaultInstance},
 			dontStartServer: true,
 		},
 		"no error if no endpoint is available": {
@@ -54,13 +55,13 @@ func TestRequestKeyLoop(t *testing.T) {
 		},
 		"works for multiple endpoints": {
 			server: &stubAPIServer{requestStateDiskKeyResp: &pubproto.RequestStateDiskKeyResponse{}},
-			listResponse: []core.Instance{
+			listResponse: []cloudtypes.Instance{
 				defaultInstance,
 				{
 					Name:       "test-instance-2",
 					ProviderID: "/test/provider",
 					Role:       role.Coordinator,
-					IPs:        []string{"192.0.2.2"},
+					PrivateIPs: []string{"192.0.2.2"},
 				},
 			},
 		},
@@ -192,19 +193,15 @@ func (s *stubAPIServer) RequestStateDiskKey(ctx context.Context, in *pubproto.Re
 }
 
 type stubMetadata struct {
-	listResponse []core.Instance
+	listResponse []cloudtypes.Instance
 }
 
-func (s stubMetadata) List(ctx context.Context) ([]core.Instance, error) {
+func (s stubMetadata) List(ctx context.Context) ([]cloudtypes.Instance, error) {
 	return s.listResponse, nil
 }
 
-func (s stubMetadata) Self(ctx context.Context) (core.Instance, error) {
-	return core.Instance{}, nil
-}
-
-func (s stubMetadata) GetInstance(ctx context.Context, providerID string) (core.Instance, error) {
-	return core.Instance{}, nil
+func (s stubMetadata) Self(ctx context.Context) (cloudtypes.Instance, error) {
+	return cloudtypes.Instance{}, nil
 }
 
 func (s stubMetadata) SignalRole(ctx context.Context, role role.Role) error {

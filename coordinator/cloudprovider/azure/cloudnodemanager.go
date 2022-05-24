@@ -19,7 +19,7 @@ func (c *CloudNodeManager) Path() string {
 // ExtraArgs returns a list of arguments to append to the cloud-node-manager command.
 func (c *CloudNodeManager) ExtraArgs() []string {
 	return []string{
-		"--wait-routes=false",
+		"--wait-routes=true",
 	}
 }
 

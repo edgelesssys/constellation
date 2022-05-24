@@ -74,7 +74,7 @@ func (a *API) ActivateAsAdditionalCoordinator(ctx context.Context, in *pubproto.
 		return nil, status.Errorf(codes.Internal, "add peers to vpn: %v", err)
 	}
 	a.logger.Info("about to join the k8s cluster")
-	err = a.core.JoinCluster(joinArgs, certKey, role.Coordinator)
+	err = a.core.JoinCluster(context.TODO(), joinArgs, certKey, role.Coordinator)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "%v", err)
 	}

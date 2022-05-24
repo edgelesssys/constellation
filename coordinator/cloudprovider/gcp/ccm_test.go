@@ -1,11 +1,12 @@
 package gcp
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
 	"github.com/edgelesssys/constellation/cli/gcp/client"
-	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,12 +16,12 @@ import (
 
 func TestConfigMaps(t *testing.T) {
 	testCases := map[string]struct {
-		instance       core.Instance
+		instance       cloudtypes.Instance
 		wantConfigMaps resources.ConfigMaps
 		wantErr        bool
 	}{
 		"ConfigMaps works": {
-			instance: core.Instance{ProviderID: "gce://project-id/zone/instance-name"},
+			instance: cloudtypes.Instance{ProviderID: "gce://project-id/zone/instanceName-UID-0", Name: "instanceName-UID-0"},
 			wantConfigMaps: resources.ConfigMaps{
 				&k8s.ConfigMap{
 					TypeMeta: v1.TypeMeta{
@@ -34,14 +35,15 @@ func TestConfigMaps(t *testing.T) {
 					Data: map[string]string{
 						"gce.conf": `[global]
 project-id = project-id
-use-metadata-server = false
+use-metadata-server = true
+node-tags = constellation-UID
 `,
 					},
 				},
 			},
 		},
 		"invalid providerID fails": {
-			instance: core.Instance{ProviderID: "invalid"},
+			instance: cloudtypes.Instance{ProviderID: "invalid"},
 			wantErr:  true,
 		},
 	}
@@ -80,7 +82,7 @@ func TestSecrets(t *testing.T) {
 	rawKey, err := json.Marshal(serviceAccountKey)
 	require.NoError(t, err)
 	testCases := map[string]struct {
-		instance               core.Instance
+		instance               cloudtypes.Instance
 		cloudServiceAccountURI string
 		wantSecrets            resources.Secrets
 		wantErr                bool
@@ -115,7 +117,7 @@ func TestSecrets(t *testing.T) {
 			require := require.New(t)
 
 			cloud := CloudControllerManager{}
-			secrets, err := cloud.Secrets(tc.instance, tc.cloudServiceAccountURI)
+			secrets, err := cloud.Secrets(context.Background(), tc.instance, tc.cloudServiceAccountURI)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -137,6 +139,5 @@ func TestTrivialCCMFunctions(t *testing.T) {
 	assert.NotEmpty(cloud.Volumes())
 	assert.NotEmpty(cloud.VolumeMounts())
 	assert.NotEmpty(cloud.Env())
-	assert.NoError(cloud.PrepareInstance(core.Instance{}, "192.0.2.0"))
 	assert.True(cloud.Supported())
 }

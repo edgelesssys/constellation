@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"net/netip"
 	"sync"
 	"time"
 
@@ -25,8 +24,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-var coordinatorVPNIP = netip.AddrFrom4([4]byte{10, 118, 0, 1})
-
 type Core struct {
 	state                    state.State
 	openTPM                  vtpm.TPMOpenFunc
@@ -35,9 +32,6 @@ type Core struct {
 	vpn                      VPN
 	kube                     Cluster
 	metadata                 ProviderMetadata
-	cloudControllerManager   CloudControllerManager
-	cloudNodeManager         CloudNodeManager
-	clusterAutoscaler        ClusterAutoscaler
 	encryptedDisk            EncryptedDisk
 	kms                      kms.CloudKMS
 	zaplogger                *zap.Logger
@@ -50,8 +44,7 @@ type Core struct {
 
 // NewCore creates and initializes a new Core object.
 func NewCore(vpn VPN, kube Cluster,
-	metadata ProviderMetadata, cloudControllerManager CloudControllerManager, cloudNodeManager CloudNodeManager, clusterAutoscaler ClusterAutoscaler,
-	encryptedDisk EncryptedDisk, zapLogger *zap.Logger, openTPM vtpm.TPMOpenFunc, persistentStoreFactory PersistentStoreFactory, fileHandler file.Handler, linuxUserManager user.LinuxUserManager,
+	metadata ProviderMetadata, encryptedDisk EncryptedDisk, zapLogger *zap.Logger, openTPM vtpm.TPMOpenFunc, persistentStoreFactory PersistentStoreFactory, fileHandler file.Handler, linuxUserManager user.LinuxUserManager,
 ) (*Core, error) {
 	stor := store.NewStdStore()
 	c := &Core{
@@ -60,9 +53,6 @@ func NewCore(vpn VPN, kube Cluster,
 		vpn:                      vpn,
 		kube:                     kube,
 		metadata:                 metadata,
-		cloudNodeManager:         cloudNodeManager,
-		cloudControllerManager:   cloudControllerManager,
-		clusterAutoscaler:        clusterAutoscaler,
 		encryptedDisk:            encryptedDisk,
 		zaplogger:                zapLogger,
 		kms:                      nil, // KMS is set up during init phase

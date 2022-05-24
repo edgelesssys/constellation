@@ -186,7 +186,7 @@ func (a *API) JoinCluster(ctx context.Context, in *pubproto.JoinClusterRequest) 
 		return nil, status.Errorf(codes.Internal, "request K8s join string: %v", err)
 	}
 
-	err = a.core.JoinCluster(&kubeadm.BootstrapTokenDiscovery{
+	err = a.core.JoinCluster(context.TODO(), &kubeadm.BootstrapTokenDiscovery{
 		APIServerEndpoint: resp.ApiServerEndpoint,
 		Token:             resp.Token,
 		CACertHashes:      []string{resp.DiscoveryTokenCaCertHash},

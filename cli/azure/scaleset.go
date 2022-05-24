@@ -10,18 +10,22 @@ import (
 
 // ScaleSet defines a Azure scale set.
 type ScaleSet struct {
-	Name                 string
-	NamePrefix           string
-	Location             string
-	InstanceType         string
-	StateDiskSizeGB      int32
-	Count                int64
-	Username             string
-	SubnetID             string
-	NetworkSecurityGroup string
-	Password             string
-	Image                string
-	UserAssignedIdentity string
+	Name                           string
+	NamePrefix                     string
+	Subscription                   string
+	ResourceGroup                  string
+	Location                       string
+	InstanceType                   string
+	StateDiskSizeGB                int32
+	Count                          int64
+	Username                       string
+	SubnetID                       string
+	NetworkSecurityGroup           string
+	Password                       string
+	Image                          string
+	UserAssignedIdentity           string
+	LoadBalancerName               string
+	LoadBalancerBackendAddressPool string
 }
 
 // Azure returns the Azure representation of ScaleSet.
@@ -72,13 +76,16 @@ func (s ScaleSet) Azure() armcompute.VirtualMachineScaleSet {
 									{
 										Name: to.StringPtr(s.Name),
 										Properties: &armcompute.VirtualMachineScaleSetIPConfigurationProperties{
+											Primary: to.BoolPtr(true),
 											Subnet: &armcompute.APIEntityReference{
 												ID: to.StringPtr(s.SubnetID),
 											},
-											PublicIPAddressConfiguration: &armcompute.VirtualMachineScaleSetPublicIPAddressConfiguration{
-												Name: to.StringPtr(s.Name),
-												Properties: &armcompute.VirtualMachineScaleSetPublicIPAddressConfigurationProperties{
-													IdleTimeoutInMinutes: to.Int32Ptr(15), // default per https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-networking#creating-a-scale-set-with-public-ip-per-virtual-machine
+											LoadBalancerBackendAddressPools: []*armcompute.SubResource{
+												{
+													ID: to.StringPtr("/subscriptions/" + s.Subscription + "/resourcegroups/" + s.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + s.LoadBalancerName + "/backendAddressPools/" + s.LoadBalancerBackendAddressPool),
+												},
+												{
+													ID: to.StringPtr("/subscriptions/" + s.Subscription + "/resourcegroups/" + s.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + s.LoadBalancerName + "/backendAddressPools/all"),
 												},
 											},
 										},

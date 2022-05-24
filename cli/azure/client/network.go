@@ -6,21 +6,34 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
+	"github.com/edgelesssys/constellation/cli/azure"
 	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 )
 
 type createNetworkInput struct {
-	name         string
-	location     string
-	addressSpace string
+	name             string
+	location         string
+	addressSpace     string
+	nodeAddressSpace string
+	podAddressSpace  string
 }
+
+const (
+	nodeNetworkName     = "nodeNetwork"
+	podNetworkName      = "podNetwork"
+	networkAddressSpace = "10.0.0.0/8"
+	nodeAddressSpace    = "10.9.0.0/16"
+	podAddressSpace     = "10.10.0.0/16"
+)
 
 // CreateVirtualNetwork creates a virtual network.
 func (c *Client) CreateVirtualNetwork(ctx context.Context) error {
 	createNetworkInput := createNetworkInput{
-		name:         "constellation-" + c.uid,
-		location:     c.location,
-		addressSpace: "172.20.0.0/16",
+		name:             "constellation-" + c.uid,
+		location:         c.location,
+		addressSpace:     networkAddressSpace,
+		nodeAddressSpace: nodeAddressSpace,
+		podAddressSpace:  podAddressSpace,
 	}
 
 	poller, err := c.networksAPI.BeginCreateOrUpdate(
@@ -36,9 +49,15 @@ func (c *Client) CreateVirtualNetwork(ctx context.Context) error {
 				},
 				Subnets: []*armnetwork.Subnet{
 					{
-						Name: to.StringPtr("default"),
+						Name: to.StringPtr(nodeNetworkName),
 						Properties: &armnetwork.SubnetPropertiesFormat{
-							AddressPrefix: to.StringPtr(createNetworkInput.addressSpace),
+							AddressPrefix: to.StringPtr(createNetworkInput.nodeAddressSpace),
+						},
+					},
+					{
+						Name: to.StringPtr(podNetworkName),
+						Properties: &armnetwork.SubnetPropertiesFormat{
+							AddressPrefix: to.StringPtr(createNetworkInput.podAddressSpace),
 						},
 					},
 				},
@@ -141,29 +160,72 @@ func (c *Client) createNIC(ctx context.Context, name, publicIPAddressID string) 
 		nil
 }
 
-// createPublicIPAddress creates a public IP address.
-// TODO: deprecate as soon as scale sets are available.
-func (c *Client) createPublicIPAddress(ctx context.Context, name string) (string, error) {
+func (c *Client) createPublicIPAddress(ctx context.Context, name string) (*armnetwork.PublicIPAddress, error) {
 	poller, err := c.publicIPAddressesAPI.BeginCreateOrUpdate(
 		ctx, c.resourceGroup, name,
 		armnetwork.PublicIPAddress{
 			Location: to.StringPtr(c.location),
+			SKU: &armnetwork.PublicIPAddressSKU{
+				Name: armnetwork.PublicIPAddressSKUNameStandard.ToPtr(),
+			},
+			Properties: &armnetwork.PublicIPAddressPropertiesFormat{
+				PublicIPAllocationMethod: armnetwork.IPAllocationMethodStatic.ToPtr(),
+			},
 		},
 		nil,
 	)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	pollerResp, err := poller.PollUntilDone(ctx, 30*time.Second)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return *pollerResp.PublicIPAddressesClientCreateOrUpdateResult.PublicIPAddress.ID, nil
+	return &pollerResp.PublicIPAddressesClientCreateOrUpdateResult.PublicIPAddress, nil
 }
 
 // NetworkSecurityGroupInput defines firewall rules to be set.
 type NetworkSecurityGroupInput struct {
 	Ingress cloudtypes.Firewall
 	Egress  cloudtypes.Firewall
+}
+
+// CreateExternalLoadBalancer creates an external load balancer.
+func (c *Client) CreateExternalLoadBalancer(ctx context.Context) error {
+	// First, create a public IP address for the load balancer.
+	publicIPAddress, err := c.createPublicIPAddress(ctx, "loadbalancer-public-ip-"+c.uid)
+	if err != nil {
+		return err
+	}
+
+	// Then, create the load balancer.
+	loadBalancerName := "constellation-load-balancer-" + c.uid
+	loadBalancer := azure.LoadBalancer{
+		Name:          loadBalancerName,
+		Location:      c.location,
+		ResourceGroup: c.resourceGroup,
+		Subscription:  c.subscriptionID,
+		PublicIPID:    *publicIPAddress.ID,
+		UID:           c.uid,
+	}
+	azureLoadBalancer := loadBalancer.Azure()
+
+	poller, err := c.loadBalancersAPI.BeginCreateOrUpdate(
+		ctx, c.resourceGroup, loadBalancerName,
+		azureLoadBalancer,
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = poller.PollUntilDone(ctx, 30*time.Second)
+	if err != nil {
+		return err
+	}
+	c.loadBalancerName = loadBalancerName
+
+	c.loadBalancerPubIP = *publicIPAddress.Properties.IPAddress
+	return nil
 }

@@ -179,7 +179,19 @@ func getIPsFromConfig(stat statec.ConstellationState, config configc.Config) ([]
 	if err != nil {
 		return nil, err
 	}
-	return append(coordinators.PublicIPs(), nodes.PublicIPs()...), nil
+
+	var ips []string
+	// only deploy to non empty public IPs
+	for _, ip := range append(coordinators.PublicIPs(), nodes.PublicIPs()...) {
+		if ip != "" {
+			ips = append(ips, ip)
+		}
+	}
+	if len(ips) == 0 {
+		return nil, fmt.Errorf("no public IPs found in statefile")
+	}
+
+	return ips, nil
 }
 
 func init() {

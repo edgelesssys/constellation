@@ -38,7 +38,7 @@ func TestGetNextNodeIP(t *testing.T) {
 	require := require.New(t)
 
 	fs := afero.NewMemMapFs()
-	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
+	core, err := NewCore(&stubVPN{}, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 	require.NoError(err)
 	require.NoError(core.InitializeStoreIPs())
 
@@ -82,7 +82,7 @@ func TestSwitchToPersistentStore(t *testing.T) {
 
 	storeFactory := &fakeStoreFactory{}
 	fs := afero.NewMemMapFs()
-	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, storeFactory, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
+	core, err := NewCore(&stubVPN{}, nil, nil, nil, zaptest.NewLogger(t), nil, storeFactory, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 	require.NoError(core.store.Put("test", []byte("test")))
 	require.NoError(err)
 
@@ -97,7 +97,7 @@ func TestGetIDs(t *testing.T) {
 	require := require.New(t)
 
 	fs := afero.NewMemMapFs()
-	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
+	core, err := NewCore(&stubVPN{}, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 	require.NoError(err)
 
 	_, _, err = core.GetIDs(nil)
@@ -122,7 +122,7 @@ func TestNotifyNodeHeartbeat(t *testing.T) {
 	require := require.New(t)
 
 	fs := afero.NewMemMapFs()
-	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
+	core, err := NewCore(&stubVPN{}, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 	require.NoError(err)
 
 	const ip = "192.0.2.1"
@@ -136,7 +136,7 @@ func TestDeriveKey(t *testing.T) {
 	require := require.New(t)
 
 	fs := afero.NewMemMapFs()
-	core, err := NewCore(&stubVPN{}, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
+	core, err := NewCore(&stubVPN{}, nil, nil, nil, zaptest.NewLogger(t), nil, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 	require.NoError(err)
 
 	// error when no kms is set up
@@ -214,7 +214,7 @@ func TestInitialize(t *testing.T) {
 					VPNPrivKey: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7},
 				}).ToFile(fileHandler))
 			}
-			core, err := NewCore(&stubVPN{}, &clusterStub{}, &ProviderMetadataFake{}, nil, nil, nil, nil, zaptest.NewLogger(t), openTPM, &fakeStoreFactory{}, fileHandler, user.NewLinuxUserManagerFake(fs))
+			core, err := NewCore(&stubVPN{}, &clusterStub{}, &ProviderMetadataFake{}, nil, zaptest.NewLogger(t), openTPM, &fakeStoreFactory{}, fileHandler, user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 			core.initialVPNPeersRetriever = fakeInitializeVPNPeersRetriever
 			// prepare store to emulate initialized KMS
@@ -272,7 +272,7 @@ func TestPersistNodeState(t *testing.T) {
 				require.NoError(err)
 				require.NoError(file.Close())
 			}
-			core, err := NewCore(tc.vpn, nil, nil, nil, nil, nil, nil, zaptest.NewLogger(t), nil, nil, fileHandler, user.NewLinuxUserManagerFake(fs))
+			core, err := NewCore(tc.vpn, nil, nil, nil, zaptest.NewLogger(t), nil, nil, fileHandler, user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 			err = core.PersistNodeState(role.Coordinator, "192.0.2.1", []byte("owner-id"), []byte("cluster-id"))
 			if tc.wantErr {

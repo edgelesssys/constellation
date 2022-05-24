@@ -104,7 +104,6 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool) Kube
 					"profiling": "false",
 				},
 			},
-			ControlPlaneEndpoint: "127.0.0.1:16443",
 		},
 		// warning: this config is applied to every node in the cluster!
 		KubeletConfiguration: kubeletconf.KubeletConfiguration{
@@ -122,6 +121,18 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool) Kube
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: kubeletconf.SchemeGroupVersion.String(),
 				Kind:       "KubeletConfiguration",
+			},
+			RegisterWithTaints: []corev1.Taint{
+				{
+					Key:    "node.cloudprovider.kubernetes.io/uninitialized",
+					Value:  "true",
+					Effect: corev1.TaintEffectPreferNoSchedule,
+				},
+				{
+					Key:    "node.cilium.io/agent-not-ready",
+					Value:  "true",
+					Effect: corev1.TaintEffectPreferNoSchedule,
+				},
 			},
 		},
 	}
@@ -143,63 +154,6 @@ func (c *CoreOSConfiguration) JoinConfiguration(externalCloudProvider bool) Kube
 				KubeletExtraArgs: map[string]string{
 					"cloud-provider": cloudProvider,
 				},
-			},
-			Discovery: kubeadm.Discovery{
-				BootstrapToken: &kubeadm.BootstrapTokenDiscovery{},
-			},
-		},
-		KubeletConfiguration: kubeletconf.KubeletConfiguration{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: kubeletconf.SchemeGroupVersion.String(),
-				Kind:       "KubeletConfiguration",
-			},
-		},
-	}
-}
-
-type AWSConfiguration struct{}
-
-func (a *AWSConfiguration) InitConfiguration() KubeadmInitYAML {
-	return KubeadmInitYAML{
-		InitConfiguration: kubeadm.InitConfiguration{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: kubeadm.SchemeGroupVersion.String(),
-				Kind:       "InitConfiguration",
-			},
-			NodeRegistration: kubeadm.NodeRegistrationOptions{
-				CRISocket:             "/run/containerd/containerd.sock",
-				IgnorePreflightErrors: []string{"SystemVerification"},
-			},
-			LocalAPIEndpoint: kubeadm.APIEndpoint{BindPort: bindPort},
-		},
-		ClusterConfiguration: kubeadm.ClusterConfiguration{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: kubeadm.SchemeGroupVersion.String(),
-				Kind:       "ClusterConfiguration",
-			},
-			APIServer: kubeadm.APIServer{
-				CertSANs: []string{"10.118.0.1"},
-			},
-		},
-		KubeletConfiguration: kubeletconf.KubeletConfiguration{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: kubeletconf.SchemeGroupVersion.String(),
-				Kind:       "KubeletConfiguration",
-			},
-		},
-	}
-}
-
-func (a *AWSConfiguration) JoinConfiguration() KubeadmJoinYAML {
-	return KubeadmJoinYAML{
-		JoinConfiguration: kubeadm.JoinConfiguration{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: kubeadm.SchemeGroupVersion.String(),
-				Kind:       "JoinConfiguration",
-			},
-			NodeRegistration: kubeadm.NodeRegistrationOptions{
-				CRISocket:             "/run/containerd/containerd.sock",
-				IgnorePreflightErrors: []string{"SystemVerification"},
 			},
 			Discovery: kubeadm.Discovery{
 				BootstrapToken: &kubeadm.BootstrapTokenDiscovery{},
@@ -276,8 +230,25 @@ func (k *KubeadmInitYAML) SetNodeName(nodeName string) {
 	k.InitConfiguration.NodeRegistration.Name = nodeName
 }
 
+// SetCertSANs sets the SANs for the certificate.
+func (k *KubeadmInitYAML) SetCertSANs(certSANs []string) {
+	for _, certSAN := range certSANs {
+		if certSAN == "" {
+			continue
+		}
+		k.ClusterConfiguration.APIServer.CertSANs = append(k.ClusterConfiguration.APIServer.CertSANs, certSAN)
+	}
+}
+
 func (k *KubeadmInitYAML) SetApiServerAdvertiseAddress(apiServerAdvertiseAddress string) {
 	k.InitConfiguration.LocalAPIEndpoint.AdvertiseAddress = apiServerAdvertiseAddress
+}
+
+// SetControlPlaneEndpoint sets the control plane endpoint if controlPlaneEndpoint is not empty.
+func (k *KubeadmInitYAML) SetControlPlaneEndpoint(controlPlaneEndpoint string) {
+	if controlPlaneEndpoint != "" {
+		k.ClusterConfiguration.ControlPlaneEndpoint = controlPlaneEndpoint
+	}
 }
 
 func (k *KubeadmInitYAML) SetServiceCIDR(serviceCIDR string) {

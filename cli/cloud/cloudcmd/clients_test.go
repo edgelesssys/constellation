@@ -24,6 +24,7 @@ type fakeAzureClient struct {
 	subscriptionID       string
 	tenantID             string
 	subnetID             string
+	loadBalancerName     string
 	coordinatorsScaleSet string
 	nodesScaleSet        string
 	networkSecurityGroup string
@@ -74,6 +75,11 @@ func (c *fakeAzureClient) CreateResourceGroup(ctx context.Context) error {
 
 func (c *fakeAzureClient) CreateVirtualNetwork(ctx context.Context) error {
 	c.subnetID = "subnet"
+	return nil
+}
+
+func (c *fakeAzureClient) CreateExternalLoadBalancer(ctx context.Context) error {
+	c.loadBalancerName = "loadBalancer"
 	return nil
 }
 
@@ -152,6 +158,7 @@ type stubAzureClient struct {
 	createResourceGroupErr       error
 	createVirtualNetworkErr      error
 	createSecurityGroupErr       error
+	createLoadBalancerErr        error
 	createInstancesErr           error
 	createServicePrincipalErr    error
 	terminateResourceGroupErr    error
@@ -164,6 +171,10 @@ func (c *stubAzureClient) GetState() (state.ConstellationState, error) {
 
 func (c *stubAzureClient) SetState(state.ConstellationState) error {
 	return c.setStateErr
+}
+
+func (c *stubAzureClient) CreateExternalLoadBalancer(ctx context.Context) error {
+	return c.createLoadBalancerErr
 }
 
 func (c *stubAzureClient) CreateResourceGroup(ctx context.Context) error {
@@ -271,11 +282,9 @@ func (c *fakeGcpClient) CreateFirewall(ctx context.Context, input gcpcl.Firewall
 	if c.network == "" {
 		return errors.New("client has not network")
 	}
-	var firewalls []string
 	for _, rule := range input.Ingress {
-		firewalls = append(firewalls, rule.Name)
+		c.firewalls = append(c.firewalls, rule.Name)
 	}
-	c.firewalls = firewalls
 	return nil
 }
 

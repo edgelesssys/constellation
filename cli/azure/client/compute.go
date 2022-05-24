@@ -13,13 +13,14 @@ import (
 func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput) error {
 	// Create nodes scale set
 	createNodesInput := CreateScaleSetInput{
-		Name:                 "constellation-scale-set-nodes-" + c.uid,
-		NamePrefix:           c.name + "-worker-" + c.uid + "-",
-		Count:                input.CountNodes,
-		InstanceType:         input.InstanceType,
-		StateDiskSizeGB:      int32(input.StateDiskSizeGB),
-		Image:                input.Image,
-		UserAssingedIdentity: input.UserAssingedIdentity,
+		Name:                           "constellation-scale-set-nodes-" + c.uid,
+		NamePrefix:                     c.name + "-worker-" + c.uid + "-",
+		Count:                          input.CountNodes,
+		InstanceType:                   input.InstanceType,
+		StateDiskSizeGB:                int32(input.StateDiskSizeGB),
+		Image:                          input.Image,
+		UserAssingedIdentity:           input.UserAssingedIdentity,
+		LoadBalancerBackendAddressPool: azure.BackendAddressPoolWorkerName + "-" + c.uid,
 	}
 
 	if err := c.createScaleSet(ctx, createNodesInput); err != nil {
@@ -30,13 +31,14 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 
 	// Create coordinator scale set
 	createCoordinatorsInput := CreateScaleSetInput{
-		Name:                 "constellation-scale-set-coordinators-" + c.uid,
-		NamePrefix:           c.name + "-control-plane-" + c.uid + "-",
-		Count:                input.CountCoordinators,
-		InstanceType:         input.InstanceType,
-		StateDiskSizeGB:      int32(input.StateDiskSizeGB),
-		Image:                input.Image,
-		UserAssingedIdentity: input.UserAssingedIdentity,
+		Name:                           "constellation-scale-set-coordinators-" + c.uid,
+		NamePrefix:                     c.name + "-control-plane-" + c.uid + "-",
+		Count:                          input.CountCoordinators,
+		InstanceType:                   input.InstanceType,
+		StateDiskSizeGB:                int32(input.StateDiskSizeGB),
+		Image:                          input.Image,
+		UserAssingedIdentity:           input.UserAssingedIdentity,
+		LoadBalancerBackendAddressPool: azure.BackendAddressPoolControlPlaneName + "-" + c.uid,
 	}
 
 	if err := c.createScaleSet(ctx, createCoordinatorsInput); err != nil {
@@ -57,6 +59,14 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		return err
 	}
 	c.coordinators = instances
+
+	// Set the load balancer public IP in the first coordinator
+	coord, ok := c.coordinators["0"]
+	if !ok {
+		return errors.New("coordinator 0 not found")
+	}
+	coord.PublicIP = c.loadBalancerPubIP
+	c.coordinators["0"] = coord
 
 	return nil
 }
@@ -119,13 +129,13 @@ func (c *Client) CreateInstancesVMs(ctx context.Context, input CreateInstancesIn
 // TODO: deprecate as soon as scale sets are available.
 func (c *Client) createInstanceVM(ctx context.Context, input azure.VMInstance) (azure.Instance, error) {
 	pubIPName := input.Name + "-pubIP"
-	pubIPID, err := c.createPublicIPAddress(ctx, pubIPName)
+	pubIP, err := c.createPublicIPAddress(ctx, pubIPName)
 	if err != nil {
 		return azure.Instance{}, err
 	}
 
 	nicName := input.Name + "-NIC"
-	privIP, nicID, err := c.createNIC(ctx, nicName, pubIPID)
+	privIP, nicID, err := c.createNIC(ctx, nicName, *pubIP.ID)
 	if err != nil {
 		return azure.Instance{}, err
 	}
@@ -167,18 +177,22 @@ func (c *Client) createScaleSet(ctx context.Context, input CreateScaleSetInput) 
 		return err
 	}
 	scaleSet := azure.ScaleSet{
-		Name:                 input.Name,
-		NamePrefix:           input.NamePrefix,
-		Location:             c.location,
-		InstanceType:         input.InstanceType,
-		StateDiskSizeGB:      input.StateDiskSizeGB,
-		Count:                int64(input.Count),
-		Username:             "constellation",
-		SubnetID:             c.subnetID,
-		NetworkSecurityGroup: c.networkSecurityGroup,
-		Image:                input.Image,
-		Password:             pw,
-		UserAssignedIdentity: input.UserAssingedIdentity,
+		Name:                           input.Name,
+		NamePrefix:                     input.NamePrefix,
+		Location:                       c.location,
+		InstanceType:                   input.InstanceType,
+		StateDiskSizeGB:                input.StateDiskSizeGB,
+		Count:                          int64(input.Count),
+		Username:                       "constellation",
+		SubnetID:                       c.subnetID,
+		NetworkSecurityGroup:           c.networkSecurityGroup,
+		Image:                          input.Image,
+		Password:                       pw,
+		UserAssignedIdentity:           input.UserAssingedIdentity,
+		Subscription:                   c.subscriptionID,
+		ResourceGroup:                  c.resourceGroup,
+		LoadBalancerName:               c.loadBalancerName,
+		LoadBalancerBackendAddressPool: input.LoadBalancerBackendAddressPool,
 	}.Azure()
 
 	poller, err := c.scaleSetsAPI.BeginCreateOrUpdate(
@@ -242,13 +256,14 @@ func (c *Client) getInstanceIPs(ctx context.Context, scaleSet string, count int)
 
 // CreateScaleSetInput is the input for a CreateScaleSet operation.
 type CreateScaleSetInput struct {
-	Name                 string
-	NamePrefix           string
-	Count                int
-	InstanceType         string
-	StateDiskSizeGB      int32
-	Image                string
-	UserAssingedIdentity string
+	Name                           string
+	NamePrefix                     string
+	Count                          int
+	InstanceType                   string
+	StateDiskSizeGB                int32
+	Image                          string
+	UserAssingedIdentity           string
+	LoadBalancerBackendAddressPool string
 }
 
 // CreateResourceGroup creates a resource group.

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,15 +21,15 @@ func TestDiscoverDebugIPs(t *testing.T) {
 	}{
 		"disovery works": {
 			meta: stubMetadata{
-				listRes: []core.Instance{
+				listRes: []cloudtypes.Instance{
 					{
-						IPs: []string{"192.0.2.0"},
+						PrivateIPs: []string{"192.0.2.0"},
 					},
 					{
-						IPs: []string{"192.0.2.1"},
+						PrivateIPs: []string{"192.0.2.1"},
 					},
 					{
-						IPs: []string{"192.0.2.2"},
+						PrivateIPs: []string{"192.0.2.2"},
 					},
 				},
 			},
@@ -75,7 +75,7 @@ func TestFetchSSHKeys(t *testing.T) {
 	}{
 		"fetch works": {
 			meta: stubMetadata{
-				selfRes: core.Instance{
+				selfRes: cloudtypes.Instance{
 					Name:       "name",
 					ProviderID: "provider-id",
 					SSHKeys:    map[string][]string{"bob": {"ssh-rsa bobskey"}},
@@ -117,24 +117,24 @@ func TestFetchSSHKeys(t *testing.T) {
 }
 
 type stubMetadata struct {
-	listRes        []core.Instance
+	listRes        []cloudtypes.Instance
 	listErr        error
-	selfRes        core.Instance
+	selfRes        cloudtypes.Instance
 	selfErr        error
-	getInstanceRes core.Instance
+	getInstanceRes cloudtypes.Instance
 	getInstanceErr error
 	supportedRes   bool
 }
 
-func (m *stubMetadata) List(ctx context.Context) ([]core.Instance, error) {
+func (m *stubMetadata) List(ctx context.Context) ([]cloudtypes.Instance, error) {
 	return m.listRes, m.listErr
 }
 
-func (m *stubMetadata) Self(ctx context.Context) (core.Instance, error) {
+func (m *stubMetadata) Self(ctx context.Context) (cloudtypes.Instance, error) {
 	return m.selfRes, m.selfErr
 }
 
-func (m *stubMetadata) GetInstance(ctx context.Context, providerID string) (core.Instance, error) {
+func (m *stubMetadata) GetInstance(ctx context.Context, providerID string) (cloudtypes.Instance, error) {
 	return m.getInstanceRes, m.getInstanceErr
 }
 

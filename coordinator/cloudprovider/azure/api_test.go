@@ -174,3 +174,121 @@ func (a *stubTagsAPI) CreateOrUpdateAtScope(ctx context.Context, scope string, p
 func (a *stubTagsAPI) UpdateAtScope(ctx context.Context, scope string, parameters armresources.TagsPatchResource, options *armresources.TagsClientUpdateAtScopeOptions) (armresources.TagsClientUpdateAtScopeResponse, error) {
 	return armresources.TagsClientUpdateAtScopeResponse{}, a.updateAtScopeErr
 }
+
+type stubSecurityGroupsClientListPager struct {
+	pagesCounter int
+	pages        [][]*armnetwork.SecurityGroup
+}
+
+func (p *stubSecurityGroupsClientListPager) NextPage(ctx context.Context) bool {
+	return p.pagesCounter < len(p.pages)
+}
+
+func (p *stubSecurityGroupsClientListPager) PageResponse() armnetwork.SecurityGroupsClientListResponse {
+	if p.pagesCounter >= len(p.pages) {
+		return armnetwork.SecurityGroupsClientListResponse{}
+	}
+	p.pagesCounter = p.pagesCounter + 1
+	return armnetwork.SecurityGroupsClientListResponse{
+		SecurityGroupsClientListResult: armnetwork.SecurityGroupsClientListResult{
+			SecurityGroupListResult: armnetwork.SecurityGroupListResult{
+				Value: p.pages[p.pagesCounter-1],
+			},
+		},
+	}
+}
+
+type stubSecurityGroupsAPI struct {
+	listPages [][]*armnetwork.SecurityGroup
+}
+
+func (a *stubSecurityGroupsAPI) List(resourceGroupName string, options *armnetwork.SecurityGroupsClientListOptions) securityGroupsClientListPager {
+	return &stubSecurityGroupsClientListPager{
+		pages: a.listPages,
+	}
+}
+
+type stubVirtualNetworksClientListPager struct {
+	pagesCounter int
+	pages        [][]*armnetwork.VirtualNetwork
+}
+
+func (p *stubVirtualNetworksClientListPager) NextPage(ctx context.Context) bool {
+	return p.pagesCounter < len(p.pages)
+}
+
+func (p *stubVirtualNetworksClientListPager) PageResponse() armnetwork.VirtualNetworksClientListResponse {
+	if p.pagesCounter >= len(p.pages) {
+		return armnetwork.VirtualNetworksClientListResponse{}
+	}
+	p.pagesCounter = p.pagesCounter + 1
+	return armnetwork.VirtualNetworksClientListResponse{
+		VirtualNetworksClientListResult: armnetwork.VirtualNetworksClientListResult{
+			VirtualNetworkListResult: armnetwork.VirtualNetworkListResult{
+				Value: p.pages[p.pagesCounter-1],
+			},
+		},
+	}
+}
+
+type stubVirtualNetworksAPI struct {
+	listPages [][]*armnetwork.VirtualNetwork
+}
+
+func (a *stubVirtualNetworksAPI) List(resourceGroupName string, options *armnetwork.VirtualNetworksClientListOptions) virtualNetworksClientListPager {
+	return &stubVirtualNetworksClientListPager{
+		pages: a.listPages,
+	}
+}
+
+type stubLoadBalancersClientListPager struct {
+	pagesCounter int
+	pages        [][]*armnetwork.LoadBalancer
+}
+
+func (p *stubLoadBalancersClientListPager) NextPage(ctx context.Context) bool {
+	return p.pagesCounter < len(p.pages)
+}
+
+func (p *stubLoadBalancersClientListPager) PageResponse() armnetwork.LoadBalancersClientListResponse {
+	if p.pagesCounter >= len(p.pages) {
+		return armnetwork.LoadBalancersClientListResponse{}
+	}
+	p.pagesCounter = p.pagesCounter + 1
+	return armnetwork.LoadBalancersClientListResponse{
+		LoadBalancersClientListResult: armnetwork.LoadBalancersClientListResult{
+			LoadBalancerListResult: armnetwork.LoadBalancerListResult{
+				Value: p.pages[p.pagesCounter-1],
+			},
+		},
+	}
+}
+
+type stubLoadBalancersAPI struct {
+	listPages [][]*armnetwork.LoadBalancer
+}
+
+func (a *stubLoadBalancersAPI) List(resourceGroupName string, options *armnetwork.LoadBalancersClientListOptions) loadBalancersClientListPager {
+	return &stubLoadBalancersClientListPager{
+		pages: a.listPages,
+	}
+}
+
+type stubPublicIPAddressesAPI struct {
+	getResponse                                      armnetwork.PublicIPAddressesClientGetResponse
+	getVirtualMachineScaleSetPublicIPAddressResponse armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResponse
+	getErr                                           error
+}
+
+func (a *stubPublicIPAddressesAPI) Get(ctx context.Context, resourceGroupName string, publicIPAddressName string,
+	options *armnetwork.PublicIPAddressesClientGetOptions,
+) (armnetwork.PublicIPAddressesClientGetResponse, error) {
+	return a.getResponse, a.getErr
+}
+
+func (a *stubPublicIPAddressesAPI) GetVirtualMachineScaleSetPublicIPAddress(ctx context.Context, resourceGroupName string, virtualMachineScaleSetName string,
+	virtualmachineIndex string, networkInterfaceName string, IPConfigurationName string, publicIPAddressName string,
+	options *armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressOptions,
+) (armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResponse, error) {
+	return a.getVirtualMachineScaleSetPublicIPAddressResponse, a.getErr
+}

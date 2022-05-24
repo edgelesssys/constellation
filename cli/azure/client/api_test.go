@@ -48,6 +48,29 @@ func (a stubNetworksAPI) BeginCreateOrUpdate(ctx context.Context, resourceGroupN
 	return a.stubResponse, a.createErr
 }
 
+type stubLoadBalancersAPI struct {
+	createErr    error
+	stubResponse stubLoadBalancersClientCreateOrUpdatePollerResponse
+}
+
+type stubLoadBalancersClientCreateOrUpdatePollerResponse struct {
+	pollResponse armnetwork.LoadBalancersClientCreateOrUpdateResponse
+	pollErr      error
+}
+
+func (r stubLoadBalancersClientCreateOrUpdatePollerResponse) PollUntilDone(ctx context.Context, freq time.Duration,
+) (armnetwork.LoadBalancersClientCreateOrUpdateResponse, error) {
+	return r.pollResponse, r.pollErr
+}
+
+func (a stubLoadBalancersAPI) BeginCreateOrUpdate(ctx context.Context, resourceGroupName string,
+	loadBalancerName string, parameters armnetwork.LoadBalancer,
+	options *armnetwork.LoadBalancersClientBeginCreateOrUpdateOptions) (
+	loadBalancersClientCreateOrUpdatePollerResponse, error,
+) {
+	return a.stubResponse, a.createErr
+}
+
 type stubNetworkSecurityGroupsCreateOrUpdatePollerResponse struct {
 	armnetwork.SecurityGroupsClientCreateOrUpdatePollerResponse
 	pollerErr error
@@ -143,23 +166,17 @@ func (a stubScaleSetsAPI) BeginCreateOrUpdate(ctx context.Context, resourceGroup
 	return a.stubResponse, a.createErr
 }
 
-// TODO: deprecate as soon as scale sets are available.
 type stubPublicIPAddressesAPI struct {
-	// TODO: deprecate as soon as scale sets are available.
-	createErr error
-	// TODO: deprecate as soon as scale sets are available.
-	getErr error
-	// TODO: deprecate as soon as scale sets are available.
+	createErr          error
+	getErr             error
 	stubCreateResponse stubPublicIPAddressesClientCreateOrUpdatePollerResponse
 }
 
-// TODO: deprecate as soon as scale sets are available.
 type stubPublicIPAddressesClientCreateOrUpdatePollerResponse struct {
 	armnetwork.PublicIPAddressesClientCreateOrUpdatePollerResponse
 	pollErr error
 }
 
-// TODO: deprecate as soon as scale sets are available.
 func (r stubPublicIPAddressesClientCreateOrUpdatePollerResponse) PollUntilDone(ctx context.Context, freq time.Duration) (
 	armnetwork.PublicIPAddressesClientCreateOrUpdateResponse, error,
 ) {
@@ -167,6 +184,9 @@ func (r stubPublicIPAddressesClientCreateOrUpdatePollerResponse) PollUntilDone(c
 		PublicIPAddressesClientCreateOrUpdateResult: armnetwork.PublicIPAddressesClientCreateOrUpdateResult{
 			PublicIPAddress: armnetwork.PublicIPAddress{
 				ID: to.StringPtr("pubIP-id"),
+				Properties: &armnetwork.PublicIPAddressPropertiesFormat{
+					IPAddress: to.StringPtr("192.0.2.1"),
+				},
 			},
 		},
 	}, r.pollErr
@@ -206,7 +226,6 @@ func (a stubPublicIPAddressesAPI) ListVirtualMachineScaleSetVMPublicIPAddresses(
 	return &stubPublicIPAddressesListVirtualMachineScaleSetVMPublicIPAddressesPager{pagesCounter: 0, PagesMax: 1}
 }
 
-// TODO: deprecate as soon as scale sets are available.
 func (a stubPublicIPAddressesAPI) BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, publicIPAddressName string,
 	parameters armnetwork.PublicIPAddress, options *armnetwork.PublicIPAddressesClientBeginCreateOrUpdateOptions) (
 	publicIPAddressesClientCreateOrUpdatePollerResponse, error,
@@ -214,7 +233,6 @@ func (a stubPublicIPAddressesAPI) BeginCreateOrUpdate(ctx context.Context, resou
 	return a.stubCreateResponse, a.createErr
 }
 
-// TODO: deprecate as soon as scale sets are available.
 func (a stubPublicIPAddressesAPI) Get(ctx context.Context, resourceGroupName string, publicIPAddressName string, options *armnetwork.PublicIPAddressesClientGetOptions) (
 	armnetwork.PublicIPAddressesClientGetResponse, error,
 ) {
@@ -230,11 +248,9 @@ func (a stubPublicIPAddressesAPI) Get(ctx context.Context, resourceGroupName str
 }
 
 type stubNetworkInterfacesAPI struct {
-	getErr error
-	// TODO: deprecate as soon as scale sets are available
+	getErr    error
 	createErr error
-	// TODO: deprecate as soon as scale sets are available
-	stubResp stubInterfacesClientCreateOrUpdatePollerResponse
+	stubResp  stubInterfacesClientCreateOrUpdatePollerResponse
 }
 
 func (a stubNetworkInterfacesAPI) GetVirtualMachineScaleSetNetworkInterface(ctx context.Context, resourceGroupName string,

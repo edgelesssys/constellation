@@ -8,6 +8,7 @@ import (
 
 	compute "cloud.google.com/go/compute/apiv1"
 	"github.com/edgelesssys/constellation/coordinator/cloudprovider"
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/core"
 	"google.golang.org/api/iterator"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
@@ -16,9 +17,12 @@ import (
 
 const gcpSSHMetadataKey = "ssh-keys"
 
+var providerIDRegex = regexp.MustCompile(`^gce://([^/]+)/([^/]+)/([^/]+)$`)
+
 // Client implements the gcp.API interface.
 type Client struct {
 	instanceAPI
+	subnetworkAPI
 	metadataAPI
 }
 
@@ -28,11 +32,15 @@ func NewClient(ctx context.Context) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{instanceAPI: &instanceClient{insAPI}, metadataAPI: &metadataClient{}}, nil
+	subnetAPI, err := compute.NewSubnetworksRESTClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &Client{instanceAPI: &instanceClient{insAPI}, subnetworkAPI: &subnetworkClient{subnetAPI}, metadataAPI: &metadataClient{}}, nil
 }
 
 // RetrieveInstances returns list of instances including their ips and metadata.
-func (c *Client) RetrieveInstances(ctx context.Context, project, zone string) ([]core.Instance, error) {
+func (c *Client) RetrieveInstances(ctx context.Context, project, zone string) ([]cloudtypes.Instance, error) {
 	uid, err := c.uid()
 	if err != nil {
 		return nil, err
@@ -43,7 +51,7 @@ func (c *Client) RetrieveInstances(ctx context.Context, project, zone string) ([
 	}
 	instanceIterator := c.instanceAPI.List(ctx, req)
 
-	instances := []core.Instance{}
+	instances := []cloudtypes.Instance{}
 	for {
 		resp, err := instanceIterator.Next()
 		if err == iterator.Done {
@@ -68,10 +76,10 @@ func (c *Client) RetrieveInstances(ctx context.Context, project, zone string) ([
 }
 
 // RetrieveInstance returns a an instance including ips and metadata.
-func (c *Client) RetrieveInstance(ctx context.Context, project, zone, instanceName string) (core.Instance, error) {
+func (c *Client) RetrieveInstance(ctx context.Context, project, zone, instanceName string) (cloudtypes.Instance, error) {
 	instance, err := c.getComputeInstance(ctx, project, zone, instanceName)
 	if err != nil {
-		return core.Instance{}, err
+		return cloudtypes.Instance{}, err
 	}
 
 	return convertToCoreInstance(instance, project, zone)
@@ -156,8 +164,45 @@ func (c *Client) UnsetInstanceMetadata(ctx context.Context, project, zone, insta
 	return nil
 }
 
+// RetrieveSubnetworkAliasCIDR returns the alias CIDR of the subnetwork specified by project, zone and subnetworkName.
+func (c *Client) RetrieveSubnetworkAliasCIDR(ctx context.Context, project, zone, instanceName string) (string, error) {
+	instance, err := c.getComputeInstance(ctx, project, zone, instanceName)
+	if err != nil {
+		return "", err
+	}
+	if instance == nil || instance.NetworkInterfaces == nil || len(instance.NetworkInterfaces) == 0 || instance.NetworkInterfaces[0].Subnetwork == nil {
+		return "", fmt.Errorf("retrieving instance network interfaces failed")
+	}
+	subnetworkURL := *instance.NetworkInterfaces[0].Subnetwork
+	subnetworkURLFragments := strings.Split(subnetworkURL, "/")
+	subnetworkName := subnetworkURLFragments[len(subnetworkURLFragments)-1]
+
+	// convert:
+	//           zone --> region
+	// europe-west3-b --> europe-west3
+	regionParts := strings.Split(zone, "-")
+	region := strings.TrimSuffix(zone, "-"+regionParts[len(regionParts)-1])
+
+	req := &computepb.GetSubnetworkRequest{
+		Project:    project,
+		Region:     region,
+		Subnetwork: subnetworkName,
+	}
+	subnetwork, err := c.subnetworkAPI.Get(ctx, req)
+	if err != nil {
+		return "", fmt.Errorf("retrieving subnetwork alias CIDR failed: %w", err)
+	}
+	if subnetwork == nil || subnetwork.IpCidrRange == nil || *subnetwork.IpCidrRange == "" {
+		return "", fmt.Errorf("retrieving subnetwork alias CIDR returned invalid results")
+	}
+	return *subnetwork.IpCidrRange, nil
+}
+
 // Close closes the instanceAPI client.
 func (c *Client) Close() error {
+	if err := c.subnetworkAPI.Close(); err != nil {
+		return err
+	}
 	return c.instanceAPI.Close()
 }
 
@@ -199,14 +244,48 @@ func (c *Client) uid() (string, error) {
 	return uid, nil
 }
 
-// extractIPs extracts private interface IPs from a list of interfaces.
-func extractIPs(interfaces []*computepb.NetworkInterface) []string {
+// extractPrivateIPs extracts private interface IPs from a list of interfaces.
+func extractPrivateIPs(interfaces []*computepb.NetworkInterface) []string {
 	ips := []string{}
 	for _, interf := range interfaces {
 		if interf == nil || interf.NetworkIP == nil {
 			continue
 		}
 		ips = append(ips, *interf.NetworkIP)
+	}
+	return ips
+}
+
+// extractPublicIPs extracts public interface IPs from a list of interfaces.
+func extractPublicIPs(interfaces []*computepb.NetworkInterface) []string {
+	ips := []string{}
+	for _, interf := range interfaces {
+		if interf == nil || interf.AccessConfigs == nil {
+			continue
+		}
+		for _, accessConfig := range interf.AccessConfigs {
+			if accessConfig == nil || accessConfig.NatIP == nil {
+				continue
+			}
+			ips = append(ips, *accessConfig.NatIP)
+		}
+	}
+	return ips
+}
+
+// extractAliasIPRanges extracts alias interface IPs from a list of interfaces.
+func extractAliasIPRanges(interfaces []*computepb.NetworkInterface) []string {
+	ips := []string{}
+	for _, interf := range interfaces {
+		if interf == nil || interf.AliasIpRanges == nil {
+			continue
+		}
+		for _, aliasIP := range interf.AliasIpRanges {
+			if aliasIP == nil || aliasIP.IpCidrRange == nil {
+				continue
+			}
+			ips = append(ips, *aliasIP.IpCidrRange)
+		}
 	}
 	return ips
 }
@@ -239,17 +318,19 @@ func extractSSHKeys(metadata map[string]string) map[string][]string {
 }
 
 // convertToCoreInstance converts a *computepb.Instance to a core.Instance.
-func convertToCoreInstance(in *computepb.Instance, project string, zone string) (core.Instance, error) {
+func convertToCoreInstance(in *computepb.Instance, project string, zone string) (cloudtypes.Instance, error) {
 	if in.Name == nil {
-		return core.Instance{}, fmt.Errorf("retrieving instance from compute API client returned invalid instance Name: %v", in.Name)
+		return cloudtypes.Instance{}, fmt.Errorf("retrieving instance from compute API client returned invalid instance Name: %v", in.Name)
 	}
 	metadata := extractInstanceMetadata(in.Metadata, "", false)
-	return core.Instance{
-		Name:       *in.Name,
-		ProviderID: joinProviderID(project, zone, *in.Name),
-		Role:       cloudprovider.ExtractRole(metadata),
-		IPs:        extractIPs(in.NetworkInterfaces),
-		SSHKeys:    extractSSHKeys(metadata),
+	return cloudtypes.Instance{
+		Name:          *in.Name,
+		ProviderID:    joinProviderID(project, zone, *in.Name),
+		Role:          cloudprovider.ExtractRole(metadata),
+		PrivateIPs:    extractPrivateIPs(in.NetworkInterfaces),
+		PublicIPs:     extractPublicIPs(in.NetworkInterfaces),
+		AliasIPRanges: extractAliasIPRanges(in.NetworkInterfaces),
+		SSHKeys:       extractSSHKeys(metadata),
 	}, nil
 }
 
@@ -262,9 +343,7 @@ func joinProviderID(project, zone, instanceName string) string {
 // splitProviderID splits a provider's id into core components.
 // A providerID is build after the schema 'gce://<project-id>/<zone>/<instance-name>'
 func splitProviderID(providerID string) (project, zone, instance string, err error) {
-	// providerIDregex is a regex matching a gce providerID with each part of the URI being a submatch.
-	providerIDregex := regexp.MustCompile(`^gce://([^/]+)/([^/]+)/([^/]+)$`)
-	matches := providerIDregex.FindStringSubmatch(providerID)
+	matches := providerIDRegex.FindStringSubmatch(providerID)
 	if len(matches) != 4 {
 		return "", "", "", fmt.Errorf("error splitting providerID: %v", providerID)
 	}

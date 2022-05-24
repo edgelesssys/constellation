@@ -39,6 +39,6 @@ type Core interface {
 
 	CreateSSHUsers([]ssh.UserKey) error
 
-	InitCluster(autoscalingNodeGroups []string, cloudServiceAccountURI string, masterSecret []byte) ([]byte, error)
-	JoinCluster(joinToken *kubeadm.BootstrapTokenDiscovery, certificateKey string, role role.Role) error
+	InitCluster(ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI string, masterSecret []byte) ([]byte, error)
+	JoinCluster(ctx context.Context, joinToken *kubeadm.BootstrapTokenDiscovery, certificateKey string, role role.Role) error
 }

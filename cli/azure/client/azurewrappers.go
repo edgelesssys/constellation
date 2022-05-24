@@ -35,6 +35,17 @@ func (c *networkInterfacesClient) BeginCreateOrUpdate(ctx context.Context, resou
 	return c.InterfacesClient.BeginCreateOrUpdate(ctx, resourceGroupName, networkInterfaceName, parameters, options)
 }
 
+type loadBalancersClient struct {
+	*armnetwork.LoadBalancersClient
+}
+
+func (c *loadBalancersClient) BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, loadBalancerName string,
+	parameters armnetwork.LoadBalancer, options *armnetwork.LoadBalancersClientBeginCreateOrUpdateOptions) (
+	loadBalancersClientCreateOrUpdatePollerResponse, error,
+) {
+	return c.LoadBalancersClient.BeginCreateOrUpdate(ctx, resourceGroupName, loadBalancerName, parameters, options)
+}
+
 type networkSecurityGroupsClient struct {
 	*armnetwork.SecurityGroupsClient
 }

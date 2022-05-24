@@ -197,6 +197,13 @@ func Default() *Config {
 				FromPort:    constants.NodePortFrom,
 				ToPort:      constants.NodePortTo,
 			},
+			{
+				Name:        "kubernetes",
+				Description: "Kubernetes",
+				Protocol:    "tcp",
+				IPRange:     "0.0.0.0/0",
+				FromPort:    constants.KubernetesPort,
+			},
 		},
 		Provider: ProviderConfig{
 			// TODO remove our subscriptions from the default config
@@ -204,7 +211,7 @@ func Default() *Config {
 				SubscriptionID:       "0d202bbb-4fa7-4af8-8125-58c269a05435",
 				TenantID:             "adb650a8-5da3-4b15-b4b0-3daf65ff7626",
 				Location:             "North Europe",
-				Image:                "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos/versions/0.0.1654096948",
+				Image:                "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos/versions/0.0.1654162332",
 				Measurements:         azurePCRs,
 				UserAssignedIdentity: "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-dev-identity",
 			},
@@ -212,7 +219,7 @@ func Default() *Config {
 				Project: "constellation-331613",
 				Region:  "europe-west3",
 				Zone:    "europe-west3-b",
-				Image:   "projects/constellation-images/global/images/constellation-coreos-1654096948",
+				Image:   "projects/constellation-images/global/images/constellation-coreos-1654162332",
 				ServiceAccountRoles: []string{
 					"roles/compute.instanceAdmin.v1",
 					"roles/compute.networkAdmin",

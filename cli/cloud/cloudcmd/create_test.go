@@ -33,7 +33,11 @@ func TestCreator(t *testing.T) {
 		GCPCoordinatorInstanceTemplate: "coordinator-template",
 		GCPNetwork:                     "network",
 		GCPSubnetwork:                  "subnetwork",
-		GCPFirewalls:                   []string{"coordinator", "wireguard", "ssh", "nodeport"},
+		GCPFirewalls: []string{
+			"coordinator", "wireguard", "ssh", "nodeport", "kubernetes",
+			"allow-cluster-internal-tcp", "allow-cluster-internal-udp", "allow-cluster-internal-icmp",
+			"allow-node-internal-tcp", "allow-node-internal-udp", "allow-node-internal-icmp",
+		},
 	}
 
 	wantAzureState := state.ConstellationState{

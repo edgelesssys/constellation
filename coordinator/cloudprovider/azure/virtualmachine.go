@@ -11,29 +11,31 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/edgelesssys/constellation/coordinator/cloudprovider"
-	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 )
 
+var azureVMProviderIDRegexp = regexp.MustCompile(`^azure:///subscriptions/([^/]+)/resourceGroups/([^/]+)/providers/Microsoft.Compute/virtualMachines/([^/]+)$`)
+
 // getVM tries to get a single azure vm.
-func (m *Metadata) getVM(ctx context.Context, providerID string) (core.Instance, error) {
+func (m *Metadata) getVM(ctx context.Context, providerID string) (cloudtypes.Instance, error) {
 	_, resourceGroup, instanceName, err := splitVMProviderID(providerID)
 	if err != nil {
-		return core.Instance{}, err
+		return cloudtypes.Instance{}, err
 	}
 	vmResp, err := m.virtualMachinesAPI.Get(ctx, resourceGroup, instanceName, nil)
 	if err != nil {
-		return core.Instance{}, err
+		return cloudtypes.Instance{}, err
 	}
 	interfaceIPConfigurations, err := m.getVMInterfaces(ctx, vmResp.VirtualMachine, resourceGroup)
 	if err != nil {
-		return core.Instance{}, err
+		return cloudtypes.Instance{}, err
 	}
 	return convertVMToCoreInstance(vmResp.VirtualMachine, interfaceIPConfigurations)
 }
 
 // listVMs lists all individual VMs in the current resource group.
-func (m *Metadata) listVMs(ctx context.Context, resourceGroup string) ([]core.Instance, error) {
-	instances := []core.Instance{}
+func (m *Metadata) listVMs(ctx context.Context, resourceGroup string) ([]cloudtypes.Instance, error) {
+	instances := []cloudtypes.Instance{}
 	pager := m.virtualMachinesAPI.List(resourceGroup, nil)
 	for pager.NextPage(ctx) {
 		for _, vm := range pager.PageResponse().Value {
@@ -75,19 +77,17 @@ func (m *Metadata) setTag(ctx context.Context, key, value string) error {
 // A providerID  for individual VMs is build after the following schema:
 // - 'azure:///subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Compute/virtualMachines/<instance-name>'
 func splitVMProviderID(providerID string) (subscriptionID, resourceGroup, instanceName string, err error) {
-	// providerIDregex is a regex matching an azure vm providerID with each part of the URI being a submatch.
-	providerIDregex := regexp.MustCompile(`^azure:///subscriptions/([^/]+)/resourceGroups/([^/]+)/providers/Microsoft.Compute/virtualMachines/([^/]+)$`)
-	matches := providerIDregex.FindStringSubmatch(providerID)
+	matches := azureVMProviderIDRegexp.FindStringSubmatch(providerID)
 	if len(matches) != 4 {
 		return "", "", "", errors.New("error splitting providerID")
 	}
 	return matches[1], matches[2], matches[3], nil
 }
 
-// convertVMToCoreInstance converts an azure virtual machine with interface configurations into a core.Instance.
-func convertVMToCoreInstance(vm armcompute.VirtualMachine, interfaceIPConfigs []*armnetwork.InterfaceIPConfiguration) (core.Instance, error) {
+// convertVMToCoreInstance converts an azure virtual machine with interface configurations into a cloudtypes.Instance.
+func convertVMToCoreInstance(vm armcompute.VirtualMachine, networkInterfaces []armnetwork.Interface) (cloudtypes.Instance, error) {
 	if vm.Name == nil || vm.ID == nil {
-		return core.Instance{}, fmt.Errorf("retrieving instance from armcompute API client returned invalid instance Name (%v) or ID (%v)", vm.Name, vm.ID)
+		return cloudtypes.Instance{}, fmt.Errorf("retrieving instance from armcompute API client returned invalid instance Name (%v) or ID (%v)", vm.Name, vm.ID)
 	}
 	var sshKeys map[string][]string
 	if vm.Properties == nil || vm.Properties.OSProfile == nil || vm.Properties.OSProfile.LinuxConfiguration == nil || vm.Properties.OSProfile.LinuxConfiguration.SSH == nil {
@@ -96,11 +96,11 @@ func convertVMToCoreInstance(vm armcompute.VirtualMachine, interfaceIPConfigs []
 		sshKeys = extractSSHKeys(*vm.Properties.OSProfile.LinuxConfiguration.SSH)
 	}
 	metadata := extractInstanceTags(vm.Tags)
-	return core.Instance{
+	return cloudtypes.Instance{
 		Name:       *vm.Name,
 		ProviderID: "azure://" + *vm.ID,
 		Role:       cloudprovider.ExtractRole(metadata),
-		IPs:        extractPrivateIPs(interfaceIPConfigs),
+		PrivateIPs: extractPrivateIPs(networkInterfaces),
 		SSHKeys:    sshKeys,
 	}, nil
 }

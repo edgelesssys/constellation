@@ -29,8 +29,9 @@ const (
 	NVMEOverTCPPort = 8009
 	// Default NodePort Range
 	// https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
-	NodePortFrom = 30000
-	NodePortTo   = 32767
+	NodePortFrom   = 30000
+	NodePortTo     = 32767
+	KubernetesPort = 6443
 
 	//
 	// Filenames.
