@@ -20,11 +20,8 @@ import (
 
 // CreateAttestationServerTLSConfig creates a tls.Config object with a self-signed certificate and an embedded attestation document.
 // Pass a list of validators to enable mutual aTLS.
+// If issuer is nil, no attestation will be embedded.
 func CreateAttestationServerTLSConfig(issuer Issuer, validators []Validator) (*tls.Config, error) {
-	if issuer == nil {
-		return nil, errors.New("unable to create aTLS server configuration without quote issuer")
-	}
-
 	getConfigForClient, err := getATLSConfigForClientFunc(issuer, validators)
 	if err != nil {
 		return nil, err
@@ -37,7 +34,7 @@ func CreateAttestationServerTLSConfig(issuer Issuer, validators []Validator) (*t
 
 // CreateAttestationClientTLSConfig creates a tls.Config object that verifies a certificate with an embedded attestation document.
 // If no validators are set, the server's attestation document will not be verified.
-// If issuers is nil, the client will be unable to perform mutual aTLS.
+// If issuer is nil, the client will be unable to perform mutual aTLS.
 func CreateAttestationClientTLSConfig(issuer Issuer, validators []Validator) (*tls.Config, error) {
 	nonce, err := util.GenerateRandomBytes(config.RNGLengthDefault)
 	if err != nil {
@@ -117,18 +114,24 @@ func getCertificate(issuer Issuer, priv, pub any, remoteNonce, localNonce []byte
 		return nil, err
 	}
 
-	hash, err := hashPublicKey(pub)
-	if err != nil {
-		return nil, err
+	var extensions []pkix.Extension
+
+	// create and embed attestation if quote Issuer is available
+	if issuer != nil {
+		hash, err := hashPublicKey(pub)
+		if err != nil {
+			return nil, err
+		}
+
+		// create attestation document using the nonce send by the remote party
+		attDoc, err := issuer.Issue(hash, remoteNonce)
+		if err != nil {
+			return nil, err
+		}
+
+		extensions = append(extensions, pkix.Extension{Id: issuer.OID(), Value: attDoc})
 	}
 
-	// create attestation document using the nonce send by the remote party
-	attDoc, err := issuer.Issue(hash, remoteNonce)
-	if err != nil {
-		return nil, err
-	}
-
-	extensions := []pkix.Extension{{Id: issuer.OID(), Value: attDoc}}
 	// embed locally generated nonce in certificate
 	if len(localNonce) > 0 {
 		extensions = append(extensions, pkix.Extension{Id: oid.ATLSNonce, Value: localNonce})
@@ -237,10 +240,6 @@ func (c *clientConnection) verify(rawCerts [][]byte, verifiedChains [][]*x509.Ce
 
 // getCertificate generates a client certificate for mutual aTLS connections.
 func (c *clientConnection) getCertificate(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
-	if c.issuer == nil {
-		return nil, errors.New("unable to create certificate: no quote issuer available")
-	}
-
 	// generate and hash key
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
