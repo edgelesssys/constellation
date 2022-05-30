@@ -38,3 +38,10 @@ variable "ip_range_start" {
   default     = 100
   description = "first ip address to use within subnet"
 }
+
+
+variable "machine" {
+  type        = string
+  default     = "q35"
+  description = "machine type. use 'q35' for secure boot and 'pc' for non secure boot. See 'qemu-system-x86_64 -machine help'"
+}

@@ -44,5 +44,11 @@ variable "boot_volume_id" {
 }
 
 variable "role" {
-  type = string
+  type        = string
+  description = "role of the node in the constellation. either 'control-plane' or 'worker'"
+}
+
+variable "machine" {
+  type        = string
+  description = "machine type. use 'q35' for secure boot and 'pc' for non secure boot. See 'qemu-system-x86_64 -machine help'"
 }

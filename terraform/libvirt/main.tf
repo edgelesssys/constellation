@@ -23,6 +23,7 @@ module "control_plane" {
   network_id      = libvirt_network.constellation.id
   pool            = libvirt_pool.cluster.name
   boot_volume_id  = libvirt_volume.constellation_coreos_image.id
+  machine         = var.machine
 }
 
 module "worker" {
@@ -37,6 +38,7 @@ module "worker" {
   network_id      = libvirt_network.constellation.id
   pool            = libvirt_pool.cluster.name
   boot_volume_id  = libvirt_volume.constellation_coreos_image.id
+  machine         = var.machine
 }
 
 resource "libvirt_pool" "cluster" {

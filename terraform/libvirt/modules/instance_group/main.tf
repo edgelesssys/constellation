@@ -16,7 +16,7 @@ resource "libvirt_domain" "instance_group" {
   count   = var.amount
   memory  = var.memory
   vcpu    = var.vcpus
-  machine = "q35"
+  machine = var.machine
   tpm {
     backend_type    = "emulator"
     backend_version = "2.0"

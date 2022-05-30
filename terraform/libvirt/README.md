@@ -18,6 +18,7 @@ constellation_coreos_image_qcow2="/path/to/image.qcow2"
 # memory=2048
 # state_disk_size=10
 # ip_range_start=100
+# machine="q35"
 ```
 
 Create terraform resources from within terraform workspace (`terraform/libvirt`):
