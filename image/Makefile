@@ -46,6 +46,8 @@ AZURE_IMAGE_VERSION              ?= 0.0.1
 AZURE_PUBLISHER                  ?= edgelesssys
 AZURE_SKU                        ?= constellation-coreos
 
+-include $(CURDIR)/config.mk
+
 .PHONY: clean all kernel coreos run shell cosa-init cosa-fetch images image-gcp upload-gcp image-azure upload-azure-non-cvm $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
 SHELL := /bin/bash
 
@@ -163,4 +165,5 @@ endif
 clean:
 	-rm $(COSA_LOCKFILE)
 	-rm $(IMAGES_PATH)/*
-	-. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && cosa clean
+	-rm -r $(COREOS_BUILD_PATH)
+	mkdir -p $(COREOS_BUILD_PATH)
