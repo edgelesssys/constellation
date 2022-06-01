@@ -25,7 +25,7 @@ func main() {
 
 	klog.InitFlags(nil)
 	flag.Parse()
-	klog.V(2).Infof("\nConstellation Node Activation Service\nVersion: %s\nRunning on: %s", constants.VersionInfo, *provider)
+	klog.V(2).Infof("\nConstellation Node Activation Service\nVersion: v%s\nRunning on: %s", constants.VersionInfo, *provider)
 
 	handler := file.NewHandler(afero.NewOsFs())
 

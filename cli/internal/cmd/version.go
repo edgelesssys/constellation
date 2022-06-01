@@ -13,7 +13,7 @@ func NewVersionCmd() *cobra.Command {
 		Long:  "Display version of this CLI.",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Printf("CLI Version: v%s \n", constants.CliVersion)
+			cmd.Printf("CLI Version: v%s \n", constants.VersionInfo)
 		},
 	}
 	return cmd

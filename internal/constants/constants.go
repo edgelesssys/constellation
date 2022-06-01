@@ -85,5 +85,5 @@ const (
 	WireguardAdminMTU = 1300
 )
 
-// CliVersion is the version of the CLI. Left as a separate variable to allow override during build.
-var CliVersion = "0.0.0"
+// VersionInfo is the version of a binary. Left as a separate variable to allow override during build.
+var VersionInfo = "0.0.0"

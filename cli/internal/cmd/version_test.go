@@ -21,5 +21,5 @@ func TestVersionCmd(t *testing.T) {
 
 	s, err := io.ReadAll(b)
 	assert.NoError(err)
-	assert.Contains(string(s), constants.CliVersion)
+	assert.Contains(string(s), constants.VersionInfo)
 }
