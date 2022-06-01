@@ -13,23 +13,22 @@ import (
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/oid"
-	"github.com/edgelesssys/constellation/kms/kmsproto"
+	"github.com/edgelesssys/constellation/joinservice/joinproto"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
+	testclock "k8s.io/utils/clock/testing"
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m,
-		// https://github.com/census-instrumentation/opencensus-go/issues/1262
-		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
-	)
+	goleak.VerifyTestMain(m)
 }
 
 func TestRequestKeyLoop(t *testing.T) {
+	clockstep := struct{}{}
+	someErr := errors.New("failed")
 	defaultInstance := metadata.InstanceMetadata{
 		Name:       "test-instance",
 		ProviderID: "/test/provider",
@@ -38,81 +37,102 @@ func TestRequestKeyLoop(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		server          *stubAPIServer
-		wantCalls       int
-		listResponse    []metadata.InstanceMetadata
-		dontStartServer bool
+		answers []any
 	}{
 		"success": {
-			server:       &stubAPIServer{requestStateDiskKeyResp: &kmsproto.GetDataKeyResponse{}},
-			listResponse: []metadata.InstanceMetadata{defaultInstance},
-		},
-		"no error if server throws an error": {
-			server: &stubAPIServer{
-				requestStateDiskKeyResp: &kmsproto.GetDataKeyResponse{},
-				requestStateDiskKeyErr:  errors.New("error"),
+			answers: []any{
+				listAnswer{listResponse: []metadata.InstanceMetadata{defaultInstance}},
+				issueRejoinTicketAnswer{stateDiskKey: []byte{0x1}, measurementSecret: []byte{0x2}},
+				pushStateDiskKeyAnswer{},
 			},
-			listResponse: []metadata.InstanceMetadata{defaultInstance},
 		},
-		"no error if the server can not be reached": {
-			server:          &stubAPIServer{requestStateDiskKeyResp: &kmsproto.GetDataKeyResponse{}},
-			listResponse:    []metadata.InstanceMetadata{defaultInstance},
-			dontStartServer: true,
+		"recover metadata list error": {
+			answers: []any{
+				listAnswer{err: someErr},
+				clockstep,
+				listAnswer{listResponse: []metadata.InstanceMetadata{defaultInstance}},
+				issueRejoinTicketAnswer{stateDiskKey: []byte{0x1}, measurementSecret: []byte{0x2}},
+				pushStateDiskKeyAnswer{},
+			},
 		},
-		"no error if no endpoint is available": {
-			server: &stubAPIServer{requestStateDiskKeyResp: &kmsproto.GetDataKeyResponse{}},
+		"recover issue rejoin ticket error": {
+			answers: []any{
+				listAnswer{listResponse: []metadata.InstanceMetadata{defaultInstance}},
+				issueRejoinTicketAnswer{err: someErr},
+				clockstep,
+				listAnswer{listResponse: []metadata.InstanceMetadata{defaultInstance}},
+				issueRejoinTicketAnswer{stateDiskKey: []byte{0x1}, measurementSecret: []byte{0x2}},
+				pushStateDiskKeyAnswer{},
+			},
 		},
-		"works for multiple endpoints": {
-			server: &stubAPIServer{requestStateDiskKeyResp: &kmsproto.GetDataKeyResponse{}},
-			listResponse: []metadata.InstanceMetadata{
-				defaultInstance,
-				{
-					Name:       "test-instance-2",
-					ProviderID: "/test/provider",
-					Role:       role.ControlPlane,
-					PrivateIPs: []string{"192.0.2.2"},
-				},
+		"recover push key error": {
+			answers: []any{
+				listAnswer{listResponse: []metadata.InstanceMetadata{defaultInstance}},
+				issueRejoinTicketAnswer{stateDiskKey: []byte{0x1}, measurementSecret: []byte{0x2}},
+				pushStateDiskKeyAnswer{err: someErr},
+				clockstep,
+				listAnswer{listResponse: []metadata.InstanceMetadata{defaultInstance}},
+				issueRejoinTicketAnswer{stateDiskKey: []byte{0x1}, measurementSecret: []byte{0x2}},
+				pushStateDiskKeyAnswer{},
 			},
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			require := require.New(t)
+			metadataServer := newStubMetadataServer()
+			joinServer := newStubJoinAPIServer()
+			keyServer := newStubKeyAPIServer()
 
-			keyReceived := make(chan struct{}, 1)
-			listener := bufconn.Listen(1)
+			listener := bufconn.Listen(1024)
 			defer listener.Close()
-
 			creds := atlscredentials.New(atls.NewFakeIssuer(oid.Dummy{}), nil)
-			s := grpc.NewServer(grpc.Creds(creds))
-			kmsproto.RegisterAPIServer(s, tc.server)
+			grpcServer := grpc.NewServer(grpc.Creds(creds))
+			joinproto.RegisterAPIServer(grpcServer, joinServer)
+			keyproto.RegisterAPIServer(grpcServer, keyServer)
+			go grpcServer.Serve(listener)
+			defer grpcServer.GracefulStop()
 
-			if !tc.dontStartServer {
-				go func() { require.NoError(s.Serve(listener)) }()
-			}
-
+			clock := testclock.NewFakeClock(time.Now())
+			keyReceived := make(chan struct{}, 1)
 			keyWaiter := &KeyAPI{
+				listenAddr:  "192.0.2.1:30090",
 				log:         logger.NewTest(t),
-				metadata:    stubMetadata{listResponse: tc.listResponse},
+				metadata:    metadataServer,
 				keyReceived: keyReceived,
-				timeout:     500 * time.Millisecond,
+				clock:       clock,
+				timeout:     1 * time.Second,
+				interval:    1 * time.Second,
 			}
-
-			// notify the API a key was received after 1 second
-			go func() {
-				time.Sleep(1 * time.Second)
-				keyReceived <- struct{}{}
-			}()
-
-			keyWaiter.requestKeyLoop(
-				"1234",
+			grpcOpts := []grpc.DialOption{
 				grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
 					return listener.DialContext(ctx)
 				}),
-			)
+			}
 
-			s.Stop()
+			// Start the request loop under tests.
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				keyWaiter.requestKeyLoop("1234", grpcOpts...)
+			}()
+
+			// Play test case answers.
+			for _, answ := range tc.answers {
+				switch answ := answ.(type) {
+				case listAnswer:
+					metadataServer.listAnswerC <- answ
+				case issueRejoinTicketAnswer:
+					joinServer.issueRejoinTicketAnswerC <- answ
+				case pushStateDiskKeyAnswer:
+					keyServer.pushStateDiskKeyAnswerC <- answ
+				default:
+					clock.Step(time.Second)
+				}
+			}
+
+			// Stop the request loop.
+			keyReceived <- struct{}{}
 		})
 	}
 }
@@ -164,27 +184,75 @@ func TestPushStateDiskKey(t *testing.T) {
 }
 
 func TestResetKey(t *testing.T) {
-	api := New(logger.NewTest(t), nil, nil, time.Second)
+	api := New(logger.NewTest(t), nil, nil, time.Second, time.Millisecond)
 
 	api.key = []byte{0x1, 0x2, 0x3}
 	api.ResetKey()
 	assert.Nil(t, api.key)
 }
 
-type stubAPIServer struct {
-	requestStateDiskKeyResp *kmsproto.GetDataKeyResponse
-	requestStateDiskKeyErr  error
-	kmsproto.UnimplementedAPIServer
+type stubMetadataServer struct {
+	listAnswerC chan listAnswer
 }
 
-func (s *stubAPIServer) GetDataKey(ctx context.Context, req *kmsproto.GetDataKeyRequest) (*kmsproto.GetDataKeyResponse, error) {
-	return s.requestStateDiskKeyResp, s.requestStateDiskKeyErr
+func newStubMetadataServer() *stubMetadataServer {
+	return &stubMetadataServer{
+		listAnswerC: make(chan listAnswer),
+	}
 }
 
-type stubMetadata struct {
+func (s *stubMetadataServer) List(context.Context) ([]metadata.InstanceMetadata, error) {
+	answer := <-s.listAnswerC
+	return answer.listResponse, answer.err
+}
+
+type listAnswer struct {
 	listResponse []metadata.InstanceMetadata
+	err          error
 }
 
-func (s stubMetadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
-	return s.listResponse, nil
+type stubJoinAPIServer struct {
+	issueRejoinTicketAnswerC chan issueRejoinTicketAnswer
+	joinproto.UnimplementedAPIServer
+}
+
+func newStubJoinAPIServer() *stubJoinAPIServer {
+	return &stubJoinAPIServer{
+		issueRejoinTicketAnswerC: make(chan issueRejoinTicketAnswer),
+	}
+}
+
+func (s *stubJoinAPIServer) IssueRejoinTicket(context.Context, *joinproto.IssueRejoinTicketRequest) (*joinproto.IssueRejoinTicketResponse, error) {
+	answer := <-s.issueRejoinTicketAnswerC
+	resp := &joinproto.IssueRejoinTicketResponse{
+		StateDiskKey:      answer.stateDiskKey,
+		MeasurementSecret: answer.measurementSecret,
+	}
+	return resp, answer.err
+}
+
+type issueRejoinTicketAnswer struct {
+	stateDiskKey      []byte
+	measurementSecret []byte
+	err               error
+}
+
+type stubKeyAPIServer struct {
+	pushStateDiskKeyAnswerC chan pushStateDiskKeyAnswer
+	keyproto.UnimplementedAPIServer
+}
+
+func newStubKeyAPIServer() *stubKeyAPIServer {
+	return &stubKeyAPIServer{
+		pushStateDiskKeyAnswerC: make(chan pushStateDiskKeyAnswer),
+	}
+}
+
+func (s *stubKeyAPIServer) PushStateDiskKey(context.Context, *keyproto.PushStateDiskKeyRequest) (*keyproto.PushStateDiskKeyResponse, error) {
+	answer := <-s.pushStateDiskKeyAnswerC
+	return &keyproto.PushStateDiskKeyResponse{}, answer.err
+}
+
+type pushStateDiskKeyAnswer struct {
+	err error
 }

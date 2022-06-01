@@ -99,6 +99,7 @@ func TestKeyAPI(t *testing.T) {
 		atls.NewFakeIssuer(oid.Dummy{}),
 		&fakeMetadataAPI{},
 		20*time.Second,
+		time.Second,
 	)
 
 	// send a key to the server

@@ -96,7 +96,7 @@ func main() {
 		log.Named("setupManager"),
 		*csp,
 		afero.Afero{Fs: afero.NewOsFs()},
-		keyservice.New(log.Named("keyService"), issuer, metadata, 20*time.Second), // try to request a key every 20 seconds
+		keyservice.New(log.Named("keyService"), issuer, metadata, 20*time.Second, 20*time.Second), // try to request a key every 20 seconds
 		mapper,
 		setup.DiskMounter{},
 		vtpm.OpenVTPM,

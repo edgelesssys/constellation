@@ -3,6 +3,7 @@ package keyservice
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -19,6 +20,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
+	"k8s.io/utils/clock"
 )
 
 // KeyAPI is the interface called by control-plane or an admin during restart of a node.
@@ -31,18 +33,24 @@ type KeyAPI struct {
 	key               []byte
 	measurementSecret []byte
 	keyReceived       chan struct{}
-	timeout           time.Duration
+
+	clock    clock.WithTicker
+	timeout  time.Duration
+	interval time.Duration
+
 	keyproto.UnimplementedAPIServer
 }
 
 // New initializes a KeyAPI with the given parameters.
-func New(log *logger.Logger, issuer QuoteIssuer, metadata metadata.InstanceLister, timeout time.Duration) *KeyAPI {
+func New(log *logger.Logger, issuer QuoteIssuer, metadata metadata.InstanceLister, timeout time.Duration, interval time.Duration) *KeyAPI {
 	return &KeyAPI{
 		log:         log,
 		metadata:    metadata,
 		issuer:      issuer,
 		keyReceived: make(chan struct{}, 1),
+		clock:       clock.RealClock{},
 		timeout:     timeout,
+		interval:    interval,
 	}
 }
 
@@ -99,67 +107,80 @@ func (a *KeyAPI) requestKeyLoop(uuid string, opts ...grpc.DialOption) {
 	// we do not perform attestation, since the restarting node does not need to care about notifying the correct node
 	// if an incorrect key is pushed by a malicious actor, decrypting the disk will fail, and the node will not start
 	creds := atlscredentials.New(a.issuer, nil)
-	// set up for the select statement to immediately request a key, skipping the initial delay caused by using a ticker
-	firstReq := make(chan struct{}, 1)
-	firstReq <- struct{}{}
 
-	ticker := time.NewTicker(a.timeout)
+	ticker := a.clock.NewTicker(a.interval)
 	defer ticker.Stop()
 	for {
+		endpoints, err := a.getJoinServiceEndpoints()
+		if err != nil {
+			a.log.With(zap.Error(err)).Errorf("Failed to get JoinService endpoints")
+		} else {
+			a.log.Infof("Received list with JoinService endpoints: %v", endpoints)
+			for _, endpoint := range endpoints {
+				a.requestKey(endpoint, uuid, creds, opts...)
+			}
+		}
+
 		select {
-		// return if a key was received
-		// a key can be send by
-		// - a control-plane node, after the request rpc was received
-		// - by a Constellation admin, at any time this loop is running on a node during boot
 		case <-a.keyReceived:
+			// return if a key was received
+			// a key can be send by
+			// - a control-plane node, after the request rpc was received
+			// - by a Constellation admin, at any time this loop is running on a node during boot
 			return
-		case <-ticker.C:
-			a.requestKey(uuid, creds, opts...)
-		case <-firstReq:
-			a.requestKey(uuid, creds, opts...)
+		case <-ticker.C():
 		}
 	}
 }
 
-func (a *KeyAPI) requestKey(uuid string, credentials credentials.TransportCredentials, opts ...grpc.DialOption) {
-	// list available control-plane nodes
-	endpoints, _ := metadata.JoinServiceEndpoints(context.Background(), a.metadata)
+func (a *KeyAPI) getJoinServiceEndpoints() ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), a.timeout)
+	defer cancel()
+	return metadata.JoinServiceEndpoints(ctx, a.metadata)
+}
 
-	a.log.With(zap.Strings("endpoints", endpoints)).Infof("Sending a key request to available control-plane nodes")
-	// notify all available control-plane nodes to send a key to the node
-	// any errors encountered here will be ignored, and the calls retried after a timeout
-	for _, endpoint := range endpoints {
-		ctx, cancel := context.WithTimeout(context.Background(), a.timeout)
-		defer cancel()
+func (a *KeyAPI) requestKey(endpoint, uuid string, credentials credentials.TransportCredentials, opts ...grpc.DialOption) {
+	opts = append(opts, grpc.WithTransportCredentials(credentials))
 
-		// request rejoin ticket from JoinService
-		conn, err := grpc.DialContext(ctx, endpoint, append(opts, grpc.WithTransportCredentials(credentials))...)
-		if err != nil {
-			continue
-		}
-		defer conn.Close()
-		client := joinproto.NewAPIClient(conn)
-		response, err := client.IssueRejoinTicket(ctx, &joinproto.IssueRejoinTicketRequest{DiskUuid: uuid})
-		if err != nil {
-			a.log.With(zap.Error(err), zap.String("endpoint", endpoint)).Warnf("Failed to request key")
-			continue
-		}
-
-		// push key to own gRPC server
-		pushKeyConn, err := grpc.DialContext(ctx, a.listenAddr, append(opts, grpc.WithTransportCredentials(credentials))...)
-		if err != nil {
-			continue
-		}
-		defer pushKeyConn.Close()
-		pushKeyClient := keyproto.NewAPIClient(pushKeyConn)
-		if _, err := pushKeyClient.PushStateDiskKey(
-			ctx,
-			&keyproto.PushStateDiskKeyRequest{StateDiskKey: response.StateDiskKey, MeasurementSecret: response.MeasurementSecret},
-		); err != nil {
-			a.log.With(zap.Error(err), zap.String("endpoint", a.listenAddr)).Errorf("Failed to push key")
-			continue
-		}
+	a.log.With(zap.String("endpoint", endpoint)).Infof("Requesting rejoin ticket")
+	rejoinTicket, err := a.requestRejoinTicket(endpoint, uuid, opts...)
+	if err != nil {
+		a.log.With(zap.Error(err), zap.String("endpoint", endpoint)).Errorf("Failed to request rejoin ticket")
+		return
 	}
+
+	a.log.With(zap.String("endpoint", endpoint)).Infof("Pushing key to own server")
+	if err := a.pushKeyToOwnServer(rejoinTicket.StateDiskKey, rejoinTicket.MeasurementSecret, opts...); err != nil {
+		a.log.With(zap.Error(err), zap.String("endpoint", a.listenAddr)).Errorf("Failed to push key to own server")
+		return
+	}
+}
+
+func (a *KeyAPI) requestRejoinTicket(endpoint, uuid string, opts ...grpc.DialOption) (*joinproto.IssueRejoinTicketResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), a.timeout)
+	defer cancel()
+	conn, err := grpc.DialContext(ctx, endpoint, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("dialing gRPC: %w", err)
+	}
+	defer conn.Close()
+	client := joinproto.NewAPIClient(conn)
+	req := &joinproto.IssueRejoinTicketRequest{DiskUuid: uuid}
+	return client.IssueRejoinTicket(ctx, req)
+}
+
+func (a *KeyAPI) pushKeyToOwnServer(stateDiskKey, measurementSecret []byte, opts ...grpc.DialOption) error {
+	ctx, cancel := context.WithTimeout(context.Background(), a.timeout)
+	defer cancel()
+	conn, err := grpc.DialContext(ctx, a.listenAddr, opts...)
+	if err != nil {
+		return fmt.Errorf("dialing gRPC: %w", err)
+	}
+	defer conn.Close()
+	client := keyproto.NewAPIClient(conn)
+	req := &keyproto.PushStateDiskKeyRequest{StateDiskKey: stateDiskKey, MeasurementSecret: measurementSecret}
+	_, err = client.PushStateDiskKey(ctx, req)
+	return err
 }
 
 // QuoteValidator validates quotes.
