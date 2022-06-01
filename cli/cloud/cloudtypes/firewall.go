@@ -2,11 +2,12 @@ package cloudtypes
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/edgelesssys/constellation/internal/config"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
 )
@@ -46,7 +47,7 @@ func (f Firewall) Azure() ([]*armnetwork.SecurityRule, error) {
 	var fw []*armnetwork.SecurityRule
 	for i, rule := range f {
 		// format string according to armnetwork.SecurityRuleProtocol specification
-		protocol := strings.Title(strings.ToLower(rule.Protocol))
+		protocol := cases.Title(language.English).String(rule.Protocol)
 
 		dstPortRange, err := portOrRange(rule.FromPort, rule.ToPort)
 		if err != nil {
