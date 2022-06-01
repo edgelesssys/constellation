@@ -17,7 +17,7 @@ RUN go mod download all
 
 # Copy Repo
 COPY . /constellation
-RUN rm -rf ./hack/ go.work.sum go.work
+RUN rm -rf ./hack/
 
 # Build
 RUN mkdir -p /constellation/build

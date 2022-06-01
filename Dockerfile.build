@@ -15,14 +15,11 @@ ENV PATH ${PATH}:/usr/local/go/bin
 WORKDIR /constellation/
 COPY go.mod ./
 COPY go.sum ./
-COPY go.work ./
-COPY go.work.sum ./
-COPY hack/go.mod ./hack/go.mod
-COPY hack/go.sum ./hack/go.sum
 RUN go mod download all
 
 # Copy Repo
 COPY . /constellation
+RUN rm -rf ./hack/
 
 FROM build AS build-coordinator
 WORKDIR /constellation/coordinator/
