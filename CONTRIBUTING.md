@@ -18,12 +18,28 @@ but there is also a CI action to ensure compliance.
 
 To locally run all configured linters, execute
 
-```
+```sh
 golangci-lint run ./...
 ```
 
 It is also recommended to use golangci-lint (and [gofumpt](https://github.com/mvdan/gofumpt) as formatter) in your IDE, by adding the recommended VS Code Settings or by [configuring it yourself](https://golangci-lint.run/usage/integrations/#editor-integration)
 
+## Nested Go modules
+
+As this project contains nested Go modules, it is recommended to create a local Go workspace, so your IDE can lint multiple modules at once.
+
+```go
+go 1.18
+
+use (
+	.
+	./hack
+)
+```
+
+You can find an introduction in the [Go workspace tutorial](https://go.dev/doc/tutorial/workspaces).
+
+If you have changed dependencies within a module and have run `go mod tidy`, you can use `go work sync` to sync versions of the same dependency of the different modules.
 
 ## Recommended VS Code Settings
 
