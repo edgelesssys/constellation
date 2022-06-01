@@ -27,9 +27,6 @@ WORKDIR /constellation/coordinator/
 ARG PROJECT_VERSION
 RUN go build -o coordinator -tags=gcp,disable_tpm_simulator -buildvcs=false -ldflags "-s -w -buildid='' -X main.version=${PROJECT_VERSION}" ./cmd/coordinator/
 
-FROM build-coordinator AS hash-coordinator
-RUN mv coordinator coordinator-$(sha512sum coordinator | cut -d " " -f 1)
-
 FROM build AS build-disk-mapper
 WORKDIR /constellation/state/
 
