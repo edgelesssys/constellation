@@ -1,13 +1,13 @@
-//go:build gcp
-// +build gcp
+//go:build azure
+// +build azure
 
-package gcp
+package azure
 
 import (
 	"encoding/json"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
+	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,7 +17,7 @@ func TestAttestation(t *testing.T) {
 	require := require.New(t)
 
 	issuer := NewIssuer()
-	validator := NewValidator(map[uint32][]byte{0: PCR0})
+	validator := NewValidator(map[uint32][]byte{}) // TODO: check for list of expected Azure PCRs
 
 	nonce := []byte{2, 3, 4}
 	challenge := []byte("Constellation")
@@ -32,7 +32,7 @@ func TestAttestation(t *testing.T) {
 	originalPCR := attDoc.Attestation.Quotes[1].Pcrs.Pcrs[uint32(vtpm.PCRIndexOwnerID)]
 
 	out, err := validator.Validate(attDocRaw, nonce)
-	assert.NoError(err)
+	require.NoError(err)
 	assert.Equal(challenge, out)
 
 	// Mark node as intialized. We should still be abe to validate
@@ -47,6 +47,6 @@ func TestAttestation(t *testing.T) {
 	assert.NotEqual(originalPCR, attDoc.Attestation.Quotes[1].Pcrs.Pcrs[uint32(vtpm.PCRIndexOwnerID)])
 
 	out, err = validator.Validate(attDocRaw, nonce)
-	assert.NoError(err)
+	require.NoError(err)
 	assert.Equal(challenge, out)
 }

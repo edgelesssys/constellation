@@ -8,7 +8,6 @@ import (
 	"net"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/logging"
 	"github.com/edgelesssys/constellation/coordinator/peer"
@@ -18,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
 	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/spf13/afero"

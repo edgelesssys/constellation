@@ -1,8 +1,8 @@
 package core
 
 import (
-	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/coordinator/state"
+	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 )
 
 // GetState returns the current state.

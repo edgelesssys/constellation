@@ -6,8 +6,6 @@ import (
 	"net"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/attestation/simulator"
-	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/coordinator/nodestate"
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/role"
@@ -15,6 +13,8 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/store"
 	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
 	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
+	"github.com/edgelesssys/constellation/internal/attestation/simulator"
+	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/edgelesssys/constellation/internal/file"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"

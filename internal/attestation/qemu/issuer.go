@@ -3,8 +3,8 @@ package qemu
 import (
 	"io"
 
-	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
-	"github.com/edgelesssys/constellation/coordinator/oid"
+	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/internal/oid"
 	tpmclient "github.com/google/go-tpm-tools/client"
 )
 

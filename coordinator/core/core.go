@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/coordinator/config"
 	"github.com/edgelesssys/constellation/coordinator/nodestate"
 	"github.com/edgelesssys/constellation/coordinator/role"
@@ -16,6 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/store"
 	"github.com/edgelesssys/constellation/coordinator/storewrapper"
 	"github.com/edgelesssys/constellation/coordinator/util"
+	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/kms/kms"

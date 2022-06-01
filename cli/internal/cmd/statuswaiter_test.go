@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/state"
+	"github.com/edgelesssys/constellation/internal/atls"
 )
 
 type stubStatusWaiter struct {

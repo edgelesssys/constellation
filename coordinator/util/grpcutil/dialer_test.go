@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"

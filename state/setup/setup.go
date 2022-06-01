@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/coordinator/config"
 	"github.com/edgelesssys/constellation/coordinator/nodestate"
+	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"
 )

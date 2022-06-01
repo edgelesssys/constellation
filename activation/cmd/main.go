@@ -8,7 +8,7 @@ import (
 	"github.com/edgelesssys/constellation/activation/server"
 	"github.com/edgelesssys/constellation/activation/validator"
 	"github.com/edgelesssys/constellation/activation/watcher"
-	"github.com/edgelesssys/constellation/coordinator/atls"
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"

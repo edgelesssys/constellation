@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/edgelesssys/constellation/coordinator/atls"
-	"github.com/edgelesssys/constellation/coordinator/attestation/azure"
-	"github.com/edgelesssys/constellation/coordinator/attestation/gcp"
-	"github.com/edgelesssys/constellation/coordinator/attestation/qemu"
-	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
+	"github.com/edgelesssys/constellation/internal/atls"
+	"github.com/edgelesssys/constellation/internal/attestation/azure"
+	"github.com/edgelesssys/constellation/internal/attestation/gcp"
+	"github.com/edgelesssys/constellation/internal/attestation/qemu"
+	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/config"
 )

@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/coordinator/config"
-	"github.com/edgelesssys/constellation/coordinator/oid"
 	"github.com/edgelesssys/constellation/coordinator/util"
+	"github.com/edgelesssys/constellation/internal/oid"
 )
 
 // CreateAttestationServerTLSConfig creates a tls.Config object with a self-signed certificate and an embedded attestation document.

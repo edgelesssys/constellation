@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/config"
 	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

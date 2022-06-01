@@ -12,8 +12,8 @@ import (
 	"time"
 
 	compute "cloud.google.com/go/compute/apiv1"
-	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
-	"github.com/edgelesssys/constellation/coordinator/oid"
+	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/internal/oid"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm-tools/server"
 	"github.com/googleapis/gax-go/v2"

@@ -7,7 +7,7 @@ import (
 	"io"
 	"testing"
 
-	tpmsim "github.com/edgelesssys/constellation/coordinator/attestation/simulator"
+	tpmsim "github.com/edgelesssys/constellation/internal/attestation/simulator"
 	tpmclient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm-tools/proto/tpm"

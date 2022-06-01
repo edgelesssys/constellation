@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/coordinator/oid"
+	"github.com/edgelesssys/constellation/internal/oid"
 )
 
 // QuoteValidator validates quotes.

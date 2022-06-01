@@ -3,7 +3,7 @@ package config
 import (
 	"encoding/base64"
 
-	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
+	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 )
 
 type Measurements map[uint32][]byte

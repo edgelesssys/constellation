@@ -5,8 +5,8 @@ import (
 	"io"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/attestation/simulator"
 	"github.com/edgelesssys/constellation/coordinator/state"
+	"github.com/edgelesssys/constellation/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"

@@ -1,6 +1,6 @@
 package aws
 
-import "github.com/edgelesssys/constellation/coordinator/oid"
+import "github.com/edgelesssys/constellation/internal/oid"
 
 type Issuer struct {
 	oid.AWS

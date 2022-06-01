@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/attestation/simulator"
 	"github.com/edgelesssys/constellation/coordinator/role"
+	"github.com/edgelesssys/constellation/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"

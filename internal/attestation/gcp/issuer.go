@@ -6,8 +6,8 @@ import (
 	"io"
 
 	"cloud.google.com/go/compute/metadata"
-	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
-	"github.com/edgelesssys/constellation/coordinator/oid"
+	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/internal/oid"
 	tpmclient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
 )

@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/edgelesssys/constellation/coordinator/atls"
+	"github.com/edgelesssys/constellation/internal/atls"
 )
 
 type recoveryClient interface {

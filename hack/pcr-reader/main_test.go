@@ -13,8 +13,8 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
-	"github.com/edgelesssys/constellation/coordinator/oid"
+	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/internal/oid"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm-tools/proto/tpm"
 	"github.com/spf13/afero"

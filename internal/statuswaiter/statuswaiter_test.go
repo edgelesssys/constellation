@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/state"
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 )

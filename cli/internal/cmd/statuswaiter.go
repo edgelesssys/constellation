@@ -3,8 +3,8 @@ package cmd
 import (
 	"context"
 
-	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/state"
+	"github.com/edgelesssys/constellation/internal/atls"
 )
 
 type statusWaiter interface {

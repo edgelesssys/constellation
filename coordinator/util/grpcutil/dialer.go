@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/edgelesssys/constellation/coordinator/atls"
+	"github.com/edgelesssys/constellation/internal/atls"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"

@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/state/keyservice"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"github.com/edgelesssys/constellation/state/mapper"

@@ -12,7 +12,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/atls"
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"
