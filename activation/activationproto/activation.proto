@@ -12,15 +12,18 @@ service API {
 
 message ActivateNodeRequest {
     string disk_uuid = 1;
+    string node_name = 2;
 }
 
 message ActivateNodeResponse {
     bytes state_disk_key = 1;
     bytes owner_id = 2;
     bytes cluster_id = 3;
-    string api_server_endpoint = 4;
-    string token = 5;
-    string discovery_token_ca_cert_hash = 6;
+    bytes kubelet_key = 4;
+    bytes kubelet_cert = 5;
+    string api_server_endpoint = 6;
+    string token = 7;
+    string discovery_token_ca_cert_hash = 8;
 }
 
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/edgelesssys/constellation/activation/kms"
 	"github.com/edgelesssys/constellation/activation/kubeadm"
+	"github.com/edgelesssys/constellation/activation/kubernetesca"
 	"github.com/edgelesssys/constellation/activation/server"
 	"github.com/edgelesssys/constellation/activation/validator"
 	"github.com/edgelesssys/constellation/activation/watcher"
@@ -46,7 +47,7 @@ func main() {
 	}
 	kms := kms.New(*kmsEndpoint)
 
-	server := server.New(handler, kubeadm, kms)
+	server := server.New(handler, kubernetesca.New(handler), kubeadm, kms)
 
 	watcher, err := watcher.New(validator)
 	if err != nil {

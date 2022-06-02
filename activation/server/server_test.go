@@ -19,6 +19,7 @@ import (
 func TestActivateNode(t *testing.T) {
 	someErr := errors.New("error")
 	testKey := []byte{0x1, 0x2, 0x3}
+	testCert := []byte{0x4, 0x5, 0x6}
 	testID := id{
 		Owner:   []byte{0x4, 0x5, 0x6},
 		Cluster: []byte{0x7, 0x8, 0x9},
@@ -32,34 +33,88 @@ func TestActivateNode(t *testing.T) {
 	testCases := map[string]struct {
 		kubeadm stubTokenGetter
 		kms     stubKeyGetter
+		ca      stubCA
 		id      []byte
 		wantErr bool
 	}{
 		"success": {
-			kubeadm: stubTokenGetter{token: testJoinToken},
-			kms:     stubKeyGetter{dataKey: testKey},
-			id:      mustMarshalID(testID),
+			kubeadm: stubTokenGetter{
+				token: testJoinToken,
+			},
+			kms: stubKeyGetter{
+				dataKey: testKey,
+			},
+			ca: stubCA{
+				cert: testCert,
+				key:  testKey,
+			},
+			id: mustMarshalID(testID),
 		},
 		"GetDataKey fails": {
-			kubeadm: stubTokenGetter{token: testJoinToken},
-			kms:     stubKeyGetter{getDataKeyErr: someErr},
+			kubeadm: stubTokenGetter{
+				token: testJoinToken,
+			},
+			kms: stubKeyGetter{
+				getDataKeyErr: someErr,
+			},
+			ca: stubCA{
+				cert: testCert,
+				key:  testKey,
+			},
 			id:      mustMarshalID(testID),
 			wantErr: true,
 		},
 		"loading IDs fails": {
-			kubeadm: stubTokenGetter{token: testJoinToken},
-			kms:     stubKeyGetter{dataKey: testKey},
+			kubeadm: stubTokenGetter{
+				token: testJoinToken,
+			},
+			kms: stubKeyGetter{
+				dataKey: testKey,
+			},
+			ca: stubCA{
+				cert: testCert,
+				key:  testKey,
+			},
 			id:      []byte{0x1, 0x2, 0x3},
 			wantErr: true,
 		},
 		"no ID file": {
-			kubeadm: stubTokenGetter{token: testJoinToken},
-			kms:     stubKeyGetter{dataKey: testKey},
+			kubeadm: stubTokenGetter{
+				token: testJoinToken,
+			},
+			kms: stubKeyGetter{
+				dataKey: testKey,
+			},
+			ca: stubCA{
+				cert: testCert,
+				key:  testKey,
+			},
 			wantErr: true,
 		},
 		"GetJoinToken fails": {
-			kubeadm: stubTokenGetter{getJoinTokenErr: someErr},
-			kms:     stubKeyGetter{dataKey: testKey},
+			kubeadm: stubTokenGetter{
+				getJoinTokenErr: someErr,
+			},
+			kms: stubKeyGetter{
+				dataKey: testKey,
+			},
+			ca: stubCA{
+				cert: testCert,
+				key:  testKey,
+			},
+			id:      mustMarshalID(testID),
+			wantErr: true,
+		},
+		"GetCertificate fails": {
+			kubeadm: stubTokenGetter{
+				token: testJoinToken,
+			},
+			kms: stubKeyGetter{
+				dataKey: testKey,
+			},
+			ca: stubCA{
+				getCertErr: someErr,
+			},
 			id:      mustMarshalID(testID),
 			wantErr: true,
 		},
@@ -74,7 +129,7 @@ func TestActivateNode(t *testing.T) {
 			if len(tc.id) > 0 {
 				require.NoError(file.Write(constants.ActivationIDFilename, tc.id, 0o644))
 			}
-			api := New(file, tc.kubeadm, tc.kms)
+			api := New(file, tc.ca, tc.kubeadm, tc.kms)
 
 			resp, err := api.ActivateNode(context.Background(), &proto.ActivateNodeRequest{DiskUuid: "uuid"})
 			if tc.wantErr {
@@ -92,6 +147,8 @@ func TestActivateNode(t *testing.T) {
 			assert.Equal(tc.kubeadm.token.APIServerEndpoint, resp.ApiServerEndpoint)
 			assert.Equal(tc.kubeadm.token.CACertHashes[0], resp.DiscoveryTokenCaCertHash)
 			assert.Equal(tc.kubeadm.token.Token, resp.Token)
+			assert.Equal(tc.ca.cert, resp.KubeletCert)
+			assert.Equal(tc.ca.key, resp.KubeletKey)
 		})
 	}
 }
@@ -120,4 +177,14 @@ type stubKeyGetter struct {
 
 func (f stubKeyGetter) GetDataKey(context.Context, string, int) ([]byte, error) {
 	return f.dataKey, f.getDataKeyErr
+}
+
+type stubCA struct {
+	cert       []byte
+	key        []byte
+	getCertErr error
+}
+
+func (f stubCA) GetCertificate(string) ([]byte, []byte, error) {
+	return f.cert, f.key, f.getCertErr
 }
