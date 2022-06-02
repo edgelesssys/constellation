@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+
+### Changed
+
+### Removed
+
+### Fixed
+
+### Security
+
+### Internal
+
+## [1.1.0] - 2022-06-02
+### Added
 - CLI
   - Command `constellation recover` to re-initialize a completely stopped cluster.
   - Command `constellation config generate` to generate a default configuration file for a specific cloud provider.
@@ -13,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Option to enable dm-integrity in a StorageClass.
   - Support volume expansion.
   - Support volume snapshots.
+- KMS
+  - Deploy Key Management Service (KMS) in Constellation clusters to handle key derivation.
 - Option to add SSH users on init.
 
 ### Changed
@@ -50,5 +65,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2022-04-28
 Initial release of Constellation. With underlying WireGuard and Kubernetes compliant.
 
-[Unreleased]: https://github.com/edgelesssys/constellation/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/edgelesssys/constellation/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/edgelesssys/constellation/releases/tag/v1.1.0
 [1.0.0]: https://github.com/edgelesssys/constellation/releases/tag/v1.0.0
