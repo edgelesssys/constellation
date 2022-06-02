@@ -17,6 +17,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+## [1.2.0] - 2022-06-02
+### Added
+
+### Changed
+replaced flannel CNI with cilium
+
+### Removed
+
+### Fixed
+
+### Security
+
+### Internal
+
 ## [1.1.0] - 2022-06-02
 ### Added
 - CLI
@@ -65,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2022-04-28
 Initial release of Constellation. With underlying WireGuard and Kubernetes compliant.
 
-[Unreleased]: https://github.com/edgelesssys/constellation/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/edgelesssys/constellation/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/edgelesssys/constellation/releases/tag/v1.2.0
 [1.1.0]: https://github.com/edgelesssys/constellation/releases/tag/v1.1.0
 [1.0.0]: https://github.com/edgelesssys/constellation/releases/tag/v1.0.0
