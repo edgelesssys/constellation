@@ -36,21 +36,21 @@ func CreateAttestationServerTLSConfig(issuer Issuer, validators []Validator) (*t
 // If no validators are set, the server's attestation document will not be verified.
 // If issuer is nil, the client will be unable to perform mutual aTLS.
 func CreateAttestationClientTLSConfig(issuer Issuer, validators []Validator) (*tls.Config, error) {
-	nonce, err := util.GenerateRandomBytes(config.RNGLengthDefault)
+	clientNonce, err := util.GenerateRandomBytes(config.RNGLengthDefault)
 	if err != nil {
 		return nil, err
 	}
 	clientConn := &clientConnection{
 		issuer:      issuer,
 		validators:  validators,
-		clientNonce: nonce,
+		clientNonce: clientNonce,
 	}
 
 	return &tls.Config{
 		VerifyPeerCertificate: clientConn.verify,
-		GetClientCertificate:  clientConn.getCertificate,                // use custom certificate for mutual aTLS connections
-		InsecureSkipVerify:    true,                                     // disable default verification because we use our own verify func
-		ServerName:            base64.StdEncoding.EncodeToString(nonce), // abuse ServerName as a channel to transmit the nonce
+		GetClientCertificate:  clientConn.getCertificate,                      // use custom certificate for mutual aTLS connections
+		InsecureSkipVerify:    true,                                           // disable default verification because we use our own verify func
+		ServerName:            base64.StdEncoding.EncodeToString(clientNonce), // abuse ServerName as a channel to transmit the nonce
 		MinVersion:            tls.VersionTLS12,
 	}, nil
 }
@@ -78,16 +78,16 @@ func getATLSConfigForClientFunc(issuer Issuer, validators []Validator) (func(*tl
 	// this function will be called once for every client
 	return func(chi *tls.ClientHelloInfo) (*tls.Config, error) {
 		// generate nonce for this connection
-		nonce, err := util.GenerateRandomBytes(config.RNGLengthDefault)
+		serverNonce, err := util.GenerateRandomBytes(config.RNGLengthDefault)
 		if err != nil {
 			return nil, err
 		}
 
 		serverConn := &serverConnection{
-			privKey:    priv,
-			issuer:     issuer,
-			validators: validators,
-			nonce:      nonce,
+			privKey:     priv,
+			issuer:      issuer,
+			validators:  validators,
+			serverNonce: serverNonce,
 		}
 
 		clientAuth := tls.NoClientCert
@@ -255,10 +255,10 @@ func (c *clientConnection) getCertificate(*tls.CertificateRequestInfo) (*tls.Cer
 
 // serverConnection holds state for server to client connections.
 type serverConnection struct {
-	issuer     Issuer
-	validators []Validator
-	privKey    *ecdsa.PrivateKey
-	nonce      []byte
+	issuer      Issuer
+	validators  []Validator
+	privKey     *ecdsa.PrivateKey
+	serverNonce []byte
 }
 
 // verify the validity of a clients aTLS certificate.
@@ -269,7 +269,7 @@ func (c *serverConnection) verify(rawCerts [][]byte, verifiedChains [][]*x509.Ce
 		return err
 	}
 
-	return verifyEmbeddedReport(c.validators, cert, hash, c.nonce)
+	return verifyEmbeddedReport(c.validators, cert, hash, c.serverNonce)
 }
 
 // getCertificate generates a client certificate for aTLS connections.
@@ -283,5 +283,5 @@ func (c *serverConnection) getCertificate(chi *tls.ClientHelloInfo) (*tls.Certif
 
 	// create aTLS certificate using the nonce as extracted from the client-hello message
 	// we also embed the nonce generated for this connection in case of mutual aTLS
-	return getCertificate(c.issuer, c.privKey, &c.privKey.PublicKey, clientNonce, c.nonce)
+	return getCertificate(c.issuer, c.privKey, &c.privKey.PublicKey, clientNonce, c.serverNonce)
 }
