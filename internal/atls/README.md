@@ -27,16 +27,16 @@ sequenceDiagram
     Note over Client: Verify Attestation
     Client->>Server: ClientKeyExchange
     Client->>Server: ChangeCipherSpec, Finished
-    Server->>Client: 
+    Server->>Client: #
 ```
 
 ## Server side verification
 
 1. The client sends a ClientHello message
 
-2. The server sends back a certificate with a random nonce. The nonce is embedded using x509 certificate extensions with the OID `1.3.9900.0.1`.
+2. The server sends back a certificate and a random nonce. The nonce is encoded as the Distinguished Name of an acceptable CA.
 
-3. The client does not verify the servers certificate, but uses the embedded nonce to generate an attestation based on its CC capabilities.
+3. The client does not verify the servers certificate, but uses the nonce to generate an attestation based on its CC capabilities.
     * The attestation is embedded in the client certificate using x509 certificate extensions with an OID to identify the CC attestation type.
 
 4. The server verifies the client's attestation statement.
@@ -48,7 +48,7 @@ sequenceDiagram
     participant Client
     participant Server
     Client->>Server: ClientHello
-    Server->>Client: ServerCertificate(nonce), ServerHelloDone
+    Server->>Client: ServerCertificate, AcceptableCAs(nonce), ServerHelloDone
     Client->>Server: ClientKeyExchange, ClientCertificate(AttestationStatement)
     Client->>Server: ChangeCipherSpec, Finished
     Note over Server: Verify Attestation
@@ -61,11 +61,11 @@ sequenceDiagram
 
 2. The server generates an attestation statement using the clients nonce and its CC capabilities.
     * The attestation is embedded in the server certificate using x509 certificate extensions with an OID to identify the attestation type.
-    * A nonce is embedded using x509 certificate extensions with the OID `1.3.9900.0.1`.
+    * A nonce is encoded as the Distinguished Name of an acceptable CA.
 
 3. The client verifies the attestation statement.
 
-4. The client uses the nonce embedded in the server's certificate to generate an attestation based on its CC capabilities.
+4. The client uses the nonce to generate an attestation based on its CC capabilities.
     * The attestation is embedded in the client certificate using x509 certificate extensions with an OID to identify the CC attestation type.
 
 5. The server verifies the client's attestation statement.
@@ -77,7 +77,7 @@ sequenceDiagram
     participant Client
     participant Server
     Client->>Server: ClientHello(nonce)
-    Server->>Client: ServerCertificate(AttestationStatement, nonce), ServerHelloDone
+    Server->>Client: ServerCertificate(AttestationStatement), AcceptableCAs(nonce), ServerHelloDone
     Note over Client: Verify Attestation
     Client->>Server: ClientKeyExchange, ClientCertificate(AttestationStatement)
     Client->>Server: ChangeCipherSpec, Finished

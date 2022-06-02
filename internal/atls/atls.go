@@ -9,8 +9,11 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/base64"
 	"errors"
+	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/edgelesssys/constellation/coordinator/config"
@@ -33,6 +36,11 @@ func CreateAttestationServerTLSConfig(issuer Issuer, validators []Validator) (*t
 }
 
 // CreateAttestationClientTLSConfig creates a tls.Config object that verifies a certificate with an embedded attestation document.
+//
+// ATTENTION: The tls.Config ensures freshness of the server's attestation only for the first connection it is used for.
+// If freshness is required, you must create a new tls.Config for each connection or ensure freshness on the protocol level.
+// If freshness is not required, you can reuse this tls.Config.
+//
 // If no validators are set, the server's attestation document will not be verified.
 // If issuer is nil, the client will be unable to perform mutual aTLS.
 func CreateAttestationClientTLSConfig(issuer Issuer, validators []Validator) (*tls.Config, error) {
@@ -67,7 +75,7 @@ type Validator interface {
 
 // getATLSConfigForClientFunc returns a config setup function that is called once for every client connecting to the server.
 // This allows for different server configuration for every client.
-// In aTLS this is used to generate unique nonces for every client and embed them in the server's certificate.
+// In aTLS this is used to generate unique nonces for every client.
 func getATLSConfigForClientFunc(issuer Issuer, validators []Validator) (func(*tls.ClientHelloInfo) (*tls.Config, error), error) {
 	// generate key for the server
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -90,25 +98,29 @@ func getATLSConfigForClientFunc(issuer Issuer, validators []Validator) (func(*tl
 			serverNonce: serverNonce,
 		}
 
-		clientAuth := tls.NoClientCert
-		// enable mutual aTLS if any validators are set
-		if len(validators) > 0 {
-			clientAuth = tls.RequireAnyClientCert // validity of certificate will be checked by our custom verify function
-		}
-
-		return &tls.Config{
-			ClientAuth:            clientAuth,
+		cfg := &tls.Config{
 			VerifyPeerCertificate: serverConn.verify,
 			GetCertificate:        serverConn.getCertificate,
 			MinVersion:            tls.VersionTLS12,
-		}, nil
+		}
+
+		// enable mutual aTLS if any validators are set
+		if len(validators) > 0 {
+			cfg.ClientAuth = tls.RequireAnyClientCert // validity of certificate will be checked by our custom verify function
+
+			// ugly hack: abuse acceptable client CAs as a channel to transmit the nonce
+			if cfg.ClientCAs, err = encodeNonceToCertPool(serverNonce, priv); err != nil {
+				return nil, fmt.Errorf("encode nonce: %w", err)
+			}
+		}
+
+		return cfg, nil
 	}, nil
 }
 
 // getCertificate creates a client or server certificate for aTLS connections.
-// The certificate uses certificate extensions to embed an attestation document generated using remoteNonce.
-// If localNonce is set, it is also embedded as a certificate extension.
-func getCertificate(issuer Issuer, priv, pub any, remoteNonce, localNonce []byte) (*tls.Certificate, error) {
+// The certificate uses certificate extensions to embed an attestation document generated using nonce.
+func getCertificate(issuer Issuer, priv, pub any, nonce []byte) (*tls.Certificate, error) {
 	serialNumber, err := util.GenerateCertificateSerialNumber()
 	if err != nil {
 		return nil, err
@@ -124,7 +136,7 @@ func getCertificate(issuer Issuer, priv, pub any, remoteNonce, localNonce []byte
 		}
 
 		// create attestation document using the nonce send by the remote party
-		attDoc, err := issuer.Issue(hash, remoteNonce)
+		attDoc, err := issuer.Issue(hash, nonce)
 		if err != nil {
 			return nil, err
 		}
@@ -132,12 +144,7 @@ func getCertificate(issuer Issuer, priv, pub any, remoteNonce, localNonce []byte
 		extensions = append(extensions, pkix.Extension{Id: issuer.OID(), Value: attDoc})
 	}
 
-	// embed locally generated nonce in certificate
-	if len(localNonce) > 0 {
-		extensions = append(extensions, pkix.Extension{Id: oid.ATLSNonce, Value: localNonce})
-	}
-
-	// create certificate that includes the attestation document and the server nonce as extension
+	// create certificate that includes the attestation document as extension
 	now := time.Now()
 	template := &x509.Certificate{
 		SerialNumber:    serialNumber,
@@ -208,12 +215,59 @@ func hashPublicKey(pub any) ([]byte, error) {
 	return result[:], nil
 }
 
+// encodeNonceToCertPool returns a cert pool that contains a certificate whose CN is the base64-encoded nonce.
+func encodeNonceToCertPool(nonce []byte, privKey *ecdsa.PrivateKey) (*x509.CertPool, error) {
+	template := &x509.Certificate{
+		SerialNumber: &big.Int{},
+		Subject:      pkix.Name{CommonName: base64.StdEncoding.EncodeToString(nonce)},
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, template, &privKey.PublicKey, privKey)
+	if err != nil {
+		return nil, err
+	}
+	cert, err := x509.ParseCertificate(der)
+	if err != nil {
+		return nil, err
+	}
+	pool := x509.NewCertPool()
+	pool.AddCert(cert)
+	return pool, nil
+}
+
+// decodeNonceFromAcceptableCAs interprets the CN of acceptableCAs[0] as base64-encoded nonce and returns the decoded nonce.
+// acceptableCAs should have been received by a client where the server used encodeNonceToCertPool to transmit the nonce.
+func decodeNonceFromAcceptableCAs(acceptableCAs [][]byte) ([]byte, error) {
+	if len(acceptableCAs) != 1 {
+		return nil, errors.New("unexpected acceptableCAs length")
+	}
+	var rdnSeq pkix.RDNSequence
+	if _, err := asn1.Unmarshal(acceptableCAs[0], &rdnSeq); err != nil {
+		return nil, err
+	}
+
+	// https://github.com/golang/go/blob/19309779ac5e2f5a2fd3cbb34421dafb2855ac21/src/crypto/x509/pkix/pkix.go#L188
+	oidCommonName := asn1.ObjectIdentifier{2, 5, 4, 3}
+
+	for _, rdnSet := range rdnSeq {
+		for _, rdn := range rdnSet {
+			if rdn.Type.Equal(oidCommonName) {
+				nonce, ok := rdn.Value.(string)
+				if !ok {
+					return nil, errors.New("unexpected RDN type")
+				}
+				return base64.StdEncoding.DecodeString(nonce)
+			}
+		}
+	}
+
+	return nil, errors.New("CN not found")
+}
+
 // clientConnection holds state for client to server connections.
 type clientConnection struct {
 	issuer      Issuer
 	validators  []Validator
 	clientNonce []byte
-	serverNonce []byte
 }
 
 // verify the validity of an aTLS server certificate.
@@ -221,13 +275,6 @@ func (c *clientConnection) verify(rawCerts [][]byte, verifiedChains [][]*x509.Ce
 	cert, hash, err := processCertificate(rawCerts, verifiedChains)
 	if err != nil {
 		return err
-	}
-
-	// get nonce send by server from cert extensions and save to connection state
-	for _, ex := range cert.Extensions {
-		if ex.Id.Equal(oid.ATLSNonce) {
-			c.serverNonce = ex.Value
-		}
 	}
 
 	// don't perform verification of attestation document if no validators are set
@@ -239,18 +286,20 @@ func (c *clientConnection) verify(rawCerts [][]byte, verifiedChains [][]*x509.Ce
 }
 
 // getCertificate generates a client certificate for mutual aTLS connections.
-func (c *clientConnection) getCertificate(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
+func (c *clientConnection) getCertificate(cri *tls.CertificateRequestInfo) (*tls.Certificate, error) {
 	// generate and hash key
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, err
 	}
 
-	// create aTLS certificate using the server's nonce as read by clientConnection.verify
-	// we do not pass a nonce because
-	// 		1. we already received a certificate from the server
-	//		2. we transmitted the client nonce as our server name in our client-hello message
-	return getCertificate(c.issuer, priv, &priv.PublicKey, c.serverNonce, nil)
+	// ugly hack: abuse acceptable client CAs as a channel to receive the nonce
+	serverNonce, err := decodeNonceFromAcceptableCAs(cri.AcceptableCAs)
+	if err != nil {
+		return nil, fmt.Errorf("decode nonce: %w", err)
+	}
+
+	return getCertificate(c.issuer, priv, &priv.PublicKey, serverNonce)
 }
 
 // serverConnection holds state for server to client connections.
@@ -282,6 +331,5 @@ func (c *serverConnection) getCertificate(chi *tls.ClientHelloInfo) (*tls.Certif
 	}
 
 	// create aTLS certificate using the nonce as extracted from the client-hello message
-	// we also embed the nonce generated for this connection in case of mutual aTLS
-	return getCertificate(c.issuer, c.privKey, &c.privKey.PublicKey, clientNonce, c.serverNonce)
+	return getCertificate(c.issuer, c.privKey, &c.privKey.PublicKey, clientNonce)
 }

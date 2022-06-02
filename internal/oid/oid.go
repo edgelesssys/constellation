@@ -4,9 +4,6 @@ import (
 	"encoding/asn1"
 )
 
-// ATLSNonce is the ASN.1 object identifier used to transmit a nonce from server to client.
-var ATLSNonce = asn1.ObjectIdentifier{1, 3, 9900, 0, 1}
-
 // Getter returns an ASN.1 Object Identifier.
 type Getter interface {
 	OID() asn1.ObjectIdentifier
