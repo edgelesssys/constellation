@@ -24,6 +24,8 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 	a.mut.Lock()
 	defer a.mut.Unlock()
 
+	a.cloudLogger.Disclose("ActivateAsCoordinator called.")
+
 	if err := a.core.RequireState(state.AcceptingInit); err != nil {
 		return status.Errorf(codes.FailedPrecondition, "node is not in required state: %v", err)
 	}
@@ -167,6 +169,8 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 
 // ActivateAdditionalNodes is the RPC call to activate additional nodes.
 func (a *API) ActivateAdditionalNodes(in *pubproto.ActivateAdditionalNodesRequest, srv pubproto.API_ActivateAdditionalNodesServer) error {
+	a.cloudLogger.Disclose("ActivateAdditionalNodes called.")
+
 	if err := a.core.RequireState(state.ActivatingNodes); err != nil {
 		return status.Errorf(codes.FailedPrecondition, "%v", err)
 	}
@@ -194,6 +198,7 @@ func (a *API) ActivateAdditionalNodes(in *pubproto.ActivateAdditionalNodesReques
 
 // RequestStateDiskKey triggers the Coordinator to return a key derived from the Constellation's master secret to the caller.
 func (a *API) RequestStateDiskKey(ctx context.Context, in *pubproto.RequestStateDiskKeyRequest) (*pubproto.RequestStateDiskKeyResponse, error) {
+	a.cloudLogger.Disclose("RequestStateDiskKey called.")
 	if err := a.core.RequireState(state.ActivatingNodes); err != nil {
 		return nil, status.Errorf(codes.FailedPrecondition, "%v", err)
 	}

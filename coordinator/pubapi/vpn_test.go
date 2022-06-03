@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/edgelesssys/constellation/coordinator/logging"
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
@@ -41,7 +42,7 @@ func TestGetVPNPeers(t *testing.T) {
 
 			logger := zaptest.NewLogger(t)
 			cor := &fakeCore{peers: wantedPeers, GetPeersErr: tc.coreGetPeersErr}
-			api := New(logger, cor, nil, nil, nil, nil)
+			api := New(logger, &logging.NopLogger{}, cor, nil, nil, nil, nil)
 			defer api.Close()
 			resp, err := api.GetVPNPeers(context.Background(), &pubproto.GetVPNPeersRequest{})
 			if tc.wantErr {

@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edgelesssys/constellation/coordinator/logging"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/state/setup"
 	"go.uber.org/zap"
@@ -27,6 +28,7 @@ const (
 type API struct {
 	mut             sync.Mutex
 	logger          *zap.Logger
+	cloudLogger     logging.CloudLogger
 	core            Core
 	dialer          Dialer
 	vpnAPIServer    VPNAPIServer
@@ -39,9 +41,10 @@ type API struct {
 }
 
 // New creates a new API.
-func New(logger *zap.Logger, core Core, dialer Dialer, vpnAPIServer VPNAPIServer, getPublicIPAddr GetIPAddrFunc, peerFromContext PeerFromContextFunc) *API {
+func New(logger *zap.Logger, cloudLogger logging.CloudLogger, core Core, dialer Dialer, vpnAPIServer VPNAPIServer, getPublicIPAddr GetIPAddrFunc, peerFromContext PeerFromContextFunc) *API {
 	return &API{
 		logger:          logger,
+		cloudLogger:     cloudLogger,
 		core:            core,
 		dialer:          dialer,
 		vpnAPIServer:    vpnAPIServer,

@@ -11,6 +11,7 @@ import (
 
 	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/attestation/simulator"
+	"github.com/edgelesssys/constellation/coordinator/logging"
 	"github.com/edgelesssys/constellation/coordinator/pubapi"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/state"
@@ -139,7 +140,7 @@ func newMockCoreWithDialer(bufDialer *bufconnDialer) (*Core, *pubapi.API, error)
 	}
 
 	vapiServer := &fakeVPNAPIServer{logger: zapLogger, core: core, dialer: bufDialer}
-	papi := pubapi.New(zapLogger, core, dialer, vapiServer, getPublicAddr, nil)
+	papi := pubapi.New(zapLogger, &logging.NopLogger{}, core, dialer, vapiServer, getPublicAddr, nil)
 
 	return core, papi, nil
 }

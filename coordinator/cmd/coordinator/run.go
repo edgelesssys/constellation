@@ -10,6 +10,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/coordinator/logging"
 	"github.com/edgelesssys/constellation/coordinator/pubapi"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/store"
@@ -31,10 +32,13 @@ var version = "0.0.0"
 
 func run(issuer core.QuoteIssuer, vpn core.VPN, openTPM vtpm.TPMOpenFunc, getPublicIPAddr func() (string, error), dialer *grpcutil.Dialer, fileHandler file.Handler,
 	kube core.Cluster, metadata core.ProviderMetadata, encryptedDisk core.EncryptedDisk, etcdEndpoint string, etcdTLS bool, bindIP, bindPort string, zapLoggerCore *zap.Logger,
-	fs afero.Fs,
+	cloudLogger logging.CloudLogger, fs afero.Fs,
 ) {
 	defer zapLoggerCore.Sync()
 	zapLoggerCore.Info("starting coordinator", zap.String("version", version))
+
+	defer cloudLogger.Close()
+	cloudLogger.Disclose("Coordinator started running...")
 
 	tlsConfig, err := atls.CreateAttestationServerTLSConfig(issuer, nil)
 	if err != nil {
@@ -54,7 +58,7 @@ func run(issuer core.QuoteIssuer, vpn core.VPN, openTPM vtpm.TPMOpenFunc, getPub
 
 	vapiServer := &vpnAPIServer{logger: zapLoggerCore.Named("vpnapi"), core: core}
 	zapLoggerPubapi := zapLoggerCore.Named("pubapi")
-	papi := pubapi.New(zapLoggerPubapi, core, dialer, vapiServer, getPublicIPAddr, pubapi.GetRecoveryPeerFromContext)
+	papi := pubapi.New(zapLoggerPubapi, cloudLogger, core, dialer, vapiServer, getPublicIPAddr, pubapi.GetRecoveryPeerFromContext)
 	// initialize state machine and wait for re-joining of the VPN (if applicable)
 	nodeActivated, err := core.Initialize(context.TODO(), dialer, papi)
 	if err != nil {

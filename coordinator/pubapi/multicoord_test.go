@@ -6,6 +6,7 @@ import (
 	"net"
 	"testing"
 
+	"github.com/edgelesssys/constellation/coordinator/logging"
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
@@ -100,7 +101,7 @@ func TestActivateAsAdditionalCoordinator(t *testing.T) {
 				return "192.0.2.1", nil
 			}
 
-			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, getPublicIPAddr, nil)
+			api := New(zaptest.NewLogger(t), &logging.NopLogger{}, core, dialer, stubVPNAPIServer{}, getPublicIPAddr, nil)
 			defer api.Close()
 
 			// spawn vpnServer
@@ -167,7 +168,7 @@ func TestTriggerCoordinatorUpdate(t *testing.T) {
 			}
 			dialer := grpcutil.NewDialer(fakeValidator{}, nil)
 
-			api := New(logger, core, dialer, nil, nil, nil)
+			api := New(logger, &logging.NopLogger{}, core, dialer, nil, nil, nil)
 
 			_, err := api.TriggerCoordinatorUpdate(context.Background(), &pubproto.TriggerCoordinatorUpdateRequest{})
 			if tc.wantErr {
@@ -245,7 +246,7 @@ func TestActivateAdditionalCoordinators(t *testing.T) {
 				return "192.0.2.1", nil
 			}
 
-			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, getPublicIPAddr, nil)
+			api := New(zaptest.NewLogger(t), &logging.NopLogger{}, core, dialer, stubVPNAPIServer{}, getPublicIPAddr, nil)
 			defer api.Close()
 
 			// spawn coordinator
@@ -302,7 +303,7 @@ func TestGetPeerVPNPublicKey(t *testing.T) {
 				return "192.0.2.1", nil
 			}
 
-			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, getPublicIPAddr, nil)
+			api := New(zaptest.NewLogger(t), &logging.NopLogger{}, core, dialer, stubVPNAPIServer{}, getPublicIPAddr, nil)
 			defer api.Close()
 
 			resp, err := api.GetPeerVPNPublicKey(context.Background(), &pubproto.GetPeerVPNPublicKeyRequest{})

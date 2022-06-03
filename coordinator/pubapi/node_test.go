@@ -10,6 +10,7 @@ import (
 
 	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/coordinator/logging"
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
@@ -153,7 +154,7 @@ func TestActivateAsNode(t *testing.T) {
 			netDialer := testdialer.NewBufconnDialer()
 			dialer := grpcutil.NewDialer(fakeValidator{}, netDialer)
 
-			api := New(logger, cor, dialer, nil, nil, nil)
+			api := New(logger, &logging.NopLogger{}, cor, dialer, nil, nil, nil)
 			defer api.Close()
 
 			vserver := grpc.NewServer()
@@ -261,7 +262,7 @@ func TestTriggerNodeUpdate(t *testing.T) {
 			netDialer := testdialer.NewBufconnDialer()
 			dialer := grpcutil.NewDialer(fakeValidator{}, netDialer)
 
-			api := New(logger, core, dialer, nil, nil, nil)
+			api := New(logger, &logging.NopLogger{}, core, dialer, nil, nil, nil)
 
 			vserver := grpc.NewServer()
 			vapi := &stubVPNAPI{
@@ -337,7 +338,7 @@ func TestJoinCluster(t *testing.T) {
 			netDialer := testdialer.NewBufconnDialer()
 			dialer := grpcutil.NewDialer(fakeValidator{}, netDialer)
 
-			api := New(logger, core, dialer, nil, nil, nil)
+			api := New(logger, &logging.NopLogger{}, core, dialer, nil, nil, nil)
 
 			vserver := grpc.NewServer()
 			vapi := &stubVPNAPI{

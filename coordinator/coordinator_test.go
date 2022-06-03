@@ -11,6 +11,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/attestation/simulator"
 	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/coordinator/logging"
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/pubapi"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
@@ -223,7 +224,7 @@ func spawnPeer(require *require.Assertions, logger *zap.Logger, netDialer *testd
 	dialer := grpcutil.NewDialer(&core.MockValidator{}, netDialer)
 	vapiServer := &fakeVPNAPIServer{logger: logger.Named("vpnapi"), core: cor, dialer: netDialer}
 
-	papi := pubapi.New(logger, cor, dialer, vapiServer, getPublicAddr, nil)
+	papi := pubapi.New(logger, &logging.NopLogger{}, cor, dialer, vapiServer, getPublicAddr, nil)
 
 	tlsConfig, err := atls.CreateAttestationServerTLSConfig(&core.MockIssuer{}, nil)
 	require.NoError(err)

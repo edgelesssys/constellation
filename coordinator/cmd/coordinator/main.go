@@ -23,6 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/kubernetes"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/kubectl"
+	"github.com/edgelesssys/constellation/coordinator/logging"
 	"github.com/edgelesssys/constellation/coordinator/util"
 	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
 	"github.com/edgelesssys/constellation/coordinator/wireguard"
@@ -44,6 +45,7 @@ func main() {
 	var kube core.Cluster
 	var coreMetadata core.ProviderMetadata
 	var encryptedDisk core.EncryptedDisk
+	var cloudLogger logging.CloudLogger
 	cfg := zap.NewDevelopmentConfig()
 
 	logLevelUser := flag.Bool("debug", false, "enables gRPC debug output")
@@ -78,6 +80,7 @@ func main() {
 	case "gcp":
 		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.GCPPCRSelection)
 		if err != nil {
+			// TODO: Is there a reason we use log. instead of zapLogger?
 			log.Fatal(err)
 		}
 
@@ -89,6 +92,14 @@ func main() {
 			log.Fatalf("creating GCP client failed: %v\n", err)
 		}
 		metadata := gcpcloud.New(gcpClient)
+		descr, err := metadata.Self(context.Background())
+		if err != nil {
+			log.Fatal(err)
+		}
+		cloudLogger, err = gcpcloud.NewLogger(context.Background(), descr.ProviderID, "constellation-boot-log")
+		if err != nil {
+			log.Fatal(err)
+		}
 		coreMetadata = metadata
 		kube = kubernetes.New("gcp", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &gcpcloud.CloudControllerManager{}, &gcpcloud.CloudNodeManager{}, &gcpcloud.Autoscaler{}, metadata)
 		encryptedDisk = diskencryption.New()
@@ -111,6 +122,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		// TODO: Implement cloud logging for Azure
+		cloudLogger = &logging.NopLogger{}
 		coreMetadata = metadata
 		kube = kubernetes.New("azure", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), azurecloud.NewCloudControllerManager(metadata), &azurecloud.CloudNodeManager{}, &azurecloud.Autoscaler{}, metadata)
 
@@ -132,6 +145,7 @@ func main() {
 
 		// no support for cloud services in qemu
 		metadata := &qemucloud.Metadata{}
+		cloudLogger = &logging.NopLogger{}
 		kube = kubernetes.New("qemu", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &qemucloud.CloudControllerManager{}, &qemucloud.CloudNodeManager{}, &qemucloud.Autoscaler{}, metadata)
 		coreMetadata = metadata
 
@@ -147,6 +161,7 @@ func main() {
 		validator = core.NewMockValidator()
 		kube = &core.ClusterFake{}
 		coreMetadata = &core.ProviderMetadataFake{}
+		cloudLogger = &logging.NopLogger{}
 		encryptedDisk = &core.EncryptedDiskFake{}
 		bindIP = defaultIP
 		bindPort = defaultPort
@@ -162,5 +177,6 @@ func main() {
 	netDialer := &net.Dialer{}
 	dialer := grpcutil.NewDialer(validator, netDialer)
 	run(issuer, wg, openTPM, util.GetIPAddr, dialer, fileHandler, kube,
-		coreMetadata, encryptedDisk, etcdEndpoint, enforceEtcdTls, bindIP, bindPort, zapLoggerCore, fs)
+		coreMetadata, encryptedDisk, etcdEndpoint, enforceEtcdTls, bindIP,
+		bindPort, zapLoggerCore, cloudLogger, fs)
 }

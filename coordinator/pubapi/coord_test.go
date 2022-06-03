@@ -13,6 +13,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
 	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/coordinator/logging"
 	"github.com/edgelesssys/constellation/coordinator/oid"
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
@@ -155,7 +156,7 @@ func TestActivateAsCoordinator(t *testing.T) {
 				return "192.0.2.1", nil
 			}
 
-			api := New(zaptest.NewLogger(t), core, dialer, stubVPNAPIServer{}, getPublicIPAddr, nil)
+			api := New(zaptest.NewLogger(t), &logging.NopLogger{}, core, dialer, stubVPNAPIServer{}, getPublicIPAddr, nil)
 			defer api.Close()
 
 			// spawn nodes
@@ -307,7 +308,7 @@ func TestActivateAdditionalNodes(t *testing.T) {
 				return "192.0.2.1", nil
 			}
 
-			api := New(zaptest.NewLogger(t), core, dialer, nil, getPublicIPAddr, nil)
+			api := New(zaptest.NewLogger(t), &logging.NopLogger{}, core, dialer, nil, getPublicIPAddr, nil)
 			defer api.Close()
 			// spawn nodes
 			var nodePublicIPs []string
@@ -356,7 +357,7 @@ func TestAssemblePeerStruct(t *testing.T) {
 
 	vpnPubKey := []byte{2, 3, 4}
 	core := &fakeCore{vpnPubKey: vpnPubKey}
-	api := New(zaptest.NewLogger(t), core, nil, nil, getPublicIPAddr, nil)
+	api := New(zaptest.NewLogger(t), &logging.NopLogger{}, core, nil, nil, getPublicIPAddr, nil)
 	defer api.Close()
 
 	vpnIP, err := core.GetVPNIP()
@@ -558,7 +559,7 @@ func TestRequestStateDiskKey(t *testing.T) {
 				getDataKeyErr: tc.getDataKeyErr,
 			}
 
-			api := New(zaptest.NewLogger(t), core, grpcutil.NewDialer(dummyValidator{}, &net.Dialer{}), nil, nil, getPeerFromContext)
+			api := New(zaptest.NewLogger(t), &logging.NopLogger{}, core, grpcutil.NewDialer(dummyValidator{}, &net.Dialer{}), nil, nil, getPeerFromContext)
 
 			_, err = api.RequestStateDiskKey(ctx, &pubproto.RequestStateDiskKeyRequest{})
 			if tc.wantErr {

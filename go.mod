@@ -41,6 +41,7 @@ require (
 	cloud.google.com/go/compute v1.5.0
 	cloud.google.com/go/iam v0.3.0
 	cloud.google.com/go/kms v1.4.0
+	cloud.google.com/go/logging v1.4.2
 	cloud.google.com/go/resourcemanager v1.2.0
 	cloud.google.com/go/storage v1.21.0
 	github.com/Azure/azure-sdk-for-go v62.2.0+incompatible
@@ -80,6 +81,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/kr/text v0.2.0
 	github.com/martinjungblut/go-cryptsetup v0.0.0-20220421194528-92e17766b2e7
+	github.com/microsoft/ApplicationInsights-Go v0.4.4
 	github.com/schollz/progressbar/v3 v3.8.6
 	github.com/spf13/afero v1.8.2
 	github.com/spf13/cobra v1.4.0
@@ -108,6 +110,12 @@ require (
 	k8s.io/kubernetes v1.24.0
 	k8s.io/mount-utils v0.24.0
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
+)
+
+require (
+	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
+	github.com/gofrs/uuid v4.0.0+incompatible // indirect
+	github.com/hashicorp/errwrap v1.1.0 // indirect
 )
 
 require (
@@ -164,7 +172,6 @@ require (
 	github.com/google/go-cmp v0.5.7 // indirect
 	github.com/google/go-tspi v0.3.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/icholy/replace v0.5.0
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
