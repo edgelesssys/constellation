@@ -118,7 +118,7 @@ func (k *KubernetesUtil) setupAzurePodNetwork(ctx context.Context, providerID, s
 		return fmt.Errorf("error splitting providerID %q", providerID)
 	}
 
-	ciliumInstall := exec.CommandContext(ctx, "cilium", "install", "--azure-resource-group", matches[2], "--encryption", "wireguard", "--ipam", "azure",
+	ciliumInstall := exec.CommandContext(ctx, "cilium", "install", "--azure-resource-group", matches[2], "--ipam", "azure",
 		"--helm-set",
 		"tunnel=disabled,enableIPv4Masquerade=true,azure.enabled=true,debug.enabled=true,ipv4NativeRoutingCIDR="+subnetworkPodCIDR+
 			",endpointRoutes.enabled=true,encryption.enabled=true,encryption.type=wireguard,l7Proxy=false,egressMasqueradeInterfaces=eth0")
@@ -149,7 +149,7 @@ func (k *KubernetesUtil) setupGCPPodNetwork(ctx context.Context, nodeName, nodeP
 		return err
 	}
 
-	ciliumInstall := exec.CommandContext(ctx, "cilium", "install", "--encryption", "wireguard", "--ipam", "kubernetes", "--ipv4-native-routing-cidr", subnetworkPodCIDR, "--helm-set", "endpointRoutes.enabled=true,tunnel=disabled")
+	ciliumInstall := exec.CommandContext(ctx, "cilium", "install", "--ipam", "kubernetes", "--ipv4-native-routing-cidr", subnetworkPodCIDR, "--helm-set", "endpointRoutes.enabled=true,tunnel=disabled,encryption.enabled=true,encryption.type=wireguard,l7Proxy=false")
 	ciliumInstall.Env = append(os.Environ(), "KUBECONFIG="+kubeConfig)
 	out, err = ciliumInstall.CombinedOutput()
 	if err != nil {
