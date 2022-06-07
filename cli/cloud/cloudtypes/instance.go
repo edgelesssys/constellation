@@ -56,3 +56,9 @@ func (i Instances) GetOthers(id string) Instances {
 	}
 	return others
 }
+
+// ScalingGroup is a group of instances, with an identifying group ID.
+type ScalingGroup struct {
+	Instances
+	GroupID string
+}

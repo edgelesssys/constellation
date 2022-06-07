@@ -12,6 +12,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/edgelesssys/constellation/cli/cloud/cloudcmd"
+	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/cli/internal/azure"
 	"github.com/edgelesssys/constellation/cli/internal/gcp"
 	"github.com/edgelesssys/constellation/cli/internal/proto"
@@ -395,7 +396,7 @@ func readOrGeneratedMasterSecret(w io.Writer, fileHandler file.Handler, filename
 	return masterSecret, nil
 }
 
-func getScalingGroupsFromConfig(stat state.ConstellationState, config *config.Config) (coordinators, nodes ScalingGroup, err error) {
+func getScalingGroupsFromConfig(stat state.ConstellationState, config *config.Config) (coordinators, nodes cloudtypes.ScalingGroup, err error) {
 	switch {
 	case len(stat.GCPCoordinators) != 0:
 		return getGCPInstances(stat, config)
@@ -404,103 +405,76 @@ func getScalingGroupsFromConfig(stat state.ConstellationState, config *config.Co
 	case len(stat.QEMUCoordinators) != 0:
 		return getQEMUInstances(stat, config)
 	default:
-		return ScalingGroup{}, ScalingGroup{}, errors.New("no instances to initialize")
+		return cloudtypes.ScalingGroup{}, cloudtypes.ScalingGroup{}, errors.New("no instances to initialize")
 	}
 }
 
-func getGCPInstances(stat state.ConstellationState, config *config.Config) (coordinators, nodes ScalingGroup, err error) {
-	coordinatorMap := stat.GCPCoordinators
-	if len(coordinatorMap) == 0 {
-		return ScalingGroup{}, ScalingGroup{}, errors.New("no control-plane nodes available, can't create Constellation without any instance")
+func getGCPInstances(stat state.ConstellationState, config *config.Config) (coordinators, nodes cloudtypes.ScalingGroup, err error) {
+	if len(stat.GCPCoordinators) == 0 {
+		return cloudtypes.ScalingGroup{}, cloudtypes.ScalingGroup{}, errors.New("no control-plane nodes available, can't create Constellation without any instance")
 	}
-	var coordinatorInstances Instances
-	for _, node := range coordinatorMap {
-		coordinatorInstances = append(coordinatorInstances, Instance(node))
-	}
+
 	// GroupID of coordinators is empty, since they currently do not scale.
-	coordinators = ScalingGroup{
-		Instances: coordinatorInstances,
+	coordinators = cloudtypes.ScalingGroup{
+		Instances: stat.GCPCoordinators,
 		GroupID:   "",
 	}
 
-	nodeMap := stat.GCPNodes
-	if len(nodeMap) == 0 {
-		return ScalingGroup{}, ScalingGroup{}, errors.New("no worker nodes available, can't create Constellation with one instance")
-	}
-
-	var nodeInstances Instances
-	for _, node := range nodeMap {
-		nodeInstances = append(nodeInstances, Instance(node))
+	if len(stat.GCPNodes) == 0 {
+		return cloudtypes.ScalingGroup{}, cloudtypes.ScalingGroup{}, errors.New("no worker nodes available, can't create Constellation with one instance")
 	}
 
 	// TODO: make min / max configurable and abstract autoscaling for different cloud providers
-	nodes = ScalingGroup{
-		Instances: nodeInstances,
+	nodes = cloudtypes.ScalingGroup{
+		Instances: stat.GCPNodes,
 		GroupID:   gcp.AutoscalingNodeGroup(stat.GCPProject, stat.GCPZone, stat.GCPNodeInstanceGroup, config.AutoscalingNodeGroupMin, config.AutoscalingNodeGroupMax),
 	}
 
 	return
 }
 
-func getAzureInstances(stat state.ConstellationState, config *config.Config) (coordinators, nodes ScalingGroup, err error) {
-	coordinatorMap := stat.AzureCoordinators
-	if len(coordinatorMap) == 0 {
-		return ScalingGroup{}, ScalingGroup{}, errors.New("no control-plane nodes available, can't create Constellation cluster without any instance")
-	}
-	var coordinatorInstances Instances
-	for _, node := range coordinatorMap {
-		coordinatorInstances = append(coordinatorInstances, Instance(node))
-	}
-	// GroupID of coordinators is empty, since they currently do not scale.
-	coordinators = ScalingGroup{
-		Instances: coordinatorInstances,
-		GroupID:   "",
-	}
-	nodeMap := stat.AzureNodes
-	if len(nodeMap) == 0 {
-		return ScalingGroup{}, ScalingGroup{}, errors.New("no worker nodes available, can't create Constellation cluster with one instance")
+func getAzureInstances(stat state.ConstellationState, config *config.Config) (coordinators, nodes cloudtypes.ScalingGroup, err error) {
+	if len(stat.AzureCoordinators) == 0 {
+		return cloudtypes.ScalingGroup{}, cloudtypes.ScalingGroup{}, errors.New("no control-plane nodes available, can't create Constellation cluster without any instance")
 	}
 
-	var nodeInstances Instances
-	for _, node := range nodeMap {
-		nodeInstances = append(nodeInstances, Instance(node))
+	// GroupID of coordinators is empty, since they currently do not scale.
+	coordinators = cloudtypes.ScalingGroup{
+		Instances: stat.AzureCoordinators,
+		GroupID:   "",
+	}
+
+	if len(stat.AzureNodes) == 0 {
+		return cloudtypes.ScalingGroup{}, cloudtypes.ScalingGroup{}, errors.New("no worker nodes available, can't create Constellation cluster with one instance")
 	}
 
 	// TODO: make min / max configurable and abstract autoscaling for different cloud providers
-	nodes = ScalingGroup{
-		Instances: nodeInstances,
+	nodes = cloudtypes.ScalingGroup{
+		Instances: stat.AzureNodes,
 		GroupID:   azure.AutoscalingNodeGroup(stat.AzureNodesScaleSet, config.AutoscalingNodeGroupMin, config.AutoscalingNodeGroupMax),
 	}
 	return
 }
 
-func getQEMUInstances(stat state.ConstellationState, config *config.Config) (coordinators, nodes ScalingGroup, err error) {
+func getQEMUInstances(stat state.ConstellationState, config *config.Config) (coordinators, nodes cloudtypes.ScalingGroup, err error) {
 	coordinatorMap := stat.QEMUCoordinators
 	if len(coordinatorMap) == 0 {
-		return ScalingGroup{}, ScalingGroup{}, errors.New("no coordinators available, can't create Constellation without any instance")
+		return cloudtypes.ScalingGroup{}, cloudtypes.ScalingGroup{}, errors.New("no coordinators available, can't create Constellation without any instance")
 	}
-	var coordinatorInstances Instances
-	for _, node := range coordinatorMap {
-		coordinatorInstances = append(coordinatorInstances, Instance(node))
-	}
+
 	// QEMU does not support autoscaling
-	coordinators = ScalingGroup{
-		Instances: coordinatorInstances,
+	coordinators = cloudtypes.ScalingGroup{
+		Instances: stat.QEMUCoordinators,
 		GroupID:   "",
 	}
-	nodeMap := stat.QEMUNodes
-	if len(nodeMap) == 0 {
-		return ScalingGroup{}, ScalingGroup{}, errors.New("no nodes available, can't create Constellation with one instance")
-	}
 
-	var nodeInstances Instances
-	for _, node := range nodeMap {
-		nodeInstances = append(nodeInstances, Instance(node))
+	if len(stat.QEMUNodes) == 0 {
+		return cloudtypes.ScalingGroup{}, cloudtypes.ScalingGroup{}, errors.New("no nodes available, can't create Constellation with one instance")
 	}
 
 	// QEMU does not support autoscaling
-	nodes = ScalingGroup{
-		Instances: nodeInstances,
+	nodes = cloudtypes.ScalingGroup{
+		Instances: stat.QEMUNodes,
 		GroupID:   "",
 	}
 	return
@@ -513,39 +487,4 @@ func initCompletion(cmd *cobra.Command, args []string, toComplete string) ([]str
 		return []string{}, cobra.ShellCompDirectiveError
 	}
 	return []string{}, cobra.ShellCompDirectiveDefault
-}
-
-//
-// TODO: Code below is target of multicloud refactoring.
-//
-
-// Instance is a cloud instance.
-type Instance struct {
-	PublicIP  string
-	PrivateIP string
-}
-
-type Instances []Instance
-
-type ScalingGroup struct {
-	Instances
-	GroupID string
-}
-
-// PublicIPs returns the public IPs of all the instances.
-func (i Instances) PublicIPs() []string {
-	var ips []string
-	for _, instance := range i {
-		ips = append(ips, instance.PublicIP)
-	}
-	return ips
-}
-
-// PrivateIPs returns the private IPs of all the instances of the Constellation.
-func (i Instances) PrivateIPs() []string {
-	var ips []string
-	for _, instance := range i {
-		ips = append(ips, instance.PrivateIP)
-	}
-	return ips
 }
