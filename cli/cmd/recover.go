@@ -9,7 +9,7 @@ import (
 
 	"github.com/edgelesssys/constellation/cli/cloud/cloudcmd"
 	"github.com/edgelesssys/constellation/cli/cloudprovider"
-	"github.com/edgelesssys/constellation/cli/proto"
+	"github.com/edgelesssys/constellation/cli/internal/proto"
 	"github.com/edgelesssys/constellation/coordinator/util"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
