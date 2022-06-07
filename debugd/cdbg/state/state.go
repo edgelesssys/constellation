@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	cmdc "github.com/edgelesssys/constellation/cli/cmd"
-	"github.com/edgelesssys/constellation/cli/gcp"
 	configc "github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/state"
 )
@@ -54,7 +53,7 @@ func getAWSInstances(stat state.ConstellationState, _ *configc.Config) (coordina
 
 	// TODO: make min / max configurable and abstract autoscaling for different cloud providers
 	// TODO: GroupID of nodes is empty, since they currently do not scale.
-	nodes = cmdc.ScalingGroup{Instances: nodeInstances, GroupID: ""}
+	nodes = cmdc.ScalingGroup{Instances: nodeInstances}
 
 	return
 }
@@ -85,10 +84,7 @@ func getGCPInstances(stat state.ConstellationState, config *configc.Config) (coo
 	}
 
 	// TODO: make min / max configurable and abstract autoscaling for different cloud providers
-	nodes = cmdc.ScalingGroup{
-		Instances: nodeInstances,
-		GroupID:   gcp.AutoscalingNodeGroup(stat.GCPProject, stat.GCPZone, stat.GCPNodeInstanceGroup, config.AutoscalingNodeGroupMin, config.AutoscalingNodeGroupMax),
-	}
+	nodes = cmdc.ScalingGroup{Instances: nodeInstances}
 
 	return
 }
@@ -118,10 +114,7 @@ func getAzureInstances(stat state.ConstellationState, _ *configc.Config) (coordi
 	}
 
 	// TODO: make min / max configurable and abstract autoscaling for different cloud providers
-	nodes = cmdc.ScalingGroup{
-		Instances: nodeInstances,
-		GroupID:   "",
-	}
+	nodes = cmdc.ScalingGroup{Instances: nodeInstances}
 	return
 }
 
@@ -147,9 +140,6 @@ func getQEMUInstances(stat state.ConstellationState, _ *configc.Config) (coordin
 	for _, node := range nodeMap {
 		nodeInstances = append(nodeInstances, cmdc.Instance(node))
 	}
-	nodes = cmdc.ScalingGroup{
-		Instances: nodeInstances,
-		GroupID:   "",
-	}
+	nodes = cmdc.ScalingGroup{Instances: nodeInstances}
 	return
 }

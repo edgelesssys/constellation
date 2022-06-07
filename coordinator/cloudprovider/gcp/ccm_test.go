@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/edgelesssys/constellation/cli/gcp/client"
 	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/internal/gcpshared"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	k8s "k8s.io/api/core/v1"
@@ -67,7 +67,7 @@ node-tags = constellation-UID
 }
 
 func TestSecrets(t *testing.T) {
-	serviceAccountKey := client.ServiceAccountKey{
+	serviceAccountKey := gcpshared.ServiceAccountKey{
 		Type:                    "type",
 		ProjectID:               "project-id",
 		PrivateKeyID:            "private-key-id",

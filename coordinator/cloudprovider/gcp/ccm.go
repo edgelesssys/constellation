@@ -9,6 +9,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/cloudprovider"
 	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/internal/gcpshared"
 	k8s "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -80,7 +81,7 @@ func (c *CloudControllerManager) ConfigMaps(instance cloudtypes.Instance) (resou
 // Secrets returns a list of secrets to deploy together with the k8s cloud-controller-manager.
 // Reference: https://kubernetes.io/docs/concepts/configuration/secret/ .
 func (c *CloudControllerManager) Secrets(ctx context.Context, instance cloudtypes.Instance, cloudServiceAccountURI string) (resources.Secrets, error) {
-	serviceAccountKey, err := getServiceAccountKey(cloudServiceAccountURI)
+	serviceAccountKey, err := gcpshared.ServiceAccountKeyFromURI(cloudServiceAccountURI)
 	if err != nil {
 		return resources.Secrets{}, err
 	}

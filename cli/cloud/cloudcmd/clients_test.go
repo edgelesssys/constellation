@@ -9,6 +9,7 @@ import (
 	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	gcpcl "github.com/edgelesssys/constellation/cli/gcp/client"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/internal/gcpshared"
 	"github.com/edgelesssys/constellation/internal/state"
 )
 
@@ -307,7 +308,7 @@ func (c *fakeGcpClient) CreateInstances(ctx context.Context, input gcpcl.CreateI
 
 func (c *fakeGcpClient) CreateServiceAccount(ctx context.Context, input gcpcl.ServiceAccountInput) (string, error) {
 	c.serviceAccount = "service-account@" + c.project + ".iam.gserviceaccount.com"
-	return gcpcl.ServiceAccountKey{
+	return gcpshared.ServiceAccountKey{
 		Type:                    "service_account",
 		ProjectID:               c.project,
 		PrivateKeyID:            "key-id",
@@ -318,7 +319,7 @@ func (c *fakeGcpClient) CreateServiceAccount(ctx context.Context, input gcpcl.Se
 		TokenURI:                "https://accounts.google.com/o/oauth2/token",
 		AuthProviderX509CertURL: "https://www.googleapis.com/oauth2/v1/certs",
 		ClientX509CertURL:       "https://www.googleapis.com/robot/v1/metadata/x509/service-account-email",
-	}.ConvertToCloudServiceAccountURI(), nil
+	}.ToCloudServiceAccountURI(), nil
 }
 
 func (c *fakeGcpClient) TerminateFirewall(ctx context.Context) error {
@@ -398,7 +399,7 @@ func (c *stubGcpClient) CreateInstances(ctx context.Context, input gcpcl.CreateI
 }
 
 func (c *stubGcpClient) CreateServiceAccount(ctx context.Context, input gcpcl.ServiceAccountInput) (string, error) {
-	return gcpcl.ServiceAccountKey{}.ConvertToCloudServiceAccountURI(), c.createServiceAccountErr
+	return gcpshared.ServiceAccountKey{}.ToCloudServiceAccountURI(), c.createServiceAccountErr
 }
 
 func (c *stubGcpClient) TerminateFirewall(ctx context.Context) error {
