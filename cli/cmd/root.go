@@ -12,6 +12,7 @@ import (
 
 // Execute starts the CLI.
 func Execute() error {
+	cobra.EnableCommandSorting = false
 	rootCmd := NewRootCmd()
 	ctx, cancel := signalContext(context.Background(), os.Interrupt)
 	defer cancel()
