@@ -1,0 +1,9 @@
+domain: edgeless.systems
+layout:
+- go.kubebuilder.io/v3
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: constellation-node-operator
+repo: github.com/edgelesssys/constellation/operators/constellation-node-operator
+version: "3"
