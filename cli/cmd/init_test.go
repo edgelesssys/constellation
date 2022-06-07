@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
-	"github.com/edgelesssys/constellation/cli/ec2"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/state"
@@ -167,15 +166,12 @@ func TestInitialize(t *testing.T) {
 			wantErr:       true,
 		},
 		"no instances to pick one": {
-			existingState: state.ConstellationState{
-				EC2Instances:     ec2.Instances{},
-				EC2SecurityGroup: "sg-test",
-			},
-			client:     &stubProtoClient{},
-			waiter:     &stubStatusWaiter{},
-			privKey:    testKey,
-			vpnHandler: &stubVPNHandler{},
-			wantErr:    true,
+			existingState: state.ConstellationState{GCPNodes: cloudtypes.Instances{}},
+			client:        &stubProtoClient{},
+			waiter:        &stubStatusWaiter{},
+			privKey:       testKey,
+			vpnHandler:    &stubVPNHandler{},
+			wantErr:       true,
 		},
 		"public key to short": {
 			existingState: testGcpState,

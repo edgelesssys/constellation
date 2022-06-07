@@ -397,8 +397,6 @@ func readOrGeneratedMasterSecret(w io.Writer, fileHandler file.Handler, filename
 
 func getScalingGroupsFromConfig(stat state.ConstellationState, config *config.Config) (coordinators, nodes ScalingGroup, err error) {
 	switch {
-	case len(stat.EC2Instances) != 0:
-		return getAWSInstances(stat)
 	case len(stat.GCPCoordinators) != 0:
 		return getGCPInstances(stat, config)
 	case len(stat.AzureCoordinators) != 0:
@@ -408,39 +406,6 @@ func getScalingGroupsFromConfig(stat state.ConstellationState, config *config.Co
 	default:
 		return ScalingGroup{}, ScalingGroup{}, errors.New("no instances to initialize")
 	}
-}
-
-func getAWSInstances(stat state.ConstellationState) (coordinators, nodes ScalingGroup, err error) {
-	coordinatorID, _, err := stat.EC2Instances.GetOne()
-	if err != nil {
-		return
-	}
-	coordinatorMap := stat.EC2Instances
-	var coordinatorInstances Instances
-	for _, node := range coordinatorMap {
-		coordinatorInstances = append(coordinatorInstances, Instance(node))
-	}
-	// GroupID of coordinators is empty, since they currently do not scale.
-	coordinators = ScalingGroup{
-		Instances: coordinatorInstances,
-		GroupID:   "",
-	}
-
-	nodeMap := stat.EC2Instances.GetOthers(coordinatorID)
-	if len(nodeMap) == 0 {
-		return ScalingGroup{}, ScalingGroup{}, errors.New("no worker nodes available, can't create Constellation cluster with one instance")
-	}
-
-	var nodeInstances Instances
-	for _, node := range nodeMap {
-		nodeInstances = append(nodeInstances, Instance(node))
-	}
-
-	// TODO: make min / max configurable and abstract autoscaling for different cloud providers
-	// TODO: GroupID of workers is empty, since they currently do not scale.
-	nodes = ScalingGroup{Instances: nodeInstances, GroupID: ""}
-
-	return
 }
 
 func getGCPInstances(stat state.ConstellationState, config *config.Config) (coordinators, nodes ScalingGroup, err error) {

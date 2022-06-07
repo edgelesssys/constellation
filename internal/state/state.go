@@ -2,7 +2,6 @@ package state
 
 import (
 	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
-	"github.com/edgelesssys/constellation/cli/ec2"
 )
 
 // ConstellationState is the state of a Constellation.
@@ -10,9 +9,6 @@ type ConstellationState struct {
 	Name          string `json:"name,omitempty"`
 	UID           string `json:"uid,omitempty"`
 	CloudProvider string `json:"cloudprovider,omitempty"`
-
-	EC2Instances     ec2.Instances `json:"ec2instances,omitempty"`
-	EC2SecurityGroup string        `json:"ec2securitygroup,omitempty"`
 
 	GCPNodes                       cloudtypes.Instances `json:"gcpnodes,omitempty"`
 	GCPCoordinators                cloudtypes.Instances `json:"gcpcoordinators,omitempty"`
