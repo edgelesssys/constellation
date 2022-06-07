@@ -7,7 +7,7 @@ import (
 
 	"github.com/edgelesssys/constellation/cli/azure"
 	azurecl "github.com/edgelesssys/constellation/cli/azure/client"
-	"github.com/edgelesssys/constellation/cli/gcp"
+	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	gcpcl "github.com/edgelesssys/constellation/cli/gcp/client"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/state"
@@ -216,8 +216,8 @@ func (c *stubAzureClient) TerminateServicePrincipal(ctx context.Context) error {
 }
 
 type fakeGcpClient struct {
-	nodes        gcp.Instances
-	coordinators gcp.Instances
+	nodes        cloudtypes.Instances
+	coordinators cloudtypes.Instances
 
 	nodesInstanceGroup       string
 	coordinatorInstanceGroup string
@@ -293,15 +293,15 @@ func (c *fakeGcpClient) CreateInstances(ctx context.Context, input gcpcl.CreateI
 	c.nodesInstanceGroup = "nodes-group"
 	c.nodeTemplate = "node-template"
 	c.coordinatorTemplate = "coordinator-template"
-	c.nodes = make(gcp.Instances)
+	c.nodes = make(cloudtypes.Instances)
 	for i := 0; i < input.CountNodes; i++ {
 		id := "id-" + strconv.Itoa(i)
-		c.nodes[id] = gcp.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
+		c.nodes[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
 	}
-	c.coordinators = make(gcp.Instances)
+	c.coordinators = make(cloudtypes.Instances)
 	for i := 0; i < input.CountCoordinators; i++ {
 		id := "id-" + strconv.Itoa(i)
-		c.coordinators[id] = gcp.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
+		c.coordinators[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
 	}
 	return nil
 }

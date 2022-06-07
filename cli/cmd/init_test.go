@@ -13,7 +13,6 @@ import (
 	"github.com/edgelesssys/constellation/cli/azure"
 	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/cli/ec2"
-	"github.com/edgelesssys/constellation/cli/gcp"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/state"
@@ -37,11 +36,11 @@ func TestInitialize(t *testing.T) {
 	testKey := base64.StdEncoding.EncodeToString([]byte("32bytesWireGuardKeyForTheTesting"))
 	testGcpState := state.ConstellationState{
 		CloudProvider: "GCP",
-		GCPNodes: gcp.Instances{
+		GCPNodes: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		GCPCoordinators: gcp.Instances{
+		GCPCoordinators: cloudtypes.Instances{
 			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
 	}
@@ -515,11 +514,11 @@ func TestAutoscaleFlag(t *testing.T) {
 	testKey := base64.StdEncoding.EncodeToString([]byte("32bytesWireGuardKeyForTheTesting"))
 	testGcpState := state.ConstellationState{
 		CloudProvider: "gcp",
-		GCPNodes: gcp.Instances{
+		GCPNodes: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		GCPCoordinators: gcp.Instances{
+		GCPCoordinators: cloudtypes.Instances{
 			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
 	}

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/cli/azure"
-	"github.com/edgelesssys/constellation/cli/gcp"
+	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/state"
 	"github.com/stretchr/testify/assert"
@@ -17,11 +17,11 @@ func TestTerminator(t *testing.T) {
 		return state.ConstellationState{
 			CloudProvider: cloudprovider.GCP.String(),
 			GCPProject:    "project",
-			GCPNodes: gcp.Instances{
+			GCPNodes: cloudtypes.Instances{
 				"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 				"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			},
-			GCPCoordinators: gcp.Instances{
+			GCPCoordinators: cloudtypes.Instances{
 				"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			},
 			GCPNodeInstanceGroup:           "nodes-group",

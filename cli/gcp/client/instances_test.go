@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/cli/gcp"
+	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/stretchr/testify/assert"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
@@ -157,8 +157,8 @@ func TestCreateInstances(t *testing.T) {
 				operationGlobalAPI:       tc.operationGlobalAPI,
 				instanceTemplateAPI:      tc.instanceTemplateAPI,
 				instanceGroupManagersAPI: tc.instanceGroupManagersAPI,
-				nodes:                    make(gcp.Instances),
-				coordinators:             make(gcp.Instances),
+				nodes:                    make(cloudtypes.Instances),
+				coordinators:             make(cloudtypes.Instances),
 			}
 
 			if tc.wantErr {
@@ -231,8 +231,8 @@ func TestTerminateInstances(t *testing.T) {
 				operationGlobalAPI:       tc.operationGlobalAPI,
 				instanceTemplateAPI:      tc.instanceTemplateAPI,
 				instanceGroupManagersAPI: tc.instanceGroupManagersAPI,
-				nodes:                    gcp.Instances{"node-id-1": gcp.Instance{}, "node-id-2": gcp.Instance{}},
-				coordinators:             gcp.Instances{"coordinator-id-1": gcp.Instance{}},
+				nodes:                    cloudtypes.Instances{"node-id-1": cloudtypes.Instance{}, "node-id-2": cloudtypes.Instance{}},
+				coordinators:             cloudtypes.Instances{"coordinator-id-1": cloudtypes.Instance{}},
 				firewalls:                []string{"firewall-1", "firewall-2"},
 				network:                  "network-id-1",
 				nodesInstanceGroup:       "nodeInstanceGroup-id-1",
@@ -242,7 +242,7 @@ func TestTerminateInstances(t *testing.T) {
 			}
 			if tc.missingNodeInstanceGroup {
 				client.nodesInstanceGroup = ""
-				client.nodes = gcp.Instances{}
+				client.nodes = cloudtypes.Instances{}
 			}
 
 			if tc.wantErr {

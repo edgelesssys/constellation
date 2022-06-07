@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edgelesssys/constellation/cli/gcp"
+	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"google.golang.org/api/iterator"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
@@ -134,7 +134,7 @@ func (c *Client) TerminateInstances(ctx context.Context) error {
 		}
 		ops = append(ops, op)
 		c.nodesInstanceGroup = ""
-		c.nodes = make(gcp.Instances)
+		c.nodes = make(cloudtypes.Instances)
 	}
 
 	if c.coordinatorInstanceGroup != "" {
@@ -144,7 +144,7 @@ func (c *Client) TerminateInstances(ctx context.Context) error {
 		}
 		ops = append(ops, op)
 		c.coordinatorInstanceGroup = ""
-		c.coordinators = make(gcp.Instances)
+		c.coordinators = make(cloudtypes.Instances)
 	}
 	if err := c.waitForOperations(ctx, ops); err != nil {
 		return err
@@ -228,7 +228,7 @@ func (c *Client) waitForInstanceGroupScaling(ctx context.Context, groupId string
 }
 
 // getInstanceIPs requests the IPs of the client's instances.
-func (c *Client) getInstanceIPs(ctx context.Context, groupId string, list gcp.Instances) error {
+func (c *Client) getInstanceIPs(ctx context.Context, groupId string, list cloudtypes.Instances) error {
 	req := &computepb.ListInstancesRequest{
 		Filter:  proto.String("name=" + groupId + "*"),
 		Project: c.project,
@@ -258,7 +258,7 @@ func (c *Client) getInstanceIPs(ctx context.Context, groupId string, list gcp.In
 		if resp.NetworkInterfaces[0].AccessConfigs[0].NatIP == nil {
 			return errors.New("natIP is nil")
 		}
-		instance := gcp.Instance{
+		instance := cloudtypes.Instance{
 			PrivateIP: *resp.NetworkInterfaces[0].NetworkIP,
 			PublicIP:  *resp.NetworkInterfaces[0].AccessConfigs[0].NatIP,
 		}

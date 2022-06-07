@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
-	"github.com/edgelesssys/constellation/cli/gcp"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -70,8 +69,8 @@ func TestCreateVPCs(t *testing.T) {
 				operationRegionAPI: tc.operationRegionAPI,
 				networksAPI:        tc.networksAPI,
 				subnetworksAPI:     tc.subnetworksAPI,
-				nodes:              make(gcp.Instances),
-				coordinators:       make(gcp.Instances),
+				nodes:              make(cloudtypes.Instances),
+				coordinators:       make(cloudtypes.Instances),
 			}
 
 			if tc.wantErr {

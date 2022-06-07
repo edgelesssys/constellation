@@ -11,7 +11,7 @@ import (
 	compute "cloud.google.com/go/compute/apiv1"
 	admin "cloud.google.com/go/iam/admin/apiv1"
 	resourcemanager "cloud.google.com/go/resourcemanager/apiv3"
-	"github.com/edgelesssys/constellation/cli/gcp"
+	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/state"
 )
@@ -30,8 +30,8 @@ type Client struct {
 	iamAPI
 	projectsAPI
 
-	nodes        gcp.Instances
-	coordinators gcp.Instances
+	nodes        cloudtypes.Instances
+	coordinators cloudtypes.Instances
 
 	nodesInstanceGroup       string
 	coordinatorInstanceGroup string
@@ -128,8 +128,8 @@ func NewFromDefault(ctx context.Context) (*Client, error) {
 		instanceGroupManagersAPI: &instanceGroupManagersClient{groupAPI},
 		iamAPI:                   &iamClient{iamAPI},
 		projectsAPI:              &projectsClient{projectsAPI},
-		nodes:                    make(gcp.Instances),
-		coordinators:             make(gcp.Instances),
+		nodes:                    make(cloudtypes.Instances),
+		coordinators:             make(cloudtypes.Instances),
 	}, nil
 }
 

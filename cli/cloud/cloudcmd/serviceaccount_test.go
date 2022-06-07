@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/cli/gcp"
+	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/state"
@@ -17,8 +17,8 @@ func TestServiceAccountCreator(t *testing.T) {
 		return state.ConstellationState{
 			CloudProvider:                  cloudprovider.GCP.String(),
 			GCPProject:                     "project",
-			GCPNodes:                       gcp.Instances{},
-			GCPCoordinators:                gcp.Instances{},
+			GCPNodes:                       cloudtypes.Instances{},
+			GCPCoordinators:                cloudtypes.Instances{},
 			GCPNodeInstanceGroup:           "nodes-group",
 			GCPCoordinatorInstanceGroup:    "coord-group",
 			GCPNodeInstanceTemplate:        "template",

@@ -4,7 +4,6 @@ import (
 	"github.com/edgelesssys/constellation/cli/azure"
 	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/cli/ec2"
-	"github.com/edgelesssys/constellation/cli/gcp"
 )
 
 // ConstellationState is the state of a Constellation.
@@ -16,19 +15,19 @@ type ConstellationState struct {
 	EC2Instances     ec2.Instances `json:"ec2instances,omitempty"`
 	EC2SecurityGroup string        `json:"ec2securitygroup,omitempty"`
 
-	GCPNodes                       gcp.Instances `json:"gcpnodes,omitempty"`
-	GCPCoordinators                gcp.Instances `json:"gcpcoordinators,omitempty"`
-	GCPNodeInstanceGroup           string        `json:"gcpnodeinstancegroup,omitempty"`
-	GCPCoordinatorInstanceGroup    string        `json:"gcpcoordinatorinstancegroup,omitempty"`
-	GCPNodeInstanceTemplate        string        `json:"gcpnodeinstancetemplate,omitempty"`
-	GCPCoordinatorInstanceTemplate string        `json:"gcpcoordinatorinstancetemplate,omitempty"`
-	GCPNetwork                     string        `json:"gcpnetwork,omitempty"`
-	GCPSubnetwork                  string        `json:"gcpsubnetwork,omitempty"`
-	GCPFirewalls                   []string      `json:"gcpfirewalls,omitempty"`
-	GCPProject                     string        `json:"gcpproject,omitempty"`
-	GCPZone                        string        `json:"gcpzone,omitempty"`
-	GCPRegion                      string        `json:"gcpregion,omitempty"`
-	GCPServiceAccount              string        `json:"gcpserviceaccount,omitempty"`
+	GCPNodes                       cloudtypes.Instances `json:"gcpnodes,omitempty"`
+	GCPCoordinators                cloudtypes.Instances `json:"gcpcoordinators,omitempty"`
+	GCPNodeInstanceGroup           string               `json:"gcpnodeinstancegroup,omitempty"`
+	GCPCoordinatorInstanceGroup    string               `json:"gcpcoordinatorinstancegroup,omitempty"`
+	GCPNodeInstanceTemplate        string               `json:"gcpnodeinstancetemplate,omitempty"`
+	GCPCoordinatorInstanceTemplate string               `json:"gcpcoordinatorinstancetemplate,omitempty"`
+	GCPNetwork                     string               `json:"gcpnetwork,omitempty"`
+	GCPSubnetwork                  string               `json:"gcpsubnetwork,omitempty"`
+	GCPFirewalls                   []string             `json:"gcpfirewalls,omitempty"`
+	GCPProject                     string               `json:"gcpproject,omitempty"`
+	GCPZone                        string               `json:"gcpzone,omitempty"`
+	GCPRegion                      string               `json:"gcpregion,omitempty"`
+	GCPServiceAccount              string               `json:"gcpserviceaccount,omitempty"`
 
 	AzureNodes                azure.Instances `json:"azurenodes,omitempty"`
 	AzureCoordinators         azure.Instances `json:"azurecoordinators,omitempty"`

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/cli/azure"
-	"github.com/edgelesssys/constellation/cli/gcp"
+	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/state"
@@ -18,11 +18,11 @@ func TestCreator(t *testing.T) {
 	wantGCPState := state.ConstellationState{
 		CloudProvider: cloudprovider.GCP.String(),
 		GCPProject:    "project",
-		GCPCoordinators: gcp.Instances{
+		GCPCoordinators: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		GCPNodes: gcp.Instances{
+		GCPNodes: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-2": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
