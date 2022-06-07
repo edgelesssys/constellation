@@ -3,7 +3,7 @@ package client
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/cli/azure"
+	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/state"
 	"github.com/stretchr/testify/assert"
@@ -18,13 +18,13 @@ func TestSetGetState(t *testing.T) {
 		"valid state": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.Azure.String(),
-				AzureNodes: azure.Instances{
+				AzureNodes: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				AzureCoordinators: azure.Instances{
+				AzureCoordinators: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -45,7 +45,7 @@ func TestSetGetState(t *testing.T) {
 		"missing nodes": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.Azure.String(),
-				AzureCoordinators: azure.Instances{
+				AzureCoordinators: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -67,7 +67,7 @@ func TestSetGetState(t *testing.T) {
 		"missing coordinator": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.Azure.String(),
-				AzureNodes: azure.Instances{
+				AzureNodes: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
@@ -89,13 +89,13 @@ func TestSetGetState(t *testing.T) {
 		"missing name": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.Azure.String(),
-				AzureNodes: azure.Instances{
+				AzureNodes: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				AzureCoordinators: azure.Instances{
+				AzureCoordinators: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -116,13 +116,13 @@ func TestSetGetState(t *testing.T) {
 		"missing uid": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.Azure.String(),
-				AzureNodes: azure.Instances{
+				AzureNodes: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				AzureCoordinators: azure.Instances{
+				AzureCoordinators: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -143,13 +143,13 @@ func TestSetGetState(t *testing.T) {
 		"missing resource group": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.Azure.String(),
-				AzureNodes: azure.Instances{
+				AzureNodes: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				AzureCoordinators: azure.Instances{
+				AzureCoordinators: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -170,13 +170,13 @@ func TestSetGetState(t *testing.T) {
 		"missing location": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.Azure.String(),
-				AzureNodes: azure.Instances{
+				AzureNodes: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				AzureCoordinators: azure.Instances{
+				AzureCoordinators: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -197,13 +197,13 @@ func TestSetGetState(t *testing.T) {
 		"missing subscription": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.Azure.String(),
-				AzureNodes: azure.Instances{
+				AzureNodes: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				AzureCoordinators: azure.Instances{
+				AzureCoordinators: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -224,13 +224,13 @@ func TestSetGetState(t *testing.T) {
 		"missing tenant": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.Azure.String(),
-				AzureNodes: azure.Instances{
+				AzureNodes: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				AzureCoordinators: azure.Instances{
+				AzureCoordinators: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -251,13 +251,13 @@ func TestSetGetState(t *testing.T) {
 		"missing subnet": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.Azure.String(),
-				AzureNodes: azure.Instances{
+				AzureNodes: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				AzureCoordinators: azure.Instances{
+				AzureCoordinators: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -278,13 +278,13 @@ func TestSetGetState(t *testing.T) {
 		"missing network security group": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.Azure.String(),
-				AzureNodes: azure.Instances{
+				AzureNodes: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				AzureCoordinators: azure.Instances{
+				AzureCoordinators: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -305,13 +305,13 @@ func TestSetGetState(t *testing.T) {
 		"missing node scale set": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.Azure.String(),
-				AzureNodes: azure.Instances{
+				AzureNodes: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				AzureCoordinators: azure.Instances{
+				AzureCoordinators: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -332,13 +332,13 @@ func TestSetGetState(t *testing.T) {
 		"missing coordinator scale set": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.Azure.String(),
-				AzureNodes: azure.Instances{
+				AzureNodes: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				AzureCoordinators: azure.Instances{
+				AzureCoordinators: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -422,13 +422,13 @@ func TestSetStateCloudProvider(t *testing.T) {
 
 	client := Client{}
 	stateMissingCloudProvider := state.ConstellationState{
-		AzureNodes: azure.Instances{
+		AzureNodes: cloudtypes.Instances{
 			"0": {
 				PublicIP:  "ip1",
 				PrivateIP: "ip2",
 			},
 		},
-		AzureCoordinators: azure.Instances{
+		AzureCoordinators: cloudtypes.Instances{
 			"0": {
 				PublicIP:  "ip3",
 				PrivateIP: "ip4",
@@ -447,13 +447,13 @@ func TestSetStateCloudProvider(t *testing.T) {
 	assert.Error(client.SetState(stateMissingCloudProvider))
 	stateIncorrectCloudProvider := state.ConstellationState{
 		CloudProvider: "incorrect",
-		AzureNodes: azure.Instances{
+		AzureNodes: cloudtypes.Instances{
 			"0": {
 				PublicIP:  "ip1",
 				PrivateIP: "ip2",
 			},
 		},
-		AzureCoordinators: azure.Instances{
+		AzureCoordinators: cloudtypes.Instances{
 			"0": {
 				PublicIP:  "ip3",
 				PrivateIP: "ip4",

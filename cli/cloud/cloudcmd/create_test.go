@@ -6,7 +6,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/cli/azure"
 	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/config"
@@ -42,11 +41,11 @@ func TestCreator(t *testing.T) {
 
 	wantAzureState := state.ConstellationState{
 		CloudProvider: cloudprovider.Azure.String(),
-		AzureCoordinators: azure.Instances{
+		AzureCoordinators: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		AzureNodes: azure.Instances{
+		AzureNodes: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-2": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},

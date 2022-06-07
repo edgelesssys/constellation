@@ -8,6 +8,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/edgelesssys/constellation/cli/azure"
+	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 )
 
 func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput) error {
@@ -127,45 +128,45 @@ func (c *Client) CreateInstancesVMs(ctx context.Context, input CreateInstancesIn
 // createInstanceVM creates a single VM with a public IP address
 // and a network interface.
 // TODO: deprecate as soon as scale sets are available.
-func (c *Client) createInstanceVM(ctx context.Context, input azure.VMInstance) (azure.Instance, error) {
+func (c *Client) createInstanceVM(ctx context.Context, input azure.VMInstance) (cloudtypes.Instance, error) {
 	pubIPName := input.Name + "-pubIP"
 	pubIP, err := c.createPublicIPAddress(ctx, pubIPName)
 	if err != nil {
-		return azure.Instance{}, err
+		return cloudtypes.Instance{}, err
 	}
 
 	nicName := input.Name + "-NIC"
 	privIP, nicID, err := c.createNIC(ctx, nicName, *pubIP.ID)
 	if err != nil {
-		return azure.Instance{}, err
+		return cloudtypes.Instance{}, err
 	}
 
 	input.NIC = nicID
 
 	poller, err := c.virtualMachinesAPI.BeginCreateOrUpdate(ctx, c.resourceGroup, input.Name, input.Azure(), nil)
 	if err != nil {
-		return azure.Instance{}, err
+		return cloudtypes.Instance{}, err
 	}
 
 	vm, err := poller.PollUntilDone(ctx, 30*time.Second)
 	if err != nil {
-		return azure.Instance{}, err
+		return cloudtypes.Instance{}, err
 	}
 
 	if vm.Identity == nil || vm.Identity.PrincipalID == nil {
-		return azure.Instance{}, errors.New("virtual machine was created without system managed identity")
+		return cloudtypes.Instance{}, errors.New("virtual machine was created without system managed identity")
 	}
 
 	if err := c.assignResourceGroupRole(ctx, *vm.Identity.PrincipalID, virtualMachineContributorRoleDefinitionID); err != nil {
-		return azure.Instance{}, err
+		return cloudtypes.Instance{}, err
 	}
 
 	res, err := c.publicIPAddressesAPI.Get(ctx, c.resourceGroup, pubIPName, nil)
 	if err != nil {
-		return azure.Instance{}, err
+		return cloudtypes.Instance{}, err
 	}
 
-	return azure.Instance{PublicIP: *res.PublicIPAddressesClientGetResult.PublicIPAddress.Properties.IPAddress, PrivateIP: privIP}, nil
+	return cloudtypes.Instance{PublicIP: *res.PublicIPAddressesClientGetResult.PublicIPAddress.Properties.IPAddress, PrivateIP: privIP}, nil
 }
 
 func (c *Client) createScaleSet(ctx context.Context, input CreateScaleSetInput) error {
@@ -212,8 +213,8 @@ func (c *Client) createScaleSet(ctx context.Context, input CreateScaleSetInput) 
 	return nil
 }
 
-func (c *Client) getInstanceIPs(ctx context.Context, scaleSet string, count int) (azure.Instances, error) {
-	instances := azure.Instances{}
+func (c *Client) getInstanceIPs(ctx context.Context, scaleSet string, count int) (cloudtypes.Instances, error) {
+	instances := cloudtypes.Instances{}
 	for i := 0; i < count; i++ {
 		// get public ip address
 		var publicIPAddress string
@@ -245,7 +246,7 @@ func (c *Client) getInstanceIPs(ctx context.Context, scaleSet string, count int)
 			break
 		}
 
-		instance := azure.Instance{
+		instance := cloudtypes.Instance{
 			PrivateIP: privateIPAddress,
 			PublicIP:  publicIPAddress,
 		}

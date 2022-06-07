@@ -15,7 +15,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/graphrbac/1.6/graphrbac"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"github.com/edgelesssys/constellation/cli/azure"
+	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/state"
 )
@@ -42,8 +42,8 @@ type Client struct {
 	adReplicationLagCheckInterval   time.Duration
 	adReplicationLagCheckMaxRetries int
 
-	nodes        azure.Instances
-	coordinators azure.Instances
+	nodes        cloudtypes.Instances
+	coordinators cloudtypes.Instances
 
 	name                 string
 	uid                  string
@@ -103,8 +103,8 @@ func NewFromDefault(subscriptionID, tenantID string) (*Client, error) {
 		virtualMachinesAPI:              &virtualMachinesClient{virtualMachinesAPI},
 		subscriptionID:                  subscriptionID,
 		tenantID:                        tenantID,
-		nodes:                           azure.Instances{},
-		coordinators:                    azure.Instances{},
+		nodes:                           cloudtypes.Instances{},
+		coordinators:                    cloudtypes.Instances{},
 		adReplicationLagCheckInterval:   adReplicationLagCheckInterval,
 		adReplicationLagCheckMaxRetries: adReplicationLagCheckMaxRetries,
 	}, nil

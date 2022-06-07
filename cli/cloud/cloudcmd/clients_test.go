@@ -5,7 +5,6 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/edgelesssys/constellation/cli/azure"
 	azurecl "github.com/edgelesssys/constellation/cli/azure/client"
 	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	gcpcl "github.com/edgelesssys/constellation/cli/gcp/client"
@@ -14,8 +13,8 @@ import (
 )
 
 type fakeAzureClient struct {
-	nodes        azure.Instances
-	coordinators azure.Instances
+	nodes        cloudtypes.Instances
+	coordinators cloudtypes.Instances
 
 	resourceGroup        string
 	name                 string
@@ -91,30 +90,30 @@ func (c *fakeAzureClient) CreateSecurityGroup(ctx context.Context, input azurecl
 func (c *fakeAzureClient) CreateInstances(ctx context.Context, input azurecl.CreateInstancesInput) error {
 	c.coordinatorsScaleSet = "coordinators-scale-set"
 	c.nodesScaleSet = "nodes-scale-set"
-	c.nodes = make(azure.Instances)
+	c.nodes = make(cloudtypes.Instances)
 	for i := 0; i < input.CountNodes; i++ {
 		id := "id-" + strconv.Itoa(i)
-		c.nodes[id] = azure.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
+		c.nodes[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
 	}
-	c.coordinators = make(azure.Instances)
+	c.coordinators = make(cloudtypes.Instances)
 	for i := 0; i < input.CountCoordinators; i++ {
 		id := "id-" + strconv.Itoa(i)
-		c.coordinators[id] = azure.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
+		c.coordinators[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
 	}
 	return nil
 }
 
 // TODO: deprecate as soon as scale sets are available.
 func (c *fakeAzureClient) CreateInstancesVMs(ctx context.Context, input azurecl.CreateInstancesInput) error {
-	c.nodes = make(azure.Instances)
+	c.nodes = make(cloudtypes.Instances)
 	for i := 0; i < input.CountNodes; i++ {
 		id := "id-" + strconv.Itoa(i)
-		c.nodes[id] = azure.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
+		c.nodes[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
 	}
-	c.coordinators = make(azure.Instances)
+	c.coordinators = make(cloudtypes.Instances)
 	for i := 0; i < input.CountCoordinators; i++ {
 		id := "id-" + strconv.Itoa(i)
-		c.coordinators[id] = azure.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
+		c.coordinators[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
 	}
 	return nil
 }

@@ -1,7 +1,6 @@
 package state
 
 import (
-	"github.com/edgelesssys/constellation/cli/azure"
 	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/cli/ec2"
 )
@@ -29,17 +28,17 @@ type ConstellationState struct {
 	GCPRegion                      string               `json:"gcpregion,omitempty"`
 	GCPServiceAccount              string               `json:"gcpserviceaccount,omitempty"`
 
-	AzureNodes                azure.Instances `json:"azurenodes,omitempty"`
-	AzureCoordinators         azure.Instances `json:"azurecoordinators,omitempty"`
-	AzureResourceGroup        string          `json:"azureresourcegroup,omitempty"`
-	AzureLocation             string          `json:"azurelocation,omitempty"`
-	AzureSubscription         string          `json:"azuresubscription,omitempty"`
-	AzureTenant               string          `json:"azuretenant,omitempty"`
-	AzureSubnet               string          `json:"azuresubnet,omitempty"`
-	AzureNetworkSecurityGroup string          `json:"azurenetworksecuritygroup,omitempty"`
-	AzureNodesScaleSet        string          `json:"azurenodesscaleset,omitempty"`
-	AzureCoordinatorsScaleSet string          `json:"azurecoordinatorsscaleset,omitempty"`
-	AzureADAppObjectID        string          `json:"azureadappobjectid,omitempty"`
+	AzureNodes                cloudtypes.Instances `json:"azurenodes,omitempty"`
+	AzureCoordinators         cloudtypes.Instances `json:"azurecoordinators,omitempty"`
+	AzureResourceGroup        string               `json:"azureresourcegroup,omitempty"`
+	AzureLocation             string               `json:"azurelocation,omitempty"`
+	AzureSubscription         string               `json:"azuresubscription,omitempty"`
+	AzureTenant               string               `json:"azuretenant,omitempty"`
+	AzureSubnet               string               `json:"azuresubnet,omitempty"`
+	AzureNetworkSecurityGroup string               `json:"azurenetworksecuritygroup,omitempty"`
+	AzureNodesScaleSet        string               `json:"azurenodesscaleset,omitempty"`
+	AzureCoordinatorsScaleSet string               `json:"azurecoordinatorsscaleset,omitempty"`
+	AzureADAppObjectID        string               `json:"azureadappobjectid,omitempty"`
 
 	QEMUNodes        cloudtypes.Instances `json:"qemunodes,omitempty"`
 	QEMUCoordinators cloudtypes.Instances `json:"qemucoordinators,omitempty"`

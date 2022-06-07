@@ -5,7 +5,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/cli/azure"
 	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/stretchr/testify/assert"
 )
@@ -40,8 +39,8 @@ func TestCreateVirtualNetwork(t *testing.T) {
 				name:          "name",
 				uid:           "uid",
 				networksAPI:   tc.networksAPI,
-				nodes:         make(azure.Instances),
-				coordinators:  make(azure.Instances),
+				nodes:         make(cloudtypes.Instances),
+				coordinators:  make(cloudtypes.Instances),
 			}
 
 			if tc.wantErr {
@@ -103,8 +102,8 @@ func TestCreateSecurityGroup(t *testing.T) {
 				location:                 "location",
 				name:                     "name",
 				uid:                      "uid",
-				nodes:                    make(azure.Instances),
-				coordinators:             make(azure.Instances),
+				nodes:                    make(cloudtypes.Instances),
+				coordinators:             make(cloudtypes.Instances),
 				networkSecurityGroupsAPI: tc.networkSecurityGroupsAPI,
 			}
 
@@ -153,8 +152,8 @@ func TestCreateNIC(t *testing.T) {
 				location:             "location",
 				name:                 "name",
 				uid:                  "uid",
-				nodes:                make(azure.Instances),
-				coordinators:         make(azure.Instances),
+				nodes:                make(cloudtypes.Instances),
+				coordinators:         make(cloudtypes.Instances),
 				networkInterfacesAPI: tc.networkInterfacesAPI,
 			}
 
@@ -202,8 +201,8 @@ func TestCreatePublicIPAddress(t *testing.T) {
 				location:             "location",
 				name:                 "name",
 				uid:                  "uid",
-				nodes:                make(azure.Instances),
-				coordinators:         make(azure.Instances),
+				nodes:                make(cloudtypes.Instances),
+				coordinators:         make(cloudtypes.Instances),
 				publicIPAddressesAPI: tc.publicIPAddressesAPI,
 			}
 
@@ -257,8 +256,8 @@ func TestCreateExternalLoadBalancer(t *testing.T) {
 				location:             "location",
 				name:                 "name",
 				uid:                  "uid",
-				nodes:                make(azure.Instances),
-				coordinators:         make(azure.Instances),
+				nodes:                make(cloudtypes.Instances),
+				coordinators:         make(cloudtypes.Instances),
 				loadBalancersAPI:     tc.loadBalancersAPI,
 				publicIPAddressesAPI: tc.publicIPAddressesAPI,
 			}

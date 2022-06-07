@@ -8,7 +8,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"github.com/edgelesssys/constellation/cli/azure"
+	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -38,8 +38,8 @@ func TestCreateResourceGroup(t *testing.T) {
 				name:             "name",
 				uid:              "uid",
 				resourceGroupAPI: tc.resourceGroupAPI,
-				nodes:            make(azure.Instances),
-				coordinators:     make(azure.Instances),
+				nodes:            make(cloudtypes.Instances),
+				coordinators:     make(cloudtypes.Instances),
 			}
 
 			if tc.wantErr {
@@ -62,12 +62,12 @@ func TestTerminateResourceGroup(t *testing.T) {
 		subnetID:             "subnet",
 		nodesScaleSet:        "node-scale-set",
 		coordinatorsScaleSet: "coordinator-scale-set",
-		nodes: azure.Instances{
+		nodes: cloudtypes.Instances{
 			"0": {
 				PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1",
 			},
 		},
-		coordinators: azure.Instances{
+		coordinators: cloudtypes.Instances{
 			"0": {
 				PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1",
 			},
@@ -214,8 +214,8 @@ func TestCreateInstances(t *testing.T) {
 				scaleSetsAPI:         tc.scaleSetsAPI,
 				resourceGroupAPI:     tc.resourceGroupAPI,
 				roleAssignmentsAPI:   tc.roleAssignmentsAPI,
-				nodes:                make(azure.Instances),
-				coordinators:         make(azure.Instances),
+				nodes:                make(cloudtypes.Instances),
+				coordinators:         make(cloudtypes.Instances),
 				loadBalancerPubIP:    "lbip",
 			}
 
@@ -355,8 +355,8 @@ func TestCreateInstancesVMs(t *testing.T) {
 				virtualMachinesAPI:   tc.virtualMachinesAPI,
 				resourceGroupAPI:     tc.resourceGroupAPI,
 				roleAssignmentsAPI:   tc.roleAssignmentsAPI,
-				nodes:                make(azure.Instances),
-				coordinators:         make(azure.Instances),
+				nodes:                make(cloudtypes.Instances),
+				coordinators:         make(cloudtypes.Instances),
 			}
 
 			if tc.wantErr {

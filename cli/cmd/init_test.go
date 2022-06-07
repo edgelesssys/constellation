@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/cli/azure"
 	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/cli/ec2"
 	"github.com/edgelesssys/constellation/internal/constants"
@@ -46,11 +45,11 @@ func TestInitialize(t *testing.T) {
 	}
 	testAzureState := state.ConstellationState{
 		CloudProvider: "Azure",
-		AzureNodes: azure.Instances{
+		AzureNodes: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		AzureCoordinators: azure.Instances{
+		AzureCoordinators: cloudtypes.Instances{
 			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
 		AzureResourceGroup: "test",
@@ -524,11 +523,11 @@ func TestAutoscaleFlag(t *testing.T) {
 	}
 	testAzureState := state.ConstellationState{
 		CloudProvider: "azure",
-		AzureNodes: azure.Instances{
+		AzureNodes: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		AzureCoordinators: azure.Instances{
+		AzureCoordinators: cloudtypes.Instances{
 			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
 		AzureResourceGroup: "test",
