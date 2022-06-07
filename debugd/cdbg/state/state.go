@@ -4,14 +4,14 @@ import (
 	"errors"
 
 	cmdc "github.com/edgelesssys/constellation/cli/cmd"
-	configc "github.com/edgelesssys/constellation/internal/config"
+	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/state"
 )
 
 // Code in this file is mostly copied from constellation-coordinator
 // TODO: import as package from coordinator once it is properly refactored
 
-func GetScalingGroupsFromConfig(stat state.ConstellationState, config *configc.Config) (coordinators, nodes cmdc.ScalingGroup, err error) {
+func GetScalingGroupsFromConfig(stat state.ConstellationState, config *config.Config) (coordinators, nodes cmdc.ScalingGroup, err error) {
 	switch {
 	case len(stat.GCPCoordinators) != 0:
 		return getGCPInstances(stat, config)
@@ -24,7 +24,7 @@ func GetScalingGroupsFromConfig(stat state.ConstellationState, config *configc.C
 	}
 }
 
-func getGCPInstances(stat state.ConstellationState, config *configc.Config) (coordinators, nodes cmdc.ScalingGroup, err error) {
+func getGCPInstances(stat state.ConstellationState, config *config.Config) (coordinators, nodes cmdc.ScalingGroup, err error) {
 	coordinatorMap := stat.GCPCoordinators
 	if len(coordinatorMap) == 0 {
 		return cmdc.ScalingGroup{}, cmdc.ScalingGroup{}, errors.New("no coordinators available, can't create Constellation without any instance")
@@ -55,7 +55,7 @@ func getGCPInstances(stat state.ConstellationState, config *configc.Config) (coo
 	return
 }
 
-func getAzureInstances(stat state.ConstellationState, _ *configc.Config) (coordinators, nodes cmdc.ScalingGroup, err error) {
+func getAzureInstances(stat state.ConstellationState, _ *config.Config) (coordinators, nodes cmdc.ScalingGroup, err error) {
 	coordinatorMap := stat.AzureCoordinators
 	if len(coordinatorMap) == 0 {
 		return cmdc.ScalingGroup{}, cmdc.ScalingGroup{}, errors.New("no coordinators available, can't create Constellation without any instance")
@@ -84,7 +84,7 @@ func getAzureInstances(stat state.ConstellationState, _ *configc.Config) (coordi
 	return
 }
 
-func getQEMUInstances(stat state.ConstellationState, _ *configc.Config) (coordinators, nodes cmdc.ScalingGroup, err error) {
+func getQEMUInstances(stat state.ConstellationState, _ *config.Config) (coordinators, nodes cmdc.ScalingGroup, err error) {
 	coordinatorMap := stat.QEMUCoordinators
 	if len(coordinatorMap) == 0 {
 		return cmdc.ScalingGroup{}, cmdc.ScalingGroup{}, errors.New("no coordinators available, can't create Constellation without any instance")
