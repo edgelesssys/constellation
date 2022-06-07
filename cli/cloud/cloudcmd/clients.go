@@ -3,7 +3,7 @@ package cloudcmd
 import (
 	"context"
 
-	azurecl "github.com/edgelesssys/constellation/cli/azure/client"
+	azurecl "github.com/edgelesssys/constellation/cli/internal/azure/client"
 	gcpcl "github.com/edgelesssys/constellation/cli/internal/gcp/client"
 	"github.com/edgelesssys/constellation/internal/state"
 )

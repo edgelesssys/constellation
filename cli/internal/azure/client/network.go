@@ -6,8 +6,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
-	"github.com/edgelesssys/constellation/cli/azure"
 	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
+	"github.com/edgelesssys/constellation/cli/internal/azure"
 )
 
 type createNetworkInput struct {
