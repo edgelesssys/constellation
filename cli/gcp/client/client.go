@@ -11,8 +11,8 @@ import (
 	compute "cloud.google.com/go/compute/apiv1"
 	admin "cloud.google.com/go/iam/admin/apiv1"
 	resourcemanager "cloud.google.com/go/resourcemanager/apiv3"
-	"github.com/edgelesssys/constellation/cli/cloudprovider"
 	"github.com/edgelesssys/constellation/cli/gcp"
+	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/state"
 )
 

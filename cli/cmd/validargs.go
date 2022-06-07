@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/edgelesssys/constellation/cli/azure"
-	"github.com/edgelesssys/constellation/cli/cloudprovider"
 	"github.com/edgelesssys/constellation/cli/gcp"
+	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/spf13/cobra"
 )
 

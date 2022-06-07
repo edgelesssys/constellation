@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/edgelesssys/constellation/cli/proto"
+	"github.com/edgelesssys/constellation/cli/internal/proto"
 	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/state"

@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/cli/cloud/cloudcmd"
-	"github.com/edgelesssys/constellation/cli/cloudprovider"
 	"github.com/edgelesssys/constellation/cli/internal/proto"
+	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"

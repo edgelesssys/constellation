@@ -7,9 +7,9 @@ import (
 
 	"github.com/edgelesssys/constellation/cli/azure"
 	azurecl "github.com/edgelesssys/constellation/cli/azure/client"
-	"github.com/edgelesssys/constellation/cli/cloudprovider"
 	"github.com/edgelesssys/constellation/cli/gcp"
 	gcpcl "github.com/edgelesssys/constellation/cli/gcp/client"
+	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/state"
 )
 

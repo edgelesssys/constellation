@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/edgelesssys/constellation/cli/cloudprovider"
+	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

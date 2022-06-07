@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io/fs"
 
-	"github.com/edgelesssys/constellation/cli/cloudprovider"
+	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/go-playground/locales/en"

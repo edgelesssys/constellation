@@ -5,12 +5,12 @@ import (
 	"encoding/base64"
 	"testing"
 
-	"github.com/edgelesssys/constellation/cli/cloudprovider"
 	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/attestation/azure"
 	"github.com/edgelesssys/constellation/coordinator/attestation/gcp"
 	"github.com/edgelesssys/constellation/coordinator/attestation/qemu"
 	"github.com/edgelesssys/constellation/coordinator/attestation/vtpm"
+	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/stretchr/testify/assert"
 )

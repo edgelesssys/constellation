@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/edgelesssys/constellation/cli/cloudprovider"
+	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/file"
 )

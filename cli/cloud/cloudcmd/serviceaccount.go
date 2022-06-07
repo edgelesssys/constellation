@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	azurecl "github.com/edgelesssys/constellation/cli/azure/client"
-	"github.com/edgelesssys/constellation/cli/cloudprovider"
 	gcpcl "github.com/edgelesssys/constellation/cli/gcp/client"
+	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/state"
 )

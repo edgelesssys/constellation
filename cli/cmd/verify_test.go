@@ -7,7 +7,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/cli/cloudprovider"
+	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
