@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
 
+	"github.com/edgelesssys/constellation/internal/gcpshared"
 	adminpb "google.golang.org/genproto/googleapis/iam/admin/v1"
 )
 
@@ -34,7 +34,7 @@ func (c *Client) CreateServiceAccount(ctx context.Context, input ServiceAccountI
 		return "", err
 	}
 
-	return key.ConvertToCloudServiceAccountURI(), nil
+	return key.ToCloudServiceAccountURI(), nil
 }
 
 func (c *Client) TerminateServiceAccount(ctx context.Context) error {
@@ -67,41 +67,6 @@ func (i ServiceAccountInput) addIAMPolicyBindingInput(serviceAccount string) Add
 	return iamPolicyBindingInput
 }
 
-// ServiceAccountKey is a GCP service account key.
-type ServiceAccountKey struct {
-	Type                    string `json:"type"`
-	ProjectID               string `json:"project_id"`
-	PrivateKeyID            string `json:"private_key_id"`
-	PrivateKey              string `json:"private_key"`
-	ClientEmail             string `json:"client_email"`
-	ClientID                string `json:"client_id"`
-	AuthURI                 string `json:"auth_uri"`
-	TokenURI                string `json:"token_uri"`
-	AuthProviderX509CertURL string `json:"auth_provider_x509_cert_url"`
-	ClientX509CertURL       string `json:"client_x509_cert_url"`
-}
-
-// ConvertToCloudServiceAccountURI converts the ServiceAccountKey into a cloud service account URI.
-func (k ServiceAccountKey) ConvertToCloudServiceAccountURI() string {
-	query := url.Values{}
-	query.Add("type", k.Type)
-	query.Add("project_id", k.ProjectID)
-	query.Add("private_key_id", k.PrivateKeyID)
-	query.Add("private_key", k.PrivateKey)
-	query.Add("client_email", k.ClientEmail)
-	query.Add("client_id", k.ClientID)
-	query.Add("auth_uri", k.AuthURI)
-	query.Add("token_uri", k.TokenURI)
-	query.Add("auth_provider_x509_cert_url", k.AuthProviderX509CertURL)
-	query.Add("client_x509_cert_url", k.ClientX509CertURL)
-	uri := url.URL{
-		Scheme:   "serviceaccount",
-		Host:     "gcp",
-		RawQuery: query.Encode(),
-	}
-	return uri.String()
-}
-
 func (c *Client) insertServiceAccount(ctx context.Context, input insertServiceAccountInput) (string, error) {
 	req := input.createServiceAccountRequest()
 	account, err := c.iamAPI.CreateServiceAccount(ctx, req)
@@ -112,15 +77,15 @@ func (c *Client) insertServiceAccount(ctx context.Context, input insertServiceAc
 	return account.Email, nil
 }
 
-func (c *Client) createServiceAccountKey(ctx context.Context, email string) (ServiceAccountKey, error) {
+func (c *Client) createServiceAccountKey(ctx context.Context, email string) (gcpshared.ServiceAccountKey, error) {
 	req := createServiceAccountKeyRequest(email)
 	key, err := c.iamAPI.CreateServiceAccountKey(ctx, req)
 	if err != nil {
-		return ServiceAccountKey{}, fmt.Errorf("creating service account key failed: %w", err)
+		return gcpshared.ServiceAccountKey{}, fmt.Errorf("creating service account key failed: %w", err)
 	}
-	var serviceAccountKey ServiceAccountKey
+	var serviceAccountKey gcpshared.ServiceAccountKey
 	if err := json.Unmarshal(key.PrivateKeyData, &serviceAccountKey); err != nil {
-		return ServiceAccountKey{}, fmt.Errorf("decoding service account key JSON failed: %w", err)
+		return gcpshared.ServiceAccountKey{}, fmt.Errorf("decoding service account key JSON failed: %w", err)
 	}
 
 	return serviceAccountKey, nil

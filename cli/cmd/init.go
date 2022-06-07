@@ -13,7 +13,7 @@ import (
 
 	"github.com/edgelesssys/constellation/cli/azure"
 	"github.com/edgelesssys/constellation/cli/cloud/cloudcmd"
-	"github.com/edgelesssys/constellation/cli/gcp"
+	"github.com/edgelesssys/constellation/cli/internal/gcp"
 	"github.com/edgelesssys/constellation/cli/internal/proto"
 	"github.com/edgelesssys/constellation/cli/internal/status"
 	"github.com/edgelesssys/constellation/cli/internal/vpn"

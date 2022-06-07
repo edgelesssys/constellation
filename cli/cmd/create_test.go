@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/cli/azure"
-	"github.com/edgelesssys/constellation/cli/gcp"
+	"github.com/edgelesssys/constellation/cli/internal/gcp"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"

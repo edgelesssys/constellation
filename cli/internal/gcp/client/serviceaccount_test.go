@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"net/url"
 	"testing"
 
+	"github.com/edgelesssys/constellation/internal/gcpshared"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,7 +14,7 @@ import (
 func TestCreateServiceAccount(t *testing.T) {
 	require := require.New(t)
 	someErr := errors.New("someErr")
-	key := ServiceAccountKey{
+	key := gcpshared.ServiceAccountKey{
 		Type:                    "type",
 		ProjectID:               "project-id",
 		PrivateKeyID:            "private-key-id",
@@ -91,7 +91,7 @@ func TestCreateServiceAccount(t *testing.T) {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				assert.Equal(key.ConvertToCloudServiceAccountURI(), serviceAccountKey)
+				assert.Equal(key.ToCloudServiceAccountURI(), serviceAccountKey)
 				assert.Equal("email", client.serviceAccount)
 			}
 		})
@@ -136,39 +136,4 @@ func TestTerminateServiceAccount(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestConvertToCloudServiceAccountURI(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-	key := ServiceAccountKey{
-		Type:                    "type",
-		ProjectID:               "project-id",
-		PrivateKeyID:            "private-key-id",
-		PrivateKey:              "private-key",
-		ClientEmail:             "client-email",
-		ClientID:                "client-id",
-		AuthURI:                 "auth-uri",
-		TokenURI:                "token-uri",
-		AuthProviderX509CertURL: "auth-provider-x509-cert-url",
-		ClientX509CertURL:       "client-x509-cert-url",
-	}
-	cloudServiceAccountURI := key.ConvertToCloudServiceAccountURI()
-	uri, err := url.Parse(cloudServiceAccountURI)
-	require.NoError(err)
-	query := uri.Query()
-	assert.Equal("serviceaccount", uri.Scheme)
-	assert.Equal("gcp", uri.Host)
-	assert.Equal(url.Values{
-		"type":                        []string{"type"},
-		"project_id":                  []string{"project-id"},
-		"private_key_id":              []string{"private-key-id"},
-		"private_key":                 []string{"private-key"},
-		"client_email":                []string{"client-email"},
-		"client_id":                   []string{"client-id"},
-		"auth_uri":                    []string{"auth-uri"},
-		"token_uri":                   []string{"token-uri"},
-		"auth_provider_x509_cert_url": []string{"auth-provider-x509-cert-url"},
-		"client_x509_cert_url":        []string{"client-x509-cert-url"},
-	}, query)
 }
