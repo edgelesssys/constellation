@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 	"errors"
-	"net/url"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -12,7 +11,6 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -357,28 +355,4 @@ func TestAssignOwnerOfResourceGroup(t *testing.T) {
 			assert.NoError(err)
 		})
 	}
-}
-
-func TestConvertToCloudServiceAccountURI(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-	key := ApplicationCredentials{
-		TenantID:     "tenant-id",
-		ClientID:     "client-id",
-		ClientSecret: "client-secret",
-		Location:     "location",
-	}
-
-	cloudServiceAccountURI := key.ConvertToCloudServiceAccountURI()
-	uri, err := url.Parse(cloudServiceAccountURI)
-	require.NoError(err)
-	query := uri.Query()
-	assert.Equal("serviceaccount", uri.Scheme)
-	assert.Equal("azure", uri.Host)
-	assert.Equal(url.Values{
-		"tenant_id":     []string{"tenant-id"},
-		"client_id":     []string{"client-id"},
-		"client_secret": []string{"client-secret"},
-		"location":      []string{"location"},
-	}, query)
 }

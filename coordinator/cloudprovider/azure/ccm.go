@@ -7,6 +7,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/cloudprovider"
 	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/internal/azureshared"
 	k8s "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -68,7 +69,7 @@ func (c *CloudControllerManager) Secrets(ctx context.Context, instance cloudtype
 	if err != nil {
 		return resources.Secrets{}, err
 	}
-	creds, err := getApplicationCredentials(cloudServiceAccountURI)
+	creds, err := azureshared.ApplicationCredentialsFromURI(cloudServiceAccountURI)
 	if err != nil {
 		return resources.Secrets{}, err
 	}

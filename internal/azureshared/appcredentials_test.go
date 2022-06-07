@@ -1,15 +1,15 @@
-package azure
+package azureshared
 
 import (
+	"net/url"
 	"testing"
 
-	"github.com/edgelesssys/constellation/cli/azure/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetApplicationCredentials(t *testing.T) {
-	creds := client.ApplicationCredentials{
+func TestApplicationCredentialsFromURI(t *testing.T) {
+	creds := ApplicationCredentials{
 		TenantID:     "tenant-id",
 		ClientID:     "client-id",
 		ClientSecret: "client-secret",
@@ -17,7 +17,7 @@ func TestGetApplicationCredentials(t *testing.T) {
 	}
 	testCases := map[string]struct {
 		cloudServiceAccountURI string
-		wantCreds              client.ApplicationCredentials
+		wantCreds              ApplicationCredentials
 		wantErr                bool
 	}{
 		"getApplicationCredentials works": {
@@ -43,7 +43,7 @@ func TestGetApplicationCredentials(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			creds, err := getApplicationCredentials(tc.cloudServiceAccountURI)
+			creds, err := ApplicationCredentialsFromURI(tc.cloudServiceAccountURI)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -52,4 +52,28 @@ func TestGetApplicationCredentials(t *testing.T) {
 			assert.Equal(tc.wantCreds, creds)
 		})
 	}
+}
+
+func TestToCloudServiceAccountURI(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+	key := ApplicationCredentials{
+		TenantID:     "tenant-id",
+		ClientID:     "client-id",
+		ClientSecret: "client-secret",
+		Location:     "location",
+	}
+
+	cloudServiceAccountURI := key.ToCloudServiceAccountURI()
+	uri, err := url.Parse(cloudServiceAccountURI)
+	require.NoError(err)
+	query := uri.Query()
+	assert.Equal("serviceaccount", uri.Scheme)
+	assert.Equal("azure", uri.Host)
+	assert.Equal(url.Values{
+		"tenant_id":     []string{"tenant-id"},
+		"client_id":     []string{"client-id"},
+		"client_secret": []string{"client-secret"},
+		"location":      []string{"location"},
+	}, query)
 }

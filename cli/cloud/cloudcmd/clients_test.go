@@ -8,6 +8,7 @@ import (
 	azurecl "github.com/edgelesssys/constellation/cli/azure/client"
 	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	gcpcl "github.com/edgelesssys/constellation/cli/internal/gcp/client"
+	"github.com/edgelesssys/constellation/internal/azureshared"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/gcpshared"
 	"github.com/edgelesssys/constellation/internal/state"
@@ -121,10 +122,10 @@ func (c *fakeAzureClient) CreateInstancesVMs(ctx context.Context, input azurecl.
 
 func (c *fakeAzureClient) CreateServicePrincipal(ctx context.Context) (string, error) {
 	c.adAppObjectID = "00000000-0000-0000-0000-000000000001"
-	return azurecl.ApplicationCredentials{
+	return azureshared.ApplicationCredentials{
 		ClientID:     "client-id",
 		ClientSecret: "client-secret",
-	}.ConvertToCloudServiceAccountURI(), nil
+	}.ToCloudServiceAccountURI(), nil
 }
 
 func (c *fakeAzureClient) TerminateResourceGroup(ctx context.Context) error {
@@ -199,10 +200,10 @@ func (c *stubAzureClient) CreateInstancesVMs(ctx context.Context, input azurecl.
 }
 
 func (c *stubAzureClient) CreateServicePrincipal(ctx context.Context) (string, error) {
-	return azurecl.ApplicationCredentials{
+	return azureshared.ApplicationCredentials{
 		ClientID:     "00000000-0000-0000-0000-000000000000",
 		ClientSecret: "secret",
-	}.ConvertToCloudServiceAccountURI(), c.createServicePrincipalErr
+	}.ToCloudServiceAccountURI(), c.createServicePrincipalErr
 }
 
 func (c *stubAzureClient) TerminateResourceGroup(ctx context.Context) error {

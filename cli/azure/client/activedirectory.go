@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"net/url"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/authorization/mgmt/authorization"
@@ -15,6 +14,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/edgelesssys/constellation/internal/azureshared"
 	"github.com/google/uuid"
 )
 
@@ -47,12 +47,12 @@ func (c *Client) CreateServicePrincipal(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	return ApplicationCredentials{
+	return azureshared.ApplicationCredentials{
 		TenantID:     c.tenantID,
 		ClientID:     createAppRes.AppID,
 		ClientSecret: clientSecret,
 		Location:     c.location,
-	}.ConvertToCloudServiceAccountURI(), nil
+	}.ToCloudServiceAccountURI(), nil
 }
 
 // TerminateServicePrincipal terminates an Azure AD app together with the service principal.
@@ -162,30 +162,6 @@ func (c *Client) assignResourceGroupRole(ctx context.Context, principalID, roleD
 		time.Sleep(c.adReplicationLagCheckInterval)
 	}
 	return err
-}
-
-// ApplicationCredentials is a set of Azure AD application credentials.
-// It is the equivalent of a service account key in other cloud providers.
-type ApplicationCredentials struct {
-	TenantID     string
-	ClientID     string
-	ClientSecret string
-	Location     string
-}
-
-// ConvertToCloudServiceAccountURI converts the ApplicationCredentials into a cloud service account URI.
-func (c ApplicationCredentials) ConvertToCloudServiceAccountURI() string {
-	query := url.Values{}
-	query.Add("tenant_id", c.TenantID)
-	query.Add("client_id", c.ClientID)
-	query.Add("client_secret", c.ClientSecret)
-	query.Add("location", c.Location)
-	uri := url.URL{
-		Scheme:   "serviceaccount",
-		Host:     "azure",
-		RawQuery: query.Encode(),
-	}
-	return uri.String()
 }
 
 type createADApplicationOutput struct {
