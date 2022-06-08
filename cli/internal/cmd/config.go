@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newConfigCmd() *cobra.Command {
+func NewConfigCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
 		Short: "Work with the Constellation configuration file",

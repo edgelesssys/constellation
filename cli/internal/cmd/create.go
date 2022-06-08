@@ -15,7 +15,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newCreateCmd() *cobra.Command {
+// NewCreateCmd returns a new cobra.Command for the create command.
+func NewCreateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create {aws|azure|gcp}",
 		Short: "Create instances on a cloud platform for your Constellation cluster",
@@ -205,6 +206,12 @@ func createCompletion(cmd *cobra.Command, args []string, toComplete string) ([]s
 		return []string{"aws", "gcp", "azure"}, cobra.ShellCompDirectiveNoFileComp
 	default:
 		return []string{}, cobra.ShellCompDirectiveError
+	}
+}
+
+func must(err error) {
+	if err != nil {
+		panic(err)
 	}
 }
 

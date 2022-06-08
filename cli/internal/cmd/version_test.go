@@ -12,7 +12,7 @@ import (
 func TestVersionCmd(t *testing.T) {
 	assert := assert.New(t)
 
-	cmd := newVersionCmd()
+	cmd := NewVersionCmd()
 	b := &bytes.Buffer{}
 	cmd.SetOut(b)
 

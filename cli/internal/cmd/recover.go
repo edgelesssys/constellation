@@ -20,7 +20,8 @@ import (
 
 var diskUUIDRegexp = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
-func newRecoverCmd() *cobra.Command {
+// NewRecoverCmd returns a new cobra.Command for the recover command.
+func NewRecoverCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "recover",
 		Short: "Recover a completely stopped Constellation cluster",

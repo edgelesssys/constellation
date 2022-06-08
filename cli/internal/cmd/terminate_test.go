@@ -27,7 +27,7 @@ func TestTerminateCmdArgumentValidation(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			cmd := newTerminateCmd()
+			cmd := NewTerminateCmd()
 			err := cmd.ValidateArgs(tc.args)
 
 			if tc.wantErr {
@@ -105,7 +105,7 @@ func TestTerminate(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			cmd := newTerminateCmd()
+			cmd := NewTerminateCmd()
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
 

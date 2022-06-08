@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/edgelesssys/constellation/cli/internal/cmd"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/spf13/cobra"
 )
@@ -34,13 +35,13 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.PersistentFlags().String("config", constants.ConfigFilename, "path to the configuration file")
 	must(rootCmd.MarkPersistentFlagFilename("config", "json"))
 
-	rootCmd.AddCommand(newConfigCmd())
-	rootCmd.AddCommand(newCreateCmd())
-	rootCmd.AddCommand(newInitCmd())
-	rootCmd.AddCommand(newVerifyCmd())
-	rootCmd.AddCommand(newRecoverCmd())
-	rootCmd.AddCommand(newTerminateCmd())
-	rootCmd.AddCommand(newVersionCmd())
+	rootCmd.AddCommand(cmd.NewConfigCmd())
+	rootCmd.AddCommand(cmd.NewCreateCmd())
+	rootCmd.AddCommand(cmd.NewInitCmd())
+	rootCmd.AddCommand(cmd.NewVerifyCmd())
+	rootCmd.AddCommand(cmd.NewRecoverCmd())
+	rootCmd.AddCommand(cmd.NewTerminateCmd())
+	rootCmd.AddCommand(cmd.NewVersionCmd())
 
 	return rootCmd
 }

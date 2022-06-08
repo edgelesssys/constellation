@@ -27,7 +27,7 @@ func TestRecoverCmdArgumentValidation(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			cmd := newRecoverCmd()
+			cmd := NewRecoverCmd()
 			err := cmd.ValidateArgs(tc.args)
 
 			if tc.wantErr {
@@ -160,7 +160,7 @@ func TestRecover(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			cmd := newRecoverCmd()
+			cmd := NewRecoverCmd()
 			cmd.Flags().String("config", "", "") // register persisten flag manually
 			out := &bytes.Buffer{}
 			cmd.SetOut(out)
@@ -255,7 +255,7 @@ func TestParseRecoverFlags(t *testing.T) {
 
 			fs := afero.NewMemMapFs()
 			require.NoError(afero.WriteFile(fs, "constellation-mastersecret.base64", []byte("Y29uc3RlbGxhdGlvbi1tYXN0ZXItc2VjcmV0LWxlbmc="), 0o777))
-			cmd := newRecoverCmd()
+			cmd := NewRecoverCmd()
 			cmd.Flags().String("config", "", "") // register persistent flag manually
 			require.NoError(cmd.ParseFlags(tc.args))
 			flags, err := parseRecoverFlags(cmd, file.NewHandler(fs))

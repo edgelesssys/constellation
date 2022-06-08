@@ -24,7 +24,7 @@ import (
 func TestInitArgumentValidation(t *testing.T) {
 	assert := assert.New(t)
 
-	cmd := newInitCmd()
+	cmd := NewInitCmd()
 	assert.NoError(cmd.ValidateArgs(nil))
 	assert.Error(cmd.ValidateArgs([]string{"something"}))
 	assert.Error(cmd.ValidateArgs([]string{"sth", "sth"}))
@@ -285,7 +285,7 @@ func TestInitialize(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			cmd := newInitCmd()
+			cmd := NewInitCmd()
 			var out bytes.Buffer
 			cmd.SetOut(&out)
 			var errOut bytes.Buffer
@@ -592,7 +592,7 @@ func TestAutoscaleFlag(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			cmd := newInitCmd()
+			cmd := NewInitCmd()
 			var out bytes.Buffer
 			cmd.SetOut(&out)
 			var errOut bytes.Buffer

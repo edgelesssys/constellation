@@ -35,7 +35,8 @@ import (
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
-func newInitCmd() *cobra.Command {
+// NewInitCmd returns a new cobra.Command for the init command.
+func NewInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "init",
 		Short:             "Initialize the Constellation cluster",

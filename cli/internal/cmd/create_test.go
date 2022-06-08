@@ -34,7 +34,7 @@ func TestCreateArgumentValidation(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			err := newCreateCmd().ValidateArgs(tc.args)
+			err := NewCreateCmd().ValidateArgs(tc.args)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -225,7 +225,7 @@ func TestCreate(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			cmd := newCreateCmd()
+			cmd := NewCreateCmd()
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))

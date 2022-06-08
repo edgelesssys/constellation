@@ -15,7 +15,8 @@ import (
 	"github.com/edgelesssys/constellation/internal/state"
 )
 
-func newTerminateCmd() *cobra.Command {
+// NewTerminateCmd returns a new cobra.Command for the terminate command.
+func NewTerminateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "terminate",
 		Short: "Terminate a Constellation cluster",

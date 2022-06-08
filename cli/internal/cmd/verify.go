@@ -15,7 +15,8 @@ import (
 	rpcStatus "google.golang.org/grpc/status"
 )
 
-func newVerifyCmd() *cobra.Command {
+// NewVerifyCmd returns a new cobra.Command for the verify command.
+func NewVerifyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "verify {aws|azure|gcp}",
 		Short: "Verify the confidential properties of a Constellation cluster",

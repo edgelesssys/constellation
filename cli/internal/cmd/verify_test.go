@@ -32,7 +32,7 @@ func TestVerifyCmdArgumentValidation(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			cmd := newVerifyCmd()
+			cmd := NewVerifyCmd()
 			err := cmd.ValidateArgs(tc.args)
 
 			if tc.wantErr {
@@ -132,7 +132,7 @@ func TestVerify(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			cmd := newVerifyCmd()
+			cmd := NewVerifyCmd()
 			cmd.Flags().String("config", "", "") // register persisten flag manually
 			out := &bytes.Buffer{}
 			cmd.SetOut(out)

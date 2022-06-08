@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/edgelesssys/constellation/cli/qemu"
+	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/state"
 )
 
@@ -41,17 +41,17 @@ func transformState(tfOut terraformOutput) state.ConstellationState {
 		Name:             "qemu",
 		UID:              "debug",
 		CloudProvider:    "qemu",
-		QEMUNodes:        qemu.Instances{},
-		QEMUCoordinators: qemu.Instances{},
+		QEMUNodes:        cloudtypes.Instances{},
+		QEMUCoordinators: cloudtypes.Instances{},
 	}
 	for i, ip := range tfOut.ControlPlaneIPs.Value {
-		conState.QEMUCoordinators[fmt.Sprintf("control-plane-%d", i)] = qemu.Instance{
+		conState.QEMUCoordinators[fmt.Sprintf("control-plane-%d", i)] = cloudtypes.Instance{
 			PublicIP:  ip,
 			PrivateIP: ip,
 		}
 	}
 	for i, ip := range tfOut.WorkerIPs.Value {
-		conState.QEMUNodes[fmt.Sprintf("worker-%d", i)] = qemu.Instance{
+		conState.QEMUNodes[fmt.Sprintf("worker-%d", i)] = cloudtypes.Instance{
 			PublicIP:  ip,
 			PrivateIP: ip,
 		}

@@ -5,7 +5,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newVersionCmd() *cobra.Command {
+// NewVerifyCmd returns a new cobra.Command for the verify command.
+func NewVersionCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Display version of this CLI",
