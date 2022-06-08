@@ -14,7 +14,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/edgelesssys/constellation/cli/status"
 	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/attestation/azure"
 	"github.com/edgelesssys/constellation/coordinator/attestation/gcp"
@@ -22,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/oid"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/state"
+	"github.com/edgelesssys/constellation/internal/statuswaiter"
 	"github.com/spf13/afero"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -44,7 +44,7 @@ func main() {
 	defer cancel()
 
 	// wait for coordinator to come online
-	waiter := status.NewWaiter()
+	waiter := statuswaiter.New()
 	if err := waiter.InitializeValidators([]atls.Validator{
 		azure.NewValidator(map[uint32][]byte{}),
 		gcp.NewValidator(map[uint32][]byte{}),

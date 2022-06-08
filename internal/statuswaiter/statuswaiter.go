@@ -1,4 +1,4 @@
-package status
+package statuswaiter
 
 import (
 	"context"
@@ -15,8 +15,6 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 )
 
-// TODO(katexochen): Use protoClient for waiter?
-
 // Waiter waits for PeerStatusServer to reach a specific state. The waiter needs
 // to be initialized before usage.
 type Waiter struct {
@@ -26,9 +24,9 @@ type Waiter struct {
 	newClient   func(cc grpc.ClientConnInterface) pubproto.APIClient
 }
 
-// NewWaiter returns a default Waiter with probing inteval of 10 seconds,
+// New returns a default Waiter with probing inteval of 10 seconds,
 // attested gRPC connection and PeerStatusClient.
-func NewWaiter() *Waiter {
+func New() *Waiter {
 	return &Waiter{
 		interval:  10 * time.Second,
 		newClient: pubproto.NewAPIClient,

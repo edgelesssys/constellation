@@ -15,7 +15,6 @@ import (
 	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/cli/internal/gcp"
 	"github.com/edgelesssys/constellation/cli/internal/proto"
-	"github.com/edgelesssys/constellation/cli/internal/status"
 	"github.com/edgelesssys/constellation/cli/internal/vpn"
 	"github.com/edgelesssys/constellation/coordinator/atls"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
@@ -28,6 +27,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/state"
+	"github.com/edgelesssys/constellation/internal/statuswaiter"
 	"github.com/kr/text"
 	wgquick "github.com/nmiculinic/wg-quick-go"
 	"github.com/spf13/afero"
@@ -58,7 +58,7 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	vpnHandler := vpn.NewConfigHandler()
 	serviceAccountCreator := cloudcmd.NewServiceAccountCreator()
-	waiter := status.NewWaiter()
+	waiter := statuswaiter.New()
 	protoClient := &proto.Client{}
 	defer protoClient.Close()
 
