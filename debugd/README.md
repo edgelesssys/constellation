@@ -33,11 +33,11 @@ With `cdbg` and `yq` installed in your path:
    export TIMESTAMP=01234
 
    yq -i \
-       ".provider.azureConfig.image = \"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos-debugd/versions/0.0.${TIMESTAMP}\"" \
+       "(.provider | select(. | has(\"azure\")).azure.image) = \"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos-debugd/versions/0.0.${TIMESTAMP}\"" \
        constellation-conf.yaml
 
    yq -i \
-       ".provider.gcpConfig.image = \"projects/constellation-images/global/images/constellation-coreos-debugd-${TIMESTAMP}\"" \
+       "(.provider | select(. | has(\"gcp\")).gcp.image) = \"projects/constellation-images/global/images/constellation-coreos-debugd-${TIMESTAMP}\"" \
        constellation-conf.yaml
 
    yq -i \
