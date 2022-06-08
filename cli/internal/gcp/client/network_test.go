@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
+	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/stretchr/testify/assert"
 )
 

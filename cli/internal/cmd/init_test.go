@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
+	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/state"

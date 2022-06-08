@@ -1,7 +1,7 @@
 package state
 
 import (
-	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
+	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 )
 
 // ConstellationState is the state of a Constellation.

@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/cli/internal/azure"
+	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 )
 
 func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput) error {

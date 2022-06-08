@@ -5,11 +5,11 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	azurecl "github.com/edgelesssys/constellation/cli/internal/azure/client"
 	gcpcl "github.com/edgelesssys/constellation/cli/internal/gcp/client"
 	"github.com/edgelesssys/constellation/internal/azureshared"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/gcpshared"
 	"github.com/edgelesssys/constellation/internal/state"
 )

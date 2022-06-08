@@ -12,7 +12,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/edgelesssys/constellation/cli/cloud/cloudcmd"
-	"github.com/edgelesssys/constellation/cli/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/cli/internal/azure"
 	"github.com/edgelesssys/constellation/cli/internal/gcp"
 	"github.com/edgelesssys/constellation/cli/internal/proto"
@@ -23,6 +22,7 @@ import (
 	coordinatorstate "github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/util"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
