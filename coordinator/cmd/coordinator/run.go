@@ -30,42 +30,38 @@ import (
 
 var version = "0.0.0"
 
-func run(issuer core.QuoteIssuer, vpn core.VPN, openTPM vtpm.TPMOpenFunc, getPublicIPAddr func() (string, error), dialer *grpcutil.Dialer, fileHandler file.Handler,
-	kube core.Cluster, metadata core.ProviderMetadata, encryptedDisk core.EncryptedDisk, etcdEndpoint string, etcdTLS bool, bindIP, bindPort string, zapLoggerCore *zap.Logger,
+func run(issuer core.QuoteIssuer, vpn core.VPN, tpm vtpm.TPMOpenFunc, getPublicIPAddr func() (string, error), dialer *grpcutil.Dialer, fileHandler file.Handler,
+	kube core.Cluster, metadata core.ProviderMetadata, disk core.EncryptedDisk, etcdEndpoint string, etcdTLS bool, bindIP, bindPort string, logger *zap.Logger,
 	cloudLogger logging.CloudLogger, fs afero.Fs,
 ) {
-	defer zapLoggerCore.Sync()
-	zapLoggerCore.Info("starting coordinator", zap.String("version", version))
+	defer logger.Sync()
+	logger.Info("starting coordinator", zap.String("version", version))
 
 	defer cloudLogger.Close()
 	cloudLogger.Disclose("Coordinator started running...")
 
 	tlsConfig, err := atls.CreateAttestationServerTLSConfig(issuer, nil)
 	if err != nil {
-		zapLoggerCore.Fatal("failed to create server TLS config", zap.Error(err))
+		logger.Fatal("failed to create server TLS config", zap.Error(err))
 	}
 
-	etcdStoreFactory := &store.EtcdStoreFactory{
-		Endpoint: etcdEndpoint,
-		ForceTLS: etcdTLS,
-		Logger:   zapLoggerCore.WithOptions(zap.IncreaseLevel(zap.WarnLevel)).Named("etcd"),
-	}
+	etcdStoreFactory := store.NewEtcdStoreFactory(etcdEndpoint, etcdTLS, logger)
 	linuxUserManager := user.NewLinuxUserManager(fs)
-	core, err := core.NewCore(vpn, kube, metadata, encryptedDisk, zapLoggerCore, openTPM, etcdStoreFactory, fileHandler, linuxUserManager)
+	core, err := core.NewCore(vpn, kube, metadata, disk, logger, tpm, etcdStoreFactory, fileHandler, linuxUserManager)
 	if err != nil {
-		zapLoggerCore.Fatal("failed to create core", zap.Error(err))
+		logger.Fatal("failed to create core", zap.Error(err))
 	}
 
-	vapiServer := &vpnAPIServer{logger: zapLoggerCore.Named("vpnapi"), core: core}
-	zapLoggerPubapi := zapLoggerCore.Named("pubapi")
-	papi := pubapi.New(zapLoggerPubapi, cloudLogger, core, dialer, vapiServer, getPublicIPAddr, pubapi.GetRecoveryPeerFromContext)
+	vapiServer := &vpnAPIServer{logger: logger.Named("vpnapi"), core: core}
+	loggerPubAPI := logger.Named("pubapi")
+	papi := pubapi.New(loggerPubAPI, cloudLogger, core, dialer, vapiServer, getPublicIPAddr, pubapi.GetRecoveryPeerFromContext)
 	// initialize state machine and wait for re-joining of the VPN (if applicable)
 	nodeActivated, err := core.Initialize(context.TODO(), dialer, papi)
 	if err != nil {
-		zapLoggerCore.Fatal("failed to initialize core", zap.Error(err))
+		logger.Fatal("failed to initialize core", zap.Error(err))
 	}
 
-	zapLoggergRPC := zapLoggerPubapi.Named("gRPC")
+	zapLoggergRPC := loggerPubAPI.Named("gRPC")
 
 	grpcServer := grpc.NewServer(
 		grpc.Creds(credentials.NewTLS(tlsConfig)),
@@ -97,7 +93,7 @@ func run(issuer core.QuoteIssuer, vpn core.VPN, openTPM vtpm.TPMOpenFunc, getPub
 	}()
 
 	if !nodeActivated {
-		zapLoggerStartupJoin := zapLoggerCore.Named("startup-join")
+		zapLoggerStartupJoin := logger.Named("startup-join")
 		if err := tryJoinClusterOnStartup(getPublicIPAddr, metadata, zapLoggerStartupJoin); err != nil {
 			zapLoggerStartupJoin.Info("joining existing cluster on startup failed. Waiting for connection.", zap.Error(err))
 		}

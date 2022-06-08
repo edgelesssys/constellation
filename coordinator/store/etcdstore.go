@@ -265,6 +265,15 @@ type EtcdStoreFactory struct {
 	Logger   *zap.Logger
 }
 
+// NewEtcdStoreFactory creates a new EtcdStoreFactory.
+func NewEtcdStoreFactory(endpoint string, forceTLS bool, logger *zap.Logger) *EtcdStoreFactory {
+	return &EtcdStoreFactory{
+		Endpoint: endpoint,
+		ForceTLS: forceTLS,
+		Logger:   logger.WithOptions(zap.IncreaseLevel(zap.WarnLevel)).Named("etcd"),
+	}
+}
+
 // New creates a new EtcdStore.
 func (f *EtcdStoreFactory) New() (Store, error) {
 	return NewEtcdStore(f.Endpoint, f.ForceTLS, f.Logger)
