@@ -27,3 +27,7 @@ Dockerfile.*
 
 # VS Code configuration folder
 .vscode
+
+# Go work files should not be used during build
+go.work
+go.work.sum
