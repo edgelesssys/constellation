@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/cli/cloud/cloudcmd"
+	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/cli/internal/proto"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"

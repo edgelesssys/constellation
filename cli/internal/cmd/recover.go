@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/edgelesssys/constellation/cli/cloud/cloudcmd"
+	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/cli/internal/proto"
 	"github.com/edgelesssys/constellation/coordinator/util"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
