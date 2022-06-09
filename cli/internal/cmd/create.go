@@ -70,7 +70,7 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 
 	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath, provider)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading and validating config: %w", err)
 	}
 
 	if !flags.yes {
@@ -105,7 +105,7 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 func parseCreateFlags(cmd *cobra.Command, provider cloudprovider.Provider) (createFlags, error) {
 	controllerCount, err := cmd.Flags().GetInt("control-plane-nodes")
 	if err != nil {
-		return createFlags{}, err
+		return createFlags{}, fmt.Errorf("parsing number of control-plane nodes: %w", err)
 	}
 	if controllerCount < constants.MinControllerCount {
 		return createFlags{}, fmt.Errorf("number of control-plane nodes must be at least %d", constants.MinControllerCount)
@@ -113,7 +113,7 @@ func parseCreateFlags(cmd *cobra.Command, provider cloudprovider.Provider) (crea
 
 	workerCount, err := cmd.Flags().GetInt("worker-nodes")
 	if err != nil {
-		return createFlags{}, err
+		return createFlags{}, fmt.Errorf("parsing number of worker nodes: %w", err)
 	}
 	if workerCount < constants.MinWorkerCount {
 		return createFlags{}, fmt.Errorf("number of worker nodes must be at least %d", constants.MinWorkerCount)
@@ -121,7 +121,7 @@ func parseCreateFlags(cmd *cobra.Command, provider cloudprovider.Provider) (crea
 
 	insType, err := cmd.Flags().GetString("instance-type")
 	if err != nil {
-		return createFlags{}, err
+		return createFlags{}, fmt.Errorf("parsing instance type argument: %w", err)
 	}
 	if insType == "" {
 		insType = defaultInstanceType(provider)
@@ -132,7 +132,7 @@ func parseCreateFlags(cmd *cobra.Command, provider cloudprovider.Provider) (crea
 
 	name, err := cmd.Flags().GetString("name")
 	if err != nil {
-		return createFlags{}, err
+		return createFlags{}, fmt.Errorf("parsing name argument: %w", err)
 	}
 	if len(name) > constants.ConstellationNameLength {
 		return createFlags{}, fmt.Errorf(
@@ -143,12 +143,12 @@ func parseCreateFlags(cmd *cobra.Command, provider cloudprovider.Provider) (crea
 
 	yes, err := cmd.Flags().GetBool("yes")
 	if err != nil {
-		return createFlags{}, err
+		return createFlags{}, fmt.Errorf("%w; Set '-yes' without a value to automatically confirm", err)
 	}
 
 	configPath, err := cmd.Flags().GetString("config")
 	if err != nil {
-		return createFlags{}, err
+		return createFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
 
 	return createFlags{
@@ -192,7 +192,7 @@ func checkDirClean(fileHandler file.Handler) error {
 		return fmt.Errorf("file '%s' already exists in working directory, run 'constellation terminate' before creating a new one", constants.AdminConfFilename)
 	}
 	if _, err := fileHandler.Stat(constants.MasterSecretFilename); !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("file '%s' already exists in working directory, clean it up first", constants.MasterSecretFilename)
+		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous master secrets. Move it somewhere or delete it before creating a new cluster", constants.MasterSecretFilename)
 	}
 
 	return nil

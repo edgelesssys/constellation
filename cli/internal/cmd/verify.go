@@ -51,7 +51,7 @@ func verify(ctx context.Context, cmd *cobra.Command, provider cloudprovider.Prov
 
 	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath, provider)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading and validating config: %w", err)
 	}
 
 	validators, err := cloudcmd.NewValidators(provider, config)
@@ -83,28 +83,28 @@ func verify(ctx context.Context, cmd *cobra.Command, provider cloudprovider.Prov
 func parseVerifyFlags(cmd *cobra.Command) (verifyFlags, error) {
 	ownerID, err := cmd.Flags().GetString("owner-id")
 	if err != nil {
-		return verifyFlags{}, err
+		return verifyFlags{}, fmt.Errorf("parsing owner-id argument: %w", err)
 	}
 	clusterID, err := cmd.Flags().GetString("unique-id")
 	if err != nil {
-		return verifyFlags{}, err
+		return verifyFlags{}, fmt.Errorf("parsing unique-id argument: %w", err)
 	}
 	if ownerID == "" && clusterID == "" {
-		return verifyFlags{}, errors.New("neither owner ID nor unique ID provided to verify the cluster")
+		return verifyFlags{}, errors.New("neither owner-id nor unique-id provided to verify the cluster")
 	}
 
 	endpoint, err := cmd.Flags().GetString("node-endpoint")
 	if err != nil {
-		return verifyFlags{}, err
+		return verifyFlags{}, fmt.Errorf("parsing node-endpoint argument: %w", err)
 	}
 	endpoint, err = validateEndpoint(endpoint, constants.CoordinatorPort)
 	if err != nil {
-		return verifyFlags{}, err
+		return verifyFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
 	}
 
 	configPath, err := cmd.Flags().GetString("config")
 	if err != nil {
-		return verifyFlags{}, err
+		return verifyFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
 
 	return verifyFlags{

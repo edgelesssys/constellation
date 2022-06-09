@@ -80,16 +80,16 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 	var stat state.ConstellationState
 	err = fileHandler.ReadJSON(constants.StateFilename, &stat)
 	if errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("nothing to initialize: %w", err)
+		return fmt.Errorf("missing Constellation state file: %w. Please do 'constellation create ...' before 'constellation init'", err)
 	} else if err != nil {
-		return err
+		return fmt.Errorf("loading Constellation state file: %w", err)
 	}
 
 	provider := cloudprovider.FromString(stat.CloudProvider)
 
 	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath, provider)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading and validating config: %w", err)
 	}
 
 	var sshUsers []*ssh.UserKey
@@ -166,7 +166,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 
 	if flags.autoconfigureWG {
 		if err := vpnHandler.Apply(vpnConfig); err != nil {
-			return err
+			return fmt.Errorf("configuring WireGuard: %w", err)
 		}
 	}
 
@@ -247,7 +247,7 @@ type activationResult struct {
 func writeWGQuickFile(fileHandler file.Handler, vpnHandler vpnHandler, vpnConfig *wgquick.Config) error {
 	data, err := vpnHandler.Marshal(vpnConfig)
 	if err != nil {
-		return err
+		return fmt.Errorf("marshalling VPN config: %w", err)
 	}
 	return fileHandler.Write(constants.WGQuickConfigFilename, data, file.OptNone)
 }
@@ -285,7 +285,7 @@ func writeRow(wr io.Writer, col1 string, col2 string) {
 func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (initFlags, error) {
 	userPrivKeyPath, err := cmd.Flags().GetString("privatekey")
 	if err != nil {
-		return initFlags{}, err
+		return initFlags{}, fmt.Errorf("parsing privatekey path argument: %w", err)
 	}
 	userPrivKey, userPubKey, err := readOrGenerateVPNKey(fileHandler, userPrivKeyPath)
 	if err != nil {
@@ -293,23 +293,23 @@ func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (initFlags, erro
 	}
 	autoconfigureWG, err := cmd.Flags().GetBool("wg-autoconfig")
 	if err != nil {
-		return initFlags{}, err
+		return initFlags{}, fmt.Errorf("parsing wg-autoconfig argument: %w", err)
 	}
 	masterSecretPath, err := cmd.Flags().GetString("master-secret")
 	if err != nil {
-		return initFlags{}, err
+		return initFlags{}, fmt.Errorf("parsing master-secret path argument: %w", err)
 	}
-	masterSecret, err := readOrGeneratedMasterSecret(cmd.OutOrStdout(), fileHandler, masterSecretPath)
+	masterSecret, err := readOrGenerateMasterSecret(cmd.OutOrStdout(), fileHandler, masterSecretPath)
 	if err != nil {
-		return initFlags{}, err
+		return initFlags{}, fmt.Errorf("parsing or generating master mastersecret from file %s: %w", masterSecretPath, err)
 	}
 	autoscale, err := cmd.Flags().GetBool("autoscale")
 	if err != nil {
-		return initFlags{}, err
+		return initFlags{}, fmt.Errorf("parsing autoscale argument: %w", err)
 	}
 	configPath, err := cmd.Flags().GetString("config")
 	if err != nil {
-		return initFlags{}, err
+		return initFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
 
 	return initFlags{
@@ -337,17 +337,17 @@ func readOrGenerateVPNKey(fileHandler file.Handler, privKeyPath string) (privKey
 	if privKeyPath == "" {
 		privKeyParsed, err = wgtypes.GeneratePrivateKey()
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("generating WireGuard private key: %w", err)
 		}
 		privKey = []byte(privKeyParsed.String())
 	} else {
 		privKey, err = fileHandler.Read(privKeyPath)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("reading the VPN private key: %w", err)
 		}
 		privKeyParsed, err = wgtypes.ParseKey(string(privKey))
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("parsing the WireGuard private key: %w", err)
 		}
 	}
 
@@ -367,8 +367,8 @@ func ipsToEndpoints(ips []string, port string) []string {
 	return endpoints
 }
 
-// readOrGeneratedMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
-func readOrGeneratedMasterSecret(w io.Writer, fileHandler file.Handler, filename string) ([]byte, error) {
+// readOrGenerateMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
+func readOrGenerateMasterSecret(writer io.Writer, fileHandler file.Handler, filename string) ([]byte, error) {
 	if filename != "" {
 		// Try to read the base64 secret from file
 		encodedSecret, err := fileHandler.Read(filename)
@@ -393,7 +393,7 @@ func readOrGeneratedMasterSecret(w io.Writer, fileHandler file.Handler, filename
 	if err := fileHandler.Write(constants.MasterSecretFilename, []byte(base64.StdEncoding.EncodeToString(masterSecret)), file.OptNone); err != nil {
 		return nil, err
 	}
-	fmt.Fprintf(w, "Your Constellation master secret was successfully written to ./%s\n", constants.MasterSecretFilename)
+	fmt.Fprintf(writer, "Your Constellation master secret was successfully written to ./%s\n", constants.MasterSecretFilename)
 	return masterSecret, nil
 }
 

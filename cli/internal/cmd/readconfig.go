@@ -24,7 +24,7 @@ func readConfig(out io.Writer, fileHandler file.Handler, name string, provider c
 func validateConfig(out io.Writer, cnf *config.Config, provider cloudprovider.Provider) error {
 	msgs, err := cnf.Validate()
 	if err != nil {
-		return err
+		return fmt.Errorf("performing config validation: %w", err)
 	}
 
 	if len(msgs) > 0 {
@@ -32,7 +32,7 @@ func validateConfig(out io.Writer, cnf *config.Config, provider cloudprovider.Pr
 		for _, m := range msgs {
 			fmt.Fprintln(out, "\t"+m)
 		}
-		return errors.New("invalid configuration")
+		return errors.New("invalid configuration. Fix the invalid entries or generate a new configuration using `constellation config generate`")
 	}
 
 	if provider != cloudprovider.Unknown && !cnf.HasProvider(provider) {

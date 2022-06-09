@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
@@ -50,7 +52,7 @@ func configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloud
 	if flags.file == "-" {
 		content, err := encoder.NewEncoder(conf).Encode()
 		if err != nil {
-			return err
+			return fmt.Errorf("encoding config content: %w", err)
 		}
 		_, err = cmd.OutOrStdout().Write(content)
 		return err
@@ -62,7 +64,7 @@ func configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloud
 func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {
 	file, err := cmd.Flags().GetString("file")
 	if err != nil {
-		return generateFlags{}, err
+		return generateFlags{}, fmt.Errorf("parsing config generate flags: %w", err)
 	}
 	return generateFlags{
 		file: file,

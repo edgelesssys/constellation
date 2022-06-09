@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -60,7 +61,7 @@ func recover(ctx context.Context, cmd *cobra.Command, fileHandler file.Handler, 
 
 	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath, provider)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading and validating config: %w", err)
 	}
 
 	validators, err := cloudcmd.NewValidators(provider, config)
@@ -89,16 +90,16 @@ func recover(ctx context.Context, cmd *cobra.Command, fileHandler file.Handler, 
 func parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFlags, error) {
 	endpoint, err := cmd.Flags().GetString("endpoint")
 	if err != nil {
-		return recoverFlags{}, err
+		return recoverFlags{}, fmt.Errorf("parsing endpoint argument: %w", err)
 	}
 	endpoint, err = validateEndpoint(endpoint, constants.CoordinatorPort)
 	if err != nil {
-		return recoverFlags{}, err
+		return recoverFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
 	}
 
 	diskUUID, err := cmd.Flags().GetString("disk-uuid")
 	if err != nil {
-		return recoverFlags{}, err
+		return recoverFlags{}, fmt.Errorf("parsing disk-uuid argument: %w", err)
 	}
 	if match := diskUUIDRegexp.MatchString(diskUUID); !match {
 		return recoverFlags{}, errors.New("flag '--disk-uuid' isn't a valid LUKS UUID")
@@ -107,16 +108,16 @@ func parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFla
 
 	masterSecretPath, err := cmd.Flags().GetString("master-secret")
 	if err != nil {
-		return recoverFlags{}, err
+		return recoverFlags{}, fmt.Errorf("parsing master-secret path argument: %w", err)
 	}
 	masterSecret, err := readMasterSecret(fileHandler, masterSecretPath)
 	if err != nil {
-		return recoverFlags{}, err
+		return recoverFlags{}, fmt.Errorf("reading the master secret from file %s: %w", masterSecretPath, err)
 	}
 
 	configPath, err := cmd.Flags().GetString("config")
 	if err != nil {
-		return recoverFlags{}, err
+		return recoverFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
 
 	return recoverFlags{

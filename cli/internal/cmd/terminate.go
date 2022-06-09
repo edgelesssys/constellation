@@ -38,28 +38,28 @@ func runTerminate(cmd *cobra.Command, args []string) error {
 func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.Handler) error {
 	var stat state.ConstellationState
 	if err := fileHandler.ReadJSON(constants.StateFilename, &stat); err != nil {
-		return err
+		return fmt.Errorf("reading Constellation state: %w", err)
 	}
 
 	cmd.Println("Terminating ...")
 
 	if err := terminator.Terminate(cmd.Context(), stat); err != nil {
-		return err
+		return fmt.Errorf("terminating Constellation cluster: %w", err)
 	}
 
 	cmd.Println("Your Constellation cluster was terminated successfully.")
 
 	var retErr error
 	if err := fileHandler.Remove(constants.StateFilename); err != nil {
-		retErr = multierr.Append(err, fmt.Errorf("failed to remove file '%s', please remove manually", constants.StateFilename))
+		retErr = multierr.Append(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", constants.StateFilename))
 	}
 
 	if err := fileHandler.Remove(constants.AdminConfFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		retErr = multierr.Append(err, fmt.Errorf("failed to remove file '%s', please remove manually", constants.AdminConfFilename))
+		retErr = multierr.Append(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", constants.AdminConfFilename))
 	}
 
 	if err := fileHandler.Remove(constants.WGQuickConfigFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		retErr = multierr.Append(err, fmt.Errorf("failed to remove file '%s', please remove manually", constants.WGQuickConfigFilename))
+		retErr = multierr.Append(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", constants.WGQuickConfigFilename))
 	}
 
 	return retErr

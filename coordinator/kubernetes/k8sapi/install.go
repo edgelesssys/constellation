@@ -90,16 +90,18 @@ func (i *osInstaller) extractArchive(archivePath, prefix string, perm fs.FileMod
 			if len(header.Name) == 0 {
 				return errors.New("cannot create dir for empty path")
 			}
-			if err := i.fs.Mkdir(path.Join(prefix, header.Name), fs.FileMode(header.Mode)&perm); err != nil && !errors.Is(err, os.ErrExist) {
-				return fmt.Errorf("creating folder %s: %w", path.Join(prefix, header.Name), err)
+			prefixedPath := path.Join(prefix, header.Name)
+			if err := i.fs.Mkdir(prefixedPath, fs.FileMode(header.Mode)&perm); err != nil && !errors.Is(err, os.ErrExist) {
+				return fmt.Errorf("creating folder %q: %w", prefixedPath, err)
 			}
 		case tar.TypeReg:
 			if len(header.Name) == 0 {
 				return errors.New("cannot create file for empty path")
 			}
-			out, err := i.fs.OpenFile(path.Join(prefix, header.Name), os.O_WRONLY|os.O_CREATE, fs.FileMode(header.Mode))
+			prefixedPath := path.Join(prefix, header.Name)
+			out, err := i.fs.OpenFile(prefixedPath, os.O_WRONLY|os.O_CREATE, fs.FileMode(header.Mode))
 			if err != nil {
-				return fmt.Errorf("creating file %s for writing: %w", path.Join(prefix, header.Name), err)
+				return fmt.Errorf("creating file %q for writing: %w", prefixedPath, err)
 			}
 			defer out.Close()
 			if _, err := io.Copy(out, tarReader); err != nil {

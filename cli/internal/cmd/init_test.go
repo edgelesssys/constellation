@@ -414,7 +414,7 @@ func TestReadOrGenerateVPNKey(t *testing.T) {
 	assert.NotEmpty(pubK)
 }
 
-func TestReadOrGeneratedMasterSecret(t *testing.T) {
+func TestReadOrGenerateMasterSecret(t *testing.T) {
 	testCases := map[string]struct {
 		filename    string
 		filecontent string
@@ -484,7 +484,7 @@ func TestReadOrGeneratedMasterSecret(t *testing.T) {
 			}
 
 			var out bytes.Buffer
-			secret, err := readOrGeneratedMasterSecret(&out, fileHandler, tc.filename)
+			secret, err := readOrGenerateMasterSecret(&out, fileHandler, tc.filename)
 
 			if tc.wantErr {
 				assert.Error(err)
