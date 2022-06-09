@@ -8,7 +8,7 @@ import (
 // GetDiskUUID gets the disk's UUID.
 func (c *Core) GetDiskUUID() (string, error) {
 	if err := c.encryptedDisk.Open(); err != nil {
-		return "", fmt.Errorf("retrieving uuid of encrypted disk failed: cannot open disk: %w", err)
+		return "", fmt.Errorf("retrieving uuid of encrypted disk: cannot open disk: %w", err)
 	}
 	defer c.encryptedDisk.Close()
 	uuid, err := c.encryptedDisk.UUID()
@@ -21,7 +21,7 @@ func (c *Core) GetDiskUUID() (string, error) {
 // UpdateDiskPassphrase switches the initial random passphrase of the encrypted disk to a permanent passphrase.
 func (c *Core) UpdateDiskPassphrase(passphrase string) error {
 	if err := c.encryptedDisk.Open(); err != nil {
-		return fmt.Errorf("updating passphrase of encrypted disk failed: cannot open disk: %w", err)
+		return fmt.Errorf("updating passphrase of encrypted disk: cannot open disk: %w", err)
 	}
 	defer c.encryptedDisk.Close()
 	return c.encryptedDisk.UpdatePassphrase(passphrase)

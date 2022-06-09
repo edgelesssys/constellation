@@ -69,7 +69,7 @@ func (c *ServiceAccountCreator) createServiceAccountGCP(ctx context.Context, cl 
 	stat state.ConstellationState, config *config.Config,
 ) (string, state.ConstellationState, error) {
 	if err := cl.SetState(stat); err != nil {
-		return "", state.ConstellationState{}, fmt.Errorf("failed to set state while creating service account: %w", err)
+		return "", state.ConstellationState{}, fmt.Errorf("setting state while creating service account: %w", err)
 	}
 
 	input := gcpcl.ServiceAccountInput{
@@ -77,12 +77,12 @@ func (c *ServiceAccountCreator) createServiceAccountGCP(ctx context.Context, cl 
 	}
 	serviceAccount, err := cl.CreateServiceAccount(ctx, input)
 	if err != nil {
-		return "", state.ConstellationState{}, fmt.Errorf("failed to create service account: %w", err)
+		return "", state.ConstellationState{}, fmt.Errorf("creating service account: %w", err)
 	}
 
 	stat, err = cl.GetState()
 	if err != nil {
-		return "", state.ConstellationState{}, fmt.Errorf("failed to get state after creating service account: %w", err)
+		return "", state.ConstellationState{}, fmt.Errorf("getting state after creating service account: %w", err)
 	}
 	return serviceAccount, stat, nil
 }
@@ -91,16 +91,16 @@ func (c *ServiceAccountCreator) createServiceAccountAzure(ctx context.Context, c
 	stat state.ConstellationState, config *config.Config,
 ) (string, state.ConstellationState, error) {
 	if err := cl.SetState(stat); err != nil {
-		return "", state.ConstellationState{}, fmt.Errorf("failed to set state while creating service account: %w", err)
+		return "", state.ConstellationState{}, fmt.Errorf("setting state while creating service account: %w", err)
 	}
 	serviceAccount, err := cl.CreateServicePrincipal(ctx)
 	if err != nil {
-		return "", state.ConstellationState{}, fmt.Errorf("failed to create service account: %w", err)
+		return "", state.ConstellationState{}, fmt.Errorf("creating service account: %w", err)
 	}
 
 	stat, err = cl.GetState()
 	if err != nil {
-		return "", state.ConstellationState{}, fmt.Errorf("failed to get state after creating service account: %w", err)
+		return "", state.ConstellationState{}, fmt.Errorf("getting state after creating service account: %w", err)
 	}
 	return serviceAccount, stat, nil
 }

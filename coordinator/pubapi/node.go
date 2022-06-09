@@ -65,7 +65,7 @@ func (a *API) ActivateAsNode(stream pubproto.API_ActivateAsNodeServer) (reterr e
 	*/
 	message, err := stream.Recv()
 	if err != nil {
-		return status.Errorf(codes.Internal, "could not receive initial request from coordinator: %v", err)
+		return status.Errorf(codes.Internal, "receiving initial request from coordinator: %v", err)
 	}
 	initialRequest, ok := message.GetRequest().(*pubproto.ActivateAsNodeRequest_InitialRequest)
 	if !ok {
@@ -137,7 +137,7 @@ func (a *API) ActivateAsNode(stream pubproto.API_ActivateAsNodeServer) (reterr e
 	*/
 	message, err = stream.Recv()
 	if err != nil {
-		return status.Errorf(codes.Internal, "could not receive state disk key from coordinator: %v", err)
+		return status.Errorf(codes.Internal, "failed to receive state disk key from coordinator: %v", err)
 	}
 	diskKey, ok := message.GetRequest().(*pubproto.ActivateAsNodeRequest_StateDiskKey)
 	if !ok {

@@ -43,7 +43,7 @@ func (c *Client) TerminateServiceAccount(ctx context.Context) error {
 			Name: "projects/-/serviceAccounts/" + c.serviceAccount,
 		}
 		if err := c.iamAPI.DeleteServiceAccount(ctx, req); err != nil {
-			return fmt.Errorf("deleting service account failed: %w", err)
+			return fmt.Errorf("deleting service account: %w", err)
 		}
 		c.serviceAccount = ""
 	}
@@ -81,11 +81,11 @@ func (c *Client) createServiceAccountKey(ctx context.Context, email string) (gcp
 	req := createServiceAccountKeyRequest(email)
 	key, err := c.iamAPI.CreateServiceAccountKey(ctx, req)
 	if err != nil {
-		return gcpshared.ServiceAccountKey{}, fmt.Errorf("creating service account key failed: %w", err)
+		return gcpshared.ServiceAccountKey{}, fmt.Errorf("creating service account key: %w", err)
 	}
 	var serviceAccountKey gcpshared.ServiceAccountKey
 	if err := json.Unmarshal(key.PrivateKeyData, &serviceAccountKey); err != nil {
-		return gcpshared.ServiceAccountKey{}, fmt.Errorf("decoding service account key JSON failed: %w", err)
+		return gcpshared.ServiceAccountKey{}, fmt.Errorf("decoding service account key JSON: %w", err)
 	}
 
 	return serviceAccountKey, nil

@@ -224,7 +224,7 @@ func (a *API) activateCoordinator(ctx context.Context, coordinatorIP string, ssh
 	for _, p := range peers {
 		if p.Role == role.Coordinator && p.VPNIP != thisPeer.VPNIP {
 			if err := a.triggerCoordinatorUpdate(context.TODO(), p.PublicIP); err != nil {
-				a.logger.Error("triggerCoordinatorUpdate failed", zap.Error(err), zap.String("endpoint", p.PublicIP), zap.String("vpnip", p.VPNIP))
+				a.logger.Error("failed to trigger coordinator update", zap.Error(err), zap.String("endpoint", p.PublicIP), zap.String("vpnip", p.VPNIP))
 			}
 		}
 	}
@@ -263,7 +263,7 @@ func (a *API) TriggerCoordinatorUpdate(ctx context.Context, in *pubproto.Trigger
 func (a *API) GetPeerVPNPublicKey(ctx context.Context, in *pubproto.GetPeerVPNPublicKeyRequest) (*pubproto.GetPeerVPNPublicKeyResponse, error) {
 	key, err := a.core.GetVPNPubKey()
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not obtain VPNPubKey %v", err)
+		return nil, status.Errorf(codes.Internal, "obtaining VPNPubKey: %v", err)
 	}
 	return &pubproto.GetPeerVPNPublicKeyResponse{CoordinatorPubKey: key}, nil
 }

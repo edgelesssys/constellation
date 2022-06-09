@@ -92,7 +92,7 @@ func main() {
 
 		gcpClient, err := gcpcloud.NewClient(context.Background())
 		if err != nil {
-			log.Fatalf("creating GCP client failed: %v\n", err)
+			log.Fatalf("failed to create GCP client: %v\n", err)
 		}
 		metadata := gcpcloud.New(gcpClient)
 		descr, err := metadata.Self(context.Background())

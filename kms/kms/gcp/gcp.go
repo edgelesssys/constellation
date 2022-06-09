@@ -118,7 +118,7 @@ func (c *KMSClient) GetDEK(ctx context.Context, kekID, keyID string, dekSize int
 		// If the DEK does not exist we generate a new random DEK and save it to storage
 		newDEK, err := util.GetRandomKey(dekSize)
 		if err != nil {
-			return nil, fmt.Errorf("could not generate key: %w", err)
+			return nil, fmt.Errorf("key generation: %w", err)
 		}
 		return newDEK, c.putDEK(ctx, client, kekID, keyID, newDEK)
 	}
@@ -217,7 +217,7 @@ func (c *KMSClient) importKEK(ctx context.Context, keyID string, key []byte, cli
 	}
 	wrappedKey, err := wrapCryptoKey(key, wrappingPublicKey)
 	if err != nil {
-		return nil, fmt.Errorf("unable to wrap key: %w", err)
+		return nil, fmt.Errorf("wrapping public key: %w", err)
 	}
 
 	// Perform the actual key import

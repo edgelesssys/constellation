@@ -107,7 +107,7 @@ func (c *Client) updateAppCredentials(ctx context.Context, objectID string) (str
 	keyID := uuid.New().String()
 	clientSecret, err := generateClientSecret()
 	if err != nil {
-		return "", fmt.Errorf("generating client secret failed: %w", err)
+		return "", fmt.Errorf("generating client secret: %w", err)
 	}
 	updateParameters := graphrbac.PasswordCredentialsUpdateParameters{
 		Value: &[]graphrbac.PasswordCredential{

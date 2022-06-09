@@ -105,7 +105,7 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 	id := attestationtypes.ID{Owner: ownerID, Cluster: clusterID}
 	kubeconfig, err := a.core.InitCluster(context.TODO(), in.AutoscalingNodeGroups, in.CloudServiceAccountUri, id, in.MasterSecret, in.SshUserKeys)
 	if err != nil {
-		return status.Errorf(codes.Internal, "initializing Kubernetes cluster failed: %v", err)
+		return status.Errorf(codes.Internal, "initializing Kubernetes cluster: %v", err)
 	}
 
 	// run the VPN-API server
@@ -206,7 +206,7 @@ func (a *API) RequestStateDiskKey(ctx context.Context, in *pubproto.RequestState
 	}
 	key, err := a.core.GetDataKey(ctx, in.DiskUuid, config.RNGLengthDefault)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "unable to load key: %v", err)
+		return nil, status.Errorf(codes.Internal, "getting data key: %v", err)
 	}
 
 	peer, err := a.peerFromContext(ctx)
@@ -394,12 +394,12 @@ func (a *API) activateNode(nodePublicIP string, nodeVPNIP string, initialPeers [
 func (a *API) assemblePeerStruct(vpnIP string, _ role.Role) (peer.Peer, error) {
 	vpnPubKey, err := a.core.GetVPNPubKey()
 	if err != nil {
-		a.logger.Error("could not get key", zap.Error(err))
+		a.logger.Error("failed to get VPN pub key", zap.Error(err))
 		return peer.Peer{}, err
 	}
 	publicIP, err := a.getPublicIPAddr()
 	if err != nil {
-		a.logger.Error("could not get public IP", zap.Error(err))
+		a.logger.Error("failed to get public IP", zap.Error(err))
 		return peer.Peer{}, err
 	}
 	return peer.Peer{

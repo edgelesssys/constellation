@@ -56,7 +56,7 @@ func (c *Client) RetrieveInstances(ctx context.Context, project, zone string) ([
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("retrieving instance list from compute API client failed: %w", err)
+			return nil, fmt.Errorf("retrieving instance list from compute API client: %w", err)
 		}
 		metadata := extractInstanceMetadata(resp.Metadata, "", false)
 		// skip instances not belonging to the current constellation
@@ -112,7 +112,7 @@ func (c *Client) RetrieveInstanceName() (string, error) {
 func (c *Client) RetrieveInstanceMetadata(attr string) (string, error) {
 	value, err := c.metadataAPI.InstanceAttributeValue(attr)
 	if err != nil {
-		return "", fmt.Errorf("requesting GCP instance metadata failed: %w", err)
+		return "", fmt.Errorf("requesting GCP instance metadata: %w", err)
 	}
 	return value, nil
 }
@@ -121,7 +121,7 @@ func (c *Client) RetrieveInstanceMetadata(attr string) (string, error) {
 func (c *Client) SetInstanceMetadata(ctx context.Context, project, zone, instanceName, key, value string) error {
 	instance, err := c.getComputeInstance(ctx, project, zone, instanceName)
 	if err != nil {
-		return fmt.Errorf("retrieving instance metadata failed: %w", err)
+		return fmt.Errorf("retrieving instance metadata: %w", err)
 	}
 	if instance == nil || instance.Metadata == nil {
 		return fmt.Errorf("retrieving instance metadata returned invalid results")
@@ -134,7 +134,7 @@ func (c *Client) SetInstanceMetadata(ctx context.Context, project, zone, instanc
 	metadata := flattenInstanceMetadata(metadataMap, instance.Metadata.Fingerprint, instance.Metadata.Kind)
 
 	if err := c.updateInstanceMetadata(ctx, project, zone, instanceName, metadata); err != nil {
-		return fmt.Errorf("setting instance metadata %v: %v failed with: %w", key, value, err)
+		return fmt.Errorf("setting instance metadata %v: %v: %w", key, value, err)
 	}
 	return nil
 }
@@ -143,7 +143,7 @@ func (c *Client) SetInstanceMetadata(ctx context.Context, project, zone, instanc
 func (c *Client) UnsetInstanceMetadata(ctx context.Context, project, zone, instanceName, key string) error {
 	instance, err := c.getComputeInstance(ctx, project, zone, instanceName)
 	if err != nil {
-		return fmt.Errorf("retrieving instance metadata failed: %w", err)
+		return fmt.Errorf("retrieving instance metadata: %w", err)
 	}
 	if instance == nil || instance.Metadata == nil {
 		return fmt.Errorf("retrieving instance metadata returned invalid results")
@@ -157,7 +157,7 @@ func (c *Client) UnsetInstanceMetadata(ctx context.Context, project, zone, insta
 	metadata := flattenInstanceMetadata(metadataMap, instance.Metadata.Fingerprint, instance.Metadata.Kind)
 
 	if err := c.updateInstanceMetadata(ctx, project, zone, instanceName, metadata); err != nil {
-		return fmt.Errorf("unsetting instance metadata key %v failed with: %w", key, err)
+		return fmt.Errorf("unsetting instance metadata key %v: %w", key, err)
 	}
 	return nil
 }
@@ -212,7 +212,7 @@ func (c *Client) getComputeInstance(ctx context.Context, project, zone, instance
 	}
 	instance, err := c.instanceAPI.Get(ctx, instanceGetReq)
 	if err != nil {
-		return nil, fmt.Errorf("retrieving compute instance failed: %w", err)
+		return nil, fmt.Errorf("retrieving compute instance: %w", err)
 	}
 	return instance, nil
 }
@@ -227,7 +227,7 @@ func (c *Client) updateInstanceMetadata(ctx context.Context, project, zone, inst
 	}
 
 	if _, err := c.instanceAPI.SetMetadata(ctx, setMetadataReq); err != nil {
-		return fmt.Errorf("updating instance metadata failed: %w", err)
+		return fmt.Errorf("updating instance metadata: %w", err)
 	}
 	return nil
 }
@@ -237,7 +237,7 @@ func (c *Client) uid() (string, error) {
 	// API endpoint: http://metadata.google.internal/computeMetadata/v1/instance/attributes/constellation-uid
 	uid, err := c.RetrieveInstanceMetadata(core.ConstellationUIDMetadataKey)
 	if err != nil {
-		return "", fmt.Errorf("retrieving constellation uid failed: %w", err)
+		return "", fmt.Errorf("retrieving constellation uid: %w", err)
 	}
 	return uid, nil
 }

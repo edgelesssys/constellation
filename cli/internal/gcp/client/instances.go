@@ -42,7 +42,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 	}
 	op, err := c.insertInstanceTemplate(ctx, nodeTemplateInput)
 	if err != nil {
-		return fmt.Errorf("inserting instanceTemplate failed: %w", err)
+		return fmt.Errorf("inserting instanceTemplate: %w", err)
 	}
 	ops = append(ops, op)
 	c.nodeTemplate = nodeTemplateInput.Name
@@ -64,7 +64,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 	}
 	op, err = c.insertInstanceTemplate(ctx, coordinatorTemplateInput)
 	if err != nil {
-		return fmt.Errorf("inserting instanceTemplate failed: %w", err)
+		return fmt.Errorf("inserting instanceTemplate: %w", err)
 	}
 	ops = append(ops, op)
 	c.coordinatorTemplate = coordinatorTemplateInput.Name
@@ -83,7 +83,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 	}
 	op, err = c.insertInstanceGroupManger(ctx, coordinatorGroupInput)
 	if err != nil {
-		return fmt.Errorf("inserting instanceGroupManager failed: %w", err)
+		return fmt.Errorf("inserting instanceGroupManager: %w", err)
 	}
 	ops = append(ops, op)
 	c.coordinatorInstanceGroup = coordinatorGroupInput.Name
@@ -98,7 +98,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 	}
 	op, err = c.insertInstanceGroupManger(ctx, nodeGroupInput)
 	if err != nil {
-		return fmt.Errorf("inserting instanceGroupManager failed: %w", err)
+		return fmt.Errorf("inserting instanceGroupManager: %w", err)
 	}
 	ops = append(ops, op)
 	c.nodesInstanceGroup = nodeGroupInput.Name
@@ -108,18 +108,18 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 	}
 
 	if err := c.waitForInstanceGroupScaling(ctx, c.nodesInstanceGroup); err != nil {
-		return fmt.Errorf("waiting for instanceGroupScaling failed: %w", err)
+		return fmt.Errorf("waiting for instanceGroupScaling: %w", err)
 	}
 
 	if err := c.waitForInstanceGroupScaling(ctx, c.coordinatorInstanceGroup); err != nil {
-		return fmt.Errorf("waiting for instanceGroupScaling failed: %w", err)
+		return fmt.Errorf("waiting for instanceGroupScaling: %w", err)
 	}
 
 	if err := c.getInstanceIPs(ctx, c.nodesInstanceGroup, c.nodes); err != nil {
-		return fmt.Errorf("failed to get instanceIPs: %w", err)
+		return fmt.Errorf("getting instanceIPs: %w", err)
 	}
 	if err := c.getInstanceIPs(ctx, c.coordinatorInstanceGroup, c.coordinators); err != nil {
-		return fmt.Errorf("failed to get instanceIPs: %w", err)
+		return fmt.Errorf("getting instanceIPs: %w", err)
 	}
 	return nil
 }
@@ -130,7 +130,7 @@ func (c *Client) TerminateInstances(ctx context.Context) error {
 	if c.nodesInstanceGroup != "" {
 		op, err := c.deleteInstanceGroupManager(ctx, c.nodesInstanceGroup)
 		if err != nil {
-			return fmt.Errorf("deleting instanceGroupManager '%s' failed: %w", c.nodesInstanceGroup, err)
+			return fmt.Errorf("deleting instanceGroupManager '%s': %w", c.nodesInstanceGroup, err)
 		}
 		ops = append(ops, op)
 		c.nodesInstanceGroup = ""
@@ -140,7 +140,7 @@ func (c *Client) TerminateInstances(ctx context.Context) error {
 	if c.coordinatorInstanceGroup != "" {
 		op, err := c.deleteInstanceGroupManager(ctx, c.coordinatorInstanceGroup)
 		if err != nil {
-			return fmt.Errorf("deleting instanceGroupManager '%s' failed: %w", c.coordinatorInstanceGroup, err)
+			return fmt.Errorf("deleting instanceGroupManager '%s': %w", c.coordinatorInstanceGroup, err)
 		}
 		ops = append(ops, op)
 		c.coordinatorInstanceGroup = ""
@@ -154,7 +154,7 @@ func (c *Client) TerminateInstances(ctx context.Context) error {
 	if c.nodeTemplate != "" {
 		op, err := c.deleteInstanceTemplate(ctx, c.nodeTemplate)
 		if err != nil {
-			return fmt.Errorf("deleting instanceTemplate failed: %w", err)
+			return fmt.Errorf("deleting instanceTemplate: %w", err)
 		}
 		ops = append(ops, op)
 		c.nodeTemplate = ""
@@ -162,7 +162,7 @@ func (c *Client) TerminateInstances(ctx context.Context) error {
 	if c.coordinatorTemplate != "" {
 		op, err := c.deleteInstanceTemplate(ctx, c.coordinatorTemplate)
 		if err != nil {
-			return fmt.Errorf("deleting instanceTemplate failed: %w", err)
+			return fmt.Errorf("deleting instanceTemplate: %w", err)
 		}
 		ops = append(ops, op)
 		c.coordinatorTemplate = ""

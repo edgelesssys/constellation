@@ -14,7 +14,7 @@ func (c *Client) addIAMPolicyBindings(ctx context.Context, input AddIAMPolicyBin
 	}
 	policy, err := c.projectsAPI.GetIamPolicy(ctx, getReq)
 	if err != nil {
-		return fmt.Errorf("retrieving current iam policy failed: %w", err)
+		return fmt.Errorf("retrieving current iam policy: %w", err)
 	}
 	for _, binding := range input.Bindings {
 		addIAMPolicy(policy, binding)
@@ -24,7 +24,7 @@ func (c *Client) addIAMPolicyBindings(ctx context.Context, input AddIAMPolicyBin
 		Policy:   policy,
 	}
 	if _, err := c.projectsAPI.SetIamPolicy(ctx, setReq); err != nil {
-		return fmt.Errorf("setting new iam policy failed: %w", err)
+		return fmt.Errorf("setting new iam policy: %w", err)
 	}
 	return nil
 }

@@ -199,7 +199,7 @@ func getConfig(values url.Values, keys []string) ([]string, error) {
 		}
 		val, err := url.QueryUnescape(val)
 		if err != nil {
-			return res, fmt.Errorf("could not unescape value for key: %q", key)
+			return res, fmt.Errorf("failed to unescape value for key: %q", key)
 		}
 		res[idx] = val
 	}

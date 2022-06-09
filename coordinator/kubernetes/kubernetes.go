@@ -118,14 +118,14 @@ func (k *KubeWrapper) InitCluster(
 	initConfig.SetControlPlaneEndpoint(controlPlaneEndpointIP)
 	initConfigYAML, err := initConfig.Marshal()
 	if err != nil {
-		return fmt.Errorf("encoding kubeadm init configuration as YAML failed: %w", err)
+		return fmt.Errorf("encoding kubeadm init configuration as YAML: %w", err)
 	}
 	if err := k.clusterUtil.InitCluster(ctx, initConfigYAML); err != nil {
-		return fmt.Errorf("kubeadm init failed: %w", err)
+		return fmt.Errorf("kubeadm init: %w", err)
 	}
 	kubeConfig, err := k.GetKubeconfig()
 	if err != nil {
-		return fmt.Errorf("reading kubeconfig after cluster initialization failed: %w", err)
+		return fmt.Errorf("reading kubeconfig after cluster initialization: %w", err)
 	}
 	k.client.SetKubeconfig(kubeConfig)
 
@@ -139,12 +139,12 @@ func (k *KubeWrapper) InitCluster(
 		ProviderID:        providerID,
 	}
 	if err = k.clusterUtil.SetupPodNetwork(ctx, setupPodNetworkInput); err != nil {
-		return fmt.Errorf("setup of pod network failed: %w", err)
+		return fmt.Errorf("setting up pod network: %w", err)
 	}
 
 	kms := resources.NewKMSDeployment(masterSecret)
 	if err = k.clusterUtil.SetupKMS(k.client, kms); err != nil {
-		return fmt.Errorf("setup of kms failed: %w", err)
+		return fmt.Errorf("setting up kms: %w", err)
 	}
 
 	if err := k.setupActivationService(k.cloudProvider, k.initialMeasurementsJSON, id); err != nil {
@@ -152,14 +152,14 @@ func (k *KubeWrapper) InitCluster(
 	}
 
 	if err := k.setupCCM(context.TODO(), vpnIP, subnetworkPodCIDR, cloudServiceAccountURI, instance); err != nil {
-		return fmt.Errorf("setting up cloud controller manager failed: %w", err)
+		return fmt.Errorf("setting up cloud controller manager: %w", err)
 	}
 	if err := k.setupCloudNodeManager(); err != nil {
-		return fmt.Errorf("setting up cloud node manager failed: %w", err)
+		return fmt.Errorf("setting up cloud node manager: %w", err)
 	}
 
 	if err := k.setupClusterAutoscaler(instance, cloudServiceAccountURI, autoscalingNodeGroups); err != nil {
-		return fmt.Errorf("setting up cluster autoscaler failed: %w", err)
+		return fmt.Errorf("setting up cluster autoscaler: %w", err)
 	}
 
 	accessManager := resources.NewAccessManagerDeployment(sshUsers)
@@ -216,10 +216,10 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	}
 	joinConfigYAML, err := joinConfig.Marshal()
 	if err != nil {
-		return fmt.Errorf("encoding kubeadm join configuration as YAML failed: %w", err)
+		return fmt.Errorf("encoding kubeadm join configuration as YAML: %w", err)
 	}
 	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML); err != nil {
-		return fmt.Errorf("joining cluster failed: %v %w ", string(joinConfigYAML), err)
+		return fmt.Errorf("joining cluster: %v; %w ", string(joinConfigYAML), err)
 	}
 
 	go k.clusterUtil.FixCilium(nodeName)

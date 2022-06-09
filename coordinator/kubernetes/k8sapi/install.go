@@ -51,7 +51,7 @@ func (i *osInstaller) Install(
 			err = i.copy(tempPath, destination, perm)
 		}
 		if err != nil {
-			return fmt.Errorf("installing from %q failed: copying to destination %q failed: %w", sourceURL, destination, err)
+			return fmt.Errorf("installing from %q: copying to destination %q: %w", sourceURL, destination, err)
 		}
 	}
 	return nil
@@ -61,16 +61,16 @@ func (i *osInstaller) Install(
 func (i *osInstaller) extractArchive(archivePath, prefix string, perm fs.FileMode) error {
 	archiveFile, err := i.fs.Open(archivePath)
 	if err != nil {
-		return fmt.Errorf("unable to open archive file: %w", err)
+		return fmt.Errorf("opening archive file: %w", err)
 	}
 	defer archiveFile.Close()
 	gzReader, err := gzip.NewReader(archiveFile)
 	if err != nil {
-		return fmt.Errorf("unable to read archive file as gzip: %w", err)
+		return fmt.Errorf("reading archive file as gzip: %w", err)
 	}
 	defer gzReader.Close()
 	if err := i.fs.MkdirAll(prefix, fs.ModePerm); err != nil {
-		return fmt.Errorf("unable to create prefix folder: %w", err)
+		return fmt.Errorf("creating prefix folder: %w", err)
 	}
 	tarReader := tar.NewReader(gzReader)
 
@@ -80,10 +80,10 @@ func (i *osInstaller) extractArchive(archivePath, prefix string, perm fs.FileMod
 			return nil
 		}
 		if err != nil {
-			return fmt.Errorf("unable to parse tar header: %w", err)
+			return fmt.Errorf("parsing tar header: %w", err)
 		}
 		if err := verifyTarPath(header.Name); err != nil {
-			return fmt.Errorf("invalid tar path %q: %w", header.Name, err)
+			return fmt.Errorf("verifying tar path %q: %w", header.Name, err)
 		}
 		switch header.Typeflag {
 		case tar.TypeDir:
@@ -91,7 +91,7 @@ func (i *osInstaller) extractArchive(archivePath, prefix string, perm fs.FileMod
 				return errors.New("cannot create dir for empty path")
 			}
 			if err := i.fs.Mkdir(path.Join(prefix, header.Name), fs.FileMode(header.Mode)&perm); err != nil && !errors.Is(err, os.ErrExist) {
-				return fmt.Errorf("unable to create folder: %w", err)
+				return fmt.Errorf("creating folder %s: %w", path.Join(prefix, header.Name), err)
 			}
 		case tar.TypeReg:
 			if len(header.Name) == 0 {
@@ -99,11 +99,11 @@ func (i *osInstaller) extractArchive(archivePath, prefix string, perm fs.FileMod
 			}
 			out, err := i.fs.OpenFile(path.Join(prefix, header.Name), os.O_WRONLY|os.O_CREATE, fs.FileMode(header.Mode))
 			if err != nil {
-				return fmt.Errorf("unable to create file for writing: %w", err)
+				return fmt.Errorf("creating file %s for writing: %w", path.Join(prefix, header.Name), err)
 			}
 			defer out.Close()
 			if _, err := io.Copy(out, tarReader); err != nil {
-				return fmt.Errorf("unable to write extracted file contents: %w", err)
+				return fmt.Errorf("writing extracted file contents: %w", err)
 			}
 		case tar.TypeSymlink:
 			if err := verifyTarPath(header.Linkname); err != nil {
@@ -117,7 +117,7 @@ func (i *osInstaller) extractArchive(archivePath, prefix string, perm fs.FileMod
 			}
 			if symlinker, ok := i.fs.Fs.(afero.Symlinker); ok {
 				if err := symlinker.SymlinkIfPossible(path.Join(prefix, header.Name), path.Join(prefix, header.Linkname)); err != nil {
-					return fmt.Errorf("creating symlink failed: %w", err)
+					return fmt.Errorf("creating symlink: %w", err)
 				}
 			} else {
 				return errors.New("fs does not support symlinks")
@@ -132,16 +132,16 @@ func (i *osInstaller) extractArchive(archivePath, prefix string, perm fs.FileMod
 func (i *osInstaller) downloadToTempDir(ctx context.Context, url string, transforms ...transform.Transformer) (string, error) {
 	out, err := afero.TempFile(i.fs, "", "")
 	if err != nil {
-		return "", fmt.Errorf("unable to create destination temp file: %w", err)
+		return "", fmt.Errorf("creating destination temp file: %w", err)
 	}
 	defer out.Close()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return "", fmt.Errorf("request to download %q failed: %w", url, err)
+		return "", fmt.Errorf("request to download %q: %w", url, err)
 	}
 	resp, err := i.hClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("request to download %q failed: %w", url, err)
+		return "", fmt.Errorf("request to download %q: %w", url, err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("request to download %q failed with status code: %v", url, resp.Status)
@@ -151,7 +151,7 @@ func (i *osInstaller) downloadToTempDir(ctx context.Context, url string, transfo
 	transformReader := transform.NewReader(resp.Body, transform.Chain(transforms...))
 
 	if _, err = io.Copy(out, transformReader); err != nil {
-		return "", fmt.Errorf("downloading %q failed: %w", url, err)
+		return "", fmt.Errorf("downloading %q: %w", url, err)
 	}
 	return out.Name(), nil
 }
@@ -160,16 +160,16 @@ func (i *osInstaller) downloadToTempDir(ctx context.Context, url string, transfo
 func (i *osInstaller) copy(oldname, newname string, perm fs.FileMode) (err error) {
 	old, openOldErr := i.fs.OpenFile(oldname, os.O_RDONLY, fs.ModePerm)
 	if openOldErr != nil {
-		return fmt.Errorf("unable to copy %q to %q: cannot open source file for reading: %w", oldname, newname, openOldErr)
+		return fmt.Errorf("copying %q to %q: cannot open source file for reading: %w", oldname, newname, openOldErr)
 	}
 	defer func() { _ = old.Close() }()
 	// create destination path if not exists
 	if err := i.fs.MkdirAll(path.Dir(newname), fs.ModePerm); err != nil {
-		return fmt.Errorf("unable to copy %q to %q: unable to create destination folder: %w", oldname, newname, err)
+		return fmt.Errorf("copying %q to %q: unable to create destination folder: %w", oldname, newname, err)
 	}
 	new, openNewErr := i.fs.OpenFile(newname, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, perm)
 	if openNewErr != nil {
-		return fmt.Errorf("unable to copy %q to %q: cannot open destination file for writing: %w", oldname, newname, openNewErr)
+		return fmt.Errorf("copying %q to %q: cannot open destination file for writing: %w", oldname, newname, openNewErr)
 	}
 	defer func() {
 		_ = new.Close()
@@ -178,7 +178,7 @@ func (i *osInstaller) copy(oldname, newname string, perm fs.FileMode) (err error
 		}
 	}()
 	if _, err := io.Copy(new, old); err != nil {
-		return fmt.Errorf("unable to copy %q to %q: copying file contents failed: %w", oldname, newname, err)
+		return fmt.Errorf("copying %q to %q: copying file contents: %w", oldname, newname, err)
 	}
 
 	return nil

@@ -126,7 +126,7 @@ func (m *Metadata) GetInstance(ctx context.Context, providerID string) (cloudtyp
 	if scaleSetErr == nil {
 		return instance, nil
 	}
-	return cloudtypes.Instance{}, fmt.Errorf("could not retrieve instance given providerID %v as either single vm or scale set vm: %v %v", providerID, singleErr, scaleSetErr)
+	return cloudtypes.Instance{}, fmt.Errorf("retrieving instance given providerID %v as either single vm or scale set vm: %v; %v", providerID, singleErr, scaleSetErr)
 }
 
 // SignalRole signals the constellation role via cloud provider metadata.

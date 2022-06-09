@@ -164,11 +164,11 @@ func (l *LinuxUserManager) GetLinuxUser(username string) (LinuxUser, error) {
 	entry := entries[username]
 	uid, err := strconv.Atoi(entry.Uid)
 	if err != nil {
-		return LinuxUser{}, fmt.Errorf("failed to parse users uid: %w", err)
+		return LinuxUser{}, fmt.Errorf("parsing users uid: %w", err)
 	}
 	gid, err := strconv.Atoi(entry.Gid)
 	if err != nil {
-		return LinuxUser{}, fmt.Errorf("failed to parse users gid: %w", err)
+		return LinuxUser{}, fmt.Errorf("parsing users gid: %w", err)
 	}
 	return LinuxUser{
 		Username: username,

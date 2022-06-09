@@ -143,10 +143,10 @@ func (c *CryptMapper) CloseCryptDevice(volumeID string) error {
 			klog.V(4).Infof("Skipping unmapping for disk %q: volume does not exist or is already unmapped", volumeID)
 			return nil
 		}
-		return fmt.Errorf("failed to get device path for disk %q: %w", cryptPrefix+volumeID, err)
+		return fmt.Errorf("getting device path for disk %q: %w", cryptPrefix+volumeID, err)
 	}
 	if err := closeCryptDevice(c.mapper, source, volumeID, "crypt"); err != nil {
-		return fmt.Errorf("failed to close crypt device: %w", err)
+		return fmt.Errorf("closing crypt device: %w", err)
 	}
 
 	integrity, err := filepath.EvalSymlinks(cryptPrefix + volumeID + integritySuffix)
@@ -154,7 +154,7 @@ func (c *CryptMapper) CloseCryptDevice(volumeID string) error {
 		// If device was created with integrity, we need to also close the integrity device
 		integrityErr := closeCryptDevice(c.mapper, integrity, volumeID+integritySuffix, "integrity")
 		if integrityErr != nil {
-			klog.Errorf("Could not close integrity device: %s", integrityErr)
+			klog.Errorf("Failed to close integrity device: %s", integrityErr)
 			return integrityErr
 		}
 	}
@@ -164,7 +164,7 @@ func (c *CryptMapper) CloseCryptDevice(volumeID string) error {
 			// integrity device does not exist
 			return nil
 		}
-		return fmt.Errorf("failed to get device path for disk %q: %w", cryptPrefix+volumeID, err)
+		return fmt.Errorf("getting device path for disk %q: %w", cryptPrefix+volumeID, err)
 	}
 
 	return nil
@@ -205,14 +205,14 @@ func closeCryptDevice(device DeviceMapper, source, volumeID, deviceType string) 
 	klog.V(4).Infof("Unmapping dm-%s volume %q for device %q", deviceType, cryptPrefix+volumeID, source)
 
 	if err := device.InitByName(volumeID); err != nil {
-		klog.Errorf("Could not initialize dm-%s to unmap device %q: %s", deviceType, source, err)
-		return fmt.Errorf("could not initialize dm-%s to unmap device %q: %w", deviceType, source, err)
+		klog.Errorf("Failed to initialize dm-%s to unmap device %q: %s", deviceType, source, err)
+		return fmt.Errorf("initializing dm-%s to unmap device %q: %w", deviceType, source, err)
 	}
 	defer device.Free()
 
 	if err := device.Deactivate(volumeID); err != nil {
-		klog.Errorf("Could not deactivate dm-%s volume %q for device %q: %s", deviceType, cryptPrefix+volumeID, source, err)
-		return fmt.Errorf("could not deactivate dm-%s volume %q for device %q: %w", deviceType, cryptPrefix+volumeID, source, err)
+		klog.Errorf("Failed to deactivate dm-%s volume %q for device %q: %s", deviceType, cryptPrefix+volumeID, source, err)
+		return fmt.Errorf("deactivating dm-%s volume %q for device %q: %w", deviceType, cryptPrefix+volumeID, source, err)
 	}
 
 	klog.V(4).Infof("Successfully unmapped dm-%s volume %q for device %q", deviceType, cryptPrefix+volumeID, source)
@@ -249,7 +249,7 @@ func openCryptDevice(ctx context.Context, device DeviceMapper, source, volumeID 
 		klog.V(4).Infof("Device %q is not formatted as LUKS2 partition, checking for existing format...", source)
 		format, err := diskInfo(source)
 		if err != nil {
-			return "", fmt.Errorf("could not determine if disk is formatted: %w", err)
+			return "", fmt.Errorf("determining if disk is formatted: %w", err)
 		}
 		if format != "" {
 			// Device is already formated, return an error
@@ -277,8 +277,8 @@ func openCryptDevice(ctx context.Context, device DeviceMapper, source, volumeID 
 				CipherMode:    "xts-plain64",
 				VolumeKeySize: keySize,
 			}); err != nil {
-			klog.Errorf("Formatting device %q failed: %s", source, err)
-			return "", fmt.Errorf("formatting device %q failed: %w", source, err)
+			klog.Errorf("Failed to format device %q: %s", source, err)
+			return "", fmt.Errorf("formatting device %q: %w", source, err)
 		}
 
 		uuid := device.GetUUID()

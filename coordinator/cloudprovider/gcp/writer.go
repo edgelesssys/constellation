@@ -14,7 +14,7 @@ type Writer struct {
 // WriteGCEConf persists the GCE config on disk.
 func (w *Writer) WriteGCEConf(config string) error {
 	if err := w.fs.WriteFile("/etc/gce.conf", []byte(config), 0o644); err != nil {
-		return fmt.Errorf("writing gce config failed: %w", err)
+		return fmt.Errorf("writing gce config: %w", err)
 	}
 	return nil
 }

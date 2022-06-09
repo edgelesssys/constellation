@@ -52,37 +52,37 @@ func (k *kubernetesVersion) installK8sComponents(ctx context.Context, inst insta
 	if err := inst.Install(
 		ctx, k.CNIPluginsURL, []string{cniPluginsDir}, executablePerm, true,
 	); err != nil {
-		return fmt.Errorf("failed to install cni plugins: %w", err)
+		return fmt.Errorf("installing cni plugins: %w", err)
 	}
 	if err := inst.Install(
 		ctx, k.CrictlURL, []string{binDir}, executablePerm, true,
 	); err != nil {
-		return fmt.Errorf("failed to install crictl: %w", err)
+		return fmt.Errorf("installing crictl: %w", err)
 	}
 	if err := inst.Install(
 		ctx, k.KubeletServiceURL, []string{kubeletServiceEtcPath, kubeletServiceStatePath}, systemdUnitPerm, false, replace.String("/usr/bin", binDir),
 	); err != nil {
-		return fmt.Errorf("failed to install kubelet service: %w", err)
+		return fmt.Errorf("installing kubelet service: %w", err)
 	}
 	if err := inst.Install(
 		ctx, k.KubeadmConfURL, []string{kubeadmConfEtcPath, kubeadmConfStatePath}, systemdUnitPerm, false, replace.String("/usr/bin", binDir),
 	); err != nil {
-		return fmt.Errorf("failed to install kubeadm conf: %w", err)
+		return fmt.Errorf("installing kubeadm conf: %w", err)
 	}
 	if err := inst.Install(
 		ctx, k.KubeletURL, []string{kubeletPath}, executablePerm, false,
 	); err != nil {
-		return fmt.Errorf("failed to install kubelet: %w", err)
+		return fmt.Errorf("installing kubelet: %w", err)
 	}
 	if err := inst.Install(
 		ctx, k.KubeadmURL, []string{kubeadmPath}, executablePerm, false,
 	); err != nil {
-		return fmt.Errorf("failed to install kubeadm: %w", err)
+		return fmt.Errorf("installing kubeadm: %w", err)
 	}
 	if err := inst.Install(
 		ctx, k.KubectlURL, []string{kubectlPath}, executablePerm, false,
 	); err != nil {
-		return fmt.Errorf("failed to install kubectl: %w", err)
+		return fmt.Errorf("installing kubectl: %w", err)
 	}
 	return nil
 }

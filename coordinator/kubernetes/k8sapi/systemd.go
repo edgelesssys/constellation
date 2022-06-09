@@ -10,12 +10,12 @@ import (
 func restartSystemdUnit(ctx context.Context, unit string) error {
 	conn, err := dbus.NewSystemdConnectionContext(ctx)
 	if err != nil {
-		return fmt.Errorf("establishing systemd connection failed: %w", err)
+		return fmt.Errorf("establishing systemd connection: %w", err)
 	}
 
 	restartChan := make(chan string)
 	if _, err := conn.RestartUnitContext(ctx, unit, "replace", restartChan); err != nil {
-		return fmt.Errorf("restarting systemd unit %q failed: %w", unit, err)
+		return fmt.Errorf("restarting systemd unit %q: %w", unit, err)
 	}
 
 	// Wait for the restart to finish and actually check if it was
@@ -34,12 +34,12 @@ func restartSystemdUnit(ctx context.Context, unit string) error {
 func startSystemdUnit(ctx context.Context, unit string) error {
 	conn, err := dbus.NewSystemdConnectionContext(ctx)
 	if err != nil {
-		return fmt.Errorf("establishing systemd connection failed: %w", err)
+		return fmt.Errorf("establishing systemd connection: %w", err)
 	}
 
 	startChan := make(chan string)
 	if _, err := conn.StartUnitContext(ctx, unit, "replace", startChan); err != nil {
-		return fmt.Errorf("starting systemd unit %q failed: %w", unit, err)
+		return fmt.Errorf("starting systemd unit %q: %w", unit, err)
 	}
 
 	// Wait for the enable to finish and actually check if it was
@@ -58,11 +58,11 @@ func startSystemdUnit(ctx context.Context, unit string) error {
 func enableSystemdUnit(ctx context.Context, unitPath string) error {
 	conn, err := dbus.NewSystemdConnectionContext(ctx)
 	if err != nil {
-		return fmt.Errorf("establishing systemd connection failed: %w", err)
+		return fmt.Errorf("establishing systemd connection: %w", err)
 	}
 
 	if _, _, err := conn.EnableUnitFilesContext(ctx, []string{unitPath}, true, true); err != nil {
-		return fmt.Errorf("enabling systemd unit %q failed: %w", unitPath, err)
+		return fmt.Errorf("enabling systemd unit %q: %w", unitPath, err)
 	}
 	return nil
 }

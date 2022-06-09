@@ -178,12 +178,12 @@ func (c *Core) NotifyNodeHeartbeat(addr net.Addr) {
 func (c *Core) Initialize(ctx context.Context, dialer Dialer, api PubAPI) (nodeActivated bool, err error) {
 	nodeActivated, err = vtpm.IsNodeInitialized(c.openTPM)
 	if err != nil {
-		return false, fmt.Errorf("failed to check for previous activation using vTPM: %w", err)
+		return false, fmt.Errorf("checking for previous activation using vTPM: %w", err)
 	}
 	if !nodeActivated {
 		c.zaplogger.Info("Node was never activated. Allowing node to be activated.")
 		if err := c.vpn.Setup(nil); err != nil {
-			return false, fmt.Errorf("failed to setup VPN: %w", err)
+			return false, fmt.Errorf("VPN setup: %w", err)
 		}
 		c.state.Advance(state.AcceptingInit)
 		return false, nil
@@ -191,15 +191,15 @@ func (c *Core) Initialize(ctx context.Context, dialer Dialer, api PubAPI) (nodeA
 	c.zaplogger.Info("Node was previously activated. Attempting re-join.")
 	nodeState, err := nodestate.FromFile(c.fileHandler)
 	if err != nil {
-		return false, fmt.Errorf("failed to read node state: %w", err)
+		return false, fmt.Errorf("reading node state: %w", err)
 	}
 	if err := c.vpn.Setup(nodeState.VPNPrivKey); err != nil {
-		return false, fmt.Errorf("failed to setup VPN: %w", err)
+		return false, fmt.Errorf("VPN setup: %w", err)
 	}
 
 	// restart kubernetes
 	if err := c.kube.StartKubelet(); err != nil {
-		return false, fmt.Errorf("failed to start kubelet service: %w", err)
+		return false, fmt.Errorf("starting kubelet service: %w", err)
 	}
 
 	var initialState state.State
@@ -214,7 +214,7 @@ func (c *Core) Initialize(ctx context.Context, dialer Dialer, api PubAPI) (nodeA
 		return false, fmt.Errorf("invalid node role for initialized node: %v", nodeState.Role)
 	}
 	if err != nil {
-		return false, fmt.Errorf("reinit failed: %w", err)
+		return false, fmt.Errorf("reinit: %w", err)
 	}
 	c.zaplogger.Info("Re-join successful.")
 
@@ -226,7 +226,7 @@ func (c *Core) Initialize(ctx context.Context, dialer Dialer, api PubAPI) (nodeA
 func (c *Core) PersistNodeState(role role.Role, vpnIP string, ownerID []byte, clusterID []byte) error {
 	vpnPrivKey, err := c.vpn.GetPrivateKey()
 	if err != nil {
-		return fmt.Errorf("failed to retrieve VPN private key: %w", err)
+		return fmt.Errorf("retrieving VPN private key: %w", err)
 	}
 	nodeState := nodestate.NodeState{
 		Role:       role,

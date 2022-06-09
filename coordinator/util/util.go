@@ -53,11 +53,11 @@ func GetIPAddr() (string, error) {
 func GetInterfaceIP(netInterface string) (string, error) {
 	netif, err := net.InterfaceByName(netInterface)
 	if err != nil {
-		return "", fmt.Errorf("could not find interface %s: %w", netInterface, err)
+		return "", fmt.Errorf("finding interface %s: %w", netInterface, err)
 	}
 	addrs, err := netif.Addrs()
 	if err != nil {
-		return "", fmt.Errorf("could not retrieve interface ip addresses %s: %w", netInterface, err)
+		return "", fmt.Errorf("retrieving interface ip addresses %s: %w", netInterface, err)
 	}
 	for _, addr := range addrs {
 		if ipn, ok := addr.(*net.IPNet); ok {

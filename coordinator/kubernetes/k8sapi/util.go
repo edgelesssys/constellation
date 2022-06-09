@@ -80,20 +80,20 @@ func (k *KubernetesUtil) InitCluster(ctx context.Context, initConfig []byte) err
 	// TODO: audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
 	if err != nil {
-		return fmt.Errorf("failed to generate default audit policy: %w", err)
+		return fmt.Errorf("generating default audit policy: %w", err)
 	}
 	if err := os.WriteFile(auditPolicyPath, auditPolicy, 0o644); err != nil {
-		return fmt.Errorf("failed to write default audit policy: %w", err)
+		return fmt.Errorf("writing default audit policy: %w", err)
 	}
 
 	initConfigFile, err := os.CreateTemp("", "kubeadm-init.*.yaml")
 	if err != nil {
-		return fmt.Errorf("failed to create init config file %v: %w", initConfigFile.Name(), err)
+		return fmt.Errorf("creating init config file %v: %w", initConfigFile.Name(), err)
 	}
 	defer os.Remove(initConfigFile.Name())
 
 	if _, err := initConfigFile.Write(initConfig); err != nil {
-		return fmt.Errorf("writing kubeadm init yaml config %v failed: %w", initConfigFile.Name(), err)
+		return fmt.Errorf("writing kubeadm init yaml config %v: %w", initConfigFile.Name(), err)
 	}
 
 	cmd := exec.CommandContext(ctx, kubeadmPath, "init", "--config", initConfigFile.Name())
@@ -103,7 +103,7 @@ func (k *KubernetesUtil) InitCluster(ctx context.Context, initConfig []byte) err
 		if errors.As(err, &exitErr) {
 			return fmt.Errorf("kubeadm init failed (code %v) with: %s", exitErr.ExitCode(), exitErr.Stderr)
 		}
-		return fmt.Errorf("kubeadm init failed: %w", err)
+		return fmt.Errorf("kubeadm init: %w", err)
 	}
 	return nil
 }
@@ -227,7 +227,7 @@ func (k *KubernetesUtil) setupQemuPodNetwork(ctx context.Context) error {
 // SetupAutoscaling deploys the k8s cluster autoscaler.
 func (k *KubernetesUtil) SetupAutoscaling(kubectl Client, clusterAutoscalerConfiguration resources.Marshaler, secrets resources.Marshaler) error {
 	if err := kubectl.Apply(secrets, true); err != nil {
-		return fmt.Errorf("applying cluster-autoscaler Secrets failed: %w", err)
+		return fmt.Errorf("applying cluster-autoscaler Secrets: %w", err)
 	}
 	return kubectl.Apply(clusterAutoscalerConfiguration, true)
 }
@@ -240,13 +240,13 @@ func (k *KubernetesUtil) SetupActivationService(kubectl Client, activationServic
 // SetupCloudControllerManager deploys the k8s cloud-controller-manager.
 func (k *KubernetesUtil) SetupCloudControllerManager(kubectl Client, cloudControllerManagerConfiguration resources.Marshaler, configMaps resources.Marshaler, secrets resources.Marshaler) error {
 	if err := kubectl.Apply(configMaps, true); err != nil {
-		return fmt.Errorf("applying ccm ConfigMaps failed: %w", err)
+		return fmt.Errorf("applying ccm ConfigMaps: %w", err)
 	}
 	if err := kubectl.Apply(secrets, true); err != nil {
-		return fmt.Errorf("applying ccm Secrets failed: %w", err)
+		return fmt.Errorf("applying ccm Secrets: %w", err)
 	}
 	if err := kubectl.Apply(cloudControllerManagerConfiguration, true); err != nil {
-		return fmt.Errorf("applying ccm failed: %w", err)
+		return fmt.Errorf("applying ccm: %w", err)
 	}
 	return nil
 }
@@ -266,20 +266,20 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte) err
 	// TODO: audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
 	if err != nil {
-		return fmt.Errorf("failed to generate default audit policy: %w", err)
+		return fmt.Errorf("generating default audit policy: %w", err)
 	}
 	if err := os.WriteFile(auditPolicyPath, auditPolicy, 0o644); err != nil {
-		return fmt.Errorf("failed to write default audit policy: %w", err)
+		return fmt.Errorf("writing default audit policy: %w", err)
 	}
 
 	joinConfigFile, err := os.CreateTemp("", "kubeadm-join.*.yaml")
 	if err != nil {
-		return fmt.Errorf("failed to create join config file %v: %w", joinConfigFile.Name(), err)
+		return fmt.Errorf("creating join config file %v: %w", joinConfigFile.Name(), err)
 	}
 	defer os.Remove(joinConfigFile.Name())
 
 	if _, err := joinConfigFile.Write(joinConfig); err != nil {
-		return fmt.Errorf("writing kubeadm init yaml config %v failed: %w", joinConfigFile.Name(), err)
+		return fmt.Errorf("writing kubeadm init yaml config %v: %w", joinConfigFile.Name(), err)
 	}
 
 	// run `kubeadm join` to join a worker node to an existing Kubernetes cluster
@@ -289,7 +289,7 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte) err
 		if errors.As(err, &exitErr) {
 			return fmt.Errorf("kubeadm join failed (code %v) with: %s", exitErr.ExitCode(), exitErr.Stderr)
 		}
-		return fmt.Errorf("kubeadm join failed: %w", err)
+		return fmt.Errorf("kubeadm join: %w", err)
 	}
 
 	return nil
@@ -298,7 +298,7 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte) err
 // SetupKMS deploys the KMS deployment.
 func (k *KubernetesUtil) SetupKMS(kubectl Client, kmsConfiguration resources.Marshaler) error {
 	if err := kubectl.Apply(kmsConfiguration, true); err != nil {
-		return fmt.Errorf("applying KMS configuration failed: %w", err)
+		return fmt.Errorf("applying KMS configuration: %w", err)
 	}
 	return nil
 }
@@ -308,7 +308,7 @@ func (k *KubernetesUtil) StartKubelet() error {
 	ctx, cancel := context.WithTimeout(context.TODO(), kubeletStartTimeout)
 	defer cancel()
 	if err := enableSystemdUnit(ctx, kubeletServiceEtcPath); err != nil {
-		return fmt.Errorf("enabling kubelet systemd unit failed: %w", err)
+		return fmt.Errorf("enabling kubelet systemd unit: %w", err)
 	}
 	return startSystemdUnit(ctx, "kubelet.service")
 }
@@ -331,7 +331,7 @@ func (k *KubernetesUtil) GetControlPlaneJoinCertificateKey(ctx context.Context) 
 		if errors.As(err, &exitErr) {
 			return "", fmt.Errorf("kubeadm upload-certs failed (code %v) with: %s", exitErr.ExitCode(), exitErr.Stderr)
 		}
-		return "", fmt.Errorf("kubeadm upload-certs failed: %w", err)
+		return "", fmt.Errorf("kubeadm upload-certs: %w", err)
 	}
 	// Example output:
 	/*
@@ -350,7 +350,7 @@ func (k *KubernetesUtil) GetControlPlaneJoinCertificateKey(ctx context.Context) 
 func (k *KubernetesUtil) CreateJoinToken(ctx context.Context, ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error) {
 	output, err := exec.CommandContext(ctx, kubeadmPath, "token", "create", "--ttl", ttl.String(), "--print-join-command").Output()
 	if err != nil {
-		return nil, fmt.Errorf("kubeadm token create failed: %w", err)
+		return nil, fmt.Errorf("kubeadm token create: %w", err)
 	}
 	// `kubeadm token create [...] --print-join-command` outputs the following format:
 	// kubeadm join [API_SERVER_ENDPOINT] --token [TOKEN] --discovery-token-ca-cert-hash [DISCOVERY_TOKEN_CA_CERT_HASH]

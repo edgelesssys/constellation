@@ -381,7 +381,7 @@ func (f *fakeStreamer) WriteStream(filename string, stream coordinator.ReadChunk
 			if errors.Is(err, io.EOF) {
 				return f.writeStreamErr
 			}
-			return fmt.Errorf("reading stream failed: %w", err)
+			return fmt.Errorf("reading stream: %w", err)
 		}
 		f.writeStreamChunks = append(f.writeStreamChunks, chunk.Content)
 	}

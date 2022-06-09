@@ -45,7 +45,7 @@ func (u Unix) CreateUserWithSpecificUIDAndGID(ctx context.Context, username stri
 		if exitError, ok := err.(*exec.ExitError); ok && exitError.ExitCode() == exitCodeAlreadyInUse {
 			return ErrUserOrGroupAlreadyExists
 		}
-		return fmt.Errorf("creating a new user failed: %w", err)
+		return fmt.Errorf("creating a new user: %w", err)
 	}
 	return nil
 }

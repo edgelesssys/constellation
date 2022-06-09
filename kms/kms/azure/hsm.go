@@ -130,7 +130,7 @@ func (c *HSMClient) GetDEK(ctx context.Context, kekID string, keyID string, dekS
 		// If the DEK does not exist we generate a new random DEK and save it to storage
 		newDEK, err := util.GetRandomKey(dekSize)
 		if err != nil {
-			return nil, fmt.Errorf("could not generate key: %w", err)
+			return nil, fmt.Errorf("key generation: %w", err)
 		}
 		if err := c.putDEK(ctx, kekID, keyID, newDEK); err != nil {
 			return nil, fmt.Errorf("creating new DEK: %w", err)

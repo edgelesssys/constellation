@@ -78,7 +78,7 @@ func UnmarshalK8SResources(data []byte, into any) error {
 	decoder := serializer.NewCodecFactory(scheme.Scheme).UniversalDecoder()
 	documents, err := splitYAML(data)
 	if err != nil {
-		return fmt.Errorf("unable to split deployment YAML into multiple documents: %w", err)
+		return fmt.Errorf("splitting deployment YAML into multiple documents: %w", err)
 	}
 	if len(documents) != value.NumField() {
 		return fmt.Errorf("expected %v YAML documents, got %v", value.NumField(), len(documents))

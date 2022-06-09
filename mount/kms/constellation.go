@@ -40,7 +40,7 @@ func (k *ConstellationKMS) GetDEK(ctx context.Context, dekID string, dekSize int
 		conn,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("could not get data encryption key from Constellation Coordinator: %w", err)
+		return nil, fmt.Errorf("getting data encryption key from Constellation Coordinator: %w", err)
 	}
 
 	return res.DataKey, nil

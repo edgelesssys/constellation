@@ -51,11 +51,11 @@ func NewAzure(ctx context.Context) (*Fetcher, error) {
 func (f *Fetcher) DiscoverDebugdIPs(ctx context.Context) ([]string, error) {
 	self, err := f.metaAPI.Self(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("retrieving own instance failed: %w", err)
+		return nil, fmt.Errorf("retrieving own instance: %w", err)
 	}
 	instances, err := f.metaAPI.List(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("retrieving instances failed: %w", err)
+		return nil, fmt.Errorf("retrieving instances: %w", err)
 	}
 	// filter own instance from instance list
 	for i, instance := range instances {
@@ -75,7 +75,7 @@ func (f *Fetcher) DiscoverDebugdIPs(ctx context.Context) ([]string, error) {
 func (f *Fetcher) FetchSSHKeys(ctx context.Context) ([]ssh.UserKey, error) {
 	self, err := f.metaAPI.Self(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("retrieving ssh keys from cloud provider metadata failed: %w", err)
+		return nil, fmt.Errorf("retrieving ssh keys from cloud provider metadata: %w", err)
 	}
 
 	keys := []ssh.UserKey{}

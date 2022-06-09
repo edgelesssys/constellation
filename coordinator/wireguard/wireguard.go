@@ -52,7 +52,7 @@ func (w *Wireguard) Setup(privKey []byte) error {
 func (w *Wireguard) GetPrivateKey() ([]byte, error) {
 	device, err := w.client.Device(netInterface)
 	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve wireguard private key from device %v: %w", netInterface, err)
+		return nil, fmt.Errorf("retrieving wireguard private key from device %v: %w", netInterface, err)
 	}
 	return device.PrivateKey[:], nil
 }
@@ -150,12 +150,12 @@ func prettyWgError(err error) error {
 func (w *Wireguard) UpdatePeers(peers []peer.Peer) error {
 	wgPeers, err := transformToWgpeer(peers)
 	if err != nil {
-		return fmt.Errorf("failed to transform peers to wireguard-peers: %w", err)
+		return fmt.Errorf("transforming peers to wireguard-peers: %w", err)
 	}
 
 	deviceData, err := w.client.Device(netInterface)
 	if err != nil {
-		return fmt.Errorf("failed to obtain device data: %w", err)
+		return fmt.Errorf("obtaining device data: %w", err)
 	}
 	// convert to map for easier lookup
 	storePeers := make(map[string]wgtypes.Peer)

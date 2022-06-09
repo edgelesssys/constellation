@@ -20,7 +20,7 @@ func (m *Metadata) getVMInterfaces(ctx context.Context, vm armcompute.VirtualMac
 	for _, interfaceName := range interfaceNames {
 		networkInterfacesResp, err := m.networkInterfacesAPI.Get(ctx, resourceGroup, interfaceName, nil)
 		if err != nil {
-			return nil, fmt.Errorf("failed to retrieve network interface %v: %w", interfaceName, err)
+			return nil, fmt.Errorf("retrieving network interface %v: %w", interfaceName, err)
 		}
 		networkInterfaces = append(networkInterfaces, networkInterfacesResp.Interface)
 	}
@@ -37,7 +37,7 @@ func (m *Metadata) getScaleSetVMInterfaces(ctx context.Context, vm armcompute.Vi
 	for _, interfaceName := range interfaceNames {
 		networkInterfacesResp, err := m.networkInterfacesAPI.GetVirtualMachineScaleSetNetworkInterface(ctx, resourceGroup, scaleSet, instanceID, interfaceName, nil)
 		if err != nil {
-			return nil, fmt.Errorf("failed to retrieve network interface %v: %w", interfaceName, err)
+			return nil, fmt.Errorf("retrieving network interface %v: %w", interfaceName, err)
 		}
 		networkInterfaces = append(networkInterfaces, networkInterfacesResp.Interface)
 	}

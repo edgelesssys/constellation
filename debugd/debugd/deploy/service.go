@@ -80,7 +80,7 @@ type dbusConn interface {
 func (s *ServiceManager) SystemdAction(ctx context.Context, request ServiceManagerRequest) error {
 	conn, err := s.dbus.NewSystemdConnectionContext(ctx)
 	if err != nil {
-		return fmt.Errorf("establishing systemd connection failed: %w", err)
+		return fmt.Errorf("establishing systemd connection: %w", err)
 	}
 
 	resultChan := make(chan string)
@@ -97,7 +97,7 @@ func (s *ServiceManager) SystemdAction(ctx context.Context, request ServiceManag
 		return errors.New("unknown systemd action: " + request.Action.String())
 	}
 	if err != nil {
-		return fmt.Errorf("failed to perform systemd action %v on unit %v: %w", request.Action, request.Unit, err)
+		return fmt.Errorf("performing systemd action %v on unit %v: %w", request.Action, request.Unit, err)
 	}
 
 	if request.Action == Reload {
@@ -124,11 +124,11 @@ func (s *ServiceManager) WriteSystemdUnitFile(ctx context.Context, unit SystemdU
 	s.systemdUnitFilewriteLock.Lock()
 	defer s.systemdUnitFilewriteLock.Unlock()
 	if err := afero.WriteFile(s.fs, fmt.Sprintf("%s/%s", systemdUnitFolder, unit.Name), []byte(unit.Contents), 0o644); err != nil {
-		return fmt.Errorf("writing systemd unit file \"%v\" failed: %w", unit.Name, err)
+		return fmt.Errorf("writing systemd unit file \"%v\": %w", unit.Name, err)
 	}
 
 	if err := s.SystemdAction(ctx, ServiceManagerRequest{Unit: unit.Name, Action: Reload}); err != nil {
-		return fmt.Errorf("performing systemd daemon-reload failed: %w", err)
+		return fmt.Errorf("performing systemd daemon-reload: %w", err)
 	}
 
 	log.Printf("Wrote systemd unit file: %s/%s and performed daemon-reload\n", systemdUnitFolder, unit.Name)
@@ -142,7 +142,7 @@ func DeployDefaultServiceUnit(ctx context.Context, serviceManager *ServiceManage
 		Name:     debugd.CoordinatorSystemdUnitName,
 		Contents: debugd.CoordinatorSystemdUnitContents,
 	}); err != nil {
-		return fmt.Errorf("writing systemd unit file %q failed: %w", debugd.CoordinatorSystemdUnitName, err)
+		return fmt.Errorf("writing systemd unit file %q: %w", debugd.CoordinatorSystemdUnitName, err)
 	}
 
 	// try to start the default service if the binary exists but ignore failure.

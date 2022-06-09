@@ -41,14 +41,14 @@ func (f *FileStreamer) WriteStream(filename string, stream ReadChunkStream, show
 	// try to read from stream once before acquiring write lock
 	chunk, err := stream.Recv()
 	if err != nil {
-		return fmt.Errorf("reading stream failed: %w", err)
+		return fmt.Errorf("reading stream: %w", err)
 	}
 
 	f.mux.Lock()
 	defer f.mux.Unlock()
 	file, err := f.fs.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o755)
 	if err != nil {
-		return fmt.Errorf("open %v for writing failed: %w", filename, err)
+		return fmt.Errorf("open %v for writing: %w", filename, err)
 	}
 	defer file.Close()
 
@@ -70,12 +70,12 @@ func (f *FileStreamer) WriteStream(filename string, stream ReadChunkStream, show
 			}
 			_ = file.Close()
 			_ = f.fs.Remove(filename)
-			return fmt.Errorf("reading stream failed: %w", err)
+			return fmt.Errorf("reading stream: %w", err)
 		}
 		if _, err := file.Write(chunk.Content); err != nil {
 			_ = file.Close()
 			_ = f.fs.Remove(filename)
-			return fmt.Errorf("writing chunk to disk failed: %w", err)
+			return fmt.Errorf("writing chunk to disk: %w", err)
 		}
 		if showProgress {
 			_ = bar.Add(len(chunk.Content))
@@ -99,7 +99,7 @@ func (f *FileStreamer) ReadStream(filename string, stream WriteChunkStream, chun
 	}
 	file, err := f.fs.OpenFile(filename, os.O_RDONLY, 0o755)
 	if err != nil {
-		return fmt.Errorf("open %v for reading failed: %w", filename, err)
+		return fmt.Errorf("open %v for reading: %w", filename, err)
 	}
 	defer file.Close()
 
@@ -107,7 +107,7 @@ func (f *FileStreamer) ReadStream(filename string, stream WriteChunkStream, chun
 	if showProgress {
 		stat, err := file.Stat()
 		if err != nil {
-			return fmt.Errorf("performing stat on %v to get the file size failed: %w", filename, err)
+			return fmt.Errorf("performing stat on %v to get the file size: %w", filename, err)
 		}
 		bar = progressbar.NewOptions64(
 			stat.Size(),
@@ -125,11 +125,11 @@ func (f *FileStreamer) ReadStream(filename string, stream WriteChunkStream, chun
 			if errors.Is(err, io.EOF) {
 				return nil
 			}
-			return fmt.Errorf("reading file chunk failed: %w", err)
+			return fmt.Errorf("reading file chunk: %w", err)
 		}
 
 		if err = stream.Send(&pb.Chunk{Content: buf[:n]}); err != nil {
-			return fmt.Errorf("sending chunk failed: %w", err)
+			return fmt.Errorf("sending chunk: %w", err)
 		}
 		if showProgress {
 			_ = bar.Add(n)

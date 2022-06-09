@@ -27,9 +27,9 @@ func FromFile(fileHandler file.Handler, name string) (*CDBGConfig, error) {
 	conf := &CDBGConfig{}
 	if err := fileHandler.ReadYAML(name, conf); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return nil, fmt.Errorf("unable to find %s - consult the README on how to setup cdbg", name)
+			return nil, fmt.Errorf("%s not found - consult the README on how to setup cdbg", name)
 		}
-		return nil, fmt.Errorf("could not load config from file %s: %w", name, err)
+		return nil, fmt.Errorf("loading config from file %s: %w", name, err)
 	}
 	return conf, nil
 }

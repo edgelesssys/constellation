@@ -117,7 +117,7 @@ func getInitialVPNPeers(ctx context.Context, dialer Dialer, logger *zap.Logger, 
 		defer cancel()
 		conn, err := dialer.Dial(callCTX, coordinatorEndpoint)
 		if err != nil {
-			logger.Warn("getting VPN peer information from coordinator failed: dialing failed: ", zap.String("endpoint", coordinatorEndpoint), zap.Error(err))
+			logger.Warn("failed getting VPN peer information from coordinator: dialing failed: ", zap.String("endpoint", coordinatorEndpoint), zap.Error(err))
 			continue
 		}
 		defer conn.Close()

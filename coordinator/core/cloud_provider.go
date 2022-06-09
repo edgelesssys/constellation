@@ -68,7 +68,7 @@ func CoordinatorEndpoints(ctx context.Context, metadata ProviderMetadata) ([]str
 	}
 	instances, err := metadata.List(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("retrieving instances list from cloud provider failed: %w", err)
+		return nil, fmt.Errorf("retrieving instances list from cloud provider: %w", err)
 	}
 	coordinatorEndpoints := []string{}
 	for _, instance := range instances {

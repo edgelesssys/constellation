@@ -86,7 +86,7 @@ func (c *KMSClient) CreateKEK(ctx context.Context, keyID string, key []byte) err
 		var err error
 		key, err = util.GetRandomKey(config.SymmetricKeyLength)
 		if err != nil {
-			return fmt.Errorf("could not generate key: %w", err)
+			return fmt.Errorf("key generation: %w", err)
 		}
 	}
 
@@ -118,7 +118,7 @@ func (c *KMSClient) GetDEK(ctx context.Context, kekID, keyID string, dekSize int
 		// If the DEK does not exist we generate a new random DEK and save it to storage
 		newDEK, err := util.GetRandomKey(dekSize)
 		if err != nil {
-			return nil, fmt.Errorf("could not generate key: %w", err)
+			return nil, fmt.Errorf("key generation: %w", err)
 		}
 		return newDEK, c.putDEK(ctx, keyID, kek, newDEK)
 	}

@@ -51,7 +51,7 @@ func (c *Cryptsetup) Open() error {
 	var err error
 	c.device, err = c.initByName(stateMapperDevice)
 	if err != nil {
-		return fmt.Errorf("unable to initialize crypt device for mapped device %q: %w", stateMapperDevice, err)
+		return fmt.Errorf("initializing crypt device for mapped device %q: %w", stateMapperDevice, err)
 	}
 	return nil
 }
@@ -96,7 +96,7 @@ func (c *Cryptsetup) UpdatePassphrase(passphrase string) error {
 		return err
 	}
 	if err := c.device.KeyslotChangeByPassphrase(keyslot, keyslot, initialPassphrase, passphrase); err != nil {
-		return fmt.Errorf("unable to change passphrase for mapped device %q: %w", stateMapperDevice, err)
+		return fmt.Errorf("changing passphrase for mapped device %q: %w", stateMapperDevice, err)
 	}
 	return nil
 }
@@ -105,7 +105,7 @@ func (c *Cryptsetup) UpdatePassphrase(passphrase string) error {
 func (c *Cryptsetup) getInitialPassphrase() (string, error) {
 	passphrase, err := afero.ReadFile(c.fs, initialKeyPath)
 	if err != nil {
-		return "", fmt.Errorf("unable to read first boot encryption passphrase from disk: %w", err)
+		return "", fmt.Errorf("reading first boot encryption passphrase from disk: %w", err)
 	}
 	return string(passphrase), nil
 }

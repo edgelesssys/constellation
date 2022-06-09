@@ -68,7 +68,7 @@ func trustedKeyFromGCEAPI(getClient func(ctx context.Context, opts ...option.Cli
 		defer cancel()
 		client, err := getClient(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("unable to create GCE client: %w", err)
+			return nil, fmt.Errorf("creating GCE client: %w", err)
 		}
 		defer client.Close()
 
@@ -78,7 +78,7 @@ func trustedKeyFromGCEAPI(getClient func(ctx context.Context, opts ...option.Cli
 			Zone:     instanceInfo.GetZone(),
 		})
 		if err != nil {
-			return nil, fmt.Errorf("could not retrieve VM identity: %w", err)
+			return nil, fmt.Errorf("retrieving VM identity: %w", err)
 		}
 
 		if instance.SigningKey == nil || instance.SigningKey.EkPub == nil {

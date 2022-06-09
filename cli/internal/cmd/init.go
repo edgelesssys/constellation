@@ -127,7 +127,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		return err
 	}
 	if err := waiter.WaitForAll(ctx, endpoints, coordinatorstate.AcceptingInit); err != nil {
-		return fmt.Errorf("failed to wait for peer status: %w", err)
+		return fmt.Errorf("waiting for all peers status: %w", err)
 	}
 
 	var autoscalingNodeGroups []string
@@ -161,7 +161,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 	}
 
 	if err := writeWGQuickFile(fileHandler, vpnHandler, vpnConfig); err != nil {
-		return fmt.Errorf("write wg-quick file: %w", err)
+		return fmt.Errorf("writing wg-quick file: %w", err)
 	}
 
 	if flags.autoconfigureWG {

@@ -77,7 +77,7 @@ func (s *debugdServer) UploadCoordinator(stream pb.Debugd_UploadCoordinatorServe
 		}
 		log.Printf("Uploading coordinator failed: %v\n", err)
 		responseStatus = pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_UPLOAD_FAILED
-		return fmt.Errorf("uploading coordinator failed: %w", err)
+		return fmt.Errorf("uploading coordinator: %w", err)
 	}
 
 	log.Println("Successfully uploaded coordinator")
@@ -110,7 +110,7 @@ func Start(wg *sync.WaitGroup, serv pb.DebugdServer) {
 	pb.RegisterDebugdServer(grpcServer, serv)
 	lis, err := net.Listen("tcp", net.JoinHostPort("0.0.0.0", debugd.DebugdPort))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatalf("listening failed: %v", err)
 	}
 	log.Println("gRPC server is waiting for connections")
 	grpcServer.Serve(lis)

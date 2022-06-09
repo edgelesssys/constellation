@@ -157,7 +157,7 @@ func (f *fakeStreamToFileWriter) WriteStream(filename string, stream coordinator
 			if errors.Is(err, io.EOF) {
 				return nil
 			}
-			return fmt.Errorf("reading stream failed: %w", err)
+			return fmt.Errorf("reading stream: %w", err)
 		}
 		f.chunks = append(f.chunks, chunk.Content)
 	}
@@ -173,7 +173,7 @@ type fakeOnlyDownloadServer struct {
 func (f *fakeOnlyDownloadServer) DownloadCoordinator(request *pb.DownloadCoordinatorRequest, stream pb.Debugd_DownloadCoordinatorServer) error {
 	for _, chunk := range f.chunks {
 		if err := stream.Send(&pb.Chunk{Content: chunk}); err != nil {
-			return fmt.Errorf("sending chunk failed: %w", err)
+			return fmt.Errorf("sending chunk: %w", err)
 		}
 	}
 	return f.downladErr

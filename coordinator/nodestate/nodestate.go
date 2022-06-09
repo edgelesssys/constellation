@@ -23,7 +23,7 @@ type NodeState struct {
 func FromFile(fileHandler file.Handler) (*NodeState, error) {
 	nodeState := &NodeState{}
 	if err := fileHandler.ReadJSON(nodeStatePath, nodeState); err != nil {
-		return nil, fmt.Errorf("could not load node state: %w", err)
+		return nil, fmt.Errorf("loading node state: %w", err)
 	}
 	return nodeState, nil
 }

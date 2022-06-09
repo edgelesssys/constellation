@@ -99,7 +99,7 @@ func run(issuer core.QuoteIssuer, vpn core.VPN, tpm vtpm.TPMOpenFunc, getPublicI
 func tryJoinClusterOnStartup(getPublicIPAddr func() (string, error), metadata core.ProviderMetadata, logger *zap.Logger) error {
 	nodePublicIP, err := getPublicIPAddr()
 	if err != nil {
-		return fmt.Errorf("failed to retrieve own public ip: %w", err)
+		return fmt.Errorf("retrieving own public ip: %w", err)
 	}
 	if !metadata.Supported() {
 		logger.Info("Metadata API not implemented for cloud provider")
@@ -107,7 +107,7 @@ func tryJoinClusterOnStartup(getPublicIPAddr func() (string, error), metadata co
 	}
 	coordinatorEndpoints, err := core.CoordinatorEndpoints(context.TODO(), metadata)
 	if err != nil {
-		return fmt.Errorf("failed to retrieve coordinatorEndpoints from cloud provider api: %w", err)
+		return fmt.Errorf("retrieving coordinatorEndpoints from cloud provider api: %w", err)
 	}
 	logger.Info("Retrieved endpoints from cloud-provider API", zap.Strings("endpoints", coordinatorEndpoints))
 

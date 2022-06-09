@@ -27,11 +27,11 @@ func terraformOut(workspaceDir string) (terraformOutput, error) {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		return terraformOutput{}, fmt.Errorf("failed to run terraform output: %q: %w", stderr.String(), err)
+		return terraformOutput{}, fmt.Errorf("command terraform output failed: %q: %w", stderr.String(), err)
 	}
 	var tfOut terraformOutput
 	if err := json.Unmarshal(stdout.Bytes(), &tfOut); err != nil {
-		return terraformOutput{}, fmt.Errorf("failed to unmarshal terraform output: %w", err)
+		return terraformOutput{}, fmt.Errorf("unmarshaling terraform output: %w", err)
 	}
 	return tfOut, nil
 }
@@ -62,11 +62,11 @@ func transformState(tfOut terraformOutput) state.ConstellationState {
 func writeState(workspaceDir string, conState state.ConstellationState) error {
 	rawState, err := json.Marshal(conState)
 	if err != nil {
-		return fmt.Errorf("failed to marshal state: %w", err)
+		return fmt.Errorf("marshaling state: %w", err)
 	}
 	stateFile := fmt.Sprintf("%s/constellation-state.json", workspaceDir)
 	if err := os.WriteFile(stateFile, rawState, 0o644); err != nil {
-		return fmt.Errorf("failed to write state: %w", err)
+		return fmt.Errorf("writing state: %w", err)
 	}
 	return nil
 }

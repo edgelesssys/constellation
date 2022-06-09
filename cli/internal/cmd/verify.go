@@ -71,7 +71,7 @@ func verify(ctx context.Context, cmd *cobra.Command, provider cloudprovider.Prov
 	}
 	if _, err := protoClient.GetState(ctx); err != nil {
 		if err, ok := rpcStatus.FromError(err); ok {
-			return fmt.Errorf("unable to verify Constellation cluster: %s", err.Message())
+			return fmt.Errorf("verifying Constellation cluster: %s", err.Message())
 		}
 		return err
 	}

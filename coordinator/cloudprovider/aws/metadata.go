@@ -63,12 +63,12 @@ func (m Metadata) Supported() bool {
 func retrieveIdentityDocument(ctx context.Context) (*imds.GetInstanceIdentityDocumentOutput, error) {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("unable to load default AWS configuration: %w", err)
+		return nil, fmt.Errorf("loading default AWS configuration: %w", err)
 	}
 	client := imds.NewFromConfig(cfg)
 	identityDocument, err := client.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
 	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve AWS instance identity document: %w", err)
+		return nil, fmt.Errorf("retrieving AWS instance identity document: %w", err)
 	}
 	return identityDocument, nil
 }

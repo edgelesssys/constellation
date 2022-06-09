@@ -42,7 +42,7 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	}
 	configName, err := cmd.Flags().GetString("config")
 	if err != nil {
-		return err
+		return fmt.Errorf("parsing config path argument: %w", err)
 	}
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	debugConfig, err := config.FromFile(fileHandler, debugConfigName)
@@ -78,9 +78,9 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 		err := fileHandler.ReadJSON(constants.StateFilename, &stat)
 		if errors.Is(err, fs.ErrNotExist) {
 			log.Println("Unable to load statefile. Maybe you forgot to run \"constellation create ...\" first?")
-			return fmt.Errorf("loading statefile failed: %w", err)
+			return fmt.Errorf("loading statefile: %w", err)
 		} else if err != nil {
-			return fmt.Errorf("loading statefile failed: %w", err)
+			return fmt.Errorf("loading statefile: %w", err)
 		}
 		ips, err = getIPsFromConfig(stat, *constellationConfig)
 		if err != nil {
@@ -119,7 +119,7 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	defer cancel()
 	conn, err := grpc.DialContext(dialCTX, in.debugdEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return fmt.Errorf("error connecting to other instance via gRPC: %w", err)
+		return fmt.Errorf("connecting to other instance via gRPC: %w", err)
 	}
 	defer conn.Close()
 	client := pb.NewDebugdClient(conn)
@@ -155,13 +155,13 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 
 	stream, err := client.UploadCoordinator(ctx)
 	if err != nil {
-		return fmt.Errorf("starting coordinator upload to instance %v failed: %w", in.debugdEndpoint, err)
+		return fmt.Errorf("starting coordinator upload to instance %v: %w", in.debugdEndpoint, err)
 	}
 	streamErr := in.reader.ReadStream(in.coordinatorPath, stream, debugd.Chunksize, true)
 
 	uploadResponse, closeErr := stream.CloseAndRecv()
 	if closeErr != nil {
-		return fmt.Errorf("closing upload stream after uploading coordinator to %v failed: %w", in.debugdEndpoint, closeErr)
+		return fmt.Errorf("closing upload stream after uploading coordinator to %v: %w", in.debugdEndpoint, closeErr)
 	}
 	if uploadResponse.Status == pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_FILE_EXISTS {
 		log.Println("Coordinator was already uploaded")

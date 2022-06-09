@@ -43,17 +43,17 @@ func (d *Download) DownloadCoordinator(ctx context.Context, ip string) error {
 	d.attemptedDownloads[serverAddr] = time.Now()
 	conn, err := d.dial(ctx, serverAddr)
 	if err != nil {
-		return fmt.Errorf("error connecting to other instance via gRPC: %w", err)
+		return fmt.Errorf("connecting to other instance via gRPC: %w", err)
 	}
 	defer conn.Close()
 	client := pb.NewDebugdClient(conn)
 
 	stream, err := client.DownloadCoordinator(ctx, &pb.DownloadCoordinatorRequest{})
 	if err != nil {
-		return fmt.Errorf("starting coordinator download from other instance failed: %w", err)
+		return fmt.Errorf("starting coordinator download from other instance: %w", err)
 	}
 	if err := d.writer.WriteStream(debugd.CoordinatorDeployFilename, stream, true); err != nil {
-		return fmt.Errorf("streaming coordinator from other instance failed: %w", err)
+		return fmt.Errorf("streaming coordinator from other instance: %w", err)
 	}
 
 	log.Printf("Successfully downloaded coordinator from %s\n", ip)
@@ -64,7 +64,7 @@ func (d *Download) DownloadCoordinator(ctx context.Context, ip string) error {
 		Action: Restart,
 	}
 	if err := d.serviceManager.SystemdAction(ctx, restartAction); err != nil {
-		return fmt.Errorf("restarting coordinator failed: %w", err)
+		return fmt.Errorf("restarting coordinator: %w", err)
 	}
 
 	return nil

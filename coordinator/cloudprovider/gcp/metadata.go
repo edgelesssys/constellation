@@ -56,7 +56,7 @@ func (m *Metadata) List(ctx context.Context) ([]cloudtypes.Instance, error) {
 	}
 	instances, err := m.api.RetrieveInstances(ctx, project, zone)
 	if err != nil {
-		return nil, fmt.Errorf("retrieving instances list from GCP api failed: %w", err)
+		return nil, fmt.Errorf("retrieving instances list from GCP api: %w", err)
 	}
 	return instances, nil
 }

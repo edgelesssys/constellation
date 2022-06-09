@@ -26,16 +26,16 @@ type Client struct {
 func New(config []byte) (*Client, error) {
 	clientConfig, err := clientcmd.RESTConfigFromKubeConfig(config)
 	if err != nil {
-		return nil, fmt.Errorf("creating k8s client config from kubeconfig failed: %w", err)
+		return nil, fmt.Errorf("creating k8s client config from kubeconfig: %w", err)
 	}
 	clientset, err := kubernetes.NewForConfig(clientConfig)
 	if err != nil {
-		return nil, fmt.Errorf("creating k8s client from kubeconfig failed: %w", err)
+		return nil, fmt.Errorf("creating k8s client from kubeconfig: %w", err)
 	}
 
 	restClientGetter, err := newRESTClientGetter(config)
 	if err != nil {
-		return nil, fmt.Errorf("creating k8s RESTClientGetter from kubeconfig failed: %w", err)
+		return nil, fmt.Errorf("creating k8s RESTClientGetter from kubeconfig: %w", err)
 	}
 	builder := resource.NewBuilder(restClientGetter).Unstructured()
 
@@ -51,7 +51,7 @@ func (c *Client) ApplyOneObject(info *resource.Info, forceConflicts bool) error 
 	// server-side-apply uses unstructured JSON instead of strict typing on the client side.
 	data, err := runtime.Encode(unstructured.UnstructuredJSONScheme, info.Object)
 	if err != nil {
-		return fmt.Errorf("preparing resource for server-side apply failed: encoding of resource failed: %w", err)
+		return fmt.Errorf("preparing resource for server-side apply: encoding of resource: %w", err)
 	}
 	options := metav1.PatchOptions{
 		Force: &forceConflicts,
@@ -64,7 +64,7 @@ func (c *Client) ApplyOneObject(info *resource.Info, forceConflicts bool) error 
 		&options,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to apply object %v using server-side apply: %w", info, err)
+		return fmt.Errorf("applying object %v using server-side apply: %w", info, err)
 	}
 
 	return info.Refresh(obj, true)
@@ -75,7 +75,7 @@ func (c *Client) GetObjects(resources resources.Marshaler) ([]*resource.Info, er
 	// convert our resource struct into YAML
 	data, err := resources.Marshal()
 	if err != nil {
-		return nil, fmt.Errorf("converting resources to YAML failed: %w", err)
+		return nil, fmt.Errorf("converting resources to YAML: %w", err)
 	}
 	// read into resource.Info using builder
 	reader := bytes.NewReader(data)
