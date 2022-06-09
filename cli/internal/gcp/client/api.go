@@ -41,6 +41,34 @@ type firewallsAPI interface {
 		opts ...gax.CallOption) (Operation, error)
 }
 
+type forwardingRulesAPI interface {
+	Close() error
+	Delete(ctx context.Context, req *computepb.DeleteForwardingRuleRequest,
+		opts ...gax.CallOption) (Operation, error)
+	Insert(ctx context.Context, req *computepb.InsertForwardingRuleRequest,
+		opts ...gax.CallOption) (Operation, error)
+	Get(ctx context.Context, req *computepb.GetForwardingRuleRequest,
+		opts ...gax.CallOption) (*computepb.ForwardingRule, error)
+	SetLabels(ctx context.Context, req *computepb.SetLabelsForwardingRuleRequest,
+		opts ...gax.CallOption) (Operation, error)
+}
+
+type backendServicesAPI interface {
+	Close() error
+	Delete(ctx context.Context, req *computepb.DeleteRegionBackendServiceRequest,
+		opts ...gax.CallOption) (Operation, error)
+	Insert(ctx context.Context, req *computepb.InsertRegionBackendServiceRequest,
+		opts ...gax.CallOption) (Operation, error)
+}
+
+type healthChecksAPI interface {
+	Close() error
+	Delete(ctx context.Context, req *computepb.DeleteRegionHealthCheckRequest,
+		opts ...gax.CallOption) (Operation, error)
+	Insert(ctx context.Context, req *computepb.InsertRegionHealthCheckRequest,
+		opts ...gax.CallOption) (Operation, error)
+}
+
 type networksAPI interface {
 	Close() error
 	Delete(ctx context.Context, req *computepb.DeleteNetworkRequest,

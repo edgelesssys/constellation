@@ -241,6 +241,11 @@ type fakeGcpClient struct {
 	name                     string
 	zone                     string
 	serviceAccount           string
+
+	// loadbalancer
+	healthCheck    string
+	backendService string
+	forwardingRule string
 }
 
 func (c *fakeGcpClient) GetState() (state.ConstellationState, error) {
@@ -255,6 +260,9 @@ func (c *fakeGcpClient) GetState() (state.ConstellationState, error) {
 		GCPNetwork:                     c.network,
 		GCPSubnetwork:                  c.subnetwork,
 		GCPFirewalls:                   c.firewalls,
+		GCPBackendService:              c.backendService,
+		GCPHealthCheck:                 c.healthCheck,
+		GCPForwardingRule:              c.forwardingRule,
 		GCPProject:                     c.project,
 		Name:                           c.name,
 		UID:                            c.uid,
@@ -279,6 +287,9 @@ func (c *fakeGcpClient) SetState(stat state.ConstellationState) error {
 	c.uid = stat.UID
 	c.zone = stat.GCPZone
 	c.serviceAccount = stat.GCPServiceAccount
+	c.healthCheck = stat.GCPHealthCheck
+	c.backendService = stat.GCPBackendService
+	c.forwardingRule = stat.GCPForwardingRule
 	return nil
 }
 
@@ -332,6 +343,13 @@ func (c *fakeGcpClient) CreateServiceAccount(ctx context.Context, input gcpcl.Se
 	}.ToCloudServiceAccountURI(), nil
 }
 
+func (c *fakeGcpClient) CreateLoadBalancer(ctx context.Context) error {
+	c.healthCheck = "health-check"
+	c.backendService = "backend-service"
+	c.forwardingRule = "forwarding-rule"
+	return nil
+}
+
 func (c *fakeGcpClient) TerminateFirewall(ctx context.Context) error {
 	if len(c.firewalls) == 0 {
 		return nil
@@ -364,6 +382,13 @@ func (c *fakeGcpClient) TerminateServiceAccount(context.Context) error {
 	return nil
 }
 
+func (c *fakeGcpClient) TerminateLoadBalancer(context.Context) error {
+	c.healthCheck = ""
+	c.backendService = ""
+	c.forwardingRule = ""
+	return nil
+}
+
 func (c *fakeGcpClient) Close() error {
 	return nil
 }
@@ -381,10 +406,12 @@ type stubGcpClient struct {
 	createFirewallErr          error
 	createInstancesErr         error
 	createServiceAccountErr    error
+	createLoadBalancerErr      error
 	terminateFirewallErr       error
 	terminateVPCsErr           error
 	terminateInstancesErr      error
 	terminateServiceAccountErr error
+	terminateLoadBalancerErr   error
 	closeErr                   error
 }
 
@@ -412,6 +439,10 @@ func (c *stubGcpClient) CreateServiceAccount(ctx context.Context, input gcpcl.Se
 	return gcpshared.ServiceAccountKey{}.ToCloudServiceAccountURI(), c.createServiceAccountErr
 }
 
+func (c *stubGcpClient) CreateLoadBalancer(ctx context.Context) error {
+	return c.createLoadBalancerErr
+}
+
 func (c *stubGcpClient) TerminateFirewall(ctx context.Context) error {
 	c.terminateFirewallCalled = true
 	return c.terminateFirewallErr
@@ -430,6 +461,10 @@ func (c *stubGcpClient) TerminateInstances(context.Context) error {
 func (c *stubGcpClient) TerminateServiceAccount(context.Context) error {
 	c.terminateServiceAccountCalled = true
 	return c.terminateServiceAccountErr
+}
+
+func (c *stubGcpClient) TerminateLoadBalancer(context.Context) error {
+	return c.terminateLoadBalancerErr
 }
 
 func (c *stubGcpClient) Close() error {

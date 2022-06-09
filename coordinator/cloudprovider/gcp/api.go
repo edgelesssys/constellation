@@ -22,6 +22,11 @@ type subnetworkAPI interface {
 	Close() error
 }
 
+type forwardingRulesAPI interface {
+	List(ctx context.Context, req *computepb.ListForwardingRulesRequest, opts ...gax.CallOption) ForwardingRuleIterator
+	Close() error
+}
+
 type metadataAPI interface {
 	InstanceAttributeValue(attr string) (string, error)
 	ProjectID() (string, error)
@@ -39,4 +44,8 @@ type InstanceIterator interface {
 
 type SubnetworkIterator interface {
 	Next() (*computepb.Subnetwork, error)
+}
+
+type ForwardingRuleIterator interface {
+	Next() (*computepb.ForwardingRule, error)
 }

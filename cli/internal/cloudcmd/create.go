@@ -132,6 +132,10 @@ func (c *Creator) createGCP(ctx context.Context, cl gcpclient, config *config.Co
 		return state.ConstellationState{}, err
 	}
 
+	if err := cl.CreateLoadBalancer(ctx); err != nil {
+		return state.ConstellationState{}, err
+	}
+
 	return cl.GetState()
 }
 

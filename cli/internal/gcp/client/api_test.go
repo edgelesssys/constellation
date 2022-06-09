@@ -219,6 +219,143 @@ func (a stubSubnetworksAPI) Delete(ctx context.Context, req *computepb.DeleteSub
 	}, nil
 }
 
+type stubBackendServicesAPI struct {
+	insertErr error
+	deleteErr error
+}
+
+func (a stubBackendServicesAPI) Close() error {
+	return nil
+}
+
+func (a stubBackendServicesAPI) Insert(ctx context.Context, req *computepb.InsertRegionBackendServiceRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	if a.insertErr != nil {
+		return nil, a.insertErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Name:   proto.String("name"),
+			Region: proto.String("region"),
+		},
+	}, nil
+}
+
+func (a stubBackendServicesAPI) Delete(ctx context.Context, req *computepb.DeleteRegionBackendServiceRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	if a.deleteErr != nil {
+		return nil, a.deleteErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Name:   proto.String("name"),
+			Region: proto.String("region"),
+		},
+	}, nil
+}
+
+type stubForwardingRulesAPI struct {
+	insertErr      error
+	deleteErr      error
+	getErr         error
+	setLabelErr    error
+	forwardingRule *computepb.ForwardingRule
+}
+
+func (a stubForwardingRulesAPI) Close() error {
+	return nil
+}
+
+func (a stubForwardingRulesAPI) Insert(ctx context.Context, req *computepb.InsertForwardingRuleRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	if a.insertErr != nil {
+		return nil, a.insertErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Name:   proto.String("name"),
+			Region: proto.String("region"),
+		},
+	}, nil
+}
+
+func (a stubForwardingRulesAPI) Delete(ctx context.Context, req *computepb.DeleteForwardingRuleRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	if a.deleteErr != nil {
+		return nil, a.deleteErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Name:   proto.String("name"),
+			Region: proto.String("region"),
+		},
+	}, nil
+}
+
+func (a stubForwardingRulesAPI) Get(ctx context.Context, req *computepb.GetForwardingRuleRequest,
+	opts ...gax.CallOption,
+) (*computepb.ForwardingRule, error) {
+	if a.getErr != nil {
+		return nil, a.getErr
+	}
+	return a.forwardingRule, nil
+}
+
+func (a stubForwardingRulesAPI) SetLabels(ctx context.Context, req *computepb.SetLabelsForwardingRuleRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	if a.deleteErr != nil {
+		return nil, a.setLabelErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Name:   proto.String("name"),
+			Region: proto.String("region"),
+		},
+	}, nil
+}
+
+type stubHealthChecksAPI struct {
+	insertErr error
+	deleteErr error
+}
+
+func (a stubHealthChecksAPI) Close() error {
+	return nil
+}
+
+func (a stubHealthChecksAPI) Insert(ctx context.Context, req *computepb.InsertRegionHealthCheckRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	if a.insertErr != nil {
+		return nil, a.insertErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Name:   proto.String("name"),
+			Region: proto.String("region"),
+		},
+	}, nil
+}
+
+func (a stubHealthChecksAPI) Delete(ctx context.Context, req *computepb.DeleteRegionHealthCheckRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	if a.deleteErr != nil {
+		return nil, a.deleteErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Name:   proto.String("name"),
+			Region: proto.String("region"),
+		},
+	}, nil
+}
+
 type stubInstanceTemplateAPI struct {
 	deleteErr error
 	insertErr error

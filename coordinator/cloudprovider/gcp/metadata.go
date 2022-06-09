@@ -26,6 +26,8 @@ type API interface {
 	RetrieveInstanceName() (string, error)
 	// RetrieveSubnetworkAliasCIDR retrieves the subnetwork CIDR of the current instance.
 	RetrieveSubnetworkAliasCIDR(ctx context.Context, project, zone, instanceName string) (string, error)
+	// RetrieveLoadBalancerIP retrieves the load balancer IP of the current instance.
+	RetrieveLoadBalancerIP(ctx context.Context, project, zone string) (string, error)
 	// SetInstanceMetadata sets metadata key: value of the instance specified by project, zone and instanceName.
 	SetInstanceMetadata(ctx context.Context, project, zone, instanceName, key, value string) error
 	// UnsetInstanceMetadata removes a metadata key-value pair of the instance specified by project, zone and instanceName.
@@ -140,12 +142,20 @@ func (m *Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
 
 // SupportsLoadBalancer returns true if the cloud provider supports load balancers.
 func (m *Metadata) SupportsLoadBalancer() bool {
-	return false
+	return true
 }
 
 // GetLoadBalancerIP returns the IP of the load balancer.
 func (m *Metadata) GetLoadBalancerIP(ctx context.Context) (string, error) {
-	return "", nil
+	project, err := m.api.RetrieveProjectID()
+	if err != nil {
+		return "", err
+	}
+	zone, err := m.api.RetrieveZone()
+	if err != nil {
+		return "", err
+	}
+	return m.api.RetrieveLoadBalancerIP(ctx, project, zone)
 }
 
 // Supported is used to determine if metadata API is implemented for this cloud provider.

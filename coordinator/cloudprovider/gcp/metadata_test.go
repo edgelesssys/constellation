@@ -368,11 +368,13 @@ type stubGCPClient struct {
 	projectID                    string
 	zone                         string
 	instanceName                 string
+	loadBalancerIP               string
 	retrieveProjectIDErr         error
 	retrieveZoneErr              error
 	retrieveInstanceNameErr      error
 	setInstanceMetadataErr       error
 	unsetInstanceMetadataErr     error
+	retrieveLoadBalancerErr      error
 
 	instanceMetadataProjects      []string
 	instanceMetadataZones         []string
@@ -408,6 +410,10 @@ func (s *stubGCPClient) RetrieveZone() (string, error) {
 
 func (s *stubGCPClient) RetrieveInstanceName() (string, error) {
 	return s.instanceName, s.retrieveInstanceNameErr
+}
+
+func (s *stubGCPClient) RetrieveLoadBalancerIP(ctx context.Context, project, zone string) (string, error) {
+	return s.loadBalancerIP, s.retrieveLoadBalancerErr
 }
 
 func (s *stubGCPClient) SetInstanceMetadata(ctx context.Context, project, zone, instanceName, key, value string) error {

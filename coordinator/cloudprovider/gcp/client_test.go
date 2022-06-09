@@ -756,7 +756,7 @@ func TestRetrieveSubnetworkAliasCIDR(t *testing.T) {
 			require := require.New(t)
 
 			client := Client{instanceAPI: tc.stubInstancesClient, subnetworkAPI: tc.stubSubnetworksClient}
-			aliasCIDR, err := client.RetrieveSubnetworkAliasCIDR(context.Background(), "project", "zone", "subnetwork")
+			aliasCIDR, err := client.RetrieveSubnetworkAliasCIDR(context.Background(), "project", "us-central1-a", "subnetwork")
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -768,18 +768,106 @@ func TestRetrieveSubnetworkAliasCIDR(t *testing.T) {
 	}
 }
 
+func TestRetrieveLoadBalancerIP(t *testing.T) {
+	loadBalancerIP := "192.0.2.1"
+	uid := "uid"
+	someErr := errors.New("some error")
+	testCases := map[string]struct {
+		stubForwardingRulesClient stubForwardingRulesClient
+		stubMetadataClient        stubMetadataClient
+		wantLoadBalancerIP        string
+		wantErr                   bool
+	}{
+		"RetrieveSubnetworkAliasCIDR works": {
+			stubMetadataClient: stubMetadataClient{InstanceValue: uid},
+			stubForwardingRulesClient: stubForwardingRulesClient{
+				ForwardingRuleIterator: &stubForwardingRuleIterator{
+					rules: []*computepb.ForwardingRule{
+						{
+							IPAddress: proto.String(loadBalancerIP),
+							Labels:    map[string]string{"constellation-uid": uid},
+						},
+					},
+				},
+			},
+			wantLoadBalancerIP: loadBalancerIP,
+		},
+		"RetrieveSubnetworkAliasCIDR fails when no matching load balancers exists": {
+			stubMetadataClient: stubMetadataClient{InstanceValue: uid},
+			stubForwardingRulesClient: stubForwardingRulesClient{
+				ForwardingRuleIterator: &stubForwardingRuleIterator{
+					rules: []*computepb.ForwardingRule{
+						{
+							IPAddress: proto.String(loadBalancerIP),
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		"RetrieveSubnetworkAliasCIDR fails when retrieving uid": {
+			stubMetadataClient: stubMetadataClient{InstanceErr: someErr},
+			stubForwardingRulesClient: stubForwardingRulesClient{
+				ForwardingRuleIterator: &stubForwardingRuleIterator{
+					rules: []*computepb.ForwardingRule{
+						{
+							IPAddress: proto.String(loadBalancerIP),
+							Labels:    map[string]string{"constellation-uid": uid},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		"RetrieveSubnetworkAliasCIDR fails when retrieving loadbalancer IP": {
+			stubMetadataClient: stubMetadataClient{},
+			stubForwardingRulesClient: stubForwardingRulesClient{
+				ForwardingRuleIterator: &stubForwardingRuleIterator{
+					nextErr: someErr,
+					rules: []*computepb.ForwardingRule{
+						{
+							IPAddress: proto.String(loadBalancerIP),
+							Labels:    map[string]string{"constellation-uid": uid},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			client := Client{forwardingRulesAPI: tc.stubForwardingRulesClient, metadataAPI: tc.stubMetadataClient}
+			aliasCIDR, err := client.RetrieveLoadBalancerIP(context.Background(), "project", "us-central1-a")
+
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+			assert.Equal(tc.wantLoadBalancerIP, aliasCIDR)
+		})
+	}
+}
+
 func TestClose(t *testing.T) {
 	someErr := errors.New("failed")
 
 	assert := assert.New(t)
 
-	client := Client{instanceAPI: stubInstancesClient{}, subnetworkAPI: stubSubnetworksClient{}}
+	client := Client{instanceAPI: stubInstancesClient{}, subnetworkAPI: stubSubnetworksClient{}, forwardingRulesAPI: stubForwardingRulesClient{}}
 	assert.NoError(client.Close())
 
-	client = Client{instanceAPI: stubInstancesClient{CloseErr: someErr}, subnetworkAPI: stubSubnetworksClient{}}
+	client = Client{instanceAPI: stubInstancesClient{CloseErr: someErr}, subnetworkAPI: stubSubnetworksClient{}, forwardingRulesAPI: stubForwardingRulesClient{}}
 	assert.Error(client.Close())
 
-	client = Client{instanceAPI: stubInstancesClient{}, subnetworkAPI: stubSubnetworksClient{CloseErr: someErr}}
+	client = Client{instanceAPI: stubInstancesClient{}, subnetworkAPI: stubSubnetworksClient{CloseErr: someErr}, forwardingRulesAPI: stubForwardingRulesClient{}}
+	assert.Error(client.Close())
+
+	client = Client{instanceAPI: stubInstancesClient{}, subnetworkAPI: stubSubnetworksClient{}, forwardingRulesAPI: stubForwardingRulesClient{CloseErr: someErr}}
 	assert.Error(client.Close())
 }
 
@@ -892,6 +980,40 @@ func (s stubSubnetworksClient) List(ctx context.Context, req *computepb.ListSubn
 }
 
 func (s stubSubnetworksClient) Close() error {
+	return s.CloseErr
+}
+
+type stubForwardingRuleIterator struct {
+	rules   []*computepb.ForwardingRule
+	nextErr error
+
+	internalCounter int
+}
+
+func (i *stubForwardingRuleIterator) Next() (*computepb.ForwardingRule, error) {
+	if i.nextErr != nil {
+		return nil, i.nextErr
+	}
+	if i.internalCounter >= len(i.rules) {
+		i.internalCounter = 0
+		return nil, iterator.Done
+	}
+	resp := i.rules[i.internalCounter]
+	i.internalCounter++
+	return resp, nil
+}
+
+type stubForwardingRulesClient struct {
+	ForwardingRuleIterator ForwardingRuleIterator
+	GetErr                 error
+	CloseErr               error
+}
+
+func (s stubForwardingRulesClient) List(ctx context.Context, req *computepb.ListForwardingRulesRequest, opts ...gax.CallOption) ForwardingRuleIterator {
+	return s.ForwardingRuleIterator
+}
+
+func (s stubForwardingRulesClient) Close() error {
 	return s.CloseErr
 }
 

@@ -3,8 +3,10 @@ package client
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
+	"google.golang.org/genproto/googleapis/cloud/compute/v1"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
 )
@@ -196,4 +198,137 @@ func (c *Client) terminateSubnet(ctx context.Context) error {
 		return err
 	}
 	return c.waitForOperations(ctx, []Operation{op})
+}
+
+// CreateLoadBalancer creates a load balancer.
+func (c *Client) CreateLoadBalancer(ctx context.Context) error {
+	c.healthCheck = c.name + "-" + c.uid
+	resp, err := c.healthChecksAPI.Insert(ctx, &computepb.InsertRegionHealthCheckRequest{
+		Project: c.project,
+		Region:  c.region,
+		HealthCheckResource: &computepb.HealthCheck{
+			Name:             proto.String(c.healthCheck),
+			Type:             proto.String(compute.HealthCheck_Type_name[int32(compute.HealthCheck_TCP)]),
+			CheckIntervalSec: proto.Int32(1),
+			TimeoutSec:       proto.Int32(1),
+			TcpHealthCheck: &computepb.TCPHealthCheck{
+				Port: proto.Int32(6443),
+			},
+		},
+	})
+	if err != nil {
+		return err
+	}
+	if err := c.waitForOperations(ctx, []Operation{resp}); err != nil {
+		return err
+	}
+
+	c.backendService = c.name + "-" + c.uid
+	resp, err = c.backendServicesAPI.Insert(ctx, &computepb.InsertRegionBackendServiceRequest{
+		Project: c.project,
+		Region:  c.region,
+		BackendServiceResource: &computepb.BackendService{
+			Name:                proto.String(c.backendService),
+			Protocol:            proto.String(compute.BackendService_Protocol_name[int32(compute.BackendService_TCP)]),
+			LoadBalancingScheme: proto.String(computepb.BackendService_LoadBalancingScheme_name[int32(compute.BackendService_EXTERNAL)]),
+			TimeoutSec:          proto.Int32(10),
+			HealthChecks:        []string{"https://www.googleapis.com/compute/v1/projects/" + c.project + "/regions/" + c.region + "/healthChecks/" + c.healthCheck},
+			Backends: []*computepb.Backend{
+				{
+					BalancingMode: proto.String(computepb.Backend_BalancingMode_name[int32(compute.Backend_CONNECTION)]),
+					Group:         proto.String("https://www.googleapis.com/compute/v1/projects/" + c.project + "/zones/" + c.zone + "/instanceGroups/" + c.coordinatorInstanceGroup),
+				},
+			},
+		},
+	})
+	if err != nil {
+		return err
+	}
+	if err := c.waitForOperations(ctx, []Operation{resp}); err != nil {
+		return err
+	}
+
+	c.forwardingRule = c.name + "-" + c.uid
+	resp, err = c.forwardingRulesAPI.Insert(ctx, &computepb.InsertForwardingRuleRequest{
+		Project: c.project,
+		Region:  c.region,
+		ForwardingRuleResource: &computepb.ForwardingRule{
+			Name:                proto.String(c.forwardingRule),
+			IPProtocol:          proto.String(compute.ForwardingRule_IPProtocolEnum_name[int32(compute.ForwardingRule_TCP)]),
+			LoadBalancingScheme: proto.String(compute.ForwardingRule_LoadBalancingScheme_name[int32(compute.ForwardingRule_EXTERNAL)]),
+			Ports:               []string{"6443", "9000"},
+			BackendService:      proto.String("https://www.googleapis.com/compute/v1/projects/" + c.project + "/regions/" + c.region + "/backendServices/" + c.backendService),
+		},
+	})
+	if err != nil {
+		return err
+	}
+	if err := c.waitForOperations(ctx, []Operation{resp}); err != nil {
+		return err
+	}
+
+	forwardingRule, err := c.forwardingRulesAPI.Get(ctx, &computepb.GetForwardingRuleRequest{
+		Project:        c.project,
+		Region:         c.region,
+		ForwardingRule: c.forwardingRule,
+	})
+	if err != nil {
+		return err
+	}
+	if forwardingRule.LabelFingerprint == nil {
+		return fmt.Errorf("forwarding rule %s has no label fingerprint", c.forwardingRule)
+	}
+
+	resp, err = c.forwardingRulesAPI.SetLabels(ctx, &computepb.SetLabelsForwardingRuleRequest{
+		Project:  c.project,
+		Region:   c.region,
+		Resource: c.forwardingRule,
+		RegionSetLabelsRequestResource: &computepb.RegionSetLabelsRequest{
+			Labels:           map[string]string{"constellation-uid": c.uid},
+			LabelFingerprint: forwardingRule.LabelFingerprint,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	return c.waitForOperations(ctx, []Operation{resp})
+}
+
+// TerminteLoadBalancer removes the load balancer and its associated resources.
+func (c *Client) TerminateLoadBalancer(ctx context.Context) error {
+	resp, err := c.forwardingRulesAPI.Delete(ctx, &computepb.DeleteForwardingRuleRequest{
+		Project:        c.project,
+		Region:         c.region,
+		ForwardingRule: c.forwardingRule,
+	})
+	if err != nil {
+		return err
+	}
+	if err := c.waitForOperations(ctx, []Operation{resp}); err != nil {
+		return err
+	}
+
+	resp, err = c.backendServicesAPI.Delete(ctx, &computepb.DeleteRegionBackendServiceRequest{
+		Project:        c.project,
+		Region:         c.region,
+		BackendService: c.backendService,
+	})
+	if err != nil {
+		return err
+	}
+	if err := c.waitForOperations(ctx, []Operation{resp}); err != nil {
+		return err
+	}
+
+	resp, err = c.healthChecksAPI.Delete(ctx, &computepb.DeleteRegionHealthCheckRequest{
+		Project:     c.project,
+		Region:      c.region,
+		HealthCheck: c.healthCheck,
+	})
+	if err != nil {
+		return err
+	}
+
+	return c.waitForOperations(ctx, []Operation{resp})
 }

@@ -3,6 +3,7 @@ package gcp
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	compute "cloud.google.com/go/compute/apiv1"
@@ -17,11 +18,14 @@ import (
 
 const gcpSSHMetadataKey = "ssh-keys"
 
+var zoneFromRegionRegex = regexp.MustCompile("([a-z]*-[a-z]*[0-9])")
+
 // Client implements the gcp.API interface.
 type Client struct {
 	instanceAPI
 	subnetworkAPI
 	metadataAPI
+	forwardingRulesAPI
 }
 
 // NewClient creates a new Client.
@@ -34,7 +38,16 @@ func NewClient(ctx context.Context) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{instanceAPI: &instanceClient{insAPI}, subnetworkAPI: &subnetworkClient{subnetAPI}, metadataAPI: &metadataClient{}}, nil
+	forwardingRulesAPI, err := compute.NewForwardingRulesRESTClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &Client{
+		instanceAPI:        &instanceClient{insAPI},
+		subnetworkAPI:      &subnetworkClient{subnetAPI},
+		forwardingRulesAPI: &forwardingRulesClient{forwardingRulesAPI},
+		metadataAPI:        &metadataClient{},
+	}, nil
 }
 
 // RetrieveInstances returns list of instances including their ips and metadata.
@@ -178,8 +191,10 @@ func (c *Client) RetrieveSubnetworkAliasCIDR(ctx context.Context, project, zone,
 	// convert:
 	//           zone --> region
 	// europe-west3-b --> europe-west3
-	regionParts := strings.Split(zone, "-")
-	region := strings.TrimSuffix(zone, "-"+regionParts[len(regionParts)-1])
+	region := zoneFromRegionRegex.FindString(zone)
+	if region == "" {
+		return "", fmt.Errorf("invalid zone %s", zone)
+	}
 
 	req := &computepb.GetSubnetworkRequest{
 		Project:    project,
@@ -196,9 +211,45 @@ func (c *Client) RetrieveSubnetworkAliasCIDR(ctx context.Context, project, zone,
 	return *subnetwork.IpCidrRange, nil
 }
 
+// RetrieveLoadBalancerIP returns the IP address of the load balancer specified by project, zone and loadBalancerName.
+func (c *Client) RetrieveLoadBalancerIP(ctx context.Context, project, zone string) (string, error) {
+	uid, err := c.uid()
+	if err != nil {
+		return "", err
+	}
+
+	region := zoneFromRegionRegex.FindString(zone)
+	if region == "" {
+		return "", fmt.Errorf("invalid zone %s", zone)
+	}
+
+	req := &computepb.ListForwardingRulesRequest{
+		Region:  region,
+		Project: project,
+	}
+	iter := c.forwardingRulesAPI.List(ctx, req)
+	for {
+		resp, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return "", fmt.Errorf("retrieving load balancer IP failed: %w", err)
+		}
+		if resp.Labels["constellation-uid"] == uid {
+			return *resp.IPAddress, nil
+		}
+	}
+
+	return "", fmt.Errorf("retrieving load balancer IP failed: load balancer not found")
+}
+
 // Close closes the instanceAPI client.
 func (c *Client) Close() error {
 	if err := c.subnetworkAPI.Close(); err != nil {
+		return err
+	}
+	if err := c.forwardingRulesAPI.Close(); err != nil {
 		return err
 	}
 	return c.instanceAPI.Close()

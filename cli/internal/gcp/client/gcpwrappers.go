@@ -46,6 +46,78 @@ func (c *firewallsClient) Insert(ctx context.Context, req *computepb.InsertFirew
 	return c.FirewallsClient.Insert(ctx, req)
 }
 
+type forwardingRulesClient struct {
+	*compute.ForwardingRulesClient
+}
+
+func (c *forwardingRulesClient) Close() error {
+	return c.ForwardingRulesClient.Close()
+}
+
+func (c *forwardingRulesClient) Delete(ctx context.Context, req *computepb.DeleteForwardingRuleRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	return c.ForwardingRulesClient.Delete(ctx, req)
+}
+
+func (c *forwardingRulesClient) Insert(ctx context.Context, req *computepb.InsertForwardingRuleRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	return c.ForwardingRulesClient.Insert(ctx, req)
+}
+
+func (c *forwardingRulesClient) Get(ctx context.Context, req *computepb.GetForwardingRuleRequest,
+	opts ...gax.CallOption,
+) (*computepb.ForwardingRule, error) {
+	return c.ForwardingRulesClient.Get(ctx, req)
+}
+
+func (c *forwardingRulesClient) SetLabels(ctx context.Context, req *computepb.SetLabelsForwardingRuleRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	return c.ForwardingRulesClient.SetLabels(ctx, req)
+}
+
+type backendServicesClient struct {
+	*compute.RegionBackendServicesClient
+}
+
+func (c *backendServicesClient) Close() error {
+	return c.RegionBackendServicesClient.Close()
+}
+
+func (c *backendServicesClient) Insert(ctx context.Context, req *computepb.InsertRegionBackendServiceRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	return c.RegionBackendServicesClient.Insert(ctx, req)
+}
+
+func (c *backendServicesClient) Delete(ctx context.Context, req *computepb.DeleteRegionBackendServiceRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	return c.RegionBackendServicesClient.Delete(ctx, req)
+}
+
+type healthChecksClient struct {
+	*compute.RegionHealthChecksClient
+}
+
+func (c *healthChecksClient) Close() error {
+	return c.RegionHealthChecksClient.Close()
+}
+
+func (c *healthChecksClient) Delete(ctx context.Context, req *computepb.DeleteRegionHealthCheckRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	return c.RegionHealthChecksClient.Delete(ctx, req)
+}
+
+func (c *healthChecksClient) Insert(ctx context.Context, req *computepb.InsertRegionHealthCheckRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	return c.RegionHealthChecksClient.Insert(ctx, req)
+}
+
 type networksClient struct {
 	*compute.NetworksClient
 }

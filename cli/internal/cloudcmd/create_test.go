@@ -32,6 +32,9 @@ func TestCreator(t *testing.T) {
 		GCPCoordinatorInstanceTemplate: "coordinator-template",
 		GCPNetwork:                     "network",
 		GCPSubnetwork:                  "subnetwork",
+		GCPBackendService:              "backend-service",
+		GCPHealthCheck:                 "health-check",
+		GCPForwardingRule:              "forwarding-rule",
 		GCPFirewalls: []string{
 			"coordinator", "wireguard", "ssh", "nodeport", "kubernetes",
 			"allow-cluster-internal-tcp", "allow-cluster-internal-udp", "allow-cluster-internal-icmp",
@@ -98,6 +101,13 @@ func TestCreator(t *testing.T) {
 		},
 		"gcp CreateInstances error": {
 			gcpclient:    &stubGcpClient{createInstancesErr: someErr},
+			provider:     cloudprovider.GCP,
+			config:       config.Default(),
+			wantErr:      true,
+			wantRollback: true,
+		},
+		"gcp CreateLoadBalancer error": {
+			gcpclient:    &stubGcpClient{createLoadBalancerErr: someErr},
 			provider:     cloudprovider.GCP,
 			config:       config.Default(),
 			wantErr:      true,

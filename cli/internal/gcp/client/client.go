@@ -25,6 +25,9 @@ type Client struct {
 	networksAPI
 	subnetworksAPI
 	firewallsAPI
+	forwardingRulesAPI
+	backendServicesAPI
+	healthChecksAPI
 	instanceTemplateAPI
 	instanceGroupManagersAPI
 	iamAPI
@@ -47,6 +50,11 @@ type Client struct {
 	zone                     string
 	region                   string
 	serviceAccount           string
+
+	// loadbalancer
+	healthCheck    string
+	backendService string
+	forwardingRule string
 }
 
 // NewFromDefault creates an uninitialized client.
@@ -92,7 +100,31 @@ func NewFromDefault(ctx context.Context) (*Client, error) {
 		_ = closeAll(closers)
 		return nil, err
 	}
-	closers = append(closers, fwAPI)
+	closers = append(closers, subnetAPI)
+	forwardingRulesAPI, err := compute.NewForwardingRulesRESTClient(ctx)
+	if err != nil {
+		_ = closeAll(closers)
+		return nil, err
+	}
+	closers = append(closers, forwardingRulesAPI)
+	backendServicesAPI, err := compute.NewRegionBackendServicesRESTClient(ctx)
+	if err != nil {
+		_ = closeAll(closers)
+		return nil, err
+	}
+	closers = append(closers, backendServicesAPI)
+	targetPoolsAPI, err := compute.NewTargetPoolsRESTClient(ctx)
+	if err != nil {
+		_ = closeAll(closers)
+		return nil, err
+	}
+	closers = append(closers, targetPoolsAPI)
+	healthChecksAPI, err := compute.NewRegionHealthChecksRESTClient(ctx)
+	if err != nil {
+		_ = closeAll(closers)
+		return nil, err
+	}
+	closers = append(closers, healthChecksAPI)
 	templAPI, err := compute.NewInstanceTemplatesRESTClient(ctx)
 	if err != nil {
 		_ = closeAll(closers)
@@ -124,6 +156,9 @@ func NewFromDefault(ctx context.Context) (*Client, error) {
 		networksAPI:              &networksClient{netAPI},
 		subnetworksAPI:           &subnetworksClient{subnetAPI},
 		firewallsAPI:             &firewallsClient{fwAPI},
+		forwardingRulesAPI:       &forwardingRulesClient{forwardingRulesAPI},
+		backendServicesAPI:       &backendServicesClient{backendServicesAPI},
+		healthChecksAPI:          &healthChecksClient{healthChecksAPI},
 		instanceTemplateAPI:      &instanceTemplateClient{templAPI},
 		instanceGroupManagersAPI: &instanceGroupManagersClient{groupAPI},
 		iamAPI:                   &iamClient{iamAPI},
@@ -147,12 +182,19 @@ func NewInitialized(ctx context.Context, project, zone, region, name string) (*C
 func (c *Client) Close() error {
 	closers := []closer{
 		c.instanceAPI,
+		c.operationRegionAPI,
 		c.operationZoneAPI,
 		c.operationGlobalAPI,
 		c.networksAPI,
+		c.subnetworksAPI,
 		c.firewallsAPI,
+		c.forwardingRulesAPI,
+		c.backendServicesAPI,
+		c.healthChecksAPI,
 		c.instanceTemplateAPI,
 		c.instanceGroupManagersAPI,
+		c.iamAPI,
+		c.projectsAPI,
 	}
 	return closeAll(closers)
 }
@@ -246,6 +288,21 @@ func (c *Client) GetState() (state.ConstellationState, error) {
 	}
 	stat.GCPCoordinatorInstanceTemplate = c.coordinatorTemplate
 
+	if c.healthCheck == "" {
+		return state.ConstellationState{}, errors.New("client has no health check")
+	}
+	stat.GCPHealthCheck = c.healthCheck
+
+	if c.backendService == "" {
+		return state.ConstellationState{}, errors.New("client has no backend service")
+	}
+	stat.GCPBackendService = c.backendService
+
+	if c.forwardingRule == "" {
+		return state.ConstellationState{}, errors.New("client has no forwarding rule")
+	}
+	stat.GCPForwardingRule = c.forwardingRule
+
 	// service account does not have to be set at all times
 	stat.GCPServiceAccount = c.serviceAccount
 
@@ -326,6 +383,21 @@ func (c *Client) SetState(stat state.ConstellationState) error {
 		return errors.New("state has no coordinator instance template")
 	}
 	c.coordinatorTemplate = stat.GCPCoordinatorInstanceTemplate
+
+	if stat.GCPHealthCheck == "" {
+		return errors.New("state has no health check")
+	}
+	c.healthCheck = stat.GCPHealthCheck
+
+	if stat.GCPBackendService == "" {
+		return errors.New("state has no backend service")
+	}
+	c.backendService = stat.GCPBackendService
+
+	if stat.GCPForwardingRule == "" {
+		return errors.New("state has no forwarding rule")
+	}
+	c.forwardingRule = stat.GCPForwardingRule
 
 	// service account does not have to be set at all times
 	c.serviceAccount = stat.GCPServiceAccount

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Early boot logging for Cloud Provider: GCP & Azure
 - Added `constellation-access-manager`, allowing users to manage SSH users over a ConfigMap. This allows persistent & dynamic management of SSH users on multiple nodes, even after a reboot.
+- GCP-native Kubernetes load balancing
 
 ### Changed
 

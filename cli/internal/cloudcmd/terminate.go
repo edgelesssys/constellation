@@ -55,6 +55,9 @@ func (t *Terminator) terminateGCP(ctx context.Context, cl gcpclient, state state
 		return err
 	}
 
+	if err := cl.TerminateLoadBalancer(ctx); err != nil {
+		return err
+	}
 	if err := cl.TerminateInstances(ctx); err != nil {
 		return err
 	}

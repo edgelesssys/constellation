@@ -43,6 +43,20 @@ func (c *subnetworkClient) Get(ctx context.Context, req *computepb.GetSubnetwork
 	return c.SubnetworksClient.Get(ctx, req)
 }
 
+type forwardingRulesClient struct {
+	*compute.ForwardingRulesClient
+}
+
+func (c *forwardingRulesClient) Close() error {
+	return c.ForwardingRulesClient.Close()
+}
+
+func (c *forwardingRulesClient) List(ctx context.Context, req *computepb.ListForwardingRulesRequest,
+	opts ...gax.CallOption,
+) ForwardingRuleIterator {
+	return c.ForwardingRulesClient.List(ctx, req)
+}
+
 type metadataClient struct{}
 
 func (c *metadataClient) InstanceAttributeValue(attr string) (string, error) {

@@ -19,6 +19,9 @@ type ConstellationState struct {
 	GCPNetwork                     string               `json:"gcpnetwork,omitempty"`
 	GCPSubnetwork                  string               `json:"gcpsubnetwork,omitempty"`
 	GCPFirewalls                   []string             `json:"gcpfirewalls,omitempty"`
+	GCPBackendService              string               `json:"gcpbackendservice,omitempty"`
+	GCPHealthCheck                 string               `json:"gcphealthcheck,omitempty"`
+	GCPForwardingRule              string               `json:"gcpforwardingrule,omitempty"`
 	GCPProject                     string               `json:"gcpproject,omitempty"`
 	GCPZone                        string               `json:"gcpzone,omitempty"`
 	GCPRegion                      string               `json:"gcpregion,omitempty"`
