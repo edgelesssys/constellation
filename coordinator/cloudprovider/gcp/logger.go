@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"cloud.google.com/go/logging"
+	"github.com/edgelesssys/constellation/internal/gcpshared"
 )
 
 type Logger struct {
@@ -15,7 +16,7 @@ type Logger struct {
 // NewLogger creates a new Cloud Logger for GCP.
 // https://cloud.google.com/logging/docs/setup/go
 func NewLogger(ctx context.Context, providerID string, logName string) (*Logger, error) {
-	projectID, _, _, err := splitProviderID(providerID)
+	projectID, _, _, err := gcpshared.SplitProviderID(providerID)
 	if err != nil {
 		return nil, err
 	}

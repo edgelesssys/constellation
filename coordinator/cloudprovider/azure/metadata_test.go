@@ -605,47 +605,6 @@ func TestProviderID(t *testing.T) {
 	}
 }
 
-func TestExtractBasicsFromProviderID(t *testing.T) {
-	testCases := map[string]struct {
-		providerID         string
-		wantErr            bool
-		wantSubscriptionID string
-		wantResourceGroup  string
-	}{
-		"providerID for individual instance works": {
-			providerID:         "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
-			wantSubscriptionID: "subscription-id",
-			wantResourceGroup:  "resource-group",
-		},
-		"providerID for scale set instance works": {
-			providerID:         "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-			wantSubscriptionID: "subscription-id",
-			wantResourceGroup:  "resource-group",
-		},
-		"providerID is malformed": {
-			providerID: "malformed-provider-id",
-			wantErr:    true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			subscriptionID, resourceGroup, err := extractBasicsFromProviderID(tc.providerID)
-
-			if tc.wantErr {
-				assert.Error(err)
-				return
-			}
-			require.NoError(err)
-			assert.Equal(tc.wantSubscriptionID, subscriptionID)
-			assert.Equal(tc.wantResourceGroup, resourceGroup)
-		})
-	}
-}
-
 func TestExtractInstanceTags(t *testing.T) {
 	testCases := map[string]struct {
 		in       map[string]*string

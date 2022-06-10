@@ -189,49 +189,6 @@ func TestSetTag(t *testing.T) {
 	}
 }
 
-func TestSplitVMProviderID(t *testing.T) {
-	testCases := map[string]struct {
-		providerID         string
-		wantErr            bool
-		wantSubscriptionID string
-		wantResourceGroup  string
-		wantInstanceName   string
-	}{
-		"providerID for individual instance works": {
-			providerID:         "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
-			wantSubscriptionID: "subscription-id",
-			wantResourceGroup:  "resource-group",
-			wantInstanceName:   "instance-name",
-		},
-		"providerID for scale set instance must fail": {
-			providerID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-			wantErr:    true,
-		},
-		"providerID is malformed": {
-			providerID: "malformed-provider-id",
-			wantErr:    true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			subscriptionID, resourceGroup, instanceName, err := splitVMProviderID(tc.providerID)
-
-			if tc.wantErr {
-				assert.Error(err)
-				return
-			}
-			require.NoError(err)
-			assert.Equal(tc.wantSubscriptionID, subscriptionID)
-			assert.Equal(tc.wantResourceGroup, resourceGroup)
-			assert.Equal(tc.wantInstanceName, instanceName)
-		})
-	}
-}
-
 func TestConvertVMToCoreInstance(t *testing.T) {
 	testCases := map[string]struct {
 		inVM         armcompute.VirtualMachine

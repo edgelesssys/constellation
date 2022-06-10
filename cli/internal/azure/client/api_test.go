@@ -6,6 +6,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/authorization/mgmt/authorization"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
@@ -401,4 +402,13 @@ func (a *stubRoleAssignmentsAPI) Create(ctx context.Context, scope string, roleA
 		return authorization.RoleAssignment{}, nil
 	}
 	return authorization.RoleAssignment{}, a.createErrors[(a.createCounter-1)%len(a.createErrors)]
+}
+
+type stubApplicationInsightsAPI struct {
+	err error
+}
+
+func (a *stubApplicationInsightsAPI) CreateOrUpdate(ctx context.Context, resourceGroupName string, resourceName string, insightProperties armapplicationinsights.Component, options *armapplicationinsights.ComponentsClientCreateOrUpdateOptions) (armapplicationinsights.ComponentsClientCreateOrUpdateResponse, error) {
+	resp := armapplicationinsights.ComponentsClientCreateOrUpdateResponse{}
+	return resp, a.err
 }

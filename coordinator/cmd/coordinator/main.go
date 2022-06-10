@@ -122,8 +122,10 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		// TODO: Implement cloud logging for Azure
-		cloudLogger = &logging.NopLogger{}
+		cloudLogger, err = azurecloud.NewLogger(context.Background(), metadata)
+		if err != nil {
+			log.Fatal(err)
+		}
 		coreMetadata = metadata
 		kube = kubernetes.New("azure", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), azurecloud.NewCloudControllerManager(metadata), &azurecloud.CloudNodeManager{}, &azurecloud.Autoscaler{}, metadata)
 

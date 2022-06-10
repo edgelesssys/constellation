@@ -2,9 +2,7 @@ package azure
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"regexp"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
@@ -12,13 +10,11 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/edgelesssys/constellation/coordinator/cloudprovider"
 	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
+	"github.com/edgelesssys/constellation/internal/azureshared"
 )
 
-var azureVMProviderIDRegexp = regexp.MustCompile(`^azure:///subscriptions/([^/]+)/resourceGroups/([^/]+)/providers/Microsoft.Compute/virtualMachines/([^/]+)$`)
-
-// getVM tries to get a single azure vm.
 func (m *Metadata) getVM(ctx context.Context, providerID string) (cloudtypes.Instance, error) {
-	_, resourceGroup, instanceName, err := splitVMProviderID(providerID)
+	_, resourceGroup, instanceName, err := azureshared.VMInformationFromProviderID(providerID)
 	if err != nil {
 		return cloudtypes.Instance{}, err
 	}
@@ -71,17 +67,6 @@ func (m *Metadata) setTag(ctx context.Context, key, value string) error {
 		},
 	}, nil)
 	return err
-}
-
-// splitVMProviderID splits a provider's id belonging to a single azure instance into core components.
-// A providerID  for individual VMs is build after the following schema:
-// - 'azure:///subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Compute/virtualMachines/<instance-name>'
-func splitVMProviderID(providerID string) (subscriptionID, resourceGroup, instanceName string, err error) {
-	matches := azureVMProviderIDRegexp.FindStringSubmatch(providerID)
-	if len(matches) != 4 {
-		return "", "", "", errors.New("error splitting providerID")
-	}
-	return matches[1], matches[2], matches[3], nil
 }
 
 // convertVMToCoreInstance converts an azure virtual machine with interface configurations into a cloudtypes.Instance.

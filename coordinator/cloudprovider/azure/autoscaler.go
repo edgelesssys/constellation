@@ -18,7 +18,7 @@ func (a *Autoscaler) Name() string {
 
 // Secrets returns a list of secrets to deploy together with the k8s cluster-autoscaler.
 func (a *Autoscaler) Secrets(instance cloudtypes.Instance, cloudServiceAccountURI string) (resources.Secrets, error) {
-	subscriptionID, resourceGroup, err := extractBasicsFromProviderID(instance.ProviderID)
+	subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(instance.ProviderID)
 	if err != nil {
 		return resources.Secrets{}, err
 	}

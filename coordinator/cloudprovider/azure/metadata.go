@@ -7,12 +7,14 @@ import (
 	"regexp"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/role"
+	"github.com/edgelesssys/constellation/internal/azureshared"
 )
 
 var (
@@ -32,6 +34,7 @@ type Metadata struct {
 	virtualMachinesAPI
 	virtualMachineScaleSetVMsAPI
 	tagsAPI
+	applicationInsightsAPI
 }
 
 // NewMetadata creates a new Metadata.
@@ -50,7 +53,7 @@ func NewMetadata(ctx context.Context) (*Metadata, error) {
 	if err != nil {
 		return nil, err
 	}
-	subscriptionID, _, err := extractBasicsFromProviderID("azure://" + instanceMetadata.Compute.ResourceID)
+	subscriptionID, _, err := azureshared.BasicsFromProviderID("azure://" + instanceMetadata.Compute.ResourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -63,6 +66,7 @@ func NewMetadata(ctx context.Context) (*Metadata, error) {
 	virtualMachinesAPI := armcompute.NewVirtualMachinesClient(subscriptionID, cred, nil)
 	virtualMachineScaleSetVMsAPI := armcompute.NewVirtualMachineScaleSetVMsClient(subscriptionID, cred, nil)
 	tagsAPI := armresources.NewTagsClient(subscriptionID, cred, nil)
+	applicationInsightsAPI := armapplicationinsights.NewComponentsClient(subscriptionID, cred, nil)
 
 	return &Metadata{
 		imdsAPI:                      &imdsAPI,
@@ -75,6 +79,7 @@ func NewMetadata(ctx context.Context) (*Metadata, error) {
 		virtualMachinesAPI:           &virtualMachinesClient{virtualMachinesAPI},
 		virtualMachineScaleSetVMsAPI: &virtualMachineScaleSetVMsClient{virtualMachineScaleSetVMsAPI},
 		tagsAPI:                      &tagsClient{tagsAPI},
+		applicationInsightsAPI:       &applicationInsightsClient{applicationInsightsAPI},
 	}, nil
 }
 
@@ -84,7 +89,7 @@ func (m *Metadata) List(ctx context.Context) ([]cloudtypes.Instance, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, resourceGroup, err := extractBasicsFromProviderID(providerID)
+	_, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +136,7 @@ func (m *Metadata) SignalRole(ctx context.Context, role role.Role) error {
 	if err != nil {
 		return err
 	}
-	if _, _, _, _, err := splitScaleSetProviderID(providerID); err == nil {
+	if _, _, _, _, err := azureshared.ScaleSetInformationFromProviderID(providerID); err == nil {
 		// scale set instances cannot store tags and role can be inferred from scale set name.
 		return nil
 	}
@@ -144,7 +149,7 @@ func (m *Metadata) GetNetworkSecurityGroupName(ctx context.Context) (string, err
 	if err != nil {
 		return "", err
 	}
-	_, resourceGroup, err := extractBasicsFromProviderID(providerID)
+	_, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
 	if err != nil {
 		return "", err
 	}
@@ -165,7 +170,7 @@ func (m *Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	_, resourceGroup, err := extractBasicsFromProviderID(providerID)
+	_, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
 	if err != nil {
 		return "", err
 	}
@@ -187,7 +192,7 @@ func (m *Metadata) getLoadBalancer(ctx context.Context) (*armnetwork.LoadBalance
 	if err != nil {
 		return nil, err
 	}
-	_, resourceGroup, err := extractBasicsFromProviderID(providerID)
+	_, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +258,7 @@ func (m *Metadata) GetLoadBalancerIP(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	_, resourceGroup, err := extractBasicsFromProviderID(providerID)
+	_, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
 	if err != nil {
 		return "", err
 	}
@@ -284,19 +289,6 @@ func (m *Metadata) providerID(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return "azure://" + instanceMetadata.Compute.ResourceID, nil
-}
-
-// extractBasicsFromProviderID extracts subscriptionID and resourceGroup from both types of valid azure providerID.
-func extractBasicsFromProviderID(providerID string) (subscriptionID, resourceGroup string, err error) {
-	subscriptionID, resourceGroup, _, err = splitVMProviderID(providerID)
-	if err == nil {
-		return subscriptionID, resourceGroup, nil
-	}
-	subscriptionID, resourceGroup, _, _, err = splitScaleSetProviderID(providerID)
-	if err == nil {
-		return subscriptionID, resourceGroup, nil
-	}
-	return "", "", fmt.Errorf("providerID %v is malformatted", providerID)
 }
 
 // extractInstanceTags converts azure tags into metadata key-value pairs.

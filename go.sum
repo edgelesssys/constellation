@@ -124,6 +124,8 @@ github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets v0.5.0 h1:8OgHKRX8uTyIi
 github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets v0.5.0/go.mod h1:uQSVRwN3dRA6hguqKpgzwonvQtpxaWo7/t5cbz3iHbE=
 github.com/Azure/azure-sdk-for-go/sdk/keyvault/internal v0.2.1 h1:lirjIOHv5RrmDbZXw9lUz/fY68uU05qR4uIef58WMvQ=
 github.com/Azure/azure-sdk-for-go/sdk/keyvault/internal v0.2.1/go.mod h1:j1J9XXIo/eXD7YSrr73sYZTEY/AQ0+/Q6Aa96z1e2j8=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights v0.2.1 h1:H+YaV8IY4sVFxrkSmyvfvXZv+wxUq/qTQOa9TkqUqPE=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights v0.2.1/go.mod h1:IwvRqY+EcaQzfAGUdIZpzWELUdsZzuItWRP6cNTzgr0=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute v0.5.0 h1:kqRtiAe9aH0WzzQm3Mq7N6mzcdZHGJZrdteepKT7ymU=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute v0.5.0/go.mod h1:isx+19QmRnAX0Ls0Adm/8SL3b8bIaZiSPbhpoyZX5Mw=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork v0.3.1 h1:CyGPbnjITjA63agVN1nNznge7Tip0g7OiAvFPiT0btU=

@@ -7,6 +7,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/role"
+	"github.com/edgelesssys/constellation/internal/gcpshared"
 )
 
 // API handles all GCP API requests.
@@ -79,7 +80,7 @@ func (m *Metadata) Self(ctx context.Context) (cloudtypes.Instance, error) {
 
 // GetInstance retrieves an instance using its providerID.
 func (m *Metadata) GetInstance(ctx context.Context, providerID string) (cloudtypes.Instance, error) {
-	project, zone, instanceName, err := splitProviderID(providerID)
+	project, zone, instanceName, err := gcpshared.SplitProviderID(providerID)
 	if err != nil {
 		return cloudtypes.Instance{}, fmt.Errorf("invalid providerID: %w", err)
 	}

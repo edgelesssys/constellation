@@ -9,17 +9,17 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/role"
+	"github.com/edgelesssys/constellation/internal/azureshared"
 )
 
 var (
-	azureVMSSProviderIDRegexp = regexp.MustCompile(`^azure:///subscriptions/([^/]+)/resourceGroups/([^/]+)/providers/Microsoft.Compute/virtualMachineScaleSets/([^/]+)/virtualMachines/([^/]+)$`)
 	coordinatorScaleSetRegexp = regexp.MustCompile(`constellation-scale-set-coordinators-[0-9a-zA-Z]+$`)
 	nodeScaleSetRegexp        = regexp.MustCompile(`constellation-scale-set-nodes-[0-9a-zA-Z]+$`)
 )
 
 // getScaleSetVM tries to get an azure vm belonging to a scale set.
 func (m *Metadata) getScaleSetVM(ctx context.Context, providerID string) (cloudtypes.Instance, error) {
-	_, resourceGroup, scaleSet, instanceID, err := splitScaleSetProviderID(providerID)
+	_, resourceGroup, scaleSet, instanceID, err := azureshared.ScaleSetInformationFromProviderID(providerID)
 	if err != nil {
 		return cloudtypes.Instance{}, err
 	}
@@ -68,17 +68,6 @@ func (m *Metadata) listScaleSetVMs(ctx context.Context, resourceGroup string) ([
 		}
 	}
 	return instances, nil
-}
-
-// splitScaleSetProviderID splits a provider's id belonging to an azure scaleset into core components.
-// A providerID for scale set VMs is build after the following schema:
-// - 'azure:///subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Compute/virtualMachineScaleSets/<scale-set-name>/virtualMachines/<instance-id>'
-func splitScaleSetProviderID(providerID string) (subscriptionID, resourceGroup, scaleSet, instanceID string, err error) {
-	matches := azureVMSSProviderIDRegexp.FindStringSubmatch(providerID)
-	if len(matches) != 5 {
-		return "", "", "", "", errors.New("error splitting providerID")
-	}
-	return matches[1], matches[2], matches[3], matches[4], nil
 }
 
 // convertScaleSetVMToCoreInstance converts an azure scale set virtual machine with interface configurations into a core.Instance.

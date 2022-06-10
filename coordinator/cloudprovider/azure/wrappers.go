@@ -3,6 +3,7 @@ package azure
 import (
 	"context"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
@@ -109,4 +110,12 @@ type scaleSetsClient struct {
 
 func (c *scaleSetsClient) List(resourceGroupName string, options *armcompute.VirtualMachineScaleSetsClientListOptions) virtualMachineScaleSetsClientListPager {
 	return c.VirtualMachineScaleSetsClient.List(resourceGroupName, options)
+}
+
+type applicationInsightsClient struct {
+	*armapplicationinsights.ComponentsClient
+}
+
+func (c *applicationInsightsClient) Get(ctx context.Context, resourceGroupName string, resourceName string, options *armapplicationinsights.ComponentsClientGetOptions) (armapplicationinsights.ComponentsClientGetResponse, error) {
+	return c.ComponentsClient.Get(ctx, resourceGroupName, resourceName, options)
 }

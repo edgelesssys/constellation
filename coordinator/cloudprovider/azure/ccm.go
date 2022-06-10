@@ -65,7 +65,7 @@ func (c *CloudControllerManager) Secrets(ctx context.Context, instance cloudtype
 	// Azure CCM expects cloud provider config to contain cluster configuration and service principal client secrets
 	// reference: https://kubernetes-sigs.github.io/cloud-provider-azure/install/configs/
 
-	subscriptionID, resourceGroup, err := extractBasicsFromProviderID(instance.ProviderID)
+	subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(instance.ProviderID)
 	if err != nil {
 		return resources.Secrets{}, err
 	}
@@ -75,7 +75,7 @@ func (c *CloudControllerManager) Secrets(ctx context.Context, instance cloudtype
 	}
 
 	vmType := "standard"
-	if _, _, _, _, err := splitScaleSetProviderID(instance.ProviderID); err == nil {
+	if _, _, _, _, err := azureshared.ScaleSetInformationFromProviderID(instance.ProviderID); err == nil {
 		vmType = "vmss"
 	}
 

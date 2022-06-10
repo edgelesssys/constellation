@@ -50,6 +50,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v0.13.2
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/azkeys v0.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets v0.5.0
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights v0.2.1
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute v0.5.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork v0.3.1
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v0.3.1
@@ -65,7 +66,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.32.0
 	github.com/aws/aws-sdk-go-v2/service/kms v1.16.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.26.2
-	github.com/aws/smithy-go v1.11.2
 	github.com/coreos/go-systemd/v22 v22.3.2
 	github.com/docker/docker v20.10.13+incompatible
 	github.com/docker/go-connections v0.4.0
@@ -118,6 +118,7 @@ require (
 
 require (
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
+	github.com/aws/smithy-go v1.11.2 // indirect
 	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 )

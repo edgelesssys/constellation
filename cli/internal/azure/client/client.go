@@ -9,6 +9,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/authorization/mgmt/authorization"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
@@ -38,6 +39,7 @@ type Client struct {
 	applicationsAPI
 	servicePrincipalsAPI
 	roleAssignmentsAPI
+	applicationInsightsAPI
 
 	adReplicationLagCheckInterval   time.Duration
 	adReplicationLagCheckMaxRetries int
@@ -82,6 +84,7 @@ func NewFromDefault(subscriptionID, tenantID string) (*Client, error) {
 	networkInterfacesAPI := armnetwork.NewInterfacesClient(subscriptionID, cred, nil)
 	loadBalancersAPI := armnetwork.NewLoadBalancersClient(subscriptionID, cred, nil)
 	virtualMachinesAPI := armcompute.NewVirtualMachinesClient(subscriptionID, cred, nil)
+	applicationInsightsAPI := armapplicationinsights.NewComponentsClient(subscriptionID, cred, nil)
 	applicationsAPI := graphrbac.NewApplicationsClient(tenantID)
 	applicationsAPI.Authorizer = graphAuthorizer
 	servicePrincipalsAPI := graphrbac.NewServicePrincipalsClient(tenantID)
@@ -101,6 +104,7 @@ func NewFromDefault(subscriptionID, tenantID string) (*Client, error) {
 		servicePrincipalsAPI:            &servicePrincipalsClient{&servicePrincipalsAPI},
 		roleAssignmentsAPI:              &roleAssignmentsClient{&roleAssignmentsAPI},
 		virtualMachinesAPI:              &virtualMachinesClient{virtualMachinesAPI},
+		applicationInsightsAPI:          applicationInsightsAPI,
 		subscriptionID:                  subscriptionID,
 		tenantID:                        tenantID,
 		nodes:                           cloudtypes.Instances{},

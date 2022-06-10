@@ -166,6 +166,9 @@ func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *confi
 	if err := cl.CreateInstances(ctx, createInput); err != nil {
 		return state.ConstellationState{}, err
 	}
+	if err := cl.CreateApplicationInsight(ctx); err != nil {
+		return state.ConstellationState{}, err
+	}
 
 	return cl.GetState()
 }

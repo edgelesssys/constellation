@@ -51,7 +51,7 @@ func (c *CloudControllerManager) ConfigMaps(instance cloudtypes.Instance) (resou
 	// reference: https://github.com/kubernetes/cloud-provider-gcp/blob/master/cluster/gce/gci/configure-helper.sh#L791-L892
 	var config strings.Builder
 	config.WriteString("[global]\n")
-	projectID, _, _, err := splitProviderID(instance.ProviderID)
+	projectID, _, _, err := gcpshared.SplitProviderID(instance.ProviderID)
 	if err != nil {
 		return resources.ConfigMaps{}, err
 	}

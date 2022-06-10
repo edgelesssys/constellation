@@ -3,21 +3,19 @@ package gcp
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 
 	compute "cloud.google.com/go/compute/apiv1"
 	"github.com/edgelesssys/constellation/coordinator/cloudprovider"
 	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/internal/gcpshared"
 	"google.golang.org/api/iterator"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
 )
 
 const gcpSSHMetadataKey = "ssh-keys"
-
-var providerIDRegex = regexp.MustCompile(`^gce://([^/]+)/([^/]+)/([^/]+)$`)
 
 // Client implements the gcp.API interface.
 type Client struct {
@@ -325,29 +323,13 @@ func convertToCoreInstance(in *computepb.Instance, project string, zone string) 
 	metadata := extractInstanceMetadata(in.Metadata, "", false)
 	return cloudtypes.Instance{
 		Name:          *in.Name,
-		ProviderID:    joinProviderID(project, zone, *in.Name),
+		ProviderID:    gcpshared.JoinProviderID(project, zone, *in.Name),
 		Role:          cloudprovider.ExtractRole(metadata),
 		PrivateIPs:    extractPrivateIPs(in.NetworkInterfaces),
 		PublicIPs:     extractPublicIPs(in.NetworkInterfaces),
 		AliasIPRanges: extractAliasIPRanges(in.NetworkInterfaces),
 		SSHKeys:       extractSSHKeys(metadata),
 	}, nil
-}
-
-// joinProviderID builds a k8s provider ID for GCP instances.
-// A providerID is build after the schema 'gce://<project-id>/<zone>/<instance-name>'
-func joinProviderID(project, zone, instanceName string) string {
-	return fmt.Sprintf("gce://%v/%v/%v", project, zone, instanceName)
-}
-
-// splitProviderID splits a provider's id into core components.
-// A providerID is build after the schema 'gce://<project-id>/<zone>/<instance-name>'
-func splitProviderID(providerID string) (project, zone, instance string, err error) {
-	matches := providerIDRegex.FindStringSubmatch(providerID)
-	if len(matches) != 4 {
-		return "", "", "", fmt.Errorf("error splitting providerID: %v", providerID)
-	}
-	return matches[1], matches[2], matches[3], nil
 }
 
 // extractInstanceMetadata will extract the list of instance metadata key-value pairs into a map.

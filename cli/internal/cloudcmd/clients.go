@@ -25,6 +25,7 @@ type gcpclient interface {
 type azureclient interface {
 	GetState() (state.ConstellationState, error)
 	SetState(state.ConstellationState) error
+	CreateApplicationInsight(ctx context.Context) error
 	CreateResourceGroup(ctx context.Context) error
 	CreateExternalLoadBalancer(ctx context.Context) error
 	CreateVirtualNetwork(ctx context.Context) error

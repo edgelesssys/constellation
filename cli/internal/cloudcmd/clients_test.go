@@ -69,6 +69,10 @@ func (c *fakeAzureClient) SetState(stat state.ConstellationState) error {
 	return nil
 }
 
+func (c *fakeAzureClient) CreateApplicationInsight(ctx context.Context) error {
+	return nil
+}
+
 func (c *fakeAzureClient) CreateResourceGroup(ctx context.Context) error {
 	c.resourceGroup = "resource-group"
 	return nil
@@ -156,6 +160,7 @@ type stubAzureClient struct {
 
 	getStateErr                  error
 	setStateErr                  error
+	createApplicationInsightErr  error
 	createResourceGroupErr       error
 	createVirtualNetworkErr      error
 	createSecurityGroupErr       error
@@ -176,6 +181,10 @@ func (c *stubAzureClient) SetState(state.ConstellationState) error {
 
 func (c *stubAzureClient) CreateExternalLoadBalancer(ctx context.Context) error {
 	return c.createLoadBalancerErr
+}
+
+func (c *stubAzureClient) CreateApplicationInsight(ctx context.Context) error {
+	return c.createApplicationInsightErr
 }
 
 func (c *stubAzureClient) CreateResourceGroup(ctx context.Context) error {
