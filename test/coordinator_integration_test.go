@@ -4,7 +4,6 @@ package integration
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -27,6 +26,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/store"
 	"github.com/edgelesssys/constellation/coordinator/storewrapper"
 	"github.com/edgelesssys/constellation/internal/atls"
+	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -249,12 +249,9 @@ func TestMain(t *testing.T) {
 
 // helper methods
 func startCoordinator(ctx context.Context, coordinatorAddr string, ips []string) error {
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, []atls.Validator{&core.MockValidator{}})
-	if err != nil {
-		return err
-	}
+	creds := atlscredentials.New(nil, []atls.Validator{&core.MockValidator{}})
 
-	conn, err := grpc.DialContext(ctx, net.JoinHostPort(coordinatorAddr, publicgRPCPort), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	conn, err := grpc.DialContext(ctx, net.JoinHostPort(coordinatorAddr, publicgRPCPort), grpc.WithTransportCredentials(creds))
 	if err != nil {
 		return err
 	}
@@ -299,12 +296,9 @@ func createTempDir() error {
 }
 
 func addNewCoordinatorToCoordinator(ctx context.Context, newCoordinatorAddr, oldCoordinatorAddr string) error {
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, []atls.Validator{&core.MockValidator{}})
-	if err != nil {
-		return err
-	}
+	creds := atlscredentials.New(nil, []atls.Validator{&core.MockValidator{}})
 
-	conn, err := grpc.DialContext(ctx, net.JoinHostPort(oldCoordinatorAddr, publicgRPCPort), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	conn, err := grpc.DialContext(ctx, net.JoinHostPort(oldCoordinatorAddr, publicgRPCPort), grpc.WithTransportCredentials(creds))
 	if err != nil {
 		return err
 	}
@@ -322,12 +316,9 @@ func addNewCoordinatorToCoordinator(ctx context.Context, newCoordinatorAddr, old
 }
 
 func addNewNodesToCoordinator(ctx context.Context, coordinatorAddr string, ips []string) error {
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, []atls.Validator{&core.MockValidator{}})
-	if err != nil {
-		return err
-	}
+	creds := atlscredentials.New(nil, []atls.Validator{&core.MockValidator{}})
 
-	conn, err := grpc.DialContext(ctx, net.JoinHostPort(coordinatorAddr, publicgRPCPort), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	conn, err := grpc.DialContext(ctx, net.JoinHostPort(coordinatorAddr, publicgRPCPort), grpc.WithTransportCredentials(creds))
 	if err != nil {
 		return err
 	}
@@ -533,11 +524,11 @@ func createNewNode(ctx context.Context, cli *client.Client) (*newNodeData, error
 	return &newNodeData{resp, containerData.NetworkSettings.IPAddress}, nil
 }
 
-func awaitPeerResponse(ctx context.Context, ip string, tlsConfig *tls.Config) error {
+func awaitPeerResponse(ctx context.Context, ip string, credentials credentials.TransportCredentials) error {
 	// Block, so the connection gets established/fails immediately
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	conn, err := grpc.DialContext(ctx, net.JoinHostPort(ip, publicgRPCPort), grpc.WithBlock(), grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	conn, err := grpc.DialContext(ctx, net.JoinHostPort(ip, publicgRPCPort), grpc.WithBlock(), grpc.WithTransportCredentials(credentials))
 	if err != nil {
 		return err
 	}
@@ -545,13 +536,10 @@ func awaitPeerResponse(ctx context.Context, ip string, tlsConfig *tls.Config) er
 }
 
 func blockUntilUp(ctx context.Context, peerIPs []string) error {
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, []atls.Validator{&core.MockValidator{}})
-	if err != nil {
-		return err
-	}
+	creds := atlscredentials.New(nil, []atls.Validator{&core.MockValidator{}})
 	for _, ip := range peerIPs {
 		// Block, so the connection gets established/fails immediately
-		if err := awaitPeerResponse(ctx, ip, tlsConfig); err != nil {
+		if err := awaitPeerResponse(ctx, ip, creds); err != nil {
 			return err
 		}
 	}

@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
 	"github.com/edgelesssys/constellation/debugd/coordinator"
 	"github.com/edgelesssys/constellation/debugd/debugd"
 	pb "github.com/edgelesssys/constellation/debugd/service"
+	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"

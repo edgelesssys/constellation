@@ -8,10 +8,10 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/internal/atls"
+	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 // Client wraps a PubAPI client and the connection to it.
@@ -26,12 +26,9 @@ type Client struct {
 // called on a client that already has a connection, the old
 // connection is closed.
 func (c *Client) Connect(endpoint string, validators []atls.Validator) error {
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, validators)
-	if err != nil {
-		return err
-	}
+	creds := atlscredentials.New(nil, validators)
 
-	conn, err := grpc.Dial(endpoint, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	conn, err := grpc.Dial(endpoint, grpc.WithTransportCredentials(creds))
 	if err != nil {
 		return err
 	}

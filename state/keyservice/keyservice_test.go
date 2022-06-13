@@ -11,12 +11,11 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
-	"github.com/edgelesssys/constellation/internal/atls"
+	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/test/bufconn"
 )
 
@@ -76,9 +75,8 @@ func TestRequestKeyLoop(t *testing.T) {
 			listener := bufconn.Listen(1)
 			defer listener.Close()
 
-			tlsConfig, err := atls.CreateAttestationServerTLSConfig(core.NewMockIssuer(), nil)
-			require.NoError(err)
-			s := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
+			creds := atlscredentials.New(core.NewMockIssuer(), nil)
+			s := grpc.NewServer(grpc.Creds(creds))
 			pubproto.RegisterAPIServer(s, tc.server)
 
 			if !tc.dontStartServer {
@@ -97,7 +95,7 @@ func TestRequestKeyLoop(t *testing.T) {
 				keyReceived <- struct{}{}
 			}()
 
-			err = keyWaiter.requestKeyLoop(
+			err := keyWaiter.requestKeyLoop(
 				"1234",
 				grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
 					return listener.DialContext(ctx)

@@ -14,18 +14,18 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
-	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
-	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
+	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
+	"github.com/edgelesssys/constellation/internal/grpc/dialer"
+	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
@@ -152,7 +152,7 @@ func TestActivateAsNode(t *testing.T) {
 			linuxUserManager := user.NewLinuxUserManagerFake(fs)
 			cor := &fakeCore{state: tc.state, vpnPubKey: vpnPubKey, setVPNIPErr: tc.setVPNIPErr, linuxUserManager: linuxUserManager}
 			netDialer := testdialer.NewBufconnDialer()
-			dialer := grpcutil.NewDialer(fakeValidator{}, netDialer)
+			dialer := dialer.New(nil, fakeValidator{}, netDialer)
 
 			api := New(logger, &logging.NopLogger{}, cor, dialer, nil, nil, nil)
 			defer api.Close()
@@ -163,9 +163,8 @@ func TestActivateAsNode(t *testing.T) {
 			go vserver.Serve(netDialer.GetListener(net.JoinHostPort("10.118.0.1", vpnAPIPort)))
 			defer vserver.GracefulStop()
 
-			tlsConfig, err := atls.CreateAttestationServerTLSConfig(&core.MockIssuer{}, nil)
-			require.NoError(err)
-			pubserver := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
+			creds := atlscredentials.New(&core.MockIssuer{}, nil)
+			pubserver := grpc.NewServer(grpc.Creds(creds))
 			pubproto.RegisterAPIServer(pubserver, api)
 			go pubserver.Serve(netDialer.GetListener(net.JoinHostPort(nodeIP, endpointAVPNPort)))
 			defer pubserver.GracefulStop()
@@ -260,7 +259,7 @@ func TestTriggerNodeUpdate(t *testing.T) {
 			logger := zaptest.NewLogger(t)
 			core := &fakeCore{state: tc.state}
 			netDialer := testdialer.NewBufconnDialer()
-			dialer := grpcutil.NewDialer(fakeValidator{}, netDialer)
+			dialer := dialer.New(nil, fakeValidator{}, netDialer)
 
 			api := New(logger, &logging.NopLogger{}, core, dialer, nil, nil, nil)
 
@@ -336,7 +335,7 @@ func TestJoinCluster(t *testing.T) {
 			logger := zaptest.NewLogger(t)
 			core := &fakeCore{state: tc.state, joinClusterErr: tc.joinClusterErr}
 			netDialer := testdialer.NewBufconnDialer()
-			dialer := grpcutil.NewDialer(fakeValidator{}, netDialer)
+			dialer := dialer.New(nil, fakeValidator{}, netDialer)
 
 			api := New(logger, &logging.NopLogger{}, core, dialer, nil, nil, nil)
 
@@ -433,16 +432,13 @@ func activateNode(require *require.Assertions, dialer netDialer, messageSequence
 }
 
 func dialGRPC(ctx context.Context, dialer netDialer, target string) (*grpc.ClientConn, error) {
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, []atls.Validator{&core.MockValidator{}})
-	if err != nil {
-		return nil, err
-	}
+	creds := atlscredentials.New(nil, []atls.Validator{&core.MockValidator{}})
 
 	return grpc.DialContext(ctx, target,
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
 			return dialer.DialContext(ctx, "tcp", addr)
 		}),
-		grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
+		grpc.WithTransportCredentials(creds),
 	)
 }
 

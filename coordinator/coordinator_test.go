@@ -15,14 +15,15 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/store"
-	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
-	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
+	"github.com/edgelesssys/constellation/internal/grpc/dialer"
+	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +32,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 func TestMain(m *testing.M) {
@@ -221,14 +221,13 @@ func spawnPeer(require *require.Assertions, logger *zap.Logger, netDialer *testd
 	getPublicAddr := func() (string, error) {
 		return "192.0.2.1", nil
 	}
-	dialer := grpcutil.NewDialer(&core.MockValidator{}, netDialer)
+	dialer := dialer.New(nil, &core.MockValidator{}, netDialer)
 	vapiServer := &fakeVPNAPIServer{logger: logger.Named("vpnapi"), core: cor, dialer: netDialer}
 
 	papi := pubapi.New(logger, &logging.NopLogger{}, cor, dialer, vapiServer, getPublicAddr, nil)
 
-	tlsConfig, err := atls.CreateAttestationServerTLSConfig(&core.MockIssuer{}, nil)
-	require.NoError(err)
-	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
+	creds := atlscredentials.New(&core.MockIssuer{}, nil)
+	server := grpc.NewServer(grpc.Creds(creds))
 	pubproto.RegisterAPIServer(server, papi)
 
 	listener := netDialer.GetListener(endpoint)
@@ -264,16 +263,13 @@ func activateCoordinator(require *require.Assertions, dialer netDialer, coordina
 }
 
 func dialGRPC(ctx context.Context, dialer netDialer, target string) (*grpc.ClientConn, error) {
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, []atls.Validator{&core.MockValidator{}})
-	if err != nil {
-		return nil, err
-	}
+	creds := atlscredentials.New(nil, []atls.Validator{&core.MockValidator{}})
 
 	return grpc.DialContext(ctx, target,
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
 			return dialer.DialContext(ctx, "tcp", addr)
 		}),
-		grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
+		grpc.WithTransportCredentials(creds),
 	)
 }
 

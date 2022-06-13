@@ -5,9 +5,9 @@ import (
 	"errors"
 
 	"github.com/edgelesssys/constellation/internal/atls"
+	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 // KeyClient wraps a KeyAPI client and the connection to it.
@@ -22,12 +22,9 @@ type KeyClient struct {
 // called on a client that already has a connection, the old
 // connection is closed.
 func (c *KeyClient) Connect(endpoint string, validators []atls.Validator) error {
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, validators)
-	if err != nil {
-		return err
-	}
+	creds := atlscredentials.New(nil, validators)
 
-	conn, err := grpc.Dial(endpoint, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
+	conn, err := grpc.Dial(endpoint, grpc.WithTransportCredentials(creds))
 	if err != nil {
 		return err
 	}

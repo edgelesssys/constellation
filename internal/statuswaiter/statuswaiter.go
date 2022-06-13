@@ -9,9 +9,9 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/internal/atls"
+	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"google.golang.org/grpc"
 	grpccodes "google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials"
 	grpcstatus "google.golang.org/grpc/status"
 )
 
@@ -113,13 +113,10 @@ func (w *Waiter) WaitForAll(ctx context.Context, endpoints []string, status ...s
 // newAttestedConnGenerator creates a function returning a default attested grpc connection.
 func newAttestedConnGenerator(validators []atls.Validator) func(ctx context.Context, target string, opts ...grpc.DialOption) (ClientConn, error) {
 	return func(ctx context.Context, target string, opts ...grpc.DialOption) (ClientConn, error) {
-		tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, validators)
-		if err != nil {
-			return nil, err
-		}
+		creds := atlscredentials.New(nil, validators)
 
 		return grpc.DialContext(
-			ctx, target, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
+			ctx, target, grpc.WithTransportCredentials(creds),
 		)
 	}
 }

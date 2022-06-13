@@ -12,25 +12,24 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/store"
-	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
-	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
+	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 var version = "0.0.0"
 
-func run(issuer core.QuoteIssuer, vpn core.VPN, tpm vtpm.TPMOpenFunc, getPublicIPAddr func() (string, error), dialer *grpcutil.Dialer, fileHandler file.Handler,
+func run(issuer core.QuoteIssuer, vpn core.VPN, tpm vtpm.TPMOpenFunc, getPublicIPAddr func() (string, error), dialer *dialer.Dialer, fileHandler file.Handler,
 	kube core.Cluster, metadata core.ProviderMetadata, disk core.EncryptedDisk, etcdEndpoint string, etcdTLS bool, bindIP, bindPort string, logger *zap.Logger,
 	cloudLogger logging.CloudLogger, fs afero.Fs,
 ) {
@@ -40,10 +39,7 @@ func run(issuer core.QuoteIssuer, vpn core.VPN, tpm vtpm.TPMOpenFunc, getPublicI
 	defer cloudLogger.Close()
 	cloudLogger.Disclose("Coordinator started running...")
 
-	tlsConfig, err := atls.CreateAttestationServerTLSConfig(issuer, nil)
-	if err != nil {
-		logger.Fatal("failed to create server TLS config", zap.Error(err))
-	}
+	creds := atlscredentials.New(issuer, nil)
 
 	etcdStoreFactory := store.NewEtcdStoreFactory(etcdEndpoint, etcdTLS, logger)
 	linuxUserManager := user.NewLinuxUserManager(fs)
@@ -64,7 +60,7 @@ func run(issuer core.QuoteIssuer, vpn core.VPN, tpm vtpm.TPMOpenFunc, getPublicI
 	zapLoggergRPC := loggerPubAPI.Named("gRPC")
 
 	grpcServer := grpc.NewServer(
-		grpc.Creds(credentials.NewTLS(tlsConfig)),
+		grpc.Creds(creds),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_ctxtags.StreamServerInterceptor(),
 			grpc_zap.StreamServerInterceptor(zapLoggergRPC),
@@ -117,14 +113,11 @@ func tryJoinClusterOnStartup(getPublicIPAddr func() (string, error), metadata co
 
 	// We create an client unverified connection, since the node does not need to verify the Coordinator.
 	// ActivateAdditionalNodes triggers the Coordinator to call ActivateAsNode. This rpc lets the Coordinator verify the node.
-	tlsClientConfig, err := atls.CreateAttestationClientTLSConfig(nil, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create client TLS config: %w", err)
-	}
+	creds := atlscredentials.New(nil, nil)
 
 	// try to notify a coordinator to activate this node
 	for _, coordinatorEndpoint := range coordinatorEndpoints {
-		conn, err := grpc.Dial(coordinatorEndpoint, grpc.WithTransportCredentials(credentials.NewTLS(tlsClientConfig)))
+		conn, err := grpc.Dial(coordinatorEndpoint, grpc.WithTransportCredentials(creds))
 		if err != nil {
 			logger.Info("Dial failed:", zap.String("endpoint", coordinatorEndpoint), zap.Error(err))
 			continue

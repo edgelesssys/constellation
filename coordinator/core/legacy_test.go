@@ -13,20 +13,19 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/state"
-	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
-	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
+	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/test/bufconn"
 )
 
@@ -121,7 +120,7 @@ func newMockCoreWithDialer(bufDialer *bufconnDialer) (*Core, *pubapi.API, error)
 		return nil, nil, err
 	}
 
-	dialer := grpcutil.NewDialer(NewMockValidator(), bufDialer)
+	dialer := dialer.New(nil, NewMockValidator(), bufDialer)
 	vpn := &stubVPN{}
 	kubeFake := &ClusterFake{}
 	metadataFake := &ProviderMetadataFake{}
@@ -171,12 +170,9 @@ func (b *bufconnDialer) addListener(endpoint string, listener *bufconn.Listener)
 }
 
 func spawnNode(endpoint string, testNodeCore *pubapi.API, bufDialer *bufconnDialer) (*grpc.Server, error) {
-	tlsConfig, err := atls.CreateAttestationServerTLSConfig(&MockIssuer{}, nil)
-	if err != nil {
-		return nil, err
-	}
+	creds := atlscredentials.New(&MockIssuer{}, nil)
 
-	grpcServer := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
+	grpcServer := grpc.NewServer(grpc.Creds(creds))
 	pubproto.RegisterAPIServer(grpcServer, testNodeCore)
 
 	const bufferSize = 8 * 1024

@@ -2,7 +2,6 @@ package keyservice
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"log"
 	"net"
@@ -12,7 +11,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/config"
 	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
-	"github.com/edgelesssys/constellation/internal/atls"
+	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -63,11 +62,8 @@ func (a *KeyAPI) WaitForDecryptionKey(uuid, listenAddr string) ([]byte, error) {
 		return nil, errors.New("received no disk UUID")
 	}
 
-	tlsConfig, err := atls.CreateAttestationServerTLSConfig(a.issuer, nil)
-	if err != nil {
-		return nil, err
-	}
-	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
+	creds := atlscredentials.New(a.issuer, nil)
+	server := grpc.NewServer(grpc.Creds(creds))
 	keyproto.RegisterAPIServer(server, a)
 	listener, err := net.Listen("tcp", listenAddr)
 	if err != nil {
@@ -95,11 +91,7 @@ func (a *KeyAPI) ResetKey() {
 func (a *KeyAPI) requestKeyLoop(uuid string, opts ...grpc.DialOption) error {
 	// we do not perform attestation, since the restarting node does not need to care about notifying the correct Coordinator
 	// if an incorrect key is pushed by a malicious actor, decrypting the disk will fail, and the node will not start
-	tlsClientConfig, err := atls.CreateAttestationClientTLSConfig(nil, nil)
-	if err != nil {
-		return err
-	}
-
+	creds := atlscredentials.New(nil, nil)
 	// set up for the select statement to immediately request a key, skipping the initial delay caused by using a ticker
 	firstReq := make(chan struct{}, 1)
 	firstReq <- struct{}{}
@@ -115,14 +107,14 @@ func (a *KeyAPI) requestKeyLoop(uuid string, opts ...grpc.DialOption) error {
 		case <-a.keyReceived:
 			return nil
 		case <-ticker.C:
-			a.requestKey(uuid, tlsClientConfig, opts...)
+			a.requestKey(uuid, creds, opts...)
 		case <-firstReq:
-			a.requestKey(uuid, tlsClientConfig, opts...)
+			a.requestKey(uuid, creds, opts...)
 		}
 	}
 }
 
-func (a *KeyAPI) requestKey(uuid string, tlsClientConfig *tls.Config, opts ...grpc.DialOption) {
+func (a *KeyAPI) requestKey(uuid string, credentials credentials.TransportCredentials, opts ...grpc.DialOption) {
 	// list available Coordinators
 	endpoints, _ := core.CoordinatorEndpoints(context.Background(), a.metadata)
 
@@ -131,7 +123,7 @@ func (a *KeyAPI) requestKey(uuid string, tlsClientConfig *tls.Config, opts ...gr
 	// any errors encountered here will be ignored, and the calls retried after a timeout
 	for _, endpoint := range endpoints {
 		ctx, cancel := context.WithTimeout(context.Background(), a.timeout)
-		conn, err := grpc.DialContext(ctx, endpoint, append(opts, grpc.WithTransportCredentials(credentials.NewTLS(tlsClientConfig)))...)
+		conn, err := grpc.DialContext(ctx, endpoint, append(opts, grpc.WithTransportCredentials(credentials))...)
 		if err == nil {
 			client := pubproto.NewAPIClient(conn)
 			_, _ = client.RequestStateDiskKey(ctx, &pubproto.RequestStateDiskKeyRequest{DiskUuid: uuid})

@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/coordinator/core"
-	"github.com/edgelesssys/constellation/internal/atls"
+	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/state/keyservice"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"github.com/edgelesssys/constellation/state/mapper"
@@ -20,7 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -91,9 +90,8 @@ func TestKeyAPI(t *testing.T) {
 		// wait 2 seconds before sending the key
 		time.Sleep(2 * time.Second)
 
-		clientCfg, err := atls.CreateAttestationClientTLSConfig(nil, nil)
-		require.NoError(err)
-		conn, err := grpc.Dial(apiAddr, grpc.WithTransportCredentials(credentials.NewTLS(clientCfg)))
+		creds := atlscredentials.New(nil, nil)
+		conn, err := grpc.Dial(apiAddr, grpc.WithTransportCredentials(creds))
 		require.NoError(err)
 		defer conn.Close()
 

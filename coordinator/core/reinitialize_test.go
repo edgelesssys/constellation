@@ -9,11 +9,11 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
-	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
-	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
-	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
+	"github.com/edgelesssys/constellation/internal/grpc/dialer"
+	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -21,7 +21,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -74,7 +73,7 @@ func TestReinitializeAsNode(t *testing.T) {
 
 			coordinators := []cloudtypes.Instance{{PrivateIPs: []string{"192.0.2.1"}, Role: role.Coordinator}}
 			netDialer := testdialer.NewBufconnDialer()
-			dialer := grpcutil.NewDialer(&MockValidator{}, netDialer)
+			dialer := dialer.New(nil, &MockValidator{}, netDialer)
 			server := newPubAPIServer()
 			api := &pubAPIServerStub{responses: tc.getInitialVPNPeersResponses}
 			pubproto.RegisterAPIServer(server, api)
@@ -147,7 +146,7 @@ func TestReinitializeAsCoordinator(t *testing.T) {
 
 			coordinators := []cloudtypes.Instance{{PrivateIPs: []string{"192.0.2.1"}, Role: role.Coordinator}}
 			netDialer := testdialer.NewBufconnDialer()
-			dialer := grpcutil.NewDialer(&MockValidator{}, netDialer)
+			dialer := dialer.New(nil, &MockValidator{}, netDialer)
 			server := newPubAPIServer()
 			api := &pubAPIServerStub{responses: tc.getInitialVPNPeersResponses}
 			pubproto.RegisterAPIServer(server, api)
@@ -235,7 +234,7 @@ func TestGetInitialVPNPeers(t *testing.T) {
 			zapLogger, err := zap.NewDevelopment()
 			require.NoError(err)
 			netDialer := testdialer.NewBufconnDialer()
-			dialer := grpcutil.NewDialer(&MockValidator{}, netDialer)
+			dialer := dialer.New(nil, &MockValidator{}, netDialer)
 			server := newPubAPIServer()
 			api := &pubAPIServerStub{
 				responses: []struct {
@@ -259,11 +258,9 @@ func TestGetInitialVPNPeers(t *testing.T) {
 }
 
 func newPubAPIServer() *grpc.Server {
-	tlsConfig, err := atls.CreateAttestationServerTLSConfig(&MockIssuer{}, nil)
-	if err != nil {
-		panic(err)
-	}
-	return grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
+	creds := atlscredentials.New(&MockIssuer{}, nil)
+
+	return grpc.NewServer(grpc.Creds(creds))
 }
 
 type pubAPIServerStub struct {

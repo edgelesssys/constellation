@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"net"
 	"time"
@@ -39,9 +38,9 @@ func New(fileHandler file.Handler, ca certificateAuthority, joinTokenGetter join
 }
 
 // Run starts the gRPC server on the given port, using the provided tlsConfig.
-func (s *Server) Run(tlsConfig *tls.Config, port string) error {
+func (s *Server) Run(creds credentials.TransportCredentials, port string) error {
 	grpcServer := grpc.NewServer(
-		grpc.Creds(credentials.NewTLS(tlsConfig)),
+		grpc.Creds(creds),
 		grpc.UnaryInterceptor(logGRPC),
 	)
 

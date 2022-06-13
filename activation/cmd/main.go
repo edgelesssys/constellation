@@ -12,6 +12,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/spf13/afero"
 	"k8s.io/klog/v2"
 )
@@ -36,10 +37,7 @@ func main() {
 		klog.Exitf("failed to create validator: %s", err)
 	}
 
-	tlsConfig, err := atls.CreateAttestationServerTLSConfig(nil, []atls.Validator{validator})
-	if err != nil {
-		klog.Exitf("unable to create server config: %s", err)
-	}
+	creds := atlscredentials.New(nil, []atls.Validator{validator})
 
 	kubeadm, err := kubeadm.New()
 	if err != nil {
@@ -62,7 +60,7 @@ func main() {
 		}
 	}()
 
-	if err := server.Run(tlsConfig, bindPort); err != nil {
+	if err := server.Run(creds, bindPort); err != nil {
 		klog.Exitf("failed to run server: %s", err)
 	}
 }

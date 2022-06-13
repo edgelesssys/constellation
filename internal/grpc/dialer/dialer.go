@@ -1,24 +1,26 @@
-package grpcutil
+package dialer
 
 import (
 	"context"
 	"net"
 
 	"github.com/edgelesssys/constellation/internal/atls"
+	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 // Dialer can open grpc client connections with different levels of ATLS encryption / verification.
 type Dialer struct {
+	issuer    atls.Issuer
 	validator atls.Validator
 	netDialer NetDialer
 }
 
-// NewDialer creates a new Dialer.
-func NewDialer(validator atls.Validator, netDialer NetDialer) *Dialer {
+// New creates a new Dialer.
+func New(issuer atls.Issuer, validator atls.Validator, netDialer NetDialer) *Dialer {
 	return &Dialer{
+		issuer:    issuer,
 		validator: validator,
 		netDialer: netDialer,
 	}
@@ -26,14 +28,11 @@ func NewDialer(validator atls.Validator, netDialer NetDialer) *Dialer {
 
 // Dial creates a new grpc client connection to the given target using the atls validator.
 func (d *Dialer) Dial(ctx context.Context, target string) (*grpc.ClientConn, error) {
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, []atls.Validator{d.validator})
-	if err != nil {
-		return nil, err
-	}
+	credentials := atlscredentials.New(d.issuer, []atls.Validator{d.validator})
 
 	return grpc.DialContext(ctx, target,
 		d.grpcWithDialer(),
-		grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
+		grpc.WithTransportCredentials(credentials),
 	)
 }
 
@@ -48,14 +47,11 @@ func (d *Dialer) DialInsecure(ctx context.Context, target string) (*grpc.ClientC
 
 // DialNoVerify creates a new grpc client connection to the given target without verifying the server's attestation.
 func (d *Dialer) DialNoVerify(ctx context.Context, target string) (*grpc.ClientConn, error) {
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, nil)
-	if err != nil {
-		return nil, err
-	}
+	credentials := atlscredentials.New(nil, nil)
 
 	return grpc.DialContext(ctx, target,
 		d.grpcWithDialer(),
-		grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
+		grpc.WithTransportCredentials(credentials),
 	)
 }
 

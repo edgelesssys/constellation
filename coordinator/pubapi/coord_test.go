@@ -16,12 +16,12 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
-	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
-	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
-	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
+	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
+	"github.com/edgelesssys/constellation/internal/grpc/dialer"
+	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
 	"github.com/edgelesssys/constellation/internal/oid"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
@@ -30,7 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	grpcpeer "google.golang.org/grpc/peer"
 )
 
@@ -150,7 +149,7 @@ func TestActivateAsCoordinator(t *testing.T) {
 			}
 
 			netDialer := testdialer.NewBufconnDialer()
-			dialer := grpcutil.NewDialer(fakeValidator{}, netDialer)
+			dialer := dialer.New(nil, fakeValidator{}, netDialer)
 
 			getPublicIPAddr := func() (string, error) {
 				return "192.0.2.1", nil
@@ -302,7 +301,7 @@ func TestActivateAdditionalNodes(t *testing.T) {
 
 			core := &fakeCore{state: tc.state}
 			netDialer := testdialer.NewBufconnDialer()
-			dialer := grpcutil.NewDialer(fakeValidator{}, netDialer)
+			dialer := dialer.New(nil, fakeValidator{}, netDialer)
 
 			getPublicIPAddr := func() (string, error) {
 				return "192.0.2.1", nil
@@ -432,11 +431,8 @@ func (n *stubPeer) GetPeerVPNPublicKey(ctx context.Context, in *pubproto.GetPeer
 }
 
 func (n *stubPeer) newServer() *grpc.Server {
-	tlsConfig, err := atls.CreateAttestationServerTLSConfig(fakeIssuer{}, nil)
-	if err != nil {
-		panic(err)
-	}
-	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
+	creds := atlscredentials.New(fakeIssuer{}, nil)
+	server := grpc.NewServer(grpc.Creds(creds))
 	pubproto.RegisterAPIServer(server, n)
 	return server
 }
@@ -537,9 +533,8 @@ func TestRequestStateDiskKey(t *testing.T) {
 			require.NoError(err)
 			defer listener.Close()
 
-			tlsConfig, err := atls.CreateAttestationServerTLSConfig(issuer, nil)
-			require.NoError(err)
-			s := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
+			creds := atlscredentials.New(issuer, nil)
+			s := grpc.NewServer(grpc.Creds(creds))
 			keyproto.RegisterAPIServer(s, stateDiskServer)
 			defer s.GracefulStop()
 			go s.Serve(listener)
@@ -559,7 +554,7 @@ func TestRequestStateDiskKey(t *testing.T) {
 				getDataKeyErr: tc.getDataKeyErr,
 			}
 
-			api := New(zaptest.NewLogger(t), &logging.NopLogger{}, core, grpcutil.NewDialer(dummyValidator{}, &net.Dialer{}), nil, nil, getPeerFromContext)
+			api := New(zaptest.NewLogger(t), &logging.NopLogger{}, core, dialer.New(nil, dummyValidator{}, &net.Dialer{}), nil, nil, getPeerFromContext)
 
 			_, err = api.RequestStateDiskKey(ctx, &pubproto.RequestStateDiskKeyRequest{})
 			if tc.wantErr {

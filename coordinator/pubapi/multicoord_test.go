@@ -11,8 +11,8 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
-	"github.com/edgelesssys/constellation/coordinator/util/grpcutil"
-	"github.com/edgelesssys/constellation/coordinator/util/testdialer"
+	"github.com/edgelesssys/constellation/internal/grpc/dialer"
+	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
@@ -95,7 +95,7 @@ func TestActivateAsAdditionalCoordinator(t *testing.T) {
 				clusterID:                  []byte("clusterID"),
 			}
 			netDialer := testdialer.NewBufconnDialer()
-			dialer := grpcutil.NewDialer(fakeValidator{}, netDialer)
+			dialer := dialer.New(nil, fakeValidator{}, netDialer)
 
 			getPublicIPAddr := func() (string, error) {
 				return "192.0.2.1", nil
@@ -166,7 +166,7 @@ func TestTriggerCoordinatorUpdate(t *testing.T) {
 				state: tc.state,
 				peers: tc.peers,
 			}
-			dialer := grpcutil.NewDialer(fakeValidator{}, nil)
+			dialer := dialer.New(nil, fakeValidator{}, nil)
 
 			api := New(logger, &logging.NopLogger{}, core, dialer, nil, nil, nil)
 
@@ -240,7 +240,7 @@ func TestActivateAdditionalCoordinators(t *testing.T) {
 				clusterID:  []byte("clusterID"),
 			}
 			netDialer := testdialer.NewBufconnDialer()
-			dialer := grpcutil.NewDialer(fakeValidator{}, netDialer)
+			dialer := dialer.New(nil, fakeValidator{}, netDialer)
 
 			getPublicIPAddr := func() (string, error) {
 				return "192.0.2.1", nil
@@ -297,7 +297,7 @@ func TestGetPeerVPNPublicKey(t *testing.T) {
 				vpnPubKey:       tc.coordinator.peer.VPNPubKey,
 				getvpnPubKeyErr: tc.getVPNPubKeyErr,
 			}
-			dialer := grpcutil.NewDialer(fakeValidator{}, testdialer.NewBufconnDialer())
+			dialer := dialer.New(nil, fakeValidator{}, testdialer.NewBufconnDialer())
 
 			getPublicIPAddr := func() (string, error) {
 				return "192.0.2.1", nil
