@@ -566,6 +566,9 @@ func (s *stubClusterUtil) CreateJoinToken(ctx context.Context, ttl time.Duration
 	return s.createJoinTokenResponse, s.createJoinTokenErr
 }
 
+func (s *stubClusterUtil) FixCilium(nodeName string) {
+}
+
 type stubConfigProvider struct {
 	InitConfig k8sapi.KubeadmInitYAML
 	JoinConfig k8sapi.KubeadmJoinYAML

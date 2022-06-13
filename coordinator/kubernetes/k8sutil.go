@@ -23,4 +23,5 @@ type clusterUtil interface {
 	RestartKubelet() error
 	GetControlPlaneJoinCertificateKey(ctx context.Context) (string, error)
 	CreateJoinToken(ctx context.Context, ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error)
+	FixCilium(nodeNameK8s string)
 }

@@ -157,6 +157,8 @@ func (k *KubeWrapper) InitCluster(ctx context.Context, autoscalingNodeGroups []s
 		return fmt.Errorf("failed to setup access-manager: %w", err)
 	}
 
+	go k.clusterUtil.FixCilium(nodeName)
+
 	return nil
 }
 
@@ -209,6 +211,8 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML); err != nil {
 		return fmt.Errorf("joining cluster failed: %v %w ", string(joinConfigYAML), err)
 	}
+
+	go k.clusterUtil.FixCilium(nodeName)
 
 	return nil
 }
