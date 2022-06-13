@@ -51,4 +51,3 @@ jobs:
           target: release
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
