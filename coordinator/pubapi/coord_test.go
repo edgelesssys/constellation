@@ -219,22 +219,22 @@ func TestActivateAsCoordinator(t *testing.T) {
 			assert.Equal([]role.Role{role.Coordinator}, core.persistNodeStateRoles)
 
 			// Test SSH user & key creation. Both cases: "supposed to add" and "not supposed to add"
-			// This slightly differs from a real environment (e.g. missing /home) but should be fine in the stub context with a virtual file system
+			// This slightly differs from a real environment (e.g. missing /var/home) but should be fine in the stub context with a virtual file system
 			if tc.sshKeys != nil {
 				passwd := user.Passwd{}
 				entries, err := passwd.Parse(fs)
 				require.NoError(err)
 				for _, singleEntry := range entries {
 					username := singleEntry.Gecos
-					_, err := fs.Stat(fmt.Sprintf("/home/%s/.ssh/authorized_keys.d/ssh-keys", username))
+					_, err := fs.Stat(fmt.Sprintf("/var/home/%s/.ssh/authorized_keys.d/constellation-ssh-keys", username))
 					assert.NoError(err)
 				}
 			} else {
 				passwd := user.Passwd{}
 				_, err := passwd.Parse(fs)
 				assert.EqualError(err, "open /etc/passwd: file does not exist")
-				_, err = fs.Stat("/home")
-				assert.EqualError(err, "open /home: file does not exist")
+				_, err = fs.Stat("/var/home")
+				assert.EqualError(err, "open /var/home: file does not exist")
 			}
 		})
 	}

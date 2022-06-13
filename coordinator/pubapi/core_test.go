@@ -6,6 +6,7 @@ import (
 	"net/netip"
 
 	"github.com/edgelesssys/constellation/coordinator/peer"
+	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
@@ -122,7 +123,7 @@ func (c *fakeCore) UpdatePeers(peers []peer.Peer) error {
 	return c.UpdatePeersErr
 }
 
-func (c *fakeCore) InitCluster(ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI string, masterSecret []byte) ([]byte, error) {
+func (c *fakeCore) InitCluster(ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI string, masterSecret []byte, sshUsers []*pubproto.SSHUserKey) ([]byte, error) {
 	c.autoscalingNodeGroups = autoscalingNodeGroups
 	return c.kubeconfig, nil
 }
@@ -159,11 +160,11 @@ func (c *fakeCore) UpdateDiskPassphrase(passphrase string) error {
 }
 
 func (c *fakeCore) CreateSSHUsers(sshUserKeys []ssh.UserKey) error {
-	sshAccess := ssh.NewSSHAccess(c.linuxUserManager)
+	sshAccess := ssh.NewAccess(c.linuxUserManager)
 	ctx := context.Background()
 
 	for _, pair := range sshUserKeys {
-		if err := sshAccess.DeploySSHAuthorizedKey(ctx, pair); err != nil {
+		if err := sshAccess.DeployAuthorizedKey(ctx, pair); err != nil {
 			return err
 		}
 	}

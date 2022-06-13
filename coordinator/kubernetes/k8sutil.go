@@ -14,6 +14,7 @@ type clusterUtil interface {
 	InitCluster(ctx context.Context, initConfig []byte) error
 	JoinCluster(ctx context.Context, joinConfig []byte) error
 	SetupPodNetwork(context.Context, k8sapi.SetupPodNetworkInput) error
+	SetupAccessManager(kubectl k8sapi.Client, sshUsers resources.Marshaler) error
 	SetupAutoscaling(kubectl k8sapi.Client, clusterAutoscalerConfiguration resources.Marshaler, secrets resources.Marshaler) error
 	SetupCloudControllerManager(kubectl k8sapi.Client, cloudControllerManagerConfiguration resources.Marshaler, configMaps resources.Marshaler, secrets resources.Marshaler) error
 	SetupCloudNodeManager(kubectl k8sapi.Client, cloudNodeManagerConfiguration resources.Marshaler) error

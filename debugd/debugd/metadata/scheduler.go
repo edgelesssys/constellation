@@ -124,7 +124,7 @@ func (s *Scheduler) downloadCoordinator(ctx context.Context, ips []string) (succ
 // deploySSHKeys tries to deploy a list of SSH keys and logs errors encountered.
 func (s *Scheduler) deploySSHKeys(ctx context.Context, keys []ssh.UserKey) {
 	for _, key := range keys {
-		err := s.ssh.DeploySSHAuthorizedKey(ctx, key)
+		err := s.ssh.DeployAuthorizedKey(ctx, key)
 		if err != nil {
 			log.Printf("error occurred while deploying ssh key %v: %v\n", key, err)
 			continue
@@ -137,5 +137,5 @@ type downloader interface {
 }
 
 type sshDeployer interface {
-	DeploySSHAuthorizedKey(ctx context.Context, sshKey ssh.UserKey) error
+	DeployAuthorizedKey(ctx context.Context, sshKey ssh.UserKey) error
 }

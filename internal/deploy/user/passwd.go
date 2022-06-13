@@ -5,9 +5,10 @@ import (
 	"github.com/willdonnelly/passwd"
 )
 
-// An Entry contains all the fields for a specific user. Re-exported to allow other module to only import this passwd module.
+// Entries contains the information for each user defined in '/etc/passwd'. Re-exported to allow other module to only import this passwd module.
 type Entries map[string]passwd.Entry
 
+// Passwd allows to parse users from '/etc/passwd' on the local system.
 type Passwd struct{}
 
 // Parse opens the '/etc/passwd' file and parses it into a map from usernames to Entries.

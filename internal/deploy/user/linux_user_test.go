@@ -19,13 +19,13 @@ func TestGetLinuxUser(t *testing.T) {
 		wantUser       LinuxUser
 	}{
 		"get works": {
-			passwdContents: "user:x:1000:1000:user:/home/user:/bin/bash\n",
+			passwdContents: "user:x:1000:1000:user:/var/home/user:/bin/bash\n",
 			wantErr:        false,
 			wantUser: LinuxUser{
 				Username: "user",
-				Home:     "/home/user",
-				Uid:      1000,
-				Gid:      1000,
+				Home:     "/var/home/user",
+				UID:      1000,
+				GID:      1000,
 			},
 		},
 		"user does not exist": {
@@ -37,11 +37,11 @@ func TestGetLinuxUser(t *testing.T) {
 			wantErr:        true,
 		},
 		"invalid uid": {
-			passwdContents: "user:x:invalid:1000:user:/home/user:/bin/bash\n",
+			passwdContents: "user:x:invalid:1000:user:/var/home/user:/bin/bash\n",
 			wantErr:        true,
 		},
 		"invalid gid": {
-			passwdContents: "user:x:1000:invalid:user:/home/user:/bin/bash\n",
+			passwdContents: "user:x:1000:invalid:user:/var/home/user:/bin/bash\n",
 			wantErr:        true,
 		},
 	}
@@ -54,7 +54,7 @@ func TestGetLinuxUser(t *testing.T) {
 			fs := afero.NewMemMapFs()
 			assert.NoError(afero.WriteFile(fs, "/etc/passwd", []byte(tc.passwdContents), 0o755))
 			manager := NewLinuxUserManagerFake(fs)
-			user, err := manager.getLinuxUser(username)
+			user, err := manager.GetLinuxUser(username)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -79,9 +79,9 @@ func TestEnsureLinuxUserExists(t *testing.T) {
 			wantErr:     false,
 			wantUser: LinuxUser{
 				Username: "user",
-				Home:     "/home/user",
-				Uid:      1000,
-				Gid:      1000,
+				Home:     "/var/home/user",
+				UID:      1000,
+				GID:      1000,
 			},
 		},
 		"create fails": {

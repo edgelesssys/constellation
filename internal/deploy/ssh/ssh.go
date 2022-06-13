@@ -16,16 +16,16 @@ type UserKey struct {
 	PublicKey string
 }
 
-// SSHAccess reads ssh public keys from a channel, creates the specified users if required and writes the public keys to the users authorized_keys file.
-type SSHAccess struct {
+// Access reads SSH public keys from a channel, creates the specified users if required and writes the public keys to the users authorized_keys file.
+type Access struct {
 	userManager user.LinuxUserManager
 	authorized  map[string]bool
 	mux         sync.Mutex
 }
 
-// NewSSHAccess creates a new SSHAccess.
-func NewSSHAccess(userManager user.LinuxUserManager) *SSHAccess {
-	return &SSHAccess{
+// NewAccess creates a new Access.
+func NewAccess(userManager user.LinuxUserManager) *Access {
+	return &Access{
 		userManager: userManager,
 		mux:         sync.Mutex{},
 		authorized:  map[string]bool{},
@@ -33,17 +33,18 @@ func NewSSHAccess(userManager user.LinuxUserManager) *SSHAccess {
 }
 
 // alreadyAuthorized checks if key was written to authorized keys before.
-func (s *SSHAccess) alreadyAuthorized(sshKey UserKey) bool {
+func (s *Access) alreadyAuthorized(sshKey UserKey) bool {
 	_, ok := s.authorized[fmt.Sprintf("%s:%s", sshKey.Username, sshKey.PublicKey)]
 	return ok
 }
 
 // rememberAuthorized marks this key as already written to authorized keys..
-func (s *SSHAccess) rememberAuthorized(sshKey UserKey) {
+func (s *Access) rememberAuthorized(sshKey UserKey) {
 	s.authorized[fmt.Sprintf("%s:%s", sshKey.Username, sshKey.PublicKey)] = true
 }
 
-func (s *SSHAccess) DeploySSHAuthorizedKey(ctx context.Context, sshKey UserKey) error {
+// DeployAuthorizedKey takes an user & public key pair, creates the user if required and deploy a SSH key for them.
+func (s *Access) DeployAuthorizedKey(ctx context.Context, sshKey UserKey) error {
 	// allow only one thread to write to authorized keys, create users and update the authorized map at a time
 	s.mux.Lock()
 	defer s.mux.Unlock()
@@ -57,29 +58,29 @@ func (s *SSHAccess) DeploySSHAuthorizedKey(ctx context.Context, sshKey UserKey) 
 	}
 	// CoreOS uses https://github.com/coreos/ssh-key-dir to search for ssh keys in ~/.ssh/authorized_keys.d/*
 	sshFolder := fmt.Sprintf("%s/.ssh", user.Home)
-	authorized_keys_d := fmt.Sprintf("%s/authorized_keys.d", sshFolder)
-	if err := s.userManager.Fs.MkdirAll(authorized_keys_d, 0o700); err != nil {
+	authorizedKeysD := fmt.Sprintf("%s/authorized_keys.d", sshFolder)
+	if err := s.userManager.Fs.MkdirAll(authorizedKeysD, 0o700); err != nil {
 		return err
 	}
-	if err := s.userManager.Fs.Chown(sshFolder, user.Uid, user.Gid); err != nil {
+	if err := s.userManager.Fs.Chown(sshFolder, user.UID, user.GID); err != nil {
 		return err
 	}
-	if err := s.userManager.Fs.Chown(authorized_keys_d, user.Uid, user.Gid); err != nil {
+	if err := s.userManager.Fs.Chown(authorizedKeysD, user.UID, user.GID); err != nil {
 		return err
 	}
-	authorizedKeysPath := fmt.Sprintf("%s/ssh-keys", authorized_keys_d)
+	authorizedKeysPath := fmt.Sprintf("%s/constellation-ssh-keys", authorizedKeysD)
 	authorizedKeysFile, err := s.userManager.Fs.OpenFile(authorizedKeysPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return err
 	}
-	_, err = authorizedKeysFile.WriteString(fmt.Sprintf("%s %s\n", sshKey.PublicKey, sshKey.Username))
+	_, err = authorizedKeysFile.WriteString(fmt.Sprintf("%s\n", sshKey.PublicKey))
 	if err != nil {
 		return err
 	}
 	if err := authorizedKeysFile.Close(); err != nil {
 		return err
 	}
-	if err := s.userManager.Fs.Chown(authorizedKeysPath, user.Uid, user.Gid); err != nil {
+	if err := s.userManager.Fs.Chown(authorizedKeysPath, user.UID, user.GID); err != nil {
 		return err
 	}
 	if err := s.userManager.Fs.Chmod(authorizedKeysPath, 0o644); err != nil {

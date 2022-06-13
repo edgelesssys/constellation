@@ -328,7 +328,7 @@ type stubSSHDeployer struct {
 	deployErr error
 }
 
-func (s *stubSSHDeployer) DeploySSHAuthorizedKey(ctx context.Context, sshKey ssh.UserKey) error {
+func (s *stubSSHDeployer) DeployAuthorizedKey(ctx context.Context, sshKey ssh.UserKey) error {
 	s.sshKeys = append(s.sshKeys, sshKey)
 
 	return s.deployErr

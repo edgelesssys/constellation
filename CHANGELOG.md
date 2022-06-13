@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Early boot logging for Cloud Provider: GCP & Azure
+- Added `constellation-access-manager`, allowing users to manage SSH users over a ConfigMap. This allows persistent & dynamic management of SSH users on multiple nodes, even after a reboot.
 
 ### Changed
+- Moved KMS image build instructions to `Dockerfile.services` to have a centralized Dockerfile for all in-repo microservices.
 
 ### Removed
 

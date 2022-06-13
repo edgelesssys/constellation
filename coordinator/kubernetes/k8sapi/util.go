@@ -32,6 +32,22 @@ type Client interface {
 	// TODO: add tolerations
 }
 
+type ClusterUtil interface {
+	InstallComponents(ctx context.Context, version string) error
+	InitCluster(initConfig []byte) error
+	JoinCluster(joinConfig []byte) error
+	SetupPodNetwork(kubectl Client, podNetworkConfiguration resources.Marshaler) error
+	SetupAccessManager(kubectl Client, accessManagerConfiguration resources.Marshaler) error
+	SetupAutoscaling(kubectl Client, clusterAutoscalerConfiguration resources.Marshaler, secrets resources.Marshaler) error
+	SetupCloudControllerManager(kubectl Client, cloudControllerManagerConfiguration resources.Marshaler, configMaps resources.Marshaler, secrets resources.Marshaler) error
+	SetupCloudNodeManager(kubectl Client, cloudNodeManagerConfiguration resources.Marshaler) error
+	SetupKMS(kubectl Client, kmsConfiguration resources.Marshaler) error
+	StartKubelet() error
+	RestartKubelet() error
+	GetControlPlaneJoinCertificateKey() (string, error)
+	CreateJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error)
+}
+
 // KubernetesUtil provides low level management of the kubernetes cluster.
 type KubernetesUtil struct {
 	inst installer
@@ -195,6 +211,11 @@ func (k *KubernetesUtil) SetupCloudControllerManager(kubectl Client, cloudContro
 // SetupCloudNodeManager deploys the k8s cloud-node-manager.
 func (k *KubernetesUtil) SetupCloudNodeManager(kubectl Client, cloudNodeManagerConfiguration resources.Marshaler) error {
 	return kubectl.Apply(cloudNodeManagerConfiguration, true)
+}
+
+// SetupAccessManager deploys the constellation-access-manager for deploying SSH keys on control-plane & worker nodes.
+func (k *KubernetesUtil) SetupAccessManager(kubectl Client, accessManagerConfiguration resources.Marshaler) error {
+	return kubectl.Apply(accessManagerConfiguration, true)
 }
 
 // JoinCluster joins existing Kubernetes cluster using kubeadm join.

@@ -30,13 +30,13 @@ func TestDeploySSHAuthorizedKey(t *testing.T) {
 			fs:               afero.NewMemMapFs(),
 			wantErr:          false,
 			wantFile:         true,
-			wantFileContents: "ssh-rsa testkey user\n",
+			wantFileContents: "ssh-rsa testkey\n",
 		},
 		"appending ssh key works": {
-			fs:               memMapFsWithFile("/home/user/.ssh/authorized_keys.d/ssh-keys", "ssh-rsa preexistingkey user\n"),
+			fs:               memMapFsWithFile("/var/home/user/.ssh/authorized_keys.d/constellation-ssh-keys", "ssh-rsa preexistingkey\n"),
 			wantErr:          false,
 			wantFile:         true,
-			wantFileContents: "ssh-rsa preexistingkey user\nssh-rsa testkey user\n",
+			wantFileContents: "ssh-rsa preexistingkey\nssh-rsa testkey\n",
 		},
 		"redeployment avoided": {
 			fs:              afero.NewMemMapFs(),
@@ -65,12 +65,12 @@ func TestDeploySSHAuthorizedKey(t *testing.T) {
 			if tc.alreadyDeployed {
 				authorized["user:ssh-rsa testkey"] = true
 			}
-			sshAccess := SSHAccess{
+			sshAccess := Access{
 				userManager: userManager,
 				mux:         sync.Mutex{},
 				authorized:  authorized,
 			}
-			err := sshAccess.DeploySSHAuthorizedKey(context.Background(), authorizedKey)
+			err := sshAccess.DeployAuthorizedKey(context.Background(), authorizedKey)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -78,11 +78,11 @@ func TestDeploySSHAuthorizedKey(t *testing.T) {
 			}
 			require.NoError(err)
 			if tc.wantFile {
-				fileContents, err := afero.ReadFile(userManager.Fs, "/home/user/.ssh/authorized_keys.d/ssh-keys")
+				fileContents, err := afero.ReadFile(userManager.Fs, "/var/home/user/.ssh/authorized_keys.d/constellation-ssh-keys")
 				assert.NoError(err)
 				assert.Equal(tc.wantFileContents, string(fileContents))
 			} else {
-				exists, err := afero.Exists(userManager.Fs, "/home/user/.ssh/authorized_keys.d/ssh-keys")
+				exists, err := afero.Exists(userManager.Fs, "/var/home/user/.ssh/authorized_keys.d/constellation-ssh-keys")
 				assert.NoError(err)
 				assert.False(exists)
 			}

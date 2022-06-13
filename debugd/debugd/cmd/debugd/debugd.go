@@ -25,7 +25,7 @@ func main() {
 	fs := afero.NewOsFs()
 	streamer := coordinator.NewFileStreamer(fs)
 	serviceManager := deploy.NewServiceManager()
-	ssh := ssh.NewSSHAccess(user.NewLinuxUserManager(fs))
+	ssh := ssh.NewAccess(user.NewLinuxUserManager(fs))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

@@ -244,7 +244,7 @@ func TestInitCluster(t *testing.T) {
 				client:                 &tc.kubeCTL,
 				kubeconfigReader:       tc.kubeconfigReader,
 			}
-			err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountUri, coordinatorVPNIP, masterSecret)
+			err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountUri, coordinatorVPNIP, masterSecret, nil)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -501,6 +501,7 @@ type stubClusterUtil struct {
 	setupCloudControllerManagerError error
 	setupCloudNodeManagerError       error
 	setupKMSError                    error
+	setupAccessManagerError          error
 	joinClusterErr                   error
 	startKubeletErr                  error
 	restartKubeletErr                error
@@ -534,6 +535,10 @@ func (s *stubClusterUtil) SetupCloudControllerManager(kubectl k8sapi.Client, clo
 
 func (s *stubClusterUtil) SetupKMS(kubectl k8sapi.Client, kmsDeployment resources.Marshaler) error {
 	return s.setupKMSError
+}
+
+func (s *stubClusterUtil) SetupAccessManager(kubectl k8sapi.Client, accessManagerConfiguration resources.Marshaler) error {
+	return s.setupAccessManagerError
 }
 
 func (s *stubClusterUtil) SetupCloudNodeManager(kubectl k8sapi.Client, cloudNodeManagerConfiguration resources.Marshaler) error {

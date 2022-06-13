@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
@@ -22,6 +23,12 @@ func TestInitCluster(t *testing.T) {
 	kubeconfigContent := []byte("kubeconfig")
 
 	testMS := []byte{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8}
+	testSSHUsers := make([]*pubproto.SSHUserKey, 0)
+	testSSHUser := &pubproto.SSHUserKey{
+		Username:  "testUser",
+		PublicKey: "ssh-rsa testKey",
+	}
+	testSSHUsers = append(testSSHUsers, testSSHUser)
 
 	testCases := map[string]struct {
 		cluster               Cluster
@@ -29,6 +36,7 @@ func TestInitCluster(t *testing.T) {
 		metadata              ProviderMetadata
 		masterSecret          []byte
 		autoscalingNodeGroups []string
+		sshUsers              []*pubproto.SSHUserKey
 		wantErr               bool
 	}{
 		"InitCluster works": {
@@ -46,7 +54,16 @@ func TestInitCluster(t *testing.T) {
 			vpn:                   &stubVPN{interfaceIP: "192.0.2.1"},
 			metadata:              &stubMetadata{supportedRes: true, signalRoleErr: someErr},
 			autoscalingNodeGroups: []string{"someNodeGroup"},
+		},
+		"InitCluster works with SSH and KMS": {
+			cluster: &clusterStub{
+				kubeconfig: kubeconfigContent,
+			},
+			vpn:                   &stubVPN{interfaceIP: "192.0.2.1"},
+			metadata:              &stubMetadata{supportedRes: true},
+			autoscalingNodeGroups: []string{"someNodeGroup"},
 			masterSecret:          testMS,
+			sshUsers:              testSSHUsers,
 		},
 		"cannot get VPN IP": {
 			cluster: &clusterStub{
@@ -87,7 +104,7 @@ func TestInitCluster(t *testing.T) {
 			core, err := NewCore(tc.vpn, tc.cluster, tc.metadata, nil, zapLogger, simulator.OpenSimulatedTPM, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 
-			kubeconfig, err := core.InitCluster(context.Background(), tc.autoscalingNodeGroups, "cloud-service-account-uri", tc.masterSecret)
+			kubeconfig, err := core.InitCluster(context.Background(), tc.autoscalingNodeGroups, "cloud-service-account-uri", tc.masterSecret, tc.sshUsers)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -179,7 +196,7 @@ type clusterStub struct {
 	inVpnIP                  string
 }
 
-func (c *clusterStub) InitCluster(ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI string, vpnIP string, masterSecret []byte) error {
+func (c *clusterStub) InitCluster(ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI string, vpnIP string, masterSecret []byte, sshUsers map[string]string) error {
 	c.inAutoscalingNodeGroups = autoscalingNodeGroups
 	c.inCloudServiceAccountURI = cloudServiceAccountURI
 	c.inVpnIP = vpnIP

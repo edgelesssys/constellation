@@ -56,7 +56,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 }
 
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
-func (k *KubeWrapper) InitCluster(ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, vpnIP string, masterSecret []byte) error {
+func (k *KubeWrapper) InitCluster(ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, vpnIP string, masterSecret []byte, sshUsers map[string]string) error {
 	// TODO: k8s version should be user input
 	if err := k.clusterUtil.InstallComponents(context.TODO(), "1.23.6"); err != nil {
 		return err
@@ -150,6 +150,11 @@ func (k *KubeWrapper) InitCluster(ctx context.Context, autoscalingNodeGroups []s
 
 	if err := k.setupClusterAutoscaler(instance, cloudServiceAccountURI, autoscalingNodeGroups); err != nil {
 		return fmt.Errorf("setting up cluster autoscaler failed: %w", err)
+	}
+
+	accessManager := resources.NewAccessManagerDeployment(sshUsers)
+	if err := k.clusterUtil.SetupAccessManager(k.client, accessManager); err != nil {
+		return fmt.Errorf("failed to setup access-manager: %w", err)
 	}
 
 	return nil
