@@ -27,8 +27,15 @@ runs:
   - name: Download results
     run: sonobuoy retrieve -x --kubeconfig constellation-admin.conf
     shell: bash
+  - name: Upload test results
+    uses: actions/upload-artifact@v3
+    with:
+      name: 'junit_01.xml'
+      path: '**/junit_01.xml'
+    if: ${{ always() && !env.ACT }}
   - name: Publish test results
     uses: mikepenz/action-junit-report@v3
     if: ${{ !env.ACT }}
     with:
       report_paths: '**/junit_01.xml'
+      fail_on_failure: true
