@@ -142,6 +142,9 @@ func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *confi
 	if err := cl.CreateResourceGroup(ctx); err != nil {
 		return state.ConstellationState{}, err
 	}
+	if err := cl.CreateApplicationInsight(ctx); err != nil {
+		return state.ConstellationState{}, err
+	}
 	if err := cl.CreateExternalLoadBalancer(ctx); err != nil {
 		return state.ConstellationState{}, err
 	}
@@ -164,9 +167,6 @@ func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *confi
 		UserAssingedIdentity: config.Provider.Azure.UserAssignedIdentity,
 	}
 	if err := cl.CreateInstances(ctx, createInput); err != nil {
-		return state.ConstellationState{}, err
-	}
-	if err := cl.CreateApplicationInsight(ctx); err != nil {
 		return state.ConstellationState{}, err
 	}
 
