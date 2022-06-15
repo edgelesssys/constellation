@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"path/filepath"
 	"testing"
 	"time"
 
 	proto "github.com/edgelesssys/constellation/activation/activationproto"
+	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"
@@ -20,7 +22,7 @@ func TestActivateNode(t *testing.T) {
 	someErr := errors.New("error")
 	testKey := []byte{0x1, 0x2, 0x3}
 	testCert := []byte{0x4, 0x5, 0x6}
-	testID := id{
+	testID := attestationtypes.ID{
 		Owner:   []byte{0x4, 0x5, 0x6},
 		Cluster: []byte{0x7, 0x8, 0x9},
 	}
@@ -127,7 +129,7 @@ func TestActivateNode(t *testing.T) {
 
 			file := file.NewHandler(afero.NewMemMapFs())
 			if len(tc.id) > 0 {
-				require.NoError(file.Write(constants.ActivationIDFilename, tc.id, 0o644))
+				require.NoError(file.Write(filepath.Join(constants.ActivationBasePath, constants.ActivationIDFilename), tc.id, 0o644))
 			}
 			api := New(file, tc.ca, tc.kubeadm, tc.kms)
 
@@ -137,7 +139,7 @@ func TestActivateNode(t *testing.T) {
 				return
 			}
 
-			var expectedIDs id
+			var expectedIDs attestationtypes.ID
 			require.NoError(json.Unmarshal(tc.id, &expectedIDs))
 
 			require.NoError(err)
@@ -153,7 +155,7 @@ func TestActivateNode(t *testing.T) {
 	}
 }
 
-func mustMarshalID(id id) []byte {
+func mustMarshalID(id attestationtypes.ID) []byte {
 	b, err := json.Marshal(id)
 	if err != nil {
 		panic(err)

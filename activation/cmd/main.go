@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"path/filepath"
+	"strconv"
 
 	"github.com/edgelesssys/constellation/activation/kms"
 	"github.com/edgelesssys/constellation/activation/kubeadm"
@@ -17,17 +19,15 @@ import (
 	"k8s.io/klog/v2"
 )
 
-const (
-	bindPort = "9090"
-)
-
 func main() {
 	provider := flag.String("cloud-provider", "", "cloud service provider this binary is running on")
 	kmsEndpoint := flag.String("kms-endpoint", "", "endpoint of Constellations key management service")
 
 	klog.InitFlags(nil)
 	flag.Parse()
-	klog.V(2).Infof("\nConstellation Node Activation Service\nVersion: v%s\nRunning on: %s", constants.VersionInfo, *provider)
+	defer klog.Flush()
+
+	klog.V(2).Infof("\nConstellation Node Activation Service\nVersion: %s\nRunning on: %s", constants.VersionInfo, *provider)
 
 	handler := file.NewHandler(afero.NewOsFs())
 
@@ -54,13 +54,13 @@ func main() {
 	defer watcher.Close()
 
 	go func() {
-		klog.V(4).Infof("starting file watcher for measurements file %s", constants.ActivationMeasurementsFilename)
-		if err := watcher.Watch(constants.ActivationMeasurementsFilename); err != nil {
+		klog.V(4).Infof("starting file watcher for measurements file %s", filepath.Join(constants.ActivationBasePath, constants.ActivationMeasurementsFilename))
+		if err := watcher.Watch(filepath.Join(constants.ActivationBasePath, constants.ActivationMeasurementsFilename)); err != nil {
 			klog.Exitf("failed to watch measurements file: %s", err)
 		}
 	}()
 
-	if err := server.Run(creds, bindPort); err != nil {
+	if err := server.Run(creds, strconv.Itoa(constants.ActivationServicePort)); err != nil {
 		klog.Exitf("failed to run server: %s", err)
 	}
 }

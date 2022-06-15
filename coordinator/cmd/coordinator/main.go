@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"io"
 	"log"
@@ -101,7 +102,14 @@ func main() {
 			log.Fatal(err)
 		}
 		coreMetadata = metadata
-		kube = kubernetes.New("gcp", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &gcpcloud.CloudControllerManager{}, &gcpcloud.CloudNodeManager{}, &gcpcloud.Autoscaler{}, metadata)
+		pcrsJSON, err := json.Marshal(pcrs)
+		if err != nil {
+			log.Fatal(err)
+		}
+		kube = kubernetes.New(
+			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &gcpcloud.CloudControllerManager{},
+			&gcpcloud.CloudNodeManager{}, &gcpcloud.Autoscaler{}, metadata, pcrsJSON,
+		)
 		encryptedDisk = diskencryption.New()
 		bindIP = defaultIP
 		bindPort = defaultPort
@@ -127,7 +135,14 @@ func main() {
 			log.Fatal(err)
 		}
 		coreMetadata = metadata
-		kube = kubernetes.New("azure", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), azurecloud.NewCloudControllerManager(metadata), &azurecloud.CloudNodeManager{}, &azurecloud.Autoscaler{}, metadata)
+		pcrsJSON, err := json.Marshal(pcrs)
+		if err != nil {
+			log.Fatal(err)
+		}
+		kube = kubernetes.New(
+			"azure", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), azurecloud.NewCloudControllerManager(metadata),
+			&azurecloud.CloudNodeManager{}, &azurecloud.Autoscaler{}, metadata, pcrsJSON,
+		)
 
 		encryptedDisk = diskencryption.New()
 		bindIP = defaultIP
@@ -148,7 +163,14 @@ func main() {
 		// no support for cloud services in qemu
 		metadata := &qemucloud.Metadata{}
 		cloudLogger = &logging.NopLogger{}
-		kube = kubernetes.New("qemu", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &qemucloud.CloudControllerManager{}, &qemucloud.CloudNodeManager{}, &qemucloud.Autoscaler{}, metadata)
+		pcrsJSON, err := json.Marshal(pcrs)
+		if err != nil {
+			log.Fatal(err)
+		}
+		kube = kubernetes.New(
+			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &qemucloud.CloudControllerManager{},
+			&qemucloud.CloudNodeManager{}, &qemucloud.Autoscaler{}, metadata, pcrsJSON,
+		)
 		coreMetadata = metadata
 
 		encryptedDisk = diskencryption.New()

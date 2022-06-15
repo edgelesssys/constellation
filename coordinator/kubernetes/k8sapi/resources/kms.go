@@ -1,16 +1,20 @@
 package resources
 
 import (
+	"fmt"
+
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/secrets"
 	apps "k8s.io/api/apps/v1"
 	k8s "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 type kmsDeployment struct {
 	ServiceAccount     k8s.ServiceAccount
+	Service            k8s.Service
 	ClusterRole        rbac.ClusterRole
 	ClusterRoleBinding rbac.ClusterRoleBinding
 	Deployment         apps.Deployment
@@ -33,6 +37,30 @@ func NewKMSDeployment(masterSecret []byte) *kmsDeployment {
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "kms",
 				Namespace: "kube-system",
+			},
+		},
+		Service: k8s.Service{
+			TypeMeta: meta.TypeMeta{
+				APIVersion: "v1",
+				Kind:       "Service",
+			},
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "kms",
+				Namespace: "kube-system",
+			},
+			Spec: k8s.ServiceSpec{
+				Type: k8s.ServiceTypeClusterIP,
+				Ports: []k8s.ServicePort{
+					{
+						Name:       "grpc",
+						Protocol:   k8s.ProtocolTCP,
+						Port:       constants.KMSPort,
+						TargetPort: intstr.FromInt(constants.KMSPort),
+					},
+				},
+				Selector: map[string]string{
+					"k8s-app": "kms",
+				},
 			},
 		},
 		ClusterRole: rbac.ClusterRole{
@@ -100,6 +128,31 @@ func NewKMSDeployment(masterSecret []byte) *kmsDeployment {
 						},
 					},
 					Spec: k8s.PodSpec{
+						PriorityClassName: "system-cluster-critical",
+						Tolerations: []k8s.Toleration{
+							{
+								Key:      "CriticalAddonsOnly",
+								Operator: k8s.TolerationOpExists,
+							},
+							{
+								Key:      "node-role.kubernetes.io/master",
+								Operator: k8s.TolerationOpEqual,
+								Value:    "true",
+								Effect:   k8s.TaintEffectNoSchedule,
+							},
+							{
+								Operator: k8s.TolerationOpExists,
+								Effect:   k8s.TaintEffectNoExecute,
+							},
+							{
+								Operator: k8s.TolerationOpExists,
+								Effect:   k8s.TaintEffectNoSchedule,
+							},
+						},
+						// Only run on control plane nodes
+						NodeSelector: map[string]string{
+							"node-role.kubernetes.io/master": "",
+						},
 						ImagePullSecrets: []k8s.LocalObjectReference{
 							{
 								Name: secrets.PullSecretName,
@@ -126,6 +179,10 @@ func NewKMSDeployment(masterSecret []byte) *kmsDeployment {
 							{
 								Name:  "kms",
 								Image: kmsImage,
+								Args: []string{
+									fmt.Sprintf("--port=%d", constants.KMSPort),
+									"--v=5",
+								},
 								VolumeMounts: []k8s.VolumeMount{
 									{
 										Name:      "mastersecret",

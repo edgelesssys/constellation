@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"path/filepath"
 	"time"
 
 	proto "github.com/edgelesssys/constellation/activation/activationproto"
+	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/grpc/grpc_klog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -41,7 +44,7 @@ func New(fileHandler file.Handler, ca certificateAuthority, joinTokenGetter join
 func (s *Server) Run(creds credentials.TransportCredentials, port string) error {
 	grpcServer := grpc.NewServer(
 		grpc.Creds(creds),
-		grpc.UnaryInterceptor(logGRPC),
+		grpc.UnaryInterceptor(grpc_klog.LogGRPC(2)),
 	)
 
 	proto.RegisterAPIServer(grpcServer, s)
@@ -61,8 +64,8 @@ func (s *Server) Run(creds credentials.TransportCredentials, port string) error 
 // - cluster and owner ID to taint the node as initialized.
 func (s *Server) ActivateNode(ctx context.Context, req *proto.ActivateNodeRequest) (*proto.ActivateNodeResponse, error) {
 	klog.V(4).Info("ActivateNode: loading IDs")
-	var id id
-	if err := s.file.ReadJSON(constants.ActivationIDFilename, &id); err != nil {
+	var id attestationtypes.ID
+	if err := s.file.ReadJSON(filepath.Join(constants.ActivationBasePath, constants.ActivationIDFilename), &id); err != nil {
 		klog.Errorf("unable to load IDs: %s", err)
 		return nil, status.Errorf(codes.Internal, "unable to load IDs: %s", err)
 	}
@@ -121,22 +124,4 @@ type dataKeyGetter interface {
 type certificateAuthority interface {
 	// GetCertificate returns a certificate and private key, signed by the issuer.
 	GetCertificate(nodeName string) (kubeletCert []byte, kubeletKey []byte, err error)
-}
-
-type id struct {
-	Cluster []byte `json:"cluster"`
-	Owner   []byte `json:"owner"`
-}
-
-// logGRPC writes a log with the name of every gRPC call or error it receives.
-func logGRPC(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-	// log the requests method name
-	klog.V(2).Infof("GRPC call: %s", info.FullMethod)
-
-	// log errors, if any
-	resp, err := handler(ctx, req)
-	if err != nil {
-		klog.Errorf("GRPC error: %v", err)
-	}
-	return resp, err
 }

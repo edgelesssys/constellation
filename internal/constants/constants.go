@@ -22,11 +22,14 @@ const (
 	// Ports.
 	//
 
-	CoordinatorPort = 9000
-	EnclaveSSHPort  = 2222
-	SSHPort         = 22
-	WireguardPort   = 51820
-	NVMEOverTCPPort = 8009
+	ActivationServicePort     = 9090
+	ActivationServiceNodePort = 30090
+	KMSPort                   = 9000
+	CoordinatorPort           = 9000
+	EnclaveSSHPort            = 2222
+	SSHPort                   = 22
+	WireguardPort             = 51820
+	NVMEOverTCPPort           = 8009
 	// Default NodePort Range
 	// https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
 	NodePortFrom   = 30000
@@ -46,8 +49,9 @@ const (
 	CoreOSAdminConfFilename = "/etc/kubernetes/admin.conf"
 
 	// Filenames for the Activation service.
-	ActivationMeasurementsFilename = "/var/config/measurements"
-	ActivationIDFilename           = "/var/config/id"
+	ActivationBasePath             = "/var/config"
+	ActivationMeasurementsFilename = "measurements"
+	ActivationIDFilename           = "id"
 
 	//
 	// Cryptographic constants.

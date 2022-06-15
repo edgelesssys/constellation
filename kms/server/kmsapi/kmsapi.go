@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/klog/v2"
 )
 
 // API resembles an encryption key management api server through logger, CloudKMS and proto-unimplemented server.
@@ -30,16 +31,19 @@ func New(logger *zap.Logger, conKMS kms.CloudKMS) *API {
 func (a *API) GetDataKey(ctx context.Context, in *kmsproto.GetDataKeyRequest) (*kmsproto.GetDataKeyResponse, error) {
 	// Error on 0 key length
 	if in.Length == 0 {
+		klog.Error("GetDataKey: requested key length is zero")
 		return nil, status.Error(codes.InvalidArgument, "can't derive key with length zero")
 	}
 
 	// Error on empty DataKeyId
 	if in.DataKeyId == "" {
-		return nil, status.Error(codes.InvalidArgument, "no data key id specified")
+		klog.Error("GetDataKey: no data key ID specified")
+		return nil, status.Error(codes.InvalidArgument, "no data key ID specified")
 	}
 
 	key, err := a.conKMS.GetDEK(ctx, "Constellation", "key-"+in.DataKeyId, int(in.Length))
 	if err != nil {
+		klog.Errorf("GetDataKey: failed to get data key: %v", err)
 		return nil, status.Errorf(codes.Internal, "%v", err)
 	}
 	return &kmsproto.GetDataKeyResponse{DataKey: key}, nil

@@ -7,6 +7,7 @@ import (
 	"github.com/edgelesssys/constellation/kms/server/kmsapi/kmsproto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"k8s.io/klog/v2"
 )
 
 // Client interacts with Constellation's key management service.
@@ -33,6 +34,7 @@ func (c Client) GetDataKey(ctx context.Context, uuid string, length int) ([]byte
 	}
 	defer conn.Close()
 
+	klog.V(6).Infof("GetDataKey: connecting to KMS at %s", c.endpoint)
 	res, err := c.grpc.GetDataKey(
 		ctx,
 		&kmsproto.GetDataKeyRequest{

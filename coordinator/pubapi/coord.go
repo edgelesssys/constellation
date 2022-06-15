@@ -12,6 +12,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
+	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"go.uber.org/zap"
@@ -101,7 +102,8 @@ func (a *API) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, s
 	}
 
 	logToCLI("Initializing Kubernetes ...")
-	kubeconfig, err := a.core.InitCluster(context.TODO(), in.AutoscalingNodeGroups, in.CloudServiceAccountUri, in.MasterSecret, in.SshUserKeys)
+	id := attestationtypes.ID{Owner: ownerID, Cluster: clusterID}
+	kubeconfig, err := a.core.InitCluster(context.TODO(), in.AutoscalingNodeGroups, in.CloudServiceAccountUri, id, in.MasterSecret, in.SshUserKeys)
 	if err != nil {
 		return status.Errorf(codes.Internal, "initializing Kubernetes cluster failed: %v", err)
 	}

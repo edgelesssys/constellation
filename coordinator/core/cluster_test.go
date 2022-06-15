@@ -9,6 +9,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/internal/attestation/simulator"
+	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"
@@ -104,7 +105,8 @@ func TestInitCluster(t *testing.T) {
 			core, err := NewCore(tc.vpn, tc.cluster, tc.metadata, nil, zapLogger, simulator.OpenSimulatedTPM, nil, file.NewHandler(fs), user.NewLinuxUserManagerFake(fs))
 			require.NoError(err)
 
-			kubeconfig, err := core.InitCluster(context.Background(), tc.autoscalingNodeGroups, "cloud-service-account-uri", tc.masterSecret, tc.sshUsers)
+			id := attestationtypes.ID{Owner: []byte{0x1}, Cluster: []byte{0x2}}
+			kubeconfig, err := core.InitCluster(context.Background(), tc.autoscalingNodeGroups, "cloud-service-account-uri", id, tc.masterSecret, tc.sshUsers)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -196,7 +198,9 @@ type clusterStub struct {
 	inVpnIP                  string
 }
 
-func (c *clusterStub) InitCluster(ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI string, vpnIP string, masterSecret []byte, sshUsers map[string]string) error {
+func (c *clusterStub) InitCluster(
+	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI string, vpnIP string, id attestationtypes.ID, masterSecret []byte, sshUsers map[string]string,
+) error {
 	c.inAutoscalingNodeGroups = autoscalingNodeGroups
 	c.inCloudServiceAccountURI = cloudServiceAccountURI
 	c.inVpnIP = vpnIP

@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/coordinator/role"
+	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/spf13/afero"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
@@ -27,36 +29,40 @@ type configurationProvider interface {
 
 // KubeWrapper implements Cluster interface.
 type KubeWrapper struct {
-	cloudProvider          string
-	clusterUtil            clusterUtil
-	configProvider         configurationProvider
-	client                 k8sapi.Client
-	kubeconfigReader       configReader
-	cloudControllerManager CloudControllerManager
-	cloudNodeManager       CloudNodeManager
-	clusterAutoscaler      ClusterAutoscaler
-	providerMetadata       ProviderMetadata
+	cloudProvider           string
+	clusterUtil             clusterUtil
+	configProvider          configurationProvider
+	client                  k8sapi.Client
+	kubeconfigReader        configReader
+	cloudControllerManager  CloudControllerManager
+	cloudNodeManager        CloudNodeManager
+	clusterAutoscaler       ClusterAutoscaler
+	providerMetadata        ProviderMetadata
+	initialMeasurementsJSON []byte
 }
 
 // New creates a new KubeWrapper with real values.
 func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client, cloudControllerManager CloudControllerManager,
-	cloudNodeManager CloudNodeManager, clusterAutoscaler ClusterAutoscaler, providerMetadata ProviderMetadata,
+	cloudNodeManager CloudNodeManager, clusterAutoscaler ClusterAutoscaler, providerMetadata ProviderMetadata, initialMeasurementsJSON []byte,
 ) *KubeWrapper {
 	return &KubeWrapper{
-		cloudProvider:          cloudProvider,
-		clusterUtil:            clusterUtil,
-		configProvider:         configProvider,
-		client:                 client,
-		kubeconfigReader:       &KubeconfigReader{fs: afero.Afero{Fs: afero.NewOsFs()}},
-		cloudControllerManager: cloudControllerManager,
-		cloudNodeManager:       cloudNodeManager,
-		clusterAutoscaler:      clusterAutoscaler,
-		providerMetadata:       providerMetadata,
+		cloudProvider:           cloudProvider,
+		clusterUtil:             clusterUtil,
+		configProvider:          configProvider,
+		client:                  client,
+		kubeconfigReader:        &KubeconfigReader{fs: afero.Afero{Fs: afero.NewOsFs()}},
+		cloudControllerManager:  cloudControllerManager,
+		cloudNodeManager:        cloudNodeManager,
+		clusterAutoscaler:       clusterAutoscaler,
+		providerMetadata:        providerMetadata,
+		initialMeasurementsJSON: initialMeasurementsJSON,
 	}
 }
 
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
-func (k *KubeWrapper) InitCluster(ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, vpnIP string, masterSecret []byte, sshUsers map[string]string) error {
+func (k *KubeWrapper) InitCluster(
+	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, vpnIP string, id attestationtypes.ID, masterSecret []byte, sshUsers map[string]string,
+) error {
 	// TODO: k8s version should be user input
 	if err := k.clusterUtil.InstallComponents(context.TODO(), "1.23.6"); err != nil {
 		return err
@@ -139,6 +145,10 @@ func (k *KubeWrapper) InitCluster(ctx context.Context, autoscalingNodeGroups []s
 	kms := resources.NewKMSDeployment(masterSecret)
 	if err = k.clusterUtil.SetupKMS(k.client, kms); err != nil {
 		return fmt.Errorf("setup of kms failed: %w", err)
+	}
+
+	if err := k.setupActivationService(k.cloudProvider, k.initialMeasurementsJSON, id); err != nil {
+		return fmt.Errorf("setting up activation service failed: %w", err)
 	}
 
 	if err := k.setupCCM(context.TODO(), vpnIP, subnetworkPodCIDR, cloudServiceAccountURI, instance); err != nil {
@@ -238,6 +248,17 @@ func (k *KubeWrapper) GetKubeadmCertificateKey(ctx context.Context) (string, err
 // GetJoinToken returns a bootstrap (join) token.
 func (k *KubeWrapper) GetJoinToken(ctx context.Context, ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error) {
 	return k.clusterUtil.CreateJoinToken(ctx, ttl)
+}
+
+func (k *KubeWrapper) setupActivationService(csp string, measurementsJSON []byte, id attestationtypes.ID) error {
+	idJSON, err := json.Marshal(id)
+	if err != nil {
+		return err
+	}
+
+	activationConfiguration := resources.NewActivationDaemonset(csp, string(measurementsJSON), string(idJSON)) // TODO: set kms endpoint
+
+	return k.clusterUtil.SetupActivationService(k.client, activationConfiguration)
 }
 
 func (k *KubeWrapper) setupCCM(ctx context.Context, vpnIP, subnetworkPodCIDR, cloudServiceAccountURI string, instance cloudtypes.Instance) error {

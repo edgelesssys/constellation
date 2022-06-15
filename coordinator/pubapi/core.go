@@ -7,6 +7,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
+	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
@@ -40,6 +41,8 @@ type Core interface {
 
 	CreateSSHUsers([]ssh.UserKey) error
 
-	InitCluster(ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI string, masterSecret []byte, sshUserKeys []*pubproto.SSHUserKey) ([]byte, error)
+	InitCluster(
+		ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI string, id attestationtypes.ID, masterSecret []byte, sshUserKeys []*pubproto.SSHUserKey,
+	) ([]byte, error)
 	JoinCluster(ctx context.Context, joinToken *kubeadm.BootstrapTokenDiscovery, certificateKey string, role role.Role) error
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
+	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"
@@ -123,7 +124,9 @@ func (c *fakeCore) UpdatePeers(peers []peer.Peer) error {
 	return c.UpdatePeersErr
 }
 
-func (c *fakeCore) InitCluster(ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI string, masterSecret []byte, sshUsers []*pubproto.SSHUserKey) ([]byte, error) {
+func (c *fakeCore) InitCluster(
+	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI string, id attestationtypes.ID, masterSecret []byte, sshUsers []*pubproto.SSHUserKey,
+) ([]byte, error) {
 	c.autoscalingNodeGroups = autoscalingNodeGroups
 	return c.kubeconfig, nil
 }

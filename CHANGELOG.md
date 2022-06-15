@@ -10,7 +10,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `constellation-access-manager`, allowing users to manage SSH users over a ConfigMap. This allows persistent & dynamic management of SSH users on multiple nodes, even after a reboot.
 
 ### Changed
-- Moved KMS image build instructions to `Dockerfile.services` to have a centralized Dockerfile for all in-repo microservices.
 
 ### Removed
 
@@ -20,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GCP WireGuard encryption via cilium
 
 ### Internal
+- Added `constellation-activation-service`, offloading new Kubernetes node activation from monolithic Coordinator to Kubernetes native micro-service
 
 ## [1.2.0] - 2022-06-02
 ### Added

@@ -3,6 +3,7 @@ package validator
 import (
 	"encoding/asn1"
 	"fmt"
+	"path/filepath"
 	"sync"
 
 	"github.com/edgelesssys/constellation/internal/atls"
@@ -68,7 +69,7 @@ func (u *Updatable) Update() error {
 	klog.V(4).Info("Updating expected measurements")
 
 	var measurements map[uint32][]byte
-	if err := u.fileHandler.ReadJSON(constants.ActivationMeasurementsFilename, &measurements); err != nil {
+	if err := u.fileHandler.ReadJSON(filepath.Join(constants.ActivationBasePath, constants.ActivationMeasurementsFilename), &measurements); err != nil {
 		return err
 	}
 	klog.V(6).Infof("New measurements: %v", measurements)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
+	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"go.uber.org/zap"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
@@ -22,7 +23,9 @@ func (c *Core) GetK8SCertificateKey(ctx context.Context) (string, error) {
 }
 
 // InitCluster initializes the cluster, stores the join args, and returns the kubeconfig.
-func (c *Core) InitCluster(ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI string, masterSecret []byte, sshUsers []*pubproto.SSHUserKey) ([]byte, error) {
+func (c *Core) InitCluster(
+	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI string, id attestationtypes.ID, masterSecret []byte, sshUsers []*pubproto.SSHUserKey,
+) ([]byte, error) {
 	c.zaplogger.Info("Initializing cluster")
 	vpnIP, err := c.GetVPNIP()
 	if err != nil {
@@ -37,7 +40,7 @@ func (c *Core) InitCluster(ctx context.Context, autoscalingNodeGroups []string, 
 			sshUsersMap[value.Username] = value.PublicKey
 		}
 	}
-	if err := c.kube.InitCluster(ctx, autoscalingNodeGroups, cloudServiceAccountURI, vpnIP, masterSecret, sshUsersMap); err != nil {
+	if err := c.kube.InitCluster(ctx, autoscalingNodeGroups, cloudServiceAccountURI, vpnIP, id, masterSecret, sshUsersMap); err != nil {
 		c.zaplogger.Error("Initializing cluster failed", zap.Error(err))
 		return nil, err
 	}
@@ -89,7 +92,9 @@ func (c *Core) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDisc
 // Cluster manages the overall cluster lifecycle (init, join).
 type Cluster interface {
 	// InitCluster bootstraps a new cluster with the current node being the master, returning the arguments required to join the cluster.
-	InitCluster(ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, vpnIP string, masterSecret []byte, sshUsers map[string]string) error
+	InitCluster(
+		ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, vpnIP string, id attestationtypes.ID, masterSecret []byte, sshUsers map[string]string,
+	) error
 	// JoinCluster will join the current node to an existing cluster.
 	JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, nodeVPNIP, certKey string, peerRole role.Role) error
 	// GetKubeconfig reads the kubeconfig from the filesystem. Only succeeds after cluster is initialized.
@@ -106,7 +111,9 @@ type Cluster interface {
 type ClusterFake struct{}
 
 // InitCluster fakes bootstrapping a new cluster with the current node being the master, returning the arguments required to join the cluster.
-func (c *ClusterFake) InitCluster(ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, vpnIP string, masterSecret []byte, sshUsers map[string]string) error {
+func (c *ClusterFake) InitCluster(
+	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, vpnIP string, id attestationtypes.ID, masterSecret []byte, sshUsers map[string]string,
+) error {
 	return nil
 }
 

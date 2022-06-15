@@ -232,6 +232,11 @@ func (k *KubernetesUtil) SetupAutoscaling(kubectl Client, clusterAutoscalerConfi
 	return kubectl.Apply(clusterAutoscalerConfiguration, true)
 }
 
+// SetupActivationService deploys the Constellation node activation service.
+func (k *KubernetesUtil) SetupActivationService(kubectl Client, activationServiceConfiguration resources.Marshaler) error {
+	return kubectl.Apply(activationServiceConfiguration, true)
+}
+
 // SetupCloudControllerManager deploys the k8s cloud-controller-manager.
 func (k *KubernetesUtil) SetupCloudControllerManager(kubectl Client, cloudControllerManagerConfiguration resources.Marshaler, configMaps resources.Marshaler, secrets resources.Marshaler) error {
 	if err := kubectl.Apply(configMaps, true); err != nil {

@@ -11,6 +11,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/coordinator/role"
+	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -172,6 +173,17 @@ func TestInitCluster(t *testing.T) {
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
 		},
+		"kubeadm init fails when setting up the activation service": {
+			clusterUtil: stubClusterUtil{setupActivationServiceError: someErr},
+			kubeconfigReader: &stubKubeconfigReader{
+				Kubeconfig: []byte("someKubeconfig"),
+			},
+			providerMetadata:       &stubProviderMetadata{},
+			CloudControllerManager: &stubCloudControllerManager{SupportedResp: true},
+			CloudNodeManager:       &stubCloudNodeManager{},
+			ClusterAutoscaler:      &stubClusterAutoscaler{},
+			wantErr:                true,
+		},
 		"kubeadm init fails when setting the cloud contoller manager": {
 			clusterUtil: stubClusterUtil{setupCloudControllerManagerError: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
@@ -244,7 +256,7 @@ func TestInitCluster(t *testing.T) {
 				client:                 &tc.kubeCTL,
 				kubeconfigReader:       tc.kubeconfigReader,
 			}
-			err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountUri, coordinatorVPNIP, masterSecret, nil)
+			err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountUri, coordinatorVPNIP, attestationtypes.ID{}, masterSecret, nil)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -498,6 +510,7 @@ type stubClusterUtil struct {
 	initClusterErr                   error
 	setupPodNetworkErr               error
 	setupAutoscalingError            error
+	setupActivationServiceError      error
 	setupCloudControllerManagerError error
 	setupCloudNodeManagerError       error
 	setupKMSError                    error
@@ -527,6 +540,10 @@ func (s *stubClusterUtil) SetupPodNetwork(context.Context, k8sapi.SetupPodNetwor
 
 func (s *stubClusterUtil) SetupAutoscaling(kubectl k8sapi.Client, clusterAutoscalerConfiguration resources.Marshaler, secrets resources.Marshaler) error {
 	return s.setupAutoscalingError
+}
+
+func (s *stubClusterUtil) SetupActivationService(kubectl k8sapi.Client, activationServiceConfiguration resources.Marshaler) error {
+	return s.setupActivationServiceError
 }
 
 func (s *stubClusterUtil) SetupCloudControllerManager(kubectl k8sapi.Client, cloudControllerManagerConfiguration resources.Marshaler, configMaps resources.Marshaler, secrets resources.Marshaler) error {
