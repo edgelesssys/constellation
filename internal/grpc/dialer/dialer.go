@@ -28,7 +28,11 @@ func New(issuer atls.Issuer, validator atls.Validator, netDialer NetDialer) *Dia
 
 // Dial creates a new grpc client connection to the given target using the atls validator.
 func (d *Dialer) Dial(ctx context.Context, target string) (*grpc.ClientConn, error) {
-	credentials := atlscredentials.New(d.issuer, []atls.Validator{d.validator})
+	var validators []atls.Validator
+	if d.validator != nil {
+		validators = append(validators, d.validator)
+	}
+	credentials := atlscredentials.New(d.issuer, validators)
 
 	return grpc.DialContext(ctx, target,
 		d.grpcWithDialer(),
