@@ -11,11 +11,15 @@ on:
           - 'activation-service'
           - 'kmsserver'
         required: true
-        default: 'access manager'
+        default: 'access-manager'
       imageTag:
         description: 'Container image tag'
         required: true
         default: 'manual-build'
+      version:
+        description: 'Version of the image to build'
+        required: true
+        default: '0.0.0'
 
 jobs:
   build-micro-service:
@@ -32,11 +36,11 @@ jobs:
       - name: Set Dockerfile variable
         id: set-variable
         run: |
-          case "${{ env.someVar }}" in
+          case "${{ inputs.microService }}" in
             "access-manager" )
               echo "microServiceDockerfile=access_manager/Dockerfile" >> $GITHUB_ENV ;;
             "activation-service" )
-              echo "microServiceDockerfile=activation-service/Dockerfile" >> $GITHUB_ENV ;;
+              echo "microServiceDockerfile=activation/Dockerfile" >> $GITHUB_ENV ;;
             "kmsserver" )
               echo "microServiceDockerfile=Dockerfile.kms" >> $GITHUB_ENV ;;
           esac
@@ -46,6 +50,7 @@ jobs:
         uses: ./.github/actions/build_micro-service
         with:
           name: ${{ inputs.microService }}
+          projectVersion: '0.0.0'
           dockerfile: ${{ env.microServiceDockerfile }}
-          tag: ${{ inputs.imageTag }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          pushTag: ${{ inputs.imageTag }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}

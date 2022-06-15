@@ -30,5 +30,6 @@ jobs:
         uses: ./.github/actions/build_micro-service
         with:
           name: activation-service
+          projectVersion: '0.0.0'
           dockerfile: activation/Dockerfile
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}

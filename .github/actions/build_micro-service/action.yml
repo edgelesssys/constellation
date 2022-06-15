@@ -4,6 +4,10 @@ inputs:
   name:
     description: 'Name of the micro-service'
     required: true
+  projectVersion:
+    description: 'Version of the micro-service'
+    default: '0.0.0'
+    required: false
   dockerfile:
     description: 'Path to the services Dockerfile'
     required: true
@@ -13,6 +17,7 @@ inputs:
   githubToken:
     description: 'GitHub authorization token'
     required: true
+  
 
 runs: 
   using: "composite"
@@ -49,3 +54,5 @@ runs:
         target: release
         push: true
         tags: ${{ steps.meta.outputs.tags }}
+        build-args: |
+          PROJECT_VERSION=${{ inputs.projectVersion }}
