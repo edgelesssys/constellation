@@ -12,7 +12,9 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
+	"github.com/edgelesssys/constellation/internal/oid"
 	"github.com/edgelesssys/constellation/state/keyservice"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"github.com/edgelesssys/constellation/state/mapper"
@@ -83,7 +85,7 @@ func TestKeyAPI(t *testing.T) {
 	apiAddr := listener.Addr().String()
 	listener.Close()
 
-	api := keyservice.New(core.NewMockIssuer(), &core.ProviderMetadataFake{}, 20*time.Second)
+	api := keyservice.New(atls.NewFakeIssuer(oid.Dummy{}), &core.ProviderMetadataFake{}, 20*time.Second)
 
 	// send a key to the server
 	go func() {

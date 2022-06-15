@@ -15,11 +15,13 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi"
 	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
+	"github.com/edgelesssys/constellation/internal/oid"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -120,7 +122,7 @@ func newMockCoreWithDialer(bufDialer *bufconnDialer) (*Core, *pubapi.API, error)
 		return nil, nil, err
 	}
 
-	dialer := dialer.New(nil, NewMockValidator(), bufDialer)
+	dialer := dialer.New(nil, atls.NewFakeValidator(oid.Dummy{}), bufDialer)
 	vpn := &stubVPN{}
 	kubeFake := &ClusterFake{}
 	metadataFake := &ProviderMetadataFake{}
@@ -170,7 +172,7 @@ func (b *bufconnDialer) addListener(endpoint string, listener *bufconn.Listener)
 }
 
 func spawnNode(endpoint string, testNodeCore *pubapi.API, bufDialer *bufconnDialer) (*grpc.Server, error) {
-	creds := atlscredentials.New(&MockIssuer{}, nil)
+	creds := atlscredentials.New(atls.NewFakeIssuer(oid.Dummy{}), nil)
 
 	grpcServer := grpc.NewServer(grpc.Creds(creds))
 	pubproto.RegisterAPIServer(grpcServer, testNodeCore)

@@ -9,11 +9,13 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
+	"github.com/edgelesssys/constellation/internal/oid"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -73,7 +75,7 @@ func TestReinitializeAsNode(t *testing.T) {
 
 			coordinators := []cloudtypes.Instance{{PrivateIPs: []string{"192.0.2.1"}, Role: role.Coordinator}}
 			netDialer := testdialer.NewBufconnDialer()
-			dialer := dialer.New(nil, &MockValidator{}, netDialer)
+			dialer := dialer.New(nil, atls.NewFakeValidator(oid.Dummy{}), netDialer)
 			server := newPubAPIServer()
 			api := &pubAPIServerStub{responses: tc.getInitialVPNPeersResponses}
 			pubproto.RegisterAPIServer(server, api)
@@ -146,7 +148,7 @@ func TestReinitializeAsCoordinator(t *testing.T) {
 
 			coordinators := []cloudtypes.Instance{{PrivateIPs: []string{"192.0.2.1"}, Role: role.Coordinator}}
 			netDialer := testdialer.NewBufconnDialer()
-			dialer := dialer.New(nil, &MockValidator{}, netDialer)
+			dialer := dialer.New(nil, atls.NewFakeValidator(oid.Dummy{}), netDialer)
 			server := newPubAPIServer()
 			api := &pubAPIServerStub{responses: tc.getInitialVPNPeersResponses}
 			pubproto.RegisterAPIServer(server, api)
@@ -234,7 +236,7 @@ func TestGetInitialVPNPeers(t *testing.T) {
 			zapLogger, err := zap.NewDevelopment()
 			require.NoError(err)
 			netDialer := testdialer.NewBufconnDialer()
-			dialer := dialer.New(nil, &MockValidator{}, netDialer)
+			dialer := dialer.New(nil, atls.NewFakeValidator(oid.Dummy{}), netDialer)
 			server := newPubAPIServer()
 			api := &pubAPIServerStub{
 				responses: []struct {
@@ -258,7 +260,7 @@ func TestGetInitialVPNPeers(t *testing.T) {
 }
 
 func newPubAPIServer() *grpc.Server {
-	creds := atlscredentials.New(&MockIssuer{}, nil)
+	creds := atlscredentials.New(atls.NewFakeIssuer(oid.Dummy{}), nil)
 
 	return grpc.NewServer(grpc.Creds(creds))
 }

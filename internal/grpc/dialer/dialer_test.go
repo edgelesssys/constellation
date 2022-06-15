@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
+	"github.com/edgelesssys/constellation/internal/oid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -63,8 +64,8 @@ func TestDial(t *testing.T) {
 			require := require.New(t)
 
 			netDialer := testdialer.NewBufconnDialer()
-			dialer := New(nil, &core.MockValidator{}, netDialer)
-			server := newServer(tc.tls)
+			dialer := New(nil, atls.NewFakeValidator(oid.Dummy{}), netDialer)
+			server := newServer(oid.Dummy{}, tc.tls)
 			api := &testAPI{}
 			grpc_testing.RegisterTestServiceServer(server, api)
 			go server.Serve(netDialer.GetListener("192.0.2.1:1234"))
@@ -85,9 +86,9 @@ func TestDial(t *testing.T) {
 	}
 }
 
-func newServer(tls bool) *grpc.Server {
+func newServer(oid oid.Getter, tls bool) *grpc.Server {
 	if tls {
-		creds := atlscredentials.New(&core.MockIssuer{}, nil)
+		creds := atlscredentials.New(atls.NewFakeIssuer(oid), nil)
 		return grpc.NewServer(grpc.Creds(creds))
 	}
 	return grpc.NewServer()

@@ -11,12 +11,14 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/store"
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
+	"github.com/edgelesssys/constellation/internal/oid"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -220,7 +222,7 @@ func TestInitialize(t *testing.T) {
 			// prepare store to emulate initialized KMS
 			require.NoError(core.data().PutKMSData(kms.KMSInformation{StorageUri: kms.NoStoreURI, KmsUri: kms.ClusterKMSURI}))
 			require.NoError(core.data().PutMasterSecret([]byte("master-secret")))
-			dialer := dialer.New(nil, &MockValidator{}, testdialer.NewBufconnDialer())
+			dialer := dialer.New(nil, atls.NewFakeValidator(oid.Dummy{}), testdialer.NewBufconnDialer())
 
 			nodeActivated, err := core.Initialize(context.Background(), dialer, &stubPubAPI{})
 			if tc.wantErr {

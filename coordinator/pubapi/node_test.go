@@ -8,7 +8,6 @@ import (
 	"net"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/logging"
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
@@ -21,6 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
+	"github.com/edgelesssys/constellation/internal/oid"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -163,7 +163,7 @@ func TestActivateAsNode(t *testing.T) {
 			go vserver.Serve(netDialer.GetListener(net.JoinHostPort("10.118.0.1", vpnAPIPort)))
 			defer vserver.GracefulStop()
 
-			creds := atlscredentials.New(&core.MockIssuer{}, nil)
+			creds := atlscredentials.New(atls.NewFakeIssuer(oid.Dummy{}), nil)
 			pubserver := grpc.NewServer(grpc.Creds(creds))
 			pubproto.RegisterAPIServer(pubserver, api)
 			go pubserver.Serve(netDialer.GetListener(net.JoinHostPort(nodeIP, endpointAVPNPort)))
@@ -432,7 +432,7 @@ func activateNode(require *require.Assertions, dialer netDialer, messageSequence
 }
 
 func dialGRPC(ctx context.Context, dialer netDialer, target string) (*grpc.ClientConn, error) {
-	creds := atlscredentials.New(nil, []atls.Validator{&core.MockValidator{}})
+	creds := atlscredentials.New(nil, atls.NewFakeValidators(oid.Dummy{}))
 
 	return grpc.DialContext(ctx, target,
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {

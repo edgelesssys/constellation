@@ -20,13 +20,13 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
-	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/store"
 	"github.com/edgelesssys/constellation/coordinator/storewrapper"
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
+	"github.com/edgelesssys/constellation/internal/oid"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -249,7 +249,7 @@ func TestMain(t *testing.T) {
 
 // helper methods
 func startCoordinator(ctx context.Context, coordinatorAddr string, ips []string) error {
-	creds := atlscredentials.New(nil, []atls.Validator{&core.MockValidator{}})
+	creds := atlscredentials.New(nil, atls.NewFakeValidators(oid.Dummy{}))
 
 	conn, err := grpc.DialContext(ctx, net.JoinHostPort(coordinatorAddr, publicgRPCPort), grpc.WithTransportCredentials(creds))
 	if err != nil {
@@ -296,7 +296,7 @@ func createTempDir() error {
 }
 
 func addNewCoordinatorToCoordinator(ctx context.Context, newCoordinatorAddr, oldCoordinatorAddr string) error {
-	creds := atlscredentials.New(nil, []atls.Validator{&core.MockValidator{}})
+	creds := atlscredentials.New(nil, atls.NewFakeValidators(oid.Dummy{}))
 
 	conn, err := grpc.DialContext(ctx, net.JoinHostPort(oldCoordinatorAddr, publicgRPCPort), grpc.WithTransportCredentials(creds))
 	if err != nil {
@@ -316,7 +316,7 @@ func addNewCoordinatorToCoordinator(ctx context.Context, newCoordinatorAddr, old
 }
 
 func addNewNodesToCoordinator(ctx context.Context, coordinatorAddr string, ips []string) error {
-	creds := atlscredentials.New(nil, []atls.Validator{&core.MockValidator{}})
+	creds := atlscredentials.New(nil, atls.NewFakeValidators(oid.Dummy{}))
 
 	conn, err := grpc.DialContext(ctx, net.JoinHostPort(coordinatorAddr, publicgRPCPort), grpc.WithTransportCredentials(creds))
 	if err != nil {
@@ -536,7 +536,7 @@ func awaitPeerResponse(ctx context.Context, ip string, credentials credentials.T
 }
 
 func blockUntilUp(ctx context.Context, peerIPs []string) error {
-	creds := atlscredentials.New(nil, []atls.Validator{&core.MockValidator{}})
+	creds := atlscredentials.New(nil, atls.NewFakeValidators(oid.Dummy{}))
 	for _, ip := range peerIPs {
 		// Block, so the connection gets established/fails immediately
 		if err := awaitPeerResponse(ctx, ip, creds); err != nil {

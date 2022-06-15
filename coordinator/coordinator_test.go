@@ -24,6 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
+	"github.com/edgelesssys/constellation/internal/oid"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -221,12 +222,12 @@ func spawnPeer(require *require.Assertions, logger *zap.Logger, netDialer *testd
 	getPublicAddr := func() (string, error) {
 		return "192.0.2.1", nil
 	}
-	dialer := dialer.New(nil, &core.MockValidator{}, netDialer)
+	dialer := dialer.New(nil, atls.NewFakeValidator(oid.Dummy{}), netDialer)
 	vapiServer := &fakeVPNAPIServer{logger: logger.Named("vpnapi"), core: cor, dialer: netDialer}
 
 	papi := pubapi.New(logger, &logging.NopLogger{}, cor, dialer, vapiServer, getPublicAddr, nil)
 
-	creds := atlscredentials.New(&core.MockIssuer{}, nil)
+	creds := atlscredentials.New(atls.NewFakeIssuer(oid.Dummy{}), nil)
 	server := grpc.NewServer(grpc.Creds(creds))
 	pubproto.RegisterAPIServer(server, papi)
 
@@ -263,7 +264,7 @@ func activateCoordinator(require *require.Assertions, dialer netDialer, coordina
 }
 
 func dialGRPC(ctx context.Context, dialer netDialer, target string) (*grpc.ClientConn, error) {
-	creds := atlscredentials.New(nil, []atls.Validator{&core.MockValidator{}})
+	creds := atlscredentials.New(nil, atls.NewFakeValidators(oid.Dummy{}))
 
 	return grpc.DialContext(ctx, target,
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {

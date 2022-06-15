@@ -129,7 +129,7 @@ func (c *Core) SwitchToPersistentStore() error {
 		return err
 	}
 	c.store = newStore
-	c.zaplogger.Info("transition to persistent store successful")
+	c.zaplogger.Info("Transition to persistent store successful")
 	return nil
 }
 

@@ -8,10 +8,11 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
-	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
+	"github.com/edgelesssys/constellation/internal/oid"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -75,7 +76,7 @@ func TestRequestKeyLoop(t *testing.T) {
 			listener := bufconn.Listen(1)
 			defer listener.Close()
 
-			creds := atlscredentials.New(core.NewMockIssuer(), nil)
+			creds := atlscredentials.New(atls.NewFakeIssuer(oid.Dummy{}), nil)
 			s := grpc.NewServer(grpc.Creds(creds))
 			pubproto.RegisterAPIServer(s, tc.server)
 

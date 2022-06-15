@@ -10,12 +10,12 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/logging"
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/state"
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
@@ -524,7 +524,7 @@ func TestRequestStateDiskKey(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			issuer := core.NewMockIssuer()
+			issuer := atls.NewFakeIssuer(oid.Dummy{})
 
 			stateDiskServer := &stubStateDiskServer{pushKeyErr: tc.pushKeyErr}
 

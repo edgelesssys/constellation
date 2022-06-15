@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/internal/atls"
+	"github.com/edgelesssys/constellation/internal/oid"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 )
@@ -29,7 +29,7 @@ func TestInitializeValidators(t *testing.T) {
 	assert.Error(waiter.InitializeValidators(nil))
 
 	// Initialized waiter succeeds
-	assert.NoError(waiter.InitializeValidators([]atls.Validator{core.NewMockValidator()}))
+	assert.NoError(waiter.InitializeValidators(atls.NewFakeValidators(oid.Dummy{})))
 	assert.NoError(waiter.WaitFor(context.Background(), "someIP", state.IsNode))
 }
 

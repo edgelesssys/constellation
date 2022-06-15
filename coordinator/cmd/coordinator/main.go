@@ -22,6 +22,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/logging"
 	"github.com/edgelesssys/constellation/coordinator/util"
 	"github.com/edgelesssys/constellation/coordinator/wireguard"
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/attestation/azure"
 	"github.com/edgelesssys/constellation/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/internal/attestation/qemu"
@@ -29,6 +30,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
+	"github.com/edgelesssys/constellation/internal/oid"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
@@ -181,8 +183,8 @@ func main() {
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 	default:
-		issuer = core.NewMockIssuer()
-		validator = core.NewMockValidator()
+		issuer = atls.NewFakeIssuer(oid.Dummy{})
+		validator = atls.NewFakeValidator(oid.Dummy{})
 		kube = &core.ClusterFake{}
 		coreMetadata = &core.ProviderMetadataFake{}
 		cloudLogger = &logging.NopLogger{}

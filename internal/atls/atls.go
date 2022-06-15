@@ -11,6 +11,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -332,4 +333,63 @@ func (c *serverConnection) getCertificate(chi *tls.ClientHelloInfo) (*tls.Certif
 
 	// create aTLS certificate using the nonce as extracted from the client-hello message
 	return getCertificate(c.issuer, c.privKey, &c.privKey.PublicKey, clientNonce)
+}
+
+// FakeIssuer fakes an issuer and can be used for tests.
+type FakeIssuer struct {
+	oid.Getter
+}
+
+// NewFakeIssuer creates a new FakeIssuer with the given OID.
+func NewFakeIssuer(oid oid.Getter) *FakeIssuer {
+	return &FakeIssuer{oid}
+}
+
+// Issue marshals the user data and returns it.
+func (FakeIssuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
+	return json.Marshal(FakeAttestationDoc{UserData: userData, Nonce: nonce})
+}
+
+// FakeValidator fakes a validator and can be used for tests.
+type FakeValidator struct {
+	oid.Getter
+	err error // used for package internal testing only
+}
+
+// NewFakeValidator creates a new FakeValidator with the given OID.
+func NewFakeValidator(oid oid.Getter) *FakeValidator {
+	return &FakeValidator{oid, nil}
+}
+
+// NewFakeValidators returns a slice with a single FakeValidator.
+func NewFakeValidators(oid oid.Getter) []Validator {
+	return []Validator{NewFakeValidator(oid)}
+}
+
+// Validate unmarshals the attestation document and verifies the nonce.
+func (v FakeValidator) Validate(attDoc []byte, nonce []byte) ([]byte, error) {
+	var doc FakeAttestationDoc
+	if err := json.Unmarshal(attDoc, &doc); err != nil {
+		return nil, err
+	}
+
+	if !bytes.Equal(doc.Nonce, nonce) {
+		return nil, fmt.Errorf("invalid nonce: expected %x, got %x", doc.Nonce, nonce)
+	}
+
+	return doc.UserData, v.err
+}
+
+// FakeAttestationDoc is a fake attestation document used for testing.
+type FakeAttestationDoc struct {
+	UserData []byte
+	Nonce    []byte
+}
+
+type fakeOID struct {
+	asn1.ObjectIdentifier
+}
+
+func (o fakeOID) OID() asn1.ObjectIdentifier {
+	return o.ObjectIdentifier
 }
