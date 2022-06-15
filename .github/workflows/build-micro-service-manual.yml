@@ -45,7 +45,7 @@ jobs:
         id: build-and-upload
         uses: ./.github/actions/build_micro-service
         with:
-          name: ${{ input.microService }}
+          name: ${{ inputs.microService }}
           dockerfile: ${{ env.microServiceDockerfile }}
-          tag: ${{ input.imageTag }}
+          tag: ${{ inputs.imageTag }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
