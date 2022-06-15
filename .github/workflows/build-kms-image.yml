@@ -1,7 +1,7 @@
-name: Build and upload access-manager image
+name: Build and upload KMS image
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: access-manager
+  IMAGE_NAME: kmsserver
 
 on:
   workflow_dispatch:
@@ -9,11 +9,12 @@ on:
     branches:
       - main
     paths:
-      - "access_manager/**"
-      - "internal/deploy/**"
+      - "kms/**"
+      - "internal/constants/**"
+      - "internal/file/**"
 
 jobs:
-  build-access-manager:
+  build-kms-server:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -23,10 +24,10 @@ jobs:
         id: checkout
         uses: actions/checkout@v3
 
-      - name: Build and upload access-manager container image
+      - name: Build and upload KMS server container image
         id: build-and-upload
         uses: ./.github/actions/build_micro-service
         with:
-          name: access-manager
-          dockerfile: access_manager/Dockerfile
+          name: kmsserver
+          dockerfile: Dockerfile.kms
           github_token: ${{ secrets.GITHUB_TOKEN }}

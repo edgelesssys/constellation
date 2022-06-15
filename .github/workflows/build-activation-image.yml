@@ -1,0 +1,34 @@
+name: Build and upload activation-service image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "activation/**"
+      - "internal/atls/**"
+      - "internal/attestation/**"
+      - "internal/constants/**"
+      - "internal/file/**"
+      - "internal/grpc/**"
+      - "internal/oid/**"
+
+jobs:
+  build-activation-service:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out repository
+        id: checkout
+        uses: actions/checkout@v3
+
+      - name: Build and upload activation-service container image
+        id: build-and-upload
+        uses: ./.github/actions/build_micro-service
+        with:
+          name: activation-service
+          dockerfile: activation/Dockerfile
+          github_token: ${{ secrets.GITHUB_TOKEN }}
