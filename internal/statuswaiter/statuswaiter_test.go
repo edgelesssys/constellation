@@ -3,15 +3,20 @@ package statuswaiter
 import (
 	"context"
 	"errors"
+	"net"
 	"testing"
 	"time"
 
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/internal/atls"
+	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/oid"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/test/bufconn"
 )
 
 func TestInitializeValidators(t *testing.T) {
@@ -36,6 +41,7 @@ func TestInitializeValidators(t *testing.T) {
 func TestWaitForAndWaitForAll(t *testing.T) {
 	var noErr error
 	someErr := errors.New("failed")
+	handshakeErr := status.Error(codes.Unavailable, `connection error: desc = "transport: authentication handshake failed"`)
 
 	testCases := map[string]struct {
 		waiter       Waiter
@@ -86,6 +92,16 @@ func TestWaitForAndWaitForAll(t *testing.T) {
 				interval:    time.Millisecond,
 				newConn:     stubNewConnFunc(someErr),
 				newClient:   stubNewClientFunc(&stubPeerStatusClient{}),
+			},
+			waitForState: []state.State{state.IsNode},
+			wantErr:      true,
+		},
+		"fail TLS handshake": {
+			waiter: Waiter{
+				initialized: true,
+				interval:    time.Millisecond,
+				newConn:     stubNewConnFunc(handshakeErr),
+				newClient:   stubNewClientFunc(&stubPeerStatusClient{state: state.IsNode}),
 			},
 			waitForState: []state.State{state.IsNode},
 			wantErr:      true,
@@ -215,4 +231,77 @@ func TestContainsState(t *testing.T) {
 			assert.Equal(tc.success, res)
 		})
 	}
+}
+
+func TestIsHandshakeError(t *testing.T) {
+	testCases := map[string]struct {
+		err          error
+		wantedResult bool
+	}{
+		"TLS handshake error": {
+			err:          getGRPCHandshakeError(),
+			wantedResult: true,
+		},
+		"Unavailable error": {
+			err:          status.Error(codes.Unavailable, "connection error"),
+			wantedResult: false,
+		},
+		"TLS handshake error with wrong code": {
+			err:          status.Error(codes.Aborted, `connection error: desc = "transport: authentication handshake failed`),
+			wantedResult: false,
+		},
+		"Non gRPC error": {
+			err:          errors.New("error"),
+			wantedResult: false,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			res := isGRPCHandshakeError(tc.err)
+			assert.Equal(tc.wantedResult, res)
+		})
+	}
+}
+
+func getGRPCHandshakeError() error {
+	serverCreds := atlscredentials.New(atls.NewFakeIssuer(oid.Dummy{}), nil)
+	api := &fakeAPI{}
+	server := grpc.NewServer(grpc.Creds(serverCreds))
+	pubproto.RegisterAPIServer(server, api)
+
+	listener := bufconn.Listen(1024)
+	defer server.GracefulStop()
+	go server.Serve(listener)
+
+	clientCreds := atlscredentials.New(nil, []atls.Validator{failingValidator{oid.Dummy{}}})
+	conn, err := grpc.DialContext(context.Background(), "", grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+		return listener.Dial()
+	}), grpc.WithTransportCredentials(clientCreds))
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+
+	client := pubproto.NewAPIClient(conn)
+	_, err = client.GetState(context.Background(), &pubproto.GetStateRequest{})
+	return err
+}
+
+type failingValidator struct {
+	oid.Getter
+}
+
+func (v failingValidator) Validate(attDoc []byte, nonce []byte) ([]byte, error) {
+	return nil, errors.New("error")
+}
+
+type fakeAPI struct {
+	pubproto.UnimplementedAPIServer
+}
+
+func (f *fakeAPI) GetState(ctx context.Context, in *pubproto.GetStateRequest) (*pubproto.GetStateResponse, error) {
+	return &pubproto.GetStateResponse{State: 1}, nil
 }

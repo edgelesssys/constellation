@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
@@ -55,7 +56,7 @@ func (w *Waiter) WaitFor(ctx context.Context, endpoint string, status ...state.S
 
 	// Check once before waiting
 	resp, err := w.probe(ctx, endpoint)
-	if err != nil && grpcstatus.Code(err) != grpccodes.Unavailable {
+	if err != nil && (grpcstatus.Code(err) != grpccodes.Unavailable || isGRPCHandshakeError(err)) {
 		return err
 	}
 	if resp != nil && containsState(state.State(resp.State), status...) {
@@ -67,7 +68,7 @@ func (w *Waiter) WaitFor(ctx context.Context, endpoint string, status ...state.S
 		select {
 		case <-ticker.C:
 			resp, err := w.probe(ctx, endpoint)
-			if grpcstatus.Code(err) == grpccodes.Unavailable {
+			if grpcstatus.Code(err) == grpccodes.Unavailable && !isGRPCHandshakeError(err) {
 				// The server isn't reachable yet.
 				continue
 			}
@@ -135,4 +136,16 @@ func containsState(s state.State, states ...state.State) bool {
 		}
 	}
 	return false
+}
+
+func isGRPCHandshakeError(err error) bool {
+	statusErr, ok := grpcstatus.FromError(err)
+	if !ok {
+		return false
+	}
+	if statusErr.Code() != grpccodes.Unavailable {
+		return false
+	}
+	// ideally we would check the error type directly, but grpc only provides a string
+	return strings.HasPrefix(statusErr.Message(), `connection error: desc = "transport: authentication handshake failed`)
 }
