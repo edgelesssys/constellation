@@ -23,3 +23,10 @@ runs:
       echo "$(pwd)" >> $GITHUB_PATH
       export PATH="$PATH:$(pwd)"
     shell: bash
+  - name: Build hack/pcr-reader
+    run: |
+      cd hack/pcr-reader/
+      go build -buildvcs=false .
+      echo "$(pwd)" >> $GITHUB_PATH
+      export PATH="$PATH:$(pwd)"
+    shell: bash

@@ -68,7 +68,7 @@ With `cdbg` and `yq` installed in your path:
 For GCP, run the following command to get a list of all constellation debug images, sorted by their creation date:
 
 ```shell
-gcloud compute images list --filter="name~'constellation-coreos-debugd.+'" --sort-by=~creationTimestamp --project constellation-images
+gcloud compute images list --filter="name~'constellation-coreos-debugd.+'" --sort-by=creationTimestamp --project constellation-images
 ```
 
 Choose the newest debugd image with the naming scheme `constellation-coreos-debugd-<timestamp>`.

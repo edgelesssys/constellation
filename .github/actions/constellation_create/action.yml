@@ -20,19 +20,43 @@ runs:
   using: 'composite'
   steps:
   - name: Install wireguard
-    run: sudo apt-get update && sudo apt-get install wireguard iproute2 -y
+    run: sudo apt-get update && sudo apt-get install wireguard iproute2 jq -y
     shell: bash
   - name: Install kubectl
     run: |
       curl -LO https://dl.k8s.io/release/v1.23.0/bin/linux/amd64/kubectl
       install kubectl /usr/local/bin
     shell: bash
+  - name: Install yq
+    run: |
+      sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CC86BB64
+      sudo add-apt-repository ppa:rmescandon/yq
+      sudo apt update
+      sudo apt install yq -y
+    shell: bash
+
   - name: Constellation config generate
     run: |
       constellation config generate ${{ inputs.cloudProvider }}
     shell: bash
+
+  - name: Set latest Azure image
+    run: |
+      LATEST_AZURE_IMAGE=$(az sig image-version list --resource-group constellation-images --gallery-name Constellation --gallery-image-definition constellation-coreos --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table | tail -n 1)
+      yq eval -i "(.provider.azure.image) = \"${LATEST_AZURE_IMAGE}\"" constellation-conf.yaml
+    shell: bash
+    if: ${{ inputs.cloudProvider == 'azure' }}
+  - name: Set latest GCP image
+    run: |
+      LATEST_GCP_IMAGE_TIMESTAMP=$(gcloud compute images list --filter="name~'constellation-coreos-\d{10}'" --sort-by=creationTimestamp --project constellation-images --format="table(name)" | tail -n 1 | cut -d '-' -f3)
+      yq eval -i "(.provider.gcp.image) = \"projects/constellation-images/global/images/constellation-coreos-${LATEST_GCP_IMAGE_TIMESTAMP}\"" constellation-conf.yaml
+    shell: bash
+    if: ${{ inputs.cloudProvider == 'gcp' }}
+
   - name: Constellation create
     run: |
+      echo "Creating cluster using config:"
+      cat constellation-conf.yaml
       constellation create ${{ inputs.cloudProvider }} -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} -t ${{ inputs.machineType }} --name e2e-test -y
     shell: bash
   - name: Upload constellation-state.json
@@ -41,6 +65,28 @@ runs:
       name: constellation-state.json
       path: constellation-state.json
     if: ${{ always() && !env.ACT }}
+
+  - name: Read Coordinator IP (Azure)
+    run: |
+      echo COORD_IP=$(jq -r .azurecoordinators[].PublicIP constellation-state.json) >> $GITHUB_ENV
+    shell: bash
+    if: ${{ inputs.cloudProvider == 'azure' }}
+  - name: Read Coordinator IP (GCP)
+    run: |
+      echo COORD_IP=$(jq -r .gcpcoordinators[].PublicIP constellation-state.json) >> $GITHUB_ENV
+    shell: bash
+    if: ${{ inputs.cloudProvider == 'gcp' }}
+  - name: Fetch PCRs
+    run: |
+      pcr-reader --coord-ip ${{ env.COORD_IP }} -o measurements.go
+    shell: bash
+  - name: Upload measurements
+    uses: actions/upload-artifact@v3
+    with:
+      name: measurements.go
+      path: measurements.go
+    if: ${{ !env.ACT }}
+
   - name: Constellation init
     run: |
       if [ ${{ inputs.autoscale }} = true ]; then autoscale=--autoscale; fi

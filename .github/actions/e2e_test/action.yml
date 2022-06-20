@@ -59,7 +59,7 @@ runs:
       sonobuoyTestSuiteCmd: ${{ inputs.sonobuoyTestSuiteCmd }}
 
   - name: Notify teams channel
-    if: failure()
+    if: ${{ failure() && github.ref == 'refs/heads/main' }}
     run: |
       sudo apt-get install gettext-base -y
       export TEAMS_JOB_NAME=${{ inputs.cloudProvider }}
