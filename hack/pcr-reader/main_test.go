@@ -227,20 +227,48 @@ func mustMarshalAttDoc(t *testing.T, attDoc vtpm.AttestationDocument) []byte {
 }
 
 func TestPrintPCRs(t *testing.T) {
-	assert := assert.New(t)
-
-	pcrs := map[uint32][]byte{
-		0: {0x1, 0x2, 0x3},
-		1: {0x1, 0x2, 0x3},
-		2: {0x1, 0x2, 0x3},
+	testCases := map[string]struct {
+		pcrs   map[uint32][]byte
+		format string
+	}{
+		"json": {
+			pcrs: map[uint32][]byte{
+				0: {0x1, 0x2, 0x3},
+				1: {0x1, 0x2, 0x3},
+				2: {0x1, 0x2, 0x3},
+			},
+			format: "json",
+		},
+		"empty format": {
+			pcrs: map[uint32][]byte{
+				0: {0x1, 0x2, 0x3},
+				1: {0x1, 0x2, 0x3},
+				2: {0x1, 0x2, 0x3},
+			},
+			format: "",
+		},
+		"yaml": {
+			pcrs: map[uint32][]byte{
+				0: {0x1, 0x2, 0x3},
+				1: {0x1, 0x2, 0x3},
+				2: {0x1, 0x2, 0x3},
+			},
+			format: "yaml",
+		},
 	}
 
-	var out bytes.Buffer
-	err := printPCRs(&out, pcrs)
-	assert.NoError(err)
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
 
-	for idx, pcr := range pcrs {
-		assert.Contains(out.String(), fmt.Sprintf("\"%d\": ", idx))
-		assert.Contains(out.String(), fmt.Sprintf(": \"%s\"", base64.StdEncoding.EncodeToString(pcr)))
+			var out bytes.Buffer
+			err := printPCRs(&out, tc.pcrs, tc.format)
+			assert.NoError(err)
+
+			for idx, pcr := range tc.pcrs {
+				assert.Contains(out.String(), fmt.Sprintf("%d", idx))
+				assert.Contains(out.String(), base64.StdEncoding.EncodeToString(pcr))
+			}
+		})
 	}
 }

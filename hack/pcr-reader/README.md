@@ -88,6 +88,17 @@ PCRs:
 }
 ```
 
+### Extend Config
+
+To set measurement values in Constellation config, use `yaml` format option.
+Optionally filter down results measurements per cloud provider:
+
+Azure
+
+```bash
+./pcr-reader --coord-ip ${COORD_IP} --format yaml | yq e 'del(.[0,6,10,11,12,13,14,15,16,17,18,19,20,21,22,23])' -
+```
+
 ## Meaning of PCR values
 
 An overview about what data is measured into the different registers can be found [in the TPM spec](https://trustedcomputinggroup.org/wp-content/uploads/TCG_PCClient_PFP_r1p05_v23_pub.pdf#%5B%7B%22num%22%3A157%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C33%2C400%2C0%5D).

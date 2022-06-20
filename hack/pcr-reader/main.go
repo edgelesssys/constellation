@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -25,12 +26,14 @@ import (
 	"github.com/spf13/afero"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"gopkg.in/yaml.v3"
 )
 
 var (
 	coordIP         = flag.String("coord-ip", "", "IP of the VM the Coordinator is running on")
 	coordinatorPort = flag.String("coord-port", "9000", "Port of the Coordinator's pub API")
 	export          = flag.String("o", "", "Write PCRs, formatted as Go code, to file")
+	format          = flag.String("format", "json", "Output format: json, yaml (default json)")
 	quiet           = flag.Bool("q", false, "Set to disable output")
 	timeout         = flag.Duration("timeout", 2*time.Minute, "Wait this duration for the Coordinator to become available")
 )
@@ -38,7 +41,6 @@ var (
 func main() {
 	flag.Parse()
 
-	fmt.Printf("connecting to Coordinator at %s:%s\n", *coordIP, *coordinatorPort)
 	addr := net.JoinHostPort(*coordIP, *coordinatorPort)
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
@@ -71,7 +73,7 @@ func main() {
 	}
 
 	if !*quiet {
-		if err := printPCRs(os.Stdout, pcrs); err != nil {
+		if err := printPCRs(os.Stdout, pcrs, *format); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -80,6 +82,20 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+}
+
+type Measurements map[uint32][]byte
+
+// MarshalYAML forces that measurements are written as base64. Default would
+// be to print list of bytes.
+func (m Measurements) MarshalYAML() (interface{}, error) {
+	base64Map := make(map[uint32]string)
+
+	for key, value := range m {
+		base64Map[key] = base64.StdEncoding.EncodeToString(value[:])
+	}
+
+	return base64Map, nil
 }
 
 // connectToCoordinator connects to the Constellation Coordinator and returns its attestation document.
@@ -145,12 +161,33 @@ func validatePCRAttDoc(attDocRaw []byte) (map[uint32][]byte, error) {
 }
 
 // printPCRs formates and prints PCRs to the given writer.
-func printPCRs(w io.Writer, pcrs map[uint32][]byte) error {
+// format can be one of 'json' or 'yaml'. If it doesnt match defaults to 'json'.
+func printPCRs(w io.Writer, pcrs map[uint32][]byte, format string) error {
+	switch format {
+	case "json":
+		return printPCRsJSON(w, pcrs)
+	case "yaml":
+		return printPCRsYAML(w, pcrs)
+	default:
+		return printPCRsJSON(w, pcrs)
+	}
+}
+
+func printPCRsYAML(w io.Writer, pcrs Measurements) error {
+	pcrYAML, err := yaml.Marshal(pcrs)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(w, "%s", string(pcrYAML))
+	return nil
+}
+
+func printPCRsJSON(w io.Writer, pcrs map[uint32][]byte) error {
 	pcrJSON, err := json.MarshalIndent(pcrs, "", "  ")
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(w, "PCRs:\n%s\n", string(pcrJSON))
+	fmt.Fprintf(w, "%s", string(pcrJSON))
 	return nil
 }
 
