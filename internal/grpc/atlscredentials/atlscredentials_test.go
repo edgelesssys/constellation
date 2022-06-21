@@ -9,7 +9,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
+	"github.com/edgelesssys/constellation/coordinator/initproto"
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,7 +39,7 @@ func TestATLSCredentials(t *testing.T) {
 	for i := 0; i < serverCount; i++ {
 		api := &fakeAPI{}
 		server := grpc.NewServer(grpc.Creds(serverCreds))
-		pubproto.RegisterAPIServer(server, api)
+		initproto.RegisterAPIServer(server, api)
 
 		listener := bufconn.Listen(1024)
 		listeners = append(listeners, listener)
@@ -66,8 +66,8 @@ func TestATLSCredentials(t *testing.T) {
 			require.NoError(err)
 			defer conn.Close()
 
-			client := pubproto.NewAPIClient(conn)
-			_, err = client.GetState(context.Background(), &pubproto.GetStateRequest{})
+			client := initproto.NewAPIClient(conn)
+			_, err = client.Init(context.Background(), &initproto.InitRequest{})
 		}()
 	}
 
@@ -112,9 +112,9 @@ type fakeDoc struct {
 }
 
 type fakeAPI struct {
-	pubproto.UnimplementedAPIServer
+	initproto.UnimplementedAPIServer
 }
 
-func (f *fakeAPI) GetState(ctx context.Context, in *pubproto.GetStateRequest) (*pubproto.GetStateResponse, error) {
-	return &pubproto.GetStateResponse{State: 1}, nil
+func (f *fakeAPI) Init(ctx context.Context, in *initproto.InitRequest) (*initproto.InitResponse, error) {
+	return &initproto.InitResponse{}, nil
 }

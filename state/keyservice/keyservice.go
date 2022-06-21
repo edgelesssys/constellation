@@ -12,6 +12,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/internal/oid"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -24,8 +25,8 @@ import (
 type KeyAPI struct {
 	log         *logger.Logger
 	mux         sync.Mutex
-	metadata    core.ProviderMetadata
-	issuer      core.QuoteIssuer
+	metadata    ProviderMetadata
+	issuer      QuoteIssuer
 	key         []byte
 	keyReceived chan struct{}
 	timeout     time.Duration
@@ -33,7 +34,7 @@ type KeyAPI struct {
 }
 
 // New initializes a KeyAPI with the given parameters.
-func New(log *logger.Logger, issuer core.QuoteIssuer, metadata core.ProviderMetadata, timeout time.Duration) *KeyAPI {
+func New(log *logger.Logger, issuer QuoteIssuer, metadata core.ProviderMetadata, timeout time.Duration) *KeyAPI {
 	return &KeyAPI{
 		log:         log,
 		metadata:    metadata,
@@ -135,4 +136,18 @@ func (a *KeyAPI) requestKey(uuid string, credentials credentials.TransportCreden
 
 		cancel()
 	}
+}
+
+// QuoteValidator validates quotes.
+type QuoteValidator interface {
+	oid.Getter
+	// Validate validates a quote and returns the user data on success.
+	Validate(attDoc []byte, nonce []byte) ([]byte, error)
+}
+
+// QuoteIssuer issues quotes.
+type QuoteIssuer interface {
+	oid.Getter
+	// Issue issues a quote for remote attestation for a given message
+	Issue(userData []byte, nonce []byte) (quote []byte, err error)
 }

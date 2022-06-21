@@ -23,13 +23,11 @@ func TestFromFile(t *testing.T) {
 		wantErr      bool
 	}{
 		"nodestate exists": {
-			fileContents: `{	"Role": "Coordinator", "VPNIP": "192.0.2.1", "VPNPrivKey": "dGVzdA==", "OwnerID": "T3duZXJJRA==", "ClusterID": "Q2x1c3RlcklE"	}`,
+			fileContents: `{	"Role": "Coordinator", "OwnerID": "T3duZXJJRA==", "ClusterID": "Q2x1c3RlcklE"	}`,
 			wantState: &NodeState{
-				Role:       role.Coordinator,
-				VPNIP:      "192.0.2.1",
-				VPNPrivKey: []byte("test"),
-				OwnerID:    []byte("OwnerID"),
-				ClusterID:  []byte("ClusterID"),
+				Role:      role.Coordinator,
+				OwnerID:   []byte("OwnerID"),
+				ClusterID: []byte("ClusterID"),
 			},
 		},
 		"nodestate file does not exist": {
@@ -68,16 +66,12 @@ func TestToFile(t *testing.T) {
 	}{
 		"writing works": {
 			state: &NodeState{
-				Role:       role.Coordinator,
-				VPNIP:      "192.0.2.1",
-				VPNPrivKey: []byte("test"),
-				OwnerID:    []byte("OwnerID"),
-				ClusterID:  []byte("ClusterID"),
+				Role:      role.Coordinator,
+				OwnerID:   []byte("OwnerID"),
+				ClusterID: []byte("ClusterID"),
 			},
 			wantFile: `{
 	"Role": "Coordinator",
-	"VPNIP": "192.0.2.1",
-	"VPNPrivKey": "dGVzdA==",
 	"OwnerID": "T3duZXJJRA==",
 	"ClusterID": "Q2x1c3RlcklE"
 }`,

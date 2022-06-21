@@ -114,6 +114,11 @@ require (
 )
 
 require (
+	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+)
+
+require (
 	cloud.google.com/go v0.100.2 // indirect
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v0.9.1 // indirect

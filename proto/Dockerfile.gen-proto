@@ -24,16 +24,6 @@ RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v${GEN_GO_VER} && \
 
 # Generate code for every existing proto file
 
-## Coordinator pubapi
-WORKDIR /pubapi
-COPY coordinator/pubapi/pubproto/*.proto /pubapi
-RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
-
-## Coordinator vpnapi
-WORKDIR /vpnapi
-COPY coordinator/vpnapi/vpnproto/*.proto /vpnapi
-RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
-
 ## disk-mapper keyservice api
 WORKDIR /disk-mapper
 COPY state/keyservice/keyproto/*.proto /disk-mapper
@@ -57,13 +47,16 @@ RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_o
 ## verify
 WORKDIR /verify
 COPY verify/verifyproto/*.proto /verify
+
+## init
+WORKDIR /init
+COPY coordinator/initproto/*.proto /init
 RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
 
 FROM scratch as export
-COPY --from=build /pubapi/*.go coordinator/pubapi/pubproto/
-COPY --from=build /vpnapi/*.go coordinator/vpnapi/vpnproto/
 COPY --from=build /disk-mapper/*.go state/keyservice/keyproto/
 COPY --from=build /service/*.go debugd/service/
 COPY --from=build /kms/*.go kms/kmsproto/
 COPY --from=build /activation/*.go activation/activationproto/
 COPY --from=build /verify/*.go verify/verifyproto/
+COPY --from=build /init/*.go coordinator/initproto/

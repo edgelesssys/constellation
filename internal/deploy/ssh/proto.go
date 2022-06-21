@@ -1,11 +1,11 @@
 package ssh
 
 import (
-	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
+	"github.com/edgelesssys/constellation/coordinator/initproto"
 )
 
 // FromProtoSlice converts a SSH UserKey definition from pubproto to the Go flavor.
-func FromProtoSlice(input []*pubproto.SSHUserKey) []UserKey {
+func FromProtoSlice(input []*initproto.SSHUserKey) []UserKey {
 	if input == nil {
 		return nil
 	}
@@ -25,14 +25,14 @@ func FromProtoSlice(input []*pubproto.SSHUserKey) []UserKey {
 }
 
 // ToProtoSlice converts a SSH UserKey definition from Go to pubproto flavor.
-func ToProtoSlice(input []*UserKey) []*pubproto.SSHUserKey {
+func ToProtoSlice(input []*UserKey) []*initproto.SSHUserKey {
 	if input == nil {
 		return nil
 	}
 
-	output := make([]*pubproto.SSHUserKey, 0)
+	output := make([]*initproto.SSHUserKey, 0)
 	for _, pair := range input {
-		singlePair := pubproto.SSHUserKey{
+		singlePair := initproto.SSHUserKey{
 			Username:  pair.Username,
 			PublicKey: pair.PublicKey,
 		}

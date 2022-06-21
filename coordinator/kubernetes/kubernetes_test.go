@@ -35,6 +35,7 @@ func TestInitCluster(t *testing.T) {
 	publicIP := "192.0.2.2"
 	loadbalancerIP := "192.0.2.3"
 	aliasIPRange := "192.0.2.0/24"
+	k8sVersion := "1.23.8"
 
 	testCases := map[string]struct {
 		clusterUtil            stubClusterUtil
@@ -267,7 +268,7 @@ func TestInitCluster(t *testing.T) {
 				client:                 &tc.kubeCTL,
 				kubeconfigReader:       tc.kubeconfigReader,
 			}
-			err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountUri, coordinatorVPNIP, attestationtypes.ID{}, masterSecret, nil)
+			err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountUri, k8sVersion, attestationtypes.ID{}, KMSConfig{MasterSecret: masterSecret}, nil)
 
 			if tc.wantErr {
 				assert.Error(err)

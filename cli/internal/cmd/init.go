@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -9,29 +10,26 @@ import (
 	"net"
 	"strconv"
 	"text/tabwriter"
+	"time"
 
 	"github.com/edgelesssys/constellation/cli/internal/azure"
 	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/cli/internal/gcp"
-	"github.com/edgelesssys/constellation/cli/internal/proto"
-	"github.com/edgelesssys/constellation/cli/internal/vpn"
-	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
-	coordinatorstate "github.com/edgelesssys/constellation/coordinator/state"
+	"github.com/edgelesssys/constellation/coordinator/initproto"
+	"github.com/edgelesssys/constellation/coordinator/kms"
 	"github.com/edgelesssys/constellation/coordinator/util"
-	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/grpc/dialer"
+	"github.com/edgelesssys/constellation/internal/grpc/retry"
 	"github.com/edgelesssys/constellation/internal/state"
-	"github.com/edgelesssys/constellation/internal/statuswaiter"
-	"github.com/kr/text"
-	wgquick "github.com/nmiculinic/wg-quick-go"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
+	"google.golang.org/grpc"
 )
 
 // NewInitCmd returns a new cobra.Command for the init command.
@@ -44,10 +42,7 @@ func NewInitCmd() *cobra.Command {
 		Args:              cobra.ExactArgs(0),
 		RunE:              runInitialize,
 	}
-	cmd.Flags().String("privatekey", "", "path to your private key")
 	cmd.Flags().String("master-secret", "", "path to base64-encoded master secret")
-	cmd.Flags().Bool("wg-autoconfig", false, "enable automatic configuration of WireGuard interface")
-	must(cmd.Flags().MarkHidden("wg-autoconfig"))
 	cmd.Flags().Bool("autoscale", false, "enable Kubernetes cluster-autoscaler")
 	return cmd
 }
@@ -55,19 +50,15 @@ func NewInitCmd() *cobra.Command {
 // runInitialize runs the initialize command.
 func runInitialize(cmd *cobra.Command, args []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	vpnHandler := vpn.NewConfigHandler()
 	serviceAccountCreator := cloudcmd.NewServiceAccountCreator()
-	waiter := statuswaiter.New()
-	protoClient := &proto.Client{}
-	defer protoClient.Close()
-
-	return initialize(cmd, protoClient, serviceAccountCreator, fileHandler, waiter, vpnHandler)
+	dialer := dialer.New(nil, nil, &net.Dialer{})
+	return initialize(cmd, dialer, serviceAccountCreator, fileHandler)
 }
 
 // initialize initializes a Constellation. Coordinator instances are activated as contole-plane nodes and will
 // themself activate the other peers as workers.
-func initialize(cmd *cobra.Command, protCl protoClient, serviceAccCreator serviceAccountCreator,
-	fileHandler file.Handler, waiter statusWaiter, vpnHandler vpnHandler,
+func initialize(cmd *cobra.Command, dialer grpcDialer, serviceAccCreator serviceAccountCreator,
+	fileHandler file.Handler,
 ) error {
 	flags, err := evalFlagArgs(cmd, fileHandler)
 	if err != nil {
@@ -117,153 +108,79 @@ func initialize(cmd *cobra.Command, protCl protoClient, serviceAccCreator servic
 		return err
 	}
 
-	endpoints := ipsToEndpoints(append(coordinators.PublicIPs(), nodes.PublicIPs()...), strconv.Itoa(constants.CoordinatorPort))
-
-	cmd.Println("Waiting for cloud provider resource creation and boot ...")
-	if err := waiter.InitializeValidators(validators.V()); err != nil {
-		return err
-	}
-	if err := waiter.WaitForAll(cmd.Context(), endpoints, coordinatorstate.AcceptingInit); err != nil {
-		return fmt.Errorf("waiting for all peers status: %w", err)
-	}
-
 	var autoscalingNodeGroups []string
 	if flags.autoscale {
 		autoscalingNodeGroups = append(autoscalingNodeGroups, nodes.GroupID)
 	}
 
-	input := activationInput{
-		coordinatorPubIP:       coordinators.PublicIPs()[0],
-		pubKey:                 flags.userPubKey,
-		masterSecret:           flags.masterSecret,
-		nodePrivIPs:            nodes.PrivateIPs(),
-		coordinatorPrivIPs:     coordinators.PrivateIPs()[1:],
-		autoscalingNodeGroups:  autoscalingNodeGroups,
-		cloudServiceAccountURI: serviceAccount,
-		sshUserKeys:            ssh.ToProtoSlice(sshUsers),
+	req := &initproto.InitRequest{
+		AutoscalingNodeGroups:  autoscalingNodeGroups,
+		MasterSecret:           flags.masterSecret,
+		KmsUri:                 kms.ClusterKMSURI,
+		StorageUri:             kms.NoStoreURI,
+		KeyEncryptionKeyId:     "",
+		UseExistingKek:         false,
+		CloudServiceAccountUri: serviceAccount,
+		KubernetesVersion:      "1.23.6",
+		SshUserKeys:            ssh.ToProtoSlice(sshUsers),
 	}
-	result, err := activate(cmd, protCl, input, validators.V())
+	resp, err := initCall(cmd.Context(), dialer, coordinators.PublicIPs()[0], req)
 	if err != nil {
 		return err
 	}
 
-	err = result.writeOutput(cmd.OutOrStdout(), fileHandler)
-	if err != nil {
+	if err := writeOutput(resp, cmd.OutOrStdout(), fileHandler); err != nil {
 		return err
-	}
-
-	vpnConfig, err := vpnHandler.Create(result.coordinatorPubKey, result.coordinatorPubIP, string(flags.userPrivKey), result.clientVpnIP, constants.WireguardAdminMTU)
-	if err != nil {
-		return err
-	}
-
-	if err := writeWGQuickFile(fileHandler, vpnHandler, vpnConfig); err != nil {
-		return fmt.Errorf("writing wg-quick file: %w", err)
-	}
-
-	if flags.autoconfigureWG {
-		if err := vpnHandler.Apply(vpnConfig); err != nil {
-			return fmt.Errorf("configuring WireGuard: %w", err)
-		}
 	}
 
 	return nil
 }
 
-func activate(cmd *cobra.Command, client protoClient, input activationInput,
-	validators []atls.Validator,
-) (activationResult, error) {
-	err := client.Connect(net.JoinHostPort(input.coordinatorPubIP, strconv.Itoa(constants.CoordinatorPort)), validators)
-	if err != nil {
-		return activationResult{}, err
+func initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.InitRequest) (*initproto.InitResponse, error) {
+	doer := &initDoer{
+		dialer:   dialer,
+		endpoint: net.JoinHostPort(ip, strconv.Itoa(constants.CoordinatorPort)),
+		req:      req,
 	}
-
-	respCl, err := client.Activate(cmd.Context(), input.pubKey, input.masterSecret, input.nodePrivIPs, input.coordinatorPrivIPs, input.autoscalingNodeGroups, input.cloudServiceAccountURI, input.sshUserKeys)
-	if err != nil {
-		return activationResult{}, err
+	retryer := retry.NewIntervalRetryer(doer, 30*time.Second)
+	if err := retryer.Do(ctx); err != nil {
+		return nil, err
 	}
-
-	indentOut := text.NewIndentWriter(cmd.OutOrStdout(), []byte{'\t'})
-	cmd.Println("Activating the cluster ...")
-	if err := respCl.WriteLogStream(indentOut); err != nil {
-		return activationResult{}, err
-	}
-
-	clientVpnIp, err := respCl.GetClientVpnIp()
-	if err != nil {
-		return activationResult{}, err
-	}
-	coordinatorPubKey, err := respCl.GetCoordinatorVpnKey()
-	if err != nil {
-		return activationResult{}, err
-	}
-	kubeconfig, err := respCl.GetKubeconfig()
-	if err != nil {
-		return activationResult{}, err
-	}
-	ownerID, err := respCl.GetOwnerID()
-	if err != nil {
-		return activationResult{}, err
-	}
-	clusterID, err := respCl.GetClusterID()
-	if err != nil {
-		return activationResult{}, err
-	}
-
-	return activationResult{
-		clientVpnIP:       clientVpnIp,
-		coordinatorPubKey: coordinatorPubKey,
-		coordinatorPubIP:  input.coordinatorPubIP,
-		kubeconfig:        kubeconfig,
-		ownerID:           ownerID,
-		clusterID:         clusterID,
-	}, nil
+	return doer.resp, nil
 }
 
-type activationInput struct {
-	coordinatorPubIP       string
-	pubKey                 []byte
-	masterSecret           []byte
-	nodePrivIPs            []string
-	coordinatorPrivIPs     []string
-	autoscalingNodeGroups  []string
-	cloudServiceAccountURI string
-	sshUserKeys            []*pubproto.SSHUserKey
+type initDoer struct {
+	dialer   grpcDialer
+	endpoint string
+	req      *initproto.InitRequest
+	resp     *initproto.InitResponse
 }
 
-type activationResult struct {
-	clientVpnIP       string
-	coordinatorPubKey string
-	coordinatorPubIP  string
-	kubeconfig        string
-	ownerID           string
-	clusterID         string
-}
-
-// writeWGQuickFile writes the wg-quick file to the default path.
-func writeWGQuickFile(fileHandler file.Handler, vpnHandler vpnHandler, vpnConfig *wgquick.Config) error {
-	data, err := vpnHandler.Marshal(vpnConfig)
+func (d *initDoer) Do(ctx context.Context) error {
+	conn, err := d.dialer.Dial(ctx, d.endpoint)
+	if err != nil {
+		return fmt.Errorf("dialing init server: %w", err)
+	}
+	protoClient := initproto.NewAPIClient(conn)
+	resp, err := protoClient.Init(ctx, d.req)
 	if err != nil {
 		return fmt.Errorf("marshalling VPN config: %w", err)
 	}
-	return fileHandler.Write(constants.WGQuickConfigFilename, data, file.OptNone)
+	d.resp = resp
+	return nil
 }
 
-func (r activationResult) writeOutput(wr io.Writer, fileHandler file.Handler) error {
+func writeOutput(resp *initproto.InitResponse, wr io.Writer, fileHandler file.Handler) error {
 	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
-	writeRow(tw, "Your WireGuard IP", r.clientVpnIP)
-	writeRow(tw, "Control plane's public IP", r.coordinatorPubIP)
-	writeRow(tw, "Control plane's public key", r.coordinatorPubKey)
-	writeRow(tw, "Constellation cluster's owner identifier", r.ownerID)
-	writeRow(tw, "Constellation cluster's unique identifier", r.clusterID)
-	writeRow(tw, "WireGuard configuration file", constants.WGQuickConfigFilename)
+	writeRow(tw, "Constellation cluster's owner identifier", string(resp.OwnerId))
+	writeRow(tw, "Constellation cluster's unique identifier", string(resp.ClusterId))
 	writeRow(tw, "Kubernetes configuration", constants.AdminConfFilename)
 	tw.Flush()
 	fmt.Fprintln(wr)
 
-	if err := fileHandler.Write(constants.AdminConfFilename, []byte(r.kubeconfig), file.OptNone); err != nil {
+	if err := fileHandler.Write(constants.AdminConfFilename, resp.Kubeconfig, file.OptNone); err != nil {
 		return fmt.Errorf("write kubeconfig: %w", err)
 	}
 
@@ -273,7 +190,6 @@ func (r activationResult) writeOutput(wr io.Writer, fileHandler file.Handler) er
 	}
 
 	fmt.Fprintln(wr, "You can now connect to your cluster by executing:")
-	fmt.Fprintf(wr, "\twg-quick up ./%s\n", constants.WGQuickConfigFilename)
 	fmt.Fprintf(wr, "\texport KUBECONFIG=\"$PWD/%s\"\n", constants.AdminConfFilename)
 	return nil
 }
@@ -285,18 +201,6 @@ func writeRow(wr io.Writer, col1 string, col2 string) {
 // evalFlagArgs gets the flag values and does preprocessing of these values like
 // reading the content from file path flags and deriving other values from flag combinations.
 func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (initFlags, error) {
-	userPrivKeyPath, err := cmd.Flags().GetString("privatekey")
-	if err != nil {
-		return initFlags{}, fmt.Errorf("parsing privatekey path argument: %w", err)
-	}
-	userPrivKey, userPubKey, err := readOrGenerateVPNKey(fileHandler, userPrivKeyPath)
-	if err != nil {
-		return initFlags{}, err
-	}
-	autoconfigureWG, err := cmd.Flags().GetBool("wg-autoconfig")
-	if err != nil {
-		return initFlags{}, fmt.Errorf("parsing wg-autoconfig argument: %w", err)
-	}
 	masterSecretPath, err := cmd.Flags().GetString("master-secret")
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing master-secret path argument: %w", err)
@@ -315,58 +219,17 @@ func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (initFlags, erro
 	}
 
 	return initFlags{
-		configPath:      configPath,
-		userPrivKey:     userPrivKey,
-		userPubKey:      userPubKey,
-		autoconfigureWG: autoconfigureWG,
-		autoscale:       autoscale,
-		masterSecret:    masterSecret,
+		configPath:   configPath,
+		autoscale:    autoscale,
+		masterSecret: masterSecret,
 	}, nil
 }
 
 // initFlags are the resulting values of flag preprocessing.
 type initFlags struct {
-	configPath      string
-	userPrivKey     []byte
-	userPubKey      []byte
-	masterSecret    []byte
-	autoconfigureWG bool
-	autoscale       bool
-}
-
-func readOrGenerateVPNKey(fileHandler file.Handler, privKeyPath string) (privKey, pubKey []byte, err error) {
-	var privKeyParsed wgtypes.Key
-	if privKeyPath == "" {
-		privKeyParsed, err = wgtypes.GeneratePrivateKey()
-		if err != nil {
-			return nil, nil, fmt.Errorf("generating WireGuard private key: %w", err)
-		}
-		privKey = []byte(privKeyParsed.String())
-	} else {
-		privKey, err = fileHandler.Read(privKeyPath)
-		if err != nil {
-			return nil, nil, fmt.Errorf("reading the VPN private key: %w", err)
-		}
-		privKeyParsed, err = wgtypes.ParseKey(string(privKey))
-		if err != nil {
-			return nil, nil, fmt.Errorf("parsing the WireGuard private key: %w", err)
-		}
-	}
-
-	pubKey = []byte(privKeyParsed.PublicKey().String())
-
-	return privKey, pubKey, nil
-}
-
-func ipsToEndpoints(ips []string, port string) []string {
-	var endpoints []string
-	for _, ip := range ips {
-		if ip == "" {
-			continue
-		}
-		endpoints = append(endpoints, net.JoinHostPort(ip, port))
-	}
-	return endpoints
+	configPath   string
+	masterSecret []byte
+	autoscale    bool
 }
 
 // readOrGenerateMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
@@ -490,4 +353,8 @@ func initCompletion(cmd *cobra.Command, args []string, toComplete string) ([]str
 		return []string{}, cobra.ShellCompDirectiveError
 	}
 	return []string{}, cobra.ShellCompDirectiveDefault
+}
+
+type grpcDialer interface {
+	Dial(ctx context.Context, target string) (*grpc.ClientConn, error)
 }

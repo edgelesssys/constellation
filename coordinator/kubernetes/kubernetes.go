@@ -11,6 +11,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/coordinator/role"
+	"github.com/edgelesssys/constellation/coordinator/util"
 	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/spf13/afero"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
@@ -59,16 +60,29 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 	}
 }
 
+type KMSConfig struct {
+	MasterSecret       []byte
+	KMSURI             string
+	StorageURI         string
+	KeyEncryptionKeyID string
+	UseExistingKEK     bool
+}
+
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
-	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, vpnIP string, id attestationtypes.ID, masterSecret []byte, sshUsers map[string]string,
+	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, k8sVersion string,
+	id attestationtypes.ID, kmsConfig KMSConfig, sshUsers map[string]string,
 ) error {
 	// TODO: k8s version should be user input
-	if err := k.clusterUtil.InstallComponents(context.TODO(), "1.23.6"); err != nil {
+	if err := k.clusterUtil.InstallComponents(ctx, k8sVersion); err != nil {
 		return err
 	}
 
-	nodeName := vpnIP
+	ip, err := util.GetIPAddr()
+	if err != nil {
+		return err
+	}
+	nodeName := ip
 	var providerID string
 	var instance cloudtypes.Instance
 	var publicIP string
@@ -77,11 +91,10 @@ func (k *KubeWrapper) InitCluster(
 	// this is the IP in "kubeadm init --control-plane-endpoint=<IP/DNS>:<port>" hence the unfortunate name
 	var controlPlaneEndpointIP string
 	var nodeIP string
-	var err error
 
 	// Step 1: retrieve cloud metadata for Kubernetes configuration
 	if k.providerMetadata.Supported() {
-		instance, err = k.providerMetadata.Self(context.TODO())
+		instance, err = k.providerMetadata.Self(ctx)
 		if err != nil {
 			return fmt.Errorf("retrieving own instance metadata failed: %w", err)
 		}
@@ -96,13 +109,13 @@ func (k *KubeWrapper) InitCluster(
 		if len(instance.AliasIPRanges) > 0 {
 			nodePodCIDR = instance.AliasIPRanges[0]
 		}
-		subnetworkPodCIDR, err = k.providerMetadata.GetSubnetworkCIDR(context.TODO())
+		subnetworkPodCIDR, err = k.providerMetadata.GetSubnetworkCIDR(ctx)
 		if err != nil {
 			return fmt.Errorf("retrieving subnetwork CIDR failed: %w", err)
 		}
 		controlPlaneEndpointIP = publicIP
 		if k.providerMetadata.SupportsLoadBalancer() {
-			controlPlaneEndpointIP, err = k.providerMetadata.GetLoadBalancerIP(context.TODO())
+			controlPlaneEndpointIP, err = k.providerMetadata.GetLoadBalancerIP(ctx)
 			if err != nil {
 				return fmt.Errorf("retrieving load balancer IP failed: %w", err)
 			}
@@ -142,7 +155,7 @@ func (k *KubeWrapper) InitCluster(
 		return fmt.Errorf("setting up pod network: %w", err)
 	}
 
-	kms := resources.NewKMSDeployment(k.cloudProvider, masterSecret)
+	kms := resources.NewKMSDeployment(k.cloudProvider, kmsConfig.MasterSecret)
 	if err = k.clusterUtil.SetupKMS(k.client, kms); err != nil {
 		return fmt.Errorf("setting up kms: %w", err)
 	}
@@ -151,7 +164,7 @@ func (k *KubeWrapper) InitCluster(
 		return fmt.Errorf("setting up activation service failed: %w", err)
 	}
 
-	if err := k.setupCCM(context.TODO(), vpnIP, subnetworkPodCIDR, cloudServiceAccountURI, instance); err != nil {
+	if err := k.setupCCM(ctx, subnetworkPodCIDR, cloudServiceAccountURI, instance); err != nil {
 		return fmt.Errorf("setting up cloud controller manager: %w", err)
 	}
 	if err := k.setupCloudNodeManager(); err != nil {
@@ -201,12 +214,6 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		}
 	}
 	nodeName = k8sCompliantHostname(nodeName)
-
-	if k.cloudControllerManager.Supported() && k.providerMetadata.Supported() {
-		if err := k.prepareInstanceForCCM(context.TODO(), nodeVPNIP); err != nil {
-			return fmt.Errorf("preparing node for CCM failed: %w", err)
-		}
-	}
 
 	// Step 2: configure kubeadm join config
 
@@ -267,12 +274,9 @@ func (k *KubeWrapper) setupActivationService(csp string, measurementsJSON []byte
 	return k.clusterUtil.SetupActivationService(k.client, activationConfiguration)
 }
 
-func (k *KubeWrapper) setupCCM(ctx context.Context, vpnIP, subnetworkPodCIDR, cloudServiceAccountURI string, instance cloudtypes.Instance) error {
+func (k *KubeWrapper) setupCCM(ctx context.Context, subnetworkPodCIDR, cloudServiceAccountURI string, instance cloudtypes.Instance) error {
 	if !k.cloudControllerManager.Supported() {
 		return nil
-	}
-	if err := k.prepareInstanceForCCM(context.TODO(), vpnIP); err != nil {
-		return fmt.Errorf("preparing node for CCM failed: %w", err)
 	}
 	ccmConfigMaps, err := k.cloudControllerManager.ConfigMaps(instance)
 	if err != nil {
@@ -323,14 +327,6 @@ func (k *KubeWrapper) setupClusterAutoscaler(instance cloudtypes.Instance, cloud
 		return fmt.Errorf("failed to setup cluster-autoscaler: %w", err)
 	}
 
-	return nil
-}
-
-// prepareInstanceForCCM sets the vpn IP in cloud provider metadata.
-func (k *KubeWrapper) prepareInstanceForCCM(ctx context.Context, vpnIP string) error {
-	if err := k.providerMetadata.SetVPNIP(ctx, vpnIP); err != nil {
-		return fmt.Errorf("setting VPN IP for cloud-controller-manager failed: %w", err)
-	}
 	return nil
 }
 

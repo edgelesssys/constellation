@@ -48,7 +48,7 @@ func main() {
 	// set up metadata API and quote issuer for aTLS connections
 	var err error
 	var diskPath string
-	var issuer core.QuoteIssuer
+	var issuer keyservice.QuoteIssuer
 	var metadata core.ProviderMetadata
 	switch strings.ToLower(*csp) {
 	case "azure":
