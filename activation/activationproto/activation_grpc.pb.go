@@ -22,8 +22,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type APIClient interface {
-	ActivateNode(ctx context.Context, in *ActivateNodeRequest, opts ...grpc.CallOption) (*ActivateNodeResponse, error)
-	ActivateCoordinator(ctx context.Context, in *ActivateCoordinatorRequest, opts ...grpc.CallOption) (*ActivateCoordinatorResponse, error)
+	ActivateWorkerNode(ctx context.Context, in *ActivateWorkerNodeRequest, opts ...grpc.CallOption) (*ActivateWorkerNodeResponse, error)
+	ActivateControlPlaneNode(ctx context.Context, in *ActivateControlPlaneNodeRequest, opts ...grpc.CallOption) (*ActivateControlPlaneNodeResponse, error)
 }
 
 type aPIClient struct {
@@ -34,18 +34,18 @@ func NewAPIClient(cc grpc.ClientConnInterface) APIClient {
 	return &aPIClient{cc}
 }
 
-func (c *aPIClient) ActivateNode(ctx context.Context, in *ActivateNodeRequest, opts ...grpc.CallOption) (*ActivateNodeResponse, error) {
-	out := new(ActivateNodeResponse)
-	err := c.cc.Invoke(ctx, "/pubapi.API/ActivateNode", in, out, opts...)
+func (c *aPIClient) ActivateWorkerNode(ctx context.Context, in *ActivateWorkerNodeRequest, opts ...grpc.CallOption) (*ActivateWorkerNodeResponse, error) {
+	out := new(ActivateWorkerNodeResponse)
+	err := c.cc.Invoke(ctx, "/activation.API/ActivateWorkerNode", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *aPIClient) ActivateCoordinator(ctx context.Context, in *ActivateCoordinatorRequest, opts ...grpc.CallOption) (*ActivateCoordinatorResponse, error) {
-	out := new(ActivateCoordinatorResponse)
-	err := c.cc.Invoke(ctx, "/pubapi.API/ActivateCoordinator", in, out, opts...)
+func (c *aPIClient) ActivateControlPlaneNode(ctx context.Context, in *ActivateControlPlaneNodeRequest, opts ...grpc.CallOption) (*ActivateControlPlaneNodeResponse, error) {
+	out := new(ActivateControlPlaneNodeResponse)
+	err := c.cc.Invoke(ctx, "/activation.API/ActivateControlPlaneNode", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -56,8 +56,8 @@ func (c *aPIClient) ActivateCoordinator(ctx context.Context, in *ActivateCoordin
 // All implementations must embed UnimplementedAPIServer
 // for forward compatibility
 type APIServer interface {
-	ActivateNode(context.Context, *ActivateNodeRequest) (*ActivateNodeResponse, error)
-	ActivateCoordinator(context.Context, *ActivateCoordinatorRequest) (*ActivateCoordinatorResponse, error)
+	ActivateWorkerNode(context.Context, *ActivateWorkerNodeRequest) (*ActivateWorkerNodeResponse, error)
+	ActivateControlPlaneNode(context.Context, *ActivateControlPlaneNodeRequest) (*ActivateControlPlaneNodeResponse, error)
 	mustEmbedUnimplementedAPIServer()
 }
 
@@ -65,11 +65,11 @@ type APIServer interface {
 type UnimplementedAPIServer struct {
 }
 
-func (UnimplementedAPIServer) ActivateNode(context.Context, *ActivateNodeRequest) (*ActivateNodeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ActivateNode not implemented")
+func (UnimplementedAPIServer) ActivateWorkerNode(context.Context, *ActivateWorkerNodeRequest) (*ActivateWorkerNodeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ActivateWorkerNode not implemented")
 }
-func (UnimplementedAPIServer) ActivateCoordinator(context.Context, *ActivateCoordinatorRequest) (*ActivateCoordinatorResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ActivateCoordinator not implemented")
+func (UnimplementedAPIServer) ActivateControlPlaneNode(context.Context, *ActivateControlPlaneNodeRequest) (*ActivateControlPlaneNodeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ActivateControlPlaneNode not implemented")
 }
 func (UnimplementedAPIServer) mustEmbedUnimplementedAPIServer() {}
 
@@ -84,38 +84,38 @@ func RegisterAPIServer(s grpc.ServiceRegistrar, srv APIServer) {
 	s.RegisterService(&API_ServiceDesc, srv)
 }
 
-func _API_ActivateNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ActivateNodeRequest)
+func _API_ActivateWorkerNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ActivateWorkerNodeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(APIServer).ActivateNode(ctx, in)
+		return srv.(APIServer).ActivateWorkerNode(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/pubapi.API/ActivateNode",
+		FullMethod: "/activation.API/ActivateWorkerNode",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(APIServer).ActivateNode(ctx, req.(*ActivateNodeRequest))
+		return srv.(APIServer).ActivateWorkerNode(ctx, req.(*ActivateWorkerNodeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _API_ActivateCoordinator_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ActivateCoordinatorRequest)
+func _API_ActivateControlPlaneNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ActivateControlPlaneNodeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(APIServer).ActivateCoordinator(ctx, in)
+		return srv.(APIServer).ActivateControlPlaneNode(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/pubapi.API/ActivateCoordinator",
+		FullMethod: "/activation.API/ActivateControlPlaneNode",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(APIServer).ActivateCoordinator(ctx, req.(*ActivateCoordinatorRequest))
+		return srv.(APIServer).ActivateControlPlaneNode(ctx, req.(*ActivateControlPlaneNodeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -124,16 +124,16 @@ func _API_ActivateCoordinator_Handler(srv interface{}, ctx context.Context, dec 
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var API_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "pubapi.API",
+	ServiceName: "activation.API",
 	HandlerType: (*APIServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ActivateNode",
-			Handler:    _API_ActivateNode_Handler,
+			MethodName: "ActivateWorkerNode",
+			Handler:    _API_ActivateWorkerNode_Handler,
 		},
 		{
-			MethodName: "ActivateCoordinator",
-			Handler:    _API_ActivateCoordinator_Handler,
+			MethodName: "ActivateControlPlaneNode",
+			Handler:    _API_ActivateControlPlaneNode_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

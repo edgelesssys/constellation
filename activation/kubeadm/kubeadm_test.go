@@ -1,6 +1,7 @@
 package kubeadm
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -9,7 +10,12 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	fakecorev1 "k8s.io/client-go/kubernetes/typed/core/v1/fake"
 )
 
 func TestGetJoinToken(t *testing.T) {
@@ -87,4 +93,68 @@ kind: Config`,
 			}
 		})
 	}
+}
+
+func TestGetControlPlaneCertificateKey(t *testing.T) {
+	testCases := map[string]struct {
+		wantErr bool
+		client  clientset.Interface
+	}{
+		"success": {
+			client:  fake.NewSimpleClientset(),
+			wantErr: false,
+		},
+		"failure": {
+			client: &failingClient{
+				fake.NewSimpleClientset(),
+			},
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			client := &Kubeadm{
+				client: tc.client,
+			}
+
+			_, err := client.GetControlPlaneCertificateKey()
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+			}
+		})
+	}
+}
+
+type failingClient struct {
+	*fake.Clientset
+}
+
+func (f *failingClient) CoreV1() corev1.CoreV1Interface {
+	return &failingCoreV1{
+		&fakecorev1.FakeCoreV1{Fake: &f.Clientset.Fake},
+	}
+}
+
+type failingCoreV1 struct {
+	*fakecorev1.FakeCoreV1
+}
+
+func (f *failingCoreV1) Secrets(namespace string) corev1.SecretInterface {
+	return &failingSecretInterface{
+		&fakecorev1.FakeSecrets{Fake: f.FakeCoreV1},
+	}
+}
+
+type failingSecretInterface struct {
+	*fakecorev1.FakeSecrets
+}
+
+// copycerts.UploadCerts will fail if a secret already exists.
+func (f *failingSecretInterface) Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.Secret, error) {
+	return &v1.Secret{}, nil
 }

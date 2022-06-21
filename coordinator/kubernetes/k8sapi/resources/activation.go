@@ -41,7 +41,12 @@ func NewActivationDaemonset(csp, measurementsJSON, idJSON string) *activationDae
 				{
 					APIGroups: []string{""},
 					Resources: []string{"secrets"},
-					Verbs:     []string{"get", "list", "create"},
+					Verbs:     []string{"get", "list", "create", "update"},
+				},
+				{
+					APIGroups: []string{"rbac.authorization.k8s.io"},
+					Resources: []string{"roles", "rolebindings"},
+					Verbs:     []string{"create", "update"},
 				},
 			},
 		},

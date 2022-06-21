@@ -67,5 +67,6 @@ Uses fsnotify to wait for expected measurement updates, and updates the validato
 ## [Dockerfile](./Dockerfile)
 
 ```shell
-DOCKER_BUILDKIT=1 docker build --build-arg PROJECT_VERSION="v1.0.0" -t ghcr.io/edgelesssys/activation-service:v1.0.0 -f activation/Dockerfile .
+export VERSION=1.0.0
+DOCKER_BUILDKIT=1 docker build --build-arg PROJECT_VERSION=${VERSION} -t ghcr.io/edgelesssys/constellation/activation-service:v${VERSION} -f activation/Dockerfile .
 ```

@@ -47,6 +47,7 @@ const (
 	MasterSecretFilename    = "constellation-mastersecret.base64"
 	WGQuickConfigFilename   = "wg0.conf"
 	CoreOSAdminConfFilename = "/etc/kubernetes/admin.conf"
+	KubeadmCertificateDir   = "/etc/kubernetes/pki"
 
 	// Filenames for the Activation service.
 	ActivationBasePath             = "/var/config"

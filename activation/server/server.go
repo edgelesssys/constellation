@@ -57,62 +57,113 @@ func (s *Server) Run(creds credentials.TransportCredentials, port string) error 
 	return grpcServer.Serve(lis)
 }
 
-// ActivateNode handles activation requests of Constellation worker nodes.
+// ActivateWorkerNode handles activation requests of Constellation worker nodes.
 // A worker node will receive:
 // - stateful disk encryption key.
 // - Kubernetes join token.
 // - cluster and owner ID to taint the node as initialized.
-func (s *Server) ActivateNode(ctx context.Context, req *proto.ActivateNodeRequest) (*proto.ActivateNodeResponse, error) {
-	klog.V(4).Info("ActivateNode: loading IDs")
-	var id attestationtypes.ID
-	if err := s.file.ReadJSON(filepath.Join(constants.ActivationBasePath, constants.ActivationIDFilename), &id); err != nil {
-		klog.Errorf("unable to load IDs: %s", err)
-		return nil, status.Errorf(codes.Internal, "unable to load IDs: %s", err)
-	}
-
-	klog.V(4).Info("ActivateNode: requesting disk encryption key")
-	stateDiskKey, err := s.dataKeyGetter.GetDataKey(ctx, req.DiskUuid, constants.StateDiskKeyLength)
+func (s *Server) ActivateWorkerNode(ctx context.Context, req *proto.ActivateWorkerNodeRequest) (*proto.ActivateWorkerNodeResponse, error) {
+	nodeParameters, err := s.activateNode(ctx, "ActivateWorker", req.DiskUuid, req.NodeName)
 	if err != nil {
-		klog.Errorf("unable to get key for stateful disk: %s", err)
-		return nil, status.Errorf(codes.Internal, "unable to get key for stateful disk: %s", err)
-	}
-
-	klog.V(4).Info("ActivateNode: creating Kubernetes join token")
-	kubeArgs, err := s.joinTokenGetter.GetJoinToken(constants.KubernetesJoinTokenTTL)
-	if err != nil {
-		klog.Errorf("unable to generate Kubernetes join arguments: %s", err)
-		return nil, status.Errorf(codes.Internal, "unable to generate Kubernetes join arguments: %s", err)
-	}
-
-	klog.V(4).Info("ActivateNode: creating signed kubelet certificate")
-	kubeletCert, kubeletKey, err := s.ca.GetCertificate(req.NodeName)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "unable to generate kubelet certificate: %s", err)
+		return nil, fmt.Errorf("ActivateNode failed: %w", err)
 	}
 
 	klog.V(4).Info("ActivateNode successful")
 
-	return &proto.ActivateNodeResponse{
-		StateDiskKey:             stateDiskKey,
-		ClusterId:                id.Cluster,
-		OwnerId:                  id.Owner,
-		ApiServerEndpoint:        kubeArgs.APIServerEndpoint,
-		Token:                    kubeArgs.Token,
-		DiscoveryTokenCaCertHash: kubeArgs.CACertHashes[0],
-		KubeletCert:              kubeletCert,
-		KubeletKey:               kubeletKey,
+	return &proto.ActivateWorkerNodeResponse{
+		StateDiskKey:             nodeParameters.stateDiskKey,
+		ClusterId:                nodeParameters.id.Cluster,
+		OwnerId:                  nodeParameters.id.Owner,
+		ApiServerEndpoint:        nodeParameters.kubeArgs.APIServerEndpoint,
+		Token:                    nodeParameters.kubeArgs.Token,
+		DiscoveryTokenCaCertHash: nodeParameters.kubeArgs.CACertHashes[0],
+		KubeletCert:              nodeParameters.kubeletCert,
+		KubeletKey:               nodeParameters.kubeletKey,
 	}, nil
 }
 
-// ActivateCoordinator handles activation requests of Constellation control-plane nodes.
-func (s *Server) ActivateCoordinator(ctx context.Context, req *proto.ActivateCoordinatorRequest) (*proto.ActivateCoordinatorResponse, error) {
-	panic("not implemented")
+// ActivateControlPlaneNode handles activation requests of Constellation control-plane nodes.
+// A control-plane node will receive:
+// - stateful disk encryption key.
+// - Kubernetes join token.
+// - cluster and owner ID to taint the node as initialized.
+// - a decryption key for CA certificates uploaded to the Kubernetes cluster.
+func (s *Server) ActivateControlPlaneNode(ctx context.Context, req *proto.ActivateControlPlaneNodeRequest) (*proto.ActivateControlPlaneNodeResponse, error) {
+	nodeParameters, err := s.activateNode(ctx, "ActivateControlPlane", req.DiskUuid, req.NodeName)
+	if err != nil {
+		return nil, fmt.Errorf("ActivateControlPlane failed: %w", err)
+	}
+
+	certKey, err := s.joinTokenGetter.GetControlPlaneCertificateKey()
+	if err != nil {
+		return nil, fmt.Errorf("ActivateControlPlane failed: %w", err)
+	}
+
+	klog.V(4).Info("ActivateControlPlane successful")
+
+	return &proto.ActivateControlPlaneNodeResponse{
+		StateDiskKey:             nodeParameters.stateDiskKey,
+		ClusterId:                nodeParameters.id.Cluster,
+		OwnerId:                  nodeParameters.id.Owner,
+		ApiServerEndpoint:        nodeParameters.kubeArgs.APIServerEndpoint,
+		Token:                    nodeParameters.kubeArgs.Token,
+		DiscoveryTokenCaCertHash: nodeParameters.kubeArgs.CACertHashes[0],
+		KubeletCert:              nodeParameters.kubeletCert,
+		KubeletKey:               nodeParameters.kubeletKey,
+		CertificateKey:           certKey,
+	}, nil
+}
+
+func (s *Server) activateNode(ctx context.Context, logPrefix, diskUUID, nodeName string) (nodeParameters, error) {
+	klog.V(4).Infof("%s: loading IDs", logPrefix)
+	var id attestationtypes.ID
+	if err := s.file.ReadJSON(filepath.Join(constants.ActivationBasePath, constants.ActivationIDFilename), &id); err != nil {
+		klog.Errorf("unable to load IDs: %s", err)
+		return nodeParameters{}, status.Errorf(codes.Internal, "unable to load IDs: %s", err)
+	}
+
+	klog.V(4).Infof("%s: requesting disk encryption key", logPrefix)
+	stateDiskKey, err := s.dataKeyGetter.GetDataKey(ctx, diskUUID, constants.StateDiskKeyLength)
+	if err != nil {
+		klog.Errorf("unable to get key for stateful disk: %s", err)
+		return nodeParameters{}, status.Errorf(codes.Internal, "unable to get key for stateful disk: %s", err)
+	}
+
+	klog.V(4).Infof("%s: creating Kubernetes join token", logPrefix)
+	kubeArgs, err := s.joinTokenGetter.GetJoinToken(constants.KubernetesJoinTokenTTL)
+	if err != nil {
+		klog.Errorf("unable to generate Kubernetes join arguments: %s", err)
+		return nodeParameters{}, status.Errorf(codes.Internal, "unable to generate Kubernetes join arguments: %s", err)
+	}
+
+	klog.V(4).Infof("%s: creating signed kubelet certificate", logPrefix)
+	kubeletCert, kubeletKey, err := s.ca.GetCertificate(nodeName)
+	if err != nil {
+		return nodeParameters{}, status.Errorf(codes.Internal, "unable to generate kubelet certificate: %s", err)
+	}
+
+	return nodeParameters{
+		stateDiskKey: stateDiskKey,
+		id:           id,
+		kubeArgs:     kubeArgs,
+		kubeletCert:  kubeletCert,
+		kubeletKey:   kubeletKey,
+	}, nil
+}
+
+type nodeParameters struct {
+	stateDiskKey []byte
+	id           attestationtypes.ID
+	kubeArgs     *kubeadmv1.BootstrapTokenDiscovery
+	kubeletCert  []byte
+	kubeletKey   []byte
 }
 
 // joinTokenGetter returns Kubernetes bootstrap (join) tokens.
 type joinTokenGetter interface {
 	// GetJoinToken returns a bootstrap (join) token.
 	GetJoinToken(ttl time.Duration) (*kubeadmv1.BootstrapTokenDiscovery, error)
+	GetControlPlaneCertificateKey() (string, error)
 }
 
 // dataKeyGetter interacts with Constellation's key management system to retrieve keys.
