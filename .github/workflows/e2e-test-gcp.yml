@@ -13,6 +13,8 @@ jobs:
     steps:
     - name: Check out repository
       uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
     - name: Run GCP E2E test
       uses: ./.github/actions/e2e_test
       with:
