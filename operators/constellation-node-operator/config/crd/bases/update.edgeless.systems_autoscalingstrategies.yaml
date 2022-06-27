@@ -36,13 +36,34 @@ spec:
           spec:
             description: AutoscalingStrategySpec defines the desired state of AutoscalingStrategy
             properties:
-              foo:
-                description: Foo is an example field of AutoscalingStrategy. Edit
-                  autoscalingstrategy_types.go to remove/update
+              deploymentName:
+                description: DeploymentName defines the name of the autoscaler deployment.
                 type: string
+              deploymentNamespace:
+                description: DeploymentNamespace defines the namespace of the autoscaler
+                  deployment.
+                type: string
+              enabled:
+                description: Enabled defines whether cluster autoscaling should be
+                  enabled or not.
+                type: boolean
+            required:
+            - deploymentName
+            - deploymentNamespace
+            - enabled
             type: object
           status:
             description: AutoscalingStrategyStatus defines the observed state of AutoscalingStrategy
+            properties:
+              enabled:
+                description: Enabled shows whether cluster autoscaling is currently
+                  enabled or not.
+                type: boolean
+              replicas:
+                description: Replicas is the number of replicas for the autoscaler
+                  deployment.
+                format: int32
+                type: integer
             type: object
         type: object
     served: true

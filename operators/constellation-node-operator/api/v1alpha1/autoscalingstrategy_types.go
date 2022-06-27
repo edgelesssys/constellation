@@ -5,22 +5,24 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // AutoscalingStrategySpec defines the desired state of AutoscalingStrategy
 type AutoscalingStrategySpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of AutoscalingStrategy. Edit autoscalingstrategy_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Enabled defines whether cluster autoscaling should be enabled or not.
+	Enabled bool `json:"enabled"`
+	// DeploymentName defines the name of the autoscaler deployment.
+	DeploymentName string `json:"deploymentName"`
+	// DeploymentNamespace defines the namespace of the autoscaler deployment.
+	DeploymentNamespace string `json:"deploymentNamespace"`
 }
 
 // AutoscalingStrategyStatus defines the observed state of AutoscalingStrategy
 type AutoscalingStrategyStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Enabled shows whether cluster autoscaling is currently enabled or not.
+	// +optional
+	Enabled bool `json:"enabled,omitempty"`
+	// Replicas is the number of replicas for the autoscaler deployment.
+	// +optional
+	Replicas int32 `json:"replicas,omitempty"`
 }
 
 //+kubebuilder:object:root=true
