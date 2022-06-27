@@ -5,22 +5,27 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+const (
+	// ConditionOutdated is used to signal outdated scaling groups.
+	ConditionOutdated = "Outdated"
+)
 
 // ScalingGroupSpec defines the desired state of ScalingGroup
 type ScalingGroupSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of ScalingGroup. Edit scalinggroup_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// NodeImage is the name of the NodeImage resource.
+	NodeImage string `json:"nodeImage,omitempty"`
+	// GroupID is the CSP specific, canonical identifier of a scaling group.
+	GroupID string `json:"groupId,omitempty"`
+	// Autoscaling specifies wether the scaling group should automatically scale using the cluster-autoscaler.
+	Autoscaling bool `json:"autoscaling,omitempty"`
 }
 
 // ScalingGroupStatus defines the observed state of ScalingGroup
 type ScalingGroupStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// ImageReference is the image currently used for newly created nodes in this scaling group.
+	ImageReference string `json:"imageReference,omitempty"`
+	// Conditions represent the latest available observations of an object's state.
+	Conditions []metav1.Condition `json:"conditions"`
 }
 
 //+kubebuilder:object:root=true
