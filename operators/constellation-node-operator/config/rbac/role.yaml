@@ -57,3 +57,29 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - update.edgeless.systems
+  resources:
+  - scalinggroups
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - update.edgeless.systems
+  resources:
+  - scalinggroups/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - update.edgeless.systems
+  resources:
+  - scalinggroups/status
+  verbs:
+  - get
+  - patch
+  - update

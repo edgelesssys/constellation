@@ -1,0 +1,6 @@
+apiVersion: update.edgeless.systems/v1alpha1
+kind: ScalingGroup
+metadata:
+  name: scalinggroup-sample
+spec:
+  # TODO(user): Add fields here
