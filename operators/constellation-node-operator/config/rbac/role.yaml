@@ -17,6 +17,12 @@ rules:
   - update
   - watch
 - apiGroups:
+  - apps
+  resources:
+  - nodeimage/status
+  verbs:
+  - get
+- apiGroups:
   - update.edgeless.systems
   resources:
   - autoscalingstrategies
@@ -42,6 +48,14 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - update.edgeless.systems
+  resources:
+  - nodeimage
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - update.edgeless.systems
   resources:
