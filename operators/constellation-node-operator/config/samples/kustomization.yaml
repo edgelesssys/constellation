@@ -3,4 +3,5 @@ resources:
 - update_v1alpha1_nodeimage.yaml
 - update_v1alpha1_autoscalingstrategy.yaml
 - update_v1alpha1_scalinggroup.yaml
+- update_v1alpha1_pendingnode.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

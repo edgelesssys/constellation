@@ -60,6 +60,32 @@ rules:
 - apiGroups:
   - update.edgeless.systems
   resources:
+  - pendingnodes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - update.edgeless.systems
+  resources:
+  - pendingnodes/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - update.edgeless.systems
+  resources:
+  - pendingnodes/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - update.edgeless.systems
+  resources:
   - scalinggroups
   verbs:
   - create

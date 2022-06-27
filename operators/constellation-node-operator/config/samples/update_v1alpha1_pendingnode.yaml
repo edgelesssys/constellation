@@ -1,0 +1,6 @@
+apiVersion: update.edgeless.systems/v1alpha1
+kind: PendingNode
+metadata:
+  name: pendingnode-sample
+spec:
+  # TODO(user): Add fields here
