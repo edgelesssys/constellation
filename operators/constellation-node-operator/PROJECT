@@ -6,4 +6,13 @@ plugins:
   scorecard.sdk.operatorframework.io/v2: {}
 projectName: constellation-node-operator
 repo: github.com/edgelesssys/constellation/operators/constellation-node-operator
+resources:
+- api:
+    crdVersion: v1
+  controller: true
+  domain: edgeless.systems
+  group: update
+  kind: NodeImage
+  path: github.com/edgelesssys/constellation/operators/constellation-node-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"
