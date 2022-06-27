@@ -15,4 +15,12 @@ resources:
   kind: NodeImage
   path: github.com/edgelesssys/constellation/operators/constellation-node-operator/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+  controller: true
+  domain: edgeless.systems
+  group: update
+  kind: AutoscalingStrategy
+  path: github.com/edgelesssys/constellation/operators/constellation-node-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"

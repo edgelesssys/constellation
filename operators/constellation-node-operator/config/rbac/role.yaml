@@ -8,6 +8,32 @@ rules:
 - apiGroups:
   - update.edgeless.systems
   resources:
+  - autoscalingstrategies
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - update.edgeless.systems
+  resources:
+  - autoscalingstrategies/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - update.edgeless.systems
+  resources:
+  - autoscalingstrategies/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - update.edgeless.systems
+  resources:
   - nodeimages
   verbs:
   - create
