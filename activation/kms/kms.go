@@ -4,21 +4,24 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/kms/server/kmsapi/kmsproto"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"k8s.io/klog/v2"
 )
 
 // Client interacts with Constellation's key management service.
 type Client struct {
+	log      *logger.Logger
 	endpoint string
 	grpc     grpcClient
 }
 
 // New creates a new KMS.
-func New(endpoint string) Client {
+func New(log *logger.Logger, endpoint string) Client {
 	return Client{
+		log:      log,
 		endpoint: endpoint,
 		grpc:     client{},
 	}
@@ -26,15 +29,17 @@ func New(endpoint string) Client {
 
 // GetDEK returns a data encryption key for the given UUID.
 func (c Client) GetDataKey(ctx context.Context, uuid string, length int) ([]byte, error) {
+	log := c.log.With(zap.String("diskUUID", uuid), zap.String("endpoint", c.endpoint))
 	// TODO: update credentials if we enable aTLS on the KMS
 	// For now this is fine since traffic is only routed through the Constellation cluster
+	log.Infof("Connecting to KMS at %s", c.endpoint)
 	conn, err := grpc.DialContext(ctx, c.endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
 
-	klog.V(6).Infof("GetDataKey: connecting to KMS at %s", c.endpoint)
+	log.Infof("Requesting data key")
 	res, err := c.grpc.GetDataKey(
 		ctx,
 		&kmsproto.GetDataKeyRequest{
@@ -47,6 +52,7 @@ func (c Client) GetDataKey(ctx context.Context, uuid string, length int) ([]byte
 		return nil, fmt.Errorf("fetching data encryption key from Constellation KMS: %w", err)
 	}
 
+	log.Infof("Data key request successful")
 	return res.DataKey, nil
 }
 

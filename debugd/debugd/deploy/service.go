@@ -2,13 +2,13 @@ package deploy
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log"
 	"sync"
 
 	"github.com/edgelesssys/constellation/debugd/debugd"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
+	"go.uber.org/zap"
 )
 
 const (
@@ -40,15 +40,17 @@ type SystemdUnit struct {
 
 // ServiceManager receives ServiceManagerRequests and units via channels and performs the requests / creates the unit files.
 type ServiceManager struct {
+	log                      *logger.Logger
 	dbus                     dbusClient
 	fs                       afero.Fs
 	systemdUnitFilewriteLock sync.Mutex
 }
 
 // NewServiceManager creates a new ServiceManager.
-func NewServiceManager() *ServiceManager {
+func NewServiceManager(log *logger.Logger) *ServiceManager {
 	fs := afero.NewOsFs()
 	return &ServiceManager{
+		log:                      log,
 		dbus:                     &dbusWrapper{},
 		fs:                       fs,
 		systemdUnitFilewriteLock: sync.Mutex{},
@@ -78,6 +80,7 @@ type dbusConn interface {
 
 // SystemdAction will perform a systemd action on a service unit (start, stop, restart, reload).
 func (s *ServiceManager) SystemdAction(ctx context.Context, request ServiceManagerRequest) error {
+	log := s.log.With(zap.String("unit", request.Unit), zap.String("action", request.Action.String()))
 	conn, err := s.dbus.NewSystemdConnectionContext(ctx)
 	if err != nil {
 		return fmt.Errorf("establishing systemd connection: %w", err)
@@ -94,14 +97,14 @@ func (s *ServiceManager) SystemdAction(ctx context.Context, request ServiceManag
 	case Reload:
 		err = conn.ReloadContext(ctx)
 	default:
-		return errors.New("unknown systemd action: " + request.Action.String())
+		return fmt.Errorf("unknown systemd action: %s", request.Action.String())
 	}
 	if err != nil {
 		return fmt.Errorf("performing systemd action %v on unit %v: %w", request.Action, request.Unit, err)
 	}
 
 	if request.Action == Reload {
-		log.Println("daemon-reload succeeded")
+		log.Infof("daemon-reload succeeded")
 		return nil
 	}
 	// Wait for the action to finish and then check if it was
@@ -110,17 +113,18 @@ func (s *ServiceManager) SystemdAction(ctx context.Context, request ServiceManag
 
 	switch result {
 	case "done":
-		log.Printf("%s on systemd unit %s succeeded\n", request.Action, request.Unit)
+		log.Infof("%s on systemd unit %s succeeded", request.Action, request.Unit)
 		return nil
 
 	default:
-		return fmt.Errorf("performing action %v on systemd unit \"%v\" failed: expected \"%v\" but received \"%v\"", request.Action, request.Unit, "done", result)
+		return fmt.Errorf("performing action %q on systemd unit %q failed: expected %q but received %q", request.Action.String(), request.Unit, "done", result)
 	}
 }
 
 // WriteSystemdUnitFile will write a systemd unit to disk.
 func (s *ServiceManager) WriteSystemdUnitFile(ctx context.Context, unit SystemdUnit) error {
-	log.Printf("Writing systemd unit file: %s/%s\n", systemdUnitFolder, unit.Name)
+	log := s.log.With(zap.String("unitFile", fmt.Sprintf("%s/%s", systemdUnitFolder, unit.Name)))
+	log.Infof("Writing systemd unit file")
 	s.systemdUnitFilewriteLock.Lock()
 	defer s.systemdUnitFilewriteLock.Unlock()
 	if err := afero.WriteFile(s.fs, fmt.Sprintf("%s/%s", systemdUnitFolder, unit.Name), []byte(unit.Contents), 0o644); err != nil {
@@ -131,7 +135,7 @@ func (s *ServiceManager) WriteSystemdUnitFile(ctx context.Context, unit SystemdU
 		return fmt.Errorf("performing systemd daemon-reload: %w", err)
 	}
 
-	log.Printf("Wrote systemd unit file: %s/%s and performed daemon-reload\n", systemdUnitFolder, unit.Name)
+	log.Infof("Wrote systemd unit file and performed daemon-reload")
 
 	return nil
 }

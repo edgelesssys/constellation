@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/fsnotify/fsnotify"
 	"github.com/stretchr/testify/assert"
 )
@@ -99,6 +100,7 @@ func TestWatcher(t *testing.T) {
 			assert := assert.New(t)
 
 			watcher := &FileWatcher{
+				log:     logger.NewTest(t),
 				updater: tc.updater,
 				watcher: tc.watcher,
 				done:    make(chan struct{}, 1),

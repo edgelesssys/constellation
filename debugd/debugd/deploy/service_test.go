@@ -7,6 +7,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -95,6 +96,7 @@ func TestSystemdAction(t *testing.T) {
 
 			fs := afero.NewMemMapFs()
 			manager := ServiceManager{
+				log:                      logger.NewTest(t),
 				dbus:                     &tc.dbus,
 				fs:                       fs,
 				systemdUnitFilewriteLock: sync.Mutex{},
@@ -173,6 +175,7 @@ func TestWriteSystemdUnitFile(t *testing.T) {
 				fs = afero.NewReadOnlyFs(fs)
 			}
 			manager := ServiceManager{
+				log:                      logger.NewTest(t),
 				dbus:                     &tc.dbus,
 				fs:                       fs,
 				systemdUnitFilewriteLock: sync.Mutex{},

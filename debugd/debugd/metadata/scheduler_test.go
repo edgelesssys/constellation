@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -74,6 +75,7 @@ func TestSchedulerStart(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), tc.timeout)
 			defer cancel()
 			scheduler := Scheduler{
+				log:        logger.NewTest(t),
 				fetcher:    &tc.fetcher,
 				ssh:        &tc.ssh,
 				downloader: &tc.downloader,

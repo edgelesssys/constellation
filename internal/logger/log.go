@@ -33,13 +33,16 @@ Use Fatalf() to log information about any errors that occurred and then exit the
 package logger
 
 import (
+	"fmt"
 	"os"
+	"testing"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc"
 )
 
@@ -85,6 +88,13 @@ func New(logType LogType, logLevel zapcore.Level) *Logger {
 	return &Logger{logger: logger.Sugar()}
 }
 
+// NewTestLogger creates a logger for unit / integration tests.
+func NewTest(t *testing.T) *Logger {
+	return &Logger{
+		logger: zaptest.NewLogger(t).Sugar().Named(fmt.Sprintf("%q", t.Name())),
+	}
+}
+
 // Debugf logs a message at Debug level.
 // Debug logs are typically voluminous, and contain detailed information on the flow of execution.
 func (l *Logger) Debugf(format string, args ...any) {
@@ -123,7 +133,7 @@ func (l *Logger) Sync() {
 
 // WithIncreasedLevel returns a logger with increased logging level.
 func (l *Logger) WithIncreasedLevel(level zapcore.Level) *Logger {
-	return &Logger{logger: l.GetZapLogger().WithOptions(zap.IncreaseLevel(level)).Sugar()}
+	return &Logger{logger: l.getZapLogger().WithOptions(zap.IncreaseLevel(level)).Sugar()}
 }
 
 // With returns a logger with structured context.
@@ -136,16 +146,16 @@ func (l *Logger) Named(name string) *Logger {
 	return &Logger{logger: l.logger.Named(name)}
 }
 
-// GetZapLogger returns the underlying zap logger.
-func (l *Logger) GetZapLogger() *zap.Logger {
-	return l.logger.Desugar()
+// ReplaceGRPCLogger replaces grpc's internal logger with the given logger.
+func (l *Logger) ReplaceGRPCLogger() {
+	grpc_zap.ReplaceGrpcLoggerV2(l.logger.Desugar())
 }
 
 // GetServerUnaryInterceptor returns a gRPC server option for intercepting unary gRPC logs.
 func (l *Logger) GetServerUnaryInterceptor() grpc.ServerOption {
 	return grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 		grpc_ctxtags.UnaryServerInterceptor(),
-		grpc_zap.UnaryServerInterceptor(l.GetZapLogger()),
+		grpc_zap.UnaryServerInterceptor(l.getZapLogger()),
 	))
 }
 
@@ -153,20 +163,25 @@ func (l *Logger) GetServerUnaryInterceptor() grpc.ServerOption {
 func (l *Logger) GetServerStreamInterceptor() grpc.ServerOption {
 	return grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 		grpc_ctxtags.StreamServerInterceptor(),
-		grpc_zap.StreamServerInterceptor(l.GetZapLogger()),
+		grpc_zap.StreamServerInterceptor(l.getZapLogger()),
 	))
 }
 
 // GetClientUnaryInterceptor returns a gRPC client option for intercepting unary gRPC logs.
 func (l *Logger) GetClientUnaryInterceptor() grpc.DialOption {
 	return grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
-		grpc_zap.UnaryClientInterceptor(l.GetZapLogger()),
+		grpc_zap.UnaryClientInterceptor(l.getZapLogger()),
 	))
 }
 
 // GetClientStreamInterceptor returns a gRPC client option for intercepting stream gRPC logs.
 func (l *Logger) GetClientStreamInterceptor() grpc.DialOption {
 	return grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
-		grpc_zap.StreamClientInterceptor(l.GetZapLogger()),
+		grpc_zap.StreamClientInterceptor(l.getZapLogger()),
 	))
+}
+
+// getZapLogger returns the underlying zap logger.
+func (l *Logger) getZapLogger() *zap.Logger {
+	return l.logger.Desugar()
 }

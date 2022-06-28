@@ -7,6 +7,7 @@ import (
 
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -77,6 +78,7 @@ kind: Config`,
 			require := require.New(t)
 
 			client := &Kubeadm{
+				log:    logger.NewTest(t),
 				file:   file.NewHandler(afero.NewMemMapFs()),
 				client: fake.NewSimpleClientset(),
 			}
@@ -117,6 +119,7 @@ func TestGetControlPlaneCertificateKey(t *testing.T) {
 			assert := assert.New(t)
 
 			client := &Kubeadm{
+				log:    logger.NewTest(t),
 				client: tc.client,
 			}
 

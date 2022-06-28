@@ -3,11 +3,12 @@ package ssh
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"sync"
 
 	"github.com/edgelesssys/constellation/internal/deploy/user"
+	"github.com/edgelesssys/constellation/internal/logger"
+	"go.uber.org/zap"
 )
 
 // UserKey describes an user that should be created with a corresponding public SSH key.
@@ -18,14 +19,16 @@ type UserKey struct {
 
 // Access reads SSH public keys from a channel, creates the specified users if required and writes the public keys to the users authorized_keys file.
 type Access struct {
+	log         *logger.Logger
 	userManager user.LinuxUserManager
 	authorized  map[string]bool
 	mux         sync.Mutex
 }
 
 // NewAccess creates a new Access.
-func NewAccess(userManager user.LinuxUserManager) *Access {
+func NewAccess(log *logger.Logger, userManager user.LinuxUserManager) *Access {
 	return &Access{
+		log:         log,
 		userManager: userManager,
 		mux:         sync.Mutex{},
 		authorized:  map[string]bool{},
@@ -51,7 +54,7 @@ func (s *Access) DeployAuthorizedKey(ctx context.Context, sshKey UserKey) error 
 	if s.alreadyAuthorized(sshKey) {
 		return nil
 	}
-	log.Printf("Trying to deploy ssh key for %s\n", sshKey.Username)
+	s.log.With(zap.String("username", sshKey.Username)).Infof("Trying to deploy ssh key for user")
 	user, err := s.userManager.EnsureLinuxUserExists(ctx, sshKey.Username)
 	if err != nil {
 		return err
@@ -87,6 +90,6 @@ func (s *Access) DeployAuthorizedKey(ctx context.Context, sshKey UserKey) error 
 		return err
 	}
 	s.rememberAuthorized(sshKey)
-	log.Printf("Successfully authorized %s\n", sshKey.Username)
+	s.log.With(zap.String("username", sshKey.Username)).Infof("Successfully authorized user")
 	return nil
 }

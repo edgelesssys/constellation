@@ -13,11 +13,12 @@ import (
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
-	"k8s.io/klog/v2"
+	"github.com/edgelesssys/constellation/internal/logger"
 )
 
 // Updatable implements an updatable atls.Validator.
 type Updatable struct {
+	log          *logger.Logger
 	mux          sync.Mutex
 	newValidator newValidatorFunc
 	fileHandler  file.Handler
@@ -25,7 +26,7 @@ type Updatable struct {
 }
 
 // New initializes a new updatable validator.
-func New(csp string, fileHandler file.Handler) (*Updatable, error) {
+func New(log *logger.Logger, csp string, fileHandler file.Handler) (*Updatable, error) {
 	var newValidator newValidatorFunc
 	switch cloudprovider.FromString(csp) {
 	case cloudprovider.Azure:
@@ -39,6 +40,7 @@ func New(csp string, fileHandler file.Handler) (*Updatable, error) {
 	}
 
 	u := &Updatable{
+		log:          log,
 		newValidator: newValidator,
 		fileHandler:  fileHandler,
 	}
@@ -66,13 +68,13 @@ func (u *Updatable) Update() error {
 	u.mux.Lock()
 	defer u.mux.Unlock()
 
-	klog.V(4).Info("Updating expected measurements")
+	u.log.Infof("Updating expected measurements")
 
 	var measurements map[uint32][]byte
 	if err := u.fileHandler.ReadJSON(filepath.Join(constants.ActivationBasePath, constants.ActivationMeasurementsFilename), &measurements); err != nil {
 		return err
 	}
-	klog.V(6).Infof("New measurements: %v", measurements)
+	u.log.Debugf("New measurements: %v", measurements)
 
 	u.Validator = u.newValidator(measurements)
 

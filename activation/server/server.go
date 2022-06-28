@@ -11,18 +11,20 @@ import (
 	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
-	"github.com/edgelesssys/constellation/internal/grpc/grpc_klog"
+	"github.com/edgelesssys/constellation/internal/grpc/grpclog"
+	"github.com/edgelesssys/constellation/internal/logger"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
-	"k8s.io/klog/v2"
 
 	kubeadmv1 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
 // Server implements the core logic of Constellation's node activation service.
 type Server struct {
+	log             *logger.Logger
 	file            file.Handler
 	joinTokenGetter joinTokenGetter
 	dataKeyGetter   dataKeyGetter
@@ -31,8 +33,9 @@ type Server struct {
 }
 
 // New initializes a new Server.
-func New(fileHandler file.Handler, ca certificateAuthority, joinTokenGetter joinTokenGetter, dataKeyGetter dataKeyGetter) *Server {
+func New(log *logger.Logger, fileHandler file.Handler, ca certificateAuthority, joinTokenGetter joinTokenGetter, dataKeyGetter dataKeyGetter) *Server {
 	return &Server{
+		log:             log,
 		file:            fileHandler,
 		joinTokenGetter: joinTokenGetter,
 		dataKeyGetter:   dataKeyGetter,
@@ -42,9 +45,10 @@ func New(fileHandler file.Handler, ca certificateAuthority, joinTokenGetter join
 
 // Run starts the gRPC server on the given port, using the provided tlsConfig.
 func (s *Server) Run(creds credentials.TransportCredentials, port string) error {
+	s.log.WithIncreasedLevel(zap.WarnLevel).Named("gRPC").ReplaceGRPCLogger()
 	grpcServer := grpc.NewServer(
 		grpc.Creds(creds),
-		grpc.UnaryInterceptor(grpc_klog.LogGRPC(2)),
+		s.log.Named("gRPC").GetServerUnaryInterceptor(),
 	)
 
 	proto.RegisterAPIServer(grpcServer, s)
@@ -53,7 +57,7 @@ func (s *Server) Run(creds credentials.TransportCredentials, port string) error 
 	if err != nil {
 		return fmt.Errorf("failed to listen: %s", err)
 	}
-	klog.V(2).Infof("starting activation service on %s", lis.Addr().String())
+	s.log.Infof("Starting activation service on %s", lis.Addr().String())
 	return grpcServer.Serve(lis)
 }
 
@@ -63,12 +67,13 @@ func (s *Server) Run(creds credentials.TransportCredentials, port string) error 
 // - Kubernetes join token.
 // - cluster and owner ID to taint the node as initialized.
 func (s *Server) ActivateWorkerNode(ctx context.Context, req *proto.ActivateWorkerNodeRequest) (*proto.ActivateWorkerNodeResponse, error) {
-	nodeParameters, err := s.activateNode(ctx, "ActivateWorker", req.DiskUuid, req.NodeName)
+	s.log.Infof("ActivateWorkerNode called")
+	nodeParameters, err := s.activateNode(ctx, req.DiskUuid, req.NodeName)
 	if err != nil {
-		return nil, fmt.Errorf("ActivateNode failed: %w", err)
+		return nil, fmt.Errorf("ActivateWorkerNode failed: %w", err)
 	}
 
-	klog.V(4).Info("ActivateNode successful")
+	s.log.Infof("ActivateWorkerNode successful")
 
 	return &proto.ActivateWorkerNodeResponse{
 		StateDiskKey:             nodeParameters.stateDiskKey,
@@ -89,9 +94,10 @@ func (s *Server) ActivateWorkerNode(ctx context.Context, req *proto.ActivateWork
 // - cluster and owner ID to taint the node as initialized.
 // - a decryption key for CA certificates uploaded to the Kubernetes cluster.
 func (s *Server) ActivateControlPlaneNode(ctx context.Context, req *proto.ActivateControlPlaneNodeRequest) (*proto.ActivateControlPlaneNodeResponse, error) {
-	nodeParameters, err := s.activateNode(ctx, "ActivateControlPlane", req.DiskUuid, req.NodeName)
+	s.log.Infof("ActivateControlPlaneNode called")
+	nodeParameters, err := s.activateNode(ctx, req.DiskUuid, req.NodeName)
 	if err != nil {
-		return nil, fmt.Errorf("ActivateControlPlane failed: %w", err)
+		return nil, fmt.Errorf("ActivateControlPlaneNode failed: %w", err)
 	}
 
 	certKey, err := s.joinTokenGetter.GetControlPlaneCertificateKey()
@@ -99,7 +105,7 @@ func (s *Server) ActivateControlPlaneNode(ctx context.Context, req *proto.Activa
 		return nil, fmt.Errorf("ActivateControlPlane failed: %w", err)
 	}
 
-	klog.V(4).Info("ActivateControlPlane successful")
+	s.log.Infof("ActivateControlPlaneNode successful")
 
 	return &proto.ActivateControlPlaneNodeResponse{
 		StateDiskKey:             nodeParameters.stateDiskKey,
@@ -114,29 +120,30 @@ func (s *Server) ActivateControlPlaneNode(ctx context.Context, req *proto.Activa
 	}, nil
 }
 
-func (s *Server) activateNode(ctx context.Context, logPrefix, diskUUID, nodeName string) (nodeParameters, error) {
-	klog.V(4).Infof("%s: loading IDs", logPrefix)
+func (s *Server) activateNode(ctx context.Context, diskUUID, nodeName string) (nodeParameters, error) {
+	log := s.log.With(zap.String("peerAddress", grpclog.PeerAddrFromContext(ctx)))
+	log.Infof("Loading IDs")
 	var id attestationtypes.ID
 	if err := s.file.ReadJSON(filepath.Join(constants.ActivationBasePath, constants.ActivationIDFilename), &id); err != nil {
-		klog.Errorf("unable to load IDs: %s", err)
+		log.With(zap.Error(err)).Errorf("Unable to load IDs")
 		return nodeParameters{}, status.Errorf(codes.Internal, "unable to load IDs: %s", err)
 	}
 
-	klog.V(4).Infof("%s: requesting disk encryption key", logPrefix)
+	log.Infof("Requesting disk encryption key")
 	stateDiskKey, err := s.dataKeyGetter.GetDataKey(ctx, diskUUID, constants.StateDiskKeyLength)
 	if err != nil {
-		klog.Errorf("unable to get key for stateful disk: %s", err)
+		log.With(zap.Error(err)).Errorf("Unable to get key for stateful disk")
 		return nodeParameters{}, status.Errorf(codes.Internal, "unable to get key for stateful disk: %s", err)
 	}
 
-	klog.V(4).Infof("%s: creating Kubernetes join token", logPrefix)
+	log.Infof("Creating Kubernetes join token")
 	kubeArgs, err := s.joinTokenGetter.GetJoinToken(constants.KubernetesJoinTokenTTL)
 	if err != nil {
-		klog.Errorf("unable to generate Kubernetes join arguments: %s", err)
+		log.With(zap.Error(err)).Errorf("Unable to generate Kubernetes join arguments")
 		return nodeParameters{}, status.Errorf(codes.Internal, "unable to generate Kubernetes join arguments: %s", err)
 	}
 
-	klog.V(4).Infof("%s: creating signed kubelet certificate", logPrefix)
+	log.Infof("Creating signed kubelet certificate")
 	kubeletCert, kubeletKey, err := s.ca.GetCertificate(nodeName)
 	if err != nil {
 		return nodeParameters{}, status.Errorf(codes.Internal, "unable to generate kubelet certificate: %s", err)

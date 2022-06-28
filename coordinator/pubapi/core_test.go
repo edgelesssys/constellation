@@ -12,7 +12,9 @@ import (
 	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
+	"github.com/edgelesssys/constellation/internal/logger"
 	kms "github.com/edgelesssys/constellation/kms/server/setup"
+	"go.uber.org/zap/zapcore"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
@@ -163,7 +165,7 @@ func (c *fakeCore) UpdateDiskPassphrase(passphrase string) error {
 }
 
 func (c *fakeCore) CreateSSHUsers(sshUserKeys []ssh.UserKey) error {
-	sshAccess := ssh.NewAccess(c.linuxUserManager)
+	sshAccess := ssh.NewAccess(logger.New(logger.PlainLog, zapcore.DebugLevel), c.linuxUserManager)
 	ctx := context.Background()
 
 	for _, pair := range sshUserKeys {

@@ -5,18 +5,20 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/kms/server/kmsapi/kmsproto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 )
 
 func TestGetDataKey(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
+	log := logger.NewTest(t)
+
 	kms := &stubKMS{derivedKey: []byte{0x0, 0x1, 0x2, 0x3, 0x4, 0x5}}
-	api := New(zaptest.NewLogger(t), kms)
+	api := New(log, kms)
 
 	res, err := api.GetDataKey(context.Background(), &kmsproto.GetDataKeyRequest{DataKeyId: "1", Length: 32})
 	require.NoError(err)
@@ -33,7 +35,7 @@ func TestGetDataKey(t *testing.T) {
 	assert.Nil(res)
 
 	// Test derive key error
-	api = New(zaptest.NewLogger(t), &stubKMS{deriveKeyErr: errors.New("error")})
+	api = New(log, &stubKMS{deriveKeyErr: errors.New("error")})
 	res, err = api.GetDataKey(context.Background(), &kmsproto.GetDataKeyRequest{DataKeyId: "1", Length: 32})
 	assert.Error(err)
 	assert.Nil(res)

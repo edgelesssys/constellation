@@ -11,6 +11,7 @@ import (
 
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -164,86 +165,89 @@ func TestDeployKeys(t *testing.T) {
 			},
 		},
 	}
-	for _, tc := range testCases {
-		fs := afero.NewMemMapFs()
-		require.NoError(fs.MkdirAll(normalHomePath, 0o700))
-		require.NoError(fs.Mkdir("/etc", 0o644))
-		_, err := fs.Create("/etc/passwd")
-		require.NoError(err)
-
-		// Create fake user directories
-		for user := range tc.existingUsers {
-			userHomePath := path.Join(normalHomePath, user)
-			err := fs.MkdirAll(userHomePath, 0o700)
-			require.NoError(err)
-			require.NoError(fs.Chown(userHomePath, int(tc.existingUsers[user].UID), int(tc.existingUsers[user].GID)))
-		}
-
-		linuxUserManager := user.NewLinuxUserManagerFake(fs)
-		sshAccess := ssh.NewAccess(linuxUserManager)
-		deployKeys(context.Background(), tc.configMap, fs, linuxUserManager, tc.existingUsers, sshAccess)
-
-		// Unfourtunaly, we cannot retrieve the UID/GID from afero's MemMapFs without weird hacks,
-		// as it does not have getters and it is not exported.
-		if tc.configMap != nil && tc.existingUsers != nil {
-			// Parse /etc/passwd and check for users
-			passwdEntries, err := linuxUserManager.Passwd.Parse(fs)
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+			require.NoError(fs.MkdirAll(normalHomePath, 0o700))
+			require.NoError(fs.Mkdir("/etc", 0o644))
+			_, err := fs.Create("/etc/passwd")
 			require.NoError(err)
 
-			// Check recreation or deletion
+			// Create fake user directories
 			for user := range tc.existingUsers {
-				if _, ok := tc.configMap.Data[user]; ok {
-					checkHomeDirectory(user, fs, assert, true)
+				userHomePath := path.Join(normalHomePath, user)
+				err := fs.MkdirAll(userHomePath, 0o700)
+				require.NoError(err)
+				require.NoError(fs.Chown(userHomePath, int(tc.existingUsers[user].UID), int(tc.existingUsers[user].GID)))
+			}
 
-					// Check if user exists in /etc/passwd
-					userEntry, ok := passwdEntries[user]
-					assert.True(ok)
+			log := logger.NewTest(t)
+			linuxUserManager := user.NewLinuxUserManagerFake(fs)
+			sshAccess := ssh.NewAccess(log, linuxUserManager)
+			deployKeys(context.Background(), log, tc.configMap, fs, linuxUserManager, tc.existingUsers, sshAccess)
 
-					// Check if user has been recreated with correct UID/GID
-					actualUID, err := strconv.Atoi(userEntry.Uid)
-					assert.NoError(err)
-					assert.EqualValues(tc.existingUsers[user].UID, actualUID)
-					actualGID, err := strconv.Atoi(userEntry.Gid)
-					assert.NoError(err)
-					assert.EqualValues(tc.existingUsers[user].GID, actualGID)
+			// Unfortunately, we cannot retrieve the UID/GID from afero's MemMapFs without weird hacks,
+			// as it does not have getters and it is not exported.
+			if tc.configMap != nil && tc.existingUsers != nil {
+				// Parse /etc/passwd and check for users
+				passwdEntries, err := linuxUserManager.Passwd.Parse(fs)
+				require.NoError(err)
 
-					// Check if the user has the right keys
-					checkSSHKeys(user, fs, assert, tc.configMap.Data[user]+"\n")
+				// Check recreation or deletion
+				for user := range tc.existingUsers {
+					if _, ok := tc.configMap.Data[user]; ok {
+						checkHomeDirectory(user, fs, assert, true)
 
-				} else {
-					// Check if home directory is not available anymore under the regular path
-					checkHomeDirectory(user, fs, assert, false)
+						// Check if user exists in /etc/passwd
+						userEntry, ok := passwdEntries[user]
+						assert.True(ok)
 
-					// Check if home directory has been evicted
-					homeDirs, err := afero.ReadDir(fs, evictedHomePath)
-					require.NoError(err)
+						// Check if user has been recreated with correct UID/GID
+						actualUID, err := strconv.Atoi(userEntry.Uid)
+						assert.NoError(err)
+						assert.EqualValues(tc.existingUsers[user].UID, actualUID)
+						actualGID, err := strconv.Atoi(userEntry.Gid)
+						assert.NoError(err)
+						assert.EqualValues(tc.existingUsers[user].GID, actualGID)
 
-					var userDirectoryName string
-					for _, singleDir := range homeDirs {
-						if strings.Contains(singleDir.Name(), user+"_") {
-							userDirectoryName = singleDir.Name()
-							break
+						// Check if the user has the right keys
+						checkSSHKeys(user, fs, assert, tc.configMap.Data[user]+"\n")
+
+					} else {
+						// Check if home directory is not available anymore under the regular path
+						checkHomeDirectory(user, fs, assert, false)
+
+						// Check if home directory has been evicted
+						homeDirs, err := afero.ReadDir(fs, evictedHomePath)
+						require.NoError(err)
+
+						var userDirectoryName string
+						for _, singleDir := range homeDirs {
+							if strings.Contains(singleDir.Name(), user+"_") {
+								userDirectoryName = singleDir.Name()
+								break
+							}
 						}
+						assert.NotEmpty(userDirectoryName)
+
+						// Check if user does not exist in /etc/passwd
+						_, ok := passwdEntries[user]
+						assert.False(ok)
 					}
-					assert.NotEmpty(userDirectoryName)
-
-					// Check if user does not exist in /etc/passwd
-					_, ok := passwdEntries[user]
-					assert.False(ok)
-				}
-			}
-
-			// Check creation of new users
-			for user := range tc.configMap.Data {
-				// We already checked recreated or evicted users, so skip them.
-				if _, ok := tc.existingUsers[user]; ok {
-					continue
 				}
 
-				checkHomeDirectory(user, fs, assert, true)
-				checkSSHKeys(user, fs, assert, tc.configMap.Data[user]+"\n")
+				// Check creation of new users
+				for user := range tc.configMap.Data {
+					// We already checked recreated or evicted users, so skip them.
+					if _, ok := tc.existingUsers[user]; ok {
+						continue
+					}
+
+					checkHomeDirectory(user, fs, assert, true)
+					checkSSHKeys(user, fs, assert, tc.configMap.Data[user]+"\n")
+				}
 			}
-		}
+		})
 	}
 }
 

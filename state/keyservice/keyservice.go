@@ -3,7 +3,6 @@ package keyservice
 import (
 	"context"
 	"errors"
-	"log"
 	"net"
 	"sync"
 	"time"
@@ -12,7 +11,9 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -21,6 +22,7 @@ import (
 
 // KeyAPI is the interface called by the Coordinator or an admin during restart of a node.
 type KeyAPI struct {
+	log         *logger.Logger
 	mux         sync.Mutex
 	metadata    core.ProviderMetadata
 	issuer      core.QuoteIssuer
@@ -31,8 +33,9 @@ type KeyAPI struct {
 }
 
 // New initializes a KeyAPI with the given parameters.
-func New(issuer core.QuoteIssuer, metadata core.ProviderMetadata, timeout time.Duration) *KeyAPI {
+func New(log *logger.Logger, issuer core.QuoteIssuer, metadata core.ProviderMetadata, timeout time.Duration) *KeyAPI {
 	return &KeyAPI{
+		log:         log,
 		metadata:    metadata,
 		issuer:      issuer,
 		keyReceived: make(chan struct{}, 1),
@@ -71,7 +74,7 @@ func (a *KeyAPI) WaitForDecryptionKey(uuid, listenAddr string) ([]byte, error) {
 	}
 	defer listener.Close()
 
-	log.Printf("Waiting for decryption key. Listening on: %s", listener.Addr().String())
+	a.log.Infof("Waiting for decryption key. Listening on: %s", listener.Addr().String())
 	go server.Serve(listener)
 	defer server.GracefulStop()
 
@@ -118,7 +121,7 @@ func (a *KeyAPI) requestKey(uuid string, credentials credentials.TransportCreden
 	// list available Coordinators
 	endpoints, _ := core.CoordinatorEndpoints(context.Background(), a.metadata)
 
-	log.Printf("Sending a key request to available Coordinators: %v", endpoints)
+	a.log.With(zap.Strings("endpoints", endpoints)).Infof("Sending a key request to available Coordinators")
 	// notify all available Coordinators to send a key to the node
 	// any errors encountered here will be ignored, and the calls retried after a timeout
 	for _, endpoint := range endpoints {

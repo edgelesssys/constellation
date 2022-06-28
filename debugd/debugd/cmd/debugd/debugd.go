@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net"
 	"os"
 	"strings"
@@ -15,22 +14,25 @@ import (
 	"github.com/edgelesssys/constellation/debugd/debugd/server"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/context"
 )
 
 func main() {
 	wg := &sync.WaitGroup{}
 
+	log := logger.New(logger.JSONLog, zapcore.InfoLevel)
 	fs := afero.NewOsFs()
 	streamer := coordinator.NewFileStreamer(fs)
-	serviceManager := deploy.NewServiceManager()
-	ssh := ssh.NewAccess(user.NewLinuxUserManager(fs))
+	serviceManager := deploy.NewServiceManager(log.Named("serviceManager"))
+	ssh := ssh.NewAccess(log, user.NewLinuxUserManager(fs))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	download := deploy.New(&net.Dialer{}, serviceManager, streamer)
+	download := deploy.New(log.Named("download"), &net.Dialer{}, serviceManager, streamer)
 	var fetcher metadata.Fetcher
 	constellationCSP := strings.ToLower(os.Getenv("CONSTEL_CSP"))
 	switch constellationCSP {
@@ -47,11 +49,11 @@ func main() {
 		}
 		fetcher = gcpFetcher
 	default:
-		log.Printf("Unknown / unimplemented cloud provider CONSTEL_CSP=%v\n", constellationCSP)
+		log.Errorf("Unknown / unimplemented cloud provider CONSTEL_CSP=%v. Using fallback", constellationCSP)
 		fetcher = fallback.Fetcher{}
 	}
-	sched := metadata.NewScheduler(fetcher, ssh, download)
-	serv := server.New(ssh, serviceManager, streamer)
+	sched := metadata.NewScheduler(log.Named("scheduler"), fetcher, ssh, download)
+	serv := server.New(log.Named("server"), ssh, serviceManager, streamer)
 	if err := deploy.DeployDefaultServiceUnit(ctx, serviceManager); err != nil {
 		panic(err)
 	}
@@ -59,7 +61,7 @@ func main() {
 	wg.Add(1)
 	go sched.Start(ctx, wg)
 	wg.Add(1)
-	go server.Start(wg, serv)
+	go server.Start(log, wg, serv)
 
 	wg.Wait()
 }

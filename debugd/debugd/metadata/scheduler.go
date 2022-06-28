@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"io/fs"
-	"log"
 	"sync"
 	"time"
 
 	"github.com/edgelesssys/constellation/debugd/debugd"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
+	"github.com/edgelesssys/constellation/internal/logger"
+	"go.uber.org/zap"
 )
 
 // Fetcher retrieves other debugd IPs and SSH keys from cloud provider metadata.
@@ -20,14 +21,16 @@ type Fetcher interface {
 
 // Scheduler schedules fetching of metadata using timers.
 type Scheduler struct {
+	log        *logger.Logger
 	fetcher    Fetcher
 	ssh        sshDeployer
 	downloader downloader
 }
 
 // NewScheduler returns a new scheduler.
-func NewScheduler(fetcher Fetcher, ssh sshDeployer, downloader downloader) *Scheduler {
+func NewScheduler(log *logger.Logger, fetcher Fetcher, ssh sshDeployer, downloader downloader) *Scheduler {
 	return &Scheduler{
+		log:        log,
 		fetcher:    fetcher,
 		ssh:        ssh,
 		downloader: downloader,
@@ -49,7 +52,7 @@ func (s *Scheduler) discoveryLoop(ctx context.Context, wg *sync.WaitGroup) {
 	// execute debugd discovery once at the start to skip wait for first tick
 	ips, err := s.fetcher.DiscoverDebugdIPs(ctx)
 	if err != nil {
-		log.Printf("error occurred while discovering debugd IPs: %v\n", err)
+		s.log.With(zap.Error(err)).Errorf("Discovering debugd IPs failed")
 	} else {
 		if s.downloadCoordinator(ctx, ips) {
 			return
@@ -64,10 +67,10 @@ func (s *Scheduler) discoveryLoop(ctx context.Context, wg *sync.WaitGroup) {
 		case <-ticker.C:
 			ips, err = s.fetcher.DiscoverDebugdIPs(ctx)
 			if err != nil {
-				log.Printf("error occurred while discovering debugd IPs: %v\n", err)
+				s.log.With(zap.Error(err)).Errorf("Discovering debugd IPs failed")
 				continue
 			}
-			log.Printf("discovered instances: %v\n", ips)
+			s.log.With(zap.Strings("ips", ips)).Infof("Discovered instances")
 			if s.downloadCoordinator(ctx, ips) {
 				return
 			}
@@ -80,24 +83,19 @@ func (s *Scheduler) discoveryLoop(ctx context.Context, wg *sync.WaitGroup) {
 // sshLoop discovers new ssh keys from cloud provider metadata periodically.
 func (s *Scheduler) sshLoop(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
-	// execute ssh key search once at the start to skip wait for first tick
-	keys, err := s.fetcher.FetchSSHKeys(ctx)
-	if err != nil {
-		log.Printf("error occurred while fetching SSH keys: %v\n", err)
-	} else {
-		s.deploySSHKeys(ctx, keys)
-	}
+
 	ticker := time.NewTicker(debugd.SSHCheckInterval)
 	defer ticker.Stop()
 	for {
+		keys, err := s.fetcher.FetchSSHKeys(ctx)
+		if err != nil {
+			s.log.With(zap.Error(err)).Errorf("Fetching SSH keys failed")
+		} else {
+			s.deploySSHKeys(ctx, keys)
+		}
+
 		select {
 		case <-ticker.C:
-			keys, err := s.fetcher.FetchSSHKeys(ctx)
-			if err != nil {
-				log.Printf("error occurred while fetching ssh keys: %v\n", err)
-				continue
-			}
-			s.deploySSHKeys(ctx, keys)
 		case <-ctx.Done():
 			return
 		}
@@ -116,7 +114,7 @@ func (s *Scheduler) downloadCoordinator(ctx context.Context, ips []string) (succ
 			// coordinator was already uploaded
 			return true
 		}
-		log.Printf("error occurred while downloading coordinator from %v: %v\n", ip, err)
+		s.log.With(zap.Error(err), zap.String("peer", ip)).Errorf("Downloading coordinator from peer failed")
 	}
 	return false
 }
@@ -126,7 +124,7 @@ func (s *Scheduler) deploySSHKeys(ctx context.Context, keys []ssh.UserKey) {
 	for _, key := range keys {
 		err := s.ssh.DeployAuthorizedKey(ctx, key)
 		if err != nil {
-			log.Printf("error occurred while deploying ssh key %v: %v\n", key, err)
+			s.log.With(zap.Error(err), zap.Any("key", key)).Errorf("Deploying SSH key failed")
 			continue
 		}
 	}

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/kms/server/kmsapi/kmsproto"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
@@ -41,7 +42,10 @@ func TestGetDataKey(t *testing.T) {
 			listener := bufconn.Listen(1)
 			defer listener.Close()
 
-			client := New(listener.Addr().String())
+			client := New(
+				logger.NewTest(t),
+				listener.Addr().String(),
+			)
 
 			client.grpc = tc.client
 

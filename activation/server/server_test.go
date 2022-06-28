@@ -12,6 +12,7 @@ import (
 	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -131,9 +132,15 @@ func TestActivateNode(t *testing.T) {
 			if len(tc.id) > 0 {
 				require.NoError(file.Write(filepath.Join(constants.ActivationBasePath, constants.ActivationIDFilename), tc.id, 0o644))
 			}
-			api := New(file, tc.ca, tc.kubeadm, tc.kms)
+			api := New(
+				logger.NewTest(t),
+				file,
+				tc.ca,
+				tc.kubeadm,
+				tc.kms,
+			)
 
-			resp, err := api.activateNode(context.Background(), "test", "uuid", "test")
+			resp, err := api.activateNode(context.Background(), "uuid", "test")
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -212,7 +219,13 @@ func TestActivateWorkerNode(t *testing.T) {
 			file := file.NewHandler(afero.NewMemMapFs())
 			require.NoError(file.Write(filepath.Join(constants.ActivationBasePath, constants.ActivationIDFilename), tc.id, 0o644))
 
-			api := New(file, tc.ca, tc.kubeadm, tc.kms)
+			api := New(
+				logger.NewTest(t),
+				file,
+				tc.ca,
+				tc.kubeadm,
+				tc.kms,
+			)
 
 			resp, err := api.ActivateWorkerNode(context.Background(), &activationproto.ActivateWorkerNodeRequest{DiskUuid: "uuid", NodeName: "test"})
 			if tc.wantErr {
@@ -311,7 +324,13 @@ func TestActivateControlPlaneNode(t *testing.T) {
 			file := file.NewHandler(afero.NewMemMapFs())
 			require.NoError(file.Write(filepath.Join(constants.ActivationBasePath, constants.ActivationIDFilename), tc.id, 0o644))
 
-			api := New(file, tc.ca, tc.kubeadm, tc.kms)
+			api := New(
+				logger.NewTest(t),
+				file,
+				tc.ca,
+				tc.kubeadm,
+				tc.kms,
+			)
 
 			resp, err := api.ActivateControlPlaneNode(context.Background(), &activationproto.ActivateControlPlaneNodeRequest{DiskUuid: "uuid", NodeName: "test"})
 			if tc.wantErr {

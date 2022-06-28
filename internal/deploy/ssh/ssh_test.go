@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/internal/deploy/user"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -66,6 +67,7 @@ func TestDeploySSHAuthorizedKey(t *testing.T) {
 				authorized["user:ssh-rsa testkey"] = true
 			}
 			sshAccess := Access{
+				log:         logger.NewTest(t),
 				userManager: userManager,
 				mux:         sync.Mutex{},
 				authorized:  authorized,

@@ -3,19 +3,21 @@ package deploy
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"time"
 
 	"github.com/edgelesssys/constellation/debugd/coordinator"
 	"github.com/edgelesssys/constellation/debugd/debugd"
 	pb "github.com/edgelesssys/constellation/debugd/service"
+	"github.com/edgelesssys/constellation/internal/logger"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 // Download downloads a coordinator from a given debugd instance.
 type Download struct {
+	log                *logger.Logger
 	dialer             NetDialer
 	writer             streamToFileWriter
 	serviceManager     serviceManager
@@ -23,8 +25,9 @@ type Download struct {
 }
 
 // New creates a new Download.
-func New(dialer NetDialer, serviceManager serviceManager, writer streamToFileWriter) *Download {
+func New(log *logger.Logger, dialer NetDialer, serviceManager serviceManager, writer streamToFileWriter) *Download {
 	return &Download{
+		log:                log,
 		dialer:             dialer,
 		writer:             writer,
 		serviceManager:     serviceManager,
@@ -34,12 +37,13 @@ func New(dialer NetDialer, serviceManager serviceManager, writer streamToFileWri
 
 // DownloadCoordinator will open a new grpc connection to another instance, attempting to download a coordinator from that instance.
 func (d *Download) DownloadCoordinator(ctx context.Context, ip string) error {
+	log := d.log.With(zap.String("ip", ip))
 	serverAddr := net.JoinHostPort(ip, debugd.DebugdPort)
 	// only retry download from same endpoint after backoff
 	if lastAttempt, ok := d.attemptedDownloads[serverAddr]; ok && time.Since(lastAttempt) < debugd.CoordinatorDownloadRetryBackoff {
 		return fmt.Errorf("download failed too recently: %v / %v", time.Since(lastAttempt), debugd.CoordinatorDownloadRetryBackoff)
 	}
-	log.Printf("Trying to download coordinator from %s\n", ip)
+	log.Infof("Trying to download coordinator")
 	d.attemptedDownloads[serverAddr] = time.Now()
 	conn, err := d.dial(ctx, serverAddr)
 	if err != nil {
@@ -56,7 +60,7 @@ func (d *Download) DownloadCoordinator(ctx context.Context, ip string) error {
 		return fmt.Errorf("streaming coordinator from other instance: %w", err)
 	}
 
-	log.Printf("Successfully downloaded coordinator from %s\n", ip)
+	log.Infof("Successfully downloaded coordinator")
 
 	// after the upload succeeds, try to restart the coordinator
 	restartAction := ServiceManagerRequest{

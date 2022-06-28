@@ -4,8 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -17,10 +15,14 @@ import (
 	"github.com/edgelesssys/constellation/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/state/keyservice"
 	"github.com/edgelesssys/constellation/state/mapper"
 	"github.com/edgelesssys/constellation/state/setup"
 	"github.com/spf13/afero"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -34,7 +36,9 @@ var csp = flag.String("csp", "", "Cloud Service Provider the image is running on
 func main() {
 	flag.Parse()
 
-	log.Printf("Starting disk-mapper for csp %q\n", *csp)
+	log := logger.New(logger.JSONLog, zapcore.InfoLevel)
+	log.With(zap.String("version", constants.VersionInfo), zap.String("cloudProvider", *csp)).
+		Infof("Starting disk-mapper")
 
 	// set up metadata API and quote issuer for aTLS connections
 	var err error
@@ -47,7 +51,7 @@ func main() {
 		diskPath, diskPathErr = filepath.EvalSymlinks(azureStateDiskPath)
 		metadata, err = azurecloud.NewMetadata(context.Background())
 		if err != nil {
-			exit(err)
+			log.With(zap.Error).Fatalf("Failed to create Azure metadata API")
 		}
 		issuer = azure.NewIssuer()
 
@@ -56,34 +60,35 @@ func main() {
 		issuer = gcp.NewIssuer()
 		gcpClient, err := gcpcloud.NewClient(context.Background())
 		if err != nil {
-			exit(err)
+			log.With(zap.Error).Fatalf("Failed to create GCP client")
 		}
 		metadata = gcpcloud.New(gcpClient)
 
 	case "qemu":
 		diskPath = qemuStateDiskPath
 		issuer = qemu.NewIssuer()
-		fmt.Fprintf(os.Stderr, "warning: cloud services are not supported for csp %q\n", *csp)
+		log.Warnf("cloud services are not supported on QEMU")
 		metadata = &core.ProviderMetadataFake{}
 
 	default:
 		diskPathErr = fmt.Errorf("csp %q is not supported by Constellation", *csp)
 	}
 	if diskPathErr != nil {
-		exit(fmt.Errorf("unable to determine state disk path: %w", diskPathErr))
+		log.With(zap.Error(diskPathErr)).Fatalf("Unable to determine state disk path")
 	}
 
 	// initialize device mapper
 	mapper, err := mapper.New(diskPath)
 	if err != nil {
-		exit(err)
+		log.With(zap.Error(err)).Fatalf("Failed to initialize device mapper")
 	}
 	defer mapper.Close()
 
 	setupManger := setup.New(
+		log.Named("setupManager"),
 		*csp,
 		afero.Afero{Fs: afero.NewOsFs()},
-		keyservice.New(issuer, metadata, 20*time.Second), // try to request a key every 20 seconds
+		keyservice.New(log.Named("keyService"), issuer, metadata, 20*time.Second), // try to request a key every 20 seconds
 		mapper,
 		setup.DiskMounter{},
 		vtpm.OpenVTPM,
@@ -95,13 +100,7 @@ func main() {
 	} else {
 		err = setupManger.PrepareNewDisk()
 	}
-	exit(err)
-}
-
-func exit(err error) {
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		os.Exit(1)
+		log.With(zap.Error(err)).Fatalf("Failed to prepare state disk")
 	}
-	os.Exit(0)
 }

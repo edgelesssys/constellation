@@ -16,6 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -67,7 +68,11 @@ func TestNewUpdateableValidator(t *testing.T) {
 				))
 			}
 
-			_, err := New(tc.provider, handler)
+			_, err := New(
+				logger.NewTest(t),
+				tc.provider,
+				handler,
+			)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -88,7 +93,11 @@ func TestUpdate(t *testing.T) {
 	handler := file.NewHandler(afero.NewMemMapFs())
 
 	// create server
-	validator := &Updatable{newValidator: newValidator, fileHandler: handler}
+	validator := &Updatable{
+		log:          logger.NewTest(t),
+		newValidator: newValidator,
+		fileHandler:  handler,
+	}
 
 	// Update should fail if the file does not exist
 	assert.Error(validator.Update())
@@ -139,6 +148,7 @@ func TestUpdateConcurrency(t *testing.T) {
 
 	handler := file.NewHandler(afero.NewMemMapFs())
 	validator := &Updatable{
+		log:         logger.NewTest(t),
 		fileHandler: handler,
 		newValidator: func(m map[uint32][]byte) atls.Validator {
 			return fakeValidator{fakeOID: fakeOID{1, 3, 9900, 1}}

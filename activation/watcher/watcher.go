@@ -3,25 +3,28 @@ package watcher
 import (
 	"fmt"
 
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/fsnotify/fsnotify"
-	"k8s.io/klog/v2"
+	"go.uber.org/zap"
 )
 
 // FileWatcher watches for changes to the file and calls the waiter's Update method.
 type FileWatcher struct {
+	log     *logger.Logger
 	updater updater
 	watcher eventWatcher
 	done    chan struct{}
 }
 
 // New creates a new FileWatcher for the given validator.
-func New(updater updater) (*FileWatcher, error) {
+func New(log *logger.Logger, updater updater) (*FileWatcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
 	}
 
 	return &FileWatcher{
+		log:     log,
 		watcher: &fsnotifyWatcher{watcher},
 		updater: updater,
 		done:    make(chan struct{}, 1),
@@ -39,6 +42,7 @@ func (f *FileWatcher) Close() error {
 // Watch starts watching the file at the given path.
 // It will call the watcher's Update method when the file is modified.
 func (f *FileWatcher) Watch(file string) error {
+	log := f.log.With("file", file)
 	defer func() { f.done <- struct{}{} }()
 	if err := f.watcher.Add(file); err != nil {
 		return err
@@ -48,28 +52,28 @@ func (f *FileWatcher) Watch(file string) error {
 		select {
 		case event, ok := <-f.watcher.Events():
 			if !ok {
-				klog.V(4).Infof("watcher closed")
+				log.Infof("Watcher closed")
 				return nil
 			}
 
 			// file changes may be indicated by either a WRITE, CHMOD, CREATE or RENAME event
 			if event.Op&(fsnotify.Write|fsnotify.Chmod|fsnotify.Create|fsnotify.Rename) != 0 {
 				if err := f.updater.Update(); err != nil {
-					klog.Errorf("failed to update activation validator: %s", err)
+					log.With(zap.Error(err)).Errorf("Failed to update activation validator")
 				}
 			}
 
 			// if a file gets removed, e.g. by a rename event, we need to re-add the file to the watcher
 			if event.Op&fsnotify.Remove == fsnotify.Remove {
 				if err := f.watcher.Add(event.Name); err != nil {
-					klog.Errorf("failed to re-add file %q to watcher: %s", event.Name, err)
+					log.With(zap.Error(err)).Errorf("Failed to re-add file to watcher")
 					return fmt.Errorf("failed to re-add file %q to watcher: %w", event.Name, err)
 				}
 			}
 
 		case err := <-f.watcher.Errors():
 			if err != nil {
-				klog.Errorf("watching for measurements updates: %s", err)
+				log.With(zap.Error(err)).Errorf("Watching for measurements updates")
 				return fmt.Errorf("watching for measurements updates: %w", err)
 			}
 		}

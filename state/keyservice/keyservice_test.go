@@ -12,6 +12,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/oid"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"github.com/stretchr/testify/assert"
@@ -85,6 +86,7 @@ func TestRequestKeyLoop(t *testing.T) {
 			}
 
 			keyWaiter := &KeyAPI{
+				log:         logger.NewTest(t),
 				metadata:    stubMetadata{listResponse: tc.listResponse},
 				keyReceived: keyReceived,
 				timeout:     500 * time.Millisecond,
@@ -138,6 +140,7 @@ func TestPushStateDiskKey(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
+			tc.testAPI.log = logger.NewTest(t)
 			_, err := tc.testAPI.PushStateDiskKey(context.Background(), tc.request)
 			if tc.wantErr {
 				assert.Error(err)
@@ -150,7 +153,7 @@ func TestPushStateDiskKey(t *testing.T) {
 }
 
 func TestResetKey(t *testing.T) {
-	api := New(nil, nil, time.Second)
+	api := New(logger.NewTest(t), nil, nil, time.Second)
 
 	api.key = []byte{0x1, 0x2, 0x3}
 	api.ResetKey()

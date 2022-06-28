@@ -13,6 +13,7 @@ import (
 	"github.com/edgelesssys/constellation/debugd/debugd"
 	pb "github.com/edgelesssys/constellation/debugd/service"
 	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
@@ -93,6 +94,7 @@ func TestDownloadCoordinator(t *testing.T) {
 			go grpcServ.Serve(lis)
 
 			download := &Download{
+				log:                logger.NewTest(t),
 				dialer:             dialer,
 				writer:             writer,
 				serviceManager:     &tc.serviceManager,

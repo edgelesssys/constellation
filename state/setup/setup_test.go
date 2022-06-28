@@ -11,6 +11,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/nodestate"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -107,7 +108,15 @@ func TestPrepareExistingDisk(t *testing.T) {
 				require.NoError(t, handler.WriteJSON(stateInfoPath, nodestate.NodeState{OwnerID: []byte("ownerID"), ClusterID: []byte("clusterID")}, file.OptMkdirAll))
 			}
 
-			setupManager := New("test", tc.fs, tc.keyWaiter, tc.mapper, tc.mounter, tc.openTPM)
+			setupManager := New(
+				logger.NewTest(t),
+				"test",
+				tc.fs,
+				tc.keyWaiter,
+				tc.mapper,
+				tc.mounter,
+				tc.openTPM,
+			)
 
 			err := setupManager.PrepareExistingDisk()
 			if tc.wantErr {
@@ -167,7 +176,7 @@ func TestPrepareNewDisk(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			setupManager := New("test", tc.fs, nil, tc.mapper, nil, nil)
+			setupManager := New(logger.NewTest(t), "test", tc.fs, nil, tc.mapper, nil, nil)
 
 			err := setupManager.PrepareNewDisk()
 			if tc.wantErr {
@@ -233,7 +242,7 @@ func TestReadInitSecrets(t *testing.T) {
 				require.NoError(handler.WriteJSON("/tmp/test-state.json", state, file.OptMkdirAll))
 			}
 
-			setupManager := New("test", tc.fs, nil, nil, nil, nil)
+			setupManager := New(logger.NewTest(t), "test", tc.fs, nil, nil, nil, nil)
 
 			ownerID, clusterID, err := setupManager.readInitSecrets("/tmp/test-state.json")
 			if tc.wantErr {

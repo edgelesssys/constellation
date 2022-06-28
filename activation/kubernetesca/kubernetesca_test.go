@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -89,7 +90,10 @@ Q29uc3RlbGxhdGlvbg==
 				require.NoError(file.Write(caKeyFilename, tc.caKey, 0o644))
 			}
 
-			ca := New(file)
+			ca := New(
+				logger.NewTest(t),
+				file,
+			)
 
 			nodeName := "test"
 			kubeCert, kubeKey, err := ca.GetCertificate(nodeName)

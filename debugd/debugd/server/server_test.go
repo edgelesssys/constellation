@@ -13,6 +13,7 @@ import (
 	pb "github.com/edgelesssys/constellation/debugd/service"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -73,6 +74,7 @@ func TestUploadAuthorizedKeys(t *testing.T) {
 			require := require.New(t)
 
 			serv := debugdServer{
+				log:            logger.NewTest(t),
 				ssh:            &tc.ssh,
 				serviceManager: &tc.serviceManager,
 				streamer:       &fakeStreamer{},
@@ -148,6 +150,7 @@ func TestUploadCoordinator(t *testing.T) {
 			require := require.New(t)
 
 			serv := debugdServer{
+				log:            logger.NewTest(t),
 				ssh:            &tc.ssh,
 				serviceManager: &tc.serviceManager,
 				streamer:       &tc.streamer,
@@ -218,6 +221,7 @@ func TestDownloadCoordinator(t *testing.T) {
 			require := require.New(t)
 
 			serv := debugdServer{
+				log:            logger.NewTest(t),
 				ssh:            &tc.ssh,
 				serviceManager: &tc.serviceManager,
 				streamer:       &tc.streamer,
@@ -298,6 +302,7 @@ func TestUploadSystemServiceUnits(t *testing.T) {
 			require := require.New(t)
 
 			serv := debugdServer{
+				log:            logger.NewTest(t),
 				ssh:            &tc.ssh,
 				serviceManager: &tc.serviceManager,
 				streamer:       &fakeStreamer{},

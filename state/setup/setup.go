@@ -3,7 +3,6 @@ package setup
 import (
 	"crypto/rand"
 	"errors"
-	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -13,7 +12,9 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/nodestate"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
+	"go.uber.org/zap"
 )
 
 const (
@@ -27,6 +28,7 @@ const (
 
 // SetupManager handles formating, mapping, mounting and unmounting of state disks.
 type SetupManager struct {
+	log       *logger.Logger
 	csp       string
 	fs        afero.Afero
 	keyWaiter KeyWaiter
@@ -36,8 +38,9 @@ type SetupManager struct {
 }
 
 // New initializes a SetupManager with the given parameters.
-func New(csp string, fs afero.Afero, keyWaiter KeyWaiter, mapper DeviceMapper, mounter Mounter, openTPM vtpm.TPMOpenFunc) *SetupManager {
+func New(log *logger.Logger, csp string, fs afero.Afero, keyWaiter KeyWaiter, mapper DeviceMapper, mounter Mounter, openTPM vtpm.TPMOpenFunc) *SetupManager {
 	return &SetupManager{
+		log:       log,
 		csp:       csp,
 		fs:        fs,
 		keyWaiter: keyWaiter,
@@ -50,7 +53,7 @@ func New(csp string, fs afero.Afero, keyWaiter KeyWaiter, mapper DeviceMapper, m
 // PrepareExistingDisk requests and waits for a decryption key to remap the encrypted state disk.
 // Once the disk is mapped, the function taints the node as initialized by updating it's PCRs.
 func (s *SetupManager) PrepareExistingDisk() error {
-	log.Println("Preparing existing state disk")
+	s.log.Infof("Preparing existing state disk")
 	uuid := s.mapper.DiskUUID()
 
 getKey:
@@ -61,6 +64,7 @@ getKey:
 
 	if err := s.mapper.MapDisk(stateDiskMappedName, string(passphrase)); err != nil {
 		// retry key fetching if disk mapping fails
+		s.log.With(zap.Error(err)).Errorf("Failed to map state disk, retrying...")
 		s.keyWaiter.ResetKey()
 		goto getKey
 	}
@@ -88,7 +92,7 @@ getKey:
 
 // PrepareNewDisk prepares an instances state disk by formatting the disk as a LUKS device using a random passphrase.
 func (s *SetupManager) PrepareNewDisk() error {
-	log.Println("Preparing new state disk")
+	s.log.Infof("Preparing new state disk")
 
 	// generate and save temporary passphrase
 	if err := s.fs.MkdirAll(keyPath, os.ModePerm); err != nil {

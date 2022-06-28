@@ -12,7 +12,7 @@ import (
 
 	"github.com/edgelesssys/constellation/coordinator/util"
 	"github.com/edgelesssys/constellation/internal/file"
-	"k8s.io/klog/v2"
+	"github.com/edgelesssys/constellation/internal/logger"
 )
 
 const (
@@ -22,19 +22,21 @@ const (
 
 // KubernetesCA handles signing of certificates using the Kubernetes root CA.
 type KubernetesCA struct {
+	log  *logger.Logger
 	file file.Handler
 }
 
 // New creates a new KubernetesCA.
-func New(fileHandler file.Handler) *KubernetesCA {
+func New(log *logger.Logger, fileHandler file.Handler) *KubernetesCA {
 	return &KubernetesCA{
+		log:  log,
 		file: fileHandler,
 	}
 }
 
 // GetCertificate creates a certificate for a node and signs it using the Kubernetes root CA.
 func (c KubernetesCA) GetCertificate(nodeName string) (cert []byte, key []byte, err error) {
-	klog.V(6).Info("CA: loading Kubernetes CA certificate")
+	c.log.Debugf("Loading Kubernetes CA certificate")
 	parentCertRaw, err := c.file.Read(caCertFilename)
 	if err != nil {
 		return nil, nil, err
@@ -45,7 +47,7 @@ func (c KubernetesCA) GetCertificate(nodeName string) (cert []byte, key []byte, 
 		return nil, nil, err
 	}
 
-	klog.V(6).Info("CA: loading Kubernetes CA private key")
+	c.log.Debugf("Loading Kubernetes CA private key")
 	parentKeyRaw, err := c.file.Read(caKeyFilename)
 	if err != nil {
 		return nil, nil, err
@@ -66,7 +68,7 @@ func (c KubernetesCA) GetCertificate(nodeName string) (cert []byte, key []byte, 
 		return nil, nil, err
 	}
 
-	klog.V(6).Info("CA: creating kubelet private key")
+	c.log.Infof("Creating kubelet private key")
 	privK, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, nil, err
@@ -80,7 +82,7 @@ func (c KubernetesCA) GetCertificate(nodeName string) (cert []byte, key []byte, 
 		Bytes: keyBytes,
 	})
 
-	klog.V(6).Info("CA: creating kubelet certificate")
+	c.log.Infof("Creating kubelet certificate")
 	serialNumber, err := util.GenerateCertificateSerialNumber()
 	if err != nil {
 		return nil, nil, err
