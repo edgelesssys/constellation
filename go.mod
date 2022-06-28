@@ -86,7 +86,7 @@ require (
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
 	github.com/schollz/progressbar/v3 v3.8.6
 	github.com/spf13/afero v1.8.2
-	github.com/spf13/cobra v1.4.0
+	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.7.1
 	github.com/talos-systems/talos/pkg/machinery v1.0.4
 	github.com/vishvananda/netlink v1.1.1-0.20210330154013-f5de75959ad5

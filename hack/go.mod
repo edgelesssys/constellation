@@ -41,9 +41,10 @@ require (
 	github.com/edgelesssys/constellation v1.0.0
 	github.com/google/go-tpm-tools v0.3.8
 	github.com/spf13/afero v1.8.2
-	github.com/spf13/cobra v1.4.0
+	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.7.1
 	google.golang.org/grpc v1.46.2
+	gopkg.in/yaml.v3 v3.0.0-20220512140231-539c8e751b99
 )
 
 require (
@@ -95,7 +96,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.11.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.16.2 // indirect
 	github.com/aws/smithy-go v1.11.2 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
@@ -149,5 +150,4 @@ require (
 	google.golang.org/genproto v0.0.0-20220317150908-0efb43f6373e // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20220512140231-539c8e751b99 // indirect
 )
