@@ -1,7 +1,7 @@
 package azure
 
 import (
-	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/azureshared"
 	k8s "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"

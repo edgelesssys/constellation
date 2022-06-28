@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes/k8sapi/resources"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
 	"k8s.io/cli-runtime/pkg/resource"

@@ -3,7 +3,7 @@ package azure
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes/k8sapi/resources"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	k8s "k8s.io/api/core/v1"

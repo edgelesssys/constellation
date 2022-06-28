@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi"
-	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes/k8sapi"
+	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes/k8sapi/resources"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 

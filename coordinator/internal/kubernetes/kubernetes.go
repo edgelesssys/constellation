@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
-	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi"
-	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes/k8sapi"
+	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/util"
 	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/spf13/afero"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
@@ -40,6 +40,7 @@ type KubeWrapper struct {
 	clusterAutoscaler       ClusterAutoscaler
 	providerMetadata        ProviderMetadata
 	initialMeasurementsJSON []byte
+	getIPAddr               func() (string, error)
 }
 
 // New creates a new KubeWrapper with real values.
@@ -57,6 +58,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 		clusterAutoscaler:       clusterAutoscaler,
 		providerMetadata:        providerMetadata,
 		initialMeasurementsJSON: initialMeasurementsJSON,
+		getIPAddr:               util.GetIPAddr,
 	}
 }
 
@@ -78,13 +80,13 @@ func (k *KubeWrapper) InitCluster(
 		return err
 	}
 
-	ip, err := util.GetIPAddr()
+	ip, err := k.getIPAddr()
 	if err != nil {
 		return err
 	}
 	nodeName := ip
 	var providerID string
-	var instance cloudtypes.Instance
+	var instance metadata.InstanceMetadata
 	var publicIP string
 	var nodePodCIDR string
 	var subnetworkPodCIDR string
@@ -192,18 +194,21 @@ func (k *KubeWrapper) InitCluster(
 }
 
 // JoinCluster joins existing Kubernetes cluster.
-func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, nodeVPNIP, certKey string, peerRole role.Role) error {
+func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, certKey string, peerRole role.Role) error {
 	// TODO: k8s version should be user input
-	if err := k.clusterUtil.InstallComponents(context.TODO(), "1.23.6"); err != nil {
+	if err := k.clusterUtil.InstallComponents(ctx, "1.23.6"); err != nil {
 		return err
 	}
 
 	// Step 1: retrieve cloud metadata for Kubernetes configuration
+	nodeInternalIP, err := k.getIPAddr()
+	if err != nil {
+		return err
+	}
+	nodeName := nodeInternalIP
 	var providerID string
-	nodeName := nodeVPNIP
-	nodeInternalIP := nodeVPNIP
 	if k.providerMetadata.Supported() {
-		instance, err := k.providerMetadata.Self(context.TODO())
+		instance, err := k.providerMetadata.Self(ctx)
 		if err != nil {
 			return fmt.Errorf("retrieving own instance metadata failed: %w", err)
 		}
@@ -274,7 +279,7 @@ func (k *KubeWrapper) setupActivationService(csp string, measurementsJSON []byte
 	return k.clusterUtil.SetupActivationService(k.client, activationConfiguration)
 }
 
-func (k *KubeWrapper) setupCCM(ctx context.Context, subnetworkPodCIDR, cloudServiceAccountURI string, instance cloudtypes.Instance) error {
+func (k *KubeWrapper) setupCCM(ctx context.Context, subnetworkPodCIDR, cloudServiceAccountURI string, instance metadata.InstanceMetadata) error {
 	if !k.cloudControllerManager.Supported() {
 		return nil
 	}
@@ -312,7 +317,7 @@ func (k *KubeWrapper) setupCloudNodeManager() error {
 	return nil
 }
 
-func (k *KubeWrapper) setupClusterAutoscaler(instance cloudtypes.Instance, cloudServiceAccountURI string, autoscalingNodeGroups []string) error {
+func (k *KubeWrapper) setupClusterAutoscaler(instance metadata.InstanceMetadata, cloudServiceAccountURI string, autoscalingNodeGroups []string) error {
 	if !k.clusterAutoscaler.Supported() {
 		return nil
 	}

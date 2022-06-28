@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
-	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi"
-	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes/k8sapi"
+	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -24,7 +24,6 @@ func TestMain(m *testing.M) {
 
 func TestInitCluster(t *testing.T) {
 	someErr := errors.New("failed")
-	coordinatorVPNIP := "192.0.2.0"
 	serviceAccountUri := "some-service-account-uri"
 	masterSecret := []byte("some-master-secret")
 	autoscalingNodeGroups := []string{"0,10,autoscaling_group_0"}
@@ -64,7 +63,7 @@ func TestInitCluster(t *testing.T) {
 							"node-ip":     "",
 							"provider-id": "",
 						},
-						Name: coordinatorVPNIP,
+						Name: privateIP,
 					},
 				},
 				ClusterConfiguration: kubeadm.ClusterConfiguration{},
@@ -77,7 +76,7 @@ func TestInitCluster(t *testing.T) {
 			},
 			providerMetadata: &stubProviderMetadata{
 				SupportedResp: true,
-				SelfResp: cloudtypes.Instance{
+				SelfResp: metadata.InstanceMetadata{
 					Name:          nodeName,
 					ProviderID:    providerID,
 					PrivateIPs:    []string{privateIP},
@@ -267,6 +266,7 @@ func TestInitCluster(t *testing.T) {
 				configProvider:         &stubConfigProvider{InitConfig: k8sapi.KubeadmInitYAML{}},
 				client:                 &tc.kubeCTL,
 				kubeconfigReader:       tc.kubeconfigReader,
+				getIPAddr:              func() (string, error) { return privateIP, nil },
 			}
 			err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountUri, k8sVersion, attestationtypes.ID{}, KMSConfig{MasterSecret: masterSecret}, nil)
 
@@ -292,7 +292,7 @@ func TestJoinCluster(t *testing.T) {
 		CACertHashes:      []string{"sha256:a60ebe9b0879090edd83b40a4df4bebb20506bac1e51d518ff8f4505a721930f"},
 	}
 
-	nodeVPNIP := "192.0.2.0"
+	privateIP := "192.0.2.1"
 	certKey := "cert-key"
 
 	testCases := map[string]struct {
@@ -313,8 +313,8 @@ func TestJoinCluster(t *testing.T) {
 					BootstrapToken: joinCommand,
 				},
 				NodeRegistration: kubeadm.NodeRegistrationOptions{
-					Name:             nodeVPNIP,
-					KubeletExtraArgs: map[string]string{"node-ip": "192.0.2.0"},
+					Name:             privateIP,
+					KubeletExtraArgs: map[string]string{"node-ip": privateIP},
 				},
 			},
 		},
@@ -322,7 +322,7 @@ func TestJoinCluster(t *testing.T) {
 			clusterUtil: stubClusterUtil{},
 			providerMetadata: &stubProviderMetadata{
 				SupportedResp: true,
-				SelfResp: cloudtypes.Instance{
+				SelfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
 					Name:       "metadata-name",
 					PrivateIPs: []string{"192.0.2.1"},
@@ -344,7 +344,7 @@ func TestJoinCluster(t *testing.T) {
 			clusterUtil: stubClusterUtil{},
 			providerMetadata: &stubProviderMetadata{
 				SupportedResp: true,
-				SelfResp: cloudtypes.Instance{
+				SelfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
 					Name:       "metadata-name",
 					PrivateIPs: []string{"192.0.2.1"},
@@ -368,7 +368,7 @@ func TestJoinCluster(t *testing.T) {
 			clusterUtil: stubClusterUtil{},
 			providerMetadata: &stubProviderMetadata{
 				SupportedResp: true,
-				SelfResp: cloudtypes.Instance{
+				SelfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
 					Name:       "metadata-name",
 					PrivateIPs: []string{"192.0.2.1"},
@@ -410,23 +410,6 @@ func TestJoinCluster(t *testing.T) {
 			role:                   role.Node,
 			wantErr:                true,
 		},
-		"kubeadm join worker works fails when setting the metadata for the cloud controller manager": {
-			clusterUtil: stubClusterUtil{},
-			providerMetadata: &stubProviderMetadata{
-				SupportedResp: true,
-				SelfResp: cloudtypes.Instance{
-					ProviderID: "provider-id",
-					Name:       "metadata-name",
-					PrivateIPs: []string{"192.0.2.1"},
-				},
-				SetVPNIPErr: someErr,
-			},
-			CloudControllerManager: &stubCloudControllerManager{
-				SupportedResp: true,
-			},
-			role:    role.Node,
-			wantErr: true,
-		},
 	}
 
 	for name, tc := range testCases {
@@ -439,9 +422,10 @@ func TestJoinCluster(t *testing.T) {
 				providerMetadata:       tc.providerMetadata,
 				cloudControllerManager: tc.CloudControllerManager,
 				configProvider:         &stubConfigProvider{},
+				getIPAddr:              func() (string, error) { return privateIP, nil },
 			}
 
-			err := kube.JoinCluster(context.Background(), joinCommand, nodeVPNIP, certKey, tc.role)
+			err := kube.JoinCluster(context.Background(), joinCommand, certKey, tc.role)
 			if tc.wantErr {
 				assert.Error(err)
 				return

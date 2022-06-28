@@ -10,7 +10,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/config"
 	"github.com/edgelesssys/constellation/coordinator/diskencryption"
 	"github.com/edgelesssys/constellation/coordinator/initproto"
-	"github.com/edgelesssys/constellation/coordinator/kubernetes"
+	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes"
 	"github.com/edgelesssys/constellation/coordinator/nodestate"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/util"

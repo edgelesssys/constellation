@@ -3,18 +3,18 @@ package kubernetes
 import (
 	"context"
 
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
-	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/coordinator/role"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	k8s "k8s.io/api/core/v1"
 )
 
 // ProviderMetadata implementers read/write cloud provider metadata.
 type ProviderMetadata interface {
 	// List retrieves all instances belonging to the current Constellation.
-	List(ctx context.Context) ([]cloudtypes.Instance, error)
+	List(ctx context.Context) ([]metadata.InstanceMetadata, error)
 	// Self retrieves the current instance.
-	Self(ctx context.Context) (cloudtypes.Instance, error)
+	Self(ctx context.Context) (metadata.InstanceMetadata, error)
 	// GetSubnetworkCIDR retrieves the subnetwork CIDR for the current instance.
 	GetSubnetworkCIDR(ctx context.Context) (string, error)
 	// SupportsLoadBalancer returns true if the cloud provider supports load balancers.
@@ -22,7 +22,7 @@ type ProviderMetadata interface {
 	// GetLoadBalancerIP retrieves the load balancer IP.
 	GetLoadBalancerIP(ctx context.Context) (string, error)
 	// GetInstance retrieves an instance using its providerID.
-	GetInstance(ctx context.Context, providerID string) (cloudtypes.Instance, error)
+	GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error)
 	// SignalRole signals the constellation role via cloud provider metadata (if supported by the CSP and deployment type, otherwise does nothing).
 	SignalRole(ctx context.Context, role role.Role) error
 	// SetVPNIP stores the internally used VPN IP in cloud provider metadata (if supported and required for autoscaling by the CSP, otherwise does nothing).
@@ -43,10 +43,10 @@ type CloudControllerManager interface {
 	ExtraArgs() []string
 	// ConfigMaps returns a list of ConfigMaps to deploy together with the k8s cloud-controller-manager
 	// Reference: https://kubernetes.io/docs/concepts/configuration/configmap/ .
-	ConfigMaps(instance cloudtypes.Instance) (resources.ConfigMaps, error)
+	ConfigMaps(instance metadata.InstanceMetadata) (resources.ConfigMaps, error)
 	// Secrets returns a list of secrets to deploy together with the k8s cloud-controller-manager.
 	// Reference: https://kubernetes.io/docs/concepts/configuration/secret/ .
-	Secrets(ctx context.Context, instance cloudtypes.Instance, cloudServiceAccountURI string) (resources.Secrets, error)
+	Secrets(ctx context.Context, providerID, cloudServiceAccountURI string) (resources.Secrets, error)
 	// Volumes returns a list of volumes to deploy together with the k8s cloud-controller-manager.
 	// Reference: https://kubernetes.io/docs/concepts/storage/volumes/ .
 	Volumes() []k8s.Volume
@@ -75,7 +75,7 @@ type ClusterAutoscaler interface {
 	// Name returns the cloud-provider name as used by k8s cluster-autoscaler.
 	Name() string
 	// Secrets returns a list of secrets to deploy together with the k8s cluster-autoscaler.
-	Secrets(instance cloudtypes.Instance, cloudServiceAccountURI string) (resources.Secrets, error)
+	Secrets(providerID, cloudServiceAccountURI string) (resources.Secrets, error)
 	// Volumes returns a list of volumes to deploy together with the k8s cluster-autoscaler.
 	Volumes() []k8s.Volume
 	// VolumeMounts returns a list of volume mounts to deploy together with the k8s cluster-autoscaler.
@@ -94,16 +94,16 @@ type stubProviderMetadata struct {
 	GetSubnetworkCIDRResp string
 
 	ListErr  error
-	ListResp []cloudtypes.Instance
+	ListResp []metadata.InstanceMetadata
 
 	SignalRoleErr error
 	SetVPNIPErr   error
 
 	SelfErr  error
-	SelfResp cloudtypes.Instance
+	SelfResp metadata.InstanceMetadata
 
 	GetInstanceErr  error
-	GetInstanceResp cloudtypes.Instance
+	GetInstanceResp metadata.InstanceMetadata
 
 	SupportedResp            bool
 	SupportsLoadBalancerResp bool
@@ -117,15 +117,15 @@ func (m *stubProviderMetadata) GetSubnetworkCIDR(ctx context.Context) (string, e
 	return m.GetSubnetworkCIDRResp, m.GetSubnetworkCIDRErr
 }
 
-func (m *stubProviderMetadata) List(ctx context.Context) ([]cloudtypes.Instance, error) {
+func (m *stubProviderMetadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
 	return m.ListResp, m.ListErr
 }
 
-func (m *stubProviderMetadata) Self(ctx context.Context) (cloudtypes.Instance, error) {
+func (m *stubProviderMetadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
 	return m.SelfResp, m.SelfErr
 }
 
-func (m *stubProviderMetadata) GetInstance(ctx context.Context, providerID string) (cloudtypes.Instance, error) {
+func (m *stubProviderMetadata) GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error) {
 	return m.GetInstanceResp, m.GetInstanceErr
 }
 
@@ -165,11 +165,11 @@ func (m *stubCloudControllerManager) ExtraArgs() []string {
 	return []string{}
 }
 
-func (m *stubCloudControllerManager) ConfigMaps(instance cloudtypes.Instance) (resources.ConfigMaps, error) {
+func (m *stubCloudControllerManager) ConfigMaps(instance metadata.InstanceMetadata) (resources.ConfigMaps, error) {
 	return []*k8s.ConfigMap{}, nil
 }
 
-func (m *stubCloudControllerManager) Secrets(ctx context.Context, instance cloudtypes.Instance, cloudServiceAccountURI string) (resources.Secrets, error) {
+func (m *stubCloudControllerManager) Secrets(ctx context.Context, instance, cloudServiceAccountURI string) (resources.Secrets, error) {
 	return []*k8s.Secret{}, nil
 }
 
@@ -222,7 +222,7 @@ func (a *stubClusterAutoscaler) Name() string {
 }
 
 // Secrets returns a list of secrets to deploy together with the k8s cluster-autoscaler.
-func (a *stubClusterAutoscaler) Secrets(instance cloudtypes.Instance, cloudServiceAccountURI string) (resources.Secrets, error) {
+func (a *stubClusterAutoscaler) Secrets(instance, cloudServiceAccountURI string) (resources.Secrets, error) {
 	return resources.Secrets{}, nil
 }
 

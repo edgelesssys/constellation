@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/edgelesssys/constellation/coordinator/cloudprovider"
-	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/azureshared"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	k8s "k8s.io/api/core/v1"
