@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -62,14 +61,12 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 	protoClient := &proto.Client{}
 	defer protoClient.Close()
 
-	// We have to parse the context separately, since cmd.Context()
-	// returns nil during the tests otherwise.
-	return initialize(cmd.Context(), cmd, protoClient, serviceAccountCreator, fileHandler, waiter, vpnHandler)
+	return initialize(cmd, protoClient, serviceAccountCreator, fileHandler, waiter, vpnHandler)
 }
 
 // initialize initializes a Constellation. Coordinator instances are activated as contole-plane nodes and will
 // themself activate the other peers as workers.
-func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, serviceAccCreator serviceAccountCreator,
+func initialize(cmd *cobra.Command, protCl protoClient, serviceAccCreator serviceAccountCreator,
 	fileHandler file.Handler, waiter statusWaiter, vpnHandler vpnHandler,
 ) error {
 	flags, err := evalFlagArgs(cmd, fileHandler)
@@ -107,7 +104,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 	cmd.Print(validators.WarningsIncludeInit())
 
 	cmd.Println("Creating service account ...")
-	serviceAccount, stat, err := serviceAccCreator.Create(ctx, stat, config)
+	serviceAccount, stat, err := serviceAccCreator.Create(cmd.Context(), stat, config)
 	if err != nil {
 		return err
 	}
@@ -126,7 +123,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 	if err := waiter.InitializeValidators(validators.V()); err != nil {
 		return err
 	}
-	if err := waiter.WaitForAll(ctx, endpoints, coordinatorstate.AcceptingInit); err != nil {
+	if err := waiter.WaitForAll(cmd.Context(), endpoints, coordinatorstate.AcceptingInit); err != nil {
 		return fmt.Errorf("waiting for all peers status: %w", err)
 	}
 
@@ -145,7 +142,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 		cloudServiceAccountURI: serviceAccount,
 		sshUserKeys:            ssh.ToProtoSlice(sshUsers),
 	}
-	result, err := activate(ctx, cmd, protCl, input, validators.V())
+	result, err := activate(cmd, protCl, input, validators.V())
 	if err != nil {
 		return err
 	}
@@ -173,7 +170,7 @@ func initialize(ctx context.Context, cmd *cobra.Command, protCl protoClient, ser
 	return nil
 }
 
-func activate(ctx context.Context, cmd *cobra.Command, client protoClient, input activationInput,
+func activate(cmd *cobra.Command, client protoClient, input activationInput,
 	validators []atls.Validator,
 ) (activationResult, error) {
 	err := client.Connect(net.JoinHostPort(input.coordinatorPubIP, strconv.Itoa(constants.CoordinatorPort)), validators)
@@ -181,7 +178,7 @@ func activate(ctx context.Context, cmd *cobra.Command, client protoClient, input
 		return activationResult{}, err
 	}
 
-	respCl, err := client.Activate(ctx, input.pubKey, input.masterSecret, input.nodePrivIPs, input.coordinatorPrivIPs, input.autoscalingNodeGroups, input.cloudServiceAccountURI, input.sshUserKeys)
+	respCl, err := client.Activate(cmd.Context(), input.pubKey, input.masterSecret, input.nodePrivIPs, input.coordinatorPrivIPs, input.autoscalingNodeGroups, input.cloudServiceAccountURI, input.sshUserKeys)
 	if err != nil {
 		return activationResult{}, err
 	}

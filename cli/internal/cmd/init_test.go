@@ -305,8 +305,9 @@ func TestInitialize(t *testing.T) {
 			ctx := context.Background()
 			ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 			defer cancel()
+			cmd.SetContext(ctx)
 
-			err := initialize(ctx, cmd, tc.client, &tc.serviceAccountCreator, fileHandler, tc.waiter, tc.vpnHandler)
+			err := initialize(cmd, tc.client, &tc.serviceAccountCreator, fileHandler, tc.waiter, tc.vpnHandler)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -608,9 +609,8 @@ func TestAutoscaleFlag(t *testing.T) {
 			require.NoError(cmd.Flags().Set("privatekey", "privK"))
 
 			require.NoError(cmd.Flags().Set("autoscale", strconv.FormatBool(tc.autoscaleFlag)))
-			ctx := context.Background()
 
-			require.NoError(initialize(ctx, cmd, tc.client, &tc.serviceAccountCreator, fileHandler, tc.waiter, &vpnHandler))
+			require.NoError(initialize(cmd, tc.client, &tc.serviceAccountCreator, fileHandler, tc.waiter, &vpnHandler))
 			if tc.autoscaleFlag {
 				assert.Len(tc.client.activateAutoscalingNodeGroups, 1)
 			} else {

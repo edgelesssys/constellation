@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
@@ -40,10 +39,10 @@ func runVerify(cmd *cobra.Command, args []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	protoClient := &proto.Client{}
 	defer protoClient.Close()
-	return verify(cmd.Context(), cmd, provider, fileHandler, protoClient)
+	return verify(cmd, provider, fileHandler, protoClient)
 }
 
-func verify(ctx context.Context, cmd *cobra.Command, provider cloudprovider.Provider, fileHandler file.Handler, protoClient protoClient) error {
+func verify(cmd *cobra.Command, provider cloudprovider.Provider, fileHandler file.Handler, protoClient protoClient) error {
 	flags, err := parseVerifyFlags(cmd)
 	if err != nil {
 		return err
@@ -69,7 +68,7 @@ func verify(ctx context.Context, cmd *cobra.Command, provider cloudprovider.Prov
 	if err := protoClient.Connect(flags.endpoint, validators.V()); err != nil {
 		return err
 	}
-	if _, err := protoClient.GetState(ctx); err != nil {
+	if _, err := protoClient.GetState(cmd.Context()); err != nil {
 		if err, ok := rpcStatus.FromError(err); ok {
 			return fmt.Errorf("verifying Constellation cluster: %s", err.Message())
 		}

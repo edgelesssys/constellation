@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -43,10 +42,10 @@ func runRecover(cmd *cobra.Command, args []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	recoveryClient := &proto.KeyClient{}
 	defer recoveryClient.Close()
-	return recover(cmd.Context(), cmd, fileHandler, recoveryClient)
+	return recover(cmd, fileHandler, recoveryClient)
 }
 
-func recover(ctx context.Context, cmd *cobra.Command, fileHandler file.Handler, recoveryClient recoveryClient) error {
+func recover(cmd *cobra.Command, fileHandler file.Handler, recoveryClient recoveryClient) error {
 	flags, err := parseRecoverFlags(cmd, fileHandler)
 	if err != nil {
 		return err
@@ -79,7 +78,7 @@ func recover(ctx context.Context, cmd *cobra.Command, fileHandler file.Handler, 
 		return err
 	}
 
-	if err := recoveryClient.PushStateDiskKey(ctx, diskKey); err != nil {
+	if err := recoveryClient.PushStateDiskKey(cmd.Context(), diskKey); err != nil {
 		return err
 	}
 

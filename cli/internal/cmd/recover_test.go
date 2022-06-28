@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"testing"
 
@@ -182,8 +181,7 @@ func TestRecover(t *testing.T) {
 				require.NoError(fileHandler.WriteJSON(constants.StateFilename, tc.existingState, file.OptNone))
 			}
 
-			ctx := context.Background()
-			err := recover(ctx, cmd, fileHandler, tc.client)
+			err := recover(cmd, fileHandler, tc.client)
 
 			if tc.wantErr {
 				assert.Error(err)

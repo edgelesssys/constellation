@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"context"
 	"encoding/base64"
 	"errors"
 	"testing"
@@ -151,8 +150,7 @@ func TestVerify(t *testing.T) {
 			}
 			fileHandler := file.NewHandler(tc.setupFs(require))
 
-			ctx := context.Background()
-			err := verify(ctx, cmd, tc.provider, fileHandler, tc.protoClient)
+			err := verify(cmd, tc.provider, fileHandler, tc.protoClient)
 
 			if tc.wantErr {
 				assert.Error(err)
