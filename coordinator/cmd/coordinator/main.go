@@ -17,7 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes"
 	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes/k8sapi/kubectl"
-	"github.com/edgelesssys/constellation/coordinator/logging"
+	"github.com/edgelesssys/constellation/coordinator/internal/logging"
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/attestation/azure"
 	"github.com/edgelesssys/constellation/internal/attestation/gcp"

@@ -7,7 +7,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/internal/initserver"
 	"github.com/edgelesssys/constellation/coordinator/internal/joinclient"
-	"github.com/edgelesssys/constellation/coordinator/logging"
+	"github.com/edgelesssys/constellation/coordinator/internal/logging"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
