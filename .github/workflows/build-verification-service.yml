@@ -1,0 +1,31 @@
+name: Build and upload verification-service image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "verify/**"
+      - "internal/attestation/**"
+      - "internal/constants/**"
+
+jobs:
+  build-activation-service:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out repository
+        id: checkout
+        uses: actions/checkout@v3
+
+      - name: Build and upload verification-service container image
+        id: build-and-upload
+        uses: ./.github/actions/build_micro-service
+        with:
+          name: verification-service
+          projectVersion: '0.0.0'
+          dockerfile: verify/Dockerfile
+          githubToken: ${{ secrets.GITHUB_TOKEN }}

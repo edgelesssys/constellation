@@ -21,7 +21,6 @@ go.work.sum
 build
 admin.conf
 coordinator-*
-util/pcr-reader/pcrs/
 
 # VS Code configuration folder
 .vscode

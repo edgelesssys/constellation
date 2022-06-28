@@ -434,7 +434,7 @@ func NewDefaultAutoscalerDeployment(extraVolumes []k8s.Volume, extraVolumeMounts
 						Containers: []k8s.Container{
 							{
 								Name:            "cluster-autoscaler",
-								Image:           "k8s.gcr.io/autoscaling/cluster-autoscaler:v1.23.0",
+								Image:           clusterAutoscalerImage,
 								ImagePullPolicy: k8s.PullIfNotPresent,
 								LivenessProbe: &k8s.Probe{
 									ProbeHandler: k8s.ProbeHandler{
@@ -458,6 +458,11 @@ func NewDefaultAutoscalerDeployment(extraVolumes []k8s.Volume, extraVolumeMounts
 						Tolerations: []k8s.Toleration{
 							{
 								Key:      "node-role.kubernetes.io/master",
+								Operator: k8s.TolerationOpExists,
+								Effect:   k8s.TaintEffectNoSchedule,
+							},
+							{
+								Key:      "node-role.kubernetes.io/control-plane",
 								Operator: k8s.TolerationOpExists,
 								Effect:   k8s.TaintEffectNoSchedule,
 							},

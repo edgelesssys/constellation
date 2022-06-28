@@ -2,16 +2,27 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
+	"net"
+	"strconv"
 	"testing"
 
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/grpc/dialer"
+	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
+	"github.com/edgelesssys/constellation/internal/oid"
+	"github.com/edgelesssys/constellation/verify/verifyproto"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	rpcStatus "google.golang.org/grpc/status"
 )
@@ -50,7 +61,7 @@ func TestVerify(t *testing.T) {
 	testCases := map[string]struct {
 		setupFs          func(*require.Assertions) afero.Fs
 		provider         cloudprovider.Provider
-		protoClient      protoClient
+		protoClient      verifyClient
 		nodeEndpointFlag string
 		configFlag       string
 		ownerIDFlag      string
@@ -62,28 +73,28 @@ func TestVerify(t *testing.T) {
 			provider:         cloudprovider.GCP,
 			nodeEndpointFlag: "192.0.2.1:1234",
 			ownerIDFlag:      zeroBase64,
-			protoClient:      &stubProtoClient{},
+			protoClient:      &stubVerifyClient{},
 		},
 		"azure": {
 			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			provider:         cloudprovider.Azure,
 			nodeEndpointFlag: "192.0.2.1:1234",
 			ownerIDFlag:      zeroBase64,
-			protoClient:      &stubProtoClient{},
+			protoClient:      &stubVerifyClient{},
 		},
 		"default port": {
 			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			provider:         cloudprovider.GCP,
 			nodeEndpointFlag: "192.0.2.1",
 			ownerIDFlag:      zeroBase64,
-			protoClient:      &stubProtoClient{},
+			protoClient:      &stubVerifyClient{},
 		},
 		"invalid endpoint": {
 			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			provider:         cloudprovider.GCP,
 			nodeEndpointFlag: ":::::",
 			ownerIDFlag:      zeroBase64,
-			protoClient:      &stubProtoClient{},
+			protoClient:      &stubVerifyClient{},
 			wantErr:          true,
 		},
 		"neither owner id nor cluster id set": {
@@ -100,20 +111,12 @@ func TestVerify(t *testing.T) {
 			configFlag:       "./file",
 			wantErr:          true,
 		},
-		"error protoClient Connect": {
-			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
-			provider:         cloudprovider.Azure,
-			nodeEndpointFlag: "192.0.2.1:1234",
-			ownerIDFlag:      zeroBase64,
-			protoClient:      &stubProtoClient{connectErr: someErr},
-			wantErr:          true,
-		},
 		"error protoClient GetState": {
 			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			provider:         cloudprovider.Azure,
 			nodeEndpointFlag: "192.0.2.1:1234",
 			ownerIDFlag:      zeroBase64,
-			protoClient:      &stubProtoClient{getStateErr: rpcStatus.Error(codes.Internal, "failed")},
+			protoClient:      &stubVerifyClient{verifyErr: rpcStatus.Error(codes.Internal, "failed")},
 			wantErr:          true,
 		},
 		"error protoClient GetState not rpc": {
@@ -121,7 +124,7 @@ func TestVerify(t *testing.T) {
 			provider:         cloudprovider.Azure,
 			nodeEndpointFlag: "192.0.2.1:1234",
 			ownerIDFlag:      zeroBase64,
-			protoClient:      &stubProtoClient{getStateErr: someErr},
+			protoClient:      &stubVerifyClient{verifyErr: someErr},
 			wantErr:          true,
 		},
 	}
@@ -132,7 +135,7 @@ func TestVerify(t *testing.T) {
 			require := require.New(t)
 
 			cmd := NewVerifyCmd()
-			cmd.Flags().String("config", "", "") // register persisten flag manually
+			cmd.Flags().String("config", "", "") // register persistent flag manually
 			out := &bytes.Buffer{}
 			cmd.SetOut(out)
 			cmd.SetErr(&bytes.Buffer{})
@@ -192,4 +195,107 @@ func TestVerifyCompletion(t *testing.T) {
 			assert.Equal(tc.wantShellCD, shellCD)
 		})
 	}
+}
+
+func TestVerifyClient(t *testing.T) {
+	testCases := map[string]struct {
+		attestationDoc atls.FakeAttestationDoc
+		userData       []byte
+		nonce          []byte
+		attestationErr error
+		wantErr        bool
+	}{
+		"success": {
+			attestationDoc: atls.FakeAttestationDoc{
+				UserData: []byte("user data"),
+				Nonce:    []byte("nonce"),
+			},
+			userData: []byte("user data"),
+			nonce:    []byte("nonce"),
+		},
+		"attestation error": {
+			attestationDoc: atls.FakeAttestationDoc{
+				UserData: []byte("user data"),
+				Nonce:    []byte("nonce"),
+			},
+			userData:       []byte("user data"),
+			nonce:          []byte("nonce"),
+			attestationErr: errors.New("error"),
+			wantErr:        true,
+		},
+		"user data does not match": {
+			attestationDoc: atls.FakeAttestationDoc{
+				UserData: []byte("wrong user data"),
+				Nonce:    []byte("nonce"),
+			},
+			userData: []byte("user data"),
+			nonce:    []byte("nonce"),
+			wantErr:  true,
+		},
+		"nonce does not match": {
+			attestationDoc: atls.FakeAttestationDoc{
+				UserData: []byte("user data"),
+				Nonce:    []byte("wrong nonce"),
+			},
+			userData: []byte("user data"),
+			nonce:    []byte("nonce"),
+			wantErr:  true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			attestation, err := json.Marshal(tc.attestationDoc)
+			require.NoError(err)
+			verifyAPI := &stubVerifyAPI{
+				attestation:    &verifyproto.GetAttestationResponse{Attestation: attestation},
+				attestationErr: tc.attestationErr,
+			}
+
+			netDialer := testdialer.NewBufconnDialer()
+			dialer := dialer.New(nil, nil, netDialer)
+			verifyServer := grpc.NewServer()
+			verifyproto.RegisterAPIServer(verifyServer, verifyAPI)
+
+			addr := net.JoinHostPort("192.0.2.1", strconv.Itoa(constants.VerifyServiceNodePortGRPC))
+			listener := netDialer.GetListener(addr)
+			go verifyServer.Serve(listener)
+			defer verifyServer.GracefulStop()
+
+			verifier := &constellationVerifier{dialer: dialer}
+			request := &verifyproto.GetAttestationRequest{
+				UserData: tc.userData,
+				Nonce:    tc.nonce,
+			}
+
+			err = verifier.Verify(context.Background(), addr, request, atls.NewFakeValidator(oid.Dummy{}))
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+			}
+		})
+	}
+}
+
+type stubVerifyClient struct {
+	verifyErr error
+}
+
+func (c *stubVerifyClient) Verify(ctx context.Context, endpoint string, req *verifyproto.GetAttestationRequest, validator atls.Validator) error {
+	return c.verifyErr
+}
+
+type stubVerifyAPI struct {
+	attestation    *verifyproto.GetAttestationResponse
+	attestationErr error
+	verifyproto.UnimplementedAPIServer
+}
+
+func (a stubVerifyAPI) GetAttestation(context.Context, *verifyproto.GetAttestationRequest) (*verifyproto.GetAttestationResponse, error) {
+	return a.attestation, a.attestationErr
 }

@@ -167,6 +167,12 @@ func (k *KubeWrapper) InitCluster(
 		return fmt.Errorf("failed to setup access-manager: %w", err)
 	}
 
+	if err := k.clusterUtil.SetupVerificationService(
+		k.client, resources.NewVerificationDaemonSet(k.cloudProvider),
+	); err != nil {
+		return fmt.Errorf("failed to setup verification service: %w", err)
+	}
+
 	go k.clusterUtil.FixCilium(nodeName)
 
 	return nil
@@ -256,7 +262,7 @@ func (k *KubeWrapper) setupActivationService(csp string, measurementsJSON []byte
 		return err
 	}
 
-	activationConfiguration := resources.NewActivationDaemonset(csp, string(measurementsJSON), string(idJSON)) // TODO: set kms endpoint
+	activationConfiguration := resources.NewActivationDaemonset(csp, string(measurementsJSON), string(idJSON))
 
 	return k.clusterUtil.SetupActivationService(k.client, activationConfiguration)
 }

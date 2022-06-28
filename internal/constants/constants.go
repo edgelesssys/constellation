@@ -24,6 +24,10 @@ const (
 
 	ActivationServicePort     = 9090
 	ActivationServiceNodePort = 30090
+	VerifyServicePortHTTP     = 8080
+	VerifyServicePortGRPC     = 9090
+	VerifyServiceNodePortHTTP = 30080
+	VerifyServiceNodePortGRPC = 30081
 	KMSPort                   = 9000
 	CoordinatorPort           = 9000
 	EnclaveSSHPort            = 2222

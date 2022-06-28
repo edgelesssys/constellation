@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package verify;
+
+option go_package = "github.com/edgelesssys/constellation/verify/verifyproto";
+
+service API {
+    rpc GetAttestation(GetAttestationRequest) returns (GetAttestationResponse);
+}
+
+message GetAttestationRequest {
+    bytes user_data = 1;
+    bytes nonce = 2;
+}
+
+message GetAttestationResponse {
+    bytes attestation = 1;
+}

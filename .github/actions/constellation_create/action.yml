@@ -68,17 +68,24 @@ runs:
 
   - name: Read Coordinator IP (Azure)
     run: |
-      echo COORD_IP=$(jq -r .azurecoordinators[].PublicIP constellation-state.json) >> $GITHUB_ENV
+      echo CONSTELL_IP=$(jq -r .azurecoordinators[].PublicIP constellation-state.json) >> $GITHUB_ENV
     shell: bash
     if: ${{ inputs.cloudProvider == 'azure' }}
   - name: Read Coordinator IP (GCP)
     run: |
-      echo COORD_IP=$(jq -r .gcpcoordinators[].PublicIP constellation-state.json) >> $GITHUB_ENV
+      echo CONSTELL_IP=$(jq -r .gcpcoordinators[].PublicIP constellation-state.json) >> $GITHUB_ENV
     shell: bash
     if: ${{ inputs.cloudProvider == 'gcp' }}
+
+  - name: Constellation init
+    run: |
+      if [ ${{ inputs.autoscale }} = true ]; then autoscale=--autoscale; fi
+      constellation init ${autoscale}
+    shell: bash
+
   - name: Fetch PCRs
     run: |
-      pcr-reader --coord-ip ${{ env.COORD_IP }} -o measurements.go
+      pcr-reader --constell-ip ${{ env.CONSTELL_IP }} -o measurements.go
     shell: bash
   - name: Upload measurements
     uses: actions/upload-artifact@v3
@@ -86,12 +93,6 @@ runs:
       name: measurements.go
       path: measurements.go
     if: ${{ !env.ACT }}
-
-  - name: Constellation init
-    run: |
-      if [ ${{ inputs.autoscale }} = true ]; then autoscale=--autoscale; fi
-      constellation init ${autoscale}
-    shell: bash
 
   - name: Configure VPN connection
     run: wg-quick up ./wg0.conf

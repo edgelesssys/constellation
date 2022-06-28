@@ -130,6 +130,11 @@ func NewDefaultCloudNodeManagerDeployment(image, path string, extraArgs []string
 								Effect:   k8s.TaintEffectNoSchedule,
 							},
 							{
+								Key:      "node-role.kubernetes.io/control-plane",
+								Operator: k8s.TolerationOpExists,
+								Effect:   k8s.TaintEffectNoSchedule,
+							},
+							{
 								Operator: k8s.TolerationOpExists,
 								Effect:   k8s.TaintEffectNoExecute,
 							},

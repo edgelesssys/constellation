@@ -5,60 +5,17 @@ This utility program makes it simple to update the expected PCR values of the CL
 
 ## Usage
 
-### Script
-
-Run `fetch_pcrs.sh` to create Constellations on all supported cloud providers and read their PCR states.
-```shell
-./fetch_pcrs.sh
-```
-
-The result is printed to screen and written as Go code to files in `./pcrs`.
-```bash
-+ main
-+ command -v constellation
-+ command -v go
-+ mkdir -p ./pcrs
-+ constellation create azure 2 Standard_D4s_v3 --name pcr-fetch -y
-Your Constellation was created successfully.
-++ jq '.azurecoordinators | to_entries[] | select(.key|startswith("")) | .value.PublicIP' -rcM constellation-state.json
-+ coord_ip=192.0.2.1
-+ go run ../main.go -coord-ip 192.0.2.1 -o ./pcrs/azure_pcrs.go
-connecting to Coordinator at 192.0.2.1:9000
-PCRs:
-{
-  "0": "q27iAZeXGAiCPdu1bqRA2gAoyMO2KrXWY4YkTCQowc4=",
-  ...
-  "9": "dEGJtQe3h+SI0z42yO7TklzwPixtM3iMCUeJPGRozvg="
-}
-+ constellation terminate
-Your Constellation was terminated successfully.
-+ constellation create gcp 2 n2d-standard-2 --name pcr-fetch -y
-Your Constellation was created successfully.
-++ jq '.gcpcoordinators | to_entries[] | select(.key|startswith("")) | .value.PublicIP' -rcM constellation-state.json
-+ coord_ip=192.0.2.2
-+ go run ../main.go -coord-ip 192.0.2.2 -o ./pcrs/gcp_pcrs.go
-connecting to Coordinator at 192.0.2.2:9000
-PCRs:
-{
-  "0": "DzXCFGCNk8em5ornNZtKi+Wg6Z7qkQfs5CfE3qTkOc8=",
-  ...
-  "9": "gse53SjsqREEdOpImJH4KAb0b8PqIgwI+Ps/XSiFnN4="
-}
-+ constellation terminate
-Your Constellation was terminated successfully.
-```
-
-### Manual
-
 To read the PCR state of any running Constellation node, run the following:
+
 ```shell
-go run main.go -coord-ip <NODE_IP> -coord-port <COORDINATOR_PORT>
+go run main.go -constell-ip <NODE_IP> -constell-port <COORDINATOR_PORT>
 ```
 
 The output is similar to the following:
+
 ```shell
-$ go run main.go -coord-ip 192.0.2.3 -coord-port 12345
-connecting to Coordinator at 192.0.2.3:12345
+$ go run main.go -constell-ip 192.0.2.3 -constell-port 30081
+connecting to Coordinator at 192.0.2.3:30081
 PCRs:
 {
   "0": "DzXCFGCNk8em5ornNZtKi+Wg6Z7qkQfs5CfE3qTkOc8=",
@@ -96,7 +53,7 @@ Optionally filter down results measurements per cloud provider:
 Azure
 
 ```bash
-./pcr-reader --coord-ip ${COORD_IP} --format yaml | yq e 'del(.[0,6,10,11,12,13,14,15,16,17,18,19,20,21,22,23])' -
+./pcr-reader --constell-ip ${CONSTELLATION_IP} --format yaml | yq e 'del(.[0,6,10,11,12,13,14,15,16,17,18,19,20,21,22,23])' -
 ```
 
 ## Meaning of PCR values
@@ -109,6 +66,7 @@ We use the TPM and its PCRs to verify all nodes of a Constellation run with the 
 
 PCR[0] measures the firmware volume (FV). Changes to FV also change PCR[0], making it unreliable for attestation.
 PCR[6] measures the VM ID. This is unusable for cluster attestation for two reasons:
+
 1. The Coordinator does not know the VM ID of nodes wanting to join the cluster, so it can not compute the expected PCR[6] for the joining VM
 2. A user may attest any node of the cluster without knowing the VM ID
 

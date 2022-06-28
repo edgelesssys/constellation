@@ -22,10 +22,6 @@ type kmsDeployment struct {
 	ImagePullSecret    k8s.Secret
 }
 
-const (
-	kmsImage = "ghcr.io/edgelesssys/constellation/kmsserver:latest"
-)
-
 // NewKMSDeployment creates a new *kmsDeployment to use as the key management system inside Constellation.
 func NewKMSDeployment(masterSecret []byte) *kmsDeployment {
 	return &kmsDeployment{
@@ -138,6 +134,11 @@ func NewKMSDeployment(masterSecret []byte) *kmsDeployment {
 								Key:      "node-role.kubernetes.io/master",
 								Operator: k8s.TolerationOpEqual,
 								Value:    "true",
+								Effect:   k8s.TaintEffectNoSchedule,
+							},
+							{
+								Key:      "node-role.kubernetes.io/control-plane",
+								Operator: k8s.TolerationOpExists,
 								Effect:   k8s.TaintEffectNoSchedule,
 							},
 							{

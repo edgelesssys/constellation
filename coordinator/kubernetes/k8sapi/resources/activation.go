@@ -12,8 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-const activationImage = "ghcr.io/edgelesssys/constellation/activation-service:latest"
-
 type activationDaemonset struct {
 	ClusterRole        rbac.ClusterRole
 	ClusterRoleBinding rbac.ClusterRoleBinding
@@ -109,6 +107,11 @@ func NewActivationDaemonset(csp, measurementsJSON, idJSON string) *activationDae
 								Key:      "node-role.kubernetes.io/master",
 								Operator: k8s.TolerationOpEqual,
 								Value:    "true",
+								Effect:   k8s.TaintEffectNoSchedule,
+							},
+							{
+								Key:      "node-role.kubernetes.io/control-plane",
+								Operator: k8s.TolerationOpExists,
 								Effect:   k8s.TaintEffectNoSchedule,
 							},
 							{

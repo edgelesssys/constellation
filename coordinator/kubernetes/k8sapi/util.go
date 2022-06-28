@@ -261,6 +261,19 @@ func (k *KubernetesUtil) SetupAccessManager(kubectl Client, accessManagerConfigu
 	return kubectl.Apply(accessManagerConfiguration, true)
 }
 
+// SetupKMS deploys the KMS deployment.
+func (k *KubernetesUtil) SetupKMS(kubectl Client, kmsConfiguration resources.Marshaler) error {
+	if err := kubectl.Apply(kmsConfiguration, true); err != nil {
+		return fmt.Errorf("applying KMS configuration: %w", err)
+	}
+	return nil
+}
+
+// SetupVerificationService deploys the verification service.
+func (k *KubernetesUtil) SetupVerificationService(kubectl Client, verificationServiceConfiguration resources.Marshaler) error {
+	return kubectl.Apply(verificationServiceConfiguration, true)
+}
+
 // JoinCluster joins existing Kubernetes cluster using kubeadm join.
 func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte) error {
 	// TODO: audit policy should be user input
@@ -292,14 +305,6 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte) err
 		return fmt.Errorf("kubeadm join: %w", err)
 	}
 
-	return nil
-}
-
-// SetupKMS deploys the KMS deployment.
-func (k *KubernetesUtil) SetupKMS(kubectl Client, kmsConfiguration resources.Marshaler) error {
-	if err := kubectl.Apply(kmsConfiguration, true); err != nil {
-		return fmt.Errorf("applying KMS configuration: %w", err)
-	}
 	return nil
 }
 

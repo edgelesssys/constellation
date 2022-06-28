@@ -10,6 +10,7 @@ on:
           - 'access-manager'
           - 'activation-service'
           - 'kmsserver'
+          - 'verification-service'
         required: true
         default: 'access-manager'
       imageTag:
@@ -43,6 +44,8 @@ jobs:
               echo "microServiceDockerfile=activation/Dockerfile" >> $GITHUB_ENV ;;
             "kmsserver" )
               echo "microServiceDockerfile=Dockerfile.kms" >> $GITHUB_ENV ;;
+            "verification-service" )
+              echo "microServiceDockerfile=verify/Dockerfile" >> $GITHUB_ENV ;;
           esac
 
       - name: Build and upload activation-service container image
@@ -50,7 +53,7 @@ jobs:
         uses: ./.github/actions/build_micro-service
         with:
           name: ${{ inputs.microService }}
-          projectVersion: '0.0.0'
+          projectVersion: ${{ inputs.version }}
           dockerfile: ${{ env.microServiceDockerfile }}
           pushTag: ${{ inputs.imageTag }}
           githubToken: ${{ secrets.GITHUB_TOKEN }}

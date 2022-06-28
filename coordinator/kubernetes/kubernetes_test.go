@@ -239,6 +239,17 @@ func TestInitCluster(t *testing.T) {
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
 		},
+		"kubeadm init fails when setting up verification service": {
+			clusterUtil: stubClusterUtil{setupVerificationServiceErr: someErr},
+			kubeconfigReader: &stubKubeconfigReader{
+				Kubeconfig: []byte("someKubeconfig"),
+			},
+			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
+			CloudControllerManager: &stubCloudControllerManager{},
+			CloudNodeManager:       &stubCloudNodeManager{SupportedResp: false},
+			ClusterAutoscaler:      &stubClusterAutoscaler{},
+			wantErr:                true,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -515,6 +526,7 @@ type stubClusterUtil struct {
 	setupCloudNodeManagerError       error
 	setupKMSError                    error
 	setupAccessManagerError          error
+	setupVerificationServiceErr      error
 	joinClusterErr                   error
 	startKubeletErr                  error
 	restartKubeletErr                error
@@ -560,6 +572,10 @@ func (s *stubClusterUtil) SetupAccessManager(kubectl k8sapi.Client, accessManage
 
 func (s *stubClusterUtil) SetupCloudNodeManager(kubectl k8sapi.Client, cloudNodeManagerConfiguration resources.Marshaler) error {
 	return s.setupCloudNodeManagerError
+}
+
+func (s *stubClusterUtil) SetupVerificationService(kubectl k8sapi.Client, verificationServiceConfiguration resources.Marshaler) error {
+	return s.setupVerificationServiceErr
 }
 
 func (s *stubClusterUtil) JoinCluster(ctx context.Context, joinConfig []byte) error {

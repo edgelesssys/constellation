@@ -1,17 +1,23 @@
 package cmd
 
 import (
+	"bytes"
+	"context"
 	"errors"
 	"fmt"
+	"net"
 
 	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/cli/internal/proto"
+	"github.com/edgelesssys/constellation/coordinator/util"
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/grpc/dialer"
+	"github.com/edgelesssys/constellation/verify/verifyproto"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	rpcStatus "google.golang.org/grpc/status"
+	"google.golang.org/grpc"
 )
 
 // NewVerifyCmd returns a new cobra.Command for the verify command.
@@ -37,12 +43,13 @@ func NewVerifyCmd() *cobra.Command {
 func runVerify(cmd *cobra.Command, args []string) error {
 	provider := cloudprovider.FromString(args[0])
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	protoClient := &proto.Client{}
-	defer protoClient.Close()
-	return verify(cmd, provider, fileHandler, protoClient)
+	verifyClient := &constellationVerifier{dialer: dialer.New(nil, nil, &net.Dialer{})}
+	return verify(cmd, provider, fileHandler, verifyClient)
 }
 
-func verify(cmd *cobra.Command, provider cloudprovider.Provider, fileHandler file.Handler, protoClient protoClient) error {
+func verify(
+	cmd *cobra.Command, provider cloudprovider.Provider, fileHandler file.Handler, verifyClient verifyClient,
+) error {
 	flags, err := parseVerifyFlags(cmd)
 	if err != nil {
 		return err
@@ -65,13 +72,24 @@ func verify(cmd *cobra.Command, provider cloudprovider.Provider, fileHandler fil
 		cmd.Print(validators.Warnings())
 	}
 
-	if err := protoClient.Connect(flags.endpoint, validators.V()); err != nil {
+	nonce, err := util.GenerateRandomBytes(32)
+	if err != nil {
 		return err
 	}
-	if _, err := protoClient.GetState(cmd.Context()); err != nil {
-		if err, ok := rpcStatus.FromError(err); ok {
-			return fmt.Errorf("verifying Constellation cluster: %s", err.Message())
-		}
+	userData, err := util.GenerateRandomBytes(32)
+	if err != nil {
+		return err
+	}
+
+	if err := verifyClient.Verify(
+		cmd.Context(),
+		flags.endpoint,
+		&verifyproto.GetAttestationRequest{
+			Nonce:    nonce,
+			UserData: userData,
+		},
+		validators.V()[0],
+	); err != nil {
 		return err
 	}
 
@@ -96,7 +114,7 @@ func parseVerifyFlags(cmd *cobra.Command) (verifyFlags, error) {
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing node-endpoint argument: %w", err)
 	}
-	endpoint, err = validateEndpoint(endpoint, constants.CoordinatorPort)
+	endpoint, err = validateEndpoint(endpoint, constants.VerifyServiceNodePortGRPC)
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
 	}
@@ -121,7 +139,7 @@ type verifyFlags struct {
 	configPath string
 }
 
-// verifyCompletion handels the completion of CLI arguments. It is frequently called
+// verifyCompletion handles the completion of CLI arguments. It is frequently called
 // while the user types arguments of the command to suggest completion.
 func verifyCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	switch len(args) {
@@ -130,4 +148,44 @@ func verifyCompletion(cmd *cobra.Command, args []string, toComplete string) ([]s
 	default:
 		return []string{}, cobra.ShellCompDirectiveError
 	}
+}
+
+type constellationVerifier struct {
+	dialer grpcDialer
+}
+
+// Verify retrieves an attestation statement from the Constellation and verifies it using the validator.
+func (v *constellationVerifier) Verify(
+	ctx context.Context, endpoint string, req *verifyproto.GetAttestationRequest, validator atls.Validator,
+) error {
+	conn, err := v.dialer.DialInsecure(ctx, endpoint)
+	if err != nil {
+		return fmt.Errorf("dialing init server: %w", err)
+	}
+	defer conn.Close()
+
+	client := verifyproto.NewAPIClient(conn)
+
+	resp, err := client.GetAttestation(ctx, req)
+	if err != nil {
+		return fmt.Errorf("getting attestation: %w", err)
+	}
+
+	signedData, err := validator.Validate(resp.Attestation, req.Nonce)
+	if err != nil {
+		return fmt.Errorf("validating attestation: %w", err)
+	}
+
+	if !bytes.Equal(signedData, req.UserData) {
+		return errors.New("signed data in attestation does not match provided user data")
+	}
+	return nil
+}
+
+type verifyClient interface {
+	Verify(ctx context.Context, endpoint string, req *verifyproto.GetAttestationRequest, validator atls.Validator) error
+}
+
+type grpcDialer interface {
+	DialInsecure(ctx context.Context, endpoint string) (conn *grpc.ClientConn, err error)
 }

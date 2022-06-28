@@ -54,6 +54,11 @@ WORKDIR /activation
 COPY activation/activationproto/*.proto /activation
 RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
 
+## verify
+WORKDIR /verify
+COPY verify/verifyproto/*.proto /verify
+RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
+
 FROM scratch as export
 COPY --from=build /pubapi/*.go coordinator/pubapi/pubproto/
 COPY --from=build /vpnapi/*.go coordinator/vpnapi/vpnproto/
@@ -61,3 +66,4 @@ COPY --from=build /disk-mapper/*.go state/keyservice/keyproto/
 COPY --from=build /service/*.go debugd/service/
 COPY --from=build /kms/*.go kms/server/kmsapi/kmsproto/
 COPY --from=build /activation/*.go activation/activationproto/
+COPY --from=build /verify/*.go verify/verifyproto/

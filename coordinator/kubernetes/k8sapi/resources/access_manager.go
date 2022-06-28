@@ -104,7 +104,7 @@ func NewAccessManagerDeployment(sshUsers map[string]string) *accessManagerDeploy
 						InitContainers: []k8s.Container{
 							{
 								Name:  "constellation-access-manager",
-								Image: "ghcr.io/edgelesssys/constellation/access-manager:v1.2",
+								Image: accessManagerImage,
 								VolumeMounts: []k8s.VolumeMount{
 									{
 										Name:      "host",

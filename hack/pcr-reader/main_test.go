@@ -2,97 +2,18 @@ package main
 
 import (
 	"bytes"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/x509"
-	"crypto/x509/pkix"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"testing"
 
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
-	"github.com/edgelesssys/constellation/internal/oid"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm-tools/proto/tpm"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestGetVerifyPeerCertificateFunc(t *testing.T) {
-	testCases := map[string]struct {
-		rawCerts [][]byte
-		wantErr  bool
-	}{
-		"no certificates": {
-			rawCerts: nil,
-			wantErr:  true,
-		},
-		"invalid certificate": {
-			rawCerts: [][]byte{
-				{0x1, 0x2, 0x3},
-			},
-			wantErr: true,
-		},
-		"no extension": {
-			rawCerts: [][]byte{
-				mustGenerateTestCert(t, &x509.Certificate{
-					SerialNumber: big.NewInt(123),
-				}),
-			},
-			wantErr: true,
-		},
-		"certificate with attestation": {
-			rawCerts: [][]byte{
-				mustGenerateTestCert(t, &x509.Certificate{
-					SerialNumber: big.NewInt(123),
-					ExtraExtensions: []pkix.Extension{
-						{
-							Id:       oid.GCP{}.OID(),
-							Value:    []byte{0x1, 0x2, 0x3},
-							Critical: true,
-						},
-					},
-				}),
-			},
-			wantErr: false,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			attDoc := &[]byte{}
-			verify := getVerifyPeerCertificateFunc(attDoc)
-
-			err := verify(tc.rawCerts, nil)
-			if tc.wantErr {
-				assert.Error(err)
-			} else {
-				require.NoError(err)
-
-				assert.NotNil(attDoc)
-				cert, err := x509.ParseCertificate(tc.rawCerts[0])
-				require.NoError(err)
-				assert.Equal(cert.Extensions[0].Value, *attDoc)
-			}
-		})
-	}
-}
-
-func mustGenerateTestCert(t *testing.T, template *x509.Certificate) []byte {
-	require := require.New(t)
-	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	require.NoError(err)
-	cert, err := x509.CreateCertificate(rand.Reader, template, template, priv.Public(), priv)
-	require.NoError(err)
-	return cert
-}
 
 func TestExportToFile(t *testing.T) {
 	testCases := map[string]struct {

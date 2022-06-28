@@ -148,6 +148,11 @@ func NewDefaultCloudControllerManagerDeployment(cloudProvider, image, path, podC
 								Effect: k8s.TaintEffectNoSchedule,
 							},
 							{
+								Key:      "node-role.kubernetes.io/control-plane",
+								Operator: k8s.TolerationOpExists,
+								Effect:   k8s.TaintEffectNoSchedule,
+							},
+							{
 								Key:    "node.kubernetes.io/not-ready",
 								Effect: k8s.TaintEffectNoSchedule,
 							},

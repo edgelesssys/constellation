@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -13,29 +11,26 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
-	"github.com/edgelesssys/constellation/coordinator/state"
-	"github.com/edgelesssys/constellation/internal/atls"
-	"github.com/edgelesssys/constellation/internal/attestation/azure"
-	"github.com/edgelesssys/constellation/internal/attestation/gcp"
+	"github.com/edgelesssys/constellation/coordinator/util"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
-	"github.com/edgelesssys/constellation/internal/oid"
-	"github.com/edgelesssys/constellation/internal/statuswaiter"
+	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/verify/verifyproto"
 	"github.com/spf13/afero"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"gopkg.in/yaml.v3"
 )
 
 var (
-	coordIP         = flag.String("coord-ip", "", "IP of the VM the Coordinator is running on")
-	coordinatorPort = flag.String("coord-port", "9000", "Port of the Coordinator's pub API")
+	coordIP         = flag.String("constell-ip", "", "Public IP of the Constellation")
+	coordinatorPort = flag.String("constell-port", strconv.Itoa(constants.VerifyServiceNodePortGRPC), "NodePort of the Constellation's verification service")
 	export          = flag.String("o", "", "Write PCRs, formatted as Go code, to file")
 	format          = flag.String("format", "json", "Output format: json, yaml (default json)")
 	quiet           = flag.Bool("q", false, "Set to disable output")
-	timeout         = flag.Duration("timeout", 2*time.Minute, "Wait this duration for the Coordinator to become available")
+	timeout         = flag.Duration("timeout", 2*time.Minute, "Wait this duration for the verification service to become available")
 )
 
 func main() {
@@ -45,25 +40,8 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 
-	// wait for coordinator to come online
-	waiter := statuswaiter.New()
-	if err := waiter.InitializeValidators([]atls.Validator{
-		azure.NewValidator(map[uint32][]byte{}),
-		gcp.NewValidator(map[uint32][]byte{}),
-	}); err != nil {
-		log.Fatal(err)
-	}
-	if err := waiter.WaitFor(ctx, addr, state.AcceptingInit, state.ActivatingNodes, state.IsNode, state.NodeWaitingForClusterJoin); err != nil {
-		log.Fatal(err)
-	}
-
-	attDocRaw := []byte{}
-	tlsConfig, err := atls.CreateAttestationClientTLSConfig(nil, nil)
+	attDocRaw, err := getAttestation(ctx, addr)
 	if err != nil {
-		log.Fatal(err)
-	}
-	tlsConfig.VerifyPeerCertificate = getVerifyPeerCertificateFunc(&attDocRaw)
-	if err := connectToCoordinator(ctx, addr, tlsConfig); err != nil {
 		log.Fatal(err)
 	}
 
@@ -98,45 +76,27 @@ func (m Measurements) MarshalYAML() (interface{}, error) {
 	return base64Map, nil
 }
 
-// connectToCoordinator connects to the Constellation Coordinator and returns its attestation document.
-func connectToCoordinator(ctx context.Context, addr string, tlsConfig *tls.Config) error {
+// getAttestation connects to the Constellation verification service and returns its attestation document.
+func getAttestation(ctx context.Context, addr string) ([]byte, error) {
 	conn, err := grpc.DialContext(
-		ctx, addr, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)),
+		ctx, addr, grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("unable to connect to verification service: %w", err)
 	}
 	defer conn.Close()
 
-	client := pubproto.NewAPIClient(conn)
-	_, err = client.GetState(ctx, &pubproto.GetStateRequest{})
-	return err
-}
-
-// getVerifyPeerCertificateFunc returns a VerifyPeerCertificate function, which writes the attestation document extension to the given byte slice pointer.
-func getVerifyPeerCertificateFunc(attDoc *[]byte) func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
-	return func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
-		if len(rawCerts) == 0 {
-			return errors.New("rawCerts is empty")
-		}
-		cert, err := x509.ParseCertificate(rawCerts[0])
-		if err != nil {
-			return err
-		}
-
-		for _, ex := range cert.Extensions {
-			if ex.Id.Equal(oid.Azure{}.OID()) || ex.Id.Equal(oid.GCP{}.OID()) {
-				if err := json.Unmarshal(ex.Value, attDoc); err != nil {
-					*attDoc = ex.Value
-				}
-			}
-		}
-
-		if len(*attDoc) == 0 {
-			return errors.New("did not receive attestation document in certificate extension")
-		}
-		return nil
+	nonce, err := util.GenerateRandomBytes(32)
+	if err != nil {
+		return nil, err
 	}
+
+	client := verifyproto.NewAPIClient(conn)
+	res, err := client.GetAttestation(ctx, &verifyproto.GetAttestationRequest{Nonce: nonce, UserData: nonce})
+	if err != nil {
+		return nil, err
+	}
+	return res.Attestation, nil
 }
 
 // validatePCRAttDoc parses and validates PCRs of an attestation document.
