@@ -50,16 +50,6 @@ type publicIPAddressesAPI interface {
 		options *armnetwork.PublicIPAddressesClientGetOptions) (armnetwork.PublicIPAddressesClientGetResponse, error)
 }
 
-type virtualMachinesAPI interface {
-	Get(ctx context.Context, resourceGroupName string, vmName string, options *armcompute.VirtualMachinesClientGetOptions) (armcompute.VirtualMachinesClientGetResponse, error)
-	List(resourceGroupName string, options *armcompute.VirtualMachinesClientListOptions) virtualMachinesClientListPager
-}
-
-type virtualMachinesClientListPager interface {
-	NextPage(ctx context.Context) bool
-	PageResponse() armcompute.VirtualMachinesClientListResponse
-}
-
 type virtualMachineScaleSetVMsAPI interface {
 	Get(ctx context.Context, resourceGroupName string, vmScaleSetName string, instanceID string, options *armcompute.VirtualMachineScaleSetVMsClientGetOptions) (armcompute.VirtualMachineScaleSetVMsClientGetResponse, error)
 	List(resourceGroupName string, virtualMachineScaleSetName string, options *armcompute.VirtualMachineScaleSetVMsClientListOptions) virtualMachineScaleSetVMsClientListPager

@@ -282,7 +282,7 @@ func (k *KubeWrapper) setupCCM(ctx context.Context, subnetworkPodCIDR, cloudServ
 	if err != nil {
 		return fmt.Errorf("defining ConfigMaps for CCM failed: %w", err)
 	}
-	ccmSecrets, err := k.cloudControllerManager.Secrets(ctx, instance, cloudServiceAccountURI)
+	ccmSecrets, err := k.cloudControllerManager.Secrets(ctx, instance.ProviderID, cloudServiceAccountURI)
 	if err != nil {
 		return fmt.Errorf("defining Secrets for CCM failed: %w", err)
 	}
@@ -316,7 +316,7 @@ func (k *KubeWrapper) setupClusterAutoscaler(instance cloudtypes.Instance, cloud
 	if !k.clusterAutoscaler.Supported() {
 		return nil
 	}
-	caSecrets, err := k.clusterAutoscaler.Secrets(instance, cloudServiceAccountURI)
+	caSecrets, err := k.clusterAutoscaler.Secrets(instance.ProviderID, cloudServiceAccountURI)
 	if err != nil {
 		return fmt.Errorf("defining Secrets for cluster-autoscaler failed: %w", err)
 	}

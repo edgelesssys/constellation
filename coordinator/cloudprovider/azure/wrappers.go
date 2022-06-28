@@ -68,18 +68,6 @@ func (c *loadBalancersClient) List(resourceGroupName string, options *armnetwork
 	return c.LoadBalancersClient.List(resourceGroupName, options)
 }
 
-type virtualMachinesClient struct {
-	*armcompute.VirtualMachinesClient
-}
-
-func (c *virtualMachinesClient) Get(ctx context.Context, resourceGroupName, vmName string, options *armcompute.VirtualMachinesClientGetOptions) (armcompute.VirtualMachinesClientGetResponse, error) {
-	return c.VirtualMachinesClient.Get(ctx, resourceGroupName, vmName, options)
-}
-
-func (c *virtualMachinesClient) List(resourceGroupName string, options *armcompute.VirtualMachinesClientListOptions) virtualMachinesClientListPager {
-	return c.VirtualMachinesClient.List(resourceGroupName, options)
-}
-
 type virtualMachineScaleSetVMsClient struct {
 	*armcompute.VirtualMachineScaleSetVMsClient
 }

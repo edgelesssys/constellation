@@ -7,9 +7,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/internal/azureshared"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 )
 
 var (
@@ -18,30 +18,30 @@ var (
 )
 
 // getScaleSetVM tries to get an azure vm belonging to a scale set.
-func (m *Metadata) getScaleSetVM(ctx context.Context, providerID string) (cloudtypes.Instance, error) {
+func (m *Metadata) getScaleSetVM(ctx context.Context, providerID string) (metadata.InstanceMetadata, error) {
 	_, resourceGroup, scaleSet, instanceID, err := azureshared.ScaleSetInformationFromProviderID(providerID)
 	if err != nil {
-		return cloudtypes.Instance{}, err
+		return metadata.InstanceMetadata{}, err
 	}
 	vmResp, err := m.virtualMachineScaleSetVMsAPI.Get(ctx, resourceGroup, scaleSet, instanceID, nil)
 	if err != nil {
-		return cloudtypes.Instance{}, err
+		return metadata.InstanceMetadata{}, err
 	}
 	networkInterfaces, err := m.getScaleSetVMInterfaces(ctx, vmResp.VirtualMachineScaleSetVM, resourceGroup, scaleSet, instanceID)
 	if err != nil {
-		return cloudtypes.Instance{}, err
+		return metadata.InstanceMetadata{}, err
 	}
 	publicIPAddresses, err := m.getScaleSetVMPublicIPAddresses(ctx, resourceGroup, scaleSet, instanceID, networkInterfaces)
 	if err != nil {
-		return cloudtypes.Instance{}, err
+		return metadata.InstanceMetadata{}, err
 	}
 
 	return convertScaleSetVMToCoreInstance(scaleSet, vmResp.VirtualMachineScaleSetVM, networkInterfaces, publicIPAddresses)
 }
 
 // listScaleSetVMs lists all scale set VMs in the current resource group.
-func (m *Metadata) listScaleSetVMs(ctx context.Context, resourceGroup string) ([]cloudtypes.Instance, error) {
-	instances := []cloudtypes.Instance{}
+func (m *Metadata) listScaleSetVMs(ctx context.Context, resourceGroup string) ([]metadata.InstanceMetadata, error) {
+	instances := []metadata.InstanceMetadata{}
 	scaleSetPager := m.scaleSetsAPI.List(resourceGroup, nil)
 	for scaleSetPager.NextPage(ctx) {
 		for _, scaleSet := range scaleSetPager.PageResponse().Value {
@@ -71,12 +71,12 @@ func (m *Metadata) listScaleSetVMs(ctx context.Context, resourceGroup string) ([
 }
 
 // convertScaleSetVMToCoreInstance converts an azure scale set virtual machine with interface configurations into a core.Instance.
-func convertScaleSetVMToCoreInstance(scaleSet string, vm armcompute.VirtualMachineScaleSetVM, networkInterfaces []armnetwork.Interface, publicIPAddresses []string) (cloudtypes.Instance, error) {
+func convertScaleSetVMToCoreInstance(scaleSet string, vm armcompute.VirtualMachineScaleSetVM, networkInterfaces []armnetwork.Interface, publicIPAddresses []string) (metadata.InstanceMetadata, error) {
 	if vm.ID == nil {
-		return cloudtypes.Instance{}, errors.New("retrieving instance from armcompute API client returned no instance ID")
+		return metadata.InstanceMetadata{}, errors.New("retrieving instance from armcompute API client returned no instance ID")
 	}
 	if vm.Properties == nil || vm.Properties.OSProfile == nil || vm.Properties.OSProfile.ComputerName == nil {
-		return cloudtypes.Instance{}, errors.New("retrieving instance from armcompute API client returned no computer name")
+		return metadata.InstanceMetadata{}, errors.New("retrieving instance from armcompute API client returned no computer name")
 	}
 	var sshKeys map[string][]string
 	if vm.Properties.OSProfile.LinuxConfiguration == nil || vm.Properties.OSProfile.LinuxConfiguration.SSH == nil {
@@ -84,7 +84,7 @@ func convertScaleSetVMToCoreInstance(scaleSet string, vm armcompute.VirtualMachi
 	} else {
 		sshKeys = extractSSHKeys(*vm.Properties.OSProfile.LinuxConfiguration.SSH)
 	}
-	return cloudtypes.Instance{
+	return metadata.InstanceMetadata{
 		Name:       *vm.Properties.OSProfile.ComputerName,
 		ProviderID: "azure://" + *vm.ID,
 		Role:       extractScaleSetVMRole(scaleSet),

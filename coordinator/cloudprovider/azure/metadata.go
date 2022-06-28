@@ -11,10 +11,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
-	"github.com/edgelesssys/constellation/coordinator/core"
-	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/internal/azureshared"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 )
 
 var (
@@ -31,7 +29,6 @@ type Metadata struct {
 	publicIPAddressesAPI
 	scaleSetsAPI
 	loadBalancerAPI
-	virtualMachinesAPI
 	virtualMachineScaleSetVMsAPI
 	tagsAPI
 	applicationInsightsAPI
@@ -63,7 +60,6 @@ func NewMetadata(ctx context.Context) (*Metadata, error) {
 	securityGroupsAPI := armnetwork.NewSecurityGroupsClient(subscriptionID, cred, nil)
 	scaleSetsAPI := armcompute.NewVirtualMachineScaleSetsClient(subscriptionID, cred, nil)
 	loadBalancerAPI := armnetwork.NewLoadBalancersClient(subscriptionID, cred, nil)
-	virtualMachinesAPI := armcompute.NewVirtualMachinesClient(subscriptionID, cred, nil)
 	virtualMachineScaleSetVMsAPI := armcompute.NewVirtualMachineScaleSetVMsClient(subscriptionID, cred, nil)
 	tagsAPI := armresources.NewTagsClient(subscriptionID, cred, nil)
 	applicationInsightsAPI := armapplicationinsights.NewComponentsClient(subscriptionID, cred, nil)
@@ -76,7 +72,6 @@ func NewMetadata(ctx context.Context) (*Metadata, error) {
 		publicIPAddressesAPI:         &publicIPAddressesClient{publicIPAddressesAPI},
 		loadBalancerAPI:              &loadBalancersClient{loadBalancerAPI},
 		scaleSetsAPI:                 &scaleSetsClient{scaleSetsAPI},
-		virtualMachinesAPI:           &virtualMachinesClient{virtualMachinesAPI},
 		virtualMachineScaleSetVMsAPI: &virtualMachineScaleSetVMsClient{virtualMachineScaleSetVMsAPI},
 		tagsAPI:                      &tagsClient{tagsAPI},
 		applicationInsightsAPI:       &applicationInsightsClient{applicationInsightsAPI},
@@ -84,7 +79,7 @@ func NewMetadata(ctx context.Context) (*Metadata, error) {
 }
 
 // List retrieves all instances belonging to the current constellation.
-func (m *Metadata) List(ctx context.Context) ([]cloudtypes.Instance, error) {
+func (m *Metadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
 	providerID, err := m.providerID(ctx)
 	if err != nil {
 		return nil, err
@@ -93,54 +88,29 @@ func (m *Metadata) List(ctx context.Context) ([]cloudtypes.Instance, error) {
 	if err != nil {
 		return nil, err
 	}
-	singleInstances, err := m.listVMs(ctx, resourceGroup)
-	if err != nil {
-		return nil, err
-	}
 	scaleSetInstances, err := m.listScaleSetVMs(ctx, resourceGroup)
 	if err != nil {
 		return nil, err
 	}
-	instances := make([]cloudtypes.Instance, 0, len(singleInstances)+len(scaleSetInstances))
-	instances = append(instances, singleInstances...)
-	instances = append(instances, scaleSetInstances...)
-	return instances, nil
+	return scaleSetInstances, nil
 }
 
 // Self retrieves the current instance.
-func (m *Metadata) Self(ctx context.Context) (cloudtypes.Instance, error) {
+func (m *Metadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
 	providerID, err := m.providerID(ctx)
 	if err != nil {
-		return cloudtypes.Instance{}, err
+		return metadata.InstanceMetadata{}, err
 	}
 	return m.GetInstance(ctx, providerID)
 }
 
 // GetInstance retrieves an instance using its providerID.
-func (m *Metadata) GetInstance(ctx context.Context, providerID string) (cloudtypes.Instance, error) {
-	instance, singleErr := m.getVM(ctx, providerID)
-	if singleErr == nil {
-		return instance, nil
-	}
+func (m *Metadata) GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error) {
 	instance, scaleSetErr := m.getScaleSetVM(ctx, providerID)
 	if scaleSetErr == nil {
 		return instance, nil
 	}
-	return cloudtypes.Instance{}, fmt.Errorf("retrieving instance given providerID %v as either single VM or scale set VM: %v; %v", providerID, singleErr, scaleSetErr)
-}
-
-// SignalRole signals the constellation role via cloud provider metadata.
-// On single VMs, the role is stored in tags, on scale set VMs, the role is inferred from the scale set and not signalied explicitly.
-func (m *Metadata) SignalRole(ctx context.Context, role role.Role) error {
-	providerID, err := m.providerID(ctx)
-	if err != nil {
-		return err
-	}
-	if _, _, _, _, err := azureshared.ScaleSetInformationFromProviderID(providerID); err == nil {
-		// scale set instances cannot store tags and role can be inferred from scale set name.
-		return nil
-	}
-	return m.setTag(ctx, core.RoleMetadataKey, role.String())
+	return metadata.InstanceMetadata{}, fmt.Errorf("retrieving instance given providerID %v: %w", providerID, scaleSetErr)
 }
 
 // GetNetworkSecurityGroupName returns the security group name of the resource group.

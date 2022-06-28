@@ -6,9 +6,8 @@ import (
 	"testing"
 
 	compute "cloud.google.com/go/compute/apiv1"
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
-	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/role"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	gax "github.com/googleapis/gax-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -44,11 +43,11 @@ func TestRetrieveInstances(t *testing.T) {
 								Value: proto.String("value-2"),
 							},
 							{
-								Key:   proto.String(core.ConstellationUIDMetadataKey),
+								Key:   proto.String(constellationUIDMetadataKey),
 								Value: proto.String(uid),
 							},
 							{
-								Key:   proto.String(core.RoleMetadataKey),
+								Key:   proto.String(roleMetadataKey),
 								Value: proto.String(role.Coordinator.String()),
 							},
 						},
@@ -70,14 +69,14 @@ func TestRetrieveInstances(t *testing.T) {
 		metadata            stubMetadataClient
 		instanceIter        *stubInstanceIterator
 		instanceIterMutator func(*stubInstanceIterator)
-		wantInstances       []cloudtypes.Instance
+		wantInstances       []metadata.InstanceMetadata
 		wantErr             bool
 	}{
 		"retrieve works": {
 			client:       stubInstancesClient{},
 			metadata:     stubMetadataClient{InstanceValue: uid},
 			instanceIter: newTestIter(),
-			wantInstances: []cloudtypes.Instance{
+			wantInstances: []metadata.InstanceMetadata{
 				{
 					Name:          "someInstance",
 					ProviderID:    "gce://someProject/someZone/someInstance",
@@ -101,7 +100,7 @@ func TestRetrieveInstances(t *testing.T) {
 			metadata:            stubMetadataClient{InstanceValue: uid},
 			instanceIter:        newTestIter(),
 			instanceIterMutator: func(sii *stubInstanceIterator) { sii.instances[0].NetworkInterfaces = nil },
-			wantInstances: []cloudtypes.Instance{
+			wantInstances: []metadata.InstanceMetadata{
 				{
 					Name:          "someInstance",
 					ProviderID:    "gce://someProject/someZone/someInstance",
@@ -118,7 +117,7 @@ func TestRetrieveInstances(t *testing.T) {
 			metadata:            stubMetadataClient{InstanceValue: uid},
 			instanceIter:        newTestIter(),
 			instanceIterMutator: func(sii *stubInstanceIterator) { sii.instances[0].NetworkInterfaces[0].NetworkIP = nil },
-			wantInstances: []cloudtypes.Instance{
+			wantInstances: []metadata.InstanceMetadata{
 				{
 					Name:          "someInstance",
 					ProviderID:    "gce://someProject/someZone/someInstance",
@@ -135,7 +134,7 @@ func TestRetrieveInstances(t *testing.T) {
 			metadata:            stubMetadataClient{InstanceValue: uid},
 			instanceIter:        newTestIter(),
 			instanceIterMutator: func(sii *stubInstanceIterator) { sii.instances[0].Metadata.Items[2].Key = proto.String("") },
-			wantInstances:       []cloudtypes.Instance{},
+			wantInstances:       []metadata.InstanceMetadata{},
 		},
 		"constellation retrieval fails": {
 			client:       stubInstancesClient{},
@@ -148,7 +147,7 @@ func TestRetrieveInstances(t *testing.T) {
 			metadata:            stubMetadataClient{InstanceValue: uid},
 			instanceIter:        newTestIter(),
 			instanceIterMutator: func(sii *stubInstanceIterator) { sii.instances[0].Metadata.Items[3].Key = proto.String("") },
-			wantInstances: []cloudtypes.Instance{
+			wantInstances: []metadata.InstanceMetadata{
 				{
 					Name:          "someInstance",
 					ProviderID:    "gce://someProject/someZone/someInstance",
@@ -224,13 +223,13 @@ func TestRetrieveInstance(t *testing.T) {
 		client                stubInstancesClient
 		clientInstance        *computepb.Instance
 		clientInstanceMutator func(*computepb.Instance)
-		wantInstance          cloudtypes.Instance
+		wantInstance          metadata.InstanceMetadata
 		wantErr               bool
 	}{
 		"retrieve works": {
 			client:         stubInstancesClient{},
 			clientInstance: newTestInstance(),
-			wantInstance: cloudtypes.Instance{
+			wantInstance: metadata.InstanceMetadata{
 				Name:          "someInstance",
 				ProviderID:    "gce://someProject/someZone/someInstance",
 				AliasIPRanges: []string{"192.0.2.0/16"},
@@ -246,7 +245,7 @@ func TestRetrieveInstance(t *testing.T) {
 				i.Metadata.Items[0].Key = proto.String("ssh-keys")
 				i.Metadata.Items[0].Value = proto.String("bob:ssh-rsa bobskey")
 			},
-			wantInstance: cloudtypes.Instance{
+			wantInstance: metadata.InstanceMetadata{
 				Name:          "someInstance",
 				ProviderID:    "gce://someProject/someZone/someInstance",
 				AliasIPRanges: []string{"192.0.2.0/16"},
@@ -259,10 +258,10 @@ func TestRetrieveInstance(t *testing.T) {
 			client:         stubInstancesClient{},
 			clientInstance: newTestInstance(),
 			clientInstanceMutator: func(i *computepb.Instance) {
-				i.Metadata.Items[0].Key = proto.String(core.RoleMetadataKey)
+				i.Metadata.Items[0].Key = proto.String(roleMetadataKey)
 				i.Metadata.Items[0].Value = proto.String(role.Coordinator.String())
 			},
-			wantInstance: cloudtypes.Instance{
+			wantInstance: metadata.InstanceMetadata{
 				Name:          "someInstance",
 				ProviderID:    "gce://someProject/someZone/someInstance",
 				AliasIPRanges: []string{"192.0.2.0/16"},
@@ -283,7 +282,7 @@ func TestRetrieveInstance(t *testing.T) {
 			client:                stubInstancesClient{},
 			clientInstance:        newTestInstance(),
 			clientInstanceMutator: func(i *computepb.Instance) { i.Metadata.Items[0] = nil },
-			wantInstance: cloudtypes.Instance{
+			wantInstance: metadata.InstanceMetadata{
 				Name:          "someInstance",
 				ProviderID:    "gce://someProject/someZone/someInstance",
 				AliasIPRanges: []string{"192.0.2.0/16"},
@@ -296,7 +295,7 @@ func TestRetrieveInstance(t *testing.T) {
 			client:                stubInstancesClient{},
 			clientInstance:        newTestInstance(),
 			clientInstanceMutator: func(i *computepb.Instance) { i.Metadata.Items[0].Key = nil },
-			wantInstance: cloudtypes.Instance{
+			wantInstance: metadata.InstanceMetadata{
 				Name:          "someInstance",
 				ProviderID:    "gce://someProject/someZone/someInstance",
 				AliasIPRanges: []string{"192.0.2.0/16"},
@@ -309,7 +308,7 @@ func TestRetrieveInstance(t *testing.T) {
 			client:                stubInstancesClient{},
 			clientInstance:        newTestInstance(),
 			clientInstanceMutator: func(i *computepb.Instance) { i.Metadata.Items[0].Value = nil },
-			wantInstance: cloudtypes.Instance{
+			wantInstance: metadata.InstanceMetadata{
 				Name:          "someInstance",
 				ProviderID:    "gce://someProject/someZone/someInstance",
 				AliasIPRanges: []string{"192.0.2.0/16"},
@@ -322,7 +321,7 @@ func TestRetrieveInstance(t *testing.T) {
 			client:                stubInstancesClient{},
 			clientInstance:        newTestInstance(),
 			clientInstanceMutator: func(i *computepb.Instance) { i.NetworkInterfaces[0] = nil },
-			wantInstance: cloudtypes.Instance{
+			wantInstance: metadata.InstanceMetadata{
 				Name:          "someInstance",
 				ProviderID:    "gce://someProject/someZone/someInstance",
 				AliasIPRanges: []string{},
@@ -335,7 +334,7 @@ func TestRetrieveInstance(t *testing.T) {
 			client:                stubInstancesClient{},
 			clientInstance:        newTestInstance(),
 			clientInstanceMutator: func(i *computepb.Instance) { i.NetworkInterfaces[0].NetworkIP = nil },
-			wantInstance: cloudtypes.Instance{
+			wantInstance: metadata.InstanceMetadata{
 				Name:          "someInstance",
 				ProviderID:    "gce://someProject/someZone/someInstance",
 				AliasIPRanges: []string{"192.0.2.0/16"},
@@ -348,7 +347,7 @@ func TestRetrieveInstance(t *testing.T) {
 			client:                stubInstancesClient{},
 			clientInstance:        newTestInstance(),
 			clientInstanceMutator: func(i *computepb.Instance) { i.NetworkInterfaces[0].AliasIpRanges[0].IpCidrRange = nil },
-			wantInstance: cloudtypes.Instance{
+			wantInstance: metadata.InstanceMetadata{
 				Name:          "someInstance",
 				ProviderID:    "gce://someProject/someZone/someInstance",
 				AliasIPRanges: []string{},
@@ -361,7 +360,7 @@ func TestRetrieveInstance(t *testing.T) {
 			client:                stubInstancesClient{},
 			clientInstance:        newTestInstance(),
 			clientInstanceMutator: func(i *computepb.Instance) { i.NetworkInterfaces[0].AccessConfigs[0].NatIP = nil },
-			wantInstance: cloudtypes.Instance{
+			wantInstance: metadata.InstanceMetadata{
 				Name:          "someInstance",
 				ProviderID:    "gce://someProject/someZone/someInstance",
 				AliasIPRanges: []string{"192.0.2.0/16"},

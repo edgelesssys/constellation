@@ -50,7 +50,6 @@ const (
 	//
 	// Filenames.
 	//
-
 	StateFilename           = "constellation-state.json"
 	ClusterIDsFileName      = "constellation-id.json"
 	ConfigFilename          = "constellation-conf.yaml"

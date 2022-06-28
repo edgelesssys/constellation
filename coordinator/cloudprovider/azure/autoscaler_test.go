@@ -3,7 +3,6 @@ package azure
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,13 +12,13 @@ import (
 
 func TestAutoscalerSecrets(t *testing.T) {
 	testCases := map[string]struct {
-		instance               cloudtypes.Instance
+		providerID             string
 		cloudServiceAccountURI string
 		wantSecrets            resources.Secrets
 		wantErr                bool
 	}{
 		"Secrets works": {
-			instance:               cloudtypes.Instance{ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name"},
+			providerID:             "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
 			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret",
 			wantSecrets: resources.Secrets{
 				&k8s.Secret{
@@ -43,11 +42,11 @@ func TestAutoscalerSecrets(t *testing.T) {
 			},
 		},
 		"invalid providerID fails": {
-			instance: cloudtypes.Instance{ProviderID: "invalid"},
-			wantErr:  true,
+			providerID: "invalid",
+			wantErr:    true,
 		},
 		"invalid cloudServiceAccountURI fails": {
-			instance:               cloudtypes.Instance{ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name"},
+			providerID:             "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
 			cloudServiceAccountURI: "invalid",
 			wantErr:                true,
 		},
@@ -59,7 +58,7 @@ func TestAutoscalerSecrets(t *testing.T) {
 			require := require.New(t)
 
 			autoscaler := Autoscaler{}
-			secrets, err := autoscaler.Secrets(tc.instance, tc.cloudServiceAccountURI)
+			secrets, err := autoscaler.Secrets(tc.providerID, tc.cloudServiceAccountURI)
 			if tc.wantErr {
 				assert.Error(err)
 				return

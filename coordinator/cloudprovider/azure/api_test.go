@@ -52,49 +52,6 @@ func (a *stubNetworkInterfacesAPI) Get(ctx context.Context, resourceGroupName st
 	}, a.getErr
 }
 
-type stubVirtualMachinesClientListPager struct {
-	pagesCounter int
-	pages        [][]*armcompute.VirtualMachine
-}
-
-func (p *stubVirtualMachinesClientListPager) NextPage(ctx context.Context) bool {
-	return p.pagesCounter < len(p.pages)
-}
-
-func (p *stubVirtualMachinesClientListPager) PageResponse() armcompute.VirtualMachinesClientListResponse {
-	if p.pagesCounter >= len(p.pages) {
-		return armcompute.VirtualMachinesClientListResponse{}
-	}
-	p.pagesCounter = p.pagesCounter + 1
-	return armcompute.VirtualMachinesClientListResponse{
-		VirtualMachinesClientListResult: armcompute.VirtualMachinesClientListResult{
-			VirtualMachineListResult: armcompute.VirtualMachineListResult{
-				Value: p.pages[p.pagesCounter-1],
-			},
-		},
-	}
-}
-
-type stubVirtualMachinesAPI struct {
-	getVM     armcompute.VirtualMachine
-	getErr    error
-	listPages [][]*armcompute.VirtualMachine
-}
-
-func (a *stubVirtualMachinesAPI) Get(ctx context.Context, resourceGroupName string, vmName string, options *armcompute.VirtualMachinesClientGetOptions) (armcompute.VirtualMachinesClientGetResponse, error) {
-	return armcompute.VirtualMachinesClientGetResponse{
-		VirtualMachinesClientGetResult: armcompute.VirtualMachinesClientGetResult{
-			VirtualMachine: a.getVM,
-		},
-	}, a.getErr
-}
-
-func (a *stubVirtualMachinesAPI) List(resourceGroupName string, options *armcompute.VirtualMachinesClientListOptions) virtualMachinesClientListPager {
-	return &stubVirtualMachinesClientListPager{
-		pages: a.listPages,
-	}
-}
-
 type stubVirtualMachineScaleSetVMsClientListPager struct {
 	pagesCounter int
 	pages        [][]*armcompute.VirtualMachineScaleSetVM

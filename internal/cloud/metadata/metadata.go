@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -36,24 +35,30 @@ type metadataAPI interface {
 	Supported() bool
 }
 
-// TODO(katexochen): Rename to InitEndpoints
-func CoordinatorEndpoints(ctx context.Context, api metadataAPI) ([]string, error) {
-	if !api.Supported() {
-		return nil, errors.New("retrieving instances list from cloud provider is not yet supported")
-	}
-	instances, err := api.List(ctx)
+type InstanceSelfer interface {
+	// Self retrieves the current instance.
+	Self(ctx context.Context) (InstanceMetadata, error)
+}
+
+type InstanceLister interface {
+	// List retrieves all instances belonging to the current constellation.
+	List(ctx context.Context) ([]InstanceMetadata, error)
+}
+
+func InitServerEndpoints(ctx context.Context, lister InstanceLister) ([]string, error) {
+	instances, err := lister.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving instances list from cloud provider: %w", err)
 	}
-	coordinatorEndpoints := []string{}
+	initServerEndpoints := []string{}
 	for _, instance := range instances {
 		// check if role of instance is "Coordinator"
 		if instance.Role == role.Coordinator {
 			for _, ip := range instance.PrivateIPs {
-				coordinatorEndpoints = append(coordinatorEndpoints, net.JoinHostPort(ip, strconv.Itoa(constants.CoordinatorPort)))
+				initServerEndpoints = append(initServerEndpoints, net.JoinHostPort(ip, strconv.Itoa(constants.CoordinatorPort)))
 			}
 		}
 	}
 
-	return coordinatorEndpoints, nil
+	return initServerEndpoints, nil
 }

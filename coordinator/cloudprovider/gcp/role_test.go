@@ -1,9 +1,8 @@
-package cloudprovider
+package gcp
 
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
@@ -23,19 +22,19 @@ func TestExtractRole(t *testing.T) {
 	}{
 		"coordinator role": {
 			metadata: map[string]string{
-				core.RoleMetadataKey: role.Coordinator.String(),
+				roleMetadataKey: role.Coordinator.String(),
 			},
 			wantRole: role.Coordinator,
 		},
 		"node role": {
 			metadata: map[string]string{
-				core.RoleMetadataKey: role.Node.String(),
+				roleMetadataKey: role.Node.String(),
 			},
 			wantRole: role.Node,
 		},
 		"unknown role": {
 			metadata: map[string]string{
-				core.RoleMetadataKey: "some-unknown-role",
+				roleMetadataKey: "some-unknown-role",
 			},
 			wantRole: role.Unknown,
 		},
@@ -48,7 +47,7 @@ func TestExtractRole(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			role := ExtractRole(tc.metadata)
+			role := extractRole(tc.metadata)
 
 			assert.Equal(tc.wantRole, role)
 		})

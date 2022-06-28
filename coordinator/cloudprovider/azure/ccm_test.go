@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	k8s "k8s.io/api/core/v1"
@@ -16,14 +16,14 @@ import (
 func TestSecrets(t *testing.T) {
 	someErr := errors.New("some error")
 	testCases := map[string]struct {
-		instance               cloudtypes.Instance
+		providerID             string
 		metadata               ccmMetadata
 		cloudServiceAccountURI string
 		wantSecrets            resources.Secrets
 		wantErr                bool
 	}{
 		"Secrets works": {
-			instance:               cloudtypes.Instance{ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name"},
+			providerID:             "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
 			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret&location=location",
 			metadata:               &ccmMetadataStub{loadBalancerName: "load-balancer-name", networkSecurityGroupName: "network-security-group-name"},
 			wantSecrets: resources.Secrets{
@@ -43,7 +43,7 @@ func TestSecrets(t *testing.T) {
 			},
 		},
 		"Secrets works for scale sets": {
-			instance:               cloudtypes.Instance{ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"},
+			providerID:             "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret&location=location",
 			metadata:               &ccmMetadataStub{loadBalancerName: "load-balancer-name", networkSecurityGroupName: "network-security-group-name"},
 			wantSecrets: resources.Secrets{
@@ -63,24 +63,24 @@ func TestSecrets(t *testing.T) {
 			},
 		},
 		"cannot get load balancer Name": {
-			instance:               cloudtypes.Instance{ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"},
+			providerID:             "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret&location=location",
 			metadata:               &ccmMetadataStub{getLoadBalancerNameErr: someErr},
 			wantErr:                true,
 		},
 		"cannot get network security group name": {
-			instance:               cloudtypes.Instance{ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"},
+			providerID:             "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret&location=location",
 			metadata:               &ccmMetadataStub{getNetworkSecurityGroupNameErr: someErr},
 			wantErr:                true,
 		},
 		"invalid providerID fails": {
-			instance: cloudtypes.Instance{ProviderID: "invalid"},
-			metadata: &ccmMetadataStub{},
-			wantErr:  true,
+			providerID: "invalid",
+			metadata:   &ccmMetadataStub{},
+			wantErr:    true,
 		},
 		"invalid cloudServiceAccountURI fails": {
-			instance:               cloudtypes.Instance{ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name"},
+			providerID:             "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
 			metadata:               &ccmMetadataStub{},
 			cloudServiceAccountURI: "invalid",
 			wantErr:                true,
@@ -93,7 +93,7 @@ func TestSecrets(t *testing.T) {
 			require := require.New(t)
 
 			cloud := NewCloudControllerManager(tc.metadata)
-			secrets, err := cloud.Secrets(context.Background(), tc.instance, tc.cloudServiceAccountURI)
+			secrets, err := cloud.Secrets(context.Background(), tc.providerID, tc.cloudServiceAccountURI)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -112,7 +112,7 @@ func TestTrivialCCMFunctions(t *testing.T) {
 	assert.NotEmpty(cloud.Path())
 	assert.NotEmpty(cloud.Name())
 	assert.NotEmpty(cloud.ExtraArgs())
-	assert.Empty(cloud.ConfigMaps(cloudtypes.Instance{}))
+	assert.Empty(cloud.ConfigMaps(metadata.InstanceMetadata{}))
 	assert.NotEmpty(cloud.Volumes())
 	assert.NotEmpty(cloud.VolumeMounts())
 	assert.Empty(cloud.Env())

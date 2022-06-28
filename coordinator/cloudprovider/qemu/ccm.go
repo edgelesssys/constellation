@@ -3,8 +3,8 @@ package qemu
 import (
 	"context"
 
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	k8s "k8s.io/api/core/v1"
 )
 
@@ -33,13 +33,13 @@ func (c CloudControllerManager) ExtraArgs() []string {
 
 // ConfigMaps returns a list of ConfigMaps to deploy together with the k8s cloud-controller-manager
 // Reference: https://kubernetes.io/docs/concepts/configuration/configmap/ .
-func (c CloudControllerManager) ConfigMaps(instance cloudtypes.Instance) (resources.ConfigMaps, error) {
+func (c CloudControllerManager) ConfigMaps(instance metadata.InstanceMetadata) (resources.ConfigMaps, error) {
 	return resources.ConfigMaps{}, nil
 }
 
 // Secrets returns a list of secrets to deploy together with the k8s cloud-controller-manager.
 // Reference: https://kubernetes.io/docs/concepts/configuration/secret/ .
-func (c CloudControllerManager) Secrets(ctx context.Context, instance cloudtypes.Instance, cloudServiceAccountURI string) (resources.Secrets, error) {
+func (c CloudControllerManager) Secrets(ctx context.Context, instance metadata.InstanceMetadata, cloudServiceAccountURI string) (resources.Secrets, error) {
 	return resources.Secrets{}, nil
 }
 
@@ -61,7 +61,7 @@ func (c CloudControllerManager) Env() []k8s.EnvVar {
 
 // PrepareInstance is called on every instance before deploying the cloud-controller-manager.
 // Allows for cloud-provider specific hooks.
-func (c CloudControllerManager) PrepareInstance(instance cloudtypes.Instance, vpnIP string) error {
+func (c CloudControllerManager) PrepareInstance(instance metadata.InstanceMetadata, vpnIP string) error {
 	// no specific hook required.
 	return nil
 }

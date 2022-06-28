@@ -8,14 +8,14 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/role"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGetScaleSetVM(t *testing.T) {
-	wantInstance := cloudtypes.Instance{
+	wantInstance := metadata.InstanceMetadata{
 		Name:       "scale-set-name-instance-id",
 		ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 		PrivateIPs: []string{"192.0.2.0"},
@@ -26,7 +26,7 @@ func TestGetScaleSetVM(t *testing.T) {
 		networkInterfacesAPI         networkInterfacesAPI
 		virtualMachineScaleSetVMsAPI virtualMachineScaleSetVMsAPI
 		wantErr                      bool
-		wantInstance                 cloudtypes.Instance
+		wantInstance                 metadata.InstanceMetadata
 	}{
 		"getVM for scale set instance works": {
 			providerID:                   "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
@@ -41,12 +41,6 @@ func TestGetScaleSetVM(t *testing.T) {
 		"Get fails": {
 			providerID:                   "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 			virtualMachineScaleSetVMsAPI: newFailingGetScaleSetVirtualMachinesStub(),
-			wantErr:                      true,
-		},
-		"retrieving interfaces fails": {
-			providerID:                   "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-			virtualMachineScaleSetVMsAPI: newVirtualMachineScaleSetsVMsStub(),
-			networkInterfacesAPI:         newFailingNetworkInterfacesStub(),
 			wantErr:                      true,
 		},
 		"conversion fails": {
@@ -79,7 +73,7 @@ func TestGetScaleSetVM(t *testing.T) {
 }
 
 func TestListScaleSetVMs(t *testing.T) {
-	wantInstances := []cloudtypes.Instance{
+	wantInstances := []metadata.InstanceMetadata{
 		{
 			Name:       "scale-set-name-instance-id",
 			ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
@@ -93,7 +87,7 @@ func TestListScaleSetVMs(t *testing.T) {
 		virtualMachineScaleSetVMsAPI virtualMachineScaleSetVMsAPI
 		scaleSetsAPI                 scaleSetsAPI
 		wantErr                      bool
-		wantInstances                []cloudtypes.Instance
+		wantInstances                []metadata.InstanceMetadata
 	}{
 		"listVMs works": {
 			imdsAPI:                      newIMDSStub(),
@@ -114,7 +108,7 @@ func TestListScaleSetVMs(t *testing.T) {
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachineScaleSetVMsAPI: &stubVirtualMachineScaleSetVMsAPI{},
 			scaleSetsAPI:                 newScaleSetsStub(),
-			wantInstances:                []cloudtypes.Instance{},
+			wantInstances:                []metadata.InstanceMetadata{},
 		},
 		"can skip nil in VM list": {
 			imdsAPI:                      newIMDSStub(),
@@ -122,13 +116,6 @@ func TestListScaleSetVMs(t *testing.T) {
 			virtualMachineScaleSetVMsAPI: newListContainingNilScaleSetVirtualMachinesStub(),
 			scaleSetsAPI:                 newScaleSetsStub(),
 			wantInstances:                wantInstances,
-		},
-		"retrieving network interfaces fails": {
-			imdsAPI:                      newIMDSStub(),
-			networkInterfacesAPI:         newFailingNetworkInterfacesStub(),
-			virtualMachineScaleSetVMsAPI: newVirtualMachineScaleSetsVMsStub(),
-			scaleSetsAPI:                 newScaleSetsStub(),
-			wantErr:                      true,
 		},
 		"converting instance fails": {
 			imdsAPI:                      newIMDSStub(),
@@ -168,7 +155,7 @@ func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 		inInterface  []armnetwork.Interface
 		inPublicIPs  []string
 		wantErr      bool
-		wantInstance cloudtypes.Instance
+		wantInstance metadata.InstanceMetadata
 	}{
 		"conversion works": {
 			inVM: armcompute.VirtualMachineScaleSetVM{
@@ -197,7 +184,7 @@ func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 				},
 			},
 			inPublicIPs: []string{"192.0.2.100", "192.0.2.101"},
-			wantInstance: cloudtypes.Instance{
+			wantInstance: metadata.InstanceMetadata{
 				Name:       "scale-set-name-instance-id",
 				ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 				PrivateIPs: []string{"192.0.2.0"},

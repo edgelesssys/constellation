@@ -8,20 +8,13 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
-	"github.com/edgelesssys/constellation/coordinator/role"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestList(t *testing.T) {
-	wantInstances := []cloudtypes.Instance{
-		{
-			Name:       "instance-name",
-			ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
-			PrivateIPs: []string{"192.0.2.0"},
-			SSHKeys:    map[string][]string{"user": {"key-data"}},
-		},
+	wantInstances := []metadata.InstanceMetadata{
 		{
 			Name:       "scale-set-name-instance-id",
 			ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
@@ -33,17 +26,15 @@ func TestList(t *testing.T) {
 		imdsAPI                      imdsAPI
 		networkInterfacesAPI         networkInterfacesAPI
 		scaleSetsAPI                 scaleSetsAPI
-		virtualMachinesAPI           virtualMachinesAPI
 		virtualMachineScaleSetVMsAPI virtualMachineScaleSetVMsAPI
 		tagsAPI                      tagsAPI
 		wantErr                      bool
-		wantInstances                []cloudtypes.Instance
+		wantInstances                []metadata.InstanceMetadata
 	}{
 		"List works": {
 			imdsAPI:                      newIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			scaleSetsAPI:                 newScaleSetsStub(),
-			virtualMachinesAPI:           newVirtualMachinesStub(),
 			virtualMachineScaleSetVMsAPI: newVirtualMachineScaleSetsVMsStub(),
 			tagsAPI:                      newTagsStub(),
 			wantInstances:                wantInstances,
@@ -56,16 +47,10 @@ func TestList(t *testing.T) {
 			imdsAPI: newInvalidIMDSStub(),
 			wantErr: true,
 		},
-		"listVMs fails": {
-			imdsAPI:            newIMDSStub(),
-			virtualMachinesAPI: newFailingListsVirtualMachinesStub(),
-			wantErr:            true,
-		},
 		"listScaleSetVMs fails": {
 			imdsAPI:                      newIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			scaleSetsAPI:                 newScaleSetsStub(),
-			virtualMachinesAPI:           newVirtualMachinesStub(),
 			virtualMachineScaleSetVMsAPI: newFailingListsVirtualMachineScaleSetsVMsStub(),
 			tagsAPI:                      newTagsStub(),
 			wantErr:                      true,
@@ -77,15 +62,14 @@ func TestList(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			metadata := Metadata{
+			azureMetadata := Metadata{
 				imdsAPI:                      tc.imdsAPI,
 				networkInterfacesAPI:         tc.networkInterfacesAPI,
 				scaleSetsAPI:                 tc.scaleSetsAPI,
-				virtualMachinesAPI:           tc.virtualMachinesAPI,
 				virtualMachineScaleSetVMsAPI: tc.virtualMachineScaleSetVMsAPI,
 				tagsAPI:                      tc.tagsAPI,
 			}
-			instances, err := metadata.List(context.Background())
+			instances, err := azureMetadata.List(context.Background())
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -98,13 +82,13 @@ func TestList(t *testing.T) {
 }
 
 func TestSelf(t *testing.T) {
-	wantVMInstance := cloudtypes.Instance{
+	wantVMInstance := metadata.InstanceMetadata{
 		Name:       "instance-name",
 		ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
 		PrivateIPs: []string{"192.0.2.0"},
 		SSHKeys:    map[string][]string{"user": {"key-data"}},
 	}
-	wantScaleSetInstance := cloudtypes.Instance{
+	wantScaleSetInstance := metadata.InstanceMetadata{
 		Name:       "scale-set-name-instance-id",
 		ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 		PrivateIPs: []string{"192.0.2.0"},
@@ -113,22 +97,19 @@ func TestSelf(t *testing.T) {
 	testCases := map[string]struct {
 		imdsAPI                      imdsAPI
 		networkInterfacesAPI         networkInterfacesAPI
-		virtualMachinesAPI           virtualMachinesAPI
 		virtualMachineScaleSetVMsAPI virtualMachineScaleSetVMsAPI
 		wantErr                      bool
-		wantInstance                 cloudtypes.Instance
+		wantInstance                 metadata.InstanceMetadata
 	}{
 		"self for individual instance works": {
 			imdsAPI:                      newIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
-			virtualMachinesAPI:           newVirtualMachinesStub(),
 			virtualMachineScaleSetVMsAPI: newVirtualMachineScaleSetsVMsStub(),
 			wantInstance:                 wantVMInstance,
 		},
 		"self for scale set instance works": {
 			imdsAPI:                      newScaleSetIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
-			virtualMachinesAPI:           newVirtualMachinesStub(),
 			virtualMachineScaleSetVMsAPI: newVirtualMachineScaleSetsVMsStub(),
 			wantInstance:                 wantScaleSetInstance,
 		},
@@ -137,9 +118,8 @@ func TestSelf(t *testing.T) {
 			wantErr: true,
 		},
 		"GetInstance fails": {
-			imdsAPI:            newIMDSStub(),
-			virtualMachinesAPI: newFailingGetVirtualMachinesStub(),
-			wantErr:            true,
+			imdsAPI: newIMDSStub(),
+			wantErr: true,
 		},
 	}
 
@@ -151,7 +131,6 @@ func TestSelf(t *testing.T) {
 			metadata := Metadata{
 				imdsAPI:                      tc.imdsAPI,
 				networkInterfacesAPI:         tc.networkInterfacesAPI,
-				virtualMachinesAPI:           tc.virtualMachinesAPI,
 				virtualMachineScaleSetVMsAPI: tc.virtualMachineScaleSetVMsAPI,
 			}
 			instance, err := metadata.Self(context.Background())
@@ -162,50 +141,6 @@ func TestSelf(t *testing.T) {
 			}
 			require.NoError(err)
 			assert.Equal(tc.wantInstance, instance)
-		})
-	}
-}
-
-func TestSignalRole(t *testing.T) {
-	testCases := map[string]struct {
-		imdsAPI imdsAPI
-		tagsAPI tagsAPI
-		wantErr bool
-	}{
-		"SignalRole works": {
-			imdsAPI: newIMDSStub(),
-			tagsAPI: newTagsStub(),
-		},
-		"SignalRole is not attempted on scale set vm": {
-			imdsAPI: newScaleSetIMDSStub(),
-		},
-		"providerID cannot be retrieved": {
-			imdsAPI: &stubIMDSAPI{retrieveErr: errors.New("imds err")},
-			wantErr: true,
-		},
-		"setting tag fails": {
-			imdsAPI: newIMDSStub(),
-			tagsAPI: newFailingTagsStub(),
-			wantErr: true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			metadata := Metadata{
-				imdsAPI: tc.imdsAPI,
-				tagsAPI: tc.tagsAPI,
-			}
-			err := metadata.SignalRole(context.Background(), role.Coordinator)
-
-			if tc.wantErr {
-				assert.Error(err)
-				return
-			}
-			require.NoError(err)
 		})
 	}
 }
@@ -719,12 +654,6 @@ func newInvalidIMDSStub() *stubIMDSAPI {
 	}
 }
 
-func newFailingIMDSStub() *stubIMDSAPI {
-	return &stubIMDSAPI{
-		retrieveErr: errors.New("imds retrieve error"),
-	}
-}
-
 func newNetworkInterfacesStub() *stubNetworkInterfacesAPI {
 	return &stubNetworkInterfacesAPI{
 		getInterface: armnetwork.Interface{
@@ -751,81 +680,6 @@ func newScaleSetsStub() *stubScaleSetsAPI {
 				},
 			},
 		},
-	}
-}
-
-func newVirtualMachinesStub() *stubVirtualMachinesAPI {
-	return &stubVirtualMachinesAPI{
-		getVM: armcompute.VirtualMachine{
-			Name: to.StringPtr("instance-name"),
-			ID:   to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name"),
-			Properties: &armcompute.VirtualMachineProperties{
-				NetworkProfile: &armcompute.NetworkProfile{
-					NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
-						{
-							ID: to.StringPtr("/subscriptions/subscription/resourceGroups/resource-group/providers/Microsoft.Network/networkInterfaces/interface-name"),
-						},
-					},
-				},
-				OSProfile: &armcompute.OSProfile{
-					LinuxConfiguration: &armcompute.LinuxConfiguration{
-						SSH: &armcompute.SSHConfiguration{
-							PublicKeys: []*armcompute.SSHPublicKey{
-								{
-									KeyData: to.StringPtr("key-data"),
-									Path:    to.StringPtr("/home/user/.ssh/authorized_keys"),
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		listPages: [][]*armcompute.VirtualMachine{
-			{
-				{
-					Name: to.StringPtr("instance-name"),
-					ID:   to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name"),
-					Properties: &armcompute.VirtualMachineProperties{
-						NetworkProfile: &armcompute.NetworkProfile{
-							NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
-								{
-									ID: to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Network/networkInterfaces/interface-name"),
-								},
-							},
-						},
-						OSProfile: &armcompute.OSProfile{
-							LinuxConfiguration: &armcompute.LinuxConfiguration{
-								SSH: &armcompute.SSHConfiguration{
-									PublicKeys: []*armcompute.SSHPublicKey{
-										{
-											KeyData: to.StringPtr("key-data"),
-											Path:    to.StringPtr("/home/user/.ssh/authorized_keys"),
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func newFailingListsVirtualMachinesStub() *stubVirtualMachinesAPI {
-	return &stubVirtualMachinesAPI{
-		listPages: [][]*armcompute.VirtualMachine{
-			{
-				{},
-			},
-		},
-	}
-}
-
-func newFailingGetVirtualMachinesStub() *stubVirtualMachinesAPI {
-	return &stubVirtualMachinesAPI{
-		getErr: errors.New("get err"),
 	}
 }
 
@@ -906,11 +760,4 @@ func newFailingListsVirtualMachineScaleSetsVMsStub() *stubVirtualMachineScaleSet
 
 func newTagsStub() *stubTagsAPI {
 	return &stubTagsAPI{}
-}
-
-func newFailingTagsStub() *stubTagsAPI {
-	return &stubTagsAPI{
-		createOrUpdateAtScopeErr: errors.New("createOrUpdateErr"),
-		updateAtScopeErr:         errors.New("updateErr"),
-	}
 }

@@ -7,16 +7,17 @@ import (
 	"strings"
 
 	compute "cloud.google.com/go/compute/apiv1"
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider"
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
-	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/gcpshared"
 	"google.golang.org/api/iterator"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
 )
 
-const gcpSSHMetadataKey = "ssh-keys"
+const (
+	gcpSSHMetadataKey           = "ssh-keys"
+	constellationUIDMetadataKey = "constellation-uid"
+)
 
 var zoneFromRegionRegex = regexp.MustCompile("([a-z]*-[a-z]*[0-9])")
 
@@ -51,7 +52,7 @@ func NewClient(ctx context.Context) (*Client, error) {
 }
 
 // RetrieveInstances returns list of instances including their ips and metadata.
-func (c *Client) RetrieveInstances(ctx context.Context, project, zone string) ([]cloudtypes.Instance, error) {
+func (c *Client) RetrieveInstances(ctx context.Context, project, zone string) ([]metadata.InstanceMetadata, error) {
 	uid, err := c.uid()
 	if err != nil {
 		return nil, err
@@ -62,7 +63,7 @@ func (c *Client) RetrieveInstances(ctx context.Context, project, zone string) ([
 	}
 	instanceIterator := c.instanceAPI.List(ctx, req)
 
-	instances := []cloudtypes.Instance{}
+	instances := []metadata.InstanceMetadata{}
 	for {
 		resp, err := instanceIterator.Next()
 		if err == iterator.Done {
@@ -73,7 +74,7 @@ func (c *Client) RetrieveInstances(ctx context.Context, project, zone string) ([
 		}
 		metadata := extractInstanceMetadata(resp.Metadata, "", false)
 		// skip instances not belonging to the current constellation
-		if instanceUID, ok := metadata[core.ConstellationUIDMetadataKey]; !ok || instanceUID != uid {
+		if instanceUID, ok := metadata[constellationUIDMetadataKey]; !ok || instanceUID != uid {
 			continue
 		}
 		instance, err := convertToCoreInstance(resp, project, zone)
@@ -87,10 +88,10 @@ func (c *Client) RetrieveInstances(ctx context.Context, project, zone string) ([
 }
 
 // RetrieveInstance returns a an instance including ips and metadata.
-func (c *Client) RetrieveInstance(ctx context.Context, project, zone, instanceName string) (cloudtypes.Instance, error) {
+func (c *Client) RetrieveInstance(ctx context.Context, project, zone, instanceName string) (metadata.InstanceMetadata, error) {
 	instance, err := c.getComputeInstance(ctx, project, zone, instanceName)
 	if err != nil {
-		return cloudtypes.Instance{}, err
+		return metadata.InstanceMetadata{}, err
 	}
 
 	return convertToCoreInstance(instance, project, zone)
@@ -286,7 +287,7 @@ func (c *Client) updateInstanceMetadata(ctx context.Context, project, zone, inst
 // uid retrieves the current instances uid.
 func (c *Client) uid() (string, error) {
 	// API endpoint: http://metadata.google.internal/computeMetadata/v1/instance/attributes/constellation-uid
-	uid, err := c.RetrieveInstanceMetadata(core.ConstellationUIDMetadataKey)
+	uid, err := c.RetrieveInstanceMetadata(constellationUIDMetadataKey)
 	if err != nil {
 		return "", fmt.Errorf("retrieving constellation uid: %w", err)
 	}
@@ -367,19 +368,19 @@ func extractSSHKeys(metadata map[string]string) map[string][]string {
 }
 
 // convertToCoreInstance converts a *computepb.Instance to a core.Instance.
-func convertToCoreInstance(in *computepb.Instance, project string, zone string) (cloudtypes.Instance, error) {
+func convertToCoreInstance(in *computepb.Instance, project string, zone string) (metadata.InstanceMetadata, error) {
 	if in.Name == nil {
-		return cloudtypes.Instance{}, fmt.Errorf("retrieving instance from compute API client returned invalid instance Name: %v", in.Name)
+		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving instance from compute API client returned invalid instance Name: %v", in.Name)
 	}
-	metadata := extractInstanceMetadata(in.Metadata, "", false)
-	return cloudtypes.Instance{
+	mdata := extractInstanceMetadata(in.Metadata, "", false)
+	return metadata.InstanceMetadata{
 		Name:          *in.Name,
 		ProviderID:    gcpshared.JoinProviderID(project, zone, *in.Name),
-		Role:          cloudprovider.ExtractRole(metadata),
+		Role:          extractRole(mdata),
 		PrivateIPs:    extractPrivateIPs(in.NetworkInterfaces),
 		PublicIPs:     extractPublicIPs(in.NetworkInterfaces),
 		AliasIPRanges: extractAliasIPRanges(in.NetworkInterfaces),
-		SSHKeys:       extractSSHKeys(metadata),
+		SSHKeys:       extractSSHKeys(mdata),
 	}, nil
 }
 

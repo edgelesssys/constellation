@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/role"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 )
 
 const qemuMetadataEndpoint = "10.42.0.1:8080"
@@ -23,34 +23,34 @@ func (m *Metadata) Supported() bool {
 }
 
 // List retrieves all instances belonging to the current constellation.
-func (m *Metadata) List(ctx context.Context) ([]cloudtypes.Instance, error) {
+func (m *Metadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
 	instancesRaw, err := m.retrieveMetadata(ctx, "/peers")
 	if err != nil {
 		return nil, err
 	}
 
-	var instances []cloudtypes.Instance
+	var instances []metadata.InstanceMetadata
 	err = json.Unmarshal(instancesRaw, &instances)
 	return instances, err
 }
 
 // Self retrieves the current instance.
-func (m *Metadata) Self(ctx context.Context) (cloudtypes.Instance, error) {
+func (m *Metadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
 	instanceRaw, err := m.retrieveMetadata(ctx, "/self")
 	if err != nil {
-		return cloudtypes.Instance{}, err
+		return metadata.InstanceMetadata{}, err
 	}
 
-	var instance cloudtypes.Instance
+	var instance metadata.InstanceMetadata
 	err = json.Unmarshal(instanceRaw, &instance)
 	return instance, err
 }
 
 // GetInstance retrieves an instance using its providerID.
-func (m Metadata) GetInstance(ctx context.Context, providerID string) (cloudtypes.Instance, error) {
+func (m Metadata) GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error) {
 	instances, err := m.List(ctx)
 	if err != nil {
-		return cloudtypes.Instance{}, err
+		return metadata.InstanceMetadata{}, err
 	}
 
 	for _, instance := range instances {
@@ -58,7 +58,7 @@ func (m Metadata) GetInstance(ctx context.Context, providerID string) (cloudtype
 			return instance, nil
 		}
 	}
-	return cloudtypes.Instance{}, errors.New("instance not found")
+	return metadata.InstanceMetadata{}, errors.New("instance not found")
 }
 
 // SignalRole signals the constellation role via cloud provider metadata (if supported by the CSP and deployment type, otherwise does nothing).

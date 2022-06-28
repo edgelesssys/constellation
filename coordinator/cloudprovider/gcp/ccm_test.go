@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/gcpshared"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,12 +16,12 @@ import (
 
 func TestConfigMaps(t *testing.T) {
 	testCases := map[string]struct {
-		instance       cloudtypes.Instance
+		instance       metadata.InstanceMetadata
 		wantConfigMaps resources.ConfigMaps
 		wantErr        bool
 	}{
 		"ConfigMaps works": {
-			instance: cloudtypes.Instance{ProviderID: "gce://project-id/zone/instanceName-UID-0", Name: "instanceName-UID-0"},
+			instance: metadata.InstanceMetadata{ProviderID: "gce://project-id/zone/instanceName-UID-0", Name: "instanceName-UID-0"},
 			wantConfigMaps: resources.ConfigMaps{
 				&k8s.ConfigMap{
 					TypeMeta: v1.TypeMeta{
@@ -43,7 +43,7 @@ node-tags = constellation-UID
 			},
 		},
 		"invalid providerID fails": {
-			instance: cloudtypes.Instance{ProviderID: "invalid"},
+			instance: metadata.InstanceMetadata{ProviderID: "invalid"},
 			wantErr:  true,
 		},
 	}
@@ -82,7 +82,7 @@ func TestSecrets(t *testing.T) {
 	rawKey, err := json.Marshal(serviceAccountKey)
 	require.NoError(t, err)
 	testCases := map[string]struct {
-		instance               cloudtypes.Instance
+		instance               metadata.InstanceMetadata
 		cloudServiceAccountURI string
 		wantSecrets            resources.Secrets
 		wantErr                bool
@@ -117,7 +117,7 @@ func TestSecrets(t *testing.T) {
 			require := require.New(t)
 
 			cloud := CloudControllerManager{}
-			secrets, err := cloud.Secrets(context.Background(), tc.instance, tc.cloudServiceAccountURI)
+			secrets, err := cloud.Secrets(context.Background(), tc.instance.ProviderID, tc.cloudServiceAccountURI)
 			if tc.wantErr {
 				assert.Error(err)
 				return
