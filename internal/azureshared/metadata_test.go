@@ -81,56 +81,6 @@ func TestUIDFromProviderID(t *testing.T) {
 	}
 }
 
-func TestVMInformationFromProviderID(t *testing.T) {
-	testCases := map[string]struct {
-		providerID         string
-		wantSubscriptionID string
-		wantResourceGroup  string
-		wantInstanceName   string
-		wantErr            bool
-	}{
-		"simple id": {
-			providerID:         "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-id",
-			wantSubscriptionID: "subscription-id",
-			wantResourceGroup:  "resource-group",
-			wantInstanceName:   "instance-id",
-		},
-		"missing instance": {
-			providerID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines",
-			wantErr:    true,
-		},
-		"providerID for scale set instance must fail": {
-			providerID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-			wantErr:    true,
-		},
-		"wrong provider": {
-			providerID: "gcp:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-id",
-			wantErr:    true,
-		},
-		"providerID is malformed": {
-			providerID: "malformed-provider-id",
-			wantErr:    true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			subscriptionID, resourceGroup, instanceName, err := VMInformationFromProviderID(tc.providerID)
-
-			if tc.wantErr {
-				assert.Error(err)
-				return
-			}
-			assert.NoError(err)
-			assert.Equal(tc.wantSubscriptionID, subscriptionID)
-			assert.Equal(tc.wantResourceGroup, resourceGroup)
-			assert.Equal(tc.wantInstanceName, instanceName)
-		})
-	}
-}
-
 func TestScaleSetInformationFromProviderID(t *testing.T) {
 	testCases := map[string]struct {
 		providerID         string

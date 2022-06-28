@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/config"
 	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/oid"
@@ -51,8 +51,8 @@ func (a *KeyAPI) PushStateDiskKey(ctx context.Context, in *keyproto.PushStateDis
 	if len(a.key) != 0 {
 		return nil, status.Error(codes.FailedPrecondition, "node already received a passphrase")
 	}
-	if len(in.StateDiskKey) != config.RNGLengthDefault {
-		return nil, status.Errorf(codes.InvalidArgument, "received invalid passphrase: expected length: %d, but got: %d", config.RNGLengthDefault, len(in.StateDiskKey))
+	if len(in.StateDiskKey) != constants.RNGLengthDefault {
+		return nil, status.Errorf(codes.InvalidArgument, "received invalid passphrase: expected length: %d, but got: %d", constants.RNGLengthDefault, len(in.StateDiskKey))
 	}
 
 	a.key = in.StateDiskKey

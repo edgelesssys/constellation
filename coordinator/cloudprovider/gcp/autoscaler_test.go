@@ -3,7 +3,6 @@ package gcp
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,7 +11,7 @@ func TestTrivialAutoscalerFunctions(t *testing.T) {
 	autoscaler := Autoscaler{}
 
 	assert.NotEmpty(autoscaler.Name())
-	assert.Empty(autoscaler.Secrets(metadata.InstanceMetadata{}, ""))
+	assert.Empty(autoscaler.Secrets("", ""))
 	assert.NotEmpty(autoscaler.Volumes())
 	assert.NotEmpty(autoscaler.VolumeMounts())
 	assert.NotEmpty(autoscaler.Env())

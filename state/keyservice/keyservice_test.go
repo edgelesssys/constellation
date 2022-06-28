@@ -214,14 +214,6 @@ func (s stubMetadata) Self(ctx context.Context) (cloudtypes.Instance, error) {
 	return cloudtypes.Instance{}, nil
 }
 
-func (s stubMetadata) SignalRole(ctx context.Context, role role.Role) error {
-	return nil
-}
-
-func (s stubMetadata) SetVPNIP(ctx context.Context, vpnIP string) error {
-	return nil
-}
-
 func (s stubMetadata) Supported() bool {
 	return true
 }

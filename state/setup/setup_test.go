@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/config"
 	"github.com/edgelesssys/constellation/coordinator/nodestate"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
@@ -193,7 +193,7 @@ func TestPrepareNewDisk(t *testing.T) {
 
 				data, err := tc.fs.ReadFile(filepath.Join(keyPath, keyFile))
 				require.NoError(t, err)
-				assert.Len(data, config.RNGLengthDefault)
+				assert.Len(data, constants.RNGLengthDefault)
 			}
 		})
 	}

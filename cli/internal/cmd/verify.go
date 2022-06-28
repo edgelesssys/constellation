@@ -180,7 +180,7 @@ func verifyCompletion(cmd *cobra.Command, args []string, toComplete string) ([]s
 }
 
 type constellationVerifier struct {
-	dialer grpcDialer
+	dialer grpcInsecureDialer
 }
 
 // Verify retrieves an attestation statement from the Constellation and verifies it using the validator.
@@ -215,6 +215,6 @@ type verifyClient interface {
 	Verify(ctx context.Context, endpoint string, req *verifyproto.GetAttestationRequest, validator atls.Validator) error
 }
 
-type grpcDialer interface {
+type grpcInsecureDialer interface {
 	DialInsecure(ctx context.Context, endpoint string) (conn *grpc.ClientConn, err error)
 }

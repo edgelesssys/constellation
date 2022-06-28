@@ -17,8 +17,8 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/config"
 	"github.com/edgelesssys/constellation/coordinator/util"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/oid"
 )
 
@@ -45,7 +45,7 @@ func CreateAttestationServerTLSConfig(issuer Issuer, validators []Validator) (*t
 // If no validators are set, the server's attestation document will not be verified.
 // If issuer is nil, the client will be unable to perform mutual aTLS.
 func CreateAttestationClientTLSConfig(issuer Issuer, validators []Validator) (*tls.Config, error) {
-	clientNonce, err := util.GenerateRandomBytes(config.RNGLengthDefault)
+	clientNonce, err := util.GenerateRandomBytes(constants.RNGLengthDefault)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func getATLSConfigForClientFunc(issuer Issuer, validators []Validator) (func(*tl
 	// this function will be called once for every client
 	return func(chi *tls.ClientHelloInfo) (*tls.Config, error) {
 		// generate nonce for this connection
-		serverNonce, err := util.GenerateRandomBytes(config.RNGLengthDefault)
+		serverNonce, err := util.GenerateRandomBytes(constants.RNGLengthDefault)
 		if err != nil {
 			return nil, err
 		}

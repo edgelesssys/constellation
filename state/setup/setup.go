@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/edgelesssys/constellation/coordinator/config"
 	"github.com/edgelesssys/constellation/coordinator/nodestate"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
@@ -99,7 +99,7 @@ func (s *SetupManager) PrepareNewDisk() error {
 		return err
 	}
 
-	passphrase := make([]byte, config.RNGLengthDefault)
+	passphrase := make([]byte, constants.RNGLengthDefault)
 	if _, err := rand.Read(passphrase); err != nil {
 		return err
 	}

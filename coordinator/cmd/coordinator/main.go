@@ -12,8 +12,7 @@ import (
 	azurecloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/azure"
 	gcpcloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/gcp"
 	qemucloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/qemu"
-	"github.com/edgelesssys/constellation/coordinator/config"
-	"github.com/edgelesssys/constellation/coordinator/core"
+	"github.com/edgelesssys/constellation/coordinator/internal/joinclient"
 	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes"
 	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes/k8sapi/kubectl"
@@ -34,12 +33,18 @@ import (
 const (
 	defaultIP   = "0.0.0.0"
 	defaultPort = "9000"
+	// ConstellationCSP is the Cloud Service Provider Constellation is running on.
+	constellationCSP = "CONSTEL_CSP"
 )
 
 func main() {
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	var bindIP, bindPort string
-	var clusterInitJoiner ClusterInitJoiner
-	var coreMetadata core.ProviderMetadata
+	var clusterInitJoiner clusterInitJoiner
+	var metadataAPI joinclient.MetadataAPI
 	var cloudLogger logging.CloudLogger
 	cfg := zap.NewDevelopmentConfig()
 
@@ -62,7 +67,7 @@ func main() {
 	var openTPM vtpm.TPMOpenFunc
 	var fs afero.Fs
 
-	switch strings.ToLower(os.Getenv(config.ConstellationCSP)) {
+	switch strings.ToLower(os.Getenv(constellationCSP)) {
 	case "aws":
 		panic("AWS cloud provider currently unsupported")
 	case "gcp":
@@ -74,20 +79,20 @@ func main() {
 
 		issuer = gcp.NewIssuer()
 
-		gcpClient, err := gcpcloud.NewClient(context.Background())
+		gcpClient, err := gcpcloud.NewClient(ctx)
 		if err != nil {
 			log.Fatalf("failed to create GCP client: %v\n", err)
 		}
 		metadata := gcpcloud.New(gcpClient)
-		descr, err := metadata.Self(context.Background())
+		descr, err := metadata.Self(ctx)
 		if err != nil {
 			log.Fatal(err)
 		}
-		cloudLogger, err = gcpcloud.NewLogger(context.Background(), descr.ProviderID, "constellation-boot-log")
+		cloudLogger, err = gcpcloud.NewLogger(ctx, descr.ProviderID, "constellation-boot-log")
 		if err != nil {
 			log.Fatal(err)
 		}
-		coreMetadata = metadata
+		metadataAPI = metadata
 		pcrsJSON, err := json.Marshal(pcrs)
 		if err != nil {
 			log.Fatal(err)
@@ -108,15 +113,15 @@ func main() {
 
 		issuer = azure.NewIssuer()
 
-		metadata, err := azurecloud.NewMetadata(context.Background())
+		metadata, err := azurecloud.NewMetadata(ctx)
 		if err != nil {
 			log.Fatal(err)
 		}
-		cloudLogger, err = azurecloud.NewLogger(context.Background(), metadata)
+		cloudLogger, err = azurecloud.NewLogger(ctx, metadata)
 		if err != nil {
 			log.Fatal(err)
 		}
-		coreMetadata = metadata
+		metadataAPI = metadata
 		pcrsJSON, err := json.Marshal(pcrs)
 		if err != nil {
 			log.Fatal(err)
@@ -148,7 +153,7 @@ func main() {
 			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &qemucloud.CloudControllerManager{},
 			&qemucloud.CloudNodeManager{}, &qemucloud.Autoscaler{}, metadata, pcrsJSON,
 		)
-		coreMetadata = metadata
+		metadataAPI = metadata
 
 		bindIP = defaultIP
 		bindPort = defaultPort
@@ -156,8 +161,8 @@ func main() {
 		fs = afero.NewOsFs()
 	default:
 		issuer = atls.NewFakeIssuer(oid.Dummy{})
-		clusterInitJoiner = &core.ClusterFake{}
-		coreMetadata = &core.ProviderMetadataFake{}
+		clusterInitJoiner = &clusterFake{}
+		metadataAPI = &providerMetadataFake{}
 		cloudLogger = &logging.NopLogger{}
 		bindIP = defaultIP
 		bindPort = defaultPort
@@ -170,6 +175,6 @@ func main() {
 	fileHandler := file.NewHandler(fs)
 
 	run(issuer, openTPM, fileHandler, clusterInitJoiner,
-		coreMetadata, bindIP,
+		metadataAPI, bindIP,
 		bindPort, zapLoggerCore, cloudLogger, fs)
 }

@@ -74,15 +74,15 @@ type KMSConfig struct {
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, k8sVersion string,
 	id attestationtypes.ID, kmsConfig KMSConfig, sshUsers map[string]string,
-) error {
+) ([]byte, error) {
 	// TODO: k8s version should be user input
 	if err := k.clusterUtil.InstallComponents(ctx, k8sVersion); err != nil {
-		return err
+		return nil, err
 	}
 
 	ip, err := k.getIPAddr()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	nodeName := ip
 	var providerID string
@@ -98,7 +98,7 @@ func (k *KubeWrapper) InitCluster(
 	if k.providerMetadata.Supported() {
 		instance, err = k.providerMetadata.Self(ctx)
 		if err != nil {
-			return fmt.Errorf("retrieving own instance metadata failed: %w", err)
+			return nil, fmt.Errorf("retrieving own instance metadata failed: %w", err)
 		}
 		nodeName = k8sCompliantHostname(instance.Name)
 		providerID = instance.ProviderID
@@ -113,13 +113,13 @@ func (k *KubeWrapper) InitCluster(
 		}
 		subnetworkPodCIDR, err = k.providerMetadata.GetSubnetworkCIDR(ctx)
 		if err != nil {
-			return fmt.Errorf("retrieving subnetwork CIDR failed: %w", err)
+			return nil, fmt.Errorf("retrieving subnetwork CIDR failed: %w", err)
 		}
 		controlPlaneEndpointIP = publicIP
 		if k.providerMetadata.SupportsLoadBalancer() {
 			controlPlaneEndpointIP, err = k.providerMetadata.GetLoadBalancerIP(ctx)
 			if err != nil {
-				return fmt.Errorf("retrieving load balancer IP failed: %w", err)
+				return nil, fmt.Errorf("retrieving load balancer IP failed: %w", err)
 			}
 		}
 	}
@@ -133,14 +133,14 @@ func (k *KubeWrapper) InitCluster(
 	initConfig.SetControlPlaneEndpoint(controlPlaneEndpointIP)
 	initConfigYAML, err := initConfig.Marshal()
 	if err != nil {
-		return fmt.Errorf("encoding kubeadm init configuration as YAML: %w", err)
+		return nil, fmt.Errorf("encoding kubeadm init configuration as YAML: %w", err)
 	}
 	if err := k.clusterUtil.InitCluster(ctx, initConfigYAML); err != nil {
-		return fmt.Errorf("kubeadm init: %w", err)
+		return nil, fmt.Errorf("kubeadm init: %w", err)
 	}
 	kubeConfig, err := k.GetKubeconfig()
 	if err != nil {
-		return fmt.Errorf("reading kubeconfig after cluster initialization: %w", err)
+		return nil, fmt.Errorf("reading kubeconfig after cluster initialization: %w", err)
 	}
 	k.client.SetKubeconfig(kubeConfig)
 
@@ -154,43 +154,43 @@ func (k *KubeWrapper) InitCluster(
 		ProviderID:        providerID,
 	}
 	if err = k.clusterUtil.SetupPodNetwork(ctx, setupPodNetworkInput); err != nil {
-		return fmt.Errorf("setting up pod network: %w", err)
+		return nil, fmt.Errorf("setting up pod network: %w", err)
 	}
 
 	kms := resources.NewKMSDeployment(k.cloudProvider, kmsConfig.MasterSecret)
 	if err = k.clusterUtil.SetupKMS(k.client, kms); err != nil {
-		return fmt.Errorf("setting up kms: %w", err)
+		return nil, fmt.Errorf("setting up kms: %w", err)
 	}
 
 	if err := k.setupActivationService(k.cloudProvider, k.initialMeasurementsJSON, id); err != nil {
-		return fmt.Errorf("setting up activation service failed: %w", err)
+		return nil, fmt.Errorf("setting up activation service failed: %w", err)
 	}
 
 	if err := k.setupCCM(ctx, subnetworkPodCIDR, cloudServiceAccountURI, instance); err != nil {
-		return fmt.Errorf("setting up cloud controller manager: %w", err)
+		return nil, fmt.Errorf("setting up cloud controller manager: %w", err)
 	}
 	if err := k.setupCloudNodeManager(); err != nil {
-		return fmt.Errorf("setting up cloud node manager: %w", err)
+		return nil, fmt.Errorf("setting up cloud node manager: %w", err)
 	}
 
 	if err := k.setupClusterAutoscaler(instance, cloudServiceAccountURI, autoscalingNodeGroups); err != nil {
-		return fmt.Errorf("setting up cluster autoscaler: %w", err)
+		return nil, fmt.Errorf("setting up cluster autoscaler: %w", err)
 	}
 
 	accessManager := resources.NewAccessManagerDeployment(sshUsers)
 	if err := k.clusterUtil.SetupAccessManager(k.client, accessManager); err != nil {
-		return fmt.Errorf("failed to setup access-manager: %w", err)
+		return nil, fmt.Errorf("failed to setup access-manager: %w", err)
 	}
 
 	if err := k.clusterUtil.SetupVerificationService(
 		k.client, resources.NewVerificationDaemonSet(k.cloudProvider),
 	); err != nil {
-		return fmt.Errorf("failed to setup verification service: %w", err)
+		return nil, fmt.Errorf("failed to setup verification service: %w", err)
 	}
 
 	go k.clusterUtil.FixCilium(nodeName)
 
-	return nil
+	return k.GetKubeconfig()
 }
 
 // JoinCluster joins existing Kubernetes cluster.

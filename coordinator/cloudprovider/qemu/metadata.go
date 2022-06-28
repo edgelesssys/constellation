@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 )
 
@@ -59,16 +58,6 @@ func (m Metadata) GetInstance(ctx context.Context, providerID string) (metadata.
 		}
 	}
 	return metadata.InstanceMetadata{}, errors.New("instance not found")
-}
-
-// SignalRole signals the constellation role via cloud provider metadata (if supported by the CSP and deployment type, otherwise does nothing).
-func (m Metadata) SignalRole(ctx context.Context, role role.Role) error {
-	return nil
-}
-
-// SetVPNIP stores the internally used VPN IP in cloud provider metadata (if supported and required for autoscaling by the CSP, otherwise does nothing).
-func (m Metadata) SetVPNIP(ctx context.Context, vpnIP string) error {
-	return nil
 }
 
 // SupportsLoadBalancer returns true if the cloud provider supports load balancers.

@@ -104,6 +104,11 @@ func (m *Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
 	return m.api.RetrieveSubnetworkAliasCIDR(ctx, project, zone, instanceName)
 }
 
+// SupportsLoadBalancer returns true if the cloud provider supports load balancers.
+func (m *Metadata) SupportsLoadBalancer() bool {
+	return true
+}
+
 // GetLoadBalancerIP returns the IP of the load balancer.
 func (m *Metadata) GetLoadBalancerIP(ctx context.Context) (string, error) {
 	project, err := m.api.RetrieveProjectID()
@@ -115,4 +120,9 @@ func (m *Metadata) GetLoadBalancerIP(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return m.api.RetrieveLoadBalancerIP(ctx, project, zone)
+}
+
+// Supported is used to determine if metadata API is implemented for this cloud provider.
+func (m *Metadata) Supported() bool {
+	return true
 }

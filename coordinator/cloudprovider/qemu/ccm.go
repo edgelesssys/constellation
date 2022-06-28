@@ -39,7 +39,7 @@ func (c CloudControllerManager) ConfigMaps(instance metadata.InstanceMetadata) (
 
 // Secrets returns a list of secrets to deploy together with the k8s cloud-controller-manager.
 // Reference: https://kubernetes.io/docs/concepts/configuration/secret/ .
-func (c CloudControllerManager) Secrets(ctx context.Context, instance metadata.InstanceMetadata, cloudServiceAccountURI string) (resources.Secrets, error) {
+func (c CloudControllerManager) Secrets(ctx context.Context, providerID, cloudServiceAccountURI string) (resources.Secrets, error) {
 	return resources.Secrets{}, nil
 }
 

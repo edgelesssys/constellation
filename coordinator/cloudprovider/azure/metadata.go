@@ -242,11 +242,6 @@ func (m *Metadata) GetLoadBalancerIP(ctx context.Context) (string, error) {
 	return *resp.Properties.IPAddress, nil
 }
 
-// SetVPNIP stores the internally used VPN IP in cloud provider metadata (not required on azure).
-func (m *Metadata) SetVPNIP(ctx context.Context, vpnIP string) error {
-	return nil
-}
-
 // Supported is used to determine if metadata API is implemented for this cloud provider.
 func (m *Metadata) Supported() bool {
 	return true

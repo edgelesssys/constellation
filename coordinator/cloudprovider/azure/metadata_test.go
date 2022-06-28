@@ -488,12 +488,6 @@ func TestGetLoadBalancerIP(t *testing.T) {
 	}
 }
 
-func TestSetVPNIP(t *testing.T) {
-	assert := assert.New(t)
-	metadata := Metadata{}
-	assert.NoError(metadata.SetVPNIP(context.Background(), "192.0.2.0"))
-}
-
 func TestMetadataSupported(t *testing.T) {
 	assert := assert.New(t)
 	metadata := Metadata{}

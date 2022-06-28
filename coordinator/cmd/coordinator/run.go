@@ -2,23 +2,23 @@ package main
 
 import (
 	"net"
-	"sync"
 
-	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/coordinator/internal/initserver"
 	"github.com/edgelesssys/constellation/coordinator/internal/joinclient"
 	"github.com/edgelesssys/constellation/coordinator/internal/logging"
+	"github.com/edgelesssys/constellation/coordinator/internal/nodelock"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
+	"github.com/edgelesssys/constellation/internal/oid"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )
 
 var version = "0.0.0"
 
-func run(issuer core.QuoteIssuer, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
-	kube ClusterInitJoiner, metadata core.ProviderMetadata,
+func run(issuer quoteIssuer, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
+	kube clusterInitJoiner, metadata joinclient.MetadataAPI,
 	bindIP, bindPort string, logger *zap.Logger,
 	cloudLogger logging.CloudLogger, fs afero.Fs,
 ) {
@@ -40,7 +40,7 @@ func run(issuer core.QuoteIssuer, tpm vtpm.TPMOpenFunc, fileHandler file.Handler
 		return
 	}
 
-	nodeLock := &sync.Mutex{}
+	nodeLock := nodelock.New()
 	initServer := initserver.New(nodeLock, kube, logger)
 
 	dialer := dialer.New(issuer, nil, &net.Dialer{})
@@ -54,8 +54,14 @@ func run(issuer core.QuoteIssuer, tpm vtpm.TPMOpenFunc, fileHandler file.Handler
 	}
 }
 
-type ClusterInitJoiner interface {
+type clusterInitJoiner interface {
 	joinclient.ClusterJoiner
 	initserver.ClusterInitializer
 	StartKubelet() error
+}
+
+type quoteIssuer interface {
+	oid.Getter
+	// Issue issues a quote for remote attestation for a given message
+	Issue(userData []byte, nonce []byte) (quote []byte, err error)
 }

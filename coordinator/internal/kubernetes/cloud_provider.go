@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes/k8sapi/resources"
-	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	k8s "k8s.io/api/core/v1"
 )
@@ -23,10 +22,6 @@ type ProviderMetadata interface {
 	GetLoadBalancerIP(ctx context.Context) (string, error)
 	// GetInstance retrieves an instance using its providerID.
 	GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error)
-	// SignalRole signals the constellation role via cloud provider metadata (if supported by the CSP and deployment type, otherwise does nothing).
-	SignalRole(ctx context.Context, role role.Role) error
-	// SetVPNIP stores the internally used VPN IP in cloud provider metadata (if supported and required for autoscaling by the CSP, otherwise does nothing).
-	SetVPNIP(ctx context.Context, vpnIP string) error
 	// Supported is used to determine if metadata API is implemented for this cloud provider.
 	Supported() bool
 }
@@ -96,9 +91,6 @@ type stubProviderMetadata struct {
 	ListErr  error
 	ListResp []metadata.InstanceMetadata
 
-	SignalRoleErr error
-	SetVPNIPErr   error
-
 	SelfErr  error
 	SelfResp metadata.InstanceMetadata
 
@@ -127,14 +119,6 @@ func (m *stubProviderMetadata) Self(ctx context.Context) (metadata.InstanceMetad
 
 func (m *stubProviderMetadata) GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error) {
 	return m.GetInstanceResp, m.GetInstanceErr
-}
-
-func (m *stubProviderMetadata) SignalRole(ctx context.Context, role role.Role) error {
-	return m.SignalRoleErr
-}
-
-func (m *stubProviderMetadata) SetVPNIP(ctx context.Context, vpnIP string) error {
-	return m.SetVPNIPErr
 }
 
 func (m *stubProviderMetadata) Supported() bool {

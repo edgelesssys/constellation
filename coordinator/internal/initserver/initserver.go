@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"net"
 	"strings"
-	"sync"
 
-	"github.com/edgelesssys/constellation/coordinator/config"
 	"github.com/edgelesssys/constellation/coordinator/initproto"
 	"github.com/edgelesssys/constellation/coordinator/internal/diskencryption"
 	"github.com/edgelesssys/constellation/coordinator/internal/kubernetes"
+	"github.com/edgelesssys/constellation/coordinator/internal/nodelock"
 	"github.com/edgelesssys/constellation/coordinator/nodestate"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/coordinator/util"
 	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -25,26 +25,29 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// Server is the initialization server, which is started on each node.
+// The server handles initialization calls from the CLI and initializes the
+// Kubernetes cluster.
 type Server struct {
-	nodeLock *sync.Mutex
-
-	kube        ClusterInitializer
-	disk        EncryptedDisk
+	nodeLock    *nodelock.Lock
+	initializer ClusterInitializer
+	disk        encryptedDisk
 	fileHandler file.Handler
-	grpcServer  *grpc.Server
+	grpcServer  serveStopper
 
 	logger *zap.Logger
 
 	initproto.UnimplementedAPIServer
 }
 
-func New(nodeLock *sync.Mutex, kube ClusterInitializer, logger *zap.Logger) *Server {
+// New creates a new initialization server.
+func New(lock *nodelock.Lock, kube ClusterInitializer, logger *zap.Logger) *Server {
 	logger = logger.Named("initServer")
 	server := &Server{
-		nodeLock: nodeLock,
-		disk:     diskencryption.New(),
-		kube:     kube,
-		logger:   logger,
+		nodeLock:    lock,
+		disk:        diskencryption.New(),
+		initializer: kube,
+		logger:      logger,
 	}
 
 	grpcLogger := logger.Named("gRPC")
@@ -74,8 +77,14 @@ func (s *Server) Serve(ip, port string) error {
 	return s.grpcServer.Serve(lis)
 }
 
+// Init initializes the cluster.
 func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initproto.InitResponse, error) {
-	if ok := s.nodeLock.TryLock(); !ok {
+	if ok := s.nodeLock.TryLockOnce(); !ok {
+		// The join client seems to already have a connection to an
+		// existing join service. At this point, any further call to
+		// init does not make sense, so we just stop.
+		//
+		// The server stops itself after the current call is done.
 		go s.grpcServer.GracefulStop()
 		return nil, status.Error(codes.FailedPrecondition, "node is already being activated")
 	}
@@ -98,7 +107,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		return nil, status.Errorf(codes.Internal, "persisting node state: %s", err)
 	}
 
-	kubeconfig, err := s.kube.InitCluster(ctx,
+	kubeconfig, err := s.initializer.InitCluster(ctx,
 		req.AutoscalingNodeGroups,
 		req.CloudServiceAccountUri,
 		req.KubernetesVersion,
@@ -145,13 +154,13 @@ func (s *Server) setupDisk(masterSecret []byte) error {
 }
 
 func (s *Server) deriveAttestationID(masterSecret []byte) (attestationtypes.ID, error) {
-	clusterID, err := util.GenerateRandomBytes(config.RNGLengthDefault)
+	clusterID, err := util.GenerateRandomBytes(constants.RNGLengthDefault)
 	if err != nil {
 		return attestationtypes.ID{}, err
 	}
 
 	// TODO: Choose a way to salt the key derivation
-	ownerID, err := util.DeriveKey(masterSecret, []byte("Constellation"), []byte("id"), config.RNGLengthDefault)
+	ownerID, err := util.DeriveKey(masterSecret, []byte("Constellation"), []byte("id"), constants.RNGLengthDefault)
 	if err != nil {
 		return attestationtypes.ID{}, err
 	}
@@ -167,20 +176,21 @@ func sshProtoKeysToMap(keys []*initproto.SSHUserKey) map[string]string {
 	return keyMap
 }
 
+// ClusterInitializer has the ability to initialize a cluster.
 type ClusterInitializer interface {
+	// InitCluster initializes a new Kubernetes cluster.
 	InitCluster(
 		ctx context.Context,
 		autoscalingNodeGroups []string,
 		cloudServiceAccountURI string,
-		kubernetesVersion string,
+		k8sVersion string,
 		id attestationtypes.ID,
-		config kubernetes.KMSConfig,
+		kmsConfig kubernetes.KMSConfig,
 		sshUserKeys map[string]string,
 	) ([]byte, error)
 }
 
-// EncryptedDisk manages the encrypted state disk.
-type EncryptedDisk interface {
+type encryptedDisk interface {
 	// Open prepares the underlying device for disk operations.
 	Open() error
 	// Close closes the underlying device.
@@ -189,4 +199,11 @@ type EncryptedDisk interface {
 	UUID() (string, error)
 	// UpdatePassphrase switches the initial random passphrase of the encrypted disk to a permanent passphrase.
 	UpdatePassphrase(passphrase string) error
+}
+
+type serveStopper interface {
+	// Serve starts the server.
+	Serve(lis net.Listener) error
+	// GracefulStop stops the server and blocks until all requests are done.
+	GracefulStop()
 }

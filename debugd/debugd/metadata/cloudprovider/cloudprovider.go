@@ -5,17 +5,17 @@ import (
 	"fmt"
 
 	azurecloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/azure"
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	gcpcloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/gcp"
 	qemucloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/qemu"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 )
 
 type providerMetadata interface {
 	// List retrieves all instances belonging to the current constellation.
-	List(ctx context.Context) ([]cloudtypes.Instance, error)
+	List(ctx context.Context) ([]metadata.InstanceMetadata, error)
 	// Self retrieves the current instance.
-	Self(ctx context.Context) (cloudtypes.Instance, error)
+	Self(ctx context.Context) (metadata.InstanceMetadata, error)
 }
 
 // Fetcher checks the metadata service to search for instances that were set up for debugging and cloud provider specific SSH keys.

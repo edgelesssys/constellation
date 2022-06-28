@@ -27,10 +27,6 @@ type metadataAPI interface {
 	List(ctx context.Context) ([]InstanceMetadata, error)
 	// Self retrieves the current instance.
 	Self(ctx context.Context) (InstanceMetadata, error)
-	// SignalRole signals the constellation role via cloud provider metadata (if supported by the CSP and deployment type, otherwise does nothing).
-	SignalRole(ctx context.Context, role role.Role) error
-	// SetVPNIP stores the internally used VPN IP in cloud provider metadata (if supported and required for autoscaling by the CSP, otherwise does nothing).
-	SetVPNIP(ctx context.Context, vpnIP string) error
 	// Supported is used to determine if metadata API is implemented for this cloud provider.
 	Supported() bool
 }

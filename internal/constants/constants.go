@@ -82,6 +82,8 @@ const (
 	MasterSecretLengthDefault = 32
 	// MasterSecretLengthMin is the minimal length in bytes for user provided master secrets.
 	MasterSecretLengthMin = 16
+	// RNGLengthDefault is the number of bytes used for generating nonces.
+	RNGLengthDefault = 32
 
 	//
 	// CLI.

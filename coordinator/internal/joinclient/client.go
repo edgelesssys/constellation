@@ -11,6 +11,7 @@ import (
 
 	"github.com/edgelesssys/constellation/activation/activationproto"
 	"github.com/edgelesssys/constellation/coordinator/internal/diskencryption"
+	"github.com/edgelesssys/constellation/coordinator/internal/nodelock"
 	"github.com/edgelesssys/constellation/coordinator/nodestate"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
@@ -19,7 +20,7 @@ import (
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
+	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 	"k8s.io/utils/clock"
 )
 
@@ -30,11 +31,11 @@ const (
 
 // JoinClient is a client for self-activation of node.
 type JoinClient struct {
-	nodeLock    *sync.Mutex
+	nodeLock    *nodelock.Lock
 	diskUUID    string
 	nodeName    string
 	role        role.Role
-	disk        EncryptedDisk
+	disk        encryptedDisk
 	fileHandler file.Handler
 
 	timeout  time.Duration
@@ -43,7 +44,7 @@ type JoinClient struct {
 
 	dialer      grpcDialer
 	joiner      ClusterJoiner
-	metadataAPI metadataAPI
+	metadataAPI MetadataAPI
 
 	log *zap.Logger
 
@@ -53,7 +54,7 @@ type JoinClient struct {
 }
 
 // New creates a new SelfActivationClient.
-func New(nodeLock *sync.Mutex, dial grpcDialer, joiner ClusterJoiner, meta metadataAPI, log *zap.Logger) *JoinClient {
+func New(lock *nodelock.Lock, dial grpcDialer, joiner ClusterJoiner, meta MetadataAPI, log *zap.Logger) *JoinClient {
 	return &JoinClient{
 		disk:        diskencryption.New(),
 		fileHandler: file.NewHandler(afero.NewOsFs()),
@@ -87,11 +88,11 @@ func (c *JoinClient) Start() {
 	go func() {
 		defer ticker.Stop()
 		defer func() { c.stopDone <- struct{}{} }()
+		defer c.log.Info("Client stopped")
 
-		diskUUID, err := c.GetDiskUUID()
+		diskUUID, err := c.getDiskUUID()
 		if err != nil {
 			c.log.Error("Failed to get disk UUID", zap.Error(err))
-			c.log.Error("Stopping self-activation client")
 			return
 		}
 		c.diskUUID = diskUUID
@@ -116,6 +117,9 @@ func (c *JoinClient) Start() {
 			err := c.tryJoinAtAvailableServices()
 			if err == nil {
 				c.log.Info("Activated successfully. SelfActivationClient shut down.")
+				return
+			} else if isUnrecoverable(err) {
+				c.log.Error("Unrecoverable error occurred", zap.Error(err))
 				return
 			}
 			c.log.Info("Activation failed for all available endpoints", zap.Error(err))
@@ -247,8 +251,18 @@ func (c *JoinClient) joinAsControlPlaneNode(ctx context.Context, client activati
 
 func (c *JoinClient) startNodeAndJoin(ctx context.Context, diskKey, ownerID, clusterID, kubeletKey, kubeletCert []byte, endpoint, token,
 	discoveryCACertHash, certKey string,
-) error {
-	if ok := c.nodeLock.TryLock(); !ok {
+) (retErr error) {
+	// If an error occurs in this func, the client cannot continue.
+	defer func() {
+		if retErr != nil {
+			retErr = unrecoverableError{retErr}
+		}
+	}()
+
+	if ok := c.nodeLock.TryLockOnce(); !ok {
+		// There is already a cluster initialization in progress on
+		// this node, so there is no need to also join the cluster,
+		// as the initializing node is automatically part of the cluster.
 		return errors.New("node is already being initialized")
 	}
 
@@ -310,7 +324,7 @@ func (c *JoinClient) updateDiskPassphrase(passphrase string) error {
 	return c.disk.UpdatePassphrase(passphrase)
 }
 
-func (c *JoinClient) GetDiskUUID() (string, error) {
+func (c *JoinClient) getDiskUUID() (string, error) {
 	if err := c.disk.Open(); err != nil {
 		return "", fmt.Errorf("opening disk: %w", err)
 	}
@@ -343,11 +357,21 @@ func (c *JoinClient) timeoutCtx() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), c.timeout)
 }
 
+type unrecoverableError struct{ error }
+
+func isUnrecoverable(err error) bool {
+	var ue *unrecoverableError
+	ok := errors.As(err, &ue)
+	return ok
+}
+
 type grpcDialer interface {
 	Dial(ctx context.Context, target string) (*grpc.ClientConn, error)
 }
 
+// ClusterJoiner has the ability to join a new node to an existing cluster.
 type ClusterJoiner interface {
+	// JoinCluster joins a new node to an existing cluster.
 	JoinCluster(
 		ctx context.Context,
 		args *kubeadm.BootstrapTokenDiscovery,
@@ -356,15 +380,15 @@ type ClusterJoiner interface {
 	) error
 }
 
-type metadataAPI interface {
+// MetadataAPI provides information about the instances.
+type MetadataAPI interface {
 	// List retrieves all instances belonging to the current constellation.
 	List(ctx context.Context) ([]metadata.InstanceMetadata, error)
 	// Self retrieves the current instance.
 	Self(ctx context.Context) (metadata.InstanceMetadata, error)
 }
 
-// EncryptedDisk manages the encrypted state disk.
-type EncryptedDisk interface {
+type encryptedDisk interface {
 	// Open prepares the underlying device for disk operations.
 	Open() error
 	// Close closes the underlying device.

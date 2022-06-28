@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,7 +29,7 @@ func TestDiscoverDebugIPs(t *testing.T) {
 	}{
 		"disovery works": {
 			meta: stubMetadata{
-				listRes: []cloudtypes.Instance{
+				listRes: []metadata.InstanceMetadata{
 					{
 						PrivateIPs: []string{"192.0.2.0"},
 					},
@@ -83,7 +83,7 @@ func TestFetchSSHKeys(t *testing.T) {
 	}{
 		"fetch works": {
 			meta: stubMetadata{
-				selfRes: cloudtypes.Instance{
+				selfRes: metadata.InstanceMetadata{
 					Name:       "name",
 					ProviderID: "provider-id",
 					SSHKeys:    map[string][]string{"bob": {"ssh-rsa bobskey"}},
@@ -125,24 +125,24 @@ func TestFetchSSHKeys(t *testing.T) {
 }
 
 type stubMetadata struct {
-	listRes        []cloudtypes.Instance
+	listRes        []metadata.InstanceMetadata
 	listErr        error
-	selfRes        cloudtypes.Instance
+	selfRes        metadata.InstanceMetadata
 	selfErr        error
-	getInstanceRes cloudtypes.Instance
+	getInstanceRes metadata.InstanceMetadata
 	getInstanceErr error
 	supportedRes   bool
 }
 
-func (m *stubMetadata) List(ctx context.Context) ([]cloudtypes.Instance, error) {
+func (m *stubMetadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
 	return m.listRes, m.listErr
 }
 
-func (m *stubMetadata) Self(ctx context.Context) (cloudtypes.Instance, error) {
+func (m *stubMetadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
 	return m.selfRes, m.selfErr
 }
 
-func (m *stubMetadata) GetInstance(ctx context.Context, providerID string) (cloudtypes.Instance, error) {
+func (m *stubMetadata) GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error) {
 	return m.getInstanceRes, m.getInstanceErr
 }
 

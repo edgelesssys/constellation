@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/activation/activationproto"
+	"github.com/edgelesssys/constellation/coordinator/internal/nodelock"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/constants"
@@ -18,11 +19,12 @@ import (
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc"
-	"k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
+	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 	testclock "k8s.io/utils/clock/testing"
 )
 
@@ -41,9 +43,9 @@ func TestClient(t *testing.T) {
 
 	testCases := map[string]struct {
 		role          role.Role
-		clusterJoiner ClusterJoiner
-		disk          EncryptedDisk
-		nodeLock      *sync.Mutex
+		clusterJoiner *stubClusterJoiner
+		disk          encryptedDisk
+		nodeLock      *nodelock.Lock
 		apiAnswers    []any
 	}{
 		"on node: metadata self: errors occur": {
@@ -57,7 +59,7 @@ func TestClient(t *testing.T) {
 				activateWorkerNodeAnswer{},
 			},
 			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      &sync.Mutex{},
+			nodeLock:      nodelock.New(),
 			disk:          &stubDisk{},
 		},
 		"on node: metadata self: invalid answer": {
@@ -71,7 +73,7 @@ func TestClient(t *testing.T) {
 				activateWorkerNodeAnswer{},
 			},
 			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      &sync.Mutex{},
+			nodeLock:      nodelock.New(),
 			disk:          &stubDisk{},
 		},
 		"on node: metadata list: errors occur": {
@@ -85,7 +87,7 @@ func TestClient(t *testing.T) {
 				activateWorkerNodeAnswer{},
 			},
 			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      &sync.Mutex{},
+			nodeLock:      nodelock.New(),
 			disk:          &stubDisk{},
 		},
 		"on node: metadata list: no coordinators in answer": {
@@ -99,7 +101,7 @@ func TestClient(t *testing.T) {
 				activateWorkerNodeAnswer{},
 			},
 			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      &sync.Mutex{},
+			nodeLock:      nodelock.New(),
 			disk:          &stubDisk{},
 		},
 		"on node: aaas ActivateNode: errors": {
@@ -114,13 +116,15 @@ func TestClient(t *testing.T) {
 				activateWorkerNodeAnswer{},
 			},
 			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      &sync.Mutex{},
+			nodeLock:      nodelock.New(),
 			disk:          &stubDisk{},
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
 			clock := testclock.NewFakeClock(time.Now())
 			metadataAPI := newStubMetadataAPI()
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
@@ -165,12 +169,24 @@ func TestClient(t *testing.T) {
 			}
 
 			client.Stop()
+
+			assert.True(tc.clusterJoiner.joinClusterCalled)
+			assert.False(client.nodeLock.TryLockOnce()) // lock should be locked
 		})
 	}
 }
 
 func TestClientConcurrentStartStop(t *testing.T) {
+	netDialer := testdialer.NewBufconnDialer()
+	dialer := dialer.New(nil, nil, netDialer)
 	client := &JoinClient{
+		nodeLock:    nodelock.New(),
+		timeout:     30 * time.Second,
+		interval:    30 * time.Second,
+		dialer:      dialer,
+		disk:        &stubDisk{},
+		joiner:      &stubClusterJoiner{},
+		fileHandler: file.NewHandler(afero.NewMemMapFs()),
 		metadataAPI: &stubRepeaterMetadataAPI{},
 		clock:       testclock.NewFakeClock(time.Now()),
 		log:         zap.NewNop(),
@@ -293,10 +309,12 @@ type activateControlPlaneNodeAnswer struct {
 }
 
 type stubClusterJoiner struct {
-	joinClusterErr error
+	joinClusterCalled bool
+	joinClusterErr    error
 }
 
 func (j *stubClusterJoiner) JoinCluster(context.Context, *kubeadm.BootstrapTokenDiscovery, string, role.Role) error {
+	j.joinClusterCalled = true
 	return j.joinClusterErr
 }
 

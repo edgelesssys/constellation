@@ -268,7 +268,7 @@ func TestInitCluster(t *testing.T) {
 				kubeconfigReader:       tc.kubeconfigReader,
 				getIPAddr:              func() (string, error) { return privateIP, nil },
 			}
-			err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountUri, k8sVersion, attestationtypes.ID{}, KMSConfig{MasterSecret: masterSecret}, nil)
+			_, err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountUri, k8sVersion, attestationtypes.ID{}, KMSConfig{MasterSecret: masterSecret}, nil)
 
 			if tc.wantErr {
 				assert.Error(err)
