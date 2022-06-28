@@ -3,7 +3,6 @@ package util
 import (
 	"crypto/rand"
 	"crypto/sha256"
-	"fmt"
 	"io"
 	"math/big"
 	"net"
@@ -48,23 +47,4 @@ func GetIPAddr() (string, error) {
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 
 	return localAddr.IP.String(), nil
-}
-
-func GetInterfaceIP(netInterface string) (string, error) {
-	netif, err := net.InterfaceByName(netInterface)
-	if err != nil {
-		return "", fmt.Errorf("finding interface %s: %w", netInterface, err)
-	}
-	addrs, err := netif.Addrs()
-	if err != nil {
-		return "", fmt.Errorf("retrieving interface ip addresses %s: %w", netInterface, err)
-	}
-	for _, addr := range addrs {
-		if ipn, ok := addr.(*net.IPNet); ok {
-			if ip := ipn.IP.To4(); ip != nil {
-				return ip.String(), nil
-			}
-		}
-	}
-	return "", fmt.Errorf("interface %s don't have an ipv4 address", netInterface)
 }

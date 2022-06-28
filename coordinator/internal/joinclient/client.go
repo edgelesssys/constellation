@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/activation/activationproto"
-	"github.com/edgelesssys/constellation/coordinator/diskencryption"
+	"github.com/edgelesssys/constellation/coordinator/internal/diskencryption"
 	"github.com/edgelesssys/constellation/coordinator/nodestate"
 	"github.com/edgelesssys/constellation/coordinator/role"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
