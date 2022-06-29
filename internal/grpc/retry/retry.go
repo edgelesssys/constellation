@@ -10,21 +10,24 @@ import (
 	"k8s.io/utils/clock"
 )
 
-type IntervalRetryer struct {
+// IntervalRetrier is retries a grpc call with an interval.
+type IntervalRetrier struct {
 	interval time.Duration
 	doer     Doer
 	clock    clock.WithTicker
 }
 
-func NewIntervalRetryer(doer Doer, interval time.Duration) *IntervalRetryer {
-	return &IntervalRetryer{
+// NewIntervalRetrier returns a new IntervalRetrier.
+func NewIntervalRetrier(doer Doer, interval time.Duration) *IntervalRetrier {
+	return &IntervalRetrier{
 		interval: interval,
 		doer:     doer,
 		clock:    clock.RealClock{},
 	}
 }
 
-func (r *IntervalRetryer) Do(ctx context.Context) error {
+// Do retries performing a grpc call until it succeeds, returns a permanent error or the context is cancelled.
+func (r *IntervalRetrier) Do(ctx context.Context) error {
 	ticker := r.clock.NewTicker(r.interval)
 	defer ticker.Stop()
 
@@ -39,14 +42,16 @@ func (r *IntervalRetryer) Do(ctx context.Context) error {
 		}
 
 		select {
-		case <-ctx.Done(): // TODO(katexochen): is this necessary?
+		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C():
 		}
 	}
 }
 
-func (r *IntervalRetryer) serviceIsUnavailable(err error) bool {
+// serviceIsUnavailable checks if the error is a grpc status with code Unavailable.
+// In the special case of an authentication handshake failure, false is returned to prevent further retries.
+func (r *IntervalRetrier) serviceIsUnavailable(err error) bool {
 	statusErr, ok := status.FromError(err)
 	if !ok {
 		return false
@@ -55,9 +60,12 @@ func (r *IntervalRetryer) serviceIsUnavailable(err error) bool {
 		return false
 	}
 	// ideally we would check the error type directly, but grpc only provides a string
-	return strings.HasPrefix(statusErr.Message(), `connection error: desc = "transport: authentication handshake failed`)
+	return !strings.HasPrefix(statusErr.Message(), `connection error: desc = "transport: authentication handshake failed`)
 }
 
 type Doer interface {
+	// Do performs a grpc operation.
+	//
+	// It should return a grpc status with code Unavailable error to signal a transient fault.
 	Do(ctx context.Context) error
 }

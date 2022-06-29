@@ -142,8 +142,8 @@ func initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.
 		endpoint: net.JoinHostPort(ip, strconv.Itoa(constants.CoordinatorPort)),
 		req:      req,
 	}
-	retryer := retry.NewIntervalRetryer(doer, 30*time.Second)
-	if err := retryer.Do(ctx); err != nil {
+	retrier := retry.NewIntervalRetrier(doer, 30*time.Second)
+	if err := retrier.Do(ctx); err != nil {
 		return nil, err
 	}
 	return doer.resp, nil
