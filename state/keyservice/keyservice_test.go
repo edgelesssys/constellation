@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/bootstrapper/cloudprovider/cloudtypes"
-	"github.com/edgelesssys/constellation/bootstrapper/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/atls"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/oid"
+	"github.com/edgelesssys/constellation/kms/kmsproto"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,7 +30,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestRequestKeyLoop(t *testing.T) {
-	defaultInstance := cloudtypes.Instance{
+	defaultInstance := metadata.InstanceMetadata{
 		Name:       "test-instance",
 		ProviderID: "/test/provider",
 		Role:       role.ControlPlane,
@@ -40,31 +40,31 @@ func TestRequestKeyLoop(t *testing.T) {
 	testCases := map[string]struct {
 		server          *stubAPIServer
 		wantCalls       int
-		listResponse    []cloudtypes.Instance
+		listResponse    []metadata.InstanceMetadata
 		dontStartServer bool
 	}{
 		"success": {
-			server:       &stubAPIServer{requestStateDiskKeyResp: &pubproto.RequestStateDiskKeyResponse{}},
-			listResponse: []cloudtypes.Instance{defaultInstance},
+			server:       &stubAPIServer{requestStateDiskKeyResp: &kmsproto.GetDataKeyResponse{}},
+			listResponse: []metadata.InstanceMetadata{defaultInstance},
 		},
 		"no error if server throws an error": {
 			server: &stubAPIServer{
-				requestStateDiskKeyResp: &pubproto.RequestStateDiskKeyResponse{},
+				requestStateDiskKeyResp: &kmsproto.GetDataKeyResponse{},
 				requestStateDiskKeyErr:  errors.New("error"),
 			},
-			listResponse: []cloudtypes.Instance{defaultInstance},
+			listResponse: []metadata.InstanceMetadata{defaultInstance},
 		},
 		"no error if the server can not be reached": {
-			server:          &stubAPIServer{requestStateDiskKeyResp: &pubproto.RequestStateDiskKeyResponse{}},
-			listResponse:    []cloudtypes.Instance{defaultInstance},
+			server:          &stubAPIServer{requestStateDiskKeyResp: &kmsproto.GetDataKeyResponse{}},
+			listResponse:    []metadata.InstanceMetadata{defaultInstance},
 			dontStartServer: true,
 		},
 		"no error if no endpoint is available": {
-			server: &stubAPIServer{requestStateDiskKeyResp: &pubproto.RequestStateDiskKeyResponse{}},
+			server: &stubAPIServer{requestStateDiskKeyResp: &kmsproto.GetDataKeyResponse{}},
 		},
 		"works for multiple endpoints": {
-			server: &stubAPIServer{requestStateDiskKeyResp: &pubproto.RequestStateDiskKeyResponse{}},
-			listResponse: []cloudtypes.Instance{
+			server: &stubAPIServer{requestStateDiskKeyResp: &kmsproto.GetDataKeyResponse{}},
+			listResponse: []metadata.InstanceMetadata{
 				defaultInstance,
 				{
 					Name:       "test-instance-2",
@@ -87,7 +87,7 @@ func TestRequestKeyLoop(t *testing.T) {
 
 			creds := atlscredentials.New(atls.NewFakeIssuer(oid.Dummy{}), nil)
 			s := grpc.NewServer(grpc.Creds(creds))
-			pubproto.RegisterAPIServer(s, tc.server)
+			kmsproto.RegisterAPIServer(s, tc.server)
 
 			if !tc.dontStartServer {
 				go func() { require.NoError(s.Serve(listener)) }()
@@ -169,51 +169,19 @@ func TestResetKey(t *testing.T) {
 }
 
 type stubAPIServer struct {
-	requestStateDiskKeyResp *pubproto.RequestStateDiskKeyResponse
+	requestStateDiskKeyResp *kmsproto.GetDataKeyResponse
 	requestStateDiskKeyErr  error
-	pubproto.UnimplementedAPIServer
+	kmsproto.UnimplementedAPIServer
 }
 
-func (s *stubAPIServer) GetState(ctx context.Context, in *pubproto.GetStateRequest) (*pubproto.GetStateResponse, error) {
-	return nil, nil
-}
-
-func (s *stubAPIServer) ActivateAsCoordinator(in *pubproto.ActivateAsCoordinatorRequest, srv pubproto.API_ActivateAsCoordinatorServer) error {
-	return nil
-}
-
-func (s *stubAPIServer) ActivateAsNode(pubproto.API_ActivateAsNodeServer) error {
-	return nil
-}
-
-func (s *stubAPIServer) ActivateAdditionalNodes(in *pubproto.ActivateAdditionalNodesRequest, srv pubproto.API_ActivateAdditionalNodesServer) error {
-	return nil
-}
-
-func (s *stubAPIServer) JoinCluster(ctx context.Context, in *pubproto.JoinClusterRequest) (*pubproto.JoinClusterResponse, error) {
-	return nil, nil
-}
-
-func (s *stubAPIServer) TriggerNodeUpdate(ctx context.Context, in *pubproto.TriggerNodeUpdateRequest) (*pubproto.TriggerNodeUpdateResponse, error) {
-	return nil, nil
-}
-
-func (s *stubAPIServer) RequestStateDiskKey(ctx context.Context, in *pubproto.RequestStateDiskKeyRequest) (*pubproto.RequestStateDiskKeyResponse, error) {
+func (s *stubAPIServer) GetDataKey(ctx context.Context, req *kmsproto.GetDataKeyRequest) (*kmsproto.GetDataKeyResponse, error) {
 	return s.requestStateDiskKeyResp, s.requestStateDiskKeyErr
 }
 
 type stubMetadata struct {
-	listResponse []cloudtypes.Instance
+	listResponse []metadata.InstanceMetadata
 }
 
-func (s stubMetadata) List(ctx context.Context) ([]cloudtypes.Instance, error) {
+func (s stubMetadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
 	return s.listResponse, nil
-}
-
-func (s stubMetadata) Self(ctx context.Context) (cloudtypes.Instance, error) {
-	return cloudtypes.Instance{}, nil
-}
-
-func (s stubMetadata) Supported() bool {
-	return true
 }

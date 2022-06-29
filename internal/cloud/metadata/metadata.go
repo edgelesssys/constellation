@@ -22,15 +22,6 @@ type InstanceMetadata struct {
 	SSHKeys map[string][]string
 }
 
-type metadataAPI interface {
-	// List retrieves all instances belonging to the current constellation.
-	List(ctx context.Context) ([]InstanceMetadata, error)
-	// Self retrieves the current instance.
-	Self(ctx context.Context) (InstanceMetadata, error)
-	// Supported is used to determine if metadata API is implemented for this cloud provider.
-	Supported() bool
-}
-
 type InstanceSelfer interface {
 	// Self retrieves the current instance.
 	Self(ctx context.Context) (InstanceMetadata, error)
@@ -56,4 +47,22 @@ func InitServerEndpoints(ctx context.Context, lister InstanceLister) ([]string, 
 	}
 
 	return initServerEndpoints, nil
+}
+
+// KMSEndpoints returns the list of endpoints for the KMS service, which are running on the control plane nodes.
+func KMSEndpoints(ctx context.Context, lister InstanceLister) ([]string, error) {
+	instances, err := lister.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving instances list from cloud provider: %w", err)
+	}
+	kmsEndpoints := []string{}
+	for _, instance := range instances {
+		if instance.Role == role.ControlPlane {
+			for _, ip := range instance.PrivateIPs {
+				kmsEndpoints = append(kmsEndpoints, net.JoinHostPort(ip, strconv.Itoa(constants.KMSNodePort)))
+			}
+		}
+	}
+
+	return kmsEndpoints, nil
 }

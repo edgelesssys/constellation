@@ -18,7 +18,7 @@ func TestAutoscalerSecrets(t *testing.T) {
 		wantErr                bool
 	}{
 		"Secrets works": {
-			providerID:             "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
+			providerID:             "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scaleset/virtualMachines/instance-name",
 			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret",
 			wantSecrets: resources.Secrets{
 				&k8s.Secret{

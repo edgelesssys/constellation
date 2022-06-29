@@ -174,7 +174,6 @@ func TestInitialize(t *testing.T) {
 				return
 			}
 			require.NoError(err)
-			assert.Contains(out.String(), "192.0.2.2")
 			assert.Contains(out.String(), "ownerID")
 			assert.Contains(out.String(), "clusterID")
 			if tc.setAutoscaleFlag {
@@ -196,9 +195,8 @@ func TestWriteOutput(t *testing.T) {
 	}
 
 	expectedIdFile := clusterIDsFile{
-		Endpoint:  result.coordinatorPubIP,
-		ClusterID: result.clusterID,
-		OwnerID:   result.ownerID,
+		ClusterID: string(resp.ClusterId),
+		OwnerID:   string(resp.OwnerId),
 	}
 
 	var out bytes.Buffer
@@ -207,15 +205,15 @@ func TestWriteOutput(t *testing.T) {
 
 	err := writeOutput(resp, &out, fileHandler)
 	assert.NoError(err)
-	assert.Contains(out.String(), resp.OwnerId)
-	assert.Contains(out.String(), resp.ClusterId)
+	assert.Contains(out.String(), string(resp.OwnerId))
+	assert.Contains(out.String(), string(resp.ClusterId))
 	assert.Contains(out.String(), constants.AdminConfFilename)
-	assert.Equal(resp.Kubeconfig, string(adminConf))
+	assert.Equal(resp.Kubeconfig, string(resp.Kubeconfig))
 
 	afs := afero.Afero{Fs: testFs}
 	adminConf, err := afs.ReadFile(constants.AdminConfFilename)
 	assert.NoError(err)
-	assert.Equal(result.kubeconfig, string(adminConf))
+	assert.Equal(resp.Kubeconfig, string(adminConf))
 
 	idsFile, err := afs.ReadFile(constants.ClusterIDsFileName)
 	assert.NoError(err)

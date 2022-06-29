@@ -13,12 +13,12 @@ import (
 
 	azurecloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/azure"
 	gcpcloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/gcp"
-	qemucloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/qemu"
-	"github.com/edgelesssys/constellation/coordinator/core"
+	qemucloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/qemu"
 	"github.com/edgelesssys/constellation/internal/attestation/azure"
 	"github.com/edgelesssys/constellation/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/state/keyservice"
@@ -49,7 +49,7 @@ func main() {
 	var err error
 	var diskPath string
 	var issuer keyservice.QuoteIssuer
-	var metadata core.ProviderMetadata
+	var metadata metadata.InstanceLister
 	switch strings.ToLower(*csp) {
 	case "azure":
 		diskPath, err = filepath.EvalSymlinks(azureStateDiskPath)

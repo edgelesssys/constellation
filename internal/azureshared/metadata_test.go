@@ -14,11 +14,6 @@ func TestBasicsFromProviderID(t *testing.T) {
 		wantSubscriptionID string
 		wantResourceGroup  string
 	}{
-		"providerID for individual instance works": {
-			providerID:         "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
-			wantSubscriptionID: "subscription-id",
-			wantResourceGroup:  "resource-group",
-		},
 		"providerID for scale set instance works": {
 			providerID:         "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 			wantSubscriptionID: "subscription-id",
@@ -55,7 +50,7 @@ func TestUIDFromProviderID(t *testing.T) {
 		wantErr    bool
 	}{
 		"UID from virtual machine works": {
-			providerID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group-ABC123/providers/Microsoft.Compute/virtualMachines/instance-name",
+			providerID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group-ABC123/providers/Microsoft.Compute/virtualMachineScaleSets/scaleset/virtualMachines/instance-name",
 			wantUID:    "ABC123",
 		},
 		"providerID is malformed": {

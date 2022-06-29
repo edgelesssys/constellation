@@ -11,8 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/bootstrapper/core"
+	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/atls"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/oid"
@@ -95,7 +96,7 @@ func TestKeyAPI(t *testing.T) {
 	api := keyservice.New(
 		logger.NewTest(t),
 		atls.NewFakeIssuer(oid.Dummy{}),
-		&core.ProviderMetadataFake{},
+		&fakeMetadataAPI{},
 		20*time.Second,
 	)
 
@@ -121,4 +122,17 @@ func TestKeyAPI(t *testing.T) {
 	key, err := api.WaitForDecryptionKey("12345678-1234-1234-1234-123456789ABC", apiAddr)
 	assert.NoError(err)
 	assert.Equal(testKey, key)
+}
+
+type fakeMetadataAPI struct{}
+
+func (f *fakeMetadataAPI) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
+	return []metadata.InstanceMetadata{
+		{
+			Name:       "instanceName",
+			ProviderID: "fake://instance-id",
+			Role:       role.Unknown,
+			PrivateIPs: []string{"192.0.2.1"},
+		},
+	}, nil
 }

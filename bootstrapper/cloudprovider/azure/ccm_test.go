@@ -22,26 +22,6 @@ func TestSecrets(t *testing.T) {
 		wantSecrets            resources.Secrets
 		wantErr                bool
 	}{
-		"Secrets works": {
-			providerID:             "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
-			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret&location=location",
-			metadata:               &ccmMetadataStub{loadBalancerName: "load-balancer-name", networkSecurityGroupName: "network-security-group-name"},
-			wantSecrets: resources.Secrets{
-				&k8s.Secret{
-					TypeMeta: meta.TypeMeta{
-						Kind:       "Secret",
-						APIVersion: "v1",
-					},
-					ObjectMeta: meta.ObjectMeta{
-						Name:      "azureconfig",
-						Namespace: "kube-system",
-					},
-					Data: map[string][]byte{
-						"azure.json": []byte(`{"cloud":"AzurePublicCloud","tenantId":"tenant-id","subscriptionId":"subscription-id","resourceGroup":"resource-group","location":"location","securityGroupName":"network-security-group-name","loadBalancerName":"load-balancer-name","loadBalancerSku":"standard","useInstanceMetadata":true,"vmType":"standard","aadClientId":"client-id","aadClientSecret":"client-secret"}`),
-					},
-				},
-			},
-		},
 		"Secrets works for scale sets": {
 			providerID:             "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret&location=location",

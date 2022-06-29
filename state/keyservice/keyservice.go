@@ -7,12 +7,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgelesssys/constellation/bootstrapper/core"
-	"github.com/edgelesssys/constellation/bootstrapper/pubapi/pubproto"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/oid"
+	"github.com/edgelesssys/constellation/kms/kmsproto"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -25,7 +25,7 @@ import (
 type KeyAPI struct {
 	log         *logger.Logger
 	mux         sync.Mutex
-	metadata    ProviderMetadata
+	metadata    metadata.InstanceLister
 	issuer      QuoteIssuer
 	key         []byte
 	keyReceived chan struct{}
@@ -34,7 +34,7 @@ type KeyAPI struct {
 }
 
 // New initializes a KeyAPI with the given parameters.
-func New(log *logger.Logger, issuer QuoteIssuer, metadata core.ProviderMetadata, timeout time.Duration) *KeyAPI {
+func New(log *logger.Logger, issuer QuoteIssuer, metadata metadata.InstanceLister, timeout time.Duration) *KeyAPI {
 	return &KeyAPI{
 		log:         log,
 		metadata:    metadata,
@@ -120,7 +120,7 @@ func (a *KeyAPI) requestKeyLoop(uuid string, opts ...grpc.DialOption) error {
 
 func (a *KeyAPI) requestKey(uuid string, credentials credentials.TransportCredentials, opts ...grpc.DialOption) {
 	// list available Coordinators
-	endpoints, _ := core.CoordinatorEndpoints(context.Background(), a.metadata)
+	endpoints, _ := metadata.KMSEndpoints(context.Background(), a.metadata)
 
 	a.log.With(zap.Strings("endpoints", endpoints)).Infof("Sending a key request to available Coordinators")
 	// notify all available Coordinators to send a key to the node
@@ -129,8 +129,8 @@ func (a *KeyAPI) requestKey(uuid string, credentials credentials.TransportCreden
 		ctx, cancel := context.WithTimeout(context.Background(), a.timeout)
 		conn, err := grpc.DialContext(ctx, endpoint, append(opts, grpc.WithTransportCredentials(credentials))...)
 		if err == nil {
-			client := pubproto.NewAPIClient(conn)
-			_, _ = client.RequestStateDiskKey(ctx, &pubproto.RequestStateDiskKeyRequest{DiskUuid: uuid})
+			client := kmsproto.NewAPIClient(conn)
+			_, _ = client.GetDataKey(ctx, &kmsproto.GetDataKeyRequest{DataKeyId: uuid, Length: constants.StateDiskKeyLength})
 			conn.Close()
 		}
 

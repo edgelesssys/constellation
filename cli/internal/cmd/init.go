@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/bootstrapper/initproto"
-	"github.com/edgelesssys/constellation/bootstrapper/kms"
 	"github.com/edgelesssys/constellation/bootstrapper/util"
 	"github.com/edgelesssys/constellation/cli/internal/azure"
 	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
@@ -27,6 +26,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/internal/grpc/retry"
 	"github.com/edgelesssys/constellation/internal/state"
+	kms "github.com/edgelesssys/constellation/kms/setup"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"

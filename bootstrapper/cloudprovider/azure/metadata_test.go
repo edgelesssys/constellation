@@ -32,7 +32,7 @@ func TestList(t *testing.T) {
 		wantInstances                []metadata.InstanceMetadata
 	}{
 		"List works": {
-			imdsAPI:                      newIMDSStub(),
+			imdsAPI:                      newScaleSetIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			scaleSetsAPI:                 newScaleSetsStub(),
 			virtualMachineScaleSetVMsAPI: newVirtualMachineScaleSetsVMsStub(),
@@ -48,7 +48,7 @@ func TestList(t *testing.T) {
 			wantErr: true,
 		},
 		"listScaleSetVMs fails": {
-			imdsAPI:                      newIMDSStub(),
+			imdsAPI:                      newScaleSetIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			scaleSetsAPI:                 newScaleSetsStub(),
 			virtualMachineScaleSetVMsAPI: newFailingListsVirtualMachineScaleSetsVMsStub(),
@@ -82,12 +82,6 @@ func TestList(t *testing.T) {
 }
 
 func TestSelf(t *testing.T) {
-	wantVMInstance := metadata.InstanceMetadata{
-		Name:       "instance-name",
-		ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
-		PrivateIPs: []string{"192.0.2.0"},
-		SSHKeys:    map[string][]string{"user": {"key-data"}},
-	}
 	wantScaleSetInstance := metadata.InstanceMetadata{
 		Name:       "scale-set-name-instance-id",
 		ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
@@ -101,12 +95,6 @@ func TestSelf(t *testing.T) {
 		wantErr                      bool
 		wantInstance                 metadata.InstanceMetadata
 	}{
-		"self for individual instance works": {
-			imdsAPI:                      newIMDSStub(),
-			networkInterfacesAPI:         newNetworkInterfacesStub(),
-			virtualMachineScaleSetVMsAPI: newVirtualMachineScaleSetsVMsStub(),
-			wantInstance:                 wantVMInstance,
-		},
 		"self for scale set instance works": {
 			imdsAPI:                      newScaleSetIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
@@ -118,8 +106,9 @@ func TestSelf(t *testing.T) {
 			wantErr: true,
 		},
 		"GetInstance fails": {
-			imdsAPI: newIMDSStub(),
-			wantErr: true,
+			imdsAPI:                      newScaleSetIMDSStub(),
+			virtualMachineScaleSetVMsAPI: &stubVirtualMachineScaleSetVMsAPI{getErr: errors.New("failed")},
+			wantErr:                      true,
 		},
 	}
 
@@ -154,7 +143,7 @@ func TestGetNetworkSecurityGroupName(t *testing.T) {
 		wantErr           bool
 	}{
 		"GetNetworkSecurityGroupName works": {
-			imdsAPI: newIMDSStub(),
+			imdsAPI: newScaleSetIMDSStub(),
 			securityGroupsAPI: &stubSecurityGroupsAPI{
 				listPages: [][]*armnetwork.SecurityGroup{
 					{
@@ -167,12 +156,12 @@ func TestGetNetworkSecurityGroupName(t *testing.T) {
 			wantName: name,
 		},
 		"no security group": {
-			imdsAPI:           newIMDSStub(),
+			imdsAPI:           newScaleSetIMDSStub(),
 			securityGroupsAPI: &stubSecurityGroupsAPI{},
 			wantErr:           true,
 		},
 		"missing name in security group struct": {
-			imdsAPI:           newIMDSStub(),
+			imdsAPI:           newScaleSetIMDSStub(),
 			securityGroupsAPI: &stubSecurityGroupsAPI{listPages: [][]*armnetwork.SecurityGroup{{{}}}},
 			wantErr:           true,
 		},
@@ -207,7 +196,7 @@ func TestGetSubnetworkCIDR(t *testing.T) {
 		wantErr            bool
 	}{
 		"GetSubnetworkCIDR works": {
-			imdsAPI: newIMDSStub(),
+			imdsAPI: newScaleSetIMDSStub(),
 			virtualNetworksAPI: &stubVirtualNetworksAPI{listPages: [][]*armnetwork.VirtualNetwork{
 				{
 					{
@@ -223,7 +212,7 @@ func TestGetSubnetworkCIDR(t *testing.T) {
 			wantNetworkCIDR: subnetworkCIDR,
 		},
 		"no virtual networks found": {
-			imdsAPI: newIMDSStub(),
+			imdsAPI: newScaleSetIMDSStub(),
 			virtualNetworksAPI: &stubVirtualNetworksAPI{listPages: [][]*armnetwork.VirtualNetwork{
 				{},
 			}},
@@ -231,7 +220,7 @@ func TestGetSubnetworkCIDR(t *testing.T) {
 			wantNetworkCIDR: subnetworkCIDR,
 		},
 		"malformed network struct": {
-			imdsAPI: newIMDSStub(),
+			imdsAPI: newScaleSetIMDSStub(),
 			virtualNetworksAPI: &stubVirtualNetworksAPI{listPages: [][]*armnetwork.VirtualNetwork{
 				{
 					{},
@@ -270,7 +259,7 @@ func TestGetLoadBalancerName(t *testing.T) {
 		wantErr         bool
 	}{
 		"GetLoadBalancerName works": {
-			imdsAPI: newIMDSStub(),
+			imdsAPI: newScaleSetIMDSStub(),
 			loadBalancerAPI: &stubLoadBalancersAPI{
 				listPages: [][]*armnetwork.LoadBalancer{
 					{
@@ -284,12 +273,12 @@ func TestGetLoadBalancerName(t *testing.T) {
 			wantName: loadBalancerName,
 		},
 		"invalid load balancer struct": {
-			imdsAPI:         newIMDSStub(),
+			imdsAPI:         newScaleSetIMDSStub(),
 			loadBalancerAPI: &stubLoadBalancersAPI{listPages: [][]*armnetwork.LoadBalancer{{{}}}},
 			wantErr:         true,
 		},
 		"invalid missing name": {
-			imdsAPI: newIMDSStub(),
+			imdsAPI: newScaleSetIMDSStub(),
 			loadBalancerAPI: &stubLoadBalancersAPI{listPages: [][]*armnetwork.LoadBalancer{{{
 				Properties: &armnetwork.LoadBalancerPropertiesFormat{},
 			}}}},
@@ -329,7 +318,7 @@ func TestGetLoadBalancerIP(t *testing.T) {
 		wantErr              bool
 	}{
 		"GetLoadBalancerIP works": {
-			imdsAPI: newIMDSStub(),
+			imdsAPI: newScaleSetIMDSStub(),
 			loadBalancerAPI: &stubLoadBalancersAPI{
 				listPages: [][]*armnetwork.LoadBalancer{
 					{
@@ -362,7 +351,7 @@ func TestGetLoadBalancerIP(t *testing.T) {
 			wantIP: publicIP,
 		},
 		"no load balancer": {
-			imdsAPI: newIMDSStub(),
+			imdsAPI: newScaleSetIMDSStub(),
 			loadBalancerAPI: &stubLoadBalancersAPI{
 				listPages: [][]*armnetwork.LoadBalancer{
 					{},
@@ -371,7 +360,7 @@ func TestGetLoadBalancerIP(t *testing.T) {
 			wantErr: true,
 		},
 		"load balancer missing public IP reference": {
-			imdsAPI: newIMDSStub(),
+			imdsAPI: newScaleSetIMDSStub(),
 			loadBalancerAPI: &stubLoadBalancersAPI{
 				listPages: [][]*armnetwork.LoadBalancer{
 					{
@@ -387,7 +376,7 @@ func TestGetLoadBalancerIP(t *testing.T) {
 			wantErr: true,
 		},
 		"public IP reference has wrong format": {
-			imdsAPI: newIMDSStub(),
+			imdsAPI: newScaleSetIMDSStub(),
 			loadBalancerAPI: &stubLoadBalancersAPI{
 				listPages: [][]*armnetwork.LoadBalancer{
 					{
@@ -411,7 +400,7 @@ func TestGetLoadBalancerIP(t *testing.T) {
 			wantErr: true,
 		},
 		"no public IP address found": {
-			imdsAPI: newIMDSStub(),
+			imdsAPI: newScaleSetIMDSStub(),
 			loadBalancerAPI: &stubLoadBalancersAPI{
 				listPages: [][]*armnetwork.LoadBalancer{
 					{
@@ -436,7 +425,7 @@ func TestGetLoadBalancerIP(t *testing.T) {
 			wantErr:              true,
 		},
 		"found public IP has no address field": {
-			imdsAPI: newIMDSStub(),
+			imdsAPI: newScaleSetIMDSStub(),
 			loadBalancerAPI: &stubLoadBalancersAPI{
 				listPages: [][]*armnetwork.LoadBalancer{
 					{
@@ -500,10 +489,6 @@ func TestProviderID(t *testing.T) {
 		wantErr        bool
 		wantProviderID string
 	}{
-		"providerID for individual instance works": {
-			imdsAPI:        newIMDSStub(),
-			wantProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name",
-		},
 		"providerID for scale set instance works": {
 			imdsAPI:        newScaleSetIMDSStub(),
 			wantProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
@@ -621,14 +606,6 @@ func TestExtractSSHKeys(t *testing.T) {
 
 			assert.Equal(tc.wantKeys, keys)
 		})
-	}
-}
-
-func newIMDSStub() *stubIMDSAPI {
-	return &stubIMDSAPI{
-		res: metadataResponse{Compute: struct {
-			ResourceID string `json:"resourceId,omitempty"`
-		}{"/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachines/instance-name"}},
 	}
 }
 

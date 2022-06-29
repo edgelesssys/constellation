@@ -90,35 +90,35 @@ func TestListScaleSetVMs(t *testing.T) {
 		wantInstances                []metadata.InstanceMetadata
 	}{
 		"listVMs works": {
-			imdsAPI:                      newIMDSStub(),
+			imdsAPI:                      newScaleSetIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachineScaleSetVMsAPI: newVirtualMachineScaleSetsVMsStub(),
 			scaleSetsAPI:                 newScaleSetsStub(),
 			wantInstances:                wantInstances,
 		},
 		"invalid scale sets are skipped": {
-			imdsAPI:                      newIMDSStub(),
+			imdsAPI:                      newScaleSetIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachineScaleSetVMsAPI: newVirtualMachineScaleSetsVMsStub(),
 			scaleSetsAPI:                 newListContainingNilScaleSetStub(),
 			wantInstances:                wantInstances,
 		},
 		"listVMs can return 0 VMs": {
-			imdsAPI:                      newIMDSStub(),
+			imdsAPI:                      newScaleSetIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachineScaleSetVMsAPI: &stubVirtualMachineScaleSetVMsAPI{},
 			scaleSetsAPI:                 newScaleSetsStub(),
 			wantInstances:                []metadata.InstanceMetadata{},
 		},
 		"can skip nil in VM list": {
-			imdsAPI:                      newIMDSStub(),
+			imdsAPI:                      newScaleSetIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachineScaleSetVMsAPI: newListContainingNilScaleSetVirtualMachinesStub(),
 			scaleSetsAPI:                 newScaleSetsStub(),
 			wantInstances:                wantInstances,
 		},
 		"converting instance fails": {
-			imdsAPI:                      newIMDSStub(),
+			imdsAPI:                      newScaleSetIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachineScaleSetVMsAPI: newListContainingInvalidScaleSetVirtualMachinesStub(),
 			scaleSetsAPI:                 newScaleSetsStub(),
@@ -221,11 +221,11 @@ func TestExtractScaleSetVMRole(t *testing.T) {
 		wantRole role.Role
 	}{
 		"bootstrapper role": {
-			scaleSet: "constellation-scale-set-bootstrappers-abcd123",
+			scaleSet: "constellation-scale-set-controlplanes-abcd123",
 			wantRole: role.ControlPlane,
 		},
 		"node role": {
-			scaleSet: "constellation-scale-set-nodes-abcd123",
+			scaleSet: "constellation-scale-set-workers-abcd123",
 			wantRole: role.Worker,
 		},
 		"unknown role": {
