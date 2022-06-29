@@ -31,6 +31,7 @@ var (
 	testEnv   *envtest.Environment
 	ctx       context.Context
 	cancel    context.CancelFunc
+	fakes     = newFakes()
 )
 
 func TestAPIs(t *testing.T) {
@@ -77,6 +78,13 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
+	err = (&ScalingGroupReconciler{
+		scalingGroupUpdater: fakes.scalingGroupUpdater,
+		Client:              k8sManager.GetClient(),
+		Scheme:              k8sManager.GetScheme(),
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
 	go func() {
 		defer GinkgoRecover()
 		err = k8sManager.Start(ctx)
@@ -90,3 +98,13 @@ var _ = AfterSuite(func() {
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
+
+type fakeCollection struct {
+	scalingGroupUpdater *fakeScalingGroupUpdater
+}
+
+func newFakes() fakeCollection {
+	return fakeCollection{
+		scalingGroupUpdater: newFakeScalingGroupUpdater(),
+	}
+}
