@@ -54,7 +54,7 @@ func (s *Scheduler) discoveryLoop(ctx context.Context, wg *sync.WaitGroup) {
 	if err != nil {
 		s.log.With(zap.Error(err)).Errorf("Discovering debugd IPs failed")
 	} else {
-		if s.downloadCoordinator(ctx, ips) {
+		if s.downloadBootstrapper(ctx, ips) {
 			return
 		}
 	}
@@ -71,7 +71,7 @@ func (s *Scheduler) discoveryLoop(ctx context.Context, wg *sync.WaitGroup) {
 				continue
 			}
 			s.log.With(zap.Strings("ips", ips)).Infof("Discovered instances")
-			if s.downloadCoordinator(ctx, ips) {
+			if s.downloadBootstrapper(ctx, ips) {
 				return
 			}
 		case <-ctx.Done():
@@ -102,19 +102,19 @@ func (s *Scheduler) sshLoop(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-// downloadCoordinator tries to download coordinator from a list of ips and logs errors encountered.
-func (s *Scheduler) downloadCoordinator(ctx context.Context, ips []string) (success bool) {
+// downloadBootstrapper tries to download bootstrapper from a list of ips and logs errors encountered.
+func (s *Scheduler) downloadBootstrapper(ctx context.Context, ips []string) (success bool) {
 	for _, ip := range ips {
-		err := s.downloader.DownloadCoordinator(ctx, ip)
+		err := s.downloader.DownloadBootstrapper(ctx, ip)
 		if err == nil {
-			// early exit with success since coordinator should only be downloaded once
+			// early exit with success since bootstrapper should only be downloaded once
 			return true
 		}
 		if errors.Is(err, fs.ErrExist) {
-			// coordinator was already uploaded
+			// bootstrapper was already uploaded
 			return true
 		}
-		s.log.With(zap.Error(err), zap.String("peer", ip)).Errorf("Downloading coordinator from peer failed")
+		s.log.With(zap.Error(err), zap.String("peer", ip)).Errorf("Downloading bootstrapper from peer failed")
 	}
 	return false
 }
@@ -131,7 +131,7 @@ func (s *Scheduler) deploySSHKeys(ctx context.Context, keys []ssh.UserKey) {
 }
 
 type downloader interface {
-	DownloadCoordinator(ctx context.Context, ip string) error
+	DownloadBootstrapper(ctx context.Context, ip string) error
 }
 
 type sshDeployer interface {

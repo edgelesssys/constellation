@@ -134,7 +134,7 @@ type stubDownloader struct {
 	err error
 }
 
-func (s *stubDownloader) DownloadCoordinator(ctx context.Context, ip string) error {
+func (s *stubDownloader) DownloadBootstrapper(ctx context.Context, ip string) error {
 	s.ips = append(s.ips, ip)
 	return s.err
 }

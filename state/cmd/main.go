@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	azurecloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/azure"
-	gcpcloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/gcp"
+	azurecloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/azure"
+	gcpcloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/gcp"
 	qemucloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/qemu"
 	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/internal/attestation/azure"

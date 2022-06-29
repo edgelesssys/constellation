@@ -5,7 +5,7 @@ Constellation is a Kubernetes distribution and a sidecar. This means that the Ku
 - Kubernetes linux binaries installed in the CoreOS image (`kubelet`, `kubectl`, `kubeadm`)
 - The desired Kubernetes version deployed by `kubeadm init`
 - Kubernetes resources (deployments made while initializing Kubernetes, including the `cloud-controller-manager`, `cluster-autoscaler` and more)
-- Kubernetes go dependencies for the coordinator code
+- Kubernetes go dependencies for the bootstrapper code
 
 
 ## Understand what has changed
@@ -56,7 +56,7 @@ const (
 ## Upgrading Kubernetes resources
 
 During the cluster initialization, multiple Kubernetes resources are deployed. Some of these should be upgraded with Kubernetes.
-Look at [the resources folder](/coordinator/internal/kubernetes/k8sapi/resources) and decide what needs to be upgraded. Cloud provider specific images are defined in [`github.com/edgelesssys/constellation/coordinator/cloudprovider`](/coordinator/cloudprovider/images.go). You can check available version tags for container images using [the container registry tags API](https://docs.docker.com/registry/spec/api/#listing-image-tags):
+Look at [the resources folder](/bootstrapper/internal/kubernetes/k8sapi/resources) and decide what needs to be upgraded. Cloud provider specific images are defined in [`github.com/edgelesssys/constellation/bootstrapper/cloudprovider`](/bootstrapper/cloudprovider/images.go). You can check available version tags for container images using [the container registry tags API](https://docs.docker.com/registry/spec/api/#listing-image-tags):
 
 ```
 curl -q https://k8s.gcr.io/v2/autoscaling/cluster-autoscaler/tags/list | jq .tags
@@ -76,7 +76,7 @@ See the diff of [this PR](https://github.com/edgelesssys/constellation/pull/110)
 
 ## Test the new Kubernetes version
 
-- Setup a Constellation cluster using the new image with the new coordinator binary and check if Kubernetes is deployed successfully.
+- Setup a Constellation cluster using the new image with the new bootstrapper binary and check if Kubernetes is deployed successfully.
 
     ```
     # should print the new k8s version for every node

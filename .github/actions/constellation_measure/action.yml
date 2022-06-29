@@ -43,14 +43,14 @@ runs:
       run: |
         case $CSP in
           azure)
-            FIRST_NODE=$(jq -r ".azurecoordinators | keys | first" constellation-state.json)
-            CONSTELL_IP=$(jq -r ".azurecoordinators.\"${FIRST_NODE}\".PublicIP" constellation-state.json)
+            FIRST_NODE=$(jq -r ".azurebootstrappers | keys | first" constellation-state.json)
+            CONSTELL_IP=$(jq -r ".azurebootstrappers.\"${FIRST_NODE}\".PublicIP" constellation-state.json)
             pcr-reader --constell-ip ${CONSTELL_IP} -format yaml > measurements.yaml
             yq e 'del(.[0,6,10,11,12,13,14,15,16,17,18,19,20,21,22,23])' -i measurements.yaml
             ;;
           gcp)
-            FIRST_NODE=$(jq -r ".gcpcoordinators | keys | first" constellation-state.json)
-            CONSTELL_IP=$(jq -r ".gcpcoordinators.\"${FIRST_NODE}\".PublicIP" constellation-state.json)
+            FIRST_NODE=$(jq -r ".gcpbootstrappers | keys | first" constellation-state.json)
+            CONSTELL_IP=$(jq -r ".gcpbootstrappers.\"${FIRST_NODE}\".PublicIP" constellation-state.json)
             pcr-reader --constell-ip ${CONSTELL_IP} -format yaml > measurements.yaml
             yq e 'del(.[11,12,13,14,15,16,17,18,19,20,21,22,23])' -i measurements.yaml
             ;;

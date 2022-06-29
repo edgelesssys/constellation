@@ -39,8 +39,8 @@ func TestCreateVirtualNetwork(t *testing.T) {
 				name:          "name",
 				uid:           "uid",
 				networksAPI:   tc.networksAPI,
-				nodes:         make(cloudtypes.Instances),
-				coordinators:  make(cloudtypes.Instances),
+				workers:       make(cloudtypes.Instances),
+				controlPlanes: make(cloudtypes.Instances),
 			}
 
 			if tc.wantErr {
@@ -102,8 +102,8 @@ func TestCreateSecurityGroup(t *testing.T) {
 				location:                 "location",
 				name:                     "name",
 				uid:                      "uid",
-				nodes:                    make(cloudtypes.Instances),
-				coordinators:             make(cloudtypes.Instances),
+				workers:                  make(cloudtypes.Instances),
+				controlPlanes:            make(cloudtypes.Instances),
 				networkSecurityGroupsAPI: tc.networkSecurityGroupsAPI,
 			}
 
@@ -152,8 +152,8 @@ func TestCreateNIC(t *testing.T) {
 				location:             "location",
 				name:                 "name",
 				uid:                  "uid",
-				nodes:                make(cloudtypes.Instances),
-				coordinators:         make(cloudtypes.Instances),
+				workers:              make(cloudtypes.Instances),
+				controlPlanes:        make(cloudtypes.Instances),
 				networkInterfacesAPI: tc.networkInterfacesAPI,
 			}
 
@@ -201,8 +201,8 @@ func TestCreatePublicIPAddress(t *testing.T) {
 				location:             "location",
 				name:                 "name",
 				uid:                  "uid",
-				nodes:                make(cloudtypes.Instances),
-				coordinators:         make(cloudtypes.Instances),
+				workers:              make(cloudtypes.Instances),
+				controlPlanes:        make(cloudtypes.Instances),
 				publicIPAddressesAPI: tc.publicIPAddressesAPI,
 			}
 
@@ -256,8 +256,8 @@ func TestCreateExternalLoadBalancer(t *testing.T) {
 				location:             "location",
 				name:                 "name",
 				uid:                  "uid",
-				nodes:                make(cloudtypes.Instances),
-				coordinators:         make(cloudtypes.Instances),
+				workers:              make(cloudtypes.Instances),
+				controlPlanes:        make(cloudtypes.Instances),
 				loadBalancersAPI:     tc.loadBalancersAPI,
 				publicIPAddressesAPI: tc.publicIPAddressesAPI,
 			}

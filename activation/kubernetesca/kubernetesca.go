@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/util"
+	"github.com/edgelesssys/constellation/bootstrapper/util"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
 )

@@ -8,7 +8,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/edgelesssys/constellation/debugd/coordinator"
+	"github.com/edgelesssys/constellation/debugd/bootstrapper"
 	"github.com/edgelesssys/constellation/debugd/debugd"
 	"github.com/edgelesssys/constellation/debugd/debugd/deploy"
 	pb "github.com/edgelesssys/constellation/debugd/service"
@@ -52,46 +52,46 @@ func (s *debugdServer) UploadAuthorizedKeys(ctx context.Context, in *pb.UploadAu
 	}, nil
 }
 
-// UploadCoordinator receives a coordinator binary in a stream of chunks and writes to a file.
-func (s *debugdServer) UploadCoordinator(stream pb.Debugd_UploadCoordinatorServer) error {
+// UploadBootstrapper receives a bootstrapper binary in a stream of chunks and writes to a file.
+func (s *debugdServer) UploadBootstrapper(stream pb.Debugd_UploadBootstrapperServer) error {
 	startAction := deploy.ServiceManagerRequest{
-		Unit:   debugd.CoordinatorSystemdUnitName,
+		Unit:   debugd.BootstrapperSystemdUnitName,
 		Action: deploy.Start,
 	}
-	var responseStatus pb.UploadCoordinatorStatus
+	var responseStatus pb.UploadBootstrapperStatus
 	defer func() {
 		if err := s.serviceManager.SystemdAction(stream.Context(), startAction); err != nil {
-			s.log.With(zap.Error(err)).Errorf("Starting uploaded coordinator failed")
-			if responseStatus == pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_SUCCESS {
-				responseStatus = pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_START_FAILED
+			s.log.With(zap.Error(err)).Errorf("Starting uploaded bootstrapper failed")
+			if responseStatus == pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_SUCCESS {
+				responseStatus = pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_START_FAILED
 			}
 		}
-		stream.SendAndClose(&pb.UploadCoordinatorResponse{
+		stream.SendAndClose(&pb.UploadBootstrapperResponse{
 			Status: responseStatus,
 		})
 	}()
-	s.log.Infof("Starting coordinator upload")
-	if err := s.streamer.WriteStream(debugd.CoordinatorDeployFilename, stream, true); err != nil {
+	s.log.Infof("Starting bootstrapper upload")
+	if err := s.streamer.WriteStream(debugd.BootstrapperDeployFilename, stream, true); err != nil {
 		if errors.Is(err, fs.ErrExist) {
-			// coordinator was already uploaded
-			s.log.Warnf("Coordinator already uploaded")
-			responseStatus = pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_FILE_EXISTS
+			// bootstrapper was already uploaded
+			s.log.Warnf("Bootstrapper already uploaded")
+			responseStatus = pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_FILE_EXISTS
 			return nil
 		}
-		s.log.With(zap.Error(err)).Errorf("Uploading coordinator failed")
-		responseStatus = pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_UPLOAD_FAILED
-		return fmt.Errorf("uploading coordinator: %w", err)
+		s.log.With(zap.Error(err)).Errorf("Uploading bootstrapper failed")
+		responseStatus = pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_UPLOAD_FAILED
+		return fmt.Errorf("uploading bootstrapper: %w", err)
 	}
 
-	s.log.Infof("Successfully uploaded coordinator")
-	responseStatus = pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_SUCCESS
+	s.log.Infof("Successfully uploaded bootstrapper")
+	responseStatus = pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_SUCCESS
 	return nil
 }
 
-// DownloadCoordinator streams the local coordinator binary to other instances.
-func (s *debugdServer) DownloadCoordinator(request *pb.DownloadCoordinatorRequest, stream pb.Debugd_DownloadCoordinatorServer) error {
-	s.log.Infof("Sending coordinator to other instance")
-	return s.streamer.ReadStream(debugd.CoordinatorDeployFilename, stream, debugd.Chunksize, true)
+// DownloadBootstrapper streams the local bootstrapper binary to other instances.
+func (s *debugdServer) DownloadBootstrapper(request *pb.DownloadBootstrapperRequest, stream pb.Debugd_DownloadBootstrapperServer) error {
+	s.log.Infof("Sending bootstrapper to other instance")
+	return s.streamer.ReadStream(debugd.BootstrapperDeployFilename, stream, debugd.Chunksize, true)
 }
 
 // UploadSystemServiceUnits receives systemd service units, writes them to a service file and schedules a daemon-reload.
@@ -133,6 +133,6 @@ type serviceManager interface {
 }
 
 type streamer interface {
-	WriteStream(filename string, stream coordinator.ReadChunkStream, showProgress bool) error
-	ReadStream(filename string, stream coordinator.WriteChunkStream, chunksize uint, showProgress bool) error
+	WriteStream(filename string, stream bootstrapper.ReadChunkStream, showProgress bool) error
+	ReadStream(filename string, stream bootstrapper.WriteChunkStream, chunksize uint, showProgress bool) error
 }

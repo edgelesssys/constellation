@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/edgelesssys/constellation/coordinator/util"
+	"github.com/edgelesssys/constellation/bootstrapper/util"
 )
 
 // ClusterKMS implements the kms.CloudKMS interface for in cluster key management.

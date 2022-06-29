@@ -12,11 +12,11 @@ import (
 )
 
 func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput) error {
-	// Create nodes scale set
-	createNodesInput := CreateScaleSetInput{
-		Name:                           "constellation-scale-set-nodes-" + c.uid,
+	// Create worker scale set
+	createWorkerInput := CreateScaleSetInput{
+		Name:                           "constellation-scale-set-workers-" + c.uid,
 		NamePrefix:                     c.name + "-worker-" + c.uid + "-",
-		Count:                          input.CountNodes,
+		Count:                          input.CountWorkers,
 		InstanceType:                   input.InstanceType,
 		StateDiskSizeGB:                int32(input.StateDiskSizeGB),
 		Image:                          input.Image,
@@ -24,17 +24,17 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		LoadBalancerBackendAddressPool: azure.BackendAddressPoolWorkerName + "-" + c.uid,
 	}
 
-	if err := c.createScaleSet(ctx, createNodesInput); err != nil {
+	if err := c.createScaleSet(ctx, createWorkerInput); err != nil {
 		return err
 	}
 
-	c.nodesScaleSet = createNodesInput.Name
+	c.workerScaleSet = createWorkerInput.Name
 
-	// Create coordinator scale set
-	createCoordinatorsInput := CreateScaleSetInput{
-		Name:                           "constellation-scale-set-coordinators-" + c.uid,
+	// Create control plane scale set
+	createControlPlaneInput := CreateScaleSetInput{
+		Name:                           "constellation-scale-set-controlpalens-" + c.uid,
 		NamePrefix:                     c.name + "-control-plane-" + c.uid + "-",
-		Count:                          input.CountCoordinators,
+		Count:                          input.CountControlPlanes,
 		InstanceType:                   input.InstanceType,
 		StateDiskSizeGB:                int32(input.StateDiskSizeGB),
 		Image:                          input.Image,
@@ -42,40 +42,40 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		LoadBalancerBackendAddressPool: azure.BackendAddressPoolControlPlaneName + "-" + c.uid,
 	}
 
-	if err := c.createScaleSet(ctx, createCoordinatorsInput); err != nil {
+	if err := c.createScaleSet(ctx, createControlPlaneInput); err != nil {
 		return err
 	}
 
-	// Get nodes IPs
-	instances, err := c.getInstanceIPs(ctx, createNodesInput.Name, createNodesInput.Count)
+	// Get worker IPs
+	instances, err := c.getInstanceIPs(ctx, createWorkerInput.Name, createWorkerInput.Count)
 	if err != nil {
 		return err
 	}
-	c.nodes = instances
+	c.workers = instances
 
-	// Get coordinators IPs
-	c.coordinatorsScaleSet = createCoordinatorsInput.Name
-	instances, err = c.getInstanceIPs(ctx, createCoordinatorsInput.Name, createCoordinatorsInput.Count)
+	// Get control plane IPs
+	c.controlPlaneScaleSet = createControlPlaneInput.Name
+	instances, err = c.getInstanceIPs(ctx, createControlPlaneInput.Name, createControlPlaneInput.Count)
 	if err != nil {
 		return err
 	}
-	c.coordinators = instances
+	c.controlPlanes = instances
 
-	// Set the load balancer public IP in the first coordinator
-	coord, ok := c.coordinators["0"]
+	// Set the load balancer public IP in the first control plane
+	coord, ok := c.controlPlanes["0"]
 	if !ok {
-		return errors.New("coordinator 0 not found")
+		return errors.New("control plane 0 not found")
 	}
 	coord.PublicIP = c.loadBalancerPubIP
-	c.coordinators["0"] = coord
+	c.controlPlanes["0"] = coord
 
 	return nil
 }
 
 // CreateInstancesInput is the input for a CreateInstances operation.
 type CreateInstancesInput struct {
-	CountNodes           int
-	CountCoordinators    int
+	CountWorkers         int
+	CountControlPlanes   int
 	InstanceType         string
 	StateDiskSizeGB      int
 	Image                string
@@ -90,7 +90,7 @@ func (c *Client) CreateInstancesVMs(ctx context.Context, input CreateInstancesIn
 		return err
 	}
 
-	for i := 0; i < input.CountCoordinators; i++ {
+	for i := 0; i < input.CountControlPlanes; i++ {
 		vm := azure.VMInstance{
 			Name:         c.name + "-control-plane-" + c.uid + "-" + strconv.Itoa(i),
 			Username:     "constell",
@@ -103,12 +103,12 @@ func (c *Client) CreateInstancesVMs(ctx context.Context, input CreateInstancesIn
 		if err != nil {
 			return err
 		}
-		c.coordinators[strconv.Itoa(i)] = instance
+		c.controlPlanes[strconv.Itoa(i)] = instance
 	}
 
-	for i := 0; i < input.CountNodes; i++ {
+	for i := 0; i < input.CountWorkers; i++ {
 		vm := azure.VMInstance{
-			Name:         c.name + "-node-" + c.uid + "-" + strconv.Itoa(i),
+			Name:         c.name + "-worker-" + c.uid + "-" + strconv.Itoa(i),
 			Username:     "constell",
 			Password:     pw,
 			Location:     c.location,
@@ -119,7 +119,7 @@ func (c *Client) CreateInstancesVMs(ctx context.Context, input CreateInstancesIn
 		if err != nil {
 			return err
 		}
-		c.nodes[strconv.Itoa(i)] = instance
+		c.workers[strconv.Itoa(i)] = instance
 	}
 
 	return nil
@@ -294,12 +294,12 @@ func (c *Client) TerminateResourceGroup(ctx context.Context) error {
 	if _, err = poller.PollUntilDone(ctx, 30*time.Second); err != nil {
 		return err
 	}
-	c.nodes = nil
-	c.coordinators = nil
+	c.workers = nil
+	c.controlPlanes = nil
 	c.resourceGroup = ""
 	c.subnetID = ""
 	c.networkSecurityGroup = ""
-	c.nodesScaleSet = ""
-	c.coordinatorsScaleSet = ""
+	c.workerScaleSet = ""
+	c.controlPlaneScaleSet = ""
 	return nil
 }

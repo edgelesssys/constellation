@@ -35,7 +35,7 @@ We use the [Fedora CoreOS Assembler](https://coreos.github.io/coreos-assembler/)
 Create a configuration file in `image/config.mk` to override any of the variables found at the top of the [Makefile](Makefile).
 Important settings are:
 
-- `COORDINATOR_BINARY`: path to a coordinator binary. Can be substituted with a path to a `debugd` binary if a debug image should be built. The binary has to be built before!
+- `BOOTSTRAPPER_BINARY`: path to a bootstrapper binary. Can be substituted with a path to a `debugd` binary if a debug image should be built. The binary has to be built before!
 - `CONTAINER_ENGINE`: container engine used to run COSA. either `podman` or `docker`.
 - `COSA_INIT_REPO`: Git repository containing CoreOS config. Cloned in `cosa-init` target.
 - `COSA_INIT_BRANCH`: Git branch checked out from `COSA_INIT_REPO`. Can be used to test out changes on another branch before merging.
@@ -46,7 +46,7 @@ Important settings are:
 Example `config.mk` to create a debug image with docker and name it `my-custom-image`:
 
 ```Makefile
-COORDINATOR_BINARY = ../build/debugd
+BOOTSTRAPPER_BINARY = ../build/debugd
 CONTAINER_ENGINE = docker
 GCP_IMAGE_NAME = my-custom-image
 AZURE_IMAGE_NAME = my-custom-image

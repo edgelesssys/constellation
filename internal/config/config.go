@@ -169,11 +169,11 @@ func Default() *Config {
 		StateDiskSizeGB:         30,
 		IngressFirewall: Firewall{
 			{
-				Name:        "coordinator",
-				Description: "Coordinator default port",
+				Name:        "bootstrapper",
+				Description: "bootstrapper default port",
 				Protocol:    "tcp",
 				IPRange:     "0.0.0.0/0",
-				FromPort:    constants.CoordinatorPort,
+				FromPort:    constants.BootstrapperPort,
 			},
 			{
 				Name:        "wireguard",

@@ -8,9 +8,9 @@ import (
 	"log"
 	"net"
 
+	"github.com/edgelesssys/constellation/debugd/bootstrapper"
 	"github.com/edgelesssys/constellation/debugd/cdbg/config"
 	"github.com/edgelesssys/constellation/debugd/cdbg/state"
-	"github.com/edgelesssys/constellation/debugd/coordinator"
 	"github.com/edgelesssys/constellation/debugd/debugd"
 	depl "github.com/edgelesssys/constellation/debugd/debugd/deploy"
 	pb "github.com/edgelesssys/constellation/debugd/service"
@@ -26,13 +26,13 @@ import (
 
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
-	Short: "Deploys a self-compiled coordinator binary and SSH keys on the current constellation",
-	Long: `Deploys a self-compiled coordinator binary and SSH keys on the current constellation.
+	Short: "Deploys a self-compiled bootstrapper binary and SSH keys on the current constellation",
+	Long: `Deploys a self-compiled bootstrapper binary and SSH keys on the current constellation.
 Uses config provided by --config and reads constellation config from its default location.
 If required, you can override the IP addresses that are used for a deployment by specifying "--ips" and a list of IP addresses.
-Specifying --coordinator will upload the coordinator from the specified path.`,
+Specifying --bootstrapper will upload the bootstrapper from the specified path.`,
 	RunE:    runDeploy,
-	Example: "cdbg deploy\ncdbg deploy --config /path/to/config\ncdbg deploy --coordinator /path/to/coordinator --ips 192.0.2.1,192.0.2.2,192.0.2.3 --config /path/to/config",
+	Example: "cdbg deploy\ncdbg deploy --config /path/to/config\ncdbg deploy --bootstrapper /path/to/bootstrapper --ips 192.0.2.1,192.0.2.2,192.0.2.3 --config /path/to/config",
 }
 
 func runDeploy(cmd *cobra.Command, args []string) error {
@@ -54,16 +54,16 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return deploy(cmd, fileHandler, constellationConfig, debugConfig, coordinator.NewFileStreamer(afero.NewOsFs()))
+	return deploy(cmd, fileHandler, constellationConfig, debugConfig, bootstrapper.NewFileStreamer(afero.NewOsFs()))
 }
 
 func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *configc.Config, debugConfig *config.CDBGConfig, reader fileToStreamReader) error {
-	overrideCoordinatorPath, err := cmd.Flags().GetString("coordinator")
+	overrideBootstrapperPath, err := cmd.Flags().GetString("bootstrapper")
 	if err != nil {
 		return err
 	}
-	if len(overrideCoordinatorPath) > 0 {
-		debugConfig.ConstellationDebugConfig.CoordinatorPath = overrideCoordinatorPath
+	if len(overrideBootstrapperPath) > 0 {
+		debugConfig.ConstellationDebugConfig.BootstrapperPath = overrideBootstrapperPath
 	}
 
 	overrideIPs, err := cmd.Flags().GetStringSlice("ips")
@@ -90,11 +90,11 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 
 	for _, ip := range ips {
 		input := deployOnEndpointInput{
-			debugdEndpoint:  net.JoinHostPort(ip, debugd.DebugdPort),
-			coordinatorPath: debugConfig.ConstellationDebugConfig.CoordinatorPath,
-			reader:          reader,
-			authorizedKeys:  debugConfig.ConstellationDebugConfig.AuthorizedKeys,
-			systemdUnits:    debugConfig.ConstellationDebugConfig.SystemdUnits,
+			debugdEndpoint:   net.JoinHostPort(ip, debugd.DebugdPort),
+			bootstrapperPath: debugConfig.ConstellationDebugConfig.BootstrapperPath,
+			reader:           reader,
+			authorizedKeys:   debugConfig.ConstellationDebugConfig.AuthorizedKeys,
+			systemdUnits:     debugConfig.ConstellationDebugConfig.SystemdUnits,
 		}
 		if err := deployOnEndpoint(cmd.Context(), input); err != nil {
 			return err
@@ -105,14 +105,14 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 }
 
 type deployOnEndpointInput struct {
-	debugdEndpoint  string
-	coordinatorPath string
-	reader          fileToStreamReader
-	authorizedKeys  []configc.UserKey
-	systemdUnits    []depl.SystemdUnit
+	debugdEndpoint   string
+	bootstrapperPath string
+	reader           fileToStreamReader
+	authorizedKeys   []configc.UserKey
+	systemdUnits     []depl.SystemdUnit
 }
 
-// deployOnEndpoint deploys SSH public keys, systemd units and a locally built coordinator binary to a debugd endpoint.
+// deployOnEndpoint deploys SSH public keys, systemd units and a locally built bootstrapper binary to a debugd endpoint.
 func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	log.Printf("Deploying on %v\n", in.debugdEndpoint)
 	dialCTX, cancel := context.WithTimeout(ctx, debugd.GRPCTimeout)
@@ -134,7 +134,7 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	}
 	authorizedKeysResponse, err := client.UploadAuthorizedKeys(ctx, &pb.UploadAuthorizedKeysRequest{Keys: pbKeys}, grpc.WaitForReady(true))
 	if err != nil || authorizedKeysResponse.Status != pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_SUCCESS {
-		return fmt.Errorf("uploading coordinator to instance %v failed: %v / %w", in.debugdEndpoint, authorizedKeysResponse, err)
+		return fmt.Errorf("uploading bootstrapper to instance %v failed: %v / %w", in.debugdEndpoint, authorizedKeysResponse, err)
 	}
 
 	if len(in.systemdUnits) > 0 {
@@ -153,36 +153,36 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 		}
 	}
 
-	stream, err := client.UploadCoordinator(ctx)
+	stream, err := client.UploadBootstrapper(ctx)
 	if err != nil {
-		return fmt.Errorf("starting coordinator upload to instance %v: %w", in.debugdEndpoint, err)
+		return fmt.Errorf("starting bootstrapper upload to instance %v: %w", in.debugdEndpoint, err)
 	}
-	streamErr := in.reader.ReadStream(in.coordinatorPath, stream, debugd.Chunksize, true)
+	streamErr := in.reader.ReadStream(in.bootstrapperPath, stream, debugd.Chunksize, true)
 
 	uploadResponse, closeErr := stream.CloseAndRecv()
 	if closeErr != nil {
-		return fmt.Errorf("closing upload stream after uploading coordinator to %v: %w", in.debugdEndpoint, closeErr)
+		return fmt.Errorf("closing upload stream after uploading bootstrapper to %v: %w", in.debugdEndpoint, closeErr)
 	}
-	if uploadResponse.Status == pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_FILE_EXISTS {
-		log.Println("Coordinator was already uploaded")
+	if uploadResponse.Status == pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_FILE_EXISTS {
+		log.Println("Bootstrapper was already uploaded")
 		return nil
 	}
-	if uploadResponse.Status != pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_SUCCESS || streamErr != nil {
-		return fmt.Errorf("uploading coordinator to instance %v failed: %v / %w", in.debugdEndpoint, uploadResponse, streamErr)
+	if uploadResponse.Status != pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_SUCCESS || streamErr != nil {
+		return fmt.Errorf("uploading bootstrapper to instance %v failed: %v / %w", in.debugdEndpoint, uploadResponse, streamErr)
 	}
-	log.Println("Uploaded coordinator")
+	log.Println("Uploaded bootstrapper")
 	return nil
 }
 
 func getIPsFromConfig(stat statec.ConstellationState, config configc.Config) ([]string, error) {
-	coordinators, nodes, err := state.GetScalingGroupsFromConfig(stat, &config)
+	controlPlanes, workers, err := state.GetScalingGroupsFromConfig(stat, &config)
 	if err != nil {
 		return nil, err
 	}
 
 	var ips []string
 	// only deploy to non empty public IPs
-	for _, ip := range append(coordinators.PublicIPs(), nodes.PublicIPs()...) {
+	for _, ip := range append(controlPlanes.PublicIPs(), workers.PublicIPs()...) {
 		if ip != "" {
 			ips = append(ips, ip)
 		}
@@ -197,10 +197,10 @@ func getIPsFromConfig(stat statec.ConstellationState, config configc.Config) ([]
 func init() {
 	rootCmd.AddCommand(deployCmd)
 
-	deployCmd.Flags().StringSlice("ips", nil, "override the ips that the coordinator will be uploaded to (defaults to ips from constellation config)")
-	deployCmd.Flags().String("coordinator", "", "override the path to the coordinator binary uploaded to instances (defaults to path set in config)")
+	deployCmd.Flags().StringSlice("ips", nil, "override the ips that the bootstrapper will be uploaded to (defaults to ips from constellation config)")
+	deployCmd.Flags().String("bootstrapper", "", "override the path to the bootstrapper binary uploaded to instances (defaults to path set in config)")
 }
 
 type fileToStreamReader interface {
-	ReadStream(filename string, stream coordinator.WriteChunkStream, chunksize uint, showProgress bool) error
+	ReadStream(filename string, stream bootstrapper.WriteChunkStream, chunksize uint, showProgress bool) error
 }

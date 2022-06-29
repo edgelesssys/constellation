@@ -8,8 +8,8 @@ import (
 	"io/fs"
 	"net"
 
+	"github.com/edgelesssys/constellation/bootstrapper/util"
 	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/coordinator/util"
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/debugd/coordinator"
+	"github.com/edgelesssys/constellation/debugd/bootstrapper"
 	"github.com/edgelesssys/constellation/debugd/debugd"
 	pb "github.com/edgelesssys/constellation/debugd/service"
 	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
@@ -27,8 +27,8 @@ func TestMain(m *testing.M) {
 	)
 }
 
-func TestDownloadCoordinator(t *testing.T) {
-	filename := "/opt/coordinator"
+func TestDownloadBootstrapper(t *testing.T) {
+	filename := "/opt/bootstrapper"
 
 	testCases := map[string]struct {
 		server             fakeOnlyDownloadServer
@@ -108,7 +108,7 @@ func TestDownloadCoordinator(t *testing.T) {
 				serviceManager:     &tc.serviceManager,
 				attemptedDownloads: tc.attemptedDownloads,
 			}
-			err := download.DownloadCoordinator(context.Background(), ip)
+			err := download.DownloadBootstrapper(context.Background(), ip)
 			grpcServ.GracefulStop()
 
 			if tc.wantDownloadErr {
@@ -124,7 +124,7 @@ func TestDownloadCoordinator(t *testing.T) {
 			if tc.wantSystemdAction {
 				assert.ElementsMatch(
 					[]ServiceManagerRequest{
-						{Unit: debugd.CoordinatorSystemdUnitName, Action: Restart},
+						{Unit: debugd.BootstrapperSystemdUnitName, Action: Restart},
 					},
 					tc.serviceManager.requests,
 				)
@@ -134,13 +134,13 @@ func TestDownloadCoordinator(t *testing.T) {
 }
 
 type stubDownloadClient struct {
-	requests    []*pb.DownloadCoordinatorRequest
-	stream      coordinator.ReadChunkStream
+	requests    []*pb.DownloadBootstrapperRequest
+	stream      bootstrapper.ReadChunkStream
 	downloadErr error
 }
 
-func (s *stubDownloadClient) DownloadCoordinator(ctx context.Context, in *pb.DownloadCoordinatorRequest, opts ...grpc.CallOption) (coordinator.ReadChunkStream, error) {
-	s.requests = append(s.requests, proto.Clone(in).(*pb.DownloadCoordinatorRequest))
+func (s *stubDownloadClient) DownloadBootstrapper(ctx context.Context, in *pb.DownloadBootstrapperRequest, opts ...grpc.CallOption) (bootstrapper.ReadChunkStream, error) {
+	s.requests = append(s.requests, proto.Clone(in).(*pb.DownloadBootstrapperRequest))
 	return s.stream, s.downloadErr
 }
 
@@ -159,7 +159,7 @@ type fakeStreamToFileWriter struct {
 	filename string
 }
 
-func (f *fakeStreamToFileWriter) WriteStream(filename string, stream coordinator.ReadChunkStream, showProgress bool) error {
+func (f *fakeStreamToFileWriter) WriteStream(filename string, stream bootstrapper.ReadChunkStream, showProgress bool) error {
 	f.filename = filename
 	for {
 		chunk, err := stream.Recv()
@@ -173,14 +173,14 @@ func (f *fakeStreamToFileWriter) WriteStream(filename string, stream coordinator
 	}
 }
 
-// fakeOnlyDownloadServer implements DebugdServer; only fakes DownloadCoordinator, panics on every other rpc.
+// fakeOnlyDownloadServer implements DebugdServer; only fakes DownloadBootstrapper, panics on every other rpc.
 type fakeOnlyDownloadServer struct {
 	chunks     [][]byte
 	downladErr error
 	pb.UnimplementedDebugdServer
 }
 
-func (f *fakeOnlyDownloadServer) DownloadCoordinator(request *pb.DownloadCoordinatorRequest, stream pb.Debugd_DownloadCoordinatorServer) error {
+func (f *fakeOnlyDownloadServer) DownloadBootstrapper(request *pb.DownloadBootstrapperRequest, stream pb.Debugd_DownloadBootstrapperServer) error {
 	for _, chunk := range f.chunks {
 		if err := stream.Send(&pb.Chunk{Content: chunk}); err != nil {
 			return fmt.Errorf("sending chunk: %w", err)

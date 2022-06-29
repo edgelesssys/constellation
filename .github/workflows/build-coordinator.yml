@@ -1,5 +1,5 @@
 # We build the coordinator as part of each PR to see that the build still works. An image is only created once merged to main (see condition on call-coreos).
-name: Build and Upload the Coordinator
+name: Build and Upload the bootstrapper
 
 on:
   workflow_dispatch:
@@ -14,15 +14,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-coordinator:
-    name: "Build the Coordinator"
+  build-bootstrapper:
+    name: "Build the bootstrapper"
     runs-on: ubuntu-latest
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
     outputs:
-      coordinator-name: ${{ steps.copy.outputs.coordinator-name }}
+      bootstrapper-name: ${{ steps.copy.outputs.bootstrapper-name }}
     steps:
       - name: Checkout
         id: checkout
@@ -35,32 +35,32 @@ jobs:
         id: prepare
         run: sudo apt-get update && sudo apt-get -y install awscli cmake make
 
-      - name: Build and tag the Coordinator
+      - name: Build and tag the bootstrapper
         id: build
         run: |
           mkdir build && cd build
           cmake ..
-          make coordinator
-          mv coordinator coordinator-$(sha512sum coordinator | cut -d " " -f 1)
+          make bootstrapper
+          mv bootstrapper bootstrapper-$(sha512sum bootstrapper | cut -d " " -f 1)
 
-      - name: Copy Coordinator to S3 if not exists
+      - name: Copy bootstrapper to S3 if not exists
         id: copy
         # Only upload the Coordinator if this action is triggered from main branch
         if: ${{ github.ref == 'refs/heads/main' }}
         run: >
-          aws s3api head-object --bucket ${{ secrets.PUBLIC_BUCKET_NAME }} --key coordinator/$(ls | grep "coordinator-")
+          aws s3api head-object --bucket ${{ secrets.PUBLIC_BUCKET_NAME }} --key bootstrapper/$(ls | grep "bootstrapper-")
           || (
-          echo "::set-output name=coordinator-name::$(ls | grep "coordinator-")"
-          && aws s3 cp ${{ github.workspace }}/build/  s3://${{ secrets.PUBLIC_BUCKET_NAME }}/coordinator/ --exclude "*" --include "coordinator-*" --include "constellation" --recursive --quiet)
+          echo "::set-output name=bootstrapper-name::$(ls | grep "bootstrapper-")"
+          && aws s3 cp ${{ github.workspace }}/build/  s3://${{ secrets.PUBLIC_BUCKET_NAME }}/bootstrapper/ --exclude "*" --include "bootstrapper-*" --include "constellation" --recursive --quiet)
         shell: bash {0}
         working-directory: ${{ github.workspace }}/build/
 
   call-coreos:
-    needs: build-coordinator
-    if: ${{ (github.ref == 'refs/heads/main') && startsWith(needs.build-coordinator.outputs.coordinator-name, 'coordinator-') }}
+    needs: build-bootstrapper
+    if: ${{ (github.ref == 'refs/heads/main') && startsWith(needs.build-bootstrapper.outputs.bootstrapper-name, 'bootstrapper-')
     uses: ./.github/workflows/build-coreos.yml
     with:
-      coordinator-name: ${{ needs.build-coordinator.outputs.coordinator-name }}
+      bootstrapper-name: ${{ needs.build-bootstrapper.outputs.bootstrapper-name }}
     secrets:
       CI_GITHUB_REPOSITORY: ${{ secrets.CI_GITHUB_REPOSITORY }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

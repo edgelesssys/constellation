@@ -35,12 +35,12 @@ const (
 	// KMSATLSPort is the port the KMS aTLS server listens on.
 	KMSATLSPort = 9001
 	// KMSNodePort is the aTLS port exposed as a NodePort.
-	KMSNodePort     = 30091
-	CoordinatorPort = 9000
-	EnclaveSSHPort  = 2222
-	SSHPort         = 22
-	WireguardPort   = 51820
-	NVMEOverTCPPort = 8009
+	KMSNodePort      = 30091
+	BootstrapperPort = 9000
+	EnclaveSSHPort   = 2222
+	SSHPort          = 22
+	WireguardPort    = 51820
+	NVMEOverTCPPort  = 8009
 	// Default NodePort Range
 	// https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
 	NodePortFrom   = 30000

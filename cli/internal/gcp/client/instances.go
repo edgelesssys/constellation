@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/role"
+	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"google.golang.org/api/iterator"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
@@ -16,7 +16,7 @@ import (
 
 // CreateInstances creates instances (virtual machines) on Google Compute Engine.
 //
-// A separate managed instance group is created for coordinators and nodes, the function
+// A separate managed instance group is created for control planes and workers, the function
 // waits until the instances are up and stores the public and private IPs of the instances
 // in the client. If the client's network must be set before instances can be created.
 func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput) error {
@@ -25,7 +25,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 	}
 	ops := []Operation{}
 
-	nodeTemplateInput := insertInstanceTemplateInput{
+	workerTemplateInput := insertInstanceTemplateInput{
 		Name:                         c.name + "-worker-" + c.uid,
 		Network:                      c.network,
 		SecondarySubnetworkRangeName: c.secondarySubnetworkRange,
@@ -33,21 +33,21 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		ImageId:                      input.ImageId,
 		InstanceType:                 input.InstanceType,
 		StateDiskSizeGB:              int64(input.StateDiskSizeGB),
-		Role:                         role.Node.String(),
+		Role:                         role.Worker.String(),
 		KubeEnv:                      input.KubeEnv,
 		Project:                      c.project,
 		Zone:                         c.zone,
 		Region:                       c.region,
 		UID:                          c.uid,
 	}
-	op, err := c.insertInstanceTemplate(ctx, nodeTemplateInput)
+	op, err := c.insertInstanceTemplate(ctx, workerTemplateInput)
 	if err != nil {
 		return fmt.Errorf("inserting instanceTemplate: %w", err)
 	}
 	ops = append(ops, op)
-	c.nodeTemplate = nodeTemplateInput.Name
+	c.workerTemplate = workerTemplateInput.Name
 
-	coordinatorTemplateInput := insertInstanceTemplateInput{
+	controlPlaneTemplateInput := insertInstanceTemplateInput{
 		Name:                         c.name + "-control-plane-" + c.uid,
 		Network:                      c.network,
 		Subnetwork:                   c.subnetwork,
@@ -55,70 +55,70 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		ImageId:                      input.ImageId,
 		InstanceType:                 input.InstanceType,
 		StateDiskSizeGB:              int64(input.StateDiskSizeGB),
-		Role:                         role.Coordinator.String(),
+		Role:                         role.ControlPlane.String(),
 		KubeEnv:                      input.KubeEnv,
 		Project:                      c.project,
 		Zone:                         c.zone,
 		Region:                       c.region,
 		UID:                          c.uid,
 	}
-	op, err = c.insertInstanceTemplate(ctx, coordinatorTemplateInput)
+	op, err = c.insertInstanceTemplate(ctx, controlPlaneTemplateInput)
 	if err != nil {
 		return fmt.Errorf("inserting instanceTemplate: %w", err)
 	}
 	ops = append(ops, op)
-	c.coordinatorTemplate = coordinatorTemplateInput.Name
+	c.controlPlaneTemplate = controlPlaneTemplateInput.Name
 	if err := c.waitForOperations(ctx, ops); err != nil {
 		return err
 	}
 	ops = []Operation{}
 
-	coordinatorGroupInput := instanceGroupManagerInput{
-		Count:    input.CountCoordinators,
+	controlPlaneGroupInput := instanceGroupManagerInput{
+		Count:    input.CountControlPlanes,
 		Name:     strings.Join([]string{c.name, "control-plane", c.uid}, "-"),
-		Template: c.coordinatorTemplate,
+		Template: c.controlPlaneTemplate,
 		UID:      c.uid,
 		Project:  c.project,
 		Zone:     c.zone,
 	}
-	op, err = c.insertInstanceGroupManger(ctx, coordinatorGroupInput)
+	op, err = c.insertInstanceGroupManger(ctx, controlPlaneGroupInput)
 	if err != nil {
 		return fmt.Errorf("inserting instanceGroupManager: %w", err)
 	}
 	ops = append(ops, op)
-	c.coordinatorInstanceGroup = coordinatorGroupInput.Name
+	c.controlPlaneInstanceGroup = controlPlaneGroupInput.Name
 
-	nodeGroupInput := instanceGroupManagerInput{
-		Count:    input.CountNodes,
+	workerGroupInput := instanceGroupManagerInput{
+		Count:    input.CountWorkers,
 		Name:     strings.Join([]string{c.name, "worker", c.uid}, "-"),
-		Template: c.nodeTemplate,
+		Template: c.workerTemplate,
 		UID:      c.uid,
 		Project:  c.project,
 		Zone:     c.zone,
 	}
-	op, err = c.insertInstanceGroupManger(ctx, nodeGroupInput)
+	op, err = c.insertInstanceGroupManger(ctx, workerGroupInput)
 	if err != nil {
 		return fmt.Errorf("inserting instanceGroupManager: %w", err)
 	}
 	ops = append(ops, op)
-	c.nodesInstanceGroup = nodeGroupInput.Name
+	c.workerInstanceGroup = workerGroupInput.Name
 
 	if err := c.waitForOperations(ctx, ops); err != nil {
 		return err
 	}
 
-	if err := c.waitForInstanceGroupScaling(ctx, c.nodesInstanceGroup); err != nil {
+	if err := c.waitForInstanceGroupScaling(ctx, c.workerInstanceGroup); err != nil {
 		return fmt.Errorf("waiting for instanceGroupScaling: %w", err)
 	}
 
-	if err := c.waitForInstanceGroupScaling(ctx, c.coordinatorInstanceGroup); err != nil {
+	if err := c.waitForInstanceGroupScaling(ctx, c.controlPlaneInstanceGroup); err != nil {
 		return fmt.Errorf("waiting for instanceGroupScaling: %w", err)
 	}
 
-	if err := c.getInstanceIPs(ctx, c.nodesInstanceGroup, c.nodes); err != nil {
+	if err := c.getInstanceIPs(ctx, c.workerInstanceGroup, c.workers); err != nil {
 		return fmt.Errorf("getting instanceIPs: %w", err)
 	}
-	if err := c.getInstanceIPs(ctx, c.coordinatorInstanceGroup, c.coordinators); err != nil {
+	if err := c.getInstanceIPs(ctx, c.controlPlaneInstanceGroup, c.controlPlanes); err != nil {
 		return fmt.Errorf("getting instanceIPs: %w", err)
 	}
 	return nil
@@ -127,45 +127,45 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 // TerminateInstances terminates the clients instances.
 func (c *Client) TerminateInstances(ctx context.Context) error {
 	ops := []Operation{}
-	if c.nodesInstanceGroup != "" {
-		op, err := c.deleteInstanceGroupManager(ctx, c.nodesInstanceGroup)
+	if c.workerInstanceGroup != "" {
+		op, err := c.deleteInstanceGroupManager(ctx, c.workerInstanceGroup)
 		if err != nil {
-			return fmt.Errorf("deleting instanceGroupManager '%s': %w", c.nodesInstanceGroup, err)
+			return fmt.Errorf("deleting instanceGroupManager '%s': %w", c.workerInstanceGroup, err)
 		}
 		ops = append(ops, op)
-		c.nodesInstanceGroup = ""
-		c.nodes = make(cloudtypes.Instances)
+		c.workerInstanceGroup = ""
+		c.workers = make(cloudtypes.Instances)
 	}
 
-	if c.coordinatorInstanceGroup != "" {
-		op, err := c.deleteInstanceGroupManager(ctx, c.coordinatorInstanceGroup)
+	if c.controlPlaneInstanceGroup != "" {
+		op, err := c.deleteInstanceGroupManager(ctx, c.controlPlaneInstanceGroup)
 		if err != nil {
-			return fmt.Errorf("deleting instanceGroupManager '%s': %w", c.coordinatorInstanceGroup, err)
+			return fmt.Errorf("deleting instanceGroupManager '%s': %w", c.controlPlaneInstanceGroup, err)
 		}
 		ops = append(ops, op)
-		c.coordinatorInstanceGroup = ""
-		c.coordinators = make(cloudtypes.Instances)
+		c.controlPlaneInstanceGroup = ""
+		c.controlPlanes = make(cloudtypes.Instances)
 	}
 	if err := c.waitForOperations(ctx, ops); err != nil {
 		return err
 	}
 	ops = []Operation{}
 
-	if c.nodeTemplate != "" {
-		op, err := c.deleteInstanceTemplate(ctx, c.nodeTemplate)
+	if c.workerTemplate != "" {
+		op, err := c.deleteInstanceTemplate(ctx, c.workerTemplate)
 		if err != nil {
 			return fmt.Errorf("deleting instanceTemplate: %w", err)
 		}
 		ops = append(ops, op)
-		c.nodeTemplate = ""
+		c.workerTemplate = ""
 	}
-	if c.coordinatorTemplate != "" {
-		op, err := c.deleteInstanceTemplate(ctx, c.coordinatorTemplate)
+	if c.controlPlaneTemplate != "" {
+		op, err := c.deleteInstanceTemplate(ctx, c.controlPlaneTemplate)
 		if err != nil {
 			return fmt.Errorf("deleting instanceTemplate: %w", err)
 		}
 		ops = append(ops, op)
-		c.coordinatorTemplate = ""
+		c.controlPlaneTemplate = ""
 	}
 	return c.waitForOperations(ctx, ops)
 }
@@ -290,12 +290,12 @@ func (i *instanceGroupManagerInput) InsertInstanceGroupManagerRequest() computep
 
 // CreateInstancesInput is the input for a CreatInstances operation.
 type CreateInstancesInput struct {
-	CountNodes        int
-	CountCoordinators int
-	ImageId           string
-	InstanceType      string
-	StateDiskSizeGB   int
-	KubeEnv           string
+	CountWorkers       int
+	CountControlPlanes int
+	ImageId            string
+	InstanceType       string
+	StateDiskSizeGB    int
+	KubeEnv            string
 }
 
 type insertInstanceTemplateInput struct {

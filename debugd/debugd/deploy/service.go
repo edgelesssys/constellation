@@ -140,21 +140,21 @@ func (s *ServiceManager) WriteSystemdUnitFile(ctx context.Context, unit SystemdU
 	return nil
 }
 
-// DeployDefaultServiceUnit will write the default "coordinator.service" unit file.
+// DeployDefaultServiceUnit will write the default "bootstrapper.service" unit file.
 func DeployDefaultServiceUnit(ctx context.Context, serviceManager *ServiceManager) error {
 	if err := serviceManager.WriteSystemdUnitFile(ctx, SystemdUnit{
-		Name:     debugd.CoordinatorSystemdUnitName,
-		Contents: debugd.CoordinatorSystemdUnitContents,
+		Name:     debugd.BootstrapperSystemdUnitName,
+		Contents: debugd.BootstrapperSystemdUnitContents,
 	}); err != nil {
-		return fmt.Errorf("writing systemd unit file %q: %w", debugd.CoordinatorSystemdUnitName, err)
+		return fmt.Errorf("writing systemd unit file %q: %w", debugd.BootstrapperSystemdUnitName, err)
 	}
 
 	// try to start the default service if the binary exists but ignore failure.
-	// this is meant to start the coordinator after a reboot
-	// if a coordinator binary was uploaded before.
-	if ok, err := afero.Exists(serviceManager.fs, debugd.CoordinatorDeployFilename); ok && err == nil {
+	// this is meant to start the bootstrapper after a reboot
+	// if a bootstrapper binary was uploaded before.
+	if ok, err := afero.Exists(serviceManager.fs, debugd.BootstrapperDeployFilename); ok && err == nil {
 		_ = serviceManager.SystemdAction(ctx, ServiceManagerRequest{
-			Unit:   debugd.CoordinatorSystemdUnitName,
+			Unit:   debugd.BootstrapperSystemdUnitName,
 			Action: Start,
 		})
 	}

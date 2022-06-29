@@ -34,9 +34,3 @@ jobs:
       # Runs all test targets starting with "integration-"
       - name: Integration Tests
         run: ctest -R integration-
-
-      - uses: actions/upload-artifact@v3
-        if: failure()
-        with:
-          name: coordinator-integrationtest-logs
-          path: /tmp/coordinator/logs/

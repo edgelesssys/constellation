@@ -9,7 +9,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/initproto"
+	"github.com/edgelesssys/constellation/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

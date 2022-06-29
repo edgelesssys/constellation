@@ -20,7 +20,7 @@ go.work.sum
 
 build
 admin.conf
-coordinator-*
+bootstrapper-*
 
 # VS Code configuration folder
 .vscode
@@ -30,7 +30,7 @@ debug/
 # Image
 image/*.ign
 image/build/*
-image/dependencies/coordinator
+image/dependencies/bootstrapper
 image/dependencies/cilium
 image/images/*
 image/cosa.lock

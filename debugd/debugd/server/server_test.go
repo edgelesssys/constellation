@@ -8,7 +8,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/edgelesssys/constellation/debugd/coordinator"
+	"github.com/edgelesssys/constellation/debugd/bootstrapper"
 	"github.com/edgelesssys/constellation/debugd/debugd/deploy"
 	pb "github.com/edgelesssys/constellation/debugd/service"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
@@ -104,7 +104,7 @@ func TestUploadAuthorizedKeys(t *testing.T) {
 	}
 }
 
-func TestUploadCoordinator(t *testing.T) {
+func TestUploadBootstrapper(t *testing.T) {
 	endpoint := "192.0.2.1:4000"
 
 	testCases := map[string]struct {
@@ -113,7 +113,7 @@ func TestUploadCoordinator(t *testing.T) {
 		streamer           fakeStreamer
 		uploadChunks       [][]byte
 		wantErr            bool
-		wantResponseStatus pb.UploadCoordinatorStatus
+		wantResponseStatus pb.UploadBootstrapperStatus
 		wantFile           bool
 		wantChunks         [][]byte
 	}{
@@ -125,27 +125,27 @@ func TestUploadCoordinator(t *testing.T) {
 			wantChunks: [][]byte{
 				[]byte("test"),
 			},
-			wantResponseStatus: pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_SUCCESS,
+			wantResponseStatus: pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_SUCCESS,
 		},
 		"recv fails": {
 			streamer: fakeStreamer{
 				writeStreamErr: errors.New("recv error"),
 			},
-			wantResponseStatus: pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_UPLOAD_FAILED,
+			wantResponseStatus: pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_UPLOAD_FAILED,
 			wantErr:            true,
 		},
-		"starting coordinator fails": {
+		"starting bootstrapper fails": {
 			uploadChunks: [][]byte{
 				[]byte("test"),
 			},
 			serviceManager: stubServiceManager{
-				systemdActionErr: errors.New("starting coordinator error"),
+				systemdActionErr: errors.New("starting bootstrapper error"),
 			},
 			wantFile: true,
 			wantChunks: [][]byte{
 				[]byte("test"),
 			},
-			wantResponseStatus: pb.UploadCoordinatorStatus_UPLOAD_COORDINATOR_START_FAILED,
+			wantResponseStatus: pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_START_FAILED,
 		},
 	}
 
@@ -165,7 +165,7 @@ func TestUploadCoordinator(t *testing.T) {
 			require.NoError(err)
 			defer conn.Close()
 			client := pb.NewDebugdClient(conn)
-			stream, err := client.UploadCoordinator(context.Background())
+			stream, err := client.UploadBootstrapper(context.Background())
 			require.NoError(err)
 			require.NoError(fakeWrite(stream, tc.uploadChunks))
 			resp, err := stream.CloseAndRecv()
@@ -180,7 +180,7 @@ func TestUploadCoordinator(t *testing.T) {
 			assert.Equal(tc.wantResponseStatus, resp.Status)
 			if tc.wantFile {
 				assert.Equal(tc.wantChunks, tc.streamer.writeStreamChunks)
-				assert.Equal("/opt/coordinator", tc.streamer.writeStreamFilename)
+				assert.Equal("/opt/bootstrapper", tc.streamer.writeStreamFilename)
 			} else {
 				assert.Empty(tc.streamer.writeStreamChunks)
 				assert.Empty(tc.streamer.writeStreamFilename)
@@ -189,18 +189,18 @@ func TestUploadCoordinator(t *testing.T) {
 	}
 }
 
-func TestDownloadCoordinator(t *testing.T) {
+func TestDownloadBootstrapper(t *testing.T) {
 	endpoint := "192.0.2.1:4000"
 	testCases := map[string]struct {
 		ssh            stubSSHDeployer
 		serviceManager stubServiceManager
-		request        *pb.DownloadCoordinatorRequest
+		request        *pb.DownloadBootstrapperRequest
 		streamer       fakeStreamer
 		wantErr        bool
 		wantChunks     [][]byte
 	}{
 		"download works": {
-			request: &pb.DownloadCoordinatorRequest{},
+			request: &pb.DownloadBootstrapperRequest{},
 			streamer: fakeStreamer{
 				readStreamChunks: [][]byte{
 					[]byte("test"),
@@ -212,9 +212,9 @@ func TestDownloadCoordinator(t *testing.T) {
 			},
 		},
 		"download fails": {
-			request: &pb.DownloadCoordinatorRequest{},
+			request: &pb.DownloadBootstrapperRequest{},
 			streamer: fakeStreamer{
-				readStreamErr: errors.New("read coordinator fails"),
+				readStreamErr: errors.New("read bootstrapper fails"),
 			},
 			wantErr: true,
 		},
@@ -236,7 +236,7 @@ func TestDownloadCoordinator(t *testing.T) {
 			require.NoError(err)
 			defer conn.Close()
 			client := pb.NewDebugdClient(conn)
-			stream, err := client.DownloadCoordinator(context.Background(), tc.request)
+			stream, err := client.DownloadBootstrapper(context.Background(), tc.request)
 			require.NoError(err)
 			chunks, err := fakeRead(stream)
 			grpcServ.GracefulStop()
@@ -247,7 +247,7 @@ func TestDownloadCoordinator(t *testing.T) {
 			}
 			require.NoError(err)
 			assert.Equal(tc.wantChunks, chunks)
-			assert.Equal("/opt/coordinator", tc.streamer.readStreamFilename)
+			assert.Equal("/opt/bootstrapper", tc.streamer.readStreamFilename)
 		})
 	}
 }
@@ -383,7 +383,7 @@ type fakeStreamer struct {
 	readStreamErr       error
 }
 
-func (f *fakeStreamer) WriteStream(filename string, stream coordinator.ReadChunkStream, showProgress bool) error {
+func (f *fakeStreamer) WriteStream(filename string, stream bootstrapper.ReadChunkStream, showProgress bool) error {
 	f.writeStreamFilename = filename
 	for {
 		chunk, err := stream.Recv()
@@ -397,7 +397,7 @@ func (f *fakeStreamer) WriteStream(filename string, stream coordinator.ReadChunk
 	}
 }
 
-func (f *fakeStreamer) ReadStream(filename string, stream coordinator.WriteChunkStream, chunksize uint, showProgress bool) error {
+func (f *fakeStreamer) ReadStream(filename string, stream bootstrapper.WriteChunkStream, chunksize uint, showProgress bool) error {
 	f.readStreamFilename = filename
 	for _, chunk := range f.readStreamChunks {
 		if err := stream.Send(&pb.Chunk{Content: chunk}); err != nil {
@@ -422,7 +422,7 @@ func setupServerWithConn(endpoint string, serv *debugdServer) (*grpc.Server, *gr
 	return grpcServ, conn, nil
 }
 
-func fakeWrite(stream coordinator.WriteChunkStream, chunks [][]byte) error {
+func fakeWrite(stream bootstrapper.WriteChunkStream, chunks [][]byte) error {
 	for _, chunk := range chunks {
 		err := stream.Send(&pb.Chunk{
 			Content: chunk,
@@ -434,7 +434,7 @@ func fakeWrite(stream coordinator.WriteChunkStream, chunks [][]byte) error {
 	return nil
 }
 
-func fakeRead(stream coordinator.ReadChunkStream) ([][]byte, error) {
+func fakeRead(stream bootstrapper.ReadChunkStream) ([][]byte, error) {
 	var chunks [][]byte
 	for {
 		chunk, err := stream.Recv()

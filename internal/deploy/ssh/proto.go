@@ -1,7 +1,7 @@
 package ssh
 
 import (
-	"github.com/edgelesssys/constellation/coordinator/initproto"
+	"github.com/edgelesssys/constellation/bootstrapper/initproto"
 )
 
 // FromProtoSlice converts a SSH UserKey definition from pubproto to the Go flavor.

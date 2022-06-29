@@ -21,9 +21,9 @@ sudo chmod 666 /dev/kvm
    ```
    source fcos/.env
    ```
-3. Set the `COORDINATOR_BINARY` environment variable to a path of the compiled coordinator binary. It will be mounted in the cosa container and copied into the resulting coreos image.
+3. Set the `BOOTSTRAPPER_BINARY` environment variable to a path of the compiled bootstrapper binary. It will be mounted in the cosa container and copied into the resulting coreos image.
    ```
-   COORDINATOR_BINARY="/path/to/coordinator"
+   BOOTSTRAPPER_BINARY="/path/to/bootstrapper"
    ```
 4. Go into the build folder and initialize cosa:
    ```

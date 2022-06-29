@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
-	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
-	"github.com/edgelesssys/constellation/coordinator/role"
+	"github.com/edgelesssys/constellation/bootstrapper/cloudprovider/cloudtypes"
+	"github.com/edgelesssys/constellation/bootstrapper/pubapi/pubproto"
+	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/logger"
@@ -33,7 +33,7 @@ func TestRequestKeyLoop(t *testing.T) {
 	defaultInstance := cloudtypes.Instance{
 		Name:       "test-instance",
 		ProviderID: "/test/provider",
-		Role:       role.Coordinator,
+		Role:       role.ControlPlane,
 		PrivateIPs: []string{"192.0.2.1"},
 	}
 
@@ -69,7 +69,7 @@ func TestRequestKeyLoop(t *testing.T) {
 				{
 					Name:       "test-instance-2",
 					ProviderID: "/test/provider",
-					Role:       role.Coordinator,
+					Role:       role.ControlPlane,
 					PrivateIPs: []string{"192.0.2.2"},
 				},
 			},

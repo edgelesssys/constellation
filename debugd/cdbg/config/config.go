@@ -17,9 +17,9 @@ type CDBGConfig struct {
 
 // ConstellationDebugdConfig is the cdbg specific configuration.
 type ConstellationDebugdConfig struct {
-	AuthorizedKeys  []configc.UserKey    `yaml:"authorizedKeys"`
-	CoordinatorPath string               `yaml:"coordinatorPath"`
-	SystemdUnits    []deploy.SystemdUnit `yaml:"systemdUnits,omitempty"`
+	AuthorizedKeys   []configc.UserKey    `yaml:"authorizedKeys"`
+	BootstrapperPath string               `yaml:"bootstrapperPath"`
+	SystemdUnits     []deploy.SystemdUnit `yaml:"systemdUnits,omitempty"`
 }
 
 // FromFile reads a debug configuration.

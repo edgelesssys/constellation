@@ -71,8 +71,8 @@ func TestCreateVPCs(t *testing.T) {
 				operationRegionAPI: tc.operationRegionAPI,
 				networksAPI:        tc.networksAPI,
 				subnetworksAPI:     tc.subnetworksAPI,
-				nodes:              make(cloudtypes.Instances),
-				coordinators:       make(cloudtypes.Instances),
+				workers:            make(cloudtypes.Instances),
+				controlPlanes:      make(cloudtypes.Instances),
 			}
 
 			if tc.wantErr {

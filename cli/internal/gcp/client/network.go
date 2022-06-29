@@ -236,7 +236,7 @@ func (c *Client) CreateLoadBalancer(ctx context.Context) error {
 			Backends: []*computepb.Backend{
 				{
 					BalancingMode: proto.String(computepb.Backend_BalancingMode_name[int32(compute.Backend_CONNECTION)]),
-					Group:         proto.String("https://www.googleapis.com/compute/v1/projects/" + c.project + "/zones/" + c.zone + "/instanceGroups/" + c.coordinatorInstanceGroup),
+					Group:         proto.String("https://www.googleapis.com/compute/v1/projects/" + c.project + "/zones/" + c.zone + "/instanceGroups/" + c.controlPlaneInstanceGroup),
 				},
 			},
 		},

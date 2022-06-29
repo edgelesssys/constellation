@@ -17,26 +17,26 @@ func TestCreator(t *testing.T) {
 	wantGCPState := state.ConstellationState{
 		CloudProvider: cloudprovider.GCP.String(),
 		GCPProject:    "project",
-		GCPCoordinators: cloudtypes.Instances{
+		GCPControlPlanes: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		GCPNodes: cloudtypes.Instances{
+		GCPWorkers: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-2": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		GCPNodeInstanceGroup:           "nodes-group",
-		GCPCoordinatorInstanceGroup:    "coordinator-group",
-		GCPNodeInstanceTemplate:        "node-template",
-		GCPCoordinatorInstanceTemplate: "coordinator-template",
-		GCPNetwork:                     "network",
-		GCPSubnetwork:                  "subnetwork",
-		GCPBackendService:              "backend-service",
-		GCPHealthCheck:                 "health-check",
-		GCPForwardingRule:              "forwarding-rule",
+		GCPWorkerInstanceGroup:          "workers-group",
+		GCPControlPlaneInstanceGroup:    "controlplane-group",
+		GCPWorkerInstanceTemplate:       "worker-template",
+		GCPControlPlaneInstanceTemplate: "controlplane-template",
+		GCPNetwork:                      "network",
+		GCPSubnetwork:                   "subnetwork",
+		GCPBackendService:               "backend-service",
+		GCPHealthCheck:                  "health-check",
+		GCPForwardingRule:               "forwarding-rule",
 		GCPFirewalls: []string{
-			"coordinator", "wireguard", "ssh", "nodeport", "kubernetes",
+			"controlplane", "wireguard", "ssh", "nodeport", "kubernetes",
 			"allow-cluster-internal-tcp", "allow-cluster-internal-udp", "allow-cluster-internal-icmp",
 			"allow-node-internal-tcp", "allow-node-internal-udp", "allow-node-internal-icmp",
 		},
@@ -44,20 +44,20 @@ func TestCreator(t *testing.T) {
 
 	wantAzureState := state.ConstellationState{
 		CloudProvider: cloudprovider.Azure.String(),
-		AzureCoordinators: cloudtypes.Instances{
+		AzureControlPlane: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		AzureNodes: cloudtypes.Instances{
+		AzureWorkers: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-2": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		AzureResourceGroup:        "resource-group",
-		AzureSubnet:               "subnet",
-		AzureNetworkSecurityGroup: "network-security-group",
-		AzureNodesScaleSet:        "nodes-scale-set",
-		AzureCoordinatorsScaleSet: "coordinators-scale-set",
+		AzureResourceGroup:         "resource-group",
+		AzureSubnet:                "subnet",
+		AzureNetworkSecurityGroup:  "network-security-group",
+		AzureWorkersScaleSet:       "workers-scale-set",
+		AzureControlPlanesScaleSet: "controlplanes-scale-set",
 	}
 
 	someErr := errors.New("failed")

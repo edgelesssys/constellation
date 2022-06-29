@@ -17,7 +17,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/util"
+	"github.com/edgelesssys/constellation/bootstrapper/util"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/oid"
 )

@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/core"
-	"github.com/edgelesssys/constellation/coordinator/pubapi/pubproto"
+	"github.com/edgelesssys/constellation/bootstrapper/core"
+	"github.com/edgelesssys/constellation/bootstrapper/pubapi/pubproto"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/logger"

@@ -38,8 +38,8 @@ func TestCreateResourceGroup(t *testing.T) {
 				name:             "name",
 				uid:              "uid",
 				resourceGroupAPI: tc.resourceGroupAPI,
-				nodes:            make(cloudtypes.Instances),
-				coordinators:     make(cloudtypes.Instances),
+				workers:          make(cloudtypes.Instances),
+				controlPlanes:    make(cloudtypes.Instances),
 			}
 
 			if tc.wantErr {
@@ -60,14 +60,14 @@ func TestTerminateResourceGroup(t *testing.T) {
 		name:                 "name",
 		uid:                  "uid",
 		subnetID:             "subnet",
-		nodesScaleSet:        "node-scale-set",
-		coordinatorsScaleSet: "coordinator-scale-set",
-		nodes: cloudtypes.Instances{
+		workerScaleSet:       "node-scale-set",
+		controlPlaneScaleSet: "controlplane-scale-set",
+		workers: cloudtypes.Instances{
 			"0": {
 				PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1",
 			},
 		},
-		coordinators: cloudtypes.Instances{
+		controlPlanes: cloudtypes.Instances{
 			"0": {
 				PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1",
 			},
@@ -112,10 +112,10 @@ func TestTerminateResourceGroup(t *testing.T) {
 			assert.NoError(tc.client.TerminateResourceGroup(ctx))
 			assert.Empty(tc.client.resourceGroup)
 			assert.Empty(tc.client.subnetID)
-			assert.Empty(tc.client.nodes)
-			assert.Empty(tc.client.coordinators)
-			assert.Empty(tc.client.nodesScaleSet)
-			assert.Empty(tc.client.coordinatorsScaleSet)
+			assert.Empty(tc.client.workers)
+			assert.Empty(tc.client.controlPlanes)
+			assert.Empty(tc.client.workerScaleSet)
+			assert.Empty(tc.client.controlPlaneScaleSet)
 		})
 	}
 }
@@ -146,8 +146,8 @@ func TestCreateInstances(t *testing.T) {
 			resourceGroupAPI:   newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI: &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				CountCoordinators:    3,
-				CountNodes:           3,
+				CountControlPlanes:   3,
+				CountWorkers:         3,
 				InstanceType:         "type",
 				Image:                "image",
 				UserAssingedIdentity: "identity",
@@ -160,8 +160,8 @@ func TestCreateInstances(t *testing.T) {
 			resourceGroupAPI:     newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				CountCoordinators:    3,
-				CountNodes:           3,
+				CountControlPlanes:   3,
+				CountWorkers:         3,
 				InstanceType:         "type",
 				Image:                "image",
 				UserAssingedIdentity: "identity",
@@ -175,8 +175,8 @@ func TestCreateInstances(t *testing.T) {
 			resourceGroupAPI:     newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				CountCoordinators:    3,
-				CountNodes:           3,
+				CountControlPlanes:   3,
+				CountWorkers:         3,
 				InstanceType:         "type",
 				Image:                "image",
 				UserAssingedIdentity: "identity",
@@ -190,7 +190,7 @@ func TestCreateInstances(t *testing.T) {
 			resourceGroupAPI:     newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				CountNodes:           3,
+				CountWorkers:         3,
 				InstanceType:         "type",
 				Image:                "image",
 				UserAssingedIdentity: "identity",
@@ -214,8 +214,8 @@ func TestCreateInstances(t *testing.T) {
 				scaleSetsAPI:         tc.scaleSetsAPI,
 				resourceGroupAPI:     tc.resourceGroupAPI,
 				roleAssignmentsAPI:   tc.roleAssignmentsAPI,
-				nodes:                make(cloudtypes.Instances),
-				coordinators:         make(cloudtypes.Instances),
+				workers:              make(cloudtypes.Instances),
+				controlPlanes:        make(cloudtypes.Instances),
 				loadBalancerPubIP:    "lbip",
 			}
 
@@ -223,12 +223,12 @@ func TestCreateInstances(t *testing.T) {
 				assert.Error(client.CreateInstances(ctx, tc.createInstancesInput))
 			} else {
 				assert.NoError(client.CreateInstances(ctx, tc.createInstancesInput))
-				assert.Equal(tc.createInstancesInput.CountCoordinators, len(client.coordinators))
-				assert.Equal(tc.createInstancesInput.CountNodes, len(client.nodes))
-				assert.NotEmpty(client.nodes["0"].PrivateIP)
-				assert.NotEmpty(client.nodes["0"].PublicIP)
-				assert.NotEmpty(client.coordinators["0"].PrivateIP)
-				assert.Equal("lbip", client.coordinators["0"].PublicIP)
+				assert.Equal(tc.createInstancesInput.CountControlPlanes, len(client.controlPlanes))
+				assert.Equal(tc.createInstancesInput.CountWorkers, len(client.workers))
+				assert.NotEmpty(client.workers["0"].PrivateIP)
+				assert.NotEmpty(client.workers["0"].PublicIP)
+				assert.NotEmpty(client.controlPlanes["0"].PrivateIP)
+				assert.Equal("lbip", client.controlPlanes["0"].PublicIP)
 			}
 		})
 	}
@@ -261,10 +261,10 @@ func TestCreateInstancesVMs(t *testing.T) {
 			resourceGroupAPI:   newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI: &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				CountCoordinators: 3,
-				CountNodes:        3,
-				InstanceType:      "type",
-				Image:             "image",
+				CountControlPlanes: 3,
+				CountWorkers:       3,
+				InstanceType:       "type",
+				Image:              "image",
 			},
 		},
 		"error when creating scale set": {
@@ -274,10 +274,10 @@ func TestCreateInstancesVMs(t *testing.T) {
 			resourceGroupAPI:     newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				CountCoordinators: 3,
-				CountNodes:        3,
-				InstanceType:      "type",
-				Image:             "image",
+				CountControlPlanes: 3,
+				CountWorkers:       3,
+				InstanceType:       "type",
+				Image:              "image",
 			},
 			wantErr: true,
 		},
@@ -288,10 +288,10 @@ func TestCreateInstancesVMs(t *testing.T) {
 			resourceGroupAPI:     newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				CountCoordinators: 3,
-				CountNodes:        3,
-				InstanceType:      "type",
-				Image:             "image",
+				CountControlPlanes: 3,
+				CountWorkers:       3,
+				InstanceType:       "type",
+				Image:              "image",
 			},
 			wantErr: true,
 		},
@@ -302,10 +302,10 @@ func TestCreateInstancesVMs(t *testing.T) {
 			resourceGroupAPI:     newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				CountCoordinators: 3,
-				CountNodes:        3,
-				InstanceType:      "type",
-				Image:             "image",
+				CountControlPlanes: 3,
+				CountWorkers:       3,
+				InstanceType:       "type",
+				Image:              "image",
 			},
 			wantErr: true,
 		},
@@ -316,10 +316,10 @@ func TestCreateInstancesVMs(t *testing.T) {
 			resourceGroupAPI:     newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				CountCoordinators: 3,
-				CountNodes:        3,
-				InstanceType:      "type",
-				Image:             "image",
+				CountControlPlanes: 3,
+				CountWorkers:       3,
+				InstanceType:       "type",
+				Image:              "image",
 			},
 			wantErr: true,
 		},
@@ -330,10 +330,10 @@ func TestCreateInstancesVMs(t *testing.T) {
 			resourceGroupAPI:     newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
-				CountCoordinators: 3,
-				CountNodes:        3,
-				InstanceType:      "type",
-				Image:             "image",
+				CountControlPlanes: 3,
+				CountWorkers:       3,
+				InstanceType:       "type",
+				Image:              "image",
 			},
 			wantErr: true,
 		},
@@ -355,8 +355,8 @@ func TestCreateInstancesVMs(t *testing.T) {
 				virtualMachinesAPI:   tc.virtualMachinesAPI,
 				resourceGroupAPI:     tc.resourceGroupAPI,
 				roleAssignmentsAPI:   tc.roleAssignmentsAPI,
-				nodes:                make(cloudtypes.Instances),
-				coordinators:         make(cloudtypes.Instances),
+				workers:              make(cloudtypes.Instances),
+				controlPlanes:        make(cloudtypes.Instances),
 			}
 
 			if tc.wantErr {
@@ -365,12 +365,12 @@ func TestCreateInstancesVMs(t *testing.T) {
 			}
 
 			require.NoError(client.CreateInstancesVMs(ctx, tc.createInstancesInput))
-			assert.Equal(tc.createInstancesInput.CountCoordinators, len(client.coordinators))
-			assert.Equal(tc.createInstancesInput.CountNodes, len(client.nodes))
-			assert.NotEmpty(client.nodes["0"].PrivateIP)
-			assert.NotEmpty(client.nodes["0"].PublicIP)
-			assert.NotEmpty(client.coordinators["0"].PrivateIP)
-			assert.NotEmpty(client.coordinators["0"].PublicIP)
+			assert.Equal(tc.createInstancesInput.CountControlPlanes, len(client.controlPlanes))
+			assert.Equal(tc.createInstancesInput.CountWorkers, len(client.workers))
+			assert.NotEmpty(client.workers["0"].PrivateIP)
+			assert.NotEmpty(client.workers["0"].PublicIP)
+			assert.NotEmpty(client.controlPlanes["0"].PrivateIP)
+			assert.NotEmpty(client.controlPlanes["0"].PublicIP)
 		})
 	}
 }

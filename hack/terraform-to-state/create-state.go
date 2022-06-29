@@ -41,17 +41,17 @@ func transformState(tfOut terraformOutput) state.ConstellationState {
 		Name:             "qemu",
 		UID:              "debug",
 		CloudProvider:    "qemu",
-		QEMUNodes:        cloudtypes.Instances{},
-		QEMUCoordinators: cloudtypes.Instances{},
+		QEMUWorkers:      cloudtypes.Instances{},
+		QEMUControlPlane: cloudtypes.Instances{},
 	}
 	for i, ip := range tfOut.ControlPlaneIPs.Value {
-		conState.QEMUCoordinators[fmt.Sprintf("control-plane-%d", i)] = cloudtypes.Instance{
+		conState.QEMUControlPlane[fmt.Sprintf("control-plane-%d", i)] = cloudtypes.Instance{
 			PublicIP:  ip,
 			PrivateIP: ip,
 		}
 	}
 	for i, ip := range tfOut.WorkerIPs.Value {
-		conState.QEMUNodes[fmt.Sprintf("worker-%d", i)] = cloudtypes.Instance{
+		conState.QEMUWorkers[fmt.Sprintf("worker-%d", i)] = cloudtypes.Instance{
 			PublicIP:  ip,
 			PrivateIP: ip,
 		}

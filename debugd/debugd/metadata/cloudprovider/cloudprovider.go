@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	azurecloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/azure"
-	gcpcloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/gcp"
-	qemucloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/qemu"
+	azurecloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/azure"
+	gcpcloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/gcp"
+	qemucloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/qemu"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 )

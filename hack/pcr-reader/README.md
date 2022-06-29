@@ -8,14 +8,14 @@ This utility program makes it simple to update the expected PCR values of the CL
 To read the PCR state of any running Constellation node, run the following:
 
 ```shell
-go run main.go -constell-ip <NODE_IP> -constell-port <COORDINATOR_PORT>
+go run main.go -constell-ip <NODE_IP> -constell-port <VERIFY_SERVICE_PORT>
 ```
 
 The output is similar to the following:
 
 ```shell
 $ go run main.go -constell-ip 192.0.2.3 -constell-port 30081
-connecting to Coordinator at 192.0.2.3:30081
+connecting to verification service at 192.0.2.3:30081
 PCRs:
 {
   "0": "DzXCFGCNk8em5ornNZtKi+Wg6Z7qkQfs5CfE3qTkOc8=",
@@ -67,7 +67,7 @@ We use the TPM and its PCRs to verify all nodes of a Constellation run with the 
 PCR[0] measures the firmware volume (FV). Changes to FV also change PCR[0], making it unreliable for attestation.
 PCR[6] measures the VM ID. This is unusable for cluster attestation for two reasons:
 
-1. The Coordinator does not know the VM ID of nodes wanting to join the cluster, so it can not compute the expected PCR[6] for the joining VM
+1. The verification service does not know the VM ID of nodes wanting to join the cluster, so it can not compute the expected PCR[6] for the joining VM
 2. A user may attest any node of the cluster without knowing the VM ID
 
 PCR[10] is used by Linux Integrity Measurement Architecture (IMA).

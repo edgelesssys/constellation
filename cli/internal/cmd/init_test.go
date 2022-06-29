@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/initproto"
+	"github.com/edgelesssys/constellation/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
@@ -38,32 +38,32 @@ func TestInitArgumentValidation(t *testing.T) {
 func TestInitialize(t *testing.T) {
 	testGcpState := state.ConstellationState{
 		CloudProvider: "GCP",
-		GCPNodes: cloudtypes.Instances{
+		GCPWorkers: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		GCPCoordinators: cloudtypes.Instances{
+		GCPControlPlanes: cloudtypes.Instances{
 			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
 	}
 	testAzureState := state.ConstellationState{
 		CloudProvider: "Azure",
-		AzureNodes: cloudtypes.Instances{
+		AzureWorkers: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		AzureCoordinators: cloudtypes.Instances{
+		AzureControlPlane: cloudtypes.Instances{
 			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
 		AzureResourceGroup: "test",
 	}
 	testQemuState := state.ConstellationState{
 		CloudProvider: "QEMU",
-		QEMUNodes: cloudtypes.Instances{
+		QEMUWorkers: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		QEMUCoordinators: cloudtypes.Instances{
+		QEMUControlPlane: cloudtypes.Instances{
 			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
 	}
@@ -146,7 +146,7 @@ func TestInitialize(t *testing.T) {
 			serverCreds := atlscredentials.New(nil, nil)
 			initServer := grpc.NewServer(grpc.Creds(serverCreds))
 			initproto.RegisterAPIServer(initServer, tc.initServerAPI)
-			port := strconv.Itoa(constants.CoordinatorPort)
+			port := strconv.Itoa(constants.BootstrapperPort)
 			listener := netDialer.GetListener(net.JoinHostPort("192.0.2.1", port))
 			go initServer.Serve(listener)
 			defer initServer.GracefulStop()

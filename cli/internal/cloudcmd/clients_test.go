@@ -24,8 +24,8 @@ func TestMain(m *testing.M) {
 }
 
 type fakeAzureClient struct {
-	nodes        cloudtypes.Instances
-	coordinators cloudtypes.Instances
+	workers       cloudtypes.Instances
+	controlPlanes cloudtypes.Instances
 
 	resourceGroup        string
 	name                 string
@@ -35,35 +35,35 @@ type fakeAzureClient struct {
 	tenantID             string
 	subnetID             string
 	loadBalancerName     string
-	coordinatorsScaleSet string
-	nodesScaleSet        string
+	controlPlaneScaleSet string
+	workerScaleSet       string
 	networkSecurityGroup string
 	adAppObjectID        string
 }
 
 func (c *fakeAzureClient) GetState() (state.ConstellationState, error) {
 	stat := state.ConstellationState{
-		CloudProvider:             cloudprovider.Azure.String(),
-		AzureNodes:                c.nodes,
-		AzureCoordinators:         c.coordinators,
-		Name:                      c.name,
-		UID:                       c.uid,
-		AzureResourceGroup:        c.resourceGroup,
-		AzureLocation:             c.location,
-		AzureSubscription:         c.subscriptionID,
-		AzureTenant:               c.tenantID,
-		AzureSubnet:               c.subnetID,
-		AzureNetworkSecurityGroup: c.networkSecurityGroup,
-		AzureNodesScaleSet:        c.nodesScaleSet,
-		AzureCoordinatorsScaleSet: c.coordinatorsScaleSet,
-		AzureADAppObjectID:        c.adAppObjectID,
+		CloudProvider:              cloudprovider.Azure.String(),
+		AzureWorkers:               c.workers,
+		AzureControlPlane:          c.controlPlanes,
+		Name:                       c.name,
+		UID:                        c.uid,
+		AzureResourceGroup:         c.resourceGroup,
+		AzureLocation:              c.location,
+		AzureSubscription:          c.subscriptionID,
+		AzureTenant:                c.tenantID,
+		AzureSubnet:                c.subnetID,
+		AzureNetworkSecurityGroup:  c.networkSecurityGroup,
+		AzureWorkersScaleSet:       c.workerScaleSet,
+		AzureControlPlanesScaleSet: c.controlPlaneScaleSet,
+		AzureADAppObjectID:         c.adAppObjectID,
 	}
 	return stat, nil
 }
 
 func (c *fakeAzureClient) SetState(stat state.ConstellationState) error {
-	c.nodes = stat.AzureNodes
-	c.coordinators = stat.AzureCoordinators
+	c.workers = stat.AzureWorkers
+	c.controlPlanes = stat.AzureControlPlane
 	c.name = stat.Name
 	c.uid = stat.UID
 	c.resourceGroup = stat.AzureResourceGroup
@@ -72,8 +72,8 @@ func (c *fakeAzureClient) SetState(stat state.ConstellationState) error {
 	c.tenantID = stat.AzureTenant
 	c.subnetID = stat.AzureSubnet
 	c.networkSecurityGroup = stat.AzureNetworkSecurityGroup
-	c.nodesScaleSet = stat.AzureNodesScaleSet
-	c.coordinatorsScaleSet = stat.AzureCoordinatorsScaleSet
+	c.workerScaleSet = stat.AzureWorkersScaleSet
+	c.controlPlaneScaleSet = stat.AzureControlPlanesScaleSet
 	c.adAppObjectID = stat.AzureADAppObjectID
 	return nil
 }
@@ -103,32 +103,32 @@ func (c *fakeAzureClient) CreateSecurityGroup(ctx context.Context, input azurecl
 }
 
 func (c *fakeAzureClient) CreateInstances(ctx context.Context, input azurecl.CreateInstancesInput) error {
-	c.coordinatorsScaleSet = "coordinators-scale-set"
-	c.nodesScaleSet = "nodes-scale-set"
-	c.nodes = make(cloudtypes.Instances)
-	for i := 0; i < input.CountNodes; i++ {
+	c.controlPlaneScaleSet = "controlplanes-scale-set"
+	c.workerScaleSet = "workers-scale-set"
+	c.workers = make(cloudtypes.Instances)
+	for i := 0; i < input.CountWorkers; i++ {
 		id := "id-" + strconv.Itoa(i)
-		c.nodes[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
+		c.workers[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
 	}
-	c.coordinators = make(cloudtypes.Instances)
-	for i := 0; i < input.CountCoordinators; i++ {
+	c.controlPlanes = make(cloudtypes.Instances)
+	for i := 0; i < input.CountControlPlanes; i++ {
 		id := "id-" + strconv.Itoa(i)
-		c.coordinators[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
+		c.controlPlanes[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
 	}
 	return nil
 }
 
 // TODO: deprecate as soon as scale sets are available.
 func (c *fakeAzureClient) CreateInstancesVMs(ctx context.Context, input azurecl.CreateInstancesInput) error {
-	c.nodes = make(cloudtypes.Instances)
-	for i := 0; i < input.CountNodes; i++ {
+	c.workers = make(cloudtypes.Instances)
+	for i := 0; i < input.CountWorkers; i++ {
 		id := "id-" + strconv.Itoa(i)
-		c.nodes[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
+		c.workers[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
 	}
-	c.coordinators = make(cloudtypes.Instances)
-	for i := 0; i < input.CountCoordinators; i++ {
+	c.controlPlanes = make(cloudtypes.Instances)
+	for i := 0; i < input.CountControlPlanes; i++ {
 		id := "id-" + strconv.Itoa(i)
-		c.coordinators[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
+		c.controlPlanes[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
 	}
 	return nil
 }
@@ -145,13 +145,13 @@ func (c *fakeAzureClient) TerminateResourceGroup(ctx context.Context) error {
 	if c.resourceGroup == "" {
 		return nil
 	}
-	c.nodes = nil
-	c.coordinators = nil
+	c.workers = nil
+	c.controlPlanes = nil
 	c.resourceGroup = ""
 	c.subnetID = ""
 	c.networkSecurityGroup = ""
-	c.nodesScaleSet = ""
-	c.coordinatorsScaleSet = ""
+	c.workerScaleSet = ""
+	c.controlPlaneScaleSet = ""
 	return nil
 }
 
@@ -235,21 +235,21 @@ func (c *stubAzureClient) TerminateServicePrincipal(ctx context.Context) error {
 }
 
 type fakeGcpClient struct {
-	nodes        cloudtypes.Instances
-	coordinators cloudtypes.Instances
+	workers       cloudtypes.Instances
+	controlPlanes cloudtypes.Instances
 
-	nodesInstanceGroup       string
-	coordinatorInstanceGroup string
-	coordinatorTemplate      string
-	nodeTemplate             string
-	network                  string
-	subnetwork               string
-	firewalls                []string
-	project                  string
-	uid                      string
-	name                     string
-	zone                     string
-	serviceAccount           string
+	workerInstanceGroup       string
+	controlPlaneInstanceGroup string
+	controlPlaneTemplate      string
+	workerTemplate            string
+	network                   string
+	subnetwork                string
+	firewalls                 []string
+	project                   string
+	uid                       string
+	name                      string
+	zone                      string
+	serviceAccount            string
 
 	// loadbalancer
 	healthCheck    string
@@ -259,35 +259,35 @@ type fakeGcpClient struct {
 
 func (c *fakeGcpClient) GetState() (state.ConstellationState, error) {
 	stat := state.ConstellationState{
-		CloudProvider:                  cloudprovider.GCP.String(),
-		GCPNodes:                       c.nodes,
-		GCPCoordinators:                c.coordinators,
-		GCPNodeInstanceGroup:           c.nodesInstanceGroup,
-		GCPCoordinatorInstanceGroup:    c.coordinatorInstanceGroup,
-		GCPNodeInstanceTemplate:        c.nodeTemplate,
-		GCPCoordinatorInstanceTemplate: c.coordinatorTemplate,
-		GCPNetwork:                     c.network,
-		GCPSubnetwork:                  c.subnetwork,
-		GCPFirewalls:                   c.firewalls,
-		GCPBackendService:              c.backendService,
-		GCPHealthCheck:                 c.healthCheck,
-		GCPForwardingRule:              c.forwardingRule,
-		GCPProject:                     c.project,
-		Name:                           c.name,
-		UID:                            c.uid,
-		GCPZone:                        c.zone,
-		GCPServiceAccount:              c.serviceAccount,
+		CloudProvider:                   cloudprovider.GCP.String(),
+		GCPWorkers:                      c.workers,
+		GCPControlPlanes:                c.controlPlanes,
+		GCPWorkerInstanceGroup:          c.workerInstanceGroup,
+		GCPControlPlaneInstanceGroup:    c.controlPlaneInstanceGroup,
+		GCPWorkerInstanceTemplate:       c.workerTemplate,
+		GCPControlPlaneInstanceTemplate: c.controlPlaneTemplate,
+		GCPNetwork:                      c.network,
+		GCPSubnetwork:                   c.subnetwork,
+		GCPFirewalls:                    c.firewalls,
+		GCPBackendService:               c.backendService,
+		GCPHealthCheck:                  c.healthCheck,
+		GCPForwardingRule:               c.forwardingRule,
+		GCPProject:                      c.project,
+		Name:                            c.name,
+		UID:                             c.uid,
+		GCPZone:                         c.zone,
+		GCPServiceAccount:               c.serviceAccount,
 	}
 	return stat, nil
 }
 
 func (c *fakeGcpClient) SetState(stat state.ConstellationState) error {
-	c.nodes = stat.GCPNodes
-	c.coordinators = stat.GCPCoordinators
-	c.nodesInstanceGroup = stat.GCPNodeInstanceGroup
-	c.coordinatorInstanceGroup = stat.GCPCoordinatorInstanceGroup
-	c.nodeTemplate = stat.GCPNodeInstanceTemplate
-	c.coordinatorTemplate = stat.GCPCoordinatorInstanceTemplate
+	c.workers = stat.GCPWorkers
+	c.controlPlanes = stat.GCPControlPlanes
+	c.workerInstanceGroup = stat.GCPWorkerInstanceGroup
+	c.controlPlaneInstanceGroup = stat.GCPControlPlaneInstanceGroup
+	c.workerTemplate = stat.GCPWorkerInstanceTemplate
+	c.controlPlaneTemplate = stat.GCPControlPlaneInstanceTemplate
 	c.network = stat.GCPNetwork
 	c.subnetwork = stat.GCPSubnetwork
 	c.firewalls = stat.GCPFirewalls
@@ -319,19 +319,19 @@ func (c *fakeGcpClient) CreateFirewall(ctx context.Context, input gcpcl.Firewall
 }
 
 func (c *fakeGcpClient) CreateInstances(ctx context.Context, input gcpcl.CreateInstancesInput) error {
-	c.coordinatorInstanceGroup = "coordinator-group"
-	c.nodesInstanceGroup = "nodes-group"
-	c.nodeTemplate = "node-template"
-	c.coordinatorTemplate = "coordinator-template"
-	c.nodes = make(cloudtypes.Instances)
-	for i := 0; i < input.CountNodes; i++ {
+	c.controlPlaneInstanceGroup = "controlplane-group"
+	c.workerInstanceGroup = "workers-group"
+	c.workerTemplate = "worker-template"
+	c.controlPlaneTemplate = "controlplane-template"
+	c.workers = make(cloudtypes.Instances)
+	for i := 0; i < input.CountWorkers; i++ {
 		id := "id-" + strconv.Itoa(i)
-		c.nodes[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
+		c.workers[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
 	}
-	c.coordinators = make(cloudtypes.Instances)
-	for i := 0; i < input.CountCoordinators; i++ {
+	c.controlPlanes = make(cloudtypes.Instances)
+	for i := 0; i < input.CountControlPlanes; i++ {
 		id := "id-" + strconv.Itoa(i)
-		c.coordinators[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
+		c.controlPlanes[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
 	}
 	return nil
 }
@@ -377,12 +377,12 @@ func (c *fakeGcpClient) TerminateVPCs(context.Context) error {
 }
 
 func (c *fakeGcpClient) TerminateInstances(context.Context) error {
-	c.nodeTemplate = ""
-	c.coordinatorTemplate = ""
-	c.nodesInstanceGroup = ""
-	c.coordinatorInstanceGroup = ""
-	c.nodes = nil
-	c.coordinators = nil
+	c.workerTemplate = ""
+	c.controlPlaneTemplate = ""
+	c.workerInstanceGroup = ""
+	c.controlPlaneInstanceGroup = ""
+	c.workers = nil
+	c.controlPlanes = nil
 	return nil
 }
 

@@ -5,7 +5,7 @@ COREOS_BUILD_PATH                ?= $(BASE_PATH)/build
 OVERRIDES                        ?= $(COREOS_BUILD_PATH)/overrides
 OVERRIDES_RPM                    ?= $(OVERRIDES)/rpm
 OVERRIDES_ROOTFS                 ?= $(OVERRIDES)/rootfs
-COORDINATOR_OVERRIDE_PATH        ?= $(OVERRIDES_ROOTFS)/usr/bin/coordinator
+BOOTSTRAPPER_OVERRIDE_PATH        ?= $(OVERRIDES_ROOTFS)/usr/bin/bootstrapper
 CILIUM_CLI_OVERRIDE_PATH         ?= $(OVERRIDES_ROOTFS)/usr/bin/cilium
 KERNEL_RPM                       ?= $(OVERRIDES_RPM)/kernel.rpm
 KERNEL_CORE_RPM                  ?= $(OVERRIDES_RPM)/kernel-core.rpm
@@ -14,8 +14,8 @@ OVERRIDE_KERNEL                  ?= n
 KERNEL_RPM_URL                   ?= "https://kojipkgs.fedoraproject.org/packages/kernel/5.17.0/0.rc3.89.fc36/x86_64/kernel-5.17.0-0.rc3.89.fc36.x86_64.rpm"
 KERNEL_CORE_RPM_URL              ?= "https://kojipkgs.fedoraproject.org/packages/kernel/5.17.0/0.rc3.89.fc36/x86_64/kernel-core-5.17.0-0.rc3.89.fc36.x86_64.rpm"
 KERNEL_MODULES_RPM_URL           ?= "https://kojipkgs.fedoraproject.org/packages/kernel/5.17.0/0.rc3.89.fc36/x86_64/kernel-modules-5.17.0-0.rc3.89.fc36.x86_64.rpm"
-DOWNLOAD_COORDINATOR             ?= n
-COORDINATOR_BINARY               ?= $(BASE_PATH)/../build/coordinator
+DOWNLOAD_BOOTSTRAPPER             ?= n
+BOOTSTRAPPER_BINARY               ?= $(BASE_PATH)/../build/bootstrapper
 CILIUM_CLI_BINARY                ?= $(DEPENDENCIES)/cilium
 CILIUM_CLI_URL                   ?= "https://github.com/cilium/cilium-cli/releases/download/v0.11.1/cilium-linux-amd64.tar.gz"
 DISK_MAPPER_BINARY               ?= $(BASE_PATH)/../build/disk-mapper
@@ -48,19 +48,19 @@ AZURE_SKU                        ?= constellation-coreos
 
 -include $(CURDIR)/config.mk
 
-.PHONY: clean all kernel coreos run shell cosa-init cosa-fetch images image-gcp upload-gcp image-azure upload-azure-non-cvm $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
+.PHONY: clean all kernel coreos run shell cosa-init cosa-fetch images image-gcp upload-gcp image-azure upload-azure-non-cvm $(BOOTSTRAPPER_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
 SHELL := /bin/bash
 
 all: coreos images
 
-ifeq ($(DOWNLOAD_COORDINATOR), y)
-$(COORDINATOR_BINARY):
-	wget -q $(COORDINATOR_URL) -O $@
+ifeq ($(DOWNLOAD_BOOTSTRAPPER), y)
+$(BOOTSTRAPPER_BINARY):
+	wget -q $(BOOTSTRAPPER_URL) -O $@
 endif
 
-$(COORDINATOR_OVERRIDE_PATH): $(COORDINATOR_BINARY) | cosa-init
+$(BOOTSTRAPPER_OVERRIDE_PATH): $(BOOTSTRAPPER_BINARY) | cosa-init
 	mkdir -p $(COREOS_BUILD_PATH)/overrides/rootfs/usr/bin
-	cp $(COORDINATOR_BINARY) $@
+	cp $(BOOTSTRAPPER_BINARY) $@
 	chmod +x $@
 
 $(CILIUM_CLI_BINARY):
@@ -81,16 +81,16 @@ $(DISK_MAPPER_OVERRIDE_PATH): $(DISK_MAPPER_BINARY) | cosa-init
 cosa-init:
 	-flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa init --branch $(COSA_INIT_BRANCH) $(COSA_INIT_REPO)'
 
-cosa-fetch: cosa-init kernel $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
+cosa-fetch: cosa-init kernel $(BOOTSTRAPPER_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
 	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa fetch'
 
-coreos: cosa-fetch $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
+coreos: cosa-fetch $(BOOTSTRAPPER_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
 	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa build'
 
-run: $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
+run: $(BOOTSTRAPPER_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
 	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa run --devshell-console'
 
-shell: $(COORDINATOR_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
+shell: $(BOOTSTRAPPER_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
 	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa shell'
 
 $(GCP_IMAGE_PATH): coreos
@@ -115,7 +115,7 @@ upload-gcp: $(GCP_IMAGE_PATH)
 		--family $(GCP_IMAGE_FAMILY) \
 		--source-uri=gs://$(GCP_BUCKET)/$(GCP_IMAGE_FILENAME) \
 		--guest-os-features=GVNIC,SEV_CAPABLE,VIRTIO_SCSI_MULTIQUEUE,UEFI_COMPATIBLE \
-		--labels=coordinator-sha1=$$(shasum $(COORDINATOR_OVERRIDE_PATH) | cut -d " " -f 1),coordinator-sha512=$$(sha512sum $(COORDINATOR_OVERRIDE_PATH) | cut -d " " -f 1 | cut -c-63) \
+		--labels=bootstrapper-sha1=$$(shasum $(BOOTSTRAPPER_OVERRIDE_PATH) | cut -d " " -f 1),bootstrapper-sha512=$$(sha512sum $(BOOTSTRAPPER_OVERRIDE_PATH) | cut -d " " -f 1 | cut -c-63) \
 		--project $(GCP_PROJECT)
 	gsutil rm gs://$(GCP_BUCKET)/$(GCP_IMAGE_FILENAME)
 
@@ -127,7 +127,7 @@ image-azure: $(AZURE_IMAGE_PATH)
 upload-azure: $(AZURE_IMAGE_PATH)
 	$(eval SIZE := $(shell cat $(AZURE_IMAGE_PATH) | wc -c))
 	@echo "creating disk of size $(SIZE)"
-	az disk create -n $(AZURE_IMAGE_NAME) -g $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --hyper-v-generation V2 --os-type Linux --for-upload --upload-size-bytes $(SIZE) --sku standard_lrs --tags coordinator-sha512=$$(sha512sum $(COORDINATOR_OVERRIDE_PATH) | cut -d " " -f 1)
+	az disk create -n $(AZURE_IMAGE_NAME) -g $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --hyper-v-generation V2 --os-type Linux --for-upload --upload-size-bytes $(SIZE) --sku standard_lrs --tags bootstrapper-sha512=$$(sha512sum $(BOOTSTRAPPER_OVERRIDE_PATH) | cut -d " " -f 1)
 	@echo "waiting for disk to be created"
 	az disk wait --created -n $(AZURE_IMAGE_NAME) -g $(AZURE_RESOURCE_GROUP_NAME)
 	@echo "created disk $(AZURE_IMAGE_NAME)"
@@ -137,12 +137,12 @@ upload-azure: $(AZURE_IMAGE_PATH)
 	azcopy copy "$(AZURE_IMAGE_PATH)" "$$(az disk grant-access -n $(AZURE_IMAGE_NAME) -g $(AZURE_RESOURCE_GROUP_NAME) --access-level Write --duration-in-seconds 86400 | jq -r .accessSas)" --blob-type PageBlob
 	@echo "Revoking write access"
 	az disk revoke-access -n $(AZURE_IMAGE_NAME) -g $(AZURE_RESOURCE_GROUP_NAME)
-	az image create -g $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) -n $(AZURE_IMAGE_NAME) --hyper-v-generation V2 --os-type Linux --tags coordinator-sha512=$$(sha512sum $(COORDINATOR_OVERRIDE_PATH) | cut -d " " -f 1) --source "$$(az disk list --query "[?name == '$(AZURE_IMAGE_NAME)' && resourceGroup == '$(AZURE_RESOURCE_GROUP_NAME)'] | [0].id" --output json | jq -r)"
+	az image create -g $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) -n $(AZURE_IMAGE_NAME) --hyper-v-generation V2 --os-type Linux --tags bootstrapper-sha512=$$(sha512sum $(BOOTSTRAPPER_OVERRIDE_PATH) | cut -d " " -f 1) --source "$$(az disk list --query "[?name == '$(AZURE_IMAGE_NAME)' && resourceGroup == '$(AZURE_RESOURCE_GROUP_NAME)'] | [0].id" --output json | jq -r)"
 	@echo "Create shared image gallery (if it does not exist yet)"
 	-az sig create -l $(AZURE_REGION) --gallery-name $(AZURE_GALLERY_NAME) --resource-group $(AZURE_RESOURCE_GROUP_NAME)
 	@echo "Create image definition (if it does not exist yet)"
 	-az sig image-definition create --resource-group $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --gallery-name $(AZURE_GALLERY_NAME) --gallery-image-definition $(AZURE_IMAGE_DEFINITION) --publisher $(AZURE_PUBLISHER) --offer $(AZURE_IMAGE_OFFER) --sku $(AZURE_SKU) --os-type Linux --os-state generalized --hyper-v-generation V2 --features SecurityType=TrustedLaunch
-	az sig image-version create --resource-group $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --gallery-name $(AZURE_GALLERY_NAME) --gallery-image-definition $(AZURE_IMAGE_DEFINITION) --gallery-image-version $(AZURE_IMAGE_VERSION) --target-regions $(AZURE_REGION) --replica-count 1 --tags coordinator-sha512=$$(sha512sum $(COORDINATOR_OVERRIDE_PATH) | cut -d " " -f 1) --managed-image "$$(az image list --query "[?name == '$(AZURE_IMAGE_NAME)' && resourceGroup == '$(AZURE_RESOURCE_GROUP_NAME)'] | [0].id" --output json | jq -r)"
+	az sig image-version create --resource-group $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --gallery-name $(AZURE_GALLERY_NAME) --gallery-image-definition $(AZURE_IMAGE_DEFINITION) --gallery-image-version $(AZURE_IMAGE_VERSION) --target-regions $(AZURE_REGION) --replica-count 1 --tags bootstrapper-sha512=$$(sha512sum $(BOOTSTRAPPER_OVERRIDE_PATH) | cut -d " " -f 1) --managed-image "$$(az image list --query "[?name == '$(AZURE_IMAGE_NAME)' && resourceGroup == '$(AZURE_RESOURCE_GROUP_NAME)'] | [0].id" --output json | jq -r)"
 	@echo "Cleaning up resources"
 	az image delete --resource-group $(AZURE_RESOURCE_GROUP_NAME) -n $(AZURE_IMAGE_NAME)
 	az disk delete --resource-group $(AZURE_RESOURCE_GROUP_NAME) -n $(AZURE_IMAGE_NAME) --yes

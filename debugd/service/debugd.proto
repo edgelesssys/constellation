@@ -6,12 +6,12 @@ package debugd;
 
 service Debugd {
     rpc UploadAuthorizedKeys(UploadAuthorizedKeysRequest) returns (UploadAuthorizedKeysResponse) {}
-    rpc UploadCoordinator(stream Chunk) returns (UploadCoordinatorResponse) {}
-    rpc DownloadCoordinator(DownloadCoordinatorRequest) returns (stream Chunk) {}
+    rpc UploadBootstrapper(stream Chunk) returns (UploadBootstrapperResponse) {}
+    rpc DownloadBootstrapper(DownloadBootstrapperRequest) returns (stream Chunk) {}
     rpc UploadSystemServiceUnits(UploadSystemdServiceUnitsRequest) returns (UploadSystemdServiceUnitsResponse) {}
 }
 
-message DownloadCoordinatorRequest {}
+message DownloadBootstrapperRequest {}
 
 message AuthorizedKey {
     string username = 1;
@@ -35,15 +35,15 @@ message Chunk {
     bytes content = 1;
 }
 
-message UploadCoordinatorResponse {
-    UploadCoordinatorStatus status = 1;
+message UploadBootstrapperResponse {
+    UploadBootstrapperStatus status = 1;
 }
 
-enum UploadCoordinatorStatus {
-    UPLOAD_COORDINATOR_SUCCESS = 0;
-    UPLOAD_COORDINATOR_UPLOAD_FAILED = 1;
-    UPLOAD_COORDINATOR_START_FAILED = 2;
-    UPLOAD_COORDINATOR_FILE_EXISTS = 3;
+enum UploadBootstrapperStatus {
+    UPLOAD_BOOTSTRAPPER_SUCCESS = 0;
+    UPLOAD_BOOTSTRAPPER_UPLOAD_FAILED = 1;
+    UPLOAD_BOOTSTRAPPER_START_FAILED = 2;
+    UPLOAD_BOOTSTRAPPER_FILE_EXISTS = 3;
 }
 
 message ServiceUnit {

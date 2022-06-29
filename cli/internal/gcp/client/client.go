@@ -33,23 +33,23 @@ type Client struct {
 	iamAPI
 	projectsAPI
 
-	nodes        cloudtypes.Instances
-	coordinators cloudtypes.Instances
+	workers       cloudtypes.Instances
+	controlPlanes cloudtypes.Instances
 
-	nodesInstanceGroup       string
-	coordinatorInstanceGroup string
-	coordinatorTemplate      string
-	nodeTemplate             string
-	network                  string
-	subnetwork               string
-	secondarySubnetworkRange string
-	firewalls                []string
-	name                     string
-	project                  string
-	uid                      string
-	zone                     string
-	region                   string
-	serviceAccount           string
+	workerInstanceGroup       string
+	controlPlaneInstanceGroup string
+	controlPlaneTemplate      string
+	workerTemplate            string
+	network                   string
+	subnetwork                string
+	secondarySubnetworkRange  string
+	firewalls                 []string
+	name                      string
+	project                   string
+	uid                       string
+	zone                      string
+	region                    string
+	serviceAccount            string
 
 	// loadbalancer
 	healthCheck    string
@@ -163,8 +163,8 @@ func NewFromDefault(ctx context.Context) (*Client, error) {
 		instanceGroupManagersAPI: &instanceGroupManagersClient{groupAPI},
 		iamAPI:                   &iamClient{iamAPI},
 		projectsAPI:              &projectsClient{projectsAPI},
-		nodes:                    make(cloudtypes.Instances),
-		coordinators:             make(cloudtypes.Instances),
+		workers:                  make(cloudtypes.Instances),
+		controlPlanes:            make(cloudtypes.Instances),
 	}, nil
 }
 
@@ -218,25 +218,25 @@ func (c *Client) init(project, zone, region, name string) error {
 func (c *Client) GetState() (state.ConstellationState, error) {
 	var stat state.ConstellationState
 	stat.CloudProvider = cloudprovider.GCP.String()
-	if len(c.nodes) == 0 {
-		return state.ConstellationState{}, errors.New("client has no nodes")
+	if len(c.workers) == 0 {
+		return state.ConstellationState{}, errors.New("client has no workers")
 	}
-	stat.GCPNodes = c.nodes
+	stat.GCPWorkers = c.workers
 
-	if len(c.coordinators) == 0 {
-		return state.ConstellationState{}, errors.New("client has no coordinators")
+	if len(c.controlPlanes) == 0 {
+		return state.ConstellationState{}, errors.New("client has no controlPlanes")
 	}
-	stat.GCPCoordinators = c.coordinators
+	stat.GCPControlPlanes = c.controlPlanes
 
-	if c.nodesInstanceGroup == "" {
-		return state.ConstellationState{}, errors.New("client has no nodeInstanceGroup")
+	if c.workerInstanceGroup == "" {
+		return state.ConstellationState{}, errors.New("client has no workerInstanceGroup")
 	}
-	stat.GCPNodeInstanceGroup = c.nodesInstanceGroup
+	stat.GCPWorkerInstanceGroup = c.workerInstanceGroup
 
-	if c.coordinatorInstanceGroup == "" {
-		return state.ConstellationState{}, errors.New("client has no coordinatorInstanceGroup")
+	if c.controlPlaneInstanceGroup == "" {
+		return state.ConstellationState{}, errors.New("client has no controlPlaneInstanceGroup")
 	}
-	stat.GCPCoordinatorInstanceGroup = c.coordinatorInstanceGroup
+	stat.GCPControlPlaneInstanceGroup = c.controlPlaneInstanceGroup
 
 	if c.project == "" {
 		return state.ConstellationState{}, errors.New("client has no project")
@@ -278,15 +278,15 @@ func (c *Client) GetState() (state.ConstellationState, error) {
 	}
 	stat.GCPSubnetwork = c.subnetwork
 
-	if c.nodeTemplate == "" {
-		return state.ConstellationState{}, errors.New("client has no node instance template")
+	if c.workerTemplate == "" {
+		return state.ConstellationState{}, errors.New("client has no worker instance template")
 	}
-	stat.GCPNodeInstanceTemplate = c.nodeTemplate
+	stat.GCPWorkerInstanceTemplate = c.workerTemplate
 
-	if c.coordinatorTemplate == "" {
-		return state.ConstellationState{}, errors.New("client has no coordinator instance template")
+	if c.controlPlaneTemplate == "" {
+		return state.ConstellationState{}, errors.New("client has no controlPlane instance template")
 	}
-	stat.GCPCoordinatorInstanceTemplate = c.coordinatorTemplate
+	stat.GCPControlPlaneInstanceTemplate = c.controlPlaneTemplate
 
 	if c.healthCheck == "" {
 		return state.ConstellationState{}, errors.New("client has no health check")
@@ -314,25 +314,25 @@ func (c *Client) SetState(stat state.ConstellationState) error {
 	if stat.CloudProvider != cloudprovider.GCP.String() {
 		return errors.New("state is not gcp state")
 	}
-	if len(stat.GCPNodes) == 0 {
-		return errors.New("state has no nodes")
+	if len(stat.GCPWorkers) == 0 {
+		return errors.New("state has no workers")
 	}
-	c.nodes = stat.GCPNodes
+	c.workers = stat.GCPWorkers
 
-	if len(stat.GCPCoordinators) == 0 {
-		return errors.New("state has no coordinator")
+	if len(stat.GCPControlPlanes) == 0 {
+		return errors.New("state has no controlPlane")
 	}
-	c.coordinators = stat.GCPCoordinators
+	c.controlPlanes = stat.GCPControlPlanes
 
-	if stat.GCPNodeInstanceGroup == "" {
-		return errors.New("state has no nodeInstanceGroup")
+	if stat.GCPWorkerInstanceGroup == "" {
+		return errors.New("state has no workerInstanceGroup")
 	}
-	c.nodesInstanceGroup = stat.GCPNodeInstanceGroup
+	c.workerInstanceGroup = stat.GCPWorkerInstanceGroup
 
-	if stat.GCPCoordinatorInstanceGroup == "" {
-		return errors.New("state has no coordinatorInstanceGroup")
+	if stat.GCPControlPlaneInstanceGroup == "" {
+		return errors.New("state has no controlPlaneInstanceGroup")
 	}
-	c.coordinatorInstanceGroup = stat.GCPCoordinatorInstanceGroup
+	c.controlPlaneInstanceGroup = stat.GCPControlPlaneInstanceGroup
 
 	if stat.GCPProject == "" {
 		return errors.New("state has no project")
@@ -374,15 +374,15 @@ func (c *Client) SetState(stat state.ConstellationState) error {
 	}
 	c.subnetwork = stat.GCPSubnetwork
 
-	if stat.GCPNodeInstanceTemplate == "" {
-		return errors.New("state has no node instance template")
+	if stat.GCPWorkerInstanceTemplate == "" {
+		return errors.New("state has no worker instance template")
 	}
-	c.nodeTemplate = stat.GCPNodeInstanceTemplate
+	c.workerTemplate = stat.GCPWorkerInstanceTemplate
 
-	if stat.GCPCoordinatorInstanceTemplate == "" {
-		return errors.New("state has no coordinator instance template")
+	if stat.GCPControlPlaneInstanceTemplate == "" {
+		return errors.New("state has no controlPlane instance template")
 	}
-	c.coordinatorTemplate = stat.GCPCoordinatorInstanceTemplate
+	c.controlPlaneTemplate = stat.GCPControlPlaneInstanceTemplate
 
 	if stat.GCPHealthCheck == "" {
 		return errors.New("state has no health check")

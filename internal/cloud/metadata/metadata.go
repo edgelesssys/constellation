@@ -6,7 +6,7 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/edgelesssys/constellation/coordinator/role"
+	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/constants"
 )
 
@@ -48,10 +48,9 @@ func InitServerEndpoints(ctx context.Context, lister InstanceLister) ([]string, 
 	}
 	initServerEndpoints := []string{}
 	for _, instance := range instances {
-		// check if role of instance is "Coordinator"
-		if instance.Role == role.Coordinator {
+		if instance.Role == role.ControlPlane {
 			for _, ip := range instance.PrivateIPs {
-				initServerEndpoints = append(initServerEndpoints, net.JoinHostPort(ip, strconv.Itoa(constants.CoordinatorPort)))
+				initServerEndpoints = append(initServerEndpoints, net.JoinHostPort(ip, strconv.Itoa(constants.BootstrapperPort)))
 			}
 		}
 	}

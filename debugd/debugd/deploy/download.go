@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/edgelesssys/constellation/debugd/coordinator"
+	"github.com/edgelesssys/constellation/debugd/bootstrapper"
 	"github.com/edgelesssys/constellation/debugd/debugd"
 	pb "github.com/edgelesssys/constellation/debugd/service"
 	"github.com/edgelesssys/constellation/internal/logger"
@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// Download downloads a coordinator from a given debugd instance.
+// Download downloads a bootstrapper from a given debugd instance.
 type Download struct {
 	log                *logger.Logger
 	dialer             NetDialer
@@ -35,15 +35,15 @@ func New(log *logger.Logger, dialer NetDialer, serviceManager serviceManager, wr
 	}
 }
 
-// DownloadCoordinator will open a new grpc connection to another instance, attempting to download a coordinator from that instance.
-func (d *Download) DownloadCoordinator(ctx context.Context, ip string) error {
+// DownloadBootstrapper will open a new grpc connection to another instance, attempting to download a bootstrapper from that instance.
+func (d *Download) DownloadBootstrapper(ctx context.Context, ip string) error {
 	log := d.log.With(zap.String("ip", ip))
 	serverAddr := net.JoinHostPort(ip, debugd.DebugdPort)
 	// only retry download from same endpoint after backoff
-	if lastAttempt, ok := d.attemptedDownloads[serverAddr]; ok && time.Since(lastAttempt) < debugd.CoordinatorDownloadRetryBackoff {
-		return fmt.Errorf("download failed too recently: %v / %v", time.Since(lastAttempt), debugd.CoordinatorDownloadRetryBackoff)
+	if lastAttempt, ok := d.attemptedDownloads[serverAddr]; ok && time.Since(lastAttempt) < debugd.BootstrapperDownloadRetryBackoff {
+		return fmt.Errorf("download failed too recently: %v / %v", time.Since(lastAttempt), debugd.BootstrapperDownloadRetryBackoff)
 	}
-	log.Infof("Trying to download coordinator")
+	log.Infof("Trying to download bootstrapper")
 	d.attemptedDownloads[serverAddr] = time.Now()
 	conn, err := d.dial(ctx, serverAddr)
 	if err != nil {
@@ -52,23 +52,23 @@ func (d *Download) DownloadCoordinator(ctx context.Context, ip string) error {
 	defer conn.Close()
 	client := pb.NewDebugdClient(conn)
 
-	stream, err := client.DownloadCoordinator(ctx, &pb.DownloadCoordinatorRequest{})
+	stream, err := client.DownloadBootstrapper(ctx, &pb.DownloadBootstrapperRequest{})
 	if err != nil {
-		return fmt.Errorf("starting coordinator download from other instance: %w", err)
+		return fmt.Errorf("starting bootstrapper download from other instance: %w", err)
 	}
-	if err := d.writer.WriteStream(debugd.CoordinatorDeployFilename, stream, true); err != nil {
-		return fmt.Errorf("streaming coordinator from other instance: %w", err)
+	if err := d.writer.WriteStream(debugd.BootstrapperDeployFilename, stream, true); err != nil {
+		return fmt.Errorf("streaming bootstrapper from other instance: %w", err)
 	}
 
-	log.Infof("Successfully downloaded coordinator")
+	log.Infof("Successfully downloaded bootstrapper")
 
-	// after the upload succeeds, try to restart the coordinator
+	// after the upload succeeds, try to restart the bootstrapper
 	restartAction := ServiceManagerRequest{
-		Unit:   debugd.CoordinatorSystemdUnitName,
+		Unit:   debugd.BootstrapperSystemdUnitName,
 		Action: Restart,
 	}
 	if err := d.serviceManager.SystemdAction(ctx, restartAction); err != nil {
-		return fmt.Errorf("restarting coordinator: %w", err)
+		return fmt.Errorf("restarting bootstrapper: %w", err)
 	}
 
 	return nil
@@ -92,7 +92,7 @@ type serviceManager interface {
 }
 
 type streamToFileWriter interface {
-	WriteStream(filename string, stream coordinator.ReadChunkStream, showProgress bool) error
+	WriteStream(filename string, stream bootstrapper.ReadChunkStream, showProgress bool) error
 }
 
 // NetDialer can open a net.Conn.

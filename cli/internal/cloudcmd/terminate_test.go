@@ -16,30 +16,30 @@ func TestTerminator(t *testing.T) {
 		return state.ConstellationState{
 			CloudProvider: cloudprovider.GCP.String(),
 			GCPProject:    "project",
-			GCPNodes: cloudtypes.Instances{
+			GCPWorkers: cloudtypes.Instances{
 				"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 				"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			},
-			GCPCoordinators: cloudtypes.Instances{
+			GCPControlPlanes: cloudtypes.Instances{
 				"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			},
-			GCPNodeInstanceGroup:           "nodes-group",
-			GCPCoordinatorInstanceGroup:    "coord-group",
-			GCPNodeInstanceTemplate:        "template",
-			GCPCoordinatorInstanceTemplate: "template",
-			GCPNetwork:                     "network",
-			GCPFirewalls:                   []string{"a", "b", "c"},
-			GCPServiceAccount:              "service-account@project.iam.gserviceaccount.com",
+			GCPWorkerInstanceGroup:          "worker-group",
+			GCPControlPlaneInstanceGroup:    "controlplane-group",
+			GCPWorkerInstanceTemplate:       "template",
+			GCPControlPlaneInstanceTemplate: "template",
+			GCPNetwork:                      "network",
+			GCPFirewalls:                    []string{"a", "b", "c"},
+			GCPServiceAccount:               "service-account@project.iam.gserviceaccount.com",
 		}
 	}
 	someAzureState := func() state.ConstellationState {
 		return state.ConstellationState{
 			CloudProvider: cloudprovider.Azure.String(),
-			AzureNodes: cloudtypes.Instances{
+			AzureWorkers: cloudtypes.Instances{
 				"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 				"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			},
-			AzureCoordinators: cloudtypes.Instances{
+			AzureControlPlane: cloudtypes.Instances{
 				"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			},
 			AzureResourceGroup: "group",

@@ -14,7 +14,7 @@
 #ignore build files
 /build
 admin.conf
-coordinator-*
+bootstrapper-*
 
 go.work
 go.work.sum

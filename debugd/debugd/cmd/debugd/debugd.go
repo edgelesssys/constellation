@@ -6,7 +6,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/edgelesssys/constellation/debugd/coordinator"
+	"github.com/edgelesssys/constellation/debugd/bootstrapper"
 	"github.com/edgelesssys/constellation/debugd/debugd/deploy"
 	"github.com/edgelesssys/constellation/debugd/debugd/metadata"
 	"github.com/edgelesssys/constellation/debugd/debugd/metadata/cloudprovider"
@@ -27,7 +27,7 @@ func main() {
 	flag.Parse()
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
 	fs := afero.NewOsFs()
-	streamer := coordinator.NewFileStreamer(fs)
+	streamer := bootstrapper.NewFileStreamer(fs)
 	serviceManager := deploy.NewServiceManager(log.Named("serviceManager"))
 	ssh := ssh.NewAccess(log, user.NewLinuxUserManager(fs))
 

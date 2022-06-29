@@ -11,7 +11,7 @@ var rootCmd = &cobra.Command{
 	Use:   "cdbg",
 	Short: "Constellation debugging client",
 	Long: `cdbg is the constellation debugging client.
-It connects to CoreOS instances running debugd and deploys a self-compiled version of the coordinator.`,
+It connects to CoreOS instances running debugd and deploys a self-compiled version of the bootstrapper.`,
 }
 
 // Execute starts the CLI.

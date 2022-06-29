@@ -6,7 +6,7 @@ Core components:
 
 * [access_manager](access_manager): Contains the access-manager pod used to persist SSH users based on a K8s ConfigMap
 * [cli](cli): The CLI is used to manage a Constellation cluster
-* [coordinator](coordinator): The Coordinator is a node agent whose most important task is to bootstrap a node
+* [bootstrapper](bootstrapper): The bootstrapper is a node agent whose most important task is to bootstrap a node
 * [image](image): Build files for the Constellation disk image
 * [kms](kms): Constellation's key management client and server
 * [mount](mount): Package used by CSI plugins to create and mount encrypted block devices
@@ -67,10 +67,10 @@ ctest -j `nproc`
 
 Using the CLI requires the user to make authorized API calls to the CSP API. See the [docs](https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=cloud-credentials) for configuration.
 
-## Deploying a locally compiled coordinator binary
+## Deploying a locally compiled bootstrapper binary
 
-By default, `constellation create ...` will spawn cloud provider instances with a pre-baked coordinator binary.
-For testing, you can use the constellation debug daemon (debugd) to upload your local coordinator binary to running instances and to obtain SSH access.
+By default, `constellation create ...` will spawn cloud provider instances with a pre-baked bootstrapper binary.
+For testing, you can use the constellation debug daemon (debugd) to upload your local bootstrapper binary to running instances and to obtain SSH access.
 [Follow this introduction on how to install and setup `cdbg`](debugd/README.md)
 
 ## Development Guides

@@ -19,7 +19,7 @@ With `cdbg` and `yq` installed in your path:
      authorizedKeys:
        - username: my-username
          publicKey: ssh-rsa AAAAB…LJuM=
-     coordinatorPath: "./coordinator"
+     bootstrapperPath: "./bootstrapper"
      systemdUnits:
        - name: some-custom.service
          contents: |-

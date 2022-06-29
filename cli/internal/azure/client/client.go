@@ -44,8 +44,8 @@ type Client struct {
 	adReplicationLagCheckInterval   time.Duration
 	adReplicationLagCheckMaxRetries int
 
-	nodes        cloudtypes.Instances
-	coordinators cloudtypes.Instances
+	workers       cloudtypes.Instances
+	controlPlanes cloudtypes.Instances
 
 	name                 string
 	uid                  string
@@ -54,8 +54,8 @@ type Client struct {
 	subscriptionID       string
 	tenantID             string
 	subnetID             string
-	coordinatorsScaleSet string
-	nodesScaleSet        string
+	controlPlaneScaleSet string
+	workerScaleSet       string
 	loadBalancerName     string
 	loadBalancerPubIP    string
 	networkSecurityGroup string
@@ -107,8 +107,8 @@ func NewFromDefault(subscriptionID, tenantID string) (*Client, error) {
 		applicationInsightsAPI:          applicationInsightsAPI,
 		subscriptionID:                  subscriptionID,
 		tenantID:                        tenantID,
-		nodes:                           cloudtypes.Instances{},
-		coordinators:                    cloudtypes.Instances{},
+		workers:                         cloudtypes.Instances{},
+		controlPlanes:                   cloudtypes.Instances{},
 		adReplicationLagCheckInterval:   adReplicationLagCheckInterval,
 		adReplicationLagCheckMaxRetries: adReplicationLagCheckMaxRetries,
 	}, nil
@@ -174,22 +174,22 @@ func (c *Client) GetState() (state.ConstellationState, error) {
 		return state.ConstellationState{}, errors.New("client has no network security group")
 	}
 	stat.AzureNetworkSecurityGroup = c.networkSecurityGroup
-	if len(c.nodesScaleSet) == 0 {
-		return state.ConstellationState{}, errors.New("client has no nodes scale set")
+	if len(c.workerScaleSet) == 0 {
+		return state.ConstellationState{}, errors.New("client has no worker scale set")
 	}
-	stat.AzureNodesScaleSet = c.nodesScaleSet
-	if len(c.coordinatorsScaleSet) == 0 {
-		return state.ConstellationState{}, errors.New("client has no coordinators scale set")
+	stat.AzureWorkersScaleSet = c.workerScaleSet
+	if len(c.controlPlaneScaleSet) == 0 {
+		return state.ConstellationState{}, errors.New("client has no control plane scale set")
 	}
-	stat.AzureCoordinatorsScaleSet = c.coordinatorsScaleSet
-	if len(c.nodes) == 0 {
-		return state.ConstellationState{}, errors.New("client has no nodes")
+	stat.AzureControlPlanesScaleSet = c.controlPlaneScaleSet
+	if len(c.workers) == 0 {
+		return state.ConstellationState{}, errors.New("client has no workers")
 	}
-	stat.AzureNodes = c.nodes
-	if len(c.coordinators) == 0 {
-		return state.ConstellationState{}, errors.New("client has no coordinators")
+	stat.AzureWorkers = c.workers
+	if len(c.controlPlanes) == 0 {
+		return state.ConstellationState{}, errors.New("client has no control planes")
 	}
-	stat.AzureCoordinators = c.coordinators
+	stat.AzureControlPlane = c.controlPlanes
 	// AD App Object ID does not have to be set at all times
 	stat.AzureADAppObjectID = c.adAppObjectID
 
@@ -233,22 +233,22 @@ func (c *Client) SetState(stat state.ConstellationState) error {
 		return errors.New("state has no subnet")
 	}
 	c.networkSecurityGroup = stat.AzureNetworkSecurityGroup
-	if len(stat.AzureNodesScaleSet) == 0 {
-		return errors.New("state has no nodes scale set")
+	if len(stat.AzureWorkersScaleSet) == 0 {
+		return errors.New("state has no worker scale set")
 	}
-	c.nodesScaleSet = stat.AzureNodesScaleSet
-	if len(stat.AzureCoordinatorsScaleSet) == 0 {
-		return errors.New("state has no nodes scale set")
+	c.workerScaleSet = stat.AzureWorkersScaleSet
+	if len(stat.AzureControlPlanesScaleSet) == 0 {
+		return errors.New("state has no worker scale set")
 	}
-	c.coordinatorsScaleSet = stat.AzureCoordinatorsScaleSet
-	if len(stat.AzureNodes) == 0 {
-		return errors.New("state has no nodes")
+	c.controlPlaneScaleSet = stat.AzureControlPlanesScaleSet
+	if len(stat.AzureWorkers) == 0 {
+		return errors.New("state has no workers")
 	}
-	c.nodes = stat.AzureNodes
-	if len(stat.AzureCoordinators) == 0 {
-		return errors.New("state has no coordinators")
+	c.workers = stat.AzureWorkers
+	if len(stat.AzureControlPlane) == 0 {
+		return errors.New("state has no control planes")
 	}
-	c.coordinators = stat.AzureCoordinators
+	c.controlPlanes = stat.AzureControlPlane
 	// AD App Object ID does not have to be set at all times
 	c.adAppObjectID = stat.AzureADAppObjectID
 

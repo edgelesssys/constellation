@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/edgelesssys/constellation/coordinator/util"
+	"github.com/edgelesssys/constellation/bootstrapper/util"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/verify/verifyproto"
@@ -25,18 +25,18 @@ import (
 )
 
 var (
-	coordIP         = flag.String("constell-ip", "", "Public IP of the Constellation")
-	coordinatorPort = flag.String("constell-port", strconv.Itoa(constants.VerifyServiceNodePortGRPC), "NodePort of the Constellation's verification service")
-	export          = flag.String("o", "", "Write PCRs, formatted as Go code, to file")
-	format          = flag.String("format", "json", "Output format: json, yaml (default json)")
-	quiet           = flag.Bool("q", false, "Set to disable output")
-	timeout         = flag.Duration("timeout", 2*time.Minute, "Wait this duration for the verification service to become available")
+	coordIP = flag.String("constell-ip", "", "Public IP of the Constellation")
+	port    = flag.String("constell-port", strconv.Itoa(constants.VerifyServiceNodePortGRPC), "NodePort of the Constellation's verification service")
+	export  = flag.String("o", "", "Write PCRs, formatted as Go code, to file")
+	format  = flag.String("format", "json", "Output format: json, yaml (default json)")
+	quiet   = flag.Bool("q", false, "Set to disable output")
+	timeout = flag.Duration("timeout", 2*time.Minute, "Wait this duration for the verification service to become available")
 )
 
 func main() {
 	flag.Parse()
 
-	addr := net.JoinHostPort(*coordIP, *coordinatorPort)
+	addr := net.JoinHostPort(*coordIP, *port)
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 

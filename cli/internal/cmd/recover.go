@@ -7,9 +7,9 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/edgelesssys/constellation/bootstrapper/util"
 	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/cli/internal/proto"
-	"github.com/edgelesssys/constellation/coordinator/util"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
@@ -91,7 +91,7 @@ func parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFla
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("parsing endpoint argument: %w", err)
 	}
-	endpoint, err = validateEndpoint(endpoint, constants.CoordinatorPort)
+	endpoint, err = validateEndpoint(endpoint, constants.BootstrapperPort)
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
 	}

@@ -76,7 +76,7 @@ func (l LoadBalancer) Azure() armnetwork.LoadBalancer {
 					Name: to.StringPtr(coordHealthProbeName),
 					Properties: &armnetwork.ProbePropertiesFormat{
 						Protocol: armnetwork.ProbeProtocolTCP.ToPtr(),
-						Port:     to.Int32Ptr(int32(constants.CoordinatorPort)),
+						Port:     to.Int32Ptr(int32(constants.BootstrapperPort)),
 					},
 				},
 				{
@@ -134,8 +134,8 @@ func (l LoadBalancer) Azure() armnetwork.LoadBalancer {
 						FrontendIPConfiguration: &armnetwork.SubResource{
 							ID: to.StringPtr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/frontendIPConfigurations/" + frontEndIPConfigName),
 						},
-						FrontendPort: to.Int32Ptr(int32(constants.CoordinatorPort)),
-						BackendPort:  to.Int32Ptr(int32(constants.CoordinatorPort)),
+						FrontendPort: to.Int32Ptr(int32(constants.BootstrapperPort)),
+						BackendPort:  to.Int32Ptr(int32(constants.BootstrapperPort)),
 						Protocol:     armnetwork.TransportProtocolTCP.ToPtr(),
 						Probe: &armnetwork.SubResource{
 							ID: to.StringPtr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/probes/" + coordHealthProbeName),

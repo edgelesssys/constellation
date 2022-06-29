@@ -21,19 +21,19 @@ RUN go mod download all
 COPY . /constellation
 RUN rm -rf ./hack/
 
-FROM build AS build-coordinator
-WORKDIR /constellation/coordinator/
+FROM build AS build-bootstrapper
+WORKDIR /constellation/bootstrapper/
 
 ARG PROJECT_VERSION
-RUN go build -o coordinator -tags=gcp,disable_tpm_simulator -buildvcs=false -ldflags "-s -w -buildid='' -X main.version=${PROJECT_VERSION}" ./cmd/coordinator/
+RUN go build -o bootstrapper -tags=gcp,disable_tpm_simulator -buildvcs=false -ldflags "-s -w -buildid='' -X main.version=${PROJECT_VERSION}" ./cmd/bootstrapper/
 
 FROM build AS build-disk-mapper
 WORKDIR /constellation/state/
 
 RUN go build -o disk-mapper -ldflags "-s -w" ./cmd/
 
-FROM scratch AS coordinator
-COPY --from=build-coordinator /constellation/coordinator/coordinator /
+FROM scratch AS bootstrapper
+COPY --from=build-bootstrapper /constellation/bootstrapper/bootstrapper /
 
 FROM scratch AS disk-mapper
 COPY --from=build-disk-mapper /constellation/state/disk-mapper /

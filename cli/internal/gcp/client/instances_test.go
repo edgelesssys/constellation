@@ -41,11 +41,11 @@ func TestCreateInstances(t *testing.T) {
 		{CurrentAction: proto.String(computepb.ManagedInstance_NONE.String())},
 	}
 	testInput := CreateInstancesInput{
-		CountCoordinators: 3,
-		CountNodes:        4,
-		ImageId:           "img",
-		InstanceType:      "n2d-standard-2",
-		KubeEnv:           "kube-env",
+		CountControlPlanes: 3,
+		CountWorkers:       4,
+		ImageId:            "img",
+		InstanceType:       "n2d-standard-2",
+		KubeEnv:            "kube-env",
 	}
 	someErr := errors.New("failed")
 
@@ -157,22 +157,22 @@ func TestCreateInstances(t *testing.T) {
 				operationGlobalAPI:       tc.operationGlobalAPI,
 				instanceTemplateAPI:      tc.instanceTemplateAPI,
 				instanceGroupManagersAPI: tc.instanceGroupManagersAPI,
-				nodes:                    make(cloudtypes.Instances),
-				coordinators:             make(cloudtypes.Instances),
+				workers:                  make(cloudtypes.Instances),
+				controlPlanes:            make(cloudtypes.Instances),
 			}
 
 			if tc.wantErr {
 				assert.Error(client.CreateInstances(ctx, tc.input))
 			} else {
 				assert.NoError(client.CreateInstances(ctx, tc.input))
-				assert.Equal([]string{"public-ip", "public-ip"}, client.nodes.PublicIPs())
-				assert.Equal([]string{"private-ip", "private-ip"}, client.nodes.PrivateIPs())
-				assert.Equal([]string{"public-ip", "public-ip"}, client.coordinators.PublicIPs())
-				assert.Equal([]string{"private-ip", "private-ip"}, client.coordinators.PrivateIPs())
-				assert.NotNil(client.nodesInstanceGroup)
-				assert.NotNil(client.coordinatorInstanceGroup)
-				assert.NotNil(client.coordinatorTemplate)
-				assert.NotNil(client.nodeTemplate)
+				assert.Equal([]string{"public-ip", "public-ip"}, client.workers.PublicIPs())
+				assert.Equal([]string{"private-ip", "private-ip"}, client.workers.PrivateIPs())
+				assert.Equal([]string{"public-ip", "public-ip"}, client.controlPlanes.PublicIPs())
+				assert.Equal([]string{"private-ip", "private-ip"}, client.controlPlanes.PrivateIPs())
+				assert.NotNil(client.workerInstanceGroup)
+				assert.NotNil(client.controlPlaneInstanceGroup)
+				assert.NotNil(client.controlPlaneTemplate)
+				assert.NotNil(client.workerTemplate)
 			}
 		})
 	}
@@ -186,8 +186,8 @@ func TestTerminateInstances(t *testing.T) {
 		instanceTemplateAPI      instanceTemplateAPI
 		instanceGroupManagersAPI instanceGroupManagersAPI
 
-		missingNodeInstanceGroup bool
-		wantErr                  bool
+		missingWorkerInstanceGroup bool
+		wantErr                    bool
 	}{
 		"successful terminate": {
 			operationZoneAPI:         stubOperationZoneAPI{},
@@ -195,12 +195,12 @@ func TestTerminateInstances(t *testing.T) {
 			instanceTemplateAPI:      stubInstanceTemplateAPI{},
 			instanceGroupManagersAPI: stubInstanceGroupManagersAPI{},
 		},
-		"successful terminate with missing node instance group": {
-			operationZoneAPI:         stubOperationZoneAPI{},
-			operationGlobalAPI:       stubOperationGlobalAPI{},
-			instanceTemplateAPI:      stubInstanceTemplateAPI{},
-			instanceGroupManagersAPI: stubInstanceGroupManagersAPI{},
-			missingNodeInstanceGroup: true,
+		"successful terminate with missing worker instance group": {
+			operationZoneAPI:           stubOperationZoneAPI{},
+			operationGlobalAPI:         stubOperationGlobalAPI{},
+			instanceTemplateAPI:        stubInstanceTemplateAPI{},
+			instanceGroupManagersAPI:   stubInstanceGroupManagersAPI{},
+			missingWorkerInstanceGroup: true,
 		},
 		"fail delete instanceGroupManager": {
 			operationZoneAPI:         stubOperationZoneAPI{},
@@ -223,40 +223,40 @@ func TestTerminateInstances(t *testing.T) {
 
 			ctx := context.Background()
 			client := Client{
-				project:                  "project",
-				zone:                     "zone",
-				name:                     "name",
-				uid:                      "uid",
-				operationZoneAPI:         tc.operationZoneAPI,
-				operationGlobalAPI:       tc.operationGlobalAPI,
-				instanceTemplateAPI:      tc.instanceTemplateAPI,
-				instanceGroupManagersAPI: tc.instanceGroupManagersAPI,
-				nodes:                    cloudtypes.Instances{"node-id-1": cloudtypes.Instance{}, "node-id-2": cloudtypes.Instance{}},
-				coordinators:             cloudtypes.Instances{"coordinator-id-1": cloudtypes.Instance{}},
-				firewalls:                []string{"firewall-1", "firewall-2"},
-				network:                  "network-id-1",
-				nodesInstanceGroup:       "nodeInstanceGroup-id-1",
-				coordinatorInstanceGroup: "coordinatorInstanceGroup-id-1",
-				nodeTemplate:             "template-id-1",
-				coordinatorTemplate:      "template-id-1",
+				project:                   "project",
+				zone:                      "zone",
+				name:                      "name",
+				uid:                       "uid",
+				operationZoneAPI:          tc.operationZoneAPI,
+				operationGlobalAPI:        tc.operationGlobalAPI,
+				instanceTemplateAPI:       tc.instanceTemplateAPI,
+				instanceGroupManagersAPI:  tc.instanceGroupManagersAPI,
+				workers:                   cloudtypes.Instances{"worker-id-1": cloudtypes.Instance{}, "worker-id-2": cloudtypes.Instance{}},
+				controlPlanes:             cloudtypes.Instances{"controlplane-id-1": cloudtypes.Instance{}},
+				firewalls:                 []string{"firewall-1", "firewall-2"},
+				network:                   "network-id-1",
+				workerInstanceGroup:       "workerInstanceGroup-id-1",
+				controlPlaneInstanceGroup: "controlplaneInstanceGroup-id-1",
+				workerTemplate:            "template-id-1",
+				controlPlaneTemplate:      "template-id-1",
 			}
-			if tc.missingNodeInstanceGroup {
-				client.nodesInstanceGroup = ""
-				client.nodes = cloudtypes.Instances{}
+			if tc.missingWorkerInstanceGroup {
+				client.workerInstanceGroup = ""
+				client.workers = cloudtypes.Instances{}
 			}
 
 			if tc.wantErr {
 				assert.Error(client.TerminateInstances(ctx))
 			} else {
 				assert.NoError(client.TerminateInstances(ctx))
-				assert.Nil(client.nodes.PublicIPs())
-				assert.Nil(client.nodes.PrivateIPs())
-				assert.Nil(client.coordinators.PublicIPs())
-				assert.Nil(client.coordinators.PrivateIPs())
-				assert.Empty(client.nodesInstanceGroup)
-				assert.Empty(client.coordinatorInstanceGroup)
-				assert.Empty(client.coordinatorTemplate)
-				assert.Empty(client.nodeTemplate)
+				assert.Nil(client.workers.PublicIPs())
+				assert.Nil(client.workers.PrivateIPs())
+				assert.Nil(client.controlPlanes.PublicIPs())
+				assert.Nil(client.controlPlanes.PrivateIPs())
+				assert.Empty(client.workerInstanceGroup)
+				assert.Empty(client.controlPlaneInstanceGroup)
+				assert.Empty(client.controlPlaneTemplate)
+				assert.Empty(client.workerTemplate)
 			}
 		})
 	}

@@ -23,8 +23,8 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DebugdClient interface {
 	UploadAuthorizedKeys(ctx context.Context, in *UploadAuthorizedKeysRequest, opts ...grpc.CallOption) (*UploadAuthorizedKeysResponse, error)
-	UploadCoordinator(ctx context.Context, opts ...grpc.CallOption) (Debugd_UploadCoordinatorClient, error)
-	DownloadCoordinator(ctx context.Context, in *DownloadCoordinatorRequest, opts ...grpc.CallOption) (Debugd_DownloadCoordinatorClient, error)
+	UploadBootstrapper(ctx context.Context, opts ...grpc.CallOption) (Debugd_UploadBootstrapperClient, error)
+	DownloadBootstrapper(ctx context.Context, in *DownloadBootstrapperRequest, opts ...grpc.CallOption) (Debugd_DownloadBootstrapperClient, error)
 	UploadSystemServiceUnits(ctx context.Context, in *UploadSystemdServiceUnitsRequest, opts ...grpc.CallOption) (*UploadSystemdServiceUnitsResponse, error)
 }
 
@@ -45,46 +45,46 @@ func (c *debugdClient) UploadAuthorizedKeys(ctx context.Context, in *UploadAutho
 	return out, nil
 }
 
-func (c *debugdClient) UploadCoordinator(ctx context.Context, opts ...grpc.CallOption) (Debugd_UploadCoordinatorClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Debugd_ServiceDesc.Streams[0], "/debugd.Debugd/UploadCoordinator", opts...)
+func (c *debugdClient) UploadBootstrapper(ctx context.Context, opts ...grpc.CallOption) (Debugd_UploadBootstrapperClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Debugd_ServiceDesc.Streams[0], "/debugd.Debugd/UploadBootstrapper", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &debugdUploadCoordinatorClient{stream}
+	x := &debugdUploadBootstrapperClient{stream}
 	return x, nil
 }
 
-type Debugd_UploadCoordinatorClient interface {
+type Debugd_UploadBootstrapperClient interface {
 	Send(*Chunk) error
-	CloseAndRecv() (*UploadCoordinatorResponse, error)
+	CloseAndRecv() (*UploadBootstrapperResponse, error)
 	grpc.ClientStream
 }
 
-type debugdUploadCoordinatorClient struct {
+type debugdUploadBootstrapperClient struct {
 	grpc.ClientStream
 }
 
-func (x *debugdUploadCoordinatorClient) Send(m *Chunk) error {
+func (x *debugdUploadBootstrapperClient) Send(m *Chunk) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *debugdUploadCoordinatorClient) CloseAndRecv() (*UploadCoordinatorResponse, error) {
+func (x *debugdUploadBootstrapperClient) CloseAndRecv() (*UploadBootstrapperResponse, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
-	m := new(UploadCoordinatorResponse)
+	m := new(UploadBootstrapperResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (c *debugdClient) DownloadCoordinator(ctx context.Context, in *DownloadCoordinatorRequest, opts ...grpc.CallOption) (Debugd_DownloadCoordinatorClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Debugd_ServiceDesc.Streams[1], "/debugd.Debugd/DownloadCoordinator", opts...)
+func (c *debugdClient) DownloadBootstrapper(ctx context.Context, in *DownloadBootstrapperRequest, opts ...grpc.CallOption) (Debugd_DownloadBootstrapperClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Debugd_ServiceDesc.Streams[1], "/debugd.Debugd/DownloadBootstrapper", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &debugdDownloadCoordinatorClient{stream}
+	x := &debugdDownloadBootstrapperClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -94,16 +94,16 @@ func (c *debugdClient) DownloadCoordinator(ctx context.Context, in *DownloadCoor
 	return x, nil
 }
 
-type Debugd_DownloadCoordinatorClient interface {
+type Debugd_DownloadBootstrapperClient interface {
 	Recv() (*Chunk, error)
 	grpc.ClientStream
 }
 
-type debugdDownloadCoordinatorClient struct {
+type debugdDownloadBootstrapperClient struct {
 	grpc.ClientStream
 }
 
-func (x *debugdDownloadCoordinatorClient) Recv() (*Chunk, error) {
+func (x *debugdDownloadBootstrapperClient) Recv() (*Chunk, error) {
 	m := new(Chunk)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -125,8 +125,8 @@ func (c *debugdClient) UploadSystemServiceUnits(ctx context.Context, in *UploadS
 // for forward compatibility
 type DebugdServer interface {
 	UploadAuthorizedKeys(context.Context, *UploadAuthorizedKeysRequest) (*UploadAuthorizedKeysResponse, error)
-	UploadCoordinator(Debugd_UploadCoordinatorServer) error
-	DownloadCoordinator(*DownloadCoordinatorRequest, Debugd_DownloadCoordinatorServer) error
+	UploadBootstrapper(Debugd_UploadBootstrapperServer) error
+	DownloadBootstrapper(*DownloadBootstrapperRequest, Debugd_DownloadBootstrapperServer) error
 	UploadSystemServiceUnits(context.Context, *UploadSystemdServiceUnitsRequest) (*UploadSystemdServiceUnitsResponse, error)
 	mustEmbedUnimplementedDebugdServer()
 }
@@ -138,11 +138,11 @@ type UnimplementedDebugdServer struct {
 func (UnimplementedDebugdServer) UploadAuthorizedKeys(context.Context, *UploadAuthorizedKeysRequest) (*UploadAuthorizedKeysResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UploadAuthorizedKeys not implemented")
 }
-func (UnimplementedDebugdServer) UploadCoordinator(Debugd_UploadCoordinatorServer) error {
-	return status.Errorf(codes.Unimplemented, "method UploadCoordinator not implemented")
+func (UnimplementedDebugdServer) UploadBootstrapper(Debugd_UploadBootstrapperServer) error {
+	return status.Errorf(codes.Unimplemented, "method UploadBootstrapper not implemented")
 }
-func (UnimplementedDebugdServer) DownloadCoordinator(*DownloadCoordinatorRequest, Debugd_DownloadCoordinatorServer) error {
-	return status.Errorf(codes.Unimplemented, "method DownloadCoordinator not implemented")
+func (UnimplementedDebugdServer) DownloadBootstrapper(*DownloadBootstrapperRequest, Debugd_DownloadBootstrapperServer) error {
+	return status.Errorf(codes.Unimplemented, "method DownloadBootstrapper not implemented")
 }
 func (UnimplementedDebugdServer) UploadSystemServiceUnits(context.Context, *UploadSystemdServiceUnitsRequest) (*UploadSystemdServiceUnitsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UploadSystemServiceUnits not implemented")
@@ -178,25 +178,25 @@ func _Debugd_UploadAuthorizedKeys_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Debugd_UploadCoordinator_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(DebugdServer).UploadCoordinator(&debugdUploadCoordinatorServer{stream})
+func _Debugd_UploadBootstrapper_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(DebugdServer).UploadBootstrapper(&debugdUploadBootstrapperServer{stream})
 }
 
-type Debugd_UploadCoordinatorServer interface {
-	SendAndClose(*UploadCoordinatorResponse) error
+type Debugd_UploadBootstrapperServer interface {
+	SendAndClose(*UploadBootstrapperResponse) error
 	Recv() (*Chunk, error)
 	grpc.ServerStream
 }
 
-type debugdUploadCoordinatorServer struct {
+type debugdUploadBootstrapperServer struct {
 	grpc.ServerStream
 }
 
-func (x *debugdUploadCoordinatorServer) SendAndClose(m *UploadCoordinatorResponse) error {
+func (x *debugdUploadBootstrapperServer) SendAndClose(m *UploadBootstrapperResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *debugdUploadCoordinatorServer) Recv() (*Chunk, error) {
+func (x *debugdUploadBootstrapperServer) Recv() (*Chunk, error) {
 	m := new(Chunk)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -204,24 +204,24 @@ func (x *debugdUploadCoordinatorServer) Recv() (*Chunk, error) {
 	return m, nil
 }
 
-func _Debugd_DownloadCoordinator_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(DownloadCoordinatorRequest)
+func _Debugd_DownloadBootstrapper_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(DownloadBootstrapperRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(DebugdServer).DownloadCoordinator(m, &debugdDownloadCoordinatorServer{stream})
+	return srv.(DebugdServer).DownloadBootstrapper(m, &debugdDownloadBootstrapperServer{stream})
 }
 
-type Debugd_DownloadCoordinatorServer interface {
+type Debugd_DownloadBootstrapperServer interface {
 	Send(*Chunk) error
 	grpc.ServerStream
 }
 
-type debugdDownloadCoordinatorServer struct {
+type debugdDownloadBootstrapperServer struct {
 	grpc.ServerStream
 }
 
-func (x *debugdDownloadCoordinatorServer) Send(m *Chunk) error {
+func (x *debugdDownloadBootstrapperServer) Send(m *Chunk) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -261,13 +261,13 @@ var Debugd_ServiceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "UploadCoordinator",
-			Handler:       _Debugd_UploadCoordinator_Handler,
+			StreamName:    "UploadBootstrapper",
+			Handler:       _Debugd_UploadBootstrapper_Handler,
 			ClientStreams: true,
 		},
 		{
-			StreamName:    "DownloadCoordinator",
-			Handler:       _Debugd_DownloadCoordinator_Handler,
+			StreamName:    "DownloadBootstrapper",
+			Handler:       _Debugd_DownloadBootstrapper_Handler,
 			ServerStreams: true,
 		},
 	},

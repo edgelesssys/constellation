@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.11)
-project(coordinator LANGUAGES C VERSION 0.1.0)
+project(constellation LANGUAGES C VERSION 0.1.0)
 
 set(CLI_VERSION "v0.1.0" CACHE STRING "Version of CLI binary.")
 
@@ -15,13 +15,13 @@ add_custom_target(disk-mapper ALL
 )
 
 #
-# coordinator
+# bootstrapper
 #
 
-add_custom_target(coordinator ALL
-  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION=${PROJECT_VERSION} -f Dockerfile.build --target coordinator .
+add_custom_target(bootstrapper ALL
+  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION=${PROJECT_VERSION} -f Dockerfile.build --target bootstrapper .
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  BYPRODUCTS coordinator
+  BYPRODUCTS bootstrapper
 )
 
 
@@ -39,10 +39,10 @@ add_custom_target(cli ALL
 # testing / debugging
 #
 
-add_custom_target(debug_coordinator
-  go build -o ${CMAKE_BINARY_DIR}/debug_coordinator -buildvcs=false -ldflags "-buildid='' -X main.version=${PROJECT_VERSION}"
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/coordinator/cmd/coordinator
-  BYPRODUCTS debug_coordinator
+add_custom_target(debug_bootstrapper
+  go build -o ${CMAKE_BINARY_DIR}/debug_bootstrapper -buildvcs=false -ldflags "-buildid='' -X main.version=${PROJECT_VERSION}"
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/bootstrapper/cmd/bootstrapper
+  BYPRODUCTS debug_bootstrapper
 )
 
 #
@@ -67,7 +67,5 @@ add_custom_target(cdbg ALL
 
 add_test(NAME unit-main COMMAND go test -race -count=3 ./... WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME unit-hack COMMAND go test -race -count=3 ./... WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/hack)
-add_test(NAME integration-coord COMMAND go test -v -tags integration ./test/  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME integration-mount COMMAND bash -c "go test -tags integration -c ./test/ && sudo ./test.test -test.v -v 9"  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/mount)
 add_test(NAME integration-dm COMMAND bash -c "go test -tags integration -c ./test/ && sudo ./test.test -test.v"  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/state)
-add_test(NAME integration-etcd COMMAND go test -v --race -cover -count=3 -tags integration WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/coordinator/store/)

@@ -35,7 +35,7 @@ func NewCreator(out io.Writer) *Creator {
 }
 
 // Create creates the handed amount of instances and all the needed resources.
-func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, config *config.Config, name, insType string, coordCount, nodeCount int,
+func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, config *config.Config, name, insType string, controlPlaneCount, workerCount int,
 ) (state.ConstellationState, error) {
 	switch provider {
 	case cloudprovider.GCP:
@@ -50,7 +50,7 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 			return state.ConstellationState{}, err
 		}
 		defer cl.Close()
-		return c.createGCP(ctx, cl, config, insType, coordCount, nodeCount)
+		return c.createGCP(ctx, cl, config, insType, controlPlaneCount, workerCount)
 	case cloudprovider.Azure:
 		cl, err := c.newAzureClient(
 			config.Provider.Azure.SubscriptionID,
@@ -61,13 +61,13 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 		if err != nil {
 			return state.ConstellationState{}, err
 		}
-		return c.createAzure(ctx, cl, config, insType, coordCount, nodeCount)
+		return c.createAzure(ctx, cl, config, insType, controlPlaneCount, workerCount)
 	default:
 		return state.ConstellationState{}, fmt.Errorf("unsupported cloud provider: %s", provider)
 	}
 }
 
-func (c *Creator) createGCP(ctx context.Context, cl gcpclient, config *config.Config, insType string, coordCount, nodeCount int,
+func (c *Creator) createGCP(ctx context.Context, cl gcpclient, config *config.Config, insType string, controlPlaneCount, workerCount int,
 ) (stat state.ConstellationState, retErr error) {
 	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerGCP{client: cl})
 
@@ -121,12 +121,12 @@ func (c *Creator) createGCP(ctx context.Context, cl gcpclient, config *config.Co
 	}
 
 	createInput := gcpcl.CreateInstancesInput{
-		CountCoordinators: coordCount,
-		CountNodes:        nodeCount,
-		ImageId:           config.Provider.GCP.Image,
-		InstanceType:      insType,
-		StateDiskSizeGB:   config.StateDiskSizeGB,
-		KubeEnv:           gcp.KubeEnv,
+		CountControlPlanes: controlPlaneCount,
+		CountWorkers:       workerCount,
+		ImageId:            config.Provider.GCP.Image,
+		InstanceType:       insType,
+		StateDiskSizeGB:    config.StateDiskSizeGB,
+		KubeEnv:            gcp.KubeEnv,
 	}
 	if err := cl.CreateInstances(ctx, createInput); err != nil {
 		return state.ConstellationState{}, err
@@ -139,7 +139,7 @@ func (c *Creator) createGCP(ctx context.Context, cl gcpclient, config *config.Co
 	return cl.GetState()
 }
 
-func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *config.Config, insType string, coordCount, nodeCount int,
+func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *config.Config, insType string, controlPlaneCount, workerCount int,
 ) (stat state.ConstellationState, retErr error) {
 	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerAzure{client: cl})
 
@@ -163,8 +163,8 @@ func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *confi
 		return state.ConstellationState{}, err
 	}
 	createInput := azurecl.CreateInstancesInput{
-		CountCoordinators:    coordCount,
-		CountNodes:           nodeCount,
+		CountControlPlanes:   controlPlaneCount,
+		CountWorkers:         workerCount,
 		InstanceType:         insType,
 		StateDiskSizeGB:      config.StateDiskSizeGB,
 		Image:                config.Provider.Azure.Image,

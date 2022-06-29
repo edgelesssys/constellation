@@ -15,16 +15,16 @@ import (
 func TestServiceAccountCreator(t *testing.T) {
 	someGCPState := func() state.ConstellationState {
 		return state.ConstellationState{
-			CloudProvider:                  cloudprovider.GCP.String(),
-			GCPProject:                     "project",
-			GCPNodes:                       cloudtypes.Instances{},
-			GCPCoordinators:                cloudtypes.Instances{},
-			GCPNodeInstanceGroup:           "nodes-group",
-			GCPCoordinatorInstanceGroup:    "coord-group",
-			GCPNodeInstanceTemplate:        "template",
-			GCPCoordinatorInstanceTemplate: "template",
-			GCPNetwork:                     "network",
-			GCPFirewalls:                   []string{},
+			CloudProvider:                   cloudprovider.GCP.String(),
+			GCPProject:                      "project",
+			GCPWorkers:                      cloudtypes.Instances{},
+			GCPControlPlanes:                cloudtypes.Instances{},
+			GCPWorkerInstanceGroup:          "workers-group",
+			GCPControlPlaneInstanceGroup:    "controlplane-group",
+			GCPWorkerInstanceTemplate:       "template",
+			GCPControlPlaneInstanceTemplate: "template",
+			GCPNetwork:                      "network",
+			GCPFirewalls:                    []string{},
 		}
 	}
 	someAzureState := func() state.ConstellationState {
