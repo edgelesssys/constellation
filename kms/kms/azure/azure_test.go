@@ -8,8 +8,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets"
+	"github.com/edgelesssys/constellation/kms/internal/storage"
 	"github.com/edgelesssys/constellation/kms/kms"
-	"github.com/edgelesssys/constellation/kms/storage"
 	"github.com/stretchr/testify/assert"
 )
 

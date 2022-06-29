@@ -10,7 +10,7 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/edgelesssys/constellation/kms/config"
+	"github.com/edgelesssys/constellation/kms/internal/config"
 )
 
 type awsS3ClientAPI interface {

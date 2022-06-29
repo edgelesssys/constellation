@@ -1,4 +1,4 @@
-package validator
+package watcher
 
 import (
 	"encoding/asn1"
@@ -25,8 +25,8 @@ type Updatable struct {
 	atls.Validator
 }
 
-// New initializes a new updatable validator.
-func New(log *logger.Logger, csp string, fileHandler file.Handler) (*Updatable, error) {
+// NewValidator initializes a new updatable validator.
+func NewValidator(log *logger.Logger, csp string, fileHandler file.Handler) (*Updatable, error) {
 	var newValidator newValidatorFunc
 	switch cloudprovider.FromString(csp) {
 	case cloudprovider.Azure:
@@ -71,7 +71,7 @@ func (u *Updatable) Update() error {
 	u.log.Infof("Updating expected measurements")
 
 	var measurements map[uint32][]byte
-	if err := u.fileHandler.ReadJSON(filepath.Join(constants.ActivationBasePath, constants.ActivationMeasurementsFilename), &measurements); err != nil {
+	if err := u.fileHandler.ReadJSON(filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename), &measurements); err != nil {
 		return err
 	}
 	u.log.Debugf("New measurements: %v", measurements)

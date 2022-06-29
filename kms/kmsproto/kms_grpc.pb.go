@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.20.1
-// source: kmsapi.proto
+// source: kms.proto
 
 package kmsproto
 
@@ -35,7 +35,7 @@ func NewAPIClient(cc grpc.ClientConnInterface) APIClient {
 
 func (c *aPIClient) GetDataKey(ctx context.Context, in *GetDataKeyRequest, opts ...grpc.CallOption) (*GetDataKeyResponse, error) {
 	out := new(GetDataKeyResponse)
-	err := c.cc.Invoke(ctx, "/kmsapi.API/GetDataKey", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/kms.API/GetDataKey", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func _API_GetDataKey_Handler(srv interface{}, ctx context.Context, dec func(inte
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/kmsapi.API/GetDataKey",
+		FullMethod: "/kms.API/GetDataKey",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(APIServer).GetDataKey(ctx, req.(*GetDataKeyRequest))
@@ -92,7 +92,7 @@ func _API_GetDataKey_Handler(srv interface{}, ctx context.Context, dec func(inte
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var API_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "kmsapi.API",
+	ServiceName: "kms.API",
 	HandlerType: (*APIServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -101,5 +101,5 @@ var API_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "kmsapi.proto",
+	Metadata: "kms.proto",
 }

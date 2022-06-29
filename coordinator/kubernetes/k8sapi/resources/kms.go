@@ -14,7 +14,8 @@ import (
 
 type kmsDeployment struct {
 	ServiceAccount     k8s.ServiceAccount
-	Service            k8s.Service
+	ServiceInternal    k8s.Service
+	ServiceExternal    k8s.Service
 	ClusterRole        rbac.ClusterRole
 	ClusterRoleBinding rbac.ClusterRoleBinding
 	Deployment         apps.Deployment
@@ -23,7 +24,7 @@ type kmsDeployment struct {
 }
 
 // NewKMSDeployment creates a new *kmsDeployment to use as the key management system inside Constellation.
-func NewKMSDeployment(masterSecret []byte) *kmsDeployment {
+func NewKMSDeployment(csp string, masterSecret []byte) *kmsDeployment {
 	return &kmsDeployment{
 		ServiceAccount: k8s.ServiceAccount{
 			TypeMeta: meta.TypeMeta{
@@ -35,7 +36,7 @@ func NewKMSDeployment(masterSecret []byte) *kmsDeployment {
 				Namespace: "kube-system",
 			},
 		},
-		Service: k8s.Service{
+		ServiceInternal: k8s.Service{
 			TypeMeta: meta.TypeMeta{
 				APIVersion: "v1",
 				Kind:       "Service",
@@ -52,6 +53,31 @@ func NewKMSDeployment(masterSecret []byte) *kmsDeployment {
 						Protocol:   k8s.ProtocolTCP,
 						Port:       constants.KMSPort,
 						TargetPort: intstr.FromInt(constants.KMSPort),
+					},
+				},
+				Selector: map[string]string{
+					"k8s-app": "kms",
+				},
+			},
+		},
+		ServiceExternal: k8s.Service{
+			TypeMeta: meta.TypeMeta{
+				APIVersion: "v1",
+				Kind:       "Service",
+			},
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "kms-external",
+				Namespace: "kube-system",
+			},
+			Spec: k8s.ServiceSpec{
+				Type: k8s.ServiceTypeNodePort,
+				Ports: []k8s.ServicePort{
+					{
+						Name:       "atls",
+						Protocol:   k8s.ProtocolTCP,
+						Port:       constants.KMSATLSPort,
+						TargetPort: intstr.FromInt(constants.KMSATLSPort),
+						NodePort:   constants.KMSNodePort,
 					},
 				},
 				Selector: map[string]string{
@@ -161,14 +187,35 @@ func NewKMSDeployment(masterSecret []byte) *kmsDeployment {
 						},
 						Volumes: []k8s.Volume{
 							{
-								Name: "mastersecret",
+								Name: "config",
 								VolumeSource: k8s.VolumeSource{
-									Secret: &k8s.SecretVolumeSource{
-										SecretName: constants.ConstellationMasterSecretStoreName,
-										Items: []k8s.KeyToPath{
+									Projected: &k8s.ProjectedVolumeSource{
+										Sources: []k8s.VolumeProjection{
 											{
-												Key:  constants.ConstellationMasterSecretKey,
-												Path: "constellation-mastersecret.base64",
+												ConfigMap: &k8s.ConfigMapProjection{
+													LocalObjectReference: k8s.LocalObjectReference{
+														Name: "activation-config",
+													},
+													Items: []k8s.KeyToPath{
+														{
+															Key:  constants.MeasurementsFilename,
+															Path: constants.MeasurementsFilename,
+														},
+													},
+												},
+											},
+											{
+												Secret: &k8s.SecretProjection{
+													LocalObjectReference: k8s.LocalObjectReference{
+														Name: constants.ConstellationMasterSecretStoreName,
+													},
+													Items: []k8s.KeyToPath{
+														{
+															Key:  constants.ConstellationMasterSecretKey,
+															Path: constants.MasterSecretFilename,
+														},
+													},
+												},
 											},
 										},
 									},
@@ -181,14 +228,15 @@ func NewKMSDeployment(masterSecret []byte) *kmsDeployment {
 								Name:  "kms",
 								Image: kmsImage,
 								Args: []string{
+									fmt.Sprintf("--atls-port=%d", constants.KMSATLSPort),
 									fmt.Sprintf("--port=%d", constants.KMSPort),
-									"--v=5",
+									fmt.Sprintf("--cloud-provider=%s", csp),
 								},
 								VolumeMounts: []k8s.VolumeMount{
 									{
-										Name:      "mastersecret",
+										Name:      "config",
 										ReadOnly:  true,
-										MountPath: "/constellation/",
+										MountPath: constants.ServiceBasePath,
 									},
 								},
 							},

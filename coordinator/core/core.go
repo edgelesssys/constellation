@@ -19,7 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/kms/kms"
-	kmsSetup "github.com/edgelesssys/constellation/kms/server/setup"
+	kmsSetup "github.com/edgelesssys/constellation/kms/setup"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )

@@ -124,7 +124,7 @@ func (s *Server) activateNode(ctx context.Context, diskUUID, nodeName string) (n
 	log := s.log.With(zap.String("peerAddress", grpclog.PeerAddrFromContext(ctx)))
 	log.Infof("Loading IDs")
 	var id attestationtypes.ID
-	if err := s.file.ReadJSON(filepath.Join(constants.ActivationBasePath, constants.ActivationIDFilename), &id); err != nil {
+	if err := s.file.ReadJSON(filepath.Join(constants.ServiceBasePath, constants.IDFilename), &id); err != nil {
 		log.With(zap.Error(err)).Errorf("Unable to load IDs")
 		return nodeParameters{}, status.Errorf(codes.Internal, "unable to load IDs: %s", err)
 	}

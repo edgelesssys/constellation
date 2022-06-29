@@ -27,7 +27,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/oid"
-	kms "github.com/edgelesssys/constellation/kms/server/setup"
+	kms "github.com/edgelesssys/constellation/kms/setup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"

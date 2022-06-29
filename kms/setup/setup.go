@@ -6,12 +6,12 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/edgelesssys/constellation/kms/internal/storage"
 	"github.com/edgelesssys/constellation/kms/kms"
 	"github.com/edgelesssys/constellation/kms/kms/aws"
 	"github.com/edgelesssys/constellation/kms/kms/azure"
 	"github.com/edgelesssys/constellation/kms/kms/cluster"
 	"github.com/edgelesssys/constellation/kms/kms/gcp"
-	"github.com/edgelesssys/constellation/kms/storage"
 	kmspb "google.golang.org/genproto/googleapis/cloud/kms/v1"
 )
 

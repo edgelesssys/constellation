@@ -5,7 +5,7 @@ RUN dnf -y update && \
     dnf clean all
 
 # Install Go
-ARG GO_VER=1.18
+ARG GO_VER=1.18.3
 RUN wget https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go${GO_VER}.linux-amd64.tar.gz && \
     rm go${GO_VER}.linux-amd64.tar.gz
@@ -25,7 +25,7 @@ WORKDIR /constellation/activation
 ARG PROJECT_VERSION=0.0.0
 RUN CGO_ENABLED=0 go build -o activation-service -trimpath -buildvcs=false -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/internal/constants.VersionInfo=${PROJECT_VERSION}" ./cmd/
 
-# We would like to use a scratch image here, but we require CA certificates to be installed for some operations.
+# We would like to use a scratch image here, but we require CA certificates to be installed for aTLS operations on GCP.
 FROM fedora@sha256:36af84ba69e21c9ef86a0424a090674c433b2b80c2462e57503886f1d823abe8 as release
 COPY --from=build /constellation/activation/activation-service /activation
 ENTRYPOINT [ "/activation" ]

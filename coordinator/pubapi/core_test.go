@@ -13,7 +13,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/edgelesssys/constellation/internal/logger"
-	kms "github.com/edgelesssys/constellation/kms/server/setup"
+	kms "github.com/edgelesssys/constellation/kms/setup"
 	"go.uber.org/zap/zapcore"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )

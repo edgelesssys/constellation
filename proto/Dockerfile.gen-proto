@@ -46,7 +46,7 @@ RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_o
 
 ## key management
 WORKDIR /kms
-COPY kms/server/kmsapi/kmsproto/*.proto /kms
+COPY kms/kmsproto/*.proto /kms
 RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
 
 ## activation
@@ -64,6 +64,6 @@ COPY --from=build /pubapi/*.go coordinator/pubapi/pubproto/
 COPY --from=build /vpnapi/*.go coordinator/vpnapi/vpnproto/
 COPY --from=build /disk-mapper/*.go state/keyservice/keyproto/
 COPY --from=build /service/*.go debugd/service/
-COPY --from=build /kms/*.go kms/server/kmsapi/kmsproto/
+COPY --from=build /kms/*.go kms/kmsproto/
 COPY --from=build /activation/*.go activation/activationproto/
 COPY --from=build /verify/*.go verify/verifyproto/

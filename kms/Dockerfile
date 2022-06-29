@@ -1,12 +1,14 @@
-FROM ubuntu@sha256:7cc0576c7c0ec2384de5cbf245f41567e922aab1b075f3e8ad565f508032df17 as build
+FROM fedora@sha256:36af84ba69e21c9ef86a0424a090674c433b2b80c2462e57503886f1d823abe8 as build
 
 ENV DEBIAN_FRONTEND="noninteractive"
-RUN apt-get update && apt-get install wget git -y
+RUN dnf -y update && \
+    dnf install -y wget git
 
 # Install Go
-ARG GO_VER=1.18
-RUN wget https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz
-RUN tar -C /usr/local -xzf go${GO_VER}.linux-amd64.tar.gz && rm go${GO_VER}.linux-amd64.tar.gz
+ARG GO_VER=1.18.3
+RUN wget https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go${GO_VER}.linux-amd64.tar.gz && \
+    rm go${GO_VER}.linux-amd64.tar.gz
 ENV PATH ${PATH}:/usr/local/go/bin
 
 # Download go dependencies
@@ -25,6 +27,7 @@ WORKDIR /constellation/kms/server/cmd
 ARG PROJECT_VERSION=0.0.0
 RUN CGO_ENABLED=0 go build -o /constellation/build/kmsserver -trimpath -buildvcs=false -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/internal/constants.VersionInfo=${PROJECT_VERSION}"
 
-FROM scratch as release
+# We would like to use a scratch image here, but we require CA certificates to be installed for aTLS operations on GCP.
+FROM fedora@sha256:36af84ba69e21c9ef86a0424a090674c433b2b80c2462e57503886f1d823abe8 as release
 COPY --from=build /constellation/build/kmsserver /kmsserver
 ENTRYPOINT ["/kmsserver"]

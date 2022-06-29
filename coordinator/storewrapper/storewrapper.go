@@ -11,7 +11,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/coordinator/store"
-	kms "github.com/edgelesssys/constellation/kms/server/setup"
+	kms "github.com/edgelesssys/constellation/kms/setup"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 

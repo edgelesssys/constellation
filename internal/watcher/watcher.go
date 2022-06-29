@@ -59,7 +59,7 @@ func (f *FileWatcher) Watch(file string) error {
 			// file changes may be indicated by either a WRITE, CHMOD, CREATE or RENAME event
 			if event.Op&(fsnotify.Write|fsnotify.Chmod|fsnotify.Create|fsnotify.Rename) != 0 {
 				if err := f.updater.Update(); err != nil {
-					log.With(zap.Error(err)).Errorf("Failed to update activation validator")
+					log.With(zap.Error(err)).Errorf("Update failed")
 				}
 			}
 

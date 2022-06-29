@@ -9,7 +9,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/state"
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
-	kms "github.com/edgelesssys/constellation/kms/server/setup"
+	kms "github.com/edgelesssys/constellation/kms/setup"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 	"google.golang.org/grpc"
 )

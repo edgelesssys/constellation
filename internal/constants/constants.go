@@ -28,12 +28,17 @@ const (
 	VerifyServicePortGRPC     = 9090
 	VerifyServiceNodePortHTTP = 30080
 	VerifyServiceNodePortGRPC = 30081
-	KMSPort                   = 9000
-	CoordinatorPort           = 9000
-	EnclaveSSHPort            = 2222
-	SSHPort                   = 22
-	WireguardPort             = 51820
-	NVMEOverTCPPort           = 8009
+	// KMSPort is the port the KMS server listens on.
+	KMSPort = 9000
+	// KMSATLSPort is the port the KMS aTLS server listens on.
+	KMSATLSPort = 9001
+	// KMSNodePort is the aTLS port exposed as a NodePort.
+	KMSNodePort     = 30091
+	CoordinatorPort = 9000
+	EnclaveSSHPort  = 2222
+	SSHPort         = 22
+	WireguardPort   = 51820
+	NVMEOverTCPPort = 8009
 	// Default NodePort Range
 	// https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
 	NodePortFrom   = 30000
@@ -53,10 +58,16 @@ const (
 	CoreOSAdminConfFilename = "/etc/kubernetes/admin.conf"
 	KubeadmCertificateDir   = "/etc/kubernetes/pki"
 
-	// Filenames for the Activation service.
-	ActivationBasePath             = "/var/config"
-	ActivationMeasurementsFilename = "measurements"
-	ActivationIDFilename           = "id"
+	//
+	// Filenames for Constellation's micro services.
+	//
+
+	// ServiceBasePath is the base path for the mounted micro services files.
+	ServiceBasePath = "/var/config"
+	// MeasurementsFilename is the filename of CC measurements.
+	MeasurementsFilename = "measurements"
+	// IDFilename is the filename of Constellation's IDs.
+	IDFilename = "id"
 
 	//
 	// Cryptographic constants.

@@ -9,13 +9,12 @@ import (
 	"github.com/edgelesssys/constellation/activation/kubeadm"
 	"github.com/edgelesssys/constellation/activation/kubernetesca"
 	"github.com/edgelesssys/constellation/activation/server"
-	"github.com/edgelesssys/constellation/activation/validator"
-	"github.com/edgelesssys/constellation/activation/watcher"
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/internal/watcher"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -34,7 +33,7 @@ func main() {
 
 	handler := file.NewHandler(afero.NewOsFs())
 
-	validator, err := validator.New(log.Named("validator"), *provider, handler)
+	validator, err := watcher.NewValidator(log.Named("validator"), *provider, handler)
 	if err != nil {
 		flag.Usage()
 		log.With(zap.Error(err)).Fatalf("Failed to create validator")
@@ -63,8 +62,8 @@ func main() {
 	defer watcher.Close()
 
 	go func() {
-		log.Infof("starting file watcher for measurements file %s", filepath.Join(constants.ActivationBasePath, constants.ActivationMeasurementsFilename))
-		if err := watcher.Watch(filepath.Join(constants.ActivationBasePath, constants.ActivationMeasurementsFilename)); err != nil {
+		log.Infof("starting file watcher for measurements file %s", filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename))
+		if err := watcher.Watch(filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename)); err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to watch measurements file")
 		}
 	}()

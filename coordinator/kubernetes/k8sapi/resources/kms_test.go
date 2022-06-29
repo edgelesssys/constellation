@@ -12,7 +12,7 @@ func TestKMSMarshalUnmarshal(t *testing.T) {
 	assert := assert.New(t)
 
 	testMS := []byte{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8}
-	kmsDepl := NewKMSDeployment(testMS)
+	kmsDepl := NewKMSDeployment("test", testMS)
 	data, err := kmsDepl.Marshal()
 	require.NoError(err)
 

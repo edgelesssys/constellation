@@ -22,7 +22,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/internal/oid"
-	kms "github.com/edgelesssys/constellation/kms/server/setup"
+	kms "github.com/edgelesssys/constellation/kms/setup"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

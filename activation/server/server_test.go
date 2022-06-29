@@ -130,7 +130,7 @@ func TestActivateNode(t *testing.T) {
 
 			file := file.NewHandler(afero.NewMemMapFs())
 			if len(tc.id) > 0 {
-				require.NoError(file.Write(filepath.Join(constants.ActivationBasePath, constants.ActivationIDFilename), tc.id, 0o644))
+				require.NoError(file.Write(filepath.Join(constants.ServiceBasePath, constants.IDFilename), tc.id, 0o644))
 			}
 			api := New(
 				logger.NewTest(t),
@@ -217,7 +217,7 @@ func TestActivateWorkerNode(t *testing.T) {
 			require := require.New(t)
 
 			file := file.NewHandler(afero.NewMemMapFs())
-			require.NoError(file.Write(filepath.Join(constants.ActivationBasePath, constants.ActivationIDFilename), tc.id, 0o644))
+			require.NoError(file.Write(filepath.Join(constants.ServiceBasePath, constants.IDFilename), tc.id, 0o644))
 
 			api := New(
 				logger.NewTest(t),
@@ -322,7 +322,7 @@ func TestActivateControlPlaneNode(t *testing.T) {
 			require := require.New(t)
 
 			file := file.NewHandler(afero.NewMemMapFs())
-			require.NoError(file.Write(filepath.Join(constants.ActivationBasePath, constants.ActivationIDFilename), tc.id, 0o644))
+			require.NoError(file.Write(filepath.Join(constants.ServiceBasePath, constants.IDFilename), tc.id, 0o644))
 
 			api := New(
 				logger.NewTest(t),

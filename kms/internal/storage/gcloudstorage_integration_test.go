@@ -1,6 +1,6 @@
 //go:build integration
 
-package integration
+package storage
 
 import (
 	"context"
@@ -12,7 +12,6 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
-	"github.com/edgelesssys/constellation/kms/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/api/option"
@@ -43,7 +42,7 @@ func TestGoogleCloudStorage(t *testing.T) {
 	t.Log("Running test...")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*50)
 	defer cancel()
-	store, err := storage.NewGoogleCloudStorage(ctx, projectName, bucketName, nil, option.WithoutAuthentication())
+	store, err := NewGoogleCloudStorage(ctx, projectName, bucketName, nil, option.WithoutAuthentication())
 	require.NoError(err)
 
 	testDEK1 := []byte("test DEK")
@@ -67,7 +66,7 @@ func TestGoogleCloudStorage(t *testing.T) {
 
 	_, err = store.Get(ctx, "invalid:key")
 	assert.Error(err)
-	assert.ErrorIs(err, storage.ErrDEKUnset)
+	assert.ErrorIs(err, ErrDEKUnset)
 }
 
 func setupEmulator(ctx context.Context, cli *client.Client, imageName string) (container.ContainerCreateCreatedBody, error) {

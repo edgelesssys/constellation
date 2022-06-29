@@ -12,10 +12,10 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/keyvault/azkeys"
 	"github.com/Azure/azure-sdk-for-go/sdk/keyvault/azkeys/crypto"
-	"github.com/edgelesssys/constellation/kms/config"
+	"github.com/edgelesssys/constellation/kms/internal/config"
+	"github.com/edgelesssys/constellation/kms/internal/storage"
 	"github.com/edgelesssys/constellation/kms/kms"
 	"github.com/edgelesssys/constellation/kms/kms/util"
-	"github.com/edgelesssys/constellation/kms/storage"
 )
 
 type hsmClientAPI interface {

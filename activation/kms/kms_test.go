@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/internal/logger"
-	"github.com/edgelesssys/constellation/kms/server/kmsapi/kmsproto"
+	"github.com/edgelesssys/constellation/kms/kmsproto"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"

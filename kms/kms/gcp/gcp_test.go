@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/edgelesssys/constellation/kms/internal/storage"
 	kmsInterface "github.com/edgelesssys/constellation/kms/kms"
 	"github.com/edgelesssys/constellation/kms/kms/util"
-	"github.com/edgelesssys/constellation/kms/storage"
 	"github.com/googleapis/gax-go/v2"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/api/option"

@@ -138,7 +138,7 @@ func NewActivationDaemonset(csp, measurementsJSON, idJSON string) *activationDae
 								Image: activationImage,
 								Ports: []k8s.ContainerPort{
 									{
-										ContainerPort: 9090,
+										ContainerPort: constants.ActivationServicePort,
 										Name:          "tcp",
 									},
 								},
@@ -148,13 +148,12 @@ func NewActivationDaemonset(csp, measurementsJSON, idJSON string) *activationDae
 								Args: []string{
 									fmt.Sprintf("--cloud-provider=%s", csp),
 									fmt.Sprintf("--kms-endpoint=kms.kube-system:%d", constants.KMSPort),
-									"--v=5",
 								},
 								VolumeMounts: []k8s.VolumeMount{
 									{
 										Name:      "config",
 										ReadOnly:  true,
-										MountPath: constants.ActivationBasePath,
+										MountPath: constants.ServiceBasePath,
 									},
 									{
 										Name:      "kubeadm",

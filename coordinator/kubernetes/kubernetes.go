@@ -142,7 +142,7 @@ func (k *KubeWrapper) InitCluster(
 		return fmt.Errorf("setting up pod network: %w", err)
 	}
 
-	kms := resources.NewKMSDeployment(masterSecret)
+	kms := resources.NewKMSDeployment(k.cloudProvider, masterSecret)
 	if err = k.clusterUtil.SetupKMS(k.client, kms); err != nil {
 		return fmt.Errorf("setting up kms: %w", err)
 	}

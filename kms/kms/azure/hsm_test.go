@@ -10,8 +10,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/keyvault/azkeys"
 	"github.com/Azure/azure-sdk-for-go/sdk/keyvault/azkeys/crypto"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/edgelesssys/constellation/kms/internal/storage"
 	"github.com/edgelesssys/constellation/kms/kms"
-	"github.com/edgelesssys/constellation/kms/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
