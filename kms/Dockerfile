@@ -23,7 +23,7 @@ RUN rm -rf ./hack/
 
 # Build
 RUN mkdir -p /constellation/build
-WORKDIR /constellation/kms/server/cmd
+WORKDIR /constellation/kms/cmd
 ARG PROJECT_VERSION=0.0.0
 RUN CGO_ENABLED=0 go build -o /constellation/build/kmsserver -trimpath -buildvcs=false -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/internal/constants.VersionInfo=${PROJECT_VERSION}"
 

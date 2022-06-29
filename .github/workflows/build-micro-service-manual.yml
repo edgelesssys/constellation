@@ -43,7 +43,7 @@ jobs:
             "activation-service" )
               echo "microServiceDockerfile=activation/Dockerfile" >> $GITHUB_ENV ;;
             "kmsserver" )
-              echo "microServiceDockerfile=kms/server/Dockerfile" >> $GITHUB_ENV ;;
+              echo "microServiceDockerfile=kms/Dockerfile" >> $GITHUB_ENV ;;
             "verification-service" )
               echo "microServiceDockerfile=verify/Dockerfile" >> $GITHUB_ENV ;;
           esac
