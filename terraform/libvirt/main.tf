@@ -4,11 +4,41 @@ terraform {
       source  = "dmacvicar/libvirt"
       version = "0.6.14"
     }
+    docker = {
+      source = "kreuzwerker/docker"
+      version = "2.17.0"
+    }
   }
 }
 
 provider "libvirt" {
   uri = "qemu:///session"
+}
+
+provider "docker" {
+  host = "unix:///var/run/docker.sock"
+
+  registry_auth {
+    address     = "ghcr.io"
+    config_file = pathexpand("~/.docker/config.json")
+  }
+}
+
+resource "docker_image" "qemu-metadata" {
+  name = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:latest"
+  keep_locally = true 
+}
+
+resource "docker_container" "qemu-metadata" {
+  name = "qemu-metadata"
+  image = docker_image.qemu-metadata.latest
+  network_mode = "host"
+  rm = true
+  mounts {
+    source = "/var/run/libvirt/libvirt-sock"
+    target = "/var/run/libvirt/libvirt-sock"
+    type = "bind" 
+  }
 }
 
 module "control_plane" {

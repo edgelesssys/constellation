@@ -3,7 +3,6 @@ package main
 import (
 	"net"
 	"os"
-	"strings"
 	"sync"
 
 	"github.com/edgelesssys/constellation/debugd/coordinator"
@@ -12,6 +11,7 @@ import (
 	"github.com/edgelesssys/constellation/debugd/debugd/metadata/cloudprovider"
 	"github.com/edgelesssys/constellation/debugd/debugd/metadata/fallback"
 	"github.com/edgelesssys/constellation/debugd/debugd/server"
+	platform "github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/edgelesssys/constellation/internal/logger"
@@ -34,22 +34,24 @@ func main() {
 
 	download := deploy.New(log.Named("download"), &net.Dialer{}, serviceManager, streamer)
 	var fetcher metadata.Fetcher
-	constellationCSP := strings.ToLower(os.Getenv("CONSTEL_CSP"))
-	switch constellationCSP {
-	case "azure":
+	csp := os.Getenv("CONSTEL_CSP")
+	switch platform.FromString(csp) {
+	case platform.Azure:
 		azureFetcher, err := cloudprovider.NewAzure(ctx)
 		if err != nil {
 			panic(err)
 		}
 		fetcher = azureFetcher
-	case "gcp":
+	case platform.GCP:
 		gcpFetcher, err := cloudprovider.NewGCP(ctx)
 		if err != nil {
 			panic(err)
 		}
 		fetcher = gcpFetcher
+	case platform.QEMU:
+		fetcher = cloudprovider.NewQEMU()
 	default:
-		log.Errorf("Unknown / unimplemented cloud provider CONSTEL_CSP=%v. Using fallback", constellationCSP)
+		log.Errorf("Unknown / unimplemented cloud provider CONSTEL_CSP=%v. Using fallback", csp)
 		fetcher = fallback.Fetcher{}
 	}
 	sched := metadata.NewScheduler(log.Named("scheduler"), fetcher, ssh, download)

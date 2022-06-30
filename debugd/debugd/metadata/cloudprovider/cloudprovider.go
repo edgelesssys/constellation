@@ -7,6 +7,7 @@ import (
 	azurecloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/azure"
 	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	gcpcloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/gcp"
+	qemucloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/qemu"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 )
 
@@ -45,6 +46,12 @@ func NewAzure(ctx context.Context) (*Fetcher, error) {
 	return &Fetcher{
 		metaAPI: metaAPI,
 	}, nil
+}
+
+func NewQEMU() *Fetcher {
+	return &Fetcher{
+		metaAPI: &qemucloud.Metadata{},
+	}
 }
 
 // DiscoverDebugdIPs will query the metadata of all instances and return any ips of instances already set up for debugging.

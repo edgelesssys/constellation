@@ -43,8 +43,10 @@ require (
 	github.com/spf13/afero v1.8.2
 	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.7.1
+	go.uber.org/zap v1.21.0
 	google.golang.org/grpc v1.46.2
 	gopkg.in/yaml.v3 v3.0.0-20220512140231-539c8e751b99
+	libvirt.org/go/libvirt v1.8004.0
 )
 
 require (
@@ -138,7 +140,6 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/oauth2 v0.0.0-20220309155454-6242fa91716a // indirect

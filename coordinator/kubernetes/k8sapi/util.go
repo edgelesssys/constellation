@@ -124,7 +124,7 @@ func (k *KubernetesUtil) SetupPodNetwork(ctx context.Context, in SetupPodNetwork
 	case "azure":
 		return k.setupAzurePodNetwork(ctx, in.ProviderID, in.SubnetworkPodCIDR)
 	case "qemu":
-		return k.setupQemuPodNetwork(ctx)
+		return k.setupQemuPodNetwork(ctx, in.SubnetworkPodCIDR)
 	default:
 		return fmt.Errorf("unsupported cloud provider %q", in.CloudProvider)
 	}
@@ -213,8 +213,8 @@ func (k *KubernetesUtil) FixCilium(nodeNameK8s string) {
 	}
 }
 
-func (k *KubernetesUtil) setupQemuPodNetwork(ctx context.Context) error {
-	ciliumInstall := exec.CommandContext(ctx, "cilium", "install", "--encryption", "wireguard", "--helm-set", "ipam.operator.clusterPoolIPv4PodCIDRList=10.244.0.0/16,endpointRoutes.enabled=true")
+func (k *KubernetesUtil) setupQemuPodNetwork(ctx context.Context, subnetworkPodCIDR string) error {
+	ciliumInstall := exec.CommandContext(ctx, "cilium", "install", "--encryption", "wireguard", "--helm-set", "ipam.operator.clusterPoolIPv4PodCIDRList="+subnetworkPodCIDR+",endpointRoutes.enabled=true")
 	ciliumInstall.Env = append(os.Environ(), "KUBECONFIG="+kubeConfig)
 	out, err := ciliumInstall.CombinedOutput()
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 
 	azurecloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/azure"
 	gcpcloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/gcp"
+	qemucloud "github.com/edgelesssys/constellation/coordinator/cloudprovider/qemu"
 	"github.com/edgelesssys/constellation/coordinator/core"
 	"github.com/edgelesssys/constellation/internal/attestation/azure"
 	"github.com/edgelesssys/constellation/internal/attestation/gcp"
@@ -67,8 +68,7 @@ func main() {
 	case "qemu":
 		diskPath = qemuStateDiskPath
 		issuer = qemu.NewIssuer()
-		log.Warnf("cloud services are not supported on QEMU")
-		metadata = &core.ProviderMetadataFake{}
+		metadata = &qemucloud.Metadata{}
 
 	default:
 		diskPathErr = fmt.Errorf("csp %q is not supported by Constellation", *csp)
