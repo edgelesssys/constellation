@@ -8,6 +8,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/kms/kmsproto"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 )
@@ -19,6 +20,10 @@ type stubClient struct {
 
 func (c *stubClient) GetDataKey(context.Context, *kmsproto.GetDataKeyRequest, *grpc.ClientConn) (*kmsproto.GetDataKeyResponse, error) {
 	return &kmsproto.GetDataKeyResponse{DataKey: c.dataKey}, c.getDataKeyErr
+}
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
 }
 
 func TestGetDataKey(t *testing.T) {

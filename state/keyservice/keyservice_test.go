@@ -17,9 +17,17 @@ import (
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 )
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m,
+		// https://github.com/census-instrumentation/opencensus-go/issues/1262
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+	)
+}
 
 func TestRequestKeyLoop(t *testing.T) {
 	defaultInstance := cloudtypes.Instance{

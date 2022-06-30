@@ -11,7 +11,15 @@ import (
 	"github.com/edgelesssys/constellation/kms/internal/storage"
 	"github.com/edgelesssys/constellation/kms/kms"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 )
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m,
+		// https://github.com/census-instrumentation/opencensus-go/issues/1262
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+	)
+}
 
 type stubAzureClient struct {
 	setSecretCalled bool

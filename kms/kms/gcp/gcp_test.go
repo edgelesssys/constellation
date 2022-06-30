@@ -10,11 +10,19 @@ import (
 	"github.com/edgelesssys/constellation/kms/kms/util"
 	"github.com/googleapis/gax-go/v2"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 	"google.golang.org/api/option"
 	kmspb "google.golang.org/genproto/googleapis/cloud/kms/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m,
+		// https://github.com/census-instrumentation/opencensus-go/issues/1262
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+	)
+}
 
 var testKeyRSA = `-----BEGIN PUBLIC KEY-----
 MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAu+OepfHCTiTi27nkTGke

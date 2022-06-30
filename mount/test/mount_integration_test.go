@@ -13,6 +13,7 @@ import (
 	"github.com/edgelesssys/constellation/mount/kms"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 	"k8s.io/klog/v2"
 )
 
@@ -45,6 +46,8 @@ func TestMain(m *testing.M) {
 
 	klog.InitFlags(nil)
 	defer klog.Flush()
+
+	goleak.VerifyTestMain(m)
 
 	result := m.Run()
 	os.Exit(result)

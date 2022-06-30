@@ -6,8 +6,13 @@ import (
 
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 	"k8s.io/cli-runtime/pkg/resource"
 )
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+}
 
 type stubClient struct {
 	applyOneObjectErr error

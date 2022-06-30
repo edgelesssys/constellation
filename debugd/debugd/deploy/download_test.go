@@ -15,9 +15,17 @@ import (
 	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 )
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m,
+		// https://github.com/census-instrumentation/opencensus-go/issues/1262
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+	)
+}
 
 func TestDownloadCoordinator(t *testing.T) {
 	filename := "/opt/coordinator"

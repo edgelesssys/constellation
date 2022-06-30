@@ -218,26 +218,22 @@ type fakeDbusConn struct {
 
 func (f *fakeDbusConn) StartUnitContext(ctx context.Context, name string, mode string, ch chan<- string) (int, error) {
 	f.inputs = append(f.inputs, dbusConnActionInput{name: name, mode: mode})
-	go func() {
-		ch <- f.result
-	}()
+	ch <- f.result
 
 	return f.jobID, f.actionErr
 }
 
 func (f *fakeDbusConn) StopUnitContext(ctx context.Context, name string, mode string, ch chan<- string) (int, error) {
 	f.inputs = append(f.inputs, dbusConnActionInput{name: name, mode: mode})
-	go func() {
-		ch <- f.result
-	}()
+	ch <- f.result
+
 	return f.jobID, f.actionErr
 }
 
 func (f *fakeDbusConn) RestartUnitContext(ctx context.Context, name string, mode string, ch chan<- string) (int, error) {
 	f.inputs = append(f.inputs, dbusConnActionInput{name: name, mode: mode})
-	go func() {
-		ch <- f.result
-	}()
+	ch <- f.result
+
 	return f.jobID, f.actionErr
 }
 

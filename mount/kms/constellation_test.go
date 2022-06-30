@@ -7,9 +7,14 @@ import (
 
 	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 )
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+}
 
 type stubVPNClient struct {
 	getDataKeyErr error

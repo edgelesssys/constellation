@@ -86,7 +86,7 @@ func (s *ServiceManager) SystemdAction(ctx context.Context, request ServiceManag
 		return fmt.Errorf("establishing systemd connection: %w", err)
 	}
 
-	resultChan := make(chan string)
+	resultChan := make(chan string, 1)
 	switch request.Action {
 	case Start:
 		_, err = conn.StartUnitContext(ctx, request.Unit, "replace", resultChan)

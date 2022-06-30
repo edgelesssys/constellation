@@ -8,7 +8,12 @@ import (
 	"github.com/edgelesssys/constellation/internal/state"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 )
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+}
 
 func TestSetGetState(t *testing.T) {
 	testCases := map[string]struct {

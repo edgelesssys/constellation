@@ -22,6 +22,7 @@ import (
 	"github.com/martinjungblut/go-cryptsetup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 	"google.golang.org/grpc"
 )
 
@@ -43,6 +44,11 @@ func TestMain(m *testing.M) {
 		fmt.Printf("This test suite requires root privileges, as libcrypsetup uses the kernel's device mapper.\n")
 		os.Exit(1)
 	}
+
+	goleak.VerifyTestMain(m,
+		// https://github.com/census-instrumentation/opencensus-go/issues/1262
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+	)
 
 	result := m.Run()
 	os.Exit(result)

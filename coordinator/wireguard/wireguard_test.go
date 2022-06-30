@@ -7,8 +7,13 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/peer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+}
 
 func TestUpdatePeer(t *testing.T) {
 	requirePre := require.New(t)

@@ -7,8 +7,13 @@ import (
 	wgquick "github.com/nmiculinic/wg-quick-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+}
 
 func TestCreate(t *testing.T) {
 	require := require.New(t)

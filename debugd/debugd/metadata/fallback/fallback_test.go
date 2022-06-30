@@ -5,7 +5,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 )
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+}
 
 func TestDiscoverDebugdIPs(t *testing.T) {
 	assert := assert.New(t)

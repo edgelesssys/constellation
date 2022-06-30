@@ -16,9 +16,14 @@ import (
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+}
 
 func TestUploadAuthorizedKeys(t *testing.T) {
 	endpoint := "192.0.2.1:4000"

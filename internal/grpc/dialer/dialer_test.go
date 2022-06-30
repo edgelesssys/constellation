@@ -10,9 +10,14 @@ import (
 	"github.com/edgelesssys/constellation/internal/oid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/grpc_testing"
 )
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+}
 
 func TestDial(t *testing.T) {
 	testCases := map[string]struct {

@@ -10,6 +10,7 @@ import (
 	"github.com/edgelesssys/constellation/coordinator/kubernetes/k8sapi/resources"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 	"google.golang.org/protobuf/proto"
 	apps "k8s.io/api/apps/v1"
 	k8s "k8s.io/api/core/v1"
@@ -25,6 +26,10 @@ import (
 	restfake "k8s.io/client-go/rest/fake"
 	"k8s.io/client-go/restmapper"
 )
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+}
 
 var (
 	corev1GV        = schema.GroupVersion{Version: "v1"}
