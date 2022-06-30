@@ -1,3 +1,4 @@
+# We build the coordinator as part of each PR to see that the build still works. An image is only created once merged to main (see condition on call-coreos).
 name: Build and Upload the Coordinator
 
 on:
@@ -5,6 +6,13 @@ on:
   push:
     branches:
       - main
+  pull_request:
+
+# Abort runs of *this* workflow, if a new commit with the same ref is pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-coordinator:
     name: "Build the Coordinator"
@@ -47,7 +55,7 @@ jobs:
 
   call-coreos:
     needs: build-coordinator
-    if: startsWith(needs.build-coordinator.outputs.coordinator-name, 'coordinator-')
+    if: github.ref == 'refs/heads/main' && startsWith(needs.build-coordinator.outputs.coordinator-name, 'coordinator-')
     uses: ./.github/workflows/build-coreos.yml
     with:
       coordinator-name: ${{ needs.build-coordinator.outputs.coordinator-name }}

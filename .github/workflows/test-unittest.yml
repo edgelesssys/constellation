@@ -7,6 +7,11 @@ on:
       - main
   pull_request:
 
+# Abort runs of *this* workflow, if a new commit with the same ref is pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest

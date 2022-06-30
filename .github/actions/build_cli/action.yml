@@ -1,38 +1,38 @@
 name: build
 description: "Runs cmake & default make target in build folder."
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
-  - name: Install build dependencies
-    run: |
-      sudo apt-get update
-      sudo apt-get install \
-        build-essential cmake \
-        -y
-    shell: bash
-  # https://github.blog/2022-04-12-git-security-vulnerability-announced/
-  - name: Mark repository safe
-    run: |
-      git config --global --add safe.directory /__w/constellation/constellation
-    shell: bash
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install \
+          build-essential cmake \
+          -y
+      shell: bash
+    # https://github.blog/2022-04-12-git-security-vulnerability-announced/
+    - name: Mark repository safe
+      run: |
+        git config --global --add safe.directory /__w/constellation/constellation
+      shell: bash
 
-  - name: Install Go
-    uses: actions/setup-go@v3
-    with:
-      go-version: '1.18'
-  - name: Build CLI
-    run: |
-      mkdir build
-      cd build
-      cmake ..
-      make -j`nproc` cli
-      echo "$(pwd)" >> $GITHUB_PATH
-      export PATH="$PATH:$(pwd)"
-    shell: bash
-  - name: Build hack/pcr-reader
-    run: |
-      cd hack/pcr-reader/
-      go build .
-      echo "$(pwd)" >> $GITHUB_PATH
-      export PATH="$PATH:$(pwd)"
-    shell: bash
+    - name: Install Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: "1.18"
+    - name: Build CLI
+      run: |
+        mkdir build
+        cd build
+        cmake ..
+        make -j`nproc` cli
+        echo "$(pwd)" >> $GITHUB_PATH
+        export PATH="$PATH:$(pwd)"
+      shell: bash
+    - name: Build hack/pcr-reader
+      run: |
+        cd hack/pcr-reader/
+        go build .
+        echo "$(pwd)" >> $GITHUB_PATH
+        export PATH="$PATH:$(pwd)"
+      shell: bash

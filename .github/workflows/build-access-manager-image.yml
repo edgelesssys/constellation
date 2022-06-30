@@ -12,6 +12,11 @@ on:
       - "access_manager/**"
       - "internal/deploy/**"
 
+# Abort runs of *this* workflow, if a new commit with the same ref is pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-access-manager:
     runs-on: ubuntu-latest
@@ -28,6 +33,6 @@ jobs:
         uses: ./.github/actions/build_micro-service
         with:
           name: access-manager
-          projectVersion: '0.0.0'
+          projectVersion: "0.0.0"
           dockerfile: access_manager/Dockerfile
           githubToken: ${{ secrets.GITHUB_TOKEN }}

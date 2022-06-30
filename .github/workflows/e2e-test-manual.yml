@@ -4,53 +4,59 @@ on:
   workflow_dispatch:
     inputs:
       workerNodesCount:
-        description: 'Number of worker nodes to spawn.'
-        default: '2'
+        description: "Number of worker nodes to spawn."
+        default: "2"
         required: true
       controlNodesCount:
-        description: 'Number of control-plane nodes to spawn.'
-        default: '1'
+        description: "Number of control-plane nodes to spawn."
+        default: "1"
         required: true
       autoscale:
-        description: 'Autoscale?'
+        description: "Autoscale?"
         type: boolean
         default: false
         required: true
       cloudProvider:
-        description: 'Which cloud provider to use.'
+        description: "Which cloud provider to use."
         type: choice
         options:
-          - 'gcp'
-          - 'azure'
-        default: 'gcp'
+          - "gcp"
+          - "azure"
+        default: "gcp"
         required: true
       machineType:
-        description: 'VM machine type. Make sure it matches selected cloud provider!'
+        description: "VM machine type. Make sure it matches selected cloud provider!"
         type: choice
         options:
-          - 'n2d-standard-2' # GCP
-          - 'Standard_D4s_v3' # Azure
-        default: 'n2d-standard-2'
+          - "n2d-standard-2" # GCP
+          - "Standard_D4s_v3" # Azure
+        default: "n2d-standard-2"
         required: true
       sonobuoyTestSuiteCmd:
-        description: 'Which tests should be run? Check README for guidance!'
-        default: '--mode quick'
+        description: "Which tests should be run? Check README for guidance!"
+        default: "--mode quick"
         required: true
+
+# Abort runs of *this* workflow, if a new commit with the same ref is pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   e2e-test-manual:
     runs-on: ubuntu-latest
     steps:
-    - name: Check out repository
-      uses: actions/checkout@v3
-    - name: Run manual E2E test
-      uses: ./.github/actions/e2e_test
-      with:
-        workerNodesCount: ${{ github.event.inputs.workerNodesCount }}
-        controlNodesCount: ${{ github.event.inputs.controlNodesCount }}
-        autoscale: ${{ github.event.inputs.autoscale }}
-        cloudProvider: ${{ github.event.inputs.cloudProvider }}
-        machineType: ${{ github.event.inputs.machineType }}
-        gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-        azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
-        sonobuoyTestSuiteCmd: ${{ github.event.inputs.sonobuoyTestSuiteCmd }}
-        msTeamsWebhook: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+      - name: Check out repository
+        uses: actions/checkout@v3
+      - name: Run manual E2E test
+        uses: ./.github/actions/e2e_test
+        with:
+          workerNodesCount: ${{ github.event.inputs.workerNodesCount }}
+          controlNodesCount: ${{ github.event.inputs.controlNodesCount }}
+          autoscale: ${{ github.event.inputs.autoscale }}
+          cloudProvider: ${{ github.event.inputs.cloudProvider }}
+          machineType: ${{ github.event.inputs.machineType }}
+          gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
+          sonobuoyTestSuiteCmd: ${{ github.event.inputs.sonobuoyTestSuiteCmd }}
+          msTeamsWebhook: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}

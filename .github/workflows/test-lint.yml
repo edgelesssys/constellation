@@ -8,6 +8,11 @@ permissions:
   # Allow read access to pull request. Use with `only-new-issues` option.
   pull-requests: read
 
+# Abort runs of *this* workflow, if a new commit with the same ref is pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   golangci:
     name: lint

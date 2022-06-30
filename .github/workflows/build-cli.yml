@@ -1,0 +1,25 @@
+# Right now this workflow is only used as a test. We want to see that a commit does not break the build. The resulting artifact is not used currently.
+name: Build CLI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+
+# Abort runs of *this* workflow, if a new commit with the same ref is pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-cli:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v2
+
+      - name: Build cli
+        uses: ./.github/actions/build_cli

@@ -14,6 +14,11 @@ on:
       - "internal/grpc/**"
       - "internal/oid/**"
 
+# Abort runs of *this* workflow, if a new commit with the same ref is pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-activation-service:
     runs-on: ubuntu-latest
@@ -30,6 +35,6 @@ jobs:
         uses: ./.github/actions/build_micro-service
         with:
           name: activation-service
-          projectVersion: '0.0.0'
+          projectVersion: "0.0.0"
           dockerfile: activation/Dockerfile
           githubToken: ${{ secrets.GITHUB_TOKEN }}
