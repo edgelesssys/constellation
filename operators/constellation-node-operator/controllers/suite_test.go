@@ -5,6 +5,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -12,6 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	testclock "k8s.io/utils/clock/testing"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
@@ -85,6 +87,14 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
+	err = (&PendingNodeReconciler{
+		nodeStateGetter: fakes.nodeStateGetter,
+		Client:          k8sManager.GetClient(),
+		Scheme:          k8sManager.GetScheme(),
+		Clock:           fakes.clock,
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
 	go func() {
 		defer GinkgoRecover()
 		err = k8sManager.Start(ctx)
@@ -101,10 +111,14 @@ var _ = AfterSuite(func() {
 
 type fakeCollection struct {
 	scalingGroupUpdater *fakeScalingGroupUpdater
+	nodeStateGetter     *stubNodeStateGetter
+	clock               *testclock.FakeClock
 }
 
 func newFakes() fakeCollection {
 	return fakeCollection{
 		scalingGroupUpdater: newFakeScalingGroupUpdater(),
+		nodeStateGetter:     &stubNodeStateGetter{},
+		clock:               testclock.NewFakeClock(time.Now()),
 	}
 }
