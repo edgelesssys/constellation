@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GOPRIVATE: github.com/edgelesssys/*
+      CTEST_OUTPUT_ON_FAILURE: True
     steps:
       - uses: actions/checkout@v2
       - name: Setup Go environment
@@ -25,22 +26,14 @@ jobs:
           go-version: "1.18"
 
       - name: Install Dependencies
-        run: sudo apt-get update && sudo apt-get install -y pkg-config libcryptsetup12 libcryptsetup-dev
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libcryptsetup12 libcryptsetup-dev cmake
 
-      - name: Integration Test Coordinator
-        run: go test -v -tags integration ./test/
+      - name: Create and populate build folder
+        run: mkdir build && cd build && cmake ..
 
-      - name: Integration Test mount
-        run: |
-          go test -tags integration -c ./test/
-          sudo ./test.test -test.v -v 9
-        working-directory: mount
-
-      - name: Integration Test disk-mapper
-        run: |
-          go test -tags integration -c ./test/
-          sudo ./test.test -test.v
-        working-directory: state
+      # Runs all test targets starting with "integration-"
+      - name: Integration Tests
+        run: ctest -R integration-
 
       - uses: actions/upload-artifact@v3
         if: failure()

@@ -63,7 +63,9 @@ add_custom_target(cdbg ALL
   BYPRODUCTS cdbg
 )
 
-add_test(NAME unittest COMMAND go test -race -count=3 ./... WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-add_test(NAME unittest-hack COMMAND go test -race -count=3 ./... WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/hack)
-add_test(NAME integrationtest COMMAND go test -v -tags integration ./test/  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-add_test(NAME etcd-unittest COMMAND go test -v --race -cover -count=3 -tags integration WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/coordinator/store/)
+add_test(NAME unit-main COMMAND go test -race -count=3 ./... WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME unit-hack COMMAND go test -race -count=3 ./... WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/hack)
+add_test(NAME integration-coord COMMAND go test -v -tags integration ./test/  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME integration-mount COMMAND bash -c "go test -tags integration -c ./test/ && sudo ./test.test -test.v -v 9"  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/mount)
+add_test(NAME integration-dm COMMAND bash -c "go test -tags integration -c ./test/ && sudo ./test.test -test.v"  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/state)
+add_test(NAME integration-etcd COMMAND go test -v --race -cover -count=3 -tags integration WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/coordinator/store/)

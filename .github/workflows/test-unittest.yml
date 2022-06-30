@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GOPRIVATE: github.com/edgelesssys/*
+      CTEST_OUTPUT_ON_FAILURE: True
     steps:
       - uses: actions/checkout@v2
 
@@ -26,11 +27,12 @@ jobs:
           go-version: 1.18
 
       - name: Install Dependencies
-        run: sudo apt-get update && sudo apt-get install -y pkg-config libcryptsetup12 libcryptsetup-dev libvirt-dev
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libcryptsetup12 libcryptsetup-dev cmake libvirt-dev
 
-      - name: Test main module
-        run: go test -race -count=3 ./...
+      - name: Create and populate build folder
+        run: mkdir build && cd build && cmake ..
 
-      - name: Test hack module
-        run: go test -race -count=3 ./...
-        working-directory: hack
+      # Runs all test targets starting with "unit-"
+      - name: Unit Tests
+        run: ctest -R unit-
+        working-directory: build

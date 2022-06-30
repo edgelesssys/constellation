@@ -55,6 +55,14 @@ cmake ..
 make -j`nproc`
 ```
 
+## Testing
+
+You can run all integration and unitttests like this:
+
+```sh
+ctest -j `nproc`
+```
+
 ## Cloud credentials
 
 Using the CLI requires the user to make authorized API calls to the CSP API. See the [docs](https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=cloud-credentials) for configuration.
