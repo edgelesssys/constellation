@@ -58,6 +58,10 @@ func validInstanceTypeForProvider(cmd *cobra.Command, insType string, provider c
 }
 
 func validateEndpoint(endpoint string, defaultPort int) (string, error) {
+	if endpoint == "" {
+		return "", errors.New("endpoint is empty")
+	}
+
 	_, _, err := net.SplitHostPort(endpoint)
 	if err == nil {
 		return endpoint, nil

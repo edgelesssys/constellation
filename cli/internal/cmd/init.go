@@ -267,6 +267,11 @@ func (r activationResult) writeOutput(wr io.Writer, fileHandler file.Handler) er
 		return fmt.Errorf("write kubeconfig: %w", err)
 	}
 
+	idFile := clusterIDFile{ClusterID: r.clusterID, OwnerID: r.ownerID, Endpoint: r.coordinatorPubIP}
+	if err := fileHandler.WriteJSON(constants.IDsFileName, idFile, file.OptNone); err != nil {
+		return fmt.Errorf("writing Constellation id file: %w", err)
+	}
+
 	fmt.Fprintln(wr, "You can now connect to your cluster by executing:")
 	fmt.Fprintf(wr, "\twg-quick up ./%s\n", constants.WGQuickConfigFilename)
 	fmt.Fprintf(wr, "\texport KUBECONFIG=\"$PWD/%s\"\n", constants.AdminConfFilename)

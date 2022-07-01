@@ -61,11 +61,13 @@ func TestVerify(t *testing.T) {
 	testCases := map[string]struct {
 		setupFs          func(*require.Assertions) afero.Fs
 		provider         cloudprovider.Provider
-		protoClient      verifyClient
+		protoClient      *stubVerifyClient
 		nodeEndpointFlag string
 		configFlag       string
 		ownerIDFlag      string
 		clusterIDFlag    string
+		idFile           *clusterIDFile
+		wantEndpoint     string
 		wantErr          bool
 	}{
 		"gcp": {
@@ -74,6 +76,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1:1234",
 			ownerIDFlag:      zeroBase64,
 			protoClient:      &stubVerifyClient{},
+			wantEndpoint:     "192.0.2.1:1234",
 		},
 		"azure": {
 			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
@@ -81,6 +84,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1:1234",
 			ownerIDFlag:      zeroBase64,
 			protoClient:      &stubVerifyClient{},
+			wantEndpoint:     "192.0.2.1:1234",
 		},
 		"default port": {
 			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
@@ -88,6 +92,31 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1",
 			ownerIDFlag:      zeroBase64,
 			protoClient:      &stubVerifyClient{},
+			wantEndpoint:     "192.0.2.1:9000",
+		},
+		"endpoint not set": {
+			setupFs:     func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			provider:    cloudprovider.GCP,
+			ownerIDFlag: zeroBase64,
+			protoClient: &stubVerifyClient{},
+			wantErr:     true,
+		},
+		"endpoint from id file": {
+			setupFs:      func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			provider:     cloudprovider.GCP,
+			ownerIDFlag:  zeroBase64,
+			protoClient:  &stubVerifyClient{},
+			idFile:       &clusterIDFile{Endpoint: "192.0.2.1:1234"},
+			wantEndpoint: "192.0.2.1:1234",
+		},
+		"override endpoint from details file": {
+			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			provider:         cloudprovider.GCP,
+			nodeEndpointFlag: "192.0.2.2:1234",
+			ownerIDFlag:      zeroBase64,
+			protoClient:      &stubVerifyClient{},
+			idFile:           &clusterIDFile{Endpoint: "192.0.2.1:1234"},
+			wantEndpoint:     "192.0.2.2:1234",
 		},
 		"invalid endpoint": {
 			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
@@ -102,6 +131,14 @@ func TestVerify(t *testing.T) {
 			provider:         cloudprovider.GCP,
 			nodeEndpointFlag: "192.0.2.1:1234",
 			wantErr:          true,
+		},
+		"use owner id from id file": {
+			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			provider:         cloudprovider.GCP,
+			nodeEndpointFlag: "192.0.2.1:1234",
+			protoClient:      &stubVerifyClient{},
+			idFile:           &clusterIDFile{OwnerID: zeroBase64},
+			wantEndpoint:     "192.0.2.1:1234",
 		},
 		"config file not existing": {
 			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
@@ -153,6 +190,10 @@ func TestVerify(t *testing.T) {
 			}
 			fileHandler := file.NewHandler(tc.setupFs(require))
 
+			if tc.idFile != nil {
+				require.NoError(fileHandler.WriteJSON(constants.IDsFileName, tc.idFile, file.OptNone))
+			}
+
 			err := verify(cmd, tc.provider, fileHandler, tc.protoClient)
 
 			if tc.wantErr {
@@ -160,6 +201,7 @@ func TestVerify(t *testing.T) {
 			} else {
 				assert.NoError(err)
 				assert.Contains(out.String(), "OK")
+				assert.Equal(tc.wantEndpoint, tc.protoClient.endpoint)
 			}
 		})
 	}
@@ -284,9 +326,11 @@ func TestVerifyClient(t *testing.T) {
 
 type stubVerifyClient struct {
 	verifyErr error
+	endpoint  string
 }
 
 func (c *stubVerifyClient) Verify(ctx context.Context, endpoint string, req *verifyproto.GetAttestationRequest, validator atls.Validator) error {
+	c.endpoint = endpoint
 	return c.verifyErr
 }
 

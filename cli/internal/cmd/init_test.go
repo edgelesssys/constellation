@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
@@ -331,6 +332,13 @@ func TestWriteOutput(t *testing.T) {
 		coordinatorPubIP:  "baz-qq",
 		kubeconfig:        "foo-bar-baz-qq",
 	}
+
+	expectedIdFile := clusterIDFile{
+		Endpoint:  result.coordinatorPubIP,
+		ClusterID: result.clusterID,
+		OwnerID:   result.ownerID,
+	}
+
 	var out bytes.Buffer
 	testFs := afero.NewMemMapFs()
 	fileHandler := file.NewHandler(testFs)
@@ -340,11 +348,20 @@ func TestWriteOutput(t *testing.T) {
 	assert.Contains(out.String(), result.clientVpnIP)
 	assert.Contains(out.String(), result.coordinatorPubIP)
 	assert.Contains(out.String(), result.coordinatorPubKey)
+	assert.Contains(out.String(), result.clusterID)
+	assert.Contains(out.String(), result.ownerID)
 
 	afs := afero.Afero{Fs: testFs}
 	adminConf, err := afs.ReadFile(constants.AdminConfFilename)
 	assert.NoError(err)
 	assert.Equal(result.kubeconfig, string(adminConf))
+
+	idsFile, err := afs.ReadFile(constants.IDsFileName)
+	assert.NoError(err)
+	var testIdFile clusterIDFile
+	err = json.Unmarshal(idsFile, &testIdFile)
+	assert.NoError(err)
+	assert.Equal(expectedIdFile, testIdFile)
 }
 
 func TestIpsToEndpoints(t *testing.T) {

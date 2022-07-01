@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net"
 
 	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
@@ -25,7 +26,9 @@ func NewVerifyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "verify {aws|azure|gcp}",
 		Short: "Verify the confidential properties of a Constellation cluster",
-		Long:  "Verify the confidential properties of a Constellation cluster.",
+		Long: `Verify the confidential properties of a Constellation cluster.
+
+If arguments are not specified, values are read from ` + constants.IDsFileName + `.`,
 		Args: cobra.MatchAll(
 			cobra.ExactArgs(1),
 			isCloudProvider(0),
@@ -35,8 +38,7 @@ func NewVerifyCmd() *cobra.Command {
 	}
 	cmd.Flags().String("owner-id", "", "verify using the owner identity derived from the master secret")
 	cmd.Flags().String("unique-id", "", "verify using the unique cluster identity")
-	cmd.Flags().StringP("node-endpoint", "e", "", "endpoint of the node to verify, passed as HOST[:PORT] (required)")
-	must(cmd.MarkFlagRequired("node-endpoint"))
+	cmd.Flags().StringP("node-endpoint", "e", "", "endpoint of the node to verify, passed as HOST[:PORT]")
 	return cmd
 }
 
@@ -50,7 +52,7 @@ func runVerify(cmd *cobra.Command, args []string) error {
 func verify(
 	cmd *cobra.Command, provider cloudprovider.Provider, fileHandler file.Handler, verifyClient verifyClient,
 ) error {
-	flags, err := parseVerifyFlags(cmd)
+	flags, err := parseVerifyFlags(cmd, fileHandler)
 	if err != nil {
 		return err
 	}
@@ -97,7 +99,11 @@ func verify(
 	return nil
 }
 
-func parseVerifyFlags(cmd *cobra.Command) (verifyFlags, error) {
+func parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handler) (verifyFlags, error) {
+	configPath, err := cmd.Flags().GetString("config")
+	if err != nil {
+		return verifyFlags{}, fmt.Errorf("parsing config path argument: %w", err)
+	}
 	ownerID, err := cmd.Flags().GetString("owner-id")
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing owner-id argument: %w", err)
@@ -106,22 +112,37 @@ func parseVerifyFlags(cmd *cobra.Command) (verifyFlags, error) {
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing unique-id argument: %w", err)
 	}
-	if ownerID == "" && clusterID == "" {
-		return verifyFlags{}, errors.New("neither owner-id nor unique-id provided to verify the cluster")
-	}
-
 	endpoint, err := cmd.Flags().GetString("node-endpoint")
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing node-endpoint argument: %w", err)
 	}
-	endpoint, err = validateEndpoint(endpoint, constants.VerifyServiceNodePortGRPC)
-	if err != nil {
-		return verifyFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
+
+	// Get empty values from ID file
+	emptyEndpoint := endpoint == ""
+	emptyIDs := ownerID == "" && clusterID == ""
+	if emptyEndpoint || emptyIDs {
+		if details, err := readIds(fileHandler); err == nil {
+			if emptyEndpoint {
+				cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", constants.IDsFileName)
+				endpoint = details.Endpoint
+			}
+			if emptyIDs {
+				cmd.Printf("Using IDs from %q. Specify --owner-id  and/or --unique-id to override this.\n", constants.IDsFileName)
+				ownerID = details.OwnerID
+				clusterID = details.ClusterID
+			}
+		} else if !errors.Is(err, fs.ErrNotExist) {
+			return verifyFlags{}, err
+		}
 	}
 
-	configPath, err := cmd.Flags().GetString("config")
+	// Validate
+	if ownerID == "" && clusterID == "" {
+		return verifyFlags{}, errors.New("neither owner-id nor unique-id provided to verify the cluster")
+	}
+	endpoint, err = validateEndpoint(endpoint, constants.CoordinatorPort)
 	if err != nil {
-		return verifyFlags{}, fmt.Errorf("parsing config path argument: %w", err)
+		return verifyFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
 	}
 
 	return verifyFlags{
@@ -137,6 +158,14 @@ type verifyFlags struct {
 	ownerID    string
 	clusterID  string
 	configPath string
+}
+
+func readIds(fileHandler file.Handler) (clusterIDFile, error) {
+	det := clusterIDFile{}
+	if err := fileHandler.ReadJSON(constants.IDsFileName, &det); err != nil {
+		return clusterIDFile{}, fmt.Errorf("reading cluster ids: %w", err)
+	}
+	return det, nil
 }
 
 // verifyCompletion handles the completion of CLI arguments. It is frequently called

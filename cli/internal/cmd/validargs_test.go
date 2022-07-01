@@ -65,6 +65,11 @@ func TestValidateEndpoint(t *testing.T) {
 			defaultPort: 3,
 			wantResult:  "foo:3",
 		},
+		"empty endpoint": {
+			endpoint:    "",
+			defaultPort: 3,
+			wantErr:     true,
+		},
 		"invalid endpoint": {
 			endpoint:    "foo:2:2",
 			defaultPort: 3,

@@ -50,6 +50,7 @@ const (
 	//
 
 	StateFilename           = "constellation-state.json"
+	IDsFileName             = "constellation-id.json"
 	ConfigFilename          = "constellation-conf.yaml"
 	DebugdConfigFilename    = "cdbg-conf.yaml"
 	AdminConfFilename       = "constellation-admin.conf"

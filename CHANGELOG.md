@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GCP-native Kubernetes load balancing
 
 ### Changed
+- Create `constellation-id.json` when initializing the cluster to save the cluster's unique ID and the owner ID to disk. Verifying will read this file back to use the values for the verification. This is overriden by specifying the command line arguments.
 
 ### Removed
 
