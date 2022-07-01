@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"os"
 	"path"
@@ -15,7 +16,6 @@ import (
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	v1 "k8s.io/api/core/v1"
 	v1Options "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,7 +48,10 @@ type uidGIDPair struct {
 }
 
 func main() {
-	log := logger.New(logger.JSONLog, zapcore.InfoLevel)
+	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
+
+	flag.Parse()
+	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
 
 	hostname, err := os.Hostname()
 	if err != nil {

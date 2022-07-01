@@ -12,14 +12,14 @@ import (
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/verify/server"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 func main() {
 	provider := flag.String("cloud-provider", "", "cloud service provider this binary is running on")
-	flag.Parse()
+	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 
-	log := logger.New(logger.JSONLog, zapcore.InfoLevel)
+	flag.Parse()
+	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
 
 	log.With(zap.String("version", constants.VersionInfo), zap.String("cloudProvider", *provider)).
 		Infof("Constellation Verification Service")

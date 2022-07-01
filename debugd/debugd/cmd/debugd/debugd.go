@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"net"
 	"os"
 	"sync"
@@ -16,14 +17,15 @@ import (
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/context"
 )
 
 func main() {
 	wg := &sync.WaitGroup{}
+	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 
-	log := logger.New(logger.JSONLog, zapcore.InfoLevel)
+	flag.Parse()
+	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
 	fs := afero.NewOsFs()
 	streamer := coordinator.NewFileStreamer(fs)
 	serviceManager := deploy.NewServiceManager(log.Named("serviceManager"))

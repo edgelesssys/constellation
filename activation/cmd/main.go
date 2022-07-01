@@ -17,16 +17,15 @@ import (
 	"github.com/edgelesssys/constellation/internal/watcher"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 func main() {
 	provider := flag.String("cloud-provider", "", "cloud service provider this binary is running on")
 	kmsEndpoint := flag.String("kms-endpoint", "", "endpoint of Constellations key management service")
-	verbosity := flag.Int("v", 0, "log verbosity in zap logging levels. Use -1 for debug information, 0 for info, 1 for warn, 2 for error")
+	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 
 	flag.Parse()
-	log := logger.New(logger.JSONLog, zapcore.Level(*verbosity))
+	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
 
 	log.With(zap.String("version", constants.VersionInfo), zap.String("cloudProvider", *provider)).
 		Infof("Constellation Node Activation Service")

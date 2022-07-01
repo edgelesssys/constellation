@@ -20,7 +20,6 @@ import (
 	"github.com/edgelesssys/constellation/kms/setup"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 func main() {
@@ -28,9 +27,10 @@ func main() {
 	portATLS := flag.String("atls-port", strconv.Itoa(constants.KMSNodePort), "Port aTLS server listens on")
 	provider := flag.String("cloud-provider", "", "cloud service provider this binary is running on")
 	masterSecretPath := flag.String("master-secret", filepath.Join(constants.ServiceBasePath, constants.MasterSecretFilename), "Path to the Constellation master secret")
+	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 
 	flag.Parse()
-	log := logger.New(logger.JSONLog, zapcore.InfoLevel)
+	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
 
 	log.With(zap.String("version", constants.VersionInfo), zap.String("cloudProvider", *provider)).
 		Infof("Constellation Key Management Service")

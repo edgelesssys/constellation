@@ -23,7 +23,6 @@ import (
 	"github.com/edgelesssys/constellation/state/setup"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -32,12 +31,12 @@ const (
 	qemuStateDiskPath  = "/dev/vda"
 )
 
-var csp = flag.String("csp", "", "Cloud Service Provider the image is running on")
-
 func main() {
-	flag.Parse()
+	csp := flag.String("csp", "", "Cloud Service Provider the image is running on")
+	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 
-	log := logger.New(logger.JSONLog, zapcore.InfoLevel)
+	flag.Parse()
+	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
 	log.With(zap.String("version", constants.VersionInfo), zap.String("cloudProvider", *csp)).
 		Infof("Starting disk-mapper")
 
