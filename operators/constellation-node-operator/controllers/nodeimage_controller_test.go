@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -659,6 +660,70 @@ func TestGroupNodes(t *testing.T) {
 	assert := assert.New(t)
 	groups := groupNodes(nodes, pendingNodes, latestImageReference)
 	assert.Equal(wantNodeGroups, groups)
+}
+
+type stubNodeReplacer struct {
+	sync.RWMutex
+	nodeImages        map[string]string
+	scalingGroups     map[string]string
+	createNodeName    string
+	createProviderID  string
+	nodeImageErr      error
+	scalingGroupIDErr error
+	createErr         error
+	deleteErr         error
+}
+
+func (r *stubNodeReplacer) GetNodeImage(ctx context.Context, providerID string) (string, error) {
+	r.RLock()
+	defer r.RUnlock()
+	return r.nodeImages[providerID], r.nodeImageErr
+}
+
+func (r *stubNodeReplacer) GetScalingGroupID(ctx context.Context, providerID string) (string, error) {
+	r.RLock()
+	defer r.RUnlock()
+	return r.scalingGroups[providerID], r.scalingGroupIDErr
+}
+
+func (r *stubNodeReplacer) CreateNode(ctx context.Context, scalingGroupID string) (nodeName, providerID string, err error) {
+	r.RLock()
+	defer r.RUnlock()
+	return r.createNodeName, r.createProviderID, r.createErr
+}
+
+func (r *stubNodeReplacer) DeleteNode(ctx context.Context, providerID string) error {
+	r.RLock()
+	defer r.RUnlock()
+	return r.deleteErr
+}
+
+// thread safe methods to update the stub while in use
+
+func (r *stubNodeReplacer) setNodeImage(providerID, image string) {
+	r.Lock()
+	defer r.Unlock()
+	if r.nodeImages == nil {
+		r.nodeImages = make(map[string]string)
+	}
+	r.nodeImages[providerID] = image
+}
+
+func (r *stubNodeReplacer) setScalingGroupID(providerID, scalingGroupID string) {
+	r.Lock()
+	defer r.Unlock()
+	if r.scalingGroups == nil {
+		r.scalingGroups = make(map[string]string)
+	}
+	r.scalingGroups[providerID] = scalingGroupID
+}
+
+func (r *stubNodeReplacer) setCreatedNode(nodeName, providerID string, err error) {
+	r.Lock()
+	defer r.Unlock()
+	r.createNodeName = nodeName
+	r.createProviderID = providerID
+	r.createErr = err
 }
 
 type stubNodeReplacerReader struct {
