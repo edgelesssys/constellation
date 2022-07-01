@@ -18,6 +18,7 @@ import (
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/api/v1alpha1"
 	"github.com/edgelesssys/constellation/operators/constellation-node-operator/controllers"
+	nodemaintenancev1beta1 "github.com/medik8s/node-maintenance-operator/api/v1beta1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -28,7 +29,7 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-
+	utilruntime.Must(nodemaintenancev1beta1.AddToScheme(scheme))
 	utilruntime.Must(updatev1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
