@@ -28,7 +28,7 @@ func NewVerifyCmd() *cobra.Command {
 		Short: "Verify the confidential properties of a Constellation cluster",
 		Long: `Verify the confidential properties of a Constellation cluster.
 
-If arguments are not specified, values are read from ` + constants.IDsFileName + `.`,
+If arguments aren't specified, values are read from ` + "`" + constants.IDsFileName + "`.",
 		Args: cobra.MatchAll(
 			cobra.ExactArgs(1),
 			isCloudProvider(0),
