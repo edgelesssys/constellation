@@ -1,5 +1,17 @@
 name: build
-description: "Runs cmake & default make target in build folder."
+description: |
+  Runs cmake & default make target in build folder. Additionally, Sigstore tools
+  are used to sign CLI and publish a release when run on v* tag.
+inputs:
+  cosign-public-key:
+    description: 'Cosign public key'
+    required: true
+  cosign-private-key:
+    description: 'Cosign private key'
+    required: true
+  cosign-password:
+    description: 'Password for Cosign private key'
+    required: true
 runs:
   using: "composite"
   steps:
@@ -10,6 +22,17 @@ runs:
           build-essential cmake \
           -y
       shell: bash
+
+    # TODO: Replace with https://github.com/sigstore/sigstore-installer/tree/initial
+    # once it has the functionality
+    - name: Install Cosign
+      uses: sigstore/cosign-installer@main
+    - name: Install Rekor
+      run: |
+        curl -LO https://github.com/sigstore/rekor/releases/download/v0.9.0/rekor-cli-linux-amd64
+        sudo install rekor-cli-linux-amd64 /usr/local/bin/rekor-cli
+      shell: bash
+
     # https://github.blog/2022-04-12-git-security-vulnerability-announced/
     - name: Mark repository safe
       run: |
@@ -20,6 +43,14 @@ runs:
       uses: actions/setup-go@v3
       with:
         go-version: "1.18"
+    - name: Build hack/pcr-reader
+      run: |
+        go build .
+        echo "$(pwd)" >> $GITHUB_PATH
+        export PATH="$PATH:$(pwd)"
+      working-directory: hack/pcr-reader
+      shell: bash
+
     - name: Build CLI
       run: |
         mkdir build
@@ -29,10 +60,35 @@ runs:
         echo "$(pwd)" >> $GITHUB_PATH
         export PATH="$PATH:$(pwd)"
       shell: bash
-    - name: Build hack/pcr-reader
+
+    - name: Sign CLI
       run: |
-        cd hack/pcr-reader/
-        go build .
-        echo "$(pwd)" >> $GITHUB_PATH
-        export PATH="$PATH:$(pwd)"
+        set -e
+        set -o pipefail
+        echo "$COSIGN_PUBLIC_KEY" > cosign.pub
+        # Enabling experimental mode also publishes signature to Rekor
+        COSIGN_EXPERIMENTAL=1 cosign sign-blob --key env://COSIGN_PRIVATE_KEY constellation > constellation.sig
+        # Verify - As documentation & check
+        # Local Signature (input: artifact, key, signature)
+        cosign verify-blob --key cosign.pub --signature constellation.sig constellation
+        # Transparency Log Signature (input: artifact, key)
+        uuid=$(rekor-cli search --artifact constellation | tail -n 1)
+        sig=$(rekor-cli get --uuid=$uuid --format=json | jq -r .Body.HashedRekordObj.signature.content)
+        cosign verify-blob --key cosign.pub --signature <(echo $sig) constellation
       shell: bash
+      working-directory: build
+      env:
+        COSIGN_PUBLIC_KEY: ${{ inputs.cosign-public-key }}
+        COSIGN_PRIVATE_KEY: ${{ inputs.cosign-private-key }}
+        COSIGN_PASSWORD: ${{ inputs.cosign-password }}
+
+    - name: Release CLI
+      # GitHub endorsed release project. See: https://github.com/actions/create-release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/v')
+      with:
+        draft: true
+        files: |
+          constellation
+          constellation.sig
+          cosign.pub
