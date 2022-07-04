@@ -162,9 +162,7 @@ func main() {
 		issuer = qemu.NewIssuer()
 		validator = qemu.NewValidator(pcrs)
 
-		// no support for cloud logging in qemu
-		cloudLogger = &logging.NopLogger{}
-
+		cloudLogger = qemucloud.NewLogger()
 		metadata := &qemucloud.Metadata{}
 		pcrsJSON, err := json.Marshal(pcrs)
 		if err != nil {

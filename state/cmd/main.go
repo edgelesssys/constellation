@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
-	"fmt"
+	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
@@ -21,6 +24,8 @@ import (
 	"github.com/edgelesssys/constellation/state/keyservice"
 	"github.com/edgelesssys/constellation/state/mapper"
 	"github.com/edgelesssys/constellation/state/setup"
+	tpmClient "github.com/google/go-tpm-tools/client"
+	"github.com/google/go-tpm/tpm2"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )
@@ -42,13 +47,16 @@ func main() {
 
 	// set up metadata API and quote issuer for aTLS connections
 	var err error
-	var diskPathErr error
 	var diskPath string
 	var issuer core.QuoteIssuer
 	var metadata core.ProviderMetadata
 	switch strings.ToLower(*csp) {
 	case "azure":
-		diskPath, diskPathErr = filepath.EvalSymlinks(azureStateDiskPath)
+		diskPath, err = filepath.EvalSymlinks(azureStateDiskPath)
+		if err != nil {
+			_ = exportPCRs()
+			log.With(zap.Error(err)).Fatalf("Unable to resolve Azure state disk path")
+		}
 		metadata, err = azurecloud.NewMetadata(context.Background())
 		if err != nil {
 			log.With(zap.Error).Fatalf("Failed to create Azure metadata API")
@@ -56,7 +64,11 @@ func main() {
 		issuer = azure.NewIssuer()
 
 	case "gcp":
-		diskPath, diskPathErr = filepath.EvalSymlinks(gcpStateDiskPath)
+		diskPath, err = filepath.EvalSymlinks(gcpStateDiskPath)
+		if err != nil {
+			_ = exportPCRs()
+			log.With(zap.Error(err)).Fatalf("Unable to resolve GCP state disk path")
+		}
 		issuer = gcp.NewIssuer()
 		gcpClient, err := gcpcloud.NewClient(context.Background())
 		if err != nil {
@@ -70,10 +82,7 @@ func main() {
 		metadata = &qemucloud.Metadata{}
 
 	default:
-		diskPathErr = fmt.Errorf("csp %q is not supported by Constellation", *csp)
-	}
-	if diskPathErr != nil {
-		log.With(zap.Error(diskPathErr)).Fatalf("Unable to determine state disk path")
+		log.Fatalf("CSP %s is not supported by Constellation", *csp)
 	}
 
 	// initialize device mapper
@@ -102,4 +111,29 @@ func main() {
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to prepare state disk")
 	}
+}
+
+// exportPCRs tries to export the node's PCRs to QEMU's metadata API.
+// This function is called when an Azure or GCP image boots, but is unable to find a state disk.
+// This happens when we boot such an image in QEMU.
+// We can use this to calculate the PCRs of the image locally.
+func exportPCRs() error {
+	// get TPM state
+	pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, tpmClient.FullPcrSel(tpm2.AlgSHA256))
+	if err != nil {
+		return err
+	}
+	pcrsPretty, err := json.Marshal(pcrs)
+	if err != nil {
+		return err
+	}
+
+	// send PCRs to metadata API
+	url := &url.URL{
+		Scheme: "http",
+		Host:   "10.42.0.1:8080", // QEMU metadata endpoint
+		Path:   "/pcrs",
+	}
+	_, err = http.Post(url.String(), "application/json", bytes.NewBuffer(pcrsPretty))
+	return err
 }

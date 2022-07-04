@@ -11,7 +11,7 @@ Prerequisite:
 Optional: Write a `terraform.tfvars` file in the terraform workspace (`terraform/libvirt`), defining required variables and overriding optional variables.
 See [variables.tf](./variables.tf) for a description of all available variables.
 ```tfvars
-constellation_coreos_image_qcow2="/path/to/image.qcow2"
+constellation_coreos_image="/path/to/image.qcow2"
 # optional other vars, uncomment and change as needed
 # control_plane_count=3
 # worker_count=2

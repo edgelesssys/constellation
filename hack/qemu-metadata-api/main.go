@@ -5,7 +5,9 @@ import (
 
 	"github.com/edgelesssys/constellation/hack/qemu-metadata-api/server"
 	"github.com/edgelesssys/constellation/hack/qemu-metadata-api/virtwrapper"
+	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/spf13/afero"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"libvirt.org/go/libvirt"
@@ -23,7 +25,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	serv := server.New(log, &virtwrapper.Connect{Conn: conn})
+	serv := server.New(log, &virtwrapper.Connect{Conn: conn}, file.NewHandler(afero.NewOsFs()))
 	if err := serv.ListenAndServe(*bindPort); err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to serve")
 	}

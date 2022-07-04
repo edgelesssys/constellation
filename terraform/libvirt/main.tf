@@ -39,6 +39,11 @@ resource "docker_container" "qemu-metadata" {
     target = "/var/run/libvirt/libvirt-sock"
     type = "bind" 
   }
+  mounts {
+    source = var.metadata_api_log_dir
+    target = "/pcrs"
+    type = "bind"
+  }
 }
 
 module "control_plane" {
@@ -80,8 +85,8 @@ resource "libvirt_pool" "cluster" {
 resource "libvirt_volume" "constellation_coreos_image" {
   name   = "constellation-coreos-image"
   pool   = libvirt_pool.cluster.name
-  source = var.constellation_coreos_image_qcow2
-  format = "qcow2"
+  source = var.constellation_coreos_image
+  format = var.image_format
 }
 
 resource "libvirt_network" "constellation" {
