@@ -57,7 +57,7 @@ jobs:
 
   call-coreos:
     needs: build-bootstrapper
-    if: ${{ (github.ref == 'refs/heads/main') && startsWith(needs.build-bootstrapper.outputs.bootstrapper-name, 'bootstrapper-')
+    if: ${{ (github.ref == 'refs/heads/main') && startsWith(needs.build-bootstrapper.outputs.bootstrapper-name, 'bootstrapper-') }}
     uses: ./.github/workflows/build-coreos.yml
     with:
       bootstrapper-name: ${{ needs.build-bootstrapper.outputs.bootstrapper-name }}

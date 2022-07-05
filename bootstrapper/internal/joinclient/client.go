@@ -25,8 +25,9 @@ import (
 )
 
 const (
-	interval = 30 * time.Second
-	timeout  = 30 * time.Second
+	interval    = 30 * time.Second
+	timeout     = 30 * time.Second
+	joinTimeout = 5 * time.Minute
 )
 
 // JoinClient is a client for requesting the needed information and
@@ -39,9 +40,10 @@ type JoinClient struct {
 	disk        encryptedDisk
 	fileHandler file.Handler
 
-	timeout  time.Duration
-	interval time.Duration
-	clock    clock.WithTicker
+	timeout     time.Duration
+	joinTimeout time.Duration
+	interval    time.Duration
+	clock       clock.WithTicker
 
 	dialer      grpcDialer
 	joiner      ClusterJoiner
@@ -57,9 +59,11 @@ type JoinClient struct {
 // New creates a new JoinClient.
 func New(lock *nodelock.Lock, dial grpcDialer, joiner ClusterJoiner, meta MetadataAPI, log *zap.Logger) *JoinClient {
 	return &JoinClient{
+		nodeLock:    lock,
 		disk:        diskencryption.New(),
 		fileHandler: file.NewHandler(afero.NewOsFs()),
 		timeout:     timeout,
+		joinTimeout: joinTimeout,
 		interval:    interval,
 		clock:       clock.RealClock{},
 		dialer:      dial,
@@ -202,10 +206,13 @@ func (c *JoinClient) join(serviceEndpoint string) error {
 		return fmt.Errorf("issuing join ticket: %w", err)
 	}
 
-	return c.startNodeAndJoin(ctx, ticket)
+	return c.startNodeAndJoin(ticket)
 }
 
-func (c *JoinClient) startNodeAndJoin(ctx context.Context, ticket *joinproto.IssueJoinTicketResponse) (retErr error) {
+func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse) (retErr error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.joinTimeout)
+	defer cancel()
+
 	// If an error occurs in this func, the client cannot continue.
 	defer func() {
 		if retErr != nil {
@@ -235,7 +242,7 @@ func (c *JoinClient) startNodeAndJoin(ctx context.Context, ticket *joinproto.Iss
 
 	btd := &kubeadm.BootstrapTokenDiscovery{
 		APIServerEndpoint: ticket.ApiServerEndpoint,
-		Token:             ticket.ApiServerEndpoint,
+		Token:             ticket.Token,
 		CACertHashes:      []string{ticket.DiscoveryTokenCaCertHash},
 	}
 	if err := c.joiner.JoinCluster(ctx, btd, ticket.CertificateKey, c.role); err != nil {
@@ -249,12 +256,12 @@ func (c *JoinClient) getNodeMetadata() error {
 	ctx, cancel := c.timeoutCtx()
 	defer cancel()
 
-	c.log.Info("Requesting node metadata from metadata API")
+	c.log.Debug("Requesting node metadata from metadata API")
 	inst, err := c.metadataAPI.Self(ctx)
 	if err != nil {
 		return err
 	}
-	c.log.Info("Received node metadata", zap.Any("instance", inst))
+	c.log.Debug("Received node metadata", zap.Any("instance", inst))
 
 	if inst.Name == "" {
 		return errors.New("got instance metadata with empty name")

@@ -128,7 +128,7 @@ func initialize(cmd *cobra.Command, dialer grpcDialer, serviceAccCreator service
 		return err
 	}
 
-	if err := writeOutput(resp, cmd.OutOrStdout(), fileHandler); err != nil {
+	if err := writeOutput(resp, controlPlanes.PublicIPs()[0], cmd.OutOrStdout(), fileHandler); err != nil {
 		return err
 	}
 
@@ -160,21 +160,25 @@ func (d *initDoer) Do(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("dialing init server: %w", err)
 	}
+	defer conn.Close()
 	protoClient := initproto.NewAPIClient(conn)
 	resp, err := protoClient.Init(ctx, d.req)
 	if err != nil {
-		return fmt.Errorf("marshalling VPN config: %w", err)
+		return fmt.Errorf("init call: %w", err)
 	}
 	d.resp = resp
 	return nil
 }
 
-func writeOutput(resp *initproto.InitResponse, wr io.Writer, fileHandler file.Handler) error {
+func writeOutput(resp *initproto.InitResponse, ip string, wr io.Writer, fileHandler file.Handler) error {
 	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
+	ownerID := base64.StdEncoding.EncodeToString(resp.OwnerId)
+	clusterID := base64.StdEncoding.EncodeToString(resp.ClusterId)
+
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
-	writeRow(tw, "Constellation cluster's owner identifier", string(resp.OwnerId))
-	writeRow(tw, "Constellation cluster's unique identifier", string(resp.ClusterId))
+	writeRow(tw, "Constellation cluster's owner identifier", ownerID)
+	writeRow(tw, "Constellation cluster's unique identifier", clusterID)
 	writeRow(tw, "Kubernetes configuration", constants.AdminConfFilename)
 	tw.Flush()
 	fmt.Fprintln(wr)
@@ -183,7 +187,11 @@ func writeOutput(resp *initproto.InitResponse, wr io.Writer, fileHandler file.Ha
 		return fmt.Errorf("write kubeconfig: %w", err)
 	}
 
-	idFile := clusterIDsFile{ClusterID: r.clusterID, OwnerID: r.ownerID, Endpoint: r.coordinatorPubIP}
+	idFile := clusterIDsFile{
+		ClusterID: clusterID,
+		OwnerID:   ownerID,
+		Endpoint:  net.JoinHostPort(ip, strconv.Itoa(constants.VerifyServiceNodePortGRPC)),
+	}
 	if err := fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptNone); err != nil {
 		return fmt.Errorf("writing Constellation id file: %w", err)
 	}

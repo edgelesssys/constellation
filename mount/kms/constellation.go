@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// ConstellationKMS is a key service using the Constellation Coordinator to fetch volume keys.
+// ConstellationKMS is a key service to fetch volume keys.
 type ConstellationKMS struct {
 	endpoint string
 	kms      kmsClient
@@ -23,7 +23,7 @@ func NewConstellationKMS(coordinatorEndpoint string) *ConstellationKMS {
 	}
 }
 
-// GetDEK connects to the Constellation Coordinators VPN API to request a data encryption key derived from the Constellation's master secret.
+// GetDEK request a data encryption key derived from the Constellation's master secret.
 func (k *ConstellationKMS) GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error) {
 	conn, err := grpc.DialContext(ctx, k.endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {

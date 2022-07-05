@@ -11,7 +11,6 @@ import (
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/internal/oid"
-	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )
 
@@ -20,12 +19,12 @@ var version = "0.0.0"
 func run(issuer quoteIssuer, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
 	kube clusterInitJoiner, metadata joinclient.MetadataAPI,
 	bindIP, bindPort string, logger *zap.Logger,
-	cloudLogger logging.CloudLogger, fs afero.Fs,
+	cloudLogger logging.CloudLogger,
 ) {
 	defer logger.Sync()
-	logger.Info("starting bootstrapper", zap.String("version", version))
-
 	defer cloudLogger.Close()
+
+	logger.Info("starting bootstrapper", zap.String("version", version))
 	cloudLogger.Disclose("bootstrapper started running...")
 
 	nodeBootstrapped, err := vtpm.IsNodeBootstrapped(tpm)
@@ -41,17 +40,21 @@ func run(issuer quoteIssuer, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
 	}
 
 	nodeLock := nodelock.New()
-	initServer := initserver.New(nodeLock, kube, logger)
+	initServer := initserver.New(nodeLock, kube, issuer, fileHandler, logger)
 
 	dialer := dialer.New(issuer, nil, &net.Dialer{})
 	joinClient := joinclient.New(nodeLock, dialer, kube, metadata, logger)
 
 	joinClient.Start()
-	defer joinClient.Stop()
 
 	if err := initServer.Serve(bindIP, bindPort); err != nil {
 		logger.Error("Failed to serve init server", zap.Error(err))
 	}
+
+	joinClient.Stop()
+
+	logger.Info("bootstrapper done")
+	cloudLogger.Disclose("bootstrapper done")
 }
 
 type clusterInitJoiner interface {

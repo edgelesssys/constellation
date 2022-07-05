@@ -22,7 +22,7 @@ type joinServiceDaemonset struct {
 }
 
 // NewJoinServiceDaemonset returns a daemonset for the join service.
-func NewJoinServiceDaemonset(csp, measurementsJSON, idJSON string) *joinServiceDaemonset {
+func NewJoinServiceDaemonset(csp string, measurementsJSON, idJSON string) *joinServiceDaemonset {
 	return &joinServiceDaemonset{
 		ClusterRole: rbac.ClusterRole{
 			TypeMeta: meta.TypeMeta{

@@ -3,7 +3,9 @@ package kubernetes
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -90,8 +92,7 @@ func (k *KubeWrapper) InitCluster(
 	var publicIP string
 	var nodePodCIDR string
 	var subnetworkPodCIDR string
-	// this is the IP in "kubeadm init --control-plane-endpoint=<IP/DNS>:<port>" hence the unfortunate name
-	var controlPlaneEndpointIP string
+	var controlPlaneEndpointIP string // this is the IP in "kubeadm init --control-plane-endpoint=<IP/DNS>:<port>" hence the unfortunate name
 	var nodeIP string
 
 	// Step 1: retrieve cloud metadata for Kubernetes configuration
@@ -120,6 +121,11 @@ func (k *KubeWrapper) InitCluster(
 			controlPlaneEndpointIP, err = k.providerMetadata.GetLoadBalancerIP(ctx)
 			if err != nil {
 				return nil, fmt.Errorf("retrieving load balancer IP failed: %w", err)
+			}
+			if k.cloudProvider == "gcp" {
+				if err := manuallySetLoadbalancerIP(ctx, controlPlaneEndpointIP); err != nil {
+					return nil, fmt.Errorf("setting load balancer IP failed: %w", err)
+				}
 			}
 		}
 	}
@@ -188,6 +194,12 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("failed to setup verification service: %w", err)
 	}
 
+	if k.cloudProvider == "gcp" {
+		if err := k.clusterUtil.SetupGCPGuestAgent(k.client, resources.NewGCPGuestAgentDaemonset()); err != nil {
+			return nil, fmt.Errorf("failed to setup gcp guest agent: %w", err)
+		}
+	}
+
 	go k.clusterUtil.FixCilium(nodeName)
 
 	return k.GetKubeconfig()
@@ -247,15 +259,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 
 // GetKubeconfig returns the current nodes kubeconfig of stored on disk.
 func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
-	kubeconf, err := k.kubeconfigReader.ReadKubeconfig()
-	if err != nil {
-		return nil, err
-	}
-	// replace the cluster.Server endpoint (127.0.0.1:16443) in admin.conf with the first bootstrapper endpoint (10.118.0.1:6443)
-	// kube-api server listens on 10.118.0.1:6443
-	// 127.0.0.1:16443 is the high availability balancer nginx endpoint, runnining localy on all nodes
-	// alternatively one could also start a local high availability balancer.
-	return []byte(strings.ReplaceAll(string(kubeconf), "127.0.0.1:16443", "10.118.0.1:6443")), nil
+	return k.kubeconfigReader.ReadKubeconfig()
 }
 
 // GetKubeadmCertificateKey return the key needed to join the Cluster as Control-Plane (has to be executed on a control-plane; errors otherwise).
@@ -332,6 +336,27 @@ func (k *KubeWrapper) setupClusterAutoscaler(instance metadata.InstanceMetadata,
 		return fmt.Errorf("failed to setup cluster-autoscaler: %w", err)
 	}
 
+	return nil
+}
+
+// manuallySetLoadbalancerIP sets the loadbalancer IP of the first control plane during init.
+// The GCP guest agent does this usually, but is deployed in the cluster that doesn't exist
+// at this point. This is a workaround to set the loadbalancer IP manually, so kubeadm and kubelet
+// can talk to the local Kubernetes API server using the loadbalancer IP.
+func manuallySetLoadbalancerIP(ctx context.Context, ip string) error {
+	// https://github.com/GoogleCloudPlatform/guest-agent/blob/792fce795218633bcbde505fb3457a0b24f26d37/google_guest_agent/addresses.go#L179
+	if !strings.Contains(ip, "/") {
+		ip = ip + "/32"
+	}
+	args := fmt.Sprintf("route add to local %s scope host dev ens3 proto 66", ip)
+	_, err := exec.CommandContext(ctx, "ip", strings.Split(args, " ")...).Output()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return fmt.Errorf("ip route add (code %v) with: %s", exitErr.ExitCode(), exitErr.Stderr)
+		}
+		return fmt.Errorf("ip route add: %w", err)
+	}
 	return nil
 }
 

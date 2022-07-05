@@ -21,6 +21,7 @@ type clusterUtil interface {
 	SetupCloudNodeManager(kubectl k8sapi.Client, cloudNodeManagerConfiguration resources.Marshaler) error
 	SetupKMS(kubectl k8sapi.Client, kmsConfiguration resources.Marshaler) error
 	SetupVerificationService(kubectl k8sapi.Client, verificationServiceConfiguration resources.Marshaler) error
+	SetupGCPGuestAgent(kubectl k8sapi.Client, gcpGuestAgentConfiguration resources.Marshaler) error
 	StartKubelet() error
 	RestartKubelet() error
 	GetControlPlaneJoinCertificateKey(ctx context.Context) (string, error)

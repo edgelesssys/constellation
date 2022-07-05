@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
-	"github.com/edgelesssys/constellation/coordinator/role"
+	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/hack/qemu-metadata-api/virtwrapper"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"go.uber.org/zap"
@@ -203,7 +203,7 @@ func (s *Server) exportPCRs(w http.ResponseWriter, r *http.Request) {
 }
 
 // listAll returns a list of all active peers.
-func (s *Server) listAll() ([]cloudtypes.Instance, error) {
+func (s *Server) listAll() ([]metadata.InstanceMetadata, error) {
 	net, err := s.virt.LookupNetworkByName("constellation")
 	if err != nil {
 		return nil, err
@@ -214,15 +214,15 @@ func (s *Server) listAll() ([]cloudtypes.Instance, error) {
 	if err != nil {
 		return nil, err
 	}
-	var peers []cloudtypes.Instance
+	var peers []metadata.InstanceMetadata
 
 	for _, lease := range leases {
-		instanceRole := role.Node
+		instanceRole := role.Worker
 		if strings.HasPrefix(lease.Hostname, "control-plane") {
-			instanceRole = role.Coordinator
+			instanceRole = role.ControlPlane
 		}
 
-		peers = append(peers, cloudtypes.Instance{
+		peers = append(peers, metadata.InstanceMetadata{
 			Name:       lease.Hostname,
 			Role:       instanceRole,
 			PrivateIPs: []string{lease.IPaddr},

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net"
 	"strconv"
 	"strings"
@@ -72,7 +73,7 @@ func TestInitialize(t *testing.T) {
 		OwnerId:    []byte("ownerID"),
 		ClusterId:  []byte("clusterID"),
 	}
-	// someErr := errors.New("failed")
+	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
 		existingState         state.ConstellationState
@@ -103,37 +104,22 @@ func TestInitialize(t *testing.T) {
 			initServerAPI:    &stubInitServer{initResp: testInitResp},
 			setAutoscaleFlag: true,
 		},
-		// "no state exists": {
-		// 	existingState: state.ConstellationState{},
-		// 	initServerAPI: &stubInitServer{},
-		// 	wantErr:       true,
-		// },
-		// "no instances to pick one": {
-		// 	existingState: state.ConstellationState{GCPNodes: cloudtypes.Instances{}},
-		// 	initServerAPI: &stubInitServer{},
-		// 	wantErr:       true,
-		// },
-		// "fail Connect": {
-		// 	existingState: testGcpState,
-		// 	initServerAPI: &stubInitServer{},
-		// 	wantErr:       true,
-		// },
-		// "fail Activate": {
-		// 	existingState: testGcpState,
-		// 	initServerAPI: &stubInitServer{},
-		// 	wantErr:       true,
-		// },
-		// "fail to wait for required status": {
-		// 	existingState: testGcpState,
-		// 	initServerAPI: &stubInitServer{},
-		// 	wantErr:       true,
-		// },
-		// "fail to create service account": {
-		// 	existingState:         testGcpState,
-		// 	initServerAPI:         &stubInitServer{},
-		// 	serviceAccountCreator: stubServiceAccountCreator{createErr: someErr},
-		// 	wantErr:               true,
-		// },
+		"empty state": {
+			existingState: state.ConstellationState{},
+			initServerAPI: &stubInitServer{},
+			wantErr:       true,
+		},
+		"init call fails": {
+			existingState: testGcpState,
+			initServerAPI: &stubInitServer{initErr: someErr},
+			wantErr:       true,
+		},
+		"fail to create service account": {
+			existingState:         testGcpState,
+			initServerAPI:         &stubInitServer{},
+			serviceAccountCreator: stubServiceAccountCreator{createErr: someErr},
+			wantErr:               true,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -174,8 +160,8 @@ func TestInitialize(t *testing.T) {
 				return
 			}
 			require.NoError(err)
-			assert.Contains(out.String(), "ownerID")
-			assert.Contains(out.String(), "clusterID")
+			assert.Contains(out.String(), base64.StdEncoding.EncodeToString([]byte("ownerID")))
+			assert.Contains(out.String(), base64.StdEncoding.EncodeToString([]byte("clusterID")))
 			if tc.setAutoscaleFlag {
 				assert.Len(tc.initServerAPI.activateAutoscalingNodeGroups, 1)
 			} else {
@@ -194,26 +180,29 @@ func TestWriteOutput(t *testing.T) {
 		Kubeconfig: []byte("kubeconfig"),
 	}
 
+	ownerID := base64.StdEncoding.EncodeToString(resp.OwnerId)
+	clusterID := base64.StdEncoding.EncodeToString(resp.ClusterId)
+
 	expectedIdFile := clusterIDsFile{
-		ClusterID: string(resp.ClusterId),
-		OwnerID:   string(resp.OwnerId),
+		ClusterID: clusterID,
+		OwnerID:   ownerID,
+		Endpoint:  net.JoinHostPort("ip", strconv.Itoa(constants.VerifyServiceNodePortGRPC)),
 	}
 
 	var out bytes.Buffer
 	testFs := afero.NewMemMapFs()
 	fileHandler := file.NewHandler(testFs)
 
-	err := writeOutput(resp, &out, fileHandler)
+	err := writeOutput(resp, "ip", &out, fileHandler)
 	assert.NoError(err)
-	assert.Contains(out.String(), string(resp.OwnerId))
-	assert.Contains(out.String(), string(resp.ClusterId))
+	assert.Contains(out.String(), ownerID)
+	assert.Contains(out.String(), clusterID)
 	assert.Contains(out.String(), constants.AdminConfFilename)
-	assert.Equal(resp.Kubeconfig, string(resp.Kubeconfig))
 
 	afs := afero.Afero{Fs: testFs}
 	adminConf, err := afs.ReadFile(constants.AdminConfFilename)
 	assert.NoError(err)
-	assert.Equal(resp.Kubeconfig, string(adminConf))
+	assert.Equal(string(resp.Kubeconfig), string(adminConf))
 
 	idsFile, err := afs.ReadFile(constants.ClusterIDsFileName)
 	assert.NoError(err)

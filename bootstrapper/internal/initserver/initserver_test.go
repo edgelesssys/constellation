@@ -27,7 +27,8 @@ func TestMain(m *testing.M) {
 func TestNew(t *testing.T) {
 	assert := assert.New(t)
 
-	server := New(nodelock.New(), &stubClusterInitializer{}, zap.NewNop())
+	fh := file.NewHandler(afero.NewMemMapFs())
+	server := New(nodelock.New(), &stubClusterInitializer{}, nil, fh, zap.NewNop())
 	assert.NotNil(server)
 	assert.NotNil(server.logger)
 	assert.NotNil(server.nodeLock)

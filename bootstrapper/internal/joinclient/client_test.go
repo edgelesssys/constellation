@@ -18,7 +18,6 @@ import (
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
 	"github.com/edgelesssys/constellation/joinservice/joinproto"
-	activationproto "github.com/edgelesssys/constellation/joinservice/joinproto"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -52,6 +51,8 @@ func TestClient(t *testing.T) {
 		disk          encryptedDisk
 		nodeLock      *nodelock.Lock
 		apiAnswers    []any
+		wantLock      bool
+		wantJoin      bool
 	}{
 		"on worker: metadata self: errors occur": {
 			role: role.Worker,
@@ -66,6 +67,8 @@ func TestClient(t *testing.T) {
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      nodelock.New(),
 			disk:          &stubDisk{},
+			wantJoin:      true,
+			wantLock:      true,
 		},
 		"on worker: metadata self: invalid answer": {
 			role: role.Worker,
@@ -80,6 +83,8 @@ func TestClient(t *testing.T) {
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      nodelock.New(),
 			disk:          &stubDisk{},
+			wantJoin:      true,
+			wantLock:      true,
 		},
 		"on worker: metadata list: errors occur": {
 			role: role.Worker,
@@ -94,6 +99,8 @@ func TestClient(t *testing.T) {
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      nodelock.New(),
 			disk:          &stubDisk{},
+			wantJoin:      true,
+			wantLock:      true,
 		},
 		"on worker: metadata list: no control plane nodes in answer": {
 			role: role.Worker,
@@ -108,6 +115,8 @@ func TestClient(t *testing.T) {
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      nodelock.New(),
 			disk:          &stubDisk{},
+			wantJoin:      true,
+			wantLock:      true,
 		},
 		"on worker: issueJoinTicket errors": {
 			role: role.Worker,
@@ -123,6 +132,8 @@ func TestClient(t *testing.T) {
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      nodelock.New(),
 			disk:          &stubDisk{},
+			wantJoin:      true,
+			wantLock:      true,
 		},
 		"on control plane: issueJoinTicket errors": {
 			role: role.ControlPlane,
@@ -138,6 +149,8 @@ func TestClient(t *testing.T) {
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      nodelock.New(),
 			disk:          &stubDisk{},
+			wantJoin:      true,
+			wantLock:      true,
 		},
 		"on control plane: joinCluster fails": {
 			role: role.ControlPlane,
@@ -149,6 +162,8 @@ func TestClient(t *testing.T) {
 			clusterJoiner: &stubClusterJoiner{joinClusterErr: someErr},
 			nodeLock:      nodelock.New(),
 			disk:          &stubDisk{},
+			wantJoin:      true,
+			wantLock:      true,
 		},
 		"on control plane: node already locked": {
 			role: role.ControlPlane,
@@ -160,6 +175,7 @@ func TestClient(t *testing.T) {
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      lockedLock,
 			disk:          &stubDisk{},
+			wantLock:      true,
 		},
 		"on control plane: disk open fails": {
 			role:          role.ControlPlane,
@@ -224,8 +240,16 @@ func TestClient(t *testing.T) {
 
 			client.Stop()
 
-			assert.True(tc.clusterJoiner.joinClusterCalled)
-			assert.False(client.nodeLock.TryLockOnce()) // lock should be locked
+			if tc.wantJoin {
+				assert.True(tc.clusterJoiner.joinClusterCalled)
+			} else {
+				assert.False(tc.clusterJoiner.joinClusterCalled)
+			}
+			if tc.wantLock {
+				assert.False(client.nodeLock.TryLockOnce()) // lock should be locked
+			} else {
+				assert.True(client.nodeLock.TryLockOnce())
+			}
 		})
 	}
 }
@@ -346,7 +370,7 @@ func (s *stubJoinServiceAPI) IssueJoinTicket(_ context.Context, _ *joinproto.Iss
 ) (*joinproto.IssueJoinTicketResponse, error) {
 	answer := <-s.issueJoinTicketAnswerC
 	if answer.resp == nil {
-		answer.resp = &activationproto.IssueJoinTicketResponse{}
+		answer.resp = &joinproto.IssueJoinTicketResponse{}
 	}
 	return answer.resp, answer.err
 }

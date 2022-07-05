@@ -88,7 +88,7 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool) Kube
 						},
 					},
 				},
-				CertSANs: []string{"127.0.0.1", "10.118.0.1"},
+				CertSANs: []string{"127.0.0.1"},
 			},
 			ControllerManager: kubeadm.ControlPlaneComponent{
 				ExtraArgs: map[string]string{

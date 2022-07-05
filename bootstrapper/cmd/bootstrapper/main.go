@@ -52,16 +52,16 @@ func main() {
 	flag.Parse()
 	cfg.Level.SetLevel(zap.DebugLevel)
 
-	zapLogger, err := cfg.Build()
+	logger, err := cfg.Build()
 	if err != nil {
 		log.Fatal(err)
 	}
 	if *logLevelUser {
-		grpc_zap.ReplaceGrpcLoggerV2(zapLogger.Named("gRPC"))
+		grpc_zap.ReplaceGrpcLoggerV2(logger.Named("gRPC"))
 	} else {
-		grpc_zap.ReplaceGrpcLoggerV2(zapLogger.WithOptions(zap.IncreaseLevel(zap.WarnLevel)).Named("gRPC"))
+		grpc_zap.ReplaceGrpcLoggerV2(logger.WithOptions(zap.IncreaseLevel(zap.WarnLevel)).Named("gRPC"))
 	}
-	zapLoggerCore := zapLogger.Named("core")
+	logger = logger.Named("bootstrapper")
 
 	var issuer atls.Issuer
 	var openTPM vtpm.TPMOpenFunc
@@ -174,7 +174,5 @@ func main() {
 
 	fileHandler := file.NewHandler(fs)
 
-	run(issuer, openTPM, fileHandler, clusterInitJoiner,
-		metadataAPI, bindIP,
-		bindPort, zapLoggerCore, cloudLogger, fs)
+	run(issuer, openTPM, fileHandler, clusterInitJoiner, metadataAPI, bindIP, bindPort, logger, cloudLogger)
 }

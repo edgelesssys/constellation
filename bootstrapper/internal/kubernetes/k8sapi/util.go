@@ -90,13 +90,13 @@ func (k *KubernetesUtil) InitCluster(ctx context.Context, initConfig []byte) err
 	if err != nil {
 		return fmt.Errorf("creating init config file %v: %w", initConfigFile.Name(), err)
 	}
-	defer os.Remove(initConfigFile.Name())
+	// defer os.Remove(initConfigFile.Name())
 
 	if _, err := initConfigFile.Write(initConfig); err != nil {
 		return fmt.Errorf("writing kubeadm init yaml config %v: %w", initConfigFile.Name(), err)
 	}
 
-	cmd := exec.CommandContext(ctx, kubeadmPath, "init", "--config", initConfigFile.Name())
+	cmd := exec.CommandContext(ctx, kubeadmPath, "init", "-v=5", "--config", initConfigFile.Name())
 	_, err = cmd.Output()
 	if err != nil {
 		var exitErr *exec.ExitError
@@ -237,6 +237,11 @@ func (k *KubernetesUtil) SetupJoinService(kubectl Client, joinServiceConfigurati
 	return kubectl.Apply(joinServiceConfiguration, true)
 }
 
+// SetupGCPGuestAgent deploys the GCP guest agent daemon set.
+func (k *KubernetesUtil) SetupGCPGuestAgent(kubectl Client, guestAgentDaemonset resources.Marshaler) error {
+	return kubectl.Apply(guestAgentDaemonset, true)
+}
+
 // SetupCloudControllerManager deploys the k8s cloud-controller-manager.
 func (k *KubernetesUtil) SetupCloudControllerManager(kubectl Client, cloudControllerManagerConfiguration resources.Marshaler, configMaps resources.Marshaler, secrets resources.Marshaler) error {
 	if err := kubectl.Apply(configMaps, true); err != nil {
@@ -289,18 +294,18 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte) err
 	if err != nil {
 		return fmt.Errorf("creating join config file %v: %w", joinConfigFile.Name(), err)
 	}
-	defer os.Remove(joinConfigFile.Name())
+	// defer os.Remove(joinConfigFile.Name())
 
 	if _, err := joinConfigFile.Write(joinConfig); err != nil {
 		return fmt.Errorf("writing kubeadm init yaml config %v: %w", joinConfigFile.Name(), err)
 	}
 
 	// run `kubeadm join` to join a worker node to an existing Kubernetes cluster
-	cmd := exec.CommandContext(ctx, kubeadmPath, "join", "--config", joinConfigFile.Name())
+	cmd := exec.CommandContext(ctx, kubeadmPath, "join", "-v=5", "--config", joinConfigFile.Name())
 	if _, err := cmd.Output(); err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			return fmt.Errorf("kubeadm join failed (code %v) with: %s", exitErr.ExitCode(), exitErr.Stderr)
+			return fmt.Errorf("kubeadm join failed (code %v) with: %s (full err: %s)", exitErr.ExitCode(), exitErr.Stderr, err)
 		}
 		return fmt.Errorf("kubeadm join: %w", err)
 	}
@@ -334,7 +339,7 @@ func (k *KubernetesUtil) GetControlPlaneJoinCertificateKey(ctx context.Context) 
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			return "", fmt.Errorf("kubeadm upload-certs failed (code %v) with: %s", exitErr.ExitCode(), exitErr.Stderr)
+			return "", fmt.Errorf("kubeadm upload-certs failed (code %v) with: %s (full err: %s)", exitErr.ExitCode(), exitErr.Stderr, err)
 		}
 		return "", fmt.Errorf("kubeadm upload-certs: %w", err)
 	}

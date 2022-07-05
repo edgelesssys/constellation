@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/cloudprovider/cloudtypes"
 	"github.com/edgelesssys/constellation/hack/qemu-metadata-api/virtwrapper"
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
@@ -160,7 +160,7 @@ func TestListSelf(t *testing.T) {
 			metadataRaw, err := io.ReadAll(w.Body)
 			require.NoError(err)
 
-			var metadata cloudtypes.Instance
+			var metadata metadata.InstanceMetadata
 			require.NoError(json.Unmarshal(metadataRaw, &metadata))
 			assert.Equal(tc.connect.network.leases[0].Hostname, metadata.Name)
 			assert.Equal(tc.connect.network.leases[0].IPaddr, metadata.PublicIPs[0])
@@ -222,7 +222,7 @@ func TestListPeers(t *testing.T) {
 			metadataRaw, err := io.ReadAll(w.Body)
 			require.NoError(err)
 
-			var metadata []cloudtypes.Instance
+			var metadata []metadata.InstanceMetadata
 			require.NoError(json.Unmarshal(metadataRaw, &metadata))
 			assert.Len(metadata, len(tc.connect.network.leases))
 		})

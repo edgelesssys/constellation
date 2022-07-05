@@ -3,9 +3,6 @@ description: "Destroy a running Constellation cluster."
 runs:
   using: 'composite'
   steps:
-  - name: Remove VPN configuration
-    run: wg-quick down ./wg0.conf
-    shell: bash
   - name: Constellation terminate
     run: constellation terminate
     shell: bash

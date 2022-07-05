@@ -13,9 +13,11 @@ import (
 	"github.com/edgelesssys/constellation/bootstrapper/nodestate"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/bootstrapper/util"
+	"github.com/edgelesssys/constellation/internal/atls"
 	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
@@ -41,21 +43,20 @@ type Server struct {
 }
 
 // New creates a new initialization server.
-func New(lock *nodelock.Lock, kube ClusterInitializer, logger *zap.Logger) *Server {
+func New(lock *nodelock.Lock, kube ClusterInitializer, issuer atls.Issuer, fh file.Handler, logger *zap.Logger) *Server {
 	logger = logger.Named("initServer")
 	server := &Server{
 		nodeLock:    lock,
 		disk:        diskencryption.New(),
 		initializer: kube,
+		fileHandler: fh,
 		logger:      logger,
 	}
 
+	creds := atlscredentials.New(issuer, nil)
 	grpcLogger := logger.Named("gRPC")
 	grpcServer := grpc.NewServer(
-		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
-			grpc_ctxtags.StreamServerInterceptor(),
-			grpc_zap.StreamServerInterceptor(grpcLogger),
-		)),
+		grpc.Creds(creds),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_ctxtags.UnaryServerInterceptor(),
 			grpc_zap.UnaryServerInterceptor(grpcLogger),
@@ -79,6 +80,8 @@ func (s *Server) Serve(ip, port string) error {
 
 // Init initializes the cluster.
 func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initproto.InitResponse, error) {
+	s.logger.Info("Init called")
+
 	if ok := s.nodeLock.TryLockOnce(); !ok {
 		// The join client seems to already have a connection to an
 		// existing join service. At this point, any further call to
@@ -86,6 +89,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		//
 		// The server stops itself after the current call is done.
 		go s.grpcServer.GracefulStop()
+		s.logger.Info("node is already in a join process")
 		return nil, status.Error(codes.FailedPrecondition, "node is already being activated")
 	}
 
@@ -125,6 +129,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		return nil, status.Errorf(codes.Internal, "initializing cluster: %s", err)
 	}
 
+	s.logger.Info("Init succeeded")
 	return &initproto.InitResponse{
 		Kubeconfig: kubeconfig,
 		OwnerId:    id.Owner,

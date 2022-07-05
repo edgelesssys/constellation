@@ -140,7 +140,7 @@ func parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handler) (verifyFlags
 	if ownerID == "" && clusterID == "" {
 		return verifyFlags{}, errors.New("neither owner-id nor unique-id provided to verify the cluster")
 	}
-	endpoint, err = validateEndpoint(endpoint, constants.CoordinatorPort)
+	endpoint, err = validateEndpoint(endpoint, constants.BootstrapperPort)
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
 	}

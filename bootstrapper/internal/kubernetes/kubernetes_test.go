@@ -441,34 +441,6 @@ func TestJoinCluster(t *testing.T) {
 	}
 }
 
-func TestGetKubeconfig(t *testing.T) {
-	testCases := map[string]struct {
-		Kubewrapper KubeWrapper
-		wantErr     bool
-	}{
-		"check single replacement": {
-			Kubewrapper: KubeWrapper{kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("127.0.0.1:16443"),
-			}},
-		},
-		"check multiple replacement": {
-			Kubewrapper: KubeWrapper{kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("127.0.0.1:16443...127.0.0.1:16443"),
-			}},
-		},
-	}
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-			data, err := tc.Kubewrapper.GetKubeconfig()
-			require.NoError(err)
-			assert.NotContains(string(data), "127.0.0.1:16443")
-			assert.Contains(string(data), "10.118.0.1:6443")
-		})
-	}
-}
-
 func TestK8sCompliantHostname(t *testing.T) {
 	compliantHostname := regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
 	testCases := map[string]struct {
@@ -512,6 +484,7 @@ type stubClusterUtil struct {
 	setupKMSError                    error
 	setupAccessManagerError          error
 	setupVerificationServiceErr      error
+	setupGCPGuestAgentErr            error
 	joinClusterErr                   error
 	startKubeletErr                  error
 	restartKubeletErr                error
@@ -541,6 +514,10 @@ func (s *stubClusterUtil) SetupAutoscaling(kubectl k8sapi.Client, clusterAutosca
 
 func (s *stubClusterUtil) SetupJoinService(kubectl k8sapi.Client, joinServiceConfiguration resources.Marshaler) error {
 	return s.setupJoinServiceError
+}
+
+func (s *stubClusterUtil) SetupGCPGuestAgent(kubectl k8sapi.Client, gcpGuestAgentConfiguration resources.Marshaler) error {
+	return s.setupGCPGuestAgentErr
 }
 
 func (s *stubClusterUtil) SetupCloudControllerManager(kubectl k8sapi.Client, cloudControllerManagerConfiguration resources.Marshaler, configMaps resources.Marshaler, secrets resources.Marshaler) error {
