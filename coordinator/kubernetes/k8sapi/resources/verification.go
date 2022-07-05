@@ -119,7 +119,7 @@ func NewVerificationDaemonSet(csp string) *verificationDaemonset {
 				Kind:       "Service",
 			},
 			ObjectMeta: meta.ObjectMeta{
-				Name:      "activation-service",
+				Name:      "verification-service",
 				Namespace: "kube-system",
 			},
 			Spec: k8s.ServiceSpec{
