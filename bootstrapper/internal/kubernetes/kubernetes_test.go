@@ -173,8 +173,8 @@ func TestInitCluster(t *testing.T) {
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
 		},
-		"kubeadm init fails when setting up the activation service": {
-			clusterUtil: stubClusterUtil{setupActivationServiceError: someErr},
+		"kubeadm init fails when setting up the join service": {
+			clusterUtil: stubClusterUtil{setupJoinServiceError: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
@@ -506,7 +506,7 @@ type stubClusterUtil struct {
 	initClusterErr                   error
 	setupPodNetworkErr               error
 	setupAutoscalingError            error
-	setupActivationServiceError      error
+	setupJoinServiceError            error
 	setupCloudControllerManagerError error
 	setupCloudNodeManagerError       error
 	setupKMSError                    error
@@ -539,8 +539,8 @@ func (s *stubClusterUtil) SetupAutoscaling(kubectl k8sapi.Client, clusterAutosca
 	return s.setupAutoscalingError
 }
 
-func (s *stubClusterUtil) SetupActivationService(kubectl k8sapi.Client, activationServiceConfiguration resources.Marshaler) error {
-	return s.setupActivationServiceError
+func (s *stubClusterUtil) SetupJoinService(kubectl k8sapi.Client, joinServiceConfiguration resources.Marshaler) error {
+	return s.setupJoinServiceError
 }
 
 func (s *stubClusterUtil) SetupCloudControllerManager(kubectl k8sapi.Client, cloudControllerManagerConfiguration resources.Marshaler, configMaps resources.Marshaler, secrets resources.Marshaler) error {

@@ -194,7 +194,7 @@ func NewKMSDeployment(csp string, masterSecret []byte) *kmsDeployment {
 											{
 												ConfigMap: &k8s.ConfigMapProjection{
 													LocalObjectReference: k8s.LocalObjectReference{
-														Name: "activation-config",
+														Name: "join-config",
 													},
 													Items: []k8s.KeyToPath{
 														{

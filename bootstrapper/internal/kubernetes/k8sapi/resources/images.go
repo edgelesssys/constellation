@@ -2,7 +2,7 @@ package resources
 
 const (
 	// Constellation images.
-	activationImage    = "ghcr.io/edgelesssys/constellation/activation-service:v1.2"
+	joinImage          = "ghcr.io/edgelesssys/constellation/join-service:v1.2"
 	accessManagerImage = "ghcr.io/edgelesssys/constellation/access-manager:v1.2"
 	kmsImage           = "ghcr.io/edgelesssys/constellation/kmsserver:v1.2"
 	verificationImage  = "ghcr.io/edgelesssys/constellation/verification-service:v1.2"

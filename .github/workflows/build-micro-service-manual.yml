@@ -8,7 +8,7 @@ on:
         type: choice
         options:
           - 'access-manager'
-          - 'activation-service'
+          - 'join-service'
           - 'kmsserver'
           - 'verification-service'
         required: true
@@ -40,15 +40,15 @@ jobs:
           case "${{ inputs.microService }}" in
             "access-manager" )
               echo "microServiceDockerfile=access_manager/Dockerfile" >> $GITHUB_ENV ;;
-            "activation-service" )
-              echo "microServiceDockerfile=activation/Dockerfile" >> $GITHUB_ENV ;;
+            "join-service" )
+              echo "microServiceDockerfile=joinservice/Dockerfile" >> $GITHUB_ENV ;;
             "kmsserver" )
               echo "microServiceDockerfile=kms/Dockerfile" >> $GITHUB_ENV ;;
             "verification-service" )
               echo "microServiceDockerfile=verify/Dockerfile" >> $GITHUB_ENV ;;
           esac
 
-      - name: Build and upload activation-service container image
+      - name: Build and upload join-service container image
         id: build-and-upload
         uses: ./.github/actions/build_micro_service
         with:

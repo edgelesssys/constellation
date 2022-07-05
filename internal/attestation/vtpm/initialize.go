@@ -17,8 +17,8 @@ const (
 	PCRIndexClusterID = tpmutil.Handle(12)
 )
 
-// MarkNodeAsInitialized marks a node as initialized by extending PCRs.
-func MarkNodeAsInitialized(openTPM TPMOpenFunc, ownerID, clusterID []byte) error {
+// MarkNodeAsBootstrapped marks a node as initialized by extending PCRs.
+func MarkNodeAsBootstrapped(openTPM TPMOpenFunc, ownerID, clusterID []byte) error {
 	tpm, err := openTPM()
 	if err != nil {
 		return err
@@ -33,8 +33,8 @@ func MarkNodeAsInitialized(openTPM TPMOpenFunc, ownerID, clusterID []byte) error
 	return tpm2.PCREvent(tpm, PCRIndexClusterID, clusterID)
 }
 
-// IsNodeInitialized checks if a node is already initialized by reading PCRs.
-func IsNodeInitialized(openTPM TPMOpenFunc) (bool, error) {
+// IsNodeBootstrapped checks if a node is already bootestrapped by reading PCRs.
+func IsNodeBootstrapped(openTPM TPMOpenFunc) (bool, error) {
 	tpm, err := openTPM()
 	if err != nil {
 		return false, err

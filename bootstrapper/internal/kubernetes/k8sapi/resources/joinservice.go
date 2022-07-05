@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-type activationDaemonset struct {
+type joinServiceDaemonset struct {
 	ClusterRole        rbac.ClusterRole
 	ClusterRoleBinding rbac.ClusterRoleBinding
 	ConfigMap          k8s.ConfigMap
@@ -21,18 +21,18 @@ type activationDaemonset struct {
 	Service            k8s.Service
 }
 
-// NewActivationDaemonset returns a daemonset for the activation service.
-func NewActivationDaemonset(csp, measurementsJSON, idJSON string) *activationDaemonset {
-	return &activationDaemonset{
+// NewJoinServiceDaemonset returns a daemonset for the join service.
+func NewJoinServiceDaemonset(csp, measurementsJSON, idJSON string) *joinServiceDaemonset {
+	return &joinServiceDaemonset{
 		ClusterRole: rbac.ClusterRole{
 			TypeMeta: meta.TypeMeta{
 				APIVersion: "rbac.authorization.k8s.io/v1",
 				Kind:       "ClusterRole",
 			},
 			ObjectMeta: meta.ObjectMeta{
-				Name: "activation-service",
+				Name: "join-service",
 				Labels: map[string]string{
-					"k8s-app": "activation-service",
+					"k8s-app": "join-service",
 				},
 			},
 			Rules: []rbac.PolicyRule{
@@ -54,17 +54,17 @@ func NewActivationDaemonset(csp, measurementsJSON, idJSON string) *activationDae
 				Kind:       "ClusterRoleBinding",
 			},
 			ObjectMeta: meta.ObjectMeta{
-				Name: "activation-service",
+				Name: "join-service",
 			},
 			RoleRef: rbac.RoleRef{
 				APIGroup: "rbac.authorization.k8s.io",
 				Kind:     "ClusterRole",
-				Name:     "activation-service",
+				Name:     "join-service",
 			},
 			Subjects: []rbac.Subject{
 				{
 					Kind:      "ServiceAccount",
-					Name:      "activation-service",
+					Name:      "join-service",
 					Namespace: "kube-system",
 				},
 			},
@@ -75,29 +75,29 @@ func NewActivationDaemonset(csp, measurementsJSON, idJSON string) *activationDae
 				Kind:       "DaemonSet",
 			},
 			ObjectMeta: meta.ObjectMeta{
-				Name:      "activation-service",
+				Name:      "join-service",
 				Namespace: "kube-system",
 				Labels: map[string]string{
-					"k8s-app":                       "activation-service",
-					"component":                     "activation-service",
+					"k8s-app":                       "join-service",
+					"component":                     "join-service",
 					"kubernetes.io/cluster-service": "true",
 				},
 			},
 			Spec: apps.DaemonSetSpec{
 				Selector: &meta.LabelSelector{
 					MatchLabels: map[string]string{
-						"k8s-app": "activation-service",
+						"k8s-app": "join-service",
 					},
 				},
 				Template: k8s.PodTemplateSpec{
 					ObjectMeta: meta.ObjectMeta{
 						Labels: map[string]string{
-							"k8s-app": "activation-service",
+							"k8s-app": "join-service",
 						},
 					},
 					Spec: k8s.PodSpec{
 						PriorityClassName:  "system-cluster-critical",
-						ServiceAccountName: "activation-service",
+						ServiceAccountName: "join-service",
 						Tolerations: []k8s.Toleration{
 							{
 								Key:      "CriticalAddonsOnly",
@@ -134,11 +134,11 @@ func NewActivationDaemonset(csp, measurementsJSON, idJSON string) *activationDae
 						},
 						Containers: []k8s.Container{
 							{
-								Name:  "activation-service",
-								Image: activationImage,
+								Name:  "join-service",
+								Image: joinImage,
 								Ports: []k8s.ContainerPort{
 									{
-										ContainerPort: constants.ActivationServicePort,
+										ContainerPort: constants.JoinServicePort,
 										Name:          "tcp",
 									},
 								},
@@ -169,7 +169,7 @@ func NewActivationDaemonset(csp, measurementsJSON, idJSON string) *activationDae
 								VolumeSource: k8s.VolumeSource{
 									ConfigMap: &k8s.ConfigMapVolumeSource{
 										LocalObjectReference: k8s.LocalObjectReference{
-											Name: "activation-config",
+											Name: "join-config",
 										},
 									},
 								},
@@ -193,7 +193,7 @@ func NewActivationDaemonset(csp, measurementsJSON, idJSON string) *activationDae
 				Kind:       "ServiceAccount",
 			},
 			ObjectMeta: meta.ObjectMeta{
-				Name:      "activation-service",
+				Name:      "join-service",
 				Namespace: "kube-system",
 			},
 		},
@@ -203,7 +203,7 @@ func NewActivationDaemonset(csp, measurementsJSON, idJSON string) *activationDae
 				Kind:       "Service",
 			},
 			ObjectMeta: meta.ObjectMeta{
-				Name:      "activation-service",
+				Name:      "join-service",
 				Namespace: "kube-system",
 			},
 			Spec: k8s.ServiceSpec{
@@ -212,13 +212,13 @@ func NewActivationDaemonset(csp, measurementsJSON, idJSON string) *activationDae
 					{
 						Name:       "grpc",
 						Protocol:   k8s.ProtocolTCP,
-						Port:       constants.ActivationServicePort,
-						TargetPort: intstr.IntOrString{IntVal: constants.ActivationServicePort},
+						Port:       constants.JoinServicePort,
+						TargetPort: intstr.IntOrString{IntVal: constants.JoinServicePort},
 						NodePort:   constants.JoinServiceNodePort,
 					},
 				},
 				Selector: map[string]string{
-					"k8s-app": "activation-service",
+					"k8s-app": "join-service",
 				},
 			},
 		},
@@ -228,7 +228,7 @@ func NewActivationDaemonset(csp, measurementsJSON, idJSON string) *activationDae
 				Kind:       "ConfigMap",
 			},
 			ObjectMeta: meta.ObjectMeta{
-				Name:      "activation-config",
+				Name:      "join-config",
 				Namespace: "kube-system",
 			},
 			Data: map[string]string{
@@ -240,6 +240,6 @@ func NewActivationDaemonset(csp, measurementsJSON, idJSON string) *activationDae
 }
 
 // Marshal the daemonset using the Kubernetes resource marshaller.
-func (a *activationDaemonset) Marshal() ([]byte, error) {
+func (a *joinServiceDaemonset) Marshal() ([]byte, error) {
 	return MarshalK8SResources(a)
 }

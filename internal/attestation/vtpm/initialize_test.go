@@ -31,7 +31,7 @@ func TestMarkNodeAsInitialized(t *testing.T) {
 	pcrs, err := client.ReadAllPCRs(tpm)
 	require.NoError(err)
 
-	assert.NoError(MarkNodeAsInitialized(func() (io.ReadWriteCloser, error) {
+	assert.NoError(MarkNodeAsBootstrapped(func() (io.ReadWriteCloser, error) {
 		return &simTPMNOPCloser{tpm}, nil
 	}, []byte{0x0, 0x1, 0x2, 0x3}, []byte{0x4, 0x5, 0x6, 0x7}))
 
@@ -47,7 +47,7 @@ func TestMarkNodeAsInitialized(t *testing.T) {
 func TestFailOpener(t *testing.T) {
 	assert := assert.New(t)
 
-	assert.Error(MarkNodeAsInitialized(func() (io.ReadWriteCloser, error) { return nil, errors.New("failed") }, []byte{0x0, 0x1, 0x2, 0x3}, []byte{0x0, 0x1, 0x2, 0x3}))
+	assert.Error(MarkNodeAsBootstrapped(func() (io.ReadWriteCloser, error) { return nil, errors.New("failed") }, []byte{0x0, 0x1, 0x2, 0x3}, []byte{0x0, 0x1, 0x2, 0x3}))
 }
 
 func TestIsNodeInitialized(t *testing.T) {
@@ -86,7 +86,7 @@ func TestIsNodeInitialized(t *testing.T) {
 			if tc.pcrValueClusterID != nil {
 				require.NoError(tpm2.PCREvent(tpm, PCRIndexClusterID, tc.pcrValueClusterID))
 			}
-			initialized, err := IsNodeInitialized(func() (io.ReadWriteCloser, error) {
+			initialized, err := IsNodeBootstrapped(func() (io.ReadWriteCloser, error) {
 				return &simTPMNOPCloser{tpm}, nil
 			})
 			if tc.wantErr {

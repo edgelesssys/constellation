@@ -83,7 +83,7 @@ getKey:
 	}
 
 	// taint the node as initialized
-	if err := vtpm.MarkNodeAsInitialized(s.openTPM, ownerID, clusterID); err != nil {
+	if err := vtpm.MarkNodeAsBootstrapped(s.openTPM, ownerID, clusterID); err != nil {
 		return err
 	}
 

@@ -22,9 +22,9 @@ const (
 	// Ports.
 	//
 
-	// ActivationServiePort is the port for reaching the activation service within Kubernetes.
-	ActivationServicePort = 9090
-	// JoinServiceNodePort is the port for reaching the activation service outside of Kubernetes.
+	// JoinServicePort is the port for reaching the join service within Kubernetes.
+	JoinServicePort = 9090
+	// JoinServiceNodePort is the port for reaching the join service outside of Kubernetes.
 	JoinServiceNodePort       = 30090
 	VerifyServicePortHTTP     = 8080
 	VerifyServicePortGRPC     = 9090

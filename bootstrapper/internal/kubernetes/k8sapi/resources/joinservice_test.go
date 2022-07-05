@@ -7,12 +7,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewActivationDaemonset(t *testing.T) {
-	deployment := NewActivationDaemonset("csp", "measurementsJSON", "idJSON")
+func TestNewJoinServiceDaemonset(t *testing.T) {
+	deployment := NewJoinServiceDaemonset("csp", "measurementsJSON", "idJSON")
 	deploymentYAML, err := deployment.Marshal()
 	require.NoError(t, err)
 
-	var recreated activationDaemonset
+	var recreated joinServiceDaemonset
 	require.NoError(t, UnmarshalK8SResources(deploymentYAML, &recreated))
 	assert.Equal(t, deployment, &recreated)
 }

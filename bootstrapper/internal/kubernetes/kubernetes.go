@@ -162,8 +162,8 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up kms: %w", err)
 	}
 
-	if err := k.setupActivationService(k.cloudProvider, k.initialMeasurementsJSON, id); err != nil {
-		return nil, fmt.Errorf("setting up activation service failed: %w", err)
+	if err := k.setupJoinService(k.cloudProvider, k.initialMeasurementsJSON, id); err != nil {
+		return nil, fmt.Errorf("setting up join service failed: %w", err)
 	}
 
 	if err := k.setupCCM(ctx, subnetworkPodCIDR, cloudServiceAccountURI, instance); err != nil {
@@ -268,15 +268,15 @@ func (k *KubeWrapper) GetJoinToken(ctx context.Context, ttl time.Duration) (*kub
 	return k.clusterUtil.CreateJoinToken(ctx, ttl)
 }
 
-func (k *KubeWrapper) setupActivationService(csp string, measurementsJSON []byte, id attestationtypes.ID) error {
+func (k *KubeWrapper) setupJoinService(csp string, measurementsJSON []byte, id attestationtypes.ID) error {
 	idJSON, err := json.Marshal(id)
 	if err != nil {
 		return err
 	}
 
-	activationConfiguration := resources.NewActivationDaemonset(csp, string(measurementsJSON), string(idJSON))
+	joinConfiguration := resources.NewJoinServiceDaemonset(csp, string(measurementsJSON), string(idJSON))
 
-	return k.clusterUtil.SetupActivationService(k.client, activationConfiguration)
+	return k.clusterUtil.SetupJoinService(k.client, joinConfiguration)
 }
 
 func (k *KubeWrapper) setupCCM(ctx context.Context, subnetworkPodCIDR, cloudServiceAccountURI string, instance metadata.InstanceMetadata) error {

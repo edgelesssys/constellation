@@ -11,7 +11,7 @@ on:
       - "internal/constants/**"
 
 jobs:
-  build-activation-service:
+  build-verification-service:
     runs-on: ubuntu-latest
     permissions:
       contents: read

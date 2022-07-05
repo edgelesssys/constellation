@@ -232,9 +232,9 @@ func (k *KubernetesUtil) SetupAutoscaling(kubectl Client, clusterAutoscalerConfi
 	return kubectl.Apply(clusterAutoscalerConfiguration, true)
 }
 
-// SetupActivationService deploys the Constellation node activation service.
-func (k *KubernetesUtil) SetupActivationService(kubectl Client, activationServiceConfiguration resources.Marshaler) error {
-	return kubectl.Apply(activationServiceConfiguration, true)
+// SetupJoinService deploys the Constellation node join service.
+func (k *KubernetesUtil) SetupJoinService(kubectl Client, joinServiceConfiguration resources.Marshaler) error {
+	return kubectl.Apply(joinServiceConfiguration, true)
 }
 
 // SetupCloudControllerManager deploys the k8s cloud-controller-manager.

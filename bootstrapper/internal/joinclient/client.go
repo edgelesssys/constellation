@@ -65,7 +65,7 @@ func New(lock *nodelock.Lock, dial grpcDialer, joiner ClusterJoiner, meta Metada
 		dialer:      dial,
 		joiner:      joiner,
 		metadataAPI: meta,
-		log:         log.Named("selfactivation-client"),
+		log:         log.Named("join-client"),
 	}
 }
 
@@ -116,15 +116,15 @@ func (c *JoinClient) Start() {
 		}
 
 		for {
-			err := c.tryJoinAtAvailableServices()
+			err := c.tryJoinWithAvailableServices()
 			if err == nil {
-				c.log.Info("Activated successfully. SelfActivationClient shut down.")
+				c.log.Info("Joined successfully. Client is shut down.")
 				return
 			} else if isUnrecoverable(err) {
 				c.log.Error("Unrecoverable error occurred", zap.Error(err))
 				return
 			}
-			c.log.Info("Activation failed for all available endpoints", zap.Error(err))
+			c.log.Info("Join failed for all available endpoints", zap.Error(err))
 
 			c.log.Info("Sleeping", zap.Duration("interval", c.interval))
 			select {
@@ -156,7 +156,7 @@ func (c *JoinClient) Stop() {
 	c.log.Info("Stopped")
 }
 
-func (c *JoinClient) tryJoinAtAvailableServices() error {
+func (c *JoinClient) tryJoinWithAvailableServices() error {
 	ips, err := c.getControlPlaneIPs()
 	if err != nil {
 		return err

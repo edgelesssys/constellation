@@ -28,7 +28,7 @@ func main() {
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
 
 	log.With(zap.String("version", constants.VersionInfo), zap.String("cloudProvider", *provider)).
-		Infof("Constellation Node Activation Service")
+		Infof("Constellation Node Join Service")
 
 	handler := file.NewHandler(afero.NewOsFs())
 
@@ -67,7 +67,7 @@ func main() {
 		}
 	}()
 
-	if err := server.Run(creds, strconv.Itoa(constants.ActivationServicePort)); err != nil {
+	if err := server.Run(creds, strconv.Itoa(constants.JoinServicePort)); err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to run server")
 	}
 }

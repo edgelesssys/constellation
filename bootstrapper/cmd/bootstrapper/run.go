@@ -28,12 +28,12 @@ func run(issuer quoteIssuer, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
 	defer cloudLogger.Close()
 	cloudLogger.Disclose("bootstrapper started running...")
 
-	nodeActivated, err := vtpm.IsNodeInitialized(tpm)
+	nodeBootstrapped, err := vtpm.IsNodeBootstrapped(tpm)
 	if err != nil {
-		logger.Fatal("failed to check for previous activation using vTPM", zap.Error(err))
+		logger.Fatal("failed to check for previous bootstrapping using vTPM", zap.Error(err))
 	}
 
-	if nodeActivated {
+	if nodeBootstrapped {
 		if err := kube.StartKubelet(); err != nil {
 			logger.Fatal("failed to restart kubelet", zap.Error(err))
 		}

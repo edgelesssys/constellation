@@ -22,7 +22,7 @@ import (
 	kubeadmv1 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
-// Server implements the core logic of Constellation's node activation service.
+// Server implements the core logic of Constellation's node join service.
 type Server struct {
 	log             *logger.Logger
 	file            file.Handler
@@ -57,11 +57,11 @@ func (s *Server) Run(creds credentials.TransportCredentials, port string) error 
 	if err != nil {
 		return fmt.Errorf("failed to listen: %s", err)
 	}
-	s.log.Infof("Starting activation service on %s", lis.Addr().String())
+	s.log.Infof("Starting join service on %s", lis.Addr().String())
 	return grpcServer.Serve(lis)
 }
 
-// IssueJoinTicket handles activation requests of Constellation nodes.
+// IssueJoinTicket handles join requests of Constellation nodes.
 // A node will receive:
 // - stateful disk encryption key.
 // - Kubernetes join token.
