@@ -2,8 +2,10 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
+	"strings"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -35,9 +37,11 @@ func init() {
 }
 
 func main() {
+	var csp string
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+	flag.StringVar(&csp, "csp", "", "Cloud Service Provider the image is running on")
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
@@ -50,6 +54,17 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	var cspClient cspAPI
+	switch strings.ToLower(csp) {
+	case "azure":
+		panic("Azure is not supported yet")
+	case "gcp":
+		panic("GCP is not supported yet")
+	default:
+		setupLog.Info("Unknown CSP", "csp", csp)
+		os.Exit(1)
+	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -64,10 +79,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.NodeImageReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	if err = controllers.NewNodeImageReconciler(
+		cspClient, mgr.GetClient(), mgr.GetScheme(),
+	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Unable to create controller", "controller", "NodeImage")
 		os.Exit(1)
 	}
@@ -78,17 +92,15 @@ func main() {
 		setupLog.Error(err, "Unable to create controller", "controller", "AutoscalingStrategy")
 		os.Exit(1)
 	}
-	if err = (&controllers.ScalingGroupReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	if err = controllers.NewScalingGroupReconciler(
+		cspClient, mgr.GetClient(), mgr.GetScheme(),
+	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Unable to create controller", "controller", "ScalingGroup")
 		os.Exit(1)
 	}
-	if err = (&controllers.PendingNodeReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	if err = controllers.NewPendingNodeReconciler(
+		cspClient, mgr.GetClient(), mgr.GetScheme(),
+	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Unable to create controller", "controller", "PendingNode")
 		os.Exit(1)
 	}
@@ -108,4 +120,21 @@ func main() {
 		setupLog.Error(err, "Problem running manager")
 		os.Exit(1)
 	}
+}
+
+type cspAPI interface {
+	// GetNodeImage retrieves the image currently used by a node.
+	GetNodeImage(ctx context.Context, providerID string) (string, error)
+	// GetScalingGroupID retrieves the scaling group that a node is part of.
+	GetScalingGroupID(ctx context.Context, providerID string) (string, error)
+	// CreateNode creates a new node inside a specified scaling group at the CSP and returns its future name and provider id.
+	CreateNode(ctx context.Context, scalingGroupID string) (nodeName, providerID string, err error)
+	// DeleteNode starts the termination of the node at the CSP.
+	DeleteNode(ctx context.Context, providerID string) error
+	// GetNodeState retrieves the state of a pending node from a CSP.
+	GetNodeState(ctx context.Context, providerID string) (updatev1alpha1.CSPNodeState, error)
+	// GetScalingGroupImage retrieves the image currently used by a scaling group.
+	GetScalingGroupImage(ctx context.Context, scalingGroupID string) (string, error)
+	// SetScalingGroupImage sets the image to be used by newly created nodes in a scaling group.
+	SetScalingGroupImage(ctx context.Context, scalingGroupID, imageURI string) error
 }
