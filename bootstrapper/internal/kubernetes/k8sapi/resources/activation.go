@@ -214,7 +214,7 @@ func NewActivationDaemonset(csp, measurementsJSON, idJSON string) *activationDae
 						Protocol:   k8s.ProtocolTCP,
 						Port:       constants.ActivationServicePort,
 						TargetPort: intstr.IntOrString{IntVal: constants.ActivationServicePort},
-						NodePort:   constants.ActivationServiceNodePort,
+						NodePort:   constants.JoinServiceNodePort,
 					},
 				},
 				Selector: map[string]string{

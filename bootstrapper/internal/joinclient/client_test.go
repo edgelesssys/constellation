@@ -17,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
+	"github.com/edgelesssys/constellation/joinservice/joinproto"
 	activationproto "github.com/edgelesssys/constellation/joinservice/joinproto"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -56,7 +57,7 @@ func TestClient(t *testing.T) {
 				selfAnswer{err: someErr},
 				selfAnswer{instance: self},
 				listAnswer{instances: peers},
-				activateWorkerNodeAnswer{},
+				issueJoinTicketAnswer{},
 			},
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      nodelock.New(),
@@ -70,7 +71,7 @@ func TestClient(t *testing.T) {
 				selfAnswer{instance: metadata.InstanceMetadata{Name: "node-1"}},
 				selfAnswer{instance: self},
 				listAnswer{instances: peers},
-				activateWorkerNodeAnswer{},
+				issueJoinTicketAnswer{},
 			},
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      nodelock.New(),
@@ -84,7 +85,7 @@ func TestClient(t *testing.T) {
 				listAnswer{err: someErr},
 				listAnswer{err: someErr},
 				listAnswer{instances: peers},
-				activateWorkerNodeAnswer{},
+				issueJoinTicketAnswer{},
 			},
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      nodelock.New(),
@@ -98,7 +99,7 @@ func TestClient(t *testing.T) {
 				listAnswer{},
 				listAnswer{},
 				listAnswer{instances: peers},
-				activateWorkerNodeAnswer{},
+				issueJoinTicketAnswer{},
 			},
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      nodelock.New(),
@@ -109,11 +110,11 @@ func TestClient(t *testing.T) {
 			apiAnswers: []any{
 				selfAnswer{instance: self},
 				listAnswer{instances: peers},
-				activateWorkerNodeAnswer{err: someErr},
+				issueJoinTicketAnswer{err: someErr},
 				listAnswer{instances: peers},
-				activateWorkerNodeAnswer{err: someErr},
+				issueJoinTicketAnswer{err: someErr},
 				listAnswer{instances: peers},
-				activateWorkerNodeAnswer{},
+				issueJoinTicketAnswer{},
 			},
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      nodelock.New(),
@@ -146,13 +147,13 @@ func TestClient(t *testing.T) {
 			}
 
 			serverCreds := atlscredentials.New(nil, nil)
-			activationServer := grpc.NewServer(grpc.Creds(serverCreds))
-			activationAPI := newStubActivationServiceAPI()
-			activationproto.RegisterAPIServer(activationServer, activationAPI)
-			port := strconv.Itoa(constants.ActivationServiceNodePort)
+			joinServer := grpc.NewServer(grpc.Creds(serverCreds))
+			joinserviceAPI := newStubJoinServiceAPI()
+			joinproto.RegisterAPIServer(joinServer, joinserviceAPI)
+			port := strconv.Itoa(constants.JoinServiceNodePort)
 			listener := netDialer.GetListener(net.JoinHostPort("192.0.2.3", port))
-			go activationServer.Serve(listener)
-			defer activationServer.GracefulStop()
+			go joinServer.Serve(listener)
+			defer joinServer.GracefulStop()
 
 			client.Start()
 
@@ -162,8 +163,8 @@ func TestClient(t *testing.T) {
 					metadataAPI.selfAnswerC <- a
 				case listAnswer:
 					metadataAPI.listAnswerC <- a
-				case activateWorkerNodeAnswer:
-					activationAPI.activateWorkerNodeAnswerC <- a
+				case issueJoinTicketAnswer:
+					joinserviceAPI.issueJoinTicketAnswerC <- a
 				}
 				clock.Step(time.Second)
 			}
@@ -267,44 +268,29 @@ type listAnswer struct {
 	err       error
 }
 
-type stubActivationServiceAPI struct {
-	activateWorkerNodeAnswerC       chan activateWorkerNodeAnswer
-	activateControlPlaneNodeAnswerC chan activateControlPlaneNodeAnswer
+type stubJoinServiceAPI struct {
+	issueJoinTicketAnswerC chan issueJoinTicketAnswer
 
-	activationproto.UnimplementedAPIServer
+	joinproto.UnimplementedAPIServer
 }
 
-func newStubActivationServiceAPI() *stubActivationServiceAPI {
-	return &stubActivationServiceAPI{
-		activateWorkerNodeAnswerC: make(chan activateWorkerNodeAnswer),
+func newStubJoinServiceAPI() *stubJoinServiceAPI {
+	return &stubJoinServiceAPI{
+		issueJoinTicketAnswerC: make(chan issueJoinTicketAnswer),
 	}
 }
 
-func (s *stubActivationServiceAPI) ActivateWorkerNode(_ context.Context, _ *activationproto.ActivateWorkerNodeRequest,
-) (*activationproto.ActivateWorkerNodeResponse, error) {
-	answer := <-s.activateWorkerNodeAnswerC
+func (s *stubJoinServiceAPI) IssueJoinTicket(_ context.Context, _ *joinproto.IssueJoinTicketRequest,
+) (*joinproto.IssueJoinTicketResponse, error) {
+	answer := <-s.issueJoinTicketAnswerC
 	if answer.resp == nil {
-		answer.resp = &activationproto.ActivateWorkerNodeResponse{}
+		answer.resp = &activationproto.IssueJoinTicketResponse{}
 	}
 	return answer.resp, answer.err
 }
 
-func (s *stubActivationServiceAPI) ActivateControlPlaneNode(_ context.Context, _ *activationproto.ActivateControlPlaneNodeRequest,
-) (*activationproto.ActivateControlPlaneNodeResponse, error) {
-	answer := <-s.activateControlPlaneNodeAnswerC
-	if answer.resp == nil {
-		answer.resp = &activationproto.ActivateControlPlaneNodeResponse{}
-	}
-	return answer.resp, answer.err
-}
-
-type activateWorkerNodeAnswer struct {
-	resp *activationproto.ActivateWorkerNodeResponse
-	err  error
-}
-
-type activateControlPlaneNodeAnswer struct {
-	resp *activationproto.ActivateControlPlaneNodeResponse
+type issueJoinTicketAnswer struct {
+	resp *joinproto.IssueJoinTicketResponse
 	err  error
 }
 
