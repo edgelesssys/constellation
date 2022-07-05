@@ -89,6 +89,6 @@ runs:
       with:
         draft: true
         files: |
-          constellation
-          constellation.sig
-          cosign.pub
+          build/constellation
+          build/constellation.sig
+          build/cosign.pub

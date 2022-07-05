@@ -13,5 +13,7 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
     3. Merge this branch
 4. Create a new tag in `constellation`
     * `git tag v.1.3.0`
+    * Run [Build CLI](https://github.com/edgelesssys/constellation/actions/workflows/build-cli.yml) action on the tag
+    * Check build output for link to draft release. Review & approve.
 5. Create a new tag in `constellation-docs`
     * `git tag v.1.3.0`
