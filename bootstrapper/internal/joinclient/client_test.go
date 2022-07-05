@@ -21,6 +21,7 @@ import (
 	activationproto "github.com/edgelesssys/constellation/joinservice/joinproto"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -35,7 +36,10 @@ func TestMain(m *testing.M) {
 
 func TestClient(t *testing.T) {
 	someErr := errors.New("failed")
-	self := metadata.InstanceMetadata{Role: role.Worker, Name: "node-1"}
+	lockedLock := nodelock.New()
+	require.True(t, lockedLock.TryLockOnce())
+	workerSelf := metadata.InstanceMetadata{Role: role.Worker, Name: "node-1"}
+	controlSelf := metadata.InstanceMetadata{Role: role.ControlPlane, Name: "node-5"}
 	peers := []metadata.InstanceMetadata{
 		{Role: role.Worker, Name: "node-2", PrivateIPs: []string{"192.0.2.8"}},
 		{Role: role.ControlPlane, Name: "node-3", PrivateIPs: []string{"192.0.2.1"}},
@@ -55,7 +59,7 @@ func TestClient(t *testing.T) {
 				selfAnswer{err: someErr},
 				selfAnswer{err: someErr},
 				selfAnswer{err: someErr},
-				selfAnswer{instance: self},
+				selfAnswer{instance: workerSelf},
 				listAnswer{instances: peers},
 				issueJoinTicketAnswer{},
 			},
@@ -69,7 +73,7 @@ func TestClient(t *testing.T) {
 				selfAnswer{},
 				selfAnswer{instance: metadata.InstanceMetadata{Role: role.Worker}},
 				selfAnswer{instance: metadata.InstanceMetadata{Name: "node-1"}},
-				selfAnswer{instance: self},
+				selfAnswer{instance: workerSelf},
 				listAnswer{instances: peers},
 				issueJoinTicketAnswer{},
 			},
@@ -80,7 +84,7 @@ func TestClient(t *testing.T) {
 		"on worker: metadata list: errors occur": {
 			role: role.Worker,
 			apiAnswers: []any{
-				selfAnswer{instance: self},
+				selfAnswer{instance: workerSelf},
 				listAnswer{err: someErr},
 				listAnswer{err: someErr},
 				listAnswer{err: someErr},
@@ -94,7 +98,7 @@ func TestClient(t *testing.T) {
 		"on worker: metadata list: no control plane nodes in answer": {
 			role: role.Worker,
 			apiAnswers: []any{
-				selfAnswer{instance: self},
+				selfAnswer{instance: workerSelf},
 				listAnswer{},
 				listAnswer{},
 				listAnswer{},
@@ -105,10 +109,10 @@ func TestClient(t *testing.T) {
 			nodeLock:      nodelock.New(),
 			disk:          &stubDisk{},
 		},
-		"on worker: aaas ActivateNode: errors": {
+		"on worker: issueJoinTicket errors": {
 			role: role.Worker,
 			apiAnswers: []any{
-				selfAnswer{instance: self},
+				selfAnswer{instance: workerSelf},
 				listAnswer{instances: peers},
 				issueJoinTicketAnswer{err: someErr},
 				listAnswer{instances: peers},
@@ -119,6 +123,55 @@ func TestClient(t *testing.T) {
 			clusterJoiner: &stubClusterJoiner{},
 			nodeLock:      nodelock.New(),
 			disk:          &stubDisk{},
+		},
+		"on control plane: issueJoinTicket errors": {
+			role: role.ControlPlane,
+			apiAnswers: []any{
+				selfAnswer{instance: controlSelf},
+				listAnswer{instances: peers},
+				issueJoinTicketAnswer{err: someErr},
+				listAnswer{instances: peers},
+				issueJoinTicketAnswer{err: someErr},
+				listAnswer{instances: peers},
+				issueJoinTicketAnswer{},
+			},
+			clusterJoiner: &stubClusterJoiner{},
+			nodeLock:      nodelock.New(),
+			disk:          &stubDisk{},
+		},
+		"on control plane: joinCluster fails": {
+			role: role.ControlPlane,
+			apiAnswers: []any{
+				selfAnswer{instance: controlSelf},
+				listAnswer{instances: peers},
+				issueJoinTicketAnswer{},
+			},
+			clusterJoiner: &stubClusterJoiner{joinClusterErr: someErr},
+			nodeLock:      nodelock.New(),
+			disk:          &stubDisk{},
+		},
+		"on control plane: node already locked": {
+			role: role.ControlPlane,
+			apiAnswers: []any{
+				selfAnswer{instance: controlSelf},
+				listAnswer{instances: peers},
+				issueJoinTicketAnswer{},
+			},
+			clusterJoiner: &stubClusterJoiner{},
+			nodeLock:      lockedLock,
+			disk:          &stubDisk{},
+		},
+		"on control plane: disk open fails": {
+			role:          role.ControlPlane,
+			clusterJoiner: &stubClusterJoiner{},
+			nodeLock:      nodelock.New(),
+			disk:          &stubDisk{openErr: someErr},
+		},
+		"on control plane: disk uuid fails": {
+			role:          role.ControlPlane,
+			clusterJoiner: &stubClusterJoiner{},
+			nodeLock:      nodelock.New(),
+			disk:          &stubDisk{uuidErr: someErr},
 		},
 	}
 
@@ -219,6 +272,15 @@ func TestClientConcurrentStartStop(t *testing.T) {
 	wg.Wait()
 
 	client.Stop()
+}
+
+func TestIsUnrecoverable(t *testing.T) {
+	assert := assert.New(t)
+
+	some := errors.New("failed")
+	unrec := unrecoverableError{some}
+	assert.True(isUnrecoverable(unrec))
+	assert.False(isUnrecoverable(some))
 }
 
 type stubRepeaterMetadataAPI struct {

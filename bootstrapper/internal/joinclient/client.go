@@ -314,8 +314,7 @@ func (c *JoinClient) timeoutCtx() (context.Context, context.CancelFunc) {
 type unrecoverableError struct{ error }
 
 func isUnrecoverable(err error) bool {
-	var ue *unrecoverableError
-	ok := errors.As(err, &ue)
+	_, ok := err.(unrecoverableError)
 	return ok
 }
 
