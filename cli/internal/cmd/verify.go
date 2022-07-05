@@ -28,7 +28,7 @@ func NewVerifyCmd() *cobra.Command {
 		Short: "Verify the confidential properties of a Constellation cluster",
 		Long: `Verify the confidential properties of a Constellation cluster.
 
-If arguments aren't specified, values are read from ` + "`" + constants.IDsFileName + "`.",
+If arguments aren't specified, values are read from ` + "`" + constants.ClusterIDsFileName + "`.",
 		Args: cobra.MatchAll(
 			cobra.ExactArgs(1),
 			isCloudProvider(0),
@@ -123,11 +123,11 @@ func parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handler) (verifyFlags
 	if emptyEndpoint || emptyIDs {
 		if details, err := readIds(fileHandler); err == nil {
 			if emptyEndpoint {
-				cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", constants.IDsFileName)
+				cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", constants.ClusterIDsFileName)
 				endpoint = details.Endpoint
 			}
 			if emptyIDs {
-				cmd.Printf("Using IDs from %q. Specify --owner-id  and/or --unique-id to override this.\n", constants.IDsFileName)
+				cmd.Printf("Using IDs from %q. Specify --owner-id  and/or --unique-id to override this.\n", constants.ClusterIDsFileName)
 				ownerID = details.OwnerID
 				clusterID = details.ClusterID
 			}
@@ -160,10 +160,10 @@ type verifyFlags struct {
 	configPath string
 }
 
-func readIds(fileHandler file.Handler) (clusterIDFile, error) {
-	det := clusterIDFile{}
-	if err := fileHandler.ReadJSON(constants.IDsFileName, &det); err != nil {
-		return clusterIDFile{}, fmt.Errorf("reading cluster ids: %w", err)
+func readIds(fileHandler file.Handler) (clusterIDsFile, error) {
+	det := clusterIDsFile{}
+	if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &det); err != nil {
+		return clusterIDsFile{}, fmt.Errorf("reading cluster ids: %w", err)
 	}
 	return det, nil
 }

@@ -66,7 +66,7 @@ func TestVerify(t *testing.T) {
 		configFlag       string
 		ownerIDFlag      string
 		clusterIDFlag    string
-		idFile           *clusterIDFile
+		idFile           *clusterIDsFile
 		wantEndpoint     string
 		wantErr          bool
 	}{
@@ -106,7 +106,7 @@ func TestVerify(t *testing.T) {
 			provider:     cloudprovider.GCP,
 			ownerIDFlag:  zeroBase64,
 			protoClient:  &stubVerifyClient{},
-			idFile:       &clusterIDFile{Endpoint: "192.0.2.1:1234"},
+			idFile:       &clusterIDsFile{Endpoint: "192.0.2.1:1234"},
 			wantEndpoint: "192.0.2.1:1234",
 		},
 		"override endpoint from details file": {
@@ -115,7 +115,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.2:1234",
 			ownerIDFlag:      zeroBase64,
 			protoClient:      &stubVerifyClient{},
-			idFile:           &clusterIDFile{Endpoint: "192.0.2.1:1234"},
+			idFile:           &clusterIDsFile{Endpoint: "192.0.2.1:1234"},
 			wantEndpoint:     "192.0.2.2:1234",
 		},
 		"invalid endpoint": {
@@ -137,7 +137,7 @@ func TestVerify(t *testing.T) {
 			provider:         cloudprovider.GCP,
 			nodeEndpointFlag: "192.0.2.1:1234",
 			protoClient:      &stubVerifyClient{},
-			idFile:           &clusterIDFile{OwnerID: zeroBase64},
+			idFile:           &clusterIDsFile{OwnerID: zeroBase64},
 			wantEndpoint:     "192.0.2.1:1234",
 		},
 		"config file not existing": {
@@ -191,7 +191,7 @@ func TestVerify(t *testing.T) {
 			fileHandler := file.NewHandler(tc.setupFs(require))
 
 			if tc.idFile != nil {
-				require.NoError(fileHandler.WriteJSON(constants.IDsFileName, tc.idFile, file.OptNone))
+				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, tc.idFile, file.OptNone))
 			}
 
 			err := verify(cmd, tc.provider, fileHandler, tc.protoClient)

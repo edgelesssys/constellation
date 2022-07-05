@@ -267,8 +267,8 @@ func (r activationResult) writeOutput(wr io.Writer, fileHandler file.Handler) er
 		return fmt.Errorf("write kubeconfig: %w", err)
 	}
 
-	idFile := clusterIDFile{ClusterID: r.clusterID, OwnerID: r.ownerID, Endpoint: r.coordinatorPubIP}
-	if err := fileHandler.WriteJSON(constants.IDsFileName, idFile, file.OptNone); err != nil {
+	idFile := clusterIDsFile{ClusterID: r.clusterID, OwnerID: r.ownerID, Endpoint: r.coordinatorPubIP}
+	if err := fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptNone); err != nil {
 		return fmt.Errorf("writing Constellation id file: %w", err)
 	}
 

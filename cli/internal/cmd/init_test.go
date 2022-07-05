@@ -333,7 +333,7 @@ func TestWriteOutput(t *testing.T) {
 		kubeconfig:        "foo-bar-baz-qq",
 	}
 
-	expectedIdFile := clusterIDFile{
+	expectedIdFile := clusterIDsFile{
 		Endpoint:  result.coordinatorPubIP,
 		ClusterID: result.clusterID,
 		OwnerID:   result.ownerID,
@@ -356,9 +356,9 @@ func TestWriteOutput(t *testing.T) {
 	assert.NoError(err)
 	assert.Equal(result.kubeconfig, string(adminConf))
 
-	idsFile, err := afs.ReadFile(constants.IDsFileName)
+	idsFile, err := afs.ReadFile(constants.ClusterIDsFileName)
 	assert.NoError(err)
-	var testIdFile clusterIDFile
+	var testIdFile clusterIDsFile
 	err = json.Unmarshal(idsFile, &testIdFile)
 	assert.NoError(err)
 	assert.Equal(expectedIdFile, testIdFile)
