@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
+	"github.com/edgelesssys/constellation/kms/kmsproto"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
 	"google.golang.org/grpc"
@@ -16,26 +16,26 @@ func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
 }
 
-type stubVPNClient struct {
+type stubKMSClient struct {
 	getDataKeyErr error
 	dataKey       []byte
 }
 
-func (c *stubVPNClient) GetDataKey(context.Context, *vpnproto.GetDataKeyRequest, *grpc.ClientConn) (*vpnproto.GetDataKeyResponse, error) {
-	return &vpnproto.GetDataKeyResponse{DataKey: c.dataKey}, c.getDataKeyErr
+func (c *stubKMSClient) GetDataKey(context.Context, *kmsproto.GetDataKeyRequest, *grpc.ClientConn) (*kmsproto.GetDataKeyResponse, error) {
+	return &kmsproto.GetDataKeyResponse{DataKey: c.dataKey}, c.getDataKeyErr
 }
 
 func TestConstellationKMS(t *testing.T) {
 	testCases := map[string]struct {
-		vpn     *stubVPNClient
+		kms     *stubKMSClient
 		wantErr bool
 	}{
 		"GetDataKey success": {
-			vpn:     &stubVPNClient{dataKey: []byte{0x1, 0x2, 0x3}},
+			kms:     &stubKMSClient{dataKey: []byte{0x1, 0x2, 0x3}},
 			wantErr: false,
 		},
 		"GetDataKey error": {
-			vpn:     &stubVPNClient{getDataKeyErr: errors.New("error")},
+			kms:     &stubKMSClient{getDataKeyErr: errors.New("error")},
 			wantErr: true,
 		},
 	}
@@ -49,7 +49,7 @@ func TestConstellationKMS(t *testing.T) {
 
 			kms := &ConstellationKMS{
 				endpoint: listener.Addr().String(),
-				vpn:      tc.vpn,
+				kms:      tc.kms,
 			}
 			res, err := kms.GetDEK(context.Background(), "data-key", 64)
 

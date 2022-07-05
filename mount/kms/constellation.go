@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/coordinator/vpnapi/vpnproto"
+	"github.com/edgelesssys/constellation/kms/kmsproto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -12,14 +12,14 @@ import (
 // ConstellationKMS is a key service using the Constellation Coordinator to fetch volume keys.
 type ConstellationKMS struct {
 	endpoint string
-	vpn      vpnClient
+	kms      kmsClient
 }
 
 // NewConstellationKMS initializes a ConstellationKMS.
 func NewConstellationKMS(coordinatorEndpoint string) *ConstellationKMS {
 	return &ConstellationKMS{
-		endpoint: coordinatorEndpoint, // default: "10.118.0.1:9027"
-		vpn:      &constellationVPNClient{},
+		endpoint: coordinatorEndpoint, // default: "kms.kube-system:9000"
+		kms:      &constellationKMSClient{},
 	}
 }
 
@@ -31,27 +31,27 @@ func (k *ConstellationKMS) GetDEK(ctx context.Context, dekID string, dekSize int
 	}
 	defer conn.Close()
 
-	res, err := k.vpn.GetDataKey(
+	res, err := k.kms.GetDataKey(
 		ctx,
-		&vpnproto.GetDataKeyRequest{
+		&kmsproto.GetDataKeyRequest{
 			DataKeyId: dekID,
 			Length:    uint32(dekSize),
 		},
 		conn,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("getting data encryption key from Constellation Coordinator: %w", err)
+		return nil, fmt.Errorf("fetching data encryption key from Constellation KMS: %w", err)
 	}
 
 	return res.DataKey, nil
 }
 
-type vpnClient interface {
-	GetDataKey(context.Context, *vpnproto.GetDataKeyRequest, *grpc.ClientConn) (*vpnproto.GetDataKeyResponse, error)
+type kmsClient interface {
+	GetDataKey(context.Context, *kmsproto.GetDataKeyRequest, *grpc.ClientConn) (*kmsproto.GetDataKeyResponse, error)
 }
 
-type constellationVPNClient struct{}
+type constellationKMSClient struct{}
 
-func (c *constellationVPNClient) GetDataKey(ctx context.Context, req *vpnproto.GetDataKeyRequest, conn *grpc.ClientConn) (*vpnproto.GetDataKeyResponse, error) {
-	return vpnproto.NewAPIClient(conn).GetDataKey(ctx, req)
+func (c *constellationKMSClient) GetDataKey(ctx context.Context, req *kmsproto.GetDataKeyRequest, conn *grpc.ClientConn) (*kmsproto.GetDataKeyResponse, error) {
+	return kmsproto.NewAPIClient(conn).GetDataKey(ctx, req)
 }

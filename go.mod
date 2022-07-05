@@ -33,10 +33,7 @@ replace (
 	k8s.io/sample-controller => k8s.io/sample-controller v0.24.0
 )
 
-replace (
-	github.com/martinjungblut/go-cryptsetup => github.com/daniel-weisse/go-cryptsetup v0.0.0-20220511084044-b537356aa24b
-	github.com/nmiculinic/wg-quick-go v0.1.3 => github.com/katexochen/wg-quick-go v0.1.3-beta.1
-)
+replace github.com/nmiculinic/wg-quick-go v0.1.3 => github.com/katexochen/wg-quick-go v0.1.3-beta.1
 
 require (
 	cloud.google.com/go/compute v1.5.0
@@ -82,7 +79,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/kr/text v0.2.0
-	github.com/martinjungblut/go-cryptsetup v0.0.0-20220421194528-92e17766b2e7
+	github.com/martinjungblut/go-cryptsetup v0.0.0-20220520180014-fd0874fd07a6
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
 	github.com/schollz/progressbar/v3 v3.8.6
 	github.com/spf13/afero v1.8.2
