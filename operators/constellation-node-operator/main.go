@@ -19,6 +19,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	gcpclient "github.com/edgelesssys/constellation/operators/constellation-node-operator/internal/gcp/client"
+
 	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/api/v1alpha1"
 	"github.com/edgelesssys/constellation/operators/constellation-node-operator/controllers"
 	"github.com/edgelesssys/constellation/operators/constellation-node-operator/internal/etcd"
@@ -58,11 +60,16 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	var cspClient cspAPI
+	var clientErr error
 	switch strings.ToLower(csp) {
 	case "azure":
 		panic("Azure is not supported yet")
 	case "gcp":
-		panic("GCP is not supported yet")
+		cspClient, clientErr = gcpclient.New(context.Background())
+		if clientErr != nil {
+			setupLog.Error(clientErr, "unable to create GCP client")
+			os.Exit(1)
+		}
 	default:
 		setupLog.Info("Unknown CSP", "csp", csp)
 		os.Exit(1)
