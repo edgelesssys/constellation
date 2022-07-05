@@ -7,12 +7,12 @@ import (
 	"path/filepath"
 	"time"
 
-	proto "github.com/edgelesssys/constellation/activation/activationproto"
 	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/grpclog"
 	"github.com/edgelesssys/constellation/internal/logger"
+	proto "github.com/edgelesssys/constellation/joinservice/joinproto"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

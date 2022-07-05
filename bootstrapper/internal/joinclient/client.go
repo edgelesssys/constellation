@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgelesssys/constellation/activation/activationproto"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/diskencryption"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/nodelock"
 	"github.com/edgelesssys/constellation/bootstrapper/nodestate"
@@ -17,6 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
+	activationproto "github.com/edgelesssys/constellation/joinservice/joinproto"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -29,7 +29,8 @@ const (
 	timeout  = 30 * time.Second
 )
 
-// JoinClient is a client for self-activation of node.
+// JoinClient is a client for requesting the needed information and
+// joining an existing Kubernetes cluster.
 type JoinClient struct {
 	nodeLock    *nodelock.Lock
 	diskUUID    string
@@ -53,7 +54,7 @@ type JoinClient struct {
 	stopDone chan struct{}
 }
 
-// New creates a new SelfActivationClient.
+// New creates a new JoinClient.
 func New(lock *nodelock.Lock, dial grpcDialer, joiner ClusterJoiner, meta MetadataAPI, log *zap.Logger) *JoinClient {
 	return &JoinClient{
 		disk:        diskencryption.New(),
@@ -68,8 +69,9 @@ func New(lock *nodelock.Lock, dial grpcDialer, joiner ClusterJoiner, meta Metada
 	}
 }
 
-// Start starts the client routine. The client will make the needed API calls to activate
-// the node as the role it receives from the metadata API.
+// Start starts the client routine. The client will make the needed API calls to join
+// the cluster with the role it receives from the metadata API.
+// After receiving the needed information, the node will join the cluster.
 // Multiple calls of start on the same client won't start a second routine if there is
 // already a routine running.
 func (c *JoinClient) Start() {

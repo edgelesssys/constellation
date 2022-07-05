@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/activation/activationproto"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/nodelock"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
@@ -18,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
+	activationproto "github.com/edgelesssys/constellation/joinservice/joinproto"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"

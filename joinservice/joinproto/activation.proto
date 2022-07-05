@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package activation;
 
-option go_package = "github.com/edgelesssys/constellation/activation/server/activationproto";
+option go_package = "github.com/edgelesssys/constellation/joinservice/server/activationproto";
 
 service API {
     rpc ActivateWorkerNode(ActivateWorkerNodeRequest) returns (ActivateWorkerNodeResponse);

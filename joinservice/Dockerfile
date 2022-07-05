@@ -27,5 +27,5 @@ RUN CGO_ENABLED=0 go build -o activation-service -trimpath -buildvcs=false -ldfl
 
 # We would like to use a scratch image here, but we require CA certificates to be installed for aTLS operations on GCP.
 FROM fedora@sha256:36af84ba69e21c9ef86a0424a090674c433b2b80c2462e57503886f1d823abe8 as release
-COPY --from=build /constellation/activation/activation-service /activation
+COPY --from=build /constellation/joinservice/activation-service /activation
 ENTRYPOINT [ "/activation" ]
