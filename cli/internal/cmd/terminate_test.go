@@ -45,6 +45,7 @@ func TestTerminate(t *testing.T) {
 		fileHandler := file.NewHandler(fs)
 		require.NoError(fileHandler.Write(constants.AdminConfFilename, []byte{1, 2}, file.OptNone))
 		require.NoError(fileHandler.Write(constants.WGQuickConfigFilename, []byte{1, 2}, file.OptNone))
+		require.NoError(fileHandler.Write(constants.ClusterIDsFileName, []byte{1, 2}, file.OptNone))
 		require.NoError(fileHandler.WriteJSON(constants.StateFilename, state, file.OptNone))
 		return fs
 	}
@@ -124,6 +125,8 @@ func TestTerminate(t *testing.T) {
 				_, err = fileHandler.Stat(constants.AdminConfFilename)
 				assert.Error(err)
 				_, err = fileHandler.Stat(constants.WGQuickConfigFilename)
+				assert.Error(err)
+				_, err = fileHandler.Stat(constants.ClusterIDsFileName)
 				assert.Error(err)
 			}
 		})

@@ -62,5 +62,9 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 		retErr = multierr.Append(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", constants.WGQuickConfigFilename))
 	}
 
+	if err := fileHandler.Remove(constants.ClusterIDsFileName); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		retErr = multierr.Append(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", constants.ClusterIDsFileName))
+	}
+
 	return retErr
 }
