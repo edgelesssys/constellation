@@ -1,3 +1,16 @@
+<!--
+
+Styleguide for this document:
+
+- Sentences should end with a period.
+  - This is the keepachangelog style, whereas the Microsoft Style Guide we use for other docs omits periods for short list items.
+- Omit the verb if possible.
+  - "Early boot logging ..." instead of "Add early boot logging ...".
+  - If you need a verb, it should usually be imperative mood (Add instead of Added).
+- Items should start with a capital letter.
+
+-->
+
 # Changelog
 All notable changes to Constellation will be documented in this file.
 
@@ -6,36 +19,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Early boot logging for Cloud Provider: GCP & Azure
-- Added `constellation-access-manager`, allowing users to manage SSH users over a ConfigMap. This allows persistent & dynamic management of SSH users on multiple nodes, even after a reboot.
-- GCP-native Kubernetes load balancing
 
 ### Changed
-- Create `constellation-id.json` when initializing the cluster to save the cluster's unique ID and the owner ID to disk. Verifying will read this file back to use the values for the verification. This is overriden by specifying the command line arguments.
+
+### Deprecated
 
 ### Removed
 
 ### Fixed
 
 ### Security
-- GCP WireGuard encryption via cilium
+- Create Kubernetes CA signed kubelet certificates on activation.
 
 ### Internal
-- Added `constellation-activation-service`, offloading new Kubernetes node activation from monolithic Coordinator to Kubernetes native micro-service
+
+## [1.3.0] - 2022-07-05
+### Added
+- Early boot logging for GCP and Azure. [[Docs]](https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/workflows/troubleshooting?id=cloud-logging)
+- `constellation-access-manager` allows users to manage SSH users over a ConfigMap. Enables persistent and dynamic management of SSH users on multiple nodes, even after a reboot. [[Docs]](https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/workflows/ssh)
+- GCP-native Kubernetes load balancing. [[Docs]](https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/networking)
+- `constellation version` prints more information to aid in troubleshooting. [[Docs]](https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/reference/cli?id=constellation-version)
+- Standard logging for all services and CLI, allows users to control output in a consistent manner.
+- `constellation-id.json` in Constellation workspace now holds cluster IDs, to reduce required arguments in Constellation commands, e.g., `constellation verify`.
+
+### Changed
+- New `constellation-activation-service` offloads Kubernetes node activation from monolithic Coordinator to Kubernetes native micro-service. [[ReadMe]](https://github.com/edgelesssys/constellation/blob/main/activation/README.md)
+- Improve user-friendliness of error messages in Constellation CLI.
+- Move verification from extracting attestation statements out of aTLS handshake to a dedicated `verify-service` in Kubernetes with gRPC and HTTP endpoints.
+
+### Security
+- GCP WireGuard encryption via cilium.
+
+### Internal
+- Refactore folder structure of repository to better reflect `internal` implementation and public API.
+- Extend `goleak` checks to all tests.
 
 ## [1.2.0] - 2022-06-02
-### Added
-
 ### Changed
-replaced flannel CNI with cilium
-
-### Removed
-
-### Fixed
-
-### Security
-
-### Internal
+- Replace flannel CNI with Cilium.
 
 ## [1.1.0] - 2022-06-02
 ### Added
@@ -85,7 +106,8 @@ replaced flannel CNI with cilium
 ## [1.0.0] - 2022-04-28
 Initial release of Constellation. With underlying WireGuard and Kubernetes compliant.
 
-[Unreleased]: https://github.com/edgelesssys/constellation/compare/v1.2.0...HEAD
-[1.2.0]: https://github.com/edgelesssys/constellation/releases/tag/v1.2.0
-[1.1.0]: https://github.com/edgelesssys/constellation/releases/tag/v1.1.0
+[Unreleased]: https://github.com/edgelesssys/constellation/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/edgelesssys/constellation/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/edgelesssys/constellation/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/edgelesssys/constellation/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/edgelesssys/constellation/releases/tag/v1.0.0
