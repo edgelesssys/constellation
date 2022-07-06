@@ -55,7 +55,7 @@ jobs:
 
   call-coreos:
     needs: build-coordinator
-    if: github.ref == 'refs/heads/main' && startsWith(needs.build-coordinator.outputs.coordinator-name, 'coordinator-')
+    if: ${{ (github.ref == 'refs/heads/main') && startsWith(needs.build-coordinator.outputs.coordinator-name, 'coordinator-') }}
     uses: ./.github/workflows/build-coreos.yml
     with:
       coordinator-name: ${{ needs.build-coordinator.outputs.coordinator-name }}
