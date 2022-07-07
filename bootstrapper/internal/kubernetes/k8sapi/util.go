@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
+	"go.uber.org/zap"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
@@ -76,7 +77,7 @@ func (k *KubernetesUtil) InstallComponents(ctx context.Context, version string) 
 	return enableSystemdUnit(ctx, kubeletServiceEtcPath)
 }
 
-func (k *KubernetesUtil) InitCluster(ctx context.Context, initConfig []byte) error {
+func (k *KubernetesUtil) InitCluster(ctx context.Context, initConfig []byte, logger *zap.Logger) error {
 	// TODO: audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
 	if err != nil {
@@ -97,14 +98,15 @@ func (k *KubernetesUtil) InitCluster(ctx context.Context, initConfig []byte) err
 	}
 
 	cmd := exec.CommandContext(ctx, kubeadmPath, "init", "-v=5", "--config", initConfigFile.Name())
-	_, err = cmd.Output()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			return fmt.Errorf("kubeadm init failed (code %v) with: %s", exitErr.ExitCode(), exitErr.Stderr)
+			return fmt.Errorf("kubeadm init failed (code %v) with: %s", exitErr.ExitCode(), out)
 		}
 		return fmt.Errorf("kubeadm init: %w", err)
 	}
+	logger.Info("kubeadm init succeeded", zap.String("output", string(out)))
 	return nil
 }
 
@@ -280,7 +282,7 @@ func (k *KubernetesUtil) SetupVerificationService(kubectl Client, verificationSe
 }
 
 // JoinCluster joins existing Kubernetes cluster using kubeadm join.
-func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte) error {
+func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, logger *zap.Logger) error {
 	// TODO: audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
 	if err != nil {
@@ -302,13 +304,15 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte) err
 
 	// run `kubeadm join` to join a worker node to an existing Kubernetes cluster
 	cmd := exec.CommandContext(ctx, kubeadmPath, "join", "-v=5", "--config", joinConfigFile.Name())
-	if _, err := cmd.Output(); err != nil {
+	out, err := cmd.CombinedOutput()
+	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			return fmt.Errorf("kubeadm join failed (code %v) with: %s (full err: %s)", exitErr.ExitCode(), exitErr.Stderr, err)
+			return fmt.Errorf("kubeadm join failed (code %v) with: %s (full err: %s)", exitErr.ExitCode(), out, err)
 		}
 		return fmt.Errorf("kubeadm join: %w", err)
 	}
+	logger.Info("kubeadm join succeeded", zap.String("output", string(out)))
 
 	return nil
 }

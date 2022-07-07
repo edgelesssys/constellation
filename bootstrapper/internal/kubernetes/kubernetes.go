@@ -16,6 +16,7 @@ import (
 	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/spf13/afero"
+	"go.uber.org/zap"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
@@ -75,7 +76,7 @@ type KMSConfig struct {
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, k8sVersion string,
-	id attestationtypes.ID, kmsConfig KMSConfig, sshUsers map[string]string,
+	id attestationtypes.ID, kmsConfig KMSConfig, sshUsers map[string]string, logger *zap.Logger,
 ) ([]byte, error) {
 	// TODO: k8s version should be user input
 	if err := k.clusterUtil.InstallComponents(ctx, k8sVersion); err != nil {
@@ -141,7 +142,7 @@ func (k *KubeWrapper) InitCluster(
 	if err != nil {
 		return nil, fmt.Errorf("encoding kubeadm init configuration as YAML: %w", err)
 	}
-	if err := k.clusterUtil.InitCluster(ctx, initConfigYAML); err != nil {
+	if err := k.clusterUtil.InitCluster(ctx, initConfigYAML, logger); err != nil {
 		return nil, fmt.Errorf("kubeadm init: %w", err)
 	}
 	kubeConfig, err := k.GetKubeconfig()
@@ -206,7 +207,7 @@ func (k *KubeWrapper) InitCluster(
 }
 
 // JoinCluster joins existing Kubernetes cluster.
-func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, certKey string, peerRole role.Role) error {
+func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, certKey string, peerRole role.Role, logger *zap.Logger) error {
 	// TODO: k8s version should be user input
 	if err := k.clusterUtil.InstallComponents(ctx, "1.23.6"); err != nil {
 		return err
@@ -248,7 +249,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	if err != nil {
 		return fmt.Errorf("encoding kubeadm join configuration as YAML: %w", err)
 	}
-	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML); err != nil {
+	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML, logger); err != nil {
 		return fmt.Errorf("joining cluster: %v; %w ", string(joinConfigYAML), err)
 	}
 

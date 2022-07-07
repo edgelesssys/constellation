@@ -124,6 +124,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 			UseExistingKEK:     req.UseExistingKek,
 		},
 		sshProtoKeysToMap(req.SshUserKeys),
+		s.logger,
 	)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "initializing cluster: %s", err)
@@ -192,6 +193,7 @@ type ClusterInitializer interface {
 		id attestationtypes.ID,
 		kmsConfig kubernetes.KMSConfig,
 		sshUserKeys map[string]string,
+		logger *zap.Logger,
 	) ([]byte, error)
 }
 

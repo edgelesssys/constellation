@@ -32,7 +32,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 
 	// Create control plane scale set
 	createControlPlaneInput := CreateScaleSetInput{
-		Name:                           "constellation-scale-set-controlpalens-" + c.uid,
+		Name:                           "constellation-scale-set-controlplanes-" + c.uid,
 		NamePrefix:                     c.name + "-control-plane-" + c.uid + "-",
 		Count:                          input.CountControlPlanes,
 		InstanceType:                   input.InstanceType,
