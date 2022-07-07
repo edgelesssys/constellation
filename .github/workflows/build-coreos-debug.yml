@@ -1,6 +1,7 @@
 name: Build and Upload CoreOS debug image
 env:
   REGISTRY: ghcr.io
+  AZ_CLI_VERSION: 2.37.0
 on:
   workflow_dispatch:
 jobs:
@@ -38,6 +39,7 @@ jobs:
       - name: "Install azure CLI"
         run: |
           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          sudo apt-get install -y "azure-cli=${AZ_CLI_VERSION}-1~$(lsb_release -sc)"
           wget -q https://aka.ms/downloadazcopy-v10-linux -O azcopy.tar.gz
           tar --strip-components 1 -xf azcopy.tar.gz
           rm azcopy.tar.gz
