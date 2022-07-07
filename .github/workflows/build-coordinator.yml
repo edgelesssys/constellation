@@ -45,6 +45,8 @@ jobs:
 
       - name: Copy Coordinator to S3 if not exists
         id: copy
+        # Only upload the Coordinator if this action is triggered from main branch
+        if: ${{ github.ref == 'refs/heads/main' }}
         run: >
           aws s3api head-object --bucket ${{ secrets.PUBLIC_BUCKET_NAME }} --key coordinator/$(ls | grep "coordinator-")
           || (

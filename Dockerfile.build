@@ -35,8 +35,5 @@ RUN go build -o disk-mapper -ldflags "-s -w" ./cmd/
 FROM scratch AS coordinator
 COPY --from=build-coordinator /constellation/coordinator/coordinator /
 
-FROM scratch AS coordinator-hashed
-COPY --from=hash-coordinator /constellation/coordinator/coordinator-* /
-
 FROM scratch AS disk-mapper
 COPY --from=build-disk-mapper /constellation/state/disk-mapper /
