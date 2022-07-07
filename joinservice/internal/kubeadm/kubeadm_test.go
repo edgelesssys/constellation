@@ -18,6 +18,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	fakecorev1 "k8s.io/client-go/kubernetes/typed/core/v1/fake"
+	testclock "k8s.io/utils/clock/testing"
 )
 
 func TestMain(m *testing.M) {
@@ -83,9 +84,10 @@ kind: Config`,
 			require := require.New(t)
 
 			client := &Kubeadm{
-				log:    logger.NewTest(t),
-				file:   file.NewHandler(afero.NewMemMapFs()),
-				client: fake.NewSimpleClientset(),
+				log:        logger.NewTest(t),
+				keyManager: &keyManager{clock: testclock.NewFakeClock(time.Time{})},
+				file:       file.NewHandler(afero.NewMemMapFs()),
+				client:     fake.NewSimpleClientset(),
 			}
 			if tc.adminConf != "" {
 				require.NoError(client.file.Write(constants.CoreOSAdminConfFilename, []byte(tc.adminConf), file.OptNone))
@@ -124,8 +126,9 @@ func TestGetControlPlaneCertificateKey(t *testing.T) {
 			assert := assert.New(t)
 
 			client := &Kubeadm{
-				log:    logger.NewTest(t),
-				client: tc.client,
+				keyManager: &keyManager{clock: testclock.NewFakeClock(time.Time{})},
+				log:        logger.NewTest(t),
+				client:     tc.client,
 			}
 
 			_, err := client.GetControlPlaneCertificateKey()

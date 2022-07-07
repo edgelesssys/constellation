@@ -28,6 +28,7 @@ import (
 type Kubeadm struct {
 	apiServerEndpoint string
 	log               *logger.Logger
+	keyManager        *keyManager
 	client            clientset.Interface
 	file              file.Handler
 }
@@ -47,6 +48,7 @@ func New(apiServerEndpoint string, log *logger.Logger) (*Kubeadm, error) {
 	return &Kubeadm{
 		apiServerEndpoint: apiServerEndpoint,
 		log:               log,
+		keyManager:        newKeyManager(),
 		client:            client,
 		file:              file,
 	}, nil
@@ -112,7 +114,7 @@ func (k *Kubeadm) GetJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscov
 // The key can be used by new nodes to join the cluster as a control plane node.
 func (k *Kubeadm) GetControlPlaneCertificateKey() (string, error) {
 	k.log.Infof("Creating new random control plane certificate key")
-	key, err := copycerts.CreateCertificateKey()
+	key, err := k.keyManager.getCertificatetKey()
 	if err != nil {
 		return "", fmt.Errorf("couldn't create control plane certificate key: %w", err)
 	}
