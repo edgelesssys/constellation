@@ -5,13 +5,16 @@ description: |
 inputs:
   cosign-public-key:
     description: 'Cosign public key'
-    required: true
+    required: false
+    default: ''
   cosign-private-key:
     description: 'Cosign private key'
-    required: true
+    required: false
+    default: ''
   cosign-password:
     description: 'Password for Cosign private key'
-    required: true
+    required: false
+    default: ''
 runs:
   using: "composite"
   steps:
@@ -81,6 +84,7 @@ runs:
         COSIGN_PUBLIC_KEY: ${{ inputs.cosign-public-key }}
         COSIGN_PRIVATE_KEY: ${{ inputs.cosign-private-key }}
         COSIGN_PASSWORD: ${{ inputs.cosign-password }}
+      if: ${{ inputs.cosign-public-key != '' && inputs.cosign-private-key != '' && inputs.cosign-password != '' }}
 
     - name: Release CLI
       # GitHub endorsed release project. See: https://github.com/actions/create-release
