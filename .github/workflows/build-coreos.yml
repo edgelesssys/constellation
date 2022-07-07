@@ -64,7 +64,7 @@ jobs:
       - name: "Install azure CLI"
         run: |
           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-          sudo apt-get install -y "azure-cli=${AZ_CLI_VERSION}-1~$(lsb_release -sc)"
+          sudo apt-get install -y --allow-downgrades "azure-cli=${AZ_CLI_VERSION}-1~$(lsb_release -sc)"
           wget -q https://aka.ms/downloadazcopy-v10-linux -O azcopy.tar.gz
           tar --strip-components 1 -xf azcopy.tar.gz
           rm azcopy.tar.gz
