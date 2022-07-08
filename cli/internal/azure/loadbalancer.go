@@ -25,6 +25,7 @@ const (
 func (l LoadBalancer) Azure() armnetwork.LoadBalancer {
 	frontEndIPConfigName := "frontEndIPConfig"
 	kubeHealthProbeName := "kubeHealthProbe"
+	verifyHealthProbeName := "verifyHealthProbe"
 	coordHealthProbeName := "coordHealthProbe"
 	debugdHealthProbeName := "debugdHealthProbe"
 	backEndAddressPoolNodeName := BackendAddressPoolWorkerName + "-" + l.UID
@@ -65,6 +66,13 @@ func (l LoadBalancer) Azure() armnetwork.LoadBalancer {
 					},
 				},
 				{
+					Name: to.StringPtr(verifyHealthProbeName),
+					Properties: &armnetwork.ProbePropertiesFormat{
+						Protocol: armnetwork.ProbeProtocolTCP.ToPtr(),
+						Port:     to.Int32Ptr(constants.VerifyServiceNodePortGRPC),
+					},
+				},
+				{
 					Name: to.StringPtr(coordHealthProbeName),
 					Properties: &armnetwork.ProbePropertiesFormat{
 						Protocol: armnetwork.ProbeProtocolTCP.ToPtr(),
@@ -91,6 +99,26 @@ func (l LoadBalancer) Azure() armnetwork.LoadBalancer {
 						Protocol:     armnetwork.TransportProtocolTCP.ToPtr(),
 						Probe: &armnetwork.SubResource{
 							ID: to.StringPtr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/probes/" + kubeHealthProbeName),
+						},
+						DisableOutboundSnat: to.BoolPtr(true),
+						BackendAddressPools: []*armnetwork.SubResource{
+							{
+								ID: to.StringPtr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/backendAddressPools/" + backEndAddressPoolControlPlaneName),
+							},
+						},
+					},
+				},
+				{
+					Name: to.StringPtr("verifyLoadBalancerRule"),
+					Properties: &armnetwork.LoadBalancingRulePropertiesFormat{
+						FrontendIPConfiguration: &armnetwork.SubResource{
+							ID: to.StringPtr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/frontendIPConfigurations/" + frontEndIPConfigName),
+						},
+						FrontendPort: to.Int32Ptr(constants.VerifyServiceNodePortGRPC),
+						BackendPort:  to.Int32Ptr(constants.VerifyServiceNodePortGRPC),
+						Protocol:     armnetwork.TransportProtocolTCP.ToPtr(),
+						Probe: &armnetwork.SubResource{
+							ID: to.StringPtr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/probes/" + verifyHealthProbeName),
 						},
 						DisableOutboundSnat: to.BoolPtr(true),
 						BackendAddressPools: []*armnetwork.SubResource{
