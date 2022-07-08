@@ -187,6 +187,17 @@ func getIPsFromConfig(stat statec.ConstellationState, config configc.Config) ([]
 			ips = append(ips, ip)
 		}
 	}
+	// add bootstrapper IP if it is not already in the list
+	var foundBootstrapperIP bool
+	for _, ip := range ips {
+		if ip == stat.BootstrapperHost {
+			foundBootstrapperIP = true
+			break
+		}
+	}
+	if !foundBootstrapperIP && stat.BootstrapperHost != "" {
+		ips = append(ips, stat.BootstrapperHost)
+	}
 	if len(ips) == 0 {
 		return nil, fmt.Errorf("no public IPs found in statefile")
 	}

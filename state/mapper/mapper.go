@@ -35,7 +35,7 @@ func (m *Mapper) IsLUKSDevice() bool {
 	return m.device.Load(cryptsetup.LUKS2{}) == nil
 }
 
-// GetUUID gets the device's UUID.
+// DiskUUID gets the device's UUID.
 func (m *Mapper) DiskUUID() string {
 	return strings.ToLower(m.device.GetUUID())
 }

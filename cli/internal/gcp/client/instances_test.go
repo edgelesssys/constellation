@@ -43,7 +43,7 @@ func TestCreateInstances(t *testing.T) {
 	testInput := CreateInstancesInput{
 		CountControlPlanes: 3,
 		CountWorkers:       4,
-		ImageId:            "img",
+		ImageID:            "img",
 		InstanceType:       "n2d-standard-2",
 		KubeEnv:            "kube-env",
 	}

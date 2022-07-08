@@ -14,7 +14,6 @@ import (
 	"go.uber.org/goleak"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	fakecorev1 "k8s.io/client-go/kubernetes/typed/core/v1/fake"
@@ -101,53 +100,6 @@ kind: Config`,
 				assert.NotNil(res)
 			}
 		})
-	}
-}
-
-func TestGetControlPlaneCertificateKey(t *testing.T) {
-	testCases := map[string]struct {
-		wantErr bool
-		client  clientset.Interface
-	}{
-		"success": {
-			client:  fake.NewSimpleClientset(),
-			wantErr: false,
-		},
-		"failure": {
-			client: &failingClient{
-				fake.NewSimpleClientset(),
-			},
-			wantErr: true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			client := &Kubeadm{
-				keyManager: &keyManager{clock: testclock.NewFakeClock(time.Time{})},
-				log:        logger.NewTest(t),
-				client:     tc.client,
-			}
-
-			_, err := client.GetControlPlaneCertificateKey()
-			if tc.wantErr {
-				assert.Error(err)
-			} else {
-				assert.NoError(err)
-			}
-		})
-	}
-}
-
-type failingClient struct {
-	*fake.Clientset
-}
-
-func (f *failingClient) CoreV1() corev1.CoreV1Interface {
-	return &failingCoreV1{
-		&fakecorev1.FakeCoreV1{Fake: &f.Clientset.Fake},
 	}
 }
 

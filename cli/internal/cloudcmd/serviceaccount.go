@@ -11,7 +11,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/state"
 )
 
-// ServieAccountCreator creates service accounts.
+// ServiceAccountCreator creates service accounts.
 type ServiceAccountCreator struct {
 	newGCPClient   func(ctx context.Context) (gcpclient, error)
 	newAzureClient func(subscriptionID, tenantID string) (azureclient, error)

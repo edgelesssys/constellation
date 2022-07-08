@@ -15,7 +15,7 @@ func NewImagePullSecret() k8s.Secret {
 		[]byte(fmt.Sprintf("%s:%s", secrets.PullSecretUser, secrets.PullSecretToken)),
 	)
 
-	pullSecretDockerCfgJson := fmt.Sprintf(`{"auths":{"ghcr.io":{"auth":"%s"}}}`, base64EncodedSecret)
+	pullSecretDockerCfgJSON := fmt.Sprintf(`{"auths":{"ghcr.io":{"auth":"%s"}}}`, base64EncodedSecret)
 
 	return k8s.Secret{
 		TypeMeta: meta.TypeMeta{
@@ -26,7 +26,7 @@ func NewImagePullSecret() k8s.Secret {
 			Name:      secrets.PullSecretName,
 			Namespace: "kube-system",
 		},
-		StringData: map[string]string{".dockerconfigjson": pullSecretDockerCfgJson},
+		StringData: map[string]string{".dockerconfigjson": pullSecretDockerCfgJSON},
 		Type:       "kubernetes.io/dockerconfigjson",
 	}
 }

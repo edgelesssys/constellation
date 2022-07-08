@@ -9,6 +9,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 )
 
+// VMInstance describes a single instance.
 // TODO: deprecate as soon as scale sets are available.
 type VMInstance struct {
 	Name         string
@@ -20,6 +21,7 @@ type VMInstance struct {
 	Image        string
 }
 
+// Azure makes a new virtual machine template with default values.
 // TODO: deprecate as soon as scale sets are available.
 func (i VMInstance) Azure() armcompute.VirtualMachine {
 	return armcompute.VirtualMachine{

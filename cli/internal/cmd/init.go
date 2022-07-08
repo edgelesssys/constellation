@@ -102,7 +102,7 @@ func initialize(cmd *cobra.Command, dialer grpcDialer, serviceAccCreator service
 		return err
 	}
 
-	controlPlanes, workers, err := getScalingGroupsFromConfig(stat, config)
+	controlPlanes, workers, err := getScalingGroupsFromState(stat, config)
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func initialize(cmd *cobra.Command, dialer grpcDialer, serviceAccCreator service
 		KubernetesVersion:      "1.23.6",
 		SshUserKeys:            ssh.ToProtoSlice(sshUsers),
 	}
-	resp, err := initCall(cmd.Context(), dialer, controlPlanes.PublicIPs()[0], req)
+	resp, err := initCall(cmd.Context(), dialer, stat.BootstrapperHost, req)
 	if err != nil {
 		return err
 	}
@@ -269,7 +269,7 @@ func readOrGenerateMasterSecret(writer io.Writer, fileHandler file.Handler, file
 	return masterSecret, nil
 }
 
-func getScalingGroupsFromConfig(stat state.ConstellationState, config *config.Config) (controlPlanes, workers cloudtypes.ScalingGroup, err error) {
+func getScalingGroupsFromState(stat state.ConstellationState, config *config.Config) (controlPlanes, workers cloudtypes.ScalingGroup, err error) {
 	switch {
 	case len(stat.GCPControlPlanes) != 0:
 		return getGCPInstances(stat, config)
@@ -329,7 +329,7 @@ func getAzureInstances(stat state.ConstellationState, config *config.Config) (co
 	return
 }
 
-func getQEMUInstances(stat state.ConstellationState, config *config.Config) (controlPlanes, workers cloudtypes.ScalingGroup, err error) {
+func getQEMUInstances(stat state.ConstellationState, _ *config.Config) (controlPlanes, workers cloudtypes.ScalingGroup, err error) {
 	controlPlanesMap := stat.QEMUControlPlane
 	if len(controlPlanesMap) == 0 {
 		return cloudtypes.ScalingGroup{}, cloudtypes.ScalingGroup{}, errors.New("no controlPlanes available, can't create Constellation without any instance")

@@ -2,12 +2,10 @@ package kubernetes
 
 import (
 	"context"
-	"time"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"go.uber.org/zap"
-	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
 type clusterUtil interface {
@@ -25,7 +23,5 @@ type clusterUtil interface {
 	SetupGCPGuestAgent(kubectl k8sapi.Client, gcpGuestAgentConfiguration resources.Marshaler) error
 	StartKubelet() error
 	RestartKubelet() error
-	GetControlPlaneJoinCertificateKey(ctx context.Context) (string, error)
-	CreateJoinToken(ctx context.Context, ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error)
 	FixCilium(nodeNameK8s string)
 }

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"regexp"
 	"testing"
-	"time"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
@@ -26,7 +25,7 @@ func TestMain(m *testing.M) {
 
 func TestInitCluster(t *testing.T) {
 	someErr := errors.New("failed")
-	serviceAccountUri := "some-service-account-uri"
+	serviceAccountURI := "some-service-account-uri"
 	masterSecret := []byte("some-master-secret")
 	autoscalingNodeGroups := []string{"0,10,autoscaling_group_0"}
 
@@ -270,7 +269,7 @@ func TestInitCluster(t *testing.T) {
 				kubeconfigReader:       tc.kubeconfigReader,
 				getIPAddr:              func() (string, error) { return privateIP, nil },
 			}
-			_, err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountUri, k8sVersion, attestationtypes.ID{}, KMSConfig{MasterSecret: masterSecret}, nil, zaptest.NewLogger(t))
+			_, err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountURI, k8sVersion, attestationtypes.ID{}, KMSConfig{MasterSecret: masterSecret}, nil, zaptest.NewLogger(t))
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -490,8 +489,6 @@ type stubClusterUtil struct {
 	joinClusterErr                   error
 	startKubeletErr                  error
 	restartKubeletErr                error
-	createJoinTokenResponse          *kubeadm.BootstrapTokenDiscovery
-	createJoinTokenErr               error
 
 	initConfigs [][]byte
 	joinConfigs [][]byte
@@ -553,14 +550,6 @@ func (s *stubClusterUtil) StartKubelet() error {
 
 func (s *stubClusterUtil) RestartKubelet() error {
 	return s.restartKubeletErr
-}
-
-func (s *stubClusterUtil) GetControlPlaneJoinCertificateKey(context.Context) (string, error) {
-	return "", nil
-}
-
-func (s *stubClusterUtil) CreateJoinToken(ctx context.Context, ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error) {
-	return s.createJoinTokenResponse, s.createJoinTokenErr
 }
 
 func (s *stubClusterUtil) FixCilium(nodeName string) {

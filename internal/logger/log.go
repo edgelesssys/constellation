@@ -88,7 +88,7 @@ func New(logType LogType, logLevel zapcore.Level) *Logger {
 	return &Logger{logger: logger.Sugar()}
 }
 
-// NewTestLogger creates a logger for unit / integration tests.
+// NewTest creates a logger for unit / integration tests.
 func NewTest(t *testing.T) *Logger {
 	return &Logger{
 		logger: zaptest.NewLogger(t).Sugar().Named(fmt.Sprintf("%q", t.Name())),

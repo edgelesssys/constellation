@@ -187,7 +187,7 @@ func TestGetGCPKMSConfig(t *testing.T) {
 }
 
 func TestGetConfig(t *testing.T) {
-	const testUri = "test://config?name=test-name&data=test-data&value=test-value"
+	const testURI = "test://config?name=test-name&data=test-data&value=test-value"
 
 	testCases := map[string]struct {
 		uri     string
@@ -195,17 +195,17 @@ func TestGetConfig(t *testing.T) {
 		wantErr bool
 	}{
 		"success": {
-			uri:     testUri,
+			uri:     testURI,
 			keys:    []string{"name", "data", "value"},
 			wantErr: false,
 		},
 		"less keys than capture groups": {
-			uri:     testUri,
+			uri:     testURI,
 			keys:    []string{"name", "data"},
 			wantErr: false,
 		},
 		"invalid regex": {
-			uri:     testUri,
+			uri:     testURI,
 			keys:    []string{"name", "data", "test-value"},
 			wantErr: true,
 		},
@@ -215,7 +215,7 @@ func TestGetConfig(t *testing.T) {
 			wantErr: true,
 		},
 		"more keys than expected": {
-			uri:     testUri,
+			uri:     testURI,
 			keys:    []string{"name", "data", "value", "anotherValue"},
 			wantErr: true,
 		},

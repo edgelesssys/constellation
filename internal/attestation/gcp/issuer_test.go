@@ -29,7 +29,7 @@ func TestGetGCEInstanceInfo(t *testing.T) {
 				projectIDString:    "projectID",
 				instanceNameString: "instanceName",
 				zoneString:         "zone",
-				projecIdErr:        errors.New("error"),
+				projecIDErr:        errors.New("error"),
 			},
 			wantErr: true,
 		},
@@ -78,13 +78,13 @@ type fakeMetadataClient struct {
 	projectIDString    string
 	instanceNameString string
 	zoneString         string
-	projecIdErr        error
+	projecIDErr        error
 	instanceNameErr    error
 	zoneErr            error
 }
 
 func (c fakeMetadataClient) projectID() (string, error) {
-	return c.projectIDString, c.projecIdErr
+	return c.projectIDString, c.projecIDErr
 }
 
 func (c fakeMetadataClient) instanceName() (string, error) {

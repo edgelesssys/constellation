@@ -15,24 +15,24 @@ func TestMain(m *testing.M) {
 func TestMarshal(t *testing.T) {
 	testCases := map[string]struct {
 		role     Role
-		wantJson string
+		wantJSON string
 		wantErr  bool
 	}{
 		"controlePlane role": {
 			role:     ControlPlane,
-			wantJson: `"ControlPlane"`,
+			wantJSON: `"ControlPlane"`,
 		},
 		"node role": {
 			role:     Worker,
-			wantJson: `"Worker"`,
+			wantJSON: `"Worker"`,
 		},
 		"admin role": {
 			role:     Admin,
-			wantJson: `"Admin"`,
+			wantJSON: `"Admin"`,
 		},
 		"unknown role": {
 			role:     Unknown,
-			wantJson: `"Unknown"`,
+			wantJSON: `"Unknown"`,
 		},
 	}
 
@@ -48,7 +48,7 @@ func TestMarshal(t *testing.T) {
 			}
 
 			require.NoError(err)
-			assert.Equal(tc.wantJson, string(jsonRole))
+			assert.Equal(tc.wantJSON, string(jsonRole))
 		})
 	}
 }

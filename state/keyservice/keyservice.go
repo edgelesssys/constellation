@@ -44,7 +44,7 @@ func New(log *logger.Logger, issuer QuoteIssuer, metadata metadata.InstanceListe
 	}
 }
 
-// PushStateDiskKeyRequest is the rpc to push state disk decryption keys to a restarting node.
+// PushStateDiskKey is the rpc to push state disk decryption keys to a restarting node.
 func (a *KeyAPI) PushStateDiskKey(ctx context.Context, in *keyproto.PushStateDiskKeyRequest) (*keyproto.PushStateDiskKeyResponse, error) {
 	a.mux.Lock()
 	defer a.mux.Unlock()

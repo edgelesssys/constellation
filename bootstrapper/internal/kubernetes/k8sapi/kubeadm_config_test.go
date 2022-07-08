@@ -24,7 +24,7 @@ func TestInitConfiguration(t *testing.T) {
 		"CoreOS init config with all fields can be created": {
 			config: func() KubeadmInitYAML {
 				c := coreOSConfig.InitConfiguration(true)
-				c.SetApiServerAdvertiseAddress("192.0.2.0")
+				c.SetAPIServerAdvertiseAddress("192.0.2.0")
 				c.SetNodeIP("192.0.2.0")
 				c.SetNodeName("node")
 				c.SetPodNetworkCIDR("10.244.0.0/16")
@@ -62,7 +62,7 @@ func TestJoinConfiguration(t *testing.T) {
 		"CoreOS join config with all fields can be created": {
 			config: func() KubeadmJoinYAML {
 				c := coreOSConfig.JoinConfiguration(true)
-				c.SetApiServerEndpoint("192.0.2.0:6443")
+				c.SetAPIServerEndpoint("192.0.2.0:6443")
 				c.SetNodeIP("192.0.2.0")
 				c.SetNodeName("node")
 				c.SetToken("token")

@@ -16,10 +16,8 @@ import (
 	certutil "k8s.io/client-go/util/cert"
 	bootstraputil "k8s.io/cluster-bootstrap/token/util"
 	bootstraptoken "k8s.io/kubernetes/cmd/kubeadm/app/apis/bootstraptoken/v1"
-	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 	tokenphase "k8s.io/kubernetes/cmd/kubeadm/app/phases/bootstraptoken/node"
-	"k8s.io/kubernetes/cmd/kubeadm/app/phases/copycerts"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/kubeconfig"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
 )
@@ -48,7 +46,7 @@ func New(apiServerEndpoint string, log *logger.Logger) (*Kubeadm, error) {
 	return &Kubeadm{
 		apiServerEndpoint: apiServerEndpoint,
 		log:               log,
-		keyManager:        newKeyManager(),
+		keyManager:        newKeyManager(client, log),
 		client:            client,
 		file:              file,
 	}, nil
@@ -113,21 +111,10 @@ func (k *Kubeadm) GetJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscov
 // GetControlPlaneCertificateKey uploads Kubernetes encrypted CA certificates to Kubernetes and returns the decryption key.
 // The key can be used by new nodes to join the cluster as a control plane node.
 func (k *Kubeadm) GetControlPlaneCertificateKey() (string, error) {
-	k.log.Infof("Creating new random control plane certificate key")
+	k.log.Infof("Creating new random control plane certificate key (or returning cached key)")
 	key, err := k.keyManager.getCertificatetKey()
 	if err != nil {
 		return "", fmt.Errorf("couldn't create control plane certificate key: %w", err)
 	}
-
-	k.log.Infof("Uploading certs to Kubernetes")
-	cfg := &kubeadmapi.InitConfiguration{
-		ClusterConfiguration: kubeadmapi.ClusterConfiguration{
-			CertificatesDir: constants.KubeadmCertificateDir,
-		},
-	}
-	if err := copycerts.UploadCerts(k.client, cfg, key); err != nil {
-		return "", fmt.Errorf("uploading certs: %w", err)
-	}
-
 	return key, nil
 }

@@ -84,7 +84,7 @@ type DeviceMapper interface {
 	Resize(name string, newSize uint64) error
 }
 
-// cryptDevice is a wrapper for cryptsetup.Device.
+// CryptDevice is a wrapper for cryptsetup.Device.
 type CryptDevice struct {
 	*cryptsetup.Device
 }
@@ -192,7 +192,7 @@ func (c *CryptMapper) ResizeCryptDevice(ctx context.Context, volumeID string) (s
 	return cryptPrefix + volumeID, nil
 }
 
-// GetDeviceName returns the real device name of a mapped crypt device.
+// GetDevicePath returns the device path of a mapped crypt device.
 func (c *CryptMapper) GetDevicePath(volumeID string) (string, error) {
 	return getDevicePath(c.mapper, strings.TrimPrefix(volumeID, cryptPrefix))
 }

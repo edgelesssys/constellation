@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
-	"time"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
@@ -201,7 +200,7 @@ func (k *KubeWrapper) InitCluster(
 		}
 	}
 
-	go k.clusterUtil.FixCilium(nodeName)
+	k.clusterUtil.FixCilium(nodeName)
 
 	return k.GetKubeconfig()
 }
@@ -236,7 +235,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	// Step 2: configure kubeadm join config
 
 	joinConfig := k.configProvider.JoinConfiguration(k.cloudControllerManager.Supported())
-	joinConfig.SetApiServerEndpoint(args.APIServerEndpoint)
+	joinConfig.SetAPIServerEndpoint(args.APIServerEndpoint)
 	joinConfig.SetToken(args.Token)
 	joinConfig.AppendDiscoveryTokenCaCertHash(args.CACertHashes[0])
 	joinConfig.SetNodeIP(nodeInternalIP)
@@ -253,7 +252,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		return fmt.Errorf("joining cluster: %v; %w ", string(joinConfigYAML), err)
 	}
 
-	go k.clusterUtil.FixCilium(nodeName)
+	k.clusterUtil.FixCilium(nodeName)
 
 	return nil
 }
@@ -261,16 +260,6 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 // GetKubeconfig returns the current nodes kubeconfig of stored on disk.
 func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
 	return k.kubeconfigReader.ReadKubeconfig()
-}
-
-// GetKubeadmCertificateKey return the key needed to join the Cluster as Control-Plane (has to be executed on a control-plane; errors otherwise).
-func (k *KubeWrapper) GetKubeadmCertificateKey(ctx context.Context) (string, error) {
-	return k.clusterUtil.GetControlPlaneJoinCertificateKey(ctx)
-}
-
-// GetJoinToken returns a bootstrap (join) token.
-func (k *KubeWrapper) GetJoinToken(ctx context.Context, ttl time.Duration) (*kubeadm.BootstrapTokenDiscovery, error) {
-	return k.clusterUtil.CreateJoinToken(ctx, ttl)
 }
 
 func (k *KubeWrapper) setupJoinService(csp string, measurementsJSON []byte, id attestationtypes.ID) error {

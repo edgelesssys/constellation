@@ -177,7 +177,7 @@ func (k *KubeadmJoinYAML) SetNodeName(nodeName string) {
 	k.JoinConfiguration.NodeRegistration.Name = nodeName
 }
 
-func (k *KubeadmJoinYAML) SetApiServerEndpoint(apiServerEndpoint string) {
+func (k *KubeadmJoinYAML) SetAPIServerEndpoint(apiServerEndpoint string) {
 	k.JoinConfiguration.Discovery.BootstrapToken.APIServerEndpoint = apiServerEndpoint
 }
 
@@ -240,7 +240,7 @@ func (k *KubeadmInitYAML) SetCertSANs(certSANs []string) {
 	}
 }
 
-func (k *KubeadmInitYAML) SetApiServerAdvertiseAddress(apiServerAdvertiseAddress string) {
+func (k *KubeadmInitYAML) SetAPIServerAdvertiseAddress(apiServerAdvertiseAddress string) {
 	k.InitConfiguration.LocalAPIEndpoint.AdvertiseAddress = apiServerAdvertiseAddress
 }
 

@@ -6,9 +6,10 @@ import (
 
 // ConstellationState is the state of a Constellation.
 type ConstellationState struct {
-	Name          string `json:"name,omitempty"`
-	UID           string `json:"uid,omitempty"`
-	CloudProvider string `json:"cloudprovider,omitempty"`
+	Name             string `json:"name,omitempty"`
+	UID              string `json:"uid,omitempty"`
+	CloudProvider    string `json:"cloudprovider,omitempty"`
+	BootstrapperHost string `json:"bootstrapperhost,omitempty"`
 
 	GCPWorkers                      cloudtypes.Instances `json:"gcpworkers,omitempty"`
 	GCPControlPlanes                cloudtypes.Instances `json:"gcpcontrolplanes,omitempty"`

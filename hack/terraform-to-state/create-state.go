@@ -41,6 +41,7 @@ func transformState(tfOut terraformOutput) state.ConstellationState {
 		Name:             "qemu",
 		UID:              "debug",
 		CloudProvider:    "qemu",
+		BootstrapperHost: tfOut.ControlPlaneIPs.Value[0],
 		QEMUWorkers:      cloudtypes.Instances{},
 		QEMUControlPlane: cloudtypes.Instances{},
 	}

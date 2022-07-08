@@ -5,7 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// ConfigMaps represent a list of k8s Secret.
+// Secrets represent a list of k8s Secret.
 type Secrets []*k8s.Secret
 
 // Marshal marshals secrets into multiple YAML documents.

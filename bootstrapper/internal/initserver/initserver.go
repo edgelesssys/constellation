@@ -9,7 +9,6 @@ import (
 	"github.com/edgelesssys/constellation/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/diskencryption"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes"
-	"github.com/edgelesssys/constellation/bootstrapper/internal/nodelock"
 	"github.com/edgelesssys/constellation/bootstrapper/nodestate"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/bootstrapper/util"
@@ -31,7 +30,7 @@ import (
 // The server handles initialization calls from the CLI and initializes the
 // Kubernetes cluster.
 type Server struct {
-	nodeLock    *nodelock.Lock
+	nodeLock    locker
 	initializer ClusterInitializer
 	disk        encryptedDisk
 	fileHandler file.Handler
@@ -43,7 +42,7 @@ type Server struct {
 }
 
 // New creates a new initialization server.
-func New(lock *nodelock.Lock, kube ClusterInitializer, issuer atls.Issuer, fh file.Handler, logger *zap.Logger) *Server {
+func New(lock locker, kube ClusterInitializer, issuer atls.Issuer, fh file.Handler, logger *zap.Logger) *Server {
 	logger = logger.Named("initServer")
 	server := &Server{
 		nodeLock:    lock,
@@ -69,20 +68,32 @@ func New(lock *nodelock.Lock, kube ClusterInitializer, issuer atls.Issuer, fh fi
 	return server
 }
 
-func (s *Server) Serve(ip, port string) error {
+// Serve starts the initialization server.
+func (s *Server) Serve(ip, port string, cleaner cleaner) error {
 	lis, err := net.Listen("tcp", net.JoinHostPort(ip, port))
 	if err != nil {
 		return fmt.Errorf("failed to listen: %w", err)
 	}
 
-	return s.grpcServer.Serve(lis)
+	err = s.grpcServer.Serve(lis)
+	cleaner.Clean()
+	return err
 }
 
 // Init initializes the cluster.
 func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initproto.InitResponse, error) {
 	s.logger.Info("Init called")
 
-	if ok := s.nodeLock.TryLockOnce(); !ok {
+	id, err := s.deriveAttestationID(req.MasterSecret)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "%s", err)
+	}
+
+	nodeLockAcquired, err := s.nodeLock.TryLockOnce(id.Owner, id.Cluster)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "locking node: %s", err)
+	}
+	if !nodeLockAcquired {
 		// The join client seems to already have a connection to an
 		// existing join service. At this point, any further call to
 		// init does not make sense, so we just stop.
@@ -91,11 +102,6 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		go s.grpcServer.GracefulStop()
 		s.logger.Info("node is already in a join process")
 		return nil, status.Error(codes.FailedPrecondition, "node is already being activated")
-	}
-
-	id, err := s.deriveAttestationID(req.MasterSecret)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
 	if err := s.setupDisk(req.MasterSecret); err != nil {
@@ -131,11 +137,17 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 	}
 
 	s.logger.Info("Init succeeded")
+	go s.grpcServer.GracefulStop()
 	return &initproto.InitResponse{
 		Kubeconfig: kubeconfig,
 		OwnerId:    id.Owner,
 		ClusterId:  id.Cluster,
 	}, nil
+}
+
+// Stop stops the initialization server gracefully.
+func (s *Server) Stop() {
+	s.grpcServer.GracefulStop()
 }
 
 func (s *Server) setupDisk(masterSecret []byte) error {
@@ -213,4 +225,14 @@ type serveStopper interface {
 	Serve(lis net.Listener) error
 	// GracefulStop stops the server and blocks until all requests are done.
 	GracefulStop()
+}
+
+type locker interface {
+	// TryLockOnce tries to lock the node. If the node is already locked, it
+	// returns false. If the node is unlocked, it locks it and returns true.
+	TryLockOnce(ownerID, clusterID []byte) (bool, error)
+}
+
+type cleaner interface {
+	Clean()
 }

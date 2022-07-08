@@ -28,8 +28,8 @@ const (
 )
 
 type KMSInformation struct {
-	KmsUri             string
-	StorageUri         string
+	KMSURI             string
+	StorageURI         string
 	KeyEncryptionKeyID string
 }
 

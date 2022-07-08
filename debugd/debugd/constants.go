@@ -18,6 +18,8 @@ Wants=network-online.target
 After=network-online.target
 [Service]
 Type=simple
+RemainAfterExit=yes
+Restart=on-failure
 EnvironmentFile=/etc/constellation.env
 ExecStartPre=-setenforce Permissive
 ExecStartPre=/usr/bin/mkdir -p /opt/cni/bin/

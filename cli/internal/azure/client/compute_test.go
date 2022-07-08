@@ -228,7 +228,7 @@ func TestCreateInstances(t *testing.T) {
 				assert.NotEmpty(client.workers["0"].PrivateIP)
 				assert.NotEmpty(client.workers["0"].PublicIP)
 				assert.NotEmpty(client.controlPlanes["0"].PrivateIP)
-				assert.Equal("lbip", client.controlPlanes["0"].PublicIP)
+				assert.NotEmpty(client.controlPlanes["0"].PublicIP)
 			}
 		})
 	}

@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"net"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/edgelesssys/constellation/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes"
-	"github.com/edgelesssys/constellation/bootstrapper/internal/nodelock"
 	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"
@@ -28,7 +28,7 @@ func TestNew(t *testing.T) {
 	assert := assert.New(t)
 
 	fh := file.NewHandler(afero.NewMemMapFs())
-	server := New(nodelock.New(), &stubClusterInitializer{}, nil, fh, zap.NewNop())
+	server := New(newFakeLock(), &stubClusterInitializer{}, nil, fh, zap.NewNop())
 	assert.NotNil(server)
 	assert.NotNil(server.logger)
 	assert.NotNil(server.nodeLock)
@@ -40,11 +40,13 @@ func TestNew(t *testing.T) {
 
 func TestInit(t *testing.T) {
 	someErr := errors.New("failed")
-	lockedNodeLock := nodelock.New()
-	require.True(t, lockedNodeLock.TryLockOnce())
+	lockedLock := newFakeLock()
+	aqcuiredLock, lockErr := lockedLock.TryLockOnce(nil, nil)
+	require.True(t, aqcuiredLock)
+	require.Nil(t, lockErr)
 
 	testCases := map[string]struct {
-		nodeLock     *nodelock.Lock
+		nodeLock     *fakeLock
 		initializer  ClusterInitializer
 		disk         encryptedDisk
 		fileHandler  file.Handler
@@ -53,14 +55,14 @@ func TestInit(t *testing.T) {
 		wantShutdown bool
 	}{
 		"successful init": {
-			nodeLock:    nodelock.New(),
+			nodeLock:    newFakeLock(),
 			initializer: &stubClusterInitializer{},
 			disk:        &stubDisk{},
 			fileHandler: file.NewHandler(afero.NewMemMapFs()),
 			req:         &initproto.InitRequest{},
 		},
 		"node locked": {
-			nodeLock:     lockedNodeLock,
+			nodeLock:     lockedLock,
 			initializer:  &stubClusterInitializer{},
 			disk:         &stubDisk{},
 			fileHandler:  file.NewHandler(afero.NewMemMapFs()),
@@ -69,7 +71,7 @@ func TestInit(t *testing.T) {
 			wantShutdown: true,
 		},
 		"disk open error": {
-			nodeLock:    nodelock.New(),
+			nodeLock:    newFakeLock(),
 			initializer: &stubClusterInitializer{},
 			disk:        &stubDisk{openErr: someErr},
 			fileHandler: file.NewHandler(afero.NewMemMapFs()),
@@ -77,7 +79,7 @@ func TestInit(t *testing.T) {
 			wantErr:     true,
 		},
 		"disk uuid error": {
-			nodeLock:    nodelock.New(),
+			nodeLock:    newFakeLock(),
 			initializer: &stubClusterInitializer{},
 			disk:        &stubDisk{uuidErr: someErr},
 			fileHandler: file.NewHandler(afero.NewMemMapFs()),
@@ -85,7 +87,7 @@ func TestInit(t *testing.T) {
 			wantErr:     true,
 		},
 		"disk update passphrase error": {
-			nodeLock:    nodelock.New(),
+			nodeLock:    newFakeLock(),
 			initializer: &stubClusterInitializer{},
 			disk:        &stubDisk{updatePassphraseErr: someErr},
 			fileHandler: file.NewHandler(afero.NewMemMapFs()),
@@ -93,7 +95,7 @@ func TestInit(t *testing.T) {
 			wantErr:     true,
 		},
 		"write state file error": {
-			nodeLock:    nodelock.New(),
+			nodeLock:    newFakeLock(),
 			initializer: &stubClusterInitializer{},
 			disk:        &stubDisk{},
 			fileHandler: file.NewHandler(afero.NewReadOnlyFs(afero.NewMemMapFs())),
@@ -101,7 +103,7 @@ func TestInit(t *testing.T) {
 			wantErr:     true,
 		},
 		"initialize cluster error": {
-			nodeLock:    nodelock.New(),
+			nodeLock:    newFakeLock(),
 			initializer: &stubClusterInitializer{initClusterErr: someErr},
 			disk:        &stubDisk{},
 			fileHandler: file.NewHandler(afero.NewMemMapFs()),
@@ -142,7 +144,7 @@ func TestInit(t *testing.T) {
 
 			assert.NoError(err)
 			assert.NotNil(kubeconfig)
-			assert.False(server.nodeLock.TryLockOnce()) // lock should be locked
+			assert.False(server.nodeLock.TryLockOnce(nil, nil)) // lock should be locked
 		})
 	}
 }
@@ -236,4 +238,18 @@ func (s *stubServeStopper) Serve(net.Listener) error {
 
 func (s *stubServeStopper) GracefulStop() {
 	s.shutdownCalled <- struct{}{}
+}
+
+type fakeLock struct {
+	state *sync.Mutex
+}
+
+func newFakeLock() *fakeLock {
+	return &fakeLock{
+		state: &sync.Mutex{},
+	}
+}
+
+func (l *fakeLock) TryLockOnce(_, _ []byte) (bool, error) {
+	return l.state.TryLock(), nil
 }

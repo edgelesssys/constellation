@@ -38,7 +38,8 @@ func TestInitArgumentValidation(t *testing.T) {
 
 func TestInitialize(t *testing.T) {
 	testGcpState := state.ConstellationState{
-		CloudProvider: "GCP",
+		CloudProvider:    "GCP",
+		BootstrapperHost: "192.0.2.1",
 		GCPWorkers: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
@@ -48,7 +49,8 @@ func TestInitialize(t *testing.T) {
 		},
 	}
 	testAzureState := state.ConstellationState{
-		CloudProvider: "Azure",
+		CloudProvider:    "Azure",
+		BootstrapperHost: "192.0.2.1",
 		AzureWorkers: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
@@ -59,7 +61,8 @@ func TestInitialize(t *testing.T) {
 		AzureResourceGroup: "test",
 	}
 	testQemuState := state.ConstellationState{
-		CloudProvider: "QEMU",
+		CloudProvider:    "QEMU",
+		BootstrapperHost: "192.0.2.1",
 		QEMUWorkers: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
@@ -183,7 +186,7 @@ func TestWriteOutput(t *testing.T) {
 	ownerID := base64.StdEncoding.EncodeToString(resp.OwnerId)
 	clusterID := base64.StdEncoding.EncodeToString(resp.ClusterId)
 
-	expectedIdFile := clusterIDsFile{
+	expectedIDFile := clusterIDsFile{
 		ClusterID: clusterID,
 		OwnerID:   ownerID,
 		Endpoint:  net.JoinHostPort("ip", strconv.Itoa(constants.VerifyServiceNodePortGRPC)),
@@ -206,10 +209,10 @@ func TestWriteOutput(t *testing.T) {
 
 	idsFile, err := afs.ReadFile(constants.ClusterIDsFileName)
 	assert.NoError(err)
-	var testIdFile clusterIDsFile
-	err = json.Unmarshal(idsFile, &testIdFile)
+	var testIDFile clusterIDsFile
+	err = json.Unmarshal(idsFile, &testIDFile)
 	assert.NoError(err)
-	assert.Equal(expectedIdFile, testIdFile)
+	assert.Equal(expectedIDFile, testIDFile)
 }
 
 func TestInitCompletion(t *testing.T) {

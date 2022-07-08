@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
-	"google.golang.org/genproto/googleapis/cloud/compute/v1"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
 )
@@ -208,11 +207,13 @@ func (c *Client) CreateLoadBalancer(ctx context.Context) error {
 		Region:  c.region,
 		HealthCheckResource: &computepb.HealthCheck{
 			Name:             proto.String(c.healthCheck),
-			Type:             proto.String(compute.HealthCheck_Type_name[int32(compute.HealthCheck_TCP)]),
+			Type:             proto.String(computepb.HealthCheck_Type_name[int32(computepb.HealthCheck_HTTPS)]),
 			CheckIntervalSec: proto.Int32(1),
 			TimeoutSec:       proto.Int32(1),
-			TcpHealthCheck: &computepb.TCPHealthCheck{
-				Port: proto.Int32(6443),
+			HttpsHealthCheck: &computepb.HTTPSHealthCheck{
+				Host:        proto.String(""),
+				Port:        proto.Int32(6443),
+				RequestPath: proto.String("/readyz"),
 			},
 		},
 	})
@@ -229,13 +230,13 @@ func (c *Client) CreateLoadBalancer(ctx context.Context) error {
 		Region:  c.region,
 		BackendServiceResource: &computepb.BackendService{
 			Name:                proto.String(c.backendService),
-			Protocol:            proto.String(compute.BackendService_Protocol_name[int32(compute.BackendService_TCP)]),
-			LoadBalancingScheme: proto.String(computepb.BackendService_LoadBalancingScheme_name[int32(compute.BackendService_EXTERNAL)]),
+			Protocol:            proto.String(computepb.BackendService_Protocol_name[int32(computepb.BackendService_TCP)]),
+			LoadBalancingScheme: proto.String(computepb.BackendService_LoadBalancingScheme_name[int32(computepb.BackendService_EXTERNAL)]),
 			TimeoutSec:          proto.Int32(10),
 			HealthChecks:        []string{"https://www.googleapis.com/compute/v1/projects/" + c.project + "/regions/" + c.region + "/healthChecks/" + c.healthCheck},
 			Backends: []*computepb.Backend{
 				{
-					BalancingMode: proto.String(computepb.Backend_BalancingMode_name[int32(compute.Backend_CONNECTION)]),
+					BalancingMode: proto.String(computepb.Backend_BalancingMode_name[int32(computepb.Backend_CONNECTION)]),
 					Group:         proto.String("https://www.googleapis.com/compute/v1/projects/" + c.project + "/zones/" + c.zone + "/instanceGroups/" + c.controlPlaneInstanceGroup),
 				},
 			},
@@ -254,8 +255,8 @@ func (c *Client) CreateLoadBalancer(ctx context.Context) error {
 		Region:  c.region,
 		ForwardingRuleResource: &computepb.ForwardingRule{
 			Name:                proto.String(c.forwardingRule),
-			IPProtocol:          proto.String(compute.ForwardingRule_IPProtocolEnum_name[int32(compute.ForwardingRule_TCP)]),
-			LoadBalancingScheme: proto.String(compute.ForwardingRule_LoadBalancingScheme_name[int32(compute.ForwardingRule_EXTERNAL)]),
+			IPProtocol:          proto.String(computepb.ForwardingRule_IPProtocolEnum_name[int32(computepb.ForwardingRule_TCP)]),
+			LoadBalancingScheme: proto.String(computepb.ForwardingRule_LoadBalancingScheme_name[int32(computepb.ForwardingRule_EXTERNAL)]),
 			Ports:               []string{"6443", "9000"},
 			BackendService:      proto.String("https://www.googleapis.com/compute/v1/projects/" + c.project + "/regions/" + c.region + "/backendServices/" + c.backendService),
 		},
@@ -295,7 +296,7 @@ func (c *Client) CreateLoadBalancer(ctx context.Context) error {
 	return c.waitForOperations(ctx, []Operation{resp})
 }
 
-// TerminteLoadBalancer removes the load balancer and its associated resources.
+// TerminateLoadBalancer removes the load balancer and its associated resources.
 func (c *Client) TerminateLoadBalancer(ctx context.Context) error {
 	resp, err := c.forwardingRulesAPI.Delete(ctx, &computepb.DeleteForwardingRuleRequest{
 		Project:        c.project,

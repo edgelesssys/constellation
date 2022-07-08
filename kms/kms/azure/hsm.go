@@ -29,7 +29,7 @@ type cryptoClientAPI interface {
 	WrapKey(ctx context.Context, alg crypto.KeyWrapAlgorithm, key []byte, options *crypto.WrapKeyOptions) (crypto.WrapKeyResponse, error)
 }
 
-// Suffix for HSM Vaults.
+// HSMDefaultCloud is the suffix for HSM Vaults.
 const HSMDefaultCloud VaultSuffix = ".managedhsm.azure.net/"
 
 // HSMClient implements the CloudKMS interface for Azure managed HSM.

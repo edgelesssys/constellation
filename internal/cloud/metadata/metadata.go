@@ -10,7 +10,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/constants"
 )
 
-// Instance describes metadata of a peer.
+// InstanceMetadata describes metadata of a peer.
 type InstanceMetadata struct {
 	Name          string
 	ProviderID    string
@@ -32,6 +32,7 @@ type InstanceLister interface {
 	List(ctx context.Context) ([]InstanceMetadata, error)
 }
 
+// InitServerEndpoints returns the list of endpoints for the init server, which are running on the control plane nodes.
 func InitServerEndpoints(ctx context.Context, lister InstanceLister) ([]string, error) {
 	instances, err := lister.List(ctx)
 	if err != nil {

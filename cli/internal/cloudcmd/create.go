@@ -123,7 +123,7 @@ func (c *Creator) createGCP(ctx context.Context, cl gcpclient, config *config.Co
 	createInput := gcpcl.CreateInstancesInput{
 		CountControlPlanes: controlPlaneCount,
 		CountWorkers:       workerCount,
-		ImageId:            config.Provider.GCP.Image,
+		ImageID:            config.Provider.GCP.Image,
 		InstanceType:       insType,
 		StateDiskSizeGB:    config.StateDiskSizeGB,
 		KubeEnv:            gcp.KubeEnv,

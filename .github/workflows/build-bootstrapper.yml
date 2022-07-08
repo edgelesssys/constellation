@@ -1,4 +1,4 @@
-# We build the coordinator as part of each PR to see that the build still works. An image is only created once merged to main (see condition on call-coreos).
+# We build the bootstrapper as part of each PR to see that the build still works. An image is only created once merged to main (see condition on call-coreos).
 name: Build and Upload the bootstrapper
 
 on:
@@ -45,7 +45,7 @@ jobs:
 
       - name: Copy bootstrapper to S3 if not exists
         id: copy
-        # Only upload the Coordinator if this action is triggered from main branch
+        # Only upload the bootstrapper if this action is triggered from main branch
         if: ${{ github.ref == 'refs/heads/main' }}
         run: >
           aws s3api head-object --bucket ${{ secrets.PUBLIC_BUCKET_NAME }} --key bootstrapper/$(ls | grep "bootstrapper-")

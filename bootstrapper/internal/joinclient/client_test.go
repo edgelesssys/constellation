@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/nodelock"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/constants"
@@ -35,8 +34,10 @@ func TestMain(m *testing.M) {
 
 func TestClient(t *testing.T) {
 	someErr := errors.New("failed")
-	lockedLock := nodelock.New()
-	require.True(t, lockedLock.TryLockOnce())
+	lockedLock := newFakeLock()
+	aqcuiredLock, lockErr := lockedLock.TryLockOnce(nil, nil)
+	require.True(t, aqcuiredLock)
+	require.Nil(t, lockErr)
 	workerSelf := metadata.InstanceMetadata{Role: role.Worker, Name: "node-1"}
 	controlSelf := metadata.InstanceMetadata{Role: role.ControlPlane, Name: "node-5"}
 	peers := []metadata.InstanceMetadata{
@@ -49,7 +50,7 @@ func TestClient(t *testing.T) {
 		role          role.Role
 		clusterJoiner *stubClusterJoiner
 		disk          encryptedDisk
-		nodeLock      *nodelock.Lock
+		nodeLock      *fakeLock
 		apiAnswers    []any
 		wantLock      bool
 		wantJoin      bool
@@ -65,7 +66,7 @@ func TestClient(t *testing.T) {
 				issueJoinTicketAnswer{},
 			},
 			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      nodelock.New(),
+			nodeLock:      newFakeLock(),
 			disk:          &stubDisk{},
 			wantJoin:      true,
 			wantLock:      true,
@@ -81,7 +82,7 @@ func TestClient(t *testing.T) {
 				issueJoinTicketAnswer{},
 			},
 			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      nodelock.New(),
+			nodeLock:      newFakeLock(),
 			disk:          &stubDisk{},
 			wantJoin:      true,
 			wantLock:      true,
@@ -97,7 +98,7 @@ func TestClient(t *testing.T) {
 				issueJoinTicketAnswer{},
 			},
 			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      nodelock.New(),
+			nodeLock:      newFakeLock(),
 			disk:          &stubDisk{},
 			wantJoin:      true,
 			wantLock:      true,
@@ -113,7 +114,7 @@ func TestClient(t *testing.T) {
 				issueJoinTicketAnswer{},
 			},
 			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      nodelock.New(),
+			nodeLock:      newFakeLock(),
 			disk:          &stubDisk{},
 			wantJoin:      true,
 			wantLock:      true,
@@ -130,7 +131,7 @@ func TestClient(t *testing.T) {
 				issueJoinTicketAnswer{},
 			},
 			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      nodelock.New(),
+			nodeLock:      newFakeLock(),
 			disk:          &stubDisk{},
 			wantJoin:      true,
 			wantLock:      true,
@@ -147,7 +148,7 @@ func TestClient(t *testing.T) {
 				issueJoinTicketAnswer{},
 			},
 			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      nodelock.New(),
+			nodeLock:      newFakeLock(),
 			disk:          &stubDisk{},
 			wantJoin:      true,
 			wantLock:      true,
@@ -160,7 +161,7 @@ func TestClient(t *testing.T) {
 				issueJoinTicketAnswer{},
 			},
 			clusterJoiner: &stubClusterJoiner{joinClusterErr: someErr},
-			nodeLock:      nodelock.New(),
+			nodeLock:      newFakeLock(),
 			disk:          &stubDisk{},
 			wantJoin:      true,
 			wantLock:      true,
@@ -180,13 +181,13 @@ func TestClient(t *testing.T) {
 		"on control plane: disk open fails": {
 			role:          role.ControlPlane,
 			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      nodelock.New(),
+			nodeLock:      newFakeLock(),
 			disk:          &stubDisk{openErr: someErr},
 		},
 		"on control plane: disk uuid fails": {
 			role:          role.ControlPlane,
 			clusterJoiner: &stubClusterJoiner{},
-			nodeLock:      nodelock.New(),
+			nodeLock:      newFakeLock(),
 			disk:          &stubDisk{uuidErr: someErr},
 		},
 	}
@@ -224,7 +225,7 @@ func TestClient(t *testing.T) {
 			go joinServer.Serve(listener)
 			defer joinServer.GracefulStop()
 
-			client.Start()
+			client.Start(stubCleaner{})
 
 			for _, a := range tc.apiAnswers {
 				switch a := a.(type) {
@@ -246,9 +247,9 @@ func TestClient(t *testing.T) {
 				assert.False(tc.clusterJoiner.joinClusterCalled)
 			}
 			if tc.wantLock {
-				assert.False(client.nodeLock.TryLockOnce()) // lock should be locked
+				assert.False(client.nodeLock.TryLockOnce(nil, nil)) // lock should be locked
 			} else {
-				assert.True(client.nodeLock.TryLockOnce())
+				assert.True(client.nodeLock.TryLockOnce(nil, nil))
 			}
 		})
 	}
@@ -258,7 +259,7 @@ func TestClientConcurrentStartStop(t *testing.T) {
 	netDialer := testdialer.NewBufconnDialer()
 	dialer := dialer.New(nil, nil, netDialer)
 	client := &JoinClient{
-		nodeLock:    nodelock.New(),
+		nodeLock:    newFakeLock(),
 		timeout:     30 * time.Second,
 		interval:    30 * time.Second,
 		dialer:      dialer,
@@ -274,7 +275,7 @@ func TestClientConcurrentStartStop(t *testing.T) {
 
 	start := func() {
 		defer wg.Done()
-		client.Start()
+		client.Start(stubCleaner{})
 	}
 
 	stop := func() {
@@ -414,4 +415,22 @@ func (d *stubDisk) UUID() (string, error) {
 func (d *stubDisk) UpdatePassphrase(string) error {
 	d.updatePassphraseCalled = true
 	return d.updatePassphraseErr
+}
+
+type stubCleaner struct{}
+
+func (c stubCleaner) Clean() {}
+
+type fakeLock struct {
+	state *sync.Mutex
+}
+
+func newFakeLock() *fakeLock {
+	return &fakeLock{
+		state: &sync.Mutex{},
+	}
+}
+
+func (l *fakeLock) TryLockOnce(_, _ []byte) (bool, error) {
+	return l.state.TryLock(), nil
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewVerifyCmd returns a new cobra.Command for the verify command.
+// NewVersionCmd returns a new cobra.Command for the verify command.
 func NewVersionCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",

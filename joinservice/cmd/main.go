@@ -50,7 +50,7 @@ func main() {
 
 	creds := atlscredentials.New(nil, []atls.Validator{validator})
 
-	vpcIP, err := getIPinVPC(ctx, *provider)
+	vpcIP, err := getVPCIP(ctx, *provider)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to get IP in VPC")
 	}
@@ -87,7 +87,7 @@ func main() {
 	}
 }
 
-func getIPinVPC(ctx context.Context, provider string) (string, error) {
+func getVPCIP(ctx context.Context, provider string) (string, error) {
 	switch cloudprovider.FromString(provider) {
 	case cloudprovider.Azure:
 		metadata, err := azurecloud.NewMetadata(ctx)

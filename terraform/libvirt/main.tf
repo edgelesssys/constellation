@@ -5,7 +5,7 @@ terraform {
       version = "0.6.14"
     }
     docker = {
-      source = "kreuzwerker/docker"
+      source  = "kreuzwerker/docker"
       version = "2.17.0"
     }
   }
@@ -25,24 +25,24 @@ provider "docker" {
 }
 
 resource "docker_image" "qemu-metadata" {
-  name = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:latest"
-  keep_locally = true 
+  name         = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:feat-coordinator-selfactivation-node"
+  keep_locally = true
 }
 
 resource "docker_container" "qemu-metadata" {
-  name = "qemu-metadata"
-  image = docker_image.qemu-metadata.latest
+  name         = "qemu-metadata"
+  image        = docker_image.qemu-metadata.latest
   network_mode = "host"
-  rm = true
+  rm           = true
   mounts {
     source = "/var/run/libvirt/libvirt-sock"
     target = "/var/run/libvirt/libvirt-sock"
-    type = "bind" 
+    type   = "bind"
   }
   mounts {
     source = var.metadata_api_log_dir
     target = "/pcrs"
-    type = "bind"
+    type   = "bind"
   }
 }
 

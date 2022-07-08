@@ -30,7 +30,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		Network:                      c.network,
 		SecondarySubnetworkRangeName: c.secondarySubnetworkRange,
 		Subnetwork:                   c.subnetwork,
-		ImageId:                      input.ImageId,
+		ImageID:                      input.ImageID,
 		InstanceType:                 input.InstanceType,
 		StateDiskSizeGB:              int64(input.StateDiskSizeGB),
 		Role:                         role.Worker.String(),
@@ -52,7 +52,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		Network:                      c.network,
 		Subnetwork:                   c.subnetwork,
 		SecondarySubnetworkRangeName: c.secondarySubnetworkRange,
-		ImageId:                      input.ImageId,
+		ImageID:                      input.ImageID,
 		InstanceType:                 input.InstanceType,
 		StateDiskSizeGB:              int64(input.StateDiskSizeGB),
 		Role:                         role.ControlPlane.String(),
@@ -197,13 +197,13 @@ func (c *Client) deleteInstanceGroupManager(ctx context.Context, instanceGroupMa
 	return c.instanceGroupManagersAPI.Delete(ctx, req)
 }
 
-func (c *Client) waitForInstanceGroupScaling(ctx context.Context, groupId string) error {
+func (c *Client) waitForInstanceGroupScaling(ctx context.Context, groupID string) error {
 	for {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
 		listReq := &computepb.ListManagedInstancesInstanceGroupManagersRequest{
-			InstanceGroupManager: groupId,
+			InstanceGroupManager: groupID,
 			Project:              c.project,
 			Zone:                 c.zone,
 		}
@@ -228,9 +228,9 @@ func (c *Client) waitForInstanceGroupScaling(ctx context.Context, groupId string
 }
 
 // getInstanceIPs requests the IPs of the client's instances.
-func (c *Client) getInstanceIPs(ctx context.Context, groupId string, list cloudtypes.Instances) error {
+func (c *Client) getInstanceIPs(ctx context.Context, groupID string, list cloudtypes.Instances) error {
 	req := &computepb.ListInstancesRequest{
-		Filter:  proto.String("name=" + groupId + "*"),
+		Filter:  proto.String("name=" + groupID + "*"),
 		Project: c.project,
 		Zone:    c.zone,
 	}
@@ -292,7 +292,7 @@ func (i *instanceGroupManagerInput) InsertInstanceGroupManagerRequest() computep
 type CreateInstancesInput struct {
 	CountWorkers       int
 	CountControlPlanes int
-	ImageId            string
+	ImageID            string
 	InstanceType       string
 	StateDiskSizeGB    int
 	KubeEnv            string
@@ -303,7 +303,7 @@ type insertInstanceTemplateInput struct {
 	Network                      string
 	Subnetwork                   string
 	SecondarySubnetworkRangeName string
-	ImageId                      string
+	ImageID                      string
 	InstanceType                 string
 	StateDiskSizeGB              int64
 	Role                         string
@@ -328,7 +328,7 @@ func (i insertInstanceTemplateInput) insertInstanceTemplateRequest() *computepb.
 					{
 						InitializeParams: &computepb.AttachedDiskInitializeParams{
 							DiskSizeGb:  proto.Int64(10),
-							SourceImage: proto.String(i.ImageId),
+							SourceImage: proto.String(i.ImageID),
 						},
 						AutoDelete: proto.Bool(true),
 						Boot:       proto.Bool(true),

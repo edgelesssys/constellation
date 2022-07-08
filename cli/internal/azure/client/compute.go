@@ -61,14 +61,6 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 	}
 	c.controlPlanes = instances
 
-	// Set the load balancer public IP in the first control plane
-	coord, ok := c.controlPlanes["0"]
-	if !ok {
-		return errors.New("control plane 0 not found")
-	}
-	coord.PublicIP = c.loadBalancerPubIP
-	c.controlPlanes["0"] = coord
-
 	return nil
 }
 

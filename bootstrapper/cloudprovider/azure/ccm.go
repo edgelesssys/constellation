@@ -98,7 +98,7 @@ func (c *CloudControllerManager) Secrets(ctx context.Context, providerID string,
 		SecurityGroupName:   securityGroupName,
 		LoadBalancerName:    loadBalancerName,
 		UseInstanceMetadata: true,
-		VmType:              vmType,
+		VMType:              vmType,
 		Location:            creds.Location,
 		AADClientID:         creds.ClientID,
 		AADClientSecret:     creds.ClientSecret,
@@ -177,7 +177,7 @@ type cloudConfig struct {
 	VNetResourceGroup          string `json:"vnetResourceGroup,omitempty"`
 	CloudProviderBackoff       bool   `json:"cloudProviderBackoff,omitempty"`
 	UseInstanceMetadata        bool   `json:"useInstanceMetadata,omitempty"`
-	VmType                     string `json:"vmType,omitempty"`
+	VMType                     string `json:"vmType,omitempty"`
 	AADClientID                string `json:"aadClientId,omitempty"`
 	AADClientSecret            string `json:"aadClientSecret,omitempty"`
 }

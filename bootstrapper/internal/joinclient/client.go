@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/diskencryption"
-	"github.com/edgelesssys/constellation/bootstrapper/internal/nodelock"
 	"github.com/edgelesssys/constellation/bootstrapper/nodestate"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
@@ -33,7 +32,7 @@ const (
 // JoinClient is a client for requesting the needed information and
 // joining an existing Kubernetes cluster.
 type JoinClient struct {
-	nodeLock    *nodelock.Lock
+	nodeLock    locker
 	diskUUID    string
 	nodeName    string
 	role        role.Role
@@ -57,7 +56,7 @@ type JoinClient struct {
 }
 
 // New creates a new JoinClient.
-func New(lock *nodelock.Lock, dial grpcDialer, joiner ClusterJoiner, meta MetadataAPI, log *zap.Logger) *JoinClient {
+func New(lock locker, dial grpcDialer, joiner ClusterJoiner, meta MetadataAPI, log *zap.Logger) *JoinClient {
 	return &JoinClient{
 		nodeLock:    lock,
 		disk:        diskencryption.New(),
@@ -78,7 +77,7 @@ func New(lock *nodelock.Lock, dial grpcDialer, joiner ClusterJoiner, meta Metada
 // After receiving the needed information, the node will join the cluster.
 // Multiple calls of start on the same client won't start a second routine if there is
 // already a routine running.
-func (c *JoinClient) Start() {
+func (c *JoinClient) Start(cleaner cleaner) {
 	c.mux.Lock()
 	defer c.mux.Unlock()
 
@@ -123,6 +122,7 @@ func (c *JoinClient) Start() {
 			err := c.tryJoinWithAvailableServices()
 			if err == nil {
 				c.log.Info("Joined successfully. Client is shut down.")
+				go cleaner.Clean()
 				return
 			} else if isUnrecoverable(err) {
 				c.log.Error("Unrecoverable error occurred", zap.Error(err))
@@ -220,7 +220,12 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse)
 		}
 	}()
 
-	if ok := c.nodeLock.TryLockOnce(); !ok {
+	nodeLockAcquired, err := c.nodeLock.TryLockOnce(ticket.OwnerId, ticket.ClusterId)
+	if err != nil {
+		c.log.Info("Acquiring node lock failed", zap.Error(err))
+		return fmt.Errorf("acquiring node lock: %w", err)
+	}
+	if !nodeLockAcquired {
 		// There is already a cluster initialization in progress on
 		// this node, so there is no need to also join the cluster,
 		// as the initializing node is automatically part of the cluster.
@@ -358,4 +363,14 @@ type encryptedDisk interface {
 	UUID() (string, error)
 	// UpdatePassphrase switches the initial random passphrase of the encrypted disk to a permanent passphrase.
 	UpdatePassphrase(passphrase string) error
+}
+
+type cleaner interface {
+	Clean()
+}
+
+type locker interface {
+	// TryLockOnce tries to lock the node. If the node is already locked, it
+	// returns false. If the node is unlocked, it locks it and returns true.
+	TryLockOnce(ownerID, clusterID []byte) (bool, error)
 }

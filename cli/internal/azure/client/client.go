@@ -154,6 +154,10 @@ func (c *Client) GetState() (state.ConstellationState, error) {
 		return state.ConstellationState{}, errors.New("client has no uid")
 	}
 	stat.UID = c.uid
+	if len(c.loadBalancerPubIP) == 0 {
+		return state.ConstellationState{}, errors.New("client has no load balancer public IP")
+	}
+	stat.BootstrapperHost = c.loadBalancerPubIP
 	if len(c.location) == 0 {
 		return state.ConstellationState{}, errors.New("client has no location")
 	}
@@ -213,6 +217,10 @@ func (c *Client) SetState(stat state.ConstellationState) error {
 		return errors.New("state has no uuid")
 	}
 	c.uid = stat.UID
+	if len(stat.BootstrapperHost) == 0 {
+		return errors.New("state has no bootstrapper host")
+	}
+	c.loadBalancerPubIP = stat.BootstrapperHost
 	if len(stat.AzureLocation) == 0 {
 		return errors.New("state has no location")
 	}

@@ -5,6 +5,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/logger"
+	clientset "k8s.io/client-go/kubernetes"
+	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
 	"k8s.io/kubernetes/cmd/kubeadm/app/phases/copycerts"
 	"k8s.io/utils/clock"
 )
@@ -18,11 +22,15 @@ type keyManager struct {
 	key            string
 	expirationDate time.Time
 	clock          clock.Clock
+	client         clientset.Interface
+	log            *logger.Logger
 }
 
-func newKeyManager() *keyManager {
+func newKeyManager(client clientset.Interface, log *logger.Logger) *keyManager {
 	return &keyManager{
-		clock: clock.RealClock{},
+		clock:  clock.RealClock{},
+		client: client,
+		log:    log,
 	}
 }
 
@@ -45,6 +53,15 @@ func (k *keyManager) getCertificatetKey() (string, error) {
 		}
 		k.expirationDate = k.clock.Now().Add(certificateKeyTTL)
 		k.key = key
+		k.log.Infof("Uploading certs to Kubernetes")
+		cfg := &kubeadmapi.InitConfiguration{
+			ClusterConfiguration: kubeadmapi.ClusterConfiguration{
+				CertificatesDir: constants.KubeadmCertificateDir,
+			},
+		}
+		if err := copycerts.UploadCerts(k.client, cfg, key); err != nil {
+			return "", fmt.Errorf("uploading certs: %w", err)
+		}
 	case k.expirationDate.After(k.clock.Now()):
 		// key is still valid
 		// if TTL is less than 2 minutes away, increase it by 2 minutes

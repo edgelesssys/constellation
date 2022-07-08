@@ -227,6 +227,11 @@ func (c *Client) GetState() (state.ConstellationState, error) {
 		return state.ConstellationState{}, errors.New("client has no controlPlanes")
 	}
 	stat.GCPControlPlanes = c.controlPlanes
+	publicIPs := c.controlPlanes.PublicIPs()
+	if len(publicIPs) == 0 {
+		return state.ConstellationState{}, errors.New("client has no bootstrapper endpoint")
+	}
+	stat.BootstrapperHost = publicIPs[0]
 
 	if c.workerInstanceGroup == "" {
 		return state.ConstellationState{}, errors.New("client has no workerInstanceGroup")

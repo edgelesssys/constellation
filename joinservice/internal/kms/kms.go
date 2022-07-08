@@ -27,7 +27,7 @@ func New(log *logger.Logger, endpoint string) Client {
 	}
 }
 
-// GetDEK returns a data encryption key for the given UUID.
+// GetDataKey returns a data encryption key for the given UUID.
 func (c Client) GetDataKey(ctx context.Context, uuid string, length int) ([]byte, error) {
 	log := c.log.With(zap.String("diskUUID", uuid), zap.String("endpoint", c.endpoint))
 	// TODO: update credentials if we enable aTLS on the KMS
