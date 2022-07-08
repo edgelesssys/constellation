@@ -25,6 +25,8 @@ Here are some examples for test suits you might want to run. Values for `sonobuo
 
 Check [Sonobuoy docs](https://sonobuoy.io/docs/latest/e2eplugin/) for more examples.
 
+When using `--mode` be aware that `--e2e-focus` and `e2e-skip` will be overwritten. [Check in the source code](https://github.com/vmware-tanzu/sonobuoy/blob/e709787426316423a4821927b1749d5bcc90cb8c/cmd/sonobuoy/app/modes.go#L130) what the different modes do.
+
 ## Local Development
 
 Using [nektos/act](https://github.com/nektos/act) you can run GitHub actions locally.
