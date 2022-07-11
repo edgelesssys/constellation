@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.11)
 project(coordinator LANGUAGES C VERSION 0.1.0)
 
+set(CLI_VERSION "v0.1.0" CACHE STRING "Version of CLI binary.")
+
 enable_testing()
 
 #
@@ -28,7 +30,7 @@ add_custom_target(coordinator ALL
 #
 
 add_custom_target(cli ALL
-  CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/constellation -tags=gcp -ldflags "-buildid='' -X github.com/edgelesssys/constellation/internal/constants.VersionInfo=${PROJECT_VERSION}"
+  CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/constellation -tags=gcp -ldflags "-buildid='' -X github.com/edgelesssys/constellation/internal/constants.VersionInfo=${CLI_VERSION}"
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/cli
   BYPRODUCTS constellation
 )

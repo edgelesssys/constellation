@@ -33,6 +33,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+## [1.3.1] - 2022-07-11
+
+### Changed
+- Update default CoreOS image to latest version (1657199013).
+
+### Fixed
+- Add load balancer path to Azure deployment so that PCR values can be read.
+- Show correct version number in `constellation version`.
+
+### Removed
+- Support for Azure `Standard_*_v3` types.
+
 ## [1.3.0] - 2022-07-05
 ### Added
 - Early boot logging for GCP and Azure. [[Docs]](https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/workflows/troubleshooting?id=cloud-logging)
@@ -106,7 +118,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2022-04-28
 Initial release of Constellation. With underlying WireGuard and Kubernetes compliant.
 
-[Unreleased]: https://github.com/edgelesssys/constellation/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/edgelesssys/constellation/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/edgelesssys/constellation/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/edgelesssys/constellation/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/edgelesssys/constellation/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/edgelesssys/constellation/compare/v1.0.0...v1.1.0
