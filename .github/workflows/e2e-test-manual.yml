@@ -29,7 +29,7 @@ on:
         type: choice
         options:
           - "n2d-standard-2" # GCP
-          - "Standard_D4s_v3" # Azure
+          - "Standard_D4a_v4" # Azure
         default: "n2d-standard-2"
         required: true
       sonobuoyTestSuiteCmd:
