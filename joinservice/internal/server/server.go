@@ -106,12 +106,19 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		return nil, status.Errorf(codes.Internal, "unable to generate kubelet certificate: %s", err)
 	}
 
-	var certKey string
+	var controlPlaneFiles []*joinproto.ControlPlaneCertOrKey
 	if req.IsControlPlane {
 		log.Infof("Creating control plane certificate key")
-		certKey, err = s.joinTokenGetter.GetControlPlaneCertificateKey()
+		filesMap, err := s.joinTokenGetter.GetControlPlaneCertificatesAndKeys()
 		if err != nil {
 			return nil, fmt.Errorf("ActivateControlPlane failed: %w", err)
+		}
+
+		for k, v := range filesMap {
+			controlPlaneFiles = append(controlPlaneFiles, &joinproto.ControlPlaneCertOrKey{
+				Name: k,
+				Data: v,
+			})
 		}
 	}
 
@@ -125,7 +132,7 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		DiscoveryTokenCaCertHash: kubeArgs.CACertHashes[0],
 		KubeletCert:              kubeletCert,
 		KubeletKey:               kubeletKey,
-		CertificateKey:           certKey,
+		ControlPlaneFiles:        controlPlaneFiles,
 	}, nil
 }
 
@@ -133,7 +140,7 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 type joinTokenGetter interface {
 	// GetJoinToken returns a bootstrap (join) token.
 	GetJoinToken(ttl time.Duration) (*kubeadmv1.BootstrapTokenDiscovery, error)
-	GetControlPlaneCertificateKey() (string, error)
+	GetControlPlaneCertificatesAndKeys() (map[string][]byte, error)
 }
 
 // dataKeyGetter interacts with Constellation's key management system to retrieve keys.

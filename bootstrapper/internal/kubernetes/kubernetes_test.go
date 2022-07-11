@@ -294,7 +294,6 @@ func TestJoinCluster(t *testing.T) {
 	}
 
 	privateIP := "192.0.2.1"
-	certKey := "cert-key"
 
 	testCases := map[string]struct {
 		clusterUtil            stubClusterUtil
@@ -390,8 +389,8 @@ func TestJoinCluster(t *testing.T) {
 						AdvertiseAddress: "192.0.2.1",
 						BindPort:         6443,
 					},
-					CertificateKey: certKey,
 				},
+				SkipPhases: []string{"control-plane-prepare/download-certs"},
 			},
 		},
 		"kubeadm join worker fails when retrieving self metadata": {
@@ -426,7 +425,7 @@ func TestJoinCluster(t *testing.T) {
 				getIPAddr:              func() (string, error) { return privateIP, nil },
 			}
 
-			err := kube.JoinCluster(context.Background(), joinCommand, certKey, tc.role, zaptest.NewLogger(t))
+			err := kube.JoinCluster(context.Background(), joinCommand, tc.role, zaptest.NewLogger(t))
 			if tc.wantErr {
 				assert.Error(err)
 				return

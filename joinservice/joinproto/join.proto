@@ -24,5 +24,10 @@ message IssueJoinTicketResponse {
     string api_server_endpoint = 6;
     string token = 7;
     string discovery_token_ca_cert_hash = 8;
-    string certificate_key = 9;
+    repeated control_plane_cert_or_key control_plane_files = 9;
+}
+
+message control_plane_cert_or_key {
+    string name = 1;
+    bytes data = 2;
 }

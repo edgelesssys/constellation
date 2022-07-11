@@ -1,7 +1,7 @@
 package kubeadm
 
 import (
-	"context"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -12,12 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	fakecorev1 "k8s.io/client-go/kubernetes/typed/core/v1/fake"
-	testclock "k8s.io/utils/clock/testing"
+	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
 func TestMain(m *testing.M) {
@@ -83,10 +79,9 @@ kind: Config`,
 			require := require.New(t)
 
 			client := &Kubeadm{
-				log:        logger.NewTest(t),
-				keyManager: &keyManager{clock: testclock.NewFakeClock(time.Time{})},
-				file:       file.NewHandler(afero.NewMemMapFs()),
-				client:     fake.NewSimpleClientset(),
+				log:    logger.NewTest(t),
+				file:   file.NewHandler(afero.NewMemMapFs()),
+				client: fake.NewSimpleClientset(),
 			}
 			if tc.adminConf != "" {
 				require.NoError(client.file.Write(constants.CoreOSAdminConfFilename, []byte(tc.adminConf), file.OptNone))
@@ -103,21 +98,70 @@ kind: Config`,
 	}
 }
 
-type failingCoreV1 struct {
-	*fakecorev1.FakeCoreV1
-}
+func TestGetControlPlaneCertificatesAndKeys(t *testing.T) {
+	someData := []byte{0x1, 0x2, 0x3}
 
-func (f *failingCoreV1) Secrets(namespace string) corev1.SecretInterface {
-	return &failingSecretInterface{
-		&fakecorev1.FakeSecrets{Fake: f.FakeCoreV1},
+	testCases := map[string]struct {
+		preExistingFiles map[string][]byte
+		wantErr          bool
+	}{
+		"success": {
+			preExistingFiles: map[string][]byte{
+				kubeconstants.CAKeyName:                    someData,
+				kubeconstants.ServiceAccountPrivateKeyName: someData,
+				kubeconstants.FrontProxyCAKeyName:          someData,
+				kubeconstants.EtcdCAKeyName:                someData,
+				kubeconstants.CACertName:                   someData,
+				kubeconstants.ServiceAccountPublicKeyName:  someData,
+				kubeconstants.FrontProxyCACertName:         someData,
+				kubeconstants.EtcdCACertName:               someData,
+			},
+		},
+		"missing key": {
+			preExistingFiles: map[string][]byte{
+				kubeconstants.CACertName:                  someData,
+				kubeconstants.ServiceAccountPublicKeyName: someData,
+				kubeconstants.FrontProxyCACertName:        someData,
+				kubeconstants.EtcdCACertName:              someData,
+			},
+			wantErr: true,
+		},
+		"missing cert": {
+			preExistingFiles: map[string][]byte{
+				kubeconstants.CAKeyName:                    someData,
+				kubeconstants.ServiceAccountPrivateKeyName: someData,
+				kubeconstants.FrontProxyCAKeyName:          someData,
+				kubeconstants.EtcdCAKeyName:                someData,
+			},
+			wantErr: true,
+		},
 	}
-}
 
-type failingSecretInterface struct {
-	*fakecorev1.FakeSecrets
-}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
 
-// copycerts.UploadCerts will fail if a secret already exists.
-func (f *failingSecretInterface) Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.Secret, error) {
-	return &v1.Secret{}, nil
+			client := &Kubeadm{
+				log:    logger.NewTest(t),
+				file:   file.NewHandler(afero.NewMemMapFs()),
+				client: fake.NewSimpleClientset(),
+			}
+			for filename, content := range tc.preExistingFiles {
+				require.NoError(client.file.Write(
+					filepath.Join(kubeconstants.KubernetesDir, kubeconstants.DefaultCertificateDir, filename),
+					content,
+					file.OptNone,
+				))
+			}
+
+			files, err := client.GetControlPlaneCertificatesAndKeys()
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.NotNil(files)
+			}
+		})
+	}
 }

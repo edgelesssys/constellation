@@ -201,14 +201,14 @@ func (k *KubeadmJoinYAML) SetProviderID(providerID string) {
 	k.KubeletConfiguration.ProviderID = providerID
 }
 
-func (k *KubeadmJoinYAML) SetControlPlane(advertiseAddress string, certificateKey string) {
+func (k *KubeadmJoinYAML) SetControlPlane(advertiseAddress string) {
 	k.JoinConfiguration.ControlPlane = &kubeadm.JoinControlPlane{
 		LocalAPIEndpoint: kubeadm.APIEndpoint{
 			AdvertiseAddress: advertiseAddress,
 			BindPort:         6443,
 		},
-		CertificateKey: certificateKey,
 	}
+	k.JoinConfiguration.SkipPhases = []string{"control-plane-prepare/download-certs"}
 }
 
 func (k *KubeadmJoinYAML) Marshal() ([]byte, error) {

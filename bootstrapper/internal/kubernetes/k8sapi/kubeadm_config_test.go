@@ -68,7 +68,7 @@ func TestJoinConfiguration(t *testing.T) {
 				c.SetToken("token")
 				c.AppendDiscoveryTokenCaCertHash("discovery-token-ca-cert-hash")
 				c.SetProviderID("somecloudprovider://instance-id")
-				c.SetControlPlane("192.0.2.0", "11111111111111111111111111111111111")
+				c.SetControlPlane("192.0.2.0")
 				return c
 			}(),
 		},

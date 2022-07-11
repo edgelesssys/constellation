@@ -206,7 +206,7 @@ func (k *KubeWrapper) InitCluster(
 }
 
 // JoinCluster joins existing Kubernetes cluster.
-func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, certKey string, peerRole role.Role, logger *zap.Logger) error {
+func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, peerRole role.Role, logger *zap.Logger) error {
 	// TODO: k8s version should be user input
 	if err := k.clusterUtil.InstallComponents(ctx, "1.23.6"); err != nil {
 		return err
@@ -242,7 +242,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	joinConfig.SetNodeName(nodeName)
 	joinConfig.SetProviderID(providerID)
 	if peerRole == role.ControlPlane {
-		joinConfig.SetControlPlane(nodeInternalIP, certKey)
+		joinConfig.SetControlPlane(nodeInternalIP)
 	}
 	joinConfigYAML, err := joinConfig.Marshal()
 	if err != nil {

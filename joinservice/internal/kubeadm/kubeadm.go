@@ -3,6 +3,7 @@ package kubeadm
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/edgelesssys/constellation/internal/constants"
@@ -17,6 +18,7 @@ import (
 	bootstraputil "k8s.io/cluster-bootstrap/token/util"
 	bootstraptoken "k8s.io/kubernetes/cmd/kubeadm/app/apis/bootstraptoken/v1"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
+	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	tokenphase "k8s.io/kubernetes/cmd/kubeadm/app/phases/bootstraptoken/node"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/kubeconfig"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
@@ -26,7 +28,6 @@ import (
 type Kubeadm struct {
 	apiServerEndpoint string
 	log               *logger.Logger
-	keyManager        *keyManager
 	client            clientset.Interface
 	file              file.Handler
 }
@@ -46,7 +47,6 @@ func New(apiServerEndpoint string, log *logger.Logger) (*Kubeadm, error) {
 	return &Kubeadm{
 		apiServerEndpoint: apiServerEndpoint,
 		log:               log,
-		keyManager:        newKeyManager(client, log),
 		client:            client,
 		file:              file,
 	}, nil
@@ -108,13 +108,39 @@ func (k *Kubeadm) GetJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscov
 	}, nil
 }
 
-// GetControlPlaneCertificateKey uploads Kubernetes encrypted CA certificates to Kubernetes and returns the decryption key.
-// The key can be used by new nodes to join the cluster as a control plane node.
-func (k *Kubeadm) GetControlPlaneCertificateKey() (string, error) {
-	k.log.Infof("Creating new random control plane certificate key (or returning cached key)")
-	key, err := k.keyManager.getCertificatetKey()
-	if err != nil {
-		return "", fmt.Errorf("couldn't create control plane certificate key: %w", err)
+// GetControlPlaneCertificatesAndKeys loads the Kubernetes CA certificates and keys.
+func (k *Kubeadm) GetControlPlaneCertificatesAndKeys() (map[string][]byte, error) {
+	k.log.Infof("Loading control plane certificates and keys")
+	controlPlaneFiles := make(map[string][]byte)
+
+	keyFilenames := []string{
+		kubeconstants.CAKeyName,
+		kubeconstants.ServiceAccountPrivateKeyName,
+		kubeconstants.FrontProxyCAKeyName,
+		kubeconstants.EtcdCAKeyName,
 	}
-	return key, nil
+	certFilenames := []string{
+		kubeconstants.CACertName,
+		kubeconstants.ServiceAccountPublicKeyName,
+		kubeconstants.FrontProxyCACertName,
+		kubeconstants.EtcdCACertName,
+	}
+
+	for _, keyFilename := range keyFilenames {
+		key, err := k.file.Read(filepath.Join(kubeconstants.KubernetesDir, kubeconstants.DefaultCertificateDir, keyFilename))
+		if err != nil {
+			return nil, err
+		}
+		controlPlaneFiles[keyFilename] = key
+	}
+
+	for _, certFilename := range certFilenames {
+		cert, err := k.file.Read(filepath.Join(kubeconstants.KubernetesDir, kubeconstants.DefaultCertificateDir, certFilename))
+		if err != nil {
+			return nil, err
+		}
+		controlPlaneFiles[certFilename] = cert
+	}
+
+	return controlPlaneFiles, nil
 }

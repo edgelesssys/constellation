@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
@@ -20,6 +21,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
+	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/utils/clock"
 )
 
@@ -236,6 +238,12 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse)
 		return fmt.Errorf("updating disk passphrase: %w", err)
 	}
 
+	if c.role == role.ControlPlane {
+		if err := c.writeControlePlaneFiles(ticket.ControlPlaneFiles); err != nil {
+			return fmt.Errorf("writing control plane files: %w", err)
+		}
+	}
+
 	state := nodestate.NodeState{
 		Role:      c.role,
 		OwnerID:   ticket.OwnerId,
@@ -250,7 +258,7 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse)
 		Token:             ticket.Token,
 		CACertHashes:      []string{ticket.DiscoveryTokenCaCertHash},
 	}
-	if err := c.joiner.JoinCluster(ctx, btd, ticket.CertificateKey, c.role, c.log); err != nil {
+	if err := c.joiner.JoinCluster(ctx, btd, c.role, c.log); err != nil {
 		return fmt.Errorf("joining Kubernetes cluster: %w", err)
 	}
 
@@ -319,6 +327,20 @@ func (c *JoinClient) getControlPlaneIPs() ([]string, error) {
 	return ips, nil
 }
 
+func (c *JoinClient) writeControlePlaneFiles(files []*joinproto.ControlPlaneCertOrKey) error {
+	for _, cert := range files {
+		if err := c.fileHandler.Write(
+			filepath.Join(kubeconstants.KubernetesDir, kubeconstants.DefaultCertificateDir, cert.Name),
+			cert.Data,
+			file.OptMkdirAll,
+		); err != nil {
+			return fmt.Errorf("writing control plane files: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func (c *JoinClient) timeoutCtx() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), c.timeout)
 }
@@ -340,7 +362,6 @@ type ClusterJoiner interface {
 	JoinCluster(
 		ctx context.Context,
 		args *kubeadm.BootstrapTokenDiscovery,
-		certKey string,
 		peerRole role.Role,
 		logger *zap.Logger,
 	) error

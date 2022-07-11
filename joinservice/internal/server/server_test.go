@@ -88,10 +88,13 @@ func TestIssueJoinTicket(t *testing.T) {
 		},
 		"control plane": {
 			isControlPlane: true,
-			kubeadm:        stubTokenGetter{token: testJoinToken, certificateKey: "test"},
-			kms:            stubKeyGetter{dataKey: testKey},
-			ca:             stubCA{cert: testCert, key: testKey},
-			id:             mustMarshalID(testID),
+			kubeadm: stubTokenGetter{
+				token: testJoinToken,
+				files: map[string][]byte{"test": {0x1, 0x2, 0x3}},
+			},
+			kms: stubKeyGetter{dataKey: testKey},
+			ca:  stubCA{cert: testCert, key: testKey},
+			id:  mustMarshalID(testID),
 		},
 		"GetControlPlaneCertificateKey fails": {
 			isControlPlane: true,
@@ -145,7 +148,7 @@ func TestIssueJoinTicket(t *testing.T) {
 			assert.Equal(tc.ca.key, resp.KubeletKey)
 
 			if tc.isControlPlane {
-				assert.Equal(tc.kubeadm.certificateKey, resp.CertificateKey)
+				assert.Len(resp.ControlPlaneFiles, len(tc.kubeadm.files))
 			}
 		})
 	}
@@ -162,7 +165,7 @@ func mustMarshalID(id attestationtypes.ID) []byte {
 type stubTokenGetter struct {
 	token             *kubeadmv1.BootstrapTokenDiscovery
 	getJoinTokenErr   error
-	certificateKey    string
+	files             map[string][]byte
 	certificateKeyErr error
 }
 
@@ -170,8 +173,8 @@ func (f stubTokenGetter) GetJoinToken(time.Duration) (*kubeadmv1.BootstrapTokenD
 	return f.token, f.getJoinTokenErr
 }
 
-func (f stubTokenGetter) GetControlPlaneCertificateKey() (string, error) {
-	return f.certificateKey, f.certificateKeyErr
+func (f stubTokenGetter) GetControlPlaneCertificatesAndKeys() (map[string][]byte, error) {
+	return f.files, f.certificateKeyErr
 }
 
 type stubKeyGetter struct {
