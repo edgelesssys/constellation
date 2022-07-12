@@ -32,6 +32,7 @@ require (
 
 require (
 	cloud.google.com/go/compute v1.7.0
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.1.1
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.13 // indirect
