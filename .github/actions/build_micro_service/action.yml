@@ -1,4 +1,4 @@
-name: build micro-service image
+name: Build micro service
 description: Build and upload a container image for a Constellation micro-service
 inputs:
   name:
@@ -17,9 +17,9 @@ inputs:
   githubToken:
     description: 'GitHub authorization token'
     required: true
-  
 
-runs: 
+
+runs:
   using: "composite"
   steps:
     - name: Docker metadata

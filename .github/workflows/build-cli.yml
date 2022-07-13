@@ -24,6 +24,6 @@ jobs:
       - name: Build cli
         uses: ./.github/actions/build_cli
         with:
-          cosign-public-key: ${{ secrets.COSIGN_PUBLIC_KEY }}
-          cosign-private-key: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          cosign-password: ${{ secrets.COSIGN_PASSWORD }}
+          cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          cosignPassword: ${{ secrets.COSIGN_PASSWORD }}

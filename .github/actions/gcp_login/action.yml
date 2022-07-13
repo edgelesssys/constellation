@@ -1,4 +1,4 @@
-name: gcp_login
+name: GCP login
 description: "Login to GCP & configure gcloud CLI."
 inputs:
   gcp_service_account_json:

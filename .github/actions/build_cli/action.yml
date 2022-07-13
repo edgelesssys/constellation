@@ -1,17 +1,18 @@
-name: build
+name: Build CLI
 description: |
-  Runs cmake & default make target in build folder. Additionally, Sigstore tools
-  are used to sign CLI and publish a release when run on v* tag.
+  Runs cmake and cli make target in build folder. Optionally, Sigstore tools
+  are used to sign CLI when inputs are provided. A draft release is published
+  when run on v* tag.
 inputs:
-  cosign-public-key:
+  cosignPublicKey:
     description: 'Cosign public key'
     required: false
     default: ''
-  cosign-private-key:
+  cosignPrivateKey:
     description: 'Cosign private key'
     required: false
     default: ''
-  cosign-password:
+  cosignPassword:
     description: 'Password for Cosign private key'
     required: false
     default: ''
@@ -82,10 +83,10 @@ runs:
       shell: bash
       working-directory: build
       env:
-        COSIGN_PUBLIC_KEY: ${{ inputs.cosign-public-key }}
-        COSIGN_PRIVATE_KEY: ${{ inputs.cosign-private-key }}
-        COSIGN_PASSWORD: ${{ inputs.cosign-password }}
-      if: ${{ inputs.cosign-public-key != '' && inputs.cosign-private-key != '' && inputs.cosign-password != '' }}
+        COSIGN_PUBLIC_KEY: ${{ inputs.cosignPublicKey }}
+        COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
+        COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
+      if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
 
     - name: Release CLI
       # GitHub endorsed release project. See: https://github.com/actions/create-release

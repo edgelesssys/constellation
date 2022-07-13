@@ -1,4 +1,4 @@
-name: e2e_test
+name: E2E test
 description: "Run Constellation e2e test."
 inputs:
   workerNodesCount:
@@ -26,8 +26,29 @@ inputs:
     description: 'Which tests should be run? Check README for guidance!'
     required: true
   msTeamsWebhook:
-    description: 'WebHook used to notify of failure'
+    description: 'WebHook used to notify of failure.'
     required: true
+  cosignPublicKey:
+    description: 'Cosign public key to sign measurements.'
+    required: false
+  cosignPrivateKey:
+    description: 'Cosign private key to sign measurements.'
+    required: false
+  cosignPassword:
+    description: 'Cosign password for private key.'
+    required: false
+  awsAccessKeyID:
+    description: 'AWS access key ID to upload measurements.'
+    required: false
+  awsSecretAccessKey:
+    description: 'AWS secrets access key to upload measurements.'
+    required: false
+  awsDefaultRegion:
+    description: 'AWS region of S3 bucket. to upload measurements.'
+    required: false
+  awsBucketName:
+    description: 'AWS S3 bucket name to upload measurements.'
+    required: false
 runs:
   using: 'composite'
   steps:
@@ -53,6 +74,17 @@ runs:
       workerNodesCount: ${{ inputs.workerNodesCount }}
       controlNodesCount: ${{ inputs.controlNodesCount }}
       machineType: ${{ inputs.machineType }}
+  - name: Measure cluster
+    uses: ./.github/actions/constellation_measure
+    with:
+      cloudProvider: ${{ inputs.cloudProvider }}
+      cosignPublicKey: ${{ inputs.cosignPublicKey }}
+      cosignPrivateKey: ${{ inputs.cosignPrivateKey }}
+      cosignPassword: ${{ inputs.cosignPassword }}
+      awsAccessKeyID: ${{ inputs.awsAccessKeyID }}
+      awsSecretAccessKey: ${{ inputs.awsSecretAccessKey }}
+      awsDefaultRegion: ${{ inputs.awsDefaultRegion }}
+      awsBucketName: ${{ inputs.awsBucketName }}
   - name: Run e2e tests
     uses: ./.github/actions/sonobuoy
     with:

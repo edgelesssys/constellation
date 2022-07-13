@@ -1,4 +1,4 @@
-name: azure_login
+name: Azure login
 description: "Login to Azure & configure az CLI."
 inputs:
   azure_credentials:

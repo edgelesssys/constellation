@@ -32,7 +32,7 @@ jobs:
 
       - name: Build and upload activation-service container image
         id: build-and-upload
-        uses: ./.github/actions/build_micro-service
+        uses: ./.github/actions/build_micro_service
         with:
           name: activation-service
           projectVersion: "0.0.0"

@@ -1,4 +1,4 @@
-name: constellation_destroy
+name: Constellation destroy
 description: "Destroy a running Constellation cluster."
 runs:
   using: 'composite'

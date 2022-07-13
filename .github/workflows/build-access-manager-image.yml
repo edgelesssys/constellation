@@ -30,7 +30,7 @@ jobs:
 
       - name: Build and upload access-manager container image
         id: build-and-upload
-        uses: ./.github/actions/build_micro-service
+        uses: ./.github/actions/build_micro_service
         with:
           name: access-manager
           projectVersion: "0.0.0"
