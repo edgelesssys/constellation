@@ -11,7 +11,10 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/storer"
 )
 
-var versionRegex = regexp.MustCompile(`^v\d+\.\d+\.\d+$`)
+var (
+	versionRegex = regexp.MustCompile(`^v\d+\.\d+\.\d+$`)
+	tagReference = regexp.MustCompile(`^refs/tags/([^/]+)$`)
+)
 
 type Git struct {
 	repo *git.Repository
@@ -87,19 +90,24 @@ func (g *Git) tagsByRevisionHash() (map[string][]string, error) {
 			switch err {
 			case nil:
 				// Tag object present
+				commit, err := tag.Commit()
+				if err != nil {
+					return err
+				}
+				commitHash := commit.Hash.String()
+				tags[commitHash] = append(tags[commitHash], tag.Name)
 			case plumbing.ErrObjectNotFound:
 				// Not a tag object
-				return nil
+				message, err := tagRefToMessage(ref)
+				if err != nil {
+					return err
+				}
+				tags[ref.Hash().String()] = append(tags[ref.Hash().String()], message)
 			default:
 				// Some other error
 				return err
 			}
-			commit, err := tag.Commit()
-			if err != nil {
-				return err
-			}
-			commitHash := commit.Hash.String()
-			tags[commitHash] = append(tags[commitHash], tag.Name)
+
 			return nil
 		},
 	); err != nil {
@@ -116,4 +124,12 @@ func (g *Git) findVersionTag(tags []string) *string {
 		}
 	}
 	return nil
+}
+
+func tagRefToMessage(tagRef *plumbing.Reference) (string, error) {
+	matches := tagReference.FindStringSubmatch(tagRef.Name().String())
+	if len(matches) != 2 {
+		return "", errors.New("invalid tag reference")
+	}
+	return matches[1], nil
 }
