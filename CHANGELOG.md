@@ -23,7 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Nodes add themselves to the cluster after `constellation init` is done
-Removed
 
 ### Deprecated
 
