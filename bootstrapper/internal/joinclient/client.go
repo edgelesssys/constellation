@@ -16,6 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/joinservice/joinproto"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
@@ -50,7 +51,7 @@ type JoinClient struct {
 	joiner      ClusterJoiner
 	metadataAPI MetadataAPI
 
-	log *zap.Logger
+	log *logger.Logger
 
 	mux      sync.Mutex
 	stopC    chan struct{}
@@ -58,7 +59,7 @@ type JoinClient struct {
 }
 
 // New creates a new JoinClient.
-func New(lock locker, dial grpcDialer, joiner ClusterJoiner, meta MetadataAPI, log *zap.Logger) *JoinClient {
+func New(lock locker, dial grpcDialer, joiner ClusterJoiner, meta MetadataAPI, log *logger.Logger) *JoinClient {
 	return &JoinClient{
 		nodeLock:    lock,
 		disk:        diskencryption.New(),
@@ -87,7 +88,7 @@ func (c *JoinClient) Start(cleaner cleaner) {
 		return
 	}
 
-	c.log.Info("Starting")
+	c.log.Infof("Starting")
 	c.stopC = make(chan struct{}, 1)
 	c.stopDone = make(chan struct{}, 1)
 
@@ -95,12 +96,12 @@ func (c *JoinClient) Start(cleaner cleaner) {
 	go func() {
 		defer ticker.Stop()
 		defer func() { c.stopDone <- struct{}{} }()
-		defer c.log.Info("Client stopped")
+		defer c.log.Infof("Client stopped")
 		defer cleaner.Clean()
 
 		diskUUID, err := c.getDiskUUID()
 		if err != nil {
-			c.log.Error("Failed to get disk UUID", zap.Error(err))
+			c.log.With(zap.Error(err)).Errorf("Failed to get disk UUID")
 			return
 		}
 		c.diskUUID = diskUUID
@@ -108,12 +109,12 @@ func (c *JoinClient) Start(cleaner cleaner) {
 		for {
 			err := c.getNodeMetadata()
 			if err == nil {
-				c.log.Info("Received own instance metadata", zap.String("role", c.role.String()), zap.String("name", c.nodeName))
+				c.log.With(zap.String("role", c.role.String()), zap.String("name", c.nodeName)).Infof("Received own instance metadata")
 				break
 			}
-			c.log.Info("Failed to retrieve instance metadata", zap.Error(err))
+			c.log.With(zap.Error(err)).Errorf("Failed to retrieve instance metadata")
 
-			c.log.Info("Sleeping", zap.Duration("interval", c.interval))
+			c.log.With(zap.Duration("interval", c.interval)).Infof("Sleeping")
 			select {
 			case <-c.stopC:
 				return
@@ -124,15 +125,15 @@ func (c *JoinClient) Start(cleaner cleaner) {
 		for {
 			err := c.tryJoinWithAvailableServices()
 			if err == nil {
-				c.log.Info("Joined successfully. Client is shut down.")
+				c.log.Infof("Joined successfully. Client is shutting down")
 				return
 			} else if isUnrecoverable(err) {
-				c.log.Error("Unrecoverable error occurred", zap.Error(err))
+				c.log.With(zap.Error(err)).Errorf("Unrecoverable error occurred")
 				return
 			}
-			c.log.Info("Join failed for all available endpoints", zap.Error(err))
+			c.log.With(zap.Error(err)).Warnf("Join failed for all available endpoints")
 
-			c.log.Info("Sleeping", zap.Duration("interval", c.interval))
+			c.log.With(zap.Duration("interval", c.interval)).Infof("Sleeping")
 			select {
 			case <-c.stopC:
 				return
@@ -151,7 +152,7 @@ func (c *JoinClient) Stop() {
 		return
 	}
 
-	c.log.Info("Stopping")
+	c.log.Infof("Stopping")
 
 	c.stopC <- struct{}{}
 	<-c.stopDone
@@ -159,7 +160,7 @@ func (c *JoinClient) Stop() {
 	c.stopC = nil
 	c.stopDone = nil
 
-	c.log.Info("Stopped")
+	c.log.Infof("Stopped")
 }
 
 func (c *JoinClient) tryJoinWithAvailableServices() error {
@@ -191,7 +192,7 @@ func (c *JoinClient) join(serviceEndpoint string) error {
 
 	conn, err := c.dialer.Dial(ctx, serviceEndpoint)
 	if err != nil {
-		c.log.Info("Join service unreachable", zap.String("endpoint", serviceEndpoint), zap.Error(err))
+		c.log.With(zap.String("endpoint", serviceEndpoint), zap.Error(err)).Errorf("Join service unreachable")
 		return fmt.Errorf("dialing join service endpoint: %w", err)
 	}
 	defer conn.Close()
@@ -204,7 +205,7 @@ func (c *JoinClient) join(serviceEndpoint string) error {
 	}
 	ticket, err := protoClient.IssueJoinTicket(ctx, req)
 	if err != nil {
-		c.log.Info("Issuing join ticket failed", zap.String("endpoint", serviceEndpoint), zap.Error(err))
+		c.log.With(zap.String("endpoint", serviceEndpoint), zap.Error(err)).Errorf("Issuing join ticket failed")
 		return fmt.Errorf("issuing join ticket: %w", err)
 	}
 
@@ -224,7 +225,7 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse)
 
 	nodeLockAcquired, err := c.nodeLock.TryLockOnce(ticket.OwnerId, ticket.ClusterId)
 	if err != nil {
-		c.log.Info("Acquiring node lock failed", zap.Error(err))
+		c.log.With(zap.Error(err)).Errorf("Acquiring node lock failed")
 		return fmt.Errorf("acquiring node lock: %w", err)
 	}
 	if !nodeLockAcquired {
@@ -269,12 +270,12 @@ func (c *JoinClient) getNodeMetadata() error {
 	ctx, cancel := c.timeoutCtx()
 	defer cancel()
 
-	c.log.Debug("Requesting node metadata from metadata API")
+	c.log.Debugf("Requesting node metadata from metadata API")
 	inst, err := c.metadataAPI.Self(ctx)
 	if err != nil {
 		return err
 	}
-	c.log.Debug("Received node metadata", zap.Any("instance", inst))
+	c.log.With(zap.Any("instance", inst)).Debugf("Received node metadata")
 
 	if inst.Name == "" {
 		return errors.New("got instance metadata with empty name")
@@ -312,7 +313,7 @@ func (c *JoinClient) getControlPlaneIPs() ([]string, error) {
 
 	instances, err := c.metadataAPI.List(ctx)
 	if err != nil {
-		c.log.Error("Failed to list instances from metadata API", zap.Error(err))
+		c.log.With(zap.Error(err)).Errorf("Failed to list instances from metadata API")
 		return nil, fmt.Errorf("listing instances from metadata API: %w", err)
 	}
 
@@ -323,7 +324,7 @@ func (c *JoinClient) getControlPlaneIPs() ([]string, error) {
 		}
 	}
 
-	c.log.Info("Received control plane endpoints", zap.Strings("IPs", ips))
+	c.log.With(zap.Strings("IPs", ips)).Infof("Received control plane endpoints")
 	return ips, nil
 }
 
@@ -363,7 +364,7 @@ type ClusterJoiner interface {
 		ctx context.Context,
 		args *kubeadm.BootstrapTokenDiscovery,
 		peerRole role.Role,
-		logger *zap.Logger,
+		log *logger.Logger,
 	) error
 }
 

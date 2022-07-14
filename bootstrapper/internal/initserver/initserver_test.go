@@ -12,12 +12,11 @@ import (
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes"
 	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 )
 
 func TestMain(m *testing.M) {
@@ -28,9 +27,9 @@ func TestNew(t *testing.T) {
 	assert := assert.New(t)
 
 	fh := file.NewHandler(afero.NewMemMapFs())
-	server := New(newFakeLock(), &stubClusterInitializer{}, nil, fh, zap.NewNop())
+	server := New(newFakeLock(), &stubClusterInitializer{}, nil, fh, logger.NewTest(t))
 	assert.NotNil(server)
-	assert.NotNil(server.logger)
+	assert.NotNil(server.log)
 	assert.NotNil(server.nodeLock)
 	assert.NotNil(server.initializer)
 	assert.NotNil(server.grpcServer)
@@ -122,7 +121,7 @@ func TestInit(t *testing.T) {
 				initializer: tc.initializer,
 				disk:        tc.disk,
 				fileHandler: tc.fileHandler,
-				logger:      zaptest.NewLogger(t),
+				log:         logger.NewTest(t),
 				grpcServer:  serveStopper,
 				cleaner:     &fakeCleaner{serveStopper: serveStopper},
 			}
@@ -220,7 +219,7 @@ type stubClusterInitializer struct {
 	initClusterErr        error
 }
 
-func (i *stubClusterInitializer) InitCluster(context.Context, []string, string, string, attestationtypes.ID, kubernetes.KMSConfig, map[string]string, *zap.Logger,
+func (i *stubClusterInitializer) InitCluster(context.Context, []string, string, string, attestationtypes.ID, kubernetes.KMSConfig, map[string]string, *logger.Logger,
 ) ([]byte, error) {
 	return i.initClusterKubeconfig, i.initClusterErr
 }

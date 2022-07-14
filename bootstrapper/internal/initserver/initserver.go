@@ -17,9 +17,8 @@ import (
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	"github.com/edgelesssys/constellation/internal/grpc/grpclog"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -37,30 +36,25 @@ type Server struct {
 	grpcServer  serveStopper
 	cleaner     cleaner
 
-	logger *zap.Logger
+	log *logger.Logger
 
 	initproto.UnimplementedAPIServer
 }
 
 // New creates a new initialization server.
-func New(lock locker, kube ClusterInitializer, issuer atls.Issuer, fh file.Handler, logger *zap.Logger) *Server {
-	logger = logger.Named("initServer")
+func New(lock locker, kube ClusterInitializer, issuer atls.Issuer, fh file.Handler, log *logger.Logger) *Server {
+	log = log.Named("initServer")
 	server := &Server{
 		nodeLock:    lock,
 		disk:        diskencryption.New(),
 		initializer: kube,
 		fileHandler: fh,
-		logger:      logger,
+		log:         log,
 	}
 
-	creds := atlscredentials.New(issuer, nil)
-	grpcLogger := logger.Named("gRPC")
 	grpcServer := grpc.NewServer(
-		grpc.Creds(creds),
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-			grpc_ctxtags.UnaryServerInterceptor(),
-			grpc_zap.UnaryServerInterceptor(grpcLogger),
-		)),
+		grpc.Creds(atlscredentials.New(issuer, nil)),
+		log.Named("gRPC").GetServerUnaryInterceptor(),
 	)
 	initproto.RegisterAPIServer(grpcServer, server)
 
@@ -82,7 +76,8 @@ func (s *Server) Serve(ip, port string, cleaner cleaner) error {
 // Init initializes the cluster.
 func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initproto.InitResponse, error) {
 	defer s.cleaner.Clean()
-	s.logger.Info("Init called")
+	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(ctx)))
+	log.Infof("Init called")
 
 	id, err := s.deriveAttestationID(req.MasterSecret)
 	if err != nil {
@@ -99,7 +94,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		// init does not make sense, so we just stop.
 		//
 		// The server stops itself after the current call is done.
-		s.logger.Info("node is already in a join process")
+		log.Warnf("Node is already in a join process")
 		return nil, status.Error(codes.FailedPrecondition, "node is already being activated")
 	}
 
@@ -129,13 +124,13 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 			UseExistingKEK:     req.UseExistingKek,
 		},
 		sshProtoKeysToMap(req.SshUserKeys),
-		s.logger,
+		s.log,
 	)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "initializing cluster: %s", err)
 	}
 
-	s.logger.Info("Init succeeded")
+	log.Infof("Init succeeded")
 	return &initproto.InitResponse{
 		Kubeconfig: kubeconfig,
 		OwnerId:    id.Owner,
@@ -203,7 +198,7 @@ type ClusterInitializer interface {
 		id attestationtypes.ID,
 		kmsConfig kubernetes.KMSConfig,
 		sshUserKeys map[string]string,
-		logger *zap.Logger,
+		log *logger.Logger,
 	) ([]byte, error)
 }
 

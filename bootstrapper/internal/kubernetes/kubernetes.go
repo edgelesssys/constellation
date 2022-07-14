@@ -14,6 +14,7 @@ import (
 	"github.com/edgelesssys/constellation/bootstrapper/util"
 	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
@@ -75,9 +76,10 @@ type KMSConfig struct {
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, k8sVersion string,
-	id attestationtypes.ID, kmsConfig KMSConfig, sshUsers map[string]string, logger *zap.Logger,
+	id attestationtypes.ID, kmsConfig KMSConfig, sshUsers map[string]string, log *logger.Logger,
 ) ([]byte, error) {
 	// TODO: k8s version should be user input
+	log.With(zap.String("version", k8sVersion)).Infof("Installing Kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, k8sVersion); err != nil {
 		return nil, err
 	}
@@ -97,6 +99,7 @@ func (k *KubeWrapper) InitCluster(
 
 	// Step 1: retrieve cloud metadata for Kubernetes configuration
 	if k.providerMetadata.Supported() {
+		log.Infof("Retrieving node metadata")
 		instance, err = k.providerMetadata.Self(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving own instance metadata failed: %w", err)
@@ -129,6 +132,13 @@ func (k *KubeWrapper) InitCluster(
 			}
 		}
 	}
+	log.With(
+		zap.String("nodeName", nodeName),
+		zap.String("providerID", providerID),
+		zap.String("nodeIP", nodeIP),
+		zap.String("controlPlaneEndpointIP", controlPlaneEndpointIP),
+		zap.String("podCIDR", subnetworkPodCIDR),
+	).Infof("Setting information for node")
 
 	// Step 2: configure kubeadm init config
 	initConfig := k.configProvider.InitConfiguration(k.cloudControllerManager.Supported())
@@ -141,7 +151,8 @@ func (k *KubeWrapper) InitCluster(
 	if err != nil {
 		return nil, fmt.Errorf("encoding kubeadm init configuration as YAML: %w", err)
 	}
-	if err := k.clusterUtil.InitCluster(ctx, initConfigYAML, logger); err != nil {
+	log.Infof("Initializing Kubernetes cluster")
+	if err := k.clusterUtil.InitCluster(ctx, initConfigYAML, log); err != nil {
 		return nil, fmt.Errorf("kubeadm init: %w", err)
 	}
 	kubeConfig, err := k.GetKubeconfig()
@@ -151,7 +162,7 @@ func (k *KubeWrapper) InitCluster(
 	k.client.SetKubeconfig(kubeConfig)
 
 	// Step 3: configure & start kubernetes controllers
-
+	log.Infof("Starting Kubernetes controllers and deployments")
 	setupPodNetworkInput := k8sapi.SetupPodNetworkInput{
 		CloudProvider:     k.cloudProvider,
 		NodeName:          nodeName,
@@ -206,8 +217,9 @@ func (k *KubeWrapper) InitCluster(
 }
 
 // JoinCluster joins existing Kubernetes cluster.
-func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, peerRole role.Role, logger *zap.Logger) error {
+func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, peerRole role.Role, log *logger.Logger) error {
 	// TODO: k8s version should be user input
+	log.With(zap.String("version", "1.23.6")).Infof("Installing Kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, "1.23.6"); err != nil {
 		return err
 	}
@@ -220,6 +232,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	nodeName := nodeInternalIP
 	var providerID string
 	if k.providerMetadata.Supported() {
+		log.Infof("Retrieving node metadata")
 		instance, err := k.providerMetadata.Self(ctx)
 		if err != nil {
 			return fmt.Errorf("retrieving own instance metadata failed: %w", err)
@@ -231,6 +244,12 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		}
 	}
 	nodeName = k8sCompliantHostname(nodeName)
+
+	log.With(
+		zap.String("nodeName", nodeName),
+		zap.String("providerID", providerID),
+		zap.String("nodeIP", nodeInternalIP),
+	).Infof("Setting information for node")
 
 	// Step 2: configure kubeadm join config
 
@@ -248,7 +267,8 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	if err != nil {
 		return fmt.Errorf("encoding kubeadm join configuration as YAML: %w", err)
 	}
-	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML, logger); err != nil {
+	log.With(zap.String("apiServerEndpoint", args.APIServerEndpoint)).Infof("Joining Kubernetes cluster")
+	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML, log); err != nil {
 		return fmt.Errorf("joining cluster: %v; %w ", string(joinConfigYAML), err)
 	}
 

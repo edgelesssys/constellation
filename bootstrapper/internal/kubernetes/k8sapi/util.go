@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"go.uber.org/zap"
 )
 
@@ -57,7 +58,7 @@ func (k *KubernetesUtil) InstallComponents(ctx context.Context, version string) 
 	return enableSystemdUnit(ctx, kubeletServiceEtcPath)
 }
 
-func (k *KubernetesUtil) InitCluster(ctx context.Context, initConfig []byte, logger *zap.Logger) error {
+func (k *KubernetesUtil) InitCluster(ctx context.Context, initConfig []byte, log *logger.Logger) error {
 	// TODO: audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
 	if err != nil {
@@ -85,7 +86,7 @@ func (k *KubernetesUtil) InitCluster(ctx context.Context, initConfig []byte, log
 		}
 		return fmt.Errorf("kubeadm init: %w", err)
 	}
-	logger.Info("kubeadm init succeeded", zap.String("output", string(out)))
+	log.With(zap.String("output", string(out))).Infof("kubeadm init succeeded")
 	return nil
 }
 
@@ -261,7 +262,7 @@ func (k *KubernetesUtil) SetupVerificationService(kubectl Client, verificationSe
 }
 
 // JoinCluster joins existing Kubernetes cluster using kubeadm join.
-func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, logger *zap.Logger) error {
+func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, log *logger.Logger) error {
 	// TODO: audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
 	if err != nil {
@@ -290,7 +291,7 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, log
 		}
 		return fmt.Errorf("kubeadm join: %w", err)
 	}
-	logger.Info("kubeadm join succeeded", zap.String("output", string(out)))
+	log.With(zap.String("output", string(out))).Infof("kubeadm join succeeded")
 
 	return nil
 }

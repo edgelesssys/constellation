@@ -16,13 +16,12 @@ import (
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/joinservice/joinproto"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 	testclock "k8s.io/utils/clock/testing"
@@ -213,7 +212,7 @@ func TestClient(t *testing.T) {
 				fileHandler: fileHandler,
 				metadataAPI: metadataAPI,
 				clock:       clock,
-				log:         zaptest.NewLogger(t),
+				log:         logger.NewTest(t),
 			}
 
 			serverCreds := atlscredentials.New(nil, nil)
@@ -268,7 +267,7 @@ func TestClientConcurrentStartStop(t *testing.T) {
 		fileHandler: file.NewHandler(afero.NewMemMapFs()),
 		metadataAPI: &stubRepeaterMetadataAPI{},
 		clock:       testclock.NewFakeClock(time.Now()),
-		log:         zap.NewNop(),
+		log:         logger.NewTest(t),
 	}
 
 	wg := sync.WaitGroup{}
@@ -386,7 +385,7 @@ type stubClusterJoiner struct {
 	joinClusterErr    error
 }
 
-func (j *stubClusterJoiner) JoinCluster(context.Context, *kubeadm.BootstrapTokenDiscovery, role.Role, *zap.Logger) error {
+func (j *stubClusterJoiner) JoinCluster(context.Context, *kubeadm.BootstrapTokenDiscovery, role.Role, *logger.Logger) error {
 	j.joinClusterCalled = true
 	return j.joinClusterErr
 }

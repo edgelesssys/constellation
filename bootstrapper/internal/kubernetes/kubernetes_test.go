@@ -11,11 +11,10 @@ import (
 	"github.com/edgelesssys/constellation/bootstrapper/role"
 	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
@@ -269,7 +268,7 @@ func TestInitCluster(t *testing.T) {
 				kubeconfigReader:       tc.kubeconfigReader,
 				getIPAddr:              func() (string, error) { return privateIP, nil },
 			}
-			_, err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountURI, k8sVersion, attestationtypes.ID{}, KMSConfig{MasterSecret: masterSecret}, nil, zaptest.NewLogger(t))
+			_, err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountURI, k8sVersion, attestationtypes.ID{}, KMSConfig{MasterSecret: masterSecret}, nil, logger.NewTest(t))
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -425,7 +424,7 @@ func TestJoinCluster(t *testing.T) {
 				getIPAddr:              func() (string, error) { return privateIP, nil },
 			}
 
-			err := kube.JoinCluster(context.Background(), joinCommand, tc.role, zaptest.NewLogger(t))
+			err := kube.JoinCluster(context.Background(), joinCommand, tc.role, logger.NewTest(t))
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -497,7 +496,7 @@ func (s *stubClusterUtil) InstallComponents(ctx context.Context, version string)
 	return s.installComponentsErr
 }
 
-func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte, logger *zap.Logger) error {
+func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte, log *logger.Logger) error {
 	s.initConfigs = append(s.initConfigs, initConfig)
 	return s.initClusterErr
 }
@@ -538,7 +537,7 @@ func (s *stubClusterUtil) SetupVerificationService(kubectl k8sapi.Client, verifi
 	return s.setupVerificationServiceErr
 }
 
-func (s *stubClusterUtil) JoinCluster(ctx context.Context, joinConfig []byte, logger *zap.Logger) error {
+func (s *stubClusterUtil) JoinCluster(ctx context.Context, joinConfig []byte, log *logger.Logger) error {
 	s.joinConfigs = append(s.joinConfigs, joinConfig)
 	return s.joinClusterErr
 }

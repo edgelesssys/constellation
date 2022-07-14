@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"io"
-	"log"
 	"os"
 	"strings"
 
@@ -24,8 +23,8 @@ import (
 	"github.com/edgelesssys/constellation/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/oid"
-	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )
@@ -38,6 +37,18 @@ const (
 )
 
 func main() {
+	gRPCDebug := flag.Bool("debug", false, "Enable gRPC debug logging")
+	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
+	flag.Parse()
+	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity)).Named("bootstrapper")
+	defer log.Sync()
+
+	if *gRPCDebug {
+		log.Named("gRPC").ReplaceGRPCLogger()
+	} else {
+		log.Named("gRPC").WithIncreasedLevel(zap.WarnLevel).ReplaceGRPCLogger()
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -45,23 +56,6 @@ func main() {
 	var clusterInitJoiner clusterInitJoiner
 	var metadataAPI joinclient.MetadataAPI
 	var cloudLogger logging.CloudLogger
-	cfg := zap.NewDevelopmentConfig()
-
-	logLevelUser := flag.Bool("debug", false, "enables gRPC debug output")
-	flag.Parse()
-	cfg.Level.SetLevel(zap.DebugLevel)
-
-	logger, err := cfg.Build()
-	if err != nil {
-		log.Fatal(err)
-	}
-	if *logLevelUser {
-		grpc_zap.ReplaceGrpcLoggerV2(logger.Named("gRPC"))
-	} else {
-		grpc_zap.ReplaceGrpcLoggerV2(logger.WithOptions(zap.IncreaseLevel(zap.WarnLevel)).Named("gRPC"))
-	}
-	logger = logger.Named("bootstrapper")
-
 	var issuer atls.Issuer
 	var openTPM vtpm.TPMOpenFunc
 	var fs afero.Fs
@@ -72,29 +66,28 @@ func main() {
 	case "gcp":
 		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.GCPPCRSelection)
 		if err != nil {
-			// TODO: Is there a reason we use log. instead of zapLogger?
-			log.Fatal(err)
+			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
 
 		issuer = gcp.NewIssuer()
 
 		gcpClient, err := gcpcloud.NewClient(ctx)
 		if err != nil {
-			log.Fatalf("failed to create GCP client: %v\n", err)
+			log.With(zap.Error(err)).Fatalf("Failed to create GCP metadata client")
 		}
 		metadata := gcpcloud.New(gcpClient)
 		descr, err := metadata.Self(ctx)
 		if err != nil {
-			log.Fatal(err)
+			log.With(zap.Error(err)).Fatalf("Failed to get instance metadata")
 		}
 		cloudLogger, err = gcpcloud.NewLogger(ctx, descr.ProviderID, "constellation-boot-log")
 		if err != nil {
-			log.Fatal(err)
+			log.With(zap.Error(err)).Fatalf("Failed to set up cloud logger")
 		}
 		metadataAPI = metadata
 		pcrsJSON, err := json.Marshal(pcrs)
 		if err != nil {
-			log.Fatal(err)
+			log.With(zap.Error(err)).Fatalf("Failed to marshal PCRs")
 		}
 		clusterInitJoiner = kubernetes.New(
 			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &gcpcloud.CloudControllerManager{},
@@ -107,23 +100,23 @@ func main() {
 	case "azure":
 		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.AzurePCRSelection)
 		if err != nil {
-			log.Fatal(err)
+			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
 
 		issuer = azure.NewIssuer()
 
 		metadata, err := azurecloud.NewMetadata(ctx)
 		if err != nil {
-			log.Fatal(err)
+			log.With(zap.Error(err)).Fatalf("Failed to create Azure metadata client")
 		}
 		cloudLogger, err = azurecloud.NewLogger(ctx, metadata)
 		if err != nil {
-			log.Fatal(err)
+			log.With(zap.Error(err)).Fatalf("Failed to set up cloud logger")
 		}
 		metadataAPI = metadata
 		pcrsJSON, err := json.Marshal(pcrs)
 		if err != nil {
-			log.Fatal(err)
+			log.With(zap.Error(err)).Fatalf("Failed to marshal PCRs")
 		}
 		clusterInitJoiner = kubernetes.New(
 			"azure", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), azurecloud.NewCloudControllerManager(metadata),
@@ -137,7 +130,7 @@ func main() {
 	case "qemu":
 		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.QEMUPCRSelection)
 		if err != nil {
-			log.Fatal(err)
+			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
 
 		issuer = qemu.NewIssuer()
@@ -146,7 +139,7 @@ func main() {
 		metadata := &qemucloud.Metadata{}
 		pcrsJSON, err := json.Marshal(pcrs)
 		if err != nil {
-			log.Fatal(err)
+			log.With(zap.Error(err)).Fatalf("Failed to marshal PCRs")
 		}
 		clusterInitJoiner = kubernetes.New(
 			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &qemucloud.CloudControllerManager{},
@@ -173,5 +166,5 @@ func main() {
 
 	fileHandler := file.NewHandler(fs)
 
-	run(issuer, openTPM, fileHandler, clusterInitJoiner, metadataAPI, bindIP, bindPort, logger, cloudLogger)
+	run(issuer, openTPM, fileHandler, clusterInitJoiner, metadataAPI, bindIP, bindPort, log, cloudLogger)
 }
