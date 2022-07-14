@@ -183,7 +183,7 @@ func (k *KubeWrapper) InitCluster(
 		SubnetworkPodCIDR: subnetworkPodCIDR,
 		ProviderID:        providerID,
 	}
-	if err = k.clusterUtil.SetupPodNetwork(ctx, setupPodNetworkInput); err != nil {
+	if err = k.clusterUtil.SetupPodNetwork(ctx, setupPodNetworkInput, k.client); err != nil {
 		return nil, fmt.Errorf("setting up pod network: %w", err)
 	}
 

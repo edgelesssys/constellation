@@ -17,10 +17,11 @@ func TestMain(m *testing.M) {
 }
 
 type stubClient struct {
-	applyOneObjectErr  error
-	getObjectsInfos    []*resource.Info
-	getObjectsErr      error
-	createConfigMapErr error
+	applyOneObjectErr              error
+	getObjectsInfos                []*resource.Info
+	getObjectsErr                  error
+	createConfigMapErr             error
+	addTolerationsToDeploymentErr  error
 }
 
 func (s *stubClient) ApplyOneObject(info *resource.Info, forceConflicts bool) error {
@@ -35,12 +36,17 @@ func (s *stubClient) CreateConfigMap(ctx context.Context, configMap corev1.Confi
 	return s.createConfigMapErr
 }
 
+func (s *stubClient) AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string) error {
+	return s.addTolerationsToDeploymentErr
+}
+
 type stubClientGenerator struct {
-	applyOneObjectErr  error
-	getObjectsInfos    []*resource.Info
-	getObjectsErr      error
-	newClientErr       error
-	createConfigMapErr error
+	applyOneObjectErr              error
+	getObjectsInfos                []*resource.Info
+	getObjectsErr                  error
+	newClientErr                   error
+	createConfigMapErr             error
+	addTolerationsToDeploymentErr  error
 }
 
 func (s *stubClientGenerator) NewClient(kubeconfig []byte) (Client, error) {
@@ -49,6 +55,7 @@ func (s *stubClientGenerator) NewClient(kubeconfig []byte) (Client, error) {
 		s.getObjectsInfos,
 		s.getObjectsErr,
 		s.createConfigMapErr,
+		s.addTolerationsToDeploymentErr,
 	}, s.newClientErr
 }
 

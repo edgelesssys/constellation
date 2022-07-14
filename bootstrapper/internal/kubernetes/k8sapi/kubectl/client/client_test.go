@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -12,11 +13,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 	"google.golang.org/protobuf/proto"
-	apps "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8s "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/meta/testrestmapper"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
@@ -33,26 +35,26 @@ func TestMain(m *testing.M) {
 
 var (
 	corev1GV        = schema.GroupVersion{Version: "v1"}
-	nginxDeployment = &apps.Deployment{
-		TypeMeta: v1.TypeMeta{
+	nginxDeployment = &appsv1.Deployment{
+		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
 			Kind:       "Deployment",
 		},
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
 				"app": "nginx",
 			},
 			Name: "my-nginx",
 		},
-		Spec: apps.DeploymentSpec{
+		Spec: appsv1.DeploymentSpec{
 			Replicas: proto.Int32(3),
-			Selector: &v1.LabelSelector{
+			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app": "nginx",
 				},
 			},
 			Template: k8s.PodTemplateSpec{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						"app": "nginx",
 					},
@@ -275,6 +277,50 @@ func TestGetObjects(t *testing.T) {
 			}
 			require.NoError(err)
 			assert.NotNil(infos)
+		})
+	}
+}
+
+func TestAddTolerationsToDeployment(t *testing.T) {
+	testCases := map[string]struct {
+		name        string
+		deployment  appsv1.Deployment
+		tolerations []corev1.Toleration
+		wantErr     bool
+	}{
+		"Success": {
+			name: "test-deployment",
+			deployment: appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-deployment",
+				},
+			},
+			tolerations: []corev1.Toleration{},
+		},
+		"Specifying non-existent deployment fails": {
+			name: "wrong-name",
+			deployment: appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-deployment",
+				},
+			},
+			tolerations: []corev1.Toleration{},
+			wantErr:     true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			client := newClientWithFakes(t, map[string]string{}, &tc.deployment)
+			err := client.AddTolerationsToDeployment(context.Background(), tc.tolerations, tc.name)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
 		})
 	}
 }

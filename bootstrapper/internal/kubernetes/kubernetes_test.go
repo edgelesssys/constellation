@@ -530,7 +530,7 @@ func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte, no
 	return s.initClusterErr
 }
 
-func (s *stubClusterUtil) SetupPodNetwork(context.Context, k8sapi.SetupPodNetworkInput) error {
+func (s *stubClusterUtil) SetupPodNetwork(context.Context, k8sapi.SetupPodNetworkInput, k8sapi.Client) error {
 	return s.setupPodNetworkErr
 }
 
@@ -603,8 +603,9 @@ func (s *stubConfigProvider) JoinConfiguration(_ bool) k8sapi.KubeadmJoinYAML {
 }
 
 type stubKubectl struct {
-	ApplyErr           error
-	createConfigMapErr error
+	ApplyErr                         error
+	createConfigMapErr               error
+	AddTolerationsToDeploymentErr    error
 
 	resources   []resources.Marshaler
 	kubeconfigs [][]byte
@@ -621,6 +622,10 @@ func (s *stubKubectl) SetKubeconfig(kubeconfig []byte) {
 
 func (s *stubKubectl) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error {
 	return s.createConfigMapErr
+}
+
+func (s *stubKubectl) AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string) error {
+	return s.AddTolerationsToDeploymentErr
 }
 
 type stubKubeconfigReader struct {

@@ -40,12 +40,12 @@ const (
 
 var providerIDRegex = regexp.MustCompile(`^azure:///subscriptions/([^/]+)/resourceGroups/([^/]+)/providers/Microsoft.Compute/virtualMachineScaleSets/([^/]+)/virtualMachines/([^/]+)$`)
 
-// Client provides the functionality of `kubectl apply`.
+// Client provides the functions to talk to the k8s API.
 type Client interface {
 	Apply(resources resources.Marshaler, forceConflicts bool) error
 	SetKubeconfig(kubeconfig []byte)
 	CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error
-	// TODO: add tolerations
+	AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string) error
 }
 
 type installer interface {
@@ -187,10 +187,10 @@ type SetupPodNetworkInput struct {
 }
 
 // SetupPodNetwork sets up the cilium pod network.
-func (k *KubernetesUtil) SetupPodNetwork(ctx context.Context, in SetupPodNetworkInput) error {
+func (k *KubernetesUtil) SetupPodNetwork(ctx context.Context, in SetupPodNetworkInput, client Client) error {
 	switch in.CloudProvider {
 	case "gcp":
-		return k.setupGCPPodNetwork(ctx, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR)
+		return k.setupGCPPodNetwork(ctx, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR, client)
 	case "azure":
 		return k.setupAzurePodNetwork(ctx, in.ProviderID, in.SubnetworkPodCIDR)
 	case "qemu":
@@ -219,7 +219,7 @@ func (k *KubernetesUtil) setupAzurePodNetwork(ctx context.Context, providerID, s
 	return nil
 }
 
-func (k *KubernetesUtil) setupGCPPodNetwork(ctx context.Context, nodeName, nodePodCIDR, subnetworkPodCIDR string) error {
+func (k *KubernetesUtil) setupGCPPodNetwork(ctx context.Context, nodeName, nodePodCIDR, subnetworkPodCIDR string, kubectl Client) error {
 	out, err := exec.CommandContext(ctx, kubectlPath, "--kubeconfig", kubeConfig, "patch", "node", nodeName, "-p", "{\"spec\":{\"podCIDR\": \""+nodePodCIDR+"\"}}").CombinedOutput()
 	if err != nil {
 		err = errors.New(string(out))
@@ -229,6 +229,16 @@ func (k *KubernetesUtil) setupGCPPodNetwork(ctx context.Context, nodeName, nodeP
 	// allow coredns to run on uninitialized nodes (required by cloud-controller-manager)
 	err = exec.CommandContext(ctx, kubectlPath, "--kubeconfig", kubeConfig, "-n", "kube-system", "patch", "deployment", "coredns", "--type", "json", "-p", "[{\"op\":\"add\",\"path\":\"/spec/template/spec/tolerations/-\",\"value\":{\"key\":\"node.cloudprovider.kubernetes.io/uninitialized\",\"value\":\"true\",\"effect\":\"NoSchedule\"}},{\"op\":\"add\",\"path\":\"/spec/template/spec/nodeSelector\",\"value\":{\"node-role.kubernetes.io/control-plane\":\"\"}}]").Run()
 	if err != nil {
+		return err
+	}
+	tolerations := []corev1.Toleration{
+		{
+			Key:    "node.cloudprovider.kubernetes.io/uninitialized",
+			Value:  "true",
+			Effect: "NoSchedule",
+		},
+	}
+	if err = kubectl.AddTolerationsToDeployment(ctx, tolerations, "coredns"); err != nil {
 		return err
 	}
 

@@ -14,6 +14,7 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/retry"
 )
 
 const fieldManager = "constellation-bootstrapper"
@@ -94,6 +95,28 @@ func (c *Client) GetObjects(resources resources.Marshaler) ([]*resource.Info, er
 // CreateConfigMap creates the given ConfigMap.
 func (c *Client) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error {
 	_, err := c.clientset.CoreV1().ConfigMaps(configMap.ObjectMeta.Namespace).Create(ctx, &configMap, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string) error {
+	deployments := c.clientset.AppsV1().Deployments(corev1.NamespaceAll)
+
+	// retry resource update if an error occurs
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		result, err := deployments.Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("Failed to get latest version of Deployment: %v", err)
+		}
+
+		result.Spec.Template.Spec.Tolerations = append(result.Spec.Template.Spec.Tolerations, tolerations...)
+		if _, err = deployments.Update(ctx, result, metav1.UpdateOptions{}); err != nil {
+			return err
+		}
+		return nil
+	})
 	if err != nil {
 		return err
 	}
