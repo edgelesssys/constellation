@@ -48,7 +48,7 @@ jobs:
               echo "microServiceDockerfile=verify/Dockerfile" >> $GITHUB_ENV ;;
           esac
 
-      - name: Build and upload join-service container image
+      - name: Build and upload container image
         id: build-and-upload
         uses: ./.github/actions/build_micro_service
         with:

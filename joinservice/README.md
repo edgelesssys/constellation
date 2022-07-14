@@ -3,21 +3,10 @@
 Implementation for Constellation's node flow to join an existing cluster.
 
 The join service runs on each control-plane node of the Kubernetes cluster.
-New nodes (at cluster start, or later through autoscaling) send an IssueJoinTicket request to the service over [aTLS](../coordinator/atls/).
+New nodes (at cluster start, or later through autoscaling) send an IssueJoinTicket request to the service over [aTLS](../bootstrapper/atls/).
 The join service verifies the new nodes certificate and attestation statement.
 If attestation is successful, the new node is supplied with a disk encryption key for its state disk, and a Kubernetes bootstrap token, so it may join the cluster.
 
-The join service uses klog v2 for logging.
-Use the `-v` flag to set the log verbosity level.
-Use different verbosity levels during development depending on the information:
-
-* 2 for information that should always be logged. Examples: server starting, new gRPC request.
-
-* 4 for general logging. If you are unsure what log level to use, use 4.
-
-* 6 for low level information logging. Example: values of new expected measurements
-
-* Potentially sensitive information, such as return values of functions should never be logged.
 
 ## Packages
 
@@ -36,7 +25,7 @@ sequenceDiagram
     participant New Node
     participant Join Service
     New Node-->>Join Service: aTLS Handshake (server side verification)
-    Join Service-->>New Node:
+    Join Service-->>New Node: #
     New Node->>+Join Service: grpc::IssueJoinTicket(DiskUUID, NodeName, IsControlPlane)
     Join Service->>+KMS: grpc::GetDataKey(DiskUUID)
     KMS->>-Join Service: DiskEncryptionKey

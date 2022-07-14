@@ -11,6 +11,9 @@ type gcpGuestAgentDaemonset struct {
 	DaemonSet apps.DaemonSet
 }
 
+// NewGCPGuestAgentDaemonset creates a new GCP Guest Agent Daemonset.
+// The GCP guest agent is built in a separate repository: https://github.com/edgelesssys/gcp-guest-agent
+// It is used automatically to add loadbalancer IPs to the local routing table of GCP instances.
 func NewGCPGuestAgentDaemonset() *gcpGuestAgentDaemonset {
 	return &gcpGuestAgentDaemonset{
 		DaemonSet: apps.DaemonSet{
@@ -61,7 +64,7 @@ func NewGCPGuestAgentDaemonset() *gcpGuestAgentDaemonset {
 						Containers: []k8s.Container{
 							{
 								Name:  "gcp-guest-agent",
-								Image: gcpGuestImage,
+								Image: gcpGuestImage, // built from https://github.com/edgelesssys/gcp-guest-agent
 								SecurityContext: &k8s.SecurityContext{
 									Privileged: func(b bool) *bool { return &b }(true),
 									Capabilities: &k8s.Capabilities{

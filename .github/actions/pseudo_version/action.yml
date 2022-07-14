@@ -1,0 +1,26 @@
+name: Determine pseudo version
+description: "Determine go-like pseudo version to use as container image tag."
+outputs:
+  pseudo-version:
+    description: "Pseudo version based on the current HEAD"
+    value: ${{ steps.pseudo-version.outputs.pseudo-version }}
+runs:
+  using: 'composite'
+  steps:
+  - name: Install Go
+    uses: actions/setup-go@v3
+    with:
+      go-version: "1.18"
+  - name: get pseudo version
+    id: pseudo-version
+    run: |
+      set -e
+      set -o pipefail
+      if $(git rev-parse --is-shallow-repository); then
+        git fetch --prune --unshallow --tags -v
+      else
+        git fetch --tags -v
+      fi
+      echo "::set-output name=pseudo-version::$(go run .)"
+    working-directory: hack/pseudo-version
+    shell: bash

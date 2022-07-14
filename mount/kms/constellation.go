@@ -16,9 +16,9 @@ type ConstellationKMS struct {
 }
 
 // NewConstellationKMS initializes a ConstellationKMS.
-func NewConstellationKMS(coordinatorEndpoint string) *ConstellationKMS {
+func NewConstellationKMS(endpoint string) *ConstellationKMS {
 	return &ConstellationKMS{
-		endpoint: coordinatorEndpoint, // default: "kms.kube-system:9000"
+		endpoint: endpoint, // default: "kms.kube-system:9000"
 		kms:      &constellationKMSClient{},
 	}
 }

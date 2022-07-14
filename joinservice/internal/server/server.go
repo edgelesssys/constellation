@@ -70,14 +70,6 @@ func (s *Server) Run(creds credentials.TransportCredentials, port string) error 
 // - a decryption key for CA certificates uploaded to the Kubernetes cluster.
 func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTicketRequest) (resp *joinproto.IssueJoinTicketResponse, retErr error) {
 	s.log.Infof("IssueJoinTicket called")
-
-	defer func() {
-		if retErr != nil {
-			s.log.Errorf("IssueJoinTicket failed: %s", retErr)
-			retErr = fmt.Errorf("IssueJoinTicket failed: %w", retErr)
-		}
-	}()
-
 	log := s.log.With(zap.String("peerAddress", grpclog.PeerAddrFromContext(ctx)))
 	log.Infof("Loading IDs")
 	var id attestationtypes.ID
@@ -108,10 +100,11 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 
 	var controlPlaneFiles []*joinproto.ControlPlaneCertOrKey
 	if req.IsControlPlane {
-		log.Infof("Creating control plane certificate key")
+		log.Infof("Loading control plane certificates and keys")
 		filesMap, err := s.joinTokenGetter.GetControlPlaneCertificatesAndKeys()
 		if err != nil {
-			return nil, fmt.Errorf("ActivateControlPlane failed: %w", err)
+			log.With(zap.Error(err)).Errorf("Failed to load control plane certificates and keys")
+			return nil, status.Errorf(codes.Internal, "ActivateControlPlane failed: %s", err)
 		}
 
 		for k, v := range filesMap {

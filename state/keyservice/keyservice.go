@@ -21,8 +21,9 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// KeyAPI is the interface called by the Coordinator or an admin during restart of a node.
+// KeyAPI is the interface called by control-plane or an admin during restart of a node.
 type KeyAPI struct {
+	listenAddr  string
 	log         *logger.Logger
 	mux         sync.Mutex
 	metadata    metadata.InstanceLister
@@ -60,12 +61,12 @@ func (a *KeyAPI) PushStateDiskKey(ctx context.Context, in *keyproto.PushStateDis
 	return &keyproto.PushStateDiskKeyResponse{}, nil
 }
 
-// WaitForDecryptionKey notifies the Coordinator to send a decryption key and waits until a key is received.
+// WaitForDecryptionKey notifies control-plane nodes to send a decryption key and waits until a key is received.
 func (a *KeyAPI) WaitForDecryptionKey(uuid, listenAddr string) ([]byte, error) {
 	if uuid == "" {
 		return nil, errors.New("received no disk UUID")
 	}
-
+	a.listenAddr = listenAddr
 	creds := atlscredentials.New(a.issuer, nil)
 	server := grpc.NewServer(grpc.Creds(creds))
 	keyproto.RegisterAPIServer(server, a)
@@ -79,10 +80,7 @@ func (a *KeyAPI) WaitForDecryptionKey(uuid, listenAddr string) ([]byte, error) {
 	go server.Serve(listener)
 	defer server.GracefulStop()
 
-	if err := a.requestKeyLoop(uuid); err != nil {
-		return nil, err
-	}
-
+	a.requestKeyLoop(uuid)
 	return a.key, nil
 }
 
@@ -91,11 +89,11 @@ func (a *KeyAPI) ResetKey() {
 	a.key = nil
 }
 
-// requestKeyLoop continuously requests decryption keys from all available Coordinators, until the KeyAPI receives a key.
-func (a *KeyAPI) requestKeyLoop(uuid string, opts ...grpc.DialOption) error {
-	// we do not perform attestation, since the restarting node does not need to care about notifying the correct Coordinator
+// requestKeyLoop continuously requests decryption keys from all available control-plane nodes, until the KeyAPI receives a key.
+func (a *KeyAPI) requestKeyLoop(uuid string, opts ...grpc.DialOption) {
+	// we do not perform attestation, since the restarting node does not need to care about notifying the correct node
 	// if an incorrect key is pushed by a malicious actor, decrypting the disk will fail, and the node will not start
-	creds := atlscredentials.New(nil, nil)
+	creds := atlscredentials.New(a.issuer, nil)
 	// set up for the select statement to immediately request a key, skipping the initial delay caused by using a ticker
 	firstReq := make(chan struct{}, 1)
 	firstReq <- struct{}{}
@@ -106,10 +104,10 @@ func (a *KeyAPI) requestKeyLoop(uuid string, opts ...grpc.DialOption) error {
 		select {
 		// return if a key was received
 		// a key can be send by
-		// - a Coordinator, after the request rpc was received
+		// - a control-plane node, after the request rpc was received
 		// - by a Constellation admin, at any time this loop is running on a node during boot
 		case <-a.keyReceived:
-			return nil
+			return
 		case <-ticker.C:
 			a.requestKey(uuid, creds, opts...)
 		case <-firstReq:
@@ -119,22 +117,36 @@ func (a *KeyAPI) requestKeyLoop(uuid string, opts ...grpc.DialOption) error {
 }
 
 func (a *KeyAPI) requestKey(uuid string, credentials credentials.TransportCredentials, opts ...grpc.DialOption) {
-	// list available Coordinators
+	// list available control-plane nodes
 	endpoints, _ := metadata.KMSEndpoints(context.Background(), a.metadata)
 
-	a.log.With(zap.Strings("endpoints", endpoints)).Infof("Sending a key request to available Coordinators")
-	// notify all available Coordinators to send a key to the node
+	a.log.With(zap.Strings("endpoints", endpoints)).Infof("Sending a key request to available control-plane nodes")
+	// notify all available control-plane nodes to send a key to the node
 	// any errors encountered here will be ignored, and the calls retried after a timeout
 	for _, endpoint := range endpoints {
 		ctx, cancel := context.WithTimeout(context.Background(), a.timeout)
+		defer cancel()
 		conn, err := grpc.DialContext(ctx, endpoint, append(opts, grpc.WithTransportCredentials(credentials))...)
-		if err == nil {
-			client := kmsproto.NewAPIClient(conn)
-			_, _ = client.GetDataKey(ctx, &kmsproto.GetDataKeyRequest{DataKeyId: uuid, Length: constants.StateDiskKeyLength})
-			conn.Close()
+		if err != nil {
+			continue
 		}
-
-		cancel()
+		defer conn.Close()
+		client := kmsproto.NewAPIClient(conn)
+		response, err := client.GetDataKey(ctx, &kmsproto.GetDataKeyRequest{DataKeyId: uuid, Length: constants.StateDiskKeyLength})
+		if err != nil {
+			a.log.With(zap.Error(err), zap.String("endpoint", endpoint)).Warnf("Failed to request key")
+			continue
+		}
+		pushKeyConn, err := grpc.DialContext(ctx, a.listenAddr, append(opts, grpc.WithTransportCredentials(credentials))...)
+		if err != nil {
+			continue
+		}
+		defer pushKeyConn.Close()
+		pushKeyClient := keyproto.NewAPIClient(pushKeyConn)
+		if _, err := pushKeyClient.PushStateDiskKey(ctx, &keyproto.PushStateDiskKeyRequest{StateDiskKey: response.DataKey}); err != nil {
+			a.log.With(zap.Error(err), zap.String("endpoint", a.listenAddr)).Errorf("Failed to push key")
+			continue
+		}
 	}
 }
 

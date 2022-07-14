@@ -35,6 +35,7 @@ type Server struct {
 	disk        encryptedDisk
 	fileHandler file.Handler
 	grpcServer  serveStopper
+	cleaner     cleaner
 
 	logger *zap.Logger
 
@@ -70,18 +71,17 @@ func New(lock locker, kube ClusterInitializer, issuer atls.Issuer, fh file.Handl
 
 // Serve starts the initialization server.
 func (s *Server) Serve(ip, port string, cleaner cleaner) error {
+	s.cleaner = cleaner
 	lis, err := net.Listen("tcp", net.JoinHostPort(ip, port))
 	if err != nil {
 		return fmt.Errorf("failed to listen: %w", err)
 	}
-
-	err = s.grpcServer.Serve(lis)
-	cleaner.Clean()
-	return err
+	return s.grpcServer.Serve(lis)
 }
 
 // Init initializes the cluster.
 func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initproto.InitResponse, error) {
+	defer s.cleaner.Clean()
 	s.logger.Info("Init called")
 
 	id, err := s.deriveAttestationID(req.MasterSecret)
@@ -99,7 +99,6 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		// init does not make sense, so we just stop.
 		//
 		// The server stops itself after the current call is done.
-		go s.grpcServer.GracefulStop()
 		s.logger.Info("node is already in a join process")
 		return nil, status.Error(codes.FailedPrecondition, "node is already being activated")
 	}
@@ -137,7 +136,6 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 	}
 
 	s.logger.Info("Init succeeded")
-	go s.grpcServer.GracefulStop()
 	return &initproto.InitResponse{
 		Kubeconfig: kubeconfig,
 		OwnerId:    id.Owner,

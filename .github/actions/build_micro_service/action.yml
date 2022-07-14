@@ -22,6 +22,10 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Determine pseudo version
+      id: pseudo-version
+      uses: ./.github/actions/pseudo_version
+
     - name: Docker metadata
       id: meta
       uses: docker/metadata-action@v3
@@ -31,6 +35,7 @@ runs:
         tags: |
           type=raw,value=latest,enable={{is_default_branch}}
           type=raw,value=${{ inputs.pushTag }},enable=${{ '' != inputs.pushTag }}
+          type=raw,value=${{ steps.pseudo-version.outputs.pseudo-version }},enable=${{ '' != steps.pseudo-version.outputs.pseudo-version }}
           type=ref,event=branch
 
     - name: Set up Docker Buildx

@@ -338,8 +338,8 @@ func manuallySetLoadbalancerIP(ctx context.Context, ip string) error {
 	if !strings.Contains(ip, "/") {
 		ip = ip + "/32"
 	}
-	args := fmt.Sprintf("route add to local %s scope host dev ens3 proto 66", ip)
-	_, err := exec.CommandContext(ctx, "ip", strings.Split(args, " ")...).Output()
+	args := []string{"route", "add", "to", "local", ip, "scope", "host", "dev", "ens3", "proto", "66"}
+	_, err := exec.CommandContext(ctx, "ip", args...).Output()
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {

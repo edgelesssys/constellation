@@ -3,7 +3,7 @@ package main
 import (
 	"net"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/exit"
+	"github.com/edgelesssys/constellation/bootstrapper/internal/clean"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/initserver"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/joinclient"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/logging"
@@ -46,22 +46,14 @@ func run(issuer quoteIssuer, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
 	dialer := dialer.New(issuer, nil, &net.Dialer{})
 	joinClient := joinclient.New(nodeLock, dialer, kube, metadata, logger)
 
-	cleaner := exit.New().
-		With(initServer).
-		With(joinClient)
+	cleaner := clean.New().With(initServer).With(joinClient)
+	go cleaner.Start()
+	defer cleaner.Done()
+
 	joinClient.Start(cleaner)
 
 	if err := initServer.Serve(bindIP, bindPort, cleaner); err != nil {
-		logger.Error("Failed to serve init server", zap.Error(err))
-	}
-
-	// wait for join client and server to exit cleanly
-	cleaner.Clean()
-
-	// if node lock was never acquired, then we didn't bootstrap successfully.
-	if !nodeLock.Locked() {
-		cloudLogger.Disclose("bootstrapper failed")
-		logger.Fatal("bootstrapper failed")
+		logger.Fatal("Failed to serve init server", zap.Error(err))
 	}
 
 	logger.Info("bootstrapper done")

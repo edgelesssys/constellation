@@ -96,6 +96,7 @@ func (c *JoinClient) Start(cleaner cleaner) {
 		defer ticker.Stop()
 		defer func() { c.stopDone <- struct{}{} }()
 		defer c.log.Info("Client stopped")
+		defer cleaner.Clean()
 
 		diskUUID, err := c.getDiskUUID()
 		if err != nil {
@@ -124,7 +125,6 @@ func (c *JoinClient) Start(cleaner cleaner) {
 			err := c.tryJoinWithAvailableServices()
 			if err == nil {
 				c.log.Info("Joined successfully. Client is shut down.")
-				go cleaner.Clean()
 				return
 			} else if isUnrecoverable(err) {
 				c.log.Error("Unrecoverable error occurred", zap.Error(err))

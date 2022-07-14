@@ -33,13 +33,12 @@ import (
 const (
 	defaultIP   = "0.0.0.0"
 	defaultPort = "9000"
-	// ConstellationCSP is the Cloud Service Provider Constellation is running on.
+	// ConstellationCSP is the environment variable stating which Cloud Service Provider Constellation is running on.
 	constellationCSP = "CONSTEL_CSP"
 )
 
 func main() {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	var bindIP, bindPort string

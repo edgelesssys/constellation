@@ -9,7 +9,7 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
     * Version of the image to build: `1.3.0`
 3. Create a new branch to prepare the following things:
     1. Review and update changelog with all changes since last release. [GitHub's diff view](https://github.com/edgelesssys/constellation/compare/v1.2.0...main) helps a lot!
-    2. Update versions [images.go](../coordinator/kubernetes/k8sapi/resources/images.go) to `v1.3.0`
+    2. Update versions [images.go](../bootstrapper/kubernetes/k8sapi/resources/images.go) to `v1.3.0`
     3. Merge this branch
 4. Create a new tag in `constellation`
     * `git tag v1.3.0`

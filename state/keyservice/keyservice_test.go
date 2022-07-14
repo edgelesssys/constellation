@@ -78,7 +78,6 @@ func TestRequestKeyLoop(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
 			require := require.New(t)
 
 			keyReceived := make(chan struct{}, 1)
@@ -106,13 +105,12 @@ func TestRequestKeyLoop(t *testing.T) {
 				keyReceived <- struct{}{}
 			}()
 
-			err := keyWaiter.requestKeyLoop(
+			keyWaiter.requestKeyLoop(
 				"1234",
 				grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
 					return listener.DialContext(ctx)
 				}),
 			)
-			assert.NoError(err)
 
 			s.Stop()
 		})

@@ -12,7 +12,7 @@ type ClusterKMS struct {
 	masterKey []byte
 }
 
-// CreateKEK sets the CoordinatorKMS masterKey.
+// CreateKEK sets the ClusterKMS masterKey.
 func (c *ClusterKMS) CreateKEK(ctx context.Context, keyID string, kek []byte) error {
 	c.masterKey = kek
 	return nil

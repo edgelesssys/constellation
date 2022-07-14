@@ -7,6 +7,7 @@ import (
 	"net"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	azurecloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/azure"
 	gcpcloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/gcp"
@@ -26,17 +27,16 @@ import (
 	"go.uber.org/zap"
 )
 
+// vpcIPTimeout is the maximum amount of time to wait for retrieval of the VPC ip.
+const vpcIPTimeout = 30 * time.Second
+
 func main() {
 	provider := flag.String("cloud-provider", "", "cloud service provider this binary is running on")
 	kmsEndpoint := flag.String("kms-endpoint", "", "endpoint of Constellations key management service")
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 	flag.Parse()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
-
 	log.With(zap.String("version", constants.VersionInfo), zap.String("cloudProvider", *provider)).
 		Infof("Constellation Node Join Service")
 
@@ -50,6 +50,8 @@ func main() {
 
 	creds := atlscredentials.New(nil, []atls.Validator{validator})
 
+	ctx, cancel := context.WithTimeout(context.Background(), vpcIPTimeout)
+	defer cancel()
 	vpcIP, err := getVPCIP(ctx, *provider)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to get IP in VPC")

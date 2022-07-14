@@ -124,6 +124,7 @@ func TestInit(t *testing.T) {
 				fileHandler: tc.fileHandler,
 				logger:      zaptest.NewLogger(t),
 				grpcServer:  serveStopper,
+				cleaner:     &fakeCleaner{serveStopper: serveStopper},
 			}
 
 			kubeconfig, err := server.Init(context.Background(), tc.req)
@@ -252,4 +253,12 @@ func newFakeLock() *fakeLock {
 
 func (l *fakeLock) TryLockOnce(_, _ []byte) (bool, error) {
 	return l.state.TryLock(), nil
+}
+
+type fakeCleaner struct {
+	serveStopper
+}
+
+func (f *fakeCleaner) Clean() {
+	go f.serveStopper.GracefulStop() // this is not the correct way to do this, but it's fine for testing
 }

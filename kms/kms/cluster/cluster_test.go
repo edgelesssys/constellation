@@ -12,7 +12,7 @@ func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
 }
 
-func TestCoordinatorKMS(t *testing.T) {
+func TestClusterKMS(t *testing.T) {
 	assert := assert.New(t)
 	kms := &ClusterKMS{}
 	masterKey := []byte("Constellation")

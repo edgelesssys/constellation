@@ -19,10 +19,9 @@ calling the InitCluster function of our Kubernetes library, which does a `kubead
 
 ## Join Flow
 
-The JoinClient is a gRPC client that is trying to connect to an JoinService, which might be running
-in an already existing cluster as DaemonSet. The JoinService is validating the instance which wants to join the cluster using
-aTLS. For details on the used protocol and the verification of a joining instances measurements, see the
-[joinservice](./../joinservice) package.
+The JoinClient is a gRPC client that tries to connect to a JoinService of an already existing cluster.
+The JoinService validates the instance using [aTLS](./../internal/atls/README.md).
+For details on the used protocol, see the [joinservice](./../joinservice) package.
 
 If the JoinService successfully verifies the instance, it issues a join ticket. The JoinClient then
 joins the cluster by calling the `kubeadm join` command, using the token and other needed information
