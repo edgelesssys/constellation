@@ -2,10 +2,10 @@ package resources
 
 const (
 	// Constellation images.
-	joinImage          = "ghcr.io/edgelesssys/constellation/join-service:feat-coordinator-selfactivation-node"
-	accessManagerImage = "ghcr.io/edgelesssys/constellation/access-manager:feat-coordinator-selfactivation-node"
-	kmsImage           = "ghcr.io/edgelesssys/constellation/kmsserver:feat-coordinator-selfactivation-node"
-	verificationImage  = "ghcr.io/edgelesssys/constellation/verification-service:feat-coordinator-selfactivation-node"
+	joinImage          = "ghcr.io/edgelesssys/constellation/join-service:v1.3.2-0.20220714151638-d295be31"
+	accessManagerImage = "ghcr.io/edgelesssys/constellation/access-manager:v1.3.2-0.20220714151638-d295be31"
+	kmsImage           = "ghcr.io/edgelesssys/constellation/kmsserver:v1.3.2-0.20220714151638-d295be31"
+	verificationImage  = "ghcr.io/edgelesssys/constellation/verification-service:v1.3.2-0.20220714151638-d295be31"
 	gcpGuestImage      = "ghcr.io/edgelesssys/gcp-guest-agent:latest"
 
 	// external images.

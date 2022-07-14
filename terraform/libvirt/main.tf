@@ -25,7 +25,7 @@ provider "docker" {
 }
 
 resource "docker_image" "qemu-metadata" {
-  name         = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:feat-coordinator-selfactivation-node"
+  name         = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v1.3.2-0.20220714151638-d295be31"
   keep_locally = true
 }
 
