@@ -1,0 +1,71 @@
+name: Publish CLI reference to documentation
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  publish-to-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Constellation
+        uses: actions/checkout@v3
+        with:
+          path: constellation
+
+      - name: Checkout docs
+        uses: actions/checkout@v3
+        with:
+          repository: edgelesssys/constellation-docs
+          token: ${{ secrets.CI_GITHUB_REPOSITORY }}
+          path: docs
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.18
+
+      - name: Generate reference docs
+        run: |
+          cd constellation/hack/clidocgen
+          go build .
+          ./clidocgen > content.md
+          cat header.md content.md > ../../../cli.md
+
+      - name: Get commit sha
+        run: |
+          echo "COMMIT_END=$(echo ${{ github.sha }} | cut -c1-8)" >> $GITHUB_ENV
+
+      - name: Check if action branch exists
+        run: |
+          ex=$(git --git-dir=./docs/.git ls-remote --heads origin action/constellation/update-cli-reference)
+          echo "EXISTS=$(if [ -z "$ex" ]; then echo 0; else echo 1; fi)" >> $GITHUB_ENV
+
+      - name: Publish new reference (create new branch)
+        if: ${{ env.EXISTS == 0 }}
+        uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.CI_GITHUB_REPOSITORY }}
+        with:
+          source_file: 'cli.md'
+          destination_repo: 'edgelesssys/constellation-docs'
+          destination_branch_create: 'action/constellation/update-cli-reference'
+          destination_folder: '6c320851-bdd2-41d5-bf10-e27427398692/reference'
+          user_name: '${{ github.actor }}'
+          user_email: '${{ github.actor }}@users.noreply.github.com'
+          commit_message: 'CLI reference was updated by edgelesssys/constellation@${{ env.COMMIT_END}}'
+
+      - name: Publish new reference (update branch)
+        if: ${{ env.EXISTS == 1 }}
+        uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.CI_GITHUB_REPOSITORY }}
+        with:
+          source_file: 'cli.md'
+          destination_repo: 'edgelesssys/constellation-docs'
+          destination_branch: 'action/constellation/update-cli-reference'
+          destination_folder: '6c320851-bdd2-41d5-bf10-e27427398692/reference'
+          user_name: '${{ github.actor }}'
+          user_email: '${{ github.actor }}@users.noreply.github.com'
+          commit_message: 'CLI reference was updated by edgelesssys/constellation@${{ env.COMMIT_END}}'
