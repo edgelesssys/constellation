@@ -86,28 +86,11 @@ func (g *Git) tagsByRevisionHash() (map[string][]string, error) {
 	}
 	if err := refs.ForEach(
 		func(ref *plumbing.Reference) error {
-			tag, err := g.repo.TagObject(ref.Hash())
-			switch err {
-			case nil:
-				// Tag object present
-				commit, err := tag.Commit()
-				if err != nil {
-					return err
-				}
-				commitHash := commit.Hash.String()
-				tags[commitHash] = append(tags[commitHash], tag.Name)
-			case plumbing.ErrObjectNotFound:
-				// Not a tag object
-				message, err := tagRefToMessage(ref)
-				if err != nil {
-					return err
-				}
-				tags[ref.Hash().String()] = append(tags[ref.Hash().String()], message)
-			default:
-				// Some other error
+			message, err := tagRefToName(ref)
+			if err != nil {
 				return err
 			}
-
+			tags[ref.Hash().String()] = append(tags[ref.Hash().String()], message)
 			return nil
 		},
 	); err != nil {
@@ -126,7 +109,8 @@ func (g *Git) findVersionTag(tags []string) *string {
 	return nil
 }
 
-func tagRefToMessage(tagRef *plumbing.Reference) (string, error) {
+// tagRefToName extracts the name of a tag reference.
+func tagRefToName(tagRef *plumbing.Reference) (string, error) {
 	matches := tagReference.FindStringSubmatch(tagRef.Name().String())
 	if len(matches) != 2 {
 		return "", errors.New("invalid tag reference")
