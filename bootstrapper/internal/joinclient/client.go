@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/diskencryption"
+	"github.com/edgelesssys/constellation/bootstrapper/internal/kubelet"
 	"github.com/edgelesssys/constellation/bootstrapper/nodestate"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
@@ -39,6 +40,7 @@ type JoinClient struct {
 	diskUUID    string
 	nodeName    string
 	role        role.Role
+	validIPs    []net.IP
 	disk        encryptedDisk
 	fileHandler file.Handler
 
@@ -190,6 +192,11 @@ func (c *JoinClient) join(serviceEndpoint string) error {
 	ctx, cancel := c.timeoutCtx()
 	defer cancel()
 
+	certificateRequest, kubeletKey, err := kubelet.GetCertificateRequest(c.nodeName, c.validIPs)
+	if err != nil {
+		return err
+	}
+
 	conn, err := c.dialer.Dial(ctx, serviceEndpoint)
 	if err != nil {
 		c.log.With(zap.String("endpoint", serviceEndpoint), zap.Error(err)).Errorf("Join service unreachable")
@@ -199,9 +206,9 @@ func (c *JoinClient) join(serviceEndpoint string) error {
 
 	protoClient := joinproto.NewAPIClient(conn)
 	req := &joinproto.IssueJoinTicketRequest{
-		DiskUuid:       c.diskUUID,
-		NodeName:       c.nodeName,
-		IsControlPlane: c.role == role.ControlPlane,
+		DiskUuid:           c.diskUUID,
+		CertificateRequest: certificateRequest,
+		IsControlPlane:     c.role == role.ControlPlane,
 	}
 	ticket, err := protoClient.IssueJoinTicket(ctx, req)
 	if err != nil {
@@ -209,10 +216,10 @@ func (c *JoinClient) join(serviceEndpoint string) error {
 		return fmt.Errorf("issuing join ticket: %w", err)
 	}
 
-	return c.startNodeAndJoin(ticket)
+	return c.startNodeAndJoin(ticket, kubeletKey)
 }
 
-func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse) (retErr error) {
+func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse, kubeletKey []byte) (retErr error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.joinTimeout)
 	defer cancel()
 
@@ -243,6 +250,12 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse)
 		if err := c.writeControlePlaneFiles(ticket.ControlPlaneFiles); err != nil {
 			return fmt.Errorf("writing control plane files: %w", err)
 		}
+	}
+	if err := c.fileHandler.Write(kubelet.CertificateFilename, ticket.KubeletCert, file.OptMkdirAll); err != nil {
+		return fmt.Errorf("writing kubelet certificate: %w", err)
+	}
+	if err := c.fileHandler.Write(kubelet.KeyFilename, kubeletKey, file.OptMkdirAll); err != nil {
+		return fmt.Errorf("writing kubelet key: %w", err)
 	}
 
 	state := nodestate.NodeState{
@@ -285,8 +298,17 @@ func (c *JoinClient) getNodeMetadata() error {
 		return errors.New("got instance metadata with unknown role")
 	}
 
+	var ips []net.IP
+	for _, ip := range inst.PrivateIPs {
+		ips = append(ips, net.ParseIP(ip))
+	}
+	for _, ip := range inst.PublicIPs {
+		ips = append(ips, net.ParseIP(ip))
+	}
+
 	c.nodeName = inst.Name
 	c.role = inst.Role
+	c.validIPs = ips
 
 	return nil
 }

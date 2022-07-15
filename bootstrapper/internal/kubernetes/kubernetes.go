@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"os/exec"
 	"strings"
 
@@ -96,6 +97,7 @@ func (k *KubeWrapper) InitCluster(
 	var subnetworkPodCIDR string
 	var controlPlaneEndpointIP string // this is the IP in "kubeadm init --control-plane-endpoint=<IP/DNS>:<port>" hence the unfortunate name
 	var nodeIP string
+	var validIPs []net.IP
 
 	// Step 1: retrieve cloud metadata for Kubernetes configuration
 	if k.providerMetadata.Supported() {
@@ -103,6 +105,12 @@ func (k *KubeWrapper) InitCluster(
 		instance, err = k.providerMetadata.Self(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving own instance metadata failed: %w", err)
+		}
+		for _, ip := range instance.PrivateIPs {
+			validIPs = append(validIPs, net.ParseIP(ip))
+		}
+		for _, ip := range instance.PublicIPs {
+			validIPs = append(validIPs, net.ParseIP(ip))
 		}
 		nodeName = k8sCompliantHostname(instance.Name)
 		providerID = instance.ProviderID
@@ -152,7 +160,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("encoding kubeadm init configuration as YAML: %w", err)
 	}
 	log.Infof("Initializing Kubernetes cluster")
-	if err := k.clusterUtil.InitCluster(ctx, initConfigYAML, log); err != nil {
+	if err := k.clusterUtil.InitCluster(ctx, initConfigYAML, nodeName, validIPs, log); err != nil {
 		return nil, fmt.Errorf("kubeadm init: %w", err)
 	}
 	kubeConfig, err := k.GetKubeconfig()

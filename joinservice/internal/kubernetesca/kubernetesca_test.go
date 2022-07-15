@@ -10,6 +10,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"math/big"
+	"strings"
 	"testing"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
+	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
 func TestMain(m *testing.M) {
@@ -38,45 +40,126 @@ Q29uc3RlbGxhdGlvbg==
 	invalidCert := []byte(`-----BEGIN CERTIFICATE-----
 Q29uc3RlbGxhdGlvbg==
 -----END CERTIFICATE-----`)
+	defaultSigningRequestFunc := func() ([]byte, error) {
+		privK, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		if err != nil {
+			return nil, err
+		}
+		csrTemplate := &x509.CertificateRequest{
+			Subject: pkix.Name{
+				Organization: []string{kubeconstants.NodesGroup},
+				CommonName:   kubeconstants.NodesUserPrefix + "test-node",
+			},
+		}
+		return x509.CreateCertificateRequest(rand.Reader, csrTemplate, privK)
+	}
 
 	testCases := map[string]struct {
-		caCert  []byte
-		caKey   []byte
-		wantErr bool
+		caCert               []byte
+		caKey                []byte
+		createSigningRequest func() ([]byte, error)
+		wantErr              bool
 	}{
 		"success ec key": {
-			caCert: ecCert,
-			caKey:  ecKey,
+			caCert:               ecCert,
+			caKey:                ecKey,
+			createSigningRequest: defaultSigningRequestFunc,
 		},
 		"success rsa key": {
-			caCert: rsaCert,
-			caKey:  rsaKey,
+			caCert:               rsaCert,
+			caKey:                rsaKey,
+			createSigningRequest: defaultSigningRequestFunc,
 		},
 		"success any key": {
-			caCert: testCert,
-			caKey:  testKey,
+			caCert:               testCert,
+			caKey:                testKey,
+			createSigningRequest: defaultSigningRequestFunc,
 		},
 		"unsupported key": {
-			caCert:  ecCert,
-			caKey:   unsupportedKey,
-			wantErr: true,
+			caCert:               ecCert,
+			caKey:                unsupportedKey,
+			createSigningRequest: defaultSigningRequestFunc,
+			wantErr:              true,
 		},
 		"invalid key": {
-			caCert:  ecCert,
-			caKey:   invalidKey,
-			wantErr: true,
+			caCert:               ecCert,
+			caKey:                invalidKey,
+			createSigningRequest: defaultSigningRequestFunc,
+			wantErr:              true,
 		},
 		"invalid certificate": {
-			caCert:  invalidCert,
-			caKey:   ecKey,
-			wantErr: true,
+			caCert:               invalidCert,
+			caKey:                ecKey,
+			createSigningRequest: defaultSigningRequestFunc,
+			wantErr:              true,
 		},
 		"no ca certificate": {
-			caKey:   ecKey,
-			wantErr: true,
+			caKey:                ecKey,
+			createSigningRequest: defaultSigningRequestFunc,
+			wantErr:              true,
 		},
 		"no ca key": {
-			caCert:  ecCert,
+			caCert:               ecCert,
+			createSigningRequest: defaultSigningRequestFunc,
+			wantErr:              true,
+		},
+		"no signing request": {
+			caCert:               ecCert,
+			caKey:                ecKey,
+			createSigningRequest: func() ([]byte, error) { return nil, nil },
+			wantErr:              true,
+		},
+		"incorrect common name format": {
+			caCert: ecCert,
+			caKey:  ecKey,
+			createSigningRequest: func() ([]byte, error) {
+				privK, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+				if err != nil {
+					return nil, err
+				}
+				csrTemplate := &x509.CertificateRequest{
+					Subject: pkix.Name{
+						Organization: []string{kubeconstants.NodesGroup},
+						CommonName:   "test-node",
+					},
+				}
+				return x509.CreateCertificateRequest(rand.Reader, csrTemplate, privK)
+			},
+			wantErr: true,
+		},
+		"incorrect organization format": {
+			caCert: ecCert,
+			caKey:  ecKey,
+			createSigningRequest: func() ([]byte, error) {
+				privK, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+				if err != nil {
+					return nil, err
+				}
+				csrTemplate := &x509.CertificateRequest{
+					Subject: pkix.Name{
+						Organization: []string{"test"},
+						CommonName:   kubeconstants.NodesUserPrefix + "test-node",
+					},
+				}
+				return x509.CreateCertificateRequest(rand.Reader, csrTemplate, privK)
+			},
+			wantErr: true,
+		},
+		"no organization": {
+			caCert: ecCert,
+			caKey:  ecKey,
+			createSigningRequest: func() ([]byte, error) {
+				privK, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+				if err != nil {
+					return nil, err
+				}
+				csrTemplate := &x509.CertificateRequest{
+					Subject: pkix.Name{
+						CommonName: kubeconstants.NodesUserPrefix + "test-node",
+					},
+				}
+				return x509.CreateCertificateRequest(rand.Reader, csrTemplate, privK)
+			},
 			wantErr: true,
 		},
 	}
@@ -100,8 +183,9 @@ Q29uc3RlbGxhdGlvbg==
 				file,
 			)
 
-			nodeName := "test"
-			kubeCert, kubeKey, err := ca.GetCertificate(nodeName)
+			signingRequest, err := tc.createSigningRequest()
+			require.NoError(err)
+			kubeCert, err := ca.GetCertificate(signingRequest)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -112,19 +196,12 @@ Q29uc3RlbGxhdGlvbg==
 			require.NotNil(certPEM)
 			cert, err := x509.ParseCertificate(certPEM.Bytes)
 			require.NoError(err)
-			assert.Equal("system:node:"+nodeName, cert.Subject.CommonName)
-			assert.Equal("system:nodes", cert.Subject.Organization[0])
+			assert.True(strings.HasPrefix(cert.Subject.CommonName, kubeconstants.NodesUserPrefix))
+			assert.Equal(kubeconstants.NodesGroup, cert.Subject.Organization[0])
 			assert.Equal(x509.KeyUsageDigitalSignature|x509.KeyUsageKeyEncipherment, cert.KeyUsage)
 			assert.Equal(x509.ExtKeyUsageClientAuth, cert.ExtKeyUsage[0])
 			assert.False(cert.IsCA)
 			assert.True(cert.BasicConstraintsValid)
-
-			keyPEM, _ := pem.Decode(kubeKey)
-			require.NotNil(keyPEM)
-			key, err := x509.ParseECPrivateKey(keyPEM.Bytes)
-			require.NoError(err)
-			require.IsType(&ecdsa.PublicKey{}, cert.PublicKey)
-			assert.Equal(&key.PublicKey, cert.PublicKey.(*ecdsa.PublicKey))
 		})
 	}
 }

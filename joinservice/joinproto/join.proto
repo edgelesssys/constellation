@@ -11,7 +11,7 @@ service API {
 
 message IssueJoinTicketRequest {
     string disk_uuid = 1;
-    string node_name = 2;
+    bytes certificate_request = 2;
     bool is_control_plane = 3;
 }
 
@@ -19,12 +19,11 @@ message IssueJoinTicketResponse {
     bytes state_disk_key = 1;
     bytes owner_id = 2;
     bytes cluster_id = 3;
-    bytes kubelet_key = 4;
-    bytes kubelet_cert = 5;
-    string api_server_endpoint = 6;
-    string token = 7;
-    string discovery_token_ca_cert_hash = 8;
-    repeated control_plane_cert_or_key control_plane_files = 9;
+    bytes kubelet_cert = 4;
+    string api_server_endpoint = 5;
+    string token = 6;
+    string discovery_token_ca_cert_hash = 7;
+    repeated control_plane_cert_or_key control_plane_files = 8;
 }
 
 message control_plane_cert_or_key {

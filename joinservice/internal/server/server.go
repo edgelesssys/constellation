@@ -93,7 +93,7 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 	}
 
 	log.Infof("Creating signed kubelet certificate")
-	kubeletCert, kubeletKey, err := s.ca.GetCertificate(req.NodeName)
+	kubeletCert, err := s.ca.GetCertificate(req.CertificateRequest)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "unable to generate kubelet certificate: %s", err)
 	}
@@ -124,7 +124,6 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		Token:                    kubeArgs.Token,
 		DiscoveryTokenCaCertHash: kubeArgs.CACertHashes[0],
 		KubeletCert:              kubeletCert,
-		KubeletKey:               kubeletKey,
 		ControlPlaneFiles:        controlPlaneFiles,
 	}, nil
 }
@@ -144,5 +143,5 @@ type dataKeyGetter interface {
 
 type certificateAuthority interface {
 	// GetCertificate returns a certificate and private key, signed by the issuer.
-	GetCertificate(nodeName string) (kubeletCert []byte, kubeletKey []byte, err error)
+	GetCertificate(certificateRequest []byte) (kubeletCert []byte, err error)
 }

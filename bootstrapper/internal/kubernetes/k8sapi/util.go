@@ -2,18 +2,28 @@ package k8sapi
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/edgelesssys/constellation/bootstrapper/internal/kubelet"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/bootstrapper/util"
+	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/spf13/afero"
 	"go.uber.org/zap"
+	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
 const (
@@ -35,12 +45,14 @@ type Client interface {
 // KubernetesUtil provides low level management of the kubernetes cluster.
 type KubernetesUtil struct {
 	inst installer
+	file file.Handler
 }
 
 // NewKubernetesUtil creates a new KubernetesUtil.
 func NewKubernetesUtil() *KubernetesUtil {
 	return &KubernetesUtil{
 		inst: newOSInstaller(),
+		file: file.NewHandler(afero.NewOsFs()),
 	}
 }
 
@@ -58,7 +70,9 @@ func (k *KubernetesUtil) InstallComponents(ctx context.Context, version string) 
 	return enableSystemdUnit(ctx, kubeletServiceEtcPath)
 }
 
-func (k *KubernetesUtil) InitCluster(ctx context.Context, initConfig []byte, log *logger.Logger) error {
+func (k *KubernetesUtil) InitCluster(
+	ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, log *logger.Logger,
+) error {
 	// TODO: audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
 	if err != nil {
@@ -77,8 +91,40 @@ func (k *KubernetesUtil) InitCluster(ctx context.Context, initConfig []byte, log
 		return fmt.Errorf("writing kubeadm init yaml config %v: %w", initConfigFile.Name(), err)
 	}
 
-	cmd := exec.CommandContext(ctx, kubeadmPath, "init", "-v=5", "--config", initConfigFile.Name())
+	// preflight
+	log.Infof("Running kubeadm preflight checks")
+	cmd := exec.CommandContext(ctx, kubeadmPath, "init", "phase", "preflight", "-v=5", "--config", initConfigFile.Name())
 	out, err := cmd.CombinedOutput()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return fmt.Errorf("kubeadm init phase preflight failed (code %v) with: %s", exitErr.ExitCode(), out)
+		}
+		return fmt.Errorf("kubeadm init: %w", err)
+	}
+
+	// create CA certs
+	log.Infof("Creating Kubernetes control-plane certificates and keys")
+	cmd = exec.CommandContext(ctx, kubeadmPath, "init", "phase", "certs", "all", "-v=5", "--config", initConfigFile.Name())
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return fmt.Errorf("kubeadm init phase certs all failed (code %v) with: %s", exitErr.ExitCode(), out)
+		}
+		return fmt.Errorf("kubeadm init: %w", err)
+	}
+
+	// create kubelet key and CA signed certificate for the node
+	log.Infof("Creating signed kubelet certificate")
+	if err := k.createSignedKubeletCert(nodeName, ips); err != nil {
+		return err
+	}
+
+	// initialize the cluster
+	log.Infof("Initializing the cluster using kubeadm init")
+	cmd = exec.CommandContext(ctx, kubeadmPath, "init", "-v=5", "--skip-phases=preflight,certs", "--config", initConfigFile.Name())
+	out, err = cmd.CombinedOutput()
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
@@ -311,4 +357,93 @@ func (k *KubernetesUtil) RestartKubelet() error {
 	ctx, cancel := context.WithTimeout(context.TODO(), kubeletStartTimeout)
 	defer cancel()
 	return restartSystemdUnit(ctx, "kubelet.service")
+}
+
+// createSignedKubeletCert manually creates a Kubernetes CA signed kubelet certificate for the bootstrapper node.
+// This is necessary because this node does not request a certificate from the join service.
+func (k *KubernetesUtil) createSignedKubeletCert(nodeName string, ips []net.IP) error {
+	certRequestRaw, kubeletKey, err := kubelet.GetCertificateRequest(nodeName, ips)
+	if err != nil {
+		return err
+	}
+	if err := k.file.Write(kubelet.KeyFilename, kubeletKey, file.OptMkdirAll); err != nil {
+		return err
+	}
+
+	parentCertRaw, err := k.file.Read(filepath.Join(
+		constants.KubernetesDir,
+		constants.DefaultCertificateDir,
+		constants.CACertName,
+	))
+	if err != nil {
+		return err
+	}
+	parentCertPEM, _ := pem.Decode(parentCertRaw)
+	parentCert, err := x509.ParseCertificate(parentCertPEM.Bytes)
+	if err != nil {
+		return err
+	}
+
+	parentKeyRaw, err := k.file.Read(filepath.Join(
+		constants.KubernetesDir,
+		constants.DefaultCertificateDir,
+		constants.CAKeyName,
+	))
+	if err != nil {
+		return err
+	}
+	parentKeyPEM, _ := pem.Decode(parentKeyRaw)
+	var parentKey any
+	switch parentKeyPEM.Type {
+	case "EC PRIVATE KEY":
+		parentKey, err = x509.ParseECPrivateKey(parentKeyPEM.Bytes)
+	case "RSA PRIVATE KEY":
+		parentKey, err = x509.ParsePKCS1PrivateKey(parentKeyPEM.Bytes)
+	case "PRIVATE KEY":
+		parentKey, err = x509.ParsePKCS8PrivateKey(parentKeyPEM.Bytes)
+	default:
+		err = fmt.Errorf("unsupported key type %q", parentCertPEM.Type)
+	}
+	if err != nil {
+		return err
+	}
+
+	certRequest, err := x509.ParseCertificateRequest(certRequestRaw)
+	if err != nil {
+		return err
+	}
+
+	serialNumber, err := util.GenerateCertificateSerialNumber()
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+	// Create the kubelet certificate
+	// For a reference on the certificate fields, see: https://kubernetes.io/docs/setup/best-practices/certificates/
+	certTmpl := &x509.Certificate{
+		SerialNumber: serialNumber,
+		NotBefore:    now.Add(-2 * time.Hour),
+		NotAfter:     now.Add(24 * 365 * time.Hour),
+		Subject:      certRequest.Subject,
+		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage: []x509.ExtKeyUsage{
+			x509.ExtKeyUsageClientAuth,
+			x509.ExtKeyUsageServerAuth,
+		},
+		IsCA:                  false,
+		BasicConstraintsValid: true,
+		IPAddresses:           certRequest.IPAddresses,
+	}
+
+	certRaw, err := x509.CreateCertificate(rand.Reader, certTmpl, parentCert, certRequest.PublicKey, parentKey)
+	if err != nil {
+		return err
+	}
+	kubeletCert := pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: certRaw,
+	})
+
+	return k.file.Write(kubelet.CertificateFilename, kubeletCert, file.OptMkdirAll)
 }

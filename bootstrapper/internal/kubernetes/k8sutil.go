@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"context"
+	"net"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
@@ -10,7 +11,7 @@ import (
 
 type clusterUtil interface {
 	InstallComponents(ctx context.Context, version string) error
-	InitCluster(ctx context.Context, initConfig []byte, log *logger.Logger) error
+	InitCluster(ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, log *logger.Logger) error
 	JoinCluster(ctx context.Context, joinConfig []byte, log *logger.Logger) error
 	SetupPodNetwork(context.Context, k8sapi.SetupPodNetworkInput) error
 	SetupAccessManager(kubectl k8sapi.Client, sshUsers resources.Marshaler) error

@@ -1,18 +1,18 @@
 package kubernetesca
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
-	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/bootstrapper/util"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
+	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
 const (
@@ -35,22 +35,22 @@ func New(log *logger.Logger, fileHandler file.Handler) *KubernetesCA {
 }
 
 // GetCertificate creates a certificate for a node and signs it using the Kubernetes root CA.
-func (c KubernetesCA) GetCertificate(nodeName string) (cert []byte, key []byte, err error) {
+func (c KubernetesCA) GetCertificate(csr []byte) (cert []byte, err error) {
 	c.log.Debugf("Loading Kubernetes CA certificate")
 	parentCertRaw, err := c.file.Read(caCertFilename)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	parentCertPEM, _ := pem.Decode(parentCertRaw)
 	parentCert, err := x509.ParseCertificate(parentCertPEM.Bytes)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	c.log.Debugf("Loading Kubernetes CA private key")
 	parentKeyRaw, err := c.file.Read(caKeyFilename)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	parentKeyPEM, _ := pem.Decode(parentKeyRaw)
 	var parentKey any
@@ -62,30 +62,34 @@ func (c KubernetesCA) GetCertificate(nodeName string) (cert []byte, key []byte, 
 	case "PRIVATE KEY":
 		parentKey, err = x509.ParsePKCS8PrivateKey(parentKeyPEM.Bytes)
 	default:
-		return nil, nil, fmt.Errorf("unsupported key type %q", parentCertPEM.Type)
+		return nil, fmt.Errorf("unsupported key type %q", parentCertPEM.Type)
 	}
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	c.log.Infof("Creating kubelet private key")
-	privK, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	certRequest, err := x509.ParseCertificateRequest(csr)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	keyBytes, err := x509.MarshalECPrivateKey(privK)
-	if err != nil {
-		return nil, nil, err
+	if err := certRequest.CheckSignature(); err != nil {
+		return nil, err
 	}
-	kubeletKey := pem.EncodeToMemory(&pem.Block{
-		Type:  "EC PRIVATE KEY",
-		Bytes: keyBytes,
-	})
 
 	c.log.Infof("Creating kubelet certificate")
+	if len(certRequest.Subject.Organization) != 1 {
+		return nil, errors.New("certificate request must have exactly one organization")
+	}
+	if certRequest.Subject.Organization[0] != kubeconstants.NodesGroup {
+		return nil, fmt.Errorf("certificate request must have organization %q but has %q", kubeconstants.NodesGroup, certRequest.Subject.Organization[0])
+	}
+	if !strings.HasPrefix(certRequest.Subject.CommonName, kubeconstants.NodesUserPrefix) {
+		return nil, fmt.Errorf("certificate request must have common name prefix %q but is %q", kubeconstants.NodesUserPrefix, certRequest.Subject.CommonName)
+	}
+
 	serialNumber, err := util.GenerateCertificateSerialNumber()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	now := time.Now()
@@ -95,25 +99,25 @@ func (c KubernetesCA) GetCertificate(nodeName string) (cert []byte, key []byte, 
 		SerialNumber: serialNumber,
 		NotBefore:    now.Add(-2 * time.Hour),
 		NotAfter:     now.Add(24 * 365 * time.Hour),
-		Subject: pkix.Name{
-			Organization: []string{"system:nodes"},
-			CommonName:   fmt.Sprintf("system:node:%s", nodeName),
-		},
-		KeyUsage: x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		Subject:      certRequest.Subject,
+		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage: []x509.ExtKeyUsage{
 			x509.ExtKeyUsageClientAuth,
+			x509.ExtKeyUsageServerAuth,
 		},
 		IsCA:                  false,
 		BasicConstraintsValid: true,
+		IPAddresses:           certRequest.IPAddresses,
 	}
-	certRaw, err := x509.CreateCertificate(rand.Reader, certTmpl, parentCert, &privK.PublicKey, parentKey)
+
+	certRaw, err := x509.CreateCertificate(rand.Reader, certTmpl, parentCert, certRequest.PublicKey, parentKey)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	kubeletCert := pem.EncodeToMemory(&pem.Block{
 		Type:  "CERTIFICATE",
 		Bytes: certRaw,
 	})
 
-	return kubeletCert, kubeletKey, nil
+	return kubeletCert, nil
 }

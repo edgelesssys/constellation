@@ -3,12 +3,14 @@ package k8sapi
 import (
 	"path/filepath"
 
+	"github.com/edgelesssys/constellation/bootstrapper/internal/kubelet"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/constants"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeletconf "k8s.io/kubelet/config/v1beta1"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
+	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
 // Uses types defined here: https://kubernetes.io/docs/reference/config-api/kubeadm-config.v1beta3/
@@ -62,6 +64,11 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool) Kube
 						"audit-log-maxbackup": "10",                                     // CIS benchmark - Default value of Rancher
 						"audit-log-maxsize":   "100",                                    // CIS benchmark - Default value of Rancher
 						"profiling":           "false",                                  // CIS benchmark
+						"kubelet-certificate-authority": filepath.Join(
+							kubeconstants.KubernetesDir,
+							kubeconstants.DefaultCertificateDir,
+							kubeconstants.CACertName,
+						),
 						"tls-cipher-suites": "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256," +
 							"TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256," +
 							"TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384," +
@@ -134,6 +141,8 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool) Kube
 					Effect: corev1.TaintEffectPreferNoSchedule,
 				},
 			},
+			TLSCertFile:       kubelet.CertificateFilename,
+			TLSPrivateKeyFile: kubelet.KeyFilename,
 		},
 	}
 }

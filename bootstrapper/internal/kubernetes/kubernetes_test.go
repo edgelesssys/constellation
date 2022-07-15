@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"context"
 	"errors"
+	"net"
 	"regexp"
 	"testing"
 
@@ -496,7 +497,7 @@ func (s *stubClusterUtil) InstallComponents(ctx context.Context, version string)
 	return s.installComponentsErr
 }
 
-func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte, log *logger.Logger) error {
+func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, log *logger.Logger) error {
 	s.initConfigs = append(s.initConfigs, initConfig)
 	return s.initClusterErr
 }

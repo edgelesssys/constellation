@@ -49,33 +49,33 @@ func TestIssueJoinTicket(t *testing.T) {
 		"worker node": {
 			kubeadm: stubTokenGetter{token: testJoinToken},
 			kms:     stubKeyGetter{dataKey: testKey},
-			ca:      stubCA{cert: testCert, key: testKey},
+			ca:      stubCA{cert: testCert},
 			id:      mustMarshalID(testID),
 		},
 		"GetDataKey fails": {
 			kubeadm: stubTokenGetter{token: testJoinToken},
 			kms:     stubKeyGetter{getDataKeyErr: someErr},
-			ca:      stubCA{cert: testCert, key: testKey},
+			ca:      stubCA{cert: testCert},
 			id:      mustMarshalID(testID),
 			wantErr: true,
 		},
 		"loading IDs fails": {
 			kubeadm: stubTokenGetter{token: testJoinToken},
 			kms:     stubKeyGetter{dataKey: testKey},
-			ca:      stubCA{cert: testCert, key: testKey},
+			ca:      stubCA{cert: testCert},
 			id:      []byte{0x1, 0x2, 0x3},
 			wantErr: true,
 		},
 		"no ID file": {
 			kubeadm: stubTokenGetter{token: testJoinToken},
 			kms:     stubKeyGetter{dataKey: testKey},
-			ca:      stubCA{cert: testCert, key: testKey},
+			ca:      stubCA{cert: testCert},
 			wantErr: true,
 		},
 		"GetJoinToken fails": {
 			kubeadm: stubTokenGetter{getJoinTokenErr: someErr},
 			kms:     stubKeyGetter{dataKey: testKey},
-			ca:      stubCA{cert: testCert, key: testKey},
+			ca:      stubCA{cert: testCert},
 			id:      mustMarshalID(testID),
 			wantErr: true,
 		},
@@ -93,14 +93,14 @@ func TestIssueJoinTicket(t *testing.T) {
 				files: map[string][]byte{"test": {0x1, 0x2, 0x3}},
 			},
 			kms: stubKeyGetter{dataKey: testKey},
-			ca:  stubCA{cert: testCert, key: testKey},
+			ca:  stubCA{cert: testCert},
 			id:  mustMarshalID(testID),
 		},
 		"GetControlPlaneCertificateKey fails": {
 			isControlPlane: true,
 			kubeadm:        stubTokenGetter{token: testJoinToken, certificateKeyErr: someErr},
 			kms:            stubKeyGetter{dataKey: testKey},
-			ca:             stubCA{cert: testCert, key: testKey},
+			ca:             stubCA{cert: testCert},
 			id:             mustMarshalID(testID),
 			wantErr:        true,
 		},
@@ -125,7 +125,6 @@ func TestIssueJoinTicket(t *testing.T) {
 
 			req := &joinproto.IssueJoinTicketRequest{
 				DiskUuid:       "uuid",
-				NodeName:       "test",
 				IsControlPlane: tc.isControlPlane,
 			}
 			resp, err := api.IssueJoinTicket(context.Background(), req)
@@ -145,7 +144,6 @@ func TestIssueJoinTicket(t *testing.T) {
 			assert.Equal(tc.kubeadm.token.CACertHashes[0], resp.DiscoveryTokenCaCertHash)
 			assert.Equal(tc.kubeadm.token.Token, resp.Token)
 			assert.Equal(tc.ca.cert, resp.KubeletCert)
-			assert.Equal(tc.ca.key, resp.KubeletKey)
 
 			if tc.isControlPlane {
 				assert.Len(resp.ControlPlaneFiles, len(tc.kubeadm.files))
@@ -188,10 +186,9 @@ func (f stubKeyGetter) GetDataKey(context.Context, string, int) ([]byte, error) 
 
 type stubCA struct {
 	cert       []byte
-	key        []byte
 	getCertErr error
 }
 
-func (f stubCA) GetCertificate(string) ([]byte, []byte, error) {
-	return f.cert, f.key, f.getCertErr
+func (f stubCA) GetCertificate(csr []byte) ([]byte, error) {
+	return f.cert, f.getCertErr
 }
