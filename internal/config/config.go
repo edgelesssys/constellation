@@ -176,13 +176,6 @@ func Default() *Config {
 				FromPort:    constants.BootstrapperPort,
 			},
 			{
-				Name:        "wireguard",
-				Description: "WireGuard default port",
-				Protocol:    "udp",
-				IPRange:     "0.0.0.0/0",
-				FromPort:    constants.WireguardPort,
-			},
-			{
 				Name:        "ssh",
 				Description: "SSH",
 				Protocol:    "tcp",

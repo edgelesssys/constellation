@@ -39,7 +39,6 @@ const (
 	BootstrapperPort = 9000
 	EnclaveSSHPort   = 2222
 	SSHPort          = 22
-	WireguardPort    = 51820
 	NVMEOverTCPPort  = 8009
 	// Default NodePort Range
 	// https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
@@ -99,14 +98,6 @@ const (
 	// KubernetesVersion installed by kubeadm.
 	KubernetesVersion      = "stable-1.23"
 	KubernetesJoinTokenTTL = 15 * time.Minute
-
-	//
-	// VPN.
-	//
-
-	// WireguardAdminMTU is the MTU designated for the admin's WireGuard interface.
-	// WireGuard doesn't support Path MTU Discovery. Thus, its default MTU can be too high on some networks.
-	WireguardAdminMTU = 1300
 )
 
 // VersionInfo is the version of a binary. Left as a separate variable to allow override during build.

@@ -4,8 +4,6 @@
 
 [Install & configure `gcloud` CLI](https://cloud.google.com/sdk/gcloud) for access to GCP.
 
-[Install WireGuard](https://www.wireguard.com/install/) for connecting to your cluster
-
 [Install kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/) for working with Kubernetes
 
 For more information [follow our documentation.](https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install)
@@ -18,7 +16,6 @@ These tests results were produced using Sonobuoy v0.56.4.
 ```sh
 constellation create gcp 1 2 n2d-standard-2 -y
 constellation init
-wg-quick up ./wg0.conf
 export KUBECONFIG="$PWD/constellation-admin.conf"
 ```
 
@@ -50,7 +47,6 @@ cat plugins/e2e/results/global/junit_01.xml
 # Remove test deployments
 sonobuoy delete --wait
 # Or, shutdown cluster
-wg-quick down ./wg0.conf
 ./constellation terminate
 rm constellation-mastersecret.base64
 ```

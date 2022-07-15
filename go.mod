@@ -33,8 +33,6 @@ replace (
 	k8s.io/sample-controller => k8s.io/sample-controller v0.24.0
 )
 
-replace github.com/nmiculinic/wg-quick-go v0.1.3 => github.com/katexochen/wg-quick-go v0.1.3-beta.1
-
 require (
 	cloud.google.com/go/compute v1.5.0
 	cloud.google.com/go/iam v0.3.0

@@ -20,20 +20,17 @@ inputs:
 runs:
   using: 'composite'
   steps:
-  - name: Install wireguard
-    run: sudo apt-get update && sudo apt-get install wireguard iproute2 jq -y
-    shell: bash
   - name: Install kubectl
     run: |
       curl -LO https://dl.k8s.io/release/v1.23.0/bin/linux/amd64/kubectl
       install kubectl /usr/local/bin
     shell: bash
-  - name: Install yq
+  - name: Install yq jq
     run: |
       sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CC86BB64
       sudo add-apt-repository ppa:rmescandon/yq
       sudo apt update
-      sudo apt install yq -y
+      sudo apt install yq jq -y
     shell: bash
 
   - name: Constellation config generate
@@ -74,8 +71,4 @@ runs:
     run: |
       if [ ${{ inputs.autoscale }} = true ]; then autoscale=--autoscale; fi
       constellation init ${autoscale}
-    shell: bash
-
-  - name: Configure VPN connection
-    run: wg-quick up ./wg0.conf
     shell: bash

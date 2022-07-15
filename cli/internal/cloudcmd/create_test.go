@@ -36,7 +36,7 @@ func TestCreator(t *testing.T) {
 		GCPHealthCheck:                  "health-check",
 		GCPForwardingRule:               "forwarding-rule",
 		GCPFirewalls: []string{
-			"bootstrapper", "wireguard", "ssh", "nodeport", "kubernetes",
+			"bootstrapper", "ssh", "nodeport", "kubernetes",
 			"allow-cluster-internal-tcp", "allow-cluster-internal-udp", "allow-cluster-internal-icmp",
 			"allow-node-internal-tcp", "allow-node-internal-udp", "allow-node-internal-icmp",
 		},

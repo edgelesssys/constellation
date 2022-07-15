@@ -61,16 +61,6 @@ Then run act with the event as input:
 act -j e2e-test --eventpath event.json
 ```
 
-### Wireguard
-
-When running actions that use Wireguard, you need to provide privileged capabilities to Docker:
-
-```bash
-act --privileged
-```
-
-Make sure there is no wg0 interface configured on your machine, else this will fail inside container.
-
 ### Authorizing GCP
 
 For creating Kubernetes clusters in GCP a local copy of the service account secret is required.

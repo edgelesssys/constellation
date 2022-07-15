@@ -34,7 +34,6 @@ replace (
 
 replace (
 	github.com/edgelesssys/constellation => ./..
-	github.com/nmiculinic/wg-quick-go v0.1.3 => github.com/katexochen/wg-quick-go v0.1.3-beta.1
 )
 
 require (
