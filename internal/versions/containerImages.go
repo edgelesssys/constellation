@@ -2,7 +2,7 @@ package versions
 
 const (
 	// Constellation images.
-	JoinImage          = "ghcr.io/edgelesssys/constellation/join-service:v1.3.2-0.20220714151638-d295be31"
+	JoinImage          = "ghcr.io/edgelesssys/constellation/join-service:v1.3.2-0.20220718102802-8c25a227"
 	AccessManagerImage = "ghcr.io/edgelesssys/constellation/access-manager:v1.3.2-0.20220714151638-d295be31"
 	KmsImage           = "ghcr.io/edgelesssys/constellation/kmsserver:v1.3.2-0.20220714151638-d295be31"
 	VerificationImage  = "ghcr.io/edgelesssys/constellation/verification-service:v1.3.2-0.20220714151638-d295be31"
