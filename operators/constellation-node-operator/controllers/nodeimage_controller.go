@@ -28,7 +28,7 @@ import (
 
 const (
 	// nodeOverprovisionLimit is the maximum number of extra nodes created during the update procedure at any point in time.
-	nodeOverprovisionLimit = 2
+	nodeOverprovisionLimit = 4
 	// nodeJoinTimeout is the time limit pending nodes have to join the cluster before being terminated.
 	nodeJoinTimeout = time.Minute * 15
 	// nodeLeaveTimeout is the time limit pending nodes have to leave the cluster and being terminated.
@@ -47,14 +47,16 @@ const (
 // NodeImageReconciler reconciles a NodeImage object
 type NodeImageReconciler struct {
 	nodeReplacer
+	etcdRemover
 	client.Client
 	Scheme *runtime.Scheme
 }
 
 // NewNodeImageReconciler creates a new NodeImageReconciler.
-func NewNodeImageReconciler(nodeReplacer nodeReplacer, client client.Client, scheme *runtime.Scheme) *NodeImageReconciler {
+func NewNodeImageReconciler(nodeReplacer nodeReplacer, etcdRemover etcdRemover, client client.Client, scheme *runtime.Scheme) *NodeImageReconciler {
 	return &NodeImageReconciler{
 		nodeReplacer: nodeReplacer,
+		etcdRemover:  etcdRemover,
 		Client:       client,
 		Scheme:       scheme,
 	}
@@ -441,6 +443,17 @@ func (r *NodeImageReconciler) deleteNode(ctx context.Context, controller metav1.
 	}
 
 	// node is unused & ready to be replaced
+	if nodeutil.IsControlPlaneNode(&node) {
+		nodeVPCIP, err := nodeutil.VPCIP(&node)
+		if err != nil {
+			logr.Error(err, "Unable to get node VPC IP")
+			return false, err
+		}
+		if err := r.RemoveEtcdMemberFromCluster(ctx, nodeVPCIP); err != nil {
+			logr.Error(err, "Unable to remove etcd member from cluster")
+			return false, err
+		}
+	}
 	if err := r.Delete(ctx, &node); err != nil {
 		logr.Error(err, "Deleting node")
 		return false, err
@@ -777,4 +790,9 @@ type nodeReplacer interface {
 	CreateNode(ctx context.Context, scalingGroupID string) (nodeName, providerID string, err error)
 	// DeleteNode starts the termination of the node at the CSP.
 	DeleteNode(ctx context.Context, providerID string) error
+}
+
+type etcdRemover interface {
+	// RemoveEtcdMemberFromCluster removes an etcd member from the cluster.
+	RemoveEtcdMemberFromCluster(ctx context.Context, vpcIP string) error
 }

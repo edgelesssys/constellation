@@ -15,11 +15,13 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/api/v1alpha1"
 	"github.com/edgelesssys/constellation/operators/constellation-node-operator/controllers"
+	"github.com/edgelesssys/constellation/operators/constellation-node-operator/internal/etcd"
 	nodemaintenancev1beta1 "github.com/medik8s/node-maintenance-operator/api/v1beta1"
 	//+kubebuilder:scaffold:imports
 )
@@ -79,8 +81,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	k8sClient, err := client.New(ctrl.GetConfigOrDie(), client.Options{Scheme: scheme})
+	if err != nil {
+		setupLog.Error(err, "Unable to create k8s client")
+		os.Exit(1)
+	}
+	etcdClient, err := etcd.New(k8sClient)
+	if err != nil {
+		setupLog.Error(err, "Unable to create etcd client")
+		os.Exit(1)
+	}
+	defer etcdClient.Close()
+
 	if err = controllers.NewNodeImageReconciler(
-		cspClient, mgr.GetClient(), mgr.GetScheme(),
+		cspClient, etcdClient, mgr.GetClient(), mgr.GetScheme(),
 	).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Unable to create controller", "controller", "NodeImage")
 		os.Exit(1)
