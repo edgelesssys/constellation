@@ -3,6 +3,7 @@ package retry
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -98,6 +99,13 @@ func TestServiceIsUnavailable(t *testing.T) {
 		"normal unavailable error": {
 			err:             status.Error(codes.Unavailable, "error"),
 			wantUnavailable: true,
+		},
+		"wrapped error": {
+			err:             fmt.Errorf("some wrapping: %w", status.Error(codes.Unavailable, "error")),
+			wantUnavailable: true,
+		},
+		"code unknown": {
+			err: status.Error(codes.Unknown, "unknown"),
 		},
 	}
 

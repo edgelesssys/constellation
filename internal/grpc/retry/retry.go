@@ -2,6 +2,7 @@ package retry
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -52,13 +53,25 @@ func (r *IntervalRetrier) Do(ctx context.Context) error {
 // serviceIsUnavailable checks if the error is a grpc status with code Unavailable.
 // In the special case of an authentication handshake failure, false is returned to prevent further retries.
 func (r *IntervalRetrier) serviceIsUnavailable(err error) bool {
-	statusErr, ok := status.FromError(err)
+	// taken from google.golang.org/grpc/status.FromError
+	var targetErr interface {
+		GRPCStatus() *status.Status
+		Error() string
+	}
+
+	if !errors.As(err, &targetErr) {
+		return false
+	}
+
+	statusErr, ok := status.FromError(targetErr)
 	if !ok {
 		return false
 	}
+
 	if statusErr.Code() != codes.Unavailable {
 		return false
 	}
+
 	// ideally we would check the error type directly, but grpc only provides a string
 	return !strings.HasPrefix(statusErr.Message(), `connection error: desc = "transport: authentication handshake failed`)
 }

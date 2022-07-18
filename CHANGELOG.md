@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - User facing WireGuard VPN
 
 ### Fixed
+- Correctly wait for `bootstrapper` to come online in `constellation init`
 
 ### Security
 - Create Kubernetes CA signed kubelet certificates on activation.
