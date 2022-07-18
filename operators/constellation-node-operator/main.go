@@ -19,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	azureclient "github.com/edgelesssys/constellation/operators/constellation-node-operator/internal/azure/client"
 	gcpclient "github.com/edgelesssys/constellation/operators/constellation-node-operator/internal/gcp/client"
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/api/v1alpha1"
@@ -63,7 +64,11 @@ func main() {
 	var clientErr error
 	switch strings.ToLower(csp) {
 	case "azure":
-		panic("Azure is not supported yet")
+		cspClient, clientErr = azureclient.NewFromDefault("0d202bbb-4fa7-4af8-8125-58c269a05435", "adb650a8-5da3-4b15-b4b0-3daf65ff7626")
+		if clientErr != nil {
+			setupLog.Error(clientErr, "Unable to create Azure client")
+			os.Exit(1)
+		}
 	case "gcp":
 		cspClient, clientErr = gcpclient.New(context.Background())
 		if clientErr != nil {
