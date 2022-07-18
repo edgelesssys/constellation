@@ -1,11 +1,14 @@
 package node
 
 import (
+	"errors"
 	"regexp"
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
+
+const controlPlaneRoleLabel = "node-role.kubernetes.io/control-plane"
 
 var reservedHostRegex = regexp.MustCompile(`^(.+\.|)(kubernetes|k8s)\.io(/.*)?$`)
 
@@ -17,6 +20,22 @@ func Ready(node *corev1.Node) bool {
 		}
 	}
 	return false
+}
+
+// VPCIP returns the VPC IP of a node.
+func VPCIP(node *corev1.Node) (string, error) {
+	for _, addr := range node.Status.Addresses {
+		if addr.Type == corev1.NodeInternalIP {
+			return addr.Address, nil
+		}
+	}
+	return "", errors.New("no VPC IP found")
+}
+
+// IsControlPlaneNode returns true if the node is a control plane node.
+func IsControlPlaneNode(node *corev1.Node) bool {
+	_, ok := node.Labels[controlPlaneRoleLabel]
+	return ok
 }
 
 // FindPending searches for a pending node that matches a node.

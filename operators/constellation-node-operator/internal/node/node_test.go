@@ -5,8 +5,9 @@ import (
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestReady(t *testing.T) {
@@ -53,6 +54,68 @@ func TestReady(t *testing.T) {
 	}
 }
 
+func TestIsControlPlaneNode(t *testing.T) {
+	testCases := map[string]struct {
+		node             corev1.Node
+		wantControlPlane bool
+	}{
+		"node without labels": {},
+		"node with control-plane role label": {
+			node: corev1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{controlPlaneRoleLabel: ""},
+				},
+			},
+			wantControlPlane: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			assert.Equal(tc.wantControlPlane, IsControlPlaneNode(&tc.node))
+		})
+	}
+}
+
+func TestVPCIP(t *testing.T) {
+	testCases := map[string]struct {
+		node      corev1.Node
+		wantVPCIP string
+		wantErr   bool
+	}{
+		"node without addresses": {
+			wantErr: true,
+		},
+		"node with multiple addresses": {
+			node: corev1.Node{
+				Status: corev1.NodeStatus{
+					Addresses: []corev1.NodeAddress{
+						{Type: corev1.NodeExternalIP, Address: "external"},
+						{Type: corev1.NodeInternalIP, Address: "192.0.2.1"},
+						{Type: corev1.NodeInternalIP, Address: "second-internal"},
+					},
+				},
+			},
+			wantVPCIP: "192.0.2.1",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+			gotIP, err := VPCIP(&tc.node)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+			assert.Equal(tc.wantVPCIP, gotIP)
+		})
+	}
+}
+
 func TestFindPending(t *testing.T) {
 	testCases := map[string]struct {
 		pendingNodes []updatev1alpha1.PendingNode
@@ -66,7 +129,7 @@ func TestFindPending(t *testing.T) {
 		"node is not in pending nodes list": {
 			pendingNodes: pendingNodes,
 			node: &corev1.Node{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "doesnotexist",
 				},
 			},
@@ -74,7 +137,7 @@ func TestFindPending(t *testing.T) {
 		"pending node is leaving": {
 			pendingNodes: pendingNodes,
 			node: &corev1.Node{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "leavingnode",
 				},
 			},
@@ -82,7 +145,7 @@ func TestFindPending(t *testing.T) {
 		"pending node is not ready": {
 			pendingNodes: pendingNodes,
 			node: &corev1.Node{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "unreadynode",
 				},
 			},
@@ -90,7 +153,7 @@ func TestFindPending(t *testing.T) {
 		"pending node is found": {
 			pendingNodes: pendingNodes,
 			node: &corev1.Node{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "joiningnode",
 				},
 			},
