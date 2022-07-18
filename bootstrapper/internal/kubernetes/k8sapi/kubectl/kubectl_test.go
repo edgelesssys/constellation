@@ -1,12 +1,14 @@
 package kubectl
 
 import (
+	"context"
 	"errors"
 	"testing"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/cli-runtime/pkg/resource"
 )
 
@@ -15,9 +17,10 @@ func TestMain(m *testing.M) {
 }
 
 type stubClient struct {
-	applyOneObjectErr error
-	getObjectsInfos   []*resource.Info
-	getObjectsErr     error
+	applyOneObjectErr  error
+	getObjectsInfos    []*resource.Info
+	getObjectsErr      error
+	createConfigMapErr error
 }
 
 func (s *stubClient) ApplyOneObject(info *resource.Info, forceConflicts bool) error {
@@ -28,11 +31,16 @@ func (s *stubClient) GetObjects(resources resources.Marshaler) ([]*resource.Info
 	return s.getObjectsInfos, s.getObjectsErr
 }
 
+func (s *stubClient) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error {
+	return s.createConfigMapErr
+}
+
 type stubClientGenerator struct {
-	applyOneObjectErr error
-	getObjectsInfos   []*resource.Info
-	getObjectsErr     error
-	newClientErr      error
+	applyOneObjectErr  error
+	getObjectsInfos    []*resource.Info
+	getObjectsErr      error
+	newClientErr       error
+	createConfigMapErr error
 }
 
 func (s *stubClientGenerator) NewClient(kubeconfig []byte) (Client, error) {
@@ -40,6 +48,7 @@ func (s *stubClientGenerator) NewClient(kubeconfig []byte) (Client, error) {
 		s.applyOneObjectErr,
 		s.getObjectsInfos,
 		s.getObjectsErr,
+		s.createConfigMapErr,
 	}, s.newClientErr
 }
 

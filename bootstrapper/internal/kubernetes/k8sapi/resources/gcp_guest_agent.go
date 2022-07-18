@@ -2,6 +2,7 @@ package resources
 
 import (
 	"github.com/edgelesssys/constellation/internal/secrets"
+	"github.com/edgelesssys/constellation/internal/versions"
 	apps "k8s.io/api/apps/v1"
 	k8s "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,7 +65,7 @@ func NewGCPGuestAgentDaemonset() *gcpGuestAgentDaemonset {
 						Containers: []k8s.Container{
 							{
 								Name:  "gcp-guest-agent",
-								Image: gcpGuestImage, // built from https://github.com/edgelesssys/gcp-guest-agent
+								Image: versions.GcpGuestImage, // built from https://github.com/edgelesssys/gcp-guest-agent
 								SecurityContext: &k8s.SecurityContext{
 									Privileged: func(b bool) *bool { return &b }(true),
 									Capabilities: &k8s.Capabilities{

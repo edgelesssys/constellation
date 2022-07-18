@@ -5,6 +5,7 @@ import (
 
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/secrets"
+	"github.com/edgelesssys/constellation/internal/versions"
 	apps "k8s.io/api/apps/v1"
 	k8s "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
@@ -135,7 +136,7 @@ func NewJoinServiceDaemonset(csp string, measurementsJSON, idJSON string) *joinS
 						Containers: []k8s.Container{
 							{
 								Name:  "join-service",
-								Image: joinImage,
+								Image: versions.JoinImage,
 								Ports: []k8s.ContainerPort{
 									{
 										ContainerPort: constants.JoinServicePort,
@@ -167,9 +168,22 @@ func NewJoinServiceDaemonset(csp string, measurementsJSON, idJSON string) *joinS
 							{
 								Name: "config",
 								VolumeSource: k8s.VolumeSource{
-									ConfigMap: &k8s.ConfigMapVolumeSource{
-										LocalObjectReference: k8s.LocalObjectReference{
-											Name: "join-config",
+									Projected: &k8s.ProjectedVolumeSource{
+										Sources: []k8s.VolumeProjection{
+											{
+												ConfigMap: &k8s.ConfigMapProjection{
+													LocalObjectReference: k8s.LocalObjectReference{
+														Name: "join-config",
+													},
+												},
+											},
+											{
+												ConfigMap: &k8s.ConfigMapProjection{
+													LocalObjectReference: k8s.LocalObjectReference{
+														Name: constants.K8sVersion,
+													},
+												},
+											},
 										},
 									},
 								},

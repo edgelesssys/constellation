@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"github.com/edgelesssys/constellation/internal/versions"
 	"google.golang.org/protobuf/proto"
 	apps "k8s.io/api/apps/v1"
 	k8s "k8s.io/api/core/v1"
@@ -434,7 +435,7 @@ func NewDefaultAutoscalerDeployment(extraVolumes []k8s.Volume, extraVolumeMounts
 						Containers: []k8s.Container{
 							{
 								Name:            "cluster-autoscaler",
-								Image:           clusterAutoscalerImage,
+								Image:           versions.ClusterAutoscalerImage,
 								ImagePullPolicy: k8s.PullIfNotPresent,
 								LivenessProbe: &k8s.Probe{
 									ProbeHandler: k8s.ProbeHandler{

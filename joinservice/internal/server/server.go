@@ -12,6 +12,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/grpclog"
 	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/internal/versions"
 	"github.com/edgelesssys/constellation/joinservice/joinproto"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -92,6 +93,12 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		return nil, status.Errorf(codes.Internal, "unable to generate Kubernetes join arguments: %s", err)
 	}
 
+	log.Infof("Querying K8sVersion ConfigMap")
+	k8sVersion, err := s.getK8sVersion(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "unable to get k8s version: %s", err)
+	}
+
 	log.Infof("Creating signed kubelet certificate")
 	kubeletCert, err := s.ca.GetCertificate(req.CertificateRequest)
 	if err != nil {
@@ -125,7 +132,23 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		DiscoveryTokenCaCertHash: kubeArgs.CACertHashes[0],
 		KubeletCert:              kubeletCert,
 		ControlPlaneFiles:        controlPlaneFiles,
+		KubernetesVersion:        k8sVersion,
 	}, nil
+}
+
+// getK8sVersion reads the k8s version from a VolumeMount that is backed by the k8s-version ConfigMap.
+func (s *Server) getK8sVersion(ctx context.Context) (string, error) {
+	fileContent, err := s.file.Read(filepath.Join(constants.ServiceBasePath, "k8s-version"))
+	if err != nil {
+		return "", fmt.Errorf("could not read k8s version file: %v", err)
+	}
+	k8sVersion := string(fileContent)
+
+	if !versions.IsSupportedK8sVersion(k8sVersion) {
+		return "", fmt.Errorf("supplied k8s version is not supported: %v", k8sVersion)
+	}
+
+	return k8sVersion, nil
 }
 
 // joinTokenGetter returns Kubernetes bootstrap (join) tokens.

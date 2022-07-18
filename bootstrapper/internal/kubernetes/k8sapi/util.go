@@ -7,6 +7,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net"
 	"net/http"
 	"os"
@@ -21,8 +22,12 @@ import (
 	"github.com/edgelesssys/constellation/bootstrapper/util"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/internal/versions"
+	"github.com/icholy/replace"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
+	"golang.org/x/text/transform"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
@@ -39,7 +44,15 @@ var providerIDRegex = regexp.MustCompile(`^azure:///subscriptions/([^/]+)/resour
 type Client interface {
 	Apply(resources resources.Marshaler, forceConflicts bool) error
 	SetKubeconfig(kubeconfig []byte)
+	CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error
 	// TODO: add tolerations
+}
+
+type installer interface {
+	Install(
+		ctx context.Context, sourceURL string, destinations []string, perm fs.FileMode,
+		extract bool, transforms ...transform.Transformer,
+	) error
 }
 
 // KubernetesUtil provides low level management of the kubernetes cluster.
@@ -58,13 +71,46 @@ func NewKubernetesUtil() *KubernetesUtil {
 
 // InstallComponents installs kubernetes components in the version specified.
 func (k *KubernetesUtil) InstallComponents(ctx context.Context, version string) error {
-	var versionConf kubernetesVersion
+	var versionConf versions.KubernetesVersion
 	var ok bool
-	if versionConf, ok = versionConfigs[version]; !ok {
+	if versionConf, ok = versions.VersionConfigs[version]; !ok {
 		return fmt.Errorf("unsupported kubernetes version %q", version)
 	}
-	if err := versionConf.installK8sComponents(ctx, k.inst); err != nil {
-		return err
+
+	if err := k.inst.Install(
+		ctx, versionConf.CNIPluginsURL, []string{cniPluginsDir}, executablePerm, true,
+	); err != nil {
+		return fmt.Errorf("installing cni plugins: %w", err)
+	}
+	if err := k.inst.Install(
+		ctx, versionConf.CrictlURL, []string{binDir}, executablePerm, true,
+	); err != nil {
+		return fmt.Errorf("installing crictl: %w", err)
+	}
+	if err := k.inst.Install(
+		ctx, versionConf.KubeletServiceURL, []string{kubeletServiceEtcPath, kubeletServiceStatePath}, systemdUnitPerm, false, replace.String("/usr/bin", binDir),
+	); err != nil {
+		return fmt.Errorf("installing kubelet service: %w", err)
+	}
+	if err := k.inst.Install(
+		ctx, versionConf.KubeadmConfURL, []string{kubeadmConfEtcPath, kubeadmConfStatePath}, systemdUnitPerm, false, replace.String("/usr/bin", binDir),
+	); err != nil {
+		return fmt.Errorf("installing kubeadm conf: %w", err)
+	}
+	if err := k.inst.Install(
+		ctx, versionConf.KubeletURL, []string{kubeletPath}, executablePerm, false,
+	); err != nil {
+		return fmt.Errorf("installing kubelet: %w", err)
+	}
+	if err := k.inst.Install(
+		ctx, versionConf.KubeadmURL, []string{kubeadmPath}, executablePerm, false,
+	); err != nil {
+		return fmt.Errorf("installing kubeadm: %w", err)
+	}
+	if err := k.inst.Install(
+		ctx, versionConf.KubectlURL, []string{kubectlPath}, executablePerm, false,
+	); err != nil {
+		return fmt.Errorf("installing kubectl: %w", err)
 	}
 
 	return enableSystemdUnit(ctx, kubeletServiceEtcPath)

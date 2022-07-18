@@ -5,6 +5,7 @@ import (
 
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/secrets"
+	"github.com/edgelesssys/constellation/internal/versions"
 	apps "k8s.io/api/apps/v1"
 	k8s "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
@@ -226,7 +227,7 @@ func NewKMSDeployment(csp string, masterSecret []byte) *kmsDeployment {
 						Containers: []k8s.Container{
 							{
 								Name:  "kms",
-								Image: kmsImage,
+								Image: versions.KmsImage,
 								Args: []string{
 									fmt.Sprintf("--atls-port=%d", constants.KMSATLSPort),
 									fmt.Sprintf("--port=%d", constants.KMSPort),

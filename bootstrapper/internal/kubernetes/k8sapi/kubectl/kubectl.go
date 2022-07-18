@@ -1,10 +1,12 @@
 package kubectl
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/cli-runtime/pkg/resource"
 )
 
@@ -17,6 +19,7 @@ type Client interface {
 	ApplyOneObject(info *resource.Info, forceConflicts bool) error
 	// GetObjects converts resources into prepared info fields for use in ApplyOneObject.
 	GetObjects(resources resources.Marshaler) ([]*resource.Info, error)
+	CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error
 }
 
 // clientGenerator can generate new clients from a kubeconfig.
@@ -65,4 +68,18 @@ func (k *Kubectl) Apply(resources resources.Marshaler, forceConflicts bool) erro
 // SetKubeconfig will store the kubeconfig to generate Clients using the clientGenerator later.
 func (k *Kubectl) SetKubeconfig(kubeconfig []byte) {
 	k.kubeconfig = kubeconfig
+}
+
+func (k *Kubectl) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error {
+	client, err := k.clientGenerator.NewClient(k.kubeconfig)
+	if err != nil {
+		return err
+	}
+
+	err = client.CreateConfigMap(ctx, configMap)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

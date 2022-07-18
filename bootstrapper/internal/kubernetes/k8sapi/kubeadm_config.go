@@ -5,7 +5,6 @@ import (
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubelet"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
-	"github.com/edgelesssys/constellation/internal/constants"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeletconf "k8s.io/kubelet/config/v1beta1"
@@ -25,7 +24,7 @@ const (
 
 type CoreOSConfiguration struct{}
 
-func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool) KubeadmInitYAML {
+func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool, k8sVersion string) KubeadmInitYAML {
 	var cloudProvider string
 	if externalCloudProvider {
 		cloudProvider = "external"
@@ -48,12 +47,14 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool) Kube
 				BindPort: bindPort,
 			},
 		},
+		// https://pkg.go.dev/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3#ClusterConfiguration
 		ClusterConfiguration: kubeadm.ClusterConfiguration{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "ClusterConfiguration",
 				APIVersion: kubeadm.SchemeGroupVersion.String(),
 			},
-			KubernetesVersion: constants.KubernetesVersion,
+			// Target kubernetes version of the control plane.
+			KubernetesVersion: k8sVersion,
 			// necessary to be able to access the kubeapi server through localhost
 			APIServer: kubeadm.APIServer{
 				ControlPlaneComponent: kubeadm.ControlPlaneComponent{

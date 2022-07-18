@@ -272,7 +272,7 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 		Token:             ticket.Token,
 		CACertHashes:      []string{ticket.DiscoveryTokenCaCertHash},
 	}
-	if err := c.joiner.JoinCluster(ctx, btd, c.role, c.log); err != nil {
+	if err := c.joiner.JoinCluster(ctx, btd, c.role, ticket.KubernetesVersion, c.log); err != nil {
 		return fmt.Errorf("joining Kubernetes cluster: %w", err)
 	}
 
@@ -386,6 +386,7 @@ type ClusterJoiner interface {
 		ctx context.Context,
 		args *kubeadm.BootstrapTokenDiscovery,
 		peerRole role.Role,
+		k8sVersion string,
 		log *logger.Logger,
 	) error
 }

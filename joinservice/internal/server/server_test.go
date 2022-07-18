@@ -37,6 +37,7 @@ func TestIssueJoinTicket(t *testing.T) {
 		CACertHashes:      []string{"hash"},
 		Token:             "token",
 	}
+	testK8sVersion := "1.23.6"
 
 	testCases := map[string]struct {
 		isControlPlane bool
@@ -115,6 +116,10 @@ func TestIssueJoinTicket(t *testing.T) {
 			if len(tc.id) > 0 {
 				require.NoError(file.Write(filepath.Join(constants.ServiceBasePath, constants.IDFilename), tc.id, 0o644))
 			}
+
+			// IssueJoinTicket tries to read the k8s-version ConfigMap from a mounted file.
+			require.NoError(file.Write(filepath.Join(constants.ServiceBasePath, constants.K8sVersion), []byte(testK8sVersion), 0o644))
+
 			api := New(
 				logger.NewTest(t),
 				file,

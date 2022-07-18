@@ -11,6 +11,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/versions"
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
@@ -60,6 +61,9 @@ type Config struct {
 	// examples:
 	//   - value: '[]UserKey{ { Username:  "Alice", PublicKey: "ssh-rsa AAAAB3NzaC...5QXHKW1rufgtJeSeJ8= alice@domain.com" } }'
 	SSHUsers []UserKey `yaml:"sshUsers,omitempty" validate:"dive"`
+	// description: |
+	//   Kubernetes version installed in the cluster.
+	KubernetesVersion string `yaml:"kubernetesVersion" validate:"supported_k8s_version"`
 }
 
 // UserKey describes a user that should be created with corresponding public SSH key.
@@ -226,7 +230,12 @@ func Default() *Config {
 				Measurements: qemuPCRs,
 			},
 		},
+		KubernetesVersion: "1.23.6",
 	}
+}
+
+func validateK8sVersion(fl validator.FieldLevel) bool {
+	return versions.IsSupportedK8sVersion(fl.Field().String())
 }
 
 // Validate checks the config values and returns validation error messages.
@@ -235,6 +244,11 @@ func (c *Config) Validate() ([]string, error) {
 	trans := ut.New(en.New()).GetFallback()
 	validate := validator.New()
 	if err := en_translations.RegisterDefaultTranslations(validate, trans); err != nil {
+		return nil, err
+	}
+
+	// register custom validator with label supported_k8s_version to validate version based on available versionConfigs.
+	if err := validate.RegisterValidation("supported_k8s_version", validateK8sVersion); err != nil {
 		return nil, err
 	}
 

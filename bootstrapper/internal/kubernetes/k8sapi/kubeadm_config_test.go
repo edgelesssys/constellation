@@ -19,11 +19,11 @@ func TestInitConfiguration(t *testing.T) {
 		config KubeadmInitYAML
 	}{
 		"CoreOS init config can be created": {
-			config: coreOSConfig.InitConfiguration(true),
+			config: coreOSConfig.InitConfiguration(true, "3.2.1"),
 		},
 		"CoreOS init config with all fields can be created": {
 			config: func() KubeadmInitYAML {
-				c := coreOSConfig.InitConfiguration(true)
+				c := coreOSConfig.InitConfiguration(true, "3.2.1")
 				c.SetAPIServerAdvertiseAddress("192.0.2.0")
 				c.SetNodeIP("192.0.2.0")
 				c.SetNodeName("node")

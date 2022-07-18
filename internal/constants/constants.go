@@ -63,12 +63,14 @@ const (
 	// Filenames for Constellation's micro services.
 	//
 
-	// ServiceBasePath is the base path for the mounted micro services files.
+	// ServiceBasePath is the base path for the mounted micro service's files.
 	ServiceBasePath = "/var/config"
 	// MeasurementsFilename is the filename of CC measurements.
 	MeasurementsFilename = "measurements"
 	// IDFilename is the filename of Constellation's IDs.
 	IDFilename = "id"
+	// K8sVersion is the filename of the mapped k8s-version configMap file.
+	K8sVersion = "k8s-version"
 
 	//
 	// Cryptographic constants.

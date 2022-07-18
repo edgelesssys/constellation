@@ -24,6 +24,7 @@ message IssueJoinTicketResponse {
     string token = 6;
     string discovery_token_ca_cert_hash = 7;
     repeated control_plane_cert_or_key control_plane_files = 8;
+    string kubernetes_version = 9;
 }
 
 message control_plane_cert_or_key {

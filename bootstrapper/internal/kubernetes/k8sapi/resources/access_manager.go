@@ -2,6 +2,7 @@ package resources
 
 import (
 	"github.com/edgelesssys/constellation/internal/secrets"
+	"github.com/edgelesssys/constellation/internal/versions"
 	"google.golang.org/protobuf/proto"
 	apps "k8s.io/api/apps/v1"
 	k8s "k8s.io/api/core/v1"
@@ -104,7 +105,7 @@ func NewAccessManagerDeployment(sshUsers map[string]string) *accessManagerDeploy
 						InitContainers: []k8s.Container{
 							{
 								Name:  "constellation-access-manager",
-								Image: accessManagerImage,
+								Image: versions.AccessManagerImage,
 								VolumeMounts: []k8s.VolumeMount{
 									{
 										Name:      "host",

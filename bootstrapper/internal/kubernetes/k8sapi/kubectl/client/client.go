@@ -2,9 +2,11 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -87,4 +89,14 @@ func (c *Client) GetObjects(resources resources.Marshaler) ([]*resource.Info, er
 		Flatten().
 		Do()
 	return result.Infos()
+}
+
+// CreateConfigMap creates the given ConfigMap.
+func (c *Client) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error {
+	_, err := c.clientset.CoreV1().ConfigMaps(configMap.ObjectMeta.Namespace).Create(ctx, &configMap, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

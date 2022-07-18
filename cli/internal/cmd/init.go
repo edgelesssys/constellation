@@ -120,7 +120,7 @@ func initialize(cmd *cobra.Command, dialer grpcDialer, serviceAccCreator service
 		KeyEncryptionKeyId:     "",
 		UseExistingKek:         false,
 		CloudServiceAccountUri: serviceAccount,
-		KubernetesVersion:      "1.23.6",
+		KubernetesVersion:      config.KubernetesVersion,
 		SshUserKeys:            ssh.ToProtoSlice(sshUsers),
 	}
 	resp, err := initCall(cmd.Context(), dialer, stat.BootstrapperHost, req)

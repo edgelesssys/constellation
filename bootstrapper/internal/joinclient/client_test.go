@@ -385,7 +385,7 @@ type stubClusterJoiner struct {
 	joinClusterErr    error
 }
 
-func (j *stubClusterJoiner) JoinCluster(context.Context, *kubeadm.BootstrapTokenDiscovery, role.Role, *logger.Logger) error {
+func (j *stubClusterJoiner) JoinCluster(context.Context, *kubeadm.BootstrapTokenDiscovery, role.Role, string, *logger.Logger) error {
 	j.joinClusterCalled = true
 	return j.joinClusterErr
 }

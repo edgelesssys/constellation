@@ -5,6 +5,7 @@ import (
 
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/secrets"
+	"github.com/edgelesssys/constellation/internal/versions"
 	apps "k8s.io/api/apps/v1"
 	k8s "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -73,7 +74,7 @@ func NewVerificationDaemonSet(csp string) *verificationDaemonset {
 						Containers: []k8s.Container{
 							{
 								Name:  "verification-service",
-								Image: verificationImage,
+								Image: versions.VerificationImage,
 								Ports: []k8s.ContainerPort{
 									{
 										Name:          "http",
