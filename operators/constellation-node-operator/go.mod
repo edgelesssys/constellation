@@ -7,6 +7,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.18.1
 	github.com/stretchr/testify v1.7.5
+	go.etcd.io/etcd/api/v3 v3.5.4
 	k8s.io/api v0.24.0
 	k8s.io/apimachinery v0.24.0
 	k8s.io/client-go v0.24.0
@@ -14,7 +15,17 @@ require (
 	sigs.k8s.io/controller-runtime v0.12.1
 )
 
-require github.com/pmezard/go-difflib v1.0.0 // indirect
+require (
+	github.com/coreos/etcd v3.3.13+incompatible // indirect
+	github.com/coreos/go-semver v0.3.0 // indirect
+	github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e // indirect
+	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
+	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.5.4 // indirect
+	google.golang.org/genproto v0.0.0-20220107163113-42d7afdf6368 // indirect
+	google.golang.org/grpc v1.40.0 // indirect
+)
 
 require (
 	cloud.google.com/go v0.81.0 // indirect
@@ -60,6 +71,8 @@ require (
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	go.etcd.io/etcd v3.3.27+incompatible
+	go.etcd.io/etcd/client/v3 v3.5.4
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
