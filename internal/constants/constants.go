@@ -69,7 +69,7 @@ const (
 	MeasurementsFilename = "measurements"
 	// IDFilename is the filename of Constellation's IDs.
 	IDFilename = "id"
-	// K8sVersion is the filename of the mapped k8s-version configMap file.
+	// K8sVersion is the filename of the mapped "k8s-version" configMap file.
 	K8sVersion = "k8s-version"
 
 	//

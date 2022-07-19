@@ -15,6 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/bootstrapper/util"
 	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/versions"
 	"github.com/spf13/afero"
@@ -380,7 +381,7 @@ func (k *KubeWrapper) setupK8sVersionConfigMap(ctx context.Context, k8sVersion s
 			Namespace: "kube-system",
 		},
 		Data: map[string]string{
-			"K8sVersion": k8sVersion,
+			constants.K8sVersion: k8sVersion,
 		},
 	}
 
