@@ -119,23 +119,23 @@ func (v *Validators) Warnings() string {
 	sb := &strings.Builder{}
 
 	if v.pcrs[0] == nil || v.pcrs[1] == nil {
-		writeFmt(sb, warningStr, "BIOS")
+		writeWarnFmt(sb, "BIOS")
 	}
 
 	if v.pcrs[2] == nil || v.pcrs[3] == nil {
-		writeFmt(sb, warningStr, "OPROM")
+		writeWarnFmt(sb, "OPROM")
 	}
 
 	if v.pcrs[4] == nil || v.pcrs[5] == nil {
-		writeFmt(sb, warningStr, "MBR")
+		writeWarnFmt(sb, "MBR")
 	}
 
 	// GRUB measures kernel command line and initrd into pcrs 8 and 9
 	if v.pcrs[8] == nil {
-		writeFmt(sb, warningStr, "kernel command line")
+		writeWarnFmt(sb, "kernel command line")
 	}
 	if v.pcrs[9] == nil {
-		writeFmt(sb, warningStr, "initrd")
+		writeWarnFmt(sb, "initrd")
 	}
 
 	return sb.String()
@@ -164,6 +164,10 @@ func (v *Validators) checkPCRs(pcrs map[uint32][]byte) error {
 		}
 	}
 	return nil
+}
+
+func writeWarnFmt(sb *strings.Builder, args ...any) {
+	writeFmt(sb, warningStr, args...)
 }
 
 func writeFmt(sb *strings.Builder, fmtStr string, args ...any) {

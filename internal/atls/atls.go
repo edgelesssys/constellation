@@ -164,7 +164,7 @@ func getCertificate(issuer Issuer, priv, pub any, nonce []byte) (*tls.Certificat
 
 // processCertificate parses the certificate and verifies it.
 // If successful returns the certificate and its hashed public key, an error otherwise.
-func processCertificate(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) (*x509.Certificate, []byte, error) {
+func processCertificate(rawCerts [][]byte, _ [][]*x509.Certificate) (*x509.Certificate, []byte, error) {
 	// parse certificate
 	if len(rawCerts) == 0 {
 		return nil, nil, errors.New("rawCerts is empty")

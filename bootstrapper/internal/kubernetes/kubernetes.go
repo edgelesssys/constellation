@@ -224,7 +224,7 @@ func (k *KubeWrapper) InitCluster(
 
 	// Store the received k8sVersion in a ConfigMap, overwriting exisiting values (there shouldn't be any).
 	// Joining nodes determine the kubernetes version they will install based on this ConfigMap.
-	if err := k.setupK8sVersionConfigMap(ctx, k8sVersion, true); err != nil {
+	if err := k.setupK8sVersionConfigMap(ctx, k8sVersion); err != nil {
 		return nil, fmt.Errorf("failed to setup k8s version ConfigMap: %v", err)
 	}
 
@@ -366,7 +366,7 @@ func (k *KubeWrapper) setupClusterAutoscaler(instance metadata.InstanceMetadata,
 }
 
 // setupK8sVersionConfigMap applies a ConfigMap (cf. server-side apply) to consistently store the installed k8s version.
-func (k *KubeWrapper) setupK8sVersionConfigMap(ctx context.Context, k8sVersion string, forceConflicts bool) error {
+func (k *KubeWrapper) setupK8sVersionConfigMap(ctx context.Context, k8sVersion string) error {
 	if !versions.IsSupportedK8sVersion(k8sVersion) {
 		return fmt.Errorf("supplied k8s version is not supported: %v", k8sVersion)
 	}

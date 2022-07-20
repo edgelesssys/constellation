@@ -88,7 +88,7 @@ func (c *ServiceAccountCreator) createServiceAccountGCP(ctx context.Context, cl 
 }
 
 func (c *ServiceAccountCreator) createServiceAccountAzure(ctx context.Context, cl azureclient,
-	stat state.ConstellationState, config *config.Config,
+	stat state.ConstellationState, _ *config.Config,
 ) (string, state.ConstellationState, error) {
 	if err := cl.SetState(stat); err != nil {
 		return "", state.ConstellationState{}, fmt.Errorf("setting state while creating service account: %w", err)

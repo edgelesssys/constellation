@@ -170,7 +170,7 @@ func readIds(fileHandler file.Handler) (clusterIDsFile, error) {
 
 // verifyCompletion handles the completion of CLI arguments. It is frequently called
 // while the user types arguments of the command to suggest completion.
-func verifyCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+func verifyCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 	switch len(args) {
 	case 0:
 		return []string{"gcp", "azure"}, cobra.ShellCompDirectiveNoFileComp

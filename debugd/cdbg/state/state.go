@@ -24,7 +24,7 @@ func GetScalingGroupsFromConfig(stat state.ConstellationState, config *config.Co
 	}
 }
 
-func getGCPInstances(stat state.ConstellationState, config *config.Config) (controlPlanes, workers cloudtypes.ScalingGroup, err error) {
+func getGCPInstances(stat state.ConstellationState, _ *config.Config) (controlPlanes, workers cloudtypes.ScalingGroup, err error) {
 	if len(stat.GCPControlPlanes) == 0 {
 		return cloudtypes.ScalingGroup{}, cloudtypes.ScalingGroup{}, errors.New("no control-plane workers available, can't create Constellation without any instance")
 	}
@@ -59,7 +59,7 @@ func getAzureInstances(stat state.ConstellationState, _ *config.Config) (control
 	return
 }
 
-func getQEMUInstances(stat state.ConstellationState, config *config.Config) (controlPlanes, workers cloudtypes.ScalingGroup, err error) {
+func getQEMUInstances(stat state.ConstellationState, _ *config.Config) (controlPlanes, workers cloudtypes.ScalingGroup, err error) {
 	controlPlaneMap := stat.QEMUControlPlane
 	if len(controlPlaneMap) == 0 {
 		return cloudtypes.ScalingGroup{}, cloudtypes.ScalingGroup{}, errors.New("no controlPlanes available, can't create Constellation without any instance")
