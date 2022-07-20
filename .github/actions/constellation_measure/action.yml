@@ -41,17 +41,14 @@ runs:
     # for why we ignore certain measurement values.
     - name: Fetch PCRs
       run: |
+        KUBECONFIG="$PWD/constellation-admin.conf" kubectl wait ds/verification-service -n kube-system --for condition=available
+        CONSTELL_IP=$(jq -r ".bootstrapperhost" constellation-state.json)
+        pcr-reader --constell-ip ${CONSTELL_IP} -format yaml > measurements.yaml
         case $CSP in
           azure)
-            FIRST_NODE=$(jq -r ".azurecontrolplanes | keys | first" constellation-state.json)
-            CONSTELL_IP=$(jq -r ".azurecontrolplanes.\"${FIRST_NODE}\".PublicIP" constellation-state.json)
-            pcr-reader --constell-ip ${CONSTELL_IP} -format yaml > measurements.yaml
             yq e 'del(.[0,6,10,11,12,13,14,15,16,17,18,19,20,21,22,23])' -i measurements.yaml
             ;;
           gcp)
-            FIRST_NODE=$(jq -r ".gcpcontrolplanes | keys | first" constellation-state.json)
-            CONSTELL_IP=$(jq -r ".gcpcontrolplanes.\"${FIRST_NODE}\".PublicIP" constellation-state.json)
-            pcr-reader --constell-ip ${CONSTELL_IP} -format yaml > measurements.yaml
             yq e 'del(.[11,12,13,14,15,16,17,18,19,20,21,22,23])' -i measurements.yaml
             ;;
         esac
