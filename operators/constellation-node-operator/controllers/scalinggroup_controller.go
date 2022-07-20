@@ -49,7 +49,7 @@ func NewScalingGroupReconciler(scalingGroupUpdater scalingGroupUpdater, client c
 //+kubebuilder:rbac:groups=update.edgeless.systems,resources=scalinggroups/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=update.edgeless.systems,resources=scalinggroups/finalizers,verbs=update
 //+kubebuilder:rbac:groups=update.edgeless.systems,resources=nodeimage,verbs=get;list;watch
-//+kubebuilder:rbac:groups=apps,resources=nodeimage/status,verbs=get
+//+kubebuilder:rbac:groups=update.edgeless.systems,resources=nodeimages/status,verbs=get
 
 // Reconcile reads the latest node image from the referenced NodeImage spec and updates the scaling group to match.
 func (r *ScalingGroupReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {

@@ -51,6 +51,8 @@ func NewPendingNodeReconciler(nodeStateGetter nodeStateGetter, client client.Cli
 //+kubebuilder:rbac:groups=update.edgeless.systems,resources=pendingnodes,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=update.edgeless.systems,resources=pendingnodes/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=update.edgeless.systems,resources=pendingnodes/finalizers,verbs=update
+//+kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch
+//+kubebuilder:rbac:groups="",resources=nodes/status,verbs=get
 
 // Reconcile observes the state of a pending node that is either trying to join the cluster or is leaving the cluster (waiting to be destroyed).
 // If the node is trying to join the cluster and fails to join within the deadline referenced in the PendingNode spec, the node is deleted.

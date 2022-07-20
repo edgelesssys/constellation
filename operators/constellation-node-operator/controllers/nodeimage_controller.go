@@ -63,6 +63,9 @@ func NewNodeImageReconciler(nodeReplacer nodeReplacer, client client.Client, sch
 //+kubebuilder:rbac:groups=update.edgeless.systems,resources=nodeimages,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=update.edgeless.systems,resources=nodeimages/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=update.edgeless.systems,resources=nodeimages/finalizers,verbs=update
+//+kubebuilder:rbac:groups=nodemaintenance.medik8s.io,resources=nodemaintenances,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="",resources=nodes/status,verbs=get
 
 // Reconcile replaces outdated nodes (using an old image) with new nodes (using a new image) as specified in the NodeImage spec.
 func (r *NodeImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
