@@ -25,7 +25,7 @@ spec:
         control-plane: controller-manager
     spec:
       securityContext:
-        runAsNonRoot: true
+        runAsUser: 0 # required to read etcd certs and keys from /etc/kubernetes/pki
       containers:
       - command:
         - /manager
@@ -47,6 +47,9 @@ spec:
             port: 8081
           initialDelaySeconds: 5
           periodSeconds: 10
+        volumeMounts:
+        - mountPath: /etc/kubernetes/pki/etcd
+          name: etcd-certs
         # TODO(user): Configure the resources accordingly based on the project requirements.
         # More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
         resources:
@@ -56,5 +59,19 @@ spec:
           requests:
             cpu: 10m
             memory: 64Mi
+      volumes:
+      - name: etcd-certs
+        hostPath:
+          path: /etc/kubernetes/pki/etcd
+          type: Directory
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
