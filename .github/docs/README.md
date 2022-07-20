@@ -5,7 +5,7 @@
 It is currently not possible to run a `workflow_dispatch` based workflow on a specific branch, while it is not yet available in `main` branch, from the WebUI. If you would like to test your pipeline changes on a branch, use the [GitHub CLI](https://github.com/cli/cli):
 
 ```bash
-gh workflow run e2e-test.yml \
+gh workflow run e2e-test-manual.yml \
     --ref feat/e2e_pipeline \                       # On your specific branch!
     -F autoscale=false -F cloudProvider=gcp \       # With your ...
     -F controlNodesCount=1 -F workerNodesCount=2 \  # ... settings
@@ -34,7 +34,7 @@ Using [nektos/act](https://github.com/nektos/act) you can run GitHub actions loc
 ### Specific Jobs
 
 ```bash
-act -j e2e-test
+act -j e2e-test-gcp
 ```
 
 ### Simulate a `workflow_dispatch` event
@@ -58,7 +58,7 @@ Create a new JSON file to describe the event ([relevant issue](https://github.co
 Then run act with the event as input:
 
 ```bash
-act -j e2e-test --eventpath event.json
+act -j e2e-test-manual --eventpath event.json
 ```
 
 ### Authorizing GCP

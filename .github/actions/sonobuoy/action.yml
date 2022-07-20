@@ -28,13 +28,13 @@ runs:
     run: sonobuoy retrieve -x --kubeconfig constellation-admin.conf
     shell: bash
   - name: Upload test results
-    uses: actions/upload-artifact@v3
+    uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
     with:
       name: 'junit_01.xml'
       path: '**/junit_01.xml'
     if: ${{ always() && !env.ACT }}
   - name: Publish test results
-    uses: mikepenz/action-junit-report@v3
+    uses: mikepenz/action-junit-report@1b47bb811362f3d8d753fc148cb7a13ec9e55570
     if: ${{ !env.ACT }}
     with:
       report_paths: '**/junit_01.xml'

@@ -30,7 +30,7 @@ runs:
     # TODO: Replace with https://github.com/sigstore/sigstore-installer/tree/initial
     # once it has the functionality
     - name: Install Cosign
-      uses: sigstore/cosign-installer@main
+      uses: sigstore/cosign-installer@48866aa521d8bf870604709cd43ec2f602d03ff2
     - name: Install Rekor
       run: |
         curl -LO https://github.com/sigstore/rekor/releases/download/v0.9.0/rekor-cli-linux-amd64
@@ -44,7 +44,7 @@ runs:
       shell: bash
 
     - name: Install Go
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@84cbf8094393cdc5fe1fe1671ff2647332956b1a
       with:
         go-version: "1.18"
     - name: Build hack/pcr-reader
@@ -90,7 +90,7 @@ runs:
 
     - name: Release CLI
       # GitHub endorsed release project. See: https://github.com/actions/create-release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5
       if: startsWith(github.ref, 'refs/tags/v')
       with:
         draft: true

@@ -1,6 +1,9 @@
 name: Golangci-lint
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
 
 permissions:
@@ -20,12 +23,19 @@ jobs:
     env:
       GOPRIVATE: github.com/edgelesssys/*
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
 
       - name: Install Dependencies
         run: sudo apt-get update && sudo apt-get -y install libcryptsetup-dev
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
+      - name: Setup Go environment
+        uses: actions/setup-go@84cbf8094393cdc5fe1fe1671ff2647332956b1a
         with:
+          go-version: "1.18"
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@537aa1903e5d359d0b27dbc19ddd22c5087f3fbc
+        with:
+          # show only new issues if it's a pull request
           only-new-issues: true

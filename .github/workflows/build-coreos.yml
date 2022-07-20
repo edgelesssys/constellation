@@ -33,7 +33,7 @@ on:
         required: true
 
 jobs:
-  build-enclave:
+  build-coreos:
     name: "Build CoreOS using customized COSA"
     runs-on: [self-hosted, linux, nested-virt]
     permissions:
@@ -48,14 +48,14 @@ jobs:
     steps:
       - name: Checkout
         id: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
         with:
           submodules: recursive
           token: ${{ secrets.CI_GITHUB_REPOSITORY }}
 
       - name: Log in to the Container registry
         id: docker-login
-        uses: docker/login-action@v1
+        uses: docker/login-action@dd4fa0671be5250ee6f50aedf4cb05514abda2c7
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -70,12 +70,13 @@ jobs:
           rm azcopy.tar.gz
           echo "$(pwd)" >> $GITHUB_PATH
 
-      - uses: azure/login@v1
+      - name: Login to Azure
+        uses: azure/login@24848bc889cfc0a8313c2b3e378ac0d625b9bc16
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Setup Go environment
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@84cbf8094393cdc5fe1fe1671ff2647332956b1a
         with:
           go-version: "1.18"
 

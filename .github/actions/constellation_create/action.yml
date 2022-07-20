@@ -61,7 +61,7 @@ runs:
       constellation create ${{ inputs.cloudProvider }} -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} -t ${{ inputs.machineType }} --name e2e-test -y
     shell: bash
   - name: Upload constellation-state.json
-    uses: actions/upload-artifact@v3
+    uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
     with:
       name: constellation-state.json
       path: constellation-state.json
