@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/edgelesssys/constellation/bootstrapper/cloudprovider"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/gcpshared"
+	"github.com/edgelesssys/constellation/internal/versions"
 	k8s "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -18,8 +18,11 @@ import (
 type CloudControllerManager struct{}
 
 // Image returns the container image used to provide cloud-controller-manager for the cloud-provider.
-func (c *CloudControllerManager) Image() string {
-	return cloudprovider.CloudControllerManagerImageGCP
+func (c *CloudControllerManager) Image(k8sVersion string) (string, error) {
+	if !versions.IsSupportedK8sVersion(k8sVersion) {
+		return "", fmt.Errorf("received unsupported k8sVersion: %s", k8sVersion)
+	}
+	return versions.VersionConfigs[k8sVersion].CloudControllerManagerImageAzure, nil
 }
 
 // Path returns the path used by cloud-controller-manager executable within the container image.

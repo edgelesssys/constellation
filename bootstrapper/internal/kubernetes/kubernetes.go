@@ -84,6 +84,8 @@ func (k *KubeWrapper) InitCluster(
 	id attestationtypes.ID, kmsConfig KMSConfig, sshUsers map[string]string, log *logger.Logger,
 ) ([]byte, error) {
 	log.With(zap.String("version", k8sVersion)).Infof("Installing Kubernetes components")
+	// InstallComponents validates the k8sVersion as it's first action and returns if not supported.
+	// This implicitly makes k8sVersion safe to use in this function.
 	if err := k.clusterUtil.InstallComponents(ctx, k8sVersion); err != nil {
 		return nil, err
 	}
@@ -194,14 +196,14 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up join service failed: %w", err)
 	}
 
-	if err := k.setupCCM(ctx, subnetworkPodCIDR, cloudServiceAccountURI, instance); err != nil {
+	if err := k.setupCCM(ctx, subnetworkPodCIDR, cloudServiceAccountURI, instance, k8sVersion); err != nil {
 		return nil, fmt.Errorf("setting up cloud controller manager: %w", err)
 	}
-	if err := k.setupCloudNodeManager(); err != nil {
+	if err := k.setupCloudNodeManager(k8sVersion); err != nil {
 		return nil, fmt.Errorf("setting up cloud node manager: %w", err)
 	}
 
-	if err := k.setupClusterAutoscaler(instance, cloudServiceAccountURI, autoscalingNodeGroups); err != nil {
+	if err := k.setupClusterAutoscaler(instance, cloudServiceAccountURI, autoscalingNodeGroups, k8sVersion); err != nil {
 		return nil, fmt.Errorf("setting up cluster autoscaler: %w", err)
 	}
 
@@ -309,7 +311,7 @@ func (k *KubeWrapper) setupJoinService(csp string, measurementsJSON []byte, id a
 	return k.clusterUtil.SetupJoinService(k.client, joinConfiguration)
 }
 
-func (k *KubeWrapper) setupCCM(ctx context.Context, subnetworkPodCIDR, cloudServiceAccountURI string, instance metadata.InstanceMetadata) error {
+func (k *KubeWrapper) setupCCM(ctx context.Context, subnetworkPodCIDR, cloudServiceAccountURI string, instance metadata.InstanceMetadata, k8sVersion string) error {
 	if !k.cloudControllerManager.Supported() {
 		return nil
 	}
@@ -321,9 +323,13 @@ func (k *KubeWrapper) setupCCM(ctx context.Context, subnetworkPodCIDR, cloudServ
 	if err != nil {
 		return fmt.Errorf("defining Secrets for CCM failed: %w", err)
 	}
+	ccmImage, err := k.cloudControllerManager.Image(k8sVersion)
+	if err != nil {
+		return fmt.Errorf("defining Image for CCM failed: %w", err)
+	}
 
 	cloudControllerManagerConfiguration := resources.NewDefaultCloudControllerManagerDeployment(
-		k.cloudControllerManager.Name(), k.cloudControllerManager.Image(), k.cloudControllerManager.Path(), subnetworkPodCIDR,
+		k.cloudControllerManager.Name(), ccmImage, k.cloudControllerManager.Path(), subnetworkPodCIDR,
 		k.cloudControllerManager.ExtraArgs(), k.cloudControllerManager.Volumes(), k.cloudControllerManager.VolumeMounts(), k.cloudControllerManager.Env(),
 	)
 	if err := k.clusterUtil.SetupCloudControllerManager(k.client, cloudControllerManagerConfiguration, ccmConfigMaps, ccmSecrets); err != nil {
@@ -333,12 +339,17 @@ func (k *KubeWrapper) setupCCM(ctx context.Context, subnetworkPodCIDR, cloudServ
 	return nil
 }
 
-func (k *KubeWrapper) setupCloudNodeManager() error {
+func (k *KubeWrapper) setupCloudNodeManager(k8sVersion string) error {
 	if !k.cloudNodeManager.Supported() {
 		return nil
 	}
+	nodeManagerImage, err := k.cloudNodeManager.Image(k8sVersion)
+	if err != nil {
+		return fmt.Errorf("defining Image for Node Manager failed: %w", err)
+	}
+
 	cloudNodeManagerConfiguration := resources.NewDefaultCloudNodeManagerDeployment(
-		k.cloudNodeManager.Image(), k.cloudNodeManager.Path(), k.cloudNodeManager.ExtraArgs(),
+		nodeManagerImage, k.cloudNodeManager.Path(), k.cloudNodeManager.ExtraArgs(),
 	)
 	if err := k.clusterUtil.SetupCloudNodeManager(k.client, cloudNodeManagerConfiguration); err != nil {
 		return fmt.Errorf("failed to setup cloud-node-manager: %w", err)
@@ -347,7 +358,7 @@ func (k *KubeWrapper) setupCloudNodeManager() error {
 	return nil
 }
 
-func (k *KubeWrapper) setupClusterAutoscaler(instance metadata.InstanceMetadata, cloudServiceAccountURI string, autoscalingNodeGroups []string) error {
+func (k *KubeWrapper) setupClusterAutoscaler(instance metadata.InstanceMetadata, cloudServiceAccountURI string, autoscalingNodeGroups []string, k8sVersion string) error {
 	if !k.clusterAutoscaler.Supported() {
 		return nil
 	}
@@ -356,7 +367,7 @@ func (k *KubeWrapper) setupClusterAutoscaler(instance metadata.InstanceMetadata,
 		return fmt.Errorf("defining Secrets for cluster-autoscaler failed: %w", err)
 	}
 
-	clusterAutoscalerConfiguration := resources.NewDefaultAutoscalerDeployment(k.clusterAutoscaler.Volumes(), k.clusterAutoscaler.VolumeMounts(), k.clusterAutoscaler.Env())
+	clusterAutoscalerConfiguration := resources.NewDefaultAutoscalerDeployment(k.clusterAutoscaler.Volumes(), k.clusterAutoscaler.VolumeMounts(), k.clusterAutoscaler.Env(), k8sVersion)
 	clusterAutoscalerConfiguration.SetAutoscalerCommand(k.clusterAutoscaler.Name(), autoscalingNodeGroups)
 	if err := k.clusterUtil.SetupAutoscaling(k.client, clusterAutoscalerConfiguration, caSecrets); err != nil {
 		return fmt.Errorf("failed to setup cluster-autoscaler: %w", err)

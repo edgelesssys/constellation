@@ -12,8 +12,8 @@ import (
 type CloudControllerManager struct{}
 
 // Image returns the container image used to provide cloud-controller-manager for the cloud-provider.
-func (c CloudControllerManager) Image() string {
-	return ""
+func (c CloudControllerManager) Image(k8sVersion string) (string, error) {
+	return "", nil
 }
 
 // Path returns the path used by cloud-controller-manager executable within the container image.

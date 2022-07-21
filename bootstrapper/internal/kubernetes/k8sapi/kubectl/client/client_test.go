@@ -245,7 +245,7 @@ func TestGetObjects(t *testing.T) {
 		wantErr          bool
 	}{
 		"GetObjects works on cluster-autoscaler deployment": {
-			wantResources: resources.NewDefaultAutoscalerDeployment(nil, nil, nil),
+			wantResources: resources.NewDefaultAutoscalerDeployment(nil, nil, nil, ""),
 			resourcesYAML: string(nginxDeplYAML),
 			wantErr:       false,
 		},

@@ -5,8 +5,8 @@ type CloudNodeManager struct{}
 
 // Image returns the container image used to provide cloud-node-manager for the cloud-provider.
 // Not used on GCP.
-func (c *CloudNodeManager) Image() string {
-	return ""
+func (c *CloudNodeManager) Image(k8sVersion string) (string, error) {
+	return "", nil
 }
 
 // Path returns the path used by cloud-node-manager executable within the container image.

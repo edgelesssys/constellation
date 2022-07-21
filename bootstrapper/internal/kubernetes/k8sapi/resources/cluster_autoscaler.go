@@ -23,7 +23,7 @@ type autoscalerDeployment struct {
 }
 
 // NewDefaultAutoscalerDeployment creates a new *autoscalerDeployment, customized for the CSP.
-func NewDefaultAutoscalerDeployment(extraVolumes []k8s.Volume, extraVolumeMounts []k8s.VolumeMount, env []k8s.EnvVar) *autoscalerDeployment {
+func NewDefaultAutoscalerDeployment(extraVolumes []k8s.Volume, extraVolumeMounts []k8s.VolumeMount, env []k8s.EnvVar, k8sVersion string) *autoscalerDeployment {
 	return &autoscalerDeployment{
 		PodDisruptionBudget: policy.PodDisruptionBudget{
 			TypeMeta: v1.TypeMeta{
@@ -435,7 +435,7 @@ func NewDefaultAutoscalerDeployment(extraVolumes []k8s.Volume, extraVolumeMounts
 						Containers: []k8s.Container{
 							{
 								Name:            "cluster-autoscaler",
-								Image:           versions.ClusterAutoscalerImage,
+								Image:           versions.VersionConfigs[k8sVersion].ClusterAutoscalerImage,
 								ImagePullPolicy: k8s.PullIfNotPresent,
 								LivenessProbe: &k8s.Probe{
 									ProbeHandler: k8s.ProbeHandler{
