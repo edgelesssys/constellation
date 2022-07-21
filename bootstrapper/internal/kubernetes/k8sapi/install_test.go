@@ -12,7 +12,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/icholy/replace"
@@ -21,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/text/transform"
 	"google.golang.org/grpc/test/bufconn"
+	testclock "k8s.io/utils/clock/testing"
 )
 
 func TestInstall(t *testing.T) {
@@ -75,10 +78,14 @@ func TestInstall(t *testing.T) {
 				},
 			}
 
+			// This test was written before retriability was added to Install. It makes sense to test Install as if it wouldn't retry requests.
 			inst := osInstaller{
-				fs:      &afero.Afero{Fs: afero.NewMemMapFs()},
-				hClient: &hClient,
+				fs:        &afero.Afero{Fs: afero.NewMemMapFs()},
+				hClient:   &hClient,
+				clock:     testclock.NewFakeClock(time.Time{}),
+				retriable: func(err error) bool { return false },
 			}
+
 			err := inst.Install(context.Background(), "http://server/path", []string{tc.destination}, fs.ModePerm, tc.extract, tc.transforms...)
 			if tc.wantErr {
 				assert.Error(err)
@@ -234,6 +241,91 @@ func TestExtractArchive(t *testing.T) {
 				assert.NoError(err)
 				assert.Equal(wantContents, contents)
 			}
+		})
+	}
+}
+
+func TestRetryDownloadToTempDir(t *testing.T) {
+	testCases := map[string]struct {
+		responses []int
+		cancelCtx bool
+		wantErr   bool
+		wantFile  []byte
+	}{
+		"Succeed on third try": {
+			responses: []int{500, 500, 200},
+			wantFile:  []byte("file-content"),
+		},
+		"Cancel after second try": {
+			responses: []int{500, 500},
+			cancelCtx: true,
+			wantErr:   true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			// control the server's responses through stateCh
+			stateCh := make(chan int)
+			server := newHTTPBufconnServerWithState(stateCh, tc.wantFile)
+			defer server.Close()
+
+			hClient := http.Client{
+				Transport: &http.Transport{
+					DialContext:    server.DialContext,
+					Dial:           server.Dial,
+					DialTLSContext: server.DialContext,
+					DialTLS:        server.Dial,
+				},
+			}
+
+			afs := afero.NewMemMapFs()
+
+			// control download retries through FakeClock clock
+			clock := testclock.NewFakeClock(time.Now())
+			inst := osInstaller{
+				fs:        &afero.Afero{Fs: afs},
+				hClient:   &hClient,
+				clock:     clock,
+				retriable: func(error) bool { return true },
+			}
+
+			// abort retryDownloadToTempDir in some test cases by using the context
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			wg := sync.WaitGroup{}
+			var downloadErr error
+			var path string
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				path, downloadErr = inst.retryDownloadToTempDir(ctx, "http://server/path", []transform.Transformer{}...)
+			}()
+
+			// control the server's responses through stateCh.
+			for _, resp := range tc.responses {
+				stateCh <- resp
+				clock.Step(downloadInterval)
+			}
+			if tc.cancelCtx {
+				cancel()
+			}
+
+			wg.Wait()
+
+			if tc.wantErr {
+				assert.Error(downloadErr)
+				return
+			}
+
+			require.NoError(downloadErr)
+			content, err := inst.fs.ReadFile(path)
+			assert.NoError(err)
+			assert.Equal(tc.wantFile, content)
 		})
 	}
 }
@@ -480,6 +572,21 @@ func newHTTPBufconnServerWithBody(body []byte) httpBufconnServer {
 	return newHTTPBufconnServer(func(writer http.ResponseWriter, request *http.Request) {
 		if _, err := writer.Write(body); err != nil {
 			panic(err)
+		}
+	})
+}
+
+func newHTTPBufconnServerWithState(state chan int, body []byte) httpBufconnServer {
+	return newHTTPBufconnServer(func(w http.ResponseWriter, r *http.Request) {
+		switch <-state {
+		case 500:
+			w.WriteHeader(500)
+		case 200:
+			if _, err := w.Write(body); err != nil {
+				panic(err)
+			}
+		default:
+			w.WriteHeader(402)
 		}
 	})
 }

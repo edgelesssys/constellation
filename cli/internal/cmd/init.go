@@ -24,7 +24,8 @@ import (
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
-	"github.com/edgelesssys/constellation/internal/grpc/retry"
+	grpcRetry "github.com/edgelesssys/constellation/internal/grpc/retry"
+	"github.com/edgelesssys/constellation/internal/retry"
 	"github.com/edgelesssys/constellation/internal/state"
 	kms "github.com/edgelesssys/constellation/kms/setup"
 	"github.com/spf13/afero"
@@ -141,7 +142,7 @@ func initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.
 		endpoint: net.JoinHostPort(ip, strconv.Itoa(constants.BootstrapperPort)),
 		req:      req,
 	}
-	retrier := retry.NewIntervalRetrier(doer, 30*time.Second)
+	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, grpcRetry.ServiceIsUnavailable)
 	if err := retrier.Do(ctx); err != nil {
 		return nil, err
 	}

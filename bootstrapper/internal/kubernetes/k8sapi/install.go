@@ -11,22 +11,37 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"syscall"
+	"time"
 
+	"github.com/edgelesssys/constellation/internal/retry"
 	"github.com/spf13/afero"
 	"golang.org/x/text/transform"
+	"k8s.io/utils/clock"
+)
+
+const (
+	// determines the period after which retryDownloadToTempDir will retry a download.
+	downloadInterval = 10 * time.Millisecond
 )
 
 // osInstaller installs binary components of supported kubernetes versions.
 type osInstaller struct {
 	fs      *afero.Afero
 	hClient httpClient
+	// clock is needed for testing purposes
+	clock clock.WithTicker
+	// retriable is the function used to check if an error is retriable. Needed for testing.
+	retriable func(error) bool
 }
 
 // newOSInstaller creates a new osInstaller.
 func newOSInstaller() *osInstaller {
 	return &osInstaller{
-		fs:      &afero.Afero{Fs: afero.NewOsFs()},
-		hClient: &http.Client{},
+		fs:        &afero.Afero{Fs: afero.NewOsFs()},
+		hClient:   &http.Client{},
+		clock:     clock.RealClock{},
+		retriable: connectionResetErr,
 	}
 }
 
@@ -36,7 +51,7 @@ func (i *osInstaller) Install(
 	ctx context.Context, sourceURL string, destinations []string, perm fs.FileMode,
 	extract bool, transforms ...transform.Transformer,
 ) error {
-	tempPath, err := i.downloadToTempDir(ctx, sourceURL, transforms...)
+	tempPath, err := i.retryDownloadToTempDir(ctx, sourceURL, transforms...)
 	if err != nil {
 		return err
 	}
@@ -130,13 +145,37 @@ func (i *osInstaller) extractArchive(archivePath, prefix string, perm fs.FileMod
 	}
 }
 
+func (i *osInstaller) retryDownloadToTempDir(ctx context.Context, url string, transforms ...transform.Transformer) (fileName string, someError error) {
+	doer := downloadDoer{
+		url:        url,
+		transforms: transforms,
+		downloader: i,
+	}
+
+	// Retries are cancled as soon as the context is canceled.
+	// We need to call NewIntervalRetrier with a clock argument so that the tests can fake the clock by changing the osInstaller clock.
+	retrier := retry.NewIntervalRetrier(&doer, downloadInterval, i.retriable, i.clock)
+	if err := retrier.Do(ctx); err != nil {
+		return "", fmt.Errorf("retrying downloadToTempDir: %w", err)
+	}
+
+	return doer.path, nil
+}
+
 // downloadToTempDir downloads a file to a temporary location, applying transform on-the-fly.
-func (i *osInstaller) downloadToTempDir(ctx context.Context, url string, transforms ...transform.Transformer) (string, error) {
+func (i *osInstaller) downloadToTempDir(ctx context.Context, url string, transforms ...transform.Transformer) (fileName string, retErr error) {
 	out, err := afero.TempFile(i.fs, "", "")
 	if err != nil {
 		return "", fmt.Errorf("creating destination temp file: %w", err)
 	}
+	// Remove the created file if an error occurs.
+	defer func() {
+		if retErr != nil {
+			_ = i.fs.Remove(fileName)
+		}
+	}()
 	defer out.Close()
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", fmt.Errorf("request to download %q: %w", url, err)
@@ -184,6 +223,27 @@ func (i *osInstaller) copy(oldname, newname string, perm fs.FileMode) (err error
 	}
 
 	return nil
+}
+
+type downloadDoer struct {
+	url        string
+	transforms []transform.Transformer
+	downloader downloader
+	path       string
+}
+
+type downloader interface {
+	downloadToTempDir(ctx context.Context, url string, transforms ...transform.Transformer) (string, error)
+}
+
+func (d *downloadDoer) Do(ctx context.Context) error {
+	path, err := d.downloader.downloadToTempDir(ctx, d.url, d.transforms...)
+	d.path = path
+	return err
+}
+
+func connectionResetErr(err error) bool {
+	return errors.Is(err, syscall.ECONNRESET)
 }
 
 // verifyTarPath checks if a tar path is valid (must not contain ".." as path element).
