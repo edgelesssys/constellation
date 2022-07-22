@@ -50,6 +50,9 @@ spec:
         volumeMounts:
         - mountPath: /etc/kubernetes/pki/etcd
           name: etcd-certs
+        - mountPath: /etc/azure
+          name: azureconfig
+          readOnly: true
         # TODO(user): Configure the resources accordingly based on the project requirements.
         # More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
         resources:
@@ -64,6 +67,10 @@ spec:
         hostPath:
           path: /etc/kubernetes/pki/etcd
           type: Directory
+      - name: azureconfig
+        secret:
+          secretName: azureconfig
+          optional: true
       nodeSelector:
         node-role.kubernetes.io/control-plane: ""
       tolerations:

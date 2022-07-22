@@ -4,6 +4,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/edgelesssys/constellation/operators/constellation-node-operator/internal/poller"
+	"github.com/spf13/afero"
 )
 
 // Client is a client for the Azure Cloud.
@@ -15,17 +16,22 @@ type Client struct {
 }
 
 // NewFromDefault creates a client with initialized clients.
-func NewFromDefault(subscriptionID, tenantID string) (*Client, error) {
+func NewFromDefault(configPath string) (*Client, error) {
+	config, err := loadConfig(afero.NewOsFs(), configPath)
+	if err != nil {
+		return nil, err
+	}
+
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return nil, err
 	}
 
-	scaleSetAPI, err := armcomputev2.NewVirtualMachineScaleSetsClient(subscriptionID, cred, nil)
+	scaleSetAPI, err := armcomputev2.NewVirtualMachineScaleSetsClient(config.SubscriptionID, cred, nil)
 	if err != nil {
 		return nil, err
 	}
-	virtualMachineScaleSetVMsAPI, err := armcomputev2.NewVirtualMachineScaleSetVMsClient(subscriptionID, cred, nil)
+	virtualMachineScaleSetVMsAPI, err := armcomputev2.NewVirtualMachineScaleSetVMsClient(config.SubscriptionID, cred, nil)
 	if err != nil {
 		return nil, err
 	}

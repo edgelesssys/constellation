@@ -34,6 +34,10 @@ var (
 	setupLog = ctrl.Log.WithName("setup")
 )
 
+const (
+	defaultAzureCloudConfigPath = "/etc/azure/azure.json"
+)
+
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(nodemaintenancev1beta1.AddToScheme(scheme))
@@ -43,10 +47,12 @@ func init() {
 
 func main() {
 	var csp string
+	var cloudConfigPath string
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
 	flag.StringVar(&csp, "csp", "", "Cloud Service Provider the image is running on")
+	flag.StringVar(&cloudConfigPath, "cloud-config", "", "Path to provider specific cloud config. Optional.")
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
@@ -64,7 +70,10 @@ func main() {
 	var clientErr error
 	switch strings.ToLower(csp) {
 	case "azure":
-		cspClient, clientErr = azureclient.NewFromDefault("0d202bbb-4fa7-4af8-8125-58c269a05435", "adb650a8-5da3-4b15-b4b0-3daf65ff7626")
+		if cloudConfigPath == "" {
+			cloudConfigPath = defaultAzureCloudConfigPath
+		}
+		cspClient, clientErr = azureclient.NewFromDefault(cloudConfigPath)
 		if clientErr != nil {
 			setupLog.Error(clientErr, "Unable to create Azure client")
 			os.Exit(1)

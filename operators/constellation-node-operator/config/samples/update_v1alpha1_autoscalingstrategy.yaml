@@ -3,4 +3,6 @@ kind: AutoscalingStrategy
 metadata:
   name: autoscalingstrategy-sample
 spec:
-  # TODO(user): Add fields here
+  deploymentName: constellation-cluster-autoscaler
+  deploymentNamespace: kube-system
+  enabled: true
