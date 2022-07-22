@@ -5,6 +5,7 @@ import (
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/internal/versions"
 	k8s "k8s.io/api/core/v1"
 )
 
@@ -29,7 +30,7 @@ type ProviderMetadata interface {
 // CloudControllerManager implementers provide configuration for the k8s cloud-controller-manager.
 type CloudControllerManager interface {
 	// Image returns the container image used to provide cloud-controller-manager for the cloud-provider.
-	Image(k8sVersion string) (string, error)
+	Image(k8sVersion versions.ValidK8sVersion) (string, error)
 	// Path returns the path used by cloud-controller-manager executable within the container image.
 	Path() string
 	// Name returns the cloud-provider name as used by k8s cloud-controller-manager (k8s.gcr.io/cloud-controller-manager).
@@ -56,7 +57,7 @@ type CloudControllerManager interface {
 // CloudNodeManager implementers provide configuration for the k8s cloud-node-manager.
 type CloudNodeManager interface {
 	// Image returns the container image used to provide cloud-node-manager for the cloud-provider.
-	Image(k8sVersion string) (string, error)
+	Image(k8sVersion versions.ValidK8sVersion) (string, error)
 	// Path returns the path used by cloud-node-manager executable within the container image.
 	Path() string
 	// ExtraArgs returns a list of arguments to append to the cloud-node-manager command.
@@ -133,7 +134,7 @@ type stubCloudControllerManager struct {
 	SupportedResp bool
 }
 
-func (m *stubCloudControllerManager) Image(k8sVersion string) (string, error) {
+func (m *stubCloudControllerManager) Image(k8sVersion versions.ValidK8sVersion) (string, error) {
 	return "stub-image:latest", nil
 }
 
@@ -181,7 +182,7 @@ type stubCloudNodeManager struct {
 	ExtraArgsResp []string
 }
 
-func (m *stubCloudNodeManager) Image(k8sVersion string) (string, error) {
+func (m *stubCloudNodeManager) Image(k8sVersion versions.ValidK8sVersion) (string, error) {
 	return m.ImageResp, nil
 }
 

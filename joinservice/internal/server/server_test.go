@@ -12,6 +12,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/internal/versions"
 	"github.com/edgelesssys/constellation/joinservice/joinproto"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -37,7 +38,7 @@ func TestIssueJoinTicket(t *testing.T) {
 		CACertHashes:      []string{"hash"},
 		Token:             "token",
 	}
-	testK8sVersion := "1.23"
+	testK8sVersion := versions.Latest
 
 	testCases := map[string]struct {
 		isControlPlane bool

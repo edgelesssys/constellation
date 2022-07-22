@@ -5,6 +5,7 @@ import (
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/internal/versions"
 	k8s "k8s.io/api/core/v1"
 )
 
@@ -12,7 +13,7 @@ import (
 type CloudControllerManager struct{}
 
 // Image returns the container image used to provide cloud-controller-manager for the cloud-provider.
-func (c CloudControllerManager) Image(k8sVersion string) (string, error) {
+func (c CloudControllerManager) Image(k8sVersion versions.ValidK8sVersion) (string, error) {
 	return "", nil
 }
 

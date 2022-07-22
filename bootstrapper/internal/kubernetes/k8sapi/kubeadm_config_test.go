@@ -1,11 +1,14 @@
 package k8sapi
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/edgelesssys/constellation/internal/versions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
+	kubeadmUtil "k8s.io/kubernetes/cmd/kubeadm/app/util"
 )
 
 func TestMain(m *testing.M) {
@@ -19,11 +22,11 @@ func TestInitConfiguration(t *testing.T) {
 		config KubeadmInitYAML
 	}{
 		"CoreOS init config can be created": {
-			config: coreOSConfig.InitConfiguration(true, "3.2.1"),
+			config: coreOSConfig.InitConfiguration(true, versions.Latest),
 		},
 		"CoreOS init config with all fields can be created": {
 			config: func() KubeadmInitYAML {
-				c := coreOSConfig.InitConfiguration(true, "3.2.1")
+				c := coreOSConfig.InitConfiguration(true, versions.Latest)
 				c.SetAPIServerAdvertiseAddress("192.0.2.0")
 				c.SetNodeIP("192.0.2.0")
 				c.SetNodeName("node")
@@ -46,6 +49,38 @@ func TestInitConfiguration(t *testing.T) {
 			// test on correct mashalling and unmarshalling
 			assert.Equal(tc.config.ClusterConfiguration, tmp.ClusterConfiguration)
 			assert.Equal(tc.config.InitConfiguration, tmp.InitConfiguration)
+		})
+	}
+}
+
+func TestInitConfigurationKubeadmCompatibility(t *testing.T) {
+	coreOSConfig := CoreOSConfiguration{}
+
+	testCases := map[string]struct {
+		config          KubeadmInitYAML
+		expectedVersion string
+		wantErr         bool
+	}{
+		"Kubeadm accepts version 'Latest'": {
+			config:          coreOSConfig.InitConfiguration(true, versions.Latest),
+			expectedVersion: fmt.Sprintf("v%s", versions.VersionConfigs[versions.Latest].PatchVersion),
+		},
+		"Kubeadm receives incompatible version": {
+			config:  coreOSConfig.InitConfiguration(true, "1.22"),
+			wantErr: true,
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			version, err := kubeadmUtil.KubernetesReleaseVersion(tc.config.ClusterConfiguration.KubernetesVersion)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.Equal(tc.expectedVersion, version)
+			assert.NoError(err)
 		})
 	}
 }

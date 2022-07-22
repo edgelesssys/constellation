@@ -13,6 +13,7 @@ import (
 	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/internal/versions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -47,7 +48,7 @@ func TestInitCluster(t *testing.T) {
 		kubeconfigReader       configReader
 		wantConfig             k8sapi.KubeadmInitYAML
 		wantErr                bool
-		k8sVersion             string
+		k8sVersion             versions.ValidK8sVersion
 	}{
 		"kubeadm init works without metadata": {
 			clusterUtil: stubClusterUtil{},
@@ -70,7 +71,7 @@ func TestInitCluster(t *testing.T) {
 				},
 				ClusterConfiguration: kubeadm.ClusterConfiguration{},
 			},
-			k8sVersion: "1.23",
+			k8sVersion: versions.Latest,
 		},
 		"kubeadm init works with metadata and loadbalancer": {
 			clusterUtil: stubClusterUtil{},
@@ -110,7 +111,7 @@ func TestInitCluster(t *testing.T) {
 				},
 			},
 			wantErr:    false,
-			k8sVersion: "1.23",
+			k8sVersion: versions.Latest,
 		},
 		"kubeadm init fails when retrieving metadata self": {
 			clusterUtil: stubClusterUtil{},
@@ -125,7 +126,7 @@ func TestInitCluster(t *testing.T) {
 			CloudNodeManager:       &stubCloudNodeManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
-			k8sVersion:             "1.23",
+			k8sVersion:             versions.Latest,
 		},
 		"kubeadm init fails when retrieving metadata subnetwork cidr": {
 			clusterUtil: stubClusterUtil{},
@@ -140,7 +141,7 @@ func TestInitCluster(t *testing.T) {
 			CloudNodeManager:       &stubCloudNodeManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
-			k8sVersion:             "1.23",
+			k8sVersion:             versions.Latest,
 		},
 		"kubeadm init fails when retrieving metadata loadbalancer ip": {
 			clusterUtil: stubClusterUtil{},
@@ -156,7 +157,7 @@ func TestInitCluster(t *testing.T) {
 			CloudNodeManager:       &stubCloudNodeManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
-			k8sVersion:             "1.23",
+			k8sVersion:             versions.Latest,
 		},
 		"kubeadm init fails when applying the init config": {
 			clusterUtil: stubClusterUtil{initClusterErr: someErr},
@@ -168,7 +169,7 @@ func TestInitCluster(t *testing.T) {
 			CloudNodeManager:       &stubCloudNodeManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
-			k8sVersion:             "1.23",
+			k8sVersion:             versions.Latest,
 		},
 		"kubeadm init fails when setting up the pod network": {
 			clusterUtil: stubClusterUtil{setupPodNetworkErr: someErr},
@@ -180,7 +181,7 @@ func TestInitCluster(t *testing.T) {
 			CloudNodeManager:       &stubCloudNodeManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
-			k8sVersion:             "1.23",
+			k8sVersion:             versions.Latest,
 		},
 		"kubeadm init fails when setting up the join service": {
 			clusterUtil: stubClusterUtil{setupJoinServiceError: someErr},
@@ -192,7 +193,7 @@ func TestInitCluster(t *testing.T) {
 			CloudNodeManager:       &stubCloudNodeManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
-			k8sVersion:             "1.23",
+			k8sVersion:             versions.Latest,
 		},
 		"kubeadm init fails when setting the cloud contoller manager": {
 			clusterUtil: stubClusterUtil{setupCloudControllerManagerError: someErr},
@@ -204,7 +205,7 @@ func TestInitCluster(t *testing.T) {
 			CloudNodeManager:       &stubCloudNodeManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
-			k8sVersion:             "1.23",
+			k8sVersion:             versions.Latest,
 		},
 		"kubeadm init fails when setting the cloud node manager": {
 			clusterUtil: stubClusterUtil{setupCloudNodeManagerError: someErr},
@@ -216,7 +217,7 @@ func TestInitCluster(t *testing.T) {
 			CloudNodeManager:       &stubCloudNodeManager{SupportedResp: true},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
-			k8sVersion:             "1.23",
+			k8sVersion:             versions.Latest,
 		},
 		"kubeadm init fails when setting the cluster autoscaler": {
 			clusterUtil: stubClusterUtil{setupAutoscalingError: someErr},
@@ -228,7 +229,7 @@ func TestInitCluster(t *testing.T) {
 			CloudNodeManager:       &stubCloudNodeManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{SupportedResp: true},
 			wantErr:                true,
-			k8sVersion:             "1.23",
+			k8sVersion:             versions.Latest,
 		},
 		"kubeadm init fails when reading kubeconfig": {
 			clusterUtil: stubClusterUtil{},
@@ -240,7 +241,7 @@ func TestInitCluster(t *testing.T) {
 			CloudNodeManager:       &stubCloudNodeManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
-			k8sVersion:             "1.23",
+			k8sVersion:             versions.Latest,
 		},
 		"kubeadm init fails when setting up the kms": {
 			clusterUtil: stubClusterUtil{setupKMSError: someErr},
@@ -252,7 +253,7 @@ func TestInitCluster(t *testing.T) {
 			CloudNodeManager:       &stubCloudNodeManager{SupportedResp: false},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
-			k8sVersion:             "1.23",
+			k8sVersion:             versions.Latest,
 		},
 		"kubeadm init fails when setting up verification service": {
 			clusterUtil: stubClusterUtil{setupVerificationServiceErr: someErr},
@@ -264,7 +265,7 @@ func TestInitCluster(t *testing.T) {
 			CloudNodeManager:       &stubCloudNodeManager{SupportedResp: false},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
-			k8sVersion:             "1.23",
+			k8sVersion:             versions.Latest,
 		},
 		"unsupported k8sVersion fails cluster creation": {
 			clusterUtil: stubClusterUtil{},
@@ -275,7 +276,7 @@ func TestInitCluster(t *testing.T) {
 			CloudControllerManager: &stubCloudControllerManager{},
 			CloudNodeManager:       &stubCloudNodeManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
-			k8sVersion:             "invalid version",
+			k8sVersion:             "1.19",
 			wantErr:                true,
 		},
 	}
@@ -296,7 +297,7 @@ func TestInitCluster(t *testing.T) {
 				kubeconfigReader:       tc.kubeconfigReader,
 				getIPAddr:              func() (string, error) { return privateIP, nil },
 			}
-			_, err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountURI, tc.k8sVersion, attestationtypes.ID{}, KMSConfig{MasterSecret: masterSecret}, nil, logger.NewTest(t))
+			_, err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountURI, string(tc.k8sVersion), attestationtypes.ID{}, KMSConfig{MasterSecret: masterSecret}, nil, logger.NewTest(t))
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -321,8 +322,7 @@ func TestJoinCluster(t *testing.T) {
 	}
 
 	privateIP := "192.0.2.1"
-	// stubClusterUtil does not validate the k8sVersion, thus it can be arbitrary.
-	k8sVersion := "3.2.1"
+	k8sVersion := versions.Latest
 
 	testCases := map[string]struct {
 		clusterUtil            stubClusterUtil
@@ -454,7 +454,7 @@ func TestJoinCluster(t *testing.T) {
 				getIPAddr:              func() (string, error) { return privateIP, nil },
 			}
 
-			err := kube.JoinCluster(context.Background(), joinCommand, tc.role, k8sVersion, logger.NewTest(t))
+			err := kube.JoinCluster(context.Background(), joinCommand, tc.role, string(k8sVersion), logger.NewTest(t))
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -522,7 +522,7 @@ type stubClusterUtil struct {
 	joinConfigs [][]byte
 }
 
-func (s *stubClusterUtil) InstallComponents(ctx context.Context, version string) error {
+func (s *stubClusterUtil) InstallComponents(ctx context.Context, version versions.ValidK8sVersion) error {
 	return s.installComponentsErr
 }
 
@@ -588,7 +588,7 @@ type stubConfigProvider struct {
 	JoinConfig k8sapi.KubeadmJoinYAML
 }
 
-func (s *stubConfigProvider) InitConfiguration(_ bool, _ string) k8sapi.KubeadmInitYAML {
+func (s *stubConfigProvider) InitConfiguration(_ bool, _ versions.ValidK8sVersion) k8sapi.KubeadmInitYAML {
 	return s.InitConfig
 }
 

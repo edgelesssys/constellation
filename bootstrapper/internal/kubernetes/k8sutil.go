@@ -7,10 +7,11 @@ import (
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/internal/versions"
 )
 
 type clusterUtil interface {
-	InstallComponents(ctx context.Context, version string) error
+	InstallComponents(ctx context.Context, version versions.ValidK8sVersion) error
 	InitCluster(ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, log *logger.Logger) error
 	JoinCluster(ctx context.Context, joinConfig []byte, log *logger.Logger) error
 	SetupPodNetwork(context.Context, k8sapi.SetupPodNetworkInput) error

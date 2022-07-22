@@ -1,8 +1,6 @@
 package azure
 
 import (
-	"fmt"
-
 	"github.com/edgelesssys/constellation/internal/versions"
 )
 
@@ -11,11 +9,8 @@ import (
 type CloudNodeManager struct{}
 
 // Image returns the container image used to provide cloud-node-manager for the cloud-provider.
-func (c *CloudNodeManager) Image(k8sVersion string) (string, error) {
-	if !versions.IsSupportedK8sVersion(k8sVersion) {
-		return "", fmt.Errorf("received unsupported k8sVersion: %s", k8sVersion)
-	}
-	return versions.VersionConfigs[k8sVersion].CloudControllerManagerImageAzure, nil
+func (c *CloudNodeManager) Image(k8sVersion versions.ValidK8sVersion) (string, error) {
+	return versions.VersionConfigs[k8sVersion].CloudNodeManagerImageAzure, nil
 }
 
 // Path returns the path used by cloud-node-manager executable within the container image.

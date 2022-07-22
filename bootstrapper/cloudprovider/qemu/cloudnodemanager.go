@@ -1,11 +1,13 @@
 package qemu
 
+import "github.com/edgelesssys/constellation/internal/versions"
+
 // CloudNodeManager holds the QEMU cloud-node-manager configuration.
 type CloudNodeManager struct{}
 
 // Image returns the container image used to provide cloud-node-manager for the cloud-provider.
 // Not used on QEMU.
-func (c *CloudNodeManager) Image(k8sVersion string) (string, error) {
+func (c *CloudNodeManager) Image(k8sVersion versions.ValidK8sVersion) (string, error) {
 	return "", nil
 }
 

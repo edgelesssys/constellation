@@ -32,7 +32,7 @@ type configReader interface {
 
 // configurationProvider provides kubeadm init and join configuration.
 type configurationProvider interface {
-	InitConfiguration(externalCloudProvider bool, k8sVersion string) k8sapi.KubeadmInitYAML
+	InitConfiguration(externalCloudProvider bool, k8sVersion versions.ValidK8sVersion) k8sapi.KubeadmInitYAML
 	JoinConfiguration(externalCloudProvider bool) k8sapi.KubeadmJoinYAML
 }
 
@@ -80,12 +80,14 @@ type KMSConfig struct {
 
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
-	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, k8sVersion string,
+	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, versionString string,
 	id attestationtypes.ID, kmsConfig KMSConfig, sshUsers map[string]string, log *logger.Logger,
 ) ([]byte, error) {
-	log.With(zap.String("version", k8sVersion)).Infof("Installing Kubernetes components")
-	// InstallComponents validates the k8sVersion as it's first action and returns if not supported.
-	// This implicitly makes k8sVersion safe to use in this function.
+	k8sVersion, err := versions.NewValidK8sVersion(versionString)
+	if err != nil {
+		return nil, err
+	}
+	log.With(zap.String("version", string(k8sVersion))).Infof("Installing Kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, k8sVersion); err != nil {
 		return nil, err
 	}
@@ -236,8 +238,12 @@ func (k *KubeWrapper) InitCluster(
 }
 
 // JoinCluster joins existing Kubernetes cluster.
-func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, peerRole role.Role, k8sVersion string, log *logger.Logger) error {
-	log.With(zap.String("version", k8sVersion)).Infof("Installing Kubernetes components")
+func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, peerRole role.Role, versionString string, log *logger.Logger) error {
+	k8sVersion, err := versions.NewValidK8sVersion(versionString)
+	if err != nil {
+		return err
+	}
+	log.With(zap.String("version", string(k8sVersion))).Infof("Installing Kubernetes components")
 	if err := k.clusterUtil.InstallComponents(ctx, k8sVersion); err != nil {
 		return err
 	}
@@ -311,7 +317,7 @@ func (k *KubeWrapper) setupJoinService(csp string, measurementsJSON []byte, id a
 	return k.clusterUtil.SetupJoinService(k.client, joinConfiguration)
 }
 
-func (k *KubeWrapper) setupCCM(ctx context.Context, subnetworkPodCIDR, cloudServiceAccountURI string, instance metadata.InstanceMetadata, k8sVersion string) error {
+func (k *KubeWrapper) setupCCM(ctx context.Context, subnetworkPodCIDR, cloudServiceAccountURI string, instance metadata.InstanceMetadata, k8sVersion versions.ValidK8sVersion) error {
 	if !k.cloudControllerManager.Supported() {
 		return nil
 	}
@@ -339,7 +345,7 @@ func (k *KubeWrapper) setupCCM(ctx context.Context, subnetworkPodCIDR, cloudServ
 	return nil
 }
 
-func (k *KubeWrapper) setupCloudNodeManager(k8sVersion string) error {
+func (k *KubeWrapper) setupCloudNodeManager(k8sVersion versions.ValidK8sVersion) error {
 	if !k.cloudNodeManager.Supported() {
 		return nil
 	}
@@ -358,7 +364,7 @@ func (k *KubeWrapper) setupCloudNodeManager(k8sVersion string) error {
 	return nil
 }
 
-func (k *KubeWrapper) setupClusterAutoscaler(instance metadata.InstanceMetadata, cloudServiceAccountURI string, autoscalingNodeGroups []string, k8sVersion string) error {
+func (k *KubeWrapper) setupClusterAutoscaler(instance metadata.InstanceMetadata, cloudServiceAccountURI string, autoscalingNodeGroups []string, k8sVersion versions.ValidK8sVersion) error {
 	if !k.clusterAutoscaler.Supported() {
 		return nil
 	}
@@ -377,11 +383,7 @@ func (k *KubeWrapper) setupClusterAutoscaler(instance metadata.InstanceMetadata,
 }
 
 // setupK8sVersionConfigMap applies a ConfigMap (cf. server-side apply) to consistently store the installed k8s version.
-func (k *KubeWrapper) setupK8sVersionConfigMap(ctx context.Context, k8sVersion string) error {
-	if !versions.IsSupportedK8sVersion(k8sVersion) {
-		return fmt.Errorf("supplied k8s version is not supported: %v", k8sVersion)
-	}
-
+func (k *KubeWrapper) setupK8sVersionConfigMap(ctx context.Context, k8sVersion versions.ValidK8sVersion) error {
 	config := corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -392,14 +394,14 @@ func (k *KubeWrapper) setupK8sVersionConfigMap(ctx context.Context, k8sVersion s
 			Namespace: "kube-system",
 		},
 		Data: map[string]string{
-			constants.K8sVersion: k8sVersion,
+			constants.K8sVersion: string(k8sVersion),
 		},
 	}
 
 	// We do not use the client's Apply method here since we are handling a kubernetes-native type.
 	// These types don't implement our custom Marshaler interface.
 	if err := k.client.CreateConfigMap(ctx, config); err != nil {
-		return fmt.Errorf("Apply in KubeWrapper.setupK8sVersionConfigMap(..) failed with: %v", err)
+		return fmt.Errorf("apply in KubeWrapper.setupK8sVersionConfigMap(..) failed with: %v", err)
 	}
 
 	return nil

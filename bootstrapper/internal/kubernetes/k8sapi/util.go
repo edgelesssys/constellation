@@ -70,12 +70,8 @@ func NewKubernetesUtil() *KubernetesUtil {
 }
 
 // InstallComponents installs kubernetes components in the version specified.
-func (k *KubernetesUtil) InstallComponents(ctx context.Context, version string) error {
-	var versionConf versions.KubernetesVersion
-	var ok bool
-	if versionConf, ok = versions.VersionConfigs[version]; !ok {
-		return fmt.Errorf("unsupported kubernetes version %q", version)
-	}
+func (k *KubernetesUtil) InstallComponents(ctx context.Context, version versions.ValidK8sVersion) error {
+	versionConf := versions.VersionConfigs[version]
 
 	if err := k.inst.Install(
 		ctx, versionConf.CNIPluginsURL, []string{cniPluginsDir}, executablePerm, true,

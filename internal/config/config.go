@@ -230,7 +230,7 @@ func Default() *Config {
 				Measurements: qemuPCRs,
 			},
 		},
-		KubernetesVersion: "1.23",
+		KubernetesVersion: string(versions.Latest),
 	}
 }
 

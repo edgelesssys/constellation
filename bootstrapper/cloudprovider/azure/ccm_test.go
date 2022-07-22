@@ -7,6 +7,7 @@ import (
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/internal/versions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	k8s "k8s.io/api/core/v1"
@@ -88,7 +89,7 @@ func TestTrivialCCMFunctions(t *testing.T) {
 	assert := assert.New(t)
 	cloud := CloudControllerManager{}
 
-	assert.NotEmpty(cloud.Image("1.23"))
+	assert.NotEmpty(cloud.Image(versions.Latest))
 	assert.NotEmpty(cloud.Path())
 	assert.NotEmpty(cloud.Name())
 	assert.NotEmpty(cloud.ExtraArgs())

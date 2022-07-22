@@ -97,8 +97,6 @@ const (
 	// Kubernetes.
 	//
 
-	// KubernetesVersion installed by kubeadm.
-	KubernetesVersion      = "stable-1.23"
 	KubernetesJoinTokenTTL = 15 * time.Minute
 )
 

@@ -3,7 +3,6 @@ package azure
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/azureshared"
@@ -30,10 +29,7 @@ func NewCloudControllerManager(metadata ccmMetadata) *CloudControllerManager {
 }
 
 // Image returns the container image used to provide cloud-controller-manager for the cloud-provider.
-func (c *CloudControllerManager) Image(k8sVersion string) (string, error) {
-	if !versions.IsSupportedK8sVersion(k8sVersion) {
-		return "", fmt.Errorf("received unsupported k8sVersion: %s", k8sVersion)
-	}
+func (c *CloudControllerManager) Image(k8sVersion versions.ValidK8sVersion) (string, error) {
 	return versions.VersionConfigs[k8sVersion].CloudControllerManagerImageAzure, nil
 }
 
