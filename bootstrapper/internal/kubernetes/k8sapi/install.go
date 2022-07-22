@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"syscall"
 	"time"
 
 	"github.com/edgelesssys/constellation/internal/retry"
@@ -41,7 +40,7 @@ func newOSInstaller() *osInstaller {
 		fs:        &afero.Afero{Fs: afero.NewOsFs()},
 		hClient:   &http.Client{},
 		clock:     clock.RealClock{},
-		retriable: connectionResetErr,
+		retriable: isRetriable,
 	}
 }
 
@@ -152,7 +151,7 @@ func (i *osInstaller) retryDownloadToTempDir(ctx context.Context, url string, tr
 		downloader: i,
 	}
 
-	// Retries are cancled as soon as the context is canceled.
+	// Retries are canceled as soon as the context is canceled.
 	// We need to call NewIntervalRetrier with a clock argument so that the tests can fake the clock by changing the osInstaller clock.
 	retrier := retry.NewIntervalRetrier(&doer, downloadInterval, i.retriable, i.clock)
 	if err := retrier.Do(ctx); err != nil {
@@ -172,6 +171,7 @@ func (i *osInstaller) downloadToTempDir(ctx context.Context, url string, transfo
 	defer func() {
 		if retErr != nil {
 			_ = i.fs.Remove(fileName)
+			retErr = &retriableError{err: retErr} // mark any error after this point as retriable
 		}
 	}()
 	defer out.Close()
@@ -242,8 +242,19 @@ func (d *downloadDoer) Do(ctx context.Context) error {
 	return err
 }
 
-func connectionResetErr(err error) bool {
-	return errors.Is(err, syscall.ECONNRESET)
+// retriableError is an error that can be retried.
+type retriableError struct{ err error }
+
+func (e *retriableError) Error() string {
+	return fmt.Sprintf("retriable error: %s", e.err.Error())
+}
+
+func (e *retriableError) Unwrap() error { return e.err }
+
+// isRetriable returns true if the action resulting in this error can be retried.
+func isRetriable(err error) bool {
+	retriableError := &retriableError{}
+	return errors.As(err, &retriableError)
 }
 
 // verifyTarPath checks if a tar path is valid (must not contain ".." as path element).
