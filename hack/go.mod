@@ -32,9 +32,7 @@ replace (
 	k8s.io/sample-controller => k8s.io/sample-controller v0.24.0
 )
 
-replace (
-	github.com/edgelesssys/constellation => ./..
-)
+replace github.com/edgelesssys/constellation => ./..
 
 require (
 	github.com/edgelesssys/constellation v1.0.0
@@ -56,7 +54,6 @@ require (
 	github.com/emirpasic/gods v1.12.0 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.3.1 // indirect
-	github.com/icholy/replace v0.5.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351 // indirect
@@ -145,7 +142,6 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/talos-systems/talos/pkg/machinery v1.0.4 // indirect
-	github.com/willdonnelly/passwd v0.0.0-20141013001024-7935dab3074c // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect

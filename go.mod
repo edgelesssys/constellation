@@ -81,7 +81,6 @@ require (
 	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.7.1
 	github.com/talos-systems/talos/pkg/machinery v1.0.4
-	github.com/willdonnelly/passwd v0.0.0-20141013001024-7935dab3074c
 	go.uber.org/goleak v1.1.12
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0

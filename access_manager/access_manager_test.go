@@ -208,10 +208,10 @@ func TestDeployKeys(t *testing.T) {
 						assert.True(ok)
 
 						// Check if user has been recreated with correct UID/GID
-						actualUID, err := strconv.Atoi(userEntry.Uid)
+						actualUID, err := strconv.Atoi(userEntry.UID)
 						assert.NoError(err)
 						assert.EqualValues(tc.existingUsers[user].UID, actualUID)
-						actualGID, err := strconv.Atoi(userEntry.Gid)
+						actualGID, err := strconv.Atoi(userEntry.GID)
 						assert.NoError(err)
 						assert.EqualValues(tc.existingUsers[user].GID, actualGID)
 
@@ -288,10 +288,10 @@ func TestEvictRootKey(t *testing.T) {
 	assert.True(ok)
 
 	// Check if user has been recreated with correct UID/GID
-	actualUID, err := strconv.Atoi(userEntry.Uid)
+	actualUID, err := strconv.Atoi(userEntry.UID)
 	assert.NoError(err)
 	assert.EqualValues(0, actualUID)
-	actualGID, err := strconv.Atoi(userEntry.Gid)
+	actualGID, err := strconv.Atoi(userEntry.GID)
 	assert.NoError(err)
 	assert.EqualValues(0, actualGID)
 

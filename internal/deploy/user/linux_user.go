@@ -162,17 +162,17 @@ func (l *LinuxUserManager) GetLinuxUser(username string) (LinuxUser, error) {
 		return LinuxUser{}, ErrUserDoesNotExist
 	}
 	entry := entries[username]
-	uid, err := strconv.Atoi(entry.Uid)
+	uid, err := strconv.Atoi(entry.UID)
 	if err != nil {
 		return LinuxUser{}, fmt.Errorf("parsing users uid: %w", err)
 	}
-	gid, err := strconv.Atoi(entry.Gid)
+	gid, err := strconv.Atoi(entry.GID)
 	if err != nil {
 		return LinuxUser{}, fmt.Errorf("parsing users gid: %w", err)
 	}
 	return LinuxUser{
 		Username: username,
-		Home:     entry.Home,
+		Home:     entry.Directory,
 		UID:      uid,
 		GID:      gid,
 	}, nil
