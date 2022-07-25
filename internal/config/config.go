@@ -208,7 +208,7 @@ func Default() *Config {
 				SubscriptionID:       "0d202bbb-4fa7-4af8-8125-58c269a05435",
 				TenantID:             "adb650a8-5da3-4b15-b4b0-3daf65ff7626",
 				Location:             "North Europe",
-				Image:                "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos/versions/0.0.1657814939",
+				Image:                "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos/versions/0.0.1658499095",
 				Measurements:         azurePCRs,
 				UserAssignedIdentity: "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-dev-identity",
 			},
@@ -216,7 +216,7 @@ func Default() *Config {
 				Project: "constellation-331613",
 				Region:  "europe-west3",
 				Zone:    "europe-west3-b",
-				Image:   "projects/constellation-images/global/images/constellation-coreos-1657814939",
+				Image:   "projects/constellation-images/global/images/constellation-coreos-1658499095",
 				ServiceAccountRoles: []string{
 					"roles/compute.instanceAdmin.v1",
 					"roles/compute.networkAdmin",
