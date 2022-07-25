@@ -41,7 +41,7 @@ runs:
     # for why we ignore certain measurement values.
     - name: Fetch PCRs
       run: |
-        KUBECONFIG="$PWD/constellation-admin.conf" kubectl wait ds/verification-service -n kube-system --for condition=available
+        KUBECONFIG="$PWD/constellation-admin.conf" kubectl rollout status ds/verification-service -n kube-system --timeout=3m
         CONSTELL_IP=$(jq -r ".bootstrapperhost" constellation-state.json)
         pcr-reader --constell-ip ${CONSTELL_IP} -format yaml > measurements.yaml
         case $CSP in
