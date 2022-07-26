@@ -86,6 +86,7 @@ func TestKeyAPI(t *testing.T) {
 	assert := assert.New(t)
 
 	testKey := []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+	testSecret := []byte("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
 
 	// get a free port on localhost to run the test on
 	listener, err := net.Listen("tcp", "localhost:0")
@@ -114,14 +115,16 @@ func TestKeyAPI(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
 		_, err = client.PushStateDiskKey(ctx, &keyproto.PushStateDiskKeyRequest{
-			StateDiskKey: testKey,
+			StateDiskKey:      testKey,
+			MeasurementSecret: testSecret,
 		})
 		require.NoError(err)
 	}()
 
-	key, err := api.WaitForDecryptionKey("12345678-1234-1234-1234-123456789ABC", apiAddr)
+	key, measurementSecret, err := api.WaitForDecryptionKey("12345678-1234-1234-1234-123456789ABC", apiAddr)
 	assert.NoError(err)
 	assert.Equal(testKey, key)
+	assert.Equal(testSecret, measurementSecret)
 }
 
 type fakeMetadataAPI struct{}

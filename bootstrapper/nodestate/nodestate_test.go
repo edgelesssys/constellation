@@ -23,11 +23,10 @@ func TestFromFile(t *testing.T) {
 		wantErr      bool
 	}{
 		"nodestate exists": {
-			fileContents: `{	"Role": "ControlPlane", "OwnerID": "T3duZXJJRA==", "ClusterID": "Q2x1c3RlcklE"	}`,
+			fileContents: `{	"Role": "ControlPlane", "MeasurementSalt": "U2FsdA=="	}`,
 			wantState: &NodeState{
-				Role:      role.ControlPlane,
-				OwnerID:   []byte("OwnerID"),
-				ClusterID: []byte("ClusterID"),
+				Role:            role.ControlPlane,
+				MeasurementSalt: []byte("Salt"),
 			},
 		},
 		"nodestate file does not exist": {
@@ -66,14 +65,12 @@ func TestToFile(t *testing.T) {
 	}{
 		"writing works": {
 			state: &NodeState{
-				Role:      role.ControlPlane,
-				OwnerID:   []byte("OwnerID"),
-				ClusterID: []byte("ClusterID"),
+				Role:            role.ControlPlane,
+				MeasurementSalt: []byte("Salt"),
 			},
 			wantFile: `{
 	"Role": "ControlPlane",
-	"OwnerID": "T3duZXJJRA==",
-	"ClusterID": "Q2x1c3RlcklE"
+	"MeasurementSalt": "U2FsdA=="
 }`,
 		},
 		"file exists already": {

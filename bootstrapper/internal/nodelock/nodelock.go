@@ -28,9 +28,10 @@ func New(tpm vtpm.TPMOpenFunc) *Lock {
 
 // TryLockOnce tries to lock the node. If the node is already locked, it
 // returns false. If the node is unlocked, it locks it and returns true.
-func (l *Lock) TryLockOnce(ownerID, clusterID []byte) (bool, error) {
+func (l *Lock) TryLockOnce(clusterID []byte) (bool, error) {
 	if !l.mux.TryLock() {
 		return false, nil
 	}
-	return true, vtpm.MarkNodeAsBootstrapped(l.tpm, ownerID, clusterID)
+
+	return true, vtpm.MarkNodeAsBootstrapped(l.tpm, clusterID)
 }

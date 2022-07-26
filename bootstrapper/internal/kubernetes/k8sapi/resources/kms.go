@@ -15,8 +15,7 @@ import (
 
 type kmsDeployment struct {
 	ServiceAccount     k8s.ServiceAccount
-	ServiceInternal    k8s.Service
-	ServiceExternal    k8s.Service
+	Service            k8s.Service
 	ClusterRole        rbac.ClusterRole
 	ClusterRoleBinding rbac.ClusterRoleBinding
 	Deployment         apps.Deployment
@@ -37,7 +36,7 @@ func NewKMSDeployment(csp string, masterSecret []byte) *kmsDeployment {
 				Namespace: "kube-system",
 			},
 		},
-		ServiceInternal: k8s.Service{
+		Service: k8s.Service{
 			TypeMeta: meta.TypeMeta{
 				APIVersion: "v1",
 				Kind:       "Service",
@@ -54,31 +53,6 @@ func NewKMSDeployment(csp string, masterSecret []byte) *kmsDeployment {
 						Protocol:   k8s.ProtocolTCP,
 						Port:       constants.KMSPort,
 						TargetPort: intstr.FromInt(constants.KMSPort),
-					},
-				},
-				Selector: map[string]string{
-					"k8s-app": "kms",
-				},
-			},
-		},
-		ServiceExternal: k8s.Service{
-			TypeMeta: meta.TypeMeta{
-				APIVersion: "v1",
-				Kind:       "Service",
-			},
-			ObjectMeta: meta.ObjectMeta{
-				Name:      "kms-external",
-				Namespace: "kube-system",
-			},
-			Spec: k8s.ServiceSpec{
-				Type: k8s.ServiceTypeNodePort,
-				Ports: []k8s.ServicePort{
-					{
-						Name:       "atls",
-						Protocol:   k8s.ProtocolTCP,
-						Port:       constants.KMSATLSPort,
-						TargetPort: intstr.FromInt(constants.KMSATLSPort),
-						NodePort:   constants.KMSNodePort,
 					},
 				},
 				Selector: map[string]string{
@@ -229,9 +203,7 @@ func NewKMSDeployment(csp string, masterSecret []byte) *kmsDeployment {
 								Name:  "kms",
 								Image: versions.KmsImage,
 								Args: []string{
-									fmt.Sprintf("--atls-port=%d", constants.KMSATLSPort),
 									fmt.Sprintf("--port=%d", constants.KMSPort),
-									fmt.Sprintf("--cloud-provider=%s", csp),
 								},
 								VolumeMounts: []k8s.VolumeMount{
 									{

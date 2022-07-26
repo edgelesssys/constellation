@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nodes add themselves to the cluster after `constellation init` is done
 
+- Owner ID and Unique ID merged into a single value: Cluster ID
+
 ### Deprecated
 
 ### Removed

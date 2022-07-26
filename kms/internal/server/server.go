@@ -3,10 +3,10 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net"
-	"sync"
 
-	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
+	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/grpc/grpclog"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/kms/kms"
@@ -35,52 +35,21 @@ func New(log *logger.Logger, conKMS kms.CloudKMS) *Server {
 	}
 }
 
-// Run starts both the plain gRPC server and the aTLS gRPC server.
-// If one of the servers fails, the other server will be closed and the error will be returned.
-func (s *Server) Run(atlsListener, plainListener net.Listener, credentials *atlscredentials.Credentials) error {
-	var err error
-	var once sync.Once
-	var wg sync.WaitGroup
+// Run starts the gRPC server.
+func (s *Server) Run(port string) error {
+	// set up listener
+	listener, err := net.Listen("tcp", net.JoinHostPort("", port))
+	if err != nil {
+		return fmt.Errorf("failed to listen on port %s: %v", port, err)
+	}
 
-	atlsServer := grpc.NewServer(
-		grpc.Creds(credentials),
-		s.log.Named("gRPC.aTLS").GetServerUnaryInterceptor(),
-	)
-	kmsproto.RegisterAPIServer(atlsServer, s)
-
-	plainServer := grpc.NewServer(s.log.Named("gRPC.cluster").GetServerUnaryInterceptor())
-	kmsproto.RegisterAPIServer(plainServer, s)
-
+	server := grpc.NewServer(s.log.Named("gRPC").GetServerUnaryInterceptor())
+	kmsproto.RegisterAPIServer(server, s)
 	s.log.Named("gRPC").WithIncreasedLevel(zapcore.WarnLevel).ReplaceGRPCLogger()
 
-	// start the plain gRPC server
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		defer atlsServer.GracefulStop()
-
-		s.log.Infof("Starting Constellation key management service on %s", plainListener.Addr().String())
-		plainErr := plainServer.Serve(plainListener)
-		if plainErr != nil {
-			once.Do(func() { err = plainErr })
-		}
-	}()
-
-	// start the aTLS server
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		defer plainServer.GracefulStop()
-
-		s.log.Infof("Starting Constellation aTLS key management service on %s", atlsListener.Addr().String())
-		atlsErr := atlsServer.Serve(atlsListener)
-		if atlsErr != nil {
-			once.Do(func() { err = atlsErr })
-		}
-	}()
-
-	wg.Wait()
-	return err
+	// start the server
+	s.log.Infof("Starting Constellation key management service on %s", listener.Addr().String())
+	return server.Serve(listener)
 }
 
 // GetDataKey returns a data key.
@@ -99,7 +68,7 @@ func (s *Server) GetDataKey(ctx context.Context, in *kmsproto.GetDataKeyRequest)
 		return nil, status.Error(codes.InvalidArgument, "no data key ID specified")
 	}
 
-	key, err := s.conKMS.GetDEK(ctx, "Constellation", "key-"+in.DataKeyId, int(in.Length))
+	key, err := s.conKMS.GetDEK(ctx, "Constellation", crypto.HKDFInfoPrefix+in.DataKeyId, int(in.Length))
 	if err != nil {
 		log.With(zap.Error(err)).Errorf("Failed to get data key")
 		return nil, status.Errorf(codes.Internal, "%v", err)

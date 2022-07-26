@@ -6,6 +6,7 @@ option go_package = "github.com/edgelesssys/constellation/joinservice/joinproto"
 
 service API {
     rpc IssueJoinTicket(IssueJoinTicketRequest) returns (IssueJoinTicketResponse);
+    rpc IssueRejoinTicket(IssueRejoinTicketRequest) returns (IssueRejoinTicketResponse);
 }
 
 
@@ -17,8 +18,8 @@ message IssueJoinTicketRequest {
 
 message IssueJoinTicketResponse {
     bytes state_disk_key = 1;
-    bytes owner_id = 2;
-    bytes cluster_id = 3;
+    bytes measurement_salt = 2;
+    bytes measurement_secret = 3;
     bytes kubelet_cert = 4;
     string api_server_endpoint = 5;
     string token = 6;
@@ -30,4 +31,13 @@ message IssueJoinTicketResponse {
 message control_plane_cert_or_key {
     string name = 1;
     bytes data = 2;
+}
+
+message IssueRejoinTicketRequest {
+    string disk_uuid = 1;
+}
+
+message IssueRejoinTicketResponse {
+    bytes state_disk_key = 1;
+    bytes measurement_secret = 2;
 }

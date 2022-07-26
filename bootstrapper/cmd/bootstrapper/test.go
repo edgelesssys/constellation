@@ -5,7 +5,6 @@ import (
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
-	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/logger"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
@@ -15,7 +14,7 @@ import (
 type clusterFake struct{}
 
 // InitCluster fakes bootstrapping a new cluster with the current node being the master, returning the arguments required to join the cluster.
-func (c *clusterFake) InitCluster(context.Context, []string, string, string, attestationtypes.ID, kubernetes.KMSConfig, map[string]string, *logger.Logger,
+func (c *clusterFake) InitCluster(context.Context, []string, string, string, []byte, kubernetes.KMSConfig, map[string]string, *logger.Logger,
 ) ([]byte, error) {
 	return []byte{}, nil
 }

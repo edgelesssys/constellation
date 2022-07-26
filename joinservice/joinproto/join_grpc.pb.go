@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type APIClient interface {
 	IssueJoinTicket(ctx context.Context, in *IssueJoinTicketRequest, opts ...grpc.CallOption) (*IssueJoinTicketResponse, error)
+	IssueRejoinTicket(ctx context.Context, in *IssueRejoinTicketRequest, opts ...grpc.CallOption) (*IssueRejoinTicketResponse, error)
 }
 
 type aPIClient struct {
@@ -42,11 +43,21 @@ func (c *aPIClient) IssueJoinTicket(ctx context.Context, in *IssueJoinTicketRequ
 	return out, nil
 }
 
+func (c *aPIClient) IssueRejoinTicket(ctx context.Context, in *IssueRejoinTicketRequest, opts ...grpc.CallOption) (*IssueRejoinTicketResponse, error) {
+	out := new(IssueRejoinTicketResponse)
+	err := c.cc.Invoke(ctx, "/join.API/IssueRejoinTicket", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // APIServer is the server API for API service.
 // All implementations must embed UnimplementedAPIServer
 // for forward compatibility
 type APIServer interface {
 	IssueJoinTicket(context.Context, *IssueJoinTicketRequest) (*IssueJoinTicketResponse, error)
+	IssueRejoinTicket(context.Context, *IssueRejoinTicketRequest) (*IssueRejoinTicketResponse, error)
 	mustEmbedUnimplementedAPIServer()
 }
 
@@ -56,6 +67,9 @@ type UnimplementedAPIServer struct {
 
 func (UnimplementedAPIServer) IssueJoinTicket(context.Context, *IssueJoinTicketRequest) (*IssueJoinTicketResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IssueJoinTicket not implemented")
+}
+func (UnimplementedAPIServer) IssueRejoinTicket(context.Context, *IssueRejoinTicketRequest) (*IssueRejoinTicketResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IssueRejoinTicket not implemented")
 }
 func (UnimplementedAPIServer) mustEmbedUnimplementedAPIServer() {}
 
@@ -88,6 +102,24 @@ func _API_IssueJoinTicket_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _API_IssueRejoinTicket_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IssueRejoinTicketRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIServer).IssueRejoinTicket(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/join.API/IssueRejoinTicket",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIServer).IssueRejoinTicket(ctx, req.(*IssueRejoinTicketRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // API_ServiceDesc is the grpc.ServiceDesc for API service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -98,6 +130,10 @@ var API_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IssueJoinTicket",
 			Handler:    _API_IssueJoinTicket_Handler,
+		},
+		{
+			MethodName: "IssueRejoinTicket",
+			Handler:    _API_IssueRejoinTicket_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

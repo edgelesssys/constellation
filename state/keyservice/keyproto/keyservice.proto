@@ -10,6 +10,7 @@ service API {
 
 message PushStateDiskKeyRequest {
     bytes state_disk_key = 1;
+    bytes measurement_secret = 2;
 }
 
 message PushStateDiskKeyResponse {

@@ -11,10 +11,9 @@ import (
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes"
 	"github.com/edgelesssys/constellation/bootstrapper/nodestate"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
-	"github.com/edgelesssys/constellation/bootstrapper/util"
 	"github.com/edgelesssys/constellation/internal/atls"
-	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
-	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/attestation"
+	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/grpc/grpclog"
@@ -79,12 +78,13 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(ctx)))
 	log.Infof("Init called")
 
-	id, err := s.deriveAttestationID(req.MasterSecret)
+	// generate values for cluster attestation
+	measurementSalt, clusterID, err := deriveMeasurementValues(req.MasterSecret)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "%s", err)
+		return nil, status.Errorf(codes.Internal, "deriving measurement values: %s", err)
 	}
 
-	nodeLockAcquired, err := s.nodeLock.TryLockOnce(id.Owner, id.Cluster)
+	nodeLockAcquired, err := s.nodeLock.TryLockOnce(clusterID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "locking node: %s", err)
 	}
@@ -103,9 +103,8 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 	}
 
 	state := nodestate.NodeState{
-		Role:      role.ControlPlane,
-		OwnerID:   id.Owner,
-		ClusterID: id.Cluster,
+		Role:            role.ControlPlane,
+		MeasurementSalt: measurementSalt,
 	}
 	if err := state.ToFile(s.fileHandler); err != nil {
 		return nil, status.Errorf(codes.Internal, "persisting node state: %s", err)
@@ -115,7 +114,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		req.AutoscalingNodeGroups,
 		req.CloudServiceAccountUri,
 		req.KubernetesVersion,
-		id,
+		measurementSalt,
 		kubernetes.KMSConfig{
 			MasterSecret:       req.MasterSecret,
 			KMSURI:             req.KmsUri,
@@ -133,8 +132,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 	log.Infof("Init succeeded")
 	return &initproto.InitResponse{
 		Kubeconfig: kubeconfig,
-		OwnerId:    id.Owner,
-		ClusterId:  id.Cluster,
+		ClusterId:  clusterID,
 	}, nil
 }
 
@@ -156,27 +154,12 @@ func (s *Server) setupDisk(masterSecret []byte) error {
 	uuid = strings.ToLower(uuid)
 
 	// TODO: Choose a way to salt the key derivation
-	diskKey, err := util.DeriveKey(masterSecret, []byte("Constellation"), []byte("key"+uuid), 32)
+	diskKey, err := crypto.DeriveKey(masterSecret, []byte("Constellation"), []byte(crypto.HKDFInfoPrefix+uuid), 32)
 	if err != nil {
 		return err
 	}
 
 	return s.disk.UpdatePassphrase(string(diskKey))
-}
-
-func (s *Server) deriveAttestationID(masterSecret []byte) (attestationtypes.ID, error) {
-	clusterID, err := util.GenerateRandomBytes(constants.RNGLengthDefault)
-	if err != nil {
-		return attestationtypes.ID{}, err
-	}
-
-	// TODO: Choose a way to salt the key derivation
-	ownerID, err := util.DeriveKey(masterSecret, []byte("Constellation"), []byte("id"), constants.RNGLengthDefault)
-	if err != nil {
-		return attestationtypes.ID{}, err
-	}
-
-	return attestationtypes.ID{Owner: ownerID, Cluster: clusterID}, nil
 }
 
 func sshProtoKeysToMap(keys []*initproto.SSHUserKey) map[string]string {
@@ -187,6 +170,23 @@ func sshProtoKeysToMap(keys []*initproto.SSHUserKey) map[string]string {
 	return keyMap
 }
 
+func deriveMeasurementValues(masterSecret []byte) (salt, clusterID []byte, err error) {
+	salt, err = crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
+	if err != nil {
+		return nil, nil, err
+	}
+	secret, err := attestation.DeriveMeasurementSecret(masterSecret)
+	if err != nil {
+		return nil, nil, err
+	}
+	clusterID, err = attestation.DeriveClusterID(salt, secret)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return salt, clusterID, nil
+}
+
 // ClusterInitializer has the ability to initialize a cluster.
 type ClusterInitializer interface {
 	// InitCluster initializes a new Kubernetes cluster.
@@ -195,7 +195,7 @@ type ClusterInitializer interface {
 		autoscalingNodeGroups []string,
 		cloudServiceAccountURI string,
 		k8sVersion string,
-		id attestationtypes.ID,
+		measurementSalt []byte,
 		kmsConfig kubernetes.KMSConfig,
 		sshUserKeys map[string]string,
 		log *logger.Logger,
@@ -223,7 +223,7 @@ type serveStopper interface {
 type locker interface {
 	// TryLockOnce tries to lock the node. If the node is already locked, it
 	// returns false. If the node is unlocked, it locks it and returns true.
-	TryLockOnce(ownerID, clusterID []byte) (bool, error)
+	TryLockOnce(clusterID []byte) (bool, error)
 }
 
 type cleaner interface {

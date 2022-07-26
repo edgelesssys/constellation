@@ -9,8 +9,9 @@ import (
 	"syscall"
 
 	"github.com/edgelesssys/constellation/bootstrapper/nodestate"
+	"github.com/edgelesssys/constellation/internal/attestation"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
-	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
@@ -57,7 +58,7 @@ func (s *SetupManager) PrepareExistingDisk() error {
 	uuid := s.mapper.DiskUUID()
 
 getKey:
-	passphrase, err := s.keyWaiter.WaitForDecryptionKey(uuid, net.JoinHostPort("0.0.0.0", RecoveryPort))
+	passphrase, measurementSecret, err := s.keyWaiter.WaitForDecryptionKey(uuid, net.JoinHostPort("0.0.0.0", RecoveryPort))
 	if err != nil {
 		return err
 	}
@@ -77,13 +78,17 @@ getKey:
 		return err
 	}
 
-	ownerID, clusterID, err := s.readInitSecrets(stateInfoPath)
+	measurementSalt, err := s.readMeasurementSalt(stateInfoPath)
+	if err != nil {
+		return err
+	}
+	clusterID, err := attestation.DeriveClusterID(measurementSalt, measurementSecret)
 	if err != nil {
 		return err
 	}
 
 	// taint the node as initialized
-	if err := vtpm.MarkNodeAsBootstrapped(s.openTPM, ownerID, clusterID); err != nil {
+	if err := vtpm.MarkNodeAsBootstrapped(s.openTPM, clusterID); err != nil {
 		return err
 	}
 
@@ -99,7 +104,7 @@ func (s *SetupManager) PrepareNewDisk() error {
 		return err
 	}
 
-	passphrase := make([]byte, constants.RNGLengthDefault)
+	passphrase := make([]byte, crypto.RNGLengthDefault)
 	if _, err := rand.Read(passphrase); err != nil {
 		return err
 	}
@@ -114,16 +119,16 @@ func (s *SetupManager) PrepareNewDisk() error {
 	return s.mapper.MapDisk(stateDiskMappedName, string(passphrase))
 }
 
-func (s *SetupManager) readInitSecrets(path string) ([]byte, []byte, error) {
+func (s *SetupManager) readMeasurementSalt(path string) ([]byte, error) {
 	handler := file.NewHandler(s.fs)
 	var state nodestate.NodeState
 	if err := handler.ReadJSON(path, &state); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	if len(state.ClusterID) == 0 || len(state.OwnerID) == 0 {
-		return nil, nil, errors.New("missing state information to retaint node")
+	if len(state.MeasurementSalt) != crypto.RNGLengthDefault {
+		return nil, errors.New("missing state information to retaint node")
 	}
 
-	return state.OwnerID, state.ClusterID, nil
+	return state.MeasurementSalt, nil
 }

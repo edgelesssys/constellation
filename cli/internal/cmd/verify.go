@@ -8,11 +8,11 @@ import (
 	"io/fs"
 	"net"
 
-	"github.com/edgelesssys/constellation/bootstrapper/util"
 	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/verify/verifyproto"
@@ -37,7 +37,7 @@ If arguments aren't specified, values are read from ` + "`" + constants.ClusterI
 		RunE: runVerify,
 	}
 	cmd.Flags().String("owner-id", "", "verify using the owner identity derived from the master secret")
-	cmd.Flags().String("unique-id", "", "verify using the unique cluster identity")
+	cmd.Flags().String("cluster-id", "", "verify using the unique cluster identity")
 	cmd.Flags().StringP("node-endpoint", "e", "", "endpoint of the node to verify, passed as HOST[:PORT]")
 	return cmd
 }
@@ -74,11 +74,11 @@ func verify(
 		cmd.Print(validators.Warnings())
 	}
 
-	nonce, err := util.GenerateRandomBytes(32)
+	nonce, err := crypto.GenerateRandomBytes(32)
 	if err != nil {
 		return err
 	}
-	userData, err := util.GenerateRandomBytes(32)
+	userData, err := crypto.GenerateRandomBytes(32)
 	if err != nil {
 		return err
 	}
@@ -108,9 +108,9 @@ func parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handler) (verifyFlags
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing owner-id argument: %w", err)
 	}
-	clusterID, err := cmd.Flags().GetString("unique-id")
+	clusterID, err := cmd.Flags().GetString("cluster-id")
 	if err != nil {
-		return verifyFlags{}, fmt.Errorf("parsing unique-id argument: %w", err)
+		return verifyFlags{}, fmt.Errorf("parsing cluster-id argument: %w", err)
 	}
 	endpoint, err := cmd.Flags().GetString("node-endpoint")
 	if err != nil {
@@ -127,7 +127,7 @@ func parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handler) (verifyFlags
 				endpoint = details.Endpoint
 			}
 			if emptyIDs {
-				cmd.Printf("Using IDs from %q. Specify --owner-id  and/or --unique-id to override this.\n", constants.ClusterIDsFileName)
+				cmd.Printf("Using IDs from %q. Specify --owner-id  and/or --cluster-id to override this.\n", constants.ClusterIDsFileName)
 				ownerID = details.OwnerID
 				clusterID = details.ClusterID
 			}
@@ -138,7 +138,7 @@ func parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handler) (verifyFlags
 
 	// Validate
 	if ownerID == "" && clusterID == "" {
-		return verifyFlags{}, errors.New("neither owner-id nor unique-id provided to verify the cluster")
+		return verifyFlags{}, errors.New("neither owner-id nor cluster-id provided to verify the cluster")
 	}
 	endpoint, err = validateEndpoint(endpoint, constants.BootstrapperPort)
 	if err != nil {

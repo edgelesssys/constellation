@@ -50,13 +50,14 @@ func (c *KeyClient) Close() error {
 
 // PushStateDiskKey pushes the state disk key to a constellation instance in recovery mode.
 // The state disk key must be derived from the UUID of the state disk and the master key.
-func (c *KeyClient) PushStateDiskKey(ctx context.Context, stateDiskKey []byte) error {
+func (c *KeyClient) PushStateDiskKey(ctx context.Context, stateDiskKey, measurementSecret []byte) error {
 	if c.keyapi == nil {
 		return errors.New("client is not connected")
 	}
 
 	req := &keyproto.PushStateDiskKeyRequest{
-		StateDiskKey: stateDiskKey,
+		StateDiskKey:      stateDiskKey,
+		MeasurementSecret: measurementSecret,
 	}
 
 	_, err := c.keyapi.PushStateDiskKey(ctx, req)

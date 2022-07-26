@@ -50,20 +50,20 @@ func InitServerEndpoints(ctx context.Context, lister InstanceLister) ([]string, 
 	return initServerEndpoints, nil
 }
 
-// KMSEndpoints returns the list of endpoints for the KMS service, which are running on the control plane nodes.
-func KMSEndpoints(ctx context.Context, lister InstanceLister) ([]string, error) {
+// JoinServiceEndpoints returns the list of endpoints for the join service, which are running on the control plane nodes.
+func JoinServiceEndpoints(ctx context.Context, lister InstanceLister) ([]string, error) {
 	instances, err := lister.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving instances list from cloud provider: %w", err)
 	}
-	kmsEndpoints := []string{}
+	joinEndpoints := []string{}
 	for _, instance := range instances {
 		if instance.Role == role.ControlPlane {
 			for _, ip := range instance.PrivateIPs {
-				kmsEndpoints = append(kmsEndpoints, net.JoinHostPort(ip, strconv.Itoa(constants.KMSNodePort)))
+				joinEndpoints = append(joinEndpoints, net.JoinHostPort(ip, strconv.Itoa(constants.JoinServiceNodePort)))
 			}
 		}
 	}
 
-	return kmsEndpoints, nil
+	return joinEndpoints, nil
 }

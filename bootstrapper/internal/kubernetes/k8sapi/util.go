@@ -19,7 +19,7 @@ import (
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubelet"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
-	"github.com/edgelesssys/constellation/bootstrapper/util"
+	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/versions"
@@ -455,7 +455,7 @@ func (k *KubernetesUtil) createSignedKubeletCert(nodeName string, ips []net.IP) 
 		return err
 	}
 
-	serialNumber, err := util.GenerateCertificateSerialNumber()
+	serialNumber, err := crypto.GenerateCertificateSerialNumber()
 	if err != nil {
 		return err
 	}

@@ -23,7 +23,7 @@ type joinServiceDaemonset struct {
 }
 
 // NewJoinServiceDaemonset returns a daemonset for the join service.
-func NewJoinServiceDaemonset(csp string, measurementsJSON, idJSON string) *joinServiceDaemonset {
+func NewJoinServiceDaemonset(csp, measurementsJSON string, measurementSalt []byte) *joinServiceDaemonset {
 	return &joinServiceDaemonset{
 		ClusterRole: rbac.ClusterRole{
 			TypeMeta: meta.TypeMeta{
@@ -246,8 +246,10 @@ func NewJoinServiceDaemonset(csp string, measurementsJSON, idJSON string) *joinS
 				Namespace: "kube-system",
 			},
 			Data: map[string]string{
-				"measurements": measurementsJSON,
-				"id":           idJSON,
+				constants.MeasurementsFilename: measurementsJSON,
+			},
+			BinaryData: map[string][]byte{
+				constants.MeasurementSaltFilename: measurementSalt,
 			},
 		},
 	}

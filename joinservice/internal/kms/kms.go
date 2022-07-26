@@ -28,8 +28,8 @@ func New(log *logger.Logger, endpoint string) Client {
 }
 
 // GetDataKey returns a data encryption key for the given UUID.
-func (c Client) GetDataKey(ctx context.Context, uuid string, length int) ([]byte, error) {
-	log := c.log.With(zap.String("diskUUID", uuid), zap.String("endpoint", c.endpoint))
+func (c Client) GetDataKey(ctx context.Context, keyID string, length int) ([]byte, error) {
+	log := c.log.With(zap.String("keyID", keyID), zap.String("endpoint", c.endpoint))
 	// TODO: update credentials if we enable aTLS on the KMS
 	// For now this is fine since traffic is only routed through the Constellation cluster
 	log.Infof("Connecting to KMS at %s", c.endpoint)
@@ -43,7 +43,7 @@ func (c Client) GetDataKey(ctx context.Context, uuid string, length int) ([]byte
 	res, err := c.grpc.GetDataKey(
 		ctx,
 		&kmsproto.GetDataKeyRequest{
-			DataKeyId: uuid,
+			DataKeyId: keyID,
 			Length:    uint32(length),
 		},
 		conn,

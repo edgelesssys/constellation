@@ -125,19 +125,24 @@ func TestPushStateDiskKey(t *testing.T) {
 	}{
 		"success": {
 			testAPI: &KeyAPI{keyReceived: make(chan struct{}, 1)},
-			request: &keyproto.PushStateDiskKeyRequest{StateDiskKey: []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")},
+			request: &keyproto.PushStateDiskKeyRequest{StateDiskKey: []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), MeasurementSecret: []byte("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")},
 		},
 		"key already set": {
 			testAPI: &KeyAPI{
 				keyReceived: make(chan struct{}, 1),
 				key:         []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
 			},
-			request: &keyproto.PushStateDiskKeyRequest{StateDiskKey: []byte("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")},
+			request: &keyproto.PushStateDiskKeyRequest{StateDiskKey: []byte("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"), MeasurementSecret: []byte("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")},
 			wantErr: true,
 		},
 		"incorrect size of pushed key": {
 			testAPI: &KeyAPI{keyReceived: make(chan struct{}, 1)},
-			request: &keyproto.PushStateDiskKeyRequest{StateDiskKey: []byte("AAAAAAAAAAAAAAAA")},
+			request: &keyproto.PushStateDiskKeyRequest{StateDiskKey: []byte("AAAAAAAAAAAAAAAA"), MeasurementSecret: []byte("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")},
+			wantErr: true,
+		},
+		"incorrect size of measurement secret": {
+			testAPI: &KeyAPI{keyReceived: make(chan struct{}, 1)},
+			request: &keyproto.PushStateDiskKeyRequest{StateDiskKey: []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), MeasurementSecret: []byte("BBBBBBBBBBBBBBBB")},
 			wantErr: true,
 		},
 	}

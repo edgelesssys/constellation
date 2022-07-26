@@ -10,7 +10,6 @@ import (
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
-	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/versions"
@@ -297,7 +296,7 @@ func TestInitCluster(t *testing.T) {
 				kubeconfigReader:       tc.kubeconfigReader,
 				getIPAddr:              func() (string, error) { return privateIP, nil },
 			}
-			_, err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountURI, string(tc.k8sVersion), attestationtypes.ID{}, KMSConfig{MasterSecret: masterSecret}, nil, logger.NewTest(t))
+			_, err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountURI, string(tc.k8sVersion), nil, KMSConfig{MasterSecret: masterSecret}, nil, logger.NewTest(t))
 
 			if tc.wantErr {
 				assert.Error(err)

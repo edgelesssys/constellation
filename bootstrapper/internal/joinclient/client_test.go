@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 func TestClient(t *testing.T) {
 	someErr := errors.New("failed")
 	lockedLock := newFakeLock()
-	aqcuiredLock, lockErr := lockedLock.TryLockOnce(nil, nil)
+	aqcuiredLock, lockErr := lockedLock.TryLockOnce(nil)
 	require.True(t, aqcuiredLock)
 	require.Nil(t, lockErr)
 	workerSelf := metadata.InstanceMetadata{Role: role.Worker, Name: "node-1"}
@@ -246,9 +246,9 @@ func TestClient(t *testing.T) {
 				assert.False(tc.clusterJoiner.joinClusterCalled)
 			}
 			if tc.wantLock {
-				assert.False(client.nodeLock.TryLockOnce(nil, nil)) // lock should be locked
+				assert.False(client.nodeLock.TryLockOnce(nil)) // lock should be locked
 			} else {
-				assert.True(client.nodeLock.TryLockOnce(nil, nil))
+				assert.True(client.nodeLock.TryLockOnce(nil))
 			}
 		})
 	}
@@ -430,6 +430,6 @@ func newFakeLock() *fakeLock {
 	}
 }
 
-func (l *fakeLock) TryLockOnce(_, _ []byte) (bool, error) {
+func (l *fakeLock) TryLockOnce(_ []byte) (bool, error) {
 	return l.state.TryLock(), nil
 }

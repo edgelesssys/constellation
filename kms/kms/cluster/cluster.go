@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/edgelesssys/constellation/bootstrapper/util"
+	"github.com/edgelesssys/constellation/internal/crypto"
 )
 
 // ClusterKMS implements the kms.CloudKMS interface for in cluster key management.
@@ -24,5 +24,5 @@ func (c *ClusterKMS) GetDEK(ctx context.Context, kekID string, dekID string, dek
 		return nil, errors.New("master key not set for Constellation KMS")
 	}
 	// TODO: Choose a way to salt key derivation
-	return util.DeriveKey(c.masterKey, []byte("Constellation"), []byte("key"+dekID), uint(dekSize))
+	return crypto.DeriveKey(c.masterKey, []byte("Constellation"), []byte(dekID), uint(dekSize))
 }

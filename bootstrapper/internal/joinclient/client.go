@@ -14,6 +14,7 @@ import (
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubelet"
 	"github.com/edgelesssys/constellation/bootstrapper/nodestate"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
+	"github.com/edgelesssys/constellation/internal/attestation"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
@@ -230,7 +231,12 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 		}
 	}()
 
-	nodeLockAcquired, err := c.nodeLock.TryLockOnce(ticket.OwnerId, ticket.ClusterId)
+	clusterID, err := attestation.DeriveClusterID(ticket.MeasurementSalt, ticket.MeasurementSecret)
+	if err != nil {
+		return err
+	}
+
+	nodeLockAcquired, err := c.nodeLock.TryLockOnce(clusterID)
 	if err != nil {
 		c.log.With(zap.Error(err)).Errorf("Acquiring node lock failed")
 		return fmt.Errorf("acquiring node lock: %w", err)
@@ -259,9 +265,8 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 	}
 
 	state := nodestate.NodeState{
-		Role:      c.role,
-		OwnerID:   ticket.OwnerId,
-		ClusterID: ticket.ClusterId,
+		Role:            c.role,
+		MeasurementSalt: ticket.MeasurementSalt,
 	}
 	if err := state.ToFile(c.fileHandler); err != nil {
 		return fmt.Errorf("persisting node state: %w", err)
@@ -417,5 +422,5 @@ type cleaner interface {
 type locker interface {
 	// TryLockOnce tries to lock the node. If the node is already locked, it
 	// returns false. If the node is unlocked, it locks it and returns true.
-	TryLockOnce(ownerID, clusterID []byte) (bool, error)
+	TryLockOnce(clusterID []byte) (bool, error)
 }

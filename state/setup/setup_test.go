@@ -9,7 +9,7 @@ import (
 
 	"github.com/edgelesssys/constellation/bootstrapper/nodestate"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
-	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
@@ -108,9 +108,10 @@ func TestPrepareExistingDisk(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
+			salt := []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 			if !tc.missingState {
 				handler := file.NewHandler(tc.fs)
-				require.NoError(t, handler.WriteJSON(stateInfoPath, nodestate.NodeState{OwnerID: []byte("ownerID"), ClusterID: []byte("clusterID")}, file.OptMkdirAll))
+				require.NoError(t, handler.WriteJSON(stateInfoPath, nodestate.NodeState{MeasurementSalt: salt}, file.OptMkdirAll))
 			}
 
 			setupManager := New(
@@ -193,43 +194,30 @@ func TestPrepareNewDisk(t *testing.T) {
 
 				data, err := tc.fs.ReadFile(filepath.Join(keyPath, keyFile))
 				require.NoError(t, err)
-				assert.Len(data, constants.RNGLengthDefault)
+				assert.Len(data, crypto.RNGLengthDefault)
 			}
 		})
 	}
 }
 
-func TestReadInitSecrets(t *testing.T) {
+func TestReadMeasurementSalt(t *testing.T) {
+	salt := []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 	testCases := map[string]struct {
 		fs        afero.Afero
-		ownerID   string
-		clusterID string
+		salt      []byte
 		writeFile bool
 		wantErr   bool
 	}{
 		"success": {
 			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
-			ownerID:   "ownerID",
-			clusterID: "clusterID",
+			salt:      salt,
 			writeFile: true,
 		},
 		"no state file": {
 			fs:      afero.Afero{Fs: afero.NewMemMapFs()},
 			wantErr: true,
 		},
-		"missing ownerID": {
-			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
-			clusterID: "clusterID",
-			writeFile: true,
-			wantErr:   true,
-		},
-		"missing clusterID": {
-			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
-			ownerID:   "ownerID",
-			writeFile: true,
-			wantErr:   true,
-		},
-		"no IDs": {
+		"missing salt": {
 			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
 			writeFile: true,
 			wantErr:   true,
@@ -243,19 +231,18 @@ func TestReadInitSecrets(t *testing.T) {
 
 			if tc.writeFile {
 				handler := file.NewHandler(tc.fs)
-				state := nodestate.NodeState{ClusterID: []byte(tc.clusterID), OwnerID: []byte(tc.ownerID)}
-				require.NoError(handler.WriteJSON("/tmp/test-state.json", state, file.OptMkdirAll))
+				state := nodestate.NodeState{MeasurementSalt: tc.salt}
+				require.NoError(handler.WriteJSON("test-state.json", state, file.OptMkdirAll))
 			}
 
 			setupManager := New(logger.NewTest(t), "test", tc.fs, nil, nil, nil, nil)
 
-			ownerID, clusterID, err := setupManager.readInitSecrets("/tmp/test-state.json")
+			measurementSalt, err := setupManager.readMeasurementSalt("test-state.json")
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				assert.Equal([]byte(tc.ownerID), ownerID)
-				assert.Equal([]byte(tc.clusterID), clusterID)
+				assert.Equal(tc.salt, measurementSalt)
 			}
 		})
 	}
@@ -311,19 +298,20 @@ func (s *stubMounter) MkdirAll(path string, perm fs.FileMode) error {
 }
 
 type stubKeyWaiter struct {
-	receivedUUID  string
-	decryptionKey []byte
-	waitErr       error
-	waitCalled    bool
+	receivedUUID      string
+	decryptionKey     []byte
+	measurementSecret []byte
+	waitErr           error
+	waitCalled        bool
 }
 
-func (s *stubKeyWaiter) WaitForDecryptionKey(uuid, addr string) ([]byte, error) {
+func (s *stubKeyWaiter) WaitForDecryptionKey(uuid, addr string) ([]byte, []byte, error) {
 	if s.waitCalled {
-		return nil, errors.New("wait called before key was reset")
+		return nil, nil, errors.New("wait called before key was reset")
 	}
 	s.waitCalled = true
 	s.receivedUUID = uuid
-	return s.decryptionKey, s.waitErr
+	return s.decryptionKey, s.measurementSecret, s.waitErr
 }
 
 func (s *stubKeyWaiter) ResetKey() {

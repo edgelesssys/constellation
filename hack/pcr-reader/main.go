@@ -14,9 +14,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/edgelesssys/constellation/bootstrapper/util"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/verify/verifyproto"
 	"github.com/spf13/afero"
 	"google.golang.org/grpc"
@@ -86,7 +86,7 @@ func getAttestation(ctx context.Context, addr string) ([]byte, error) {
 	}
 	defer conn.Close()
 
-	nonce, err := util.GenerateRandomBytes(32)
+	nonce, err := crypto.GenerateRandomBytes(32)
 	if err != nil {
 		return nil, err
 	}

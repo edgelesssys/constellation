@@ -2,7 +2,6 @@ package kubernetes
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -13,7 +12,6 @@ import (
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/bootstrapper/util"
-	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/logger"
@@ -81,7 +79,7 @@ type KMSConfig struct {
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, versionString string,
-	id attestationtypes.ID, kmsConfig KMSConfig, sshUsers map[string]string, log *logger.Logger,
+	measurementSalt []byte, kmsConfig KMSConfig, sshUsers map[string]string, log *logger.Logger,
 ) ([]byte, error) {
 	k8sVersion, err := versions.NewValidK8sVersion(versionString)
 	if err != nil {
@@ -194,7 +192,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up kms: %w", err)
 	}
 
-	if err := k.setupJoinService(k.cloudProvider, k.initialMeasurementsJSON, id); err != nil {
+	if err := k.setupJoinService(k.cloudProvider, k.initialMeasurementsJSON, measurementSalt); err != nil {
 		return nil, fmt.Errorf("setting up join service failed: %w", err)
 	}
 
@@ -226,7 +224,7 @@ func (k *KubeWrapper) InitCluster(
 		}
 	}
 
-	// Store the received k8sVersion in a ConfigMap, overwriting exisiting values (there shouldn't be any).
+	// Store the received k8sVersion in a ConfigMap, overwriting existing values (there shouldn't be any).
 	// Joining nodes determine the kubernetes version they will install based on this ConfigMap.
 	if err := k.setupK8sVersionConfigMap(ctx, k8sVersion); err != nil {
 		return nil, fmt.Errorf("failed to setup k8s version ConfigMap: %v", err)
@@ -306,13 +304,8 @@ func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
 	return k.kubeconfigReader.ReadKubeconfig()
 }
 
-func (k *KubeWrapper) setupJoinService(csp string, measurementsJSON []byte, id attestationtypes.ID) error {
-	idJSON, err := json.Marshal(id)
-	if err != nil {
-		return err
-	}
-
-	joinConfiguration := resources.NewJoinServiceDaemonset(csp, string(measurementsJSON), string(idJSON))
+func (k *KubeWrapper) setupJoinService(csp string, measurementsJSON, measurementSalt []byte) error {
+	joinConfiguration := resources.NewJoinServiceDaemonset(csp, string(measurementsJSON), measurementSalt)
 
 	return k.clusterUtil.SetupJoinService(k.client, joinConfiguration)
 }

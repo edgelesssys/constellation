@@ -10,7 +10,6 @@ import (
 
 	"github.com/edgelesssys/constellation/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes"
-	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
@@ -40,7 +39,7 @@ func TestNew(t *testing.T) {
 func TestInit(t *testing.T) {
 	someErr := errors.New("failed")
 	lockedLock := newFakeLock()
-	aqcuiredLock, lockErr := lockedLock.TryLockOnce(nil, nil)
+	aqcuiredLock, lockErr := lockedLock.TryLockOnce(nil)
 	require.True(t, aqcuiredLock)
 	require.Nil(t, lockErr)
 
@@ -144,7 +143,7 @@ func TestInit(t *testing.T) {
 
 			assert.NoError(err)
 			assert.NotNil(kubeconfig)
-			assert.False(server.nodeLock.TryLockOnce(nil, nil)) // lock should be locked
+			assert.False(server.nodeLock.TryLockOnce(nil)) // lock should be locked
 		})
 	}
 }
@@ -219,7 +218,7 @@ type stubClusterInitializer struct {
 	initClusterErr        error
 }
 
-func (i *stubClusterInitializer) InitCluster(context.Context, []string, string, string, attestationtypes.ID, kubernetes.KMSConfig, map[string]string, *logger.Logger,
+func (i *stubClusterInitializer) InitCluster(context.Context, []string, string, string, []byte, kubernetes.KMSConfig, map[string]string, *logger.Logger,
 ) ([]byte, error) {
 	return i.initClusterKubeconfig, i.initClusterErr
 }
@@ -250,7 +249,7 @@ func newFakeLock() *fakeLock {
 	}
 }
 
-func (l *fakeLock) TryLockOnce(_, _ []byte) (bool, error) {
+func (l *fakeLock) TryLockOnce(_ []byte) (bool, error) {
 	return l.state.TryLock(), nil
 }
 

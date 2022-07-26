@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 	"time"
 
-	attestationtypes "github.com/edgelesssys/constellation/internal/attestation/types"
+	"github.com/edgelesssys/constellation/internal/attestation"
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/grpclog"
 	"github.com/edgelesssys/constellation/internal/logger"
@@ -25,6 +26,8 @@ import (
 
 // Server implements the core logic of Constellation's node join service.
 type Server struct {
+	measurementSalt []byte
+
 	log             *logger.Logger
 	file            file.Handler
 	joinTokenGetter joinTokenGetter
@@ -34,8 +37,12 @@ type Server struct {
 }
 
 // New initializes a new Server.
-func New(log *logger.Logger, fileHandler file.Handler, ca certificateAuthority, joinTokenGetter joinTokenGetter, dataKeyGetter dataKeyGetter) *Server {
+func New(
+	measurementSalt []byte, fileHandler file.Handler, ca certificateAuthority,
+	joinTokenGetter joinTokenGetter, dataKeyGetter dataKeyGetter, log *logger.Logger,
+) *Server {
 	return &Server{
+		measurementSalt: measurementSalt,
 		log:             log,
 		file:            fileHandler,
 		joinTokenGetter: joinTokenGetter,
@@ -66,21 +73,22 @@ func (s *Server) Run(creds credentials.TransportCredentials, port string) error 
 // A node will receive:
 // - stateful disk encryption key.
 // - Kubernetes join token.
-// - cluster and owner ID to taint the node as initialized.
+// - measurement salt and secret, to mark the node as initialized.
 // In addition, control plane nodes receive:
 // - a decryption key for CA certificates uploaded to the Kubernetes cluster.
-func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTicketRequest) (resp *joinproto.IssueJoinTicketResponse, retErr error) {
-	s.log.Infof("IssueJoinTicket called")
+func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTicketRequest) (*joinproto.IssueJoinTicketResponse, error) {
 	log := s.log.With(zap.String("peerAddress", grpclog.PeerAddrFromContext(ctx)))
-	log.Infof("Loading IDs")
-	var id attestationtypes.ID
-	if err := s.file.ReadJSON(filepath.Join(constants.ServiceBasePath, constants.IDFilename), &id); err != nil {
-		log.With(zap.Error(err)).Errorf("Unable to load IDs")
-		return nil, status.Errorf(codes.Internal, "unable to load IDs: %s", err)
+	log.Infof("IssueJoinTicket called")
+
+	log.Infof("Requesting measurement secret")
+	measurementSecret, err := s.dataKeyGetter.GetDataKey(ctx, attestation.MeasurementSecretContext, crypto.DerivedKeyLengthDefault)
+	if err != nil {
+		log.With(zap.Error(err)).Errorf("Unable to get measurement secret")
+		return nil, status.Errorf(codes.Internal, "unable to get measurement secret: %s", err)
 	}
 
 	log.Infof("Requesting disk encryption key")
-	stateDiskKey, err := s.dataKeyGetter.GetDataKey(ctx, req.DiskUuid, constants.StateDiskKeyLength)
+	stateDiskKey, err := s.dataKeyGetter.GetDataKey(ctx, req.DiskUuid, crypto.StateDiskKeyLength)
 	if err != nil {
 		log.With(zap.Error(err)).Errorf("Unable to get key for stateful disk")
 		return nil, status.Errorf(codes.Internal, "unable to get key for stateful disk: %s", err)
@@ -94,7 +102,7 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 	}
 
 	log.Infof("Querying K8sVersion ConfigMap")
-	k8sVersion, err := s.getK8sVersion(ctx)
+	k8sVersion, err := s.getK8sVersion()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "unable to get k8s version: %s", err)
 	}
@@ -122,11 +130,11 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		}
 	}
 
-	s.log.Infof("IssueJoinTicket successful")
+	log.Infof("IssueJoinTicket successful")
 	return &joinproto.IssueJoinTicketResponse{
 		StateDiskKey:             stateDiskKey,
-		ClusterId:                id.Cluster,
-		OwnerId:                  id.Owner,
+		MeasurementSalt:          s.measurementSalt,
+		MeasurementSecret:        measurementSecret,
 		ApiServerEndpoint:        kubeArgs.APIServerEndpoint,
 		Token:                    kubeArgs.Token,
 		DiscoveryTokenCaCertHash: kubeArgs.CACertHashes[0],
@@ -136,8 +144,32 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 	}, nil
 }
 
+func (s *Server) IssueRejoinTicket(ctx context.Context, req *joinproto.IssueRejoinTicketRequest) (*joinproto.IssueRejoinTicketResponse, error) {
+	log := s.log.With(zap.String("peerAddress", grpclog.PeerAddrFromContext(ctx)))
+	log.Infof("IssueRejoinTicket called")
+
+	log.Infof("Requesting measurement secret")
+	measurementSecret, err := s.dataKeyGetter.GetDataKey(ctx, attestation.MeasurementSecretContext, crypto.DerivedKeyLengthDefault)
+	if err != nil {
+		log.With(zap.Error(err)).Errorf("Unable to get measurement secret")
+		return nil, status.Errorf(codes.Internal, "unable to get measurement secret: %s", err)
+	}
+
+	log.Infof("Requesting disk encryption key")
+	stateDiskKey, err := s.dataKeyGetter.GetDataKey(ctx, req.DiskUuid, crypto.StateDiskKeyLength)
+	if err != nil {
+		log.With(zap.Error(err)).Errorf("Unable to get key for stateful disk")
+		return nil, status.Errorf(codes.Internal, "unable to get key for stateful disk: %s", err)
+	}
+
+	return &joinproto.IssueRejoinTicketResponse{
+		StateDiskKey:      stateDiskKey,
+		MeasurementSecret: measurementSecret,
+	}, nil
+}
+
 // getK8sVersion reads the k8s version from a VolumeMount that is backed by the k8s-version ConfigMap.
-func (s *Server) getK8sVersion(_ context.Context) (string, error) {
+func (s *Server) getK8sVersion() (string, error) {
 	fileContent, err := s.file.Read(filepath.Join(constants.ServiceBasePath, "k8s-version"))
 	if err != nil {
 		return "", fmt.Errorf("could not read k8s version file: %v", err)

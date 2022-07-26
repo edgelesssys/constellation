@@ -12,9 +12,8 @@ const nodeStatePath = "/run/state/constellation/node_state.json"
 // NodeState is the state of a constellation node that is required to recover from a reboot.
 // Can be persisted to disk and reloaded later.
 type NodeState struct {
-	Role      role.Role
-	OwnerID   []byte
-	ClusterID []byte
+	Role            role.Role
+	MeasurementSalt []byte
 }
 
 // FromFile reads a NodeState from disk.

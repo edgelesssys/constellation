@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewJoinServiceDaemonset(t *testing.T) {
-	deployment := NewJoinServiceDaemonset("csp", "measurementsJSON", "idJSON")
+	deployment := NewJoinServiceDaemonset("csp", "measurementsJSON", []byte{0x0, 0x1, 0x2})
 	deploymentYAML, err := deployment.Marshal()
 	require.NoError(t, err)
 

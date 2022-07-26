@@ -7,11 +7,12 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/edgelesssys/constellation/bootstrapper/util"
 	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/cli/internal/proto"
+	"github.com/edgelesssys/constellation/internal/attestation"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/state"
 	"github.com/spf13/afero"
@@ -78,7 +79,12 @@ func recover(cmd *cobra.Command, fileHandler file.Handler, recoveryClient recove
 		return err
 	}
 
-	if err := recoveryClient.PushStateDiskKey(cmd.Context(), diskKey); err != nil {
+	measurementSecret, err := attestation.DeriveMeasurementSecret(flags.masterSecret)
+	if err != nil {
+		return err
+	}
+
+	if err := recoveryClient.PushStateDiskKey(cmd.Context(), diskKey, measurementSecret); err != nil {
 		return err
 	}
 
@@ -150,5 +156,5 @@ func readMasterSecret(fileHandler file.Handler, filename string) ([]byte, error)
 
 // deriveStateDiskKey derives a state disk key from a master secret and a disk UUID.
 func deriveStateDiskKey(masterKey []byte, diskUUID string) ([]byte, error) {
-	return util.DeriveKey(masterKey, []byte("Constellation"), []byte("key"+diskUUID), constants.StateDiskKeyLength)
+	return crypto.DeriveKey(masterKey, []byte("Constellation"), []byte(crypto.HKDFInfoPrefix+diskUUID), crypto.StateDiskKeyLength)
 }

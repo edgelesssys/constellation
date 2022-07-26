@@ -17,8 +17,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/edgelesssys/constellation/bootstrapper/util"
-	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/oid"
 )
 
@@ -45,7 +44,7 @@ func CreateAttestationServerTLSConfig(issuer Issuer, validators []Validator) (*t
 // If no validators are set, the server's attestation document will not be verified.
 // If issuer is nil, the client will be unable to perform mutual aTLS.
 func CreateAttestationClientTLSConfig(issuer Issuer, validators []Validator) (*tls.Config, error) {
-	clientNonce, err := util.GenerateRandomBytes(constants.RNGLengthDefault)
+	clientNonce, err := crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +86,7 @@ func getATLSConfigForClientFunc(issuer Issuer, validators []Validator) (func(*tl
 	// this function will be called once for every client
 	return func(chi *tls.ClientHelloInfo) (*tls.Config, error) {
 		// generate nonce for this connection
-		serverNonce, err := util.GenerateRandomBytes(constants.RNGLengthDefault)
+		serverNonce, err := crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
 		if err != nil {
 			return nil, err
 		}
@@ -122,7 +121,7 @@ func getATLSConfigForClientFunc(issuer Issuer, validators []Validator) (func(*tl
 // getCertificate creates a client or server certificate for aTLS connections.
 // The certificate uses certificate extensions to embed an attestation document generated using nonce.
 func getCertificate(issuer Issuer, priv, pub any, nonce []byte) (*tls.Certificate, error) {
-	serialNumber, err := util.GenerateCertificateSerialNumber()
+	serialNumber, err := crypto.GenerateCertificateSerialNumber()
 	if err != nil {
 		return nil, err
 	}

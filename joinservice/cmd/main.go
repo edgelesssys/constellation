@@ -63,12 +63,18 @@ func main() {
 	}
 	kms := kms.New(log.Named("kms"), *kmsEndpoint)
 
+	measurementSalt, err := handler.Read(filepath.Join(constants.ServiceBasePath, constants.MeasurementSaltFilename))
+	if err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to read measurement salt")
+	}
+
 	server := server.New(
-		log.Named("server"),
+		measurementSalt,
 		handler,
 		kubernetesca.New(log.Named("certificateAuthority"), handler),
 		kubeadm,
 		kms,
+		log.Named("server"),
 	)
 
 	watcher, err := watcher.New(log.Named("fileWatcher"), validator)

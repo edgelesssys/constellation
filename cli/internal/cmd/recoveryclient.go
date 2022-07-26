@@ -9,6 +9,6 @@ import (
 
 type recoveryClient interface {
 	Connect(endpoint string, validators []atls.Validator) error
-	PushStateDiskKey(ctx context.Context, stateDiskKey []byte) error
+	PushStateDiskKey(ctx context.Context, stateDiskKey, measurementSecret []byte) error
 	io.Closer
 }

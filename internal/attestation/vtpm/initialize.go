@@ -2,7 +2,6 @@ package vtpm
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/google/go-tpm/tpm2"
 	"github.com/google/go-tpm/tpmutil"
@@ -18,22 +17,18 @@ const (
 )
 
 // MarkNodeAsBootstrapped marks a node as initialized by extending PCRs.
-func MarkNodeAsBootstrapped(openTPM TPMOpenFunc, ownerID, clusterID []byte) error {
+func MarkNodeAsBootstrapped(openTPM TPMOpenFunc, clusterID []byte) error {
 	tpm, err := openTPM()
 	if err != nil {
 		return err
 	}
 	defer tpm.Close()
 
-	// ownerID is used to identify the Constellation as belonging to a specific master key
-	if err := tpm2.PCREvent(tpm, PCRIndexOwnerID, ownerID); err != nil {
-		return err
-	}
 	// clusterID is used to uniquely identify this running instance of Constellation
 	return tpm2.PCREvent(tpm, PCRIndexClusterID, clusterID)
 }
 
-// IsNodeBootstrapped checks if a node is already bootestrapped by reading PCRs.
+// IsNodeBootstrapped checks if a node is already bootstrapped by reading PCRs.
 func IsNodeBootstrapped(openTPM TPMOpenFunc) (bool, error) {
 	tpm, err := openTPM()
 	if err != nil {
@@ -41,6 +36,20 @@ func IsNodeBootstrapped(openTPM TPMOpenFunc) (bool, error) {
 	}
 	defer tpm.Close()
 
+	idxClusterID := int(PCRIndexClusterID)
+	pcrs, err := tpm2.ReadPCRs(tpm, tpm2.PCRSelection{
+		Hash: tpm2.AlgSHA256,
+		PCRs: []int{idxClusterID},
+	})
+	if err != nil {
+		return false, err
+	}
+	if len(pcrs[idxClusterID]) == 0 {
+		return false, errors.New("cluster ID PCR does not exist")
+	}
+	return pcrInitialized(pcrs[idxClusterID]), nil
+
+	/* Old code that will be reenabled in the future
 	idxOwner := int(PCRIndexOwnerID)
 	idxCluster := int(PCRIndexClusterID)
 	selection := tpm2.PCRSelection{
@@ -75,6 +84,7 @@ func IsNodeBootstrapped(openTPM TPMOpenFunc) (bool, error) {
 		clusterState = "initialized"
 	}
 	return false, fmt.Errorf("PCRs %v and %v are not consistent: PCR[%v]=%v (%v), PCR[%v]=%v (%v)", idxOwner, idxCluster, idxOwner, pcrs[idxOwner], ownerState, idxCluster, pcrs[idxCluster], clusterState)
+	*/
 }
 
 // pcrInitialized checks if a PCR value is set to a non-zero value.

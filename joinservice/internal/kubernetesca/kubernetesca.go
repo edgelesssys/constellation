@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edgelesssys/constellation/bootstrapper/util"
+	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
 	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
@@ -87,7 +87,7 @@ func (c KubernetesCA) GetCertificate(csr []byte) (cert []byte, err error) {
 		return nil, fmt.Errorf("certificate request must have common name prefix %q but is %q", kubeconstants.NodesUserPrefix, certRequest.Subject.CommonName)
 	}
 
-	serialNumber, err := util.GenerateCertificateSerialNumber()
+	serialNumber, err := crypto.GenerateCertificateSerialNumber()
 	if err != nil {
 		return nil, err
 	}

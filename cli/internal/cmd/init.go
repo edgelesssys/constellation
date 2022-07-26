@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/bootstrapper/initproto"
-	"github.com/edgelesssys/constellation/bootstrapper/util"
 	"github.com/edgelesssys/constellation/cli/internal/azure"
 	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/cli/internal/gcp"
@@ -21,6 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
@@ -178,7 +178,7 @@ func writeOutput(resp *initproto.InitResponse, ip string, wr io.Writer, fileHand
 	clusterID := base64.StdEncoding.EncodeToString(resp.ClusterId)
 
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
-	writeRow(tw, "Constellation cluster's owner identifier", ownerID)
+	// writeRow(tw, "Constellation cluster's owner identifier", ownerID)
 	writeRow(tw, "Constellation cluster's unique identifier", clusterID)
 	writeRow(tw, "Kubernetes configuration", constants.AdminConfFilename)
 	tw.Flush()
@@ -252,14 +252,14 @@ func readOrGenerateMasterSecret(writer io.Writer, fileHandler file.Handler, file
 		if err != nil {
 			return nil, err
 		}
-		if len(decoded) < constants.MasterSecretLengthMin {
+		if len(decoded) < crypto.MasterSecretLengthMin {
 			return nil, errors.New("provided master secret is smaller than the required minimum of 16 Bytes")
 		}
 		return decoded, nil
 	}
 
 	// No file given, generate a new secret, and save it to disk
-	masterSecret, err := util.GenerateRandomBytes(constants.MasterSecretLengthDefault)
+	masterSecret, err := crypto.GenerateRandomBytes(crypto.MasterSecretLengthDefault)
 	if err != nil {
 		return nil, err
 	}

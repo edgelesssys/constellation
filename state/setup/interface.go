@@ -22,7 +22,7 @@ type DeviceMapper interface {
 
 // KeyWaiter is an interface to request and wait for disk decryption keys.
 type KeyWaiter interface {
-	WaitForDecryptionKey(uuid, addr string) ([]byte, error)
+	WaitForDecryptionKey(uuid, addr string) (diskKey, measurementSecret []byte, err error)
 	ResetKey()
 }
 

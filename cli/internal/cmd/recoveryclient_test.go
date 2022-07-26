@@ -25,7 +25,7 @@ func (c *stubRecoveryClient) Close() error {
 	return c.closeErr
 }
 
-func (c *stubRecoveryClient) PushStateDiskKey(_ context.Context, stateDiskKey []byte) error {
+func (c *stubRecoveryClient) PushStateDiskKey(_ context.Context, stateDiskKey, _ []byte) error {
 	c.pushStateDiskKeyKey = stateDiskKey
 	return c.pushStateDiskKeyErr
 }

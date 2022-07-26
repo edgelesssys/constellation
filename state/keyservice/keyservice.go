@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
-	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/oid"
-	"github.com/edgelesssys/constellation/kms/kmsproto"
+	"github.com/edgelesssys/constellation/joinservice/joinproto"
 	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -23,14 +23,15 @@ import (
 
 // KeyAPI is the interface called by control-plane or an admin during restart of a node.
 type KeyAPI struct {
-	listenAddr  string
-	log         *logger.Logger
-	mux         sync.Mutex
-	metadata    metadata.InstanceLister
-	issuer      QuoteIssuer
-	key         []byte
-	keyReceived chan struct{}
-	timeout     time.Duration
+	listenAddr        string
+	log               *logger.Logger
+	mux               sync.Mutex
+	metadata          metadata.InstanceLister
+	issuer            QuoteIssuer
+	key               []byte
+	measurementSecret []byte
+	keyReceived       chan struct{}
+	timeout           time.Duration
 	keyproto.UnimplementedAPIServer
 }
 
@@ -52,19 +53,23 @@ func (a *KeyAPI) PushStateDiskKey(ctx context.Context, in *keyproto.PushStateDis
 	if len(a.key) != 0 {
 		return nil, status.Error(codes.FailedPrecondition, "node already received a passphrase")
 	}
-	if len(in.StateDiskKey) != constants.RNGLengthDefault {
-		return nil, status.Errorf(codes.InvalidArgument, "received invalid passphrase: expected length: %d, but got: %d", constants.RNGLengthDefault, len(in.StateDiskKey))
+	if len(in.StateDiskKey) != crypto.StateDiskKeyLength {
+		return nil, status.Errorf(codes.InvalidArgument, "received invalid passphrase: expected length: %d, but got: %d", crypto.StateDiskKeyLength, len(in.StateDiskKey))
+	}
+	if len(in.MeasurementSecret) != crypto.RNGLengthDefault {
+		return nil, status.Errorf(codes.InvalidArgument, "received invalid measurement secret: expected length: %d, but got: %d", crypto.RNGLengthDefault, len(in.MeasurementSecret))
 	}
 
 	a.key = in.StateDiskKey
+	a.measurementSecret = in.MeasurementSecret
 	a.keyReceived <- struct{}{}
 	return &keyproto.PushStateDiskKeyResponse{}, nil
 }
 
 // WaitForDecryptionKey notifies control-plane nodes to send a decryption key and waits until a key is received.
-func (a *KeyAPI) WaitForDecryptionKey(uuid, listenAddr string) ([]byte, error) {
+func (a *KeyAPI) WaitForDecryptionKey(uuid, listenAddr string) (diskKey, measurementSecret []byte, err error) {
 	if uuid == "" {
-		return nil, errors.New("received no disk UUID")
+		return nil, nil, errors.New("received no disk UUID")
 	}
 	a.listenAddr = listenAddr
 	creds := atlscredentials.New(a.issuer, nil)
@@ -72,7 +77,7 @@ func (a *KeyAPI) WaitForDecryptionKey(uuid, listenAddr string) ([]byte, error) {
 	keyproto.RegisterAPIServer(server, a)
 	listener, err := net.Listen("tcp", listenAddr)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer listener.Close()
 
@@ -81,7 +86,7 @@ func (a *KeyAPI) WaitForDecryptionKey(uuid, listenAddr string) ([]byte, error) {
 	defer server.GracefulStop()
 
 	a.requestKeyLoop(uuid)
-	return a.key, nil
+	return a.key, a.measurementSecret, nil
 }
 
 // ResetKey resets a previously set key.
@@ -118,7 +123,7 @@ func (a *KeyAPI) requestKeyLoop(uuid string, opts ...grpc.DialOption) {
 
 func (a *KeyAPI) requestKey(uuid string, credentials credentials.TransportCredentials, opts ...grpc.DialOption) {
 	// list available control-plane nodes
-	endpoints, _ := metadata.KMSEndpoints(context.Background(), a.metadata)
+	endpoints, _ := metadata.JoinServiceEndpoints(context.Background(), a.metadata)
 
 	a.log.With(zap.Strings("endpoints", endpoints)).Infof("Sending a key request to available control-plane nodes")
 	// notify all available control-plane nodes to send a key to the node
@@ -126,24 +131,31 @@ func (a *KeyAPI) requestKey(uuid string, credentials credentials.TransportCreden
 	for _, endpoint := range endpoints {
 		ctx, cancel := context.WithTimeout(context.Background(), a.timeout)
 		defer cancel()
+
+		// request rejoin ticket from JoinService
 		conn, err := grpc.DialContext(ctx, endpoint, append(opts, grpc.WithTransportCredentials(credentials))...)
 		if err != nil {
 			continue
 		}
 		defer conn.Close()
-		client := kmsproto.NewAPIClient(conn)
-		response, err := client.GetDataKey(ctx, &kmsproto.GetDataKeyRequest{DataKeyId: uuid, Length: constants.StateDiskKeyLength})
+		client := joinproto.NewAPIClient(conn)
+		response, err := client.IssueRejoinTicket(ctx, &joinproto.IssueRejoinTicketRequest{DiskUuid: uuid})
 		if err != nil {
 			a.log.With(zap.Error(err), zap.String("endpoint", endpoint)).Warnf("Failed to request key")
 			continue
 		}
+
+		// push key to own gRPC server
 		pushKeyConn, err := grpc.DialContext(ctx, a.listenAddr, append(opts, grpc.WithTransportCredentials(credentials))...)
 		if err != nil {
 			continue
 		}
 		defer pushKeyConn.Close()
 		pushKeyClient := keyproto.NewAPIClient(pushKeyConn)
-		if _, err := pushKeyClient.PushStateDiskKey(ctx, &keyproto.PushStateDiskKeyRequest{StateDiskKey: response.DataKey}); err != nil {
+		if _, err := pushKeyClient.PushStateDiskKey(
+			ctx,
+			&keyproto.PushStateDiskKeyRequest{StateDiskKey: response.StateDiskKey, MeasurementSecret: response.MeasurementSecret},
+		); err != nil {
 			a.log.With(zap.Error(err), zap.String("endpoint", a.listenAddr)).Errorf("Failed to push key")
 			continue
 		}

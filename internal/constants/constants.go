@@ -31,11 +31,7 @@ const (
 	VerifyServiceNodePortHTTP = 30080
 	VerifyServiceNodePortGRPC = 30081
 	// KMSPort is the port the KMS server listens on.
-	KMSPort = 9000
-	// KMSATLSPort is the port the KMS aTLS server listens on.
-	KMSATLSPort = 9001
-	// KMSNodePort is the aTLS port exposed as a NodePort.
-	KMSNodePort      = 30091
+	KMSPort          = 9000
 	BootstrapperPort = 9000
 	EnclaveSSHPort   = 2222
 	SSHPort          = 22
@@ -67,24 +63,12 @@ const (
 	ServiceBasePath = "/var/config"
 	// MeasurementsFilename is the filename of CC measurements.
 	MeasurementsFilename = "measurements"
-	// IDFilename is the filename of Constellation's IDs.
-	IDFilename = "id"
+	// MeasurementSaltFilename is the filename of the salt used in creation of the clusterID.
+	MeasurementSaltFilename = "measurementSalt"
+	// MeasurementSecretFilename is the filename of the secret used in creation of the clusterID.
+	MeasurementSecretFilename = "measurementSecret"
 	// K8sVersion is the filename of the mapped "k8s-version" configMap file.
 	K8sVersion = "k8s-version"
-
-	//
-	// Cryptographic constants.
-	//
-
-	StateDiskKeyLength = 32
-	// DerivedKeyLengthDefault is the default length in bytes for KMS derived keys.
-	DerivedKeyLengthDefault = 32
-	// MasterSecretLengthDefault is the default length in bytes for CLI generated master secrets.
-	MasterSecretLengthDefault = 32
-	// MasterSecretLengthMin is the minimal length in bytes for user provided master secrets.
-	MasterSecretLengthMin = 16
-	// RNGLengthDefault is the number of bytes used for generating nonces.
-	RNGLengthDefault = 32
 
 	//
 	// CLI.

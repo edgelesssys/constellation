@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/crypto"
 	cryptsetup "github.com/martinjungblut/go-cryptsetup"
 	"k8s.io/klog/v2"
 	mount "k8s.io/mount-utils"
@@ -179,7 +179,7 @@ func (c *CryptMapper) OpenCryptDevice(ctx context.Context, source, volumeID stri
 
 // ResizeCryptDevice resizes the underlying crypt device and returns the mapped device path.
 func (c *CryptMapper) ResizeCryptDevice(ctx context.Context, volumeID string) (string, error) {
-	dek, err := c.kms.GetDEK(ctx, volumeID, constants.StateDiskKeyLength)
+	dek, err := c.kms.GetDEK(ctx, volumeID, crypto.StateDiskKeyLength)
 	if err != nil {
 		return "", err
 	}
@@ -283,12 +283,12 @@ func openCryptDevice(ctx context.Context, device DeviceMapper, source, volumeID 
 
 		uuid := device.GetUUID()
 		klog.V(4).Infof("Fetching data encryption key for volume %q", volumeID)
-		passphrase, err = getKey(ctx, uuid, constants.StateDiskKeyLength)
+		passphrase, err = getKey(ctx, uuid, crypto.StateDiskKeyLength)
 		if err != nil {
 			return "", err
 		}
-		if len(passphrase) != constants.StateDiskKeyLength {
-			return "", fmt.Errorf("expected key length to be [%d] but got [%d]", constants.StateDiskKeyLength, len(passphrase))
+		if len(passphrase) != crypto.StateDiskKeyLength {
+			return "", fmt.Errorf("expected key length to be [%d] but got [%d]", crypto.StateDiskKeyLength, len(passphrase))
 		}
 
 		// Add a new keyslot using the internal volume key
@@ -304,12 +304,12 @@ func openCryptDevice(ctx context.Context, device DeviceMapper, source, volumeID 
 	} else {
 		uuid := device.GetUUID()
 		klog.V(4).Infof("Fetching data encryption key for volume %q", volumeID)
-		passphrase, err = getKey(ctx, uuid, constants.StateDiskKeyLength)
+		passphrase, err = getKey(ctx, uuid, crypto.StateDiskKeyLength)
 		if err != nil {
 			return "", err
 		}
-		if len(passphrase) != constants.StateDiskKeyLength {
-			return "", fmt.Errorf("expected key length to be [%d] but got [%d]", constants.StateDiskKeyLength, len(passphrase))
+		if len(passphrase) != crypto.StateDiskKeyLength {
+			return "", fmt.Errorf("expected key length to be [%d] but got [%d]", crypto.StateDiskKeyLength, len(passphrase))
 		}
 	}
 

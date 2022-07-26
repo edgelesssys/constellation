@@ -33,13 +33,12 @@ func TestMarkNodeAsInitialized(t *testing.T) {
 
 	assert.NoError(MarkNodeAsBootstrapped(func() (io.ReadWriteCloser, error) {
 		return &simTPMNOPCloser{tpm}, nil
-	}, []byte{0x0, 0x1, 0x2, 0x3}, []byte{0x4, 0x5, 0x6, 0x7}))
+	}, []byte{0x0, 0x1, 0x2, 0x3}))
 
 	pcrsInitialized, err := client.ReadAllPCRs(tpm)
 	require.NoError(err)
 
 	for i := range pcrs {
-		assert.NotEqual(pcrs[i].Pcrs[uint32(PCRIndexOwnerID)], pcrsInitialized[i].Pcrs[uint32(PCRIndexOwnerID)])
 		assert.NotEqual(pcrs[i].Pcrs[uint32(PCRIndexClusterID)], pcrsInitialized[i].Pcrs[uint32(PCRIndexClusterID)])
 	}
 }
@@ -47,29 +46,19 @@ func TestMarkNodeAsInitialized(t *testing.T) {
 func TestFailOpener(t *testing.T) {
 	assert := assert.New(t)
 
-	assert.Error(MarkNodeAsBootstrapped(func() (io.ReadWriteCloser, error) { return nil, errors.New("failed") }, []byte{0x0, 0x1, 0x2, 0x3}, []byte{0x0, 0x1, 0x2, 0x3}))
+	assert.Error(MarkNodeAsBootstrapped(func() (io.ReadWriteCloser, error) { return nil, errors.New("failed") }, []byte{0x0, 0x1, 0x2, 0x3}))
 }
 
 func TestIsNodeInitialized(t *testing.T) {
 	testCases := map[string]struct {
-		pcrValueOwnerID   []byte
 		pcrValueClusterID []byte
 		wantInitialized   bool
 		wantErr           bool
 	}{
 		"uninitialized PCRs results in uninitialized node": {},
 		"initializing PCRs result in initialized node": {
-			pcrValueOwnerID:   []byte{0x0, 0x1, 0x2, 0x3},
 			pcrValueClusterID: []byte{0x4, 0x5, 0x6, 0x7},
 			wantInitialized:   true,
-		},
-		"initializing ownerID alone fails": {
-			pcrValueOwnerID: []byte{0x0, 0x1, 0x2, 0x3},
-			wantErr:         true,
-		},
-		"initializing clusterID alone fails": {
-			pcrValueClusterID: []byte{0x4, 0x5, 0x6, 0x7},
-			wantErr:           true,
 		},
 	}
 
@@ -80,9 +69,6 @@ func TestIsNodeInitialized(t *testing.T) {
 			tpm, err := simulator.OpenSimulatedTPM()
 			require.NoError(err)
 			defer tpm.Close()
-			if tc.pcrValueOwnerID != nil {
-				require.NoError(tpm2.PCREvent(tpm, PCRIndexOwnerID, tc.pcrValueOwnerID))
-			}
 			if tc.pcrValueClusterID != nil {
 				require.NoError(tpm2.PCREvent(tpm, PCRIndexClusterID, tc.pcrValueClusterID))
 			}
