@@ -92,7 +92,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1",
 			ownerIDFlag:      zeroBase64,
 			protoClient:      &stubVerifyClient{},
-			wantEndpoint:     "192.0.2.1:9000",
+			wantEndpoint:     "192.0.2.1:30081",
 		},
 		"endpoint not set": {
 			setupFs:     func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },

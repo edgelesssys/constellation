@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
+	"github.com/edgelesssys/constellation/internal/constants"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
 )
@@ -257,7 +259,7 @@ func (c *Client) CreateLoadBalancer(ctx context.Context) error {
 			Name:                proto.String(c.forwardingRule),
 			IPProtocol:          proto.String(computepb.ForwardingRule_IPProtocolEnum_name[int32(computepb.ForwardingRule_TCP)]),
 			LoadBalancingScheme: proto.String(computepb.ForwardingRule_LoadBalancingScheme_name[int32(computepb.ForwardingRule_EXTERNAL)]),
-			Ports:               []string{"6443", "9000"},
+			Ports:               []string{"6443", "9000", strconv.Itoa(constants.VerifyServiceNodePortGRPC)},
 			BackendService:      proto.String("https://www.googleapis.com/compute/v1/projects/" + c.project + "/regions/" + c.region + "/backendServices/" + c.backendService),
 		},
 	})
