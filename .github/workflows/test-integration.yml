@@ -36,3 +36,4 @@ jobs:
       # Runs all test targets starting with "integration-"
       - name: Integration Tests
         run: ctest -R integration-
+        working-directory: build

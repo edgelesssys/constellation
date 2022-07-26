@@ -86,7 +86,7 @@ func TestKeyAPI(t *testing.T) {
 	assert := assert.New(t)
 
 	testKey := []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-	testSecret := []byte("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
+	testSecret := []byte("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
 
 	// get a free port on localhost to run the test on
 	listener, err := net.Listen("tcp", "localhost:0")
