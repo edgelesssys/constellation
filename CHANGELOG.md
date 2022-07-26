@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 
+- Kubernetes version is configured through an entry in `constellation-config.yaml`.
+- Kubernetes version 1.24 is now supported.
+
 ### Changed
 
 - Nodes add themselves to the cluster after `constellation init` is done

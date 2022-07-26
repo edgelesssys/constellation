@@ -158,7 +158,7 @@ func NewDefaultCloudControllerManagerDeployment(cloudProvider, image, path, podC
 							},
 						},
 						NodeSelector: map[string]string{
-							"node-role.kubernetes.io/master": "",
+							"node-role.kubernetes.io/control-plane": "",
 						},
 					},
 				},

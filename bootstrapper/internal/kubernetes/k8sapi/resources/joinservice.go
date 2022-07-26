@@ -126,7 +126,7 @@ func NewJoinServiceDaemonset(csp, measurementsJSON string, measurementSalt []byt
 						},
 						// Only run on control plane nodes
 						NodeSelector: map[string]string{
-							"node-role.kubernetes.io/master": "",
+							"node-role.kubernetes.io/control-plane": "",
 						},
 						ImagePullSecrets: []k8s.LocalObjectReference{
 							{

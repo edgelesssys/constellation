@@ -38,10 +38,9 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool, k8sV
 				Kind:       "InitConfiguration",
 			},
 			NodeRegistration: kubeadm.NodeRegistrationOptions{
-				CRISocket: "/run/containerd/containerd.sock",
+				CRISocket: "unix:///run/containerd/containerd.sock",
 				KubeletExtraArgs: map[string]string{
 					"cloud-provider": cloudProvider,
-					"network-plugin": "cni",
 				},
 			},
 			// AdvertiseAddress will be overwritten later
@@ -162,7 +161,7 @@ func (c *CoreOSConfiguration) JoinConfiguration(externalCloudProvider bool) Kube
 				Kind:       "JoinConfiguration",
 			},
 			NodeRegistration: kubeadm.NodeRegistrationOptions{
-				CRISocket: "/run/containerd/containerd.sock",
+				CRISocket: "unix:///run/containerd/containerd.sock",
 				KubeletExtraArgs: map[string]string{
 					"cloud-provider": cloudProvider,
 				},

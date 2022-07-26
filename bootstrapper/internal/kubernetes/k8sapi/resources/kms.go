@@ -153,7 +153,7 @@ func NewKMSDeployment(csp string, masterSecret []byte) *kmsDeployment {
 						},
 						// Only run on control plane nodes
 						NodeSelector: map[string]string{
-							"node-role.kubernetes.io/master": "",
+							"node-role.kubernetes.io/control-plane": "",
 						},
 						ImagePullSecrets: []k8s.LocalObjectReference{
 							{
