@@ -22,6 +22,7 @@ type stubClient struct {
 	getObjectsErr                  error
 	createConfigMapErr             error
 	addTolerationsToDeploymentErr  error
+	addNodeSelectorToDeploymentErr error
 }
 
 func (s *stubClient) ApplyOneObject(info *resource.Info, forceConflicts bool) error {
@@ -40,6 +41,10 @@ func (s *stubClient) AddTolerationsToDeployment(ctx context.Context, tolerations
 	return s.addTolerationsToDeploymentErr
 }
 
+func (s *stubClient) AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string) error {
+	return s.addNodeSelectorToDeploymentErr
+}
+
 type stubClientGenerator struct {
 	applyOneObjectErr              error
 	getObjectsInfos                []*resource.Info
@@ -47,6 +52,7 @@ type stubClientGenerator struct {
 	newClientErr                   error
 	createConfigMapErr             error
 	addTolerationsToDeploymentErr  error
+	addNodeSelectorToDeploymentErr error
 }
 
 func (s *stubClientGenerator) NewClient(kubeconfig []byte) (Client, error) {
@@ -56,6 +62,7 @@ func (s *stubClientGenerator) NewClient(kubeconfig []byte) (Client, error) {
 		s.getObjectsErr,
 		s.createConfigMapErr,
 		s.addTolerationsToDeploymentErr,
+		s.addNodeSelectorToDeploymentErr,
 	}, s.newClientErr
 }
 

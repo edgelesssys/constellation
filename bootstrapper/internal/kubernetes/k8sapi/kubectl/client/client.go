@@ -120,6 +120,30 @@ func (c *Client) AddTolerationsToDeployment(ctx context.Context, tolerations []c
 	if err != nil {
 		return err
 	}
+	return nil
+}
 
+func (c *Client) AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string) error {
+	deployments := c.clientset.AppsV1().Deployments(corev1.NamespaceAll)
+
+	// retry resource update if an error occurs
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		result, err := deployments.Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("Failed to get latest version of Deployment: %v", err)
+		}
+
+		for k, v := range selectors {
+			result.Spec.Template.Spec.NodeSelector[k] = v
+		}
+
+		if _, err = deployments.Update(ctx, result, metav1.UpdateOptions{}); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
 	return nil
 }

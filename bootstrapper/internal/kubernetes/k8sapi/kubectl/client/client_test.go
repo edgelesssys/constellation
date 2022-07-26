@@ -75,6 +75,23 @@ var (
 			},
 		},
 	}
+	tolerationsDeployment = appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-deployment",
+		},
+	}
+	selectorsDeployment = appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-deployment",
+		},
+		Spec: appsv1.DeploymentSpec{
+			Template: k8s.PodTemplateSpec{
+				Spec: k8s.PodSpec{
+					NodeSelector: map[string]string{},
+				},
+			},
+		},
+	}
 	nginxDeplJSON, _ = marshalJSON(nginxDeployment)
 	nginxDeplYAML, _ = marshalYAML(nginxDeployment)
 )
@@ -284,28 +301,15 @@ func TestGetObjects(t *testing.T) {
 func TestAddTolerationsToDeployment(t *testing.T) {
 	testCases := map[string]struct {
 		name        string
-		deployment  appsv1.Deployment
 		tolerations []corev1.Toleration
 		wantErr     bool
 	}{
 		"Success": {
 			name: "test-deployment",
-			deployment: appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-deployment",
-				},
-			},
-			tolerations: []corev1.Toleration{},
 		},
 		"Specifying non-existent deployment fails": {
-			name: "wrong-name",
-			deployment: appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-deployment",
-				},
-			},
-			tolerations: []corev1.Toleration{},
-			wantErr:     true,
+			name:    "wrong-name",
+			wantErr: true,
 		},
 	}
 
@@ -314,8 +318,40 @@ func TestAddTolerationsToDeployment(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			client := newClientWithFakes(t, map[string]string{}, &tc.deployment)
+			client := newClientWithFakes(t, map[string]string{}, &tolerationsDeployment)
 			err := client.AddTolerationsToDeployment(context.Background(), tc.tolerations, tc.name)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+		})
+	}
+}
+
+func TestAddNodeSelectorsToDeployment(t *testing.T) {
+	testCases := map[string]struct {
+		name      string
+		selectors map[string]string
+		wantErr   bool
+	}{
+		"Success": {
+			name:      "test-deployment",
+			selectors: map[string]string{"some-key": "some-value"},
+		},
+		"Specifying non-existent deployment fails": {
+			name:    "wrong-name",
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			client := newClientWithFakes(t, map[string]string{}, &selectorsDeployment)
+			err := client.AddNodeSelectorsToDeployment(context.Background(), tc.selectors, tc.name)
 			if tc.wantErr {
 				assert.Error(err)
 				return

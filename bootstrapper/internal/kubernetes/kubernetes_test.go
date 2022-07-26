@@ -606,6 +606,7 @@ type stubKubectl struct {
 	ApplyErr                         error
 	createConfigMapErr               error
 	AddTolerationsToDeploymentErr    error
+	AddTNodeSelectorsToDeploymentErr error
 
 	resources   []resources.Marshaler
 	kubeconfigs [][]byte
@@ -626,6 +627,10 @@ func (s *stubKubectl) CreateConfigMap(ctx context.Context, configMap corev1.Conf
 
 func (s *stubKubectl) AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string) error {
 	return s.AddTolerationsToDeploymentErr
+}
+
+func (s *stubKubectl) AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string) error {
+	return s.AddTNodeSelectorsToDeploymentErr
 }
 
 type stubKubeconfigReader struct {

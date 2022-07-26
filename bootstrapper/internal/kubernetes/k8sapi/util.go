@@ -46,6 +46,7 @@ type Client interface {
 	SetKubeconfig(kubeconfig []byte)
 	CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error
 	AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string) error
+	AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string) error
 }
 
 type installer interface {
@@ -227,10 +228,6 @@ func (k *KubernetesUtil) setupGCPPodNetwork(ctx context.Context, nodeName, nodeP
 	}
 
 	// allow coredns to run on uninitialized nodes (required by cloud-controller-manager)
-	err = exec.CommandContext(ctx, kubectlPath, "--kubeconfig", kubeConfig, "-n", "kube-system", "patch", "deployment", "coredns", "--type", "json", "-p", "[{\"op\":\"add\",\"path\":\"/spec/template/spec/tolerations/-\",\"value\":{\"key\":\"node.cloudprovider.kubernetes.io/uninitialized\",\"value\":\"true\",\"effect\":\"NoSchedule\"}},{\"op\":\"add\",\"path\":\"/spec/template/spec/nodeSelector\",\"value\":{\"node-role.kubernetes.io/control-plane\":\"\"}}]").Run()
-	if err != nil {
-		return err
-	}
 	tolerations := []corev1.Toleration{
 		{
 			Key:    "node.cloudprovider.kubernetes.io/uninitialized",
@@ -239,6 +236,12 @@ func (k *KubernetesUtil) setupGCPPodNetwork(ctx context.Context, nodeName, nodeP
 		},
 	}
 	if err = kubectl.AddTolerationsToDeployment(ctx, tolerations, "coredns"); err != nil {
+		return err
+	}
+	selectors := map[string]string{
+		"node-role.kubernetes.io/control-plane": "",
+	}
+	if err = kubectl.AddNodeSelectorsToDeployment(ctx, selectors, "coredns"); err != nil {
 		return err
 	}
 
