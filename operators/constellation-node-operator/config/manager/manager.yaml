@@ -73,6 +73,8 @@ spec:
           optional: true
       nodeSelector:
         node-role.kubernetes.io/control-plane: ""
+      imagePullSecrets:
+      - name: constellation-pull # workaround until https://github.com/operator-framework/operator-lifecycle-manager/issues/2682 is fixed
       tolerations:
       - effect: NoSchedule
         key: node-role.kubernetes.io/control-plane
