@@ -26,6 +26,7 @@ jobs:
         uses: actions/setup-go@84cbf8094393cdc5fe1fe1671ff2647332956b1a
         with:
           go-version: 1.18
+          cache: true
 
       - name: Install Dependencies
         run: sudo apt-get update && sudo apt-get install -y pkg-config libcryptsetup12 libcryptsetup-dev cmake libvirt-dev
