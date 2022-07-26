@@ -1,8 +1,129 @@
 # constellation-node-operator
-// TODO(user): Add simple overview of use/purpose
+
+The constellation node operator manages the lifecycle of constellation nodes after cluster initialization.
+In particular, it is responsible for updating the OS images of nodes by replacing nodes running old images with new nodes.
+
+## High level goals
+
+- Admin or `constellation init` can create custom resources for node related components
+- The operator will manage nodes in the cluster by trying to ensure every node has the specified image
+- If a node uses an outdated image, it will be replaced by a new node
+- Admin can update the specified image at any point in time which will trigger a rolling upgrade through the cluster
+- Nodes are replaced safely (cordon, drain, preservation of node labels)
 
 ## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+
+The operator has multiple controllers with corresponding custom resource definitions (CRDs) that are responsible for the following high level tasks:
+
+### NodeImage
+
+`NodeImage` is the only user controlled CRD. The spec allows an administrator to update the desired image and trigger a rolling update.
+
+Example for GCP:
+```yaml
+apiVersion: update.edgeless.systems/v1alpha1
+kind: NodeImage
+metadata:
+  name: constellation-coreos
+spec:
+  image: "projects/constellation-images/global/images/<image-name>"
+```
+
+Example for Azure:
+```yaml
+apiVersion: update.edgeless.systems/v1alpha1
+kind: NodeImage
+metadata:
+  name: constellation-coreos
+spec:
+  image: "/subscriptions/<subscription-id>/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/<image-definition-name>/versions/<image-version>"
+```
+
+
+### AutoscalingStrategy
+
+`AutoscalingStrategy` is used and modified by the `NodeImage` controller to pause the `cluster-autoscaler` while an image update is in progress.
+
+Example:
+
+```yaml
+apiVersion: update.edgeless.systems/v1alpha1
+kind: AutoscalingStrategy
+metadata:
+  name: autoscalingstrategy
+spec:
+  enabled: true
+  deploymentName: "cluster-autoscaler"
+  deploymentNamespace: "kube-system"
+```
+
+### ScalingGroup
+
+`ScalingGroup` represents one scaling group at the CSP. Constellation uses one scaling group for worker nodes and one for control-plane nodes.
+The scaling group controller will automatically set the image used for newly created nodes to be the image set in the `NodeImage` Spec. On cluster creation, one instance of the `ScalingGroup` resource per scaling group at the CSP is created. It does not need to be updated manually.
+
+Example for GCP:
+
+```yaml
+apiVersion: update.edgeless.systems/v1alpha1
+kind: ScalingGroup
+metadata:
+  name: scalinggroup-worker
+spec:
+  nodeImage: "constellation-coreos"
+  groupId: "projects/<project-id>/zones/<zone>/instanceGroupManagers/<instance-group-name>"
+  autoscaling: true
+```
+
+Example for Azure:
+
+```yaml
+apiVersion: update.edgeless.systems/v1alpha1
+kind: ScalingGroup
+metadata:
+  name: scalinggroup-worker
+spec:
+  nodeImage: "constellation-coreos"
+  groupId: "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Compute/virtualMachineScaleSets/<scale-set-name>"
+  autoscaling: true
+```
+
+### PendingNode
+
+`PendingNode` represents a node that is either joining or leaving the cluster. These are nodes that are not part of the cluster (they do not have a corresponding node object). Instead, they are used to track the creation and deletion of nodes.
+This resource is automatically managed by the operator.
+For joining nodes, the deadline is used to delete the pending node if it fails to join before the deadline ends.
+
+Example for GCP:
+
+```yaml
+apiVersion: update.edgeless.systems/v1alpha1
+kind: PendingNode
+metadata:
+  name: pendingnode-sample
+spec:
+  providerID: "gce://<project-id>/<zone>/<instance-name>"
+  groupID: "projects/<project-id>/zones/<zone>/instanceGroupManagers/<instance-group-name>"
+  nodeName: "<kubernetes-node-name>"
+  goal: Join
+  deadline: "2022-07-04T08:33:18+00:00"
+```
+
+Example for Azure:
+
+```yaml
+apiVersion: update.edgeless.systems/v1alpha1
+kind: PendingNode
+metadata:
+  name: pendingnode-sample
+spec:
+  providerID: "azure:///subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Compute/virtualMachineScaleSets/<scale-set-name>/virtualMachines/<instance-id>"
+  groupID: "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Compute/virtualMachineScaleSets/<scale-set-name>"
+  nodeName: "<kubernetes-node-name>"
+  goal: Join
+  deadline: "2022-07-04T08:33:18+00:00"
+```
+
 
 ## Getting Started
 You’ll need a Kubernetes cluster to run against. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
@@ -16,15 +137,15 @@ kubectl apply -f config/samples/
 ```
 
 2. Build and push your image to the location specified by `IMG`:
-	
+
 ```sh
-make docker-build docker-push IMG=<some-registry>/constellation-node-operator:tag
+make docker-build docker-push IMG=<some-registry>/constellation/node-operator:tag
 ```
-	
+
 3. Deploy the controller to the cluster with the image specified by `IMG`:
 
 ```sh
-make deploy IMG=<some-registry>/constellation-node-operator:tag
+make deploy IMG=<some-registry>/constellation/node-operator:tag
 ```
 
 ### Uninstall CRDs
@@ -41,14 +162,11 @@ UnDeploy the controller to the cluster:
 make undeploy
 ```
 
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
-
 ### How it works
 This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
 
-It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/) 
-which provides a reconcile function responsible for synchronizing resources untile the desired state is reached on the cluster 
+It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/)
+which provides a reconcile function responsible for synchronizing resources until the desired state is reached on the cluster
 
 ### Test It Out
 1. Install the CRDs into the cluster:
@@ -76,6 +194,66 @@ make manifests
 
 More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
 
-## License
+## Production deployment
 
-TODO: add Copyright notice
+In production, it is recommended to deploy the operator using the [operator lifecycle manager (OLM)](https://olm.operatorframework.io/).
+
+1. [Deploy OLM](https://olm.operatorframework.io/docs/getting-started/)
+
+    ```shell-session
+    operator-sdk olm install
+    ```
+
+2. [Deploy Node Maintenance Operator](https://github.com/medik8s/node-maintenance-operator)
+
+    ```shell-session
+    operator-sdk run bundle quay.io/medik8s/node-maintenance-operator-bundle:latest
+    ```
+
+3. Deploy node operator
+
+   ```yaml
+   apiVersion: operators.coreos.com/v1alpha1
+    kind: CatalogSource
+    metadata:
+        name: constellation-node-operator-catalog
+        namespace: olm
+    spec:
+        sourceType: grpc
+        secrets:
+        - "constellation-pull"
+        # TODO: user: set desired operator catalog version here
+        image: ghcr.io/edgelesssys/constellation/node-operator-catalog:v0.0.1
+        displayName: Constellation Node Operator
+        publisher: Edgeless Systems
+        updateStrategy:
+            registryPoll:
+                interval: 10m
+    ---
+    apiVersion: operators.coreos.com/v1
+    kind: OperatorGroup
+    metadata:
+        name: constellation-og
+        namespace: kube-system
+    spec:
+        upgradeStrategy: Default
+    ---
+    apiVersion: operators.coreos.com/v1alpha1
+    kind: Subscription
+    metadata:
+        name: constellation-node-operator-sub
+        namespace: kube-system
+    spec:
+        channel: alpha
+        name: constellation-node-operator
+        source: constellation-node-operator-catalog
+        sourceNamespace: olm
+        installPlanApproval: Automatic
+        # TODO: user: set desired operator version here
+        startingCSV: constellation-node-operator.v0.0.1
+        config:
+            env:
+            # TODO: user: set correct CSP here ("azure" or "gcp")
+            - name: CONSTEL_CSP
+              value: "gcp"
+   ```

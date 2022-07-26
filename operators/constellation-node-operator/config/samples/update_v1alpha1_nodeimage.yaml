@@ -1,6 +1,15 @@
 apiVersion: update.edgeless.systems/v1alpha1
 kind: NodeImage
 metadata:
-  name: nodeimage-sample
+  name: constellation-coreos-azure
+  namespace: kube-system
 spec:
-  # TODO(user): Add fields here
+  image: "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Compute/galleries/<gallery-name>/images/<image-definition-name>/versions/<version>"
+---
+apiVersion: update.edgeless.systems/v1alpha1
+kind: NodeImage
+metadata:
+  name: constellation-coreos-gcp
+  namespace: kube-system
+spec:
+  image: projects/<project>/global/images/<image-name>

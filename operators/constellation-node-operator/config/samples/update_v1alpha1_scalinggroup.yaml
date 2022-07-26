@@ -1,6 +1,19 @@
 apiVersion: update.edgeless.systems/v1alpha1
 kind: ScalingGroup
 metadata:
-  name: scalinggroup-sample
+  name: scalinggroup-worker-azure
+  namespace: kube-system
 spec:
-  # TODO(user): Add fields here
+  nodeImage: "constellation-coreos-azure"
+  groupId: "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Compute/virtualMachineScaleSets/<scale-set-name>"
+  autoscaling: true
+---
+apiVersion: update.edgeless.systems/v1alpha1
+kind: ScalingGroup
+metadata:
+  name: scalinggroup-worker-gcp
+  namespace: kube-system
+spec:
+  nodeImage: "constellation-coreos-gcp"
+  groupId: "projects/<project>/zones/<zone>/instanceGroupManagers/<instance-group-name>"
+  autoscaling: true
