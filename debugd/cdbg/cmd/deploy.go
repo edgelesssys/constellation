@@ -66,6 +66,10 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 		debugConfig.ConstellationDebugConfig.BootstrapperPath = overrideBootstrapperPath
 	}
 
+	if !state.ImageNameContainsDebug(constellationConfig) {
+		log.Println("WARN: constellation image does not contain 'debug', are you using a debug image?")
+	}
+
 	overrideIPs, err := cmd.Flags().GetStringSlice("ips")
 	if err != nil {
 		return err
