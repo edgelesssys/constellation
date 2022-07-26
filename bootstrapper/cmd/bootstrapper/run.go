@@ -4,6 +4,7 @@ import (
 	"net"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/clean"
+	"github.com/edgelesssys/constellation/bootstrapper/internal/diskencryption"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/initserver"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/joinclient"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/logging"
@@ -27,6 +28,15 @@ func run(issuer quoteIssuer, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
 
 	log.With(zap.String("version", version)).Infof("Starting bootstrapper")
 	cloudLogger.Disclose("bootstrapper started running...")
+
+	uuid, err := getDiskUUID()
+	if err != nil {
+		log.With(zap.Error(err)).Errorf("Failed to get disk UUID")
+		cloudLogger.Disclose("Failed to get disk UUID")
+	} else {
+		log.Infof("Disk UUID: %s", uuid)
+		cloudLogger.Disclose("Disk UUID: " + uuid)
+	}
 
 	nodeBootstrapped, err := vtpm.IsNodeBootstrapped(tpm)
 	if err != nil {
@@ -58,6 +68,15 @@ func run(issuer quoteIssuer, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
 
 	log.Infof("bootstrapper done")
 	cloudLogger.Disclose("bootstrapper done")
+}
+
+func getDiskUUID() (string, error) {
+	disk := diskencryption.New()
+	if err := disk.Open(); err != nil {
+		return "", err
+	}
+	defer disk.Close()
+	return disk.UUID()
 }
 
 type clusterInitJoiner interface {
