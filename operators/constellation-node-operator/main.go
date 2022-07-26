@@ -36,6 +36,8 @@ var (
 
 const (
 	defaultAzureCloudConfigPath = "/etc/azure/azure.json"
+	// constellationCSP is the environment variable stating which Cloud Service Provider Constellation is running on.
+	constellationCSP = "CONSTEL_CSP"
 )
 
 func init() {
@@ -46,12 +48,10 @@ func init() {
 }
 
 func main() {
-	var csp string
 	var cloudConfigPath string
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
-	flag.StringVar(&csp, "csp", "", "Cloud Service Provider the image is running on")
 	flag.StringVar(&cloudConfigPath, "cloud-config", "", "Path to provider specific cloud config. Optional.")
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -68,7 +68,8 @@ func main() {
 
 	var cspClient cspAPI
 	var clientErr error
-	switch strings.ToLower(csp) {
+	csp := strings.ToLower(os.Getenv(constellationCSP))
+	switch csp {
 	case "azure":
 		if cloudConfigPath == "" {
 			cloudConfigPath = defaultAzureCloudConfigPath
