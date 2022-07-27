@@ -179,7 +179,7 @@ func writeOutput(resp *initproto.InitResponse, ip string, wr io.Writer, fileHand
 
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
 	// writeRow(tw, "Constellation cluster's owner identifier", ownerID)
-	writeRow(tw, "Constellation cluster's unique identifier", clusterID)
+	writeRow(tw, "Constellation cluster identifier", clusterID)
 	writeRow(tw, "Kubernetes configuration", constants.AdminConfFilename)
 	tw.Flush()
 	fmt.Fprintln(wr)
