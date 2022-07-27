@@ -33,6 +33,8 @@ replace (
 	k8s.io/sample-controller => k8s.io/sample-controller v0.24.0
 )
 
+replace github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork => github.com/malt3/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork v0.0.0-20220728112040-735e3fd529fa
+
 require (
 	cloud.google.com/go/compute v1.7.0
 	cloud.google.com/go/iam v0.3.0
