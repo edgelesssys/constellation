@@ -66,7 +66,7 @@ func TestInitConfigurationKubeadmCompatibility(t *testing.T) {
 			expectedVersion: fmt.Sprintf("v%s", versions.VersionConfigs[versions.Latest].PatchVersion),
 		},
 		"Kubeadm receives incompatible version": {
-			config:  coreOSConfig.InitConfiguration(true, "1.22"),
+			config:  coreOSConfig.InitConfiguration(true, "1.19"),
 			wantErr: true,
 		},
 	}

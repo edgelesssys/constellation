@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Kubernetes version is configured through an entry in `constellation-config.yaml`.
 - Kubernetes version 1.24 is now supported.
+- Kubernetes version 1.22 is now supported.
 
 ### Changed
 
