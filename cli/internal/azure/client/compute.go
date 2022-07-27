@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/edgelesssys/constellation/cli/internal/azure"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
@@ -143,7 +144,9 @@ func (c *Client) createInstanceVM(ctx context.Context, input azure.VMInstance) (
 		return cloudtypes.Instance{}, err
 	}
 
-	vm, err := poller.PollUntilDone(ctx, 30*time.Second)
+	vm, err := poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
+		Frequency: 30 * time.Second,
+	})
 	if err != nil {
 		return cloudtypes.Instance{}, err
 	}
@@ -161,7 +164,7 @@ func (c *Client) createInstanceVM(ctx context.Context, input azure.VMInstance) (
 		return cloudtypes.Instance{}, err
 	}
 
-	return cloudtypes.Instance{PublicIP: *res.PublicIPAddressesClientGetResult.PublicIPAddress.Properties.IPAddress, PrivateIP: privIP}, nil
+	return cloudtypes.Instance{PublicIP: *res.PublicIPAddress.Properties.IPAddress, PrivateIP: privIP}, nil
 }
 
 func (c *Client) createScaleSet(ctx context.Context, input CreateScaleSetInput) error {
@@ -201,7 +204,9 @@ func (c *Client) createScaleSet(ctx context.Context, input CreateScaleSetInput) 
 		return err
 	}
 
-	_, err = poller.PollUntilDone(ctx, 30*time.Second)
+	_, err = poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
+		Frequency: 30 * time.Second,
+	})
 	if err != nil {
 		return err
 	}
@@ -214,14 +219,15 @@ func (c *Client) getInstanceIPs(ctx context.Context, scaleSet string, count int)
 	for i := 0; i < count; i++ {
 		// get public ip address
 		var publicIPAddress string
-		pager := c.publicIPAddressesAPI.ListVirtualMachineScaleSetVMPublicIPAddresses(
+		pager := c.publicIPAddressesAPI.NewListVirtualMachineScaleSetVMPublicIPAddressesPager(
 			c.resourceGroup, scaleSet, strconv.Itoa(i), scaleSet, scaleSet, nil)
 
-		// We always need one pager.NextPage, since calling
-		// pager.PageResponse() directly return no result.
-		// We expect to get one page with one entry for each VM.
-		for pager.NextPage(ctx) {
-			for _, v := range pager.PageResponse().Value {
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				return cloudtypes.Instances{}, err
+			}
+			for _, v := range page.Value {
 				if v.Properties != nil && v.Properties.IPAddress != nil {
 					publicIPAddress = *v.Properties.IPAddress
 					break
@@ -236,7 +242,7 @@ func (c *Client) getInstanceIPs(ctx context.Context, scaleSet string, count int)
 		if err != nil {
 			return nil, err
 		}
-		configs := res.InterfacesClientGetVirtualMachineScaleSetNetworkInterfaceResult.Interface.Properties.IPConfigurations
+		configs := res.Interface.Properties.IPConfigurations
 		for _, config := range configs {
 			privateIPAddress = *config.Properties.PrivateIPAddress
 			break
@@ -288,7 +294,9 @@ func (c *Client) TerminateResourceGroup(ctx context.Context) error {
 		return err
 	}
 
-	if _, err = poller.PollUntilDone(ctx, 30*time.Second); err != nil {
+	if _, err = poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
+		Frequency: 30 * time.Second,
+	}); err != nil {
 		return err
 	}
 	c.workers = nil

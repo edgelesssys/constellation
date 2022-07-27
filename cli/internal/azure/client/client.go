@@ -10,7 +10,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/authorization/mgmt/authorization"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
+	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/services/graphrbac/1.6/graphrbac"
@@ -76,15 +76,42 @@ func NewFromDefault(subscriptionID, tenantID string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	netAPI := armnetwork.NewVirtualNetworksClient(subscriptionID, cred, nil)
-	netSecGrpAPI := armnetwork.NewSecurityGroupsClient(subscriptionID, cred, nil)
-	resGroupAPI := armresources.NewResourceGroupsClient(subscriptionID, cred, nil)
-	scaleSetAPI := armcompute.NewVirtualMachineScaleSetsClient(subscriptionID, cred, nil)
-	publicIPAddressesAPI := armnetwork.NewPublicIPAddressesClient(subscriptionID, cred, nil)
-	networkInterfacesAPI := armnetwork.NewInterfacesClient(subscriptionID, cred, nil)
-	loadBalancersAPI := armnetwork.NewLoadBalancersClient(subscriptionID, cred, nil)
-	virtualMachinesAPI := armcompute.NewVirtualMachinesClient(subscriptionID, cred, nil)
-	applicationInsightsAPI := armapplicationinsights.NewComponentsClient(subscriptionID, cred, nil)
+	netAPI, err := armnetwork.NewVirtualNetworksClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+	netSecGrpAPI, err := armnetwork.NewSecurityGroupsClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+	resGroupAPI, err := armresources.NewResourceGroupsClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+	scaleSetAPI, err := armcomputev2.NewVirtualMachineScaleSetsClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+	publicIPAddressesAPI, err := armnetwork.NewPublicIPAddressesClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+	networkInterfacesAPI, err := armnetwork.NewInterfacesClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+	loadBalancersAPI, err := armnetwork.NewLoadBalancersClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+	virtualMachinesAPI, err := armcomputev2.NewVirtualMachinesClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+	applicationInsightsAPI, err := armapplicationinsights.NewComponentsClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
 	applicationsAPI := graphrbac.NewApplicationsClient(tenantID)
 	applicationsAPI.Authorizer = graphAuthorizer
 	servicePrincipalsAPI := graphrbac.NewServicePrincipalsClient(tenantID)
@@ -93,17 +120,17 @@ func NewFromDefault(subscriptionID, tenantID string) (*Client, error) {
 	roleAssignmentsAPI.Authorizer = managementAuthorizer
 
 	return &Client{
-		networksAPI:                     &networksClient{netAPI},
-		networkSecurityGroupsAPI:        &networkSecurityGroupsClient{netSecGrpAPI},
-		resourceGroupAPI:                &resourceGroupsClient{resGroupAPI},
-		scaleSetsAPI:                    &virtualMachineScaleSetsClient{scaleSetAPI},
-		publicIPAddressesAPI:            &publicIPAddressesClient{publicIPAddressesAPI},
-		networkInterfacesAPI:            &networkInterfacesClient{networkInterfacesAPI},
-		loadBalancersAPI:                &loadBalancersClient{loadBalancersAPI},
-		applicationsAPI:                 &applicationsClient{&applicationsAPI},
-		servicePrincipalsAPI:            &servicePrincipalsClient{&servicePrincipalsAPI},
-		roleAssignmentsAPI:              &roleAssignmentsClient{&roleAssignmentsAPI},
-		virtualMachinesAPI:              &virtualMachinesClient{virtualMachinesAPI},
+		networksAPI:                     netAPI,
+		networkSecurityGroupsAPI:        netSecGrpAPI,
+		resourceGroupAPI:                resGroupAPI,
+		scaleSetsAPI:                    scaleSetAPI,
+		publicIPAddressesAPI:            publicIPAddressesAPI,
+		networkInterfacesAPI:            networkInterfacesAPI,
+		loadBalancersAPI:                loadBalancersAPI,
+		applicationsAPI:                 applicationsAPI,
+		servicePrincipalsAPI:            servicePrincipalsAPI,
+		roleAssignmentsAPI:              roleAssignmentsAPI,
+		virtualMachinesAPI:              virtualMachinesAPI,
 		applicationInsightsAPI:          applicationInsightsAPI,
 		subscriptionID:                  subscriptionID,
 		tenantID:                        tenantID,

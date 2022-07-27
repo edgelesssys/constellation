@@ -3,7 +3,7 @@ package azure
 import (
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
+	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -88,7 +88,7 @@ func TestFirewallPermissions(t *testing.T) {
 	// Verify vTPM
 	require.NotNil(scaleSetAzure.Properties.VirtualMachineProfile.SecurityProfile)
 	require.NotNil(scaleSetAzure.Properties.VirtualMachineProfile.SecurityProfile.SecurityType)
-	assert.Equal(armcompute.SecurityTypesTrustedLaunch, *scaleSetAzure.Properties.VirtualMachineProfile.SecurityProfile.SecurityType)
+	assert.Equal(armcomputev2.SecurityTypesTrustedLaunch, *scaleSetAzure.Properties.VirtualMachineProfile.SecurityProfile.SecurityType)
 	require.NotNil(scaleSetAzure.Properties.VirtualMachineProfile.SecurityProfile.UefiSettings)
 	require.NotNil(scaleSetAzure.Properties.VirtualMachineProfile.SecurityProfile.UefiSettings.VTpmEnabled)
 	assert.True(*scaleSetAzure.Properties.VirtualMachineProfile.SecurityProfile.UefiSettings.VTpmEnabled)
@@ -96,7 +96,7 @@ func TestFirewallPermissions(t *testing.T) {
 	// Verify UserAssignedIdentity
 	require.NotNil(scaleSetAzure.Identity)
 	require.NotNil(scaleSetAzure.Identity.Type)
-	assert.Equal(armcompute.ResourceIdentityTypeUserAssigned, *scaleSetAzure.Identity.Type)
+	assert.Equal(armcomputev2.ResourceIdentityTypeUserAssigned, *scaleSetAzure.Identity.Type)
 	require.Len(scaleSetAzure.Identity.UserAssignedIdentities, 1)
 	assert.Contains(scaleSetAzure.Identity.UserAssignedIdentities, scaleSet.UserAssignedIdentity)
 }

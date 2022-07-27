@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
+	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/stretchr/testify/assert"
@@ -145,25 +145,27 @@ func TestGetNetworkSecurityGroupName(t *testing.T) {
 		"GetNetworkSecurityGroupName works": {
 			imdsAPI: newScaleSetIMDSStub(),
 			securityGroupsAPI: &stubSecurityGroupsAPI{
-				listPages: [][]*armnetwork.SecurityGroup{
-					{
-						{
-							Name: to.StringPtr(name),
-						},
-					},
+				pager: &stubSecurityGroupsClientListPager{
+					list: []armnetwork.SecurityGroup{{Name: to.Ptr(name)}},
 				},
 			},
 			wantName: name,
 		},
 		"no security group": {
-			imdsAPI:           newScaleSetIMDSStub(),
-			securityGroupsAPI: &stubSecurityGroupsAPI{},
-			wantErr:           true,
+			imdsAPI: newScaleSetIMDSStub(),
+			securityGroupsAPI: &stubSecurityGroupsAPI{
+				pager: &stubSecurityGroupsClientListPager{},
+			},
+			wantErr: true,
 		},
 		"missing name in security group struct": {
-			imdsAPI:           newScaleSetIMDSStub(),
-			securityGroupsAPI: &stubSecurityGroupsAPI{listPages: [][]*armnetwork.SecurityGroup{{{}}}},
-			wantErr:           true,
+			imdsAPI: newScaleSetIMDSStub(),
+			securityGroupsAPI: &stubSecurityGroupsAPI{
+				pager: &stubSecurityGroupsClientListPager{
+					list: []armnetwork.SecurityGroup{{}},
+				},
+			},
+			wantErr: true,
 		},
 	}
 	for name, tc := range testCases {
@@ -197,35 +199,33 @@ func TestGetSubnetworkCIDR(t *testing.T) {
 	}{
 		"GetSubnetworkCIDR works": {
 			imdsAPI: newScaleSetIMDSStub(),
-			virtualNetworksAPI: &stubVirtualNetworksAPI{listPages: [][]*armnetwork.VirtualNetwork{
-				{
-					{
-						Name: to.StringPtr(name),
+			virtualNetworksAPI: &stubVirtualNetworksAPI{
+				pager: &stubVirtualNetworksClientListPager{
+					list: []armnetwork.VirtualNetwork{{
+						Name: to.Ptr(name),
 						Properties: &armnetwork.VirtualNetworkPropertiesFormat{
 							Subnets: []*armnetwork.Subnet{
-								{Properties: &armnetwork.SubnetPropertiesFormat{AddressPrefix: to.StringPtr(subnetworkCIDR)}},
+								{Properties: &armnetwork.SubnetPropertiesFormat{AddressPrefix: to.Ptr(subnetworkCIDR)}},
 							},
 						},
-					},
+					}},
 				},
-			}},
+			},
 			wantNetworkCIDR: subnetworkCIDR,
 		},
 		"no virtual networks found": {
 			imdsAPI: newScaleSetIMDSStub(),
-			virtualNetworksAPI: &stubVirtualNetworksAPI{listPages: [][]*armnetwork.VirtualNetwork{
-				{},
-			}},
+			virtualNetworksAPI: &stubVirtualNetworksAPI{
+				pager: &stubVirtualNetworksClientListPager{},
+			},
 			wantErr:         true,
 			wantNetworkCIDR: subnetworkCIDR,
 		},
 		"malformed network struct": {
 			imdsAPI: newScaleSetIMDSStub(),
-			virtualNetworksAPI: &stubVirtualNetworksAPI{listPages: [][]*armnetwork.VirtualNetwork{
-				{
-					{},
-				},
-			}},
+			virtualNetworksAPI: &stubVirtualNetworksAPI{
+				pager: &stubVirtualNetworksClientListPager{list: []armnetwork.VirtualNetwork{{}}},
+			},
 			wantErr:         true,
 			wantNetworkCIDR: subnetworkCIDR,
 		},
@@ -261,27 +261,29 @@ func TestGetLoadBalancerName(t *testing.T) {
 		"GetLoadBalancerName works": {
 			imdsAPI: newScaleSetIMDSStub(),
 			loadBalancerAPI: &stubLoadBalancersAPI{
-				listPages: [][]*armnetwork.LoadBalancer{
-					{
-						{
-							Name:       to.StringPtr(loadBalancerName),
-							Properties: &armnetwork.LoadBalancerPropertiesFormat{},
-						},
-					},
+				pager: &stubLoadBalancersClientListPager{
+					list: []armnetwork.LoadBalancer{{
+						Name:       to.Ptr(loadBalancerName),
+						Properties: &armnetwork.LoadBalancerPropertiesFormat{},
+					}},
 				},
 			},
 			wantName: loadBalancerName,
 		},
 		"invalid load balancer struct": {
-			imdsAPI:         newScaleSetIMDSStub(),
-			loadBalancerAPI: &stubLoadBalancersAPI{listPages: [][]*armnetwork.LoadBalancer{{{}}}},
-			wantErr:         true,
+			imdsAPI: newScaleSetIMDSStub(),
+			loadBalancerAPI: &stubLoadBalancersAPI{
+				pager: &stubLoadBalancersClientListPager{list: []armnetwork.LoadBalancer{{}}},
+			},
+			wantErr: true,
 		},
 		"invalid missing name": {
 			imdsAPI: newScaleSetIMDSStub(),
-			loadBalancerAPI: &stubLoadBalancersAPI{listPages: [][]*armnetwork.LoadBalancer{{{
-				Properties: &armnetwork.LoadBalancerPropertiesFormat{},
-			}}}},
+			loadBalancerAPI: &stubLoadBalancersAPI{
+				pager: &stubLoadBalancersClientListPager{list: []armnetwork.LoadBalancer{{
+					Properties: &armnetwork.LoadBalancerPropertiesFormat{},
+				}}},
+			},
 			wantErr: true,
 		},
 	}
@@ -320,31 +322,25 @@ func TestGetLoadBalancerIP(t *testing.T) {
 		"GetLoadBalancerIP works": {
 			imdsAPI: newScaleSetIMDSStub(),
 			loadBalancerAPI: &stubLoadBalancersAPI{
-				listPages: [][]*armnetwork.LoadBalancer{
-					{
-						{
-							Name: to.StringPtr(loadBalancerName),
-							Properties: &armnetwork.LoadBalancerPropertiesFormat{
-								FrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{
-									{
-										Properties: &armnetwork.FrontendIPConfigurationPropertiesFormat{
-											PublicIPAddress: &armnetwork.PublicIPAddress{
-												ID: &correctPublicIPID,
-											},
-										},
+				pager: &stubLoadBalancersClientListPager{
+					list: []armnetwork.LoadBalancer{{
+						Name: to.Ptr(loadBalancerName),
+						Properties: &armnetwork.LoadBalancerPropertiesFormat{
+							FrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{
+								{
+									Properties: &armnetwork.FrontendIPConfigurationPropertiesFormat{
+										PublicIPAddress: &armnetwork.PublicIPAddress{ID: &correctPublicIPID},
 									},
 								},
 							},
 						},
-					},
+					}},
 				},
 			},
 			publicIPAddressesAPI: &stubPublicIPAddressesAPI{getResponse: armnetwork.PublicIPAddressesClientGetResponse{
-				PublicIPAddressesClientGetResult: armnetwork.PublicIPAddressesClientGetResult{
-					PublicIPAddress: armnetwork.PublicIPAddress{
-						Properties: &armnetwork.PublicIPAddressPropertiesFormat{
-							IPAddress: &publicIP,
-						},
+				PublicIPAddress: armnetwork.PublicIPAddress{
+					Properties: &armnetwork.PublicIPAddressPropertiesFormat{
+						IPAddress: &publicIP,
 					},
 				},
 			}},
@@ -353,24 +349,20 @@ func TestGetLoadBalancerIP(t *testing.T) {
 		"no load balancer": {
 			imdsAPI: newScaleSetIMDSStub(),
 			loadBalancerAPI: &stubLoadBalancersAPI{
-				listPages: [][]*armnetwork.LoadBalancer{
-					{},
-				},
+				pager: &stubLoadBalancersClientListPager{},
 			},
 			wantErr: true,
 		},
 		"load balancer missing public IP reference": {
 			imdsAPI: newScaleSetIMDSStub(),
 			loadBalancerAPI: &stubLoadBalancersAPI{
-				listPages: [][]*armnetwork.LoadBalancer{
-					{
-						{
-							Name: to.StringPtr(loadBalancerName),
-							Properties: &armnetwork.LoadBalancerPropertiesFormat{
-								FrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{},
-							},
+				pager: &stubLoadBalancersClientListPager{
+					list: []armnetwork.LoadBalancer{{
+						Name: to.Ptr(loadBalancerName),
+						Properties: &armnetwork.LoadBalancerPropertiesFormat{
+							FrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{},
 						},
-					},
+					}},
 				},
 			},
 			wantErr: true,
@@ -378,23 +370,21 @@ func TestGetLoadBalancerIP(t *testing.T) {
 		"public IP reference has wrong format": {
 			imdsAPI: newScaleSetIMDSStub(),
 			loadBalancerAPI: &stubLoadBalancersAPI{
-				listPages: [][]*armnetwork.LoadBalancer{
-					{
-						{
-							Name: to.StringPtr(loadBalancerName),
-							Properties: &armnetwork.LoadBalancerPropertiesFormat{
-								FrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{
-									{
-										Properties: &armnetwork.FrontendIPConfigurationPropertiesFormat{
-											PublicIPAddress: &armnetwork.PublicIPAddress{
-												ID: to.StringPtr("wrong-format"),
-											},
+				pager: &stubLoadBalancersClientListPager{
+					list: []armnetwork.LoadBalancer{{
+						Name: to.Ptr(loadBalancerName),
+						Properties: &armnetwork.LoadBalancerPropertiesFormat{
+							FrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{
+								{
+									Properties: &armnetwork.FrontendIPConfigurationPropertiesFormat{
+										PublicIPAddress: &armnetwork.PublicIPAddress{
+											ID: to.Ptr("wrong-format"),
 										},
 									},
 								},
 							},
 						},
-					},
+					}},
 				},
 			},
 			wantErr: true,
@@ -402,23 +392,19 @@ func TestGetLoadBalancerIP(t *testing.T) {
 		"no public IP address found": {
 			imdsAPI: newScaleSetIMDSStub(),
 			loadBalancerAPI: &stubLoadBalancersAPI{
-				listPages: [][]*armnetwork.LoadBalancer{
-					{
-						{
-							Name: to.StringPtr(loadBalancerName),
-							Properties: &armnetwork.LoadBalancerPropertiesFormat{
-								FrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{
-									{
-										Properties: &armnetwork.FrontendIPConfigurationPropertiesFormat{
-											PublicIPAddress: &armnetwork.PublicIPAddress{
-												ID: &correctPublicIPID,
-											},
-										},
+				pager: &stubLoadBalancersClientListPager{
+					list: []armnetwork.LoadBalancer{{
+						Name: to.Ptr(loadBalancerName),
+						Properties: &armnetwork.LoadBalancerPropertiesFormat{
+							FrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{
+								{
+									Properties: &armnetwork.FrontendIPConfigurationPropertiesFormat{
+										PublicIPAddress: &armnetwork.PublicIPAddress{ID: &correctPublicIPID},
 									},
 								},
 							},
 						},
-					},
+					}},
 				},
 			},
 			publicIPAddressesAPI: &stubPublicIPAddressesAPI{getErr: someErr},
@@ -427,30 +413,24 @@ func TestGetLoadBalancerIP(t *testing.T) {
 		"found public IP has no address field": {
 			imdsAPI: newScaleSetIMDSStub(),
 			loadBalancerAPI: &stubLoadBalancersAPI{
-				listPages: [][]*armnetwork.LoadBalancer{
-					{
-						{
-							Name: to.StringPtr(loadBalancerName),
-							Properties: &armnetwork.LoadBalancerPropertiesFormat{
-								FrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{
-									{
-										Properties: &armnetwork.FrontendIPConfigurationPropertiesFormat{
-											PublicIPAddress: &armnetwork.PublicIPAddress{
-												ID: &correctPublicIPID,
-											},
-										},
+				pager: &stubLoadBalancersClientListPager{
+					list: []armnetwork.LoadBalancer{{
+						Name: to.Ptr(loadBalancerName),
+						Properties: &armnetwork.LoadBalancerPropertiesFormat{
+							FrontendIPConfigurations: []*armnetwork.FrontendIPConfiguration{
+								{
+									Properties: &armnetwork.FrontendIPConfigurationPropertiesFormat{
+										PublicIPAddress: &armnetwork.PublicIPAddress{ID: &correctPublicIPID},
 									},
 								},
 							},
 						},
-					},
+					}},
 				},
 			},
 			publicIPAddressesAPI: &stubPublicIPAddressesAPI{getResponse: armnetwork.PublicIPAddressesClientGetResponse{
-				PublicIPAddressesClientGetResult: armnetwork.PublicIPAddressesClientGetResult{
-					PublicIPAddress: armnetwork.PublicIPAddress{
-						Properties: &armnetwork.PublicIPAddressPropertiesFormat{},
-					},
+				PublicIPAddress: armnetwork.PublicIPAddress{
+					Properties: &armnetwork.PublicIPAddressPropertiesFormat{},
 				},
 			}},
 			wantErr: true,
@@ -525,7 +505,7 @@ func TestExtractInstanceTags(t *testing.T) {
 		wantTags map[string]string
 	}{
 		"tags are extracted": {
-			in:       map[string]*string{"key": to.StringPtr("value")},
+			in:       map[string]*string{"key": to.Ptr("value")},
 			wantTags: map[string]string{"key": "value"},
 		},
 		"nil values are skipped": {
@@ -547,53 +527,53 @@ func TestExtractInstanceTags(t *testing.T) {
 
 func TestExtractSSHKeys(t *testing.T) {
 	testCases := map[string]struct {
-		in       armcompute.SSHConfiguration
+		in       armcomputev2.SSHConfiguration
 		wantKeys map[string][]string
 	}{
 		"ssh key is extracted": {
-			in: armcompute.SSHConfiguration{
-				PublicKeys: []*armcompute.SSHPublicKey{
+			in: armcomputev2.SSHConfiguration{
+				PublicKeys: []*armcomputev2.SSHPublicKey{
 					{
-						KeyData: to.StringPtr("key-data"),
-						Path:    to.StringPtr("/home/user/.ssh/authorized_keys"),
+						KeyData: to.Ptr("key-data"),
+						Path:    to.Ptr("/home/user/.ssh/authorized_keys"),
 					},
 				},
 			},
 			wantKeys: map[string][]string{"user": {"key-data"}},
 		},
 		"invalid path is skipped": {
-			in: armcompute.SSHConfiguration{
-				PublicKeys: []*armcompute.SSHPublicKey{
+			in: armcomputev2.SSHConfiguration{
+				PublicKeys: []*armcomputev2.SSHPublicKey{
 					{
-						KeyData: to.StringPtr("key-data"),
-						Path:    to.StringPtr("invalid-path"),
+						KeyData: to.Ptr("key-data"),
+						Path:    to.Ptr("invalid-path"),
 					},
 				},
 			},
 			wantKeys: map[string][]string{},
 		},
 		"key data is nil": {
-			in: armcompute.SSHConfiguration{
-				PublicKeys: []*armcompute.SSHPublicKey{
+			in: armcomputev2.SSHConfiguration{
+				PublicKeys: []*armcomputev2.SSHPublicKey{
 					{
-						Path: to.StringPtr("/home/user/.ssh/authorized_keys"),
+						Path: to.Ptr("/home/user/.ssh/authorized_keys"),
 					},
 				},
 			},
 			wantKeys: map[string][]string{},
 		},
 		"path is nil": {
-			in: armcompute.SSHConfiguration{
-				PublicKeys: []*armcompute.SSHPublicKey{
+			in: armcomputev2.SSHConfiguration{
+				PublicKeys: []*armcomputev2.SSHPublicKey{
 					{
-						KeyData: to.StringPtr("key-data"),
+						KeyData: to.Ptr("key-data"),
 					},
 				},
 			},
 			wantKeys: map[string][]string{},
 		},
 		"public keys are nil": {
-			in:       armcompute.SSHConfiguration{},
+			in:       armcomputev2.SSHConfiguration{},
 			wantKeys: map[string][]string{},
 		},
 	}
@@ -628,13 +608,13 @@ func newInvalidIMDSStub() *stubIMDSAPI {
 func newNetworkInterfacesStub() *stubNetworkInterfacesAPI {
 	return &stubNetworkInterfacesAPI{
 		getInterface: armnetwork.Interface{
-			Name: to.StringPtr("interface-name"),
+			Name: to.Ptr("interface-name"),
 			Properties: &armnetwork.InterfacePropertiesFormat{
 				IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
 					{
 						Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
-							PrivateIPAddress: to.StringPtr("192.0.2.0"),
-							Primary:          to.BoolPtr(true),
+							PrivateIPAddress: to.Ptr("192.0.2.0"),
+							Primary:          to.Ptr(true),
 						},
 					},
 				},
@@ -645,38 +625,36 @@ func newNetworkInterfacesStub() *stubNetworkInterfacesAPI {
 
 func newScaleSetsStub() *stubScaleSetsAPI {
 	return &stubScaleSetsAPI{
-		listPages: [][]*armcompute.VirtualMachineScaleSet{
-			{
-				&armcompute.VirtualMachineScaleSet{
-					Name: to.StringPtr("scale-set-name"),
-				},
-			},
+		pager: &stubVirtualMachineScaleSetsClientListPager{
+			list: []armcomputev2.VirtualMachineScaleSet{{
+				Name: to.Ptr("scale-set-name"),
+			}},
 		},
 	}
 }
 
 func newVirtualMachineScaleSetsVMsStub() *stubVirtualMachineScaleSetVMsAPI {
 	return &stubVirtualMachineScaleSetVMsAPI{
-		getVM: armcompute.VirtualMachineScaleSetVM{
-			Name:       to.StringPtr("scale-set-name_instance-id"),
-			InstanceID: to.StringPtr("instance-id"),
-			ID:         to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"),
-			Properties: &armcompute.VirtualMachineScaleSetVMProperties{
-				NetworkProfile: &armcompute.NetworkProfile{
-					NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
+		getVM: armcomputev2.VirtualMachineScaleSetVM{
+			Name:       to.Ptr("scale-set-name_instance-id"),
+			InstanceID: to.Ptr("instance-id"),
+			ID:         to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"),
+			Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
+				NetworkProfile: &armcomputev2.NetworkProfile{
+					NetworkInterfaces: []*armcomputev2.NetworkInterfaceReference{
 						{
-							ID: to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id/networkInterfaces/interface-name"),
+							ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id/networkInterfaces/interface-name"),
 						},
 					},
 				},
-				OSProfile: &armcompute.OSProfile{
-					ComputerName: to.StringPtr("scale-set-name-instance-id"),
-					LinuxConfiguration: &armcompute.LinuxConfiguration{
-						SSH: &armcompute.SSHConfiguration{
-							PublicKeys: []*armcompute.SSHPublicKey{
+				OSProfile: &armcomputev2.OSProfile{
+					ComputerName: to.Ptr("scale-set-name-instance-id"),
+					LinuxConfiguration: &armcomputev2.LinuxConfiguration{
+						SSH: &armcomputev2.SSHConfiguration{
+							PublicKeys: []*armcomputev2.SSHPublicKey{
 								{
-									KeyData: to.StringPtr("key-data"),
-									Path:    to.StringPtr("/home/user/.ssh/authorized_keys"),
+									KeyData: to.Ptr("key-data"),
+									Path:    to.Ptr("/home/user/.ssh/authorized_keys"),
 								},
 							},
 						},
@@ -684,48 +662,44 @@ func newVirtualMachineScaleSetsVMsStub() *stubVirtualMachineScaleSetVMsAPI {
 				},
 			},
 		},
-		listPages: [][]*armcompute.VirtualMachineScaleSetVM{
-			{
-				&armcompute.VirtualMachineScaleSetVM{
-					Name:       to.StringPtr("scale-set-name_instance-id"),
-					InstanceID: to.StringPtr("instance-id"),
-					ID:         to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"),
-					Properties: &armcompute.VirtualMachineScaleSetVMProperties{
-						NetworkProfile: &armcompute.NetworkProfile{
-							NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
-								{
-									ID: to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id/networkInterfaces/interface-name"),
-								},
+		pager: &stubVirtualMachineScaleSetVMPager{
+			list: []armcomputev2.VirtualMachineScaleSetVM{{
+				Name:       to.Ptr("scale-set-name_instance-id"),
+				InstanceID: to.Ptr("instance-id"),
+				ID:         to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"),
+				Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
+					NetworkProfile: &armcomputev2.NetworkProfile{
+						NetworkInterfaces: []*armcomputev2.NetworkInterfaceReference{
+							{
+								ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id/networkInterfaces/interface-name"),
 							},
 						},
-						OSProfile: &armcompute.OSProfile{
-							ComputerName: to.StringPtr("scale-set-name-instance-id"),
-							LinuxConfiguration: &armcompute.LinuxConfiguration{
-								SSH: &armcompute.SSHConfiguration{
-									PublicKeys: []*armcompute.SSHPublicKey{
-										{
-											KeyData: to.StringPtr("key-data"),
-											Path:    to.StringPtr("/home/user/.ssh/authorized_keys"),
-										},
+					},
+					OSProfile: &armcomputev2.OSProfile{
+						ComputerName: to.Ptr("scale-set-name-instance-id"),
+						LinuxConfiguration: &armcomputev2.LinuxConfiguration{
+							SSH: &armcomputev2.SSHConfiguration{
+								PublicKeys: []*armcomputev2.SSHPublicKey{
+									{
+										KeyData: to.Ptr("key-data"),
+										Path:    to.Ptr("/home/user/.ssh/authorized_keys"),
 									},
 								},
 							},
 						},
 					},
 				},
-			},
+			}},
 		},
 	}
 }
 
 func newFailingListsVirtualMachineScaleSetsVMsStub() *stubVirtualMachineScaleSetVMsAPI {
 	return &stubVirtualMachineScaleSetVMsAPI{
-		listPages: [][]*armcompute.VirtualMachineScaleSetVM{
-			{
-				{
-					InstanceID: to.StringPtr("invalid-instance-id"),
-				},
-			},
+		pager: &stubVirtualMachineScaleSetVMPager{
+			list: []armcomputev2.VirtualMachineScaleSetVM{{
+				InstanceID: to.Ptr("invalid-instance-id"),
+			}},
 		},
 	}
 }

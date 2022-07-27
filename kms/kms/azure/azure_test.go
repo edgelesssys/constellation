@@ -28,14 +28,16 @@ type stubAzureClient struct {
 	secret          []byte
 }
 
-func (s *stubAzureClient) SetSecret(ctx context.Context, secretName string, value string, options *azsecrets.SetSecretOptions) (azsecrets.SetSecretResponse, error) {
+func (s *stubAzureClient) SetSecret(ctx context.Context, secretName string, parameters azsecrets.SetSecretParameters, options *azsecrets.SetSecretOptions) (azsecrets.SetSecretResponse, error) {
 	s.setSecretCalled = true
 	return azsecrets.SetSecretResponse{}, s.setSecretErr
 }
 
-func (s *stubAzureClient) GetSecret(ctx context.Context, secretName string, options *azsecrets.GetSecretOptions) (azsecrets.GetSecretResponse, error) {
+func (s *stubAzureClient) GetSecret(ctx context.Context, secretName string, version string, options *azsecrets.GetSecretOptions) (azsecrets.GetSecretResponse, error) {
 	return azsecrets.GetSecretResponse{
-		Secret: azsecrets.Secret{Value: to.StringPtr(base64.StdEncoding.EncodeToString(s.secret))},
+		SecretBundle: azsecrets.SecretBundle{
+			Value: to.Ptr(base64.StdEncoding.EncodeToString(s.secret)),
+		},
 	}, s.getSecretErr
 }
 

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets"
@@ -32,8 +33,8 @@ const (
 type VaultSuffix string
 
 type kmsClientAPI interface {
-	SetSecret(ctx context.Context, secretName string, value string, options *azsecrets.SetSecretOptions) (azsecrets.SetSecretResponse, error)
-	GetSecret(ctx context.Context, secretName string, options *azsecrets.GetSecretOptions) (azsecrets.GetSecretResponse, error)
+	SetSecret(ctx context.Context, secretName string, parameters azsecrets.SetSecretParameters, options *azsecrets.SetSecretOptions) (azsecrets.SetSecretResponse, error)
+	GetSecret(ctx context.Context, secretName string, version string, options *azsecrets.GetSecretOptions) (azsecrets.GetSecretResponse, error)
 }
 
 // KMSClient implements the CloudKMS interface for Azure Key Vault.
@@ -46,7 +47,7 @@ type KMSClient struct {
 // Opts are optional settings for AKV clients.
 type Opts struct {
 	credentials *azidentity.DefaultAzureCredentialOptions
-	client      *azsecrets.ClientOptions
+	client      *azcore.ClientOptions
 }
 
 // New initializes a KMS client for Azure Key Vault.
@@ -58,17 +59,13 @@ func New(ctx context.Context, vaultName string, vaultType VaultSuffix, store kms
 	if err != nil {
 		return nil, fmt.Errorf("loading credentials: %w", err)
 	}
-	client, err := azsecrets.NewClient(vaultPrefix+vaultName+string(vaultType), cred, opts.client)
-	if err != nil {
-		return nil, fmt.Errorf("creating vault client: %w", err)
-	}
+	client := azsecrets.NewClient(vaultPrefix+vaultName+string(vaultType), cred, opts.client)
 
 	// `azsecrets.NewClient()` does not error if the vault is non existent
 	// Test here if we can reach the vault, and error otherwise
-	pager := client.ListSecrets(nil)
-	pager.NextPage(ctx)
-	if pager.Err() != nil {
-		return nil, fmt.Errorf("AKV not reachable: %w", pager.Err())
+	pager := client.NewListSecretsPager(nil)
+	if _, err := pager.NextPage(ctx); err != nil {
+		return nil, fmt.Errorf("AKV not reachable: %w", err)
 	}
 
 	if store == nil {
@@ -91,10 +88,12 @@ func (c *KMSClient) CreateKEK(ctx context.Context, keyID string, key []byte) err
 	}
 
 	// Saving symmetric keys in Azure Key Vault requires encoding them to base64
-	_, err := c.client.SetSecret(ctx, keyID, base64.StdEncoding.EncodeToString(key), &azsecrets.SetSecretOptions{
-		ContentType: to.StringPtr("KeyEncryptionKey"),
-		Tags:        config.KmsTags,
-	})
+	secretValue := azsecrets.SetSecretParameters{
+		Value:       to.Ptr(base64.StdEncoding.EncodeToString(key)),
+		ContentType: to.Ptr("KeyEncryptionKey"),
+		Tags:        toAzureTags(config.KmsTags),
+	}
+	_, err := c.client.SetSecret(ctx, keyID, secretValue, &azsecrets.SetSecretOptions{})
 	if err != nil {
 		return fmt.Errorf("importing KEK to Azure Key Vault: %w", err)
 	}
@@ -139,7 +138,7 @@ func (c *KMSClient) putDEK(ctx context.Context, keyID string, kek, plainDEK []by
 
 // getKEK loads a Key Encryption Key from Azure Key Vault.
 func (c *KMSClient) getKEK(ctx context.Context, kekID string) ([]byte, error) {
-	res, err := c.client.GetSecret(ctx, kekID, nil)
+	res, err := c.client.GetSecret(ctx, kekID, "", nil)
 	if err != nil {
 		if strings.Contains(err.Error(), "SecretNotFound") {
 			return nil, kms.ErrKEKUnknown

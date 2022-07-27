@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
+	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 )
 
 // getVMInterfaces retrieves all network interfaces referenced by a virtual machine.
-func (m *Metadata) getVMInterfaces(ctx context.Context, vm armcompute.VirtualMachine, resourceGroup string) ([]armnetwork.Interface, error) {
+func (m *Metadata) getVMInterfaces(ctx context.Context, vm armcomputev2.VirtualMachine, resourceGroup string) ([]armnetwork.Interface, error) {
 	if vm.Properties == nil || vm.Properties.NetworkProfile == nil {
 		return []armnetwork.Interface{}, nil
 	}
@@ -28,7 +28,7 @@ func (m *Metadata) getVMInterfaces(ctx context.Context, vm armcompute.VirtualMac
 }
 
 // getScaleSetVMInterfaces retrieves all network interfaces referenced by a scale set virtual machine.
-func (m *Metadata) getScaleSetVMInterfaces(ctx context.Context, vm armcompute.VirtualMachineScaleSetVM, resourceGroup, scaleSet, instanceID string) ([]armnetwork.Interface, error) {
+func (m *Metadata) getScaleSetVMInterfaces(ctx context.Context, vm armcomputev2.VirtualMachineScaleSetVM, resourceGroup, scaleSet, instanceID string) ([]armnetwork.Interface, error) {
 	if vm.Properties == nil || vm.Properties.NetworkProfile == nil {
 		return []armnetwork.Interface{}, nil
 	}
@@ -99,7 +99,7 @@ func extractVPCIP(networkInterfaces []armnetwork.Interface) string {
 // Format:
 // - "/subscriptions/<subscription>/resourceGroups/<resource-group>/providers/Microsoft.Network/networkInterfaces/<interface-name>"
 // - "/subscriptions/<subscription>/resourceGroups/<resource-group>/providers/Microsoft.Compute/virtualMachineScaleSets/<scale-set-name>/virtualMachines/<instanceID>/networkInterfaces/<interface-name>".
-func extractInterfaceNamesFromInterfaceReferences(references []*armcompute.NetworkInterfaceReference) []string {
+func extractInterfaceNamesFromInterfaceReferences(references []*armcomputev2.NetworkInterfaceReference) []string {
 	interfaceNames := []string{}
 	for _, interfaceReference := range references {
 		if interfaceReference == nil || interfaceReference.ID == nil {

@@ -13,20 +13,20 @@ import (
 )
 
 type azureContainerAPI interface {
-	Create(ctx context.Context, options *azblob.CreateContainerOptions) (azblob.ContainerCreateResponse, error)
-	NewBlockBlobClient(blobName string) azureBlobAPI
+	Create(ctx context.Context, options *azblob.ContainerCreateOptions) (azblob.ContainerCreateResponse, error)
+	NewBlockBlobClient(blobName string) (azureBlobAPI, error)
 }
 
 type azureBlobAPI interface {
-	DownloadBlobToWriterAt(ctx context.Context, offset int64, count int64, writer io.WriterAt, o azblob.HighLevelDownloadFromBlobOptions) error
-	Upload(ctx context.Context, body io.ReadSeekCloser, options *azblob.UploadBlockBlobOptions) (azblob.BlockBlobUploadResponse, error)
+	DownloadToWriterAt(ctx context.Context, offset int64, count int64, writer io.WriterAt, options azblob.DownloadOptions) error
+	Upload(ctx context.Context, body io.ReadSeekCloser, options *azblob.BlockBlobUploadOptions) (azblob.BlockBlobUploadResponse, error)
 }
 
 type wrappedAzureClient struct {
 	azblob.ContainerClient
 }
 
-func (c wrappedAzureClient) NewBlockBlobClient(blobName string) azureBlobAPI {
+func (c wrappedAzureClient) NewBlockBlobClient(blobName string) (azureBlobAPI, error) {
 	return c.ContainerClient.NewBlockBlobClient(blobName)
 }
 
@@ -40,7 +40,7 @@ type AzureStorage struct {
 
 // AzureOpts are additional options to be used when interacting with the Azure API.
 type AzureOpts struct {
-	upload  *azblob.UploadBlockBlobOptions
+	upload  *azblob.BlockBlobUploadOptions
 	service *azblob.ClientOptions
 }
 
@@ -79,14 +79,14 @@ func (s *AzureStorage) Get(ctx context.Context, keyID string) ([]byte, error) {
 	// the Azure SDK requires an io.WriterAt, the AWS SDK provides a utility function to create one from a byte slice
 	keyBuffer := manager.NewWriteAtBuffer([]byte{})
 
-	opts := azblob.HighLevelDownloadFromBlobOptions{
+	opts := azblob.DownloadOptions{
 		RetryReaderOptionsPerBlock: azblob.RetryReaderOptions{
 			MaxRetryRequests:       5,
 			TreatEarlyCloseAsError: true,
 		},
 	}
 
-	if err := client.DownloadBlobToWriterAt(ctx, 0, 0, keyBuffer, opts); err != nil {
+	if err := client.DownloadToWriterAt(ctx, 0, 0, keyBuffer, opts); err != nil {
 		var storeErr *azblob.StorageError
 		if errors.As(err, &storeErr) && (storeErr.ErrorCode == azblob.StorageErrorCodeBlobNotFound) {
 			return nil, ErrDEKUnset
@@ -118,7 +118,7 @@ func (s *AzureStorage) createContainerOrContinue(ctx context.Context) error {
 	}
 
 	var storeErr *azblob.StorageError
-	_, err = client.Create(ctx, &azblob.CreateContainerOptions{
+	_, err = client.Create(ctx, &azblob.ContainerCreateOptions{
 		Metadata: config.StorageTags,
 	})
 	if (err == nil) || (errors.As(err, &storeErr) && (storeErr.ErrorCode == azblob.StorageErrorCodeContainerAlreadyExists)) {
@@ -134,7 +134,7 @@ func (s *AzureStorage) newBlobClient(ctx context.Context, blobName string) (azur
 	if err != nil {
 		return nil, err
 	}
-	return c.NewBlockBlobClient(blobName), nil
+	return c.NewBlockBlobClient(blobName)
 }
 
 func azureContainerClientFactory(ctx context.Context, connectionString, containerName string, opts *azblob.ClientOptions) (azureContainerAPI, error) {
@@ -143,7 +143,11 @@ func azureContainerClientFactory(ctx context.Context, connectionString, containe
 		return nil, fmt.Errorf("creating storage client from connection string: %w", err)
 	}
 
-	return wrappedAzureClient{service.NewContainerClient(containerName)}, nil
+	containerClient, err := service.NewContainerClient(containerName)
+	if err != nil {
+		return nil, fmt.Errorf("creating storage container client: %w", err)
+	}
+	return &wrappedAzureClient{*containerClient}, err
 }
 
 // readSeekNopCloser is a wrapper for io.ReadSeeker implementing the Close method. This is required by the Azure SDK.

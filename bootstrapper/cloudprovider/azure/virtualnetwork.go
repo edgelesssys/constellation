@@ -9,9 +9,13 @@ import (
 
 // getVirtualNetwork return the first virtual network found in the resource group.
 func (m *Metadata) getVirtualNetwork(ctx context.Context, resourceGroup string) (*armnetwork.VirtualNetwork, error) {
-	pager := m.virtualNetworksAPI.List(resourceGroup, nil)
-	for pager.NextPage(ctx) {
-		for _, network := range pager.PageResponse().Value {
+	pager := m.virtualNetworksAPI.NewListPager(resourceGroup, nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("retrieving virtual networks: %w", err)
+		}
+		for _, network := range page.Value {
 			if network != nil {
 				return network, nil
 			}

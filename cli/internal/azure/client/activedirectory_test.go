@@ -29,7 +29,7 @@ func TestCreateServicePrincipal(t *testing.T) {
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			resourceGroupAPI: stubResourceGroupAPI{
 				getResourceGroup: armresources.ResourceGroup{
-					ID: to.StringPtr("resource-group-id"),
+					ID: to.Ptr("resource-group-id"),
 				},
 			},
 		},
@@ -54,7 +54,7 @@ func TestCreateServicePrincipal(t *testing.T) {
 			},
 			resourceGroupAPI: stubResourceGroupAPI{
 				getResourceGroup: armresources.ResourceGroup{
-					ID: to.StringPtr("resource-group-id"),
+					ID: to.Ptr("resource-group-id"),
 				},
 			},
 			wantErr: true,
@@ -67,7 +67,7 @@ func TestCreateServicePrincipal(t *testing.T) {
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			resourceGroupAPI: stubResourceGroupAPI{
 				getResourceGroup: armresources.ResourceGroup{
-					ID: to.StringPtr("resource-group-id"),
+					ID: to.Ptr("resource-group-id"),
 				},
 			},
 			wantErr: true,
@@ -256,7 +256,7 @@ func TestAssignOwnerOfResourceGroup(t *testing.T) {
 			roleAssignmentsAPI: &stubRoleAssignmentsAPI{},
 			resourceGroupAPI: stubResourceGroupAPI{
 				getResourceGroup: armresources.ResourceGroup{
-					ID: to.StringPtr("resource-group-id"),
+					ID: to.Ptr("resource-group-id"),
 				},
 			},
 		},
@@ -266,7 +266,7 @@ func TestAssignOwnerOfResourceGroup(t *testing.T) {
 			},
 			resourceGroupAPI: stubResourceGroupAPI{
 				getResourceGroup: armresources.ResourceGroup{
-					ID: to.StringPtr("resource-group-id"),
+					ID: to.Ptr("resource-group-id"),
 				},
 			},
 			wantErr: true,
@@ -298,7 +298,7 @@ func TestAssignOwnerOfResourceGroup(t *testing.T) {
 			},
 			resourceGroupAPI: stubResourceGroupAPI{
 				getResourceGroup: armresources.ResourceGroup{
-					ID: to.StringPtr("resource-group-id"),
+					ID: to.Ptr("resource-group-id"),
 				},
 			},
 		},
@@ -308,7 +308,7 @@ func TestAssignOwnerOfResourceGroup(t *testing.T) {
 			},
 			resourceGroupAPI: stubResourceGroupAPI{
 				getResourceGroup: armresources.ResourceGroup{
-					ID: to.StringPtr("resource-group-id"),
+					ID: to.Ptr("resource-group-id"),
 				},
 			},
 			wantErr: true,
@@ -326,7 +326,7 @@ func TestAssignOwnerOfResourceGroup(t *testing.T) {
 			},
 			resourceGroupAPI: stubResourceGroupAPI{
 				getResourceGroup: armresources.ResourceGroup{
-					ID: to.StringPtr("resource-group-id"),
+					ID: to.Ptr("resource-group-id"),
 				},
 			},
 			wantErr: true,

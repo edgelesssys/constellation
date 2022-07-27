@@ -8,10 +8,10 @@ import (
 
 func (c *Client) CreateApplicationInsight(ctx context.Context) error {
 	properties := armapplicationinsights.Component{
-		Kind:     to.StringPtr("web"),
-		Location: to.StringPtr(c.location),
+		Kind:     to.Ptr("web"),
+		Location: to.Ptr(c.location),
 		Properties: &armapplicationinsights.ComponentProperties{
-			ApplicationType: armapplicationinsights.ApplicationTypeWeb.ToPtr(),
+			ApplicationType: to.Ptr(armapplicationinsights.ApplicationTypeWeb),
 		},
 	}
 

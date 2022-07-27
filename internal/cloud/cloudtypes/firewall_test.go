@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/stretchr/testify/assert"
@@ -93,13 +94,13 @@ func TestFirewallAzure(t *testing.T) {
 			Name: proto.String("perm1"),
 			Properties: &armnetwork.SecurityRulePropertiesFormat{
 				Description:              proto.String("perm1 description"),
-				Protocol:                 armnetwork.SecurityRuleProtocolTCP.ToPtr(),
+				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
 				SourceAddressPrefix:      proto.String("192.0.2.0/24"),
 				SourcePortRange:          proto.String("*"),
 				DestinationAddressPrefix: proto.String("192.0.2.0/24"),
 				DestinationPortRange:     proto.String("22"),
-				Access:                   armnetwork.SecurityRuleAccessAllow.ToPtr(),
-				Direction:                armnetwork.SecurityRuleDirectionInbound.ToPtr(),
+				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
+				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
 				Priority:                 proto.Int32(100),
 			},
 		},
@@ -107,13 +108,13 @@ func TestFirewallAzure(t *testing.T) {
 			Name: proto.String("perm2"),
 			Properties: &armnetwork.SecurityRulePropertiesFormat{
 				Description:              proto.String("perm2 description"),
-				Protocol:                 armnetwork.SecurityRuleProtocolUDP.ToPtr(),
+				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolUDP),
 				SourceAddressPrefix:      proto.String("192.0.2.0/24"),
 				SourcePortRange:          proto.String("*"),
 				DestinationAddressPrefix: proto.String("192.0.2.0/24"),
 				DestinationPortRange:     proto.String("4433"),
-				Access:                   armnetwork.SecurityRuleAccessAllow.ToPtr(),
-				Direction:                armnetwork.SecurityRuleDirectionInbound.ToPtr(),
+				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
+				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
 				Priority:                 proto.Int32(200),
 			},
 		},
@@ -121,13 +122,13 @@ func TestFirewallAzure(t *testing.T) {
 			Name: proto.String("perm3"),
 			Properties: &armnetwork.SecurityRulePropertiesFormat{
 				Description:              proto.String("perm3 description"),
-				Protocol:                 armnetwork.SecurityRuleProtocolTCP.ToPtr(),
+				Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
 				SourceAddressPrefix:      proto.String("192.0.2.0/24"),
 				SourcePortRange:          proto.String("*"),
 				DestinationAddressPrefix: proto.String("192.0.2.0/24"),
 				DestinationPortRange:     proto.String("4433"),
-				Access:                   armnetwork.SecurityRuleAccessAllow.ToPtr(),
-				Direction:                armnetwork.SecurityRuleDirectionInbound.ToPtr(),
+				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
+				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
 				Priority:                 proto.Int32(300),
 			},
 		},

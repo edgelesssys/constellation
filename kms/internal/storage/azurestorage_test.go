@@ -23,13 +23,13 @@ func newStubClientFactory(stub stubAzureContainerAPI) func(ctx context.Context, 
 	}
 }
 
-func (s stubAzureContainerAPI) Create(ctx context.Context, options *azblob.CreateContainerOptions) (azblob.ContainerCreateResponse, error) {
+func (s stubAzureContainerAPI) Create(ctx context.Context, options *azblob.ContainerCreateOptions) (azblob.ContainerCreateResponse, error) {
 	*s.createCalled = true
 	return azblob.ContainerCreateResponse{}, s.createErr
 }
 
-func (s stubAzureContainerAPI) NewBlockBlobClient(blobName string) azureBlobAPI {
-	return s.blockBlobAPI
+func (s stubAzureContainerAPI) NewBlockBlobClient(blobName string) (azureBlobAPI, error) {
+	return s.blockBlobAPI, nil
 }
 
 type stubAzureBlockBlobAPI struct {
@@ -39,14 +39,14 @@ type stubAzureBlockBlobAPI struct {
 	uploadData                 chan []byte
 }
 
-func (s stubAzureBlockBlobAPI) DownloadBlobToWriterAt(ctx context.Context, offset int64, count int64, writer io.WriterAt, o azblob.HighLevelDownloadFromBlobOptions) error {
+func (s stubAzureBlockBlobAPI) DownloadToWriterAt(ctx context.Context, offset int64, count int64, writer io.WriterAt, o azblob.DownloadOptions) error {
 	if _, err := writer.WriteAt(s.downloadBlobToWriterOutput, 0); err != nil {
 		panic(err)
 	}
 	return s.downloadBlobToWriterAtErr
 }
 
-func (s stubAzureBlockBlobAPI) Upload(ctx context.Context, body io.ReadSeekCloser, options *azblob.UploadBlockBlobOptions) (azblob.BlockBlobUploadResponse, error) {
+func (s stubAzureBlockBlobAPI) Upload(ctx context.Context, body io.ReadSeekCloser, options *azblob.BlockBlobUploadOptions) (azblob.BlockBlobUploadResponse, error) {
 	res, err := io.ReadAll(body)
 	if err != nil {
 		panic(err)

@@ -2,12 +2,13 @@ package client
 
 import (
 	"context"
-	"time"
+	"net/http"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/authorization/mgmt/authorization"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
+	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/services/graphrbac/1.6/graphrbac"
@@ -15,90 +16,82 @@ import (
 )
 
 type stubNetworksAPI struct {
-	createErr    error
-	stubResponse stubVirtualNetworksCreateOrUpdatePollerResponse
-}
-
-type stubVirtualNetworksCreateOrUpdatePollerResponse struct {
-	armnetwork.VirtualNetworksClientCreateOrUpdatePollerResponse
-	pollerErr error
-}
-
-func (r stubVirtualNetworksCreateOrUpdatePollerResponse) PollUntilDone(ctx context.Context, freq time.Duration,
-) (armnetwork.VirtualNetworksClientCreateOrUpdateResponse, error) {
-	return armnetwork.VirtualNetworksClientCreateOrUpdateResponse{
-		VirtualNetworksClientCreateOrUpdateResult: armnetwork.VirtualNetworksClientCreateOrUpdateResult{
-			VirtualNetwork: armnetwork.VirtualNetwork{
-				Properties: &armnetwork.VirtualNetworkPropertiesFormat{
-					Subnets: []*armnetwork.Subnet{
-						{
-							ID: to.StringPtr("virtual-network-subnet-id"),
-						},
-					},
-				},
-			},
-		},
-	}, r.pollerErr
+	createErr error
+	pollErr   error
 }
 
 func (a stubNetworksAPI) BeginCreateOrUpdate(ctx context.Context, resourceGroupName string,
 	virtualNetworkName string, parameters armnetwork.VirtualNetwork,
 	options *armnetwork.VirtualNetworksClientBeginCreateOrUpdateOptions) (
-	virtualNetworksCreateOrUpdatePollerResponse, error,
+	*runtime.Poller[armnetwork.VirtualNetworksClientCreateOrUpdateResponse], error,
 ) {
-	return a.stubResponse, a.createErr
+	poller, err := runtime.NewPoller(nil, runtime.NewPipeline("", "", runtime.PipelineOptions{}, nil), &runtime.NewPollerOptions[armnetwork.VirtualNetworksClientCreateOrUpdateResponse]{
+		Handler: &stubPoller[armnetwork.VirtualNetworksClientCreateOrUpdateResponse]{
+			result: armnetwork.VirtualNetworksClientCreateOrUpdateResponse{
+				VirtualNetwork: armnetwork.VirtualNetwork{
+					Properties: &armnetwork.VirtualNetworkPropertiesFormat{
+						Subnets: []*armnetwork.Subnet{
+							{
+								ID: to.Ptr("subnet-id"),
+							},
+						},
+					},
+				},
+			},
+			resultErr: a.pollErr,
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	return poller, a.createErr
 }
 
 type stubLoadBalancersAPI struct {
 	createErr    error
-	stubResponse stubLoadBalancersClientCreateOrUpdatePollerResponse
-}
-
-type stubLoadBalancersClientCreateOrUpdatePollerResponse struct {
-	pollResponse armnetwork.LoadBalancersClientCreateOrUpdateResponse
+	stubResponse armnetwork.LoadBalancersClientCreateOrUpdateResponse
 	pollErr      error
-}
-
-func (r stubLoadBalancersClientCreateOrUpdatePollerResponse) PollUntilDone(ctx context.Context, freq time.Duration,
-) (armnetwork.LoadBalancersClientCreateOrUpdateResponse, error) {
-	return r.pollResponse, r.pollErr
 }
 
 func (a stubLoadBalancersAPI) BeginCreateOrUpdate(ctx context.Context, resourceGroupName string,
 	loadBalancerName string, parameters armnetwork.LoadBalancer,
 	options *armnetwork.LoadBalancersClientBeginCreateOrUpdateOptions) (
-	loadBalancersClientCreateOrUpdatePollerResponse, error,
+	*runtime.Poller[armnetwork.LoadBalancersClientCreateOrUpdateResponse], error,
 ) {
-	return a.stubResponse, a.createErr
-}
-
-type stubNetworkSecurityGroupsCreateOrUpdatePollerResponse struct {
-	armnetwork.SecurityGroupsClientCreateOrUpdatePollerResponse
-	pollerErr error
-}
-
-func (r stubNetworkSecurityGroupsCreateOrUpdatePollerResponse) PollUntilDone(ctx context.Context, freq time.Duration,
-) (armnetwork.SecurityGroupsClientCreateOrUpdateResponse, error) {
-	return armnetwork.SecurityGroupsClientCreateOrUpdateResponse{
-		SecurityGroupsClientCreateOrUpdateResult: armnetwork.SecurityGroupsClientCreateOrUpdateResult{
-			SecurityGroup: armnetwork.SecurityGroup{
-				ID: to.StringPtr("network-security-group-id"),
-			},
+	poller, err := runtime.NewPoller(nil, runtime.NewPipeline("", "", runtime.PipelineOptions{}, nil), &runtime.NewPollerOptions[armnetwork.LoadBalancersClientCreateOrUpdateResponse]{
+		Handler: &stubPoller[armnetwork.LoadBalancersClientCreateOrUpdateResponse]{
+			result:    a.stubResponse,
+			resultErr: a.pollErr,
 		},
-	}, r.pollerErr
+	})
+	if err != nil {
+		panic(err)
+	}
+	return poller, a.createErr
 }
 
 type stubNetworkSecurityGroupsAPI struct {
-	createErr  error
-	stubPoller stubNetworkSecurityGroupsCreateOrUpdatePollerResponse
+	createErr error
+	pollErr   error
 }
 
 func (a stubNetworkSecurityGroupsAPI) BeginCreateOrUpdate(ctx context.Context, resourceGroupName string,
 	networkSecurityGroupName string, parameters armnetwork.SecurityGroup,
 	options *armnetwork.SecurityGroupsClientBeginCreateOrUpdateOptions) (
-	networkSecurityGroupsCreateOrUpdatePollerResponse, error,
+	*runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse], error,
 ) {
-	return a.stubPoller, a.createErr
+	poller, err := runtime.NewPoller(nil, runtime.NewPipeline("", "", runtime.PipelineOptions{}, nil), &runtime.NewPollerOptions[armnetwork.SecurityGroupsClientCreateOrUpdateResponse]{
+		Handler: &stubPoller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse]{
+			result: armnetwork.SecurityGroupsClientCreateOrUpdateResponse{
+				SecurityGroup: armnetwork.SecurityGroup{ID: to.Ptr("network-security-group-id")},
+			},
+			resultErr: a.pollErr,
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	return poller, a.createErr
 }
 
 type stubResourceGroupAPI struct {
@@ -106,7 +99,7 @@ type stubResourceGroupAPI struct {
 	createErr        error
 	getErr           error
 	getResourceGroup armresources.ResourceGroup
-	stubResponse     stubResourceGroupsDeletePollerResponse
+	pollErr          error
 }
 
 func (a stubResourceGroupAPI) CreateOrUpdate(ctx context.Context, resourceGroupName string,
@@ -119,130 +112,135 @@ func (a stubResourceGroupAPI) CreateOrUpdate(ctx context.Context, resourceGroupN
 
 func (a stubResourceGroupAPI) Get(ctx context.Context, resourceGroupName string, options *armresources.ResourceGroupsClientGetOptions) (armresources.ResourceGroupsClientGetResponse, error) {
 	return armresources.ResourceGroupsClientGetResponse{
-		ResourceGroupsClientGetResult: armresources.ResourceGroupsClientGetResult{
-			ResourceGroup: a.getResourceGroup,
-		},
+		ResourceGroup: a.getResourceGroup,
 	}, a.getErr
-}
-
-type stubResourceGroupsDeletePollerResponse struct {
-	armresources.ResourceGroupsClientDeletePollerResponse
-	pollerErr error
-}
-
-func (r stubResourceGroupsDeletePollerResponse) PollUntilDone(ctx context.Context, freq time.Duration) (
-	armresources.ResourceGroupsClientDeleteResponse, error,
-) {
-	return armresources.ResourceGroupsClientDeleteResponse{}, r.pollerErr
 }
 
 func (a stubResourceGroupAPI) BeginDelete(ctx context.Context, resourceGroupName string,
 	options *armresources.ResourceGroupsClientBeginDeleteOptions) (
-	resourceGroupsDeletePollerResponse, error,
+	*runtime.Poller[armresources.ResourceGroupsClientDeleteResponse], error,
 ) {
-	return a.stubResponse, a.terminateErr
+	poller, err := runtime.NewPoller(nil, runtime.NewPipeline("", "", runtime.PipelineOptions{}, nil), &runtime.NewPollerOptions[armresources.ResourceGroupsClientDeleteResponse]{
+		Handler: &stubPoller[armresources.ResourceGroupsClientDeleteResponse]{
+			result:    armresources.ResourceGroupsClientDeleteResponse{},
+			resultErr: a.pollErr,
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	return poller, a.terminateErr
 }
 
 type stubScaleSetsAPI struct {
 	createErr    error
-	stubResponse stubVirtualMachineScaleSetsCreateOrUpdatePollerResponse
-}
-
-type stubVirtualMachineScaleSetsCreateOrUpdatePollerResponse struct {
-	pollResponse armcompute.VirtualMachineScaleSetsClientCreateOrUpdateResponse
+	stubResponse armcomputev2.VirtualMachineScaleSetsClientCreateOrUpdateResponse
 	pollErr      error
 }
 
-func (r stubVirtualMachineScaleSetsCreateOrUpdatePollerResponse) PollUntilDone(ctx context.Context, freq time.Duration) (
-	armcompute.VirtualMachineScaleSetsClientCreateOrUpdateResponse, error,
-) {
-	return r.pollResponse, r.pollErr
-}
-
 func (a stubScaleSetsAPI) BeginCreateOrUpdate(ctx context.Context, resourceGroupName string,
-	vmScaleSetName string, parameters armcompute.VirtualMachineScaleSet,
-	options *armcompute.VirtualMachineScaleSetsClientBeginCreateOrUpdateOptions) (
-	virtualMachineScaleSetsCreateOrUpdatePollerResponse, error,
+	vmScaleSetName string, parameters armcomputev2.VirtualMachineScaleSet,
+	options *armcomputev2.VirtualMachineScaleSetsClientBeginCreateOrUpdateOptions) (
+	*runtime.Poller[armcomputev2.VirtualMachineScaleSetsClientCreateOrUpdateResponse], error,
 ) {
-	return a.stubResponse, a.createErr
+	poller, err := runtime.NewPoller(nil, runtime.NewPipeline("", "", runtime.PipelineOptions{}, nil), &runtime.NewPollerOptions[armcomputev2.VirtualMachineScaleSetsClientCreateOrUpdateResponse]{
+		Handler: &stubPoller[armcomputev2.VirtualMachineScaleSetsClientCreateOrUpdateResponse]{
+			result:    a.stubResponse,
+			resultErr: a.pollErr,
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	return poller, a.createErr
 }
 
 type stubPublicIPAddressesAPI struct {
-	createErr          error
-	getErr             error
-	stubCreateResponse stubPublicIPAddressesClientCreateOrUpdatePollerResponse
-}
-
-type stubPublicIPAddressesClientCreateOrUpdatePollerResponse struct {
-	armnetwork.PublicIPAddressesClientCreateOrUpdatePollerResponse
-	pollErr error
-}
-
-func (r stubPublicIPAddressesClientCreateOrUpdatePollerResponse) PollUntilDone(ctx context.Context, freq time.Duration) (
-	armnetwork.PublicIPAddressesClientCreateOrUpdateResponse, error,
-) {
-	return armnetwork.PublicIPAddressesClientCreateOrUpdateResponse{
-		PublicIPAddressesClientCreateOrUpdateResult: armnetwork.PublicIPAddressesClientCreateOrUpdateResult{
-			PublicIPAddress: armnetwork.PublicIPAddress{
-				ID: to.StringPtr("pubIP-id"),
-				Properties: &armnetwork.PublicIPAddressPropertiesFormat{
-					IPAddress: to.StringPtr("192.0.2.1"),
-				},
-			},
-		},
-	}, r.pollErr
+	createErr error
+	getErr    error
+	pollErr   error
 }
 
 type stubPublicIPAddressesListVirtualMachineScaleSetVMPublicIPAddressesPager struct {
-	pagesCounter int
-	PagesMax     int
+	pages    int
+	fetchErr error
+	more     bool
 }
 
-func (p *stubPublicIPAddressesListVirtualMachineScaleSetVMPublicIPAddressesPager) NextPage(ctx context.Context) bool {
-	p.pagesCounter++
-	return p.pagesCounter <= p.PagesMax
-}
-
-func (p *stubPublicIPAddressesListVirtualMachineScaleSetVMPublicIPAddressesPager) PageResponse() armnetwork.PublicIPAddressesClientListVirtualMachineScaleSetVMPublicIPAddressesResponse {
-	return armnetwork.PublicIPAddressesClientListVirtualMachineScaleSetVMPublicIPAddressesResponse{
-		PublicIPAddressesClientListVirtualMachineScaleSetVMPublicIPAddressesResult: armnetwork.PublicIPAddressesClientListVirtualMachineScaleSetVMPublicIPAddressesResult{
-			PublicIPAddressListResult: armnetwork.PublicIPAddressListResult{
-				Value: []*armnetwork.PublicIPAddress{
-					{
-						Properties: &armnetwork.PublicIPAddressPropertiesFormat{
-							IPAddress: to.StringPtr("192.0.2.1"),
-						},
-					},
-				},
-			},
-		},
+func (p *stubPublicIPAddressesListVirtualMachineScaleSetVMPublicIPAddressesPager) moreFunc() func(
+	armnetwork.PublicIPAddressesClientListVirtualMachineScaleSetVMPublicIPAddressesResponse) bool {
+	return func(armnetwork.PublicIPAddressesClientListVirtualMachineScaleSetVMPublicIPAddressesResponse) bool {
+		return p.more
 	}
 }
 
-func (a stubPublicIPAddressesAPI) ListVirtualMachineScaleSetVMPublicIPAddresses(resourceGroupName string,
-	virtualMachineScaleSetName string, virtualmachineIndex string,
-	networkInterfaceName string, ipConfigurationName string,
+func (p *stubPublicIPAddressesListVirtualMachineScaleSetVMPublicIPAddressesPager) fetcherFunc() func(
+	context.Context, *armnetwork.PublicIPAddressesClientListVirtualMachineScaleSetVMPublicIPAddressesResponse) (
+	armnetwork.PublicIPAddressesClientListVirtualMachineScaleSetVMPublicIPAddressesResponse, error) {
+	return func(context.Context, *armnetwork.PublicIPAddressesClientListVirtualMachineScaleSetVMPublicIPAddressesResponse) (
+		armnetwork.PublicIPAddressesClientListVirtualMachineScaleSetVMPublicIPAddressesResponse, error,
+	) {
+		page := make([]*armnetwork.PublicIPAddress, p.pages)
+		for i := 0; i < p.pages; i++ {
+			page[i] = &armnetwork.PublicIPAddress{
+				Properties: &armnetwork.PublicIPAddressPropertiesFormat{
+					IPAddress: to.Ptr("192.0.2.1"),
+				},
+			}
+		}
+		return armnetwork.PublicIPAddressesClientListVirtualMachineScaleSetVMPublicIPAddressesResponse{
+			PublicIPAddressListResult: armnetwork.PublicIPAddressListResult{
+				Value: page,
+			},
+		}, p.fetchErr
+	}
+}
+
+func (a stubPublicIPAddressesAPI) NewListVirtualMachineScaleSetVMPublicIPAddressesPager(
+	resourceGroupName string, virtualMachineScaleSetName string,
+	virtualmachineIndex string, networkInterfaceName string,
+	ipConfigurationName string,
 	options *armnetwork.PublicIPAddressesClientListVirtualMachineScaleSetVMPublicIPAddressesOptions,
-) publicIPAddressesListVirtualMachineScaleSetVMPublicIPAddressesPager {
-	return &stubPublicIPAddressesListVirtualMachineScaleSetVMPublicIPAddressesPager{pagesCounter: 0, PagesMax: 1}
+) *runtime.Pager[armnetwork.PublicIPAddressesClientListVirtualMachineScaleSetVMPublicIPAddressesResponse] {
+	pager := &stubPublicIPAddressesListVirtualMachineScaleSetVMPublicIPAddressesPager{
+		pages: 1,
+	}
+	return runtime.NewPager(runtime.PagingHandler[armnetwork.PublicIPAddressesClientListVirtualMachineScaleSetVMPublicIPAddressesResponse]{
+		More:    pager.moreFunc(),
+		Fetcher: pager.fetcherFunc(),
+	})
 }
 
 func (a stubPublicIPAddressesAPI) BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, publicIPAddressName string,
 	parameters armnetwork.PublicIPAddress, options *armnetwork.PublicIPAddressesClientBeginCreateOrUpdateOptions) (
-	publicIPAddressesClientCreateOrUpdatePollerResponse, error,
+	*runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse], error,
 ) {
-	return a.stubCreateResponse, a.createErr
+	poller, err := runtime.NewPoller(nil, runtime.NewPipeline("", "", runtime.PipelineOptions{}, nil), &runtime.NewPollerOptions[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse]{
+		Handler: &stubPoller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse]{
+			result: armnetwork.PublicIPAddressesClientCreateOrUpdateResponse{
+				PublicIPAddress: armnetwork.PublicIPAddress{
+					ID: to.Ptr("ip-address-id"),
+					Properties: &armnetwork.PublicIPAddressPropertiesFormat{
+						IPAddress: to.Ptr("192.0.2.1"),
+					},
+				},
+			},
+			resultErr: a.pollErr,
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	return poller, a.createErr
 }
 
 func (a stubPublicIPAddressesAPI) Get(ctx context.Context, resourceGroupName string, publicIPAddressName string, options *armnetwork.PublicIPAddressesClientGetOptions) (
 	armnetwork.PublicIPAddressesClientGetResponse, error,
 ) {
 	return armnetwork.PublicIPAddressesClientGetResponse{
-		PublicIPAddressesClientGetResult: armnetwork.PublicIPAddressesClientGetResult{
-			PublicIPAddress: armnetwork.PublicIPAddress{
-				Properties: &armnetwork.PublicIPAddressPropertiesFormat{
-					IPAddress: to.StringPtr("192.0.2.1"),
-				},
+		PublicIPAddress: armnetwork.PublicIPAddress{
+			Properties: &armnetwork.PublicIPAddressPropertiesFormat{
+				IPAddress: to.Ptr("192.0.2.1"),
 			},
 		},
 	}, a.getErr
@@ -251,7 +249,7 @@ func (a stubPublicIPAddressesAPI) Get(ctx context.Context, resourceGroupName str
 type stubNetworkInterfacesAPI struct {
 	getErr    error
 	createErr error
-	stubResp  stubInterfacesClientCreateOrUpdatePollerResponse
+	pollErr   error
 }
 
 func (a stubNetworkInterfacesAPI) GetVirtualMachineScaleSetNetworkInterface(ctx context.Context, resourceGroupName string,
@@ -262,14 +260,12 @@ func (a stubNetworkInterfacesAPI) GetVirtualMachineScaleSetNetworkInterface(ctx 
 		return armnetwork.InterfacesClientGetVirtualMachineScaleSetNetworkInterfaceResponse{}, a.getErr
 	}
 	return armnetwork.InterfacesClientGetVirtualMachineScaleSetNetworkInterfaceResponse{
-		InterfacesClientGetVirtualMachineScaleSetNetworkInterfaceResult: armnetwork.InterfacesClientGetVirtualMachineScaleSetNetworkInterfaceResult{
-			Interface: armnetwork.Interface{
-				Properties: &armnetwork.InterfacePropertiesFormat{
-					IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
-						{
-							Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
-								PrivateIPAddress: to.StringPtr("192.0.2.1"),
-							},
+		Interface: armnetwork.Interface{
+			Properties: &armnetwork.InterfacePropertiesFormat{
+				IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
+					{
+						Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+							PrivateIPAddress: to.Ptr("192.0.2.1"),
 						},
 					},
 				},
@@ -279,64 +275,56 @@ func (a stubNetworkInterfacesAPI) GetVirtualMachineScaleSetNetworkInterface(ctx 
 }
 
 // TODO: deprecate as soon as scale sets are available.
-type stubInterfacesClientCreateOrUpdatePollerResponse struct {
-	pollErr error
-}
-
-// TODO: deprecate as soon as scale sets are available.
-func (r stubInterfacesClientCreateOrUpdatePollerResponse) PollUntilDone(ctx context.Context, freq time.Duration) (
-	armnetwork.InterfacesClientCreateOrUpdateResponse, error,
+func (a stubNetworkInterfacesAPI) BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, networkInterfaceName string,
+	parameters armnetwork.Interface, options *armnetwork.InterfacesClientBeginCreateOrUpdateOptions) (
+	*runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse], error,
 ) {
-	return armnetwork.InterfacesClientCreateOrUpdateResponse{
-		InterfacesClientCreateOrUpdateResult: armnetwork.InterfacesClientCreateOrUpdateResult{
-			Interface: armnetwork.Interface{
-				ID: to.StringPtr("interface-id"),
-				Properties: &armnetwork.InterfacePropertiesFormat{
-					IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
-						{
-							Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
-								PrivateIPAddress: to.StringPtr("192.0.2.1"),
+	poller, err := runtime.NewPoller(nil, runtime.NewPipeline("", "", runtime.PipelineOptions{}, nil), &runtime.NewPollerOptions[armnetwork.InterfacesClientCreateOrUpdateResponse]{
+		Handler: &stubPoller[armnetwork.InterfacesClientCreateOrUpdateResponse]{
+			result: armnetwork.InterfacesClientCreateOrUpdateResponse{
+				Interface: armnetwork.Interface{
+					ID: to.Ptr("interface-id"),
+					Properties: &armnetwork.InterfacePropertiesFormat{
+						IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
+							{
+								Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+									PrivateIPAddress: to.Ptr("192.0.2.1"),
+								},
 							},
 						},
 					},
 				},
 			},
+			resultErr: a.pollErr,
 		},
-	}, r.pollErr
-}
-
-// TODO: deprecate as soon as scale sets are available.
-func (a stubNetworkInterfacesAPI) BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, networkInterfaceName string,
-	parameters armnetwork.Interface, options *armnetwork.InterfacesClientBeginCreateOrUpdateOptions) (
-	interfacesClientCreateOrUpdatePollerResponse, error,
-) {
-	return a.stubResp, a.createErr
+	})
+	if err != nil {
+		panic(err)
+	}
+	return poller, a.createErr
 }
 
 // TODO: deprecate as soon as scale sets are available.
 type stubVirtualMachinesAPI struct {
-	stubResponse stubVirtualMachinesClientCreateOrUpdatePollerResponse
+	stubResponse armcomputev2.VirtualMachinesClientCreateOrUpdateResponse
+	pollErr      error
 	createErr    error
 }
 
 // TODO: deprecate as soon as scale sets are available.
-type stubVirtualMachinesClientCreateOrUpdatePollerResponse struct {
-	pollResponse armcompute.VirtualMachinesClientCreateOrUpdateResponse
-	pollErr      error
-}
-
-// TODO: deprecate as soon as scale sets are available.
-func (r stubVirtualMachinesClientCreateOrUpdatePollerResponse) PollUntilDone(ctx context.Context, freq time.Duration) (
-	armcompute.VirtualMachinesClientCreateOrUpdateResponse, error,
-) {
-	return r.pollResponse, r.pollErr
-}
-
-// TODO: deprecate as soon as scale sets are available.
-func (a stubVirtualMachinesAPI) BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, vmName string, parameters armcompute.VirtualMachine,
-	options *armcompute.VirtualMachinesClientBeginCreateOrUpdateOptions,
-) (virtualMachinesClientCreateOrUpdatePollerResponse, error) {
-	return a.stubResponse, a.createErr
+func (a stubVirtualMachinesAPI) BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, vmName string, parameters armcomputev2.VirtualMachine,
+	options *armcomputev2.VirtualMachinesClientBeginCreateOrUpdateOptions,
+) (*runtime.Poller[armcomputev2.VirtualMachinesClientCreateOrUpdateResponse], error) {
+	poller, err := runtime.NewPoller(nil, runtime.NewPipeline("", "", runtime.PipelineOptions{}, nil), &runtime.NewPollerOptions[armcomputev2.VirtualMachinesClientCreateOrUpdateResponse]{
+		Handler: &stubPoller[armcomputev2.VirtualMachinesClientCreateOrUpdateResponse]{
+			result:    a.stubResponse,
+			resultErr: a.pollErr,
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	return poller, a.createErr
 }
 
 type stubApplicationsAPI struct {
@@ -354,8 +342,8 @@ func (a stubApplicationsAPI) Create(ctx context.Context, parameters graphrbac.Ap
 		return *a.createApplication, nil
 	}
 	return graphrbac.Application{
-		AppID:    to.StringPtr("00000000-0000-0000-0000-000000000000"),
-		ObjectID: to.StringPtr("00000000-0000-0000-0000-000000000001"),
+		AppID:    to.Ptr("00000000-0000-0000-0000-000000000000"),
+		ObjectID: to.Ptr("00000000-0000-0000-0000-000000000001"),
 	}, nil
 }
 
@@ -386,8 +374,8 @@ func (a stubServicePrincipalsAPI) Create(ctx context.Context, parameters graphrb
 		return *a.createServicePrincipal, nil
 	}
 	return graphrbac.ServicePrincipal{
-		AppID:    to.StringPtr("00000000-0000-0000-0000-000000000000"),
-		ObjectID: to.StringPtr("00000000-0000-0000-0000-000000000002"),
+		AppID:    to.Ptr("00000000-0000-0000-0000-000000000000"),
+		ObjectID: to.Ptr("00000000-0000-0000-0000-000000000002"),
 	}, nil
 }
 
@@ -411,4 +399,23 @@ type stubApplicationInsightsAPI struct {
 func (a *stubApplicationInsightsAPI) CreateOrUpdate(ctx context.Context, resourceGroupName string, resourceName string, insightProperties armapplicationinsights.Component, options *armapplicationinsights.ComponentsClientCreateOrUpdateOptions) (armapplicationinsights.ComponentsClientCreateOrUpdateResponse, error) {
 	resp := armapplicationinsights.ComponentsClientCreateOrUpdateResponse{}
 	return resp, a.err
+}
+
+type stubPoller[T any] struct {
+	result    T
+	pollErr   error
+	resultErr error
+}
+
+func (p *stubPoller[T]) Done() bool {
+	return true
+}
+
+func (p *stubPoller[T]) Poll(context.Context) (*http.Response, error) {
+	return nil, p.pollErr
+}
+
+func (p *stubPoller[T]) Result(ctx context.Context, out *T) error {
+	*out = p.result
+	return p.resultErr
 }

@@ -8,7 +8,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
+	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/edgelesssys/constellation/internal/azureshared"
@@ -54,27 +54,54 @@ func NewMetadata(ctx context.Context) (*Metadata, error) {
 	if err != nil {
 		return nil, err
 	}
-	virtualNetworksAPI := armnetwork.NewVirtualNetworksClient(subscriptionID, cred, nil)
-	networkInterfacesAPI := armnetwork.NewInterfacesClient(subscriptionID, cred, nil)
-	publicIPAddressesAPI := armnetwork.NewPublicIPAddressesClient(subscriptionID, cred, nil)
-	securityGroupsAPI := armnetwork.NewSecurityGroupsClient(subscriptionID, cred, nil)
-	scaleSetsAPI := armcompute.NewVirtualMachineScaleSetsClient(subscriptionID, cred, nil)
-	loadBalancerAPI := armnetwork.NewLoadBalancersClient(subscriptionID, cred, nil)
-	virtualMachineScaleSetVMsAPI := armcompute.NewVirtualMachineScaleSetVMsClient(subscriptionID, cred, nil)
-	tagsAPI := armresources.NewTagsClient(subscriptionID, cred, nil)
-	applicationInsightsAPI := armapplicationinsights.NewComponentsClient(subscriptionID, cred, nil)
+	virtualNetworksAPI, err := armnetwork.NewVirtualNetworksClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+	networkInterfacesAPI, err := armnetwork.NewInterfacesClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+	publicIPAddressesAPI, err := armnetwork.NewPublicIPAddressesClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+	securityGroupsAPI, err := armnetwork.NewSecurityGroupsClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+	scaleSetsAPI, err := armcomputev2.NewVirtualMachineScaleSetsClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+	loadBalancerAPI, err := armnetwork.NewLoadBalancersClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+	virtualMachineScaleSetVMsAPI, err := armcomputev2.NewVirtualMachineScaleSetVMsClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+	tagsAPI, err := armresources.NewTagsClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+	applicationInsightsAPI, err := armapplicationinsights.NewComponentsClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Metadata{
 		imdsAPI:                      &imdsAPI,
-		virtualNetworksAPI:           &virtualNetworksClient{virtualNetworksAPI},
-		networkInterfacesAPI:         &networkInterfacesClient{networkInterfacesAPI},
-		securityGroupsAPI:            &securityGroupsClient{securityGroupsAPI},
-		publicIPAddressesAPI:         &publicIPAddressesClient{publicIPAddressesAPI},
-		loadBalancerAPI:              &loadBalancersClient{loadBalancerAPI},
-		scaleSetsAPI:                 &scaleSetsClient{scaleSetsAPI},
-		virtualMachineScaleSetVMsAPI: &virtualMachineScaleSetVMsClient{virtualMachineScaleSetVMsAPI},
-		tagsAPI:                      &tagsClient{tagsAPI},
-		applicationInsightsAPI:       &applicationInsightsClient{applicationInsightsAPI},
+		virtualNetworksAPI:           virtualNetworksAPI,
+		networkInterfacesAPI:         networkInterfacesAPI,
+		securityGroupsAPI:            securityGroupsAPI,
+		publicIPAddressesAPI:         publicIPAddressesAPI,
+		loadBalancerAPI:              loadBalancerAPI,
+		scaleSetsAPI:                 scaleSetsAPI,
+		virtualMachineScaleSetVMsAPI: virtualMachineScaleSetVMsAPI,
+		tagsAPI:                      tagsAPI,
+		applicationInsightsAPI:       applicationInsightsAPI,
 	}, nil
 }
 
@@ -166,10 +193,14 @@ func (m *Metadata) getLoadBalancer(ctx context.Context) (*armnetwork.LoadBalance
 	if err != nil {
 		return nil, err
 	}
-	pager := m.loadBalancerAPI.List(resourceGroup, nil)
+	pager := m.loadBalancerAPI.NewListPager(resourceGroup, nil)
 
-	for pager.NextPage(ctx) {
-		for _, lb := range pager.PageResponse().Value {
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("retrieving loadbalancer page: %w", err)
+		}
+		for _, lb := range page.Value {
 			if lb != nil && lb.Properties != nil {
 				return lb, nil
 			}
@@ -269,7 +300,7 @@ func extractInstanceTags(tags map[string]*string) map[string]string {
 }
 
 // extractSSHKeys extracts SSH public keys from azure instance OS Profile.
-func extractSSHKeys(sshConfig armcompute.SSHConfiguration) map[string][]string {
+func extractSSHKeys(sshConfig armcomputev2.SSHConfiguration) map[string][]string {
 	sshKeys := map[string][]string{}
 	for _, key := range sshConfig.PublicKeys {
 		if key == nil || key.Path == nil || key.KeyData == nil {

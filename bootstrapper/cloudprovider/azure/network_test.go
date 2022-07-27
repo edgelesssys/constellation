@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
+	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/stretchr/testify/assert"
@@ -27,10 +27,10 @@ func TestGetVMInterfaces(t *testing.T) {
 			},
 		},
 	}
-	vm := armcompute.VirtualMachine{
-		Properties: &armcompute.VirtualMachineProperties{
-			NetworkProfile: &armcompute.NetworkProfile{
-				NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
+	vm := armcomputev2.VirtualMachine{
+		Properties: &armcomputev2.VirtualMachineProperties{
+			NetworkProfile: &armcomputev2.NetworkProfile{
+				NetworkInterfaces: []*armcomputev2.NetworkInterfaceReference{
 					{
 						ID: to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Network/networkInterfaces/interface-name"),
 					},
@@ -39,7 +39,7 @@ func TestGetVMInterfaces(t *testing.T) {
 		},
 	}
 	testCases := map[string]struct {
-		vm                    armcompute.VirtualMachine
+		vm                    armcomputev2.VirtualMachine
 		networkInterfacesAPI  networkInterfacesAPI
 		wantErr               bool
 		wantNetworkInterfaces []armnetwork.Interface
@@ -63,7 +63,7 @@ func TestGetVMInterfaces(t *testing.T) {
 			wantNetworkInterfaces: wantNetworkInterfaces,
 		},
 		"vm can have 0 interfaces": {
-			vm: armcompute.VirtualMachine{},
+			vm: armcomputev2.VirtualMachine{},
 			networkInterfacesAPI: &stubNetworkInterfacesAPI{
 				getInterface: armnetwork.Interface{
 					Name: to.StringPtr("interface-name"),
@@ -124,10 +124,10 @@ func TestGetScaleSetVMInterfaces(t *testing.T) {
 			},
 		},
 	}
-	vm := armcompute.VirtualMachineScaleSetVM{
-		Properties: &armcompute.VirtualMachineScaleSetVMProperties{
-			NetworkProfile: &armcompute.NetworkProfile{
-				NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
+	vm := armcomputev2.VirtualMachineScaleSetVM{
+		Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
+			NetworkProfile: &armcomputev2.NetworkProfile{
+				NetworkInterfaces: []*armcomputev2.NetworkInterfaceReference{
 					{
 						ID: to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id/networkInterfaces/interface-name"),
 					},
@@ -136,7 +136,7 @@ func TestGetScaleSetVMInterfaces(t *testing.T) {
 		},
 	}
 	testCases := map[string]struct {
-		vm                    armcompute.VirtualMachineScaleSetVM
+		vm                    armcomputev2.VirtualMachineScaleSetVM
 		networkInterfacesAPI  networkInterfacesAPI
 		wantErr               bool
 		wantNetworkInterfaces []armnetwork.Interface
@@ -160,7 +160,7 @@ func TestGetScaleSetVMInterfaces(t *testing.T) {
 			wantNetworkInterfaces: wantNetworkInterfaces,
 		},
 		"vm can have 0 interfaces": {
-			vm: armcompute.VirtualMachineScaleSetVM{},
+			vm: armcomputev2.VirtualMachineScaleSetVM{},
 			networkInterfacesAPI: &stubNetworkInterfacesAPI{
 				getInterface: armnetwork.Interface{
 					Name: to.StringPtr("interface-name"),
@@ -250,11 +250,9 @@ func TestGetScaleSetVMPublicIPAddresses(t *testing.T) {
 	}{
 		"retrieval works": {
 			publicIPAddressesAPI: &stubPublicIPAddressesAPI{getVirtualMachineScaleSetPublicIPAddressResponse: armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResponse{
-				PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResult: armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResult{
-					PublicIPAddress: armnetwork.PublicIPAddress{
-						Properties: &armnetwork.PublicIPAddressPropertiesFormat{
-							IPAddress: to.StringPtr("192.0.2.1"),
-						},
+				PublicIPAddress: armnetwork.PublicIPAddress{
+					Properties: &armnetwork.PublicIPAddressPropertiesFormat{
+						IPAddress: to.StringPtr("192.0.2.1"),
 					},
 				},
 			}},
@@ -263,11 +261,9 @@ func TestGetScaleSetVMPublicIPAddresses(t *testing.T) {
 		},
 		"retrieval works for no valid interfaces": {
 			publicIPAddressesAPI: &stubPublicIPAddressesAPI{getVirtualMachineScaleSetPublicIPAddressResponse: armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResponse{
-				PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResult: armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResult{
-					PublicIPAddress: armnetwork.PublicIPAddress{
-						Properties: &armnetwork.PublicIPAddressPropertiesFormat{
-							IPAddress: to.StringPtr("192.0.2.1"),
-						},
+				PublicIPAddress: armnetwork.PublicIPAddress{
+					Properties: &armnetwork.PublicIPAddressPropertiesFormat{
+						IPAddress: to.StringPtr("192.0.2.1"),
 					},
 				},
 			}},
@@ -284,9 +280,7 @@ func TestGetScaleSetVMPublicIPAddresses(t *testing.T) {
 		},
 		"fail to parse IPv4 address of public IP": {
 			publicIPAddressesAPI: &stubPublicIPAddressesAPI{getVirtualMachineScaleSetPublicIPAddressResponse: armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResponse{
-				PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResult: armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResult{
-					PublicIPAddress: armnetwork.PublicIPAddress{},
-				},
+				PublicIPAddress: armnetwork.PublicIPAddress{},
 			}},
 			networkInterfaces: newNetworkInterfaces(),
 			wantErr:           true,
@@ -364,11 +358,11 @@ func TestExtractPrivateIPs(t *testing.T) {
 
 func TestExtractInterfaceNamesFromInterfaceReferences(t *testing.T) {
 	testCases := map[string]struct {
-		references []*armcompute.NetworkInterfaceReference
+		references []*armcomputev2.NetworkInterfaceReference
 		wantNames  []string
 	}{
 		"extraction with individual interface reference works": {
-			references: []*armcompute.NetworkInterfaceReference{
+			references: []*armcomputev2.NetworkInterfaceReference{
 				{
 					ID: to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Network/networkInterfaces/interface-name"),
 				},
@@ -376,7 +370,7 @@ func TestExtractInterfaceNamesFromInterfaceReferences(t *testing.T) {
 			wantNames: []string{"interface-name"},
 		},
 		"extraction with scale set interface reference works": {
-			references: []*armcompute.NetworkInterfaceReference{
+			references: []*armcomputev2.NetworkInterfaceReference{
 				{
 					ID: to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id/networkInterfaces/interface-name"),
 				},
@@ -384,10 +378,10 @@ func TestExtractInterfaceNamesFromInterfaceReferences(t *testing.T) {
 			wantNames: []string{"interface-name"},
 		},
 		"can be empty": {
-			references: []*armcompute.NetworkInterfaceReference{},
+			references: []*armcomputev2.NetworkInterfaceReference{},
 		},
 		"interface reference containing nil fields is skipped": {
-			references: []*armcompute.NetworkInterfaceReference{
+			references: []*armcomputev2.NetworkInterfaceReference{
 				{},
 			},
 		},

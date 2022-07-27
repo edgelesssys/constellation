@@ -5,7 +5,7 @@ import (
 	"math/big"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
+	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 )
 
 // ScaleSet defines a Azure scale set.
@@ -30,92 +30,92 @@ type ScaleSet struct {
 }
 
 // Azure returns the Azure representation of ScaleSet.
-func (s ScaleSet) Azure() armcompute.VirtualMachineScaleSet {
-	return armcompute.VirtualMachineScaleSet{
-		Name:     to.StringPtr(s.Name),
-		Location: to.StringPtr(s.Location),
-		SKU: &armcompute.SKU{
-			Name:     to.StringPtr(s.InstanceType),
-			Capacity: to.Int64Ptr(s.Count),
+func (s ScaleSet) Azure() armcomputev2.VirtualMachineScaleSet {
+	return armcomputev2.VirtualMachineScaleSet{
+		Name:     to.Ptr(s.Name),
+		Location: to.Ptr(s.Location),
+		SKU: &armcomputev2.SKU{
+			Name:     to.Ptr(s.InstanceType),
+			Capacity: to.Ptr(s.Count),
 		},
-		Properties: &armcompute.VirtualMachineScaleSetProperties{
-			Overprovision: to.BoolPtr(false),
-			UpgradePolicy: &armcompute.UpgradePolicy{
-				Mode: armcompute.UpgradeModeManual.ToPtr(),
-				AutomaticOSUpgradePolicy: &armcompute.AutomaticOSUpgradePolicy{
-					EnableAutomaticOSUpgrade: to.BoolPtr(false),
-					DisableAutomaticRollback: to.BoolPtr(false),
+		Properties: &armcomputev2.VirtualMachineScaleSetProperties{
+			Overprovision: to.Ptr(false),
+			UpgradePolicy: &armcomputev2.UpgradePolicy{
+				Mode: to.Ptr(armcomputev2.UpgradeModeManual),
+				AutomaticOSUpgradePolicy: &armcomputev2.AutomaticOSUpgradePolicy{
+					EnableAutomaticOSUpgrade: to.Ptr(false),
+					DisableAutomaticRollback: to.Ptr(false),
 				},
 			},
-			VirtualMachineProfile: &armcompute.VirtualMachineScaleSetVMProfile{
-				OSProfile: &armcompute.VirtualMachineScaleSetOSProfile{
-					ComputerNamePrefix: to.StringPtr(s.NamePrefix),
-					AdminUsername:      to.StringPtr(s.Username),
-					AdminPassword:      to.StringPtr(s.Password),
-					LinuxConfiguration: &armcompute.LinuxConfiguration{},
+			VirtualMachineProfile: &armcomputev2.VirtualMachineScaleSetVMProfile{
+				OSProfile: &armcomputev2.VirtualMachineScaleSetOSProfile{
+					ComputerNamePrefix: to.Ptr(s.NamePrefix),
+					AdminUsername:      to.Ptr(s.Username),
+					AdminPassword:      to.Ptr(s.Password),
+					LinuxConfiguration: &armcomputev2.LinuxConfiguration{},
 				},
-				StorageProfile: &armcompute.VirtualMachineScaleSetStorageProfile{
-					ImageReference: &armcompute.ImageReference{
-						ID: to.StringPtr(s.Image),
+				StorageProfile: &armcomputev2.VirtualMachineScaleSetStorageProfile{
+					ImageReference: &armcomputev2.ImageReference{
+						ID: to.Ptr(s.Image),
 					},
-					DataDisks: []*armcompute.VirtualMachineScaleSetDataDisk{
+					DataDisks: []*armcomputev2.VirtualMachineScaleSetDataDisk{
 						{
-							CreateOption: armcompute.DiskCreateOptionTypesEmpty.ToPtr(),
-							DiskSizeGB:   to.Int32Ptr(s.StateDiskSizeGB),
-							Lun:          to.Int32Ptr(0),
-							ManagedDisk: &armcompute.VirtualMachineScaleSetManagedDiskParameters{
-								StorageAccountType: (*armcompute.StorageAccountTypes)(to.StringPtr(s.StateDiskType)),
+							CreateOption: to.Ptr(armcomputev2.DiskCreateOptionTypesEmpty),
+							DiskSizeGB:   to.Ptr(s.StateDiskSizeGB),
+							Lun:          to.Ptr[int32](0),
+							ManagedDisk: &armcomputev2.VirtualMachineScaleSetManagedDiskParameters{
+								StorageAccountType: (*armcomputev2.StorageAccountTypes)(to.Ptr(s.StateDiskType)),
 							},
 						},
 					},
 				},
-				NetworkProfile: &armcompute.VirtualMachineScaleSetNetworkProfile{
-					NetworkInterfaceConfigurations: []*armcompute.VirtualMachineScaleSetNetworkConfiguration{
+				NetworkProfile: &armcomputev2.VirtualMachineScaleSetNetworkProfile{
+					NetworkInterfaceConfigurations: []*armcomputev2.VirtualMachineScaleSetNetworkConfiguration{
 						{
-							Name: to.StringPtr(s.Name),
-							Properties: &armcompute.VirtualMachineScaleSetNetworkConfigurationProperties{
-								Primary:            to.BoolPtr(true),
-								EnableIPForwarding: to.BoolPtr(true),
-								IPConfigurations: []*armcompute.VirtualMachineScaleSetIPConfiguration{
+							Name: to.Ptr(s.Name),
+							Properties: &armcomputev2.VirtualMachineScaleSetNetworkConfigurationProperties{
+								Primary:            to.Ptr(true),
+								EnableIPForwarding: to.Ptr(true),
+								IPConfigurations: []*armcomputev2.VirtualMachineScaleSetIPConfiguration{
 									{
-										Name: to.StringPtr(s.Name),
-										Properties: &armcompute.VirtualMachineScaleSetIPConfigurationProperties{
-											Primary: to.BoolPtr(true),
-											Subnet: &armcompute.APIEntityReference{
-												ID: to.StringPtr(s.SubnetID),
+										Name: to.Ptr(s.Name),
+										Properties: &armcomputev2.VirtualMachineScaleSetIPConfigurationProperties{
+											Primary: to.Ptr(true),
+											Subnet: &armcomputev2.APIEntityReference{
+												ID: to.Ptr(s.SubnetID),
 											},
-											LoadBalancerBackendAddressPools: []*armcompute.SubResource{
+											LoadBalancerBackendAddressPools: []*armcomputev2.SubResource{
 												{
-													ID: to.StringPtr("/subscriptions/" + s.Subscription + "/resourcegroups/" + s.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + s.LoadBalancerName + "/backendAddressPools/" + s.LoadBalancerBackendAddressPool),
+													ID: to.Ptr("/subscriptions/" + s.Subscription + "/resourcegroups/" + s.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + s.LoadBalancerName + "/backendAddressPools/" + s.LoadBalancerBackendAddressPool),
 												},
 												{
-													ID: to.StringPtr("/subscriptions/" + s.Subscription + "/resourcegroups/" + s.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + s.LoadBalancerName + "/backendAddressPools/all"),
+													ID: to.Ptr("/subscriptions/" + s.Subscription + "/resourcegroups/" + s.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + s.LoadBalancerName + "/backendAddressPools/all"),
 												},
 											},
 										},
 									},
 								},
-								NetworkSecurityGroup: &armcompute.SubResource{
-									ID: to.StringPtr(s.NetworkSecurityGroup),
+								NetworkSecurityGroup: &armcomputev2.SubResource{
+									ID: to.Ptr(s.NetworkSecurityGroup),
 								},
 							},
 						},
 					},
 				},
-				SecurityProfile: &armcompute.SecurityProfile{
-					SecurityType: armcompute.SecurityTypesTrustedLaunch.ToPtr(),
-					UefiSettings: &armcompute.UefiSettings{VTpmEnabled: to.BoolPtr(true)},
+				SecurityProfile: &armcomputev2.SecurityProfile{
+					SecurityType: to.Ptr(armcomputev2.SecurityTypesTrustedLaunch),
+					UefiSettings: &armcomputev2.UefiSettings{VTpmEnabled: to.Ptr(true)},
 				},
-				DiagnosticsProfile: &armcompute.DiagnosticsProfile{
-					BootDiagnostics: &armcompute.BootDiagnostics{
-						Enabled: to.BoolPtr(true),
+				DiagnosticsProfile: &armcomputev2.DiagnosticsProfile{
+					BootDiagnostics: &armcomputev2.BootDiagnostics{
+						Enabled: to.Ptr(true),
 					},
 				},
 			},
 		},
-		Identity: &armcompute.VirtualMachineScaleSetIdentity{
-			Type: armcompute.ResourceIdentityTypeUserAssigned.ToPtr(),
-			UserAssignedIdentities: map[string]*armcompute.VirtualMachineScaleSetIdentityUserAssignedIdentitiesValue{
+		Identity: &armcomputev2.VirtualMachineScaleSetIdentity{
+			Type: to.Ptr(armcomputev2.ResourceIdentityTypeUserAssigned),
+			UserAssignedIdentities: map[string]*armcomputev2.UserAssignedIdentitiesValue{
 				s.UserAssignedIdentity: {},
 			},
 		},

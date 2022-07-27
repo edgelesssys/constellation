@@ -2,90 +2,60 @@ package client
 
 import (
 	"context"
-	"time"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/authorization/mgmt/authorization"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
+	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/Azure/azure-sdk-for-go/services/graphrbac/1.6/graphrbac"
 	"github.com/Azure/go-autorest/autorest"
 )
 
-type virtualNetworksCreateOrUpdatePollerResponse interface {
-	PollUntilDone(ctx context.Context, freq time.Duration) (armnetwork.VirtualNetworksClientCreateOrUpdateResponse, error)
-}
-
 type networksAPI interface {
 	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string,
 		virtualNetworkName string, parameters armnetwork.VirtualNetwork,
 		options *armnetwork.VirtualNetworksClientBeginCreateOrUpdateOptions) (
-		virtualNetworksCreateOrUpdatePollerResponse, error)
-}
-
-type networkSecurityGroupsCreateOrUpdatePollerResponse interface {
-	PollUntilDone(ctx context.Context, freq time.Duration) (armnetwork.SecurityGroupsClientCreateOrUpdateResponse, error)
+		*runtime.Poller[armnetwork.VirtualNetworksClientCreateOrUpdateResponse], error)
 }
 
 type networkSecurityGroupsAPI interface {
 	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string,
 		networkSecurityGroupName string, parameters armnetwork.SecurityGroup,
 		options *armnetwork.SecurityGroupsClientBeginCreateOrUpdateOptions) (
-		networkSecurityGroupsCreateOrUpdatePollerResponse, error)
-}
-
-type loadBalancersClientCreateOrUpdatePollerResponse interface {
-	PollUntilDone(ctx context.Context, freq time.Duration) (armnetwork.LoadBalancersClientCreateOrUpdateResponse, error)
+		*runtime.Poller[armnetwork.SecurityGroupsClientCreateOrUpdateResponse], error)
 }
 
 type loadBalancersAPI interface {
 	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string,
 		loadBalancerName string, parameters armnetwork.LoadBalancer,
 		options *armnetwork.LoadBalancersClientBeginCreateOrUpdateOptions) (
-		loadBalancersClientCreateOrUpdatePollerResponse, error,
+		*runtime.Poller[armnetwork.LoadBalancersClientCreateOrUpdateResponse], error,
 	)
-}
-
-type virtualMachineScaleSetsCreateOrUpdatePollerResponse interface {
-	PollUntilDone(ctx context.Context, freq time.Duration) (armcompute.VirtualMachineScaleSetsClientCreateOrUpdateResponse, error)
 }
 
 type scaleSetsAPI interface {
 	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string,
-		vmScaleSetName string, parameters armcompute.VirtualMachineScaleSet,
-		options *armcompute.VirtualMachineScaleSetsClientBeginCreateOrUpdateOptions) (
-		virtualMachineScaleSetsCreateOrUpdatePollerResponse, error)
-}
-
-type publicIPAddressesListVirtualMachineScaleSetVMPublicIPAddressesPager interface {
-	NextPage(ctx context.Context) bool
-	PageResponse() armnetwork.PublicIPAddressesClientListVirtualMachineScaleSetVMPublicIPAddressesResponse
-}
-
-// TODO: deprecate as soon as scale sets are available.
-type publicIPAddressesClientCreateOrUpdatePollerResponse interface {
-	PollUntilDone(ctx context.Context, freq time.Duration) (armnetwork.PublicIPAddressesClientCreateOrUpdateResponse, error)
+		vmScaleSetName string, parameters armcomputev2.VirtualMachineScaleSet,
+		options *armcomputev2.VirtualMachineScaleSetsClientBeginCreateOrUpdateOptions) (
+		*runtime.Poller[armcomputev2.VirtualMachineScaleSetsClientCreateOrUpdateResponse], error)
 }
 
 type publicIPAddressesAPI interface {
-	ListVirtualMachineScaleSetVMPublicIPAddresses(resourceGroupName string,
-		virtualMachineScaleSetName string, virtualmachineIndex string,
-		networkInterfaceName string, ipConfigurationName string,
+	NewListVirtualMachineScaleSetVMPublicIPAddressesPager(
+		resourceGroupName string, virtualMachineScaleSetName string,
+		virtualmachineIndex string, networkInterfaceName string,
+		ipConfigurationName string,
 		options *armnetwork.PublicIPAddressesClientListVirtualMachineScaleSetVMPublicIPAddressesOptions,
-	) publicIPAddressesListVirtualMachineScaleSetVMPublicIPAddressesPager
+	) *runtime.Pager[armnetwork.PublicIPAddressesClientListVirtualMachineScaleSetVMPublicIPAddressesResponse]
 	// TODO: deprecate as soon as scale sets are available.
 	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, publicIPAddressName string,
 		parameters armnetwork.PublicIPAddress, options *armnetwork.PublicIPAddressesClientBeginCreateOrUpdateOptions) (
-		publicIPAddressesClientCreateOrUpdatePollerResponse, error)
+		*runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse], error)
 	// TODO: deprecate as soon as scale sets are available.
 	Get(ctx context.Context, resourceGroupName string, publicIPAddressName string, options *armnetwork.PublicIPAddressesClientGetOptions) (
 		armnetwork.PublicIPAddressesClientGetResponse, error)
-}
-
-// TODO: deprecate as soon as scale sets are available.
-type interfacesClientCreateOrUpdatePollerResponse interface {
-	PollUntilDone(ctx context.Context, freq time.Duration) (armnetwork.InterfacesClientCreateOrUpdateResponse, error)
 }
 
 type networkInterfacesAPI interface {
@@ -96,11 +66,7 @@ type networkInterfacesAPI interface {
 	// TODO: deprecate as soon as scale sets are available
 	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, networkInterfaceName string,
 		parameters armnetwork.Interface, options *armnetwork.InterfacesClientBeginCreateOrUpdateOptions) (
-		interfacesClientCreateOrUpdatePollerResponse, error)
-}
-
-type resourceGroupsDeletePollerResponse interface {
-	PollUntilDone(ctx context.Context, freq time.Duration) (armresources.ResourceGroupsClientDeleteResponse, error)
+		*runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse], error)
 }
 
 type resourceGroupAPI interface {
@@ -110,7 +76,7 @@ type resourceGroupAPI interface {
 		armresources.ResourceGroupsClientCreateOrUpdateResponse, error)
 	BeginDelete(ctx context.Context, resourceGroupName string,
 		options *armresources.ResourceGroupsClientBeginDeleteOptions) (
-		resourceGroupsDeletePollerResponse, error)
+		*runtime.Poller[armresources.ResourceGroupsClientDeleteResponse], error)
 	Get(ctx context.Context, resourceGroupName string, options *armresources.ResourceGroupsClientGetOptions) (armresources.ResourceGroupsClientGetResponse, error)
 }
 
@@ -131,14 +97,11 @@ type roleAssignmentsAPI interface {
 }
 
 // TODO: deprecate as soon as scale sets are available.
-type virtualMachinesClientCreateOrUpdatePollerResponse interface {
-	PollUntilDone(ctx context.Context, freq time.Duration) (armcompute.VirtualMachinesClientCreateOrUpdateResponse, error)
-}
-
-// TODO: deprecate as soon as scale sets are available.
 type virtualMachinesAPI interface {
-	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, vmName string, parameters armcompute.VirtualMachine,
-		options *armcompute.VirtualMachinesClientBeginCreateOrUpdateOptions) (virtualMachinesClientCreateOrUpdatePollerResponse, error)
+	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string,
+		vmName string, parameters armcomputev2.VirtualMachine,
+		options *armcomputev2.VirtualMachinesClientBeginCreateOrUpdateOptions) (
+		*runtime.Poller[armcomputev2.VirtualMachinesClientCreateOrUpdateResponse], error)
 }
 
 type applicationInsightsAPI interface {

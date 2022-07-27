@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
+	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/stretchr/testify/assert"
@@ -94,7 +94,7 @@ func TestTerminateResourceGroup(t *testing.T) {
 			wantErr:          true,
 		},
 		"failed to poll terminate response": {
-			resourceGroupAPI: stubResourceGroupAPI{stubResponse: stubResourceGroupsDeletePollerResponse{pollerErr: someErr}},
+			resourceGroupAPI: stubResourceGroupAPI{pollErr: someErr},
 			client:           clientWithResourceGroup,
 			wantErr:          true,
 		},
@@ -135,12 +135,8 @@ func TestCreateInstances(t *testing.T) {
 			publicIPAddressesAPI: stubPublicIPAddressesAPI{},
 			networkInterfacesAPI: stubNetworkInterfacesAPI{},
 			scaleSetsAPI: stubScaleSetsAPI{
-				stubResponse: stubVirtualMachineScaleSetsCreateOrUpdatePollerResponse{
-					pollResponse: armcompute.VirtualMachineScaleSetsClientCreateOrUpdateResponse{
-						VirtualMachineScaleSetsClientCreateOrUpdateResult: armcompute.VirtualMachineScaleSetsClientCreateOrUpdateResult{
-							VirtualMachineScaleSet: armcompute.VirtualMachineScaleSet{Identity: &armcompute.VirtualMachineScaleSetIdentity{PrincipalID: to.StringPtr("principal-id")}},
-						},
-					},
+				stubResponse: armcomputev2.VirtualMachineScaleSetsClientCreateOrUpdateResponse{
+					VirtualMachineScaleSet: armcomputev2.VirtualMachineScaleSet{Identity: &armcomputev2.VirtualMachineScaleSetIdentity{PrincipalID: to.Ptr("principal-id")}},
 				},
 			},
 			resourceGroupAPI:   newSuccessfulResourceGroupStub(),
@@ -171,7 +167,7 @@ func TestCreateInstances(t *testing.T) {
 		"error when polling create scale set response": {
 			publicIPAddressesAPI: stubPublicIPAddressesAPI{},
 			networkInterfacesAPI: stubNetworkInterfacesAPI{},
-			scaleSetsAPI:         stubScaleSetsAPI{stubResponse: stubVirtualMachineScaleSetsCreateOrUpdatePollerResponse{pollErr: someErr}},
+			scaleSetsAPI:         stubScaleSetsAPI{pollErr: someErr},
 			resourceGroupAPI:     newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
@@ -250,13 +246,9 @@ func TestCreateInstancesVMs(t *testing.T) {
 			publicIPAddressesAPI: stubPublicIPAddressesAPI{},
 			networkInterfacesAPI: stubNetworkInterfacesAPI{},
 			virtualMachinesAPI: stubVirtualMachinesAPI{
-				stubResponse: stubVirtualMachinesClientCreateOrUpdatePollerResponse{
-					pollResponse: armcompute.VirtualMachinesClientCreateOrUpdateResponse{VirtualMachinesClientCreateOrUpdateResult: armcompute.VirtualMachinesClientCreateOrUpdateResult{
-						VirtualMachine: armcompute.VirtualMachine{
-							Identity: &armcompute.VirtualMachineIdentity{PrincipalID: to.StringPtr("principal-id")},
-						},
-					}},
-				},
+				stubResponse: armcomputev2.VirtualMachinesClientCreateOrUpdateResponse{VirtualMachine: armcomputev2.VirtualMachine{
+					Identity: &armcomputev2.VirtualMachineIdentity{PrincipalID: to.Ptr("principal-id")},
+				}},
 			},
 			resourceGroupAPI:   newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI: &stubRoleAssignmentsAPI{},
@@ -284,7 +276,7 @@ func TestCreateInstancesVMs(t *testing.T) {
 		"error when polling create scale set response": {
 			publicIPAddressesAPI: stubPublicIPAddressesAPI{},
 			networkInterfacesAPI: stubNetworkInterfacesAPI{},
-			virtualMachinesAPI:   stubVirtualMachinesAPI{stubResponse: stubVirtualMachinesClientCreateOrUpdatePollerResponse{pollErr: someErr}},
+			virtualMachinesAPI:   stubVirtualMachinesAPI{pollErr: someErr},
 			resourceGroupAPI:     newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{
@@ -378,7 +370,7 @@ func TestCreateInstancesVMs(t *testing.T) {
 func newSuccessfulResourceGroupStub() *stubResourceGroupAPI {
 	return &stubResourceGroupAPI{
 		getResourceGroup: armresources.ResourceGroup{
-			ID: to.StringPtr("resource-group-id"),
+			ID: to.Ptr("resource-group-id"),
 		},
 	}
 }

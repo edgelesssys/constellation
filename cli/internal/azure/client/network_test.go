@@ -19,7 +19,7 @@ func TestCreateVirtualNetwork(t *testing.T) {
 			networksAPI: stubNetworksAPI{},
 		},
 		"failed to get response from successful create": {
-			networksAPI: stubNetworksAPI{stubResponse: stubVirtualNetworksCreateOrUpdatePollerResponse{pollerErr: someErr}},
+			networksAPI: stubNetworksAPI{pollErr: someErr},
 			wantErr:     true,
 		},
 		"failed create": {
@@ -83,7 +83,7 @@ func TestCreateSecurityGroup(t *testing.T) {
 			networkSecurityGroupsAPI: stubNetworkSecurityGroupsAPI{},
 		},
 		"failed to get response from successful create": {
-			networkSecurityGroupsAPI: stubNetworkSecurityGroupsAPI{stubPoller: stubNetworkSecurityGroupsCreateOrUpdatePollerResponse{pollerErr: someErr}},
+			networkSecurityGroupsAPI: stubNetworkSecurityGroupsAPI{pollErr: someErr},
 			wantErr:                  true,
 		},
 		"failed create": {
@@ -133,7 +133,7 @@ func TestCreateNIC(t *testing.T) {
 			publicIPAddressID:    "pubIP-id",
 		},
 		"failed to get response from successful create": {
-			networkInterfacesAPI: stubNetworkInterfacesAPI{stubResp: stubInterfacesClientCreateOrUpdatePollerResponse{pollErr: someErr}},
+			networkInterfacesAPI: stubNetworkInterfacesAPI{pollErr: someErr},
 			wantErr:              true,
 		},
 		"failed create": {
@@ -182,7 +182,7 @@ func TestCreatePublicIPAddress(t *testing.T) {
 			name:                 "nic-name",
 		},
 		"failed to get response from successful create": {
-			publicIPAddressesAPI: stubPublicIPAddressesAPI{stubCreateResponse: stubPublicIPAddressesClientCreateOrUpdatePollerResponse{pollErr: someErr}},
+			publicIPAddressesAPI: stubPublicIPAddressesAPI{pollErr: someErr},
 			wantErr:              true,
 		},
 		"failed create": {
@@ -226,11 +226,11 @@ func TestCreateExternalLoadBalancer(t *testing.T) {
 		wantErr              bool
 	}{
 		"successful create": {
-			publicIPAddressesAPI: stubPublicIPAddressesAPI{stubCreateResponse: stubPublicIPAddressesClientCreateOrUpdatePollerResponse{}},
+			publicIPAddressesAPI: stubPublicIPAddressesAPI{},
 			loadBalancersAPI:     stubLoadBalancersAPI{},
 		},
 		"failed to get response from successful create": {
-			loadBalancersAPI:     stubLoadBalancersAPI{stubResponse: stubLoadBalancersClientCreateOrUpdatePollerResponse{pollErr: someErr}},
+			loadBalancersAPI:     stubLoadBalancersAPI{pollErr: someErr},
 			publicIPAddressesAPI: stubPublicIPAddressesAPI{},
 			wantErr:              true,
 		},

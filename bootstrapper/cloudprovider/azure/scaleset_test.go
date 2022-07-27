@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
+	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
@@ -106,7 +106,7 @@ func TestListScaleSetVMs(t *testing.T) {
 		"listVMs can return 0 VMs": {
 			imdsAPI:                      newScaleSetIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
-			virtualMachineScaleSetVMsAPI: &stubVirtualMachineScaleSetVMsAPI{},
+			virtualMachineScaleSetVMsAPI: &stubVirtualMachineScaleSetVMsAPI{pager: &stubVirtualMachineScaleSetVMPager{}},
 			scaleSetsAPI:                 newScaleSetsStub(),
 			wantInstances:                []metadata.InstanceMetadata{},
 		},
@@ -151,33 +151,33 @@ func TestListScaleSetVMs(t *testing.T) {
 
 func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 	testCases := map[string]struct {
-		inVM         armcompute.VirtualMachineScaleSetVM
+		inVM         armcomputev2.VirtualMachineScaleSetVM
 		inInterface  []armnetwork.Interface
 		inPublicIP   string
 		wantErr      bool
 		wantInstance metadata.InstanceMetadata
 	}{
 		"conversion works": {
-			inVM: armcompute.VirtualMachineScaleSetVM{
-				Name: to.StringPtr("scale-set-name_instance-id"),
-				ID:   to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"),
-				Tags: map[string]*string{"tag-key": to.StringPtr("tag-value")},
-				Properties: &armcompute.VirtualMachineScaleSetVMProperties{
-					OSProfile: &armcompute.OSProfile{
-						ComputerName: to.StringPtr("scale-set-name-instance-id"),
+			inVM: armcomputev2.VirtualMachineScaleSetVM{
+				Name: to.Ptr("scale-set-name_instance-id"),
+				ID:   to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"),
+				Tags: map[string]*string{"tag-key": to.Ptr("tag-value")},
+				Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
+					OSProfile: &armcomputev2.OSProfile{
+						ComputerName: to.Ptr("scale-set-name-instance-id"),
 					},
 				},
 			},
 			inInterface: []armnetwork.Interface{
 				{
-					Name: to.StringPtr("scale-set-name_instance-id"),
-					ID:   to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Network/networkInterfaces/interface-name"),
+					Name: to.Ptr("scale-set-name_instance-id"),
+					ID:   to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Network/networkInterfaces/interface-name"),
 					Properties: &armnetwork.InterfacePropertiesFormat{
 						IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
 							{
 								Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
-									Primary:          to.BoolPtr(true),
-									PrivateIPAddress: to.StringPtr("192.0.2.0"),
+									Primary:          to.Ptr(true),
+									PrivateIPAddress: to.Ptr("192.0.2.0"),
 								},
 							},
 						},
@@ -194,7 +194,7 @@ func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 			},
 		},
 		"invalid instance": {
-			inVM:    armcompute.VirtualMachineScaleSetVM{},
+			inVM:    armcomputev2.VirtualMachineScaleSetVM{},
 			wantErr: true,
 		},
 	}
@@ -254,38 +254,37 @@ func newFailingGetScaleSetVirtualMachinesStub() *stubVirtualMachineScaleSetVMsAP
 
 func newGetInvalidScaleSetVirtualMachinesStub() *stubVirtualMachineScaleSetVMsAPI {
 	return &stubVirtualMachineScaleSetVMsAPI{
-		getVM: armcompute.VirtualMachineScaleSetVM{},
+		getVM: armcomputev2.VirtualMachineScaleSetVM{},
 	}
 }
 
 func newListContainingNilScaleSetVirtualMachinesStub() *stubVirtualMachineScaleSetVMsAPI {
 	return &stubVirtualMachineScaleSetVMsAPI{
-		listPages: [][]*armcompute.VirtualMachineScaleSetVM{
-			{
-				nil,
+		pager: &stubVirtualMachineScaleSetVMPager{
+			list: []armcomputev2.VirtualMachineScaleSetVM{
 				{
-					Name:       to.StringPtr("scale-set-name_instance-id"),
-					ID:         to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"),
-					InstanceID: to.StringPtr("instance-id"),
+					Name:       to.Ptr("scale-set-name_instance-id"),
+					ID:         to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"),
+					InstanceID: to.Ptr("instance-id"),
 					Tags: map[string]*string{
-						"tag-key": to.StringPtr("tag-value"),
+						"tag-key": to.Ptr("tag-value"),
 					},
-					Properties: &armcompute.VirtualMachineScaleSetVMProperties{
-						NetworkProfile: &armcompute.NetworkProfile{
-							NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
+					Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
+						NetworkProfile: &armcomputev2.NetworkProfile{
+							NetworkInterfaces: []*armcomputev2.NetworkInterfaceReference{
 								{
-									ID: to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id/networkInterfaces/interface-name"),
+									ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id/networkInterfaces/interface-name"),
 								},
 							},
 						},
-						OSProfile: &armcompute.OSProfile{
-							ComputerName: to.StringPtr("scale-set-name-instance-id"),
-							LinuxConfiguration: &armcompute.LinuxConfiguration{
-								SSH: &armcompute.SSHConfiguration{
-									PublicKeys: []*armcompute.SSHPublicKey{
+						OSProfile: &armcomputev2.OSProfile{
+							ComputerName: to.Ptr("scale-set-name-instance-id"),
+							LinuxConfiguration: &armcomputev2.LinuxConfiguration{
+								SSH: &armcomputev2.SSHConfiguration{
+									PublicKeys: []*armcomputev2.SSHPublicKey{
 										{
-											KeyData: to.StringPtr("key-data"),
-											Path:    to.StringPtr("/home/user/.ssh/authorized_keys"),
+											KeyData: to.Ptr("key-data"),
+											Path:    to.Ptr("/home/user/.ssh/authorized_keys"),
 										},
 									},
 								},
@@ -300,20 +299,16 @@ func newListContainingNilScaleSetVirtualMachinesStub() *stubVirtualMachineScaleS
 
 func newListContainingInvalidScaleSetVirtualMachinesStub() *stubVirtualMachineScaleSetVMsAPI {
 	return &stubVirtualMachineScaleSetVMsAPI{
-		listPages: [][]*armcompute.VirtualMachineScaleSetVM{
-			{
+		pager: &stubVirtualMachineScaleSetVMPager{
+			list: []armcomputev2.VirtualMachineScaleSetVM{
 				{
-					Name:       nil,
-					ID:         nil,
-					InstanceID: to.StringPtr("instance-id"),
-					Properties: &armcompute.VirtualMachineScaleSetVMProperties{
-						OSProfile: &armcompute.OSProfile{
-							ComputerName: nil,
-						},
-						NetworkProfile: &armcompute.NetworkProfile{
-							NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
+					InstanceID: to.Ptr("instance-id"),
+					Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
+						OSProfile: &armcomputev2.OSProfile{},
+						NetworkProfile: &armcomputev2.NetworkProfile{
+							NetworkInterfaces: []*armcomputev2.NetworkInterfaceReference{
 								{
-									ID: to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id/networkInterfaces/interface-name"),
+									ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id/networkInterfaces/interface-name"),
 								},
 							},
 						},
@@ -326,11 +321,8 @@ func newListContainingInvalidScaleSetVirtualMachinesStub() *stubVirtualMachineSc
 
 func newListContainingNilScaleSetStub() *stubScaleSetsAPI {
 	return &stubScaleSetsAPI{
-		listPages: [][]*armcompute.VirtualMachineScaleSet{
-			{
-				nil,
-				{Name: to.StringPtr("scale-set-name")},
-			},
+		pager: &stubVirtualMachineScaleSetsClientListPager{
+			list: []armcomputev2.VirtualMachineScaleSet{{Name: to.Ptr("scale-set-name")}},
 		},
 	}
 }

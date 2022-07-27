@@ -3,9 +3,10 @@ package azure
 import (
 	"context"
 	"errors"
+	"fmt"
 	"regexp"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
+	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/azureshared"
@@ -42,15 +43,23 @@ func (m *Metadata) getScaleSetVM(ctx context.Context, providerID string) (metada
 // listScaleSetVMs lists all scale set VMs in the current resource group.
 func (m *Metadata) listScaleSetVMs(ctx context.Context, resourceGroup string) ([]metadata.InstanceMetadata, error) {
 	instances := []metadata.InstanceMetadata{}
-	scaleSetPager := m.scaleSetsAPI.List(resourceGroup, nil)
-	for scaleSetPager.NextPage(ctx) {
-		for _, scaleSet := range scaleSetPager.PageResponse().Value {
+	scaleSetPager := m.scaleSetsAPI.NewListPager(resourceGroup, nil)
+	for scaleSetPager.More() {
+		page, err := scaleSetPager.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("retrieving scale sets: %w", err)
+		}
+		for _, scaleSet := range page.Value {
 			if scaleSet == nil || scaleSet.Name == nil {
 				continue
 			}
-			vmPager := m.virtualMachineScaleSetVMsAPI.List(resourceGroup, *scaleSet.Name, nil)
-			for vmPager.NextPage(ctx) {
-				for _, vm := range vmPager.PageResponse().Value {
+			vmPager := m.virtualMachineScaleSetVMsAPI.NewListPager(resourceGroup, *scaleSet.Name, nil)
+			for vmPager.More() {
+				vmPage, err := vmPager.NextPage(ctx)
+				if err != nil {
+					return nil, fmt.Errorf("retrieving vms: %w", err)
+				}
+				for _, vm := range vmPage.Value {
 					if vm == nil || vm.InstanceID == nil {
 						continue
 					}
@@ -71,7 +80,7 @@ func (m *Metadata) listScaleSetVMs(ctx context.Context, resourceGroup string) ([
 }
 
 // convertScaleSetVMToCoreInstance converts an azure scale set virtual machine with interface configurations into a core.Instance.
-func convertScaleSetVMToCoreInstance(scaleSet string, vm armcompute.VirtualMachineScaleSetVM, networkInterfaces []armnetwork.Interface, publicIPAddress string) (metadata.InstanceMetadata, error) {
+func convertScaleSetVMToCoreInstance(scaleSet string, vm armcomputev2.VirtualMachineScaleSetVM, networkInterfaces []armnetwork.Interface, publicIPAddress string) (metadata.InstanceMetadata, error) {
 	if vm.ID == nil {
 		return metadata.InstanceMetadata{}, errors.New("retrieving instance from armcompute API client returned no instance ID")
 	}

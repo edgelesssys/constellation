@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/edgelesssys/constellation/cli/internal/azure"
@@ -39,25 +40,25 @@ func (c *Client) CreateVirtualNetwork(ctx context.Context) error {
 	poller, err := c.networksAPI.BeginCreateOrUpdate(
 		ctx, c.resourceGroup, createNetworkInput.name,
 		armnetwork.VirtualNetwork{
-			Name:     to.StringPtr(createNetworkInput.name), // this is supposed to be read-only
-			Location: to.StringPtr(createNetworkInput.location),
+			Name:     to.Ptr(createNetworkInput.name), // this is supposed to be read-only
+			Location: to.Ptr(createNetworkInput.location),
 			Properties: &armnetwork.VirtualNetworkPropertiesFormat{
 				AddressSpace: &armnetwork.AddressSpace{
 					AddressPrefixes: []*string{
-						to.StringPtr(createNetworkInput.addressSpace),
+						to.Ptr(createNetworkInput.addressSpace),
 					},
 				},
 				Subnets: []*armnetwork.Subnet{
 					{
-						Name: to.StringPtr(nodeNetworkName),
+						Name: to.Ptr(nodeNetworkName),
 						Properties: &armnetwork.SubnetPropertiesFormat{
-							AddressPrefix: to.StringPtr(createNetworkInput.nodeAddressSpace),
+							AddressPrefix: to.Ptr(createNetworkInput.nodeAddressSpace),
 						},
 					},
 					{
-						Name: to.StringPtr(podNetworkName),
+						Name: to.Ptr(podNetworkName),
 						Properties: &armnetwork.SubnetPropertiesFormat{
-							AddressPrefix: to.StringPtr(createNetworkInput.podAddressSpace),
+							AddressPrefix: to.Ptr(createNetworkInput.podAddressSpace),
 						},
 					},
 				},
@@ -68,11 +69,13 @@ func (c *Client) CreateVirtualNetwork(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	resp, err := poller.PollUntilDone(ctx, 30*time.Second)
+	resp, err := poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
+		Frequency: 30 * time.Second,
+	})
 	if err != nil {
 		return err
 	}
-	c.subnetID = *resp.VirtualNetworksClientCreateOrUpdateResult.VirtualNetwork.Properties.Subnets[0].ID
+	c.subnetID = *resp.VirtualNetwork.Properties.Subnets[0].ID
 	return nil
 }
 
@@ -98,8 +101,8 @@ func (c *Client) CreateSecurityGroup(ctx context.Context, input NetworkSecurityG
 	poller, err := c.networkSecurityGroupsAPI.BeginCreateOrUpdate(
 		ctx, c.resourceGroup, createNetworkSecurityGroupInput.name,
 		armnetwork.SecurityGroup{
-			Name:     to.StringPtr(createNetworkSecurityGroupInput.name),
-			Location: to.StringPtr(createNetworkSecurityGroupInput.location),
+			Name:     to.Ptr(createNetworkSecurityGroupInput.name),
+			Location: to.Ptr(createNetworkSecurityGroupInput.location),
 			Properties: &armnetwork.SecurityGroupPropertiesFormat{
 				SecurityRules: createNetworkSecurityGroupInput.rules,
 			},
@@ -109,11 +112,13 @@ func (c *Client) CreateSecurityGroup(ctx context.Context, input NetworkSecurityG
 	if err != nil {
 		return err
 	}
-	pollerResp, err := poller.PollUntilDone(ctx, 30*time.Second)
+	pollerResp, err := poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
+		Frequency: 30 * time.Second,
+	})
 	if err != nil {
 		return err
 	}
-	c.networkSecurityGroup = *pollerResp.SecurityGroupsClientCreateOrUpdateResult.SecurityGroup.ID
+	c.networkSecurityGroup = *pollerResp.SecurityGroup.ID
 	return nil
 }
 
@@ -123,20 +128,20 @@ func (c *Client) createNIC(ctx context.Context, name, publicIPAddressID string) 
 	poller, err := c.networkInterfacesAPI.BeginCreateOrUpdate(
 		ctx, c.resourceGroup, name,
 		armnetwork.Interface{
-			Location: to.StringPtr(c.location),
+			Location: to.Ptr(c.location),
 			Properties: &armnetwork.InterfacePropertiesFormat{
 				NetworkSecurityGroup: &armnetwork.SecurityGroup{
-					ID: to.StringPtr(c.networkSecurityGroup),
+					ID: to.Ptr(c.networkSecurityGroup),
 				},
 				IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
 					{
-						Name: to.StringPtr(name),
+						Name: to.Ptr(name),
 						Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
 							Subnet: &armnetwork.Subnet{
-								ID: to.StringPtr(c.subnetID),
+								ID: to.Ptr(c.subnetID),
 							},
 							PublicIPAddress: &armnetwork.PublicIPAddress{
-								ID: to.StringPtr(publicIPAddressID),
+								ID: to.Ptr(publicIPAddressID),
 							},
 						},
 					},
@@ -148,12 +153,14 @@ func (c *Client) createNIC(ctx context.Context, name, publicIPAddressID string) 
 	if err != nil {
 		return "", "", err
 	}
-	pollerResp, err := poller.PollUntilDone(ctx, 30*time.Second)
+	pollerResp, err := poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
+		Frequency: 30 * time.Second,
+	})
 	if err != nil {
 		return "", "", err
 	}
 
-	netInterface := pollerResp.InterfacesClientCreateOrUpdateResult.Interface
+	netInterface := pollerResp.Interface
 
 	return *netInterface.Properties.IPConfigurations[0].Properties.PrivateIPAddress,
 		*netInterface.ID,
@@ -164,12 +171,12 @@ func (c *Client) createPublicIPAddress(ctx context.Context, name string) (*armne
 	poller, err := c.publicIPAddressesAPI.BeginCreateOrUpdate(
 		ctx, c.resourceGroup, name,
 		armnetwork.PublicIPAddress{
-			Location: to.StringPtr(c.location),
+			Location: to.Ptr(c.location),
 			SKU: &armnetwork.PublicIPAddressSKU{
-				Name: armnetwork.PublicIPAddressSKUNameStandard.ToPtr(),
+				Name: to.Ptr(armnetwork.PublicIPAddressSKUNameStandard),
 			},
 			Properties: &armnetwork.PublicIPAddressPropertiesFormat{
-				PublicIPAllocationMethod: armnetwork.IPAllocationMethodStatic.ToPtr(),
+				PublicIPAllocationMethod: to.Ptr(armnetwork.IPAllocationMethodStatic),
 			},
 		},
 		nil,
@@ -177,12 +184,14 @@ func (c *Client) createPublicIPAddress(ctx context.Context, name string) (*armne
 	if err != nil {
 		return nil, err
 	}
-	pollerResp, err := poller.PollUntilDone(ctx, 30*time.Second)
+	pollerResp, err := poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
+		Frequency: 30 * time.Second,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &pollerResp.PublicIPAddressesClientCreateOrUpdateResult.PublicIPAddress, nil
+	return &pollerResp.PublicIPAddress, nil
 }
 
 // NetworkSecurityGroupInput defines firewall rules to be set.
@@ -220,7 +229,9 @@ func (c *Client) CreateExternalLoadBalancer(ctx context.Context) error {
 		return err
 	}
 
-	_, err = poller.PollUntilDone(ctx, 30*time.Second)
+	_, err = poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
+		Frequency: 30 * time.Second,
+	})
 	if err != nil {
 		return err
 	}

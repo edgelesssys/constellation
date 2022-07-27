@@ -3,6 +3,7 @@ package cloudtypes
 import (
 	"fmt"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/edgelesssys/constellation/internal/config"
@@ -67,8 +68,8 @@ func (f Firewall) Azure() ([]*armnetwork.SecurityRule, error) {
 				SourcePortRange:          proto.String("*"),
 				DestinationAddressPrefix: proto.String(rule.IPRange),
 				DestinationPortRange:     proto.String(dstPortRange),
-				Access:                   armnetwork.SecurityRuleAccessAllow.ToPtr(),
-				Direction:                armnetwork.SecurityRuleDirectionInbound.ToPtr(),
+				Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
+				Direction:                to.Ptr(armnetwork.SecurityRuleDirectionInbound),
 				// Each security role needs a unique priority
 				Priority: proto.Int32(int32(100 * (i + 1))),
 			},
