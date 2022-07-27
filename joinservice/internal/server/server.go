@@ -170,7 +170,7 @@ func (s *Server) IssueRejoinTicket(ctx context.Context, req *joinproto.IssueRejo
 
 // getK8sVersion reads the k8s version from a VolumeMount that is backed by the k8s-version ConfigMap.
 func (s *Server) getK8sVersion() (string, error) {
-	fileContent, err := s.file.Read(filepath.Join(constants.ServiceBasePath, "k8s-version"))
+	fileContent, err := s.file.Read(filepath.Join(constants.ServiceBasePath, constants.K8sVersion))
 	if err != nil {
 		return "", fmt.Errorf("could not read k8s version file: %v", err)
 	}

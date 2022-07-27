@@ -68,6 +68,14 @@ func (s ScaleSet) Azure() armcomputev2.VirtualMachineScaleSet {
 							},
 						},
 					},
+					OSDisk: &armcomputev2.VirtualMachineScaleSetOSDisk{
+						ManagedDisk: &armcomputev2.VirtualMachineScaleSetManagedDiskParameters{
+							SecurityProfile: &armcomputev2.VMDiskSecurityProfile{
+								SecurityEncryptionType: to.Ptr(armcomputev2.SecurityEncryptionTypesVMGuestStateOnly),
+							},
+						},
+						CreateOption: to.Ptr(armcomputev2.DiskCreateOptionTypesFromImage),
+					},
 				},
 				NetworkProfile: &armcomputev2.VirtualMachineScaleSetNetworkProfile{
 					NetworkInterfaceConfigurations: []*armcomputev2.VirtualMachineScaleSetNetworkConfiguration{
@@ -103,8 +111,8 @@ func (s ScaleSet) Azure() armcomputev2.VirtualMachineScaleSet {
 					},
 				},
 				SecurityProfile: &armcomputev2.SecurityProfile{
-					SecurityType: to.Ptr(armcomputev2.SecurityTypesTrustedLaunch),
-					UefiSettings: &armcomputev2.UefiSettings{VTpmEnabled: to.Ptr(true)},
+					SecurityType: to.Ptr(armcomputev2.SecurityTypesConfidentialVM),
+					UefiSettings: &armcomputev2.UefiSettings{VTpmEnabled: to.Ptr(true), SecureBootEnabled: to.Ptr(false)},
 				},
 				DiagnosticsProfile: &armcomputev2.DiagnosticsProfile{
 					BootDiagnostics: &armcomputev2.BootDiagnostics{

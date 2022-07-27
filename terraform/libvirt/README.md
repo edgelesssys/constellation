@@ -114,3 +114,8 @@ Ubuntu currently ships swtpm 0.6.3 so you need to install swtpm [from launchpad]
    ```shell-session
    sudo chown -R swtpm:root /var/lib/swtpm-localca
    ```
+
+## Misc
+
+- List all domains: `virsh list --all`
+- Destroy domain with nvram: `virsh undefine --nvram <name>`

@@ -101,7 +101,7 @@ az image create -g ${AZURE_RESOURCE_GROUP_NAME} -l ${AZURE_REGION} -n ${AZURE_IM
 echo "Creating Azure Shared Image Gallery."
 az sig create -l ${AZURE_REGION} --gallery-name ${AZURE_GALLERY_NAME} --resource-group ${AZURE_RESOURCE_GROUP_NAME}
 echo "Creating Image Definition."
-az sig image-definition create --resource-group ${AZURE_RESOURCE_GROUP_NAME} -l ${AZURE_REGION} --gallery-name ${AZURE_GALLERY_NAME} --gallery-image-definition ${AZURE_IMAGE_DEFINITION} --publisher ${AZURE_PUBLISHER} --offer ${AZURE_IMAGE_OFFER} --sku ${AZURE_SKU} --os-type Linux --os-state generalized --hyper-v-generation V2 --features SecurityType=TrustedLaunch
+az sig image-definition create --resource-group ${AZURE_RESOURCE_GROUP_NAME} -l ${AZURE_REGION} --gallery-name ${AZURE_GALLERY_NAME} --gallery-image-definition ${AZURE_IMAGE_DEFINITION} --publisher ${AZURE_PUBLISHER} --offer ${AZURE_IMAGE_OFFER} --sku ${AZURE_SKU} --os-type Linux --os-state generalized --hyper-v-generation V2 --features SecurityType=ConfidentialVmSupported
 echo "Retrieving image ID."
 AZURE_IMAGE_ID=$(az image list --query "[?name == '${AZURE_IMAGE_NAME}' && resourceGroup == '${AZURE_RESOURCE_GROUP_NAME^^}'] | [0].id" --output json | jq -r)
 echo "Image ID is ${AZURE_IMAGE_ID}"

@@ -88,7 +88,7 @@ func TestFirewallPermissions(t *testing.T) {
 	// Verify vTPM
 	require.NotNil(scaleSetAzure.Properties.VirtualMachineProfile.SecurityProfile)
 	require.NotNil(scaleSetAzure.Properties.VirtualMachineProfile.SecurityProfile.SecurityType)
-	assert.Equal(armcomputev2.SecurityTypesTrustedLaunch, *scaleSetAzure.Properties.VirtualMachineProfile.SecurityProfile.SecurityType)
+	assert.Equal(armcomputev2.SecurityTypesConfidentialVM, *scaleSetAzure.Properties.VirtualMachineProfile.SecurityProfile.SecurityType)
 	require.NotNil(scaleSetAzure.Properties.VirtualMachineProfile.SecurityProfile.UefiSettings)
 	require.NotNil(scaleSetAzure.Properties.VirtualMachineProfile.SecurityProfile.UefiSettings.VTpmEnabled)
 	assert.True(*scaleSetAzure.Properties.VirtualMachineProfile.SecurityProfile.UefiSettings.VTpmEnabled)
