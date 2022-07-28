@@ -54,18 +54,19 @@ jobs:
           && aws s3 cp ${{ github.workspace }}/build/  s3://${{ secrets.PUBLIC_BUCKET_NAME }}/bootstrapper/ --exclude "*" --include "bootstrapper-*" --include "constellation" --recursive --quiet)
         shell: bash {0}
         working-directory: ${{ github.workspace }}/build/
-
-  call-coreos:
-    needs: build-bootstrapper
-    if: ${{ (github.ref == 'refs/heads/main') && startsWith(needs.build-bootstrapper.outputs.bootstrapper-name, 'bootstrapper-') }}
-    uses: ./.github/workflows/build-coreos.yml
-    with:
-      bootstrapper-name: ${{ needs.build-bootstrapper.outputs.bootstrapper-name }}
-    secrets:
-      CI_GITHUB_REPOSITORY: ${{ secrets.CI_GITHUB_REPOSITORY }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-      BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
-      PUBLIC_BUCKET_NAME: ${{ secrets.PUBLIC_BUCKET_NAME }}
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+# This is disabled for now as release images need to be built manually anyway.
+# For cases where you need a new image because of bootstrapper changes, either trigger a manual build or use a debug image.
+# call-coreos:
+#   needs: build-bootstrapper
+#   if: ${{ (github.ref == 'refs/heads/main') && startsWith(needs.build-bootstrapper.outputs.bootstrapper-name, 'bootstrapper-') }}
+#   uses: ./.github/workflows/build-coreos.yml
+#   with:
+#     bootstrapper-name: ${{ needs.build-bootstrapper.outputs.bootstrapper-name }}
+#   secrets:
+#     CI_GITHUB_REPOSITORY: ${{ secrets.CI_GITHUB_REPOSITORY }}
+#     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#     AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+#     BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
+#     PUBLIC_BUCKET_NAME: ${{ secrets.PUBLIC_BUCKET_NAME }}
+#     AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
