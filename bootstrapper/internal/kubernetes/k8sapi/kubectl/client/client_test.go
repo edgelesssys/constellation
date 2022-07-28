@@ -77,12 +77,14 @@ var (
 	}
 	tolerationsDeployment = appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-deployment",
+			Namespace: "test-ns",
+			Name:      "test-deployment",
 		},
 	}
 	selectorsDeployment = appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-deployment",
+			Namespace: "test-ns",
+			Name:      "test-deployment",
 		},
 		Spec: appsv1.DeploymentSpec{
 			Template: k8s.PodTemplateSpec{
@@ -300,15 +302,22 @@ func TestGetObjects(t *testing.T) {
 
 func TestAddTolerationsToDeployment(t *testing.T) {
 	testCases := map[string]struct {
+		namespace   string
 		name        string
 		tolerations []corev1.Toleration
 		wantErr     bool
 	}{
 		"Success": {
-			name: "test-deployment",
+			namespace: "test-ns",
+			name:      "test-deployment",
 		},
 		"Specifying non-existent deployment fails": {
-			name:    "wrong-name",
+			namespace: "test-ns",
+			name:      "wrong-name",
+			wantErr:   true,
+		},
+		"Wrong namespace": {
+			name:    "test-deployment",
 			wantErr: true,
 		},
 	}
@@ -319,7 +328,7 @@ func TestAddTolerationsToDeployment(t *testing.T) {
 			require := require.New(t)
 
 			client := newClientWithFakes(t, map[string]string{}, &tolerationsDeployment)
-			err := client.AddTolerationsToDeployment(context.Background(), tc.tolerations, tc.name)
+			err := client.AddTolerationsToDeployment(context.Background(), tc.tolerations, tc.name, tc.namespace)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -331,16 +340,23 @@ func TestAddTolerationsToDeployment(t *testing.T) {
 
 func TestAddNodeSelectorsToDeployment(t *testing.T) {
 	testCases := map[string]struct {
+		namespace string
 		name      string
 		selectors map[string]string
 		wantErr   bool
 	}{
 		"Success": {
+			namespace: "test-ns",
 			name:      "test-deployment",
 			selectors: map[string]string{"some-key": "some-value"},
 		},
 		"Specifying non-existent deployment fails": {
-			name:    "wrong-name",
+			namespace: "test-ns",
+			name:      "wrong-name",
+			wantErr:   true,
+		},
+		"Wrong namespace": {
+			name:    "test-deployment",
 			wantErr: true,
 		},
 	}
@@ -351,7 +367,7 @@ func TestAddNodeSelectorsToDeployment(t *testing.T) {
 			require := require.New(t)
 
 			client := newClientWithFakes(t, map[string]string{}, &selectorsDeployment)
-			err := client.AddNodeSelectorsToDeployment(context.Background(), tc.selectors, tc.name)
+			err := client.AddNodeSelectorsToDeployment(context.Background(), tc.selectors, tc.name, tc.namespace)
 			if tc.wantErr {
 				assert.Error(err)
 				return

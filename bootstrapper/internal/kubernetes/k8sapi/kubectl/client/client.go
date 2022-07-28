@@ -101,14 +101,14 @@ func (c *Client) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap
 	return nil
 }
 
-func (c *Client) AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string) error {
-	deployments := c.clientset.AppsV1().Deployments(corev1.NamespaceAll)
+func (c *Client) AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error {
+	deployments := c.clientset.AppsV1().Deployments(namespace)
 
 	// retry resource update if an error occurs
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		result, err := deployments.Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
-			return fmt.Errorf("Failed to get latest version of Deployment: %v", err)
+			return fmt.Errorf("failed to get Deployment to add toleration: %v", err)
 		}
 
 		result.Spec.Template.Spec.Tolerations = append(result.Spec.Template.Spec.Tolerations, tolerations...)
@@ -123,14 +123,14 @@ func (c *Client) AddTolerationsToDeployment(ctx context.Context, tolerations []c
 	return nil
 }
 
-func (c *Client) AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string) error {
-	deployments := c.clientset.AppsV1().Deployments(corev1.NamespaceAll)
+func (c *Client) AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error {
+	deployments := c.clientset.AppsV1().Deployments(namespace)
 
 	// retry resource update if an error occurs
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		result, err := deployments.Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
-			return fmt.Errorf("Failed to get latest version of Deployment: %v", err)
+			return fmt.Errorf("failed to get Deployment to add node selector: %v", err)
 		}
 
 		for k, v := range selectors {

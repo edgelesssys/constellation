@@ -625,11 +625,11 @@ func (s *stubKubectl) CreateConfigMap(ctx context.Context, configMap corev1.Conf
 	return s.createConfigMapErr
 }
 
-func (s *stubKubectl) AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string) error {
+func (s *stubKubectl) AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error {
 	return s.AddTolerationsToDeploymentErr
 }
 
-func (s *stubKubectl) AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string) error {
+func (s *stubKubectl) AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error {
 	return s.AddTNodeSelectorsToDeploymentErr
 }
 

@@ -20,8 +20,8 @@ type Client interface {
 	// GetObjects converts resources into prepared info fields for use in ApplyOneObject.
 	GetObjects(resources resources.Marshaler) ([]*resource.Info, error)
 	CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error
-	AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string) error
-	AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string) error
+	AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error
+	AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error
 }
 
 // clientGenerator can generate new clients from a kubeconfig.
@@ -86,26 +86,26 @@ func (k *Kubectl) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMa
 	return nil
 }
 
-func (k *Kubectl) AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string) error {
+func (k *Kubectl) AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error {
 	client, err := k.clientGenerator.NewClient(k.kubeconfig)
 	if err != nil {
 		return err
 	}
 
-	if err = client.AddTolerationsToDeployment(ctx, tolerations, name); err != nil {
+	if err = client.AddTolerationsToDeployment(ctx, tolerations, name, namespace); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (k *Kubectl) AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string) error {
+func (k *Kubectl) AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error {
 	client, err := k.clientGenerator.NewClient(k.kubeconfig)
 	if err != nil {
 		return err
 	}
 
-	if err = client.AddNodeSelectorsToDeployment(ctx, selectors, name); err != nil {
+	if err = client.AddNodeSelectorsToDeployment(ctx, selectors, name, namespace); err != nil {
 		return err
 	}
 

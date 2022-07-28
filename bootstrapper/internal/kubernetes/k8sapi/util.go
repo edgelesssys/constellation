@@ -45,8 +45,8 @@ type Client interface {
 	Apply(resources resources.Marshaler, forceConflicts bool) error
 	SetKubeconfig(kubeconfig []byte)
 	CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error
-	AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string) error
-	AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string) error
+	AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error
+	AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error
 }
 
 type installer interface {
@@ -235,13 +235,13 @@ func (k *KubernetesUtil) setupGCPPodNetwork(ctx context.Context, nodeName, nodeP
 			Effect: "NoSchedule",
 		},
 	}
-	if err = kubectl.AddTolerationsToDeployment(ctx, tolerations, "coredns"); err != nil {
+	if err = kubectl.AddTolerationsToDeployment(ctx, tolerations, "coredns", "kube-system"); err != nil {
 		return err
 	}
 	selectors := map[string]string{
 		"node-role.kubernetes.io/control-plane": "",
 	}
-	if err = kubectl.AddNodeSelectorsToDeployment(ctx, selectors, "coredns"); err != nil {
+	if err = kubectl.AddNodeSelectorsToDeployment(ctx, selectors, "coredns", "kube-system"); err != nil {
 		return err
 	}
 

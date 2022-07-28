@@ -37,11 +37,11 @@ func (s *stubClient) CreateConfigMap(ctx context.Context, configMap corev1.Confi
 	return s.createConfigMapErr
 }
 
-func (s *stubClient) AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string) error {
+func (s *stubClient) AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error {
 	return s.addTolerationsToDeploymentErr
 }
 
-func (s *stubClient) AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string) error {
+func (s *stubClient) AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error {
 	return s.addNodeSelectorToDeploymentErr
 }
 
