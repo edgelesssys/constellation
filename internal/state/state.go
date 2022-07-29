@@ -11,8 +11,8 @@ type ConstellationState struct {
 	CloudProvider    string `json:"cloudprovider,omitempty"`
 	BootstrapperHost string `json:"bootstrapperhost,omitempty"`
 
-	GCPWorkers                      cloudtypes.Instances `json:"gcpworkers,omitempty"`
-	GCPControlPlanes                cloudtypes.Instances `json:"gcpcontrolplanes,omitempty"`
+	GCPWorkerInstances              cloudtypes.Instances `json:"gcpworkers,omitempty"`
+	GCPControlPlaneInstances        cloudtypes.Instances `json:"gcpcontrolplanes,omitempty"`
 	GCPWorkerInstanceGroup          string               `json:"gcpworkerinstancegroup,omitempty"`
 	GCPControlPlaneInstanceGroup    string               `json:"gcpcontrolplaneinstancegroup,omitempty"`
 	GCPWorkerInstanceTemplate       string               `json:"gcpworkerinstancetemplate,omitempty"`
@@ -28,18 +28,18 @@ type ConstellationState struct {
 	GCPRegion                       string               `json:"gcpregion,omitempty"`
 	GCPServiceAccount               string               `json:"gcpserviceaccount,omitempty"`
 
-	AzureWorkers               cloudtypes.Instances `json:"azureworkers,omitempty"`
-	AzureControlPlane          cloudtypes.Instances `json:"azurecontrolplanes,omitempty"`
+	AzureWorkerInstances       cloudtypes.Instances `json:"azureworkers,omitempty"`
+	AzureControlPlaneInstances cloudtypes.Instances `json:"azurecontrolplanes,omitempty"`
 	AzureResourceGroup         string               `json:"azureresourcegroup,omitempty"`
 	AzureLocation              string               `json:"azurelocation,omitempty"`
 	AzureSubscription          string               `json:"azuresubscription,omitempty"`
 	AzureTenant                string               `json:"azuretenant,omitempty"`
 	AzureSubnet                string               `json:"azuresubnet,omitempty"`
 	AzureNetworkSecurityGroup  string               `json:"azurenetworksecuritygroup,omitempty"`
-	AzureWorkersScaleSet       string               `json:"azureworkersscaleset,omitempty"`
-	AzureControlPlanesScaleSet string               `json:"azurecontrolplanesscaleset,omitempty"`
+	AzureWorkerScaleSet        string               `json:"azureworkersscaleset,omitempty"`
+	AzureControlPlaneScaleSet  string               `json:"azurecontrolplanesscaleset,omitempty"`
 	AzureADAppObjectID         string               `json:"azureadappobjectid,omitempty"`
 
-	QEMUWorkers      cloudtypes.Instances `json:"qemuworkers,omitempty"`
-	QEMUControlPlane cloudtypes.Instances `json:"qemucontrolplanes,omitempty"`
+	QEMUWorkerInstances       cloudtypes.Instances `json:"qemuworkers,omitempty"`
+	QEMUControlPlaneInstances cloudtypes.Instances `json:"qemucontrolplanes,omitempty"`
 }

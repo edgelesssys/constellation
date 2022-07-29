@@ -17,11 +17,11 @@ func TestCreator(t *testing.T) {
 	wantGCPState := state.ConstellationState{
 		CloudProvider: cloudprovider.GCP.String(),
 		GCPProject:    "project",
-		GCPControlPlanes: cloudtypes.Instances{
+		GCPControlPlaneInstances: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		GCPWorkers: cloudtypes.Instances{
+		GCPWorkerInstances: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-2": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
@@ -44,20 +44,20 @@ func TestCreator(t *testing.T) {
 
 	wantAzureState := state.ConstellationState{
 		CloudProvider: cloudprovider.Azure.String(),
-		AzureControlPlane: cloudtypes.Instances{
+		AzureControlPlaneInstances: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		AzureWorkers: cloudtypes.Instances{
+		AzureWorkerInstances: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-2": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		AzureResourceGroup:         "resource-group",
-		AzureSubnet:                "subnet",
-		AzureNetworkSecurityGroup:  "network-security-group",
-		AzureWorkersScaleSet:       "workers-scale-set",
-		AzureControlPlanesScaleSet: "controlplanes-scale-set",
+		AzureResourceGroup:        "resource-group",
+		AzureSubnet:               "subnet",
+		AzureNetworkSecurityGroup: "network-security-group",
+		AzureWorkerScaleSet:       "workers-scale-set",
+		AzureControlPlaneScaleSet: "controlplanes-scale-set",
 	}
 
 	someErr := errors.New("failed")

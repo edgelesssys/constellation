@@ -210,19 +210,19 @@ func (c *Client) GetState() (state.ConstellationState, error) {
 	if len(c.workerScaleSet) == 0 {
 		return state.ConstellationState{}, errors.New("client has no worker scale set")
 	}
-	stat.AzureWorkersScaleSet = c.workerScaleSet
+	stat.AzureWorkerScaleSet = c.workerScaleSet
 	if len(c.controlPlaneScaleSet) == 0 {
 		return state.ConstellationState{}, errors.New("client has no control plane scale set")
 	}
-	stat.AzureControlPlanesScaleSet = c.controlPlaneScaleSet
+	stat.AzureControlPlaneScaleSet = c.controlPlaneScaleSet
 	if len(c.workers) == 0 {
 		return state.ConstellationState{}, errors.New("client has no workers")
 	}
-	stat.AzureWorkers = c.workers
+	stat.AzureWorkerInstances = c.workers
 	if len(c.controlPlanes) == 0 {
 		return state.ConstellationState{}, errors.New("client has no control planes")
 	}
-	stat.AzureControlPlane = c.controlPlanes
+	stat.AzureControlPlaneInstances = c.controlPlanes
 	// AD App Object ID does not have to be set at all times
 	stat.AzureADAppObjectID = c.adAppObjectID
 
@@ -270,22 +270,22 @@ func (c *Client) SetState(stat state.ConstellationState) error {
 		return errors.New("state has no subnet")
 	}
 	c.networkSecurityGroup = stat.AzureNetworkSecurityGroup
-	if len(stat.AzureWorkersScaleSet) == 0 {
+	if len(stat.AzureWorkerScaleSet) == 0 {
 		return errors.New("state has no worker scale set")
 	}
-	c.workerScaleSet = stat.AzureWorkersScaleSet
-	if len(stat.AzureControlPlanesScaleSet) == 0 {
+	c.workerScaleSet = stat.AzureWorkerScaleSet
+	if len(stat.AzureControlPlaneScaleSet) == 0 {
 		return errors.New("state has no worker scale set")
 	}
-	c.controlPlaneScaleSet = stat.AzureControlPlanesScaleSet
-	if len(stat.AzureWorkers) == 0 {
+	c.controlPlaneScaleSet = stat.AzureControlPlaneScaleSet
+	if len(stat.AzureWorkerInstances) == 0 {
 		return errors.New("state has no workers")
 	}
-	c.workers = stat.AzureWorkers
-	if len(stat.AzureControlPlane) == 0 {
+	c.workers = stat.AzureWorkerInstances
+	if len(stat.AzureControlPlaneInstances) == 0 {
 		return errors.New("state has no control planes")
 	}
-	c.controlPlanes = stat.AzureControlPlane
+	c.controlPlanes = stat.AzureControlPlaneInstances
 	// AD App Object ID does not have to be set at all times
 	c.adAppObjectID = stat.AzureADAppObjectID
 

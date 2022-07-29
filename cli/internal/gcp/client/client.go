@@ -245,12 +245,12 @@ func (c *Client) GetState() (state.ConstellationState, error) {
 	if len(c.workers) == 0 {
 		return state.ConstellationState{}, errors.New("client has no workers")
 	}
-	stat.GCPWorkers = c.workers
+	stat.GCPWorkerInstances = c.workers
 
 	if len(c.controlPlanes) == 0 {
 		return state.ConstellationState{}, errors.New("client has no controlPlanes")
 	}
-	stat.GCPControlPlanes = c.controlPlanes
+	stat.GCPControlPlaneInstances = c.controlPlanes
 	publicIPs := c.controlPlanes.PublicIPs()
 	if len(publicIPs) == 0 {
 		return state.ConstellationState{}, errors.New("client has no bootstrapper endpoint")
@@ -343,15 +343,15 @@ func (c *Client) SetState(stat state.ConstellationState) error {
 	if stat.CloudProvider != cloudprovider.GCP.String() {
 		return errors.New("state is not gcp state")
 	}
-	if len(stat.GCPWorkers) == 0 {
+	if len(stat.GCPWorkerInstances) == 0 {
 		return errors.New("state has no workers")
 	}
-	c.workers = stat.GCPWorkers
+	c.workers = stat.GCPWorkerInstances
 
-	if len(stat.GCPControlPlanes) == 0 {
+	if len(stat.GCPControlPlaneInstances) == 0 {
 		return errors.New("state has no controlPlane")
 	}
-	c.controlPlanes = stat.GCPControlPlanes
+	c.controlPlanes = stat.GCPControlPlaneInstances
 
 	if stat.GCPWorkerInstanceGroup == "" {
 		return errors.New("state has no workerInstanceGroup")

@@ -23,367 +23,13 @@ func TestSetGetState(t *testing.T) {
 		"valid state": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.Azure.String(),
-				AzureWorkers: cloudtypes.Instances{
+				AzureWorkerInstances: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				AzureControlPlane: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip3",
-						PrivateIP: "ip4",
-					},
-				},
-				Name:                       "name",
-				UID:                        "uid",
-				BootstrapperHost:           "bootstrapper-host",
-				AzureResourceGroup:         "resource-group",
-				AzureLocation:              "location",
-				AzureSubscription:          "subscription",
-				AzureTenant:                "tenant",
-				AzureSubnet:                "azure-subnet",
-				AzureNetworkSecurityGroup:  "network-security-group",
-				AzureWorkersScaleSet:       "worker-scale-set",
-				AzureControlPlanesScaleSet: "controlplane-scale-set",
-			},
-		},
-		"missing workers": {
-			state: state.ConstellationState{
-				CloudProvider: cloudprovider.Azure.String(),
-				AzureControlPlane: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip3",
-						PrivateIP: "ip4",
-					},
-				},
-				Name:                       "name",
-				UID:                        "uid",
-				BootstrapperHost:           "bootstrapper-host",
-				AzureResourceGroup:         "resource-group",
-				AzureLocation:              "location",
-				AzureSubscription:          "subscription",
-				AzureTenant:                "tenant",
-				AzureSubnet:                "azure-subnet",
-				AzureNetworkSecurityGroup:  "network-security-group",
-				AzureWorkersScaleSet:       "worker-scale-set",
-				AzureControlPlanesScaleSet: "controlplane-scale-set",
-			},
-			wantErr: true,
-		},
-		"missing controlplane": {
-			state: state.ConstellationState{
-				CloudProvider: cloudprovider.Azure.String(),
-				AzureWorkers: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip1",
-						PrivateIP: "ip2",
-					},
-				},
-				Name:                       "name",
-				UID:                        "uid",
-				BootstrapperHost:           "bootstrapper-host",
-				AzureResourceGroup:         "resource-group",
-				AzureLocation:              "location",
-				AzureSubscription:          "subscription",
-				AzureTenant:                "tenant",
-				AzureSubnet:                "azure-subnet",
-				AzureNetworkSecurityGroup:  "network-security-group",
-				AzureWorkersScaleSet:       "worker-scale-set",
-				AzureControlPlanesScaleSet: "controlplane-scale-set",
-			},
-			wantErr: true,
-		},
-		"missing name": {
-			state: state.ConstellationState{
-				CloudProvider: cloudprovider.Azure.String(),
-				AzureWorkers: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip1",
-						PrivateIP: "ip2",
-					},
-				},
-				AzureControlPlane: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip3",
-						PrivateIP: "ip4",
-					},
-				},
-				UID:                        "uid",
-				BootstrapperHost:           "bootstrapper-host",
-				AzureResourceGroup:         "resource-group",
-				AzureLocation:              "location",
-				AzureSubscription:          "subscription",
-				AzureTenant:                "tenant",
-				AzureSubnet:                "azure-subnet",
-				AzureNetworkSecurityGroup:  "network-security-group",
-				AzureWorkersScaleSet:       "worker-scale-set",
-				AzureControlPlanesScaleSet: "controlplane-scale-set",
-			},
-			wantErr: true,
-		},
-		"missing uid": {
-			state: state.ConstellationState{
-				CloudProvider: cloudprovider.Azure.String(),
-				AzureWorkers: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip1",
-						PrivateIP: "ip2",
-					},
-				},
-				AzureControlPlane: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip3",
-						PrivateIP: "ip4",
-					},
-				},
-				Name:                       "name",
-				BootstrapperHost:           "bootstrapper-host",
-				AzureResourceGroup:         "resource-group",
-				AzureLocation:              "location",
-				AzureSubscription:          "subscription",
-				AzureTenant:                "tenant",
-				AzureSubnet:                "azure-subnet",
-				AzureNetworkSecurityGroup:  "network-security-group",
-				AzureWorkersScaleSet:       "worker-scale-set",
-				AzureControlPlanesScaleSet: "controlplane-scale-set",
-			},
-			wantErr: true,
-		},
-		"missing bootstrapper host": {
-			state: state.ConstellationState{
-				CloudProvider: cloudprovider.Azure.String(),
-				AzureWorkers: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip1",
-						PrivateIP: "ip2",
-					},
-				},
-				AzureControlPlane: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip3",
-						PrivateIP: "ip4",
-					},
-				},
-				Name:                       "name",
-				UID:                        "uid",
-				AzureResourceGroup:         "resource-group",
-				AzureLocation:              "location",
-				AzureSubscription:          "subscription",
-				AzureTenant:                "tenant",
-				AzureSubnet:                "azure-subnet",
-				AzureNetworkSecurityGroup:  "network-security-group",
-				AzureWorkersScaleSet:       "worker-scale-set",
-				AzureControlPlanesScaleSet: "controlplane-scale-set",
-			},
-			wantErr: true,
-		},
-		"missing resource group": {
-			state: state.ConstellationState{
-				CloudProvider: cloudprovider.Azure.String(),
-				AzureWorkers: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip1",
-						PrivateIP: "ip2",
-					},
-				},
-				AzureControlPlane: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip3",
-						PrivateIP: "ip4",
-					},
-				},
-				Name:                       "name",
-				UID:                        "uid",
-				BootstrapperHost:           "bootstrapper-host",
-				AzureLocation:              "location",
-				AzureSubscription:          "subscription",
-				AzureTenant:                "tenant",
-				AzureSubnet:                "azure-subnet",
-				AzureNetworkSecurityGroup:  "network-security-group",
-				AzureWorkersScaleSet:       "worker-scale-set",
-				AzureControlPlanesScaleSet: "controlplane-scale-set",
-			},
-			wantErr: true,
-		},
-		"missing location": {
-			state: state.ConstellationState{
-				CloudProvider: cloudprovider.Azure.String(),
-				AzureWorkers: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip1",
-						PrivateIP: "ip2",
-					},
-				},
-				AzureControlPlane: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip3",
-						PrivateIP: "ip4",
-					},
-				},
-				Name:                       "name",
-				UID:                        "uid",
-				BootstrapperHost:           "bootstrapper-host",
-				AzureResourceGroup:         "resource-group",
-				AzureSubscription:          "subscription",
-				AzureTenant:                "tenant",
-				AzureSubnet:                "azure-subnet",
-				AzureNetworkSecurityGroup:  "network-security-group",
-				AzureWorkersScaleSet:       "worker-scale-set",
-				AzureControlPlanesScaleSet: "controlplane-scale-set",
-			},
-			wantErr: true,
-		},
-		"missing subscription": {
-			state: state.ConstellationState{
-				CloudProvider: cloudprovider.Azure.String(),
-				AzureWorkers: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip1",
-						PrivateIP: "ip2",
-					},
-				},
-				AzureControlPlane: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip3",
-						PrivateIP: "ip4",
-					},
-				},
-				Name:                       "name",
-				UID:                        "uid",
-				BootstrapperHost:           "bootstrapper-host",
-				AzureResourceGroup:         "resource-group",
-				AzureTenant:                "tenant",
-				AzureLocation:              "location",
-				AzureSubnet:                "azure-subnet",
-				AzureNetworkSecurityGroup:  "network-security-group",
-				AzureWorkersScaleSet:       "worker-scale-set",
-				AzureControlPlanesScaleSet: "controlplane-scale-set",
-			},
-			wantErr: true,
-		},
-		"missing tenant": {
-			state: state.ConstellationState{
-				CloudProvider: cloudprovider.Azure.String(),
-				AzureWorkers: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip1",
-						PrivateIP: "ip2",
-					},
-				},
-				AzureControlPlane: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip3",
-						PrivateIP: "ip4",
-					},
-				},
-				Name:                       "name",
-				UID:                        "uid",
-				BootstrapperHost:           "bootstrapper-host",
-				AzureResourceGroup:         "resource-group",
-				AzureSubscription:          "subscription",
-				AzureLocation:              "location",
-				AzureSubnet:                "azure-subnet",
-				AzureNetworkSecurityGroup:  "network-security-group",
-				AzureWorkersScaleSet:       "worker-scale-set",
-				AzureControlPlanesScaleSet: "controlplane-scale-set",
-			},
-			wantErr: true,
-		},
-		"missing subnet": {
-			state: state.ConstellationState{
-				CloudProvider: cloudprovider.Azure.String(),
-				AzureWorkers: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip1",
-						PrivateIP: "ip2",
-					},
-				},
-				AzureControlPlane: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip3",
-						PrivateIP: "ip4",
-					},
-				},
-				Name:                       "name",
-				UID:                        "uid",
-				BootstrapperHost:           "bootstrapper-host",
-				AzureResourceGroup:         "resource-group",
-				AzureLocation:              "location",
-				AzureSubscription:          "subscription",
-				AzureTenant:                "tenant",
-				AzureNetworkSecurityGroup:  "network-security-group",
-				AzureWorkersScaleSet:       "worker-scale-set",
-				AzureControlPlanesScaleSet: "controlplane-scale-set",
-			},
-			wantErr: true,
-		},
-		"missing network security group": {
-			state: state.ConstellationState{
-				CloudProvider: cloudprovider.Azure.String(),
-				AzureWorkers: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip1",
-						PrivateIP: "ip2",
-					},
-				},
-				AzureControlPlane: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip3",
-						PrivateIP: "ip4",
-					},
-				},
-				Name:                       "name",
-				UID:                        "uid",
-				BootstrapperHost:           "bootstrapper-host",
-				AzureResourceGroup:         "resource-group",
-				AzureLocation:              "location",
-				AzureSubscription:          "subscription",
-				AzureTenant:                "tenant",
-				AzureSubnet:                "azure-subnet",
-				AzureWorkersScaleSet:       "worker-scale-set",
-				AzureControlPlanesScaleSet: "controlplane-scale-set",
-			},
-			wantErr: true,
-		},
-		"missing worker scale set": {
-			state: state.ConstellationState{
-				CloudProvider: cloudprovider.Azure.String(),
-				AzureWorkers: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip1",
-						PrivateIP: "ip2",
-					},
-				},
-				AzureControlPlane: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip3",
-						PrivateIP: "ip4",
-					},
-				},
-				Name:                       "name",
-				UID:                        "uid",
-				BootstrapperHost:           "bootstrapper-host",
-				AzureResourceGroup:         "resource-group",
-				AzureLocation:              "location",
-				AzureSubscription:          "subscription",
-				AzureTenant:                "tenant",
-				AzureSubnet:                "azure-subnet",
-				AzureNetworkSecurityGroup:  "network-security-group",
-				AzureControlPlanesScaleSet: "controlplane-scale-set",
-			},
-			wantErr: true,
-		},
-		"missing controlplane scale set": {
-			state: state.ConstellationState{
-				CloudProvider: cloudprovider.Azure.String(),
-				AzureWorkers: cloudtypes.Instances{
-					"0": {
-						PublicIP:  "ip1",
-						PrivateIP: "ip2",
-					},
-				},
-				AzureControlPlane: cloudtypes.Instances{
+				AzureControlPlaneInstances: cloudtypes.Instances{
 					"0": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -398,7 +44,361 @@ func TestSetGetState(t *testing.T) {
 				AzureTenant:               "tenant",
 				AzureSubnet:               "azure-subnet",
 				AzureNetworkSecurityGroup: "network-security-group",
-				AzureWorkersScaleSet:      "worker-scale-set",
+				AzureWorkerScaleSet:       "worker-scale-set",
+				AzureControlPlaneScaleSet: "controlplane-scale-set",
+			},
+		},
+		"missing workers": {
+			state: state.ConstellationState{
+				CloudProvider: cloudprovider.Azure.String(),
+				AzureControlPlaneInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip3",
+						PrivateIP: "ip4",
+					},
+				},
+				Name:                      "name",
+				UID:                       "uid",
+				BootstrapperHost:          "bootstrapper-host",
+				AzureResourceGroup:        "resource-group",
+				AzureLocation:             "location",
+				AzureSubscription:         "subscription",
+				AzureTenant:               "tenant",
+				AzureSubnet:               "azure-subnet",
+				AzureNetworkSecurityGroup: "network-security-group",
+				AzureWorkerScaleSet:       "worker-scale-set",
+				AzureControlPlaneScaleSet: "controlplane-scale-set",
+			},
+			wantErr: true,
+		},
+		"missing controlplane": {
+			state: state.ConstellationState{
+				CloudProvider: cloudprovider.Azure.String(),
+				AzureWorkerInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip1",
+						PrivateIP: "ip2",
+					},
+				},
+				Name:                      "name",
+				UID:                       "uid",
+				BootstrapperHost:          "bootstrapper-host",
+				AzureResourceGroup:        "resource-group",
+				AzureLocation:             "location",
+				AzureSubscription:         "subscription",
+				AzureTenant:               "tenant",
+				AzureSubnet:               "azure-subnet",
+				AzureNetworkSecurityGroup: "network-security-group",
+				AzureWorkerScaleSet:       "worker-scale-set",
+				AzureControlPlaneScaleSet: "controlplane-scale-set",
+			},
+			wantErr: true,
+		},
+		"missing name": {
+			state: state.ConstellationState{
+				CloudProvider: cloudprovider.Azure.String(),
+				AzureWorkerInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip1",
+						PrivateIP: "ip2",
+					},
+				},
+				AzureControlPlaneInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip3",
+						PrivateIP: "ip4",
+					},
+				},
+				UID:                       "uid",
+				BootstrapperHost:          "bootstrapper-host",
+				AzureResourceGroup:        "resource-group",
+				AzureLocation:             "location",
+				AzureSubscription:         "subscription",
+				AzureTenant:               "tenant",
+				AzureSubnet:               "azure-subnet",
+				AzureNetworkSecurityGroup: "network-security-group",
+				AzureWorkerScaleSet:       "worker-scale-set",
+				AzureControlPlaneScaleSet: "controlplane-scale-set",
+			},
+			wantErr: true,
+		},
+		"missing uid": {
+			state: state.ConstellationState{
+				CloudProvider: cloudprovider.Azure.String(),
+				AzureWorkerInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip1",
+						PrivateIP: "ip2",
+					},
+				},
+				AzureControlPlaneInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip3",
+						PrivateIP: "ip4",
+					},
+				},
+				Name:                      "name",
+				BootstrapperHost:          "bootstrapper-host",
+				AzureResourceGroup:        "resource-group",
+				AzureLocation:             "location",
+				AzureSubscription:         "subscription",
+				AzureTenant:               "tenant",
+				AzureSubnet:               "azure-subnet",
+				AzureNetworkSecurityGroup: "network-security-group",
+				AzureWorkerScaleSet:       "worker-scale-set",
+				AzureControlPlaneScaleSet: "controlplane-scale-set",
+			},
+			wantErr: true,
+		},
+		"missing bootstrapper host": {
+			state: state.ConstellationState{
+				CloudProvider: cloudprovider.Azure.String(),
+				AzureWorkerInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip1",
+						PrivateIP: "ip2",
+					},
+				},
+				AzureControlPlaneInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip3",
+						PrivateIP: "ip4",
+					},
+				},
+				Name:                      "name",
+				UID:                       "uid",
+				AzureResourceGroup:        "resource-group",
+				AzureLocation:             "location",
+				AzureSubscription:         "subscription",
+				AzureTenant:               "tenant",
+				AzureSubnet:               "azure-subnet",
+				AzureNetworkSecurityGroup: "network-security-group",
+				AzureWorkerScaleSet:       "worker-scale-set",
+				AzureControlPlaneScaleSet: "controlplane-scale-set",
+			},
+			wantErr: true,
+		},
+		"missing resource group": {
+			state: state.ConstellationState{
+				CloudProvider: cloudprovider.Azure.String(),
+				AzureWorkerInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip1",
+						PrivateIP: "ip2",
+					},
+				},
+				AzureControlPlaneInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip3",
+						PrivateIP: "ip4",
+					},
+				},
+				Name:                      "name",
+				UID:                       "uid",
+				BootstrapperHost:          "bootstrapper-host",
+				AzureLocation:             "location",
+				AzureSubscription:         "subscription",
+				AzureTenant:               "tenant",
+				AzureSubnet:               "azure-subnet",
+				AzureNetworkSecurityGroup: "network-security-group",
+				AzureWorkerScaleSet:       "worker-scale-set",
+				AzureControlPlaneScaleSet: "controlplane-scale-set",
+			},
+			wantErr: true,
+		},
+		"missing location": {
+			state: state.ConstellationState{
+				CloudProvider: cloudprovider.Azure.String(),
+				AzureWorkerInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip1",
+						PrivateIP: "ip2",
+					},
+				},
+				AzureControlPlaneInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip3",
+						PrivateIP: "ip4",
+					},
+				},
+				Name:                      "name",
+				UID:                       "uid",
+				BootstrapperHost:          "bootstrapper-host",
+				AzureResourceGroup:        "resource-group",
+				AzureSubscription:         "subscription",
+				AzureTenant:               "tenant",
+				AzureSubnet:               "azure-subnet",
+				AzureNetworkSecurityGroup: "network-security-group",
+				AzureWorkerScaleSet:       "worker-scale-set",
+				AzureControlPlaneScaleSet: "controlplane-scale-set",
+			},
+			wantErr: true,
+		},
+		"missing subscription": {
+			state: state.ConstellationState{
+				CloudProvider: cloudprovider.Azure.String(),
+				AzureWorkerInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip1",
+						PrivateIP: "ip2",
+					},
+				},
+				AzureControlPlaneInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip3",
+						PrivateIP: "ip4",
+					},
+				},
+				Name:                      "name",
+				UID:                       "uid",
+				BootstrapperHost:          "bootstrapper-host",
+				AzureResourceGroup:        "resource-group",
+				AzureTenant:               "tenant",
+				AzureLocation:             "location",
+				AzureSubnet:               "azure-subnet",
+				AzureNetworkSecurityGroup: "network-security-group",
+				AzureWorkerScaleSet:       "worker-scale-set",
+				AzureControlPlaneScaleSet: "controlplane-scale-set",
+			},
+			wantErr: true,
+		},
+		"missing tenant": {
+			state: state.ConstellationState{
+				CloudProvider: cloudprovider.Azure.String(),
+				AzureWorkerInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip1",
+						PrivateIP: "ip2",
+					},
+				},
+				AzureControlPlaneInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip3",
+						PrivateIP: "ip4",
+					},
+				},
+				Name:                      "name",
+				UID:                       "uid",
+				BootstrapperHost:          "bootstrapper-host",
+				AzureResourceGroup:        "resource-group",
+				AzureSubscription:         "subscription",
+				AzureLocation:             "location",
+				AzureSubnet:               "azure-subnet",
+				AzureNetworkSecurityGroup: "network-security-group",
+				AzureWorkerScaleSet:       "worker-scale-set",
+				AzureControlPlaneScaleSet: "controlplane-scale-set",
+			},
+			wantErr: true,
+		},
+		"missing subnet": {
+			state: state.ConstellationState{
+				CloudProvider: cloudprovider.Azure.String(),
+				AzureWorkerInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip1",
+						PrivateIP: "ip2",
+					},
+				},
+				AzureControlPlaneInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip3",
+						PrivateIP: "ip4",
+					},
+				},
+				Name:                      "name",
+				UID:                       "uid",
+				BootstrapperHost:          "bootstrapper-host",
+				AzureResourceGroup:        "resource-group",
+				AzureLocation:             "location",
+				AzureSubscription:         "subscription",
+				AzureTenant:               "tenant",
+				AzureNetworkSecurityGroup: "network-security-group",
+				AzureWorkerScaleSet:       "worker-scale-set",
+				AzureControlPlaneScaleSet: "controlplane-scale-set",
+			},
+			wantErr: true,
+		},
+		"missing network security group": {
+			state: state.ConstellationState{
+				CloudProvider: cloudprovider.Azure.String(),
+				AzureWorkerInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip1",
+						PrivateIP: "ip2",
+					},
+				},
+				AzureControlPlaneInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip3",
+						PrivateIP: "ip4",
+					},
+				},
+				Name:                      "name",
+				UID:                       "uid",
+				BootstrapperHost:          "bootstrapper-host",
+				AzureResourceGroup:        "resource-group",
+				AzureLocation:             "location",
+				AzureSubscription:         "subscription",
+				AzureTenant:               "tenant",
+				AzureSubnet:               "azure-subnet",
+				AzureWorkerScaleSet:       "worker-scale-set",
+				AzureControlPlaneScaleSet: "controlplane-scale-set",
+			},
+			wantErr: true,
+		},
+		"missing worker scale set": {
+			state: state.ConstellationState{
+				CloudProvider: cloudprovider.Azure.String(),
+				AzureWorkerInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip1",
+						PrivateIP: "ip2",
+					},
+				},
+				AzureControlPlaneInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip3",
+						PrivateIP: "ip4",
+					},
+				},
+				Name:                      "name",
+				UID:                       "uid",
+				BootstrapperHost:          "bootstrapper-host",
+				AzureResourceGroup:        "resource-group",
+				AzureLocation:             "location",
+				AzureSubscription:         "subscription",
+				AzureTenant:               "tenant",
+				AzureSubnet:               "azure-subnet",
+				AzureNetworkSecurityGroup: "network-security-group",
+				AzureControlPlaneScaleSet: "controlplane-scale-set",
+			},
+			wantErr: true,
+		},
+		"missing controlplane scale set": {
+			state: state.ConstellationState{
+				CloudProvider: cloudprovider.Azure.String(),
+				AzureWorkerInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip1",
+						PrivateIP: "ip2",
+					},
+				},
+				AzureControlPlaneInstances: cloudtypes.Instances{
+					"0": {
+						PublicIP:  "ip3",
+						PrivateIP: "ip4",
+					},
+				},
+				Name:                      "name",
+				UID:                       "uid",
+				BootstrapperHost:          "bootstrapper-host",
+				AzureResourceGroup:        "resource-group",
+				AzureLocation:             "location",
+				AzureSubscription:         "subscription",
+				AzureTenant:               "tenant",
+				AzureSubnet:               "azure-subnet",
+				AzureNetworkSecurityGroup: "network-security-group",
+				AzureWorkerScaleSet:       "worker-scale-set",
 			},
 			wantErr: true,
 		},
@@ -414,8 +414,8 @@ func TestSetGetState(t *testing.T) {
 					assert.Error(client.SetState(tc.state))
 				} else {
 					assert.NoError(client.SetState(tc.state))
-					assert.Equal(tc.state.AzureWorkers, client.workers)
-					assert.Equal(tc.state.AzureControlPlane, client.controlPlanes)
+					assert.Equal(tc.state.AzureWorkerInstances, client.workers)
+					assert.Equal(tc.state.AzureControlPlaneInstances, client.controlPlanes)
 					assert.Equal(tc.state.Name, client.name)
 					assert.Equal(tc.state.UID, client.uid)
 					assert.Equal(tc.state.AzureResourceGroup, client.resourceGroup)
@@ -424,8 +424,8 @@ func TestSetGetState(t *testing.T) {
 					assert.Equal(tc.state.AzureTenant, client.tenantID)
 					assert.Equal(tc.state.AzureSubnet, client.subnetID)
 					assert.Equal(tc.state.AzureNetworkSecurityGroup, client.networkSecurityGroup)
-					assert.Equal(tc.state.AzureWorkersScaleSet, client.workerScaleSet)
-					assert.Equal(tc.state.AzureControlPlanesScaleSet, client.controlPlaneScaleSet)
+					assert.Equal(tc.state.AzureWorkerScaleSet, client.workerScaleSet)
+					assert.Equal(tc.state.AzureControlPlaneScaleSet, client.controlPlaneScaleSet)
 				}
 			})
 		}
@@ -437,8 +437,8 @@ func TestSetGetState(t *testing.T) {
 				assert := assert.New(t)
 
 				client := Client{
-					workers:              tc.state.AzureWorkers,
-					controlPlanes:        tc.state.AzureControlPlane,
+					workers:              tc.state.AzureWorkerInstances,
+					controlPlanes:        tc.state.AzureControlPlaneInstances,
 					name:                 tc.state.Name,
 					uid:                  tc.state.UID,
 					loadBalancerPubIP:    tc.state.BootstrapperHost,
@@ -448,8 +448,8 @@ func TestSetGetState(t *testing.T) {
 					tenantID:             tc.state.AzureTenant,
 					subnetID:             tc.state.AzureSubnet,
 					networkSecurityGroup: tc.state.AzureNetworkSecurityGroup,
-					workerScaleSet:       tc.state.AzureWorkersScaleSet,
-					controlPlaneScaleSet: tc.state.AzureControlPlanesScaleSet,
+					workerScaleSet:       tc.state.AzureWorkerScaleSet,
+					controlPlaneScaleSet: tc.state.AzureControlPlaneScaleSet,
 				}
 				if tc.wantErr {
 					_, err := client.GetState()
@@ -469,52 +469,52 @@ func TestSetStateCloudProvider(t *testing.T) {
 
 	client := Client{}
 	stateMissingCloudProvider := state.ConstellationState{
-		AzureWorkers: cloudtypes.Instances{
+		AzureWorkerInstances: cloudtypes.Instances{
 			"0": {
 				PublicIP:  "ip1",
 				PrivateIP: "ip2",
 			},
 		},
-		AzureControlPlane: cloudtypes.Instances{
+		AzureControlPlaneInstances: cloudtypes.Instances{
 			"0": {
 				PublicIP:  "ip3",
 				PrivateIP: "ip4",
 			},
 		},
-		Name:                       "name",
-		UID:                        "uid",
-		AzureResourceGroup:         "resource-group",
-		AzureLocation:              "location",
-		AzureSubscription:          "subscription",
-		AzureSubnet:                "azure-subnet",
-		AzureNetworkSecurityGroup:  "network-security-group",
-		AzureWorkersScaleSet:       "worker-scale-set",
-		AzureControlPlanesScaleSet: "controlplane-scale-set",
+		Name:                      "name",
+		UID:                       "uid",
+		AzureResourceGroup:        "resource-group",
+		AzureLocation:             "location",
+		AzureSubscription:         "subscription",
+		AzureSubnet:               "azure-subnet",
+		AzureNetworkSecurityGroup: "network-security-group",
+		AzureWorkerScaleSet:       "worker-scale-set",
+		AzureControlPlaneScaleSet: "controlplane-scale-set",
 	}
 	assert.Error(client.SetState(stateMissingCloudProvider))
 	stateIncorrectCloudProvider := state.ConstellationState{
 		CloudProvider: "incorrect",
-		AzureWorkers: cloudtypes.Instances{
+		AzureWorkerInstances: cloudtypes.Instances{
 			"0": {
 				PublicIP:  "ip1",
 				PrivateIP: "ip2",
 			},
 		},
-		AzureControlPlane: cloudtypes.Instances{
+		AzureControlPlaneInstances: cloudtypes.Instances{
 			"0": {
 				PublicIP:  "ip3",
 				PrivateIP: "ip4",
 			},
 		},
-		Name:                       "name",
-		UID:                        "uid",
-		AzureResourceGroup:         "resource-group",
-		AzureLocation:              "location",
-		AzureSubscription:          "subscription",
-		AzureSubnet:                "azure-subnet",
-		AzureNetworkSecurityGroup:  "network-security-group",
-		AzureWorkersScaleSet:       "worker-scale-set",
-		AzureControlPlanesScaleSet: "controlplane-scale-set",
+		Name:                      "name",
+		UID:                       "uid",
+		AzureResourceGroup:        "resource-group",
+		AzureLocation:             "location",
+		AzureSubscription:         "subscription",
+		AzureSubnet:               "azure-subnet",
+		AzureNetworkSecurityGroup: "network-security-group",
+		AzureWorkerScaleSet:       "worker-scale-set",
+		AzureControlPlaneScaleSet: "controlplane-scale-set",
 	}
 	assert.Error(client.SetState(stateIncorrectCloudProvider))
 }

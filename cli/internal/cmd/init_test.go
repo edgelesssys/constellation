@@ -46,22 +46,22 @@ func TestInitialize(t *testing.T) {
 	testGcpState := state.ConstellationState{
 		CloudProvider:    "GCP",
 		BootstrapperHost: "192.0.2.1",
-		GCPWorkers: cloudtypes.Instances{
+		GCPWorkerInstances: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		GCPControlPlanes: cloudtypes.Instances{
+		GCPControlPlaneInstances: cloudtypes.Instances{
 			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
 	}
 	testAzureState := state.ConstellationState{
 		CloudProvider:    "Azure",
 		BootstrapperHost: "192.0.2.1",
-		AzureWorkers: cloudtypes.Instances{
+		AzureWorkerInstances: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		AzureControlPlane: cloudtypes.Instances{
+		AzureControlPlaneInstances: cloudtypes.Instances{
 			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
 		AzureResourceGroup: "test",
@@ -69,11 +69,11 @@ func TestInitialize(t *testing.T) {
 	testQemuState := state.ConstellationState{
 		CloudProvider:    "QEMU",
 		BootstrapperHost: "192.0.2.1",
-		QEMUWorkers: cloudtypes.Instances{
+		QEMUWorkerInstances: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		QEMUControlPlane: cloudtypes.Instances{
+		QEMUControlPlaneInstances: cloudtypes.Instances{
 			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
 	}
@@ -394,11 +394,11 @@ func TestAttestation(t *testing.T) {
 	existingState := state.ConstellationState{
 		CloudProvider:    "QEMU",
 		BootstrapperHost: "192.0.2.1",
-		QEMUWorkers: cloudtypes.Instances{
+		QEMUWorkerInstances: cloudtypes.Instances{
 			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		QEMUControlPlane: cloudtypes.Instances{
+		QEMUControlPlaneInstances: cloudtypes.Instances{
 			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
 	}

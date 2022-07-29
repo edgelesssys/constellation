@@ -27,13 +27,13 @@ func TestSetGetState(t *testing.T) {
 		"valid state": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPWorkers: cloudtypes.Instances{
+				GCPWorkerInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				GCPControlPlanes: cloudtypes.Instances{
+				GCPControlPlaneInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -61,7 +61,7 @@ func TestSetGetState(t *testing.T) {
 		"missing workers": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPControlPlanes: cloudtypes.Instances{
+				GCPControlPlaneInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -89,7 +89,7 @@ func TestSetGetState(t *testing.T) {
 		"missing control plane": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPWorkers: cloudtypes.Instances{
+				GCPWorkerInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
@@ -117,13 +117,13 @@ func TestSetGetState(t *testing.T) {
 		"missing worker group": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPWorkers: cloudtypes.Instances{
+				GCPWorkerInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				GCPControlPlanes: cloudtypes.Instances{
+				GCPControlPlaneInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -150,13 +150,13 @@ func TestSetGetState(t *testing.T) {
 		"missing control plane group": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPWorkers: cloudtypes.Instances{
+				GCPWorkerInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				GCPControlPlanes: cloudtypes.Instances{
+				GCPControlPlaneInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -183,13 +183,13 @@ func TestSetGetState(t *testing.T) {
 		"missing project id": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPWorkers: cloudtypes.Instances{
+				GCPWorkerInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				GCPControlPlanes: cloudtypes.Instances{
+				GCPControlPlaneInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -216,13 +216,13 @@ func TestSetGetState(t *testing.T) {
 		"missing zone": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPWorkers: cloudtypes.Instances{
+				GCPWorkerInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				GCPControlPlanes: cloudtypes.Instances{
+				GCPControlPlaneInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -249,13 +249,13 @@ func TestSetGetState(t *testing.T) {
 		"missing region": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPWorkers: cloudtypes.Instances{
+				GCPWorkerInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				GCPControlPlanes: cloudtypes.Instances{
+				GCPControlPlaneInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -282,13 +282,13 @@ func TestSetGetState(t *testing.T) {
 		"missing name": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPWorkers: cloudtypes.Instances{
+				GCPWorkerInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				GCPControlPlanes: cloudtypes.Instances{
+				GCPControlPlaneInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -314,13 +314,13 @@ func TestSetGetState(t *testing.T) {
 		"missing uid": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPWorkers: cloudtypes.Instances{
+				GCPWorkerInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				GCPControlPlanes: cloudtypes.Instances{
+				GCPControlPlaneInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -347,13 +347,13 @@ func TestSetGetState(t *testing.T) {
 		"missing firewalls": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPWorkers: cloudtypes.Instances{
+				GCPWorkerInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				GCPControlPlanes: cloudtypes.Instances{
+				GCPControlPlaneInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -380,13 +380,13 @@ func TestSetGetState(t *testing.T) {
 		"missing network": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPWorkers: cloudtypes.Instances{
+				GCPWorkerInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				GCPControlPlanes: cloudtypes.Instances{
+				GCPControlPlaneInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -412,13 +412,13 @@ func TestSetGetState(t *testing.T) {
 		"missing external network": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPWorkers: cloudtypes.Instances{
+				GCPWorkerInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				GCPControlPlanes: cloudtypes.Instances{
+				GCPControlPlaneInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -445,13 +445,13 @@ func TestSetGetState(t *testing.T) {
 		"missing subnetwork": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPWorkers: cloudtypes.Instances{
+				GCPWorkerInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				GCPControlPlanes: cloudtypes.Instances{
+				GCPControlPlaneInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -478,13 +478,13 @@ func TestSetGetState(t *testing.T) {
 		"missing external subnetwork": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPWorkers: cloudtypes.Instances{
+				GCPWorkerInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				GCPControlPlanes: cloudtypes.Instances{
+				GCPControlPlaneInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -511,13 +511,13 @@ func TestSetGetState(t *testing.T) {
 		"missing worker template": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPWorkers: cloudtypes.Instances{
+				GCPWorkerInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				GCPControlPlanes: cloudtypes.Instances{
+				GCPControlPlaneInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -544,13 +544,13 @@ func TestSetGetState(t *testing.T) {
 		"missing control plane template": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPWorkers: cloudtypes.Instances{
+				GCPWorkerInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				GCPControlPlanes: cloudtypes.Instances{
+				GCPControlPlaneInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -577,13 +577,13 @@ func TestSetGetState(t *testing.T) {
 		"missing backend service": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPWorkers: cloudtypes.Instances{
+				GCPWorkerInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				GCPControlPlanes: cloudtypes.Instances{
+				GCPControlPlaneInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -610,13 +610,13 @@ func TestSetGetState(t *testing.T) {
 		"missing health check": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPWorkers: cloudtypes.Instances{
+				GCPWorkerInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				GCPControlPlanes: cloudtypes.Instances{
+				GCPControlPlaneInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -643,13 +643,13 @@ func TestSetGetState(t *testing.T) {
 		"missing forwarding rule": {
 			state: state.ConstellationState{
 				CloudProvider: cloudprovider.GCP.String(),
-				GCPWorkers: cloudtypes.Instances{
+				GCPWorkerInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip1",
 						PrivateIP: "ip2",
 					},
 				},
-				GCPControlPlanes: cloudtypes.Instances{
+				GCPControlPlaneInstances: cloudtypes.Instances{
 					"id-1": {
 						PublicIP:  "ip3",
 						PrivateIP: "ip4",
@@ -685,8 +685,8 @@ func TestSetGetState(t *testing.T) {
 					assert.Error(client.SetState(tc.state))
 				} else {
 					assert.NoError(client.SetState(tc.state))
-					assert.Equal(tc.state.GCPWorkers, client.workers)
-					assert.Equal(tc.state.GCPControlPlanes, client.controlPlanes)
+					assert.Equal(tc.state.GCPWorkerInstances, client.workers)
+					assert.Equal(tc.state.GCPControlPlaneInstances, client.controlPlanes)
 					assert.Equal(tc.state.GCPWorkerInstanceGroup, client.workerInstanceGroup)
 					assert.Equal(tc.state.GCPControlPlaneInstanceGroup, client.controlPlaneInstanceGroup)
 					assert.Equal(tc.state.GCPProject, client.project)
@@ -709,8 +709,8 @@ func TestSetGetState(t *testing.T) {
 				assert := assert.New(t)
 
 				client := Client{
-					workers:                   tc.state.GCPWorkers,
-					controlPlanes:             tc.state.GCPControlPlanes,
+					workers:                   tc.state.GCPWorkerInstances,
+					controlPlanes:             tc.state.GCPControlPlaneInstances,
 					workerInstanceGroup:       tc.state.GCPWorkerInstanceGroup,
 					controlPlaneInstanceGroup: tc.state.GCPControlPlaneInstanceGroup,
 					project:                   tc.state.GCPProject,
@@ -746,13 +746,13 @@ func TestSetStateCloudProvider(t *testing.T) {
 
 	client := Client{}
 	stateMissingCloudProvider := state.ConstellationState{
-		GCPWorkers: cloudtypes.Instances{
+		GCPWorkerInstances: cloudtypes.Instances{
 			"id-1": {
 				PublicIP:  "ip1",
 				PrivateIP: "ip2",
 			},
 		},
-		GCPControlPlanes: cloudtypes.Instances{
+		GCPControlPlaneInstances: cloudtypes.Instances{
 			"id-1": {
 				PublicIP:  "ip3",
 				PrivateIP: "ip4",
@@ -778,13 +778,13 @@ func TestSetStateCloudProvider(t *testing.T) {
 	assert.Error(client.SetState(stateMissingCloudProvider))
 	stateIncorrectCloudProvider := state.ConstellationState{
 		CloudProvider: "incorrect",
-		GCPWorkers: cloudtypes.Instances{
+		GCPWorkerInstances: cloudtypes.Instances{
 			"id-1": {
 				PublicIP:  "ip1",
 				PrivateIP: "ip2",
 			},
 		},
-		GCPControlPlanes: cloudtypes.Instances{
+		GCPControlPlaneInstances: cloudtypes.Instances{
 			"id-1": {
 				PublicIP:  "ip3",
 				PrivateIP: "ip4",

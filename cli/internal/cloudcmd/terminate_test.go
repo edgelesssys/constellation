@@ -16,11 +16,11 @@ func TestTerminator(t *testing.T) {
 		return state.ConstellationState{
 			CloudProvider: cloudprovider.GCP.String(),
 			GCPProject:    "project",
-			GCPWorkers: cloudtypes.Instances{
+			GCPWorkerInstances: cloudtypes.Instances{
 				"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 				"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			},
-			GCPControlPlanes: cloudtypes.Instances{
+			GCPControlPlaneInstances: cloudtypes.Instances{
 				"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			},
 			GCPWorkerInstanceGroup:          "worker-group",
@@ -35,11 +35,11 @@ func TestTerminator(t *testing.T) {
 	someAzureState := func() state.ConstellationState {
 		return state.ConstellationState{
 			CloudProvider: cloudprovider.Azure.String(),
-			AzureWorkers: cloudtypes.Instances{
+			AzureWorkerInstances: cloudtypes.Instances{
 				"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 				"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			},
-			AzureControlPlane: cloudtypes.Instances{
+			AzureControlPlaneInstances: cloudtypes.Instances{
 				"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			},
 			AzureResourceGroup: "group",

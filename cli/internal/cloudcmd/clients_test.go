@@ -44,8 +44,8 @@ type fakeAzureClient struct {
 func (c *fakeAzureClient) GetState() (state.ConstellationState, error) {
 	stat := state.ConstellationState{
 		CloudProvider:              cloudprovider.Azure.String(),
-		AzureWorkers:               c.workers,
-		AzureControlPlane:          c.controlPlanes,
+		AzureWorkerInstances:       c.workers,
+		AzureControlPlaneInstances: c.controlPlanes,
 		Name:                       c.name,
 		UID:                        c.uid,
 		AzureResourceGroup:         c.resourceGroup,
@@ -54,16 +54,16 @@ func (c *fakeAzureClient) GetState() (state.ConstellationState, error) {
 		AzureTenant:                c.tenantID,
 		AzureSubnet:                c.subnetID,
 		AzureNetworkSecurityGroup:  c.networkSecurityGroup,
-		AzureWorkersScaleSet:       c.workerScaleSet,
-		AzureControlPlanesScaleSet: c.controlPlaneScaleSet,
+		AzureWorkerScaleSet:        c.workerScaleSet,
+		AzureControlPlaneScaleSet:  c.controlPlaneScaleSet,
 		AzureADAppObjectID:         c.adAppObjectID,
 	}
 	return stat, nil
 }
 
 func (c *fakeAzureClient) SetState(stat state.ConstellationState) error {
-	c.workers = stat.AzureWorkers
-	c.controlPlanes = stat.AzureControlPlane
+	c.workers = stat.AzureWorkerInstances
+	c.controlPlanes = stat.AzureControlPlaneInstances
 	c.name = stat.Name
 	c.uid = stat.UID
 	c.resourceGroup = stat.AzureResourceGroup
@@ -72,8 +72,8 @@ func (c *fakeAzureClient) SetState(stat state.ConstellationState) error {
 	c.tenantID = stat.AzureTenant
 	c.subnetID = stat.AzureSubnet
 	c.networkSecurityGroup = stat.AzureNetworkSecurityGroup
-	c.workerScaleSet = stat.AzureWorkersScaleSet
-	c.controlPlaneScaleSet = stat.AzureControlPlanesScaleSet
+	c.workerScaleSet = stat.AzureWorkerScaleSet
+	c.controlPlaneScaleSet = stat.AzureControlPlaneScaleSet
 	c.adAppObjectID = stat.AzureADAppObjectID
 	return nil
 }
@@ -260,8 +260,8 @@ type fakeGcpClient struct {
 func (c *fakeGcpClient) GetState() (state.ConstellationState, error) {
 	stat := state.ConstellationState{
 		CloudProvider:                   cloudprovider.GCP.String(),
-		GCPWorkers:                      c.workers,
-		GCPControlPlanes:                c.controlPlanes,
+		GCPWorkerInstances:              c.workers,
+		GCPControlPlaneInstances:        c.controlPlanes,
 		GCPWorkerInstanceGroup:          c.workerInstanceGroup,
 		GCPControlPlaneInstanceGroup:    c.controlPlaneInstanceGroup,
 		GCPWorkerInstanceTemplate:       c.workerTemplate,
@@ -282,8 +282,8 @@ func (c *fakeGcpClient) GetState() (state.ConstellationState, error) {
 }
 
 func (c *fakeGcpClient) SetState(stat state.ConstellationState) error {
-	c.workers = stat.GCPWorkers
-	c.controlPlanes = stat.GCPControlPlanes
+	c.workers = stat.GCPWorkerInstances
+	c.controlPlanes = stat.GCPControlPlaneInstances
 	c.workerInstanceGroup = stat.GCPWorkerInstanceGroup
 	c.controlPlaneInstanceGroup = stat.GCPControlPlaneInstanceGroup
 	c.workerTemplate = stat.GCPWorkerInstanceTemplate

@@ -17,8 +17,8 @@ func TestServiceAccountCreator(t *testing.T) {
 		return state.ConstellationState{
 			CloudProvider:                   cloudprovider.GCP.String(),
 			GCPProject:                      "project",
-			GCPWorkers:                      cloudtypes.Instances{},
-			GCPControlPlanes:                cloudtypes.Instances{},
+			GCPWorkerInstances:              cloudtypes.Instances{},
+			GCPControlPlaneInstances:        cloudtypes.Instances{},
 			GCPWorkerInstanceGroup:          "workers-group",
 			GCPControlPlaneInstanceGroup:    "controlplane-group",
 			GCPWorkerInstanceTemplate:       "template",

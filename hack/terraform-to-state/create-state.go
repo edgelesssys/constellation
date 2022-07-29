@@ -39,21 +39,21 @@ func terraformOut(workspaceDir string) (terraformOutput, error) {
 
 func transformState(tfOut terraformOutput) state.ConstellationState {
 	conState := state.ConstellationState{
-		Name:             "qemu",
-		UID:              "debug",
-		CloudProvider:    cloudprovider.QEMU.String(),
-		BootstrapperHost: tfOut.ControlPlaneIPs.Value[0],
-		QEMUWorkers:      cloudtypes.Instances{},
-		QEMUControlPlane: cloudtypes.Instances{},
+		Name:                      "qemu",
+		UID:                       "debug",
+		CloudProvider:             cloudprovider.QEMU.String(),
+		BootstrapperHost:          tfOut.ControlPlaneIPs.Value[0],
+		QEMUWorkerInstances:       cloudtypes.Instances{},
+		QEMUControlPlaneInstances: cloudtypes.Instances{},
 	}
 	for i, ip := range tfOut.ControlPlaneIPs.Value {
-		conState.QEMUControlPlane[fmt.Sprintf("control-plane-%d", i)] = cloudtypes.Instance{
+		conState.QEMUControlPlaneInstances[fmt.Sprintf("control-plane-%d", i)] = cloudtypes.Instance{
 			PublicIP:  ip,
 			PrivateIP: ip,
 		}
 	}
 	for i, ip := range tfOut.WorkerIPs.Value {
-		conState.QEMUWorkers[fmt.Sprintf("worker-%d", i)] = cloudtypes.Instance{
+		conState.QEMUWorkerInstances[fmt.Sprintf("worker-%d", i)] = cloudtypes.Instance{
 			PublicIP:  ip,
 			PrivateIP: ip,
 		}
