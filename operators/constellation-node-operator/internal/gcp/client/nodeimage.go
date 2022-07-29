@@ -81,10 +81,7 @@ func (c *Client) CreateNode(ctx context.Context, scalingGroupID string) (nodeNam
 	if instanceGroupManager.BaseInstanceName == nil {
 		return "", "", fmt.Errorf("instance group manager %q has no base instance name", instanceGroupName)
 	}
-	instanceName, err := generateInstanceName(*instanceGroupManager.BaseInstanceName, c.prng)
-	if err != nil {
-		return "", "", err
-	}
+	instanceName := generateInstanceName(*instanceGroupManager.BaseInstanceName, c.prng)
 	op, err := c.instanceGroupManagersAPI.CreateInstances(ctx, &computepb.CreateInstancesInstanceGroupManagerRequest{
 		InstanceGroupManager: instanceGroupName,
 		Project:              project,

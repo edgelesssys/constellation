@@ -199,7 +199,7 @@ func TestCreateNode(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			pager := &stubPager{
+			pager := &stubVMSSVMPager{
 				list:     tc.preexistingVMs,
 				fetchErr: tc.fetchErr,
 			}
@@ -325,7 +325,7 @@ func TestCapacityPollingHandler(t *testing.T) {
 	assert.Error(handler.Poll(context.Background()))
 
 	// let Poll finish
-	handler.scaleSetsAPI.(*stubScaleSetsAPI).scaleSet.SKU = &armcomputev2.SKU{Capacity: to.Ptr(int64(wantCapacity))}
+	handler.scaleSetsAPI.(*stubScaleSetsAPI).scaleSet.SKU = &armcomputev2.SKU{Capacity: to.Ptr(wantCapacity)}
 	assert.NoError(handler.Poll(context.Background()))
 	assert.True(handler.Done())
 	assert.NoError(handler.Result(context.Background(), &gotCapacity))

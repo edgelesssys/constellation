@@ -9,6 +9,7 @@ import (
 
 // Client is a client for the Azure Cloud.
 type Client struct {
+	config cloudConfig
 	scaleSetsAPI
 	virtualMachineScaleSetVMsAPI
 	capacityPollerGenerator func(resourceGroup, scaleSet string, wantedCapacity int64) capacityPoller
@@ -37,6 +38,7 @@ func NewFromDefault(configPath string) (*Client, error) {
 	}
 
 	return &Client{
+		config:                       *config,
 		scaleSetsAPI:                 scaleSetAPI,
 		virtualMachineScaleSetVMsAPI: virtualMachineScaleSetVMsAPI,
 		capacityPollerGenerator: func(resourceGroup, scaleSet string, wantedCapacity int64) capacityPoller {

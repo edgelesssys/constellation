@@ -53,8 +53,9 @@ spec:
         - mountPath: /etc/azure
           name: azureconfig
           readOnly: true
-        # TODO(user): Configure the resources accordingly based on the project requirements.
-        # More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+        - mountPath: /etc/gce
+          name: gceconf
+          readOnly: true
         resources:
           limits:
             cpu: 500m
@@ -70,6 +71,10 @@ spec:
       - name: azureconfig
         secret:
           secretName: azureconfig
+          optional: true
+      - name: gceconf
+        configMap:
+          name: gceconf
           optional: true
       nodeSelector:
         node-role.kubernetes.io/control-plane: ""

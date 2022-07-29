@@ -123,3 +123,97 @@ func TestSetScalingGroupImage(t *testing.T) {
 		})
 	}
 }
+
+func TestGetScalingGroupName(t *testing.T) {
+	testCases := map[string]struct {
+		scalingGroupID string
+		wantName       string
+		wantErr        bool
+	}{
+		"getting name works": {
+			scalingGroupID: "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name",
+			wantName:       "scale-set-name",
+		},
+		"uppercase name is lowercased": {
+			scalingGroupID: "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/SCALE-SET-NAME",
+			wantName:       "scale-set-name",
+		},
+		"splitting scalingGroupID fails": {
+			scalingGroupID: "invalid",
+			wantErr:        true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			client := Client{}
+			gotName, err := client.GetScalingGroupName(context.Background(), tc.scalingGroupID)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+			assert.Equal(tc.wantName, gotName)
+		})
+	}
+}
+
+func TestListScalingGroups(t *testing.T) {
+	testCases := map[string]struct {
+		scaleSet          armcomputev2.VirtualMachineScaleSet
+		fetchPageErr      error
+		wantControlPlanes []string
+		wantWorkers       []string
+		wantErr           bool
+	}{
+		"listing control-plane works": {
+			scaleSet: armcomputev2.VirtualMachineScaleSet{
+				ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-controlplanes-uid"),
+			},
+			wantControlPlanes: []string{"/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-controlplanes-uid"},
+		},
+		"listing worker works": {
+			scaleSet: armcomputev2.VirtualMachineScaleSet{
+				ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-workers-uid"),
+			},
+			wantWorkers: []string{"/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-workers-uid"},
+		},
+		"listing other works": {
+			scaleSet: armcomputev2.VirtualMachineScaleSet{
+				ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/other"),
+			},
+		},
+		"fetching scale sets fails": {
+			fetchPageErr: errors.New("fetch page error"),
+			wantErr:      true,
+		},
+		"scale set is invalid": {},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			client := Client{
+				scaleSetsAPI: &stubScaleSetsAPI{
+					pager: &stubVMSSPager{
+						list:     []armcomputev2.VirtualMachineScaleSet{tc.scaleSet},
+						fetchErr: tc.fetchPageErr,
+					},
+				},
+			}
+			gotControlPlanes, gotWorkers, err := client.ListScalingGroups(context.Background(), "uid")
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+			assert.ElementsMatch(tc.wantControlPlanes, gotControlPlanes)
+			assert.ElementsMatch(tc.wantWorkers, gotWorkers)
+		})
+	}
+}

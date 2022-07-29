@@ -16,6 +16,7 @@ type stubScaleSetsAPI struct {
 	deleteResponse armcomputev2.VirtualMachineScaleSetsClientDeleteInstancesResponse
 	deleteErr      error
 	resultErr      error
+	pager          *stubVMSSPager
 }
 
 func (a *stubScaleSetsAPI) Get(ctx context.Context, resourceGroupName string, vmScaleSetName string,
@@ -54,12 +55,20 @@ func (a *stubScaleSetsAPI) BeginDeleteInstances(ctx context.Context, resourceGro
 	return poller, a.deleteErr
 }
 
+func (a *stubScaleSetsAPI) NewListPager(resourceGroupName string, options *armcomputev2.VirtualMachineScaleSetsClientListOptions,
+) *runtime.Pager[armcomputev2.VirtualMachineScaleSetsClientListResponse] {
+	return runtime.NewPager(runtime.PagingHandler[armcomputev2.VirtualMachineScaleSetsClientListResponse]{
+		More:    a.pager.moreFunc(),
+		Fetcher: a.pager.fetcherFunc(),
+	})
+}
+
 type stubvirtualMachineScaleSetVMsAPI struct {
 	scaleSetVM      armcomputev2.VirtualMachineScaleSetVMsClientGetResponse
 	getErr          error
 	instanceView    armcomputev2.VirtualMachineScaleSetVMsClientGetInstanceViewResponse
 	instanceViewErr error
-	pager           *stubPager
+	pager           *stubVMSSVMPager
 }
 
 func (a *stubvirtualMachineScaleSetVMsAPI) Get(ctx context.Context, resourceGroupName string, vmScaleSetName string, instanceID string,
@@ -102,19 +111,19 @@ func (p *stubPoller[T]) Result(ctx context.Context, out *T) error {
 	return p.resultErr
 }
 
-type stubPager struct {
+type stubVMSSVMPager struct {
 	list     []armcomputev2.VirtualMachineScaleSetVM
 	fetchErr error
 	more     bool
 }
 
-func (p *stubPager) moreFunc() func(armcomputev2.VirtualMachineScaleSetVMsClientListResponse) bool {
+func (p *stubVMSSVMPager) moreFunc() func(armcomputev2.VirtualMachineScaleSetVMsClientListResponse) bool {
 	return func(armcomputev2.VirtualMachineScaleSetVMsClientListResponse) bool {
 		return p.more
 	}
 }
 
-func (p *stubPager) fetcherFunc() func(context.Context, *armcomputev2.VirtualMachineScaleSetVMsClientListResponse) (armcomputev2.VirtualMachineScaleSetVMsClientListResponse, error) {
+func (p *stubVMSSVMPager) fetcherFunc() func(context.Context, *armcomputev2.VirtualMachineScaleSetVMsClientListResponse) (armcomputev2.VirtualMachineScaleSetVMsClientListResponse, error) {
 	return func(context.Context, *armcomputev2.VirtualMachineScaleSetVMsClientListResponse) (armcomputev2.VirtualMachineScaleSetVMsClientListResponse, error) {
 		page := make([]*armcomputev2.VirtualMachineScaleSetVM, len(p.list))
 		for i := range p.list {
@@ -122,6 +131,32 @@ func (p *stubPager) fetcherFunc() func(context.Context, *armcomputev2.VirtualMac
 		}
 		return armcomputev2.VirtualMachineScaleSetVMsClientListResponse{
 			VirtualMachineScaleSetVMListResult: armcomputev2.VirtualMachineScaleSetVMListResult{
+				Value: page,
+			},
+		}, p.fetchErr
+	}
+}
+
+type stubVMSSPager struct {
+	list     []armcomputev2.VirtualMachineScaleSet
+	fetchErr error
+	more     bool
+}
+
+func (p *stubVMSSPager) moreFunc() func(armcomputev2.VirtualMachineScaleSetsClientListResponse) bool {
+	return func(armcomputev2.VirtualMachineScaleSetsClientListResponse) bool {
+		return p.more
+	}
+}
+
+func (p *stubVMSSPager) fetcherFunc() func(context.Context, *armcomputev2.VirtualMachineScaleSetsClientListResponse) (armcomputev2.VirtualMachineScaleSetsClientListResponse, error) {
+	return func(context.Context, *armcomputev2.VirtualMachineScaleSetsClientListResponse) (armcomputev2.VirtualMachineScaleSetsClientListResponse, error) {
+		page := make([]*armcomputev2.VirtualMachineScaleSet, len(p.list))
+		for i := range p.list {
+			page[i] = &p.list[i]
+		}
+		return armcomputev2.VirtualMachineScaleSetsClientListResponse{
+			VirtualMachineScaleSetListResult: armcomputev2.VirtualMachineScaleSetListResult{
 				Value: page,
 			},
 		}, p.fetchErr

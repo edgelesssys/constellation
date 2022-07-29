@@ -282,3 +282,96 @@ func TestSetScalingGroupImage(t *testing.T) {
 		})
 	}
 }
+
+func TestGetScalingGroupName(t *testing.T) {
+	testCases := map[string]struct {
+		scalingGroupID string
+		wantName       string
+		wantErr        bool
+	}{
+		"valid scaling group ID": {
+			scalingGroupID: "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			wantName:       "instance-group",
+		},
+		"invalid scaling group ID": {
+			scalingGroupID: "invalid",
+			wantErr:        true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			client := Client{}
+			gotName, err := client.GetScalingGroupName(context.Background(), tc.scalingGroupID)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+			assert.Equal(tc.wantName, gotName)
+		})
+	}
+}
+
+func TestListScalingGroups(t *testing.T) {
+	testCases := map[string]struct {
+		name                         *string
+		groupID                      *string
+		listInstanceGroupManagersErr error
+		wantControlPlanes            []string
+		wantWorkers                  []string
+		wantErr                      bool
+	}{
+		"list instance group managers fails": {
+			listInstanceGroupManagersErr: errors.New("list instance group managers error"),
+			wantErr:                      true,
+		},
+		"list instance group managers for control plane": {
+			name:    proto.String("test-control-plane-uid"),
+			groupID: proto.String("projects/project/zones/zone/instanceGroupManagers/test-control-plane-uid"),
+			wantControlPlanes: []string{
+				"projects/project/zones/zone/instanceGroupManagers/test-control-plane-uid",
+			},
+		},
+		"list instance group managers for worker": {
+			name:    proto.String("test-worker-uid"),
+			groupID: proto.String("projects/project/zones/zone/instanceGroupManagers/test-worker-uid"),
+			wantWorkers: []string{
+				"projects/project/zones/zone/instanceGroupManagers/test-worker-uid",
+			},
+		},
+		"unrelated instance group manager": {
+			name:    proto.String("test-unrelated-uid"),
+			groupID: proto.String("projects/project/zones/zone/instanceGroupManagers/test-unrelated-uid"),
+		},
+		"invalid instance group manager": {},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			client := Client{
+				instanceGroupManagersAPI: &stubInstanceGroupManagersAPI{
+					aggregatedListErr: tc.listInstanceGroupManagersErr,
+					instanceGroupManager: &computepb.InstanceGroupManager{
+						Name:     tc.name,
+						SelfLink: tc.groupID,
+					},
+				},
+			}
+			gotControlPlanes, gotWorkers, err := client.ListScalingGroups(context.Background(), "uid")
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+			assert.ElementsMatch(tc.wantControlPlanes, gotControlPlanes)
+			assert.ElementsMatch(tc.wantWorkers, gotWorkers)
+		})
+	}
+}

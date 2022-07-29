@@ -13,6 +13,7 @@ import (
 type cloudConfig struct {
 	TenantID       string `json:"tenantId,omitempty"`
 	SubscriptionID string `json:"subscriptionId,omitempty"`
+	ResourceGroup  string `json:"resourceGroup,omitempty"`
 }
 
 // loadConfig loads the cloud config from the given path.

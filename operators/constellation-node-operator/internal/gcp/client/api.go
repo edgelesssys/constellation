@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 
+	compute "cloud.google.com/go/compute/apiv1"
 	"github.com/googleapis/gax-go/v2"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 )
@@ -27,6 +28,8 @@ type instanceGroupManagersAPI interface {
 	Close() error
 	Get(ctx context.Context, req *computepb.GetInstanceGroupManagerRequest,
 		opts ...gax.CallOption) (*computepb.InstanceGroupManager, error)
+	AggregatedList(ctx context.Context, req *computepb.AggregatedListInstanceGroupManagersRequest,
+		opts ...gax.CallOption) InstanceGroupManagerScopedListIterator
 	SetInstanceTemplate(ctx context.Context, req *computepb.SetInstanceTemplateInstanceGroupManagerRequest,
 		opts ...gax.CallOption) (Operation, error)
 	CreateInstances(ctx context.Context, req *computepb.CreateInstancesInstanceGroupManagerRequest,
@@ -45,6 +48,10 @@ type Operation interface {
 	Proto() *computepb.Operation
 	Done() bool
 	Wait(ctx context.Context, opts ...gax.CallOption) error
+}
+
+type InstanceGroupManagerScopedListIterator interface {
+	Next() (compute.InstanceGroupManagersScopedListPair, error)
 }
 
 type prng interface {

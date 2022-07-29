@@ -11,7 +11,7 @@ import (
 )
 
 // this state is included in most VMs but not needed
-// to determine the node state as every provisioned VM also has a power state
+// to determine the node state as every provisioned VM also has a power state.
 const provisioningStateSucceeded = "ProvisioningState/succeeded"
 
 func TestNodeStateFromStatuses(t *testing.T) {

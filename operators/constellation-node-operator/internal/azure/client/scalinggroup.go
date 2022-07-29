@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 )
@@ -51,4 +52,33 @@ func (c *Client) SetScalingGroupImage(ctx context.Context, scalingGroupID, image
 		return err
 	}
 	return nil
+}
+
+// GetScalingGroupName retrieves the name of a scaling group.
+func (c *Client) GetScalingGroupName(ctx context.Context, scalingGroupID string) (string, error) {
+	_, _, scaleSet, err := splitVMSSID(scalingGroupID)
+	if err != nil {
+		return "", fmt.Errorf("getting scaling group name: %w", err)
+	}
+	return strings.ToLower(scaleSet), nil
+}
+
+// ListScalingGroups retrieves a list of scaling groups for the cluster.
+func (c *Client) ListScalingGroups(ctx context.Context, uid string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error) {
+	scaleSetIDs, err := c.getScaleSets(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("listing scaling groups: %w", err)
+	}
+	for _, scaleSetID := range scaleSetIDs {
+		_, _, scaleSet, err := splitVMSSID(scaleSetID)
+		if err != nil {
+			return nil, nil, fmt.Errorf("getting scaling group name: %w", err)
+		}
+		if scaleSet == "constellation-scale-set-controlplanes-"+uid {
+			controlPlaneGroupIDs = append(controlPlaneGroupIDs, scaleSetID)
+		} else if strings.HasPrefix(scaleSet, "constellation-scale-set-workers-"+uid) {
+			workerGroupIDs = append(workerGroupIDs, scaleSetID)
+		}
+	}
+	return controlPlaneGroupIDs, workerGroupIDs, nil
 }

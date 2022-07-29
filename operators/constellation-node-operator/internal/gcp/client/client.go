@@ -6,11 +6,13 @@ import (
 	"time"
 
 	compute "cloud.google.com/go/compute/apiv1"
+	"github.com/spf13/afero"
 	"go.uber.org/multierr"
 )
 
 // Client is a client for the Google Compute Engine.
 type Client struct {
+	projectID string
 	instanceAPI
 	instanceTemplateAPI
 	instanceGroupManagersAPI
@@ -20,7 +22,12 @@ type Client struct {
 }
 
 // New creates a new client for the Google Compute Engine.
-func New(ctx context.Context) (*Client, error) {
+func New(ctx context.Context, configPath string) (*Client, error) {
+	projectID, err := loadProjectID(afero.NewOsFs(), configPath)
+	if err != nil {
+		return nil, err
+	}
+
 	var closers []closer
 	insAPI, err := compute.NewInstancesRESTClient(ctx)
 	if err != nil {
@@ -44,8 +51,8 @@ func New(ctx context.Context) (*Client, error) {
 		_ = closeAll(closers)
 		return nil, err
 	}
-
 	return &Client{
+		projectID:                projectID,
 		instanceAPI:              insAPI,
 		instanceTemplateAPI:      &instanceTemplateClient{templAPI},
 		instanceGroupManagersAPI: &instanceGroupManagersClient{groupAPI},

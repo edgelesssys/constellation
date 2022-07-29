@@ -9,7 +9,7 @@ import (
 var vmssIDRegexp = regexp.MustCompile(`^/subscriptions/([^/]+)/resourceGroups/([^/]+)/providers/Microsoft.Compute/virtualMachineScaleSets/([^/]+)$`)
 
 // joinVMSSID joins scale set parameters to generate a virtual machine scale set (VMSS) ID.
-// Format: /subscriptions/<subscription>/resourceGroups/<resource-group>/providers/Microsoft.Compute/virtualMachineScaleSets/<scale-set>
+// Format: /subscriptions/<subscription>/resourceGroups/<resource-group>/providers/Microsoft.Compute/virtualMachineScaleSets/<scale-set> .
 func joinVMSSID(subscriptionID, resourceGroup, scaleSet string) string {
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/virtualMachineScaleSets/%s", subscriptionID, resourceGroup, scaleSet)
 }

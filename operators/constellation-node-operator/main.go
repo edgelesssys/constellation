@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	azureclient "github.com/edgelesssys/constellation/operators/constellation-node-operator/internal/azure/client"
+	"github.com/edgelesssys/constellation/operators/constellation-node-operator/internal/deploy"
 	gcpclient "github.com/edgelesssys/constellation/operators/constellation-node-operator/internal/gcp/client"
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/api/v1alpha1"
@@ -36,8 +37,11 @@ var (
 
 const (
 	defaultAzureCloudConfigPath = "/etc/azure/azure.json"
+	defaultGCPCloudConfigPath   = "/etc/gce/gce.conf"
 	// constellationCSP is the environment variable stating which Cloud Service Provider Constellation is running on.
 	constellationCSP = "CONSTEL_CSP"
+	// constellationUID is the environment variable stating which uid is used to tag / label cloud provider resources belonging to one constellation.
+	constellationUID = "constellation-uid"
 )
 
 func init() {
@@ -80,7 +84,10 @@ func main() {
 			os.Exit(1)
 		}
 	case "gcp":
-		cspClient, clientErr = gcpclient.New(context.Background())
+		if cloudConfigPath == "" {
+			cloudConfigPath = defaultGCPCloudConfigPath
+		}
+		cspClient, clientErr = gcpclient.New(context.Background(), cloudConfigPath)
 		if clientErr != nil {
 			setupLog.Error(clientErr, "unable to create GCP client")
 			os.Exit(1)
@@ -114,6 +121,11 @@ func main() {
 		os.Exit(1)
 	}
 	defer etcdClient.Close()
+
+	if err := deploy.InitialResources(context.Background(), k8sClient, cspClient, os.Getenv(constellationUID)); err != nil {
+		setupLog.Error(err, "Unable to deploy initial resources")
+		os.Exit(1)
+	}
 
 	if err = controllers.NewNodeImageReconciler(
 		cspClient, etcdClient, mgr.GetClient(), mgr.GetScheme(),
@@ -173,4 +185,8 @@ type cspAPI interface {
 	GetScalingGroupImage(ctx context.Context, scalingGroupID string) (string, error)
 	// SetScalingGroupImage sets the image to be used by newly created nodes in a scaling group.
 	SetScalingGroupImage(ctx context.Context, scalingGroupID, imageURI string) error
+	// GetScalingGroupName retrieves the name of a scaling group.
+	GetScalingGroupName(ctx context.Context, scalingGroupID string) (string, error)
+	// ListScalingGroups retrieves a list of scaling groups for the cluster.
+	ListScalingGroups(ctx context.Context, uid string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error)
 }

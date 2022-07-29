@@ -49,21 +49,17 @@ func TestSplitInstanceGroupID(t *testing.T) {
 
 func TestGenerateInstanceName(t *testing.T) {
 	assert := assert.New(t)
-	require := require.New(t)
 	baseInstanceName := "base"
-	gotInstanceName, err := generateInstanceName(baseInstanceName, &stubRng{result: 0})
-	require.NoError(err)
+	gotInstanceName := generateInstanceName(baseInstanceName, &stubRng{result: 0})
 	assert.Equal("base-aaaa", gotInstanceName)
 }
 
 func TestGenerateInstanceNameRandomTest(t *testing.T) {
 	assert := assert.New(t)
-	require := require.New(t)
 	instanceNameRegexp := regexp.MustCompile(`^base-[0-9a-z]{4}$`)
 	baseInstanceName := "base"
 	random := rand.New(rand.NewSource(int64(time.Now().Nanosecond())))
-	gotInstanceName, err := generateInstanceName(baseInstanceName, random)
-	require.NoError(err)
+	gotInstanceName := generateInstanceName(baseInstanceName, random)
 	assert.Regexp(instanceNameRegexp, gotInstanceName)
 }
 

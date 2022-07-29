@@ -3,7 +3,9 @@ package client
 import (
 	"context"
 
+	compute "cloud.google.com/go/compute/apiv1"
 	"github.com/googleapis/gax-go/v2"
+	"google.golang.org/api/iterator"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
 )
@@ -63,6 +65,7 @@ func (a stubInstanceTemplateAPI) Insert(ctx context.Context, req *computepb.Inse
 type stubInstanceGroupManagersAPI struct {
 	instanceGroupManager   *computepb.InstanceGroupManager
 	getErr                 error
+	aggregatedListErr      error
 	setInstanceTemplateErr error
 	createInstancesErr     error
 	deleteInstancesErr     error
@@ -76,6 +79,24 @@ func (a stubInstanceGroupManagersAPI) Get(ctx context.Context, req *computepb.Ge
 	opts ...gax.CallOption,
 ) (*computepb.InstanceGroupManager, error) {
 	return a.instanceGroupManager, a.getErr
+}
+
+func (a stubInstanceGroupManagersAPI) AggregatedList(ctx context.Context, req *computepb.AggregatedListInstanceGroupManagersRequest,
+	opts ...gax.CallOption,
+) InstanceGroupManagerScopedListIterator {
+	return &stubInstanceGroupManagerScopedListIterator{
+		pairs: []compute.InstanceGroupManagersScopedListPair{
+			{
+				Key: "key",
+				Value: &computepb.InstanceGroupManagersScopedList{
+					InstanceGroupManagers: []*computepb.InstanceGroupManager{
+						a.instanceGroupManager,
+					},
+				},
+			},
+		},
+		nextErr: a.aggregatedListErr,
+	}
 }
 
 func (a stubInstanceGroupManagersAPI) SetInstanceTemplate(ctx context.Context, req *computepb.SetInstanceTemplateInstanceGroupManagerRequest,
@@ -140,4 +161,23 @@ func (o *stubOperation) Done() bool {
 
 func (o *stubOperation) Wait(ctx context.Context, opts ...gax.CallOption) error {
 	return nil
+}
+
+type stubInstanceGroupManagerScopedListIterator struct {
+	pairs   []compute.InstanceGroupManagersScopedListPair
+	nextErr error
+
+	internalCounter int
+}
+
+func (i *stubInstanceGroupManagerScopedListIterator) Next() (compute.InstanceGroupManagersScopedListPair, error) {
+	if i.nextErr != nil {
+		return compute.InstanceGroupManagersScopedListPair{}, i.nextErr
+	}
+	if i.internalCounter >= len(i.pairs) {
+		return compute.InstanceGroupManagersScopedListPair{}, iterator.Done
+	}
+	pair := i.pairs[i.internalCounter]
+	i.internalCounter++
+	return pair, nil
 }

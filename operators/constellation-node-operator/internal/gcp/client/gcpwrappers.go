@@ -42,6 +42,12 @@ func (c *instanceGroupManagersClient) Get(ctx context.Context, req *computepb.Ge
 	return c.InstanceGroupManagersClient.Get(ctx, req, opts...)
 }
 
+func (c *instanceGroupManagersClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListInstanceGroupManagersRequest,
+	opts ...gax.CallOption,
+) InstanceGroupManagerScopedListIterator {
+	return c.InstanceGroupManagersClient.AggregatedList(ctx, req, opts...)
+}
+
 func (c *instanceGroupManagersClient) SetInstanceTemplate(ctx context.Context, req *computepb.SetInstanceTemplateInstanceGroupManagerRequest,
 	opts ...gax.CallOption,
 ) (Operation, error) {

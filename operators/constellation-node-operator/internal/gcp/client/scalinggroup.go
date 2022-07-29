@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
+	"google.golang.org/api/iterator"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
+	"google.golang.org/protobuf/proto"
 )
 
 // GetScalingGroupImage returns the image URI of the scaling group.
@@ -75,6 +78,47 @@ func (c *Client) SetScalingGroupImage(ctx context.Context, scalingGroupID, image
 		return fmt.Errorf("waiting for setting instance template: %w", err)
 	}
 	return nil
+}
+
+// GetScalingGroupName retrieves the name of a scaling group.
+func (c *Client) GetScalingGroupName(ctx context.Context, scalingGroupID string) (string, error) {
+	_, _, instanceGroupName, err := splitInstanceGroupID(scalingGroupID)
+	if err != nil {
+		return "", fmt.Errorf("getting scaling group name: %w", err)
+	}
+	return strings.ToLower(instanceGroupName), nil
+}
+
+// ListScalingGroups retrieves a list of scaling groups for the cluster.
+func (c *Client) ListScalingGroups(ctx context.Context, uid string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error) {
+	iter := c.instanceGroupManagersAPI.AggregatedList(ctx, &computepb.AggregatedListInstanceGroupManagersRequest{
+		Filter:  proto.String(fmt.Sprintf("name eq \".+-.+-%s\"", uid)), // filter by constellation UID
+		Project: c.projectID,
+	})
+	for instanceGroupManagerScopedListPair, err := iter.Next(); ; instanceGroupManagerScopedListPair, err = iter.Next() {
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, nil, fmt.Errorf("listing instance group managers: %w", err)
+		}
+		if instanceGroupManagerScopedListPair.Value == nil {
+			continue
+		}
+		for _, instanceGroupManager := range instanceGroupManagerScopedListPair.Value.InstanceGroupManagers {
+			if instanceGroupManager == nil || instanceGroupManager.Name == nil || instanceGroupManager.SelfLink == nil {
+				continue
+			}
+			groupID := uriNormalize(*instanceGroupManager.SelfLink)
+
+			if isControlPlaneInstanceGroup(*instanceGroupManager.Name) {
+				controlPlaneGroupIDs = append(controlPlaneGroupIDs, groupID)
+			} else if isWorkerInstanceGroup(*instanceGroupManager.Name) {
+				workerGroupIDs = append(workerGroupIDs, groupID)
+			}
+		}
+	}
+	return controlPlaneGroupIDs, workerGroupIDs, nil
 }
 
 func (c *Client) getScalingGroupTemplate(ctx context.Context, scalingGroupID string) (*computepb.InstanceTemplate, error) {

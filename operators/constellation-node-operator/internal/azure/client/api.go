@@ -30,6 +30,8 @@ type scaleSetsAPI interface {
 	BeginDeleteInstances(ctx context.Context, resourceGroupName string, vmScaleSetName string, vmInstanceIDs armcomputev2.VirtualMachineScaleSetVMInstanceRequiredIDs,
 		options *armcomputev2.VirtualMachineScaleSetsClientBeginDeleteInstancesOptions,
 	) (*runtime.Poller[armcomputev2.VirtualMachineScaleSetsClientDeleteInstancesResponse], error)
+	NewListPager(resourceGroupName string, options *armcomputev2.VirtualMachineScaleSetsClientListOptions,
+	) *runtime.Pager[armcomputev2.VirtualMachineScaleSetsClientListResponse]
 }
 
 type capacityPoller interface {
