@@ -11,6 +11,8 @@ import (
 
 // ProviderMetadata implementers read/write cloud provider metadata.
 type ProviderMetadata interface {
+	// UID returns the unique identifier for the constellation.
+	UID(ctx context.Context) (string, error)
 	// List retrieves all instances belonging to the current Constellation.
 	List(ctx context.Context) ([]metadata.InstanceMetadata, error)
 	// Self retrieves the current instance.
@@ -100,6 +102,9 @@ type stubProviderMetadata struct {
 
 	SupportedResp            bool
 	SupportsLoadBalancerResp bool
+
+	UIDErr  error
+	UIDResp string
 }
 
 func (m *stubProviderMetadata) GetLoadBalancerIP(ctx context.Context) (string, error) {
@@ -128,6 +133,10 @@ func (m *stubProviderMetadata) Supported() bool {
 
 func (m *stubProviderMetadata) SupportsLoadBalancer() bool {
 	return m.SupportsLoadBalancerResp
+}
+
+func (m *stubProviderMetadata) UID(ctx context.Context) (string, error) {
+	return m.UIDResp, m.UIDErr
 }
 
 type stubCloudControllerManager struct {

@@ -231,6 +231,8 @@ func TestGetInstance(t *testing.T) {
 }
 
 type stubGCPClient struct {
+	retrieveUIDValue             string
+	retrieveUIDErr               error
 	retrieveInstanceValue        metadata.InstanceMetadata
 	retrieveInstanceErr          error
 	retrieveInstancesValues      []metadata.InstanceMetadata
@@ -287,6 +289,10 @@ func (s *stubGCPClient) RetrieveInstanceName() (string, error) {
 
 func (s *stubGCPClient) RetrieveLoadBalancerIP(ctx context.Context, project, zone string) (string, error) {
 	return s.loadBalancerIP, s.retrieveLoadBalancerErr
+}
+
+func (s *stubGCPClient) UID() (string, error) {
+	return s.retrieveUIDValue, s.retrieveUIDErr
 }
 
 func (s *stubGCPClient) SetInstanceMetadata(ctx context.Context, project, zone, instanceName, key, value string) error {

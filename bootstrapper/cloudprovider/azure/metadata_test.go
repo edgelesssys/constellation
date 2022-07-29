@@ -499,6 +499,58 @@ func TestProviderID(t *testing.T) {
 	}
 }
 
+func TestUID(t *testing.T) {
+	testCases := map[string]struct {
+		imdsAPI imdsAPI
+		wantErr bool
+		wantUID string
+	}{
+		"uid extraction from providerID works": {
+			imdsAPI: &stubIMDSAPI{
+				res: metadataResponse{Compute: struct {
+					ResourceID string `json:"resourceId,omitempty"`
+				}{"/subscriptions/subscription-id/resourceGroups/basename-uid/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"}},
+			},
+			wantUID: "uid",
+		},
+		"providerID does not contain uid": {
+			imdsAPI: &stubIMDSAPI{
+				res: metadataResponse{Compute: struct {
+					ResourceID string `json:"resourceId,omitempty"`
+				}{"/subscriptions/subscription-id/resourceGroups/invalid/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"}},
+			},
+			wantErr: true,
+		},
+		"providerID is invalid": {
+			imdsAPI: newInvalidIMDSStub(),
+			wantErr: true,
+		},
+		"imds retrieval fails": {
+			imdsAPI: &stubIMDSAPI{retrieveErr: errors.New("imds err")},
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			metadata := Metadata{
+				imdsAPI: tc.imdsAPI,
+			}
+			uid, err := metadata.UID(context.Background())
+
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+			assert.Equal(tc.wantUID, uid)
+		})
+	}
+}
+
 func TestExtractInstanceTags(t *testing.T) {
 	testCases := map[string]struct {
 		in       map[string]*string

@@ -53,7 +53,7 @@ func NewClient(ctx context.Context) (*Client, error) {
 
 // RetrieveInstances returns list of instances including their ips and metadata.
 func (c *Client) RetrieveInstances(ctx context.Context, project, zone string) ([]metadata.InstanceMetadata, error) {
-	uid, err := c.uid()
+	uid, err := c.UID()
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +214,7 @@ func (c *Client) RetrieveSubnetworkAliasCIDR(ctx context.Context, project, zone,
 
 // RetrieveLoadBalancerIP returns the IP address of the load balancer specified by project, zone and loadBalancerName.
 func (c *Client) RetrieveLoadBalancerIP(ctx context.Context, project, zone string) (string, error) {
-	uid, err := c.uid()
+	uid, err := c.UID()
 	if err != nil {
 		return "", err
 	}
@@ -284,8 +284,8 @@ func (c *Client) updateInstanceMetadata(ctx context.Context, project, zone, inst
 	return nil
 }
 
-// uid retrieves the current instances uid.
-func (c *Client) uid() (string, error) {
+// UID retrieves the current instances uid.
+func (c *Client) UID() (string, error) {
 	// API endpoint: http://metadata.google.internal/computeMetadata/v1/instance/attributes/constellation-uid
 	uid, err := c.RetrieveInstanceMetadata(constellationUIDMetadataKey)
 	if err != nil {

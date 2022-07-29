@@ -2,6 +2,7 @@ package azure
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -16,8 +17,9 @@ import (
 )
 
 var (
-	publicIPAddressRegexp = regexp.MustCompile(`/subscriptions/[^/]+/resourceGroups/[^/]+/providers/Microsoft.Network/publicIPAddresses/(?P<IPname>[^/]+)`)
-	keyPathRegexp         = regexp.MustCompile(`^\/home\/([^\/]+)\/\.ssh\/authorized_keys$`)
+	publicIPAddressRegexp   = regexp.MustCompile(`/subscriptions/[^/]+/resourceGroups/[^/]+/providers/Microsoft.Network/publicIPAddresses/(?P<IPname>[^/]+)`)
+	keyPathRegexp           = regexp.MustCompile(`^\/home\/([^\/]+)\/\.ssh\/authorized_keys$`)
+	resourceGroupNameRegexp = regexp.MustCompile(`^(.*)-([^-]+)$`)
 )
 
 // Metadata implements azure metadata APIs.
@@ -183,6 +185,25 @@ func (m *Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
 	return *virtualNetwork.Properties.Subnets[0].Properties.AddressPrefix, nil
 }
 
+// UID retrieves the UID of the constellation.
+func (m *Metadata) UID(ctx context.Context) (string, error) {
+	providerID, err := m.providerID(ctx)
+	if err != nil {
+		return "", err
+	}
+	_, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
+	if err != nil {
+		return "", err
+	}
+
+	uid, err := getUIDFromResourceGroup(resourceGroup)
+	if err != nil {
+		return "", err
+	}
+
+	return uid, nil
+}
+
 // getLoadBalancer retrieves the load balancer from cloud provider metadata.
 func (m *Metadata) getLoadBalancer(ctx context.Context) (*armnetwork.LoadBalancer, error) {
 	providerID, err := m.providerID(ctx)
@@ -313,4 +334,12 @@ func extractSSHKeys(sshConfig armcomputev2.SSHConfiguration) map[string][]string
 		sshKeys[matches[1]] = append(sshKeys[matches[1]], *key.KeyData)
 	}
 	return sshKeys
+}
+
+func getUIDFromResourceGroup(resourceGroup string) (string, error) {
+	matches := resourceGroupNameRegexp.FindStringSubmatch(resourceGroup)
+	if len(matches) != 3 {
+		return "", errors.New("error splitting resource group name")
+	}
+	return matches[2], nil
 }

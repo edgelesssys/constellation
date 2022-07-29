@@ -70,6 +70,13 @@ func (m Metadata) GetLoadBalancerIP(ctx context.Context) (string, error) {
 	panic("function *Metadata.GetLoadBalancerIP not implemented")
 }
 
+// UID returns the UID of the constellation.
+func (m Metadata) UID(ctx context.Context) (string, error) {
+	// We expect only one constellation to be deployed in the same QEMU / libvirt environment.
+	// the UID can be an empty string.
+	return "", nil
+}
+
 // GetSubnetworkCIDR retrieves the subnetwork CIDR from cloud provider metadata.
 func (m Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
 	return "10.244.0.0/16", nil
