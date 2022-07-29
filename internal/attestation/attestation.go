@@ -13,12 +13,11 @@ const (
 )
 
 // DeriveClusterID derives the cluster ID from a salt and secret value.
-func DeriveClusterID(salt, secret []byte) ([]byte, error) {
+func DeriveClusterID(secret, salt []byte) ([]byte, error) {
 	return crypto.DeriveKey(secret, salt, []byte(crypto.HKDFInfoPrefix+clusterIDContext), crypto.DerivedKeyLengthDefault)
 }
 
 // DeriveMeasurementSecret derives the secret value needed to derive ClusterID.
-func DeriveMeasurementSecret(masterSecret []byte) ([]byte, error) {
-	// TODO: replace hard coded salt
-	return crypto.DeriveKey(masterSecret, []byte("Constellation"), []byte(crypto.HKDFInfoPrefix+MeasurementSecretContext), crypto.DerivedKeyLengthDefault)
+func DeriveMeasurementSecret(masterSecret, salt []byte) ([]byte, error) {
+	return crypto.DeriveKey(masterSecret, salt, []byte(crypto.HKDFInfoPrefix+MeasurementSecretContext), crypto.DerivedKeyLengthDefault)
 }

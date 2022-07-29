@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"regexp"
@@ -35,11 +34,11 @@ func NewRecoverCmd() *cobra.Command {
 	must(cmd.MarkFlagRequired("endpoint"))
 	cmd.Flags().String("disk-uuid", "", "disk UUID of the encrypted state disk (required)")
 	must(cmd.MarkFlagRequired("disk-uuid"))
-	cmd.Flags().String("master-secret", constants.MasterSecretFilename, "path to base64-encoded master secret")
+	cmd.Flags().String("master-secret", constants.MasterSecretFilename, "path to master secret file")
 	return cmd
 }
 
-func runRecover(cmd *cobra.Command, args []string) error {
+func runRecover(cmd *cobra.Command, _ []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	recoveryClient := &proto.KeyClient{}
 	defer recoveryClient.Close()
@@ -47,8 +46,13 @@ func runRecover(cmd *cobra.Command, args []string) error {
 }
 
 func recover(cmd *cobra.Command, fileHandler file.Handler, recoveryClient recoveryClient) error {
-	flags, err := parseRecoverFlags(cmd, fileHandler)
+	flags, err := parseRecoverFlags(cmd)
 	if err != nil {
+		return err
+	}
+
+	var masterSecret masterSecret
+	if err := fileHandler.ReadJSON(flags.secretPath, &masterSecret); err != nil {
 		return err
 	}
 
@@ -74,12 +78,12 @@ func recover(cmd *cobra.Command, fileHandler file.Handler, recoveryClient recove
 		return err
 	}
 
-	diskKey, err := deriveStateDiskKey(flags.masterSecret, flags.diskUUID)
+	diskKey, err := deriveStateDiskKey(masterSecret.Key, masterSecret.Salt, flags.diskUUID)
 	if err != nil {
 		return err
 	}
 
-	measurementSecret, err := attestation.DeriveMeasurementSecret(flags.masterSecret)
+	measurementSecret, err := attestation.DeriveMeasurementSecret(masterSecret.Key, masterSecret.Salt)
 	if err != nil {
 		return err
 	}
@@ -92,7 +96,7 @@ func recover(cmd *cobra.Command, fileHandler file.Handler, recoveryClient recove
 	return nil
 }
 
-func parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFlags, error) {
+func parseRecoverFlags(cmd *cobra.Command) (recoverFlags, error) {
 	endpoint, err := cmd.Flags().GetString("endpoint")
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("parsing endpoint argument: %w", err)
@@ -115,10 +119,6 @@ func parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFla
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("parsing master-secret path argument: %w", err)
 	}
-	masterSecret, err := readMasterSecret(fileHandler, masterSecretPath)
-	if err != nil {
-		return recoverFlags{}, fmt.Errorf("reading the master secret from file %s: %w", masterSecretPath, err)
-	}
 
 	configPath, err := cmd.Flags().GetString("config")
 	if err != nil {
@@ -126,35 +126,21 @@ func parseRecoverFlags(cmd *cobra.Command, fileHandler file.Handler) (recoverFla
 	}
 
 	return recoverFlags{
-		endpoint:     endpoint,
-		diskUUID:     diskUUID,
-		masterSecret: masterSecret,
-		configPath:   configPath,
+		endpoint:   endpoint,
+		diskUUID:   diskUUID,
+		secretPath: masterSecretPath,
+		configPath: configPath,
 	}, nil
 }
 
 type recoverFlags struct {
-	endpoint     string
-	diskUUID     string
-	masterSecret []byte
-	configPath   string
+	endpoint   string
+	diskUUID   string
+	secretPath string
+	configPath string
 }
 
-// readMasterSecret reads a base64 encoded master secret from file.
-func readMasterSecret(fileHandler file.Handler, filename string) ([]byte, error) {
-	// Try to read the base64 secret from file
-	encodedSecret, err := fileHandler.Read(filename)
-	if err != nil {
-		return nil, err
-	}
-	decoded, err := base64.StdEncoding.DecodeString(string(encodedSecret))
-	if err != nil {
-		return nil, err
-	}
-	return decoded, nil
-}
-
-// deriveStateDiskKey derives a state disk key from a master secret and a disk UUID.
-func deriveStateDiskKey(masterKey []byte, diskUUID string) ([]byte, error) {
-	return crypto.DeriveKey(masterKey, []byte("Constellation"), []byte(crypto.HKDFInfoPrefix+diskUUID), crypto.StateDiskKeyLength)
+// deriveStateDiskKey derives a state disk key from a master key, a salt, and a disk UUID.
+func deriveStateDiskKey(masterKey, salt []byte, diskUUID string) ([]byte, error) {
+	return crypto.DeriveKey(masterKey, salt, []byte(crypto.HKDFInfoPrefix+diskUUID), crypto.StateDiskKeyLength)
 }

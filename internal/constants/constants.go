@@ -17,6 +17,8 @@ const (
 	ConstellationMasterSecretStoreName = "constellation-mastersecret"
 	// ConstellationMasterSecretKey is the name of the key for master secret in the master secret store secret.
 	ConstellationMasterSecretKey = "mastersecret"
+	// ConstellationMasterSecretSalt is the name of the key for salt in the master secret store secret.
+	ConstellationMasterSecretSalt = "salt"
 
 	//
 	// Ports.
@@ -50,7 +52,7 @@ const (
 	ConfigFilename          = "constellation-conf.yaml"
 	DebugdConfigFilename    = "cdbg-conf.yaml"
 	AdminConfFilename       = "constellation-admin.conf"
-	MasterSecretFilename    = "constellation-mastersecret.base64"
+	MasterSecretFilename    = "constellation-mastersecret.json"
 	WGQuickConfigFilename   = "wg0.conf"
 	CoreOSAdminConfFilename = "/etc/kubernetes/admin.conf"
 	KubeadmCertificateDir   = "/etc/kubernetes/pki"

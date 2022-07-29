@@ -2,6 +2,7 @@ package setup
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/url"
 	"testing"
@@ -73,7 +74,7 @@ func TestGetKMS(t *testing.T) {
 		wantErr bool
 	}{
 		"cluster kms": {
-			uri:     ClusterKMSURI,
+			uri:     fmt.Sprintf("%s?salt=%s", ClusterKMSURI, base64.URLEncoding.EncodeToString([]byte("salt"))),
 			wantErr: false,
 		},
 		"aws kms": {
@@ -124,11 +125,11 @@ func TestGetKMS(t *testing.T) {
 func TestSetUpKMS(t *testing.T) {
 	assert := assert.New(t)
 
-	kms, err := SetUpKMS(context.TODO(), "storage://unknown", "kms://unknown")
+	kms, err := SetUpKMS(context.Background(), "storage://unknown", "kms://unknown")
 	assert.Error(err)
 	assert.Nil(kms)
 
-	kms, err = SetUpKMS(context.Background(), "storage://no-store", "kms://cluster-kms")
+	kms, err = SetUpKMS(context.Background(), "storage://no-store", "kms://cluster-kms?salt="+base64.URLEncoding.EncodeToString([]byte("salt")))
 	assert.NoError(err)
 	assert.NotNil(kms)
 }
@@ -184,6 +185,23 @@ func TestGetGCPKMSConfig(t *testing.T) {
 	require.NoError(err)
 	_, _, _, _, err = getGCPKMSConfig(uri)
 	assert.Error(err)
+}
+
+func TestGetClusterKMSConfig(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	expectedSalt := []byte{
+		0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf,
+		0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf,
+	}
+
+	uri, err := url.Parse(ClusterKMSURI + "?salt=" + base64.URLEncoding.EncodeToString(expectedSalt))
+	require.NoError(err)
+
+	salt, err := getClusterKMSConfig(uri)
+	assert.NoError(err)
+	assert.Equal(expectedSalt, salt)
 }
 
 func TestGetConfig(t *testing.T) {

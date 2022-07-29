@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/bootstrapper/initproto"
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes"
+	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
@@ -218,7 +218,7 @@ type stubClusterInitializer struct {
 	initClusterErr        error
 }
 
-func (i *stubClusterInitializer) InitCluster(context.Context, []string, string, string, []byte, kubernetes.KMSConfig, map[string]string, *logger.Logger,
+func (i *stubClusterInitializer) InitCluster(context.Context, []string, string, string, []byte, resources.KMSConfig, map[string]string, *logger.Logger,
 ) ([]byte, error) {
 	return i.initClusterKubeconfig, i.initClusterErr
 }

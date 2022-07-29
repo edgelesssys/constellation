@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"flag"
-	"fmt"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -21,7 +21,8 @@ import (
 
 func main() {
 	port := flag.String("port", strconv.Itoa(constants.KMSPort), "Port gRPC server listens on")
-	masterSecretPath := flag.String("master-secret", filepath.Join(constants.ServiceBasePath, constants.MasterSecretFilename), "Path to the Constellation master secret")
+	masterSecretPath := flag.String("master-secret", filepath.Join(constants.ServiceBasePath, constants.ConstellationMasterSecretKey), "Path to the Constellation master secret")
+	saltPath := flag.String("salt", filepath.Join(constants.ServiceBasePath, constants.ConstellationMasterSecretSalt), "Path to the Constellation salt")
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 
 	flag.Parse()
@@ -30,15 +31,28 @@ func main() {
 	log.With(zap.String("version", constants.VersionInfo)).
 		Infof("Constellation Key Management Service")
 
-	// set up Key Management Service
-	masterKey, err := readMainSecret(*masterSecretPath)
+	// read master secret and salt
+	file := file.NewHandler(afero.NewOsFs())
+	masterKey, err := file.Read(*masterSecretPath)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to read master secret")
 	}
+	if len(masterKey) < crypto.MasterSecretLengthMin {
+		log.With(zap.Error(errors.New("invalid key length"))).Fatalf("Provided master secret is smaller than the required minimum of %d bytes", crypto.MasterSecretLengthMin)
+	}
+	salt, err := file.Read(*saltPath)
+	if err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to read salt")
+	}
+	if len(salt) < crypto.RNGLengthDefault {
+		log.With(zap.Error(errors.New("invalid salt length"))).Fatalf("Expected salt to be %d bytes, but got %d", crypto.RNGLengthDefault, len(salt))
+	}
+	keyURI := setup.ClusterKMSURI + "?salt=" + base64.URLEncoding.EncodeToString(salt)
 
+	// set up Key Management Service
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
-	conKMS, err := setup.SetUpKMS(ctx, setup.NoStoreURI, setup.ClusterKMSURI)
+	conKMS, err := setup.SetUpKMS(ctx, setup.NoStoreURI, keyURI)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to setup KMS")
 	}
@@ -49,23 +63,4 @@ func main() {
 	if err := server.New(log.Named("kms"), conKMS).Run(*port); err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to run KMS server")
 	}
-}
-
-// readMainSecret reads the base64 encoded main secret file from specified path and returns the secret as bytes.
-func readMainSecret(fileName string) ([]byte, error) {
-	if fileName == "" {
-		return nil, errors.New("no filename to master secret provided")
-	}
-
-	fileHandler := file.NewHandler(afero.NewOsFs())
-
-	secretBytes, err := fileHandler.Read(fileName)
-	if err != nil {
-		return nil, err
-	}
-	if len(secretBytes) < crypto.MasterSecretLengthMin {
-		return nil, fmt.Errorf("provided master secret is smaller than the required minimum of %d bytes", crypto.MasterSecretLengthMin)
-	}
-
-	return secretBytes, nil
 }

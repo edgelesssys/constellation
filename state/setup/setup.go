@@ -82,7 +82,7 @@ getKey:
 	if err != nil {
 		return err
 	}
-	clusterID, err := attestation.DeriveClusterID(measurementSalt, measurementSecret)
+	clusterID, err := attestation.DeriveClusterID(measurementSecret, measurementSalt)
 	if err != nil {
 		return err
 	}

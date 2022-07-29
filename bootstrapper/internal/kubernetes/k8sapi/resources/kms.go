@@ -23,8 +23,18 @@ type kmsDeployment struct {
 	ImagePullSecret    k8s.Secret
 }
 
+// KMSConfig is the configuration needed to set up Constellation's key management service.
+type KMSConfig struct {
+	MasterSecret       []byte
+	Salt               []byte
+	KMSURI             string
+	StorageURI         string
+	KeyEncryptionKeyID string
+	UseExistingKEK     bool
+}
+
 // NewKMSDeployment creates a new *kmsDeployment to use as the key management system inside Constellation.
-func NewKMSDeployment(csp string, masterSecret []byte) *kmsDeployment {
+func NewKMSDeployment(csp string, config KMSConfig) *kmsDeployment {
 	return &kmsDeployment{
 		ServiceAccount: k8s.ServiceAccount{
 			TypeMeta: meta.TypeMeta{
@@ -187,7 +197,11 @@ func NewKMSDeployment(csp string, masterSecret []byte) *kmsDeployment {
 													Items: []k8s.KeyToPath{
 														{
 															Key:  constants.ConstellationMasterSecretKey,
-															Path: constants.MasterSecretFilename,
+															Path: constants.ConstellationMasterSecretKey,
+														},
+														{
+															Key:  constants.ConstellationMasterSecretSalt,
+															Path: constants.ConstellationMasterSecretSalt,
 														},
 													},
 												},
@@ -228,7 +242,8 @@ func NewKMSDeployment(csp string, masterSecret []byte) *kmsDeployment {
 				Namespace: "kube-system",
 			},
 			Data: map[string][]byte{
-				constants.ConstellationMasterSecretKey: masterSecret,
+				constants.ConstellationMasterSecretKey:  config.MasterSecret,
+				constants.ConstellationMasterSecretSalt: config.Salt,
 			},
 			Type: "Opaque",
 		},

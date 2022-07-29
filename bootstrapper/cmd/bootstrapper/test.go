@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes"
+	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/logger"
@@ -14,7 +14,7 @@ import (
 type clusterFake struct{}
 
 // InitCluster fakes bootstrapping a new cluster with the current node being the master, returning the arguments required to join the cluster.
-func (c *clusterFake) InitCluster(context.Context, []string, string, string, []byte, kubernetes.KMSConfig, map[string]string, *logger.Logger,
+func (c *clusterFake) InitCluster(context.Context, []string, string, string, []byte, resources.KMSConfig, map[string]string, *logger.Logger,
 ) ([]byte, error) {
 	return []byte{}, nil
 }

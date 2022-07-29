@@ -256,59 +256,80 @@ func TestInitCompletion(t *testing.T) {
 
 func TestReadOrGeneratedMasterSecret(t *testing.T) {
 	testCases := map[string]struct {
-		filename    string
-		filecontent string
-		createFile  bool
-		fs          func() afero.Fs
-		wantErr     bool
+		filename       string
+		createFileFunc func(handler file.Handler) error
+		fs             func() afero.Fs
+		wantErr        bool
 	}{
 		"file with secret exists": {
-			filename:    "someSecret",
-			filecontent: base64.StdEncoding.EncodeToString([]byte("ConstellationSecret")),
-			createFile:  true,
-			fs:          afero.NewMemMapFs,
-			wantErr:     false,
+			filename: "someSecret",
+			fs:       afero.NewMemMapFs,
+			createFileFunc: func(handler file.Handler) error {
+				return handler.WriteJSON(
+					"someSecret",
+					masterSecret{Key: []byte("constellation-master-secret"), Salt: []byte("constellation-32Byte-length-salt")},
+					file.OptNone,
+				)
+			},
+			wantErr: false,
 		},
 		"no file given": {
-			filename:    "",
-			filecontent: "",
-			fs:          afero.NewMemMapFs,
-			wantErr:     false,
+			filename:       "",
+			createFileFunc: func(handler file.Handler) error { return nil },
+			fs:             afero.NewMemMapFs,
+			wantErr:        false,
 		},
 		"file does not exist": {
-			filename:    "nonExistingSecret",
-			filecontent: "",
-			createFile:  false,
-			fs:          afero.NewMemMapFs,
-			wantErr:     true,
+			filename:       "nonExistingSecret",
+			createFileFunc: func(handler file.Handler) error { return nil },
+			fs:             afero.NewMemMapFs,
+			wantErr:        true,
 		},
 		"file is empty": {
-			filename:    "emptySecret",
-			filecontent: "",
-			createFile:  true,
-			fs:          afero.NewMemMapFs,
-			wantErr:     true,
+			filename: "emptySecret",
+			createFileFunc: func(handler file.Handler) error {
+				return handler.Write("emptySecret", []byte{}, file.OptNone)
+			},
+			fs:      afero.NewMemMapFs,
+			wantErr: true,
 		},
-		"secret too short": {
-			filename:    "shortSecret",
-			filecontent: base64.StdEncoding.EncodeToString([]byte("short")),
-			createFile:  true,
-			fs:          afero.NewMemMapFs,
-			wantErr:     true,
+		"salt too short": {
+			filename: "shortSecret",
+			createFileFunc: func(handler file.Handler) error {
+				return handler.WriteJSON(
+					"shortSecret",
+					masterSecret{Key: []byte("constellation-master-secret"), Salt: []byte("short")},
+					file.OptNone,
+				)
+			},
+			fs:      afero.NewMemMapFs,
+			wantErr: true,
 		},
-		"secret not encoded": {
-			filename:    "unencodedSecret",
-			filecontent: "Constellation",
-			createFile:  true,
-			fs:          afero.NewMemMapFs,
-			wantErr:     true,
+		"key too short": {
+			filename: "shortSecret",
+			createFileFunc: func(handler file.Handler) error {
+				return handler.WriteJSON(
+					"shortSecret",
+					masterSecret{Key: []byte("short"), Salt: []byte("constellation-32Byte-length-salt")},
+					file.OptNone,
+				)
+			},
+			fs:      afero.NewMemMapFs,
+			wantErr: true,
+		},
+		"invalid file content": {
+			filename: "unencodedSecret",
+			createFileFunc: func(handler file.Handler) error {
+				return handler.Write("unencodedSecret", []byte("invalid-constellation-master-secret"), file.OptNone)
+			},
+			fs:      afero.NewMemMapFs,
+			wantErr: true,
 		},
 		"file not writeable": {
-			filename:    "",
-			filecontent: "",
-			createFile:  false,
-			fs:          func() afero.Fs { return afero.NewReadOnlyFs(afero.NewMemMapFs()) },
-			wantErr:     true,
+			filename:       "",
+			createFileFunc: func(handler file.Handler) error { return nil },
+			fs:             func() afero.Fs { return afero.NewReadOnlyFs(afero.NewMemMapFs()) },
+			wantErr:        true,
 		},
 	}
 
@@ -318,10 +339,7 @@ func TestReadOrGeneratedMasterSecret(t *testing.T) {
 			require := require.New(t)
 
 			fileHandler := file.NewHandler(tc.fs())
-
-			if tc.createFile {
-				require.NoError(fileHandler.Write(tc.filename, []byte(tc.filecontent), file.OptNone))
-			}
+			require.NoError(tc.createFileFunc(fileHandler))
 
 			var out bytes.Buffer
 			secret, err := readOrGenerateMasterSecret(&out, fileHandler, tc.filename)
@@ -337,9 +355,10 @@ func TestReadOrGeneratedMasterSecret(t *testing.T) {
 					tc.filename = strings.Trim(filename[1], "\n")
 				}
 
-				content, err := fileHandler.Read(tc.filename)
-				require.NoError(err)
-				assert.Equal(content, []byte(base64.StdEncoding.EncodeToString(secret)))
+				var masterSecret masterSecret
+				require.NoError(fileHandler.ReadJSON(tc.filename, &masterSecret))
+				assert.Equal(masterSecret.Key, secret.Key)
+				assert.Equal(masterSecret.Salt, secret.Salt)
 			}
 		})
 	}

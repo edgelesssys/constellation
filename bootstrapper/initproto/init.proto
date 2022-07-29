@@ -18,6 +18,7 @@ message InitRequest {
   string cloud_service_account_uri = 7;
   string kubernetes_version = 8;
   repeated SSHUserKey ssh_user_keys = 9;
+  bytes salt = 10;
 }
 
 message InitResponse {

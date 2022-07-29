@@ -10,6 +10,12 @@ import (
 // ClusterKMS implements the kms.CloudKMS interface for in cluster key management.
 type ClusterKMS struct {
 	masterKey []byte
+	salt      []byte
+}
+
+// New creates a new ClusterKMS.
+func New(salt []byte) *ClusterKMS {
+	return &ClusterKMS{salt: salt}
 }
 
 // CreateKEK sets the ClusterKMS masterKey.
@@ -23,6 +29,5 @@ func (c *ClusterKMS) GetDEK(ctx context.Context, kekID string, dekID string, dek
 	if len(c.masterKey) == 0 {
 		return nil, errors.New("master key not set for Constellation KMS")
 	}
-	// TODO: Choose a way to salt key derivation
-	return crypto.DeriveKey(c.masterKey, []byte("Constellation"), []byte(dekID), uint(dekSize))
+	return crypto.DeriveKey(c.masterKey, c.salt, []byte(dekID), uint(dekSize))
 }

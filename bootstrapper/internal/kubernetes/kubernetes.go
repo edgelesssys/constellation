@@ -68,18 +68,10 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 	}
 }
 
-type KMSConfig struct {
-	MasterSecret       []byte
-	KMSURI             string
-	StorageURI         string
-	KeyEncryptionKeyID string
-	UseExistingKEK     bool
-}
-
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, versionString string,
-	measurementSalt []byte, kmsConfig KMSConfig, sshUsers map[string]string, log *logger.Logger,
+	measurementSalt []byte, kmsConfig resources.KMSConfig, sshUsers map[string]string, log *logger.Logger,
 ) ([]byte, error) {
 	k8sVersion, err := versions.NewValidK8sVersion(versionString)
 	if err != nil {
@@ -187,7 +179,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up pod network: %w", err)
 	}
 
-	kms := resources.NewKMSDeployment(k.cloudProvider, kmsConfig.MasterSecret)
+	kms := resources.NewKMSDeployment(k.cloudProvider, kmsConfig)
 	if err = k.clusterUtil.SetupKMS(k.client, kms); err != nil {
 		return nil, fmt.Errorf("setting up kms: %w", err)
 	}

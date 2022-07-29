@@ -8,7 +8,7 @@ import (
 
 	"github.com/edgelesssys/constellation/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/diskencryption"
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes"
+	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/bootstrapper/nodestate"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/atls"
@@ -79,7 +79,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 	log.Infof("Init called")
 
 	// generate values for cluster attestation
-	measurementSalt, clusterID, err := deriveMeasurementValues(req.MasterSecret)
+	measurementSalt, clusterID, err := deriveMeasurementValues(req.MasterSecret, req.Salt)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "deriving measurement values: %s", err)
 	}
@@ -98,7 +98,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		return nil, status.Error(codes.FailedPrecondition, "node is already being activated")
 	}
 
-	if err := s.setupDisk(req.MasterSecret); err != nil {
+	if err := s.setupDisk(req.MasterSecret, req.Salt); err != nil {
 		return nil, status.Errorf(codes.Internal, "setting up disk: %s", err)
 	}
 
@@ -115,8 +115,9 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		req.CloudServiceAccountUri,
 		req.KubernetesVersion,
 		measurementSalt,
-		kubernetes.KMSConfig{
+		resources.KMSConfig{
 			MasterSecret:       req.MasterSecret,
+			Salt:               req.Salt,
 			KMSURI:             req.KmsUri,
 			StorageURI:         req.StorageUri,
 			KeyEncryptionKeyID: req.KeyEncryptionKeyId,
@@ -141,7 +142,7 @@ func (s *Server) Stop() {
 	s.grpcServer.GracefulStop()
 }
 
-func (s *Server) setupDisk(masterSecret []byte) error {
+func (s *Server) setupDisk(masterSecret, salt []byte) error {
 	if err := s.disk.Open(); err != nil {
 		return fmt.Errorf("opening encrypted disk: %w", err)
 	}
@@ -153,8 +154,7 @@ func (s *Server) setupDisk(masterSecret []byte) error {
 	}
 	uuid = strings.ToLower(uuid)
 
-	// TODO: Choose a way to salt the key derivation
-	diskKey, err := crypto.DeriveKey(masterSecret, []byte("Constellation"), []byte(crypto.HKDFInfoPrefix+uuid), 32)
+	diskKey, err := crypto.DeriveKey(masterSecret, salt, []byte(crypto.HKDFInfoPrefix+uuid), 32)
 	if err != nil {
 		return err
 	}
@@ -170,16 +170,16 @@ func sshProtoKeysToMap(keys []*initproto.SSHUserKey) map[string]string {
 	return keyMap
 }
 
-func deriveMeasurementValues(masterSecret []byte) (salt, clusterID []byte, err error) {
+func deriveMeasurementValues(masterSecret, hkdfSalt []byte) (salt, clusterID []byte, err error) {
 	salt, err = crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
 	if err != nil {
 		return nil, nil, err
 	}
-	secret, err := attestation.DeriveMeasurementSecret(masterSecret)
+	secret, err := attestation.DeriveMeasurementSecret(masterSecret, hkdfSalt)
 	if err != nil {
 		return nil, nil, err
 	}
-	clusterID, err = attestation.DeriveClusterID(salt, secret)
+	clusterID, err = attestation.DeriveClusterID(secret, salt)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -196,7 +196,7 @@ type ClusterInitializer interface {
 		cloudServiceAccountURI string,
 		k8sVersion string,
 		measurementSalt []byte,
-		kmsConfig kubernetes.KMSConfig,
+		kmsConfig resources.KMSConfig,
 		sshUserKeys map[string]string,
 		log *logger.Logger,
 	) ([]byte, error)

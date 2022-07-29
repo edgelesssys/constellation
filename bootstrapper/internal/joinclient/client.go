@@ -231,7 +231,7 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 		}
 	}()
 
-	clusterID, err := attestation.DeriveClusterID(ticket.MeasurementSalt, ticket.MeasurementSecret)
+	clusterID, err := attestation.DeriveClusterID(ticket.MeasurementSecret, ticket.MeasurementSalt)
 	if err != nil {
 		return err
 	}

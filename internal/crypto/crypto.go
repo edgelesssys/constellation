@@ -25,8 +25,6 @@ const (
 )
 
 // DeriveKey derives a key from a secret.
-//
-// TODO: decide on a secure key derivation function.
 func DeriveKey(secret, salt, info []byte, length uint) ([]byte, error) {
 	hkdf := hkdf.New(sha256.New, secret, salt, info)
 	key := make([]byte, length)

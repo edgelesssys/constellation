@@ -115,7 +115,8 @@ func initialize(cmd *cobra.Command, dialer grpcDialer, serviceAccCreator service
 
 	req := &initproto.InitRequest{
 		AutoscalingNodeGroups:  autoscalingNodeGroups,
-		MasterSecret:           flags.masterSecret,
+		MasterSecret:           flags.masterSecret.Key,
+		Salt:                   flags.masterSecret.Salt,
 		KmsUri:                 kms.ClusterKMSURI,
 		StorageUri:             kms.NoStoreURI,
 		KeyEncryptionKeyId:     "",
@@ -129,11 +130,7 @@ func initialize(cmd *cobra.Command, dialer grpcDialer, serviceAccCreator service
 		return err
 	}
 
-	if err := writeOutput(resp, controlPlanes.PublicIPs()[0], cmd.OutOrStdout(), fileHandler); err != nil {
-		return err
-	}
-
-	return nil
+	return writeOutput(resp, controlPlanes.PublicIPs()[0], cmd.OutOrStdout(), fileHandler)
 }
 
 func initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.InitRequest) (*initproto.InitResponse, error) {
@@ -185,7 +182,7 @@ func writeOutput(resp *initproto.InitResponse, ip string, wr io.Writer, fileHand
 	fmt.Fprintln(wr)
 
 	if err := fileHandler.Write(constants.AdminConfFilename, resp.Kubeconfig, file.OptNone); err != nil {
-		return fmt.Errorf("write kubeconfig: %w", err)
+		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
 
 	idFile := clusterIDsFile{
@@ -236,38 +233,52 @@ func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (initFlags, erro
 // initFlags are the resulting values of flag preprocessing.
 type initFlags struct {
 	configPath   string
-	masterSecret []byte
+	masterSecret masterSecret
 	autoscale    bool
 }
 
+// masterSecret holds the master key and salt for deriving keys.
+type masterSecret struct {
+	Key  []byte `json:"key"`
+	Salt []byte `json:"salt"`
+}
+
 // readOrGenerateMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
-func readOrGenerateMasterSecret(writer io.Writer, fileHandler file.Handler, filename string) ([]byte, error) {
+func readOrGenerateMasterSecret(writer io.Writer, fileHandler file.Handler, filename string) (masterSecret, error) {
 	if filename != "" {
-		// Try to read the base64 secret from file
-		encodedSecret, err := fileHandler.Read(filename)
-		if err != nil {
-			return nil, err
+		var secret masterSecret
+		if err := fileHandler.ReadJSON(filename, &secret); err != nil {
+			return masterSecret{}, err
 		}
-		decoded, err := base64.StdEncoding.DecodeString(string(encodedSecret))
-		if err != nil {
-			return nil, err
+
+		if len(secret.Key) < crypto.MasterSecretLengthMin {
+			return masterSecret{}, fmt.Errorf("provided master secret is smaller than the required minimum of %d Bytes", crypto.MasterSecretLengthMin)
 		}
-		if len(decoded) < crypto.MasterSecretLengthMin {
-			return nil, errors.New("provided master secret is smaller than the required minimum of 16 Bytes")
+		if len(secret.Salt) < crypto.RNGLengthDefault {
+			return masterSecret{}, fmt.Errorf("provided salt is smaller than the required minimum of %d Bytes", crypto.RNGLengthDefault)
 		}
-		return decoded, nil
+		return secret, nil
 	}
 
 	// No file given, generate a new secret, and save it to disk
-	masterSecret, err := crypto.GenerateRandomBytes(crypto.MasterSecretLengthDefault)
+	key, err := crypto.GenerateRandomBytes(crypto.MasterSecretLengthDefault)
 	if err != nil {
-		return nil, err
+		return masterSecret{}, err
 	}
-	if err := fileHandler.Write(constants.MasterSecretFilename, []byte(base64.StdEncoding.EncodeToString(masterSecret)), file.OptNone); err != nil {
-		return nil, err
+	salt, err := crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
+	if err != nil {
+		return masterSecret{}, err
+	}
+	secret := masterSecret{
+		Key:  key,
+		Salt: salt,
+	}
+
+	if err := fileHandler.WriteJSON(constants.MasterSecretFilename, secret, file.OptNone); err != nil {
+		return masterSecret{}, err
 	}
 	fmt.Fprintf(writer, "Your Constellation master secret was successfully written to ./%s\n", constants.MasterSecretFilename)
-	return masterSecret, nil
+	return secret, nil
 }
 
 func getScalingGroupsFromState(stat state.ConstellationState, config *config.Config) (controlPlanes, workers cloudtypes.ScalingGroup, err error) {

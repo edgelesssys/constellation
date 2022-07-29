@@ -12,12 +12,14 @@ Styleguide for this document:
 -->
 
 # Changelog
+
 All notable changes to Constellation will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
 ### Added
 
 - Kubernetes version is configured through an entry in `constellation-config.yaml`.
@@ -28,7 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Nodes add themselves to the cluster after `constellation init` is done
-
 - Owner ID and Unique ID merged into a single value: Cluster ID
 
 ### Deprecated
@@ -38,27 +39,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - User facing WireGuard VPN
 
 ### Fixed
+
 - Correctly wait for `bootstrapper` to come online in `constellation init`
 
 ### Security
+
 - Create Kubernetes CA signed kubelet certificates on activation.
+- Add salt to key derivation
 
 ### Internal
 
 ## [1.3.1] - 2022-07-11
 
 ### Changed
+
 - Update default CoreOS image to latest version (1657199013).
 
 ### Fixed
+
 - Add load balancer path to Azure deployment so that PCR values can be read.
 - Show correct version number in `constellation version`.
 
 ### Removed
+
 - Support for Azure `Standard_*_v3` types.
 
 ## [1.3.0] - 2022-07-05
+
 ### Added
+
 - Early boot logging for GCP and Azure. [[Docs]](https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/workflows/troubleshooting?id=cloud-logging)
 - `constellation-access-manager` allows users to manage SSH users over a ConfigMap. Enables persistent and dynamic management of SSH users on multiple nodes, even after a reboot. [[Docs]](https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/workflows/ssh)
 - GCP-native Kubernetes load balancing. [[Docs]](https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/networking)
@@ -67,23 +76,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `constellation-id.json` in Constellation workspace now holds cluster IDs, to reduce required arguments in Constellation commands, e.g., `constellation verify`.
 
 ### Changed
+
 - New `constellation-activation-service` offloads Kubernetes node activation from monolithic Coordinator to Kubernetes native micro-service. [[ReadMe]](https://github.com/edgelesssys/constellation/blob/main/activation/README.md)
 - Improve user-friendliness of error messages in Constellation CLI.
 - Move verification from extracting attestation statements out of aTLS handshake to a dedicated `verify-service` in Kubernetes with gRPC and HTTP endpoints.
 
 ### Security
+
 - GCP WireGuard encryption via cilium.
 
 ### Internal
+
 - Refactore folder structure of repository to better reflect `internal` implementation and public API.
 - Extend `goleak` checks to all tests.
 
 ## [1.2.0] - 2022-06-02
+
 ### Changed
+
 - Replace flannel CNI with Cilium.
 
 ## [1.1.0] - 2022-06-02
+
 ### Added
+
 - CLI
   - Command `constellation recover` to re-initialize a completely stopped cluster.
   - Command `constellation config generate` to generate a default configuration file for a specific cloud provider.
@@ -96,6 +112,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Option to add SSH users on init.
 
 ### Changed
+
 - CLI UX
   - `constellation create` now requires a configuration file. The usual workflow is to run `constellation config generate` first.
   - Consistent command format with at most one argument and named flags otherwise.
@@ -110,17 +127,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Rename *PCRs* to *Measurements*.
 
 ### Removed
+
 - Support for non-CVMs on GCP.
 
 ### Fixed
+
 - Pin Kubernetes version deployed by `kubeadm init`.
 
 ### Security
+
 - Replace single, never expiring Kubernetes join token with expiring unique tokens.
 - Apply CIS benchmark for kubeadm clusterconf and kubelet conf.
 - Enable Kubernetes audit log.
 
 ### Internal
+
 - Create GCP images in `constellation-images` project so that they can be shared with customers.
 - Add customer onboarding docs.
 - Add E2E test as Github Action.
@@ -128,6 +149,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preparations for mutual ATLS.
 
 ## [1.0.0] - 2022-04-28
+
 Initial release of Constellation. With underlying WireGuard and Kubernetes compliant.
 
 [Unreleased]: https://github.com/edgelesssys/constellation/compare/v1.3.1...HEAD

@@ -2,6 +2,7 @@ package setup
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -123,7 +124,11 @@ func getKMS(ctx context.Context, kmsURI string, store kms.Storage) (kms.CloudKMS
 		return gcp.New(ctx, project, location, keyRing, store, kmspb.ProtectionLevel(protectionLvl))
 
 	case "cluster-kms":
-		return &cluster.ClusterKMS{}, nil
+		salt, err := getClusterKMSConfig(uri)
+		if err != nil {
+			return nil, err
+		}
+		return cluster.New(salt), nil
 
 	default:
 		return nil, fmt.Errorf("unknown KMS type: %s", uri.Host)
@@ -184,6 +189,14 @@ func getGCPKMSConfig(uri *url.URL) (string, string, string, int, error) {
 func getGCPStorageConfig(uri *url.URL) (string, string, error) {
 	r, err := getConfig(uri.Query(), []string{"project", "bucket"})
 	return r[0], r[1], err
+}
+
+func getClusterKMSConfig(uri *url.URL) ([]byte, error) {
+	r, err := getConfig(uri.Query(), []string{"salt"})
+	if err != nil {
+		return nil, err
+	}
+	return base64.URLEncoding.DecodeString(r[0])
 }
 
 // getConfig parses url query values, returning a map of the requested values.

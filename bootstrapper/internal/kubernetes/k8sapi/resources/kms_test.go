@@ -11,8 +11,7 @@ func TestKMSMarshalUnmarshal(t *testing.T) {
 	require := require.New(t)
 	assert := assert.New(t)
 
-	testMS := []byte{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8}
-	kmsDepl := NewKMSDeployment("test", testMS)
+	kmsDepl := NewKMSDeployment("test", KMSConfig{MasterSecret: []byte{0x0, 0x1, 0x2}, Salt: []byte{0x3, 0x4, 0x5}})
 	data, err := kmsDepl.Marshal()
 	require.NoError(err)
 
