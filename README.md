@@ -2,6 +2,11 @@
 
 This is the main repository of Constellation.
 
+![E2ETestAzure](https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-azure.yml/badge.svg?branch=main)
+![E2ETestGCP](https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-gcp.yml/badge.svg?branch=main)
+[![Go Report Card](https://goreportcard.com/badge/github.com/edgelesssys/constellation)](https://goreportcard.com/report/github.com/edgelesssys/constellation)
+[![Discord Chat](https://img.shields.io/badge/chat-on%20Discord-blue)](https://discord.gg/rH8QTH56JN)
+
 Core components:
 
 * [access_manager](access_manager): Contains the access-manager pod used to persist SSH users based on a K8s ConfigMap
