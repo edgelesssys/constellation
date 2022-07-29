@@ -5,8 +5,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
 	"net"
+	"strconv"
+	"strings"
 
 	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/internal/atls"
@@ -114,30 +115,30 @@ func parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handler) (verifyFlags
 		return verifyFlags{}, fmt.Errorf("parsing node-endpoint argument: %w", err)
 	}
 
-	// Get empty values from ID file
 	emptyEndpoint := endpoint == ""
 	emptyIDs := ownerID == "" && clusterID == ""
-	if emptyEndpoint || emptyIDs {
-		if details, err := readIds(fileHandler); err == nil {
-			if emptyEndpoint {
-				cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", constants.ClusterIDsFileName)
-				endpoint = details.Endpoint
-			}
-			if emptyIDs {
-				cmd.Printf("Using IDs from %q. Specify --owner-id  and/or --cluster-id to override this.\n", constants.ClusterIDsFileName)
-				ownerID = details.OwnerID
-				clusterID = details.ClusterID
-			}
-		} else if !errors.Is(err, fs.ErrNotExist) {
-			return verifyFlags{}, err
+
+	var idFile clusterIDsFile
+	if emptyEndpoint || emptyIDs { // Get empty values from ID file
+		if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
+			return verifyFlags{}, fmt.Errorf("reading cluster ID file: %w", err)
 		}
+	}
+	if emptyEndpoint {
+		cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", constants.ClusterIDsFileName)
+		endpoint = idFile.IP
+	}
+	if emptyIDs {
+		cmd.Printf("Using IDs from %q. Specify --owner-id  and/or --cluster-id to override this.\n", constants.ClusterIDsFileName)
+		ownerID = idFile.OwnerID
+		clusterID = idFile.ClusterID
 	}
 
 	// Validate
 	if ownerID == "" && clusterID == "" {
 		return verifyFlags{}, errors.New("neither owner-id nor cluster-id provided to verify the cluster")
 	}
-	endpoint, err = validateEndpoint(endpoint, constants.VerifyServiceNodePortGRPC)
+	endpoint, err = addPortIfMissing(endpoint, constants.VerifyServiceNodePortGRPC)
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
 	}
@@ -157,12 +158,21 @@ type verifyFlags struct {
 	configPath string
 }
 
-func readIds(fileHandler file.Handler) (clusterIDsFile, error) {
-	det := clusterIDsFile{}
-	if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &det); err != nil {
-		return clusterIDsFile{}, fmt.Errorf("reading cluster ids: %w", err)
+func addPortIfMissing(endpoint string, defaultPort int) (string, error) {
+	if endpoint == "" {
+		return "", errors.New("endpoint is empty")
 	}
-	return det, nil
+
+	_, _, err := net.SplitHostPort(endpoint)
+	if err == nil {
+		return endpoint, nil
+	}
+
+	if strings.Contains(err.Error(), "missing port in address") {
+		return net.JoinHostPort(endpoint, strconv.Itoa(defaultPort)), nil
+	}
+
+	return "", err
 }
 
 // verifyCompletion handles the completion of CLI arguments. It is frequently called

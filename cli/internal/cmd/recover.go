@@ -100,7 +100,7 @@ func parseRecoverFlags(cmd *cobra.Command) (recoverFlags, error) {
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("parsing endpoint argument: %w", err)
 	}
-	endpoint, err = validateEndpoint(endpoint, constants.BootstrapperPort)
+	endpoint, err = addPortIfMissing(endpoint, constants.BootstrapperPort)
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
 	}

@@ -106,8 +106,8 @@ func TestVerify(t *testing.T) {
 			provider:     cloudprovider.GCP,
 			ownerIDFlag:  zeroBase64,
 			protoClient:  &stubVerifyClient{},
-			idFile:       &clusterIDsFile{Endpoint: "192.0.2.1:1234"},
-			wantEndpoint: "192.0.2.1:1234",
+			idFile:       &clusterIDsFile{IP: "192.0.2.1"},
+			wantEndpoint: "192.0.2.1:30081",
 		},
 		"override endpoint from details file": {
 			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
@@ -115,7 +115,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.2:1234",
 			ownerIDFlag:      zeroBase64,
 			protoClient:      &stubVerifyClient{},
-			idFile:           &clusterIDsFile{Endpoint: "192.0.2.1:1234"},
+			idFile:           &clusterIDsFile{IP: "192.0.2.1"},
 			wantEndpoint:     "192.0.2.2:1234",
 		},
 		"invalid endpoint": {
@@ -344,4 +344,60 @@ type stubVerifyAPI struct {
 
 func (a stubVerifyAPI) GetAttestation(context.Context, *verifyproto.GetAttestationRequest) (*verifyproto.GetAttestationResponse, error) {
 	return a.attestation, a.attestationErr
+}
+
+func TestAddPortIfMissing(t *testing.T) {
+	testCases := map[string]struct {
+		endpoint    string
+		defaultPort int
+		wantResult  string
+		wantErr     bool
+	}{
+		"ip and port": {
+			endpoint:    "192.0.2.1:2",
+			defaultPort: 3,
+			wantResult:  "192.0.2.1:2",
+		},
+		"hostname and port": {
+			endpoint:    "foo:2",
+			defaultPort: 3,
+			wantResult:  "foo:2",
+		},
+		"ip": {
+			endpoint:    "192.0.2.1",
+			defaultPort: 3,
+			wantResult:  "192.0.2.1:3",
+		},
+		"hostname": {
+			endpoint:    "foo",
+			defaultPort: 3,
+			wantResult:  "foo:3",
+		},
+		"empty endpoint": {
+			endpoint:    "",
+			defaultPort: 3,
+			wantErr:     true,
+		},
+		"invalid endpoint": {
+			endpoint:    "foo:2:2",
+			defaultPort: 3,
+			wantErr:     true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			res, err := addPortIfMissing(tc.endpoint, tc.defaultPort)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+
+			require.NoError(err)
+			assert.Equal(tc.wantResult, res)
+		})
+	}
 }

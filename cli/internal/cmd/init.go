@@ -217,7 +217,7 @@ func writeOutput(resp *initproto.InitResponse, ip string, wr io.Writer, fileHand
 	idFile := clusterIDsFile{
 		ClusterID: clusterID,
 		OwnerID:   ownerID,
-		Endpoint:  net.JoinHostPort(ip, strconv.Itoa(constants.VerifyServiceNodePortGRPC)),
+		IP:        ip,
 	}
 	if err := fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptNone); err != nil {
 		return fmt.Errorf("writing Constellation id file: %w", err)

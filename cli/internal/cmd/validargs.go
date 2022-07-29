@@ -3,9 +3,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"net"
-	"strconv"
-	"strings"
 
 	"github.com/edgelesssys/constellation/cli/internal/azure"
 	"github.com/edgelesssys/constellation/cli/internal/gcp"
@@ -55,21 +52,4 @@ func validInstanceTypeForProvider(cmd *cobra.Command, insType string, provider c
 	default:
 		return fmt.Errorf("%s isn't a valid cloud platform", provider)
 	}
-}
-
-func validateEndpoint(endpoint string, defaultPort int) (string, error) {
-	if endpoint == "" {
-		return "", errors.New("endpoint is empty")
-	}
-
-	_, _, err := net.SplitHostPort(endpoint)
-	if err == nil {
-		return endpoint, nil
-	}
-
-	if strings.Contains(err.Error(), "missing port in address") {
-		return net.JoinHostPort(endpoint, strconv.Itoa(defaultPort)), nil
-	}
-
-	return "", err
 }

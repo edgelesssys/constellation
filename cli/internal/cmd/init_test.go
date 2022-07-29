@@ -207,14 +207,14 @@ func TestWriteOutput(t *testing.T) {
 	expectedIDFile := clusterIDsFile{
 		ClusterID: clusterID,
 		OwnerID:   ownerID,
-		Endpoint:  net.JoinHostPort("ip", strconv.Itoa(constants.VerifyServiceNodePortGRPC)),
+		IP:        "cluster-ip",
 	}
 
 	var out bytes.Buffer
 	testFs := afero.NewMemMapFs()
 	fileHandler := file.NewHandler(testFs)
 
-	err := writeOutput(resp, "ip", &out, fileHandler)
+	err := writeOutput(resp, "cluster-ip", &out, fileHandler)
 	assert.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
