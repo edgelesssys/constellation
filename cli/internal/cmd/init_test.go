@@ -44,38 +44,17 @@ func TestInitArgumentValidation(t *testing.T) {
 
 func TestInitialize(t *testing.T) {
 	testGcpState := state.ConstellationState{
-		CloudProvider:    "GCP",
-		BootstrapperHost: "192.0.2.1",
-		GCPWorkerInstances: cloudtypes.Instances{
-			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-		},
-		GCPControlPlaneInstances: cloudtypes.Instances{
-			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-		},
+		CloudProvider:      "GCP",
+		GCPWorkerInstances: cloudtypes.Instances{"id-0": {}, "id-1": {}},
 	}
 	testAzureState := state.ConstellationState{
-		CloudProvider:    "Azure",
-		BootstrapperHost: "192.0.2.1",
-		AzureWorkerInstances: cloudtypes.Instances{
-			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-		},
-		AzureControlPlaneInstances: cloudtypes.Instances{
-			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-		},
-		AzureResourceGroup: "test",
+		CloudProvider:        "Azure",
+		AzureWorkerInstances: cloudtypes.Instances{"id-0": {}, "id-1": {}},
+		AzureResourceGroup:   "test",
 	}
 	testQemuState := state.ConstellationState{
-		CloudProvider:    "QEMU",
-		BootstrapperHost: "192.0.2.1",
-		QEMUWorkerInstances: cloudtypes.Instances{
-			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-		},
-		QEMUControlPlaneInstances: cloudtypes.Instances{
-			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-		},
+		CloudProvider:       "QEMU",
+		QEMUWorkerInstances: cloudtypes.Instances{"id-0": {}, "id-1": {}},
 	}
 	testInitResp := &initproto.InitResponse{
 		Kubeconfig: []byte("kubeconfig"),
@@ -86,46 +65,67 @@ func TestInitialize(t *testing.T) {
 
 	testCases := map[string]struct {
 		existingState         state.ConstellationState
+		existingIDFile        clusterIDsFile
 		serviceAccountCreator stubServiceAccountCreator
 		helmLoader            stubHelmLoader
 		initServerAPI         *stubInitServer
+		endpointFlag          string
 		setAutoscaleFlag      bool
 		wantErr               bool
 	}{
 		"initialize some gcp instances": {
-			existingState: testGcpState,
+			existingState:  testGcpState,
+			existingIDFile: clusterIDsFile{IP: "192.0.2.1"},
+
 			initServerAPI: &stubInitServer{initResp: testInitResp},
 		},
 		"initialize some azure instances": {
-			existingState: testAzureState,
-			initServerAPI: &stubInitServer{initResp: testInitResp},
+			existingState:  testAzureState,
+			existingIDFile: clusterIDsFile{IP: "192.0.2.1"},
+			initServerAPI:  &stubInitServer{initResp: testInitResp},
 		},
 		"initialize some qemu instances": {
-			existingState: testQemuState,
-			initServerAPI: &stubInitServer{initResp: testInitResp},
+			existingState:  testQemuState,
+			existingIDFile: clusterIDsFile{IP: "192.0.2.1"},
+			initServerAPI:  &stubInitServer{initResp: testInitResp},
 		},
 		"initialize gcp with autoscaling": {
 			existingState:    testGcpState,
+			existingIDFile:   clusterIDsFile{IP: "192.0.2.1"},
 			initServerAPI:    &stubInitServer{initResp: testInitResp},
 			setAutoscaleFlag: true,
 		},
 		"initialize azure with autoscaling": {
 			existingState:    testAzureState,
+			existingIDFile:   clusterIDsFile{IP: "192.0.2.1"},
 			initServerAPI:    &stubInitServer{initResp: testInitResp},
 			setAutoscaleFlag: true,
 		},
+		"initialize with endpoint flag": {
+			existingState: testGcpState,
+			initServerAPI: &stubInitServer{initResp: testInitResp},
+			endpointFlag:  "192.0.2.1",
+		},
 		"empty state": {
+			existingState:  state.ConstellationState{},
+			existingIDFile: clusterIDsFile{IP: "192.0.2.1"},
+			initServerAPI:  &stubInitServer{},
+			wantErr:        true,
+		},
+		"neither endpoint flag nor id file": {
 			existingState: state.ConstellationState{},
 			initServerAPI: &stubInitServer{},
 			wantErr:       true,
 		},
 		"init call fails": {
-			existingState: testGcpState,
-			initServerAPI: &stubInitServer{initErr: someErr},
-			wantErr:       true,
+			existingState:  testGcpState,
+			existingIDFile: clusterIDsFile{IP: "192.0.2.1"},
+			initServerAPI:  &stubInitServer{initErr: someErr},
+			wantErr:        true,
 		},
 		"fail to create service account": {
 			existingState:         testGcpState,
+			existingIDFile:        clusterIDsFile{IP: "192.0.2.1"},
 			initServerAPI:         &stubInitServer{},
 			serviceAccountCreator: stubServiceAccountCreator{createErr: someErr},
 			wantErr:               true,
@@ -167,7 +167,11 @@ func TestInitialize(t *testing.T) {
 			config := defaultConfigWithExpectedMeasurements(t, cloudprovider.FromString(tc.existingState.CloudProvider))
 			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config))
 			require.NoError(fileHandler.WriteJSON(constants.StateFilename, tc.existingState, file.OptNone))
+			require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, tc.existingIDFile, file.OptNone))
 			require.NoError(cmd.Flags().Set("autoscale", strconv.FormatBool(tc.setAutoscaleFlag)))
+			if tc.endpointFlag != "" {
+				require.NoError(cmd.Flags().Set("endpoint", tc.endpointFlag))
+			}
 
 			ctx := context.Background()
 			ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
@@ -391,17 +395,8 @@ func TestAttestation(t *testing.T) {
 		OwnerId:    []byte("ownerID"),
 		ClusterId:  []byte("clusterID"),
 	}}
-	existingState := state.ConstellationState{
-		CloudProvider:    "QEMU",
-		BootstrapperHost: "192.0.2.1",
-		QEMUWorkerInstances: cloudtypes.Instances{
-			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-		},
-		QEMUControlPlaneInstances: cloudtypes.Instances{
-			"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-		},
-	}
+	existingState := state.ConstellationState{CloudProvider: "QEMU"}
+	existingIDFile := &clusterIDsFile{IP: "192.0.2.4"}
 
 	netDialer := testdialer.NewBufconnDialer()
 	newDialer := func(v *cloudcmd.Validator) *dialer.Dialer {
@@ -425,7 +420,7 @@ func TestAttestation(t *testing.T) {
 	initServer := grpc.NewServer(grpc.Creds(serverCreds))
 	initproto.RegisterAPIServer(initServer, initServerAPI)
 	port := strconv.Itoa(constants.BootstrapperPort)
-	listener := netDialer.GetListener(net.JoinHostPort("192.0.2.1", port))
+	listener := netDialer.GetListener(net.JoinHostPort("192.0.2.4", port))
 	go initServer.Serve(listener)
 	defer initServer.GracefulStop()
 
@@ -439,6 +434,7 @@ func TestAttestation(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	fileHandler := file.NewHandler(fs)
 	require.NoError(fileHandler.WriteJSON(constants.StateFilename, existingState, file.OptNone))
+	require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, existingIDFile, file.OptNone))
 
 	cfg := config.Default()
 	cfg.RemoveProviderExcept(cloudprovider.QEMU)

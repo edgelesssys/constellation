@@ -46,7 +46,7 @@ func TestCreateArgumentValidation(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	testState := state.ConstellationState{Name: "test"}
+	testState := state.ConstellationState{Name: "test", BootstrapperHost: "192.0.2.1"}
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
@@ -263,6 +263,8 @@ func TestCreate(t *testing.T) {
 					assert.True(tc.creator.createCalled)
 					var state state.ConstellationState
 					require.NoError(fileHandler.ReadJSON(constants.StateFilename, &state))
+					var idFile clusterIDsFile
+					require.NoError(fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile))
 					assert.Equal(state, testState)
 				}
 			}

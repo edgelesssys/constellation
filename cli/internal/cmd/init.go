@@ -46,6 +46,7 @@ func NewInitCmd() *cobra.Command {
 		RunE:              runInitialize,
 	}
 	cmd.Flags().String("master-secret", "", "path to base64-encoded master secret")
+	cmd.Flags().String("endpoint", "", "endpoint of the bootstrapper, passed as HOST[:PORT]")
 	cmd.Flags().Bool("autoscale", false, "enable Kubernetes cluster-autoscaler")
 	return cmd
 }
@@ -124,7 +125,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return err
 	}
 
-	_, workers, err := getScalingGroupsFromState(stat, config)
+	workers, err := getScalingGroupsFromState(stat, config)
 	if err != nil {
 		return err
 	}
@@ -154,12 +155,16 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		HelmDeployments:        helmDeployments,
 		EnforcedPcrs:           getEnforcedMeasurements(provider, config),
 	}
-	resp, err := initCall(cmd.Context(), newDialer(validator), stat.BootstrapperHost, req)
+	resp, err := initCall(cmd.Context(), newDialer(validator), flags.endpoint, req)
 	if err != nil {
 		return err
 	}
 
-	return writeOutput(resp, stat.BootstrapperHost, cmd.OutOrStdout(), fileHandler)
+	if err := writeOutput(resp, flags.endpoint, cmd.OutOrStdout(), fileHandler); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.InitRequest) (*initproto.InitResponse, error) {
@@ -219,7 +224,7 @@ func writeOutput(resp *initproto.InitResponse, ip string, wr io.Writer, fileHand
 		OwnerID:   ownerID,
 		IP:        ip,
 	}
-	if err := fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptNone); err != nil {
+	if err := fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptOverwrite); err != nil {
 		return fmt.Errorf("writing Constellation id file: %w", err)
 	}
 
@@ -250,23 +255,34 @@ func getEnforcedMeasurements(provider cloudprovider.Provider, config *config.Con
 func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (initFlags, error) {
 	masterSecretPath, err := cmd.Flags().GetString("master-secret")
 	if err != nil {
-		return initFlags{}, fmt.Errorf("parsing master-secret path argument: %w", err)
+		return initFlags{}, fmt.Errorf("parsing master-secret path flag: %w", err)
 	}
 	masterSecret, err := readOrGenerateMasterSecret(cmd.OutOrStdout(), fileHandler, masterSecretPath)
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing or generating master mastersecret from file %s: %w", masterSecretPath, err)
 	}
+	endpoint, err := cmd.Flags().GetString("endpoint")
+	if err != nil {
+		return initFlags{}, fmt.Errorf("parsing endpoint flag: %w", err)
+	}
+	if endpoint == "" {
+		endpoint, err = readIPFromIDFile(fileHandler)
+		if err != nil {
+			return initFlags{}, fmt.Errorf("getting bootstrapper endpoint: %w", err)
+		}
+	}
 	autoscale, err := cmd.Flags().GetBool("autoscale")
 	if err != nil {
-		return initFlags{}, fmt.Errorf("parsing autoscale argument: %w", err)
+		return initFlags{}, fmt.Errorf("parsing autoscale flag: %w", err)
 	}
 	configPath, err := cmd.Flags().GetString("config")
 	if err != nil {
-		return initFlags{}, fmt.Errorf("parsing config path argument: %w", err)
+		return initFlags{}, fmt.Errorf("parsing config path flag: %w", err)
 	}
 
 	return initFlags{
 		configPath:   configPath,
+		endpoint:     endpoint,
 		autoscale:    autoscale,
 		masterSecret: masterSecret,
 	}, nil
@@ -276,6 +292,7 @@ func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (initFlags, erro
 type initFlags struct {
 	configPath   string
 	masterSecret masterSecret
+	endpoint     string
 	autoscale    bool
 }
 
@@ -323,88 +340,32 @@ func readOrGenerateMasterSecret(writer io.Writer, fileHandler file.Handler, file
 	return secret, nil
 }
 
-func getScalingGroupsFromState(stat state.ConstellationState, config *config.Config) (controlPlanes, workers cloudtypes.ScalingGroup, err error) {
-	switch {
-	case len(stat.GCPControlPlaneInstances) != 0:
-		return getGCPInstances(stat, config)
-	case len(stat.AzureControlPlaneInstances) != 0:
-		return getAzureInstances(stat, config)
-	case len(stat.QEMUControlPlaneInstances) != 0:
-		return getQEMUInstances(stat, config)
+func readIPFromIDFile(fileHandler file.Handler) (string, error) {
+	var idFile clusterIDsFile
+	if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
+		return "", err
+	}
+	if idFile.IP == "" {
+		return "", fmt.Errorf("missing IP address in %q", constants.ClusterIDsFileName)
+	}
+	return idFile.IP, nil
+}
+
+func getScalingGroupsFromState(stat state.ConstellationState, config *config.Config) (workers cloudtypes.ScalingGroup, err error) {
+	switch cloudprovider.FromString(stat.CloudProvider) {
+	case cloudprovider.GCP:
+		return cloudtypes.ScalingGroup{
+			GroupID: gcp.AutoscalingNodeGroup(stat.GCPProject, stat.GCPZone, stat.GCPWorkerInstanceGroup, config.AutoscalingNodeGroupMin, config.AutoscalingNodeGroupMax),
+		}, nil
+	case cloudprovider.Azure:
+		return cloudtypes.ScalingGroup{
+			GroupID: azure.AutoscalingNodeGroup(stat.AzureWorkerScaleSet, config.AutoscalingNodeGroupMin, config.AutoscalingNodeGroupMax),
+		}, nil
+	case cloudprovider.QEMU:
+		return cloudtypes.ScalingGroup{GroupID: ""}, nil
 	default:
-		return cloudtypes.ScalingGroup{}, cloudtypes.ScalingGroup{}, errors.New("no instances to initialize")
+		return cloudtypes.ScalingGroup{}, errors.New("unknown cloud provider")
 	}
-}
-
-func getGCPInstances(stat state.ConstellationState, config *config.Config) (controlPlanes, workers cloudtypes.ScalingGroup, err error) {
-	if len(stat.GCPControlPlaneInstances) == 0 {
-		return cloudtypes.ScalingGroup{}, cloudtypes.ScalingGroup{}, errors.New("no control-plane workers available, can't create Constellation without any instance")
-	}
-
-	// GroupID of controlPlanes is empty, since they currently do not scale.
-	controlPlanes = cloudtypes.ScalingGroup{
-		Instances: stat.GCPControlPlaneInstances,
-		GroupID:   "",
-	}
-
-	if len(stat.GCPWorkerInstances) == 0 {
-		return cloudtypes.ScalingGroup{}, cloudtypes.ScalingGroup{}, errors.New("no worker workers available, can't create Constellation with one instance")
-	}
-
-	// TODO: make min / max configurable and abstract autoscaling for different cloud providers
-	workers = cloudtypes.ScalingGroup{
-		Instances: stat.GCPWorkerInstances,
-		GroupID:   gcp.AutoscalingNodeGroup(stat.GCPProject, stat.GCPZone, stat.GCPWorkerInstanceGroup, config.AutoscalingNodeGroupMin, config.AutoscalingNodeGroupMax),
-	}
-
-	return
-}
-
-func getAzureInstances(stat state.ConstellationState, config *config.Config) (controlPlanes, workers cloudtypes.ScalingGroup, err error) {
-	if len(stat.AzureControlPlaneInstances) == 0 {
-		return cloudtypes.ScalingGroup{}, cloudtypes.ScalingGroup{}, errors.New("no control-plane workers available, can't create Constellation cluster without any instance")
-	}
-
-	// GroupID of controlPlanes is empty, since they currently do not scale.
-	controlPlanes = cloudtypes.ScalingGroup{
-		Instances: stat.AzureControlPlaneInstances,
-		GroupID:   "",
-	}
-
-	if len(stat.AzureWorkerInstances) == 0 {
-		return cloudtypes.ScalingGroup{}, cloudtypes.ScalingGroup{}, errors.New("no worker workers available, can't create Constellation cluster with one instance")
-	}
-
-	// TODO: make min / max configurable and abstract autoscaling for different cloud providers
-	workers = cloudtypes.ScalingGroup{
-		Instances: stat.AzureWorkerInstances,
-		GroupID:   azure.AutoscalingNodeGroup(stat.AzureWorkerScaleSet, config.AutoscalingNodeGroupMin, config.AutoscalingNodeGroupMax),
-	}
-	return
-}
-
-func getQEMUInstances(stat state.ConstellationState, _ *config.Config) (controlPlanes, workers cloudtypes.ScalingGroup, err error) {
-	controlPlanesMap := stat.QEMUControlPlaneInstances
-	if len(controlPlanesMap) == 0 {
-		return cloudtypes.ScalingGroup{}, cloudtypes.ScalingGroup{}, errors.New("no controlPlanes available, can't create Constellation without any instance")
-	}
-
-	// QEMU does not support autoscaling
-	controlPlanes = cloudtypes.ScalingGroup{
-		Instances: stat.QEMUControlPlaneInstances,
-		GroupID:   "",
-	}
-
-	if len(stat.QEMUWorkerInstances) == 0 {
-		return cloudtypes.ScalingGroup{}, cloudtypes.ScalingGroup{}, errors.New("no workers available, can't create Constellation with one instance")
-	}
-
-	// QEMU does not support autoscaling
-	workers = cloudtypes.ScalingGroup{
-		Instances: stat.QEMUWorkerInstances,
-		GroupID:   "",
-	}
-	return
 }
 
 // initCompletion handels the completion of CLI arguments. It is frequently called

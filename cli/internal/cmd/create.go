@@ -11,6 +11,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/state"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -98,6 +99,10 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 	}
 
 	if err := fileHandler.WriteJSON(constants.StateFilename, state, file.OptNone); err != nil {
+		return err
+	}
+
+	if err := writeIPtoIDFile(fileHandler, state); err != nil {
 		return err
 	}
 
@@ -198,8 +203,20 @@ func checkDirClean(fileHandler file.Handler) error {
 	if _, err := fileHandler.Stat(constants.MasterSecretFilename); !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous master secrets. Move it somewhere or delete it before creating a new cluster", constants.MasterSecretFilename)
 	}
+	if _, err := fileHandler.Stat(constants.ClusterIDsFileName); !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous cluster IDs. Move it somewhere or delete it before creating a new cluster", constants.ClusterIDsFileName)
+	}
 
 	return nil
+}
+
+func writeIPtoIDFile(fileHandler file.Handler, state state.ConstellationState) error {
+	ip := state.BootstrapperHost
+	if ip == "" {
+		return fmt.Errorf("bootstrapper ip not found")
+	}
+	idFile := clusterIDsFile{IP: ip}
+	return fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptNone)
 }
 
 // createCompletion handles the completion of the create command. It is frequently called
