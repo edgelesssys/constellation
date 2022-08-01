@@ -3,9 +3,11 @@ package cmd
 import (
 	"bytes"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/crypto/testvector"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/state"
 	"github.com/spf13/afero"
@@ -42,98 +44,77 @@ func TestRecover(t *testing.T) {
 	validState := state.ConstellationState{CloudProvider: "GCP"}
 	invalidCSPState := state.ConstellationState{CloudProvider: "invalid"}
 
-	writeMasterSecret := func(require *require.Assertions) afero.Fs {
-		fs := afero.NewMemMapFs()
-		handler := file.NewHandler(fs)
-		require.NoError(handler.WriteJSON("constellation-mastersecret.json", masterSecret{Key: []byte("master-secret"), Salt: []byte("salt")}, file.OptNone))
-		return fs
-	}
-
 	testCases := map[string]struct {
-		setupFs          func(*require.Assertions) afero.Fs
 		existingState    state.ConstellationState
 		client           *stubRecoveryClient
+		masterSecret     testvector.HKDF
 		endpointFlag     string
 		diskUUIDFlag     string
 		masterSecretFlag string
 		configFlag       string
 		stateless        bool
 		wantErr          bool
-		wantKey          []byte
 	}{
 		"works": {
-			setupFs:       writeMasterSecret,
 			existingState: validState,
 			client:        &stubRecoveryClient{},
 			endpointFlag:  "192.0.2.1",
-			diskUUIDFlag:  "00000000-0000-0000-0000-000000000000",
-			wantKey: []byte{
-				0xcb, 0x31, 0x9d, 0x3d, 0xe0, 0xb7, 0x8a, 0xe9, 0x20, 0xc0, 0x62, 0x00, 0x8f, 0xe4, 0x58, 0xa1,
-				0x87, 0x85, 0x5d, 0xa0, 0xca, 0xe2, 0x04, 0x5c, 0x80, 0xe8, 0xe6, 0xd5, 0x8a, 0x6c, 0xcb, 0x49,
-			},
+			diskUUIDFlag:  testvector.HKDFZero.Info,
+			masterSecret:  testvector.HKDFZero,
 		},
 		"uppercase disk uuid works": {
-			setupFs:       writeMasterSecret,
 			existingState: validState,
 			client:        &stubRecoveryClient{},
 			endpointFlag:  "192.0.2.1",
-			diskUUIDFlag:  "ABCDEFAB-CDEF-ABCD-ABCD-ABCDEFABCDEF",
-			wantKey: []byte{
-				0x9b, 0xb8, 0x4a, 0x62, 0x01, 0xb3, 0x32, 0xf6, 0xf2, 0x79, 0x43, 0x09, 0x86, 0xe7, 0x25, 0x0e,
-				0xd2, 0x77, 0xcb, 0x14, 0xe8, 0x8f, 0x38, 0xab, 0xe7, 0xd6, 0x25, 0x14, 0xa5, 0xa1, 0xff, 0xda,
-			},
+			diskUUIDFlag:  strings.ToUpper(testvector.HKDF0xFF.Info),
+			masterSecret:  testvector.HKDF0xFF,
 		},
 		"lowercase disk uuid results in same key": {
-			setupFs:       writeMasterSecret,
 			existingState: validState,
 			client:        &stubRecoveryClient{},
 			endpointFlag:  "192.0.2.1",
-			diskUUIDFlag:  "abcdefab-cdef-abcd-abcd-abcdefabcdef",
-			wantKey: []byte{
-				0x9b, 0xb8, 0x4a, 0x62, 0x01, 0xb3, 0x32, 0xf6, 0xf2, 0x79, 0x43, 0x09, 0x86, 0xe7, 0x25, 0x0e,
-				0xd2, 0x77, 0xcb, 0x14, 0xe8, 0x8f, 0x38, 0xab, 0xe7, 0xd6, 0x25, 0x14, 0xa5, 0xa1, 0xff, 0xda,
-			},
+			diskUUIDFlag:  strings.ToLower(testvector.HKDF0xFF.Info),
+			masterSecret:  testvector.HKDF0xFF,
 		},
 		"missing flags": {
-			setupFs: func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			wantErr: true,
 		},
 		"missing config": {
-			setupFs:      writeMasterSecret,
 			endpointFlag: "192.0.2.1",
-			diskUUIDFlag: "00000000-0000-0000-0000-000000000000",
+			diskUUIDFlag: testvector.HKDFZero.Info,
+			masterSecret: testvector.HKDFZero,
 			configFlag:   "nonexistent-config",
 			wantErr:      true,
 		},
 		"missing state": {
-			setupFs:       writeMasterSecret,
 			existingState: validState,
 			endpointFlag:  "192.0.2.1",
-			diskUUIDFlag:  "00000000-0000-0000-0000-000000000000",
+			diskUUIDFlag:  testvector.HKDFZero.Info,
+			masterSecret:  testvector.HKDFZero,
 			stateless:     true,
 			wantErr:       true,
 		},
 		"invalid cloud provider": {
-			setupFs:       writeMasterSecret,
 			existingState: invalidCSPState,
 			endpointFlag:  "192.0.2.1",
-			diskUUIDFlag:  "00000000-0000-0000-0000-000000000000",
+			diskUUIDFlag:  testvector.HKDFZero.Info,
+			masterSecret:  testvector.HKDFZero,
 			wantErr:       true,
 		},
 		"connect fails": {
-			setupFs:       writeMasterSecret,
 			existingState: validState,
 			client:        &stubRecoveryClient{connectErr: errors.New("connect failed")},
 			endpointFlag:  "192.0.2.1",
-			diskUUIDFlag:  "00000000-0000-0000-0000-000000000000",
+			diskUUIDFlag:  testvector.HKDFZero.Info,
+			masterSecret:  testvector.HKDFZero,
 			wantErr:       true,
 		},
 		"pushing state key fails": {
-			setupFs:       writeMasterSecret,
 			existingState: validState,
 			client:        &stubRecoveryClient{pushStateDiskKeyErr: errors.New("pushing key failed")},
 			endpointFlag:  "192.0.2.1",
-			diskUUIDFlag:  "00000000-0000-0000-0000-000000000000",
+			diskUUIDFlag:  testvector.HKDFZero.Info,
+			masterSecret:  testvector.HKDFZero,
 			wantErr:       true,
 		},
 	}
@@ -160,7 +141,10 @@ func TestRecover(t *testing.T) {
 			if tc.configFlag != "" {
 				require.NoError(cmd.Flags().Set("config", tc.configFlag))
 			}
-			fileHandler := file.NewHandler(tc.setupFs(require))
+
+			fs := afero.NewMemMapFs()
+			fileHandler := file.NewHandler(fs)
+			require.NoError(fileHandler.WriteJSON("constellation-mastersecret.json", masterSecret{Key: tc.masterSecret.Secret, Salt: tc.masterSecret.Salt}, file.OptNone))
 			if !tc.stateless {
 				require.NoError(fileHandler.WriteJSON(constants.StateFilename, tc.existingState, file.OptNone))
 			}
@@ -174,7 +158,7 @@ func TestRecover(t *testing.T) {
 
 			assert.NoError(err)
 			assert.Contains(out.String(), "Pushed recovery key.")
-			assert.Equal(tc.wantKey, tc.client.pushStateDiskKeyKey)
+			assert.Equal(tc.masterSecret.Output, tc.client.pushStateDiskKeyKey)
 		})
 	}
 }
@@ -245,40 +229,13 @@ func TestParseRecoverFlags(t *testing.T) {
 
 func TestDeriveStateDiskKey(t *testing.T) {
 	testCases := map[string]struct {
-		masterKey        []byte
-		salt             []byte
-		diskUUID         string
-		wantStateDiskKey []byte
+		masterSecret testvector.HKDF
 	}{
 		"all zero": {
-			masterKey: []byte{
-				0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-				0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-			},
-			salt: []byte{
-				0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-				0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-			},
-			diskUUID: "00000000-0000-0000-0000-000000000000",
-			wantStateDiskKey: []byte{
-				0x2b, 0x5c, 0x82, 0x9f, 0x69, 0x1b, 0xfd, 0x42, 0x32, 0xf8, 0xaa, 0xc4, 0x64, 0xbc, 0xcc, 0x07,
-				0xe6, 0x05, 0xc7, 0xc8, 0xe8, 0x2c, 0xbc, 0xa0, 0x98, 0x37, 0xe8, 0x6d, 0x0b, 0x6d, 0x06, 0x65,
-			},
+			masterSecret: testvector.HKDFZero,
 		},
 		"all 0xff": {
-			masterKey: []byte{
-				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-			},
-			salt: []byte{
-				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-			},
-			diskUUID: "ffffffff-ffff-ffff-ffff-ffffffffffff",
-			wantStateDiskKey: []byte{
-				0x14, 0x84, 0xaa, 0x39, 0xd3, 0x41, 0x5e, 0x90, 0x6e, 0x07, 0x94, 0x0f, 0xf2, 0x15, 0xd8, 0xb1,
-				0xee, 0xe7, 0x05, 0xd3, 0x02, 0x7d, 0xba, 0x93, 0x30, 0x6a, 0xf4, 0xab, 0xff, 0x4f, 0x70, 0xbe,
-			},
+			masterSecret: testvector.HKDF0xFF,
 		},
 	}
 
@@ -286,10 +243,10 @@ func TestDeriveStateDiskKey(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			stateDiskKey, err := deriveStateDiskKey(tc.masterKey, tc.salt, tc.diskUUID)
+			stateDiskKey, err := deriveStateDiskKey(tc.masterSecret.Secret, tc.masterSecret.Salt, tc.masterSecret.Info)
 
 			assert.NoError(err)
-			assert.Equal(tc.wantStateDiskKey, stateDiskKey)
+			assert.Equal(tc.masterSecret.Output, stateDiskKey)
 		})
 	}
 }

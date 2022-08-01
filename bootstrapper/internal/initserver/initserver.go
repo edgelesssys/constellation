@@ -154,7 +154,7 @@ func (s *Server) setupDisk(masterSecret, salt []byte) error {
 	}
 	uuid = strings.ToLower(uuid)
 
-	diskKey, err := crypto.DeriveKey(masterSecret, salt, []byte(crypto.HKDFInfoPrefix+uuid), 32)
+	diskKey, err := crypto.DeriveKey(masterSecret, salt, []byte(crypto.HKDFInfoPrefix+uuid), crypto.DerivedKeyLengthDefault)
 	if err != nil {
 		return err
 	}

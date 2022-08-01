@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"net"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/edgelesssys/constellation/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/internal/crypto/testvector"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
@@ -185,6 +187,68 @@ func TestSSHProtoKeysToMap(t *testing.T) {
 			assert.Equal(tc.want, got)
 		})
 	}
+}
+
+func TestSetupDisk(t *testing.T) {
+	testCases := map[string]struct {
+		uuid         string
+		masterSecret []byte
+		salt         []byte
+		wantKey      []byte
+	}{
+		"lower case uuid": {
+			uuid:         strings.ToLower(testvector.HKDF0xFF.Info),
+			masterSecret: testvector.HKDF0xFF.Secret,
+			salt:         testvector.HKDF0xFF.Salt,
+			wantKey:      testvector.HKDF0xFF.Output,
+		},
+		"upper case uuid": {
+			uuid:         strings.ToUpper(testvector.HKDF0xFF.Info),
+			masterSecret: testvector.HKDF0xFF.Secret,
+			salt:         testvector.HKDF0xFF.Salt,
+			wantKey:      testvector.HKDF0xFF.Output,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			disk := &fakeDisk{
+				uuid:    tc.uuid,
+				wantKey: tc.wantKey,
+			}
+			server := &Server{
+				disk: disk,
+			}
+
+			assert.NoError(server.setupDisk(tc.masterSecret, tc.salt))
+		})
+	}
+}
+
+type fakeDisk struct {
+	uuid    string
+	wantKey []byte
+}
+
+func (d *fakeDisk) Open() error {
+	return nil
+}
+
+func (d *fakeDisk) Close() error {
+	return nil
+}
+
+func (d *fakeDisk) UUID() (string, error) {
+	return d.uuid, nil
+}
+
+func (d *fakeDisk) UpdatePassphrase(passphrase string) error {
+	if passphrase != string(d.wantKey) {
+		return errors.New("wrong passphrase")
+	}
+	return nil
 }
 
 type stubDisk struct {
