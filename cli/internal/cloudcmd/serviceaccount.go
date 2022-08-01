@@ -68,9 +68,7 @@ func (c *ServiceAccountCreator) Create(ctx context.Context, stat state.Constella
 func (c *ServiceAccountCreator) createServiceAccountGCP(ctx context.Context, cl gcpclient,
 	stat state.ConstellationState, config *config.Config,
 ) (string, state.ConstellationState, error) {
-	if err := cl.SetState(stat); err != nil {
-		return "", state.ConstellationState{}, fmt.Errorf("setting state while creating service account: %w", err)
-	}
+	cl.SetState(stat)
 
 	input := gcpcl.ServiceAccountInput{
 		Roles: config.Provider.GCP.ServiceAccountRoles,
@@ -80,27 +78,18 @@ func (c *ServiceAccountCreator) createServiceAccountGCP(ctx context.Context, cl 
 		return "", state.ConstellationState{}, fmt.Errorf("creating service account: %w", err)
 	}
 
-	stat, err = cl.GetState()
-	if err != nil {
-		return "", state.ConstellationState{}, fmt.Errorf("getting state after creating service account: %w", err)
-	}
-	return serviceAccount, stat, nil
+	return serviceAccount, cl.GetState(), nil
 }
 
 func (c *ServiceAccountCreator) createServiceAccountAzure(ctx context.Context, cl azureclient,
 	stat state.ConstellationState, _ *config.Config,
 ) (string, state.ConstellationState, error) {
-	if err := cl.SetState(stat); err != nil {
-		return "", state.ConstellationState{}, fmt.Errorf("setting state while creating service account: %w", err)
-	}
+	cl.SetState(stat)
+
 	serviceAccount, err := cl.CreateServicePrincipal(ctx)
 	if err != nil {
 		return "", state.ConstellationState{}, fmt.Errorf("creating service account: %w", err)
 	}
 
-	stat, err = cl.GetState()
-	if err != nil {
-		return "", state.ConstellationState{}, fmt.Errorf("getting state after creating service account: %w", err)
-	}
-	return serviceAccount, stat, nil
+	return serviceAccount, cl.GetState(), nil
 }

@@ -41,8 +41,8 @@ type fakeAzureClient struct {
 	adAppObjectID        string
 }
 
-func (c *fakeAzureClient) GetState() (state.ConstellationState, error) {
-	stat := state.ConstellationState{
+func (c *fakeAzureClient) GetState() state.ConstellationState {
+	return state.ConstellationState{
 		CloudProvider:              cloudprovider.Azure.String(),
 		AzureWorkerInstances:       c.workers,
 		AzureControlPlaneInstances: c.controlPlanes,
@@ -58,10 +58,9 @@ func (c *fakeAzureClient) GetState() (state.ConstellationState, error) {
 		AzureControlPlaneScaleSet:  c.controlPlaneScaleSet,
 		AzureADAppObjectID:         c.adAppObjectID,
 	}
-	return stat, nil
 }
 
-func (c *fakeAzureClient) SetState(stat state.ConstellationState) error {
+func (c *fakeAzureClient) SetState(stat state.ConstellationState) {
 	c.workers = stat.AzureWorkerInstances
 	c.controlPlanes = stat.AzureControlPlaneInstances
 	c.name = stat.Name
@@ -75,7 +74,6 @@ func (c *fakeAzureClient) SetState(stat state.ConstellationState) error {
 	c.workerScaleSet = stat.AzureWorkerScaleSet
 	c.controlPlaneScaleSet = stat.AzureControlPlaneScaleSet
 	c.adAppObjectID = stat.AzureADAppObjectID
-	return nil
 }
 
 func (c *fakeAzureClient) CreateApplicationInsight(ctx context.Context) error {
@@ -167,8 +165,6 @@ type stubAzureClient struct {
 	terminateResourceGroupCalled    bool
 	terminateServicePrincipalCalled bool
 
-	getStateErr                  error
-	setStateErr                  error
 	createApplicationInsightErr  error
 	createResourceGroupErr       error
 	createVirtualNetworkErr      error
@@ -180,12 +176,11 @@ type stubAzureClient struct {
 	terminateServicePrincipalErr error
 }
 
-func (c *stubAzureClient) GetState() (state.ConstellationState, error) {
-	return state.ConstellationState{}, c.getStateErr
+func (c *stubAzureClient) GetState() state.ConstellationState {
+	return state.ConstellationState{}
 }
 
-func (c *stubAzureClient) SetState(state.ConstellationState) error {
-	return c.setStateErr
+func (c *stubAzureClient) SetState(state.ConstellationState) {
 }
 
 func (c *stubAzureClient) CreateExternalLoadBalancer(ctx context.Context) error {
@@ -257,8 +252,8 @@ type fakeGcpClient struct {
 	forwardingRule string
 }
 
-func (c *fakeGcpClient) GetState() (state.ConstellationState, error) {
-	stat := state.ConstellationState{
+func (c *fakeGcpClient) GetState() state.ConstellationState {
+	return state.ConstellationState{
 		CloudProvider:                   cloudprovider.GCP.String(),
 		GCPWorkerInstances:              c.workers,
 		GCPControlPlaneInstances:        c.controlPlanes,
@@ -278,10 +273,9 @@ func (c *fakeGcpClient) GetState() (state.ConstellationState, error) {
 		GCPZone:                         c.zone,
 		GCPServiceAccount:               c.serviceAccount,
 	}
-	return stat, nil
 }
 
-func (c *fakeGcpClient) SetState(stat state.ConstellationState) error {
+func (c *fakeGcpClient) SetState(stat state.ConstellationState) {
 	c.workers = stat.GCPWorkerInstances
 	c.controlPlanes = stat.GCPControlPlaneInstances
 	c.workerInstanceGroup = stat.GCPWorkerInstanceGroup
@@ -299,7 +293,6 @@ func (c *fakeGcpClient) SetState(stat state.ConstellationState) error {
 	c.healthCheck = stat.GCPHealthCheck
 	c.backendService = stat.GCPBackendService
 	c.forwardingRule = stat.GCPForwardingRule
-	return nil
 }
 
 func (c *fakeGcpClient) CreateVPCs(ctx context.Context) error {
@@ -409,8 +402,6 @@ type stubGcpClient struct {
 	terminateServiceAccountCalled bool
 	closeCalled                   bool
 
-	getStateErr                error
-	setStateErr                error
 	createVPCsErr              error
 	createFirewallErr          error
 	createInstancesErr         error
@@ -424,12 +415,11 @@ type stubGcpClient struct {
 	closeErr                   error
 }
 
-func (c *stubGcpClient) GetState() (state.ConstellationState, error) {
-	return state.ConstellationState{}, c.getStateErr
+func (c *stubGcpClient) GetState() state.ConstellationState {
+	return state.ConstellationState{}
 }
 
-func (c *stubGcpClient) SetState(state.ConstellationState) error {
-	return c.setStateErr
+func (c *stubGcpClient) SetState(state.ConstellationState) {
 }
 
 func (c *stubGcpClient) CreateVPCs(ctx context.Context) error {

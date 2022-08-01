@@ -51,9 +51,7 @@ func (t *Terminator) Terminate(ctx context.Context, state state.ConstellationSta
 }
 
 func (t *Terminator) terminateGCP(ctx context.Context, cl gcpclient, state state.ConstellationState) error {
-	if err := cl.SetState(state); err != nil {
-		return err
-	}
+	cl.SetState(state)
 
 	if err := cl.TerminateLoadBalancer(ctx); err != nil {
 		return err
@@ -71,9 +69,7 @@ func (t *Terminator) terminateGCP(ctx context.Context, cl gcpclient, state state
 }
 
 func (t *Terminator) terminateAzure(ctx context.Context, cl azureclient, state state.ConstellationState) error {
-	if err := cl.SetState(state); err != nil {
-		return err
-	}
+	cl.SetState(state)
 
 	if err := cl.TerminateServicePrincipal(ctx); err != nil {
 		return err

@@ -65,11 +65,6 @@ func TestTerminator(t *testing.T) {
 			state:           someGCPState(),
 			wantErr:         true,
 		},
-		"gcp setState error": {
-			gcpclient: &stubGcpClient{setStateErr: someErr},
-			state:     someGCPState(),
-			wantErr:   true,
-		},
 		"gcp terminateInstances error": {
 			gcpclient: &stubGcpClient{terminateInstancesErr: someErr},
 			state:     someGCPState(),
@@ -98,11 +93,6 @@ func TestTerminator(t *testing.T) {
 			newAzureClientErr: someErr,
 			state:             someAzureState(),
 			wantErr:           true,
-		},
-		"azure setState error": {
-			azureclient: &stubAzureClient{setStateErr: someErr},
-			state:       someAzureState(),
-			wantErr:     true,
 		},
 		"azure terminateServicePrincipal error": {
 			azureclient: &stubAzureClient{terminateServicePrincipalErr: someErr},

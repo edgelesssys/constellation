@@ -9,8 +9,8 @@ import (
 )
 
 type gcpclient interface {
-	GetState() (state.ConstellationState, error)
-	SetState(state.ConstellationState) error
+	GetState() state.ConstellationState
+	SetState(state.ConstellationState)
 	CreateVPCs(ctx context.Context) error
 	CreateFirewall(ctx context.Context, input gcpcl.FirewallInput) error
 	CreateInstances(ctx context.Context, input gcpcl.CreateInstancesInput) error
@@ -25,8 +25,8 @@ type gcpclient interface {
 }
 
 type azureclient interface {
-	GetState() (state.ConstellationState, error)
-	SetState(state.ConstellationState) error
+	GetState() state.ConstellationState
+	SetState(state.ConstellationState)
 	CreateApplicationInsight(ctx context.Context) error
 	CreateResourceGroup(ctx context.Context) error
 	CreateExternalLoadBalancer(ctx context.Context) error

@@ -137,7 +137,7 @@ func (c *Creator) createGCP(ctx context.Context, cl gcpclient, config *config.Co
 		return state.ConstellationState{}, err
 	}
 
-	return cl.GetState()
+	return cl.GetState(), nil
 }
 
 func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *config.Config, insType string, controlPlaneCount, workerCount int,
@@ -176,5 +176,5 @@ func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *confi
 		return state.ConstellationState{}, err
 	}
 
-	return cl.GetState()
+	return cl.GetState(), nil
 }

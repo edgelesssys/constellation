@@ -2,7 +2,6 @@ package client
 
 import (
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"math/big"
 	"time"
@@ -168,128 +167,42 @@ func (c *Client) init(location, name string) error {
 }
 
 // GetState returns the state of the client as ConstellationState.
-func (c *Client) GetState() (state.ConstellationState, error) {
-	var stat state.ConstellationState
-	stat.CloudProvider = cloudprovider.Azure.String()
-	if len(c.resourceGroup) == 0 {
-		return state.ConstellationState{}, errors.New("client has no resource group")
+func (c *Client) GetState() state.ConstellationState {
+	return state.ConstellationState{
+		Name:                       c.name,
+		UID:                        c.uid,
+		CloudProvider:              cloudprovider.Azure.String(),
+		BootstrapperHost:           c.loadBalancerPubIP,
+		AzureLocation:              c.location,
+		AzureSubscription:          c.subscriptionID,
+		AzureTenant:                c.tenantID,
+		AzureResourceGroup:         c.resourceGroup,
+		AzureNetworkSecurityGroup:  c.networkSecurityGroup,
+		AzureSubnet:                c.subnetID,
+		AzureWorkerScaleSet:        c.workerScaleSet,
+		AzureControlPlaneScaleSet:  c.controlPlaneScaleSet,
+		AzureWorkerInstances:       c.workers,
+		AzureControlPlaneInstances: c.controlPlanes,
+		AzureADAppObjectID:         c.adAppObjectID,
 	}
-	stat.AzureResourceGroup = c.resourceGroup
-	if c.name == "" {
-		return state.ConstellationState{}, errors.New("client has no name")
-	}
-	stat.Name = c.name
-	if len(c.uid) == 0 {
-		return state.ConstellationState{}, errors.New("client has no uid")
-	}
-	stat.UID = c.uid
-	if len(c.loadBalancerPubIP) == 0 {
-		return state.ConstellationState{}, errors.New("client has no load balancer public IP")
-	}
-	stat.BootstrapperHost = c.loadBalancerPubIP
-	if len(c.location) == 0 {
-		return state.ConstellationState{}, errors.New("client has no location")
-	}
-	stat.AzureLocation = c.location
-	if len(c.subscriptionID) == 0 {
-		return state.ConstellationState{}, errors.New("client has no subscription")
-	}
-	stat.AzureSubscription = c.subscriptionID
-	if len(c.tenantID) == 0 {
-		return state.ConstellationState{}, errors.New("client has no tenant")
-	}
-	stat.AzureTenant = c.tenantID
-	if len(c.subnetID) == 0 {
-		return state.ConstellationState{}, errors.New("client has no subnet")
-	}
-	stat.AzureSubnet = c.subnetID
-	if len(c.networkSecurityGroup) == 0 {
-		return state.ConstellationState{}, errors.New("client has no network security group")
-	}
-	stat.AzureNetworkSecurityGroup = c.networkSecurityGroup
-	if len(c.workerScaleSet) == 0 {
-		return state.ConstellationState{}, errors.New("client has no worker scale set")
-	}
-	stat.AzureWorkerScaleSet = c.workerScaleSet
-	if len(c.controlPlaneScaleSet) == 0 {
-		return state.ConstellationState{}, errors.New("client has no control plane scale set")
-	}
-	stat.AzureControlPlaneScaleSet = c.controlPlaneScaleSet
-	if len(c.workers) == 0 {
-		return state.ConstellationState{}, errors.New("client has no workers")
-	}
-	stat.AzureWorkerInstances = c.workers
-	if len(c.controlPlanes) == 0 {
-		return state.ConstellationState{}, errors.New("client has no control planes")
-	}
-	stat.AzureControlPlaneInstances = c.controlPlanes
-	// AD App Object ID does not have to be set at all times
-	stat.AzureADAppObjectID = c.adAppObjectID
-
-	return stat, nil
 }
 
 // SetState sets the state of the client to the handed ConstellationState.
-func (c *Client) SetState(stat state.ConstellationState) error {
-	if stat.CloudProvider != cloudprovider.Azure.String() {
-		return errors.New("state is not azure state")
-	}
-	if len(stat.AzureResourceGroup) == 0 {
-		return errors.New("state has no resource group")
-	}
+func (c *Client) SetState(stat state.ConstellationState) {
 	c.resourceGroup = stat.AzureResourceGroup
-	if stat.Name == "" {
-		return errors.New("state has no name")
-	}
 	c.name = stat.Name
-	if len(stat.UID) == 0 {
-		return errors.New("state has no uuid")
-	}
 	c.uid = stat.UID
-	if len(stat.BootstrapperHost) == 0 {
-		return errors.New("state has no bootstrapper host")
-	}
 	c.loadBalancerPubIP = stat.BootstrapperHost
-	if len(stat.AzureLocation) == 0 {
-		return errors.New("state has no location")
-	}
 	c.location = stat.AzureLocation
-	if len(stat.AzureSubscription) == 0 {
-		return errors.New("state has no subscription")
-	}
 	c.subscriptionID = stat.AzureSubscription
-	if len(stat.AzureTenant) == 0 {
-		return errors.New("state has no tenant")
-	}
 	c.tenantID = stat.AzureTenant
-	if len(stat.AzureSubnet) == 0 {
-		return errors.New("state has no subnet")
-	}
 	c.subnetID = stat.AzureSubnet
-	if len(stat.AzureNetworkSecurityGroup) == 0 {
-		return errors.New("state has no subnet")
-	}
 	c.networkSecurityGroup = stat.AzureNetworkSecurityGroup
-	if len(stat.AzureWorkerScaleSet) == 0 {
-		return errors.New("state has no worker scale set")
-	}
 	c.workerScaleSet = stat.AzureWorkerScaleSet
-	if len(stat.AzureControlPlaneScaleSet) == 0 {
-		return errors.New("state has no worker scale set")
-	}
 	c.controlPlaneScaleSet = stat.AzureControlPlaneScaleSet
-	if len(stat.AzureWorkerInstances) == 0 {
-		return errors.New("state has no workers")
-	}
 	c.workers = stat.AzureWorkerInstances
-	if len(stat.AzureControlPlaneInstances) == 0 {
-		return errors.New("state has no control planes")
-	}
 	c.controlPlanes = stat.AzureControlPlaneInstances
-	// AD App Object ID does not have to be set at all times
 	c.adAppObjectID = stat.AzureADAppObjectID
-
-	return nil
 }
 
 func (c *Client) generateUID() (string, error) {

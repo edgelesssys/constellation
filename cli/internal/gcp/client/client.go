@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/big"
 
@@ -239,199 +238,51 @@ func (c *Client) init(project, zone, region, name string) error {
 }
 
 // GetState returns the state of the client as ConstellationState.
-func (c *Client) GetState() (state.ConstellationState, error) {
-	var stat state.ConstellationState
-	stat.CloudProvider = cloudprovider.GCP.String()
-	if len(c.workers) == 0 {
-		return state.ConstellationState{}, errors.New("client has no workers")
+func (c *Client) GetState() state.ConstellationState {
+	return state.ConstellationState{
+		Name:                            c.name,
+		UID:                             c.uid,
+		CloudProvider:                   cloudprovider.GCP.String(),
+		BootstrapperHost:                c.controlPlanes.PublicIPs()[0],
+		GCPProject:                      c.project,
+		GCPZone:                         c.zone,
+		GCPRegion:                       c.region,
+		GCPWorkerInstances:              c.workers,
+		GCPWorkerInstanceGroup:          c.workerInstanceGroup,
+		GCPWorkerInstanceTemplate:       c.workerTemplate,
+		GCPControlPlaneInstances:        c.controlPlanes,
+		GCPControlPlaneInstanceGroup:    c.controlPlaneInstanceGroup,
+		GCPControlPlaneInstanceTemplate: c.controlPlaneTemplate,
+		GCPFirewalls:                    c.firewalls,
+		GCPNetwork:                      c.network,
+		GCPSubnetwork:                   c.subnetwork,
+		GCPHealthCheck:                  c.healthCheck,
+		GCPBackendService:               c.backendService,
+		GCPForwardingRule:               c.forwardingRule,
+		GCPServiceAccount:               c.serviceAccount,
 	}
-	stat.GCPWorkerInstances = c.workers
-
-	if len(c.controlPlanes) == 0 {
-		return state.ConstellationState{}, errors.New("client has no controlPlanes")
-	}
-	stat.GCPControlPlaneInstances = c.controlPlanes
-	publicIPs := c.controlPlanes.PublicIPs()
-	if len(publicIPs) == 0 {
-		return state.ConstellationState{}, errors.New("client has no bootstrapper endpoint")
-	}
-	stat.BootstrapperHost = publicIPs[0]
-
-	if c.workerInstanceGroup == "" {
-		return state.ConstellationState{}, errors.New("client has no workerInstanceGroup")
-	}
-	stat.GCPWorkerInstanceGroup = c.workerInstanceGroup
-
-	if c.controlPlaneInstanceGroup == "" {
-		return state.ConstellationState{}, errors.New("client has no controlPlaneInstanceGroup")
-	}
-	stat.GCPControlPlaneInstanceGroup = c.controlPlaneInstanceGroup
-
-	if c.project == "" {
-		return state.ConstellationState{}, errors.New("client has no project")
-	}
-	stat.GCPProject = c.project
-
-	if c.zone == "" {
-		return state.ConstellationState{}, errors.New("client has no zone")
-	}
-	stat.GCPZone = c.zone
-
-	if c.region == "" {
-		return state.ConstellationState{}, errors.New("client has no region")
-	}
-	stat.GCPRegion = c.region
-
-	if c.name == "" {
-		return state.ConstellationState{}, errors.New("client has no name")
-	}
-	stat.Name = c.name
-
-	if c.uid == "" {
-		return state.ConstellationState{}, errors.New("client has no uid")
-	}
-	stat.UID = c.uid
-
-	if len(c.firewalls) == 0 {
-		return state.ConstellationState{}, errors.New("client has no firewalls")
-	}
-	stat.GCPFirewalls = c.firewalls
-
-	if c.network == "" {
-		return state.ConstellationState{}, errors.New("client has no network")
-	}
-	stat.GCPNetwork = c.network
-
-	if c.subnetwork == "" {
-		return state.ConstellationState{}, errors.New("client has no subnetwork")
-	}
-	stat.GCPSubnetwork = c.subnetwork
-
-	if c.workerTemplate == "" {
-		return state.ConstellationState{}, errors.New("client has no worker instance template")
-	}
-	stat.GCPWorkerInstanceTemplate = c.workerTemplate
-
-	if c.controlPlaneTemplate == "" {
-		return state.ConstellationState{}, errors.New("client has no controlPlane instance template")
-	}
-	stat.GCPControlPlaneInstanceTemplate = c.controlPlaneTemplate
-
-	if c.healthCheck == "" {
-		return state.ConstellationState{}, errors.New("client has no health check")
-	}
-	stat.GCPHealthCheck = c.healthCheck
-
-	if c.backendService == "" {
-		return state.ConstellationState{}, errors.New("client has no backend service")
-	}
-	stat.GCPBackendService = c.backendService
-
-	if c.forwardingRule == "" {
-		return state.ConstellationState{}, errors.New("client has no forwarding rule")
-	}
-	stat.GCPForwardingRule = c.forwardingRule
-
-	// service account does not have to be set at all times
-	stat.GCPServiceAccount = c.serviceAccount
-
-	return stat, nil
 }
 
 // SetState sets the state of the client to the handed ConstellationState.
-func (c *Client) SetState(stat state.ConstellationState) error {
-	if stat.CloudProvider != cloudprovider.GCP.String() {
-		return errors.New("state is not gcp state")
-	}
-	if len(stat.GCPWorkerInstances) == 0 {
-		return errors.New("state has no workers")
-	}
+func (c *Client) SetState(stat state.ConstellationState) {
 	c.workers = stat.GCPWorkerInstances
-
-	if len(stat.GCPControlPlaneInstances) == 0 {
-		return errors.New("state has no controlPlane")
-	}
 	c.controlPlanes = stat.GCPControlPlaneInstances
-
-	if stat.GCPWorkerInstanceGroup == "" {
-		return errors.New("state has no workerInstanceGroup")
-	}
 	c.workerInstanceGroup = stat.GCPWorkerInstanceGroup
-
-	if stat.GCPControlPlaneInstanceGroup == "" {
-		return errors.New("state has no controlPlaneInstanceGroup")
-	}
 	c.controlPlaneInstanceGroup = stat.GCPControlPlaneInstanceGroup
-
-	if stat.GCPProject == "" {
-		return errors.New("state has no project")
-	}
 	c.project = stat.GCPProject
-
-	if stat.GCPZone == "" {
-		return errors.New("state has no zone")
-	}
 	c.zone = stat.GCPZone
-
-	if stat.GCPRegion == "" {
-		return errors.New("state has no region")
-	}
 	c.region = stat.GCPRegion
-
-	if stat.Name == "" {
-		return errors.New("state has no name")
-	}
 	c.name = stat.Name
-
-	if stat.UID == "" {
-		return errors.New("state has no uid")
-	}
 	c.uid = stat.UID
-
-	if len(stat.GCPFirewalls) == 0 {
-		return errors.New("state has no firewalls")
-	}
 	c.firewalls = stat.GCPFirewalls
-
-	if stat.GCPNetwork == "" {
-		return errors.New("state has no network")
-	}
 	c.network = stat.GCPNetwork
-
-	if stat.GCPSubnetwork == "" {
-		return errors.New("state has no subnetwork")
-	}
 	c.subnetwork = stat.GCPSubnetwork
-
-	if stat.GCPWorkerInstanceTemplate == "" {
-		return errors.New("state has no worker instance template")
-	}
 	c.workerTemplate = stat.GCPWorkerInstanceTemplate
-
-	if stat.GCPControlPlaneInstanceTemplate == "" {
-		return errors.New("state has no controlPlane instance template")
-	}
 	c.controlPlaneTemplate = stat.GCPControlPlaneInstanceTemplate
-
-	if stat.GCPHealthCheck == "" {
-		return errors.New("state has no health check")
-	}
 	c.healthCheck = stat.GCPHealthCheck
-
-	if stat.GCPBackendService == "" {
-		return errors.New("state has no backend service")
-	}
 	c.backendService = stat.GCPBackendService
-
-	if stat.GCPForwardingRule == "" {
-		return errors.New("state has no forwarding rule")
-	}
 	c.forwardingRule = stat.GCPForwardingRule
-
-	// service account does not have to be set at all times
 	c.serviceAccount = stat.GCPServiceAccount
-
-	return nil
 }
 
 func (c *Client) generateUID() (string, error) {

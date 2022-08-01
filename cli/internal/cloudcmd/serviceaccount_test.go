@@ -60,25 +60,9 @@ func TestServiceAccountCreator(t *testing.T) {
 			config:  config.Default(),
 			wantErr: true,
 		},
-		"gcp client setState error": {
-			newGCPClient: func(ctx context.Context) (gcpclient, error) {
-				return &stubGcpClient{setStateErr: someErr}, nil
-			},
-			state:   someGCPState(),
-			config:  config.Default(),
-			wantErr: true,
-		},
 		"gcp client createServiceAccount error": {
 			newGCPClient: func(ctx context.Context) (gcpclient, error) {
 				return &stubGcpClient{createServiceAccountErr: someErr}, nil
-			},
-			state:   someGCPState(),
-			config:  config.Default(),
-			wantErr: true,
-		},
-		"gcp client getState error": {
-			newGCPClient: func(ctx context.Context) (gcpclient, error) {
-				return &stubGcpClient{getStateErr: someErr}, nil
 			},
 			state:   someGCPState(),
 			config:  config.Default(),
@@ -102,25 +86,9 @@ func TestServiceAccountCreator(t *testing.T) {
 			config:  config.Default(),
 			wantErr: true,
 		},
-		"azure client setState error": {
-			newAzureClient: func(subscriptionID, tenantID string) (azureclient, error) {
-				return &stubAzureClient{setStateErr: someErr}, nil
-			},
-			state:   someAzureState(),
-			config:  config.Default(),
-			wantErr: true,
-		},
 		"azure client createServiceAccount error": {
 			newAzureClient: func(subscriptionID, tenantID string) (azureclient, error) {
 				return &stubAzureClient{createServicePrincipalErr: someErr}, nil
-			},
-			state:   someAzureState(),
-			config:  config.Default(),
-			wantErr: true,
-		},
-		"azure client getState error": {
-			newAzureClient: func(subscriptionID, tenantID string) (azureclient, error) {
-				return &stubAzureClient{getStateErr: someErr}, nil
 			},
 			state:   someAzureState(),
 			config:  config.Default(),
