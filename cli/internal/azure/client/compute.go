@@ -3,8 +3,9 @@ package client
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
-	"time"
+	"sync"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
@@ -26,12 +27,6 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		LoadBalancerBackendAddressPool: azure.BackendAddressPoolWorkerName + "-" + c.uid,
 	}
 
-	if err := c.createScaleSet(ctx, createWorkerInput); err != nil {
-		return err
-	}
-
-	c.workerScaleSet = createWorkerInput.Name
-
 	// Create control plane scale set
 	createControlPlaneInput := CreateScaleSetInput{
 		Name:                           "constellation-scale-set-controlplanes-" + c.uid,
@@ -45,11 +40,32 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		LoadBalancerBackendAddressPool: azure.BackendAddressPoolControlPlaneName + "-" + c.uid,
 	}
 
-	if err := c.createScaleSet(ctx, createControlPlaneInput); err != nil {
-		return err
+	var wg sync.WaitGroup
+	var controlPlaneErr, workerErr error
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		workerErr = c.createScaleSet(ctx, createWorkerInput)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		controlPlaneErr = c.createScaleSet(ctx, createControlPlaneInput)
+	}()
+
+	wg.Wait()
+	if controlPlaneErr != nil {
+		return fmt.Errorf("creating control-plane scaleset: %w", controlPlaneErr)
+	}
+	if workerErr != nil {
+		return fmt.Errorf("creating worker scaleset: %w", workerErr)
 	}
 
+	// TODO: Remove getInstanceIPs calls after init has been refactored to not use node IPs
 	// Get worker IPs
+	c.workerScaleSet = createWorkerInput.Name
 	instances, err := c.getInstanceIPs(ctx, createWorkerInput.Name, createWorkerInput.Count)
 	if err != nil {
 		return err
@@ -145,7 +161,7 @@ func (c *Client) createInstanceVM(ctx context.Context, input azure.VMInstance) (
 	}
 
 	vm, err := poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
-		Frequency: 30 * time.Second,
+		Frequency: c.pollFrequency,
 	})
 	if err != nil {
 		return cloudtypes.Instance{}, err
@@ -205,7 +221,7 @@ func (c *Client) createScaleSet(ctx context.Context, input CreateScaleSetInput) 
 	}
 
 	_, err = poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
-		Frequency: 30 * time.Second,
+		Frequency: c.pollFrequency,
 	})
 	if err != nil {
 		return err
@@ -295,7 +311,7 @@ func (c *Client) TerminateResourceGroup(ctx context.Context) error {
 	}
 
 	if _, err = poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
-		Frequency: 30 * time.Second,
+		Frequency: c.pollFrequency,
 	}); err != nil {
 		return err
 	}

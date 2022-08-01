@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -70,7 +69,7 @@ func (c *Client) CreateVirtualNetwork(ctx context.Context) error {
 		return err
 	}
 	resp, err := poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
-		Frequency: 30 * time.Second,
+		Frequency: c.pollFrequency,
 	})
 	if err != nil {
 		return err
@@ -113,7 +112,7 @@ func (c *Client) CreateSecurityGroup(ctx context.Context, input NetworkSecurityG
 		return err
 	}
 	pollerResp, err := poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
-		Frequency: 30 * time.Second,
+		Frequency: c.pollFrequency,
 	})
 	if err != nil {
 		return err
@@ -154,7 +153,7 @@ func (c *Client) createNIC(ctx context.Context, name, publicIPAddressID string) 
 		return "", "", err
 	}
 	pollerResp, err := poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
-		Frequency: 30 * time.Second,
+		Frequency: c.pollFrequency,
 	})
 	if err != nil {
 		return "", "", err
@@ -185,7 +184,7 @@ func (c *Client) createPublicIPAddress(ctx context.Context, name string) (*armne
 		return nil, err
 	}
 	pollerResp, err := poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
-		Frequency: 30 * time.Second,
+		Frequency: c.pollFrequency,
 	})
 	if err != nil {
 		return nil, err
@@ -230,7 +229,7 @@ func (c *Client) CreateExternalLoadBalancer(ctx context.Context) error {
 	}
 
 	_, err = poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
-		Frequency: 30 * time.Second,
+		Frequency: c.pollFrequency,
 	})
 	if err != nil {
 		return err

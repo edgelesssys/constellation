@@ -41,6 +41,7 @@ type Client struct {
 	roleAssignmentsAPI
 	applicationInsightsAPI
 
+	pollFrequency                   time.Duration
 	adReplicationLagCheckInterval   time.Duration
 	adReplicationLagCheckMaxRetries int
 
@@ -136,6 +137,7 @@ func NewFromDefault(subscriptionID, tenantID string) (*Client, error) {
 		tenantID:                        tenantID,
 		workers:                         cloudtypes.Instances{},
 		controlPlanes:                   cloudtypes.Instances{},
+		pollFrequency:                   time.Second * 5,
 		adReplicationLagCheckInterval:   adReplicationLagCheckInterval,
 		adReplicationLagCheckMaxRetries: adReplicationLagCheckMaxRetries,
 	}, nil
