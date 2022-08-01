@@ -3,10 +3,12 @@ package client
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/api/googleapi"
 	"google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
 )
@@ -87,6 +89,8 @@ func TestCreateVPCs(t *testing.T) {
 
 func TestTerminateVPCs(t *testing.T) {
 	someErr := errors.New("failed")
+	notFoundErr := &googleapi.Error{Code: http.StatusNotFound}
+
 	testCases := map[string]struct {
 		operationGlobalAPI operationGlobalAPI
 		operationRegionAPI operationRegionAPI
@@ -94,6 +98,7 @@ func TestTerminateVPCs(t *testing.T) {
 		subnetworksAPI     subnetworksAPI
 		firewalls          []string
 		subnetwork         string
+		network            string
 		wantErr            bool
 	}{
 		"successful terminate": {
@@ -102,6 +107,7 @@ func TestTerminateVPCs(t *testing.T) {
 			networksAPI:        stubNetworksAPI{},
 			subnetworksAPI:     stubSubnetworksAPI{},
 			subnetwork:         "subnetwork-id-1",
+			network:            "network-id-1",
 		},
 		"subnetwork empty": {
 			operationGlobalAPI: stubOperationGlobalAPI{},
@@ -109,30 +115,58 @@ func TestTerminateVPCs(t *testing.T) {
 			networksAPI:        stubNetworksAPI{},
 			subnetworksAPI:     stubSubnetworksAPI{},
 			subnetwork:         "",
+			network:            "network-id-1",
+		},
+		"network empty": {
+			operationGlobalAPI: stubOperationGlobalAPI{},
+			operationRegionAPI: stubOperationRegionAPI{},
+			networksAPI:        stubNetworksAPI{},
+			subnetworksAPI:     stubSubnetworksAPI{},
+			subnetwork:         "subnetwork-id-1",
+			network:            "",
+		},
+		"subnetwork not found": {
+			operationGlobalAPI: stubOperationGlobalAPI{},
+			operationRegionAPI: stubOperationRegionAPI{},
+			networksAPI:        stubNetworksAPI{},
+			subnetworksAPI:     stubSubnetworksAPI{deleteErr: notFoundErr},
+			subnetwork:         "subnetwork-id-1",
+			network:            "network-id-1",
+		},
+		"network not found": {
+			operationGlobalAPI: stubOperationGlobalAPI{},
+			operationRegionAPI: stubOperationRegionAPI{},
+			networksAPI:        stubNetworksAPI{deleteErr: notFoundErr},
+			subnetworksAPI:     stubSubnetworksAPI{},
+			subnetwork:         "subnetwork-id-1",
+			network:            "network-id-1",
 		},
 		"failed wait global op": {
 			operationGlobalAPI: stubOperationGlobalAPI{waitErr: someErr},
 			operationRegionAPI: stubOperationRegionAPI{},
 			networksAPI:        stubNetworksAPI{},
 			subnetworksAPI:     stubSubnetworksAPI{},
-			wantErr:            true,
 			subnetwork:         "subnetwork-id-1",
+			network:            "network-id-1",
+			wantErr:            true,
 		},
 		"failed delete networks": {
 			operationGlobalAPI: stubOperationGlobalAPI{},
 			operationRegionAPI: stubOperationRegionAPI{},
 			networksAPI:        stubNetworksAPI{deleteErr: someErr},
 			subnetworksAPI:     stubSubnetworksAPI{},
-			wantErr:            true,
 			subnetwork:         "subnetwork-id-1",
+			network:            "network-id-1",
+			wantErr:            true,
 		},
 		"failed delete subnetworks": {
 			operationGlobalAPI: stubOperationGlobalAPI{},
 			operationRegionAPI: stubOperationRegionAPI{},
 			networksAPI:        stubNetworksAPI{},
 			subnetworksAPI:     stubSubnetworksAPI{deleteErr: someErr},
-			wantErr:            true,
 			subnetwork:         "subnetwork-id-1",
+			network:            "network-id-1",
+			wantErr:            true,
 		},
 		"must delete firewalls first": {
 			firewalls:          []string{"firewall-1", "firewall-2"},
@@ -140,8 +174,9 @@ func TestTerminateVPCs(t *testing.T) {
 			operationGlobalAPI: stubOperationGlobalAPI{},
 			networksAPI:        stubNetworksAPI{},
 			subnetworksAPI:     stubSubnetworksAPI{},
-			wantErr:            true,
 			subnetwork:         "subnetwork-id-1",
+			network:            "network-id-1",
+			wantErr:            true,
 		},
 	}
 
@@ -160,7 +195,7 @@ func TestTerminateVPCs(t *testing.T) {
 				networksAPI:        tc.networksAPI,
 				subnetworksAPI:     tc.subnetworksAPI,
 				firewalls:          tc.firewalls,
-				network:            "network-id-1",
+				network:            tc.network,
 				subnetwork:         tc.subnetwork,
 			}
 
@@ -169,6 +204,7 @@ func TestTerminateVPCs(t *testing.T) {
 			} else {
 				assert.NoError(client.TerminateVPCs(ctx))
 				assert.Empty(client.network)
+				assert.Empty(client.subnetwork)
 			}
 		})
 	}
@@ -254,6 +290,7 @@ func TestCreateFirewall(t *testing.T) {
 
 func TestTerminateFirewall(t *testing.T) {
 	someErr := errors.New("failed")
+	notFoundErr := &googleapi.Error{Code: http.StatusNotFound}
 
 	testCases := map[string]struct {
 		operationGlobalAPI operationGlobalAPI
@@ -270,6 +307,11 @@ func TestTerminateFirewall(t *testing.T) {
 			operationGlobalAPI: stubOperationGlobalAPI{},
 			firewallsAPI:       stubFirewallsAPI{},
 			firewalls:          []string{},
+		},
+		"successful terminate when firewall not found": {
+			operationGlobalAPI: stubOperationGlobalAPI{},
+			firewallsAPI:       stubFirewallsAPI{deleteErr: notFoundErr},
+			firewalls:          []string{"firewall-1", "firewall-2"},
 		},
 		"failed to wait on global operation": {
 			operationGlobalAPI: stubOperationGlobalAPI{waitErr: someErr},
@@ -399,6 +441,8 @@ func TestCreateLoadBalancer(t *testing.T) {
 
 func TestTerminateLoadBalancer(t *testing.T) {
 	someErr := errors.New("failed")
+	notFoundErr := &googleapi.Error{Code: http.StatusNotFound}
+
 	testCases := map[string]struct {
 		operationRegionAPI operationRegionAPI
 		healthChecksAPI    healthChecksAPI
@@ -410,6 +454,24 @@ func TestTerminateLoadBalancer(t *testing.T) {
 			healthChecksAPI:    stubHealthChecksAPI{},
 			backendServicesAPI: stubBackendServicesAPI{},
 			forwardingRulesAPI: stubForwardingRulesAPI{},
+			operationRegionAPI: stubOperationRegionAPI{},
+		},
+		"successful terminate when health check not found": {
+			healthChecksAPI:    stubHealthChecksAPI{deleteErr: notFoundErr},
+			backendServicesAPI: stubBackendServicesAPI{},
+			forwardingRulesAPI: stubForwardingRulesAPI{},
+			operationRegionAPI: stubOperationRegionAPI{},
+		},
+		"successful terminate when backend service not found": {
+			healthChecksAPI:    stubHealthChecksAPI{},
+			backendServicesAPI: stubBackendServicesAPI{deleteErr: notFoundErr},
+			forwardingRulesAPI: stubForwardingRulesAPI{},
+			operationRegionAPI: stubOperationRegionAPI{},
+		},
+		"successful terminate when forwarding rule not found": {
+			healthChecksAPI:    stubHealthChecksAPI{},
+			backendServicesAPI: stubBackendServicesAPI{},
+			forwardingRulesAPI: stubForwardingRulesAPI{deleteErr: notFoundErr},
 			operationRegionAPI: stubOperationRegionAPI{},
 		},
 		"TerminateLoadBalancer fails when deleting health check": {

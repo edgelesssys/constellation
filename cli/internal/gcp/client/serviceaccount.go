@@ -38,15 +38,18 @@ func (c *Client) CreateServiceAccount(ctx context.Context, input ServiceAccountI
 }
 
 func (c *Client) TerminateServiceAccount(ctx context.Context) error {
-	if c.serviceAccount != "" {
-		req := &adminpb.DeleteServiceAccountRequest{
-			Name: "projects/-/serviceAccounts/" + c.serviceAccount,
-		}
-		if err := c.iamAPI.DeleteServiceAccount(ctx, req); err != nil {
-			return fmt.Errorf("deleting service account: %w", err)
-		}
-		c.serviceAccount = ""
+	if c.serviceAccount == "" {
+		return nil
 	}
+
+	req := &adminpb.DeleteServiceAccountRequest{
+		Name: "projects/-/serviceAccounts/" + c.serviceAccount,
+	}
+	if err := c.iamAPI.DeleteServiceAccount(ctx, req); err != nil && !isNotFoundError(err) {
+		return fmt.Errorf("deleting service account: %w", err)
+	}
+
+	c.serviceAccount = ""
 	return nil
 }
 

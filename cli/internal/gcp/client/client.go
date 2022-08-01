@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
+	"net/http"
 
 	compute "cloud.google.com/go/compute/apiv1"
 	admin "cloud.google.com/go/iam/admin/apiv1"
@@ -15,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/state"
 	"go.uber.org/multierr"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/api/googleapi"
 )
 
 // Client is a client for the Google Compute Engine.
@@ -317,4 +320,12 @@ func closeAll(closers []closer) error {
 		err = multierr.Append(err, closer.Close())
 	}
 	return err
+}
+
+func isNotFoundError(err error) bool {
+	var gAPIErr *googleapi.Error
+	if !errors.As(err, &gAPIErr) {
+		return false
+	}
+	return gAPIErr.Code == http.StatusNotFound
 }

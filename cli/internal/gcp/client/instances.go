@@ -131,20 +131,24 @@ func (c *Client) TerminateInstances(ctx context.Context) error {
 	ops := []Operation{}
 	if c.workerInstanceGroup != "" {
 		op, err := c.deleteInstanceGroupManager(ctx, c.workerInstanceGroup)
-		if err != nil {
+		if err != nil && !isNotFoundError(err) {
 			return fmt.Errorf("deleting instanceGroupManager '%s': %w", c.workerInstanceGroup, err)
 		}
-		ops = append(ops, op)
+		if err == nil {
+			ops = append(ops, op)
+		}
 		c.workerInstanceGroup = ""
 		c.workers = make(cloudtypes.Instances)
 	}
 
 	if c.controlPlaneInstanceGroup != "" {
 		op, err := c.deleteInstanceGroupManager(ctx, c.controlPlaneInstanceGroup)
-		if err != nil {
+		if err != nil && !isNotFoundError(err) {
 			return fmt.Errorf("deleting instanceGroupManager '%s': %w", c.controlPlaneInstanceGroup, err)
 		}
-		ops = append(ops, op)
+		if err == nil {
+			ops = append(ops, op)
+		}
 		c.controlPlaneInstanceGroup = ""
 		c.controlPlanes = make(cloudtypes.Instances)
 	}
@@ -155,18 +159,22 @@ func (c *Client) TerminateInstances(ctx context.Context) error {
 
 	if c.workerTemplate != "" {
 		op, err := c.deleteInstanceTemplate(ctx, c.workerTemplate)
-		if err != nil {
+		if err != nil && !isNotFoundError(err) {
 			return fmt.Errorf("deleting instanceTemplate: %w", err)
 		}
-		ops = append(ops, op)
+		if err == nil {
+			ops = append(ops, op)
+		}
 		c.workerTemplate = ""
 	}
 	if c.controlPlaneTemplate != "" {
 		op, err := c.deleteInstanceTemplate(ctx, c.controlPlaneTemplate)
-		if err != nil {
+		if err != nil && !isNotFoundError(err) {
 			return fmt.Errorf("deleting instanceTemplate: %w", err)
 		}
-		ops = append(ops, op)
+		if err == nil {
+			ops = append(ops, op)
+		}
 		c.controlPlaneTemplate = ""
 	}
 	return c.waitForOperations(ctx, ops)

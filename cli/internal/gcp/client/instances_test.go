@@ -3,10 +3,12 @@ package client
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/api/googleapi"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
 )
@@ -180,6 +182,8 @@ func TestCreateInstances(t *testing.T) {
 
 func TestTerminateInstances(t *testing.T) {
 	someErr := errors.New("failed")
+	notFoundErr := &googleapi.Error{Code: http.StatusNotFound}
+
 	testCases := map[string]struct {
 		operationZoneAPI         operationZoneAPI
 		operationGlobalAPI       operationGlobalAPI
@@ -201,6 +205,18 @@ func TestTerminateInstances(t *testing.T) {
 			instanceTemplateAPI:        stubInstanceTemplateAPI{},
 			instanceGroupManagersAPI:   stubInstanceGroupManagersAPI{},
 			missingWorkerInstanceGroup: true,
+		},
+		"instances not found": {
+			operationZoneAPI:         stubOperationZoneAPI{},
+			operationGlobalAPI:       stubOperationGlobalAPI{},
+			instanceTemplateAPI:      stubInstanceTemplateAPI{},
+			instanceGroupManagersAPI: stubInstanceGroupManagersAPI{deleteErr: notFoundErr},
+		},
+		"templates not found": {
+			operationZoneAPI:         stubOperationZoneAPI{},
+			operationGlobalAPI:       stubOperationGlobalAPI{},
+			instanceTemplateAPI:      stubInstanceTemplateAPI{deleteErr: notFoundErr},
+			instanceGroupManagersAPI: stubInstanceGroupManagersAPI{},
 		},
 		"fail delete instanceGroupManager": {
 			operationZoneAPI:         stubOperationZoneAPI{},

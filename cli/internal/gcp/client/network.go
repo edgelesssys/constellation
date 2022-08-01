@@ -65,6 +65,9 @@ func (c *Client) TerminateFirewall(ctx context.Context) error {
 			Project:  c.project,
 		}
 		resp, err := c.firewallsAPI.Delete(ctx, req)
+		if isNotFoundError(err) {
+			continue
+		}
 		if err != nil {
 			return err
 		}
@@ -130,28 +133,40 @@ func (c *Client) TerminateVPCs(ctx context.Context) error {
 		return err
 	}
 
-	var op Operation
-	var err error
-	if c.network != "" {
-		op, err = c.terminateVPC(ctx, c.network)
-		if err != nil {
-			return err
-		}
-		c.network = ""
+	if err := c.terminateVPC(ctx); err != nil {
+		return err
 	}
 
-	return c.waitForOperations(ctx, []Operation{op})
+	return nil
 }
 
 // terminateVPC terminates a VPC network.
 //
 // If the network has firewall rules, these must be terminated first.
-func (c *Client) terminateVPC(ctx context.Context, network string) (Operation, error) {
+func (c *Client) terminateVPC(ctx context.Context) error {
+	if c.network == "" {
+		return nil
+	}
+
 	req := &computepb.DeleteNetworkRequest{
 		Project: c.project,
-		Network: network,
+		Network: c.network,
 	}
-	return c.networksAPI.Delete(ctx, req)
+	op, err := c.networksAPI.Delete(ctx, req)
+	if err != nil && !isNotFoundError(err) {
+		return err
+	}
+	if isNotFoundError(err) {
+		c.network = ""
+		return nil
+	}
+
+	if err := c.waitForOperations(ctx, []Operation{op}); err != nil {
+		return err
+	}
+
+	c.network = ""
+	return nil
 }
 
 func (c *Client) createSubnets(ctx context.Context) error {
@@ -189,16 +204,27 @@ func (c *Client) terminateSubnet(ctx context.Context) error {
 	if c.subnetwork == "" {
 		return nil
 	}
+
 	req := &computepb.DeleteSubnetworkRequest{
 		Project:    c.project,
 		Region:     c.region,
 		Subnetwork: c.subnetwork,
 	}
 	op, err := c.subnetworksAPI.Delete(ctx, req)
-	if err != nil {
+	if err != nil && !isNotFoundError(err) {
 		return err
 	}
-	return c.waitForOperations(ctx, []Operation{op})
+	if isNotFoundError(err) {
+		c.subnetwork = ""
+		return nil
+	}
+
+	if err := c.waitForOperations(ctx, []Operation{op}); err != nil {
+		return err
+	}
+
+	c.subnetwork = ""
+	return nil
 }
 
 // CreateLoadBalancer creates a load balancer.
@@ -305,11 +331,13 @@ func (c *Client) TerminateLoadBalancer(ctx context.Context) error {
 		Region:         c.region,
 		ForwardingRule: c.forwardingRule,
 	})
-	if err != nil {
+	if err != nil && !isNotFoundError(err) {
 		return err
 	}
-	if err := c.waitForOperations(ctx, []Operation{resp}); err != nil {
-		return err
+	if err == nil {
+		if err := c.waitForOperations(ctx, []Operation{resp}); err != nil {
+			return err
+		}
 	}
 
 	resp, err = c.backendServicesAPI.Delete(ctx, &computepb.DeleteRegionBackendServiceRequest{
@@ -317,11 +345,13 @@ func (c *Client) TerminateLoadBalancer(ctx context.Context) error {
 		Region:         c.region,
 		BackendService: c.backendService,
 	})
-	if err != nil {
+	if err != nil && !isNotFoundError(err) {
 		return err
 	}
-	if err := c.waitForOperations(ctx, []Operation{resp}); err != nil {
-		return err
+	if err == nil {
+		if err := c.waitForOperations(ctx, []Operation{resp}); err != nil {
+			return err
+		}
 	}
 
 	resp, err = c.healthChecksAPI.Delete(ctx, &computepb.DeleteRegionHealthCheckRequest{
@@ -329,9 +359,15 @@ func (c *Client) TerminateLoadBalancer(ctx context.Context) error {
 		Region:      c.region,
 		HealthCheck: c.healthCheck,
 	})
-	if err != nil {
+	if err != nil && !isNotFoundError(err) {
 		return err
 	}
 
-	return c.waitForOperations(ctx, []Operation{resp})
+	if err == nil {
+		if err := c.waitForOperations(ctx, []Operation{resp}); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
