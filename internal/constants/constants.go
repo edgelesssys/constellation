@@ -84,6 +84,18 @@ const (
 	//
 
 	KubernetesJoinTokenTTL = 15 * time.Minute
+
+	//
+	// Releases.
+	//
+
+	// S3PublicBucket contains measurements & releases.
+	S3PublicBucket = "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/"
+	// CosignPublicKey signs all our releases.
+	CosignPublicKey = `-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE1Iv15myTjpa1KznlGFe+dBEjN91q
+oGhQf4z+3TgFjv+Z+6ATPA1OPANf0//6p+goKifNZD5+Cq/VEAP7xOhlYw==
+-----END PUBLIC KEY-----`
 )
 
 // VersionInfo is the version of a binary. Left as a separate variable to allow override during build.

@@ -282,6 +282,31 @@ func (c *Config) HasProvider(provider cloudprovider.Provider) bool {
 	return false
 }
 
+// Image returns OS image for the configured cloud provider.
+// If multiple cloud providers are configured (which is not supported)
+// only a single image is returned.
+func (c *Config) Image() string {
+	if c.HasProvider(cloudprovider.Azure) {
+		return c.Provider.Azure.Image
+	}
+	if c.HasProvider(cloudprovider.GCP) {
+		return c.Provider.GCP.Image
+	}
+	return ""
+}
+
+func (c *Config) UpdateMeasurements(newMeasurements Measurements) {
+	if c.Provider.Azure != nil {
+		c.Provider.Azure.Measurements.CopyFrom(newMeasurements)
+	}
+	if c.Provider.GCP != nil {
+		c.Provider.GCP.Measurements.CopyFrom(newMeasurements)
+	}
+	if c.Provider.QEMU != nil {
+		c.Provider.QEMU.Measurements.CopyFrom(newMeasurements)
+	}
+}
+
 // RemoveProviderExcept removes all provider specific configurations, i.e.,
 // sets them to nil, except the one specified.
 // If an unknown provider is passed, the same configuration is returned.

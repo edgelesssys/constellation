@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `constellation config fetch-measurements` to download and verify measurements, and write them into config file.
 
 - Kubernetes version is configured through an entry in `constellation-config.yaml`.
 - Kubernetes version 1.24 is now supported.

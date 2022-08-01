@@ -201,6 +201,35 @@ func TestHasProvider(t *testing.T) {
 	assert.False(cnfWithAzure.HasProvider(cloudprovider.GCP))
 }
 
+func TestImage(t *testing.T) {
+	testCases := map[string]struct {
+		cfg       *Config
+		wantImage string
+	}{
+		"default azure": {
+			cfg:       func() *Config { c := Default(); c.RemoveProviderExcept(cloudprovider.Azure); return c }(),
+			wantImage: Default().Provider.Azure.Image,
+		},
+		"default gcp": {
+			cfg:       func() *Config { c := Default(); c.RemoveProviderExcept(cloudprovider.GCP); return c }(),
+			wantImage: Default().Provider.GCP.Image,
+		},
+		"default qemu": {
+			cfg:       func() *Config { c := Default(); c.RemoveProviderExcept(cloudprovider.QEMU); return c }(),
+			wantImage: "",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			image := tc.cfg.Image()
+			assert.Equal(tc.wantImage, image)
+		})
+	}
+}
+
 func TestConfigRemoveProviderExcept(t *testing.T) {
 	testCases := map[string]struct {
 		removeExcept cloudprovider.Provider
@@ -245,4 +274,41 @@ func TestConfigRemoveProviderExcept(t *testing.T) {
 func TestConfigGeneratedDocsFresh(t *testing.T) {
 	assert := assert.New(t)
 	assert.Len(ConfigDoc.Fields, 8, "remember to re-generate config docs!")
+}
+
+func TestConfig_UpdateMeasurements(t *testing.T) {
+	assert := assert.New(t)
+	newMeasurements := Measurements{
+		1: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		2: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+		3: []byte{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2},
+	}
+
+	{ // Azure
+		conf := Default()
+		conf.RemoveProviderExcept(cloudprovider.Azure)
+		for k := range conf.Provider.Azure.Measurements {
+			delete(conf.Provider.Azure.Measurements, k)
+		}
+		conf.UpdateMeasurements(newMeasurements)
+		assert.Equal(newMeasurements, conf.Provider.Azure.Measurements)
+	}
+	{ // GCP
+		conf := Default()
+		conf.RemoveProviderExcept(cloudprovider.GCP)
+		for k := range conf.Provider.GCP.Measurements {
+			delete(conf.Provider.GCP.Measurements, k)
+		}
+		conf.UpdateMeasurements(newMeasurements)
+		assert.Equal(newMeasurements, conf.Provider.GCP.Measurements)
+	}
+	{ // QEMU
+		conf := Default()
+		conf.RemoveProviderExcept(cloudprovider.QEMU)
+		for k := range conf.Provider.QEMU.Measurements {
+			delete(conf.Provider.QEMU.Measurements, k)
+		}
+		conf.UpdateMeasurements(newMeasurements)
+		assert.Equal(newMeasurements, conf.Provider.QEMU.Measurements)
+	}
 }

@@ -25,6 +25,8 @@ while read line; do
       case $pkg in
         github.com/talos-systems/talos/pkg/machinery/config/encoder)
           ;;
+        github.com/letsencrypt/boulder)
+          ;;
         *)
           not_allowed
           ;;
