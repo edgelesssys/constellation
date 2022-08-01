@@ -39,9 +39,16 @@ func NewLogger(ctx context.Context, metadata *Metadata) (*Logger, error) {
 	if resp.Properties == nil || resp.Properties.InstrumentationKey == nil {
 		return nil, errors.New("unable to get instrumentation key")
 	}
+	client := appinsights.NewTelemetryClient(*resp.Properties.InstrumentationKey)
+
+	instance, err := metadata.GetInstance(ctx, providerID)
+	if err != nil {
+		return nil, err
+	}
+	client.Context().CommonProperties["instance-name"] = instance.Name
 
 	return &Logger{
-		client: appinsights.NewTelemetryClient(*resp.Properties.InstrumentationKey),
+		client: client,
 	}, nil
 }
 
