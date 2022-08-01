@@ -245,11 +245,7 @@ type fakeGcpClient struct {
 	name                      string
 	zone                      string
 	serviceAccount            string
-
-	// loadbalancer
-	healthCheck    string
-	backendService string
-	forwardingRule string
+	loadbalancers             []string
 }
 
 func (c *fakeGcpClient) GetState() state.ConstellationState {
@@ -264,14 +260,12 @@ func (c *fakeGcpClient) GetState() state.ConstellationState {
 		GCPNetwork:                      c.network,
 		GCPSubnetwork:                   c.subnetwork,
 		GCPFirewalls:                    c.firewalls,
-		GCPBackendService:               c.backendService,
-		GCPHealthCheck:                  c.healthCheck,
-		GCPForwardingRule:               c.forwardingRule,
 		GCPProject:                      c.project,
 		Name:                            c.name,
 		UID:                             c.uid,
 		GCPZone:                         c.zone,
 		GCPServiceAccount:               c.serviceAccount,
+		GCPLoadbalancers:                c.loadbalancers,
 	}
 }
 
@@ -290,9 +284,7 @@ func (c *fakeGcpClient) SetState(stat state.ConstellationState) {
 	c.uid = stat.UID
 	c.zone = stat.GCPZone
 	c.serviceAccount = stat.GCPServiceAccount
-	c.healthCheck = stat.GCPHealthCheck
-	c.backendService = stat.GCPBackendService
-	c.forwardingRule = stat.GCPForwardingRule
+	c.loadbalancers = stat.GCPLoadbalancers
 }
 
 func (c *fakeGcpClient) CreateVPCs(ctx context.Context) error {
@@ -345,10 +337,8 @@ func (c *fakeGcpClient) CreateServiceAccount(ctx context.Context, input gcpcl.Se
 	}.ToCloudServiceAccountURI(), nil
 }
 
-func (c *fakeGcpClient) CreateLoadBalancer(ctx context.Context) error {
-	c.healthCheck = "health-check"
-	c.backendService = "backend-service"
-	c.forwardingRule = "forwarding-rule"
+func (c *fakeGcpClient) CreateLoadBalancers(ctx context.Context) error {
+	c.loadbalancers = []string{"kube-lb", "boot-lb", "verify-lb"}
 	return nil
 }
 
@@ -384,10 +374,8 @@ func (c *fakeGcpClient) TerminateServiceAccount(context.Context) error {
 	return nil
 }
 
-func (c *fakeGcpClient) TerminateLoadBalancer(context.Context) error {
-	c.healthCheck = ""
-	c.backendService = ""
-	c.forwardingRule = ""
+func (c *fakeGcpClient) TerminateLoadBalancers(context.Context) error {
+	c.loadbalancers = nil
 	return nil
 }
 
@@ -438,7 +426,7 @@ func (c *stubGcpClient) CreateServiceAccount(ctx context.Context, input gcpcl.Se
 	return gcpshared.ServiceAccountKey{}.ToCloudServiceAccountURI(), c.createServiceAccountErr
 }
 
-func (c *stubGcpClient) CreateLoadBalancer(ctx context.Context) error {
+func (c *stubGcpClient) CreateLoadBalancers(ctx context.Context) error {
 	return c.createLoadBalancerErr
 }
 
@@ -462,7 +450,7 @@ func (c *stubGcpClient) TerminateServiceAccount(context.Context) error {
 	return c.terminateServiceAccountErr
 }
 
-func (c *stubGcpClient) TerminateLoadBalancer(context.Context) error {
+func (c *stubGcpClient) TerminateLoadBalancers(context.Context) error {
 	return c.terminateLoadBalancerErr
 }
 

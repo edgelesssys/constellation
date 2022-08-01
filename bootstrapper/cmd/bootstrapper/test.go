@@ -55,6 +55,10 @@ func (f *providerMetadataFake) SetVPNIP(ctx context.Context, vpnIP string) error
 	return nil
 }
 
+func (f *providerMetadataFake) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
+	return "", nil
+}
+
 func (f *providerMetadataFake) Supported() bool {
 	return true
 }

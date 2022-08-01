@@ -2,6 +2,7 @@ package client
 
 import (
 	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
@@ -10,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
+	"google.golang.org/api/googleapi"
 )
 
 func TestMain(m *testing.M) {
@@ -41,16 +43,13 @@ func TestSetGetState(t *testing.T) {
 		GCPRegion:                       "region-id",
 		Name:                            "name",
 		UID:                             "uid",
-		BootstrapperHost:                "ip3",
+		LoadBalancerIP:                  "ip5",
 		GCPNetwork:                      "net-id",
 		GCPSubnetwork:                   "subnet-id",
 		GCPFirewalls:                    []string{"fw-1", "fw-2"},
 		GCPWorkerInstanceTemplate:       "temp-id",
 		GCPControlPlaneInstanceTemplate: "temp-id",
-		GCPServiceAccount:               "service-account",
-		GCPBackendService:               "backend-service-id",
-		GCPHealthCheck:                  "health-check-id",
-		GCPForwardingRule:               "forwarding-rule-id",
+		GCPLoadbalancers:                []string{"lb-1", "lb-2"},
 	}
 
 	t.Run("SetState", func(t *testing.T) {
@@ -71,6 +70,13 @@ func TestSetGetState(t *testing.T) {
 		assert.Equal(state.GCPControlPlaneInstanceTemplate, client.controlPlaneTemplate)
 		assert.Equal(state.GCPWorkerInstanceTemplate, client.workerTemplate)
 		assert.Equal(state.GCPServiceAccount, client.serviceAccount)
+		assert.Equal(state.LoadBalancerIP, client.loadbalancerIP)
+		for _, lb := range client.loadbalancers {
+			assert.Contains(state.GCPLoadbalancers, lb.name)
+			assert.True(lb.hasBackendService)
+			assert.True(lb.hasHealthCheck)
+			assert.True(lb.hasForwardingRules)
+		}
 	})
 
 	t.Run("GetState", func(t *testing.T) {
@@ -92,9 +98,11 @@ func TestSetGetState(t *testing.T) {
 			workerTemplate:            state.GCPWorkerInstanceTemplate,
 			controlPlaneTemplate:      state.GCPControlPlaneInstanceTemplate,
 			serviceAccount:            state.GCPServiceAccount,
-			healthCheck:               state.GCPHealthCheck,
-			backendService:            state.GCPBackendService,
-			forwardingRule:            state.GCPForwardingRule,
+			loadbalancerIP:            state.LoadBalancerIP,
+			loadbalancerIPname:        state.GCPLoadbalancerIPname,
+		}
+		for _, lbName := range state.GCPLoadbalancers {
+			client.loadbalancers = append(client.loadbalancers, &loadBalancer{name: lbName})
 		}
 
 		stat := client.GetState()
@@ -140,4 +148,22 @@ type someCloser struct {
 func (c *someCloser) Close() error {
 	c.closed = true
 	return c.closeErr
+}
+
+func TestIsNotFoundError(t *testing.T) {
+	testCases := map[string]struct {
+		err    error
+		result bool
+	}{
+		"not found error": {err: &googleapi.Error{Code: http.StatusNotFound}, result: true},
+		"nil error":       {err: nil, result: false},
+		"other error":     {err: errors.New("failed"), result: false},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			assert.Equal(tc.result, isNotFoundError(tc.err))
+		})
+	}
 }

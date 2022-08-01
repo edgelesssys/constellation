@@ -2,7 +2,9 @@ package gcp
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net"
 	"regexp"
 	"strings"
 
@@ -213,8 +215,8 @@ func (c *Client) RetrieveSubnetworkAliasCIDR(ctx context.Context, project, zone,
 	return *(subnetwork.SecondaryIpRanges[0]).IpCidrRange, nil
 }
 
-// RetrieveLoadBalancerIP returns the IP address of the load balancer specified by project, zone and loadBalancerName.
-func (c *Client) RetrieveLoadBalancerIP(ctx context.Context, project, zone string) (string, error) {
+// RetrieveLoadBalancerEndpoint returns the endpoint of the load balancer with the constellation-uid tag.
+func (c *Client) RetrieveLoadBalancerEndpoint(ctx context.Context, project, zone string) (string, error) {
 	uid, err := c.UID()
 	if err != nil {
 		return "", err
@@ -226,8 +228,8 @@ func (c *Client) RetrieveLoadBalancerIP(ctx context.Context, project, zone strin
 	}
 
 	req := &computepb.ListForwardingRulesRequest{
-		Region:  region,
 		Project: project,
+		Region:  region,
 	}
 	iter := c.forwardingRulesAPI.List(ctx, req)
 	for {
@@ -239,7 +241,10 @@ func (c *Client) RetrieveLoadBalancerIP(ctx context.Context, project, zone strin
 			return "", fmt.Errorf("retrieving load balancer IP failed: %w", err)
 		}
 		if resp.Labels["constellation-uid"] == uid {
-			return *resp.IPAddress, nil
+			if len(resp.Ports) == 0 {
+				return "", errors.New("load balancer with searched UID has no ports")
+			}
+			return net.JoinHostPort(*resp.IPAddress, resp.Ports[0]), nil
 		}
 	}
 

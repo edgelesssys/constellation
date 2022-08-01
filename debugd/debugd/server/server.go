@@ -6,16 +6,20 @@ import (
 	"fmt"
 	"io/fs"
 	"net"
+	"strconv"
 	"sync"
+	"time"
 
 	"github.com/edgelesssys/constellation/debugd/bootstrapper"
 	"github.com/edgelesssys/constellation/debugd/debugd"
 	"github.com/edgelesssys/constellation/debugd/debugd/deploy"
 	pb "github.com/edgelesssys/constellation/debugd/service"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 )
 
 type debugdServer struct {
@@ -113,9 +117,13 @@ func Start(log *logger.Logger, wg *sync.WaitGroup, serv pb.DebugdServer) {
 	grpcLog := log.Named("gRPC")
 	grpcLog.WithIncreasedLevel(zap.WarnLevel).ReplaceGRPCLogger()
 
-	grpcServer := grpc.NewServer(grpcLog.GetServerStreamInterceptor(), grpcLog.GetServerUnaryInterceptor())
+	grpcServer := grpc.NewServer(
+		grpcLog.GetServerStreamInterceptor(),
+		grpcLog.GetServerUnaryInterceptor(),
+		grpc.KeepaliveParams(keepalive.ServerParameters{Time: 15 * time.Second}),
+	)
 	pb.RegisterDebugdServer(grpcServer, serv)
-	lis, err := net.Listen("tcp", net.JoinHostPort("0.0.0.0", debugd.DebugdPort))
+	lis, err := net.Listen("tcp", net.JoinHostPort("0.0.0.0", strconv.Itoa(constants.DebugdPort)))
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Listening failed")
 	}

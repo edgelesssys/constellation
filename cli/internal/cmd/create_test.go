@@ -46,7 +46,7 @@ func TestCreateArgumentValidation(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	testState := state.ConstellationState{Name: "test", BootstrapperHost: "192.0.2.1"}
+	testState := state.ConstellationState{Name: "test", LoadBalancerIP: "192.0.2.1"}
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {

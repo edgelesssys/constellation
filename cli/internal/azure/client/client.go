@@ -172,7 +172,7 @@ func (c *Client) GetState() state.ConstellationState {
 		Name:                       c.name,
 		UID:                        c.uid,
 		CloudProvider:              cloudprovider.Azure.String(),
-		BootstrapperHost:           c.loadBalancerPubIP,
+		LoadBalancerIP:             c.loadBalancerPubIP,
 		AzureLocation:              c.location,
 		AzureSubscription:          c.subscriptionID,
 		AzureTenant:                c.tenantID,
@@ -192,7 +192,7 @@ func (c *Client) SetState(stat state.ConstellationState) {
 	c.resourceGroup = stat.AzureResourceGroup
 	c.name = stat.Name
 	c.uid = stat.UID
-	c.loadBalancerPubIP = stat.BootstrapperHost
+	c.loadBalancerPubIP = stat.LoadBalancerIP
 	c.location = stat.AzureLocation
 	c.subscriptionID = stat.AzureSubscription
 	c.tenantID = stat.AzureTenant

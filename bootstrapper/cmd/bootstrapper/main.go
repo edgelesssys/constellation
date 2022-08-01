@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"flag"
 	"io"
+	"net"
 	"os"
+	"strconv"
 	"strings"
 
 	azurecloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/azure"
 	gcpcloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/gcp"
 	qemucloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/qemu"
-	"github.com/edgelesssys/constellation/bootstrapper/internal/joinclient"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/kubectl"
@@ -22,7 +23,9 @@ import (
 	"github.com/edgelesssys/constellation/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/iproute"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/oid"
 	"github.com/spf13/afero"
@@ -30,8 +33,6 @@ import (
 )
 
 const (
-	defaultIP   = "0.0.0.0"
-	defaultPort = "9000"
 	// ConstellationCSP is the environment variable stating which Cloud Service Provider Constellation is running on.
 	constellationCSP = "CONSTEL_CSP"
 )
@@ -52,9 +53,10 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	var bindIP, bindPort string
+	bindIP := "0.0.0.0"
+	bindPort := strconv.Itoa(constants.BootstrapperPort)
 	var clusterInitJoiner clusterInitJoiner
-	var metadataAPI joinclient.MetadataAPI
+	var metadataAPI metadataAPI
 	var cloudLogger logging.CloudLogger
 	var issuer atls.Issuer
 	var openTPM vtpm.TPMOpenFunc
@@ -93,10 +95,12 @@ func main() {
 			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &gcpcloud.CloudControllerManager{},
 			&gcpcloud.CloudNodeManager{}, &gcpcloud.Autoscaler{}, metadata, pcrsJSON,
 		)
-		bindIP = defaultIP
-		bindPort = defaultPort
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
+		if err := setLoadbalancerRoute(ctx, metadata); err != nil {
+			log.With(zap.Error(err)).Fatalf("Failed to set loadbalancer route")
+		}
+		log.Infof("Added load balancer IP to routing table")
 	case "azure":
 		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.AzurePCRSelection)
 		if err != nil {
@@ -123,8 +127,6 @@ func main() {
 			&azurecloud.CloudNodeManager{}, &azurecloud.Autoscaler{}, metadata, pcrsJSON,
 		)
 
-		bindIP = defaultIP
-		bindPort = defaultPort
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 	case "qemu":
@@ -147,8 +149,6 @@ func main() {
 		)
 		metadataAPI = metadata
 
-		bindIP = defaultIP
-		bindPort = defaultPort
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 	default:
@@ -156,8 +156,6 @@ func main() {
 		clusterInitJoiner = &clusterFake{}
 		metadataAPI = &providerMetadataFake{}
 		cloudLogger = &logging.NopLogger{}
-		bindIP = defaultIP
-		bindPort = defaultPort
 		var simulatedTPMCloser io.Closer
 		openTPM, simulatedTPMCloser = simulator.NewSimulatedTPMOpenFunc()
 		defer simulatedTPMCloser.Close()
@@ -167,4 +165,16 @@ func main() {
 	fileHandler := file.NewHandler(fs)
 
 	run(issuer, openTPM, fileHandler, clusterInitJoiner, metadataAPI, bindIP, bindPort, log, cloudLogger)
+}
+
+func setLoadbalancerRoute(ctx context.Context, meta metadataAPI) error {
+	endpoint, err := meta.GetLoadBalancerEndpoint(ctx)
+	if err != nil {
+		return err
+	}
+	ip, _, err := net.SplitHostPort(endpoint)
+	if err != nil {
+		return err
+	}
+	return iproute.AddToLocalRoutingTable(ctx, ip)
 }

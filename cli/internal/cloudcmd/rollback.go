@@ -34,7 +34,7 @@ type rollbackerGCP struct {
 
 func (r *rollbackerGCP) rollback(ctx context.Context) error {
 	var err error
-	err = multierr.Append(err, r.client.TerminateLoadBalancer(ctx))
+	err = multierr.Append(err, r.client.TerminateLoadBalancers(ctx))
 	err = multierr.Append(err, r.client.TerminateInstances(ctx))
 	err = multierr.Append(err, r.client.TerminateFirewall(ctx))
 	err = multierr.Append(err, r.client.TerminateVPCs(ctx))

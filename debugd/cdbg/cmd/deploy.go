@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"log"
 	"net"
+	"strconv"
 
 	"github.com/edgelesssys/constellation/debugd/bootstrapper"
 	"github.com/edgelesssys/constellation/debugd/cdbg/config"
@@ -94,7 +95,7 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 
 	for _, ip := range ips {
 		input := deployOnEndpointInput{
-			debugdEndpoint:   net.JoinHostPort(ip, debugd.DebugdPort),
+			debugdEndpoint:   net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort)),
 			bootstrapperPath: debugConfig.ConstellationDebugConfig.BootstrapperPath,
 			reader:           reader,
 			authorizedKeys:   debugConfig.ConstellationDebugConfig.AuthorizedKeys,
@@ -194,13 +195,13 @@ func getIPsFromConfig(stat statec.ConstellationState, config configc.Config) ([]
 	// add bootstrapper IP if it is not already in the list
 	var foundBootstrapperIP bool
 	for _, ip := range ips {
-		if ip == stat.BootstrapperHost {
+		if ip == stat.LoadBalancerIP {
 			foundBootstrapperIP = true
 			break
 		}
 	}
-	if !foundBootstrapperIP && stat.BootstrapperHost != "" {
-		ips = append(ips, stat.BootstrapperHost)
+	if !foundBootstrapperIP && stat.LoadBalancerIP != "" {
+		ips = append(ips, stat.LoadBalancerIP)
 	}
 	if len(ips) == 0 {
 		return nil, fmt.Errorf("no public IPs found in statefile")

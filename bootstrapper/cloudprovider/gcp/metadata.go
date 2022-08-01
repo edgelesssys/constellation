@@ -26,8 +26,8 @@ type API interface {
 	RetrieveInstanceName() (string, error)
 	// RetrieveSubnetworkAliasCIDR retrieves the subnetwork CIDR of the current instance.
 	RetrieveSubnetworkAliasCIDR(ctx context.Context, project, zone, instanceName string) (string, error)
-	// RetrieveLoadBalancerIP retrieves the load balancer IP of the current instance.
-	RetrieveLoadBalancerIP(ctx context.Context, project, zone string) (string, error)
+	// RetrieveLoadBalancerEndpoint retrieves the load balancer endpoint of the current instance.
+	RetrieveLoadBalancerEndpoint(ctx context.Context, project, zone string) (string, error)
 	// SetInstanceMetadata sets metadata key: value of the instance specified by project, zone and instanceName.
 	SetInstanceMetadata(ctx context.Context, project, zone, instanceName, key, value string) error
 	// UnsetInstanceMetadata removes a metadata key-value pair of the instance specified by project, zone and instanceName.
@@ -111,8 +111,8 @@ func (m *Metadata) SupportsLoadBalancer() bool {
 	return true
 }
 
-// GetLoadBalancerIP returns the IP of the load balancer.
-func (m *Metadata) GetLoadBalancerIP(ctx context.Context) (string, error) {
+// GetLoadBalancerEndpoint returns the endpoint of the load balancer.
+func (m *Metadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
 	project, err := m.api.RetrieveProjectID()
 	if err != nil {
 		return "", err
@@ -121,7 +121,7 @@ func (m *Metadata) GetLoadBalancerIP(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return m.api.RetrieveLoadBalancerIP(ctx, project, zone)
+	return m.api.RetrieveLoadBalancerEndpoint(ctx, project, zone)
 }
 
 // UID retrieves the UID of the constellation.

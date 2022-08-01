@@ -14,6 +14,11 @@ func (f Fetcher) DiscoverDebugdIPs(ctx context.Context) ([]string, error) {
 	return nil, nil
 }
 
+func (f Fetcher) DiscoverLoadbalancerIP(ctx context.Context) (string, error) {
+	// Fallback fetcher does not try to discover loadbalancer IP
+	return "", nil
+}
+
 func (f Fetcher) FetchSSHKeys(ctx context.Context) ([]ssh.UserKey, error) {
 	// Fallback fetcher does not try to fetch ssh keys
 	return nil, nil

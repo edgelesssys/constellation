@@ -5,6 +5,7 @@ import (
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubelet"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/versions"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,7 +18,6 @@ import (
 // Slimmed down to the fields we require
 
 const (
-	bindPort        = 6443
 	auditLogDir     = "/var/log/kubernetes/audit/"
 	auditLogFile    = "audit.log"
 	auditPolicyPath = "/etc/kubernetes/audit-policy.yaml"
@@ -45,7 +45,7 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool, k8sV
 			},
 			// AdvertiseAddress will be overwritten later
 			LocalAPIEndpoint: kubeadm.APIEndpoint{
-				BindPort: bindPort,
+				BindPort: constants.KubernetesPort,
 			},
 		},
 		// https://pkg.go.dev/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3#ClusterConfiguration
@@ -216,7 +216,7 @@ func (k *KubeadmJoinYAML) SetControlPlane(advertiseAddress string) {
 	k.JoinConfiguration.ControlPlane = &kubeadm.JoinControlPlane{
 		LocalAPIEndpoint: kubeadm.APIEndpoint{
 			AdvertiseAddress: advertiseAddress,
-			BindPort:         6443,
+			BindPort:         constants.KubernetesPort,
 		},
 	}
 	k.JoinConfiguration.SkipPhases = []string{"control-plane-prepare/download-certs"}

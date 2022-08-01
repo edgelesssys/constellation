@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/clean"
@@ -20,7 +21,7 @@ import (
 var version = "0.0.0"
 
 func run(issuer quoteIssuer, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
-	kube clusterInitJoiner, metadata joinclient.MetadataAPI,
+	kube clusterInitJoiner, metadata metadataAPI,
 	bindIP, bindPort string, log *logger.Logger,
 	cloudLogger logging.CloudLogger,
 ) {
@@ -89,4 +90,9 @@ type quoteIssuer interface {
 	oid.Getter
 	// Issue issues a quote for remote attestation for a given message
 	Issue(userData []byte, nonce []byte) (quote []byte, err error)
+}
+
+type metadataAPI interface {
+	joinclient.MetadataAPI
+	GetLoadBalancerEndpoint(ctx context.Context) (string, error)
 }

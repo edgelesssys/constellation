@@ -117,6 +117,10 @@ func (s *stubFetcher) FetchSSHKeys(ctx context.Context) ([]ssh.UserKey, error) {
 	return s.keys, s.fetchSSHKeysErr
 }
 
+func (s *stubFetcher) DiscoverLoadbalancerIP(ctx context.Context) (string, error) {
+	return "", nil
+}
+
 type stubSSHDeployer struct {
 	sshKeys []ssh.UserKey
 

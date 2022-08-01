@@ -5,12 +5,14 @@ import (
 	"errors"
 	"net"
 	"regexp"
+	"strconv"
 	"testing"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/versions"
 	"github.com/stretchr/testify/assert"
@@ -86,8 +88,8 @@ func TestInitCluster(t *testing.T) {
 					PublicIP:      publicIP,
 					AliasIPRanges: []string{aliasIPRange},
 				},
-				GetLoadBalancerIPResp:    loadbalancerIP,
-				SupportsLoadBalancerResp: true,
+				GetLoadBalancerEndpointResp: loadbalancerIP,
+				SupportsLoadBalancerResp:    true,
 			},
 			CloudControllerManager: &stubCloudControllerManager{},
 			CloudNodeManager:       &stubCloudNodeManager{SupportedResp: false},
@@ -148,9 +150,9 @@ func TestInitCluster(t *testing.T) {
 				Kubeconfig: []byte("someKubeconfig"),
 			},
 			providerMetadata: &stubProviderMetadata{
-				GetLoadBalancerIPErr:     someErr,
-				SupportsLoadBalancerResp: true,
-				SupportedResp:            true,
+				GetLoadBalancerEndpointErr: someErr,
+				SupportsLoadBalancerResp:   true,
+				SupportedResp:              true,
 			},
 			CloudControllerManager: &stubCloudControllerManager{},
 			CloudNodeManager:       &stubCloudNodeManager{},
@@ -319,7 +321,7 @@ func TestInitCluster(t *testing.T) {
 func TestJoinCluster(t *testing.T) {
 	someErr := errors.New("failed")
 	joinCommand := &kubeadm.BootstrapTokenDiscovery{
-		APIServerEndpoint: "192.0.2.0:6443",
+		APIServerEndpoint: "192.0.2.0:" + strconv.Itoa(constants.KubernetesPort),
 		Token:             "kube-fake-token",
 		CACertHashes:      []string{"sha256:a60ebe9b0879090edd83b40a4df4bebb20506bac1e51d518ff8f4505a721930f"},
 	}
@@ -419,7 +421,7 @@ func TestJoinCluster(t *testing.T) {
 				ControlPlane: &kubeadm.JoinControlPlane{
 					LocalAPIEndpoint: kubeadm.APIEndpoint{
 						AdvertiseAddress: "192.0.2.1",
-						BindPort:         6443,
+						BindPort:         constants.KubernetesPort,
 					},
 				},
 				SkipPhases: []string{"control-plane-prepare/download-certs"},

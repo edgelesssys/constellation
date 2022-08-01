@@ -14,11 +14,11 @@ type gcpclient interface {
 	CreateVPCs(ctx context.Context) error
 	CreateFirewall(ctx context.Context, input gcpcl.FirewallInput) error
 	CreateInstances(ctx context.Context, input gcpcl.CreateInstancesInput) error
-	CreateLoadBalancer(ctx context.Context) error
+	CreateLoadBalancers(ctx context.Context) error
 	CreateServiceAccount(ctx context.Context, input gcpcl.ServiceAccountInput) (string, error)
 	TerminateFirewall(ctx context.Context) error
 	TerminateVPCs(context.Context) error
-	TerminateLoadBalancer(context.Context) error
+	TerminateLoadBalancers(context.Context) error
 	TerminateInstances(context.Context) error
 	TerminateServiceAccount(ctx context.Context) error
 	Close() error

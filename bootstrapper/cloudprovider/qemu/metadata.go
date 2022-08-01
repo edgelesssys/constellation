@@ -65,9 +65,9 @@ func (m Metadata) SupportsLoadBalancer() bool {
 	return false
 }
 
-// GetLoadBalancerIP returns the IP of the load balancer.
-func (m Metadata) GetLoadBalancerIP(ctx context.Context) (string, error) {
-	panic("function *Metadata.GetLoadBalancerIP not implemented")
+// GetLoadBalancerEndpoint returns the endpoint of the load balancer.
+func (m Metadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
+	panic("function *Metadata.GetLoadBalancerEndpoint not implemented")
 }
 
 // UID returns the UID of the constellation.

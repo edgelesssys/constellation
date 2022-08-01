@@ -141,6 +141,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return fmt.Errorf("loading Helm charts: %w", err)
 	}
 
+	cmd.Println("Initializing cluster ...")
 	req := &initproto.InitRequest{
 		AutoscalingNodeGroups:  autoscalingNodeGroups,
 		MasterSecret:           flags.masterSecret.Key,

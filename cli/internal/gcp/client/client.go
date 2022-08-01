@@ -36,6 +36,7 @@ type Client struct {
 	instanceGroupManagersAPI
 	iamAPI
 	projectsAPI
+	addressesAPI
 
 	workers       cloudtypes.Instances
 	controlPlanes cloudtypes.Instances
@@ -56,9 +57,9 @@ type Client struct {
 	serviceAccount            string
 
 	// loadbalancer
-	healthCheck    string
-	backendService string
-	forwardingRule string
+	loadbalancerIP     string
+	loadbalancerIPname string
+	loadbalancers      []*loadBalancer
 }
 
 // NewFromDefault creates an uninitialized client.
@@ -152,6 +153,13 @@ func NewFromDefault(ctx context.Context) (*Client, error) {
 		_ = closeAll(closers)
 		return nil, err
 	}
+	closers = append(closers, projectsAPI)
+	addressesAPI, err := compute.NewAddressesRESTClient(ctx)
+	if err != nil {
+		_ = closeAll(closers)
+		return nil, err
+	}
+
 	return &Client{
 		instanceAPI:              &instanceClient{insAPI},
 		operationRegionAPI:       opRegionAPI,
@@ -167,6 +175,7 @@ func NewFromDefault(ctx context.Context) (*Client, error) {
 		instanceGroupManagersAPI: &instanceGroupManagersClient{groupAPI},
 		iamAPI:                   &iamClient{iamAPI},
 		projectsAPI:              &projectsClient{projectsAPI},
+		addressesAPI:             &addressesClient{addressesAPI},
 		workers:                  make(cloudtypes.Instances),
 		controlPlanes:            make(cloudtypes.Instances),
 	}, nil
@@ -221,6 +230,7 @@ func (c *Client) Close() error {
 		c.instanceGroupManagersAPI,
 		c.iamAPI,
 		c.projectsAPI,
+		c.addressesAPI,
 	}
 	return closeAll(closers)
 }
@@ -242,11 +252,11 @@ func (c *Client) init(project, zone, region, name string) error {
 
 // GetState returns the state of the client as ConstellationState.
 func (c *Client) GetState() state.ConstellationState {
-	return state.ConstellationState{
+	stat := state.ConstellationState{
 		Name:                            c.name,
 		UID:                             c.uid,
 		CloudProvider:                   cloudprovider.GCP.String(),
-		BootstrapperHost:                c.controlPlanes.PublicIPs()[0],
+		LoadBalancerIP:                  c.loadbalancerIP,
 		GCPProject:                      c.project,
 		GCPZone:                         c.zone,
 		GCPRegion:                       c.region,
@@ -259,11 +269,13 @@ func (c *Client) GetState() state.ConstellationState {
 		GCPFirewalls:                    c.firewalls,
 		GCPNetwork:                      c.network,
 		GCPSubnetwork:                   c.subnetwork,
-		GCPHealthCheck:                  c.healthCheck,
-		GCPBackendService:               c.backendService,
-		GCPForwardingRule:               c.forwardingRule,
 		GCPServiceAccount:               c.serviceAccount,
+		GCPLoadbalancerIPname:           c.loadbalancerIPname,
 	}
+	for _, lb := range c.loadbalancers {
+		stat.GCPLoadbalancers = append(stat.GCPLoadbalancers, lb.name)
+	}
+	return stat
 }
 
 // SetState sets the state of the client to the handed ConstellationState.
@@ -282,10 +294,18 @@ func (c *Client) SetState(stat state.ConstellationState) {
 	c.subnetwork = stat.GCPSubnetwork
 	c.workerTemplate = stat.GCPWorkerInstanceTemplate
 	c.controlPlaneTemplate = stat.GCPControlPlaneInstanceTemplate
-	c.healthCheck = stat.GCPHealthCheck
-	c.backendService = stat.GCPBackendService
-	c.forwardingRule = stat.GCPForwardingRule
+	c.loadbalancerIPname = stat.GCPLoadbalancerIPname
+	c.loadbalancerIP = stat.LoadBalancerIP
 	c.serviceAccount = stat.GCPServiceAccount
+	for _, lbName := range stat.GCPLoadbalancers {
+		lb := &loadBalancer{
+			name:               lbName,
+			hasForwardingRules: true,
+			hasBackendService:  true,
+			hasHealthCheck:     true,
+		}
+		c.loadbalancers = append(c.loadbalancers, lb)
+	}
 }
 
 func (c *Client) generateUID() (string, error) {

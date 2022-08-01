@@ -307,7 +307,7 @@ func TestGetLoadBalancerName(t *testing.T) {
 	}
 }
 
-func TestGetLoadBalancerIP(t *testing.T) {
+func TestGetLoadBalancerEndpoint(t *testing.T) {
 	loadBalancerName := "load-balancer-name"
 	publicIP := "192.0.2.1"
 	correctPublicIPID := "/subscriptions/subscription/resourceGroups/resourceGroup/providers/Microsoft.Network/publicIPAddresses/pubIPName"
@@ -319,7 +319,7 @@ func TestGetLoadBalancerIP(t *testing.T) {
 		wantIP               string
 		wantErr              bool
 	}{
-		"GetLoadBalancerIP works": {
+		"GetLoadBalancerEndpoint works": {
 			imdsAPI: newScaleSetIMDSStub(),
 			loadBalancerAPI: &stubLoadBalancersAPI{
 				pager: &stubLoadBalancersClientListPager{
@@ -446,7 +446,7 @@ func TestGetLoadBalancerIP(t *testing.T) {
 				loadBalancerAPI:      tc.loadBalancerAPI,
 				publicIPAddressesAPI: tc.publicIPAddressesAPI,
 			}
-			loadbalancerName, err := metadata.GetLoadBalancerIP(context.Background())
+			loadbalancerName, err := metadata.GetLoadBalancerEndpoint(context.Background())
 			if tc.wantErr {
 				assert.Error(err)
 				return

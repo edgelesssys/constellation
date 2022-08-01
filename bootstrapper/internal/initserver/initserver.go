@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/edgelesssys/constellation/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/diskencryption"
@@ -21,6 +22,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
 )
 
@@ -53,12 +55,12 @@ func New(lock locker, kube ClusterInitializer, issuer atls.Issuer, fh file.Handl
 
 	grpcServer := grpc.NewServer(
 		grpc.Creds(atlscredentials.New(issuer, nil)),
+		grpc.KeepaliveParams(keepalive.ServerParameters{Time: 15 * time.Second}),
 		log.Named("gRPC").GetServerUnaryInterceptor(),
 	)
 	initproto.RegisterAPIServer(grpcServer, server)
 
 	server.grpcServer = grpcServer
-
 	return server
 }
 
@@ -69,6 +71,8 @@ func (s *Server) Serve(ip, port string, cleaner cleaner) error {
 	if err != nil {
 		return fmt.Errorf("failed to listen: %w", err)
 	}
+
+	s.log.Infof("Starting")
 	return s.grpcServer.Serve(lis)
 }
 

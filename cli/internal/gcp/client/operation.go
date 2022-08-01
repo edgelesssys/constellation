@@ -37,6 +37,9 @@ func (c *Client) waitForGlobalOperation(ctx context.Context, op Operation) error
 		if err := ctx.Err(); err != nil {
 			return err
 		}
+		if op.Proto().Name == nil {
+			return errors.New("operation name is nil")
+		}
 		waitReq := &computepb.WaitGlobalOperationRequest{
 			Operation: *op.Proto().Name,
 			Project:   c.project,
@@ -58,6 +61,9 @@ func (c *Client) waitForZoneOperation(ctx context.Context, op Operation) error {
 	for {
 		if err := ctx.Err(); err != nil {
 			return err
+		}
+		if op.Proto().Name == nil {
+			return errors.New("operation name is nil")
 		}
 		waitReq := &computepb.WaitZoneOperationRequest{
 			Operation: *op.Proto().Name,
@@ -81,6 +87,9 @@ func (c *Client) waitForRegionOperation(ctx context.Context, op Operation) error
 	for {
 		if err := ctx.Err(); err != nil {
 			return err
+		}
+		if op.Proto().Name == nil {
+			return errors.New("operation name is nil")
 		}
 		waitReq := &computepb.WaitRegionOperationRequest{
 			Operation: *op.Proto().Name,

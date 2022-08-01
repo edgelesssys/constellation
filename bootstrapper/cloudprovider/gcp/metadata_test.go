@@ -239,7 +239,7 @@ type stubGCPClient struct {
 	retrieveInstancesErr         error
 	retrieveInstanceMetadaValues map[string]string
 	retrieveInstanceMetadataErr  error
-	retrieveSubentworkAliasErr   error
+	retrieveSubnetworkAliasErr   error
 	projectID                    string
 	zone                         string
 	instanceName                 string
@@ -287,7 +287,7 @@ func (s *stubGCPClient) RetrieveInstanceName() (string, error) {
 	return s.instanceName, s.retrieveInstanceNameErr
 }
 
-func (s *stubGCPClient) RetrieveLoadBalancerIP(ctx context.Context, project, zone string) (string, error) {
+func (s *stubGCPClient) RetrieveLoadBalancerEndpoint(ctx context.Context, project, zone string) (string, error) {
 	return s.loadBalancerIP, s.retrieveLoadBalancerErr
 }
 
@@ -315,5 +315,5 @@ func (s *stubGCPClient) UnsetInstanceMetadata(ctx context.Context, project, zone
 }
 
 func (s *stubGCPClient) RetrieveSubnetworkAliasCIDR(ctx context.Context, project, zone, instanceName string) (string, error) {
-	return "", s.retrieveSubentworkAliasErr
+	return "", s.retrieveSubnetworkAliasErr
 }

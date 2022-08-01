@@ -6,11 +6,13 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"syscall"
 
 	"github.com/edgelesssys/constellation/bootstrapper/nodestate"
 	"github.com/edgelesssys/constellation/internal/attestation"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
@@ -20,7 +22,6 @@ import (
 )
 
 const (
-	RecoveryPort        = "9000"
 	keyPath             = "/run/cryptsetup-keys.d"
 	keyFile             = "state.key"
 	stateDiskMappedName = "state"
@@ -63,8 +64,9 @@ func (s *SetupManager) PrepareExistingDisk() error {
 	s.log.Infof("Preparing existing state disk")
 	uuid := s.mapper.DiskUUID()
 
+	endpoint := net.JoinHostPort("0.0.0.0", strconv.Itoa(constants.RecoveryPort))
 getKey:
-	passphrase, measurementSecret, err := s.keyWaiter.WaitForDecryptionKey(uuid, net.JoinHostPort("0.0.0.0", RecoveryPort))
+	passphrase, measurementSecret, err := s.keyWaiter.WaitForDecryptionKey(uuid, endpoint)
 	if err != nil {
 		return err
 	}

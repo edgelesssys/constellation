@@ -32,9 +32,7 @@ func TestCreator(t *testing.T) {
 		GCPControlPlaneInstanceTemplate: "controlplane-template",
 		GCPNetwork:                      "network",
 		GCPSubnetwork:                   "subnetwork",
-		GCPBackendService:               "backend-service",
-		GCPHealthCheck:                  "health-check",
-		GCPForwardingRule:               "forwarding-rule",
+		GCPLoadbalancers:                []string{"kube-lb", "boot-lb", "verify-lb"},
 		GCPFirewalls: []string{
 			"bootstrapper", "ssh", "nodeport", "kubernetes",
 			"allow-cluster-internal-tcp", "allow-cluster-internal-udp", "allow-cluster-internal-icmp",

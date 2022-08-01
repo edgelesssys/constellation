@@ -247,8 +247,11 @@ func (m *Metadata) GetLoadBalancerName(ctx context.Context) (string, error) {
 	return *lb.Name, nil
 }
 
-// GetLoadBalancerIP retrieves the first load balancer IP from cloud provider metadata.
-func (m *Metadata) GetLoadBalancerIP(ctx context.Context) (string, error) {
+// GetLoadBalancerEndpoint retrieves the first load balancer IP from cloud provider metadata.
+//
+// The returned string is an IP address without a port, but the method name needs to satisfy the
+// metadata interface.
+func (m *Metadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
 	lb, err := m.getLoadBalancer(ctx)
 	if err != nil {
 		return "", err

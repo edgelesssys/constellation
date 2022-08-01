@@ -212,15 +212,21 @@ func (c *iamClient) Close() error {
 	return c.IamClient.Close()
 }
 
-func (c *iamClient) CreateServiceAccount(ctx context.Context, req *adminpb.CreateServiceAccountRequest, opts ...gax.CallOption) (*adminpb.ServiceAccount, error) {
+func (c *iamClient) CreateServiceAccount(ctx context.Context, req *adminpb.CreateServiceAccountRequest,
+	opts ...gax.CallOption,
+) (*adminpb.ServiceAccount, error) {
 	return c.IamClient.CreateServiceAccount(ctx, req)
 }
 
-func (c *iamClient) CreateServiceAccountKey(ctx context.Context, req *adminpb.CreateServiceAccountKeyRequest, opts ...gax.CallOption) (*adminpb.ServiceAccountKey, error) {
+func (c *iamClient) CreateServiceAccountKey(ctx context.Context, req *adminpb.CreateServiceAccountKeyRequest,
+	opts ...gax.CallOption,
+) (*adminpb.ServiceAccountKey, error) {
 	return c.IamClient.CreateServiceAccountKey(ctx, req)
 }
 
-func (c *iamClient) DeleteServiceAccount(ctx context.Context, req *adminpb.DeleteServiceAccountRequest, opts ...gax.CallOption) error {
+func (c *iamClient) DeleteServiceAccount(ctx context.Context, req *adminpb.DeleteServiceAccountRequest,
+	opts ...gax.CallOption,
+) error {
 	return c.IamClient.DeleteServiceAccount(ctx, req)
 }
 
@@ -232,10 +238,34 @@ func (c *projectsClient) Close() error {
 	return c.ProjectsClient.Close()
 }
 
-func (c *projectsClient) GetIamPolicy(ctx context.Context, req *iampb.GetIamPolicyRequest, opts ...gax.CallOption) (*iampb.Policy, error) {
+func (c *projectsClient) GetIamPolicy(ctx context.Context, req *iampb.GetIamPolicyRequest,
+	opts ...gax.CallOption,
+) (*iampb.Policy, error) {
 	return c.ProjectsClient.GetIamPolicy(ctx, req)
 }
 
-func (c *projectsClient) SetIamPolicy(ctx context.Context, req *iampb.SetIamPolicyRequest, opts ...gax.CallOption) (*iampb.Policy, error) {
+func (c *projectsClient) SetIamPolicy(ctx context.Context, req *iampb.SetIamPolicyRequest,
+	opts ...gax.CallOption,
+) (*iampb.Policy, error) {
 	return c.ProjectsClient.SetIamPolicy(ctx, req)
+}
+
+type addressesClient struct {
+	*compute.AddressesClient
+}
+
+func (c *addressesClient) Insert(ctx context.Context, req *computepb.InsertAddressRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	return c.AddressesClient.Insert(ctx, req)
+}
+
+func (c *addressesClient) Delete(ctx context.Context, req *computepb.DeleteAddressRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	return c.AddressesClient.Delete(ctx, req)
+}
+
+func (c *addressesClient) Close() error {
+	return c.AddressesClient.Close()
 }

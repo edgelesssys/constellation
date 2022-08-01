@@ -9,6 +9,7 @@ import (
 
 	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"google.golang.org/api/iterator"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
@@ -76,8 +77,14 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 	ops = []Operation{}
 
 	controlPlaneGroupInput := instanceGroupManagerInput{
-		Count:    input.CountControlPlanes,
-		Name:     strings.Join([]string{c.name, "control-plane", c.uid}, "-"),
+		Count: input.CountControlPlanes,
+		Name:  strings.Join([]string{c.name, "control-plane", c.uid}, "-"),
+		NamedPorts: []*computepb.NamedPort{
+			{Name: proto.String("kubernetes"), Port: proto.Int32(constants.KubernetesPort)},
+			{Name: proto.String("debugd"), Port: proto.Int32(constants.DebugdPort)},
+			{Name: proto.String("bootstrapper"), Port: proto.Int32(constants.BootstrapperPort)},
+			{Name: proto.String("verify"), Port: proto.Int32(constants.VerifyServiceNodePortGRPC)},
+		},
 		Template: c.controlPlaneTemplate,
 		UID:      c.uid,
 		Project:  c.project,
@@ -277,18 +284,20 @@ func (c *Client) getInstanceIPs(ctx context.Context, groupID string, list cloudt
 }
 
 type instanceGroupManagerInput struct {
-	Count    int
-	Name     string
-	Template string
-	Project  string
-	Zone     string
-	UID      string
+	Count      int
+	Name       string
+	NamedPorts []*computepb.NamedPort
+	Template   string
+	Project    string
+	Zone       string
+	UID        string
 }
 
 func (i *instanceGroupManagerInput) InsertInstanceGroupManagerRequest() computepb.InsertInstanceGroupManagerRequest {
 	return computepb.InsertInstanceGroupManagerRequest{
 		InstanceGroupManagerResource: &computepb.InstanceGroupManager{
 			BaseInstanceName: proto.String(i.Name),
+			NamedPorts:       i.NamedPorts,
 			InstanceTemplate: proto.String("projects/" + i.Project + "/global/instanceTemplates/" + i.Template),
 			Name:             proto.String(i.Name),
 			TargetSize:       proto.Int32(int32(i.Count)),

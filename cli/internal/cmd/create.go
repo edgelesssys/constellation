@@ -211,7 +211,7 @@ func checkDirClean(fileHandler file.Handler) error {
 }
 
 func writeIPtoIDFile(fileHandler file.Handler, state state.ConstellationState) error {
-	ip := state.BootstrapperHost
+	ip := state.LoadBalancerIP
 	if ip == "" {
 		return fmt.Errorf("bootstrapper ip not found")
 	}

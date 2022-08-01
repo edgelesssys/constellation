@@ -105,15 +105,30 @@ type instanceGroupManagersAPI interface {
 
 type iamAPI interface {
 	Close() error
-	CreateServiceAccount(ctx context.Context, req *adminpb.CreateServiceAccountRequest, opts ...gax.CallOption) (*adminpb.ServiceAccount, error)
-	CreateServiceAccountKey(ctx context.Context, req *adminpb.CreateServiceAccountKeyRequest, opts ...gax.CallOption) (*adminpb.ServiceAccountKey, error)
-	DeleteServiceAccount(ctx context.Context, req *adminpb.DeleteServiceAccountRequest, opts ...gax.CallOption) error
+	CreateServiceAccount(ctx context.Context, req *adminpb.CreateServiceAccountRequest,
+		opts ...gax.CallOption) (*adminpb.ServiceAccount, error)
+	CreateServiceAccountKey(ctx context.Context, req *adminpb.CreateServiceAccountKeyRequest,
+		opts ...gax.CallOption) (*adminpb.ServiceAccountKey, error)
+	DeleteServiceAccount(ctx context.Context, req *adminpb.DeleteServiceAccountRequest,
+		opts ...gax.CallOption) error
 }
 
 type projectsAPI interface {
 	Close() error
-	GetIamPolicy(ctx context.Context, req *iampb.GetIamPolicyRequest, opts ...gax.CallOption) (*iampb.Policy, error)
-	SetIamPolicy(ctx context.Context, req *iampb.SetIamPolicyRequest, opts ...gax.CallOption) (*iampb.Policy, error)
+	GetIamPolicy(ctx context.Context, req *iampb.GetIamPolicyRequest,
+		opts ...gax.CallOption) (*iampb.Policy, error)
+	SetIamPolicy(ctx context.Context, req *iampb.SetIamPolicyRequest,
+		opts ...gax.CallOption) (*iampb.Policy, error)
+}
+
+type addressesAPI interface {
+	Close() error
+	Insert(ctx context.Context, req *computepb.InsertAddressRequest,
+		opts ...gax.CallOption) (Operation, error)
+	Get(ctx context.Context, req *computepb.GetAddressRequest,
+		opts ...gax.CallOption) (*computepb.Address, error)
+	Delete(ctx context.Context, req *computepb.DeleteAddressRequest,
+		opts ...gax.CallOption) (Operation, error)
 }
 
 type Operation interface {

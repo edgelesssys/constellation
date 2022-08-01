@@ -21,8 +21,8 @@ type ProviderMetadata interface {
 	GetSubnetworkCIDR(ctx context.Context) (string, error)
 	// SupportsLoadBalancer returns true if the cloud provider supports load balancers.
 	SupportsLoadBalancer() bool
-	// GetLoadBalancerIP retrieves the load balancer IP.
-	GetLoadBalancerIP(ctx context.Context) (string, error)
+	// GetLoadBalancerEndpoint retrieves the load balancer endpoint.
+	GetLoadBalancerEndpoint(ctx context.Context) (string, error)
 	// GetInstance retrieves an instance using its providerID.
 	GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error)
 	// Supported is used to determine if metadata API is implemented for this cloud provider.
@@ -85,8 +85,8 @@ type ClusterAutoscaler interface {
 }
 
 type stubProviderMetadata struct {
-	GetLoadBalancerIPErr  error
-	GetLoadBalancerIPResp string
+	GetLoadBalancerEndpointErr  error
+	GetLoadBalancerEndpointResp string
 
 	GetSubnetworkCIDRErr  error
 	GetSubnetworkCIDRResp string
@@ -107,8 +107,8 @@ type stubProviderMetadata struct {
 	UIDResp string
 }
 
-func (m *stubProviderMetadata) GetLoadBalancerIP(ctx context.Context) (string, error) {
-	return m.GetLoadBalancerIPResp, m.GetLoadBalancerIPErr
+func (m *stubProviderMetadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
+	return m.GetLoadBalancerEndpointResp, m.GetLoadBalancerEndpointErr
 }
 
 func (m *stubProviderMetadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {

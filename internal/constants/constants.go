@@ -35,14 +35,16 @@ const (
 	// KMSPort is the port the KMS server listens on.
 	KMSPort          = 9000
 	BootstrapperPort = 9000
+	KubernetesPort   = 6443
+	RecoveryPort     = 9000
 	EnclaveSSHPort   = 2222
 	SSHPort          = 22
 	NVMEOverTCPPort  = 8009
+	DebugdPort       = 4000
 	// Default NodePort Range
 	// https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
-	NodePortFrom   = 30000
-	NodePortTo     = 32767
-	KubernetesPort = 6443
+	NodePortFrom = 30000
+	NodePortTo   = 32767
 
 	//
 	// Filenames.

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net"
@@ -16,9 +17,9 @@ import (
 	platform "github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
+	"github.com/edgelesssys/constellation/internal/iproute"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
-	"golang.org/x/net/context"
 )
 
 const debugBanner = `
@@ -29,10 +30,9 @@ const debugBanner = `
 `
 
 func main() {
-	wg := &sync.WaitGroup{}
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
-
 	flag.Parse()
+
 	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
 	fs := afero.NewOsFs()
 	streamer := bootstrapper.NewFileStreamer(fs)
@@ -49,15 +49,19 @@ func main() {
 	case platform.Azure:
 		azureFetcher, err := cloudprovider.NewAzure(ctx)
 		if err != nil {
-			panic(err)
+			log.Fatalf("%s", err)
 		}
 		fetcher = azureFetcher
 	case platform.GCP:
 		gcpFetcher, err := cloudprovider.NewGCP(ctx)
 		if err != nil {
-			panic(err)
+			log.Fatalf("%s", err)
 		}
 		fetcher = gcpFetcher
+		if err := setLoadbalancerRoute(ctx, fetcher); err != nil {
+			log.Errorf("adding load balancer IP to local routing table: %s", err)
+		}
+		log.Infof("Added load balancer IP to local routing table")
 	case platform.QEMU:
 		fetcher = cloudprovider.NewQEMU()
 	default:
@@ -67,10 +71,12 @@ func main() {
 	sched := metadata.NewScheduler(log.Named("scheduler"), fetcher, ssh, download)
 	serv := server.New(log.Named("server"), ssh, serviceManager, streamer)
 	if err := deploy.DeployDefaultServiceUnit(ctx, serviceManager); err != nil {
-		panic(err)
+		log.Fatalf("%s", err)
 	}
 
 	writeDebugBanner(log)
+
+	wg := &sync.WaitGroup{}
 
 	wg.Add(1)
 	go sched.Start(ctx, wg)
@@ -90,4 +96,12 @@ func writeDebugBanner(log *logger.Logger) {
 	if _, err := fmt.Fprint(tty, debugBanner); err != nil {
 		log.Infof("Unable to print to /dev/ttyS0: %v", err)
 	}
+}
+
+func setLoadbalancerRoute(ctx context.Context, fetcher metadata.Fetcher) error {
+	ip, err := fetcher.DiscoverLoadbalancerIP(ctx)
+	if err != nil {
+		return err
+	}
+	return iproute.AddToLocalRoutingTable(ctx, ip)
 }

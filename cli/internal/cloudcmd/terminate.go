@@ -53,7 +53,7 @@ func (t *Terminator) Terminate(ctx context.Context, state state.ConstellationSta
 func (t *Terminator) terminateGCP(ctx context.Context, cl gcpclient, state state.ConstellationState) error {
 	cl.SetState(state)
 
-	if err := cl.TerminateLoadBalancer(ctx); err != nil {
+	if err := cl.TerminateLoadBalancers(ctx); err != nil {
 		return err
 	}
 	if err := cl.TerminateInstances(ctx); err != nil {

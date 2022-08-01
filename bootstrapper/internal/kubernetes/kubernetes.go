@@ -3,10 +3,8 @@ package kubernetes
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net"
-	"os/exec"
 	"strings"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi"
@@ -15,6 +13,7 @@ import (
 	"github.com/edgelesssys/constellation/bootstrapper/util"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/iproute"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/versions"
 	"github.com/spf13/afero"
@@ -93,7 +92,7 @@ func (k *KubeWrapper) InitCluster(
 	var publicIP string
 	var nodePodCIDR string
 	var subnetworkPodCIDR string
-	var controlPlaneEndpointIP string // this is the IP in "kubeadm init --control-plane-endpoint=<IP/DNS>:<port>" hence the unfortunate name
+	var controlPlaneEndpoint string // this is the endpoint in "kubeadm init --control-plane-endpoint=<IP/DNS>:<port>"
 	var nodeIP string
 	var validIPs []net.IP
 
@@ -102,7 +101,7 @@ func (k *KubeWrapper) InitCluster(
 		log.Infof("Retrieving node metadata")
 		instance, err = k.providerMetadata.Self(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("retrieving own instance metadata failed: %w", err)
+			return nil, fmt.Errorf("retrieving own instance metadata: %w", err)
 		}
 		if instance.VPCIP != "" {
 			validIPs = append(validIPs, net.ParseIP(instance.VPCIP))
@@ -120,18 +119,13 @@ func (k *KubeWrapper) InitCluster(
 		}
 		subnetworkPodCIDR, err = k.providerMetadata.GetSubnetworkCIDR(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("retrieving subnetwork CIDR failed: %w", err)
+			return nil, fmt.Errorf("retrieving subnetwork CIDR: %w", err)
 		}
-		controlPlaneEndpointIP = publicIP
+		controlPlaneEndpoint = publicIP
 		if k.providerMetadata.SupportsLoadBalancer() {
-			controlPlaneEndpointIP, err = k.providerMetadata.GetLoadBalancerIP(ctx)
+			controlPlaneEndpoint, err = k.providerMetadata.GetLoadBalancerEndpoint(ctx)
 			if err != nil {
-				return nil, fmt.Errorf("retrieving load balancer IP failed: %w", err)
-			}
-			if k.cloudProvider == "gcp" {
-				if err := manuallySetLoadbalancerIP(ctx, controlPlaneEndpointIP); err != nil {
-					return nil, fmt.Errorf("setting load balancer IP failed: %w", err)
-				}
+				return nil, fmt.Errorf("retrieving load balancer endpoint: %w", err)
 			}
 		}
 	}
@@ -139,7 +133,7 @@ func (k *KubeWrapper) InitCluster(
 		zap.String("nodeName", nodeName),
 		zap.String("providerID", providerID),
 		zap.String("nodeIP", nodeIP),
-		zap.String("controlPlaneEndpointIP", controlPlaneEndpointIP),
+		zap.String("controlPlaneEndpointEndpoint", controlPlaneEndpoint),
 		zap.String("podCIDR", subnetworkPodCIDR),
 	).Infof("Setting information for node")
 
@@ -149,7 +143,7 @@ func (k *KubeWrapper) InitCluster(
 	initConfig.SetCertSANs([]string{publicIP, nodeIP})
 	initConfig.SetNodeName(nodeName)
 	initConfig.SetProviderID(providerID)
-	initConfig.SetControlPlaneEndpoint(controlPlaneEndpointIP)
+	initConfig.SetControlPlaneEndpoint(controlPlaneEndpoint)
 	initConfigYAML, err := initConfig.Marshal()
 	if err != nil {
 		return nil, fmt.Errorf("encoding kubeadm init configuration as YAML: %w", err)
@@ -249,15 +243,20 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	}
 	nodeName := nodeInternalIP
 	var providerID string
+	var loadbalancerEndpoint string
 	if k.providerMetadata.Supported() {
 		log.Infof("Retrieving node metadata")
 		instance, err := k.providerMetadata.Self(ctx)
 		if err != nil {
-			return fmt.Errorf("retrieving own instance metadata failed: %w", err)
+			return fmt.Errorf("retrieving own instance metadata: %w", err)
 		}
 		providerID = instance.ProviderID
 		nodeName = instance.Name
 		nodeInternalIP = instance.VPCIP
+		loadbalancerEndpoint, err = k.providerMetadata.GetLoadBalancerEndpoint(ctx)
+		if err != nil {
+			return fmt.Errorf("retrieving loadbalancer endpoint: %w", err)
+		}
 	}
 	nodeName = k8sCompliantHostname(nodeName)
 
@@ -267,8 +266,19 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		zap.String("nodeIP", nodeInternalIP),
 	).Infof("Setting information for node")
 
-	// Step 2: configure kubeadm join config
+	// Step 2: Remove load balancer from local routing table on GCP.
+	if k.cloudProvider == "gcp" {
+		ip, _, err := net.SplitHostPort(loadbalancerEndpoint)
+		if err != nil {
+			return fmt.Errorf("parsing load balancer IP: %w", err)
+		}
+		if err := iproute.RemoveFromLocalRoutingTable(ctx, ip); err != nil {
+			return fmt.Errorf("removing load balancer IP from routing table: %w", err)
+		}
+		log.Infof("Removed load balancer IP from routing table")
+	}
 
+	// Step 3: configure kubeadm join config
 	joinConfig := k.configProvider.JoinConfiguration(k.cloudControllerManager.Supported())
 	joinConfig.SetAPIServerEndpoint(args.APIServerEndpoint)
 	joinConfig.SetToken(args.Token)
@@ -319,15 +329,15 @@ func (k *KubeWrapper) setupCCM(ctx context.Context, subnetworkPodCIDR, cloudServ
 	}
 	ccmConfigMaps, err := k.cloudControllerManager.ConfigMaps(instance)
 	if err != nil {
-		return fmt.Errorf("defining ConfigMaps for CCM failed: %w", err)
+		return fmt.Errorf("defining ConfigMaps for CCM: %w", err)
 	}
 	ccmSecrets, err := k.cloudControllerManager.Secrets(ctx, instance.ProviderID, cloudServiceAccountURI)
 	if err != nil {
-		return fmt.Errorf("defining Secrets for CCM failed: %w", err)
+		return fmt.Errorf("defining Secrets for CCM: %w", err)
 	}
 	ccmImage, err := k.cloudControllerManager.Image(k8sVersion)
 	if err != nil {
-		return fmt.Errorf("defining Image for CCM failed: %w", err)
+		return fmt.Errorf("defining Image for CCM: %w", err)
 	}
 
 	cloudControllerManagerConfiguration := resources.NewDefaultCloudControllerManagerDeployment(
@@ -335,7 +345,7 @@ func (k *KubeWrapper) setupCCM(ctx context.Context, subnetworkPodCIDR, cloudServ
 		k.cloudControllerManager.ExtraArgs(), k.cloudControllerManager.Volumes(), k.cloudControllerManager.VolumeMounts(), k.cloudControllerManager.Env(),
 	)
 	if err := k.clusterUtil.SetupCloudControllerManager(k.client, cloudControllerManagerConfiguration, ccmConfigMaps, ccmSecrets); err != nil {
-		return fmt.Errorf("failed to setup cloud-controller-manager: %w", err)
+		return fmt.Errorf("setting up cloud-controller-manager: %w", err)
 	}
 
 	return nil
@@ -347,14 +357,14 @@ func (k *KubeWrapper) setupCloudNodeManager(k8sVersion versions.ValidK8sVersion)
 	}
 	nodeManagerImage, err := k.cloudNodeManager.Image(k8sVersion)
 	if err != nil {
-		return fmt.Errorf("defining Image for Node Manager failed: %w", err)
+		return fmt.Errorf("defining Image for Node Manager: %w", err)
 	}
 
 	cloudNodeManagerConfiguration := resources.NewDefaultCloudNodeManagerDeployment(
 		nodeManagerImage, k.cloudNodeManager.Path(), k.cloudNodeManager.ExtraArgs(),
 	)
 	if err := k.clusterUtil.SetupCloudNodeManager(k.client, cloudNodeManagerConfiguration); err != nil {
-		return fmt.Errorf("failed to setup cloud-node-manager: %w", err)
+		return fmt.Errorf("setting up cloud-node-manager: %w", err)
 	}
 
 	return nil
@@ -366,13 +376,13 @@ func (k *KubeWrapper) setupClusterAutoscaler(instance metadata.InstanceMetadata,
 	}
 	caSecrets, err := k.clusterAutoscaler.Secrets(instance.ProviderID, cloudServiceAccountURI)
 	if err != nil {
-		return fmt.Errorf("defining Secrets for cluster-autoscaler failed: %w", err)
+		return fmt.Errorf("defining Secrets for cluster-autoscaler: %w", err)
 	}
 
 	clusterAutoscalerConfiguration := resources.NewDefaultAutoscalerDeployment(k.clusterAutoscaler.Volumes(), k.clusterAutoscaler.VolumeMounts(), k.clusterAutoscaler.Env(), k8sVersion)
 	clusterAutoscalerConfiguration.SetAutoscalerCommand(k.clusterAutoscaler.Name(), autoscalingNodeGroups)
 	if err := k.clusterUtil.SetupAutoscaling(k.client, clusterAutoscalerConfiguration, caSecrets); err != nil {
-		return fmt.Errorf("failed to setup cluster-autoscaler: %w", err)
+		return fmt.Errorf("setting up cluster-autoscaler: %w", err)
 	}
 
 	return nil
@@ -422,27 +432,6 @@ func (k *KubeWrapper) setupOperators(ctx context.Context) error {
 		return fmt.Errorf("setting up constellation node operator: %w", err)
 	}
 
-	return nil
-}
-
-// manuallySetLoadbalancerIP sets the loadbalancer IP of the first control plane during init.
-// The GCP guest agent does this usually, but is deployed in the cluster that doesn't exist
-// at this point. This is a workaround to set the loadbalancer IP manually, so kubeadm and kubelet
-// can talk to the local Kubernetes API server using the loadbalancer IP.
-func manuallySetLoadbalancerIP(ctx context.Context, ip string) error {
-	// https://github.com/GoogleCloudPlatform/guest-agent/blob/792fce795218633bcbde505fb3457a0b24f26d37/google_guest_agent/addresses.go#L179
-	if !strings.Contains(ip, "/") {
-		ip = ip + "/32"
-	}
-	args := []string{"route", "add", "to", "local", ip, "scope", "host", "dev", "ens3", "proto", "66"}
-	_, err := exec.CommandContext(ctx, "ip", args...).Output()
-	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			return fmt.Errorf("ip route add (code %v) with: %s", exitErr.ExitCode(), exitErr.Stderr)
-		}
-		return fmt.Errorf("ip route add: %w", err)
-	}
 	return nil
 }
 

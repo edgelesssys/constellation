@@ -4,7 +4,6 @@ import "time"
 
 const (
 	DebugdMetadataFlag               = "constellation-debugd"
-	DebugdPort                       = "4000"
 	GRPCTimeout                      = 5 * time.Minute
 	SSHCheckInterval                 = 30 * time.Second
 	DiscoverDebugdInterval           = 30 * time.Second

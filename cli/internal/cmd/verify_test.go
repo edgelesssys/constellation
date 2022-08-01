@@ -92,7 +92,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.1",
 			ownerIDFlag:      zeroBase64,
 			protoClient:      &stubVerifyClient{},
-			wantEndpoint:     "192.0.2.1:30081",
+			wantEndpoint:     "192.0.2.1:" + strconv.Itoa(constants.VerifyServiceNodePortGRPC),
 		},
 		"endpoint not set": {
 			setupFs:     func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
@@ -107,7 +107,7 @@ func TestVerify(t *testing.T) {
 			ownerIDFlag:  zeroBase64,
 			protoClient:  &stubVerifyClient{},
 			idFile:       &clusterIDsFile{IP: "192.0.2.1"},
-			wantEndpoint: "192.0.2.1:30081",
+			wantEndpoint: "192.0.2.1:" + strconv.Itoa(constants.VerifyServiceNodePortGRPC),
 		},
 		"override endpoint from details file": {
 			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },

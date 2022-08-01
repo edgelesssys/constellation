@@ -548,3 +548,48 @@ func (i *stubManagedInstanceIterator) Next() (*computepb.ManagedInstance, error)
 	i.internalCounter++
 	return resp, nil
 }
+
+type stubAddressesAPI struct {
+	insertErr error
+	getAddr   *string
+	getErr    error
+	deleteErr error
+}
+
+func (a stubAddressesAPI) Insert(context.Context, *computepb.InsertAddressRequest,
+	...gax.CallOption,
+) (Operation, error) {
+	if a.insertErr != nil {
+		return nil, a.insertErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Name:   proto.String("name"),
+			Region: proto.String("region"),
+		},
+	}, nil
+}
+
+func (a stubAddressesAPI) Get(ctx context.Context, req *computepb.GetAddressRequest,
+	opts ...gax.CallOption,
+) (*computepb.Address, error) {
+	return &computepb.Address{Address: a.getAddr}, a.getErr
+}
+
+func (a stubAddressesAPI) Delete(context.Context, *computepb.DeleteAddressRequest,
+	...gax.CallOption,
+) (Operation, error) {
+	if a.deleteErr != nil {
+		return nil, a.deleteErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Name:   proto.String("name"),
+			Region: proto.String("region"),
+		},
+	}, nil
+}
+
+func (a stubAddressesAPI) Close() error {
+	return nil
+}

@@ -773,7 +773,7 @@ func TestRetrieveSubnetworkAliasCIDR(t *testing.T) {
 	}
 }
 
-func TestRetrieveLoadBalancerIP(t *testing.T) {
+func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 	loadBalancerIP := "192.0.2.1"
 	uid := "uid"
 	someErr := errors.New("some error")
@@ -783,13 +783,14 @@ func TestRetrieveLoadBalancerIP(t *testing.T) {
 		wantLoadBalancerIP        string
 		wantErr                   bool
 	}{
-		"RetrieveSubnetworkAliasCIDR works": {
+		"works": {
 			stubMetadataClient: stubMetadataClient{InstanceValue: uid},
 			stubForwardingRulesClient: stubForwardingRulesClient{
 				ForwardingRuleIterator: &stubForwardingRuleIterator{
 					rules: []*computepb.ForwardingRule{
 						{
 							IPAddress: proto.String(loadBalancerIP),
+							Ports:     []string{"100"},
 							Labels:    map[string]string{"constellation-uid": uid},
 						},
 					},
@@ -797,20 +798,36 @@ func TestRetrieveLoadBalancerIP(t *testing.T) {
 			},
 			wantLoadBalancerIP: loadBalancerIP,
 		},
-		"RetrieveSubnetworkAliasCIDR fails when no matching load balancers exists": {
+		"fails when no matching load balancers exists": {
 			stubMetadataClient: stubMetadataClient{InstanceValue: uid},
 			stubForwardingRulesClient: stubForwardingRulesClient{
 				ForwardingRuleIterator: &stubForwardingRuleIterator{
 					rules: []*computepb.ForwardingRule{
 						{
 							IPAddress: proto.String(loadBalancerIP),
+							Ports:     []string{"100"},
 						},
 					},
 				},
 			},
 			wantErr: true,
 		},
-		"RetrieveSubnetworkAliasCIDR fails when retrieving uid": {
+		"fails when retrieving uid": {
+			stubMetadataClient: stubMetadataClient{InstanceErr: someErr},
+			stubForwardingRulesClient: stubForwardingRulesClient{
+				ForwardingRuleIterator: &stubForwardingRuleIterator{
+					rules: []*computepb.ForwardingRule{
+						{
+							IPAddress: proto.String(loadBalancerIP),
+							Ports:     []string{"100"},
+							Labels:    map[string]string{"constellation-uid": uid},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		"fails when answer has empty port range": {
 			stubMetadataClient: stubMetadataClient{InstanceErr: someErr},
 			stubForwardingRulesClient: stubForwardingRulesClient{
 				ForwardingRuleIterator: &stubForwardingRuleIterator{
@@ -824,7 +841,7 @@ func TestRetrieveLoadBalancerIP(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		"RetrieveSubnetworkAliasCIDR fails when retrieving loadbalancer IP": {
+		"fails when retrieving loadbalancer IP": {
 			stubMetadataClient: stubMetadataClient{},
 			stubForwardingRulesClient: stubForwardingRulesClient{
 				ForwardingRuleIterator: &stubForwardingRuleIterator{
@@ -832,6 +849,7 @@ func TestRetrieveLoadBalancerIP(t *testing.T) {
 					rules: []*computepb.ForwardingRule{
 						{
 							IPAddress: proto.String(loadBalancerIP),
+							Ports:     []string{"100"},
 							Labels:    map[string]string{"constellation-uid": uid},
 						},
 					},
@@ -846,14 +864,14 @@ func TestRetrieveLoadBalancerIP(t *testing.T) {
 			require := require.New(t)
 
 			client := Client{forwardingRulesAPI: tc.stubForwardingRulesClient, metadataAPI: tc.stubMetadataClient}
-			aliasCIDR, err := client.RetrieveLoadBalancerIP(context.Background(), "project", "us-central1-a")
+			aliasCIDR, err := client.RetrieveLoadBalancerEndpoint(context.Background(), "project", "us-central1-a")
 
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.wantLoadBalancerIP, aliasCIDR)
+			assert.Equal(tc.wantLoadBalancerIP+":100", aliasCIDR)
 		})
 	}
 }

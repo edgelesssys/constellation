@@ -62,7 +62,7 @@ func (l LoadBalancer) Azure() armnetwork.LoadBalancer {
 					Name: to.Ptr(kubeHealthProbeName),
 					Properties: &armnetwork.ProbePropertiesFormat{
 						Protocol: to.Ptr(armnetwork.ProbeProtocolTCP),
-						Port:     to.Ptr(int32(6443)),
+						Port:     to.Ptr(int32(constants.KubernetesPort)),
 					},
 				},
 				{
@@ -83,7 +83,7 @@ func (l LoadBalancer) Azure() armnetwork.LoadBalancer {
 					Name: to.Ptr(debugdHealthProbeName),
 					Properties: &armnetwork.ProbePropertiesFormat{
 						Protocol: to.Ptr(armnetwork.ProbeProtocolTCP),
-						Port:     to.Ptr[int32](4000),
+						Port:     to.Ptr[int32](constants.DebugdPort),
 					},
 				},
 			},
@@ -94,8 +94,8 @@ func (l LoadBalancer) Azure() armnetwork.LoadBalancer {
 						FrontendIPConfiguration: &armnetwork.SubResource{
 							ID: to.Ptr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/frontendIPConfigurations/" + frontEndIPConfigName),
 						},
-						FrontendPort: to.Ptr[int32](6443),
-						BackendPort:  to.Ptr[int32](6443),
+						FrontendPort: to.Ptr[int32](constants.KubernetesPort),
+						BackendPort:  to.Ptr[int32](constants.KubernetesPort),
 						Protocol:     to.Ptr(armnetwork.TransportProtocolTCP),
 						Probe: &armnetwork.SubResource{
 							ID: to.Ptr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/probes/" + kubeHealthProbeName),
@@ -154,8 +154,8 @@ func (l LoadBalancer) Azure() armnetwork.LoadBalancer {
 						FrontendIPConfiguration: &armnetwork.SubResource{
 							ID: to.Ptr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/frontendIPConfigurations/" + frontEndIPConfigName),
 						},
-						FrontendPort: to.Ptr[int32](4000),
-						BackendPort:  to.Ptr[int32](4000),
+						FrontendPort: to.Ptr[int32](constants.DebugdPort),
+						BackendPort:  to.Ptr[int32](constants.DebugdPort),
 						Protocol:     to.Ptr(armnetwork.TransportProtocolTCP),
 						Probe: &armnetwork.SubResource{
 							ID: to.Ptr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/probes/" + debugdHealthProbeName),

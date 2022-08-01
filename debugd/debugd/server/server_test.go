@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strconv"
 	"testing"
 
 	"github.com/edgelesssys/constellation/debugd/bootstrapper"
 	"github.com/edgelesssys/constellation/debugd/debugd/deploy"
 	pb "github.com/edgelesssys/constellation/debugd/service"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
 	"github.com/edgelesssys/constellation/internal/logger"
@@ -26,7 +28,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestUploadAuthorizedKeys(t *testing.T) {
-	endpoint := "192.0.2.1:4000"
+	endpoint := "192.0.2.1:" + strconv.Itoa(constants.DebugdPort)
 
 	testCases := map[string]struct {
 		ssh                stubSSHDeployer
@@ -105,7 +107,7 @@ func TestUploadAuthorizedKeys(t *testing.T) {
 }
 
 func TestUploadBootstrapper(t *testing.T) {
-	endpoint := "192.0.2.1:4000"
+	endpoint := "192.0.2.1:" + strconv.Itoa(constants.DebugdPort)
 
 	testCases := map[string]struct {
 		ssh                stubSSHDeployer
@@ -190,7 +192,8 @@ func TestUploadBootstrapper(t *testing.T) {
 }
 
 func TestDownloadBootstrapper(t *testing.T) {
-	endpoint := "192.0.2.1:4000"
+	endpoint := "192.0.2.1:" + strconv.Itoa(constants.DebugdPort)
+
 	testCases := map[string]struct {
 		ssh            stubSSHDeployer
 		serviceManager stubServiceManager
@@ -253,7 +256,8 @@ func TestDownloadBootstrapper(t *testing.T) {
 }
 
 func TestUploadSystemServiceUnits(t *testing.T) {
-	endpoint := "192.0.2.1:4000"
+	endpoint := "192.0.2.1:" + strconv.Itoa(constants.DebugdPort)
+
 	testCases := map[string]struct {
 		ssh                stubSSHDeployer
 		serviceManager     stubServiceManager

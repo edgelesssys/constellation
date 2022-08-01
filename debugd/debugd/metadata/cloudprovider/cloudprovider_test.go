@@ -73,6 +73,50 @@ func TestDiscoverDebugIPs(t *testing.T) {
 	}
 }
 
+func TestDiscoverLoadbalancerIP(t *testing.T) {
+	ip := "192.0.2.1"
+	endpoint := ip + ":1234"
+	someErr := errors.New("failed")
+
+	testCases := map[string]struct {
+		metaAPI providerMetadata
+		wantIP  string
+		wantErr bool
+	}{
+		"discovery works": {
+			metaAPI: &stubMetadata{getLBEndpointRes: endpoint},
+			wantIP:  ip,
+		},
+		"get endpoint fails": {
+			metaAPI: &stubMetadata{getLBEndpointErr: someErr},
+			wantErr: true,
+		},
+		"invalid endpoint": {
+			metaAPI: &stubMetadata{getLBEndpointRes: "invalid"},
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			fetcher := &Fetcher{
+				metaAPI: tc.metaAPI,
+			}
+
+			ip, err := fetcher.DiscoverLoadbalancerIP(context.Background())
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.wantIP, ip)
+			}
+		})
+	}
+}
+
 func TestFetchSSHKeys(t *testing.T) {
 	err := errors.New("some err")
 
@@ -125,13 +169,15 @@ func TestFetchSSHKeys(t *testing.T) {
 }
 
 type stubMetadata struct {
-	listRes        []metadata.InstanceMetadata
-	listErr        error
-	selfRes        metadata.InstanceMetadata
-	selfErr        error
-	getInstanceRes metadata.InstanceMetadata
-	getInstanceErr error
-	supportedRes   bool
+	listRes          []metadata.InstanceMetadata
+	listErr          error
+	selfRes          metadata.InstanceMetadata
+	selfErr          error
+	getInstanceRes   metadata.InstanceMetadata
+	getInstanceErr   error
+	getLBEndpointRes string
+	getLBEndpointErr error
+	supportedRes     bool
 }
 
 func (m *stubMetadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
@@ -144,6 +190,10 @@ func (m *stubMetadata) Self(ctx context.Context) (metadata.InstanceMetadata, err
 
 func (m *stubMetadata) GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error) {
 	return m.getInstanceRes, m.getInstanceErr
+}
+
+func (m *stubMetadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
+	return m.getLBEndpointRes, m.getLBEndpointErr
 }
 
 func (m *stubMetadata) Supported() bool {

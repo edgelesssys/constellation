@@ -17,6 +17,7 @@ import (
 type Fetcher interface {
 	DiscoverDebugdIPs(ctx context.Context) ([]string, error)
 	FetchSSHKeys(ctx context.Context) ([]ssh.UserKey, error)
+	DiscoverLoadbalancerIP(ctx context.Context) (string, error)
 }
 
 // Scheduler schedules fetching of metadata using timers.

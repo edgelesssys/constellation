@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/verify/verifyproto"
@@ -15,6 +16,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 )
@@ -48,7 +50,10 @@ func (s *Server) Run(httpListener, grpcListener net.Listener) error {
 	var once sync.Once
 
 	s.log.WithIncreasedLevel(zapcore.WarnLevel).Named("grpc").ReplaceGRPCLogger()
-	grpcServer := grpc.NewServer(s.log.Named("gRPC").GetServerUnaryInterceptor())
+	grpcServer := grpc.NewServer(
+		s.log.Named("gRPC").GetServerUnaryInterceptor(),
+		grpc.KeepaliveParams(keepalive.ServerParameters{Time: 15 * time.Second}),
+	)
 	verifyproto.RegisterAPIServer(grpcServer, s)
 
 	httpHandler := http.NewServeMux()

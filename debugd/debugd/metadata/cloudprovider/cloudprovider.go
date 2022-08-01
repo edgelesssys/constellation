@@ -3,6 +3,7 @@ package cloudprovider
 import (
 	"context"
 	"fmt"
+	"net"
 
 	azurecloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/azure"
 	gcpcloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/gcp"
@@ -16,6 +17,8 @@ type providerMetadata interface {
 	List(ctx context.Context) ([]metadata.InstanceMetadata, error)
 	// Self retrieves the current instance.
 	Self(ctx context.Context) (metadata.InstanceMetadata, error)
+	// GetLoadBalancerEndpoint returns the endpoint of the load balancer.
+	GetLoadBalancerEndpoint(ctx context.Context) (string, error)
 }
 
 // Fetcher checks the metadata service to search for instances that were set up for debugging and cloud provider specific SSH keys.
@@ -78,6 +81,25 @@ func (f *Fetcher) DiscoverDebugdIPs(ctx context.Context) ([]string, error) {
 		}
 	}
 	return ips, nil
+}
+
+func (f *Fetcher) DiscoverLoadbalancerIP(ctx context.Context) (string, error) {
+	lbEndpoint, err := f.metaAPI.GetLoadBalancerEndpoint(ctx)
+	if err != nil {
+		return "", fmt.Errorf("retrieving load balancer endpoint: %w", err)
+	}
+
+	// The port of the endpoint is not the port we need. We need to strip it off.
+	//
+	// TODO: Tag the specific load balancer we are looking for with a distinct tag.
+	// Change the GetLoadBalancerEndpoint method to return the endpoint of a load
+	// balancer with a given tag.
+	lbIP, _, err := net.SplitHostPort(lbEndpoint)
+	if err != nil {
+		return "", fmt.Errorf("parsing load balancer endpoint: %w", err)
+	}
+
+	return lbIP, nil
 }
 
 // FetchSSHKeys will query the metadata of the current instance and deploys any SSH keys found.

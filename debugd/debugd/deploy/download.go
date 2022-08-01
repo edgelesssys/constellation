@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strconv"
 	"time"
 
 	"github.com/edgelesssys/constellation/debugd/bootstrapper"
 	"github.com/edgelesssys/constellation/debugd/debugd"
 	pb "github.com/edgelesssys/constellation/debugd/service"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -38,7 +40,8 @@ func New(log *logger.Logger, dialer NetDialer, serviceManager serviceManager, wr
 // DownloadBootstrapper will open a new grpc connection to another instance, attempting to download a bootstrapper from that instance.
 func (d *Download) DownloadBootstrapper(ctx context.Context, ip string) error {
 	log := d.log.With(zap.String("ip", ip))
-	serverAddr := net.JoinHostPort(ip, debugd.DebugdPort)
+	serverAddr := net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort))
+
 	// only retry download from same endpoint after backoff
 	if lastAttempt, ok := d.attemptedDownloads[serverAddr]; ok && time.Since(lastAttempt) < debugd.BootstrapperDownloadRetryBackoff {
 		return fmt.Errorf("download failed too recently: %v / %v", time.Since(lastAttempt), debugd.BootstrapperDownloadRetryBackoff)

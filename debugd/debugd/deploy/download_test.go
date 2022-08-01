@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/edgelesssys/constellation/debugd/bootstrapper"
 	"github.com/edgelesssys/constellation/debugd/debugd"
 	pb "github.com/edgelesssys/constellation/debugd/service"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/stretchr/testify/assert"
@@ -59,7 +61,7 @@ func TestDownloadBootstrapper(t *testing.T) {
 				chunks: [][]byte{[]byte("test")},
 			},
 			attemptedDownloads: map[string]time.Time{
-				"192.0.2.0:4000": time.Now(),
+				"192.0.2.0:" + strconv.Itoa(constants.DebugdPort): time.Now(),
 			},
 			wantDownloadErr: true,
 		},
@@ -98,7 +100,7 @@ func TestDownloadBootstrapper(t *testing.T) {
 
 			grpcServ := grpc.NewServer()
 			pb.RegisterDebugdServer(grpcServ, &tc.server)
-			lis := dialer.GetListener(net.JoinHostPort(ip, debugd.DebugdPort))
+			lis := dialer.GetListener(net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort)))
 			go grpcServ.Serve(lis)
 
 			download := &Download{
