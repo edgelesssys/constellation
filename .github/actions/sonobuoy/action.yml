@@ -22,7 +22,7 @@ runs:
     shell: bash
 
   - name: Run quick e2e test
-    run: sonobuoy run --wait ${{ inputs.sonobuoyTestSuiteCmd }} --kubeconfig constellation-admin.conf
+    run: sonobuoy run --wait 300 ${{ inputs.sonobuoyTestSuiteCmd }} --kubeconfig constellation-admin.conf
     shell: bash
   - name: Download results
     run: sonobuoy retrieve -x --kubeconfig constellation-admin.conf
