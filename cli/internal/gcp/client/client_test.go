@@ -848,23 +848,3 @@ func (c *someCloser) Close() error {
 	c.closed = true
 	return c.closeErr
 }
-
-func TestComposedErr(t *testing.T) {
-	assert := assert.New(t)
-
-	noErrs := []error{nil, nil, nil}
-	assert.NoError(composeErr(noErrs))
-
-	someErrs := []error{
-		errors.New("failed 4"),
-		errors.New("failed 7"),
-		nil,
-		nil,
-		errors.New("failed 9"),
-	}
-	err := composeErr(someErrs)
-	assert.Error(err)
-	assert.Contains(err.Error(), "4")
-	assert.Contains(err.Error(), "7")
-	assert.Contains(err.Error(), "9")
-}

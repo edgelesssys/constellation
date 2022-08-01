@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"strings"
 
 	compute "cloud.google.com/go/compute/apiv1"
 	admin "cloud.google.com/go/iam/admin/apiv1"
@@ -15,6 +14,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/state"
+	"go.uber.org/multierr"
 	"golang.org/x/oauth2/google"
 )
 
@@ -461,25 +461,9 @@ func closeAll(closers []closer) error {
 	// close operations, even if a previous operation failed. The if multiple
 	// errors occur, the returned error will be composed of the error messages
 	// of those errors.
-	var errs []error
+	var err error
 	for _, closer := range closers {
-		errs = append(errs, closer.Close())
+		err = multierr.Append(err, closer.Close())
 	}
-	return composeErr(errs)
-}
-
-// composeErr composes a list of errors to a single error.
-//
-// If all errs are nil, the returned error is also nil.
-func composeErr(errs []error) error {
-	var composed strings.Builder
-	for i, err := range errs {
-		if err != nil {
-			composed.WriteString(fmt.Sprintf("%d: %s", i, err.Error()))
-		}
-	}
-	if composed.Len() != 0 {
-		return errors.New(composed.String())
-	}
-	return nil
+	return err
 }
