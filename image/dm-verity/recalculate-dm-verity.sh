@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -xeuo pipefail
 
 # Show progress on pipes if `pv` is installed
 # Otherwise use plain cat
@@ -14,11 +14,6 @@ mount_partition () {
     local partition_file=$1
     local mountpoint=$2
 
-    # use guestmount if possible
-    if command -v guestmount &> /dev/null && guestmount -a "${partition_file}" -m /dev/sda "${mountpoint}"; then
-        return
-    fi
-
     # second, try to mount as current user
     if mount -o loop "${partition_file}" "${mountpoint}"; then
         return
@@ -31,12 +26,8 @@ mount_partition () {
 }
 
 umount_partition () {
+    sync
     local mountpoint=$1
-
-    # use guestunmount if possible
-    if command -v guestunmount &> /dev/null && guestunmount "${mountpoint}"; then
-        return
-    fi
 
     # second, try to umount as current user
     if umount "${mountpoint}"; then

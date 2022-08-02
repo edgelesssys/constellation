@@ -85,7 +85,7 @@ def create_instance(
     zone: str = 'us-central1-c',
     instance_name: str = 'coreos-builder',
     machine_type: str = "n2-highmem-4",
-    source_image: str = "projects/ubuntu-os-cloud/global/images/ubuntu-2110-impish-v20220118",
+    source_image: str = "projects/ubuntu-os-cloud/global/images/family/ubuntu-2004-lts",
     network_name: str = "global/networks/default",
     disk_size_gb: int = 64,
     enable_nested_virtualization: bool = True,

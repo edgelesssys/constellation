@@ -18,6 +18,7 @@ packages:
  - lsb-release
  - jq
  - pv
+ - sed
 
 runcmd:
  - [sudo, chmod, "+r", "/boot/vmlinuz*"]
