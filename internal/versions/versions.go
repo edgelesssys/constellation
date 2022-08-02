@@ -30,10 +30,10 @@ func IsSupportedK8sVersion(version string) bool {
 const (
 	// Constellation images.
 	// These images are built in a way that they support all versions currently listed in VersionConfigs.
-	JoinImage          = "ghcr.io/edgelesssys/constellation/join-service:v1.3.2-0.20220729075247-e715786b"
-	AccessManagerImage = "ghcr.io/edgelesssys/constellation/access-manager:v1.3.2-0.20220714151638-d295be31"
-	KmsImage           = "ghcr.io/edgelesssys/constellation/kmsserver:v1.3.2-0.20220729075247-e715786b"
-	VerificationImage  = "ghcr.io/edgelesssys/constellation/verification-service:v1.3.2-0.20220729075247-e715786b"
+	JoinImage          = "ghcr.io/edgelesssys/constellation/join-service:v1.4.0"
+	AccessManagerImage = "ghcr.io/edgelesssys/constellation/access-manager:v1.4.0"
+	KmsImage           = "ghcr.io/edgelesssys/constellation/kmsserver:v1.4.0"
+	VerificationImage  = "ghcr.io/edgelesssys/constellation/verification-service:v1.4.0"
 	GcpGuestImage      = "ghcr.io/edgelesssys/gcp-guest-agent:latest"
 
 	// currently supported versions.
