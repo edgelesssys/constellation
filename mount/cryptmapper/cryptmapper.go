@@ -36,7 +36,7 @@ var packageLock = sync.Mutex{}
 
 func init() {
 	cryptsetup.SetDebugLevel(cryptsetup.CRYPT_LOG_NORMAL)
-	cryptsetup.SetLogCallback(func(level int, message string) { klog.V(4).Infof("libcryptsetup: %s", message) })
+	cryptsetup.SetLogCallback(func(_ int, message string) { klog.V(4).Infof("libcryptsetup: %s", message) })
 }
 
 // KeyCreator is an interface to create data encryption keys.

@@ -14,7 +14,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/oid"
 	"github.com/edgelesssys/constellation/joinservice/joinproto"
-	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
+	"github.com/edgelesssys/constellation/state/keyproto"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

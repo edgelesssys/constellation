@@ -21,9 +21,9 @@ import (
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/logger"
-	"github.com/edgelesssys/constellation/state/keyservice"
-	"github.com/edgelesssys/constellation/state/mapper"
-	"github.com/edgelesssys/constellation/state/setup"
+	"github.com/edgelesssys/constellation/state/internal/keyservice"
+	"github.com/edgelesssys/constellation/state/internal/mapper"
+	"github.com/edgelesssys/constellation/state/internal/setup"
 	tpmClient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm/tpm2"
 	"github.com/spf13/afero"
@@ -86,7 +86,7 @@ func main() {
 	}
 
 	// initialize device mapper
-	mapper, err := mapper.New(diskPath)
+	mapper, err := mapper.New(diskPath, log)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to initialize device mapper")
 	}

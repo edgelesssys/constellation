@@ -4,6 +4,7 @@ package integration
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"net"
 	"os"
@@ -17,9 +18,9 @@ import (
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/oid"
-	"github.com/edgelesssys/constellation/state/keyservice"
-	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
-	"github.com/edgelesssys/constellation/state/mapper"
+	"github.com/edgelesssys/constellation/state/internal/keyservice"
+	"github.com/edgelesssys/constellation/state/internal/mapper"
+	"github.com/edgelesssys/constellation/state/keyproto"
 	"github.com/martinjungblut/go-cryptsetup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,8 +33,10 @@ const (
 	mappedDevice = "mappedDevice"
 )
 
-func setup() error {
-	return exec.Command("/bin/dd", "if=/dev/zero", fmt.Sprintf("of=%s", devicePath), "bs=64M", "count=1").Run()
+var diskPath = flag.String("disk", "", "Path to the disk to use for the benchmark")
+
+func setup(sizeGB int) error {
+	return exec.Command("/bin/dd", "if=/dev/random", fmt.Sprintf("of=%s", devicePath), "bs=1G", fmt.Sprintf("count=%d", sizeGB)).Run()
 }
 
 func teardown() error {
@@ -41,6 +44,8 @@ func teardown() error {
 }
 
 func TestMain(m *testing.M) {
+	flag.Parse()
+
 	if os.Getuid() != 0 {
 		fmt.Printf("This test suite requires root privileges, as libcrypsetup uses the kernel's device mapper.\n")
 		os.Exit(1)
@@ -56,14 +61,15 @@ func TestMain(m *testing.M) {
 }
 
 func TestMapper(t *testing.T) {
-	cryptsetup.SetDebugLevel(cryptsetup.CRYPT_LOG_VERBOSE)
-	cryptsetup.SetLogCallback(func(level int, message string) { fmt.Println(message) })
+	cryptsetup.SetDebugLevel(cryptsetup.CRYPT_LOG_ERROR)
+	cryptsetup.SetLogCallback(func(_ int, message string) { fmt.Println(message) })
+
 	assert := assert.New(t)
 	require := require.New(t)
-	require.NoError(setup(), "failed to setup test disk")
+	require.NoError(setup(1), "failed to setup test disk")
 	defer func() { require.NoError(teardown(), "failed to delete test disk") }()
 
-	mapper, err := mapper.New(devicePath)
+	mapper, err := mapper.New(devicePath, logger.NewTest(t))
 	require.NoError(err, "failed to initialize crypt device")
 	defer func() { require.NoError(mapper.Close(), "failed to close crypt device") }()
 

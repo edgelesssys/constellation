@@ -6,7 +6,7 @@ import (
 
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
-	"github.com/edgelesssys/constellation/state/keyservice/keyproto"
+	"github.com/edgelesssys/constellation/state/keyproto"
 	"google.golang.org/grpc"
 )
 

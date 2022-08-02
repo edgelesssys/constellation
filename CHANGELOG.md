@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Kubernetes version 1.24 is now supported.
 - Kubernetes version 1.22 is now supported.
 - Log the disk UUID to cloud logging for recovery.
+- Configurable disk type for Azure and GCP.
 
 ### Changed
 
@@ -47,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Create Kubernetes CA signed kubelet certificates on activation.
 - Add salt to key derivation
+- Enable integrity protection of state disks.
 
 ### Internal
 

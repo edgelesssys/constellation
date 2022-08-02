@@ -7,6 +7,9 @@ type cryptDevice interface {
 	// Returns nil on success, or an error otherwise.
 	// C equivalent: crypt_activate_by_passphrase
 	ActivateByPassphrase(deviceName string, keyslot int, passphrase string, flags int) error
+	// ActivateByVolumeKey activates a device by using a volume key.
+	// Returns nil on success, or an error otherwise.
+	ActivateByVolumeKey(deviceName string, volumeKey string, volumeKeySize int, flags int) error
 	// Deactivate deactivates a device.
 	// Returns nil on success, or an error otherwise.
 	// C equivalent: crypt_deactivate
@@ -29,4 +32,7 @@ type cryptDevice interface {
 	// Returns nil on success, or an error otherwise.
 	// C equivalent: crypt_keyslot_add_by_volume_key
 	KeyslotAddByVolumeKey(keyslot int, volumeKey string, passphrase string) error
+	// Wipe removes existing data and clears the device for use with dm-integrity.
+	// Returns nil on success, or an error otherwise.
+	Wipe(devicePath string, pattern int, offset, length uint64, wipeBlockSize int, flags int, progress func(size, offset uint64) int) error
 }

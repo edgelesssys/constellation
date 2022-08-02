@@ -261,12 +261,12 @@ func (s *stubMapper) DiskUUID() string {
 	return s.uuid
 }
 
-func (s *stubMapper) FormatDisk(passphrase string) error {
+func (s *stubMapper) FormatDisk(string) error {
 	s.formatDiskCalled = true
 	return s.formatDiskErr
 }
 
-func (s *stubMapper) MapDisk(target string, passphrase string) error {
+func (s *stubMapper) MapDisk(string, string) error {
 	if s.mapDiskRepeatedCalls == 0 {
 		s.mapDiskErr = nil
 	}
