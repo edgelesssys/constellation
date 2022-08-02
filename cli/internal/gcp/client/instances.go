@@ -33,6 +33,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		ImageID:                      input.ImageID,
 		InstanceType:                 input.InstanceType,
 		StateDiskSizeGB:              int64(input.StateDiskSizeGB),
+		StateDiskType:                input.StateDiskType,
 		Role:                         role.Worker.String(),
 		KubeEnv:                      input.KubeEnv,
 		Project:                      c.project,
@@ -55,6 +56,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		ImageID:                      input.ImageID,
 		InstanceType:                 input.InstanceType,
 		StateDiskSizeGB:              int64(input.StateDiskSizeGB),
+		StateDiskType:                input.StateDiskType,
 		Role:                         role.ControlPlane.String(),
 		KubeEnv:                      input.KubeEnv,
 		Project:                      c.project,
@@ -295,6 +297,7 @@ type CreateInstancesInput struct {
 	ImageID            string
 	InstanceType       string
 	StateDiskSizeGB    int
+	StateDiskType      string
 	KubeEnv            string
 }
 
@@ -306,6 +309,7 @@ type insertInstanceTemplateInput struct {
 	ImageID                      string
 	InstanceType                 string
 	StateDiskSizeGB              int64
+	StateDiskType                string
 	Role                         string
 	KubeEnv                      string
 	Project                      string
@@ -337,6 +341,7 @@ func (i insertInstanceTemplateInput) insertInstanceTemplateRequest() *computepb.
 					{
 						InitializeParams: &computepb.AttachedDiskInitializeParams{
 							DiskSizeGb: proto.Int64(i.StateDiskSizeGB),
+							DiskType:   proto.String(i.StateDiskType),
 						},
 						AutoDelete: proto.Bool(true),
 						DeviceName: proto.String("state-disk"),

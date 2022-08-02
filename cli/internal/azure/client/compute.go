@@ -19,6 +19,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		Count:                          input.CountWorkers,
 		InstanceType:                   input.InstanceType,
 		StateDiskSizeGB:                int32(input.StateDiskSizeGB),
+		StateDiskType:                  input.StateDiskType,
 		Image:                          input.Image,
 		UserAssingedIdentity:           input.UserAssingedIdentity,
 		LoadBalancerBackendAddressPool: azure.BackendAddressPoolWorkerName + "-" + c.uid,
@@ -37,6 +38,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		Count:                          input.CountControlPlanes,
 		InstanceType:                   input.InstanceType,
 		StateDiskSizeGB:                int32(input.StateDiskSizeGB),
+		StateDiskType:                  input.StateDiskType,
 		Image:                          input.Image,
 		UserAssingedIdentity:           input.UserAssingedIdentity,
 		LoadBalancerBackendAddressPool: azure.BackendAddressPoolControlPlaneName + "-" + c.uid,
@@ -70,6 +72,7 @@ type CreateInstancesInput struct {
 	CountControlPlanes   int
 	InstanceType         string
 	StateDiskSizeGB      int
+	StateDiskType        string
 	Image                string
 	UserAssingedIdentity string
 }
@@ -175,6 +178,7 @@ func (c *Client) createScaleSet(ctx context.Context, input CreateScaleSetInput) 
 		Location:                       c.location,
 		InstanceType:                   input.InstanceType,
 		StateDiskSizeGB:                input.StateDiskSizeGB,
+		StateDiskType:                  input.StateDiskType,
 		Count:                          int64(input.Count),
 		Username:                       "constellation",
 		SubnetID:                       c.subnetID,
@@ -254,6 +258,7 @@ type CreateScaleSetInput struct {
 	Count                          int
 	InstanceType                   string
 	StateDiskSizeGB                int32
+	StateDiskType                  string
 	Image                          string
 	UserAssingedIdentity           string
 	LoadBalancerBackendAddressPool string

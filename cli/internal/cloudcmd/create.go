@@ -126,6 +126,7 @@ func (c *Creator) createGCP(ctx context.Context, cl gcpclient, config *config.Co
 		ImageID:            config.Provider.GCP.Image,
 		InstanceType:       insType,
 		StateDiskSizeGB:    config.StateDiskSizeGB,
+		StateDiskType:      config.Provider.GCP.StateDiskType,
 		KubeEnv:            gcp.KubeEnv,
 	}
 	if err := cl.CreateInstances(ctx, createInput); err != nil {
@@ -167,6 +168,7 @@ func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *confi
 		CountWorkers:         workerCount,
 		InstanceType:         insType,
 		StateDiskSizeGB:      config.StateDiskSizeGB,
+		StateDiskType:        config.Provider.Azure.StateDiskType,
 		Image:                config.Provider.Azure.Image,
 		UserAssingedIdentity: config.Provider.Azure.UserAssignedIdentity,
 	}

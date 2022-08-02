@@ -1,6 +1,7 @@
 package config
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
@@ -273,7 +274,15 @@ func TestConfigRemoveProviderExcept(t *testing.T) {
 
 func TestConfigGeneratedDocsFresh(t *testing.T) {
 	assert := assert.New(t)
-	assert.Len(ConfigDoc.Fields, 8, "remember to re-generate config docs!")
+	updateMsg := "remember to re-generate config docs! 🔨"
+
+	assert.Len(ConfigDoc.Fields, reflect.ValueOf(Config{}).NumField(), updateMsg)
+	assert.Len(UserKeyDoc.Fields, reflect.ValueOf(UserKey{}).NumField(), updateMsg)
+	assert.Len(FirewallRuleDoc.Fields, reflect.ValueOf(FirewallRule{}).NumField(), updateMsg)
+	assert.Len(ProviderConfigDoc.Fields, reflect.ValueOf(ProviderConfig{}).NumField(), updateMsg)
+	assert.Len(AzureConfigDoc.Fields, reflect.ValueOf(AzureConfig{}).NumField(), updateMsg)
+	assert.Len(GCPConfigDoc.Fields, reflect.ValueOf(GCPConfig{}).NumField(), updateMsg)
+	assert.Len(QEMUConfigDoc.Fields, reflect.ValueOf(QEMUConfig{}).NumField(), updateMsg)
 }
 
 func TestConfig_UpdateMeasurements(t *testing.T) {

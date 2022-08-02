@@ -129,6 +129,9 @@ type AzureConfig struct {
 	//   Machine image used to create Constellation nodes.
 	Image string `yaml:"image" validate:"required"`
 	// description: |
+	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#disk-type-comparison
+	StateDiskType string `yaml:"stateDiskType" validate:"oneof=Premium_LRS Premium_ZRS Standard_LRS StandardSSD_LRS StandardSSD_ZRS"`
+	// description: |
 	//   Expected confidential VM measurements.
 	Measurements Measurements `yaml:"measurements"`
 	// description: |
@@ -150,6 +153,9 @@ type GCPConfig struct {
 	// description: |
 	//   Machine image used to create Constellation nodes.
 	Image string `yaml:"image" validate:"required"`
+	// description: |
+	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://cloud.google.com/compute/docs/disks#disk-types
+	StateDiskType string `yaml:"stateDiskType" validate:"oneof=pd-standard pd-balanced pd-ssd"`
 	// description: |
 	//   Roles added to service account.
 	ServiceAccountRoles []string `yaml:"serviceAccountRoles"`
@@ -209,6 +215,7 @@ func Default() *Config {
 				TenantID:             "adb650a8-5da3-4b15-b4b0-3daf65ff7626",
 				Location:             "North Europe",
 				Image:                "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos/versions/0.0.1658932686",
+				StateDiskType:        "StandardSSD_LRS", // TODO: Replace with Premium_LRS when we replace the default VM size (Standard_D2a_v4) since the size does not support Premium_LRS
 				Measurements:         azurePCRs,
 				UserAssignedIdentity: "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-dev-identity",
 			},
@@ -224,7 +231,8 @@ func Default() *Config {
 					"roles/storage.admin",
 					"roles/iam.serviceAccountUser",
 				},
-				Measurements: gcpPCRs,
+				StateDiskType: "pd-ssd",
+				Measurements:  gcpPCRs,
 			},
 			QEMU: &QEMUConfig{
 				Measurements: qemuPCRs,

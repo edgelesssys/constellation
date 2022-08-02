@@ -24,7 +24,7 @@ func init() {
 	ConfigDoc.Type = "Config"
 	ConfigDoc.Comments[encoder.LineComment] = "Config defines configuration used by CLI."
 	ConfigDoc.Description = "Config defines configuration used by CLI."
-	ConfigDoc.Fields = make([]encoder.Doc, 8)
+	ConfigDoc.Fields = make([]encoder.Doc, 9)
 	ConfigDoc.Fields[0].Name = "version"
 	ConfigDoc.Fields[0].Type = "string"
 	ConfigDoc.Fields[0].Note = ""
@@ -69,6 +69,11 @@ func init() {
 	ConfigDoc.Fields[7].Comments[encoder.LineComment] = "Create SSH users on Constellation nodes."
 
 	ConfigDoc.Fields[7].AddExample("", []UserKey{{Username: "Alice", PublicKey: "ssh-rsa AAAAB3NzaC...5QXHKW1rufgtJeSeJ8= alice@domain.com"}})
+	ConfigDoc.Fields[8].Name = "kubernetesVersion"
+	ConfigDoc.Fields[8].Type = "string"
+	ConfigDoc.Fields[8].Note = ""
+	ConfigDoc.Fields[8].Description = "Kubernetes version installed in the cluster."
+	ConfigDoc.Fields[8].Comments[encoder.LineComment] = "Kubernetes version installed in the cluster."
 
 	UserKeyDoc.Type = "UserKey"
 	UserKeyDoc.Comments[encoder.LineComment] = "UserKey describes a user that should be created with corresponding public SSH key."
@@ -163,7 +168,7 @@ func init() {
 			FieldName: "azure",
 		},
 	}
-	AzureConfigDoc.Fields = make([]encoder.Doc, 6)
+	AzureConfigDoc.Fields = make([]encoder.Doc, 7)
 	AzureConfigDoc.Fields[0].Name = "subscription"
 	AzureConfigDoc.Fields[0].Type = "string"
 	AzureConfigDoc.Fields[0].Note = ""
@@ -184,16 +189,21 @@ func init() {
 	AzureConfigDoc.Fields[3].Note = ""
 	AzureConfigDoc.Fields[3].Description = "Machine image used to create Constellation nodes."
 	AzureConfigDoc.Fields[3].Comments[encoder.LineComment] = "Machine image used to create Constellation nodes."
-	AzureConfigDoc.Fields[4].Name = "measurements"
-	AzureConfigDoc.Fields[4].Type = "Measurements"
+	AzureConfigDoc.Fields[4].Name = "stateDiskType"
+	AzureConfigDoc.Fields[4].Type = "string"
 	AzureConfigDoc.Fields[4].Note = ""
-	AzureConfigDoc.Fields[4].Description = "Expected confidential VM measurements."
-	AzureConfigDoc.Fields[4].Comments[encoder.LineComment] = "Expected confidential VM measurements."
-	AzureConfigDoc.Fields[5].Name = "userAssignedIdentity"
-	AzureConfigDoc.Fields[5].Type = "string"
+	AzureConfigDoc.Fields[4].Description = "Type of a node's state disk. The type influences boot time and I/O performance. See: https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#disk-type-comparison"
+	AzureConfigDoc.Fields[4].Comments[encoder.LineComment] = "Type of a node's state disk. The type influences boot time and I/O performance. See: https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#disk-type-comparison"
+	AzureConfigDoc.Fields[5].Name = "measurements"
+	AzureConfigDoc.Fields[5].Type = "Measurements"
 	AzureConfigDoc.Fields[5].Note = ""
-	AzureConfigDoc.Fields[5].Description = "Authorize spawned VMs to access Azure API. See: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=azure"
-	AzureConfigDoc.Fields[5].Comments[encoder.LineComment] = "Authorize spawned VMs to access Azure API. See: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=azure"
+	AzureConfigDoc.Fields[5].Description = "Expected confidential VM measurements."
+	AzureConfigDoc.Fields[5].Comments[encoder.LineComment] = "Expected confidential VM measurements."
+	AzureConfigDoc.Fields[6].Name = "userAssignedIdentity"
+	AzureConfigDoc.Fields[6].Type = "string"
+	AzureConfigDoc.Fields[6].Note = ""
+	AzureConfigDoc.Fields[6].Description = "Authorize spawned VMs to access Azure API. See: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=azure"
+	AzureConfigDoc.Fields[6].Comments[encoder.LineComment] = "Authorize spawned VMs to access Azure API. See: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=azure"
 
 	GCPConfigDoc.Type = "GCPConfig"
 	GCPConfigDoc.Comments[encoder.LineComment] = "GCPConfig are GCP specific configuration values used by the CLI."
@@ -204,7 +214,7 @@ func init() {
 			FieldName: "gcp",
 		},
 	}
-	GCPConfigDoc.Fields = make([]encoder.Doc, 6)
+	GCPConfigDoc.Fields = make([]encoder.Doc, 7)
 	GCPConfigDoc.Fields[0].Name = "project"
 	GCPConfigDoc.Fields[0].Type = "string"
 	GCPConfigDoc.Fields[0].Note = ""
@@ -225,16 +235,21 @@ func init() {
 	GCPConfigDoc.Fields[3].Note = ""
 	GCPConfigDoc.Fields[3].Description = "Machine image used to create Constellation nodes."
 	GCPConfigDoc.Fields[3].Comments[encoder.LineComment] = "Machine image used to create Constellation nodes."
-	GCPConfigDoc.Fields[4].Name = "serviceAccountRoles"
-	GCPConfigDoc.Fields[4].Type = "[]string"
+	GCPConfigDoc.Fields[4].Name = "stateDiskType"
+	GCPConfigDoc.Fields[4].Type = "string"
 	GCPConfigDoc.Fields[4].Note = ""
-	GCPConfigDoc.Fields[4].Description = "Roles added to service account."
-	GCPConfigDoc.Fields[4].Comments[encoder.LineComment] = "Roles added to service account."
-	GCPConfigDoc.Fields[5].Name = "measurements"
-	GCPConfigDoc.Fields[5].Type = "Measurements"
+	GCPConfigDoc.Fields[4].Description = "Type of a node's state disk. The type influences boot time and I/O performance. See: https://cloud.google.com/compute/docs/disks#disk-types"
+	GCPConfigDoc.Fields[4].Comments[encoder.LineComment] = "Type of a node's state disk. The type influences boot time and I/O performance. See: https://cloud.google.com/compute/docs/disks#disk-types"
+	GCPConfigDoc.Fields[5].Name = "serviceAccountRoles"
+	GCPConfigDoc.Fields[5].Type = "[]string"
 	GCPConfigDoc.Fields[5].Note = ""
-	GCPConfigDoc.Fields[5].Description = "Expected confidential VM measurements."
-	GCPConfigDoc.Fields[5].Comments[encoder.LineComment] = "Expected confidential VM measurements."
+	GCPConfigDoc.Fields[5].Description = "Roles added to service account."
+	GCPConfigDoc.Fields[5].Comments[encoder.LineComment] = "Roles added to service account."
+	GCPConfigDoc.Fields[6].Name = "measurements"
+	GCPConfigDoc.Fields[6].Type = "Measurements"
+	GCPConfigDoc.Fields[6].Note = ""
+	GCPConfigDoc.Fields[6].Description = "Expected confidential VM measurements."
+	GCPConfigDoc.Fields[6].Comments[encoder.LineComment] = "Expected confidential VM measurements."
 
 	QEMUConfigDoc.Type = "QEMUConfig"
 	QEMUConfigDoc.Comments[encoder.LineComment] = ""
