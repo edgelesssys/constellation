@@ -17,40 +17,50 @@ All notable changes to Constellation will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
 ## [Unreleased]
+### Added
+<!--  For new features. -->
+### Changed
+<!-- For changes in existing functionality.  -->
+### Deprecated
+<!-- For soon-to-be removed features. -->
+### Removed
+<!-- For now removed features. -->
+### Fixed
+<!-- For any bug fixes. -->
+### Security
+<!-- In case of vulnerabilities. -->
+### Internal
+
+## [1.4.0] - 2022-08-02
 
 ### Added
-- `constellation config fetch-measurements` to download and verify measurements, and write them into config file.
 
-- Kubernetes version is configured through an entry in `constellation-config.yaml`.
-- Kubernetes version 1.24 is now supported.
-- Kubernetes version 1.22 is now supported.
-- Log the disk UUID to cloud logging for recovery.
+- Publish measurements for each released coreos-image.
+- `constellation config fetch-measurements` to download and verify measurements, and writing them into the config file.
+- Configurable Kubernetes version through an entry in `constellation-config.yaml`.
+- Kubernetes version 1.24 support.
+- Kubernetes version 1.22 support.
+- Log disk UUID to cloud logging for recovery.
 - Configurable disk type for Azure and GCP.
+- Create Kubernetes CA signed kubelet certificates on activation.
+- Salt key derivation.
+- Integrity protection of state disks.
 
 ### Changed
 
-- Nodes add themselves to the cluster after `constellation init` is done
-- Owner ID and Unique ID merged into a single value: Cluster ID
-
-### Deprecated
+- Nodes add themselves to the cluster after `constellation init` is done. Previously, nodes were asked to join the cluster by the bootstrapper.
+- Owner ID and Unique ID are merged into a single value: Cluster ID.
+- Streamline logging to only use one logging library, instead of multiple.
+- Replace dependency on github.com/willdonnelly/passwd with own implementation.
 
 ### Removed
 
-- User facing WireGuard VPN
+- User facing WireGuard VPN.
 
 ### Fixed
 
-- Correctly wait for `bootstrapper` to come online in `constellation init`
-
-### Security
-
-- Create Kubernetes CA signed kubelet certificates on activation.
-- Add salt to key derivation
-- Enable integrity protection of state disks.
-
-### Internal
+- Correctly wait for `bootstrapper` to come online during `constellation init`.
 
 ## [1.3.1] - 2022-07-11
 
@@ -155,7 +165,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial release of Constellation. With underlying WireGuard and Kubernetes compliant.
 
-[Unreleased]: https://github.com/edgelesssys/constellation/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/edgelesssys/constellation/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/edgelesssys/constellation/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/edgelesssys/constellation/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/edgelesssys/constellation/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/edgelesssys/constellation/compare/v1.1.0...v1.2.0
