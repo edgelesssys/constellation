@@ -1,6 +1,7 @@
 package qemu
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"strings"
@@ -23,7 +24,12 @@ func (l *Logger) Disclose(msg string) {
 		Path:   "/log",
 	}
 
-	_, _ = http.Post(url.String(), "application/json", strings.NewReader(msg))
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, url.String(), strings.NewReader(msg))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err == nil {
+		defer resp.Body.Close()
+	}
 }
 
 // Close is a no-op.

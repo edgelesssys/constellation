@@ -134,6 +134,16 @@ func exportPCRs() error {
 		Host:   "10.42.0.1:8080", // QEMU metadata endpoint
 		Path:   "/pcrs",
 	}
-	_, err = http.Post(url.String(), "application/json", bytes.NewBuffer(pcrsPretty))
-	return err
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url.String(), bytes.NewBuffer(pcrsPretty))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	return nil
 }

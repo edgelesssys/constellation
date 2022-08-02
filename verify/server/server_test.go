@@ -211,7 +211,9 @@ func TestGetAttestationHTTP(t *testing.T) {
 			httpServer := httptest.NewServer(http.HandlerFunc(server.getAttestationHTTP))
 			defer httpServer.Close()
 
-			resp, err := http.Get(httpServer.URL + tc.request)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, httpServer.URL+tc.request, nil)
+			require.NoError(err)
+			resp, err := http.DefaultClient.Do(req)
 			require.NoError(err)
 			defer resp.Body.Close()
 

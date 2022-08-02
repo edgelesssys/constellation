@@ -222,7 +222,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("failed to setup k8s version ConfigMap: %v", err)
 	}
 
-	k.clusterUtil.FixCilium(nodeName)
+	k.clusterUtil.FixCilium(nodeName, log)
 
 	return k.GetKubeconfig()
 }
@@ -286,7 +286,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		return fmt.Errorf("joining cluster: %v; %w ", string(joinConfigYAML), err)
 	}
 
-	k.clusterUtil.FixCilium(nodeName)
+	k.clusterUtil.FixCilium(nodeName, log)
 
 	return nil
 }

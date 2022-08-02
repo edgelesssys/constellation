@@ -259,13 +259,18 @@ func (k *KubernetesUtil) setupGCPPodNetwork(ctx context.Context, nodeName, nodeP
 
 // FixCilium fixes https://github.com/cilium/cilium/issues/19958 but instead of a rollout restart of
 // the cilium daemonset, it only restarts the local cilium pod.
-func (k *KubernetesUtil) FixCilium(nodeNameK8s string) {
+func (k *KubernetesUtil) FixCilium(nodeNameK8s string, log *logger.Logger) {
 	// wait for cilium pod to be healthy
 	for {
 		time.Sleep(5 * time.Second)
-		resp, err := http.Get("http://127.0.0.1:9876/healthz")
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1:9876/healthz", nil)
 		if err != nil {
-			fmt.Printf("waiting for local cilium daemonset pod not healthy: %v\n", err)
+			log.With(zap.Error(err)).Errorf("Unable to create request")
+			continue
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			log.With(zap.Error(err)).Warnf("Waiting for local cilium daemonset pod not healthy")
 			continue
 		}
 		resp.Body.Close()
@@ -277,22 +282,21 @@ func (k *KubernetesUtil) FixCilium(nodeNameK8s string) {
 	// get cilium pod name
 	out, err := exec.CommandContext(context.Background(), "/bin/bash", "-c", "/run/state/bin/crictl ps -o json | jq -r '.containers[] | select(.metadata.name == \"cilium-agent\") | .podSandboxId'").CombinedOutput()
 	if err != nil {
-		fmt.Printf("getting pod id failed: %v: %v\n", err, string(out))
+		log.With(zap.Error(err)).Errorf("Getting pod id failed: %s", out)
 		return
 	}
 	outLines := strings.Split(string(out), "\n")
-	fmt.Println(outLines)
 	podID := outLines[len(outLines)-2]
 
 	// stop and delete pod
 	out, err = exec.CommandContext(context.Background(), "/run/state/bin/crictl", "stopp", podID).CombinedOutput()
 	if err != nil {
-		fmt.Printf("stopping cilium agent pod failed: %v: %v\n", err, string(out))
+		log.With(zap.Error(err)).Errorf("Stopping cilium agent pod failed: %s", out)
 		return
 	}
 	out, err = exec.CommandContext(context.Background(), "/run/state/bin/crictl", "rmp", podID).CombinedOutput()
 	if err != nil {
-		fmt.Printf("removing cilium agent pod failed: %v: %v\n", err, string(out))
+		log.With(zap.Error(err)).Errorf("Removing cilium agent pod failed: %s", out)
 	}
 }
 

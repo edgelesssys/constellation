@@ -146,7 +146,10 @@ func TestUpdate(t *testing.T) {
 	require.NoError(validator.Update())
 
 	// client connection should fail now, since the server's validator expects a different OID from the client
-	_, err = testConnection(require, server.URL, clientOID)
+	resp, err = testConnection(require, server.URL, clientOID)
+	if err == nil {
+		defer resp.Body.Close()
+	}
 	assert.Error(err)
 }
 

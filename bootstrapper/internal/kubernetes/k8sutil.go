@@ -25,5 +25,5 @@ type clusterUtil interface {
 	SetupGCPGuestAgent(kubectl k8sapi.Client, gcpGuestAgentConfiguration resources.Marshaler) error
 	StartKubelet() error
 	RestartKubelet() error
-	FixCilium(nodeNameK8s string)
+	FixCilium(nodeNameK8s string, log *logger.Logger)
 }
