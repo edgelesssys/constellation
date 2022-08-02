@@ -62,6 +62,12 @@ Clean up the `build` dir and remove old images (⚠ this will undo any local cha
 sudo make clean
 ```
 
+Ensure you have the modified cosa container image installed:
+
+```shell-session
+make cosa-image
+```
+
 - Build QEMU image (for local testing only)
 
   ```shell-session

@@ -22,6 +22,7 @@ DISK_MAPPER_BINARY               ?= $(BASE_PATH)/../build/disk-mapper
 DISK_MAPPER_OVERRIDE_PATH        ?= $(OVERRIDES_ROOTFS)/usr/sbin/disk-mapper
 IMAGES_PATH                      ?= $(BASE_PATH)/images
 CONTAINER_ENGINE                 ?= podman
+COSA_BUILDDIR                    ?= $(BASE_PATH)/../3rdparty/coreos-assembler
 COSA_ENV                         ?= $(BASE_PATH)/$(CONTAINER_ENGINE).env
 COSA_INIT_REPO                   ?= "https://github.com/edgelesssys/constellation-fedora-coreos-config"
 COSA_INIT_BRANCH                 ?= "constellation"
@@ -77,6 +78,10 @@ $(DISK_MAPPER_OVERRIDE_PATH): $(DISK_MAPPER_BINARY) | cosa-init
 	mkdir -p $(COREOS_BUILD_PATH)/overrides/rootfs/usr/sbin
 	cp $(DISK_MAPPER_BINARY) $@
 	chmod +x $@
+
+cosa-image:
+	-make -j 1 -C $(COSA_BUILDDIR) clean
+	make -j 1 -C $(COSA_BUILDDIR)
 
 cosa-init:
 	-flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa init --branch $(COSA_INIT_BRANCH) $(COSA_INIT_REPO)'

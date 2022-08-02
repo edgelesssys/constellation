@@ -116,6 +116,7 @@ jobs:
         id: build-and-upload
         shell: bash {0}
         run: |
+          make cosa-image
           make -j$(nproc) CONTAINER_ENGINE=docker NETRC=/tmp/.netrc \
             COSA_INIT_BRANCH="${{ inputs.coreOSConfigBranch }}" \
             GCP_IMAGE_NAME="${{ env.gcpImageName }}" GCP_IMAGE_FAMILY="${{ env.gcpImageFamily }}" \
