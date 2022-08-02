@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	major := flag.String("major", "v1", "Optional major version")
+	major := flag.String("major", "v0", "Optional major version")
 	base := flag.String("base", "", "Optional base version")
 	revisionTimestamp := flag.String("time", "", "Optional revision time")
 	revision := flag.String("revision", "", "Optional revision (git commit hash)")
@@ -29,7 +29,8 @@ func main() {
 	if *base == "" {
 		_, versionTag, err := gitc.FirstParentWithVersionTag()
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to find base version")
+			log.With(zap.Error(err)).Warnf("Failed to find base version. Using default.")
+			versionTag = ""
 		}
 		*base = versionTag
 	}
