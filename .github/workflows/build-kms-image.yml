@@ -13,11 +13,6 @@ on:
       - "internal/constants/**"
       - "internal/file/**"
 
-# Abort runs of *this* workflow, if a new commit with the same ref is pushed.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build-kms-server:
     runs-on: ubuntu-latest

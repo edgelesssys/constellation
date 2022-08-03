@@ -12,11 +12,6 @@ on:
       - "access_manager/**"
       - "internal/deploy/**"
 
-# Abort runs of *this* workflow, if a new commit with the same ref is pushed.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build-access-manager:
     runs-on: ubuntu-latest

@@ -13,6 +13,9 @@ import (
 )
 
 func main() {
+	printSemVer := flag.Bool("semantic-version", false, "Only print semantic version")
+	printTimestamp := flag.Bool("print-timestamp", false, "Only print timestamp")
+	printBranch := flag.Bool("print-branch", false, "Only print branch name")
 	major := flag.String("major", "v0", "Optional major version")
 	base := flag.String("base", "", "Optional base version")
 	revisionTimestamp := flag.String("time", "", "Optional revision time")
@@ -24,6 +27,11 @@ func main() {
 	gitc, err := git.New()
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to initialize git client")
+	}
+
+	branch, err := gitc.ParsedBranchName()
+	if err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to get branch name")
 	}
 
 	if *base == "" {
@@ -57,5 +65,15 @@ func main() {
 	}
 
 	version := module.PseudoVersion(*major, *base, headTime, *revision)
-	fmt.Println(version)
+
+	switch {
+	case *printSemVer:
+		fmt.Println(*base)
+	case *printTimestamp:
+		fmt.Println(headTime.Format("20060102150405"))
+	case *printBranch:
+		fmt.Println(branch)
+	default:
+		fmt.Println(version)
+	}
 }

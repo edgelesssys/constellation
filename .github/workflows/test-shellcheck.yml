@@ -8,7 +8,7 @@ on:
 # Abort runs of *this* workflow, if a new commit with the same ref is pushed.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   shellcheck:

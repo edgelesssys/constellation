@@ -88,3 +88,48 @@ az role assignment create --role "User Access Administrator" --scope /subscripti
 Next, [add API permissions to Managed Identity](https://github.com/edgelesssys/wiki/blob/master/other_tech/azure.md#adding-api-permission-to-managed-identity)
 
 Store output of `az ad sp ...` in [GitHub Action Secret](https://github.com/edgelesssys/constellation/settings/secrets/actions) or create a local secret file for act to consume.
+
+## Image versions
+
+The [build-coreos](../workflows/build-coreos.yml) workflow can be used to trigger an image build.
+
+The workflow can be used to build debug or release images.
+A debug image uses [`debugd`](../../debugd/) as its bootstrapper binary, while release images use the actual [`bootstrapper`](../../bootstrapper/)
+Workflows for the main branch will always build debug images.
+
+The image will be named and categorized depending on the branch the build is triggered from.
+In the following, __Release__ refers to non debug images build from a release branch, e.g. `release/v1.4.0`,
+__Debug__ refers to debug images build from either main or a release branch,
+and __Branch__ refers to any image build from a branch that is not main or a release branch.
+Non debug images built from main follow the __Branch__ image naming scheme.
+
+### GCP
+
+Type | Image Family | Image Name
+-|-|-
+Release | constellation | constellation-v\<major\>-\<minor\>-\<patch\>
+Debug | constellation-debug-v\<major\>-\<minor\>-\<patch\> | constellation-\<commit-timestamp\>
+Branch | constellation-\<branch-name\> | constellation-\<commit-timestamp\>
+
+Example:
+Type | Image Family | Image Name
+-|-|-
+Release | constellation | constellation-v1-5-0
+Debug | constellation-v1-5-0 | constellation-20220912123456
+Branch | constellation-ref-cli | constellation-20220912123456
+
+### Azure
+
+Type | Gallery | Image Definition | Image Version
+-|-|-|-
+Release | Constellation | constellation | \<major\>.\<minor\>.\<patch\>
+Debug | Constellation_Debug | v\<major\>.\<minor\>.\<patch\> | \<commit-timestamp\>
+Branch | Constellation_Testing | \<branch-name\> | \<commit-timestamp\>
+
+Example:
+
+Type | Image Definition | Image Version
+-|-|-
+Release | constellation | 1.5.0
+Debug | v1.5.0 | 2022.0912.123456
+Branch | ref-cli | 2022.0912.123456

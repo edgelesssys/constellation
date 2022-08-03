@@ -1,9 +1,20 @@
 name: Determine pseudo version
 description: "Determine go-like pseudo version to use as container image tag."
+
 outputs:
-  pseudo-version:
+  pseudoVersion:
     description: "Pseudo version based on the current HEAD"
-    value: ${{ steps.pseudo-version.outputs.pseudo-version }}
+    value: ${{ steps.pseudo-version.outputs.pseudoVersion }}
+  semanticVersion:
+    description: "Semantic version based on the current HEAD"
+    value: ${{ steps.pseudo-version.outputs.semanticVersion }}
+  timestamp:
+    description: "Commit timestamp based on the current HEAD"
+    value: ${{ steps.pseudo-version.outputs.timestamp }}
+  branchName:
+    description: "Branch name"
+    value: ${{ steps.pseudo-version.outputs.branchName }}
+
 runs:
   using: 'composite'
   steps:
@@ -11,6 +22,7 @@ runs:
     uses: actions/setup-go@84cbf8094393cdc5fe1fe1671ff2647332956b1a
     with:
       go-version: "1.18"
+
   - name: get pseudo version
     id: pseudo-version
     run: |
@@ -21,6 +33,18 @@ runs:
       else
         git fetch --tags -v
       fi
-      echo "::set-output name=pseudo-version::$(go run .)"
+      homedir="$(getent passwd $(id -u) | cut -d ":" -f 6)"
+      export GOCACHE=${homedir}/.cache/go-build
+      export GOPATH=${homedir}/go
+      export GOPRIVATE=github.com/edgelesssys
+      export GOMODCACHE=${homedir}/.cache/go-mod
+      pseudoVersion=$(go run .)
+      semanticVersion=$(go run . -semantic-version)
+      timestamp=$(go run . -print-timestamp)
+      branchName=$(go run . -print-branch)
+      echo "::set-output name=pseudoVersion::${pseudoVersion}"
+      echo "::set-output name=semanticVersion::${semanticVersion}"
+      echo "::set-output name=timestamp::${timestamp}"
+      echo "::set-output name=branchName::${branchName}"
     working-directory: hack/pseudo-version
-    shell: bash
+    shell: bash {0}

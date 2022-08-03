@@ -35,7 +35,7 @@ runs:
         tags: |
           type=raw,value=latest,enable={{is_default_branch}}
           type=raw,value=${{ inputs.pushTag }},enable=${{ '' != inputs.pushTag }}
-          type=raw,value=${{ steps.pseudo-version.outputs.pseudo-version }},enable=${{ '' != steps.pseudo-version.outputs.pseudo-version }}
+          type=raw,value=${{ steps.pseudo-version.outputs.pseudoVersion }},enable=${{ '' != steps.pseudo-version.outputs.pseudoVersion }}
           type=ref,event=branch
 
     - name: Set up Docker Buildx

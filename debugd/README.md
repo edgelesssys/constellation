@@ -68,17 +68,20 @@ With `cdbg` and `yq` installed in your path:
 For GCP, run the following command to get a list of all constellation debug images, sorted by their creation date:
 
 ```shell
-gcloud compute images list --filter="name~'constellation-coreos-debugd.+'" --sort-by=creationTimestamp --project constellation-images
+gcloud compute images list --filter="family~'constellation-debug-v.+'" --sort-by=creationTimestamp --project constellation-images
 ```
 
-Choose the newest debugd image with the naming scheme `constellation-coreos-debugd-<timestamp>`.
+The images are grouped by the Constellation release they were built for.
+Choose the newest debugd image for your release with the naming scheme `constellation-<commit-timestamp>`.
 
 ### debugd Azure Image
 
-For Azure, run the following command to get a list of all constellation debugd images, sorted by their creation date:
+Azure debug images are grouped by the Constellation release they were built for.
+Run the following command to get a list of all constellation debugd images for release v1.5.0, sorted by their creation date:
 
 ```shell
-az sig image-version list --resource-group constellation-images --gallery-name Constellation --gallery-image-definition constellation-coreos-debugd --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table
+RELEASE=v1.5.0
+az sig image-version list --resource-group constellation-images --gallery-name Constellation_Debug --gallery-image-definition ${RELEASE} --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table
 ```
 
 Choose the newest debugd image and copy the full URI.

@@ -3,6 +3,7 @@ package git
 import (
 	"errors"
 	"regexp"
+	"strings"
 	"time"
 
 	git "github.com/go-git/go-git/v5"
@@ -75,6 +76,28 @@ func (g *Git) FirstParentWithVersionTag() (revision string, versionTag string, e
 		return "", "", errors.New("no version tag found")
 	}
 	return revision, versionTag, nil
+}
+
+// ParsedBranchName returns the name of the current branch.
+// Special characters are replaced with "-", and the name is lowercased and trimmed to 49 characters.
+// This makes sure that the branch name is usable as a GCP image name.
+func (g *Git) ParsedBranchName() (string, error) {
+	commitRef, err := g.repo.Head()
+	if err != nil {
+		return "", err
+	}
+
+	rxp, err := regexp.Compile("[^a-zA-Z0-9-]+")
+	if err != nil {
+		return "", err
+	}
+
+	branch := strings.ToLower(rxp.ReplaceAllString(commitRef.Name().Short(), "-"))
+	if len(branch) > 49 {
+		branch = branch[:49]
+	}
+
+	return strings.TrimSuffix(branch, "-"), nil
 }
 
 // tagsByRevisionHash returns a map from revision hash to a list of associated tags.

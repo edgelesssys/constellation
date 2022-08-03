@@ -14,11 +14,6 @@ on:
       - "internal/grpc/**"
       - "internal/oid/**"
 
-# Abort runs of *this* workflow, if a new commit with the same ref is pushed.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build-join-service:
     runs-on: ubuntu-latest

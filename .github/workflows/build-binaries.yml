@@ -1,0 +1,38 @@
+# Build Constellation binaries as quality control
+name: Build Constellation binaries
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+
+# Abort runs of *this* workflow, if a new commit with the same ref is pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  build-binaries:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+
+      - name: Build the bootstrapper
+        id: build-bootstrapper
+        uses: ./.github/actions/build_bootstrapper
+      
+      - name: Build debugd
+        id: build-debugd
+        uses: ./.github/actions/build_debugd
+      
+      - name: Build disk-mapper
+        id: build-disk-mapper
+        uses: ./.github/actions/build_disk_mapper
+
+      - name: Build CLI
+        id: build-cli
+        uses: ./.github/actions/build_cli
