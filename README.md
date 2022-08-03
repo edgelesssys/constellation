@@ -19,6 +19,7 @@ Core components:
 
 Development components:
 
+* [3rdparty](3rdparty): Contains the third party dependencies used by Constellation
 * [conformance](conformance): Kubernetes conformance tests
 * [debugd](debugd): Debug daemon and client
 * [hack](hack): Development tools
@@ -30,7 +31,6 @@ Development components:
 Additional repositories:
 
 * [constellation-docs](https://github.com/edgelesssys/constellation-docs): End-user documentation
-* [constellation-coreos-assembler](https://github.com/edgelesssys/constellation-coreos-assembler): Build environment for CoreOS images with changes for Constellation
 * [constellation-fedora-coreos-config](https://github.com/edgelesssys/constellation-fedora-coreos-config): CoreOS build configuration with changes for Constellation
 * [edg-azuredisk-csi-driver](https://github.com/edgelesssys/edg-azuredisk-csi-driver): Azure CSI driver with encryption on node
 * [edg-gcp-compute-persistent-disk-csi-driver](https://github.com/edgelesssys/edg-gcp-compute-persistent-disk-csi-driver): GCP CSI driver with encryption on node
