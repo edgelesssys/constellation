@@ -56,7 +56,7 @@ var VersionConfigs map[ValidK8sVersion]KubernetesVersion = map[ValidK8sVersion]K
 		KubectlURL:        "https://storage.googleapis.com/kubernetes-release/release/v1.22.12/bin/linux/amd64/kubectl",
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
 		// TODO: use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
-		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:sha-2f6a5b07fc2d37f24f8ff725132f87584d627d8f",
+		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v22",
 		// CloudControllerManagerImageAzure is the CCM image used on Azure.
 		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.1.18",
 		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
@@ -75,7 +75,7 @@ var VersionConfigs map[ValidK8sVersion]KubernetesVersion = map[ValidK8sVersion]K
 		KubectlURL:        "https://storage.googleapis.com/kubernetes-release/release/v1.23.6/bin/linux/amd64/kubectl",
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
 		// TODO: use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
-		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:sha-2f6a5b07fc2d37f24f8ff725132f87584d627d8f",
+		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v23",
 		// CloudControllerManagerImageAzure is the CCM image used on Azure.
 		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.23.11",
 		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
@@ -94,7 +94,7 @@ var VersionConfigs map[ValidK8sVersion]KubernetesVersion = map[ValidK8sVersion]K
 		KubectlURL:        "https://storage.googleapis.com/kubernetes-release/release/v1.24.3/bin/linux/amd64/kubectl",
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
 		// TODO: use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
-		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:sha-2f6a5b07fc2d37f24f8ff725132f87584d627d8f",
+		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v24",
 		// CloudControllerManagerImageAzure is the CCM image used on Azure.
 		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.24.3",
 		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
@@ -114,7 +114,7 @@ type KubernetesVersion struct {
 	KubeletURL                       string // k8s version dependency.
 	KubeadmURL                       string // k8s version dependency.
 	KubectlURL                       string // k8s version dependency.
-	CloudControllerManagerImageGCP   string // k8s compatibility policy unknown. Using self-built image until resolved: https://github.com/kubernetes/cloud-provider-gcp/issues/289
+	CloudControllerManagerImageGCP   string // Using self-built image until resolved: https://github.com/kubernetes/cloud-provider-gcp/issues/289
 	CloudControllerManagerImageAzure string // k8s version dependency.
 	CloudNodeManagerImageAzure       string // k8s version dependency. Same version as above.
 	ClusterAutoscalerImage           string // Matches k8s versioning scheme.

@@ -1,0 +1,78 @@
+name: Build and Upload GCP CCM container image
+env:
+  REGISTRY: ghcr.io
+on: [workflow_dispatch]
+
+# Abort runs of *this* workflow, if a new commit with the same ref is pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-ccm-gcp:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        version: [v24.0.0, v23.0.0, v22.1.0]
+        include:
+          - version: v24.0.0
+            latest: true
+    steps:
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        with:
+          repository: 'kubernetes/cloud-provider-gcp'
+          ref: refs/tags/ccm/${{ matrix.version }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@b2391d37b4157fa4aa2e118d643f417910ff3242
+        with:
+          images: |
+            ${{ env.REGISTRY }}/edgelesssys/cloud-provider-gcp
+          flavor: |
+            latest=${{ matrix.latest || false }}
+          tags: |
+             type=semver,pattern=v{{version}},value=${{ matrix.version }}
+             type=semver,pattern=v{{major}}.{{minor}},value=${{ matrix.version }}
+             type=semver,pattern=v{{major}},value=${{ matrix.version }}
+      - name: Set up Docker Buildx
+        id: docker-setup
+        uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6
+      - name: Log in to the Container registry
+        id: docker-login
+        uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install bazelisk
+        run: |
+          curl -LO "https://github.com/bazelbuild/bazelisk/releases/download/v1.12.0/bazelisk-linux-amd64"
+          mkdir -p "${GITHUB_WORKSPACE}/bin/"
+          mv bazelisk-linux-amd64 "${GITHUB_WORKSPACE}/bin/bazel"
+          chmod +x "${GITHUB_WORKSPACE}/bin/bazel"
+
+      - name: Build CCM
+        run: |
+          "${GITHUB_WORKSPACE}/bin/bazel" build //cmd/cloud-controller-manager:cloud-controller-manager
+      - name: Copy CCM
+        run: |
+          cp ./bazel-bin/cmd/cloud-controller-manager/linux_amd64_pure_stripped/cloud-controller-manager ./cloud-controller-manager
+      - name: Prepare Dockerfile
+        run: |
+          cat > Dockerfile <<EOF
+          FROM scratch
+          COPY ./cloud-controller-manager /cloud-controller-manager
+          EOF
+      - name: Build and push container image
+        id: build
+        uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
