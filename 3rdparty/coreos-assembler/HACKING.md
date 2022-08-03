@@ -5,21 +5,19 @@ Constellation uses CoreOS as a base for OS images. While the images are mostly u
 Checkout the CoreOS assembler source code [from the upstream repo](https://github.com/coreos/coreos-assembler) using the commit ID specified in the [Makefile](Makefile)
 
 ```shell-session
-mkdir build && cd build
-git clone https://github.com/coreos/coreos-assembler
-git checkout <HASH>
+make clone
 ```
 
 Apply the patch:
 
 ```shell-session
-patch -p1 < ../../verity.patch
+make patch
 ```
 
 Now you can make changes to the coreos-assembler and compile it using the included `Dockerfile`:
 
 ```shell-session
-docker build -t <TAG> .
+make containerimage
 ```
 
 Once you are done, create a new patch file (within `3rdparty/coreos-assembler/build/coreos-assembler`):
