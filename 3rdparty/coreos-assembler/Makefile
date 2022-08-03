@@ -5,8 +5,8 @@ UPSTREAM          ?= https://github.com/coreos/coreos-assembler
 COMMIT            ?= b8f61207c7a4ce345a1f136823dac6c628086273
 SRC_PATH           = $(CURDIR)
 BASE_PATH         ?= $(SRC_PATH)
-BUILDDIR		  ?= $(BASE_PATH)/build
-CLONEDIR	      ?= $(BUILDDIR)/coreos-assembler
+BUILDDIR          ?= $(BASE_PATH)/build
+CLONEDIR          ?= $(BUILDDIR)/coreos-assembler
 
 
 .PHONY: all clone patch containerimage clean
