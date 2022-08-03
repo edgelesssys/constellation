@@ -34,6 +34,7 @@ go 1.18
 use (
 	.
 	./hack
+	./operators/constellation-node-operator
 )
 ```
 
