@@ -13,7 +13,7 @@ on:
         required: true
 
 jobs:
- build-coreos-image:
+  build-coreos-image:
     name: 'Build CoreOS using customized COSA'
     runs-on: [self-hosted, linux, nested-virt]
     permissions:
@@ -23,28 +23,24 @@ jobs:
       SHELL: /bin/bash
     steps:
       - name: Checkout
-        id: checkout
         uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
         with:
           submodules: recursive
           token: ${{ secrets.CI_GITHUB_REPOSITORY }}
 
       - name: Build bootstrapper
-        id: build-bootstrapper
         if: ${{ inputs.debug == false }}
         uses: ./.github/actions/build_bootstrapper
         with:
           outputPath: ${{ github.workspace }}/build/bootstrapper
 
       - name: Build debugd
-        id: build-debugd
         if: ${{ inputs.debug == true }}
         uses: ./.github/actions/build_debugd
         with:
           outputPath: ${{ github.workspace }}/build/bootstrapper
 
       - name: Build disk-mapper
-        id: build-disk-mapper
         uses: ./.github/actions/build_disk_mapper
         with:
           outputPath: ${{ github.workspace }}/build/disk-mapper
@@ -54,7 +50,6 @@ jobs:
         uses: ./.github/actions/pseudo_version
 
       - name: Log in to the Container registry
-        id: docker-login
         uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b
         with:
           registry: ghcr.io
@@ -62,7 +57,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Azure CLI
-        id: install-azure-cli
         shell: bash
         run: |
           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
@@ -78,7 +72,6 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Store GH token to be mounted by cosa
-        id: store-gh-token
         shell: bash
         run: echo "machine github.com login api password ${{ secrets.CI_GITHUB_REPOSITORY }}" > /tmp/.netrc
 
@@ -91,21 +84,20 @@ jobs:
       #  GCP
       #    image family and image name may include lowercase alphanumeric characters and dashes. Must not end or begin with a dash
       - name: Configure input variables
-        id: configure-variables
         shell: bash
         run: |
           timestamp=${{ steps.version.outputs.timestamp }}
           semver=${{ steps.version.outputs.semanticVersion }}
           pseudover=${{ steps.version.outputs.pseudoVersion }}
           echo "azureImageName=constellation-${pseudover//./-}" >> $GITHUB_ENV
-          if [ "${{ startsWith(github.ref, 'refs/heads/release/') && (inputs.buildDebug == false) }}" = true ]
+          if [ "${{ startsWith(github.ref, 'refs/heads/release/') && (inputs.debug == false) }}" = true ]
           then
             echo "gcpImageName=constellation-${semver//./-}" >> $GITHUB_ENV
             echo "gcpImageFamily=constellation" >> $GITHUB_ENV
             echo "azureGalleryName=Constellation" >> $GITHUB_ENV
             echo "azureImageDefinition=constellation" >> $GITHUB_ENV
             echo "azureImageVersion=${semver:1}" >> $GITHUB_ENV
-          elif [ "${{ ((github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/')) && (inputs.buildDebug == true) }}" = true ]
+          elif [ "${{ ((github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/')) && (inputs.debug == true) }}" = true ]
           then
             echo "gcpImageName=constellation-debug-${{ steps.version.outputs.timestamp }}" >> $GITHUB_ENV
             echo "gcpImageFamily=constellation-debug-${semver//./-}" >> $GITHUB_ENV
@@ -113,8 +105,8 @@ jobs:
             echo "azureImageDefinition=${semver}" >> $GITHUB_ENV
             echo "azureImageVersion=${timestamp:0:4}.${timestamp:4:4}.${timestamp:8}" >> $GITHUB_ENV
           else
-            echo "gcpImageName=constellation-${{ steps.version.outputs.branchName }}" >> $GITHUB_ENV
-            echo "gcpImageFamily=constellation-${{ steps.version.outputs.timestamp }}" >> $GITHUB_ENV
+            echo "gcpImageName=constellation-${{ steps.version.outputs.timestamp }}" >> $GITHUB_ENV
+            echo "gcpImageFamily=constellation-${{ steps.version.outputs.branchName }}" >> $GITHUB_ENV
             echo "azureGalleryName=Constellation_Testing" >> $GITHUB_ENV
             echo "azureImageDefinition=${{ steps.version.outputs.branchName }}" >> $GITHUB_ENV
             echo "azureImageVersion=${timestamp:0:4}.${timestamp:4:4}.${timestamp:8}" >> $GITHUB_ENV
