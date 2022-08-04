@@ -10,7 +10,7 @@ import (
 )
 
 // NewImagePullSecret creates a new k8s.Secret from the config for authenticating when pulling images.
-func NewImagePullSecret() k8s.Secret {
+func NewImagePullSecret(namespace string) k8s.Secret {
 	base64EncodedSecret := base64.StdEncoding.EncodeToString(
 		[]byte(fmt.Sprintf("%s:%s", secrets.PullSecretUser, secrets.PullSecretToken)),
 	)
@@ -24,7 +24,7 @@ func NewImagePullSecret() k8s.Secret {
 		},
 		ObjectMeta: meta.ObjectMeta{
 			Name:      secrets.PullSecretName,
-			Namespace: "kube-system",
+			Namespace: namespace,
 		},
 		StringData: map[string]string{".dockerconfigjson": pullSecretDockerCfgJSON},
 		Type:       "kubernetes.io/dockerconfigjson",

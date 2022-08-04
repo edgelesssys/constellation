@@ -13,6 +13,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+const kmsNamespace = "kube-system"
+
 type kmsDeployment struct {
 	ServiceAccount     k8s.ServiceAccount
 	Service            k8s.Service
@@ -43,7 +45,7 @@ func NewKMSDeployment(csp string, config KMSConfig) *kmsDeployment {
 			},
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "kms",
-				Namespace: "kube-system",
+				Namespace: kmsNamespace,
 			},
 		},
 		Service: k8s.Service{
@@ -53,7 +55,7 @@ func NewKMSDeployment(csp string, config KMSConfig) *kmsDeployment {
 			},
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "kms",
-				Namespace: "kube-system",
+				Namespace: kmsNamespace,
 			},
 			Spec: k8s.ServiceSpec{
 				Type: k8s.ServiceTypeClusterIP,
@@ -106,7 +108,7 @@ func NewKMSDeployment(csp string, config KMSConfig) *kmsDeployment {
 				{
 					Kind:      "ServiceAccount",
 					Name:      "kms",
-					Namespace: "kube-system",
+					Namespace: kmsNamespace,
 				},
 			},
 		},
@@ -120,7 +122,7 @@ func NewKMSDeployment(csp string, config KMSConfig) *kmsDeployment {
 					"k8s-app": "kms",
 				},
 				Name:      "kms",
-				Namespace: "kube-system",
+				Namespace: kmsNamespace,
 			},
 			Spec: apps.DeploymentSpec{
 				Selector: &meta.LabelSelector{
@@ -239,7 +241,7 @@ func NewKMSDeployment(csp string, config KMSConfig) *kmsDeployment {
 			},
 			ObjectMeta: meta.ObjectMeta{
 				Name:      constants.ConstellationMasterSecretStoreName,
-				Namespace: "kube-system",
+				Namespace: kmsNamespace,
 			},
 			Data: map[string][]byte{
 				constants.ConstellationMasterSecretKey:  config.MasterSecret,
@@ -247,7 +249,7 @@ func NewKMSDeployment(csp string, config KMSConfig) *kmsDeployment {
 			},
 			Type: "Opaque",
 		},
-		ImagePullSecret: NewImagePullSecret(),
+		ImagePullSecret: NewImagePullSecret(kmsNamespace),
 	}
 }
 

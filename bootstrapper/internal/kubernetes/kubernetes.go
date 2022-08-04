@@ -207,6 +207,13 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("failed to setup verification service: %w", err)
 	}
 
+	// TODO: enable operator deployment on kubernetes 1.24 once https://github.com/medik8s/node-maintenance-operator/issues/49 is fixed
+	if k8sVersion != versions.V1_24 {
+		if err := k.setupOperators(ctx); err != nil {
+			return nil, fmt.Errorf("setting up operators: %w", err)
+		}
+	}
+
 	if k.cloudProvider == "gcp" {
 		if err := k.clusterUtil.SetupGCPGuestAgent(k.client, resources.NewGCPGuestAgentDaemonset()); err != nil {
 			return nil, fmt.Errorf("failed to setup gcp guest agent: %w", err)
@@ -382,6 +389,28 @@ func (k *KubeWrapper) setupK8sVersionConfigMap(ctx context.Context, k8sVersion v
 	// These types don't implement our custom Marshaler interface.
 	if err := k.client.CreateConfigMap(ctx, config); err != nil {
 		return fmt.Errorf("apply in KubeWrapper.setupK8sVersionConfigMap(..) failed with: %v", err)
+	}
+
+	return nil
+}
+
+// setupOperators deploys the operator lifecycle manager and subscriptions to operators.
+func (k *KubeWrapper) setupOperators(ctx context.Context) error {
+	if err := k.clusterUtil.SetupOperatorLifecycleManager(ctx, k.client, &resources.OperatorLifecycleManagerCRDs{}, &resources.OperatorLifecycleManager{}, resources.OLMCRDNames); err != nil {
+		return fmt.Errorf("setting up OLM: %w", err)
+	}
+
+	if err := k.clusterUtil.SetupNodeMaintenanceOperator(k.client, resources.NewNodeMaintenanceOperatorDeployment()); err != nil {
+		return fmt.Errorf("setting up node maintenance operator: %w", err)
+	}
+
+	uid, err := k.providerMetadata.UID(ctx)
+	if err != nil {
+		return fmt.Errorf("retrieving constellation UID: %w", err)
+	}
+
+	if err := k.clusterUtil.SetupNodeOperator(ctx, k.client, resources.NewNodeOperatorDeployment(k.cloudProvider, uid)); err != nil {
+		return fmt.Errorf("setting up constellation node operator: %w", err)
 	}
 
 	return nil

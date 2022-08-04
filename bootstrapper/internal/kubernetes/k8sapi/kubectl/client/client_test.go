@@ -16,12 +16,15 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8s "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsclientv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/meta/testrestmapper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -375,4 +378,105 @@ func TestAddNodeSelectorsToDeployment(t *testing.T) {
 			require.NoError(err)
 		})
 	}
+}
+
+func TestWaitForCRD(t *testing.T) {
+	testCases := map[string]struct {
+		crd      string
+		events   []watch.Event
+		watchErr error
+		wantErr  bool
+	}{
+		"Success": {
+			crd: "test-crd",
+			events: []watch.Event{
+				{
+					Type: watch.Added,
+					Object: &apiextensionsv1.CustomResourceDefinition{
+						Status: apiextensionsv1.CustomResourceDefinitionStatus{
+							Conditions: []apiextensionsv1.CustomResourceDefinitionCondition{
+								{
+									Type:   apiextensionsv1.Established,
+									Status: apiextensionsv1.ConditionTrue,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"watch error": {
+			crd:      "test-crd",
+			watchErr: errors.New("watch error"),
+			wantErr:  true,
+		},
+		"crd deleted": {
+			crd:     "test-crd",
+			events:  []watch.Event{{Type: watch.Deleted}},
+			wantErr: true,
+		},
+		"other error": {
+			crd:     "test-crd",
+			events:  []watch.Event{{Type: watch.Error}},
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			client := Client{
+				apiextensionClient: &stubCRDWatcher{events: tc.events, watchErr: tc.watchErr},
+			}
+			err := client.WaitForCRD(context.Background(), tc.crd)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			require.NoError(err)
+		})
+	}
+}
+
+type stubCRDWatcher struct {
+	events   []watch.Event
+	watchErr error
+
+	apiextensionsclientv1.ApiextensionsV1Interface
+}
+
+func (w *stubCRDWatcher) CustomResourceDefinitions() apiextensionsclientv1.CustomResourceDefinitionInterface {
+	return &stubCustomResourceDefinitions{
+		events:   w.events,
+		watchErr: w.watchErr,
+	}
+}
+
+type stubCustomResourceDefinitions struct {
+	events   []watch.Event
+	watchErr error
+
+	apiextensionsclientv1.CustomResourceDefinitionInterface
+}
+
+func (c *stubCustomResourceDefinitions) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+	eventChan := make(chan watch.Event, len(c.events))
+	for _, event := range c.events {
+		eventChan <- event
+	}
+	return &stubCRDWatch{events: eventChan}, c.watchErr
+}
+
+type stubCRDWatch struct {
+	events chan watch.Event
+}
+
+func (w *stubCRDWatch) Stop() {
+	close(w.events)
+}
+
+func (w *stubCRDWatch) ResultChan() <-chan watch.Event {
+	return w.events
 }

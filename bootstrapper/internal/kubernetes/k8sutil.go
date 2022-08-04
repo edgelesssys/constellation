@@ -23,6 +23,9 @@ type clusterUtil interface {
 	SetupKMS(kubectl k8sapi.Client, kmsConfiguration resources.Marshaler) error
 	SetupVerificationService(kubectl k8sapi.Client, verificationServiceConfiguration resources.Marshaler) error
 	SetupGCPGuestAgent(kubectl k8sapi.Client, gcpGuestAgentConfiguration resources.Marshaler) error
+	SetupOperatorLifecycleManager(ctx context.Context, kubectl k8sapi.Client, olmCRDs, olmConfiguration resources.Marshaler, crdNames []string) error
+	SetupNodeMaintenanceOperator(kubectl k8sapi.Client, nodeMaintenanceOperatorConfiguration resources.Marshaler) error
+	SetupNodeOperator(ctx context.Context, kubectl k8sapi.Client, nodeOperatorConfiguration resources.Marshaler) error
 	StartKubelet() error
 	RestartKubelet() error
 	FixCilium(nodeNameK8s string, log *logger.Logger)

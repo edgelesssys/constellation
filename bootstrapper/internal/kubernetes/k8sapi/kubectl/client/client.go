@@ -7,10 +7,13 @@ import (
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsclientv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -21,8 +24,9 @@ const fieldManager = "constellation-bootstrapper"
 
 // Client implements k8sapi.Client interface and talks to the Kubernetes API.
 type Client struct {
-	clientset kubernetes.Interface
-	builder   *resource.Builder
+	clientset          kubernetes.Interface
+	apiextensionClient apiextensionsclientv1.ApiextensionsV1Interface
+	builder            *resource.Builder
 }
 
 // New creates a new Client, talking to the real k8s API.
@@ -36,13 +40,18 @@ func New(config []byte) (*Client, error) {
 		return nil, fmt.Errorf("creating k8s client from kubeconfig: %w", err)
 	}
 
+	apiextensionClient, err := apiextensionsclientv1.NewForConfig(clientConfig)
+	if err != nil {
+		return nil, fmt.Errorf("creating api extension client from kubeconfig: %w", err)
+	}
+
 	restClientGetter, err := newRESTClientGetter(config)
 	if err != nil {
 		return nil, fmt.Errorf("creating k8s RESTClientGetter from kubeconfig: %w", err)
 	}
 	builder := resource.NewBuilder(restClientGetter).Unstructured()
 
-	return &Client{clientset: clientset, builder: builder}, nil
+	return &Client{clientset: clientset, apiextensionClient: apiextensionClient, builder: builder}, nil
 }
 
 // ApplyOneObject uses server-side apply to send unstructured JSON blobs to the server and let it handle the core logic.
@@ -146,4 +155,38 @@ func (c *Client) AddNodeSelectorsToDeployment(ctx context.Context, selectors map
 		return err
 	}
 	return nil
+}
+
+// WaitForCRD waits for the given CRD to be established.
+func (c *Client) WaitForCRD(ctx context.Context, crd string) error {
+	watcher, err := c.apiextensionClient.CustomResourceDefinitions().Watch(ctx, metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("metadata.name=%s", crd),
+	})
+	if err != nil {
+		return err
+	}
+	defer watcher.Stop()
+	for event := range watcher.ResultChan() {
+		switch event.Type {
+		case watch.Added, watch.Modified:
+			crd := event.Object.(*apiextensionsv1.CustomResourceDefinition)
+			if crdHasCondition(crd.Status.Conditions, apiextensionsv1.Established) {
+				return nil
+			}
+		case watch.Deleted:
+			return fmt.Errorf("crd %q deleted", crd)
+		case watch.Error:
+			return fmt.Errorf("crd %q error: %v", crd, event.Object)
+		}
+	}
+	return fmt.Errorf("crd %q not established", crd)
+}
+
+func crdHasCondition(conditions []apiextensionsv1.CustomResourceDefinitionCondition, conditionType apiextensionsv1.CustomResourceDefinitionConditionType) bool {
+	for _, condition := range conditions {
+		if condition.Type == conditionType && condition.Status == apiextensionsv1.ConditionTrue {
+			return true
+		}
+	}
+	return false
 }

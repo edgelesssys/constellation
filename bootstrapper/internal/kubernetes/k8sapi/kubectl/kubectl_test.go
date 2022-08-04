@@ -23,6 +23,7 @@ type stubClient struct {
 	createConfigMapErr             error
 	addTolerationsToDeploymentErr  error
 	addNodeSelectorToDeploymentErr error
+	waitForCRDErr                  error
 }
 
 func (s *stubClient) ApplyOneObject(info *resource.Info, forceConflicts bool) error {
@@ -53,16 +54,22 @@ type stubClientGenerator struct {
 	createConfigMapErr             error
 	addTolerationsToDeploymentErr  error
 	addNodeSelectorToDeploymentErr error
+	waitForCRDErr                  error
+}
+
+func (s *stubClient) WaitForCRD(ctx context.Context, crd string) error {
+	return s.waitForCRDErr
 }
 
 func (s *stubClientGenerator) NewClient(kubeconfig []byte) (Client, error) {
 	return &stubClient{
-		s.applyOneObjectErr,
-		s.getObjectsInfos,
-		s.getObjectsErr,
-		s.createConfigMapErr,
-		s.addTolerationsToDeploymentErr,
-		s.addNodeSelectorToDeploymentErr,
+		applyOneObjectErr:              s.applyOneObjectErr,
+		getObjectsInfos:                s.getObjectsInfos,
+		getObjectsErr:                  s.getObjectsErr,
+		createConfigMapErr:             s.createConfigMapErr,
+		addTolerationsToDeploymentErr:  s.addTolerationsToDeploymentErr,
+		addNodeSelectorToDeploymentErr: s.addNodeSelectorToDeploymentErr,
+		waitForCRDErr:                  s.waitForCRDErr,
 	}, s.newClientErr
 }
 

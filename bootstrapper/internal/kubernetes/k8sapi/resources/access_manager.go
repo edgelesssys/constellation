@@ -10,6 +10,8 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const accessManagerNamespace = "kube-system"
+
 // accessManagerDeployment holds the configuration for the SSH user creation pods. User/Key definitions are stored in the ConfigMap, and the manager is deployed on each node by the DaemonSet.
 type accessManagerDeployment struct {
 	ConfigMap       k8s.ConfigMap
@@ -35,7 +37,7 @@ func NewAccessManagerDeployment(sshUsers map[string]string) *accessManagerDeploy
 					"app.kubernetes.io/managed-by": "Constellation",
 				},
 				Name:      "constellation-access-manager",
-				Namespace: "kube-system",
+				Namespace: accessManagerNamespace,
 			},
 			AutomountServiceAccountToken: proto.Bool(true),
 		},
@@ -46,7 +48,7 @@ func NewAccessManagerDeployment(sshUsers map[string]string) *accessManagerDeploy
 			},
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "ssh-users",
-				Namespace: "kube-system",
+				Namespace: accessManagerNamespace,
 			},
 			Data: sshUsers,
 		},
@@ -57,7 +59,7 @@ func NewAccessManagerDeployment(sshUsers map[string]string) *accessManagerDeploy
 			},
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "constellation-access-manager",
-				Namespace: "kube-system",
+				Namespace: accessManagerNamespace,
 				Labels: map[string]string{
 					"app.kubernetes.io/instance": "constellation",
 					"app.kubernetes.io/name":     "constellation-access-manager",
@@ -148,7 +150,7 @@ func NewAccessManagerDeployment(sshUsers map[string]string) *accessManagerDeploy
 					"app.kubernetes.io/managed-by": "Constellation",
 				},
 				Name:      "constellation-access-manager",
-				Namespace: "kube-system",
+				Namespace: accessManagerNamespace,
 			},
 			Rules: []rbac.PolicyRule{
 				{
@@ -177,7 +179,7 @@ func NewAccessManagerDeployment(sshUsers map[string]string) *accessManagerDeploy
 					"app.kubernetes.io/managed-by": "Constellation",
 				},
 				Name:      "constellation-access-manager",
-				Namespace: "kube-system",
+				Namespace: accessManagerNamespace,
 			},
 			RoleRef: rbac.RoleRef{
 				APIGroup: "rbac.authorization.k8s.io",
@@ -188,11 +190,11 @@ func NewAccessManagerDeployment(sshUsers map[string]string) *accessManagerDeploy
 				{
 					Kind:      "ServiceAccount",
 					Name:      "constellation-access-manager",
-					Namespace: "kube-system",
+					Namespace: accessManagerNamespace,
 				},
 			},
 		},
-		ImagePullSecret: NewImagePullSecret(),
+		ImagePullSecret: NewImagePullSecret(accessManagerNamespace),
 	}
 }
 

@@ -36,6 +36,8 @@ const (
 	kubeConfig = "/etc/kubernetes/admin.conf"
 	// kubeletStartTimeout is the maximum time given to the kubelet service to (re)start.
 	kubeletStartTimeout = 10 * time.Minute
+	// crdTimeout is the maximum time given to the CRDs to be created.
+	crdTimeout = 15 * time.Second
 )
 
 var providerIDRegex = regexp.MustCompile(`^azure:///subscriptions/([^/]+)/resourceGroups/([^/]+)/providers/Microsoft.Compute/virtualMachineScaleSets/([^/]+)/virtualMachines/([^/]+)$`)
@@ -47,6 +49,7 @@ type Client interface {
 	CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error
 	AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error
 	AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error
+	WaitForCRDs(ctx context.Context, crds []string) error
 }
 
 type installer interface {
@@ -364,6 +367,26 @@ func (k *KubernetesUtil) SetupKMS(kubectl Client, kmsConfiguration resources.Mar
 // SetupVerificationService deploys the verification service.
 func (k *KubernetesUtil) SetupVerificationService(kubectl Client, verificationServiceConfiguration resources.Marshaler) error {
 	return kubectl.Apply(verificationServiceConfiguration, true)
+}
+
+func (k *KubernetesUtil) SetupOperatorLifecycleManager(ctx context.Context, kubectl Client, olmCRDs, olmConfiguration resources.Marshaler, crdNames []string) error {
+	if err := kubectl.Apply(olmCRDs, true); err != nil {
+		return fmt.Errorf("applying OLM CRDs: %w", err)
+	}
+	crdReadyTimeout, cancel := context.WithTimeout(ctx, crdTimeout)
+	defer cancel()
+	if err := kubectl.WaitForCRDs(crdReadyTimeout, crdNames); err != nil {
+		return fmt.Errorf("waiting for OLM CRDs: %w", err)
+	}
+	return kubectl.Apply(olmConfiguration, true)
+}
+
+func (k *KubernetesUtil) SetupNodeMaintenanceOperator(kubectl Client, nodeMaintenanceOperatorConfiguration resources.Marshaler) error {
+	return kubectl.Apply(nodeMaintenanceOperatorConfiguration, true)
+}
+
+func (k *KubernetesUtil) SetupNodeOperator(ctx context.Context, kubectl Client, nodeOperatorConfiguration resources.Marshaler) error {
+	return kubectl.Apply(nodeOperatorConfiguration, true)
 }
 
 // JoinCluster joins existing Kubernetes cluster using kubeadm join.

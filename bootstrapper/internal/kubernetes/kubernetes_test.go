@@ -513,6 +513,9 @@ type stubClusterUtil struct {
 	setupAccessManagerError          error
 	setupVerificationServiceErr      error
 	setupGCPGuestAgentErr            error
+	setupOLMErr                      error
+	setupNMOErr                      error
+	setupNodeOperatorErr             error
 	joinClusterErr                   error
 	startKubeletErr                  error
 	restartKubeletErr                error
@@ -566,6 +569,18 @@ func (s *stubClusterUtil) SetupVerificationService(kubectl k8sapi.Client, verifi
 	return s.setupVerificationServiceErr
 }
 
+func (s *stubClusterUtil) SetupOperatorLifecycleManager(ctx context.Context, kubectl k8sapi.Client, olmCRDs, olmConfiguration resources.Marshaler, crdNames []string) error {
+	return s.setupOLMErr
+}
+
+func (s *stubClusterUtil) SetupNodeMaintenanceOperator(kubectl k8sapi.Client, nodeMaintenanceOperatorConfiguration resources.Marshaler) error {
+	return s.setupNMOErr
+}
+
+func (s *stubClusterUtil) SetupNodeOperator(ctx context.Context, kubectl k8sapi.Client, nodeOperatorConfiguration resources.Marshaler) error {
+	return s.setupNodeOperatorErr
+}
+
 func (s *stubClusterUtil) JoinCluster(ctx context.Context, joinConfig []byte, log *logger.Logger) error {
 	s.joinConfigs = append(s.joinConfigs, joinConfig)
 	return s.joinClusterErr
@@ -607,6 +622,7 @@ type stubKubectl struct {
 	createConfigMapErr               error
 	AddTolerationsToDeploymentErr    error
 	AddTNodeSelectorsToDeploymentErr error
+	waitForCRDsErr                   error
 
 	resources   []resources.Marshaler
 	kubeconfigs [][]byte
@@ -631,6 +647,10 @@ func (s *stubKubectl) AddTolerationsToDeployment(ctx context.Context, toleration
 
 func (s *stubKubectl) AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error {
 	return s.AddTNodeSelectorsToDeploymentErr
+}
+
+func (s *stubKubectl) WaitForCRDs(ctx context.Context, crds []string) error {
+	return s.waitForCRDsErr
 }
 
 type stubKubeconfigReader struct {

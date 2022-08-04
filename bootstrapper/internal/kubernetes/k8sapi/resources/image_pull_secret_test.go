@@ -7,7 +7,8 @@ import (
 )
 
 func TestImagePullSecret(t *testing.T) {
-	imgPullSec := NewImagePullSecret()
+	imgPullSec := NewImagePullSecret("namespace")
 	_, err := imgPullSec.Marshal()
 	assert.NoError(t, err)
+	assert.Equal(t, "namespace", imgPullSec.Namespace)
 }

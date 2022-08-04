@@ -22,6 +22,8 @@ type Client interface {
 	CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error
 	AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error
 	AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error
+	// WaitForCRD waits for the given CRD to be established.
+	WaitForCRD(ctx context.Context, crd string) error
 }
 
 // clientGenerator can generate new clients from a kubeconfig.
@@ -109,5 +111,21 @@ func (k *Kubectl) AddNodeSelectorsToDeployment(ctx context.Context, selectors ma
 		return err
 	}
 
+	return nil
+}
+
+// WaitForCRD waits for a list of CRDs to be established.
+func (k *Kubectl) WaitForCRDs(ctx context.Context, crds []string) error {
+	client, err := k.clientGenerator.NewClient(k.kubeconfig)
+	if err != nil {
+		return err
+	}
+
+	for _, crd := range crds {
+		err = client.WaitForCRD(ctx, crd)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
