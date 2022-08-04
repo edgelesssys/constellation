@@ -103,20 +103,17 @@ func (k *KubeWrapper) InitCluster(
 		if err != nil {
 			return nil, fmt.Errorf("retrieving own instance metadata failed: %w", err)
 		}
-		for _, ip := range instance.PrivateIPs {
-			validIPs = append(validIPs, net.ParseIP(ip))
+		if instance.VPCIP != "" {
+			validIPs = append(validIPs, net.ParseIP(instance.VPCIP))
 		}
-		for _, ip := range instance.PublicIPs {
-			validIPs = append(validIPs, net.ParseIP(ip))
+		if instance.PublicIP != "" {
+			validIPs = append(validIPs, net.ParseIP(instance.PublicIP))
 		}
 		nodeName = k8sCompliantHostname(instance.Name)
 		providerID = instance.ProviderID
-		if len(instance.PrivateIPs) > 0 {
-			nodeIP = instance.PrivateIPs[0]
-		}
-		if len(instance.PublicIPs) > 0 {
-			publicIP = instance.PublicIPs[0]
-		}
+		nodeIP = instance.VPCIP
+		publicIP = instance.PublicIP
+
 		if len(instance.AliasIPRanges) > 0 {
 			nodePodCIDR = instance.AliasIPRanges[0]
 		}
@@ -253,9 +250,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		}
 		providerID = instance.ProviderID
 		nodeName = instance.Name
-		if len(instance.PrivateIPs) > 0 {
-			nodeInternalIP = instance.PrivateIPs[0]
-		}
+		nodeInternalIP = instance.VPCIP
 	}
 	nodeName = k8sCompliantHostname(nodeName)
 

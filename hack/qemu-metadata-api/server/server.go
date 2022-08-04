@@ -73,16 +73,14 @@ func (s *Server) listSelf(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, peer := range peers {
-		for _, ip := range peer.PublicIPs {
-			if ip == remoteIP {
-				w.Header().Set("Content-Type", "application/json")
-				if err := json.NewEncoder(w).Encode(peer); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-				log.Infof("Request successful")
+		if peer.PublicIP == remoteIP {
+			w.Header().Set("Content-Type", "application/json")
+			if err := json.NewEncoder(w).Encode(peer); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			log.Infof("Request successful")
+			return
 		}
 	}
 
@@ -178,7 +176,7 @@ func (s *Server) exportPCRs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, peer := range peers {
-		if peer.PublicIPs[0] == remoteIP {
+		if peer.PublicIP == remoteIP {
 			nodeName = peer.Name
 		}
 	}
@@ -225,8 +223,8 @@ func (s *Server) listAll() ([]metadata.InstanceMetadata, error) {
 		peers = append(peers, metadata.InstanceMetadata{
 			Name:       lease.Hostname,
 			Role:       instanceRole,
-			PrivateIPs: []string{lease.IPaddr},
-			PublicIPs:  []string{lease.IPaddr},
+			VPCIP:      lease.IPaddr,
+			PublicIP:   lease.IPaddr,
 			ProviderID: "qemu:///hostname/" + lease.Hostname,
 		})
 	}

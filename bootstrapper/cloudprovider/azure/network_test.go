@@ -216,6 +216,7 @@ func TestGetScaleSetVMPublicIPAddresses(t *testing.T) {
 					{
 						Name: to.StringPtr("ip-config-name"),
 						Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+							Primary: to.BoolPtr(true),
 							PublicIPAddress: &armnetwork.PublicIPAddress{
 								ID: to.StringPtr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Network/publicIPAddresses/public-ip-name"),
 							},
@@ -244,7 +245,7 @@ func TestGetScaleSetVMPublicIPAddresses(t *testing.T) {
 		networkInterfacesMutator func(*[]armnetwork.Interface)
 		networkInterfaces        []armnetwork.Interface
 		publicIPAddressesAPI     publicIPAddressesAPI
-		wantIPs                  []string
+		wantIP                   string
 		wantErr                  bool
 	}{
 		"retrieval works": {
@@ -258,7 +259,7 @@ func TestGetScaleSetVMPublicIPAddresses(t *testing.T) {
 				},
 			}},
 			networkInterfaces: newNetworkInterfaces(),
-			wantIPs:           []string{"192.0.2.1", "192.0.2.1"},
+			wantIP:            "192.0.2.1",
 		},
 		"retrieval works for no valid interfaces": {
 			publicIPAddressesAPI: &stubPublicIPAddressesAPI{getVirtualMachineScaleSetPublicIPAddressResponse: armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResponse{
@@ -304,14 +305,14 @@ func TestGetScaleSetVMPublicIPAddresses(t *testing.T) {
 				publicIPAddressesAPI: tc.publicIPAddressesAPI,
 			}
 
-			ips, err := metadata.getScaleSetVMPublicIPAddresses(context.Background(), "resource-group", "scale-set-name", "instance-id", tc.networkInterfaces)
+			ips, err := metadata.getScaleSetVMPublicIPAddress(context.Background(), "resource-group", "scale-set-name", "instance-id", tc.networkInterfaces)
 
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
-			assert.Equal(tc.wantIPs, ips)
+			assert.Equal(tc.wantIP, ips)
 		})
 	}
 }
@@ -319,7 +320,7 @@ func TestGetScaleSetVMPublicIPAddresses(t *testing.T) {
 func TestExtractPrivateIPs(t *testing.T) {
 	testCases := map[string]struct {
 		networkInterfaces []armnetwork.Interface
-		wantIPs           []string
+		wantIP            string
 	}{
 		"extraction works": {
 			networkInterfaces: []armnetwork.Interface{
@@ -328,14 +329,20 @@ func TestExtractPrivateIPs(t *testing.T) {
 						IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
 							{
 								Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+									Primary:          to.BoolPtr(true),
 									PrivateIPAddress: to.StringPtr("192.0.2.0"),
+								},
+							},
+							{
+								Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+									PrivateIPAddress: to.StringPtr("192.0.2.1"),
 								},
 							},
 						},
 					},
 				},
 			},
-			wantIPs: []string{"192.0.2.0"},
+			wantIP: "192.0.2.0",
 		},
 		"can be empty": {
 			networkInterfaces: []armnetwork.Interface{},
@@ -349,9 +356,8 @@ func TestExtractPrivateIPs(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			ips := extractPrivateIPs(tc.networkInterfaces)
-
-			assert.ElementsMatch(tc.wantIPs, ips)
+			ip := extractVPCIP(tc.networkInterfaces)
+			assert.Equal(tc.wantIP, ip)
 		})
 	}
 }

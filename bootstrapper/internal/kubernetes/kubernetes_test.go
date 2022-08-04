@@ -82,8 +82,8 @@ func TestInitCluster(t *testing.T) {
 				SelfResp: metadata.InstanceMetadata{
 					Name:          nodeName,
 					ProviderID:    providerID,
-					PrivateIPs:    []string{privateIP},
-					PublicIPs:     []string{publicIP},
+					VPCIP:         privateIP,
+					PublicIP:      publicIP,
 					AliasIPRanges: []string{aliasIPRange},
 				},
 				GetLoadBalancerIPResp:    loadbalancerIP,
@@ -353,7 +353,7 @@ func TestJoinCluster(t *testing.T) {
 				SelfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
 					Name:       "metadata-name",
-					PrivateIPs: []string{"192.0.2.1"},
+					VPCIP:      "192.0.2.1",
 				},
 			},
 			CloudControllerManager: &stubCloudControllerManager{},
@@ -375,7 +375,7 @@ func TestJoinCluster(t *testing.T) {
 				SelfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
 					Name:       "metadata-name",
-					PrivateIPs: []string{"192.0.2.1"},
+					VPCIP:      "192.0.2.1",
 				},
 			},
 			CloudControllerManager: &stubCloudControllerManager{
@@ -399,7 +399,7 @@ func TestJoinCluster(t *testing.T) {
 				SelfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
 					Name:       "metadata-name",
-					PrivateIPs: []string{"192.0.2.1"},
+					VPCIP:      "192.0.2.1",
 				},
 			},
 			CloudControllerManager: &stubCloudControllerManager{},

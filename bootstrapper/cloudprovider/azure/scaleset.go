@@ -31,12 +31,12 @@ func (m *Metadata) getScaleSetVM(ctx context.Context, providerID string) (metada
 	if err != nil {
 		return metadata.InstanceMetadata{}, err
 	}
-	publicIPAddresses, err := m.getScaleSetVMPublicIPAddresses(ctx, resourceGroup, scaleSet, instanceID, networkInterfaces)
+	publicIPAddress, err := m.getScaleSetVMPublicIPAddress(ctx, resourceGroup, scaleSet, instanceID, networkInterfaces)
 	if err != nil {
 		return metadata.InstanceMetadata{}, err
 	}
 
-	return convertScaleSetVMToCoreInstance(scaleSet, vmResp.VirtualMachineScaleSetVM, networkInterfaces, publicIPAddresses)
+	return convertScaleSetVMToCoreInstance(scaleSet, vmResp.VirtualMachineScaleSetVM, networkInterfaces, publicIPAddress)
 }
 
 // listScaleSetVMs lists all scale set VMs in the current resource group.
@@ -58,7 +58,7 @@ func (m *Metadata) listScaleSetVMs(ctx context.Context, resourceGroup string) ([
 					if err != nil {
 						return nil, err
 					}
-					instance, err := convertScaleSetVMToCoreInstance(*scaleSet.Name, *vm, interfaces, nil)
+					instance, err := convertScaleSetVMToCoreInstance(*scaleSet.Name, *vm, interfaces, "")
 					if err != nil {
 						return nil, err
 					}
@@ -71,7 +71,7 @@ func (m *Metadata) listScaleSetVMs(ctx context.Context, resourceGroup string) ([
 }
 
 // convertScaleSetVMToCoreInstance converts an azure scale set virtual machine with interface configurations into a core.Instance.
-func convertScaleSetVMToCoreInstance(scaleSet string, vm armcompute.VirtualMachineScaleSetVM, networkInterfaces []armnetwork.Interface, publicIPAddresses []string) (metadata.InstanceMetadata, error) {
+func convertScaleSetVMToCoreInstance(scaleSet string, vm armcompute.VirtualMachineScaleSetVM, networkInterfaces []armnetwork.Interface, publicIPAddress string) (metadata.InstanceMetadata, error) {
 	if vm.ID == nil {
 		return metadata.InstanceMetadata{}, errors.New("retrieving instance from armcompute API client returned no instance ID")
 	}
@@ -88,8 +88,8 @@ func convertScaleSetVMToCoreInstance(scaleSet string, vm armcompute.VirtualMachi
 		Name:       *vm.Properties.OSProfile.ComputerName,
 		ProviderID: "azure://" + *vm.ID,
 		Role:       extractScaleSetVMRole(scaleSet),
-		PrivateIPs: extractPrivateIPs(networkInterfaces),
-		PublicIPs:  publicIPAddresses,
+		VPCIP:      extractVPCIP(networkInterfaces),
+		PublicIP:   publicIPAddress,
 		SSHKeys:    sshKeys,
 	}, nil
 }

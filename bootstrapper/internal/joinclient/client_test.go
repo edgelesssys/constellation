@@ -40,9 +40,10 @@ func TestClient(t *testing.T) {
 	workerSelf := metadata.InstanceMetadata{Role: role.Worker, Name: "node-1"}
 	controlSelf := metadata.InstanceMetadata{Role: role.ControlPlane, Name: "node-5"}
 	peers := []metadata.InstanceMetadata{
-		{Role: role.Worker, Name: "node-2", PrivateIPs: []string{"192.0.2.8"}},
-		{Role: role.ControlPlane, Name: "node-3", PrivateIPs: []string{"192.0.2.1"}},
-		{Role: role.ControlPlane, Name: "node-4", PrivateIPs: []string{"192.0.2.2", "192.0.2.3"}},
+		{Role: role.Worker, Name: "node-2", VPCIP: "192.0.2.8"},
+		{Role: role.ControlPlane, Name: "node-3", VPCIP: "192.0.2.1"},
+		{Role: role.ControlPlane, Name: "node-4", VPCIP: "192.0.2.2"},
+		{Role: role.ControlPlane, Name: "node-5", VPCIP: "192.0.2.3"},
 	}
 
 	testCases := map[string]struct {

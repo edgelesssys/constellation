@@ -73,7 +73,9 @@ func (f *Fetcher) DiscoverDebugdIPs(ctx context.Context) ([]string, error) {
 	}
 	var ips []string
 	for _, instance := range instances {
-		ips = append(ips, instance.PrivateIPs...)
+		if instance.VPCIP != "" {
+			ips = append(ips, instance.VPCIP)
+		}
 	}
 	return ips, nil
 }

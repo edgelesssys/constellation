@@ -18,7 +18,7 @@ func TestList(t *testing.T) {
 		{
 			Name:       "scale-set-name-instance-id",
 			ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-			PrivateIPs: []string{"192.0.2.0"},
+			VPCIP:      "192.0.2.0",
 			SSHKeys:    map[string][]string{"user": {"key-data"}},
 		},
 	}
@@ -85,7 +85,7 @@ func TestSelf(t *testing.T) {
 	wantScaleSetInstance := metadata.InstanceMetadata{
 		Name:       "scale-set-name-instance-id",
 		ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-		PrivateIPs: []string{"192.0.2.0"},
+		VPCIP:      "192.0.2.0",
 		SSHKeys:    map[string][]string{"user": {"key-data"}},
 	}
 	testCases := map[string]struct {
@@ -634,6 +634,7 @@ func newNetworkInterfacesStub() *stubNetworkInterfacesAPI {
 					{
 						Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
 							PrivateIPAddress: to.StringPtr("192.0.2.0"),
+							Primary:          to.BoolPtr(true),
 						},
 					},
 				},

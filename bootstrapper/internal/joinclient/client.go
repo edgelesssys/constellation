@@ -253,7 +253,7 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 	}
 
 	if c.role == role.ControlPlane {
-		if err := c.writeControlePlaneFiles(ticket.ControlPlaneFiles); err != nil {
+		if err := c.writeControlPlaneFiles(ticket.ControlPlaneFiles); err != nil {
 			return fmt.Errorf("writing control plane files: %w", err)
 		}
 	}
@@ -304,11 +304,12 @@ func (c *JoinClient) getNodeMetadata() error {
 	}
 
 	var ips []net.IP
-	for _, ip := range inst.PrivateIPs {
-		ips = append(ips, net.ParseIP(ip))
+
+	if inst.VPCIP != "" {
+		ips = append(ips, net.ParseIP(inst.VPCIP))
 	}
-	for _, ip := range inst.PublicIPs {
-		ips = append(ips, net.ParseIP(ip))
+	if inst.PublicIP != "" {
+		ips = append(ips, net.ParseIP(inst.PublicIP))
 	}
 
 	c.nodeName = inst.Name
@@ -346,8 +347,8 @@ func (c *JoinClient) getControlPlaneIPs() ([]string, error) {
 
 	ips := []string{}
 	for _, instance := range instances {
-		if instance.Role == role.ControlPlane {
-			ips = append(ips, instance.PrivateIPs...)
+		if instance.Role == role.ControlPlane && instance.VPCIP != "" {
+			ips = append(ips, instance.VPCIP)
 		}
 	}
 
@@ -355,7 +356,7 @@ func (c *JoinClient) getControlPlaneIPs() ([]string, error) {
 	return ips, nil
 }
 
-func (c *JoinClient) writeControlePlaneFiles(files []*joinproto.ControlPlaneCertOrKey) error {
+func (c *JoinClient) writeControlPlaneFiles(files []*joinproto.ControlPlaneCertOrKey) error {
 	for _, cert := range files {
 		if err := c.fileHandler.Write(
 			filepath.Join(kubeconstants.KubernetesDir, kubeconstants.DefaultCertificateDir, cert.Name),

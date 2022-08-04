@@ -18,7 +18,7 @@ func TestList(t *testing.T) {
 			{
 				Name:       "someInstance",
 				ProviderID: "gce://someProject/someZone/someInstance",
-				PrivateIPs: []string{"192.0.2.0"},
+				VPCIP:      "192.0.2.0",
 			},
 		}
 	}
@@ -43,7 +43,7 @@ func TestList(t *testing.T) {
 				{
 					Name:       "someInstance",
 					ProviderID: "gce://someProject/someZone/someInstance",
-					PrivateIPs: []string{"192.0.2.0"},
+					VPCIP:      "192.0.2.0",
 				},
 			},
 		},
@@ -113,13 +113,13 @@ func TestSelf(t *testing.T) {
 				retrieveInstanceValue: metadata.InstanceMetadata{
 					Name:       "someInstance",
 					ProviderID: "gce://someProject/someZone/someInstance",
-					PrivateIPs: []string{"192.0.2.0"},
+					VPCIP:      "192.0.2.0",
 				},
 			},
 			wantInstance: metadata.InstanceMetadata{
 				Name:       "someInstance",
 				ProviderID: "gce://someProject/someZone/someInstance",
-				PrivateIPs: []string{"192.0.2.0"},
+				VPCIP:      "192.0.2.0",
 			},
 		},
 		"retrieve error is detected": {
@@ -186,13 +186,13 @@ func TestGetInstance(t *testing.T) {
 				retrieveInstanceValue: metadata.InstanceMetadata{
 					Name:       "someInstance",
 					ProviderID: "gce://someProject/someZone/someInstance",
-					PrivateIPs: []string{"192.0.2.0"},
+					VPCIP:      "192.0.2.0",
 				},
 			},
 			wantInstance: metadata.InstanceMetadata{
 				Name:       "someInstance",
 				ProviderID: "gce://someProject/someZone/someInstance",
-				PrivateIPs: []string{"192.0.2.0"},
+				VPCIP:      "192.0.2.0",
 			},
 		},
 		"retrieve error is detected": {

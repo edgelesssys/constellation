@@ -294,33 +294,35 @@ func (c *Client) uid() (string, error) {
 	return uid, nil
 }
 
-// extractPrivateIPs extracts private interface IPs from a list of interfaces.
-func extractPrivateIPs(interfaces []*computepb.NetworkInterface) []string {
-	ips := []string{}
+// extractVPCIP extracts the primary private IP from a list of interfaces.
+func extractVPCIP(interfaces []*computepb.NetworkInterface) string {
 	for _, interf := range interfaces {
-		if interf == nil || interf.NetworkIP == nil {
+		if interf == nil || interf.NetworkIP == nil || interf.Name == nil || *interf.Name != "nic0" {
 			continue
 		}
-		ips = append(ips, *interf.NetworkIP)
+		// return private IP from the default interface
+		return *interf.NetworkIP
 	}
-	return ips
+	return ""
 }
 
-// extractPublicIPs extracts public interface IPs from a list of interfaces.
-func extractPublicIPs(interfaces []*computepb.NetworkInterface) []string {
-	ips := []string{}
+// extractPublicIP extracts a public IP from a list of interfaces.
+func extractPublicIP(interfaces []*computepb.NetworkInterface) string {
 	for _, interf := range interfaces {
-		if interf == nil || interf.AccessConfigs == nil {
+		if interf == nil || interf.AccessConfigs == nil || interf.Name == nil || *interf.Name != "nic0" {
 			continue
 		}
+
+		// return public IP from the default interface
+		// GCP only supports one type of access config, so returning the first IP should result in a valid public IP
 		for _, accessConfig := range interf.AccessConfigs {
 			if accessConfig == nil || accessConfig.NatIP == nil {
 				continue
 			}
-			ips = append(ips, *accessConfig.NatIP)
+			return *accessConfig.NatIP
 		}
 	}
-	return ips
+	return ""
 }
 
 // extractAliasIPRanges extracts alias interface IPs from a list of interfaces.
@@ -377,8 +379,8 @@ func convertToCoreInstance(in *computepb.Instance, project string, zone string) 
 		Name:          *in.Name,
 		ProviderID:    gcpshared.JoinProviderID(project, zone, *in.Name),
 		Role:          extractRole(mdata),
-		PrivateIPs:    extractPrivateIPs(in.NetworkInterfaces),
-		PublicIPs:     extractPublicIPs(in.NetworkInterfaces),
+		VPCIP:         extractVPCIP(in.NetworkInterfaces),
+		PublicIP:      extractPublicIP(in.NetworkInterfaces),
 		AliasIPRanges: extractAliasIPRanges(in.NetworkInterfaces),
 		SSHKeys:       extractSSHKeys(mdata),
 	}, nil

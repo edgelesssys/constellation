@@ -33,7 +33,7 @@ func TestRequestKeyLoop(t *testing.T) {
 		Name:       "test-instance",
 		ProviderID: "/test/provider",
 		Role:       role.ControlPlane,
-		PrivateIPs: []string{"192.0.2.1"},
+		VPCIP:      "192.0.2.1",
 	}
 
 	testCases := map[string]struct {

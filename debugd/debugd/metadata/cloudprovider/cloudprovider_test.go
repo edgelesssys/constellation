@@ -31,13 +31,13 @@ func TestDiscoverDebugIPs(t *testing.T) {
 			meta: stubMetadata{
 				listRes: []metadata.InstanceMetadata{
 					{
-						PrivateIPs: []string{"192.0.2.0"},
+						VPCIP: "192.0.2.0",
 					},
 					{
-						PrivateIPs: []string{"192.0.2.1"},
+						VPCIP: "192.0.2.1",
 					},
 					{
-						PrivateIPs: []string{"192.0.2.2"},
+						VPCIP: "192.0.2.2",
 					},
 				},
 			},

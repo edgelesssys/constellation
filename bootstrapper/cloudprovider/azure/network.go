@@ -44,17 +44,17 @@ func (m *Metadata) getScaleSetVMInterfaces(ctx context.Context, vm armcompute.Vi
 	return networkInterfaces, nil
 }
 
-// getScaleSetVMPublicIPAddresses retrieves all public IP addresses from a network interface which is referenced by a scale set virtual machine.
-func (m *Metadata) getScaleSetVMPublicIPAddresses(ctx context.Context, resourceGroup, scaleSet, instanceID string,
+// getScaleSetVMPublicIPAddress retrieves the primary public IP address from a network interface which is referenced by a scale set virtual machine.
+func (m *Metadata) getScaleSetVMPublicIPAddress(ctx context.Context, resourceGroup, scaleSet, instanceID string,
 	networkInterfaces []armnetwork.Interface,
-) ([]string, error) {
-	var publicIPAddresses []string
+) (string, error) {
 	for _, networkInterface := range networkInterfaces {
 		if networkInterface.Properties == nil || networkInterface.Name == nil {
 			continue
 		}
 		for _, config := range networkInterface.Properties.IPConfigurations {
-			if config == nil || config.Properties == nil || config.Properties.PublicIPAddress == nil || config.Name == nil {
+			if config == nil || config.Name == nil || config.Properties == nil || config.Properties.PublicIPAddress == nil ||
+				config.Properties.Primary == nil || !*config.Properties.Primary {
 				continue
 			}
 			publicIPAddressName := *config.Properties.PublicIPAddress.ID
@@ -62,32 +62,37 @@ func (m *Metadata) getScaleSetVMPublicIPAddresses(ctx context.Context, resourceG
 			publicIPAddressName = publicIPAddressNameParts[len(publicIPAddressNameParts)-1]
 			publicIPAddress, err := m.publicIPAddressesAPI.GetVirtualMachineScaleSetPublicIPAddress(ctx, resourceGroup, scaleSet, instanceID, *networkInterface.Name, *config.Name, publicIPAddressName, nil)
 			if err != nil {
-				return nil, fmt.Errorf("failed to retrieve public ip address %v: %w", publicIPAddressName, err)
+				return "", fmt.Errorf("failed to retrieve public ip address %v: %w", publicIPAddressName, err)
 			}
 			if publicIPAddress.Properties == nil || publicIPAddress.Properties.IPAddress == nil {
-				return nil, errors.New("retrieved public ip address has invalid ip address")
+				return "", errors.New("retrieved public ip address has invalid ip address")
 			}
-			publicIPAddresses = append(publicIPAddresses, *publicIPAddress.Properties.IPAddress)
+
+			return *publicIPAddress.Properties.IPAddress, nil
 		}
 	}
-	return publicIPAddresses, nil
+
+	// instances may have no public IP, in that case we don't return an error.
+	return "", nil
 }
 
-// extractPrivateIPs extracts private IPs from a list of network interface IP configurations.
-func extractPrivateIPs(networkInterfaces []armnetwork.Interface) []string {
-	addresses := []string{}
+// extractVPCIP extracts the primary VPC IP from a list of network interface IP configurations.
+func extractVPCIP(networkInterfaces []armnetwork.Interface) string {
 	for _, networkInterface := range networkInterfaces {
 		if networkInterface.Properties == nil || len(networkInterface.Properties.IPConfigurations) == 0 {
 			continue
 		}
 		for _, config := range networkInterface.Properties.IPConfigurations {
-			if config == nil || config.Properties == nil || config.Properties.PrivateIPAddress == nil {
+			if config == nil || config.Properties == nil || config.Properties.PrivateIPAddress == nil || config.Properties.Primary == nil {
 				continue
 			}
-			addresses = append(addresses, *config.Properties.PrivateIPAddress)
+			if *config.Properties.Primary {
+				return *config.Properties.PrivateIPAddress
+			}
 		}
 	}
-	return addresses
+
+	return ""
 }
 
 // extractInterfaceNamesFromInterfaceReferences extracts the name of a network interface from a reference id.

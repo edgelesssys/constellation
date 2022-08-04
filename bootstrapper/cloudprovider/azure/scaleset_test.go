@@ -18,7 +18,7 @@ func TestGetScaleSetVM(t *testing.T) {
 	wantInstance := metadata.InstanceMetadata{
 		Name:       "scale-set-name-instance-id",
 		ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-		PrivateIPs: []string{"192.0.2.0"},
+		VPCIP:      "192.0.2.0",
 		SSHKeys:    map[string][]string{"user": {"key-data"}},
 	}
 	testCases := map[string]struct {
@@ -77,7 +77,7 @@ func TestListScaleSetVMs(t *testing.T) {
 		{
 			Name:       "scale-set-name-instance-id",
 			ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-			PrivateIPs: []string{"192.0.2.0"},
+			VPCIP:      "192.0.2.0",
 			SSHKeys:    map[string][]string{"user": {"key-data"}},
 		},
 	}
@@ -153,7 +153,7 @@ func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 	testCases := map[string]struct {
 		inVM         armcompute.VirtualMachineScaleSetVM
 		inInterface  []armnetwork.Interface
-		inPublicIPs  []string
+		inPublicIP   string
 		wantErr      bool
 		wantInstance metadata.InstanceMetadata
 	}{
@@ -176,6 +176,7 @@ func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 						IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
 							{
 								Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
+									Primary:          to.BoolPtr(true),
 									PrivateIPAddress: to.StringPtr("192.0.2.0"),
 								},
 							},
@@ -183,12 +184,12 @@ func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 					},
 				},
 			},
-			inPublicIPs: []string{"192.0.2.100", "192.0.2.101"},
+			inPublicIP: "192.0.2.100",
 			wantInstance: metadata.InstanceMetadata{
 				Name:       "scale-set-name-instance-id",
 				ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-				PrivateIPs: []string{"192.0.2.0"},
-				PublicIPs:  []string{"192.0.2.100", "192.0.2.101"},
+				VPCIP:      "192.0.2.0",
+				PublicIP:   "192.0.2.100",
 				SSHKeys:    map[string][]string{},
 			},
 		},
@@ -203,7 +204,7 @@ func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			instance, err := convertScaleSetVMToCoreInstance("scale-set", tc.inVM, tc.inInterface, tc.inPublicIPs)
+			instance, err := convertScaleSetVMToCoreInstance("scale-set", tc.inVM, tc.inInterface, tc.inPublicIP)
 
 			if tc.wantErr {
 				assert.Error(err)

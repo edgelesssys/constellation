@@ -12,11 +12,13 @@ import (
 
 // InstanceMetadata describes metadata of a peer.
 type InstanceMetadata struct {
-	Name          string
-	ProviderID    string
-	Role          role.Role
-	PrivateIPs    []string
-	PublicIPs     []string
+	Name       string
+	ProviderID string
+	Role       role.Role
+	// VPCIP is the primary IP address of the instance in the VPC.
+	VPCIP string
+	// PublicIP is the primary public IP of the instance, if available, empty string otherwise.
+	PublicIP      string
 	AliasIPRanges []string
 	// SSHKeys maps usernames to ssh public keys.
 	SSHKeys map[string][]string
@@ -32,24 +34,6 @@ type InstanceLister interface {
 	List(ctx context.Context) ([]InstanceMetadata, error)
 }
 
-// InitServerEndpoints returns the list of endpoints for the init server, which are running on the control plane nodes.
-func InitServerEndpoints(ctx context.Context, lister InstanceLister) ([]string, error) {
-	instances, err := lister.List(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("retrieving instances list from cloud provider: %w", err)
-	}
-	initServerEndpoints := []string{}
-	for _, instance := range instances {
-		if instance.Role == role.ControlPlane {
-			for _, ip := range instance.PrivateIPs {
-				initServerEndpoints = append(initServerEndpoints, net.JoinHostPort(ip, strconv.Itoa(constants.BootstrapperPort)))
-			}
-		}
-	}
-
-	return initServerEndpoints, nil
-}
-
 // JoinServiceEndpoints returns the list of endpoints for the join service, which are running on the control plane nodes.
 func JoinServiceEndpoints(ctx context.Context, lister InstanceLister) ([]string, error) {
 	instances, err := lister.List(ctx)
@@ -59,8 +43,8 @@ func JoinServiceEndpoints(ctx context.Context, lister InstanceLister) ([]string,
 	joinEndpoints := []string{}
 	for _, instance := range instances {
 		if instance.Role == role.ControlPlane {
-			for _, ip := range instance.PrivateIPs {
-				joinEndpoints = append(joinEndpoints, net.JoinHostPort(ip, strconv.Itoa(constants.JoinServiceNodePort)))
+			if instance.VPCIP != "" {
+				joinEndpoints = append(joinEndpoints, net.JoinHostPort(instance.VPCIP, strconv.Itoa(constants.JoinServiceNodePort)))
 			}
 		}
 	}

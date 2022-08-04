@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -145,7 +146,7 @@ func TestListSelf(t *testing.T) {
 
 			server := New(logger.NewTest(t), tc.connect, file.Handler{})
 
-			req, err := http.NewRequest(http.MethodGet, "http://192.0.0.1/self", nil)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.0.1/self", nil)
 			require.NoError(err)
 			req.RemoteAddr = tc.remoteAddr
 
@@ -163,7 +164,7 @@ func TestListSelf(t *testing.T) {
 			var metadata metadata.InstanceMetadata
 			require.NoError(json.Unmarshal(metadataRaw, &metadata))
 			assert.Equal(tc.connect.network.leases[0].Hostname, metadata.Name)
-			assert.Equal(tc.connect.network.leases[0].IPaddr, metadata.PublicIPs[0])
+			assert.Equal(tc.connect.network.leases[0].IPaddr, metadata.PublicIP)
 		})
 	}
 }
@@ -207,7 +208,7 @@ func TestListPeers(t *testing.T) {
 
 			server := New(logger.NewTest(t), tc.connect, file.Handler{})
 
-			req, err := http.NewRequest(http.MethodGet, "http://192.0.0.1/peers", nil)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.0.1/peers", nil)
 			require.NoError(err)
 			req.RemoteAddr = tc.remoteAddr
 
@@ -262,7 +263,7 @@ func TestPostLog(t *testing.T) {
 
 			server := New(logger.NewTest(t), &stubConnect{}, file.NewHandler(afero.NewMemMapFs()))
 
-			req, err := http.NewRequest(tc.method, "http://192.0.0.1/logs", tc.message)
+			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.0.1/logs", tc.message)
 			require.NoError(err)
 			req.RemoteAddr = tc.remoteAddr
 
@@ -343,7 +344,7 @@ func TestExportPCRs(t *testing.T) {
 			file := file.NewHandler(afero.NewMemMapFs())
 			server := New(logger.NewTest(t), tc.connect, file)
 
-			req, err := http.NewRequest(tc.method, "http://192.0.0.1/pcrs", strings.NewReader(tc.message))
+			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.0.1/pcrs", strings.NewReader(tc.message))
 			require.NoError(err)
 			req.RemoteAddr = tc.remoteAddr
 
