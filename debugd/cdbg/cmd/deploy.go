@@ -180,34 +180,11 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 }
 
 func getIPsFromConfig(stat statec.ConstellationState, config configc.Config) ([]string, error) {
-	controlPlanes, workers, err := state.GetScalingGroupsFromConfig(stat, &config)
-	if err != nil {
-		return nil, err
+	if stat.LoadBalancerIP != "" {
+		return []string{stat.LoadBalancerIP}, nil
 	}
 
-	var ips []string
-	// only deploy to non empty public IPs
-	for _, ip := range append(controlPlanes.PublicIPs(), workers.PublicIPs()...) {
-		if ip != "" {
-			ips = append(ips, ip)
-		}
-	}
-	// add bootstrapper IP if it is not already in the list
-	var foundBootstrapperIP bool
-	for _, ip := range ips {
-		if ip == stat.LoadBalancerIP {
-			foundBootstrapperIP = true
-			break
-		}
-	}
-	if !foundBootstrapperIP && stat.LoadBalancerIP != "" {
-		ips = append(ips, stat.LoadBalancerIP)
-	}
-	if len(ips) == 0 {
-		return nil, fmt.Errorf("no public IPs found in statefile")
-	}
-
-	return ips, nil
+	return nil, fmt.Errorf("no load balancer IP found in statefile")
 }
 
 func init() {
