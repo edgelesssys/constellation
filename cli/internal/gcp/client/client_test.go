@@ -123,6 +123,48 @@ func TestInit(t *testing.T) {
 	assert.Equal("name", client.name)
 }
 
+func TestBuildResourceName(t *testing.T) {
+	testCases := map[string]struct {
+		clientUID  string
+		clientName string
+		names      []string
+		wantName   string
+	}{
+		"no names": {
+			clientUID:  "uid",
+			clientName: "name",
+			wantName:   "name-uid",
+		},
+		"one name": {
+			clientUID:  "uid",
+			clientName: "name",
+			names:      []string{"foo"},
+			wantName:   "name-foo-uid",
+		},
+		"two names": {
+			clientUID:  "uid",
+			clientName: "name",
+			names:      []string{"foo", "bar"},
+			wantName:   "name-foo-bar-uid",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			client := Client{
+				name: tc.clientName,
+				uid:  tc.clientUID,
+			}
+
+			name := client.buildResourceName(tc.names...)
+
+			assert.Equal(tc.wantName, name)
+		})
+	}
+}
+
 func TestResourceURI(t *testing.T) {
 	testCases := map[string]struct {
 		scope        resourceScope

@@ -324,6 +324,23 @@ func (c *Client) generateUID() (string, error) {
 	return string(uid), nil
 }
 
+// buildInstanceName returns a formatted name string.
+// The names are joined with a '-'.
+// If names is empty, the returned value is c.name + "-" + c.uid.
+func (c *Client) buildResourceName(names ...string) string {
+	builder := strings.Builder{}
+
+	builder.WriteString(c.name)
+	builder.WriteRune('-')
+	for _, name := range names {
+		builder.WriteString(name)
+		builder.WriteRune('-')
+	}
+	builder.WriteString(c.uid)
+
+	return builder.String()
+}
+
 func (c *Client) resourceURI(scope resourceScope, resourceType, resourceName string) string {
 	const baseURI = "https://www.googleapis.com/compute/v1/projects/"
 
@@ -338,17 +355,17 @@ func (c *Client) resourceURI(scope resourceScope, resourceType, resourceName str
 	case scopeRegion:
 		builder.WriteString("/regions/")
 		builder.WriteString(c.region)
-		builder.WriteString("/")
+		builder.WriteRune('/')
 	case scopeZone:
 		builder.WriteString("/zones/")
 		builder.WriteString(c.zone)
-		builder.WriteString("/")
+		builder.WriteRune('/')
 	default:
 		panic("unknown scope")
 	}
 
 	builder.WriteString(resourceType)
-	builder.WriteString("/")
+	builder.WriteRune('/')
 	builder.WriteString(resourceName)
 
 	return builder.String()

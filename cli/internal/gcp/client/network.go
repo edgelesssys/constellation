@@ -88,7 +88,7 @@ type FirewallInput struct {
 
 // CreateVPCs creates all necessary VPC networks.
 func (c *Client) CreateVPCs(ctx context.Context) error {
-	c.network = c.name + "-" + c.uid
+	c.network = c.buildResourceName()
 
 	op, err := c.createVPC(ctx, c.network)
 	if err != nil {

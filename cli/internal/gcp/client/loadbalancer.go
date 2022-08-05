@@ -39,7 +39,7 @@ func (c *Client) CreateLoadBalancers(ctx context.Context) error {
 	//
 
 	c.loadbalancers = append(c.loadbalancers, &loadBalancer{
-		name:            c.name + "-" + "kube" + "-" + c.uid,
+		name:            c.buildResourceName("kube"),
 		ip:              c.loadbalancerIP,
 		frontendPort:    constants.KubernetesPort,
 		backendPortName: "kubernetes",
@@ -48,7 +48,7 @@ func (c *Client) CreateLoadBalancers(ctx context.Context) error {
 	})
 
 	c.loadbalancers = append(c.loadbalancers, &loadBalancer{
-		name:            c.name + "-" + "boot" + "-" + c.uid,
+		name:            c.buildResourceName("boot"),
 		ip:              c.loadbalancerIPname,
 		frontendPort:    constants.BootstrapperPort,
 		backendPortName: "bootstrapper",
@@ -56,7 +56,7 @@ func (c *Client) CreateLoadBalancers(ctx context.Context) error {
 	})
 
 	c.loadbalancers = append(c.loadbalancers, &loadBalancer{
-		name:            c.name + "-" + "verify" + "-" + c.uid,
+		name:            c.buildResourceName("verify"),
 		ip:              c.loadbalancerIPname,
 		frontendPort:    constants.VerifyServiceNodePortGRPC,
 		backendPortName: "verify",
@@ -64,7 +64,7 @@ func (c *Client) CreateLoadBalancers(ctx context.Context) error {
 	})
 
 	c.loadbalancers = append(c.loadbalancers, &loadBalancer{
-		name:            c.name + "-" + "debugd" + "-" + c.uid,
+		name:            c.buildResourceName("debugd"),
 		ip:              c.loadbalancerIPname,
 		frontendPort:    constants.DebugdPort,
 		backendPortName: "debugd",
@@ -350,7 +350,7 @@ func (c *Client) terminateHealthCheck(ctx context.Context, lb *loadBalancer) err
 }
 
 func (c *Client) createIPAddr(ctx context.Context) error {
-	ipName := c.name + "-" + c.uid
+	ipName := c.buildResourceName()
 	insertReq := &computepb.InsertAddressRequest{
 		Project: c.project,
 		Region:  c.region,
@@ -365,7 +365,7 @@ func (c *Client) createIPAddr(ctx context.Context) error {
 	if err := c.waitForOperations(ctx, []Operation{op}); err != nil {
 		return err
 	}
-	c.loadbalancerIPname = c.name + "-" + c.uid
+	c.loadbalancerIPname = ipName
 
 	getReq := &computepb.GetAddressRequest{
 		Project: c.project,

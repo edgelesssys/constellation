@@ -27,7 +27,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 	ops := []Operation{}
 
 	workerTemplateInput := insertInstanceTemplateInput{
-		Name:                         c.name + "-worker-" + c.uid,
+		Name:                         c.buildResourceName("worker"),
 		Network:                      c.network,
 		SecondarySubnetworkRangeName: c.secondarySubnetworkRange,
 		Subnetwork:                   c.subnetwork,
@@ -50,7 +50,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 	c.workerTemplate = workerTemplateInput.Name
 
 	controlPlaneTemplateInput := insertInstanceTemplateInput{
-		Name:                         c.name + "-control-plane-" + c.uid,
+		Name:                         c.buildResourceName("control-plane"),
 		Network:                      c.network,
 		Subnetwork:                   c.subnetwork,
 		SecondarySubnetworkRangeName: c.secondarySubnetworkRange,
