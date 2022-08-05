@@ -7,8 +7,13 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 	testclock "k8s.io/utils/clock/testing"
 )
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+}
 
 func TestDo(t *testing.T) {
 	testCases := map[string]struct {
@@ -64,14 +69,13 @@ func TestDo(t *testing.T) {
 			defer cancel()
 
 			go func() { retrierResult <- retrier.Do(ctx) }()
-
-			if tc.cancel {
-				cancel()
-			}
-
 			for _, err := range tc.errors {
 				doer.errC <- err
 				clock.Step(retrier.interval)
+			}
+
+			if tc.cancel {
+				cancel()
 			}
 
 			assert.Equal(tc.wantErr, <-retrierResult)
@@ -89,8 +93,13 @@ func newStubDoer() *stubDoer {
 	}
 }
 
-func (d *stubDoer) Do(_ context.Context) error {
-	return <-d.errC
+func (d *stubDoer) Do(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-d.errC:
+		return err
+	}
 }
 
 func isRetriable(err error) bool {
