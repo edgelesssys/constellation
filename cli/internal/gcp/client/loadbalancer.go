@@ -142,12 +142,12 @@ func (c *Client) createBackendService(ctx context.Context, lb *loadBalancer) err
 			Name:                proto.String(lb.name),
 			Protocol:            proto.String(computepb.BackendService_Protocol_name[int32(computepb.BackendService_TCP)]),
 			LoadBalancingScheme: proto.String(computepb.BackendService_LoadBalancingScheme_name[int32(computepb.BackendService_EXTERNAL)]),
-			HealthChecks:        []string{"https://www.googleapis.com/compute/v1/projects/" + c.project + "/regions/" + c.region + "/healthChecks/" + lb.name},
+			HealthChecks:        []string{c.resourceURI(scopeRegion, "healthChecks", lb.name)},
 			PortName:            proto.String(lb.backendPortName),
 			Backends: []*computepb.Backend{
 				{
 					BalancingMode: proto.String(computepb.Backend_BalancingMode_name[int32(computepb.Backend_CONNECTION)]),
-					Group:         proto.String("https://www.googleapis.com/compute/v1/projects/" + c.project + "/zones/" + c.zone + "/instanceGroups/" + c.controlPlaneInstanceGroup),
+					Group:         proto.String(c.resourceURI(scopeZone, "instanceGroups", c.controlPlaneInstanceGroup)),
 				},
 			},
 		},
@@ -171,11 +171,11 @@ func (c *Client) createForwardingRules(ctx context.Context, lb *loadBalancer) er
 		Region:  c.region,
 		ForwardingRuleResource: &computepb.ForwardingRule{
 			Name:                proto.String(lb.name),
-			IPAddress:           proto.String("https://www.googleapis.com/compute/v1/projects/" + c.project + "/regions/" + c.region + "/addresses/" + c.loadbalancerIPname),
+			IPAddress:           proto.String(c.resourceURI(scopeRegion, "addresses", c.loadbalancerIPname)),
 			IPProtocol:          proto.String(computepb.ForwardingRule_IPProtocolEnum_name[int32(computepb.ForwardingRule_TCP)]),
 			LoadBalancingScheme: proto.String(computepb.ForwardingRule_LoadBalancingScheme_name[int32(computepb.ForwardingRule_EXTERNAL)]),
 			Ports:               []string{strconv.Itoa(lb.frontendPort)},
-			BackendService:      proto.String("https://www.googleapis.com/compute/v1/projects/" + c.project + "/regions/" + c.region + "/backendServices/" + lb.name),
+			BackendService:      proto.String(c.resourceURI(scopeRegion, "backendServices", lb.name)),
 		},
 	}
 	resp, err := c.forwardingRulesAPI.Insert(ctx, req)

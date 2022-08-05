@@ -123,6 +123,50 @@ func TestInit(t *testing.T) {
 	assert.Equal("name", client.name)
 }
 
+func TestResourceURI(t *testing.T) {
+	testCases := map[string]struct {
+		scope        resourceScope
+		resourceType string
+		resourceName string
+		wantURI      string
+	}{
+		"global resource": {
+			scope:        scopeGlobal,
+			resourceType: "healthChecks",
+			resourceName: "name",
+			wantURI:      "https://www.googleapis.com/compute/v1/projects/project/global/healthChecks/name",
+		},
+		"regional resource": {
+			scope:        scopeRegion,
+			resourceType: "healthChecks",
+			resourceName: "name",
+			wantURI:      "https://www.googleapis.com/compute/v1/projects/project/regions/region/healthChecks/name",
+		},
+		"zonal resource": {
+			scope:        scopeZone,
+			resourceType: "instanceGroups",
+			resourceName: "name",
+			wantURI:      "https://www.googleapis.com/compute/v1/projects/project/zones/zone/instanceGroups/name",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			client := Client{
+				project: "project",
+				zone:    "zone",
+				region:  "region",
+			}
+
+			uri := client.resourceURI(tc.scope, tc.resourceType, tc.resourceName)
+
+			assert.Equal(tc.wantURI, uri)
+		})
+	}
+}
+
 func TestCloseAll(t *testing.T) {
 	assert := assert.New(t)
 

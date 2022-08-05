@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
+	"strings"
 
 	compute "cloud.google.com/go/compute/apiv1"
 	admin "cloud.google.com/go/iam/admin/apiv1"
@@ -322,6 +323,44 @@ func (c *Client) generateUID() (string, error) {
 	}
 	return string(uid), nil
 }
+
+func (c *Client) resourceURI(scope resourceScope, resourceType, resourceName string) string {
+	const baseURI = "https://www.googleapis.com/compute/v1/projects/"
+
+	builder := strings.Builder{}
+
+	builder.WriteString(baseURI)
+	builder.WriteString(c.project)
+
+	switch scope {
+	case scopeGlobal:
+		builder.WriteString("/global/")
+	case scopeRegion:
+		builder.WriteString("/regions/")
+		builder.WriteString(c.region)
+		builder.WriteString("/")
+	case scopeZone:
+		builder.WriteString("/zones/")
+		builder.WriteString(c.zone)
+		builder.WriteString("/")
+	default:
+		panic("unknown scope")
+	}
+
+	builder.WriteString(resourceType)
+	builder.WriteString("/")
+	builder.WriteString(resourceName)
+
+	return builder.String()
+}
+
+type resourceScope string
+
+const (
+	scopeGlobal resourceScope = "global"
+	scopeRegion resourceScope = "region"
+	scopeZone   resourceScope = "zone"
+)
 
 type closer interface {
 	Close() error
