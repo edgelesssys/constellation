@@ -3,18 +3,18 @@ on:
   workflow_dispatch:
     inputs:
       coreOSConfigBranch:
-        description: 'Branch of CoreOS config repo to build from'
-        default: 'constellation'
+        description: "Branch of CoreOS config repo to build from"
+        default: "constellation"
         required: false
       debug:
-        description: 'Build debug image'
+        description: "Build debug image"
         type: boolean
         default: false
         required: true
 
 jobs:
   build-coreos-image:
-    name: 'Build CoreOS using customized COSA'
+    name: "Build CoreOS using customized COSA"
     runs-on: [self-hosted, linux, nested-virt]
     permissions:
       contents: read
@@ -44,7 +44,7 @@ jobs:
         uses: ./.github/actions/build_disk_mapper
         with:
           outputPath: ${{ github.workspace }}/build/disk-mapper
-  
+
       - name: Determine version
         id: version
         uses: ./.github/actions/pseudo_version
@@ -99,7 +99,7 @@ jobs:
             echo "azureImageVersion=${semver:1}" >> $GITHUB_ENV
           elif [ "${{ ((github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/')) && (inputs.debug == true) }}" = true ]
           then
-            echo "gcpImageName=constellation-debug-${{ steps.version.outputs.timestamp }}" >> $GITHUB_ENV
+            echo "gcpImageName=constellation-${{ steps.version.outputs.timestamp }}" >> $GITHUB_ENV
             echo "gcpImageFamily=constellation-debug-${semver//./-}" >> $GITHUB_ENV
             echo "azureGalleryName=Constellation_Debug" >> $GITHUB_ENV
             echo "azureImageDefinition=${semver}" >> $GITHUB_ENV
