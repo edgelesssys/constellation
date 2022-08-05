@@ -1,6 +1,7 @@
-//go:generate docgen ./config.go ./config_doc.go Configuration
 // This binary can be build from siderolabs/talos projects. Located at:
 // https://github.com/siderolabs/talos/tree/master/hack/docgen
+//
+//go:generate docgen ./config.go ./config_doc.go Configuration
 package config
 
 import (

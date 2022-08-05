@@ -3,7 +3,7 @@ Package logger provides logging functionality for Constellation services.
 It is a thin wrapper around the zap package, providing a consistent interface for logging.
 Use this package to implement logging for your Constellation services.
 
-Usage
+# Usage
 
 1. Create a logger using New().
 
@@ -18,7 +18,7 @@ This can also be used to add context to a single log message:
 
 	logger.With(zap.String("key", "value")).Infof("log message")
 
-Log Levels
+# Log Levels
 
 Use Debugf() to log low level and detailed information that is useful for debugging.
 

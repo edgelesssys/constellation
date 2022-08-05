@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"testing"
@@ -175,20 +175,20 @@ func TestConfigFetchMeasurements(t *testing.T) {
 		if req.URL.String() == "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/projects/constellation-images/global/images/constellation-coreos-1658216163/measurements.yaml" {
 			return &http.Response{
 				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(bytes.NewBufferString(measurements)),
+				Body:       io.NopCloser(bytes.NewBufferString(measurements)),
 				Header:     make(http.Header),
 			}
 		}
 		if req.URL.String() == "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/projects/constellation-images/global/images/constellation-coreos-1658216163/measurements.yaml.sig" {
 			return &http.Response{
 				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(bytes.NewBufferString(signature)),
+				Body:       io.NopCloser(bytes.NewBufferString(signature)),
 				Header:     make(http.Header),
 			}
 		}
 		return &http.Response{
 			StatusCode: http.StatusNotFound,
-			Body:       ioutil.NopCloser(bytes.NewBufferString("Not found.")),
+			Body:       io.NopCloser(bytes.NewBufferString("Not found.")),
 			Header:     make(http.Header),
 		}
 	})

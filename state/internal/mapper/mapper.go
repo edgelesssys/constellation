@@ -14,7 +14,8 @@ import (
 
 // packageLock is needed to block concurrent use of package functions, since libcryptsetup is not thread safe.
 // See: https://gitlab.com/cryptsetup/cryptsetup/-/issues/710
-// 		https://stackoverflow.com/questions/30553386/cryptsetup-backend-safe-with-multithreading
+//
+//	https://stackoverflow.com/questions/30553386/cryptsetup-backend-safe-with-multithreading
 var packageLock = sync.Mutex{}
 
 // Mapper handles actions for formating and mapping crypt devices.

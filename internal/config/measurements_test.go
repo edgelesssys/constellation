@@ -3,7 +3,7 @@ package config
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -282,20 +282,20 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 				if req.URL.String() == measurementsURL.String() {
 					return &http.Response{
 						StatusCode: tc.measurementsStatus,
-						Body:       ioutil.NopCloser(strings.NewReader(tc.measurements)),
+						Body:       io.NopCloser(strings.NewReader(tc.measurements)),
 						Header:     make(http.Header),
 					}
 				}
 				if req.URL.String() == signatureURL.String() {
 					return &http.Response{
 						StatusCode: tc.signatureStatus,
-						Body:       ioutil.NopCloser(strings.NewReader(tc.signature)),
+						Body:       io.NopCloser(strings.NewReader(tc.signature)),
 						Header:     make(http.Header),
 					}
 				}
 				return &http.Response{
 					StatusCode: http.StatusNotFound,
-					Body:       ioutil.NopCloser(strings.NewReader("Not found.")),
+					Body:       io.NopCloser(strings.NewReader("Not found.")),
 					Header:     make(http.Header),
 				}
 			})

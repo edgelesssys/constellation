@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -112,7 +112,7 @@ func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([
 	if resp.StatusCode != http.StatusOK {
 		return []byte{}, fmt.Errorf("http status code: %d", resp.StatusCode)
 	}
-	content, err := ioutil.ReadAll(resp.Body)
+	content, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return []byte{}, err
 	}
