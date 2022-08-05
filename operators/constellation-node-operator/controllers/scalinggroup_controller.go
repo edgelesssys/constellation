@@ -3,6 +3,7 @@ package controllers
 
 import (
 	"context"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -75,7 +76,8 @@ func (r *ScalingGroupReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	outdatedCondition := metav1.Condition{
 		Type: updatev1alpha1.ConditionOutdated,
 	}
-	if nodeImage == desiredNodeImage.Spec.ImageReference {
+	imagesMatch := strings.EqualFold(nodeImage, desiredNodeImage.Spec.ImageReference)
+	if imagesMatch {
 		outdatedCondition.Status = metav1.ConditionFalse
 		outdatedCondition.Reason = conditionScalingGroupUpToDateReason
 		outdatedCondition.Message = conditionScalingGroupUpToDateMessage
@@ -90,7 +92,7 @@ func (r *ScalingGroupReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, err
 	}
 
-	if nodeImage != desiredNodeImage.Spec.ImageReference {
+	if !imagesMatch {
 		logr.Info("ScalingGroup NodeImage is out of date")
 		if err := r.scalingGroupUpdater.SetScalingGroupImage(ctx, desiredScalingGroup.Spec.GroupID, desiredNodeImage.Spec.ImageReference); err != nil {
 			logr.Error(err, "Unable to set ScalingGroup NodeImage")

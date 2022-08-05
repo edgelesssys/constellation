@@ -330,6 +330,9 @@ func TestCreateNewNodes(t *testing.T) {
 		"no outdated nodes": {
 			scalingGroupByID: map[string]updatev1alpha1.ScalingGroup{
 				"scaling-group": {
+					Spec: updatev1alpha1.ScalingGroupSpec{
+						GroupID: "scaling-group",
+					},
 					Status: updatev1alpha1.ScalingGroupStatus{
 						ImageReference: "image",
 					},
@@ -350,6 +353,9 @@ func TestCreateNewNodes(t *testing.T) {
 			},
 			scalingGroupByID: map[string]updatev1alpha1.ScalingGroup{
 				"scaling-group": {
+					Spec: updatev1alpha1.ScalingGroupSpec{
+						GroupID: "scaling-group",
+					},
 					Status: updatev1alpha1.ScalingGroupStatus{
 						ImageReference: "image",
 					},
@@ -371,6 +377,9 @@ func TestCreateNewNodes(t *testing.T) {
 			},
 			scalingGroupByID: map[string]updatev1alpha1.ScalingGroup{
 				"scaling-group": {
+					Spec: updatev1alpha1.ScalingGroupSpec{
+						GroupID: "scaling-group",
+					},
 					Status: updatev1alpha1.ScalingGroupStatus{
 						ImageReference: "image",
 					},
@@ -392,6 +401,9 @@ func TestCreateNewNodes(t *testing.T) {
 			},
 			scalingGroupByID: map[string]updatev1alpha1.ScalingGroup{
 				"scaling-group": {
+					Spec: updatev1alpha1.ScalingGroupSpec{
+						GroupID: "scaling-group",
+					},
 					Status: updatev1alpha1.ScalingGroupStatus{
 						ImageReference: "image",
 					},
@@ -411,6 +423,9 @@ func TestCreateNewNodes(t *testing.T) {
 			},
 			scalingGroupByID: map[string]updatev1alpha1.ScalingGroup{
 				"scaling-group": {
+					Spec: updatev1alpha1.ScalingGroupSpec{
+						GroupID: "scaling-group",
+					},
 					Status: updatev1alpha1.ScalingGroupStatus{
 						ImageReference: "outdated-image",
 					},
@@ -439,6 +454,9 @@ func TestCreateNewNodes(t *testing.T) {
 			},
 			scalingGroupByID: map[string]updatev1alpha1.ScalingGroup{
 				"scaling-group": {
+					Spec: updatev1alpha1.ScalingGroupSpec{
+						GroupID: "scaling-group",
+					},
 					Status: updatev1alpha1.ScalingGroupStatus{
 						ImageReference: "image",
 					},
@@ -467,6 +485,9 @@ func TestCreateNewNodes(t *testing.T) {
 			},
 			scalingGroupByID: map[string]updatev1alpha1.ScalingGroup{
 				"scaling-group": {
+					Spec: updatev1alpha1.ScalingGroupSpec{
+						GroupID: "scaling-group",
+					},
 					Status: updatev1alpha1.ScalingGroupStatus{
 						ImageReference: "image",
 					},
@@ -489,6 +510,9 @@ func TestCreateNewNodes(t *testing.T) {
 			},
 			scalingGroupByID: map[string]updatev1alpha1.ScalingGroup{
 				"scaling-group": {
+					Spec: updatev1alpha1.ScalingGroupSpec{
+						GroupID: "scaling-group",
+					},
 					Status: updatev1alpha1.ScalingGroupStatus{
 						ImageReference: "image",
 					},
@@ -509,11 +533,17 @@ func TestCreateNewNodes(t *testing.T) {
 			},
 			scalingGroupByID: map[string]updatev1alpha1.ScalingGroup{
 				"scaling-group": {
+					Spec: updatev1alpha1.ScalingGroupSpec{
+						GroupID: "scaling-group",
+					},
 					Status: updatev1alpha1.ScalingGroupStatus{
 						ImageReference: "image",
 					},
 				},
 				"other-scaling-group": {
+					Spec: updatev1alpha1.ScalingGroupSpec{
+						GroupID: "other-scaling-group",
+					},
 					Status: updatev1alpha1.ScalingGroupStatus{
 						ImageReference: "image",
 					},

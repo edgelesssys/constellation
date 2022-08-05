@@ -4,6 +4,7 @@ package controllers
 import (
 	"context"
 	"reflect"
+	"strings"
 	"time"
 
 	nodeutil "github.com/edgelesssys/constellation/operators/constellation-node-operator/internal/node"
@@ -28,9 +29,9 @@ import (
 
 const (
 	// nodeOverprovisionLimit is the maximum number of extra nodes created during the update procedure at any point in time.
-	nodeOverprovisionLimit = 4
+	nodeOverprovisionLimit = 1
 	// nodeJoinTimeout is the time limit pending nodes have to join the cluster before being terminated.
-	nodeJoinTimeout = time.Minute * 15
+	nodeJoinTimeout = time.Minute * 30
 	// nodeLeaveTimeout is the time limit pending nodes have to leave the cluster and being terminated.
 	nodeLeaveTimeout                   = time.Minute
 	donorAnnotation                    = "constellation.edgeless.systems/donor"
@@ -44,7 +45,7 @@ const (
 	conditionNodeImageOutOfDateMessage = "Some node images are out of date"
 )
 
-// NodeImageReconciler reconciles a NodeImage object
+// NodeImageReconciler reconciles a NodeImage object.
 type NodeImageReconciler struct {
 	nodeReplacer
 	etcdRemover
@@ -113,7 +114,7 @@ func (r *NodeImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 	scalingGroupByID := make(map[string]updatev1alpha1.ScalingGroup, len(scalingGroupList.Items))
 	for _, scalingGroup := range scalingGroupList.Items {
-		scalingGroupByID[scalingGroup.Spec.GroupID] = scalingGroup
+		scalingGroupByID[strings.ToLower(scalingGroup.Spec.GroupID)] = scalingGroup
 	}
 	annotatedNodes, invalidNodes := r.annotateNodes(ctx, nodeList.Items)
 	groups := groupNodes(annotatedNodes, pendingNodeList.Items, desiredNodeImage.Spec.ImageReference)
@@ -272,7 +273,7 @@ func (r *NodeImageReconciler) pairDonorsAndHeirs(ctx context.Context, controller
 		// find outdated node in the same group
 		for i := range outdatedNodes {
 			outdatedNode := &outdatedNodes[i]
-			if outdatedNode.Annotations[scalingGroupAnnotation] != mintNode.pendingNode.Spec.ScalingGroupID || len(outdatedNode.Annotations[heirAnnotation]) != 0 {
+			if !strings.EqualFold(outdatedNode.Annotations[scalingGroupAnnotation], mintNode.pendingNode.Spec.ScalingGroupID) || len(outdatedNode.Annotations[heirAnnotation]) != 0 {
 				continue
 			}
 			// mark as donor <-> heir pair and delete "pending node" resource
@@ -302,6 +303,7 @@ func (r *NodeImageReconciler) pairDonorsAndHeirs(ctx context.Context, controller
 			break
 		}
 		if !foundReplacement {
+			logr.Info("No replacement found for mint node. Marking as outdated.", "mintNode", mintNode.node.Name, "scalingGroupID", mintNode.pendingNode.Spec.ScalingGroupID)
 			// mint node was not needed as heir. Cleanup obsolete resources.
 			if err := r.Delete(ctx, &mintNode.pendingNode); err != nil {
 				logr.Error(err, "Unable to delete pending node resource", "pendingNode", mintNode.pendingNode.Name)
@@ -503,7 +505,7 @@ func (r *NodeImageReconciler) createNewNodes(
 		if len(node.Annotations[heirAnnotation]) != 0 {
 			continue
 		}
-		outdatedNodesPerScalingGroup[node.Annotations[scalingGroupAnnotation]]++
+		outdatedNodesPerScalingGroup[strings.ToLower(node.Annotations[scalingGroupAnnotation])]++
 	}
 	pendingJoiningNodesPerScalingGroup := make(map[string]int)
 	for _, pendingNode := range pendingNodes {
@@ -511,10 +513,11 @@ func (r *NodeImageReconciler) createNewNodes(
 		if pendingNode.Spec.Goal != updatev1alpha1.NodeGoalJoin {
 			continue
 		}
-		pendingJoiningNodesPerScalingGroup[pendingNode.Spec.ScalingGroupID]++
+		pendingJoiningNodesPerScalingGroup[strings.ToLower(pendingNode.Spec.ScalingGroupID)]++
 	}
 	requiredNodesPerScalingGroup := make(map[string]int, len(outdatedNodesPerScalingGroup))
 	for scalingGroupID := range outdatedNodesPerScalingGroup {
+		scalingGroupID := strings.ToLower(scalingGroupID)
 		if pendingJoiningNodesPerScalingGroup[scalingGroupID] < outdatedNodesPerScalingGroup[scalingGroupID] {
 			requiredNodesPerScalingGroup[scalingGroupID] = outdatedNodesPerScalingGroup[scalingGroupID] - pendingJoiningNodesPerScalingGroup[scalingGroupID]
 		}
@@ -522,10 +525,10 @@ func (r *NodeImageReconciler) createNewNodes(
 	for scalingGroupID := range requiredNodesPerScalingGroup {
 		scalingGroup, ok := scalingGroupByID[scalingGroupID]
 		if !ok {
-			logr.Info("Scaling group does not have matching resource", "scalingGroup", scalingGroupID)
+			logr.Info("Scaling group does not have matching resource", "scalingGroup", scalingGroupID, "scalingGroups", scalingGroupByID)
 			continue
 		}
-		if scalingGroup.Status.ImageReference != desiredNodeImage.Spec.ImageReference {
+		if !strings.EqualFold(scalingGroup.Status.ImageReference, desiredNodeImage.Spec.ImageReference) {
 			logr.Info("Scaling group does not use latest image", "scalingGroup", scalingGroupID, "usedImage", scalingGroup.Status.ImageReference, "wantedImage", desiredNodeImage.Spec.ImageReference)
 			continue
 		}
@@ -540,7 +543,7 @@ func (r *NodeImageReconciler) createNewNodes(
 				break
 			}
 			logr.Info("Creating new node", "scalingGroup", scalingGroupID)
-			nodeName, providerID, err := r.CreateNode(ctx, scalingGroupID)
+			nodeName, providerID, err := r.CreateNode(ctx, scalingGroup.Spec.GroupID)
 			if err != nil {
 				return err
 			}
@@ -549,7 +552,7 @@ func (r *NodeImageReconciler) createNewNodes(
 				ObjectMeta: metav1.ObjectMeta{Name: nodeName},
 				Spec: updatev1alpha1.PendingNodeSpec{
 					ProviderID:     providerID,
-					ScalingGroupID: scalingGroupID,
+					ScalingGroupID: scalingGroup.Spec.GroupID,
 					NodeName:       nodeName,
 					Goal:           updatev1alpha1.NodeGoalJoin,
 					Deadline:       &deadline,
@@ -757,7 +760,7 @@ func groupNodes(nodes []corev1.Node, pendingNodes []updatev1alpha1.PendingNode, 
 			groups.Obsolete = append(groups.Obsolete, node)
 			continue
 		}
-		if node.Annotations[nodeImageAnnotation] != latestImageReference {
+		if !strings.EqualFold(node.Annotations[nodeImageAnnotation], latestImageReference) {
 			if heir := node.Annotations[heirAnnotation]; heir != "" {
 				groups.Donors = append(groups.Donors, node)
 			} else {
