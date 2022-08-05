@@ -34,15 +34,16 @@ With `cdbg` and `yq` installed in your path:
 3. Modify the `constellation-conf.yaml` to use an image with the debugd already included and add required firewall rules:
 
    ```shell-session
-   # Set timestamp from cloud provider image name
-   export TIMESTAMP=01234
+   # Set full reference of cloud provider image name
+   export IMAGE_URI=
+   ```
 
+   ```shell-session
    yq -i \
-       "(.provider | select(. | has(\"azure\")).azure.image) = \"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos-debugd/versions/0.0.${TIMESTAMP}\"" \
-       constellation-conf.yaml
-
+       "(.provider | select(. | has(\"azure\")).azure.image) = \"${IMAGE_URI}\"" \
+        constellation-conf.yaml
    yq -i \
-       "(.provider | select(. | has(\"gcp\")).gcp.image) = \"projects/constellation-images/global/images/constellation-coreos-debugd-${TIMESTAMP}\"" \
+       "(.provider | select(. | has(\"gcp\")).gcp.image) = \"${IMAGE_URI}\"" \
        constellation-conf.yaml
 
    yq -i \
@@ -68,15 +69,21 @@ With `cdbg` and `yq` installed in your path:
 For GCP, run the following command to get a list of all constellation debug images, sorted by their creation date:
 
 ```shell
-gcloud compute images list --filter="family~'constellation-debug-v.+'" --sort-by=creationTimestamp --project constellation-images
+gcloud compute images list --filter="family~'constellation-debug-v.+'" --sort-by=creationTimestamp --project constellation-images --uri | sed 's#https://www.googleapis.com/compute/v1/##'
 ```
 
 The images are grouped by the Constellation release they were built for.
-Choose the newest debugd image for your release with the naming scheme `constellation-<commit-timestamp>`.
+Choose the newest debugd image for your release and copy the full URI.
 
 ### debugd Azure Image
 
 Azure debug images are grouped by the Constellation release they were built for.
+To get a list of available releases, run the following:
+
+```shell
+az sig image-definition list --resource-group constellation-images --gallery-name Constellation_Debug --query "[].name"  -o table
+```
+
 Run the following command to get a list of all constellation debugd images for release v1.5.0, sorted by their creation date:
 
 ```shell
