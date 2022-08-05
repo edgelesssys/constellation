@@ -109,7 +109,10 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) (controlPlan
 			if instanceGroupManager == nil || instanceGroupManager.Name == nil || instanceGroupManager.SelfLink == nil {
 				continue
 			}
-			groupID := uriNormalize(*instanceGroupManager.SelfLink)
+			groupID, err := c.canonicalInstanceGroupID(ctx, *instanceGroupManager.SelfLink)
+			if err != nil {
+				return nil, nil, fmt.Errorf("normalizing instance group ID: %w", err)
+			}
 
 			if isControlPlaneInstanceGroup(*instanceGroupManager.Name) {
 				controlPlaneGroupIDs = append(controlPlaneGroupIDs, groupID)

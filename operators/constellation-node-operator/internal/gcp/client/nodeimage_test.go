@@ -116,8 +116,8 @@ func TestGetScalingGroupID(t *testing.T) {
 	}{
 		"scaling group is found": {
 			providerID:         "gce://project/zone/instance-name",
-			createdBy:          "projects/project/zones/zone/instanceGroups/instance-group",
-			wantScalingGroupID: "projects/project/zones/zone/instanceGroups/instance-group",
+			createdBy:          "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			wantScalingGroupID: "projects/project/zones/zone/instanceGroupManagers/instance-group",
 		},
 		"splitting providerID fails": {
 			providerID: "invalid",

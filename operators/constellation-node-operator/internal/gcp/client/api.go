@@ -8,6 +8,12 @@ import (
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 )
 
+type projectAPI interface {
+	Close() error
+	Get(ctx context.Context, req *computepb.GetProjectRequest,
+		opts ...gax.CallOption) (*computepb.Project, error)
+}
+
 type instanceAPI interface {
 	Close() error
 	Get(ctx context.Context, req *computepb.GetInstanceRequest,

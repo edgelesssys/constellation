@@ -10,6 +10,21 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+type stubProjectAPI struct {
+	project *computepb.Project
+	getErr  error
+}
+
+func (a stubProjectAPI) Close() error {
+	return nil
+}
+
+func (a stubProjectAPI) Get(ctx context.Context, req *computepb.GetProjectRequest,
+	opts ...gax.CallOption,
+) (*computepb.Project, error) {
+	return a.project, a.getErr
+}
+
 type stubInstanceAPI struct {
 	instance *computepb.Instance
 	getErr   error

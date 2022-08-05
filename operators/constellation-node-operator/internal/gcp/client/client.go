@@ -13,6 +13,7 @@ import (
 // Client is a client for the Google Compute Engine.
 type Client struct {
 	projectID string
+	projectAPI
 	instanceAPI
 	instanceTemplateAPI
 	instanceGroupManagersAPI
@@ -29,8 +30,15 @@ func New(ctx context.Context, configPath string) (*Client, error) {
 	}
 
 	var closers []closer
+	projectAPI, err := compute.NewProjectsRESTClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	closers = append(closers, projectAPI)
 	insAPI, err := compute.NewInstancesRESTClient(ctx)
 	if err != nil {
+		_ = closeAll(closers)
 		return nil, err
 	}
 	closers = append(closers, insAPI)
@@ -53,6 +61,7 @@ func New(ctx context.Context, configPath string) (*Client, error) {
 	}
 	return &Client{
 		projectID:                projectID,
+		projectAPI:               projectAPI,
 		instanceAPI:              insAPI,
 		instanceTemplateAPI:      &instanceTemplateClient{templAPI},
 		instanceGroupManagersAPI: &instanceGroupManagersClient{groupAPI},
@@ -64,6 +73,7 @@ func New(ctx context.Context, configPath string) (*Client, error) {
 // Close closes the client's connection.
 func (c *Client) Close() error {
 	closers := []closer{
+		c.projectAPI,
 		c.instanceAPI,
 		c.instanceTemplateAPI,
 		c.instanceGroupManagersAPI,

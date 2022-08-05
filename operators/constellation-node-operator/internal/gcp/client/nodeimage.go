@@ -14,6 +14,10 @@ func (c *Client) GetNodeImage(ctx context.Context, providerID string) (string, e
 	if err != nil {
 		return "", err
 	}
+	project, err = c.canonicalProjectID(ctx, project)
+	if err != nil {
+		return "", err
+	}
 	instance, err := c.instanceAPI.Get(ctx, &computepb.GetInstanceRequest{
 		Instance: instanceName,
 		Project:  project,
@@ -61,12 +65,20 @@ func (c *Client) GetScalingGroupID(ctx context.Context, providerID string) (stri
 	if scalingGroupID == "" {
 		return "", fmt.Errorf("instance %q has no created-by metadata", instanceName)
 	}
+	scalingGroupID, err = c.canonicalInstanceGroupID(ctx, scalingGroupID)
+	if err != nil {
+		return "", err
+	}
 	return scalingGroupID, nil
 }
 
 // CreateNode creates a node in the specified scaling group.
 func (c *Client) CreateNode(ctx context.Context, scalingGroupID string) (nodeName, providerID string, err error) {
 	project, zone, instanceGroupName, err := splitInstanceGroupID(scalingGroupID)
+	if err != nil {
+		return "", "", err
+	}
+	project, err = c.canonicalProjectID(ctx, project)
 	if err != nil {
 		return "", "", err
 	}
