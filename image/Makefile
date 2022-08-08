@@ -130,7 +130,7 @@ image-azure: $(AZURE_IMAGE_PATH)
 # reference: https://docs.microsoft.com/en-us/azure/virtual-machines/linux/upload-vhd
 # reference: https://docs.microsoft.com/en-us/azure/virtual-machines/image-version
 upload-azure: $(AZURE_IMAGE_PATH)
-	$(eval SIZE := $(shell cat $(AZURE_IMAGE_PATH) | wc -c))
+	$(eval SIZE := $(shell wc -c $(AZURE_IMAGE_PATH) | cut -d " " -f1))
 	@echo "creating disk of size $(SIZE)"
 	az disk create -n $(AZURE_IMAGE_NAME) -g $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --hyper-v-generation V2 --os-type Linux --for-upload --upload-size-bytes $(SIZE) --sku standard_lrs --tags bootstrapper-sha512=$$(sha512sum $(BOOTSTRAPPER_OVERRIDE_PATH) | cut -d " " -f 1)
 	@echo "waiting for disk to be created"
