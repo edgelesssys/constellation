@@ -4,7 +4,7 @@ layout:
 plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
-projectName: constellation-node-operator
+projectName: node-operator
 repo: github.com/edgelesssys/constellation/operators/constellation-node-operator
 resources:
 - api:

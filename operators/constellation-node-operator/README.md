@@ -250,7 +250,7 @@ In production, it is recommended to deploy the operator using the [operator life
         sourceNamespace: olm
         installPlanApproval: Automatic
         # TODO: user: set desired operator version here
-        startingCSV: constellation-node-operator.v0.0.1
+        startingCSV: node-operator.v0.0.1
         config:
             env:
             # TODO: user: set correct CSP here ("azure" or "gcp")

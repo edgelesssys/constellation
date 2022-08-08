@@ -56,7 +56,7 @@ spec:
   - constellation
   links:
   - name: Constellation Node Operator
-    url: https://constellation-node-operator.domain
+    url: https://edgeless.systems/
   maintainers:
   - email: mp@edgeless.systems
     name: Malte Poll
