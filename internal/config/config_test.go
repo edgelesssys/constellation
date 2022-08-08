@@ -43,7 +43,7 @@ func TestFromFile(t *testing.T) {
 		"default config when path empty": {
 			config:     nil,
 			configName: "",
-			wantResult: Default(),
+			wantErr:    true,
 		},
 		"err when path not exist": {
 			config:     nil,
@@ -154,7 +154,7 @@ func TestValidate(t *testing.T) {
 	}{
 		"default config is valid": {
 			cnf:          Default(),
-			wantMsgCount: 0,
+			wantMsgCount: 7, // expect 7 error messages by default because user-specific values are not set
 		},
 		"config with 1 error": {
 			cnf: func() *Config {
@@ -162,7 +162,7 @@ func TestValidate(t *testing.T) {
 				cnf.Version = "v0"
 				return cnf
 			}(),
-			wantMsgCount: 1,
+			wantMsgCount: 8,
 		},
 		"config with 2 errors": {
 			cnf: func() *Config {
@@ -171,7 +171,7 @@ func TestValidate(t *testing.T) {
 				cnf.StateDiskSizeGB = -1
 				return cnf
 			}(),
-			wantMsgCount: 2,
+			wantMsgCount: 9,
 		},
 	}
 

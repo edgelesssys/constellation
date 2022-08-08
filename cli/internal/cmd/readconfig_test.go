@@ -17,8 +17,44 @@ func TestValidateConfig(t *testing.T) {
 		wantOutput bool
 		wantErr    bool
 	}{
-		"default config is valid": {
-			cnf: config.Default(),
+		"default config is not valid": {
+			cnf:        config.Default(),
+			wantOutput: true,
+			wantErr:    true,
+		},
+		"default Azure config is not valid": {
+			cnf: func() *config.Config {
+				cnf := config.Default()
+				az := cnf.Provider.Azure
+				cnf.Provider = config.ProviderConfig{}
+				cnf.Provider.Azure = az
+				return cnf
+			}(),
+			provider:   cloudprovider.Azure,
+			wantOutput: true,
+			wantErr:    true,
+		},
+		"default GCP config is not valid": {
+			cnf: func() *config.Config {
+				cnf := config.Default()
+				gcp := cnf.Provider.GCP
+				cnf.Provider = config.ProviderConfig{}
+				cnf.Provider.GCP = gcp
+				return cnf
+			}(),
+			provider:   cloudprovider.GCP,
+			wantOutput: true,
+			wantErr:    true,
+		},
+		"default QEMU config is valid": {
+			cnf: func() *config.Config {
+				cnf := config.Default()
+				qemu := cnf.Provider.QEMU
+				cnf.Provider = config.ProviderConfig{}
+				cnf.Provider.QEMU = qemu
+				return cnf
+			}(),
+			provider: cloudprovider.QEMU,
 		},
 		"config with an error": {
 			cnf: func() *config.Config {
@@ -35,16 +71,6 @@ func TestValidateConfig(t *testing.T) {
 				cnf.Provider = config.ProviderConfig{}
 				return cnf
 			}(),
-		},
-		"config with only required provider": {
-			cnf: func() *config.Config {
-				cnf := config.Default()
-				az := cnf.Provider.Azure
-				cnf.Provider = config.ProviderConfig{}
-				cnf.Provider.Azure = az
-				return cnf
-			}(),
-			provider: cloudprovider.Azure,
 		},
 		"config without required provider": {
 			cnf: func() *config.Config {

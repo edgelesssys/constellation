@@ -11,6 +11,10 @@ import (
 )
 
 func readConfig(out io.Writer, fileHandler file.Handler, name string, provider cloudprovider.Provider) (*config.Config, error) {
+	if name == "" {
+		return config.Default(), nil
+	}
+
 	cnf, err := config.FromFile(fileHandler, name)
 	if err != nil {
 		return nil, err
@@ -32,7 +36,8 @@ func validateConfig(out io.Writer, cnf *config.Config, provider cloudprovider.Pr
 		for _, m := range msgs {
 			fmt.Fprintln(out, "\t"+m)
 		}
-		return errors.New("invalid configuration. Fix the invalid entries or generate a new configuration using `constellation config generate`")
+		fmt.Fprintln(out, "Fix the invalid entries or generate a new configuration using `constellation config generate`")
+		return errors.New("invalid configuration")
 	}
 
 	if provider != cloudprovider.Unknown && !cnf.HasProvider(provider) {

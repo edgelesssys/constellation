@@ -19,20 +19,33 @@ import (
 )
 
 // Option is a bitmask of options for file operations.
-type Option uint
+type Option struct {
+	uint
+}
 
-// Has determines if a set of options contains the given options.
-func (o Option) Has(op Option) bool {
-	return o&op == op
+// hasOption determines if a set of options contains the given option.
+func hasOption(options []Option, op Option) bool {
+	for _, ops := range options {
+		if ops == op {
+			return true
+		}
+	}
+	return false
 }
 
 const (
 	// OptNone is a no-op.
-	OptNone Option = 1 << iota / 2
+	optNone uint = iota
 	// OptOverwrite overwrites an existing file.
-	OptOverwrite
+	optOverwrite
 	// OptMkdirAll creates the path to the file.
-	OptMkdirAll
+	optMkdirAll
+)
+
+var (
+	OptNone      = Option{optNone}
+	OptOverwrite = Option{optOverwrite}
+	OptMkdirAll  = Option{optMkdirAll}
 )
 
 // Handler handles file interaction.
@@ -57,14 +70,14 @@ func (h *Handler) Read(name string) ([]byte, error) {
 }
 
 // Write writes the data bytes into the file with the given name.
-func (h *Handler) Write(name string, data []byte, options Option) error {
-	if options.Has(OptMkdirAll) {
+func (h *Handler) Write(name string, data []byte, options ...Option) error {
+	if hasOption(options, OptMkdirAll) {
 		if err := h.fs.MkdirAll(path.Dir(name), os.ModePerm); err != nil {
 			return err
 		}
 	}
 	flags := os.O_WRONLY | os.O_CREATE | os.O_EXCL
-	if options.Has(OptOverwrite) {
+	if hasOption(options, OptOverwrite) {
 		flags = os.O_WRONLY | os.O_CREATE | os.O_TRUNC
 	}
 	file, err := h.fs.OpenFile(name, flags, 0o600)
@@ -89,12 +102,12 @@ func (h *Handler) ReadJSON(name string, content any) error {
 }
 
 // WriteJSON marshals the content interface to JSON and writes it to the path with the given name.
-func (h *Handler) WriteJSON(name string, content any, options Option) error {
+func (h *Handler) WriteJSON(name string, content any, options ...Option) error {
 	jsonData, err := json.MarshalIndent(content, "", "\t")
 	if err != nil {
 		return err
 	}
-	return h.Write(name, jsonData, options)
+	return h.Write(name, jsonData, options...)
 }
 
 // ReadYAML reads a YAML file from name and unmarshals it into the content interface.
@@ -120,7 +133,7 @@ func (h *Handler) readYAML(name string, content any, strict bool) error {
 }
 
 // WriteYAML marshals the content interface to YAML and writes it to the path with the given name.
-func (h *Handler) WriteYAML(name string, content any, options Option) (err error) {
+func (h *Handler) WriteYAML(name string, content any, options ...Option) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New("recovered from panic")
@@ -130,7 +143,7 @@ func (h *Handler) WriteYAML(name string, content any, options Option) (err error
 	if err != nil {
 		return err
 	}
-	return h.Write(name, data, options)
+	return h.Write(name, data, options...)
 }
 
 // Remove deletes the file with the given name.

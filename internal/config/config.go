@@ -212,18 +212,18 @@ func Default() *Config {
 		Provider: ProviderConfig{
 			// TODO remove our subscriptions from the default config
 			Azure: &AzureConfig{
-				SubscriptionID:       "0d202bbb-4fa7-4af8-8125-58c269a05435",
-				TenantID:             "adb650a8-5da3-4b15-b4b0-3daf65ff7626",
-				Location:             "North Europe",
+				SubscriptionID:       "",
+				TenantID:             "",
+				Location:             "",
+				UserAssignedIdentity: "",
 				Image:                "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos/versions/0.0.1659453699",
 				StateDiskType:        "StandardSSD_LRS", // TODO: Replace with Premium_LRS when we replace the default VM size (Standard_D2a_v4) since the size does not support Premium_LRS
 				Measurements:         azurePCRs,
-				UserAssignedIdentity: "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-dev-identity",
 			},
 			GCP: &GCPConfig{
-				Project: "constellation-331613",
-				Region:  "europe-west3",
-				Zone:    "europe-west3-b",
+				Project: "",
+				Region:  "",
+				Zone:    "",
 				Image:   "projects/constellation-images/global/images/constellation-coreos-1659453699",
 				ServiceAccountRoles: []string{
 					"roles/compute.instanceAdmin.v1",
@@ -336,18 +336,13 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 
 // FromFile returns config file with `name` read from `fileHandler` by parsing
 // it as YAML.
-// If name is empty, the default configuration is returned.
 func FromFile(fileHandler file.Handler, name string) (*Config, error) {
-	if name == "" {
-		return Default(), nil
-	}
-
-	var emptyConf Config
-	if err := fileHandler.ReadYAMLStrict(name, &emptyConf); err != nil {
+	var conf Config
+	if err := fileHandler.ReadYAMLStrict(name, &conf); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, fmt.Errorf("unable to find %s - use `constellation config generate` to generate it first", name)
 		}
 		return nil, fmt.Errorf("could not load config from file %s: %w", name, err)
 	}
-	return &emptyConf, nil
+	return &conf, nil
 }

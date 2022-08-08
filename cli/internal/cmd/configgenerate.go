@@ -58,7 +58,12 @@ func configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloud
 		return err
 	}
 
-	return fileHandler.WriteYAML(flags.file, conf, 0o644)
+	if err := fileHandler.WriteYAML(flags.file, conf, file.OptMkdirAll); err != nil {
+		return err
+	}
+	cmd.Println("Config file written to", flags.file)
+	cmd.Println("Please fill in your CSP specific configuration before proceeding.")
+	return nil
 }
 
 func parseGenerateFlags(cmd *cobra.Command) (generateFlags, error) {

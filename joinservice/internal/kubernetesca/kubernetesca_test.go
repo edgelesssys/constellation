@@ -169,18 +169,18 @@ Q29uc3RlbGxhdGlvbg==
 			assert := assert.New(t)
 			require := require.New(t)
 
-			file := file.NewHandler(afero.NewMemMapFs())
+			fileHandler := file.NewHandler(afero.NewMemMapFs())
 
 			if len(tc.caCert) > 0 {
-				require.NoError(file.Write(caCertFilename, tc.caCert, 0o644))
+				require.NoError(fileHandler.Write(caCertFilename, tc.caCert, file.OptNone))
 			}
 			if len(tc.caKey) > 0 {
-				require.NoError(file.Write(caKeyFilename, tc.caKey, 0o644))
+				require.NoError(fileHandler.Write(caKeyFilename, tc.caKey, file.OptNone))
 			}
 
 			ca := New(
 				logger.NewTest(t),
-				file,
+				fileHandler,
 			)
 
 			signingRequest, err := tc.createSigningRequest()
