@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package controllers
 
 import (
@@ -73,6 +76,13 @@ var _ = Describe("ScalingGroup controller", func() {
 			Eventually(func() string {
 				image, _ := fakes.scalingGroupUpdater.GetScalingGroupImage(ctx, "group-id")
 				return image
+			}, timeout, interval).Should(Equal("image-1"))
+			Eventually(func() string {
+				err := k8sClient.Get(ctx, scalingGroupLookupKey, createdScalingGroup)
+				if err != nil {
+					return ""
+				}
+				return createdScalingGroup.Status.ImageReference
 			}, timeout, interval).Should(Equal("image-1"))
 			Consistently(func() (string, error) {
 				err := k8sClient.Get(ctx, scalingGroupLookupKey, createdScalingGroup)

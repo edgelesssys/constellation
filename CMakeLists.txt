@@ -67,5 +67,7 @@ add_custom_target(cdbg ALL
 
 add_test(NAME unit-main COMMAND go test -race -count=3 ./... WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME unit-hack COMMAND go test -race -count=3 ./... WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/hack)
-add_test(NAME integration-mount COMMAND bash -c "go test -tags integration -c ./test/ && sudo ./test.test -test.v -v 9"  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/mount)
-add_test(NAME integration-dm COMMAND bash -c "go test -tags integration -c ./test/ && sudo ./test.test -test.v"  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/state/internal)
+add_test(NAME unit-node-operator COMMAND go test -race -count=3 ./... WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/operators/constellation-node-operator)
+add_test(NAME integration-node-operator COMMAND make test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/operators/constellation-node-operator)
+add_test(NAME integration-mount COMMAND bash -c "go test -tags integration -c ./test/ && sudo ./test.test -test.v -v 9" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/mount)
+add_test(NAME integration-dm COMMAND bash -c "go test -tags integration -c ./test/ && sudo ./test.test -test.v" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/state/internal)

@@ -1,7 +1,6 @@
-
 // Package v1alpha1 contains API Schema definitions for the update v1alpha1 API group
-//+kubebuilder:object:generate=true
-//+groupName=update.edgeless.systems
+// +kubebuilder:object:generate=true
+// +groupName=update.edgeless.systems
 package v1alpha1
 
 import (

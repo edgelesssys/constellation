@@ -1,0 +1,27 @@
+name: Build and upload constellation node operator image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "operators/constellation-node-operator/**"
+
+jobs:
+  build-constellation-node-operator:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out repository
+        id: checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+
+      - name: Build and upload constellation-node-operator container image
+        uses: ./.github/actions/build_operator
+        with:
+          name: node-operator
+          sourceDir: operators/constellation-node-operator
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
