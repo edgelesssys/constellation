@@ -40,6 +40,20 @@ on:
         description: "Kubernetes version to create the cluster from."
         default: "1.24"
         required: true
+      coreosImage:
+        description: "CoreOS image (full path). Examples are in internal/config/config.go."
+        default: "debug-latest"
+        required: false
+      isDebugImage:
+        description: "Is CoreOS image a debug image?"
+        type: boolean
+        default: true
+        required: false
+
+# Abort runs of *this* workflow, if a new commit with the same ref is pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   e2e-test-manual:
@@ -60,3 +74,5 @@ jobs:
           sonobuoyTestSuiteCmd: ${{ github.event.inputs.sonobuoyTestSuiteCmd }}
           kubernetesVersion: ${{ github.event.inputs.kubernetesVersion }}
           msTeamsWebhook: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+          coreosImage: ${{ github.event.inputs.coreosImage }}
+          isDebugImage: ${{ github.event.inputs.isDebugImage }}

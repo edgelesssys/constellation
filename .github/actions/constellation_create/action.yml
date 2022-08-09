@@ -17,6 +17,12 @@ inputs:
   machineType:
     description: "Machine type of VM to spawn."
     required: true
+  coreosImage:
+    description: "CoreOS image to use. The default value 'debug-latest' will select the latest available debug image."
+    required: true
+  isDebugImage:
+    description: "Is CoreOS img a debug img?"
+    required: true
   kubernetesVersion:
     description: "Kubernetes version to create the cluster from."
     required: false
@@ -57,21 +63,43 @@ runs:
         fi
       shell: bash
 
-    - name: Set latest image
+    - name: Set image
       run: |
         case $CSP in
           azure)
-            LATEST_AZURE_IMAGE=$(az sig image-version list --resource-group constellation-images --gallery-name Constellation --gallery-image-definition constellation-coreos --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table | tail -n 1)
-            yq eval -i "(.provider.azure.image) = \"${LATEST_AZURE_IMAGE}\"" constellation-conf.yaml
+            if [ "${{ inputs.coreosImage == 'debug-latest' }}" = true ]
+            then
+              IMAGE_DEFINITION=$(az sig image-definition list --resource-group constellation-images --gallery-name Constellation_Debug --query "[].name" -o tsv | sort --version-sort | tail -n 1)
+              AZURE_IMAGE=$(az sig image-version list --resource-group constellation-images --gallery-name Constellation_Debug --gallery-image-definition ${IMAGE_DEFINITION} --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table | tail -n 1)
+            else
+              AZURE_IMAGE=${{ inputs.coreosImage }}
+            fi
+
+            yq eval -i "(.provider.azure.image) = \"${AZURE_IMAGE}\"" constellation-conf.yaml
             ;;
           gcp)
-            LATEST_GCP_IMAGE_TIMESTAMP=$(gcloud compute images list --filter="name~'constellation-coreos-\d{10}'" --sort-by=creationTimestamp --project constellation-images --format="table(name)" | tail -n 1 | cut -d '-' -f3)
-            yq eval -i "(.provider.gcp.image) = \"projects/constellation-images/global/images/constellation-coreos-${LATEST_GCP_IMAGE_TIMESTAMP}\"" constellation-conf.yaml
+            if [ "${{ inputs.coreosImage == 'debug-latest' }}" = true ]
+            then
+              GCP_LATEST_FAMILY=$(gcloud compute images list --project constellation-images --filter="family ~ constellation-debug-v\d+-\d+-\d+" --format="value(family)" | sort --version-sort | tail -n 1)
+              GCP_IMAGE_NAME=$(gcloud compute images list --project constellation-images --filter="name ~ constellation-\d{10} AND family:${GCP_LATEST_FAMILY}" --sort-by=creationTimestamp --format="table(name)" | tail -n 1)
+              GCP_IMAGE="projects/constellation-images/global/images/${GCP_IMAGE_NAME}"
+            else
+              GCP_IMAGE=${{ inputs.coreosImage }}
+            fi
+
+            yq eval -i "(.provider.gcp.image) = \"${GCP_IMAGE}\"" constellation-conf.yaml
             ;;
         esac
+
       shell: bash
       env:
         CSP: ${{ inputs.cloudProvider }}
+
+    - name: Add debugd firewall rule
+      run: |
+        yq eval -i '(.ingressFirewall) += {"name": "debugd", "description": "debugd default port", "protocol": "tcp", "iprange": "0.0.0.0/0", "fromport": 4000, "toport": 0}' constellation-conf.yaml
+      shell: bash
+      if: ${{ inputs.isDebugImage == 'true' }}
 
     - name: Constellation create
       run: |
@@ -85,6 +113,15 @@ runs:
         name: constellation-state.json
         path: constellation-state.json
       if: ${{ always() && !env.ACT }}
+
+    - name: Cdbg deploy
+      run: |
+        printf 'cdbg:\n  bootstrapperPath: "'$GITHUB_WORKSPACE'/build/bootstrapper"\n' > cdbg-conf.yaml
+        echo "Deploying bootstrapper with config:"
+        cat ./cdbg-conf.yaml
+        cdbg deploy
+      shell: bash
+      if: ${{ inputs.isDebugImage == 'true' }}
 
     - name: Constellation init
       run: |

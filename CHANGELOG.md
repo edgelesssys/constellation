@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- In case of vulnerabilities. -->
 ### Internal
 - Run e2e tests on all supported versions.
+- Run e2e tests on latest debug images, instead of release image.
 
 ## [1.4.0] - 2022-08-02
 

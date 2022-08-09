@@ -16,6 +16,14 @@ inputs:
   machineType:
     description: "VM machine type. Make sure it matches selected cloud provider!"
     required: true
+  coreosImage:
+    description: "CoreOS image to run. The default value 'debug-latest' will select the latest available debug image."
+    default: "debug-latest"
+    required: true
+  isDebugImage:
+    description: "Is CoreOS img a debug img?"
+    default: "true"
+    required: true
   gcp_service_account_json:
     description: "Service account with permissions to create Constellation on GCP."
     required: false
@@ -52,11 +60,20 @@ inputs:
   awsBucketName:
     description: "AWS S3 bucket name to upload measurements."
     required: false
+
 runs:
   using: "composite"
   steps:
     - name: Build CLI
       uses: ./.github/actions/build_cli
+    - name: Build the bootstrapper
+      id: build-bootstrapper
+      uses: ./.github/actions/build_bootstrapper
+      if: ${{ inputs.isDebugImage == 'true' }}
+    - name: Build debugd
+      id: build-debugd
+      uses: ./.github/actions/build_debugd
+      if: ${{ inputs.isDebugImage == 'true' }}
 
     - name: Login to GCP
       uses: ./.github/actions/gcp_login
@@ -77,6 +94,8 @@ runs:
         workerNodesCount: ${{ inputs.workerNodesCount }}
         controlNodesCount: ${{ inputs.controlNodesCount }}
         machineType: ${{ inputs.machineType }}
+        coreosImage: ${{ inputs.coreosImage }}
+        isDebugImage: ${{ inputs.isDebugImage }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
     - name: Measure cluster
       uses: ./.github/actions/constellation_measure
