@@ -15,7 +15,7 @@ type stubRecoveryClient struct {
 	pushStateDiskKeyKey []byte
 }
 
-func (c *stubRecoveryClient) Connect(_ string, _ []atls.Validator) error {
+func (c *stubRecoveryClient) Connect(_ string, _ atls.Validator) error {
 	c.conn = true
 	return c.connectErr
 }

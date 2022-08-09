@@ -62,7 +62,7 @@ func verify(
 		return fmt.Errorf("reading and validating config: %w", err)
 	}
 
-	validators, err := cloudcmd.NewValidators(provider, config)
+	validators, err := cloudcmd.NewValidator(provider, config)
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func verify(
 			Nonce:    nonce,
 			UserData: userData,
 		},
-		validators.V()[0],
+		validators.V(),
 	); err != nil {
 		return err
 	}

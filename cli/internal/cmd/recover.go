@@ -68,7 +68,7 @@ func recover(cmd *cobra.Command, fileHandler file.Handler, recoveryClient recove
 		return fmt.Errorf("reading and validating config: %w", err)
 	}
 
-	validators, err := cloudcmd.NewValidators(provider, config)
+	validators, err := cloudcmd.NewValidator(provider, config)
 	if err != nil {
 		return err
 	}

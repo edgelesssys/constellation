@@ -21,8 +21,8 @@ type KeyClient struct {
 // The connection must be closed using Close(). If connect is
 // called on a client that already has a connection, the old
 // connection is closed.
-func (c *KeyClient) Connect(endpoint string, validators []atls.Validator) error {
-	creds := atlscredentials.New(nil, validators)
+func (c *KeyClient) Connect(endpoint string, validators atls.Validator) error {
+	creds := atlscredentials.New(nil, []atls.Validator{validators})
 
 	conn, err := grpc.Dial(endpoint, grpc.WithTransportCredentials(creds))
 	if err != nil {

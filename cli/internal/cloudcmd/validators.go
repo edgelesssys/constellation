@@ -18,14 +18,14 @@ import (
 
 const warningStr = "Warning: not verifying the Constellation cluster's %s measurements\n"
 
-type Validators struct {
-	provider   cloudprovider.Provider
-	pcrs       map[uint32][]byte
-	validators []atls.Validator
+type Validator struct {
+	provider  cloudprovider.Provider
+	pcrs      map[uint32][]byte
+	validator atls.Validator
 }
 
-func NewValidators(provider cloudprovider.Provider, config *config.Config) (*Validators, error) {
-	v := Validators{}
+func NewValidator(provider cloudprovider.Provider, config *config.Config) (*Validator, error) {
+	v := Validator{}
 	if provider == cloudprovider.Unknown {
 		return nil, errors.New("unknown cloud provider")
 	}
@@ -36,7 +36,7 @@ func NewValidators(provider cloudprovider.Provider, config *config.Config) (*Val
 	return &v, nil
 }
 
-func (v *Validators) UpdateInitPCRs(ownerID, clusterID string) error {
+func (v *Validator) UpdateInitPCRs(ownerID, clusterID string) error {
 	if err := v.updatePCR(uint32(vtpm.PCRIndexOwnerID), ownerID); err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (v *Validators) UpdateInitPCRs(ownerID, clusterID string) error {
 // When adding, the input is first decoded from base64.
 // We then calculate the expected PCR by hashing the input using SHA256,
 // appending expected PCR for initialization, and then hashing once more.
-func (v *Validators) updatePCR(pcrIndex uint32, encoded string) error {
+func (v *Validator) updatePCR(pcrIndex uint32, encoded string) error {
 	if encoded == "" {
 		delete(v.pcrs, pcrIndex)
 		return nil
@@ -65,7 +65,7 @@ func (v *Validators) updatePCR(pcrIndex uint32, encoded string) error {
 	return nil
 }
 
-func (v *Validators) setPCRs(config *config.Config) error {
+func (v *Validator) setPCRs(config *config.Config) error {
 	switch v.provider {
 	case cloudprovider.GCP:
 		gcpPCRs := config.Provider.GCP.Measurements
@@ -89,33 +89,32 @@ func (v *Validators) setPCRs(config *config.Config) error {
 	return nil
 }
 
-// V returns validators as list of atls.Validator.
-func (v *Validators) V() []atls.Validator {
-	v.updateValidators()
-	return v.validators
+// V returns the validator as atls.Validator.
+func (v *Validator) V() atls.Validator {
+	v.updateValidator()
+	return v.validator
 }
 
-func (v *Validators) updateValidators() {
+// PCRS returns the validator's PCR map.
+func (v *Validator) PCRS() map[uint32][]byte {
+	return v.pcrs
+}
+
+func (v *Validator) updateValidator() {
 	switch v.provider {
 	case cloudprovider.GCP:
-		v.validators = []atls.Validator{
-			gcp.NewValidator(v.pcrs),
-		}
+		v.validator = gcp.NewValidator(v.pcrs)
 	case cloudprovider.Azure:
-		v.validators = []atls.Validator{
-			azure.NewValidator(v.pcrs),
-		}
+		v.validator = azure.NewValidator(v.pcrs)
 	case cloudprovider.QEMU:
-		v.validators = []atls.Validator{
-			qemu.NewValidator(v.pcrs),
-		}
+		v.validator = qemu.NewValidator(v.pcrs)
 	}
 }
 
 // Warnings returns warnings for the specifc PCR values that are not verified.
 //
 // PCR allocation inspired by https://link.springer.com/chapter/10.1007/978-1-4302-6584-9_12#Tab1
-func (v *Validators) Warnings() string {
+func (v *Validator) Warnings() string {
 	sb := &strings.Builder{}
 
 	if v.pcrs[0] == nil || v.pcrs[1] == nil {
@@ -141,11 +140,11 @@ func (v *Validators) Warnings() string {
 	return sb.String()
 }
 
-// WarningsIncludeInit returns warnings for the specifc PCR values that are not verified.
+// WarningsIncludeInit returns warnings for the specific PCR values that are not verified.
 // Warnings regarding the initialization are included.
 //
 // PCR allocation inspired by https://link.springer.com/chapter/10.1007/978-1-4302-6584-9_12#Tab1
-func (v *Validators) WarningsIncludeInit() string {
+func (v *Validator) WarningsIncludeInit() string {
 	warnings := v.Warnings()
 	if v.pcrs[uint32(vtpm.PCRIndexOwnerID)] == nil || v.pcrs[uint32(vtpm.PCRIndexClusterID)] == nil {
 		warnings = warnings + fmt.Sprintf(warningStr, "initialization status")
@@ -154,7 +153,7 @@ func (v *Validators) WarningsIncludeInit() string {
 	return warnings
 }
 
-func (v *Validators) checkPCRs(pcrs map[uint32][]byte) error {
+func (v *Validator) checkPCRs(pcrs map[uint32][]byte) error {
 	if len(pcrs) == 0 {
 		return errors.New("no PCR values provided")
 	}

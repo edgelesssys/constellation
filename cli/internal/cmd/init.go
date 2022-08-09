@@ -52,13 +52,15 @@ func NewInitCmd() *cobra.Command {
 func runInitialize(cmd *cobra.Command, args []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	serviceAccountCreator := cloudcmd.NewServiceAccountCreator()
-	dialer := dialer.New(nil, nil, &net.Dialer{})
-	return initialize(cmd, dialer, serviceAccountCreator, fileHandler)
+	newDialer := func(validator *cloudcmd.Validator) *dialer.Dialer {
+		return dialer.New(nil, validator.V(), &net.Dialer{})
+	}
+	return initialize(cmd, newDialer, serviceAccountCreator, fileHandler)
 }
 
 // initialize initializes a Constellation.
-func initialize(cmd *cobra.Command, dialer grpcDialer, serviceAccCreator serviceAccountCreator,
-	fileHandler file.Handler,
+func initialize(cmd *cobra.Command, newDialer func(*cloudcmd.Validator) *dialer.Dialer,
+	serviceAccCreator serviceAccountCreator, fileHandler file.Handler,
 ) error {
 	flags, err := evalFlagArgs(cmd, fileHandler)
 	if err != nil {
@@ -88,11 +90,11 @@ func initialize(cmd *cobra.Command, dialer grpcDialer, serviceAccCreator service
 		})
 	}
 
-	validators, err := cloudcmd.NewValidators(provider, config)
+	validator, err := cloudcmd.NewValidator(provider, config)
 	if err != nil {
 		return err
 	}
-	cmd.Print(validators.WarningsIncludeInit())
+	cmd.Print(validator.WarningsIncludeInit())
 
 	cmd.Println("Creating service account ...")
 	serviceAccount, stat, err := serviceAccCreator.Create(cmd.Context(), stat, config)
@@ -103,7 +105,7 @@ func initialize(cmd *cobra.Command, dialer grpcDialer, serviceAccCreator service
 		return err
 	}
 
-	controlPlanes, workers, err := getScalingGroupsFromState(stat, config)
+	_, workers, err := getScalingGroupsFromState(stat, config)
 	if err != nil {
 		return err
 	}
@@ -125,12 +127,12 @@ func initialize(cmd *cobra.Command, dialer grpcDialer, serviceAccCreator service
 		KubernetesVersion:      config.KubernetesVersion,
 		SshUserKeys:            ssh.ToProtoSlice(sshUsers),
 	}
-	resp, err := initCall(cmd.Context(), dialer, stat.BootstrapperHost, req)
+	resp, err := initCall(cmd.Context(), newDialer(validator), stat.BootstrapperHost, req)
 	if err != nil {
 		return err
 	}
 
-	return writeOutput(resp, controlPlanes.PublicIPs()[0], cmd.OutOrStdout(), fileHandler)
+	return writeOutput(resp, stat.BootstrapperHost, cmd.OutOrStdout(), fileHandler)
 }
 
 func initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.InitRequest) (*initproto.InitResponse, error) {

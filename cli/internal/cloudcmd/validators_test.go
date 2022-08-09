@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewValidators(t *testing.T) {
+func TestNewValidator(t *testing.T) {
 	zero := []byte("00000000000000000000000000000000")
 	one := []byte("11111111111111111111111111111111")
 	testPCRs := map[uint32][]byte{
@@ -80,7 +80,7 @@ func TestNewValidators(t *testing.T) {
 				conf.Provider.QEMU = &config.QEMUConfig{Measurements: measurements}
 			}
 
-			validators, err := NewValidators(tc.provider, conf)
+			validators, err := NewValidator(tc.provider, conf)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -93,7 +93,7 @@ func TestNewValidators(t *testing.T) {
 	}
 }
 
-func TestValidatorsWarnings(t *testing.T) {
+func TestValidatorWarnings(t *testing.T) {
 	zero := []byte("00000000000000000000000000000000")
 
 	testCases := map[string]struct {
@@ -233,7 +233,7 @@ func TestValidatorsWarnings(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			validators := Validators{pcrs: tc.pcrs}
+			validators := Validator{pcrs: tc.pcrs}
 
 			warnings := validators.Warnings()
 			warningsInclueInit := validators.WarningsIncludeInit()
@@ -259,7 +259,7 @@ func TestValidatorsWarnings(t *testing.T) {
 	}
 }
 
-func TestValidatorsV(t *testing.T) {
+func TestValidatorV(t *testing.T) {
 	zero := []byte("00000000000000000000000000000000")
 	newTestPCRs := func() map[uint32][]byte {
 		return map[uint32][]byte{
@@ -282,28 +282,22 @@ func TestValidatorsV(t *testing.T) {
 	testCases := map[string]struct {
 		provider cloudprovider.Provider
 		pcrs     map[uint32][]byte
-		wantVs   []atls.Validator
+		wantVs   atls.Validator
 	}{
 		"gcp": {
 			provider: cloudprovider.GCP,
 			pcrs:     newTestPCRs(),
-			wantVs: []atls.Validator{
-				gcp.NewValidator(newTestPCRs()),
-			},
+			wantVs:   gcp.NewValidator(newTestPCRs()),
 		},
 		"azure": {
 			provider: cloudprovider.Azure,
 			pcrs:     newTestPCRs(),
-			wantVs: []atls.Validator{
-				azure.NewValidator(newTestPCRs()),
-			},
+			wantVs:   azure.NewValidator(newTestPCRs()),
 		},
 		"qemu": {
 			provider: cloudprovider.QEMU,
 			pcrs:     newTestPCRs(),
-			wantVs: []atls.Validator{
-				qemu.NewValidator(newTestPCRs()),
-			},
+			wantVs:   qemu.NewValidator(newTestPCRs()),
 		},
 	}
 
@@ -311,19 +305,16 @@ func TestValidatorsV(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			validators := &Validators{provider: tc.provider, pcrs: tc.pcrs}
+			validators := &Validator{provider: tc.provider, pcrs: tc.pcrs}
 
-			resultValidators := validators.V()
+			resultValidator := validators.V()
 
-			assert.Equal(len(tc.wantVs), len(resultValidators))
-			for i, resValidator := range resultValidators {
-				assert.Equal(tc.wantVs[i].OID(), resValidator.OID())
-			}
+			assert.Equal(tc.wantVs.OID(), resultValidator.OID())
 		})
 	}
 }
 
-func TestValidatorsUpdateInitPCRs(t *testing.T) {
+func TestValidatorUpdateInitPCRs(t *testing.T) {
 	zero := []byte("00000000000000000000000000000000")
 	one := []byte("11111111111111111111111111111111")
 	one64 := base64.StdEncoding.EncodeToString(one)
@@ -402,7 +393,7 @@ func TestValidatorsUpdateInitPCRs(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			validators := &Validators{provider: tc.provider, pcrs: tc.pcrs}
+			validators := &Validator{provider: tc.provider, pcrs: tc.pcrs}
 
 			err := validators.UpdateInitPCRs(tc.ownerID, tc.clusterID)
 
@@ -515,7 +506,7 @@ func TestUpdatePCR(t *testing.T) {
 				pcrs[k] = v
 			}
 
-			validators := &Validators{
+			validators := &Validator{
 				provider: cloudprovider.GCP,
 				pcrs:     pcrs,
 			}
