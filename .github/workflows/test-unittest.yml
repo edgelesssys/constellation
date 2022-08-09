@@ -36,5 +36,5 @@ jobs:
 
       # Runs all test targets starting with "unit-"
       - name: Unit Tests
-        run: ctest -R unit-
+        run: ctest -j $(nproc) -R unit-
         working-directory: build
