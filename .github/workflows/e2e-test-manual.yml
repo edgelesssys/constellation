@@ -36,11 +36,10 @@ on:
         description: "Which tests should be run? Check README for guidance!"
         default: "--mode quick"
         required: true
-
-# Abort runs of *this* workflow, if a new commit with the same ref is pushed.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+      kubernetesVersion:
+        description: "Kubernetes version to create the cluster from."
+        default: "1.24"
+        required: true
 
 jobs:
   e2e-test-manual:
@@ -59,4 +58,5 @@ jobs:
           gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
           azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
           sonobuoyTestSuiteCmd: ${{ github.event.inputs.sonobuoyTestSuiteCmd }}
+          kubernetesVersion: ${{ github.event.inputs.kubernetesVersion }}
           msTeamsWebhook: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}

@@ -1,0 +1,33 @@
+name: e2e Test Azure Weekly
+# This workflow only runs once per week. It executes the full e2e tests on the latest-1 and latest-2 versions. Currently 1.23 and 1.22.
+# It is executed every sunday at 19:00.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 19 * * 0"
+jobs:
+  test-older-versions:
+    strategy:
+      matrix:
+        version: ["1.22", "1.23"]
+    runs-on: [self-hosted, edgserver]
+    container:
+      image: ghcr.io/catthehacker/ubuntu:act-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        with:
+          fetch-depth: 0
+      - name: Run Azure E2E test
+        uses: ./.github/actions/e2e_test
+        with:
+          workerNodesCount: "2"
+          controlNodesCount: "1"
+          autoscale: "false"
+          cloudProvider: "azure"
+          machineType: "Standard_D4a_v4"
+          azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
+          sonobuoyTestSuiteCmd: '--plugin e2e --plugin-env e2e.E2E_FOCUS="\[Conformance\]" --plugin-env e2e.E2E_SKIP="for service with type clusterIP|HostPort validates that there is no conflict between pods with same hostPort but different hostIP and protocol" --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-plugin.yaml --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-master-plugin.yaml'
+          kubernetesVersion: ${{ matrix.version }}
+          msTeamsWebhook: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}

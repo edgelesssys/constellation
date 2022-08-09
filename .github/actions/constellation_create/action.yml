@@ -17,69 +17,77 @@ inputs:
   machineType:
     description: "Machine type of VM to spawn."
     required: true
+  kubernetesVersion:
+    description: "Kubernetes version to create the cluster from."
+    required: false
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
-  - name: Install kubectl
-    run: |
-      curl -LO https://dl.k8s.io/release/v1.23.0/bin/linux/amd64/kubectl
-      install kubectl /usr/local/bin
-    shell: bash
-  - name: Install yq jq
-    run: |
-      sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CC86BB64
-      sudo add-apt-repository ppa:rmescandon/yq
-      sudo apt update
-      sudo apt install yq jq -y
-    shell: bash
+    - name: Install kubectl
+      run: |
+        curl -LO https://dl.k8s.io/release/v1.23.0/bin/linux/amd64/kubectl
+        install kubectl /usr/local/bin
+      shell: bash
+    - name: Install yq jq
+      run: |
+        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CC86BB64
+        sudo add-apt-repository ppa:rmescandon/yq
+        sudo apt update
+        sudo apt install yq jq -y
+      shell: bash
 
-  - name: Constellation config generate
-    run: |
-      constellation config generate ${{ inputs.cloudProvider }}
-      yq eval -i \
-        "(.provider | select(. | has(\"azure\")).azure.subscription) = \"0d202bbb-4fa7-4af8-8125-58c269a05435\" |
-          (.provider | select(. | has(\"azure\")).azure.tenant) = \"adb650a8-5da3-4b15-b4b0-3daf65ff7626\" |
-          (.provider | select(. | has(\"azure\")).azure.location) = \"North Europe\" |
-          (.provider | select(. | has(\"azure\")).azure.userAssignedIdentity) = \"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-dev-identity\"" \
-        constellation-conf.yaml
-      yq eval -i \
-        "(.provider | select(. | has(\"gcp\")).gcp.project) = \"constellation-331613\" |
-          (.provider | select(. | has(\"gcp\")).gcp.region) = \"europe-west3\" |
-          (.provider | select(. | has(\"gcp\")).gcp.zone) = \"europe-west3-b\"" \
-        constellation-conf.yaml
-    shell: bash
+    - name: Constellation config generate
+      run: |
+        constellation config generate ${{ inputs.cloudProvider }}
 
-  - name: Set latest image
-    run: |
-      case $CSP in
-        azure)
-          LATEST_AZURE_IMAGE=$(az sig image-version list --resource-group constellation-images --gallery-name Constellation --gallery-image-definition constellation-coreos --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table | tail -n 1)
-          yq eval -i "(.provider.azure.image) = \"${LATEST_AZURE_IMAGE}\"" constellation-conf.yaml
-          ;;
-        gcp)
-          LATEST_GCP_IMAGE_TIMESTAMP=$(gcloud compute images list --filter="name~'constellation-coreos-\d{10}'" --sort-by=creationTimestamp --project constellation-images --format="table(name)" | tail -n 1 | cut -d '-' -f3)
-          yq eval -i "(.provider.gcp.image) = \"projects/constellation-images/global/images/constellation-coreos-${LATEST_GCP_IMAGE_TIMESTAMP}\"" constellation-conf.yaml
-          ;;
-      esac
-    shell: bash
-    env:
-      CSP: ${{ inputs.cloudProvider }}
+        yq eval -i \
+          "(.provider | select(. | has(\"azure\")).azure.subscription) = \"0d202bbb-4fa7-4af8-8125-58c269a05435\" |
+            (.provider | select(. | has(\"azure\")).azure.tenant) = \"adb650a8-5da3-4b15-b4b0-3daf65ff7626\" |
+            (.provider | select(. | has(\"azure\")).azure.location) = \"North Europe\" |
+            (.provider | select(. | has(\"azure\")).azure.userAssignedIdentity) = \"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-dev-identity\"" \
+          constellation-conf.yaml
+        yq eval -i \
+          "(.provider | select(. | has(\"gcp\")).gcp.project) = \"constellation-331613\" |
+            (.provider | select(. | has(\"gcp\")).gcp.region) = \"europe-west3\" |
+            (.provider | select(. | has(\"gcp\")).gcp.zone) = \"europe-west3-b\"" \
+          constellation-conf.yaml
 
-  - name: Constellation create
-    run: |
-      echo "Creating cluster using config:"
-      cat constellation-conf.yaml
-      constellation create ${{ inputs.cloudProvider }} -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} -t ${{ inputs.machineType }} --name e2e-test -y
-    shell: bash
-  - name: Upload constellation-state.json
-    uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
-    with:
-      name: constellation-state.json
-      path: constellation-state.json
-    if: ${{ always() && !env.ACT }}
+        if [ ${{ inputs.kubernetesVersion != '' }} = true ]; then
+          yq eval -i "(.kubernetesVersion) = ${{ inputs.kubernetesVersion }}" constellation-conf.yaml
+        fi
+      shell: bash
 
-  - name: Constellation init
-    run: |
-      if [ ${{ inputs.autoscale }} = true ]; then autoscale=--autoscale; fi
-      constellation init ${autoscale}
-    shell: bash
+    - name: Set latest image
+      run: |
+        case $CSP in
+          azure)
+            LATEST_AZURE_IMAGE=$(az sig image-version list --resource-group constellation-images --gallery-name Constellation --gallery-image-definition constellation-coreos --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table | tail -n 1)
+            yq eval -i "(.provider.azure.image) = \"${LATEST_AZURE_IMAGE}\"" constellation-conf.yaml
+            ;;
+          gcp)
+            LATEST_GCP_IMAGE_TIMESTAMP=$(gcloud compute images list --filter="name~'constellation-coreos-\d{10}'" --sort-by=creationTimestamp --project constellation-images --format="table(name)" | tail -n 1 | cut -d '-' -f3)
+            yq eval -i "(.provider.gcp.image) = \"projects/constellation-images/global/images/constellation-coreos-${LATEST_GCP_IMAGE_TIMESTAMP}\"" constellation-conf.yaml
+            ;;
+        esac
+      shell: bash
+      env:
+        CSP: ${{ inputs.cloudProvider }}
+
+    - name: Constellation create
+      run: |
+        echo "Creating cluster using config:"
+        cat constellation-conf.yaml
+        constellation create ${{ inputs.cloudProvider }} -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} -t ${{ inputs.machineType }} --name e2e-test -y
+      shell: bash
+    - name: Upload constellation-state.json
+      uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+      with:
+        name: constellation-state.json
+        path: constellation-state.json
+      if: ${{ always() && !env.ACT }}
+
+    - name: Constellation init
+      run: |
+        if [ ${{ inputs.autoscale }} = true ]; then autoscale=--autoscale; fi
+        constellation init ${autoscale}
+      shell: bash

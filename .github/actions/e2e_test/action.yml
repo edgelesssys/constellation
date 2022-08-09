@@ -2,108 +2,112 @@ name: E2E test
 description: "Run Constellation e2e test."
 inputs:
   workerNodesCount:
-    description: 'Number of worker nodes to spawn.'
+    description: "Number of worker nodes to spawn."
     required: true
   controlNodesCount:
-    description: 'Number of control-plane nodes to spawn.'
+    description: "Number of control-plane nodes to spawn."
     required: true
   autoscale:
-    description: 'Autoscale?'
+    description: "Autoscale?"
     required: true
   cloudProvider:
-    description: 'Which cloud provider to use.'
+    description: "Which cloud provider to use."
     required: true
   machineType:
-    description: 'VM machine type. Make sure it matches selected cloud provider!'
+    description: "VM machine type. Make sure it matches selected cloud provider!"
     required: true
   gcp_service_account_json:
-    description: 'Service account with permissions to create Constellation on GCP.'
+    description: "Service account with permissions to create Constellation on GCP."
     required: false
   azure_credentials:
-    description: 'Credentials authorized to create Constellation on Azure.'
+    description: "Credentials authorized to create Constellation on Azure."
     required: false
   sonobuoyTestSuiteCmd:
-    description: 'Which tests should be run? Check README for guidance!'
+    description: "Which tests should be run? Check README for guidance!"
     required: true
+  kubernetesVersion:
+    description: "Kubernetes version to create the cluster from."
+    required: false
   msTeamsWebhook:
-    description: 'WebHook used to notify of failure.'
+    description: "WebHook used to notify of failure."
     required: true
   cosignPublicKey:
-    description: 'Cosign public key to sign measurements.'
+    description: "Cosign public key to sign measurements."
     required: false
   cosignPrivateKey:
-    description: 'Cosign private key to sign measurements.'
+    description: "Cosign private key to sign measurements."
     required: false
   cosignPassword:
-    description: 'Cosign password for private key.'
+    description: "Cosign password for private key."
     required: false
   awsAccessKeyID:
-    description: 'AWS access key ID to upload measurements.'
+    description: "AWS access key ID to upload measurements."
     required: false
   awsSecretAccessKey:
-    description: 'AWS secrets access key to upload measurements.'
+    description: "AWS secrets access key to upload measurements."
     required: false
   awsDefaultRegion:
-    description: 'AWS region of S3 bucket. to upload measurements.'
+    description: "AWS region of S3 bucket. to upload measurements."
     required: false
   awsBucketName:
-    description: 'AWS S3 bucket name to upload measurements.'
+    description: "AWS S3 bucket name to upload measurements."
     required: false
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
-  - name: Build CLI
-    uses: ./.github/actions/build_cli
+    - name: Build CLI
+      uses: ./.github/actions/build_cli
 
-  - name: Login to GCP
-    uses: ./.github/actions/gcp_login
-    with:
-      gcp_service_account_json: ${{ inputs.gcp_service_account_json }}
-    if: ${{ inputs.cloudProvider == 'gcp' }}
-  - name: Login to Azure
-    uses: ./.github/actions/azure_login
-    with:
-      azure_credentials: ${{ inputs.azure_credentials }}
-    if: ${{ inputs.cloudProvider == 'azure' }}
+    - name: Login to GCP
+      uses: ./.github/actions/gcp_login
+      with:
+        gcp_service_account_json: ${{ inputs.gcp_service_account_json }}
+      if: ${{ inputs.cloudProvider == 'gcp' }}
+    - name: Login to Azure
+      uses: ./.github/actions/azure_login
+      with:
+        azure_credentials: ${{ inputs.azure_credentials }}
+      if: ${{ inputs.cloudProvider == 'azure' }}
 
-  - name: Create cluster
-    uses: ./.github/actions/constellation_create
-    with:
-      cloudProvider: ${{ inputs.cloudProvider }}
-      autoscale: ${{ inputs.autoscale }}
-      workerNodesCount: ${{ inputs.workerNodesCount }}
-      controlNodesCount: ${{ inputs.controlNodesCount }}
-      machineType: ${{ inputs.machineType }}
-  - name: Measure cluster
-    uses: ./.github/actions/constellation_measure
-    with:
-      cloudProvider: ${{ inputs.cloudProvider }}
-      cosignPublicKey: ${{ inputs.cosignPublicKey }}
-      cosignPrivateKey: ${{ inputs.cosignPrivateKey }}
-      cosignPassword: ${{ inputs.cosignPassword }}
-      awsAccessKeyID: ${{ inputs.awsAccessKeyID }}
-      awsSecretAccessKey: ${{ inputs.awsSecretAccessKey }}
-      awsDefaultRegion: ${{ inputs.awsDefaultRegion }}
-      awsBucketName: ${{ inputs.awsBucketName }}
-  - name: Run e2e tests
-    uses: ./.github/actions/sonobuoy
-    with:
-      sonobuoyTestSuiteCmd: ${{ inputs.sonobuoyTestSuiteCmd }}
+    - name: Create cluster
+      uses: ./.github/actions/constellation_create
+      with:
+        cloudProvider: ${{ inputs.cloudProvider }}
+        autoscale: ${{ inputs.autoscale }}
+        workerNodesCount: ${{ inputs.workerNodesCount }}
+        controlNodesCount: ${{ inputs.controlNodesCount }}
+        machineType: ${{ inputs.machineType }}
+        kubernetesVersion: ${{ inputs.kubernetesVersion }}
+    - name: Measure cluster
+      uses: ./.github/actions/constellation_measure
+      with:
+        cloudProvider: ${{ inputs.cloudProvider }}
+        cosignPublicKey: ${{ inputs.cosignPublicKey }}
+        cosignPrivateKey: ${{ inputs.cosignPrivateKey }}
+        cosignPassword: ${{ inputs.cosignPassword }}
+        awsAccessKeyID: ${{ inputs.awsAccessKeyID }}
+        awsSecretAccessKey: ${{ inputs.awsSecretAccessKey }}
+        awsDefaultRegion: ${{ inputs.awsDefaultRegion }}
+        awsBucketName: ${{ inputs.awsBucketName }}
+    - name: Run e2e tests
+      uses: ./.github/actions/sonobuoy
+      with:
+        sonobuoyTestSuiteCmd: ${{ inputs.sonobuoyTestSuiteCmd }}
 
-  - name: Notify teams channel
-    if: ${{ failure() && github.ref == 'refs/heads/main' }}
-    run: |
-      sudo apt-get install gettext-base -y
-      export TEAMS_JOB_NAME=${{ inputs.cloudProvider }}
-      export TEAMS_RUN_ID=${{ github.run_id }}
-      envsubst < teams-payload.json > to-be-send.json
-      curl                                          \
-        -H "Content-Type: application/json"         \
-        -d @to-be-send.json                         \
-        "${{ inputs.msTeamsWebhook }}"
-    shell: bash
-    working-directory: .github/actions/e2e_test
+    - name: Notify teams channel
+      if: ${{ failure() && github.ref == 'refs/heads/main' }}
+      run: |
+        sudo apt-get install gettext-base -y
+        export TEAMS_JOB_NAME=${{ inputs.cloudProvider }}
+        export TEAMS_RUN_ID=${{ github.run_id }}
+        envsubst < teams-payload.json > to-be-send.json
+        curl                                          \
+          -H "Content-Type: application/json"         \
+          -d @to-be-send.json                         \
+          "${{ inputs.msTeamsWebhook }}"
+      shell: bash
+      working-directory: .github/actions/e2e_test
 
-  - name: Always terminate cluster
-    if: always()
-    uses: ./.github/actions/constellation_destroy
+    - name: Always terminate cluster
+      if: always()
+      uses: ./.github/actions/constellation_destroy
