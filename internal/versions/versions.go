@@ -34,7 +34,7 @@ const (
 	AccessManagerImage                  = "ghcr.io/edgelesssys/constellation/access-manager:v1.4.0"
 	KmsImage                            = "ghcr.io/edgelesssys/constellation/kmsserver:v1.4.0"
 	VerificationImage                   = "ghcr.io/edgelesssys/constellation/verification-service:v1.4.0"
-	GcpGuestImage                       = "ghcr.io/edgelesssys/gcp-guest-agent:latest"
+	GcpGuestImage                       = "ghcr.io/edgelesssys/gcp-guest-agent:20220713.00"
 	NodeOperatorCatalogImage            = "ghcr.io/edgelesssys/constellation/node-operator-catalog"
 	NodeOperatorVersion                 = "v1.4.1-0.20220809082533-41bdd362a18a"
 	NodeMaintenanceOperatorCatalogImage = "quay.io/medik8s/node-maintenance-operator-catalog"
