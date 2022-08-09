@@ -25,6 +25,7 @@ type DebugdClient interface {
 	UploadAuthorizedKeys(ctx context.Context, in *UploadAuthorizedKeysRequest, opts ...grpc.CallOption) (*UploadAuthorizedKeysResponse, error)
 	UploadBootstrapper(ctx context.Context, opts ...grpc.CallOption) (Debugd_UploadBootstrapperClient, error)
 	DownloadBootstrapper(ctx context.Context, in *DownloadBootstrapperRequest, opts ...grpc.CallOption) (Debugd_DownloadBootstrapperClient, error)
+	DownloadAuthorizedKeys(ctx context.Context, in *DownloadAuthorizedKeysRequest, opts ...grpc.CallOption) (*DownloadAuthorizedKeysResponse, error)
 	UploadSystemServiceUnits(ctx context.Context, in *UploadSystemdServiceUnitsRequest, opts ...grpc.CallOption) (*UploadSystemdServiceUnitsResponse, error)
 }
 
@@ -111,6 +112,15 @@ func (x *debugdDownloadBootstrapperClient) Recv() (*Chunk, error) {
 	return m, nil
 }
 
+func (c *debugdClient) DownloadAuthorizedKeys(ctx context.Context, in *DownloadAuthorizedKeysRequest, opts ...grpc.CallOption) (*DownloadAuthorizedKeysResponse, error) {
+	out := new(DownloadAuthorizedKeysResponse)
+	err := c.cc.Invoke(ctx, "/debugd.Debugd/DownloadAuthorizedKeys", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *debugdClient) UploadSystemServiceUnits(ctx context.Context, in *UploadSystemdServiceUnitsRequest, opts ...grpc.CallOption) (*UploadSystemdServiceUnitsResponse, error) {
 	out := new(UploadSystemdServiceUnitsResponse)
 	err := c.cc.Invoke(ctx, "/debugd.Debugd/UploadSystemServiceUnits", in, out, opts...)
@@ -127,6 +137,7 @@ type DebugdServer interface {
 	UploadAuthorizedKeys(context.Context, *UploadAuthorizedKeysRequest) (*UploadAuthorizedKeysResponse, error)
 	UploadBootstrapper(Debugd_UploadBootstrapperServer) error
 	DownloadBootstrapper(*DownloadBootstrapperRequest, Debugd_DownloadBootstrapperServer) error
+	DownloadAuthorizedKeys(context.Context, *DownloadAuthorizedKeysRequest) (*DownloadAuthorizedKeysResponse, error)
 	UploadSystemServiceUnits(context.Context, *UploadSystemdServiceUnitsRequest) (*UploadSystemdServiceUnitsResponse, error)
 	mustEmbedUnimplementedDebugdServer()
 }
@@ -143,6 +154,9 @@ func (UnimplementedDebugdServer) UploadBootstrapper(Debugd_UploadBootstrapperSer
 }
 func (UnimplementedDebugdServer) DownloadBootstrapper(*DownloadBootstrapperRequest, Debugd_DownloadBootstrapperServer) error {
 	return status.Errorf(codes.Unimplemented, "method DownloadBootstrapper not implemented")
+}
+func (UnimplementedDebugdServer) DownloadAuthorizedKeys(context.Context, *DownloadAuthorizedKeysRequest) (*DownloadAuthorizedKeysResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DownloadAuthorizedKeys not implemented")
 }
 func (UnimplementedDebugdServer) UploadSystemServiceUnits(context.Context, *UploadSystemdServiceUnitsRequest) (*UploadSystemdServiceUnitsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UploadSystemServiceUnits not implemented")
@@ -225,6 +239,24 @@ func (x *debugdDownloadBootstrapperServer) Send(m *Chunk) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _Debugd_DownloadAuthorizedKeys_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DownloadAuthorizedKeysRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DebugdServer).DownloadAuthorizedKeys(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/debugd.Debugd/DownloadAuthorizedKeys",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DebugdServer).DownloadAuthorizedKeys(ctx, req.(*DownloadAuthorizedKeysRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Debugd_UploadSystemServiceUnits_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UploadSystemdServiceUnitsRequest)
 	if err := dec(in); err != nil {
@@ -253,6 +285,10 @@ var Debugd_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UploadAuthorizedKeys",
 			Handler:    _Debugd_UploadAuthorizedKeys_Handler,
+		},
+		{
+			MethodName: "DownloadAuthorizedKeys",
+			Handler:    _Debugd_DownloadAuthorizedKeys_Handler,
 		},
 		{
 			MethodName: "UploadSystemServiceUnits",

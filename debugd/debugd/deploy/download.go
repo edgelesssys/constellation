@@ -11,6 +11,7 @@ import (
 	"github.com/edgelesssys/constellation/debugd/debugd"
 	pb "github.com/edgelesssys/constellation/debugd/service"
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -37,33 +38,45 @@ func New(log *logger.Logger, dialer NetDialer, serviceManager serviceManager, wr
 	}
 }
 
-// DownloadBootstrapper will open a new grpc connection to another instance, attempting to download a bootstrapper from that instance.
-func (d *Download) DownloadBootstrapper(ctx context.Context, ip string) error {
+// DownloadDeployment will open a new grpc connection to another instance, attempting to download a bootstrapper from that instance.
+func (d *Download) DownloadDeployment(ctx context.Context, ip string) ([]ssh.UserKey, error) {
 	log := d.log.With(zap.String("ip", ip))
 	serverAddr := net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort))
 
 	// only retry download from same endpoint after backoff
 	if lastAttempt, ok := d.attemptedDownloads[serverAddr]; ok && time.Since(lastAttempt) < debugd.BootstrapperDownloadRetryBackoff {
-		return fmt.Errorf("download failed too recently: %v / %v", time.Since(lastAttempt), debugd.BootstrapperDownloadRetryBackoff)
+		return nil, fmt.Errorf("download failed too recently: %v / %v", time.Since(lastAttempt), debugd.BootstrapperDownloadRetryBackoff)
 	}
-	log.Infof("Trying to download bootstrapper")
+
+	log.Infof("Connecting to server")
 	d.attemptedDownloads[serverAddr] = time.Now()
 	conn, err := d.dial(ctx, serverAddr)
 	if err != nil {
-		return fmt.Errorf("connecting to other instance via gRPC: %w", err)
+		return nil, fmt.Errorf("connecting to other instance via gRPC: %w", err)
 	}
 	defer conn.Close()
 	client := pb.NewDebugdClient(conn)
 
+	log.Infof("Trying to download bootstrapper")
 	stream, err := client.DownloadBootstrapper(ctx, &pb.DownloadBootstrapperRequest{})
 	if err != nil {
-		return fmt.Errorf("starting bootstrapper download from other instance: %w", err)
+		return nil, fmt.Errorf("starting bootstrapper download from other instance: %w", err)
 	}
 	if err := d.writer.WriteStream(debugd.BootstrapperDeployFilename, stream, true); err != nil {
-		return fmt.Errorf("streaming bootstrapper from other instance: %w", err)
+		return nil, fmt.Errorf("streaming bootstrapper from other instance: %w", err)
+	}
+	log.Infof("Successfully downloaded bootstrapper")
+
+	log.Infof("Trying to download ssh keys")
+	resp, err := client.DownloadAuthorizedKeys(ctx, &pb.DownloadAuthorizedKeysRequest{})
+	if err != nil {
+		return nil, fmt.Errorf("downloading authorized keys: %w", err)
 	}
 
-	log.Infof("Successfully downloaded bootstrapper")
+	var keys []ssh.UserKey
+	for _, key := range resp.Keys {
+		keys = append(keys, ssh.UserKey{Username: key.Username, PublicKey: key.KeyValue})
+	}
 
 	// after the upload succeeds, try to restart the bootstrapper
 	restartAction := ServiceManagerRequest{
@@ -71,10 +84,10 @@ func (d *Download) DownloadBootstrapper(ctx context.Context, ip string) error {
 		Action: Restart,
 	}
 	if err := d.serviceManager.SystemdAction(ctx, restartAction); err != nil {
-		return fmt.Errorf("restarting bootstrapper: %w", err)
+		return nil, fmt.Errorf("restarting bootstrapper: %w", err)
 	}
 
-	return nil
+	return keys, nil
 }
 
 func (d *Download) dial(ctx context.Context, target string) (*grpc.ClientConn, error) {

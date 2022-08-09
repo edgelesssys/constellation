@@ -17,7 +17,40 @@ func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
 }
 
-func TestDeploySSHAuthorizedKey(t *testing.T) {
+func TestGetAuthorizedKeys(t *testing.T) {
+	testCases := map[string]struct {
+		authorized map[UserKey]bool
+		want       []UserKey
+	}{
+		"success": {
+			authorized: map[UserKey]bool{
+				{Username: "user1", PublicKey: "ssh-rsa test1=="}: true,
+				{Username: "user2", PublicKey: "ssh-rsa test2=="}: true,
+			},
+			want: []UserKey{
+				{Username: "user1", PublicKey: "ssh-rsa test1=="},
+				{Username: "user2", PublicKey: "ssh-rsa test2=="},
+			},
+		},
+		"empty": {
+			authorized: map[UserKey]bool{},
+			want:       []UserKey(nil),
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			sshAccess := Access{authorized: tc.authorized}
+
+			keys := sshAccess.GetAuthorizedKeys()
+			assert.ElementsMatch(tc.want, keys)
+		})
+	}
+}
+
+func TestDeployAuthorizedKey(t *testing.T) {
 	authorizedKey := UserKey{
 		Username:  "user",
 		PublicKey: "ssh-rsa testkey",
@@ -67,9 +100,12 @@ func TestDeploySSHAuthorizedKey(t *testing.T) {
 			if tc.readonly {
 				userManager.Fs = afero.NewReadOnlyFs(userManager.Fs)
 			}
-			authorized := map[string]bool{}
+			authorized := map[UserKey]bool{}
 			if tc.alreadyDeployed {
-				authorized["user:ssh-rsa testkey"] = true
+				authorized[UserKey{
+					Username:  "user",
+					PublicKey: "ssh-rsa testkey",
+				}] = true
 			}
 			sshAccess := Access{
 				log:         logger.NewTest(t),

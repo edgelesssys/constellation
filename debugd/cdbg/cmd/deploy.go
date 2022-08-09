@@ -11,7 +11,6 @@ import (
 
 	"github.com/edgelesssys/constellation/debugd/bootstrapper"
 	"github.com/edgelesssys/constellation/debugd/cdbg/config"
-	"github.com/edgelesssys/constellation/debugd/cdbg/state"
 	"github.com/edgelesssys/constellation/debugd/debugd"
 	depl "github.com/edgelesssys/constellation/debugd/debugd/deploy"
 	pb "github.com/edgelesssys/constellation/debugd/service"

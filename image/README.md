@@ -54,18 +54,30 @@ AZURE_IMAGE_NAME = my-custom-image
 
 ## Build an image
 
+Ensure you have the modified cosa container image installed:
+
+```shell-session
+docker image ls | grep localhost/coreos-assembler
+```
+
+or
+
+```shell-session
+podman image ls | grep localhost/coreos-assembler
+```
+
+If not present, install with
+
+```shell-session
+make cosa-image
+```
+
 > It is always advisable to create an image from a clean `build` dir.
 
 Clean up the `build` dir and remove old images (⚠ this will undo any local changes to the CoreOS configuration!):
 
 ```shell-session
 sudo make clean
-```
-
-Ensure you have the modified cosa container image installed:
-
-```shell-session
-make cosa-image
 ```
 
 - Build QEMU image (for local testing only)

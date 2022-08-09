@@ -21,7 +21,7 @@ type UserKey struct {
 type Access struct {
 	log         *logger.Logger
 	userManager user.LinuxUserManager
-	authorized  map[string]bool
+	authorized  map[UserKey]bool
 	mux         sync.Mutex
 }
 
@@ -30,20 +30,32 @@ func NewAccess(log *logger.Logger, userManager user.LinuxUserManager) *Access {
 	return &Access{
 		log:         log,
 		userManager: userManager,
-		mux:         sync.Mutex{},
-		authorized:  map[string]bool{},
+		authorized:  map[UserKey]bool{},
 	}
 }
 
 // alreadyAuthorized checks if key was written to authorized keys before.
 func (s *Access) alreadyAuthorized(sshKey UserKey) bool {
-	_, ok := s.authorized[fmt.Sprintf("%s:%s", sshKey.Username, sshKey.PublicKey)]
+	_, ok := s.authorized[sshKey]
 	return ok
 }
 
 // rememberAuthorized marks this key as already written to authorized keys..
 func (s *Access) rememberAuthorized(sshKey UserKey) {
-	s.authorized[fmt.Sprintf("%s:%s", sshKey.Username, sshKey.PublicKey)] = true
+	s.authorized[sshKey] = true
+}
+
+// GetAuthorizedKeys returns a list of authorized keys for the specified user.
+func (s *Access) GetAuthorizedKeys() []UserKey {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+
+	var authorizedKeys []UserKey
+	for key := range s.authorized {
+		authorizedKeys = append(authorizedKeys, key)
+	}
+
+	return authorizedKeys
 }
 
 // DeployAuthorizedKey takes an user & public key pair, creates the user if required and deploy a SSH key for them.

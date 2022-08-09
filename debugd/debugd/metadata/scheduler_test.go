@@ -18,6 +18,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestSchedulerStart(t *testing.T) {
+	someErr := errors.New("failed")
+
 	testCases := map[string]struct {
 		fetcher             stubFetcher
 		ssh                 stubSSHDeployer
@@ -29,46 +31,28 @@ func TestSchedulerStart(t *testing.T) {
 		"scheduler works and calls fetcher functions at least once": {},
 		"ssh keys are fetched": {
 			fetcher: stubFetcher{
-				keys: []ssh.UserKey{
-					{
-						Username:  "test",
-						PublicKey: "testkey",
-					},
-				},
+				keys: []ssh.UserKey{{Username: "test", PublicKey: "testkey"}},
 			},
-			wantSSHKeys: []ssh.UserKey{
-				{
-					Username:  "test",
-					PublicKey: "testkey",
-				},
-			},
+			wantSSHKeys: []ssh.UserKey{{Username: "test", PublicKey: "testkey"}},
 		},
 		"download for discovered debugd ips is started": {
 			fetcher: stubFetcher{
 				ips: []string{"192.0.2.1", "192.0.2.2"},
 			},
-			downloader: stubDownloader{
-				err: errors.New("download fails"),
-			},
-
+			downloader:          stubDownloader{downloadErr: someErr},
 			wantDebugdDownloads: []string{"192.0.2.1", "192.0.2.2"},
 		},
 		"if download is successful, second download is not attempted": {
 			fetcher: stubFetcher{
 				ips: []string{"192.0.2.1", "192.0.2.2"},
 			},
-
 			wantDebugdDownloads: []string{"192.0.2.1"},
 		},
 		"endpoint discovery can fail": {
-			fetcher: stubFetcher{
-				discoverErr: errors.New("discovery error"),
-			},
+			fetcher: stubFetcher{discoverErr: someErr},
 		},
 		"ssh key fetch can fail": {
-			fetcher: stubFetcher{
-				fetchSSHKeysErr: errors.New("fetch error"),
-			},
+			fetcher: stubFetcher{fetchSSHKeysErr: someErr},
 		},
 	}
 
@@ -134,11 +118,12 @@ func (s *stubSSHDeployer) DeployAuthorizedKey(ctx context.Context, sshKey ssh.Us
 }
 
 type stubDownloader struct {
-	ips []string
-	err error
+	ips         []string
+	downloadErr error
+	keys        []ssh.UserKey
 }
 
-func (s *stubDownloader) DownloadBootstrapper(ctx context.Context, ip string) error {
+func (s *stubDownloader) DownloadDeployment(ctx context.Context, ip string) ([]ssh.UserKey, error) {
 	s.ips = append(s.ips, ip)
-	return s.err
+	return s.keys, s.downloadErr
 }

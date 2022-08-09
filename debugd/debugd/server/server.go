@@ -98,6 +98,21 @@ func (s *debugdServer) DownloadBootstrapper(request *pb.DownloadBootstrapperRequ
 	return s.streamer.ReadStream(debugd.BootstrapperDeployFilename, stream, debugd.Chunksize, true)
 }
 
+// DownloadAuthorizedKeys streams the local authorized keys to other instances.
+func (s *debugdServer) DownloadAuthorizedKeys(_ context.Context, req *pb.DownloadAuthorizedKeysRequest) (*pb.DownloadAuthorizedKeysResponse, error) {
+	s.log.Infof("Sending authorized keys to other instance")
+
+	var authKeys []*pb.AuthorizedKey
+	for _, key := range s.ssh.GetAuthorizedKeys() {
+		authKeys = append(authKeys, &pb.AuthorizedKey{
+			Username: key.Username,
+			KeyValue: key.PublicKey,
+		})
+	}
+
+	return &pb.DownloadAuthorizedKeysResponse{Keys: authKeys}, nil
+}
+
 // UploadSystemServiceUnits receives systemd service units, writes them to a service file and schedules a daemon-reload.
 func (s *debugdServer) UploadSystemServiceUnits(ctx context.Context, in *pb.UploadSystemdServiceUnitsRequest) (*pb.UploadSystemdServiceUnitsResponse, error) {
 	s.log.Infof("Uploading systemd service units")
@@ -133,6 +148,7 @@ func Start(log *logger.Logger, wg *sync.WaitGroup, serv pb.DebugdServer) {
 
 type sshDeployer interface {
 	DeployAuthorizedKey(ctx context.Context, sshKey ssh.UserKey) error
+	GetAuthorizedKeys() []ssh.UserKey
 }
 
 type serviceManager interface {

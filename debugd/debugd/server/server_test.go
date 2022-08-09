@@ -255,6 +255,39 @@ func TestDownloadBootstrapper(t *testing.T) {
 	}
 }
 
+func TestDownloadAuthorizedKeys(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	endpoint := "192.0.2.1:" + strconv.Itoa(constants.DebugdPort)
+	deployer := &stubSSHDeployer{
+		sshKeys: []ssh.UserKey{
+			{Username: "test1", PublicKey: "foo"},
+			{Username: "test2", PublicKey: "bar"},
+		},
+	}
+
+	serv := debugdServer{
+		log: logger.NewTest(t),
+		ssh: deployer,
+	}
+
+	grpcServ, conn, err := setupServerWithConn(endpoint, &serv)
+	require.NoError(err)
+	defer conn.Close()
+	defer grpcServ.GracefulStop()
+	client := pb.NewDebugdClient(conn)
+
+	resp, err := client.DownloadAuthorizedKeys(context.Background(), &pb.DownloadAuthorizedKeysRequest{})
+
+	assert.NoError(err)
+	wantKeys := []*pb.AuthorizedKey{
+		{Username: "test1", KeyValue: "foo"},
+		{Username: "test2", KeyValue: "bar"},
+	}
+	assert.ElementsMatch(wantKeys, resp.Keys)
+}
+
 func TestUploadSystemServiceUnits(t *testing.T) {
 	endpoint := "192.0.2.1:" + strconv.Itoa(constants.DebugdPort)
 
@@ -346,6 +379,10 @@ func (s *stubSSHDeployer) DeployAuthorizedKey(ctx context.Context, sshKey ssh.Us
 	s.sshKeys = append(s.sshKeys, sshKey)
 
 	return s.deployErr
+}
+
+func (s *stubSSHDeployer) GetAuthorizedKeys() []ssh.UserKey {
+	return s.sshKeys
 }
 
 type stubServiceManager struct {

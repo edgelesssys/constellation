@@ -8,10 +8,17 @@ service Debugd {
     rpc UploadAuthorizedKeys(UploadAuthorizedKeysRequest) returns (UploadAuthorizedKeysResponse) {}
     rpc UploadBootstrapper(stream Chunk) returns (UploadBootstrapperResponse) {}
     rpc DownloadBootstrapper(DownloadBootstrapperRequest) returns (stream Chunk) {}
+    rpc DownloadAuthorizedKeys(DownloadAuthorizedKeysRequest) returns (DownloadAuthorizedKeysResponse) {}
     rpc UploadSystemServiceUnits(UploadSystemdServiceUnitsRequest) returns (UploadSystemdServiceUnitsResponse) {}
 }
 
 message DownloadBootstrapperRequest {}
+
+message DownloadAuthorizedKeysRequest {}
+
+message DownloadAuthorizedKeysResponse {
+    repeated AuthorizedKey keys = 1;
+}
 
 message AuthorizedKey {
     string username = 1;

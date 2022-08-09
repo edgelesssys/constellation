@@ -55,7 +55,7 @@ func (s *Scheduler) discoveryLoop(ctx context.Context, wg *sync.WaitGroup) {
 	if err != nil {
 		s.log.With(zap.Error(err)).Errorf("Discovering debugd IPs failed")
 	} else {
-		if s.downloadBootstrapper(ctx, ips) {
+		if s.downloadDeployment(ctx, ips) {
 			return
 		}
 	}
@@ -72,7 +72,7 @@ func (s *Scheduler) discoveryLoop(ctx context.Context, wg *sync.WaitGroup) {
 				continue
 			}
 			s.log.With(zap.Strings("ips", ips)).Infof("Discovered instances")
-			if s.downloadBootstrapper(ctx, ips) {
+			if s.downloadDeployment(ctx, ips) {
 				return
 			}
 		case <-ctx.Done():
@@ -103,19 +103,20 @@ func (s *Scheduler) sshLoop(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-// downloadBootstrapper tries to download bootstrapper from a list of ips and logs errors encountered.
-func (s *Scheduler) downloadBootstrapper(ctx context.Context, ips []string) (success bool) {
+// downloadDeployment tries to download deployment from a list of ips and logs errors encountered.
+func (s *Scheduler) downloadDeployment(ctx context.Context, ips []string) (success bool) {
 	for _, ip := range ips {
-		err := s.downloader.DownloadBootstrapper(ctx, ip)
+		keys, err := s.downloader.DownloadDeployment(ctx, ip)
 		if err == nil {
-			// early exit with success since bootstrapper should only be downloaded once
+			s.deploySSHKeys(ctx, keys)
 			return true
 		}
 		if errors.Is(err, fs.ErrExist) {
 			// bootstrapper was already uploaded
+			s.log.Infof("Bootstrapper was already uploaded.")
 			return true
 		}
-		s.log.With(zap.Error(err), zap.String("peer", ip)).Errorf("Downloading bootstrapper from peer failed")
+		s.log.With(zap.Error(err), zap.String("peer", ip)).Errorf("Downloading deployment from peer failed")
 	}
 	return false
 }
@@ -132,7 +133,7 @@ func (s *Scheduler) deploySSHKeys(ctx context.Context, keys []ssh.UserKey) {
 }
 
 type downloader interface {
-	DownloadBootstrapper(ctx context.Context, ip string) error
+	DownloadDeployment(ctx context.Context, ip string) ([]ssh.UserKey, error)
 }
 
 type sshDeployer interface {
