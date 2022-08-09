@@ -21,7 +21,7 @@ var _ = Describe("ScalingGroup controller", func() {
 		nodeImageName    = "node-image"
 		scalingGroupName = "test-group"
 
-		timeout  = time.Second * 10
+		timeout  = time.Second * 20
 		duration = time.Second * 2
 		interval = time.Millisecond * 250
 	)

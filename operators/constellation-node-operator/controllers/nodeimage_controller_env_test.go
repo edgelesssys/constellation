@@ -28,7 +28,7 @@ var _ = Describe("NodeImage controller", func() {
 		secondImage           = "image-2"
 		scalingGroupID        = "scaling-group"
 
-		timeout  = time.Second * 10
+		timeout  = time.Second * 20
 		duration = time.Second * 2
 		interval = time.Millisecond * 250
 	)

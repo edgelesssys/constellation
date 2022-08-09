@@ -23,7 +23,7 @@ var _ = Describe("PendingNode controller", func() {
 	const (
 		pendingNodeName = "pending-node"
 
-		timeout  = time.Second * 10
+		timeout  = time.Second * 20
 		duration = time.Second * 2
 		interval = time.Millisecond * 250
 	)

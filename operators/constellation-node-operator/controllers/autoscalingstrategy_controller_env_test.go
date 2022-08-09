@@ -24,7 +24,7 @@ var _ = Describe("AutoscalingStrategy controller", func() {
 		ClusterAutoscalerDeploymentNamespace = "kube-system"
 		AutoscalingStrategyName              = "test-strategy"
 
-		timeout  = time.Second * 10
+		timeout  = time.Second * 20
 		duration = time.Second * 2
 		interval = time.Millisecond * 250
 	)
