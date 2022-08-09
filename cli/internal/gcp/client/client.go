@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"crypto/rand"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -14,6 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/state"
+	"golang.org/x/oauth2/google"
 )
 
 // Client is a client for the Google Compute Engine.
@@ -170,6 +172,28 @@ func NewFromDefault(ctx context.Context) (*Client, error) {
 
 // NewInitialized creates an initialized client.
 func NewInitialized(ctx context.Context, project, zone, region, name string) (*Client, error) {
+	// check if ADC are configured for the same project as the cluster
+	var defaultProject string
+	creds, err := google.FindDefaultCredentials(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// if the CLI is run by a service account, use the project of the service account
+	defaultProject = creds.ProjectID
+	// if the CLI is run by a user directly projectID will be empty, use the quota project id of the user instead
+	if defaultProject == "" {
+		var projectID struct {
+			ProjectID string `json:"quota_project_id"`
+		}
+		if err := json.Unmarshal(creds.JSON, &projectID); err != nil {
+			return nil, err
+		}
+		defaultProject = projectID.ProjectID
+	}
+	if defaultProject != project {
+		return nil, fmt.Errorf("application default credentials are configured for project %q, but the cluster is configured for project %q", defaultProject, project)
+	}
+
 	client, err := NewFromDefault(ctx)
 	if err != nil {
 		return nil, err
