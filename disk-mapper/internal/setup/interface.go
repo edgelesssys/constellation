@@ -10,6 +10,8 @@ import (
 	"io/fs"
 	"os"
 	"syscall"
+
+	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 )
 
 // Mounter is an interface for mount and unmount operations.
@@ -27,15 +29,21 @@ type DeviceMapper interface {
 	UnmapDisk(target string) error
 }
 
-// KeyWaiter is an interface to request and wait for disk decryption keys.
-type KeyWaiter interface {
-	WaitForDecryptionKey(uuid, addr string) (diskKey, measurementSecret []byte, err error)
-	ResetKey()
-}
-
 // ConfigurationGenerator is an interface for generating systemd-cryptsetup@.service unit files.
 type ConfigurationGenerator interface {
 	Generate(volumeName, encryptedDevice, keyFile, options string) error
+}
+
+// MetadataAPI is an interface for accessing cloud metadata.
+type MetadataAPI interface {
+	metadata.InstanceSelfer
+	metadata.InstanceLister
+}
+
+// RecoveryDoer is an interface to perform key recovery operations.
+// Calls to Do may be blocking, and if successful return a passphrase and measurementSecret.
+type RecoveryDoer interface {
+	Do(uuid, endpoint string) (passphrase, measurementSecret []byte, err error)
 }
 
 // DiskMounter uses the syscall package to mount disks.

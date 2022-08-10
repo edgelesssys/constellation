@@ -7,10 +7,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 package setup
 
 import (
+	"context"
 	"errors"
 	"io"
 	"io/fs"
+	"net"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
@@ -30,9 +33,13 @@ func TestMain(m *testing.M) {
 
 func TestPrepareExistingDisk(t *testing.T) {
 	someErr := errors.New("error")
+	testRecoveryDoer := &stubRecoveryDoer{
+		passphrase: []byte("passphrase"),
+		secret:     []byte("secret"),
+	}
 
 	testCases := map[string]struct {
-		keyWaiter       *stubKeyWaiter
+		recoveryDoer    *stubRecoveryDoer
 		mapper          *stubMapper
 		mounter         *stubMounter
 		configGenerator *stubConfigurationGenerator
@@ -41,34 +48,33 @@ func TestPrepareExistingDisk(t *testing.T) {
 		wantErr         bool
 	}{
 		"success": {
-			keyWaiter:       &stubKeyWaiter{},
+			recoveryDoer:    testRecoveryDoer,
 			mapper:          &stubMapper{uuid: "test"},
 			mounter:         &stubMounter{},
 			configGenerator: &stubConfigurationGenerator{},
 			openTPM:         vtpm.OpenNOPTPM,
 		},
 		"WaitForDecryptionKey fails": {
-			keyWaiter:       &stubKeyWaiter{waitErr: someErr},
+			recoveryDoer:    &stubRecoveryDoer{recoveryErr: someErr},
 			mapper:          &stubMapper{uuid: "test"},
 			mounter:         &stubMounter{},
 			configGenerator: &stubConfigurationGenerator{},
 			openTPM:         vtpm.OpenNOPTPM,
 			wantErr:         true,
 		},
-		"MapDisk fails causes a repeat": {
-			keyWaiter: &stubKeyWaiter{},
+		"MapDisk fails": {
+			recoveryDoer: testRecoveryDoer,
 			mapper: &stubMapper{
-				uuid:                 "test",
-				mapDiskErr:           someErr,
-				mapDiskRepeatedCalls: 2,
+				uuid:       "test",
+				mapDiskErr: someErr,
 			},
 			mounter:         &stubMounter{},
 			configGenerator: &stubConfigurationGenerator{},
 			openTPM:         vtpm.OpenNOPTPM,
-			wantErr:         false,
+			wantErr:         true,
 		},
 		"MkdirAll fails": {
-			keyWaiter:       &stubKeyWaiter{},
+			recoveryDoer:    testRecoveryDoer,
 			mapper:          &stubMapper{uuid: "test"},
 			mounter:         &stubMounter{mkdirAllErr: someErr},
 			configGenerator: &stubConfigurationGenerator{},
@@ -76,7 +82,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 			wantErr:         true,
 		},
 		"Mount fails": {
-			keyWaiter:       &stubKeyWaiter{},
+			recoveryDoer:    testRecoveryDoer,
 			mapper:          &stubMapper{uuid: "test"},
 			mounter:         &stubMounter{mountErr: someErr},
 			configGenerator: &stubConfigurationGenerator{},
@@ -84,7 +90,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 			wantErr:         true,
 		},
 		"Unmount fails": {
-			keyWaiter:       &stubKeyWaiter{},
+			recoveryDoer:    testRecoveryDoer,
 			mapper:          &stubMapper{uuid: "test"},
 			mounter:         &stubMounter{unmountErr: someErr},
 			configGenerator: &stubConfigurationGenerator{},
@@ -92,7 +98,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 			wantErr:         true,
 		},
 		"MarkNodeAsBootstrapped fails": {
-			keyWaiter:       &stubKeyWaiter{},
+			recoveryDoer:    testRecoveryDoer,
 			mapper:          &stubMapper{uuid: "test"},
 			mounter:         &stubMounter{unmountErr: someErr},
 			configGenerator: &stubConfigurationGenerator{},
@@ -100,7 +106,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 			wantErr:         true,
 		},
 		"Generating config fails": {
-			keyWaiter:       &stubKeyWaiter{},
+			recoveryDoer:    testRecoveryDoer,
 			mapper:          &stubMapper{uuid: "test"},
 			mounter:         &stubMounter{},
 			configGenerator: &stubConfigurationGenerator{generateErr: someErr},
@@ -108,7 +114,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 			wantErr:         true,
 		},
 		"no state file": {
-			keyWaiter:       &stubKeyWaiter{},
+			recoveryDoer:    testRecoveryDoer,
 			mapper:          &stubMapper{uuid: "test"},
 			mounter:         &stubMounter{},
 			configGenerator: &stubConfigurationGenerator{},
@@ -130,23 +136,21 @@ func TestPrepareExistingDisk(t *testing.T) {
 			}
 
 			setupManager := &SetupManager{
-				log:       logger.NewTest(t),
-				csp:       "test",
-				diskPath:  "disk-path",
-				fs:        fs,
-				keyWaiter: tc.keyWaiter,
-				mapper:    tc.mapper,
-				mounter:   tc.mounter,
-				config:    tc.configGenerator,
-				openTPM:   tc.openTPM,
+				log:      logger.NewTest(t),
+				csp:      "test",
+				diskPath: "disk-path",
+				fs:       fs,
+				mapper:   tc.mapper,
+				mounter:  tc.mounter,
+				config:   tc.configGenerator,
+				openTPM:  tc.openTPM,
 			}
 
-			err := setupManager.PrepareExistingDisk()
+			err := setupManager.PrepareExistingDisk(tc.recoveryDoer)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				assert.Equal(tc.mapper.uuid, tc.keyWaiter.receivedUUID)
 				assert.True(tc.mapper.mapDiskCalled)
 				assert.True(tc.mounter.mountCalled)
 				assert.True(tc.mounter.unmountCalled)
@@ -191,9 +195,8 @@ func TestPrepareNewDisk(t *testing.T) {
 		"MapDisk fails": {
 			fs: afero.Afero{Fs: afero.NewMemMapFs()},
 			mapper: &stubMapper{
-				uuid:                 "test",
-				mapDiskErr:           someErr,
-				mapDiskRepeatedCalls: 1,
+				uuid:       "test",
+				mapDiskErr: someErr,
 			},
 			configGenerator: &stubConfigurationGenerator{},
 			wantErr:         true,
@@ -267,7 +270,7 @@ func TestReadMeasurementSalt(t *testing.T) {
 				require.NoError(handler.WriteJSON("test-state.json", state, file.OptMkdirAll))
 			}
 
-			setupManager := New(logger.NewTest(t), "test", "disk-path", fs, nil, nil, nil, nil)
+			setupManager := New(logger.NewTest(t), "test", "disk-path", fs, nil, nil, nil)
 
 			measurementSalt, err := setupManager.readMeasurementSalt("test-state.json")
 			if tc.wantErr {
@@ -280,15 +283,115 @@ func TestReadMeasurementSalt(t *testing.T) {
 	}
 }
 
+func TestRecoveryDoer(t *testing.T) {
+	assert := assert.New(t)
+
+	rejoinClientKey := []byte("rejoinClientKey")
+	rejoinClientSecret := []byte("rejoinClientSecret")
+	recoveryServerKey := []byte("recoveryServerKey")
+	recoveryServerSecret := []byte("recoveryServerSecret")
+
+	recoveryServerErr := errors.New("error")
+	recoveryServer := &stubRecoveryServer{
+		key:      recoveryServerKey,
+		secret:   recoveryServerSecret,
+		sendKeys: make(chan struct{}, 1),
+		err:      recoveryServerErr,
+	}
+	rejoinClient := &stubRejoinClient{
+		key:      rejoinClientKey,
+		secret:   rejoinClientSecret,
+		sendKeys: make(chan struct{}, 1),
+	}
+	recoverer := NewNodeRecoverer(recoveryServer, rejoinClient)
+
+	var wg sync.WaitGroup
+	var key, secret []byte
+	var err error
+
+	// error from recovery server
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		key, secret, err = recoverer.Do("", "")
+	}()
+	recoveryServer.sendKeys <- struct{}{}
+	wg.Wait()
+	assert.ErrorIs(err, recoveryServerErr)
+
+	recoveryServer.err = nil
+	recoveryServer.sendKeys = make(chan struct{}, 1)
+
+	// recovery server returns its key and secret
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		key, secret, err = recoverer.Do("", "")
+	}()
+	recoveryServer.sendKeys <- struct{}{}
+	wg.Wait()
+	assert.NoError(err)
+	assert.Equal(recoveryServerKey, key)
+	assert.Equal(recoveryServerSecret, secret)
+
+	recoveryServer.sendKeys = make(chan struct{}, 1)
+
+	// rejoin client returns its key and secret
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		key, secret, err = recoverer.Do("", "")
+	}()
+	rejoinClient.sendKeys <- struct{}{}
+	wg.Wait()
+	assert.NoError(err)
+	assert.Equal(rejoinClientKey, key)
+	assert.Equal(rejoinClientSecret, secret)
+}
+
+type stubRecoveryServer struct {
+	key      []byte
+	secret   []byte
+	sendKeys chan struct{}
+	err      error
+}
+
+func (s *stubRecoveryServer) Serve(ctx context.Context, _ net.Listener, _ string) ([]byte, []byte, error) {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, nil, ctx.Err()
+		case <-s.sendKeys:
+			return s.key, s.secret, s.err
+		}
+	}
+}
+
+type stubRejoinClient struct {
+	key      []byte
+	secret   []byte
+	sendKeys chan struct{}
+}
+
+func (s *stubRejoinClient) Start(ctx context.Context, _ string) ([]byte, []byte) {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, nil
+		case <-s.sendKeys:
+			return s.key, s.secret
+		}
+	}
+}
+
 type stubMapper struct {
-	formatDiskCalled     bool
-	formatDiskErr        error
-	mapDiskRepeatedCalls int
-	mapDiskCalled        bool
-	mapDiskErr           error
-	unmapDiskCalled      bool
-	unmapDiskErr         error
-	uuid                 string
+	formatDiskCalled bool
+	formatDiskErr    error
+	mapDiskCalled    bool
+	mapDiskErr       error
+	unmapDiskCalled  bool
+	unmapDiskErr     error
+	uuid             string
 }
 
 func (s *stubMapper) DiskUUID() string {
@@ -301,10 +404,6 @@ func (s *stubMapper) FormatDisk(string) error {
 }
 
 func (s *stubMapper) MapDisk(string, string) error {
-	if s.mapDiskRepeatedCalls == 0 {
-		s.mapDiskErr = nil
-	}
-	s.mapDiskRepeatedCalls--
 	s.mapDiskCalled = true
 	return s.mapDiskErr
 }
@@ -336,25 +435,14 @@ func (s *stubMounter) MkdirAll(path string, perm fs.FileMode) error {
 	return s.mkdirAllErr
 }
 
-type stubKeyWaiter struct {
-	receivedUUID      string
-	decryptionKey     []byte
-	measurementSecret []byte
-	waitErr           error
-	waitCalled        bool
+type stubRecoveryDoer struct {
+	passphrase  []byte
+	secret      []byte
+	recoveryErr error
 }
 
-func (s *stubKeyWaiter) WaitForDecryptionKey(uuid, addr string) ([]byte, []byte, error) {
-	if s.waitCalled {
-		return nil, nil, errors.New("wait called before key was reset")
-	}
-	s.waitCalled = true
-	s.receivedUUID = uuid
-	return s.decryptionKey, s.measurementSecret, s.waitErr
-}
-
-func (s *stubKeyWaiter) ResetKey() {
-	s.waitCalled = false
+func (s *stubRecoveryDoer) Do(uuid, endpoint string) (passphrase, measurementSecret []byte, err error) {
+	return s.passphrase, s.secret, s.recoveryErr
 }
 
 type stubConfigurationGenerator struct {

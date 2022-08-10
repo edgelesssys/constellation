@@ -9,29 +9,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 package integration
 
 import (
-	"context"
 	"flag"
 	"fmt"
-	"net"
 	"os"
 	"os/exec"
 	"testing"
-	"time"
 
-	"github.com/edgelesssys/constellation/internal/atls"
-	"github.com/edgelesssys/constellation/internal/cloud/metadata"
-	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
+	"github.com/edgelesssys/constellation/disk-mapper/internal/mapper"
 	"github.com/edgelesssys/constellation/internal/logger"
-	"github.com/edgelesssys/constellation/internal/oid"
-	"github.com/edgelesssys/constellation/internal/role"
-	"github.com/edgelesssys/constellation/state/internal/keyservice"
-	"github.com/edgelesssys/constellation/state/internal/mapper"
-	"github.com/edgelesssys/constellation/state/keyproto"
 	"github.com/martinjungblut/go-cryptsetup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
-	"google.golang.org/grpc"
 )
 
 const (
@@ -93,53 +82,7 @@ func TestMapper(t *testing.T) {
 	assert.Error(mapper.MapDisk(mappedDevice, "invalid-passphrase"), "was able to map disk with incorrect passphrase")
 }
 
-func TestKeyAPI(t *testing.T) {
-	require := require.New(t)
-	assert := assert.New(t)
-
-	testKey := []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-	testSecret := []byte("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
-
-	// get a free port on localhost to run the test on
-	listener, err := net.Listen("tcp", "localhost:0")
-	require.NoError(err)
-	apiAddr := listener.Addr().String()
-	listener.Close()
-
-	api := keyservice.New(
-		logger.NewTest(t),
-		atls.NewFakeIssuer(oid.Dummy{}),
-		&fakeMetadataAPI{},
-		20*time.Second,
-		time.Second,
-	)
-
-	// send a key to the server
-	go func() {
-		// wait 2 seconds before sending the key
-		time.Sleep(2 * time.Second)
-
-		creds := atlscredentials.New(nil, nil)
-		conn, err := grpc.Dial(apiAddr, grpc.WithTransportCredentials(creds))
-		require.NoError(err)
-		defer conn.Close()
-
-		client := keyproto.NewAPIClient(conn)
-		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-		defer cancel()
-		_, err = client.PushStateDiskKey(ctx, &keyproto.PushStateDiskKeyRequest{
-			StateDiskKey:      testKey,
-			MeasurementSecret: testSecret,
-		})
-		require.NoError(err)
-	}()
-
-	key, measurementSecret, err := api.WaitForDecryptionKey("12345678-1234-1234-1234-123456789ABC", apiAddr)
-	assert.NoError(err)
-	assert.Equal(testKey, key)
-	assert.Equal(testSecret, measurementSecret)
-}
-
+/*
 type fakeMetadataAPI struct{}
 
 func (f *fakeMetadataAPI) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
@@ -152,3 +95,4 @@ func (f *fakeMetadataAPI) List(ctx context.Context) ([]metadata.InstanceMetadata
 		},
 	}, nil
 }
+*/

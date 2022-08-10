@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.20.1
-// source: keyservice.proto
+// source: recover.proto
 
-package keyproto
+package recoverproto
 
 import (
 	context "context"
@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type APIClient interface {
-	PushStateDiskKey(ctx context.Context, in *PushStateDiskKeyRequest, opts ...grpc.CallOption) (*PushStateDiskKeyResponse, error)
+	Recover(ctx context.Context, opts ...grpc.CallOption) (API_RecoverClient, error)
 }
 
 type aPIClient struct {
@@ -33,20 +33,42 @@ func NewAPIClient(cc grpc.ClientConnInterface) APIClient {
 	return &aPIClient{cc}
 }
 
-func (c *aPIClient) PushStateDiskKey(ctx context.Context, in *PushStateDiskKeyRequest, opts ...grpc.CallOption) (*PushStateDiskKeyResponse, error) {
-	out := new(PushStateDiskKeyResponse)
-	err := c.cc.Invoke(ctx, "/keyproto.API/PushStateDiskKey", in, out, opts...)
+func (c *aPIClient) Recover(ctx context.Context, opts ...grpc.CallOption) (API_RecoverClient, error) {
+	stream, err := c.cc.NewStream(ctx, &API_ServiceDesc.Streams[0], "/recoverproto.API/Recover", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &aPIRecoverClient{stream}
+	return x, nil
+}
+
+type API_RecoverClient interface {
+	Send(*RecoverMessage) error
+	Recv() (*RecoverResponse, error)
+	grpc.ClientStream
+}
+
+type aPIRecoverClient struct {
+	grpc.ClientStream
+}
+
+func (x *aPIRecoverClient) Send(m *RecoverMessage) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *aPIRecoverClient) Recv() (*RecoverResponse, error) {
+	m := new(RecoverResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // APIServer is the server API for API service.
 // All implementations must embed UnimplementedAPIServer
 // for forward compatibility
 type APIServer interface {
-	PushStateDiskKey(context.Context, *PushStateDiskKeyRequest) (*PushStateDiskKeyResponse, error)
+	Recover(API_RecoverServer) error
 	mustEmbedUnimplementedAPIServer()
 }
 
@@ -54,8 +76,8 @@ type APIServer interface {
 type UnimplementedAPIServer struct {
 }
 
-func (UnimplementedAPIServer) PushStateDiskKey(context.Context, *PushStateDiskKeyRequest) (*PushStateDiskKeyResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method PushStateDiskKey not implemented")
+func (UnimplementedAPIServer) Recover(API_RecoverServer) error {
+	return status.Errorf(codes.Unimplemented, "method Recover not implemented")
 }
 func (UnimplementedAPIServer) mustEmbedUnimplementedAPIServer() {}
 
@@ -70,36 +92,46 @@ func RegisterAPIServer(s grpc.ServiceRegistrar, srv APIServer) {
 	s.RegisterService(&API_ServiceDesc, srv)
 }
 
-func _API_PushStateDiskKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PushStateDiskKeyRequest)
-	if err := dec(in); err != nil {
+func _API_Recover_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(APIServer).Recover(&aPIRecoverServer{stream})
+}
+
+type API_RecoverServer interface {
+	Send(*RecoverResponse) error
+	Recv() (*RecoverMessage, error)
+	grpc.ServerStream
+}
+
+type aPIRecoverServer struct {
+	grpc.ServerStream
+}
+
+func (x *aPIRecoverServer) Send(m *RecoverResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *aPIRecoverServer) Recv() (*RecoverMessage, error) {
+	m := new(RecoverMessage)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(APIServer).PushStateDiskKey(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/keyproto.API/PushStateDiskKey",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(APIServer).PushStateDiskKey(ctx, req.(*PushStateDiskKeyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
 // API_ServiceDesc is the grpc.ServiceDesc for API service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var API_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "keyproto.API",
+	ServiceName: "recoverproto.API",
 	HandlerType: (*APIServer)(nil),
-	Methods: []grpc.MethodDesc{
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "PushStateDiskKey",
-			Handler:    _API_PushStateDiskKey_Handler,
+			StreamName:    "Recover",
+			Handler:       _API_Recover_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "keyservice.proto",
+	Metadata: "recover.proto",
 }
