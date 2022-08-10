@@ -1,5 +1,13 @@
 FROM fedora@sha256:36af84ba69e21c9ef86a0424a090674c433b2b80c2462e57503886f1d823abe8 as build
 
+# This workaround is necessary since glibc in versions >= 2.34 are incompatible with docker versions <= 20.10.9.
+# Since the host ubuntu is running docker 20.10.7, this incompatibility becomes a problem.
+# The workaround binary is a small go program that adds a missing seccomp filter to all programs invoked through the
+# container's shell. More explanations can be found in the clone3-workaround repo and the blogpost linked in the repo.
+ADD https://github.com/AkihiroSuda/clone3-workaround/releases/download/v1.0.0/clone3-workaround.x86_64 /clone3-workaround
+RUN chmod 100 /clone3-workaround
+SHELL ["/clone3-workaround", "/bin/sh", "-c"]
+
 RUN dnf -y update && \
     dnf -y install @development-tools pkg-config iproute iputils wget git jq openssl-devel cryptsetup-libs cryptsetup-devel && \
     dnf clean all
