@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package recoverproto;
+
+option go_package = "github.com/edgelesssys/constellation/disk-mapper/recoverproto";
+
+service API {
+    rpc Recover(stream RecoverMessage) returns (stream RecoverResponse) {}
+}
+
+message RecoverMessage {
+    oneof request {
+        bytes state_disk_key = 1;
+        bytes measurement_secret = 2;
+    }
+}
+
+message RecoverResponse {
+    string disk_uuid = 1;
+}

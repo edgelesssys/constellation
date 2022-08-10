@@ -36,7 +36,7 @@ ARG PROJECT_VERSION
 RUN go build -o bootstrapper -tags=gcp,disable_tpm_simulator -buildvcs=false -ldflags "-s -w -buildid='' -X main.version=${PROJECT_VERSION}" ./cmd/bootstrapper/
 
 FROM build AS build-disk-mapper
-WORKDIR /constellation/state/
+WORKDIR /constellation/disk-mapper/
 
 RUN go build -o disk-mapper -ldflags "-s -w" ./cmd/
 
@@ -44,4 +44,4 @@ FROM scratch AS bootstrapper
 COPY --from=build-bootstrapper /constellation/bootstrapper/bootstrapper /
 
 FROM scratch AS disk-mapper
-COPY --from=build-disk-mapper /constellation/state/disk-mapper /
+COPY --from=build-disk-mapper /constellation/disk-mapper/disk-mapper /

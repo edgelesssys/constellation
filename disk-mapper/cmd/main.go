@@ -11,12 +11,17 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"net"
 	"net/http"
 	"net/url"
 	"path/filepath"
 	"strings"
-	"time"
 
+	"github.com/edgelesssys/constellation/disk-mapper/internal/mapper"
+	"github.com/edgelesssys/constellation/disk-mapper/internal/recoveryserver"
+	"github.com/edgelesssys/constellation/disk-mapper/internal/rejoinclient"
+	"github.com/edgelesssys/constellation/disk-mapper/internal/setup"
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/attestation/azure"
 	"github.com/edgelesssys/constellation/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/internal/attestation/qemu"
@@ -26,10 +31,8 @@ import (
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	qemucloud "github.com/edgelesssys/constellation/internal/cloud/qemu"
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/internal/logger"
-	"github.com/edgelesssys/constellation/state/internal/keyservice"
-	"github.com/edgelesssys/constellation/state/internal/mapper"
-	"github.com/edgelesssys/constellation/state/internal/setup"
 	tpmClient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm/tpm2"
 	"github.com/spf13/afero"
@@ -54,8 +57,8 @@ func main() {
 	// set up metadata API and quote issuer for aTLS connections
 	var err error
 	var diskPath string
-	var issuer keyservice.QuoteIssuer
-	var metadata metadata.InstanceLister
+	var issuer atls.Issuer
+	var metadataAPI setup.MetadataAPI
 	switch strings.ToLower(*csp) {
 	case "azure":
 		diskPath, err = filepath.EvalSymlinks(azureStateDiskPath)
@@ -63,7 +66,7 @@ func main() {
 			_ = exportPCRs()
 			log.With(zap.Error(err)).Fatalf("Unable to resolve Azure state disk path")
 		}
-		metadata, err = azurecloud.NewMetadata(context.Background())
+		metadataAPI, err = azurecloud.NewMetadata(context.Background())
 		if err != nil {
 			log.With(zap.Error).Fatalf("Failed to create Azure metadata API")
 		}
@@ -81,12 +84,12 @@ func main() {
 		if err != nil {
 			log.With(zap.Error).Fatalf("Failed to create GCP client")
 		}
-		metadata = gcpcloud.New(gcpClient)
+		metadataAPI = gcpcloud.New(gcpClient)
 
 	case "qemu":
 		diskPath = qemuStateDiskPath
 		issuer = qemu.NewIssuer()
-		metadata = &qemucloud.Metadata{}
+		metadataAPI = &qemucloud.Metadata{}
 
 	default:
 		log.Fatalf("CSP %s is not supported by Constellation", *csp)
@@ -104,7 +107,6 @@ func main() {
 		*csp,
 		diskPath,
 		afero.Afero{Fs: afero.NewOsFs()},
-		keyservice.New(log.Named("keyService"), issuer, metadata, 20*time.Second, 20*time.Second), // try to request a key every 20 seconds
 		mapper,
 		setup.DiskMounter{},
 		vtpm.OpenVTPM,
@@ -112,7 +114,23 @@ func main() {
 
 	// prepare the state disk
 	if mapper.IsLUKSDevice() {
-		err = setupManger.PrepareExistingDisk()
+		// set up rejoin client
+		var self metadata.InstanceMetadata
+		self, err = metadataAPI.Self(context.Background())
+		if err != nil {
+			log.With(zap.Error(err)).Fatalf("Failed to get self metadata")
+		}
+		rejoinClient := rejoinclient.New(
+			dialer.New(issuer, nil, &net.Dialer{}),
+			self,
+			metadataAPI,
+			log.Named("rejoinClient"),
+		)
+
+		// set up recovery server
+		recoveryServer := recoveryserver.New(issuer, log.Named("recoveryServer"))
+
+		err = setupManger.PrepareExistingDisk(setup.NewNodeRecoverer(recoveryServer, rejoinClient))
 	} else {
 		err = setupManger.PrepareNewDisk()
 	}

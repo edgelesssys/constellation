@@ -13,8 +13,8 @@ import (
 	"math"
 	"testing"
 
+	"github.com/edgelesssys/constellation/disk-mapper/internal/mapper"
 	"github.com/edgelesssys/constellation/internal/logger"
-	"github.com/edgelesssys/constellation/state/internal/mapper"
 	"github.com/martinjungblut/go-cryptsetup"
 	"go.uber.org/zap/zapcore"
 )
