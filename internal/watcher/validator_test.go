@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/internal/atls"
+	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
@@ -72,7 +73,10 @@ func TestNewUpdateableValidator(t *testing.T) {
 					map[uint32][]byte{
 						11: {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
 					},
-					file.OptNone,
+				))
+				require.NoError(handler.WriteJSON(
+					filepath.Join(constants.ServiceBasePath, constants.EnforcedPCRsFilename),
+					[]uint32{11},
 				))
 			}
 
@@ -95,7 +99,7 @@ func TestUpdate(t *testing.T) {
 	require := require.New(t)
 
 	oid := fakeOID{1, 3, 9900, 1}
-	newValidator := func(m map[uint32][]byte) atls.Validator {
+	newValidator := func(m map[uint32][]byte, e []uint32) atls.Validator {
 		return fakeValidator{fakeOID: oid}
 	}
 	handler := file.NewHandler(afero.NewMemMapFs())
@@ -117,6 +121,10 @@ func TestUpdate(t *testing.T) {
 			11: {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
 		},
 		file.OptNone,
+	))
+	require.NoError(handler.WriteJSON(
+		filepath.Join(constants.ServiceBasePath, constants.EnforcedPCRsFilename),
+		[]uint32{11},
 	))
 
 	// call update once to initialize the server's validator
@@ -161,7 +169,7 @@ func TestUpdateConcurrency(t *testing.T) {
 	validator := &Updatable{
 		log:         logger.NewTest(t),
 		fileHandler: handler,
-		newValidator: func(m map[uint32][]byte) atls.Validator {
+		newValidator: func(m map[uint32][]byte, e []uint32) atls.Validator {
 			return fakeValidator{fakeOID: fakeOID{1, 3, 9900, 1}}
 		},
 	}
@@ -171,6 +179,10 @@ func TestUpdateConcurrency(t *testing.T) {
 			11: {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
 		},
 		file.OptNone,
+	))
+	require.NoError(handler.WriteJSON(
+		filepath.Join(constants.ServiceBasePath, constants.EnforcedPCRsFilename),
+		[]uint32{11},
 	))
 
 	var wg sync.WaitGroup
@@ -219,6 +231,8 @@ func (v fakeValidator) Validate(attDoc []byte, nonce []byte) ([]byte, error) {
 	}
 	return doc.UserData, v.err
 }
+
+func (v fakeValidator) AddLogger(logger vtpm.WarnLogger) {}
 
 type fakeOID asn1.ObjectIdentifier
 

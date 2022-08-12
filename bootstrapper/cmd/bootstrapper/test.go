@@ -14,7 +14,9 @@ import (
 type clusterFake struct{}
 
 // InitCluster fakes bootstrapping a new cluster with the current node being the master, returning the arguments required to join the cluster.
-func (c *clusterFake) InitCluster(context.Context, []string, string, string, []byte, resources.KMSConfig, map[string]string, []byte, *logger.Logger,
+func (c *clusterFake) InitCluster(
+	context.Context, []string, string, string, []byte, []uint32,
+	resources.KMSConfig, map[string]string, []byte, *logger.Logger,
 ) ([]byte, error) {
 	return []byte{}, nil
 }

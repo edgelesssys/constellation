@@ -70,9 +70,6 @@ func verify(
 	if err := validators.UpdateInitPCRs(flags.ownerID, flags.clusterID); err != nil {
 		return err
 	}
-	if validators.Warnings() != "" {
-		cmd.Print(validators.Warnings())
-	}
 
 	nonce, err := crypto.GenerateRandomBytes(32)
 	if err != nil {
@@ -90,7 +87,7 @@ func verify(
 			Nonce:    nonce,
 			UserData: userData,
 		},
-		validators.V(),
+		validators.V(cmd),
 	); err != nil {
 		return err
 	}

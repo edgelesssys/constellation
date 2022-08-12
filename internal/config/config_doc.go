@@ -168,7 +168,7 @@ func init() {
 			FieldName: "azure",
 		},
 	}
-	AzureConfigDoc.Fields = make([]encoder.Doc, 7)
+	AzureConfigDoc.Fields = make([]encoder.Doc, 8)
 	AzureConfigDoc.Fields[0].Name = "subscription"
 	AzureConfigDoc.Fields[0].Type = "string"
 	AzureConfigDoc.Fields[0].Note = ""
@@ -199,11 +199,16 @@ func init() {
 	AzureConfigDoc.Fields[5].Note = ""
 	AzureConfigDoc.Fields[5].Description = "Expected confidential VM measurements."
 	AzureConfigDoc.Fields[5].Comments[encoder.LineComment] = "Expected confidential VM measurements."
-	AzureConfigDoc.Fields[6].Name = "userAssignedIdentity"
-	AzureConfigDoc.Fields[6].Type = "string"
+	AzureConfigDoc.Fields[6].Name = "enforcedMeasurements"
+	AzureConfigDoc.Fields[6].Type = "[]uint32"
 	AzureConfigDoc.Fields[6].Note = ""
-	AzureConfigDoc.Fields[6].Description = "Authorize spawned VMs to access Azure API. See: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=azure"
-	AzureConfigDoc.Fields[6].Comments[encoder.LineComment] = "Authorize spawned VMs to access Azure API. See: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=azure"
+	AzureConfigDoc.Fields[6].Description = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
+	AzureConfigDoc.Fields[6].Comments[encoder.LineComment] = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
+	AzureConfigDoc.Fields[7].Name = "userAssignedIdentity"
+	AzureConfigDoc.Fields[7].Type = "string"
+	AzureConfigDoc.Fields[7].Note = ""
+	AzureConfigDoc.Fields[7].Description = "Authorize spawned VMs to access Azure API. See: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=azure"
+	AzureConfigDoc.Fields[7].Comments[encoder.LineComment] = "Authorize spawned VMs to access Azure API. See: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=azure"
 
 	GCPConfigDoc.Type = "GCPConfig"
 	GCPConfigDoc.Comments[encoder.LineComment] = "GCPConfig are GCP specific configuration values used by the CLI."
@@ -214,7 +219,7 @@ func init() {
 			FieldName: "gcp",
 		},
 	}
-	GCPConfigDoc.Fields = make([]encoder.Doc, 7)
+	GCPConfigDoc.Fields = make([]encoder.Doc, 8)
 	GCPConfigDoc.Fields[0].Name = "project"
 	GCPConfigDoc.Fields[0].Type = "string"
 	GCPConfigDoc.Fields[0].Note = ""
@@ -250,6 +255,11 @@ func init() {
 	GCPConfigDoc.Fields[6].Note = ""
 	GCPConfigDoc.Fields[6].Description = "Expected confidential VM measurements."
 	GCPConfigDoc.Fields[6].Comments[encoder.LineComment] = "Expected confidential VM measurements."
+	GCPConfigDoc.Fields[7].Name = "enforcedMeasurements"
+	GCPConfigDoc.Fields[7].Type = "[]uint32"
+	GCPConfigDoc.Fields[7].Note = ""
+	GCPConfigDoc.Fields[7].Description = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
+	GCPConfigDoc.Fields[7].Comments[encoder.LineComment] = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
 
 	QEMUConfigDoc.Type = "QEMUConfig"
 	QEMUConfigDoc.Comments[encoder.LineComment] = ""
@@ -260,12 +270,17 @@ func init() {
 			FieldName: "qemu",
 		},
 	}
-	QEMUConfigDoc.Fields = make([]encoder.Doc, 1)
+	QEMUConfigDoc.Fields = make([]encoder.Doc, 2)
 	QEMUConfigDoc.Fields[0].Name = "measurements"
 	QEMUConfigDoc.Fields[0].Type = "Measurements"
 	QEMUConfigDoc.Fields[0].Note = ""
 	QEMUConfigDoc.Fields[0].Description = "Measurement used to enable measured boot."
 	QEMUConfigDoc.Fields[0].Comments[encoder.LineComment] = "Measurement used to enable measured boot."
+	QEMUConfigDoc.Fields[1].Name = "enforcedMeasurements"
+	QEMUConfigDoc.Fields[1].Type = "[]uint32"
+	QEMUConfigDoc.Fields[1].Note = ""
+	QEMUConfigDoc.Fields[1].Description = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
+	QEMUConfigDoc.Fields[1].Comments[encoder.LineComment] = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
 }
 
 func (_ Config) Doc() *encoder.Doc {

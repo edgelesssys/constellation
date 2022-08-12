@@ -115,6 +115,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		req.CloudServiceAccountUri,
 		req.KubernetesVersion,
 		measurementSalt,
+		req.EnforcedPcrs,
 		resources.KMSConfig{
 			MasterSecret:       req.MasterSecret,
 			Salt:               req.Salt,
@@ -197,6 +198,7 @@ type ClusterInitializer interface {
 		cloudServiceAccountURI string,
 		k8sVersion string,
 		measurementSalt []byte,
+		enforcedPcrs []uint32,
 		kmsConfig resources.KMSConfig,
 		sshUserKeys map[string]string,
 		helmDeployments []byte,

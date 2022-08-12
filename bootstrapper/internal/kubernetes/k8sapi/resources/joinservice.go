@@ -23,7 +23,7 @@ type joinServiceDaemonset struct {
 }
 
 // NewJoinServiceDaemonset returns a daemonset for the join service.
-func NewJoinServiceDaemonset(csp, measurementsJSON string, measurementSalt []byte) *joinServiceDaemonset {
+func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON string, measurementSalt []byte) *joinServiceDaemonset {
 	return &joinServiceDaemonset{
 		ClusterRole: rbac.ClusterRole{
 			TypeMeta: meta.TypeMeta{
@@ -247,6 +247,7 @@ func NewJoinServiceDaemonset(csp, measurementsJSON string, measurementSalt []byt
 			},
 			Data: map[string]string{
 				constants.MeasurementsFilename: measurementsJSON,
+				constants.EnforcedPCRsFilename: enforcedPCRsJSON,
 			},
 			BinaryData: map[string][]byte{
 				constants.MeasurementSaltFilename: measurementSalt,

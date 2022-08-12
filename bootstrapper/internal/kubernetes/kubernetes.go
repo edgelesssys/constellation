@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -70,8 +71,8 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
-	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, versionString string,
-	measurementSalt []byte, kmsConfig resources.KMSConfig, sshUsers map[string]string, helmDeployments []byte, log *logger.Logger,
+	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, versionString string, measurementSalt []byte,
+	enforcedPCRs []uint32, kmsConfig resources.KMSConfig, sshUsers map[string]string, helmDeployments []byte, log *logger.Logger,
 ) ([]byte, error) {
 	k8sVersion, err := versions.NewValidK8sVersion(versionString)
 	if err != nil {
@@ -180,7 +181,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up kms: %w", err)
 	}
 
-	if err := k.setupJoinService(k.cloudProvider, k.initialMeasurementsJSON, measurementSalt); err != nil {
+	if err := k.setupJoinService(k.cloudProvider, k.initialMeasurementsJSON, measurementSalt, enforcedPCRs); err != nil {
 		return nil, fmt.Errorf("setting up join service failed: %w", err)
 	}
 
@@ -297,8 +298,17 @@ func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
 	return k.kubeconfigReader.ReadKubeconfig()
 }
 
-func (k *KubeWrapper) setupJoinService(csp string, measurementsJSON, measurementSalt []byte) error {
-	joinConfiguration := resources.NewJoinServiceDaemonset(csp, string(measurementsJSON), measurementSalt)
+func (k *KubeWrapper) setupJoinService(
+	csp string, measurementsJSON, measurementSalt []byte, enforcedPCRs []uint32,
+) error {
+	enforcedPCRsJSON, err := json.Marshal(enforcedPCRs)
+	if err != nil {
+		return fmt.Errorf("marshaling enforcedPCRs: %w", err)
+	}
+
+	joinConfiguration := resources.NewJoinServiceDaemonset(
+		csp, string(measurementsJSON), string(enforcedPCRsJSON), measurementSalt,
+	)
 
 	return k.clusterUtil.SetupJoinService(k.client, joinConfiguration)
 }

@@ -136,6 +136,9 @@ type AzureConfig struct {
 	//   Expected confidential VM measurements.
 	Measurements Measurements `yaml:"measurements"`
 	// description: |
+	//   List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning.
+	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
+	// description: |
 	//   Authorize spawned VMs to access Azure API. See: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=azure
 	UserAssignedIdentity string `yaml:"userAssignedIdentity" validate:"required"`
 }
@@ -163,12 +166,18 @@ type GCPConfig struct {
 	// description: |
 	//   Expected confidential VM measurements.
 	Measurements Measurements `yaml:"measurements"`
+	// description: |
+	//   List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning.
+	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
 }
 
 type QEMUConfig struct {
 	// description: |
 	//   Measurement used to enable measured boot.
 	Measurements Measurements `yaml:"measurements"`
+	// description: |
+	//   List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning.
+	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
 }
 
 // Default returns a struct with the default config.
@@ -218,7 +227,8 @@ func Default() *Config {
 				UserAssignedIdentity: "",
 				Image:                "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos/versions/0.0.1659453699",
 				StateDiskType:        "StandardSSD_LRS", // TODO: Replace with Premium_LRS when we replace the default VM size (Standard_D2a_v4) since the size does not support Premium_LRS
-				Measurements:         azurePCRs,
+				Measurements:         copyPCRMap(azurePCRs),
+				EnforcedMeasurements: []uint32{8, 9, 11, 12},
 			},
 			GCP: &GCPConfig{
 				Project: "",
@@ -232,11 +242,13 @@ func Default() *Config {
 					"roles/storage.admin",
 					"roles/iam.serviceAccountUser",
 				},
-				StateDiskType: "pd-ssd",
-				Measurements:  gcpPCRs,
+				StateDiskType:        "pd-ssd",
+				Measurements:         copyPCRMap(gcpPCRs),
+				EnforcedMeasurements: []uint32{0, 8, 9, 11, 12},
 			},
 			QEMU: &QEMUConfig{
-				Measurements: qemuPCRs,
+				Measurements:         copyPCRMap(qemuPCRs),
+				EnforcedMeasurements: []uint32{11, 12},
 			},
 		},
 		KubernetesVersion: string(versions.Latest),
@@ -345,4 +357,10 @@ func FromFile(fileHandler file.Handler, name string) (*Config, error) {
 		return nil, fmt.Errorf("could not load config from file %s: %w", name, err)
 	}
 	return &conf, nil
+}
+
+func copyPCRMap(m map[uint32][]byte) map[uint32][]byte {
+	res := make(Measurements)
+	res.CopyFrom(m)
+	return res
 }

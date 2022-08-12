@@ -17,11 +17,15 @@ All notable changes to Constellation will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
 ## [Unreleased]
+
 ### Added
 
 - Kubernetes operator for Constellation nodes with ability to update node images.
 - cilium strict pod2pod encryption.
+- Add a configurable list of enforced measurements to the config. If an expected measurement can not be verified during attestation, but it is not in the list of enforced measurements, only a warning is logged.
+
 ### Changed
 <!-- For changes in existing functionality.  -->
 ### Deprecated
@@ -33,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 <!-- In case of vulnerabilities. -->
 ### Internal
+
 - Run e2e tests on all supported versions.
 - Run e2e tests on latest debug images, instead of release image.
 

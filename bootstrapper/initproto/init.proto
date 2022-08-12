@@ -20,6 +20,7 @@ message InitRequest {
   repeated SSHUserKey ssh_user_keys = 9;
   bytes salt = 10;
   bytes helm_deployments = 11;
+  repeated uint32 enforced_pcrs = 12;
 }
 
 message InitResponse {

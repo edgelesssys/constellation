@@ -54,7 +54,7 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	serviceAccountCreator := cloudcmd.NewServiceAccountCreator()
 	newDialer := func(validator *cloudcmd.Validator) *dialer.Dialer {
-		return dialer.New(nil, validator.V(), &net.Dialer{})
+		return dialer.New(nil, validator.V(cmd), &net.Dialer{})
 	}
 	helmLoader := &helm.ChartLoader{}
 	return initialize(cmd, newDialer, serviceAccountCreator, fileHandler, helmLoader)
@@ -96,7 +96,6 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 	if err != nil {
 		return err
 	}
-	cmd.Print(validator.WarningsIncludeInit())
 
 	cmd.Println("Creating service account ...")
 	serviceAccount, stat, err := serviceAccCreator.Create(cmd.Context(), stat, config)
@@ -135,6 +134,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		KubernetesVersion:      config.KubernetesVersion,
 		SshUserKeys:            ssh.ToProtoSlice(sshUsers),
 		HelmDeployments:        helmDeployments,
+		EnforcedPcrs:           getEnforcedMeasurements(provider, config),
 	}
 	resp, err := initCall(cmd.Context(), newDialer(validator), stat.BootstrapperHost, req)
 	if err != nil {
@@ -212,6 +212,19 @@ func writeOutput(resp *initproto.InitResponse, ip string, wr io.Writer, fileHand
 
 func writeRow(wr io.Writer, col1 string, col2 string) {
 	fmt.Fprint(wr, col1, "\t", col2, "\n")
+}
+
+func getEnforcedMeasurements(provider cloudprovider.Provider, config *config.Config) []uint32 {
+	switch provider {
+	case cloudprovider.Azure:
+		return config.Provider.Azure.EnforcedMeasurements
+	case cloudprovider.GCP:
+		return config.Provider.GCP.EnforcedMeasurements
+	case cloudprovider.QEMU:
+		return config.Provider.QEMU.EnforcedMeasurements
+	default:
+		return nil
+	}
 }
 
 // evalFlagArgs gets the flag values and does preprocessing of these values like

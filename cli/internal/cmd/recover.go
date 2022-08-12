@@ -72,9 +72,8 @@ func recover(cmd *cobra.Command, fileHandler file.Handler, recoveryClient recove
 	if err != nil {
 		return err
 	}
-	cmd.Print(validators.WarningsIncludeInit())
 
-	if err := recoveryClient.Connect(flags.endpoint, validators.V()); err != nil {
+	if err := recoveryClient.Connect(flags.endpoint, validators.V(cmd)); err != nil {
 		return err
 	}
 

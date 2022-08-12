@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/crypto/testvector"
 	"github.com/edgelesssys/constellation/internal/file"
@@ -125,7 +126,7 @@ func TestRecover(t *testing.T) {
 			require := require.New(t)
 
 			cmd := NewRecoverCmd()
-			cmd.Flags().String("config", "", "") // register persistent flag manually
+			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 			out := &bytes.Buffer{}
 			cmd.SetOut(out)
 			cmd.SetErr(&bytes.Buffer{})
@@ -144,6 +145,10 @@ func TestRecover(t *testing.T) {
 
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
+
+			config := defaultConfigWithExpectedMeasurements(t, cloudprovider.FromString(tc.existingState.CloudProvider))
+			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config))
+
 			require.NoError(fileHandler.WriteJSON("constellation-mastersecret.json", masterSecret{Key: tc.masterSecret.Secret, Salt: tc.masterSecret.Salt}, file.OptNone))
 			if !tc.stateless {
 				require.NoError(fileHandler.WriteJSON(constants.StateFilename, tc.existingState, file.OptNone))

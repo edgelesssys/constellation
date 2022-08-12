@@ -14,6 +14,7 @@ import (
 
 	"github.com/edgelesssys/constellation/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/config"
@@ -158,9 +159,12 @@ func TestInitialize(t *testing.T) {
 			cmd.SetOut(&out)
 			var errOut bytes.Buffer
 			cmd.SetErr(&errOut)
-			cmd.Flags().String("config", "", "") // register persistent flag manually
+			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
+
+			config := defaultConfigWithExpectedMeasurements(t, cloudprovider.FromString(tc.existingState.CloudProvider))
+			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config))
 			require.NoError(fileHandler.WriteJSON(constants.StateFilename, tc.existingState, file.OptNone))
 			require.NoError(cmd.Flags().Set("autoscale", strconv.FormatBool(tc.setAutoscaleFlag)))
 
@@ -476,6 +480,8 @@ func (v *testValidator) Validate(attDoc []byte, nonce []byte) ([]byte, error) {
 	return attestation.UserData, nil
 }
 
+func (v *testValidator) AddLogger(vtpm.WarnLogger) {}
+
 type testIssuer struct {
 	oid.Getter
 	pcrs map[uint32][]byte
@@ -505,4 +511,28 @@ type stubInitServer struct {
 func (s *stubInitServer) Init(ctx context.Context, req *initproto.InitRequest) (*initproto.InitResponse, error) {
 	s.activateAutoscalingNodeGroups = req.AutoscalingNodeGroups
 	return s.initResp, s.initErr
+}
+
+func defaultConfigWithExpectedMeasurements(t *testing.T, csp cloudprovider.Provider) *config.Config {
+	t.Helper()
+	config := config.Default()
+
+	config.Provider.Azure.SubscriptionID = "01234567-0123-0123-0123-0123456789ab"
+	config.Provider.Azure.TenantID = "01234567-0123-0123-0123-0123456789ab"
+	config.Provider.Azure.Location = "test-location"
+	config.Provider.Azure.UserAssignedIdentity = "test-identity"
+	config.Provider.Azure.Measurements[8] = []byte("00000000000000000000000000000000")
+	config.Provider.Azure.Measurements[9] = []byte("11111111111111111111111111111111")
+
+	config.Provider.GCP.Region = "test-region"
+	config.Provider.GCP.Project = "test-project"
+	config.Provider.GCP.Zone = "test-zone"
+	config.Provider.GCP.Measurements[8] = []byte("00000000000000000000000000000000")
+	config.Provider.GCP.Measurements[9] = []byte("11111111111111111111111111111111")
+
+	config.Provider.QEMU.Measurements[8] = []byte("00000000000000000000000000000000")
+	config.Provider.QEMU.Measurements[9] = []byte("11111111111111111111111111111111")
+
+	config.RemoveProviderExcept(csp)
+	return config
 }

@@ -51,6 +51,11 @@ type (
 	VerifyUserData func(pub crypto.PublicKey, hash crypto.Hash, hashed, sig []byte) error
 )
 
+// WarnLogger is a logger used to print warnings during attestation validation.
+type WarnLogger interface {
+	Warnf(format string, args ...interface{})
+}
+
 // AttestationDocument contains the TPM attestation with signed user data.
 type AttestationDocument struct {
 	// Attestation contains the TPM event log, PCR values and quotes, and public key of the key used to sign the attestation.
@@ -122,20 +127,37 @@ func (i *Issuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
 
 // Validator handles validation of TPM based attestation.
 type Validator struct {
-	trustedPcrs    map[uint32][]byte
+	expectedPCRs   map[uint32][]byte
+	enforcedPCRs   map[uint32]struct{}
 	getTrustedKey  GetTPMTrustedAttestationPublicKey
 	validateCVM    ValidateCVM
 	verifyUserData VerifyUserData
+
+	log WarnLogger
 }
 
 // NewValidator returns a new Validator.
-func NewValidator(trustedPcrs map[uint32][]byte, getTrustedKey GetTPMTrustedAttestationPublicKey, validateCVM ValidateCVM, verifyUserData VerifyUserData) *Validator {
+func NewValidator(expectedPCRs map[uint32][]byte, enforcedPCRs []uint32,
+	getTrustedKey GetTPMTrustedAttestationPublicKey, validateCVM ValidateCVM, verifyUserData VerifyUserData,
+) *Validator {
+	// Convert the enforced PCR list to a map for convenient and fast lookup
+	enforcedMap := make(map[uint32]struct{})
+	for _, pcr := range enforcedPCRs {
+		enforcedMap[pcr] = struct{}{}
+	}
+
 	return &Validator{
-		trustedPcrs:    trustedPcrs,
+		expectedPCRs:   expectedPCRs,
+		enforcedPCRs:   enforcedMap,
 		getTrustedKey:  getTrustedKey,
 		validateCVM:    validateCVM,
 		verifyUserData: verifyUserData,
 	}
+}
+
+// AddLogger adds a logger to the validator.
+func (v *Validator) AddLogger(log WarnLogger) {
+	v.log = log
 }
 
 // Validate a TPM based attestation.
@@ -173,9 +195,14 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	for idx, pcr := range v.trustedPcrs {
+	for idx, pcr := range v.expectedPCRs {
 		if !bytes.Equal(pcr, attDoc.Attestation.Quotes[quoteIdx].Pcrs.Pcrs[idx]) {
-			return nil, fmt.Errorf("untrusted PCR value at PCR index %d", idx)
+			if _, ok := v.enforcedPCRs[idx]; ok {
+				return nil, fmt.Errorf("untrusted PCR value at PCR index %d", idx)
+			}
+			if v.log != nil {
+				v.log.Warnf("Encountered untrusted PCR value at index %d", idx)
+			}
 		}
 	}
 

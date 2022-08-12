@@ -172,7 +172,7 @@ func TestVerify(t *testing.T) {
 			require := require.New(t)
 
 			cmd := NewVerifyCmd()
-			cmd.Flags().String("config", "", "") // register persistent flag manually
+			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 			out := &bytes.Buffer{}
 			cmd.SetOut(out)
 			cmd.SetErr(&bytes.Buffer{})
@@ -190,6 +190,8 @@ func TestVerify(t *testing.T) {
 			}
 			fileHandler := file.NewHandler(tc.setupFs(require))
 
+			config := defaultConfigWithExpectedMeasurements(t, tc.provider)
+			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config))
 			if tc.idFile != nil {
 				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, tc.idFile, file.OptNone))
 			}

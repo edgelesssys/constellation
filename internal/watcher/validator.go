@@ -30,11 +30,11 @@ func NewValidator(log *logger.Logger, csp string, fileHandler file.Handler) (*Up
 	var newValidator newValidatorFunc
 	switch cloudprovider.FromString(csp) {
 	case cloudprovider.Azure:
-		newValidator = func(m map[uint32][]byte) atls.Validator { return azure.NewValidator(m) }
+		newValidator = func(m map[uint32][]byte, e []uint32) atls.Validator { return azure.NewValidator(m, e) }
 	case cloudprovider.GCP:
-		newValidator = func(m map[uint32][]byte) atls.Validator { return gcp.NewValidator(m) }
+		newValidator = func(m map[uint32][]byte, e []uint32) atls.Validator { return gcp.NewValidator(m, e) }
 	case cloudprovider.QEMU:
-		newValidator = func(m map[uint32][]byte) atls.Validator { return qemu.NewValidator(m) }
+		newValidator = func(m map[uint32][]byte, e []uint32) atls.Validator { return qemu.NewValidator(m, e) }
 	default:
 		return nil, fmt.Errorf("unknown cloud service provider: %q", csp)
 	}
@@ -76,9 +76,16 @@ func (u *Updatable) Update() error {
 	}
 	u.log.Debugf("New measurements: %v", measurements)
 
-	u.Validator = u.newValidator(measurements)
+	var enforced []uint32
+	if err := u.fileHandler.ReadJSON(filepath.Join(constants.ServiceBasePath, constants.EnforcedPCRsFilename), &enforced); err != nil {
+		return err
+	}
+	u.log.Debugf("Enforced PCRs: %v", enforced)
+
+	u.Validator = u.newValidator(measurements, enforced)
+	u.Validator.AddLogger(u.log)
 
 	return nil
 }
 
-type newValidatorFunc func(measurements map[uint32][]byte) atls.Validator
+type newValidatorFunc func(measurements map[uint32][]byte, enforcedPCRs []uint32) atls.Validator
