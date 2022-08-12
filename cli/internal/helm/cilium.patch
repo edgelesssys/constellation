@@ -1,0 +1,25 @@
+diff --git a/install/kubernetes/cilium/templates/cilium-configmap.yaml b/install/kubernetes/cilium/templates/cilium-configmap.yaml
+index 13c4b01414..348d1281b2 100644
+--- a/install/kubernetes/cilium/templates/cilium-configmap.yaml
++++ b/install/kubernetes/cilium/templates/cilium-configmap.yaml
+@@ -500,4 +500,7 @@ data:
+ {{- end }}
+ 
++{{- if .Values.strictModeCIDR }}
++  strict-mode-cidr: {{ .Values.strictModeCIDR | quote }}
++{{- end }}
+   enable-xt-socket-fallback: {{ .Values.enableXTSocketFallback | quote }}
+   install-iptables-rules: {{ .Values.installIptablesRules | quote }}
+diff --git a/install/kubernetes/cilium/values.yaml b/install/kubernetes/cilium/values.yaml
+index bbdccc1465..7dece98eac 100644
+--- a/install/kubernetes/cilium/values.yaml
++++ b/install/kubernetes/cilium/values.yaml
+@@ -550,6 +550,8 @@ encryption:
+   # This option is only effective when encryption.type is set to ipsec.
+   interface: ""
+ 
++strictModeCIDR: ""
++
+ endpointHealthChecking:
+   # -- Enable connectivity health checking between virtual endpoints.
+   enabled: true

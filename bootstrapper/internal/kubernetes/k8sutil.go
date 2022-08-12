@@ -14,7 +14,7 @@ type clusterUtil interface {
 	InstallComponents(ctx context.Context, version versions.ValidK8sVersion) error
 	InitCluster(ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, log *logger.Logger) error
 	JoinCluster(ctx context.Context, joinConfig []byte, log *logger.Logger) error
-	SetupPodNetwork(context.Context, k8sapi.SetupPodNetworkInput, k8sapi.Client) error
+	SetupHelmDeployments(ctx context.Context, client k8sapi.Client, helmDeployments []byte, in k8sapi.SetupPodNetworkInput, log *logger.Logger) error
 	SetupAccessManager(kubectl k8sapi.Client, sshUsers resources.Marshaler) error
 	SetupAutoscaling(kubectl k8sapi.Client, clusterAutoscalerConfiguration resources.Marshaler, secrets resources.Marshaler) error
 	SetupJoinService(kubectl k8sapi.Client, joinServiceConfiguration resources.Marshaler) error

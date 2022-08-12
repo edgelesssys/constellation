@@ -21,8 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Kubernetes operator for Constellation nodes with ability to update node images.
-
-<!--  For new features. -->
+- cilium strict pod2pod encryption.
 ### Changed
 <!-- For changes in existing functionality.  -->
 ### Deprecated

@@ -170,8 +170,8 @@ func TestInitCluster(t *testing.T) {
 			wantErr:                true,
 			k8sVersion:             versions.Latest,
 		},
-		"kubeadm init fails when setting up the pod network": {
-			clusterUtil: stubClusterUtil{setupPodNetworkErr: someErr},
+		"kubeadm init fails when deploying helm charts": {
+			clusterUtil: stubClusterUtil{setupHelmDeploymentsErr: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
@@ -296,7 +296,7 @@ func TestInitCluster(t *testing.T) {
 				kubeconfigReader:       tc.kubeconfigReader,
 				getIPAddr:              func() (string, error) { return privateIP, nil },
 			}
-			_, err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountURI, string(tc.k8sVersion), nil, resources.KMSConfig{MasterSecret: masterSecret}, nil, logger.NewTest(t))
+			_, err := kube.InitCluster(context.Background(), autoscalingNodeGroups, serviceAccountURI, string(tc.k8sVersion), nil, resources.KMSConfig{MasterSecret: masterSecret}, nil, nil, logger.NewTest(t))
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -504,7 +504,7 @@ func TestK8sCompliantHostname(t *testing.T) {
 type stubClusterUtil struct {
 	installComponentsErr             error
 	initClusterErr                   error
-	setupPodNetworkErr               error
+	setupHelmDeploymentsErr          error
 	setupAutoscalingError            error
 	setupJoinServiceError            error
 	setupCloudControllerManagerError error
@@ -533,8 +533,8 @@ func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte, no
 	return s.initClusterErr
 }
 
-func (s *stubClusterUtil) SetupPodNetwork(context.Context, k8sapi.SetupPodNetworkInput, k8sapi.Client) error {
-	return s.setupPodNetworkErr
+func (s *stubClusterUtil) SetupHelmDeployments(context.Context, k8sapi.Client, []byte, k8sapi.SetupPodNetworkInput, *logger.Logger) error {
+	return s.setupHelmDeploymentsErr
 }
 
 func (s *stubClusterUtil) SetupAutoscaling(kubectl k8sapi.Client, clusterAutoscalerConfiguration resources.Marshaler, secrets resources.Marshaler) error {

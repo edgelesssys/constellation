@@ -206,10 +206,11 @@ func (c *Client) RetrieveSubnetworkAliasCIDR(ctx context.Context, project, zone,
 	if err != nil {
 		return "", fmt.Errorf("retrieving subnetwork alias CIDR failed: %w", err)
 	}
-	if subnetwork == nil || subnetwork.IpCidrRange == nil || *subnetwork.IpCidrRange == "" {
+	if subnetwork == nil || len(subnetwork.SecondaryIpRanges) == 0 || (subnetwork.SecondaryIpRanges[0]).IpCidrRange == nil {
 		return "", fmt.Errorf("retrieving subnetwork alias CIDR returned invalid results")
 	}
-	return *subnetwork.IpCidrRange, nil
+
+	return *(subnetwork.SecondaryIpRanges[0]).IpCidrRange, nil
 }
 
 // RetrieveLoadBalancerIP returns the IP address of the load balancer specified by project, zone and loadBalancerName.

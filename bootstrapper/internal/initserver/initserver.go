@@ -124,6 +124,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 			UseExistingKEK:     req.UseExistingKek,
 		},
 		sshProtoKeysToMap(req.SshUserKeys),
+		req.HelmDeployments,
 		s.log,
 	)
 	if err != nil {
@@ -198,6 +199,7 @@ type ClusterInitializer interface {
 		measurementSalt []byte,
 		kmsConfig resources.KMSConfig,
 		sshUserKeys map[string]string,
+		helmDeployments []byte,
 		log *logger.Logger,
 	) ([]byte, error)
 }

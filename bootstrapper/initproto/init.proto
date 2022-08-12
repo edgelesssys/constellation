@@ -19,6 +19,7 @@ message InitRequest {
   string kubernetes_version = 8;
   repeated SSHUserKey ssh_user_keys = 9;
   bytes salt = 10;
+  bytes helm_deployments = 11;
 }
 
 message InitResponse {

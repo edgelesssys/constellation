@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -13,13 +14,16 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubelet"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/internal/constants"
+	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
+
 	"github.com/edgelesssys/constellation/internal/crypto"
+	"github.com/edgelesssys/constellation/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/versions"
@@ -27,8 +31,9 @@ import (
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 	"golang.org/x/text/transform"
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/cli"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
 const (
@@ -39,8 +44,6 @@ const (
 	// crdTimeout is the maximum time given to the CRDs to be created.
 	crdTimeout = 15 * time.Second
 )
-
-var providerIDRegex = regexp.MustCompile(`^azure:///subscriptions/([^/]+)/resourceGroups/([^/]+)/providers/Microsoft.Compute/virtualMachineScaleSets/([^/]+)/virtualMachines/([^/]+)$`)
 
 // Client provides the functions to talk to the k8s API.
 type Client interface {
@@ -182,6 +185,33 @@ func (k *KubernetesUtil) InitCluster(
 	return nil
 }
 
+func (k *KubernetesUtil) SetupHelmDeployments(ctx context.Context, kubectl Client, helmDeployments []byte, in SetupPodNetworkInput, log *logger.Logger) error {
+	var helmDeploy helm.Deployments
+	if err := json.Unmarshal(helmDeployments, &helmDeploy); err != nil {
+		return fmt.Errorf("unmarshalling helm deployments: %w", err)
+	}
+	settings := cli.New()
+	settings.KubeConfig = kubeConfig
+
+	actionConfig := new(action.Configuration)
+	if err := actionConfig.Init(settings.RESTClientGetter(), constants.HelmNamespace,
+		"secret", log.Infof); err != nil {
+		return err
+	}
+
+	helmClient := action.NewInstall(actionConfig)
+	helmClient.Namespace = constants.HelmNamespace
+	helmClient.ReleaseName = "cilium"
+	helmClient.Wait = true
+	helmClient.Timeout = 30 * time.Second
+
+	if err := k.deployCilium(ctx, in, helmClient, helmDeploy.Cilium, kubectl); err != nil {
+		return fmt.Errorf("deploying cilium: %w", err)
+	}
+
+	return nil
+}
+
 type SetupPodNetworkInput struct {
 	CloudProvider     string
 	NodeName          string
@@ -190,40 +220,29 @@ type SetupPodNetworkInput struct {
 	ProviderID        string
 }
 
-// SetupPodNetwork sets up the cilium pod network.
-func (k *KubernetesUtil) SetupPodNetwork(ctx context.Context, in SetupPodNetworkInput, client Client) error {
+// deployCilium sets up the cilium pod network.
+func (k *KubernetesUtil) deployCilium(ctx context.Context, in SetupPodNetworkInput, helmClient *action.Install, ciliumDeployment helm.Deployment, kubectl Client) error {
 	switch in.CloudProvider {
 	case "gcp":
-		return k.setupGCPPodNetwork(ctx, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR, client)
+		return k.deployCiliumGCP(ctx, helmClient, kubectl, ciliumDeployment, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR)
 	case "azure":
-		return k.setupAzurePodNetwork(ctx, in.ProviderID, in.SubnetworkPodCIDR)
+		return k.deployCiliumAzure(ctx, helmClient, ciliumDeployment)
 	case "qemu":
-		return k.setupQemuPodNetwork(ctx, in.SubnetworkPodCIDR)
+		return k.deployCiliumQEMU(ctx, helmClient, ciliumDeployment, in.SubnetworkPodCIDR)
 	default:
 		return fmt.Errorf("unsupported cloud provider %q", in.CloudProvider)
 	}
 }
 
-func (k *KubernetesUtil) setupAzurePodNetwork(ctx context.Context, providerID, subnetworkPodCIDR string) error {
-	matches := providerIDRegex.FindStringSubmatch(providerID)
-	if len(matches) != 5 {
-		return fmt.Errorf("error splitting providerID %q", providerID)
-	}
-
-	ciliumInstall := exec.CommandContext(ctx, "cilium", "install", "--azure-resource-group", matches[2], "--ipam", "azure",
-		"--helm-set",
-		"tunnel=disabled,enableIPv4Masquerade=true,azure.enabled=true,debug.enabled=true,ipv4NativeRoutingCIDR="+subnetworkPodCIDR+
-			",endpointRoutes.enabled=true,encryption.enabled=true,encryption.type=wireguard,l7Proxy=false,egressMasqueradeInterfaces=eth0")
-	ciliumInstall.Env = append(os.Environ(), "KUBECONFIG="+kubeConfig)
-	out, err := ciliumInstall.CombinedOutput()
+func (k *KubernetesUtil) deployCiliumAzure(ctx context.Context, helmClient *action.Install, ciliumDeployment helm.Deployment) error {
+	_, err := helmClient.RunWithContext(ctx, ciliumDeployment.Chart, ciliumDeployment.Values)
 	if err != nil {
-		err = errors.New(string(out))
-		return err
+		return fmt.Errorf("installing cilium: %w", err)
 	}
 	return nil
 }
 
-func (k *KubernetesUtil) setupGCPPodNetwork(ctx context.Context, nodeName, nodePodCIDR, subnetworkPodCIDR string, kubectl Client) error {
+func (k *KubernetesUtil) deployCiliumGCP(ctx context.Context, helmClient *action.Install, kubectl Client, ciliumDeployment helm.Deployment, nodeName, nodePodCIDR, subnetworkPodCIDR string) error {
 	out, err := exec.CommandContext(ctx, kubectlPath, "--kubeconfig", kubeConfig, "patch", "node", nodeName, "-p", "{\"spec\":{\"podCIDR\": \""+nodePodCIDR+"\"}}").CombinedOutput()
 	if err != nil {
 		err = errors.New(string(out))
@@ -248,13 +267,13 @@ func (k *KubernetesUtil) setupGCPPodNetwork(ctx context.Context, nodeName, nodeP
 		return err
 	}
 
-	ciliumInstall := exec.CommandContext(ctx, "cilium", "install", "--ipam", "kubernetes", "--ipv4-native-routing-cidr", subnetworkPodCIDR,
-		"--helm-set", "endpointRoutes.enabled=true,tunnel=disabled,encryption.enabled=true,encryption.type=wireguard,l7Proxy=false")
-	ciliumInstall.Env = append(os.Environ(), "KUBECONFIG="+kubeConfig)
-	out, err = ciliumInstall.CombinedOutput()
+	// configure pod network CIDR
+	ciliumDeployment.Values["ipv4NativeRoutingCIDR"] = subnetworkPodCIDR
+	ciliumDeployment.Values["strictModeCIDR"] = subnetworkPodCIDR
+
+	_, err = helmClient.RunWithContext(ctx, ciliumDeployment.Chart, ciliumDeployment.Values)
 	if err != nil {
-		err = errors.New(string(out))
-		return err
+		return fmt.Errorf("installing cilium: %w", err)
 	}
 
 	return nil
@@ -264,14 +283,15 @@ func (k *KubernetesUtil) setupGCPPodNetwork(ctx context.Context, nodeName, nodeP
 // the cilium daemonset, it only restarts the local cilium pod.
 func (k *KubernetesUtil) FixCilium(nodeNameK8s string, log *logger.Logger) {
 	// wait for cilium pod to be healthy
+	client := http.Client{}
 	for {
 		time.Sleep(5 * time.Second)
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1:9876/healthz", nil)
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1:9879/healthz", http.NoBody)
 		if err != nil {
 			log.With(zap.Error(err)).Errorf("Unable to create request")
 			continue
 		}
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := client.Do(req)
 		if err != nil {
 			log.With(zap.Error(err)).Warnf("Waiting for local cilium daemonset pod not healthy")
 			continue
@@ -303,13 +323,19 @@ func (k *KubernetesUtil) FixCilium(nodeNameK8s string, log *logger.Logger) {
 	}
 }
 
-func (k *KubernetesUtil) setupQemuPodNetwork(ctx context.Context, subnetworkPodCIDR string) error {
-	ciliumInstall := exec.CommandContext(ctx, "cilium", "install", "--encryption", "wireguard", "--helm-set", "ipam.operator.clusterPoolIPv4PodCIDRList="+subnetworkPodCIDR+",endpointRoutes.enabled=true")
-	ciliumInstall.Env = append(os.Environ(), "KUBECONFIG="+kubeConfig)
-	out, err := ciliumInstall.CombinedOutput()
+func (k *KubernetesUtil) deployCiliumQEMU(ctx context.Context, helmClient *action.Install, ciliumDeployment helm.Deployment, subnetworkPodCIDR string) error {
+	// configure pod network CIDR
+	ciliumDeployment.Values["ipam"] = map[string]interface{}{
+		"operator": map[string]interface{}{
+			"clusterPoolIPv4PodCIDRList": []interface{}{
+				subnetworkPodCIDR,
+			},
+		},
+	}
+
+	_, err := helmClient.RunWithContext(ctx, ciliumDeployment.Chart, ciliumDeployment.Values)
 	if err != nil {
-		err = errors.New(string(out))
-		return err
+		return fmt.Errorf("installing cilium: %w", err)
 	}
 	return nil
 }
@@ -453,9 +479,9 @@ func (k *KubernetesUtil) createSignedKubeletCert(nodeName string, ips []net.IP) 
 	}
 
 	parentCertRaw, err := k.file.Read(filepath.Join(
-		constants.KubernetesDir,
-		constants.DefaultCertificateDir,
-		constants.CACertName,
+		kubeconstants.KubernetesDir,
+		kubeconstants.DefaultCertificateDir,
+		kubeconstants.CACertName,
 	))
 	if err != nil {
 		return err
@@ -467,9 +493,9 @@ func (k *KubernetesUtil) createSignedKubeletCert(nodeName string, ips []net.IP) 
 	}
 
 	parentKeyRaw, err := k.file.Read(filepath.Join(
-		constants.KubernetesDir,
-		constants.DefaultCertificateDir,
-		constants.CAKeyName,
+		kubeconstants.KubernetesDir,
+		kubeconstants.DefaultCertificateDir,
+		kubeconstants.CAKeyName,
 	))
 	if err != nil {
 		return err

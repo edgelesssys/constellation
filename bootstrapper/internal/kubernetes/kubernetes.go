@@ -71,7 +71,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, versionString string,
-	measurementSalt []byte, kmsConfig resources.KMSConfig, sshUsers map[string]string, log *logger.Logger,
+	measurementSalt []byte, kmsConfig resources.KMSConfig, sshUsers map[string]string, helmDeployments []byte, log *logger.Logger,
 ) ([]byte, error) {
 	k8sVersion, err := versions.NewValidK8sVersion(versionString)
 	if err != nil {
@@ -170,9 +170,8 @@ func (k *KubeWrapper) InitCluster(
 		NodeName:          nodeName,
 		FirstNodePodCIDR:  nodePodCIDR,
 		SubnetworkPodCIDR: subnetworkPodCIDR,
-		ProviderID:        providerID,
 	}
-	if err = k.clusterUtil.SetupPodNetwork(ctx, setupPodNetworkInput, k.client); err != nil {
+	if err = k.clusterUtil.SetupHelmDeployments(ctx, k.client, helmDeployments, setupPodNetworkInput, log); err != nil {
 		return nil, fmt.Errorf("setting up pod network: %w", err)
 	}
 

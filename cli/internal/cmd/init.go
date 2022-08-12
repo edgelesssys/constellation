@@ -16,6 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/cli/internal/azure"
 	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/cli/internal/gcp"
+	"github.com/edgelesssys/constellation/cli/internal/helm"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/config"
@@ -55,12 +56,13 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 	newDialer := func(validator *cloudcmd.Validator) *dialer.Dialer {
 		return dialer.New(nil, validator.V(), &net.Dialer{})
 	}
-	return initialize(cmd, newDialer, serviceAccountCreator, fileHandler)
+	helmLoader := &helm.ChartLoader{}
+	return initialize(cmd, newDialer, serviceAccountCreator, fileHandler, helmLoader)
 }
 
 // initialize initializes a Constellation.
-func initialize(cmd *cobra.Command, newDialer func(*cloudcmd.Validator) *dialer.Dialer,
-	serviceAccCreator serviceAccountCreator, fileHandler file.Handler,
+func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator) *dialer.Dialer,
+	serviceAccCreator serviceAccountCreator, fileHandler file.Handler, helmLoader helmLoader,
 ) error {
 	flags, err := evalFlagArgs(cmd, fileHandler)
 	if err != nil {
@@ -115,6 +117,12 @@ func initialize(cmd *cobra.Command, newDialer func(*cloudcmd.Validator) *dialer.
 		autoscalingNodeGroups = append(autoscalingNodeGroups, workers.GroupID)
 	}
 
+	cmd.Println("Loading Helm charts ...")
+	helmDeployments, err := helmLoader.Load(stat.CloudProvider)
+	if err != nil {
+		return fmt.Errorf("loading Helm charts: %w", err)
+	}
+
 	req := &initproto.InitRequest{
 		AutoscalingNodeGroups:  autoscalingNodeGroups,
 		MasterSecret:           flags.masterSecret.Key,
@@ -126,6 +134,7 @@ func initialize(cmd *cobra.Command, newDialer func(*cloudcmd.Validator) *dialer.
 		CloudServiceAccountUri: serviceAccount,
 		KubernetesVersion:      config.KubernetesVersion,
 		SshUserKeys:            ssh.ToProtoSlice(sshUsers),
+		HelmDeployments:        helmDeployments,
 	}
 	resp, err := initCall(cmd.Context(), newDialer(validator), stat.BootstrapperHost, req)
 	if err != nil {

@@ -85,6 +85,7 @@ func TestInitialize(t *testing.T) {
 	testCases := map[string]struct {
 		existingState         state.ConstellationState
 		serviceAccountCreator stubServiceAccountCreator
+		helmLoader            stubHelmLoader
 		initServerAPI         *stubInitServer
 		setAutoscaleFlag      bool
 		wantErr               bool
@@ -127,6 +128,12 @@ func TestInitialize(t *testing.T) {
 			serviceAccountCreator: stubServiceAccountCreator{createErr: someErr},
 			wantErr:               true,
 		},
+		"fail to load helm charts": {
+			existingState: testGcpState,
+			helmLoader:    stubHelmLoader{loadErr: someErr},
+			initServerAPI: &stubInitServer{initResp: testInitResp},
+			wantErr:       true,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -162,7 +169,7 @@ func TestInitialize(t *testing.T) {
 			defer cancel()
 			cmd.SetContext(ctx)
 
-			err := initialize(cmd, newDialer, &tc.serviceAccountCreator, fileHandler)
+			err := initialize(cmd, newDialer, &tc.serviceAccountCreator, fileHandler, &tc.helmLoader)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -441,7 +448,7 @@ func TestAttestation(t *testing.T) {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	err := initialize(cmd, newDialer, &stubServiceAccountCreator{}, fileHandler)
+	err := initialize(cmd, newDialer, &stubServiceAccountCreator{}, fileHandler, &stubHelmLoader{})
 	assert.Error(err)
 	// make sure the error is actually a TLS handshake error
 	assert.Contains(err.Error(), "transport: authentication handshake failed")

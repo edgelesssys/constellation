@@ -86,6 +86,12 @@ const (
 	KubernetesJoinTokenTTL = 15 * time.Minute
 
 	//
+	// Helm.
+	//
+
+	HelmNamespace = "kube-system"
+
+	//
 	// Releases.
 	//
 

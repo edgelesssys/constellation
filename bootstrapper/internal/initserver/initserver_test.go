@@ -282,7 +282,7 @@ type stubClusterInitializer struct {
 	initClusterErr        error
 }
 
-func (i *stubClusterInitializer) InitCluster(context.Context, []string, string, string, []byte, resources.KMSConfig, map[string]string, *logger.Logger,
+func (i *stubClusterInitializer) InitCluster(context.Context, []string, string, string, []byte, resources.KMSConfig, map[string]string, []byte, *logger.Logger,
 ) ([]byte, error) {
 	return i.initClusterKubeconfig, i.initClusterErr
 }

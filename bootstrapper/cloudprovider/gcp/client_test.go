@@ -701,7 +701,11 @@ func TestRetrieveSubnetworkAliasCIDR(t *testing.T) {
 			},
 			stubSubnetworksClient: stubSubnetworksClient{
 				GetSubnetwork: &computepb.Subnetwork{
-					IpCidrRange: &aliasCIDR,
+					SecondaryIpRanges: []*computepb.SubnetworkSecondaryRange{
+						{
+							IpCidrRange: proto.String(aliasCIDR),
+						},
+					},
 				},
 			},
 			wantAliasCIDR: aliasCIDR,
