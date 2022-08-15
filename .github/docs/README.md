@@ -112,11 +112,11 @@ Debug | constellation-debug-v\<major\>-\<minor\>-\<patch\> | constellation-\<com
 Branch | constellation-\<branch-name\> | constellation-\<commit-timestamp\>
 
 Example:
-Type | Image Family | Image Name
--|-|-
-Release | constellation | constellation-v1-5-0
-Debug | constellation-v1-5-0 | constellation-20220912123456
-Branch | constellation-ref-cli | constellation-20220912123456
+Type | Image Family | Image Name | List command
+-|-|-|-
+Release | constellation | constellation-v1-5-0 | `gcloud compute images list --filter="family~'^constellation$'" --sort-by=creationTimestamp --project constellation-images`
+Debug | constellation-debug-v1-5-0 | constellation-20220912123456 | `gcloud compute images list --filter="family~'constellation-debug-v.+'" --sort-by=creationTimestamp --project constellation-images`
+Branch | constellation-ref-cli | constellation-20220912123456 | `gcloud compute images list --filter="family~'constellation-$(go run $(git rev-parse --show-toplevel)/hack/pseudo-version/pseudo-version.go -print-branch)'" --sort-by=creationTimestamp --project constellation-images`
 
 ### Azure
 
@@ -128,8 +128,8 @@ Branch | Constellation_Testing | \<branch-name\> | \<commit-timestamp\>
 
 Example:
 
-Type | Image Definition | Image Version
--|-|-
-Release | constellation | 1.5.0
-Debug | v1.5.0 | 2022.0912.123456
-Branch | ref-cli | 2022.0912.123456
+Type | Gallery | Image Definition | Image Version | List command
+-|-|-|-|-
+Release | Constellation | constellation | 1.5.0 | `az sig image-version list --resource-group constellation-images --gallery-name Constellation --gallery-image-definition constellation --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table`
+Debug | Constellation_Debug | v1.5.0 | 2022.0912.123456 | `az sig image-version list --resource-group constellation-images --gallery-name Constellation_Debug --gallery-image-definition v1.5.0 --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table`
+Branch | Constellation_Testing | ref-cli | 2022.0912.123456 | `az sig image-version list --resource-group constellation-images --gallery-name Constellation_Testing --gallery-image-definition $(go run $(git rev-parse --show-toplevel)/hack/pseudo-version/pseudo-version.go -print-branch) --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table`
