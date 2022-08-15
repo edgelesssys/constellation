@@ -18,12 +18,18 @@ type DeviceMapper interface {
 	DiskUUID() string
 	FormatDisk(passphrase string) error
 	MapDisk(target string, passphrase string) error
+	UnmapDisk(target string) error
 }
 
 // KeyWaiter is an interface to request and wait for disk decryption keys.
 type KeyWaiter interface {
 	WaitForDecryptionKey(uuid, addr string) (diskKey, measurementSecret []byte, err error)
 	ResetKey()
+}
+
+// ConfigurationGenerator is an interface for generating systemd-cryptsetup@.service unit files.
+type ConfigurationGenerator interface {
+	Generate(volumeName, encryptedDevice, keyFile, options string) error
 }
 
 // DiskMounter uses the syscall package to mount disks.

@@ -26,81 +26,89 @@ func TestPrepareExistingDisk(t *testing.T) {
 	someErr := errors.New("error")
 
 	testCases := map[string]struct {
-		fs           afero.Afero
-		keyWaiter    *stubKeyWaiter
-		mapper       *stubMapper
-		mounter      *stubMounter
-		openTPM      vtpm.TPMOpenFunc
-		missingState bool
-		wantErr      bool
+		keyWaiter       *stubKeyWaiter
+		mapper          *stubMapper
+		mounter         *stubMounter
+		configGenerator *stubConfigurationGenerator
+		openTPM         vtpm.TPMOpenFunc
+		missingState    bool
+		wantErr         bool
 	}{
 		"success": {
-			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
-			keyWaiter: &stubKeyWaiter{},
-			mapper:    &stubMapper{uuid: "test"},
-			mounter:   &stubMounter{},
-			openTPM:   vtpm.OpenNOPTPM,
+			keyWaiter:       &stubKeyWaiter{},
+			mapper:          &stubMapper{uuid: "test"},
+			mounter:         &stubMounter{},
+			configGenerator: &stubConfigurationGenerator{},
+			openTPM:         vtpm.OpenNOPTPM,
 		},
 		"WaitForDecryptionKey fails": {
-			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
-			keyWaiter: &stubKeyWaiter{waitErr: someErr},
-			mapper:    &stubMapper{uuid: "test"},
-			mounter:   &stubMounter{},
-			openTPM:   vtpm.OpenNOPTPM,
-			wantErr:   true,
+			keyWaiter:       &stubKeyWaiter{waitErr: someErr},
+			mapper:          &stubMapper{uuid: "test"},
+			mounter:         &stubMounter{},
+			configGenerator: &stubConfigurationGenerator{},
+			openTPM:         vtpm.OpenNOPTPM,
+			wantErr:         true,
 		},
 		"MapDisk fails causes a repeat": {
-			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
 			keyWaiter: &stubKeyWaiter{},
 			mapper: &stubMapper{
 				uuid:                 "test",
 				mapDiskErr:           someErr,
 				mapDiskRepeatedCalls: 2,
 			},
-			mounter: &stubMounter{},
-			openTPM: vtpm.OpenNOPTPM,
-			wantErr: false,
+			mounter:         &stubMounter{},
+			configGenerator: &stubConfigurationGenerator{},
+			openTPM:         vtpm.OpenNOPTPM,
+			wantErr:         false,
 		},
 		"MkdirAll fails": {
-			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
-			keyWaiter: &stubKeyWaiter{},
-			mapper:    &stubMapper{uuid: "test"},
-			mounter:   &stubMounter{mkdirAllErr: someErr},
-			openTPM:   vtpm.OpenNOPTPM,
-			wantErr:   true,
+			keyWaiter:       &stubKeyWaiter{},
+			mapper:          &stubMapper{uuid: "test"},
+			mounter:         &stubMounter{mkdirAllErr: someErr},
+			configGenerator: &stubConfigurationGenerator{},
+			openTPM:         vtpm.OpenNOPTPM,
+			wantErr:         true,
 		},
 		"Mount fails": {
-			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
-			keyWaiter: &stubKeyWaiter{},
-			mapper:    &stubMapper{uuid: "test"},
-			mounter:   &stubMounter{mountErr: someErr},
-			openTPM:   vtpm.OpenNOPTPM,
-			wantErr:   true,
+			keyWaiter:       &stubKeyWaiter{},
+			mapper:          &stubMapper{uuid: "test"},
+			mounter:         &stubMounter{mountErr: someErr},
+			configGenerator: &stubConfigurationGenerator{},
+			openTPM:         vtpm.OpenNOPTPM,
+			wantErr:         true,
 		},
 		"Unmount fails": {
-			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
-			keyWaiter: &stubKeyWaiter{},
-			mapper:    &stubMapper{uuid: "test"},
-			mounter:   &stubMounter{unmountErr: someErr},
-			openTPM:   vtpm.OpenNOPTPM,
-			wantErr:   true,
+			keyWaiter:       &stubKeyWaiter{},
+			mapper:          &stubMapper{uuid: "test"},
+			mounter:         &stubMounter{unmountErr: someErr},
+			configGenerator: &stubConfigurationGenerator{},
+			openTPM:         vtpm.OpenNOPTPM,
+			wantErr:         true,
 		},
 		"MarkNodeAsBootstrapped fails": {
-			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
-			keyWaiter: &stubKeyWaiter{},
-			mapper:    &stubMapper{uuid: "test"},
-			mounter:   &stubMounter{unmountErr: someErr},
-			openTPM:   failOpener,
-			wantErr:   true,
+			keyWaiter:       &stubKeyWaiter{},
+			mapper:          &stubMapper{uuid: "test"},
+			mounter:         &stubMounter{unmountErr: someErr},
+			configGenerator: &stubConfigurationGenerator{},
+			openTPM:         failOpener,
+			wantErr:         true,
+		},
+		"Generating config fails": {
+			keyWaiter:       &stubKeyWaiter{},
+			mapper:          &stubMapper{uuid: "test"},
+			mounter:         &stubMounter{},
+			configGenerator: &stubConfigurationGenerator{generateErr: someErr},
+			openTPM:         failOpener,
+			wantErr:         true,
 		},
 		"no state file": {
-			fs:           afero.Afero{Fs: afero.NewMemMapFs()},
-			keyWaiter:    &stubKeyWaiter{},
-			mapper:       &stubMapper{uuid: "test"},
-			mounter:      &stubMounter{},
-			openTPM:      vtpm.OpenNOPTPM,
-			missingState: true,
-			wantErr:      true,
+			keyWaiter:       &stubKeyWaiter{},
+			mapper:          &stubMapper{uuid: "test"},
+			mounter:         &stubMounter{},
+			configGenerator: &stubConfigurationGenerator{},
+			openTPM:         vtpm.OpenNOPTPM,
+			missingState:    true,
+			wantErr:         true,
 		},
 	}
 
@@ -108,21 +116,24 @@ func TestPrepareExistingDisk(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
+			fs := afero.Afero{Fs: afero.NewMemMapFs()}
 			salt := []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 			if !tc.missingState {
-				handler := file.NewHandler(tc.fs)
+				handler := file.NewHandler(fs)
 				require.NoError(t, handler.WriteJSON(stateInfoPath, nodestate.NodeState{MeasurementSalt: salt}, file.OptMkdirAll))
 			}
 
-			setupManager := New(
-				logger.NewTest(t),
-				"test",
-				tc.fs,
-				tc.keyWaiter,
-				tc.mapper,
-				tc.mounter,
-				tc.openTPM,
-			)
+			setupManager := &SetupManager{
+				log:       logger.NewTest(t),
+				csp:       "test",
+				diskPath:  "disk-path",
+				fs:        fs,
+				keyWaiter: tc.keyWaiter,
+				mapper:    tc.mapper,
+				mounter:   tc.mounter,
+				config:    tc.configGenerator,
+				openTPM:   tc.openTPM,
+			}
 
 			err := setupManager.PrepareExistingDisk()
 			if tc.wantErr {
@@ -146,18 +157,21 @@ func failOpener() (io.ReadWriteCloser, error) {
 func TestPrepareNewDisk(t *testing.T) {
 	someErr := errors.New("error")
 	testCases := map[string]struct {
-		fs      afero.Afero
-		mapper  *stubMapper
-		wantErr bool
+		fs              afero.Afero
+		mapper          *stubMapper
+		configGenerator *stubConfigurationGenerator
+		wantErr         bool
 	}{
 		"success": {
-			fs:     afero.Afero{Fs: afero.NewMemMapFs()},
-			mapper: &stubMapper{uuid: "test"},
+			fs:              afero.Afero{Fs: afero.NewMemMapFs()},
+			mapper:          &stubMapper{uuid: "test"},
+			configGenerator: &stubConfigurationGenerator{},
 		},
 		"creating directory fails": {
-			fs:      afero.Afero{Fs: afero.NewReadOnlyFs(afero.NewMemMapFs())},
-			mapper:  &stubMapper{},
-			wantErr: true,
+			fs:              afero.Afero{Fs: afero.NewReadOnlyFs(afero.NewMemMapFs())},
+			mapper:          &stubMapper{},
+			configGenerator: &stubConfigurationGenerator{},
+			wantErr:         true,
 		},
 		"FormatDisk fails": {
 			fs: afero.Afero{Fs: afero.NewMemMapFs()},
@@ -165,7 +179,8 @@ func TestPrepareNewDisk(t *testing.T) {
 				uuid:          "test",
 				formatDiskErr: someErr,
 			},
-			wantErr: true,
+			configGenerator: &stubConfigurationGenerator{},
+			wantErr:         true,
 		},
 		"MapDisk fails": {
 			fs: afero.Afero{Fs: afero.NewMemMapFs()},
@@ -174,7 +189,14 @@ func TestPrepareNewDisk(t *testing.T) {
 				mapDiskErr:           someErr,
 				mapDiskRepeatedCalls: 1,
 			},
-			wantErr: true,
+			configGenerator: &stubConfigurationGenerator{},
+			wantErr:         true,
+		},
+		"Generating config fails": {
+			fs:              afero.Afero{Fs: afero.NewMemMapFs()},
+			mapper:          &stubMapper{uuid: "test"},
+			configGenerator: &stubConfigurationGenerator{generateErr: someErr},
+			wantErr:         true,
 		},
 	}
 
@@ -182,7 +204,14 @@ func TestPrepareNewDisk(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			setupManager := New(logger.NewTest(t), "test", tc.fs, nil, tc.mapper, nil, nil)
+			setupManager := &SetupManager{
+				log:      logger.NewTest(t),
+				csp:      "test",
+				diskPath: "disk-path",
+				fs:       tc.fs,
+				mapper:   tc.mapper,
+				config:   tc.configGenerator,
+			}
 
 			err := setupManager.PrepareNewDisk()
 			if tc.wantErr {
@@ -203,22 +232,18 @@ func TestPrepareNewDisk(t *testing.T) {
 func TestReadMeasurementSalt(t *testing.T) {
 	salt := []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 	testCases := map[string]struct {
-		fs        afero.Afero
 		salt      []byte
 		writeFile bool
 		wantErr   bool
 	}{
 		"success": {
-			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
 			salt:      salt,
 			writeFile: true,
 		},
 		"no state file": {
-			fs:      afero.Afero{Fs: afero.NewMemMapFs()},
 			wantErr: true,
 		},
 		"missing salt": {
-			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
 			writeFile: true,
 			wantErr:   true,
 		},
@@ -229,13 +254,14 @@ func TestReadMeasurementSalt(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
+			fs := afero.Afero{Fs: afero.NewMemMapFs()}
 			if tc.writeFile {
-				handler := file.NewHandler(tc.fs)
+				handler := file.NewHandler(fs)
 				state := nodestate.NodeState{MeasurementSalt: tc.salt}
 				require.NoError(handler.WriteJSON("test-state.json", state, file.OptMkdirAll))
 			}
 
-			setupManager := New(logger.NewTest(t), "test", tc.fs, nil, nil, nil, nil)
+			setupManager := New(logger.NewTest(t), "test", "disk-path", fs, nil, nil, nil, nil)
 
 			measurementSalt, err := setupManager.readMeasurementSalt("test-state.json")
 			if tc.wantErr {
@@ -254,6 +280,8 @@ type stubMapper struct {
 	mapDiskRepeatedCalls int
 	mapDiskCalled        bool
 	mapDiskErr           error
+	unmapDiskCalled      bool
+	unmapDiskErr         error
 	uuid                 string
 }
 
@@ -273,6 +301,11 @@ func (s *stubMapper) MapDisk(string, string) error {
 	s.mapDiskRepeatedCalls--
 	s.mapDiskCalled = true
 	return s.mapDiskErr
+}
+
+func (s *stubMapper) UnmapDisk(string) error {
+	s.unmapDiskCalled = true
+	return s.unmapDiskErr
 }
 
 type stubMounter struct {
@@ -316,4 +349,12 @@ func (s *stubKeyWaiter) WaitForDecryptionKey(uuid, addr string) ([]byte, []byte,
 
 func (s *stubKeyWaiter) ResetKey() {
 	s.waitCalled = false
+}
+
+type stubConfigurationGenerator struct {
+	generateErr error
+}
+
+func (s *stubConfigurationGenerator) Generate(volumeName, encryptedDevice, keyFile, options string) error {
+	return s.generateErr
 }

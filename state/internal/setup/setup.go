@@ -14,6 +14,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/state/internal/systemd"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )
@@ -24,29 +25,34 @@ const (
 	keyFile             = "state.key"
 	stateDiskMappedName = "state"
 	stateDiskMountPath  = "/var/run/state"
+	cryptsetupOptions   = "cipher=aes-xts-plain64,integrity=hmac-sha256"
 	stateInfoPath       = stateDiskMountPath + "/constellation/node_state.json"
 )
 
-// SetupManager handles formating, mapping, mounting and unmounting of state disks.
+// SetupManager handles formatting, mapping, mounting and unmounting of state disks.
 type SetupManager struct {
 	log       *logger.Logger
 	csp       string
+	diskPath  string
 	fs        afero.Afero
 	keyWaiter KeyWaiter
 	mapper    DeviceMapper
 	mounter   Mounter
+	config    ConfigurationGenerator
 	openTPM   vtpm.TPMOpenFunc
 }
 
 // New initializes a SetupManager with the given parameters.
-func New(log *logger.Logger, csp string, fs afero.Afero, keyWaiter KeyWaiter, mapper DeviceMapper, mounter Mounter, openTPM vtpm.TPMOpenFunc) *SetupManager {
+func New(log *logger.Logger, csp string, diskPath string, fs afero.Afero, keyWaiter KeyWaiter, mapper DeviceMapper, mounter Mounter, openTPM vtpm.TPMOpenFunc) *SetupManager {
 	return &SetupManager{
 		log:       log,
 		csp:       csp,
+		diskPath:  diskPath,
 		fs:        fs,
 		keyWaiter: keyWaiter,
 		mapper:    mapper,
 		mounter:   mounter,
+		config:    systemd.New(fs),
 		openTPM:   openTPM,
 	}
 }
@@ -92,6 +98,10 @@ getKey:
 		return err
 	}
 
+	if err := s.saveConfiguration(passphrase); err != nil {
+		return err
+	}
+
 	return s.mounter.Unmount(stateDiskMountPath, 0)
 }
 
@@ -100,15 +110,11 @@ func (s *SetupManager) PrepareNewDisk() error {
 	s.log.Infof("Preparing new state disk")
 
 	// generate and save temporary passphrase
-	if err := s.fs.MkdirAll(keyPath, os.ModePerm); err != nil {
-		return err
-	}
-
 	passphrase := make([]byte, crypto.RNGLengthDefault)
 	if _, err := rand.Read(passphrase); err != nil {
 		return err
 	}
-	if err := s.fs.WriteFile(filepath.Join(keyPath, keyFile), passphrase, 0o400); err != nil {
+	if err := s.saveConfiguration(passphrase); err != nil {
 		return err
 	}
 
@@ -131,4 +137,18 @@ func (s *SetupManager) readMeasurementSalt(path string) ([]byte, error) {
 	}
 
 	return state.MeasurementSalt, nil
+}
+
+// saveConfiguration saves the given passphrase and cryptsetup mapping configuration to disk.
+func (s *SetupManager) saveConfiguration(passphrase []byte) error {
+	// passphrase
+	if err := s.fs.MkdirAll(keyPath, os.ModePerm); err != nil {
+		return err
+	}
+	if err := s.fs.WriteFile(filepath.Join(keyPath, keyFile), passphrase, 0o400); err != nil {
+		return err
+	}
+
+	// systemd cryptsetup unit
+	return s.config.Generate(stateDiskMappedName, s.diskPath, filepath.Join(keyPath, keyFile), cryptsetupOptions)
 }
