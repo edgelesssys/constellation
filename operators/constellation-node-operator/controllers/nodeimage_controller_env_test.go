@@ -174,7 +174,10 @@ var _ = Describe("NodeImage controller", func() {
 			Eventually(func() error {
 				return k8sClient.Get(ctx, joiningPendingNodeLookupKey, pendingNode)
 			}).Should(Succeed())
-			Expect(pendingNode.Status.CSPNodeState).Should(Equal(updatev1alpha1.NodeStateReady))
+			Eventually(func() updatev1alpha1.CSPNodeState {
+				k8sClient.Get(ctx, joiningPendingNodeLookupKey, pendingNode)
+				return pendingNode.Status.CSPNodeState
+			}).Should(Equal(updatev1alpha1.NodeStateReady))
 			Eventually(func() int {
 				if err := k8sClient.Get(ctx, nodeImageLookupKey, nodeImage); err != nil {
 					return 0
