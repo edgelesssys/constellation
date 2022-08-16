@@ -26,6 +26,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	grpcRetry "github.com/edgelesssys/constellation/internal/grpc/retry"
+	"github.com/edgelesssys/constellation/internal/license"
 	"github.com/edgelesssys/constellation/internal/retry"
 	"github.com/edgelesssys/constellation/internal/state"
 	kms "github.com/edgelesssys/constellation/kms/setup"
@@ -57,12 +58,12 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 		return dialer.New(nil, validator.V(cmd), &net.Dialer{})
 	}
 	helmLoader := &helm.ChartLoader{}
-	return initialize(cmd, newDialer, serviceAccountCreator, fileHandler, helmLoader)
+	return initialize(cmd, newDialer, serviceAccountCreator, fileHandler, helmLoader, license.NewClient())
 }
 
 // initialize initializes a Constellation.
 func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator) *dialer.Dialer,
-	serviceAccCreator serviceAccountCreator, fileHandler file.Handler, helmLoader helmLoader,
+	serviceAccCreator serviceAccountCreator, fileHandler file.Handler, helmLoader helmLoader, licenseClient licenseClient,
 ) error {
 	flags, err := evalFlagArgs(cmd, fileHandler)
 	if err != nil {
@@ -83,6 +84,23 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 	if err != nil {
 		return fmt.Errorf("reading and validating config: %w", err)
 	}
+
+	licenseID, err := license.FromFile(fileHandler, constants.LicenseFilename)
+	if err != nil {
+		cmd.Println("Unable to find license file. Assuming community license.")
+		licenseID = license.CommunityLicense
+	}
+	quotaResp, err := licenseClient.CheckQuota(cmd.Context(), license.CheckQuotaRequest{
+		License: licenseID,
+		Action:  license.Init,
+	})
+	if err != nil {
+		cmd.Println("Unable to contact license server.")
+		cmd.Println("Please keep your vCPU quota in mind.")
+		cmd.Printf("For community installation the vCPU quota is: %d.\n", license.CommunityQuota)
+	}
+	cmd.Printf("Constellation license found: %s\n", licenseID)
+	cmd.Printf("Please keep your vCPU quota (%d) in mind.\n", quotaResp.Quota)
 
 	var sshUsers []*ssh.UserKey
 	for _, user := range config.SSHUsers {
@@ -400,4 +418,8 @@ func initCompletion(cmd *cobra.Command, args []string, toComplete string) ([]str
 
 type grpcDialer interface {
 	Dial(ctx context.Context, target string) (*grpc.ClientConn, error)
+}
+
+type licenseClient interface {
+	CheckQuota(ctx context.Context, checkRequest license.CheckQuotaRequest) (license.CheckQuotaResponse, error)
 }

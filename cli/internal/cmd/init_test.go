@@ -23,6 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
+	"github.com/edgelesssys/constellation/internal/license"
 	"github.com/edgelesssys/constellation/internal/oid"
 	"github.com/edgelesssys/constellation/internal/state"
 	"github.com/spf13/afero"
@@ -173,7 +174,7 @@ func TestInitialize(t *testing.T) {
 			defer cancel()
 			cmd.SetContext(ctx)
 
-			err := initialize(cmd, newDialer, &tc.serviceAccountCreator, fileHandler, &tc.helmLoader)
+			err := initialize(cmd, newDialer, &tc.serviceAccountCreator, fileHandler, &tc.helmLoader, &stubLicenseClient{})
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -452,7 +453,7 @@ func TestAttestation(t *testing.T) {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	err := initialize(cmd, newDialer, &stubServiceAccountCreator{}, fileHandler, &stubHelmLoader{})
+	err := initialize(cmd, newDialer, &stubServiceAccountCreator{}, fileHandler, &stubHelmLoader{}, &stubLicenseClient{})
 	assert.Error(err)
 	// make sure the error is actually a TLS handshake error
 	assert.Contains(err.Error(), "transport: authentication handshake failed")
@@ -535,4 +536,12 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, csp cloudprovider.Provi
 
 	config.RemoveProviderExcept(csp)
 	return config
+}
+
+type stubLicenseClient struct{}
+
+func (c *stubLicenseClient) CheckQuota(ctx context.Context, checkRequest license.CheckQuotaRequest) (license.CheckQuotaResponse, error) {
+	return license.CheckQuotaResponse{
+		Quota: license.CommunityQuota,
+	}, nil
 }
