@@ -23,8 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support MacOS (arm64 and amd64) for Constellation CLI.
+- Create multiple load balancers to enable load balacing TCP traffic for different backend services. All load balancers currently share the same public IP address.
+- Improve rollback on GCP resource termination. You can now terminate multiple times.
+- Implement SSH peer to peer distribution between debugd nodes.
 
 ### Changed
+<!-- For changes in existing functionality.  -->
+- Use IP from Constellation ID file in init and verify instead of IPs from state file.
+- Change cdbg to use load balancer for deploy.
 
 ### Deprecated
 <!-- For soon-to-be removed features. -->
