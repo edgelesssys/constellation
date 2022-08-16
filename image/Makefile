@@ -122,6 +122,10 @@ upload-gcp: $(GCP_IMAGE_PATH)
 		--guest-os-features=GVNIC,SEV_CAPABLE,VIRTIO_SCSI_MULTIQUEUE,UEFI_COMPATIBLE \
 		--labels=bootstrapper-sha1=$$(shasum $(BOOTSTRAPPER_OVERRIDE_PATH) | cut -d " " -f 1),bootstrapper-sha512=$$(sha512sum $(BOOTSTRAPPER_OVERRIDE_PATH) | cut -d " " -f 1 | cut -c-63) \
 		--project $(GCP_PROJECT)
+	gcloud compute images add-iam-policy-binding $(GCP_IMAGE_NAME) \
+		--project $(GCP_PROJECT) \
+		--member='allAuthenticatedUsers' \
+		--role='roles/compute.imageUser'
 	gsutil rm gs://$(GCP_BUCKET)/$(GCP_IMAGE_FILENAME)
 
 image-azure: $(AZURE_IMAGE_PATH)

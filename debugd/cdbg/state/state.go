@@ -2,7 +2,6 @@ package state
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/config"
@@ -76,16 +75,4 @@ func getQEMUInstances(stat state.ConstellationState, _ *config.Config) (controlP
 	// QEMU does not support autoscaling
 	workers = cloudtypes.ScalingGroup{Instances: stat.QEMUWorkers}
 	return
-}
-
-// ImageNameContainsDebug check wether the image name in config contains "debug".
-func ImageNameContainsDebug(config *config.Config) bool {
-	switch {
-	case config.Provider.GCP != nil:
-		return strings.Contains(config.Provider.GCP.Image, "debug")
-	case config.Provider.Azure != nil:
-		return strings.Contains(config.Provider.Azure.Image, "debug")
-	default:
-		return false
-	}
 }

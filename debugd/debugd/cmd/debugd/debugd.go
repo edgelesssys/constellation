@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net"
 	"os"
 	"sync"
@@ -19,6 +20,13 @@ import (
 	"github.com/spf13/afero"
 	"golang.org/x/net/context"
 )
+
+const debugBanner = `
+**************************************
+    THIS A CONSTELLATION DEBUG IMAGE.
+    DO NOT USE IN PRODUCTION.
+**************************************
+`
 
 func main() {
 	wg := &sync.WaitGroup{}
@@ -62,10 +70,24 @@ func main() {
 		panic(err)
 	}
 
+	writeDebugBanner(log)
+
 	wg.Add(1)
 	go sched.Start(ctx, wg)
 	wg.Add(1)
 	go server.Start(log, wg, serv)
 
 	wg.Wait()
+}
+
+func writeDebugBanner(log *logger.Logger) {
+	tty, err := os.OpenFile("/dev/ttyS0", os.O_WRONLY, os.ModeAppend)
+	if err != nil {
+		log.Infof("Unable to open /dev/ttyS0 for printing banner: %v", err)
+		return
+	}
+	defer tty.Close()
+	if _, err := fmt.Fprint(tty, debugBanner); err != nil {
+		log.Infof("Unable to print to /dev/ttyS0: %v", err)
+	}
 }

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"regexp"
 
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
@@ -343,6 +344,22 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 		c.Provider.QEMU = currentProviderConfigs.QEMU
 	default:
 		c.Provider = currentProviderConfigs
+	}
+}
+
+// IsImageDebug checks whether image name looks like a release image, if not it is
+// probably a debug image. In the end we do not if bootstrapper or debugd
+// was put inside an image just by looking at its name.
+func (c *Config) IsImageDebug() bool {
+	switch {
+	case c.Provider.GCP != nil:
+		gcpRegex := regexp.MustCompile(`^projects\/constellation-images\/global\/images\/constellation-v[\d]+-[\d]+-[\d]+$`)
+		return !gcpRegex.MatchString(c.Provider.GCP.Image)
+	case c.Provider.Azure != nil:
+		azureRegex := regexp.MustCompile(`^\/subscriptions\/0d202bbb-4fa7-4af8-8125-58c269a05435\/resourceGroups\/constellation-images\/providers\/Microsoft.Compute\/galleries\/Constellation\/images\/constellation\/versions\/[\d]+.[\d]+.[\d]+$`)
+		return !azureRegex.MatchString(c.Provider.Azure.Image)
+	default:
+		return false
 	}
 }
 

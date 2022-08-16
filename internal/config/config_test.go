@@ -321,3 +321,58 @@ func TestConfig_UpdateMeasurements(t *testing.T) {
 		assert.Equal(newMeasurements, conf.Provider.QEMU.Measurements)
 	}
 }
+
+func TestConfig_IsImageDebug(t *testing.T) {
+	testCases := map[string]struct {
+		conf *Config
+		want bool
+	}{
+		"gcp release": {
+			conf: func() *Config {
+				conf := Default()
+				conf.RemoveProviderExcept(cloudprovider.GCP)
+				conf.Provider.GCP.Image = "projects/constellation-images/global/images/constellation-v1-3-0"
+				return conf
+			}(),
+			want: false,
+		},
+		"gcp debug": {
+			conf: func() *Config {
+				conf := Default()
+				conf.RemoveProviderExcept(cloudprovider.GCP)
+				conf.Provider.GCP.Image = "projects/constellation-images/global/images/constellation-20220812102023"
+				return conf
+			}(),
+			want: true,
+		},
+		"azure release": {
+			conf: func() *Config {
+				conf := Default()
+				conf.RemoveProviderExcept(cloudprovider.Azure)
+				conf.Provider.Azure.Image = "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.Compute/galleries/Constellation/images/constellation/versions/2022.0805.151600"
+				return conf
+			}(),
+			want: false,
+		},
+		"azure debug": {
+			conf: func() *Config {
+				conf := Default()
+				conf.RemoveProviderExcept(cloudprovider.Azure)
+				conf.Provider.Azure.Image = "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.Compute/galleries/Constellation_Debug/images/v1.4.0/versions/2022.0805.151600"
+				return conf
+			}(),
+			want: true,
+		},
+		"empty config": {
+			conf: &Config{},
+			want: false,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			assert.Equal(tc.want, tc.conf.IsImageDebug())
+		})
+	}
+}

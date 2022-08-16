@@ -23,7 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Kubernetes operator for Constellation nodes with ability to update node images.
-- cilium strict pod2pod encryption.
+- CoreOS images are publicly available for GCP.
+- Cilium strict pod2pod encryption.
 - Add a configurable list of enforced measurements to the config. If an expected measurement can not be verified during attestation, but it is not in the list of enforced measurements, only a warning is logged.
 
 ### Changed

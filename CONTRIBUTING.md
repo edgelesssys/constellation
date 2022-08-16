@@ -10,6 +10,14 @@ ctest
 
 [Run CI e2e tests](/.github/docs/README.md)
 
+### Debug Images
+
+> :warning: These images are not safe to use in production environments. :warning:
+
+As described in [debugd](/debugd/README.md), it is possible to use a CoreOS image targeted at dev environments. This image allows to upload any [bootstrapper](/bootstrapper/README.md) using [cdbg](/debugd/cdbg).
+
+To enable the upload, an additional **unsecured** port (4000) is opened which accepts any binary to be run on target machine. **Make sure that this machine is not exposed to the internet.**
+
 ## Linting
 
 This projects uses [golangci-lint](https://golangci-lint.run/) for linting.
