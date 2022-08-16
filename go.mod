@@ -30,6 +30,8 @@ replace (
 	k8s.io/sample-apiserver v0.0.0 => k8s.io/sample-apiserver v0.24.3
 )
 
+replace github.com/google/go-attestation => github.com/malt3/go-attestation v0.0.0-20220816131639-92b6394e4e0e
+
 require (
 	cloud.google.com/go/compute v1.7.0
 	cloud.google.com/go/iam v0.3.0
