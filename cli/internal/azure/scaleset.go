@@ -112,7 +112,7 @@ func (s ScaleSet) Azure() armcomputev2.VirtualMachineScaleSet {
 				},
 				SecurityProfile: &armcomputev2.SecurityProfile{
 					SecurityType: to.Ptr(armcomputev2.SecurityTypesConfidentialVM),
-					UefiSettings: &armcomputev2.UefiSettings{VTpmEnabled: to.Ptr(true), SecureBootEnabled: to.Ptr(false)},
+					UefiSettings: &armcomputev2.UefiSettings{VTpmEnabled: to.Ptr(true), SecureBootEnabled: to.Ptr(true)},
 				},
 				DiagnosticsProfile: &armcomputev2.DiagnosticsProfile{
 					BootDiagnostics: &armcomputev2.BootDiagnostics{
