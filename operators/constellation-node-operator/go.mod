@@ -12,10 +12,10 @@ require (
 	github.com/stretchr/testify v1.7.5
 	go.etcd.io/etcd/api/v3 v3.5.4
 	google.golang.org/genproto v0.0.0-20220624142145-8cd45d7dbd1f
-	k8s.io/api v0.24.0
-	k8s.io/apimachinery v0.24.0
-	k8s.io/client-go v0.24.0
-	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
+	k8s.io/api v0.24.3
+	k8s.io/apimachinery v0.24.3
+	k8s.io/client-go v0.24.3
+	k8s.io/utils v0.0.0-20220812165043-ad590609e2e5
 	sigs.k8s.io/controller-runtime v0.12.1
 )
 
