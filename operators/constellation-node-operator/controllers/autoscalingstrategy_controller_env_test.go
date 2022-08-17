@@ -129,6 +129,13 @@ var _ = Describe("AutoscalingStrategy controller", func() {
 			Eventually(checkDeploymentReplicas, timeout, interval).Should(Equal(int32(1)))
 
 			By("checking the autoscaling strategy status shows one replica")
+			Eventually(func() (int32, error) {
+				err := k8sClient.Get(ctx, strategyLookupKey, createdStrategy)
+				if err != nil {
+					return -1, err
+				}
+				return createdStrategy.Status.Replicas, nil
+			}, duration, interval).Should(Equal(int32(1)))
 			Consistently(func() (int32, error) {
 				err := k8sClient.Get(ctx, strategyLookupKey, createdStrategy)
 				if err != nil {
