@@ -22,7 +22,7 @@ func TestAttestation(t *testing.T) {
 	require := require.New(t)
 
 	issuer := NewIssuer()
-	validator := NewValidator(map[uint32][]byte{}) // TODO: check for list of expected Azure PCRs
+	validator := NewValidator(map[uint32][]byte{}, nil) // TODO: check for list of expected Azure PCRs
 
 	nonce := []byte{2, 3, 4}
 	challenge := []byte("Constellation")
@@ -41,7 +41,7 @@ func TestAttestation(t *testing.T) {
 	assert.Equal(challenge, out)
 
 	// Mark node as intialized. We should still be abe to validate
-	assert.NoError(vtpm.MarkNodeAsInitialized(vtpm.OpenVTPM, []byte("Test"), []byte("Nonce")))
+	assert.NoError(vtpm.MarkNodeAsBootstrapped(vtpm.OpenVTPM, []byte("Test")))
 
 	attDocRaw, err = issuer.Issue(challenge, nonce)
 	assert.NoError(err)

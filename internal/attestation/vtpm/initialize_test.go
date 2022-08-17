@@ -21,7 +21,7 @@ func (s simTPMNOPCloser) Close() error {
 	return nil
 }
 
-func TestMarkNodeAsInitialized(t *testing.T) {
+func TestMarkNodeAsBootstrapped(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 

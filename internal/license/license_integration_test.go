@@ -3,6 +3,7 @@
 package license
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,7 +12,7 @@ import (
 func TestCheckQuotaIntegration(t *testing.T) {
 	testCases := map[string]struct {
 		license   string
-		action    string
+		action    Action
 		wantQuota int
 		wantError bool
 	}{
@@ -48,10 +49,11 @@ func TestCheckQuotaIntegration(t *testing.T) {
 
 			client := NewClient()
 
-			resp, err := client.CheckQuota(CheckQuotaRequest{
+			req := CheckQuotaRequest{
 				Action:  tc.action,
 				License: tc.license,
-			})
+			}
+			resp, err := client.CheckQuota(context.Background(), req)
 
 			if tc.wantError {
 				assert.Error(err)

@@ -85,7 +85,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 			openTPM:   vtpm.OpenNOPTPM,
 			wantErr:   true,
 		},
-		"MarkNodeAsInitialized fails": {
+		"MarkNodeAsBootstrapped fails": {
 			fs:        afero.Afero{Fs: afero.NewMemMapFs()},
 			keyWaiter: &stubKeyWaiter{},
 			mapper:    &stubMapper{uuid: "test"},

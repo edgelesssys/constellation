@@ -106,16 +106,17 @@ func cleanUpBucket(ctx context.Context, require *require.Assertions, bucketID st
 		objects = append(objects, *output.Contents[i].Key)
 	}
 	// Delete all objects of the bucket
-	cleanUpObjects(ctx, client, bucketID, objects)
+	require.NoError(cleanUpObjects(ctx, client, bucketID, objects))
 
 	// Delete the bucket
 	deleteBucketInput := &s3.DeleteBucketInput{
 		Bucket: &bucketID,
 	}
-	client.DeleteBucket(ctx, deleteBucketInput)
+	_, err = client.DeleteBucket(ctx, deleteBucketInput)
+	require.NoError(err)
 }
 
-func cleanUpObjects(ctx context.Context, client *s3.Client, bucketID string, objectsToDelete []string) {
+func cleanUpObjects(ctx context.Context, client *s3.Client, bucketID string, objectsToDelete []string) error {
 	var objectsIdentifier []types.ObjectIdentifier
 	for _, object := range objectsToDelete {
 		objectsIdentifier = append(objectsIdentifier, types.ObjectIdentifier{Key: aws.String(object)})
@@ -124,7 +125,8 @@ func cleanUpObjects(ctx context.Context, client *s3.Client, bucketID string, obj
 		Bucket: &bucketID,
 		Delete: &types.Delete{Objects: objectsIdentifier},
 	}
-	client.DeleteObjects(ctx, deleteObjectsInput)
+	_, err := client.DeleteObjects(ctx, deleteObjectsInput)
+	return err
 }
 
 func TestAwsKms(t *testing.T) {

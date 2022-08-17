@@ -20,9 +20,10 @@ func TestMain(m *testing.M) {
 func TestAttestation(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
+	PCR0 := []byte{0x0f, 0x35, 0xc2, 0x14, 0x60, 0x8d, 0x93, 0xc7, 0xa6, 0xe6, 0x8a, 0xe7, 0x35, 0x9b, 0x4a, 0x8b, 0xe5, 0xa0, 0xe9, 0x9e, 0xea, 0x91, 0x07, 0xec, 0xe4, 0x27, 0xc4, 0xde, 0xa4, 0xe4, 0x39, 0xcf}
 
 	issuer := NewIssuer()
-	validator := NewValidator(map[uint32][]byte{0: PCR0})
+	validator := NewValidator(map[uint32][]byte{0: PCR0}, nil)
 
 	nonce := []byte{2, 3, 4}
 	challenge := []byte("Constellation")
@@ -41,7 +42,7 @@ func TestAttestation(t *testing.T) {
 	assert.Equal(challenge, out)
 
 	// Mark node as intialized. We should still be abe to validate
-	assert.NoError(vtpm.MarkNodeAsInitialized(vtpm.OpenVTPM, []byte("Test"), []byte("Nonce")))
+	assert.NoError(vtpm.MarkNodeAsBootstrapped(vtpm.OpenVTPM, []byte("Test")))
 
 	attDocRaw, err = issuer.Issue(challenge, nonce)
 	assert.NoError(err)

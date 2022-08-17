@@ -23,11 +23,11 @@ const (
 )
 
 func setup() {
-	exec.Command("/bin/dd", "if=/dev/zero", fmt.Sprintf("of=%s", DevicePath), "bs=64M", "count=1").Run()
+	_ = exec.Command("/bin/dd", "if=/dev/zero", fmt.Sprintf("of=%s", DevicePath), "bs=64M", "count=1").Run()
 }
 
 func teardown(devicePath string) {
-	exec.Command("/bin/rm", "-f", devicePath).Run()
+	_ = exec.Command("/bin/rm", "-f", devicePath).Run()
 }
 
 func copy(source, target string) error {
@@ -35,7 +35,7 @@ func copy(source, target string) error {
 }
 
 func resize() {
-	exec.Command("/bin/dd", "if=/dev/zero", fmt.Sprintf("of=%s", DevicePath), "bs=32M", "count=1", "oflag=append", "conv=notrunc").Run()
+	_ = exec.Command("/bin/dd", "if=/dev/zero", fmt.Sprintf("of=%s", DevicePath), "bs=32M", "count=1", "oflag=append", "conv=notrunc").Run()
 }
 
 func TestMain(m *testing.M) {

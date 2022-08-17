@@ -1,13 +1,14 @@
 run:
-  timeout: 5m
-
-output:
-  format: tab
-  sort-results: true
+  timeout: 10m
   build-tags:
     - integration
     - aws
     - gcp
+    - azure
+
+output:
+  format: tab
+  sort-results: true
 
 linters:
   enable:
