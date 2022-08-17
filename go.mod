@@ -33,8 +33,6 @@ replace (
 	k8s.io/sample-controller => k8s.io/sample-controller v0.24.0
 )
 
-replace github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork => github.com/malt3/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork v0.0.0-20220728112040-735e3fd529fa
-
 require (
 	cloud.google.com/go/compute v1.7.0
 	cloud.google.com/go/iam v0.3.0
@@ -49,7 +47,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets v0.8.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights v1.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2 v2.0.0
-	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork v1.0.0
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork v1.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.1
 	github.com/Azure/go-autorest/autorest v0.11.27
