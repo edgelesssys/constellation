@@ -10,7 +10,7 @@
 # * AZURE_IMAGE_VERSION: (required) version number used for uploaded image. <major>.<minor>.<patch>
 # Optional values.
 # * AZURE_IMAGE_FILE: (optional, default: ./abcd) Path to image file to be uploaded.
-# * AZURE_REGION: (optional, default: northeurope) Region used in Azure.
+# * AZURE_REGION: (optional, default: westus) Region used in Azure.
 # * AZURE_GALLERY_NAME: (optional, default: constellation_import) Name for Azure shared image gallery. Will be created as part of this script.
 # * AZURE_IMAGE_NAME: (optional, default: upload-target) Temporary image used for upload, must not exist.
 
@@ -37,7 +37,7 @@ then
 fi
 
 AZURE_IMAGE_FILE="${AZURE_IMAGE_FILE:-$(pwd)/abcd}"
-AZURE_REGION="${AZURE_REGION:-northeurope}"
+AZURE_REGION="${AZURE_REGION:-westus}"
 AZURE_GALLERY_NAME="${AZURE_GALLERY_NAME:-constellation_import}"
 AZURE_PUBLISHER="${AZURE_PUBLISHER:-edgelesssys}"
 AZURE_IMAGE_NAME="${AZURE_IMAGE_NAME:-upload-target}"

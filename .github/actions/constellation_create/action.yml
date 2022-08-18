@@ -49,7 +49,7 @@ runs:
         yq eval -i \
           "(.provider | select(. | has(\"azure\")).azure.subscription) = \"0d202bbb-4fa7-4af8-8125-58c269a05435\" |
             (.provider | select(. | has(\"azure\")).azure.tenant) = \"adb650a8-5da3-4b15-b4b0-3daf65ff7626\" |
-            (.provider | select(. | has(\"azure\")).azure.location) = \"North Europe\" |
+            (.provider | select(. | has(\"azure\")).azure.location) = \"West US\" |
             (.provider | select(. | has(\"azure\")).azure.userAssignedIdentity) = \"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-dev-identity\" |
             (.provider | select(. | has(\"azure\")).azure.enforcedMeasurements) = [11,12]" \
           constellation-conf.yaml

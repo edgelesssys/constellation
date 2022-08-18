@@ -40,6 +40,7 @@ AZURE_IMAGE_FILENAME             ?= $(AZURE_IMAGE_NAME)_azure.vhd
 AZURE_IMAGE_PATH                 ?= $(IMAGES_PATH)/$(AZURE_IMAGE_FILENAME)
 AZURE_RESOURCE_GROUP_NAME        ?= CONSTELLATION-IMAGES
 AZURE_REGION                     ?= northeurope
+AZURE_REPLICATION_REGIONS        ?= northeurope eastus westeurope westus
 AZURE_GALLERY_NAME               ?= Constellation
 AZURE_IMAGE_DEFINITION           ?= $(AZURE_IMAGE_NAME)
 AZURE_IMAGE_OFFER                ?= $(AZURE_IMAGE_DEFINITION)
@@ -151,7 +152,7 @@ upload-azure: $(AZURE_IMAGE_PATH)
 	-az sig create -l $(AZURE_REGION) --gallery-name $(AZURE_GALLERY_NAME) --resource-group $(AZURE_RESOURCE_GROUP_NAME)
 	@echo "Create image definition (if it does not exist yet)"
 	-az sig image-definition create --resource-group $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --gallery-name $(AZURE_GALLERY_NAME) --gallery-image-definition $(AZURE_IMAGE_DEFINITION) --publisher $(AZURE_PUBLISHER) --offer $(AZURE_IMAGE_OFFER) --sku $(AZURE_SKU) --os-type Linux --os-state generalized --hyper-v-generation V2 --features SecurityType=ConfidentialVmSupported
-	az sig image-version create --resource-group $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --gallery-name $(AZURE_GALLERY_NAME) --gallery-image-definition $(AZURE_IMAGE_DEFINITION) --gallery-image-version $(AZURE_IMAGE_VERSION) --target-regions $(AZURE_REGION) --replica-count 1 --tags bootstrapper-sha512=$$(sha512sum $(BOOTSTRAPPER_OVERRIDE_PATH) | cut -d " " -f 1) --managed-image "$$(az image list --query "[?name == '$(AZURE_IMAGE_NAME)' && resourceGroup == '$(AZURE_RESOURCE_GROUP_NAME)'] | [0].id" --output json | jq -r)"
+	az sig image-version create --resource-group $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --gallery-name $(AZURE_GALLERY_NAME) --gallery-image-definition $(AZURE_IMAGE_DEFINITION) --gallery-image-version $(AZURE_IMAGE_VERSION) --target-regions $(AZURE_REPLICATION_REGIONS) --replica-count 1 --tags bootstrapper-sha512=$$(sha512sum $(BOOTSTRAPPER_OVERRIDE_PATH) | cut -d " " -f 1) --managed-image "$$(az image list --query "[?name == '$(AZURE_IMAGE_NAME)' && resourceGroup == '$(AZURE_RESOURCE_GROUP_NAME)'] | [0].id" --output json | jq -r)"
 	@echo "Cleaning up resources"
 	az image delete --resource-group $(AZURE_RESOURCE_GROUP_NAME) -n $(AZURE_IMAGE_NAME)
 	az disk delete --resource-group $(AZURE_RESOURCE_GROUP_NAME) -n $(AZURE_IMAGE_NAME) --yes
