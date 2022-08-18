@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/state"
 )
@@ -40,7 +41,7 @@ func transformState(tfOut terraformOutput) state.ConstellationState {
 	conState := state.ConstellationState{
 		Name:             "qemu",
 		UID:              "debug",
-		CloudProvider:    "qemu",
+		CloudProvider:    cloudprovider.QEMU.String(),
 		BootstrapperHost: tfOut.ControlPlaneIPs.Value[0],
 		QEMUWorkers:      cloudtypes.Instances{},
 		QEMUControlPlane: cloudtypes.Instances{},

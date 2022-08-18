@@ -25,7 +25,7 @@ provider "docker" {
 }
 
 resource "docker_image" "qemu-metadata" {
-  name         = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v1.3.2-0.20220714151638-d295be31"
+  name         = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v1.4.1-0.20220817163854-84e9f659542d"
   keep_locally = true
 }
 
