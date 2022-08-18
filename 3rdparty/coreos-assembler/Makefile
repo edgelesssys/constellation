@@ -2,7 +2,7 @@ CONTAINER_RUNTIME ?= docker
 IMAGENAME         ?= localhost/coreos-assembler
 IMAGETAG          ?= latest
 UPSTREAM          ?= https://github.com/coreos/coreos-assembler
-COMMIT            ?= b8f61207c7a4ce345a1f136823dac6c628086273
+COMMIT            ?= 2dd33ddc36e6b9e1cc01ee0740f29020d203ceb2
 SRC_PATH           = $(CURDIR)
 BASE_PATH         ?= $(SRC_PATH)
 BUILDDIR          ?= $(BASE_PATH)/build
@@ -19,7 +19,7 @@ clone:
 	cd $(CLONEDIR) && git checkout $(COMMIT)
 
 patch:
-	cd $(CLONEDIR) && patch -p1 < $(BASE_PATH)/verity.patch
+	cd $(CLONEDIR) && patch --verbose -p1 < $(BASE_PATH)/verity.patch
 
 containerimage:
 	cd $(CLONEDIR) && $(CONTAINER_RUNTIME) build -t $(IMAGENAME):$(IMAGETAG) -f Dockerfile .
