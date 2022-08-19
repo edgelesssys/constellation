@@ -33,10 +33,18 @@ while read line; do
       esac
       ;;
 
+    AGPL-3.0)
+      case $pkg in
+        github.com/edgelesssys/constellation*)
+          ;;
+        *)
+          not_allowed
+          ;;
+      esac
+      ;;
+
     Unknown)
       case $pkg in
-        github.com/edgelesssys/constellation/*)
-          ;;
         *)
           not_allowed
           ;;
