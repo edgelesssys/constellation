@@ -1,0 +1,28 @@
+name: Build operator manually
+
+on:
+  workflow_dispatch:
+    inputs:
+      imageTag:
+        description: "Container image tag"
+        required: true
+        default: "manual-build"
+
+jobs:
+  build-operator-manual:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out repository
+        id: checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+
+      - name: Build and upload constellation-node-operator container image
+        uses: ./.github/actions/build_operator
+        with:
+          name: node-operator
+          sourceDir: operators/constellation-node-operator
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          pushTag: ${{ inputs.imageTag }}
