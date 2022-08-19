@@ -100,6 +100,14 @@ func (g *Git) ParsedBranchName() (string, error) {
 	return strings.TrimSuffix(branch, "-"), nil
 }
 
+func (g *Git) BranchName() (string, error) {
+	commitRef, err := g.repo.Head()
+	if err != nil {
+		return "", err
+	}
+	return commitRef.Name().Short(), nil
+}
+
 // tagsByRevisionHash returns a map from revision hash to a list of associated tags.
 func (g *Git) tagsByRevisionHash() (map[string][]string, error) {
 	tags := make(map[string][]string)

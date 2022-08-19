@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/hack/pseudo-version/internal/git"
@@ -16,6 +17,7 @@ func main() {
 	printSemVer := flag.Bool("semantic-version", false, "Only print semantic version")
 	printTimestamp := flag.Bool("print-timestamp", false, "Only print timestamp")
 	printBranch := flag.Bool("print-branch", false, "Only print branch name")
+	printReleaseVersion := flag.Bool("print-release-branch", false, "Only print release branch version")
 	major := flag.String("major", "v0", "Optional major version")
 	base := flag.String("base", "", "Optional base version")
 	revisionTimestamp := flag.String("time", "", "Optional revision time")
@@ -29,7 +31,12 @@ func main() {
 		log.With(zap.Error(err)).Fatalf("Failed to initialize git client")
 	}
 
-	branch, err := gitc.ParsedBranchName()
+	parsedBranch, err := gitc.ParsedBranchName()
+	if err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to get parsed branch name")
+	}
+
+	rawBranch, err := gitc.BranchName()
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to get branch name")
 	}
@@ -72,7 +79,9 @@ func main() {
 	case *printTimestamp:
 		fmt.Println(headTime.Format("20060102150405"))
 	case *printBranch:
-		fmt.Println(branch)
+		fmt.Println(parsedBranch)
+	case *printReleaseVersion:
+		fmt.Println(strings.TrimPrefix(rawBranch, "release/"))
 	default:
 		fmt.Println(version)
 	}
