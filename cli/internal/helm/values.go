@@ -78,4 +78,5 @@ var qemuVals = map[string]interface{}{
 		"enabled": true,
 		"type":    "wireguard",
 	},
+	"l7Proxy": false,
 }
