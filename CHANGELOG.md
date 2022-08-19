@@ -28,7 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add a configurable list of enforced measurements to the config. If an expected measurement can not be verified during attestation, but it is not in the list of enforced measurements, only a warning is logged.
 
 ### Changed
-<!-- For changes in existing functionality.  -->
+
+- Use Azure CVMs instead of Trusted Launch VMs.
+
 ### Deprecated
 <!-- For soon-to-be removed features. -->
 ### Removed
@@ -36,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix timeout issue during cilium installation.
+
 ### Security
 <!-- In case of vulnerabilities. -->
 ### Internal
