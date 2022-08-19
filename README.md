@@ -37,7 +37,11 @@
 From the inside, it's a fully featured, [certified] Kubernetes engine. From the outside, it's an end to end isolated, always encrypted stronghold. A Confidential Cloud in the public cloud.
 Constellation is open source and enterprise-ready, tailored for unleashing the power of confidential computing for all your workloads at scale.
 
-![Overview](docs/product-overview.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/product-overview-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/product-overview.png">
+  <img alt="Constellation product overview" src="docs/product-overview.png">
+</picture>
 
 For a brief introduction to the Confidential Kubernetes concept, read the [introduction][confidential-kubernetes].
 For more elaborate overviews of Constellation, see the [architecture] documentation.
@@ -142,4 +146,3 @@ If you require a cluster with more than 8 vCPUs or need other services such as e
 [troubleshooting]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/workflows/troubleshooting
 [threat-model]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/threat-model
 [twitter]: https://twitter.com/EdgelessSystems
-
