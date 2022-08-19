@@ -34,7 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 <!-- For now removed features. -->
 ### Fixed
-<!-- For any bug fixes. -->
+
+- Fix timeout issue during cilium installation.
 ### Security
 <!-- In case of vulnerabilities. -->
 ### Internal

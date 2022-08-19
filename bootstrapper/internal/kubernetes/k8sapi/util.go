@@ -43,6 +43,8 @@ const (
 	kubeletStartTimeout = 10 * time.Minute
 	// crdTimeout is the maximum time given to the CRDs to be created.
 	crdTimeout = 15 * time.Second
+	// helmTimeout is the maximum time given to the helm client.
+	helmTimeout = 5 * time.Minute
 )
 
 // Client provides the functions to talk to the k8s API.
@@ -203,7 +205,7 @@ func (k *KubernetesUtil) SetupHelmDeployments(ctx context.Context, kubectl Clien
 	helmClient.Namespace = constants.HelmNamespace
 	helmClient.ReleaseName = "cilium"
 	helmClient.Wait = true
-	helmClient.Timeout = 30 * time.Second
+	helmClient.Timeout = helmTimeout
 
 	if err := k.deployCilium(ctx, in, helmClient, helmDeploy.Cilium, kubectl); err != nil {
 		return fmt.Errorf("deploying cilium: %w", err)
