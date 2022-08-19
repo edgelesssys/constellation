@@ -1,88 +1,145 @@
-# Constellation
+<p align="center">
+    <b>⭐ Star us on GitHub — it motivates us a lot!</b>
+</p>
 
-This is the main repository of Constellation.
+![](docs/constellation-header.png)
 
-![E2ETestAzure](https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-azure.yml/badge.svg?branch=main)
-![E2ETestGCP](https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-gcp.yml/badge.svg?branch=main)
-[![Go Report Card](https://goreportcard.com/badge/github.com/edgelesssys/constellation)](https://goreportcard.com/report/github.com/edgelesssys/constellation)
-[![Discord Chat](https://img.shields.io/badge/chat-on%20Discord-blue)](https://discord.gg/rH8QTH56JN)
+<h1 align="center">Welcome to Constellation!</h1>
 
-Core components:
+<p align="center">
+    <a href="https://www.edgeless.systems/products/constellation/">Constellation</a> is the first Confidential Kubernetes platform. It leverages <a href="https://www.edgeless.systems/resources/confidential-computing/">confidential computing</a> to isolate entire Kubernetes clusters and all workloads from the rest of the cloud infrastructure.
+</p>
 
-* [access_manager](access_manager): Contains the access-manager pod used to persist SSH users based on a K8s ConfigMap
-* [cli](cli): The CLI is used to manage a Constellation cluster
-* [bootstrapper](bootstrapper): The bootstrapper is a node agent whose most important task is to bootstrap a node
-* [image](image): Build files for the Constellation disk image
-* [kms](kms): Constellation's key management client and server
-* [mount](mount): Package used by CSI plugins to create and mount encrypted block devices
-* [state](state): Contains the disk-mapper that maps the encrypted node data disk during boot
+<p align="center">
+    <a href="https://github.com/edgelesssys/constellation/blob/master/LICENSE"><img src="https://img.shields.io/github/license/edgelesssys/constellation" alt="Constellation License"></a>
+    <a href="https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-azure.yml/badge.svg?branch=main"><img src="https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-azure.yml/badge.svg?branch=main" alt="E2E Test Azure"></a>
+    <a href="https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-gcp.yml/badge.svg?branch=main"><img src="https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-gcp.yml/badge.svg?branch=main" alt="E2E Test GCP"></a>
+    <a href="https://goreportcard.com/report/github.com/edgelesssys/constellation"><img src="https://goreportcard.com/badge/github.com/edgelesssys/constellation" alt="Go Report"></a>
+    <a href="https://discord.gg/rH8QTH56JN"><img src="https://img.shields.io/badge/chat-on%20Discord-blue" alt="Discord"></a>
+    <a href="https://twitter.com/EdgelessSystems"><img src="https://img.shields.io/twitter/follow/EdgelessSystems?label=Follow" alt="Twitter"></a>
+</p>
 
-Development components:
+## Table of contents
+- [Table of contents](#table-of-contents)
+- [✨ What is Constellation?](#-what-is-constellation)
+- [🛠 Features](#-features)
+- [🚀 Getting started](#-getting-started)
+- [📖 Documentation](#-documentation)
+- [👥 Community](#-community)
+- [🤝 Contributing](#-contributing)
+- [🗺 Roadmap](#-roadmap)
+- [❓ Support & Enterprise Support](#-support--enterprise-support)
+- [📃 License](#-license)
 
-* [3rdparty](3rdparty): Contains the third party dependencies used by Constellation
-* [conformance](conformance): Kubernetes conformance tests
-* [debugd](debugd): Debug daemon and client
-* [hack](hack): Development tools
-* [proto](proto): Proto files generator
-* [terraform](terraform): Infrastructure management using terraform (instead of `constellation create/destroy`)
-  * [libvirt](terraform/libvirt): Deploy local cluster using terraform, libvirt and QEMU
-* [test](test): Integration test
 
-Additional repositories:
+## ✨ What is Constellation?
 
-* [constellation-docs](https://github.com/edgelesssys/constellation-docs): End-user documentation
-* [constellation-fedora-coreos-config](https://github.com/edgelesssys/constellation-fedora-coreos-config): CoreOS build configuration with changes for Constellation
-* [edg-azuredisk-csi-driver](https://github.com/edgelesssys/edg-azuredisk-csi-driver): Azure CSI driver with encryption on node
-* [edg-gcp-compute-persistent-disk-csi-driver](https://github.com/edgelesssys/edg-gcp-compute-persistent-disk-csi-driver): GCP CSI driver with encryption on node
+From the inside, it's a fully featured, [certified] Kubernetes engine. From the outside, it's an end to end isolated, always encrypted stronghold. A Confidential Cloud in the public cloud.
+Constellation is open source and enterprise-ready, tailored for unleashing the power of confidential computing for all your workloads at scale.
 
-## Build
+![Overview](docs/product-overview.png)
 
-Prerequisites:
+For a brief introduction to the Confidential Kubernetes concept, read the [introduction][confidential-kubernetes].
+For more elaborate overviews of Constellation, see the [architecture] documentation.
 
-* [Go 1.18](https://go.dev/doc/install)
-* [Docker](https://docs.docker.com/engine/install/)
-* Packages on Ubuntu:
 
-  ```sh
-  sudo apt install build-essential cmake libssl-dev pkg-config libcryptsetup12 libcryptsetup-dev
-  ```
+## 🛠 Features
 
-* Packages on Fedora:
+* The only cloud-agnostic Confidential Kubernetes platform
+* [Verifiable][cluster-attestation] integrity and confidentiality of the entire Kubernetes cluster
+* High-available, enterprise-ready Kubernetes engine
+* Memory runtime encryption of all Kubernetes nodes
+* [Transparent network encryption][network-encryption] for the entire cluster node to node traffic. Provided by [Cilium], application independent, no sidecar required
+* [Persistent volume](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) encryption for block storage. [Encrypted in the confidential Kubernetes context][storage-encryption], keys and plaintext data never leave the cluster. No trust in the cloud storage backend required
+* [Key management][key-management] for transparent network and storage encryption
+* [Confidential computing-optimized][images], fully measured, and integrity-protected node OS
+* Kubernetes node attestation based on confidential computing. Nodes are [verified][node-attestation] on their integrity and identity with a hardware-based remote attestation procedure before joining the cluster
+* Dynamic cluster autoscaling
+* [Supply chain protection][supply-chain] with [sigstore](https://www.sigstore.dev/)
 
-  ```sh
-  sudo dnf install @development-tools pkg-config cmake openssl-devel cryptsetup-libs cryptsetup-devel
-  ```
+## 🚀 Getting started
 
-```sh
-mkdir build
-cd build
-cmake ..
-make -j`nproc`
-```
+Sounds great, how can I try this?
 
-## Testing
+Constellation can be deployed in minutes to your favorite infrastructure provider:
 
-You can run all integration and unitttests like this:
+:wrench: [Install][install]
 
-```sh
-ctest -j `nproc`
-```
+:lock: [Deploy][deploy]
 
-## Cloud credentials
+:white_check_mark: [Profit][examples]
 
-Using the CLI requires the user to make authorized API calls to the CSP API. See the [docs](https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=cloud-credentials) for configuration.
+## 📖 Documentation
 
-## Deploying a locally compiled bootstrapper binary
+* [Concept][confidential-kubernetes]
+* [Threat model][threat-model]
+* [Architecture][architecture]
+* [Installing the CLI][install]
+* [Creating a Constelltion cluster][deploy]
 
-By default, `constellation create ...` will spawn cloud provider instances with a pre-baked bootstrapper binary.
-For testing, you can use the constellation debug daemon (debugd) to upload your local bootstrapper binary to running instances and to obtain SSH access.
-[Follow this introduction on how to install and setup `cdbg`](debugd/README.md)
+## 👥 Community
 
-## Development Guides
+* Got a question? Please get in touch via [Discord][discord] or file an [issue][github-issues].
+* If you see an error message or run into an issue, please make sure to create a [bug report][github-issues].
+* Get the latest news and announcements on [Twitter][twitter], [LinkedIn][linkedin] or sign up for our monthly [newsletter][newsletter].
+* Visit our [blog](https://blog.edgeless.systems/) for technical deep-dives and tutorials.
 
-* [Upgrading Kubernetes](/docs/upgrade-kubernetes.md)
-* [Manual local image testing](/docs/local-image-testing.md)
+## 🤝 Contributing
 
-## Deployment Guides
+* Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for information on issue reporting, code guidelines, and how to work in this repository.
+* Pull requests are welcome! You need to agree to our [Contributor License Agreement][cla-assistant].
+* This project and everyone participating in it are governed by the [Code of Conduct](/CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
+* To report a security issue, write to security@edgeless.systems.
 
-* [Onboarding Customers](/docs/onboarding-customers.md)
+## 🗺 Roadmap
+
+Constellation maintains a [public roadmap][TODO]. It gives a a high-level view of the main priorities for the project, the maturity of different features, and how to influence the project direction.
+
+## ❓ Support & Enterprise Support
+
+If you require a cluster with more than 8 vCPUs or need other services such as enterprise support: [Contact us][contact] or find more information on the [Constellation product page][constellation-product].
+
+## 📃 License
+
+
+
+
+<!-- refs -->
+[architecture]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/overview
+[certified]: https://www.cncf.io/certification/software-conformance/
+[Cilium]: https://cilium.io/
+[cla-assistant]: https://cla-assistant.io/edgelesssys/constellation
+[cluster-attestation]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/attestation?id=cluster-attestation
+[community-license]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e2742739869/getting-started/license
+[confidential-computing]: https://www.edgeless.systems/resources/confidential-computing/
+[confidential-kubernetes]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/confidential-kubernetes
+[Constellation]: https://www.edgeless.systems/products/constellation/
+[constellation-product]: https://www.edgeless.systems/products/constellation/
+[contact]: https://www.edgeless.systems/contact/
+[deploy]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/workflows/create
+[discord]: https://discord.gg/rH8QTH56JN
+[discord-badge]: https://img.shields.io/badge/chat-on%20Discord-blue
+[documentation]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692
+[e2eTestAzure]: https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-azure.yml/badge.svg?branch=main
+[e2eTestGCP]: https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-gcp.yml/badge.svg?branch=main
+[examples]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/examples
+[getting-started]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install
+[github-issues]: https://github.com/edgelesssys/constellation/issues/new/choose
+[go-report-card]: https://goreportcard.com/report/github.com/edgelesssys/constellation
+[go-report-card-badge]: https://goreportcard.com/badge/github.com/edgelesssys/constellation
+[images]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/images?id=constellation-images
+[install]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install
+[join-service]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/components?id=joinservice
+[key-management]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/keys?id=constellation-managed-key-management
+[license]: https://github.com/edgelesssys/constellation/blob/master/LICENSE
+[license-badge]: https://img.shields.io/github/license/edgelesssys/constellation
+[linkedin]: https://www.linkedin.com/company/edgeless-systems/
+[network-encryption]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/keys?id=network-encryption
+[newsletter]: https://www.edgeless.systems/#newsletter-signup
+[node-attestation]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/attestation?id=node-attestation
+[storage-encryption]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/keys?id=storage-encryption
+[supply-chain]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/attestation?id=chain-of-trust
+[troubleshooting]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/workflows/troubleshooting
+[threat-model]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/threat-model
+[twitter]: https://twitter.com/EdgelessSystems
+
