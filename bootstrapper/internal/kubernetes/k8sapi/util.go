@@ -489,8 +489,7 @@ func (k *KubernetesUtil) createSignedKubeletCert(nodeName string, ips []net.IP) 
 	if err != nil {
 		return err
 	}
-	parentCertPEM, _ := pem.Decode(parentCertRaw)
-	parentCert, err := x509.ParseCertificate(parentCertPEM.Bytes)
+	parentCert, err := crypto.PemToX509Cert(parentCertRaw)
 	if err != nil {
 		return err
 	}
@@ -513,7 +512,7 @@ func (k *KubernetesUtil) createSignedKubeletCert(nodeName string, ips []net.IP) 
 	case "PRIVATE KEY":
 		parentKey, err = x509.ParsePKCS8PrivateKey(parentKeyPEM.Bytes)
 	default:
-		err = fmt.Errorf("unsupported key type %q", parentCertPEM.Type)
+		err = fmt.Errorf("unsupported key type %q", parentKeyPEM.Type)
 	}
 	if err != nil {
 		return err

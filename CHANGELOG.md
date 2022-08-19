@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- For changes in existing functionality.  -->
 - Use IP from Constellation ID file in init and verify instead of IPs from state file.
 - Change cdbg to use load balancer for deploy.
+- Azure CVMs are attested using SNP attestation
 
 ### Deprecated
 <!-- For soon-to-be removed features. -->
