@@ -22,14 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Kubernetes operator for Constellation nodes with ability to update node images.
-- CoreOS images are publicly available for GCP.
-- Cilium strict pod2pod encryption.
-- Add a configurable list of enforced measurements to the config. If an expected measurement can not be verified during attestation, but it is not in the list of enforced measurements, only a warning is logged.
-
 ### Changed
-
-- Use Azure CVMs instead of Trusted Launch VMs.
 
 ### Deprecated
 <!-- For soon-to-be removed features. -->
@@ -37,14 +30,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- For now removed features. -->
 ### Fixed
 
-- Fix timeout issue during cilium installation.
-
 ### Security
 <!-- In case of vulnerabilities. -->
 ### Internal
 
+## [1.5.0] - 2022-08-19
+
+### Added
+
+- Kubernetes operator for Constellation nodes with ability to update node images.
+- CoreOS images are publicly available for GCP.
+- Cilium strict pod2pod encryption.
+- Add a configurable list of enforced measurements to the config. If an expected measurement can not be verified during attestation, but it is not in the list of enforced measurements, only a warning is logged.
+- License check during init
+
+### Changed
+
+- Use Azure CVMs instead of Trusted Launch VMs.
+- Parallel resource creation on Azure.
+
+### Fixed
+
+- Fix timeout issue during cilium installation.
+
+### Internal
+
 - Run e2e tests on all supported versions.
 - Run e2e tests on latest debug images, instead of release image.
+- Upgrade Azure SDK
 
 ## [1.4.0] - 2022-08-02
 
@@ -179,7 +192,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial release of Constellation. With underlying WireGuard and Kubernetes compliant.
 
-[Unreleased]: https://github.com/edgelesssys/constellation/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/edgelesssys/constellation/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/edgelesssys/constellation/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/edgelesssys/constellation/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/edgelesssys/constellation/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/edgelesssys/constellation/compare/v1.2.0...v1.3.0
