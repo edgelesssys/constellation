@@ -50,11 +50,6 @@ on:
         default: true
         required: false
 
-# Abort runs of *this* workflow, if a new commit with the same ref is pushed.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   e2e-test-manual:
     runs-on: ubuntu-latest
