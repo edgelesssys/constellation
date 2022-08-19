@@ -8,11 +8,14 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         * branch: `release/v1.3.0`
         * Container image tag: `v1.3.0`
         * Version of the image to build: `1.3.0`
-    2. Review and update changelog with all changes since last release. [GitHub's diff view](https://github.com/edgelesssys/constellation/compare/v1.2.0...main) helps a lot!
-    3. Update versions [versions.go](../internal/versions/versions.go#L33-L36) to `v1.3.0`
-    4. Create a [production coreOS image](/.github/workflows/build-coreos.yml)
-    5. Update [default images in config](/internal/config/config.go)
-    6. Merge this branch back to `main`
+    2. Use [Build operator manual](https://github.com/edgelesssys/constellation/actions/workflows/build-operator-manual.yml) and run the pipeline once with the following parameters:
+        * branch: `release/v1.3.0`
+        * Container image tag: `v1.3.0`
+    3. Review and update changelog with all changes since last release. [GitHub's diff view](https://github.com/edgelesssys/constellation/compare/v1.2.0...main) helps a lot!
+    4. Update versions [versions.go](../internal/versions/versions.go#L33-L36) to `v1.3.0`
+    5. Create a [production coreOS image](/.github/workflows/build-coreos.yml)
+    6. Update [default images in config](/internal/config/config.go)
+    7. Merge this branch back to `main`
 3. Run E2E to confirm stability and [generate measurements](/.github/workflows/e2e-test-manual.yml)
 4. Create a new tag in `constellation` on `main`
     * `git tag v1.3.0`
