@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/stretchr/testify/assert"
@@ -89,6 +90,10 @@ type stubFetcher struct {
 	keys            []ssh.UserKey
 	discoverErr     error
 	fetchSSHKeysErr error
+}
+
+func (s *stubFetcher) Role(_ context.Context) (role.Role, error) {
+	return role.Unknown, nil
 }
 
 func (s *stubFetcher) DiscoverDebugdIPs(ctx context.Context) ([]string, error) {

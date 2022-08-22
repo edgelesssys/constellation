@@ -17,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/kubectl"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/logging"
+	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/attestation/azure"
 	"github.com/edgelesssys/constellation/internal/attestation/gcp"
@@ -168,6 +169,13 @@ func main() {
 }
 
 func setLoadbalancerRoute(ctx context.Context, meta metadataAPI) error {
+	self, err := meta.Self(ctx)
+	if err != nil {
+		return err
+	}
+	if self.Role != role.ControlPlane {
+		return nil
+	}
 	endpoint, err := meta.GetLoadBalancerEndpoint(ctx)
 	if err != nil {
 		return err

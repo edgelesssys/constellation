@@ -8,6 +8,7 @@ import (
 	azurecloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/azure"
 	gcpcloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/gcp"
 	qemucloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/qemu"
+	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 )
@@ -55,6 +56,15 @@ func NewQEMU() *Fetcher {
 	return &Fetcher{
 		metaAPI: &qemucloud.Metadata{},
 	}
+}
+
+func (f *Fetcher) Role(ctx context.Context) (role.Role, error) {
+	self, err := f.metaAPI.Self(ctx)
+	if err != nil {
+		return role.Unknown, fmt.Errorf("retrieving role from cloud provider metadata: %w", err)
+	}
+
+	return self.Role, nil
 }
 
 // DiscoverDebugdIPs will query the metadata of all instances and return any ips of instances already set up for debugging.

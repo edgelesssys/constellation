@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/debugd/debugd"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/logger"
@@ -15,6 +16,7 @@ import (
 
 // Fetcher retrieves other debugd IPs and SSH keys from cloud provider metadata.
 type Fetcher interface {
+	Role(ctx context.Context) (role.Role, error)
 	DiscoverDebugdIPs(ctx context.Context) ([]string, error)
 	FetchSSHKeys(ctx context.Context) ([]ssh.UserKey, error)
 	DiscoverLoadbalancerIP(ctx context.Context) (string, error)

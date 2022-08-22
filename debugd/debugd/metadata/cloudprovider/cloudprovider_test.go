@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/stretchr/testify/assert"
@@ -17,6 +18,48 @@ func TestMain(m *testing.M) {
 		// https://github.com/census-instrumentation/opencensus-go/issues/1262
 		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
 	)
+}
+
+func TestRole(t *testing.T) {
+	instance1 := metadata.InstanceMetadata{Role: role.ControlPlane}
+	instance2 := metadata.InstanceMetadata{Role: role.Worker}
+
+	testCases := map[string]struct {
+		meta     *stubMetadata
+		wantErr  bool
+		wantRole role.Role
+	}{
+		"control plane": {
+			meta:     &stubMetadata{selfRes: instance1},
+			wantRole: role.ControlPlane,
+		},
+		"worker": {
+			meta:     &stubMetadata{selfRes: instance2},
+			wantRole: role.Worker,
+		},
+		"self fails": {
+			meta:     &stubMetadata{selfErr: errors.New("some err")},
+			wantErr:  true,
+			wantRole: role.Unknown,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			fetcher := Fetcher{tc.meta}
+
+			role, err := fetcher.Role(context.Background())
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.wantRole, role)
+			}
+		})
+	}
 }
 
 func TestDiscoverDebugIPs(t *testing.T) {

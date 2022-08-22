@@ -8,6 +8,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/debugd/bootstrapper"
 	"github.com/edgelesssys/constellation/debugd/debugd/deploy"
 	"github.com/edgelesssys/constellation/debugd/debugd/metadata"
@@ -99,6 +100,13 @@ func writeDebugBanner(log *logger.Logger) {
 }
 
 func setLoadbalancerRoute(ctx context.Context, fetcher metadata.Fetcher) error {
+	ownRole, err := fetcher.Role(ctx)
+	if err != nil {
+		return err
+	}
+	if ownRole != role.ControlPlane {
+		return nil
+	}
 	ip, err := fetcher.DiscoverLoadbalancerIP(ctx)
 	if err != nil {
 		return err
