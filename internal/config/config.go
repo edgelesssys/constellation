@@ -140,7 +140,7 @@ type AzureConfig struct {
 	//   List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning.
 	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
 	// description: |
-	//   Authorize spawned VMs to access Azure API. See: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=azure
+	//   Authorize spawned VMs to access Azure API. See: https://docs.edgeless.systems/constellation/latest/#/getting-started/install?id=azure
 	UserAssignedIdentity string `yaml:"userAssignedIdentity" validate:"required"`
 }
 

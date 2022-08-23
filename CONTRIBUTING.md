@@ -1,6 +1,6 @@
 ## First steps
 
-Thank you for getting involved! Before you start, please familiarize yourself with the [documentation](https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692).
+Thank you for getting involved! Before you start, please familiarize yourself with the [documentation](https://docs.edgeless.systems/constellation/latest).
 
 Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) when interacting with this project.
 
@@ -124,7 +124,7 @@ To enable the upload, an additional **unsecured** port (4000) is opened which ac
 
 ## Cloud credentials
 
-Using the CLI requires the user to make authorized API calls to the CSP API. See the [docs](https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install?id=cloud-credentials) for configuration.
+Using the CLI requires the user to make authorized API calls to the CSP API. See the [docs](https://docs.edgeless.systems/constellation/latest/#/getting-started/install?id=cloud-credentials) for configuration.
 
 ## Deploying a locally compiled bootstrapper binary
 

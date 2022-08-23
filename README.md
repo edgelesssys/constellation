@@ -19,10 +19,14 @@
     <a href="https://twitter.com/EdgelessSystems"><img src="https://img.shields.io/twitter/follow/EdgelessSystems?label=Follow" alt="Twitter"></a>
 </p>
 
-## Table of contents
-- [Table of contents](#table-of-contents)
+## Table of contents <!-- omit in toc -->
+
 - [✨ What is Constellation?](#-what-is-constellation)
 - [🛠 Features](#-features)
+  - [Everything always encrypted](#everything-always-encrypted)
+  - [Everything verifiable](#everything-verifiable)
+  - [Performance and scale](#performance-and-scale)
+  - [100% compatibility](#100-compatibility)
 - [🚀 Getting started](#-getting-started)
 - [📖 Documentation](#-documentation)
 - [👥 Community](#-community)
@@ -46,20 +50,38 @@ Constellation is open source and enterprise-ready, tailored for unleashing the p
 For a brief introduction to the Confidential Kubernetes concept, read the [introduction][confidential-kubernetes].
 For more elaborate overviews of Constellation, see the [architecture] documentation.
 
-
 ## 🛠 Features
 
-* The only cloud-agnostic Confidential Kubernetes platform
-* [Verifiable][cluster-attestation] integrity and confidentiality of the entire Kubernetes cluster
-* High-available, enterprise-ready Kubernetes engine
-* Memory runtime encryption of all Kubernetes nodes
-* [Transparent network encryption][network-encryption] for the entire cluster node to node traffic. Provided by [Cilium], application independent, no sidecar required
-* [Persistent volume](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) encryption for block storage. [Encrypted in the confidential Kubernetes context][storage-encryption], keys and plaintext data never leave the cluster. No trust in the cloud storage backend required
-* [Key management][key-management] for transparent network and storage encryption
-* [Confidential computing-optimized][images], fully measured, and integrity-protected node OS
-* Kubernetes node attestation based on confidential computing. Nodes are [verified][node-attestation] on their integrity and identity with a hardware-based remote attestation procedure before joining the cluster
-* Dynamic cluster autoscaling
-* [Supply chain protection][supply-chain] with [sigstore](https://www.sigstore.dev/)
+### Everything always encrypted
+
+- Memory runtime encryption of all Kubernetes nodes
+- [Transparent network encryption][network-encryption] for the entire cluster node to node traffic. Provided by [Cilium], application independent, no sidecar required
+- [Persistent volume](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) encryption for block storage. [Encrypted in the confidential Kubernetes context][storage-encryption], keys and plaintext data never leave the cluster. No trust in the cloud storage backend required
+- [Key management][key-management] for transparent network and storage encryption
+
+### Everything verifiable
+
+- [Verifiable][cluster-attestation] integrity and confidentiality of the entire Kubernetes cluster
+- Kubernetes node attestation based on confidential computing. Nodes are [verified][node-attestation] on their integrity and identity with a hardware-based remote attestation procedure before joining the cluster
+- [Supply chain protection][supply-chain] with [sigstore](https://www.sigstore.dev/)
+- [Confidential computing-optimized][images], fully measured, and integrity-protected node OS
+
+### Performance and scale
+
+- High-available, enterprise-ready Kubernetes engine
+- Multi-master architecture
+- [Stacked etcd topology][etcd-stacked]
+- Dynamic cluster autoscaling
+
+### 100% compatibility
+
+<a href="https://landscape.cncf.io/?selected=constellation"><img src="https://raw.githubusercontent.com/cncf/artwork/1c1a10d9cc7de24235e07c8831923874331ef233/projects/kubernetes/certified-kubernetes/versionless/color/certified-kubernetes-color.svg" align="right" width="100px"></a>
+
+- [Certified][certified] Kubernetes engine
+- Works with all your existing containers and tools
+- The only cloud-agnostic Confidential Kubernetes platform
+- Aligned to the [version support policy of Kubernetes][k8s-version-support]
+- [Cilium][Cilium] networking
 
 ## 🚀 Getting started
 
@@ -79,7 +101,7 @@ Constellation can be deployed in minutes to your favorite infrastructure provide
 * [Threat model][threat-model]
 * [Architecture][architecture]
 * [Installing the CLI][install]
-* [Creating a Constelltion cluster][deploy]
+* [Creating a Constellation cluster][deploy]
 
 ## 👥 Community
 
@@ -97,7 +119,7 @@ Constellation can be deployed in minutes to your favorite infrastructure provide
 
 ## 🗺 Roadmap
 
-Constellation maintains a [public roadmap][TODO]. It gives a a high-level view of the main priorities for the project, the maturity of different features, and how to influence the project direction.
+Constellation maintains a [public roadmap][TODO]. It gives a high-level view of the main priorities for the project, the maturity of different features, and how to influence the project direction.
 
 ## ❓ Support & Enterprise Support
 
@@ -105,44 +127,45 @@ If you require a cluster with more than 8 vCPUs or need other services such as e
 
 ## 📃 License
 
-
-
+TODO
 
 <!-- refs -->
-[architecture]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/overview
+[architecture]: https://docs.edgeless.systems/constellation/latest/#/architecture/overview
 [certified]: https://www.cncf.io/certification/software-conformance/
 [Cilium]: https://cilium.io/
 [cla-assistant]: https://cla-assistant.io/edgelesssys/constellation
-[cluster-attestation]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/attestation?id=cluster-attestation
-[community-license]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e2742739869/getting-started/license
+[cluster-attestation]: https://docs.edgeless.systems/constellation/latest/#/architecture/attestation?id=cluster-attestation
+[community-license]: https://docs.edgeless.systems/constellation/latest/#/getting-started/license
 [confidential-computing]: https://www.edgeless.systems/resources/confidential-computing/
-[confidential-kubernetes]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/confidential-kubernetes
+[confidential-kubernetes]: https://docs.edgeless.systems/constellation/latest/#/getting-started/confidential-kubernetes
 [Constellation]: https://www.edgeless.systems/products/constellation/
 [constellation-product]: https://www.edgeless.systems/products/constellation/
 [contact]: https://www.edgeless.systems/contact/
-[deploy]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/workflows/create
+[deploy]: https://docs.edgeless.systems/constellation/latest/#/workflows/create
 [discord]: https://discord.gg/rH8QTH56JN
 [discord-badge]: https://img.shields.io/badge/chat-on%20Discord-blue
-[documentation]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692
+[documentation]: https://docs.edgeless.systems/constellation/latest
 [e2eTestAzure]: https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-azure.yml/badge.svg?branch=main
 [e2eTestGCP]: https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-gcp.yml/badge.svg?branch=main
-[examples]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/examples
-[getting-started]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install
+[etcd-stacked]: https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/ha-topology/#stacked-etcd-topology
+[examples]: https://docs.edgeless.systems/constellation/latest/#/getting-started/examples
+[getting-started]: https://docs.edgeless.systems/constellation/latest/#/getting-started/install
 [github-issues]: https://github.com/edgelesssys/constellation/issues/new/choose
 [go-report-card]: https://goreportcard.com/report/github.com/edgelesssys/constellation
 [go-report-card-badge]: https://goreportcard.com/badge/github.com/edgelesssys/constellation
-[images]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/images?id=constellation-images
-[install]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install
-[join-service]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/components?id=joinservice
-[key-management]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/keys?id=constellation-managed-key-management
+[images]: https://docs.edgeless.systems/constellation/latest/#/architecture/images?id=constellation-images
+[install]: https://docs.edgeless.systems/constellation/latest/#/getting-started/install
+[join-service]: https://docs.edgeless.systems/constellation/latest/#/architecture/components?id=joinservice
+[k8s-version-support]: https://docs.edgeless.systems/constellation/latest/#/architecture/versions?id=kubernetes-support-policy
+[key-management]: https://docs.edgeless.systems/constellation/latest/#/architecture/keys?id=constellation-managed-key-management
 [license]: https://github.com/edgelesssys/constellation/blob/master/LICENSE
 [license-badge]: https://img.shields.io/github/license/edgelesssys/constellation
 [linkedin]: https://www.linkedin.com/company/edgeless-systems/
-[network-encryption]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/keys?id=network-encryption
+[network-encryption]: https://docs.edgeless.systems/constellation/latest/#/architecture/keys?id=network-encryption
 [newsletter]: https://www.edgeless.systems/#newsletter-signup
-[node-attestation]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/attestation?id=node-attestation
-[storage-encryption]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/keys?id=storage-encryption
-[supply-chain]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/architecture/attestation?id=chain-of-trust
-[troubleshooting]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/workflows/troubleshooting
-[threat-model]: https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/threat-model
+[node-attestation]: https://docs.edgeless.systems/constellation/latest/#/architecture/attestation?id=node-attestation
+[storage-encryption]: https://docs.edgeless.systems/constellation/latest/#/architecture/keys?id=storage-encryption
+[supply-chain]: https://docs.edgeless.systems/constellation/latest/#/architecture/attestation?id=chain-of-trust
+[troubleshooting]: https://docs.edgeless.systems/constellation/latest/#/workflows/troubleshooting
+[threat-model]: https://docs.edgeless.systems/constellation/latest/#/getting-started/threat-model
 [twitter]: https://twitter.com/EdgelessSystems

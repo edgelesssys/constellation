@@ -6,7 +6,7 @@
 
 [Install kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/) for working with Kubernetes
 
-For more information [follow our documentation.](https://constellation-docs.edgeless.systems/6c320851-bdd2-41d5-bf10-e27427398692/#/getting-started/install)
+For more information [follow our documentation.](https://docs.edgeless.systems/constellation/latest/#/getting-started/install)
 
 Additionally, [Sonobuoy CLI is required.](https://github.com/vmware-tanzu/sonobuoy/releases)
 These tests results were produced using Sonobuoy v0.56.4.
