@@ -1,0 +1,49 @@
+name: Build CLI and prepare release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-cli:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+
+      - name: Build cli-linux-amd64
+        uses: ./.github/actions/build_cli
+        with:
+          targetOS: linux
+          targetArch: amd64
+          cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
+
+      - name: Build cli-darwin-amd64
+        uses: ./.github/actions/build_cli
+        with:
+          targetOS: darwin
+          targetArch: amd64
+          cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
+
+      - name: Build cli-darwin-arm64
+        uses: ./.github/actions/build_cli
+        with:
+          targetOS: darwin
+          targetArch: arm64
+          cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
+
+      - name: Release CLI
+        # GitHub endorsed release project. See: https://github.com/actions/create-release
+        uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          draft: true
+          files: |
+            build/constellation-*
+            build/cosign.pub

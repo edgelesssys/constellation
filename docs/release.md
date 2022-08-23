@@ -19,7 +19,7 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
 3. Run E2E to confirm stability and [generate measurements](/.github/workflows/e2e-test-manual.yml)
 4. Create a new tag in `constellation` on `main`
     * `git tag v1.3.0`
-    * Run [Build CLI](https://github.com/edgelesssys/constellation/actions/workflows/build-cli.yml) action on the tag
+    * Run [Release CLI](https://github.com/edgelesssys/constellation/actions/workflows/release-cli.yml) action on the tag
     * The previous step will create a draft release. Check build output for link to draft release. Review & approve.
 5. Create a new tag in `constellation-docs`
     * `git tag v1.3.0`

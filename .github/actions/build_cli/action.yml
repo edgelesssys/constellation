@@ -4,6 +4,14 @@ description: |
   are used to sign CLI when inputs are provided. A draft release is published
   when run on v* tag.
 inputs:
+  targetOS:
+    description: 'Build CLI for this OS. [linux, darwin]'
+    required: true
+    default: 'linux'
+  targetArch:
+    description: 'Build CLI for this architecture. [amd64, arm64]'
+    required: true
+    default: 'amd64'
   cosignPublicKey:
     description: 'Cosign public key'
     required: false
@@ -27,16 +35,6 @@ runs:
           -y
       shell: bash
 
-    # TODO: Replace with https://github.com/sigstore/sigstore-installer/tree/initial
-    # once it has the functionality
-    - name: Install Cosign
-      uses: sigstore/cosign-installer@48866aa521d8bf870604709cd43ec2f602d03ff2
-    - name: Install Rekor
-      run: |
-        curl -LO https://github.com/sigstore/rekor/releases/download/v0.9.0/rekor-cli-linux-amd64
-        sudo install rekor-cli-linux-amd64 /usr/local/bin/rekor-cli
-      shell: bash
-
     # https://github.blog/2022-04-12-git-security-vulnerability-announced/
     - name: Mark repository safe
       run: |
@@ -48,39 +46,44 @@ runs:
       with:
         go-version: "1.18"
 
-    - name: Build hack/pcr-reader
-      run: |
-        go build .
-        echo "$(pwd)" >> $GITHUB_PATH
-        export PATH="$PATH:$(pwd)"
-      working-directory: hack/pcr-reader
-      shell: bash
-
     - name: Build CLI
       run: |
         GIT_TAG=$(git describe --tags --always --dirty --abbrev=0)
         mkdir -p build
         cd build
         cmake -DCLI_VERSION:STRING=${GIT_TAG} ..
-        make -j`nproc` cli
+        GOOS=${{ inputs.targetOS }} GOARCH=${{ inputs.targetArch }} make -j`nproc` cli
+        cp constellation constellation-${{ inputs.targetOS }}-${{ inputs.targetArch }}
         echo "$(pwd)" >> $GITHUB_PATH
         export PATH="$PATH:$(pwd)"
       shell: bash
 
+    # TODO: Replace with https://github.com/sigstore/sigstore-installer/tree/initial
+    # once it has the functionality
+    - name: Install Cosign
+      uses: sigstore/cosign-installer@48866aa521d8bf870604709cd43ec2f602d03ff2
+      if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
+    - name: Install Rekor
+      run: |
+        curl -LO https://github.com/sigstore/rekor/releases/download/v0.9.0/rekor-cli-linux-amd64
+        sudo install rekor-cli-linux-amd64 /usr/local/bin/rekor-cli
+      shell: bash
+      if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
     - name: Sign CLI
       run: |
         set -e
         set -o pipefail
+        SIGN_TARGET=constellation-${{ inputs.targetOS }}-${{ inputs.targetArch }}
         echo "$COSIGN_PUBLIC_KEY" > cosign.pub
         # Enabling experimental mode also publishes signature to Rekor
-        COSIGN_EXPERIMENTAL=1 cosign sign-blob --key env://COSIGN_PRIVATE_KEY constellation > constellation.sig
+        COSIGN_EXPERIMENTAL=1 cosign sign-blob --key env://COSIGN_PRIVATE_KEY ${SIGN_TARGET} > ${SIGN_TARGET}.sig
         # Verify - As documentation & check
         # Local Signature (input: artifact, key, signature)
-        cosign verify-blob --key cosign.pub --signature constellation.sig constellation
+        cosign verify-blob --key cosign.pub --signature ${SIGN_TARGET}.sig ${SIGN_TARGET}
         # Transparency Log Signature (input: artifact, key)
-        uuid=$(rekor-cli search --artifact constellation | tail -n 1)
+        uuid=$(rekor-cli search --artifact ${SIGN_TARGET} | tail -n 1)
         sig=$(rekor-cli get --uuid=$uuid --format=json | jq -r .Body.HashedRekordObj.signature.content)
-        cosign verify-blob --key cosign.pub --signature <(echo $sig) constellation
+        cosign verify-blob --key cosign.pub --signature <(echo $sig) ${SIGN_TARGET}
       shell: bash
       working-directory: build
       env:
@@ -88,14 +91,3 @@ runs:
         COSIGN_PRIVATE_KEY: ${{ inputs.cosignPrivateKey }}
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
       if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
-
-    - name: Release CLI
-      # GitHub endorsed release project. See: https://github.com/actions/create-release
-      uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5
-      if: startsWith(github.ref, 'refs/tags/v')
-      with:
-        draft: true
-        files: |
-          build/constellation
-          build/constellation.sig
-          build/cosign.pub

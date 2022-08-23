@@ -37,6 +37,13 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Build hack/pcr-reader
+      run: |
+        go build .
+        echo "$(pwd)" >> $GITHUB_PATH
+      working-directory: hack/pcr-reader
+      shell: bash
+
     # Check /docs/secure_software_distribution.md#sign-measurements
     # for why we ignore certain measurement values.
     - name: Fetch PCRs
