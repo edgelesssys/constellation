@@ -20,6 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/gcpshared"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
@@ -43,16 +44,19 @@ func TestInitArgumentValidation(t *testing.T) {
 }
 
 func TestInitialize(t *testing.T) {
-	testGcpState := state.ConstellationState{
+	testGcpState := &state.ConstellationState{
 		CloudProvider:      "GCP",
 		GCPWorkerInstances: cloudtypes.Instances{"id-0": {}, "id-1": {}},
 	}
-	testAzureState := state.ConstellationState{
+	gcpServiceAccKey := &gcpshared.ServiceAccountKey{
+		Type: "service_account",
+	}
+	testAzureState := &state.ConstellationState{
 		CloudProvider:        "Azure",
 		AzureWorkerInstances: cloudtypes.Instances{"id-0": {}, "id-1": {}},
 		AzureResourceGroup:   "test",
 	}
-	testQemuState := state.ConstellationState{
+	testQemuState := &state.ConstellationState{
 		CloudProvider:       "QEMU",
 		QEMUWorkerInstances: cloudtypes.Instances{"id-0": {}, "id-1": {}},
 	}
@@ -61,77 +65,86 @@ func TestInitialize(t *testing.T) {
 		OwnerId:    []byte("ownerID"),
 		ClusterId:  []byte("clusterID"),
 	}
+	serviceAccPath := "/test/service-account.json"
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		existingState         state.ConstellationState
-		existingIDFile        clusterIDsFile
-		serviceAccountCreator stubServiceAccountCreator
-		helmLoader            stubHelmLoader
-		initServerAPI         *stubInitServer
-		endpointFlag          string
-		setAutoscaleFlag      bool
-		wantErr               bool
+		state             *state.ConstellationState
+		existingIDFile    *clusterIDsFile
+		serviceAccCreator serviceAccountCreator
+		configMutator     func(*config.Config)
+		serviceAccKey     *gcpshared.ServiceAccountKey
+		helmLoader        stubHelmLoader
+		initServerAPI     *stubInitServer
+		endpointFlag      string
+		setAutoscaleFlag  bool
+		wantErr           bool
 	}{
 		"initialize some gcp instances": {
-			existingState:  testGcpState,
-			existingIDFile: clusterIDsFile{IP: "192.0.2.1"},
-
-			initServerAPI: &stubInitServer{initResp: testInitResp},
-		},
-		"initialize some azure instances": {
-			existingState:  testAzureState,
-			existingIDFile: clusterIDsFile{IP: "192.0.2.1"},
+			state:          testGcpState,
+			existingIDFile: &clusterIDsFile{IP: "192.0.2.1"},
+			configMutator:  func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
+			serviceAccKey:  gcpServiceAccKey,
 			initServerAPI:  &stubInitServer{initResp: testInitResp},
 		},
+		"initialize some azure instances": {
+			state:             testAzureState,
+			serviceAccCreator: &stubServiceAccountCreator{},
+			existingIDFile:    &clusterIDsFile{IP: "192.0.2.1"},
+			initServerAPI:     &stubInitServer{initResp: testInitResp},
+		},
 		"initialize some qemu instances": {
-			existingState:  testQemuState,
-			existingIDFile: clusterIDsFile{IP: "192.0.2.1"},
+			state:          testQemuState,
+			existingIDFile: &clusterIDsFile{IP: "192.0.2.1"},
 			initServerAPI:  &stubInitServer{initResp: testInitResp},
 		},
 		"initialize gcp with autoscaling": {
-			existingState:    testGcpState,
-			existingIDFile:   clusterIDsFile{IP: "192.0.2.1"},
+			state:            testGcpState,
+			existingIDFile:   &clusterIDsFile{IP: "192.0.2.1"},
+			configMutator:    func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
+			serviceAccKey:    gcpServiceAccKey,
 			initServerAPI:    &stubInitServer{initResp: testInitResp},
 			setAutoscaleFlag: true,
 		},
 		"initialize azure with autoscaling": {
-			existingState:    testAzureState,
-			existingIDFile:   clusterIDsFile{IP: "192.0.2.1"},
-			initServerAPI:    &stubInitServer{initResp: testInitResp},
-			setAutoscaleFlag: true,
+			state:             testAzureState,
+			existingIDFile:    &clusterIDsFile{IP: "192.0.2.1"},
+			serviceAccCreator: &stubServiceAccountCreator{},
+			initServerAPI:     &stubInitServer{initResp: testInitResp},
+			setAutoscaleFlag:  true,
 		},
 		"initialize with endpoint flag": {
-			existingState: testGcpState,
+			state:         testGcpState,
+			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
+			serviceAccKey: gcpServiceAccKey,
 			initServerAPI: &stubInitServer{initResp: testInitResp},
 			endpointFlag:  "192.0.2.1",
 		},
 		"empty state": {
-			existingState:  state.ConstellationState{},
-			existingIDFile: clusterIDsFile{IP: "192.0.2.1"},
+			state:          &state.ConstellationState{},
+			existingIDFile: &clusterIDsFile{IP: "192.0.2.1"},
 			initServerAPI:  &stubInitServer{},
 			wantErr:        true,
 		},
 		"neither endpoint flag nor id file": {
-			existingState: state.ConstellationState{},
-			initServerAPI: &stubInitServer{},
-			wantErr:       true,
+			state:   &state.ConstellationState{},
+			wantErr: true,
 		},
 		"init call fails": {
-			existingState:  testGcpState,
-			existingIDFile: clusterIDsFile{IP: "192.0.2.1"},
+			state:          testGcpState,
+			existingIDFile: &clusterIDsFile{IP: "192.0.2.1"},
 			initServerAPI:  &stubInitServer{initErr: someErr},
 			wantErr:        true,
 		},
 		"fail to create service account": {
-			existingState:         testGcpState,
-			existingIDFile:        clusterIDsFile{IP: "192.0.2.1"},
-			initServerAPI:         &stubInitServer{},
-			serviceAccountCreator: stubServiceAccountCreator{createErr: someErr},
-			wantErr:               true,
+			state:             testAzureState,
+			existingIDFile:    &clusterIDsFile{IP: "192.0.2.1"},
+			initServerAPI:     &stubInitServer{},
+			serviceAccCreator: &stubServiceAccountCreator{createErr: someErr},
+			wantErr:           true,
 		},
 		"fail to load helm charts": {
-			existingState: testGcpState,
+			state:         testGcpState,
 			helmLoader:    stubHelmLoader{loadErr: someErr},
 			initServerAPI: &stubInitServer{initResp: testInitResp},
 			wantErr:       true,
@@ -143,6 +156,7 @@ func TestInitialize(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
+			// Networking
 			netDialer := testdialer.NewBufconnDialer()
 			newDialer := func(*cloudcmd.Validator) *dialer.Dialer {
 				return dialer.New(nil, nil, netDialer)
@@ -155,22 +169,36 @@ func TestInitialize(t *testing.T) {
 			go initServer.Serve(listener)
 			defer initServer.GracefulStop()
 
+			// Command
 			cmd := NewInitCmd()
 			var out bytes.Buffer
 			cmd.SetOut(&out)
 			var errOut bytes.Buffer
 			cmd.SetErr(&errOut)
-			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
-			fs := afero.NewMemMapFs()
-			fileHandler := file.NewHandler(fs)
 
-			config := defaultConfigWithExpectedMeasurements(t, cloudprovider.FromString(tc.existingState.CloudProvider))
-			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config))
-			require.NoError(fileHandler.WriteJSON(constants.StateFilename, tc.existingState, file.OptNone))
-			require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, tc.existingIDFile, file.OptNone))
+			// Flags
+			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 			require.NoError(cmd.Flags().Set("autoscale", strconv.FormatBool(tc.setAutoscaleFlag)))
 			if tc.endpointFlag != "" {
 				require.NoError(cmd.Flags().Set("endpoint", tc.endpointFlag))
+			}
+
+			// File system preparation
+			fs := afero.NewMemMapFs()
+			fileHandler := file.NewHandler(fs)
+			config := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.FromString(tc.state.CloudProvider))
+			if tc.configMutator != nil {
+				tc.configMutator(config)
+			}
+			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config, file.OptNone))
+			if tc.state != nil {
+				require.NoError(fileHandler.WriteJSON(constants.StateFilename, tc.state, file.OptNone))
+			}
+			if tc.existingIDFile != nil {
+				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, tc.existingIDFile, file.OptNone))
+			}
+			if tc.serviceAccKey != nil {
+				require.NoError(fileHandler.WriteJSON(serviceAccPath, tc.serviceAccKey, file.OptNone))
 			}
 
 			ctx := context.Background()
@@ -178,7 +206,7 @@ func TestInitialize(t *testing.T) {
 			defer cancel()
 			cmd.SetContext(ctx)
 
-			err := initialize(cmd, newDialer, &tc.serviceAccountCreator, fileHandler, &tc.helmLoader, &stubLicenseClient{})
+			err := initialize(cmd, newDialer, tc.serviceAccCreator, fileHandler, &tc.helmLoader, &stubLicenseClient{})
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -510,28 +538,30 @@ func (s *stubInitServer) Init(ctx context.Context, req *initproto.InitRequest) (
 	return s.initResp, s.initErr
 }
 
-func defaultConfigWithExpectedMeasurements(t *testing.T, csp cloudprovider.Provider) *config.Config {
+func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, csp cloudprovider.Provider) *config.Config {
 	t.Helper()
-	config := config.Default()
 
-	config.Provider.Azure.SubscriptionID = "01234567-0123-0123-0123-0123456789ab"
-	config.Provider.Azure.TenantID = "01234567-0123-0123-0123-0123456789ab"
-	config.Provider.Azure.Location = "test-location"
-	config.Provider.Azure.UserAssignedIdentity = "test-identity"
-	config.Provider.Azure.Measurements[8] = []byte("00000000000000000000000000000000")
-	config.Provider.Azure.Measurements[9] = []byte("11111111111111111111111111111111")
+	switch csp {
+	case cloudprovider.Azure:
+		conf.Provider.Azure.SubscriptionID = "01234567-0123-0123-0123-0123456789ab"
+		conf.Provider.Azure.TenantID = "01234567-0123-0123-0123-0123456789ab"
+		conf.Provider.Azure.Location = "test-location"
+		conf.Provider.Azure.UserAssignedIdentity = "test-identity"
+		conf.Provider.Azure.Measurements[8] = []byte("00000000000000000000000000000000")
+		conf.Provider.Azure.Measurements[9] = []byte("11111111111111111111111111111111")
+	case cloudprovider.GCP:
+		conf.Provider.GCP.Region = "test-region"
+		conf.Provider.GCP.Project = "test-project"
+		conf.Provider.GCP.Zone = "test-zone"
+		conf.Provider.GCP.Measurements[8] = []byte("00000000000000000000000000000000")
+		conf.Provider.GCP.Measurements[9] = []byte("11111111111111111111111111111111")
+	case cloudprovider.QEMU:
+		conf.Provider.QEMU.Measurements[8] = []byte("00000000000000000000000000000000")
+		conf.Provider.QEMU.Measurements[9] = []byte("11111111111111111111111111111111")
+	}
 
-	config.Provider.GCP.Region = "test-region"
-	config.Provider.GCP.Project = "test-project"
-	config.Provider.GCP.Zone = "test-zone"
-	config.Provider.GCP.Measurements[8] = []byte("00000000000000000000000000000000")
-	config.Provider.GCP.Measurements[9] = []byte("11111111111111111111111111111111")
-
-	config.Provider.QEMU.Measurements[8] = []byte("00000000000000000000000000000000")
-	config.Provider.QEMU.Measurements[9] = []byte("11111111111111111111111111111111")
-
-	config.RemoveProviderExcept(csp)
-	return config
+	conf.RemoveProviderExcept(csp)
+	return conf
 }
 
 type stubLicenseClient struct{}

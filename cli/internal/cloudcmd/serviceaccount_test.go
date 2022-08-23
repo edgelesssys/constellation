@@ -6,27 +6,12 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/state"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestServiceAccountCreator(t *testing.T) {
-	someGCPState := func() state.ConstellationState {
-		return state.ConstellationState{
-			CloudProvider:                   cloudprovider.GCP.String(),
-			GCPProject:                      "project",
-			GCPWorkerInstances:              cloudtypes.Instances{},
-			GCPControlPlaneInstances:        cloudtypes.Instances{},
-			GCPWorkerInstanceGroup:          "workers-group",
-			GCPControlPlaneInstanceGroup:    "controlplane-group",
-			GCPWorkerInstanceTemplate:       "template",
-			GCPControlPlaneInstanceTemplate: "template",
-			GCPNetwork:                      "network",
-			GCPFirewalls:                    []string{},
-		}
-	}
 	someAzureState := func() state.ConstellationState {
 		return state.ConstellationState{
 			CloudProvider: cloudprovider.Azure.String(),
@@ -42,32 +27,6 @@ func TestServiceAccountCreator(t *testing.T) {
 		wantErr          bool
 		wantStateMutator func(*state.ConstellationState)
 	}{
-		"gcp": {
-			newGCPClient: func(ctx context.Context) (gcpclient, error) {
-				return &fakeGcpClient{}, nil
-			},
-			state:  someGCPState(),
-			config: config.Default(),
-			wantStateMutator: func(stat *state.ConstellationState) {
-				stat.GCPServiceAccount = "service-account@project.iam.gserviceaccount.com"
-			},
-		},
-		"gcp newGCPClient error": {
-			newGCPClient: func(ctx context.Context) (gcpclient, error) {
-				return nil, someErr
-			},
-			state:   someGCPState(),
-			config:  config.Default(),
-			wantErr: true,
-		},
-		"gcp client createServiceAccount error": {
-			newGCPClient: func(ctx context.Context) (gcpclient, error) {
-				return &stubGcpClient{createServiceAccountErr: someErr}, nil
-			},
-			state:   someGCPState(),
-			config:  config.Default(),
-			wantErr: true,
-		},
 		"azure": {
 			newAzureClient: func(subscriptionID, tenantID string) (azureclient, error) {
 				return &fakeAzureClient{}, nil

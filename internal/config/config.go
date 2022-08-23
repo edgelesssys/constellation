@@ -162,8 +162,8 @@ type GCPConfig struct {
 	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://cloud.google.com/compute/docs/disks#disk-types
 	StateDiskType string `yaml:"stateDiskType" validate:"oneof=pd-standard pd-balanced pd-ssd"`
 	// description: |
-	//   Roles added to service account.
-	ServiceAccountRoles []string `yaml:"serviceAccountRoles"`
+	//   Path of service account key file. For needed service account roles, see https://constellation-docs.edgeless.systems/constellation/latest/#/getting-started/install?id=authorization
+	ServiceAccountKeyPath string `yaml:"serviceAccountKeyPath"`
 	// description: |
 	//   Expected confidential VM measurements.
 	Measurements Measurements `yaml:"measurements"`
@@ -232,20 +232,14 @@ func Default() *Config {
 				EnforcedMeasurements: []uint32{8, 9, 11, 12},
 			},
 			GCP: &GCPConfig{
-				Project: "",
-				Region:  "",
-				Zone:    "",
-				Image:   "projects/constellation-images/global/images/constellation-v1-5-0",
-				ServiceAccountRoles: []string{
-					"roles/compute.instanceAdmin.v1",
-					"roles/compute.networkAdmin",
-					"roles/compute.securityAdmin",
-					"roles/storage.admin",
-					"roles/iam.serviceAccountUser",
-				},
-				StateDiskType:        "pd-ssd",
-				Measurements:         copyPCRMap(gcpPCRs),
-				EnforcedMeasurements: []uint32{0, 8, 9, 11, 12},
+				Project:               "",
+				Region:                "",
+				Zone:                  "",
+				Image:                 "projects/constellation-images/global/images/constellation-v1-5-0",
+				StateDiskType:         "pd-ssd",
+				ServiceAccountKeyPath: "serviceAccountKey.json",
+				Measurements:          copyPCRMap(gcpPCRs),
+				EnforcedMeasurements:  []uint32{0, 8, 9, 11, 12},
 			},
 			QEMU: &QEMUConfig{
 				Measurements:         copyPCRMap(qemuPCRs),

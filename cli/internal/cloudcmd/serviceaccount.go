@@ -34,18 +34,7 @@ func (c *ServiceAccountCreator) Create(ctx context.Context, stat state.Constella
 	provider := cloudprovider.FromString(stat.CloudProvider)
 	switch provider {
 	case cloudprovider.GCP:
-		cl, err := c.newGCPClient(ctx)
-		if err != nil {
-			return "", state.ConstellationState{}, err
-		}
-		defer cl.Close()
-
-		serviceAccount, stat, err := c.createServiceAccountGCP(ctx, cl, stat, config)
-		if err != nil {
-			return "", state.ConstellationState{}, err
-		}
-
-		return serviceAccount, stat, err
+		return "", state.ConstellationState{}, fmt.Errorf("creating service account not supported for GCP")
 	case cloudprovider.Azure:
 		cl, err := c.newAzureClient(stat.AzureSubscription, stat.AzureTenant)
 		if err != nil {
@@ -63,22 +52,6 @@ func (c *ServiceAccountCreator) Create(ctx context.Context, stat state.Constella
 	default:
 		return "", state.ConstellationState{}, fmt.Errorf("unsupported provider: %s", provider)
 	}
-}
-
-func (c *ServiceAccountCreator) createServiceAccountGCP(ctx context.Context, cl gcpclient,
-	stat state.ConstellationState, config *config.Config,
-) (string, state.ConstellationState, error) {
-	cl.SetState(stat)
-
-	input := gcpcl.ServiceAccountInput{
-		Roles: config.Provider.GCP.ServiceAccountRoles,
-	}
-	serviceAccount, err := cl.CreateServiceAccount(ctx, input)
-	if err != nil {
-		return "", state.ConstellationState{}, fmt.Errorf("creating service account: %w", err)
-	}
-
-	return serviceAccount, cl.GetState(), nil
 }
 
 func (c *ServiceAccountCreator) createServiceAccountAzure(ctx context.Context, cl azureclient,

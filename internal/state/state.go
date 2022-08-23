@@ -25,7 +25,6 @@ type ConstellationState struct {
 	GCPProject                      string               `json:"gcpproject,omitempty"`
 	GCPZone                         string               `json:"gcpzone,omitempty"`
 	GCPRegion                       string               `json:"gcpregion,omitempty"`
-	GCPServiceAccount               string               `json:"gcpserviceaccount,omitempty"`
 
 	AzureWorkerInstances       cloudtypes.Instances `json:"azureworkers,omitempty"`
 	AzureControlPlaneInstances cloudtypes.Instances `json:"azurecontrolplanes,omitempty"`

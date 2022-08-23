@@ -2,15 +2,12 @@ package client
 
 import (
 	"context"
-	"time"
 
 	"github.com/googleapis/gax-go/v2"
 	"google.golang.org/api/iterator"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
-	adminpb "google.golang.org/genproto/googleapis/iam/admin/v1"
 	iampb "google.golang.org/genproto/googleapis/iam/v1"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type stubOperation struct {
@@ -434,54 +431,6 @@ func (a stubInstanceGroupManagersAPI) ListManagedInstances(ctx context.Context, 
 	opts ...gax.CallOption,
 ) ManagedInstanceIterator {
 	return a.listIterator
-}
-
-type stubIAMAPI struct {
-	serviceAccountKeyData   []byte
-	createErr               error
-	createKeyErr            error
-	deleteServiceAccountErr error
-}
-
-func (a stubIAMAPI) Close() error {
-	return nil
-}
-
-func (a stubIAMAPI) CreateServiceAccount(ctx context.Context, req *adminpb.CreateServiceAccountRequest, opts ...gax.CallOption) (*adminpb.ServiceAccount, error) {
-	if a.createErr != nil {
-		return nil, a.createErr
-	}
-	return &adminpb.ServiceAccount{
-		Name:           "name",
-		ProjectId:      "project-id",
-		UniqueId:       "unique-id",
-		Email:          "email",
-		DisplayName:    "display-name",
-		Description:    "description",
-		Oauth2ClientId: "oauth2-client-id",
-		Disabled:       false,
-	}, nil
-}
-
-func (a stubIAMAPI) CreateServiceAccountKey(ctx context.Context, req *adminpb.CreateServiceAccountKeyRequest, opts ...gax.CallOption) (*adminpb.ServiceAccountKey, error) {
-	if a.createKeyErr != nil {
-		return nil, a.createKeyErr
-	}
-	return &adminpb.ServiceAccountKey{
-		Name:            "name",
-		PrivateKeyType:  adminpb.ServiceAccountPrivateKeyType_TYPE_GOOGLE_CREDENTIALS_FILE,
-		KeyAlgorithm:    adminpb.ServiceAccountKeyAlgorithm_KEY_ALG_RSA_2048,
-		PrivateKeyData:  a.serviceAccountKeyData,
-		PublicKeyData:   []byte("public-key-data"),
-		ValidAfterTime:  timestamppb.New(time.Time{}),
-		ValidBeforeTime: timestamppb.New(time.Time{}),
-		KeyOrigin:       adminpb.ServiceAccountKeyOrigin_GOOGLE_PROVIDED,
-		KeyType:         adminpb.ListServiceAccountKeysRequest_USER_MANAGED,
-	}, nil
-}
-
-func (a stubIAMAPI) DeleteServiceAccount(ctx context.Context, req *adminpb.DeleteServiceAccountRequest, opts ...gax.CallOption) error {
-	return a.deleteServiceAccountErr
 }
 
 type stubProjectsAPI struct {

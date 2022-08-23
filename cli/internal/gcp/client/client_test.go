@@ -69,7 +69,6 @@ func TestSetGetState(t *testing.T) {
 		assert.Equal(state.GCPFirewalls, client.firewalls)
 		assert.Equal(state.GCPControlPlaneInstanceTemplate, client.controlPlaneTemplate)
 		assert.Equal(state.GCPWorkerInstanceTemplate, client.workerTemplate)
-		assert.Equal(state.GCPServiceAccount, client.serviceAccount)
 		assert.Equal(state.LoadBalancerIP, client.loadbalancerIP)
 		for _, lb := range client.loadbalancers {
 			assert.Contains(state.GCPLoadbalancers, lb.name)
@@ -97,7 +96,6 @@ func TestSetGetState(t *testing.T) {
 			firewalls:                 state.GCPFirewalls,
 			workerTemplate:            state.GCPWorkerInstanceTemplate,
 			controlPlaneTemplate:      state.GCPControlPlaneInstanceTemplate,
-			serviceAccount:            state.GCPServiceAccount,
 			loadbalancerIP:            state.LoadBalancerIP,
 			loadbalancerIPname:        state.GCPLoadbalancerIPname,
 		}
@@ -109,18 +107,6 @@ func TestSetGetState(t *testing.T) {
 
 		assert.Equal(state, stat)
 	})
-}
-
-func TestInit(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	client := Client{}
-	require.NoError(client.init("project", "zone", "region", "name"))
-	assert.Equal("project", client.project)
-	assert.Equal("zone", client.zone)
-	assert.Equal("region", client.region)
-	assert.Equal("name", client.name)
 }
 
 func TestBuildResourceName(t *testing.T) {
@@ -207,6 +193,18 @@ func TestResourceURI(t *testing.T) {
 			assert.Equal(tc.wantURI, uri)
 		})
 	}
+}
+
+func TestInit(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	client := Client{}
+	require.NoError(client.init("project", "zone", "region", "name"))
+	assert.Equal("project", client.project)
+	assert.Equal("zone", client.zone)
+	assert.Equal("region", client.region)
+	assert.Equal("name", client.name)
 }
 
 func TestCloseAll(t *testing.T) {

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/crypto/testvector"
 	"github.com/edgelesssys/constellation/internal/file"
@@ -146,7 +147,7 @@ func TestRecover(t *testing.T) {
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
 
-			config := defaultConfigWithExpectedMeasurements(t, cloudprovider.FromString(tc.existingState.CloudProvider))
+			config := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.FromString(tc.existingState.CloudProvider))
 			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config))
 
 			require.NoError(fileHandler.WriteJSON("constellation-mastersecret.json", masterSecret{Key: tc.masterSecret.Secret, Salt: tc.masterSecret.Salt}, file.OptNone))

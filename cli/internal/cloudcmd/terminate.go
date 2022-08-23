@@ -65,7 +65,8 @@ func (t *Terminator) terminateGCP(ctx context.Context, cl gcpclient, state state
 	if err := cl.TerminateVPCs(ctx); err != nil {
 		return err
 	}
-	return cl.TerminateServiceAccount(ctx)
+
+	return nil
 }
 
 func (t *Terminator) terminateAzure(ctx context.Context, cl azureclient, state state.ConstellationState) error {

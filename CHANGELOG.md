@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create multiple load balancers to enable load balacing TCP traffic for different backend services. All load balancers currently share the same public IP address.
 - Improve rollback on GCP resource termination. You can now terminate multiple times.
 - Implement SSH peer to peer distribution between debugd nodes.
+- GCP service account can now be managed manually.
 
 ### Changed
 <!-- For changes in existing functionality.  -->

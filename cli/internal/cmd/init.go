@@ -24,6 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/gcpshared"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	grpcRetry "github.com/edgelesssys/constellation/internal/grpc/retry"
 	"github.com/edgelesssys/constellation/internal/license"
@@ -116,13 +117,22 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return err
 	}
 
-	cmd.Println("Creating service account ...")
-	serviceAccount, stat, err := serviceAccCreator.Create(cmd.Context(), stat, config)
-	if err != nil {
-		return err
-	}
-	if err := fileHandler.WriteJSON(constants.StateFilename, stat, file.OptOverwrite); err != nil {
-		return err
+	var serviceAccURI string
+	// Temporary legacy flow for Azure.
+	if provider == cloudprovider.Azure {
+		cmd.Println("Creating service account ...")
+		serviceAccURI, stat, err = serviceAccCreator.Create(cmd.Context(), stat, config)
+		if err != nil {
+			return err
+		}
+		if err := fileHandler.WriteJSON(constants.StateFilename, stat, file.OptOverwrite); err != nil {
+			return err
+		}
+	} else {
+		serviceAccURI, err = getMarschaledServiceAccountURI(provider, config, fileHandler)
+		if err != nil {
+			return err
+		}
 	}
 
 	workers, err := getScalingGroupsFromState(stat, config)
@@ -150,7 +160,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		StorageUri:             kms.NoStoreURI,
 		KeyEncryptionKeyId:     "",
 		UseExistingKek:         false,
-		CloudServiceAccountUri: serviceAccount,
+		CloudServiceAccountUri: serviceAccURI,
 		KubernetesVersion:      config.KubernetesVersion,
 		SshUserKeys:            ssh.ToProtoSlice(sshUsers),
 		HelmDeployments:        helmDeployments,
@@ -350,6 +360,29 @@ func readIPFromIDFile(fileHandler file.Handler) (string, error) {
 		return "", fmt.Errorf("missing IP address in %q", constants.ClusterIDsFileName)
 	}
 	return idFile.IP, nil
+}
+
+func getMarschaledServiceAccountURI(provider cloudprovider.Provider, config *config.Config, fileHandler file.Handler) (string, error) {
+	switch provider {
+	case cloudprovider.GCP:
+		path := config.Provider.GCP.ServiceAccountKeyPath
+
+		var key gcpshared.ServiceAccountKey
+		if err := fileHandler.ReadJSON(path, &key); err != nil {
+			return "", fmt.Errorf("reading service account key from path %q: %w", path, err)
+		}
+
+		return key.ToCloudServiceAccountURI(), nil
+
+	case cloudprovider.Azure:
+		return "", fmt.Errorf("TODO")
+
+	case cloudprovider.QEMU:
+		return "", nil // QEMU does not use service account keys
+
+	default:
+		return "", fmt.Errorf("unsupported cloud provider %q", provider)
+	}
 }
 
 func getScalingGroupsFromState(stat state.ConstellationState, config *config.Config) (workers cloudtypes.ScalingGroup, err error) {

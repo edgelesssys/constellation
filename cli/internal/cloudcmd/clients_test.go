@@ -11,7 +11,6 @@ import (
 	"github.com/edgelesssys/constellation/internal/azureshared"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
-	"github.com/edgelesssys/constellation/internal/gcpshared"
 	"github.com/edgelesssys/constellation/internal/state"
 	"go.uber.org/goleak"
 )
@@ -244,7 +243,6 @@ type fakeGcpClient struct {
 	uid                       string
 	name                      string
 	zone                      string
-	serviceAccount            string
 	loadbalancers             []string
 }
 
@@ -264,7 +262,6 @@ func (c *fakeGcpClient) GetState() state.ConstellationState {
 		Name:                            c.name,
 		UID:                             c.uid,
 		GCPZone:                         c.zone,
-		GCPServiceAccount:               c.serviceAccount,
 		GCPLoadbalancers:                c.loadbalancers,
 	}
 }
@@ -283,7 +280,6 @@ func (c *fakeGcpClient) SetState(stat state.ConstellationState) {
 	c.name = stat.Name
 	c.uid = stat.UID
 	c.zone = stat.GCPZone
-	c.serviceAccount = stat.GCPServiceAccount
 	c.loadbalancers = stat.GCPLoadbalancers
 }
 
@@ -321,22 +317,6 @@ func (c *fakeGcpClient) CreateInstances(ctx context.Context, input gcpcl.CreateI
 	return nil
 }
 
-func (c *fakeGcpClient) CreateServiceAccount(ctx context.Context, input gcpcl.ServiceAccountInput) (string, error) {
-	c.serviceAccount = "service-account@" + c.project + ".iam.gserviceaccount.com"
-	return gcpshared.ServiceAccountKey{
-		Type:                    "service_account",
-		ProjectID:               c.project,
-		PrivateKeyID:            "key-id",
-		PrivateKey:              "-----BEGIN PRIVATE KEY-----\nprivate-key\n-----END PRIVATE KEY-----\n",
-		ClientEmail:             c.serviceAccount,
-		ClientID:                "client-id",
-		AuthURI:                 "https://accounts.google.com/o/oauth2/auth",
-		TokenURI:                "https://accounts.google.com/o/oauth2/token",
-		AuthProviderX509CertURL: "https://www.googleapis.com/oauth2/v1/certs",
-		ClientX509CertURL:       "https://www.googleapis.com/robot/v1/metadata/x509/service-account-email",
-	}.ToCloudServiceAccountURI(), nil
-}
-
 func (c *fakeGcpClient) CreateLoadBalancers(ctx context.Context) error {
 	c.loadbalancers = []string{"kube-lb", "boot-lb", "verify-lb"}
 	return nil
@@ -369,11 +349,6 @@ func (c *fakeGcpClient) TerminateInstances(context.Context) error {
 	return nil
 }
 
-func (c *fakeGcpClient) TerminateServiceAccount(context.Context) error {
-	c.serviceAccount = ""
-	return nil
-}
-
 func (c *fakeGcpClient) TerminateLoadBalancers(context.Context) error {
 	c.loadbalancers = nil
 	return nil
@@ -384,23 +359,20 @@ func (c *fakeGcpClient) Close() error {
 }
 
 type stubGcpClient struct {
-	terminateFirewallCalled       bool
-	terminateInstancesCalled      bool
-	terminateVPCsCalled           bool
-	terminateServiceAccountCalled bool
-	closeCalled                   bool
+	terminateFirewallCalled  bool
+	terminateInstancesCalled bool
+	terminateVPCsCalled      bool
+	closeCalled              bool
 
-	createVPCsErr              error
-	createFirewallErr          error
-	createInstancesErr         error
-	createServiceAccountErr    error
-	createLoadBalancerErr      error
-	terminateFirewallErr       error
-	terminateVPCsErr           error
-	terminateInstancesErr      error
-	terminateServiceAccountErr error
-	terminateLoadBalancerErr   error
-	closeErr                   error
+	createVPCsErr            error
+	createFirewallErr        error
+	createInstancesErr       error
+	createLoadBalancerErr    error
+	terminateFirewallErr     error
+	terminateVPCsErr         error
+	terminateInstancesErr    error
+	terminateLoadBalancerErr error
+	closeErr                 error
 }
 
 func (c *stubGcpClient) GetState() state.ConstellationState {
@@ -422,10 +394,6 @@ func (c *stubGcpClient) CreateInstances(ctx context.Context, input gcpcl.CreateI
 	return c.createInstancesErr
 }
 
-func (c *stubGcpClient) CreateServiceAccount(ctx context.Context, input gcpcl.ServiceAccountInput) (string, error) {
-	return gcpshared.ServiceAccountKey{}.ToCloudServiceAccountURI(), c.createServiceAccountErr
-}
-
 func (c *stubGcpClient) CreateLoadBalancers(ctx context.Context) error {
 	return c.createLoadBalancerErr
 }
@@ -443,11 +411,6 @@ func (c *stubGcpClient) TerminateVPCs(context.Context) error {
 func (c *stubGcpClient) TerminateInstances(context.Context) error {
 	c.terminateInstancesCalled = true
 	return c.terminateInstancesErr
-}
-
-func (c *stubGcpClient) TerminateServiceAccount(context.Context) error {
-	c.terminateServiceAccountCalled = true
-	return c.terminateServiceAccountErr
 }
 
 func (c *stubGcpClient) TerminateLoadBalancers(context.Context) error {

@@ -29,7 +29,6 @@ func TestTerminator(t *testing.T) {
 			GCPControlPlaneInstanceTemplate: "template",
 			GCPNetwork:                      "network",
 			GCPFirewalls:                    []string{"a", "b", "c"},
-			GCPServiceAccount:               "service-account@project.iam.gserviceaccount.com",
 		}
 	}
 	someAzureState := func() state.ConstellationState {
@@ -77,11 +76,6 @@ func TestTerminator(t *testing.T) {
 		},
 		"gcp terminateVPCs error": {
 			gcpclient: &stubGcpClient{terminateVPCsErr: someErr},
-			state:     someGCPState(),
-			wantErr:   true,
-		},
-		"gcp terminateServiceAccount error": {
-			gcpclient: &stubGcpClient{terminateServiceAccountErr: someErr},
 			state:     someGCPState(),
 			wantErr:   true,
 		},
@@ -135,7 +129,6 @@ func TestTerminator(t *testing.T) {
 					assert.True(cl.terminateFirewallCalled)
 					assert.True(cl.terminateInstancesCalled)
 					assert.True(cl.terminateVPCsCalled)
-					assert.True(cl.terminateServiceAccountCalled)
 					assert.True(cl.closeCalled)
 				case cloudprovider.Azure:
 					cl := tc.azureclient.(*stubAzureClient)

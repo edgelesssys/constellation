@@ -12,6 +12,7 @@ import (
 
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
@@ -190,7 +191,7 @@ func TestVerify(t *testing.T) {
 			}
 			fileHandler := file.NewHandler(tc.setupFs(require))
 
-			config := defaultConfigWithExpectedMeasurements(t, tc.provider)
+			config := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.provider)
 			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config))
 			if tc.idFile != nil {
 				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, tc.idFile, file.OptNone))

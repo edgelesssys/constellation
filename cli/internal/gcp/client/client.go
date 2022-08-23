@@ -55,7 +55,6 @@ type Client struct {
 	uid                       string
 	zone                      string
 	region                    string
-	serviceAccount            string
 
 	// loadbalancer
 	loadbalancerIP     string
@@ -270,7 +269,6 @@ func (c *Client) GetState() state.ConstellationState {
 		GCPFirewalls:                    c.firewalls,
 		GCPNetwork:                      c.network,
 		GCPSubnetwork:                   c.subnetwork,
-		GCPServiceAccount:               c.serviceAccount,
 		GCPLoadbalancerIPname:           c.loadbalancerIPname,
 	}
 	for _, lb := range c.loadbalancers {
@@ -297,7 +295,6 @@ func (c *Client) SetState(stat state.ConstellationState) {
 	c.controlPlaneTemplate = stat.GCPControlPlaneInstanceTemplate
 	c.loadbalancerIPname = stat.GCPLoadbalancerIPname
 	c.loadbalancerIP = stat.LoadBalancerIP
-	c.serviceAccount = stat.GCPServiceAccount
 	for _, lbName := range stat.GCPLoadbalancers {
 		lb := &loadBalancer{
 			name:               lbName,
