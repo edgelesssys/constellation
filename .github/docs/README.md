@@ -114,9 +114,9 @@ Branch | constellation-\<branch-name\> | constellation-\<commit-timestamp\>
 Example:
 Type | Image Family | Image Name | List command
 -|-|-|-
-Release | constellation | constellation-v1-5-0 | `gcloud compute images list --filter="family~'^constellation$'" --sort-by=creationTimestamp --project constellation-images`
-Debug | constellation-debug-v1-5-0 | constellation-20220912123456 | `gcloud compute images list --filter="family~'constellation-debug-v.+'" --sort-by=creationTimestamp --project constellation-images`
-Branch | constellation-ref-cli | constellation-20220912123456 | `gcloud compute images list --filter="family~'constellation-$(go run $(git rev-parse --show-toplevel)/hack/pseudo-version/pseudo-version.go -print-branch)'" --sort-by=creationTimestamp --project constellation-images`
+Release | constellation | constellation-v1-5-0 | `gcloud compute images list --filter="family~'^constellation$'" --sort-by=creationTimestamp --project constellation-images --uri \| sed 's#https://www.googleapis.com/compute/v1/##'`
+Debug | constellation-debug-v1-5-0 | constellation-20220912123456 | `gcloud compute images list --filter="family~'constellation-debug-v.+'" --sort-by=creationTimestamp --project constellation-images --uri \| sed 's#https://www.googleapis.com/compute/v1/##'`
+Branch | constellation-ref-cli | constellation-20220912123456 | `gcloud compute images list --filter="family~'constellation-$(go run $(git rev-parse --show-toplevel)/hack/pseudo-version/pseudo-version.go -print-branch)'" --sort-by=creationTimestamp --project constellation-images --uri \| sed 's#https://www.googleapis.com/compute/v1/##'`
 
 ### Azure
 
