@@ -2,9 +2,7 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io/fs"
 	"log"
 	"net"
 	"strconv"
@@ -17,7 +15,6 @@ import (
 	configc "github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
-	statec "github.com/edgelesssys/constellation/internal/state"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -70,26 +67,16 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 		log.Println("WARN: constellation image does not look like a debug image. Are you using a debug image?")
 	}
 
-	overrideIPs, err := cmd.Flags().GetStringSlice("ips")
+	ips, err := cmd.Flags().GetStringSlice("ips")
 	if err != nil {
 		return err
 	}
-	var ips []string
-	if len(overrideIPs) > 0 {
-		ips = overrideIPs
-	} else {
-		var stat statec.ConstellationState
-		err := fileHandler.ReadJSON(constants.StateFilename, &stat)
-		if errors.Is(err, fs.ErrNotExist) {
-			log.Println("Unable to load statefile. Maybe you forgot to run \"constellation create ...\" first?")
-			return fmt.Errorf("loading statefile: %w", err)
-		} else if err != nil {
-			return fmt.Errorf("loading statefile: %w", err)
+	if len(ips) == 0 {
+		var idFile clusterIDsFile
+		if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
+			return fmt.Errorf("reading cluster IDs file: %w", err)
 		}
-		ips, err = getIPsFromConfig(stat, *constellationConfig)
-		if err != nil {
-			return err
-		}
+		ips = []string{idFile.IP}
 	}
 
 	for _, ip := range ips {
@@ -178,14 +165,6 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	return nil
 }
 
-func getIPsFromConfig(stat statec.ConstellationState, config configc.Config) ([]string, error) {
-	if stat.LoadBalancerIP != "" {
-		return []string{stat.LoadBalancerIP}, nil
-	}
-
-	return nil, fmt.Errorf("no load balancer IP found in statefile")
-}
-
 func init() {
 	rootCmd.AddCommand(deployCmd)
 
@@ -195,4 +174,10 @@ func init() {
 
 type fileToStreamReader interface {
 	ReadStream(filename string, stream bootstrapper.WriteChunkStream, chunksize uint, showProgress bool) error
+}
+
+type clusterIDsFile struct {
+	ClusterID string
+	OwnerID   string
+	IP        string
 }
