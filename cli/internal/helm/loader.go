@@ -44,12 +44,12 @@ func (i *ChartLoader) loadCilium(csp string) (helm.Deployment, error) {
 		return helm.Deployment{}, err
 	}
 	var ciliumVals map[string]interface{}
-	switch csp {
-	case cloudprovider.GCP.String():
+	switch cloudprovider.FromString(csp) {
+	case cloudprovider.GCP:
 		ciliumVals = gcpVals
-	case cloudprovider.Azure.String():
+	case cloudprovider.Azure:
 		ciliumVals = azureVals
-	case cloudprovider.QEMU.String():
+	case cloudprovider.QEMU:
 		ciliumVals = qemuVals
 	default:
 		return helm.Deployment{}, fmt.Errorf("unknown csp: %s", csp)
