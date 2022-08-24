@@ -1,9 +1,10 @@
 package client
 
 import (
+	"context"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights"
-	"golang.org/x/net/context"
 )
 
 func (c *Client) CreateApplicationInsight(ctx context.Context) error {
