@@ -21,15 +21,20 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var deployCmd = &cobra.Command{
-	Use:   "deploy",
-	Short: "Deploys a self-compiled bootstrapper binary and SSH keys on the current constellation",
-	Long: `Deploys a self-compiled bootstrapper binary and SSH keys on the current constellation.
-Uses config provided by --config and reads constellation config from its default location.
-If required, you can override the IP addresses that are used for a deployment by specifying "--ips" and a list of IP addresses.
-Specifying --bootstrapper will upload the bootstrapper from the specified path.`,
-	RunE:    runDeploy,
-	Example: "cdbg deploy\ncdbg deploy --config /path/to/config\ncdbg deploy --bootstrapper /path/to/bootstrapper --ips 192.0.2.1,192.0.2.2,192.0.2.3 --config /path/to/config",
+func newDeployCmd() *cobra.Command {
+	deployCmd := &cobra.Command{
+		Use:   "deploy",
+		Short: "Deploys a self-compiled bootstrapper binary and SSH keys on the current constellation",
+		Long: `Deploys a self-compiled bootstrapper binary and SSH keys on the current constellation.
+	Uses config provided by --config and reads constellation config from its default location.
+	If required, you can override the IP addresses that are used for a deployment by specifying "--ips" and a list of IP addresses.
+	Specifying --bootstrapper will upload the bootstrapper from the specified path.`,
+		RunE:    runDeploy,
+		Example: "cdbg deploy\ncdbg deploy --config /path/to/config\ncdbg deploy --bootstrapper /path/to/bootstrapper --ips 192.0.2.1,192.0.2.2,192.0.2.3 --config /path/to/config",
+	}
+	deployCmd.Flags().StringSlice("ips", nil, "override the ips that the bootstrapper will be uploaded to (defaults to ips from constellation config)")
+	deployCmd.Flags().String("bootstrapper", "", "override the path to the bootstrapper binary uploaded to instances (defaults to path set in config)")
+	return deployCmd
 }
 
 func runDeploy(cmd *cobra.Command, args []string) error {
@@ -163,13 +168,6 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	}
 	log.Println("Uploaded bootstrapper")
 	return nil
-}
-
-func init() {
-	rootCmd.AddCommand(deployCmd)
-
-	deployCmd.Flags().StringSlice("ips", nil, "override the ips that the bootstrapper will be uploaded to (defaults to ips from constellation config)")
-	deployCmd.Flags().String("bootstrapper", "", "override the path to the bootstrapper binary uploaded to instances (defaults to path set in config)")
 }
 
 type fileToStreamReader interface {
