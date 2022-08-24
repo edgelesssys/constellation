@@ -36,6 +36,9 @@ type loadBalancersAPI interface {
 }
 
 type scaleSetsAPI interface {
+	Get(ctx context.Context, resourceGroupName string, vmScaleSetName string,
+		options *armcomputev2.VirtualMachineScaleSetsClientGetOptions,
+	) (armcomputev2.VirtualMachineScaleSetsClientGetResponse, error)
 	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string,
 		vmScaleSetName string, parameters armcomputev2.VirtualMachineScaleSet,
 		options *armcomputev2.VirtualMachineScaleSetsClientBeginCreateOrUpdateOptions) (

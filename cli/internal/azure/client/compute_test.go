@@ -167,7 +167,7 @@ func TestCreateInstances(t *testing.T) {
 		"error when polling create scale set response": {
 			publicIPAddressesAPI: stubPublicIPAddressesAPI{},
 			networkInterfacesAPI: stubNetworkInterfacesAPI{},
-			scaleSetsAPI:         stubScaleSetsAPI{pollErr: someErr},
+			scaleSetsAPI:         stubScaleSetsAPI{getErr: someErr},
 			resourceGroupAPI:     newSuccessfulResourceGroupStub(),
 			roleAssignmentsAPI:   &stubRoleAssignmentsAPI{},
 			createInstancesInput: CreateInstancesInput{

@@ -136,6 +136,16 @@ type stubScaleSetsAPI struct {
 	createErr    error
 	stubResponse armcomputev2.VirtualMachineScaleSetsClientCreateOrUpdateResponse
 	pollErr      error
+	getResponse  armcomputev2.VirtualMachineScaleSet
+	getErr       error
+}
+
+func (a stubScaleSetsAPI) Get(ctx context.Context, resourceGroupName string, vmScaleSetName string,
+	options *armcomputev2.VirtualMachineScaleSetsClientGetOptions,
+) (armcomputev2.VirtualMachineScaleSetsClientGetResponse, error) {
+	return armcomputev2.VirtualMachineScaleSetsClientGetResponse{
+		VirtualMachineScaleSet: a.getResponse,
+	}, a.getErr
 }
 
 func (a stubScaleSetsAPI) BeginCreateOrUpdate(ctx context.Context, resourceGroupName string,

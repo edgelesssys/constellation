@@ -4,14 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/edgelesssys/constellation/cli/internal/azure"
+	"github.com/edgelesssys/constellation/cli/internal/azure/internal/poller"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 )
+
+// scaleSetCreateTimeout maximum timeout to wait for scale set creation.
+const scaleSetCreateTimeout = 5 * time.Minute
 
 func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput) error {
 	// Create worker scale set
@@ -211,7 +218,7 @@ func (c *Client) createScaleSet(ctx context.Context, input CreateScaleSetInput) 
 		LoadBalancerBackendAddressPool: input.LoadBalancerBackendAddressPool,
 	}.Azure()
 
-	poller, err := c.scaleSetsAPI.BeginCreateOrUpdate(
+	_, err = c.scaleSetsAPI.BeginCreateOrUpdate(
 		ctx, c.resourceGroup, input.Name,
 		scaleSet,
 		nil,
@@ -220,14 +227,18 @@ func (c *Client) createScaleSet(ctx context.Context, input CreateScaleSetInput) 
 		return err
 	}
 
-	_, err = poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
-		Frequency: c.pollFrequency,
+	// use custom poller to wait for resource creation but skip waiting for OS provisioning.
+	// OS provisioning does not work reliably without the azure guest agent installed.
+	poller := poller.New[bool](&scaleSetCreationPollingHandler{
+		resourceGroup: c.resourceGroup,
+		scaleSet:      input.Name,
+		scaleSetsAPI:  c.scaleSetsAPI,
 	})
-	if err != nil {
-		return err
-	}
 
-	return nil
+	pollCtx, cancel := context.WithTimeout(ctx, scaleSetCreateTimeout)
+	defer cancel()
+	_, err = poller.PollUntilDone(pollCtx, nil)
+	return err
 }
 
 func (c *Client) getInstanceIPs(ctx context.Context, scaleSet string, count int) (cloudtypes.Instances, error) {
@@ -322,5 +333,43 @@ func (c *Client) TerminateResourceGroup(ctx context.Context) error {
 	c.networkSecurityGroup = ""
 	c.workerScaleSet = ""
 	c.controlPlaneScaleSet = ""
+	return nil
+}
+
+// scaleSetCreationPollingHandler is a custom poller used to check if a scale set was created successfully.
+type scaleSetCreationPollingHandler struct {
+	done          bool
+	resourceGroup string
+	scaleSet      string
+	scaleSetsAPI  scaleSetsAPI
+}
+
+// Done returns true if the condition is met.
+func (h *scaleSetCreationPollingHandler) Done() bool {
+	return h.done
+}
+
+// Poll checks if the scale set resource was created successfully.
+func (h *scaleSetCreationPollingHandler) Poll(ctx context.Context) error {
+	_, err := h.scaleSetsAPI.Get(ctx, h.resourceGroup, h.scaleSet, nil)
+	if err == nil {
+		h.done = true
+		return nil
+	}
+	var respErr *azcore.ResponseError
+	if errors.As(err, &respErr) && respErr.StatusCode == http.StatusNotFound {
+		// resource does not exist yet - retry later
+		return nil
+	}
+	return err
+}
+
+// Result returns the result of the poller if the condition is met.
+// If the condition is not met, an error is returned.
+func (h *scaleSetCreationPollingHandler) Result(ctx context.Context, out *bool) error {
+	if !h.done {
+		return fmt.Errorf("failed to create scale set")
+	}
+	*out = h.done
 	return nil
 }
