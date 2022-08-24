@@ -1,5 +1,4 @@
 //go:build azure
-// +build azure
 
 package azure
 

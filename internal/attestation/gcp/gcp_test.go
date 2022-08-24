@@ -1,5 +1,4 @@
 //go:build gcp
-// +build gcp
 
 package gcp
 

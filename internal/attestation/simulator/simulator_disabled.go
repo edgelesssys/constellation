@@ -1,5 +1,4 @@
 //go:build disable_tpm_simulator
-// +build disable_tpm_simulator
 
 package simulator
 
