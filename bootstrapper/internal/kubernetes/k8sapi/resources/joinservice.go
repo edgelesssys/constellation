@@ -66,7 +66,7 @@ func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON string, mea
 				{
 					Kind:      "ServiceAccount",
 					Name:      "join-service",
-					Namespace: "kube-system",
+					Namespace: constants.ConstellationNamespace,
 				},
 			},
 		},
@@ -77,7 +77,7 @@ func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON string, mea
 			},
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "join-service",
-				Namespace: "kube-system",
+				Namespace: constants.ConstellationNamespace,
 				Labels: map[string]string{
 					"k8s-app":                       "join-service",
 					"component":                     "join-service",
@@ -168,7 +168,7 @@ func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON string, mea
 											{
 												ConfigMap: &k8s.ConfigMapProjection{
 													LocalObjectReference: k8s.LocalObjectReference{
-														Name: "join-config",
+														Name: constants.JoinConfigMap,
 													},
 												},
 											},
@@ -203,7 +203,7 @@ func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON string, mea
 			},
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "join-service",
-				Namespace: "kube-system",
+				Namespace: constants.ConstellationNamespace,
 			},
 		},
 		Service: k8s.Service{
@@ -213,7 +213,7 @@ func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON string, mea
 			},
 			ObjectMeta: meta.ObjectMeta{
 				Name:      "join-service",
-				Namespace: "kube-system",
+				Namespace: constants.ConstellationNamespace,
 			},
 			Spec: k8s.ServiceSpec{
 				Type: k8s.ServiceTypeNodePort,
@@ -237,8 +237,8 @@ func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON string, mea
 				Kind:       "ConfigMap",
 			},
 			ObjectMeta: meta.ObjectMeta{
-				Name:      "join-config",
-				Namespace: "kube-system",
+				Name:      constants.JoinConfigMap,
+				Namespace: constants.ConstellationNamespace,
 			},
 			Data: map[string]string{
 				constants.MeasurementsFilename: measurementsJSON,
