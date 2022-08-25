@@ -18,7 +18,7 @@ import (
 type Creator struct {
 	out            io.Writer
 	newGCPClient   func(ctx context.Context, project, zone, region, name string) (gcpclient, error)
-	newAzureClient func(subscriptionID, tenantID, name, location string) (azureclient, error)
+	newAzureClient func(subscriptionID, tenantID, name, location, resourceGroup string) (azureclient, error)
 }
 
 // NewCreator creates a new creator.
@@ -28,8 +28,8 @@ func NewCreator(out io.Writer) *Creator {
 		newGCPClient: func(ctx context.Context, project, zone, region, name string) (gcpclient, error) {
 			return gcpcl.NewInitialized(ctx, project, zone, region, name)
 		},
-		newAzureClient: func(subscriptionID, tenantID, name, location string) (azureclient, error) {
-			return azurecl.NewInitialized(subscriptionID, tenantID, name, location)
+		newAzureClient: func(subscriptionID, tenantID, name, location, resourceGroup string) (azureclient, error) {
+			return azurecl.NewInitialized(subscriptionID, tenantID, name, location, resourceGroup)
 		},
 	}
 }
@@ -57,6 +57,7 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 			config.Provider.Azure.TenantID,
 			name,
 			config.Provider.Azure.Location,
+			config.Provider.Azure.ResourceGroup,
 		)
 		if err != nil {
 			return state.ConstellationState{}, err
@@ -144,9 +145,6 @@ func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *confi
 ) (stat state.ConstellationState, retErr error) {
 	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerAzure{client: cl})
 
-	if err := cl.CreateResourceGroup(ctx); err != nil {
-		return state.ConstellationState{}, err
-	}
 	if err := cl.CreateApplicationInsight(ctx); err != nil {
 		return state.ConstellationState{}, err
 	}

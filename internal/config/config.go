@@ -158,6 +158,9 @@ type AzureConfig struct {
 	//   Authorize spawned VMs to access Azure API. See: https://docs.edgeless.systems/constellation/latest/#/getting-started/install?id=azure
 	UserAssignedIdentity string `yaml:"userAssignedIdentity" validate:"required"`
 	// description: |
+	//   Resource group to use.
+	ResourceGroup string `yaml:"resourceGroup" validate:"required"`
+	// description: |
 	//   Use VMs with security type Confidential VM. If set to false, Trusted Launch VMs will be used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview
 	ConfidentialVM *bool `yaml:"confidentialVM" validate:"required"`
 }
@@ -244,6 +247,7 @@ func Default() *Config {
 				TenantID:             "",
 				Location:             "",
 				UserAssignedIdentity: "",
+				ResourceGroup:        "",
 				Image:                DefaultImageAzure,
 				StateDiskType:        "Premium_LRS",
 				Measurements:         copyPCRMap(azurePCRs),

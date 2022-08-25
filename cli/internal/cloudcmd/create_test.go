@@ -51,7 +51,6 @@ func TestCreator(t *testing.T) {
 			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			"id-2": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 		},
-		AzureResourceGroup:        "resource-group",
 		AzureSubnet:               "subnet",
 		AzureNetworkSecurityGroup: "network-security-group",
 		AzureWorkerScaleSet:       "workers-scale-set",
@@ -123,13 +122,6 @@ func TestCreator(t *testing.T) {
 			config:            config.Default(),
 			wantErr:           true,
 		},
-		"azure CreateResourceGroup error": {
-			azureclient:  &stubAzureClient{createResourceGroupErr: someErr},
-			provider:     cloudprovider.Azure,
-			config:       config.Default(),
-			wantErr:      true,
-			wantRollback: true,
-		},
 		"azure CreateVirtualNetwork error": {
 			azureclient:  &stubAzureClient{createVirtualNetworkErr: someErr},
 			provider:     cloudprovider.Azure,
@@ -167,7 +159,7 @@ func TestCreator(t *testing.T) {
 				newGCPClient: func(ctx context.Context, project, zone, region, name string) (gcpclient, error) {
 					return tc.gcpclient, tc.newGCPClientErr
 				},
-				newAzureClient: func(subscriptionID, tenantID, name, location string) (azureclient, error) {
+				newAzureClient: func(subscriptionID, tenantID, name, location, resourceGroup string) (azureclient, error) {
 					return tc.azureclient, tc.newAzureClientErr
 				},
 			}
@@ -186,7 +178,7 @@ func TestCreator(t *testing.T) {
 						assert.True(cl.closeCalled)
 					case cloudprovider.Azure:
 						cl := tc.azureclient.(*stubAzureClient)
-						assert.True(cl.terminateResourceGroupCalled)
+						assert.True(cl.terminateResourceGroupResourcesCalled)
 					}
 				}
 			} else {

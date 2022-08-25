@@ -47,12 +47,3 @@ func (c *stubCloudTerminator) Terminate(context.Context, state.ConstellationStat
 func (c *stubCloudTerminator) Called() bool {
 	return c.called
 }
-
-type stubServiceAccountCreator struct {
-	cloudServiceAccountURI string
-	createErr              error
-}
-
-func (c *stubServiceAccountCreator) Create(ctx context.Context, stat state.ConstellationState, config *config.Config) (string, state.ConstellationState, error) {
-	return c.cloudServiceAccountURI, stat, c.createErr
-}

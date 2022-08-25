@@ -79,11 +79,6 @@ func (c *fakeAzureClient) CreateApplicationInsight(ctx context.Context) error {
 	return nil
 }
 
-func (c *fakeAzureClient) CreateResourceGroup(ctx context.Context) error {
-	c.resourceGroup = "resource-group"
-	return nil
-}
-
 func (c *fakeAzureClient) CreateVirtualNetwork(ctx context.Context) error {
 	c.subnetID = "subnet"
 	return nil
@@ -123,17 +118,8 @@ func (c *fakeAzureClient) CreateServicePrincipal(ctx context.Context) (string, e
 	}.ToCloudServiceAccountURI(), nil
 }
 
-func (c *fakeAzureClient) TerminateResourceGroup(ctx context.Context) error {
-	if c.resourceGroup == "" {
-		return nil
-	}
-	c.workers = nil
-	c.controlPlanes = nil
-	c.resourceGroup = ""
-	c.subnetID = ""
-	c.networkSecurityGroup = ""
-	c.workerScaleSet = ""
-	c.controlPlaneScaleSet = ""
+func (c *fakeAzureClient) TerminateResourceGroupResources(ctx context.Context) error {
+	// TODO(katexochen)
 	return nil
 }
 
@@ -146,18 +132,17 @@ func (c *fakeAzureClient) TerminateServicePrincipal(ctx context.Context) error {
 }
 
 type stubAzureClient struct {
-	terminateResourceGroupCalled    bool
-	terminateServicePrincipalCalled bool
+	terminateResourceGroupResourcesCalled bool
+	terminateServicePrincipalCalled       bool
 
-	createApplicationInsightErr  error
-	createResourceGroupErr       error
-	createVirtualNetworkErr      error
-	createSecurityGroupErr       error
-	createLoadBalancerErr        error
-	createInstancesErr           error
-	createServicePrincipalErr    error
-	terminateResourceGroupErr    error
-	terminateServicePrincipalErr error
+	createApplicationInsightErr        error
+	createVirtualNetworkErr            error
+	createSecurityGroupErr             error
+	createLoadBalancerErr              error
+	createInstancesErr                 error
+	createServicePrincipalErr          error
+	terminateResourceGroupResourcesErr error
+	terminateServicePrincipalErr       error
 }
 
 func (c *stubAzureClient) GetState() state.ConstellationState {
@@ -173,10 +158,6 @@ func (c *stubAzureClient) CreateExternalLoadBalancer(ctx context.Context) error 
 
 func (c *stubAzureClient) CreateApplicationInsight(ctx context.Context) error {
 	return c.createApplicationInsightErr
-}
-
-func (c *stubAzureClient) CreateResourceGroup(ctx context.Context) error {
-	return c.createResourceGroupErr
 }
 
 func (c *stubAzureClient) CreateVirtualNetwork(ctx context.Context) error {
@@ -198,9 +179,9 @@ func (c *stubAzureClient) CreateServicePrincipal(ctx context.Context) (string, e
 	}.ToCloudServiceAccountURI(), c.createServicePrincipalErr
 }
 
-func (c *stubAzureClient) TerminateResourceGroup(ctx context.Context) error {
-	c.terminateResourceGroupCalled = true
-	return c.terminateResourceGroupErr
+func (c *stubAzureClient) TerminateResourceGroupResources(ctx context.Context) error {
+	c.terminateResourceGroupResourcesCalled = true
+	return c.terminateResourceGroupResourcesErr
 }
 
 func (c *stubAzureClient) TerminateServicePrincipal(ctx context.Context) error {

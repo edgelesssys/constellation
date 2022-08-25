@@ -10,8 +10,6 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/edgelesssys/constellation/cli/internal/azure"
 	"github.com/edgelesssys/constellation/cli/internal/azure/internal/poller"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
@@ -211,45 +209,6 @@ type CreateScaleSetInput struct {
 	UserAssingedIdentity           string
 	LoadBalancerBackendAddressPool string
 	ConfidentialVM                 bool
-}
-
-// CreateResourceGroup creates a resource group.
-func (c *Client) CreateResourceGroup(ctx context.Context) error {
-	_, err := c.resourceGroupAPI.CreateOrUpdate(ctx, c.name+"-"+c.uid,
-		armresources.ResourceGroup{
-			Location: &c.location,
-		}, nil)
-	if err != nil {
-		return err
-	}
-	c.resourceGroup = c.name + "-" + c.uid
-	return nil
-}
-
-// TerminateResourceGroup terminates a resource group.
-func (c *Client) TerminateResourceGroup(ctx context.Context) error {
-	if c.resourceGroup == "" {
-		return nil
-	}
-
-	poller, err := c.resourceGroupAPI.BeginDelete(ctx, c.resourceGroup, nil)
-	if err != nil {
-		return err
-	}
-
-	if _, err = poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
-		Frequency: c.pollFrequency,
-	}); err != nil {
-		return err
-	}
-	c.workers = nil
-	c.controlPlanes = nil
-	c.resourceGroup = ""
-	c.subnetID = ""
-	c.networkSecurityGroup = ""
-	c.workerScaleSet = ""
-	c.controlPlaneScaleSet = ""
-	return nil
 }
 
 // scaleSetCreationPollingHandler is a custom poller used to check if a scale set was created successfully.

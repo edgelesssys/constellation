@@ -29,7 +29,7 @@ const (
 type Client struct {
 	networksAPI
 	networkSecurityGroupsAPI
-	resourceGroupAPI
+	resourceAPI
 	scaleSetsAPI
 	publicIPAddressesAPI
 	networkInterfacesAPI
@@ -39,9 +39,7 @@ type Client struct {
 	roleAssignmentsAPI
 	applicationInsightsAPI
 
-	pollFrequency                   time.Duration
-	adReplicationLagCheckInterval   time.Duration
-	adReplicationLagCheckMaxRetries int
+	pollFrequency time.Duration
 
 	workers       cloudtypes.Instances
 	controlPlanes cloudtypes.Instances
@@ -83,10 +81,6 @@ func NewFromDefault(subscriptionID, tenantID string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	resGroupAPI, err := armresources.NewResourceGroupsClient(subscriptionID, cred, nil)
-	if err != nil {
-		return nil, err
-	}
 	scaleSetAPI, err := armcomputev2.NewVirtualMachineScaleSetsClient(subscriptionID, cred, nil)
 	if err != nil {
 		return nil, err
@@ -107,6 +101,10 @@ func NewFromDefault(subscriptionID, tenantID string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	resourceAPI, err := armresources.NewClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
 	applicationsAPI := graphrbac.NewApplicationsClient(tenantID)
 	applicationsAPI.Authorizer = graphAuthorizer
 	servicePrincipalsAPI := graphrbac.NewServicePrincipalsClient(tenantID)
@@ -115,42 +113,41 @@ func NewFromDefault(subscriptionID, tenantID string) (*Client, error) {
 	roleAssignmentsAPI.Authorizer = managementAuthorizer
 
 	return &Client{
-		networksAPI:                     netAPI,
-		networkSecurityGroupsAPI:        netSecGrpAPI,
-		resourceGroupAPI:                resGroupAPI,
-		scaleSetsAPI:                    scaleSetAPI,
-		publicIPAddressesAPI:            publicIPAddressesAPI,
-		networkInterfacesAPI:            networkInterfacesAPI,
-		loadBalancersAPI:                loadBalancersAPI,
-		applicationsAPI:                 applicationsAPI,
-		servicePrincipalsAPI:            servicePrincipalsAPI,
-		roleAssignmentsAPI:              roleAssignmentsAPI,
-		applicationInsightsAPI:          applicationInsightsAPI,
-		subscriptionID:                  subscriptionID,
-		tenantID:                        tenantID,
-		workers:                         cloudtypes.Instances{},
-		controlPlanes:                   cloudtypes.Instances{},
-		pollFrequency:                   time.Second * 5,
-		adReplicationLagCheckInterval:   adReplicationLagCheckInterval,
-		adReplicationLagCheckMaxRetries: adReplicationLagCheckMaxRetries,
+		networksAPI:              netAPI,
+		networkSecurityGroupsAPI: netSecGrpAPI,
+		resourceAPI:              resourceAPI,
+		scaleSetsAPI:             scaleSetAPI,
+		publicIPAddressesAPI:     publicIPAddressesAPI,
+		networkInterfacesAPI:     networkInterfacesAPI,
+		loadBalancersAPI:         loadBalancersAPI,
+		applicationsAPI:          applicationsAPI,
+		servicePrincipalsAPI:     servicePrincipalsAPI,
+		roleAssignmentsAPI:       roleAssignmentsAPI,
+		applicationInsightsAPI:   applicationInsightsAPI,
+		subscriptionID:           subscriptionID,
+		tenantID:                 tenantID,
+		workers:                  cloudtypes.Instances{},
+		controlPlanes:            cloudtypes.Instances{},
+		pollFrequency:            time.Second * 5,
 	}, nil
 }
 
 // NewInitialized creates and initializes client by setting the subscriptionID, location and name
 // of the Constellation.
-func NewInitialized(subscriptionID, tenantID, name, location string) (*Client, error) {
+func NewInitialized(subscriptionID, tenantID, name, location, resourceGroup string) (*Client, error) {
 	client, err := NewFromDefault(subscriptionID, tenantID)
 	if err != nil {
 		return nil, err
 	}
-	err = client.init(location, name)
+	err = client.init(location, name, resourceGroup)
 	return client, err
 }
 
 // init initializes the client.
-func (c *Client) init(location, name string) error {
+func (c *Client) init(location, name, resourceGroup string) error {
 	c.location = location
 	c.name = name
+	c.resourceGroup = resourceGroup
 	uid, err := c.generateUID()
 	if err != nil {
 		return err
