@@ -361,7 +361,7 @@ func TestInstanceTypeCompletion(t *testing.T) {
 	}{
 		"azure": {
 			args:        []string{"azure"},
-			wantResult:  azure.InstanceTypes,
+			wantResult:  append(append([]string{}, azure.CVMInstanceTypes...), azure.TrustedLaunchInstanceTypes...),
 			wantShellCD: cobra.ShellCompDirectiveNoFileComp,
 		},
 		"gcp": {

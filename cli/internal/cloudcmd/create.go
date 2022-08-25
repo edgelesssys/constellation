@@ -171,6 +171,7 @@ func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *confi
 		StateDiskType:        config.Provider.Azure.StateDiskType,
 		Image:                config.Provider.Azure.Image,
 		UserAssingedIdentity: config.Provider.Azure.UserAssignedIdentity,
+		ConfidentialVM:       *config.Provider.Azure.ConfidentialVM,
 	}
 	if err := cl.CreateInstances(ctx, createInput); err != nil {
 		return state.ConstellationState{}, err

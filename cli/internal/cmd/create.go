@@ -40,12 +40,15 @@ func NewCreateCmd() *cobra.Command {
 	must(cmd.RegisterFlagCompletionFunc("instance-type", instanceTypeCompletion))
 
 	cmd.SetHelpTemplate(cmd.HelpTemplate() + fmt.Sprintf(`
-Azure instance types:
+Azure Confidential VM instance types:
+%v
+
+Azure Trusted Launch instance types:
 %v
 
 GCP instance types:
 %v
-`, formatInstanceTypes(azure.InstanceTypes), formatInstanceTypes(gcp.InstanceTypes)))
+`, formatInstanceTypes(azure.CVMInstanceTypes), formatInstanceTypes(azure.TrustedLaunchInstanceTypes), formatInstanceTypes(gcp.InstanceTypes)))
 
 	return cmd
 }
@@ -76,6 +79,10 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 
 	if config.IsImageDebug() {
 		cmd.Println("Configured image does not look like a released production image. Double check image before deploying to production.")
+	}
+
+	if config.IsAzureNonCVM() {
+		cmd.Println("Disabling Confidential VMs is insecure. Use only for evaluation purposes.")
 	}
 
 	if !flags.yes {
@@ -186,7 +193,7 @@ func defaultInstanceType(provider cloudprovider.Provider) string {
 	case cloudprovider.GCP:
 		return gcp.InstanceTypes[0]
 	case cloudprovider.Azure:
-		return azure.InstanceTypes[0]
+		return azure.CVMInstanceTypes[0]
 	default:
 		return ""
 	}
@@ -244,7 +251,10 @@ func instanceTypeCompletion(cmd *cobra.Command, args []string, toComplete string
 	case "gcp":
 		return gcp.InstanceTypes, cobra.ShellCompDirectiveNoFileComp
 	case "azure":
-		return azure.InstanceTypes, cobra.ShellCompDirectiveNoFileComp
+		var azureInstanceTypes []string
+		azureInstanceTypes = append(azureInstanceTypes, azure.CVMInstanceTypes...)
+		azureInstanceTypes = append(azureInstanceTypes, azure.TrustedLaunchInstanceTypes...)
+		return azureInstanceTypes, cobra.ShellCompDirectiveNoFileComp
 	default:
 		return []string{}, cobra.ShellCompDirectiveError
 	}

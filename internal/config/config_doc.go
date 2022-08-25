@@ -168,7 +168,7 @@ func init() {
 			FieldName: "azure",
 		},
 	}
-	AzureConfigDoc.Fields = make([]encoder.Doc, 8)
+	AzureConfigDoc.Fields = make([]encoder.Doc, 9)
 	AzureConfigDoc.Fields[0].Name = "subscription"
 	AzureConfigDoc.Fields[0].Type = "string"
 	AzureConfigDoc.Fields[0].Note = ""
@@ -209,6 +209,11 @@ func init() {
 	AzureConfigDoc.Fields[7].Note = ""
 	AzureConfigDoc.Fields[7].Description = "Authorize spawned VMs to access Azure API. See: https://docs.edgeless.systems/constellation/latest/#/getting-started/install?id=azure"
 	AzureConfigDoc.Fields[7].Comments[encoder.LineComment] = "Authorize spawned VMs to access Azure API. See: https://docs.edgeless.systems/constellation/latest/#/getting-started/install?id=azure"
+	AzureConfigDoc.Fields[8].Name = "confidentialVM"
+	AzureConfigDoc.Fields[8].Type = "bool"
+	AzureConfigDoc.Fields[8].Note = ""
+	AzureConfigDoc.Fields[8].Description = "Use Azure VMs with security type Confidential VM. If set to false, Trusted Launch VMs will be used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview"
+	AzureConfigDoc.Fields[8].Comments[encoder.LineComment] = "Use Azure VMs with security type Confidential VM. If set to false, Trusted Launch VMs will be used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview"
 
 	GCPConfigDoc.Type = "GCPConfig"
 	GCPConfigDoc.Comments[encoder.LineComment] = "GCPConfig are GCP specific configuration values used by the CLI."

@@ -32,6 +32,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		Image:                          input.Image,
 		UserAssingedIdentity:           input.UserAssingedIdentity,
 		LoadBalancerBackendAddressPool: azure.BackendAddressPoolWorkerName + "-" + c.uid,
+		ConfidentialVM:                 input.ConfidentialVM,
 	}
 
 	// Create control plane scale set
@@ -45,6 +46,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		Image:                          input.Image,
 		UserAssingedIdentity:           input.UserAssingedIdentity,
 		LoadBalancerBackendAddressPool: azure.BackendAddressPoolControlPlaneName + "-" + c.uid,
+		ConfidentialVM:                 input.ConfidentialVM,
 	}
 
 	var wg sync.WaitGroup
@@ -99,6 +101,7 @@ type CreateInstancesInput struct {
 	StateDiskType        string
 	Image                string
 	UserAssingedIdentity string
+	ConfidentialVM       bool
 }
 
 // CreateInstancesVMs creates instances based on standalone VMs.
@@ -216,6 +219,7 @@ func (c *Client) createScaleSet(ctx context.Context, input CreateScaleSetInput) 
 		ResourceGroup:                  c.resourceGroup,
 		LoadBalancerName:               c.loadBalancerName,
 		LoadBalancerBackendAddressPool: input.LoadBalancerBackendAddressPool,
+		ConfidentialVM:                 input.ConfidentialVM,
 	}.Azure()
 
 	_, err = c.scaleSetsAPI.BeginCreateOrUpdate(
@@ -295,6 +299,7 @@ type CreateScaleSetInput struct {
 	Image                          string
 	UserAssingedIdentity           string
 	LoadBalancerBackendAddressPool string
+	ConfidentialVM                 bool
 }
 
 // CreateResourceGroup creates a resource group.

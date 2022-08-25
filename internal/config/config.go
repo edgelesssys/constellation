@@ -142,6 +142,9 @@ type AzureConfig struct {
 	// description: |
 	//   Authorize spawned VMs to access Azure API. See: https://docs.edgeless.systems/constellation/latest/#/getting-started/install?id=azure
 	UserAssignedIdentity string `yaml:"userAssignedIdentity" validate:"required"`
+	// description: |
+	//   Use VMs with security type Confidential VM. If set to false, Trusted Launch VMs will be used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview
+	ConfidentialVM *bool `yaml:"confidentialVM" validate:"required"`
 }
 
 // GCPConfig are GCP specific configuration values used by the CLI.
@@ -230,6 +233,7 @@ func Default() *Config {
 				StateDiskType:        "StandardSSD_LRS", // TODO: Replace with Premium_LRS when we replace the default VM size (Standard_D2a_v4) since the size does not support Premium_LRS
 				Measurements:         copyPCRMap(azurePCRs),
 				EnforcedMeasurements: []uint32{8, 9, 11, 12},
+				ConfidentialVM:       func() *bool { b := true; return &b }(),
 			},
 			GCP: &GCPConfig{
 				Project:               "",
@@ -355,6 +359,11 @@ func (c *Config) IsImageDebug() bool {
 	default:
 		return false
 	}
+}
+
+// IsAzureNonCVM checks whether the chosen provider is azure and confidential VMs are disabled.
+func (c *Config) IsAzureNonCVM() bool {
+	return c.Provider.Azure != nil && c.Provider.Azure.ConfidentialVM != nil && !*c.Provider.Azure.ConfidentialVM
 }
 
 // FromFile returns config file with `name` read from `fileHandler` by parsing

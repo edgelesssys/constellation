@@ -41,12 +41,18 @@ func validInstanceTypeForProvider(cmd *cobra.Command, insType string, provider c
 		cmd.SilenceUsage = false
 		return fmt.Errorf("%s isn't a valid GCP instance type", insType)
 	case cloudprovider.Azure:
-		for _, instanceType := range azure.InstanceTypes {
+		for _, instanceType := range azure.CVMInstanceTypes {
 			if insType == instanceType {
 				return nil
 			}
 		}
-		cmd.SetUsageTemplate("Azure instance types:\n" + formatInstanceTypes(azure.InstanceTypes))
+		for _, instanceType := range azure.TrustedLaunchInstanceTypes {
+			if insType == instanceType {
+				return nil
+			}
+		}
+		cmd.SetUsageTemplate("Azure CVM instance types:\n" + formatInstanceTypes(azure.CVMInstanceTypes) +
+			"\n\nAzure Trusted Launch instance types:\n" + formatInstanceTypes(azure.TrustedLaunchInstanceTypes))
 		cmd.SilenceUsage = false
 		return fmt.Errorf("%s isn't a valid Azure instance type", insType)
 	default:

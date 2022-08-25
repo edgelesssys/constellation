@@ -23,6 +23,7 @@ func TestFirewallPermissions(t *testing.T) {
 		Password:             "password",
 		Image:                "image",
 		UserAssignedIdentity: "user-identity",
+		ConfidentialVM:       true,
 	}
 
 	scaleSetAzure := scaleSet.Azure()

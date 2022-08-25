@@ -27,10 +27,20 @@ type ScaleSet struct {
 	UserAssignedIdentity           string
 	LoadBalancerName               string
 	LoadBalancerBackendAddressPool string
+	ConfidentialVM                 bool
 }
 
 // Azure returns the Azure representation of ScaleSet.
 func (s ScaleSet) Azure() armcomputev2.VirtualMachineScaleSet {
+	securityType := armcomputev2.SecurityTypesTrustedLaunch
+	var diskSecurityProfile *armcomputev2.VMDiskSecurityProfile
+	if s.ConfidentialVM {
+		securityType = armcomputev2.SecurityTypesConfidentialVM
+		diskSecurityProfile = &armcomputev2.VMDiskSecurityProfile{
+			SecurityEncryptionType: to.Ptr(armcomputev2.SecurityEncryptionTypesVMGuestStateOnly),
+		}
+	}
+
 	return armcomputev2.VirtualMachineScaleSet{
 		Name:     to.Ptr(s.Name),
 		Location: to.Ptr(s.Location),
@@ -70,9 +80,7 @@ func (s ScaleSet) Azure() armcomputev2.VirtualMachineScaleSet {
 					},
 					OSDisk: &armcomputev2.VirtualMachineScaleSetOSDisk{
 						ManagedDisk: &armcomputev2.VirtualMachineScaleSetManagedDiskParameters{
-							SecurityProfile: &armcomputev2.VMDiskSecurityProfile{
-								SecurityEncryptionType: to.Ptr(armcomputev2.SecurityEncryptionTypesVMGuestStateOnly),
-							},
+							SecurityProfile: diskSecurityProfile,
 						},
 						CreateOption: to.Ptr(armcomputev2.DiskCreateOptionTypesFromImage),
 					},
@@ -111,7 +119,7 @@ func (s ScaleSet) Azure() armcomputev2.VirtualMachineScaleSet {
 					},
 				},
 				SecurityProfile: &armcomputev2.SecurityProfile{
-					SecurityType: to.Ptr(armcomputev2.SecurityTypesConfidentialVM),
+					SecurityType: to.Ptr(securityType),
 					UefiSettings: &armcomputev2.UefiSettings{VTpmEnabled: to.Ptr(true), SecureBootEnabled: to.Ptr(true)},
 				},
 				DiagnosticsProfile: &armcomputev2.DiagnosticsProfile{
