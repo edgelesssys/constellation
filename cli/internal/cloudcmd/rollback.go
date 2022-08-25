@@ -46,5 +46,5 @@ type rollbackerAzure struct {
 }
 
 func (r *rollbackerAzure) rollback(ctx context.Context) error {
-	return r.client.TerminateResourceGroup(ctx)
+	return r.client.TerminateResourceGroupResources(ctx)
 }

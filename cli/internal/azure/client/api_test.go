@@ -4,15 +4,11 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/latest/authorization/mgmt/authorization"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights"
 	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"github.com/Azure/azure-sdk-for-go/services/graphrbac/1.6/graphrbac"
-	"github.com/Azure/go-autorest/autorest"
 )
 
 type stubNetworksAPI struct {
@@ -92,44 +88,6 @@ func (a stubNetworkSecurityGroupsAPI) BeginCreateOrUpdate(ctx context.Context, r
 		panic(err)
 	}
 	return poller, a.createErr
-}
-
-type stubResourceGroupAPI struct {
-	terminateErr     error
-	createErr        error
-	getErr           error
-	getResourceGroup armresources.ResourceGroup
-	pollErr          error
-}
-
-func (a stubResourceGroupAPI) CreateOrUpdate(ctx context.Context, resourceGroupName string,
-	parameters armresources.ResourceGroup,
-	options *armresources.ResourceGroupsClientCreateOrUpdateOptions) (
-	armresources.ResourceGroupsClientCreateOrUpdateResponse, error,
-) {
-	return armresources.ResourceGroupsClientCreateOrUpdateResponse{}, a.createErr
-}
-
-func (a stubResourceGroupAPI) Get(ctx context.Context, resourceGroupName string, options *armresources.ResourceGroupsClientGetOptions) (armresources.ResourceGroupsClientGetResponse, error) {
-	return armresources.ResourceGroupsClientGetResponse{
-		ResourceGroup: a.getResourceGroup,
-	}, a.getErr
-}
-
-func (a stubResourceGroupAPI) BeginDelete(ctx context.Context, resourceGroupName string,
-	options *armresources.ResourceGroupsClientBeginDeleteOptions) (
-	*runtime.Poller[armresources.ResourceGroupsClientDeleteResponse], error,
-) {
-	poller, err := runtime.NewPoller(nil, runtime.NewPipeline("", "", runtime.PipelineOptions{}, nil), &runtime.NewPollerOptions[armresources.ResourceGroupsClientDeleteResponse]{
-		Handler: &stubPoller[armresources.ResourceGroupsClientDeleteResponse]{
-			result:    armresources.ResourceGroupsClientDeleteResponse{},
-			resultErr: a.pollErr,
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-	return poller, a.terminateErr
 }
 
 type stubScaleSetsAPI struct {
@@ -280,71 +238,6 @@ func (a stubNetworkInterfacesAPI) GetVirtualMachineScaleSetNetworkInterface(ctx 
 			},
 		},
 	}, nil
-}
-
-type stubApplicationsAPI struct {
-	createErr            error
-	deleteErr            error
-	updateCredentialsErr error
-	createApplication    *graphrbac.Application
-}
-
-func (a stubApplicationsAPI) Create(ctx context.Context, parameters graphrbac.ApplicationCreateParameters) (graphrbac.Application, error) {
-	if a.createErr != nil {
-		return graphrbac.Application{}, a.createErr
-	}
-	if a.createApplication != nil {
-		return *a.createApplication, nil
-	}
-	return graphrbac.Application{
-		AppID:    to.Ptr("00000000-0000-0000-0000-000000000000"),
-		ObjectID: to.Ptr("00000000-0000-0000-0000-000000000001"),
-	}, nil
-}
-
-func (a stubApplicationsAPI) Delete(ctx context.Context, applicationObjectID string) (autorest.Response, error) {
-	if a.deleteErr != nil {
-		return autorest.Response{}, a.deleteErr
-	}
-	return autorest.Response{}, nil
-}
-
-func (a stubApplicationsAPI) UpdatePasswordCredentials(ctx context.Context, objectID string, parameters graphrbac.PasswordCredentialsUpdateParameters) (autorest.Response, error) {
-	if a.updateCredentialsErr != nil {
-		return autorest.Response{}, a.updateCredentialsErr
-	}
-	return autorest.Response{}, nil
-}
-
-type stubServicePrincipalsAPI struct {
-	createErr              error
-	createServicePrincipal *graphrbac.ServicePrincipal
-}
-
-func (a stubServicePrincipalsAPI) Create(ctx context.Context, parameters graphrbac.ServicePrincipalCreateParameters) (graphrbac.ServicePrincipal, error) {
-	if a.createErr != nil {
-		return graphrbac.ServicePrincipal{}, a.createErr
-	}
-	if a.createServicePrincipal != nil {
-		return *a.createServicePrincipal, nil
-	}
-	return graphrbac.ServicePrincipal{
-		AppID:    to.Ptr("00000000-0000-0000-0000-000000000000"),
-		ObjectID: to.Ptr("00000000-0000-0000-0000-000000000002"),
-	}, nil
-}
-
-type stubRoleAssignmentsAPI struct {
-	createCounter int
-	createErrors  []error
-}
-
-func (a *stubRoleAssignmentsAPI) Create(ctx context.Context, scope string, roleAssignmentName string, parameters authorization.RoleAssignmentCreateParameters) (authorization.RoleAssignment, error) {
-	a.createCounter++
-	if len(a.createErrors) == 0 {
-		return authorization.RoleAssignment{}, nil
-	}
-	return authorization.RoleAssignment{}, a.createErrors[(a.createCounter-1)%len(a.createErrors)]
 }
 
 type stubApplicationInsightsAPI struct {

@@ -55,17 +55,16 @@ func NewInitCmd() *cobra.Command {
 // runInitialize runs the initialize command.
 func runInitialize(cmd *cobra.Command, args []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	serviceAccountCreator := cloudcmd.NewServiceAccountCreator()
 	newDialer := func(validator *cloudcmd.Validator) *dialer.Dialer {
 		return dialer.New(nil, validator.V(cmd), &net.Dialer{})
 	}
 	helmLoader := &helm.ChartLoader{}
-	return initialize(cmd, newDialer, serviceAccountCreator, fileHandler, helmLoader, license.NewClient())
+	return initialize(cmd, newDialer, fileHandler, helmLoader, license.NewClient())
 }
 
 // initialize initializes a Constellation.
 func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator) *dialer.Dialer,
-	serviceAccCreator serviceAccountCreator, fileHandler file.Handler, helmLoader helmLoader, quotaChecker license.QuotaChecker,
+	fileHandler file.Handler, helmLoader helmLoader, quotaChecker license.QuotaChecker,
 ) error {
 	flags, err := evalFlagArgs(cmd, fileHandler)
 	if err != nil {
@@ -105,22 +104,9 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return err
 	}
 
-	var serviceAccURI string
-	// Temporary legacy flow for Azure.
-	if provider == cloudprovider.Azure {
-		cmd.Println("Creating service account ...")
-		serviceAccURI, stat, err = serviceAccCreator.Create(cmd.Context(), stat, config)
-		if err != nil {
-			return err
-		}
-		if err := fileHandler.WriteJSON(constants.StateFilename, stat, file.OptOverwrite); err != nil {
-			return err
-		}
-	} else {
-		serviceAccURI, err = getMarschaledServiceAccountURI(provider, config, fileHandler)
-		if err != nil {
-			return err
-		}
+	serviceAccURI, err := getMarschaledServiceAccountURI(provider, config, fileHandler)
+	if err != nil {
+		return err
 	}
 
 	workers, err := getScalingGroupsFromState(stat, config)

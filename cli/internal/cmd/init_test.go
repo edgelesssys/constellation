@@ -69,49 +69,54 @@ func TestInitialize(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		state             *state.ConstellationState
-		existingIDFile    *clusterIDsFile
-		serviceAccCreator serviceAccountCreator
-		configMutator     func(*config.Config)
-		serviceAccKey     *gcpshared.ServiceAccountKey
-		helmLoader        stubHelmLoader
-		initServerAPI     *stubInitServer
-		endpointFlag      string
-		setAutoscaleFlag  bool
-		wantErr           bool
+		state            *state.ConstellationState
+		idFile           *clusterIDsFile
+		configMutator    func(*config.Config)
+		serviceAccKey    *gcpshared.ServiceAccountKey
+		helmLoader       stubHelmLoader
+		initServerAPI    *stubInitServer
+		endpointFlag     string
+		setAutoscaleFlag bool
+		wantErr          bool
 	}{
 		"initialize some gcp instances": {
-			state:          testGcpState,
-			existingIDFile: &clusterIDsFile{IP: "192.0.2.1"},
-			configMutator:  func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
-			serviceAccKey:  gcpServiceAccKey,
-			initServerAPI:  &stubInitServer{initResp: testInitResp},
+			state:         testGcpState,
+			idFile:        &clusterIDsFile{IP: "192.0.2.1"},
+			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
+			serviceAccKey: gcpServiceAccKey,
+			initServerAPI: &stubInitServer{initResp: testInitResp},
 		},
 		"initialize some azure instances": {
-			state:             testAzureState,
-			serviceAccCreator: &stubServiceAccountCreator{},
-			existingIDFile:    &clusterIDsFile{IP: "192.0.2.1"},
-			initServerAPI:     &stubInitServer{initResp: testInitResp},
+			state:  testAzureState,
+			idFile: &clusterIDsFile{IP: "192.0.2.1"},
+			configMutator: func(c *config.Config) {
+				c.Provider.Azure.ResourceGroup = "resourceGroup"
+				c.Provider.Azure.UserAssignedIdentity = "userAssignedIdentity"
+			},
+			initServerAPI: &stubInitServer{initResp: testInitResp},
 		},
 		"initialize some qemu instances": {
-			state:          testQemuState,
-			existingIDFile: &clusterIDsFile{IP: "192.0.2.1"},
-			initServerAPI:  &stubInitServer{initResp: testInitResp},
+			state:         testQemuState,
+			idFile:        &clusterIDsFile{IP: "192.0.2.1"},
+			initServerAPI: &stubInitServer{initResp: testInitResp},
 		},
 		"initialize gcp with autoscaling": {
 			state:            testGcpState,
-			existingIDFile:   &clusterIDsFile{IP: "192.0.2.1"},
+			idFile:           &clusterIDsFile{IP: "192.0.2.1"},
 			configMutator:    func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
 			serviceAccKey:    gcpServiceAccKey,
 			initServerAPI:    &stubInitServer{initResp: testInitResp},
 			setAutoscaleFlag: true,
 		},
 		"initialize azure with autoscaling": {
-			state:             testAzureState,
-			existingIDFile:    &clusterIDsFile{IP: "192.0.2.1"},
-			serviceAccCreator: &stubServiceAccountCreator{},
-			initServerAPI:     &stubInitServer{initResp: testInitResp},
-			setAutoscaleFlag:  true,
+			state:  testAzureState,
+			idFile: &clusterIDsFile{IP: "192.0.2.1"},
+			configMutator: func(c *config.Config) {
+				c.Provider.Azure.ResourceGroup = "resourceGroup"
+				c.Provider.Azure.UserAssignedIdentity = "userAssignedIdentity"
+			},
+			initServerAPI:    &stubInitServer{initResp: testInitResp},
+			setAutoscaleFlag: true,
 		},
 		"initialize with endpoint flag": {
 			state:         testGcpState,
@@ -121,27 +126,30 @@ func TestInitialize(t *testing.T) {
 			endpointFlag:  "192.0.2.1",
 		},
 		"empty state": {
-			state:          &state.ConstellationState{},
-			existingIDFile: &clusterIDsFile{IP: "192.0.2.1"},
-			initServerAPI:  &stubInitServer{},
-			wantErr:        true,
+			state:         &state.ConstellationState{},
+			idFile:        &clusterIDsFile{IP: "192.0.2.1"},
+			initServerAPI: &stubInitServer{},
+			wantErr:       true,
 		},
 		"neither endpoint flag nor id file": {
 			state:   &state.ConstellationState{},
 			wantErr: true,
 		},
 		"init call fails": {
-			state:          testGcpState,
-			existingIDFile: &clusterIDsFile{IP: "192.0.2.1"},
-			initServerAPI:  &stubInitServer{initErr: someErr},
-			wantErr:        true,
+			state:         testGcpState,
+			idFile:        &clusterIDsFile{IP: "192.0.2.1"},
+			initServerAPI: &stubInitServer{initErr: someErr},
+			wantErr:       true,
 		},
 		"fail to create service account": {
-			state:             testAzureState,
-			existingIDFile:    &clusterIDsFile{IP: "192.0.2.1"},
-			initServerAPI:     &stubInitServer{},
-			serviceAccCreator: &stubServiceAccountCreator{createErr: someErr},
-			wantErr:           true,
+			state:  testAzureState,
+			idFile: &clusterIDsFile{IP: "192.0.2.1"},
+			configMutator: func(c *config.Config) {
+				c.Provider.Azure.ResourceGroup = "resourceGroup"
+				c.Provider.Azure.UserAssignedIdentity = "userAssignedIdentity"
+			},
+			initServerAPI: &stubInitServer{},
+			wantErr:       true,
 		},
 		"fail to load helm charts": {
 			state:         testGcpState,
@@ -194,8 +202,8 @@ func TestInitialize(t *testing.T) {
 			if tc.state != nil {
 				require.NoError(fileHandler.WriteJSON(constants.StateFilename, tc.state, file.OptNone))
 			}
-			if tc.existingIDFile != nil {
-				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, tc.existingIDFile, file.OptNone))
+			if tc.idFile != nil {
+				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, tc.idFile, file.OptNone))
 			}
 			if tc.serviceAccKey != nil {
 				require.NoError(fileHandler.WriteJSON(serviceAccPath, tc.serviceAccKey, file.OptNone))
@@ -206,7 +214,7 @@ func TestInitialize(t *testing.T) {
 			defer cancel()
 			cmd.SetContext(ctx)
 
-			err := initialize(cmd, newDialer, tc.serviceAccCreator, fileHandler, &tc.helmLoader, &stubLicenseClient{})
+			err := initialize(cmd, newDialer, fileHandler, &tc.helmLoader, &stubLicenseClient{})
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -477,7 +485,7 @@ func TestAttestation(t *testing.T) {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	err := initialize(cmd, newDialer, &stubServiceAccountCreator{}, fileHandler, &stubHelmLoader{}, &stubLicenseClient{})
+	err := initialize(cmd, newDialer, fileHandler, &stubHelmLoader{}, &stubLicenseClient{})
 	assert.Error(err)
 	// make sure the error is actually a TLS handshake error
 	assert.Contains(err.Error(), "transport: authentication handshake failed")
@@ -548,6 +556,7 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 		conf.Provider.Azure.Location = "test-location"
 		conf.Provider.Azure.UserAssignedIdentity = "test-identity"
 		conf.Provider.Azure.Image = "some/image/location"
+		conf.Provider.Azure.ResourceGroup = "test-resource-group"
 		conf.Provider.Azure.Measurements[8] = []byte("00000000000000000000000000000000")
 		conf.Provider.Azure.Measurements[9] = []byte("11111111111111111111111111111111")
 	case cloudprovider.GCP:

@@ -84,8 +84,9 @@ func TestInit(t *testing.T) {
 	require := require.New(t)
 
 	client := Client{}
-	require.NoError(client.init("location", "name"))
+	require.NoError(client.init("location", "name", "rGroup"))
 	assert.Equal("location", client.location)
 	assert.Equal("name", client.name)
+	assert.Equal("rGroup", client.resourceGroup)
 	assert.NotEmpty(client.uid)
 }

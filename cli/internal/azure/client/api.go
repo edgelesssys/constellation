@@ -64,15 +64,13 @@ type networkInterfacesAPI interface {
 	) (armnetwork.InterfacesClientGetVirtualMachineScaleSetNetworkInterfaceResponse, error)
 }
 
-type resourceGroupAPI interface {
-	CreateOrUpdate(ctx context.Context, resourceGroupName string,
-		parameters armresources.ResourceGroup,
-		options *armresources.ResourceGroupsClientCreateOrUpdateOptions) (
-		armresources.ResourceGroupsClientCreateOrUpdateResponse, error)
-	BeginDelete(ctx context.Context, resourceGroupName string,
-		options *armresources.ResourceGroupsClientBeginDeleteOptions) (
-		*runtime.Poller[armresources.ResourceGroupsClientDeleteResponse], error)
-	Get(ctx context.Context, resourceGroupName string, options *armresources.ResourceGroupsClientGetOptions) (armresources.ResourceGroupsClientGetResponse, error)
+type resourceAPI interface {
+	NewListByResourceGroupPager(resourceGroupName string,
+		options *armresources.ClientListByResourceGroupOptions,
+	) *runtime.Pager[armresources.ClientListByResourceGroupResponse]
+	BeginDeleteByID(ctx context.Context, resourceID string, apiVersion string,
+		options *armresources.ClientBeginDeleteByIDOptions,
+	) (*runtime.Poller[armresources.ClientDeleteByIDResponse], error)
 }
 
 type applicationsAPI interface {

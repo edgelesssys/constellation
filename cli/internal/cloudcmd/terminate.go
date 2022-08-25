@@ -72,8 +72,5 @@ func (t *Terminator) terminateGCP(ctx context.Context, cl gcpclient, state state
 func (t *Terminator) terminateAzure(ctx context.Context, cl azureclient, state state.ConstellationState) error {
 	cl.SetState(state)
 
-	if err := cl.TerminateServicePrincipal(ctx); err != nil {
-		return err
-	}
-	return cl.TerminateResourceGroup(ctx)
+	return cl.TerminateResourceGroupResources(ctx)
 }

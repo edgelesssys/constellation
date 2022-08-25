@@ -41,7 +41,6 @@ func TestTerminator(t *testing.T) {
 			AzureControlPlaneInstances: cloudtypes.Instances{
 				"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
 			},
-			AzureResourceGroup: "group",
 			AzureADAppObjectID: "00000000-0000-0000-0000-000000000001",
 		}
 	}
@@ -88,13 +87,8 @@ func TestTerminator(t *testing.T) {
 			state:             someAzureState(),
 			wantErr:           true,
 		},
-		"azure terminateServicePrincipal error": {
-			azureclient: &stubAzureClient{terminateServicePrincipalErr: someErr},
-			state:       someAzureState(),
-			wantErr:     true,
-		},
-		"azure terminateResourceGroup error": {
-			azureclient: &stubAzureClient{terminateResourceGroupErr: someErr},
+		"azure terminateResourceGroupResources error": {
+			azureclient: &stubAzureClient{terminateResourceGroupResourcesErr: someErr},
 			state:       someAzureState(),
 			wantErr:     true,
 		},
@@ -132,8 +126,7 @@ func TestTerminator(t *testing.T) {
 					assert.True(cl.closeCalled)
 				case cloudprovider.Azure:
 					cl := tc.azureclient.(*stubAzureClient)
-					assert.True(cl.terminateResourceGroupCalled)
-					assert.True(cl.terminateServicePrincipalCalled)
+					assert.True(cl.terminateResourceGroupResourcesCalled)
 				}
 			}
 		})

@@ -21,8 +21,3 @@ type cloudCreator interface {
 type cloudTerminator interface {
 	Terminate(context.Context, state.ConstellationState) error
 }
-
-type serviceAccountCreator interface {
-	Create(ctx context.Context, stat state.ConstellationState, config *config.Config,
-	) (string, state.ConstellationState, error)
-}
