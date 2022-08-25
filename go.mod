@@ -97,7 +97,6 @@ require (
 	k8s.io/cli-runtime v0.24.3
 	k8s.io/client-go v0.24.3
 	k8s.io/cluster-bootstrap v0.24.3
-	k8s.io/klog/v2 v2.60.1
 	k8s.io/kubelet v0.24.3
 	k8s.io/kubernetes v1.24.3
 	k8s.io/mount-utils v0.24.3
@@ -172,6 +171,7 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
+	k8s.io/klog/v2 v2.60.1 // indirect
 	k8s.io/kubectl v0.24.2 // indirect
 	oras.land/oras-go v1.2.0 // indirect
 	sigs.k8s.io/controller-runtime v0.12.1 // indirect

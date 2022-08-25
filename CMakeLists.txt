@@ -70,6 +70,6 @@ add_test(NAME unit-main COMMAND go test -race -count=3 ./... WORKING_DIRECTORY $
 add_test(NAME unit-hack COMMAND go test -race -count=3 ./... WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/hack)
 add_test(NAME unit-node-operator COMMAND go test -race -count=3 ./... WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/operators/constellation-node-operator)
 add_test(NAME integration-node-operator COMMAND make test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/operators/constellation-node-operator)
-add_test(NAME integration-mount COMMAND bash -c "go test -tags integration -c ./test/ && sudo ./test.test -test.v -v 9" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/mount)
+add_test(NAME integration-mount COMMAND bash -c "go test -tags integration -c ./test/ && sudo ./test.test -test.v" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/mount)
 add_test(NAME integration-dm COMMAND bash -c "go test -tags integration -c ./test/ && sudo ./test.test -test.v" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/state/internal)
 add_test(NAME integration-license COMMAND bash -c "go test -tags integration" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/internal/license)

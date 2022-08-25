@@ -8,7 +8,6 @@ import (
 
 	"github.com/edgelesssys/constellation/mount/cryptmapper"
 	"github.com/edgelesssys/constellation/mount/kms"
-	"k8s.io/klog/v2"
 )
 
 var (
@@ -19,11 +18,12 @@ var (
 )
 
 func main() {
-	klog.InitFlags(nil)
-	defer klog.Flush()
 	flag.Parse()
 
-	mapper := cryptmapper.New(kms.NewStaticKMS(), &cryptmapper.CryptDevice{})
+	mapper := cryptmapper.New(
+		kms.NewStaticKMS(),
+		&cryptmapper.CryptDevice{},
+	)
 
 	if *close {
 		err := mapper.CloseCryptDevice(*volumeID)

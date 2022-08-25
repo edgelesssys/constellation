@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
-	"k8s.io/klog/v2"
 )
 
 const (
@@ -43,9 +42,6 @@ func TestMain(m *testing.M) {
 		fmt.Printf("This test suite requires root privileges, as libcryptsetup uses the kernel's device mapper.\n")
 		os.Exit(1)
 	}
-
-	klog.InitFlags(nil)
-	defer klog.Flush()
 
 	goleak.VerifyTestMain(m)
 
