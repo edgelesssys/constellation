@@ -27,7 +27,7 @@ func newTestClient(fn roundTripFunc) *Client {
 	}
 }
 
-func TestCheckQuota(t *testing.T) {
+func TestQuotaCheck(t *testing.T) {
 	testCases := map[string]struct {
 		license               string
 		serverResponse        string
@@ -37,7 +37,7 @@ func TestCheckQuota(t *testing.T) {
 		wantError             bool
 	}{
 		"success": {
-			license:               "***REMOVED***",
+			license:               "0c0a6558-f8af-4063-bf61-92e7ac4cb052",
 			serverResponse:        "{\"quota\":256}",
 			serverResponseCode:    http.StatusOK,
 			serverResponseContent: "application/json",
@@ -74,7 +74,7 @@ func TestCheckQuota(t *testing.T) {
 				return r
 			})
 
-			resp, err := client.CheckQuota(context.Background(), CheckQuotaRequest{
+			resp, err := client.QuotaCheck(context.Background(), QuotaCheckRequest{
 				Action:  test,
 				License: tc.license,
 			})

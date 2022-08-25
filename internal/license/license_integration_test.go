@@ -9,18 +9,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCheckQuotaIntegration(t *testing.T) {
+func TestQuotaCheckIntegration(t *testing.T) {
 	testCases := map[string]struct {
 		license   string
 		action    Action
 		wantQuota int
 		wantError bool
 	}{
-		"ES license has quota 256": {
-			license:   "***REMOVED***",
-			action:    test,
-			wantQuota: 256,
-		},
 		"OSS license has quota 8": {
 			license:   CommunityLicense,
 			action:    test,
@@ -49,11 +44,11 @@ func TestCheckQuotaIntegration(t *testing.T) {
 
 			client := NewClient()
 
-			req := CheckQuotaRequest{
+			req := QuotaCheckRequest{
 				Action:  tc.action,
 				License: tc.license,
 			}
-			resp, err := client.CheckQuota(context.Background(), req)
+			resp, err := client.QuotaCheck(context.Background(), req)
 
 			if tc.wantError {
 				assert.Error(err)

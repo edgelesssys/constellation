@@ -226,7 +226,7 @@ func Default() *Config {
 				TenantID:             "",
 				Location:             "",
 				UserAssignedIdentity: "",
-				Image:                "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation/versions/1.5.0",
+				Image:                DefaultImageAzure,
 				StateDiskType:        "StandardSSD_LRS", // TODO: Replace with Premium_LRS when we replace the default VM size (Standard_D2a_v4) since the size does not support Premium_LRS
 				Measurements:         copyPCRMap(azurePCRs),
 				EnforcedMeasurements: []uint32{8, 9, 11, 12},
@@ -235,7 +235,7 @@ func Default() *Config {
 				Project:               "",
 				Region:                "",
 				Zone:                  "",
-				Image:                 "projects/constellation-images/global/images/constellation-v1-5-0",
+				Image:                 DefaultImageGCP,
 				StateDiskType:         "pd-ssd",
 				ServiceAccountKeyPath: "serviceAccountKey.json",
 				Measurements:          copyPCRMap(gcpPCRs),

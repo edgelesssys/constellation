@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.11)
 project(constellation LANGUAGES C VERSION 0.1.0)
 
 set(CLI_VERSION "v0.1.0" CACHE STRING "Version of CLI binary.")
+set(CLI_BUILD_TAGS "gcp" CACHE STRING "Tags passed to go build of Constellation CLI.")
 
 enable_testing()
 
@@ -30,7 +31,7 @@ add_custom_target(bootstrapper ALL
 #
 
 add_custom_target(cli ALL
-  CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/constellation -tags=gcp -ldflags "-buildid='' -X github.com/edgelesssys/constellation/internal/constants.VersionInfo=${CLI_VERSION}"
+  CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/constellation -tags='${CLI_BUILD_TAGS}' -ldflags "-buildid='' -X github.com/edgelesssys/constellation/internal/constants.VersionInfo=${CLI_VERSION}"
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/cli
   BYPRODUCTS constellation
 )

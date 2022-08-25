@@ -547,11 +547,13 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 		conf.Provider.Azure.TenantID = "01234567-0123-0123-0123-0123456789ab"
 		conf.Provider.Azure.Location = "test-location"
 		conf.Provider.Azure.UserAssignedIdentity = "test-identity"
+		conf.Provider.Azure.Image = "some/image/location"
 		conf.Provider.Azure.Measurements[8] = []byte("00000000000000000000000000000000")
 		conf.Provider.Azure.Measurements[9] = []byte("11111111111111111111111111111111")
 	case cloudprovider.GCP:
 		conf.Provider.GCP.Region = "test-region"
 		conf.Provider.GCP.Project = "test-project"
+		conf.Provider.GCP.Image = "some/image/location"
 		conf.Provider.GCP.Zone = "test-zone"
 		conf.Provider.GCP.Measurements[8] = []byte("00000000000000000000000000000000")
 		conf.Provider.GCP.Measurements[9] = []byte("11111111111111111111111111111111")
@@ -566,8 +568,8 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 
 type stubLicenseClient struct{}
 
-func (c *stubLicenseClient) CheckQuota(ctx context.Context, checkRequest license.CheckQuotaRequest) (license.CheckQuotaResponse, error) {
-	return license.CheckQuotaResponse{
-		Quota: license.CommunityQuota,
+func (c *stubLicenseClient) QuotaCheck(ctx context.Context, checkRequest license.QuotaCheckRequest) (license.QuotaCheckResponse, error) {
+	return license.QuotaCheckResponse{
+		Quota: 25,
 	}, nil
 }

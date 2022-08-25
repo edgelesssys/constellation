@@ -65,7 +65,7 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 
 // initialize initializes a Constellation.
 func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator) *dialer.Dialer,
-	serviceAccCreator serviceAccountCreator, fileHandler file.Handler, helmLoader helmLoader, licenseClient licenseClient,
+	serviceAccCreator serviceAccountCreator, fileHandler file.Handler, helmLoader helmLoader, quotaChecker license.QuotaChecker,
 ) error {
 	flags, err := evalFlagArgs(cmd, fileHandler)
 	if err != nil {
@@ -87,22 +87,10 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return fmt.Errorf("reading and validating config: %w", err)
 	}
 
-	licenseID, err := license.FromFile(fileHandler, constants.LicenseFilename)
-	if err != nil {
-		cmd.Println("Unable to find license file. Assuming community license.")
-		licenseID = license.CommunityLicense
+	checker := license.NewChecker(quotaChecker, fileHandler)
+	if err := checker.CheckLicense(cmd.Context(), cmd.Printf); err != nil {
+		cmd.Printf("License check failed: %v", err)
 	}
-	quotaResp, err := licenseClient.CheckQuota(cmd.Context(), license.CheckQuotaRequest{
-		License: licenseID,
-		Action:  license.Init,
-	})
-	if err != nil {
-		cmd.Println("Unable to contact license server.")
-		cmd.Println("Please keep your vCPU quota in mind.")
-		cmd.Printf("For community installation the vCPU quota is: %d.\n", license.CommunityQuota)
-	}
-	cmd.Printf("Constellation license found: %s\n", licenseID)
-	cmd.Printf("Please keep your vCPU quota (%d) in mind.\n", quotaResp.Quota)
 
 	var sshUsers []*ssh.UserKey
 	for _, user := range config.SSHUsers {
@@ -413,8 +401,4 @@ func initCompletion(cmd *cobra.Command, args []string, toComplete string) ([]str
 
 type grpcDialer interface {
 	Dial(ctx context.Context, target string) (*grpc.ClientConn, error)
-}
-
-type licenseClient interface {
-	CheckQuota(ctx context.Context, checkRequest license.CheckQuotaRequest) (license.CheckQuotaResponse, error)
 }

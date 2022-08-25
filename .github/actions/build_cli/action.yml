@@ -51,7 +51,7 @@ runs:
         GIT_TAG=$(git describe --tags --always --dirty --abbrev=0)
         mkdir -p build
         cd build
-        cmake -DCLI_VERSION:STRING=${GIT_TAG} ..
+        cmake -DCLI_BUILD_TAGS:STRING=gcp,enterprise -DCLI_VERSION:STRING=${GIT_TAG} ..
         GOOS=${{ inputs.targetOS }} GOARCH=${{ inputs.targetArch }} make -j`nproc` cli
         cp constellation constellation-${{ inputs.targetOS }}-${{ inputs.targetArch }}
         echo "$(pwd)" >> $GITHUB_PATH

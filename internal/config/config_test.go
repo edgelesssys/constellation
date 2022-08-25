@@ -13,6 +13,8 @@ import (
 	"go.uber.org/goleak"
 )
 
+const defaultMsgCount = 9 // expect this number of error messages by default because user-specific values are not set
+
 func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
 }
@@ -154,7 +156,7 @@ func TestValidate(t *testing.T) {
 	}{
 		"default config is valid": {
 			cnf:          Default(),
-			wantMsgCount: 7, // expect 7 error messages by default because user-specific values are not set
+			wantMsgCount: defaultMsgCount,
 		},
 		"config with 1 error": {
 			cnf: func() *Config {
@@ -162,7 +164,7 @@ func TestValidate(t *testing.T) {
 				cnf.Version = "v0"
 				return cnf
 			}(),
-			wantMsgCount: 8,
+			wantMsgCount: defaultMsgCount + 1,
 		},
 		"config with 2 errors": {
 			cnf: func() *Config {
@@ -171,7 +173,7 @@ func TestValidate(t *testing.T) {
 				cnf.StateDiskSizeGB = -1
 				return cnf
 			}(),
-			wantMsgCount: 9,
+			wantMsgCount: defaultMsgCount + 2,
 		},
 	}
 
