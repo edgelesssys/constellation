@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/logging"
-	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/attestation/azure"
 	"github.com/edgelesssys/constellation/internal/attestation/gcp"
@@ -29,6 +28,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/kubernetes/k8sapi/kubectl"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/oid"
+	"github.com/edgelesssys/constellation/internal/role"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )

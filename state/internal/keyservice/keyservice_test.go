@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/oid"
+	"github.com/edgelesssys/constellation/internal/role"
 	"github.com/edgelesssys/constellation/joinservice/joinproto"
 	"github.com/edgelesssys/constellation/state/keyproto"
 	"github.com/stretchr/testify/assert"

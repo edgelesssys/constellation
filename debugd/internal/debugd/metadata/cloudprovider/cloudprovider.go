@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	azurecloud "github.com/edgelesssys/constellation/internal/cloudprovider/azure"
 	gcpcloud "github.com/edgelesssys/constellation/internal/cloudprovider/gcp"
 	qemucloud "github.com/edgelesssys/constellation/internal/cloudprovider/qemu"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
+	"github.com/edgelesssys/constellation/internal/role"
 )
 
 type providerMetadata interface {

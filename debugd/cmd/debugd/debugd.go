@@ -8,6 +8,7 @@ import (
 	"os"
 	"sync"
 
+<<<<<<< HEAD:debugd/cmd/debugd/debugd.go
 	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/debugd/internal/bootstrapper"
 	"github.com/edgelesssys/constellation/debugd/internal/debugd/deploy"
@@ -15,11 +16,20 @@ import (
 	"github.com/edgelesssys/constellation/debugd/internal/debugd/metadata/cloudprovider"
 	"github.com/edgelesssys/constellation/debugd/internal/debugd/metadata/fallback"
 	"github.com/edgelesssys/constellation/debugd/internal/debugd/server"
+=======
+	"github.com/edgelesssys/constellation/debugd/bootstrapper"
+	"github.com/edgelesssys/constellation/debugd/debugd/deploy"
+	"github.com/edgelesssys/constellation/debugd/debugd/metadata"
+	"github.com/edgelesssys/constellation/debugd/debugd/metadata/cloudprovider"
+	"github.com/edgelesssys/constellation/debugd/debugd/metadata/fallback"
+	"github.com/edgelesssys/constellation/debugd/debugd/server"
+>>>>>>> a980bbf5 (move nodestate and role):debugd/debugd/cmd/debugd/debugd.go
 	platform "github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/edgelesssys/constellation/internal/iproute"
 	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/internal/role"
 	"github.com/spf13/afero"
 )
 
