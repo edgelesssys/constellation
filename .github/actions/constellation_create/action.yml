@@ -71,8 +71,8 @@ runs:
           azure)
             if [ "${{ inputs.coreosImage == 'debug-latest' }}" = true ]
             then
-              IMAGE_DEFINITION=$(az sig image-definition list --resource-group constellation-images --gallery-name Constellation_Debug --query "[].name" -o tsv | sort --version-sort | tail -n 1)
-              AZURE_IMAGE=$(az sig image-version list --resource-group constellation-images --gallery-name Constellation_Debug --gallery-image-definition ${IMAGE_DEFINITION} --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table | tail -n 1)
+              IMAGE_DEFINITION=$(az sig image-definition list --resource-group constellation-images --gallery-name Constellation_Debug_CVM --query "[].name" -o tsv | sort --version-sort | tail -n 1)
+              AZURE_IMAGE=$(az sig image-version list --resource-group constellation-images --gallery-name Constellation_Debug_CVM --gallery-image-definition ${IMAGE_DEFINITION} --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table | tail -n 1)
             else
               AZURE_IMAGE=${{ inputs.coreosImage }}
             fi

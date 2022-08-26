@@ -130,6 +130,6 @@ Example:
 
 Type | Gallery | Image Definition | Image Version | List command
 -|-|-|-|-
-Release | Constellation | constellation | 1.5.0 | `az sig image-version list --resource-group constellation-images --gallery-name Constellation --gallery-image-definition constellation --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table`
-Debug | Constellation_Debug | v1.5.0 | 2022.0912.123456 | `az sig image-version list --resource-group constellation-images --gallery-name Constellation_Debug --gallery-image-definition v1.5.0 --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table`
-Branch | Constellation_Testing | ref-cli | 2022.0912.123456 | `az sig image-version list --resource-group constellation-images --gallery-name Constellation_Testing --gallery-image-definition $(go run $(git rev-parse --show-toplevel)/hack/pseudo-version/pseudo-version.go -print-branch) --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table`
+Release | Constellation | constellation | 1.5.0 | `az sig image-version list --resource-group constellation-images --gallery-name Constellation_CVM --gallery-image-definition constellation --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table`
+Debug | Constellation_Debug | v1.5.0 | 2022.0912.123456 | `az sig image-version list --resource-group constellation-images --gallery-name Constellation_Debug_CVM --gallery-image-definition v1.5.0 --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table`
+Branch | Constellation_Testing | ref-cli | 2022.0912.123456 | `az sig image-version list --resource-group constellation-images --gallery-name Constellation_Testing_CVM --gallery-image-definition $(go run $(git rev-parse --show-toplevel)/hack/pseudo-version/pseudo-version.go -print-branch) --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table`

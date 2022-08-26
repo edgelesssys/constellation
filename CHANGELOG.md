@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improve rollback on GCP resource termination. You can now terminate multiple times.
 - Implement SSH peer to peer distribution between debugd nodes.
 - GCP service account can now be managed manually.
+- CoreOS images are publicly available for Azure.
 
 ### Changed
 <!-- For changes in existing functionality.  -->

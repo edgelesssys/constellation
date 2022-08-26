@@ -8,7 +8,7 @@ import (
 
 const (
 	DefaultResourceGroupName = "CONSTELLATION-IMAGES"
-	DefaultGalleryName       = "Constellation"
+	DefaultGalleryName       = "Constellation_CVM"
 	DefaultImageDefinition   = "constellation"
 )
 

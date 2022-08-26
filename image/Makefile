@@ -137,7 +137,7 @@ image-azure: $(AZURE_IMAGE_PATH)
 upload-azure: $(AZURE_IMAGE_PATH)
 	$(eval SIZE := $(shell wc -c $(AZURE_IMAGE_PATH) | cut -d " " -f1))
 	@echo "creating disk of size $(SIZE)"
-	az disk create -n $(AZURE_IMAGE_NAME) -g $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --hyper-v-generation V2 --os-type Linux --for-upload --upload-size-bytes $(SIZE) --sku standard_lrs --tags bootstrapper-sha512=$$(sha512sum $(BOOTSTRAPPER_OVERRIDE_PATH) | cut -d " " -f 1)
+	az disk create -n $(AZURE_IMAGE_NAME) -g $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --hyper-v-generation V2 --os-type Linux --for-upload --upload-size-bytes $(SIZE) --sku standard_lrs
 	@echo "waiting for disk to be created"
 	az disk wait --created -n $(AZURE_IMAGE_NAME) -g $(AZURE_RESOURCE_GROUP_NAME)
 	@echo "created disk $(AZURE_IMAGE_NAME)"
@@ -147,12 +147,15 @@ upload-azure: $(AZURE_IMAGE_PATH)
 	azcopy copy "$(AZURE_IMAGE_PATH)" "$$(az disk grant-access -n $(AZURE_IMAGE_NAME) -g $(AZURE_RESOURCE_GROUP_NAME) --access-level Write --duration-in-seconds 86400 | jq -r .accessSas)" --blob-type PageBlob
 	@echo "Revoking write access"
 	az disk revoke-access -n $(AZURE_IMAGE_NAME) -g $(AZURE_RESOURCE_GROUP_NAME)
-	az image create -g $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) -n $(AZURE_IMAGE_NAME) --hyper-v-generation V2 --os-type Linux --tags bootstrapper-sha512=$$(sha512sum $(BOOTSTRAPPER_OVERRIDE_PATH) | cut -d " " -f 1) --source "$$(az disk list --query "[?name == '$(AZURE_IMAGE_NAME)' && resourceGroup == '$(AZURE_RESOURCE_GROUP_NAME)'] | [0].id" --output json | jq -r)"
+	az image create -g $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) -n $(AZURE_IMAGE_NAME) --hyper-v-generation V2 --os-type Linux --source "$$(az disk list --query "[?name == '$(AZURE_IMAGE_NAME)' && resourceGroup == '$(AZURE_RESOURCE_GROUP_NAME)'] | [0].id" --output json | jq -r)"
 	@echo "Create shared image gallery (if it does not exist yet)"
 	-az sig create -l $(AZURE_REGION) --gallery-name $(AZURE_GALLERY_NAME) --resource-group $(AZURE_RESOURCE_GROUP_NAME)
 	@echo "Create image definition (if it does not exist yet)"
-	-az sig image-definition create --resource-group $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --gallery-name $(AZURE_GALLERY_NAME) --gallery-image-definition $(AZURE_IMAGE_DEFINITION) --publisher $(AZURE_PUBLISHER) --offer $(AZURE_IMAGE_OFFER) --sku $(AZURE_SKU) --os-type Linux --os-state generalized --hyper-v-generation V2 --features SecurityType=ConfidentialVmSupported
-	az sig image-version create --resource-group $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --gallery-name $(AZURE_GALLERY_NAME) --gallery-image-definition $(AZURE_IMAGE_DEFINITION) --gallery-image-version $(AZURE_IMAGE_VERSION) --target-regions $(AZURE_REPLICATION_REGIONS) --replica-count 1 --tags bootstrapper-sha512=$$(sha512sum $(BOOTSTRAPPER_OVERRIDE_PATH) | cut -d " " -f 1) --managed-image "$$(az image list --query "[?name == '$(AZURE_IMAGE_NAME)' && resourceGroup == '$(AZURE_RESOURCE_GROUP_NAME)'] | [0].id" --output json | jq -r)"
+	-az sig image-definition create --resource-group $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --gallery-name $(AZURE_GALLERY_NAME) --gallery-image-definition $(AZURE_IMAGE_DEFINITION) --publisher $(AZURE_PUBLISHER) --offer $(AZURE_IMAGE_OFFER) --sku $(AZURE_SKU) --os-type Linux --os-state generalized --hyper-v-generation V2 --features SecurityType=TrustedLaunch
+	az sig image-version create --resource-group $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --gallery-name $(AZURE_GALLERY_NAME) --gallery-image-definition $(AZURE_IMAGE_DEFINITION) --gallery-image-version $(AZURE_IMAGE_VERSION) --target-regions $(AZURE_REPLICATION_REGIONS) --replica-count 1 --managed-image "$$(az image list --query "[?name == '$(AZURE_IMAGE_NAME)' && resourceGroup == '$(AZURE_RESOURCE_GROUP_NAME)'] | [0].id" --output json | jq -r)"
+	@echo "Create CVM image definition (if it does not exist yet)"
+	-az sig image-definition create --resource-group $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --gallery-name $(AZURE_GALLERY_NAME)_CVM --gallery-image-definition $(AZURE_IMAGE_DEFINITION) --publisher $(AZURE_PUBLISHER) --offer $(AZURE_IMAGE_OFFER) --sku $(AZURE_SKU) --os-type Linux --os-state generalized --hyper-v-generation V2 --features SecurityType=ConfidentialVmSupported
+	az sig image-version create --resource-group $(AZURE_RESOURCE_GROUP_NAME) -l $(AZURE_REGION) --gallery-name $(AZURE_GALLERY_NAME)_CVM --gallery-image-definition $(AZURE_IMAGE_DEFINITION) --gallery-image-version $(AZURE_IMAGE_VERSION) --target-regions $(AZURE_REPLICATION_REGIONS) --replica-count 1 --managed-image "$$(az image list --query "[?name == '$(AZURE_IMAGE_NAME)' && resourceGroup == '$(AZURE_RESOURCE_GROUP_NAME)'] | [0].id" --output json | jq -r)"
 	@echo "Cleaning up resources"
 	az image delete --resource-group $(AZURE_RESOURCE_GROUP_NAME) -n $(AZURE_IMAGE_NAME)
 	az disk delete --resource-group $(AZURE_RESOURCE_GROUP_NAME) -n $(AZURE_IMAGE_NAME) --yes
