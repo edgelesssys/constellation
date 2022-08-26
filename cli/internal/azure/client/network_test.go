@@ -117,58 +117,6 @@ func TestCreateSecurityGroup(t *testing.T) {
 	}
 }
 
-// TODO: deprecate as soon as scale sets are available.
-func TestCreateNIC(t *testing.T) {
-	someErr := errors.New("failed")
-
-	testCases := map[string]struct {
-		networkInterfacesAPI networkInterfacesAPI
-		name                 string
-		publicIPAddressID    string
-		wantErr              bool
-	}{
-		"successful create": {
-			networkInterfacesAPI: stubNetworkInterfacesAPI{},
-			name:                 "nic-name",
-			publicIPAddressID:    "pubIP-id",
-		},
-		"failed to get response from successful create": {
-			networkInterfacesAPI: stubNetworkInterfacesAPI{pollErr: someErr},
-			wantErr:              true,
-		},
-		"failed create": {
-			networkInterfacesAPI: stubNetworkInterfacesAPI{createErr: someErr},
-			wantErr:              true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			ctx := context.Background()
-			client := Client{
-				resourceGroup:        "resource-group",
-				location:             "location",
-				name:                 "name",
-				uid:                  "uid",
-				workers:              make(cloudtypes.Instances),
-				controlPlanes:        make(cloudtypes.Instances),
-				networkInterfacesAPI: tc.networkInterfacesAPI,
-			}
-
-			ip, id, err := client.createNIC(ctx, tc.name, tc.publicIPAddressID)
-			if tc.wantErr {
-				assert.Error(err)
-			} else {
-				assert.NoError(err)
-				assert.NotEmpty(ip)
-				assert.NotEmpty(id)
-			}
-		})
-	}
-}
-
 func TestCreatePublicIPAddress(t *testing.T) {
 	someErr := errors.New("failed")
 

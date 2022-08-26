@@ -257,9 +257,7 @@ func (a stubPublicIPAddressesAPI) Get(ctx context.Context, resourceGroupName str
 }
 
 type stubNetworkInterfacesAPI struct {
-	getErr    error
-	createErr error
-	pollErr   error
+	getErr error
 }
 
 func (a stubNetworkInterfacesAPI) GetVirtualMachineScaleSetNetworkInterface(ctx context.Context, resourceGroupName string,
@@ -282,59 +280,6 @@ func (a stubNetworkInterfacesAPI) GetVirtualMachineScaleSetNetworkInterface(ctx 
 			},
 		},
 	}, nil
-}
-
-// TODO: deprecate as soon as scale sets are available.
-func (a stubNetworkInterfacesAPI) BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, networkInterfaceName string,
-	parameters armnetwork.Interface, options *armnetwork.InterfacesClientBeginCreateOrUpdateOptions) (
-	*runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse], error,
-) {
-	poller, err := runtime.NewPoller(nil, runtime.NewPipeline("", "", runtime.PipelineOptions{}, nil), &runtime.NewPollerOptions[armnetwork.InterfacesClientCreateOrUpdateResponse]{
-		Handler: &stubPoller[armnetwork.InterfacesClientCreateOrUpdateResponse]{
-			result: armnetwork.InterfacesClientCreateOrUpdateResponse{
-				Interface: armnetwork.Interface{
-					ID: to.Ptr("interface-id"),
-					Properties: &armnetwork.InterfacePropertiesFormat{
-						IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
-							{
-								Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
-									PrivateIPAddress: to.Ptr("192.0.2.1"),
-								},
-							},
-						},
-					},
-				},
-			},
-			resultErr: a.pollErr,
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-	return poller, a.createErr
-}
-
-// TODO: deprecate as soon as scale sets are available.
-type stubVirtualMachinesAPI struct {
-	stubResponse armcomputev2.VirtualMachinesClientCreateOrUpdateResponse
-	pollErr      error
-	createErr    error
-}
-
-// TODO: deprecate as soon as scale sets are available.
-func (a stubVirtualMachinesAPI) BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, vmName string, parameters armcomputev2.VirtualMachine,
-	options *armcomputev2.VirtualMachinesClientBeginCreateOrUpdateOptions,
-) (*runtime.Poller[armcomputev2.VirtualMachinesClientCreateOrUpdateResponse], error) {
-	poller, err := runtime.NewPoller(nil, runtime.NewPipeline("", "", runtime.PipelineOptions{}, nil), &runtime.NewPollerOptions[armcomputev2.VirtualMachinesClientCreateOrUpdateResponse]{
-		Handler: &stubPoller[armcomputev2.VirtualMachinesClientCreateOrUpdateResponse]{
-			result:    a.stubResponse,
-			resultErr: a.pollErr,
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-	return poller, a.createErr
 }
 
 type stubApplicationsAPI struct {

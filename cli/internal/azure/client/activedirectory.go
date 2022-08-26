@@ -19,11 +19,10 @@ import (
 )
 
 const (
-	adAppCredentialValidity                   = time.Hour * 24 * 365 * 5                                // ~5 years
-	adReplicationLagCheckInterval             = time.Second * 5                                         // 5 seconds
-	adReplicationLagCheckMaxRetries           = int((15 * time.Minute) / adReplicationLagCheckInterval) // wait for up to 15 minutes for AD replication
-	ownerRoleDefinitionID                     = "8e3af657-a8ff-443c-a75c-2fe8c4bcb635"                  // https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#owner
-	virtualMachineContributorRoleDefinitionID = "9980e02c-c2be-4d73-94e8-173b1dc7cf3c"                  // https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#virtual-machine-contributor
+	adAppCredentialValidity         = time.Hour * 24 * 365 * 5                                // ~5 years
+	adReplicationLagCheckInterval   = time.Second * 5                                         // 5 seconds
+	adReplicationLagCheckMaxRetries = int((15 * time.Minute) / adReplicationLagCheckInterval) // wait for up to 15 minutes for AD replication
+	ownerRoleDefinitionID           = "8e3af657-a8ff-443c-a75c-2fe8c4bcb635"                  // https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#owner
 )
 
 // CreateServicePrincipal creates an Azure AD app with a service principal, gives it "Owner" role on the resource group and creates new credentials.

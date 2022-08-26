@@ -121,51 +121,6 @@ func (c *Client) CreateSecurityGroup(ctx context.Context, input NetworkSecurityG
 	return nil
 }
 
-// createNIC creates a network interface that references a public IP address.
-// TODO: deprecate as soon as scale sets are available.
-func (c *Client) createNIC(ctx context.Context, name, publicIPAddressID string) (ip string, id string, err error) {
-	poller, err := c.networkInterfacesAPI.BeginCreateOrUpdate(
-		ctx, c.resourceGroup, name,
-		armnetwork.Interface{
-			Location: to.Ptr(c.location),
-			Properties: &armnetwork.InterfacePropertiesFormat{
-				NetworkSecurityGroup: &armnetwork.SecurityGroup{
-					ID: to.Ptr(c.networkSecurityGroup),
-				},
-				IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
-					{
-						Name: to.Ptr(name),
-						Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
-							Subnet: &armnetwork.Subnet{
-								ID: to.Ptr(c.subnetID),
-							},
-							PublicIPAddress: &armnetwork.PublicIPAddress{
-								ID: to.Ptr(publicIPAddressID),
-							},
-						},
-					},
-				},
-			},
-		},
-		nil,
-	)
-	if err != nil {
-		return "", "", err
-	}
-	pollerResp, err := poller.PollUntilDone(ctx, &runtime.PollUntilDoneOptions{
-		Frequency: c.pollFrequency,
-	})
-	if err != nil {
-		return "", "", err
-	}
-
-	netInterface := pollerResp.Interface
-
-	return *netInterface.Properties.IPConfigurations[0].Properties.PrivateIPAddress,
-		*netInterface.ID,
-		nil
-}
-
 func (c *Client) createPublicIPAddress(ctx context.Context, name string) (*armnetwork.PublicIPAddress, error) {
 	poller, err := c.publicIPAddressesAPI.BeginCreateOrUpdate(
 		ctx, c.resourceGroup, name,

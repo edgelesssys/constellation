@@ -52,13 +52,9 @@ type publicIPAddressesAPI interface {
 		ipConfigurationName string,
 		options *armnetwork.PublicIPAddressesClientListVirtualMachineScaleSetVMPublicIPAddressesOptions,
 	) *runtime.Pager[armnetwork.PublicIPAddressesClientListVirtualMachineScaleSetVMPublicIPAddressesResponse]
-	// TODO: deprecate as soon as scale sets are available.
 	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, publicIPAddressName string,
 		parameters armnetwork.PublicIPAddress, options *armnetwork.PublicIPAddressesClientBeginCreateOrUpdateOptions) (
 		*runtime.Poller[armnetwork.PublicIPAddressesClientCreateOrUpdateResponse], error)
-	// TODO: deprecate as soon as scale sets are available.
-	Get(ctx context.Context, resourceGroupName string, publicIPAddressName string, options *armnetwork.PublicIPAddressesClientGetOptions) (
-		armnetwork.PublicIPAddressesClientGetResponse, error)
 }
 
 type networkInterfacesAPI interface {
@@ -66,10 +62,6 @@ type networkInterfacesAPI interface {
 		virtualMachineScaleSetName string, virtualmachineIndex string, networkInterfaceName string,
 		options *armnetwork.InterfacesClientGetVirtualMachineScaleSetNetworkInterfaceOptions,
 	) (armnetwork.InterfacesClientGetVirtualMachineScaleSetNetworkInterfaceResponse, error)
-	// TODO: deprecate as soon as scale sets are available
-	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string, networkInterfaceName string,
-		parameters armnetwork.Interface, options *armnetwork.InterfacesClientBeginCreateOrUpdateOptions) (
-		*runtime.Poller[armnetwork.InterfacesClientCreateOrUpdateResponse], error)
 }
 
 type resourceGroupAPI interface {
@@ -97,14 +89,6 @@ type servicePrincipalsAPI interface {
 // TODO: switch to "armauthorization.RoleAssignmentsClient" if issue is resolved.
 type roleAssignmentsAPI interface {
 	Create(ctx context.Context, scope string, roleAssignmentName string, parameters authorization.RoleAssignmentCreateParameters) (authorization.RoleAssignment, error)
-}
-
-// TODO: deprecate as soon as scale sets are available.
-type virtualMachinesAPI interface {
-	BeginCreateOrUpdate(ctx context.Context, resourceGroupName string,
-		vmName string, parameters armcomputev2.VirtualMachine,
-		options *armcomputev2.VirtualMachinesClientBeginCreateOrUpdateOptions) (
-		*runtime.Poller[armcomputev2.VirtualMachinesClientCreateOrUpdateResponse], error)
 }
 
 type applicationInsightsAPI interface {

@@ -115,21 +115,6 @@ func (c *fakeAzureClient) CreateInstances(ctx context.Context, input azurecl.Cre
 	return nil
 }
 
-// TODO: deprecate as soon as scale sets are available.
-func (c *fakeAzureClient) CreateInstancesVMs(ctx context.Context, input azurecl.CreateInstancesInput) error {
-	c.workers = make(cloudtypes.Instances)
-	for i := 0; i < input.CountWorkers; i++ {
-		id := "id-" + strconv.Itoa(i)
-		c.workers[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
-	}
-	c.controlPlanes = make(cloudtypes.Instances)
-	for i := 0; i < input.CountControlPlanes; i++ {
-		id := "id-" + strconv.Itoa(i)
-		c.controlPlanes[id] = cloudtypes.Instance{PublicIP: "192.0.2.1", PrivateIP: "192.0.2.1"}
-	}
-	return nil
-}
-
 func (c *fakeAzureClient) CreateServicePrincipal(ctx context.Context) (string, error) {
 	c.adAppObjectID = "00000000-0000-0000-0000-000000000001"
 	return azureshared.ApplicationCredentials{
@@ -203,11 +188,6 @@ func (c *stubAzureClient) CreateSecurityGroup(ctx context.Context, input azurecl
 }
 
 func (c *stubAzureClient) CreateInstances(ctx context.Context, input azurecl.CreateInstancesInput) error {
-	return c.createInstancesErr
-}
-
-// TODO: deprecate as soon as scale sets are available.
-func (c *stubAzureClient) CreateInstancesVMs(ctx context.Context, input azurecl.CreateInstancesInput) error {
 	return c.createInstancesErr
 }
 

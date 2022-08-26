@@ -34,7 +34,6 @@ type Client struct {
 	publicIPAddressesAPI
 	networkInterfacesAPI
 	loadBalancersAPI
-	virtualMachinesAPI
 	applicationsAPI
 	servicePrincipalsAPI
 	roleAssignmentsAPI
@@ -104,10 +103,6 @@ func NewFromDefault(subscriptionID, tenantID string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	virtualMachinesAPI, err := armcomputev2.NewVirtualMachinesClient(subscriptionID, cred, nil)
-	if err != nil {
-		return nil, err
-	}
 	applicationInsightsAPI, err := armapplicationinsights.NewComponentsClient(subscriptionID, cred, nil)
 	if err != nil {
 		return nil, err
@@ -130,7 +125,6 @@ func NewFromDefault(subscriptionID, tenantID string) (*Client, error) {
 		applicationsAPI:                 applicationsAPI,
 		servicePrincipalsAPI:            servicePrincipalsAPI,
 		roleAssignmentsAPI:              roleAssignmentsAPI,
-		virtualMachinesAPI:              virtualMachinesAPI,
 		applicationInsightsAPI:          applicationInsightsAPI,
 		subscriptionID:                  subscriptionID,
 		tenantID:                        tenantID,
