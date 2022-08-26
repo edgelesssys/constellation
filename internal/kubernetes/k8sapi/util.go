@@ -17,9 +17,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubelet"
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/kubelet"
+	"github.com/edgelesssys/constellation/internal/kubernetes/k8sapi/resources"
 	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 
 	"github.com/edgelesssys/constellation/internal/crypto"

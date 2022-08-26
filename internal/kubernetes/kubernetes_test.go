@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi"
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/kubernetes/k8sapi"
+	"github.com/edgelesssys/constellation/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/versions"
 	"github.com/stretchr/testify/assert"

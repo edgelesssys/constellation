@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/azureshared"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/versions"
 	k8s "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"

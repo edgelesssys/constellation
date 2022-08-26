@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/bootstrapper/initproto"
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/crypto/testvector"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"

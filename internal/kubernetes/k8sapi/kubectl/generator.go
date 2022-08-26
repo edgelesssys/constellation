@@ -1,6 +1,6 @@
 package kubectl
 
-import "github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/kubectl/client"
+import "github.com/edgelesssys/constellation/internal/kubernetes/k8sapi/kubectl/client"
 
 // generator implements clientGenerator interface.
 type generator struct{}

@@ -3,8 +3,8 @@ package qemu
 import (
 	"context"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/versions"
 	k8s "k8s.io/api/core/v1"
 )

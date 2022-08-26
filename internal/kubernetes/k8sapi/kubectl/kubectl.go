@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/internal/kubernetes/k8sapi/resources"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/cli-runtime/pkg/resource"
 )

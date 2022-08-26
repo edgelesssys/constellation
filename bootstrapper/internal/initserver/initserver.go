@@ -9,7 +9,6 @@ import (
 
 	"github.com/edgelesssys/constellation/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/diskencryption"
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/bootstrapper/nodestate"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/atls"
@@ -18,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/internal/grpc/grpclog"
+	"github.com/edgelesssys/constellation/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"

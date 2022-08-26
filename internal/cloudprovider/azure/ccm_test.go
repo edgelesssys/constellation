@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/versions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

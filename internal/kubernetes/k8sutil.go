@@ -4,8 +4,8 @@ import (
 	"context"
 	"net"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi"
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/internal/kubernetes/k8sapi"
+	"github.com/edgelesssys/constellation/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/versions"
 )
