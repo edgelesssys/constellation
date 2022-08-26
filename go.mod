@@ -84,7 +84,6 @@ require (
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
-	golang.org/x/net v0.0.0-20220617184016-355a448f1bc9
 	google.golang.org/api v0.85.0
 	google.golang.org/genproto v0.0.0-20220617124728-180714bec0ad
 	google.golang.org/grpc v1.48.0
@@ -171,6 +170,7 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
+	golang.org/x/net v0.0.0-20220617184016-355a448f1bc9 // indirect
 	k8s.io/klog/v2 v2.60.1 // indirect
 	k8s.io/kubectl v0.24.2 // indirect
 	oras.land/oras-go v1.2.0 // indirect

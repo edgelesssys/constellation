@@ -9,7 +9,6 @@ import (
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
-	"github.com/edgelesssys/constellation/bootstrapper/util"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/iproute"
@@ -64,7 +63,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 		clusterAutoscaler:       clusterAutoscaler,
 		providerMetadata:        providerMetadata,
 		initialMeasurementsJSON: initialMeasurementsJSON,
-		getIPAddr:               util.GetIPAddr,
+		getIPAddr:               getIPAddr,
 	}
 }
 
@@ -447,4 +446,17 @@ func k8sCompliantHostname(in string) string {
 // StartKubelet starts the kubelet service.
 func (k *KubeWrapper) StartKubelet() error {
 	return k.clusterUtil.StartKubelet()
+}
+
+// getIPAddr retrieves to default sender IP used for outgoing connection.
+func getIPAddr() (string, error) {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddr.IP.String(), nil
 }
