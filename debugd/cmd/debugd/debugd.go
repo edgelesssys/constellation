@@ -43,6 +43,10 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	if err := deploy.DeleteUserPassword(ctx, "root"); err != nil {
+		log.Errorf("root login: %w")
+	}
+
 	download := deploy.New(log.Named("download"), &net.Dialer{}, serviceManager, streamer)
 	var fetcher metadata.Fetcher
 	csp := os.Getenv("CONSTEL_CSP")
