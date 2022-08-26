@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgelesssys/constellation/debugd/bootstrapper"
-	"github.com/edgelesssys/constellation/debugd/debugd"
-	"github.com/edgelesssys/constellation/debugd/debugd/deploy"
+	"github.com/edgelesssys/constellation/debugd/internal/bootstrapper"
+	"github.com/edgelesssys/constellation/debugd/internal/debugd"
+	"github.com/edgelesssys/constellation/debugd/internal/debugd/deploy"
 	pb "github.com/edgelesssys/constellation/debugd/service"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"

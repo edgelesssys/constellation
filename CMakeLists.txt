@@ -52,7 +52,7 @@ add_custom_target(debug_bootstrapper
 
 add_custom_target(debugd ALL
   CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/debugd -buildvcs=false -ldflags "-buildid=''"
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/debugd/debugd/cmd/debugd
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/debugd/cmd/debugd
   BYPRODUCTS debugd
 )
 
@@ -62,7 +62,7 @@ add_custom_target(debugd ALL
 
 add_custom_target(cdbg ALL
   CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/cdbg -buildvcs=false -ldflags "-buildid=''"
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/debugd/cdbg
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/debugd/cmd/cdbg
   BYPRODUCTS cdbg
 )
 

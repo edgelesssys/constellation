@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 
-	"github.com/edgelesssys/constellation/debugd/debugd/deploy"
+	"github.com/edgelesssys/constellation/debugd/internal/debugd/deploy"
 	configc "github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/file"
 )

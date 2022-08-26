@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/edgelesssys/constellation/debugd/debugd"
+	"github.com/edgelesssys/constellation/debugd/internal/debugd"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"

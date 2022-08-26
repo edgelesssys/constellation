@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/edgelesssys/constellation/debugd/bootstrapper"
-	"github.com/edgelesssys/constellation/debugd/debugd"
+	"github.com/edgelesssys/constellation/debugd/internal/bootstrapper"
+	"github.com/edgelesssys/constellation/debugd/internal/debugd"
 	pb "github.com/edgelesssys/constellation/debugd/service"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
