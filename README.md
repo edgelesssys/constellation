@@ -85,6 +85,8 @@ For more elaborate overviews of Constellation, see the [architecture] documentat
 
 ## 🚀 Getting started
 
+![Constellation Shell](docs/constellation-shell-windowframe.svg)
+
 Sounds great, how can I try this?
 
 Constellation can be deployed in minutes to your favorite infrastructure provider:
