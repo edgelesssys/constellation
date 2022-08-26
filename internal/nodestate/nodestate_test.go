@@ -4,8 +4,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/role"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

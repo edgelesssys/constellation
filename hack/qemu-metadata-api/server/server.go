@@ -9,11 +9,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/hack/qemu-metadata-api/virtwrapper"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/internal/role"
 	"go.uber.org/zap"
 )
 

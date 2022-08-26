@@ -1,7 +1,7 @@
 package gcp
 
 import (
-	"github.com/edgelesssys/constellation/bootstrapper/role"
+	"github.com/edgelesssys/constellation/internal/role"
 )
 
 const roleMetadataKey = "constellation-role"
