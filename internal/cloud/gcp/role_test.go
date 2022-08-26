@@ -3,7 +3,7 @@ package gcp
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/bootstrapper/role"
+	"github.com/edgelesssys/constellation/internal/role"
 	"github.com/stretchr/testify/assert"
 )
 
