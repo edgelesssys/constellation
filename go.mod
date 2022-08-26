@@ -84,6 +84,7 @@ require (
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
+	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3
 	google.golang.org/api v0.86.0
 	google.golang.org/genproto v0.0.0-20220624142145-8cd45d7dbd1f
 	google.golang.org/grpc v1.48.0
