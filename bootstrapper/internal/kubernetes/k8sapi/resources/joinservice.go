@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/internal/constants"
-	"github.com/edgelesssys/constellation/internal/secrets"
 	"github.com/edgelesssys/constellation/internal/versions"
 	apps "k8s.io/api/apps/v1"
 	k8s "k8s.io/api/core/v1"
@@ -127,11 +126,6 @@ func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON string, mea
 						// Only run on control plane nodes
 						NodeSelector: map[string]string{
 							"node-role.kubernetes.io/control-plane": "",
-						},
-						ImagePullSecrets: []k8s.LocalObjectReference{
-							{
-								Name: secrets.PullSecretName,
-							},
 						},
 						Containers: []k8s.Container{
 							{

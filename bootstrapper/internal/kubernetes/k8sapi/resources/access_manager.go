@@ -1,7 +1,6 @@
 package resources
 
 import (
-	"github.com/edgelesssys/constellation/internal/secrets"
 	"github.com/edgelesssys/constellation/internal/versions"
 	"google.golang.org/protobuf/proto"
 	apps "k8s.io/api/apps/v1"
@@ -14,12 +13,11 @@ const accessManagerNamespace = "kube-system"
 
 // accessManagerDeployment holds the configuration for the SSH user creation pods. User/Key definitions are stored in the ConfigMap, and the manager is deployed on each node by the DaemonSet.
 type accessManagerDeployment struct {
-	ConfigMap       k8s.ConfigMap
-	ServiceAccount  k8s.ServiceAccount
-	Role            rbac.Role
-	RoleBinding     rbac.RoleBinding
-	DaemonSet       apps.DaemonSet
-	ImagePullSecret k8s.Secret
+	ConfigMap      k8s.ConfigMap
+	ServiceAccount k8s.ServiceAccount
+	Role           rbac.Role
+	RoleBinding    rbac.RoleBinding
+	DaemonSet      apps.DaemonSet
 }
 
 // NewAccessManagerDeployment creates a new *accessManagerDeployment which manages the SSH users for the cluster.
@@ -90,11 +88,6 @@ func NewAccessManagerDeployment(sshUsers map[string]string) *accessManagerDeploy
 								Key:      "node-role.kubernetes.io/control-plane",
 								Operator: k8s.TolerationOpExists,
 								Effect:   k8s.TaintEffectNoSchedule,
-							},
-						},
-						ImagePullSecrets: []k8s.LocalObjectReference{
-							{
-								Name: secrets.PullSecretName,
 							},
 						},
 						Containers: []k8s.Container{
@@ -194,7 +187,6 @@ func NewAccessManagerDeployment(sshUsers map[string]string) *accessManagerDeploy
 				},
 			},
 		},
-		ImagePullSecret: NewImagePullSecret(accessManagerNamespace),
 	}
 }
 

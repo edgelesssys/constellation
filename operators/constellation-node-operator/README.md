@@ -220,8 +220,6 @@ In production, it is recommended to deploy the operator using the [operator life
         namespace: olm
     spec:
         sourceType: grpc
-        secrets:
-        - "constellation-pull"
         # TODO: user: set desired operator catalog version here
         image: ghcr.io/edgelesssys/constellation/node-operator-catalog:v0.0.1
         displayName: Constellation Node Operator

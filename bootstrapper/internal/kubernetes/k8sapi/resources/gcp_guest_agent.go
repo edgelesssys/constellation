@@ -1,7 +1,6 @@
 package resources
 
 import (
-	"github.com/edgelesssys/constellation/internal/secrets"
 	"github.com/edgelesssys/constellation/internal/versions"
 	apps "k8s.io/api/apps/v1"
 	k8s "k8s.io/api/core/v1"
@@ -54,11 +53,6 @@ func NewGCPGuestAgentDaemonset() *gcpGuestAgentDaemonset {
 								Key:      "node-role.kubernetes.io/control-plane",
 								Operator: k8s.TolerationOpExists,
 								Effect:   k8s.TaintEffectNoSchedule,
-							},
-						},
-						ImagePullSecrets: []k8s.LocalObjectReference{
-							{
-								Name: secrets.PullSecretName,
 							},
 						},
 						Containers: []k8s.Container{

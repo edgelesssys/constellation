@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"time"
 
-	"github.com/edgelesssys/constellation/internal/secrets"
 	"github.com/edgelesssys/constellation/internal/versions"
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -26,11 +25,9 @@ var NodeOperatorCRDNames = []string{
 }
 
 type nodeOperatorDeployment struct {
-	CatalogSource     operatorsv1alpha1.CatalogSource
-	OperatorGroup     operatorsv1.OperatorGroup
-	Subscription      operatorsv1alpha1.Subscription
-	CatalogPullSecret corev1.Secret
-	ImagePullSecret   corev1.Secret
+	CatalogSource operatorsv1alpha1.CatalogSource
+	OperatorGroup operatorsv1.OperatorGroup
+	Subscription  operatorsv1alpha1.Subscription
 }
 
 // NewNodeOperatorDeployment creates a new constellation node operator deployment.
@@ -45,7 +42,6 @@ func NewNodeOperatorDeployment(cloudProvider string, uid string) *nodeOperatorDe
 			},
 			Spec: operatorsv1alpha1.CatalogSourceSpec{
 				SourceType:  "grpc",
-				Secrets:     []string{secrets.PullSecretName},
 				Image:       versions.NodeOperatorCatalogImage + ":" + versions.NodeOperatorVersion,
 				DisplayName: "Constellation Node Operator",
 				Publisher:   "Edgeless Systems",
@@ -88,8 +84,6 @@ func NewNodeOperatorDeployment(cloudProvider string, uid string) *nodeOperatorDe
 				},
 			},
 		},
-		CatalogPullSecret: NewImagePullSecret(nodeOperatorCatalogNamespace),
-		ImagePullSecret:   NewImagePullSecret(nodeOperatorNamespace),
 	}
 }
 

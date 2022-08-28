@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/internal/constants"
-	"github.com/edgelesssys/constellation/internal/secrets"
 	"github.com/edgelesssys/constellation/internal/versions"
 	apps "k8s.io/api/apps/v1"
 	k8s "k8s.io/api/core/v1"
@@ -22,7 +21,6 @@ type kmsDeployment struct {
 	ClusterRoleBinding rbac.ClusterRoleBinding
 	Deployment         apps.Deployment
 	MasterSecret       k8s.Secret
-	ImagePullSecret    k8s.Secret
 }
 
 // KMSConfig is the configuration needed to set up Constellation's key management service.
@@ -167,11 +165,6 @@ func NewKMSDeployment(csp string, config KMSConfig) *kmsDeployment {
 						NodeSelector: map[string]string{
 							"node-role.kubernetes.io/control-plane": "",
 						},
-						ImagePullSecrets: []k8s.LocalObjectReference{
-							{
-								Name: secrets.PullSecretName,
-							},
-						},
 						Volumes: []k8s.Volume{
 							{
 								Name: "config",
@@ -249,7 +242,6 @@ func NewKMSDeployment(csp string, config KMSConfig) *kmsDeployment {
 			},
 			Type: "Opaque",
 		},
-		ImagePullSecret: NewImagePullSecret(kmsNamespace),
 	}
 }
 
