@@ -35,7 +35,7 @@ while read line; do
 
     AGPL-3.0)
       case $pkg in
-        github.com/edgelesssys/constellation*)
+        github.com/edgelesssys/constellation/*)
           ;;
         *)
           not_allowed
@@ -45,6 +45,8 @@ while read line; do
 
     Unknown)
       case $pkg in
+        github.com/edgelesssys/constellation/*)
+          ;;
         *)
           not_allowed
           ;;
