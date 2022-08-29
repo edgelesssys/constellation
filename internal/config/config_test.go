@@ -13,7 +13,7 @@ import (
 	"go.uber.org/goleak"
 )
 
-const defaultMsgCount = 9 // expect this number of error messages by default because user-specific values are not set
+const defaultMsgCount = 12 // expect this number of error messages by default because user-specific values are not set
 
 func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)

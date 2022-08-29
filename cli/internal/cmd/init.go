@@ -17,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/cli/internal/gcp"
 	"github.com/edgelesssys/constellation/cli/internal/helm"
+	"github.com/edgelesssys/constellation/internal/azureshared"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/config"
@@ -349,7 +350,13 @@ func getMarschaledServiceAccountURI(provider cloudprovider.Provider, config *con
 		return key.ToCloudServiceAccountURI(), nil
 
 	case cloudprovider.Azure:
-		return "", fmt.Errorf("TODO")
+		creds := azureshared.ApplicationCredentials{
+			TenantID:          config.Provider.Azure.TenantID,
+			AppClientID:       config.Provider.Azure.AppClientID,
+			ClientSecretValue: config.Provider.Azure.ClientSecretValue,
+			Location:          config.Provider.Azure.Location,
+		}
+		return creds.ToCloudServiceAccountURI(), nil
 
 	case cloudprovider.QEMU:
 		return "", nil // QEMU does not use service account keys

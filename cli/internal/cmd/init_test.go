@@ -87,12 +87,8 @@ func TestInitialize(t *testing.T) {
 			initServerAPI: &stubInitServer{initResp: testInitResp},
 		},
 		"initialize some azure instances": {
-			state:  testAzureState,
-			idFile: &clusterIDsFile{IP: "192.0.2.1"},
-			configMutator: func(c *config.Config) {
-				c.Provider.Azure.ResourceGroup = "resourceGroup"
-				c.Provider.Azure.UserAssignedIdentity = "userAssignedIdentity"
-			},
+			state:         testAzureState,
+			idFile:        &clusterIDsFile{IP: "192.0.2.1"},
 			initServerAPI: &stubInitServer{initResp: testInitResp},
 		},
 		"initialize some qemu instances": {
@@ -109,12 +105,8 @@ func TestInitialize(t *testing.T) {
 			setAutoscaleFlag: true,
 		},
 		"initialize azure with autoscaling": {
-			state:  testAzureState,
-			idFile: &clusterIDsFile{IP: "192.0.2.1"},
-			configMutator: func(c *config.Config) {
-				c.Provider.Azure.ResourceGroup = "resourceGroup"
-				c.Provider.Azure.UserAssignedIdentity = "userAssignedIdentity"
-			},
+			state:            testAzureState,
+			idFile:           &clusterIDsFile{IP: "192.0.2.1"},
 			initServerAPI:    &stubInitServer{initResp: testInitResp},
 			setAutoscaleFlag: true,
 		},
@@ -557,6 +549,8 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 		conf.Provider.Azure.UserAssignedIdentity = "test-identity"
 		conf.Provider.Azure.Image = "some/image/location"
 		conf.Provider.Azure.ResourceGroup = "test-resource-group"
+		conf.Provider.Azure.AppClientID = "test-client-secret-id"
+		conf.Provider.Azure.ClientSecretValue = "test-client-secret"
 		conf.Provider.Azure.Measurements[8] = []byte("00000000000000000000000000000000")
 		conf.Provider.Azure.Measurements[9] = []byte("11111111111111111111111111111111")
 	case cloudprovider.GCP:

@@ -60,7 +60,6 @@ func TestVerify(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		setupFs          func(*require.Assertions) afero.Fs
 		provider         cloudprovider.Provider
 		protoClient      *stubVerifyClient
 		nodeEndpointFlag string
@@ -72,7 +71,6 @@ func TestVerify(t *testing.T) {
 		wantErr          bool
 	}{
 		"gcp": {
-			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			provider:         cloudprovider.GCP,
 			nodeEndpointFlag: "192.0.2.1:1234",
 			ownerIDFlag:      zeroBase64,
@@ -80,7 +78,6 @@ func TestVerify(t *testing.T) {
 			wantEndpoint:     "192.0.2.1:1234",
 		},
 		"azure": {
-			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			provider:         cloudprovider.Azure,
 			nodeEndpointFlag: "192.0.2.1:1234",
 			ownerIDFlag:      zeroBase64,
@@ -88,7 +85,6 @@ func TestVerify(t *testing.T) {
 			wantEndpoint:     "192.0.2.1:1234",
 		},
 		"default port": {
-			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			provider:         cloudprovider.GCP,
 			nodeEndpointFlag: "192.0.2.1",
 			ownerIDFlag:      zeroBase64,
@@ -96,14 +92,12 @@ func TestVerify(t *testing.T) {
 			wantEndpoint:     "192.0.2.1:" + strconv.Itoa(constants.VerifyServiceNodePortGRPC),
 		},
 		"endpoint not set": {
-			setupFs:     func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			provider:    cloudprovider.GCP,
 			ownerIDFlag: zeroBase64,
 			protoClient: &stubVerifyClient{},
 			wantErr:     true,
 		},
 		"endpoint from id file": {
-			setupFs:      func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			provider:     cloudprovider.GCP,
 			ownerIDFlag:  zeroBase64,
 			protoClient:  &stubVerifyClient{},
@@ -111,7 +105,6 @@ func TestVerify(t *testing.T) {
 			wantEndpoint: "192.0.2.1:" + strconv.Itoa(constants.VerifyServiceNodePortGRPC),
 		},
 		"override endpoint from details file": {
-			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			provider:         cloudprovider.GCP,
 			nodeEndpointFlag: "192.0.2.2:1234",
 			ownerIDFlag:      zeroBase64,
@@ -120,7 +113,6 @@ func TestVerify(t *testing.T) {
 			wantEndpoint:     "192.0.2.2:1234",
 		},
 		"invalid endpoint": {
-			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			provider:         cloudprovider.GCP,
 			nodeEndpointFlag: ":::::",
 			ownerIDFlag:      zeroBase64,
@@ -128,13 +120,11 @@ func TestVerify(t *testing.T) {
 			wantErr:          true,
 		},
 		"neither owner id nor cluster id set": {
-			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			provider:         cloudprovider.GCP,
 			nodeEndpointFlag: "192.0.2.1:1234",
 			wantErr:          true,
 		},
 		"use owner id from id file": {
-			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			provider:         cloudprovider.GCP,
 			nodeEndpointFlag: "192.0.2.1:1234",
 			protoClient:      &stubVerifyClient{},
@@ -142,7 +132,6 @@ func TestVerify(t *testing.T) {
 			wantEndpoint:     "192.0.2.1:1234",
 		},
 		"config file not existing": {
-			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			provider:         cloudprovider.GCP,
 			ownerIDFlag:      zeroBase64,
 			nodeEndpointFlag: "192.0.2.1:1234",
@@ -150,7 +139,6 @@ func TestVerify(t *testing.T) {
 			wantErr:          true,
 		},
 		"error protoClient GetState": {
-			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			provider:         cloudprovider.Azure,
 			nodeEndpointFlag: "192.0.2.1:1234",
 			ownerIDFlag:      zeroBase64,
@@ -158,7 +146,6 @@ func TestVerify(t *testing.T) {
 			wantErr:          true,
 		},
 		"error protoClient GetState not rpc": {
-			setupFs:          func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
 			provider:         cloudprovider.Azure,
 			nodeEndpointFlag: "192.0.2.1:1234",
 			ownerIDFlag:      zeroBase64,
@@ -189,7 +176,7 @@ func TestVerify(t *testing.T) {
 			if tc.nodeEndpointFlag != "" {
 				require.NoError(cmd.Flags().Set("node-endpoint", tc.nodeEndpointFlag))
 			}
-			fileHandler := file.NewHandler(tc.setupFs(require))
+			fileHandler := file.NewHandler(afero.NewMemMapFs())
 
 			config := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.provider)
 			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config))

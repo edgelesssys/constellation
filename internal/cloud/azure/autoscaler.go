@@ -36,8 +36,8 @@ func (a *Autoscaler) Secrets(providerID string, cloudServiceAccountURI string) (
 				Namespace: "kube-system",
 			},
 			Data: map[string][]byte{
-				"ClientID":       []byte(creds.ClientID),
-				"ClientSecret":   []byte(creds.ClientSecret),
+				"ClientID":       []byte(creds.AppClientID),
+				"ClientSecret":   []byte(creds.ClientSecretValue),
 				"ResourceGroup":  []byte(resourceGroup),
 				"SubscriptionID": []byte(subscriptionID),
 				"TenantID":       []byte(creds.TenantID),
