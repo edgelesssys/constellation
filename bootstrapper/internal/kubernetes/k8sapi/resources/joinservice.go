@@ -3,6 +3,7 @@ package resources
 import (
 	"fmt"
 
+	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/edgelesssys/constellation/internal/versions"
@@ -23,7 +24,16 @@ type joinServiceDaemonset struct {
 }
 
 // NewJoinServiceDaemonset returns a daemonset for the join service.
-func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON string, measurementSalt []byte) *joinServiceDaemonset {
+func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON, initialIdKeyDigest, enforceIdKeyDigest string, measurementSalt []byte) *joinServiceDaemonset {
+	joinConfigData := map[string]string{
+		constants.MeasurementsFilename: measurementsJSON,
+		constants.EnforcedPCRsFilename: enforcedPCRsJSON,
+	}
+	if cloudprovider.FromString(csp) == cloudprovider.Azure {
+		joinConfigData[constants.EnforceIdKeyDigestFilename] = enforceIdKeyDigest
+		joinConfigData[constants.IdKeyDigestFilename] = initialIdKeyDigest
+	}
+
 	return &joinServiceDaemonset{
 		ClusterRole: rbac.ClusterRole{
 			TypeMeta: meta.TypeMeta{
@@ -240,10 +250,7 @@ func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON string, mea
 				Name:      constants.JoinConfigMap,
 				Namespace: constants.ConstellationNamespace,
 			},
-			Data: map[string]string{
-				constants.MeasurementsFilename: measurementsJSON,
-				constants.EnforcedPCRsFilename: enforcedPCRsJSON,
-			},
+			Data: joinConfigData,
 			BinaryData: map[string][]byte{
 				constants.MeasurementSaltFilename: measurementSalt,
 			},

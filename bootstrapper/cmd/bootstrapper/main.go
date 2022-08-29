@@ -94,7 +94,7 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &gcpcloud.CloudControllerManager{},
-			&gcpcloud.CloudNodeManager{}, &gcpcloud.Autoscaler{}, metadata, pcrsJSON,
+			&gcpcloud.CloudNodeManager{}, &gcpcloud.Autoscaler{}, metadata, pcrsJSON, nil,
 		)
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
@@ -106,6 +106,11 @@ func main() {
 		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.AzurePCRSelection)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
+		}
+
+		idKeyDigest, err := azure.GetIdKeyDigest(vtpm.OpenVTPM)
+		if err != nil {
+			log.With(zap.Error(err)).Fatalf("Failed to get idkeydigest")
 		}
 
 		issuer = azure.NewIssuer()
@@ -125,7 +130,7 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"azure", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), azurecloud.NewCloudControllerManager(metadata),
-			&azurecloud.CloudNodeManager{}, &azurecloud.Autoscaler{}, metadata, pcrsJSON,
+			&azurecloud.CloudNodeManager{}, &azurecloud.Autoscaler{}, metadata, pcrsJSON, idKeyDigest,
 		)
 
 		openTPM = vtpm.OpenVTPM
@@ -146,7 +151,7 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &qemucloud.CloudControllerManager{},
-			&qemucloud.CloudNodeManager{}, &qemucloud.Autoscaler{}, metadata, pcrsJSON,
+			&qemucloud.CloudNodeManager{}, &qemucloud.Autoscaler{}, metadata, pcrsJSON, nil,
 		)
 		metadataAPI = metadata
 

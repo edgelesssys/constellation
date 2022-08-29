@@ -29,14 +29,15 @@ type Validator struct {
 }
 
 // NewValidator initializes a new Azure validator with the provided PCR values.
-func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32) *Validator {
+func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, idkeydigest []byte, enforceIdKeyDigest bool, log vtpm.WarnLogger) *Validator {
 	return &Validator{
 		Validator: vtpm.NewValidator(
 			pcrs,
 			enforcedPCRs,
-			trustedKeyFromSNP(&azureInstanceInfo{}),
+			trustedKeyFromSNP(&azureInstanceInfo{}, idkeydigest, enforceIdKeyDigest, log),
 			validateAzureCVM,
 			vtpm.VerifyPKCS1v15,
+			log,
 		),
 	}
 }
@@ -77,9 +78,21 @@ func (e *vcekError) Error() string {
 	return fmt.Sprintf("validating VCEK: %v", e.innerError)
 }
 
+type idkeyError struct {
+	expectedValue []byte
+}
+
+func (e *idkeyError) Unwrap() error {
+	return nil
+}
+
+func (e *idkeyError) Error() string {
+	return fmt.Sprintf("configured idkeydigest does not match reported idkeydigest: %x", e.expectedValue)
+}
+
 // trustedKeyFromSNP establishes trust in the given public key.
 // It does so by verifying the SNP attestation statement in instanceInfo.
-func trustedKeyFromSNP(hclAk HCLAkValidator) func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
+func trustedKeyFromSNP(hclAk HCLAkValidator, idkeydigest []byte, enforceIdKeyDigest bool, log vtpm.WarnLogger) func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
 	return func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
 		var instanceInfo azureInstanceInfo
 		if err := json.Unmarshal(instanceInfoRaw, &instanceInfo); err != nil {
@@ -96,7 +109,7 @@ func trustedKeyFromSNP(hclAk HCLAkValidator) func(akPub, instanceInfoRaw []byte)
 			return nil, fmt.Errorf("validating VCEK: %w", err)
 		}
 
-		if err = validateSNPReport(vcek, report); err != nil {
+		if err = validateSNPReport(vcek, idkeydigest, enforceIdKeyDigest, report, log); err != nil {
 			return nil, fmt.Errorf("validating SNP report: %w", err)
 		}
 
@@ -163,7 +176,7 @@ func validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certificate, error) {
 	return vcek, nil
 }
 
-func validateSNPReport(cert *x509.Certificate, report snpAttestationReport) error {
+func validateSNPReport(cert *x509.Certificate, expectedIdKeyDigest []byte, enforceIdKeyDigest bool, report snpAttestationReport, log vtpm.WarnLogger) error {
 	sig_r := report.Signature.R[:]
 	sig_s := report.Signature.S[:]
 
@@ -187,6 +200,15 @@ func validateSNPReport(cert *x509.Certificate, report snpAttestationReport) erro
 	// signature is only calculated from 0x0 to 0x2a0
 	if err := cert.CheckSignature(x509.ECDSAWithSHA384, buf.Bytes()[:0x2a0], sigEncoded); err != nil {
 		return &signatureError{err}
+	}
+
+	if !bytes.Equal(expectedIdKeyDigest, report.IdKeyDigest[:]) {
+		if enforceIdKeyDigest {
+			return &idkeyError{report.IdKeyDigest[:]}
+		}
+		if log != nil {
+			log.Warnf("Encountered different than configured idkeydigest value: %x.\n", report.IdKeyDigest[:])
+		}
 	}
 
 	return nil

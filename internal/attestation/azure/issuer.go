@@ -18,6 +18,7 @@ const (
 	lenHclHeader                   = 0x20
 	lenSnpReport                   = 0x4a0
 	lenSnpReportRuntimeDataPadding = 0x14
+	tpmReportIdx                   = 0x01400001
 )
 
 // Issuer for Azure TPM attestation.
@@ -39,6 +40,27 @@ func NewIssuer() *Issuer {
 			getSNPAttestation(&tpmReport{}, imdsAPI),
 		),
 	}
+}
+
+// GetIdKeyDigest reads the idkeydigest from the snp report saved in the TPM's non-volatile memory.
+func GetIdKeyDigest(open vtpm.TPMOpenFunc) ([]byte, error) {
+	tpm, err := open()
+	if err != nil {
+		return nil, err
+	}
+	defer tpm.Close()
+
+	reportRaw, err := tpm2.NVReadEx(tpm, tpmReportIdx, tpm2.HandleOwner, "", 0)
+	if err != nil {
+		return nil, fmt.Errorf("reading idx %x from TMP: %w", tpmReportIdx, err)
+	}
+
+	report, err := newSNPReportFromBytes(reportRaw)
+	if err != nil {
+		return nil, fmt.Errorf("creating snp report: %w", err)
+	}
+
+	return report.IdKeyDigest[:], nil
 }
 
 func hclAkTemplate() tpm2.Public {
@@ -113,7 +135,7 @@ func getSNPAttestation(reportGetter tpmReportGetter, imdsAPI imdsApi) func(tpm i
 type tpmReport struct{}
 
 func (s *tpmReport) get(tpm io.ReadWriteCloser) ([]byte, error) {
-	return tpm2.NVReadEx(tpm, 0x01400001, tpm2.HandleOwner, "", 0)
+	return tpm2.NVReadEx(tpm, tpmReportIdx, tpm2.HandleOwner, "", 0)
 }
 
 type tpmReportGetter interface {

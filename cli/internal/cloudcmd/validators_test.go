@@ -29,10 +29,12 @@ func TestNewValidator(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		provider cloudprovider.Provider
-		config   *config.Config
-		pcrs     map[uint32][]byte
-		wantErr  bool
+		provider           cloudprovider.Provider
+		config             *config.Config
+		pcrs               map[uint32][]byte
+		enforceIdKeyDigest bool
+		idkeydigest        string
+		wantErr            bool
 	}{
 		"gcp": {
 			provider: cloudprovider.GCP,
@@ -61,6 +63,19 @@ func TestNewValidator(t *testing.T) {
 			pcrs:     testPCRs,
 			wantErr:  true,
 		},
+		"set idkeydigest": {
+			provider:           cloudprovider.Azure,
+			pcrs:               testPCRs,
+			idkeydigest:        "414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141",
+			enforceIdKeyDigest: true,
+		},
+		"invalid idkeydigest": {
+			provider:           cloudprovider.Azure,
+			pcrs:               testPCRs,
+			idkeydigest:        "41414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414",
+			enforceIdKeyDigest: true,
+			wantErr:            true,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -74,7 +89,7 @@ func TestNewValidator(t *testing.T) {
 			}
 			if tc.provider == cloudprovider.Azure {
 				measurements := config.Measurements(tc.pcrs)
-				conf.Provider.Azure = &config.AzureConfig{Measurements: measurements}
+				conf.Provider.Azure = &config.AzureConfig{Measurements: measurements, EnforceIdKeyDigest: &tc.enforceIdKeyDigest, IdKeyDigest: tc.idkeydigest}
 			}
 			if tc.provider == cloudprovider.QEMU {
 				measurements := config.Measurements(tc.pcrs)
@@ -96,6 +111,7 @@ func TestNewValidator(t *testing.T) {
 
 func TestValidatorV(t *testing.T) {
 	zero := []byte("00000000000000000000000000000000")
+
 	newTestPCRs := func() map[uint32][]byte {
 		return map[uint32][]byte{
 			0:  zero,
@@ -122,17 +138,17 @@ func TestValidatorV(t *testing.T) {
 		"gcp": {
 			provider: cloudprovider.GCP,
 			pcrs:     newTestPCRs(),
-			wantVs:   gcp.NewValidator(newTestPCRs(), nil),
+			wantVs:   gcp.NewValidator(newTestPCRs(), nil, nil),
 		},
 		"azure": {
 			provider: cloudprovider.Azure,
 			pcrs:     newTestPCRs(),
-			wantVs:   azure.NewValidator(newTestPCRs(), nil),
+			wantVs:   azure.NewValidator(newTestPCRs(), nil, nil, false, nil),
 		},
 		"qemu": {
 			provider: cloudprovider.QEMU,
 			pcrs:     newTestPCRs(),
-			wantVs:   qemu.NewValidator(newTestPCRs(), nil),
+			wantVs:   qemu.NewValidator(newTestPCRs(), nil, nil),
 		},
 	}
 

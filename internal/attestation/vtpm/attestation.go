@@ -138,7 +138,7 @@ type Validator struct {
 
 // NewValidator returns a new Validator.
 func NewValidator(expectedPCRs map[uint32][]byte, enforcedPCRs []uint32,
-	getTrustedKey GetTPMTrustedAttestationPublicKey, validateCVM ValidateCVM, verifyUserData VerifyUserData,
+	getTrustedKey GetTPMTrustedAttestationPublicKey, validateCVM ValidateCVM, verifyUserData VerifyUserData, log WarnLogger,
 ) *Validator {
 	// Convert the enforced PCR list to a map for convenient and fast lookup
 	enforcedMap := make(map[uint32]struct{})
@@ -152,12 +152,8 @@ func NewValidator(expectedPCRs map[uint32][]byte, enforcedPCRs []uint32,
 		getTrustedKey:  getTrustedKey,
 		validateCVM:    validateCVM,
 		verifyUserData: verifyUserData,
+		log:            log,
 	}
-}
-
-// AddLogger adds a logger to the validator.
-func (v *Validator) AddLogger(log WarnLogger) {
-	v.log = log
 }
 
 // Validate a TPM based attestation.
