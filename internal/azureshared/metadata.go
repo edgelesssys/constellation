@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"strings"
 )
 
 var azureVMSSProviderIDRegexp = regexp.MustCompile(`^azure:///subscriptions/([^/]+)/resourceGroups/([^/]+)/providers/Microsoft.Compute/virtualMachineScaleSets/([^/]+)/virtualMachines/([^/]+)$`)
@@ -16,19 +15,6 @@ func BasicsFromProviderID(providerID string) (subscriptionID, resourceGroup stri
 		return subscriptionID, resourceGroup, nil
 	}
 	return "", "", fmt.Errorf("providerID %v is malformatted", providerID)
-}
-
-// UIDFromProviderID extracts our own generated unique ID, which is the
-// suffix at the resource group, e.g., resource-group-J18dB
-// J18dB is the UID.
-func UIDFromProviderID(providerID string) (string, error) {
-	_, resourceGroup, _, _, err := ScaleSetInformationFromProviderID(providerID)
-	if err != nil {
-		return "", err
-	}
-
-	parts := strings.Split(resourceGroup, "-")
-	return parts[len(parts)-1], nil
 }
 
 // ScaleSetInformationFromProviderID splits a provider's id belonging to an azure scaleset into core components.

@@ -43,39 +43,6 @@ func TestBasicsFromProviderID(t *testing.T) {
 	}
 }
 
-func TestUIDFromProviderID(t *testing.T) {
-	testCases := map[string]struct {
-		providerID string
-		wantUID    string
-		wantErr    bool
-	}{
-		"UID from virtual machine works": {
-			providerID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group-ABC123/providers/Microsoft.Compute/virtualMachineScaleSets/scaleset/virtualMachines/instance-name",
-			wantUID:    "ABC123",
-		},
-		"providerID is malformed": {
-			providerID: "malformed-provider-id",
-			wantErr:    true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			uid, err := UIDFromProviderID(tc.providerID)
-
-			if tc.wantErr {
-				assert.Error(err)
-				return
-			}
-			require.NoError(err)
-			assert.Equal(tc.wantUID, uid)
-		})
-	}
-}
-
 func TestScaleSetInformationFromProviderID(t *testing.T) {
 	testCases := map[string]struct {
 		providerID         string

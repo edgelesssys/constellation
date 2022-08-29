@@ -11,15 +11,22 @@ import (
 )
 
 type imdsAPI interface {
-	Retrieve(ctx context.Context) (metadataResponse, error)
+	ProviderID(ctx context.Context) (string, error)
+	SubscriptionID(ctx context.Context) (string, error)
+	ResourceGroup(ctx context.Context) (string, error)
+	UID(ctx context.Context) (string, error)
 }
 
 type virtualNetworksAPI interface {
-	NewListPager(resourceGroupName string, options *armnetwork.VirtualNetworksClientListOptions) *runtime.Pager[armnetwork.VirtualNetworksClientListResponse]
+	NewListPager(resourceGroupName string,
+		options *armnetwork.VirtualNetworksClientListOptions,
+	) *runtime.Pager[armnetwork.VirtualNetworksClientListResponse]
 }
 
 type securityGroupsAPI interface {
-	NewListPager(resourceGroupName string, options *armnetwork.SecurityGroupsClientListOptions) *runtime.Pager[armnetwork.SecurityGroupsClientListResponse]
+	NewListPager(resourceGroupName string,
+		options *armnetwork.SecurityGroupsClientListOptions,
+	) *runtime.Pager[armnetwork.SecurityGroupsClientListResponse]
 }
 
 type networkInterfacesAPI interface {
@@ -38,7 +45,8 @@ type publicIPAddressesAPI interface {
 		options *armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressOptions,
 	) (armnetwork.PublicIPAddressesClientGetVirtualMachineScaleSetPublicIPAddressResponse, error)
 	Get(ctx context.Context, resourceGroupName string, publicIPAddressName string,
-		options *armnetwork.PublicIPAddressesClientGetOptions) (armnetwork.PublicIPAddressesClientGetResponse, error)
+		options *armnetwork.PublicIPAddressesClientGetOptions,
+	) (armnetwork.PublicIPAddressesClientGetResponse, error)
 }
 
 type virtualMachineScaleSetVMsAPI interface {
@@ -61,10 +69,16 @@ type loadBalancerAPI interface {
 }
 
 type tagsAPI interface {
-	CreateOrUpdateAtScope(ctx context.Context, scope string, parameters armresources.TagsResource, options *armresources.TagsClientCreateOrUpdateAtScopeOptions) (armresources.TagsClientCreateOrUpdateAtScopeResponse, error)
-	UpdateAtScope(ctx context.Context, scope string, parameters armresources.TagsPatchResource, options *armresources.TagsClientUpdateAtScopeOptions) (armresources.TagsClientUpdateAtScopeResponse, error)
+	CreateOrUpdateAtScope(ctx context.Context, scope string, parameters armresources.TagsResource,
+		options *armresources.TagsClientCreateOrUpdateAtScopeOptions,
+	) (armresources.TagsClientCreateOrUpdateAtScopeResponse, error)
+	UpdateAtScope(ctx context.Context, scope string, parameters armresources.TagsPatchResource,
+		options *armresources.TagsClientUpdateAtScopeOptions,
+	) (armresources.TagsClientUpdateAtScopeResponse, error)
 }
 
 type applicationInsightsAPI interface {
-	Get(ctx context.Context, resourceGroupName string, resourceName string, options *armapplicationinsights.ComponentsClientGetOptions) (armapplicationinsights.ComponentsClientGetResponse, error)
+	NewListByResourceGroupPager(resourceGroupName string,
+		options *armapplicationinsights.ComponentsClientListByResourceGroupOptions,
+	) *runtime.Pager[armapplicationinsights.ComponentsClientListByResourceGroupResponse]
 }

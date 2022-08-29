@@ -19,12 +19,30 @@ func TestMain(m *testing.M) {
 }
 
 type stubIMDSAPI struct {
-	res         metadataResponse
-	retrieveErr error
+	providerIDErr     error
+	providerID        string
+	subscriptionIDErr error
+	subscriptionID    string
+	resourceGroupErr  error
+	resourceGroup     string
+	uidErr            error
+	uid               string
 }
 
-func (a *stubIMDSAPI) Retrieve(ctx context.Context) (metadataResponse, error) {
-	return a.res, a.retrieveErr
+func (a *stubIMDSAPI) ProviderID(ctx context.Context) (string, error) {
+	return a.providerID, a.providerIDErr
+}
+
+func (a *stubIMDSAPI) SubscriptionID(ctx context.Context) (string, error) {
+	return a.subscriptionID, a.subscriptionIDErr
+}
+
+func (a *stubIMDSAPI) ResourceGroup(ctx context.Context) (string, error) {
+	return a.resourceGroup, a.resourceGroupErr
+}
+
+func (a *stubIMDSAPI) UID(ctx context.Context) (string, error) {
+	return a.uid, a.uidErr
 }
 
 type stubNetworkInterfacesAPI struct {

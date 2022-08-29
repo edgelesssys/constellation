@@ -82,7 +82,6 @@ func TestListScaleSetVMs(t *testing.T) {
 		},
 	}
 	testCases := map[string]struct {
-		imdsAPI                      imdsAPI
 		networkInterfacesAPI         networkInterfacesAPI
 		virtualMachineScaleSetVMsAPI virtualMachineScaleSetVMsAPI
 		scaleSetsAPI                 scaleSetsAPI
@@ -90,35 +89,30 @@ func TestListScaleSetVMs(t *testing.T) {
 		wantInstances                []metadata.InstanceMetadata
 	}{
 		"listVMs works": {
-			imdsAPI:                      newScaleSetIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachineScaleSetVMsAPI: newVirtualMachineScaleSetsVMsStub(),
 			scaleSetsAPI:                 newScaleSetsStub(),
 			wantInstances:                wantInstances,
 		},
 		"invalid scale sets are skipped": {
-			imdsAPI:                      newScaleSetIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachineScaleSetVMsAPI: newVirtualMachineScaleSetsVMsStub(),
 			scaleSetsAPI:                 newListContainingNilScaleSetStub(),
 			wantInstances:                wantInstances,
 		},
 		"listVMs can return 0 VMs": {
-			imdsAPI:                      newScaleSetIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachineScaleSetVMsAPI: &stubVirtualMachineScaleSetVMsAPI{pager: &stubVirtualMachineScaleSetVMPager{}},
 			scaleSetsAPI:                 newScaleSetsStub(),
 			wantInstances:                []metadata.InstanceMetadata{},
 		},
 		"can skip nil in VM list": {
-			imdsAPI:                      newScaleSetIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachineScaleSetVMsAPI: newListContainingNilScaleSetVirtualMachinesStub(),
 			scaleSetsAPI:                 newScaleSetsStub(),
 			wantInstances:                wantInstances,
 		},
 		"converting instance fails": {
-			imdsAPI:                      newScaleSetIMDSStub(),
 			networkInterfacesAPI:         newNetworkInterfacesStub(),
 			virtualMachineScaleSetVMsAPI: newListContainingInvalidScaleSetVirtualMachinesStub(),
 			scaleSetsAPI:                 newScaleSetsStub(),
@@ -132,7 +126,6 @@ func TestListScaleSetVMs(t *testing.T) {
 			require := require.New(t)
 
 			metadata := Metadata{
-				imdsAPI:                      tc.imdsAPI,
 				networkInterfacesAPI:         tc.networkInterfacesAPI,
 				virtualMachineScaleSetVMsAPI: tc.virtualMachineScaleSetVMsAPI,
 				scaleSetsAPI:                 tc.scaleSetsAPI,

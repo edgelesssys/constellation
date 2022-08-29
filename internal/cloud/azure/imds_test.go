@@ -10,39 +10,83 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/test/bufconn"
 )
 
-func TestRetrieve(t *testing.T) {
+func TestIMDSClient(t *testing.T) {
+	uidTags := []metadataTag{{Name: "uid", Value: "uid"}}
 	response := metadataResponse{
-		Compute: struct {
-			ResourceID string `json:"resourceId,omitempty"`
-		}{
-			ResourceID: "resource-id",
+		Compute: metadataResponseCompute{
+			ResourceID:    "resource-id",
+			ResourceGroup: "resource-group",
+			Tags:          uidTags,
 		},
 	}
+	responseWithoutID := metadataResponse{
+		Compute: metadataResponseCompute{
+			ResourceGroup: "resource-group",
+			Tags:          uidTags,
+		},
+	}
+	responseWithoutGroup := metadataResponse{
+		Compute: metadataResponseCompute{
+			ResourceID: "resource-id",
+			Tags:       uidTags,
+		},
+	}
+	responseWithoutUID := metadataResponse{
+		Compute: metadataResponseCompute{
+			ResourceID:    "resource-id",
+			ResourceGroup: "resource-group",
+		},
+	}
+
 	testCases := map[string]struct {
-		server       httpBufconnServer
-		wantErr      bool
-		wantResponse metadataResponse
+		server               httpBufconnServer
+		wantProviderIDErr    bool
+		wantProviderID       string
+		wantResourceGroupErr bool
+		wantResourceGroup    string
+		wantUIDErr           bool
+		wantUID              string
 	}{
 		"metadata response parsed": {
-			server:       newHTTPBufconnServerWithMetadataResponse(response),
-			wantResponse: response,
+			server:            newHTTPBufconnServerWithMetadataResponse(response),
+			wantProviderID:    "resource-id",
+			wantResourceGroup: "resource-group",
+			wantUID:           "uid",
+		},
+		"metadata response without resource ID": {
+			server:            newHTTPBufconnServerWithMetadataResponse(responseWithoutID),
+			wantProviderIDErr: true,
+			wantResourceGroup: "resource-group",
+			wantUID:           "uid",
+		},
+		"metadata response without UID tag": {
+			server:            newHTTPBufconnServerWithMetadataResponse(responseWithoutUID),
+			wantProviderID:    "resource-id",
+			wantResourceGroup: "resource-group",
+			wantUIDErr:        true,
+		},
+		"metadata response without resource group": {
+			server:               newHTTPBufconnServerWithMetadataResponse(responseWithoutGroup),
+			wantProviderID:       "resource-id",
+			wantResourceGroupErr: true,
+			wantUID:              "uid",
 		},
 		"invalid imds response detected": {
 			server: newHTTPBufconnServer(func(writer http.ResponseWriter, request *http.Request) {
 				fmt.Fprintln(writer, "invalid-result")
 			}),
-			wantErr: true,
+			wantProviderIDErr:    true,
+			wantResourceGroupErr: true,
+			wantUIDErr:           true,
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			require := require.New(t)
 
 			defer tc.server.Close()
 
@@ -54,17 +98,33 @@ func TestRetrieve(t *testing.T) {
 					DialTLS:        tc.server.Dial,
 				},
 			}
-			iClient := imdsClient{
-				client: &hClient,
-			}
-			resp, err := iClient.Retrieve(context.Background())
+			iClient := imdsClient{client: &hClient}
 
-			if tc.wantErr {
+			ctx := context.Background()
+
+			id, err := iClient.ProviderID(ctx)
+			if tc.wantProviderIDErr {
 				assert.Error(err)
-				return
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.wantProviderID, id)
 			}
-			require.NoError(err)
-			assert.Equal(tc.wantResponse, resp)
+
+			group, err := iClient.ResourceGroup(ctx)
+			if tc.wantResourceGroupErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.wantResourceGroup, group)
+			}
+
+			uid, err := iClient.UID(ctx)
+			if tc.wantUIDErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.wantUID, uid)
+			}
 		})
 	}
 }
