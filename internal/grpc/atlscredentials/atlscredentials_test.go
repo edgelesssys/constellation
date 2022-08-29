@@ -11,7 +11,6 @@ import (
 
 	"github.com/edgelesssys/constellation/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/internal/atls"
-	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -100,8 +99,6 @@ func (v fakeValidator) Validate(attDoc []byte, nonce []byte) ([]byte, error) {
 	}
 	return doc.UserData, v.err
 }
-
-func (v fakeValidator) AddLogger(vtpm.WarnLogger) {}
 
 type fakeOID asn1.ObjectIdentifier
 

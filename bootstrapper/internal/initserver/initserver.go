@@ -120,6 +120,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		req.KubernetesVersion,
 		measurementSalt,
 		req.EnforcedPcrs,
+		req.EnforceIdkeydigest,
 		resources.KMSConfig{
 			MasterSecret:       req.MasterSecret,
 			Salt:               req.Salt,
@@ -203,6 +204,7 @@ type ClusterInitializer interface {
 		k8sVersion string,
 		measurementSalt []byte,
 		enforcedPcrs []uint32,
+		enforceIdKeyDigest bool,
 		kmsConfig resources.KMSConfig,
 		sshUserKeys map[string]string,
 		helmDeployments []byte,

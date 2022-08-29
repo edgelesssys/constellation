@@ -28,7 +28,7 @@ type Validator struct {
 }
 
 // NewValidator initializes a new GCP validator with the provided PCR values.
-func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32) *Validator {
+func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, log vtpm.WarnLogger) *Validator {
 	return &Validator{
 		Validator: vtpm.NewValidator(
 			pcrs,
@@ -36,6 +36,7 @@ func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32) *Validator {
 			trustedKeyFromGCEAPI(newInstanceClient),
 			gceNonHostInfoEvent,
 			vtpm.VerifyPKCS1v15,
+			log,
 		),
 	}
 }

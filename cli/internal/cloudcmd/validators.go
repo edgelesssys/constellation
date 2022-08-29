@@ -3,6 +3,7 @@ package cloudcmd
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -17,10 +18,12 @@ import (
 )
 
 type Validator struct {
-	provider     cloudprovider.Provider
-	pcrs         map[uint32][]byte
-	enforcedPCRs []uint32
-	validator    atls.Validator
+	provider           cloudprovider.Provider
+	pcrs               map[uint32][]byte
+	enforcedPCRs       []uint32
+	idkeydigest        []byte
+	enforceIdKeyDigest bool
+	validator          atls.Validator
 }
 
 func NewValidator(provider cloudprovider.Provider, config *config.Config) (*Validator, error) {
@@ -32,6 +35,16 @@ func NewValidator(provider cloudprovider.Provider, config *config.Config) (*Vali
 	if err := v.setPCRs(config); err != nil {
 		return nil, err
 	}
+
+	if v.provider == cloudprovider.Azure {
+		idkeydigest, err := hex.DecodeString(config.Provider.Azure.IdKeyDigest)
+		if err != nil {
+			return nil, fmt.Errorf("bad config: decoding idkeydigest from config: %w", err)
+		}
+		v.enforceIdKeyDigest = *config.Provider.Azure.EnforceIdKeyDigest
+		v.idkeydigest = idkeydigest
+	}
+
 	return &v, nil
 }
 
@@ -116,15 +129,15 @@ func (v *Validator) PCRS() map[uint32][]byte {
 }
 
 func (v *Validator) updateValidator(cmd *cobra.Command) {
+	log := warnLogger{cmd: cmd}
 	switch v.provider {
 	case cloudprovider.GCP:
-		v.validator = gcp.NewValidator(v.pcrs, v.enforcedPCRs)
+		v.validator = gcp.NewValidator(v.pcrs, v.enforcedPCRs, log)
 	case cloudprovider.Azure:
-		v.validator = azure.NewValidator(v.pcrs, v.enforcedPCRs)
+		v.validator = azure.NewValidator(v.pcrs, v.enforcedPCRs, v.idkeydigest, v.enforceIdKeyDigest, log)
 	case cloudprovider.QEMU:
-		v.validator = qemu.NewValidator(v.pcrs, v.enforcedPCRs)
+		v.validator = qemu.NewValidator(v.pcrs, v.enforcedPCRs, log)
 	}
-	v.validator.AddLogger(warnLogger{cmd: cmd})
 }
 
 func (v *Validator) checkPCRs(pcrs map[uint32][]byte, enforcedPCRs []uint32) error {

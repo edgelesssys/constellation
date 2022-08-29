@@ -14,7 +14,6 @@ import (
 
 	"github.com/edgelesssys/constellation/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/config"
@@ -504,8 +503,6 @@ func (v *testValidator) Validate(attDoc []byte, nonce []byte) ([]byte, error) {
 	}
 	return attestation.UserData, nil
 }
-
-func (v *testValidator) AddLogger(vtpm.WarnLogger) {}
 
 type testIssuer struct {
 	oid.Getter

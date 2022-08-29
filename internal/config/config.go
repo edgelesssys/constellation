@@ -167,6 +167,12 @@ type AzureConfig struct {
 	//   List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning.
 	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
 	// description: |
+	//   Expected value for the field 'idkeydigest' in the AMD SEV-SNP attestation report. Only usable with ConfidentialVMs. See 4.6 and 7.3 in: https://www.amd.com/system/files/TechDocs/56860.pdf
+	IdKeyDigest string `yaml:"idKeyDigest" validate:"required_if=EnforceIdKeyDigest true,omitempty,hexadecimal,len=96"`
+	// description: |
+	//   Enforce the specified idKeyDigest value during remote attestation.
+	EnforceIdKeyDigest *bool `yaml:"enforceIdKeyDigest" validate:"required"`
+	// description: |
 	//   Use VMs with security type Confidential VM. If set to false, Trusted Launch VMs will be used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview
 	ConfidentialVM *bool `yaml:"confidentialVM" validate:"required"`
 }
@@ -247,7 +253,6 @@ func Default() *Config {
 			},
 		},
 		Provider: ProviderConfig{
-			// TODO remove our subscriptions from the default config
 			Azure: &AzureConfig{
 				SubscriptionID:       "",
 				TenantID:             "",
@@ -258,6 +263,8 @@ func Default() *Config {
 				StateDiskType:        "Premium_LRS",
 				Measurements:         copyPCRMap(azurePCRs),
 				EnforcedMeasurements: []uint32{8, 9, 11, 12},
+				IdKeyDigest:          "57486a447ec0f1958002a22a06b7673b9fd27d11e1c6527498056054c5fa92d23c50f9de44072760fe2b6fb89740b696",
+				EnforceIdKeyDigest:   func() *bool { b := true; return &b }(),
 				ConfidentialVM:       func() *bool { b := true; return &b }(),
 			},
 			GCP: &GCPConfig{

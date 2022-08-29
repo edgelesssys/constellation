@@ -199,7 +199,7 @@ func init() {
 			FieldName: "azure",
 		},
 	}
-	AzureConfigDoc.Fields = make([]encoder.Doc, 12)
+	AzureConfigDoc.Fields = make([]encoder.Doc, 14)
 	AzureConfigDoc.Fields[0].Name = "subscription"
 	AzureConfigDoc.Fields[0].Type = "string"
 	AzureConfigDoc.Fields[0].Note = ""
@@ -255,11 +255,21 @@ func init() {
 	AzureConfigDoc.Fields[10].Note = ""
 	AzureConfigDoc.Fields[10].Description = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
 	AzureConfigDoc.Fields[10].Comments[encoder.LineComment] = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
-	AzureConfigDoc.Fields[11].Name = "confidentialVM"
-	AzureConfigDoc.Fields[11].Type = "bool"
+	AzureConfigDoc.Fields[11].Name = "idKeyDigest"
+	AzureConfigDoc.Fields[11].Type = "string"
 	AzureConfigDoc.Fields[11].Note = ""
-	AzureConfigDoc.Fields[11].Description = "Use VMs with security type Confidential VM. If set to false, Trusted Launch VMs will be used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview"
-	AzureConfigDoc.Fields[11].Comments[encoder.LineComment] = "Use VMs with security type Confidential VM. If set to false, Trusted Launch VMs will be used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview"
+	AzureConfigDoc.Fields[11].Description = "Expected value for the field 'idkeydigest' in the AMD SEV-SNP attestation report. Only usable with ConfidentialVMs. See 4.6 and 7.3 in: https://www.amd.com/system/files/TechDocs/56860.pdf"
+	AzureConfigDoc.Fields[11].Comments[encoder.LineComment] = "Expected value for the field 'idkeydigest' in the AMD SEV-SNP attestation report. Only usable with ConfidentialVMs. See 4.6 and 7.3 in: https://www.amd.com/system/files/TechDocs/56860.pdf"
+	AzureConfigDoc.Fields[12].Name = "enforceIdKeyDigest"
+	AzureConfigDoc.Fields[12].Type = "bool"
+	AzureConfigDoc.Fields[12].Note = ""
+	AzureConfigDoc.Fields[12].Description = "Enforce the specified idKeyDigest value during remote attestation."
+	AzureConfigDoc.Fields[12].Comments[encoder.LineComment] = "Enforce the specified idKeyDigest value during remote attestation."
+	AzureConfigDoc.Fields[13].Name = "confidentialVM"
+	AzureConfigDoc.Fields[13].Type = "bool"
+	AzureConfigDoc.Fields[13].Note = ""
+	AzureConfigDoc.Fields[13].Description = "Use VMs with security type Confidential VM. If set to false, Trusted Launch VMs will be used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview"
+	AzureConfigDoc.Fields[13].Comments[encoder.LineComment] = "Use VMs with security type Confidential VM. If set to false, Trusted Launch VMs will be used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview"
 
 	GCPConfigDoc.Type = "GCPConfig"
 	GCPConfigDoc.Comments[encoder.LineComment] = "GCPConfig are GCP specific configuration values used by the CLI."

@@ -62,9 +62,10 @@ func TestValidate(t *testing.T) {
 		0: {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 		1: {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 	}
+	warnLog := &testWarnLog{}
 
 	issuer := NewIssuer(newSimTPMWithEventLog, tpmclient.AttestationKeyRSA, fakeGetInstanceInfo)
-	validator := NewValidator(testExpectedPCRs, []uint32{0, 1}, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15)
+	validator := NewValidator(testExpectedPCRs, []uint32{0, 1}, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15, warnLog)
 
 	nonce := []byte{1, 2, 3, 4}
 	challenge := []byte("Constellation")
@@ -82,7 +83,6 @@ func TestValidate(t *testing.T) {
 	require.NoError(err)
 	require.Equal(challenge, out)
 
-	warnLog := &testWarnLog{}
 	enforcedPCRs := []uint32{0, 1}
 	expectedPCRs := map[uint32][]byte{
 		0: {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
@@ -98,8 +98,8 @@ func TestValidate(t *testing.T) {
 		fakeGetTrustedKey,
 		fakeValidateCVM,
 		VerifyPKCS1v15,
+		warnLog,
 	)
-	warningValidator.AddLogger(warnLog)
 	out, err = warningValidator.Validate(attDocRaw, nonce)
 	require.NoError(err)
 	assert.Equal(t, challenge, out)
@@ -112,13 +112,13 @@ func TestValidate(t *testing.T) {
 		wantErr   bool
 	}{
 		"invalid nonce": {
-			validator: NewValidator(testExpectedPCRs, []uint32{0, 1}, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15),
+			validator: NewValidator(testExpectedPCRs, []uint32{0, 1}, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15, warnLog),
 			attDoc:    mustMarshalAttestation(attDoc, require),
 			nonce:     []byte{4, 3, 2, 1},
 			wantErr:   true,
 		},
 		"invalid signature": {
-			validator: NewValidator(testExpectedPCRs, []uint32{0, 1}, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15),
+			validator: NewValidator(testExpectedPCRs, []uint32{0, 1}, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15, warnLog),
 			attDoc: mustMarshalAttestation(AttestationDocument{
 				Attestation:       attDoc.Attestation,
 				InstanceInfo:      attDoc.InstanceInfo,
@@ -135,7 +135,7 @@ func TestValidate(t *testing.T) {
 				func(akPub, instanceInfo []byte) (crypto.PublicKey, error) {
 					return nil, errors.New("untrusted")
 				},
-				fakeValidateCVM, VerifyPKCS1v15),
+				fakeValidateCVM, VerifyPKCS1v15, warnLog),
 			attDoc:  mustMarshalAttestation(attDoc, require),
 			nonce:   nonce,
 			wantErr: true,
@@ -148,7 +148,7 @@ func TestValidate(t *testing.T) {
 				func(attestation AttestationDocument) error {
 					return errors.New("untrusted")
 				},
-				VerifyPKCS1v15),
+				VerifyPKCS1v15, warnLog),
 			attDoc:  mustMarshalAttestation(attDoc, require),
 			nonce:   nonce,
 			wantErr: true,
@@ -161,13 +161,13 @@ func TestValidate(t *testing.T) {
 				[]uint32{0},
 				fakeGetTrustedKey,
 				fakeValidateCVM,
-				VerifyPKCS1v15),
+				VerifyPKCS1v15, warnLog),
 			attDoc:  mustMarshalAttestation(attDoc, require),
 			nonce:   nonce,
 			wantErr: true,
 		},
 		"no sha256 quote": {
-			validator: NewValidator(testExpectedPCRs, []uint32{0, 1}, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15),
+			validator: NewValidator(testExpectedPCRs, []uint32{0, 1}, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15, warnLog),
 			attDoc: mustMarshalAttestation(AttestationDocument{
 				Attestation: &attest.Attestation{
 					AkPub: attDoc.Attestation.AkPub,
@@ -185,7 +185,7 @@ func TestValidate(t *testing.T) {
 			wantErr: true,
 		},
 		"invalid attestation document": {
-			validator: NewValidator(testExpectedPCRs, []uint32{0, 1}, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15),
+			validator: NewValidator(testExpectedPCRs, []uint32{0, 1}, fakeGetTrustedKey, fakeValidateCVM, VerifyPKCS1v15, warnLog),
 			attDoc:    []byte("invalid attestation"),
 			nonce:     nonce,
 			wantErr:   true,

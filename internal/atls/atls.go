@@ -17,7 +17,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/oid"
 )
@@ -72,7 +71,6 @@ type Issuer interface {
 type Validator interface {
 	oid.Getter
 	Validate(attDoc []byte, nonce []byte) ([]byte, error)
-	AddLogger(log vtpm.WarnLogger)
 }
 
 // getATLSConfigForClientFunc returns a config setup function that is called once for every client connecting to the server.
@@ -366,9 +364,6 @@ func NewFakeValidator(oid oid.Getter) *FakeValidator {
 func NewFakeValidators(oid oid.Getter) []Validator {
 	return []Validator{NewFakeValidator(oid)}
 }
-
-// AddLogger is a nop for FakeValidator.
-func (v FakeValidator) AddLogger(log vtpm.WarnLogger) {}
 
 // Validate unmarshals the attestation document and verifies the nonce.
 func (v FakeValidator) Validate(attDoc []byte, nonce []byte) ([]byte, error) {

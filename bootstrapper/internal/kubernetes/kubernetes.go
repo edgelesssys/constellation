@@ -2,9 +2,11 @@ package kubernetes
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi"
@@ -45,12 +47,13 @@ type KubeWrapper struct {
 	clusterAutoscaler       ClusterAutoscaler
 	providerMetadata        ProviderMetadata
 	initialMeasurementsJSON []byte
+	initialIdKeyDigest      []byte
 	getIPAddr               func() (string, error)
 }
 
 // New creates a new KubeWrapper with real values.
 func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client, cloudControllerManager CloudControllerManager,
-	cloudNodeManager CloudNodeManager, clusterAutoscaler ClusterAutoscaler, providerMetadata ProviderMetadata, initialMeasurementsJSON []byte,
+	cloudNodeManager CloudNodeManager, clusterAutoscaler ClusterAutoscaler, providerMetadata ProviderMetadata, initialMeasurementsJSON, initialIdKeyDigest []byte,
 ) *KubeWrapper {
 	return &KubeWrapper{
 		cloudProvider:           cloudProvider,
@@ -63,6 +66,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 		clusterAutoscaler:       clusterAutoscaler,
 		providerMetadata:        providerMetadata,
 		initialMeasurementsJSON: initialMeasurementsJSON,
+		initialIdKeyDigest:      initialIdKeyDigest,
 		getIPAddr:               getIPAddr,
 	}
 }
@@ -70,7 +74,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, versionString string, measurementSalt []byte,
-	enforcedPCRs []uint32, kmsConfig resources.KMSConfig, sshUsers map[string]string, helmDeployments []byte, log *logger.Logger,
+	enforcedPCRs []uint32, enforceIdKeyDigest bool, kmsConfig resources.KMSConfig, sshUsers map[string]string, helmDeployments []byte, log *logger.Logger,
 ) ([]byte, error) {
 	k8sVersion, err := versions.NewValidK8sVersion(versionString)
 	if err != nil {
@@ -174,7 +178,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up kms: %w", err)
 	}
 
-	if err := k.setupJoinService(k.cloudProvider, k.initialMeasurementsJSON, measurementSalt, enforcedPCRs); err != nil {
+	if err := k.setupJoinService(k.cloudProvider, k.initialMeasurementsJSON, measurementSalt, enforcedPCRs, k.initialIdKeyDigest, enforceIdKeyDigest); err != nil {
 		return nil, fmt.Errorf("setting up join service failed: %w", err)
 	}
 
@@ -305,7 +309,7 @@ func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
 }
 
 func (k *KubeWrapper) setupJoinService(
-	csp string, measurementsJSON, measurementSalt []byte, enforcedPCRs []uint32,
+	csp string, measurementsJSON, measurementSalt []byte, enforcedPCRs []uint32, initialIdKeyDigest []byte, enforceIdKeyDigest bool,
 ) error {
 	enforcedPCRsJSON, err := json.Marshal(enforcedPCRs)
 	if err != nil {
@@ -313,7 +317,7 @@ func (k *KubeWrapper) setupJoinService(
 	}
 
 	joinConfiguration := resources.NewJoinServiceDaemonset(
-		csp, string(measurementsJSON), string(enforcedPCRsJSON), measurementSalt,
+		csp, string(measurementsJSON), string(enforcedPCRsJSON), hex.EncodeToString(initialIdKeyDigest), strconv.FormatBool(enforceIdKeyDigest), measurementSalt,
 	)
 
 	return k.clusterUtil.SetupJoinService(k.client, joinConfiguration)

@@ -140,6 +140,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		SshUserKeys:            ssh.ToProtoSlice(sshUsers),
 		HelmDeployments:        helmDeployments,
 		EnforcedPcrs:           getEnforcedMeasurements(provider, config),
+		EnforceIdkeydigest:     getEnforceIdKeyDigest(provider, config),
 	}
 	resp, err := initCall(cmd.Context(), newDialer(validator), flags.endpoint, req)
 	if err != nil {
@@ -233,6 +234,15 @@ func getEnforcedMeasurements(provider cloudprovider.Provider, config *config.Con
 		return config.Provider.QEMU.EnforcedMeasurements
 	default:
 		return nil
+	}
+}
+
+func getEnforceIdKeyDigest(provider cloudprovider.Provider, config *config.Config) bool {
+	switch provider {
+	case cloudprovider.Azure:
+		return *config.Provider.Azure.EnforceIdKeyDigest
+	default:
+		return false
 	}
 }
 

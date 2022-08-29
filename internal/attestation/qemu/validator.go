@@ -15,7 +15,7 @@ type Validator struct {
 }
 
 // NewValidator initializes a new qemu validator with the provided PCR values.
-func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32) *Validator {
+func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, log vtpm.WarnLogger) *Validator {
 	return &Validator{
 		Validator: vtpm.NewValidator(
 			pcrs,
@@ -23,6 +23,7 @@ func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32) *Validator {
 			unconditionalTrust,
 			func(attestation vtpm.AttestationDocument) error { return nil },
 			vtpm.VerifyPKCS1v15,
+			log,
 		),
 	}
 }
