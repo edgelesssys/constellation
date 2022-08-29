@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
@@ -112,4 +114,16 @@ func extractScaleSetVMRole(scaleSet string) role.Role {
 		return role.Worker
 	}
 	return role.Unknown
+}
+
+func ImageReferenceFromImage(img string) *armcomputev2.ImageReference {
+	ref := &armcomputev2.ImageReference{}
+
+	if strings.HasPrefix(img, "/CommunityGalleries") {
+		ref.CommunityGalleryImageID = to.Ptr(img)
+	} else {
+		ref.ID = to.Ptr(img)
+	}
+
+	return ref
 }

@@ -34,6 +34,21 @@ func TestGetScalingGroupImage(t *testing.T) {
 			},
 			wantImage: "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/images/image-name",
 		},
+		"getting community image works": {
+			scalingGroupID: "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name",
+			scaleSet: armcomputev2.VirtualMachineScaleSet{
+				Properties: &armcomputev2.VirtualMachineScaleSetProperties{
+					VirtualMachineProfile: &armcomputev2.VirtualMachineScaleSetVMProfile{
+						StorageProfile: &armcomputev2.VirtualMachineScaleSetStorageProfile{
+							ImageReference: &armcomputev2.ImageReference{
+								CommunityGalleryImageID: to.Ptr("/CommunityGalleries/gallery-name/Images/image-name/Versions/1.2.3"),
+							},
+						},
+					},
+				},
+			},
+			wantImage: "/CommunityGalleries/gallery-name/Images/image-name/Versions/1.2.3",
+		},
 		"splitting scalingGroupID fails": {
 			scalingGroupID: "invalid",
 			wantErr:        true,

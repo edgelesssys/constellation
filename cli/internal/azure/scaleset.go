@@ -6,6 +6,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
+	"github.com/edgelesssys/constellation/bootstrapper/cloudprovider/azure"
 )
 
 // ScaleSet defines a Azure scale set.
@@ -65,9 +66,7 @@ func (s ScaleSet) Azure() armcomputev2.VirtualMachineScaleSet {
 					LinuxConfiguration: &armcomputev2.LinuxConfiguration{},
 				},
 				StorageProfile: &armcomputev2.VirtualMachineScaleSetStorageProfile{
-					ImageReference: &armcomputev2.ImageReference{
-						ID: to.Ptr(s.Image),
-					},
+					ImageReference: azure.ImageReferenceFromImage(s.Image),
 					DataDisks: []*armcomputev2.VirtualMachineScaleSetDataDisk{
 						{
 							CreateOption: to.Ptr(armcomputev2.DiskCreateOptionTypesEmpty),

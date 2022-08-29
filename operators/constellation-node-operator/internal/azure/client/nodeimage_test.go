@@ -34,6 +34,19 @@ func TestGetNodeImage(t *testing.T) {
 			},
 			wantImage: "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/images/image-name",
 		},
+		"getting community node image works": {
+			providerID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
+			vm: armcomputev2.VirtualMachineScaleSetVM{
+				Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
+					StorageProfile: &armcomputev2.StorageProfile{
+						ImageReference: &armcomputev2.ImageReference{
+							CommunityGalleryImageID: to.Ptr("/CommunityGalleries/gallery-name/Images/image-name/Versions/1.2.3"),
+						},
+					},
+				},
+			},
+			wantImage: "/CommunityGalleries/gallery-name/Images/image-name/Versions/1.2.3",
+		},
 		"splitting providerID fails": {
 			providerID: "invalid",
 			wantErr:    true,
