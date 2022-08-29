@@ -3,9 +3,8 @@ package azure
 import (
 	"context"
 	"errors"
+	"fmt"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights"
-	"github.com/edgelesssys/constellation/internal/azureshared"
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 )
 
@@ -16,40 +15,24 @@ type Logger struct {
 // NewLogger creates a new client to store information in Azure Application Insights
 // https://github.com/Microsoft/ApplicationInsights-go
 func NewLogger(ctx context.Context, metadata *Metadata) (*Logger, error) {
-	providerID, err := metadata.providerID(ctx)
+	component, err := metadata.getAppInsights(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting app insights: %w", err)
 	}
 
-	_, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
-	if err != nil {
-		return nil, err
-	}
-
-	uid, err := azureshared.UIDFromProviderID(providerID)
-	if err != nil {
-		return nil, err
-	}
-
-	resourceName := "constellation-insights-" + uid
-	resp, err := metadata.applicationInsightsAPI.Get(ctx, resourceGroup, resourceName, &armapplicationinsights.ComponentsClientGetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	if resp.Properties == nil || resp.Properties.InstrumentationKey == nil {
+	if component.Properties == nil || component.Properties.InstrumentationKey == nil {
 		return nil, errors.New("unable to get instrumentation key")
 	}
-	client := appinsights.NewTelemetryClient(*resp.Properties.InstrumentationKey)
 
-	instance, err := metadata.GetInstance(ctx, providerID)
+	client := appinsights.NewTelemetryClient(*component.Properties.InstrumentationKey)
+
+	self, err := metadata.Self(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting self: %w", err)
 	}
-	client.Context().CommonProperties["instance-name"] = instance.Name
+	client.Context().CommonProperties["instance-name"] = self.Name
 
-	return &Logger{
-		client: client,
-	}, nil
+	return &Logger{client: client}, nil
 }
 
 // Disclose stores log information in Azure Application Insights!

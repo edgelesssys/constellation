@@ -2,7 +2,6 @@ package azure
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -12,14 +11,12 @@ import (
 	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
-	"github.com/edgelesssys/constellation/internal/azureshared"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 )
 
 var (
-	publicIPAddressRegexp   = regexp.MustCompile(`/subscriptions/[^/]+/resourceGroups/[^/]+/providers/Microsoft.Network/publicIPAddresses/(?P<IPname>[^/]+)`)
-	keyPathRegexp           = regexp.MustCompile(`^\/home\/([^\/]+)\/\.ssh\/authorized_keys$`)
-	resourceGroupNameRegexp = regexp.MustCompile(`^(.*)-([^-]+)$`)
+	publicIPAddressRegexp = regexp.MustCompile(`/subscriptions/[^/]+/resourceGroups/[^/]+/providers/Microsoft.Network/publicIPAddresses/(?P<IPname>[^/]+)`)
+	keyPathRegexp         = regexp.MustCompile(`^\/home\/([^\/]+)\/\.ssh\/authorized_keys$`)
 )
 
 // Metadata implements azure metadata APIs.
@@ -48,11 +45,7 @@ func NewMetadata(ctx context.Context) (*Metadata, error) {
 	imdsAPI := imdsClient{
 		client: &http.Client{Transport: &http.Transport{Proxy: nil}},
 	}
-	instanceMetadata, err := imdsAPI.Retrieve(ctx)
-	if err != nil {
-		return nil, err
-	}
-	subscriptionID, _, err := azureshared.BasicsFromProviderID("azure://" + instanceMetadata.Compute.ResourceID)
+	subscriptionID, err := imdsAPI.SubscriptionID(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -109,11 +102,7 @@ func NewMetadata(ctx context.Context) (*Metadata, error) {
 
 // List retrieves all instances belonging to the current constellation.
 func (m *Metadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
-	providerID, err := m.providerID(ctx)
-	if err != nil {
-		return nil, err
-	}
-	_, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
+	resourceGroup, err := m.imdsAPI.ResourceGroup(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -144,11 +133,7 @@ func (m *Metadata) GetInstance(ctx context.Context, providerID string) (metadata
 
 // GetNetworkSecurityGroupName returns the security group name of the resource group.
 func (m *Metadata) GetNetworkSecurityGroupName(ctx context.Context) (string, error) {
-	providerID, err := m.providerID(ctx)
-	if err != nil {
-		return "", err
-	}
-	_, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
+	resourceGroup, err := m.imdsAPI.ResourceGroup(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -165,11 +150,7 @@ func (m *Metadata) GetNetworkSecurityGroupName(ctx context.Context) (string, err
 
 // GetSubnetworkCIDR retrieves the subnetwork CIDR from cloud provider metadata.
 func (m *Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
-	providerID, err := m.providerID(ctx)
-	if err != nil {
-		return "", err
-	}
-	_, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
+	resourceGroup, err := m.imdsAPI.ResourceGroup(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -187,33 +168,16 @@ func (m *Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
 
 // UID retrieves the UID of the constellation.
 func (m *Metadata) UID(ctx context.Context) (string, error) {
-	providerID, err := m.providerID(ctx)
-	if err != nil {
-		return "", err
-	}
-	_, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
-	if err != nil {
-		return "", err
-	}
-
-	uid, err := getUIDFromResourceGroup(resourceGroup)
-	if err != nil {
-		return "", err
-	}
-
-	return uid, nil
+	return m.imdsAPI.UID(ctx)
 }
 
 // getLoadBalancer retrieves the load balancer from cloud provider metadata.
 func (m *Metadata) getLoadBalancer(ctx context.Context) (*armnetwork.LoadBalancer, error) {
-	providerID, err := m.providerID(ctx)
+	resourceGroup, err := m.imdsAPI.ResourceGroup(ctx)
 	if err != nil {
 		return nil, err
 	}
-	_, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
-	if err != nil {
-		return nil, err
-	}
+
 	pager := m.loadBalancerAPI.NewListPager(resourceGroup, nil)
 
 	for pager.More() {
@@ -279,14 +243,11 @@ func (m *Metadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) 
 	}
 	pubIPName := matches[1]
 
-	providerID, err := m.providerID(ctx)
+	resourceGroup, err := m.imdsAPI.ResourceGroup(ctx)
 	if err != nil {
 		return "", err
 	}
-	_, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
-	if err != nil {
-		return "", err
-	}
+
 	resp, err := m.publicIPAddressesAPI.Get(ctx, resourceGroup, pubIPName, nil)
 	if err != nil {
 		return "", fmt.Errorf("could not retrieve public IP address: %w", err)
@@ -304,11 +265,42 @@ func (m *Metadata) Supported() bool {
 
 // providerID retrieves the current instances providerID.
 func (m *Metadata) providerID(ctx context.Context) (string, error) {
-	instanceMetadata, err := m.imdsAPI.Retrieve(ctx)
+	providerID, err := m.imdsAPI.ProviderID(ctx)
 	if err != nil {
 		return "", err
 	}
-	return "azure://" + instanceMetadata.Compute.ResourceID, nil
+	return "azure://" + providerID, nil
+}
+
+func (m *Metadata) getAppInsights(ctx context.Context) (*armapplicationinsights.Component, error) {
+	resourceGroup, err := m.imdsAPI.ResourceGroup(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	uid, err := m.UID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	pager := m.applicationInsightsAPI.NewListByResourceGroupPager(resourceGroup, nil)
+
+	for pager.More() {
+		nextResult, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("retrieving application insights page: %w", err)
+		}
+		for _, component := range nextResult.Value {
+			if component == nil || component.Tags == nil {
+				continue
+			}
+			if *component.Tags["uid"] == uid {
+				return component, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("could not find correctly tagged application insights")
 }
 
 // extractInstanceTags converts azure tags into metadata key-value pairs.
@@ -337,12 +329,4 @@ func extractSSHKeys(sshConfig armcomputev2.SSHConfiguration) map[string][]string
 		sshKeys[matches[1]] = append(sshKeys[matches[1]], *key.KeyData)
 	}
 	return sshKeys
-}
-
-func getUIDFromResourceGroup(resourceGroup string) (string, error) {
-	matches := resourceGroupNameRegexp.FindStringSubmatch(resourceGroup)
-	if len(matches) != 3 {
-		return "", errors.New("error splitting resource group name")
-	}
-	return matches[2], nil
 }
