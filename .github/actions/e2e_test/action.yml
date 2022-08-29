@@ -27,6 +27,9 @@ inputs:
   gcp_service_account_json:
     description: "Service account with permissions to create Constellation on GCP."
     required: false
+  gcpClusterServiceAccountKey:
+    description: "Service account to use inside the created Constellation cluster on GCP."
+    required: false
   azure_credentials:
     description: "Credentials authorized to create Constellation on Azure."
     required: false
@@ -90,6 +93,7 @@ runs:
       uses: ./.github/actions/constellation_create
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
+        gcpClusterServiceAccountKey: ${{ inputs.gcpClusterServiceAccountKey }}
         autoscale: ${{ inputs.autoscale }}
         workerNodesCount: ${{ inputs.workerNodesCount }}
         controlNodesCount: ${{ inputs.controlNodesCount }}
