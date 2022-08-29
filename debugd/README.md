@@ -29,7 +29,7 @@ With `cdbg` and `yq` installed in your path:
 
 1. Run `constellation config generate` to create a new default configuration
 
-2. Locate the latest debugd images for [GCP](#debugd-gcp-image) and [Azure](#debugd-azure-image)
+2. Locate the latest debugd images for [GCP](/.github/docs/README.md#gcp) and [Azure](/.github/docs/README.md#azure)
 
 3. Modify the `constellation-conf.yaml` to use an image with the debugd already included and add required firewall rules:
 
