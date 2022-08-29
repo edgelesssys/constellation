@@ -100,8 +100,8 @@ func (c *CloudControllerManager) Secrets(ctx context.Context, providerID string,
 		UseInstanceMetadata: true,
 		VMType:              vmType,
 		Location:            creds.Location,
-		AADClientID:         creds.ClientID,
-		AADClientSecret:     creds.ClientSecret,
+		AADClientID:         creds.AppClientID,
+		AADClientSecret:     creds.ClientSecretValue,
 	}
 
 	rawConfig, err := json.Marshal(config)

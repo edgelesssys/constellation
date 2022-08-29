@@ -149,17 +149,23 @@ type AzureConfig struct {
 	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#disk-type-comparison
 	StateDiskType string `yaml:"stateDiskType" validate:"oneof=Premium_LRS Premium_ZRS Standard_LRS StandardSSD_LRS StandardSSD_ZRS"`
 	// description: |
-	//   Expected confidential VM measurements.
-	Measurements Measurements `yaml:"measurements"`
-	// description: |
-	//   List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning.
-	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
-	// description: |
 	//   Authorize spawned VMs to access Azure API. See: https://docs.edgeless.systems/constellation/latest/#/getting-started/install?id=azure
 	UserAssignedIdentity string `yaml:"userAssignedIdentity" validate:"required"`
 	// description: |
 	//   Resource group to use.
 	ResourceGroup string `yaml:"resourceGroup" validate:"required"`
+	// description: |
+	//    Application client ID of the Active Directory app registration.
+	AppClientID string `yaml:"appClientID" validate:"required"`
+	// description: |
+	//    Client secret value of the Active Directory app registration credentials.
+	ClientSecretValue string `yaml:"clientSecretValue" validate:"required"`
+	// description: |
+	//   Expected confidential VM measurements.
+	Measurements Measurements `yaml:"measurements"`
+	// description: |
+	//   List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning.
+	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
 	// description: |
 	//   Use VMs with security type Confidential VM. If set to false, Trusted Launch VMs will be used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview
 	ConfidentialVM *bool `yaml:"confidentialVM" validate:"required"`

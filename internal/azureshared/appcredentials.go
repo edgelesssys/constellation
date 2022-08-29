@@ -8,10 +8,10 @@ import (
 // ApplicationCredentials is a set of Azure AD application credentials.
 // It is the equivalent of a service account key in other cloud providers.
 type ApplicationCredentials struct {
-	TenantID     string
-	ClientID     string
-	ClientSecret string
-	Location     string
+	TenantID          string
+	AppClientID       string
+	ClientSecretValue string
+	Location          string
 }
 
 // ApplicationCredentialsFromURI converts a cloudServiceAccountURI into Azure ApplicationCredentials.
@@ -28,10 +28,10 @@ func ApplicationCredentialsFromURI(cloudServiceAccountURI string) (ApplicationCr
 	}
 	query := uri.Query()
 	return ApplicationCredentials{
-		TenantID:     query.Get("tenant_id"),
-		ClientID:     query.Get("client_id"),
-		ClientSecret: query.Get("client_secret"),
-		Location:     query.Get("location"),
+		TenantID:          query.Get("tenant_id"),
+		AppClientID:       query.Get("client_id"),
+		ClientSecretValue: query.Get("client_secret"),
+		Location:          query.Get("location"),
 	}, nil
 }
 
@@ -39,8 +39,8 @@ func ApplicationCredentialsFromURI(cloudServiceAccountURI string) (ApplicationCr
 func (c ApplicationCredentials) ToCloudServiceAccountURI() string {
 	query := url.Values{}
 	query.Add("tenant_id", c.TenantID)
-	query.Add("client_id", c.ClientID)
-	query.Add("client_secret", c.ClientSecret)
+	query.Add("client_id", c.AppClientID)
+	query.Add("client_secret", c.ClientSecretValue)
 	query.Add("location", c.Location)
 	uri := url.URL{
 		Scheme:   "serviceaccount",

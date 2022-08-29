@@ -15,10 +15,10 @@ func TestMain(m *testing.M) {
 
 func TestApplicationCredentialsFromURI(t *testing.T) {
 	creds := ApplicationCredentials{
-		TenantID:     "tenant-id",
-		ClientID:     "client-id",
-		ClientSecret: "client-secret",
-		Location:     "location",
+		TenantID:          "tenant-id",
+		AppClientID:       "client-id",
+		ClientSecretValue: "client-secret",
+		Location:          "location",
 	}
 	testCases := map[string]struct {
 		cloudServiceAccountURI string
@@ -63,10 +63,10 @@ func TestToCloudServiceAccountURI(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 	key := ApplicationCredentials{
-		TenantID:     "tenant-id",
-		ClientID:     "client-id",
-		ClientSecret: "client-secret",
-		Location:     "location",
+		TenantID:          "tenant-id",
+		AppClientID:       "client-id",
+		ClientSecretValue: "client-secret",
+		Location:          "location",
 	}
 
 	cloudServiceAccountURI := key.ToCloudServiceAccountURI()

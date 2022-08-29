@@ -113,8 +113,8 @@ func (c *fakeAzureClient) CreateInstances(ctx context.Context, input azurecl.Cre
 func (c *fakeAzureClient) CreateServicePrincipal(ctx context.Context) (string, error) {
 	c.adAppObjectID = "00000000-0000-0000-0000-000000000001"
 	return azureshared.ApplicationCredentials{
-		ClientID:     "client-id",
-		ClientSecret: "client-secret",
+		AppClientID:       "client-id",
+		ClientSecretValue: "client-secret",
 	}.ToCloudServiceAccountURI(), nil
 }
 
@@ -174,8 +174,8 @@ func (c *stubAzureClient) CreateInstances(ctx context.Context, input azurecl.Cre
 
 func (c *stubAzureClient) CreateServicePrincipal(ctx context.Context) (string, error) {
 	return azureshared.ApplicationCredentials{
-		ClientID:     "00000000-0000-0000-0000-000000000000",
-		ClientSecret: "secret",
+		AppClientID:       "00000000-0000-0000-0000-000000000000",
+		ClientSecretValue: "secret",
 	}.ToCloudServiceAccountURI(), c.createServicePrincipalErr
 }
 
