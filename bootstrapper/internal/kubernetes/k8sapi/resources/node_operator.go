@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"time"
 
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/edgelesssys/constellation/internal/versions"
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -88,5 +89,5 @@ func NewNodeOperatorDeployment(cloudProvider string, uid string) *nodeOperatorDe
 }
 
 func (c *nodeOperatorDeployment) Marshal() ([]byte, error) {
-	return MarshalK8SResources(c)
+	return kubernetes.MarshalK8SResources(c)
 }

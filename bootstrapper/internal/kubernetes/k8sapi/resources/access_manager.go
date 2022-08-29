@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/edgelesssys/constellation/internal/versions"
 	"google.golang.org/protobuf/proto"
 	apps "k8s.io/api/apps/v1"
@@ -192,5 +193,5 @@ func NewAccessManagerDeployment(sshUsers map[string]string) *accessManagerDeploy
 
 // Marshal marshals the access-manager deployment as YAML documents.
 func (c *accessManagerDeployment) Marshal() ([]byte, error) {
-	return MarshalK8SResources(c)
+	return kubernetes.MarshalK8SResources(c)
 }

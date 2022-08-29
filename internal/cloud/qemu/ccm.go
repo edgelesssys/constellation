@@ -3,8 +3,8 @@ package qemu
 import (
 	"context"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/edgelesssys/constellation/internal/versions"
 	k8s "k8s.io/api/core/v1"
 )
@@ -34,14 +34,14 @@ func (c CloudControllerManager) ExtraArgs() []string {
 
 // ConfigMaps returns a list of ConfigMaps to deploy together with the k8s cloud-controller-manager
 // Reference: https://kubernetes.io/docs/concepts/configuration/configmap/ .
-func (c CloudControllerManager) ConfigMaps(instance metadata.InstanceMetadata) (resources.ConfigMaps, error) {
-	return resources.ConfigMaps{}, nil
+func (c CloudControllerManager) ConfigMaps(instance metadata.InstanceMetadata) (kubernetes.ConfigMaps, error) {
+	return kubernetes.ConfigMaps{}, nil
 }
 
 // Secrets returns a list of secrets to deploy together with the k8s cloud-controller-manager.
 // Reference: https://kubernetes.io/docs/concepts/configuration/secret/ .
-func (c CloudControllerManager) Secrets(ctx context.Context, providerID, cloudServiceAccountURI string) (resources.Secrets, error) {
-	return resources.Secrets{}, nil
+func (c CloudControllerManager) Secrets(ctx context.Context, providerID, cloudServiceAccountURI string) (kubernetes.Secrets, error) {
+	return kubernetes.Secrets{}, nil
 }
 
 // Volumes returns a list of volumes to deploy together with the k8s cloud-controller-manager.

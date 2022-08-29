@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 )
@@ -29,5 +30,5 @@ func NewDefaultAuditPolicy() *AuditPolicy {
 
 // Marshal marshals the audit policy as a YAML document.
 func (p *AuditPolicy) Marshal() ([]byte, error) {
-	return MarshalK8SResources(p)
+	return kubernetes.MarshalK8SResources(p)
 }

@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
+	kubernetesshared "github.com/edgelesssys/constellation/internal/kubernetes"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclientv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
@@ -83,7 +83,7 @@ func (c *Client) ApplyOneObject(info *resource.Info, forceConflicts bool) error 
 }
 
 // GetObjects tries to marshal the resources into []*resource.Info using a resource.Builder.
-func (c *Client) GetObjects(resources resources.Marshaler) ([]*resource.Info, error) {
+func (c *Client) GetObjects(resources kubernetesshared.Marshaler) ([]*resource.Info, error) {
 	// convert our resource struct into YAML
 	data, err := resources.Marshal()
 	if err != nil {

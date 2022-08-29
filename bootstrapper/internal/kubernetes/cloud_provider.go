@@ -3,8 +3,8 @@ package kubernetes
 import (
 	"context"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/edgelesssys/constellation/internal/versions"
 	k8s "k8s.io/api/core/v1"
 )
@@ -41,10 +41,10 @@ type CloudControllerManager interface {
 	ExtraArgs() []string
 	// ConfigMaps returns a list of ConfigMaps to deploy together with the k8s cloud-controller-manager
 	// Reference: https://kubernetes.io/docs/concepts/configuration/configmap/ .
-	ConfigMaps(instance metadata.InstanceMetadata) (resources.ConfigMaps, error)
+	ConfigMaps(instance metadata.InstanceMetadata) (kubernetes.ConfigMaps, error)
 	// Secrets returns a list of secrets to deploy together with the k8s cloud-controller-manager.
 	// Reference: https://kubernetes.io/docs/concepts/configuration/secret/ .
-	Secrets(ctx context.Context, providerID, cloudServiceAccountURI string) (resources.Secrets, error)
+	Secrets(ctx context.Context, providerID, cloudServiceAccountURI string) (kubernetes.Secrets, error)
 	// Volumes returns a list of volumes to deploy together with the k8s cloud-controller-manager.
 	// Reference: https://kubernetes.io/docs/concepts/storage/volumes/ .
 	Volumes() []k8s.Volume
@@ -73,7 +73,7 @@ type ClusterAutoscaler interface {
 	// Name returns the cloud-provider name as used by k8s cluster-autoscaler.
 	Name() string
 	// Secrets returns a list of secrets to deploy together with the k8s cluster-autoscaler.
-	Secrets(providerID, cloudServiceAccountURI string) (resources.Secrets, error)
+	Secrets(providerID, cloudServiceAccountURI string) (kubernetes.Secrets, error)
 	// Volumes returns a list of volumes to deploy together with the k8s cluster-autoscaler.
 	Volumes() []k8s.Volume
 	// VolumeMounts returns a list of volume mounts to deploy together with the k8s cluster-autoscaler.
@@ -159,11 +159,11 @@ func (m *stubCloudControllerManager) ExtraArgs() []string {
 	return []string{}
 }
 
-func (m *stubCloudControllerManager) ConfigMaps(instance metadata.InstanceMetadata) (resources.ConfigMaps, error) {
+func (m *stubCloudControllerManager) ConfigMaps(instance metadata.InstanceMetadata) (kubernetes.ConfigMaps, error) {
 	return []*k8s.ConfigMap{}, nil
 }
 
-func (m *stubCloudControllerManager) Secrets(ctx context.Context, instance, cloudServiceAccountURI string) (resources.Secrets, error) {
+func (m *stubCloudControllerManager) Secrets(ctx context.Context, instance, cloudServiceAccountURI string) (kubernetes.Secrets, error) {
 	return []*k8s.Secret{}, nil
 }
 
@@ -216,8 +216,8 @@ func (a *stubClusterAutoscaler) Name() string {
 }
 
 // Secrets returns a list of secrets to deploy together with the k8s cluster-autoscaler.
-func (a *stubClusterAutoscaler) Secrets(instance, cloudServiceAccountURI string) (resources.Secrets, error) {
-	return resources.Secrets{}, nil
+func (a *stubClusterAutoscaler) Secrets(instance, cloudServiceAccountURI string) (kubernetes.Secrets, error) {
+	return kubernetes.Secrets{}, nil
 }
 
 // Volumes returns a list of volumes to deploy together with the k8s cluster-autoscaler.

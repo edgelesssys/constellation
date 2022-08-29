@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/edgelesssys/constellation/internal/versions"
 	"google.golang.org/protobuf/proto"
 	apps "k8s.io/api/apps/v1"
@@ -485,7 +486,7 @@ func NewDefaultAutoscalerDeployment(extraVolumes []k8s.Volume, extraVolumeMounts
 }
 
 func (a *autoscalerDeployment) Marshal() ([]byte, error) {
-	return MarshalK8SResources(a)
+	return kubernetes.MarshalK8SResources(a)
 }
 
 func (a *autoscalerDeployment) SetAutoscalerCommand(cloudprovider string, autoscalingNodeGroups []string) {

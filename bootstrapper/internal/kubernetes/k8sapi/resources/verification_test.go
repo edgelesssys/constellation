@@ -3,6 +3,7 @@ package resources
 import (
 	"testing"
 
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,6 +14,6 @@ func TestNewVerificationDaemonset(t *testing.T) {
 	require.NoError(t, err)
 
 	var recreated verificationDaemonset
-	require.NoError(t, UnmarshalK8SResources(deploymentYAML, &recreated))
+	require.NoError(t, kubernetes.UnmarshalK8SResources(deploymentYAML, &recreated))
 	assert.Equal(t, deployment, &recreated)
 }
