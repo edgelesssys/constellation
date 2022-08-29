@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
-	"github.com/edgelesssys/constellation/bootstrapper/cloudprovider/azure"
 )
 
 // GetScalingGroupImage returns the image URI of the scaling group.
@@ -43,7 +43,7 @@ func (c *Client) SetScalingGroupImage(ctx context.Context, scalingGroupID, image
 		Properties: &armcompute.VirtualMachineScaleSetUpdateProperties{
 			VirtualMachineProfile: &armcompute.VirtualMachineScaleSetUpdateVMProfile{
 				StorageProfile: &armcompute.VirtualMachineScaleSetUpdateStorageProfile{
-					ImageReference: azure.ImageReferenceFromImage(imageURI),
+					ImageReference: imageReferenceFromImage(imageURI),
 				},
 			},
 		},
@@ -84,4 +84,16 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) (controlPlan
 		}
 	}
 	return controlPlaneGroupIDs, workerGroupIDs, nil
+}
+
+func imageReferenceFromImage(img string) *armcompute.ImageReference {
+	ref := &armcompute.ImageReference{}
+
+	if strings.HasPrefix(img, "/CommunityGalleries") {
+		ref.CommunityGalleryImageID = to.Ptr(img)
+	} else {
+		ref.ID = to.Ptr(img)
+	}
+
+	return ref
 }
