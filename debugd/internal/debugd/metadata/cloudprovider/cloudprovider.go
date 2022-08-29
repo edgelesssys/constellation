@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"net"
 
-	azurecloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/azure"
-	gcpcloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/gcp"
-	qemucloud "github.com/edgelesssys/constellation/bootstrapper/cloudprovider/qemu"
 	"github.com/edgelesssys/constellation/bootstrapper/role"
+	azurecloud "github.com/edgelesssys/constellation/internal/cloud/azure"
+	gcpcloud "github.com/edgelesssys/constellation/internal/cloud/gcp"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
+	qemucloud "github.com/edgelesssys/constellation/internal/cloud/qemu"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 )
 

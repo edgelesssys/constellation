@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/gcpshared"
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/edgelesssys/constellation/internal/versions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,12 +18,12 @@ import (
 func TestConfigMaps(t *testing.T) {
 	testCases := map[string]struct {
 		instance       metadata.InstanceMetadata
-		wantConfigMaps resources.ConfigMaps
+		wantConfigMaps kubernetes.ConfigMaps
 		wantErr        bool
 	}{
 		"ConfigMaps works": {
 			instance: metadata.InstanceMetadata{ProviderID: "gce://project-id/zone/instanceName-UID-0", Name: "instanceName-UID-0"},
-			wantConfigMaps: resources.ConfigMaps{
+			wantConfigMaps: kubernetes.ConfigMaps{
 				&k8s.ConfigMap{
 					TypeMeta: v1.TypeMeta{
 						Kind:       "ConfigMap",
@@ -85,12 +85,12 @@ func TestSecrets(t *testing.T) {
 	testCases := map[string]struct {
 		instance               metadata.InstanceMetadata
 		cloudServiceAccountURI string
-		wantSecrets            resources.Secrets
+		wantSecrets            kubernetes.Secrets
 		wantErr                bool
 	}{
 		"Secrets works": {
 			cloudServiceAccountURI: "serviceaccount://gcp?type=type&project_id=project-id&private_key_id=private-key-id&private_key=private-key&client_email=client-email&client_id=client-id&auth_uri=auth-uri&token_uri=token-uri&auth_provider_x509_cert_url=auth-provider-x509-cert-url&client_x509_cert_url=client-x509-cert-url",
-			wantSecrets: resources.Secrets{
+			wantSecrets: kubernetes.Secrets{
 				&k8s.Secret{
 					TypeMeta: v1.TypeMeta{
 						Kind:       "Secret",

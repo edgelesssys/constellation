@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/edgelesssys/constellation/internal/versions"
 	apps "k8s.io/api/apps/v1"
 	k8s "k8s.io/api/core/v1"
@@ -144,5 +145,5 @@ func NewVerificationDaemonSet(csp string) *verificationDaemonset {
 }
 
 func (v *verificationDaemonset) Marshal() ([]byte, error) {
-	return MarshalK8SResources(v)
+	return kubernetes.MarshalK8SResources(v)
 }

@@ -3,6 +3,7 @@ package resources
 import (
 	"testing"
 
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -22,7 +23,7 @@ func TestAccessManagerMarshalUnmarshal(t *testing.T) {
 	require.NoError(err)
 
 	var recreated accessManagerDeployment
-	require.NoError(UnmarshalK8SResources(data, &recreated))
+	require.NoError(kubernetes.UnmarshalK8SResources(data, &recreated))
 	assert.Equal(accessManagerDeplNil, &recreated)
 
 	// With data
@@ -32,6 +33,6 @@ func TestAccessManagerMarshalUnmarshal(t *testing.T) {
 	data, err = accessManagerDeplNil.Marshal()
 	require.NoError(err)
 
-	require.NoError(UnmarshalK8SResources(data, &recreated))
+	require.NoError(kubernetes.UnmarshalK8SResources(data, &recreated))
 	assert.Equal(accessManagerDeplNil, &recreated)
 }

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
 	corev1 "k8s.io/api/core/v1"
@@ -30,7 +30,7 @@ func (s *stubClient) ApplyOneObject(info *resource.Info, forceConflicts bool) er
 	return s.applyOneObjectErr
 }
 
-func (s *stubClient) GetObjects(resources resources.Marshaler) ([]*resource.Info, error) {
+func (s *stubClient) GetObjects(resources kubernetes.Marshaler) ([]*resource.Info, error) {
 	return s.getObjectsInfos, s.getObjectsErr
 }
 

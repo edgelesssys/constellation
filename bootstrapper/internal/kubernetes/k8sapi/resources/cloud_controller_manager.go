@@ -3,6 +3,7 @@ package resources
 import (
 	"fmt"
 
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	apps "k8s.io/api/apps/v1"
 	k8s "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
@@ -168,5 +169,5 @@ func NewDefaultCloudControllerManagerDeployment(cloudProvider, image, path, podC
 }
 
 func (c *cloudControllerManagerDeployment) Marshal() ([]byte, error) {
-	return MarshalK8SResources(c)
+	return kubernetes.MarshalK8SResources(c)
 }

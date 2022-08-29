@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/edgelesssys/constellation/internal/versions"
 	apps "k8s.io/api/apps/v1"
 	k8s "k8s.io/api/core/v1"
@@ -252,5 +253,5 @@ func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON string, mea
 
 // Marshal the daemonset using the Kubernetes resource marshaller.
 func (a *joinServiceDaemonset) Marshal() ([]byte, error) {
-	return MarshalK8SResources(a)
+	return kubernetes.MarshalK8SResources(a)
 }

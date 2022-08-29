@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/gcpshared"
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/edgelesssys/constellation/internal/versions"
 	k8s "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,14 +46,14 @@ func (c *CloudControllerManager) ExtraArgs() []string {
 
 // ConfigMaps returns a list of ConfigMaps to deploy together with the k8s cloud-controller-manager
 // Reference: https://kubernetes.io/docs/concepts/configuration/configmap/ .
-func (c *CloudControllerManager) ConfigMaps(instance metadata.InstanceMetadata) (resources.ConfigMaps, error) {
+func (c *CloudControllerManager) ConfigMaps(instance metadata.InstanceMetadata) (kubernetes.ConfigMaps, error) {
 	// GCP CCM expects cloud config to contain the GCP project-id and other configuration.
 	// reference: https://github.com/kubernetes/cloud-provider-gcp/blob/master/cluster/gce/gci/configure-helper.sh#L791-L892
 	var config strings.Builder
 	config.WriteString("[global]\n")
 	projectID, _, _, err := gcpshared.SplitProviderID(instance.ProviderID)
 	if err != nil {
-		return resources.ConfigMaps{}, err
+		return kubernetes.ConfigMaps{}, err
 	}
 	config.WriteString(fmt.Sprintf("project-id = %s\n", projectID))
 	config.WriteString("use-metadata-server = true\n")
@@ -61,7 +61,7 @@ func (c *CloudControllerManager) ConfigMaps(instance metadata.InstanceMetadata) 
 	nameParts := strings.Split(instance.Name, "-")
 	config.WriteString("node-tags = constellation-" + nameParts[len(nameParts)-2] + "\n")
 
-	return resources.ConfigMaps{
+	return kubernetes.ConfigMaps{
 		&k8s.ConfigMap{
 			TypeMeta: v1.TypeMeta{
 				Kind:       "ConfigMap",
@@ -80,17 +80,17 @@ func (c *CloudControllerManager) ConfigMaps(instance metadata.InstanceMetadata) 
 
 // Secrets returns a list of secrets to deploy together with the k8s cloud-controller-manager.
 // Reference: https://kubernetes.io/docs/concepts/configuration/secret/ .
-func (c *CloudControllerManager) Secrets(ctx context.Context, _ string, cloudServiceAccountURI string) (resources.Secrets, error) {
+func (c *CloudControllerManager) Secrets(ctx context.Context, _ string, cloudServiceAccountURI string) (kubernetes.Secrets, error) {
 	serviceAccountKey, err := gcpshared.ServiceAccountKeyFromURI(cloudServiceAccountURI)
 	if err != nil {
-		return resources.Secrets{}, err
+		return kubernetes.Secrets{}, err
 	}
 	rawKey, err := json.Marshal(serviceAccountKey)
 	if err != nil {
-		return resources.Secrets{}, err
+		return kubernetes.Secrets{}, err
 	}
 
-	return resources.Secrets{
+	return kubernetes.Secrets{
 		&k8s.Secret{
 			TypeMeta: v1.TypeMeta{
 				Kind:       "Secret",

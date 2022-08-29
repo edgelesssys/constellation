@@ -3,6 +3,7 @@ package resources
 import (
 	"testing"
 
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,6 +17,6 @@ func TestNodeMaintenanceOperatorMarshalUnmarshal(t *testing.T) {
 	require.NoError(err)
 
 	var recreated nodeMaintenanceOperatorDeployment
-	require.NoError(UnmarshalK8SResources(data, &recreated))
+	require.NoError(kubernetes.UnmarshalK8SResources(data, &recreated))
 	assert.Equal(nmoDepl, &recreated)
 }

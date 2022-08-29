@@ -4,8 +4,8 @@ import (
 	"path/filepath"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubelet"
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/edgelesssys/constellation/internal/versions"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -223,12 +223,12 @@ func (k *KubeadmJoinYAML) SetControlPlane(advertiseAddress string) {
 }
 
 func (k *KubeadmJoinYAML) Marshal() ([]byte, error) {
-	return resources.MarshalK8SResources(k)
+	return kubernetes.MarshalK8SResources(k)
 }
 
 func (k *KubeadmJoinYAML) Unmarshal(yamlData []byte) (KubeadmJoinYAML, error) {
 	var tmp KubeadmJoinYAML
-	return tmp, resources.UnmarshalK8SResources(yamlData, &tmp)
+	return tmp, kubernetes.UnmarshalK8SResources(yamlData, &tmp)
 }
 
 type KubeadmInitYAML struct {
@@ -291,10 +291,10 @@ func (k *KubeadmInitYAML) SetProviderID(providerID string) {
 }
 
 func (k *KubeadmInitYAML) Marshal() ([]byte, error) {
-	return resources.MarshalK8SResources(k)
+	return kubernetes.MarshalK8SResources(k)
 }
 
 func (k *KubeadmInitYAML) Unmarshal(yamlData []byte) (KubeadmInitYAML, error) {
 	var tmp KubeadmInitYAML
-	return tmp, resources.UnmarshalK8SResources(yamlData, &tmp)
+	return tmp, kubernetes.UnmarshalK8SResources(yamlData, &tmp)
 }

@@ -1,7 +1,7 @@
 package gcp
 
 import (
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	k8s "k8s.io/api/core/v1"
 )
 
@@ -14,8 +14,8 @@ func (a *Autoscaler) Name() string {
 }
 
 // Secrets returns a list of secrets to deploy together with the k8s cluster-autoscaler.
-func (a *Autoscaler) Secrets(instance, cloudServiceAccountURI string) (resources.Secrets, error) {
-	return resources.Secrets{}, nil
+func (a *Autoscaler) Secrets(instance, cloudServiceAccountURI string) (kubernetes.Secrets, error) {
+	return kubernetes.Secrets{}, nil
 }
 
 // Volumes returns a list of volumes to deploy together with the k8s cluster-autoscaler.

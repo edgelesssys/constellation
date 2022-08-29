@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -263,7 +264,7 @@ func TestApplyOneObject(t *testing.T) {
 
 func TestGetObjects(t *testing.T) {
 	testCases := map[string]struct {
-		wantResources    resources.Marshaler
+		wantResources    kubernetes.Marshaler
 		httpResponseData map[string]string
 		resourcesYAML    string
 		wantErr          bool

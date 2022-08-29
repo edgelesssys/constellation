@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	apps "k8s.io/api/apps/v1"
 	k8s "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
@@ -176,5 +177,5 @@ func NewDefaultCloudNodeManagerDeployment(image, path string, extraArgs []string
 
 // Marshal marshals the cloud-node-manager deployment as YAML documents.
 func (c *cloudNodeManagerDeployment) Marshal() ([]byte, error) {
-	return MarshalK8SResources(c)
+	return kubernetes.MarshalK8SResources(c)
 }
