@@ -113,6 +113,7 @@ func (c *Client) createScaleSet(ctx context.Context, input CreateScaleSetInput) 
 	scaleSet := azure.ScaleSet{
 		Name:                           input.Name,
 		NamePrefix:                     input.NamePrefix,
+		UID:                            c.uid,
 		Location:                       c.location,
 		InstanceType:                   input.InstanceType,
 		StateDiskSizeGB:                input.StateDiskSizeGB,

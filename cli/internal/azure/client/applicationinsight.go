@@ -14,6 +14,7 @@ func (c *Client) CreateApplicationInsight(ctx context.Context) error {
 		Properties: &armapplicationinsights.ComponentProperties{
 			ApplicationType: to.Ptr(armapplicationinsights.ApplicationTypeWeb),
 		},
+		Tags: map[string]*string{"uid": to.Ptr(c.uid)},
 	}
 
 	_, err := c.applicationInsightsAPI.CreateOrUpdate(

@@ -13,6 +13,7 @@ import (
 type ScaleSet struct {
 	Name                           string
 	NamePrefix                     string
+	UID                            string
 	Subscription                   string
 	ResourceGroup                  string
 	Location                       string
@@ -101,10 +102,16 @@ func (s ScaleSet) Azure() armcomputev2.VirtualMachineScaleSet {
 											},
 											LoadBalancerBackendAddressPools: []*armcomputev2.SubResource{
 												{
-													ID: to.Ptr("/subscriptions/" + s.Subscription + "/resourcegroups/" + s.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + s.LoadBalancerName + "/backendAddressPools/" + s.LoadBalancerBackendAddressPool),
+													ID: to.Ptr("/subscriptions/" + s.Subscription +
+														"/resourcegroups/" + s.ResourceGroup +
+														"/providers/Microsoft.Network/loadBalancers/" + s.LoadBalancerName +
+														"/backendAddressPools/" + s.LoadBalancerBackendAddressPool),
 												},
 												{
-													ID: to.Ptr("/subscriptions/" + s.Subscription + "/resourcegroups/" + s.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + s.LoadBalancerName + "/backendAddressPools/all"),
+													ID: to.Ptr("/subscriptions/" + s.Subscription +
+														"/resourcegroups/" + s.ResourceGroup +
+														"/providers/Microsoft.Network/loadBalancers/" + s.LoadBalancerName +
+														"/backendAddressPools/all"),
 												},
 											},
 										},
@@ -134,6 +141,7 @@ func (s ScaleSet) Azure() armcomputev2.VirtualMachineScaleSet {
 				s.UserAssignedIdentity: {},
 			},
 		},
+		Tags: map[string]*string{"uid": to.Ptr(s.UID)},
 	}
 }
 
