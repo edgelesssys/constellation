@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improve rollback on GCP resource termination. You can now terminate multiple times.
 - Implement SSH peer to peer distribution between debugd nodes.
 - GCP service account can now be managed manually.
+- Azure resource group can now be managed manually and can be resused after termination.
+- Azure Active Directory client credentials can now be managed manually.
+- Resources on Azure are now tagged with the UID of the constellation.
 - CoreOS images are publicly available for Azure.
 - GCP: Support for higher end N2D standard (128 & 224 vCPUs), *high-mem* and *high-cpu* VMs
 - Add `constellation upgrade` to update node images in Constellation.
@@ -34,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 <!-- For changes in existing functionality.  -->
 - Use IP from Constellation ID file in init and verify instead of IPs from state file.
+- Terminate now deletes all resources found within the given resource group.
 - Change cdbg to use load balancer for deploy.
 - cdbg now uses the Constellation config directly and does not require any extra config
 - Azure CVMs are attested using SNP attestation
@@ -42,7 +46,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- For soon-to-be removed features. -->
 ### Removed
 <!-- For now removed features. -->
+- Azure Trusted Launch instance types with 2 CPUs (SMT disabled due to Retbleed (CVE-2022-29900)).
 - cdbg: Custom systemd service deployment
+
 ### Fixed
 
 ### Security
