@@ -40,6 +40,7 @@ func (c *Client) CreateVirtualNetwork(ctx context.Context) error {
 		ctx, c.resourceGroup, createNetworkInput.name,
 		armnetwork.VirtualNetwork{
 			Name:     to.Ptr(createNetworkInput.name), // this is supposed to be read-only
+			Tags:     map[string]*string{"uid": to.Ptr(c.uid)},
 			Location: to.Ptr(createNetworkInput.location),
 			Properties: &armnetwork.VirtualNetworkPropertiesFormat{
 				AddressSpace: &armnetwork.AddressSpace{
@@ -101,6 +102,7 @@ func (c *Client) CreateSecurityGroup(ctx context.Context, input NetworkSecurityG
 		ctx, c.resourceGroup, createNetworkSecurityGroupInput.name,
 		armnetwork.SecurityGroup{
 			Name:     to.Ptr(createNetworkSecurityGroupInput.name),
+			Tags:     map[string]*string{"uid": to.Ptr(c.uid)},
 			Location: to.Ptr(createNetworkSecurityGroupInput.location),
 			Properties: &armnetwork.SecurityGroupPropertiesFormat{
 				SecurityRules: createNetworkSecurityGroupInput.rules,
@@ -125,6 +127,7 @@ func (c *Client) createPublicIPAddress(ctx context.Context, name string) (*armne
 	poller, err := c.publicIPAddressesAPI.BeginCreateOrUpdate(
 		ctx, c.resourceGroup, name,
 		armnetwork.PublicIPAddress{
+			Tags:     map[string]*string{"uid": to.Ptr(c.uid)},
 			Location: to.Ptr(c.location),
 			SKU: &armnetwork.PublicIPAddressSKU{
 				Name: to.Ptr(armnetwork.PublicIPAddressSKUNameStandard),

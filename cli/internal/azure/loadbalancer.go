@@ -47,15 +47,9 @@ func (l LoadBalancer) Azure() armnetwork.LoadBalancer {
 				},
 			},
 			BackendAddressPools: []*armnetwork.BackendAddressPool{
-				{
-					Name: to.Ptr(backEndAddressPoolNodeName),
-				},
-				{
-					Name: to.Ptr(backEndAddressPoolControlPlaneName),
-				},
-				{
-					Name: to.Ptr("all"),
-				},
+				{Name: to.Ptr(backEndAddressPoolNodeName)},
+				{Name: to.Ptr(backEndAddressPoolControlPlaneName)},
+				{Name: to.Ptr("all")},
 			},
 			Probes: []*armnetwork.Probe{
 				{
@@ -92,18 +86,27 @@ func (l LoadBalancer) Azure() armnetwork.LoadBalancer {
 					Name: to.Ptr("kubeLoadBalancerRule"),
 					Properties: &armnetwork.LoadBalancingRulePropertiesFormat{
 						FrontendIPConfiguration: &armnetwork.SubResource{
-							ID: to.Ptr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/frontendIPConfigurations/" + frontEndIPConfigName),
+							ID: to.Ptr("/subscriptions/" + l.Subscription +
+								"/resourceGroups/" + l.ResourceGroup +
+								"/providers/Microsoft.Network/loadBalancers/" + l.Name +
+								"/frontendIPConfigurations/" + frontEndIPConfigName),
 						},
 						FrontendPort: to.Ptr[int32](constants.KubernetesPort),
 						BackendPort:  to.Ptr[int32](constants.KubernetesPort),
 						Protocol:     to.Ptr(armnetwork.TransportProtocolTCP),
 						Probe: &armnetwork.SubResource{
-							ID: to.Ptr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/probes/" + kubeHealthProbeName),
+							ID: to.Ptr("/subscriptions/" + l.Subscription +
+								"/resourceGroups/" + l.ResourceGroup +
+								"/providers/Microsoft.Network/loadBalancers/" + l.Name +
+								"/probes/" + kubeHealthProbeName),
 						},
 						DisableOutboundSnat: to.Ptr(true),
 						BackendAddressPools: []*armnetwork.SubResource{
 							{
-								ID: to.Ptr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/backendAddressPools/" + backEndAddressPoolControlPlaneName),
+								ID: to.Ptr("/subscriptions/" + l.Subscription +
+									"/resourceGroups/" + l.ResourceGroup +
+									"/providers/Microsoft.Network/loadBalancers/" + l.Name +
+									"/backendAddressPools/" + backEndAddressPoolControlPlaneName),
 							},
 						},
 					},
@@ -112,18 +115,27 @@ func (l LoadBalancer) Azure() armnetwork.LoadBalancer {
 					Name: to.Ptr("verifyLoadBalancerRule"),
 					Properties: &armnetwork.LoadBalancingRulePropertiesFormat{
 						FrontendIPConfiguration: &armnetwork.SubResource{
-							ID: to.Ptr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/frontendIPConfigurations/" + frontEndIPConfigName),
+							ID: to.Ptr("/subscriptions/" + l.Subscription +
+								"/resourceGroups/" + l.ResourceGroup +
+								"/providers/Microsoft.Network/loadBalancers/" + l.Name +
+								"/frontendIPConfigurations/" + frontEndIPConfigName),
 						},
 						FrontendPort: to.Ptr[int32](constants.VerifyServiceNodePortGRPC),
 						BackendPort:  to.Ptr[int32](constants.VerifyServiceNodePortGRPC),
 						Protocol:     to.Ptr(armnetwork.TransportProtocolTCP),
 						Probe: &armnetwork.SubResource{
-							ID: to.Ptr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/probes/" + verifyHealthProbeName),
+							ID: to.Ptr("/subscriptions/" + l.Subscription +
+								"/resourceGroups/" + l.ResourceGroup +
+								"/providers/Microsoft.Network/loadBalancers/" + l.Name +
+								"/probes/" + verifyHealthProbeName),
 						},
 						DisableOutboundSnat: to.Ptr(true),
 						BackendAddressPools: []*armnetwork.SubResource{
 							{
-								ID: to.Ptr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/backendAddressPools/" + backEndAddressPoolControlPlaneName),
+								ID: to.Ptr("/subscriptions/" + l.Subscription +
+									"/resourceGroups/" + l.ResourceGroup +
+									"/providers/Microsoft.Network/loadBalancers/" + l.Name +
+									"/backendAddressPools/" + backEndAddressPoolControlPlaneName),
 							},
 						},
 					},
@@ -132,18 +144,27 @@ func (l LoadBalancer) Azure() armnetwork.LoadBalancer {
 					Name: to.Ptr("coordLoadBalancerRule"),
 					Properties: &armnetwork.LoadBalancingRulePropertiesFormat{
 						FrontendIPConfiguration: &armnetwork.SubResource{
-							ID: to.Ptr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/frontendIPConfigurations/" + frontEndIPConfigName),
+							ID: to.Ptr("/subscriptions/" + l.Subscription +
+								"/resourceGroups/" + l.ResourceGroup +
+								"/providers/Microsoft.Network/loadBalancers/" + l.Name +
+								"/frontendIPConfigurations/" + frontEndIPConfigName),
 						},
 						FrontendPort: to.Ptr[int32](constants.BootstrapperPort),
 						BackendPort:  to.Ptr[int32](constants.BootstrapperPort),
 						Protocol:     to.Ptr(armnetwork.TransportProtocolTCP),
 						Probe: &armnetwork.SubResource{
-							ID: to.Ptr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/probes/" + coordHealthProbeName),
+							ID: to.Ptr("/subscriptions/" + l.Subscription +
+								"/resourceGroups/" + l.ResourceGroup +
+								"/providers/Microsoft.Network/loadBalancers/" + l.Name +
+								"/probes/" + coordHealthProbeName),
 						},
 						DisableOutboundSnat: to.Ptr(true),
 						BackendAddressPools: []*armnetwork.SubResource{
 							{
-								ID: to.Ptr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/backendAddressPools/" + backEndAddressPoolControlPlaneName),
+								ID: to.Ptr("/subscriptions/" + l.Subscription +
+									"/resourceGroups/" + l.ResourceGroup +
+									"/providers/Microsoft.Network/loadBalancers/" + l.Name +
+									"/backendAddressPools/" + backEndAddressPoolControlPlaneName),
 							},
 						},
 					},
@@ -152,18 +173,27 @@ func (l LoadBalancer) Azure() armnetwork.LoadBalancer {
 					Name: to.Ptr("debudLoadBalancerRule"),
 					Properties: &armnetwork.LoadBalancingRulePropertiesFormat{
 						FrontendIPConfiguration: &armnetwork.SubResource{
-							ID: to.Ptr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/frontendIPConfigurations/" + frontEndIPConfigName),
+							ID: to.Ptr("/subscriptions/" + l.Subscription +
+								"/resourceGroups/" + l.ResourceGroup +
+								"/providers/Microsoft.Network/loadBalancers/" + l.Name +
+								"/frontendIPConfigurations/" + frontEndIPConfigName),
 						},
 						FrontendPort: to.Ptr[int32](constants.DebugdPort),
 						BackendPort:  to.Ptr[int32](constants.DebugdPort),
 						Protocol:     to.Ptr(armnetwork.TransportProtocolTCP),
 						Probe: &armnetwork.SubResource{
-							ID: to.Ptr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/probes/" + debugdHealthProbeName),
+							ID: to.Ptr("/subscriptions/" + l.Subscription +
+								"/resourceGroups/" + l.ResourceGroup +
+								"/providers/Microsoft.Network/loadBalancers/" + l.Name +
+								"/probes/" + debugdHealthProbeName),
 						},
 						DisableOutboundSnat: to.Ptr(true),
 						BackendAddressPools: []*armnetwork.SubResource{
 							{
-								ID: to.Ptr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/backendAddressPools/" + backEndAddressPoolControlPlaneName),
+								ID: to.Ptr("/subscriptions/" + l.Subscription +
+									"/resourceGroups/" + l.ResourceGroup +
+									"/providers/Microsoft.Network/loadBalancers/" + l.Name +
+									"/backendAddressPools/" + backEndAddressPoolControlPlaneName),
 							},
 						},
 					},
@@ -175,11 +205,17 @@ func (l LoadBalancer) Azure() armnetwork.LoadBalancer {
 					Properties: &armnetwork.OutboundRulePropertiesFormat{
 						FrontendIPConfigurations: []*armnetwork.SubResource{
 							{
-								ID: to.Ptr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/frontendIPConfigurations/" + frontEndIPConfigName),
+								ID: to.Ptr("/subscriptions/" + l.Subscription +
+									"/resourceGroups/" + l.ResourceGroup +
+									"/providers/Microsoft.Network/loadBalancers/" + l.Name +
+									"/frontendIPConfigurations/" + frontEndIPConfigName),
 							},
 						},
 						BackendAddressPool: &armnetwork.SubResource{
-							ID: to.Ptr("/subscriptions/" + l.Subscription + "/resourceGroups/" + l.ResourceGroup + "/providers/Microsoft.Network/loadBalancers/" + l.Name + "/backendAddressPools/all"),
+							ID: to.Ptr("/subscriptions/" + l.Subscription +
+								"/resourceGroups/" + l.ResourceGroup +
+								"/providers/Microsoft.Network/loadBalancers/" + l.Name +
+								"/backendAddressPools/all"),
 						},
 						Protocol: to.Ptr(armnetwork.LoadBalancerOutboundRuleProtocolAll),
 					},
