@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -175,7 +176,7 @@ func (k *KubernetesUtil) InitCluster(
 
 	// initialize the cluster
 	log.Infof("Initializing the cluster using kubeadm init")
-	cmd = exec.CommandContext(ctx, kubeadmPath, "init", "-v=5", "--skip-phases=preflight,certs", "--config", initConfigFile.Name())
+	cmd = exec.CommandContext(ctx, kubeadmPath, "init", "-v=5", "--skip-phases=preflight,certs,addon/kube-proxy", "--config", initConfigFile.Name())
 	out, err = cmd.CombinedOutput()
 	if err != nil {
 		var exitErr *exec.ExitError
@@ -216,20 +217,21 @@ func (k *KubernetesUtil) SetupHelmDeployments(ctx context.Context, kubectl Clien
 }
 
 type SetupPodNetworkInput struct {
-	CloudProvider     string
-	NodeName          string
-	FirstNodePodCIDR  string
-	SubnetworkPodCIDR string
-	ProviderID        string
+	CloudProvider        string
+	NodeName             string
+	FirstNodePodCIDR     string
+	SubnetworkPodCIDR    string
+	ProviderID           string
+	LoadBalancerEndpoint string
 }
 
 // deployCilium sets up the cilium pod network.
 func (k *KubernetesUtil) deployCilium(ctx context.Context, in SetupPodNetworkInput, helmClient *action.Install, ciliumDeployment helm.Deployment, kubectl Client) error {
 	switch in.CloudProvider {
 	case "gcp":
-		return k.deployCiliumGCP(ctx, helmClient, kubectl, ciliumDeployment, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR)
+		return k.deployCiliumGCP(ctx, helmClient, kubectl, ciliumDeployment, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR, in.LoadBalancerEndpoint)
 	case "azure":
-		return k.deployCiliumAzure(ctx, helmClient, ciliumDeployment)
+		return k.deployCiliumAzure(ctx, helmClient, ciliumDeployment, in.LoadBalancerEndpoint)
 	case "qemu":
 		return k.deployCiliumQEMU(ctx, helmClient, ciliumDeployment, in.SubnetworkPodCIDR)
 	default:
@@ -237,7 +239,11 @@ func (k *KubernetesUtil) deployCilium(ctx context.Context, in SetupPodNetworkInp
 	}
 }
 
-func (k *KubernetesUtil) deployCiliumAzure(ctx context.Context, helmClient *action.Install, ciliumDeployment helm.Deployment) error {
+func (k *KubernetesUtil) deployCiliumAzure(ctx context.Context, helmClient *action.Install, ciliumDeployment helm.Deployment, kubeAPIEndpoint string) error {
+	host := kubeAPIEndpoint
+	ciliumDeployment.Values["k8sServiceHost"] = host
+	ciliumDeployment.Values["k8sServicePort"] = strconv.Itoa(constants.KubernetesPort)
+
 	_, err := helmClient.RunWithContext(ctx, ciliumDeployment.Chart, ciliumDeployment.Values)
 	if err != nil {
 		return fmt.Errorf("installing cilium: %w", err)
@@ -245,7 +251,7 @@ func (k *KubernetesUtil) deployCiliumAzure(ctx context.Context, helmClient *acti
 	return nil
 }
 
-func (k *KubernetesUtil) deployCiliumGCP(ctx context.Context, helmClient *action.Install, kubectl Client, ciliumDeployment helm.Deployment, nodeName, nodePodCIDR, subnetworkPodCIDR string) error {
+func (k *KubernetesUtil) deployCiliumGCP(ctx context.Context, helmClient *action.Install, kubectl Client, ciliumDeployment helm.Deployment, nodeName, nodePodCIDR, subnetworkPodCIDR, kubeAPIEndpoint string) error {
 	out, err := exec.CommandContext(ctx, kubectlPath, "--kubeconfig", kubeConfig, "patch", "node", nodeName, "-p", "{\"spec\":{\"podCIDR\": \""+nodePodCIDR+"\"}}").CombinedOutput()
 	if err != nil {
 		err = errors.New(string(out))
@@ -270,9 +276,18 @@ func (k *KubernetesUtil) deployCiliumGCP(ctx context.Context, helmClient *action
 		return err
 	}
 
+	host, port, err := net.SplitHostPort(kubeAPIEndpoint)
+	if err != nil {
+		return err
+	}
+
 	// configure pod network CIDR
 	ciliumDeployment.Values["ipv4NativeRoutingCIDR"] = subnetworkPodCIDR
 	ciliumDeployment.Values["strictModeCIDR"] = subnetworkPodCIDR
+	ciliumDeployment.Values["k8sServiceHost"] = host
+	if port != "" {
+		ciliumDeployment.Values["k8sServicePort"] = port
+	}
 
 	_, err = helmClient.RunWithContext(ctx, ciliumDeployment.Chart, ciliumDeployment.Values)
 	if err != nil {

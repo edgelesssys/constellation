@@ -30,12 +30,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CoreOS images are publicly available for Azure.
 - GCP: Support for higher end N2D standard (128 & 224 vCPUs), *high-mem* and *high-cpu* VMs
 - Add `constellation upgrade` to update node images in Constellation.
+- Add cilium v1.12.1 with strict mode v2
 
 ### Changed
 <!-- For changes in existing functionality.  -->
 - Use IP from Constellation ID file in init and verify instead of IPs from state file.
 - Change cdbg to use load balancer for deploy.
 - Azure CVMs are attested using SNP attestation
+- Replaced kube-proxy with cilium
 
 ### Deprecated
 <!-- For soon-to-be removed features. -->
