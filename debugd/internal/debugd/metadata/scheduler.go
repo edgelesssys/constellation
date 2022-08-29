@@ -7,12 +7,7 @@ import (
 	"sync"
 	"time"
 
-<<<<<<< HEAD:debugd/internal/debugd/metadata/scheduler.go
-	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/debugd/internal/debugd"
-=======
-	"github.com/edgelesssys/constellation/debugd/debugd"
->>>>>>> a980bbf5 (move nodestate and role):debugd/debugd/metadata/scheduler.go
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/role"
