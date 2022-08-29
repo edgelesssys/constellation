@@ -14,6 +14,9 @@ inputs:
   cloudProvider:
     description: "Either 'gcp' or 'azure'."
     required: true
+  gcpClusterServiceAccountKey:
+    description: "Service account to use inside the created Constellation cluster on GCP."
+    required: false
   machineType:
     description: "Machine type of VM to spawn."
     required: true
@@ -124,6 +127,14 @@ runs:
         cdbg deploy
       shell: bash
       if: ${{ inputs.isDebugImage == 'true' }}
+
+    - name: Create serviceAccountKey.json
+      if: ${{ inputs.cloudProvider == 'gcp' }}
+      shell: bash
+      run: |
+        echo "$GCP_CLUSTER_SERVICE_ACCOUNT_KEY" > serviceAccountKey.json
+      env:
+        GCP_CLUSTER_SERVICE_ACCOUNT_KEY: ${{ inputs.gcpClusterServiceAccountKey }}
 
     - name: Constellation init
       run: |

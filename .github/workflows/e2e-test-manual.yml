@@ -65,6 +65,7 @@ jobs:
           cloudProvider: ${{ github.event.inputs.cloudProvider }}
           machineType: ${{ github.event.inputs.machineType }}
           gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
           azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
           sonobuoyTestSuiteCmd: ${{ github.event.inputs.sonobuoyTestSuiteCmd }}
           kubernetesVersion: ${{ github.event.inputs.kubernetesVersion }}
