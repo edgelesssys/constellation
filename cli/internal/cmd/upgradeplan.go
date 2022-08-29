@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
@@ -19,7 +19,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/talos-systems/talos/pkg/machinery/config/encoder"
 	"golang.org/x/mod/semver"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
+
+const imageReleaseURL = "https://github.com/edgelesssys/constellation/releases/latest/download/image-manifest.json"
 
 func newUpgradePlanCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -31,8 +34,6 @@ func newUpgradePlanCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringP("file", "f", "upgrade-plan.yaml", "path to output file, or '-' for stdout")
-	cmd.Flags().StringP("url", "u", constants.S3PublicBucket, "alternative base URL to fetch measurements from")
-	cmd.Flags().StringP("signature-url", "s", constants.S3PublicBucket, "alternative base URL to fetch measurements' signature from")
 
 	return cmd
 }
@@ -43,13 +44,17 @@ func runUpgradePlan(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	planner, err := cloudcmd.NewUpgrader(cmd.OutOrStdout())
+	if err != nil {
+		return err
+	}
 
-	return upgradePlan(cmd, fileHandler, http.DefaultClient, flags)
+	return upgradePlan(cmd, planner, fileHandler, http.DefaultClient, flags)
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
-func upgradePlan(cmd *cobra.Command, fileHandler file.Handler,
-	client *http.Client, flags upgradePlanFlags,
+func upgradePlan(cmd *cobra.Command, planner upgradePlanner,
+	fileHandler file.Handler, client *http.Client, flags upgradePlanFlags,
 ) error {
 	config, err := config.FromFile(fileHandler, flags.configPath)
 	if err != nil {
@@ -57,11 +62,10 @@ func upgradePlan(cmd *cobra.Command, fileHandler file.Handler,
 	}
 
 	// get current image version of the cluster
-	// if an update was already performed, use the updated image version
 	csp := config.GetProvider()
-	version := getCurrentImageVersion(csp, config)
-	if version == "" || !semver.IsValid(version) {
-		return errors.New("unable to determine valid version for current image")
+	version, err := getCurrentImageVersion(cmd.Context(), planner, csp)
+	if err != nil {
+		return fmt.Errorf("checking current image version: %w", err)
 	}
 
 	// fetch images definitions from GitHub and filter to only compatible images
@@ -70,9 +74,13 @@ func upgradePlan(cmd *cobra.Command, fileHandler file.Handler,
 		return fmt.Errorf("fetching available images: %w", err)
 	}
 	compatibleImages := getCompatibleImages(csp, version, images)
+	if len(compatibleImages) == 0 {
+		cmd.Println("No compatible images found to upgrade to.")
+		return nil
+	}
 
 	// get expected measurements for each image
-	if err := getMeasurements(cmd.Context(), client, flags, compatibleImages); err != nil {
+	if err := getCompatibleImageMeasurements(cmd.Context(), client, []byte(flags.cosignPubKey), compatibleImages); err != nil {
 		return fmt.Errorf("fetching measurements for compatible images: %w", err)
 	}
 
@@ -89,14 +97,12 @@ func upgradePlan(cmd *cobra.Command, fileHandler file.Handler,
 }
 
 // fetchImages retrieves a list of the latest Constellation node images from GitHub.
-func fetchImages(ctx context.Context, imageFetcher imageFetcher) (map[string]imageManifest, error) {
-	const releaseURL = "https://github.com/edgelesssys/constellation/releases/latest/download/image-manifest.json"
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, releaseURL, http.NoBody)
+func fetchImages(ctx context.Context, client *http.Client) (map[string]imageManifest, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, imageReleaseURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
-	res, err := imageFetcher.Do(req)
+	res, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -141,19 +147,20 @@ func getCompatibleImages(csp cloudprovider.Provider, currentVersion string, imag
 	return compatibleImages
 }
 
-// getMeasurements retrieves the expected measurements for each image.
-func getMeasurements(ctx context.Context, client *http.Client, flags upgradePlanFlags, images map[string]config.UpgradeConfig) error {
+// getCompatibleImageMeasurements retrieves the expected measurements for each image.
+func getCompatibleImageMeasurements(ctx context.Context, client *http.Client, pubK []byte, images map[string]config.UpgradeConfig) error {
 	for idx, img := range images {
-		parsedMeasurementsURL, err := url.Parse(flags.measurementsURL + img.Image + "/measurements.yaml")
-		if err != nil {
-			return err
-		}
-		parsedSignatureURL, err := url.Parse(constants.S3PublicBucket + img.Image + "/measurements.yaml.sig")
+		measurementsURL, err := url.Parse(constants.S3PublicBucket + img.Image + "/measurements.yaml")
 		if err != nil {
 			return err
 		}
 
-		if err := img.Measurements.FetchAndVerify(ctx, client, parsedMeasurementsURL, parsedSignatureURL, []byte(constants.CosignPublicKey)); err != nil {
+		signatureURL, err := url.Parse(constants.S3PublicBucket + img.Image + "/measurements.yaml.sig")
+		if err != nil {
+			return err
+		}
+
+		if err := img.Measurements.FetchAndVerify(ctx, client, measurementsURL, signatureURL, pubK); err != nil {
 			return err
 		}
 		images[idx] = img
@@ -162,27 +169,37 @@ func getMeasurements(ctx context.Context, client *http.Client, flags upgradePlan
 	return nil
 }
 
-func getCurrentImageVersion(csp cloudprovider.Provider, config *config.Config) string {
+// getCurrentImageVersion retrieves the semantic version of the image currently installed in the cluster.
+// If the cluster is not using a release image, an error is returned.
+func getCurrentImageVersion(ctx context.Context, planner upgradePlanner, csp cloudprovider.Provider) (string, error) {
+	_, image, err := planner.GetCurrentImage(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	var version string
 	switch csp {
 	case cloudprovider.Azure:
-		image := config.Provider.Azure.Image
-		if config.Upgrade.Image != "" {
-			// override image if upgrade image is specified
-			image = config.Upgrade.Image
+		imageRxp := regexp.MustCompile(`^\/subscriptions\/0d202bbb-4fa7-4af8-8125-58c269a05435\/resourceGroups\/(CONSTELLATION\-IMAGES|constellation\-images)\/providers\/Microsoft.Compute\/galleries\/Constellation\/images\/constellation\/versions\/([\d]+.[\d]+.[\d]+)$`)
+		azVersion := imageRxp.FindStringSubmatch(image)
+		if len(azVersion) != 3 {
+			return "", fmt.Errorf("image %q does not look like a release image", image)
 		}
-		version := regexp.MustCompile(`constellation/versions/[\d]+.[\d]+.[\d]+`).FindString(image)
-		return strings.TrimPrefix(version, "constellation/versions/")
+		version = "v" + azVersion[2]
 	case cloudprovider.GCP:
-		image := config.Provider.GCP.Image
-		if config.Upgrade.Image != "" {
-			// override image if upgrade image is specified
-			image = config.Upgrade.Image
+		gcpVersion := regexp.MustCompile(`^projects\/constellation-images\/global\/images\/constellation-(v[\d]+-[\d]+-[\d]+)$`).FindStringSubmatch(image)
+		if len(gcpVersion) != 2 {
+			return "", fmt.Errorf("image %q does not look like a release image", image)
 		}
-		version := regexp.MustCompile(`v[\d]+-[\d]+-[\d]+$`).FindString(image)
-		return strings.ReplaceAll(version, "-", ".")
+		version = strings.ReplaceAll(gcpVersion[1], "-", ".")
 	default:
-		return ""
+		return "", fmt.Errorf("unsupported cloud provider: %s", csp.String())
 	}
+
+	if !semver.IsValid(version) {
+		return "", fmt.Errorf("image %q has no valid semantic version", image)
+	}
+	return version, nil
 }
 
 func parseUpgradePlanFlags(cmd *cobra.Command) (upgradePlanFlags, error) {
@@ -194,29 +211,18 @@ func parseUpgradePlanFlags(cmd *cobra.Command) (upgradePlanFlags, error) {
 	if err != nil {
 		return upgradePlanFlags{}, err
 	}
-	measurementsURL, err := cmd.Flags().GetString("url")
-	if err != nil {
-		return upgradePlanFlags{}, err
-	}
-
-	measurementsSignatureURL, err := cmd.Flags().GetString("signature-url")
-	if err != nil {
-		return upgradePlanFlags{}, err
-	}
 
 	return upgradePlanFlags{
-		configPath:      configPath,
-		filePath:        filePath,
-		measurementsURL: measurementsURL,
-		signatureURL:    measurementsSignatureURL,
+		configPath:   configPath,
+		filePath:     filePath,
+		cosignPubKey: constants.CosignPublicKey,
 	}, nil
 }
 
 type upgradePlanFlags struct {
-	configPath      string
-	filePath        string
-	measurementsURL string
-	signatureURL    string
+	configPath   string
+	filePath     string
+	cosignPubKey string
 }
 
 type imageManifest struct {
@@ -224,6 +230,6 @@ type imageManifest struct {
 	GCPImage   string `json:"GCPCoreOSImage"`
 }
 
-type imageFetcher interface {
-	Do(req *http.Request) (*http.Response, error)
+type upgradePlanner interface {
+	GetCurrentImage(ctx context.Context) (*unstructured.Unstructured, string, error)
 }
