@@ -12,6 +12,7 @@ import (
 
 var (
 	ConfigDoc         encoder.Doc
+	UpgradeConfigDoc  encoder.Doc
 	UserKeyDoc        encoder.Doc
 	FirewallRuleDoc   encoder.Doc
 	ProviderConfigDoc encoder.Doc
@@ -24,7 +25,7 @@ func init() {
 	ConfigDoc.Type = "Config"
 	ConfigDoc.Comments[encoder.LineComment] = "Config defines configuration used by CLI."
 	ConfigDoc.Description = "Config defines configuration used by CLI."
-	ConfigDoc.Fields = make([]encoder.Doc, 9)
+	ConfigDoc.Fields = make([]encoder.Doc, 10)
 	ConfigDoc.Fields[0].Name = "version"
 	ConfigDoc.Fields[0].Type = "string"
 	ConfigDoc.Fields[0].Note = ""
@@ -74,6 +75,36 @@ func init() {
 	ConfigDoc.Fields[8].Note = ""
 	ConfigDoc.Fields[8].Description = "Kubernetes version installed in the cluster."
 	ConfigDoc.Fields[8].Comments[encoder.LineComment] = "Kubernetes version installed in the cluster."
+	ConfigDoc.Fields[9].Name = "upgrade"
+	ConfigDoc.Fields[9].Type = "UpgradeConfig"
+	ConfigDoc.Fields[9].Note = ""
+	ConfigDoc.Fields[9].Description = "Configuration to apply during constellation upgrade."
+	ConfigDoc.Fields[9].Comments[encoder.LineComment] = "Configuration to apply during constellation upgrade."
+
+	ConfigDoc.Fields[9].AddExample("", UpgradeConfig{Image: "", Measurements: Measurements{}})
+
+	UpgradeConfigDoc.Type = "UpgradeConfig"
+	UpgradeConfigDoc.Comments[encoder.LineComment] = "UpgradeConfig defines configuration used during constellation upgrade."
+	UpgradeConfigDoc.Description = "UpgradeConfig defines configuration used during constellation upgrade."
+
+	UpgradeConfigDoc.AddExample("", UpgradeConfig{Image: "", Measurements: Measurements{}})
+	UpgradeConfigDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "Config",
+			FieldName: "upgrade",
+		},
+	}
+	UpgradeConfigDoc.Fields = make([]encoder.Doc, 2)
+	UpgradeConfigDoc.Fields[0].Name = "image"
+	UpgradeConfigDoc.Fields[0].Type = "string"
+	UpgradeConfigDoc.Fields[0].Note = ""
+	UpgradeConfigDoc.Fields[0].Description = "Updated machine image to install on all nodes."
+	UpgradeConfigDoc.Fields[0].Comments[encoder.LineComment] = "Updated machine image to install on all nodes."
+	UpgradeConfigDoc.Fields[1].Name = "measurements"
+	UpgradeConfigDoc.Fields[1].Type = "Measurements"
+	UpgradeConfigDoc.Fields[1].Note = ""
+	UpgradeConfigDoc.Fields[1].Description = "Measurements of the updated image."
+	UpgradeConfigDoc.Fields[1].Comments[encoder.LineComment] = "Measurements of the updated image."
 
 	UserKeyDoc.Type = "UserKey"
 	UserKeyDoc.Comments[encoder.LineComment] = "UserKey describes a user that should be created with corresponding public SSH key."
@@ -212,8 +243,8 @@ func init() {
 	AzureConfigDoc.Fields[8].Name = "confidentialVM"
 	AzureConfigDoc.Fields[8].Type = "bool"
 	AzureConfigDoc.Fields[8].Note = ""
-	AzureConfigDoc.Fields[8].Description = "Use Azure VMs with security type Confidential VM. If set to false, Trusted Launch VMs will be used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview"
-	AzureConfigDoc.Fields[8].Comments[encoder.LineComment] = "Use Azure VMs with security type Confidential VM. If set to false, Trusted Launch VMs will be used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview"
+	AzureConfigDoc.Fields[8].Description = "Use VMs with security type Confidential VM. If set to false, Trusted Launch VMs will be used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview"
+	AzureConfigDoc.Fields[8].Comments[encoder.LineComment] = "Use VMs with security type Confidential VM. If set to false, Trusted Launch VMs will be used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview"
 
 	GCPConfigDoc.Type = "GCPConfig"
 	GCPConfigDoc.Comments[encoder.LineComment] = "GCPConfig are GCP specific configuration values used by the CLI."
@@ -292,6 +323,10 @@ func (_ Config) Doc() *encoder.Doc {
 	return &ConfigDoc
 }
 
+func (_ UpgradeConfig) Doc() *encoder.Doc {
+	return &UpgradeConfigDoc
+}
+
 func (_ UserKey) Doc() *encoder.Doc {
 	return &UserKeyDoc
 }
@@ -323,6 +358,7 @@ func GetConfigurationDoc() *encoder.FileDoc {
 		Description: "This binary can be build from siderolabs/talos projects. Located at:\nhttps://github.com/siderolabs/talos/tree/master/hack/docgen\n",
 		Structs: []*encoder.Doc{
 			&ConfigDoc,
+			&UpgradeConfigDoc,
 			&UserKeyDoc,
 			&FirewallRuleDoc,
 			&ProviderConfigDoc,

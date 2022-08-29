@@ -66,6 +66,21 @@ type Config struct {
 	// description: |
 	//   Kubernetes version installed in the cluster.
 	KubernetesVersion string `yaml:"kubernetesVersion" validate:"supported_k8s_version"`
+	// description: |
+	//   Configuration to apply during constellation upgrade.
+	// examples:
+	//   - value: 'UpgradeConfig{ Image: "", Measurements: Measurements{} }'
+	Upgrade UpgradeConfig `yaml:"upgrade,omitempty"`
+}
+
+// UpgradeConfig defines configuration used during constellation upgrade.
+type UpgradeConfig struct {
+	// description: |
+	//   Updated machine image to install on all nodes.
+	Image string `yaml:"image"`
+	// description: |
+	//   Measurements of the updated image.
+	Measurements Measurements `yaml:"measurements"`
 }
 
 // UserKey describes a user that should be created with corresponding public SSH key.
