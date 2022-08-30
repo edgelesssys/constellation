@@ -26,7 +26,7 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
     4. Update versions [versions.go](../internal/versions/versions.go#L33-L36) to `v1.3.0` and **push your changes**.
     5. Create a [production coreOS image](/.github/workflows/build-coreos.yml)
         ```sh
-        gh workflow run build-coreos.yml --ref release/v0.0.1 -F debug=false -F coreOSConfigBranch=constellation
+        gh workflow run build-coreos.yml --ref release/v1.3.0 -F debug=false -F coreOSConfigBranch=constellation
         ```
     6. Update [default images in config](/internal/config/images_enterprise.go)
     7. Merge this branch back to `main`
