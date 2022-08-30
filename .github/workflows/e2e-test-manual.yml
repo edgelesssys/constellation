@@ -69,6 +69,7 @@ jobs:
           azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
           sonobuoyTestSuiteCmd: ${{ github.event.inputs.sonobuoyTestSuiteCmd }}
           kubernetesVersion: ${{ github.event.inputs.kubernetesVersion }}
+          azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
           msTeamsWebhook: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           coreosImage: ${{ github.event.inputs.coreosImage }}
           isDebugImage: ${{ github.event.inputs.isDebugImage }}
