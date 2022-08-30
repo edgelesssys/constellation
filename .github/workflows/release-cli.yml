@@ -38,6 +38,17 @@ jobs:
           cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
 
+      - name: Login to Azure
+        uses: ./.github/actions/azure_login
+        with:
+          azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Build version manifest
+        run: |
+          cd hack/build-manifest/
+          AZURE_SUBSCRIPTION_ID=0d202bbb-4fa7-4af8-8125-58c269a05435 go run . > versions-manifest.json
+          cat versions-manifest.json
+
       - name: Release CLI
         # GitHub endorsed release project. See: https://github.com/actions/create-release
         uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5
@@ -47,3 +58,4 @@ jobs:
           files: |
             build/constellation-*
             build/cosign.pub
+            hack/build-manifest/versions-manifest.json
