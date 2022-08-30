@@ -15,6 +15,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/talos-systems/talos/pkg/machinery/config/encoder"
@@ -39,7 +40,7 @@ func newUpgradePlanCmd() *cobra.Command {
 		RunE:  runUpgradePlan,
 	}
 
-	cmd.Flags().StringP("file", "f", "upgrade-plan.yaml", "path to output file, or '-' for stdout")
+	cmd.Flags().StringP("file", "f", "", "path to output file, or '-' for stdout, leave empty for interactive mode")
 
 	return cmd
 }
@@ -69,6 +70,7 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner,
 
 	// get current image version of the cluster
 	csp := config.GetProvider()
+
 	version, err := getCurrentImageVersion(cmd.Context(), planner, csp)
 	if err != nil {
 		return fmt.Errorf("checking current image version: %w", err)
@@ -90,7 +92,18 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner,
 		return fmt.Errorf("fetching measurements for compatible images: %w", err)
 	}
 
-	// write upgrade plan to file
+	// interactive mode
+	if flags.filePath == "" {
+		fmt.Fprintf(cmd.OutOrStdout(), "Current version: %s\n", version)
+		return upgradePlanInteractive(
+			&nopWriteCloser{cmd.OutOrStdout()},
+			io.NopCloser(cmd.InOrStdin()),
+			flags.configPath, config, fileHandler,
+			compatibleImages,
+		)
+	}
+
+	// write upgrade plan to stdout
 	if flags.filePath == "-" {
 		content, err := encoder.NewEncoder(compatibleImages).Encode()
 		if err != nil {
@@ -99,6 +112,8 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner,
 		_, err = cmd.OutOrStdout().Write(content)
 		return err
 	}
+
+	// write upgrade plan to file
 	return fileHandler.WriteYAML(flags.filePath, compatibleImages)
 }
 
@@ -212,7 +227,7 @@ func parseUpgradePlanFlags(cmd *cobra.Command) (upgradePlanFlags, error) {
 	if err != nil {
 		return upgradePlanFlags{}, err
 	}
-	filePath, err := cmd.Flags().GetString("upgrade-plan")
+	filePath, err := cmd.Flags().GetString("file")
 	if err != nil {
 		return upgradePlanFlags{}, err
 	}
@@ -222,6 +237,50 @@ func parseUpgradePlanFlags(cmd *cobra.Command) (upgradePlanFlags, error) {
 		filePath:     filePath,
 		cosignPubKey: constants.CosignPublicKey,
 	}, nil
+}
+
+func upgradePlanInteractive(out io.WriteCloser, in io.ReadCloser,
+	configPath string, config *config.Config, fileHandler file.Handler,
+	compatibleImages map[string]config.UpgradeConfig,
+) error {
+	var imageVersions []string
+	for k := range compatibleImages {
+		imageVersions = append(imageVersions, k)
+	}
+	semver.Sort(imageVersions)
+
+	prompt := promptui.Select{
+		Label: "Select an image version to upgrade to",
+		Items: imageVersions,
+		Searcher: func(input string, index int) bool {
+			version := imageVersions[index]
+			trimmedVersion := strings.TrimPrefix(strings.Replace(version, ".", "", -1), "v")
+			input = strings.TrimPrefix(strings.Replace(input, ".", "", -1), "v")
+			return strings.Contains(trimmedVersion, input)
+		},
+		Size:   10,
+		Stdin:  in,
+		Stdout: out,
+	}
+
+	_, res, err := prompt.Run()
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintln(out, "Updating config to the following:")
+
+	fmt.Fprintf(out, "Image: %s\n", compatibleImages[res].Image)
+	fmt.Fprintln(out, "Measurements:")
+	content, err := encoder.NewEncoder(compatibleImages[res].Measurements).Encode()
+	if err != nil {
+		return fmt.Errorf("encoding measurements: %w", err)
+	}
+	measurements := strings.TrimSuffix(strings.Replace("\t"+string(content), "\n", "\n\t", -1), "\n\t")
+	fmt.Fprintln(out, measurements)
+
+	config.Upgrade = compatibleImages[res]
+	return fileHandler.WriteYAML(configPath, config, file.OptOverwrite)
 }
 
 type upgradePlanFlags struct {
@@ -234,6 +293,12 @@ type imageManifest struct {
 	AzureImage string `json:"AzureCoreOSImage"`
 	GCPImage   string `json:"GCPCoreOSImage"`
 }
+
+type nopWriteCloser struct {
+	io.Writer
+}
+
+func (c *nopWriteCloser) Close() error { return nil }
 
 type upgradePlanner interface {
 	GetCurrentImage(ctx context.Context) (*unstructured.Unstructured, string, error)
