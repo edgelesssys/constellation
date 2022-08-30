@@ -87,9 +87,11 @@ var _ = Describe("PendingNode controller", func() {
 			By("setting the CSP node state to terminated")
 			fakes.nodeStateGetter.setNodeState(updatev1alpha1.NodeStateTerminated)
 			// trigger reconciliation before regular check interval to speed up test by changing the spec
-			Expect(k8sClient.Get(ctx, pendingNodeLookupKey, pendingNode)).Should(Succeed())
-			pendingNode.Spec.Deadline = &metav1.Time{Time: fakes.clock.Now().Add(time.Second)}
-			Expect(k8sClient.Update(ctx, pendingNode)).Should(Succeed())
+			Eventually(func() error {
+				Expect(k8sClient.Get(ctx, pendingNodeLookupKey, pendingNode)).Should(Succeed())
+				pendingNode.Spec.Deadline = &metav1.Time{Time: fakes.clock.Now().Add(time.Second)}
+				return k8sClient.Update(ctx, pendingNode)
+			}, timeout, interval).Should(Succeed())
 
 			By("checking if the pending node resource is deleted")
 			Eventually(func() error {
