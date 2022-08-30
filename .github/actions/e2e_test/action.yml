@@ -63,6 +63,9 @@ inputs:
   awsBucketName:
     description: "AWS S3 bucket name to upload measurements."
     required: false
+  azureClientSecret:
+    description: "The client secret value of the used secret"
+    required: false
 
 runs:
   using: "composite"
@@ -101,6 +104,7 @@ runs:
         coreosImage: ${{ inputs.coreosImage }}
         isDebugImage: ${{ inputs.isDebugImage }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
+        azureClientSecret: ${{ inputs.azureClientSecret }}
     - name: Measure cluster
       uses: ./.github/actions/constellation_measure
       with:
