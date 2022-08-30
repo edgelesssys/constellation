@@ -10,7 +10,7 @@ on:
         description: "Build debug image"
         type: boolean
         default: false
-        required: true
+        required: false
 
 jobs:
   build-coreos-image:
