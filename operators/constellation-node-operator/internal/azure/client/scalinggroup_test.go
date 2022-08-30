@@ -34,6 +34,21 @@ func TestGetScalingGroupImage(t *testing.T) {
 			},
 			wantImage: "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/images/image-name",
 		},
+		"getting community image works": {
+			scalingGroupID: "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name",
+			scaleSet: armcomputev2.VirtualMachineScaleSet{
+				Properties: &armcomputev2.VirtualMachineScaleSetProperties{
+					VirtualMachineProfile: &armcomputev2.VirtualMachineScaleSetVMProfile{
+						StorageProfile: &armcomputev2.VirtualMachineScaleSetStorageProfile{
+							ImageReference: &armcomputev2.ImageReference{
+								CommunityGalleryImageID: to.Ptr("/CommunityGalleries/gallery-name/Images/image-name/Versions/1.2.3"),
+							},
+						},
+					},
+				},
+			},
+			wantImage: "/CommunityGalleries/gallery-name/Images/image-name/Versions/1.2.3",
+		},
 		"splitting scalingGroupID fails": {
 			scalingGroupID: "invalid",
 			wantErr:        true,
@@ -214,6 +229,36 @@ func TestListScalingGroups(t *testing.T) {
 			require.NoError(err)
 			assert.ElementsMatch(tc.wantControlPlanes, gotControlPlanes)
 			assert.ElementsMatch(tc.wantWorkers, gotWorkers)
+		})
+	}
+}
+
+func TestImageReferenceFromImage(t *testing.T) {
+	testCases := map[string]struct {
+		img             string
+		wantID          *string
+		wantCommunityID *string
+	}{
+		"ID": {
+			img:             "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.Compute/galleries/Constellation/images/constellation/versions/1.5.0",
+			wantID:          to.Ptr("/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.Compute/galleries/Constellation/images/constellation/versions/1.5.0"),
+			wantCommunityID: nil,
+		},
+		"Community": {
+			img:             "/CommunityGalleries/ConstellationCVM-728bd310-e898-4450-a1ed-21cf2fb0d735/Images/feat-azure-cvm-sharing/Versions/2022.0826.084922",
+			wantID:          nil,
+			wantCommunityID: to.Ptr("/CommunityGalleries/ConstellationCVM-728bd310-e898-4450-a1ed-21cf2fb0d735/Images/feat-azure-cvm-sharing/Versions/2022.0826.084922"),
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			ref := imageReferenceFromImage(tc.img)
+
+			assert.Equal(tc.wantID, ref.ID)
+			assert.Equal(tc.wantCommunityID, ref.CommunityGalleryImageID)
 		})
 	}
 }

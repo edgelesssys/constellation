@@ -21,10 +21,14 @@ func (c *Client) GetNodeImage(ctx context.Context, providerID string) (string, e
 	if resp.Properties == nil ||
 		resp.Properties.StorageProfile == nil ||
 		resp.Properties.StorageProfile.ImageReference == nil ||
-		resp.Properties.StorageProfile.ImageReference.ID == nil {
+		resp.Properties.StorageProfile.ImageReference.ID == nil && resp.Properties.StorageProfile.ImageReference.CommunityGalleryImageID == nil {
 		return "", fmt.Errorf("node %q does not have valid image reference", providerID)
 	}
-	return *resp.Properties.StorageProfile.ImageReference.ID, nil
+	if resp.Properties.StorageProfile.ImageReference.ID != nil {
+		return *resp.Properties.StorageProfile.ImageReference.ID, nil
+	} else {
+		return *resp.Properties.StorageProfile.ImageReference.CommunityGalleryImageID, nil
+	}
 }
 
 // GetScalingGroupID returns the scaling group ID of the node.

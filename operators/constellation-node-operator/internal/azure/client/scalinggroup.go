@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 )
 
@@ -22,10 +23,14 @@ func (c *Client) GetScalingGroupImage(ctx context.Context, scalingGroupID string
 		res.Properties.VirtualMachineProfile == nil ||
 		res.Properties.VirtualMachineProfile.StorageProfile == nil ||
 		res.Properties.VirtualMachineProfile.StorageProfile.ImageReference == nil ||
-		res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.ID == nil {
+		res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.ID == nil && res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.CommunityGalleryImageID == nil {
 		return "", fmt.Errorf("scalet set %q does not have valid image reference", scalingGroupID)
 	}
-	return *res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.ID, nil
+	if res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.ID != nil {
+		return *res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.ID, nil
+	} else {
+		return *res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.CommunityGalleryImageID, nil
+	}
 }
 
 // SetScalingGroupImage sets the image URI of the scaling group.
@@ -38,9 +43,7 @@ func (c *Client) SetScalingGroupImage(ctx context.Context, scalingGroupID, image
 		Properties: &armcompute.VirtualMachineScaleSetUpdateProperties{
 			VirtualMachineProfile: &armcompute.VirtualMachineScaleSetUpdateVMProfile{
 				StorageProfile: &armcompute.VirtualMachineScaleSetUpdateStorageProfile{
-					ImageReference: &armcompute.ImageReference{
-						ID: &imageURI,
-					},
+					ImageReference: imageReferenceFromImage(imageURI),
 				},
 			},
 		},
@@ -81,4 +84,16 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) (controlPlan
 		}
 	}
 	return controlPlaneGroupIDs, workerGroupIDs, nil
+}
+
+func imageReferenceFromImage(img string) *armcompute.ImageReference {
+	ref := &armcompute.ImageReference{}
+
+	if strings.HasPrefix(img, "/CommunityGalleries") {
+		ref.CommunityGalleryImageID = to.Ptr(img)
+	} else {
+		ref.ID = to.Ptr(img)
+	}
+
+	return ref
 }

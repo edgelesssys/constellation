@@ -128,8 +128,8 @@ Branch | Constellation_Testing | \<branch-name\> | \<commit-timestamp\>
 
 Example:
 
-Type | Gallery | Image Definition | Image Version | List command
--|-|-|-|-
-Release | Constellation | constellation | 1.5.0 | `az sig image-version list --resource-group constellation-images --gallery-name Constellation_CVM --gallery-image-definition constellation --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table`
-Debug | Constellation_Debug | v1.5.0 | 2022.0912.123456 | `az sig image-version list --resource-group constellation-images --gallery-name Constellation_Debug_CVM --gallery-image-definition v1.5.0 --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table`
-Branch | Constellation_Testing | ref-cli | 2022.0912.123456 | `az sig image-version list --resource-group constellation-images --gallery-name Constellation_Testing_CVM --gallery-image-definition $(go run $(git rev-parse --show-toplevel)/hack/pseudo-version/pseudo-version.go -print-branch) --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table`
+Type | Gallery | Image Definition | Image Version | List command | Community list command
+-|-|-|-|-|-
+Release | Constellation | constellation | 1.5.0 | `az sig image-version list --resource-group constellation-images --gallery-name Constellation_CVM --gallery-image-definition constellation --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table` | `az sig image-version list-community --public-gallery-name ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df --gallery-image-definition constellation --location northeurope`
+Debug | Constellation_Debug | v1.5.0 | 2022.0912.123456 | `az sig image-version list --resource-group constellation-images --gallery-name Constellation_Debug_CVM --gallery-image-definition v1.5.0 --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table` | `az sig image-version list-community --public-gallery-name ConstellationCVM-d1905bb0-a66c-497e-a9e6-4410ca7e3701 --gallery-image-definition v1.5.0 --location northeurope`
+Branch | Constellation_Testing | ref-cli | 2022.0912.123456 | `az sig image-version list --resource-group constellation-images --gallery-name Constellation_Testing_CVM --gallery-image-definition $(go run $(git rev-parse --show-toplevel)/hack/pseudo-version/pseudo-version.go -print-branch) --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table` | `az sig image-version list-community --public-gallery-name ConstellationCVM-d1905bb0-a66c-497e-a9e6-4410ca7e3701 --gallery-image-definition $(go run $(git rev-parse --show-toplevel)/hack/pseudo-version/pseudo-version.go -print-branch) --location northeurope`

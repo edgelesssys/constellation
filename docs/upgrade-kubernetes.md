@@ -56,7 +56,7 @@ const (
 ## Upgrading Kubernetes resources
 
 During the cluster initialization, multiple Kubernetes resources are deployed. Some of these should be upgraded with Kubernetes.
-Look at [the resources folder](/bootstrapper/internal/kubernetes/k8sapi/resources) and decide what needs to be upgraded. Cloud provider specific images are defined in [`github.com/edgelesssys/constellation/bootstrapper/cloudprovider`](/bootstrapper/cloudprovider/images.go). You can check available version tags for container images using [the container registry tags API](https://docs.docker.com/registry/spec/api/#listing-image-tags):
+Look at [the resources folder](/bootstrapper/internal/kubernetes/k8sapi/resources) and decide what needs to be upgraded. Cloud provider specific images are defined in [`github.com/edgelesssys/internal/versions`](/internal/versions/versions.go). You can check available version tags for container images using [the container registry tags API](https://docs.docker.com/registry/spec/api/#listing-image-tags):
 
 ```
 curl -q https://k8s.gcr.io/v2/autoscaling/cluster-autoscaler/tags/list | jq .tags

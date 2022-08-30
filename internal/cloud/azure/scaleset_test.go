@@ -326,3 +326,33 @@ func newListContainingNilScaleSetStub() *stubScaleSetsAPI {
 		},
 	}
 }
+
+func TestImageReferenceFromImage(t *testing.T) {
+	testCases := map[string]struct {
+		img             string
+		wantID          *string
+		wantCommunityID *string
+	}{
+		"ID": {
+			img:             "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.Compute/galleries/Constellation/images/constellation/versions/1.5.0",
+			wantID:          to.Ptr("/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.Compute/galleries/Constellation/images/constellation/versions/1.5.0"),
+			wantCommunityID: nil,
+		},
+		"Community": {
+			img:             "/CommunityGalleries/ConstellationCVM-728bd310-e898-4450-a1ed-21cf2fb0d735/Images/feat-azure-cvm-sharing/Versions/2022.0826.084922",
+			wantID:          nil,
+			wantCommunityID: to.Ptr("/CommunityGalleries/ConstellationCVM-728bd310-e898-4450-a1ed-21cf2fb0d735/Images/feat-azure-cvm-sharing/Versions/2022.0826.084922"),
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			ref := ImageReferenceFromImage(tc.img)
+
+			assert.Equal(tc.wantID, ref.ID)
+			assert.Equal(tc.wantCommunityID, ref.CommunityGalleryImageID)
+		})
+	}
+}
