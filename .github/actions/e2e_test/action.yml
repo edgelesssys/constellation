@@ -92,6 +92,10 @@ runs:
         azure_credentials: ${{ inputs.azure_credentials }}
       if: ${{ inputs.cloudProvider == 'azure' }}
 
+    - name: Clean resource group on Azure
+      uses: ./.github/actions/e2e_cleanup
+      if: ${{ inputs.cloudProvider == 'azure' }}
+
     - name: Create cluster
       uses: ./.github/actions/constellation_create
       with:
