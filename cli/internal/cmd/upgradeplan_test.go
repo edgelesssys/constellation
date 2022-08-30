@@ -28,7 +28,7 @@ func TestGetCurrentImageVersion(t *testing.T) {
 		csp                cloudprovider.Provider
 		wantErr            bool
 	}{
-		"valid Azure": {
+		"valid Azure edg gallery": {
 			stubUpgradePlanner: stubUpgradePlanner{
 				image: "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation/versions/0.0.0",
 			},
@@ -37,6 +37,19 @@ func TestGetCurrentImageVersion(t *testing.T) {
 		"invalid Azure": {
 			stubUpgradePlanner: stubUpgradePlanner{
 				image: "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation_Debug/images/constellation/versions/0.0.0",
+			},
+			csp:     cloudprovider.Azure,
+			wantErr: true,
+		},
+		"valid Azure community gallery": {
+			stubUpgradePlanner: stubUpgradePlanner{
+				image: "/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/0.0.0",
+			},
+			csp: cloudprovider.Azure,
+		},
+		"invalid Azure community gallery": {
+			stubUpgradePlanner: stubUpgradePlanner{
+				image: "/CommunityGalleries/someone-else/Images/constellation/Versions/0.0.1",
 			},
 			csp:     cloudprovider.Azure,
 			wantErr: true,
