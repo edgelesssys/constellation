@@ -245,7 +245,7 @@ func Default() *Config {
 				Location:             "",
 				UserAssignedIdentity: "",
 				Image:                DefaultImageAzure,
-				StateDiskType:        "StandardSSD_LRS", // TODO: Replace with Premium_LRS when we replace the default VM size (Standard_D2a_v4) since the size does not support Premium_LRS
+				StateDiskType:        "Premium_LRS",
 				Measurements:         copyPCRMap(azurePCRs),
 				EnforcedMeasurements: []uint32{8, 9, 11, 12},
 				ConfidentialVM:       func() *bool { b := true; return &b }(),
