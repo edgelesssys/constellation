@@ -42,6 +42,10 @@ jobs:
         uses: ./.github/actions/azure_login
         with:
           azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Login to GCP
+        uses: ./.github/actions/gcp_login
+        with:
+          gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
       - name: Build version manifest
         run: |
