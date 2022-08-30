@@ -1,4 +1,4 @@
-package resources
+package kubernetes
 
 import (
 	k8s "k8s.io/api/core/v1"

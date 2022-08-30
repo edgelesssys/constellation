@@ -3,7 +3,7 @@ package azure
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	k8s "k8s.io/api/core/v1"
@@ -14,13 +14,13 @@ func TestAutoscalerSecrets(t *testing.T) {
 	testCases := map[string]struct {
 		providerID             string
 		cloudServiceAccountURI string
-		wantSecrets            resources.Secrets
+		wantSecrets            kubernetes.Secrets
 		wantErr                bool
 	}{
 		"Secrets works": {
 			providerID:             "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scaleset/virtualMachines/instance-name",
 			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret",
-			wantSecrets: resources.Secrets{
+			wantSecrets: kubernetes.Secrets{
 				&k8s.Secret{
 					TypeMeta: meta.TypeMeta{
 						Kind:       "Secret",

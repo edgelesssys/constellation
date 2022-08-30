@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/azureshared"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/edgelesssys/constellation/internal/versions"
 	k8s "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -55,23 +55,23 @@ func (c *CloudControllerManager) ExtraArgs() []string {
 
 // ConfigMaps returns a list of ConfigMaps to deploy together with the k8s cloud-controller-manager
 // Reference: https://kubernetes.io/docs/concepts/configuration/configmap/ .
-func (c *CloudControllerManager) ConfigMaps(instance metadata.InstanceMetadata) (resources.ConfigMaps, error) {
-	return resources.ConfigMaps{}, nil
+func (c *CloudControllerManager) ConfigMaps(instance metadata.InstanceMetadata) (kubernetes.ConfigMaps, error) {
+	return kubernetes.ConfigMaps{}, nil
 }
 
 // Secrets returns a list of secrets to deploy together with the k8s cloud-controller-manager.
 // Reference: https://kubernetes.io/docs/concepts/configuration/secret/ .
-func (c *CloudControllerManager) Secrets(ctx context.Context, providerID string, cloudServiceAccountURI string) (resources.Secrets, error) {
+func (c *CloudControllerManager) Secrets(ctx context.Context, providerID string, cloudServiceAccountURI string) (kubernetes.Secrets, error) {
 	// Azure CCM expects cloud provider config to contain cluster configuration and service principal client secrets
 	// reference: https://kubernetes-sigs.github.io/cloud-provider-azure/install/configs/
 
 	subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
 	if err != nil {
-		return resources.Secrets{}, err
+		return kubernetes.Secrets{}, err
 	}
 	creds, err := azureshared.ApplicationCredentialsFromURI(cloudServiceAccountURI)
 	if err != nil {
-		return resources.Secrets{}, err
+		return kubernetes.Secrets{}, err
 	}
 
 	vmType := "standard"
@@ -81,12 +81,12 @@ func (c *CloudControllerManager) Secrets(ctx context.Context, providerID string,
 
 	securityGroupName, err := c.metadata.GetNetworkSecurityGroupName(ctx)
 	if err != nil {
-		return resources.Secrets{}, err
+		return kubernetes.Secrets{}, err
 	}
 
 	loadBalancerName, err := c.metadata.GetLoadBalancerName(ctx)
 	if err != nil {
-		return resources.Secrets{}, err
+		return kubernetes.Secrets{}, err
 	}
 
 	config := cloudConfig{
@@ -106,10 +106,10 @@ func (c *CloudControllerManager) Secrets(ctx context.Context, providerID string,
 
 	rawConfig, err := json.Marshal(config)
 	if err != nil {
-		return resources.Secrets{}, err
+		return kubernetes.Secrets{}, err
 	}
 
-	return resources.Secrets{
+	return kubernetes.Secrets{
 		&k8s.Secret{
 			TypeMeta: meta.TypeMeta{
 				Kind:       "Secret",

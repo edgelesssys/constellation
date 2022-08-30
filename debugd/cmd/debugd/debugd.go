@@ -8,7 +8,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/debugd/internal/bootstrapper"
 	"github.com/edgelesssys/constellation/debugd/internal/debugd/deploy"
 	"github.com/edgelesssys/constellation/debugd/internal/debugd/metadata"
@@ -20,6 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/deploy/user"
 	"github.com/edgelesssys/constellation/internal/iproute"
 	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/internal/role"
 	"github.com/spf13/afero"
 )
 

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/edgelesssys/constellation/internal/versions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,14 +20,14 @@ func TestSecrets(t *testing.T) {
 		providerID             string
 		metadata               ccmMetadata
 		cloudServiceAccountURI string
-		wantSecrets            resources.Secrets
+		wantSecrets            kubernetes.Secrets
 		wantErr                bool
 	}{
 		"Secrets works for scale sets": {
 			providerID:             "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 			cloudServiceAccountURI: "serviceaccount://azure?tenant_id=tenant-id&client_id=client-id&client_secret=client-secret&location=location",
 			metadata:               &ccmMetadataStub{loadBalancerName: "load-balancer-name", networkSecurityGroupName: "network-security-group-name"},
-			wantSecrets: resources.Secrets{
+			wantSecrets: kubernetes.Secrets{
 				&k8s.Secret{
 					TypeMeta: meta.TypeMeta{
 						Kind:       "Secret",

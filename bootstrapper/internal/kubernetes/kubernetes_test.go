@@ -10,10 +10,11 @@ import (
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
-	"github.com/edgelesssys/constellation/bootstrapper/role"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/internal/role"
 	"github.com/edgelesssys/constellation/internal/versions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -311,7 +312,7 @@ func TestInitCluster(t *testing.T) {
 			require.NoError(err)
 
 			var kubeadmConfig k8sapi.KubeadmInitYAML
-			require.NoError(resources.UnmarshalK8SResources(tc.clusterUtil.initConfigs[0], &kubeadmConfig))
+			require.NoError(kubernetes.UnmarshalK8SResources(tc.clusterUtil.initConfigs[0], &kubeadmConfig))
 			require.Equal(tc.wantConfig.ClusterConfiguration, kubeadmConfig.ClusterConfiguration)
 			require.Equal(tc.wantConfig.InitConfiguration, kubeadmConfig.InitConfiguration)
 		})
@@ -543,47 +544,47 @@ func (s *stubClusterUtil) SetupHelmDeployments(context.Context, k8sapi.Client, [
 	return s.setupHelmDeploymentsErr
 }
 
-func (s *stubClusterUtil) SetupAutoscaling(kubectl k8sapi.Client, clusterAutoscalerConfiguration resources.Marshaler, secrets resources.Marshaler) error {
+func (s *stubClusterUtil) SetupAutoscaling(kubectl k8sapi.Client, clusterAutoscalerConfiguration kubernetes.Marshaler, secrets kubernetes.Marshaler) error {
 	return s.setupAutoscalingError
 }
 
-func (s *stubClusterUtil) SetupJoinService(kubectl k8sapi.Client, joinServiceConfiguration resources.Marshaler) error {
+func (s *stubClusterUtil) SetupJoinService(kubectl k8sapi.Client, joinServiceConfiguration kubernetes.Marshaler) error {
 	return s.setupJoinServiceError
 }
 
-func (s *stubClusterUtil) SetupGCPGuestAgent(kubectl k8sapi.Client, gcpGuestAgentConfiguration resources.Marshaler) error {
+func (s *stubClusterUtil) SetupGCPGuestAgent(kubectl k8sapi.Client, gcpGuestAgentConfiguration kubernetes.Marshaler) error {
 	return s.setupGCPGuestAgentErr
 }
 
-func (s *stubClusterUtil) SetupCloudControllerManager(kubectl k8sapi.Client, cloudControllerManagerConfiguration resources.Marshaler, configMaps resources.Marshaler, secrets resources.Marshaler) error {
+func (s *stubClusterUtil) SetupCloudControllerManager(kubectl k8sapi.Client, cloudControllerManagerConfiguration kubernetes.Marshaler, configMaps kubernetes.Marshaler, secrets kubernetes.Marshaler) error {
 	return s.setupCloudControllerManagerError
 }
 
-func (s *stubClusterUtil) SetupKMS(kubectl k8sapi.Client, kmsDeployment resources.Marshaler) error {
+func (s *stubClusterUtil) SetupKMS(kubectl k8sapi.Client, kmsDeployment kubernetes.Marshaler) error {
 	return s.setupKMSError
 }
 
-func (s *stubClusterUtil) SetupAccessManager(kubectl k8sapi.Client, accessManagerConfiguration resources.Marshaler) error {
+func (s *stubClusterUtil) SetupAccessManager(kubectl k8sapi.Client, accessManagerConfiguration kubernetes.Marshaler) error {
 	return s.setupAccessManagerError
 }
 
-func (s *stubClusterUtil) SetupCloudNodeManager(kubectl k8sapi.Client, cloudNodeManagerConfiguration resources.Marshaler) error {
+func (s *stubClusterUtil) SetupCloudNodeManager(kubectl k8sapi.Client, cloudNodeManagerConfiguration kubernetes.Marshaler) error {
 	return s.setupCloudNodeManagerError
 }
 
-func (s *stubClusterUtil) SetupVerificationService(kubectl k8sapi.Client, verificationServiceConfiguration resources.Marshaler) error {
+func (s *stubClusterUtil) SetupVerificationService(kubectl k8sapi.Client, verificationServiceConfiguration kubernetes.Marshaler) error {
 	return s.setupVerificationServiceErr
 }
 
-func (s *stubClusterUtil) SetupOperatorLifecycleManager(ctx context.Context, kubectl k8sapi.Client, olmCRDs, olmConfiguration resources.Marshaler, crdNames []string) error {
+func (s *stubClusterUtil) SetupOperatorLifecycleManager(ctx context.Context, kubectl k8sapi.Client, olmCRDs, olmConfiguration kubernetes.Marshaler, crdNames []string) error {
 	return s.setupOLMErr
 }
 
-func (s *stubClusterUtil) SetupNodeMaintenanceOperator(kubectl k8sapi.Client, nodeMaintenanceOperatorConfiguration resources.Marshaler) error {
+func (s *stubClusterUtil) SetupNodeMaintenanceOperator(kubectl k8sapi.Client, nodeMaintenanceOperatorConfiguration kubernetes.Marshaler) error {
 	return s.setupNMOErr
 }
 
-func (s *stubClusterUtil) SetupNodeOperator(ctx context.Context, kubectl k8sapi.Client, nodeOperatorConfiguration resources.Marshaler) error {
+func (s *stubClusterUtil) SetupNodeOperator(ctx context.Context, kubectl k8sapi.Client, nodeOperatorConfiguration kubernetes.Marshaler) error {
 	return s.setupNodeOperatorErr
 }
 
@@ -630,11 +631,11 @@ type stubKubectl struct {
 	AddTNodeSelectorsToDeploymentErr error
 	waitForCRDsErr                   error
 
-	resources   []resources.Marshaler
+	resources   []kubernetes.Marshaler
 	kubeconfigs [][]byte
 }
 
-func (s *stubKubectl) Apply(resources resources.Marshaler, forceConflicts bool) error {
+func (s *stubKubectl) Apply(resources kubernetes.Marshaler, forceConflicts bool) error {
 	s.resources = append(s.resources, resources)
 	return s.ApplyErr
 }

@@ -3,6 +3,7 @@ package resources
 import (
 	"testing"
 
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +20,7 @@ func TestAutoscalerDeploymentMarshalUnmarshal(t *testing.T) {
 	t.Log(string(data))
 
 	var recreated autoscalerDeployment
-	require.NoError(UnmarshalK8SResources(data, &recreated))
+	require.NoError(kubernetes.UnmarshalK8SResources(data, &recreated))
 	assert.Equal(autoscalerDepl, &recreated)
 }
 
@@ -36,6 +37,6 @@ func TestAutoscalerDeploymentWithCommandMarshalUnmarshal(t *testing.T) {
 	t.Log(string(data))
 
 	var recreated autoscalerDeployment
-	require.NoError(UnmarshalK8SResources(data, &recreated))
+	require.NoError(kubernetes.UnmarshalK8SResources(data, &recreated))
 	assert.Equal(autoscalerDepl, &recreated)
 }

@@ -4,6 +4,9 @@ package crypto
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/x509"
+	"encoding/pem"
+	"fmt"
 	"io"
 	"math/big"
 
@@ -47,4 +50,17 @@ func GenerateRandomBytes(length int) ([]byte, error) {
 		return nil, err
 	}
 	return nonce, nil
+}
+
+// PemToX509Cert takes a list of PEM encoded certificates, parses the first one and returns it.
+func PemToX509Cert(raw []byte) (*x509.Certificate, error) {
+	decoded, _ := pem.Decode(raw)
+	if decoded == nil {
+		return nil, fmt.Errorf("decoding pem: no PEM data found")
+	}
+	cert, err := x509.ParseCertificate(decoded.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("parsing certificate: %w", err)
+	}
+	return cert, nil
 }

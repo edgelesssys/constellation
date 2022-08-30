@@ -279,6 +279,7 @@ func TestConfigGeneratedDocsFresh(t *testing.T) {
 	updateMsg := "remember to re-generate config docs! 🔨"
 
 	assert.Len(ConfigDoc.Fields, reflect.ValueOf(Config{}).NumField(), updateMsg)
+	assert.Len(UpgradeConfigDoc.Fields, reflect.ValueOf(UpgradeConfig{}).NumField(), updateMsg)
 	assert.Len(UserKeyDoc.Fields, reflect.ValueOf(UserKey{}).NumField(), updateMsg)
 	assert.Len(FirewallRuleDoc.Fields, reflect.ValueOf(FirewallRule{}).NumField(), updateMsg)
 	assert.Len(ProviderConfigDoc.Fields, reflect.ValueOf(ProviderConfig{}).NumField(), updateMsg)

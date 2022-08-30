@@ -20,6 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubelet"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 
 	"github.com/edgelesssys/constellation/internal/crypto"
@@ -49,7 +50,7 @@ const (
 
 // Client provides the functions to talk to the k8s API.
 type Client interface {
-	Apply(resources resources.Marshaler, forceConflicts bool) error
+	Apply(resources kubernetes.Marshaler, forceConflicts bool) error
 	SetKubeconfig(kubeconfig []byte)
 	CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error
 	AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error
@@ -343,7 +344,7 @@ func (k *KubernetesUtil) deployCiliumQEMU(ctx context.Context, helmClient *actio
 }
 
 // SetupAutoscaling deploys the k8s cluster autoscaler.
-func (k *KubernetesUtil) SetupAutoscaling(kubectl Client, clusterAutoscalerConfiguration resources.Marshaler, secrets resources.Marshaler) error {
+func (k *KubernetesUtil) SetupAutoscaling(kubectl Client, clusterAutoscalerConfiguration kubernetes.Marshaler, secrets kubernetes.Marshaler) error {
 	if err := kubectl.Apply(secrets, true); err != nil {
 		return fmt.Errorf("applying cluster-autoscaler Secrets: %w", err)
 	}
@@ -351,17 +352,17 @@ func (k *KubernetesUtil) SetupAutoscaling(kubectl Client, clusterAutoscalerConfi
 }
 
 // SetupJoinService deploys the Constellation node join service.
-func (k *KubernetesUtil) SetupJoinService(kubectl Client, joinServiceConfiguration resources.Marshaler) error {
+func (k *KubernetesUtil) SetupJoinService(kubectl Client, joinServiceConfiguration kubernetes.Marshaler) error {
 	return kubectl.Apply(joinServiceConfiguration, true)
 }
 
 // SetupGCPGuestAgent deploys the GCP guest agent daemon set.
-func (k *KubernetesUtil) SetupGCPGuestAgent(kubectl Client, guestAgentDaemonset resources.Marshaler) error {
+func (k *KubernetesUtil) SetupGCPGuestAgent(kubectl Client, guestAgentDaemonset kubernetes.Marshaler) error {
 	return kubectl.Apply(guestAgentDaemonset, true)
 }
 
 // SetupCloudControllerManager deploys the k8s cloud-controller-manager.
-func (k *KubernetesUtil) SetupCloudControllerManager(kubectl Client, cloudControllerManagerConfiguration resources.Marshaler, configMaps resources.Marshaler, secrets resources.Marshaler) error {
+func (k *KubernetesUtil) SetupCloudControllerManager(kubectl Client, cloudControllerManagerConfiguration kubernetes.Marshaler, configMaps kubernetes.Marshaler, secrets kubernetes.Marshaler) error {
 	if err := kubectl.Apply(configMaps, true); err != nil {
 		return fmt.Errorf("applying ccm ConfigMaps: %w", err)
 	}
@@ -375,17 +376,17 @@ func (k *KubernetesUtil) SetupCloudControllerManager(kubectl Client, cloudContro
 }
 
 // SetupCloudNodeManager deploys the k8s cloud-node-manager.
-func (k *KubernetesUtil) SetupCloudNodeManager(kubectl Client, cloudNodeManagerConfiguration resources.Marshaler) error {
+func (k *KubernetesUtil) SetupCloudNodeManager(kubectl Client, cloudNodeManagerConfiguration kubernetes.Marshaler) error {
 	return kubectl.Apply(cloudNodeManagerConfiguration, true)
 }
 
 // SetupAccessManager deploys the constellation-access-manager for deploying SSH keys on control-plane & worker nodes.
-func (k *KubernetesUtil) SetupAccessManager(kubectl Client, accessManagerConfiguration resources.Marshaler) error {
+func (k *KubernetesUtil) SetupAccessManager(kubectl Client, accessManagerConfiguration kubernetes.Marshaler) error {
 	return kubectl.Apply(accessManagerConfiguration, true)
 }
 
 // SetupKMS deploys the KMS deployment.
-func (k *KubernetesUtil) SetupKMS(kubectl Client, kmsConfiguration resources.Marshaler) error {
+func (k *KubernetesUtil) SetupKMS(kubectl Client, kmsConfiguration kubernetes.Marshaler) error {
 	if err := kubectl.Apply(kmsConfiguration, true); err != nil {
 		return fmt.Errorf("applying KMS configuration: %w", err)
 	}
@@ -393,11 +394,11 @@ func (k *KubernetesUtil) SetupKMS(kubectl Client, kmsConfiguration resources.Mar
 }
 
 // SetupVerificationService deploys the verification service.
-func (k *KubernetesUtil) SetupVerificationService(kubectl Client, verificationServiceConfiguration resources.Marshaler) error {
+func (k *KubernetesUtil) SetupVerificationService(kubectl Client, verificationServiceConfiguration kubernetes.Marshaler) error {
 	return kubectl.Apply(verificationServiceConfiguration, true)
 }
 
-func (k *KubernetesUtil) SetupOperatorLifecycleManager(ctx context.Context, kubectl Client, olmCRDs, olmConfiguration resources.Marshaler, crdNames []string) error {
+func (k *KubernetesUtil) SetupOperatorLifecycleManager(ctx context.Context, kubectl Client, olmCRDs, olmConfiguration kubernetes.Marshaler, crdNames []string) error {
 	if err := kubectl.Apply(olmCRDs, true); err != nil {
 		return fmt.Errorf("applying OLM CRDs: %w", err)
 	}
@@ -409,11 +410,11 @@ func (k *KubernetesUtil) SetupOperatorLifecycleManager(ctx context.Context, kube
 	return kubectl.Apply(olmConfiguration, true)
 }
 
-func (k *KubernetesUtil) SetupNodeMaintenanceOperator(kubectl Client, nodeMaintenanceOperatorConfiguration resources.Marshaler) error {
+func (k *KubernetesUtil) SetupNodeMaintenanceOperator(kubectl Client, nodeMaintenanceOperatorConfiguration kubernetes.Marshaler) error {
 	return kubectl.Apply(nodeMaintenanceOperatorConfiguration, true)
 }
 
-func (k *KubernetesUtil) SetupNodeOperator(ctx context.Context, kubectl Client, nodeOperatorConfiguration resources.Marshaler) error {
+func (k *KubernetesUtil) SetupNodeOperator(ctx context.Context, kubectl Client, nodeOperatorConfiguration kubernetes.Marshaler) error {
 	return kubectl.Apply(nodeOperatorConfiguration, true)
 }
 
@@ -488,8 +489,7 @@ func (k *KubernetesUtil) createSignedKubeletCert(nodeName string, ips []net.IP) 
 	if err != nil {
 		return err
 	}
-	parentCertPEM, _ := pem.Decode(parentCertRaw)
-	parentCert, err := x509.ParseCertificate(parentCertPEM.Bytes)
+	parentCert, err := crypto.PemToX509Cert(parentCertRaw)
 	if err != nil {
 		return err
 	}
@@ -512,7 +512,7 @@ func (k *KubernetesUtil) createSignedKubeletCert(nodeName string, ips []net.IP) 
 	case "PRIVATE KEY":
 		parentKey, err = x509.ParsePKCS8PrivateKey(parentKeyPEM.Bytes)
 	default:
-		err = fmt.Errorf("unsupported key type %q", parentCertPEM.Type)
+		err = fmt.Errorf("unsupported key type %q", parentKeyPEM.Type)
 	}
 	if err != nil {
 		return err

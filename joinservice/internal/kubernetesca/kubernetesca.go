@@ -41,8 +41,7 @@ func (c KubernetesCA) GetCertificate(csr []byte) (cert []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	parentCertPEM, _ := pem.Decode(parentCertRaw)
-	parentCert, err := x509.ParseCertificate(parentCertPEM.Bytes)
+	parentCert, err := crypto.PemToX509Cert(parentCertRaw)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +61,7 @@ func (c KubernetesCA) GetCertificate(csr []byte) (cert []byte, err error) {
 	case "PRIVATE KEY":
 		parentKey, err = x509.ParsePKCS8PrivateKey(parentKeyPEM.Bytes)
 	default:
-		return nil, fmt.Errorf("unsupported key type %q", parentCertPEM.Type)
+		return nil, fmt.Errorf("unsupported key type %q", parentKeyPEM.Type)
 	}
 	if err != nil {
 		return nil, err

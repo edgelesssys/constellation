@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/edgelesssys/constellation/internal/versions"
 	apps "k8s.io/api/apps/v1"
 	k8s "k8s.io/api/core/v1"
@@ -172,5 +173,5 @@ func NewGCPGuestAgentDaemonset() *gcpGuestAgentDaemonset {
 
 // Marshal marshals the access-manager deployment as YAML documents.
 func (c *gcpGuestAgentDaemonset) Marshal() ([]byte, error) {
-	return MarshalK8SResources(c)
+	return kubernetes.MarshalK8SResources(c)
 }

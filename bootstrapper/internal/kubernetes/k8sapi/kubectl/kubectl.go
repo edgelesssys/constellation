@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/cli-runtime/pkg/resource"
 )
@@ -18,7 +18,7 @@ type Client interface {
 	// ApplyOneObject applies a k8s resource similar to kubectl apply.
 	ApplyOneObject(info *resource.Info, forceConflicts bool) error
 	// GetObjects converts resources into prepared info fields for use in ApplyOneObject.
-	GetObjects(resources resources.Marshaler) ([]*resource.Info, error)
+	GetObjects(resources kubernetes.Marshaler) ([]*resource.Info, error)
 	CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error
 	AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error
 	AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error
@@ -45,7 +45,7 @@ func New() *Kubectl {
 }
 
 // Apply will apply the given resources using server-side-apply.
-func (k *Kubectl) Apply(resources resources.Marshaler, forceConflicts bool) error {
+func (k *Kubectl) Apply(resources kubernetes.Marshaler, forceConflicts bool) error {
 	if k.kubeconfig == nil {
 		return ErrKubeconfigNotSet
 	}

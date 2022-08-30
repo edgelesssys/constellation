@@ -3,6 +3,7 @@ package resources
 import (
 	"time"
 
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/edgelesssys/constellation/internal/versions"
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -74,5 +75,5 @@ func NewNodeMaintenanceOperatorDeployment() *nodeMaintenanceOperatorDeployment {
 }
 
 func (c *nodeMaintenanceOperatorDeployment) Marshal() ([]byte, error) {
-	return MarshalK8SResources(c)
+	return kubernetes.MarshalK8SResources(c)
 }

@@ -1,8 +1,8 @@
 package azure
 
 import (
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/azureshared"
+	"github.com/edgelesssys/constellation/internal/kubernetes"
 	k8s "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -16,16 +16,16 @@ func (a *Autoscaler) Name() string {
 }
 
 // Secrets returns a list of secrets to deploy together with the k8s cluster-autoscaler.
-func (a *Autoscaler) Secrets(providerID string, cloudServiceAccountURI string) (resources.Secrets, error) {
+func (a *Autoscaler) Secrets(providerID string, cloudServiceAccountURI string) (kubernetes.Secrets, error) {
 	subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
 	if err != nil {
-		return resources.Secrets{}, err
+		return kubernetes.Secrets{}, err
 	}
 	creds, err := azureshared.ApplicationCredentialsFromURI(cloudServiceAccountURI)
 	if err != nil {
-		return resources.Secrets{}, err
+		return kubernetes.Secrets{}, err
 	}
-	return resources.Secrets{
+	return kubernetes.Secrets{
 		&k8s.Secret{
 			TypeMeta: meta.TypeMeta{
 				Kind:       "Secret",
