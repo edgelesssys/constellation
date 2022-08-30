@@ -116,6 +116,8 @@ func extractScaleSetVMRole(scaleSet string) role.Role {
 	return role.Unknown
 }
 
+// ImageReferenceFromImage sets the `ID` or `CommunityGalleryImageID` field
+// of `ImageReference` depending on the provided `img`.
 func ImageReferenceFromImage(img string) *armcomputev2.ImageReference {
 	ref := &armcomputev2.ImageReference{}
 
