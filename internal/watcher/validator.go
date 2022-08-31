@@ -33,15 +33,15 @@ func NewValidator(log *logger.Logger, csp string, fileHandler file.Handler) (*Up
 	var newValidator newValidatorFunc
 	switch cloudprovider.FromString(csp) {
 	case cloudprovider.Azure:
-		newValidator = func(m map[uint32][]byte, e []uint32, idkeydigest []byte, enforceIdKeyDigest bool, log *logger.Logger) atls.Validator {
-			return azure.NewValidator(m, e, idkeydigest, enforceIdKeyDigest, log)
+		newValidator = func(m map[uint32][]byte, e []uint32, idkeydigest []byte, enforceIdKeyDigest bool, azureCVM bool, log *logger.Logger) atls.Validator {
+			return azure.NewValidator(m, e, idkeydigest, enforceIdKeyDigest, azureCVM, log)
 		}
 	case cloudprovider.GCP:
-		newValidator = func(m map[uint32][]byte, e []uint32, _ []byte, _ bool, log *logger.Logger) atls.Validator {
+		newValidator = func(m map[uint32][]byte, e []uint32, _ []byte, _ bool, _ bool, log *logger.Logger) atls.Validator {
 			return gcp.NewValidator(m, e, log)
 		}
 	case cloudprovider.QEMU:
-		newValidator = func(m map[uint32][]byte, e []uint32, _ []byte, _ bool, log *logger.Logger) atls.Validator {
+		newValidator = func(m map[uint32][]byte, e []uint32, _ []byte, _ bool, _ bool, log *logger.Logger) atls.Validator {
 			return qemu.NewValidator(m, e, log)
 		}
 	default:
@@ -94,33 +94,47 @@ func (u *Updatable) Update() error {
 
 	var idkeydigest []byte
 	var enforceIdKeyDigest bool
+	var azureCVM bool
 	if u.csp == cloudprovider.Azure {
-		u.log.Infof("Updating encforceIdKeyDigest value")
-		enforceRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.EnforceIdKeyDigestFilename))
+		u.log.Infof("Updating azureCVM value")
+		cvmRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.AzureCVM))
 		if err != nil {
 			return err
 		}
-		enforceIdKeyDigest, err = strconv.ParseBool(string(enforceRaw))
+		azureCVM, err = strconv.ParseBool(string(cvmRaw))
 		if err != nil {
-			return fmt.Errorf("parsing content of EnforceIdKeyDigestFilename: %s: %w", enforceRaw, err)
+			return fmt.Errorf("parsing content of AzureCVM: %s: %w", cvmRaw, err)
 		}
-		u.log.Debugf("New encforceIdKeyDigest value: %v", enforceIdKeyDigest)
+		u.log.Debugf("New azureCVM value: %v", azureCVM)
 
-		u.log.Infof("Updating expected idkeydigest")
-		idkeydigestRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.IdKeyDigestFilename))
-		if err != nil {
-			return err
+		if azureCVM {
+			u.log.Infof("Updating encforceIdKeyDigest value")
+			enforceRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.EnforceIdKeyDigestFilename))
+			if err != nil {
+				return err
+			}
+			enforceIdKeyDigest, err = strconv.ParseBool(string(enforceRaw))
+			if err != nil {
+				return fmt.Errorf("parsing content of EnforceIdKeyDigestFilename: %s: %w", enforceRaw, err)
+			}
+			u.log.Debugf("New encforceIdKeyDigest value: %v", enforceIdKeyDigest)
+
+			u.log.Infof("Updating expected idkeydigest")
+			idkeydigestRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.IdKeyDigestFilename))
+			if err != nil {
+				return err
+			}
+			idkeydigest, err = hex.DecodeString(string(idkeydigestRaw))
+			if err != nil {
+				return fmt.Errorf("parsing hexstring: %s: %w", idkeydigestRaw, err)
+			}
+			u.log.Debugf("New idkeydigest: %x", idkeydigest)
 		}
-		idkeydigest, err = hex.DecodeString(string(idkeydigestRaw))
-		if err != nil {
-			return fmt.Errorf("parsing hexstring: %s: %w", idkeydigestRaw, err)
-		}
-		u.log.Debugf("New idkeydigest: %x", idkeydigest)
 	}
 
-	u.Validator = u.newValidator(measurements, enforced, idkeydigest, enforceIdKeyDigest, u.log)
+	u.Validator = u.newValidator(measurements, enforced, idkeydigest, enforceIdKeyDigest, azureCVM, u.log)
 
 	return nil
 }
 
-type newValidatorFunc func(measurements map[uint32][]byte, enforcedPCRs []uint32, idkeydigest []byte, enforceIdKeyDigest bool, log *logger.Logger) atls.Validator
+type newValidatorFunc func(measurements map[uint32][]byte, enforcedPCRs []uint32, idkeydigest []byte, enforceIdKeyDigest bool, azureCVM bool, log *logger.Logger) atls.Validator

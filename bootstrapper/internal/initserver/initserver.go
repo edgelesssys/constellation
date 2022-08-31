@@ -121,6 +121,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		measurementSalt,
 		req.EnforcedPcrs,
 		req.EnforceIdkeydigest,
+		req.AzureCvm,
 		resources.KMSConfig{
 			MasterSecret:       req.MasterSecret,
 			Salt:               req.Salt,
@@ -205,6 +206,7 @@ type ClusterInitializer interface {
 		measurementSalt []byte,
 		enforcedPcrs []uint32,
 		enforceIdKeyDigest bool,
+		azureCVM bool,
 		kmsConfig resources.KMSConfig,
 		sshUserKeys map[string]string,
 		helmDeployments []byte,

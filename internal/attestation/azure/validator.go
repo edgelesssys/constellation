@@ -29,12 +29,12 @@ type Validator struct {
 }
 
 // NewValidator initializes a new Azure validator with the provided PCR values.
-func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, idkeydigest []byte, enforceIdKeyDigest bool, log vtpm.WarnLogger) *Validator {
+func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, idkeydigest []byte, enforceIdKeyDigest bool, cvm bool, log vtpm.WarnLogger) *Validator {
 	return &Validator{
 		Validator: vtpm.NewValidator(
 			pcrs,
 			enforcedPCRs,
-			trustedKeyFromSNP(&azureInstanceInfo{}, idkeydigest, enforceIdKeyDigest, log),
+			getTrustedKey(&azureInstanceInfo{}, idkeydigest, enforceIdKeyDigest, cvm, log),
 			validateAzureCVM,
 			vtpm.VerifyPKCS1v15,
 			log,
@@ -42,94 +42,21 @@ func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, idkeydigest []b
 	}
 }
 
-type signatureError struct {
-	innerError error
-}
-
-func (e *signatureError) Unwrap() error {
-	return e.innerError
-}
-
-func (e *signatureError) Error() string {
-	return fmt.Sprintf("signature validation failed: %v", e.innerError)
-}
-
-type askError struct {
-	innerError error
-}
-
-func (e *askError) Unwrap() error {
-	return e.innerError
-}
-
-func (e *askError) Error() string {
-	return fmt.Sprintf("validating ASK: %v", e.innerError)
-}
-
-type vcekError struct {
-	innerError error
-}
-
-func (e *vcekError) Unwrap() error {
-	return e.innerError
-}
-
-func (e *vcekError) Error() string {
-	return fmt.Sprintf("validating VCEK: %v", e.innerError)
-}
-
-type idkeyError struct {
-	expectedValue []byte
-}
-
-func (e *idkeyError) Unwrap() error {
-	return nil
-}
-
-func (e *idkeyError) Error() string {
-	return fmt.Sprintf("configured idkeydigest does not match reported idkeydigest: %x", e.expectedValue)
-}
-
-// trustedKeyFromSNP establishes trust in the given public key.
+// getTrustedKey establishes trust in the given public key.
 // It does so by verifying the SNP attestation statement in instanceInfo.
-func trustedKeyFromSNP(hclAk HCLAkValidator, idkeydigest []byte, enforceIdKeyDigest bool, log vtpm.WarnLogger) func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
-	return func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
-		var instanceInfo azureInstanceInfo
-		if err := json.Unmarshal(instanceInfoRaw, &instanceInfo); err != nil {
-			return nil, fmt.Errorf("unmarshalling instanceInfoRaw: %w", err)
+func getTrustedKey(hclAk HCLAkValidator, idkeydigest []byte, enforceIdKeyDigest bool, cvm bool, log vtpm.WarnLogger) func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
+	if cvm {
+		snpAttestation := snpAttestationValidator{
+			hclAk:              hclAk,
+			idkeydigest:        idkeydigest,
+			enforceIdKeyDigest: enforceIdKeyDigest,
+			log:                log,
 		}
-
-		report, err := newSNPReportFromBytes(instanceInfo.AttestationReport)
-		if err != nil {
-			return nil, fmt.Errorf("parsing attestation report: %w", err)
-		}
-
-		vcek, err := validateVCEK(instanceInfo.Vcek, instanceInfo.CertChain)
-		if err != nil {
-			return nil, fmt.Errorf("validating VCEK: %w", err)
-		}
-
-		if err = validateSNPReport(vcek, idkeydigest, enforceIdKeyDigest, report, log); err != nil {
-			return nil, fmt.Errorf("validating SNP report: %w", err)
-		}
-
-		pubArea, err := tpm2.DecodePublic(akPub)
-		if err != nil {
-			return nil, err
-		}
-
-		if err = hclAk.validateAk(instanceInfo.RuntimeData, report.ReportData[:], pubArea.RSAParameters); err != nil {
-			return nil, fmt.Errorf("validating HCLAkPub: %w", err)
-		}
-
-		return pubArea.Key()
+		return snpAttestation.getTrustedKey
 	}
-}
 
-func reverseEndian(b []byte) {
-	for i := 0; i < len(b)/2; i++ {
-		b[i], b[len(b)-i-1] = b[len(b)-i-1], b[i]
-	}
+	trustedLaunchValidator := trustedLaunchValidator{}
+	return trustedLaunchValidator.getTrustedKey
 }
 
 // validateAzureCVM is a stub, since SEV-SNP attestation is already verified in trustedKeyFromSNP().
@@ -146,9 +73,65 @@ func newSNPReportFromBytes(reportRaw []byte) (snpAttestationReport, error) {
 	return report, nil
 }
 
+func reverseEndian(b []byte) {
+	for i := 0; i < len(b)/2; i++ {
+		b[i], b[len(b)-i-1] = b[len(b)-i-1], b[i]
+	}
+}
+
+type trustedLaunchValidator struct{}
+
+// getTrustedKey returns the key encoded in the given TPMT_PUBLIC message.
+func (t *trustedLaunchValidator) getTrustedKey(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
+	pubArea, err := tpm2.DecodePublic(akPub)
+	if err != nil {
+		return nil, err
+	}
+	return pubArea.Key()
+}
+
+type snpAttestationValidator struct {
+	hclAk              HCLAkValidator
+	idkeydigest        []byte
+	enforceIdKeyDigest bool
+	log                vtpm.WarnLogger
+}
+
+func (s *snpAttestationValidator) getTrustedKey(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
+	var instanceInfo azureInstanceInfo
+	if err := json.Unmarshal(instanceInfoRaw, &instanceInfo); err != nil {
+		return nil, fmt.Errorf("unmarshalling instanceInfoRaw: %w", err)
+	}
+
+	report, err := newSNPReportFromBytes(instanceInfo.AttestationReport)
+	if err != nil {
+		return nil, fmt.Errorf("parsing attestation report: %w", err)
+	}
+
+	vcek, err := s.validateVCEK(instanceInfo.Vcek, instanceInfo.CertChain)
+	if err != nil {
+		return nil, fmt.Errorf("validating VCEK: %w", err)
+	}
+
+	if err = s.validateSNPReport(vcek, s.idkeydigest, s.enforceIdKeyDigest, report, s.log); err != nil {
+		return nil, fmt.Errorf("validating SNP report: %w", err)
+	}
+
+	pubArea, err := tpm2.DecodePublic(akPub)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = s.hclAk.validateAk(instanceInfo.RuntimeData, report.ReportData[:], pubArea.RSAParameters); err != nil {
+		return nil, fmt.Errorf("validating HCLAkPub: %w", err)
+	}
+
+	return pubArea.Key()
+}
+
 // validateVCEK takes the PEM-encoded X509 certificate VCEK, ASK and ARK and verifies the integrity of the chain.
 // ARK (hardcoded) validates ASK (cloud metadata API) validates VCEK (cloud metadata API).
-func validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certificate, error) {
+func (s *snpAttestationValidator) validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certificate, error) {
 	vcek, err := internalCrypto.PemToX509Cert(vcekRaw)
 	if err != nil {
 		return nil, fmt.Errorf("loading vcek: %w", err)
@@ -176,7 +159,7 @@ func validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certificate, error) {
 	return vcek, nil
 }
 
-func validateSNPReport(cert *x509.Certificate, expectedIdKeyDigest []byte, enforceIdKeyDigest bool, report snpAttestationReport, log vtpm.WarnLogger) error {
+func (s *snpAttestationValidator) validateSNPReport(cert *x509.Certificate, expectedIdKeyDigest []byte, enforceIdKeyDigest bool, report snpAttestationReport, log vtpm.WarnLogger) error {
 	sig_r := report.Signature.R[:]
 	sig_s := report.Signature.S[:]
 
@@ -185,9 +168,9 @@ func validateSNPReport(cert *x509.Certificate, expectedIdKeyDigest []byte, enfor
 	reverseEndian(sig_r)
 	reverseEndian(sig_s)
 
-	r := new(big.Int).SetBytes(sig_r)
-	s := new(big.Int).SetBytes(sig_s)
-	sequence := ecdsaSig{r, s}
+	rParam := new(big.Int).SetBytes(sig_r)
+	sParam := new(big.Int).SetBytes(sig_s)
+	sequence := ecdsaSig{rParam, sParam}
 	sigEncoded, err := asn1.Marshal(sequence)
 	if err != nil {
 		return fmt.Errorf("marshalling ecdsa signature: %w", err)
@@ -268,6 +251,54 @@ func (a *azureInstanceInfo) validateAk(runtimeDataRaw []byte, reportData []byte,
 
 type HCLAkValidator interface {
 	validateAk(runtimeDataRaw []byte, reportData []byte, rsaParameters *tpm2.RSAParams) error
+}
+
+type signatureError struct {
+	innerError error
+}
+
+func (e *signatureError) Unwrap() error {
+	return e.innerError
+}
+
+func (e *signatureError) Error() string {
+	return fmt.Sprintf("signature validation failed: %v", e.innerError)
+}
+
+type askError struct {
+	innerError error
+}
+
+func (e *askError) Unwrap() error {
+	return e.innerError
+}
+
+func (e *askError) Error() string {
+	return fmt.Sprintf("validating ASK: %v", e.innerError)
+}
+
+type vcekError struct {
+	innerError error
+}
+
+func (e *vcekError) Unwrap() error {
+	return e.innerError
+}
+
+func (e *vcekError) Error() string {
+	return fmt.Sprintf("validating VCEK: %v", e.innerError)
+}
+
+type idkeyError struct {
+	expectedValue []byte
+}
+
+func (e *idkeyError) Unwrap() error {
+	return nil
+}
+
+func (e *idkeyError) Error() string {
+	return fmt.Sprintf("configured idkeydigest does not match reported idkeydigest: %x", e.expectedValue)
 }
 
 type snpSignature struct {

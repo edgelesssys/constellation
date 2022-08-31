@@ -141,6 +141,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		HelmDeployments:        helmDeployments,
 		EnforcedPcrs:           getEnforcedMeasurements(provider, config),
 		EnforceIdkeydigest:     getEnforceIdKeyDigest(provider, config),
+		AzureCvm:               getAzureCVM(provider, config),
 	}
 	resp, err := initCall(cmd.Context(), newDialer(validator), flags.endpoint, req)
 	if err != nil {
@@ -241,6 +242,15 @@ func getEnforceIdKeyDigest(provider cloudprovider.Provider, config *config.Confi
 	switch provider {
 	case cloudprovider.Azure:
 		return *config.Provider.Azure.EnforceIdKeyDigest
+	default:
+		return false
+	}
+}
+
+func getAzureCVM(provider cloudprovider.Provider, config *config.Config) bool {
+	switch provider {
+	case cloudprovider.Azure:
+		return *config.Provider.Azure.ConfidentialVM
 	default:
 		return false
 	}

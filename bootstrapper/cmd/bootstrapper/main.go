@@ -108,9 +108,12 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
 
-		idKeyDigest, err := azure.GetIdKeyDigest(vtpm.OpenVTPM)
+		// This might fail if running on a trustedLaunch VM. idKeyDigest will be nil, which is ok because the value will not be used.
+		// Instead of exiting we log the fact. This is fine security-wise since the validator will fail if enforceIdKeyDigest is set.
+		snpAttestation := azure.SnpAttestationIssuer{}
+		idKeyDigest, err := snpAttestation.GetIdKeyDigest(vtpm.OpenVTPM)
 		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to get idkeydigest")
+			log.With(zap.Error(err)).Errorf("Failed to get idkeydigest. If running on TrustedLaunch VMs this is expected.")
 		}
 
 		issuer = azure.NewIssuer()

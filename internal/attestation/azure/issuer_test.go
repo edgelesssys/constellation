@@ -58,7 +58,9 @@ func TestGetSNPAttestation(t *testing.T) {
 				tpmContent: reportDecoded,
 				err:        nil,
 			}
-			attestationJson, err := getSNPAttestation(&snpAttestationReport, imdsClient)(tpm)
+
+			snpAttestation := SnpAttestationIssuer{&snpAttestationReport, imdsClient}
+			attestationJson, err := snpAttestation.getInstanceInfo(tpm)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -90,7 +92,8 @@ func TestGetHCLAttestationKey(t *testing.T) {
 	assert.NoError(err)
 	defer tpm.Close()
 
-	_, err = getHCLAttestationKey(tpm)
+	snpAttestation := SnpAttestationIssuer{}
+	_, err = snpAttestation.getAttestationKey(tpm)
 	assert.NoError(err)
 }
 

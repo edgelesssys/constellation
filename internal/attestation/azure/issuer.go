@@ -29,21 +29,47 @@ type Issuer struct {
 
 // NewIssuer initializes a new Azure Issuer.
 func NewIssuer() *Issuer {
-	imdsAPI := imdsClient{
-		client: &http.Client{Transport: &http.Transport{Proxy: nil}},
-	}
-
 	return &Issuer{
 		Issuer: vtpm.NewIssuer(
 			vtpm.OpenVTPM,
-			getHCLAttestationKey,
-			getSNPAttestation(&tpmReport{}, imdsAPI),
+			getAttestationKey,
+			getInstanceInfo,
 		),
 	}
 }
 
+func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
+	snpAttestation := SnpAttestationIssuer{}
+	key, err := snpAttestation.getAttestationKey(tpm)
+	if err != nil {
+		// Fall back to trusted launch attestation.
+		return tpmclient.AttestationKeyRSA(tpm)
+	}
+
+	return key, nil
+}
+
+func getInstanceInfo(tpm io.ReadWriteCloser) ([]byte, error) {
+	imdsAPI := imdsClient{
+		client: &http.Client{Transport: &http.Transport{Proxy: nil}},
+	}
+
+	snpAttestation := SnpAttestationIssuer{reportGetter: &tpmReport{}, imdsAPI: imdsAPI}
+	instanceInfo, err := snpAttestation.getInstanceInfo(tpm)
+	if err != nil {
+		// Fall back to trusted launch attestation.
+		return nil, nil
+	}
+	return instanceInfo, nil
+}
+
+type SnpAttestationIssuer struct {
+	reportGetter tpmReportGetter
+	imdsAPI      imdsApi
+}
+
 // GetIdKeyDigest reads the idkeydigest from the snp report saved in the TPM's non-volatile memory.
-func GetIdKeyDigest(open vtpm.TPMOpenFunc) ([]byte, error) {
+func (s *SnpAttestationIssuer) GetIdKeyDigest(open vtpm.TPMOpenFunc) ([]byte, error) {
 	tpm, err := open()
 	if err != nil {
 		return nil, err
@@ -63,7 +89,43 @@ func GetIdKeyDigest(open vtpm.TPMOpenFunc) ([]byte, error) {
 	return report.IdKeyDigest[:], nil
 }
 
-func hclAkTemplate() tpm2.Public {
+// getInstanceInfo loads and returns the SEV-SNP attestation report [1] and the
+// AMD VCEK certificate chain.
+// The attestation report is loaded from the TPM, the certificate chain is queried
+// from the cloud metadata API.
+// [1] https://github.com/AMDESE/sev-guest/blob/main/include/attestation.h
+func (s *SnpAttestationIssuer) getInstanceInfo(tpm io.ReadWriteCloser) ([]byte, error) {
+	hclReport, err := s.reportGetter.get(tpm)
+	if err != nil {
+		return nil, fmt.Errorf("reading report from TPM: %w", err)
+	}
+	if len(hclReport) < lenHclHeader+lenSnpReport+lenSnpReportRuntimeDataPadding {
+		return nil, fmt.Errorf("report read from TPM is shorter then expected: %x", hclReport)
+	}
+	hclReport = hclReport[lenHclHeader:]
+
+	runtimeData, _, _ := bytes.Cut(hclReport[lenSnpReport+lenSnpReportRuntimeDataPadding:], []byte{0})
+
+	vcekResponse, err := s.imdsAPI.getVcek(context.TODO())
+	if err != nil {
+		return nil, fmt.Errorf("getVcekFromIMDS: %w", err)
+	}
+
+	instanceInfo := azureInstanceInfo{
+		Vcek:              []byte(vcekResponse.VcekCert),
+		CertChain:         []byte(vcekResponse.CertificateChain),
+		AttestationReport: hclReport[:0x4a0],
+		RuntimeData:       runtimeData,
+	}
+	statement, err := json.Marshal(instanceInfo)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling AzureInstanceInfo: %w", err)
+	}
+
+	return statement, nil
+}
+
+func (s *SnpAttestationIssuer) hclAkTemplate() tpm2.Public {
 	akFlags := tpm2.FlagFixedTPM | tpm2.FlagFixedParent | tpm2.FlagSensitiveDataOrigin | tpm2.FlagUserWithAuth | tpm2.FlagNoDA | tpm2.FlagRestricted | tpm2.FlagSign
 	return tpm2.Public{
 		Type:       tpm2.AlgRSA,
@@ -79,57 +141,19 @@ func hclAkTemplate() tpm2.Public {
 	}
 }
 
-// getHCLAttestationKey reads the attesation key put into the TPM during early boot.
-func getHCLAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
+// getAttestationKey reads the attesation key put into the TPM during early boot.
+func (s *SnpAttestationIssuer) getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
 	// A minor drawback of `NewCachedKey` is that it will transparently create/overwrite a key if it does not find one matching the template at the given index.
 	// We actually wouldn't want to continue at this point if we realize that the key at the index is not present, due to
 	// easier debuggability. If `NewCachedKey` creates a new key, attestation will fail at the validator.
 	// The function in tpmclient that doesn't create a new key, ReadPublic, can't be used as we would have to create
 	// a tpmclient.Key object manually, which we can't since there is no constructor exported.
-	ak, err := tpmclient.NewCachedKey(tpm, tpm2.HandleOwner, hclAkTemplate(), 0x81000003)
+	ak, err := tpmclient.NewCachedKey(tpm, tpm2.HandleOwner, s.hclAkTemplate(), 0x81000003)
 	if err != nil {
 		return nil, fmt.Errorf("reading HCL attestation key from TPM: %w", err)
 	}
 
 	return ak, nil
-}
-
-// getSNPAttestation loads and returns the SEV-SNP attestation report [1] and the
-// AMD VCEK certificate chain.
-// The attestation report is loaded from the TPM, the certificate chain is queried
-// from the cloud metadata API.
-// [1] https://github.com/AMDESE/sev-guest/blob/main/include/attestation.h
-func getSNPAttestation(reportGetter tpmReportGetter, imdsAPI imdsApi) func(tpm io.ReadWriteCloser) ([]byte, error) {
-	return func(tpm io.ReadWriteCloser) ([]byte, error) {
-		hclReport, err := reportGetter.get(tpm)
-		if err != nil {
-			return nil, fmt.Errorf("reading report from TPM: %w", err)
-		}
-		if len(hclReport) < lenHclHeader+lenSnpReport+lenSnpReportRuntimeDataPadding {
-			return nil, fmt.Errorf("report read from TPM is shorter then expected: %x", hclReport)
-		}
-		hclReport = hclReport[lenHclHeader:]
-
-		runtimeData, _, _ := bytes.Cut(hclReport[lenSnpReport+lenSnpReportRuntimeDataPadding:], []byte{0})
-
-		vcekResponse, err := imdsAPI.getVcek(context.TODO())
-		if err != nil {
-			return nil, fmt.Errorf("getVcekFromIMDS: %w", err)
-		}
-
-		instanceInfo := azureInstanceInfo{
-			Vcek:              []byte(vcekResponse.VcekCert),
-			CertChain:         []byte(vcekResponse.CertificateChain),
-			AttestationReport: hclReport[:0x4a0],
-			RuntimeData:       runtimeData,
-		}
-		statement, err := json.Marshal(instanceInfo)
-		if err != nil {
-			return nil, fmt.Errorf("marshalling AzureInstanceInfo: %w", err)
-		}
-
-		return statement, nil
-	}
 }
 
 type tpmReport struct{}

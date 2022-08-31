@@ -21,7 +21,7 @@ func TestAttestation(t *testing.T) {
 	require := require.New(t)
 
 	issuer := NewIssuer()
-	validator := NewValidator(map[uint32][]byte{}, nil, nil, false, nil) // TODO: check for list of expected Azure PCRs
+	validator := NewValidator(map[uint32][]byte{}, nil, nil, false, true, nil) // TODO: check for list of expected Azure PCRs
 
 	nonce := []byte{2, 3, 4}
 	challenge := []byte("Constellation")

@@ -74,7 +74,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, versionString string, measurementSalt []byte,
-	enforcedPCRs []uint32, enforceIdKeyDigest bool, kmsConfig resources.KMSConfig, sshUsers map[string]string, helmDeployments []byte, log *logger.Logger,
+	enforcedPCRs []uint32, enforceIdKeyDigest bool, azureCVM bool, kmsConfig resources.KMSConfig, sshUsers map[string]string, helmDeployments []byte, log *logger.Logger,
 ) ([]byte, error) {
 	k8sVersion, err := versions.NewValidK8sVersion(versionString)
 	if err != nil {
@@ -179,7 +179,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up kms: %w", err)
 	}
 
-	if err := k.setupJoinService(k.cloudProvider, k.initialMeasurementsJSON, measurementSalt, enforcedPCRs, k.initialIdKeyDigest, enforceIdKeyDigest); err != nil {
+	if err := k.setupJoinService(k.cloudProvider, k.initialMeasurementsJSON, measurementSalt, enforcedPCRs, k.initialIdKeyDigest, enforceIdKeyDigest, azureCVM); err != nil {
 		return nil, fmt.Errorf("setting up join service failed: %w", err)
 	}
 
@@ -310,7 +310,7 @@ func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
 }
 
 func (k *KubeWrapper) setupJoinService(
-	csp string, measurementsJSON, measurementSalt []byte, enforcedPCRs []uint32, initialIdKeyDigest []byte, enforceIdKeyDigest bool,
+	csp string, measurementsJSON, measurementSalt []byte, enforcedPCRs []uint32, initialIdKeyDigest []byte, enforceIdKeyDigest bool, azureCVM bool,
 ) error {
 	enforcedPCRsJSON, err := json.Marshal(enforcedPCRs)
 	if err != nil {
@@ -318,7 +318,7 @@ func (k *KubeWrapper) setupJoinService(
 	}
 
 	joinConfiguration := resources.NewJoinServiceDaemonset(
-		csp, string(measurementsJSON), string(enforcedPCRsJSON), hex.EncodeToString(initialIdKeyDigest), strconv.FormatBool(enforceIdKeyDigest), measurementSalt,
+		csp, string(measurementsJSON), string(enforcedPCRsJSON), hex.EncodeToString(initialIdKeyDigest), strconv.FormatBool(enforceIdKeyDigest), strconv.FormatBool(azureCVM), measurementSalt,
 	)
 
 	return k.clusterUtil.SetupJoinService(k.client, joinConfiguration)

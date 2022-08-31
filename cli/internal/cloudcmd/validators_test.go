@@ -34,15 +34,22 @@ func TestNewValidator(t *testing.T) {
 		pcrs               map[uint32][]byte
 		enforceIdKeyDigest bool
 		idkeydigest        string
+		azureCVM           bool
 		wantErr            bool
 	}{
 		"gcp": {
 			provider: cloudprovider.GCP,
 			pcrs:     testPCRs,
 		},
-		"azure": {
+		"azure cvm": {
 			provider: cloudprovider.Azure,
 			pcrs:     testPCRs,
+			azureCVM: true,
+		},
+		"azure trusted launch": {
+			provider: cloudprovider.Azure,
+			pcrs:     testPCRs,
+			azureCVM: false,
 		},
 		"qemu": {
 			provider: cloudprovider.QEMU,
@@ -74,6 +81,7 @@ func TestNewValidator(t *testing.T) {
 			pcrs:               testPCRs,
 			idkeydigest:        "41414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414",
 			enforceIdKeyDigest: true,
+			azureCVM:           true,
 			wantErr:            true,
 		},
 	}
@@ -89,7 +97,7 @@ func TestNewValidator(t *testing.T) {
 			}
 			if tc.provider == cloudprovider.Azure {
 				measurements := config.Measurements(tc.pcrs)
-				conf.Provider.Azure = &config.AzureConfig{Measurements: measurements, EnforceIdKeyDigest: &tc.enforceIdKeyDigest, IdKeyDigest: tc.idkeydigest}
+				conf.Provider.Azure = &config.AzureConfig{Measurements: measurements, EnforceIdKeyDigest: &tc.enforceIdKeyDigest, IdKeyDigest: tc.idkeydigest, ConfidentialVM: &tc.azureCVM}
 			}
 			if tc.provider == cloudprovider.QEMU {
 				measurements := config.Measurements(tc.pcrs)
@@ -140,10 +148,15 @@ func TestValidatorV(t *testing.T) {
 			pcrs:     newTestPCRs(),
 			wantVs:   gcp.NewValidator(newTestPCRs(), nil, nil),
 		},
-		"azure": {
+		"azure cvm": {
 			provider: cloudprovider.Azure,
 			pcrs:     newTestPCRs(),
-			wantVs:   azure.NewValidator(newTestPCRs(), nil, nil, false, nil),
+			wantVs:   azure.NewValidator(newTestPCRs(), nil, nil, false, true, nil),
+		},
+		"azure trusted launch": {
+			provider: cloudprovider.Azure,
+			pcrs:     newTestPCRs(),
+			wantVs:   azure.NewValidator(newTestPCRs(), nil, nil, false, false, nil),
 		},
 		"qemu": {
 			provider: cloudprovider.QEMU,

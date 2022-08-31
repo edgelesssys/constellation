@@ -23,6 +23,7 @@ type Validator struct {
 	enforcedPCRs       []uint32
 	idkeydigest        []byte
 	enforceIdKeyDigest bool
+	azureCVM           bool
 	validator          atls.Validator
 }
 
@@ -37,12 +38,15 @@ func NewValidator(provider cloudprovider.Provider, config *config.Config) (*Vali
 	}
 
 	if v.provider == cloudprovider.Azure {
-		idkeydigest, err := hex.DecodeString(config.Provider.Azure.IdKeyDigest)
-		if err != nil {
-			return nil, fmt.Errorf("bad config: decoding idkeydigest from config: %w", err)
+		v.azureCVM = *config.Provider.Azure.ConfidentialVM
+		if v.azureCVM {
+			idkeydigest, err := hex.DecodeString(config.Provider.Azure.IdKeyDigest)
+			if err != nil {
+				return nil, fmt.Errorf("bad config: decoding idkeydigest from config: %w", err)
+			}
+			v.enforceIdKeyDigest = *config.Provider.Azure.EnforceIdKeyDigest
+			v.idkeydigest = idkeydigest
 		}
-		v.enforceIdKeyDigest = *config.Provider.Azure.EnforceIdKeyDigest
-		v.idkeydigest = idkeydigest
 	}
 
 	return &v, nil
@@ -134,7 +138,7 @@ func (v *Validator) updateValidator(cmd *cobra.Command) {
 	case cloudprovider.GCP:
 		v.validator = gcp.NewValidator(v.pcrs, v.enforcedPCRs, log)
 	case cloudprovider.Azure:
-		v.validator = azure.NewValidator(v.pcrs, v.enforcedPCRs, v.idkeydigest, v.enforceIdKeyDigest, log)
+		v.validator = azure.NewValidator(v.pcrs, v.enforcedPCRs, v.idkeydigest, v.enforceIdKeyDigest, v.azureCVM, log)
 	case cloudprovider.QEMU:
 		v.validator = qemu.NewValidator(v.pcrs, v.enforcedPCRs, log)
 	}

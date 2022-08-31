@@ -24,7 +24,7 @@ type joinServiceDaemonset struct {
 }
 
 // NewJoinServiceDaemonset returns a daemonset for the join service.
-func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON, initialIdKeyDigest, enforceIdKeyDigest string, measurementSalt []byte) *joinServiceDaemonset {
+func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON, initialIdKeyDigest, enforceIdKeyDigest string, azureCVM string, measurementSalt []byte) *joinServiceDaemonset {
 	joinConfigData := map[string]string{
 		constants.MeasurementsFilename: measurementsJSON,
 		constants.EnforcedPCRsFilename: enforcedPCRsJSON,
@@ -32,6 +32,7 @@ func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON, initialIdK
 	if cloudprovider.FromString(csp) == cloudprovider.Azure {
 		joinConfigData[constants.EnforceIdKeyDigestFilename] = enforceIdKeyDigest
 		joinConfigData[constants.IdKeyDigestFilename] = initialIdKeyDigest
+		joinConfigData[constants.AzureCVM] = azureCVM
 	}
 
 	return &joinServiceDaemonset{

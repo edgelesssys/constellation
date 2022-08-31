@@ -412,6 +412,10 @@ func (c *Config) IsAzureNonCVM() bool {
 	return c.Provider.Azure != nil && c.Provider.Azure.ConfidentialVM != nil && !*c.Provider.Azure.ConfidentialVM
 }
 
+func (c *Config) EnforcesIdKeyDigest() bool {
+	return c.Provider.Azure != nil && c.Provider.Azure.EnforceIdKeyDigest != nil && *c.Provider.Azure.EnforceIdKeyDigest
+}
+
 // FromFile returns config file with `name` read from `fileHandler` by parsing
 // it as YAML.
 func FromFile(fileHandler file.Handler, name string) (*Config, error) {
