@@ -369,7 +369,7 @@ func (c *Config) IsImageDebug() bool {
 		gcpRegex := regexp.MustCompile(`^projects\/constellation-images\/global\/images\/constellation-v[\d]+-[\d]+-[\d]+$`)
 		return !gcpRegex.MatchString(c.Provider.GCP.Image)
 	case c.Provider.Azure != nil:
-		azureRegex := regexp.MustCompile(`^\/subscriptions\/0d202bbb-4fa7-4af8-8125-58c269a05435\/resourceGroups\/constellation-images\/providers\/Microsoft.Compute\/galleries\/Constellation\/images\/constellation\/versions\/[\d]+.[\d]+.[\d]+$`)
+		azureRegex := regexp.MustCompile(`^\/CommunityGalleries\/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df\/Images\/constellation\/Versions\/[\d]+.[\d]+.[\d]+$`)
 		return !azureRegex.MatchString(c.Provider.Azure.Image)
 	default:
 		return false
