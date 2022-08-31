@@ -26,9 +26,8 @@ import (
 const imageReleaseURL = "https://github.com/edgelesssys/constellation/releases/latest/download/image-manifest.json"
 
 var (
-	edgGalleryTrustedLaunchRxp = regexp.MustCompile(`^\/subscriptions\/0d202bbb-4fa7-4af8-8125-58c269a05435\/resourceGroups\/(CONSTELLATION\-IMAGES|constellation\-images)\/providers\/Microsoft.Compute\/galleries\/Constellation\/images\/constellation\/versions\/[\d]+.[\d]+.[\d]+$`)
-	edgGalleryCVMRxp           = regexp.MustCompile(`^\/subscriptions\/0d202bbb-4fa7-4af8-8125-58c269a05435\/resourceGroups\/(CONSTELLATION\-IMAGES|constellation\-images)\/providers\/Microsoft.Compute\/galleries\/Constellation_CVM\/images\/constellation\/versions\/[\d]+.[\d]+.[\d]+$`)
-	communityGalleryCVMRxp     = regexp.MustCompile(`^\/CommunityGalleries\/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df\/Images\/constellation\/Versions\/[\d]+.[\d]+.[\d]+$`)
+	azureCVMRxp = regexp.MustCompile(`^\/CommunityGalleries\/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df\/Images\/constellation\/Versions\/[\d]+.[\d]+.[\d]+$`)
+	gcpCVMRxp   = regexp.MustCompile(`^projects\/constellation-images\/global\/images\/constellation-(v[\d]+-[\d]+-[\d]+)$`)
 )
 
 func newUpgradePlanCmd() *cobra.Command {
@@ -201,15 +200,15 @@ func getCurrentImageVersion(ctx context.Context, planner upgradePlanner, csp clo
 	var version string
 	switch csp {
 	case cloudprovider.Azure:
-		if !(communityGalleryCVMRxp.MatchString(image) || edgGalleryCVMRxp.MatchString(image) || edgGalleryTrustedLaunchRxp.MatchString(image)) {
-			return "", fmt.Errorf("image %q does not look like a release image", image)
+		if !azureCVMRxp.MatchString(image) {
+			return "", fmt.Errorf("image %q does not look like a released production image for Azure", image)
 		}
 		versionRxp := regexp.MustCompile(`[\d]+.[\d]+.[\d]+$`)
 		version = "v" + versionRxp.FindString(image)
 	case cloudprovider.GCP:
-		gcpVersion := regexp.MustCompile(`^projects\/constellation-images\/global\/images\/constellation-(v[\d]+-[\d]+-[\d]+)$`).FindStringSubmatch(image)
+		gcpVersion := gcpCVMRxp.FindStringSubmatch(image)
 		if len(gcpVersion) != 2 {
-			return "", fmt.Errorf("image %q does not look like a release image", image)
+			return "", fmt.Errorf("image %q does not look like a released production image for GCP", image)
 		}
 		version = strings.ReplaceAll(gcpVersion[1], "-", ".")
 	default:
