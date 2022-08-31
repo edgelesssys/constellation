@@ -91,12 +91,17 @@ func TestNewUpdateableValidator(t *testing.T) {
 					filepath.Join(constants.ServiceBasePath, constants.EnforceIdKeyDigestFilename),
 					[]byte("false"),
 				))
+				require.NoError(handler.Write(
+					filepath.Join(constants.ServiceBasePath, constants.AzureCVM),
+					[]byte("true"),
+				))
 			}
 
 			_, err := NewValidator(
 				logger.NewTest(t),
 				tc.provider,
 				handler,
+				false,
 			)
 			if tc.wantErr {
 				assert.Error(err)
@@ -146,6 +151,10 @@ func TestUpdate(t *testing.T) {
 	require.NoError(handler.Write(
 		filepath.Join(constants.ServiceBasePath, constants.EnforceIdKeyDigestFilename),
 		[]byte("false"),
+	))
+	require.NoError(handler.Write(
+		filepath.Join(constants.ServiceBasePath, constants.AzureCVM),
+		[]byte("true"),
 	))
 
 	// call update once to initialize the server's validator
@@ -212,6 +221,10 @@ func TestUpdateConcurrency(t *testing.T) {
 	require.NoError(handler.Write(
 		filepath.Join(constants.ServiceBasePath, constants.EnforceIdKeyDigestFilename),
 		[]byte("false"),
+	))
+	require.NoError(handler.Write(
+		filepath.Join(constants.ServiceBasePath, constants.AzureCVM),
+		[]byte("true"),
 	))
 
 	var wg sync.WaitGroup

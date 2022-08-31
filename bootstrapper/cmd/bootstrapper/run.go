@@ -20,13 +20,12 @@ import (
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/internal/logger"
-	"github.com/edgelesssys/constellation/internal/oid"
 	"go.uber.org/zap"
 )
 
 var version = "0.0.0"
 
-func run(issuer quoteIssuer, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
+func run(issuerWrapper initserver.IssuerWrapper, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
 	kube clusterInitJoiner, metadata metadataAPI,
 	bindIP, bindPort string, log *logger.Logger,
 	cloudLogger logging.CloudLogger,
@@ -58,9 +57,9 @@ func run(issuer quoteIssuer, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
 	}
 
 	nodeLock := nodelock.New(tpm)
-	initServer := initserver.New(nodeLock, kube, issuer, fileHandler, log)
+	initServer := initserver.New(nodeLock, kube, issuerWrapper, fileHandler, log)
 
-	dialer := dialer.New(issuer, nil, &net.Dialer{})
+	dialer := dialer.New(issuerWrapper, nil, &net.Dialer{})
 	joinClient := joinclient.New(nodeLock, dialer, kube, metadata, log)
 
 	cleaner := clean.New().With(initServer).With(joinClient)
@@ -90,12 +89,6 @@ type clusterInitJoiner interface {
 	joinclient.ClusterJoiner
 	initserver.ClusterInitializer
 	StartKubelet() error
-}
-
-type quoteIssuer interface {
-	oid.Getter
-	// Issue issues a quote for remote attestation for a given message
-	Issue(userData []byte, nonce []byte) (quote []byte, err error)
 }
 
 type metadataAPI interface {

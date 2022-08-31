@@ -53,13 +53,12 @@ type KubeWrapper struct {
 	clusterAutoscaler       ClusterAutoscaler
 	providerMetadata        ProviderMetadata
 	initialMeasurementsJSON []byte
-	initialIdKeyDigest      []byte
 	getIPAddr               func() (string, error)
 }
 
 // New creates a new KubeWrapper with real values.
 func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client, cloudControllerManager CloudControllerManager,
-	cloudNodeManager CloudNodeManager, clusterAutoscaler ClusterAutoscaler, providerMetadata ProviderMetadata, initialMeasurementsJSON, initialIdKeyDigest []byte,
+	cloudNodeManager CloudNodeManager, clusterAutoscaler ClusterAutoscaler, providerMetadata ProviderMetadata, initialMeasurementsJSON []byte,
 ) *KubeWrapper {
 	return &KubeWrapper{
 		cloudProvider:           cloudProvider,
@@ -72,7 +71,6 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 		clusterAutoscaler:       clusterAutoscaler,
 		providerMetadata:        providerMetadata,
 		initialMeasurementsJSON: initialMeasurementsJSON,
-		initialIdKeyDigest:      initialIdKeyDigest,
 		getIPAddr:               getIPAddr,
 	}
 }
@@ -80,7 +78,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, versionString string, measurementSalt []byte,
-	enforcedPCRs []uint32, enforceIdKeyDigest bool, kmsConfig resources.KMSConfig, sshUsers map[string]string, helmDeployments []byte, log *logger.Logger,
+	enforcedPCRs []uint32, enforceIdKeyDigest bool, idKeyDigest []byte, azureCVM bool, kmsConfig resources.KMSConfig, sshUsers map[string]string, helmDeployments []byte, log *logger.Logger,
 ) ([]byte, error) {
 	k8sVersion, err := versions.NewValidK8sVersion(versionString)
 	if err != nil {
@@ -185,7 +183,11 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up kms: %w", err)
 	}
 
-	if err := k.setupJoinService(k.cloudProvider, k.initialMeasurementsJSON, measurementSalt, enforcedPCRs, k.initialIdKeyDigest, enforceIdKeyDigest); err != nil {
+	if err := k.setupInternalConfigMap(ctx, strconv.FormatBool(azureCVM)); err != nil {
+		return nil, fmt.Errorf("failed to setup internal ConfigMap: %w", err)
+	}
+
+	if err := k.setupJoinService(k.cloudProvider, k.initialMeasurementsJSON, measurementSalt, enforcedPCRs, idKeyDigest, enforceIdKeyDigest); err != nil {
 		return nil, fmt.Errorf("setting up join service failed: %w", err)
 	}
 
@@ -224,7 +226,7 @@ func (k *KubeWrapper) InitCluster(
 	// Store the received k8sVersion in a ConfigMap, overwriting existing values (there shouldn't be any).
 	// Joining nodes determine the kubernetes version they will install based on this ConfigMap.
 	if err := k.setupK8sVersionConfigMap(ctx, k8sVersion); err != nil {
-		return nil, fmt.Errorf("failed to setup k8s version ConfigMap: %v", err)
+		return nil, fmt.Errorf("failed to setup k8s version ConfigMap: %w", err)
 	}
 
 	k.clusterUtil.FixCilium(nodeName, log)
@@ -414,7 +416,32 @@ func (k *KubeWrapper) setupK8sVersionConfigMap(ctx context.Context, k8sVersion v
 	// We do not use the client's Apply method here since we are handling a kubernetes-native type.
 	// These types don't implement our custom Marshaler interface.
 	if err := k.client.CreateConfigMap(ctx, config); err != nil {
-		return fmt.Errorf("apply in KubeWrapper.setupK8sVersionConfigMap(..) failed with: %v", err)
+		return fmt.Errorf("apply in KubeWrapper.setupK8sVersionConfigMap(..) failed with: %w", err)
+	}
+
+	return nil
+}
+
+// setupInternalConfigMap applies a ConfigMap (cf. server-side apply) to store information that is not supposed to be user-editable.
+func (k *KubeWrapper) setupInternalConfigMap(ctx context.Context, azureCVM string) error {
+	config := corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "ConfigMap",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      constants.InternalConfigMap,
+			Namespace: "kube-system",
+		},
+		Data: map[string]string{
+			constants.AzureCVM: azureCVM,
+		},
+	}
+
+	// We do not use the client's Apply method here since we are handling a kubernetes-native type.
+	// These types don't implement our custom Marshaler interface.
+	if err := k.client.CreateConfigMap(ctx, config); err != nil {
+		return fmt.Errorf("apply in KubeWrapper.setupInternalConfigMap failed with: %w", err)
 	}
 
 	return nil
