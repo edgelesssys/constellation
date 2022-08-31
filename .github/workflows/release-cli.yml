@@ -20,6 +20,15 @@ jobs:
           cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
 
+      - name: Build cli-linux-arm64
+        uses: ./.github/actions/build_cli
+        with:
+          targetOS: linux
+          targetArch: arm64
+          cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
+
       - name: Build cli-darwin-amd64
         uses: ./.github/actions/build_cli
         with:
