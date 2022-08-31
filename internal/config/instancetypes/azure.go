@@ -1,7 +1,7 @@
-package azure
+package instancetypes
 
-// CVMInstanceTypes are valid Azure CVM instance types.
-var CVMInstanceTypes = []string{
+// AzureCVMInstanceTypes are valid Azure CVM instance types.
+var AzureCVMInstanceTypes = []string{
 	// CVMs (3rd Generation EPYC 7763v processors)
 	// DCasv5-series
 	"Standard_DC4as_v5",
@@ -39,8 +39,8 @@ var CVMInstanceTypes = []string{
 	"Standard_EC96ads_v5",
 }
 
-// TrustedLaunchInstanceTypes are valid Azure Trusted Launch instance types.
-var TrustedLaunchInstanceTypes = []string{
+// AzureTrustedLaunchInstanceTypes are valid Azure Trusted Launch instance types.
+var AzureTrustedLaunchInstanceTypes = []string{
 	// Trusted Launch (2nd Generation AMD EPYC 7452 or 3rd Generation EPYC 7763v processors)
 	// Dav4-series
 	"Standard_D4a_v4",
