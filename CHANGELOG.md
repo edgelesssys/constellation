@@ -35,12 +35,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- For changes in existing functionality.  -->
 - Use IP from Constellation ID file in init and verify instead of IPs from state file.
 - Change cdbg to use load balancer for deploy.
+- cdbg now uses the Constellation config directly and does not require any extra config
 - Azure CVMs are attested using SNP attestation
 
 ### Deprecated
 <!-- For soon-to-be removed features. -->
 ### Removed
 <!-- For now removed features. -->
+- cdbg: Custom systemd service deployment
 ### Fixed
 
 ### Security
