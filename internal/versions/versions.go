@@ -30,15 +30,17 @@ func IsSupportedK8sVersion(version string) bool {
 const (
 	// Constellation images.
 	// These images are built in a way that they support all versions currently listed in VersionConfigs.
-	JoinImage                           = "ghcr.io/edgelesssys/constellation/join-service:v0.0.1"
-	AccessManagerImage                  = "ghcr.io/edgelesssys/constellation/access-manager:v0.0.1"
-	KmsImage                            = "ghcr.io/edgelesssys/constellation/kmsserver:v0.0.1"
-	VerificationImage                   = "ghcr.io/edgelesssys/constellation/verification-service:v0.0.1"
-	GcpGuestImage                       = "ghcr.io/edgelesssys/gcp-guest-agent:20220713.00"
-	NodeOperatorCatalogImage            = "ghcr.io/edgelesssys/constellation/node-operator-catalog"
-	NodeOperatorVersion                 = "v0.0.1"
-	NodeMaintenanceOperatorCatalogImage = "quay.io/medik8s/node-maintenance-operator-catalog"
-	NodeMaintenanceOperatorVersion      = "v0.13.0"
+	JoinImage                = "ghcr.io/edgelesssys/constellation/join-service:v0.0.1"
+	AccessManagerImage       = "ghcr.io/edgelesssys/constellation/access-manager:v0.0.1"
+	KmsImage                 = "ghcr.io/edgelesssys/constellation/kmsserver:v0.0.1"
+	VerificationImage        = "ghcr.io/edgelesssys/constellation/verification-service:v0.0.1"
+	GcpGuestImage            = "ghcr.io/edgelesssys/gcp-guest-agent:20220713.00"
+	NodeOperatorCatalogImage = "ghcr.io/edgelesssys/constellation/node-operator-catalog"
+	NodeOperatorVersion      = "v0.0.1"
+	// TODO: switch node maintenance operator catalog back to upstream quay.io/medik8s/node-maintenance-operator-catalog
+	// once https://github.com/medik8s/node-maintenance-operator/issues/49 is resolved.
+	NodeMaintenanceOperatorCatalogImage = "ghcr.io/edgelesssys/constellation/node-maintenance-operator-catalog"
+	NodeMaintenanceOperatorVersion      = "v0.13.1-alpha1"
 
 	// currently supported versions.
 	V1_22  ValidK8sVersion = "1.22"
