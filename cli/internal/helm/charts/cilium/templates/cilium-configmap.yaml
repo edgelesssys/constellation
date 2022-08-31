@@ -48,6 +48,7 @@
   {{- if .Values.azure.enabled }}
       {{- $azureUsePrimaryAddress = "false" -}}
   {{- end }}
+  {{- $defaultKubeProxyReplacement = "disabled" -}}
 {{- end -}}
 
 {{- $ipam := (coalesce .Values.ipam.mode $defaultIPAM) -}}
@@ -496,13 +497,6 @@ data:
   enable-wireguard-userspace-fallback: {{ .Values.encryption.wireguard.userspaceFallback | quote }}
     {{- end }}
   {{- end }}
-{{- end }}
-
-{{- if hasKey .Values "datapathMode" }}
-{{- if eq .Values.datapathMode "ipvlan" }}
-  datapath-mode: ipvlan
-  ipvlan-master-device: {{ .Values.ipvlan.masterDevice }}
-{{- end }}
 {{- end }}
 
 {{- if .Values.strictModeCIDR }}

@@ -164,10 +164,11 @@ func (k *KubeWrapper) InitCluster(
 	// Step 3: configure & start kubernetes controllers
 	log.Infof("Starting Kubernetes controllers and deployments")
 	setupPodNetworkInput := k8sapi.SetupPodNetworkInput{
-		CloudProvider:     k.cloudProvider,
-		NodeName:          nodeName,
-		FirstNodePodCIDR:  nodePodCIDR,
-		SubnetworkPodCIDR: subnetworkPodCIDR,
+		CloudProvider:        k.cloudProvider,
+		NodeName:             nodeName,
+		FirstNodePodCIDR:     nodePodCIDR,
+		SubnetworkPodCIDR:    subnetworkPodCIDR,
+		LoadBalancerEndpoint: controlPlaneEndpoint,
 	}
 	if err = k.clusterUtil.SetupHelmDeployments(ctx, k.client, helmDeployments, setupPodNetworkInput, log); err != nil {
 		return nil, fmt.Errorf("setting up pod network: %w", err)

@@ -55,7 +55,7 @@ For more elaborate overviews of Constellation, see the [architecture] documentat
 ### Everything always encrypted
 
 - Memory runtime encryption of all Kubernetes nodes
-- [Transparent network encryption][network-encryption] for the entire cluster node to node traffic. Provided by [Cilium], application independent, no sidecar required
+- [Transparent network encryption][network-encryption] provided by [Cilium]. Application independent, no sidecar required
 - [Persistent volume](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) encryption for block storage. [Encrypted in the confidential Kubernetes context][storage-encryption], keys and plaintext data never leave the cluster. No trust in the cloud storage backend required
 - [Key management][key-management] for transparent network and storage encryption
 
