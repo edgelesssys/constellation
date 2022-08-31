@@ -146,19 +146,16 @@ func TestConfigFetchMeasurements(t *testing.T) {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	measurements := `0: DzXCFGCNk8em5ornNZtKi+Wg6Z7qkQfs5CfE3qTkOc8=
-1: PpZwsXLISi+uelbloy9u3m9M+X0/Br11g5cqq370Kxc=
+	measurements := `1: fPRxd3lV3uybnSVhcBmM6XLzcvMitXW78G0RRuQxYGc=
 2: PUWM/lXMA+ofRD8VYr7sjfUcdeFKn8+acjShPxmOeWk=
 3: PUWM/lXMA+ofRD8VYr7sjfUcdeFKn8+acjShPxmOeWk=
-4: C5/4ItGHR986BeUS7VNGD/wLltkAEOmw3sek9wA/QQs=
-5: ZykPWLTRtSn5ImX6ZpHW7JpvwqN9M9L170FtEQl3PYg=
-6: PUWM/lXMA+ofRD8VYr7sjfUcdeFKn8+acjShPxmOeWk=
-7: UZcW+fhFRMpFkgU+EfKG2s3KdmgEA+TD2quLmthQHbo=
-8: h4oDFRNoG+e3iig9KmrRZQUNfeCPpk2eqH3ZTpUikmw=
-9: vODgwZQa0pm/my1oXAQWHv1ozwzMYGELX2eO44MoUlA=
-10: TyOf7DchF2qkAYUBSZLQobvbsTx3GjYGKELTfAc2vRw=
+4: HaV5ivUAGzMxmKkfKjcG3wmW08MRUWr+vsfIMVQpOH0=
+5: PemdXV59WnLLzPz0F4GGCTKm8KbHskPRvon1dtNw7oY=
+7: 8dI/6SUmQ5sd8+bulPDpJ8ghs0UX0+fgLlW8kutAYKw=
+8: XJ5IBWy6b6vqojkTsk/GLOWyfNUB2qaf58+JjMYiAB4=
+9: Gw5gq8D1WXfz46sF/OKiWbkBssyt4ayGybzNyV9cUCQ=
 `
-	signature := "MEUCIBQYbeZMYNPFTaD80fcjlm75eiwxxQ6xu0JM/H2Ha7dJAiEA1WVdnpX+NbsJLzc2lrvUQFztfaWoDA8A39pHsu1MG6c="
+	signature := "MEUCIFdJ5dH6HDywxQWTUh9Bw77wMrq0mNCUjMQGYP+6QsVmAiEAmazj/L7rFGA4/Gz8y+kI5h5E5cDgc3brihvXBKF6qZA="
 
 	cmd := newConfigFetchMeasurementsCmd()
 	cmd.Flags().String("config", constants.ConfigFilename, "") // register persisten flag manually
