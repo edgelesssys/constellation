@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package azure
+package snp
 
 import (
 	"bytes"
@@ -30,7 +30,7 @@ const arkPEM = "-----BEGIN CERTIFICATE-----\nMIIGYzCCBBKgAwIBAgIDAQAAMEYGCSqGSIb
 
 // Validator for Azure confidential VM attestation.
 type Validator struct {
-	oid.Azure
+	oid.AzureSNP
 	*vtpm.Validator
 }
 
@@ -40,65 +40,37 @@ func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, idkeydigest []b
 		Validator: vtpm.NewValidator(
 			pcrs,
 			enforcedPCRs,
-			trustedKeyFromSNP(&azureInstanceInfo{}, idkeydigest, enforceIdKeyDigest, log),
-			validateAzureCVM,
+			getTrustedKey(&azureInstanceInfo{}, idkeydigest, enforceIdKeyDigest, log),
+			validateCVM,
 			vtpm.VerifyPKCS1v15,
 			log,
 		),
 	}
 }
 
-type signatureError struct {
-	innerError error
-}
-
-func (e *signatureError) Unwrap() error {
-	return e.innerError
-}
-
-func (e *signatureError) Error() string {
-	return fmt.Sprintf("signature validation failed: %v", e.innerError)
-}
-
-type askError struct {
-	innerError error
-}
-
-func (e *askError) Unwrap() error {
-	return e.innerError
-}
-
-func (e *askError) Error() string {
-	return fmt.Sprintf("validating ASK: %v", e.innerError)
-}
-
-type vcekError struct {
-	innerError error
-}
-
-func (e *vcekError) Unwrap() error {
-	return e.innerError
-}
-
-func (e *vcekError) Error() string {
-	return fmt.Sprintf("validating VCEK: %v", e.innerError)
-}
-
-type idkeyError struct {
-	expectedValue []byte
-}
-
-func (e *idkeyError) Unwrap() error {
+// validateCVM is a stub, since SEV-SNP attestation is already verified in trustedKeyFromSNP().
+func validateCVM(attestation vtpm.AttestationDocument) error {
 	return nil
 }
 
-func (e *idkeyError) Error() string {
-	return fmt.Sprintf("configured idkeydigest does not match reported idkeydigest: %x", e.expectedValue)
+func newSNPReportFromBytes(reportRaw []byte) (snpAttestationReport, error) {
+	var report snpAttestationReport
+	if err := binary.Read(bytes.NewReader(reportRaw), binary.LittleEndian, &report); err != nil {
+		return snpAttestationReport{}, fmt.Errorf("reading attestation report: %w", err)
+	}
+
+	return report, nil
 }
 
-// trustedKeyFromSNP establishes trust in the given public key.
+func reverseEndian(b []byte) {
+	for i := 0; i < len(b)/2; i++ {
+		b[i], b[len(b)-i-1] = b[len(b)-i-1], b[i]
+	}
+}
+
+// getTrustedKey establishes trust in the given public key.
 // It does so by verifying the SNP attestation statement in instanceInfo.
-func trustedKeyFromSNP(hclAk HCLAkValidator, idkeydigest []byte, enforceIdKeyDigest bool, log vtpm.WarnLogger) func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
+func getTrustedKey(hclAk HCLAkValidator, idkeydigest []byte, enforceIdKeyDigest bool, log vtpm.WarnLogger) func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
 	return func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
 		var instanceInfo azureInstanceInfo
 		if err := json.Unmarshal(instanceInfoRaw, &instanceInfo); err != nil {
@@ -130,26 +102,6 @@ func trustedKeyFromSNP(hclAk HCLAkValidator, idkeydigest []byte, enforceIdKeyDig
 
 		return pubArea.Key()
 	}
-}
-
-func reverseEndian(b []byte) {
-	for i := 0; i < len(b)/2; i++ {
-		b[i], b[len(b)-i-1] = b[len(b)-i-1], b[i]
-	}
-}
-
-// validateAzureCVM is a stub, since SEV-SNP attestation is already verified in trustedKeyFromSNP().
-func validateAzureCVM(attestation vtpm.AttestationDocument) error {
-	return nil
-}
-
-func newSNPReportFromBytes(reportRaw []byte) (snpAttestationReport, error) {
-	var report snpAttestationReport
-	if err := binary.Read(bytes.NewReader(reportRaw), binary.LittleEndian, &report); err != nil {
-		return snpAttestationReport{}, fmt.Errorf("reading attestation report: %w", err)
-	}
-
-	return report, nil
 }
 
 // validateVCEK takes the PEM-encoded X509 certificate VCEK, ASK and ARK and verifies the integrity of the chain.
@@ -191,9 +143,9 @@ func validateSNPReport(cert *x509.Certificate, expectedIdKeyDigest []byte, enfor
 	reverseEndian(sig_r)
 	reverseEndian(sig_s)
 
-	r := new(big.Int).SetBytes(sig_r)
-	s := new(big.Int).SetBytes(sig_s)
-	sequence := ecdsaSig{r, s}
+	rParam := new(big.Int).SetBytes(sig_r)
+	sParam := new(big.Int).SetBytes(sig_s)
+	sequence := ecdsaSig{rParam, sParam}
 	sigEncoded, err := asn1.Marshal(sequence)
 	if err != nil {
 		return fmt.Errorf("marshalling ecdsa signature: %w", err)
@@ -213,7 +165,7 @@ func validateSNPReport(cert *x509.Certificate, expectedIdKeyDigest []byte, enfor
 			return &idkeyError{report.IdKeyDigest[:]}
 		}
 		if log != nil {
-			log.Warnf("Encountered different than configured idkeydigest value: %x.\n", report.IdKeyDigest[:])
+			log.Warnf("Encountered different than configured idkeydigest value: %x", report.IdKeyDigest[:])
 		}
 	}
 
@@ -274,6 +226,54 @@ func (a *azureInstanceInfo) validateAk(runtimeDataRaw []byte, reportData []byte,
 
 type HCLAkValidator interface {
 	validateAk(runtimeDataRaw []byte, reportData []byte, rsaParameters *tpm2.RSAParams) error
+}
+
+type signatureError struct {
+	innerError error
+}
+
+func (e *signatureError) Unwrap() error {
+	return e.innerError
+}
+
+func (e *signatureError) Error() string {
+	return fmt.Sprintf("signature validation failed: %v", e.innerError)
+}
+
+type askError struct {
+	innerError error
+}
+
+func (e *askError) Unwrap() error {
+	return e.innerError
+}
+
+func (e *askError) Error() string {
+	return fmt.Sprintf("validating ASK: %v", e.innerError)
+}
+
+type vcekError struct {
+	innerError error
+}
+
+func (e *vcekError) Unwrap() error {
+	return e.innerError
+}
+
+func (e *vcekError) Error() string {
+	return fmt.Sprintf("validating VCEK: %v", e.innerError)
+}
+
+type idkeyError struct {
+	expectedValue []byte
+}
+
+func (e *idkeyError) Unwrap() error {
+	return nil
+}
+
+func (e *idkeyError) Error() string {
+	return fmt.Sprintf("configured idkeydigest does not match reported idkeydigest: %x", e.expectedValue)
 }
 
 type snpSignature struct {

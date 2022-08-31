@@ -12,7 +12,8 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/internal/atls"
-	"github.com/edgelesssys/constellation/internal/attestation/azure"
+	"github.com/edgelesssys/constellation/internal/attestation/azure/snp"
+	"github.com/edgelesssys/constellation/internal/attestation/azure/trustedlaunch"
 	"github.com/edgelesssys/constellation/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
@@ -40,15 +41,22 @@ func TestNewValidator(t *testing.T) {
 		pcrs               map[uint32][]byte
 		enforceIdKeyDigest bool
 		idkeydigest        string
+		azureCVM           bool
 		wantErr            bool
 	}{
 		"gcp": {
 			provider: cloudprovider.GCP,
 			pcrs:     testPCRs,
 		},
-		"azure": {
+		"azure cvm": {
 			provider: cloudprovider.Azure,
 			pcrs:     testPCRs,
+			azureCVM: true,
+		},
+		"azure trusted launch": {
+			provider: cloudprovider.Azure,
+			pcrs:     testPCRs,
+			azureCVM: false,
 		},
 		"qemu": {
 			provider: cloudprovider.QEMU,
@@ -80,6 +88,7 @@ func TestNewValidator(t *testing.T) {
 			pcrs:               testPCRs,
 			idkeydigest:        "41414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414",
 			enforceIdKeyDigest: true,
+			azureCVM:           true,
 			wantErr:            true,
 		},
 	}
@@ -95,7 +104,7 @@ func TestNewValidator(t *testing.T) {
 			}
 			if tc.provider == cloudprovider.Azure {
 				measurements := config.Measurements(tc.pcrs)
-				conf.Provider.Azure = &config.AzureConfig{Measurements: measurements, EnforceIdKeyDigest: &tc.enforceIdKeyDigest, IdKeyDigest: tc.idkeydigest}
+				conf.Provider.Azure = &config.AzureConfig{Measurements: measurements, EnforceIdKeyDigest: &tc.enforceIdKeyDigest, IdKeyDigest: tc.idkeydigest, ConfidentialVM: &tc.azureCVM}
 			}
 			if tc.provider == cloudprovider.QEMU {
 				measurements := config.Measurements(tc.pcrs)
@@ -140,16 +149,23 @@ func TestValidatorV(t *testing.T) {
 		provider cloudprovider.Provider
 		pcrs     map[uint32][]byte
 		wantVs   atls.Validator
+		azureCVM bool
 	}{
 		"gcp": {
 			provider: cloudprovider.GCP,
 			pcrs:     newTestPCRs(),
 			wantVs:   gcp.NewValidator(newTestPCRs(), nil, nil),
 		},
-		"azure": {
+		"azure cvm": {
 			provider: cloudprovider.Azure,
 			pcrs:     newTestPCRs(),
-			wantVs:   azure.NewValidator(newTestPCRs(), nil, nil, false, nil),
+			wantVs:   snp.NewValidator(newTestPCRs(), nil, nil, false, nil),
+			azureCVM: true,
+		},
+		"azure trusted launch": {
+			provider: cloudprovider.Azure,
+			pcrs:     newTestPCRs(),
+			wantVs:   trustedlaunch.NewValidator(newTestPCRs(), nil, nil),
 		},
 		"qemu": {
 			provider: cloudprovider.QEMU,
@@ -162,7 +178,7 @@ func TestValidatorV(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			validators := &Validator{provider: tc.provider, pcrs: tc.pcrs}
+			validators := &Validator{provider: tc.provider, pcrs: tc.pcrs, azureCVM: tc.azureCVM}
 
 			resultValidator := validators.V(&cobra.Command{})
 

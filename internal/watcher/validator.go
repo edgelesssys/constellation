@@ -15,7 +15,8 @@ import (
 	"sync"
 
 	"github.com/edgelesssys/constellation/internal/atls"
-	"github.com/edgelesssys/constellation/internal/attestation/azure"
+	"github.com/edgelesssys/constellation/internal/attestation/azure/snp"
+	"github.com/edgelesssys/constellation/internal/attestation/azure/trustedlaunch"
 	"github.com/edgelesssys/constellation/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
@@ -31,16 +32,23 @@ type Updatable struct {
 	newValidator newValidatorFunc
 	fileHandler  file.Handler
 	csp          cloudprovider.Provider
+	azureCVM     bool
 	atls.Validator
 }
 
 // NewValidator initializes a new updatable validator.
-func NewValidator(log *logger.Logger, csp string, fileHandler file.Handler) (*Updatable, error) {
+func NewValidator(log *logger.Logger, csp string, fileHandler file.Handler, azureCVM bool) (*Updatable, error) {
 	var newValidator newValidatorFunc
 	switch cloudprovider.FromString(csp) {
 	case cloudprovider.Azure:
-		newValidator = func(m map[uint32][]byte, e []uint32, idkeydigest []byte, enforceIdKeyDigest bool, log *logger.Logger) atls.Validator {
-			return azure.NewValidator(m, e, idkeydigest, enforceIdKeyDigest, log)
+		if azureCVM {
+			newValidator = func(m map[uint32][]byte, e []uint32, idkeydigest []byte, enforceIdKeyDigest bool, log *logger.Logger) atls.Validator {
+				return snp.NewValidator(m, e, idkeydigest, enforceIdKeyDigest, log)
+			}
+		} else {
+			newValidator = func(m map[uint32][]byte, e []uint32, idkeydigest []byte, enforceIdKeyDigest bool, log *logger.Logger) atls.Validator {
+				return trustedlaunch.NewValidator(m, e, log)
+			}
 		}
 	case cloudprovider.GCP:
 		newValidator = func(m map[uint32][]byte, e []uint32, _ []byte, _ bool, log *logger.Logger) atls.Validator {
@@ -59,6 +67,7 @@ func NewValidator(log *logger.Logger, csp string, fileHandler file.Handler) (*Up
 		newValidator: newValidator,
 		fileHandler:  fileHandler,
 		csp:          cloudprovider.FromString(csp),
+		azureCVM:     azureCVM,
 	}
 
 	if err := u.Update(); err != nil {
@@ -100,7 +109,7 @@ func (u *Updatable) Update() error {
 
 	var idkeydigest []byte
 	var enforceIdKeyDigest bool
-	if u.csp == cloudprovider.Azure {
+	if u.csp == cloudprovider.Azure && u.azureCVM {
 		u.log.Infof("Updating encforceIdKeyDigest value")
 		enforceRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.EnforceIdKeyDigestFilename))
 		if err != nil {

@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/attestation"
+	"github.com/edgelesssys/constellation/internal/cloud/vmtype"
 	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
@@ -36,12 +37,13 @@ import (
 // The server handles initialization calls from the CLI and initializes the
 // Kubernetes cluster.
 type Server struct {
-	nodeLock    locker
-	initializer ClusterInitializer
-	disk        encryptedDisk
-	fileHandler file.Handler
-	grpcServer  serveStopper
-	cleaner     cleaner
+	nodeLock      locker
+	initializer   ClusterInitializer
+	disk          encryptedDisk
+	fileHandler   file.Handler
+	grpcServer    serveStopper
+	cleaner       cleaner
+	issuerWrapper IssuerWrapper
 
 	log *logger.Logger
 
@@ -49,18 +51,20 @@ type Server struct {
 }
 
 // New creates a new initialization server.
-func New(lock locker, kube ClusterInitializer, issuer atls.Issuer, fh file.Handler, log *logger.Logger) *Server {
+func New(lock locker, kube ClusterInitializer, issuerWrapper IssuerWrapper, fh file.Handler, log *logger.Logger) *Server {
 	log = log.Named("initServer")
+
 	server := &Server{
-		nodeLock:    lock,
-		disk:        diskencryption.New(),
-		initializer: kube,
-		fileHandler: fh,
-		log:         log,
+		nodeLock:      lock,
+		disk:          diskencryption.New(),
+		initializer:   kube,
+		fileHandler:   fh,
+		issuerWrapper: issuerWrapper,
+		log:           log,
 	}
 
 	grpcServer := grpc.NewServer(
-		grpc.Creds(atlscredentials.New(issuer, nil)),
+		grpc.Creds(atlscredentials.New(issuerWrapper, nil)),
 		grpc.KeepaliveParams(keepalive.ServerParameters{Time: 15 * time.Second}),
 		log.Named("gRPC").GetServerUnaryInterceptor(),
 	)
@@ -127,6 +131,8 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		measurementSalt,
 		req.EnforcedPcrs,
 		req.EnforceIdkeydigest,
+		s.issuerWrapper.IdKeyDigest(),
+		s.issuerWrapper.VMType() == vmtype.AzureCVM,
 		resources.KMSConfig{
 			MasterSecret:       req.MasterSecret,
 			Salt:               req.Salt,
@@ -175,6 +181,28 @@ func (s *Server) setupDisk(masterSecret, salt []byte) error {
 	return s.disk.UpdatePassphrase(string(diskKey))
 }
 
+type IssuerWrapper struct {
+	atls.Issuer
+	vmType      vmtype.VMType
+	idkeydigest []byte
+}
+
+func NewIssuerWrapper(issuer atls.Issuer, vmType vmtype.VMType, idkeydigest []byte) IssuerWrapper {
+	return IssuerWrapper{
+		Issuer:      issuer,
+		vmType:      vmType,
+		idkeydigest: idkeydigest,
+	}
+}
+
+func (i *IssuerWrapper) VMType() vmtype.VMType {
+	return i.vmType
+}
+
+func (i *IssuerWrapper) IdKeyDigest() []byte {
+	return i.idkeydigest
+}
+
 func sshProtoKeysToMap(keys []*initproto.SSHUserKey) map[string]string {
 	keyMap := make(map[string]string)
 	for _, key := range keys {
@@ -211,6 +239,8 @@ type ClusterInitializer interface {
 		measurementSalt []byte,
 		enforcedPcrs []uint32,
 		enforceIdKeyDigest bool,
+		idKeyDigest []byte,
+		azureCVM bool,
 		kmsConfig resources.KMSConfig,
 		sshUserKeys map[string]string,
 		helmDeployments []byte,

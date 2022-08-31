@@ -195,6 +195,13 @@ func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON, initialIdK
 													},
 												},
 											},
+											{
+												ConfigMap: &k8s.ConfigMapProjection{
+													LocalObjectReference: k8s.LocalObjectReference{
+														Name: constants.InternalConfigMap,
+													},
+												},
+											},
 										},
 									},
 								},

@@ -34,7 +34,7 @@ func TestNew(t *testing.T) {
 	assert := assert.New(t)
 
 	fh := file.NewHandler(afero.NewMemMapFs())
-	server := New(newFakeLock(), &stubClusterInitializer{}, nil, fh, logger.NewTest(t))
+	server := New(newFakeLock(), &stubClusterInitializer{}, IssuerWrapper{}, fh, logger.NewTest(t))
 	assert.NotNil(server)
 	assert.NotNil(server.log)
 	assert.NotNil(server.nodeLock)
@@ -289,7 +289,7 @@ type stubClusterInitializer struct {
 }
 
 func (i *stubClusterInitializer) InitCluster(
-	context.Context, []string, string, string, []byte, []uint32, bool,
+	context.Context, []string, string, string, []byte, []uint32, bool, []byte, bool,
 	resources.KMSConfig, map[string]string, []byte, *logger.Logger,
 ) ([]byte, error) {
 	return i.initClusterKubeconfig, i.initClusterErr

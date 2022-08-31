@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package azure
+package snp
 
 import (
 	"bytes"
@@ -145,7 +145,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			idkeydigest, err := hex.DecodeString(tc.idkeydigest)
 			assert.NoError(err)
 
-			key, err := trustedKeyFromSNP(&instanceInfo, idkeydigest, tc.enforceIdKeyDigest, nil)(akPub, statement)
+			key, err := getTrustedKey(&instanceInfo, idkeydigest, tc.enforceIdKeyDigest, nil)(akPub, statement)
 			if tc.wantErr {
 				tc.assertCorrectError(err)
 			} else {
@@ -171,7 +171,7 @@ func TestValidateAzureCVM(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			err := validateAzureCVM(tc.attDoc)
+			err := validateCVM(tc.attDoc)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {

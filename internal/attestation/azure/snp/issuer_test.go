@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package azure
+package snp
 
 import (
 	"context"
@@ -64,7 +64,8 @@ func TestGetSNPAttestation(t *testing.T) {
 				tpmContent: reportDecoded,
 				err:        nil,
 			}
-			attestationJson, err := getSNPAttestation(&snpAttestationReport, imdsClient)(tpm)
+
+			attestationJson, err := getInstanceInfo(&snpAttestationReport, imdsClient)(tpm)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -96,7 +97,7 @@ func TestGetHCLAttestationKey(t *testing.T) {
 	assert.NoError(err)
 	defer tpm.Close()
 
-	_, err = getHCLAttestationKey(tpm)
+	_, err = getAttestationKey(tpm)
 	assert.NoError(err)
 }
 

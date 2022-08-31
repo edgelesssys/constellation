@@ -67,6 +67,7 @@ func main() {
 		if err != nil {
 			log.With(zap.Error).Fatalf("Failed to create Azure metadata API")
 		}
+
 		issuer = azure.NewIssuer()
 
 	case "gcp":

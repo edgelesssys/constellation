@@ -14,21 +14,24 @@ import (
 	"net"
 	"os"
 	"strconv"
-	"strings"
 
+	"github.com/edgelesssys/constellation/bootstrapper/internal/initserver"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/kubectl"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/logging"
 	"github.com/edgelesssys/constellation/internal/atls"
-	"github.com/edgelesssys/constellation/internal/attestation/azure"
+	"github.com/edgelesssys/constellation/internal/attestation/azure/snp"
+	"github.com/edgelesssys/constellation/internal/attestation/azure/trustedlaunch"
 	"github.com/edgelesssys/constellation/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	azurecloud "github.com/edgelesssys/constellation/internal/cloud/azure"
+	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	gcpcloud "github.com/edgelesssys/constellation/internal/cloud/gcp"
 	qemucloud "github.com/edgelesssys/constellation/internal/cloud/qemu"
+	"github.com/edgelesssys/constellation/internal/cloud/vmtype"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/iproute"
@@ -65,20 +68,20 @@ func main() {
 	var clusterInitJoiner clusterInitJoiner
 	var metadataAPI metadataAPI
 	var cloudLogger logging.CloudLogger
-	var issuer atls.Issuer
+	var issuer initserver.IssuerWrapper
 	var openTPM vtpm.TPMOpenFunc
 	var fs afero.Fs
 
-	switch strings.ToLower(os.Getenv(constellationCSP)) {
-	case "aws":
+	switch cloudprovider.FromString(os.Getenv(constellationCSP)) {
+	case cloudprovider.AWS:
 		panic("AWS cloud provider currently unsupported")
-	case "gcp":
+	case cloudprovider.GCP:
 		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.GCPPCRSelection)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
 
-		issuer = gcp.NewIssuer()
+		issuer = initserver.NewIssuerWrapper(gcp.NewIssuer(), vmtype.Unknown, nil)
 
 		gcpClient, err := gcpcloud.NewClient(ctx)
 		if err != nil {
@@ -100,7 +103,7 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &gcpcloud.CloudControllerManager{},
-			&gcpcloud.CloudNodeManager{}, &gcpcloud.Autoscaler{}, metadata, pcrsJSON, nil,
+			&gcpcloud.CloudNodeManager{}, &gcpcloud.Autoscaler{}, metadata, pcrsJSON,
 		)
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
@@ -108,18 +111,18 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to set loadbalancer route")
 		}
 		log.Infof("Added load balancer IP to routing table")
-	case "azure":
+	case cloudprovider.Azure:
 		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.AzurePCRSelection)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
 
-		idKeyDigest, err := azure.GetIdKeyDigest(vtpm.OpenVTPM)
-		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to get idkeydigest")
+		if idkeydigest, err := snp.GetIdKeyDigest(vtpm.OpenVTPM); err == nil {
+			issuer = initserver.NewIssuerWrapper(snp.NewIssuer(), vmtype.AzureCVM, idkeydigest)
+		} else {
+			// assume we are running in a trusted-launch VM
+			issuer = initserver.NewIssuerWrapper(trustedlaunch.NewIssuer(), vmtype.AzureTrustedLaunch, idkeydigest)
 		}
-
-		issuer = azure.NewIssuer()
 
 		metadata, err := azurecloud.NewMetadata(ctx)
 		if err != nil {
@@ -136,18 +139,18 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"azure", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), azurecloud.NewCloudControllerManager(metadata),
-			&azurecloud.CloudNodeManager{}, &azurecloud.Autoscaler{}, metadata, pcrsJSON, idKeyDigest,
+			&azurecloud.CloudNodeManager{}, &azurecloud.Autoscaler{}, metadata, pcrsJSON,
 		)
 
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
-	case "qemu":
+	case cloudprovider.QEMU:
 		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.QEMUPCRSelection)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
 
-		issuer = qemu.NewIssuer()
+		issuer = initserver.NewIssuerWrapper(qemu.NewIssuer(), vmtype.Unknown, nil)
 
 		cloudLogger = qemucloud.NewLogger()
 		metadata := &qemucloud.Metadata{}
@@ -157,14 +160,14 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &qemucloud.CloudControllerManager{},
-			&qemucloud.CloudNodeManager{}, &qemucloud.Autoscaler{}, metadata, pcrsJSON, nil,
+			&qemucloud.CloudNodeManager{}, &qemucloud.Autoscaler{}, metadata, pcrsJSON,
 		)
 		metadataAPI = metadata
 
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 	default:
-		issuer = atls.NewFakeIssuer(oid.Dummy{})
+		issuer = initserver.NewIssuerWrapper(atls.NewFakeIssuer(oid.Dummy{}), vmtype.Unknown, nil)
 		clusterInitJoiner = &clusterFake{}
 		metadataAPI = &providerMetadataFake{}
 		cloudLogger = &logging.NopLogger{}
