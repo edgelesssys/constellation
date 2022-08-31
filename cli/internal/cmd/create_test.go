@@ -7,8 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edgelesssys/constellation/cli/internal/azure"
-	"github.com/edgelesssys/constellation/cli/internal/gcp"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
@@ -56,7 +54,6 @@ func TestCreate(t *testing.T) {
 		yesFlag             bool
 		controllerCountFlag *int
 		workerCountFlag     *int
-		insTypeFlag         string
 		configFlag          string
 		nameFlag            string
 		stdin               string
@@ -134,15 +131,6 @@ func TestCreate(t *testing.T) {
 			creator:             &stubCloudCreator{},
 			provider:            cloudprovider.GCP,
 			controllerCountFlag: intPtr(3),
-			wantErr:             true,
-		},
-		"flag invalid instance-type": {
-			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
-			creator:             &stubCloudCreator{},
-			provider:            cloudprovider.GCP,
-			controllerCountFlag: intPtr(1),
-			workerCountFlag:     intPtr(1),
-			insTypeFlag:         "invalid",
 			wantErr:             true,
 		},
 		"old state in directory": {
@@ -245,9 +233,6 @@ func TestCreate(t *testing.T) {
 			if tc.workerCountFlag != nil {
 				require.NoError(cmd.Flags().Set("worker-nodes", strconv.Itoa(*tc.workerCountFlag)))
 			}
-			if tc.insTypeFlag != "" {
-				require.NoError(cmd.Flags().Set("instance-type", tc.insTypeFlag))
-			}
 
 			fileHandler := file.NewHandler(tc.setupFs(require))
 
@@ -347,47 +332,6 @@ func TestCreateCompletion(t *testing.T) {
 
 			cmd := &cobra.Command{}
 			result, shellCD := createCompletion(cmd, tc.args, "")
-			assert.Equal(tc.wantResult, result)
-			assert.Equal(tc.wantShellCD, shellCD)
-		})
-	}
-}
-
-func TestInstanceTypeCompletion(t *testing.T) {
-	testCases := map[string]struct {
-		args        []string
-		wantResult  []string
-		wantShellCD cobra.ShellCompDirective
-	}{
-		"azure": {
-			args:        []string{"azure"},
-			wantResult:  append(append([]string{}, azure.CVMInstanceTypes...), azure.TrustedLaunchInstanceTypes...),
-			wantShellCD: cobra.ShellCompDirectiveNoFileComp,
-		},
-		"gcp": {
-			args:        []string{"gcp"},
-			wantResult:  gcp.InstanceTypes,
-			wantShellCD: cobra.ShellCompDirectiveNoFileComp,
-		},
-		"empty args": {
-			args:        []string{},
-			wantResult:  []string{},
-			wantShellCD: cobra.ShellCompDirectiveError,
-		},
-		"unknown provider": {
-			args:        []string{"foo"},
-			wantResult:  []string{},
-			wantShellCD: cobra.ShellCompDirectiveError,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			cmd := &cobra.Command{}
-			result, shellCD := instanceTypeCompletion(cmd, tc.args, "")
-
 			assert.Equal(tc.wantResult, result)
 			assert.Equal(tc.wantShellCD, shellCD)
 		})

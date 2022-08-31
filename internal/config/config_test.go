@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/internal/config/instancetypes"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"
@@ -376,6 +377,94 @@ func TestConfig_IsImageDebug(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 			assert.Equal(tc.want, tc.conf.IsImageDebug())
+		})
+	}
+}
+
+func TestValidInstanceTypeForProvider(t *testing.T) {
+	testCases := map[string]struct {
+		provider       cloudprovider.Provider
+		instanceTypes  []string
+		nonCVMsAllowed bool
+		expectedResult bool
+	}{
+		"empty all": {
+			provider:       cloudprovider.Unknown,
+			instanceTypes:  []string{},
+			expectedResult: false,
+		},
+		"empty azure only CVMs": {
+			provider:       cloudprovider.Azure,
+			instanceTypes:  []string{},
+			expectedResult: false,
+		},
+		"empty azure with non-CVMs": {
+			provider:       cloudprovider.Azure,
+			instanceTypes:  []string{},
+			nonCVMsAllowed: true,
+			expectedResult: false,
+		},
+		"empty gcp": {
+			provider:       cloudprovider.GCP,
+			instanceTypes:  []string{},
+			expectedResult: false,
+		},
+		"azure only CVMs": {
+			provider:       cloudprovider.Azure,
+			instanceTypes:  instancetypes.AzureCVMInstanceTypes,
+			expectedResult: true,
+		},
+		"azure CVMs but CVMs disabled": {
+			provider:       cloudprovider.Azure,
+			instanceTypes:  instancetypes.AzureCVMInstanceTypes,
+			nonCVMsAllowed: true,
+			expectedResult: false,
+		},
+		"azure trusted launch VMs with CVMs enabled": {
+			provider:       cloudprovider.Azure,
+			instanceTypes:  instancetypes.AzureTrustedLaunchInstanceTypes,
+			expectedResult: false,
+		},
+		"azure trusted launch VMs with CVMs disbled": {
+			provider:       cloudprovider.Azure,
+			instanceTypes:  instancetypes.AzureTrustedLaunchInstanceTypes,
+			nonCVMsAllowed: true,
+			expectedResult: true,
+		},
+		"gcp": {
+			provider:       cloudprovider.GCP,
+			instanceTypes:  instancetypes.GCPInstanceTypes,
+			expectedResult: true,
+		},
+		"put gcp when azure is set": {
+			provider:       cloudprovider.Azure,
+			instanceTypes:  instancetypes.GCPInstanceTypes,
+			expectedResult: false,
+		},
+		"put gcp when azure is set with CVMs disabled": {
+			provider:       cloudprovider.Azure,
+			instanceTypes:  instancetypes.GCPInstanceTypes,
+			nonCVMsAllowed: true,
+			expectedResult: false,
+		},
+		"put azure when gcp is set": {
+			provider:       cloudprovider.GCP,
+			instanceTypes:  instancetypes.AzureCVMInstanceTypes,
+			expectedResult: false,
+		},
+		"put azure when gcp is set with CVMs disabled": {
+			provider:       cloudprovider.GCP,
+			instanceTypes:  instancetypes.AzureTrustedLaunchInstanceTypes,
+			nonCVMsAllowed: true,
+			expectedResult: false,
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			for _, instanceType := range tc.instanceTypes {
+				assert.Equal(tc.expectedResult, validInstanceTypeForProvider(instanceType, tc.nonCVMsAllowed, tc.provider), instanceType)
+			}
 		})
 	}
 }

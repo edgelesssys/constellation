@@ -11,6 +11,7 @@ import (
 	"regexp"
 
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/internal/config/instancetypes"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/versions"
@@ -146,6 +147,9 @@ type AzureConfig struct {
 	//   Machine image used to create Constellation nodes.
 	Image string `yaml:"image" validate:"required"`
 	// description: |
+	//   Virtual machine instance type to use for Constellation nodes.
+	InstanceType string `yaml:"instanceType" validate:"azure_instance_type"`
+	// description: |
 	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#disk-type-comparison
 	StateDiskType string `yaml:"stateDiskType" validate:"oneof=Premium_LRS Premium_ZRS Standard_LRS StandardSSD_LRS StandardSSD_ZRS"`
 	// description: |
@@ -191,6 +195,9 @@ type GCPConfig struct {
 	// description: |
 	//   Machine image used to create Constellation nodes.
 	Image string `yaml:"image" validate:"required"`
+	// description: |
+	//   Virtual machine instance type to use for Constellation nodes.
+	InstanceType string `yaml:"instanceType" validate:"gcp_instance_type"`
 	// description: |
 	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://cloud.google.com/compute/docs/disks#disk-types
 	StateDiskType string `yaml:"stateDiskType" validate:"oneof=pd-standard pd-balanced pd-ssd"`
@@ -260,6 +267,7 @@ func Default() *Config {
 				UserAssignedIdentity: "",
 				ResourceGroup:        "",
 				Image:                DefaultImageAzure,
+				InstanceType:         "Standard_DC4as_v5",
 				StateDiskType:        "Premium_LRS",
 				Measurements:         copyPCRMap(azurePCRs),
 				EnforcedMeasurements: []uint32{8, 9, 11, 12},
@@ -272,6 +280,7 @@ func Default() *Config {
 				Region:                "",
 				Zone:                  "",
 				Image:                 DefaultImageGCP,
+				InstanceType:          "n2d-standard-4",
 				StateDiskType:         "pd-ssd",
 				ServiceAccountKeyPath: "serviceAccountKey.json",
 				Measurements:          copyPCRMap(gcpPCRs),
@@ -290,6 +299,21 @@ func validateK8sVersion(fl validator.FieldLevel) bool {
 	return versions.IsSupportedK8sVersion(fl.Field().String())
 }
 
+func validateAzureInstanceType(fl validator.FieldLevel) bool {
+	azureConfig := fl.Parent().Interface().(AzureConfig)
+	var acceptNonCVM bool
+	if azureConfig.ConfidentialVM != nil {
+		// This is the inverse of the config value (acceptNonCVMs is true if confidentialVM is false).
+		// We could make the validator the other way around, but this should be an explicit bypass rather than checking if CVMs are "allowed".
+		acceptNonCVM = !*azureConfig.ConfidentialVM
+	}
+	return validInstanceTypeForProvider(fl.Field().String(), acceptNonCVM, cloudprovider.Azure)
+}
+
+func validateGCPInstanceType(fl validator.FieldLevel) bool {
+	return validInstanceTypeForProvider(fl.Field().String(), false, cloudprovider.GCP)
+}
+
 // Validate checks the config values and returns validation error messages.
 // The function only returns an error if the validation itself fails.
 func (c *Config) Validate() ([]string, error) {
@@ -299,8 +323,27 @@ func (c *Config) Validate() ([]string, error) {
 		return nil, err
 	}
 
+	// Register Azure & GCP InstanceType validation error types
+	if err := validate.RegisterTranslation("azure_instance_type", trans, c.registerTranslateAzureInstanceTypeError, translateAzureInstanceTypeError); err != nil {
+		return nil, err
+	}
+
+	if err := validate.RegisterTranslation("gcp_instance_type", trans, registerTranslateGCPInstanceTypeError, translateGCPInstanceTypeError); err != nil {
+		return nil, err
+	}
+
 	// register custom validator with label supported_k8s_version to validate version based on available versionConfigs.
 	if err := validate.RegisterValidation("supported_k8s_version", validateK8sVersion); err != nil {
+		return nil, err
+	}
+
+	// register custom validator with label azure_instance_type to validate version based on available versionConfigs.
+	if err := validate.RegisterValidation("azure_instance_type", validateAzureInstanceType); err != nil {
+		return nil, err
+	}
+
+	// register custom validator with label azure_instance_type to validate version based on available versionConfigs.
+	if err := validate.RegisterValidation("gcp_instance_type", validateGCPInstanceType); err != nil {
 		return nil, err
 	}
 
@@ -319,6 +362,32 @@ func (c *Config) Validate() ([]string, error) {
 		msgs = append(msgs, e.Translate(trans))
 	}
 	return msgs, nil
+}
+
+// Validation translation functions for Azure & GCP instance type error functions.
+func (c *Config) registerTranslateAzureInstanceTypeError(ut ut.Translator) error {
+	// Suggest trusted launch VMs if confidential VMs have been specifically disabled
+	if c.Provider.Azure != nil && c.Provider.Azure.ConfidentialVM != nil && !*c.Provider.Azure.ConfidentialVM {
+		return ut.Add("azure_instance_type", fmt.Sprintf("{0} must be one of %v", instancetypes.AzureTrustedLaunchInstanceTypes), true)
+	}
+	// Otherwise suggest CVMs
+	return ut.Add("azure_instance_type", fmt.Sprintf("{0} must be one of %v", instancetypes.AzureCVMInstanceTypes), true)
+}
+
+func translateAzureInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
+	t, _ := ut.T("azure_instance_type", fe.Field())
+
+	return t
+}
+
+func registerTranslateGCPInstanceTypeError(ut ut.Translator) error {
+	return ut.Add("gcp_instance_type", fmt.Sprintf("{0} must be one of %v", instancetypes.GCPInstanceTypes), true)
+}
+
+func translateGCPInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
+	t, _ := ut.T("gcp_instance_type", fe.Field())
+
+	return t
 }
 
 // HasProvider checks whether the config contains the provider.
@@ -429,4 +498,33 @@ func copyPCRMap(m map[uint32][]byte) map[uint32][]byte {
 	res := make(Measurements)
 	res.CopyFrom(m)
 	return res
+}
+
+func validInstanceTypeForProvider(insType string, acceptNonCVM bool, provider cloudprovider.Provider) bool {
+	switch provider {
+	case cloudprovider.GCP:
+		for _, instanceType := range instancetypes.GCPInstanceTypes {
+			if insType == instanceType {
+				return true
+			}
+		}
+		return false
+	case cloudprovider.Azure:
+		if acceptNonCVM {
+			for _, instanceType := range instancetypes.AzureTrustedLaunchInstanceTypes {
+				if insType == instanceType {
+					return true
+				}
+			}
+		} else {
+			for _, instanceType := range instancetypes.AzureCVMInstanceTypes {
+				if insType == instanceType {
+					return true
+				}
+			}
+		}
+		return false
+	default:
+		return false
+	}
 }
