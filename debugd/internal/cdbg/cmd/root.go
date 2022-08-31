@@ -15,7 +15,6 @@ func newRootCmd() *cobra.Command {
 	It connects to CoreOS instances running debugd and deploys a self-compiled version of the bootstrapper.`,
 	}
 	cmd.PersistentFlags().String("config", constants.ConfigFilename, "Constellation config file")
-	cmd.PersistentFlags().String("cdbg-config", constants.DebugdConfigFilename, "debugd config file")
 	cmd.AddCommand(newDeployCmd())
 	return cmd
 }

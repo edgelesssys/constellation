@@ -12,21 +12,6 @@ make cdbg
 
 With `cdbg` and `yq` installed in your path:
 
-0. Write the configuration file for cdbg `cdbg-conf.yaml`:
-
-   ```yaml
-   cdbg:
-     authorizedKeys:
-       - username: my-username
-         publicKey: ssh-rsa AAAAB…LJuM=
-     bootstrapperPath: "./bootstrapper"
-     systemdUnits:
-       - name: some-custom.service
-         contents: |-
-           [Unit]
-           Description=…
-   ```
-
 1. Run `constellation config generate` to create a new default configuration
 
 2. Locate the latest debugd images for [GCP](/.github/docs/README.md#gcp) and [Azure](/.github/docs/README.md#azure)
@@ -62,7 +47,10 @@ With `cdbg` and `yq` installed in your path:
 
 5. Run `./cdbg deploy`
 
+   By default, `cdbg` searches for the bootstrapper in the current path (`./bootstrapper`). You can define a custom path by appending the argument `--bootstrapper <path to bootstrapper>` to `cdbg deploy`.
+
 6. Run `constellation init […]` as usual
+
 
 ### debugd images
 

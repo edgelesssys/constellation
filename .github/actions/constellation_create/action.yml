@@ -121,10 +121,7 @@ runs:
 
     - name: Cdbg deploy
       run: |
-        printf 'cdbg:\n  bootstrapperPath: "'$GITHUB_WORKSPACE'/build/bootstrapper"\n' > cdbg-conf.yaml
-        echo "Deploying bootstrapper with config:"
-        cat ./cdbg-conf.yaml
-        cdbg deploy
+        cdbg deploy --bootstrapper $GITHUB_WORKSPACE/build/bootstrapper
       shell: bash
       if: ${{ inputs.isDebugImage == 'true' }}
 
