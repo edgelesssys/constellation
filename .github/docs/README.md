@@ -9,7 +9,7 @@ gh workflow run e2e-test-manual.yml \
     --ref feat/e2e_pipeline \                       # On your specific branch!
     -F autoscale=false -F cloudProvider=gcp \       # With your ...
     -F controlNodesCount=1 -F workerNodesCount=2 \  # ... settings
-    -F machineType=n2d-standard-2
+    -F machineType=n2d-standard-4
 ```
 
 ### E2E Test Suites
@@ -49,7 +49,7 @@ Create a new JSON file to describe the event ([relevant issue](https://github.co
       "controlNodesCount": "1",
       "autoscale": false,
       "cloudProvider": "gcp",
-      "machineType": "n2d-standard-2",
+      "machineType": "n2d-standard-4",
       "sonobuoyTestSuiteCmd": "--mode quick"
   }
 }

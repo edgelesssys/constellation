@@ -15,7 +15,7 @@ func TestFirewallPermissions(t *testing.T) {
 		Name:                 "name",
 		NamePrefix:           "constellation-",
 		Location:             "UK South",
-		InstanceType:         "Standard_DC2as_v5",
+		InstanceType:         "Standard_DC4as_v5",
 		Count:                3,
 		Username:             "constellation",
 		SubnetID:             "subnet-id",

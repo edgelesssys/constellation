@@ -14,7 +14,7 @@ These tests results were produced using Sonobuoy v0.56.4.
 ## Provision Constellation Cluster
 
 ```sh
-constellation create gcp 1 2 n2d-standard-2 -y
+constellation create gcp 1 2 n2d-standard-4 -y
 constellation init
 export KUBECONFIG="$PWD/constellation-admin.conf"
 ```

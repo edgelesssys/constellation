@@ -28,9 +28,9 @@ on:
         description: "VM machine type. Make sure it matches selected cloud provider!"
         type: choice
         options:
-          - "n2d-standard-2" # GCP
+          - "n2d-standard-4" # GCP
           - "Standard_DC4as_v5" # Azure
-        default: "n2d-standard-2"
+        default: "n2d-standard-4"
         required: true
       sonobuoyTestSuiteCmd:
         description: "Which tests should be run? Check README for guidance!"

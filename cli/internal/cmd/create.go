@@ -191,9 +191,9 @@ type createFlags struct {
 func defaultInstanceType(provider cloudprovider.Provider) string {
 	switch provider {
 	case cloudprovider.GCP:
-		return "n2d-standard-4"
+		return gcp.InstanceTypes[0]
 	case cloudprovider.Azure:
-		return "Standard_DC4as_v5"
+		return azure.CVMInstanceTypes[0]
 	default:
 		return ""
 	}
