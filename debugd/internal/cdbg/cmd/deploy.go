@@ -8,11 +8,9 @@ import (
 	"strconv"
 
 	"github.com/edgelesssys/constellation/debugd/internal/bootstrapper"
-	"github.com/edgelesssys/constellation/debugd/internal/cdbg/config"
 	"github.com/edgelesssys/constellation/debugd/internal/debugd"
-	depl "github.com/edgelesssys/constellation/debugd/internal/debugd/deploy"
 	pb "github.com/edgelesssys/constellation/debugd/service"
-	configc "github.com/edgelesssys/constellation/internal/config"
+	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/spf13/afero"
@@ -33,39 +31,28 @@ func newDeployCmd() *cobra.Command {
 		Example: "cdbg deploy\ncdbg deploy --config /path/to/config\ncdbg deploy --bootstrapper /path/to/bootstrapper --ips 192.0.2.1,192.0.2.2,192.0.2.3 --config /path/to/config",
 	}
 	deployCmd.Flags().StringSlice("ips", nil, "override the ips that the bootstrapper will be uploaded to (defaults to ips from constellation config)")
-	deployCmd.Flags().String("bootstrapper", "", "override the path to the bootstrapper binary uploaded to instances (defaults to path set in config)")
+	deployCmd.Flags().String("bootstrapper", "./bootstrapper", "override the path to the bootstrapper binary uploaded to instances")
 	return deployCmd
 }
 
 func runDeploy(cmd *cobra.Command, args []string) error {
-	debugConfigName, err := cmd.Flags().GetString("cdbg-config")
-	if err != nil {
-		return err
-	}
 	configName, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return fmt.Errorf("parsing config path argument: %w", err)
 	}
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	debugConfig, err := config.FromFile(fileHandler, debugConfigName)
-	if err != nil {
-		return err
-	}
-	constellationConfig, err := configc.FromFile(fileHandler, configName)
+	constellationConfig, err := config.FromFile(fileHandler, configName)
 	if err != nil {
 		return err
 	}
 
-	return deploy(cmd, fileHandler, constellationConfig, debugConfig, bootstrapper.NewFileStreamer(afero.NewOsFs()))
+	return deploy(cmd, fileHandler, constellationConfig, bootstrapper.NewFileStreamer(afero.NewOsFs()))
 }
 
-func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *configc.Config, debugConfig *config.CDBGConfig, reader fileToStreamReader) error {
-	overrideBootstrapperPath, err := cmd.Flags().GetString("bootstrapper")
+func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *config.Config, reader fileToStreamReader) error {
+	bootstrapperPath, err := cmd.Flags().GetString("bootstrapper")
 	if err != nil {
 		return err
-	}
-	if len(overrideBootstrapperPath) > 0 {
-		debugConfig.ConstellationDebugConfig.BootstrapperPath = overrideBootstrapperPath
 	}
 
 	if !constellationConfig.IsImageDebug() {
@@ -87,10 +74,9 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 	for _, ip := range ips {
 		input := deployOnEndpointInput{
 			debugdEndpoint:   net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort)),
-			bootstrapperPath: debugConfig.ConstellationDebugConfig.BootstrapperPath,
+			bootstrapperPath: bootstrapperPath,
 			reader:           reader,
-			authorizedKeys:   debugConfig.ConstellationDebugConfig.AuthorizedKeys,
-			systemdUnits:     debugConfig.ConstellationDebugConfig.SystemdUnits,
+			authorizedKeys:   constellationConfig.SSHUsers,
 		}
 		if err := deployOnEndpoint(cmd.Context(), input); err != nil {
 			return err
@@ -104,11 +90,10 @@ type deployOnEndpointInput struct {
 	debugdEndpoint   string
 	bootstrapperPath string
 	reader           fileToStreamReader
-	authorizedKeys   []configc.UserKey
-	systemdUnits     []depl.SystemdUnit
+	authorizedKeys   []config.UserKey
 }
 
-// deployOnEndpoint deploys SSH public keys, systemd units and a locally built bootstrapper binary to a debugd endpoint.
+// deployOnEndpoint deploys SSH public keys and a locally built bootstrapper binary to a debugd endpoint.
 func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	log.Printf("Deploying on %v\n", in.debugdEndpoint)
 	dialCTX, cancel := context.WithTimeout(ctx, debugd.GRPCTimeout)
@@ -130,23 +115,7 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	}
 	authorizedKeysResponse, err := client.UploadAuthorizedKeys(ctx, &pb.UploadAuthorizedKeysRequest{Keys: pbKeys}, grpc.WaitForReady(true))
 	if err != nil || authorizedKeysResponse.Status != pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_SUCCESS {
-		return fmt.Errorf("uploading bootstrapper to instance %v failed: %v / %w", in.debugdEndpoint, authorizedKeysResponse, err)
-	}
-
-	if len(in.systemdUnits) > 0 {
-		log.Println("Uploading systemd unit files")
-
-		pbUnits := []*pb.ServiceUnit{}
-		for _, unit := range in.systemdUnits {
-			pbUnits = append(pbUnits, &pb.ServiceUnit{
-				Name:     unit.Name,
-				Contents: unit.Contents,
-			})
-		}
-		uploadSystemdServiceUnitsResponse, err := client.UploadSystemServiceUnits(ctx, &pb.UploadSystemdServiceUnitsRequest{Units: pbUnits})
-		if err != nil || uploadSystemdServiceUnitsResponse.Status != pb.UploadSystemdServiceUnitsStatus_UPLOAD_SYSTEMD_SERVICE_UNITS_SUCCESS {
-			return fmt.Errorf("uploading systemd service unit to instance %v failed: %v / %w", in.debugdEndpoint, uploadSystemdServiceUnitsResponse, err)
-		}
+		return fmt.Errorf("uploading authorized keys to instance %v failed: %v / %w", in.debugdEndpoint, authorizedKeysResponse, err)
 	}
 
 	stream, err := client.UploadBootstrapper(ctx)
