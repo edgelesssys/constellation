@@ -24,10 +24,10 @@ import (
 )
 
 const debugBanner = `
-**************************************
-    THIS A CONSTELLATION DEBUG IMAGE.
+*****************************************
+    THIS IS A CONSTELLATION DEBUG IMAGE.
     DO NOT USE IN PRODUCTION.
-**************************************
+*****************************************
 `
 
 func main() {
