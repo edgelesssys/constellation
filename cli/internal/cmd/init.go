@@ -105,7 +105,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return err
 	}
 
-	serviceAccURI, err := getMarschaledServiceAccountURI(provider, config, fileHandler)
+	serviceAccURI, err := getMarshaledServiceAccountURI(provider, config, fileHandler)
 	if err != nil {
 		return err
 	}
@@ -126,11 +126,16 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return fmt.Errorf("loading Helm charts: %w", err)
 	}
 
+	masterSecret, err := readOrGenerateMasterSecret(cmd.OutOrStdout(), fileHandler, flags.masterSecretPath)
+	if err != nil {
+		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
+	}
+
 	cmd.Println("Initializing cluster ...")
 	req := &initproto.InitRequest{
 		AutoscalingNodeGroups:  autoscalingNodeGroups,
-		MasterSecret:           flags.masterSecret.Key,
-		Salt:                   flags.masterSecret.Salt,
+		MasterSecret:           masterSecret.Key,
+		Salt:                   masterSecret.Salt,
 		KmsUri:                 kms.ClusterKMSURI,
 		StorageUri:             kms.NoStoreURI,
 		KeyEncryptionKeyId:     "",
@@ -253,10 +258,6 @@ func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (initFlags, erro
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing master-secret path flag: %w", err)
 	}
-	masterSecret, err := readOrGenerateMasterSecret(cmd.OutOrStdout(), fileHandler, masterSecretPath)
-	if err != nil {
-		return initFlags{}, fmt.Errorf("parsing or generating master mastersecret from file %s: %w", masterSecretPath, err)
-	}
 	endpoint, err := cmd.Flags().GetString("endpoint")
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing endpoint flag: %w", err)
@@ -277,19 +278,19 @@ func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (initFlags, erro
 	}
 
 	return initFlags{
-		configPath:   configPath,
-		endpoint:     endpoint,
-		autoscale:    autoscale,
-		masterSecret: masterSecret,
+		configPath:       configPath,
+		endpoint:         endpoint,
+		autoscale:        autoscale,
+		masterSecretPath: masterSecretPath,
 	}, nil
 }
 
 // initFlags are the resulting values of flag preprocessing.
 type initFlags struct {
-	configPath   string
-	masterSecret masterSecret
-	endpoint     string
-	autoscale    bool
+	configPath       string
+	masterSecretPath string
+	endpoint         string
+	autoscale        bool
 }
 
 // masterSecret holds the master key and salt for deriving keys.
@@ -347,7 +348,7 @@ func readIPFromIDFile(fileHandler file.Handler) (string, error) {
 	return idFile.IP, nil
 }
 
-func getMarschaledServiceAccountURI(provider cloudprovider.Provider, config *config.Config, fileHandler file.Handler) (string, error) {
+func getMarshaledServiceAccountURI(provider cloudprovider.Provider, config *config.Config, fileHandler file.Handler) (string, error) {
 	switch provider {
 	case cloudprovider.GCP:
 		path := config.Provider.GCP.ServiceAccountKeyPath
