@@ -63,6 +63,34 @@ func (u *Upgrader) Upgrade(ctx context.Context, image string, measurements map[u
 	return nil
 }
 
+// GetCurrentImage returns the currently used image of the cluster.
+func (u *Upgrader) GetCurrentImage(ctx context.Context) (*unstructured.Unstructured, string, error) {
+	imageStruct, err := u.imageUpdater.getCurrent(ctx, "constellation-coreos")
+	if err != nil {
+		return nil, "", err
+	}
+
+	spec, ok := imageStruct.Object["spec"]
+	if !ok {
+		return nil, "", errors.New("image spec missing")
+	}
+	retErr := errors.New("invalid image spec")
+	specMap, ok := spec.(map[string]any)
+	if !ok {
+		return nil, "", retErr
+	}
+	currentImageDefinition, ok := specMap["image"]
+	if !ok {
+		return nil, "", retErr
+	}
+	imageDefinition, ok := currentImageDefinition.(string)
+	if !ok {
+		return nil, "", retErr
+	}
+
+	return imageStruct, imageDefinition, nil
+}
+
 func (u *Upgrader) updateMeasurements(ctx context.Context, measurements map[uint32][]byte) error {
 	existingConf, err := u.measurementsUpdater.getCurrent(ctx, constants.JoinConfigMap)
 	if err != nil {
@@ -107,22 +135,9 @@ func (u *Upgrader) updateMeasurements(ctx context.Context, measurements map[uint
 }
 
 func (u *Upgrader) updateImage(ctx context.Context, image string) error {
-	currentImage, err := u.imageUpdater.getCurrent(ctx, "constellation-coreos")
+	currentImage, currentImageDefinition, err := u.GetCurrentImage(ctx)
 	if err != nil {
 		return fmt.Errorf("retrieving current image: %w", err)
-	}
-
-	spec, ok := currentImage.Object["spec"]
-	if !ok {
-		return errors.New("current image has no spec")
-	}
-	specMap, ok := spec.(map[string]interface{})
-	if !ok {
-		return errors.New("current image spec is not a map")
-	}
-	currentImageDefinition, ok := specMap["image"]
-	if !ok {
-		return errors.New("unable to read current image")
 	}
 
 	if currentImageDefinition == image {
@@ -130,7 +145,7 @@ func (u *Upgrader) updateImage(ctx context.Context, image string) error {
 		return nil
 	}
 
-	currentImage.Object["spec"].(map[string]interface{})["image"] = image
+	currentImage.Object["spec"].(map[string]any)["image"] = image
 	if _, err := u.imageUpdater.update(ctx, currentImage); err != nil {
 		return fmt.Errorf("setting new image: %w", err)
 	}

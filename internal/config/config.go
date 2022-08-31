@@ -376,6 +376,20 @@ func (c *Config) IsImageDebug() bool {
 	}
 }
 
+// GetProvider returns the configured cloud provider.
+func (c *Config) GetProvider() cloudprovider.Provider {
+	if c.Provider.Azure != nil {
+		return cloudprovider.Azure
+	}
+	if c.Provider.GCP != nil {
+		return cloudprovider.GCP
+	}
+	if c.Provider.QEMU != nil {
+		return cloudprovider.QEMU
+	}
+	return cloudprovider.Unknown
+}
+
 // IsAzureNonCVM checks whether the chosen provider is azure and confidential VMs are disabled.
 func (c *Config) IsAzureNonCVM() bool {
 	return c.Provider.Azure != nil && c.Provider.Azure.ConfidentialVM != nil && !*c.Provider.Azure.ConfidentialVM

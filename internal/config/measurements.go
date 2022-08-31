@@ -41,11 +41,11 @@ var (
 func (m *Measurements) FetchAndVerify(ctx context.Context, client *http.Client, measurementsURL *url.URL, signatureURL *url.URL, publicKey []byte) error {
 	measurements, err := getFromURL(ctx, client, measurementsURL)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to fetch measurements: %w", err)
 	}
 	signature, err := getFromURL(ctx, client, signatureURL)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to fetch signature: %w", err)
 	}
 	if err := sigstore.VerifySignature(measurements, signature, publicKey); err != nil {
 		return err
