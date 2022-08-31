@@ -68,15 +68,16 @@ func TestInitialize(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		state            *state.ConstellationState
-		idFile           *clusterIDsFile
-		configMutator    func(*config.Config)
-		serviceAccKey    *gcpshared.ServiceAccountKey
-		helmLoader       stubHelmLoader
-		initServerAPI    *stubInitServer
-		endpointFlag     string
-		setAutoscaleFlag bool
-		wantErr          bool
+		state                   *state.ConstellationState
+		idFile                  *clusterIDsFile
+		configMutator           func(*config.Config)
+		serviceAccKey           *gcpshared.ServiceAccountKey
+		helmLoader              stubHelmLoader
+		initServerAPI           *stubInitServer
+		endpointFlag            string
+		masterSecretShouldExist bool
+		setAutoscaleFlag        bool
+		wantErr                 bool
 	}{
 		"initialize some gcp instances": {
 			state:         testGcpState,
@@ -139,12 +140,17 @@ func TestInitialize(t *testing.T) {
 				c.Provider.Azure.ResourceGroup = "resourceGroup"
 				c.Provider.Azure.UserAssignedIdentity = "userAssignedIdentity"
 			},
-			initServerAPI: &stubInitServer{},
-			wantErr:       true,
+			initServerAPI:           &stubInitServer{},
+			masterSecretShouldExist: true,
+			wantErr:                 true,
 		},
-		"fail to load helm charts": {
-			state:         testGcpState,
-			helmLoader:    stubHelmLoader{loadErr: someErr},
+		"fail missing enforced PCR": {
+			state:  testGcpState,
+			idFile: &clusterIDsFile{IP: "192.0.2.1"},
+			configMutator: func(c *config.Config) {
+				c.Provider.GCP.EnforcedMeasurements = append(c.Provider.GCP.EnforcedMeasurements, 10)
+			},
+			serviceAccKey: gcpServiceAccKey,
 			initServerAPI: &stubInitServer{initResp: testInitResp},
 			wantErr:       true,
 		},
@@ -209,6 +215,10 @@ func TestInitialize(t *testing.T) {
 
 			if tc.wantErr {
 				assert.Error(err)
+				if !tc.masterSecretShouldExist {
+					_, err = fileHandler.Stat(constants.MasterSecretFilename)
+					assert.Error(err)
+				}
 				return
 			}
 			require.NoError(err)
@@ -219,6 +229,10 @@ func TestInitialize(t *testing.T) {
 			} else {
 				assert.Len(tc.initServerAPI.activateAutoscalingNodeGroups, 0)
 			}
+			var secret masterSecret
+			assert.NoError(fileHandler.ReadJSON(constants.MasterSecretFilename, &secret))
+			assert.NotEmpty(secret.Key)
+			assert.NotEmpty(secret.Salt)
 		})
 	}
 }
@@ -303,7 +317,7 @@ func TestInitCompletion(t *testing.T) {
 	}
 }
 
-func TestReadOrGeneratedMasterSecret(t *testing.T) {
+func TestReadOrGenerateMasterSecret(t *testing.T) {
 	testCases := map[string]struct {
 		filename       string
 		createFileFunc func(handler file.Handler) error
