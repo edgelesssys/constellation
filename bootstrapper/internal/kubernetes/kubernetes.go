@@ -200,11 +200,8 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("failed to setup verification service: %w", err)
 	}
 
-	// TODO: enable operator deployment on kubernetes 1.24 once https://github.com/medik8s/node-maintenance-operator/issues/49 is fixed
-	if k8sVersion != versions.V1_24 {
-		if err := k.setupOperators(ctx); err != nil {
-			return nil, fmt.Errorf("setting up operators: %w", err)
-		}
+	if err := k.setupOperators(ctx); err != nil {
+		return nil, fmt.Errorf("setting up operators: %w", err)
 	}
 
 	if k.cloudProvider == "gcp" {
