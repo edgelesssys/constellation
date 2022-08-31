@@ -46,7 +46,7 @@ func TestCreateInstances(t *testing.T) {
 		CountControlPlanes: 3,
 		CountWorkers:       4,
 		ImageID:            "img",
-		InstanceType:       "n2d-standard-2",
+		InstanceType:       "n2d-standard-4",
 		KubeEnv:            "kube-env",
 	}
 	someErr := errors.New("failed")
