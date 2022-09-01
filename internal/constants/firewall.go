@@ -42,6 +42,13 @@ var (
 			IPRange:     "0.0.0.0/0",
 			FromPort:    KubernetesPort,
 		},
+		{
+			Name:        "konnectivity",
+			Description: "konnectivity",
+			Protocol:    "tcp",
+			IPRange:     "0.0.0.0/0",
+			FromPort:    KonnectivityPort,
+		},
 	}
 
 	// IngressRulesDebug is the default set of ingress rules for a Constellation cluster with debug mode.

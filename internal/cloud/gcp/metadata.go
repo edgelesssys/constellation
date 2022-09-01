@@ -33,7 +33,7 @@ type API interface {
 	// RetrieveSubnetworkAliasCIDR retrieves the subnetwork CIDR of the current instance.
 	RetrieveSubnetworkAliasCIDR(ctx context.Context, project, zone, instanceName string) (string, error)
 	// RetrieveLoadBalancerEndpoint retrieves the load balancer endpoint of the current instance.
-	RetrieveLoadBalancerEndpoint(ctx context.Context, project, zone string) (string, error)
+	RetrieveLoadBalancerEndpoint(ctx context.Context, project string) (string, error)
 	// SetInstanceMetadata sets metadata key: value of the instance specified by project, zone and instanceName.
 	SetInstanceMetadata(ctx context.Context, project, zone, instanceName, key, value string) error
 	// UnsetInstanceMetadata removes a metadata key-value pair of the instance specified by project, zone and instanceName.
@@ -123,11 +123,7 @@ func (m *Metadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) 
 	if err != nil {
 		return "", err
 	}
-	zone, err := m.api.RetrieveZone()
-	if err != nil {
-		return "", err
-	}
-	return m.api.RetrieveLoadBalancerEndpoint(ctx, project, zone)
+	return m.api.RetrieveLoadBalancerEndpoint(ctx, project)
 }
 
 // UID retrieves the UID of the constellation.

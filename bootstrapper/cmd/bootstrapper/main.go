@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"flag"
 	"io"
-	"net"
 	"os"
 	"strconv"
 
@@ -34,10 +33,8 @@ import (
 	"github.com/edgelesssys/constellation/internal/cloud/vmtype"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
-	"github.com/edgelesssys/constellation/internal/iproute"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/oid"
-	"github.com/edgelesssys/constellation/internal/role"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )
@@ -107,9 +104,6 @@ func main() {
 		)
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
-		if err := setLoadbalancerRoute(ctx, metadata); err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to set loadbalancer route")
-		}
 		log.Infof("Added load balancer IP to routing table")
 	case cloudprovider.Azure:
 		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.AzurePCRSelection)
@@ -180,23 +174,4 @@ func main() {
 	fileHandler := file.NewHandler(fs)
 
 	run(issuer, openTPM, fileHandler, clusterInitJoiner, metadataAPI, bindIP, bindPort, log, cloudLogger)
-}
-
-func setLoadbalancerRoute(ctx context.Context, meta metadataAPI) error {
-	self, err := meta.Self(ctx)
-	if err != nil {
-		return err
-	}
-	if self.Role != role.ControlPlane {
-		return nil
-	}
-	endpoint, err := meta.GetLoadBalancerEndpoint(ctx)
-	if err != nil {
-		return err
-	}
-	ip, _, err := net.SplitHostPort(endpoint)
-	if err != nil {
-		return err
-	}
-	return iproute.AddToLocalRoutingTable(ctx, ip)
 }

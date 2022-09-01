@@ -28,6 +28,7 @@ import (
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/kubernetes"
+	"github.com/edgelesssys/constellation/internal/role"
 	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 
 	"github.com/edgelesssys/constellation/internal/crypto"
@@ -130,7 +131,7 @@ func (k *KubernetesUtil) InstallComponents(ctx context.Context, version versions
 }
 
 func (k *KubernetesUtil) InitCluster(
-	ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, log *logger.Logger,
+	ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, controlPlaneEndpoint string, log *logger.Logger,
 ) error {
 	// TODO: audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
@@ -180,6 +181,11 @@ func (k *KubernetesUtil) InitCluster(
 		return err
 	}
 
+	log.Infof("Preparing node for Konnectivity")
+	if err := k.prepareControlPlaneForKonnectivity(ctx, controlPlaneEndpoint); err != nil {
+		return fmt.Errorf("setup konnectivity: %w", err)
+	}
+
 	// initialize the cluster
 	log.Infof("Initializing the cluster using kubeadm init")
 	cmd = exec.CommandContext(ctx, kubeadmPath, "init", "-v=5", "--skip-phases=preflight,certs,addon/kube-proxy", "--config", initConfigFile.Name())
@@ -193,6 +199,64 @@ func (k *KubernetesUtil) InitCluster(
 	}
 	log.With(zap.String("output", string(out))).Infof("kubeadm init succeeded")
 	return nil
+}
+
+func (k *KubernetesUtil) prepareControlPlaneForKonnectivity(ctx context.Context, loadBalancerEndpoint string) error {
+	if !strings.Contains(loadBalancerEndpoint, ":") {
+		loadBalancerEndpoint = net.JoinHostPort(loadBalancerEndpoint, strconv.Itoa(constants.KubernetesPort))
+	}
+
+	if err := os.MkdirAll("/etc/kubernetes/manifests", os.ModePerm); err != nil {
+		return fmt.Errorf("creating static pods directory: %w", err)
+	}
+
+	konnectivityServerYaml, err := resources.NewKonnectivityServerStaticPod().Marshal()
+	if err != nil {
+		return fmt.Errorf("generating konnectivity server static pod: %w", err)
+	}
+	if err := os.WriteFile("/etc/kubernetes/manifests/konnectivity-server.yaml", konnectivityServerYaml, 0o644); err != nil {
+		return fmt.Errorf("writing konnectivity server pod: %w", err)
+	}
+
+	egressConfigYaml, err := resources.NewEgressSelectorConfiguration().Marshal()
+	if err != nil {
+		return fmt.Errorf("generating egress selector configuration: %w", err)
+	}
+	if err := os.WriteFile("/etc/kubernetes/egress-selector-configuration.yaml", egressConfigYaml, 0o644); err != nil {
+		return fmt.Errorf("writing egress selector config: %w", err)
+	}
+
+	if err := k.createSignedKonnectivityCert(); err != nil {
+		return fmt.Errorf("generating konnectivity server certificate: %w", err)
+	}
+
+	if out, err := exec.CommandContext(ctx, kubectlPath, "config", "set-credentials", "--kubeconfig", "/etc/kubernetes/konnectivity-server.conf", "system:konnectivity-server",
+		"--client-certificate", "/etc/kubernetes/konnectivity.crt", "--client-key", "/etc/kubernetes/konnectivity.key", "--embed-certs=true").CombinedOutput(); err != nil {
+		return fmt.Errorf("konnectivity kubeconfig set-credentials: %w, %s", err, string(out))
+	}
+	if out, err := exec.CommandContext(ctx, kubectlPath, "--kubeconfig", "/etc/kubernetes/konnectivity-server.conf", "config", "set-cluster", "kubernetes", "--server", "https://"+loadBalancerEndpoint,
+		"--certificate-authority", "/etc/kubernetes/pki/ca.crt", "--embed-certs=true").CombinedOutput(); err != nil {
+		return fmt.Errorf("konnectivity kubeconfig set-cluster: %w, %s", err, string(out))
+	}
+	if out, err := exec.CommandContext(ctx, kubectlPath, "--kubeconfig", "/etc/kubernetes/konnectivity-server.conf", "config", "set-context", "system:konnectivity-server@kubernetes",
+		"--cluster", "kubernetes", "--user", "system:konnectivity-server").CombinedOutput(); err != nil {
+		return fmt.Errorf("konnectivity kubeconfig set-context: %w, %s", err, string(out))
+	}
+	if out, err := exec.CommandContext(ctx, kubectlPath, "--kubeconfig", "/etc/kubernetes/konnectivity-server.conf", "config", "use-context", "system:konnectivity-server@kubernetes").CombinedOutput(); err != nil {
+		return fmt.Errorf("konnectivity kubeconfig use-context: %w, %s", err, string(out))
+	}
+	// cleanup
+	if err := os.Remove("/etc/kubernetes/konnectivity.crt"); err != nil {
+		return fmt.Errorf("removing konnectivity certificate: %w", err)
+	}
+	if err := os.Remove("/etc/kubernetes/konnectivity.key"); err != nil {
+		return fmt.Errorf("removing konnectivity key: %w", err)
+	}
+	return nil
+}
+
+func (k *KubernetesUtil) SetupKonnectivity(kubectl Client, konnectivityAgentsDaemonSet kubernetes.Marshaler) error {
+	return kubectl.Apply(konnectivityAgentsDaemonSet, true)
 }
 
 func (k *KubernetesUtil) SetupHelmDeployments(ctx context.Context, kubectl Client, helmDeployments []byte, in SetupPodNetworkInput, log *logger.Logger) error {
@@ -450,7 +514,7 @@ func (k *KubernetesUtil) SetupNodeOperator(ctx context.Context, kubectl Client, 
 }
 
 // JoinCluster joins existing Kubernetes cluster using kubeadm join.
-func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, log *logger.Logger) error {
+func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, peerRole role.Role, controlPlaneEndpoint string, log *logger.Logger) error {
 	// TODO: audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
 	if err != nil {
@@ -467,6 +531,13 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, log
 
 	if _, err := joinConfigFile.Write(joinConfig); err != nil {
 		return fmt.Errorf("writing kubeadm init yaml config %v: %w", joinConfigFile.Name(), err)
+	}
+
+	if peerRole == role.ControlPlane {
+		log.Infof("Prep Init Kubernetes cluster")
+		if err := k.prepareControlPlaneForKonnectivity(ctx, controlPlaneEndpoint); err != nil {
+			return fmt.Errorf("setup konnectivity: %w", err)
+		}
 	}
 
 	// run `kubeadm join` to join a worker node to an existing Kubernetes cluster
@@ -497,6 +568,7 @@ func (k *KubernetesUtil) StartKubelet() error {
 // createSignedKubeletCert manually creates a Kubernetes CA signed kubelet certificate for the bootstrapper node.
 // This is necessary because this node does not request a certificate from the join service.
 func (k *KubernetesUtil) createSignedKubeletCert(nodeName string, ips []net.IP) error {
+	// Create CSR
 	certRequestRaw, kubeletKey, err := kubelet.GetCertificateRequest(nodeName, ips)
 	if err != nil {
 		return err
@@ -505,48 +577,12 @@ func (k *KubernetesUtil) createSignedKubeletCert(nodeName string, ips []net.IP) 
 		return err
 	}
 
-	parentCertRaw, err := k.file.Read(filepath.Join(
-		kubeconstants.KubernetesDir,
-		kubeconstants.DefaultCertificateDir,
-		kubeconstants.CACertName,
-	))
-	if err != nil {
-		return err
-	}
-	parentCert, err := crypto.PemToX509Cert(parentCertRaw)
-	if err != nil {
-		return err
-	}
-
-	parentKeyRaw, err := k.file.Read(filepath.Join(
-		kubeconstants.KubernetesDir,
-		kubeconstants.DefaultCertificateDir,
-		kubeconstants.CAKeyName,
-	))
-	if err != nil {
-		return err
-	}
-	parentKeyPEM, _ := pem.Decode(parentKeyRaw)
-	var parentKey any
-	switch parentKeyPEM.Type {
-	case "EC PRIVATE KEY":
-		parentKey, err = x509.ParseECPrivateKey(parentKeyPEM.Bytes)
-	case "RSA PRIVATE KEY":
-		parentKey, err = x509.ParsePKCS1PrivateKey(parentKeyPEM.Bytes)
-	case "PRIVATE KEY":
-		parentKey, err = x509.ParsePKCS8PrivateKey(parentKeyPEM.Bytes)
-	default:
-		err = fmt.Errorf("unsupported key type %q", parentKeyPEM.Type)
-	}
-	if err != nil {
-		return err
-	}
-
 	certRequest, err := x509.ParseCertificateRequest(certRequestRaw)
 	if err != nil {
 		return err
 	}
 
+	// Prepare certificate signing
 	serialNumber, err := crypto.GenerateCertificateSerialNumber()
 	if err != nil {
 		return err
@@ -570,14 +606,116 @@ func (k *KubernetesUtil) createSignedKubeletCert(nodeName string, ips []net.IP) 
 		IPAddresses:           certRequest.IPAddresses,
 	}
 
+	parentCert, parentKey, err := k.getKubernetesCACertAndKey()
+	if err != nil {
+		return err
+	}
+
+	// Sign the certificate
 	certRaw, err := x509.CreateCertificate(rand.Reader, certTmpl, parentCert, certRequest.PublicKey, parentKey)
 	if err != nil {
 		return err
 	}
+
+	// Write the certificate
 	kubeletCert := pem.EncodeToMemory(&pem.Block{
 		Type:  "CERTIFICATE",
 		Bytes: certRaw,
 	})
 
 	return k.file.Write(kubelet.CertificateFilename, kubeletCert, file.OptMkdirAll)
+}
+
+// createSignedKonnectivityCert manually creates a Kubernetes CA signed certificate for the Konnectivity server.
+func (k *KubernetesUtil) createSignedKonnectivityCert() error {
+	// Create CSR
+	certRequestRaw, keyPem, err := resources.GetKonnectivityCertificateRequest()
+	if err != nil {
+		return err
+	}
+	if err := k.file.Write(resources.KonnectivityKeyFilename, keyPem, file.OptMkdirAll); err != nil {
+		return err
+	}
+
+	certRequest, err := x509.ParseCertificateRequest(certRequestRaw)
+	if err != nil {
+		return err
+	}
+
+	// Prepare certificate signing
+	serialNumber, err := crypto.GenerateCertificateSerialNumber()
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+	// Create the kubelet certificate
+	// For a reference on the certificate fields, see: https://kubernetes.io/docs/setup/best-practices/certificates/
+	certTmpl := &x509.Certificate{
+		SerialNumber: serialNumber,
+		NotBefore:    now.Add(-2 * time.Hour),
+		NotAfter:     now.Add(24 * 365 * time.Hour),
+		Subject:      certRequest.Subject,
+	}
+
+	parentCert, parentKey, err := k.getKubernetesCACertAndKey()
+	if err != nil {
+		return err
+	}
+
+	// Sign the certificate
+	certRaw, err := x509.CreateCertificate(rand.Reader, certTmpl, parentCert, certRequest.PublicKey, parentKey)
+	if err != nil {
+		return err
+	}
+
+	// Write the certificate
+	konnectivityCert := pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: certRaw,
+	})
+
+	return k.file.Write(resources.KonnectivityCertificateFilename, konnectivityCert, file.OptMkdirAll)
+}
+
+// getKubernetesCACertAndKey returns the Kubernetes CA certificate and key.
+// The key of type `any` can be consumed by `x509.CreateCertificate()`.
+func (k *KubernetesUtil) getKubernetesCACertAndKey() (*x509.Certificate, any, error) {
+	parentCertRaw, err := k.file.Read(filepath.Join(
+		kubeconstants.KubernetesDir,
+		kubeconstants.DefaultCertificateDir,
+		kubeconstants.CACertName,
+	))
+	if err != nil {
+		return nil, nil, err
+	}
+	parentCert, err := crypto.PemToX509Cert(parentCertRaw)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	parentKeyRaw, err := k.file.Read(filepath.Join(
+		kubeconstants.KubernetesDir,
+		kubeconstants.DefaultCertificateDir,
+		kubeconstants.CAKeyName,
+	))
+	if err != nil {
+		return nil, nil, err
+	}
+	parentKeyPEM, _ := pem.Decode(parentKeyRaw)
+	var parentKey any
+	switch parentKeyPEM.Type {
+	case "EC PRIVATE KEY":
+		parentKey, err = x509.ParseECPrivateKey(parentKeyPEM.Bytes)
+	case "RSA PRIVATE KEY":
+		parentKey, err = x509.ParsePKCS1PrivateKey(parentKeyPEM.Bytes)
+	case "PRIVATE KEY":
+		parentKey, err = x509.ParsePKCS8PrivateKey(parentKeyPEM.Bytes)
+	default:
+		err = fmt.Errorf("unsupported key type %q", parentKeyPEM.Type)
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	return parentCert, parentKey, nil
 }

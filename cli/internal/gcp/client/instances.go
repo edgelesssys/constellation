@@ -90,6 +90,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 			{Name: proto.String("debugd"), Port: proto.Int32(constants.DebugdPort)},
 			{Name: proto.String("bootstrapper"), Port: proto.Int32(constants.BootstrapperPort)},
 			{Name: proto.String("verify"), Port: proto.Int32(constants.VerifyServiceNodePortGRPC)},
+			{Name: proto.String("konnectivity"), Port: proto.Int32(constants.KonnectivityPort)},
 		},
 		Template: c.controlPlaneTemplate,
 		UID:      c.uid,

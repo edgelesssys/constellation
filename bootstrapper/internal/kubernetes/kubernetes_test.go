@@ -263,6 +263,18 @@ func TestInitCluster(t *testing.T) {
 			wantErr:                true,
 			k8sVersion:             versions.Default,
 		},
+		"kubeadm init fails when setting up konnectivity": {
+			clusterUtil: stubClusterUtil{setupKonnectivityError: someErr},
+			kubeconfigReader: &stubKubeconfigReader{
+				Kubeconfig: []byte("someKubeconfig"),
+			},
+			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
+			CloudControllerManager: &stubCloudControllerManager{},
+			CloudNodeManager:       &stubCloudNodeManager{SupportedResp: false},
+			ClusterAutoscaler:      &stubClusterAutoscaler{},
+			wantErr:                true,
+			k8sVersion:             versions.Default,
+		},
 		"kubeadm init fails when setting up verification service": {
 			clusterUtil: stubClusterUtil{setupVerificationServiceErr: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
@@ -522,6 +534,7 @@ type stubClusterUtil struct {
 	setupJoinServiceError            error
 	setupCloudControllerManagerError error
 	setupCloudNodeManagerError       error
+	setupKonnectivityError           error
 	setupKMSError                    error
 	setupAccessManagerError          error
 	setupVerificationServiceErr      error
@@ -536,11 +549,15 @@ type stubClusterUtil struct {
 	joinConfigs [][]byte
 }
 
+func (s *stubClusterUtil) SetupKonnectivity(kubectl k8sapi.Client, konnectivityAgentsDaemonSet kubernetes.Marshaler) error {
+	return s.setupKonnectivityError
+}
+
 func (s *stubClusterUtil) InstallComponents(ctx context.Context, version versions.ValidK8sVersion) error {
 	return s.installComponentsErr
 }
 
-func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, log *logger.Logger) error {
+func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, controlPlaneEndpoint string, log *logger.Logger) error {
 	s.initConfigs = append(s.initConfigs, initConfig)
 	return s.initClusterErr
 }
@@ -593,7 +610,7 @@ func (s *stubClusterUtil) SetupNodeOperator(ctx context.Context, kubectl k8sapi.
 	return s.setupNodeOperatorErr
 }
 
-func (s *stubClusterUtil) JoinCluster(ctx context.Context, joinConfig []byte, log *logger.Logger) error {
+func (s *stubClusterUtil) JoinCluster(ctx context.Context, joinConfig []byte, peerRole role.Role, controlPlaneEndpoint string, log *logger.Logger) error {
 	s.joinConfigs = append(s.joinConfigs, joinConfig)
 	return s.joinClusterErr
 }

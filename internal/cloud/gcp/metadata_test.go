@@ -293,7 +293,7 @@ func (s *stubGCPClient) RetrieveInstanceName() (string, error) {
 	return s.instanceName, s.retrieveInstanceNameErr
 }
 
-func (s *stubGCPClient) RetrieveLoadBalancerEndpoint(ctx context.Context, project, zone string) (string, error) {
+func (s *stubGCPClient) RetrieveLoadBalancerEndpoint(ctx context.Context, project string) (string, error) {
 	return s.loadBalancerIP, s.retrieveLoadBalancerErr
 }
 

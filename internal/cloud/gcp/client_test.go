@@ -796,7 +796,7 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 					rules: []*computepb.ForwardingRule{
 						{
 							IPAddress: proto.String(loadBalancerIP),
-							Ports:     []string{"100"},
+							PortRange: proto.String("100-100"),
 							Labels:    map[string]string{"constellation-uid": uid},
 						},
 					},
@@ -811,7 +811,7 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 					rules: []*computepb.ForwardingRule{
 						{
 							IPAddress: proto.String(loadBalancerIP),
-							Ports:     []string{"100"},
+							PortRange: proto.String("100-100"),
 						},
 					},
 				},
@@ -825,7 +825,7 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 					rules: []*computepb.ForwardingRule{
 						{
 							IPAddress: proto.String(loadBalancerIP),
-							Ports:     []string{"100"},
+							PortRange: proto.String("100-100"),
 							Labels:    map[string]string{"constellation-uid": uid},
 						},
 					},
@@ -855,7 +855,7 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 					rules: []*computepb.ForwardingRule{
 						{
 							IPAddress: proto.String(loadBalancerIP),
-							Ports:     []string{"100"},
+							PortRange: proto.String("100-100"),
 							Labels:    map[string]string{"constellation-uid": uid},
 						},
 					},
@@ -870,7 +870,7 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 			require := require.New(t)
 
 			client := Client{forwardingRulesAPI: tc.stubForwardingRulesClient, metadataAPI: tc.stubMetadataClient}
-			aliasCIDR, err := client.RetrieveLoadBalancerEndpoint(context.Background(), "project", "us-central1-a")
+			aliasCIDR, err := client.RetrieveLoadBalancerEndpoint(context.Background(), "project")
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -1038,7 +1038,7 @@ type stubForwardingRulesClient struct {
 	CloseErr               error
 }
 
-func (s stubForwardingRulesClient) List(ctx context.Context, req *computepb.ListForwardingRulesRequest, opts ...gax.CallOption) ForwardingRuleIterator {
+func (s stubForwardingRulesClient) List(ctx context.Context, req *computepb.ListGlobalForwardingRulesRequest, opts ...gax.CallOption) ForwardingRuleIterator {
 	return s.ForwardingRuleIterator
 }
 

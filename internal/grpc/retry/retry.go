@@ -36,6 +36,11 @@ func ServiceIsUnavailable(err error) bool {
 		return false
 	}
 
+	// retry if GCP proxy LB isn't fully available yet
+	if strings.HasPrefix(statusErr.Message(), `connection error: desc = "transport: authentication handshake failed: EOF"`) {
+		return true
+	}
+
 	// ideally we would check the error type directly, but grpc only provides a string
 	return !strings.HasPrefix(statusErr.Message(), `connection error: desc = "transport: authentication handshake failed`)
 }

@@ -7,14 +7,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 package kubelet
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/pem"
 	"net"
 
+	"github.com/edgelesssys/constellation/bootstrapper/internal/certificate"
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
@@ -27,18 +24,6 @@ const (
 
 // GetCertificateRequest returns a certificate request and macthing private key for the kubelet.
 func GetCertificateRequest(nodeName string, ips []net.IP) (certificateRequest []byte, privateKey []byte, err error) {
-	privK, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		return nil, nil, err
-	}
-	keyBytes, err := x509.MarshalECPrivateKey(privK)
-	if err != nil {
-		return nil, nil, err
-	}
-	kubeletKey := pem.EncodeToMemory(&pem.Block{
-		Type:  "EC PRIVATE KEY",
-		Bytes: keyBytes,
-	})
 	csrTemplate := &x509.CertificateRequest{
 		Subject: pkix.Name{
 			Organization: []string{constants.NodesGroup},
@@ -46,10 +31,5 @@ func GetCertificateRequest(nodeName string, ips []net.IP) (certificateRequest []
 		},
 		IPAddresses: ips,
 	}
-	certificateRequest, err = x509.CreateCertificateRequest(rand.Reader, csrTemplate, privK)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return certificateRequest, kubeletKey, nil
+	return certificate.GetCertificateRequest(csrTemplate)
 }

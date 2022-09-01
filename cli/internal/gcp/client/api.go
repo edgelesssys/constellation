@@ -49,29 +49,37 @@ type firewallsAPI interface {
 
 type forwardingRulesAPI interface {
 	Close() error
-	Delete(ctx context.Context, req *computepb.DeleteForwardingRuleRequest,
+	Delete(ctx context.Context, req *computepb.DeleteGlobalForwardingRuleRequest,
 		opts ...gax.CallOption) (Operation, error)
-	Insert(ctx context.Context, req *computepb.InsertForwardingRuleRequest,
+	Insert(ctx context.Context, req *computepb.InsertGlobalForwardingRuleRequest,
 		opts ...gax.CallOption) (Operation, error)
-	Get(ctx context.Context, req *computepb.GetForwardingRuleRequest,
+	Get(ctx context.Context, req *computepb.GetGlobalForwardingRuleRequest,
 		opts ...gax.CallOption) (*computepb.ForwardingRule, error)
-	SetLabels(ctx context.Context, req *computepb.SetLabelsForwardingRuleRequest,
+	SetLabels(ctx context.Context, req *computepb.SetLabelsGlobalForwardingRuleRequest,
 		opts ...gax.CallOption) (Operation, error)
 }
 
 type backendServicesAPI interface {
 	Close() error
-	Delete(ctx context.Context, req *computepb.DeleteRegionBackendServiceRequest,
+	Delete(ctx context.Context, req *computepb.DeleteBackendServiceRequest,
 		opts ...gax.CallOption) (Operation, error)
-	Insert(ctx context.Context, req *computepb.InsertRegionBackendServiceRequest,
+	Insert(ctx context.Context, req *computepb.InsertBackendServiceRequest,
 		opts ...gax.CallOption) (Operation, error)
 }
 
 type healthChecksAPI interface {
 	Close() error
-	Delete(ctx context.Context, req *computepb.DeleteRegionHealthCheckRequest,
+	Delete(ctx context.Context, req *computepb.DeleteHealthCheckRequest,
 		opts ...gax.CallOption) (Operation, error)
-	Insert(ctx context.Context, req *computepb.InsertRegionHealthCheckRequest,
+	Insert(ctx context.Context, req *computepb.InsertHealthCheckRequest,
+		opts ...gax.CallOption) (Operation, error)
+}
+
+type targetTCPProxiesAPI interface {
+	Close() error
+	Delete(ctx context.Context, req *computepb.DeleteTargetTcpProxyRequest,
+		opts ...gax.CallOption) (Operation, error)
+	Insert(ctx context.Context, req *computepb.InsertTargetTcpProxyRequest,
 		opts ...gax.CallOption) (Operation, error)
 }
 
@@ -129,11 +137,11 @@ type projectsAPI interface {
 
 type addressesAPI interface {
 	Close() error
-	Insert(ctx context.Context, req *computepb.InsertAddressRequest,
+	Insert(ctx context.Context, req *computepb.InsertGlobalAddressRequest,
 		opts ...gax.CallOption) (Operation, error)
-	Get(ctx context.Context, req *computepb.GetAddressRequest,
+	Get(ctx context.Context, req *computepb.GetGlobalAddressRequest,
 		opts ...gax.CallOption) (*computepb.Address, error)
-	Delete(ctx context.Context, req *computepb.DeleteAddressRequest,
+	Delete(ctx context.Context, req *computepb.DeleteGlobalAddressRequest,
 		opts ...gax.CallOption) (Operation, error)
 }
 
