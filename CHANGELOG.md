@@ -131,10 +131,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Early boot logging for GCP and Azure. [[Docs]](https://docs.edgeless.systems/constellation/latest/#/workflows/troubleshooting?id=cloud-logging)
-- `constellation-access-manager` allows users to manage SSH users over a ConfigMap. Enables persistent and dynamic management of SSH users on multiple nodes, even after a reboot. [[Docs]](https://docs.edgeless.systems/constellation/latest/#/workflows/ssh)
-- GCP-native Kubernetes load balancing. [[Docs]](https://docs.edgeless.systems/constellation/latest/#/architecture/networking)
-- `constellation version` prints more information to aid in troubleshooting. [[Docs]](https://docs.edgeless.systems/constellation/latest/#/reference/cli?id=constellation-version)
+- Early boot logging for GCP and Azure. [[Docs]](https://docs.edgeless.systems/constellation/workflows/troubleshooting#cloud-logging)
+- `constellation-access-manager` allows users to manage SSH users over a ConfigMap. Enables persistent and dynamic management of SSH users on multiple nodes, even after a reboot. [[Docs]](https://docs.edgeless.systems/constellation/workflows/ssh)
+- GCP-native Kubernetes load balancing. [[Docs]](https://docs.edgeless.systems/constellation/architecture/networking)
+- `constellation version` prints more information to aid in troubleshooting. [[Docs]](https://docs.edgeless.systems/constellation/reference/cli#constellation-version)
 - Standard logging for all services and CLI, allows users to control output in a consistent manner.
 - `constellation-id.json` in Constellation workspace now holds cluster IDs, to reduce required arguments in Constellation commands, e.g., `constellation verify`.
 

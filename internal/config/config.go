@@ -149,7 +149,7 @@ type AzureConfig struct {
 	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#disk-type-comparison
 	StateDiskType string `yaml:"stateDiskType" validate:"oneof=Premium_LRS Premium_ZRS Standard_LRS StandardSSD_LRS StandardSSD_ZRS"`
 	// description: |
-	//   Authorize spawned VMs to access Azure API. See: https://docs.edgeless.systems/constellation/latest/#/getting-started/install?id=azure
+	//   Authorize spawned VMs to access Azure API. See: https://docs.edgeless.systems/constellation/getting-started/install#authorization
 	UserAssignedIdentity string `yaml:"userAssignedIdentity" validate:"required"`
 	// description: |
 	//   Resource group to use.
@@ -195,7 +195,7 @@ type GCPConfig struct {
 	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://cloud.google.com/compute/docs/disks#disk-types
 	StateDiskType string `yaml:"stateDiskType" validate:"oneof=pd-standard pd-balanced pd-ssd"`
 	// description: |
-	//   Path of service account key file. For needed service account roles, see https://constellation-docs.edgeless.systems/constellation/latest/#/getting-started/install?id=authorization
+	//   Path of service account key file. For needed service account roles, see https://constellation-docs.edgeless.systems/constellation/getting-started/install#authorization
 	ServiceAccountKeyPath string `yaml:"serviceAccountKeyPath"`
 	// description: |
 	//   Expected confidential VM measurements.
