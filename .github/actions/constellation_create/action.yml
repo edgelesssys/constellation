@@ -166,13 +166,13 @@ runs:
         case $CSP in
           azure)
             AZURE_RESOURCE_GROUP=$(yq eval ".provider.azure.resourceGroup" constellation-conf.yaml)
-            ./.github/actions/constellation_create/az-logs ${AZURE_RESOURCE_GROUP}
+            ./.github/actions/constellation_create/az-logs.sh ${AZURE_RESOURCE_GROUP}
             ;;
           gcp)
             CONTROL_NODES=$(jq -r '.gcpcontrolplaneinstancegroup' constellation-state.json)
             WORKER_NODES=$(jq -r '.gcpworkerinstancegroup' constellation-state.json)
             ZONE=$(jq -r '.gcpzone' constellation-state.json)
-            ./.github/actions/constellation_create/gcp-logs ${CONTROL_NODES} ${WORKER_NODES} ${ZONE}
+            ./.github/actions/constellation_create/gcp-logs.sh ${CONTROL_NODES} ${WORKER_NODES} ${ZONE}
             ;;
         esac
         echo "::endgroup::"
