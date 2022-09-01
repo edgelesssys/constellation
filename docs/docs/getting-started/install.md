@@ -15,7 +15,7 @@ Before we start, make sure the following requirements are fulfilled:
 
 ## Install the Constellation CLI
 
-The Constellation CLI can be downloaded from our [release page](https://github.com/edgelesssys/constellation/releases). Therefore, navigate to a release and download the file `constellation`. Move the downloaded file to a directory in your `PATH` (default: `/usr/local/bin`) and make it executable by entering `chmod s+x constellation` in your terminal.
+The Constellation CLI can be downloaded from our [release page](https://github.com/edgelesssys/constellation/releases). Therefore, navigate to a release and download the `constellation` binary for your operating system and architecture. Move the downloaded file to a directory in your `PATH` (default: `/usr/local/bin`) and make it executable by entering `chmod u+x constellation` in your terminal.
 
 Running `constellation` should then give you:
 
@@ -38,7 +38,7 @@ The Constellation CLI supports autocompletion for various shells. To set it up, 
 For extra security, make sure to verify your CLI. Therefore, install [cosign](https://github.com/sigstore/cosign). Then, head to our [release page](https://github.com/edgelesssys/constellation/releases) again and, from the same release as before, download the following files:
 
 - `cosign.pub` (Edgeless System's cosign public key)
-- `constellation.sig` (the CLI's signature)
+- `constellation-*.sig` (the CLI's signature)
 
 You can then verify your CLI before launching a cluster using the paths to the public key, signature, and CLI executable:
 
@@ -124,23 +124,6 @@ Your user account needs the following permissions to set up a Constellation clus
 - `Contributor`
 - `User Access Administrator`
 
-Additionally, you need to [create a user-assigned managed identity](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-manage-user-assigned-managed-identities) with the following roles:
-
-- `Virtual Machine Contributor`
-- `Application Insights Component Contributor`
-
-The user-assigned identity is used by the instances of the cluster to access other cloud resources.
-
-You also need an empty resource group per cluster. Notice that the user-assigned identity has to be created in a
-different resource group as all resources within the cluster resource group will be deleted on cluster termination.
-
-Last, you need to [create an Active Directory app registration](https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app#register-an-application) (you don't need to add a redirect URI).
-As supported account types choose 'Accounts in this organizational directory only'. Then [create a client secret](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal#option-2-create-a-new-application-secret), which will be used by Kubernetes.
-On the cluster resource group, [add the app registration](https://docs.microsoft.com/en-us/azure/role-based-access-control/role-assignments-portal?tabs=current#step-2-open-the-add-role-assignment-page)
-with role `Owner`.
-
-User-assigned identity, cluster resource group, app registration client ID and client secret value need to be set in the `constellation-conf.yaml` configuration file.
-
 </tabItem>
 <tabItem value="gcp" label="GCP" default>
 
@@ -149,20 +132,6 @@ Your user account needs the following permissions to set up a Constellation:
 - `compute.*` (or the subset defined by `roles/compute.instanceAdmin.v1`)
 
 Follow Google's guide on [understanding](https://cloud.google.com/iam/docs/understanding-roles) and [assigning roles](https://cloud.google.com/iam/docs/granting-changing-revoking-access).
-
-Additionally, you need a service account with the following permissions:
-
-- `Compute Instance Admin (v1) (roles/compute.instanceAdmin.v1)`
-- `Compute Network Admin (roles/compute.networkAdmin)`
-- `Compute Security Admin (roles/compute.securityAdmin)`
-- `Compute Storage Admin (roles/compute.storageAdmin)`
-- `Service Account User (roles/iam.serviceAccountUser)`
-
-The key for this service account is passed to the CLI and used by Kubernetes to authenticate with the cloud.
-You can configure the path to the key in the `constellation-conf.yaml` configuration file.
-
-GCP instances come with a [default service account](https://cloud.google.com/iam/docs/service-accounts#default) attached
-that's used by the instances to access the cloud resources of the cluster. You don't need to configure it.
 
 </tabItem>
 </tabs>
