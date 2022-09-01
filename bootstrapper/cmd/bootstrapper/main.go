@@ -94,7 +94,7 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &gcpcloud.CloudControllerManager{},
-			&gcpcloud.CloudNodeManager{}, &gcpcloud.Autoscaler{}, metadata, pcrsJSON, nil,
+			&gcpcloud.CloudNodeManager{}, &gcpcloud.Autoscaler{}, metadata, pcrsJSON,
 		)
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
@@ -106,14 +106,6 @@ func main() {
 		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.AzurePCRSelection)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
-		}
-
-		// This might fail if running on a trustedLaunch VM. idKeyDigest will be nil, which is ok because the value will not be used.
-		// Instead of exiting we log the fact. This is fine security-wise since the validator will fail if enforceIdKeyDigest is set.
-		snpAttestation := azure.SnpAttestationIssuer{}
-		idKeyDigest, err := snpAttestation.GetIdKeyDigest(vtpm.OpenVTPM)
-		if err != nil {
-			log.With(zap.Error(err)).Errorf("Failed to get idkeydigest. If running on TrustedLaunch VMs this is expected.")
 		}
 
 		issuer = azure.NewIssuer()
@@ -133,7 +125,7 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"azure", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), azurecloud.NewCloudControllerManager(metadata),
-			&azurecloud.CloudNodeManager{}, &azurecloud.Autoscaler{}, metadata, pcrsJSON, idKeyDigest,
+			&azurecloud.CloudNodeManager{}, &azurecloud.Autoscaler{}, metadata, pcrsJSON,
 		)
 
 		openTPM = vtpm.OpenVTPM
@@ -154,7 +146,7 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &qemucloud.CloudControllerManager{},
-			&qemucloud.CloudNodeManager{}, &qemucloud.Autoscaler{}, metadata, pcrsJSON, nil,
+			&qemucloud.CloudNodeManager{}, &qemucloud.Autoscaler{}, metadata, pcrsJSON,
 		)
 		metadataAPI = metadata
 

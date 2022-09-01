@@ -151,12 +151,12 @@ func TestValidatorV(t *testing.T) {
 		"azure cvm": {
 			provider: cloudprovider.Azure,
 			pcrs:     newTestPCRs(),
-			wantVs:   azure.NewValidator(newTestPCRs(), nil, nil, false, true, nil),
+			wantVs:   azure.NewValidator(newTestPCRs(), nil, nil, false, nil),
 		},
 		"azure trusted launch": {
 			provider: cloudprovider.Azure,
 			pcrs:     newTestPCRs(),
-			wantVs:   azure.NewValidator(newTestPCRs(), nil, nil, false, false, nil),
+			wantVs:   azure.NewValidator(newTestPCRs(), nil, nil, false, nil),
 		},
 		"qemu": {
 			provider: cloudprovider.QEMU,

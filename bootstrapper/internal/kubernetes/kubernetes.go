@@ -47,13 +47,12 @@ type KubeWrapper struct {
 	clusterAutoscaler       ClusterAutoscaler
 	providerMetadata        ProviderMetadata
 	initialMeasurementsJSON []byte
-	initialIdKeyDigest      []byte
 	getIPAddr               func() (string, error)
 }
 
 // New creates a new KubeWrapper with real values.
 func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client, cloudControllerManager CloudControllerManager,
-	cloudNodeManager CloudNodeManager, clusterAutoscaler ClusterAutoscaler, providerMetadata ProviderMetadata, initialMeasurementsJSON, initialIdKeyDigest []byte,
+	cloudNodeManager CloudNodeManager, clusterAutoscaler ClusterAutoscaler, providerMetadata ProviderMetadata, initialMeasurementsJSON []byte,
 ) *KubeWrapper {
 	return &KubeWrapper{
 		cloudProvider:           cloudProvider,
@@ -66,7 +65,6 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 		clusterAutoscaler:       clusterAutoscaler,
 		providerMetadata:        providerMetadata,
 		initialMeasurementsJSON: initialMeasurementsJSON,
-		initialIdKeyDigest:      initialIdKeyDigest,
 		getIPAddr:               getIPAddr,
 	}
 }
@@ -74,7 +72,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, versionString string, measurementSalt []byte,
-	enforcedPCRs []uint32, enforceIdKeyDigest bool, azureCVM bool, kmsConfig resources.KMSConfig, sshUsers map[string]string, helmDeployments []byte, log *logger.Logger,
+	enforcedPCRs []uint32, enforceIdKeyDigest bool, idKeyDigest []byte, azureCVM bool, kmsConfig resources.KMSConfig, sshUsers map[string]string, helmDeployments []byte, log *logger.Logger,
 ) ([]byte, error) {
 	k8sVersion, err := versions.NewValidK8sVersion(versionString)
 	if err != nil {
@@ -179,7 +177,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up kms: %w", err)
 	}
 
-	if err := k.setupJoinService(k.cloudProvider, k.initialMeasurementsJSON, measurementSalt, enforcedPCRs, k.initialIdKeyDigest, enforceIdKeyDigest, azureCVM); err != nil {
+	if err := k.setupJoinService(k.cloudProvider, k.initialMeasurementsJSON, measurementSalt, enforcedPCRs, idKeyDigest, enforceIdKeyDigest, azureCVM); err != nil {
 		return nil, fmt.Errorf("setting up join service failed: %w", err)
 	}
 

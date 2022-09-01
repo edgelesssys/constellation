@@ -1,4 +1,4 @@
-package azure
+package snp
 
 import (
 	"context"
@@ -59,8 +59,7 @@ func TestGetSNPAttestation(t *testing.T) {
 				err:        nil,
 			}
 
-			snpAttestation := SnpAttestationIssuer{&snpAttestationReport, imdsClient}
-			attestationJson, err := snpAttestation.getInstanceInfo(tpm)
+			attestationJson, err := getInstanceInfo(&snpAttestationReport, imdsClient)(tpm)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -92,8 +91,7 @@ func TestGetHCLAttestationKey(t *testing.T) {
 	assert.NoError(err)
 	defer tpm.Close()
 
-	snpAttestation := SnpAttestationIssuer{}
-	_, err = snpAttestation.getAttestationKey(tpm)
+	_, err = getAttestationKey(tpm)
 	assert.NoError(err)
 }
 

@@ -12,6 +12,8 @@ import (
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/attestation"
+	"github.com/edgelesssys/constellation/internal/attestation/azure/snp"
+	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
@@ -114,6 +116,16 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		return nil, status.Errorf(codes.Internal, "persisting node state: %s", err)
 	}
 
+	var idKeyDigest []byte
+	if req.AzureCvm {
+		// This might fail if running on a trustedLaunch VM. idKeyDigest will be nil, which is ok because the value will not be used.
+		// Instead of exiting we log the fact. This is fine security-wise since the validator will fail if enforceIdKeyDigest is set.
+		idKeyDigest, err = snp.GetIdKeyDigest(vtpm.OpenVTPM)
+		if err != nil {
+			log.With(zap.Error(err)).Fatalf("Failed to get idkeydigest.")
+		}
+	}
+
 	kubeconfig, err := s.initializer.InitCluster(ctx,
 		req.AutoscalingNodeGroups,
 		req.CloudServiceAccountUri,
@@ -121,6 +133,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		measurementSalt,
 		req.EnforcedPcrs,
 		req.EnforceIdkeydigest,
+		idKeyDigest,
 		req.AzureCvm,
 		resources.KMSConfig{
 			MasterSecret:       req.MasterSecret,
@@ -206,6 +219,7 @@ type ClusterInitializer interface {
 		measurementSalt []byte,
 		enforcedPcrs []uint32,
 		enforceIdKeyDigest bool,
+		idKeyDigest []byte,
 		azureCVM bool,
 		kmsConfig resources.KMSConfig,
 		sshUserKeys map[string]string,

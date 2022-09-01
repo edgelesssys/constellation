@@ -302,7 +302,7 @@ func TestInitCluster(t *testing.T) {
 
 			_, err := kube.InitCluster(
 				context.Background(), autoscalingNodeGroups, serviceAccountURI, string(tc.k8sVersion),
-				nil, nil, false, true, resources.KMSConfig{MasterSecret: masterSecret}, nil, nil, logger.NewTest(t),
+				nil, nil, false, nil, true, resources.KMSConfig{MasterSecret: masterSecret}, nil, nil, logger.NewTest(t),
 			)
 
 			if tc.wantErr {

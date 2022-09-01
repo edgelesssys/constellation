@@ -138,7 +138,7 @@ func (v *Validator) updateValidator(cmd *cobra.Command) {
 	case cloudprovider.GCP:
 		v.validator = gcp.NewValidator(v.pcrs, v.enforcedPCRs, log)
 	case cloudprovider.Azure:
-		v.validator = azure.NewValidator(v.pcrs, v.enforcedPCRs, v.idkeydigest, v.enforceIdKeyDigest, v.azureCVM, log)
+		v.validator = azure.NewValidator(v.pcrs, v.enforcedPCRs, v.idkeydigest, v.enforceIdKeyDigest, log)
 	case cloudprovider.QEMU:
 		v.validator = qemu.NewValidator(v.pcrs, v.enforcedPCRs, log)
 	}
