@@ -177,6 +177,8 @@ runs:
         esac
         echo "::endgroup::"
       shell: bash
+      env:
+        CSP: ${{ inputs.cloudProvider }}
       continue-on-error: true
       if: ${{ always() }}
     - name: Upload boot logs
