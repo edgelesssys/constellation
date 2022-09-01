@@ -149,11 +149,11 @@ type AzureConfig struct {
 	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#disk-type-comparison
 	StateDiskType string `yaml:"stateDiskType" validate:"oneof=Premium_LRS Premium_ZRS Standard_LRS StandardSSD_LRS StandardSSD_ZRS"`
 	// description: |
-	//   Authorize spawned VMs to access Azure API. See: https://docs.edgeless.systems/constellation/getting-started/install#authorization
-	UserAssignedIdentity string `yaml:"userAssignedIdentity" validate:"required"`
-	// description: |
 	//   Resource group to use.
 	ResourceGroup string `yaml:"resourceGroup" validate:"required"`
+	// description: |
+	//   Authorize spawned VMs to access Azure API. See: https://docs.edgeless.systems/constellation/getting-started/install#authorization
+	UserAssignedIdentity string `yaml:"userAssignedIdentity" validate:"required"`
 	// description: |
 	//    Application client ID of the Active Directory app registration.
 	AppClientID string `yaml:"appClientID" validate:"required"`
