@@ -152,7 +152,7 @@ type AzureConfig struct {
 	//   Resource group to use.
 	ResourceGroup string `yaml:"resourceGroup" validate:"required"`
 	// description: |
-	//   Authorize spawned VMs to access Azure API. See: https://docs.edgeless.systems/constellation/getting-started/install#authorization
+	//   Authorize spawned VMs to access Azure API.
 	UserAssignedIdentity string `yaml:"userAssignedIdentity" validate:"required"`
 	// description: |
 	//    Application client ID of the Active Directory app registration.
