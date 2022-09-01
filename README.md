@@ -2,7 +2,7 @@
     <b>⭐ Star us on GitHub — it motivates us a lot!</b>
 </p>
 
-![](docs/constellation-header.png)
+![](docs/static/img/constellation-header.png)
 
 <h1 align="center">Welcome to Constellation!</h1>
 
@@ -42,9 +42,9 @@ From the inside, it's a fully featured, [certified] Kubernetes engine. From the 
 Constellation is open source and enterprise-ready, tailored for unleashing the power of confidential computing for all your workloads at scale.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/product-overview-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="docs/product-overview.png">
-  <img alt="Constellation product overview" src="docs/product-overview.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/docs/_media/product-overview-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/docs/_media/product-overview.png">
+  <img alt="Constellation product overview" src="docs/docs/_media/product-overview.png">
 </picture>
 
 For a brief introduction to the Confidential Kubernetes concept, read the [introduction][confidential-kubernetes].
@@ -85,7 +85,7 @@ For more elaborate overviews of Constellation, see the [architecture] documentat
 
 ## 🚀 Getting started
 
-![Constellation Shell](docs/constellation-shell-windowframe.svg)
+![Constellation Shell](docs/static/img/constellation-shell-windowframe.svg)
 
 Sounds great, how can I try this?
 
