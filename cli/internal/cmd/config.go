@@ -14,6 +14,7 @@ func NewConfigCmd() *cobra.Command {
 
 	cmd.AddCommand(newConfigGenerateCmd())
 	cmd.AddCommand(newConfigFetchMeasurementsCmd())
+	cmd.AddCommand(NewConfigInstanceTypesCmd())
 
 	return cmd
 }
