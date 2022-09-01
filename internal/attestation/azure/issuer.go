@@ -81,7 +81,7 @@ func (s *SnpAttestationIssuer) GetIdKeyDigest(open vtpm.TPMOpenFunc) ([]byte, er
 		return nil, fmt.Errorf("reading idx %x from TMP: %w", tpmReportIdx, err)
 	}
 
-	report, err := newSNPReportFromBytes(reportRaw)
+	report, err := newSNPReportFromBytes(reportRaw[lenHclHeader:])
 	if err != nil {
 		return nil, fmt.Errorf("creating snp report: %w", err)
 	}
