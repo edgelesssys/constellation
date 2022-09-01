@@ -63,6 +63,8 @@ func configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloud
 	}
 	cmd.Println("Config file written to", flags.file)
 	cmd.Println("Please fill in your CSP specific configuration before proceeding.")
+	cmd.Println("You can find the list of supported virtual machine types by executing:")
+	cmd.Println("\tconstellation config instance-types")
 	return nil
 }
 
