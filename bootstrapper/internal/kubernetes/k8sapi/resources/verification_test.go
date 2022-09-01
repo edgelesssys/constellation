@@ -9,7 +9,7 @@ import (
 )
 
 func TestNewVerificationDaemonset(t *testing.T) {
-	deployment := NewVerificationDaemonSet("csp")
+	deployment := NewVerificationDaemonSet("csp", "192.168.2.1")
 	deploymentYAML, err := deployment.Marshal()
 	require.NoError(t, err)
 

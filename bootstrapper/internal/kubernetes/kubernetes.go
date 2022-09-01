@@ -200,7 +200,7 @@ func (k *KubeWrapper) InitCluster(
 	}
 
 	if err := k.clusterUtil.SetupVerificationService(
-		k.client, resources.NewVerificationDaemonSet(k.cloudProvider),
+		k.client, resources.NewVerificationDaemonSet(k.cloudProvider, controlPlaneEndpoint),
 	); err != nil {
 		return nil, fmt.Errorf("failed to setup verification service: %w", err)
 	}

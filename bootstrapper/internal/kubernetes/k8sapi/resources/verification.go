@@ -2,10 +2,13 @@ package resources
 
 import (
 	"fmt"
+	"net"
+	"strings"
 
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/kubernetes"
 	"github.com/edgelesssys/constellation/internal/versions"
+	"google.golang.org/protobuf/proto"
 	apps "k8s.io/api/apps/v1"
 	k8s "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,11 +16,19 @@ import (
 )
 
 type verificationDaemonset struct {
-	DaemonSet apps.DaemonSet
-	Service   k8s.Service
+	DaemonSet    apps.DaemonSet
+	Service      k8s.Service
+	LoadBalancer k8s.Service
 }
 
-func NewVerificationDaemonSet(csp string) *verificationDaemonset {
+func NewVerificationDaemonSet(csp, loadBalancerIP string) *verificationDaemonset {
+	var err error
+	if strings.Contains(loadBalancerIP, ":") {
+		loadBalancerIP, _, err = net.SplitHostPort(loadBalancerIP)
+		if err != nil {
+			panic(err)
+		}
+	}
 	return &verificationDaemonset{
 		DaemonSet: apps.DaemonSet{
 			TypeMeta: meta.TypeMeta{
@@ -134,6 +145,33 @@ func NewVerificationDaemonSet(csp string) *verificationDaemonset {
 						Port:       constants.VerifyServicePortGRPC,
 						TargetPort: intstr.FromInt(constants.VerifyServicePortGRPC),
 						NodePort:   constants.VerifyServiceNodePortGRPC,
+					},
+				},
+				Selector: map[string]string{
+					"k8s-app": "verification-service",
+				},
+			},
+		},
+		LoadBalancer: k8s.Service{
+			TypeMeta: meta.TypeMeta{
+				APIVersion: "v1",
+				Kind:       "Service",
+			},
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "verify",
+				Namespace: "kube-system",
+			},
+			Spec: k8s.ServiceSpec{
+				AllocateLoadBalancerNodePorts: proto.Bool(false),
+				Type:                          k8s.ServiceTypeLoadBalancer,
+				LoadBalancerClass:             proto.String("constellation"),
+				ExternalIPs:                   []string{loadBalancerIP},
+				Ports: []k8s.ServicePort{
+					{
+						Name:       "grpc",
+						Protocol:   k8s.ProtocolTCP,
+						Port:       constants.VerifyServiceNodePortGRPC,
+						TargetPort: intstr.FromInt(constants.VerifyServicePortGRPC),
 					},
 				},
 				Selector: map[string]string{
