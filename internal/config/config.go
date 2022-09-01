@@ -273,7 +273,7 @@ func Default() *Config {
 				Zone:                  "",
 				Image:                 DefaultImageGCP,
 				StateDiskType:         "pd-ssd",
-				ServiceAccountKeyPath: "serviceAccountKey.json",
+				ServiceAccountKeyPath: "",
 				Measurements:          copyPCRMap(gcpPCRs),
 				EnforcedMeasurements:  []uint32{0, 8, 9, 11, 12},
 			},
