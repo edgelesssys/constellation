@@ -110,8 +110,8 @@ const (
 	S3PublicBucket = "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/"
 	// CosignPublicKey signs all our releases.
 	CosignPublicKey = `-----BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE1Iv15myTjpa1KznlGFe+dBEjN91q
-oGhQf4z+3TgFjv+Z+6ATPA1OPANf0//6p+goKifNZD5+Cq/VEAP7xOhlYw==
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEf8F1hpmwE+YCFXzjGtaQcrL6XZVT
+JmEe5iSLvG1SyQSAew7WdMKF6o9t8e2TFuCkzlOhhlws2OHWbiFZnFWCFw==
 -----END PUBLIC KEY-----`
 )
 
