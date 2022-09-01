@@ -133,17 +133,6 @@ func TestInitialize(t *testing.T) {
 			initServerAPI: &stubInitServer{initErr: someErr},
 			wantErr:       true,
 		},
-		"fail to create service account": {
-			state:  testAzureState,
-			idFile: &clusterIDsFile{IP: "192.0.2.1"},
-			configMutator: func(c *config.Config) {
-				c.Provider.Azure.ResourceGroup = "resourceGroup"
-				c.Provider.Azure.UserAssignedIdentity = "userAssignedIdentity"
-			},
-			initServerAPI:           &stubInitServer{},
-			masterSecretShouldExist: true,
-			wantErr:                 true,
-		},
 		"fail missing enforced PCR": {
 			state:  testGcpState,
 			idFile: &clusterIDsFile{IP: "192.0.2.1"},
