@@ -143,6 +143,7 @@ func TestValidatorV(t *testing.T) {
 		provider cloudprovider.Provider
 		pcrs     map[uint32][]byte
 		wantVs   atls.Validator
+		azureCVM bool
 	}{
 		"gcp": {
 			provider: cloudprovider.GCP,
@@ -153,6 +154,7 @@ func TestValidatorV(t *testing.T) {
 			provider: cloudprovider.Azure,
 			pcrs:     newTestPCRs(),
 			wantVs:   snp.NewValidator(newTestPCRs(), nil, nil, false, nil),
+			azureCVM: true,
 		},
 		"azure trusted launch": {
 			provider: cloudprovider.Azure,
@@ -170,7 +172,7 @@ func TestValidatorV(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			validators := &Validator{provider: tc.provider, pcrs: tc.pcrs}
+			validators := &Validator{provider: tc.provider, pcrs: tc.pcrs, azureCVM: tc.azureCVM}
 
 			resultValidator := validators.V(&cobra.Command{})
 
