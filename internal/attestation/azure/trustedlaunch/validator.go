@@ -10,7 +10,7 @@ import (
 
 // Validator for Azure trusted launch VM attestation.
 type Validator struct {
-	oid.Azure
+	oid.AzureTrustedLaunch
 	*vtpm.Validator
 }
 
