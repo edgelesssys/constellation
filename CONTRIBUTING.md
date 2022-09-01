@@ -124,7 +124,7 @@ To enable the upload, an additional **unsecured** port (4000) is opened which ac
 
 ## Cloud credentials
 
-Using the CLI requires the user to make authorized API calls to the CSP API. See the [docs](https://docs.edgeless.systems/constellation/latest/#/getting-started/install?id=cloud-credentials) for configuration.
+Using the CLI requires the user to make authorized API calls to the CSP API. See the [docs](https://docs.edgeless.systems/constellation/getting-started/install#set-up-cloud-credentials) for configuration.
 
 ## Deploying a locally compiled bootstrapper binary
 
