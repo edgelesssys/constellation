@@ -63,6 +63,7 @@ runs:
             (.provider | select(. | has(\"azure\")).azure.location) = \"West US\" |
             (.provider | select(. | has(\"azure\")).azure.userAssignedIdentity) = \"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/e2e-test-creds/providers/Microsoft.ManagedIdentity/userAssignedIdentities/e2e-test-user-assigned-id\" |
             (.provider | select(. | has(\"azure\")).azure.resourceGroup) = \"${{ inputs.azureResourceGroup }}\" |
+            (.provider | select(. | has(\"azure\")).azure.instanceType) = \"${{ inputs.machineType }}\" |
             (.provider | select(. | has(\"azure\")).azure.appClientID) = \"b657a00e-813a-4dc7-9b09-fa498a254d71\" |
             (.provider | select(. | has(\"azure\")).azure.clientSecretValue) = \"${{ inputs.azureClientSecret }}\" |
             (.provider | select(. | has(\"azure\")).azure.enforcedMeasurements) = [11,12]" \
@@ -71,6 +72,7 @@ runs:
           "(.provider | select(. | has(\"gcp\")).gcp.project) = \"constellation-331613\" |
             (.provider | select(. | has(\"gcp\")).gcp.region) = \"europe-west3\" |
             (.provider | select(. | has(\"gcp\")).gcp.zone) = \"europe-west3-b\" |
+            (.provider | select(. | has(\"gcp\")).gcp.instanceType) = \"${{ inputs.machineType }}\" |
             (.provider | select(. | has(\"gcp\")).gcp.enforcedMeasurements) = [11,12]" \
           constellation-conf.yaml
 
@@ -121,7 +123,7 @@ runs:
       run: |
         echo "Creating cluster using config:"
         cat constellation-conf.yaml
-        constellation create ${{ inputs.cloudProvider }} -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} -t ${{ inputs.machineType }} --name e2e-test -y
+        constellation create ${{ inputs.cloudProvider }} -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} --name e2e-test -y
       shell: bash
     - name: Upload constellation-state.json
       uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
