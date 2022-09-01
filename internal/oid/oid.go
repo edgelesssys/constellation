@@ -44,10 +44,18 @@ func (Azure) OID() asn1.ObjectIdentifier {
 	return asn1.ObjectIdentifier{1, 3, 9900, 4}
 }
 
+// Azure holds the Azure TrustedLaunch OID.
+type AzureTrustedLaunch struct{}
+
+// OID returns the struct's object identifier.
+func (AzureTrustedLaunch) OID() asn1.ObjectIdentifier {
+	return asn1.ObjectIdentifier{1, 3, 9900, 5}
+}
+
 // QEMU holds the QEMU OID.
 type QEMU struct{}
 
 // OID returns the struct's object identifier.
 func (QEMU) OID() asn1.ObjectIdentifier {
-	return asn1.ObjectIdentifier{1, 3, 9900, 5}
+	return asn1.ObjectIdentifier{1, 3, 9900, 6}
 }

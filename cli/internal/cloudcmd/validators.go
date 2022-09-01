@@ -8,7 +8,8 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/internal/atls"
-	"github.com/edgelesssys/constellation/internal/attestation/azure"
+	"github.com/edgelesssys/constellation/internal/attestation/azure/snp"
+	"github.com/edgelesssys/constellation/internal/attestation/azure/trustedlaunch"
 	"github.com/edgelesssys/constellation/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
@@ -138,7 +139,11 @@ func (v *Validator) updateValidator(cmd *cobra.Command) {
 	case cloudprovider.GCP:
 		v.validator = gcp.NewValidator(v.pcrs, v.enforcedPCRs, log)
 	case cloudprovider.Azure:
-		v.validator = azure.NewValidator(v.pcrs, v.enforcedPCRs, v.idkeydigest, v.enforceIdKeyDigest, log)
+		if v.azureCVM {
+			v.validator = snp.NewValidator(v.pcrs, v.enforcedPCRs, v.idkeydigest, v.enforceIdKeyDigest, log)
+		} else {
+			v.validator = trustedlaunch.NewValidator(v.pcrs, v.enforcedPCRs, log)
+		}
 	case cloudprovider.QEMU:
 		v.validator = qemu.NewValidator(v.pcrs, v.enforcedPCRs, log)
 	}

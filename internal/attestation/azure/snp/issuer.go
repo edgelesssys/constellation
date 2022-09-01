@@ -21,18 +21,6 @@ const (
 	tpmReportIdx                   = 0x01400001
 )
 
-// IsCVM checks if it can open a vTPM and read from the NV index expected to be available on CVMs without error.
-func IsCVM(open vtpm.TPMOpenFunc) bool {
-	tpm, err := open()
-	if err != nil {
-		return false
-	}
-	defer tpm.Close()
-
-	_, err = tpm2.NVReadEx(tpm, tpmReportIdx, tpm2.HandleOwner, "", 0)
-	return err == nil
-}
-
 // GetIdKeyDigest reads the idkeydigest from the snp report saved in the TPM's non-volatile memory.
 func GetIdKeyDigest(open vtpm.TPMOpenFunc) ([]byte, error) {
 	tpm, err := open()

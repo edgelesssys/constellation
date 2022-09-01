@@ -10,7 +10,7 @@ import (
 
 // Issuer for Azure trusted launch TPM attestation.
 type Issuer struct {
-	oid.Azure
+	oid.AzureTrustedLaunch
 	*vtpm.Issuer
 }
 

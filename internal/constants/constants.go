@@ -97,6 +97,7 @@ const (
 	KubernetesJoinTokenTTL = 15 * time.Minute
 	ConstellationNamespace = "kube-system"
 	JoinConfigMap          = "join-config"
+	InternalConfigMap      = "internal-config"
 
 	//
 	// Helm.

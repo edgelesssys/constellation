@@ -6,7 +6,8 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/internal/atls"
-	"github.com/edgelesssys/constellation/internal/attestation/azure"
+	"github.com/edgelesssys/constellation/internal/attestation/azure/snp"
+	"github.com/edgelesssys/constellation/internal/attestation/azure/trustedlaunch"
 	"github.com/edgelesssys/constellation/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
@@ -151,12 +152,12 @@ func TestValidatorV(t *testing.T) {
 		"azure cvm": {
 			provider: cloudprovider.Azure,
 			pcrs:     newTestPCRs(),
-			wantVs:   azure.NewValidator(newTestPCRs(), nil, nil, false, nil),
+			wantVs:   snp.NewValidator(newTestPCRs(), nil, nil, false, nil),
 		},
 		"azure trusted launch": {
 			provider: cloudprovider.Azure,
 			pcrs:     newTestPCRs(),
-			wantVs:   azure.NewValidator(newTestPCRs(), nil, nil, false, nil),
+			wantVs:   trustedlaunch.NewValidator(newTestPCRs(), nil, nil),
 		},
 		"qemu": {
 			provider: cloudprovider.QEMU,

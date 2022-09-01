@@ -177,7 +177,11 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up kms: %w", err)
 	}
 
-	if err := k.setupJoinService(k.cloudProvider, k.initialMeasurementsJSON, measurementSalt, enforcedPCRs, idKeyDigest, enforceIdKeyDigest, azureCVM); err != nil {
+	if err := k.setupInternalConfigMap(ctx, strconv.FormatBool(azureCVM)); err != nil {
+		return nil, fmt.Errorf("failed to setup internal ConfigMap: %w", err)
+	}
+
+	if err := k.setupJoinService(k.cloudProvider, k.initialMeasurementsJSON, measurementSalt, enforcedPCRs, idKeyDigest, enforceIdKeyDigest); err != nil {
 		return nil, fmt.Errorf("setting up join service failed: %w", err)
 	}
 
@@ -216,7 +220,7 @@ func (k *KubeWrapper) InitCluster(
 	// Store the received k8sVersion in a ConfigMap, overwriting existing values (there shouldn't be any).
 	// Joining nodes determine the kubernetes version they will install based on this ConfigMap.
 	if err := k.setupK8sVersionConfigMap(ctx, k8sVersion); err != nil {
-		return nil, fmt.Errorf("failed to setup k8s version ConfigMap: %v", err)
+		return nil, fmt.Errorf("failed to setup k8s version ConfigMap: %w", err)
 	}
 
 	k.clusterUtil.FixCilium(nodeName, log)
@@ -308,7 +312,7 @@ func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
 }
 
 func (k *KubeWrapper) setupJoinService(
-	csp string, measurementsJSON, measurementSalt []byte, enforcedPCRs []uint32, initialIdKeyDigest []byte, enforceIdKeyDigest bool, azureCVM bool,
+	csp string, measurementsJSON, measurementSalt []byte, enforcedPCRs []uint32, initialIdKeyDigest []byte, enforceIdKeyDigest bool,
 ) error {
 	enforcedPCRsJSON, err := json.Marshal(enforcedPCRs)
 	if err != nil {
@@ -316,7 +320,7 @@ func (k *KubeWrapper) setupJoinService(
 	}
 
 	joinConfiguration := resources.NewJoinServiceDaemonset(
-		csp, string(measurementsJSON), string(enforcedPCRsJSON), hex.EncodeToString(initialIdKeyDigest), strconv.FormatBool(enforceIdKeyDigest), strconv.FormatBool(azureCVM), measurementSalt,
+		csp, string(measurementsJSON), string(enforcedPCRsJSON), hex.EncodeToString(initialIdKeyDigest), strconv.FormatBool(enforceIdKeyDigest), measurementSalt,
 	)
 
 	return k.clusterUtil.SetupJoinService(k.client, joinConfiguration)
@@ -400,6 +404,31 @@ func (k *KubeWrapper) setupK8sVersionConfigMap(ctx context.Context, k8sVersion v
 		},
 		Data: map[string]string{
 			constants.K8sVersion: string(k8sVersion),
+		},
+	}
+
+	// We do not use the client's Apply method here since we are handling a kubernetes-native type.
+	// These types don't implement our custom Marshaler interface.
+	if err := k.client.CreateConfigMap(ctx, config); err != nil {
+		return fmt.Errorf("apply in KubeWrapper.setupK8sVersionConfigMap(..) failed with: %v", err)
+	}
+
+	return nil
+}
+
+// setupK8sVersionConfigMap applies a ConfigMap (cf. server-side apply) to consistently store the installed k8s version.
+func (k *KubeWrapper) setupInternalConfigMap(ctx context.Context, azureCVM string) error {
+	config := corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "ConfigMap",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      constants.InternalConfigMap,
+			Namespace: "kube-system",
+		},
+		Data: map[string]string{
+			constants.AzureCVM: azureCVM,
 		},
 	}
 
