@@ -14,13 +14,3 @@
 
   # Default build command.
   command = "npm run build"
-
-
-
-# Redirect old uuid path for existing customers
-[[redirects]]
-    from = "/6c320851-bdd2-41d5-bf10-e27427398692"
-    to = "/"
-    status = 301
-    force = true # always redirects
-
