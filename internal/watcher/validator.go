@@ -103,30 +103,28 @@ func (u *Updatable) Update() error {
 
 	var idkeydigest []byte
 	var enforceIdKeyDigest bool
-	if u.csp == cloudprovider.Azure {
-		if u.azureCVM {
-			u.log.Infof("Updating encforceIdKeyDigest value")
-			enforceRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.EnforceIdKeyDigestFilename))
-			if err != nil {
-				return err
-			}
-			enforceIdKeyDigest, err = strconv.ParseBool(string(enforceRaw))
-			if err != nil {
-				return fmt.Errorf("parsing content of EnforceIdKeyDigestFilename: %s: %w", enforceRaw, err)
-			}
-			u.log.Debugf("New encforceIdKeyDigest value: %v", enforceIdKeyDigest)
-
-			u.log.Infof("Updating expected idkeydigest")
-			idkeydigestRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.IdKeyDigestFilename))
-			if err != nil {
-				return err
-			}
-			idkeydigest, err = hex.DecodeString(string(idkeydigestRaw))
-			if err != nil {
-				return fmt.Errorf("parsing hexstring: %s: %w", idkeydigestRaw, err)
-			}
-			u.log.Debugf("New idkeydigest: %x", idkeydigest)
+	if u.csp == cloudprovider.Azure && u.azureCVM {
+		u.log.Infof("Updating encforceIdKeyDigest value")
+		enforceRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.EnforceIdKeyDigestFilename))
+		if err != nil {
+			return err
 		}
+		enforceIdKeyDigest, err = strconv.ParseBool(string(enforceRaw))
+		if err != nil {
+			return fmt.Errorf("parsing content of EnforceIdKeyDigestFilename: %s: %w", enforceRaw, err)
+		}
+		u.log.Debugf("New encforceIdKeyDigest value: %v", enforceIdKeyDigest)
+
+		u.log.Infof("Updating expected idkeydigest")
+		idkeydigestRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.IdKeyDigestFilename))
+		if err != nil {
+			return err
+		}
+		idkeydigest, err = hex.DecodeString(string(idkeydigestRaw))
+		if err != nil {
+			return fmt.Errorf("parsing hexstring: %s: %w", idkeydigestRaw, err)
+		}
+		u.log.Debugf("New idkeydigest: %x", idkeydigest)
 	}
 
 	u.Validator = u.newValidator(measurements, enforced, idkeydigest, enforceIdKeyDigest, u.log)
