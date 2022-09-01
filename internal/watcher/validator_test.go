@@ -95,6 +95,7 @@ func TestNewUpdateableValidator(t *testing.T) {
 				logger.NewTest(t),
 				tc.provider,
 				handler,
+				false,
 			)
 			if tc.wantErr {
 				assert.Error(err)
@@ -110,7 +111,7 @@ func TestUpdate(t *testing.T) {
 	require := require.New(t)
 
 	oid := fakeOID{1, 3, 9900, 1}
-	newValidator := func(m map[uint32][]byte, e []uint32, idkeydigest []byte, enforceIdKeyDigest bool, _ bool, _ *logger.Logger) atls.Validator {
+	newValidator := func(m map[uint32][]byte, e []uint32, idkeydigest []byte, enforceIdKeyDigest bool, _ *logger.Logger) atls.Validator {
 		return fakeValidator{fakeOID: oid}
 	}
 	handler := file.NewHandler(afero.NewMemMapFs())
@@ -192,7 +193,7 @@ func TestUpdateConcurrency(t *testing.T) {
 	validator := &Updatable{
 		log:         logger.NewTest(t),
 		fileHandler: handler,
-		newValidator: func(m map[uint32][]byte, e []uint32, idkeydigest []byte, enforceIdKeyDigest bool, _ bool, _ *logger.Logger) atls.Validator {
+		newValidator: func(m map[uint32][]byte, e []uint32, idkeydigest []byte, enforceIdKeyDigest bool, _ *logger.Logger) atls.Validator {
 			return fakeValidator{fakeOID: fakeOID{1, 3, 9900, 1}}
 		},
 	}
