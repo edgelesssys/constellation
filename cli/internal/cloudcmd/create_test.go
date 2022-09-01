@@ -40,7 +40,7 @@ func TestCreator(t *testing.T) {
 		GCPSubnetwork:                   "subnetwork",
 		GCPLoadbalancers:                []string{"kube-lb", "boot-lb", "verify-lb"},
 		GCPFirewalls: []string{
-			"bootstrapper", "ssh", "nodeport", "kubernetes",
+			"bootstrapper", "ssh", "nodeport", "kubernetes", "konnectivity",
 			"allow-cluster-internal-tcp", "allow-cluster-internal-udp", "allow-cluster-internal-icmp",
 			"allow-node-internal-tcp", "allow-node-internal-udp", "allow-node-internal-icmp",
 		},

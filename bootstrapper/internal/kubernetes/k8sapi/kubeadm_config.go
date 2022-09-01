@@ -66,12 +66,13 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool, k8sV
 			APIServer: kubeadm.APIServer{
 				ControlPlaneComponent: kubeadm.ControlPlaneComponent{
 					ExtraArgs: map[string]string{
-						"audit-policy-file":   auditPolicyPath,
-						"audit-log-path":      filepath.Join(auditLogDir, auditLogFile), // CIS benchmark
-						"audit-log-maxage":    "30",                                     // CIS benchmark - Default value of Rancher
-						"audit-log-maxbackup": "10",                                     // CIS benchmark - Default value of Rancher
-						"audit-log-maxsize":   "100",                                    // CIS benchmark - Default value of Rancher
-						"profiling":           "false",                                  // CIS benchmark
+						"audit-policy-file":           auditPolicyPath,
+						"audit-log-path":              filepath.Join(auditLogDir, auditLogFile), // CIS benchmark
+						"audit-log-maxage":            "30",                                     // CIS benchmark - Default value of Rancher
+						"audit-log-maxbackup":         "10",                                     // CIS benchmark - Default value of Rancher
+						"audit-log-maxsize":           "100",                                    // CIS benchmark - Default value of Rancher
+						"profiling":                   "false",                                  // CIS benchmark
+						"egress-selector-config-file": "/etc/kubernetes/egress-selector-configuration.yaml",
 						"kubelet-certificate-authority": filepath.Join(
 							kubeconstants.KubernetesDir,
 							kubeconstants.DefaultCertificateDir,
@@ -100,6 +101,20 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool, k8sV
 							MountPath: auditPolicyPath,
 							ReadOnly:  true,
 							PathType:  corev1.HostPathFile,
+						},
+						{
+							Name:      "egress-config",
+							HostPath:  "/etc/kubernetes/egress-selector-configuration.yaml",
+							MountPath: "/etc/kubernetes/egress-selector-configuration.yaml",
+							ReadOnly:  true,
+							PathType:  corev1.HostPathFile,
+						},
+						{
+							Name:      "konnectivity-uds",
+							HostPath:  "/etc/kubernetes/konnectivity-server",
+							MountPath: "/etc/kubernetes/konnectivity-server",
+							ReadOnly:  false,
+							PathType:  corev1.HostPathDirectoryOrCreate,
 						},
 					},
 				},
@@ -133,6 +148,7 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool, k8sV
 				"TLS_RSA_WITH_AES_256_GCM_SHA384",
 				"TLS_RSA_WITH_AES_128_GCM_SHA256",
 			}, // CIS benchmark
+			StaticPodPath: "/etc/kubernetes/manifests",
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: kubeletconf.SchemeGroupVersion.String(),
 				Kind:       "KubeletConfiguration",

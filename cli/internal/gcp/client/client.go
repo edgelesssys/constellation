@@ -36,6 +36,7 @@ type Client struct {
 	forwardingRulesAPI
 	backendServicesAPI
 	healthChecksAPI
+	targetTCPProxiesAPI
 	instanceTemplateAPI
 	instanceGroupManagersAPI
 	iamAPI
@@ -109,25 +110,31 @@ func NewFromDefault(ctx context.Context) (*Client, error) {
 		return nil, err
 	}
 	closers = append(closers, subnetAPI)
-	forwardingRulesAPI, err := compute.NewForwardingRulesRESTClient(ctx)
+	forwardingRulesAPI, err := compute.NewGlobalForwardingRulesRESTClient(ctx)
 	if err != nil {
 		_ = closeAll(closers)
 		return nil, err
 	}
 	closers = append(closers, forwardingRulesAPI)
-	backendServicesAPI, err := compute.NewRegionBackendServicesRESTClient(ctx)
+	backendServicesAPI, err := compute.NewBackendServicesRESTClient(ctx)
 	if err != nil {
 		_ = closeAll(closers)
 		return nil, err
 	}
 	closers = append(closers, backendServicesAPI)
+	targetTCPProxiesAPI, err := compute.NewTargetTcpProxiesRESTClient(ctx)
+	if err != nil {
+		_ = closeAll(closers)
+		return nil, err
+	}
+	closers = append(closers, targetTCPProxiesAPI)
 	targetPoolsAPI, err := compute.NewTargetPoolsRESTClient(ctx)
 	if err != nil {
 		_ = closeAll(closers)
 		return nil, err
 	}
 	closers = append(closers, targetPoolsAPI)
-	healthChecksAPI, err := compute.NewRegionHealthChecksRESTClient(ctx)
+	healthChecksAPI, err := compute.NewHealthChecksRESTClient(ctx)
 	if err != nil {
 		_ = closeAll(closers)
 		return nil, err
@@ -157,7 +164,7 @@ func NewFromDefault(ctx context.Context) (*Client, error) {
 		return nil, err
 	}
 	closers = append(closers, projectsAPI)
-	addressesAPI, err := compute.NewAddressesRESTClient(ctx)
+	addressesAPI, err := compute.NewGlobalAddressesRESTClient(ctx)
 	if err != nil {
 		_ = closeAll(closers)
 		return nil, err
@@ -173,6 +180,7 @@ func NewFromDefault(ctx context.Context) (*Client, error) {
 		firewallsAPI:             &firewallsClient{fwAPI},
 		forwardingRulesAPI:       &forwardingRulesClient{forwardingRulesAPI},
 		backendServicesAPI:       &backendServicesClient{backendServicesAPI},
+		targetTCPProxiesAPI:      &targetTCPProxiesClient{targetTCPProxiesAPI},
 		healthChecksAPI:          &healthChecksClient{healthChecksAPI},
 		instanceTemplateAPI:      &instanceTemplateClient{templAPI},
 		instanceGroupManagersAPI: &instanceGroupManagersClient{groupAPI},
@@ -282,6 +290,7 @@ func (c *Client) SetState(stat state.ConstellationState) {
 			hasForwardingRules: true,
 			hasBackendService:  true,
 			hasHealthCheck:     true,
+			hasTargetTCPProxy:  true,
 		}
 		c.loadbalancers = append(c.loadbalancers, lb)
 	}

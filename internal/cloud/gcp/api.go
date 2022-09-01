@@ -29,7 +29,7 @@ type subnetworkAPI interface {
 }
 
 type forwardingRulesAPI interface {
-	List(ctx context.Context, req *computepb.ListForwardingRulesRequest, opts ...gax.CallOption) ForwardingRuleIterator
+	List(ctx context.Context, req *computepb.ListGlobalForwardingRulesRequest, opts ...gax.CallOption) ForwardingRuleIterator
 	Close() error
 }
 

@@ -231,7 +231,7 @@ func (a stubBackendServicesAPI) Close() error {
 	return nil
 }
 
-func (a stubBackendServicesAPI) Insert(ctx context.Context, req *computepb.InsertRegionBackendServiceRequest,
+func (a stubBackendServicesAPI) Insert(ctx context.Context, req *computepb.InsertBackendServiceRequest,
 	opts ...gax.CallOption,
 ) (Operation, error) {
 	if a.insertErr != nil {
@@ -239,13 +239,12 @@ func (a stubBackendServicesAPI) Insert(ctx context.Context, req *computepb.Inser
 	}
 	return &stubOperation{
 		&computepb.Operation{
-			Name:   proto.String("name"),
-			Region: proto.String("region"),
+			Name: proto.String("name"),
 		},
 	}, nil
 }
 
-func (a stubBackendServicesAPI) Delete(ctx context.Context, req *computepb.DeleteRegionBackendServiceRequest,
+func (a stubBackendServicesAPI) Delete(ctx context.Context, req *computepb.DeleteBackendServiceRequest,
 	opts ...gax.CallOption,
 ) (Operation, error) {
 	if a.deleteErr != nil {
@@ -253,8 +252,42 @@ func (a stubBackendServicesAPI) Delete(ctx context.Context, req *computepb.Delet
 	}
 	return &stubOperation{
 		&computepb.Operation{
-			Name:   proto.String("name"),
-			Region: proto.String("region"),
+			Name: proto.String("name"),
+		},
+	}, nil
+}
+
+type stubTargetTCPProxiesAPI struct {
+	insertErr error
+	deleteErr error
+}
+
+func (a stubTargetTCPProxiesAPI) Close() error {
+	return nil
+}
+
+func (a stubTargetTCPProxiesAPI) Insert(ctx context.Context, req *computepb.InsertTargetTcpProxyRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	if a.insertErr != nil {
+		return nil, a.insertErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Name: proto.String("name"),
+		},
+	}, nil
+}
+
+func (a stubTargetTCPProxiesAPI) Delete(ctx context.Context, req *computepb.DeleteTargetTcpProxyRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	if a.deleteErr != nil {
+		return nil, a.deleteErr
+	}
+	return &stubOperation{
+		&computepb.Operation{
+			Name: proto.String("name"),
 		},
 	}, nil
 }
@@ -271,7 +304,7 @@ func (a stubForwardingRulesAPI) Close() error {
 	return nil
 }
 
-func (a stubForwardingRulesAPI) Insert(ctx context.Context, req *computepb.InsertForwardingRuleRequest,
+func (a stubForwardingRulesAPI) Insert(ctx context.Context, req *computepb.InsertGlobalForwardingRuleRequest,
 	opts ...gax.CallOption,
 ) (Operation, error) {
 	if a.insertErr != nil {
@@ -279,13 +312,12 @@ func (a stubForwardingRulesAPI) Insert(ctx context.Context, req *computepb.Inser
 	}
 	return &stubOperation{
 		&computepb.Operation{
-			Name:   proto.String("name"),
-			Region: proto.String("region"),
+			Name: proto.String("name"),
 		},
 	}, nil
 }
 
-func (a stubForwardingRulesAPI) Delete(ctx context.Context, req *computepb.DeleteForwardingRuleRequest,
+func (a stubForwardingRulesAPI) Delete(ctx context.Context, req *computepb.DeleteGlobalForwardingRuleRequest,
 	opts ...gax.CallOption,
 ) (Operation, error) {
 	if a.deleteErr != nil {
@@ -293,13 +325,12 @@ func (a stubForwardingRulesAPI) Delete(ctx context.Context, req *computepb.Delet
 	}
 	return &stubOperation{
 		&computepb.Operation{
-			Name:   proto.String("name"),
-			Region: proto.String("region"),
+			Name: proto.String("name"),
 		},
 	}, nil
 }
 
-func (a stubForwardingRulesAPI) Get(ctx context.Context, req *computepb.GetForwardingRuleRequest,
+func (a stubForwardingRulesAPI) Get(ctx context.Context, req *computepb.GetGlobalForwardingRuleRequest,
 	opts ...gax.CallOption,
 ) (*computepb.ForwardingRule, error) {
 	if a.getErr != nil {
@@ -308,7 +339,7 @@ func (a stubForwardingRulesAPI) Get(ctx context.Context, req *computepb.GetForwa
 	return a.forwardingRule, nil
 }
 
-func (a stubForwardingRulesAPI) SetLabels(ctx context.Context, req *computepb.SetLabelsForwardingRuleRequest,
+func (a stubForwardingRulesAPI) SetLabels(ctx context.Context, req *computepb.SetLabelsGlobalForwardingRuleRequest,
 	opts ...gax.CallOption,
 ) (Operation, error) {
 	if a.deleteErr != nil {
@@ -316,8 +347,7 @@ func (a stubForwardingRulesAPI) SetLabels(ctx context.Context, req *computepb.Se
 	}
 	return &stubOperation{
 		&computepb.Operation{
-			Name:   proto.String("name"),
-			Region: proto.String("region"),
+			Name: proto.String("name"),
 		},
 	}, nil
 }
@@ -331,7 +361,7 @@ func (a stubHealthChecksAPI) Close() error {
 	return nil
 }
 
-func (a stubHealthChecksAPI) Insert(ctx context.Context, req *computepb.InsertRegionHealthCheckRequest,
+func (a stubHealthChecksAPI) Insert(ctx context.Context, req *computepb.InsertHealthCheckRequest,
 	opts ...gax.CallOption,
 ) (Operation, error) {
 	if a.insertErr != nil {
@@ -339,13 +369,12 @@ func (a stubHealthChecksAPI) Insert(ctx context.Context, req *computepb.InsertRe
 	}
 	return &stubOperation{
 		&computepb.Operation{
-			Name:   proto.String("name"),
-			Region: proto.String("region"),
+			Name: proto.String("name"),
 		},
 	}, nil
 }
 
-func (a stubHealthChecksAPI) Delete(ctx context.Context, req *computepb.DeleteRegionHealthCheckRequest,
+func (a stubHealthChecksAPI) Delete(ctx context.Context, req *computepb.DeleteHealthCheckRequest,
 	opts ...gax.CallOption,
 ) (Operation, error) {
 	if a.deleteErr != nil {
@@ -353,8 +382,7 @@ func (a stubHealthChecksAPI) Delete(ctx context.Context, req *computepb.DeleteRe
 	}
 	return &stubOperation{
 		&computepb.Operation{
-			Name:   proto.String("name"),
-			Region: proto.String("region"),
+			Name: proto.String("name"),
 		},
 	}, nil
 }
@@ -511,7 +539,7 @@ type stubAddressesAPI struct {
 	deleteErr error
 }
 
-func (a stubAddressesAPI) Insert(context.Context, *computepb.InsertAddressRequest,
+func (a stubAddressesAPI) Insert(context.Context, *computepb.InsertGlobalAddressRequest,
 	...gax.CallOption,
 ) (Operation, error) {
 	if a.insertErr != nil {
@@ -519,19 +547,18 @@ func (a stubAddressesAPI) Insert(context.Context, *computepb.InsertAddressReques
 	}
 	return &stubOperation{
 		&computepb.Operation{
-			Name:   proto.String("name"),
-			Region: proto.String("region"),
+			Name: proto.String("name"),
 		},
 	}, nil
 }
 
-func (a stubAddressesAPI) Get(ctx context.Context, req *computepb.GetAddressRequest,
+func (a stubAddressesAPI) Get(ctx context.Context, req *computepb.GetGlobalAddressRequest,
 	opts ...gax.CallOption,
 ) (*computepb.Address, error) {
 	return &computepb.Address{Address: a.getAddr}, a.getErr
 }
 
-func (a stubAddressesAPI) Delete(context.Context, *computepb.DeleteAddressRequest,
+func (a stubAddressesAPI) Delete(context.Context, *computepb.DeleteGlobalAddressRequest,
 	...gax.CallOption,
 ) (Operation, error) {
 	if a.deleteErr != nil {
@@ -539,8 +566,7 @@ func (a stubAddressesAPI) Delete(context.Context, *computepb.DeleteAddressReques
 	}
 	return &stubOperation{
 		&computepb.Operation{
-			Name:   proto.String("name"),
-			Region: proto.String("region"),
+			Name: proto.String("name"),
 		},
 	}, nil
 }

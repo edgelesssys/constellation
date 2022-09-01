@@ -47,6 +47,7 @@ const (
 	SSHPort          = 22
 	NVMEOverTCPPort  = 8009
 	DebugdPort       = 4000
+	KonnectivityPort = 8132
 	// Default NodePort Range
 	// https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
 	NodePortFrom = 30000

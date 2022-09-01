@@ -23,9 +23,7 @@ import (
 	platform "github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/internal/deploy/user"
-	"github.com/edgelesssys/constellation/internal/iproute"
 	"github.com/edgelesssys/constellation/internal/logger"
-	"github.com/edgelesssys/constellation/internal/role"
 	"github.com/spf13/afero"
 )
 
@@ -69,9 +67,6 @@ func main() {
 			log.Fatalf("%s", err)
 		}
 		fetcher = gcpFetcher
-		if err := setLoadbalancerRoute(ctx, fetcher); err != nil {
-			log.Errorf("adding load balancer IP to local routing table: %s", err)
-		}
 		log.Infof("Added load balancer IP to local routing table")
 	case platform.QEMU:
 		fetcher = cloudprovider.NewQEMU()
@@ -107,19 +102,4 @@ func writeDebugBanner(log *logger.Logger) {
 	if _, err := fmt.Fprint(tty, debugBanner); err != nil {
 		log.Infof("Unable to print to /dev/ttyS0: %v", err)
 	}
-}
-
-func setLoadbalancerRoute(ctx context.Context, fetcher metadata.Fetcher) error {
-	ownRole, err := fetcher.Role(ctx)
-	if err != nil {
-		return err
-	}
-	if ownRole != role.ControlPlane {
-		return nil
-	}
-	ip, err := fetcher.DiscoverLoadbalancerIP(ctx)
-	if err != nil {
-		return err
-	}
-	return iproute.AddToLocalRoutingTable(ctx, ip)
 }

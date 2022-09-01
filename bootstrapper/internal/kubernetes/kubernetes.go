@@ -19,7 +19,6 @@ import (
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/internal/constants"
-	"github.com/edgelesssys/constellation/internal/iproute"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/role"
 	"github.com/edgelesssys/constellation/internal/versions"
@@ -156,7 +155,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("encoding kubeadm init configuration as YAML: %w", err)
 	}
 	log.Infof("Initializing Kubernetes cluster")
-	if err := k.clusterUtil.InitCluster(ctx, initConfigYAML, nodeName, validIPs, log); err != nil {
+	if err := k.clusterUtil.InitCluster(ctx, initConfigYAML, nodeName, validIPs, controlPlaneEndpoint, log); err != nil {
 		return nil, fmt.Errorf("kubeadm init: %w", err)
 	}
 	kubeConfig, err := k.GetKubeconfig()
@@ -176,6 +175,19 @@ func (k *KubeWrapper) InitCluster(
 	}
 	if err = k.clusterUtil.SetupHelmDeployments(ctx, k.client, helmDeployments, setupPodNetworkInput, log); err != nil {
 		return nil, fmt.Errorf("setting up pod network: %w", err)
+	}
+
+	var controlPlaneIP string
+	if strings.Contains(controlPlaneEndpoint, ":") {
+		controlPlaneIP, _, err = net.SplitHostPort(controlPlaneEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("parsing control plane endpoint: %w", err)
+		}
+	} else {
+		controlPlaneIP = controlPlaneEndpoint
+	}
+	if err = k.clusterUtil.SetupKonnectivity(k.client, resources.NewKonnectivityAgents(controlPlaneIP)); err != nil {
+		return nil, fmt.Errorf("setting up konnectivity: %w", err)
 	}
 
 	kms := resources.NewKMSDeployment(k.cloudProvider, kmsConfig)
@@ -277,19 +289,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		zap.String("nodeIP", nodeInternalIP),
 	).Infof("Setting information for node")
 
-	// Step 2: Remove load balancer from local routing table on GCP.
-	if k.cloudProvider == "gcp" {
-		ip, _, err := net.SplitHostPort(loadbalancerEndpoint)
-		if err != nil {
-			return fmt.Errorf("parsing load balancer IP: %w", err)
-		}
-		if err := iproute.RemoveFromLocalRoutingTable(ctx, ip); err != nil {
-			return fmt.Errorf("removing load balancer IP from routing table: %w", err)
-		}
-		log.Infof("Removed load balancer IP from routing table")
-	}
-
-	// Step 3: configure kubeadm join config
+	// Step 2: configure kubeadm join config
 	joinConfig := k.configProvider.JoinConfiguration(k.cloudControllerManager.Supported())
 	joinConfig.SetAPIServerEndpoint(args.APIServerEndpoint)
 	joinConfig.SetToken(args.Token)
@@ -305,7 +305,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		return fmt.Errorf("encoding kubeadm join configuration as YAML: %w", err)
 	}
 	log.With(zap.String("apiServerEndpoint", args.APIServerEndpoint)).Infof("Joining Kubernetes cluster")
-	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML, log); err != nil {
+	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML, peerRole, loadbalancerEndpoint, log); err != nil {
 		return fmt.Errorf("joining cluster: %v; %w ", string(joinConfigYAML), err)
 	}
 

@@ -32,6 +32,7 @@ type loadBalancer struct {
 	hasHealthCheck     bool
 	hasBackendService  bool
 	hasForwardingRules bool
+	hasTargetTCPProxy  bool
 }
 
 // CreateLoadBalancers creates all necessary load balancers.
@@ -66,6 +67,14 @@ func (c *Client) CreateLoadBalancers(ctx context.Context, isDebugCluster bool) e
 		ip:              c.loadbalancerIPname,
 		frontendPort:    constants.VerifyServiceNodePortGRPC,
 		backendPortName: "verify",
+		healthCheck:     computepb.HealthCheck_TCP,
+	})
+
+	c.loadbalancers = append(c.loadbalancers, &loadBalancer{
+		name:            c.buildResourceName("konnectivity"),
+		ip:              c.loadbalancerIPname,
+		frontendPort:    constants.KonnectivityPort,
+		backendPortName: "konnectivity",
 		healthCheck:     computepb.HealthCheck_TCP,
 	})
 
@@ -107,6 +116,9 @@ func (c *Client) createLoadBalancer(ctx context.Context, lb *loadBalancer) error
 	if err := c.createBackendService(ctx, lb); err != nil {
 		return fmt.Errorf("creating backend services: %w", err)
 	}
+	if err := c.createTargetTCPProxy(ctx, lb); err != nil {
+		return fmt.Errorf("creating target TCP proxies: %w", err)
+	}
 	if err := c.createForwardingRules(ctx, lb); err != nil {
 		return fmt.Errorf("creating forwarding rules: %w", err)
 	}
@@ -114,9 +126,8 @@ func (c *Client) createLoadBalancer(ctx context.Context, lb *loadBalancer) error
 }
 
 func (c *Client) createHealthCheck(ctx context.Context, lb *loadBalancer) error {
-	req := &computepb.InsertRegionHealthCheckRequest{
+	req := &computepb.InsertHealthCheckRequest{
 		Project: c.project,
-		Region:  c.region,
 		HealthCheckResource: &computepb.HealthCheck{
 			Name:             proto.String(lb.name),
 			Type:             proto.String(computepb.HealthCheck_Type_name[int32(lb.healthCheck)]),
@@ -144,18 +155,17 @@ func (c *Client) createHealthCheck(ctx context.Context, lb *loadBalancer) error 
 }
 
 func (c *Client) createBackendService(ctx context.Context, lb *loadBalancer) error {
-	req := &computepb.InsertRegionBackendServiceRequest{
+	req := &computepb.InsertBackendServiceRequest{
 		Project: c.project,
-		Region:  c.region,
 		BackendServiceResource: &computepb.BackendService{
 			Name:                proto.String(lb.name),
 			Protocol:            proto.String(computepb.BackendService_Protocol_name[int32(computepb.BackendService_TCP)]),
 			LoadBalancingScheme: proto.String(computepb.BackendService_LoadBalancingScheme_name[int32(computepb.BackendService_EXTERNAL)]),
-			HealthChecks:        []string{c.resourceURI(scopeRegion, "healthChecks", lb.name)},
+			HealthChecks:        []string{c.resourceURI(scopeGlobal, "healthChecks", lb.name)},
 			PortName:            proto.String(lb.backendPortName),
 			Backends: []*computepb.Backend{
 				{
-					BalancingMode: proto.String(computepb.Backend_BalancingMode_name[int32(computepb.Backend_CONNECTION)]),
+					BalancingMode: proto.String(computepb.Backend_BalancingMode_name[int32(computepb.Backend_UTILIZATION)]),
 					Group:         proto.String(c.resourceURI(scopeZone, "instanceGroups", c.controlPlaneInstanceGroup)),
 				},
 			},
@@ -175,16 +185,16 @@ func (c *Client) createBackendService(ctx context.Context, lb *loadBalancer) err
 }
 
 func (c *Client) createForwardingRules(ctx context.Context, lb *loadBalancer) error {
-	req := &computepb.InsertForwardingRuleRequest{
+	req := &computepb.InsertGlobalForwardingRuleRequest{
 		Project: c.project,
-		Region:  c.region,
 		ForwardingRuleResource: &computepb.ForwardingRule{
 			Name:                proto.String(lb.name),
-			IPAddress:           proto.String(c.resourceURI(scopeRegion, "addresses", c.loadbalancerIPname)),
+			IPAddress:           proto.String(c.resourceURI(scopeGlobal, "addresses", c.loadbalancerIPname)),
 			IPProtocol:          proto.String(computepb.ForwardingRule_IPProtocolEnum_name[int32(computepb.ForwardingRule_TCP)]),
 			LoadBalancingScheme: proto.String(computepb.ForwardingRule_LoadBalancingScheme_name[int32(computepb.ForwardingRule_EXTERNAL)]),
-			Ports:               []string{strconv.Itoa(lb.frontendPort)},
-			BackendService:      proto.String(c.resourceURI(scopeRegion, "backendServices", lb.name)),
+			PortRange:           proto.String(strconv.Itoa(lb.frontendPort)),
+
+			Target: proto.String(c.resourceURI(scopeGlobal, "targetTcpProxies", lb.name)),
 		},
 	}
 	resp, err := c.forwardingRulesAPI.Insert(ctx, req)
@@ -205,9 +215,8 @@ func (c *Client) createForwardingRules(ctx context.Context, lb *loadBalancer) er
 
 // labelLoadBalancer labels a load balancer (its forwarding rules) so that it can be found by applications in the cluster.
 func (c *Client) labelLoadBalancer(ctx context.Context, name string) error {
-	forwardingRule, err := c.forwardingRulesAPI.Get(ctx, &computepb.GetForwardingRuleRequest{
+	forwardingRule, err := c.forwardingRulesAPI.Get(ctx, &computepb.GetGlobalForwardingRuleRequest{
 		Project:        c.project,
-		Region:         c.region,
 		ForwardingRule: name,
 	})
 	if err != nil {
@@ -217,11 +226,10 @@ func (c *Client) labelLoadBalancer(ctx context.Context, name string) error {
 		return fmt.Errorf("forwarding rule %s has no label fingerprint", name)
 	}
 
-	resp, err := c.forwardingRulesAPI.SetLabels(ctx, &computepb.SetLabelsForwardingRuleRequest{
+	resp, err := c.forwardingRulesAPI.SetLabels(ctx, &computepb.SetLabelsGlobalForwardingRuleRequest{
 		Project:  c.project,
-		Region:   c.region,
 		Resource: name,
-		RegionSetLabelsRequestResource: &computepb.RegionSetLabelsRequest{
+		GlobalSetLabelsRequestResource: &computepb.GlobalSetLabelsRequest{
 			Labels:           map[string]string{"constellation-uid": c.uid},
 			LabelFingerprint: forwardingRule.LabelFingerprint,
 		},
@@ -231,6 +239,26 @@ func (c *Client) labelLoadBalancer(ctx context.Context, name string) error {
 	}
 
 	return c.waitForOperations(ctx, []Operation{resp})
+}
+
+func (c *Client) createTargetTCPProxy(ctx context.Context, lb *loadBalancer) error {
+	req := &computepb.InsertTargetTcpProxyRequest{
+		Project: c.project,
+		TargetTcpProxyResource: &computepb.TargetTcpProxy{
+			Name:    proto.String(lb.name),
+			Service: proto.String(c.resourceURI(scopeGlobal, "backendServices", lb.name)),
+		},
+	}
+	resp, err := c.targetTCPProxiesAPI.Insert(ctx, req)
+	if err != nil {
+		return fmt.Errorf("inserting target tcp proxy: %w", err)
+	}
+
+	if err := c.waitForOperations(ctx, []Operation{resp}); err != nil {
+		return err
+	}
+	lb.hasTargetTCPProxy = true
+	return nil
 }
 
 // TerminateLoadBalancers terminates all load balancers.
@@ -276,6 +304,12 @@ func (c *Client) terminateLoadBalancer(ctx context.Context, lb *loadBalancer) er
 		}
 	}
 
+	if lb.hasTargetTCPProxy {
+		if err := c.terminateTargetTCPProxy(ctx, lb); err != nil {
+			return fmt.Errorf("terminating target tcp proxy: %w", err)
+		}
+	}
+
 	if lb.hasBackendService {
 		if err := c.terminateBackendService(ctx, lb); err != nil {
 			return fmt.Errorf("terminating backend services: %w", err)
@@ -293,9 +327,8 @@ func (c *Client) terminateLoadBalancer(ctx context.Context, lb *loadBalancer) er
 }
 
 func (c *Client) terminateForwadingRules(ctx context.Context, lb *loadBalancer) error {
-	resp, err := c.forwardingRulesAPI.Delete(ctx, &computepb.DeleteForwardingRuleRequest{
+	resp, err := c.forwardingRulesAPI.Delete(ctx, &computepb.DeleteGlobalForwardingRuleRequest{
 		Project:        c.project,
-		Region:         c.region,
 		ForwardingRule: lb.name,
 	})
 	if isNotFoundError(err) {
@@ -314,10 +347,30 @@ func (c *Client) terminateForwadingRules(ctx context.Context, lb *loadBalancer) 
 	return nil
 }
 
-func (c *Client) terminateBackendService(ctx context.Context, lb *loadBalancer) error {
-	resp, err := c.backendServicesAPI.Delete(ctx, &computepb.DeleteRegionBackendServiceRequest{
+func (c *Client) terminateTargetTCPProxy(ctx context.Context, lb *loadBalancer) error {
+	resp, err := c.targetTCPProxiesAPI.Delete(ctx, &computepb.DeleteTargetTcpProxyRequest{
 		Project:        c.project,
-		Region:         c.region,
+		TargetTcpProxy: lb.name,
+	})
+	if isNotFoundError(err) {
+		lb.hasTargetTCPProxy = false
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("deleting target tcp proxy: %w", err)
+	}
+
+	if err := c.waitForOperations(ctx, []Operation{resp}); err != nil {
+		return err
+	}
+
+	lb.hasTargetTCPProxy = false
+	return nil
+}
+
+func (c *Client) terminateBackendService(ctx context.Context, lb *loadBalancer) error {
+	resp, err := c.backendServicesAPI.Delete(ctx, &computepb.DeleteBackendServiceRequest{
+		Project:        c.project,
 		BackendService: lb.name,
 	})
 	if isNotFoundError(err) {
@@ -337,9 +390,8 @@ func (c *Client) terminateBackendService(ctx context.Context, lb *loadBalancer) 
 }
 
 func (c *Client) terminateHealthCheck(ctx context.Context, lb *loadBalancer) error {
-	resp, err := c.healthChecksAPI.Delete(ctx, &computepb.DeleteRegionHealthCheckRequest{
+	resp, err := c.healthChecksAPI.Delete(ctx, &computepb.DeleteHealthCheckRequest{
 		Project:     c.project,
-		Region:      c.region,
 		HealthCheck: lb.name,
 	})
 	if isNotFoundError(err) {
@@ -360,9 +412,8 @@ func (c *Client) terminateHealthCheck(ctx context.Context, lb *loadBalancer) err
 
 func (c *Client) createIPAddr(ctx context.Context) error {
 	ipName := c.buildResourceName()
-	insertReq := &computepb.InsertAddressRequest{
+	insertReq := &computepb.InsertGlobalAddressRequest{
 		Project: c.project,
-		Region:  c.region,
 		AddressResource: &computepb.Address{
 			Name: proto.String(ipName),
 		},
@@ -376,9 +427,8 @@ func (c *Client) createIPAddr(ctx context.Context) error {
 	}
 	c.loadbalancerIPname = ipName
 
-	getReq := &computepb.GetAddressRequest{
+	getReq := &computepb.GetGlobalAddressRequest{
 		Project: c.project,
-		Region:  c.region,
 		Address: c.loadbalancerIPname,
 	}
 	addr, err := c.addressesAPI.Get(ctx, getReq)
@@ -398,9 +448,8 @@ func (c *Client) deleteIPAddr(ctx context.Context) error {
 		return nil
 	}
 
-	req := &computepb.DeleteAddressRequest{
+	req := &computepb.DeleteGlobalAddressRequest{
 		Project: c.project,
-		Region:  c.region,
 		Address: c.loadbalancerIPname,
 	}
 	op, err := c.addressesAPI.Delete(ctx, req)
