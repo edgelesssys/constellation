@@ -162,6 +162,7 @@ runs:
 
     - name: Download boot logs
       run: |
+        echo "::group::Download boot logs"
         case $CSP in
           azure)
             AZURE_RESOURCE_GROUP=$(yq eval ".provider.azure.resourceGroup" constellation-conf.yaml)
@@ -174,6 +175,7 @@ runs:
             ./.github/actions/constellation_create/gcp-logs ${CONTROL_NODES} ${WORKER_NODES} ${ZONE}
             ;;
         esac
+        echo "::endgroup::"
       shell: bash
       continue-on-error: true
       if: ${{ always() }}
