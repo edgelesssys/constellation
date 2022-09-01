@@ -24,7 +24,7 @@ const arkPEM = "-----BEGIN CERTIFICATE-----\nMIIGYzCCBBKgAwIBAgIDAQAAMEYGCSqGSIb
 
 // Validator for Azure confidential VM attestation.
 type Validator struct {
-	oid.Azure
+	oid.AzureSNP
 	*vtpm.Validator
 }
 
