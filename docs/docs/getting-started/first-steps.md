@@ -1,5 +1,7 @@
 # First steps
 
+Some random stuff.
+
 The following steps will guide you through the process of creating a cluster and deploying a sample app. This example assumes that you have successfully [installed and set up Constellation](install.md).
 
 ## Create a cluster
@@ -28,7 +30,35 @@ The following steps will guide you through the process of creating a cluster and
 2.  Fill in your cloud provider specific information:
 
     <tabs>
-    <tabItem value="azure" label="Azure" default>
+    <tabItem value="azure-cli" label="Azure (CLI)" default>
+
+    For a quick start it is recommended to use our `az` script to automatically create all required resources:
+
+    ```bash
+    RESOURCE_GROUP=constellation # enter name of resource group here
+    LOCATION=westus # enter location of resources here
+    SUBSCRIPTION_ID=$(az account show --query id --out tsv)
+    SERVICE_PRINCIPLE_NAME=constell
+    az group create --name "${RESOURCE_GROUP}" --location "${LOCATION}"
+    az group create --name "${RESOURCE_GROUP}-identity" --location "${LOCATION}"
+    az ad sp create-for-rbac -n "${SERVICE_PRINCIPLE_NAME}" --role Owner --scopes "/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}" | tee azureServiceAccountKey.json
+    az identity create -g "${RESOURCE_GROUP}-identity" -n "${SERVICE_PRINCIPLE_NAME}"
+    identityID=$(az identity show -n "${SERVICE_PRINCIPLE_NAME}" -g "${RESOURCE_GROUP}-identity" --query principalId --out tsv)
+    az role assignment create --assignee-principal-type ServicePrincipal --assignee-object-id "${identityID}" --role 'Virtual Machine Contributor' --scope "/subscriptions/${SUBSCRIPTION_ID}"
+    az role assignment create --assignee-principal-type ServicePrincipal --assignee-object-id "${identityID}" --role 'Application Insights Component Contributor' --scope "/subscriptions/${SUBSCRIPTION_ID}"
+    echo "subscription: ${SUBSCRIPTION_ID}"
+    echo "tenant: $(az account show --query tenantId -o tsv)"
+    echo "location: ${LOCATION}"
+    echo "resourceGroup: ${RESOURCE_GROUP}"
+    echo "userAssignedIdentity: $(az identity show -n "${SERVICE_PRINCIPLE_NAME}" -g "${RESOURCE_GROUP}-identity" --query id --out tsv)"
+    echo "appClientID: $(jq -r '.appId' azureServiceAccountKey.json)"
+    echo "clientSecretValue: $(jq -r '.password' azureServiceAccountKey.json)"
+    ```
+
+    Fill in the printed out values to your configuration file.
+
+    </tabItem>
+    <tabItem value="azure-portal" label="Azure (Portal)" default>
 
     * **subscription**: Is the UUID of your Azure subscription, e.g., `8b8bd01f-efd9-4113-9bd1-c82137c32da7`.
 
@@ -38,9 +68,12 @@ The following steps will guide you through the process of creating a cluster and
 
         You can view your tenant UUID via `az account show` and read the `tenant` field. For more information refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/azure-portal/get-subscription-tenant-id#find-your-azure-ad-tenant).
 
-    * **location**: Is the Azure datacenter location you want to deploy your cluster in, e.g., `West US`.
+    * **location**: Is the Azure datacenter location you want to deploy your cluster in, e.g., `westus`. Notice that CVMs are currently only supported in a few regions, check [Azure's products available by region](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all). Currently these are supported:
 
-        You can find a list of all Azure datacenter locations in [Azure's documentation](https://docs.microsoft.com/en-us/azure/availability-zones/az-overview#azure-regions-with-availability-zones).
+        * `westus`
+        * `eastus`
+        * `northeurope`
+        * `westeurope`
 
     * **resourceGroup**: [Create a new resource group in Azure](https://portal.azure.com/#create/Microsoft.ResourceGroup), to deploy your Constellation cluster into. Afterwards set the configuration field to the name of the created resource group, e.g., `constellation`.
 
@@ -187,4 +220,13 @@ This should give the following output:
 $ constellation terminate
 Terminating ...
 Your Constellation cluster was terminated successfully.
+```
+
+In case you have used `az` CLI to create your environment, make sure to clean up afterwards:
+
+```bash
+APPID=$(jq -r '.appId' azureServiceAccountKey.json)
+az ad sp delete --id "${APPID}"
+az group delete -g "${RESOURCE_GROUP}-identity" --yes --no-wait
+az group delete -g "${RESOURCE_GROUP}" --yes --no-wait
 ```
