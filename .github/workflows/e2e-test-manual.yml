@@ -121,5 +121,5 @@ jobs:
             --name ${{ steps.az_resource_group_gen.outputs.res_group_name }} \
             --force-deletion-types Microsoft.Compute/virtualMachineScaleSets \
             --force-deletion-types Microsoft.Compute/virtualMachines \
-            --no-wait
+            --no-wait \
             --yes
