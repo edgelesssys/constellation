@@ -51,7 +51,6 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.1
 	github.com/Azure/go-autorest/autorest v0.11.27
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11
-	github.com/Azure/go-autorest/autorest/date v0.3.0
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/aws/aws-sdk-go-v2 v1.16.5
 	github.com/aws/aws-sdk-go-v2/config v1.15.11
@@ -69,7 +68,6 @@ require (
 	github.com/google/go-tpm-tools v0.3.8
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/tink/go v1.6.1
-	github.com/google/uuid v1.3.0
 	github.com/googleapis/gax-go/v2 v2.4.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
@@ -119,6 +117,7 @@ require (
 require (
 	cloud.google.com/go v0.102.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
+	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
 	github.com/BurntSushi/toml v1.0.0 // indirect
 	github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
@@ -136,11 +135,13 @@ require (
 	github.com/docker/cli v20.10.17+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.6.4 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
+	github.com/emicklei/go-restful/v3 v3.8.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/go-gorp/gorp/v3 v3.0.2 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/google/btree v1.0.1 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gosuri/uitable v0.0.4 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
@@ -214,7 +215,6 @@ require (
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
-	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/go-errors/errors v1.4.2 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
@@ -275,9 +275,9 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm v2.17.0+incompatible
-	helm.sh/helm/v3 v3.9.2
+	helm.sh/helm/v3 v3.9.4
 	k8s.io/component-base v0.24.3 // indirect
-	k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 // indirect
+	k8s.io/kube-openapi v0.0.0-20220627174259-011e075b9cb8 // indirect
 	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect
 	sigs.k8s.io/kustomize/api v0.11.4 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.13.6 // indirect
