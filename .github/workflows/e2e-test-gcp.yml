@@ -25,7 +25,6 @@ jobs:
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
           # TODO: Remove E2E_SKIP once AB#2174 is resolved
           sonobuoyTestSuiteCmd: '--plugin e2e --plugin-env e2e.E2E_FOCUS="\[Conformance\]" --plugin-env e2e.E2E_SKIP="for service with type clusterIP|HostPort validates that there is no conflict between pods with same hostPort but different hostIP and protocol" --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-plugin.yaml --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-master-plugin.yaml'
-          msTeamsWebhook: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
           cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
@@ -33,6 +32,26 @@ jobs:
           awsSecretAccessKey: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           awsDefaultRegion: ${{ secrets.AWS_DEFAULT_REGION }}
           awsBucketName: ${{ secrets.PUBLIC_BUCKET_NAME }}
+
+      - name: Always terminate cluster
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/constellation_destroy
+
+      - name: Notify teams channel
+        if: ${{ failure() && github.ref == 'refs/heads/main' }}
+        continue-on-error: true
+        run: |
+          sudo apt-get install gettext-base -y
+          export TEAMS_JOB_NAME=gcp
+          export TEAMS_RUN_ID=${{ github.run_id }}
+          envsubst < teams-payload.json > to-be-send.json
+          curl                                          \
+            -H "Content-Type: application/json"         \
+            -d @to-be-send.json                         \
+            "${{ secrets.MS_TEAMS_WEBHOOK_URI }}"
+        shell: bash
+        working-directory: .github/actions/e2e_test
 
   test-older-versions:
     strategy:
@@ -44,6 +63,7 @@ jobs:
         uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
         with:
           fetch-depth: 0
+
       - name: Run GCP E2E test
         uses: ./.github/actions/e2e_test
         with:
@@ -56,4 +76,23 @@ jobs:
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
           sonobuoyTestSuiteCmd: "--mode quick"
           kubernetesVersion: ${{ matrix.version }}
-          msTeamsWebhook: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+
+      - name: Always terminate cluster
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/constellation_destroy
+
+      - name: Notify teams channel
+        if: ${{ failure() && github.ref == 'refs/heads/main' }}
+        continue-on-error: true
+        run: |
+          sudo apt-get install gettext-base -y
+          export TEAMS_JOB_NAME=gcp
+          export TEAMS_RUN_ID=${{ github.run_id }}
+          envsubst < teams-payload.json > to-be-send.json
+          curl                                          \
+            -H "Content-Type: application/json"         \
+            -d @to-be-send.json                         \
+            "${{ secrets.MS_TEAMS_WEBHOOK_URI }}"
+        shell: bash
+        working-directory: .github/actions/e2e_test
