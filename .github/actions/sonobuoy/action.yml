@@ -13,7 +13,7 @@ runs:
   steps:
     - name: Install sonobuoy
       run: |
-        curl -LO https://github.com/vmware-tanzu/sonobuoy/releases/download/v${{ inputs.sonobuoyVersion }}/sonobuoy_${{ inputs.sonobuoyVersion }}_linux_amd64.tar.gz
+        curl -sLO https://github.com/vmware-tanzu/sonobuoy/releases/download/v${{ inputs.sonobuoyVersion }}/sonobuoy_${{ inputs.sonobuoyVersion }}_linux_amd64.tar.gz
         tar -xzf sonobuoy_${{ inputs.sonobuoyVersion }}_linux_amd64.tar.gz
         install sonobuoy /usr/local/bin
       shell: bash
