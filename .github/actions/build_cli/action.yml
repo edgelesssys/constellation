@@ -69,7 +69,7 @@ runs:
       if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
     - name: Install Rekor
       run: |
-        curl -LO https://github.com/sigstore/rekor/releases/download/v0.9.0/rekor-cli-linux-amd64
+        curl -sLO https://github.com/sigstore/rekor/releases/download/v0.9.0/rekor-cli-linux-amd64
         sudo install rekor-cli-linux-amd64 /usr/local/bin/rekor-cli
       shell: bash
       if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}

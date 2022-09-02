@@ -40,7 +40,7 @@ runs:
   steps:
     - name: Install kubectl
       run: |
-        curl -LO https://dl.k8s.io/release/v1.23.0/bin/linux/amd64/kubectl
+        curl -sLO https://dl.k8s.io/release/v1.23.0/bin/linux/amd64/kubectl
         install kubectl /usr/local/bin
       shell: bash
     - name: Install yq jq
