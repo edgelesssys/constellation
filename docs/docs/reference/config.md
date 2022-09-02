@@ -50,7 +50,7 @@ provider:
         measurements:
             11: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
             12: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-        userAssignedIdentity: "" # Authorize spawned VMs to access Azure API. See: https://docs.edgeless.systems/constellation/getting-started/install#authorization
+        userAssignedIdentity: "" # Authorize spawned VMs to access Azure API.
 kubernetesVersion: "1.24" # Kubernetes version installed in the cluster.
 
 # # Egress firewall rules for node network.
@@ -67,17 +67,3 @@ kubernetesVersion: "1.24" # Kubernetes version installed in the cluster.
 #     - username: Alice # Username of new SSH user.
 #       publicKey: ssh-rsa AAAAB3NzaC...5QXHKW1rufgtJeSeJ8= alice@domain.com # Public key of new SSH user.
 ```
-
-## Required customizations
-
-Most options of a generated configuration can be kept at their default values. However, you must edit some cloud provider options.
-
-### Azure
-
-Set the `subscription` and `tenant` IDs of your subscription.
-
-Set the `userAssignedIdentity` that you [created for Constellation](../getting-started/install.md#azure).
-
-### GCP
-
-Set the `project` that you want to use for your Constellation cluster.

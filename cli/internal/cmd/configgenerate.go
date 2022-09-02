@@ -65,6 +65,9 @@ func configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloud
 	cmd.Println("Please fill in your CSP specific configuration before proceeding.")
 	cmd.Println("You can find the list of supported virtual machine types by executing:")
 	cmd.Println("\tconstellation config instance-types")
+	cmd.Println("Fore more information refer to our documentation:")
+	cmd.Println("\thttps://constellation-docs.edgeless.systems/constellation/getting-started/first-steps#create-a-cluster")
+
 	return nil
 }
 

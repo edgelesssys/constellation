@@ -9,10 +9,6 @@ The following steps will guide you through the process of creating a cluster and
     <tabs>
     <tabItem value="azure" label="Azure" default>
 
-    On Azure you also need a *user-assigned managed identity* with the [correct permissions](install.md?id=authorization).
-
-    Then execute:
-
     ```bash
     constellation config generate azure
     ```
@@ -27,11 +23,109 @@ The following steps will guide you through the process of creating a cluster and
     </tabItem>
     </tabs>
 
-    This creates the file `constellation-conf.yaml` in your current working directory. Edit this file to set your cloud subscription IDs and optionally customize further options of your Constellation cluster. All configuration options are documented in this file.
+    This creates the file `constellation-conf.yaml` in your current working directory.
 
-    For more details, see the [reference section](../reference/config.md#required-customizations).
+2.  Fill in your cloud provider specific information:
 
-2. Download the measurements for your configured image.
+    <tabs>
+    <tabItem value="azure-cli" label="Azure (CLI)" default>
+
+    For a quick start it's recommended to use our `az` script to automatically create all required resources:
+
+    ```bash
+    RESOURCE_GROUP=constellation # enter name of resource group here
+    LOCATION=westus # enter location of resources here
+    SUBSCRIPTION_ID=$(az account show --query id --out tsv)
+    SERVICE_PRINCIPLE_NAME=constell
+    az group create --name "${RESOURCE_GROUP}" --location "${LOCATION}"
+    az group create --name "${RESOURCE_GROUP}-identity" --location "${LOCATION}"
+    az ad sp create-for-rbac -n "${SERVICE_PRINCIPLE_NAME}" --role Owner --scopes "/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}" | tee azureServiceAccountKey.json
+    az identity create -g "${RESOURCE_GROUP}-identity" -n "${SERVICE_PRINCIPLE_NAME}"
+    identityID=$(az identity show -n "${SERVICE_PRINCIPLE_NAME}" -g "${RESOURCE_GROUP}-identity" --query principalId --out tsv)
+    az role assignment create --assignee-principal-type ServicePrincipal --assignee-object-id "${identityID}" --role 'Virtual Machine Contributor' --scope "/subscriptions/${SUBSCRIPTION_ID}"
+    az role assignment create --assignee-principal-type ServicePrincipal --assignee-object-id "${identityID}" --role 'Application Insights Component Contributor' --scope "/subscriptions/${SUBSCRIPTION_ID}"
+    echo "subscription: ${SUBSCRIPTION_ID}"
+    echo "tenant: $(az account show --query tenantId -o tsv)"
+    echo "location: ${LOCATION}"
+    echo "resourceGroup: ${RESOURCE_GROUP}"
+    echo "userAssignedIdentity: $(az identity show -n "${SERVICE_PRINCIPLE_NAME}" -g "${RESOURCE_GROUP}-identity" --query id --out tsv)"
+    echo "appClientID: $(jq -r '.appId' azureServiceAccountKey.json)"
+    echo "clientSecretValue: $(jq -r '.password' azureServiceAccountKey.json)"
+    ```
+
+    Fill in the printed out values to your configuration file.
+
+    </tabItem>
+    <tabItem value="azure-portal" label="Azure (Portal)" default>
+
+    * **subscription**: Is the UUID of your Azure subscription, e.g., `8b8bd01f-efd9-4113-9bd1-c82137c32da7`.
+
+        You can view your subscription UUID via `az account show` and read the `id` field. For more information refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/azure-portal/get-subscription-tenant-id#find-your-azure-subscription).
+
+    * **tenant**: Is the UUID of your Azure tenant, e.g., `3400e5a2-8fe2-492a-886c-38cb66170f25`.
+
+        You can view your tenant UUID via `az account show` and read the `tenant` field. For more information refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/azure-portal/get-subscription-tenant-id#find-your-azure-ad-tenant).
+
+    * **location**: Is the Azure datacenter location you want to deploy your cluster in, e.g., `westus`. Notice that CVMs are currently only supported in a few regions, check [Azure's products available by region](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all). Currently these are supported:
+
+        * `westus`
+        * `eastus`
+        * `northeurope`
+        * `westeurope`
+
+    * **resourceGroup**: [Create a new resource group in Azure](https://portal.azure.com/#create/Microsoft.ResourceGroup), to deploy your Constellation cluster into. Afterwards set the configuration field to the name of the created resource group, e.g., `constellation`.
+
+    * **userAssignedIdentity**: [Create a new managed identity in Azure](https://portal.azure.com/#create/Microsoft.ManagedIdentity). Notice that the identity should be created in a different resource group as all resources within the cluster resource group will be deleted on cluster termination.
+
+        After creation, add two role assignments to the identity, for the roles `Virtual Machine Contributor` and `Application Insights Component Contributor`. The `scope` of both should refer to the previously created resource group.
+
+        Set the configuration value to the full ID of the created identity, e.g., `/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity`.
+
+        The user-assigned identity is used by instances of the cluster to access other cloud resources.
+
+        For more information about managed identities refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-manage-user-assigned-managed-identities).
+
+    * **appClientID**: [Create a new app registration in Azure](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/CreateApplicationBlade/quickStartType~/null/isMSAApp~/false).
+
+        As `Supported account types` choose `Accounts in this organizational directory only`, and leave the `Redirect URI` empty.
+
+        In the cluster resource group, go to `Access Control (IAM)`, and set the created app registration as `Owner`.
+
+        Set the configuration value to the `Application (client) ID`, e.g., `86ec31dd-532b-4a8c-a055-dd23f25fb12f`.
+
+    * **clientSecretValue**: In our previously created app registration, go to `Certificates & secrets` and create a new `Client secret`.
+
+        Set the configuration value to the secret value.
+
+    </tabItem>
+    <tabItem value="gcp" label="GCP" default>
+
+    * **project**: Is the ID of your GCP project, e.g., `constellation-129857`.
+
+        You will find it on the [welcome screen of your GCP project](https://console.cloud.google.com/welcome). For more information refer to [Google's documentation](https://support.google.com/googleapi/answer/7014113).
+
+    * **region**: Is the GCP region you want to deploy your cluster in, e.g., `us-west-1`.
+
+        You can find a [list of all regions in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available).
+
+    * **zone**: Is the GCP zone you want to deploy your cluster in, e.g., `us-west-1a`.
+
+        You can find a [list of all zones in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available).
+
+    * **serviceAccountKeyPath**: To configure this, you need to create a GCP [service account](https://cloud.google.com/iam/docs/service-accounts) with the following permissions:
+
+        - `Compute Instance Admin (v1) (roles/compute.instanceAdmin.v1)`
+        - `Compute Network Admin (roles/compute.networkAdmin)`
+        - `Compute Security Admin (roles/compute.securityAdmin)`
+        - `Compute Storage Admin (roles/compute.storageAdmin)`
+        - `Service Account User (roles/iam.serviceAccountUser)`
+
+        Afterwards, create and download a new `JSON` key for this service account. Place the downloaded file in your Constellation workspace, and set the config parameter to the filename, e.g., `constellation-129857-15343dba46cb.json`.
+
+    </tabItem>
+    </tabs>
+
+3. Download the measurements for your configured image.
 
     ```bash
     constellation config fetch-measurements
@@ -41,7 +135,7 @@ The following steps will guide you through the process of creating a cluster and
 
     For more details, see the [verification section](../workflows/verify.md).
 
-3. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml` automatically.
+4. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml` automatically.
 
     <tabs>
     <tabItem value="azure" label="Azure" default>
@@ -67,7 +161,7 @@ The following steps will guide you through the process of creating a cluster and
     Your Constellation cluster was created successfully.
     ```
 
-4. Initialize the cluster
+5. Initialize the cluster
 
     ```bash
     constellation init
@@ -89,7 +183,7 @@ The following steps will guide you through the process of creating a cluster and
     Keep `constellation-mastersecret.json` somewhere safe.
     This will allow you to [recover your cluster](../workflows/recovery.md) in case of a disaster.
 
-5. Configure kubectl
+6. Configure kubectl
 
     ```bash
     export KUBECONFIG="$PWD/constellation-admin.conf"
@@ -124,4 +218,13 @@ This should give the following output:
 $ constellation terminate
 Terminating ...
 Your Constellation cluster was terminated successfully.
+```
+
+In case you have used `az` CLI to create your environment, make sure to clean up afterwards:
+
+```bash
+APPID=$(jq -r '.appId' azureServiceAccountKey.json)
+az ad sp delete --id "${APPID}"
+az group delete -g "${RESOURCE_GROUP}-identity" --yes --no-wait
+az group delete -g "${RESOURCE_GROUP}" --yes --no-wait
 ```
