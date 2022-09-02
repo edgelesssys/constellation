@@ -8,7 +8,7 @@ It's intendet for the Constellation CSI Plugins and the CLI.
 The Cloud KMS is where we store our key encryption key (KEK).
 It should be initiated by the CLI and provided with a key release policy.
 The CSP Plugin can request to encrypt data encryption keys (DEK) with the DEK to safely store them on persistent memory.
-The [kms](pkg/kms) package interacts with the Cloud KMS APIs.
+The [kms](kms) package interacts with the Cloud KMS APIs.
 Currently planned are KMS are:
 
 * AWS KMS

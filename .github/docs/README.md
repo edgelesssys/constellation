@@ -85,7 +85,12 @@ az ad sp create-for-rbac --name "github-actions-e2e-tests" --role contributor --
 az role assignment create --role "User Access Administrator" --scope /subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435 --assignee <SERVICE_PRINCIPAL_CLIENT_ID>
 ```
 
-Next, [add API permissions to Managed Identity](https://github.com/edgelesssys/wiki/blob/master/other_tech/azure.md#adding-api-permission-to-managed-identity)
+Next, add API permissions to Managed Identity:
+
+* Not possible through portal; requires PowerShell
+* <https://techcommunity.microsoft.com/t5/integrations-on-azure-blog/grant-graph-api-permission-to-managed-identity-object/ba-p/2792127>
+* `$GraphAppId` in this article is for Microsoft Graph. Azure AD Graph is `00000002-0000-0000-c000-000000000000`
+* Note that changing permissions can take between few seconds to several hours
 
 Store output of `az ad sp ...` in [GitHub Action Secret](https://github.com/edgelesssys/constellation/settings/secrets/actions) or create a local secret file for act to consume.
 

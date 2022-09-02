@@ -50,7 +50,7 @@ provider:
         measurements:
             11: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
             12: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-        userAssignedIdentity: "" # Authorize spawned VMs to access Azure API. See: https://docs.edgeless.systems/constellation/latest/#/getting-started/install?id=azure
+        userAssignedIdentity: "" # Authorize spawned VMs to access Azure API. See: https://docs.edgeless.systems/constellation/getting-started/install#authorization
 kubernetesVersion: "1.24" # Kubernetes version installed in the cluster.
 
 # # Egress firewall rules for node network.

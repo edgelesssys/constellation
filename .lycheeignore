@@ -1,7 +1,9 @@
 file:///github/workspace/.+/\$%7Bhref%7D
 file:///github/workspace/.+/.+/_media/
-http://localhost:8080/
+file:///github/workspace/LICENSE
+http://localhost.*
 https://github.com/edgelesssys/constellation.*
+https://github.com/edgelesssys/edg-gcp-compute-persistent-disk-csi-driver
 http://my.storage/measurements.yaml
 http://my.storage/measurements.yaml.sig
 http://php-apache
