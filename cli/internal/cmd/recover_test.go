@@ -8,10 +8,11 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"errors"
-	"strings"
 	"testing"
 
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
@@ -57,7 +58,6 @@ func TestRecover(t *testing.T) {
 		client           *stubRecoveryClient
 		masterSecret     testvector.HKDF
 		endpointFlag     string
-		diskUUIDFlag     string
 		masterSecretFlag string
 		configFlag       string
 		stateless        bool
@@ -67,29 +67,13 @@ func TestRecover(t *testing.T) {
 			existingState: validState,
 			client:        &stubRecoveryClient{},
 			endpointFlag:  "192.0.2.1",
-			diskUUIDFlag:  testvector.HKDFZero.Info,
 			masterSecret:  testvector.HKDFZero,
-		},
-		"uppercase disk uuid works": {
-			existingState: validState,
-			client:        &stubRecoveryClient{},
-			endpointFlag:  "192.0.2.1",
-			diskUUIDFlag:  strings.ToUpper(testvector.HKDF0xFF.Info),
-			masterSecret:  testvector.HKDF0xFF,
-		},
-		"lowercase disk uuid results in same key": {
-			existingState: validState,
-			client:        &stubRecoveryClient{},
-			endpointFlag:  "192.0.2.1",
-			diskUUIDFlag:  strings.ToLower(testvector.HKDF0xFF.Info),
-			masterSecret:  testvector.HKDF0xFF,
 		},
 		"missing flags": {
 			wantErr: true,
 		},
 		"missing config": {
 			endpointFlag: "192.0.2.1",
-			diskUUIDFlag: testvector.HKDFZero.Info,
 			masterSecret: testvector.HKDFZero,
 			configFlag:   "nonexistent-config",
 			wantErr:      true,
@@ -97,7 +81,6 @@ func TestRecover(t *testing.T) {
 		"missing state": {
 			existingState: validState,
 			endpointFlag:  "192.0.2.1",
-			diskUUIDFlag:  testvector.HKDFZero.Info,
 			masterSecret:  testvector.HKDFZero,
 			stateless:     true,
 			wantErr:       true,
@@ -105,7 +88,6 @@ func TestRecover(t *testing.T) {
 		"invalid cloud provider": {
 			existingState: invalidCSPState,
 			endpointFlag:  "192.0.2.1",
-			diskUUIDFlag:  testvector.HKDFZero.Info,
 			masterSecret:  testvector.HKDFZero,
 			wantErr:       true,
 		},
@@ -113,7 +95,6 @@ func TestRecover(t *testing.T) {
 			existingState: validState,
 			client:        &stubRecoveryClient{connectErr: errors.New("connect failed")},
 			endpointFlag:  "192.0.2.1",
-			diskUUIDFlag:  testvector.HKDFZero.Info,
 			masterSecret:  testvector.HKDFZero,
 			wantErr:       true,
 		},
@@ -121,7 +102,6 @@ func TestRecover(t *testing.T) {
 			existingState: validState,
 			client:        &stubRecoveryClient{pushStateDiskKeyErr: errors.New("pushing key failed")},
 			endpointFlag:  "192.0.2.1",
-			diskUUIDFlag:  testvector.HKDFZero.Info,
 			masterSecret:  testvector.HKDFZero,
 			wantErr:       true,
 		},
@@ -139,9 +119,6 @@ func TestRecover(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			if tc.endpointFlag != "" {
 				require.NoError(cmd.Flags().Set("endpoint", tc.endpointFlag))
-			}
-			if tc.diskUUIDFlag != "" {
-				require.NoError(cmd.Flags().Set("disk-uuid", tc.diskUUIDFlag))
 			}
 			if tc.masterSecretFlag != "" {
 				require.NoError(cmd.Flags().Set("master-secret", tc.masterSecretFlag))
@@ -170,7 +147,6 @@ func TestRecover(t *testing.T) {
 
 			assert.NoError(err)
 			assert.Contains(out.String(), "Pushed recovery key.")
-			assert.Equal(tc.masterSecret.Output, tc.client.pushStateDiskKeyKey)
 		})
 	}
 }
@@ -185,36 +161,22 @@ func TestParseRecoverFlags(t *testing.T) {
 			wantErr: true,
 		},
 		"invalid ip": {
-			args:    []string{"-e", "192.0.2.1:2:2", "--disk-uuid", "12345678-1234-1234-1234-123456789012"},
-			wantErr: true,
-		},
-		"invalid disk uuid": {
-			args:    []string{"-e", "192.0.2.1:2", "--disk-uuid", "invalid"},
+			args:    []string{"-e", "192.0.2.1:2:2"},
 			wantErr: true,
 		},
 		"minimal args set": {
-			args: []string{"-e", "192.0.2.1:2", "--disk-uuid", "12345678-1234-1234-1234-123456789012"},
+			args: []string{"-e", "192.0.2.1:2"},
 			wantFlags: recoverFlags{
 				endpoint:   "192.0.2.1:2",
-				diskUUID:   "12345678-1234-1234-1234-123456789012",
 				secretPath: "constellation-mastersecret.json",
 			},
 		},
 		"all args set": {
-			args: []string{"-e", "192.0.2.1:2", "--disk-uuid", "12345678-1234-1234-1234-123456789012", "--config", "config-path", "--master-secret", "/path/super-secret.json"},
+			args: []string{"-e", "192.0.2.1:2", "--config", "config-path", "--master-secret", "/path/super-secret.json"},
 			wantFlags: recoverFlags{
 				endpoint:   "192.0.2.1:2",
-				diskUUID:   "12345678-1234-1234-1234-123456789012",
 				secretPath: "/path/super-secret.json",
 				configPath: "config-path",
-			},
-		},
-		"uppercase disk-uuid is converted to lowercase": {
-			args: []string{"-e", "192.0.2.1:2", "--disk-uuid", "ABCDEFAB-CDEF-ABCD-ABCD-ABCDEFABCDEF"},
-			wantFlags: recoverFlags{
-				endpoint:   "192.0.2.1:2",
-				diskUUID:   "abcdefab-cdef-abcd-abcd-abcdefabcdef",
-				secretPath: "constellation-mastersecret.json",
 			},
 		},
 	}
@@ -239,26 +201,26 @@ func TestParseRecoverFlags(t *testing.T) {
 	}
 }
 
-func TestDeriveStateDiskKey(t *testing.T) {
-	testCases := map[string]struct {
-		masterSecret testvector.HKDF
-	}{
-		"all zero": {
-			masterSecret: testvector.HKDFZero,
-		},
-		"all 0xff": {
-			masterSecret: testvector.HKDF0xFF,
-		},
-	}
+type stubRecoveryClient struct {
+	conn                bool
+	connectErr          error
+	closeErr            error
+	pushStateDiskKeyErr error
 
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
+	pushStateDiskKeyKey []byte
+}
 
-			stateDiskKey, err := deriveStateDiskKey(tc.masterSecret.Secret, tc.masterSecret.Salt, tc.masterSecret.Info)
+func (c *stubRecoveryClient) Connect(string, atls.Validator) error {
+	c.conn = true
+	return c.connectErr
+}
 
-			assert.NoError(err)
-			assert.Equal(tc.masterSecret.Output, stateDiskKey)
-		})
-	}
+func (c *stubRecoveryClient) Close() error {
+	c.conn = false
+	return c.closeErr
+}
+
+func (c *stubRecoveryClient) Recover(_ context.Context, stateDiskKey, _ []byte) error {
+	c.pushStateDiskKeyKey = stateDiskKey
+	return c.pushStateDiskKeyErr
 }
