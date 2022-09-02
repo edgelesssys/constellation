@@ -29,8 +29,6 @@ runs:
     - name: get pseudo version
       id: pseudo-version
       run: |
-        set -e
-        set -o pipefail
         if $(git rev-parse --is-shallow-repository); then
           git fetch --prune --unshallow --tags -v
         else
@@ -52,4 +50,4 @@ runs:
         echo "::set-output name=branchName::${branchName}"
         echo "::set-output name=releaseVersion::${releaseVersion}"
       working-directory: hack/pseudo-version
-      shell: bash {0}
+      shell: bash
