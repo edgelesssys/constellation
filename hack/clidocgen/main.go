@@ -29,7 +29,15 @@ func main() {
 	body := &bytes.Buffer{}
 	for _, c := range allSubCommands(rootCmd) {
 		name := c.Name()
-		fmt.Fprintf(cmdList, "* [%v](#constellation-%v): %v\n", name, name, c.Short)
+		fullName, level := determineFullNameAndLevel(c)
+
+		// Used for indentation based on the level of a command.
+		var nestingSpaces string
+		for i := 0; i < level; i++ {
+			nestingSpaces += "  "
+		}
+
+		fmt.Fprintf(cmdList, "%s* [%v](#constellation-%v): %v\n", nestingSpaces, name, fullName, c.Short)
 		if err := doc.GenMarkdown(c, body); err != nil {
 			panic(err)
 		}
@@ -48,4 +56,16 @@ func allSubCommands(cmd *cobra.Command) []*cobra.Command {
 		all = append(all, allSubCommands(c)...)
 	}
 	return all
+}
+
+func determineFullNameAndLevel(cmd *cobra.Command) (string, int) {
+	// Traverse the command tree upwards and determine the full name and level of the command.
+	name := cmd.Name()
+	level := 0
+	for cmd.HasParent() && cmd.Parent().Name() != "constellation" {
+		cmd = cmd.Parent()
+		name = cmd.Name() + "-" + name // Use '-' as separator since we pipe it into a Markdown link.
+		level++
+	}
+	return name, level
 }
