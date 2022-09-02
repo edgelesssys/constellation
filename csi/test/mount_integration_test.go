@@ -9,8 +9,7 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/edgelesssys/constellation/mount/cryptmapper"
-	"github.com/edgelesssys/constellation/mount/kms"
+	"github.com/edgelesssys/constellation/csi/cryptmapper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -55,8 +54,7 @@ func TestOpenAndClose(t *testing.T) {
 	setup()
 	defer teardown(DevicePath)
 
-	kms := kms.NewStaticKMS()
-	mapper := cryptmapper.New(kms, &cryptmapper.CryptDevice{})
+	mapper := cryptmapper.New(&fakeKMS{}, &cryptmapper.CryptDevice{})
 
 	newPath, err := mapper.OpenCryptDevice(context.Background(), DevicePath, DeviceName, false)
 	require.NoError(err)
@@ -94,8 +92,7 @@ func TestOpenAndCloseIntegrity(t *testing.T) {
 	setup()
 	defer teardown(DevicePath)
 
-	kms := kms.NewStaticKMS()
-	mapper := cryptmapper.New(kms, &cryptmapper.CryptDevice{})
+	mapper := cryptmapper.New(&fakeKMS{}, &cryptmapper.CryptDevice{})
 
 	newPath, err := mapper.OpenCryptDevice(context.Background(), DevicePath, DeviceName, true)
 	require.NoError(err)
@@ -147,6 +144,16 @@ func TestDeviceCloning(t *testing.T) {
 
 	assert.NoError(mapper.CloseCryptDevice(DeviceName))
 	assert.NoError(mapper.CloseCryptDevice(DeviceName + "-copy"))
+}
+
+type fakeKMS struct{}
+
+func (k *fakeKMS) GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error) {
+	key := make([]byte, dekSize)
+	for i := range key {
+		key[i] = 0x41
+	}
+	return key, nil
 }
 
 type dynamicKMS struct{}
