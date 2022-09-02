@@ -1,7 +1,5 @@
 # First steps
 
-Some random stuff.
-
 The following steps will guide you through the process of creating a cluster and deploying a sample app. This example assumes that you have successfully [installed and set up Constellation](install.md).
 
 ## Create a cluster
@@ -32,7 +30,7 @@ The following steps will guide you through the process of creating a cluster and
     <tabs>
     <tabItem value="azure-cli" label="Azure (CLI)" default>
 
-    For a quick start it is recommended to use our `az` script to automatically create all required resources:
+    For a quick start it's recommended to use our `az` script to automatically create all required resources:
 
     ```bash
     RESOURCE_GROUP=constellation # enter name of resource group here
