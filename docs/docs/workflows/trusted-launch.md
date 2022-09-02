@@ -27,7 +27,7 @@ Once the import is completed you can use the `ID` of the image version in your `
 
 :::info
 
-Please note that [create.md](create) will issue a warning, because it is not able to recognize manually imported images as production grade images:
+Please note that [create](create.md) will issue a warning, because it is not able to recognize manually imported images as production grade images:
 
 ```shell-session
 Configured image does not look like a released production image. Double check image before deploying to production.
