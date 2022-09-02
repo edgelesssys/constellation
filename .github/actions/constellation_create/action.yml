@@ -45,10 +45,12 @@ runs:
       shell: bash
     - name: Install yq jq
       run: |
+        echo "::group::Install dependencies"
         sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CC86BB64
         sudo add-apt-repository ppa:rmescandon/yq
         sudo apt update
         sudo apt install yq jq -y
+        echo "::endgroup::"
       shell: bash
 
     - name: Constellation config generate
@@ -130,7 +132,9 @@ runs:
 
     - name: Cdbg deploy
       run: |
+        echo "::group::cdbg deploy"
         cdbg deploy --bootstrapper $GITHUB_WORKSPACE/build/bootstrapper
+        echo "::endgroup::"
       shell: bash
       if: ${{ inputs.isDebugImage == 'true' }}
 

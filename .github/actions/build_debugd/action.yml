@@ -3,12 +3,12 @@ description: Build the Constellation debugd binary
 
 inputs:
   outputPath:
-    description: 'Output path of the binary'
-    default: './debugd'
+    description: "Output path of the binary"
+    default: "./debugd"
     required: true
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Install Go
       uses: actions/setup-go@84cbf8094393cdc5fe1fe1671ff2647332956b1a
@@ -17,11 +17,16 @@ runs:
 
     - name: Install Dependencies
       shell: bash
-      run: sudo apt-get update && sudo apt-get -y install cmake make
-    
+      run: |
+        echo "::group::Install build dependencies"
+        sudo apt-get update
+        sudo apt-get -y install cmake make
+        echo "::endgroup::"
+
     - name: Build debugd
       shell: bash
       run: |
+        echo "::group::Build debugd"
         homedir="$(getent passwd $(id -u) | cut -d ":" -f 6)"
         mkdir -p build && cd build
         cmake ..
@@ -31,3 +36,4 @@ runs:
         export GOMODCACHE=${homedir}/.cache/go-mod
         make debugd cdbg
         mv -n debugd "${{ inputs.outputPath }}"
+        echo "::endgroup::"

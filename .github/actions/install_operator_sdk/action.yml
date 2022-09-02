@@ -12,8 +12,10 @@ runs:
   - name: Install curl gpg
     shell: bash
     run: |
+      echo "::group::Install dependencies"
       sudo apt update
       sudo apt install curl gpg -y
+      echo "::endgroup::"
 
   - name: Install operator-sdk
     shell: bash
