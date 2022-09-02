@@ -72,7 +72,6 @@ Development components:
 * [proto](proto): Proto files generator
 * [terraform](terraform): Infrastructure management using terraform (instead of `constellation create/destroy`)
   * [libvirt](terraform/libvirt): Deploy local cluster using terraform, libvirt and QEMU
-* [test](test): Integration test
 
 Additional repositories:
 
