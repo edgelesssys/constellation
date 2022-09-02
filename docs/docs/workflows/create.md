@@ -60,14 +60,14 @@ The following command creates a cluster with one control-plane and two worker no
 <tabItem value="azure" label="Azure" default>
 
 ```bash
-constellation create azure --control-plane-nodes 1 --worker-nodes 2 --instance-type Standard_D4a_v4 -y
+constellation create azure --control-plane-nodes 1 --worker-nodes 2 -y
 ```
 
 </tabItem>
 <tabItem value="gcp" label="GCP" default>
 
 ```bash
-constellation create gcp --control-plane-nodes 1 --worker-nodes 2 --instance-type n2d-standard-2 -y
+constellation create gcp --control-plane-nodes 1 --worker-nodes 2 -y
 ```
 
 </tabItem>
