@@ -19,7 +19,6 @@ import (
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/grpc/grpclog"
 	"github.com/edgelesssys/constellation/internal/logger"
-	"github.com/edgelesssys/constellation/internal/versions"
 	"github.com/edgelesssys/constellation/joinservice/joinproto"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -181,10 +180,6 @@ func (s *Server) getK8sVersion() (string, error) {
 		return "", fmt.Errorf("could not read k8s version file: %v", err)
 	}
 	k8sVersion := string(fileContent)
-
-	if !versions.IsSupportedK8sVersion(k8sVersion) {
-		return "", fmt.Errorf("supplied k8s version is not supported: %v", k8sVersion)
-	}
 
 	return k8sVersion, nil
 }
