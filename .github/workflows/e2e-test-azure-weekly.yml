@@ -17,6 +17,21 @@ jobs:
         uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
         with:
           fetch-depth: 0
+
+      - name: Login to Azure
+        uses: ./.github/actions/azure_login
+        with:
+          azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
+
+      - name: Create Azure resource group
+        id: az_resource_group_gen
+        shell: bash
+        run: |
+          uuid=$(cat /proc/sys/kernel/random/uuid)
+          name=e2e-test-${uuid%%-*}
+          az group create --location westus --name $name --tags e2e
+          echo "::set-output name=res_group_name::$name"
+
       - name: Run Azure E2E test
         uses: ./.github/actions/e2e_test
         with:
@@ -25,10 +40,10 @@ jobs:
           autoscale: "false"
           cloudProvider: "azure"
           machineType: "Standard_DC4as_v5"
-          azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
           sonobuoyTestSuiteCmd: '--plugin e2e --plugin-env e2e.E2E_FOCUS="\[Conformance\]" --plugin-env e2e.E2E_SKIP="for service with type clusterIP|HostPort validates that there is no conflict between pods with same hostPort but different hostIP and protocol" --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-plugin.yaml --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-master-plugin.yaml'
           kubernetesVersion: ${{ matrix.version }}
           azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
+          azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
 
       - name: Always terminate cluster
         if: always()
@@ -50,3 +65,13 @@ jobs:
         shell: bash
         working-directory: .github/actions/e2e_test
 
+      - name: Always destroy Azure resource group
+        if: always()
+        shell: bash
+        run: |
+          az group delete \
+            --name ${{ steps.az_resource_group_gen.outputs.res_group_name }} \
+            --force-deletion-types Microsoft.Compute/virtualMachineScaleSets \
+            --force-deletion-types Microsoft.Compute/virtualMachines \
+            --no-wait \
+            --yes

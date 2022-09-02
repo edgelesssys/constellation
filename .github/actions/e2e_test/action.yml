@@ -30,9 +30,6 @@ inputs:
   gcpClusterServiceAccountKey:
     description: "Service account to use inside the created Constellation cluster on GCP."
     required: false
-  azure_credentials:
-    description: "Credentials authorized to create Constellation on Azure."
-    required: false
   sonobuoyTestSuiteCmd:
     description: "Which tests should be run? Check README for guidance!"
     required: true
@@ -63,6 +60,9 @@ inputs:
   azureClientSecret:
     description: "The client secret value of the used secret"
     required: false
+  azureResourceGroup:
+    description: "The resource group to use"
+    required: false
 
 runs:
   using: "composite"
@@ -83,15 +83,6 @@ runs:
       with:
         gcp_service_account_json: ${{ inputs.gcp_service_account_json }}
       if: ${{ inputs.cloudProvider == 'gcp' }}
-    - name: Login to Azure
-      uses: ./.github/actions/azure_login
-      with:
-        azure_credentials: ${{ inputs.azure_credentials }}
-      if: ${{ inputs.cloudProvider == 'azure' }}
-
-    - name: Clean resource group on Azure
-      uses: ./.github/actions/e2e_cleanup
-      if: ${{ inputs.cloudProvider == 'azure' }}
 
     - name: Create cluster
       uses: ./.github/actions/constellation_create
@@ -106,6 +97,8 @@ runs:
         isDebugImage: ${{ inputs.isDebugImage }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
         azureClientSecret: ${{ inputs.azureClientSecret }}
+        azureResourceGroup: ${{ inputs.azureResourceGroup }}
+
     - name: Measure cluster
       uses: ./.github/actions/constellation_measure
       with:

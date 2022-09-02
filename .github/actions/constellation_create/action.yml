@@ -32,6 +32,9 @@ inputs:
   azureClientSecret:
     description: "The client secret value of the used secret"
     required: false
+  azureResourceGroup:
+    description: "The resource group to use for Constellation cluster"
+    required: false
 runs:
   using: "composite"
   steps:
@@ -57,7 +60,7 @@ runs:
             (.provider | select(. | has(\"azure\")).azure.tenant) = \"adb650a8-5da3-4b15-b4b0-3daf65ff7626\" |
             (.provider | select(. | has(\"azure\")).azure.location) = \"West US\" |
             (.provider | select(. | has(\"azure\")).azure.userAssignedIdentity) = \"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/e2e-test-creds/providers/Microsoft.ManagedIdentity/userAssignedIdentities/e2e-test-user-assigned-id\" |
-            (.provider | select(. | has(\"azure\")).azure.resourceGroup) = \"e2e-test\" |
+            (.provider | select(. | has(\"azure\")).azure.resourceGroup) = \"${{ inputs.azureResourceGroup }}\" |
             (.provider | select(. | has(\"azure\")).azure.appClientID) = \"b657a00e-813a-4dc7-9b09-fa498a254d71\" |
             (.provider | select(. | has(\"azure\")).azure.clientSecretValue) = \"${{ inputs.azureClientSecret }}\" |
             (.provider | select(. | has(\"azure\")).azure.enforcedMeasurements) = [11,12]" \
