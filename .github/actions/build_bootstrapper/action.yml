@@ -15,12 +15,17 @@ runs:
 
     - name: Install Dependencies
       shell: bash
-      run: sudo apt-get update && sudo apt-get -y install cmake make
+      run: |
+        echo "::group::Install build dependencies"
+        sudo apt-get update && sudo apt-get -y install cmake make
+        echo "::endgroup::"
 
     - name: Build the bootstrapper
       shell: bash
       run: |
+        echo "::group::Build the bootstrapper"
         mkdir -p build && cd build
         cmake ..
         make bootstrapper
         mv -n bootstrapper "${{ inputs.outputPath }}"
+        echo "::endgroup::"
