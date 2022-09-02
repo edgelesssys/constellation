@@ -1,8 +1,7 @@
 # Upgrading Kubernetes
 
-Constellation is a Kubernetes distribution and a sidecar. This means that the Kubernetes version is tracked in multiple places:
+Constellation is a Kubernetes distribution. As such, dependencies on Kubernetes versions exist in multiple places:
 
-- Kubernetes linux binaries installed in the CoreOS image (`kubelet`, `kubectl`, `kubeadm`)
 - The desired Kubernetes version deployed by `kubeadm init`
 - Kubernetes resources (deployments made while initializing Kubernetes, including the `cloud-controller-manager`, `cluster-autoscaler` and more)
 - Kubernetes go dependencies for the bootstrapper code
@@ -10,53 +9,13 @@ Constellation is a Kubernetes distribution and a sidecar. This means that the Ku
 
 ## Understand what has changed
 
-Before changing the Kubernetes version, it is a very good idea to [read the release notes](https://kubernetes.io/releases/notes/) and to identify breaking changes.
-
-
-## Prepare CoreOS images
-
-CoreOS is the linux distribution that constellation is built on. The Kubernetes components are installed on CoreOS from [the official Kubernetes RPM sources](https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64).
-The installed versions of `kubelet`, `kubeadm` and `kubectl` are pinned to a specific version by the [`manifest-lock.x86_64.json`](https://github.com/edgelesssys/constellation-fedora-coreos-config/blob/constellation/manifest-lock.x86_64.json) in the [`constellation-fedora-coreos-config` repository](https://github.com/edgelesssys/constellation-fedora-coreos-config):
-
-```javascript
-{
-  "packages": {
-    // [...]
-    "kubeadm": {
-      "evra": "1.23.1-0.x86_64"
-    },
-    "kubectl": {
-      "evra": "1.23.1-0.x86_64"
-    },
-    "kubelet": {
-      "evra": "1.23.1-0.x86_64"
-    },
-    // [...]
-  }
-  // [...]
-}
-```
-
-New CoreOS images with the desired Kubernetes version should be prepared for testing/debugging and a PR should be opened.
-
-## Upgrade the pinned Kubernetes version deployed by kubeadm
-
-Kubeadm is the Kubernetes deployment tool used by constellation. During `kubeadm init`, a Kubernetes version is selected and installed. Using the flag `--kubernetes-version` or the `ClusterConfiguration` field `kubernetesVersion`, this version can be pinned.
-To change this version, set the go constant in [`github.com/edgelesssys/constellation/internal/constants.KubernetesVersion`](/internal/constants/constants.go):
-
-```go
-const (
-    // [...]
-
-    // KubernetesVersion installed by kubeadm.
-    KubernetesVersion = "stable-1.23"
-)
-```
+Before adding support for a new Kubernetes version, it is a very good idea to [read the release notes](https://kubernetes.io/releases/notes/) and to identify breaking changes.
 
 ## Upgrading Kubernetes resources
 
-During the cluster initialization, multiple Kubernetes resources are deployed. Some of these should be upgraded with Kubernetes.
-Look at [the resources folder](/bootstrapper/internal/kubernetes/k8sapi/resources) and decide what needs to be upgraded. Cloud provider specific images are defined in [`github.com/edgelesssys/internal/versions`](/internal/versions/versions.go). You can check available version tags for container images using [the container registry tags API](https://docs.docker.com/registry/spec/api/#listing-image-tags):
+Everything related to Kubernetes versions is tracked in [the versions file](/internal/versions/versions.go). Add a new `ValidK8sVersion` and fill out the `VersionConfigs` entry for that version.
+During cluster initialization, multiple Kubernetes resources are deployed. Some of these should be upgraded with Kubernetes.
+You can check available version tags for container images using [the container registry tags API](https://docs.docker.com/registry/spec/api/#listing-image-tags):
 
 ```
 curl -q https://k8s.gcr.io/v2/autoscaling/cluster-autoscaler/tags/list | jq .tags
