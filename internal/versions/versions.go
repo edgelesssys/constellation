@@ -49,10 +49,10 @@ const (
 	NodeMaintenanceOperatorVersion      = "v0.13.1-alpha1"
 
 	// currently supported versions.
-	V1_22  ValidK8sVersion = "1.22"
-	V1_23  ValidK8sVersion = "1.23"
-	V1_24  ValidK8sVersion = "1.24"
-	Latest ValidK8sVersion = V1_24
+	V1_22   ValidK8sVersion = "1.22"
+	V1_23   ValidK8sVersion = "1.23"
+	V1_24   ValidK8sVersion = "1.24"
+	Default ValidK8sVersion = V1_24
 )
 
 // versionConfigs holds download URLs for all required kubernetes components for every supported version.

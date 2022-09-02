@@ -17,7 +17,7 @@ func TestTrivialCNMFunctions(t *testing.T) {
 	assert := assert.New(t)
 	cloud := CloudNodeManager{}
 
-	assert.NotEmpty(cloud.Image(versions.Latest))
+	assert.NotEmpty(cloud.Image(versions.Default))
 	assert.NotEmpty(cloud.Path())
 	assert.NotEmpty(cloud.ExtraArgs())
 	assert.True(cloud.Supported())

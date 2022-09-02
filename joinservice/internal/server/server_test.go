@@ -42,7 +42,7 @@ func TestIssueJoinTicket(t *testing.T) {
 		CACertHashes:      []string{"hash"},
 		Token:             "token",
 	}
-	testK8sVersion := versions.Latest
+	testK8sVersion := versions.Default
 
 	testCases := map[string]struct {
 		isControlPlane bool
