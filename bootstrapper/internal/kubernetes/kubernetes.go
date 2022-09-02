@@ -254,9 +254,11 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		providerID = instance.ProviderID
 		nodeName = instance.Name
 		nodeInternalIP = instance.VPCIP
-		loadbalancerEndpoint, err = k.providerMetadata.GetLoadBalancerEndpoint(ctx)
-		if err != nil {
-			return fmt.Errorf("retrieving loadbalancer endpoint: %w", err)
+		if k.providerMetadata.SupportsLoadBalancer() {
+			loadbalancerEndpoint, err = k.providerMetadata.GetLoadBalancerEndpoint(ctx)
+			if err != nil {
+				return fmt.Errorf("retrieving loadbalancer endpoint: %w", err)
+			}
 		}
 	}
 	nodeName = k8sCompliantHostname(nodeName)

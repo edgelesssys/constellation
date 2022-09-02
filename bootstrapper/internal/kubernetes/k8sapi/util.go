@@ -233,7 +233,7 @@ func (k *KubernetesUtil) deployCilium(ctx context.Context, in SetupPodNetworkInp
 	case "azure":
 		return k.deployCiliumAzure(ctx, helmClient, ciliumDeployment, in.LoadBalancerEndpoint)
 	case "qemu":
-		return k.deployCiliumQEMU(ctx, helmClient, ciliumDeployment, in.SubnetworkPodCIDR)
+		return k.deployCiliumQEMU(ctx, helmClient, ciliumDeployment, in.SubnetworkPodCIDR, in.LoadBalancerEndpoint)
 	default:
 		return fmt.Errorf("unsupported cloud provider %q", in.CloudProvider)
 	}
@@ -341,7 +341,7 @@ func (k *KubernetesUtil) FixCilium(nodeNameK8s string, log *logger.Logger) {
 	}
 }
 
-func (k *KubernetesUtil) deployCiliumQEMU(ctx context.Context, helmClient *action.Install, ciliumDeployment helm.Deployment, subnetworkPodCIDR string) error {
+func (k *KubernetesUtil) deployCiliumQEMU(ctx context.Context, helmClient *action.Install, ciliumDeployment helm.Deployment, subnetworkPodCIDR, kubeAPIEndpoint string) error {
 	// configure pod network CIDR
 	ciliumDeployment.Values["ipam"] = map[string]interface{}{
 		"operator": map[string]interface{}{
@@ -350,6 +350,9 @@ func (k *KubernetesUtil) deployCiliumQEMU(ctx context.Context, helmClient *actio
 			},
 		},
 	}
+
+	ciliumDeployment.Values["k8sServiceHost"] = kubeAPIEndpoint
+	ciliumDeployment.Values["k8sServicePort"] = strconv.Itoa(constants.KubernetesPort)
 
 	_, err := helmClient.RunWithContext(ctx, ciliumDeployment.Chart, ciliumDeployment.Values)
 	if err != nil {
