@@ -111,10 +111,10 @@ The Constellation source code is licensed under the [GNU Affero General Public L
 [install]: https://docs.edgeless.systems/constellation/getting-started/install
 [k8s-version-support]: https://docs.edgeless.systems/constellation/architecture/versions#kubernetes-support-policy
 [key-management]: https://docs.edgeless.systems/constellation/architecture/keys
-[license]: https://docs.edgeless.systems/constellation/next/overview/license
+[license]: https://docs.edgeless.systems/constellation/overview/license
 [network-encryption]: https://docs.edgeless.systems/constellation/architecture/keys#network-encryption
 [supply-chain]: https://docs.edgeless.systems/constellation/architecture/attestation#chain-of-trust
-[security-benefits]: https://docs.edgeless.systems/constellation/next/overview/security-benefits
+[security-benefits]: https://docs.edgeless.systems/constellation/overview/security-benefits
 [twitter]: https://twitter.com/EdgelessSystems
 [whitepaper]: https://content.edgeless.systems/hubfs/Confidential%20Computing%20Whitepaper.pdf
-[performance]: https://docs.edgeless.systems/constellation/next/overview/benchmarks
+[performance]: https://docs.edgeless.systems/constellation/overview/performance
