@@ -140,6 +140,11 @@ const sidebars = {
         },
         {
           type: 'doc',
+          label: 'Azure trusted launch VMs',
+          id: 'workflows/trusted-launch',
+        },
+        {
+          type: 'doc',
           label: 'Managing SSH keys',
           id: 'workflows/ssh',
         },
