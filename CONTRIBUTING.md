@@ -1,6 +1,6 @@
 ## First steps
 
-Thank you for getting involved! Before you start, please familiarize yourself with the [documentation](https://docs.edgeless.systems/constellation/latest).
+Thank you for getting involved! Before you start, please familiarize yourself with the [documentation](https://docs.edgeless.systems/constellation).
 
 Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) when interacting with this project.
 
@@ -10,7 +10,7 @@ If you want to support our development:
 * Share our projects on social media
 * Join the [Confidential Computing Discord](https://discord.gg/rH8QTH56JN)
 
-Constellation is licensed under the [TODO](LICENSE). When contributing, you also need to agree to our [Contributor License Agreement](https://cla-assistant.io/edgelesssys/constellation).
+Constellation is licensed under the [AGPL](LICENSE). When contributing, you also need to agree to our [Contributor License Agreement](https://cla-assistant.io/edgelesssys/constellation).
 
 ## Development guidelines
 
@@ -72,7 +72,6 @@ Development components:
 * [proto](proto): Proto files generator
 * [terraform](terraform): Infrastructure management using terraform (instead of `constellation create/destroy`)
   * [libvirt](terraform/libvirt): Deploy local cluster using terraform, libvirt and QEMU
-* [test](test): Integration test
 
 Additional repositories:
 

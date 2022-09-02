@@ -1,4 +1,4 @@
-# Local image testing with QEMU / libvirt / terraform
+# Auotmated local image testing with QEMU / libvirt / terraform
 
 ## Usage
 

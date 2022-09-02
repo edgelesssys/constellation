@@ -23,7 +23,7 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         gh workflow run build-operator-manual.yml --ref release/v1.3.0 -F imageTag=v1.3.0
         ```
     3. Review and update changelog with all changes since last release. [GitHub's diff view](https://github.com/edgelesssys/constellation/compare/v1.2.0...main) helps a lot!
-    4. Update versions [versions.go](../internal/versions/versions.go#L33-L39) to `v1.3.0` and **push your changes**.
+    4. Update versions [versions.go](../../internal/versions/versions.go#L33-L39) to `v1.3.0` and **push your changes**.
     5. Create a [production coreOS image](/.github/workflows/build-coreos.yml)
         ```sh
         gh workflow run build-coreos.yml --ref release/v1.3.0 -F debug=false -F coreOSConfigBranch=constellation

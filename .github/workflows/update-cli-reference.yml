@@ -50,9 +50,9 @@ jobs:
           API_TOKEN_GITHUB: ${{ secrets.CI_GITHUB_REPOSITORY }}
         with:
           source_file: 'cli.md'
-          destination_repo: 'edgelesssys/constellation-docs'
+          destination_repo: 'edgelesssys/constellation'
           destination_branch_create: 'action/constellation/update-cli-reference'
-          destination_folder: 'docs/reference'
+          destination_folder: 'docs/docs/reference'
           user_name: '${{ github.actor }}'
           user_email: '${{ github.actor }}@users.noreply.github.com'
           commit_message: 'CLI reference was updated by edgelesssys/constellation@${{ env.COMMIT_END}}'
@@ -64,9 +64,9 @@ jobs:
           API_TOKEN_GITHUB: ${{ secrets.CI_GITHUB_REPOSITORY }}
         with:
           source_file: 'cli.md'
-          destination_repo: 'edgelesssys/constellation-docs'
+          destination_repo: 'edgelesssys/constellation'
           destination_branch: 'action/constellation/update-cli-reference'
-          destination_folder: 'docs/reference'
+          destination_folder: 'docs/docs/reference'
           user_name: '${{ github.actor }}'
           user_email: '${{ github.actor }}@users.noreply.github.com'
           commit_message: 'CLI reference was updated by edgelesssys/constellation@${{ env.COMMIT_END}}'
