@@ -41,10 +41,6 @@ This is needed for fetching data encryption keys for joining nodes.
 
 Implements interaction with the Kubernetes API to create join tokens for new nodes.
 
-### [internal/validator](./internal/validator/)
-
-A wrapper for the more generic `atls.Validator`, allowing for updates to the underlying validator without having to restart the service.
-
 ## [Dockerfile](./Dockerfile)
 
 ```shell
