@@ -1,4 +1,4 @@
-![Constellation](docs/banner.svg)
+![Constellation](docs/static/img/banner.svg)
 
 # Always Encrypted K8s
 
@@ -13,7 +13,7 @@
 
 Constellation is a Kubernetes engine that aims to provide the best possible data security. It wraps your K8s cluster into a single *confidential context* that is shielded from the underlying cloud infrastructure. Everything inside is always encrypted, including at runtime in memory. For this, Constellation leverages confidential computing (see our [whitepaper]) and more specifically Confidential VMs.
 
-<img src="docs/concept.svg" alt="Concept" width="65%"/>
+<img src="docs/static/img/concept.svg" alt="Concept" width="65%"/>
 
 ## Goals
 
@@ -65,7 +65,7 @@ If you're already familiar with Kubernetes, it's easy to get started with Conste
 2. ⌨️ [Create a Constellation cluster][create-cluster]
 3. 🏎️ [Run your app][examples]
 
-![Constellation Shell](docs/shell-windowframe.svg)
+![Constellation Shell](docs/static/img/shell-windowframe.svg)
 
 ## Documentation
 
@@ -78,7 +78,7 @@ You may want to start with one of the following sections.
 
 ## Support
 
-* Please ask questions via [Discord][discord] or file an [issue][github-issues].
+* Please ask questions via [Discord] or file an [issue][github-issues].
 * If you experience errors, please create a [bug report][github-issues].
 * Visit our [blog](https://blog.edgeless.systems/) for technical deep-dives and tutorials and follow us on [Twitter] for news.
 * Edgeless Systems also offers [Enterprise Support][enterprise-support].
@@ -101,6 +101,7 @@ The Constellation source code is licensed under the [GNU Affero General Public L
 [cla-assistant]: https://cla-assistant.io/edgelesssys/constellation
 [cluster-attestation]: https://docs.edgeless.systems/constellation/architecture/attestation#cluster-attestation
 [confidential-kubernetes]: https://docs.edgeless.systems/constellation/overview/confidential-kubernetes
+[discord]: https://discord.gg/rH8QTH56JN
 [enterprise-support]: https://www.edgeless.systems/products/constellation/
 [create-cluster]: https://docs.edgeless.systems/constellation/workflows/create
 [documentation]: https://docs.edgeless.systems/constellation/latest
@@ -109,11 +110,11 @@ The Constellation source code is licensed under the [GNU Affero General Public L
 [images]: https://docs.edgeless.systems/constellation/architecture/images#constellation-images
 [install]: https://docs.edgeless.systems/constellation/getting-started/install
 [k8s-version-support]: https://docs.edgeless.systems/constellation/architecture/versions#kubernetes-support-policy
-[key-management]: https://docs.edgeless.systems/constellation/architecture/
+[key-management]: https://docs.edgeless.systems/constellation/architecture/keys
 [license]: https://docs.edgeless.systems/constellation/next/overview/license
 [network-encryption]: https://docs.edgeless.systems/constellation/architecture/keys#network-encryption
 [supply-chain]: https://docs.edgeless.systems/constellation/architecture/attestation#chain-of-trust
 [security-benefits]: https://docs.edgeless.systems/constellation/next/overview/security-benefits
 [twitter]: https://twitter.com/EdgelessSystems
 [whitepaper]: https://content.edgeless.systems/hubfs/Confidential%20Computing%20Whitepaper.pdf
-[performance]: https://docs.edgeless.systems/constellation/next/overview/performance
+[performance]: https://docs.edgeless.systems/constellation/next/overview/benchmarks
