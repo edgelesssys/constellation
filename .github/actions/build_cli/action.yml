@@ -73,8 +73,6 @@ runs:
       if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
     - name: Sign CLI
       run: |
-        set -e
-        set -o pipefail
         SIGN_TARGET=constellation-${{ inputs.targetOS }}-${{ inputs.targetArch }}
         echo "$COSIGN_PUBLIC_KEY" > cosign.pub
         # Enabling experimental mode also publishes signature to Rekor
