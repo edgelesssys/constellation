@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 
-	"github.com/edgelesssys/constellation/cli/internal/azure"
 	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/cli/internal/gcp"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
@@ -36,20 +34,6 @@ func NewCreateCmd() *cobra.Command {
 	must(cobra.MarkFlagRequired(cmd.Flags(), "control-plane-nodes"))
 	cmd.Flags().IntP("worker-nodes", "w", 0, "number of worker nodes (required)")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "worker-nodes"))
-	cmd.Flags().StringP("instance-type", "t", "", "instance type of cluster nodes")
-	must(cmd.RegisterFlagCompletionFunc("instance-type", instanceTypeCompletion))
-
-	cmd.SetHelpTemplate(cmd.HelpTemplate() + fmt.Sprintf(`
-Azure Confidential VM instance types:
-%v
-
-Azure Trusted Launch instance types:
-%v
-
-GCP instance types:
-%v
-`, formatInstanceTypes(azure.CVMInstanceTypes), formatInstanceTypes(azure.TrustedLaunchInstanceTypes), formatInstanceTypes(gcp.InstanceTypes)))
-
 	return cmd
 }
 
@@ -63,7 +47,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 
 func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, provider cloudprovider.Provider,
 ) (retErr error) {
-	flags, err := parseCreateFlags(cmd, provider)
+	flags, err := parseCreateFlags(cmd)
 	if err != nil {
 		return err
 	}
@@ -85,11 +69,19 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 		cmd.Println("Disabling Confidential VMs is insecure. Use only for evaluation purposes.")
 	}
 
+	var instanceType string
+	switch provider {
+	case cloudprovider.Azure:
+		instanceType = config.Provider.Azure.InstanceType
+	case cloudprovider.GCP:
+		instanceType = config.Provider.GCP.InstanceType
+	}
+
 	if !flags.yes {
 		// Ask user to confirm action.
 		cmd.Printf("The following Constellation cluster will be created:\n")
-		cmd.Printf("%d control-planes nodes of type %s will be created.\n", flags.controllerCount, flags.insType)
-		cmd.Printf("%d worker nodes of type %s will be created.\n", flags.workerCount, flags.insType)
+		cmd.Printf("%d control-planes nodes of type %s will be created.\n", flags.controllerCount, instanceType)
+		cmd.Printf("%d worker nodes of type %s will be created.\n", flags.workerCount, instanceType)
 		ok, err := askToConfirm(cmd, "Do you want to create this cluster?")
 		if err != nil {
 			return err
@@ -100,7 +92,7 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 		}
 	}
 
-	state, err := creator.Create(cmd.Context(), provider, config, flags.name, flags.insType, flags.controllerCount, flags.workerCount)
+	state, err := creator.Create(cmd.Context(), provider, config, flags.name, instanceType, flags.controllerCount, flags.workerCount)
 	if err != nil {
 		return err
 	}
@@ -118,7 +110,7 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 }
 
 // parseCreateFlags parses the flags of the create command.
-func parseCreateFlags(cmd *cobra.Command, provider cloudprovider.Provider) (createFlags, error) {
+func parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	controllerCount, err := cmd.Flags().GetInt("control-plane-nodes")
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing number of control-plane nodes: %w", err)
@@ -133,17 +125,6 @@ func parseCreateFlags(cmd *cobra.Command, provider cloudprovider.Provider) (crea
 	}
 	if workerCount < constants.MinWorkerCount {
 		return createFlags{}, fmt.Errorf("number of worker nodes must be at least %d", constants.MinWorkerCount)
-	}
-
-	insType, err := cmd.Flags().GetString("instance-type")
-	if err != nil {
-		return createFlags{}, fmt.Errorf("parsing instance type argument: %w", err)
-	}
-	if insType == "" {
-		insType = defaultInstanceType(provider)
-	}
-	if err := validInstanceTypeForProvider(cmd, insType, provider); err != nil {
-		return createFlags{}, err
 	}
 
 	name, err := cmd.Flags().GetString("name")
@@ -170,7 +151,6 @@ func parseCreateFlags(cmd *cobra.Command, provider cloudprovider.Provider) (crea
 	return createFlags{
 		controllerCount: controllerCount,
 		workerCount:     workerCount,
-		insType:         insType,
 		name:            name,
 		configPath:      configPath,
 		yes:             yes,
@@ -181,22 +161,9 @@ func parseCreateFlags(cmd *cobra.Command, provider cloudprovider.Provider) (crea
 type createFlags struct {
 	controllerCount int
 	workerCount     int
-	insType         string
 	name            string
 	configPath      string
 	yes             bool
-}
-
-// defaultInstanceType returns the default instance type for the given provider.
-func defaultInstanceType(provider cloudprovider.Provider) string {
-	switch provider {
-	case cloudprovider.GCP:
-		return gcp.InstanceTypes[0]
-	case cloudprovider.Azure:
-		return azure.CVMInstanceTypes[0]
-	default:
-		return ""
-	}
 }
 
 // checkDirClean checks if files of a previous Constellation are left in the current working dir.
@@ -240,22 +207,5 @@ func createCompletion(cmd *cobra.Command, args []string, toComplete string) ([]s
 func must(err error) {
 	if err != nil {
 		panic(err)
-	}
-}
-
-func instanceTypeCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	if len(args) != 1 {
-		return []string{}, cobra.ShellCompDirectiveError
-	}
-	switch args[0] {
-	case "gcp":
-		return gcp.InstanceTypes, cobra.ShellCompDirectiveNoFileComp
-	case "azure":
-		var azureInstanceTypes []string
-		azureInstanceTypes = append(azureInstanceTypes, azure.CVMInstanceTypes...)
-		azureInstanceTypes = append(azureInstanceTypes, azure.TrustedLaunchInstanceTypes...)
-		return azureInstanceTypes, cobra.ShellCompDirectiveNoFileComp
-	default:
-		return []string{}, cobra.ShellCompDirectiveError
 	}
 }

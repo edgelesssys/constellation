@@ -24,14 +24,6 @@ on:
           - "azure"
         default: "gcp"
         required: true
-      machineType:
-        description: "VM machine type. Make sure it matches selected cloud provider!"
-        type: choice
-        options:
-          - "n2d-standard-4" # GCP
-          - "Standard_DC4as_v5" # Azure
-        default: "n2d-standard-4"
-        required: true
       sonobuoyTestSuiteCmd:
         description: "Which tests should be run? Check README for guidance!"
         default: "--mode quick"
@@ -49,6 +41,11 @@ on:
         type: boolean
         default: true
         required: false
+      machineType:
+        description: "Override VM machine type. Leave as 'default' or empty to use the default VM type for the selected cloud provider."
+        type: string
+        default: "default"
+        required: false
 
 jobs:
   e2e-test-manual:
@@ -56,6 +53,23 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+
+      - name: Login to Azure
+        if: ${{ github.event.inputs.cloudProvider == 'azure' }}
+        uses: ./.github/actions/azure_login
+        with:
+          azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
+
+      - name: Create Azure resource group
+        id: az_resource_group_gen
+        if: ${{ github.event.inputs.cloudProvider == 'azure' }}
+        shell: bash
+        run: |
+          uuid=$(cat /proc/sys/kernel/random/uuid)
+          name=e2e-test-${uuid%%-*}
+          az group create --location westus --name $name --tags e2e
+          echo "::set-output name=res_group_name::$name"
+
       - name: Run manual E2E test
         uses: ./.github/actions/e2e_test
         with:
@@ -66,11 +80,10 @@ jobs:
           machineType: ${{ github.event.inputs.machineType }}
           gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
-          azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
           sonobuoyTestSuiteCmd: ${{ github.event.inputs.sonobuoyTestSuiteCmd }}
           kubernetesVersion: ${{ github.event.inputs.kubernetesVersion }}
           azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
-          msTeamsWebhook: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+          azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
           coreosImage: ${{ github.event.inputs.coreosImage }}
           isDebugImage: ${{ github.event.inputs.isDebugImage }}
           cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
@@ -80,3 +93,33 @@ jobs:
           awsSecretAccessKey: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           awsDefaultRegion: ${{ secrets.AWS_DEFAULT_REGION }}
           awsBucketName: ${{ secrets.PUBLIC_BUCKET_NAME }}
+
+      - name: Always terminate cluster
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/constellation_destroy
+
+      - name: Notify teams channel
+        if: ${{ failure() && github.ref == 'refs/heads/main' }}
+        run: |
+          sudo apt-get install gettext-base -y
+          export TEAMS_JOB_NAME=azure
+          export TEAMS_RUN_ID=${{ github.run_id }}
+          envsubst < teams-payload.json > to-be-send.json
+          curl                                          \
+            -H "Content-Type: application/json"         \
+            -d @to-be-send.json                         \
+            "${{  secrets.MS_TEAMS_WEBHOOK_URI }}"
+        shell: bash
+        working-directory: .github/actions/e2e_test
+
+      - name: Always destroy Azure resource group
+        if: ${{ always() && github.event.inputs.cloudProvider == 'azure' }}
+        shell: bash
+        run: |
+          az group delete \
+            --name ${{ steps.az_resource_group_gen.outputs.res_group_name }} \
+            --force-deletion-types Microsoft.Compute/virtualMachineScaleSets \
+            --force-deletion-types Microsoft.Compute/virtualMachines \
+            --no-wait
+            --yes

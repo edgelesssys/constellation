@@ -1,7 +1,7 @@
-package gcp
+package instancetypes
 
-// InstanceTypes are valid GCP instance types.
-var InstanceTypes = []string{
+// GCPInstanceTypes are valid GCP instance types.
+var GCPInstanceTypes = []string{
 	"n2d-standard-4",
 	"n2d-standard-8",
 	"n2d-standard-16",

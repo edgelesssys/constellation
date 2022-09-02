@@ -5,8 +5,7 @@ COREOS_BUILD_PATH                ?= $(BASE_PATH)/build
 OVERRIDES                        ?= $(COREOS_BUILD_PATH)/overrides
 OVERRIDES_RPM                    ?= $(OVERRIDES)/rpm
 OVERRIDES_ROOTFS                 ?= $(OVERRIDES)/rootfs
-BOOTSTRAPPER_OVERRIDE_PATH        ?= $(OVERRIDES_ROOTFS)/usr/bin/bootstrapper
-CILIUM_CLI_OVERRIDE_PATH         ?= $(OVERRIDES_ROOTFS)/usr/bin/cilium
+BOOTSTRAPPER_OVERRIDE_PATH       ?= $(OVERRIDES_ROOTFS)/usr/bin/bootstrapper
 KERNEL_RPM                       ?= $(OVERRIDES_RPM)/kernel.rpm
 KERNEL_CORE_RPM                  ?= $(OVERRIDES_RPM)/kernel-core.rpm
 KERNEL_MODULES_RPM               ?= $(OVERRIDES_RPM)/kernel-modules.rpm
@@ -14,10 +13,8 @@ OVERRIDE_KERNEL                  ?= n
 KERNEL_RPM_URL                   ?= "https://kojipkgs.fedoraproject.org/packages/kernel/5.17.0/0.rc3.89.fc36/x86_64/kernel-5.17.0-0.rc3.89.fc36.x86_64.rpm"
 KERNEL_CORE_RPM_URL              ?= "https://kojipkgs.fedoraproject.org/packages/kernel/5.17.0/0.rc3.89.fc36/x86_64/kernel-core-5.17.0-0.rc3.89.fc36.x86_64.rpm"
 KERNEL_MODULES_RPM_URL           ?= "https://kojipkgs.fedoraproject.org/packages/kernel/5.17.0/0.rc3.89.fc36/x86_64/kernel-modules-5.17.0-0.rc3.89.fc36.x86_64.rpm"
-DOWNLOAD_BOOTSTRAPPER             ?= n
-BOOTSTRAPPER_BINARY               ?= $(BASE_PATH)/../build/bootstrapper
-CILIUM_CLI_BINARY                ?= $(DEPENDENCIES)/cilium
-CILIUM_CLI_URL                   ?= "https://github.com/cilium/cilium-cli/releases/download/v0.11.1/cilium-linux-amd64.tar.gz"
+DOWNLOAD_BOOTSTRAPPER            ?= n
+BOOTSTRAPPER_BINARY              ?= $(BASE_PATH)/../build/bootstrapper
 DISK_MAPPER_BINARY               ?= $(BASE_PATH)/../build/disk-mapper
 DISK_MAPPER_OVERRIDE_PATH        ?= $(OVERRIDES_ROOTFS)/usr/sbin/disk-mapper
 IMAGES_PATH                      ?= $(BASE_PATH)/images
@@ -50,7 +47,7 @@ AZURE_SKU                        ?= constellation-coreos
 
 -include $(CURDIR)/config.mk
 
-.PHONY: clean all kernel coreos run shell cosa-init cosa-fetch images image-gcp upload-gcp image-azure upload-azure-non-cvm $(BOOTSTRAPPER_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
+.PHONY: clean all kernel coreos run shell cosa-init cosa-fetch images image-gcp upload-gcp image-azure upload-azure-non-cvm $(BOOTSTRAPPER_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH)
 SHELL := /bin/bash
 
 all: coreos images
@@ -65,16 +62,6 @@ $(BOOTSTRAPPER_OVERRIDE_PATH): $(BOOTSTRAPPER_BINARY) | cosa-init
 	cp $(BOOTSTRAPPER_BINARY) $@
 	chmod +x $@
 
-$(CILIUM_CLI_BINARY):
-	wget -q $(CILIUM_CLI_URL) -O cilium.tar.gz
-	tar xzfC cilium.tar.gz $(DEPENDENCIES)
-	rm cilium.tar.gz
-
-$(CILIUM_CLI_OVERRIDE_PATH): $(CILIUM_CLI_BINARY) | cosa-init
-	mkdir -p $(COREOS_BUILD_PATH)/overrides/rootfs/usr/bin
-	cp $(CILIUM_CLI_BINARY) $@
-	chmod +x $@
-
 $(DISK_MAPPER_OVERRIDE_PATH): $(DISK_MAPPER_BINARY) | cosa-init
 	mkdir -p $(COREOS_BUILD_PATH)/overrides/rootfs/usr/sbin
 	cp $(DISK_MAPPER_BINARY) $@
@@ -87,16 +74,16 @@ cosa-image:
 cosa-init:
 	-flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa init --branch $(COSA_INIT_BRANCH) $(COSA_INIT_REPO)'
 
-cosa-fetch: cosa-init kernel $(BOOTSTRAPPER_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
+cosa-fetch: cosa-init kernel $(BOOTSTRAPPER_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH)
 	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa fetch'
 
-coreos: cosa-fetch $(BOOTSTRAPPER_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
+coreos: cosa-fetch $(BOOTSTRAPPER_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH)
 	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa build'
 
-run: $(BOOTSTRAPPER_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
+run: $(BOOTSTRAPPER_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH)
 	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa run --devshell-console'
 
-shell: $(BOOTSTRAPPER_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH) $(CILIUM_CLI_OVERRIDE_PATH)
+shell: $(BOOTSTRAPPER_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH)
 	flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa shell'
 
 $(GCP_IMAGE_PATH): coreos

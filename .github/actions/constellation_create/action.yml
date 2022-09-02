@@ -19,7 +19,7 @@ inputs:
     required: false
   machineType:
     description: "Machine type of VM to spawn."
-    required: true
+    required: false
   coreosImage:
     description: "CoreOS image to use. The default value 'debug-latest' will select the latest available debug image."
     required: true
@@ -32,6 +32,9 @@ inputs:
   azureClientSecret:
     description: "The client secret value of the used secret"
     required: false
+  azureResourceGroup:
+    description: "The resource group to use for Constellation cluster"
+    required: false
 runs:
   using: "composite"
   steps:
@@ -42,10 +45,12 @@ runs:
       shell: bash
     - name: Install yq jq
       run: |
+        echo "::group::Install dependencies"
         sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CC86BB64
         sudo add-apt-repository ppa:rmescandon/yq
         sudo apt update
         sudo apt install yq jq -y
+        echo "::endgroup::"
       shell: bash
 
     - name: Constellation config generate
@@ -57,7 +62,8 @@ runs:
             (.provider | select(. | has(\"azure\")).azure.tenant) = \"adb650a8-5da3-4b15-b4b0-3daf65ff7626\" |
             (.provider | select(. | has(\"azure\")).azure.location) = \"West US\" |
             (.provider | select(. | has(\"azure\")).azure.userAssignedIdentity) = \"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/e2e-test-creds/providers/Microsoft.ManagedIdentity/userAssignedIdentities/e2e-test-user-assigned-id\" |
-            (.provider | select(. | has(\"azure\")).azure.resourceGroup) = \"e2e-test\" |
+            (.provider | select(. | has(\"azure\")).azure.resourceGroup) = \"${{ inputs.azureResourceGroup }}\" |
+            (.provider | select(. | has(\"azure\")).azure.instanceType) = \"${{ inputs.machineType }}\" |
             (.provider | select(. | has(\"azure\")).azure.appClientID) = \"b657a00e-813a-4dc7-9b09-fa498a254d71\" |
             (.provider | select(. | has(\"azure\")).azure.clientSecretValue) = \"${{ inputs.azureClientSecret }}\" |
             (.provider | select(. | has(\"azure\")).azure.enforcedMeasurements) = [11,12]" \
@@ -106,6 +112,13 @@ runs:
       env:
         CSP: ${{ inputs.cloudProvider }}
 
+    - name: Set instanceType
+      if: ${{ inputs.machineType && inputs.machineType != 'default' }}
+      shell: bash
+      run: |
+        yq eval -i "(.provider | select(. | has(\"azure\")).azure.instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
+        yq eval -i "(.provider | select(. | has(\"gcp\")).gcp.instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
+
     - name: Add debugd firewall rule
       run: |
         yq eval -i '(.ingressFirewall) += {"name": "debugd", "description": "debugd default port", "protocol": "tcp", "iprange": "0.0.0.0/0", "fromport": 4000, "toport": 0}' constellation-conf.yaml
@@ -116,7 +129,7 @@ runs:
       run: |
         echo "Creating cluster using config:"
         cat constellation-conf.yaml
-        constellation create ${{ inputs.cloudProvider }} -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} -t ${{ inputs.machineType }} --name e2e-test -y
+        constellation create ${{ inputs.cloudProvider }} -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} --name e2e-test -y
       shell: bash
     - name: Upload constellation-state.json
       uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
@@ -127,7 +140,9 @@ runs:
 
     - name: Cdbg deploy
       run: |
+        echo "::group::cdbg deploy"
         cdbg deploy --bootstrapper $GITHUB_WORKSPACE/build/bootstrapper
+        echo "::endgroup::"
       shell: bash
       if: ${{ inputs.isDebugImage == 'true' }}
 

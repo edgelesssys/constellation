@@ -5,7 +5,7 @@ RUN dnf -y update && \
     dnf clean all
 
 ARG GO_VER=1.18.3
-RUN wget https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz && \
+RUN wget -q https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go${GO_VER}.linux-amd64.tar.gz && \
     rm go${GO_VER}.linux-amd64.tar.gz
 ENV PATH ${PATH}:/usr/local/go/bin

@@ -114,7 +114,7 @@ jobs:
 
       - name: Build and Upload
         id: build-and-upload
-        shell: bash {0}
+        shell: bash
         run: |
           make cosa-image
           make -j$(nproc) CONTAINER_ENGINE=docker NETRC=/tmp/.netrc \

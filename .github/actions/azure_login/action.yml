@@ -9,6 +9,7 @@ runs:
   steps:
   - name: Install az CLI
     run: |
+      echo "::group::Install build dependencies"
       sudo apt-get update
       sudo apt-get install ca-certificates curl apt-transport-https lsb-release gnupg -y
       curl -sL https://packages.microsoft.com/keys/microsoft.asc |
@@ -20,6 +21,7 @@ runs:
       sudo apt-get update
       sudo apt-get install azure-cli -y
       az help
+      echo "::endgroup::"
     shell: bash
   # As described at:
   # https://github.com/Azure/login#configure-deployment-credentials

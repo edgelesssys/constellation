@@ -5,34 +5,36 @@ description: |
   when run on v* tag.
 inputs:
   targetOS:
-    description: 'Build CLI for this OS. [linux, darwin]'
+    description: "Build CLI for this OS. [linux, darwin]"
     required: true
-    default: 'linux'
+    default: "linux"
   targetArch:
-    description: 'Build CLI for this architecture. [amd64, arm64]'
+    description: "Build CLI for this architecture. [amd64, arm64]"
     required: true
-    default: 'amd64'
+    default: "amd64"
   cosignPublicKey:
-    description: 'Cosign public key'
+    description: "Cosign public key"
     required: false
-    default: ''
+    default: ""
   cosignPrivateKey:
-    description: 'Cosign private key'
+    description: "Cosign private key"
     required: false
-    default: ''
+    default: ""
   cosignPassword:
-    description: 'Password for Cosign private key'
+    description: "Password for Cosign private key"
     required: false
-    default: ''
+    default: ""
 runs:
   using: "composite"
   steps:
     - name: Install build dependencies
       run: |
+        echo "::group::Install build dependencies"
         sudo apt-get update
         sudo apt-get install \
           build-essential cmake \
           -y
+        echo "::endgroup::"
       shell: bash
 
     # https://github.blog/2022-04-12-git-security-vulnerability-announced/
@@ -71,8 +73,6 @@ runs:
       if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
     - name: Sign CLI
       run: |
-        set -e
-        set -o pipefail
         SIGN_TARGET=constellation-${{ inputs.targetOS }}-${{ inputs.targetArch }}
         echo "$COSIGN_PUBLIC_KEY" > cosign.pub
         # Enabling experimental mode also publishes signature to Rekor

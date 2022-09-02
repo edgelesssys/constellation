@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cdbg now uses the Constellation config directly and does not require any extra config
 - Azure CVMs are attested using SNP attestation
 - Replaced kube-proxy with cilium
+- VM instance types are now defined in the config, not via a CLI argument
 
 ### Deprecated
 <!-- For soon-to-be removed features. -->

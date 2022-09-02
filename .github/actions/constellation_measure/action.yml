@@ -7,35 +7,35 @@ inputs:
     description: "Either 'gcp' or 'azure'."
     required: true
   cosignPublicKey:
-    description: 'Cosign public key'
+    description: "Cosign public key"
     required: false
-    default: ''
+    default: ""
   cosignPrivateKey:
-    description: 'Cosign private key'
+    description: "Cosign private key"
     required: false
-    default: ''
+    default: ""
   cosignPassword:
-    description: 'Password for Cosign private key'
+    description: "Password for Cosign private key"
     required: false
-    default: ''
+    default: ""
   awsAccessKeyID:
-    description: 'AWS access key ID to upload measurements'
+    description: "AWS access key ID to upload measurements"
     required: false
-    default: ''
+    default: ""
   awsSecretAccessKey:
-    description: 'AWS secret access key to upload measurements'
+    description: "AWS secret access key to upload measurements"
     required: false
-    default: ''
+    default: ""
   awsDefaultRegion:
-    description: 'AWS region of S3 bucket to upload measurements'
+    description: "AWS region of S3 bucket to upload measurements"
     required: false
-    default: ''
+    default: ""
   awsBucketName:
-    description: 'S3 bucket name to upload measurements to'
+    description: "S3 bucket name to upload measurements to"
     required: false
-    default: ''
+    default: ""
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Build hack/pcr-reader
       run: |
@@ -77,8 +77,6 @@ runs:
       if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
     - name: Sign measurements
       run: |
-        set -e
-        set -o pipefail
         echo "$COSIGN_PUBLIC_KEY" > cosign.pub
         # Enabling experimental mode also publishes signature to Rekor
         COSIGN_EXPERIMENTAL=1 cosign sign-blob --key env://COSIGN_PRIVATE_KEY measurements.yaml > measurements.yaml.sig
@@ -97,7 +95,10 @@ runs:
       if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
 
     - name: Install AWS CLI
-      run: sudo apt-get update && sudo apt-get -y install awscli
+      run: |
+        echo "::group::Install AWS CLI"
+        sudo apt-get update && sudo apt-get -y install awscli
+        echo "::endgroup::"
       shell: bash
       if: ${{ inputs.awsAccessKeyID != '' && inputs.awsSecretAccessKey != '' && inputs.awsDefaultRegion != '' && inputs.awsBucketName != '' }}
     - name: Upload to S3
