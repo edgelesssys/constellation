@@ -19,7 +19,7 @@ inputs:
     required: false
   machineType:
     description: "Machine type of VM to spawn."
-    required: true
+    required: false
   coreosImage:
     description: "CoreOS image to use. The default value 'debug-latest' will select the latest available debug image."
     required: true
@@ -72,7 +72,6 @@ runs:
           "(.provider | select(. | has(\"gcp\")).gcp.project) = \"constellation-331613\" |
             (.provider | select(. | has(\"gcp\")).gcp.region) = \"europe-west3\" |
             (.provider | select(. | has(\"gcp\")).gcp.zone) = \"europe-west3-b\" |
-            (.provider | select(. | has(\"gcp\")).gcp.instanceType) = \"${{ inputs.machineType }}\" |
             (.provider | select(. | has(\"gcp\")).gcp.enforcedMeasurements) = [11,12]" \
           constellation-conf.yaml
 
@@ -112,6 +111,13 @@ runs:
       shell: bash
       env:
         CSP: ${{ inputs.cloudProvider }}
+
+    - name: Set instanceType
+      if: ${{ inputs.machineType && inputs.machineType != 'default' }}
+      shell: bash
+      run: |
+        yq eval -i "(.provider | select(. | has(\"azure\")).azure.instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
+        yq eval -i "(.provider | select(. | has(\"gcp\")).gcp.instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
 
     - name: Add debugd firewall rule
       run: |
