@@ -50,6 +50,7 @@ runs:
 
     - name: Build CLI
       run: |
+        echo "::group::Build CLI"
         GIT_TAG=$(git describe --tags --always --dirty --abbrev=0)
         mkdir -p build
         cd build
@@ -58,6 +59,7 @@ runs:
         cp constellation constellation-${{ inputs.targetOS }}-${{ inputs.targetArch }}
         echo "$(pwd)" >> $GITHUB_PATH
         export PATH="$PATH:$(pwd)"
+        echo "::endgroup::"
       shell: bash
 
     # TODO: Replace with https://github.com/sigstore/sigstore-installer/tree/initial
