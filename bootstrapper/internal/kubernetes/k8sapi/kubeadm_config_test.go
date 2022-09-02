@@ -28,11 +28,11 @@ func TestInitConfiguration(t *testing.T) {
 		config KubeadmInitYAML
 	}{
 		"CoreOS init config can be created": {
-			config: coreOSConfig.InitConfiguration(true, versions.Latest),
+			config: coreOSConfig.InitConfiguration(true, versions.Default),
 		},
 		"CoreOS init config with all fields can be created": {
 			config: func() KubeadmInitYAML {
-				c := coreOSConfig.InitConfiguration(true, versions.Latest)
+				c := coreOSConfig.InitConfiguration(true, versions.Default)
 				c.SetAPIServerAdvertiseAddress("192.0.2.0")
 				c.SetNodeIP("192.0.2.0")
 				c.SetNodeName("node")
@@ -68,8 +68,8 @@ func TestInitConfigurationKubeadmCompatibility(t *testing.T) {
 		wantErr         bool
 	}{
 		"Kubeadm accepts version 'Latest'": {
-			config:          coreOSConfig.InitConfiguration(true, versions.Latest),
-			expectedVersion: fmt.Sprintf("v%s", versions.VersionConfigs[versions.Latest].PatchVersion),
+			config:          coreOSConfig.InitConfiguration(true, versions.Default),
+			expectedVersion: fmt.Sprintf("v%s", versions.VersionConfigs[versions.Default].PatchVersion),
 		},
 		"Kubeadm receives incompatible version": {
 			config:  coreOSConfig.InitConfiguration(true, "1.19"),

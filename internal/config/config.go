@@ -297,7 +297,7 @@ func Default() *Config {
 				EnforcedMeasurements: []uint32{11, 12},
 			},
 		},
-		KubernetesVersion: string(versions.Latest),
+		KubernetesVersion: string(versions.Default),
 	}
 }
 

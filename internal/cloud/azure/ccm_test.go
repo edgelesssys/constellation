@@ -95,7 +95,7 @@ func TestTrivialCCMFunctions(t *testing.T) {
 	assert := assert.New(t)
 	cloud := CloudControllerManager{}
 
-	assert.NotEmpty(cloud.Image(versions.Latest))
+	assert.NotEmpty(cloud.Image(versions.Default))
 	assert.NotEmpty(cloud.Path())
 	assert.NotEmpty(cloud.Name())
 	assert.NotEmpty(cloud.ExtraArgs())
