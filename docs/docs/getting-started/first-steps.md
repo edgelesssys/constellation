@@ -30,25 +30,25 @@ The following steps will guide you through the process of creating a cluster and
     <tabs>
     <tabItem value="azure" label="Azure" default>
 
-    * **subscription**: Is the UUID of your Azure subscription, e.g., **8b8bd01f-efd9-4113-9bd1-c82137c32da7**.
+    * **subscription**: Is the UUID of your Azure subscription, e.g., `8b8bd01f-efd9-4113-9bd1-c82137c32da7`.
 
         You can view your subscription UUID via `az account show` and read the `id` field. For more information refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/azure-portal/get-subscription-tenant-id#find-your-azure-subscription).
 
-    * **tenant**: Is the UUID of your Azure tenant, e.g., **3400e5a2-8fe2-492a-886c-38cb66170f25**.
+    * **tenant**: Is the UUID of your Azure tenant, e.g., `3400e5a2-8fe2-492a-886c-38cb66170f25`.
 
         You can view your tenant UUID via `az account show` and read the `tenant` field. For more information refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/azure-portal/get-subscription-tenant-id#find-your-azure-ad-tenant).
 
-    * **location**: Is the Azure datacenter location you want to deploy your cluster in, e.g., **West US**.
+    * **location**: Is the Azure datacenter location you want to deploy your cluster in, e.g., `West US`.
 
         You can find a list of all Azure datacenter locations in [Azure's documentation](https://docs.microsoft.com/en-us/azure/availability-zones/az-overview#azure-regions-with-availability-zones).
 
-    * **resourceGroup**: [Create a new resource group in Azure](https://portal.azure.com/#create/Microsoft.ResourceGroup), to deploy your Constellation cluster into. Afterwards set the configuration field to the name of the created resource group, e.g., **constellation**.
+    * **resourceGroup**: [Create a new resource group in Azure](https://portal.azure.com/#create/Microsoft.ResourceGroup), to deploy your Constellation cluster into. Afterwards set the configuration field to the name of the created resource group, e.g., `constellation`.
 
     * **userAssignedIdentity**: [Create a new managed identity in Azure](https://portal.azure.com/#create/Microsoft.ManagedIdentity). Notice that the identity should be created in a different resource group as all resources within the cluster resource group will be deleted on cluster termination.
 
-        After creation, add two role assignements to the identity, for the roles `Virtual Machine Contributor` and `Application Insights Component Contributor`. The `scope` of both should refer to the previously created resource group.
+        After creation, add two role assignments to the identity, for the roles `Virtual Machine Contributor` and `Application Insights Component Contributor`. The `scope` of both should refer to the previously created resource group.
 
-        Set the configuration value to the full ID of the created identity, e.g., **/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity**.
+        Set the configuration value to the full ID of the created identity, e.g., `/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity`.
 
         The user-assigned identity is used by instances of the cluster to access other cloud resources.
 
@@ -60,7 +60,7 @@ The following steps will guide you through the process of creating a cluster and
 
         In the cluster resource group, go to `Access Control (IAM)`, and set the created app registration as `Owner`.
 
-        Set the configuration value to the `Application (client) ID`, e.g., **86ec31dd-532b-4a8c-a055-dd23f25fb12f**.
+        Set the configuration value to the `Application (client) ID`, e.g., `86ec31dd-532b-4a8c-a055-dd23f25fb12f`.
 
     * **clientSecretValue**: In our previously created app registration, go to `Certificates & secrets` and create a new `Client secret`.
 
@@ -69,15 +69,15 @@ The following steps will guide you through the process of creating a cluster and
     </tabItem>
     <tabItem value="gcp" label="GCP" default>
 
-    * **project**: Is the ID of your GCP project, e.g., **constellation-129857**.
+    * **project**: Is the ID of your GCP project, e.g., `constellation-129857`.
 
         You will find it on the [welcome screen of your GCP project](https://console.cloud.google.com/welcome). For more information refer to [Google's documentation](https://support.google.com/googleapi/answer/7014113).
 
-    * **region**: Is the GCP region you want to deploy your cluster in, e.g., **us-west-1**.
+    * **region**: Is the GCP region you want to deploy your cluster in, e.g., `us-west-1`.
 
         You can find a [list of all regions in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available).
 
-    * **zone**: Is the GCP zone you want to deploy your cluster in, e.g., **us-west-1a**.
+    * **zone**: Is the GCP zone you want to deploy your cluster in, e.g., `us-west-1a`.
 
         You can find a [list of all zones in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available).
 
@@ -89,7 +89,7 @@ The following steps will guide you through the process of creating a cluster and
         - `Compute Storage Admin (roles/compute.storageAdmin)`
         - `Service Account User (roles/iam.serviceAccountUser)`
 
-        Afterwards, create and download a new `JSON` key for this service account. Place the downloaded file in your Constellation workspace, and set the config parameter to the filename, e.g., **constellation-129857-15343dba46cb.json**.
+        Afterwards, create and download a new `JSON` key for this service account. Place the downloaded file in your Constellation workspace, and set the config parameter to the filename, e.g., `constellation-129857-15343dba46cb.json`.
 
     </tabItem>
     </tabs>
