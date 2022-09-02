@@ -6,9 +6,7 @@ on:
     - cron: "0 0 * * 2-6"
 jobs:
   test-latest:
-    runs-on: [self-hosted, edgserver]
-    container:
-      image: ghcr.io/catthehacker/ubuntu:act-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
@@ -39,9 +37,7 @@ jobs:
     strategy:
       matrix:
         version: ["1.22", "1.23"]
-    runs-on: [self-hosted, edgserver]
-    container:
-      image: ghcr.io/catthehacker/ubuntu:act-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
