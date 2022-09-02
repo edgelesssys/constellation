@@ -37,6 +37,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/license"
 	"github.com/edgelesssys/constellation/internal/retry"
 	"github.com/edgelesssys/constellation/internal/state"
+	"github.com/edgelesssys/constellation/internal/versions"
 	kms "github.com/edgelesssys/constellation/kms/setup"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -91,6 +92,14 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath, provider)
 	if err != nil {
 		return fmt.Errorf("reading and validating config: %w", err)
+	}
+
+	k8sVersion, err := versions.NewValidK8sVersion(config.KubernetesVersion)
+	if err != nil {
+		return fmt.Errorf("validating kubernetes version: %w", err)
+	}
+	if versions.IsPreviewK8sVersion(k8sVersion) {
+		cmd.Printf("Warning: Constellation with Kubernetes %v is still in preview. Use only for evaluation purposes.\n", k8sVersion)
 	}
 
 	checker := license.NewChecker(quotaChecker, fileHandler)
