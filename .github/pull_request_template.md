@@ -26,6 +26,5 @@ Feel free to edit, complete or extend this list while the PR is open.
 <!-- Remove items that do not apply. For completed items, change [ ] to [x], or check after submitting. -->
 
 - [ ] Update [CHANGELOG.md](https://github.com/edgelesssys/constellation/blob/main/CHANGELOG.md)
-- [ ] Update [constellation-docs](https://github.com/edgelesssys/constellation-docs)
-    - [ ] Link PR in docs
+- [ ] Update [docs](/docs)
 - [ ] Link to Milestone
