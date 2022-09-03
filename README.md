@@ -3,7 +3,7 @@
 # Always Encrypted K8s
 
 <p>
-    <a href="https://github.com/edgelesssys/constellation/blob/master/LICENSE"><img src="https://img.shields.io/github/license/edgelesssys/constellation" alt="Constellation License"></a>
+    <a href="https://github.com/edgelesssys/constellation/blob/main/LICENSE"><img src="https://img.shields.io/github/license/edgelesssys/constellation" alt="Constellation License"></a>
     <a href="https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-azure.yml/badge.svg?branch=main"><img src="https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-azure.yml/badge.svg?branch=main" alt="E2E Test Azure"></a>
     <a href="https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-gcp.yml/badge.svg?branch=main"><img src="https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-gcp.yml/badge.svg?branch=main" alt="E2E Test GCP"></a>
     <a href="https://goreportcard.com/report/github.com/edgelesssys/constellation"><img src="https://goreportcard.com/badge/github.com/edgelesssys/constellation" alt="Go Report"></a>
@@ -17,9 +17,9 @@ Constellation is a Kubernetes engine that aims to provide the best possible data
 
 ## Goals
 
-From a security perspective, Constellation is designed to keep all data always encrypted and to prevent access from the infrastructure layer (i.e., remove the infrastructure from the TCB). This includes access from datacenter employees, privileged cloud admins, and attackers coming through the infrastructure (e.g., malicious co-tenants escalating their privileges). 
+From a security perspective, Constellation is designed to keep all data always encrypted and to prevent access from the infrastructure layer (i.e., remove the infrastructure from the TCB). This includes access from datacenter employees, privileged cloud admins, and attackers coming through the infrastructure (e.g., malicious co-tenants escalating their privileges).
 
-From a DevOps perspective, Constellation is designed to work just like what you would expect from a modern K8s engine. 
+From a DevOps perspective, Constellation is designed to work just like what you would expect from a modern K8s engine.
 
 ## Use cases
 
@@ -46,7 +46,7 @@ Encrypting your K8s is good for:
 
 ### 🚀 Performance and scale
 
-* High availability with multi-master architecture and stacked etcd topology 
+* High availability with multi-master architecture and stacked etcd topology
 * Dynamic cluster autoscaling with verification and secure bootstrapping of new nodes
 * Competitive performance ([see K-Bench comparison with AKS and GKE][performance])
 
@@ -85,14 +85,14 @@ You may want to start with one of the following sections.
 
 ## Contributing
 
-Refer to [`CONTRIBUTING.md`](CONTRIBUTING.md) on how to contribute. The most important points: 
+Refer to [`CONTRIBUTING.md`](CONTRIBUTING.md) on how to contribute. The most important points:
 * Pull requests are welcome! You need to agree to our [Contributor License Agreement][cla-assistant].
 * Please follow the [Code of Conduct](/CODE_OF_CONDUCT.md).
 * ⚠️ To report a security issue, please write to security@edgeless.systems.
 
 ## License
 
-The Constellation source code is licensed under the [GNU Affero General Public License v3.0](https://www.gnu.org/licenses/agpl-3.0.en.html). Edgeless Systems provides pre-built and signed binaries and images for Constellation. You may use these free of charge to create and run services for internal consumption. You can find more information in the [license] section of the docs.
+The Constellation source code is licensed under the [GNU Affero General Public License v3.0](LICENSE). Edgeless Systems provides pre-built and signed binaries and images for Constellation. You may use these free of charge to create and run services for internal consumption. You can find more information in the [license] section of the docs.
 
 <!-- refs -->
 [architecture]: https://docs.edgeless.systems/constellation/architecture/overview

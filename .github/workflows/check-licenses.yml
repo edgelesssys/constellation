@@ -2,7 +2,13 @@ name: Check licenses
 on:
   push:
     branches: [main]
+    paths:
+      - "**.go"
+      - "**/go.mod"
   pull_request:
+    paths:
+      - "**.go"
+      - "**/go.mod"
 
 jobs:
   check:
@@ -22,3 +28,6 @@ jobs:
 
       - name: Check licenses
         run: hack/check-licenses.sh
+
+      - name: Check for files without license header
+        run: "! grep -rL --include='*.go' -e'SPDX-License-Identifier: AGPL-3.0-only' -e'DO NOT EDIT'"

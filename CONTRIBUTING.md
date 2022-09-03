@@ -10,7 +10,7 @@ If you want to support our development:
 * Share our projects on social media
 * Join the [Confidential Computing Discord](https://discord.gg/rH8QTH56JN)
 
-Constellation is licensed under the [AGPL](LICENSE). When contributing, you also need to agree to our [Contributor License Agreement](https://cla-assistant.io/edgelesssys/constellation).
+Constellation is licensed under the [AGPLv3](LICENSE). When contributing, you also need to agree to our [Contributor License Agreement](https://cla-assistant.io/edgelesssys/constellation).
 
 ## Development guidelines
 
