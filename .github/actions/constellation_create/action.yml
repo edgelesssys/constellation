@@ -63,7 +63,6 @@ runs:
             (.provider | select(. | has(\"azure\")).azure.location) = \"West US\" |
             (.provider | select(. | has(\"azure\")).azure.userAssignedIdentity) = \"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/e2e-test-creds/providers/Microsoft.ManagedIdentity/userAssignedIdentities/e2e-test-user-assigned-id\" |
             (.provider | select(. | has(\"azure\")).azure.resourceGroup) = \"${{ inputs.azureResourceGroup }}\" |
-            (.provider | select(. | has(\"azure\")).azure.instanceType) = \"${{ inputs.machineType }}\" |
             (.provider | select(. | has(\"azure\")).azure.appClientID) = \"b657a00e-813a-4dc7-9b09-fa498a254d71\" |
             (.provider | select(. | has(\"azure\")).azure.clientSecretValue) = \"${{ inputs.azureClientSecret }}\" |
             (.provider | select(. | has(\"azure\")).azure.enforcedMeasurements) = [11,12]" \

@@ -109,7 +109,6 @@ jobs:
           controlNodesCount: "1"
           autoscale: "false"
           cloudProvider: "azure"
-          machineType: "Standard_DC4as_v5"
           azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
           azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
