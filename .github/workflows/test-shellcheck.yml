@@ -3,7 +3,11 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "**.sh"
   pull_request:
+    paths:
+      - "**.sh"
 
 # Abort runs of *this* workflow, if a new commit with the same ref is pushed.
 concurrency:
