@@ -47,8 +47,13 @@ const sidebars = {
         },
         {
           type: 'doc',
+          label: 'Feature status of clouds',
+          id: 'overview/clouds',
+        },
+        {
+          type: 'doc',
           label: 'Performance',
-          id: 'overview/benchmarks',
+          id: 'overview/performance',
         },
         {
           type: 'doc',
@@ -130,7 +135,7 @@ const sidebars = {
         },
         {
           type: 'doc',
-          label: 'Use persistent storage',
+          label: 'Use peristent storage',
           id: 'workflows/storage',
         },
         {
