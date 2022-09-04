@@ -1,14 +1,15 @@
 # Feature status of clouds
 
-What works on which cloud? Currently, Confidential VMs (CVMs) are available in varying quality on the different clouds and software stacks. 
+What works on which cloud? Currently, Confidential VMs (CVMs) are available in varying quality on the different clouds and software stacks.
 
 For Constellation, the ideal environment provides the following:
+
 1. Ability to run arbitrary software and images inside CVMs
-2. CVMs based on AMD SEV-SNP (available in EPYC CPUs since the Milan generation) or, in the future, Intel TDX (available in Xeon CPUs from the Sapphire Rapids generation onwards) 
+2. CVMs based on AMD SEV-SNP (available in EPYC CPUs since the Milan generation) or, in the future, Intel TDX (available in Xeon CPUs from the Sapphire Rapids generation onward)
 3. Ability for CVM guests to obtain raw attestation statements directly from the CPU, ideally via a TPM-like interface
 4. Reviewable, open-source firmware inside CVMs
 
-(1) is a functional must-have. (2)--(4) are required for remote attestation that fully keeps the infrastructure/cloud out. Constellation can work without them or with approximations, but won't protect against certain privileged attackers anymore. 
+(1) is a functional must-have. (2)--(4) are required for remote attestation that fully keeps the infrastructure/cloud out. Constellation can work without them or with approximations, but won't protect against certain privileged attackers anymore.
 
 The following table summarizes the state of features for different infrastructures as of September 2022.
 
@@ -25,9 +26,9 @@ With its [CVM offering](https://docs.microsoft.com/en-us/azure/confidential-comp
 
 Recently, Azure [announced](https://techcommunity.microsoft.com/t5/azure-confidential-computing/azure-confidential-vms-using-sev-snp-dcasv5-ecasv5-are-now/ba-p/3573747) the *limited preview* of CVMs with customizable firmware. With this CVM type, (4) switches from *No* to *Yes*. Constellation will support customizable firmware on Azure in the future.
 
-## Google Cloud Platform (GCP) 
+## Google Cloud Platform (GCP)
 
-The [CVMs available in GCP](https://cloud.google.com/compute/confidential-vm/docs/create-confidential-vm-instance) are based on AMD SEV, but don't have SNP features enabled. This impacts attestation capabilities. Currently, GCP doesn't offer CVM-based attestation at all. Instead, GCP provides attestation statements based on its regular [vTPM](https://cloud.google.com/blog/products/identity-security/virtual-trusted-platform-module-for-shielded-vms-security-in-plaintext), which is managed by the hypervisor. On GCP, the hypervisor is thus currently part of Constellation's TCB.
+The [CVMs available in GCP](https://cloud.google.com/compute/confidential-vm/docs/create-confidential-vm-instance) are based on AMD SEV but don't have SNP features enabled. This impacts attestation capabilities. Currently, GCP doesn't offer CVM-based attestation at all. Instead, GCP provides attestation statements based on its regular [vTPM](https://cloud.google.com/blog/products/identity-security/virtual-trusted-platform-module-for-shielded-vms-security-in-plaintext), which is managed by the hypervisor. On GCP, the hypervisor is thus currently part of Constellation's TCB.
 
 ## Amazon Web Services (AWS)
 
@@ -39,4 +40,4 @@ OpenStack is an open-source cloud and infrastructure management software. It's u
 
 ## Conclusion
 
-The different clouds and software like the Linux Kernel and OpenStack are in the process of building out their support for state-of-the-art CVMs. Azure has already most features in place. For Constellation, the status quo means that the TCB has different shapes on different infrastructures. With broad SEV-SNP support coming to the Linux Kernel, we soon expect a normalization of features across infrastructures. 
+The different clouds and software like the Linux Kernel and OpenStack are in the process of building out their support for state-of-the-art CVMs. Azure has already most features in place. For Constellation, the status quo means that the TCB has different shapes on different infrastructures. With broad SEV-SNP support coming to the Linux Kernel, we soon expect a normalization of features across infrastructures.
