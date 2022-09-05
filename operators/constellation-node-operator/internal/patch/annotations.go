@@ -1,3 +1,9 @@
+/*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
 package patch
 
 import "sigs.k8s.io/controller-runtime/pkg/client"

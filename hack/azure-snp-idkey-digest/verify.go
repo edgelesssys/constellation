@@ -1,3 +1,9 @@
+/*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
 // Verify verifies an MAA JWT and prints the SNP ID key digest on success.
 package main
 

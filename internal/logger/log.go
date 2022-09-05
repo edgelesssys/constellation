@@ -1,4 +1,10 @@
 /*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
+/*
 Package logger provides logging functionality for Constellation services.
 It is a thin wrapper around the zap package, providing a consistent interface for logging.
 Use this package to implement logging for your Constellation services.

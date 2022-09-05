@@ -1,3 +1,9 @@
+/*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
 // This binary can be build from siderolabs/talos projects. Located at:
 // https://github.com/siderolabs/talos/tree/master/hack/docgen
 //

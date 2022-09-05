@@ -1,4 +1,10 @@
 /*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
+/*
 Package constants contains the constants used by Constellation.
 Constants should never be overwritable by command line flags or configuration files.
 */
