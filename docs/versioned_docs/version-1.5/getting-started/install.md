@@ -71,7 +71,7 @@ To try out Constellation, using a cloud environment such as [Azure Cloud Shell](
 
 **Production**
 
-For production clusters, use the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/) on a trusted machine:
+For production clusters, use the latest version of the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/) on a trusted machine:
 
 ```bash
 az login
