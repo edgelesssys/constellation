@@ -4,7 +4,7 @@ on:
     inputs:
       coreOSConfigBranch:
         description: "Branch of CoreOS config repo to build from"
-        default: "constellation"
+        default: "main"
         required: false
       debug:
         description: "Build debug image"
