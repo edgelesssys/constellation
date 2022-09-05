@@ -87,7 +87,7 @@ You may want to start with one of the following sections.
 
 Refer to [`CONTRIBUTING.md`](CONTRIBUTING.md) on how to contribute. The most important points: 
 * Pull requests are welcome! You need to agree to our [Contributor License Agreement][cla-assistant].
-* Please follow the [Code of Conduct](/CODE_OF_CONDUCT.md). 
+* Please follow the [Code of Conduct](/CODE_OF_CONDUCT.md).
 * ⚠️ To report a security issue, please write to security@edgeless.systems.
 
 ## License
@@ -117,4 +117,4 @@ The Constellation source code is licensed under the [GNU Affero General Public L
 [security-benefits]: https://docs.edgeless.systems/constellation/overview/security-benefits
 [twitter]: https://twitter.com/EdgelessSystems
 [whitepaper]: https://content.edgeless.systems/hubfs/Confidential%20Computing%20Whitepaper.pdf
-[performance]: https://docs.edgeless.systems/constellation/overview/performance
+[performance]: https://docs.edgeless.systems/constellation/overview/benchmarks

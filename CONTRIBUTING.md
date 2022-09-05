@@ -60,7 +60,7 @@ Core components:
 * [bootstrapper](bootstrapper): The bootstrapper is a node agent whose most important task is to bootstrap a node
 * [image](image): Build files for the Constellation disk image
 * [kms](kms): Constellation's key management client and server
-* [mount](mount): Package used by CSI plugins to create and mount encrypted block devices
+* [csi](csi): Package used by CSI plugins to create and mount encrypted block devices
 * [state](state): Contains the disk-mapper that maps the encrypted node data disk during boot
 
 Development components:
@@ -77,8 +77,8 @@ Additional repositories:
 
 * [constellation-docs](https://github.com/edgelesssys/constellation-docs): End-user documentation
 * [constellation-fedora-coreos-config](https://github.com/edgelesssys/constellation-fedora-coreos-config): CoreOS build configuration with changes for Constellation
-* [edg-azuredisk-csi-driver](https://github.com/edgelesssys/edg-azuredisk-csi-driver): Azure CSI driver with encryption on node
-* [edg-gcp-compute-persistent-disk-csi-driver](https://github.com/edgelesssys/edg-gcp-compute-persistent-disk-csi-driver): GCP CSI driver with encryption on node
+* [constellation-azuredisk-csi-driver](https://github.com/edgelesssys/constellation-azuredisk-csi-driver): Azure CSI driver with encryption on node
+* [constellation-gcp-compute-persistent-disk-csi-driver](https://github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver): GCP CSI driver with encryption on node
 
 ## Build
 

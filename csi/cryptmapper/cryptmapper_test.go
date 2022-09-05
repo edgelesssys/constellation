@@ -5,7 +5,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/mount/kms"
 	cryptsetup "github.com/martinjungblut/go-cryptsetup"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
@@ -116,7 +115,7 @@ func TestCloseCryptDevice(t *testing.T) {
 		})
 	}
 
-	mapper := New(kms.NewStaticKMS(), &stubCryptDevice{})
+	mapper := New(&fakeKMS{}, &stubCryptDevice{})
 	err := mapper.CloseCryptDevice("volume01-unit-test")
 	assert.NoError(t, err)
 }
@@ -306,7 +305,7 @@ func TestOpenCryptDevice(t *testing.T) {
 		})
 	}
 
-	mapper := New(kms.NewStaticKMS(), &stubCryptDevice{})
+	mapper := New(&fakeKMS{}, &stubCryptDevice{})
 	_, err := mapper.OpenCryptDevice(context.Background(), "/dev/some-device", "volume01", false)
 	assert.NoError(t, err)
 }
@@ -350,7 +349,7 @@ func TestResizeCryptDevice(t *testing.T) {
 			assert := assert.New(t)
 
 			mapper := &CryptMapper{
-				kms:    kms.NewStaticKMS(),
+				kms:    &fakeKMS{},
 				mapper: tc.device,
 			}
 
@@ -451,4 +450,14 @@ func TestIsIntegrityFS(t *testing.T) {
 			}
 		})
 	}
+}
+
+type fakeKMS struct{}
+
+func (k *fakeKMS) GetDEK(ctx context.Context, dekID string, dekSize int) ([]byte, error) {
+	key := make([]byte, dekSize)
+	for i := range key {
+		key[i] = 0x41
+	}
+	return key, nil
 }
