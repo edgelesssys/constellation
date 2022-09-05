@@ -5,7 +5,7 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
 1. Merge ready PRs
 2. On the [CoreOS config repo](https://github.com/edgelesssys/constellation-fedora-coreos-config), create two new branches `release/v1.3`, `stream/v1.3` (new minor version) or use the existing ones (new patch version).
    The release branch contains the squashed changeset and is branched from main while the stream branch contains the rebased changesets on top of the latest upstream changes.
-   [Consult this guide on rebasing forks (INTERNAL)](https://github.com/edgelesssys/wiki/blob/master/documentation/rebasing_forks.md#managing-releaes-branches) for guidance.
+   [Consult this guide on rebasing forks (INTERNAL)](https://github.com/edgelesssys/wiki/blob/master/documentation/rebasing_forks.md#managing-release-branches) for guidance.
 3. Create a new branch `release/v1.3` (new minor version) or use the existing one (new patch version)
 4. On this branch, prepare the following things:
     1. (new patch version) `cherry-pick` (only) the required commits from `main`
