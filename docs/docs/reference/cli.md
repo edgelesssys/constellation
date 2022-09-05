@@ -12,17 +12,17 @@ constellation [command]
 Commands:
 
 * [config](#constellation-config): Work with the Constellation configuration file
-* [generate](#constellation-generate): Generate a default configuration file
-* [fetch-measurements](#constellation-fetch-measurements): Fetch measurements for configured cloud provider and image
-* [instance-types](#constellation-instance-types): Prints the supported instance types for all cloud providers
+  * [generate](#constellation-config-generate): Generate a default configuration file
+  * [fetch-measurements](#constellation-config-fetch-measurements): Fetch measurements for configured cloud provider and image
+  * [instance-types](#constellation-config-instance-types): Prints the supported instance types for all cloud providers
 * [create](#constellation-create): Create instances on a cloud platform for your Constellation cluster
 * [init](#constellation-init): Initialize the Constellation cluster
 * [verify](#constellation-verify): Verify the confidential properties of a Constellation cluster
 * [recover](#constellation-recover): Recover a completely stopped Constellation cluster
 * [terminate](#constellation-terminate): Terminate a Constellation cluster
 * [upgrade](#constellation-upgrade): Plan and perform an upgrade of a Constellation cluster
-* [execute](#constellation-execute): Execute an upgrade of a Constellation cluster
-* [plan](#constellation-plan): Plan an upgrade of a Constellation cluster
+  * [execute](#constellation-upgrade-execute): Execute an upgrade of a Constellation cluster
+  * [plan](#constellation-upgrade-plan): Plan an upgrade of a Constellation cluster
 * [version](#constellation-version): Display version of this CLI
 
 ## constellation config
