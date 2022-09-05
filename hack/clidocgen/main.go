@@ -31,13 +31,8 @@ func main() {
 		name := c.Name()
 		fullName, level := determineFullNameAndLevel(c)
 
-		// Used for indentation based on the level of a command.
-		var nestingSpaces string
-		for i := 0; i < level; i++ {
-			nestingSpaces += "  "
-		}
-
-		fmt.Fprintf(cmdList, "%s* [%v](#constellation-%v): %v\n", nestingSpaces, name, fullName, c.Short)
+		// First two arguments are used to create indentation for nested commands (2 spaces per level).
+		fmt.Fprintf(cmdList, "%*s* [%v](#constellation-%v): %v\n", 2*level, "", name, fullName, c.Short)
 		if err := doc.GenMarkdown(c, body); err != nil {
 			panic(err)
 		}
