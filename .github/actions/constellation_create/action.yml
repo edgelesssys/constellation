@@ -119,6 +119,14 @@ runs:
         yq eval -i "(.provider | select(. | has(\"azure\")).azure.instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
         yq eval -i "(.provider | select(. | has(\"gcp\")).gcp.instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
 
+    - name: Create serviceAccountKey.json
+      if: ${{ inputs.cloudProvider == 'gcp' }}
+      shell: bash
+      run: |
+        echo "$GCP_CLUSTER_SERVICE_ACCOUNT_KEY" > serviceAccountKey.json
+      env:
+        GCP_CLUSTER_SERVICE_ACCOUNT_KEY: ${{ inputs.gcpClusterServiceAccountKey }}
+
     - name: Add debugd firewall rule
       run: |
         yq eval -i '(.ingressFirewall) += {"name": "debugd", "description": "debugd default port", "protocol": "tcp", "iprange": "0.0.0.0/0", "fromport": 4000, "toport": 0}' constellation-conf.yaml
@@ -145,14 +153,6 @@ runs:
         echo "::endgroup::"
       shell: bash
       if: ${{ inputs.isDebugImage == 'true' }}
-
-    - name: Create serviceAccountKey.json
-      if: ${{ inputs.cloudProvider == 'gcp' }}
-      shell: bash
-      run: |
-        echo "$GCP_CLUSTER_SERVICE_ACCOUNT_KEY" > serviceAccountKey.json
-      env:
-        GCP_CLUSTER_SERVICE_ACCOUNT_KEY: ${{ inputs.gcpClusterServiceAccountKey }}
 
     - name: Constellation init
       run: |
