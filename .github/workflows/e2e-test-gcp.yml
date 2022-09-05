@@ -5,7 +5,7 @@ on:
   schedule:
     - cron: "0 2 * * 2-6"
 jobs:
-  test-latest:
+  test-default:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -52,10 +52,10 @@ jobs:
         shell: bash
         working-directory: .github/actions/e2e_test
 
-  test-older-versions:
+  test-other-versions:
     strategy:
       matrix:
-        version: ["1.22", "1.23"]
+        version: ["1.22", "1.24", "1.25"]
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
