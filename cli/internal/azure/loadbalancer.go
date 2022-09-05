@@ -25,15 +25,15 @@ type LoadBalancer struct {
 const (
 	BackendAddressPoolWorkerName       = "backendAddressWorkerPool"
 	BackendAddressPoolControlPlaneName = "backendAddressControlPlanePool"
+	frontEndIPConfigName               = "frontEndIPConfig"
+	kubeHealthProbeName                = "kubeHealthProbe"
+	verifyHealthProbeName              = "verifyHealthProbe"
+	coordHealthProbeName               = "coordHealthProbe"
+	debugdHealthProbeName              = "debugdHealthProbe"
 )
 
 // Azure returns a Azure representation of LoadBalancer.
 func (l LoadBalancer) Azure() armnetwork.LoadBalancer {
-	frontEndIPConfigName := "frontEndIPConfig"
-	kubeHealthProbeName := "kubeHealthProbe"
-	verifyHealthProbeName := "verifyHealthProbe"
-	coordHealthProbeName := "coordHealthProbe"
-	debugdHealthProbeName := "debugdHealthProbe"
 	backEndAddressPoolNodeName := BackendAddressPoolWorkerName + "-" + l.UID
 	backEndAddressPoolControlPlaneName := BackendAddressPoolControlPlaneName + "-" + l.UID
 
@@ -175,35 +175,6 @@ func (l LoadBalancer) Azure() armnetwork.LoadBalancer {
 						},
 					},
 				},
-				{
-					Name: to.Ptr("debudLoadBalancerRule"),
-					Properties: &armnetwork.LoadBalancingRulePropertiesFormat{
-						FrontendIPConfiguration: &armnetwork.SubResource{
-							ID: to.Ptr("/subscriptions/" + l.Subscription +
-								"/resourceGroups/" + l.ResourceGroup +
-								"/providers/Microsoft.Network/loadBalancers/" + l.Name +
-								"/frontendIPConfigurations/" + frontEndIPConfigName),
-						},
-						FrontendPort: to.Ptr[int32](constants.DebugdPort),
-						BackendPort:  to.Ptr[int32](constants.DebugdPort),
-						Protocol:     to.Ptr(armnetwork.TransportProtocolTCP),
-						Probe: &armnetwork.SubResource{
-							ID: to.Ptr("/subscriptions/" + l.Subscription +
-								"/resourceGroups/" + l.ResourceGroup +
-								"/providers/Microsoft.Network/loadBalancers/" + l.Name +
-								"/probes/" + debugdHealthProbeName),
-						},
-						DisableOutboundSnat: to.Ptr(true),
-						BackendAddressPools: []*armnetwork.SubResource{
-							{
-								ID: to.Ptr("/subscriptions/" + l.Subscription +
-									"/resourceGroups/" + l.ResourceGroup +
-									"/providers/Microsoft.Network/loadBalancers/" + l.Name +
-									"/backendAddressPools/" + backEndAddressPoolControlPlaneName),
-							},
-						},
-					},
-				},
 			},
 			OutboundRules: []*armnetwork.OutboundRule{
 				{
@@ -229,4 +200,50 @@ func (l LoadBalancer) Azure() armnetwork.LoadBalancer {
 			},
 		},
 	}
+}
+
+func (l *LoadBalancer) AppendDebugRules(armLoadBalancer armnetwork.LoadBalancer) armnetwork.LoadBalancer {
+	backEndAddressPoolControlPlaneName := BackendAddressPoolControlPlaneName + "-" + l.UID
+
+	if armLoadBalancer.Properties == nil {
+		armLoadBalancer.Properties = &armnetwork.LoadBalancerPropertiesFormat{}
+	}
+
+	if armLoadBalancer.Properties.LoadBalancingRules == nil {
+		armLoadBalancer.Properties.LoadBalancingRules = []*armnetwork.LoadBalancingRule{}
+	}
+
+	debugdRule := armnetwork.LoadBalancingRule{
+		Name: to.Ptr("debugdLoadBalancerRule"),
+		Properties: &armnetwork.LoadBalancingRulePropertiesFormat{
+			FrontendIPConfiguration: &armnetwork.SubResource{
+				ID: to.Ptr("/subscriptions/" + l.Subscription +
+					"/resourceGroups/" + l.ResourceGroup +
+					"/providers/Microsoft.Network/loadBalancers/" + l.Name +
+					"/frontendIPConfigurations/" + frontEndIPConfigName),
+			},
+			FrontendPort: to.Ptr[int32](constants.DebugdPort),
+			BackendPort:  to.Ptr[int32](constants.DebugdPort),
+			Protocol:     to.Ptr(armnetwork.TransportProtocolTCP),
+			Probe: &armnetwork.SubResource{
+				ID: to.Ptr("/subscriptions/" + l.Subscription +
+					"/resourceGroups/" + l.ResourceGroup +
+					"/providers/Microsoft.Network/loadBalancers/" + l.Name +
+					"/probes/" + debugdHealthProbeName),
+			},
+			DisableOutboundSnat: to.Ptr(true),
+			BackendAddressPools: []*armnetwork.SubResource{
+				{
+					ID: to.Ptr("/subscriptions/" + l.Subscription +
+						"/resourceGroups/" + l.ResourceGroup +
+						"/providers/Microsoft.Network/loadBalancers/" + l.Name +
+						"/backendAddressPools/" + backEndAddressPoolControlPlaneName),
+				},
+			},
+		},
+	}
+
+	armLoadBalancer.Properties.LoadBalancingRules = append(armLoadBalancer.Properties.LoadBalancingRules, &debugdRule)
+
+	return armLoadBalancer
 }

@@ -177,11 +177,17 @@ func TestCreateExternalLoadBalancer(t *testing.T) {
 	testCases := map[string]struct {
 		publicIPAddressesAPI publicIPAddressesAPI
 		loadBalancersAPI     loadBalancersAPI
+		isDebugCluster       bool
 		wantErr              bool
 	}{
 		"successful create": {
 			publicIPAddressesAPI: stubPublicIPAddressesAPI{},
 			loadBalancersAPI:     stubLoadBalancersAPI{},
+		},
+		"successful create (debug cluster)": {
+			publicIPAddressesAPI: stubPublicIPAddressesAPI{},
+			loadBalancersAPI:     stubLoadBalancersAPI{},
+			isDebugCluster:       true,
 		},
 		"failed to get response from successful create": {
 			loadBalancersAPI:     stubLoadBalancersAPI{pollErr: someErr},
@@ -216,7 +222,7 @@ func TestCreateExternalLoadBalancer(t *testing.T) {
 				publicIPAddressesAPI: tc.publicIPAddressesAPI,
 			}
 
-			err := client.CreateExternalLoadBalancer(ctx)
+			err := client.CreateExternalLoadBalancer(ctx, tc.isDebugCluster)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
