@@ -68,7 +68,7 @@ func (k *Kubectl) Apply(resources kubernetes.Marshaler, forceConflicts bool) err
 	// apply each object, one by one
 	for i, resource := range infos {
 		if err := client.ApplyOneObject(resource, forceConflicts); err != nil {
-			return fmt.Errorf("kubectl apply of object %v/%v: %w", i, len(infos), err)
+			return fmt.Errorf("kubectl apply of object %v/%v: %w", i+1, len(infos), err)
 		}
 	}
 
