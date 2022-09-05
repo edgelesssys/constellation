@@ -164,7 +164,7 @@ func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *confi
 	if err := cl.CreateApplicationInsight(ctx); err != nil {
 		return state.ConstellationState{}, err
 	}
-	if err := cl.CreateExternalLoadBalancer(ctx); err != nil {
+	if err := cl.CreateExternalLoadBalancer(ctx, config.IsDebugCluster()); err != nil {
 		return state.ConstellationState{}, err
 	}
 	if err := cl.CreateVirtualNetwork(ctx); err != nil {

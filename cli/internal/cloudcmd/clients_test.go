@@ -90,7 +90,7 @@ func (c *fakeAzureClient) CreateVirtualNetwork(ctx context.Context) error {
 	return nil
 }
 
-func (c *fakeAzureClient) CreateExternalLoadBalancer(ctx context.Context) error {
+func (c *fakeAzureClient) CreateExternalLoadBalancer(ctx context.Context, isDebugCluster bool) error {
 	c.loadBalancerName = "loadBalancer"
 	return nil
 }
@@ -158,7 +158,7 @@ func (c *stubAzureClient) GetState() state.ConstellationState {
 func (c *stubAzureClient) SetState(state.ConstellationState) {
 }
 
-func (c *stubAzureClient) CreateExternalLoadBalancer(ctx context.Context) error {
+func (c *stubAzureClient) CreateExternalLoadBalancer(ctx context.Context, isDebugCluster bool) error {
 	return c.createLoadBalancerErr
 }
 

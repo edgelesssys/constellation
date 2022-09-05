@@ -164,7 +164,7 @@ type NetworkSecurityGroupInput struct {
 }
 
 // CreateExternalLoadBalancer creates an external load balancer.
-func (c *Client) CreateExternalLoadBalancer(ctx context.Context) error {
+func (c *Client) CreateExternalLoadBalancer(ctx context.Context, isDebugCluster bool) error {
 	// First, create a public IP address for the load balancer.
 	publicIPAddress, err := c.createPublicIPAddress(ctx, "loadbalancer-public-ip-"+c.uid)
 	if err != nil {
@@ -182,6 +182,9 @@ func (c *Client) CreateExternalLoadBalancer(ctx context.Context) error {
 		UID:           c.uid,
 	}
 	azureLoadBalancer := loadBalancer.Azure()
+	if isDebugCluster {
+		azureLoadBalancer = loadBalancer.AppendDebugRules(azureLoadBalancer)
+	}
 
 	poller, err := c.loadBalancersAPI.BeginCreateOrUpdate(
 		ctx, c.resourceGroup, loadBalancerName,
