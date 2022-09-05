@@ -67,6 +67,11 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 		return dialer.New(nil, validator.V(cmd), &net.Dialer{})
 	}
 	helmLoader := &helm.ChartLoader{}
+
+	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
+	defer cancel()
+	cmd.SetContext(ctx)
+
 	return initialize(cmd, newDialer, fileHandler, helmLoader, license.NewClient())
 }
 

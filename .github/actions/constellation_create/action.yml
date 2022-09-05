@@ -159,3 +159,31 @@ runs:
         if [ ${{ inputs.autoscale }} = true ]; then autoscale=--autoscale; fi
         constellation init ${autoscale}
       shell: bash
+
+    - name: Download boot logs
+      run: |
+        echo "::group::Download boot logs"
+        case $CSP in
+          azure)
+            AZURE_RESOURCE_GROUP=$(yq eval ".provider.azure.resourceGroup" constellation-conf.yaml)
+            ./.github/actions/constellation_create/az-logs.sh ${AZURE_RESOURCE_GROUP}
+            ;;
+          gcp)
+            CONTROL_NODES=$(jq -r '.gcpcontrolplaneinstancegroup' constellation-state.json)
+            WORKER_NODES=$(jq -r '.gcpworkerinstancegroup' constellation-state.json)
+            ZONE=$(jq -r '.gcpzone' constellation-state.json)
+            ./.github/actions/constellation_create/gcp-logs.sh ${CONTROL_NODES} ${WORKER_NODES} ${ZONE}
+            ;;
+        esac
+        echo "::endgroup::"
+      shell: bash
+      env:
+        CSP: ${{ inputs.cloudProvider }}
+      continue-on-error: true
+      if: ${{ always() }}
+    - name: Upload boot logs
+      uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+      with:
+        name: serial-logs
+        path: '*.log'
+      if: ${{ always() && !env.ACT }}
