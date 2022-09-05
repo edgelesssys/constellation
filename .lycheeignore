@@ -1,12 +1,3 @@
-file:///github/workspace/.+/\$%7Bhref%7D
-file:///github/workspace/.+/.+/_media/
-file:///github/workspace/LICENSE
-http://localhost.*
-https://github.com/edgelesssys/constellation.*
-https://github.com/edgelesssys/edg-gcp-compute-persistent-disk-csi-driver
-https://github.com/edgelesssys/edg-azuredisk-csi-driver
-https://github.com/edgelesssys/wiki
-http://my.storage/measurements.yaml
-http://my.storage/measurements.yaml.sig
-http://php-apache
-https://www.linkedin.com.*
+http://localhost:
+https://github.com/edgelesssys/constellation-
+https://github.com/edgelesssys/wiki/blob/master/documentation/rebasing_forks.md
