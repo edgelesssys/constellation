@@ -37,6 +37,7 @@ type Client struct {
 	networkSecurityGroupsAPI
 	resourceAPI
 	scaleSetsAPI
+	virtualMachineScaleSetVMsAPI
 	publicIPAddressesAPI
 	networkInterfacesAPI
 	loadBalancersAPI
@@ -91,6 +92,10 @@ func NewFromDefault(subscriptionID, tenantID string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	virtualMachineScaleSetVMsAPI, err := armcomputev2.NewVirtualMachineScaleSetVMsClient(subscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
 	publicIPAddressesAPI, err := armnetwork.NewPublicIPAddressesClient(subscriptionID, cred, nil)
 	if err != nil {
 		return nil, err
@@ -119,22 +124,23 @@ func NewFromDefault(subscriptionID, tenantID string) (*Client, error) {
 	roleAssignmentsAPI.Authorizer = managementAuthorizer
 
 	return &Client{
-		networksAPI:              netAPI,
-		networkSecurityGroupsAPI: netSecGrpAPI,
-		resourceAPI:              resourceAPI,
-		scaleSetsAPI:             scaleSetAPI,
-		publicIPAddressesAPI:     publicIPAddressesAPI,
-		networkInterfacesAPI:     networkInterfacesAPI,
-		loadBalancersAPI:         loadBalancersAPI,
-		applicationsAPI:          applicationsAPI,
-		servicePrincipalsAPI:     servicePrincipalsAPI,
-		roleAssignmentsAPI:       roleAssignmentsAPI,
-		applicationInsightsAPI:   applicationInsightsAPI,
-		subscriptionID:           subscriptionID,
-		tenantID:                 tenantID,
-		workers:                  cloudtypes.Instances{},
-		controlPlanes:            cloudtypes.Instances{},
-		pollFrequency:            time.Second * 5,
+		networksAPI:                  netAPI,
+		networkSecurityGroupsAPI:     netSecGrpAPI,
+		resourceAPI:                  resourceAPI,
+		scaleSetsAPI:                 scaleSetAPI,
+		virtualMachineScaleSetVMsAPI: virtualMachineScaleSetVMsAPI,
+		publicIPAddressesAPI:         publicIPAddressesAPI,
+		networkInterfacesAPI:         networkInterfacesAPI,
+		loadBalancersAPI:             loadBalancersAPI,
+		applicationsAPI:              applicationsAPI,
+		servicePrincipalsAPI:         servicePrincipalsAPI,
+		roleAssignmentsAPI:           roleAssignmentsAPI,
+		applicationInsightsAPI:       applicationInsightsAPI,
+		subscriptionID:               subscriptionID,
+		tenantID:                     tenantID,
+		workers:                      cloudtypes.Instances{},
+		controlPlanes:                cloudtypes.Instances{},
+		pollFrequency:                time.Second * 5,
 	}, nil
 }
 
