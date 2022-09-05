@@ -1,3 +1,9 @@
+/*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
 package kubectl
 
 import "github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/kubectl/client"

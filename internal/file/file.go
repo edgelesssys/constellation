@@ -1,4 +1,10 @@
 /*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
+/*
 Package file provides functions that combine file handling, JSON marshaling
 and file system abstraction.
 */

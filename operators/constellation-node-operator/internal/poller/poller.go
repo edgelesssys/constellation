@@ -1,3 +1,9 @@
+/*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
 // Package poller implements a poller that can be used to wait for a condition to be met.
 // The poller is designed to be a replacement for the azure-sdk-for-go poller
 // with exponential backoff and an injectable clock.

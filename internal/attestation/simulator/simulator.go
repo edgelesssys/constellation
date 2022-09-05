@@ -1,5 +1,11 @@
 //go:build !disable_tpm_simulator
 
+/*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
 package simulator
 
 import (
