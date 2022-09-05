@@ -26,7 +26,7 @@ type kmsDeployment struct {
 	Service            k8s.Service
 	ClusterRole        rbac.ClusterRole
 	ClusterRoleBinding rbac.ClusterRoleBinding
-	Deployment         apps.Deployment
+	Deployment         apps.DaemonSet
 	MasterSecret       k8s.Secret
 }
 
@@ -117,19 +117,21 @@ func NewKMSDeployment(csp string, config KMSConfig) *kmsDeployment {
 				},
 			},
 		},
-		Deployment: apps.Deployment{
+		Deployment: apps.DaemonSet{
 			TypeMeta: meta.TypeMeta{
 				APIVersion: "apps/v1",
-				Kind:       "Deployment",
+				Kind:       "DaemonSet",
 			},
 			ObjectMeta: meta.ObjectMeta{
 				Labels: map[string]string{
-					"k8s-app": "kms",
+					"k8s-app":                       "kms",
+					"component":                     "kms",
+					"kubernetes.io/cluster-service": "true",
 				},
 				Name:      "kms",
 				Namespace: kmsNamespace,
 			},
-			Spec: apps.DeploymentSpec{
+			Spec: apps.DaemonSetSpec{
 				Selector: &meta.LabelSelector{
 					MatchLabels: map[string]string{
 						"k8s-app": "kms",
