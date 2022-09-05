@@ -18,7 +18,6 @@ import (
 
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/config/instancetypes"
-	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/versions"
 	"github.com/go-playground/locales/en"
@@ -46,22 +45,8 @@ type Config struct {
 	//   Size (in GB) of a node's disk to store the non-volatile state.
 	StateDiskSizeGB int `yaml:"stateDiskSizeGB" validate:"min=0"`
 	// description: |
-	//   Ingress firewall rules for node network.
-	IngressFirewall Firewall `yaml:"ingressFirewall,omitempty" validate:"dive"`
-	// description: |
-	//   Egress firewall rules for node network.
-	// examples:
-	//   - value: 'Firewall{
-	//     {
-	//       Name: "rule#1",
-	//       Description: "the first rule",
-	//       Protocol: "tcp",
-	//       IPRange: "0.0.0.0/0",
-	//       FromPort: 443,
-	//       ToPort: 443,
-	//     },
-	//   }'
-	EgressFirewall Firewall `yaml:"egressFirewall,omitempty" validate:"dive"`
+	//   DO NOT USE FOR PRODUCTION CLUSTERS: Enable debug cluster mode and use debug images. For usage, see: https://github.com/edgelesssys/constellation/blob/main/debugd/README.md
+	DebugCluster *bool `yaml:"debugCluster" validate:"required"`
 	// description: |
 	//   Supported cloud providers and their specific configurations.
 	Provider ProviderConfig `yaml:"provider" validate:"dive"`
@@ -99,29 +84,6 @@ type UserKey struct {
 	//   Public key of new SSH user.
 	PublicKey string `yaml:"publicKey" validate:"required"`
 }
-
-type FirewallRule struct {
-	// description: |
-	//   Name of rule.
-	Name string `yaml:"name" validate:"required"`
-	// description: |
-	//   Description for rule.
-	Description string `yaml:"description"`
-	// description: |
-	//   Protocol, such as 'udp' or 'tcp'.
-	Protocol string `yaml:"protocol" validate:"required"`
-	// description: |
-	//   CIDR range for which this rule is applied.
-	IPRange string `yaml:"iprange" validate:"required"`
-	// description: |
-	//   Start port of a range.
-	FromPort int `yaml:"fromport" validate:"min=0,max=65535"`
-	// description: |
-	//   End port of a range, or 0 if a single port is given by fromport.
-	ToPort int `yaml:"toport" validate:"omitempty,gtefield=FromPort,max=65535"`
-}
-
-type Firewall []FirewallRule
 
 // ProviderConfig are cloud-provider specific configuration values used by the CLI.
 // Fields should remain pointer-types so custom specific configs can nil them
@@ -234,37 +196,7 @@ func Default() *Config {
 		AutoscalingNodeGroupMin: 1,
 		AutoscalingNodeGroupMax: 10,
 		StateDiskSizeGB:         30,
-		IngressFirewall: Firewall{
-			{
-				Name:        "bootstrapper",
-				Description: "bootstrapper default port",
-				Protocol:    "tcp",
-				IPRange:     "0.0.0.0/0",
-				FromPort:    constants.BootstrapperPort,
-			},
-			{
-				Name:        "ssh",
-				Description: "SSH",
-				Protocol:    "tcp",
-				IPRange:     "0.0.0.0/0",
-				FromPort:    constants.SSHPort,
-			},
-			{
-				Name:        "nodeport",
-				Description: "NodePort",
-				Protocol:    "tcp",
-				IPRange:     "0.0.0.0/0",
-				FromPort:    constants.NodePortFrom,
-				ToPort:      constants.NodePortTo,
-			},
-			{
-				Name:        "kubernetes",
-				Description: "Kubernetes",
-				Protocol:    "tcp",
-				IPRange:     "0.0.0.0/0",
-				FromPort:    constants.KubernetesPort,
-			},
-		},
+		DebugCluster:            func() *bool { b := false; return &b }(),
 		Provider: ProviderConfig{
 			Azure: &AzureConfig{
 				SubscriptionID:       "",
@@ -537,4 +469,12 @@ func validInstanceTypeForProvider(insType string, acceptNonCVM bool, provider cl
 	default:
 		return false
 	}
+}
+
+// IsDebugCluster checks whether the cluster is configured as a debug cluster.
+func (c *Config) IsDebugCluster() bool {
+	if c.DebugCluster != nil && *c.DebugCluster {
+		return true
+	}
+	return false
 }
