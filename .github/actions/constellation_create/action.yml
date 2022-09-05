@@ -71,8 +71,8 @@ runs:
           "(.provider | select(. | has(\"gcp\")).gcp.project) = \"constellation-331613\" |
             (.provider | select(. | has(\"gcp\")).gcp.region) = \"europe-west3\" |
             (.provider | select(. | has(\"gcp\")).gcp.zone) = \"europe-west3-b\" |
-            (.provider | select(. | has(\"gcp\")).gcp.enforcedMeasurements) = [11,12]" |
-            (.provider | select(. | has(\"gcp\")).gcp.serviceAccountKeyPath) = \"serviceAccountKey.json\" \
+            (.provider | select(. | has(\"gcp\")).gcp.enforcedMeasurements) = [11,12] |
+            (.provider | select(. | has(\"gcp\")).gcp.serviceAccountKeyPath) = \"serviceAccountKey.json\"" \
           constellation-conf.yaml
 
         if [ ${{ inputs.kubernetesVersion != '' }} = true ]; then
