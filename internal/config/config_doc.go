@@ -14,7 +14,6 @@ var (
 	ConfigDoc         encoder.Doc
 	UpgradeConfigDoc  encoder.Doc
 	UserKeyDoc        encoder.Doc
-	FirewallRuleDoc   encoder.Doc
 	ProviderConfigDoc encoder.Doc
 	AzureConfigDoc    encoder.Doc
 	GCPConfigDoc      encoder.Doc
@@ -25,7 +24,7 @@ func init() {
 	ConfigDoc.Type = "Config"
 	ConfigDoc.Comments[encoder.LineComment] = "Config defines configuration used by CLI."
 	ConfigDoc.Description = "Config defines configuration used by CLI."
-	ConfigDoc.Fields = make([]encoder.Doc, 10)
+	ConfigDoc.Fields = make([]encoder.Doc, 9)
 	ConfigDoc.Fields[0].Name = "version"
 	ConfigDoc.Fields[0].Type = "string"
 	ConfigDoc.Fields[0].Note = ""
@@ -46,42 +45,35 @@ func init() {
 	ConfigDoc.Fields[3].Note = ""
 	ConfigDoc.Fields[3].Description = "Size (in GB) of a node's disk to store the non-volatile state."
 	ConfigDoc.Fields[3].Comments[encoder.LineComment] = "Size (in GB) of a node's disk to store the non-volatile state."
-	ConfigDoc.Fields[4].Name = "ingressFirewall"
-	ConfigDoc.Fields[4].Type = "Firewall"
+	ConfigDoc.Fields[4].Name = "debugCluster"
+	ConfigDoc.Fields[4].Type = "bool"
 	ConfigDoc.Fields[4].Note = ""
-	ConfigDoc.Fields[4].Description = "Ingress firewall rules for node network."
-	ConfigDoc.Fields[4].Comments[encoder.LineComment] = "Ingress firewall rules for node network."
-	ConfigDoc.Fields[5].Name = "egressFirewall"
-	ConfigDoc.Fields[5].Type = "Firewall"
+	ConfigDoc.Fields[4].Description = "DO NOT USE FOR PRODUCTION CLUSTERS: Enable debug cluster mode and use debug images. For usage, see: https://github.com/edgelesssys/constellation/blob/main/debugd/README.md"
+	ConfigDoc.Fields[4].Comments[encoder.LineComment] = "DO NOT USE FOR PRODUCTION CLUSTERS: Enable debug cluster mode and use debug images. For usage, see: https://github.com/edgelesssys/constellation/blob/main/debugd/README.md"
+	ConfigDoc.Fields[5].Name = "provider"
+	ConfigDoc.Fields[5].Type = "ProviderConfig"
 	ConfigDoc.Fields[5].Note = ""
-	ConfigDoc.Fields[5].Description = "Egress firewall rules for node network."
-	ConfigDoc.Fields[5].Comments[encoder.LineComment] = "Egress firewall rules for node network."
-
-	ConfigDoc.Fields[5].AddExample("", Firewall{{Name: "rule#1", Description: "the first rule", Protocol: "tcp", IPRange: "0.0.0.0/0", FromPort: 443, ToPort: 443}})
-	ConfigDoc.Fields[6].Name = "provider"
-	ConfigDoc.Fields[6].Type = "ProviderConfig"
+	ConfigDoc.Fields[5].Description = "Supported cloud providers and their specific configurations."
+	ConfigDoc.Fields[5].Comments[encoder.LineComment] = "Supported cloud providers and their specific configurations."
+	ConfigDoc.Fields[6].Name = "sshUsers"
+	ConfigDoc.Fields[6].Type = "[]UserKey"
 	ConfigDoc.Fields[6].Note = ""
-	ConfigDoc.Fields[6].Description = "Supported cloud providers and their specific configurations."
-	ConfigDoc.Fields[6].Comments[encoder.LineComment] = "Supported cloud providers and their specific configurations."
-	ConfigDoc.Fields[7].Name = "sshUsers"
-	ConfigDoc.Fields[7].Type = "[]UserKey"
+	ConfigDoc.Fields[6].Description = "Create SSH users on Constellation nodes."
+	ConfigDoc.Fields[6].Comments[encoder.LineComment] = "Create SSH users on Constellation nodes."
+
+	ConfigDoc.Fields[6].AddExample("", []UserKey{{Username: "Alice", PublicKey: "ssh-rsa AAAAB3NzaC...5QXHKW1rufgtJeSeJ8= alice@domain.com"}})
+	ConfigDoc.Fields[7].Name = "kubernetesVersion"
+	ConfigDoc.Fields[7].Type = "string"
 	ConfigDoc.Fields[7].Note = ""
-	ConfigDoc.Fields[7].Description = "Create SSH users on Constellation nodes."
-	ConfigDoc.Fields[7].Comments[encoder.LineComment] = "Create SSH users on Constellation nodes."
-
-	ConfigDoc.Fields[7].AddExample("", []UserKey{{Username: "Alice", PublicKey: "ssh-rsa AAAAB3NzaC...5QXHKW1rufgtJeSeJ8= alice@domain.com"}})
-	ConfigDoc.Fields[8].Name = "kubernetesVersion"
-	ConfigDoc.Fields[8].Type = "string"
+	ConfigDoc.Fields[7].Description = "Kubernetes version installed in the cluster."
+	ConfigDoc.Fields[7].Comments[encoder.LineComment] = "Kubernetes version installed in the cluster."
+	ConfigDoc.Fields[8].Name = "upgrade"
+	ConfigDoc.Fields[8].Type = "UpgradeConfig"
 	ConfigDoc.Fields[8].Note = ""
-	ConfigDoc.Fields[8].Description = "Kubernetes version installed in the cluster."
-	ConfigDoc.Fields[8].Comments[encoder.LineComment] = "Kubernetes version installed in the cluster."
-	ConfigDoc.Fields[9].Name = "upgrade"
-	ConfigDoc.Fields[9].Type = "UpgradeConfig"
-	ConfigDoc.Fields[9].Note = ""
-	ConfigDoc.Fields[9].Description = "Configuration to apply during constellation upgrade."
-	ConfigDoc.Fields[9].Comments[encoder.LineComment] = "Configuration to apply during constellation upgrade."
+	ConfigDoc.Fields[8].Description = "Configuration to apply during constellation upgrade."
+	ConfigDoc.Fields[8].Comments[encoder.LineComment] = "Configuration to apply during constellation upgrade."
 
-	ConfigDoc.Fields[9].AddExample("", UpgradeConfig{Image: "", Measurements: Measurements{}})
+	ConfigDoc.Fields[8].AddExample("", UpgradeConfig{Image: "", Measurements: Measurements{}})
 
 	UpgradeConfigDoc.Type = "UpgradeConfig"
 	UpgradeConfigDoc.Comments[encoder.LineComment] = "UpgradeConfig defines configuration used during constellation upgrade."
@@ -128,41 +120,6 @@ func init() {
 	UserKeyDoc.Fields[1].Note = ""
 	UserKeyDoc.Fields[1].Description = "Public key of new SSH user."
 	UserKeyDoc.Fields[1].Comments[encoder.LineComment] = "Public key of new SSH user."
-
-	FirewallRuleDoc.Type = "FirewallRule"
-	FirewallRuleDoc.Comments[encoder.LineComment] = ""
-	FirewallRuleDoc.Description = ""
-	FirewallRuleDoc.Fields = make([]encoder.Doc, 6)
-	FirewallRuleDoc.Fields[0].Name = "name"
-	FirewallRuleDoc.Fields[0].Type = "string"
-	FirewallRuleDoc.Fields[0].Note = ""
-	FirewallRuleDoc.Fields[0].Description = "Name of rule."
-	FirewallRuleDoc.Fields[0].Comments[encoder.LineComment] = "Name of rule."
-	FirewallRuleDoc.Fields[1].Name = "description"
-	FirewallRuleDoc.Fields[1].Type = "string"
-	FirewallRuleDoc.Fields[1].Note = ""
-	FirewallRuleDoc.Fields[1].Description = "Description for rule."
-	FirewallRuleDoc.Fields[1].Comments[encoder.LineComment] = "Description for rule."
-	FirewallRuleDoc.Fields[2].Name = "protocol"
-	FirewallRuleDoc.Fields[2].Type = "string"
-	FirewallRuleDoc.Fields[2].Note = ""
-	FirewallRuleDoc.Fields[2].Description = "Protocol, such as 'udp' or 'tcp'."
-	FirewallRuleDoc.Fields[2].Comments[encoder.LineComment] = "Protocol, such as 'udp' or 'tcp'."
-	FirewallRuleDoc.Fields[3].Name = "iprange"
-	FirewallRuleDoc.Fields[3].Type = "string"
-	FirewallRuleDoc.Fields[3].Note = ""
-	FirewallRuleDoc.Fields[3].Description = "CIDR range for which this rule is applied."
-	FirewallRuleDoc.Fields[3].Comments[encoder.LineComment] = "CIDR range for which this rule is applied."
-	FirewallRuleDoc.Fields[4].Name = "fromport"
-	FirewallRuleDoc.Fields[4].Type = "int"
-	FirewallRuleDoc.Fields[4].Note = ""
-	FirewallRuleDoc.Fields[4].Description = "Start port of a range."
-	FirewallRuleDoc.Fields[4].Comments[encoder.LineComment] = "Start port of a range."
-	FirewallRuleDoc.Fields[5].Name = "toport"
-	FirewallRuleDoc.Fields[5].Type = "int"
-	FirewallRuleDoc.Fields[5].Note = ""
-	FirewallRuleDoc.Fields[5].Description = "End port of a range, or 0 if a single port is given by fromport."
-	FirewallRuleDoc.Fields[5].Comments[encoder.LineComment] = "End port of a range, or 0 if a single port is given by fromport."
 
 	ProviderConfigDoc.Type = "ProviderConfig"
 	ProviderConfigDoc.Comments[encoder.LineComment] = "ProviderConfig are cloud-provider specific configuration values used by the CLI."
@@ -366,10 +323,6 @@ func (_ UserKey) Doc() *encoder.Doc {
 	return &UserKeyDoc
 }
 
-func (_ FirewallRule) Doc() *encoder.Doc {
-	return &FirewallRuleDoc
-}
-
 func (_ ProviderConfig) Doc() *encoder.Doc {
 	return &ProviderConfigDoc
 }
@@ -395,7 +348,6 @@ func GetConfigurationDoc() *encoder.FileDoc {
 			&ConfigDoc,
 			&UpgradeConfigDoc,
 			&UserKeyDoc,
-			&FirewallRuleDoc,
 			&ProviderConfigDoc,
 			&AzureConfigDoc,
 			&GCPConfigDoc,

@@ -12,16 +12,24 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/edgelesssys/constellation/internal/config"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
 )
 
-type FirewallRule = config.FirewallRule
+// FirewallRule holds a single firewall rule.
+type FirewallRule struct {
+	Name        string
+	Description string
+	Protocol    string
+	IPRange     string
+	FromPort    int
+	ToPort      int
+}
 
-type Firewall config.Firewall
+// Firewall contains all firewall rules to be applied for either ingress or egress.
+type Firewall []FirewallRule
 
 func (f Firewall) GCP() ([]*computepb.Firewall, error) {
 	var fw []*computepb.Firewall

@@ -17,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/config"
+	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/state"
 )
 
@@ -43,6 +44,14 @@ func NewCreator(out io.Writer) *Creator {
 // Create creates the handed amount of instances and all the needed resources.
 func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, config *config.Config, name, insType string, controlPlaneCount, workerCount int,
 ) (state.ConstellationState, error) {
+	// Use debug ingress firewall rules when debug mode / image is enabled
+	var ingressRules cloudtypes.Firewall
+	if config.IsDebugCluster() {
+		ingressRules = constants.IngressRulesDebug
+	} else {
+		ingressRules = constants.IngressRulesNoDebug
+	}
+
 	switch provider {
 	case cloudprovider.GCP:
 		cl, err := c.newGCPClient(
@@ -56,7 +65,7 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 			return state.ConstellationState{}, err
 		}
 		defer cl.Close()
-		return c.createGCP(ctx, cl, config, insType, controlPlaneCount, workerCount)
+		return c.createGCP(ctx, cl, config, insType, controlPlaneCount, workerCount, ingressRules)
 	case cloudprovider.Azure:
 		cl, err := c.newAzureClient(
 			config.Provider.Azure.SubscriptionID,
@@ -68,22 +77,23 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 		if err != nil {
 			return state.ConstellationState{}, err
 		}
-		return c.createAzure(ctx, cl, config, insType, controlPlaneCount, workerCount)
+		return c.createAzure(ctx, cl, config, insType, controlPlaneCount, workerCount, ingressRules)
 	default:
 		return state.ConstellationState{}, fmt.Errorf("unsupported cloud provider: %s", provider)
 	}
 }
 
-func (c *Creator) createGCP(ctx context.Context, cl gcpclient, config *config.Config, insType string, controlPlaneCount, workerCount int,
+func (c *Creator) createGCP(ctx context.Context, cl gcpclient, config *config.Config, insType string, controlPlaneCount, workerCount int, ingressRules cloudtypes.Firewall,
 ) (stat state.ConstellationState, retErr error) {
 	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerGCP{client: cl})
 
 	if err := cl.CreateVPCs(ctx); err != nil {
 		return state.ConstellationState{}, err
 	}
+
 	if err := cl.CreateFirewall(ctx, gcpcl.FirewallInput{
-		Ingress: cloudtypes.Firewall(config.IngressFirewall),
-		Egress:  cloudtypes.Firewall(config.EgressFirewall),
+		Ingress: ingressRules,
+		Egress:  constants.EgressRules,
 	}); err != nil {
 		return state.ConstellationState{}, err
 	}
@@ -147,7 +157,7 @@ func (c *Creator) createGCP(ctx context.Context, cl gcpclient, config *config.Co
 	return cl.GetState(), nil
 }
 
-func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *config.Config, insType string, controlPlaneCount, workerCount int,
+func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *config.Config, insType string, controlPlaneCount, workerCount int, ingressRules cloudtypes.Firewall,
 ) (stat state.ConstellationState, retErr error) {
 	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerAzure{client: cl})
 
@@ -162,8 +172,8 @@ func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *confi
 	}
 
 	if err := cl.CreateSecurityGroup(ctx, azurecl.NetworkSecurityGroupInput{
-		Ingress: cloudtypes.Firewall(config.IngressFirewall),
-		Egress:  cloudtypes.Firewall(config.EgressFirewall),
+		Ingress: ingressRules,
+		Egress:  constants.EgressRules,
 	}); err != nil {
 		return state.ConstellationState{}, err
 	}

@@ -288,7 +288,6 @@ func TestConfigGeneratedDocsFresh(t *testing.T) {
 	assert.Len(ConfigDoc.Fields, reflect.ValueOf(Config{}).NumField(), updateMsg)
 	assert.Len(UpgradeConfigDoc.Fields, reflect.ValueOf(UpgradeConfig{}).NumField(), updateMsg)
 	assert.Len(UserKeyDoc.Fields, reflect.ValueOf(UserKey{}).NumField(), updateMsg)
-	assert.Len(FirewallRuleDoc.Fields, reflect.ValueOf(FirewallRule{}).NumField(), updateMsg)
 	assert.Len(ProviderConfigDoc.Fields, reflect.ValueOf(ProviderConfig{}).NumField(), updateMsg)
 	assert.Len(AzureConfigDoc.Fields, reflect.ValueOf(AzureConfig{}).NumField(), updateMsg)
 	assert.Len(GCPConfigDoc.Fields, reflect.ValueOf(GCPConfig{}).NumField(), updateMsg)
@@ -471,6 +470,39 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 			for _, instanceType := range tc.instanceTypes {
 				assert.Equal(tc.expectedResult, validInstanceTypeForProvider(instanceType, tc.nonCVMsAllowed, tc.provider), instanceType)
 			}
+		})
+	}
+}
+
+func TestIsDebugCluster(t *testing.T) {
+	testCases := map[string]struct {
+		config         *Config
+		prepareConfig  func(*Config)
+		expectedResult bool
+	}{
+		"empty config": {
+			config:         &Config{},
+			expectedResult: false,
+		},
+		"default config": {
+			config:         Default(),
+			expectedResult: false,
+		},
+		"enabled": {
+			config: Default(),
+			prepareConfig: func(conf *Config) {
+				*conf.DebugCluster = true
+			},
+			expectedResult: true,
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			if tc.prepareConfig != nil {
+				tc.prepareConfig(tc.config)
+			}
+			assert.Equal(tc.expectedResult, tc.config.IsDebugCluster())
 		})
 	}
 }
