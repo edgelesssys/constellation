@@ -75,7 +75,6 @@ Development components:
 
 Additional repositories:
 
-* [constellation-docs](https://github.com/edgelesssys/constellation-docs): End-user documentation
 * [constellation-fedora-coreos-config](https://github.com/edgelesssys/constellation-fedora-coreos-config): CoreOS build configuration with changes for Constellation
 * [constellation-azuredisk-csi-driver](https://github.com/edgelesssys/constellation-azuredisk-csi-driver): Azure CSI driver with encryption on node
 * [constellation-gcp-compute-persistent-disk-csi-driver](https://github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver): GCP CSI driver with encryption on node
