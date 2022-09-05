@@ -135,7 +135,7 @@ const sidebars = {
         },
         {
           type: 'doc',
-          label: 'Use peristent storage',
+          label: 'Use persistent storage',
           id: 'workflows/storage',
         },
         {
