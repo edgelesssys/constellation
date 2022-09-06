@@ -163,6 +163,8 @@ func (r *NodeImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, nil
 	}
 
+	// should requeue is set if a node is deleted
+	var shouldRequeue bool
 	// find pairs of mint nodes and outdated nodes in the same scaling group to become donor & heir
 	replacementPairs := r.pairDonorsAndHeirs(ctx, &desiredNodeImage, groups.Outdated, groups.Mint)
 	// extend replacement pairs to include existing pairs of donors and heirs
@@ -170,29 +172,41 @@ func (r *NodeImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	// replace donor nodes by heirs
 	for _, pair := range replacementPairs {
 		logr.Info("Replacing node", "donorNode", pair.donor.Name, "heirNode", pair.heir.Name)
-		if err := r.replaceNode(ctx, &desiredNodeImage, pair); err != nil {
+		done, err := r.replaceNode(ctx, &desiredNodeImage, pair)
+		if err != nil {
 			logr.Error(err, "Replacing node")
 			return ctrl.Result{}, err
+		}
+		if done {
+			shouldRequeue = true
+			// remove donor annotation from heir
+			if err := r.patchUnsetNodeAnnotations(ctx, pair.heir.Name, []string{donorAnnotation}); err != nil {
+				logr.Error(err, "Unable to remove donor annotation from heir", "heirNode", pair.heir.Name)
+			}
 		}
 	}
 
 	// only create new nodes if the autoscaler is disabled.
 	// otherwise, new nodes will also be created by the autoscaler
 	if autoscalingEnabled {
-		return ctrl.Result{}, nil
+		return ctrl.Result{Requeue: shouldRequeue}, nil
 	}
 
 	if err := r.createNewNodes(ctx, desiredNodeImage, groups.Outdated, pendingNodeList.Items, scalingGroupByID, newNodesBudget); err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{Requeue: shouldRequeue}, nil
 	}
 	// cleanup obsolete nodes
 	for _, node := range groups.Obsolete {
-		if _, err := r.deleteNode(ctx, &desiredNodeImage, node); err != nil {
+		done, err := r.deleteNode(ctx, &desiredNodeImage, node)
+		if err != nil {
 			logr.Error(err, "Unable to remove obsolete node")
+		}
+		if done {
+			shouldRequeue = true
 		}
 	}
 
-	return ctrl.Result{}, nil
+	return ctrl.Result{Requeue: shouldRequeue}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -403,20 +417,19 @@ func (r *NodeImageReconciler) ensureAutoscaling(ctx context.Context, autoscaling
 // Labels are copied from the donor node to the heir node.
 // Readiness of the heir node is awaited.
 // Deletion of the donor node is scheduled.
-func (r *NodeImageReconciler) replaceNode(ctx context.Context, controller metav1.Object, pair replacementPair) error {
+func (r *NodeImageReconciler) replaceNode(ctx context.Context, controller metav1.Object, pair replacementPair) (bool, error) {
 	logr := log.FromContext(ctx)
 	if !reflect.DeepEqual(nodeutil.FilterLabels(pair.donor.Labels), nodeutil.FilterLabels(pair.heir.Labels)) {
 		if err := r.copyNodeLabels(ctx, pair.donor.Name, pair.heir.Name); err != nil {
 			logr.Error(err, "Copy node labels")
-			return err
+			return false, err
 		}
 	}
 	heirReady := nodeutil.Ready(&pair.heir)
 	if !heirReady {
-		return nil
+		return false, nil
 	}
-	_, err := r.deleteNode(ctx, controller, pair.donor)
-	return err
+	return r.deleteNode(ctx, controller, pair.donor)
 }
 
 // deleteNode safely removes a node from the cluster and issues termination of the node by the CSP.
