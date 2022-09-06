@@ -9,6 +9,8 @@ package snp
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/base64"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -208,6 +210,100 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateAk(t *testing.T) {
+	require := require.New(t)
+
+	tpm, err := simulator.OpenSimulatedTPM()
+	require.NoError(err)
+	defer tpm.Close()
+	key, err := client.AttestationKeyRSA(tpm)
+	require.NoError(err)
+	defer key.Close()
+
+	e := base64.RawURLEncoding.EncodeToString(int32ToByte(key.PublicArea().RSAParameters.ExponentRaw))
+	n := base64.RawURLEncoding.EncodeToString(key.PublicArea().RSAParameters.ModulusRaw)
+
+	ak := akPub{E: e, N: n}
+	runtimeData := runtimeData{Keys: []akPub{ak}}
+
+	defaultRuntimeDataRaw, err := json.Marshal(runtimeData)
+	require.NoError(err)
+	defaultInstanceInfo := azureInstanceInfo{RuntimeData: defaultRuntimeDataRaw}
+
+	sig := sha256.Sum256(defaultRuntimeDataRaw)
+	defaultReportData := sig[:]
+	defaultRsaParams := key.PublicArea().RSAParameters
+
+	testCases := map[string]struct {
+		instanceInfo   azureInstanceInfo
+		runtimeDataRaw []byte
+		reportData     []byte
+		rsaParameters  *tpm2.RSAParams
+		wantErr        bool
+	}{
+		"success": {
+			instanceInfo:   defaultInstanceInfo,
+			runtimeDataRaw: defaultRuntimeDataRaw,
+			reportData:     defaultReportData,
+			rsaParameters:  defaultRsaParams,
+		},
+		"invalid json": {
+			instanceInfo:   defaultInstanceInfo,
+			runtimeDataRaw: []byte(""),
+			reportData:     defaultReportData,
+			rsaParameters:  defaultRsaParams,
+			wantErr:        true,
+		},
+		"invalid hash": {
+			instanceInfo:   defaultInstanceInfo,
+			runtimeDataRaw: defaultRuntimeDataRaw,
+			reportData:     bytes.Repeat([]byte{0}, 64),
+			rsaParameters:  defaultRsaParams,
+			wantErr:        true,
+		},
+		"invalid E": {
+			instanceInfo:   defaultInstanceInfo,
+			runtimeDataRaw: defaultRuntimeDataRaw,
+			reportData:     defaultReportData,
+			rsaParameters: func() *tpm2.RSAParams {
+				tmp := *defaultRsaParams
+				tmp.ExponentRaw = 1
+				return &tmp
+			}(),
+			wantErr: true,
+		},
+		"invalid N": {
+			instanceInfo:   defaultInstanceInfo,
+			runtimeDataRaw: defaultRuntimeDataRaw,
+			reportData:     defaultReportData,
+			rsaParameters: func() *tpm2.RSAParams {
+				tmp := *defaultRsaParams
+				tmp.ModulusRaw = []byte{0, 1, 2, 3}
+				return &tmp
+			}(),
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			err = tc.instanceInfo.validateAk(tc.runtimeDataRaw, tc.reportData, tc.rsaParameters)
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+			}
+		})
+	}
+}
+
+func int32ToByte(val uint32) []byte {
+	r := make([]byte, 4)
+	binary.PutUvarint(r, uint64(val))
+	return r
 }
 
 func TestValidateAzureCVM(t *testing.T) {
