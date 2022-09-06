@@ -67,15 +67,29 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 		return fmt.Errorf("reading and validating config: %w", err)
 	}
 
+	var printedAWarning bool
 	if config.IsDebugImage() {
 		cmd.Println("Configured image does not look like a released production image. Double check image before deploying to production.")
+		printedAWarning = true
+	}
+
+	if config.IsDebugCluster() {
+		cmd.Println("WARNING: Creating a debug cluster. This cluster is not secure and should only be used for debugging purposes.")
+		cmd.Println("DO NOT USE THIS CLUSTER IN PRODUCTION.")
+		printedAWarning = true
 	}
 
 	if config.IsAzureNonCVM() {
 		cmd.Println("Disabling Confidential VMs is insecure. Use only for evaluation purposes.")
+		printedAWarning = true
 		if config.EnforcesIdKeyDigest() {
 			cmd.Println("Your config asks for enforcing the idkeydigest. This is only available on Confidential VMs. It will not be enforced.")
 		}
+	}
+
+	// Print an extra new line later to separate warnings from the prompt message of the create command
+	if printedAWarning {
+		cmd.Println("")
 	}
 
 	var instanceType string
