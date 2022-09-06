@@ -32,14 +32,7 @@ With `cdbg` and `yq` installed in your path:
        constellation-conf.yaml
 
    yq -i \
-       ".ingressFirewall += {
-           \"name\": \"debugd\",
-           \"description\": \"debugd default port\",
-           \"protocol\": \"tcp\",
-           \"iprange\": \"0.0.0.0/0\",
-           \"fromport\": 4000,
-           \"toport\": 0
-       }" \
+       "(.debugCluster) = true" \
        constellation-conf.yaml
    ```
 
