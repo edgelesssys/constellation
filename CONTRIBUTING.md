@@ -61,7 +61,7 @@ Core components:
 * [image](image): Build files for the Constellation disk image
 * [kms](kms): Constellation's key management client and server
 * [csi](csi): Package used by CSI plugins to create and mount encrypted block devices
-* [state](state): Contains the disk-mapper that maps the encrypted node data disk during boot
+* [disk-mapper](disk-mapper): Contains the disk-mapper that maps the encrypted node data disk during boot
 
 Development components:
 
