@@ -6,75 +6,70 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 package snp
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
-type signatureError struct {
+type errSignature struct {
 	innerError error
 }
 
-func (e *signatureError) Unwrap() error {
+func (e *errSignature) Unwrap() error {
 	return e.innerError
 }
 
-func (e *signatureError) Error() string {
+func (e *errSignature) Error() string {
 	return fmt.Sprintf("signature validation failed: %v", e.innerError)
 }
 
-type askError struct {
+type errASK struct {
 	innerError error
 }
 
-func (e *askError) Unwrap() error {
+func (e *errASK) Unwrap() error {
 	return e.innerError
 }
 
-func (e *askError) Error() string {
+func (e *errASK) Error() string {
 	return fmt.Sprintf("validating ASK: %v", e.innerError)
 }
 
-type vcekError struct {
+type errVCEK struct {
 	innerError error
 }
 
-func (e *vcekError) Unwrap() error {
+func (e *errVCEK) Unwrap() error {
 	return e.innerError
 }
 
-func (e *vcekError) Error() string {
+func (e *errVCEK) Error() string {
 	return fmt.Sprintf("validating VCEK: %v", e.innerError)
 }
 
-type idkeyError struct {
+type errIDKey struct {
 	expectedValue []byte
 }
 
-func (e *idkeyError) Unwrap() error {
+func (e *errIDKey) Unwrap() error {
 	return nil
 }
 
-func (e *idkeyError) Error() string {
+func (e *errIDKey) Error() string {
 	return fmt.Sprintf("configured idkeydigest does not match reported idkeydigest: %x", e.expectedValue)
 }
 
-type versionError struct {
+type errVersion struct {
 	expectedType     string
 	excpectedVersion tcbVersion
 }
 
-func (e *versionError) Unwrap() error {
+func (e *errVersion) Unwrap() error {
 	return nil
 }
 
-func (e *versionError) Error() string {
+func (e *errVersion) Error() string {
 	return fmt.Sprintf("invalid %s version: %x", e.expectedType, e.excpectedVersion)
 }
 
-type debuggingEnabledError struct{}
-
-func (e *debuggingEnabledError) Unwrap() error {
-	return nil
-}
-
-func (e *debuggingEnabledError) Error() string {
-	return "SNP report indicates debugging, expected no debugging"
-}
+var errDebugEnabled = errors.New("SNP report indicates debugging, expected no debugging")

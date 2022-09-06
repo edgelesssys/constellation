@@ -63,7 +63,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforceIdKeyDigest: true,
 			wantErr:            true,
 			assertCorrectError: func(err error) {
-				target := &signatureError{}
+				target := &errSignature{}
 				assert.ErrorAs(t, err, &target)
 			},
 		},
@@ -76,7 +76,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforceIdKeyDigest: true,
 			wantErr:            true,
 			assertCorrectError: func(err error) {
-				target := &vcekError{}
+				target := &errVCEK{}
 				assert.ErrorAs(t, err, &target)
 			},
 		},
@@ -89,7 +89,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforceIdKeyDigest: true,
 			wantErr:            true,
 			assertCorrectError: func(err error) {
-				target := &askError{}
+				target := &errASK{}
 				assert.ErrorAs(t, err, &target)
 			},
 		},
@@ -115,7 +115,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforceIdKeyDigest: true,
 			wantErr:            true,
 			assertCorrectError: func(err error) {
-				target := &idkeyError{}
+				target := &errIDKey{}
 				assert.ErrorAs(t, err, &target)
 			},
 		},
@@ -137,7 +137,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforceIdKeyDigest: true,
 			wantErr:            true,
 			assertCorrectError: func(err error) {
-				target := &versionError{}
+				target := &errVersion{}
 				assert.ErrorAs(t, err, &target)
 			},
 		},
@@ -150,7 +150,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforceIdKeyDigest: true,
 			wantErr:            true,
 			assertCorrectError: func(err error) {
-				target := &versionError{}
+				target := &errVersion{}
 				assert.ErrorAs(t, err, &target)
 			},
 		},
@@ -163,7 +163,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforceIdKeyDigest: true,
 			wantErr:            true,
 			assertCorrectError: func(err error) {
-				target := &versionError{}
+				target := &errVersion{}
 				assert.ErrorAs(t, err, &target)
 			},
 		},
@@ -176,8 +176,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforceIdKeyDigest: true,
 			wantErr:            true,
 			assertCorrectError: func(err error) {
-				target := &debuggingEnabledError{}
-				assert.ErrorAs(t, err, &target)
+				assert.ErrorIs(t, err, errDebugEnabled)
 			},
 		},
 	}
@@ -260,9 +259,9 @@ func TestNewSNPReportFromBytes(t *testing.T) {
 			} else {
 				assert.NoError(err)
 				assert.NotNil(report)
-				assert.Equal(hex.EncodeToString(report.IdKeyDigest[:]), "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1")
+				assert.Equal(hex.EncodeToString(report.IDKeyDigest[:]), "57e229e0ffe5fa92d0faddff6cae0e61c926fc9ef9afd20a8b8cfcf7129db9338cbe5bf3f6987733a2bf65d06dc38fc1")
 				// This is a canary for us: If this fails in the future we possibly downgraded a SVN.
-				assert.True(report.LaunchTcb.isExpectedVersion())
+				assert.True(report.LaunchTCB.isVersion(bootloaderVersion, teeVersion, snpVersion, microcodeVersion))
 			}
 		})
 	}
