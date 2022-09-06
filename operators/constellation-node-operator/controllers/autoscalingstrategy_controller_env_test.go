@@ -117,13 +117,13 @@ var _ = Describe("AutoscalingStrategy controller", func() {
 			}, timeout, interval).Should(Succeed())
 
 			By("checking the autoscaling strategy status shows zero replicas")
-			Consistently(func() (int32, error) {
+			Eventually(func() (int32, error) {
 				err := k8sClient.Get(ctx, strategyLookupKey, createdStrategy)
 				if err != nil {
 					return -1, err
 				}
 				return createdStrategy.Status.Replicas, nil
-			}, duration, interval).Should(Equal(int32(0)))
+			}, timeout, interval).Should(Equal(int32(0)))
 
 			By("enabling the autoscaler in the strategy")
 			Expect(k8sClient.Get(ctx, strategyLookupKey, strategy)).Should(Succeed())
