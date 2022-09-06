@@ -1,5 +1,12 @@
 # debug daemon (debugd)
 
+Debugd is a tool we built to allow for shorter iteration cycles during development.
+The debugd gets embedded into coreOS images at the place where the bootstrapper normally sits.
+Therefore, when a debug image is started, the debugd starts executing instead of the bootstrapper.
+The debugd will then wait for a request from the `cdbg` tool to upload a bootstrapper binary.
+Once the upload is finished debugd will start the bootstrapper.
+Subsequently you can initialize your cluster with `constellation init` as usual.
+
 ## Build cdbg
 
 ```shell
@@ -9,6 +16,7 @@ make cdbg
 ```
 
 ## debugd & cdbg usage
+Before continuing, remeber to [set up](https://docs.edgeless.systems/constellation/getting-started/install#set-up-cloud-credentials) your cloud credentials for the CLI to work.
 
 With `cdbg` and `yq` installed in your path:
 
