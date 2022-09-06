@@ -104,6 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Owner ID and Unique ID are merged into a single value: Cluster ID.
 - Streamline logging to only use one logging library, instead of multiple.
 - Replace dependency on github.com/willdonnelly/passwd with own implementation.
+- Refactor disk-mapper to allow a more streamlined node recovery
 
 ### Removed
 
