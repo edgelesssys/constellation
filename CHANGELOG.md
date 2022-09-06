@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Azure CVMs are attested using SNP attestation
 - Replaced kube-proxy with cilium
 - VM instance types are now defined in the config, not via a CLI argument
+- Config has a `debugCluster` flag required to enable debugd ingress firewall rules and create the required load balancer.
 
 ### Deprecated
 <!-- For soon-to-be removed features. -->
@@ -51,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- For now removed features. -->
 - Azure Trusted Launch instance types with 2 CPUs (SMT disabled due to Retbleed (CVE-2022-29900)).
 - cdbg: Custom systemd service deployment
+- No user configurable `ingressFirewall` and `egressFirewall` in the config
 
 ### Fixed
 
