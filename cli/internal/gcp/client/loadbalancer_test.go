@@ -9,6 +9,7 @@ package client
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -23,12 +24,13 @@ func TestCreateLoadBalancers(t *testing.T) {
 	forwardingRule := &compute.ForwardingRule{LabelFingerprint: proto.String("fingerprint")}
 
 	testCases := map[string]struct {
-		addrAPI    addressesAPI
-		healthAPI  healthChecksAPI
-		backendAPI backendServicesAPI
-		forwardAPI forwardingRulesAPI
-		opRegAPI   operationRegionAPI
-		wantErr    bool
+		addrAPI        addressesAPI
+		healthAPI      healthChecksAPI
+		backendAPI     backendServicesAPI
+		forwardAPI     forwardingRulesAPI
+		opRegAPI       operationRegionAPI
+		isDebugCluster bool
+		wantErr        bool
 	}{
 		"successful create": {
 			addrAPI:    &stubAddressesAPI{getAddr: proto.String("192.0.2.1")},
@@ -36,6 +38,14 @@ func TestCreateLoadBalancers(t *testing.T) {
 			backendAPI: &stubBackendServicesAPI{},
 			forwardAPI: &stubForwardingRulesAPI{forwardingRule: forwardingRule},
 			opRegAPI:   stubOperationRegionAPI{},
+		},
+		"successful create (debug cluster)": {
+			addrAPI:        &stubAddressesAPI{getAddr: proto.String("192.0.2.1")},
+			healthAPI:      &stubHealthChecksAPI{},
+			backendAPI:     &stubBackendServicesAPI{},
+			forwardAPI:     &stubForwardingRulesAPI{forwardingRule: forwardingRule},
+			opRegAPI:       stubOperationRegionAPI{},
+			isDebugCluster: true,
 		},
 		"createIPAddr fails": {
 			addrAPI:    &stubAddressesAPI{insertErr: someErr},
@@ -72,14 +82,33 @@ func TestCreateLoadBalancers(t *testing.T) {
 				operationRegionAPI: tc.opRegAPI,
 			}
 
-			err := client.CreateLoadBalancers(ctx)
+			err := client.CreateLoadBalancers(ctx, tc.isDebugCluster)
 
+			// In case we expect an error, check for the error and continue otherwise.
 			if tc.wantErr {
 				assert.Error(err)
-			} else {
-				assert.NoError(err)
-				assert.NotEmpty(client.loadbalancerIPname)
+				return
+			}
+
+			// If we don't expect an error, check if the resources have been successfully created.
+			assert.NoError(err)
+			assert.NotEmpty(client.loadbalancerIPname)
+
+			var foundDebugdLB bool
+			for _, lb := range client.loadbalancers {
+				// Expect load balancer name to have the format of "name-serviceName-uid" which is what buildResourceName does currently.
+				if lb.name == fmt.Sprintf("%s-debugd-%s", client.name, client.uid) {
+					foundDebugdLB = true
+					break
+				}
+			}
+
+			if tc.isDebugCluster {
 				assert.Equal(4, len(client.loadbalancers))
+				assert.True(foundDebugdLB, "debugd loadbalancer not found in debug-mode")
+			} else {
+				assert.Equal(3, len(client.loadbalancers))
+				assert.False(foundDebugdLB, "debugd loadbalancer found in non-debug mode")
 			}
 		})
 	}

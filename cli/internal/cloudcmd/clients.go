@@ -20,7 +20,7 @@ type gcpclient interface {
 	CreateVPCs(ctx context.Context) error
 	CreateFirewall(ctx context.Context, input gcpcl.FirewallInput) error
 	CreateInstances(ctx context.Context, input gcpcl.CreateInstancesInput) error
-	CreateLoadBalancers(ctx context.Context) error
+	CreateLoadBalancers(ctx context.Context, isDebugCluster bool) error
 	TerminateFirewall(ctx context.Context) error
 	TerminateVPCs(context.Context) error
 	TerminateLoadBalancers(context.Context) error
