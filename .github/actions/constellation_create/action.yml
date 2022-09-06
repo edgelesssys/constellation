@@ -127,9 +127,9 @@ runs:
       env:
         GCP_CLUSTER_SERVICE_ACCOUNT_KEY: ${{ inputs.gcpClusterServiceAccountKey }}
 
-    - name: Add debugd firewall rule
+    - name: Enable debugCluster flag
       run: |
-        yq eval -i '(.ingressFirewall) += {"name": "debugd", "description": "debugd default port", "protocol": "tcp", "iprange": "0.0.0.0/0", "fromport": 4000, "toport": 0}' constellation-conf.yaml
+        yq eval -i '(.debugCluster) = true' constellation-conf.yaml
       shell: bash
       if: ${{ inputs.isDebugImage == 'true' }}
 
@@ -185,5 +185,5 @@ runs:
       uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
       with:
         name: serial-logs
-        path: '*.log'
+        path: "*.log"
       if: ${{ always() && !env.ACT }}
