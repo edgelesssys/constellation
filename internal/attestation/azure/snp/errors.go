@@ -11,64 +11,64 @@ import (
 	"fmt"
 )
 
-type errSignature struct {
+type signatureError struct {
 	innerError error
 }
 
-func (e *errSignature) Unwrap() error {
+func (e *signatureError) Unwrap() error {
 	return e.innerError
 }
 
-func (e *errSignature) Error() string {
+func (e *signatureError) Error() string {
 	return fmt.Sprintf("signature validation failed: %v", e.innerError)
 }
 
-type errASK struct {
+type askError struct {
 	innerError error
 }
 
-func (e *errASK) Unwrap() error {
+func (e *askError) Unwrap() error {
 	return e.innerError
 }
 
-func (e *errASK) Error() string {
+func (e *askError) Error() string {
 	return fmt.Sprintf("validating ASK: %v", e.innerError)
 }
 
-type errVCEK struct {
+type vcekError struct {
 	innerError error
 }
 
-func (e *errVCEK) Unwrap() error {
+func (e *vcekError) Unwrap() error {
 	return e.innerError
 }
 
-func (e *errVCEK) Error() string {
+func (e *vcekError) Error() string {
 	return fmt.Sprintf("validating VCEK: %v", e.innerError)
 }
 
-type errIDKey struct {
+type idKeyError struct {
 	expectedValue []byte
 }
 
-func (e *errIDKey) Unwrap() error {
+func (e *idKeyError) Unwrap() error {
 	return nil
 }
 
-func (e *errIDKey) Error() string {
+func (e *idKeyError) Error() string {
 	return fmt.Sprintf("configured idkeydigest does not match reported idkeydigest: %x", e.expectedValue)
 }
 
-type errVersion struct {
+type versionError struct {
 	expectedType     string
 	excpectedVersion tcbVersion
 }
 
-func (e *errVersion) Unwrap() error {
+func (e *versionError) Unwrap() error {
 	return nil
 }
 
-func (e *errVersion) Error() string {
+func (e *versionError) Error() string {
 	return fmt.Sprintf("invalid %s version: %x", e.expectedType, e.excpectedVersion)
 }
 

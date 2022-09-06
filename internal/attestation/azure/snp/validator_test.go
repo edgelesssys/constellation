@@ -63,7 +63,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforceIdKeyDigest: true,
 			wantErr:            true,
 			assertCorrectError: func(err error) {
-				target := &errSignature{}
+				target := &signatureError{}
 				assert.ErrorAs(t, err, &target)
 			},
 		},
@@ -76,7 +76,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforceIdKeyDigest: true,
 			wantErr:            true,
 			assertCorrectError: func(err error) {
-				target := &errVCEK{}
+				target := &vcekError{}
 				assert.ErrorAs(t, err, &target)
 			},
 		},
@@ -89,7 +89,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforceIdKeyDigest: true,
 			wantErr:            true,
 			assertCorrectError: func(err error) {
-				target := &errASK{}
+				target := &askError{}
 				assert.ErrorAs(t, err, &target)
 			},
 		},
@@ -115,7 +115,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforceIdKeyDigest: true,
 			wantErr:            true,
 			assertCorrectError: func(err error) {
-				target := &errIDKey{}
+				target := &idKeyError{}
 				assert.ErrorAs(t, err, &target)
 			},
 		},
@@ -137,7 +137,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforceIdKeyDigest: true,
 			wantErr:            true,
 			assertCorrectError: func(err error) {
-				target := &errVersion{}
+				target := &versionError{}
 				assert.ErrorAs(t, err, &target)
 			},
 		},
@@ -150,7 +150,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforceIdKeyDigest: true,
 			wantErr:            true,
 			assertCorrectError: func(err error) {
-				target := &errVersion{}
+				target := &versionError{}
 				assert.ErrorAs(t, err, &target)
 			},
 		},
@@ -163,7 +163,7 @@ func TestTrustedKeyFromSNP(t *testing.T) {
 			enforceIdKeyDigest: true,
 			wantErr:            true,
 			assertCorrectError: func(err error) {
-				target := &errVersion{}
+				target := &versionError{}
 				assert.ErrorAs(t, err, &target)
 			},
 		},

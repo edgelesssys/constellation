@@ -130,11 +130,11 @@ func validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certificate, error) {
 	}
 
 	if err = ask.CheckSignatureFrom(ark); err != nil {
-		return nil, &errASK{err}
+		return nil, &askError{err}
 	}
 
 	if err = vcek.CheckSignatureFrom(ask); err != nil {
-		return nil, &errVCEK{err}
+		return nil, &vcekError{err}
 	}
 
 	return vcek, nil
@@ -146,13 +146,13 @@ func validateSNPReport(cert *x509.Certificate, expectedIDKeyDigest []byte, enfor
 	}
 
 	if !report.CommittedTCB.isVersion(bootloaderVersion, teeVersion, snpVersion, microcodeVersion) {
-		return &errVersion{"COMMITTED_TCB", report.CommittedTCB}
+		return &versionError{"COMMITTED_TCB", report.CommittedTCB}
 	}
 	if report.LaunchTCB != report.CommittedTCB {
-		return &errVersion{"LAUNCH_TCB", report.LaunchTCB}
+		return &versionError{"LAUNCH_TCB", report.LaunchTCB}
 	}
 	if !report.CommittedTCB.supersededBy(report.CurrentTCB) {
-		return &errVersion{"CURRENT_TCB", report.CurrentTCB}
+		return &versionError{"CURRENT_TCB", report.CurrentTCB}
 	}
 
 	if err := validateVCEKExtensions(cert, report); err != nil {
@@ -181,12 +181,12 @@ func validateSNPReport(cert *x509.Certificate, expectedIDKeyDigest []byte, enfor
 	}
 	// signature is only calculated from 0x0 to 0x2a0
 	if err := cert.CheckSignature(x509.ECDSAWithSHA384, buf.Bytes()[:0x2a0], sigEncoded); err != nil {
-		return &errSignature{err}
+		return &signatureError{err}
 	}
 
 	if !bytes.Equal(expectedIDKeyDigest, report.IDKeyDigest[:]) {
 		if enforceIDKeyDigest {
-			return &errIDKey{report.IDKeyDigest[:]}
+			return &idKeyError{report.IDKeyDigest[:]}
 		}
 		if log != nil {
 			log.Warnf("Encountered different than configured IDKeyDigest value: %x", report.IDKeyDigest[:])
