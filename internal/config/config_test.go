@@ -381,7 +381,7 @@ func TestConfig_IsImageDebug(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			assert.Equal(tc.want, tc.conf.IsImageDebug())
+			assert.Equal(tc.want, tc.conf.IsDebugImage())
 		})
 	}
 }
