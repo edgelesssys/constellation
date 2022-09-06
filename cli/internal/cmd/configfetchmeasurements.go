@@ -56,7 +56,7 @@ func configFetchMeasurements(cmd *cobra.Command, fileHandler file.Handler, clien
 		return err
 	}
 
-	if conf.IsImageDebug() {
+	if conf.IsDebugImage() {
 		cmd.Println("Configured image does not look like a released production image. Double check image before deploying to production.")
 	}
 

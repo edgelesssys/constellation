@@ -67,7 +67,7 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 		return fmt.Errorf("reading and validating config: %w", err)
 	}
 
-	if config.IsImageDebug() {
+	if config.IsDebugImage() {
 		cmd.Println("Configured image does not look like a released production image. Double check image before deploying to production.")
 	}
 
