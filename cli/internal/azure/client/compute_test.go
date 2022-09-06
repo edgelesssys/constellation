@@ -30,8 +30,8 @@ func TestCreateInstances(t *testing.T) {
 			publicIPAddressesAPI: stubPublicIPAddressesAPI{},
 			networkInterfacesAPI: stubNetworkInterfacesAPI{},
 			scaleSetsAPI: stubScaleSetsAPI{
-				stubResponse: armcomputev2.VirtualMachineScaleSetsClientCreateOrUpdateResponse{
-					VirtualMachineScaleSet: armcomputev2.VirtualMachineScaleSet{Identity: &armcomputev2.VirtualMachineScaleSetIdentity{PrincipalID: to.Ptr("principal-id")}},
+				getResponse: armcomputev2.VirtualMachineScaleSet{
+					Identity: &armcomputev2.VirtualMachineScaleSetIdentity{PrincipalID: to.Ptr("principal-id")}, SKU: &armcomputev2.SKU{Capacity: to.Ptr[int64](0)},
 				},
 			},
 			createInstancesInput: CreateInstancesInput{

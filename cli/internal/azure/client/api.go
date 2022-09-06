@@ -51,6 +51,12 @@ type scaleSetsAPI interface {
 		*runtime.Poller[armcomputev2.VirtualMachineScaleSetsClientCreateOrUpdateResponse], error)
 }
 
+type virtualMachineScaleSetVMsAPI interface {
+	GetInstanceView(ctx context.Context, resourceGroupName string, vmScaleSetName string, instanceID string,
+		options *armcomputev2.VirtualMachineScaleSetVMsClientGetInstanceViewOptions,
+	) (armcomputev2.VirtualMachineScaleSetVMsClientGetInstanceViewResponse, error)
+}
+
 type publicIPAddressesAPI interface {
 	NewListVirtualMachineScaleSetVMPublicIPAddressesPager(
 		resourceGroupName string, virtualMachineScaleSetName string,

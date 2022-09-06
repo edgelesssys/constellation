@@ -16,13 +16,18 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/edgelesssys/constellation/cli/internal/azure"
 	"github.com/edgelesssys/constellation/cli/internal/azure/internal/poller"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 )
 
-// scaleSetCreateTimeout maximum timeout to wait for scale set creation.
-const scaleSetCreateTimeout = 5 * time.Minute
+const (
+	// scaleSetCreateTimeout maximum timeout to wait for scale set creation.
+	scaleSetCreateTimeout = 5 * time.Minute
+	powerStateStarting    = "PowerState/starting"
+	powerStateRunning     = "PowerState/running"
+)
 
 func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput) error {
 	// Create worker scale set
@@ -150,9 +155,10 @@ func (c *Client) createScaleSet(ctx context.Context, input CreateScaleSetInput) 
 	// use custom poller to wait for resource creation but skip waiting for OS provisioning.
 	// OS provisioning does not work reliably without the azure guest agent installed.
 	poller := poller.New[bool](&scaleSetCreationPollingHandler{
-		resourceGroup: c.resourceGroup,
-		scaleSet:      input.Name,
-		scaleSetsAPI:  c.scaleSetsAPI,
+		resourceGroup:                c.resourceGroup,
+		scaleSet:                     input.Name,
+		scaleSetsAPI:                 c.scaleSetsAPI,
+		virtualMachineScaleSetVMsAPI: c.virtualMachineScaleSetVMsAPI,
 	})
 
 	pollCtx, cancel := context.WithTimeout(ctx, scaleSetCreateTimeout)
@@ -220,10 +226,12 @@ type CreateScaleSetInput struct {
 
 // scaleSetCreationPollingHandler is a custom poller used to check if a scale set was created successfully.
 type scaleSetCreationPollingHandler struct {
-	done          bool
-	resourceGroup string
-	scaleSet      string
-	scaleSetsAPI  scaleSetsAPI
+	done                         bool
+	instanceIDOffset             int
+	resourceGroup                string
+	scaleSet                     string
+	scaleSetsAPI                 scaleSetsAPI
+	virtualMachineScaleSetVMsAPI virtualMachineScaleSetVMsAPI
 }
 
 // Done returns true if the condition is met.
@@ -231,19 +239,29 @@ func (h *scaleSetCreationPollingHandler) Done() bool {
 	return h.done
 }
 
-// Poll checks if the scale set resource was created successfully.
+// Poll checks if the scale set resource was created successfully and every VM is starting or running.
 func (h *scaleSetCreationPollingHandler) Poll(ctx context.Context) error {
-	_, err := h.scaleSetsAPI.Get(ctx, h.resourceGroup, h.scaleSet, nil)
-	if err == nil {
-		h.done = true
-		return nil
+	// check if scale set can be retrieved from API
+	scaleSet, err := h.scaleSetsAPI.Get(ctx, h.resourceGroup, h.scaleSet, nil)
+	if err != nil {
+		return ignoreNotFoundError(err)
 	}
-	var respErr *azcore.ResponseError
-	if errors.As(err, &respErr) && respErr.StatusCode == http.StatusNotFound {
-		// resource does not exist yet - retry later
-		return nil
+	if scaleSet.SKU == nil || scaleSet.SKU.Capacity == nil {
+		return errors.New("invalid scale set capacity")
 	}
-	return err
+	// check if every VM in the scale set has power state starting or running
+	for i := h.instanceIDOffset; i < int(*scaleSet.SKU.Capacity); i++ {
+		instanceView, err := h.virtualMachineScaleSetVMsAPI.GetInstanceView(ctx, h.resourceGroup, h.scaleSet, strconv.Itoa(i), nil)
+		if err != nil {
+			return ignoreNotFoundError(err)
+		}
+		if !vmIsStartingOrRunning(instanceView.Statuses) {
+			return nil
+		}
+		h.instanceIDOffset = i + 1 // skip this VM in the next Poll() invocation
+	}
+	h.done = true
+	return nil
 }
 
 // Result returns the result of the poller if the condition is met.
@@ -254,4 +272,28 @@ func (h *scaleSetCreationPollingHandler) Result(ctx context.Context, out *bool) 
 	}
 	*out = h.done
 	return nil
+}
+
+func ignoreNotFoundError(err error) error {
+	var respErr *azcore.ResponseError
+	if errors.As(err, &respErr) && respErr.StatusCode == http.StatusNotFound {
+		// resource does not exist yet - retry later
+		return nil
+	}
+	return err
+}
+
+func vmIsStartingOrRunning(statuses []*armcomputev2.InstanceViewStatus) bool {
+	for _, status := range statuses {
+		if status == nil || status.Code == nil {
+			continue
+		}
+		switch *status.Code {
+		case powerStateStarting:
+			return true
+		case powerStateRunning:
+			return true
+		}
+	}
+	return false
 }
