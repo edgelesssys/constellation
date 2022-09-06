@@ -284,7 +284,7 @@ func (c *fakeGcpClient) CreateInstances(ctx context.Context, input gcpcl.CreateI
 	return nil
 }
 
-func (c *fakeGcpClient) CreateLoadBalancers(ctx context.Context) error {
+func (c *fakeGcpClient) CreateLoadBalancers(ctx context.Context, isDebugCluster bool) error {
 	c.loadbalancers = []string{"kube-lb", "boot-lb", "verify-lb"}
 	return nil
 }
@@ -361,7 +361,7 @@ func (c *stubGcpClient) CreateInstances(ctx context.Context, input gcpcl.CreateI
 	return c.createInstancesErr
 }
 
-func (c *stubGcpClient) CreateLoadBalancers(ctx context.Context) error {
+func (c *stubGcpClient) CreateLoadBalancers(ctx context.Context, isDebugClient bool) error {
 	return c.createLoadBalancerErr
 }
 

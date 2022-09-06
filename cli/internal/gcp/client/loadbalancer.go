@@ -35,7 +35,7 @@ type loadBalancer struct {
 }
 
 // CreateLoadBalancers creates all necessary load balancers.
-func (c *Client) CreateLoadBalancers(ctx context.Context) error {
+func (c *Client) CreateLoadBalancers(ctx context.Context, isDebugCluster bool) error {
 	if err := c.createIPAddr(ctx); err != nil {
 		return fmt.Errorf("creating load balancer IP address: %w", err)
 	}
@@ -69,13 +69,16 @@ func (c *Client) CreateLoadBalancers(ctx context.Context) error {
 		healthCheck:     computepb.HealthCheck_TCP,
 	})
 
-	c.loadbalancers = append(c.loadbalancers, &loadBalancer{
-		name:            c.buildResourceName("debugd"),
-		ip:              c.loadbalancerIPname,
-		frontendPort:    constants.DebugdPort,
-		backendPortName: "debugd",
-		healthCheck:     computepb.HealthCheck_TCP,
-	})
+	// Only create when the debug cluster flag is set in the Constellation config
+	if isDebugCluster {
+		c.loadbalancers = append(c.loadbalancers, &loadBalancer{
+			name:            c.buildResourceName("debugd"),
+			ip:              c.loadbalancerIPname,
+			frontendPort:    constants.DebugdPort,
+			backendPortName: "debugd",
+			healthCheck:     computepb.HealthCheck_TCP,
+		})
+	}
 
 	// Load balancer creation.
 
