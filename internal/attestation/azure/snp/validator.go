@@ -41,12 +41,12 @@ type Validator struct {
 }
 
 // NewValidator initializes a new Azure validator with the provided PCR values.
-func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, IDKeyDigest []byte, enforceIDKeyDigest bool, log vtpm.WarnLogger) *Validator {
+func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, idKeyDigest []byte, enforceIDKeyDigest bool, log vtpm.WarnLogger) *Validator {
 	return &Validator{
 		Validator: vtpm.NewValidator(
 			pcrs,
 			enforcedPCRs,
-			getTrustedKey(&azureInstanceInfo{}, IDKeyDigest, enforceIDKeyDigest, log),
+			getTrustedKey(&azureInstanceInfo{}, idKeyDigest, enforceIDKeyDigest, log),
 			validateCVM,
 			vtpm.VerifyPKCS1v15,
 			log,
@@ -76,7 +76,7 @@ func reverseEndian(b []byte) {
 
 // getTrustedKey establishes trust in the given public key.
 // It does so by verifying the SNP attestation statement in instanceInfo.
-func getTrustedKey(hclAk HCLAkValidator, IDKeyDigest []byte, enforceIDKeyDigest bool, log vtpm.WarnLogger) func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
+func getTrustedKey(hclAk HCLAkValidator, idKeyDigest []byte, enforceIDKeyDigest bool, log vtpm.WarnLogger) func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
 	return func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
 		var instanceInfo azureInstanceInfo
 		if err := json.Unmarshal(instanceInfoRaw, &instanceInfo); err != nil {
@@ -93,7 +93,7 @@ func getTrustedKey(hclAk HCLAkValidator, IDKeyDigest []byte, enforceIDKeyDigest 
 			return nil, fmt.Errorf("validating VCEK: %w", err)
 		}
 
-		if err = validateSNPReport(vcek, IDKeyDigest, enforceIDKeyDigest, report, log); err != nil {
+		if err = validateSNPReport(vcek, idKeyDigest, enforceIDKeyDigest, report, log); err != nil {
 			return nil, fmt.Errorf("validating SNP report: %w", err)
 		}
 
