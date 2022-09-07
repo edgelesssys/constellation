@@ -155,10 +155,35 @@ runs:
       if: ${{ inputs.isDebugImage == 'true' }}
 
     - name: Constellation init
+      id: constellation-init
       run: |
         if [ ${{ inputs.autoscale }} = true ]; then autoscale=--autoscale; fi
         constellation init ${autoscale}
+        echo "::set-output name=KUBECONFIG::$(pwd)/constellation-admin.conf"
       shell: bash
+
+    - name: Wait for nodes to join and become ready
+      run: |
+        echo "::group::wait for nodes"
+        NODES_COUNT=$((${{ inputs.controlNodesCount }} + ${{ inputs.workerNodesCount }}))
+        JOINWAIT=0
+        until [ "$(kubectl get nodes -o json | jq '.items | length')" == "${NODES_COUNT}" ] || [ $JOINWAIT -gt $JOINTIMEOUT ];
+        do
+            echo "$(kubectl get nodes -o json | jq '.items | length')/"${NODES_COUNT}" nodes have joined.. waiting.."
+            JOINWAIT=$((JOINWAIT+30))
+            sleep 30
+        done
+        if [ $JOINWAIT -gt $JOINTIMEOUT ]; then
+            echo "Timed out waiting for nodes to join"
+            exit 1
+        fi
+        echo "$(kubectl get nodes -o json | jq '.items | length')/"${NODES_COUNT}" nodes have joined"
+        kubectl wait --for=condition=ready --all nodes --timeout=10m
+        echo "::endgroup::"
+      shell: bash
+      env:
+        KUBECONFIG: "${{ steps.constellation-init.outputs.KUBECONFIG }}"
+        JOINTIMEOUT: "1200" # 20 minutes timeout for all nodes to join
 
     - name: Download boot logs
       run: |
@@ -185,5 +210,5 @@ runs:
       uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
       with:
         name: serial-logs
-        path: '*.log'
+        path: "*.log"
       if: ${{ always() && !env.ACT }}
