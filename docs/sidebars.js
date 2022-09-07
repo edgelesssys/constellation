@@ -20,12 +20,12 @@ const sidebars = {
   docs: [
     {
       type: 'doc',
-      label: 'Welcome to Constellation',
+      label: 'Introduction',
       id: 'intro'
     },
     {
       type: 'category',
-      label: 'Overview',
+      label: 'Basics',
       link: {
         type: 'generated-index',
       },
