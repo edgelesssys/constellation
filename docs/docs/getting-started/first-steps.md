@@ -14,7 +14,7 @@ The following steps will guide you through the process of creating a cluster and
     ```
 
     </tabItem>
-    <tabItem value="gcp" label="GCP" default>
+    <tabItem value="gcp" label="GCP">
 
     ```bash
     constellation config generate gcp
@@ -56,7 +56,7 @@ The following steps will guide you through the process of creating a cluster and
     Fill in the printed out values to your configuration file.
 
     </tabItem>
-    <tabItem value="azure-portal" label="Azure (Portal)" default>
+    <tabItem value="azure-portal" label="Azure (Portal)">
 
     * **subscription**: Is the UUID of your Azure subscription, e.g., `8b8bd01f-efd9-4113-9bd1-c82137c32da7`.
 
@@ -98,7 +98,27 @@ The following steps will guide you through the process of creating a cluster and
         Set the configuration value to the secret value.
 
     </tabItem>
-    <tabItem value="gcp" label="GCP" default>
+    <tabItem value="gcp-cli" label="GCP (CLI)">
+
+    For a quick start it's recommended to use our `gcloud` script to automatically create all required resources:
+
+    ```bash
+    SERVICE_ACCOUNT_ID=constell # enter name of service account here
+    PROJECT_ID=$(gcloud config list --format 'value(core.project)') # enter project id here
+    SERVICE_ACCOUNT_EMAIL=${SERVICE_ACCOUNT_ID}@${PROJECT_ID}.iam.gserviceaccount.com
+    gcloud iam service-accounts create "${SERVICE_ACCOUNT_ID}" --description="Service account used inside Constellation" --display-name="Constellation service account" --project="${PROJECT_ID}"
+    gcloud projects add-iam-policy-binding "${PROJECT_ID}" --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" --role='roles/compute.instanceAdmin.v1'
+    gcloud projects add-iam-policy-binding "${PROJECT_ID}" --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" --role='roles/compute.networkAdmin'
+    gcloud projects add-iam-policy-binding "${PROJECT_ID}" --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" --role='roles/compute.securityAdmin'
+    gcloud projects add-iam-policy-binding "${PROJECT_ID}" --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" --role='roles/compute.storageAdmin'
+    gcloud projects add-iam-policy-binding "${PROJECT_ID}" --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" --role='roles/iam.serviceAccountUser'
+    gcloud iam service-accounts keys create gcpServiceAccountKey.json --iam-account="${SERVICE_ACCOUNT_EMAIL}"
+    echo "project: ${PROJECT_ID}"
+    echo "serviceAccountKeyPath: $(realpath gcpServiceAccountKey.json)"
+    ```
+
+    </tabItem>
+    <tabItem value="gcp-console" label="GCP (Console)">
 
     * **project**: Is the ID of your GCP project, e.g., `constellation-129857`.
 
@@ -145,7 +165,7 @@ The following steps will guide you through the process of creating a cluster and
     ```
 
     </tabItem>
-    <tabItem value="gcp" label="GCP" default>
+    <tabItem value="gcp" label="GCP">
 
     ```bash
     constellation create gcp --control-plane-nodes 1 --worker-nodes 2 -y
