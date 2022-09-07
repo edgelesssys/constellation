@@ -13,8 +13,10 @@ These tests results were produced using Sonobuoy v0.56.4.
 
 ## Provision Constellation Cluster
 
+Tests were made using GCP `n2d-standard-4` VMs.
+
 ```sh
-constellation create gcp 1 2 n2d-standard-4 -y
+constellation create -c 1 -w 2 -y
 constellation init
 export KUBECONFIG="$PWD/constellation-admin.conf"
 ```
