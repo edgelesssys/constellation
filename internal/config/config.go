@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io/fs"
 	"regexp"
+	"strings"
 
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/config/instancetypes"
@@ -252,6 +253,28 @@ func validateGCPInstanceType(fl validator.FieldLevel) bool {
 	return validInstanceTypeForProvider(fl.Field().String(), false, cloudprovider.GCP)
 }
 
+// validateProvider checks if zero or more than one providers are defined in the config.
+func validateProvider(sl validator.StructLevel) {
+	provider := sl.Current().Interface().(ProviderConfig)
+	providerCount := 0
+
+	if provider.Azure != nil {
+		providerCount++
+	}
+	if provider.GCP != nil {
+		providerCount++
+	}
+	if provider.QEMU != nil {
+		providerCount++
+	}
+
+	if providerCount < 1 {
+		sl.ReportError(provider, "Provider", "Provider", "no_provider", "")
+	} else if providerCount > 1 {
+		sl.ReportError(provider, "Provider", "Provider", "more_than_one_provider", "")
+	}
+}
+
 // Validate checks the config values and returns validation error messages.
 // The function only returns an error if the validation itself fails.
 func (c *Config) Validate() ([]string, error) {
@@ -262,11 +285,20 @@ func (c *Config) Validate() ([]string, error) {
 	}
 
 	// Register Azure & GCP InstanceType validation error types
-	if err := validate.RegisterTranslation("azure_instance_type", trans, c.registerTranslateAzureInstanceTypeError, translateAzureInstanceTypeError); err != nil {
+	if err := validate.RegisterTranslation("azure_instance_type", trans, registerTranslateAzureInstanceTypeError, c.translateAzureInstanceTypeError); err != nil {
 		return nil, err
 	}
 
 	if err := validate.RegisterTranslation("gcp_instance_type", trans, registerTranslateGCPInstanceTypeError, translateGCPInstanceTypeError); err != nil {
+		return nil, err
+	}
+
+	// Register Provider validation error types
+	if err := validate.RegisterTranslation("no_provider", trans, registerNoProviderError, translateNoProviderError); err != nil {
+		return nil, err
+	}
+
+	if err := validate.RegisterTranslation("more_than_one_provider", trans, registerMoreThanOneProviderError, c.translateMoreThanOneProviderError); err != nil {
 		return nil, err
 	}
 
@@ -280,10 +312,13 @@ func (c *Config) Validate() ([]string, error) {
 		return nil, err
 	}
 
-	// register custom validator with label azure_instance_type to validate version based on available versionConfigs.
+	// register custom validator with label gcp_instance_type to validate version based on available versionConfigs.
 	if err := validate.RegisterValidation("gcp_instance_type", validateGCPInstanceType); err != nil {
 		return nil, err
 	}
+
+	// Register provider validation
+	validate.RegisterStructValidation(validateProvider, ProviderConfig{})
 
 	err := validate.Struct(c)
 	if err == nil {
@@ -302,18 +337,19 @@ func (c *Config) Validate() ([]string, error) {
 	return msgs, nil
 }
 
-// Validation translation functions for Azure & GCP instance type error functions.
-func (c *Config) registerTranslateAzureInstanceTypeError(ut ut.Translator) error {
-	// Suggest trusted launch VMs if confidential VMs have been specifically disabled
-	if c.Provider.Azure != nil && c.Provider.Azure.ConfidentialVM != nil && !*c.Provider.Azure.ConfidentialVM {
-		return ut.Add("azure_instance_type", fmt.Sprintf("{0} must be one of %v", instancetypes.AzureTrustedLaunchInstanceTypes), true)
-	}
-	// Otherwise suggest CVMs
-	return ut.Add("azure_instance_type", fmt.Sprintf("{0} must be one of %v", instancetypes.AzureCVMInstanceTypes), true)
+// Validation translation functions for Azure & GCP instance type errors.
+func registerTranslateAzureInstanceTypeError(ut ut.Translator) error {
+	return ut.Add("azure_instance_type", "{0} must be one of {1}", true)
 }
 
-func translateAzureInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
-	t, _ := ut.T("azure_instance_type", fe.Field())
+func (c *Config) translateAzureInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
+	// Suggest trusted launch VMs if confidential VMs have been specifically disabled
+	var t string
+	if c.Provider.Azure != nil && c.Provider.Azure.ConfidentialVM != nil && !*c.Provider.Azure.ConfidentialVM {
+		t, _ = ut.T("azure_instance_type", fe.Field(), fmt.Sprintf("%v", instancetypes.AzureTrustedLaunchInstanceTypes))
+	} else {
+		t, _ = ut.T("azure_instance_type", fe.Field(), fmt.Sprintf("%v", instancetypes.AzureCVMInstanceTypes))
+	}
 
 	return t
 }
@@ -324,6 +360,41 @@ func registerTranslateGCPInstanceTypeError(ut ut.Translator) error {
 
 func translateGCPInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
 	t, _ := ut.T("gcp_instance_type", fe.Field())
+
+	return t
+}
+
+// Validation translation functions for Provider errors.
+func registerNoProviderError(ut ut.Translator) error {
+	return ut.Add("no_provider", "{0}: No provider has been defined (requires either Azure, GCP or QEMU)", true)
+}
+
+func translateNoProviderError(ut ut.Translator, fe validator.FieldError) string {
+	t, _ := ut.T("no_provider", fe.Field())
+
+	return t
+}
+
+func registerMoreThanOneProviderError(ut ut.Translator) error {
+	return ut.Add("more_than_one_provider", "{0}: Only one provider can be defined ({1} are defined)", true)
+}
+
+func (c *Config) translateMoreThanOneProviderError(ut ut.Translator, fe validator.FieldError) string {
+	definedProviders := make([]string, 0)
+
+	// c.Provider should not be nil as Provider would need to be defined for the validation to fail in this place.
+	if c.Provider.Azure != nil {
+		definedProviders = append(definedProviders, "Azure")
+	}
+	if c.Provider.GCP != nil {
+		definedProviders = append(definedProviders, "GCP")
+	}
+	if c.Provider.QEMU != nil {
+		definedProviders = append(definedProviders, "QEMU")
+	}
+
+	// Show single string if only one other provider is defined, show list with brackets if multiple are defined.
+	t, _ := ut.T("more_than_one_provider", fe.Field(), strings.Join(definedProviders, ", "))
 
 	return t
 }
