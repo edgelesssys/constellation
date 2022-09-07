@@ -25,8 +25,14 @@ import (
 	"github.com/google/go-tpm/tpm2"
 )
 
-// AMD root key. Received from the AMD Key Distribution System API (KDS).
-const arkPEM = "-----BEGIN CERTIFICATE-----\nMIIGYzCCBBKgAwIBAgIDAQAAMEYGCSqGSIb3DQEBCjA5oA8wDQYJYIZIAWUDBAIC\nBQChHDAaBgkqhkiG9w0BAQgwDQYJYIZIAWUDBAICBQCiAwIBMKMDAgEBMHsxFDAS\nBgNVBAsMC0VuZ2luZWVyaW5nMQswCQYDVQQGEwJVUzEUMBIGA1UEBwwLU2FudGEg\nQ2xhcmExCzAJBgNVBAgMAkNBMR8wHQYDVQQKDBZBZHZhbmNlZCBNaWNybyBEZXZp\nY2VzMRIwEAYDVQQDDAlBUkstTWlsYW4wHhcNMjAxMDIyMTcyMzA1WhcNNDUxMDIy\nMTcyMzA1WjB7MRQwEgYDVQQLDAtFbmdpbmVlcmluZzELMAkGA1UEBhMCVVMxFDAS\nBgNVBAcMC1NhbnRhIENsYXJhMQswCQYDVQQIDAJDQTEfMB0GA1UECgwWQWR2YW5j\nZWQgTWljcm8gRGV2aWNlczESMBAGA1UEAwwJQVJLLU1pbGFuMIICIjANBgkqhkiG\n9w0BAQEFAAOCAg8AMIICCgKCAgEA0Ld52RJOdeiJlqK2JdsVmD7FktuotWwX1fNg\nW41XY9Xz1HEhSUmhLz9Cu9DHRlvgJSNxbeYYsnJfvyjx1MfU0V5tkKiU1EesNFta\n1kTA0szNisdYc9isqk7mXT5+KfGRbfc4V/9zRIcE8jlHN61S1ju8X93+6dxDUrG2\nSzxqJ4BhqyYmUDruPXJSX4vUc01P7j98MpqOS95rORdGHeI52Naz5m2B+O+vjsC0\n60d37jY9LFeuOP4Meri8qgfi2S5kKqg/aF6aPtuAZQVR7u3KFYXP59XmJgtcog05\ngmI0T/OitLhuzVvpZcLph0odh/1IPXqx3+MnjD97A7fXpqGd/y8KxX7jksTEzAOg\nbKAeam3lm+3yKIcTYMlsRMXPcjNbIvmsBykD//xSniusuHBkgnlENEWx1UcbQQrs\n+gVDkuVPhsnzIRNgYvM48Y+7LGiJYnrmE8xcrexekBxrva2V9TJQqnN3Q53kt5vi\nQi3+gCfmkwC0F0tirIZbLkXPrPwzZ0M9eNxhIySb2npJfgnqz55I0u33wh4r0ZNQ\neTGfw03MBUtyuzGesGkcw+loqMaq1qR4tjGbPYxCvpCq7+OgpCCoMNit2uLo9M18\nfHz10lOMT8nWAUvRZFzteXCm+7PHdYPlmQwUw3LvenJ/ILXoQPHfbkH0CyPfhl1j\nWhJFZasCAwEAAaN+MHwwDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSFrBrRQ/fI\nrFXUxR1BSKvVeErUUzAPBgNVHRMBAf8EBTADAQH/MDoGA1UdHwQzMDEwL6AtoCuG\nKWh0dHBzOi8va2RzaW50Zi5hbWQuY29tL3ZjZWsvdjEvTWlsYW4vY3JsMEYGCSqG\nSIb3DQEBCjA5oA8wDQYJYIZIAWUDBAICBQChHDAaBgkqhkiG9w0BAQgwDQYJYIZI\nAWUDBAICBQCiAwIBMKMDAgEBA4ICAQC6m0kDp6zv4Ojfgy+zleehsx6ol0ocgVel\nETobpx+EuCsqVFRPK1jZ1sp/lyd9+0fQ0r66n7kagRk4Ca39g66WGTJMeJdqYriw\nSTjjDCKVPSesWXYPVAyDhmP5n2v+BYipZWhpvqpaiO+EGK5IBP+578QeW/sSokrK\ndHaLAxG2LhZxj9aF73fqC7OAJZ5aPonw4RE299FVarh1Tx2eT3wSgkDgutCTB1Yq\nzT5DuwvAe+co2CIVIzMDamYuSFjPN0BCgojl7V+bTou7dMsqIu/TW/rPCX9/EUcp\nKGKqPQ3P+N9r1hjEFY1plBg93t53OOo49GNI+V1zvXPLI6xIFVsh+mto2RtgEX/e\npmMKTNN6psW88qg7c1hTWtN6MbRuQ0vm+O+/2tKBF2h8THb94OvvHHoFDpbCELlq\nHnIYhxy0YKXGyaW1NjfULxrrmxVW4wcn5E8GddmvNa6yYm8scJagEi13mhGu4Jqh\n3QU3sf8iUSUr09xQDwHtOQUVIqx4maBZPBtSMf+qUDtjXSSq8lfWcd8bLr9mdsUn\nJZJ0+tuPMKmBnSH860llKk+VpVQsgqbzDIvOLvD6W1Umq25boxCYJ+TuBoa4s+HH\nCViAvgT9kf/rBq1d+ivj6skkHxuzcxbk1xv6ZGxrteJxVH7KlX7YRdZ6eARKwLe4\nAFZEAwoKCQ==\n-----END CERTIFICATE-----\n"
+const (
+	// AMD root key. Received from the AMD Key Distribution System API (KDS).
+	arkPEM            = "-----BEGIN CERTIFICATE-----\nMIIGYzCCBBKgAwIBAgIDAQAAMEYGCSqGSIb3DQEBCjA5oA8wDQYJYIZIAWUDBAIC\nBQChHDAaBgkqhkiG9w0BAQgwDQYJYIZIAWUDBAICBQCiAwIBMKMDAgEBMHsxFDAS\nBgNVBAsMC0VuZ2luZWVyaW5nMQswCQYDVQQGEwJVUzEUMBIGA1UEBwwLU2FudGEg\nQ2xhcmExCzAJBgNVBAgMAkNBMR8wHQYDVQQKDBZBZHZhbmNlZCBNaWNybyBEZXZp\nY2VzMRIwEAYDVQQDDAlBUkstTWlsYW4wHhcNMjAxMDIyMTcyMzA1WhcNNDUxMDIy\nMTcyMzA1WjB7MRQwEgYDVQQLDAtFbmdpbmVlcmluZzELMAkGA1UEBhMCVVMxFDAS\nBgNVBAcMC1NhbnRhIENsYXJhMQswCQYDVQQIDAJDQTEfMB0GA1UECgwWQWR2YW5j\nZWQgTWljcm8gRGV2aWNlczESMBAGA1UEAwwJQVJLLU1pbGFuMIICIjANBgkqhkiG\n9w0BAQEFAAOCAg8AMIICCgKCAgEA0Ld52RJOdeiJlqK2JdsVmD7FktuotWwX1fNg\nW41XY9Xz1HEhSUmhLz9Cu9DHRlvgJSNxbeYYsnJfvyjx1MfU0V5tkKiU1EesNFta\n1kTA0szNisdYc9isqk7mXT5+KfGRbfc4V/9zRIcE8jlHN61S1ju8X93+6dxDUrG2\nSzxqJ4BhqyYmUDruPXJSX4vUc01P7j98MpqOS95rORdGHeI52Naz5m2B+O+vjsC0\n60d37jY9LFeuOP4Meri8qgfi2S5kKqg/aF6aPtuAZQVR7u3KFYXP59XmJgtcog05\ngmI0T/OitLhuzVvpZcLph0odh/1IPXqx3+MnjD97A7fXpqGd/y8KxX7jksTEzAOg\nbKAeam3lm+3yKIcTYMlsRMXPcjNbIvmsBykD//xSniusuHBkgnlENEWx1UcbQQrs\n+gVDkuVPhsnzIRNgYvM48Y+7LGiJYnrmE8xcrexekBxrva2V9TJQqnN3Q53kt5vi\nQi3+gCfmkwC0F0tirIZbLkXPrPwzZ0M9eNxhIySb2npJfgnqz55I0u33wh4r0ZNQ\neTGfw03MBUtyuzGesGkcw+loqMaq1qR4tjGbPYxCvpCq7+OgpCCoMNit2uLo9M18\nfHz10lOMT8nWAUvRZFzteXCm+7PHdYPlmQwUw3LvenJ/ILXoQPHfbkH0CyPfhl1j\nWhJFZasCAwEAAaN+MHwwDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSFrBrRQ/fI\nrFXUxR1BSKvVeErUUzAPBgNVHRMBAf8EBTADAQH/MDoGA1UdHwQzMDEwL6AtoCuG\nKWh0dHBzOi8va2RzaW50Zi5hbWQuY29tL3ZjZWsvdjEvTWlsYW4vY3JsMEYGCSqG\nSIb3DQEBCjA5oA8wDQYJYIZIAWUDBAICBQChHDAaBgkqhkiG9w0BAQgwDQYJYIZI\nAWUDBAICBQCiAwIBMKMDAgEBA4ICAQC6m0kDp6zv4Ojfgy+zleehsx6ol0ocgVel\nETobpx+EuCsqVFRPK1jZ1sp/lyd9+0fQ0r66n7kagRk4Ca39g66WGTJMeJdqYriw\nSTjjDCKVPSesWXYPVAyDhmP5n2v+BYipZWhpvqpaiO+EGK5IBP+578QeW/sSokrK\ndHaLAxG2LhZxj9aF73fqC7OAJZ5aPonw4RE299FVarh1Tx2eT3wSgkDgutCTB1Yq\nzT5DuwvAe+co2CIVIzMDamYuSFjPN0BCgojl7V+bTou7dMsqIu/TW/rPCX9/EUcp\nKGKqPQ3P+N9r1hjEFY1plBg93t53OOo49GNI+V1zvXPLI6xIFVsh+mto2RtgEX/e\npmMKTNN6psW88qg7c1hTWtN6MbRuQ0vm+O+/2tKBF2h8THb94OvvHHoFDpbCELlq\nHnIYhxy0YKXGyaW1NjfULxrrmxVW4wcn5E8GddmvNa6yYm8scJagEi13mhGu4Jqh\n3QU3sf8iUSUr09xQDwHtOQUVIqx4maBZPBtSMf+qUDtjXSSq8lfWcd8bLr9mdsUn\nJZJ0+tuPMKmBnSH860llKk+VpVQsgqbzDIvOLvD6W1Umq25boxCYJ+TuBoa4s+HH\nCViAvgT9kf/rBq1d+ivj6skkHxuzcxbk1xv6ZGxrteJxVH7KlX7YRdZ6eARKwLe4\nAFZEAwoKCQ==\n-----END CERTIFICATE-----\n"
+	bootloaderVersion = 2
+	teeVersion        = 0
+	snpVersion        = 6
+	microcodeVersion  = 93
+)
 
 // Validator for Azure confidential VM attestation.
 type Validator struct {
@@ -35,12 +41,12 @@ type Validator struct {
 }
 
 // NewValidator initializes a new Azure validator with the provided PCR values.
-func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, idkeydigest []byte, enforceIdKeyDigest bool, log vtpm.WarnLogger) *Validator {
+func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, idKeyDigest []byte, enforceIDKeyDigest bool, log vtpm.WarnLogger) *Validator {
 	return &Validator{
 		Validator: vtpm.NewValidator(
 			pcrs,
 			enforcedPCRs,
-			getTrustedKey(&azureInstanceInfo{}, idkeydigest, enforceIdKeyDigest, log),
+			getTrustedKey(&azureInstanceInfo{}, idKeyDigest, enforceIDKeyDigest, log),
 			validateCVM,
 			vtpm.VerifyPKCS1v15,
 			log,
@@ -70,7 +76,7 @@ func reverseEndian(b []byte) {
 
 // getTrustedKey establishes trust in the given public key.
 // It does so by verifying the SNP attestation statement in instanceInfo.
-func getTrustedKey(hclAk HCLAkValidator, idkeydigest []byte, enforceIdKeyDigest bool, log vtpm.WarnLogger) func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
+func getTrustedKey(hclAk HCLAkValidator, idKeyDigest []byte, enforceIDKeyDigest bool, log vtpm.WarnLogger) func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
 	return func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
 		var instanceInfo azureInstanceInfo
 		if err := json.Unmarshal(instanceInfoRaw, &instanceInfo); err != nil {
@@ -87,7 +93,7 @@ func getTrustedKey(hclAk HCLAkValidator, idkeydigest []byte, enforceIdKeyDigest 
 			return nil, fmt.Errorf("validating VCEK: %w", err)
 		}
 
-		if err = validateSNPReport(vcek, idkeydigest, enforceIdKeyDigest, report, log); err != nil {
+		if err = validateSNPReport(vcek, idKeyDigest, enforceIDKeyDigest, report, log); err != nil {
 			return nil, fmt.Errorf("validating SNP report: %w", err)
 		}
 
@@ -134,7 +140,25 @@ func validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certificate, error) {
 	return vcek, nil
 }
 
-func validateSNPReport(cert *x509.Certificate, expectedIdKeyDigest []byte, enforceIdKeyDigest bool, report snpAttestationReport, log vtpm.WarnLogger) error {
+func validateSNPReport(cert *x509.Certificate, expectedIDKeyDigest []byte, enforceIDKeyDigest bool, report snpAttestationReport, log vtpm.WarnLogger) error {
+	if report.Policy.Debug() {
+		return errDebugEnabled
+	}
+
+	if !report.CommittedTCB.isVersion(bootloaderVersion, teeVersion, snpVersion, microcodeVersion) {
+		return &versionError{"COMMITTED_TCB", report.CommittedTCB}
+	}
+	if report.LaunchTCB != report.CommittedTCB {
+		return &versionError{"LAUNCH_TCB", report.LaunchTCB}
+	}
+	if !report.CommittedTCB.supersededBy(report.CurrentTCB) {
+		return &versionError{"CURRENT_TCB", report.CurrentTCB}
+	}
+
+	if err := validateVCEKExtensions(cert, report); err != nil {
+		return fmt.Errorf("mismatching vcek extensions: %w", err)
+	}
+
 	sig_r := report.Signature.R[:]
 	sig_s := report.Signature.S[:]
 
@@ -160,12 +184,67 @@ func validateSNPReport(cert *x509.Certificate, expectedIdKeyDigest []byte, enfor
 		return &signatureError{err}
 	}
 
-	if !bytes.Equal(expectedIdKeyDigest, report.IdKeyDigest[:]) {
-		if enforceIdKeyDigest {
-			return &idkeyError{report.IdKeyDigest[:]}
+	if !bytes.Equal(expectedIDKeyDigest, report.IDKeyDigest[:]) {
+		if enforceIDKeyDigest {
+			return &idKeyError{report.IDKeyDigest[:]}
 		}
 		if log != nil {
-			log.Warnf("Encountered different than configured idkeydigest value: %x", report.IdKeyDigest[:])
+			log.Warnf("Encountered different than configured IDKeyDigest value: %x", report.IDKeyDigest[:])
+		}
+	}
+
+	return nil
+}
+
+// validateVCEKExtensions checks that the certificate extension values in cert match the values described in report.
+func validateVCEKExtensions(cert *x509.Certificate, report snpAttestationReport) error {
+	var certVersion int
+	for _, extension := range cert.Extensions {
+		switch extension.Id.String() {
+		// check bootloader version
+		case "1.3.6.1.4.1.3704.1.3.1":
+			{
+				_, err := asn1.Unmarshal(extension.Value, &certVersion)
+				if err != nil {
+					return fmt.Errorf("unmarshalling bootloader version: %w", err)
+				}
+				if certVersion != int(report.CommittedTCB.Bootloader) {
+					return fmt.Errorf("bootloader version %d from report does not match VCEK version %d", int(report.CommittedTCB.Bootloader), certVersion)
+				}
+			}
+		// check TEE version
+		case "1.3.6.1.4.1.3704.1.3.2":
+			{
+				_, err := asn1.Unmarshal(extension.Value, &certVersion)
+				if err != nil {
+					return fmt.Errorf("unmarshalling tee version: %w", err)
+				}
+				if certVersion != int(report.CommittedTCB.TEE) {
+					return fmt.Errorf("bootloader version %d from report does not match VCEK version %d", int(report.CommittedTCB.TEE), certVersion)
+				}
+			}
+		// check SNP Firmware version
+		case "1.3.6.1.4.1.3704.1.3.3":
+			{
+				_, err := asn1.Unmarshal(extension.Value, &certVersion)
+				if err != nil {
+					return fmt.Errorf("unmarshalling snp version: %w", err)
+				}
+				if certVersion != int(report.CommittedTCB.SNP) {
+					return fmt.Errorf("bootloader version %d from report does not match VCEK version %d", int(report.CommittedTCB.SNP), certVersion)
+				}
+			}
+		// check microcode version
+		case "1.3.6.1.4.1.3704.1.3.8":
+			{
+				_, err := asn1.Unmarshal(extension.Value, &certVersion)
+				if err != nil {
+					return fmt.Errorf("unmarshalling microcode version: %w", err)
+				}
+				if certVersion != int(report.CommittedTCB.Microcode) {
+					return fmt.Errorf("bootloader version %d from report does not match VCEK version %d", int(report.CommittedTCB.Microcode), certVersion)
+				}
+			}
 		}
 	}
 
@@ -228,52 +307,73 @@ type HCLAkValidator interface {
 	validateAk(runtimeDataRaw []byte, reportData []byte, rsaParameters *tpm2.RSAParams) error
 }
 
-type signatureError struct {
-	innerError error
+// Reference: https://github.com/AMDESE/sev-guest/blob/main/include/attestation.h
+type snpAttestationReport struct {
+	Version         uint32       // 0x000
+	GuestSVN        uint32       // 0x004
+	Policy          guestPolicy  // 0x008
+	FamilyID        [16]byte     // 0x010
+	ImageID         [16]byte     // 0x020
+	VMPL            uint32       // 0x030
+	SignatureAlgo   uint32       // 0x034
+	CurrentTCB      tcbVersion   // 0x038
+	PlatformInfo    uint64       // 0x040
+	Flags           uint32       // 0x048
+	Reserved0       uint32       // 0x04C
+	ReportData      [64]byte     // 0x050
+	Measurement     [48]byte     // 0x090
+	HostData        [32]byte     // 0x0C0
+	IDKeyDigest     [48]byte     // 0x0E0
+	AuthorKeyDigest [48]byte     // 0x110
+	ReportID        [32]byte     // 0x140
+	ReportIDMa      [32]byte     // 0x160
+	ReportedTCB     tcbVersion   // 0x180
+	_               [24]byte     // 0x188
+	ChipID          [64]byte     // 0x1A0
+	CommittedTCB    tcbVersion   // 0x1E0
+	CurrentBuild    byte         // 0x1E8
+	CurrentMinor    byte         // 0x1E9
+	CurrentMajor    byte         // 0x1EA
+	_               byte         // 0x1EB
+	CommittedBuild  byte         // 0x1EC
+	CommittedMinor  byte         // 0x1ED
+	CommittedMajor  byte         // 0x1EE
+	_               byte         // 0x1EF
+	LaunchTCB       tcbVersion   // 0x1F0
+	_               [168]byte    // 0x1F8
+	Signature       snpSignature // 0x2A0
 }
 
-func (e *signatureError) Unwrap() error {
-	return e.innerError
+type guestPolicy struct {
+	AbiMinor       uint8 // 0x0
+	AbiMajor       uint8 // 0x8
+	ContainerValue byte  // 0x10 - encodes the following four values:
+	// Smt          bool // 0x10 - bit 0 in 'ContainerValue'.
+	// _            bool // 0x11 - bit 1 in 'ContainerValue'.
+	// MigrateMa    bool // 0x12 - bit 2 in 'ContainerValue'.
+	// Debug        bool // 0x13 - bit 3 in 'ContainerValue'.
+	// SingleSocket bool // 0x14 - bit 4 in 'ContainerValue'.
+	_ [5]byte // 0x15
 }
 
-func (e *signatureError) Error() string {
-	return fmt.Sprintf("signature validation failed: %v", e.innerError)
+func (g *guestPolicy) Debug() bool {
+	return (g.ContainerValue & 0b00001000) != 0
 }
 
-type askError struct {
-	innerError error
+type tcbVersion struct {
+	Bootloader uint8   // 0x0
+	TEE        uint8   // 0x10
+	_          [4]byte // 0x2F
+	SNP        uint8   // 0x37
+	Microcode  uint8   // 0x3F
 }
 
-func (e *askError) Unwrap() error {
-	return e.innerError
+func (t *tcbVersion) isVersion(expectedBootloader, expectedTEE, expectedSNP, expectedMicrocode uint8) bool {
+	return t.Bootloader >= expectedBootloader && t.TEE >= expectedTEE && t.SNP >= expectedSNP && t.Microcode >= expectedMicrocode
 }
 
-func (e *askError) Error() string {
-	return fmt.Sprintf("validating ASK: %v", e.innerError)
-}
-
-type vcekError struct {
-	innerError error
-}
-
-func (e *vcekError) Unwrap() error {
-	return e.innerError
-}
-
-func (e *vcekError) Error() string {
-	return fmt.Sprintf("validating VCEK: %v", e.innerError)
-}
-
-type idkeyError struct {
-	expectedValue []byte
-}
-
-func (e *idkeyError) Unwrap() error {
-	return nil
-}
-
-func (e *idkeyError) Error() string {
-	return fmt.Sprintf("configured idkeydigest does not match reported idkeydigest: %x", e.expectedValue)
+func (t *tcbVersion) supersededBy(new tcbVersion) bool {
+	return new.Bootloader >= t.Bootloader && new.TEE >= t.TEE && new.SNP >= t.SNP && new.Microcode >= t.Microcode
 }
 
 type snpSignature struct {
@@ -281,34 +381,6 @@ type snpSignature struct {
 	S        [72]byte
 	Reserved [512 - 144]byte
 }
-
-// Reference: https://github.com/AMDESE/sev-guest/blob/main/include/attestation.h
-type snpAttestationReport struct {
-	Version         uint32       /* 0x000 */
-	GuestSvn        uint32       /* 0x004 */
-	Policy          uint64       /* 0x008 */
-	FamilyId        [16]byte     /* 0x010 */
-	ImageId         [16]byte     /* 0x020 */
-	Vmpl            uint32       /* 0x030 */
-	SignatureAlgo   uint32       /* 0x034 */
-	PlatformVersion uint64       /* 0x038 */
-	PlatformInfo    uint64       /* 0x040 */
-	Flags           uint32       /* 0x048 */
-	Reserved0       uint32       /* 0x04C */
-	ReportData      [64]byte     /* 0x050 */
-	Measurement     [48]byte     /* 0x090 */
-	HostData        [32]byte     /* 0x0C0 */
-	IdKeyDigest     [48]byte     /* 0x0E0 */
-	AuthorKeyDigest [48]byte     /* 0x110 */
-	ReportId        [32]byte     /* 0x140 */
-	ReportIdMa      [32]byte     /* 0x160 */
-	ReportedTcb     uint64       /* 0x180 */
-	Reserved1       [24]byte     /* 0x188 */
-	ChipId          [64]byte     /* 0x1A0 */
-	Reserved2       [192]byte    /* 0x1E0 */
-	Signature       snpSignature /* 0x2A0 */
-}
-
 type ecdsaSig struct {
 	R, S *big.Int
 }

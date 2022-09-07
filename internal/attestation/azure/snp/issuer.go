@@ -45,7 +45,7 @@ func GetIdKeyDigest(open vtpm.TPMOpenFunc) ([]byte, error) {
 		return nil, fmt.Errorf("creating snp report: %w", err)
 	}
 
-	return report.IdKeyDigest[:], nil
+	return report.IDKeyDigest[:], nil
 }
 
 // Issuer for Azure TPM attestation.
