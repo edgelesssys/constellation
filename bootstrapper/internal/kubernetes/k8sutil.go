@@ -33,6 +33,5 @@ type clusterUtil interface {
 	SetupNodeMaintenanceOperator(kubectl k8sapi.Client, nodeMaintenanceOperatorConfiguration kubernetes.Marshaler) error
 	SetupNodeOperator(ctx context.Context, kubectl k8sapi.Client, nodeOperatorConfiguration kubernetes.Marshaler) error
 	StartKubelet() error
-	RestartKubelet() error
-	FixCilium(nodeNameK8s string, log *logger.Logger)
+	FixCilium(log *logger.Logger)
 }

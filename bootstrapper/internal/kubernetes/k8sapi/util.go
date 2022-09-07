@@ -305,7 +305,7 @@ func (k *KubernetesUtil) deployCiliumGCP(ctx context.Context, helmClient *action
 
 // FixCilium fixes https://github.com/cilium/cilium/issues/19958 but instead of a rollout restart of
 // the cilium daemonset, it only restarts the local cilium pod.
-func (k *KubernetesUtil) FixCilium(nodeNameK8s string, log *logger.Logger) {
+func (k *KubernetesUtil) FixCilium(log *logger.Logger) {
 	// wait for cilium pod to be healthy
 	client := http.Client{}
 	for {
@@ -485,13 +485,6 @@ func (k *KubernetesUtil) StartKubelet() error {
 		return fmt.Errorf("enabling kubelet systemd unit: %w", err)
 	}
 	return startSystemdUnit(ctx, "kubelet.service")
-}
-
-// RestartKubelet restarts a kubelet.
-func (k *KubernetesUtil) RestartKubelet() error {
-	ctx, cancel := context.WithTimeout(context.TODO(), kubeletStartTimeout)
-	defer cancel()
-	return restartSystemdUnit(ctx, "kubelet.service")
 }
 
 // createSignedKubeletCert manually creates a Kubernetes CA signed kubelet certificate for the bootstrapper node.

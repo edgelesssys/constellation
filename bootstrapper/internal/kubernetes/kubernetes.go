@@ -229,7 +229,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("failed to setup k8s version ConfigMap: %w", err)
 	}
 
-	k.clusterUtil.FixCilium(nodeName, log)
+	k.clusterUtil.FixCilium(log)
 
 	return k.GetKubeconfig()
 }
@@ -309,7 +309,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		return fmt.Errorf("joining cluster: %v; %w ", string(joinConfigYAML), err)
 	}
 
-	k.clusterUtil.FixCilium(nodeName, log)
+	k.clusterUtil.FixCilium(log)
 
 	return nil
 }
@@ -481,8 +481,13 @@ func k8sCompliantHostname(in string) string {
 }
 
 // StartKubelet starts the kubelet service.
-func (k *KubeWrapper) StartKubelet() error {
-	return k.clusterUtil.StartKubelet()
+func (k *KubeWrapper) StartKubelet(log *logger.Logger) error {
+	if err := k.clusterUtil.StartKubelet(); err != nil {
+		return fmt.Errorf("starting kubelet: %w", err)
+	}
+
+	k.clusterUtil.FixCilium(log)
+	return nil
 }
 
 // getIPAddr retrieves to default sender IP used for outgoing connection.
