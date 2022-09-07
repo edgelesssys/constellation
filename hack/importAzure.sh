@@ -102,9 +102,8 @@ echo "Creating Azure Shared Image Gallery."
 az sig create -l ${AZURE_REGION} --gallery-name ${AZURE_GALLERY_NAME} --resource-group ${AZURE_RESOURCE_GROUP_NAME}
 echo "Creating Image Definition."
 az sig image-definition create --resource-group ${AZURE_RESOURCE_GROUP_NAME} -l ${AZURE_REGION} --gallery-name ${AZURE_GALLERY_NAME} --gallery-image-definition ${AZURE_IMAGE_DEFINITION} --publisher ${AZURE_PUBLISHER} --offer ${AZURE_IMAGE_OFFER} --sku ${AZURE_SKU} --os-type Linux --os-state generalized --hyper-v-generation V2 --features SecurityType=ConfidentialVmSupported
-echo "Retrieving image ID."
+echo "Retrieving temporary image ID."
 AZURE_IMAGE_ID=$(az image list --query "[?name == '${AZURE_IMAGE_NAME}' && resourceGroup == '${AZURE_RESOURCE_GROUP_NAME^^}'] | [0].id" --output json | jq -r)
-echo "Image ID is ${AZURE_IMAGE_ID}"
 
 echo "Creating final image version."
 az sig image-version create --resource-group ${AZURE_RESOURCE_GROUP_NAME} -l ${AZURE_REGION} --gallery-name ${AZURE_GALLERY_NAME} --gallery-image-definition ${AZURE_IMAGE_DEFINITION} --gallery-image-version ${AZURE_IMAGE_VERSION} --target-regions ${AZURE_REGION} --replica-count 1 --managed-image ${AZURE_IMAGE_ID}
@@ -112,6 +111,9 @@ az sig image-version create --resource-group ${AZURE_RESOURCE_GROUP_NAME} -l ${A
 echo "Cleaning up ephemeral resources."
 az image delete --ids ${AZURE_IMAGE_ID}
 az disk delete -y --ids ${AZURE_DISK_ID}
+
+IMAGE_VERSION=$(az sig image-version show --resource-group ${AZURE_RESOURCE_GROUP_NAME}  --gallery-name ${AZURE_GALLERY_NAME} --gallery-image-definition ${AZURE_IMAGE_DEFINITION} --gallery-image-version ${AZURE_IMAGE_VERSION} -o tsv --query id)
+echo "Image ID is ${IMAGE_VERSION}"
 
 # # Cleanup all
 # az sig image-version delete --resource-group ${AZURE_RESOURCE_GROUP_NAME} --gallery-image-definition ${AZURE_IMAGE_DEFINITION} --gallery-image-version ${AZURE_IMAGE_VERSION} --gallery-name ${AZURE_GALLERY_NAME}
