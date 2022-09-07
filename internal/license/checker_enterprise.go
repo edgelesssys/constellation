@@ -30,7 +30,7 @@ func NewChecker(quotaChecker QuotaChecker, fileHandler file.Handler) *Checker {
 // CheckLicense tries to read the license file and contact license server
 // to fetch quota information.
 // If no license file is found, community license is assumed.
-func (c *Checker) CheckLicense(ctx context.Context, printer func(string, ...any)) error {
+func (c *Checker) CheckLicense(ctx context.Context, provider cloudprovider.Provider, printer func(string, ...any)) error {
 	licenseID, err := FromFile(c.fileHandler, constants.LicenseFilename)
 	if err != nil {
 		printer("Unable to find license file. Assuming community license.\n")
@@ -38,9 +38,11 @@ func (c *Checker) CheckLicense(ctx context.Context, printer func(string, ...any)
 	} else {
 		printer("Constellation license found!\n")
 	}
+	providerStr = cloudprovider.ToString(provider)
 	quotaResp, err := c.quotaChecker.QuotaCheck(ctx, QuotaCheckRequest{
 		License: licenseID,
 		Action:  Init,
+		Cloud:   providerStr,
 	})
 	if err != nil {
 		printer("Unable to contact license server.\n")

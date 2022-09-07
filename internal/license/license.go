@@ -22,7 +22,10 @@ const (
 	licensePath      = "api/v1/license"
 )
 
-type Action string
+type (
+	Action   string
+	Provider string
+)
 
 const (
 	Init Action = "init"
@@ -43,8 +46,9 @@ func NewClient() *Client {
 
 // QuotaCheckRequest is JSON request to license server to check quota for a given license and action.
 type QuotaCheckRequest struct {
-	Action  Action `json:"action"`
-	License string `json:"license"`
+	Action   Action   `json:"action"`
+	Provider Provider `json:"cloud"`
+	License  string   `json:"license"`
 }
 
 // QuotaCheckResponse is JSON response by license server.
