@@ -49,6 +49,6 @@ func ToString(p Provider) string {
 	case QEMU:
 		return "qemu"
 	default:
-		return "unkown"
+		return "unknown"
 	}
 }
