@@ -264,12 +264,19 @@ func (k *KubernetesUtil) deployCiliumGCP(ctx context.Context, helmClient *action
 		return err
 	}
 
+	timeoutS := int64(10)
 	// allow coredns to run on uninitialized nodes (required by cloud-controller-manager)
 	tolerations := []corev1.Toleration{
 		{
 			Key:    "node.cloudprovider.kubernetes.io/uninitialized",
 			Value:  "true",
-			Effect: "NoSchedule",
+			Effect: corev1.TaintEffectNoSchedule,
+		},
+		{
+			Key:               "node.kubernetes.io/unreachable",
+			Operator:          corev1.TolerationOpExists,
+			Effect:            corev1.TaintEffectNoExecute,
+			TolerationSeconds: &timeoutS,
 		},
 	}
 	if err = kubectl.AddTolerationsToDeployment(ctx, tolerations, "coredns", "kube-system"); err != nil {
