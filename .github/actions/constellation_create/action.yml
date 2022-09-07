@@ -137,7 +137,7 @@ runs:
       run: |
         echo "Creating cluster using config:"
         cat constellation-conf.yaml
-        constellation create ${{ inputs.cloudProvider }} -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} --name e2e-test -y
+        constellation create -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} --name e2e-test -y
       shell: bash
     - name: Upload constellation-state.json
       uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
