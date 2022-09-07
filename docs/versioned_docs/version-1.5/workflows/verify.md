@@ -16,16 +16,6 @@ This command performs the following steps:
 3. Verify the signature.
 4. Write measurements into configuration file.
 
-### Custom arguments
-
-To comply with regulations and policies it may be necessary that you need to generate the measurements yourself. You can either manually write these measurements to the configuration file or download them from a custom location using this command:
-
-```bash
-constellation config fetch-measurements -u http://my.storage/measurements.yaml -s http://my.storage/measurements.yaml.sig -p "$(cat cosign.pub)"
-```
-
-For more details consult the [CLI reference](../reference/cli.md).
-
 ## The *verify* command
 
 Once measurements are configured, this command verifies an attestation statement issued by a Constellation, thereby verifying the integrity and confidentiality of the whole cluster.
