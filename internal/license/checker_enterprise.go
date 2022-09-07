@@ -11,6 +11,7 @@ package license
 import (
 	"context"
 
+	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 )
@@ -38,11 +39,11 @@ func (c *Checker) CheckLicense(ctx context.Context, provider cloudprovider.Provi
 	} else {
 		printer("Constellation license found!\n")
 	}
-	providerStr = cloudprovider.ToString(provider)
+	providerStr := cloudprovider.ToString(provider)
 	quotaResp, err := c.quotaChecker.QuotaCheck(ctx, QuotaCheckRequest{
-		License: licenseID,
-		Action:  Init,
-		Cloud:   providerStr,
+		License:  licenseID,
+		Action:   Init,
+		Provider: providerStr,
 	})
 	if err != nil {
 		printer("Unable to contact license server.\n")
