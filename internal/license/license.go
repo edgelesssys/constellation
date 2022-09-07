@@ -23,8 +23,7 @@ const (
 )
 
 type (
-	Action   string
-	Provider string
+	Action string
 )
 
 const (

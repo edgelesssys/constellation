@@ -37,18 +37,3 @@ func FromString(s string) Provider {
 		return Unknown
 	}
 }
-
-func ToString(p Provider) string {
-	switch p {
-	case AWS:
-		return "aws"
-	case Azure:
-		return "azure"
-	case GCP:
-		return "gcp"
-	case QEMU:
-		return "qemu"
-	default:
-		return "unknown"
-	}
-}

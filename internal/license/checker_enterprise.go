@@ -39,11 +39,10 @@ func (c *Checker) CheckLicense(ctx context.Context, provider cloudprovider.Provi
 	} else {
 		printer("Constellation license found!\n")
 	}
-	providerStr := cloudprovider.ToString(provider)
 	quotaResp, err := c.quotaChecker.QuotaCheck(ctx, QuotaCheckRequest{
 		License:  licenseID,
 		Action:   Init,
-		Provider: providerStr,
+		Provider: provider.String(),
 	})
 	if err != nil {
 		printer("Unable to contact license server.\n")
