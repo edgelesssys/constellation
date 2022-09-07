@@ -14,13 +14,16 @@ import (
 	"github.com/edgelesssys/constellation/internal/config/instancetypes"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/go-playground/locales/en"
+	ut "github.com/go-playground/universal-translator"
+	"github.com/go-playground/validator/v10"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 )
 
-const defaultMsgCount = 12 // expect this number of error messages by default because user-specific values are not set
+const defaultMsgCount = 13 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
 
 func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
@@ -503,6 +506,89 @@ func TestIsDebugCluster(t *testing.T) {
 				tc.prepareConfig(tc.config)
 			}
 			assert.Equal(tc.expectedResult, tc.config.IsDebugCluster())
+		})
+	}
+}
+
+func TestValidateProvider(t *testing.T) {
+	testCases := map[string]struct {
+		provider         ProviderConfig
+		wantErr          bool
+		expectedErrorTag string
+	}{
+		"empty, should trigger no provider error": {
+			provider:         ProviderConfig{},
+			wantErr:          true,
+			expectedErrorTag: "no_provider",
+		},
+		"azure only, should be okay": {
+			provider: ProviderConfig{
+				Azure: &AzureConfig{},
+			},
+			wantErr: false,
+		},
+		"gcp only, should be okay": {
+			provider: ProviderConfig{
+				GCP: &GCPConfig{},
+			},
+			wantErr: false,
+		},
+		"qemu only, should be okay": {
+			provider: ProviderConfig{
+				QEMU: &QEMUConfig{},
+			},
+			wantErr: false,
+		},
+		"azure and gcp, should trigger multiple provider error": {
+			provider: ProviderConfig{
+				Azure: &AzureConfig{},
+				GCP:   &GCPConfig{},
+			},
+			wantErr:          true,
+			expectedErrorTag: "more_than_one_provider",
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+			v := validator.New()
+			trans := ut.New(en.New()).GetFallback()
+
+			conf := Default()
+			conf.Provider = tc.provider
+
+			v.RegisterStructValidation(validateProvider, ProviderConfig{})
+			err := v.StructPartial(tc.provider)
+
+			// Register provider validation error types.
+			// Make sure the tags and expected strings below are in sync with the actual implementation.
+			require.NoError(v.RegisterTranslation("no_provider", trans, registerNoProviderError, translateNoProviderError))
+			require.NoError(v.RegisterTranslation("more_than_one_provider", trans, registerMoreThanOneProviderError, conf.translateMoreThanOneProviderError))
+
+			// Continue if no error is expected.
+			if !tc.wantErr {
+				assert.NoError(err)
+				return
+			}
+
+			// Validate if the error was identified correctly.
+			require.NotNil(err)
+			assert.Error(err)
+			assert.Contains(err.Error(), tc.expectedErrorTag)
+
+			// Check if error translation works correctly.
+			validationErr := err.(validator.ValidationErrors)
+			translatedErr := validationErr.Translate(trans)
+
+			// The translator does not seem to export a list of available translations or for a specific field.
+			// So we need to hardcode expected strings. Needs to be in sync with implementation.
+			switch tc.expectedErrorTag {
+			case "no_provider":
+				assert.Contains(translatedErr["ProviderConfig.Provider"], "No provider has been defined")
+			case "more_than_one_provider":
+				assert.Contains(translatedErr["ProviderConfig.Provider"], "Only one provider can be defined")
+			}
 		})
 	}
 }
