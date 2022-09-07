@@ -23,16 +23,13 @@ import (
 // NewCreateCmd returns a new cobra.Command for the create command.
 func NewCreateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "create {aws|azure|gcp}",
+		Use:   "create",
 		Short: "Create instances on a cloud platform for your Constellation cluster",
 		Long:  "Create instances on a cloud platform for your Constellation cluster.",
 		Args: cobra.MatchAll(
-			cobra.ExactArgs(1),
-			isCloudProvider(0),
-			warnAWS(0),
+			cobra.ExactArgs(0),
 		),
-		ValidArgsFunction: createCompletion,
-		RunE:              runCreate,
+		RunE: runCreate,
 	}
 	cmd.Flags().String("name", "constell", "create the cluster with the specified name")
 	cmd.Flags().BoolP("yes", "y", false, "create the cluster without further confirmation")
@@ -44,15 +41,13 @@ func NewCreateCmd() *cobra.Command {
 }
 
 func runCreate(cmd *cobra.Command, args []string) error {
-	provider := cloudprovider.FromString(args[0])
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	creator := cloudcmd.NewCreator(cmd.OutOrStdout())
 
-	return create(cmd, creator, fileHandler, provider)
+	return create(cmd, creator, fileHandler)
 }
 
-func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, provider cloudprovider.Provider,
-) (retErr error) {
+func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler) (retErr error) {
 	flags, err := parseCreateFlags(cmd)
 	if err != nil {
 		return err
@@ -62,7 +57,7 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 		return err
 	}
 
-	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath, provider)
+	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath)
 	if err != nil {
 		return fmt.Errorf("reading and validating config: %w", err)
 	}
@@ -92,6 +87,7 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 		cmd.Println("")
 	}
 
+	provider := config.GetProvider()
 	var instanceType string
 	switch provider {
 	case cloudprovider.Azure:
@@ -214,17 +210,6 @@ func writeIPtoIDFile(fileHandler file.Handler, state state.ConstellationState) e
 	}
 	idFile := clusterIDsFile{IP: ip}
 	return fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptNone)
-}
-
-// createCompletion handles the completion of the create command. It is frequently called
-// while the user types arguments of the command to suggest completion.
-func createCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	switch len(args) {
-	case 0:
-		return []string{"aws", "gcp", "azure"}, cobra.ShellCompDirectiveNoFileComp
-	default:
-		return []string{}, cobra.ShellCompDirectiveError
-	}
 }
 
 func must(err error) {

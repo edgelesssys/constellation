@@ -18,36 +18,9 @@ import (
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/state"
 	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestCreateArgumentValidation(t *testing.T) {
-	testCases := map[string]struct {
-		args    []string
-		wantErr bool
-	}{
-		"gcp":           {[]string{"gcp"}, false},
-		"azure":         {[]string{"azure"}, false},
-		"aws waring":    {[]string{"aws"}, true},
-		"too many args": {[]string{"gcp", "1", "2"}, true},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			err := NewCreateCmd().ValidateArgs(tc.args)
-
-			if tc.wantErr {
-				assert.Error(err)
-			} else {
-				assert.NoError(err)
-			}
-		})
-	}
-}
 
 func TestCreate(t *testing.T) {
 	testState := state.ConstellationState{Name: "test", LoadBalancerIP: "192.0.2.1"}
@@ -242,7 +215,7 @@ func TestCreate(t *testing.T) {
 
 			fileHandler := file.NewHandler(tc.setupFs(require))
 
-			err := create(cmd, tc.creator, fileHandler, tc.provider)
+			err := create(cmd, tc.creator, fileHandler)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -310,36 +283,6 @@ func TestCheckDirClean(t *testing.T) {
 			} else {
 				assert.NoError(err)
 			}
-		})
-	}
-}
-
-func TestCreateCompletion(t *testing.T) {
-	testCases := map[string]struct {
-		args        []string
-		wantResult  []string
-		wantShellCD cobra.ShellCompDirective
-	}{
-		"first arg": {
-			args:        []string{},
-			wantResult:  []string{"aws", "gcp", "azure"},
-			wantShellCD: cobra.ShellCompDirectiveNoFileComp,
-		},
-		"second arg": {
-			args:        []string{"gcp", "foo"},
-			wantResult:  []string{},
-			wantShellCD: cobra.ShellCompDirectiveError,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			cmd := &cobra.Command{}
-			result, shellCD := createCompletion(cmd, tc.args, "")
-			assert.Equal(tc.wantResult, result)
-			assert.Equal(tc.wantShellCD, shellCD)
 		})
 	}
 }

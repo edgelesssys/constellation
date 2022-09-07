@@ -47,12 +47,11 @@ import (
 // NewInitCmd returns a new cobra.Command for the init command.
 func NewInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "init",
-		Short:             "Initialize the Constellation cluster",
-		Long:              "Initialize the Constellation cluster. Start your confidential Kubernetes.",
-		ValidArgsFunction: initCompletion,
-		Args:              cobra.ExactArgs(0),
-		RunE:              runInitialize,
+		Use:   "init",
+		Short: "Initialize the Constellation cluster",
+		Long:  "Initialize the Constellation cluster. Start your confidential Kubernetes.",
+		Args:  cobra.ExactArgs(0),
+		RunE:  runInitialize,
 	}
 	cmd.Flags().String("master-secret", "", "path to base64-encoded master secret")
 	cmd.Flags().String("endpoint", "", "endpoint of the bootstrapper, passed as HOST[:PORT]")
@@ -92,9 +91,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return fmt.Errorf("loading Constellation state file: %w", err)
 	}
 
-	provider := cloudprovider.FromString(stat.CloudProvider)
-
-	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath, provider)
+	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath)
 	if err != nil {
 		return fmt.Errorf("reading and validating config: %w", err)
 	}
@@ -107,6 +104,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		cmd.Printf("Warning: Constellation with Kubernetes %v is still in preview. Use only for evaluation purposes.\n", k8sVersion)
 	}
 
+	provider := config.GetProvider()
 	checker := license.NewChecker(quotaChecker, fileHandler)
 	if err := checker.CheckLicense(cmd.Context(), provider, config.Provider, cmd.Printf); err != nil {
 		cmd.Printf("License check failed: %v", err)
@@ -412,15 +410,6 @@ func getScalingGroupsFromState(stat state.ConstellationState, config *config.Con
 	default:
 		return cloudtypes.ScalingGroup{}, errors.New("unknown cloud provider")
 	}
-}
-
-// initCompletion handels the completion of CLI arguments. It is frequently called
-// while the user types arguments of the command to suggest completion.
-func initCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	if len(args) != 0 {
-		return []string{}, cobra.ShellCompDirectiveError
-	}
-	return []string{}, cobra.ShellCompDirectiveDefault
 }
 
 type grpcDialer interface {

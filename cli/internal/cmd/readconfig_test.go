@@ -71,13 +71,15 @@ func TestValidateConfig(t *testing.T) {
 			wantOutput: true,
 			wantErr:    true,
 		},
-		"config without provider is ok if no provider required": {
+		"config without provider is not ok": {
 			cnf: func() *config.Config {
 				cnf := config.Default()
 				cnf.Provider = config.ProviderConfig{}
 				return cnf
 			}(),
+			wantErr: true,
 		},
+
 		"config without required provider": {
 			cnf: func() *config.Config {
 				cnf := config.Default()
@@ -96,7 +98,7 @@ func TestValidateConfig(t *testing.T) {
 
 			out := &bytes.Buffer{}
 
-			err := validateConfig(out, tc.cnf, tc.provider)
+			err := validateConfig(out, tc.cnf)
 
 			if tc.wantErr {
 				assert.Error(err)

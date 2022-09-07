@@ -68,8 +68,7 @@ func recover(cmd *cobra.Command, fileHandler file.Handler, recoveryClient recove
 	}
 
 	provider := cloudprovider.FromString(stat.CloudProvider)
-
-	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath, provider)
+	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath)
 	if err != nil {
 		return fmt.Errorf("reading and validating config: %w", err)
 	}
