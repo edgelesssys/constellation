@@ -62,7 +62,13 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 	}
 
 	if !constellationConfig.IsDebugImage() {
-		log.Println("WARN: constellation image does not look like a debug image. Are you using a debug image?")
+		log.Println("WARNING: Constellation image does not look like a debug image. Are you using a debug image?")
+	}
+
+	if !constellationConfig.IsDebugCluster() {
+		log.Println("WARNING: The Constellation config has debugCluster set to false.")
+		log.Println("cdbg will likely not work unless you manually adjust the firewall / load balancing rules.")
+		log.Println("If you create the cluster with a debug image, you should also set debugCluster to true.")
 	}
 
 	ips, err := cmd.Flags().GetStringSlice("ips")
