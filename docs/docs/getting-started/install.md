@@ -130,6 +130,7 @@ Your user account needs the following permissions to set up a Constellation clus
 Your user account needs the following permissions to set up a Constellation:
 
 - `compute.*` (or the subset defined by `roles/compute.instanceAdmin.v1`)
+- `iam.serviceAccountUser`
 
 Follow Google's guide on [understanding](https://cloud.google.com/iam/docs/understanding-roles) and [assigning roles](https://cloud.google.com/iam/docs/granting-changing-revoking-access).
 
