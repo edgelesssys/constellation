@@ -26,40 +26,12 @@ import (
 	"github.com/edgelesssys/constellation/internal/oid"
 	"github.com/edgelesssys/constellation/verify/verifyproto"
 	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	rpcStatus "google.golang.org/grpc/status"
 )
-
-func TestVerifyCmdArgumentValidation(t *testing.T) {
-	testCases := map[string]struct {
-		args    []string
-		wantErr bool
-	}{
-		"no args":          {[]string{}, true},
-		"valid azure":      {[]string{"azure"}, false},
-		"valid gcp":        {[]string{"gcp"}, false},
-		"invalid provider": {[]string{"invalid", "192.0.2.1", "1234"}, true},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			cmd := NewVerifyCmd()
-			err := cmd.ValidateArgs(tc.args)
-
-			if tc.wantErr {
-				assert.Error(err)
-			} else {
-				assert.NoError(err)
-			}
-		})
-	}
-}
 
 func TestVerify(t *testing.T) {
 	zeroBase64 := base64.StdEncoding.EncodeToString([]byte("00000000000000000000000000000000"))
@@ -190,7 +162,7 @@ func TestVerify(t *testing.T) {
 				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, tc.idFile, file.OptNone))
 			}
 
-			err := verify(cmd, tc.provider, fileHandler, tc.protoClient)
+			err := verify(cmd, fileHandler, tc.protoClient)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -199,38 +171,6 @@ func TestVerify(t *testing.T) {
 				assert.Contains(out.String(), "OK")
 				assert.Equal(tc.wantEndpoint, tc.protoClient.endpoint)
 			}
-		})
-	}
-}
-
-func TestVerifyCompletion(t *testing.T) {
-	testCases := map[string]struct {
-		args        []string
-		toComplete  string
-		wantResult  []string
-		wantShellCD cobra.ShellCompDirective
-	}{
-		"first arg": {
-			args:        []string{},
-			toComplete:  "az",
-			wantResult:  []string{"gcp", "azure"},
-			wantShellCD: cobra.ShellCompDirectiveNoFileComp,
-		},
-		"additional arg": {
-			args:        []string{"gcp", "foo"},
-			wantResult:  []string{},
-			wantShellCD: cobra.ShellCompDirectiveError,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			cmd := &cobra.Command{}
-			result, shellCD := verifyCompletion(cmd, tc.args, tc.toComplete)
-			assert.Equal(tc.wantResult, result)
-			assert.Equal(tc.wantShellCD, shellCD)
 		})
 	}
 }

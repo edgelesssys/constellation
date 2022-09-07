@@ -17,7 +17,6 @@ import (
 
 	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/internal/atls"
-	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/file"
@@ -31,15 +30,13 @@ import (
 // NewVerifyCmd returns a new cobra.Command for the verify command.
 func NewVerifyCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "verify {aws|azure|gcp}",
+		Use:   "verify",
 		Short: "Verify the confidential properties of a Constellation cluster",
 		Long: `Verify the confidential properties of a Constellation cluster.
 
 If arguments aren't specified, values are read from ` + "`" + constants.ClusterIDsFileName + "`.",
 		Args: cobra.MatchAll(
-			cobra.ExactArgs(1),
-			isCloudProvider(0),
-			warnAWS(0),
+			cobra.ExactArgs(0),
 		),
 		RunE: runVerify,
 	}
@@ -50,25 +47,23 @@ If arguments aren't specified, values are read from ` + "`" + constants.ClusterI
 }
 
 func runVerify(cmd *cobra.Command, args []string) error {
-	provider := cloudprovider.FromString(args[0])
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	verifyClient := &constellationVerifier{dialer: dialer.New(nil, nil, &net.Dialer{})}
-	return verify(cmd, provider, fileHandler, verifyClient)
+	return verify(cmd, fileHandler, verifyClient)
 }
 
-func verify(
-	cmd *cobra.Command, provider cloudprovider.Provider, fileHandler file.Handler, verifyClient verifyClient,
-) error {
+func verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyClient) error {
 	flags, err := parseVerifyFlags(cmd, fileHandler)
 	if err != nil {
 		return err
 	}
 
-	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath, provider)
+	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath)
 	if err != nil {
 		return fmt.Errorf("reading and validating config: %w", err)
 	}
 
+	provider := config.GetProvider()
 	validators, err := cloudcmd.NewValidator(provider, config)
 	if err != nil {
 		return err
@@ -179,17 +174,6 @@ func addPortIfMissing(endpoint string, defaultPort int) (string, error) {
 	}
 
 	return "", err
-}
-
-// verifyCompletion handles the completion of CLI arguments. It is frequently called
-// while the user types arguments of the command to suggest completion.
-func verifyCompletion(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
-	switch len(args) {
-	case 0:
-		return []string{"gcp", "azure"}, cobra.ShellCompDirectiveNoFileComp
-	default:
-		return []string{}, cobra.ShellCompDirectiveError
-	}
 }
 
 type constellationVerifier struct {

@@ -33,7 +33,6 @@ import (
 	"github.com/edgelesssys/constellation/internal/oid"
 	"github.com/edgelesssys/constellation/internal/state"
 	"github.com/spf13/afero"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -271,45 +270,6 @@ func TestWriteOutput(t *testing.T) {
 	err = json.Unmarshal(idsFile, &testIDFile)
 	assert.NoError(err)
 	assert.Equal(expectedIDFile, testIDFile)
-}
-
-func TestInitCompletion(t *testing.T) {
-	testCases := map[string]struct {
-		args        []string
-		toComplete  string
-		wantResult  []string
-		wantShellCD cobra.ShellCompDirective
-	}{
-		"first arg": {
-			args:        []string{},
-			toComplete:  "hello",
-			wantResult:  []string{},
-			wantShellCD: cobra.ShellCompDirectiveDefault,
-		},
-		"secnod arg": {
-			args:        []string{"23"},
-			toComplete:  "/test/h",
-			wantResult:  []string{},
-			wantShellCD: cobra.ShellCompDirectiveError,
-		},
-		"third arg": {
-			args:        []string{"./file", "sth"},
-			toComplete:  "./file",
-			wantResult:  []string{},
-			wantShellCD: cobra.ShellCompDirectiveError,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			cmd := &cobra.Command{}
-			result, shellCD := initCompletion(cmd, tc.args, tc.toComplete)
-			assert.Equal(tc.wantResult, result)
-			assert.Equal(tc.wantShellCD, shellCD)
-		})
-	}
 }
 
 func TestReadOrGenerateMasterSecret(t *testing.T) {
