@@ -14,6 +14,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
@@ -481,8 +482,29 @@ func k8sCompliantHostname(in string) string {
 }
 
 // StartKubelet starts the kubelet service.
-func (k *KubeWrapper) StartKubelet() error {
-	return k.clusterUtil.StartKubelet()
+func (k *KubeWrapper) StartKubelet(log *logger.Logger) error {
+	if err := k.clusterUtil.StartKubelet(); err != nil {
+		return fmt.Errorf("starting kubelet: %w", err)
+	}
+
+	ip, err := k.getIPAddr()
+	if err != nil {
+		return err
+	}
+	nodeName := ip
+
+	if k.providerMetadata.Supported() {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		self, err := k.providerMetadata.Self(ctx)
+		if err != nil {
+			return err
+		}
+		nodeName = k8sCompliantHostname(self.Name)
+	}
+
+	k.clusterUtil.FixCilium(nodeName, log)
+	return nil
 }
 
 // getIPAddr retrieves to default sender IP used for outgoing connection.

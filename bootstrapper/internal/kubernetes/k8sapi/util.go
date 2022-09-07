@@ -487,13 +487,6 @@ func (k *KubernetesUtil) StartKubelet() error {
 	return startSystemdUnit(ctx, "kubelet.service")
 }
 
-// RestartKubelet restarts a kubelet.
-func (k *KubernetesUtil) RestartKubelet() error {
-	ctx, cancel := context.WithTimeout(context.TODO(), kubeletStartTimeout)
-	defer cancel()
-	return restartSystemdUnit(ctx, "kubelet.service")
-}
-
 // createSignedKubeletCert manually creates a Kubernetes CA signed kubelet certificate for the bootstrapper node.
 // This is necessary because this node does not request a certificate from the join service.
 func (k *KubernetesUtil) createSignedKubeletCert(nodeName string, ips []net.IP) error {

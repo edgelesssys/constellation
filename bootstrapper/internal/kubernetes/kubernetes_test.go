@@ -531,7 +531,6 @@ type stubClusterUtil struct {
 	setupNodeOperatorErr             error
 	joinClusterErr                   error
 	startKubeletErr                  error
-	restartKubeletErr                error
 
 	initConfigs [][]byte
 	joinConfigs [][]byte
@@ -601,10 +600,6 @@ func (s *stubClusterUtil) JoinCluster(ctx context.Context, joinConfig []byte, lo
 
 func (s *stubClusterUtil) StartKubelet() error {
 	return s.startKubeletErr
-}
-
-func (s *stubClusterUtil) RestartKubelet() error {
-	return s.restartKubeletErr
 }
 
 func (s *stubClusterUtil) FixCilium(nodeName string, log *logger.Logger) {
