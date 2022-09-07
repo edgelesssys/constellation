@@ -157,22 +157,9 @@ The following steps will guide you through the process of creating a cluster and
 
 4. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml` automatically.
 
-    <tabs>
-    <tabItem value="azure" label="Azure" default>
-
     ```bash
-    constellation create azure --control-plane-nodes 1 --worker-nodes 2 -y
+    constellation create --control-plane-nodes 1 --worker-nodes 2 -y
     ```
-
-    </tabItem>
-    <tabItem value="gcp" label="GCP">
-
-    ```bash
-    constellation create gcp --control-plane-nodes 1 --worker-nodes 2 -y
-    ```
-
-    </tabItem>
-    </tabs>
 
     This should give the following output:
 
