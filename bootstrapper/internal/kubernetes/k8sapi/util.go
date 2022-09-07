@@ -305,7 +305,7 @@ func (k *KubernetesUtil) deployCiliumGCP(ctx context.Context, helmClient *action
 
 // FixCilium fixes https://github.com/cilium/cilium/issues/19958 but instead of a rollout restart of
 // the cilium daemonset, it only restarts the local cilium pod.
-func (k *KubernetesUtil) FixCilium(nodeNameK8s string, log *logger.Logger) {
+func (k *KubernetesUtil) FixCilium(log *logger.Logger) {
 	// wait for cilium pod to be healthy
 	client := http.Client{}
 	for {

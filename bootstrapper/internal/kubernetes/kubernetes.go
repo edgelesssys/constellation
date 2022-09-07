@@ -14,7 +14,6 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/resources"
@@ -230,7 +229,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("failed to setup k8s version ConfigMap: %w", err)
 	}
 
-	k.clusterUtil.FixCilium(nodeName, log)
+	k.clusterUtil.FixCilium(log)
 
 	return k.GetKubeconfig()
 }
@@ -310,7 +309,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		return fmt.Errorf("joining cluster: %v; %w ", string(joinConfigYAML), err)
 	}
 
-	k.clusterUtil.FixCilium(nodeName, log)
+	k.clusterUtil.FixCilium(log)
 
 	return nil
 }
@@ -487,23 +486,7 @@ func (k *KubeWrapper) StartKubelet(log *logger.Logger) error {
 		return fmt.Errorf("starting kubelet: %w", err)
 	}
 
-	ip, err := k.getIPAddr()
-	if err != nil {
-		return err
-	}
-	nodeName := ip
-
-	if k.providerMetadata.Supported() {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-		self, err := k.providerMetadata.Self(ctx)
-		if err != nil {
-			return err
-		}
-		nodeName = k8sCompliantHostname(self.Name)
-	}
-
-	k.clusterUtil.FixCilium(nodeName, log)
+	k.clusterUtil.FixCilium(log)
 	return nil
 }
 

@@ -602,7 +602,7 @@ func (s *stubClusterUtil) StartKubelet() error {
 	return s.startKubeletErr
 }
 
-func (s *stubClusterUtil) FixCilium(nodeName string, log *logger.Logger) {
+func (s *stubClusterUtil) FixCilium(log *logger.Logger) {
 }
 
 type stubConfigProvider struct {
