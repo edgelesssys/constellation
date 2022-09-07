@@ -22,22 +22,9 @@ Once measurements are configured, this command verifies an attestation statement
 
 The following command performs attestation on the Constellation in your current workspace:
 
-<tabs>
-<tabItem value="azure" label="Azure" default>
-
 ```bash
-constellation verify azure
+constellation verify
 ```
-
-</tabItem>
-<tabItem value="gcp" label="GCP" default>
-
-```bash
-constellation verify gcp
-```
-
-</tabItem>
-</tabs>
 
 The command makes sure the value passed to `-cluster-id` matches the *clusterID* presented in the attestation statement.
 This allows you to verify that you are connecting to a specific Constellation instance
@@ -50,19 +37,6 @@ You can provide additional arguments for `verify` to verify any Constellation yo
 * The IP address of a running Constellation's [VerificationService](../architecture/components.md#verification-service). The *VerificationService* is exposed via a NodePort service using the external IP address of your cluster. Run `kubectl get nodes -o wide` and look for `EXTERNAL-IP`.
 * The Constellation's *clusterID*. See [cluster identity](../architecture/keys.md#cluster-identity) for more details.
 
-<tabs>
-<tabItem value="azure" label="Azure" default>
-
 ```bash
-constellation verify azure -e 192.0.2.1 --cluster-id Q29uc3RlbGxhdGlvbkRvY3VtZW50YXRpb25TZWNyZXQ=
+constellation verify -e 192.0.2.1 --cluster-id Q29uc3RlbGxhdGlvbkRvY3VtZW50YXRpb25TZWNyZXQ=
 ```
-
-</tabItem>
-<tabItem value="gcp" label="GCP" default>
-
-```bash
-constellation verify gcp -e 192.0.2.1 --cluster-id Q29uc3RlbGxhdGlvbkRvY3VtZW50YXRpb25TZWNyZXQ=
-```
-
-</tabItem>
-</tabs>
