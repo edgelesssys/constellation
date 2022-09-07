@@ -13,30 +13,6 @@ import (
 	"github.com/coreos/go-systemd/v22/dbus"
 )
 
-func restartSystemdUnit(ctx context.Context, unit string) error {
-	conn, err := dbus.NewSystemdConnectionContext(ctx)
-	if err != nil {
-		return fmt.Errorf("establishing systemd connection: %w", err)
-	}
-
-	restartChan := make(chan string)
-	if _, err := conn.RestartUnitContext(ctx, unit, "replace", restartChan); err != nil {
-		return fmt.Errorf("restarting systemd unit %q: %w", unit, err)
-	}
-
-	// Wait for the restart to finish and actually check if it was
-	// successful or not.
-	result := <-restartChan
-
-	switch result {
-	case "done":
-		return nil
-
-	default:
-		return fmt.Errorf("restarting systemd unit %q failed: expected %v but received %v", unit, "done", result)
-	}
-}
-
 func startSystemdUnit(ctx context.Context, unit string) error {
 	conn, err := dbus.NewSystemdConnectionContext(ctx)
 	if err != nil {
