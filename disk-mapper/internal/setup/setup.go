@@ -7,14 +7,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 package setup
 
 import (
+	"context"
 	"crypto/rand"
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"syscall"
 
+	"github.com/edgelesssys/constellation/disk-mapper/internal/systemd"
 	"github.com/edgelesssys/constellation/internal/attestation"
 	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/internal/constants"
@@ -22,9 +26,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/nodestate"
-	"github.com/edgelesssys/constellation/state/internal/systemd"
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
 )
 
 const (
@@ -38,56 +40,53 @@ const (
 
 // SetupManager handles formatting, mapping, mounting and unmounting of state disks.
 type SetupManager struct {
-	log       *logger.Logger
-	csp       string
-	diskPath  string
-	fs        afero.Afero
-	keyWaiter KeyWaiter
-	mapper    DeviceMapper
-	mounter   Mounter
-	config    ConfigurationGenerator
-	openTPM   vtpm.TPMOpenFunc
+	log      *logger.Logger
+	csp      string
+	diskPath string
+	fs       afero.Afero
+	mapper   DeviceMapper
+	mounter  Mounter
+	config   ConfigurationGenerator
+	openTPM  vtpm.TPMOpenFunc
 }
 
 // New initializes a SetupManager with the given parameters.
-func New(log *logger.Logger, csp string, diskPath string, fs afero.Afero, keyWaiter KeyWaiter, mapper DeviceMapper, mounter Mounter, openTPM vtpm.TPMOpenFunc) *SetupManager {
+func New(log *logger.Logger, csp string, diskPath string, fs afero.Afero,
+	mapper DeviceMapper, mounter Mounter, openTPM vtpm.TPMOpenFunc,
+) *SetupManager {
 	return &SetupManager{
-		log:       log,
-		csp:       csp,
-		diskPath:  diskPath,
-		fs:        fs,
-		keyWaiter: keyWaiter,
-		mapper:    mapper,
-		mounter:   mounter,
-		config:    systemd.New(fs),
-		openTPM:   openTPM,
+		log:      log,
+		csp:      csp,
+		diskPath: diskPath,
+		fs:       fs,
+		mapper:   mapper,
+		mounter:  mounter,
+		config:   systemd.New(fs),
+		openTPM:  openTPM,
 	}
 }
 
 // PrepareExistingDisk requests and waits for a decryption key to remap the encrypted state disk.
 // Once the disk is mapped, the function taints the node as initialized by updating it's PCRs.
-func (s *SetupManager) PrepareExistingDisk() error {
+func (s *SetupManager) PrepareExistingDisk(recover RecoveryDoer) error {
 	s.log.Infof("Preparing existing state disk")
 	uuid := s.mapper.DiskUUID()
 
 	endpoint := net.JoinHostPort("0.0.0.0", strconv.Itoa(constants.RecoveryPort))
-getKey:
-	passphrase, measurementSecret, err := s.keyWaiter.WaitForDecryptionKey(uuid, endpoint)
+
+	passphrase, measurementSecret, err := recover.Do(uuid, endpoint)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to perform recovery: %w", err)
 	}
 
 	if err := s.mapper.MapDisk(stateDiskMappedName, string(passphrase)); err != nil {
-		// retry key fetching if disk mapping fails
-		s.log.With(zap.Error(err)).Errorf("Failed to map state disk, retrying...")
-		s.keyWaiter.ResetKey()
-		goto getKey
+		return err
 	}
 
 	if err := s.mounter.MkdirAll(stateDiskMountPath, os.ModePerm); err != nil {
 		return err
 	}
-	// we do not care about cleaning up the mount point on error, since any errors returned here should result in a kernel panic in the main function
+	// we do not care about cleaning up the mount point on error, since any errors returned here should cause a boot failure
 	if err := s.mounter.Mount(filepath.Join("/dev/mapper/", stateDiskMappedName), stateDiskMountPath, "ext4", syscall.MS_RDONLY, ""); err != nil {
 		return err
 	}
@@ -159,4 +158,69 @@ func (s *SetupManager) saveConfiguration(passphrase []byte) error {
 
 	// systemd cryptsetup unit
 	return s.config.Generate(stateDiskMappedName, s.diskPath, filepath.Join(keyPath, keyFile), cryptsetupOptions)
+}
+
+type recoveryServer interface {
+	Serve(context.Context, net.Listener, string) (key, secret []byte, err error)
+}
+
+type rejoinClient interface {
+	Start(context.Context, string) (key, secret []byte)
+}
+
+type nodeRecoverer struct {
+	recoveryServer recoveryServer
+	rejoinClient   rejoinClient
+}
+
+// NewNodeRecoverer initializes a new nodeRecoverer.
+func NewNodeRecoverer(recoveryServer recoveryServer, rejoinClient rejoinClient) *nodeRecoverer {
+	return &nodeRecoverer{
+		recoveryServer: recoveryServer,
+		rejoinClient:   rejoinClient,
+	}
+}
+
+// Do performs a recovery procedure on the given state disk.
+// The method starts a gRPC server to allow manual recovery by a user.
+// At the same time it tries to request a decryption key from all available Constellation control-plane nodes.
+func (r *nodeRecoverer) Do(uuid, endpoint string) (passphrase, measurementSecret []byte, err error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	lis, err := net.Listen("tcp", endpoint)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer lis.Close()
+
+	var once sync.Once
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		key, secret, serveErr := r.recoveryServer.Serve(ctx, lis, uuid)
+		once.Do(func() {
+			cancel()
+			passphrase = key
+			measurementSecret = secret
+		})
+		if serveErr != nil && !errors.Is(serveErr, context.Canceled) {
+			err = serveErr
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		key, secret := r.rejoinClient.Start(ctx, uuid)
+		once.Do(func() {
+			cancel()
+			passphrase = key
+			measurementSecret = secret
+		})
+	}()
+
+	wg.Wait()
+	return passphrase, measurementSecret, err
 }

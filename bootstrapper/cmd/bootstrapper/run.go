@@ -50,7 +50,7 @@ func run(issuerWrapper initserver.IssuerWrapper, tpm vtpm.TPMOpenFunc, fileHandl
 	}
 
 	if nodeBootstrapped {
-		if err := kube.StartKubelet(); err != nil {
+		if err := kube.StartKubelet(log); err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to restart kubelet")
 		}
 		return
@@ -88,7 +88,7 @@ func getDiskUUID() (string, error) {
 type clusterInitJoiner interface {
 	joinclient.ClusterJoiner
 	initserver.ClusterInitializer
-	StartKubelet() error
+	StartKubelet(*logger.Logger) error
 }
 
 type metadataAPI interface {

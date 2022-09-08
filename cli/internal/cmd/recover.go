@@ -7,24 +7,26 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
-	"errors"
+	"context"
 	"fmt"
-	"regexp"
-	"strings"
+	"io"
 
 	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/cli/internal/proto"
-	"github.com/edgelesssys/constellation/internal/attestation"
+	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/constants"
-	"github.com/edgelesssys/constellation/internal/crypto"
 	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/state"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
 
-var diskUUIDRegexp = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+type recoveryClient interface {
+	Connect(endpoint string, validators atls.Validator) error
+	Recover(ctx context.Context, masterSecret, salt []byte) error
+	io.Closer
+}
 
 // NewRecoverCmd returns a new cobra.Command for the recover command.
 func NewRecoverCmd() *cobra.Command {
@@ -38,15 +40,13 @@ func NewRecoverCmd() *cobra.Command {
 	}
 	cmd.Flags().StringP("endpoint", "e", "", "endpoint of the instance, passed as HOST[:PORT] (required)")
 	must(cmd.MarkFlagRequired("endpoint"))
-	cmd.Flags().String("disk-uuid", "", "disk UUID of the encrypted state disk (required)")
-	must(cmd.MarkFlagRequired("disk-uuid"))
 	cmd.Flags().String("master-secret", constants.MasterSecretFilename, "path to master secret file")
 	return cmd
 }
 
 func runRecover(cmd *cobra.Command, _ []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	recoveryClient := &proto.KeyClient{}
+	recoveryClient := &proto.RecoverClient{}
 	defer recoveryClient.Close()
 	return recover(cmd, fileHandler, recoveryClient)
 }
@@ -82,17 +82,7 @@ func recover(cmd *cobra.Command, fileHandler file.Handler, recoveryClient recove
 		return err
 	}
 
-	diskKey, err := deriveStateDiskKey(masterSecret.Key, masterSecret.Salt, flags.diskUUID)
-	if err != nil {
-		return err
-	}
-
-	measurementSecret, err := attestation.DeriveMeasurementSecret(masterSecret.Key, masterSecret.Salt)
-	if err != nil {
-		return err
-	}
-
-	if err := recoveryClient.PushStateDiskKey(cmd.Context(), diskKey, measurementSecret); err != nil {
+	if err := recoveryClient.Recover(cmd.Context(), masterSecret.Key, masterSecret.Salt); err != nil {
 		return err
 	}
 
@@ -110,15 +100,6 @@ func parseRecoverFlags(cmd *cobra.Command) (recoverFlags, error) {
 		return recoverFlags{}, fmt.Errorf("validating endpoint argument: %w", err)
 	}
 
-	diskUUID, err := cmd.Flags().GetString("disk-uuid")
-	if err != nil {
-		return recoverFlags{}, fmt.Errorf("parsing disk-uuid argument: %w", err)
-	}
-	if match := diskUUIDRegexp.MatchString(diskUUID); !match {
-		return recoverFlags{}, errors.New("flag '--disk-uuid' isn't a valid LUKS UUID")
-	}
-	diskUUID = strings.ToLower(diskUUID)
-
 	masterSecretPath, err := cmd.Flags().GetString("master-secret")
 	if err != nil {
 		return recoverFlags{}, fmt.Errorf("parsing master-secret path argument: %w", err)
@@ -131,7 +112,6 @@ func parseRecoverFlags(cmd *cobra.Command) (recoverFlags, error) {
 
 	return recoverFlags{
 		endpoint:   endpoint,
-		diskUUID:   diskUUID,
 		secretPath: masterSecretPath,
 		configPath: configPath,
 	}, nil
@@ -139,12 +119,6 @@ func parseRecoverFlags(cmd *cobra.Command) (recoverFlags, error) {
 
 type recoverFlags struct {
 	endpoint   string
-	diskUUID   string
 	secretPath string
 	configPath string
-}
-
-// deriveStateDiskKey derives a state disk key from a master key, a salt, and a disk UUID.
-func deriveStateDiskKey(masterKey, salt []byte, diskUUID string) ([]byte, error) {
-	return crypto.DeriveKey(masterKey, salt, []byte(crypto.HKDFInfoPrefix+diskUUID), crypto.StateDiskKeyLength)
 }
