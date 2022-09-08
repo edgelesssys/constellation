@@ -157,6 +157,12 @@ The following steps will guide you through the process of creating a cluster and
 
 4. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml` automatically.
 
+    :::tip
+
+    On Azure, after creating a user-assigned managed identity and app registration, Azure AD needs time to propagate permissions to different regions due to replication lag. To avoid permission errors, it's recommended to wait at least 15 minutes after role assignments before creating the cluster.
+
+    :::
+
     ```bash
     constellation create --control-plane-nodes 1 --worker-nodes 2 -y
     ```
