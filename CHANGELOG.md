@@ -146,6 +146,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New `constellation-activation-service` offloads Kubernetes node activation from monolithic Coordinator to Kubernetes native micro-service. [[ReadMe]](https://github.com/edgelesssys/constellation/blob/main/activation/README.md)
 - Improve user-friendliness of error messages in Constellation CLI.
 - Move verification from extracting attestation statements out of aTLS handshake to a dedicated `verify-service` in Kubernetes with gRPC and HTTP endpoints.
+- `constellation create` and `constellation verify` do not require specifying the provider anymore (automatically parsed from config)
 
 ### Security
 
