@@ -34,5 +34,6 @@ unspoofable
 updatable
 proxied
 [Ww]alkthrough
+whitepaper
 WireGuard
 Xeon
