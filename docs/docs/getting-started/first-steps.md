@@ -104,7 +104,7 @@ The following steps will guide you through the process of creating a cluster and
 
     ```bash
     SERVICE_ACCOUNT_ID=constell # enter name of service account here
-    PROJECT_ID=$(gcloud config list --format 'value(core.project)') # enter project id here
+    PROJECT_ID= # enter project id here
     SERVICE_ACCOUNT_EMAIL=${SERVICE_ACCOUNT_ID}@${PROJECT_ID}.iam.gserviceaccount.com
     gcloud iam service-accounts create "${SERVICE_ACCOUNT_ID}" --description="Service account used inside Constellation" --display-name="Constellation service account" --project="${PROJECT_ID}"
     gcloud projects add-iam-policy-binding "${PROJECT_ID}" --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" --role='roles/compute.instanceAdmin.v1'
