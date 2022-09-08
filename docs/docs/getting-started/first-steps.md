@@ -55,6 +55,14 @@ The following steps will guide you through the process of creating a cluster and
 
     Fill in the printed out values to your configuration file.
 
+    By default, Constellation uses `Standard_DC4as_v5` CVMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file.
+
+    For CVMs, any VM type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported.
+
+    If you decide to use [trusted launch VMs](../workflows/trusted-launch.md) instead, set **confidentialVM** to false. Afterward, you can use any VMs with a minimum of 4 vCPUs from the [Dav4 & Dasv4](https://docs.microsoft.com/en-us/azure/virtual-machines/dav4-dasv4-series) or [Eav4 & Easv4](https://docs.microsoft.com/en-us/azure/virtual-machines/eav4-easv4-series) families.
+
+    Run `constellation config instance-types` to get the list of all supported options.
+
     </tabItem>
     <tabItem value="azure-portal" label="Azure (Portal)">
 
@@ -72,6 +80,14 @@ The following steps will guide you through the process of creating a cluster and
         * `eastus`
         * `northeurope`
         * `westeurope`
+
+    * **instanceType**: Is the VM type you want to use for your Constellation nodes.
+
+      For CVMs, any type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported. It defaults to `Standard_DC4as_v5` (4 vCPUs, 16 GB RAM).
+
+      If you decide to use [trusted launch VMs](../workflows/trusted-launch.md) instead, set **confidentialVM** to false. Afterward, you can use any VMs with a minimum of 4 vCPUs from the [Dav4 & Dasv4](https://docs.microsoft.com/en-us/azure/virtual-machines/dav4-dasv4-series) or [Eav4 & Easv4](https://docs.microsoft.com/en-us/azure/virtual-machines/eav4-easv4-series) families.
+
+      Run `constellation config instance-types` to get the list of all supported options.
 
     * **resourceGroup**: [Create a new resource group in Azure](https://portal.azure.com/#create/Microsoft.ResourceGroup), to deploy your Constellation cluster into. Afterwards set the configuration field to the name of the created resource group, e.g., `constellation`.
 
@@ -117,6 +133,10 @@ The following steps will guide you through the process of creating a cluster and
     echo "serviceAccountKeyPath: $(realpath gcpServiceAccountKey.json)"
     ```
 
+    Fill in the printed out values to your configuration file.
+
+    By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all machines from the N2D family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
+
     </tabItem>
     <tabItem value="gcp-console" label="GCP (Console)">
 
@@ -131,6 +151,10 @@ The following steps will guide you through the process of creating a cluster and
     * **zone**: Is the GCP zone you want to deploy your cluster in, e.g., `us-west-1a`.
 
         You can find a [list of all zones in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available).
+
+    * **instanceType**: Is the VM type you want to use for your Constellation nodes.
+
+        Supported are all machines from the N2D family. It defaults to `n2d-standard-4` (4 vCPUs, 16 GB RAM), but you can use any other VMs from the same family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
 
     * **serviceAccountKeyPath**: To configure this, you need to create a GCP [service account](https://cloud.google.com/iam/docs/service-accounts) with the following permissions:
 
