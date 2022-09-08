@@ -59,7 +59,7 @@ The following steps will guide you through the process of creating a cluster and
 
     For CVMs, any VM type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported.
 
-    If you decide to use trusted launch VMs instead, set **confidentialVM** to false. Afterward, you can use any VMs with a minimum of 4 vCPUs from the [Dav4 & Dasv4](https://docs.microsoft.com/en-us/azure/virtual-machines/dav4-dasv4-series) or [Eav4 & Easv4](https://docs.microsoft.com/en-us/azure/virtual-machines/eav4-easv4-series) families.
+    If you decide to use [trusted launch VMs](../workflows/trusted-launch.md) instead, set **confidentialVM** to false. Afterward, you can use any VMs with a minimum of 4 vCPUs from the [Dav4 & Dasv4](https://docs.microsoft.com/en-us/azure/virtual-machines/dav4-dasv4-series) or [Eav4 & Easv4](https://docs.microsoft.com/en-us/azure/virtual-machines/eav4-easv4-series) families.
 
     Run `constellation config instance-types` to get the list of all supported options.
 
@@ -85,7 +85,7 @@ The following steps will guide you through the process of creating a cluster and
 
       For CVMs, any type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported. It defaults to `Standard_DC4as_v5` (4 vCPUs, 16 GB RAM).
 
-      If you decide to use trusted launch VMs instead, set **confidentialVM** to false. Afterward, you can use any VMs with a minimum of 4 vCPUs from the [Dav4 & Dasv4](https://docs.microsoft.com/en-us/azure/virtual-machines/dav4-dasv4-series) or [Eav4 & Easv4](https://docs.microsoft.com/en-us/azure/virtual-machines/eav4-easv4-series) families.
+      If you decide to use [trusted launch VMs](../workflows/trusted-launch.md) instead, set **confidentialVM** to false. Afterward, you can use any VMs with a minimum of 4 vCPUs from the [Dav4 & Dasv4](https://docs.microsoft.com/en-us/azure/virtual-machines/dav4-dasv4-series) or [Eav4 & Easv4](https://docs.microsoft.com/en-us/azure/virtual-machines/eav4-easv4-series) families.
 
       Run `constellation config instance-types` to get the list of all supported options.
 
