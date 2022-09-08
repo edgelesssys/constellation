@@ -11,6 +11,8 @@ package license
 import (
 	"context"
 
+	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/file"
 )
@@ -30,7 +32,7 @@ func NewChecker(quotaChecker QuotaChecker, fileHandler file.Handler) *Checker {
 // CheckLicense tries to read the license file and contact license server
 // to fetch quota information.
 // If no license file is found, community license is assumed.
-func (c *Checker) CheckLicense(ctx context.Context, printer func(string, ...any)) error {
+func (c *Checker) CheckLicense(ctx context.Context, provider cloudprovider.Provider, providerCfg config.ProviderConfig, printer func(string, ...any)) error {
 	licenseID, err := FromFile(c.fileHandler, constants.LicenseFilename)
 	if err != nil {
 		printer("Unable to find license file. Assuming community license.\n")
@@ -38,9 +40,19 @@ func (c *Checker) CheckLicense(ctx context.Context, printer func(string, ...any)
 	} else {
 		printer("Constellation license found!\n")
 	}
+	providerStr := provider.String()
+	if provider == cloudprovider.Azure {
+		if *providerCfg.Azure.ConfidentialVM {
+			providerStr = "azure-cvm"
+		} else {
+			providerStr = "azure-tl"
+		}
+	}
+
 	quotaResp, err := c.quotaChecker.QuotaCheck(ctx, QuotaCheckRequest{
-		License: licenseID,
-		Action:  Init,
+		License:  licenseID,
+		Action:   Init,
+		Provider: providerStr,
 	})
 	if err != nil {
 		printer("Unable to contact license server.\n")
