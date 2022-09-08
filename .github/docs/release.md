@@ -3,11 +3,17 @@
 This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers accordingly.
 
 1. Merge ready PRs
-2. On the [CoreOS config repo](https://github.com/edgelesssys/constellation-fedora-coreos-config), create two new branches `release/v1.3`, `stream/v1.3` (new minor version) or use the existing ones (new patch version).
+2. Create docs release (new major or minor release)
+    ```sh
+    cd docs
+    npm run docusaurus docs:version 1.3
+    # push upstream via PR
+    ```
+3. On the [CoreOS config repo](https://github.com/edgelesssys/constellation-fedora-coreos-config), create two new branches `release/v1.3`, `stream/v1.3` (new minor version) or use the existing ones (new patch version).
    The release branch contains the squashed changeset and is branched from main while the stream branch contains the rebased changesets on top of the latest upstream changes.
    [Consult this guide on rebasing forks (INTERNAL)](https://github.com/edgelesssys/wiki/blob/master/documentation/rebasing_forks.md#managing-release-branches) for guidance.
-3. Create a new branch `release/v1.3` (new minor version) or use the existing one (new patch version)
-4. On this branch, prepare the following things:
+4. Create a new branch `release/v1.3` (new minor version) or use the existing one (new patch version)
+5. On this branch, prepare the following things:
     1. (new patch version) `cherry-pick` (only) the required commits from `main`
     2. Use [Build micro-service manual](https://github.com/edgelesssys/constellation/actions/workflows/build-micro-service-manual.yml) and run the pipeline once for each micro-service with the following parameters:
         * branch: `release/v1.3`
@@ -46,5 +52,5 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         gh workflow run release-cli.yml --ref v1.3.0
         ```
         * The previous step will create a draft release. Check build output for link to draft release. Review & approve.
-5. Folow [export flow](https://github.com/edgelesssys/wiki/blob/master/documentation/constellation/customer-onboarding.md#manual-export-and-import) to make image available in S3 for trusted lanuch users.
-6. To bring updated version numbers and other changes (if any) to main, create a new branch `feat/release` from `release/v1.3`, rebase it onto main, and create a PR to main
+6. Folow [export flow](https://github.com/edgelesssys/wiki/blob/master/documentation/constellation/customer-onboarding.md#manual-export-and-import) to make image available in S3 for trusted lanuch users.
+7. To bring updated version numbers and other changes (if any) to main, create a new branch `feat/release` from `release/v1.3`, rebase it onto main, and create a PR to main
