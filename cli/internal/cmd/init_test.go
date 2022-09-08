@@ -517,6 +517,7 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 		conf.Provider.Azure.ResourceGroup = "test-resource-group"
 		conf.Provider.Azure.AppClientID = "test-client-secret-id"
 		conf.Provider.Azure.ClientSecretValue = "test-client-secret"
+		conf.Provider.Azure.Measurements[4] = []byte("44444444444444444444444444444444")
 		conf.Provider.Azure.Measurements[8] = []byte("00000000000000000000000000000000")
 		conf.Provider.Azure.Measurements[9] = []byte("11111111111111111111111111111111")
 	case cloudprovider.GCP:
@@ -524,6 +525,7 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 		conf.Provider.GCP.Project = "test-project"
 		conf.Provider.GCP.Image = "some/image/location"
 		conf.Provider.GCP.Zone = "test-zone"
+		conf.Provider.GCP.Measurements[4] = []byte("44444444444444444444444444444444")
 		conf.Provider.GCP.Measurements[8] = []byte("00000000000000000000000000000000")
 		conf.Provider.GCP.Measurements[9] = []byte("11111111111111111111111111111111")
 	case cloudprovider.QEMU:

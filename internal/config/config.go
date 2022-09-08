@@ -209,7 +209,7 @@ func Default() *Config {
 				InstanceType:         "Standard_DC4as_v5",
 				StateDiskType:        "Premium_LRS",
 				Measurements:         copyPCRMap(azurePCRs),
-				EnforcedMeasurements: []uint32{8, 9, 11, 12},
+				EnforcedMeasurements: []uint32{4, 8, 9, 11, 12},
 				IdKeyDigest:          "57486a447ec0f1958002a22a06b7673b9fd27d11e1c6527498056054c5fa92d23c50f9de44072760fe2b6fb89740b696",
 				EnforceIdKeyDigest:   func() *bool { b := true; return &b }(),
 				ConfidentialVM:       func() *bool { b := true; return &b }(),
@@ -223,7 +223,7 @@ func Default() *Config {
 				StateDiskType:         "pd-ssd",
 				ServiceAccountKeyPath: "",
 				Measurements:          copyPCRMap(gcpPCRs),
-				EnforcedMeasurements:  []uint32{0, 8, 9, 11, 12},
+				EnforcedMeasurements:  []uint32{0, 4, 8, 9, 11, 12},
 			},
 			QEMU: &QEMUConfig{
 				Measurements:         copyPCRMap(qemuPCRs),
