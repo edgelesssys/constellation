@@ -25,7 +25,7 @@ You can find the currently supported machine types for your cloud environment in
 
 Constellation can generate a configuration file for your cloud provider:
 
-<tabs>
+<tabs groupId="csp">
 <tabItem value="azure" label="Azure" default>
 
 ```bash
