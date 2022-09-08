@@ -55,6 +55,14 @@ The following steps will guide you through the process of creating a cluster and
 
     Fill in the printed out values to your configuration file.
 
+    By default, Constellation uses `Standard_DC4as_v5` CVMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file.
+
+    For CVMs, any VM type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported.
+
+    If you decide to use trusted launch VMs instead, set **confidentialVM** to false. Afterward, you can use any VMs with a minimum of 4 vCPUs from the [Dav4 & Dasv4](https://docs.microsoft.com/en-us/azure/virtual-machines/dav4-dasv4-series) or [Eav4 & Easv4](https://docs.microsoft.com/en-us/azure/virtual-machines/eav4-easv4-series) families.
+
+    Run `constellation config instance-types` to get the list of all supported options.
+
     </tabItem>
     <tabItem value="azure-portal" label="Azure (Portal)">
 
@@ -124,6 +132,10 @@ The following steps will guide you through the process of creating a cluster and
     echo "project: ${PROJECT_ID}"
     echo "serviceAccountKeyPath: $(realpath gcpServiceAccountKey.json)"
     ```
+
+    Fill in the printed out values to your configuration file.
+
+    By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all machines from the N2D family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
 
     </tabItem>
     <tabItem value="gcp-console" label="GCP (Console)">
