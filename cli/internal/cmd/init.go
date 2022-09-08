@@ -108,7 +108,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 	}
 
 	checker := license.NewChecker(quotaChecker, fileHandler)
-	if err := checker.CheckLicense(cmd.Context(), provider, cmd.Printf); err != nil {
+	if err := checker.CheckLicense(cmd.Context(), provider, config.Provider, cmd.Printf); err != nil {
 		cmd.Printf("License check failed: %v", err)
 	}
 
