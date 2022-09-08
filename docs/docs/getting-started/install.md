@@ -62,7 +62,7 @@ Don't use the testing methods for setting up a production-grade Constellation cl
 
 :::
 
-<tabs>
+<tabs groupId="csp">
 <tabItem value="azure" label="Azure" default>
 
 **Testing**
@@ -116,7 +116,7 @@ For production clusters, use one of the following options on a trusted machine:
 
 ### Authorization
 
-<tabs>
+<tabs groupId="csp">
 <tabItem value="azure" label="Azure" default>
 
 Your user account needs the following permissions to set up a Constellation cluster:

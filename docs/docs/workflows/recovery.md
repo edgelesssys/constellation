@@ -28,7 +28,7 @@ Constellation provides logging information on the boot process and status via [c
 In the following, you'll find detailed descriptions for identifying clusters stuck in recovery for each cloud environment.
 Once you've identified that your cluster is in an unhealthy state you can use the [recovery](recovery.md#recover-your-cluster) command of the Constellation CLI to restore it.
 
-<tabs>
+<tabs groupId="csp">
 <tabItem value="azure" label="Azure" default>
 
 In the Azure cloud portal find the cluster's resource group `<cluster-name>-<suffix>`

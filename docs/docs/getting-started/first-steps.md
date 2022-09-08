@@ -6,7 +6,7 @@ The following steps will guide you through the process of creating a cluster and
 
 1. Create the configuration file for your selected cloud provider.
 
-    <tabs>
+    <tabs groupId="csp">
     <tabItem value="azure" label="Azure" default>
 
     ```bash
@@ -27,8 +27,8 @@ The following steps will guide you through the process of creating a cluster and
 
 2.  Fill in your cloud provider specific information:
 
-    <tabs>
-    <tabItem value="azure-cli" label="Azure (CLI)" default>
+    <tabs groupId="csp">
+    <tabItem value="azure" label="Azure (CLI)" default>
 
     For a quick start it's recommended to use our `az` script to automatically create all required resources:
 
@@ -114,7 +114,7 @@ The following steps will guide you through the process of creating a cluster and
         Set the configuration value to the secret value.
 
     </tabItem>
-    <tabItem value="gcp-cli" label="GCP (CLI)">
+    <tabItem value="gcp" label="GCP (CLI)">
 
     For a quick start it's recommended to use our `gcloud` script to automatically create all required resources:
 
