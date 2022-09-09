@@ -15,15 +15,6 @@ jobs:
     steps:
       - name: Checkout Constellation
         uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
-        with:
-          path: constellation
-
-      - name: Checkout docs
-        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
-        with:
-          repository: edgelesssys/constellation-docs
-          token: ${{ secrets.CI_GITHUB_REPOSITORY }}
-          path: docs
 
       - name: Set up Go
         uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
@@ -32,10 +23,10 @@ jobs:
 
       - name: Generate reference docs
         run: |
-          cd constellation/hack/clidocgen
+          cd hack/clidocgen
           go build .
           ./clidocgen > content.md
-          cat header.md content.md > ../../../cli.md
+          cat header.md content.md > ../../cli.md
 
       - name: Get commit sha
         run: |
@@ -43,7 +34,7 @@ jobs:
 
       - name: Check if action branch exists
         run: |
-          ex=$(git --git-dir=./docs/.git ls-remote --heads origin action/constellation/update-cli-reference)
+          ex=$(git ls-remote --heads origin action/constellation/update-cli-reference)
           echo "EXISTS=$(if [ -z "$ex" ]; then echo 0; else echo 1; fi)" >> $GITHUB_ENV
 
       - name: Publish new reference (create new branch)
