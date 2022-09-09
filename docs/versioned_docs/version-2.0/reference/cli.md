@@ -12,16 +12,17 @@ constellation [command]
 Commands:
 
 * [config](#constellation-config): Work with the Constellation configuration file
-* [generate](#constellation-generate): Generate a default configuration file
-* [fetch-measurements](#constellation-fetch-measurements): Fetch measurements for configured cloud provider and image
+  * [generate](#constellation-config-generate): Generate a default configuration file
+  * [fetch-measurements](#constellation-config-fetch-measurements): Fetch measurements for configured cloud provider and image
+  * [instance-types](#constellation-config-instance-types): Prints the supported instance types for all cloud providers
 * [create](#constellation-create): Create instances on a cloud platform for your Constellation cluster
 * [init](#constellation-init): Initialize the Constellation cluster
 * [verify](#constellation-verify): Verify the confidential properties of a Constellation cluster
 * [recover](#constellation-recover): Recover a completely stopped Constellation cluster
 * [terminate](#constellation-terminate): Terminate a Constellation cluster
 * [upgrade](#constellation-upgrade): Plan and perform an upgrade of a Constellation cluster
-* [execute](#constellation-execute): Execute an upgrade of a Constellation cluster
-* [plan](#constellation-plan): Plan an upgrade of a Constellation cluster
+  * [execute](#constellation-upgrade-execute): Execute an upgrade of a Constellation cluster
+  * [plan](#constellation-upgrade-plan): Plan an upgrade of a Constellation cluster
 * [version](#constellation-version): Display version of this CLI
 
 ## constellation config
@@ -95,6 +96,30 @@ constellation config fetch-measurements [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
 ```
 
+## constellation config instance-types
+
+Prints the supported instance types for all cloud providers
+
+### Synopsis
+
+Prints the supported instance types for all cloud providers.
+
+```
+constellation config instance-types [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for instance-types
+```
+
+### Options inherited from parent commands
+
+```
+      --config string   path to the configuration file (default "constellation-conf.yaml")
+```
+
 ## constellation create
 
 Create instances on a cloud platform for your Constellation cluster
@@ -104,7 +129,7 @@ Create instances on a cloud platform for your Constellation cluster
 Create instances on a cloud platform for your Constellation cluster.
 
 ```
-constellation create {aws|azure|gcp} [flags]
+constellation create [flags]
 ```
 
 ### Options
@@ -112,7 +137,6 @@ constellation create {aws|azure|gcp} [flags]
 ```
   -c, --control-plane-nodes int   number of control-plane nodes (required)
   -h, --help                      help for create
-  -t, --instance-type string      instance type of cluster nodes
       --name string               create the cluster with the specified name (default "constell")
   -w, --worker-nodes int          number of worker nodes (required)
   -y, --yes                       create the cluster without further confirmation
@@ -162,7 +186,7 @@ Verify the confidential properties of a Constellation cluster.
 If arguments aren't specified, values are read from `constellation-id.json`.
 
 ```
-constellation verify {aws|azure|gcp} [flags]
+constellation verify [flags]
 ```
 
 ### Options
@@ -196,7 +220,6 @@ constellation recover [flags]
 ### Options
 
 ```
-      --disk-uuid string       disk UUID of the encrypted state disk (required)
   -e, --endpoint string        endpoint of the instance, passed as HOST[:PORT] (required)
   -h, --help                   help for recover
       --master-secret string   path to master secret file (default "constellation-mastersecret.json")

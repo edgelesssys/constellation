@@ -8,7 +8,7 @@ Constellation provides all features of a Kubernetes cluster including scaling an
 
 Alternatively, you can choose to manually scale your cluster:
 
-<tabs>
+<tabs groupId="csp">
 <tabItem value="azure" label="Azure" default>
 
 1. Find your Constellation resource group.
@@ -34,7 +34,7 @@ Control-plane nodes can **only be scaled manually and only scaled up**!
 
 To increase the number of control-plane nodes, follow these steps:
 
-<tabs>
+<tabs groupId="csp">
 
 <tabItem value="azure" label="Azure" default>
 
