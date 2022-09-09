@@ -129,7 +129,7 @@ Create instances on a cloud platform for your Constellation cluster
 Create instances on a cloud platform for your Constellation cluster.
 
 ```
-constellation create {aws|azure|gcp} [flags]
+constellation create [flags]
 ```
 
 ### Options
@@ -186,7 +186,7 @@ Verify the confidential properties of a Constellation cluster.
 If arguments aren't specified, values are read from `constellation-id.json`.
 
 ```
-constellation verify {aws|azure|gcp} [flags]
+constellation verify [flags]
 ```
 
 ### Options
@@ -220,7 +220,6 @@ constellation recover [flags]
 ### Options
 
 ```
-      --disk-uuid string       disk UUID of the encrypted state disk (required)
   -e, --endpoint string        endpoint of the instance, passed as HOST[:PORT] (required)
   -h, --help                   help for recover
       --master-secret string   path to master secret file (default "constellation-mastersecret.json")
