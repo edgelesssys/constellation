@@ -14,9 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # pin@v3
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
       - name: Vale
-        uses: errata-ai/vale-action@c4213d4de3d5f718b8497bd86161531c78992084 # pin@v2
+        uses: errata-ai/vale-action@c4213d4de3d5f718b8497bd86161531c78992084
         with:
           files: docs/docs
         env:
