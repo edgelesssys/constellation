@@ -1,3 +1,7 @@
+---
+slug: /
+id: intro
+---
 # Introduction
 
 Welcome to the documentation of Constellation! Constellation is a Kubernetes engine that aims to provide the best possible data security. 
