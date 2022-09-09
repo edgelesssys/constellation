@@ -4,7 +4,8 @@ on:
     branches:
       - main
     paths:
-      - "docs/docs/reference/cli.md"
+      - "cli/cmd/**"
+      - "cli/internal/cmd/**"
   workflow_dispatch:
 
 jobs:
@@ -51,13 +52,13 @@ jobs:
         env:
           API_TOKEN_GITHUB: ${{ secrets.CI_GITHUB_REPOSITORY }}
         with:
-          source_file: 'cli.md'
-          destination_repo: 'edgelesssys/constellation'
-          destination_branch_create: 'action/constellation/update-cli-reference'
-          destination_folder: 'docs/docs/reference'
-          user_name: '${{ github.actor }}'
-          user_email: '${{ github.actor }}@users.noreply.github.com'
-          commit_message: 'CLI reference was updated by edgelesssys/constellation@${{ env.COMMIT_END}}'
+          source_file: "cli.md"
+          destination_repo: "edgelesssys/constellation"
+          destination_branch_create: "action/constellation/update-cli-reference"
+          destination_folder: "docs/docs/reference"
+          user_name: "${{ github.actor }}"
+          user_email: "${{ github.actor }}@users.noreply.github.com"
+          commit_message: "CLI reference was updated by edgelesssys/constellation@${{ env.COMMIT_END}}"
 
       - name: Publish new reference (update branch)
         if: ${{ env.EXISTS == 1 }}
@@ -65,10 +66,10 @@ jobs:
         env:
           API_TOKEN_GITHUB: ${{ secrets.CI_GITHUB_REPOSITORY }}
         with:
-          source_file: 'cli.md'
-          destination_repo: 'edgelesssys/constellation'
-          destination_branch: 'action/constellation/update-cli-reference'
-          destination_folder: 'docs/docs/reference'
-          user_name: '${{ github.actor }}'
-          user_email: '${{ github.actor }}@users.noreply.github.com'
-          commit_message: 'CLI reference was updated by edgelesssys/constellation@${{ env.COMMIT_END}}'
+          source_file: "cli.md"
+          destination_repo: "edgelesssys/constellation"
+          destination_branch: "action/constellation/update-cli-reference"
+          destination_folder: "docs/docs/reference"
+          user_name: "${{ github.actor }}"
+          user_email: "${{ github.actor }}@users.noreply.github.com"
+          commit_message: "CLI reference was updated by edgelesssys/constellation@${{ env.COMMIT_END}}"
