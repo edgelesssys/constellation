@@ -124,7 +124,7 @@ Constellation allows to specify in the [config](../reference/config.md) which me
 Enforcing non-reproducible measurements controlled by the cloud provider means that changes in these values require manual updates to the cluster's config.
 By default, Constellation only enforces measurements that are stable values produced by the infrastructure or by Constellation directly.
 
-<tabs>
+<tabs groupId="csp">
 <tabItem value="azure" label="Azure" default>
 
 Constellation leverages the [vTPM](https://docs.microsoft.com/en-us/azure/virtual-machines/trusted-launch#vtpm) feature of Azure CVMs for runtime measurements.
@@ -147,7 +147,7 @@ The latter means that value can be generated offline and compared to the one in 
 | 7             |    Secure Boot State                | Azure, Constellation Bootloader | No                          |
 | 8             |    Kernel command line, GRUB config | Constellation Bootloader        | Yes                         |
 | 9             |    Kernel, initramfs                | Constellation Bootloader        | Yes                         |
-| 10            |    Reserved                         | -                               | Yes                         |
+| 10            |    Reserved                         | -                               | No                          |
 | 11            |    Reserved                         | Constellation Bootstrapper      | Yes                         |
 | 12            |    ClusterID                        | Constellation Bootstrapper      | Yes                         |
 | 13&ndash;23   |    Unused                           | -                               | -                           |
@@ -177,7 +177,7 @@ The latter means that value can be generated offline and compared to the one in 
 | 7             | GCP Secure Boot Policy           | GCP, Constellation Bootloader | No                          |
 | 8             | Kernel command line, GRUB config | Constellation Bootloader      | Yes                         |
 | 9             | Kernel, initramfs                | Constellation Bootloader      | Yes                         |
-| 10            | Reserved                         | Constellation Bootstrapper    | Yes                         |
+| 10            | Reserved                         | -                             | No                          |
 | 11            | Reserved                         | Constellation Bootstrapper    | Yes                         |
 | 12            | ClusterID                        | Constellation Bootstrapper    | Yes                         |
 | 13&ndash;23   | Unused                           |-                              | -                           |
@@ -233,5 +233,5 @@ flowchart LR
   B[CLI]-- "contains" -->D["Public Key"]
   A[Edgeless]-- "signs" -->E["Runtime measurements"]
   D["Public Key"]-- "verifies" -->E["Runtime measurements"]
-  E["Runtime measurements"]-- "verify" -->F["Constellation cluster"] 
+  E["Runtime measurements"]-- "verify" -->F["Constellation cluster"]
 ```

@@ -2,12 +2,12 @@
   "docs": [
     {
       "type": "doc",
-      "label": "Welcome to Constellation",
+      "label": "Introduction",
       "id": "intro"
     },
     {
       "type": "category",
-      "label": "Overview",
+      "label": "Basics",
       "link": {
         "type": "generated-index"
       },
@@ -29,8 +29,13 @@
         },
         {
           "type": "doc",
+          "label": "Feature status of clouds",
+          "id": "overview/clouds"
+        },
+        {
+          "type": "doc",
           "label": "Performance",
-          "id": "overview/benchmarks"
+          "id": "overview/performance"
         },
         {
           "type": "doc",
@@ -114,6 +119,11 @@
           "type": "doc",
           "label": "Use persistent storage",
           "id": "workflows/storage"
+        },
+        {
+          "type": "doc",
+          "label": "Azure trusted launch VMs",
+          "id": "workflows/trusted-launch"
         },
         {
           "type": "doc",

@@ -8,7 +8,7 @@ To provide information during early stages of the node's boot process, Constella
 
 You can view these information in the follow places:
 
-<tabs>
+<tabs groupId="csp">
 <tabItem value="azure" label="Azure" default>
 
 1. In your Azure subscription find the Constellation resource group.
