@@ -2,18 +2,18 @@ name: Create Pull Request for CLI reference update
 on:
   push:
     branches:
-    - action/constellation/update-cli-reference
+      - action/constellation/update-cli-reference
 
 jobs:
   pull-request:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: pull-request
-      uses: repo-sync/pull-request@v2
-      with:
-        destination_branch: "main"
-        pr_title: "Update CLI reference"
-        pr_body: |
-          :robot: *This is an automated PR.* :robot:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # pin@v3
+      - name: pull-request
+        uses: repo-sync/pull-request@65785d95a5a466e46a9d0708933a3bd51bbf9dde # pin@v2
+        with:
+          destination_branch: "main"
+          pr_title: "Update CLI reference"
+          pr_body: |
+            :robot: *This is an automated PR.* :robot:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
