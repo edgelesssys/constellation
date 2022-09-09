@@ -44,6 +44,6 @@ Implements interaction with the Kubernetes API to create join tokens for new nod
 ## [Dockerfile](./Dockerfile)
 
 ```shell
-export VERSION=1.0.0
+export VERSION=0.0.0
 DOCKER_BUILDKIT=1 docker build --build-arg PROJECT_VERSION=${VERSION} -t ghcr.io/edgelesssys/constellation/join-service:v${VERSION} -f joinservice/Dockerfile .
 ```

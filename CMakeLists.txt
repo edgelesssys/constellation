@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.11)
-project(constellation LANGUAGES C VERSION 0.1.0)
-
-set(CLI_VERSION "v0.1.0" CACHE STRING "Version of CLI binary.")
-set(CLI_BUILD_TAGS "gcp" CACHE STRING "Tags passed to go build of Constellation CLI.")
+project(constellation LANGUAGES C VERSION 2.0.0)
+set(CLI_BUILD_TAGS "" CACHE STRING "Tags passed to go build of Constellation CLI.")
 
 enable_testing()
 
@@ -10,7 +8,7 @@ enable_testing()
 # core-os disk-mapper
 #
 add_custom_target(disk-mapper ALL
-  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} -f Dockerfile.build --target disk-mapper .
+  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION=${PROJECT_VERSION} -f Dockerfile.build --target disk-mapper .
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   BYPRODUCTS disk-mapper
 )
@@ -18,20 +16,17 @@ add_custom_target(disk-mapper ALL
 #
 # bootstrapper
 #
-
 add_custom_target(bootstrapper ALL
   DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION=${PROJECT_VERSION} -f Dockerfile.build --target bootstrapper .
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   BYPRODUCTS bootstrapper
 )
 
-
 #
 # cli
 #
-
 add_custom_target(cli ALL
-  CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/constellation -tags='${CLI_BUILD_TAGS}' -ldflags "-buildid='' -X github.com/edgelesssys/constellation/internal/constants.VersionInfo=${CLI_VERSION}"
+  CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/constellation -tags='${CLI_BUILD_TAGS}' -ldflags "-buildid='' -X github.com/edgelesssys/constellation/internal/constants.VersionInfo=${PROJECT_VERSION}"
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/cli
   BYPRODUCTS constellation
 )
@@ -39,7 +34,6 @@ add_custom_target(cli ALL
 #
 # testing / debugging
 #
-
 add_custom_target(debug_bootstrapper
   go build -o ${CMAKE_BINARY_DIR}/debug_bootstrapper -buildvcs=false -ldflags "-buildid='' -X main.version=${PROJECT_VERSION}"
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/bootstrapper/cmd/bootstrapper
@@ -49,7 +43,6 @@ add_custom_target(debug_bootstrapper
 #
 # debugd
 #
-
 add_custom_target(debugd ALL
   CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/debugd -buildvcs=false -ldflags "-buildid=''"
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/debugd/cmd/debugd
@@ -59,7 +52,6 @@ add_custom_target(debugd ALL
 #
 # cdbg
 #
-
 add_custom_target(cdbg ALL
   CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/cdbg -buildvcs=false -ldflags "-buildid=''"
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/debugd/cmd/cdbg
