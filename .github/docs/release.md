@@ -34,18 +34,19 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         gh workflow run build-operator-manual.yml --ref release/v1.3 -F imageTag=v1.3.0
         ```
     4. Review and update changelog with all changes since last release. [GitHub's diff view](https://github.com/edgelesssys/constellation/compare/v1.2.0...main) helps a lot!
-    5. Update versions [versions.go](../../internal/versions/versions.go#L33-L39) to `v1.3.0` and **push your changes**.
-    6. Create a [production coreOS image](/.github/workflows/build-coreos.yml)
+    5. Update project version in [CMakeLists.txt](/CMakeLists.txt) to `1.3.0` (without v).
+    6. Update versions [versions.go](../../internal/versions/versions.go#L33-L39) to `v1.3.0` and **push your changes**.
+    7. Create a [production coreOS image](/.github/workflows/build-coreos.yml)
         ```sh
         gh workflow run build-coreos.yml --ref release/v1.3 -F debug=false -F coreOSConfigBranch=release/v1.3
         ```
-    7. Update [default images in config](/internal/config/images_enterprise.go)
-    8. Run E2E tests to confirm stability and [generate measurements](/.github/workflows/e2e-test-manual.yml)
+    8. Update [default images in config](/internal/config/images_enterprise.go)
+    9. Run E2E tests to confirm stability and [generate measurements](/.github/workflows/e2e-test-manual.yml)
         ```sh
         gh workflow run e2e-test-manual.yml --ref release/v1.3 -F workerNodesCount=2 -F controlNodesCount=1 -F autoscale=false -F cloudProvider=azure -F machineType=Standard_DC4as_v5 -F sonobuoyTestSuiteCmd="--mode quick" -F kubernetesVersion=1.23 -F coreosImage=/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/1.3.0 -F isDebugImage=false
         gh workflow run e2e-test-manual.yml --ref release/v1.3 -F workerNodesCount=2 -F controlNodesCount=1 -F autoscale=false -F cloudProvider=gcp -F machineType=n2d-standard-4 -F sonobuoyTestSuiteCmd="--mode quick" -F kubernetesVersion=1.23 -F coreosImage=projects/constellation-images/global/images/constellation-v1-3-0 -F isDebugImage=false
         ```
-    9. Create a new tag on this release branch
+    10. Create a new tag on this release branch
         * `git tag v1.3.0`
         * Run [Release CLI](https://github.com/edgelesssys/constellation/actions/workflows/release-cli.yml) action on the tag
         ```sh
