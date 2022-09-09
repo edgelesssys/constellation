@@ -2,7 +2,7 @@
 
 Welcome to the documentation of Constellation! Constellation is a Kubernetes engine that aims to provide the best possible data security. 
 
-![Constellation concept](../static/img/concept.svg)
+![Constellation concept](/img/concept.svg)
 
  Constellation shields your entire Kubernetes cluster from the underlying cloud infrastructure. Everything inside is always encrypted, including at runtime in memory. For this, Constellation leverages a technology called *confidential computing* and more specifically Confidential VMs.
 
