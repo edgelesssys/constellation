@@ -164,7 +164,7 @@ runs:
 
     - name: Wait for nodes to join and become ready
       run: |
-        echo "::group::wait for nodes"
+        echo "::group::Wait for nodes"
         NODES_COUNT=$((${{ inputs.controlNodesCount }} + ${{ inputs.workerNodesCount }}))
         JOINWAIT=0
         until [ "$(kubectl get nodes -o json | jq '.items | length')" == "${NODES_COUNT}" ] || [ $JOINWAIT -gt $JOINTIMEOUT ];
