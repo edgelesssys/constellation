@@ -54,7 +54,7 @@ The following installation guide gives a brief overview of using CSI-based confi
 1. Install the CSI driver:
 
   ```bash
-  helm install azuredisk-csi-driver charts/edgeless/latest/azuredisk-csi-driver.tgz \
+  helm install azuredisk-csi-driver https://raw.githubusercontent.com/edgelesssys/constellation-azuredisk-csi-driver/main/charts/edgeless/latest/azuredisk-csi-driver.tgz \
       --namespace kube-system \
       --set linux.distro=fedora \
       --set controller.replicas=1
@@ -94,9 +94,7 @@ By default, integrity protection is disabled for performance reasons. If you wan
 1. Install the CSI driver:
 
    ```bash
-   git clone https://github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver.git
-   cd constellation-gcp-compute-persistent-disk-csi-driver
-   kubectl apply -k ./deploy/kubernetes/overlays/edgeless/latest
+   kubectl apply -k github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver/deploy/kubernetes/overlays/edgeless/latest
    ```
 
 2. Create a [storage class](https://kubernetes.io/docs/concepts/storage/storage-classes/) for your driver
