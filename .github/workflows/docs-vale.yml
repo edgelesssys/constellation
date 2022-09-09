@@ -13,14 +13,13 @@ jobs:
   prose:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@master
-
-    - name: Vale
-      uses: errata-ai/vale-action@v1
-      with:
-        files: docs/docs
-      env:
-        # Required, set by GitHub actions automatically:
-        # https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      - name: Checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+      - name: Vale
+        uses: errata-ai/vale-action@c4213d4de3d5f718b8497bd86161531c78992084
+        with:
+          files: docs/docs
+        env:
+          # Required, set by GitHub actions automatically:
+          # https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
