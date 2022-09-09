@@ -22,11 +22,8 @@ jobs:
           go-version: 1.18
 
       - name: Generate reference docs
-        run: |
-          cd hack/clidocgen
-          go build .
-          ./clidocgen > content.md
-          cat header.md content.md > ../../cli.md
+        run: go run . | cat header.md - > ../../cli.md
+        working-directory: hack/clidocgen
 
       - name: Get commit sha
         run: |
