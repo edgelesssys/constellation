@@ -117,4 +117,4 @@ The Constellation source code is licensed under the [GNU Affero General Public L
 [security-benefits]: https://docs.edgeless.systems/constellation/overview/security-benefits
 [twitter]: https://twitter.com/EdgelessSystems
 [whitepaper]: https://content.edgeless.systems/hubfs/Confidential%20Computing%20Whitepaper.pdf
-[performance]: https://docs.edgeless.systems/constellation/overview/benchmarks
+[performance]: https://docs.edgeless.systems/constellation/overview/performance

@@ -2,7 +2,7 @@ vendor: Edgeless Systems
 name: Constellation
 version: v1.0.0
 website_url: https://www.edgeless.systems/products/constellation/
-documentation_url: https://docs.edgeless.systems/constellation/latest
-product_logo_url: https://docs.edgeless.systems/constellation/_assets/constellation_white_bg.svg
+documentation_url: https://docs.edgeless.systems/constellation
+product_logo_url: https://docs.edgeless.systems/constellation/img/logos/constellation_white_bg.svg
 type: distribution
 description: Constellation creates a confidential Kubernetes cluster.
