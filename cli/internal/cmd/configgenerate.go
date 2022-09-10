@@ -70,7 +70,7 @@ func configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloud
 	cmd.Println("Config file written to", flags.file)
 	cmd.Println("Please fill in your CSP-specific configuration before proceeding.")
 	cmd.Println("Fore more information refer to the documentation:")
-	cmd.Println("\thttps://constellation-docs.edgeless.systems/constellation/getting-started/first-steps#create-a-cluster")
+	cmd.Println("\thttps://docs.edgeless.systems/constellation/getting-started/first-steps")
 
 	return nil
 }

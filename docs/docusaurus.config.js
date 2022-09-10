@@ -64,9 +64,7 @@ async function createConfig() {
             // sidebarPath: 'sidebars.js',
             // Please change this to your repo.
             // Remove this to remove the "edit this page" links.
-            editUrl: ({ locale, docPath }) => {
-              return `https://github.com/edgelesssys/constellation-docs/edit/ref/docusarus/docs/${docPath}`;
-            },
+            editUrl: 'https://github.com/edgelesssys/constellation/edit/main/docs',
             routeBasePath: "/"
           },
           blog: false,
@@ -255,7 +253,7 @@ async function createConfig() {
         },
       ]
     ]
-    }
+  }
 };
 
 module.exports = createConfig;
