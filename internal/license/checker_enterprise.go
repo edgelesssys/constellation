@@ -10,6 +10,8 @@ package license
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/config"
@@ -34,8 +36,11 @@ func NewChecker(quotaChecker QuotaChecker, fileHandler file.Handler) *Checker {
 // If no license file is found, community license is assumed.
 func (c *Checker) CheckLicense(ctx context.Context, provider cloudprovider.Provider, providerCfg config.ProviderConfig, printer func(string, ...any)) error {
 	licenseID, err := FromFile(c.fileHandler, constants.LicenseFilename)
-	if err != nil {
+	if errors.Is(err, fs.ErrNotExist) {
 		printer("Unable to find license file. Assuming community license.\n")
+		licenseID = CommunityLicense
+	} else if err != nil {
+		printer("Error: %v\nContinuing with community license.\n", err)
 		licenseID = CommunityLicense
 	} else {
 		printer("Constellation license found!\n")
