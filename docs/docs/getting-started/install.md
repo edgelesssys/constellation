@@ -2,64 +2,39 @@
 
 Constellation runs entirely in your cloud environment and can be easily controlled via a dedicated Command Line Interface (CLI).
 
-The installation process will guide you through the steps of installing the CLI on your machine, verifying it, and connecting it to your Cloud Service Provider (CSP).
+The following guides you through the steps of installing the CLI on your machine, verifying it, and connecting it to your Cloud Service Provider (CSP).
 
 ### Prerequisites
 
-Before we start, make sure the following requirements are fulfilled:
+Make sure the following requirements are met:
 
 - Your machine is running Ubuntu or macOS
 - You have admin rights on your machine
 - [kubectl](https://kubernetes.io/docs/tasks/tools/) is installed
-- Your cloud provider is Microsoft Azure or Google Cloud
+- Your cloud provider is Microsoft Azure or Google Cloud Platform (GCP)
 
 ## Install the Constellation CLI
 
-The Constellation CLI can be downloaded from our [release page](https://github.com/edgelesssys/constellation/releases). Therefore, navigate to a release and download the `constellation` binary for your operating system and architecture. Move the downloaded file to a directory in your `PATH` (default: `/usr/local/bin`) and make it executable by entering `chmod u+x constellation` in your terminal.
+Download the CLI executable from the [release page](https://github.com/edgelesssys/constellation/releases). Move the downloaded file to a directory in your `PATH` (default: `/usr/local/bin`) and make it executable by entering `chmod u+x constellation` in your terminal. 
 
-Running `constellation` should then give you:
+:::note
+Edgeless Systems uses [sigstore](https://www.sigstore.dev/) to sign each release of the CLI. You may want to [verify the signature](../workflows/verify-cli.md) before you use the CLI.
+:::
 
-```shell-session
-$ constellation
-Manage your Constellation cluster.
-
-Usage:
-  constellation [command]
-
-...
-```
-
-### Optional: Enable shell autocompletion
-
-The Constellation CLI supports autocompletion for various shells. To set it up, run `constellation completion` and follow the steps.
-
-## Verify the CLI
-
-For extra security, make sure to verify your CLI. Therefore, install [cosign](https://github.com/sigstore/cosign). Then, head to our [release page](https://github.com/edgelesssys/constellation/releases) again and, from the same release as before, download the following files:
-
-- `cosign.pub` (Edgeless System's cosign public key)
-- `constellation-*.sig` (the CLI's signature)
-
-You can then verify your CLI before launching a cluster using the paths to the public key, signature, and CLI executable:
-
-```bash
-cosign verify-blob --key cosign.pub --signature constellation.sig constellation
-```
-
-For more detailed information read our [installation, update and verification documentation](../architecture/orchestration.md).
+:::tip
+The CLI supports autocompletion for various shells. To set it up, run `constellation completion` and follow the given steps.
+:::
 
 ## Set up cloud credentials
 
-The CLI makes authenticated calls to the CSP API. Therefore, you need to set up Constellation with the credentials for your CSP.
+The CLI makes authenticated calls to the CSP API. Therefore, you need to set up Constellation with the credentials for your CSP. Currently, Microsoft Azure and Google Cloud Platform (GCP) are the only supported CSPs.
 
-### Authentication
+### Step 1: Authenticate
 
-In the following, we provide you with different ways to authenticate with your CSP.
+First, you need to authenticate with your CSP. The following lists the required steps for *testing* and *production* environments.
 
 :::danger
-
-Don't use the testing methods for setting up a production-grade Constellation cluster. In those methods, secrets are stored on disk during installation which would be exposed to the CSP.
-
+The steps for a *testing* environment are simpler. However, they may expose secrets to the CSP. If in doubt, follow the *production* steps.
 :::
 
 <tabs groupId="csp">
@@ -67,11 +42,11 @@ Don't use the testing methods for setting up a production-grade Constellation cl
 
 **Testing**
 
-To try out Constellation, using a cloud environment such as [Azure Cloud Shell](https://docs.microsoft.com/en-us/azure/cloud-shell/overview) is the quickest way to get started.
+Simply open the [Azure Cloud Shell](https://docs.microsoft.com/en-us/azure/cloud-shell/overview).
 
 **Production**
 
-For production clusters, use the latest version of the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/) on a trusted machine:
+Use the latest version of the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/) on a trusted machine:
 
 ```bash
 az login
@@ -90,13 +65,13 @@ Enable the following cloud APIs first:
 
 **Testing**
 
-- If you are running from within a Google VM, and the VM is allowed to access the necessary APIs, no further configuration is needed.
+If you are running from within VM on GCP, and the VM is allowed to access the necessary APIs, no further configuration is needed.
 
-- If you are using the [Google Cloud Shell](https://cloud.google.com/shell), make sure your [session is authorized](https://cloud.google.com/shell/docs/auth). For example, execute `gsutil` and accept the authorization prompt.
+If you are using the [Google Cloud Shell](https://cloud.google.com/shell), make sure your [session is authorized](https://cloud.google.com/shell/docs/auth). For example, execute `gsutil` and accept the authorization prompt.
 
 **Production**
 
-For production clusters, use one of the following options on a trusted machine:
+For production, use one of the following options on a trusted machine:
 
 - Use the [`gcloud` CLI](https://cloud.google.com/sdk/gcloud)
 
@@ -104,7 +79,7 @@ For production clusters, use one of the following options on a trusted machine:
     gcloud auth application-default login
     ```
 
-    This will ask you to log in to your Google account, and then create your credentials.
+    This will ask you to log-in to your Google account and create your credentials.
     The Constellation CLI will automatically load these credentials when needed.
 
 - Set up a service account and pass the credentials manually
@@ -114,12 +89,14 @@ For production clusters, use one of the following options on a trusted machine:
 </tabItem>
 </tabs>
 
-### Authorization
+### Step 2: Set permissions
+
+Finally, set the required permissions for your user account.
 
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure" default>
 
-Your user account needs the following permissions to set up a Constellation cluster:
+Set the following permissions:
 
 - `Contributor`
 - `User Access Administrator`
@@ -127,7 +104,7 @@ Your user account needs the following permissions to set up a Constellation clus
 </tabItem>
 <tabItem value="gcp" label="GCP" default>
 
-Your user account needs the following permissions to set up a Constellation:
+Set the following permissions:
 
 - `compute.*` (or the subset defined by `roles/compute.instanceAdmin.v1`)
 - `iam.serviceAccountUser`
@@ -139,4 +116,4 @@ Follow Google's guide on [understanding](https://cloud.google.com/iam/docs/under
 
 ### Next Steps
 
-Once you have followed all previous steps, you can proceed [to deploy your first confidential Kubernetes cluster and application](first-steps.md).
+You are now ready to [deploy your first confidential Kubernetes cluster and application](first-steps.md).

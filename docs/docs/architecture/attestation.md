@@ -112,7 +112,7 @@ Those correspond to measurements of closed-source firmware components and other 
 While not being directly verifiable, they can be compared against previously observed values.
 As part of the [signed image measurements](#chain-of-trust), Constellation provides measurements that are known, previously observed values.
 Thereby, Constellation enables users to identify changes and deviations and allows them to act accordingly.
-See how to [fetch](../workflows/verify.md#fetch-measurements) the latest measurements and verify a cluster.
+See how to [fetch](../workflows/verify-cluster.md#fetch-measurements) the latest measurements and verify a cluster.
 
 Second, are the measurements produced by the Constellation bootloader and boot chain itself.
 The Constellation Bootloader is the first part of the Constellation stack that takes over from the CVM firmware and measures the rest of the boot chain.
@@ -205,7 +205,7 @@ When an initialized node tries to join another cluster, its measurements inevita
 ### User-facing attestation
 
 The [*VerificationService*](components.md#verificationservice) provides an endpoint for obtaining its hardware-based remote attestation statement, which includes the runtime measurements.
-A user can [verify](../workflows/verify.md) this statement and compare the measurements against the configured ground truth and, thus, verify the identity and integrity of all Constellation components and the cluster configuration. Subsequently, the user knows that the entire cluster is in the expected state and is trustworthy.
+A user can [verify](../workflows/verify-cluster.md) this statement and compare the measurements against the configured ground truth and, thus, verify the identity and integrity of all Constellation components and the cluster configuration. Subsequently, the user knows that the entire cluster is in the expected state and is trustworthy.
 
 ## Chain of trust
 

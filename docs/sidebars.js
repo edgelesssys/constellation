@@ -115,13 +115,18 @@ const sidebars = {
       items: [
         {
           type: 'doc',
+          label: 'Verify the CLI',
+          id: 'workflows/verify-cli',
+        },
+        {
+          type: 'doc',
           label: 'Create your cluster',
           id: 'workflows/create',
         },
         {
           type: 'doc',
           label: 'Verify your cluster',
-          id: 'workflows/verify',
+          id: 'workflows/verify-cluster',
         },
         {
           type: 'doc',

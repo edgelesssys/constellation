@@ -50,7 +50,7 @@ Next, download the latest trusted measurements for your configured image.
 constellation config fetch-measurements
 ```
 
-For more details, see the [verification section](../workflows/verify.md).
+For more details, see the [verification section](../workflows/verify-cluster.md).
 
 ### Create
 
