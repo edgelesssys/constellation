@@ -45,7 +45,7 @@ func newUpgradePlanCmd() *cobra.Command {
 		RunE:  runUpgradePlan,
 	}
 
-	cmd.Flags().StringP("file", "f", "", "path to output file, or '-' for stdout, leave empty for interactive mode")
+	cmd.Flags().StringP("file", "f", "", "path to output file, or '-' for stdout (omit for interactive mode)")
 
 	return cmd
 }
