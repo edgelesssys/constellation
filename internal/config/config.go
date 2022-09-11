@@ -46,7 +46,10 @@ type Config struct {
 	//   Size (in GB) of a node's disk to store the non-volatile state.
 	StateDiskSizeGB int `yaml:"stateDiskSizeGB" validate:"min=0"`
 	// description: |
-	//   DO NOT USE FOR PRODUCTION CLUSTERS: Enable debug cluster mode and use debug images. For usage, see: https://github.com/edgelesssys/constellation/blob/main/debugd/README.md
+	//   Kubernetes version to be installed in the cluster.
+	KubernetesVersion string `yaml:"kubernetesVersion" validate:"supported_k8s_version"`
+	// description: |
+	//   DON'T USE IN PRODUCTION: enable debug mode and use debug images. For usage, see: https://github.com/edgelesssys/constellation/blob/main/debugd/README.md
 	DebugCluster *bool `yaml:"debugCluster" validate:"required"`
 	// description: |
 	//   Supported cloud providers and their specific configurations.
@@ -56,9 +59,6 @@ type Config struct {
 	// examples:
 	//   - value: '[]UserKey{ { Username:  "Alice", PublicKey: "ssh-rsa AAAAB3NzaC...5QXHKW1rufgtJeSeJ8= alice@domain.com" } }'
 	SSHUsers []UserKey `yaml:"sshUsers,omitempty" validate:"dive"`
-	// description: |
-	//   Kubernetes version installed in the cluster.
-	KubernetesVersion string `yaml:"kubernetesVersion" validate:"supported_k8s_version"`
 	// description: |
 	//   Configuration to apply during constellation upgrade.
 	// examples:
@@ -113,26 +113,26 @@ type AzureConfig struct {
 	//   Azure datacenter region to be used. See: https://docs.microsoft.com/en-us/azure/availability-zones/az-overview#azure-regions-with-availability-zones
 	Location string `yaml:"location" validate:"required"`
 	// description: |
-	//   Machine image used to create Constellation nodes.
-	Image string `yaml:"image" validate:"required"`
-	// description: |
-	//   Virtual machine instance type to use for Constellation nodes.
-	InstanceType string `yaml:"instanceType" validate:"azure_instance_type"`
-	// description: |
-	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#disk-type-comparison
-	StateDiskType string `yaml:"stateDiskType" validate:"oneof=Premium_LRS Premium_ZRS Standard_LRS StandardSSD_LRS StandardSSD_ZRS"`
-	// description: |
-	//   Resource group to use.
+	//   Resource group for the cluster's resources. Must already exist.
 	ResourceGroup string `yaml:"resourceGroup" validate:"required"`
 	// description: |
 	//   Authorize spawned VMs to access Azure API.
 	UserAssignedIdentity string `yaml:"userAssignedIdentity" validate:"required"`
 	// description: |
 	//    Application client ID of the Active Directory app registration.
-	AppClientID string `yaml:"appClientID" validate:"required"`
+	AppClientID string `yaml:"appClientID" validate:"uuid"`
 	// description: |
 	//    Client secret value of the Active Directory app registration credentials.
 	ClientSecretValue string `yaml:"clientSecretValue" validate:"required"`
+	// description: |
+	//   Machine image used to create Constellation nodes.
+	Image string `yaml:"image" validate:"required"`
+	// description: |
+	//   VM instance type to use for Constellation nodes.
+	InstanceType string `yaml:"instanceType" validate:"azure_instance_type"`
+	// description: |
+	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#disk-type-comparison
+	StateDiskType string `yaml:"stateDiskType" validate:"oneof=Premium_LRS Premium_ZRS Standard_LRS StandardSSD_LRS StandardSSD_ZRS"`
 	// description: |
 	//   Expected confidential VM measurements.
 	Measurements Measurements `yaml:"measurements"`
@@ -146,7 +146,7 @@ type AzureConfig struct {
 	//   Enforce the specified idKeyDigest value during remote attestation.
 	EnforceIdKeyDigest *bool `yaml:"enforceIdKeyDigest" validate:"required"`
 	// description: |
-	//   Use VMs with security type Confidential VM. If set to false, Trusted Launch VMs will be used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview
+	//   Use Confidential VMs. If set to false, Trusted Launch VMs are used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview
 	ConfidentialVM *bool `yaml:"confidentialVM" validate:"required"`
 }
 
@@ -162,17 +162,17 @@ type GCPConfig struct {
 	//   GCP datacenter zone. See: https://cloud.google.com/compute/docs/regions-zones#available
 	Zone string `yaml:"zone" validate:"required"`
 	// description: |
+	//   Path of service account key file. For required service account roles, see https://docs.edgeless.systems/constellation/getting-started/install#authorization
+	ServiceAccountKeyPath string `yaml:"serviceAccountKeyPath" validate:"required"`
+	// description: |
 	//   Machine image used to create Constellation nodes.
 	Image string `yaml:"image" validate:"required"`
 	// description: |
-	//   Virtual machine instance type to use for Constellation nodes.
+	//   VM instance type to use for Constellation nodes.
 	InstanceType string `yaml:"instanceType" validate:"gcp_instance_type"`
 	// description: |
 	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://cloud.google.com/compute/docs/disks#disk-types
 	StateDiskType string `yaml:"stateDiskType" validate:"oneof=pd-standard pd-balanced pd-ssd"`
-	// description: |
-	//   Path of service account key file. For needed service account roles, see https://constellation-docs.edgeless.systems/constellation/getting-started/install#authorization
-	ServiceAccountKeyPath string `yaml:"serviceAccountKeyPath"`
 	// description: |
 	//   Expected confidential VM measurements.
 	Measurements Measurements `yaml:"measurements"`

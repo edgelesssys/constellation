@@ -23,8 +23,6 @@ import (
 	"go.uber.org/goleak"
 )
 
-const defaultMsgCount = 13 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
-
 func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
 }
@@ -160,6 +158,8 @@ func TestFromFileStrictErrors(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
+	const defaultMsgCount = 14 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
+
 	testCases := map[string]struct {
 		cnf          *Config
 		wantMsgCount int
