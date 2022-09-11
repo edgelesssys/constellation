@@ -2,9 +2,6 @@ run:
   timeout: 10m
   build-tags:
     - integration
-    - aws
-    - gcp
-    - azure
 
 output:
   format: tab
