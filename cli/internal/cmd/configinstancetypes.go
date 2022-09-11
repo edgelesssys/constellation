@@ -17,8 +17,8 @@ import (
 func NewConfigInstanceTypesCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "instance-types",
-		Short: "Prints the supported instance types for all cloud providers",
-		Long:  "Prints the supported instance types for all cloud providers.",
+		Short: "Print the supported instance types for all cloud providers",
+		Long:  "Print the supported instance types for all cloud providers.",
 		Args:  cobra.ArbitraryArgs,
 		Run:   printSupportedInstanceTypes,
 	}

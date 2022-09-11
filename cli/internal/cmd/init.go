@@ -138,7 +138,6 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		autoscalingNodeGroups = append(autoscalingNodeGroups, workers.GroupID)
 	}
 
-	cmd.Println("Loading Helm charts ...")
 	helmDeployments, err := helmLoader.Load(stat.CloudProvider)
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
