@@ -11,7 +11,7 @@
     <a href="https://twitter.com/EdgelessSystems"><img src="https://img.shields.io/twitter/follow/EdgelessSystems?label=Follow" alt="Twitter"></a>
 </p>
 
-Constellation is a Kubernetes engine that aims to provide the best possible data security. It wraps your K8s cluster into a single *confidential context* that is shielded from the underlying cloud infrastructure. Everything inside is always encrypted, including at runtime in memory. For this, Constellation leverages confidential computing (see our [whitepaper]) and more specifically Confidential VMs.
+Constellation is a Kubernetes engine that aims to provide the best possible data security. It wraps your K8s cluster into a single *confidential context* that is shielded from the underlying cloud infrastructure. Everything inside is always encrypted, including at runtime in memory. For this, Constellation leverages confidential computing (see the [whitepaper]) and more specifically Confidential VMs.
 
 <img src="docs/static/img/concept.svg" alt="Concept" width="65%"/>
 
@@ -35,14 +35,14 @@ Encrypting your K8s is good for:
 ### 🔒 Everything always encrypted
 
 * Runtime encryption: All nodes run inside AMD SEV-based Confidential VMs (CVMs). Support for Intel TDX will be added in the future.
-* Transparent encryption of network and storage: All pod-to-pod traffic and all writes to persistent storage are automatically encrypted ([more][network-encryption])
-* Transparent key management: All cryptographic keys are managed within the confidential context ([more][key-management])
+* Transparent encryption of network and storage: All pod-to-pod traffic and all writes to persistent storage are [automatically encrypted][network-encryption]
+* Transparent key management: All cryptographic [keys are managed within the confidential context][key-management]
 
 ### 🔍 Everything verifiable
 
-* "Whole cluster" attestation based on the remote-attestation feature of CVMs ([more][cluster-attestation])
-* Confidential computing-optimized node images based on Fedora CoreOS; fully measured and integrity-protected ([more][images])
-* Supply chain protection with [Sigstore](https://www.sigstore.dev/) ([more][supply-chain])
+* "Whole cluster" [attestation][cluster-attestation] based on the remote-attestation feature of CVMs
+* Confidential computing-optimized [node images][images] based on Fedora CoreOS; fully measured and integrity-protected
+* [Supply chain protection][supply-chain] with [sigstore](https://www.sigstore.dev/)
 
 ### 🚀 Performance and scale
 
@@ -55,7 +55,7 @@ Encrypting your K8s is good for:
 <a href="https://landscape.cncf.io/?selected=constellation"><img src="https://raw.githubusercontent.com/cncf/artwork/1c1a10d9cc7de24235e07c8831923874331ef233/projects/kubernetes/certified-kubernetes/versionless/color/certified-kubernetes-color.svg" align="right" width="100px"></a>
 
 * Constellation is a [CNCF-certified][certified] Kubernetes. It's aligned to Kubernetes' [version support policy][k8s-version-support] and will likely work with your existing workloads and tools.
-* ☁️ Support for Azure and GCP, more to come.
+* Support for Azure and GCP, more to come.
 
 ## Getting started
 
@@ -69,7 +69,7 @@ If you're already familiar with Kubernetes, it's easy to get started with Conste
 
 ## Documentation
 
-To learn more, see the official [documentation](https://docs.edgeless.systems/constellation).
+To learn more, see the [documentation](https://docs.edgeless.systems/constellation).
 You may want to start with one of the following sections.
 
 * [Confidential Kubernetes][confidential-kubernetes] (Constellation vs. AKS/GKE + CVMs)
@@ -78,8 +78,8 @@ You may want to start with one of the following sections.
 
 ## Support
 
-* Please ask questions via [Discord] or file an [issue][github-issues].
-* If you experience errors, please create a [bug report][github-issues].
+* Please file an [issue][github-issues] to get help or report a bug.
+* Join the [Discord] to have a chat on confidential computing and Constellation.
 * Visit our [blog](https://blog.edgeless.systems/) for technical deep-dives and tutorials and follow us on [Twitter] for news.
 * Edgeless Systems also offers [Enterprise Support][enterprise-support].
 
@@ -106,8 +106,8 @@ The Constellation source code is licensed under the [GNU Affero General Public L
 [create-cluster]: https://docs.edgeless.systems/constellation/workflows/create
 [documentation]: https://docs.edgeless.systems/constellation/latest
 [examples]: https://docs.edgeless.systems/constellation/getting-started/examples
-[github-issues]: https://github.com/edgelesssys/constellation/issues/new/choose
-[images]: https://docs.edgeless.systems/constellation/architecture/images#constellation-images
+[github-issues]: https://github.com/edgelesssys/constellation/issues
+[images]: https://docs.edgeless.systems/constellation/architecture/images
 [install]: https://docs.edgeless.systems/constellation/getting-started/install
 [k8s-version-support]: https://docs.edgeless.systems/constellation/architecture/versions#kubernetes-support-policy
 [key-management]: https://docs.edgeless.systems/constellation/architecture/keys
@@ -117,4 +117,4 @@ The Constellation source code is licensed under the [GNU Affero General Public L
 [security-benefits]: https://docs.edgeless.systems/constellation/overview/security-benefits
 [twitter]: https://twitter.com/EdgelessSystems
 [whitepaper]: https://content.edgeless.systems/hubfs/Confidential%20Computing%20Whitepaper.pdf
-[performance]: https://docs.edgeless.systems/constellation/overview/benchmarks
+[performance]: https://docs.edgeless.systems/constellation/overview/performance

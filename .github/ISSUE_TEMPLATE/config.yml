@@ -1,8 +1,5 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Constellation Discussions
-    url: https://github.com/edgelesssys/constellation/discussions
-    about: Ask and answer questions about Constellation.
   - name: Confidential Computing Discord
     url: https://discord.com/invite/rH8QTH56JN
     about: Join the Confidential Computing community!
