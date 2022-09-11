@@ -11,6 +11,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net"
 	"strconv"
 	"strings"
@@ -116,23 +117,24 @@ func parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handler) (verifyFlags
 		return verifyFlags{}, fmt.Errorf("parsing node-endpoint argument: %w", err)
 	}
 
+	// Get empty values from ID file
 	emptyEndpoint := endpoint == ""
 	emptyIDs := ownerID == "" && clusterID == ""
-
-	var idFile clusterIDsFile
-	if emptyEndpoint || emptyIDs { // Get empty values from ID file
-		if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
+	if emptyEndpoint || emptyIDs {
+		var idFile clusterIDsFile
+		if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err == nil {
+			if emptyEndpoint {
+				cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", constants.ClusterIDsFileName)
+				endpoint = idFile.IP
+			}
+			if emptyIDs {
+				cmd.Printf("Using IDs from %q. Specify --owner-id  and/or --cluster-id to override this.\n", constants.ClusterIDsFileName)
+				ownerID = idFile.OwnerID
+				clusterID = idFile.ClusterID
+			}
+		} else if !errors.Is(err, fs.ErrNotExist) {
 			return verifyFlags{}, fmt.Errorf("reading cluster ID file: %w", err)
 		}
-	}
-	if emptyEndpoint {
-		cmd.Printf("Using endpoint from %q. Specify --node-endpoint to override this.\n", constants.ClusterIDsFileName)
-		endpoint = idFile.IP
-	}
-	if emptyIDs {
-		cmd.Printf("Using IDs from %q. Specify --owner-id  and/or --cluster-id to override this.\n", constants.ClusterIDsFileName)
-		ownerID = idFile.OwnerID
-		clusterID = idFile.ClusterID
 	}
 
 	// Validate
