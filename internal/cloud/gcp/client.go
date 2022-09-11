@@ -186,12 +186,29 @@ func (c *Client) UnsetInstanceMetadata(ctx context.Context, project, zone, insta
 
 // RetrieveSubnetworkAliasCIDR returns the alias CIDR of the subnetwork specified by project, zone and subnetworkName.
 func (c *Client) RetrieveSubnetworkAliasCIDR(ctx context.Context, project, zone, instanceName string) (string, error) {
+	subnetwork, err := c.retrieveSubnetwork(ctx, project, zone, instanceName)
+	if err != nil {
+		return "", fmt.Errorf("retrieving subnetwork: %w", err)
+	}
+	return *(subnetwork.SecondaryIpRanges[0]).IpCidrRange, nil
+}
+
+// RetrieveSubnetworkCIDR returns the alias CIDR of the subnetwork specified by project, zone and subnetworkName.
+func (c *Client) RetrieveSubnetworkCIDR(ctx context.Context, project, zone, instanceName string) (string, error) {
+	subnetwork, err := c.retrieveSubnetwork(ctx, project, zone, instanceName)
+	if err != nil {
+		return "", fmt.Errorf("retrieving subnetwork: %w", err)
+	}
+	return *(subnetwork.IpCidrRange), nil
+}
+
+func (c *Client) retrieveSubnetwork(ctx context.Context, project, zone, instanceName string) (*computepb.Subnetwork, error) {
 	instance, err := c.getComputeInstance(ctx, project, zone, instanceName)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if instance == nil || instance.NetworkInterfaces == nil || len(instance.NetworkInterfaces) == 0 || instance.NetworkInterfaces[0].Subnetwork == nil {
-		return "", fmt.Errorf("retrieving instance network interfaces failed")
+		return nil, fmt.Errorf("retrieving instance network interfaces failed")
 	}
 	subnetworkURL := *instance.NetworkInterfaces[0].Subnetwork
 	subnetworkURLFragments := strings.Split(subnetworkURL, "/")
@@ -202,7 +219,7 @@ func (c *Client) RetrieveSubnetworkAliasCIDR(ctx context.Context, project, zone,
 	// europe-west3-b --> europe-west3
 	region := zoneFromRegionRegex.FindString(zone)
 	if region == "" {
-		return "", fmt.Errorf("invalid zone %s", zone)
+		return nil, fmt.Errorf("invalid zone %s", zone)
 	}
 
 	req := &computepb.GetSubnetworkRequest{
@@ -212,13 +229,12 @@ func (c *Client) RetrieveSubnetworkAliasCIDR(ctx context.Context, project, zone,
 	}
 	subnetwork, err := c.subnetworkAPI.Get(ctx, req)
 	if err != nil {
-		return "", fmt.Errorf("retrieving subnetwork alias CIDR failed: %w", err)
+		return nil, fmt.Errorf("retrieving subnetwork alias CIDR failed: %w", err)
 	}
 	if subnetwork == nil || len(subnetwork.SecondaryIpRanges) == 0 || (subnetwork.SecondaryIpRanges[0]).IpCidrRange == nil {
-		return "", fmt.Errorf("retrieving subnetwork alias CIDR returned invalid results")
+		return nil, fmt.Errorf("retrieving subnetwork alias CIDR returned invalid results")
 	}
-
-	return *(subnetwork.SecondaryIpRanges[0]).IpCidrRange, nil
+	return subnetwork, nil
 }
 
 // RetrieveLoadBalancerEndpoint returns the endpoint of the load balancer with the constellation-uid tag.

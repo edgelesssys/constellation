@@ -30,8 +30,10 @@ type API interface {
 	RetrieveZone() (string, error)
 	// RetrieveInstanceName retrieves the instance name of the current instance.
 	RetrieveInstanceName() (string, error)
-	// RetrieveSubnetworkAliasCIDR retrieves the subnetwork CIDR of the current instance.
+	// RetrieveSubnetworkAliasCIDR retrieves the subnetwork alias CIDR of the current instance.
 	RetrieveSubnetworkAliasCIDR(ctx context.Context, project, zone, instanceName string) (string, error)
+	// RetrieveSubnetworkCIDR retrieves the subnetwork CIDR of the current instance.
+	RetrieveSubnetworkCIDR(ctx context.Context, project, zone, instanceName string) (string, error)
 	// RetrieveLoadBalancerEndpoint retrieves the load balancer endpoint of the current instance.
 	RetrieveLoadBalancerEndpoint(ctx context.Context, project string) (string, error)
 	// SetInstanceMetadata sets metadata key: value of the instance specified by project, zone and instanceName.
@@ -110,6 +112,23 @@ func (m *Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return m.api.RetrieveSubnetworkAliasCIDR(ctx, project, zone, instanceName)
+}
+
+// GetNodenetworkCIDR returns the subnetwork CIDR of the current instance.
+func (m *Metadata) GetNodenetworkCIDR(ctx context.Context) (string, error) {
+	project, err := m.api.RetrieveProjectID()
+	if err != nil {
+		return "", err
+	}
+	zone, err := m.api.RetrieveZone()
+	if err != nil {
+		return "", err
+	}
+	instanceName, err := m.api.RetrieveInstanceName()
+	if err != nil {
+		return "", err
+	}
+	return m.api.RetrieveSubnetworkCIDR(ctx, project, zone, instanceName)
 }
 
 // SupportsLoadBalancer returns true if the cloud provider supports load balancers.

@@ -83,9 +83,14 @@ func (m Metadata) UID(ctx context.Context) (string, error) {
 	return "", nil
 }
 
-// GetSubnetworkCIDR retrieves the subnetwork CIDR from cloud provider metadata.
+// GetSubnetworkCIDR retrieves the pod subnetwork CIDR from cloud provider metadata.
 func (m Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
 	return "10.244.0.0/16", nil
+}
+
+// GetNodenetworkCIDR retrieves the node subnetwork CIDR from cloud provider metadata.
+func (m Metadata) GetNodenetworkCIDR(ctx context.Context) (string, error) {
+	return "0.0.0.0/0", nil
 }
 
 func (m Metadata) retrieveMetadata(ctx context.Context, uri string) ([]byte, error) {

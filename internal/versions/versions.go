@@ -43,8 +43,10 @@ func IsPreviewK8sVersion(version ValidK8sVersion) bool {
 const (
 	// Constellation images.
 	// These images are built in a way that they support all versions currently listed in VersionConfigs.
-	KonnectivityAgentImage   = "us.gcr.io/k8s-artifacts-prod/kas-network-proxy/proxy-agent:v0.0.32"
-	KonnectivityServerImage  = "registry.k8s.io/kas-network-proxy/proxy-server:v0.0.32"
+	KonnectivityAgentImage = "us.gcr.io/k8s-artifacts-prod/kas-network-proxy/proxy-agent:v0.0.32"
+	// TODO: switch back to official image once cilium node2node encryption is enabled.
+	// KonnectivityServerImage  = "registry.k8s.io/kas-network-proxy/proxy-server:v0.0.32".
+	KonnectivityServerImage  = "ghcr.io/3u13r/constellation-konnectivity-server:v0.0.33-edgeless@sha256:bf5748999b20576c7c97f25d2762408d705df5ae20640494bcb4cac5d648b583"
 	JoinImage                = "ghcr.io/edgelesssys/constellation/join-service:v2.0.0"
 	AccessManagerImage       = "ghcr.io/edgelesssys/constellation/access-manager:v2.0.0"
 	KmsImage                 = "ghcr.io/edgelesssys/constellation/kmsserver:v2.0.0"

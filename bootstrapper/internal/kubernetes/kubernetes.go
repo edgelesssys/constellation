@@ -97,6 +97,7 @@ func (k *KubeWrapper) InitCluster(
 	var instance metadata.InstanceMetadata
 	var publicIP string
 	var nodePodCIDR string
+	var nodeCIDR string
 	var subnetworkPodCIDR string
 	var controlPlaneEndpoint string // this is the endpoint in "kubeadm init --control-plane-endpoint=<IP/DNS>:<port>"
 	var nodeIP string
@@ -127,6 +128,10 @@ func (k *KubeWrapper) InitCluster(
 		if err != nil {
 			return nil, fmt.Errorf("retrieving subnetwork CIDR: %w", err)
 		}
+		nodeCIDR, err = k.providerMetadata.GetNodenetworkCIDR(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("retrieving nodeCIDR CIDR: %w", err)
+		}
 		controlPlaneEndpoint = publicIP
 		if k.providerMetadata.SupportsLoadBalancer() {
 			controlPlaneEndpoint, err = k.providerMetadata.GetLoadBalancerEndpoint(ctx)
@@ -155,7 +160,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("encoding kubeadm init configuration as YAML: %w", err)
 	}
 	log.Infof("Initializing Kubernetes cluster")
-	if err := k.clusterUtil.InitCluster(ctx, initConfigYAML, nodeName, validIPs, controlPlaneEndpoint, log); err != nil {
+	if err := k.clusterUtil.InitCluster(ctx, initConfigYAML, nodeName, validIPs, controlPlaneEndpoint, nodeCIDR, log); err != nil {
 		return nil, fmt.Errorf("kubeadm init: %w", err)
 	}
 	kubeConfig, err := k.GetKubeconfig()
@@ -264,6 +269,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	}
 	nodeName := nodeInternalIP
 	var providerID string
+	var nodeCIDR string
 	var loadbalancerEndpoint string
 	if k.providerMetadata.Supported() {
 		log.Infof("Retrieving node metadata")
@@ -274,6 +280,10 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		providerID = instance.ProviderID
 		nodeName = instance.Name
 		nodeInternalIP = instance.VPCIP
+		nodeCIDR, err = k.providerMetadata.GetNodenetworkCIDR(ctx)
+		if err != nil {
+			return fmt.Errorf("retrieving nodeCIDR CIDR: %w", err)
+		}
 		if k.providerMetadata.SupportsLoadBalancer() {
 			loadbalancerEndpoint, err = k.providerMetadata.GetLoadBalancerEndpoint(ctx)
 			if err != nil {
@@ -305,7 +315,7 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		return fmt.Errorf("encoding kubeadm join configuration as YAML: %w", err)
 	}
 	log.With(zap.String("apiServerEndpoint", args.APIServerEndpoint)).Infof("Joining Kubernetes cluster")
-	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML, peerRole, loadbalancerEndpoint, log); err != nil {
+	if err := k.clusterUtil.JoinCluster(ctx, joinConfigYAML, peerRole, loadbalancerEndpoint, nodeCIDR, log); err != nil {
 		return fmt.Errorf("joining cluster: %v; %w ", string(joinConfigYAML), err)
 	}
 
