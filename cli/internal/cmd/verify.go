@@ -41,8 +41,7 @@ If arguments aren't specified, values are read from ` + "`" + constants.ClusterI
 		),
 		RunE: runVerify,
 	}
-	cmd.Flags().String("owner-id", "", "verify using the owner identity derived from the master secret")
-	cmd.Flags().String("cluster-id", "", "verify using Constellation's cluster identifier")
+	cmd.Flags().String("cluster-id", "", "expected cluster identifier")
 	cmd.Flags().StringP("node-endpoint", "e", "", "endpoint of the node to verify, passed as HOST[:PORT]")
 	return cmd
 }
@@ -104,10 +103,7 @@ func parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handler) (verifyFlags
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
-	ownerID, err := cmd.Flags().GetString("owner-id")
-	if err != nil {
-		return verifyFlags{}, fmt.Errorf("parsing owner-id argument: %w", err)
-	}
+	ownerID := ""
 	clusterID, err := cmd.Flags().GetString("cluster-id")
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing cluster-id argument: %w", err)
@@ -128,7 +124,7 @@ func parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handler) (verifyFlags
 				endpoint = idFile.IP
 			}
 			if emptyIDs {
-				cmd.Printf("Using IDs from %q. Specify --owner-id  and/or --cluster-id to override this.\n", constants.ClusterIDsFileName)
+				cmd.Printf("Using ID from %q. Specify --cluster-id to override this.\n", constants.ClusterIDsFileName)
 				ownerID = idFile.OwnerID
 				clusterID = idFile.ClusterID
 			}
@@ -139,7 +135,7 @@ func parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handler) (verifyFlags
 
 	// Validate
 	if ownerID == "" && clusterID == "" {
-		return verifyFlags{}, errors.New("neither owner-id nor cluster-id provided to verify the cluster")
+		return verifyFlags{}, errors.New("cluster-id not provided to verify the cluster")
 	}
 	endpoint, err = addPortIfMissing(endpoint, constants.VerifyServiceNodePortGRPC)
 	if err != nil {
