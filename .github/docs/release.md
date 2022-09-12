@@ -38,7 +38,7 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
     6. Update versions [versions.go](../../internal/versions/versions.go#L33-L39) to `v1.3.0` and **push your changes**.
     7. Create a [production coreOS image](/.github/workflows/build-coreos.yml)
         ```sh
-        gh workflow run build-coreos.yml --ref release/v1.3 -F debug=false -F coreOSConfigBranch=release/v1.3
+        gh workflow run build-coreos.yml --ref release/v1.3 -F debug=false -F coreOSConfigBranch=release/v1.3 -F imageVersion=v1.3.0
         ```
     8. Update [default images in config](/internal/config/images_enterprise.go)
     9. Run E2E tests to confirm stability and [generate measurements](/.github/workflows/e2e-test-manual.yml)
