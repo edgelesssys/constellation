@@ -8,7 +8,7 @@ The following guides you through the steps of installing the CLI on your machine
 
 Make sure the following requirements are met:
 
-- Your machine is running Ubuntu or macOS
+- Your machine is running Linux or macOS
 - You have admin rights on your machine
 - [kubectl](https://kubernetes.io/docs/tasks/tools/) is installed
 - Your cloud provider is Microsoft Azure or Google Cloud Platform (GCP)
