@@ -5,7 +5,7 @@ description: |
   when run on v* tag.
 inputs:
   targetOS:
-    description: "Build CLI for this OS. [linux, darwin]"
+    description: "Build CLI for this OS. [linux, darwin, windows]"
     required: true
     default: "linux"
   targetArch:
@@ -49,7 +49,12 @@ runs:
           cmake ..
         fi
         GOOS=${{ inputs.targetOS }} GOARCH=${{ inputs.targetArch }} make cli
-        cp constellation constellation-${{ inputs.targetOS }}-${{ inputs.targetArch }}
+        if [${{ inputs.targetOS }} == 'windows']
+        then
+          cp constellation constellation-${{ inputs.targetOS }}-${{ inputs.targetArch }}.exe
+        else
+          cp constellation constellation-${{ inputs.targetOS }}-${{ inputs.targetArch }}
+        fi
         echo "$(pwd)" >> $GITHUB_PATH
         export PATH="$PATH:$(pwd)"
         echo "::endgroup::"
@@ -74,7 +79,12 @@ runs:
 
     - name: Sign CLI
       run: |
-        SIGN_TARGET=constellation-${{ inputs.targetOS }}-${{ inputs.targetArch }}
+        if [${{ inputs.targetOS }} == 'windows']
+        then
+          SIGN_TARGET=constellation-${{ inputs.targetOS }}-${{ inputs.targetArch }}.exe
+        else
+          SIGN_TARGET=constellation-${{ inputs.targetOS }}-${{ inputs.targetArch }}
+        fi
         echo "$COSIGN_PUBLIC_KEY" > cosign.pub
         # Enabling experimental mode also publishes signature to Rekor
         COSIGN_EXPERIMENTAL=1 cosign sign-blob --key env://COSIGN_PRIVATE_KEY ${SIGN_TARGET} > ${SIGN_TARGET}.sig
