@@ -2,6 +2,7 @@ run:
   timeout: 10m
   build-tags:
     - integration
+  modules-download-mode: readonly
 
 output:
   format: tab
