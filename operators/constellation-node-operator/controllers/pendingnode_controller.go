@@ -35,7 +35,7 @@ const (
 	defaultCheckInterval = 30 * time.Second
 )
 
-// PendingNodeReconciler reconciles a PendingNode object
+// PendingNodeReconciler reconciles a PendingNode object.
 type PendingNodeReconciler struct {
 	nodeStateGetter
 	client.Client

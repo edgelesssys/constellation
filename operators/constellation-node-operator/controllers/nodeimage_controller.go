@@ -719,7 +719,7 @@ type mintNode struct {
 }
 
 // replacementPair is a pair of a donor (outdated node that should be replaced)
-// and a heir (up to date node that inherits node labels)
+// and a heir (up to date node that inherits node labels).
 type replacementPair struct {
 	donor corev1.Node
 	heir  corev1.Node

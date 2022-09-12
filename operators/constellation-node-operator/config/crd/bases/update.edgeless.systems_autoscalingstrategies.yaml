@@ -19,7 +19,7 @@ spec:
     schema:
       openAPIV3Schema:
         description: AutoscalingStrategy is the Schema for the autoscalingstrategies
-          API
+          API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,7 +34,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: AutoscalingStrategySpec defines the desired state of AutoscalingStrategy
+            description: AutoscalingStrategySpec defines the desired state of AutoscalingStrategy.
             properties:
               deploymentName:
                 description: DeploymentName defines the name of the autoscaler deployment.
@@ -53,7 +53,7 @@ spec:
             - enabled
             type: object
           status:
-            description: AutoscalingStrategyStatus defines the observed state of AutoscalingStrategy
+            description: AutoscalingStrategyStatus defines the observed state of AutoscalingStrategy.
             properties:
               enabled:
                 description: Enabled shows whether cluster autoscaling is currently

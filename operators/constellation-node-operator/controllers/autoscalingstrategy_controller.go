@@ -20,7 +20,7 @@ import (
 	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/api/v1alpha1"
 )
 
-// AutoscalingStrategyReconciler reconciles a AutoscalingStrategy object
+// AutoscalingStrategyReconciler reconciles a AutoscalingStrategy object.
 type AutoscalingStrategyReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme

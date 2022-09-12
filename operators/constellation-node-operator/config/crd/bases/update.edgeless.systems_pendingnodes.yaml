@@ -18,7 +18,7 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: PendingNode is the Schema for the pendingnodes API
+        description: PendingNode is the Schema for the pendingnodes API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -33,7 +33,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: PendingNodeSpec defines the desired state of PendingNode
+            description: PendingNodeSpec defines the desired state of PendingNode.
             properties:
               deadline:
                 description: Deadline is the deadline for reaching the goal state.
@@ -60,7 +60,7 @@ spec:
                 type: string
             type: object
           status:
-            description: PendingNodeStatus defines the observed state of PendingNode
+            description: PendingNodeStatus defines the observed state of PendingNode.
             properties:
               cspState:
                 description: CSPNodeState is the state of the node in the cloud.

@@ -44,7 +44,7 @@ type PendingNodeGoal string
 // +kubebuilder:validation:Enum=Unknown;Creating;Ready;Stopped;Terminating;Terminated;Failed
 type CSPNodeState string
 
-// PendingNodeSpec defines the desired state of PendingNode
+// PendingNodeSpec defines the desired state of PendingNode.
 type PendingNodeSpec struct {
 	// ProviderID is the provider ID of the node.
 	ProviderID string `json:"providerID,omitempty"`
@@ -62,7 +62,7 @@ type PendingNodeSpec struct {
 	Deadline *metav1.Time `json:"deadline,omitempty"`
 }
 
-// PendingNodeStatus defines the observed state of PendingNode
+// PendingNodeStatus defines the observed state of PendingNode.
 type PendingNodeStatus struct {
 	// CSPNodeState is the state of the node in the cloud.
 	CSPNodeState `json:"cspState,omitempty"`
@@ -74,7 +74,7 @@ type PendingNodeStatus struct {
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:scope=Cluster
 
-// PendingNode is the Schema for the pendingnodes API
+// PendingNode is the Schema for the pendingnodes API.
 type PendingNode struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -85,7 +85,7 @@ type PendingNode struct {
 
 //+kubebuilder:object:root=true
 
-// PendingNodeList contains a list of PendingNode
+// PendingNodeList contains a list of PendingNode.
 type PendingNodeList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

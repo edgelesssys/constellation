@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// AutoscalingStrategySpec defines the desired state of AutoscalingStrategy
+// AutoscalingStrategySpec defines the desired state of AutoscalingStrategy.
 type AutoscalingStrategySpec struct {
 	// Enabled defines whether cluster autoscaling should be enabled or not.
 	Enabled bool `json:"enabled"`
@@ -20,7 +20,7 @@ type AutoscalingStrategySpec struct {
 	DeploymentNamespace string `json:"deploymentNamespace"`
 }
 
-// AutoscalingStrategyStatus defines the observed state of AutoscalingStrategy
+// AutoscalingStrategyStatus defines the observed state of AutoscalingStrategy.
 type AutoscalingStrategyStatus struct {
 	// Enabled shows whether cluster autoscaling is currently enabled or not.
 	// +optional
@@ -34,7 +34,7 @@ type AutoscalingStrategyStatus struct {
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:scope=Cluster
 
-// AutoscalingStrategy is the Schema for the autoscalingstrategies API
+// AutoscalingStrategy is the Schema for the autoscalingstrategies API.
 type AutoscalingStrategy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -45,7 +45,7 @@ type AutoscalingStrategy struct {
 
 //+kubebuilder:object:root=true
 
-// AutoscalingStrategyList contains a list of AutoscalingStrategy
+// AutoscalingStrategyList contains a list of AutoscalingStrategy.
 type AutoscalingStrategyList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

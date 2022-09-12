@@ -20,15 +20,15 @@ import (
 )
 
 const (
-	// etcdListenClientPort defines the port etcd listen on for client traffic
+	// etcdListenClientPort defines the port etcd listen on for client traffic.
 	etcdListenClientPort = "2379"
-	// etcdListenPeerPort defines the port etcd listen on for peer traffic
+	// etcdListenPeerPort defines the port etcd listen on for peer traffic.
 	etcdListenPeerPort = "2380"
-	// etcdCACertName defines etcd's CA certificate name
+	// etcdCACertName defines etcd's CA certificate name.
 	etcdCACertName = "/etc/kubernetes/pki/etcd/ca.crt"
-	// etcdPeerCertName defines etcd's peer certificate name
+	// etcdPeerCertName defines etcd's peer certificate name.
 	etcdPeerCertName = "/etc/kubernetes/pki/etcd/peer.crt"
-	// etcdPeerKeyName defines etcd's peer key name
+	// etcdPeerKeyName defines etcd's peer key name.
 	etcdPeerKeyName = "/etc/kubernetes/pki/etcd/peer.key"
 )
 

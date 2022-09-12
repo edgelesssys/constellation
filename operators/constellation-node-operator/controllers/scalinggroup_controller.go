@@ -35,7 +35,7 @@ const (
 	conditionScalingGroupOutOfDateMessage = "Scaling group will not use the latest image when creating new nodes"
 )
 
-// ScalingGroupReconciler reconciles a ScalingGroup object
+// ScalingGroupReconciler reconciles a ScalingGroup object.
 type ScalingGroupReconciler struct {
 	scalingGroupUpdater
 	client.Client
