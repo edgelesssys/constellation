@@ -17,9 +17,10 @@ import (
 )
 
 type Server struct {
-	log    *logger.Logger
-	server http.Server
-	done   chan<- struct{}
+	log          *logger.Logger
+	server       http.Server
+	measurements map[uint32][]byte
+	done         chan<- struct{}
 }
 
 func New(log *logger.Logger, done chan<- struct{}) *Server {
@@ -77,5 +78,12 @@ func (s *Server) logPCRs(w http.ResponseWriter, r *http.Request) {
 	log.Infof("PCR 4 %x", pcrs[4])
 	log.Infof("PCR 8 %x", pcrs[8])
 	log.Infof("PCR 9 %x", pcrs[9])
+
+	s.measurements = pcrs
+
 	s.done <- struct{}{}
+}
+
+func (s *Server) GetMeasurements() map[uint32][]byte {
+	return s.measurements
 }
