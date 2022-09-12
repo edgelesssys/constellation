@@ -14,6 +14,7 @@ import (
 	"github.com/edgelesssys/constellation/disk-mapper/recoverproto"
 	"github.com/edgelesssys/constellation/internal/atls"
 	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
+	"github.com/edgelesssys/constellation/internal/grpc/grpclog"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -89,8 +90,9 @@ func (s *RecoveryServer) Serve(ctx context.Context, listener net.Listener, diskU
 func (s *RecoveryServer) Recover(stream recoverproto.API_RecoverServer) error {
 	s.mux.Lock()
 	defer s.mux.Unlock()
+	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(stream.Context())))
 
-	s.log.Infof("Received recover call")
+	log.Infof("Received recover call")
 
 	msg, err := stream.Recv()
 	if err != nil {
@@ -99,33 +101,51 @@ func (s *RecoveryServer) Recover(stream recoverproto.API_RecoverServer) error {
 
 	measurementSecret, ok := msg.GetRequest().(*recoverproto.RecoverMessage_MeasurementSecret)
 	if !ok {
-		s.log.Errorf("Received invalid first message: not a measurement secret")
+		log.Errorf("Received invalid first message: not a measurement secret")
 		return status.Error(codes.InvalidArgument, "first message is not a measurement secret")
 	}
 
 	if err := stream.Send(&recoverproto.RecoverResponse{DiskUuid: s.diskUUID}); err != nil {
-		s.log.With(zap.Error(err)).Errorf("Failed to send disk UUID")
+		log.With(zap.Error(err)).Errorf("Failed to send disk UUID")
 		return status.Error(codes.Internal, "failed to send response")
 	}
 
 	msg, err = stream.Recv()
 	if err != nil {
-		s.log.With(zap.Error(err)).Errorf("Failed to receive disk key")
+		log.With(zap.Error(err)).Errorf("Failed to receive disk key")
 		return status.Error(codes.Internal, "failed to receive message")
 	}
 
 	stateDiskKey, ok := msg.GetRequest().(*recoverproto.RecoverMessage_StateDiskKey)
 	if !ok {
-		s.log.Errorf("Received invalid second message: not a state disk key")
+		log.Errorf("Received invalid second message: not a state disk key")
 		return status.Error(codes.InvalidArgument, "second message is not a state disk key")
 	}
 
 	s.stateDiskKey = stateDiskKey.StateDiskKey
 	s.measurementSecret = measurementSecret.MeasurementSecret
-	s.log.Infof("Received state disk key and measurement secret, shutting down server")
+	log.Infof("Received state disk key and measurement secret, shutting down server")
 
 	go s.grpcServer.GracefulStop()
 	return nil
+}
+
+// stubServer implements the RecoveryServer interface but does not actually start a server.
+type stubServer struct {
+	log *logger.Logger
+}
+
+// NewStub returns a new stubbed RecoveryServer.
+// We use this to avoid having to start a server for worker nodes, since they don't require manual recovery.
+func NewStub(log *logger.Logger) *stubServer {
+	return &stubServer{log: log}
+}
+
+// Serve waits until the context is canceled and returns nil.
+func (s *stubServer) Serve(ctx context.Context, _ net.Listener, _ string) ([]byte, []byte, error) {
+	s.log.Infof("Running as worker node, skipping recovery server")
+	<-ctx.Done()
+	return nil, nil, ctx.Err()
 }
 
 type server interface {

@@ -44,6 +44,7 @@ func (c *Client) CreateLoadBalancers(ctx context.Context, isDebugCluster bool) e
 	//
 	// LoadBalancer definitions.
 	//
+	// LoadBalancers added here also need to be referenced in instances.go:*Client.CreateInstances
 
 	c.loadbalancers = append(c.loadbalancers, &loadBalancer{
 		name:            c.buildResourceName("kube"),
@@ -75,6 +76,14 @@ func (c *Client) CreateLoadBalancers(ctx context.Context, isDebugCluster bool) e
 		ip:              c.loadbalancerIPname,
 		frontendPort:    constants.KonnectivityPort,
 		backendPortName: "konnectivity",
+		healthCheck:     computepb.HealthCheck_TCP,
+	})
+
+	c.loadbalancers = append(c.loadbalancers, &loadBalancer{
+		name:            c.buildResourceName("recovery"),
+		ip:              c.loadbalancerIPname,
+		frontendPort:    constants.RecoveryPort,
+		backendPortName: "recovery",
 		healthCheck:     computepb.HealthCheck_TCP,
 	})
 

@@ -26,6 +26,7 @@ type RecoverMessage struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Request:
+	//
 	//	*RecoverMessage_StateDiskKey
 	//	*RecoverMessage_MeasurementSecret
 	Request isRecoverMessage_Request `protobuf_oneof:"request"`
