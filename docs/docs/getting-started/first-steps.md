@@ -25,43 +25,45 @@ The following steps will guide you through the process of creating a cluster and
 
     This creates the file `constellation-conf.yaml` in your current working directory.
 
-2.  Fill in your cloud provider specific information:
+2.  Fill in your cloud provider specific information.
 
     <tabs groupId="csp">
     <tabItem value="azure" label="Azure (CLI)" default>
 
-    For a quick start it's recommended to use our `az` script to automatically create all required resources:
+    For a quick start it's recommended to use the following `az` script to automatically create all required resources:
 
     ```bash
     RESOURCE_GROUP=constellation # enter name of resource group here
     LOCATION=westus # enter location of resources here
     SUBSCRIPTION_ID=$(az account show --query id --out tsv)
-    SERVICE_PRINCIPLE_NAME=constell
+    SERVICE_PRINCIPAL_NAME=constell
     az group create --name "${RESOURCE_GROUP}" --location "${LOCATION}"
     az group create --name "${RESOURCE_GROUP}-identity" --location "${LOCATION}"
-    az ad sp create-for-rbac -n "${SERVICE_PRINCIPLE_NAME}" --role Owner --scopes "/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}" | tee azureServiceAccountKey.json
-    az identity create -g "${RESOURCE_GROUP}-identity" -n "${SERVICE_PRINCIPLE_NAME}"
-    identityID=$(az identity show -n "${SERVICE_PRINCIPLE_NAME}" -g "${RESOURCE_GROUP}-identity" --query principalId --out tsv)
+    az ad sp create-for-rbac -n "${SERVICE_PRINCIPAL_NAME}" --role Owner --scopes "/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}" | tee azureServiceAccountKey.json
+    az identity create -g "${RESOURCE_GROUP}-identity" -n "${SERVICE_PRINCIPAL_NAME}"
+    identityID=$(az identity show -n "${SERVICE_PRINCIPAL_NAME}" -g "${RESOURCE_GROUP}-identity" --query principalId --out tsv)
     az role assignment create --assignee-principal-type ServicePrincipal --assignee-object-id "${identityID}" --role 'Virtual Machine Contributor' --scope "/subscriptions/${SUBSCRIPTION_ID}"
     az role assignment create --assignee-principal-type ServicePrincipal --assignee-object-id "${identityID}" --role 'Application Insights Component Contributor' --scope "/subscriptions/${SUBSCRIPTION_ID}"
     echo "subscription: ${SUBSCRIPTION_ID}"
     echo "tenant: $(az account show --query tenantId -o tsv)"
     echo "location: ${LOCATION}"
     echo "resourceGroup: ${RESOURCE_GROUP}"
-    echo "userAssignedIdentity: $(az identity show -n "${SERVICE_PRINCIPLE_NAME}" -g "${RESOURCE_GROUP}-identity" --query id --out tsv)"
+    echo "userAssignedIdentity: $(az identity show -n "${SERVICE_PRINCIPAL_NAME}" -g "${RESOURCE_GROUP}-identity" --query id --out tsv)"
     echo "appClientID: $(jq -r '.appId' azureServiceAccountKey.json)"
     echo "clientSecretValue: $(jq -r '.password' azureServiceAccountKey.json)"
     ```
 
-    Fill in the printed out values to your configuration file.
+    Fill the values produced by the script into your configuration file.
 
-    By default, Constellation uses `Standard_DC4as_v5` CVMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file.
-
-    For CVMs, any VM type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported.
-
-    If you decide to use [trusted launch VMs](../workflows/trusted-launch.md) instead, set **confidentialVM** to false. Afterward, you can use any VMs with a minimum of 4 vCPUs from the [Dav4 & Dasv4](https://docs.microsoft.com/en-us/azure/virtual-machines/dav4-dasv4-series) or [Eav4 & Easv4](https://docs.microsoft.com/en-us/azure/virtual-machines/eav4-easv4-series) families.
+    By default, Constellation uses `Standard_DC4as_v5` CVMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. For CVMs, any VM type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported.
 
     Run `constellation config instance-types` to get the list of all supported options.
+
+    :::info
+
+    In case you don't have access to CVMs, you may use less secure  [trusted launch VMs](../workflows/trusted-launch.md) instead. For this, set **confidentialVM** to `false` in the configuration file.
+
+    :::
 
     </tabItem>
     <tabItem value="azure-portal" label="Azure (Portal)">
@@ -84,8 +86,6 @@ The following steps will guide you through the process of creating a cluster and
     * **instanceType**: Is the VM type you want to use for your Constellation nodes.
 
       For CVMs, any type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported. It defaults to `Standard_DC4as_v5` (4 vCPUs, 16 GB RAM).
-
-      If you decide to use [trusted launch VMs](../workflows/trusted-launch.md) instead, set **confidentialVM** to false. Afterward, you can use any VMs with a minimum of 4 vCPUs from the [Dav4 & Dasv4](https://docs.microsoft.com/en-us/azure/virtual-machines/dav4-dasv4-series) or [Eav4 & Easv4](https://docs.microsoft.com/en-us/azure/virtual-machines/eav4-easv4-series) families.
 
       Run `constellation config instance-types` to get the list of all supported options.
 
@@ -116,7 +116,7 @@ The following steps will guide you through the process of creating a cluster and
     </tabItem>
     <tabItem value="gcp" label="GCP (CLI)">
 
-    For a quick start it's recommended to use our `gcloud` script to automatically create all required resources:
+    For a quick start it's recommended to use the following `gcloud` script to automatically create all required resources:
 
     ```bash
     SERVICE_ACCOUNT_ID=constell # enter name of service account here
@@ -133,7 +133,7 @@ The following steps will guide you through the process of creating a cluster and
     echo "serviceAccountKeyPath: $(realpath gcpServiceAccountKey.json)"
     ```
 
-    Fill in the printed out values to your configuration file.
+    Fill the values produced by the script into your configuration file.
 
     By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all machines from the N2D family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
 
