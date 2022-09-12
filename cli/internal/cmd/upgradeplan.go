@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-const imageReleaseURL = "https://github.com/edgelesssys/constellation/releases/latest/download/image-manifest.json"
+const imageReleaseURL = "https://github.com/edgelesssys/constellation/releases/latest/download/versions-manifest.json"
 
 var (
 	azureCVMRxp = regexp.MustCompile(`^\/CommunityGalleries\/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df\/Images\/constellation\/Versions\/[\d]+.[\d]+.[\d]+$`)
