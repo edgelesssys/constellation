@@ -8,6 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package main
 
 import (
+	"context"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
@@ -42,7 +43,7 @@ func getIDKeyDigest(rawToken string) (string, error) {
 	}
 
 	// Get JSON Web Key set.
-	keySetBytes, err := httpGet("https://sharedeus.eus.attest.azure.net/certs")
+	keySetBytes, err := httpGet(context.Background(), "https://sharedeus.eus.attest.azure.net/certs")
 	if err != nil {
 		return "", err
 	}
@@ -95,8 +96,12 @@ func parseKeySet(keySetBytes []byte) (jose.JSONWebKeySet, error) {
 	return keySet, nil
 }
 
-func httpGet(url string) ([]byte, error) {
-	resp, err := http.Get(url)
+func httpGet(ctx context.Context, url string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
