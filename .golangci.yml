@@ -10,21 +10,17 @@ output:
 linters:
   enable:
     # Default linters
-    - deadcode
     - errcheck
     - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - structcheck
     - typecheck
     - unused
-    - varcheck
     # Additional linters
     - bodyclose
     - errname
     - exportloopref
-    - ifshort
     - godot
     - gofmt
     - gofumpt
