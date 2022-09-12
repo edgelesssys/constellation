@@ -67,7 +67,7 @@ sequenceDiagram
 
 The *VerificationService* runs as DaemonSet on each node.
 It provides user-facing functionality for remote attestation during the cluster's lifetime via an endpoint for [verifying the cluster](attestation.md#cluster-attestation).
-Read more about the hardware-based [attestation feature](attestation.md) of Constellation and how to [verify](../workflows/verify-cluster.md) a cluster on the client side.
+Read more about the hardware-based [attestation feature](attestation.md) of Constellation and how to [verify](../workflows/verify.md) a cluster on the client side.
 
 ## KMS
 
