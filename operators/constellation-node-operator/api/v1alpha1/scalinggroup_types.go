@@ -15,7 +15,7 @@ const (
 	ConditionOutdated = "Outdated"
 )
 
-// ScalingGroupSpec defines the desired state of ScalingGroup
+// ScalingGroupSpec defines the desired state of ScalingGroup.
 type ScalingGroupSpec struct {
 	// NodeImage is the name of the NodeImage resource.
 	NodeImage string `json:"nodeImage,omitempty"`
@@ -25,7 +25,7 @@ type ScalingGroupSpec struct {
 	Autoscaling bool `json:"autoscaling,omitempty"`
 }
 
-// ScalingGroupStatus defines the observed state of ScalingGroup
+// ScalingGroupStatus defines the observed state of ScalingGroup.
 type ScalingGroupStatus struct {
 	// ImageReference is the image currently used for newly created nodes in this scaling group.
 	ImageReference string `json:"imageReference,omitempty"`
@@ -37,7 +37,7 @@ type ScalingGroupStatus struct {
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:scope=Cluster
 
-// ScalingGroup is the Schema for the scalinggroups API
+// ScalingGroup is the Schema for the scalinggroups API.
 type ScalingGroup struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -48,7 +48,7 @@ type ScalingGroup struct {
 
 //+kubebuilder:object:root=true
 
-// ScalingGroupList contains a list of ScalingGroup
+// ScalingGroupList contains a list of ScalingGroup.
 type ScalingGroupList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

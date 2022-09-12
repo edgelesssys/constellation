@@ -11,13 +11,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// NodeImageSpec defines the desired state of NodeImage
+// NodeImageSpec defines the desired state of NodeImage.
 type NodeImageSpec struct {
 	// ImageReference is the image to use for all nodes.
 	ImageReference string `json:"image,omitempty"`
 }
 
-// NodeImageStatus defines the observed state of NodeImage
+// NodeImageStatus defines the observed state of NodeImage.
 type NodeImageStatus struct {
 	// Outdated is a list of nodes that are using an outdated image.
 	Outdated []corev1.ObjectReference `json:"outdated,omitempty"`
@@ -45,7 +45,7 @@ type NodeImageStatus struct {
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:scope=Cluster
 
-// NodeImage is the Schema for the nodeimages API
+// NodeImage is the Schema for the nodeimages API.
 type NodeImage struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -56,7 +56,7 @@ type NodeImage struct {
 
 //+kubebuilder:object:root=true
 
-// NodeImageList contains a list of NodeImage
+// NodeImageList contains a list of NodeImage.
 type NodeImageList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

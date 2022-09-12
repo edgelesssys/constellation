@@ -18,7 +18,7 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: NodeImage is the Schema for the nodeimages API
+        description: NodeImage is the Schema for the nodeimages API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -33,14 +33,14 @@ spec:
           metadata:
             type: object
           spec:
-            description: NodeImageSpec defines the desired state of NodeImage
+            description: NodeImageSpec defines the desired state of NodeImage.
             properties:
               image:
                 description: ImageReference is the image to use for all nodes.
                 type: string
             type: object
           status:
-            description: NodeImageStatus defines the observed state of NodeImage
+            description: NodeImageStatus defines the observed state of NodeImage.
             properties:
               budget:
                 description: Budget is the amount of extra nodes that can be created
