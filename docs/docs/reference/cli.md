@@ -14,15 +14,15 @@ Commands:
 * [config](#constellation-config): Work with the Constellation configuration file
   * [generate](#constellation-config-generate): Generate a default configuration file
   * [fetch-measurements](#constellation-config-fetch-measurements): Fetch measurements for configured cloud provider and image
-  * [instance-types](#constellation-config-instance-types): Prints the supported instance types for all cloud providers
+  * [instance-types](#constellation-config-instance-types): Print the supported instance types for all cloud providers
 * [create](#constellation-create): Create instances on a cloud platform for your Constellation cluster
 * [init](#constellation-init): Initialize the Constellation cluster
 * [verify](#constellation-verify): Verify the confidential properties of a Constellation cluster
+* [upgrade](#constellation-upgrade): Plan and perform an upgrade of a Constellation cluster
+  * [plan](#constellation-upgrade-plan): Plan an upgrade of a Constellation cluster
+  * [execute](#constellation-upgrade-execute): Execute an upgrade of a Constellation cluster
 * [recover](#constellation-recover): Recover a completely stopped Constellation cluster
 * [terminate](#constellation-terminate): Terminate a Constellation cluster
-* [upgrade](#constellation-upgrade): Plan and perform an upgrade of a Constellation cluster
-  * [execute](#constellation-upgrade-execute): Execute an upgrade of a Constellation cluster
-  * [plan](#constellation-upgrade-plan): Plan an upgrade of a Constellation cluster
 * [version](#constellation-version): Display version of this CLI
 
 ## constellation config
@@ -31,7 +31,7 @@ Work with the Constellation configuration file
 
 ### Synopsis
 
-Generate a configuration file for Constellation.
+Work with the Constellation configuration file.
 
 ### Options
 
@@ -98,11 +98,11 @@ constellation config fetch-measurements [flags]
 
 ## constellation config instance-types
 
-Prints the supported instance types for all cloud providers
+Print the supported instance types for all cloud providers
 
 ### Synopsis
 
-Prints the supported instance types for all cloud providers.
+Print the supported instance types for all cloud providers.
 
 ```
 constellation config instance-types [flags]
@@ -203,6 +203,75 @@ constellation verify [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
 ```
 
+## constellation upgrade
+
+Plan and perform an upgrade of a Constellation cluster
+
+### Synopsis
+
+Plan and perform an upgrade of a Constellation cluster.
+
+### Options
+
+```
+  -h, --help   help for upgrade
+```
+
+### Options inherited from parent commands
+
+```
+      --config string   path to the configuration file (default "constellation-conf.yaml")
+```
+
+## constellation upgrade plan
+
+Plan an upgrade of a Constellation cluster
+
+### Synopsis
+
+Plan an upgrade of a Constellation cluster by fetching compatible image versions and their measurements.
+
+```
+constellation upgrade plan [flags]
+```
+
+### Options
+
+```
+  -f, --file string   path to output file, or '-' for stdout (omit for interactive mode)
+  -h, --help          help for plan
+```
+
+### Options inherited from parent commands
+
+```
+      --config string   path to the configuration file (default "constellation-conf.yaml")
+```
+
+## constellation upgrade execute
+
+Execute an upgrade of a Constellation cluster
+
+### Synopsis
+
+Execute an upgrade of a Constellation cluster by applying the chosen configuration.
+
+```
+constellation upgrade execute [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for execute
+```
+
+### Options inherited from parent commands
+
+```
+      --config string   path to the configuration file (default "constellation-conf.yaml")
+```
+
 ## constellation recover
 
 Recover a completely stopped Constellation cluster
@@ -246,75 +315,6 @@ constellation terminate [flags]
 
 ```
   -h, --help   help for terminate
-```
-
-### Options inherited from parent commands
-
-```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-```
-
-## constellation upgrade
-
-Plan and perform an upgrade of a Constellation cluster
-
-### Synopsis
-
-Plan and perform an upgrade of a Constellation cluster.
-
-### Options
-
-```
-  -h, --help   help for upgrade
-```
-
-### Options inherited from parent commands
-
-```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-```
-
-## constellation upgrade execute
-
-Execute an upgrade of a Constellation cluster
-
-### Synopsis
-
-Execute an upgrade of a Constellation cluster by applying the chosen configuration.
-
-```
-constellation upgrade execute [flags]
-```
-
-### Options
-
-```
-  -h, --help   help for execute
-```
-
-### Options inherited from parent commands
-
-```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
-```
-
-## constellation upgrade plan
-
-Plan an upgrade of a Constellation cluster
-
-### Synopsis
-
-Plan an upgrade of a Constellation cluster by fetching compatible image versions and their measurements.
-
-```
-constellation upgrade plan [flags]
-```
-
-### Options
-
-```
-  -f, --file string   path to output file, or '-' for stdout, leave empty for interactive mode
-  -h, --help          help for plan
 ```
 
 ### Options inherited from parent commands
