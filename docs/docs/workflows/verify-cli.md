@@ -1,6 +1,6 @@
 # Verify the CLI
 
-Edgeless Systems uses [sigstore](https://www.sigstore.dev/) to ensure supply-chain security for the Constellation CLI and node images ("artifacts"). Sigstore consists of three components: [Cosign](https://docs.sigstore.dev/cosign/overview), [Rekor](https://docs.sigstore.dev/rekor/overview), and Fulcio. Edgeless Systems uses Cosign to sign artifacts. All signatures are automatically uploaded to the public Rekor transparency log, which resides at https://rekor.sigstore.dev/. 
+Edgeless Systems uses [sigstore](https://www.sigstore.dev/) to ensure supply-chain security for the Constellation CLI and node images ("artifacts"). sigstore consists of three components: [Cosign](https://docs.sigstore.dev/cosign/overview), [Rekor](https://docs.sigstore.dev/rekor/overview), and Fulcio. Edgeless Systems uses Cosign to sign artifacts. All signatures are automatically uploaded to the public Rekor transparency log, which resides at https://rekor.sigstore.dev/.
 
 :::note
 The public key for Edgeless Systems' long-term code-signing key is:
@@ -13,12 +13,12 @@ JmEe5iSLvG1SyQSAew7WdMKF6o9t8e2TFuCkzlOhhlws2OHWbiFZnFWCFw==
 The public key is also available for download at https://edgeless.systems/es.pub and in the Twitter profile [@EdgelessSystems](https://twitter.com/EdgelessSystems).
 :::
 
-The Rekor transparency log is a public append-only ledger that verifies and records signatures and associated metadata. The Rekor transparency log enables everyone to observe the sequence of (software) signatures issued by Edgeless Systems and many other parties. The transparency log allows for the public identification of dubious or malicious signatures. 
+The Rekor transparency log is a public append-only ledger that verifies and records signatures and associated metadata. The Rekor transparency log enables everyone to observe the sequence of (software) signatures issued by Edgeless Systems and many other parties. The transparency log allows for the public identification of dubious or malicious signatures.
 
 You should always ensure that (1) your CLI executable was signed with the private key corresponding to the above public key and that (2) there is a corresponding entry in the Rekor transparency log. Both can be done as is described in the following.
 
 :::info
-You don't need to verify the Constellation node images. This is done automatically by your CLI and the rest of Constellation. 
+You don't need to verify the Constellation node images. This is done automatically by your CLI and the rest of Constellation.
 :::
 
 ## Verify the signature
@@ -44,7 +44,7 @@ Verified OK
 
 ## Optional: Manually inspect the transparency log
 
-To further inspect the public Rekor transparency log, [install the Rekor CLI](https://docs.sigstore.dev/rekor/installation). A search for the CLI executable  should give a single UUID. (Note that this UUID contains the UUID from the previous `cosign` command.) 
+To further inspect the public Rekor transparency log, [install the Rekor CLI](https://docs.sigstore.dev/rekor/installation). A search for the CLI executable  should give a single UUID. (Note that this UUID contains the UUID from the previous `cosign` command.)
 
 ```shell-session
 $ rekor-cli search --artifact constellation-linux-amd64
@@ -79,9 +79,9 @@ Body: {
   }
 }
 ```
-The field `publicKey` should contain Edgeless Systems' public key in Base64 encoding. 
+The field `publicKey` should contain Edgeless Systems' public key in Base64 encoding.
 
-You can get an exhaustive list of artifact signatures issued by Edgeless Systems via the following command: 
+You can get an exhaustive list of artifact signatures issued by Edgeless Systems via the following command:
 
 ```bash
 $ rekor-cli search --public-key https://edgeless.systems/es.pub --pki-format x509

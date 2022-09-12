@@ -1,5 +1,5 @@
 # Emojivoto
-[Emojivoto](https://github.com/BuoyantIO/emojivoto) is a simple and fun application that is well suited to test the basic functionality of your cluster.
+[Emojivoto](https://github.com/BuoyantIO/emojivoto) is a simple and fun application that's well suited to test the basic functionality of your cluster.
 
 <!-- vale off -->
 
