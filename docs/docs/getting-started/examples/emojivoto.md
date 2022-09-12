@@ -1,5 +1,5 @@
 # Emojivoto
-For a simple but fun demo application to test the general functionality of your confidential cluster, take a look at [Emojivoto](https://github.com/BuoyantIO/emojivoto).
+[Emojivoto](https://github.com/BuoyantIO/emojivoto) is a simple and fun application that is well suited to test the basic functionality of your cluster.
 
 <!-- vale off -->
 

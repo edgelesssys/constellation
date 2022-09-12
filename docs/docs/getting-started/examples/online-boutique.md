@@ -1,5 +1,5 @@
 # Online Boutique
-[Online Boutique](https://github.com/GoogleCloudPlatform/microservices-demo) is an e-commerce demo application by Google consisting of 11 separate microservices. Constellation is automatically able to set up a load balancer on your CSP, making it easy to expose services from your confidential cluster without any additional setup required.
+[Online Boutique](https://github.com/GoogleCloudPlatform/microservices-demo) is an e-commerce demo application by Google consisting of 11 separate microservices. In this demo, Constellation automatically sets up a load balancer on your CSP, making it easy to expose services from your confidential cluster.
 
 <!-- vale off -->
 
