@@ -62,6 +62,9 @@ func (c *Checker) CheckLicense(ctx context.Context, provider cloudprovider.Provi
 	if err != nil {
 		printer("Unable to contact license server.\n")
 		printer("Please keep your vCPU quota in mind.\n")
+	} else if licenseID == CommunityLicense {
+		printer("You can use Constellation to create services for internal consumption.\n")
+		printer("For details, see https://docs.edgeless.systems/constellation/overview/license\n")
 	} else {
 		printer("Please keep your vCPU quota (%d) in mind.\n", quotaResp.Quota)
 	}
