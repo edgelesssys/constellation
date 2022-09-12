@@ -137,10 +137,6 @@ Follow Google's guide on [understanding](https://cloud.google.com/iam/docs/under
 </tabItem>
 </tabs>
 
-### Troubleshooting
-
-If you receive an error during any of the outlined steps, please verify that you have executed all previous steps in this documentation. Also, feel free to ask our active community on [Discord](https://discord.com/invite/rH8QTH56JN) for help.
-
 ### Next Steps
 
 Once you have followed all previous steps, you can proceed [to deploy your first confidential Kubernetes cluster and application](first-steps.md).
