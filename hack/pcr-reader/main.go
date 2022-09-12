@@ -70,6 +70,8 @@ func main() {
 
 type Measurements map[uint32][]byte
 
+var _ yaml.Marshaler = Measurements{}
+
 // MarshalYAML forces that measurements are written as base64. Default would
 // be to print list of bytes.
 func (m Measurements) MarshalYAML() (interface{}, error) {
