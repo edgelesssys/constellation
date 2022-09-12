@@ -1,32 +1,21 @@
-# Recovery
+# Recover your cluster
 
-Recovery of a Constellation cluster means getting a cluster back into a healthy state after it became unhealthy due to the underlying infrastructure.
+Recovery of a Constellation cluster means getting a cluster back into a healthy state after too many concurrent node failures in the control plane.
 Reasons for an unhealthy cluster can vary from a power outage, or planned reboot, to migration of nodes and regions.
-Constellation keeps all stateful data protected and encrypted in a [stateful disk](../architecture/images.md#stateful-disk) attached to each node.
-The stateful disk will be persisted across reboots.
-The data restored from that disk contains the entire Kubernetes state including the application deployments.
-Meaning after a successful recovery procedure the applications can continue operating without redeploying everything from scratch.
+Recovery events are rare, because Constellation is built for high availability and automatically and securely replaces failed nodes. When a node is replaced, Constellation's control plane first verifies the new node before it sends the node the cryptographic keys required to decrypt its [stateful disk](../architecture/images.md#stateful-disk).
 
-Recovery events are rare because Constellation is built for high availability and contains mechanisms to automatically replace and join nodes to the cluster.
-Once a node reboots, the [*Bootstrapper*](../architecture/components.md#bootstrapper) will try to authenticate to the cluster's [*JoinService*](../architecture/components.md#joinservice) using remote attestation.
-If successful the *JoinService* will return the encryption key for the stateful disk as part of the initialization response.
-This process ensures that Constellation nodes can securely recover and rejoin a cluster autonomously.
-
-In case of a disaster, where the control plane itself becomes unhealthy, Constellation provides a mechanism to recover that cluster and bring it back into a healthy state.
+Constellation provides a recovery mechanism for cases where the control plane has failed and is unable to replace nodes.
 The `constellation recover` command connects to a node, establishes a secure connection using [attested TLS](../architecture/attestation.md#attested-tls-atls), and provides that node with the key to decrypt its stateful disk and continue booting.
 This process has to be repeated until enough nodes are back running for establishing a [member quorum for etcd](https://etcd.io/docs/v3.5/faq/#what-is-failure-tolerance) and the Kubernetes state can be recovered.
 
 ## Identify unhealthy clusters
 
 The first step to recovery is identifying when a cluster becomes unhealthy.
-Usually, that's first observed when the Kubernetes API server becomes unresponsive.
-The causes can vary but are often related to issues in the underlying infrastructure.
-Recovery in Constellation becomes necessary if not enough control-plane nodes are in a healthy state to keep the control plane operational.
+Usually, this can be first observed when the Kubernetes API server becomes unresponsive.
 
-The health status of the Constellation nodes can be checked and monitored via the cloud service provider.
+The health status of the Constellation nodes can be checked and monitored via the cloud service provider (CSP).
 Constellation provides logging information on the boot process and status via [cloud logging](troubleshooting.md#cloud-logging).
 In the following, you'll find detailed descriptions for identifying clusters stuck in recovery for each cloud environment.
-Once you've identified that your cluster is in an unhealthy state you can use the [recovery](recovery.md#recover-your-cluster) command of the Constellation CLI to restore it.
 
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure" default>
@@ -62,9 +51,7 @@ If that fails, because the control plane is unhealthy, you will see log messages
 {"level":"ERROR","ts":"2022-09-08T09:57:23Z","logger":"rejoinClient","caller":"rejoinclient/client.go:110","msg":"Failed to rejoin on all endpoints"}
 ```
 
-That means you have to recover that node manually.
-Before you continue with the [recovery process](#recover-your-cluster) you need to know the node's IP address.
-For the IP address, return to the instances *Overview* page and find the *Private IP address*.
+This means that you have to recover the node manually. For this, you need its IP address, which can be obtained from the *Overview* page under *Private IP address*.
 
 </tabItem>
 <tabItem value="gcp" label="GCP" default>
@@ -101,16 +88,14 @@ If that fails, because the control plane is unhealthy, you will see log messages
 {"level":"ERROR","ts":"2022-09-08T10:22:13Z","logger":"rejoinClient","caller":"rejoinclient/client.go:110","msg":"Failed to rejoin on all endpoints"}
 ```
 
-That means you have to recover that node manually.
-Before you continue with the [recovery process](#recover-your-cluster) you need to know the node's IP address.
-For the IP address go to the *"VM Instance" -> "network interfaces"* page and take the address from *"Primary internal IP address."*
+This means that you have to recover the node manually. For this, you need its IP address, which can be obtained from the *"VM Instance" -> "network interfaces"* page under *"Primary internal IP address."*
 
 </tabItem>
 </tabs>
 
 ## Recover your cluster
 
-Depending on the size of your cluster and the number of unhealthy control plane nodes the following process needs to be repeated until a [member quorum for etcd](https://etcd.io/docs/v3.5/faq/#what-is-failure-tolerance) is established.
+The following process needs to be repeated until a [member quorum for etcd](https://etcd.io/docs/v3.5/faq/#what-is-failure-tolerance) is established.
 For example, assume you have 5 control-plane nodes in your cluster and 4 of them have been rebooted due to a maintenance downtime in the cloud environment.
 You have to run through the following process for 2 of these nodes and recover them manually to recover the quorum.
 From there, your cluster will auto heal the remaining 2 control-plane nodes and the rest of your cluster.
@@ -140,5 +125,3 @@ In the serial console output of the node you'll see a similar output to the foll
 {"level":"INFO","ts":"2022-09-08T10:26:59Z","logger":"recoveryServer.gRPC","caller":"zap/server_interceptors.go:61","msg":"finished streaming call with code OK","grpc.start_time":"2022-09-08T10:26:59Z","system":"grpc","span.kind":"server","grpc.service":"recoverproto.API","grpc.method":"Recover","peer.address":"192.0.2.3:41752","grpc.code":"OK","grpc.time_ms":15.701}
 {"level":"INFO","ts":"2022-09-08T10:27:13Z","logger":"rejoinClient","caller":"rejoinclient/client.go:87","msg":"RejoinClient stopped"}
 ```
-
-After enough control plane nodes have been recovered and the Kubernetes cluster becomes healthy again, the rest of the cluster will start auto healing using the mechanism described above.
