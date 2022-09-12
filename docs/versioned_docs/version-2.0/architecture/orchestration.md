@@ -70,7 +70,7 @@ You can read more about these values and their meaning in the guide on [cluster 
 The *master secret* must be kept secret and can be used to [recover your cluster](../workflows/recovery.md).
 Instead of managing this secret manually, you can [use your key management solution of choice](keys.md#user-managed-key-management) with Constellation.
 
-The *clusterID* uniquely identifies a cluster and can be used to [verify your cluster](../workflows/verify-cluster.md).
+The *clusterID* uniquely identifies a cluster and can be used to [verify your cluster](../workflows/verify.md).
 
 ## Upgrades
 
