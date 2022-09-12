@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"runtime"
 	"strconv"
 	"text/tabwriter"
 	"time"
@@ -221,7 +222,12 @@ func writeOutput(idFile clusterid.File, resp *initproto.InitResponse, wr io.Writ
 	}
 
 	fmt.Fprintln(wr, "You can now connect to your cluster by executing:")
-	fmt.Fprintf(wr, "\texport KUBECONFIG=\"$PWD/%s\"\n", constants.AdminConfFilename)
+	if runtime.GOOS == "windows" {
+		fmt.Fprintf(wr, "\tset KUBECONFIG=%%CD%%\\%s (cmd.exe)\n", constants.AdminConfFilename)
+		fmt.Fprintf(wr, "\t$env:KUBECONFIG=\"$PWD\\%s\" (PowerShell)\n", constants.AdminConfFilename)
+	} else {
+		fmt.Fprintf(wr, "\texport KUBECONFIG=\"$PWD/%s\"\n", constants.AdminConfFilename)
+	}
 	return nil
 }
 
