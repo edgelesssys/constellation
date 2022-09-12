@@ -370,6 +370,61 @@ func TestExportPCRs(t *testing.T) {
 	}
 }
 
+func TestExportPCRs(t *testing.T) {
+	defaultConnect := &stubConnect{
+		network: stubNetwork{
+			leases: []libvirt.NetworkDHCPLease{
+				{
+					IPaddr:   "192.0.100.1",
+					Hostname: "control-plane-0",
+				},
+			},
+		},
+	}
+
+	testCases := map[string]struct {
+		remoteAddr string
+		connect    *stubConnect
+		message    string
+		method     string
+		wantErr    bool
+	}{
+		"success": {
+			remoteAddr: "192.0.100.1:1234",
+			connect:    defaultConnect,
+			method:     http.MethodPost,
+			message:    mustMarshal(t, map[uint32][]byte{0: []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")}),
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			file := file.NewHandler(afero.NewMemMapFs())
+			server := New(logger.NewTest(t), tc.connect, file)
+
+			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.0.1/pcrs", strings.NewReader(tc.message))
+			require.NoError(err)
+			req.RemoteAddr = tc.remoteAddr
+
+			w := httptest.NewRecorder()
+			server.exportPCRs(w, req)
+
+			if tc.wantErr {
+				assert.NotEqual(http.StatusOK, w.Code)
+				return
+			}
+
+			assert.Equal(http.StatusOK, w.Code)
+			output, err := file.Read(exportedPCRsDir + tc.connect.network.leases[0].Hostname + "_pcrs.json")
+			require.NoError(err)
+			assert.JSONEq(tc.message, string(output))
+		})
+	}
+}
+
 func mustMarshal(t *testing.T, v interface{}) string {
 	t.Helper()
 	b, err := json.Marshal(v)

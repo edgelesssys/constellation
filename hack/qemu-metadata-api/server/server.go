@@ -45,6 +45,7 @@ func (s *Server) ListenAndServe(port string) error {
 	mux.Handle("/peers", http.HandlerFunc(s.listPeers))
 	mux.Handle("/log", http.HandlerFunc(s.postLog))
 	mux.Handle("/pcrs", http.HandlerFunc(s.exportPCRs))
+	mux.Handle("/nodecidr", http.HandlerFunc(s.getNodeCIDR))
 
 	server := http.Server{
 		Handler: mux,
@@ -139,6 +140,19 @@ func (s *Server) postLog(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.With(zap.String("message", string(msg))).Infof("Cloud-logging entry")
+}
+
+func (s *Server) getNodeCIDR(w http.ResponseWriter, r *http.Request) {
+	log := s.log.With(zap.String("peer", r.RemoteAddr))
+	log.Infof("Serving GET request for /nodecidr")
+
+	_, err := w.Write([]byte("10.42.0.0/16"))
+	if err != nil {
+		log.With(zap.Error(err)).Errorf("Failed to write response")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	log.Infof("Request successful")
 }
 
 // exportPCRs allows QEMU instances to export their TPM state during boot.
