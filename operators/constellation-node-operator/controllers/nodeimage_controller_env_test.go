@@ -180,7 +180,7 @@ var _ = Describe("NodeImage controller", func() {
 				return k8sClient.Get(ctx, joiningPendingNodeLookupKey, pendingNode)
 			}).Should(Succeed())
 			Eventually(func() updatev1alpha1.CSPNodeState {
-				k8sClient.Get(ctx, joiningPendingNodeLookupKey, pendingNode)
+				_ = k8sClient.Get(ctx, joiningPendingNodeLookupKey, pendingNode)
 				return pendingNode.Status.CSPNodeState
 			}).Should(Equal(updatev1alpha1.NodeStateReady))
 			Eventually(func() int {
