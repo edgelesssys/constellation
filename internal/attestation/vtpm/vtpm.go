@@ -12,17 +12,12 @@ import (
 	"github.com/google/go-tpm/tpm2"
 )
 
-const (
-	// tpmPath is the path to the vTPM.
-	tpmPath = "/dev/tpmrm0"
-)
-
 // TPMOpenFunc opens a TPM device.
 type TPMOpenFunc func() (io.ReadWriteCloser, error)
 
 // OpenVTPM opens the vTPM at `TPMPath`.
 func OpenVTPM() (io.ReadWriteCloser, error) {
-	return tpm2.OpenTPM(tpmPath)
+	return tpm2.OpenTPM()
 }
 
 type nopTPM struct{}
