@@ -192,10 +192,9 @@ constellation verify [flags]
 ### Options
 
 ```
-      --cluster-id string      verify using Constellation's cluster identifier
+      --cluster-id string      expected cluster identifier
   -h, --help                   help for verify
   -e, --node-endpoint string   endpoint of the node to verify, passed as HOST[:PORT]
-      --owner-id string        verify using the owner identity derived from the master secret
 ```
 
 ### Options inherited from parent commands
