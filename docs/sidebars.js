@@ -125,11 +125,6 @@ const sidebars = {
         },
         {
           type: 'doc',
-          label: 'Verify your cluster',
-          id: 'workflows/verify-cluster',
-        },
-        {
-          type: 'doc',
           label: 'Scale your cluster',
           id: 'workflows/scale',
         },
@@ -140,26 +135,6 @@ const sidebars = {
         },
         {
           type: 'doc',
-          label: 'Use persistent storage',
-          id: 'workflows/storage',
-        },
-        {
-          type: 'doc',
-          label: 'Azure trusted launch VMs',
-          id: 'workflows/trusted-launch',
-        },
-        {
-          type: 'doc',
-          label: 'Managing SSH keys',
-          id: 'workflows/ssh',
-        },
-        {
-          type: 'doc',
-          label: 'Troubleshooting',
-          id: 'workflows/troubleshooting',
-        },
-        {
-          type: 'doc',
           label: 'Terminate your cluster',
           id: 'workflows/terminate',
         },
@@ -167,6 +142,31 @@ const sidebars = {
           type: 'doc',
           label: 'Recover your cluster',
           id: 'workflows/recovery',
+        },
+        {
+          type: 'doc',
+          label: 'Verify your cluster',
+          id: 'workflows/verify-cluster',
+        },
+        {
+          type: 'doc',
+          label: 'Manage SSH keys',
+          id: 'workflows/ssh',
+        },
+        {
+          type: 'doc',
+          label: 'Use persistent storage',
+          id: 'workflows/storage',
+        },
+        {
+          type: 'doc',
+          label: 'Use Trusted Launch VMs',
+          id: 'workflows/trusted-launch',
+        },
+        {
+          type: 'doc',
+          label: 'Troubleshooting',
+          id: 'workflows/troubleshooting',
         },
       ],
     },

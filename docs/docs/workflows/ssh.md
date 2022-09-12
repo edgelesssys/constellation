@@ -1,4 +1,4 @@
-# Managing SSH Keys
+# Manage SSH Keys
 
 Constellation gives you the capability to create UNIX users which can connect to the cluster nodes over SSH, allowing you to access both control-plane as well as worker nodes. While the data partition is persistent, the system partition is read-only, meaning that users need to be re-created upon each restart of a node. This is where the Access Manager comes into effect, ensuring the automatic (re-)creation of all users whenever a node is restarted.
 

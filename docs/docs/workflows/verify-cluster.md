@@ -1,10 +1,14 @@
-# Verify your cluster
+# Manually verify your cluster
 
-Constellation's [attestation feature](../architecture/attestation.md) allows you, or a third party, to verify the integrity (and confidentiality) of your Constellation.
+Constellation's [attestation feature](../architecture/attestation.md) allows you, or a third party, to explicitly verify the integrity and confidentiality of your Constellation cluster.
+
+:::note
+The steps below are purely optional. They are automatically executed by `constellation init` when you initialize your cluster. The `constellation verify` command mostly has an illustrative purpose. 
+:::
 
 ## Fetch measurements
 
-To verify the integrity of Constellation you need trusted measurements to verify against. For each of the released images there are signed measurements, which you can download using the CLI:
+To verify the integrity of Constellation you need trusted measurements to verify against. For each node image released by Edgeless Systems, there are signed measurements, which you can download using the CLI:
 
 ```bash
 constellation config fetch-measurements
@@ -12,22 +16,23 @@ constellation config fetch-measurements
 
 This command performs the following steps:
 1. Download the signed measurements for the configured image. By default, this will use Edgeless Systems' public measurement registry. 
-3. Verify the signed images. By default, this will use Edgeless Systems' [public key](https://edgeless.systems/es.pub). 
-4. Write measurements into configuration file.
+2. Verify the signed images. By default, this will use Edgeless Systems' [public key](https://edgeless.systems/es.pub). 
+3. Write measurements into configuration file.
 
 ## The *verify* command
 
-Once measurements are configured, this command verifies an attestation statement issued by a Constellation, thereby verifying the integrity and confidentiality of the whole cluster.
-
-The following command performs attestation on the Constellation deployment in your current workspace:
+The `verify` command obtains and verifies an attestation statement from a running Constellation cluster.  
 
 ```bash
 constellation verify --cluster-id [...]
 ```
 
-The command ensures that the value passed as `--cluster-id` matches the unique *clusterID* presented in the attestation statement.
-This allows you to verify that you are connecting to the right Constellation instance
-Additionally, the command verifies that the Confidential VM type and node images used by your Constellation deployment match the expected configurations.
+From the attestation statement, the command verifies the following properties:
+* The cluster is using the correct Confidential VM (CVM) type.
+* Inside the CVMs, the correct node images are running. The node images are identified through the measurements obtained in the previous step.
+* The unique ID of the cluster matches the one passed in via `--cluster-id`. 
+
+Once the above properties are verified, you know that you are talking to the right Constellation cluster is in a good and trustworthy shape.
 
 ### Custom arguments
 
