@@ -66,3 +66,7 @@ html[data-theme='dark'] .header-github-link:before {
 .tabs {
   border-bottom: 1px solid var(--ifm-color-emphasis-300);
 }
+
+.footer--dark {
+  background-color: black;
+}
