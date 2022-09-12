@@ -180,6 +180,7 @@ async function createConfig() {
         prism: {
           theme: lightCodeTheme,
           darkTheme: darkCodeTheme,
+          additionalLanguages: ['shell-session'],
         },
       }),
 
