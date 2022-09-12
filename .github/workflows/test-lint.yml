@@ -39,10 +39,17 @@ jobs:
           go-version: "1.19.1"
           cache: true
 
+      - name: Get Go submodules
+        id: submods
+        shell: bash
+        run: |
+          mods=$(go list -f '{{.Dir}}/...' -m | xargs)
+          echo "Found mods: $mods"
+          echo "::set-output name=submods::${mods}"
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@537aa1903e5d359d0b27dbc19ddd22c5087f3fbc
         with:
           skip-pkg-cache: true
           skip-build-cache: true
-          working-directory: ./... ./hack/... ./operators/constellation-node-operator/...
-          args: --timeout=15m
+          args: --timeout=15m ${{ steps.submods.outputs.submods }}
