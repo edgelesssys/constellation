@@ -20,7 +20,7 @@
     kubectl wait --for=condition=available --timeout=300s -n boutique --all deployments
     ```
 4. Get the external facing IP address of the frontend (with `<your-ip>` being a placeholder for the assigned IP from your CSP):
-    ```terminal-session
+    ```shell-session
     kubectl get service frontend-external -n boutique | awk '{print $4}'
     EXTERNAL-IP
     <your-ip>
