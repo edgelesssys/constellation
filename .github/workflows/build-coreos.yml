@@ -6,6 +6,9 @@ on:
         description: "Branch of CoreOS config repo to build from"
         default: "main"
         required: false
+      imageVersion:
+        description: "Semantic version including patch e.g. v<major>.<minor>.<patch> (only used for releases)"
+        required: false
       debug:
         description: "Build debug image"
         type: boolean
@@ -87,16 +90,16 @@ jobs:
         run: |
           timestamp=${{ steps.version.outputs.timestamp }}
           semver=${{ steps.version.outputs.semanticVersion }}
-          releaseVersion=${{ steps.version.outputs.releaseVersion }}
+          imageVersion=${{ inputs.imageVersion }}
           pseudover=${{ steps.version.outputs.pseudoVersion }}
           echo "azureImageName=constellation-${pseudover//./-}" >> $GITHUB_ENV
           if [ "${{ startsWith(github.ref, 'refs/heads/release/') && (inputs.debug == false) }}" = true ]
           then
-            echo "gcpImageName=constellation-${releaseVersion//./-}" >> $GITHUB_ENV
+            echo "gcpImageName=constellation-${imageVersion//./-}" >> $GITHUB_ENV
             echo "gcpImageFamily=constellation" >> $GITHUB_ENV
             echo "azureGalleryName=Constellation" >> $GITHUB_ENV
             echo "azureImageDefinition=constellation" >> $GITHUB_ENV
-            echo "azureImageVersion=${releaseVersion:1}" >> $GITHUB_ENV
+            echo "azureImageVersion=${imageVersion:1}" >> $GITHUB_ENV
           elif [ "${{ ((github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/')) && (inputs.debug == true) }}" = true ]
           then
             echo "gcpImageName=constellation-${{ steps.version.outputs.timestamp }}" >> $GITHUB_ENV
