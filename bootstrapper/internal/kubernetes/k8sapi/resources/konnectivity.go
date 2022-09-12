@@ -253,7 +253,7 @@ func NewKonnectivityServerStaticPod() *konnectivityServerStaticPod {
 							"--agent-service-account=konnectivity-agent",
 							"--kubeconfig=/etc/kubernetes/konnectivity-server.conf",
 							"--authentication-audience=system:konnectivity-server",
-							"--proxy-strategies=destHost",
+							"--proxy-strategies=destHost,default",
 						},
 						LivenessProbe: &corev1.Probe{
 							ProbeHandler: corev1.ProbeHandler{
