@@ -38,7 +38,6 @@ jobs:
       - name: Create and populate build folder
         run: mkdir build && cd build && cmake ..
 
-      # Runs all test targets starting with "unit-"
       - name: Unit Tests
-        run: ctest -j $(nproc) -R unit-
+        run: ctest -j $(nproc) -R unit
         working-directory: build
