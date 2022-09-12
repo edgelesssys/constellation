@@ -15,6 +15,7 @@ deallocate
 [Ee]mojivoto
 etcd
 Filestore
+Fulcio
 Gbps
 iam
 IAM
@@ -26,6 +27,7 @@ kubelet
 libcryptsetup
 namespace
 [Pp]laintext
+Rekor
 resizable
 sigstore
 systemd

@@ -112,7 +112,8 @@ async function createConfig() {
         },
         announcementBar: {
           content:
-            '⭐️ If you like Constellation, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/edgelesssys/constellation">GitHub</a>! ⭐️',
+            'If you like Constellation, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/edgelesssys/constellation">GitHub</a> ⭐️',
+          backgroundColor: '#E7E6E6'
         },
         footer: {
           style: 'dark',
@@ -174,7 +175,7 @@ async function createConfig() {
               ],
             },
           ],
-          copyright: `Copyright © ${new Date().getFullYear()} Edgeless Systems. Built with Docusaurus.`,
+          copyright: `Copyright © ${new Date().getFullYear()} Edgeless Systems`,
         },
         prism: {
           theme: lightCodeTheme,

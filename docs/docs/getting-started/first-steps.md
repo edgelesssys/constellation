@@ -177,7 +177,7 @@ The following steps will guide you through the process of creating a cluster and
 
     This command is necessary to download the latest trusted measurements for your configured image.
 
-    For more details, see the [verification section](../workflows/verify.md).
+    For more details, see the [verification section](../workflows/verify-cluster.md).
 
 4. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml` automatically.
 
