@@ -32,7 +32,7 @@ const (
 	etcdPeerKeyName = "/etc/kubernetes/pki/etcd/peer.key"
 )
 
-var memberNotFoundErr = errors.New("member not found")
+var errMemberNotFound = errors.New("member not found")
 
 // Client is an etcd client that can be used to remove a member from an etcd cluster.
 type Client struct {
@@ -79,7 +79,7 @@ func (c *Client) Close() error {
 func (c *Client) RemoveEtcdMemberFromCluster(ctx context.Context, vpcIP string) error {
 	memberID, err := c.getMemberID(ctx, vpcIP)
 	if err != nil {
-		if err == memberNotFoundErr {
+		if err == errMemberNotFound {
 			return nil
 		}
 		return err
@@ -102,7 +102,7 @@ func (c *Client) getMemberID(ctx context.Context, vpcIP string) (uint64, error) 
 			}
 		}
 	}
-	return 0, memberNotFoundErr
+	return 0, errMemberNotFound
 }
 
 // peerURL returns the peer etcd URL for the given vpcIP and port.
