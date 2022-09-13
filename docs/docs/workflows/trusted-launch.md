@@ -1,6 +1,6 @@
 # Use Azure trusted launch VMs
 
-Constellation also supports [trusted launch VMs](https://docs.microsoft.com/en-us/azure/virtual-machines/trusted-launch) on Microsoft Azure. Trusted launch VMs don't offer the same level of security as CVMs, but are available in more regions and in larger quantities. The main difference between trusted launch VMs and normal VMs is that the former offer vTPM-based remote attestation. When used with trusted launch VMs, Constellation relies on vTPM-based remote attestation to verify nodes.
+Constellation also supports [trusted launch VMs](https://docs.microsoft.com/en-us/azure/virtual-machines/trusted-launch) on Microsoft Azure. Trusted launch VMs don't offer the same level of security as Confidential VMs, but are available in more regions and in larger quantities. The main difference between trusted launch VMs and normal VMs is that the former offer vTPM-based remote attestation. When used with trusted launch VMs, Constellation relies on vTPM-based remote attestation to verify nodes.
 
 :::caution
 
@@ -20,7 +20,7 @@ After you've downloaded the image, create a resource group `constellation-images
 You can use a script to do this:
 
 ```bash
-wget https://github.com/edgelesssys/constellation/blob/main/hack/importAzure.sh
+wget https://raw.githubusercontent.com/edgelesssys/constellation/main/hack/importAzure.sh
 chmod +x importAzure.sh
 AZURE_IMAGE_VERSION=2.0.0 AZURE_RESOURCE_GROUP_NAME=constellation-images AZURE_IMAGE_FILE=./2.0.0 ./importAzure.sh
 ```
@@ -31,6 +31,14 @@ The script creates the following resources:
 3. The actual image with the provided version. In this case `2.0.0`
 
 Once the import is completed, use the `ID` of the image version in your `constellation-conf.yaml` for the `image` field. Set `confidentialVM` to `false`.
+
+Fetch the image measurements:
+
+```bash
+IMAGE_VERSION=2.0.0
+URL=https://public-edgeless-constellation.s3.us-east-2.amazonaws.com//CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/$IMAGE_VERSION/measurements.yaml
+constellation config fetch-measurements -u$URL -s$URL.sig
+```
 
 :::info
 
