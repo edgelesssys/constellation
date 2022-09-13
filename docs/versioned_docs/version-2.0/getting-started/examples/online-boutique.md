@@ -1,5 +1,5 @@
 # Online Boutique
-[Online Boutique](https://github.com/GoogleCloudPlatform/microservices-demo) is an e-commerce demo application by Google consisting of 11 separate microservices. Constellation is automatically able to set up a load balancer on your CSP, making it easy to expose services from your confidential cluster without any additional setup required.
+[Online Boutique](https://github.com/GoogleCloudPlatform/microservices-demo) is an e-commerce demo application by Google consisting of 11 separate microservices. In this demo, Constellation automatically sets up a load balancer on your CSP, making it easy to expose services from your confidential cluster.
 
 <!-- vale off -->
 
@@ -20,7 +20,7 @@
     kubectl wait --for=condition=available --timeout=300s -n boutique --all deployments
     ```
 4. Get the external facing IP address of the frontend (with `<your-ip>` being a placeholder for the assigned IP from your CSP):
-    ```terminal-session
+    ```shell-session
     kubectl get service frontend-external -n boutique | awk '{print $4}'
     EXTERNAL-IP
     <your-ip>
