@@ -16,6 +16,7 @@ jobs:
         with:
           targetOS: linux
           targetArch: amd64
+          enterpriseCLI: true
           cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
           cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
@@ -25,6 +26,7 @@ jobs:
         with:
           targetOS: linux
           targetArch: arm64
+          enterpriseCLI: true
           cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
           cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
@@ -34,6 +36,7 @@ jobs:
         with:
           targetOS: darwin
           targetArch: amd64
+          enterpriseCLI: true
           cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
           cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
@@ -43,6 +46,7 @@ jobs:
         with:
           targetOS: darwin
           targetArch: arm64
+          enterpriseCLI: true
           cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
           cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           cosignPassword: ${{ secrets.COSIGN_PASSWORD }}

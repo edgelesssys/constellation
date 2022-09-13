@@ -12,6 +12,10 @@ inputs:
     description: "Build CLI for this architecture. [amd64, arm64]"
     required: true
     default: "amd64"
+  enterpriseCLI:
+    description: "Build CLI with enterprise flag."
+    required: false
+    default: "false"
   cosignPublicKey:
     description: "Cosign public key"
     required: false
@@ -53,7 +57,12 @@ runs:
         echo "::group::Build CLI"
         mkdir -p build
         cd build
-        cmake -DCLI_BUILD_TAGS:STRING=enterprise ..
+        if [ ${{ inputs.enterpriseCLI }} == 'true' ]
+        then
+          cmake -DCLI_BUILD_TAGS:STRING=enterprise ..
+        else
+          cmake ..
+        fi
         GOOS=${{ inputs.targetOS }} GOARCH=${{ inputs.targetArch }} make -j`nproc` cli
         cp constellation constellation-${{ inputs.targetOS }}-${{ inputs.targetArch }}
         echo "$(pwd)" >> $GITHUB_PATH
