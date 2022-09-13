@@ -1,0 +1,78 @@
+name: Generate measurements manually
+
+on:
+  workflow_dispatch:
+    inputs:
+      cloudProvider:
+        description: "Which cloud provider to use."
+        type: choice
+        options:
+          - "azure"
+          - "gcp"
+        default: "gcp"
+        required: true
+      coreosImage:
+        description: "CoreOS image (full path). Examples are in internal/config/config.go."
+        type: string
+        required: true
+      isDebugImage:
+        description: "Is CoreOS image a debug image?"
+        type: boolean
+        required: true
+
+jobs:
+  generate-measurements-manual:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+
+      - name: Login to Azure
+        if: ${{ github.event.inputs.cloudProvider == 'azure' }}
+        uses: ./.github/actions/azure_login
+        with:
+          azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
+
+      - name: Create Azure resource group
+        id: az_resource_group_gen
+        if: ${{ github.event.inputs.cloudProvider == 'azure' }}
+        shell: bash
+        run: |
+          uuid=$(cat /proc/sys/kernel/random/uuid)
+          name=e2e-test-${uuid%%-*}
+          az group create --location westus --name $name --tags e2e
+          echo "::set-output name=res_group_name::$name"
+
+      - name: Create Cluster & Generate Measurements
+        uses: ./.github/actions/generate_measurements
+        with:
+          cloudProvider: ${{ github.event.inputs.cloudProvider }}
+          gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
+          azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
+          azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
+          coreosImage: ${{ github.event.inputs.coreosImage }}
+          isDebugImage: ${{ github.event.inputs.isDebugImage }}
+          cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
+          awsAccessKeyID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          awsSecretAccessKey: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          awsDefaultRegion: ${{ secrets.AWS_DEFAULT_REGION }}
+          awsBucketName: ${{ secrets.PUBLIC_BUCKET_NAME }}
+
+      - name: Always terminate cluster
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/constellation_destroy
+
+      - name: Always destroy Azure resource group
+        if: ${{ always() && github.event.inputs.cloudProvider == 'azure' }}
+        shell: bash
+        run: |
+          az group delete \
+            --name ${{ steps.az_resource_group_gen.outputs.res_group_name }} \
+            --force-deletion-types Microsoft.Compute/virtualMachineScaleSets \
+            --force-deletion-types Microsoft.Compute/virtualMachines \
+            --no-wait \
+            --yes
