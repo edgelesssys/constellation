@@ -32,7 +32,7 @@ From the attestation statement, the command verifies the following properties:
 * Inside the CVMs, the correct node images are running. The node images are identified through the measurements obtained in the previous step.
 * The unique ID of the cluster matches the one passed in via `--cluster-id`. 
 
-Once the above properties are verified, you know that you are talking to the right Constellation cluster is in a good and trustworthy shape.
+Once the above properties are verified, you know that you are talking to the right Constellation cluster and it's in a good and trustworthy shape.
 
 ### Custom arguments
 
