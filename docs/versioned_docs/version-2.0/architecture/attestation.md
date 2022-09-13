@@ -120,7 +120,7 @@ Refer to [images](images.md) for more details on the Constellation boot chain.
 The Constellation [Bootstrapper](components.md#bootstrapper) is the first user mode component that runs in a Constellation image.
 It extends PCR registers with the [IDs](keys.md#cluster-identity) of the cluster marking a node as initialized.
 
-Constellation allows to specify in the [config](../reference/config.md) which measurements should be enforced during the attestation process
+Constellation allows to specify in the config which measurements should be enforced during the attestation process
 Enforcing non-reproducible measurements controlled by the cloud provider means that changes in these values require manual updates to the cluster's config.
 By default, Constellation only enforces measurements that are stable values produced by the infrastructure or by Constellation directly.
 
@@ -187,7 +187,7 @@ The latter means that value can be generated offline and compared to the one in 
 
 ## Cluster attestation
 
-Cluster-facing, Constellation's [*JoinService*](components.md#joinservice) verifies each node joining the cluster given the [configured](../reference/config.md) ground truth runtime measurements.
+Cluster-facing, Constellation's [*JoinService*](components.md#joinservice) verifies each node joining the cluster given the configured ground truth runtime measurements.
 User-facing, the [*VerificationService*](components.md#verificationservice) provides an interface to verify a node using remote attestation.
 By verifying the first node during the [initialization](components.md#bootstrapper) and configuring the ground truth measurements that are subsequently enforced by the *JoinService*, the whole cluster is verified in a transitive way.
 

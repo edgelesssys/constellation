@@ -42,7 +42,7 @@ constellation config generate gcp
 </tabItem>
 </tabs>
 
-This creates the file `constellation-conf.yaml` in the current directory. You must edit it before you can execute the next steps. See the [reference section](../reference/config.md) for details.
+This creates the file `constellation-conf.yaml` in the current directory. You must edit it before you can execute the next steps.
 
 Next, download the latest trusted measurements for your configured image.
 
