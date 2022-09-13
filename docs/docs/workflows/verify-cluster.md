@@ -16,7 +16,7 @@ constellation config fetch-measurements
 
 This command performs the following steps:
 1. Download the signed measurements for the configured image. By default, this will use Edgeless Systems' public measurement registry. 
-2. Verify the signed images. By default, this will use Edgeless Systems' [public key](https://edgeless.systems/es.pub). 
+2. Verify the signed images. This will use Edgeless Systems' [public key](https://edgeless.systems/es.pub). 
 3. Write measurements into configuration file.
 
 ## The *verify* command
