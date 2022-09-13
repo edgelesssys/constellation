@@ -66,12 +66,15 @@ runs:
     - name: Install Cosign
       uses: sigstore/cosign-installer@48866aa521d8bf870604709cd43ec2f602d03ff2
       if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
+
     - name: Install Rekor
       run: |
         curl -sLO https://github.com/sigstore/rekor/releases/download/v0.9.0/rekor-cli-linux-amd64
         sudo install rekor-cli-linux-amd64 /usr/local/bin/rekor-cli
       shell: bash
+      working-directory: build
       if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
+
     - name: Sign CLI
       run: |
         SIGN_TARGET=constellation-${{ inputs.targetOS }}-${{ inputs.targetArch }}
