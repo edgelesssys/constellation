@@ -1,24 +1,24 @@
-# Azure trusted launch VMs
+# Use Azure trusted launch VMs
 
-Constellation supports Azure trusted launch VMs. These are VMs with instance type `Standard_D*_v4` and `Standard_E*_v4`.
+Constellation also supports [trusted launch VMs](https://docs.microsoft.com/en-us/azure/virtual-machines/trusted-launch) on Microsoft Azure. Trusted launch VMs don't offer the same level of security as CVMs, but are available in more regions and in larger quantities. The main difference between trusted launch VMs and normal VMs is that the former offer vTPM-based remote attestation. When used with trusted launch VMs, Constellation relies on vTPM-based remote attestation to verify nodes.
 
 :::caution
 
-Trusted launch VMs don't provide [runtime encryption](../overview/confidential-kubernetes.md).
-For highest security, use Confidential VMs.
+Trusted launch VMs don't provide runtime encryption and don't keep the cloud service provider (CSP) out of your trusted computing base.
 
 :::
 
-Run `constellation config instance-types` to show all supported instance types.
+Constellation supports trusted launch VMs with instance types `Standard_D*_v4` and `Standard_E*_v4`. Run `constellation config instance-types` for a list of all supported instance types.
 
 ## VM images
 
-Azure currently doesn't support [community galleries for trusted launch VMs](https://docs.microsoft.com/en-us/azure/virtual-machines/share-gallery-community). So you need to import the VM image into your cloud subscription.
+Azure currently doesn't support [community galleries for trusted launch VMs](https://docs.microsoft.com/en-us/azure/virtual-machines/share-gallery-community). Thus, you need to manually import the Constellation node image into your cloud subscription.
 
-The latest image is available at [https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/azure_image_exports/2.0.0](https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/azure_image_exports/2.0.0). Simply adjust the last three numbers if you want to download an image for a different version.
+The latest image is available at [https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/azure_image_exports/2.0.0](https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/azure_image_exports/2.0.0). Simply adjust the last three digits to download a different version.
 
 After you've downloaded the image, create a resource group `constellation-images` in your Azure subscription and import the image.
 You can use a script to do this:
+
 ```bash
 wget https://github.com/edgelesssys/constellation/blob/main/hack/importAzure.sh
 chmod +x importAzure.sh

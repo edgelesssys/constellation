@@ -1,4 +1,4 @@
-# Upgrade you cluster
+# Upgrade your cluster
 
 Constellation provides an easy way to upgrade from one release to the next.
 This involves choosing a new VM image to use for all nodes in the cluster and updating the cluster's expected measurements.

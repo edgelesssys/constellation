@@ -67,7 +67,7 @@ For creating Kubernetes clusters in GCP a local copy of the service account secr
 
 1. [Create a new service account key](https://console.cloud.google.com/iam-admin/serviceaccounts/details/112741463528383500960/keys?authuser=0&project=constellation-331613&supportedpurview=project)
 2. Create a compact (one line) JSON representation of the file `jq -c`
-3. Store in [GitHub Action Secret](https://github.com/edgelesssys/constellation/settings/secrets/actions) or create a local secret file for act to consume:
+3. Store in GitHub Action Secret or create a local secret file for act to consume:
 
 ```bash
 $ cat secrets.env

@@ -1,26 +1,25 @@
 # Use persistent storage
 
-Persistent storage in Kubernetes requires configuration based on your cloud provider of choice.
+Persistent storage in Kubernetes requires cloud-specific configuration.
 For abstraction of container storage, Kubernetes offers [volumes](https://kubernetes.io/docs/concepts/storage/volumes/),
 allowing users to mount storage solutions directly into containers.
 The [Container Storage Interface (CSI)](https://kubernetes-csi.github.io/docs/) is the standard interface for exposing arbitrary block and file storage systems into containers in Kubernetes.
-Cloud providers offer their own CSI-based solutions for cloud storage.
+Cloud service providers (CSPs) offer their own CSI-based solutions for cloud storage.
 
 ### Confidential storage
 
 Most cloud storage solutions support encryption, such as [GCE Persistent Disks (PD)](https://cloud.google.com/kubernetes-engine/docs/how-to/using-cmek).
 Constellation supports the available CSI-based storage options for Kubernetes engines in Azure and GCP.
-However, their encryption takes place in the storage backend and is managed by the cloud provider.
-This mode of storage encryption doesn't provide confidential storage.
-Using the default CSI drivers for these storage types means trusting the CSP with your persistent data.
+However, their encryption takes place in the storage backend and is managed by the CSP.
+Thus, using the default CSI drivers for these storage types means trusting the CSP with your persistent data.
 
-Constellation provides CSI drivers for Azure Disk and GCE PD, offering [encryption on the node level](../architecture/keys.md#storage-encryption). They enable transparent encryption for persistent volumes without needing to trust the cloud backend. Plaintext data never leaves the confidential VM context, offering you confidential storage.
+To address this, Constellation provides CSI drivers for Azure Disk and GCE PD, offering [encryption on the node level](../architecture/keys.md#storage-encryption). They enable transparent encryption for persistent volumes without needing to trust the cloud backend. Plaintext data never leaves the confidential VM context, offering you confidential storage.
 
 For more details see [encrypted persistent storage](../architecture/encrypted-storage.md).
 
 ## CSI Drivers
 
-Constellation can use the following drivers which offer node level encryption and optional integrity protection.
+Constellation supports the following drivers, which offer node-level encryption and optional integrity protection.
 
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure" default>
@@ -46,7 +45,7 @@ Note that in case the options above aren't a suitable solution for you, Constell
 
 ## Installation
 
-The following installation guide gives a brief overview of using CSI-based confidential cloud storage for persistent volumes in Constellation.
+The following installation guide gives an overview of how to securely use CSI-based cloud storage for persistent volumes in Constellation.
 
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure" default>
@@ -82,12 +81,6 @@ The following installation guide gives a brief overview of using CSI-based confi
     EOF
     ```
 
-:::info
-
-By default, integrity protection is disabled for performance reasons. If you want to enable integrity protection, add `csi.storage.k8s.io/fstype: ext4-integrity` to `parameters`. Alternatively, you can use another filesystem by specifying another file system type with the suffix `-integrity`. Note that volume expansion isn't supported for integrity-protected disks.
-
-:::
-
 </tabItem>
 <tabItem value="gcp" label="GCP" default>
 
@@ -118,15 +111,15 @@ By default, integrity protection is disabled for performance reasons. If you wan
     volumeBindingMode: WaitForFirstConsumer
     EOF
     ```
+    
+</tabItem>
+</tabs>
 
 :::info
 
 By default, integrity protection is disabled for performance reasons. If you want to enable integrity protection, add `csi.storage.k8s.io/fstype: ext4-integrity` to `parameters`. Alternatively, you can use another filesystem by specifying another file system type with the suffix `-integrity`. Note that volume expansion isn't supported for integrity-protected disks.
 
 :::
-
-</tabItem>
-</tabs>
 
 3. Create a [persistent volume](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
 

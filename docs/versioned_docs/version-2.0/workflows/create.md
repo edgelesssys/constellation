@@ -15,7 +15,7 @@ This step creates the necessary resources for your cluster in your cloud environ
 
 Before creating your cluster you need to decide on
 
-* the size of your cluster (the number of control-plane and worker nodes)
+* the initial size of your cluster (the number of control-plane and worker nodes)
 * the machine type of your nodes (depending on the availability in your cloud environment)
 * whether to enable autoscaling for your cluster (automatically adding and removing nodes depending on resource demands)
 
@@ -66,10 +66,6 @@ For details on the flags and a list of supported instance types, consult the com
 
 ## The *init* step
 
-This step bootstraps your cluster and configures your Kubernetes client.
-
-### Init
-
 The following command initializes and bootstraps your cluster:
 
 ```bash
@@ -82,11 +78,11 @@ To enable autoscaling in your cluster, add the `--autoscale` flag:
 constellation init --autoscale
 ```
 
-Next, configure kubectl for your Constellation cluster:
+Next, configure `kubectl` for your Constellation cluster:
 
 ```bash
 export KUBECONFIG="$PWD/constellation-admin.conf"
 kubectl get nodes -o wide
 ```
 
-That's it. You've successfully created a Constellation cluster.
+🏁 That's it. You've successfully created a Constellation cluster.
