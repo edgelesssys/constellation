@@ -24,13 +24,6 @@ jobs:
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
           # TODO: Remove E2E_SKIP once AB#2174 is resolved
           sonobuoyTestSuiteCmd: '--plugin e2e --plugin-env e2e.E2E_FOCUS="\[Conformance\]" --plugin-env e2e.E2E_SKIP="for service with type clusterIP|HostPort validates that there is no conflict between pods with same hostPort but different hostIP and protocol" --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-plugin.yaml --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-master-plugin.yaml'
-          cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
-          cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
-          awsAccessKeyID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          awsSecretAccessKey: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          awsDefaultRegion: ${{ secrets.AWS_DEFAULT_REGION }}
-          awsBucketName: ${{ secrets.PUBLIC_BUCKET_NAME }}
 
       - name: Always terminate cluster
         if: always()
