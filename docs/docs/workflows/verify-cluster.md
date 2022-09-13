@@ -3,7 +3,7 @@
 Constellation's [attestation feature](../architecture/attestation.md) allows you, or a third party, to explicitly verify the integrity and confidentiality of your Constellation cluster.
 
 :::note
-The steps below are purely optional. They are automatically executed by `constellation init` when you initialize your cluster. The `constellation verify` command mostly has an illustrative purpose. 
+The steps below are purely optional. They're automatically executed by `constellation init` when you initialize your cluster. The `constellation verify` command mostly has an illustrative purpose.
 :::
 
 ## Fetch measurements
@@ -15,13 +15,13 @@ constellation config fetch-measurements
 ```
 
 This command performs the following steps:
-1. Download the signed measurements for the configured image. By default, this will use Edgeless Systems' public measurement registry. 
-2. Verify the signed images. This will use Edgeless Systems' [public key](https://edgeless.systems/es.pub). 
+1. Download the signed measurements for the configured image. By default, this will use Edgeless Systems' public measurement registry.
+2. Verify the signed images. This will use Edgeless Systems' [public key](https://edgeless.systems/es.pub).
 3. Write measurements into configuration file.
 
 ## The *verify* command
 
-The `verify` command obtains and verifies an attestation statement from a running Constellation cluster.  
+The `verify` command obtains and verifies an attestation statement from a running Constellation cluster.
 
 ```bash
 constellation verify [--cluster-id ...]
@@ -30,7 +30,7 @@ constellation verify [--cluster-id ...]
 From the attestation statement, the command verifies the following properties:
 * The cluster is using the correct Confidential VM (CVM) type.
 * Inside the CVMs, the correct node images are running. The node images are identified through the measurements obtained in the previous step.
-* The unique ID of the cluster matches the one passed in via `--cluster-id`. 
+* The unique ID of the cluster matches the one passed in via `--cluster-id`.
 
 Once the above properties are verified, you know that you are talking to the right Constellation cluster and it's in a good and trustworthy shape.
 
