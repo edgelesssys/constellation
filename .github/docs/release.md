@@ -58,5 +58,5 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         gh workflow run release-cli.yml --ref v1.3.0
         ```
         * The previous step will create a draft release. Check build output for link to draft release. Review & approve.
-6. Folow [export flow](https://github.com/edgelesssys/wiki/blob/master/documentation/constellation/customer-onboarding.md#manual-export-and-import) to make image available in S3 for trusted lanuch users.
+6. Folow [export flow (INTERNAL)](https://github.com/edgelesssys/wiki/blob/master/documentation/constellation/customer-onboarding.md#manual-export-and-import) to make image available in S3 for trusted lanuch users.
 7. To bring updated version numbers and other changes (if any) to main, create a new branch `feat/release` from `release/v1.3`, rebase it onto main, and create a PR to main
