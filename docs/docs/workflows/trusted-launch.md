@@ -1,4 +1,4 @@
-# Use trusted launch VMs
+# Use Azure trusted launch VMs
 
 Constellation also supports [trusted launch VMs](https://docs.microsoft.com/en-us/azure/virtual-machines/trusted-launch) on Microsoft Azure. Trusted launch VMs don't offer the same level of security as CVMs, but are available in more regions and in larger quantities. The main difference between trusted launch VMs and normal VMs is that the former offer vTPM-based remote attestation. When used with trusted launch VMs, Constellation relies on vTPM-based remote attestation to verify nodes.
 

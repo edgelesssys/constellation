@@ -160,7 +160,7 @@ const sidebars = {
         },
         {
           type: 'doc',
-          label: 'Use trusted launch VMs',
+          label: 'Use Azure trusted launch VMs',
           id: 'workflows/trusted-launch',
         },
         {
