@@ -1,6 +1,6 @@
 ![Constellation](docs/static/img/banner.svg)
 
-# Always Encrypted K8s
+# Always Encrypted Kubernetes
 
 <p>
     <a href="https://github.com/edgelesssys/constellation/blob/main/LICENSE"><img src="https://img.shields.io/github/license/edgelesssys/constellation" alt="Constellation License"></a>
