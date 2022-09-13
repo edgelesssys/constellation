@@ -97,8 +97,7 @@ runs:
           gcp)
             if [ "${{ inputs.coreosImage == 'debug-latest' }}" = true ]
             then
-              GCP_LATEST_FAMILY=$(gcloud compute images list --project constellation-images --filter="family ~ constellation-debug-v\d+-\d+-\d+" --format="value(family)" | sort --version-sort | tail -n 1)
-              GCP_IMAGE_NAME=$(gcloud compute images list --project constellation-images --filter="name ~ constellation-\d{10} AND family:${GCP_LATEST_FAMILY}" --sort-by=creationTimestamp --format="table(name)" | tail -n 1)
+              GCP_IMAGE_NAME=$(gcloud compute images list --project constellation-images --filter="name ~ constellation-\d{10} AND family~constellation-debug-v\d+-\d+-\d+" --sort-by=creationTimestamp --format="table(name)" | tail -n 1)
               GCP_IMAGE="projects/constellation-images/global/images/${GCP_IMAGE_NAME}"
             else
               GCP_IMAGE=${{ inputs.coreosImage }}
