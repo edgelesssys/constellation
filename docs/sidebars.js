@@ -236,11 +236,6 @@ const sidebars = {
           label: 'CLI',
           id: 'reference/cli',
         },
-        {
-          type: 'doc',
-          label: 'Configuration file',
-          id: 'reference/config',
-        },
       ],
     },
   ],

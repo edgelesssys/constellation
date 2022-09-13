@@ -2,7 +2,7 @@
 
 Constellation gives you the capability to create UNIX users which can connect to the cluster nodes over SSH, allowing you to access both control-plane and worker nodes. While the nodes' data partitions are persistent, the system partitions are read-only. Consequently, users need to be re-created upon each restart of a node. This is where the Access Manager comes into effect, ensuring the automatic (re-)creation of all users whenever a node is restarted.
 
-During the initial creation of the cluster, all users defined in the `ssh-users` section of the Constellation [configuration file](../reference/config.md) are automatically created during the initialization process. For persistence, the users are stored in a ConfigMap called `ssh-users`, residing in the `kube-system` namespace. For a running cluster, users can be added and removed by modifying the entries of the ConfigMap and performing a restart of a node.
+During the initial creation of the cluster, all users defined in the `ssh-users` section of the Constellation configuration file are automatically created during the initialization process. For persistence, the users are stored in a ConfigMap called `ssh-users`, residing in the `kube-system` namespace. For a running cluster, users can be added and removed by modifying the entries of the ConfigMap and performing a restart of a node.
 
 ## Access Manager
 The Access Manager supports all OpenSSH key types. These are RSA, ECDSA (using the `nistp256`, `nistp384`, `nistp521` curves) and Ed25519. 

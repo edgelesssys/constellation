@@ -20,7 +20,6 @@ Releases of Constellation are [published on GitHub](https://github.com/edgelesss
 
 To allow for fine-grained configuration of your cluster and cloud environment, Constellation supports an extensive configuration file with strong defaults.
 The CLI provides you with a good default configuration which can be generated with `constellation config generate`. Some cloud account-specific information is always required and to be set by the user.
-Details and examples can be found in the [reference guide](../reference/config.md).
 
 The following files are generated during the creation of a Constellation cluster and stored in the current workspace:
 
