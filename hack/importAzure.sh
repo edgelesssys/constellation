@@ -44,6 +44,7 @@ AZURE_IMAGE_NAME="${AZURE_IMAGE_NAME:-upload-target}"
 AZURE_IMAGE_OFFER="${AZURE_IMAGE_OFFER:-constellation}"
 AZURE_IMAGE_DEFINITION="${AZURE_IMAGE_DEFINITION:-constellation}"
 AZURE_SKU="${AZURE_SKU:-constellation-coreos}"
+AZURE_SECURITY_TYPE="${AZURE_SECURITY_TYPE:-TrustedLaunch}"
 
 if [[ -z "${AZURE_RESOURCE_GROUP_NAME}" ]]; then
   echo "Please provide a value for AZURE_RESOURCE_GROUP_NAME."
@@ -67,6 +68,7 @@ echo "AZURE_IMAGE_DEFINITION=${AZURE_IMAGE_DEFINITION}"
 echo "AZURE_IMAGE_VERSION=${AZURE_IMAGE_VERSION}"
 echo "AZURE_PUBLISHER=${AZURE_PUBLISHER}"
 echo "AZURE_SKU=${AZURE_SKU}"
+echo "AZURE_SECURITY_TYPE=${AZURE_SECURITY_TYPE}"
 echo ""
 
 read -p "Continue (y/n)?" choice
@@ -101,7 +103,7 @@ az image create -g ${AZURE_RESOURCE_GROUP_NAME} -l ${AZURE_REGION} -n ${AZURE_IM
 echo "Creating Azure Shared Image Gallery."
 az sig create -l ${AZURE_REGION} --gallery-name ${AZURE_GALLERY_NAME} --resource-group ${AZURE_RESOURCE_GROUP_NAME}
 echo "Creating Image Definition."
-az sig image-definition create --resource-group ${AZURE_RESOURCE_GROUP_NAME} -l ${AZURE_REGION} --gallery-name ${AZURE_GALLERY_NAME} --gallery-image-definition ${AZURE_IMAGE_DEFINITION} --publisher ${AZURE_PUBLISHER} --offer ${AZURE_IMAGE_OFFER} --sku ${AZURE_SKU} --os-type Linux --os-state generalized --hyper-v-generation V2 --features SecurityType=ConfidentialVmSupported
+az sig image-definition create --resource-group ${AZURE_RESOURCE_GROUP_NAME} -l ${AZURE_REGION} --gallery-name ${AZURE_GALLERY_NAME} --gallery-image-definition ${AZURE_IMAGE_DEFINITION} --publisher ${AZURE_PUBLISHER} --offer ${AZURE_IMAGE_OFFER} --sku ${AZURE_SKU} --os-type Linux --os-state generalized --hyper-v-generation V2 --features SecurityType=${AZURE_SECURITY_TYPE}
 echo "Retrieving temporary image ID."
 AZURE_IMAGE_ID=$(az image list --query "[?name == '${AZURE_IMAGE_NAME}' && resourceGroup == '${AZURE_RESOURCE_GROUP_NAME^^}'] | [0].id" --output json | jq -r)
 
