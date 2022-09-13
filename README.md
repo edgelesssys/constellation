@@ -1,6 +1,6 @@
 ![Constellation](docs/static/img/banner.svg)
 
-# Always Encrypted K8s
+# Always Encrypted Kubernetes
 
 <p>
     <a href="https://github.com/edgelesssys/constellation/blob/main/LICENSE"><img src="https://img.shields.io/github/license/edgelesssys/constellation" alt="Constellation License"></a>
@@ -13,7 +13,7 @@
 
 Constellation is a Kubernetes engine that aims to provide the best possible data security. It wraps your K8s cluster into a single *confidential context* that is shielded from the underlying cloud infrastructure. Everything inside is always encrypted, including at runtime in memory. For this, Constellation leverages confidential computing (see the [whitepaper]) and more specifically Confidential VMs.
 
-<img src="docs/static/img/concept.svg" alt="Concept" width="65%"/>
+<img src="docs/static/img/concept.svg" alt="Concept" width="85%"/>
 
 ## Goals
 
