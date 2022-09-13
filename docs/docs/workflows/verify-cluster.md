@@ -24,7 +24,7 @@ This command performs the following steps:
 The `verify` command obtains and verifies an attestation statement from a running Constellation cluster.  
 
 ```bash
-constellation verify --cluster-id [...]
+constellation verify [--cluster-id ...]
 ```
 
 From the attestation statement, the command verifies the following properties:
