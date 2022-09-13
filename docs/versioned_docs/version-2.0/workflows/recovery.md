@@ -43,7 +43,7 @@ On the left open the *"Support + troubleshooting" -> "Serial console"* page:
 In the serial console output search for `Waiting for decryption key`.
 Similar output to the following means your node was restarted and needs to decrypt the [state disk](../architecture/images.md#state-disk):
 
-```shell
+```json
 {"level":"INFO","ts":"2022-09-08T09:56:41Z","caller":"cmd/main.go:55","msg":"Starting disk-mapper","version":"2.0.0","cloudProvider":"azure"}
 {"level":"INFO","ts":"2022-09-08T09:56:43Z","logger":"setupManager","caller":"setup/setup.go:72","msg":"Preparing existing state disk"}
 {"level":"INFO","ts":"2022-09-08T09:56:43Z","logger":"recoveryServer","caller":"recoveryserver/server.go:59","msg":"Starting RecoveryServer"}
@@ -53,7 +53,7 @@ Similar output to the following means your node was restarted and needs to decry
 The node will then try to connect to the [*JoinService*](../architecture/components.md#joinservice) and obtain the decryption key.
 If that fails, because the control plane is unhealthy, you will see log messages similar to the following:
 
-```shell
+```json
 {"level":"INFO","ts":"2022-09-08T09:56:43Z","logger":"rejoinClient","caller":"rejoinclient/client.go:77","msg":"Received list with JoinService endpoints","endpoints":["10.9.0.5:30090","10.9.0.6:30090"]}
 {"level":"INFO","ts":"2022-09-08T09:56:43Z","logger":"rejoinClient","caller":"rejoinclient/client.go:96","msg":"Requesting rejoin ticket","endpoint":"10.9.0.5:30090"}
 {"level":"WARN","ts":"2022-09-08T09:57:03Z","logger":"rejoinClient","caller":"rejoinclient/client.go:101","msg":"Failed to rejoin on endpoint","error":"rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing dial tcp 10.9.0.5:30090: i/o timeout\"","endpoint":"10.9.0.5:30090"}
@@ -81,7 +81,7 @@ Check the serial console output of that instance by opening the *logs -> "Serial
 In the serial console output search for `Waiting for decryption key`.
 Similar output to the following means your node was restarted and needs to decrypt the [state disk](../architecture/images.md#state-disk):
 
-```shell
+```json
 {"level":"INFO","ts":"2022-09-08T10:21:53Z","caller":"cmd/main.go:55","msg":"Starting disk-mapper","version":"2.0.0","cloudProvider":"gcp"}
 {"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"setupManager","caller":"setup/setup.go:72","msg":"Preparing existing state disk"}
 {"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"rejoinClient","caller":"rejoinclient/client.go:65","msg":"Starting RejoinClient"}
@@ -92,7 +92,7 @@ Similar output to the following means your node was restarted and needs to decry
 The node will then try to connect to the [*JoinService*](../architecture/components.md#joinservice) and obtain the decryption key.
 If that fails, because the control plane is unhealthy, you will see log messages similar to the following:
 
-```shell
+```json
 {"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"rejoinClient","caller":"rejoinclient/client.go:77","msg":"Received list with JoinService endpoints","endpoints":["192.168.178.4:30090","192.168.178.2:30090"]}
 {"level":"INFO","ts":"2022-09-08T10:21:53Z","logger":"rejoinClient","caller":"rejoinclient/client.go:96","msg":"Requesting rejoin ticket","endpoint":"192.168.178.4:30090"}
 {"level":"WARN","ts":"2022-09-08T10:21:53Z","logger":"rejoinClient","caller":"rejoinclient/client.go:101","msg":"Failed to rejoin on endpoint","error":"rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing dial tcp 192.168.178.4:30090: connect: connection refused\"","endpoint":"192.168.178.4:30090"}
@@ -127,14 +127,14 @@ The easiest approach is to set up a jump host connected to the VPC network and p
 
 Given these prerequisites a node can be recovered like this:
 
-```bash
+```
 $ constellation recover -e 34.107.89.208 --master-secret constellation-mastersecret.json
 Pushed recovery key.
 ```
 
 In the serial console output of the node you'll see a similar output to the following:
 
-```shell
+```json
 {"level":"INFO","ts":"2022-09-08T10:26:59Z","logger":"recoveryServer","caller":"recoveryserver/server.go:93","msg":"Received recover call"}
 {"level":"INFO","ts":"2022-09-08T10:26:59Z","logger":"recoveryServer","caller":"recoveryserver/server.go:125","msg":"Received state disk key and measurement secret, shutting down server"}
 {"level":"INFO","ts":"2022-09-08T10:26:59Z","logger":"recoveryServer.gRPC","caller":"zap/server_interceptors.go:61","msg":"finished streaming call with code OK","grpc.start_time":"2022-09-08T10:26:59Z","system":"grpc","span.kind":"server","grpc.service":"recoverproto.API","grpc.method":"Recover","peer.address":"192.0.2.3:41752","grpc.code":"OK","grpc.time_ms":15.701}
