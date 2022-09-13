@@ -59,12 +59,6 @@ The following steps will guide you through the process of creating a cluster and
 
     Run `constellation config instance-types` to get the list of all supported options.
 
-    :::info
-
-    In case you don't have access to CVMs, you may use less secure  [trusted launch VMs](../workflows/trusted-launch.md) instead. For this, set **confidentialVM** to `false` in the configuration file.
-
-    :::
-
     </tabItem>
     <tabItem value="azure-portal" label="Azure (Portal)">
 
@@ -168,6 +162,12 @@ The following steps will guide you through the process of creating a cluster and
 
     </tabItem>
     </tabs>
+
+:::info
+
+In case you don't have access to CVMs on Azure, you may use less secure  [trusted launch VMs](../workflows/trusted-launch.md) instead. For this, set **confidentialVM** to `false` in the configuration file.
+
+:::
 
 3. Download the measurements for your configured image.
 
