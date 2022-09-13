@@ -1,7 +1,6 @@
 # Terminate your cluster
 
-You can terminate your cluster using the CLI.
-You need the state file of your running cluster named `constellation-state.json` in the current directory.
+You can terminate your cluster using the CLI. For this, you need the state file of your running cluster named `constellation-state.json` in the current directory.
 
 :::danger
 
@@ -16,7 +15,7 @@ constellation terminate
 ```
 
 This deletes all resources created by Constellation in your cloud environment.
-All local files created by the `create` and `init` commands are deleted as well, except the *master secret* `constellation-mastersecret.json` and the configuration file.
+All local files created by the `create` and `init` commands are deleted as well, except for `constellation-mastersecret.json` and the configuration file.
 
 :::caution
 

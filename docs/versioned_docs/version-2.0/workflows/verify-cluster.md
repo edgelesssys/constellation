@@ -1,42 +1,48 @@
-# Verify your cluster
+# Manually verify your cluster
 
-Constellation's [attestation feature](../architecture/attestation.md) allows you, or a third party, to verify the confidentiality and integrity of your Constellation.
+Constellation's [attestation feature](../architecture/attestation.md) allows you, or a third party, to explicitly verify the integrity and confidentiality of your Constellation cluster.
+
+:::note
+The steps below are purely optional. They're automatically executed by `constellation init` when you initialize your cluster. The `constellation verify` command mostly has an illustrative purpose.
+:::
 
 ## Fetch measurements
 
-To verify the integrity of Constellation you need trusted measurements to verify against. For each of the released images there are signed measurements, which you can download using the CLI:
+To verify the integrity of Constellation you need trusted measurements to verify against. For each node image released by Edgeless Systems, there are signed measurements, which you can download using the CLI:
 
 ```bash
 constellation config fetch-measurements
 ```
 
 This command performs the following steps:
-1. Look up the signed measurements for the configured image.
-2. Download the measurements.
-3. Verify the signature.
-4. Write measurements into configuration file.
+1. Download the signed measurements for the configured image. By default, this will use Edgeless Systems' public measurement registry.
+2. Verify the signed images. This will use Edgeless Systems' [public key](https://edgeless.systems/es.pub).
+3. Write measurements into configuration file.
 
 ## The *verify* command
 
-Once measurements are configured, this command verifies an attestation statement issued by a Constellation, thereby verifying the integrity and confidentiality of the whole cluster.
-
-The following command performs attestation on the Constellation in your current workspace:
+The `verify` command obtains and verifies an attestation statement from a running Constellation cluster.
 
 ```bash
-constellation verify
+constellation verify [--cluster-id ...]
 ```
 
-The command makes sure the value passed to `-cluster-id` matches the *clusterID* presented in the attestation statement.
-This allows you to verify that you are connecting to a specific Constellation instance
-Additionally, the confidential computing capabilities, as well as the VM image, are verified to match the expected configurations.
+From the attestation statement, the command verifies the following properties:
+* The cluster is using the correct Confidential VM (CVM) type.
+* Inside the CVMs, the correct node images are running. The node images are identified through the measurements obtained in the previous step.
+* The unique ID of the cluster matches the one passed in via `--cluster-id`.
+
+Once the above properties are verified, you know that you are talking to the right Constellation cluster and it's in a good and trustworthy shape.
 
 ### Custom arguments
 
-You can provide additional arguments for `verify` to verify any Constellation you have network access to. This requires you to provide:
+The `verify` command also allows you to verify any Constellation deployment that you have network access to. For this you need to following:
 
-* The IP address of a running Constellation's [VerificationService](../architecture/components.md#verification-service). The *VerificationService* is exposed via a NodePort service using the external IP address of your cluster. Run `kubectl get nodes -o wide` and look for `EXTERNAL-IP`.
-* The Constellation's *clusterID*. See [cluster identity](../architecture/keys.md#cluster-identity) for more details.
+* The IP address of a running Constellation cluster's [VerificationService](../architecture/components.md#verification-service). The `VerificationService` is exposed via a `NodePort` service using the external IP address of your cluster. Run `kubectl get nodes -o wide` and look for `EXTERNAL-IP`.
+* The cluster's *clusterID*. See [cluster identity](../architecture/keys.md#cluster-identity) for more details.
 
-```bash
+For example:
+
+```shell-session
 constellation verify -e 192.0.2.1 --cluster-id Q29uc3RlbGxhdGlvbkRvY3VtZW50YXRpb25TZWNyZXQ=
 ```
