@@ -1,32 +1,34 @@
-name: E2E test
-description: "Run Constellation e2e test."
+name: Generate measurements
+description: "Generates measurements for a specific image"
 inputs:
-  workerNodesCount:
-    description: "Number of worker nodes to spawn."
-    required: true
-  controlNodesCount:
-    description: "Number of control-plane nodes to spawn."
-    required: true
-  autoscale:
-    description: "Autoscale?"
-    required: true
   cloudProvider:
     description: "Which cloud provider to use."
     required: true
-  machineType:
-    description: "VM machine type. Make sure it matches selected cloud provider!"
-    required: false
   coreosImage:
     description: "CoreOS image to run. The default value 'debug-latest' will select the latest available debug image."
-    default: "debug-latest"
     required: true
   isDebugImage:
     description: "Is CoreOS img a debug img?"
-    default: "true"
     required: true
+  workerNodesCount:
+    description: "Number of worker nodes to spawn."
+    required: false
+    default: "1"
+  controlNodesCount:
+    description: "Number of control-plane nodes to spawn."
+    required: false
+    default: "1"
+  machineType:
+    description: "VM machine type. Make sure it matches selected cloud provider!"
+    required: false
   kubernetesVersion:
     description: "Kubernetes version to create the cluster from."
     required: false
+    default: "1.23"
+  autoscale:
+    description: "Autoscale?"
+    required: false
+    default: "false"
   gcp_service_account_json:
     description: "Service account with permissions to create Constellation on GCP."
     required: false
@@ -39,8 +41,26 @@ inputs:
   azureResourceGroup:
     description: "The resource group to use"
     required: false
-  sonobuoyTestSuiteCmd:
-    description: "Which tests should be run? Check README for guidance!"
+  cosignPublicKey:
+    description: "Cosign public key to sign measurements."
+    required: true
+  cosignPrivateKey:
+    description: "Cosign private key to sign measurements."
+    required: true
+  cosignPassword:
+    description: "Cosign password for private key."
+    required: true
+  awsAccessKeyID:
+    description: "AWS access key ID to upload measurements."
+    required: true
+  awsSecretAccessKey:
+    description: "AWS secrets access key to upload measurements."
+    required: true
+  awsDefaultRegion:
+    description: "AWS region of S3 bucket. to upload measurements."
+    required: true
+  awsBucketName:
+    description: "AWS S3 bucket name to upload measurements."
     required: true
 
 runs:
@@ -78,7 +98,14 @@ runs:
         azureClientSecret: ${{ inputs.azureClientSecret }}
         azureResourceGroup: ${{ inputs.azureResourceGroup }}
 
-    - name: Run e2e tests
-      uses: ./.github/actions/sonobuoy
+    - name: Measure cluster
+      uses: ./.github/actions/constellation_measure
       with:
-        sonobuoyTestSuiteCmd: ${{ inputs.sonobuoyTestSuiteCmd }}
+        cloudProvider: ${{ inputs.cloudProvider }}
+        cosignPublicKey: ${{ inputs.cosignPublicKey }}
+        cosignPrivateKey: ${{ inputs.cosignPrivateKey }}
+        cosignPassword: ${{ inputs.cosignPassword }}
+        awsAccessKeyID: ${{ inputs.awsAccessKeyID }}
+        awsSecretAccessKey: ${{ inputs.awsSecretAccessKey }}
+        awsDefaultRegion: ${{ inputs.awsDefaultRegion }}
+        awsBucketName: ${{ inputs.awsBucketName }}
