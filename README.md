@@ -6,6 +6,7 @@
     <a href="https://github.com/edgelesssys/constellation/blob/main/LICENSE"><img src="https://img.shields.io/github/license/edgelesssys/constellation" alt="Constellation License"></a>
     <a href="https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-azure.yml?query=branch%3Amain"><img src="https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-azure.yml/badge.svg?branch=main" alt="E2E Test Azure"></a>
     <a href="https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-gcp.yml?query=branch%3Amain"><img src="https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-gcp.yml/badge.svg?branch=main" alt="E2E Test GCP"></a>
+    <a href="https://github.com/edgelesssys/constellation/actions/workflows/test-govulncheck.yml?query=branch%3Amain"><img src="https://github.com/edgelesssys/constellation/actions/workflows/test-govulncheck.yml/badge.svg?branch=main" alt="Govulncheck"></a>
     <a href="https://goreportcard.com/report/github.com/edgelesssys/constellation"><img src="https://goreportcard.com/badge/github.com/edgelesssys/constellation" alt="Go Report"></a>
     <a href="https://discord.gg/rH8QTH56JN"><img src="https://img.shields.io/discord/823900998606651454?color=7389D8&label=discord&logo=discord&logoColor=ffffff" alt="Discord"></a>
     <a href="https://twitter.com/EdgelessSystems"><img src="https://img.shields.io/twitter/follow/EdgelessSystems?label=Follow" alt="Twitter"></a>
