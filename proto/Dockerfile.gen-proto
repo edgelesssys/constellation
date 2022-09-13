@@ -47,6 +47,7 @@ RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_o
 ## verify
 WORKDIR /verify
 COPY verify/verifyproto/*.proto /verify
+RUN protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative *.proto
 
 ## init
 WORKDIR /init
