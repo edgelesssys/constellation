@@ -92,7 +92,7 @@ Next, add API permissions to Managed Identity:
 * `$GraphAppId` in this article is for Microsoft Graph. Azure AD Graph is `00000002-0000-0000-c000-000000000000`
 * Note that changing permissions can take between few seconds to several hours
 
-Store output of `az ad sp ...` in [GitHub Action Secret](https://github.com/edgelesssys/constellation/settings/secrets/actions) or create a local secret file for act to consume.
+Store output of `az ad sp ...` in GitHub Action Secret or create a local secret file for act to consume.
 
 ## Image versions
 

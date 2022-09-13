@@ -2,7 +2,6 @@
 
 This container image uses [coreos assembler](https://coreos.github.io/coreos-assembler/) as a base (`quay.io/coreos-assembler/coreos-assembler`) to facilitate a build environment for the Constellation-OS.
 The root filesystem takes its contents (OSTree) from [constellation-fedora-coreos-config](https://github.com/edgelesssys/constellation-fedora-coreos-config).
-The constellation specific changes are tracked in this repository: https://github.com/edgelesssys/constellation-coreos-assembler
 And the Constellation-OS Assembler can be pulled from ghcr.io/edgelesssys/constellation-coreos-assembler
 
 ## Setup
