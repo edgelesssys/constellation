@@ -18,14 +18,10 @@ outputs:
     description: "Branch name"
     value: ${{ steps.pseudo-version.outputs.branchName }}
 
+# Linux runner only (homedir trick does not work on macOS, required for private runner)
 runs:
   using: "composite"
   steps:
-    - name: Install Go
-      uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
-      with:
-        go-version: "1.19.1"
-
     - name: get pseudo version
       id: pseudo-version
       run: |

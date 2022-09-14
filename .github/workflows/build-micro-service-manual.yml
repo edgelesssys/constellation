@@ -4,23 +4,23 @@ on:
   workflow_dispatch:
     inputs:
       microService:
-        description: 'Name of the micro-service image to build'
+        description: "Name of the micro-service image to build"
         type: choice
         options:
-          - 'access-manager'
-          - 'join-service'
-          - 'kmsserver'
-          - 'verification-service'
+          - "access-manager"
+          - "join-service"
+          - "kmsserver"
+          - "verification-service"
         required: true
-        default: 'access-manager'
+        default: "access-manager"
       imageTag:
-        description: 'Container image tag'
+        description: "Container image tag"
         required: true
-        default: 'manual-build'
+        default: "manual-build"
       version:
-        description: 'Version of the image to build'
+        description: "Version of the image to build"
         required: true
-        default: '0.0.0'
+        default: "0.0.0"
 
 jobs:
   build-micro-service:
@@ -32,6 +32,11 @@ jobs:
       - name: Check out repository
         id: checkout
         uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+
+      - name: Setup Go environment
+        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
+        with:
+          go-version: "1.19.1"
 
       # choose the correct Dockerfile depending on what micro-service is being build
       - name: Set Dockerfile variable

@@ -95,13 +95,6 @@ runs:
         COSIGN_PASSWORD: ${{ inputs.cosignPassword }}
       if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
 
-    - name: Install AWS CLI
-      run: |
-        echo "::group::Install AWS CLI"
-        sudo apt-get update && sudo apt-get -y install awscli
-        echo "::endgroup::"
-      shell: bash
-      if: ${{ inputs.awsAccessKeyID != '' && inputs.awsSecretAccessKey != '' && inputs.awsDefaultRegion != '' && inputs.awsBucketName != '' }}
     - name: Upload to S3
       run: |
         IMAGE=$(yq e ".provider.${CSP}.image" constellation-conf.yaml)
