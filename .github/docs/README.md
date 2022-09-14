@@ -28,8 +28,11 @@ Check [Sonobuoy docs](https://sonobuoy.io/docs/latest/e2eplugin/) for more examp
 When using `--mode` be aware that `--e2e-focus` and `e2e-skip` will be overwritten. [Check in the source code](https://github.com/vmware-tanzu/sonobuoy/blob/e709787426316423a4821927b1749d5bcc90cb8c/cmd/sonobuoy/app/modes.go#L130) what the different modes do.
 
 ## Local Development
+Using [***act***](https://github.com/nektos/act) you can run GitHub actions locally.
 
-Using [nektos/act](https://github.com/nektos/act) you can run GitHub actions locally.
+**These instructions are for internal use.**
+In case you want to use the E2E actions externally, you need to adjust other configuration parameters.
+Check the assignments made in the [/.github/actions/e2e_test/action.yml](E2E action) and adjust any hard-coded values.
 
 ### Specific Jobs
 
@@ -55,7 +58,7 @@ Create a new JSON file to describe the event ([relevant issue](https://github.co
 }
 ```
 
-Then run act with the event as input:
+Then run *act* with the event as input:
 
 ```bash
 act -j e2e-test-manual --eventpath event.json
@@ -67,7 +70,7 @@ For creating Kubernetes clusters in GCP a local copy of the service account secr
 
 1. [Create a new service account key](https://console.cloud.google.com/iam-admin/serviceaccounts/details/112741463528383500960/keys?authuser=0&project=constellation-331613&supportedpurview=project)
 2. Create a compact (one line) JSON representation of the file `jq -c`
-3. Store in GitHub Action Secret or create a local secret file for act to consume:
+3. Store in a GitHub Action Secret called `GCP_SERVICE_ACCOUNT` or create a local secret file for *act* to consume:
 
 ```bash
 $ cat secrets.env
@@ -75,6 +78,8 @@ GCP_SERVICE_ACCOUNT={"type":"service_account", ... }
 
 $ act --secret-file secrets.env
 ```
+
+In addition, you need to create a Service Account which Constellation itself is supposed to use. Refer to [First steps](https://docs.edgeless.systems/constellation/getting-started/first-steps#create-a-cluster) in the documentation on how to create it. What you need here specifically is the `gcpServiceAccountKey`, which needs to be stored in a secret called `GCP_CLUSTER_SERVICE_ACCOUNT`.
 
 ### Authorizing Azure
 
@@ -92,7 +97,14 @@ Next, add API permissions to Managed Identity:
 * `$GraphAppId` in this article is for Microsoft Graph. Azure AD Graph is `00000002-0000-0000-c000-000000000000`
 * Note that changing permissions can take between few seconds to several hours
 
-Store output of `az ad sp ...` in GitHub Action Secret or create a local secret file for act to consume.
+Afterward, you need to define a few secrets either as Github Action Secrets or in a secrets file for *act* as described before.
+
+The following secrets need to be defined:
+
+* `AZURE_E2E_CREDENTIALS`: The output of `az ad sp ...`
+* `AZURE_E2E_CLIENT_SECRET`: The client secret value for the registered app on Azure (which is defined as `appClientID`).
+
+For information on how to achieve this, refer to the [First steps](https://docs.edgeless.systems/constellation/getting-started/first-steps) in the documentation for Constellation.
 
 ## Image versions
 
