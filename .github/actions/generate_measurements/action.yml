@@ -72,9 +72,9 @@ runs:
       id: build-bootstrapper
       uses: ./.github/actions/build_bootstrapper
       if: ${{ inputs.isDebugImage == 'true' }}
-    - name: Build debugd
-      id: build-debugd
-      uses: ./.github/actions/build_debugd
+    - name: Build cdbg
+      id: build-cdbg
+      uses: ./.github/actions/build_cdbg
       if: ${{ inputs.isDebugImage == 'true' }}
 
     - name: Login to GCP

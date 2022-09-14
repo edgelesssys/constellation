@@ -1,0 +1,157 @@
+name: e2e Test Manual (macOS CLI)
+
+on:
+  workflow_dispatch:
+    inputs:
+      workerNodesCount:
+        description: "Number of worker nodes to spawn."
+        default: "2"
+        required: true
+      controlNodesCount:
+        description: "Number of control-plane nodes to spawn."
+        default: "1"
+        required: true
+      autoscale:
+        description: "Autoscale?"
+        type: boolean
+        default: false
+        required: true
+      cloudProvider:
+        description: "Which cloud provider to use."
+        type: choice
+        options:
+          - "gcp"
+          - "azure"
+        default: "gcp"
+        required: true
+      sonobuoyTestSuiteCmd:
+        description: "Which tests should be run? Check README for guidance!"
+        default: "--mode quick"
+        required: true
+      kubernetesVersion:
+        description: "Kubernetes version to create the cluster from."
+        default: "1.24"
+        required: true
+      coreosImage:
+        description: "CoreOS image (full path). Examples are in internal/config/config.go."
+        default: "debug-latest"
+        type: string
+        required: true
+      isDebugImage:
+        description: "Is CoreOS image a debug image?"
+        type: boolean
+        default: true
+        required: false
+      machineType:
+        description: "Override VM machine type. Leave as 'default' or empty to use the default VM type for the selected cloud provider."
+        type: string
+        default: "default"
+        required: false
+
+jobs:
+  build-bootstrapper-linux:
+    name: "Build bootstrapper (debug image)"
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.isDebugImage == 'true' }}
+    steps:
+      - name: Setup Go environment
+        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
+        if: ${{ github.event.steps.check-bootstrapper-cache.cache-hit != 'true'}}
+        with:
+          go-version: "1.19.1"
+
+      - name: Check out repository
+        if: ${{ github.event.steps.check-bootstrapper-cache.cache-hit != 'true'}}
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+
+      - name: Build bootstrapper
+        if: ${{ github.event.steps.check-bootstrapper-cache.cache-hit != 'true'}}
+        uses: ./.github/actions/build_bootstrapper
+
+      - name: Upload bootstrapper to cache
+        if: ${{ github.event.steps.check-bootstrapper-cache.cache-hit != 'true'}}
+        uses: actions/cache@v3
+        with:
+          key: bootstrapper-${{ github.sha }}
+          path: "build/bootstrapper"
+
+  e2e-test-manual-darwin:
+    name: "e2e Test Manual (macOS)"
+    runs-on: macos-12
+    needs: build-bootstrapper-linux
+    if: ${{ always() && !cancelled() && (needs.build-bootstrapper-linux.result == 'success' || needs.build-bootstrapper-linux.result == 'skipped') }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+
+      - name: Setup Go environment
+        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
+        with:
+          go-version: "1.19.1"
+
+      - name: Login to Azure
+        if: ${{ github.event.inputs.cloudProvider == 'azure' }}
+        uses: ./.github/actions/azure_login
+        with:
+          azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
+
+      - name: Create Azure resource group
+        id: az_resource_group_gen
+        if: ${{ github.event.inputs.cloudProvider == 'azure' }}
+        shell: bash
+        run: |
+          uuid=$(uuidgen)
+          name=e2e-test-${uuid%%-*}
+          az group create --location westus --name $name --tags e2e
+          echo "::set-output name=res_group_name::$name"
+
+      - name: Set up gcloud CLI
+        if: ${{ github.event.inputs.cloudProvider == 'gcp' }}
+        uses: google-github-actions/setup-gcloud@877d4953d2c70a0ba7ef3290ae968eb24af233bb
+
+      - name: Run manual E2E test
+        uses: ./.github/actions/e2e_test
+        with:
+          workerNodesCount: ${{ github.event.inputs.workerNodesCount }}
+          controlNodesCount: ${{ github.event.inputs.controlNodesCount }}
+          autoscale: ${{ github.event.inputs.autoscale }}
+          cloudProvider: ${{ github.event.inputs.cloudProvider }}
+          machineType: ${{ github.event.inputs.machineType }}
+          gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
+          sonobuoyTestSuiteCmd: ${{ github.event.inputs.sonobuoyTestSuiteCmd }}
+          kubernetesVersion: ${{ github.event.inputs.kubernetesVersion }}
+          azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
+          azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
+          coreosImage: ${{ github.event.inputs.coreosImage }}
+          isDebugImage: ${{ github.event.inputs.isDebugImage }}
+
+      - name: Always terminate cluster
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/constellation_destroy
+
+      - name: Notify teams channel
+        if: ${{ failure() && github.ref == 'refs/heads/main' }}
+        run: |
+          brew install gettext && brew link --force gettext
+          export TEAMS_JOB_NAME="${{ github.event.inputs.cloudProvider }} (macOS, manual)"
+          export TEAMS_RUN_ID=${{ github.run_id }}
+          envsubst < teams-payload.json > to-be-send.json
+          curl                                          \
+            -H "Content-Type: application/json"         \
+            -d @to-be-send.json                         \
+            "${{  secrets.MS_TEAMS_WEBHOOK_URI }}"
+        shell: bash
+        working-directory: .github/actions/e2e_test
+
+      - name: Always destroy Azure resource group
+        if: ${{ always() && github.event.inputs.cloudProvider == 'azure' }}
+        shell: bash
+        run: |
+          az group delete \
+            --name ${{ steps.az_resource_group_gen.outputs.res_group_name }} \
+            --force-deletion-types Microsoft.Compute/virtualMachineScaleSets \
+            --force-deletion-types Microsoft.Compute/virtualMachines \
+            --no-wait \
+            --yes
