@@ -152,7 +152,7 @@ func TestListSelf(t *testing.T) {
 
 			server := New(logger.NewTest(t), tc.connect, file.Handler{})
 
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.0.1/self", nil)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.2.1/self", nil)
 			require.NoError(err)
 			req.RemoteAddr = tc.remoteAddr
 
@@ -214,7 +214,7 @@ func TestListPeers(t *testing.T) {
 
 			server := New(logger.NewTest(t), tc.connect, file.Handler{})
 
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.0.1/peers", nil)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.2.1/peers", nil)
 			require.NoError(err)
 			req.RemoteAddr = tc.remoteAddr
 
@@ -269,7 +269,7 @@ func TestPostLog(t *testing.T) {
 
 			server := New(logger.NewTest(t), &stubConnect{}, file.NewHandler(afero.NewMemMapFs()))
 
-			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.0.1/logs", tc.message)
+			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.2.1/logs", tc.message)
 			require.NoError(err)
 			req.RemoteAddr = tc.remoteAddr
 
@@ -350,7 +350,7 @@ func TestExportPCRs(t *testing.T) {
 			file := file.NewHandler(afero.NewMemMapFs())
 			server := New(logger.NewTest(t), tc.connect, file)
 
-			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.0.1/pcrs", strings.NewReader(tc.message))
+			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.2.1/pcrs", strings.NewReader(tc.message))
 			require.NoError(err)
 			req.RemoteAddr = tc.remoteAddr
 
@@ -370,18 +370,7 @@ func TestExportPCRs(t *testing.T) {
 	}
 }
 
-func TestExportPCRs(t *testing.T) {
-	defaultConnect := &stubConnect{
-		network: stubNetwork{
-			leases: []libvirt.NetworkDHCPLease{
-				{
-					IPaddr:   "192.0.100.1",
-					Hostname: "control-plane-0",
-				},
-			},
-		},
-	}
-
+func TestGetNodeCIDR(t *testing.T) {
 	testCases := map[string]struct {
 		remoteAddr string
 		connect    *stubConnect
@@ -390,10 +379,8 @@ func TestExportPCRs(t *testing.T) {
 		wantErr    bool
 	}{
 		"success": {
-			remoteAddr: "192.0.100.1:1234",
-			connect:    defaultConnect,
-			method:     http.MethodPost,
-			message:    mustMarshal(t, map[uint32][]byte{0: []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")}),
+			connect: &stubConnect{},
+			method:  http.MethodGet,
 		},
 	}
 
@@ -402,15 +389,13 @@ func TestExportPCRs(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			file := file.NewHandler(afero.NewMemMapFs())
-			server := New(logger.NewTest(t), tc.connect, file)
+			server := New(logger.NewTest(t), &stubConnect{}, file.Handler{})
 
-			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.0.1/pcrs", strings.NewReader(tc.message))
+			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.2.1/nodecidr", strings.NewReader(tc.message))
 			require.NoError(err)
-			req.RemoteAddr = tc.remoteAddr
 
 			w := httptest.NewRecorder()
-			server.exportPCRs(w, req)
+			server.getNodeCIDR(w, req)
 
 			if tc.wantErr {
 				assert.NotEqual(http.StatusOK, w.Code)
@@ -418,9 +403,7 @@ func TestExportPCRs(t *testing.T) {
 			}
 
 			assert.Equal(http.StatusOK, w.Code)
-			output, err := file.Read(exportedPCRsDir + tc.connect.network.leases[0].Hostname + "_pcrs.json")
-			require.NoError(err)
-			assert.JSONEq(tc.message, string(output))
+			assert.Equal("10.42.0.0/16", w.Body.String())
 		})
 	}
 }
