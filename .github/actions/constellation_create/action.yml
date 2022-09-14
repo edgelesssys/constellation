@@ -141,6 +141,7 @@ runs:
     - name: Cdbg deploy
       run: |
         echo "::group::cdbg deploy"
+        chmod +x $GITHUB_WORKSPACE/build/cdbg
         cdbg deploy --bootstrapper $GITHUB_WORKSPACE/build/bootstrapper
         echo "::endgroup::"
       shell: bash

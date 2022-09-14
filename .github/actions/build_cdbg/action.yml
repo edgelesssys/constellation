@@ -1,0 +1,14 @@
+name: Build cdbg
+description: Build the Constellation cdbg binary
+
+runs:
+  using: "composite"
+  steps:
+    - name: Build cdbg
+      shell: bash
+      run: |
+        echo "::group::Build cdbg"
+        mkdir -p build && cd build
+        cmake ..
+        make cdbg
+        echo "::endgroup::"

@@ -46,22 +46,47 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Determine build target
+      id: determine-build-target
+      shell: bash
+      run: |
+        echo "::set-output name=hostOS::$(go env GOOS)"
+        echo "::set-output name=hostArch::$(go env GOARCH)"
+
     - name: Build CLI
       uses: ./.github/actions/build_cli
+      with:
+        targetOS: ${{ steps.determine-build-target.outputs.hostOS }}
+        targetArch: ${{ steps.determine-build-target.outputs.hostArch }}
+
+    # macOS runners don't have Docker preinstalled, so they cannot build the bootstrapper.
+    # But we can use a Linux runner to build it and store/retrieve it from the action cache.
+    - name: Download the bootstrapper from cache
+      id: download-bootstrapper-cache
+      if: inputs.isDebugImage == 'true' && runner.os == 'macOS'
+      uses: actions/cache@v3
+      with:
+        key: bootstrapper-${{ github.sha }}
+        path: "build/bootstrapper"
+
     - name: Build the bootstrapper
       id: build-bootstrapper
       uses: ./.github/actions/build_bootstrapper
-      if: ${{ inputs.isDebugImage == 'true' }}
-    - name: Build debugd
-      id: build-debugd
-      uses: ./.github/actions/build_debugd
-      if: ${{ inputs.isDebugImage == 'true' }}
+      if: inputs.isDebugImage == 'true' && runner.os != 'macOS'
+
+    - name: Build cdbg
+      id: build-cdbg
+      uses: ./.github/actions/build_cdbg
+      if: inputs.isDebugImage == 'true'
+      with:
+        targetOS: ${{ steps.determine-build-target.outputs.hostOS }}
+        targetArch: ${{ steps.determine-build-target.outputs.hostArch }}
 
     - name: Login to GCP
       uses: ./.github/actions/gcp_login
       with:
         gcp_service_account_json: ${{ inputs.gcp_service_account_json }}
-      if: ${{ inputs.cloudProvider == 'gcp' }}
+      if: inputs.cloudProvider == 'gcp'
 
     - name: Create cluster
       uses: ./.github/actions/constellation_create

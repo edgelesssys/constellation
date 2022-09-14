@@ -7,7 +7,7 @@ inputs:
     default: "./debugd"
     required: true
 
-# Linux runner only
+# Linux runner only (homedir trick does not work on macOS, required for private runner)
 runs:
   using: "composite"
   steps:
@@ -22,6 +22,6 @@ runs:
         export GOPATH=${homedir}/go
         export GOPRIVATE=github.com/edgelesssys
         export GOMODCACHE=${homedir}/.cache/go-mod
-        make debugd cdbg
+        make debugd
         mv -n debugd "${{ inputs.outputPath }}"
         echo "::endgroup::"
