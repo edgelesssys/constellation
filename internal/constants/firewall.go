@@ -49,6 +49,13 @@ var (
 			IPRange:     "0.0.0.0/0",
 			FromPort:    KonnectivityPort,
 		},
+		{
+			Name:        "recovery",
+			Description: "control-plane recovery",
+			Protocol:    "tcp",
+			IPRange:     "0.0.0.0/0",
+			FromPort:    RecoveryPort,
+		},
 	}
 
 	// IngressRulesDebug is the default set of ingress rules for a Constellation cluster with debug mode.

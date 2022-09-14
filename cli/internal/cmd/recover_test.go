@@ -10,18 +10,25 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"net"
+	"strconv"
 	"testing"
 
-	"github.com/edgelesssys/constellation/internal/atls"
+	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/disk-mapper/recoverproto"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/crypto/testvector"
 	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/internal/grpc/atlscredentials"
+	"github.com/edgelesssys/constellation/internal/grpc/dialer"
+	"github.com/edgelesssys/constellation/internal/grpc/testdialer"
 	"github.com/edgelesssys/constellation/internal/state"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 )
 
 func TestRecoverCmdArgumentValidation(t *testing.T) {
@@ -52,10 +59,25 @@ func TestRecoverCmdArgumentValidation(t *testing.T) {
 func TestRecover(t *testing.T) {
 	validState := state.ConstellationState{CloudProvider: "GCP"}
 	invalidCSPState := state.ConstellationState{CloudProvider: "invalid"}
+	successActions := []func(stream recoverproto.API_RecoverServer) error{
+		func(stream recoverproto.API_RecoverServer) error {
+			_, err := stream.Recv()
+			return err
+		},
+		func(stream recoverproto.API_RecoverServer) error {
+			return stream.Send(&recoverproto.RecoverResponse{
+				DiskUuid: "00000000-0000-0000-0000-000000000000",
+			})
+		},
+		func(stream recoverproto.API_RecoverServer) error {
+			_, err := stream.Recv()
+			return err
+		},
+	}
 
 	testCases := map[string]struct {
 		existingState    state.ConstellationState
-		client           *stubRecoveryClient
+		recoverServerAPI *stubRecoveryServer
 		masterSecret     testvector.HKDF
 		endpointFlag     string
 		masterSecretFlag string
@@ -64,46 +86,36 @@ func TestRecover(t *testing.T) {
 		wantErr          bool
 	}{
 		"works": {
-			existingState: validState,
-			client:        &stubRecoveryClient{},
-			endpointFlag:  "192.0.2.1",
-			masterSecret:  testvector.HKDFZero,
+			existingState:    validState,
+			recoverServerAPI: &stubRecoveryServer{actions: successActions},
+			endpointFlag:     "192.0.2.1",
+			masterSecret:     testvector.HKDFZero,
 		},
 		"missing flags": {
-			wantErr: true,
+			recoverServerAPI: &stubRecoveryServer{actions: successActions},
+			wantErr:          true,
 		},
 		"missing config": {
-			endpointFlag: "192.0.2.1",
-			masterSecret: testvector.HKDFZero,
-			configFlag:   "nonexistent-config",
-			wantErr:      true,
+			recoverServerAPI: &stubRecoveryServer{actions: successActions},
+			endpointFlag:     "192.0.2.1",
+			masterSecret:     testvector.HKDFZero,
+			configFlag:       "nonexistent-config",
+			wantErr:          true,
 		},
 		"missing state": {
-			existingState: validState,
-			endpointFlag:  "192.0.2.1",
-			masterSecret:  testvector.HKDFZero,
-			stateless:     true,
-			wantErr:       true,
+			existingState:    validState,
+			recoverServerAPI: &stubRecoveryServer{actions: successActions},
+			endpointFlag:     "192.0.2.1",
+			masterSecret:     testvector.HKDFZero,
+			stateless:        true,
+			wantErr:          true,
 		},
 		"invalid cloud provider": {
-			existingState: invalidCSPState,
-			endpointFlag:  "192.0.2.1",
-			masterSecret:  testvector.HKDFZero,
-			wantErr:       true,
-		},
-		"connect fails": {
-			existingState: validState,
-			client:        &stubRecoveryClient{connectErr: errors.New("connect failed")},
-			endpointFlag:  "192.0.2.1",
-			masterSecret:  testvector.HKDFZero,
-			wantErr:       true,
-		},
-		"pushing state key fails": {
-			existingState: validState,
-			client:        &stubRecoveryClient{pushStateDiskKeyErr: errors.New("pushing key failed")},
-			endpointFlag:  "192.0.2.1",
-			masterSecret:  testvector.HKDFZero,
-			wantErr:       true,
+			existingState:    invalidCSPState,
+			recoverServerAPI: &stubRecoveryServer{actions: successActions},
+			endpointFlag:     "192.0.2.1",
+			masterSecret:     testvector.HKDFZero,
+			wantErr:          true,
 		},
 	}
 
@@ -113,6 +125,7 @@ func TestRecover(t *testing.T) {
 			require := require.New(t)
 
 			cmd := NewRecoverCmd()
+			cmd.SetContext(context.Background())
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 			out := &bytes.Buffer{}
 			cmd.SetOut(out)
@@ -133,12 +146,32 @@ func TestRecover(t *testing.T) {
 			config := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.FromString(tc.existingState.CloudProvider))
 			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config))
 
-			require.NoError(fileHandler.WriteJSON("constellation-mastersecret.json", masterSecret{Key: tc.masterSecret.Secret, Salt: tc.masterSecret.Salt}, file.OptNone))
+			require.NoError(fileHandler.WriteJSON(
+				"constellation-mastersecret.json",
+				masterSecret{Key: tc.masterSecret.Secret, Salt: tc.masterSecret.Salt},
+				file.OptNone,
+			))
+
 			if !tc.stateless {
-				require.NoError(fileHandler.WriteJSON(constants.StateFilename, tc.existingState, file.OptNone))
+				require.NoError(fileHandler.WriteJSON(
+					constants.StateFilename,
+					tc.existingState,
+					file.OptNone,
+				))
 			}
 
-			err := recover(cmd, fileHandler, tc.client)
+			netDialer := testdialer.NewBufconnDialer()
+			newDialer := func(*cloudcmd.Validator) *dialer.Dialer {
+				return dialer.New(nil, nil, netDialer)
+			}
+			serverCreds := atlscredentials.New(nil, nil)
+			recoverServer := grpc.NewServer(grpc.Creds(serverCreds))
+			recoverproto.RegisterAPIServer(recoverServer, tc.recoverServerAPI)
+			listener := netDialer.GetListener(net.JoinHostPort("192.0.2.1", strconv.Itoa(constants.RecoveryPort)))
+			go recoverServer.Serve(listener)
+			defer recoverServer.GracefulStop()
+
+			err := recover(cmd, fileHandler, newDialer)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -201,26 +234,156 @@ func TestParseRecoverFlags(t *testing.T) {
 	}
 }
 
-type stubRecoveryClient struct {
-	conn                bool
-	connectErr          error
-	closeErr            error
-	pushStateDiskKeyErr error
+func TestDoRecovery(t *testing.T) {
+	someErr := errors.New("error")
+	testCases := map[string]struct {
+		recoveryServer *stubRecoveryServer
+		wantErr        bool
+	}{
+		"success": {
+			recoveryServer: &stubRecoveryServer{actions: []func(stream recoverproto.API_RecoverServer) error{
+				func(stream recoverproto.API_RecoverServer) error {
+					_, err := stream.Recv()
+					return err
+				},
+				func(stream recoverproto.API_RecoverServer) error {
+					return stream.Send(&recoverproto.RecoverResponse{
+						DiskUuid: "00000000-0000-0000-0000-000000000000",
+					})
+				},
+				func(stream recoverproto.API_RecoverServer) error {
+					_, err := stream.Recv()
+					return err
+				},
+			}},
+		},
+		"error on first recv": {
+			recoveryServer: &stubRecoveryServer{actions: []func(stream recoverproto.API_RecoverServer) error{
+				func(stream recoverproto.API_RecoverServer) error {
+					return someErr
+				},
+			}},
+			wantErr: true,
+		},
+		"error on send": {
+			recoveryServer: &stubRecoveryServer{actions: []func(stream recoverproto.API_RecoverServer) error{
+				func(stream recoverproto.API_RecoverServer) error {
+					_, err := stream.Recv()
+					return err
+				},
+				func(stream recoverproto.API_RecoverServer) error {
+					return someErr
+				},
+			}},
+			wantErr: true,
+		},
+		"error on second recv": {
+			recoveryServer: &stubRecoveryServer{actions: []func(stream recoverproto.API_RecoverServer) error{
+				func(stream recoverproto.API_RecoverServer) error {
+					_, err := stream.Recv()
+					return err
+				},
+				func(stream recoverproto.API_RecoverServer) error {
+					return stream.Send(&recoverproto.RecoverResponse{
+						DiskUuid: "00000000-0000-0000-0000-000000000000",
+					})
+				},
+				func(stream recoverproto.API_RecoverServer) error {
+					return someErr
+				},
+			}},
+			wantErr: true,
+		},
+		"final message is an error": {
+			recoveryServer: &stubRecoveryServer{actions: []func(stream recoverproto.API_RecoverServer) error{
+				func(stream recoverproto.API_RecoverServer) error {
+					_, err := stream.Recv()
+					return err
+				},
+				func(stream recoverproto.API_RecoverServer) error {
+					return stream.Send(&recoverproto.RecoverResponse{
+						DiskUuid: "00000000-0000-0000-0000-000000000000",
+					})
+				},
+				func(stream recoverproto.API_RecoverServer) error {
+					_, err := stream.Recv()
+					return err
+				},
+				func(stream recoverproto.API_RecoverServer) error {
+					return someErr
+				},
+			}},
+			wantErr: true,
+		},
+	}
 
-	pushStateDiskKeyKey []byte
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			netDialer := testdialer.NewBufconnDialer()
+			serverCreds := atlscredentials.New(nil, nil)
+			recoverServer := grpc.NewServer(grpc.Creds(serverCreds))
+			recoverproto.RegisterAPIServer(recoverServer, tc.recoveryServer)
+			addr := net.JoinHostPort("192.0.2.1", strconv.Itoa(constants.RecoveryPort))
+			listener := netDialer.GetListener(addr)
+			go recoverServer.Serve(listener)
+			defer recoverServer.GracefulStop()
+
+			recoverDoer := &recoverDoer{
+				dialer:            dialer.New(nil, nil, netDialer),
+				endpoint:          addr,
+				measurementSecret: []byte("measurement-secret"),
+				getDiskKey: func(string) ([]byte, error) {
+					return []byte("disk-key"), nil
+				},
+			}
+
+			err := recoverDoer.Do(context.Background())
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+			}
+		})
+	}
 }
 
-func (c *stubRecoveryClient) Connect(string, atls.Validator) error {
-	c.conn = true
-	return c.connectErr
+func TestDeriveStateDiskKey(t *testing.T) {
+	testCases := map[string]struct {
+		masterSecret testvector.HKDF
+	}{
+		"all zero": {
+			masterSecret: testvector.HKDFZero,
+		},
+		"all 0xff": {
+			masterSecret: testvector.HKDF0xFF,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			getKeyFunc := getStateDiskKeyFunc(tc.masterSecret.Secret, tc.masterSecret.Salt)
+			stateDiskKey, err := getKeyFunc(tc.masterSecret.Info)
+
+			assert.NoError(err)
+			assert.Equal(tc.masterSecret.Output, stateDiskKey)
+		})
+	}
 }
 
-func (c *stubRecoveryClient) Close() error {
-	c.conn = false
-	return c.closeErr
+type stubRecoveryServer struct {
+	actions []func(recoverproto.API_RecoverServer) error
+	recoverproto.UnimplementedAPIServer
 }
 
-func (c *stubRecoveryClient) Recover(_ context.Context, stateDiskKey, _ []byte) error {
-	c.pushStateDiskKeyKey = stateDiskKey
-	return c.pushStateDiskKeyErr
+func (s *stubRecoveryServer) Recover(stream recoverproto.API_RecoverServer) error {
+	for _, action := range s.actions {
+		if err := action(stream); err != nil {
+			return err
+		}
+	}
+	return nil
 }

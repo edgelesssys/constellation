@@ -160,21 +160,21 @@ func (s *SetupManager) saveConfiguration(passphrase []byte) error {
 	return s.config.Generate(stateDiskMappedName, s.diskPath, filepath.Join(keyPath, keyFile), cryptsetupOptions)
 }
 
-type recoveryServer interface {
+type RecoveryServer interface {
 	Serve(context.Context, net.Listener, string) (key, secret []byte, err error)
 }
 
-type rejoinClient interface {
+type RejoinClient interface {
 	Start(context.Context, string) (key, secret []byte)
 }
 
 type nodeRecoverer struct {
-	recoveryServer recoveryServer
-	rejoinClient   rejoinClient
+	recoveryServer RecoveryServer
+	rejoinClient   RejoinClient
 }
 
 // NewNodeRecoverer initializes a new nodeRecoverer.
-func NewNodeRecoverer(recoveryServer recoveryServer, rejoinClient rejoinClient) *nodeRecoverer {
+func NewNodeRecoverer(recoveryServer RecoveryServer, rejoinClient RejoinClient) *nodeRecoverer {
 	return &nodeRecoverer{
 		recoveryServer: recoveryServer,
 		rejoinClient:   rejoinClient,

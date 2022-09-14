@@ -119,10 +119,10 @@ func TestCreateLoadBalancers(t *testing.T) {
 			}
 
 			if tc.isDebugCluster {
-				assert.Equal(5, len(client.loadbalancers))
+				assert.Equal(6, len(client.loadbalancers))
 				assert.True(foundDebugdLB, "debugd loadbalancer not found in debug-mode")
 			} else {
-				assert.Equal(4, len(client.loadbalancers))
+				assert.Equal(5, len(client.loadbalancers))
 				assert.False(foundDebugdLB, "debugd loadbalancer found in non-debug mode")
 			}
 		})

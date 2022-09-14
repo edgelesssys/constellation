@@ -42,7 +42,7 @@ const (
 	KMSPort          = 9000
 	BootstrapperPort = 9000
 	KubernetesPort   = 6443
-	RecoveryPort     = 9000
+	RecoveryPort     = 9999
 	EnclaveSSHPort   = 2222
 	SSHPort          = 22
 	NVMEOverTCPPort  = 8009

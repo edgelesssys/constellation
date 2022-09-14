@@ -33,6 +33,7 @@ import (
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/internal/role"
 	tpmClient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm/tpm2"
 	"github.com/spf13/afero"
@@ -128,8 +129,13 @@ func main() {
 			log.Named("rejoinClient"),
 		)
 
-		// set up recovery server
-		recoveryServer := recoveryserver.New(issuer, log.Named("recoveryServer"))
+		// set up recovery server if control-plane node
+		var recoveryServer setup.RecoveryServer
+		if self.Role == role.ControlPlane {
+			recoveryServer = recoveryserver.New(issuer, log.Named("recoveryServer"))
+		} else {
+			recoveryServer = recoveryserver.NewStub(log.Named("recoveryServer"))
+		}
 
 		err = setupManger.PrepareExistingDisk(setup.NewNodeRecoverer(recoveryServer, rejoinClient))
 	} else {
