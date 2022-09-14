@@ -9,7 +9,7 @@ on:
         required: true
       controlNodesCount:
         description: "Number of control-plane nodes to spawn."
-        default: "1"
+        default: "3"
         required: true
       cloudProvider:
         description: "Which cloud provider to use."

@@ -27,7 +27,7 @@ jobs:
         uses: ./.github/actions/e2e_test
         with:
           workerNodesCount: "2"
-          controlNodesCount: "1"
+          controlNodesCount: "3"
           cloudProvider: "gcp"
           gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
