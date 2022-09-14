@@ -31,6 +31,15 @@ jobs:
           submodules: recursive
           token: ${{ secrets.CI_GITHUB_REPOSITORY }}
 
+      - name: Install build packages
+        id: install-packages
+        uses: ./.github/actions/setup_linux
+
+      - name: Setup Go environment
+        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
+        with:
+          go-version: "1.19.1"
+
       - name: Build bootstrapper
         if: ${{ inputs.debug == false }}
         uses: ./.github/actions/build_bootstrapper
@@ -59,10 +68,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Azure CLI
+      - name: Install AzCopy
         shell: bash
         run: |
-          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
           wget -q https://aka.ms/downloadazcopy-v10-linux -O azcopy.tar.gz
           tar --strip-components 1 -xf azcopy.tar.gz
           rm azcopy.tar.gz

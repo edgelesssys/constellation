@@ -31,26 +31,11 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install build dependencies
-      run: |
-        echo "::group::Install build dependencies"
-        sudo apt-get update
-        sudo apt-get install \
-          build-essential cmake \
-          -y
-        echo "::endgroup::"
-      shell: bash
-
     # https://github.blog/2022-04-12-git-security-vulnerability-announced/
     - name: Mark repository safe
       run: |
         git config --global --add safe.directory /__w/constellation/constellation
       shell: bash
-
-    - name: Install Go
-      uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
-      with:
-        go-version: "1.19.1"
 
     - name: Build CLI
       run: |

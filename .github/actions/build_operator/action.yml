@@ -2,19 +2,19 @@ name: Build operator
 description: Build and upload a container image for a Constellation operator
 inputs:
   name:
-    description: 'Name of the operator'
+    description: "Name of the operator"
     required: true
   sourceDir:
-    description: 'Path to the operators source directory'
+    description: "Path to the operators source directory"
     required: true
   pushTag:
-    description: 'Use this image tag'
+    description: "Use this image tag"
     required: false
   githubToken:
-    description: 'GitHub authorization token'
+    description: "GitHub authorization token"
     required: true
 
-
+# Linux runner only (Docker required)
 runs:
   using: "composite"
   steps:
@@ -26,10 +26,6 @@ runs:
       uses: ./.github/actions/install_operator_sdk
       with:
         version: v1.22.2
-
-    - name: Set up Docker Buildx
-      id: docker-setup
-      uses: docker/setup-buildx-action@f211e3e9ded2d9377c8cadc4489a4e38014bc4c9
 
     - name: Log in to the Container registry
       id: docker-login
@@ -50,7 +46,6 @@ runs:
           type=raw,value=${{ inputs.pushTag }},enable=${{ '' != inputs.pushTag }}
           type=raw,value=${{ steps.pseudo-version.outputs.pseudoVersion }},enable=${{ '' != steps.pseudo-version.outputs.pseudoVersion }}
           type=ref,event=branch
-
 
     - name: Build and push container image
       uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a

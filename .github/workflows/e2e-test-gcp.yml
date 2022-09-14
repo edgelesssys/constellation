@@ -13,6 +13,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Go environment
+        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
+        with:
+          go-version: "1.19.1"
+
       - name: Run GCP E2E test
         uses: ./.github/actions/e2e_test
         with:
@@ -55,6 +60,11 @@ jobs:
         uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
         with:
           fetch-depth: 0
+
+      - name: Setup Go environment
+        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
+        with:
+          go-version: "1.19.1"
 
       - name: Run GCP E2E test
         uses: ./.github/actions/e2e_test

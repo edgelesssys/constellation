@@ -7,22 +7,10 @@ inputs:
     default: "./debugd"
     required: true
 
+# Linux runner only
 runs:
   using: "composite"
   steps:
-    - name: Install Go
-      uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
-      with:
-        go-version: "1.19.1"
-
-    - name: Install Dependencies
-      shell: bash
-      run: |
-        echo "::group::Install build dependencies"
-        sudo apt-get update
-        sudo apt-get -y install cmake make
-        echo "::endgroup::"
-
     - name: Build debugd
       shell: bash
       run: |

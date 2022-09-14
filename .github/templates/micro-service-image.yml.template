@@ -32,9 +32,6 @@ jobs:
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
-      - name: Set up Docker Buildx
-        id: docker-setup
-        uses: docker/setup-buildx-action@f211e3e9ded2d9377c8cadc4489a4e38014bc4c9
 
       - name: Log in to the Container registry
         id: docker-login

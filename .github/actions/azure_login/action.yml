@@ -2,30 +2,14 @@ name: Azure login
 description: "Login to Azure & configure az CLI."
 inputs:
   azure_credentials:
-    description: 'Credentials authorized to create Constellation on Azure.'
+    description: "Credentials authorized to create Constellation on Azure."
     required: true
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
-  - name: Install az CLI
-    run: |
-      echo "::group::Install build dependencies"
-      sudo apt-get update
-      sudo apt-get install ca-certificates curl apt-transport-https lsb-release gnupg -y
-      curl -sL https://packages.microsoft.com/keys/microsoft.asc |
-        gpg --dearmor |
-        sudo tee /etc/apt/trusted.gpg.d/microsoft.gpg > /dev/null
-      AZ_REPO=$(lsb_release -cs)
-      echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main" |
-          sudo tee /etc/apt/sources.list.d/azure-cli.list
-      sudo apt-get update
-      sudo apt-get install azure-cli -y
-      az help
-      echo "::endgroup::"
-    shell: bash
-  # As described at:
-  # https://github.com/Azure/login#configure-deployment-credentials
-  - name: Login to Azure
-    uses: azure/login@24848bc889cfc0a8313c2b3e378ac0d625b9bc16
-    with:
-      creds: ${{ inputs.azure_credentials }}
+    # As described at:
+    # https://github.com/Azure/login#configure-deployment-credentials
+    - name: Login to Azure
+      uses: azure/login@24848bc889cfc0a8313c2b3e378ac0d625b9bc16
+      with:
+        creds: ${{ inputs.azure_credentials }}
