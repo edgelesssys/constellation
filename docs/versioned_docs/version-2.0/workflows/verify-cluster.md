@@ -1,10 +1,6 @@
-# Manually verify your cluster
+# Verify your cluster
 
-Constellation's [attestation feature](../architecture/attestation.md) allows you, or a third party, to explicitly verify the integrity and confidentiality of your Constellation cluster.
-
-:::note
-The steps below are purely optional. They're automatically executed by `constellation init` when you initialize your cluster. The `constellation verify` command mostly has an illustrative purpose.
-:::
+Constellation's [attestation feature](../architecture/attestation.md) allows you, or a third party, to verify the integrity and confidentiality of your Constellation cluster.
 
 ## Fetch measurements
 
@@ -21,6 +17,10 @@ This command performs the following steps:
 
 ## The *verify* command
 
+:::note
+The steps below are purely optional. They're automatically executed by `constellation init` when you initialize your cluster. The `constellation verify` command mostly has an illustrative purpose.
+:::
+
 The `verify` command obtains and verifies an attestation statement from a running Constellation cluster.
 
 ```bash
@@ -36,7 +36,7 @@ Once the above properties are verified, you know that you are talking to the rig
 
 ### Custom arguments
 
-The `verify` command also allows you to verify any Constellation deployment that you have network access to. For this you need to following:
+The `verify` command also allows you to verify any Constellation deployment that you have network access to. For this you need the following:
 
 * The IP address of a running Constellation cluster's [VerificationService](../architecture/components.md#verification-service). The `VerificationService` is exposed via a `NodePort` service using the external IP address of your cluster. Run `kubectl get nodes -o wide` and look for `EXTERNAL-IP`.
 * The cluster's *clusterID*. See [cluster identity](../architecture/keys.md#cluster-identity) for more details.
