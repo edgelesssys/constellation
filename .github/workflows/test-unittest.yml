@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  test:
+  test-linux:
     runs-on: ubuntu-latest
     env:
       GOPRIVATE: github.com/edgelesssys/*
@@ -39,5 +39,23 @@ jobs:
         run: mkdir build && cd build && cmake ..
 
       - name: Unit Tests
-        run: ctest -j $(nproc) -R unit
+        run: ctest -R unit
         working-directory: build
+
+  test-cli-darwin:
+    runs-on: macos-12
+    env:
+      GOPRIVATE: github.com/edgelesssys/*
+      CTEST_OUTPUT_ON_FAILURE: True
+    steps:
+      - name: Checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+
+      - name: Setup Go environment
+        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
+        with:
+          go-version: "1.19.1"
+          cache: true
+
+      - name: Unit Tests
+        run: go test -race -count=3 ./cli/...
