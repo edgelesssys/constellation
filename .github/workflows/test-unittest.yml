@@ -42,7 +42,7 @@ jobs:
         run: ctest -R unit
         working-directory: build
 
-  test-cli-darwin:
+  test-darwin:
     runs-on: macos-12
     env:
       GOPRIVATE: github.com/edgelesssys/*
@@ -57,5 +57,8 @@ jobs:
           go-version: "1.19.1"
           cache: true
 
-      - name: Unit Tests
+      - name: CLI Unit Tests
         run: go test -race -count=3 ./cli/...
+
+      - name: cdbg/debugd Unit Tests
+        run: go test -race -count=3 ./debugd/...
