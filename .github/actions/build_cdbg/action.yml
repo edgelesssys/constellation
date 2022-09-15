@@ -1,6 +1,16 @@
 name: Build cdbg
 description: Build the Constellation cdbg binary
 
+inputs:
+  targetOS:
+    description: "Build CLI for this OS. [linux, darwin]"
+    required: true
+    default: "linux"
+  targetArch:
+    description: "Build CLI for this architecture. [amd64, arm64]"
+    required: true
+    default: "amd64"
+
 runs:
   using: "composite"
   steps:
@@ -10,5 +20,5 @@ runs:
         echo "::group::Build cdbg"
         mkdir -p build && cd build
         cmake ..
-        make cdbg
+        GOOS=${{ inputs.targetOS }} GOARCH=${{ inputs.targetArch }} make cdbg
         echo "::endgroup::"
