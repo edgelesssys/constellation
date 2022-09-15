@@ -114,6 +114,13 @@ func TestCreateAutoscalingStrategy(t *testing.T) {
 					Enabled:             true,
 					DeploymentName:      "constellation-cluster-autoscaler",
 					DeploymentNamespace: "kube-system",
+					AutoscalerExtraArgs: map[string]string{
+						"cloud-provider":  "stub",
+						"logtostderr":     "true",
+						"stderrthreshold": "info",
+						"v":               "2",
+						"namespace":       "kube-system",
+					},
 				},
 			},
 		},
@@ -132,6 +139,13 @@ func TestCreateAutoscalingStrategy(t *testing.T) {
 					Enabled:             true,
 					DeploymentName:      "constellation-cluster-autoscaler",
 					DeploymentNamespace: "kube-system",
+					AutoscalerExtraArgs: map[string]string{
+						"cloud-provider":  "stub",
+						"logtostderr":     "true",
+						"stderrthreshold": "info",
+						"v":               "2",
+						"namespace":       "kube-system",
+					},
 				},
 			},
 		},
@@ -143,7 +157,7 @@ func TestCreateAutoscalingStrategy(t *testing.T) {
 			require := require.New(t)
 
 			k8sClient := &stubK8sClient{createErr: tc.createErr}
-			err := createAutoscalingStrategy(context.Background(), k8sClient)
+			err := createAutoscalingStrategy(context.Background(), k8sClient, "stub")
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -221,9 +235,12 @@ func TestCreateScalingGroup(t *testing.T) {
 					Name: "group-name",
 				},
 				Spec: updatev1alpha1.ScalingGroupSpec{
-					NodeImage:   constants.NodeImageResourceName,
-					GroupID:     "group-id",
-					Autoscaling: true,
+					NodeImage:           constants.NodeImageResourceName,
+					GroupID:             "group-id",
+					AutoscalerGroupName: "group-Name",
+					Min:                 1,
+					Max:                 10,
+					Role:                updatev1alpha1.WorkerRole,
 				},
 			},
 		},
@@ -239,9 +256,12 @@ func TestCreateScalingGroup(t *testing.T) {
 					Name: "group-name",
 				},
 				Spec: updatev1alpha1.ScalingGroupSpec{
-					NodeImage:   constants.NodeImageResourceName,
-					GroupID:     "group-id",
-					Autoscaling: true,
+					NodeImage:           constants.NodeImageResourceName,
+					GroupID:             "group-id",
+					AutoscalerGroupName: "group-Name",
+					Min:                 1,
+					Max:                 10,
+					Role:                updatev1alpha1.WorkerRole,
 				},
 			},
 		},
@@ -253,7 +273,7 @@ func TestCreateScalingGroup(t *testing.T) {
 			require := require.New(t)
 
 			k8sClient := &stubK8sClient{createErr: tc.createErr}
-			err := createScalingGroup(context.Background(), k8sClient, "group-id", "group-name", true)
+			err := createScalingGroup(context.Background(), k8sClient, "group-id", "group-Name", "group-Name", updatev1alpha1.WorkerRole)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -300,7 +320,11 @@ func (g *stubScalingGroupGetter) GetScalingGroupImage(ctx context.Context, scali
 	return g.store[scalingGroupID].image, g.imageErr
 }
 
-func (g *stubScalingGroupGetter) GetScalingGroupName(ctx context.Context, scalingGroupID string) (string, error) {
+func (g *stubScalingGroupGetter) GetScalingGroupName(scalingGroupID string) (string, error) {
+	return g.store[scalingGroupID].name, g.nameErr
+}
+
+func (g *stubScalingGroupGetter) GetAutoscalingGroupName(scalingGroupID string) (string, error) {
 	return g.store[scalingGroupID].name, g.nameErr
 }
 
@@ -313,6 +337,10 @@ func (g *stubScalingGroupGetter) ListScalingGroups(ctx context.Context, uid stri
 		}
 	}
 	return controlPlaneGroupIDs, workerGroupIDs, g.listErr
+}
+
+func (g *stubScalingGroupGetter) AutoscalingCloudProvider() string {
+	return "stub"
 }
 
 type scalingGroupStoreItem struct {

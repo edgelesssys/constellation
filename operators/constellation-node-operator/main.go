@@ -191,7 +191,11 @@ type cspAPI interface {
 	// SetScalingGroupImage sets the image to be used by newly created nodes in a scaling group.
 	SetScalingGroupImage(ctx context.Context, scalingGroupID, imageURI string) error
 	// GetScalingGroupName retrieves the name of a scaling group.
-	GetScalingGroupName(ctx context.Context, scalingGroupID string) (string, error)
+	GetScalingGroupName(scalingGroupID string) (string, error)
+	// GetScalingGroupName retrieves the name of a scaling group as needed by the cluster-autoscaler.
+	GetAutoscalingGroupName(scalingGroupID string) (string, error)
 	// ListScalingGroups retrieves a list of scaling groups for the cluster.
 	ListScalingGroups(ctx context.Context, uid string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error)
+	// AutoscalingCloudProvider returns the cloud-provider name as used by k8s cluster-autoscaler.
+	AutoscalingCloudProvider() string
 }

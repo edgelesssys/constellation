@@ -18,6 +18,8 @@ type AutoscalingStrategySpec struct {
 	DeploymentName string `json:"deploymentName"`
 	// DeploymentNamespace defines the namespace of the autoscaler deployment.
 	DeploymentNamespace string `json:"deploymentNamespace"`
+	// AutoscalerExtraArgs defines extra arguments to be passed to the autoscaler.
+	AutoscalerExtraArgs map[string]string `json:"autoscalerExtraArgs,omitempty"`
 }
 
 // AutoscalingStrategyStatus defines the observed state of AutoscalingStrategy.

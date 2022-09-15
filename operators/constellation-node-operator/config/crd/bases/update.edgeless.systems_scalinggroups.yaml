@@ -35,6 +35,9 @@ spec:
           spec:
             description: ScalingGroupSpec defines the desired state of ScalingGroup.
             properties:
+              autoscalerGroupName:
+                description: AutoscalerGroupName is name that is expected by the autoscaler.
+                type: string
               autoscaling:
                 description: Autoscaling specifies wether the scaling group should
                   automatically scale using the cluster-autoscaler.
@@ -43,8 +46,22 @@ spec:
                 description: GroupID is the CSP specific, canonical identifier of
                   a scaling group.
                 type: string
+              max:
+                description: Max is the maximum number of nodes in the scaling group.
+                format: int32
+                type: integer
+              min:
+                description: Min is the minimum number of nodes in the scaling group.
+                format: int32
+                type: integer
               nodeImage:
                 description: NodeImage is the name of the NodeImage resource.
+                type: string
+              role:
+                description: Role is the role of the nodes in the scaling group.
+                enum:
+                - Worker
+                - ControlPlane
                 type: string
             type: object
           status:

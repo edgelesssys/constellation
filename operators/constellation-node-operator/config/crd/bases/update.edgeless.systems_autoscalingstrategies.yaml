@@ -36,6 +36,12 @@ spec:
           spec:
             description: AutoscalingStrategySpec defines the desired state of AutoscalingStrategy.
             properties:
+              autoscalerExtraArgs:
+                additionalProperties:
+                  type: string
+                description: AutoscalerExtraArgs defines extra arguments to be passed
+                  to the autoscaler.
+                type: object
               deploymentName:
                 description: DeploymentName defines the name of the autoscaler deployment.
                 type: string
