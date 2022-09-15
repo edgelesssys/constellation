@@ -20,7 +20,6 @@ jobs:
   test-linux:
     runs-on: ubuntu-latest
     env:
-      GOPRIVATE: github.com/edgelesssys/*
       CTEST_OUTPUT_ON_FAILURE: True
     steps:
       - name: Checkout
@@ -45,7 +44,6 @@ jobs:
   test-darwin:
     runs-on: macos-12
     env:
-      GOPRIVATE: github.com/edgelesssys/*
       CTEST_OUTPUT_ON_FAILURE: True
     steps:
       - name: Checkout

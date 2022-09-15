@@ -20,7 +20,6 @@ runs:
         cmake ..
         export GOCACHE=${homedir}/.cache/go-build
         export GOPATH=${homedir}/go
-        export GOPRIVATE=github.com/edgelesssys
         export GOMODCACHE=${homedir}/.cache/go-mod
         make debugd
         mv -n debugd "${{ inputs.outputPath }}"
