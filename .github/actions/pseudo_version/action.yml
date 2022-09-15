@@ -33,7 +33,6 @@ runs:
         homedir="$(getent passwd $(id -u) | cut -d ":" -f 6)"
         export GOCACHE=${homedir}/.cache/go-build
         export GOPATH=${homedir}/go
-        export GOPRIVATE=github.com/edgelesssys
         export GOMODCACHE=${homedir}/.cache/go-mod
         pseudoVersion=$(go run .)
         semanticVersion=$(go run . -semantic-version)
