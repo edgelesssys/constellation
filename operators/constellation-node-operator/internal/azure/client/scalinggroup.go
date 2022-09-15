@@ -63,13 +63,20 @@ func (c *Client) SetScalingGroupImage(ctx context.Context, scalingGroupID, image
 	return nil
 }
 
-// GetScalingGroupName retrieves the name of a scaling group.
-func (c *Client) GetScalingGroupName(ctx context.Context, scalingGroupID string) (string, error) {
+// GetScalingGroupName retrieves the name of a scaling group, as expected by Kubernetes.
+// This keeps the casing of the original name, but Kubernetes requires the name to be lowercase,
+// so use strings.ToLower() on the result if using the name in a Kubernetes context.
+func (c *Client) GetScalingGroupName(scalingGroupID string) (string, error) {
 	_, _, scaleSet, err := splitVMSSID(scalingGroupID)
 	if err != nil {
 		return "", fmt.Errorf("getting scaling group name: %w", err)
 	}
-	return strings.ToLower(scaleSet), nil
+	return scaleSet, nil
+}
+
+// GetScalingGroupName retrieves the name of a scaling group as needed by the cluster-autoscaler.
+func (c *Client) GetAutoscalingGroupName(scalingGroupID string) (string, error) {
+	return c.GetScalingGroupName(scalingGroupID)
 }
 
 // ListScalingGroups retrieves a list of scaling groups for the cluster.

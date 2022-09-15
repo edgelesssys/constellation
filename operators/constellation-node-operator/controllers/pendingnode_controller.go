@@ -193,7 +193,7 @@ func nodeStateChangePredicate() predicate.Predicate {
 // findObjectsForNode requests reconciliation for PendingNode whenever the corresponding Node state changes.
 func (r *PendingNodeReconciler) findObjectsForNode(rawNode client.Object) []reconcile.Request {
 	var pendingNodesList updatev1alpha1.PendingNodeList
-	err := r.List(context.TODO(), &pendingNodesList, client.MatchingFields{nodeNameKey: rawNode.GetName()})
+	err := r.List(context.Background(), &pendingNodesList, client.MatchingFields{nodeNameKey: rawNode.GetName()})
 	if err != nil {
 		return []reconcile.Request{}
 	}

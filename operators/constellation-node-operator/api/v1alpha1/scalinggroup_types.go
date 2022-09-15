@@ -13,6 +13,11 @@ import (
 const (
 	// ConditionOutdated is used to signal outdated scaling groups.
 	ConditionOutdated = "Outdated"
+
+	// WorkerRole is used to signal worker scaling groups.
+	WorkerRole NodeRole = "Worker"
+	// ControlPlaneRole is used to signal control plane scaling groups.
+	ControlPlaneRole NodeRole = "ControlPlane"
 )
 
 // ScalingGroupSpec defines the desired state of ScalingGroup.
@@ -21,9 +26,21 @@ type ScalingGroupSpec struct {
 	NodeImage string `json:"nodeImage,omitempty"`
 	// GroupID is the CSP specific, canonical identifier of a scaling group.
 	GroupID string `json:"groupId,omitempty"`
+	// AutoscalerGroupName is name that is expected by the autoscaler.
+	AutoscalerGroupName string `json:"autoscalerGroupName,omitempty"`
 	// Autoscaling specifies wether the scaling group should automatically scale using the cluster-autoscaler.
 	Autoscaling bool `json:"autoscaling,omitempty"`
+	// Min is the minimum number of nodes in the scaling group (used by cluster-autoscaler).
+	Min int32 `json:"min,omitempty"`
+	// Max is the maximum number of autoscaled nodes in the scaling group (used by cluster-autoscaler).
+	Max int32 `json:"max,omitempty"`
+	// Role is the role of the nodes in the scaling group.
+	Role NodeRole `json:"role,omitempty"`
 }
+
+// NodeRole is the role of a node.
+// +kubebuilder:validation:Enum=Worker;ControlPlane
+type NodeRole string
 
 // ScalingGroupStatus defines the observed state of ScalingGroup.
 type ScalingGroupStatus struct {

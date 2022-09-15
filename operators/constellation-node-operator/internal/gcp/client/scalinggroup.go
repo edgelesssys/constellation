@@ -10,7 +10,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"google.golang.org/api/iterator"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
@@ -87,12 +86,23 @@ func (c *Client) SetScalingGroupImage(ctx context.Context, scalingGroupID, image
 }
 
 // GetScalingGroupName retrieves the name of a scaling group.
-func (c *Client) GetScalingGroupName(ctx context.Context, scalingGroupID string) (string, error) {
+// This keeps the casing of the original name, but Kubernetes requires the name to be lowercase,
+// so use strings.ToLower() on the result if using the name in a Kubernetes context.
+func (c *Client) GetScalingGroupName(scalingGroupID string) (string, error) {
 	_, _, instanceGroupName, err := splitInstanceGroupID(scalingGroupID)
 	if err != nil {
 		return "", fmt.Errorf("getting scaling group name: %w", err)
 	}
-	return strings.ToLower(instanceGroupName), nil
+	return instanceGroupName, nil
+}
+
+// GetScalingGroupName retrieves the name of a scaling group as needed by the cluster-autoscaler.
+func (c *Client) GetAutoscalingGroupName(scalingGroupID string) (string, error) {
+	project, zone, instanceGroupName, err := splitInstanceGroupID(scalingGroupID)
+	if err != nil {
+		return "", fmt.Errorf("getting autoscaling scaling group name: %w", err)
+	}
+	return ensureURIPrefixed(fmt.Sprintf("projects/%s/zones/%s/instanceGroups/%s", project, zone, instanceGroupName)), nil
 }
 
 // ListScalingGroups retrieves a list of scaling groups for the cluster.

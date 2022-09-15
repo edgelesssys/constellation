@@ -155,9 +155,9 @@ func TestGetScalingGroupName(t *testing.T) {
 			scalingGroupID: "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name",
 			wantName:       "scale-set-name",
 		},
-		"uppercase name is lowercased": {
+		"uppercase name isn't lowercased": {
 			scalingGroupID: "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/SCALE-SET-NAME",
-			wantName:       "scale-set-name",
+			wantName:       "SCALE-SET-NAME",
 		},
 		"splitting scalingGroupID fails": {
 			scalingGroupID: "invalid",
@@ -171,7 +171,7 @@ func TestGetScalingGroupName(t *testing.T) {
 			require := require.New(t)
 
 			client := Client{}
-			gotName, err := client.GetScalingGroupName(context.Background(), tc.scalingGroupID)
+			gotName, err := client.GetScalingGroupName(tc.scalingGroupID)
 			if tc.wantErr {
 				assert.Error(err)
 				return

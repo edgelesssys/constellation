@@ -40,3 +40,12 @@ func uriNormalize(imageURI string) string {
 	}
 	return matches[1]
 }
+
+// ensureURIPrefixed ensures that a compute API URI is prefixed with the optional URI prefix.
+func ensureURIPrefixed(uri string) string {
+	matches := computeAPIBase.FindStringSubmatch(uri)
+	if len(matches) == 2 {
+		return uri
+	}
+	return "https://www.googleapis.com/compute/v1/" + uri
+}

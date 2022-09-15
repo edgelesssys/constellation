@@ -311,7 +311,7 @@ func TestGetScalingGroupName(t *testing.T) {
 			require := require.New(t)
 
 			client := Client{}
-			gotName, err := client.GetScalingGroupName(context.Background(), tc.scalingGroupID)
+			gotName, err := client.GetScalingGroupName(tc.scalingGroupID)
 			if tc.wantErr {
 				assert.Error(err)
 				return
