@@ -76,8 +76,9 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
-	ctx context.Context, autoscalingNodeGroups []string, cloudServiceAccountURI, versionString string, measurementSalt []byte,
-	enforcedPCRs []uint32, enforceIdKeyDigest bool, idKeyDigest []byte, azureCVM bool, kmsConfig resources.KMSConfig, sshUsers map[string]string, helmDeployments []byte, conformanceMode bool, log *logger.Logger,
+	ctx context.Context, cloudServiceAccountURI, versionString string, measurementSalt []byte, enforcedPCRs []uint32,
+	enforceIdKeyDigest bool, idKeyDigest []byte, azureCVM bool, kmsConfig resources.KMSConfig, sshUsers map[string]string,
+	helmDeployments []byte, conformanceMode bool, log *logger.Logger,
 ) ([]byte, error) {
 	k8sVersion, err := versions.NewValidK8sVersion(versionString)
 	if err != nil {
@@ -210,7 +211,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up cloud node manager: %w", err)
 	}
 
-	if err := k.setupClusterAutoscaler(instance, cloudServiceAccountURI, autoscalingNodeGroups, k8sVersion); err != nil {
+	if err := k.setupClusterAutoscaler(instance, cloudServiceAccountURI, k8sVersion); err != nil {
 		return nil, fmt.Errorf("setting up cluster autoscaler: %w", err)
 	}
 
@@ -381,7 +382,7 @@ func (k *KubeWrapper) setupCloudNodeManager(k8sVersion versions.ValidK8sVersion)
 	return nil
 }
 
-func (k *KubeWrapper) setupClusterAutoscaler(instance metadata.InstanceMetadata, cloudServiceAccountURI string, autoscalingNodeGroups []string, k8sVersion versions.ValidK8sVersion) error {
+func (k *KubeWrapper) setupClusterAutoscaler(instance metadata.InstanceMetadata, cloudServiceAccountURI string, k8sVersion versions.ValidK8sVersion) error {
 	if !k.clusterAutoscaler.Supported() {
 		return nil
 	}
@@ -391,7 +392,6 @@ func (k *KubeWrapper) setupClusterAutoscaler(instance metadata.InstanceMetadata,
 	}
 
 	clusterAutoscalerConfiguration := resources.NewDefaultAutoscalerDeployment(k.clusterAutoscaler.Volumes(), k.clusterAutoscaler.VolumeMounts(), k.clusterAutoscaler.Env(), k8sVersion)
-	clusterAutoscalerConfiguration.SetAutoscalerCommand(k.clusterAutoscaler.Name(), autoscalingNodeGroups)
 	if err := k.clusterUtil.SetupAutoscaling(k.client, clusterAutoscalerConfiguration, caSecrets); err != nil {
 		return fmt.Errorf("setting up cluster-autoscaler: %w", err)
 	}

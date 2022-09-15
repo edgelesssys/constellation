@@ -37,7 +37,6 @@ func TestInitCluster(t *testing.T) {
 	someErr := errors.New("failed")
 	serviceAccountURI := "some-service-account-uri"
 	masterSecret := []byte("some-master-secret")
-	autoscalingNodeGroups := []string{"0,10,autoscaling_group_0"}
 
 	nodeName := "node-name"
 	providerID := "provider-id"
@@ -319,7 +318,7 @@ func TestInitCluster(t *testing.T) {
 			}
 
 			_, err := kube.InitCluster(
-				context.Background(), autoscalingNodeGroups, serviceAccountURI, string(tc.k8sVersion),
+				context.Background(), serviceAccountURI, string(tc.k8sVersion),
 				nil, nil, false, nil, true, resources.KMSConfig{MasterSecret: masterSecret}, nil, nil, false, logger.NewTest(t),
 			)
 

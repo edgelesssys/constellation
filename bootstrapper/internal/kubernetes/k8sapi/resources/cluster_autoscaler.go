@@ -422,7 +422,7 @@ func NewDefaultAutoscalerDeployment(extraVolumes []k8s.Volume, extraVolumeMounts
 				Namespace: "kube-system",
 			},
 			Spec: apps.DeploymentSpec{
-				Replicas: proto.Int32(1),
+				Replicas: proto.Int32(0),
 				Selector: &v1.LabelSelector{
 					MatchLabels: map[string]string{
 						"app.kubernetes.io/instance": "constellation",
@@ -493,21 +493,4 @@ func NewDefaultAutoscalerDeployment(extraVolumes []k8s.Volume, extraVolumeMounts
 
 func (a *autoscalerDeployment) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(a)
-}
-
-func (a *autoscalerDeployment) SetAutoscalerCommand(cloudprovider string, autoscalingNodeGroups []string) {
-	command := []string{
-		"./cluster-autoscaler",
-		"--cloud-provider",
-		cloudprovider,
-		"--logtostderr=true",
-		"--stderrthreshold=info",
-		"--v=2",
-		"--namespace=kube-system",
-	}
-	for _, autoscalingNodeGroup := range autoscalingNodeGroups {
-		command = append(command, "--nodes", autoscalingNodeGroup)
-	}
-
-	a.Deployment.Spec.Template.Spec.Containers[0].Command = command
 }

@@ -9,23 +9,18 @@ package cmd
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"net"
 	"strconv"
 	"text/tabwriter"
 	"time"
 
 	"github.com/edgelesssys/constellation/bootstrapper/initproto"
-	"github.com/edgelesssys/constellation/cli/internal/azure"
 	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/cli/internal/gcp"
 	"github.com/edgelesssys/constellation/cli/internal/helm"
 	"github.com/edgelesssys/constellation/internal/azureshared"
 	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/internal/config"
 	"github.com/edgelesssys/constellation/internal/constants"
 	"github.com/edgelesssys/constellation/internal/crypto"
@@ -36,7 +31,6 @@ import (
 	grpcRetry "github.com/edgelesssys/constellation/internal/grpc/retry"
 	"github.com/edgelesssys/constellation/internal/license"
 	"github.com/edgelesssys/constellation/internal/retry"
-	"github.com/edgelesssys/constellation/internal/state"
 	"github.com/edgelesssys/constellation/internal/versions"
 	kms "github.com/edgelesssys/constellation/kms/setup"
 	"github.com/spf13/afero"
@@ -55,7 +49,6 @@ func NewInitCmd() *cobra.Command {
 	}
 	cmd.Flags().String("master-secret", "", "path to base64-encoded master secret")
 	cmd.Flags().String("endpoint", "", "endpoint of the bootstrapper, passed as HOST[:PORT]")
-	cmd.Flags().Bool("autoscale", false, "enable Kubernetes cluster-autoscaler")
 	cmd.Flags().Bool("conformance", false, "enable conformance mode")
 	return cmd
 }
@@ -82,14 +75,6 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 	flags, err := evalFlagArgs(cmd, fileHandler)
 	if err != nil {
 		return err
-	}
-
-	var stat state.ConstellationState
-	err = fileHandler.ReadJSON(constants.StateFilename, &stat)
-	if errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("missing Constellation state file: %w. Please do 'constellation create ...' before 'constellation init'", err)
-	} else if err != nil {
-		return fmt.Errorf("loading Constellation state file: %w", err)
 	}
 
 	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath)
@@ -129,17 +114,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return err
 	}
 
-	workers, err := getScalingGroupsFromState(stat, config)
-	if err != nil {
-		return err
-	}
-
-	var autoscalingNodeGroups []string
-	if flags.autoscale {
-		autoscalingNodeGroups = append(autoscalingNodeGroups, workers.GroupID)
-	}
-
-	helmDeployments, err := helmLoader.Load(stat.CloudProvider, flags.conformance)
+	helmDeployments, err := helmLoader.Load(provider.String(), flags.conformance)
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
 	}
@@ -151,7 +126,6 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 
 	cmd.Println("Initializing cluster ...")
 	req := &initproto.InitRequest{
-		AutoscalingNodeGroups:  autoscalingNodeGroups,
 		MasterSecret:           masterSecret.Key,
 		Salt:                   masterSecret.Salt,
 		KmsUri:                 kms.ClusterKMSURI,
@@ -287,10 +261,6 @@ func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (initFlags, erro
 			return initFlags{}, fmt.Errorf("getting bootstrapper endpoint: %w", err)
 		}
 	}
-	autoscale, err := cmd.Flags().GetBool("autoscale")
-	if err != nil {
-		return initFlags{}, fmt.Errorf("parsing autoscale flag: %w", err)
-	}
 	conformance, err := cmd.Flags().GetBool("conformance")
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing autoscale flag: %w", err)
@@ -303,7 +273,6 @@ func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (initFlags, erro
 	return initFlags{
 		configPath:       configPath,
 		endpoint:         endpoint,
-		autoscale:        autoscale,
 		conformance:      conformance,
 		masterSecretPath: masterSecretPath,
 	}, nil
@@ -314,7 +283,6 @@ type initFlags struct {
 	configPath       string
 	masterSecretPath string
 	endpoint         string
-	autoscale        bool
 	conformance      bool
 }
 
@@ -399,23 +367,6 @@ func getMarshaledServiceAccountURI(provider cloudprovider.Provider, config *conf
 
 	default:
 		return "", fmt.Errorf("unsupported cloud provider %q", provider)
-	}
-}
-
-func getScalingGroupsFromState(stat state.ConstellationState, config *config.Config) (workers cloudtypes.ScalingGroup, err error) {
-	switch cloudprovider.FromString(stat.CloudProvider) {
-	case cloudprovider.GCP:
-		return cloudtypes.ScalingGroup{
-			GroupID: gcp.AutoscalingNodeGroup(stat.GCPProject, stat.GCPZone, stat.GCPWorkerInstanceGroup, config.AutoscalingNodeGroupMin, config.AutoscalingNodeGroupMax),
-		}, nil
-	case cloudprovider.Azure:
-		return cloudtypes.ScalingGroup{
-			GroupID: azure.AutoscalingNodeGroup(stat.AzureWorkerScaleSet, config.AutoscalingNodeGroupMin, config.AutoscalingNodeGroupMax),
-		}, nil
-	case cloudprovider.QEMU:
-		return cloudtypes.ScalingGroup{GroupID: ""}, nil
-	default:
-		return cloudtypes.ScalingGroup{}, errors.New("unknown cloud provider")
 	}
 }
 

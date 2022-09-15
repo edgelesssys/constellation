@@ -81,7 +81,6 @@ func TestInitialize(t *testing.T) {
 		initServerAPI           *stubInitServer
 		endpointFlag            string
 		masterSecretShouldExist bool
-		setAutoscaleFlag        bool
 		wantErr                 bool
 	}{
 		"initialize some gcp instances": {
@@ -100,20 +99,6 @@ func TestInitialize(t *testing.T) {
 			state:         testQemuState,
 			idFile:        &clusterIDsFile{IP: "192.0.2.1"},
 			initServerAPI: &stubInitServer{initResp: testInitResp},
-		},
-		"initialize gcp with autoscaling": {
-			state:            testGcpState,
-			idFile:           &clusterIDsFile{IP: "192.0.2.1"},
-			configMutator:    func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
-			serviceAccKey:    gcpServiceAccKey,
-			initServerAPI:    &stubInitServer{initResp: testInitResp},
-			setAutoscaleFlag: true,
-		},
-		"initialize azure with autoscaling": {
-			state:            testAzureState,
-			idFile:           &clusterIDsFile{IP: "192.0.2.1"},
-			initServerAPI:    &stubInitServer{initResp: testInitResp},
-			setAutoscaleFlag: true,
 		},
 		"initialize with endpoint flag": {
 			state:         testGcpState,
@@ -177,7 +162,6 @@ func TestInitialize(t *testing.T) {
 
 			// Flags
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
-			require.NoError(cmd.Flags().Set("autoscale", strconv.FormatBool(tc.setAutoscaleFlag)))
 			if tc.endpointFlag != "" {
 				require.NoError(cmd.Flags().Set("endpoint", tc.endpointFlag))
 			}
@@ -218,11 +202,6 @@ func TestInitialize(t *testing.T) {
 			require.NoError(err)
 			// assert.Contains(out.String(), base64.StdEncoding.EncodeToString([]byte("ownerID")))
 			assert.Contains(out.String(), base64.StdEncoding.EncodeToString([]byte("clusterID")))
-			if tc.setAutoscaleFlag {
-				assert.Len(tc.initServerAPI.activateAutoscalingNodeGroups, 1)
-			} else {
-				assert.Len(tc.initServerAPI.activateAutoscalingNodeGroups, 0)
-			}
 			var secret masterSecret
 			assert.NoError(fileHandler.ReadJSON(constants.MasterSecretFilename, &secret))
 			assert.NotEmpty(secret.Key)
@@ -494,13 +473,10 @@ type stubInitServer struct {
 	initResp *initproto.InitResponse
 	initErr  error
 
-	activateAutoscalingNodeGroups []string
-
 	initproto.UnimplementedAPIServer
 }
 
 func (s *stubInitServer) Init(ctx context.Context, req *initproto.InitRequest) (*initproto.InitResponse, error) {
-	s.activateAutoscalingNodeGroups = req.AutoscalingNodeGroups
 	return s.initResp, s.initErr
 }
 

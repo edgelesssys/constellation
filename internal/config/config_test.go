@@ -62,15 +62,11 @@ func TestFromFile(t *testing.T) {
 		},
 		"custom config from default file": {
 			config: &Config{
-				Version:                 Version1,
-				AutoscalingNodeGroupMin: 42,
-				AutoscalingNodeGroupMax: 1337,
+				Version: Version1,
 			},
 			configName: constants.ConfigFilename,
 			wantResult: &Config{
-				Version:                 Version1,
-				AutoscalingNodeGroupMin: 42,
-				AutoscalingNodeGroupMax: 1337,
+				Version: Version1,
 			},
 		},
 		"modify default config": {
@@ -151,6 +147,7 @@ func TestFromFileStrictErrors(t *testing.T) {
 			err := fileHandler.Write(constants.ConfigFilename, []byte(tc.yamlConfig), file.OptNone)
 			assert.NoError(err)
 
+			// TODO: Test should fail because of unknown field "autoscalingNodeGroupMin" but it doesn't.
 			_, err = FromFile(fileHandler, constants.ConfigFilename)
 			assert.Error(err)
 		})

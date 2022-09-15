@@ -125,7 +125,6 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 	}
 
 	kubeconfig, err := s.initializer.InitCluster(ctx,
-		req.AutoscalingNodeGroups,
 		req.CloudServiceAccountUri,
 		req.KubernetesVersion,
 		measurementSalt,
@@ -234,7 +233,6 @@ type ClusterInitializer interface {
 	// InitCluster initializes a new Kubernetes cluster.
 	InitCluster(
 		ctx context.Context,
-		autoscalingNodeGroups []string,
 		cloudServiceAccountURI string,
 		k8sVersion string,
 		measurementSalt []byte,
