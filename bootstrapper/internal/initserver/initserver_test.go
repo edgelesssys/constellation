@@ -289,7 +289,7 @@ type stubClusterInitializer struct {
 }
 
 func (i *stubClusterInitializer) InitCluster(
-	context.Context, []string, string, string, []byte, []uint32, bool, []byte, bool,
+	context.Context, string, string, []byte, []uint32, bool, []byte, bool,
 	resources.KMSConfig, map[string]string, []byte, bool, *logger.Logger,
 ) ([]byte, error) {
 	return i.initClusterKubeconfig, i.initClusterErr

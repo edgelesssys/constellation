@@ -35,7 +35,6 @@ func TestAutoscalerDeploymentWithCommandMarshalUnmarshal(t *testing.T) {
 	assert := assert.New(t)
 
 	autoscalerDepl := NewDefaultAutoscalerDeployment(nil, nil, nil, "")
-	autoscalerDepl.SetAutoscalerCommand("someProvider", []string{"group1", "group2"})
 
 	data, err := autoscalerDepl.Marshal()
 	require.NoError(err)

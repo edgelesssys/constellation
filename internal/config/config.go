@@ -37,12 +37,6 @@ type Config struct {
 	//   Schema version of this configuration file.
 	Version string `yaml:"version" validate:"eq=v1"`
 	// description: |
-	//   Minimum number of worker nodes in autoscaling group.
-	AutoscalingNodeGroupMin int `yaml:"autoscalingNodeGroupMin" validate:"min=0"`
-	// description: |
-	//   Maximum number of worker nodes in autoscaling group.
-	AutoscalingNodeGroupMax int `yaml:"autoscalingNodeGroupMax" validate:"gtefield=AutoscalingNodeGroupMin"`
-	// description: |
 	//   Size (in GB) of a node's disk to store the non-volatile state.
 	StateDiskSizeGB int `yaml:"stateDiskSizeGB" validate:"min=0"`
 	// description: |
@@ -193,11 +187,9 @@ type QEMUConfig struct {
 // Default returns a struct with the default config.
 func Default() *Config {
 	return &Config{
-		Version:                 Version1,
-		AutoscalingNodeGroupMin: 1,
-		AutoscalingNodeGroupMax: 10,
-		StateDiskSizeGB:         30,
-		DebugCluster:            func() *bool { b := false; return &b }(),
+		Version:         Version1,
+		StateDiskSizeGB: 30,
+		DebugCluster:    func() *bool { b := false; return &b }(),
 		Provider: ProviderConfig{
 			Azure: &AzureConfig{
 				SubscriptionID:       "",

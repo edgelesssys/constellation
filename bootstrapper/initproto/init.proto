@@ -9,7 +9,7 @@ service API {
 }
 
 message InitRequest {
-  repeated string autoscaling_node_groups = 1;
+  // repeated string autoscaling_node_groups = 1; removed
   bytes master_secret = 2;
   string kms_uri = 3;
   string storage_uri = 4;
