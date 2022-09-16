@@ -13,10 +13,10 @@ This opens up a large attack surface where workloads and data can be read, copie
 
 ## Infrastructure-based attacks
 
-Malicious cloud users ("hackers") may break out of their tenancy and access other tenants' data. Advanced attackers may even be able to establish a permanent foothold within the infrastructure and repeatedly access data over a longer period. Analogously to the *insider access* scenario, Constellation also prevents access to a deployment's data in this scenario.
+Malicious cloud users ("hackers") may break out of their tenancy and access other tenants' data. Advanced attackers may even be able to establish a permanent foothold within the infrastructure and access data over a longer period. Analogously to the *insider access* scenario, Constellation also prevents access to a deployment's data in this scenario.
 
 ## Supply chain attacks
 
-Supply chain security is receiving lots of attention recently due to an [increasing number of recorded attacks](https://www.enisa.europa.eu/news/enisa-news/understanding-the-increase-in-supply-chain-security-attacks). For instance, a malicious actor could attempt to tamper Constellation node images (including Kubernetes and other software) before they're loaded in the confidential VMs of a cluster. Constellation uses remote attestation in conjunction with public transparency logs to prevent this. The approach is detailed [here](../architecture/attestation.md). 
+Supply chain security is receiving lots of attention recently due to an [increasing number of recorded attacks](https://www.enisa.europa.eu/news/enisa-news/understanding-the-increase-in-supply-chain-security-attacks). For instance, a malicious actor could attempt to tamper Constellation node images (including Kubernetes and other software) before they're loaded in the confidential VMs of a cluster. Constellation uses [remote attestation](../architecture/attestation.md) in conjunction with public [transparency logs](../workflows/verify-cli.md) to prevent this.
 
 In the future, Constellation will extend this feature to customer workloads. This will enable cluster owners to create auditable policies that precisely define which containers can run in a given deployment.

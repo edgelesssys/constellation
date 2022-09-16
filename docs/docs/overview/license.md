@@ -20,6 +20,6 @@ These terms may be different for future releases.
 
 ### Enterprise License
 
-Enterprise Licenses don't have the above limitations and come with support and additional features. Find out more [here](https://www.edgeless.systems/products/constellation/).
+Enterprise Licenses don't have the above limitations and come with support and additional features. Find out more at the [product website](https://www.edgeless.systems/products/constellation/).
 
 Once you have received your Enterprise License file, place it in your [Constellation workspace](../architecture/orchestration.md#workspaces) in a file named `constellation.license`.
