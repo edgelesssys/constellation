@@ -4,9 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       imageTag:
-        description: "Container image tag"
-        required: true
-        default: "manual-build"
+        description: "Container image tag."
 
 jobs:
   build-operator-manual:
