@@ -138,13 +138,14 @@ func (c *Creator) createGCP(ctx context.Context, cl gcpclient, config *config.Co
 	}
 
 	createInput := gcpcl.CreateInstancesInput{
-		CountControlPlanes: controlPlaneCount,
-		CountWorkers:       workerCount,
-		ImageID:            config.Provider.GCP.Image,
-		InstanceType:       insType,
-		StateDiskSizeGB:    config.StateDiskSizeGB,
-		StateDiskType:      config.Provider.GCP.StateDiskType,
-		KubeEnv:            gcp.KubeEnv,
+		EnableSerialConsole: config.IsDebugCluster(),
+		CountControlPlanes:  controlPlaneCount,
+		CountWorkers:        workerCount,
+		ImageID:             config.Provider.GCP.Image,
+		InstanceType:        insType,
+		StateDiskSizeGB:     config.StateDiskSizeGB,
+		StateDiskType:       config.Provider.GCP.StateDiskType,
+		KubeEnv:             gcp.KubeEnv,
 	}
 	if err := cl.CreateInstances(ctx, createInput); err != nil {
 		return state.ConstellationState{}, err

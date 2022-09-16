@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,11 +33,14 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 	}
 	ops := []Operation{}
 
+	enableSerialConsole := strconv.FormatBool(input.EnableSerialConsole)
+
 	workerTemplateInput := insertInstanceTemplateInput{
 		Name:                         c.buildResourceName("worker"),
 		Network:                      c.network,
 		SecondarySubnetworkRangeName: c.secondarySubnetworkRange,
 		Subnetwork:                   c.subnetwork,
+		EnableSerialConsole:          enableSerialConsole,
 		ImageID:                      input.ImageID,
 		InstanceType:                 input.InstanceType,
 		StateDiskSizeGB:              int64(input.StateDiskSizeGB),
@@ -60,6 +64,7 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 		Network:                      c.network,
 		Subnetwork:                   c.subnetwork,
 		SecondarySubnetworkRangeName: c.secondarySubnetworkRange,
+		EnableSerialConsole:          enableSerialConsole,
 		ImageID:                      input.ImageID,
 		InstanceType:                 input.InstanceType,
 		StateDiskSizeGB:              int64(input.StateDiskSizeGB),
@@ -317,13 +322,14 @@ func (i *instanceGroupManagerInput) InsertInstanceGroupManagerRequest() computep
 
 // CreateInstancesInput is the input for a CreatInstances operation.
 type CreateInstancesInput struct {
-	CountWorkers       int
-	CountControlPlanes int
-	ImageID            string
-	InstanceType       string
-	StateDiskSizeGB    int
-	StateDiskType      string
-	KubeEnv            string
+	EnableSerialConsole bool
+	CountWorkers        int
+	CountControlPlanes  int
+	ImageID             string
+	InstanceType        string
+	StateDiskSizeGB     int
+	StateDiskType       string
+	KubeEnv             string
 }
 
 type insertInstanceTemplateInput struct {
@@ -331,6 +337,7 @@ type insertInstanceTemplateInput struct {
 	Network                      string
 	Subnetwork                   string
 	SecondarySubnetworkRangeName string
+	EnableSerialConsole          string
 	ImageID                      string
 	InstanceType                 string
 	StateDiskSizeGB              int64
@@ -388,6 +395,10 @@ func (i insertInstanceTemplateInput) insertInstanceTemplateRequest() *computepb.
 						{
 							Key:   proto.String("constellation-role"),
 							Value: proto.String(i.Role),
+						},
+						{
+							Key:   proto.String("serial-port-enable"),
+							Value: proto.String(i.EnableSerialConsole),
 						},
 					},
 				},
