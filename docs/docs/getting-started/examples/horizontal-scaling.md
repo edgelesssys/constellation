@@ -1,10 +1,10 @@
 # Horizontal Pod Autoscaling
-This example demonstrates Constellation's autoscaling capabilities by utilizing a slightly adapted version of the Kubernetes [HorizontalPodAutoscaler Walkthrough](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/). During the following steps, Constellation will spawn new VMs on demand, verify them, add them to the cluster, and delete them again when the load has settled down.
+This example demonstrates Constellation's autoscaling capabilities. It's based on the Kubernetes [HorizontalPodAutoscaler Walkthrough](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/). During the following steps, Constellation will spawn new VMs on demand, verify them, add them to the cluster, and delete them again when the load has settled down.
 
 ## Requirements
-The cluster needs to be initialized with Kubernetes 1.23 or higher. In addition, autoscaling must be enabled to trigger Constellation to assign new nodes dynamically.
+The cluster needs to be initialized with Kubernetes 1.23 or later. In addition, [autoscaling must be enabled](../../workflows/create.md#the-init-step) to enable Constellation to assign new nodes dynamically.
 
-Just for this example specifically, the cluster should have as few worker nodes in the beginning as possible. We recommend starting with a small cluster with only *one* low-powered node for the control plane node and *one* low-powered worker node. 
+Just for this example specifically, the cluster should have as few worker nodes in the beginning as possible. Start with a small cluster with only *one* low-powered node for the control-plane node and *one* low-powered worker node.
 
 :::info
 We tested the example using instances of types `Standard_DC4as_v5` on Azure and `n2d-standard-4` on GCP.
@@ -19,7 +19,7 @@ We tested the example using instances of types `Standard_DC4as_v5` on Azure and 
 
 2. Deploy the HPA example server that's supposed to be scaled under load.
 
-    This is almost the same as the example which can be found in the official Kubernetes HPA walkthrough, with the only difference being increased CPU limits and requests to facilitate the triggering of node scaling events.
+    This manifest is similar to the one from the Kubernetes HPA walkthrough, but with increased CPU limits and requests to facilitate the triggering of node scaling events.
     ```bash
     cat <<EOF | kubectl apply -f -
     apiVersion: apps/v1
@@ -61,20 +61,21 @@ We tested the example using instances of types `Standard_DC4as_v5` on Azure and 
     EOF
     ```
 3. Create a HorizontalPodAutoscaler.
-    It's recommended to set an average CPU utilization across all Pods of 20% with the above server CPU limits and requests to see one additional worker nodes being created later. Note that the CPU utilization used here isn't 1:1 the host CPU utilization, but rather the requested CPU capacities (20% of 600 milli-cores CPU across all Pods). Take a look at the [original tutorial](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/#create-horizontal-pod-autoscaler) for more information on the HPA configuration.
+
+    Set an average CPU usage across all Pods of 20% to see one additional worker node being created later. Note that the CPU usage isn't related to the host CPU usage, but rather to the requested CPU capacities (20% of 600 milli-cores CPU across all Pods). See the [original tutorial](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/#create-horizontal-pod-autoscaler) for more information on the HPA configuration.
     ```bash
     kubectl autoscale deployment php-apache --cpu-percent=20 --min=1 --max=10
     ```
-4. Create a Pod which generates load onto the server:
+4. Create a Pod that generates load on the server:
     ```bash
     kubectl run -i --tty load-generator --rm --image=busybox:1.28 --restart=Never -- /bin/sh -c "while true; do wget -q -O- http://php-apache; done"
     ```
-5. Wait for a few minutes until new nodes are added to the cluster. See below for how to monitor the state of the HorizontalPodAutoscaler, the list of nodes and the behavior of the autoscaler.
-6. To kill the load generator, press CTRL+C and run:
+5. Wait a few minutes until new nodes are added to the cluster. You can [monitor](#monitoring) the state of the HorizontalPodAutoscaler, the list of nodes, and the behavior of the autoscaler.
+6. To stop the load generator, press CTRL+C and run:
     ```bash
     kubectl delete pod load-generator
     ```
-7. The cluster-autoscaler checks every few minutes if nodes are underutilized and can be removed from the cluster. It will taint such candidates for removal and wait additional 10 minutes before the nodes are eventually removed and deallocated. The whole process can take ~20 minutes in total.
+7. The cluster-autoscaler checks every few minutes if nodes are underutilized. It will taint such candidates for removal and wait additional 10 minutes before the nodes are eventually removed and deallocated. The whole process can take about 20 minutes.
 
 ## Monitoring
 :::tip
@@ -83,7 +84,7 @@ For better observability, run the listed commands in different tabs in your term
 
 :::
 
-You can watch the status of the HorizontalPodAutoscaler with the current CPU, the target CPU limit, and the number of replicas created with:
+You can watch the status of the HorizontalPodAutoscaler with the current CPU usage, the target CPU limit, and the number of replicas created with:
 ```bash
 kubectl get hpa php-apache --watch
 ```
@@ -91,7 +92,7 @@ From time to time compare the list of nodes to check the behavior of the autosca
 ```bash
 kubectl get nodes
 ```
-For deeper insights, take a look at the logs of the autoscaler Pod which contains more details about the scaling decision process:
+For deeper insights, see the logs of the autoscaler Pod, which contains more details about the scaling decision process:
 ```bash
 kubectl logs -f deployment/constellation-cluster-autoscaler -n kube-system
 ```
