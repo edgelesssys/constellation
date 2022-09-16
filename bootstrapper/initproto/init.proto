@@ -22,6 +22,7 @@ message InitRequest {
   bytes helm_deployments = 11;
   repeated uint32 enforced_pcrs = 12;
   bool enforce_idkeydigest = 13;
+  bool conformance_mode = 14;
 }
 
 message InitResponse {
