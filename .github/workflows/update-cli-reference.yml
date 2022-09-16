@@ -6,6 +6,7 @@ on:
     paths:
       - "cli/cmd/**"
       - "cli/internal/cmd/**"
+      - "hack/clidocgen/**"
   workflow_dispatch:
 
 jobs:
