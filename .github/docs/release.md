@@ -41,10 +41,12 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         gh workflow run build-coreos.yml --ref release/v1.3 -F debug=false -F coreOSConfigBranch=release/v1.3 -F imageVersion=v1.3.0
         ```
     8. Update [default images in config](/internal/config/images_enterprise.go)
-    9. Run [E2E tests](/.github/workflows/e2e-test-manual.yml) to confirm stability.
+    9. Run manual E2E tests using [Linux](/.github/workflows/e2e-test-manual.yml) and [macOS](/.github/workflows/e2e-test-manual-macos.yml) to confirm functionality and stability.
         ```sh
         gh workflow run e2e-test-manual.yml --ref release/v1.3 -F workerNodesCount=2 -F controlNodesCount=1 -F autoscale=false -F cloudProvider=azure -F machineType=Standard_DC4as_v5 -F sonobuoyTestSuiteCmd="--mode quick" -F kubernetesVersion=1.23 -F coreosImage=/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/1.3.0 -F isDebugImage=false
+        gh workflow run e2e-test-manual-macos.yml --ref release/v1.3 -F workerNodesCount=2 -F controlNodesCount=1 -F autoscale=false -F cloudProvider=azure -F machineType=Standard_DC4as_v5 -F sonobuoyTestSuiteCmd="--mode quick" -F kubernetesVersion=1.23 -F coreosImage=/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/1.3.0 -F isDebugImage=false
         gh workflow run e2e-test-manual.yml --ref release/v1.3 -F workerNodesCount=2 -F controlNodesCount=1 -F autoscale=false -F cloudProvider=gcp -F machineType=n2d-standard-4 -F sonobuoyTestSuiteCmd="--mode quick" -F kubernetesVersion=1.23 -F coreosImage=projects/constellation-images/global/images/constellation-v1-3-0 -F isDebugImage=false
+        gh workflow run e2e-test-manual-macos.yml --ref release/v1.3 -F workerNodesCount=2 -F controlNodesCount=1 -F autoscale=false -F cloudProvider=gcp -F machineType=n2d-standard-4 -F sonobuoyTestSuiteCmd="--mode quick" -F kubernetesVersion=1.23 -F coreosImage=projects/constellation-images/global/images/constellation-v1-3-0 -F isDebugImage=false
         ```
     10. [Generate measurements](/.github/workflows/generate-measurements.yml) for the images on each CSP.
         ```sh
