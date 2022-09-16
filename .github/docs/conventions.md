@@ -1,4 +1,5 @@
 # Process conventions
+
 ## Pull request process
 
 Submissions should remain focused in scope and avoid containing unrelated commits.
@@ -35,6 +36,7 @@ You should discuss larger changes and feature requests with the maintainers. Ple
 [Run CI e2e tests](/.github/docs/README.md)
 
 # Code conventions
+
 ## General
 
 Adhere to the style and best practices described in [Effective Go](https://golang.org/doc/effective_go.html). Read [Common Review Comments](https://github.com/golang/go/wiki/CodeReviewComments) for further information.

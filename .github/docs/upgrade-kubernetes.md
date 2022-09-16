@@ -6,7 +6,6 @@ Constellation is a Kubernetes distribution. As such, dependencies on Kubernetes 
 - Kubernetes resources (deployments made while initializing Kubernetes, including the `cloud-controller-manager`, `cluster-autoscaler` and more)
 - Kubernetes go dependencies for the bootstrapper code
 
-
 ## Understand what has changed
 
 Before adding support for a new Kubernetes version, it is a very good idea to [read the release notes](https://kubernetes.io/releases/notes/) and to identify breaking changes.
@@ -17,7 +16,7 @@ Everything related to Kubernetes versions is tracked in [the versions file](/int
 During cluster initialization, multiple Kubernetes resources are deployed. Some of these should be upgraded with Kubernetes.
 You can check available version tags for container images using [the container registry tags API](https://docs.docker.com/registry/spec/api/#listing-image-tags):
 
-```
+```sh
 curl -q https://k8s.gcr.io/v2/autoscaling/cluster-autoscaler/tags/list | jq .tags
 curl -q https://k8s.gcr.io/v2/cloud-controller-manager/tags/list | jq .tags
 curl -q https://us.gcr.io/v2/k8s-artifacts-prod/provider-aws/cloud-controller-manager/tags/list | jq .tags
@@ -25,7 +24,6 @@ curl -q https://mcr.microsoft.com/v2/oss/kubernetes/azure-cloud-controller-manag
 curl -q https://mcr.microsoft.com/v2/oss/kubernetes/azure-cloud-node-manager/tags/list | jq .tags
 # [...]
 ```
-
 
 ## Upgrade go dependencies
 
@@ -37,7 +35,7 @@ See the diff of [this PR](https://github.com/edgelesssys/constellation/pull/110)
 
 - Setup a Constellation cluster using the new image with the new bootstrapper binary and check if Kubernetes is deployed successfully.
 
-    ```
+    ```sh
     # should print the new k8s version for every node
     kubectl get nodes -o wide
     # read the logs for pods deployed in the kube-system namespace and ensure they are healthy
@@ -45,9 +43,10 @@ See the diff of [this PR](https://github.com/edgelesssys/constellation/pull/110)
     kubectl -n kube-system logs [...]
     kubectl -n kube-system describe pods
     ```
+
 - Read the logs of the main Kubernetes components by getting a shell on the nodes and scan for errors / deprecation warnings:
 
-    ```
+    ```sh
     journalctl -u kubelet
     journalctl -u containerd
     ```

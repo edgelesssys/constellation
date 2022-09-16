@@ -94,6 +94,9 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler) 
 		instanceType = config.Provider.Azure.InstanceType
 	case cloudprovider.GCP:
 		instanceType = config.Provider.GCP.InstanceType
+	case cloudprovider.QEMU:
+		cpus := config.Provider.QEMU.VCPUs
+		instanceType = fmt.Sprintf("%d-vCPU", cpus)
 	}
 
 	if !flags.yes {

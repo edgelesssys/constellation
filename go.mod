@@ -71,6 +71,10 @@ require (
 	github.com/googleapis/gax-go/v2 v2.4.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
+	github.com/hashicorp/go-version v1.6.0
+	github.com/hashicorp/hc-install v0.4.0
+	github.com/hashicorp/terraform-exec v0.17.3
+	github.com/hashicorp/terraform-json v0.14.0
 	github.com/manifoldco/promptui v0.9.0
 	github.com/martinjungblut/go-cryptsetup v0.0.0-20220520180014-fd0874fd07a6
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
@@ -100,6 +104,11 @@ require (
 	k8s.io/kubernetes v1.24.3
 	k8s.io/mount-utils v0.24.3
 	k8s.io/utils v0.0.0-20220812165043-ad590609e2e5
+)
+
+require (
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
+	github.com/zclconf/go-cty v1.11.0 // indirect
 )
 
 require (

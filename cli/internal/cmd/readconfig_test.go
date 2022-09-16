@@ -40,6 +40,10 @@ func TestValidateConfig(t *testing.T) {
 			wantOutput: true,
 			wantErr:    true,
 		},
+		"Azure config with all required fields is valid": {
+			cnf:      defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure),
+			provider: cloudprovider.Azure,
+		},
 		"default GCP config is not valid": {
 			cnf: func() *config.Config {
 				cnf := config.Default()
@@ -52,7 +56,11 @@ func TestValidateConfig(t *testing.T) {
 			wantOutput: true,
 			wantErr:    true,
 		},
-		"default QEMU config is valid": {
+		"GCP config with all required fields is valid": {
+			cnf:      defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.GCP),
+			provider: cloudprovider.GCP,
+		},
+		"default QEMU config is not valid": {
 			cnf: func() *config.Config {
 				cnf := config.Default()
 				qemu := cnf.Provider.QEMU
@@ -60,6 +68,12 @@ func TestValidateConfig(t *testing.T) {
 				cnf.Provider.QEMU = qemu
 				return cnf
 			}(),
+			provider:   cloudprovider.QEMU,
+			wantOutput: true,
+			wantErr:    true,
+		},
+		"QEMU config with all required fields is valid": {
+			cnf:      defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.QEMU),
 			provider: cloudprovider.QEMU,
 		},
 		"config with an error": {

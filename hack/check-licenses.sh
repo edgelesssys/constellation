@@ -27,6 +27,8 @@ while read line; do
           ;;
         github.com/letsencrypt/boulder)
           ;;
+        github.com/hashicorp/*)
+          ;;
         *)
           not_allowed
           ;;

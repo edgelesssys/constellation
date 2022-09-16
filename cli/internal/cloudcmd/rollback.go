@@ -28,7 +28,7 @@ func rollbackOnError(ctx context.Context, w io.Writer, onErr *error, roll rollba
 	fmt.Fprintf(w, "An error occurred: %s\n", *onErr)
 	fmt.Fprintln(w, "Attempting to roll back.")
 	if err := roll.rollback(ctx); err != nil {
-		*onErr = multierr.Append(*onErr, fmt.Errorf("on rollback: %w", err)) // TODO: print the error, or retrun it?
+		*onErr = multierr.Append(*onErr, fmt.Errorf("on rollback: %w", err)) // TODO: print the error, or return it?
 		return
 	}
 	fmt.Fprintln(w, "Rollback succeeded.")
@@ -53,4 +53,15 @@ type rollbackerAzure struct {
 
 func (r *rollbackerAzure) rollback(ctx context.Context) error {
 	return r.client.TerminateResourceGroupResources(ctx)
+}
+
+type rollbackerQEMU struct {
+	client qemuclient
+}
+
+func (r *rollbackerQEMU) rollback(ctx context.Context) error {
+	var err error
+	err = multierr.Append(err, r.client.DestroyCluster(ctx))
+	err = multierr.Append(err, r.client.CleanUpWorkspace())
+	return err
 }

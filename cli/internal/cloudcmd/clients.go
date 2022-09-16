@@ -11,6 +11,7 @@ import (
 
 	azurecl "github.com/edgelesssys/constellation/v2/cli/internal/azure/client"
 	gcpcl "github.com/edgelesssys/constellation/v2/cli/internal/gcp/client"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/state"
 )
 
@@ -37,4 +38,12 @@ type azureclient interface {
 	CreateSecurityGroup(ctx context.Context, input azurecl.NetworkSecurityGroupInput) error
 	CreateInstances(ctx context.Context, input azurecl.CreateInstancesInput) error
 	TerminateResourceGroupResources(ctx context.Context) error
+}
+
+type qemuclient interface {
+	GetState() state.ConstellationState
+	CreateCluster(ctx context.Context, input terraform.CreateClusterInput) error
+	DestroyCluster(ctx context.Context) error
+	CleanUpWorkspace() error
+	RemoveInstaller()
 }
