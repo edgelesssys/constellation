@@ -72,6 +72,7 @@ cosa-image:
 	make -j 1 -C $(COSA_BUILDDIR)
 
 cosa-init:
+	 mkdir -p $(COREOS_BUILD_PATH)
 	-flock $(COSA_LOCKFILE) -c '. $(COSA_ENV) && cd $(COREOS_BUILD_PATH) && NETRC=$(NETRC) cosa init --branch $(COSA_INIT_BRANCH) $(COSA_INIT_REPO)'
 
 cosa-fetch: cosa-init kernel $(BOOTSTRAPPER_OVERRIDE_PATH) $(DISK_MAPPER_OVERRIDE_PATH)
