@@ -1,10 +1,10 @@
 # Performance
 
-This section analyses the performance of Constellation.
+This section analyzes the performance of Constellation.
 
 ## Performance impact from runtime encryption
 
-All nodes in a Constellation cluster run inside Confidential VMs (CVMs). Thus, Constellation's performance is directly affected by the performance of CVMs. 
+All nodes in a Constellation cluster run inside Confidential VMs (CVMs). Thus, Constellation's performance is directly affected by the performance of CVMs.
 
 AMD and Azure jointly released a [performance benchmark](https://community.amd.com/t5/business/microsoft-azure-confidential-computing-powered-by-3rd-gen-epyc/ba-p/497796) for CVMs based on 3rd Gen AMD EPYC processors (Milan) with SEV-SNP. With a range of mostly compute-intensive benchmarks like SPEC CPU 2017 and CoreMark, they found that CVMs only have a small (2%--8%) performance degradation compared to standard VMs. You can expect to see similar performance for compute-intensive workloads running on Constellation.
 
@@ -12,7 +12,7 @@ AMD and Azure jointly released a [performance benchmark](https://community.amd.c
 
 To assess the overall performance of Constellation, we benchmarked Constellation v1.3.0 using [K-Bench](https://github.com/vmware-tanzu/k-bench). K-Bench is a configurable framework to benchmark Kubernetes clusters in terms of storage I/O, network performance, and creating/scaling resources.
 
-As a baseline, we compare Constellation with the non-confidential managed Kubernetes offerings on Microsoft Azure and Google Cloud Platform (GCP). These are AKS on Azure and GKE on GCP. 
+As a baseline, we compare Constellation with the non-confidential managed Kubernetes offerings on Microsoft Azure and Google Cloud Platform (GCP). These are AKS on Azure and GKE on GCP.
 
 ### Configurations
 
@@ -48,7 +48,7 @@ Using the default [K-Bench test configurations](https://github.com/vmware-tanzu/
 #### Kubernetes API Latency
 
 At its core, the Kubernetes API is the way to query and modify a cluster's state. Latency matters here. Hence, it's vital that even with the additional level of security from Constellation's network the API latency doesn't spike.
-K-Bench's `default` test performs calls to the API to create, update and delete cluster resources.
+K-Bench's `default` test performs calls to the API to create, update, and delete cluster resources.
 
 The three graphs below compare the API latencies (lower is better) in milliseconds for pods, services, and deployments.
 
@@ -66,8 +66,8 @@ Deployments: Constellation has the lowest latency for all cases except for scali
 
 #### Network
 
-When it comes to network performance, there are two main indicators we need to differentiate: intra-node and inter-node transmission speed.
-K-Bench provides benchmark tests for both, configured as `dp_netperf_internode`, `dp_network_internode`, `dp_network_intranode`.
+There are two main indicators for network performance: intra-node and inter-node transmission speed.
+K-Bench provides benchmark tests for both, configured as `dp_netperf_internode`, `dp_network_internode`, and `dp_network_intranode`.
 
 ##### Inter-node
 
@@ -83,7 +83,7 @@ The connections directly pass through the node's OS layer and never hit the netw
 The benchmark evaluates how the [Constellation's node OS image](../architecture/images.md) and runtime encryption influence the throughput.
 
 The K-Bench tests `dp_network_internode` and `dp_network_intranode`. The tests use [`iperf`](https://iperf.fr/) to measure the bandwidth available.
-Constellation's bandwidth for both sending and receiving is at 20 Gbps while AKS achieves slightly higher numbers and GKE achieves about 30 Gbps in our tests.
+Constellation's bandwidth for both sending and receiving is at 20 Gbps while AKS achieves slightly higher numbers and GKE achieves about 30 Gbps in the tests.
 
 ![](../_media/benchmark_net.png)
 
@@ -97,11 +97,11 @@ Similarly, Constellation will provision a PV via a default storage class upon a 
 The K-Bench [`fio`](https://fio.readthedocs.io/en/latest/fio_doc.html) benchmark consists of several tests.
 We selected four different tests that perform asynchronous access patterns because we believe they most accurately depict real-world I/O access for most applications.
 
-In the graph below, you will find the I/O throughput in MiB/s - where higher is better.
+The following graph shows I/O throughput in MiB/s (higher is better).
 
 ![I/O benchmark graph](../_media/benchmark_io.png)
 
-Comparing Constellation on GCP with GKE, we see that Constellation offers similar read/write speeds in all scenarios.
+Comparing Constellation on GCP with GKE, you see that Constellation offers similar read/write speeds in all scenarios.
 
 Constellation on Azure and AKS, however, partially differ. Only for the full write mix, Constellation and AKS have similar storage access speeds. In the `70/30 mix`, AKS outperforms Constellation.
 

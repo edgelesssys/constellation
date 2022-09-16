@@ -16,9 +16,9 @@ The following table summarizes the state of features for different infrastructur
 | **Feature**                   | **Azure** | **GCP** | **AWS** | **OpenStack (Yoga)** |
 |-------------------------------|-----------|---------|---------|----------------------|
 | **1. Custom images**          | Yes       | Yes     | No      | Yes                  |
-| **2. SEV-SNP or TDX**         | Yes       | No      | No      | Depends on Kernel/HV |
-| **3. Raw guest attestation**  | Yes       | No      | No      | Depends on Kernel/HV |
-| **4. Reviewable firmware**    | No*       | No      | No      | Depends on Kernel/HV |
+| **2. SEV-SNP or TDX**         | Yes       | No      | No      | Depends on kernel/HV |
+| **3. Raw guest attestation**  | Yes       | No      | No      | Depends on kernel/HV |
+| **4. Reviewable firmware**    | No*       | No      | No      | Depends on kernel/HV |
 
 ## Microsoft Azure
 
@@ -36,8 +36,8 @@ AWS currently doesn't offer CVMs. AWS proprietary Nitro Enclaves offer some rela
 
 ## OpenStack
 
-OpenStack is an open-source cloud and infrastructure management software. It's used by many smaller CSPs and datacenters. In the latest *Yoga* version, OpenStack has basic support for CVMs. However, much depends on the employed Kernel and hypervisor. Features (2)--(4) are likely to be a *Yes* with Linux Kernel version 6.2. Thus, going forward, OpenStack on corresponding AMD or Intel hardware will be a viable underpinning for Constellation.
+OpenStack is an open-source cloud and infrastructure management software. It's used by many smaller CSPs and datacenters. In the latest *Yoga* version, OpenStack has basic support for CVMs. However, much depends on the employed kernel and hypervisor. Features (2)--(4) are likely to be a *Yes* with Linux kernel version 6.2. Thus, going forward, OpenStack on corresponding AMD or Intel hardware will be a viable underpinning for Constellation.
 
 ## Conclusion
 
-The different clouds and software like the Linux Kernel and OpenStack are in the process of building out their support for state-of-the-art CVMs. Azure has already most features in place. For Constellation, the status quo means that the TCB has different shapes on different infrastructures. With broad SEV-SNP support coming to the Linux Kernel, we soon expect a normalization of features across infrastructures.
+The different clouds and software like the Linux kernel and OpenStack are in the process of building out their support for state-of-the-art CVMs. Azure has already most features in place. For Constellation, the status quo means that the TCB has different shapes on different infrastructures. With broad SEV-SNP support coming to the Linux kernel, we soon expect a normalization of features across infrastructures.
