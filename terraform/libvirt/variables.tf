@@ -51,8 +51,3 @@ variable "machine" {
   default     = "q35"
   description = "machine type. use 'q35' for secure boot and 'pc' for non secure boot. See 'qemu-system-x86_64 -machine help'"
 }
-
-variable "metadata_api_log_dir" {
-  type = string
-  description = "directory to store metadata log files. This must be an absolute path"
-}

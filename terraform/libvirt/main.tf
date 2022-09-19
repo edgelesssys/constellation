@@ -39,11 +39,6 @@ resource "docker_container" "qemu-metadata" {
     target = "/var/run/libvirt/libvirt-sock"
     type   = "bind"
   }
-  mounts {
-    source = var.metadata_api_log_dir
-    target = "/pcrs"
-    type   = "bind"
-  }
 }
 
 module "control_plane" {

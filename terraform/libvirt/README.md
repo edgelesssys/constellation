@@ -13,7 +13,6 @@ See [variables.tf](./variables.tf) for a description of all available variables.
 ```tfvars
 constellation_coreos_image="/path/to/image.qcow2"
 # optional other vars, uncomment and change as needed
-# metadata_api_log_dir="path/to/folder/for/metadata"
 # control_plane_count=3
 # worker_count=2
 # vcpus=2

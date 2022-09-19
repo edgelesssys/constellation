@@ -18,9 +18,7 @@ import (
 
 	"github.com/edgelesssys/constellation/hack/qemu-metadata-api/virtwrapper"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
-	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"libvirt.org/go/libvirt"
@@ -73,7 +71,7 @@ func TestListAll(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			server := New(logger.NewTest(t), tc.connect, file.Handler{})
+			server := New(logger.NewTest(t), tc.connect)
 
 			res, err := server.listAll()
 
@@ -150,7 +148,7 @@ func TestListSelf(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			server := New(logger.NewTest(t), tc.connect, file.Handler{})
+			server := New(logger.NewTest(t), tc.connect)
 
 			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.0.1/self", nil)
 			require.NoError(err)
@@ -212,7 +210,7 @@ func TestListPeers(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			server := New(logger.NewTest(t), tc.connect, file.Handler{})
+			server := New(logger.NewTest(t), tc.connect)
 
 			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.0.1/peers", nil)
 			require.NoError(err)
@@ -267,7 +265,7 @@ func TestPostLog(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			server := New(logger.NewTest(t), &stubConnect{}, file.NewHandler(afero.NewMemMapFs()))
+			server := New(logger.NewTest(t), &stubConnect{})
 
 			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.0.1/logs", tc.message)
 			require.NoError(err)
@@ -347,8 +345,7 @@ func TestExportPCRs(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			file := file.NewHandler(afero.NewMemMapFs())
-			server := New(logger.NewTest(t), tc.connect, file)
+			server := New(logger.NewTest(t), tc.connect)
 
 			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.0.1/pcrs", strings.NewReader(tc.message))
 			require.NoError(err)
@@ -363,9 +360,6 @@ func TestExportPCRs(t *testing.T) {
 			}
 
 			assert.Equal(http.StatusOK, w.Code)
-			output, err := file.Read(exportedPCRsDir + tc.connect.network.leases[0].Hostname + "_pcrs.json")
-			require.NoError(err)
-			assert.JSONEq(tc.message, string(output))
 		})
 	}
 }
