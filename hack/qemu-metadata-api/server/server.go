@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package server
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,25 +16,20 @@ import (
 
 	"github.com/edgelesssys/constellation/hack/qemu-metadata-api/virtwrapper"
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
-	"github.com/edgelesssys/constellation/internal/file"
 	"github.com/edgelesssys/constellation/internal/logger"
 	"github.com/edgelesssys/constellation/internal/role"
 	"go.uber.org/zap"
 )
 
-const exportedPCRsDir = "/pcrs/"
-
 type Server struct {
 	log  *logger.Logger
 	virt virConnect
-	file file.Handler
 }
 
-func New(log *logger.Logger, conn virConnect, file file.Handler) *Server {
+func New(log *logger.Logger, conn virConnect) *Server {
 	return &Server{
 		log:  log,
 		virt: conn,
-		file: file,
 	}
 }
 
@@ -187,23 +181,7 @@ func (s *Server) exportPCRs(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// write PCRs as JSON and YAML to disk
-	if err := s.file.WriteJSON(exportedPCRsDir+nodeName+"_pcrs.json", pcrs, file.OptOverwrite); err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to write pcrs to JSON")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// convert []byte to base64 encoded strings for YAML encoding
-	pcrsYAML := make(map[uint32]string)
-	for k, v := range pcrs {
-		pcrsYAML[k] = base64.StdEncoding.EncodeToString(v)
-	}
-	if err := s.file.WriteYAML(exportedPCRsDir+nodeName+"_pcrs.yaml", pcrsYAML, file.OptOverwrite); err != nil {
-		log.With(zap.Error(err)).Errorf("Failed to write pcrs to YAML")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	log.With(zap.String("node", nodeName)).With(zap.Any("pcrs", pcrs)).Infof("Received PCRs from node")
 }
 
 // listAll returns a list of all active peers.
