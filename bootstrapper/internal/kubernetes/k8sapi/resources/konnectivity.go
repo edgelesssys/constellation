@@ -253,7 +253,6 @@ func NewKonnectivityServerStaticPod(nodeCIDR, csp string) *konnectivityServerSta
 							"--agent-service-account=konnectivity-agent",
 							"--kubeconfig=/etc/kubernetes/konnectivity-server.conf",
 							"--authentication-audience=system:konnectivity-server",
-							"--proxy-strategies=destHost,default",
 						},
 						LivenessProbe: &corev1.Probe{
 							ProbeHandler: corev1.ProbeHandler{
@@ -334,6 +333,9 @@ func NewKonnectivityServerStaticPod(nodeCIDR, csp string) *konnectivityServerSta
 	// Add strict routing via setting "--node-cidr=10.9.0.0/16" as argument.
 	if csp != "gcp" {
 		yaml.StaticPod.Spec.Containers[0].Args = append(yaml.StaticPod.Spec.Containers[0].Args, "--node-cidr="+nodeCIDR)
+		yaml.StaticPod.Spec.Containers[0].Args = append(yaml.StaticPod.Spec.Containers[0].Args, "--proxy-strategies=destHost,default")
+	} else {
+		yaml.StaticPod.Spec.Containers[0].Args = append(yaml.StaticPod.Spec.Containers[0].Args, "--proxy-strategies=default")
 	}
 	return yaml
 }
