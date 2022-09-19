@@ -25,6 +25,8 @@ type ProviderMetadata interface {
 	Self(ctx context.Context) (metadata.InstanceMetadata, error)
 	// GetSubnetworkCIDR retrieves the subnetwork CIDR for the current instance.
 	GetSubnetworkCIDR(ctx context.Context) (string, error)
+	// GetNodenetworkCIDR retrieves the node network CIDR for the current instance.
+	GetNodenetworkCIDR(ctx context.Context) (string, error)
 	// SupportsLoadBalancer returns true if the cloud provider supports load balancers.
 	SupportsLoadBalancer() bool
 	// GetLoadBalancerEndpoint retrieves the load balancer endpoint.
@@ -97,6 +99,9 @@ type stubProviderMetadata struct {
 	GetSubnetworkCIDRErr  error
 	GetSubnetworkCIDRResp string
 
+	GetNodenetworkCIDRErr  error
+	GetNodenetworkCIDRResp string
+
 	ListErr  error
 	ListResp []metadata.InstanceMetadata
 
@@ -119,6 +124,10 @@ func (m *stubProviderMetadata) GetLoadBalancerEndpoint(ctx context.Context) (str
 
 func (m *stubProviderMetadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
 	return m.GetSubnetworkCIDRResp, m.GetSubnetworkCIDRErr
+}
+
+func (m *stubProviderMetadata) GetNodenetworkCIDR(ctx context.Context) (string, error) {
+	return m.GetNodenetworkCIDRResp, m.GetNodenetworkCIDRErr
 }
 
 func (m *stubProviderMetadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {

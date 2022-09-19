@@ -73,7 +73,7 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool, k8sV
 						"audit-log-maxsize":   "100",                                    // CIS benchmark - Default value of Rancher
 						"profiling":           "false",                                  // CIS benchmark
 						// Disabled konnectivity until agents have stable connections
-						// "egress-selector-config-file": "/etc/kubernetes/egress-selector-configuration.yaml",
+						"egress-selector-config-file": "/etc/kubernetes/egress-selector-configuration.yaml",
 						"kubelet-certificate-authority": filepath.Join(
 							kubeconstants.KubernetesDir,
 							kubeconstants.DefaultCertificateDir,

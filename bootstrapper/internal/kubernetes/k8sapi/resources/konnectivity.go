@@ -107,16 +107,16 @@ func NewKonnectivityAgents(konnectivityServerAddress string) *konnectivityAgents
 									"--admin-server-port=8133",
 									"--health-server-port=8134",
 									"--service-account-token-path=/var/run/secrets/tokens/konnectivity-agent-token",
-									"--agent-identifiers=host=$(HOST_IP)",
+									"--agent-identifiers=host=$(HOST_IP)&default-route=true",
 									// we will be able to avoid constant polling when either one is done:
 									// https://github.com/kubernetes-sigs/apiserver-network-proxy/issues/358
 									// https://github.com/kubernetes-sigs/apiserver-network-proxy/issues/273
 									"--sync-forever=true",
 									// Ensure stable connection to the konnectivity server.
-									"--keepalive-time=60s",
-									"--sync-interval=1s",
-									"--sync-interval-cap=3s",
-									"--probe-interval=1s",
+									"--keepalive-time=20s",
+									"--sync-interval=1s",     // GKE: 5s
+									"--sync-interval-cap=3s", // GKE: 30s
+									"--probe-interval=1s",    // GKE: 5s
 									"--v=3",
 								},
 								Env: []corev1.EnvVar{
@@ -213,9 +213,9 @@ func NewKonnectivityAgents(konnectivityServerAddress string) *konnectivityAgents
 	}
 }
 
-func NewKonnectivityServerStaticPod() *konnectivityServerStaticPod {
+func NewKonnectivityServerStaticPod(nodeCIDR, csp string) *konnectivityServerStaticPod {
 	udsHostPathType := corev1.HostPathDirectoryOrCreate
-	return &konnectivityServerStaticPod{
+	yaml := &konnectivityServerStaticPod{
 		StaticPod: corev1.Pod{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "v1",
@@ -253,7 +253,6 @@ func NewKonnectivityServerStaticPod() *konnectivityServerStaticPod {
 							"--agent-service-account=konnectivity-agent",
 							"--kubeconfig=/etc/kubernetes/konnectivity-server.conf",
 							"--authentication-audience=system:konnectivity-server",
-							"--proxy-strategies=destHost,default",
 						},
 						LivenessProbe: &corev1.Probe{
 							ProbeHandler: corev1.ProbeHandler{
@@ -331,6 +330,14 @@ func NewKonnectivityServerStaticPod() *konnectivityServerStaticPod {
 			},
 		},
 	}
+	// Add strict routing via setting "--node-cidr=10.9.0.0/16" as argument.
+	if csp != "gcp" {
+		yaml.StaticPod.Spec.Containers[0].Args = append(yaml.StaticPod.Spec.Containers[0].Args, "--node-cidr="+nodeCIDR)
+		yaml.StaticPod.Spec.Containers[0].Args = append(yaml.StaticPod.Spec.Containers[0].Args, "--proxy-strategies=destHost,default")
+	} else {
+		yaml.StaticPod.Spec.Containers[0].Args = append(yaml.StaticPod.Spec.Containers[0].Args, "--proxy-strategies=default")
+	}
+	return yaml
 }
 
 func NewEgressSelectorConfiguration() *egressSelectorConfiguration {

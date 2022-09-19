@@ -154,6 +154,24 @@ func (m *Metadata) GetNetworkSecurityGroupName(ctx context.Context) (string, err
 	return *nsg.Name, nil
 }
 
+// GetNodenetworkCIDR retrieves the subnetwork CIDR from cloud provider metadata.
+func (m *Metadata) GetNodenetworkCIDR(ctx context.Context) (string, error) {
+	resourceGroup, err := m.imdsAPI.ResourceGroup(ctx)
+	if err != nil {
+		return "", err
+	}
+	virtualNetwork, err := m.getVirtualNetwork(ctx, resourceGroup)
+	if err != nil {
+		return "", err
+	}
+	if virtualNetwork == nil || virtualNetwork.Properties == nil || len(virtualNetwork.Properties.Subnets) == 0 ||
+		virtualNetwork.Properties.Subnets[0].Properties == nil || virtualNetwork.Properties.Subnets[0].Properties.AddressPrefix == nil {
+		return "", fmt.Errorf("could not retrieve subnetwork CIDR from virtual network %v", virtualNetwork)
+	}
+
+	return *virtualNetwork.Properties.Subnets[0].Properties.AddressPrefix, nil
+}
+
 // GetSubnetworkCIDR retrieves the subnetwork CIDR from cloud provider metadata.
 func (m *Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
 	resourceGroup, err := m.imdsAPI.ResourceGroup(ctx)

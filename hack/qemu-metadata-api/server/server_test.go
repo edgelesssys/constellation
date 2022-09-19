@@ -150,7 +150,7 @@ func TestListSelf(t *testing.T) {
 
 			server := New(logger.NewTest(t), tc.connect)
 
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.0.1/self", nil)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.2.1/self", nil)
 			require.NoError(err)
 			req.RemoteAddr = tc.remoteAddr
 
@@ -212,7 +212,7 @@ func TestListPeers(t *testing.T) {
 
 			server := New(logger.NewTest(t), tc.connect)
 
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.0.1/peers", nil)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.2.1/peers", nil)
 			require.NoError(err)
 			req.RemoteAddr = tc.remoteAddr
 
@@ -267,7 +267,7 @@ func TestPostLog(t *testing.T) {
 
 			server := New(logger.NewTest(t), &stubConnect{})
 
-			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.0.1/logs", tc.message)
+			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.2.1/logs", tc.message)
 			require.NoError(err)
 			req.RemoteAddr = tc.remoteAddr
 
@@ -347,7 +347,7 @@ func TestExportPCRs(t *testing.T) {
 
 			server := New(logger.NewTest(t), tc.connect)
 
-			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.0.1/pcrs", strings.NewReader(tc.message))
+			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.2.1/pcrs", strings.NewReader(tc.message))
 			require.NoError(err)
 			req.RemoteAddr = tc.remoteAddr
 
@@ -360,6 +360,44 @@ func TestExportPCRs(t *testing.T) {
 			}
 
 			assert.Equal(http.StatusOK, w.Code)
+		})
+	}
+}
+
+func TestGetNodeCIDR(t *testing.T) {
+	testCases := map[string]struct {
+		remoteAddr string
+		connect    *stubConnect
+		message    string
+		method     string
+		wantErr    bool
+	}{
+		"success": {
+			connect: &stubConnect{},
+			method:  http.MethodGet,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			server := New(logger.NewTest(t), &stubConnect{}, file.Handler{})
+
+			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.2.1/nodecidr", strings.NewReader(tc.message))
+			require.NoError(err)
+
+			w := httptest.NewRecorder()
+			server.getNodeCIDR(w, req)
+
+			if tc.wantErr {
+				assert.NotEqual(http.StatusOK, w.Code)
+				return
+			}
+
+			assert.Equal(http.StatusOK, w.Code)
+			assert.Equal("10.42.0.0/16", w.Body.String())
 		})
 	}
 }

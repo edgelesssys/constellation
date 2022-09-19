@@ -246,6 +246,7 @@ type stubGCPClient struct {
 	retrieveInstanceMetadaValues map[string]string
 	retrieveInstanceMetadataErr  error
 	retrieveSubnetworkAliasErr   error
+	retrieveSubnetworkErr        error
 	projectID                    string
 	zone                         string
 	instanceName                 string
@@ -322,4 +323,8 @@ func (s *stubGCPClient) UnsetInstanceMetadata(ctx context.Context, project, zone
 
 func (s *stubGCPClient) RetrieveSubnetworkAliasCIDR(ctx context.Context, project, zone, instanceName string) (string, error) {
 	return "", s.retrieveSubnetworkAliasErr
+}
+
+func (s *stubGCPClient) RetrieveSubnetworkCIDR(ctx context.Context, project, zone, instanceName string) (string, error) {
+	return "", s.retrieveSubnetworkErr
 }

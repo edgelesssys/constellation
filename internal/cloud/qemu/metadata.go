@@ -10,8 +10,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"net/netip"
 	"net/url"
 
 	"github.com/edgelesssys/constellation/internal/cloud/metadata"
@@ -83,9 +85,22 @@ func (m Metadata) UID(ctx context.Context) (string, error) {
 	return "", nil
 }
 
-// GetSubnetworkCIDR retrieves the subnetwork CIDR from cloud provider metadata.
+// GetSubnetworkCIDR retrieves the pod subnetwork CIDR from cloud provider metadata.
 func (m Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
 	return "10.244.0.0/16", nil
+}
+
+// GetNodenetworkCIDR retrieves the node subnetwork CIDR from cloud provider metadata.
+func (m Metadata) GetNodenetworkCIDR(ctx context.Context) (string, error) {
+	resp, err := m.retrieveMetadata(ctx, "/nodecidr")
+	if err != nil {
+		return "", err
+	}
+	_, err = netip.ParsePrefix(string(resp))
+	if err != nil {
+		return "", fmt.Errorf("parsing QEMU nodeCIDR response: %w", err)
+	}
+	return string(resp), nil
 }
 
 func (m Metadata) retrieveMetadata(ctx context.Context, uri string) ([]byte, error) {
