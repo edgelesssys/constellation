@@ -27,11 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 <!-- For changes in existing functionality.  -->
+- Autoscaling is now directly managed inside Kubernetes, by the Constellation node operator.
 
 ### Deprecated
 <!-- For soon-to-be removed features. -->
 ### Removed
 <!-- For now removed features. -->
+- CLI options for autoscaling, as this is now managed inside Kubernetes.
 
 ### Fixed
 
