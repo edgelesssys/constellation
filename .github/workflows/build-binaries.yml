@@ -21,13 +21,15 @@ jobs:
   build-bootstrapper:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
       - name: Setup Go environment
         uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
         with:
           go-version: "1.19.1"
-
-      - name: Check out repository
-        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
 
       - name: Build the bootstrapper
         uses: ./.github/actions/build_bootstrapper
@@ -35,13 +37,15 @@ jobs:
   build-debugd:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
       - name: Setup Go environment
         uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
         with:
           go-version: "1.19.1"
-
-      - name: Check out repository
-        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
 
       - name: Build debugd
         uses: ./.github/actions/build_debugd
@@ -49,13 +53,15 @@ jobs:
   build-cdbg:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
       - name: Setup Go environment
         uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
         with:
           go-version: "1.19.1"
-
-      - name: Check out repository
-        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
 
       - name: Build cdbg (Linux, amd64)
         uses: ./.github/actions/build_cdbg
@@ -84,27 +90,30 @@ jobs:
   build-disk-mapper:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
       - name: Setup Go environment
         uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
         with:
           go-version: "1.19.1"
-
-      - name: Check out repository
-        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
-
       - name: Build disk-mapper
         uses: ./.github/actions/build_disk_mapper
 
   build-cli:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
       - name: Setup Go environment
         uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
         with:
           go-version: "1.19.1"
-
-      - name: Check out repository
-        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
 
       - name: Build CLI (Linux, amd64)
         uses: ./.github/actions/build_cli

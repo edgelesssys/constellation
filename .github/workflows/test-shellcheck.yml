@@ -21,6 +21,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@203a3fd018dfe73f8ae7e3aa8da2c149a5f41c33
         with:
