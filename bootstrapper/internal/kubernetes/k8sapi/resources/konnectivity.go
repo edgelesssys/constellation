@@ -113,6 +113,7 @@ func NewKonnectivityAgents(konnectivityServerAddress string) *konnectivityAgents
 									// https://github.com/kubernetes-sigs/apiserver-network-proxy/issues/273
 									"--sync-forever=true",
 									// Ensure stable connection to the konnectivity server.
+									"--keepalive-time=20s",
 									"--sync-interval=1s",     // GKE: 5s
 									"--sync-interval-cap=3s", // GKE: 30s
 									"--probe-interval=1s",    // GKE: 5s
@@ -212,9 +213,9 @@ func NewKonnectivityAgents(konnectivityServerAddress string) *konnectivityAgents
 	}
 }
 
-func NewKonnectivityServerStaticPod(nodeCIDR string) *konnectivityServerStaticPod {
+func NewKonnectivityServerStaticPod(nodeCIDR, csp string) *konnectivityServerStaticPod {
 	udsHostPathType := corev1.HostPathDirectoryOrCreate
-	return &konnectivityServerStaticPod{
+	yaml := &konnectivityServerStaticPod{
 		StaticPod: corev1.Pod{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "v1",
@@ -253,7 +254,6 @@ func NewKonnectivityServerStaticPod(nodeCIDR string) *konnectivityServerStaticPo
 							"--kubeconfig=/etc/kubernetes/konnectivity-server.conf",
 							"--authentication-audience=system:konnectivity-server",
 							"--proxy-strategies=destHost,default",
-							"--node-cidr=" + nodeCIDR, //--node-cidr=10.9.0.0/16,
 						},
 						LivenessProbe: &corev1.Probe{
 							ProbeHandler: corev1.ProbeHandler{
@@ -331,6 +331,11 @@ func NewKonnectivityServerStaticPod(nodeCIDR string) *konnectivityServerStaticPo
 			},
 		},
 	}
+	// Add strict routing via setting "--node-cidr=10.9.0.0/16" as argument.
+	if csp != "gcp" {
+		yaml.StaticPod.Spec.Containers[0].Args = append(yaml.StaticPod.Spec.Containers[0].Args, "--node-cidr="+nodeCIDR)
+	}
+	return yaml
 }
 
 func NewEgressSelectorConfiguration() *egressSelectorConfiguration {

@@ -46,7 +46,7 @@ const (
 	KonnectivityAgentImage = "us.gcr.io/k8s-artifacts-prod/kas-network-proxy/proxy-agent:v0.0.32"
 	// TODO: switch back to official image once cilium node2node encryption is enabled.
 	// KonnectivityServerImage = "registry.k8s.io/kas-network-proxy/proxy-server:v0.0.32".
-	KonnectivityServerImage  = "ghcr.io/3u13r/constellation-konnectivity-server:v0.0.33-edgeless"
+	KonnectivityServerImage  = "ghcr.io/3u13r/constellation-konnectivity-server:v0.0.33-edgeless@sha256:75a46a3d6cca859e301059ba62324cf986826122ec315a753dd7389d3fe09473"
 	JoinImage                = "ghcr.io/edgelesssys/constellation/join-service:v2.0.0"
 	AccessManagerImage       = "ghcr.io/edgelesssys/constellation/access-manager:v2.0.0"
 	KmsImage                 = "ghcr.io/edgelesssys/constellation/kmsserver:v2.0.0"

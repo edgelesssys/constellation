@@ -131,7 +131,7 @@ func (k *KubernetesUtil) InstallComponents(ctx context.Context, version versions
 }
 
 func (k *KubernetesUtil) InitCluster(
-	ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, controlPlaneEndpoint string, nodeCIDR string, log *logger.Logger,
+	ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, controlPlaneEndpoint string, nodeCIDR string, csp string, log *logger.Logger,
 ) error {
 	// TODO: audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
@@ -182,7 +182,7 @@ func (k *KubernetesUtil) InitCluster(
 	}
 
 	log.Infof("Preparing node for Konnectivity")
-	if err := k.prepareControlPlaneForKonnectivity(ctx, controlPlaneEndpoint, nodeCIDR); err != nil {
+	if err := k.prepareControlPlaneForKonnectivity(ctx, controlPlaneEndpoint, nodeCIDR, csp); err != nil {
 		return fmt.Errorf("setup konnectivity: %w", err)
 	}
 
@@ -201,7 +201,7 @@ func (k *KubernetesUtil) InitCluster(
 	return nil
 }
 
-func (k *KubernetesUtil) prepareControlPlaneForKonnectivity(ctx context.Context, loadBalancerEndpoint, nodeCIDR string) error {
+func (k *KubernetesUtil) prepareControlPlaneForKonnectivity(ctx context.Context, loadBalancerEndpoint, nodeCIDR, csp string) error {
 	if !strings.Contains(loadBalancerEndpoint, ":") {
 		loadBalancerEndpoint = net.JoinHostPort(loadBalancerEndpoint, strconv.Itoa(constants.KubernetesPort))
 	}
@@ -210,7 +210,7 @@ func (k *KubernetesUtil) prepareControlPlaneForKonnectivity(ctx context.Context,
 		return fmt.Errorf("creating static pods directory: %w", err)
 	}
 
-	konnectivityServerYaml, err := resources.NewKonnectivityServerStaticPod(nodeCIDR).Marshal()
+	konnectivityServerYaml, err := resources.NewKonnectivityServerStaticPod(nodeCIDR, csp).Marshal()
 	if err != nil {
 		return fmt.Errorf("generating konnectivity server static pod: %w", err)
 	}
@@ -514,7 +514,7 @@ func (k *KubernetesUtil) SetupNodeOperator(ctx context.Context, kubectl Client, 
 }
 
 // JoinCluster joins existing Kubernetes cluster using kubeadm join.
-func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, peerRole role.Role, controlPlaneEndpoint string, nodeCIDR string, log *logger.Logger) error {
+func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, peerRole role.Role, controlPlaneEndpoint string, nodeCIDR string, csp string, log *logger.Logger) error {
 	// TODO: audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
 	if err != nil {
@@ -535,7 +535,7 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, pee
 
 	if peerRole == role.ControlPlane {
 		log.Infof("Prep Init Kubernetes cluster")
-		if err := k.prepareControlPlaneForKonnectivity(ctx, controlPlaneEndpoint, nodeCIDR); err != nil {
+		if err := k.prepareControlPlaneForKonnectivity(ctx, controlPlaneEndpoint, nodeCIDR, csp); err != nil {
 			return fmt.Errorf("setup konnectivity: %w", err)
 		}
 	}

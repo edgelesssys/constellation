@@ -172,10 +172,12 @@ func (c *Client) createBackendService(ctx context.Context, lb *loadBalancer) err
 			LoadBalancingScheme: proto.String(computepb.BackendService_LoadBalancingScheme_name[int32(computepb.BackendService_EXTERNAL)]),
 			HealthChecks:        []string{c.resourceURI(scopeGlobal, "healthChecks", lb.name)},
 			PortName:            proto.String(lb.backendPortName),
+			TimeoutSec:          proto.Int32(240),
 			Backends: []*computepb.Backend{
 				{
-					BalancingMode: proto.String(computepb.Backend_BalancingMode_name[int32(computepb.Backend_UTILIZATION)]),
-					Group:         proto.String(c.resourceURI(scopeZone, "instanceGroups", c.controlPlaneInstanceGroup)),
+					BalancingMode:  proto.String(computepb.Backend_BalancingMode_name[int32(computepb.Backend_UTILIZATION)]),
+					MaxUtilization: proto.Float32(0.8),
+					Group:          proto.String(c.resourceURI(scopeZone, "instanceGroups", c.controlPlaneInstanceGroup)),
 				},
 			},
 		},

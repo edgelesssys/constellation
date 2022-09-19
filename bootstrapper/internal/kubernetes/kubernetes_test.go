@@ -557,7 +557,7 @@ func (s *stubClusterUtil) InstallComponents(ctx context.Context, version version
 	return s.installComponentsErr
 }
 
-func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, controlPlaneEndpoint string, nodeCIDR string, log *logger.Logger) error {
+func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, controlPlaneEndpoint string, nodeCIDR string, csp string, log *logger.Logger) error {
 	s.initConfigs = append(s.initConfigs, initConfig)
 	return s.initClusterErr
 }
@@ -610,7 +610,7 @@ func (s *stubClusterUtil) SetupNodeOperator(ctx context.Context, kubectl k8sapi.
 	return s.setupNodeOperatorErr
 }
 
-func (s *stubClusterUtil) JoinCluster(ctx context.Context, joinConfig []byte, peerRole role.Role, controlPlaneEndpoint string, nodeCIDR string, log *logger.Logger) error {
+func (s *stubClusterUtil) JoinCluster(ctx context.Context, joinConfig []byte, peerRole role.Role, controlPlaneEndpoint string, nodeCIDR string, csp string, log *logger.Logger) error {
 	s.joinConfigs = append(s.joinConfigs, joinConfig)
 	return s.joinClusterErr
 }
