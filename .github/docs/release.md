@@ -34,6 +34,8 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         gh workflow run build-operator-manual.yml --ref release/v1.3 -F imageTag=v1.3.0
         ```
     4. Review and update changelog with all changes since last release. [GitHub's diff view](https://github.com/edgelesssys/constellation/compare/v2.0.0...main) helps a lot!
+       1. Rename the "Unreleased" heading to "[v1.3.0] - YYYY-MM-DD" and link the version to the upcoming release tag.
+       2. Create a new block for unreleased changes
     5. Update project version in [CMakeLists.txt](/CMakeLists.txt) to `1.3.0` (without v).
     6. Update versions [versions.go](../../internal/versions/versions.go#L33-L39) to `v1.3.0` and **push your changes**.
     7. Create a [production coreOS image](/.github/workflows/build-coreos.yml)
@@ -62,3 +64,8 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         * The previous step will create a draft release. Check build output for link to draft release. Review & approve.
 6. Folow [export flow (INTERNAL)](https://github.com/edgelesssys/wiki/blob/master/documentation/constellation/customer-onboarding.md#manual-export-and-import) to make image available in S3 for trusted lanuch users.
 7. To bring updated version numbers and other changes (if any) to main, create a new branch `feat/release` from `release/v1.3`, rebase it onto main, and create a PR to main
+8. Milestones management
+   1. Create a new milestone for the next release
+   2. Add the next release manager and an approximate release date to the milestone description
+   3. Close the milestone for the release
+   4. Move open issues and PRs from closed milestone to next milestone
