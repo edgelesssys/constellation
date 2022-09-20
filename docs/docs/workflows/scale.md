@@ -4,7 +4,49 @@ Constellation provides all features of a Kubernetes cluster including scaling an
 
 ## Worker node scaling
 
-[During cluster initialization](create.md#init) you can choose to deploy the [cluster autoscaler](https://github.com/kubernetes/autoscaler). It automatically provisions additional worker nodes so that all pods have a place to run. Alternatively, you can choose to manually scale your cluster up or down:
+### Autoscaling
+
+Constellation comes with autoscaling disabled by default. To enable autoscaling, find the scaling group of
+worker nodes:
+
+```bash
+worker_group=$(kubectl get scalinggroups -o json | jq -r '.items[].metadata.name | select(contains("worker"))')
+echo "The name of your worker scaling group is '$worker_group'"
+```
+
+Then, patch the `autoscaling` field of the scaling group resource to `true`:
+
+```bash
+kubectl patch scalinggroups $worker_group --patch '{"spec":{"autoscaling": true}}' --type='merge'
+kubectl get scalinggroup $worker_group -o jsonpath='{.spec}' | jq
+```
+
+The cluster autoscaler now automatically provisions additional worker nodes so that all pods have a place to run.
+You can configure the minimum and maximum number of worker nodes in the scaling group by patching the `min` or
+`max` fields of the scaling group resource:
+
+```bash
+kubectl patch scalinggroups $worker_group --patch '{"spec":{"max": 5}}' --type='merge'
+kubectl get scalinggroup $worker_group -o jsonpath='{.spec}' | jq
+```
+
+The cluster autoscaler will now never provision more than 5 worker nodes.
+
+If you want to see the autoscaling in action, try to add a deployment with a lot of replicas, like the
+following Nginx deployment. The number of replicas needed to trigger the autoscaling depends on the size of
+and count of your worker nodes. Wait for the rollout of the deployment to finish and compare the number of
+worker nodes before and after the deployment:
+
+```bash
+kubectl create deployment nginx --image=nginx --replicas 150
+kubectl -n kube-system get nodes
+kubectl rollout status deployment nginx
+kubectl -n kube-system get nodes
+```
+
+### Manual scaling
+
+Alternatively, you can choose to manually scale your cluster up or down:
 
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure" default>
