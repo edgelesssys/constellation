@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"runtime"
 
 	azurecl "github.com/edgelesssys/constellation/v2/cli/internal/azure/client"
 	"github.com/edgelesssys/constellation/v2/cli/internal/gcp"
@@ -41,6 +42,9 @@ func NewCreator(out io.Writer) *Creator {
 			return azurecl.NewInitialized(subscriptionID, tenantID, name, location, resourceGroup)
 		},
 		newQEMUClient: func(ctx context.Context) (qemuclient, error) {
+			if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
+				return nil, fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
+			}
 			return terraform.New(ctx, cloudprovider.QEMU)
 		},
 	}
