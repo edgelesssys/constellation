@@ -99,6 +99,11 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler) 
 		instanceType = fmt.Sprintf("%d-vCPU", cpus)
 	}
 
+	// error if 0 worker nodes are specified for a provider other than QEMu
+	if provider != cloudprovider.QEMU && flags.workerCount < constants.MinWorkerCount {
+		return fmt.Errorf("number of worker nodes must be at least %d", constants.MinWorkerCount)
+	}
+
 	if !flags.yes {
 		// Ask user to confirm action.
 		cmd.Printf("The following Constellation cluster will be created:\n")
@@ -144,12 +149,10 @@ func parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 		return createFlags{}, fmt.Errorf("number of control-plane nodes must be at least %d", constants.MinControllerCount)
 	}
 
+	// don't error in case of 0 workers, since this is a valid value for QEMU
 	workerCount, err := cmd.Flags().GetInt("worker-nodes")
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing number of worker nodes: %w", err)
-	}
-	if workerCount < constants.MinWorkerCount {
-		return createFlags{}, fmt.Errorf("number of worker nodes must be at least %d", constants.MinWorkerCount)
 	}
 
 	name, err := cmd.Flags().GetString("name")
