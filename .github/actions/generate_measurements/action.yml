@@ -25,10 +25,6 @@ inputs:
     description: "Kubernetes version to create the cluster from."
     required: false
     default: "1.23"
-  autoscale:
-    description: "Autoscale?"
-    required: false
-    default: "false"
   gcp_service_account_json:
     description: "Service account with permissions to create Constellation on GCP."
     required: false
@@ -88,7 +84,6 @@ runs:
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         gcpClusterServiceAccountKey: ${{ inputs.gcpClusterServiceAccountKey }}
-        autoscale: ${{ inputs.autoscale }}
         workerNodesCount: ${{ inputs.workerNodesCount }}
         controlNodesCount: ${{ inputs.controlNodesCount }}
         machineType: ${{ inputs.machineType }}

@@ -11,11 +11,6 @@ on:
         description: "Number of control-plane nodes to spawn."
         default: "1"
         required: true
-      autoscale:
-        description: "Autoscale?"
-        type: boolean
-        default: false
-        required: true
       cloudProvider:
         description: "Which cloud provider to use."
         type: choice
@@ -114,7 +109,6 @@ jobs:
         with:
           workerNodesCount: ${{ github.event.inputs.workerNodesCount }}
           controlNodesCount: ${{ github.event.inputs.controlNodesCount }}
-          autoscale: ${{ github.event.inputs.autoscale }}
           cloudProvider: ${{ github.event.inputs.cloudProvider }}
           machineType: ${{ github.event.inputs.machineType }}
           gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}

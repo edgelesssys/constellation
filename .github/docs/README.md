@@ -7,7 +7,7 @@ It is currently not possible to run a `workflow_dispatch` based workflow on a sp
 ```bash
 gh workflow run e2e-test-manual.yml \
     --ref feat/e2e_pipeline \                       # On your specific branch!
-    -F autoscale=false -F cloudProvider=gcp \       # With your ...
+    -F cloudProvider=gcp \       # With your ...
     -F controlNodesCount=1 -F workerNodesCount=2 \  # ... settings
     -F machineType=n2d-standard-4
 ```
@@ -50,7 +50,6 @@ Create a new JSON file to describe the event ([relevant issue](https://github.co
   "inputs": {
       "workerNodesCount": "2",
       "controlNodesCount": "1",
-      "autoscale": false,
       "cloudProvider": "gcp",
       "machineType": "n2d-standard-4",
       "sonobuoyTestSuiteCmd": "--mode quick"

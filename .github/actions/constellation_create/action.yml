@@ -8,9 +8,6 @@ inputs:
   controlNodesCount:
     description: "Number of control-plane nodes to spawn."
     required: true
-  autoscale:
-    description: "Enable / Disable autoscaling."
-    required: true
   cloudProvider:
     description: "Either 'gcp' or 'azure'."
     required: true
@@ -150,8 +147,7 @@ runs:
     - name: Constellation init
       id: constellation-init
       run: |
-        if [ ${{ inputs.autoscale }} = true ]; then autoscale=--autoscale; fi
-        constellation init ${autoscale}
+        constellation init
         echo "::set-output name=KUBECONFIG::$(pwd)/constellation-admin.conf"
       shell: bash
 

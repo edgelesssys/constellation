@@ -37,7 +37,6 @@ jobs:
         with:
           workerNodesCount: "2"
           controlNodesCount: "1"
-          autoscale: "false"
           cloudProvider: "azure"
           azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
@@ -110,7 +109,6 @@ jobs:
         with:
           workerNodesCount: "2"
           controlNodesCount: "1"
-          autoscale: "false"
           cloudProvider: "azure"
           azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
