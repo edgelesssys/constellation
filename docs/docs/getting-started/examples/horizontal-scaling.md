@@ -2,7 +2,7 @@
 This example demonstrates Constellation's autoscaling capabilities. It's based on the Kubernetes [HorizontalPodAutoscaler Walkthrough](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/). During the following steps, Constellation will spawn new VMs on demand, verify them, add them to the cluster, and delete them again when the load has settled down.
 
 ## Requirements
-The cluster needs to be initialized with Kubernetes 1.23 or later. In addition, [autoscaling must be enabled](../../workflows/create.md#the-init-step) to enable Constellation to assign new nodes dynamically.
+The cluster needs to be initialized with Kubernetes 1.23 or later. In addition, [autoscaling must be enabled](../../workflows/scale.md) to enable Constellation to assign new nodes dynamically.
 
 Just for this example specifically, the cluster should have as few worker nodes in the beginning as possible. Start with a small cluster with only *one* low-powered node for the control-plane node and *one* low-powered worker node.
 

@@ -17,7 +17,6 @@ Before creating your cluster you need to decide on
 
 * the initial size of your cluster (the number of control-plane and worker nodes)
 * the machine type of your nodes (depending on the availability in your cloud environment)
-* whether to enable autoscaling for your cluster (automatically adding and removing nodes depending on resource demands)
 
 You can find the currently supported machine types for your cloud environment in the [installation guide](../architecture/orchestration.md).
 
@@ -70,12 +69,6 @@ The following command initializes and bootstraps your cluster:
 
 ```bash
 constellation init
-```
-
-To enable autoscaling in your cluster, add the `--autoscale` flag:
-
-```bash
-constellation init --autoscale
 ```
 
 Next, configure `kubectl` for your Constellation cluster:
