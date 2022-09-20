@@ -7,9 +7,6 @@ inputs:
   controlNodesCount:
     description: "Number of control-plane nodes to spawn."
     required: true
-  autoscale:
-    description: "Autoscale?"
-    required: true
   cloudProvider:
     description: "Which cloud provider to use."
     required: true
@@ -93,7 +90,6 @@ runs:
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         gcpClusterServiceAccountKey: ${{ inputs.gcpClusterServiceAccountKey }}
-        autoscale: ${{ inputs.autoscale }}
         workerNodesCount: ${{ inputs.workerNodesCount }}
         controlNodesCount: ${{ inputs.controlNodesCount }}
         machineType: ${{ inputs.machineType }}
