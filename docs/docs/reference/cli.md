@@ -164,6 +164,7 @@ constellation init [flags]
 
 ```
       --autoscale              enable Kubernetes cluster-autoscaler
+      --conformance            enable conformance mode
       --endpoint string        endpoint of the bootstrapper, passed as HOST[:PORT]
   -h, --help                   help for init
       --master-secret string   path to base64-encoded master secret
