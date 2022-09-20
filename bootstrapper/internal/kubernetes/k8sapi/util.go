@@ -131,7 +131,7 @@ func (k *KubernetesUtil) InstallComponents(ctx context.Context, version versions
 }
 
 func (k *KubernetesUtil) InitCluster(
-	ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, controlPlaneEndpoint string, log *logger.Logger,
+	ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, controlPlaneEndpoint string, conformanceMode bool, log *logger.Logger,
 ) error {
 	// TODO: audit policy should be user input
 	auditPolicy, err := resources.NewDefaultAuditPolicy().Marshal()
@@ -188,7 +188,12 @@ func (k *KubernetesUtil) InitCluster(
 
 	// initialize the cluster
 	log.Infof("Initializing the cluster using kubeadm init")
-	cmd = exec.CommandContext(ctx, kubeadmPath, "init", "-v=5", "--skip-phases=preflight,certs,addon/kube-proxy", "--config", initConfigFile.Name())
+	skipPhases := "--skip-phases=preflight,certs"
+	if !conformanceMode {
+		skipPhases += ",addon/kube-proxy"
+	}
+
+	cmd = exec.CommandContext(ctx, kubeadmPath, "init", "-v=5", skipPhases, "--config", initConfigFile.Name())
 	out, err = cmd.CombinedOutput()
 	if err != nil {
 		var exitErr *exec.ExitError

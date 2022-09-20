@@ -31,8 +31,8 @@ var HelmFS embed.FS
 
 type ChartLoader struct{}
 
-func (i *ChartLoader) Load(csp string) ([]byte, error) {
-	ciliumDeployment, err := i.loadCilium(csp)
+func (i *ChartLoader) Load(csp string, conformanceMode bool) ([]byte, error) {
+	ciliumDeployment, err := i.loadCilium(csp, conformanceMode)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (i *ChartLoader) Load(csp string) ([]byte, error) {
 	return depl, nil
 }
 
-func (i *ChartLoader) loadCilium(csp string) (helm.Deployment, error) {
+func (i *ChartLoader) loadCilium(csp string, conformanceMode bool) (helm.Deployment, error) {
 	chart, err := loadChartsDir(HelmFS, "charts/cilium")
 	if err != nil {
 		return helm.Deployment{}, err
@@ -60,6 +60,16 @@ func (i *ChartLoader) loadCilium(csp string) (helm.Deployment, error) {
 	default:
 		return helm.Deployment{}, fmt.Errorf("unknown csp: %s", csp)
 	}
+	if conformanceMode {
+		ciliumVals["kubeProxyReplacementHealthzBindAddr"] = ""
+		ciliumVals["kubeProxyReplacement"] = "partial"
+		ciliumVals["sessionAffinity"] = true
+		ciliumVals["cni"] = map[string]interface{}{
+			"chainingMode": "portmap",
+		}
+
+	}
+
 	return helm.Deployment{Chart: chart, Values: ciliumVals}, nil
 }
 

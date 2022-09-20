@@ -56,6 +56,7 @@ func NewInitCmd() *cobra.Command {
 	cmd.Flags().String("master-secret", "", "path to base64-encoded master secret")
 	cmd.Flags().String("endpoint", "", "endpoint of the bootstrapper, passed as HOST[:PORT]")
 	cmd.Flags().Bool("autoscale", false, "enable Kubernetes cluster-autoscaler")
+	cmd.Flags().Bool("conformance", false, "enable conformance mode")
 	return cmd
 }
 
@@ -138,7 +139,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		autoscalingNodeGroups = append(autoscalingNodeGroups, workers.GroupID)
 	}
 
-	helmDeployments, err := helmLoader.Load(stat.CloudProvider)
+	helmDeployments, err := helmLoader.Load(stat.CloudProvider, flags.conformance)
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
 	}
@@ -163,6 +164,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		HelmDeployments:        helmDeployments,
 		EnforcedPcrs:           getEnforcedMeasurements(provider, config),
 		EnforceIdkeydigest:     getEnforceIdKeyDigest(provider, config),
+		ConformanceMode:        flags.conformance,
 	}
 	resp, err := initCall(cmd.Context(), newDialer(validator), flags.endpoint, req)
 	if err != nil {
@@ -289,6 +291,10 @@ func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (initFlags, erro
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing autoscale flag: %w", err)
 	}
+	conformance, err := cmd.Flags().GetBool("conformance")
+	if err != nil {
+		return initFlags{}, fmt.Errorf("parsing autoscale flag: %w", err)
+	}
 	configPath, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing config path flag: %w", err)
@@ -298,6 +304,7 @@ func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (initFlags, erro
 		configPath:       configPath,
 		endpoint:         endpoint,
 		autoscale:        autoscale,
+		conformance:      conformance,
 		masterSecretPath: masterSecretPath,
 	}, nil
 }
@@ -308,6 +315,7 @@ type initFlags struct {
 	masterSecretPath string
 	endpoint         string
 	autoscale        bool
+	conformance      bool
 }
 
 // masterSecret holds the master key and salt for deriving keys.

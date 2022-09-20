@@ -320,7 +320,7 @@ func TestInitCluster(t *testing.T) {
 
 			_, err := kube.InitCluster(
 				context.Background(), autoscalingNodeGroups, serviceAccountURI, string(tc.k8sVersion),
-				nil, nil, false, nil, true, resources.KMSConfig{MasterSecret: masterSecret}, nil, nil, logger.NewTest(t),
+				nil, nil, false, nil, true, resources.KMSConfig{MasterSecret: masterSecret}, nil, nil, false, logger.NewTest(t),
 			)
 
 			if tc.wantErr {
@@ -557,7 +557,7 @@ func (s *stubClusterUtil) InstallComponents(ctx context.Context, version version
 	return s.installComponentsErr
 }
 
-func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, controlPlaneEndpoint string, log *logger.Logger) error {
+func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, controlPlaneEndpoint string, conformanceMode bool, log *logger.Logger) error {
 	s.initConfigs = append(s.initConfigs, initConfig)
 	return s.initClusterErr
 }

@@ -19,7 +19,7 @@ import (
 
 type clusterUtil interface {
 	InstallComponents(ctx context.Context, version versions.ValidK8sVersion) error
-	InitCluster(ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, controlPlaneEndpoint string, log *logger.Logger) error
+	InitCluster(ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, controlPlaneEndpoint string, conformanceMode bool, log *logger.Logger) error
 	JoinCluster(ctx context.Context, joinConfig []byte, peerRole role.Role, controlPlaneEndpoint string, log *logger.Logger) error
 	SetupHelmDeployments(ctx context.Context, client k8sapi.Client, helmDeployments []byte, in k8sapi.SetupPodNetworkInput, log *logger.Logger) error
 	SetupAccessManager(kubectl k8sapi.Client, sshUsers kubernetes.Marshaler) error
