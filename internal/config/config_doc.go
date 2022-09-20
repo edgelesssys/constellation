@@ -288,7 +288,7 @@ func init() {
 			FieldName: "qemu",
 		},
 	}
-	QEMUConfigDoc.Fields = make([]encoder.Doc, 7)
+	QEMUConfigDoc.Fields = make([]encoder.Doc, 9)
 	QEMUConfigDoc.Fields[0].Name = "image"
 	QEMUConfigDoc.Fields[0].Type = "string"
 	QEMUConfigDoc.Fields[0].Note = ""
@@ -314,16 +314,26 @@ func init() {
 	QEMUConfigDoc.Fields[4].Note = ""
 	QEMUConfigDoc.Fields[4].Description = "Container image to use for the QEMU metadata server."
 	QEMUConfigDoc.Fields[4].Comments[encoder.LineComment] = "Container image to use for the QEMU metadata server."
-	QEMUConfigDoc.Fields[5].Name = "measurements"
-	QEMUConfigDoc.Fields[5].Type = "Measurements"
+	QEMUConfigDoc.Fields[5].Name = "libvirtSocket"
+	QEMUConfigDoc.Fields[5].Type = "string"
 	QEMUConfigDoc.Fields[5].Note = ""
-	QEMUConfigDoc.Fields[5].Description = "Measurement used to enable measured boot."
-	QEMUConfigDoc.Fields[5].Comments[encoder.LineComment] = "Measurement used to enable measured boot."
-	QEMUConfigDoc.Fields[6].Name = "enforcedMeasurements"
-	QEMUConfigDoc.Fields[6].Type = "[]uint32"
+	QEMUConfigDoc.Fields[5].Description = "Libvirt connection URI. Leave empty to start a libvirt instance in Docker."
+	QEMUConfigDoc.Fields[5].Comments[encoder.LineComment] = "Libvirt connection URI. Leave empty to start a libvirt instance in Docker."
+	QEMUConfigDoc.Fields[6].Name = "libvirtContainerImage"
+	QEMUConfigDoc.Fields[6].Type = "string"
 	QEMUConfigDoc.Fields[6].Note = ""
-	QEMUConfigDoc.Fields[6].Description = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
-	QEMUConfigDoc.Fields[6].Comments[encoder.LineComment] = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
+	QEMUConfigDoc.Fields[6].Description = "Container image to use for launching a containerized libvirt daemon. Only relevant if `libvirtSocket = \"\"`."
+	QEMUConfigDoc.Fields[6].Comments[encoder.LineComment] = "Container image to use for launching a containerized libvirt daemon. Only relevant if `libvirtSocket = \"\"`."
+	QEMUConfigDoc.Fields[7].Name = "measurements"
+	QEMUConfigDoc.Fields[7].Type = "Measurements"
+	QEMUConfigDoc.Fields[7].Note = ""
+	QEMUConfigDoc.Fields[7].Description = "Measurement used to enable measured boot."
+	QEMUConfigDoc.Fields[7].Comments[encoder.LineComment] = "Measurement used to enable measured boot."
+	QEMUConfigDoc.Fields[8].Name = "enforcedMeasurements"
+	QEMUConfigDoc.Fields[8].Type = "[]uint32"
+	QEMUConfigDoc.Fields[8].Note = ""
+	QEMUConfigDoc.Fields[8].Description = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
+	QEMUConfigDoc.Fields[8].Comments[encoder.LineComment] = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
 }
 
 func (_ Config) Doc() *encoder.Doc {

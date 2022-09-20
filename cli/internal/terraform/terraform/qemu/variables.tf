@@ -1,3 +1,8 @@
+variable "libvirt_uri" {
+  type        = string
+  description = "libvirt socket uri"
+}
+
 variable "constellation_coreos_image" {
   type        = string
   description = "constellation OS file path"
@@ -43,6 +48,16 @@ variable "machine" {
 variable "metadata_api_image" {
   type        = string
   description = "container image of the QEMU metadata api server"
+}
+
+variable "metadata_libvirt_uri" {
+  type        = string
+  description = "libvirt uri for the metadata api server"
+}
+
+variable "libvirt_socket_path" {
+  type        = string
+  description = "path to libvirt socket in case of unix socket"
 }
 
 variable "name" {

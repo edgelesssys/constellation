@@ -192,6 +192,12 @@ type QEMUConfig struct {
 	//   Container image to use for the QEMU metadata server.
 	MetadataAPIImage string `yaml:"metadataAPIServer" validate:"required"`
 	// description: |
+	//   Libvirt connection URI. Leave empty to start a libvirt instance in Docker.
+	LibvirtURI string `yaml:"libvirtSocket"`
+	// description: |
+	//   Container image to use for launching a containerized libvirt daemon. Only relevant if `libvirtSocket = ""`.
+	LibvirtContainerImage string `yaml:"libvirtContainerImage"`
+	// description: |
 	//   Measurement used to enable measured boot.
 	Measurements Measurements `yaml:"measurements"`
 	// description: |
@@ -233,12 +239,14 @@ func Default() *Config {
 				EnforcedMeasurements:  []uint32{0, 4, 8, 9, 11, 12},
 			},
 			QEMU: &QEMUConfig{
-				ImageFormat:          "qcow2",
-				VCPUs:                2,
-				Memory:               2048,
-				Measurements:         copyPCRMap(qemuPCRs),
-				MetadataAPIImage:     "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.1.0-pre.0.20220922072347-abb78344bc2a",
-				EnforcedMeasurements: []uint32{11, 12},
+				ImageFormat:           "qcow2",
+				VCPUs:                 2,
+				Memory:                2048,
+				MetadataAPIImage:      "localhost/qemu-metadata", // TODO: Build and set new image.
+				LibvirtURI:            "",
+				LibvirtContainerImage: "localhost/libvirt", // TODO: Build and set new image.
+				Measurements:          copyPCRMap(qemuPCRs),
+				EnforcedMeasurements:  []uint32{11, 12},
 			},
 		},
 		KubernetesVersion: string(versions.Default),

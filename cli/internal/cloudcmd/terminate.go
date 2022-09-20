@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	azurecl "github.com/edgelesssys/constellation/v2/cli/internal/azure/client"
+	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/state"
@@ -20,6 +21,7 @@ import (
 type Terminator struct {
 	newTerraformClient func(ctx context.Context) (terraformClient, error)
 	newAzureClient     func(subscriptionID, tenantID string) (azureclient, error)
+	newLibvirtRunner   func() libvirtRunner
 }
 
 // NewTerminator create a new cloud terminator.
@@ -30,6 +32,9 @@ func NewTerminator() *Terminator {
 		},
 		newAzureClient: func(subscriptionID, tenantID string) (azureclient, error) {
 			return azurecl.NewFromDefault(subscriptionID, tenantID)
+		},
+		newLibvirtRunner: func() libvirtRunner {
+			return libvirt.New()
 		},
 	}
 }
@@ -45,14 +50,20 @@ func (t *Terminator) Terminate(ctx context.Context, state state.ConstellationSta
 		}
 		return t.terminateAzure(ctx, cl, state)
 	case cloudprovider.GCP:
-		fallthrough
-	case cloudprovider.QEMU:
 		cl, err := t.newTerraformClient(ctx)
 		if err != nil {
 			return err
 		}
 		defer cl.RemoveInstaller()
 		return t.terminateTerraform(ctx, cl)
+	case cloudprovider.QEMU:
+		cl, err := t.newTerraformClient(ctx)
+		if err != nil {
+			return err
+		}
+		defer cl.RemoveInstaller()
+		libvirt := t.newLibvirtRunner()
+		return t.terminateQEMU(ctx, cl, libvirt)
 	default:
 		return fmt.Errorf("unsupported provider: %s", provider)
 	}
@@ -68,6 +79,15 @@ func (t *Terminator) terminateTerraform(ctx context.Context, cl terraformClient)
 	if err := cl.DestroyCluster(ctx); err != nil {
 		return err
 	}
+	return cl.CleanUpWorkspace()
+}
 
+func (t *Terminator) terminateQEMU(ctx context.Context, cl terraformClient, lv libvirtRunner) error {
+	if err := cl.DestroyCluster(ctx); err != nil {
+		return err
+	}
+	if err := lv.Stop(ctx); err != nil {
+		return err
+	}
 	return cl.CleanUpWorkspace()
 }

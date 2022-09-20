@@ -10,9 +10,13 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
+	"os"
 	"runtime"
+	"strings"
 
 	azurecl "github.com/edgelesssys/constellation/v2/cli/internal/azure/client"
+	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudtypes"
@@ -26,6 +30,7 @@ type Creator struct {
 	out                io.Writer
 	newTerraformClient func(ctx context.Context, provider cloudprovider.Provider) (terraformClient, error)
 	newAzureClient     func(subscriptionID, tenantID, name, location, resourceGroup string) (azureclient, error)
+	newLibvirtRunner   func() libvirtRunner
 }
 
 // NewCreator creates a new creator.
@@ -37,6 +42,9 @@ func NewCreator(out io.Writer) *Creator {
 		},
 		newAzureClient: func(subscriptionID, tenantID, name, location, resourceGroup string) (azureclient, error) {
 			return azurecl.NewInitialized(subscriptionID, tenantID, name, location, resourceGroup)
+		},
+		newLibvirtRunner: func() libvirtRunner {
+			return libvirt.New()
 		},
 	}
 }
@@ -81,7 +89,8 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 			return state.ConstellationState{}, err
 		}
 		defer cl.RemoveInstaller()
-		return c.createQEMU(ctx, cl, name, config, controlPlaneCount, workerCount)
+		lv := c.newLibvirtRunner()
+		return c.createQEMU(ctx, cl, lv, name, config, controlPlaneCount, workerCount)
 	default:
 		return state.ConstellationState{}, fmt.Errorf("unsupported cloud provider: %s", provider)
 	}
@@ -153,10 +162,48 @@ func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *confi
 	return cl.GetState(), nil
 }
 
-func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, name string, config *config.Config,
+func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirtRunner, name string, config *config.Config,
 	controlPlaneCount, workerCount int,
 ) (stat state.ConstellationState, retErr error) {
-	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
+	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerQEMU{client: cl, libvirt: lv})
+
+	libvirtURI := config.Provider.QEMU.LibvirtURI
+	libvirtSocketPath := "."
+
+	switch {
+	// if no libvirt URI is specified, start a libvirt container
+	case libvirtURI == "":
+		if err := lv.Start(ctx, name, config.Provider.QEMU.LibvirtContainerImage); err != nil {
+			return state.ConstellationState{}, err
+		}
+		// non standard port to avoid conflict with host libvirt
+		// changes here should also be reflected in the Dockerfile in "cli/internal/libvirt/Dockerfile"
+		libvirtURI = "qemu+tcp://localhost:16599/system"
+
+	// socket for system URI should be in /var/run/libvirt/libvirt-sock
+	case libvirtURI == "qemu:///system":
+		libvirtSocketPath = "/var/run/libvirt/libvirt-sock"
+
+	// socket for session URI should be in /run/user/<uid>/libvirt/libvirt-sock
+	case libvirtURI == "qemu:///session":
+		libvirtSocketPath = fmt.Sprintf("/run/user/%d/libvirt/libvirt-sock", os.Getuid())
+
+	// if a unix socket is specified we need to parse the URI to get the socket path
+	case strings.HasPrefix(libvirtURI, "qemu+unix://"):
+		unixURI, err := url.Parse(strings.TrimPrefix(libvirtURI, "qemu+unix://"))
+		if err != nil {
+			return state.ConstellationState{}, err
+		}
+		libvirtSocketPath = unixURI.Query().Get("socket")
+		if libvirtSocketPath == "" {
+			return state.ConstellationState{}, fmt.Errorf("socket path not specified in qemu+unix URI: %s", libvirtURI)
+		}
+	}
+
+	metadataLibvirtURI := libvirtURI
+	if libvirtSocketPath != "." {
+		metadataLibvirtURI = "qemu:///system"
+	}
 
 	vars := &terraform.QEMUVariables{
 		CommonVariables: terraform.CommonVariables{
@@ -165,11 +212,14 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, name strin
 			CountWorkers:       workerCount,
 			StateDiskSizeGB:    config.StateDiskSizeGB,
 		},
-		ImagePath:        config.Provider.QEMU.Image,
-		ImageFormat:      config.Provider.QEMU.ImageFormat,
-		CPUCount:         config.Provider.QEMU.VCPUs,
-		MemorySizeMiB:    config.Provider.QEMU.Memory,
-		MetadataAPIImage: config.Provider.QEMU.MetadataAPIImage,
+		LibvirtURI:         libvirtURI,
+		LibvirtSocketPath:  libvirtSocketPath,
+		ImagePath:          config.Provider.QEMU.Image,
+		ImageFormat:        config.Provider.QEMU.ImageFormat,
+		CPUCount:           config.Provider.QEMU.VCPUs,
+		MemorySizeMiB:      config.Provider.QEMU.Memory,
+		MetadataAPIImage:   config.Provider.QEMU.MetadataAPIImage,
+		MetadataLibvirtURI: metadataLibvirtURI,
 	}
 
 	if err := cl.CreateCluster(ctx, name, vars); err != nil {

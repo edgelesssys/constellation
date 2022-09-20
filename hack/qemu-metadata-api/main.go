@@ -20,11 +20,12 @@ import (
 func main() {
 	bindPort := flag.String("port", "8080", "Port to bind to")
 	targetNetwork := flag.String("network", "constellation-network", "Name of the network in QEMU to use")
+	libvirtURI := flag.String("libvirt-uri", "qemu:///system", "URI of the libvirt connection")
 	flag.Parse()
 
 	log := logger.New(logger.JSONLog, zapcore.InfoLevel)
 
-	conn, err := libvirt.NewConnect("qemu:///system")
+	conn, err := libvirt.NewConnect(*libvirtURI)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to connect to libvirt")
 	}
