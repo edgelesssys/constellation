@@ -1,0 +1,43 @@
+name: Terraform validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "**.tf"
+  pull_request:
+    paths:
+      - "**.tf"
+
+# Abort runs of *this* workflow, if a new commit with the same ref is pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  tfsec:
+    name: terraform
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@17d4c9b8043b238f6f35641cdd8433da1e6f3867
+
+      - name: Terraform format and validate
+        shell: bash
+        run: |
+          dirs=$(find . -type f -name "*.tf" -exec dirname "{}" \; | sort -ud)
+          result=0
+          for dir in $dirs; do
+            echo "Checking $dir"
+            terraform -chdir=$dir init || result=1
+            terraform -chdir=$dir fmt -check=true -diff=true || result=1
+            terraform -chdir=$dir validate -no-color || result=1
+          done
+          exit $result
