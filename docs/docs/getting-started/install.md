@@ -15,11 +15,84 @@ Make sure the following requirements are met:
 
 ## Install the Constellation CLI
 
-Download the CLI executable from the [release page](https://github.com/edgelesssys/constellation/releases). Move the downloaded file to a directory in your `PATH` (default: `/usr/local/bin`) and make it executable by entering `chmod u+x constellation` in your terminal. 
+The CLI executable is available at [GitHub](https://github.com/edgelesssys/constellation/releases).
+Install it with the following commands:
 
-:::note
-Edgeless Systems uses [sigstore](https://www.sigstore.dev/) to sign each release of the CLI. You may want to [verify the signature](../workflows/verify-cli.md) before you use the CLI.
-:::
+<tabs>
+<tabItem value="linux-amd64" label="Linux (amd64)">
+
+1. Download the CLI:
+
+```bash
+curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/constellation-linux-amd64
+```
+
+2. [Verify the signature](../workflows/verify-cli.md) (optional)
+
+3. Install the CLI to your PATH:
+
+```bash
+sudo install constellation-linux-amd64 /usr/local/bin/constellation
+```
+
+</tabItem>
+<tabItem value="linux-arm64" label="Linux (arm64)">
+
+1. Download the CLI:
+
+```bash
+curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/constellation-linux-arm64
+```
+
+2. [Verify the signature](../workflows/verify-cli.md) (optional)
+
+3. Install the CLI to your PATH:
+
+```bash
+sudo install constellation-linux-arm64 /usr/local/bin/constellation
+```
+
+
+</tabItem>
+
+<tabItem value="darwin-arm64" label="macOS (Apple Silicon)">
+
+1. Download the CLI:
+
+```bash
+curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/constellation-darwin-arm64
+```
+
+2. [Verify the signature](../workflows/verify-cli.md) (optional)
+
+3. Install the CLI to your PATH:
+
+```bash
+sudo install constellation-darwin-arm64 /usr/local/bin/constellation
+```
+
+
+
+</tabItem>
+
+<tabItem value="darwin-amd64" label="macOS (Intel)">
+
+1. Download the CLI:
+
+```bash
+curl -LO https://github.com/edgelesssys/constellation/releases/latest/download/constellation-darwin-amd64
+```
+
+2. [Verify the signature](../workflows/verify-cli.md) (optional)
+
+3. Install the CLI to your PATH:
+
+```bash
+sudo install constellation-darwin-amd64 /usr/local/bin/constellation
+```
+
+</tabItem>
+</tabs>
 
 :::tip
 The CLI supports autocompletion for various shells. To set it up, run `constellation completion` and follow the given steps.
