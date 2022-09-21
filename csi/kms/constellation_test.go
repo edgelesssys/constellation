@@ -11,7 +11,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/kms/kmsproto"
+	"github.com/edgelesssys/constellation/v2/kms/kmsproto"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
 	"google.golang.org/grpc"

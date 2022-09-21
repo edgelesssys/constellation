@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package azure
 
 import (
-	"github.com/edgelesssys/constellation/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
 // CloudNodeManager holds the Azure cloud-node-manager configuration.

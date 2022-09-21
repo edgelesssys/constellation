@@ -11,9 +11,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/internal/cloud/metadata"
-	"github.com/edgelesssys/constellation/internal/deploy/ssh"
-	"github.com/edgelesssys/constellation/internal/role"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/v2/internal/deploy/ssh"
+	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"

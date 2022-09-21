@@ -12,7 +12,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"go.uber.org/zap"
 )
 

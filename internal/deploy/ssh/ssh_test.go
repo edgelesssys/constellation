@@ -11,8 +11,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/edgelesssys/constellation/internal/deploy/user"
-	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/deploy/user"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

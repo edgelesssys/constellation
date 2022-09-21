@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/edgelesssys/constellation/cli/cmd"
+	"github.com/edgelesssys/constellation/v2/cli/cmd"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 )

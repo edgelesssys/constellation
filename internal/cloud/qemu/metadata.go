@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/edgelesssys/constellation/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 )
 
 const qemuMetadataEndpoint = "10.42.0.1:8080"

@@ -15,7 +15,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
-	"github.com/edgelesssys/constellation/kms/internal/config"
+	"github.com/edgelesssys/constellation/v2/kms/internal/config"
 )
 
 type azureContainerAPI interface {

@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/internal/deploy/ssh"
-	"github.com/edgelesssys/constellation/internal/logger"
-	"github.com/edgelesssys/constellation/internal/role"
+	"github.com/edgelesssys/constellation/v2/internal/deploy/ssh"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
 )

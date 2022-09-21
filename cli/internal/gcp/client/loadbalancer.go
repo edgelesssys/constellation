@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"go.uber.org/multierr"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"

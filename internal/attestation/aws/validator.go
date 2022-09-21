@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package aws
 
 import (
-	"github.com/edgelesssys/constellation/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/oid"
 )
 
 type Validator struct {

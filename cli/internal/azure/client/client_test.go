@@ -9,9 +9,9 @@ package client
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
-	"github.com/edgelesssys/constellation/internal/state"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudtypes"
+	"github.com/edgelesssys/constellation/v2/internal/state"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"

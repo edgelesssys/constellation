@@ -10,7 +10,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/spf13/cobra"
 )
 

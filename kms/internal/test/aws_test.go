@@ -19,9 +19,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	kmsconfig "github.com/edgelesssys/constellation/kms/internal/config"
-	"github.com/edgelesssys/constellation/kms/internal/storage"
-	awsInterface "github.com/edgelesssys/constellation/kms/kms/aws"
+	kmsconfig "github.com/edgelesssys/constellation/v2/kms/internal/config"
+	"github.com/edgelesssys/constellation/v2/kms/internal/storage"
+	awsInterface "github.com/edgelesssys/constellation/v2/kms/kms/aws"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

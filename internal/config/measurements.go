@@ -15,8 +15,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
-	"github.com/edgelesssys/constellation/internal/sigstore"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"gopkg.in/yaml.v2"
 )
 

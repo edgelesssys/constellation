@@ -15,8 +15,8 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/edgelesssys/constellation/disk-mapper/internal/mapper"
-	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/mapper"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/martinjungblut/go-cryptsetup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudtypes"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/api/googleapi"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"

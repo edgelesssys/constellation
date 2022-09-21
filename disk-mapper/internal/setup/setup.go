@@ -18,14 +18,14 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/edgelesssys/constellation/disk-mapper/internal/systemd"
-	"github.com/edgelesssys/constellation/internal/attestation"
-	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
-	"github.com/edgelesssys/constellation/internal/constants"
-	"github.com/edgelesssys/constellation/internal/crypto"
-	"github.com/edgelesssys/constellation/internal/file"
-	"github.com/edgelesssys/constellation/internal/logger"
-	"github.com/edgelesssys/constellation/internal/nodestate"
+	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/systemd"
+	"github.com/edgelesssys/constellation/v2/internal/attestation"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/crypto"
+	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/nodestate"
 	"github.com/spf13/afero"
 )
 

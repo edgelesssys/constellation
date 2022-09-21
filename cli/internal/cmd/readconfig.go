@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/edgelesssys/constellation/internal/config"
-	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/file"
 )
 
 func readConfig(out io.Writer, fileHandler file.Handler, name string) (*config.Config, error) {

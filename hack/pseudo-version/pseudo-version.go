@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edgelesssys/constellation/hack/pseudo-version/internal/git"
-	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/v2/hack/pseudo-version/internal/git"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/mod/module"

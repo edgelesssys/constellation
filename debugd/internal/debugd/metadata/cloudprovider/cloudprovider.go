@@ -11,12 +11,12 @@ import (
 	"fmt"
 	"net"
 
-	azurecloud "github.com/edgelesssys/constellation/internal/cloud/azure"
-	gcpcloud "github.com/edgelesssys/constellation/internal/cloud/gcp"
-	"github.com/edgelesssys/constellation/internal/cloud/metadata"
-	qemucloud "github.com/edgelesssys/constellation/internal/cloud/qemu"
-	"github.com/edgelesssys/constellation/internal/deploy/ssh"
-	"github.com/edgelesssys/constellation/internal/role"
+	azurecloud "github.com/edgelesssys/constellation/v2/internal/cloud/azure"
+	gcpcloud "github.com/edgelesssys/constellation/v2/internal/cloud/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
+	qemucloud "github.com/edgelesssys/constellation/v2/internal/cloud/qemu"
+	"github.com/edgelesssys/constellation/v2/internal/deploy/ssh"
+	"github.com/edgelesssys/constellation/v2/internal/role"
 )
 
 type providerMetadata interface {

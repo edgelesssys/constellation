@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package gcp
 
 import (
-	"github.com/edgelesssys/constellation/internal/role"
+	"github.com/edgelesssys/constellation/v2/internal/role"
 )
 
 const roleMetadataKey = "constellation-role"

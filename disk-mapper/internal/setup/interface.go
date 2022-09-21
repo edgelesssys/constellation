@@ -11,7 +11,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/edgelesssys/constellation/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 )
 
 // Mounter is an interface for mount and unmount operations.

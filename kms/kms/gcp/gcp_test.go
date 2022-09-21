@@ -11,9 +11,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/kms/internal/storage"
-	kmsInterface "github.com/edgelesssys/constellation/kms/kms"
-	"github.com/edgelesssys/constellation/kms/kms/util"
+	"github.com/edgelesssys/constellation/v2/kms/internal/storage"
+	kmsInterface "github.com/edgelesssys/constellation/v2/kms/kms"
+	"github.com/edgelesssys/constellation/v2/kms/kms/util"
 	"github.com/googleapis/gax-go/v2"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"

@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/kms/internal/config"
-	"github.com/edgelesssys/constellation/kms/internal/storage"
-	"github.com/edgelesssys/constellation/kms/kms/gcp"
+	"github.com/edgelesssys/constellation/v2/kms/internal/config"
+	"github.com/edgelesssys/constellation/v2/kms/internal/storage"
+	"github.com/edgelesssys/constellation/v2/kms/kms/gcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	kmspb "google.golang.org/genproto/googleapis/cloud/kms/v1"

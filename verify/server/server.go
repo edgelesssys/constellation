@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgelesssys/constellation/internal/logger"
-	"github.com/edgelesssys/constellation/verify/verifyproto"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"

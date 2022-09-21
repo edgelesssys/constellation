@@ -7,10 +7,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 package azure
 
 import (
-	"github.com/edgelesssys/constellation/internal/atls"
-	"github.com/edgelesssys/constellation/internal/attestation/azure/snp"
-	"github.com/edgelesssys/constellation/internal/attestation/azure/trustedlaunch"
-	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 )
 
 // NewIssuer returns an SNP issuer if it can successfully read the idkeydigest from the TPM.

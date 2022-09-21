@@ -9,8 +9,8 @@ package trustedlaunch
 import (
 	"crypto"
 
-	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
-	"github.com/edgelesssys/constellation/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/google/go-tpm/tpm2"
 )
 

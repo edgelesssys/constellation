@@ -11,7 +11,7 @@ import (
 	"log"
 
 	"cloud.google.com/go/logging"
-	"github.com/edgelesssys/constellation/internal/gcpshared"
+	"github.com/edgelesssys/constellation/v2/internal/gcpshared"
 )
 
 type Logger struct {

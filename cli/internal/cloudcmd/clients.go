@@ -9,9 +9,9 @@ package cloudcmd
 import (
 	"context"
 
-	azurecl "github.com/edgelesssys/constellation/cli/internal/azure/client"
-	gcpcl "github.com/edgelesssys/constellation/cli/internal/gcp/client"
-	"github.com/edgelesssys/constellation/internal/state"
+	azurecl "github.com/edgelesssys/constellation/v2/cli/internal/azure/client"
+	gcpcl "github.com/edgelesssys/constellation/v2/cli/internal/gcp/client"
+	"github.com/edgelesssys/constellation/v2/internal/state"
 )
 
 type gcpclient interface {

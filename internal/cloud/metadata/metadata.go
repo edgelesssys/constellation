@@ -12,8 +12,8 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/edgelesssys/constellation/internal/constants"
-	"github.com/edgelesssys/constellation/internal/role"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/role"
 )
 
 // InstanceMetadata describes metadata of a peer.

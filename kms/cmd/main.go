@@ -15,12 +15,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/edgelesssys/constellation/internal/constants"
-	"github.com/edgelesssys/constellation/internal/crypto"
-	"github.com/edgelesssys/constellation/internal/file"
-	"github.com/edgelesssys/constellation/internal/logger"
-	"github.com/edgelesssys/constellation/kms/internal/server"
-	"github.com/edgelesssys/constellation/kms/setup"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/crypto"
+	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/kms/internal/server"
+	"github.com/edgelesssys/constellation/v2/kms/setup"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )

@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 package qemu
 
-import "github.com/edgelesssys/constellation/internal/versions"
+import "github.com/edgelesssys/constellation/v2/internal/versions"
 
 // CloudNodeManager holds the QEMU cloud-node-manager configuration.
 type CloudNodeManager struct{}

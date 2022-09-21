@@ -13,10 +13,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgelesssys/constellation/debugd/internal/debugd"
-	"github.com/edgelesssys/constellation/internal/deploy/ssh"
-	"github.com/edgelesssys/constellation/internal/logger"
-	"github.com/edgelesssys/constellation/internal/role"
+	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
+	"github.com/edgelesssys/constellation/v2/internal/deploy/ssh"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/role"
 	"go.uber.org/zap"
 )
 

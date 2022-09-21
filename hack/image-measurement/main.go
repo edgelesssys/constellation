@@ -15,9 +15,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/edgelesssys/constellation/hack/image-measurement/server"
-	"github.com/edgelesssys/constellation/internal/config"
-	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/v2/hack/image-measurement/server"
+	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

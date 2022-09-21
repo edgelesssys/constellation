@@ -1,4 +1,4 @@
-module github.com/edgelesssys/constellation/operators/constellation-node-operator
+module github.com/edgelesssys/constellation/operators/constellation-node-operator/v2
 
 go 1.18
 

@@ -10,8 +10,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/internal/logger"
-	"github.com/edgelesssys/constellation/kms/kmsproto"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/kms/kmsproto"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

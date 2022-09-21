@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 package kubectl
 
-import "github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi/kubectl/client"
+import "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/kubectl/client"
 
 // generator implements clientGenerator interface.
 type generator struct{}

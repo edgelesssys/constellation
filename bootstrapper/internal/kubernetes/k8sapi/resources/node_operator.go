@@ -10,8 +10,8 @@ import (
 	_ "embed"
 	"time"
 
-	"github.com/edgelesssys/constellation/internal/kubernetes"
-	"github.com/edgelesssys/constellation/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"

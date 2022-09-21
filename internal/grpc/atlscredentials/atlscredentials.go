@@ -11,7 +11,7 @@ import (
 	"errors"
 	"net"
 
-	"github.com/edgelesssys/constellation/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"google.golang.org/grpc/credentials"
 )
 

@@ -10,8 +10,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/internal/cloud/metadata"
-	"github.com/edgelesssys/constellation/internal/gcpshared"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/v2/internal/gcpshared"
 )
 
 // API handles all GCP API requests.

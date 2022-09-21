@@ -11,7 +11,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
 	corev1 "k8s.io/api/core/v1"

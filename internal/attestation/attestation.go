@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package attestation
 
 import (
-	"github.com/edgelesssys/constellation/internal/crypto"
+	"github.com/edgelesssys/constellation/v2/internal/crypto"
 )
 
 const (

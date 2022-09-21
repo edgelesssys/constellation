@@ -10,7 +10,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/file"
 )
 
 func FromFile(fileHandler file.Handler, path string) (string, error) {

@@ -15,9 +15,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edgelesssys/constellation/internal/crypto"
-	"github.com/edgelesssys/constellation/internal/file"
-	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/crypto"
+	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 

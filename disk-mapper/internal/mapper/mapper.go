@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	cryptsetup "github.com/martinjungblut/go-cryptsetup"
 	"go.uber.org/zap"
 )

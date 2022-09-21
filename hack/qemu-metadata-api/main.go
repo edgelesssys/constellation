@@ -9,9 +9,9 @@ package main
 import (
 	"flag"
 
-	"github.com/edgelesssys/constellation/hack/qemu-metadata-api/server"
-	"github.com/edgelesssys/constellation/hack/qemu-metadata-api/virtwrapper"
-	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/server"
+	"github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/virtwrapper"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"libvirt.org/go/libvirt"

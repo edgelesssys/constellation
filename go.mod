@@ -1,4 +1,4 @@
-module github.com/edgelesssys/constellation
+module github.com/edgelesssys/constellation/v2
 
 go 1.18
 

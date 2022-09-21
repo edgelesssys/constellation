@@ -9,8 +9,8 @@ package trustedlaunch
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/internal/attestation/simulator"
-	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/google/go-tpm-tools/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

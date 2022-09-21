@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/fsnotify/fsnotify"
 	"github.com/stretchr/testify/assert"
 )

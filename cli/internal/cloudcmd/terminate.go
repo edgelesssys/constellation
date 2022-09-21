@@ -10,10 +10,10 @@ import (
 	"context"
 	"fmt"
 
-	azurecl "github.com/edgelesssys/constellation/cli/internal/azure/client"
-	gcpcl "github.com/edgelesssys/constellation/cli/internal/gcp/client"
-	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/internal/state"
+	azurecl "github.com/edgelesssys/constellation/v2/cli/internal/azure/client"
+	gcpcl "github.com/edgelesssys/constellation/v2/cli/internal/gcp/client"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/state"
 )
 
 // Terminator deletes cloud provider resources.

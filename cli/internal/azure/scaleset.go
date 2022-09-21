@@ -12,7 +12,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
-	"github.com/edgelesssys/constellation/internal/cloud/azure"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/azure"
 )
 
 // ScaleSet defines a Azure scale set.

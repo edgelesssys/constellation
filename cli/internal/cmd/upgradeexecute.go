@@ -9,9 +9,9 @@ package cmd
 import (
 	"context"
 
-	"github.com/edgelesssys/constellation/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/internal/config"
-	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )

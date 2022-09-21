@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package ssh
 
 import (
-	"github.com/edgelesssys/constellation/bootstrapper/initproto"
+	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 )
 
 // FromProtoSlice converts a SSH UserKey definition from pubproto to the Go flavor.

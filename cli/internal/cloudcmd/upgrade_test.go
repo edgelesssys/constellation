@@ -13,7 +13,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"

@@ -10,7 +10,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/kms/kmsproto"
+	"github.com/edgelesssys/constellation/v2/kms/kmsproto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

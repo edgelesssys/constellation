@@ -12,7 +12,7 @@ import (
 	"runtime/debug"
 	"testing"
 
-	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/stretchr/testify/assert"
 )
 

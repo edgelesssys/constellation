@@ -10,9 +10,9 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/certificate"
-	"github.com/edgelesssys/constellation/internal/kubernetes"
-	"github.com/edgelesssys/constellation/internal/versions"
+	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/certificate"
+	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"

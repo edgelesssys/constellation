@@ -9,7 +9,7 @@ package watcher
 import (
 	"fmt"
 
-	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/fsnotify/fsnotify"
 	"go.uber.org/zap"
 )

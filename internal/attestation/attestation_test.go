@@ -9,7 +9,7 @@ package attestation
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/internal/crypto/testvector"
+	"github.com/edgelesssys/constellation/v2/internal/crypto/testvector"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
