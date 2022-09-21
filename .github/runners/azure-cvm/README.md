@@ -5,6 +5,10 @@ This folder contains the files to setup an Azure function and ARM template in or
 - `azure-function`: All necessary files to redeploy the function. Changes in `requirements.txt` are installed during deployment of the function. `cloud-init.txt` is put into the CVM by supplying it as a parameter to the ARM template deployment.
 
 # Update cvm-template
+In order to make the Azure function use your changes you will have to publish them in the `cvm-template.json` file.
+While developing you can point the `template_id` variable in `__init__.py` to a different location.
+
+Doing the following you can debug your template changes:
 - Look for the `Template spec` resource in your Azure project (e.g. "snp-value-reporter-template").
 - Click on "Create new version".
 - Select the latest version available.
