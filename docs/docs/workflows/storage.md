@@ -22,14 +22,14 @@ For more details see [encrypted persistent storage](../architecture/encrypted-st
 Constellation supports the following drivers, which offer node-level encryption and optional integrity protection.
 
 <tabs groupId="csp">
-<tabItem value="azure" label="Azure" default>
+<tabItem value="azure" label="Azure">
 
 1. [Azure Disk Storage](https://github.com/edgelesssys/constellation-azuredisk-csi-driver)
 
    Mount Azure [Disk Storage](https://azure.microsoft.com/en-us/services/storage/disks/#overview) into your Constellation cluster. See the example below on how to install the modified Azure Disk CSI driver or check out the [repository](https://github.com/edgelesssys/constellation-azuredisk-csi-driver) for installation and more information about the Constellation-managed version of the driver. Since Azure Disks are mounted as ReadWriteOnce, they're only available to a single pod.
 
 </tabItem>
-<tabItem value="gcp" label="GCP" default>
+<tabItem value="gcp" label="GCP">
 
 1. [Persistent Disk](https://github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver):
 
@@ -48,7 +48,7 @@ Note that in case the options above aren't a suitable solution for you, Constell
 The following installation guide gives an overview of how to securely use CSI-based cloud storage for persistent volumes in Constellation.
 
 <tabs groupId="csp">
-<tabItem value="azure" label="Azure" default>
+<tabItem value="azure" label="Azure">
 
 1. Install the CSI driver:
 
@@ -82,7 +82,7 @@ The following installation guide gives an overview of how to securely use CSI-ba
     ```
 
 </tabItem>
-<tabItem value="gcp" label="GCP" default>
+<tabItem value="gcp" label="GCP">
 
 1. Install the CSI driver:
 
@@ -111,7 +111,7 @@ The following installation guide gives an overview of how to securely use CSI-ba
     volumeBindingMode: WaitForFirstConsumer
     EOF
     ```
-    
+
 </tabItem>
 </tabs>
 
@@ -176,7 +176,7 @@ By default, integrity protection is disabled for performance reasons. If you wan
 The examples above are defined to be automatically set as the default storage class. The default storage class is responsible for all persistent volume claims that don't explicitly request `storageClassName`. In case you need to change the default, follow the steps below:
 
 <tabs groupId="csp">
-<tabItem value="azure" label="Azure" default>
+<tabItem value="azure" label="Azure">
 
   1. List the storage classes in your cluster:
 
@@ -223,7 +223,7 @@ The examples above are defined to be automatically set as the default storage cl
       ```
 
 </tabItem>
-<tabItem value="gcp" label="GCP" default>
+<tabItem value="gcp" label="GCP">
 
   1. List the storage classes in your cluster:
 

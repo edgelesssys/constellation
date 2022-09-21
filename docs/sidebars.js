@@ -71,7 +71,7 @@ const sidebars = {
       items: [
         {
           type: 'doc',
-          label: 'Install the CLI',
+          label: 'Installation',
           id: 'getting-started/install',
         },
         {

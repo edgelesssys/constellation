@@ -125,7 +125,7 @@ Enforcing non-reproducible measurements controlled by the cloud provider means t
 By default, Constellation only enforces measurements that are stable values produced by the infrastructure or by Constellation directly.
 
 <tabs groupId="csp">
-<tabItem value="azure" label="Azure" default>
+<tabItem value="azure" label="Azure">
 
 Constellation leverages the [vTPM](https://docs.microsoft.com/en-us/azure/virtual-machines/trusted-launch#vtpm) feature of Azure CVMs for runtime measurements.
 The vTPM on Azure CVMs adheres to the [TPM 2.0](https://trustedcomputinggroup.org/resource/tpm-library-specification/) specification of the [Trusted Computing Group](https://trustedcomputinggroup.org/resource/trusted-platform-module-tpm-summary/).
@@ -153,7 +153,7 @@ The latter means that value can be generated offline and compared to the one in 
 | 13&ndash;23   |    Unused                           | -                               | -                           |
 
 </tabItem>
-<tabItem value="gcp" label="GCP" default>
+<tabItem value="gcp" label="GCP">
 
 Constellation leverages the [vTPM](https://cloud.google.com/compute/confidential-vm/docs/about-cvm) feature of CVMs on GCP for runtime measurements.
 Note that the vTPM in GCP doesn't run inside the hardware-protected CVM context, but is emulated on the hypervisor level.

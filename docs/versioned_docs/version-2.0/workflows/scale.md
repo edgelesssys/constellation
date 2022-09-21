@@ -7,7 +7,7 @@ Constellation provides all features of a Kubernetes cluster including scaling an
 [During cluster initialization](create.md#init) you can choose to deploy the [cluster autoscaler](https://github.com/kubernetes/autoscaler). It automatically provisions additional worker nodes so that all pods have a place to run. Alternatively, you can choose to manually scale your cluster up or down:
 
 <tabs groupId="csp">
-<tabItem value="azure" label="Azure" default>
+<tabItem value="azure" label="Azure">
 
 1. Find your Constellation resource group.
 2. Select the `scale-set-workers`.
@@ -15,7 +15,7 @@ Constellation provides all features of a Kubernetes cluster including scaling an
 4. Set the new **instance count** and **save**.
 
 </tabItem>
-<tabItem value="gcp" label="GCP" default>
+<tabItem value="gcp" label="GCP">
 
 1. In Compute Engine go to [Instance Groups](https://console.cloud.google.com/compute/instanceGroups/).
 2. **Edit** the **worker** instance group.
@@ -32,7 +32,7 @@ To increase the number of control-plane nodes, follow these steps:
 
 <tabs groupId="csp">
 
-<tabItem value="azure" label="Azure" default>
+<tabItem value="azure" label="Azure">
 
 1. Find your Constellation resource group.
 2. Select the `scale-set-controlplanes`.
@@ -40,7 +40,7 @@ To increase the number of control-plane nodes, follow these steps:
 4. Set the new (increased) **instance count** and **save**.
 
 </tabItem>
-<tabItem value="gcp" label="GCP" default>
+<tabItem value="gcp" label="GCP">
 
 1. In Compute Engine go to [Instance Groups](https://console.cloud.google.com/compute/instanceGroups/).
 2. **Edit** the **control-plane** instance group.
