@@ -62,10 +62,18 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         gh workflow run release-cli.yml --ref v1.3.0
         ```
         * The previous step will create a draft release. Check build output for link to draft release. Review & approve.
-6. Folow [export flow (INTERNAL)](https://github.com/edgelesssys/wiki/blob/master/documentation/constellation/customer-onboarding.md#manual-export-and-import) to make image available in S3 for trusted lanuch users.
+6. Follow [export flow (INTERNAL)](https://github.com/edgelesssys/wiki/blob/master/documentation/constellation/customer-onboarding.md#manual-export-and-import) to make image available in S3 for trusted launch users.
 7. To bring updated version numbers and other changes (if any) to main, create a new branch `feat/release` from `release/v1.3`, rebase it onto main, and create a PR to main
 8. Milestones management
    1. Create a new milestone for the next release
    2. Add the next release manager and an approximate release date to the milestone description
    3. Close the milestone for the release
    4. Move open issues and PRs from closed milestone to next milestone
+9. If the release is the new latest version, create an empty commit on main and tag it as the start of the next pre-release phase.
+    ```sh
+    git checkout main
+    git pull
+    git commit --allow-empty -m "Start v1.4.0-pre"
+    git tag v1.4.0-pre
+    git push origin main v1.4.0-pre
+    ```
