@@ -35,7 +35,7 @@ while read line; do
 
     AGPL-3.0)
       case $pkg in
-        github.com/edgelesssys/constellation)
+        github.com/edgelesssys/constellation/v2)
           ;;
         *)
           not_allowed
