@@ -7,7 +7,7 @@ The following steps guide you through the process of creating a cluster and depl
 1. Create the configuration file for your selected cloud provider.
 
     <tabs groupId="csp">
-    <tabItem value="azure" label="Azure" default>
+    <tabItem value="azure" label="Azure">
 
     ```bash
     constellation config generate azure
@@ -28,7 +28,7 @@ The following steps guide you through the process of creating a cluster and depl
 2.  Fill in your cloud provider specific information.
 
     <tabs groupId="csp">
-    <tabItem value="azure" label="Azure (CLI)" default>
+    <tabItem value="azure" label="Azure (CLI)">
 
     You need several resources for the cluster. You can use the following `az` script to create them:
 

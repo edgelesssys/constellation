@@ -18,7 +18,7 @@ Constellation provides logging information on the boot process and status via [c
 In the following, you'll find detailed descriptions for identifying clusters stuck in recovery for each cloud environment.
 
 <tabs groupId="csp">
-<tabItem value="azure" label="Azure" default>
+<tabItem value="azure" label="Azure">
 
 In the Azure cloud portal find the cluster's resource group `<cluster-name>-<suffix>`
 Inside the resource group check that the control plane *Virtual machine scale set* `constellation-scale-set-controlplanes-<suffix>` has enough members in a *Running* state.
@@ -54,7 +54,7 @@ If that fails, because the control plane is unhealthy, you will see log messages
 This means that you have to recover the node manually. For this, you need its IP address, which can be obtained from the *Overview* page under *Private IP address*.
 
 </tabItem>
-<tabItem value="gcp" label="GCP" default>
+<tabItem value="gcp" label="GCP">
 
 First, check that the control plane *Instance Group* has enough members in a *Ready* state.
 Go to *Instance Groups* and check the group for the cluster's control plane `<cluster-name>-control-plane-<suffix>`.

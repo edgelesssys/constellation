@@ -105,7 +105,7 @@ The CLI makes authenticated calls to the CSP API. Therefore, you need to set up 
 ### Required permissions
 
 <tabs groupId="csp">
-<tabItem value="azure" label="Azure" default>
+<tabItem value="azure" label="Azure">
 
 You need the following permissions for your user account:
 
@@ -116,7 +116,7 @@ If you don't have these permissions with scope *subscription*, ask your administ
 Your user account needs the `Contributor` permission scoped to this resource group.
 
 </tabItem>
-<tabItem value="gcp" label="GCP" default>
+<tabItem value="gcp" label="GCP">
 
 Create a new project for Constellation or use an existing one.
 Enable the [Compute Engine API](https://console.cloud.google.com/apis/library/compute.googleapis.com) on it.
@@ -140,7 +140,7 @@ The steps for a *testing* environment are simpler. However, they may expose secr
 :::
 
 <tabs groupId="csp">
-<tabItem value="azure" label="Azure" default>
+<tabItem value="azure" label="Azure">
 
 **Testing**
 
@@ -157,7 +157,7 @@ az login
 Other options are described in Azure's [authentication guide](https://docs.microsoft.com/en-us/cli/azure/authenticate-azure-cli).
 
 </tabItem>
-<tabItem value="gcp" label="GCP" default>
+<tabItem value="gcp" label="GCP">
 
 **Testing**
 
