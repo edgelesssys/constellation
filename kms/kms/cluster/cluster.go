@@ -10,7 +10,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/edgelesssys/constellation/internal/crypto"
+	"github.com/edgelesssys/constellation/v2/internal/crypto"
 )
 
 // ClusterKMS implements the kms.CloudKMS interface for in cluster key management.

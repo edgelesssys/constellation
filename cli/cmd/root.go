@@ -12,8 +12,8 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/edgelesssys/constellation/cli/internal/cmd"
-	"github.com/edgelesssys/constellation/internal/constants"
+	"github.com/edgelesssys/constellation/v2/cli/internal/cmd"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/spf13/cobra"
 )
 

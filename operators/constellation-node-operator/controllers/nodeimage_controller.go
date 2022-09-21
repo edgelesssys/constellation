@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	nodeutil "github.com/edgelesssys/constellation/operators/constellation-node-operator/internal/node"
-	"github.com/edgelesssys/constellation/operators/constellation-node-operator/internal/patch"
+	nodeutil "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/node"
+	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/patch"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/api/v1alpha1"
+	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/api/v1alpha1"
 	nodemaintenancev1beta1 "github.com/medik8s/node-maintenance-operator/api/v1beta1"
 )
 

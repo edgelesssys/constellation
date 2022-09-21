@@ -17,9 +17,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/edgelesssys/constellation/internal/deploy/ssh"
-	"github.com/edgelesssys/constellation/internal/deploy/user"
-	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/deploy/ssh"
+	"github.com/edgelesssys/constellation/v2/internal/deploy/user"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 

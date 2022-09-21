@@ -11,12 +11,12 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/edgelesssys/constellation/internal/attestation/azure"
-	"github.com/edgelesssys/constellation/internal/attestation/gcp"
-	"github.com/edgelesssys/constellation/internal/attestation/qemu"
-	"github.com/edgelesssys/constellation/internal/constants"
-	"github.com/edgelesssys/constellation/internal/logger"
-	"github.com/edgelesssys/constellation/verify/server"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/azure"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/verify/server"
 	"go.uber.org/zap"
 )
 

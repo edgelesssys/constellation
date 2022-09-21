@@ -9,7 +9,7 @@ package nodelock
 import (
 	"sync"
 
-	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 )
 
 // Lock locks the node once there the join or the init is at a point

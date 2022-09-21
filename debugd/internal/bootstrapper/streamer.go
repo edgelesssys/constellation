@@ -13,7 +13,7 @@ import (
 	"os"
 	"sync"
 
-	pb "github.com/edgelesssys/constellation/debugd/service"
+	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/afero"
 )

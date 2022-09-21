@@ -19,7 +19,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/edgelesssys/constellation/internal/retry"
+	"github.com/edgelesssys/constellation/v2/internal/retry"
 	"github.com/spf13/afero"
 	"golang.org/x/text/transform"
 	"k8s.io/utils/clock"

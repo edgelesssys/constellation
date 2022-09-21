@@ -12,12 +12,12 @@ import (
 	"strconv"
 	"testing"
 
-	azurecl "github.com/edgelesssys/constellation/cli/internal/azure/client"
-	gcpcl "github.com/edgelesssys/constellation/cli/internal/gcp/client"
-	"github.com/edgelesssys/constellation/internal/azureshared"
-	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
-	"github.com/edgelesssys/constellation/internal/state"
+	azurecl "github.com/edgelesssys/constellation/v2/cli/internal/azure/client"
+	gcpcl "github.com/edgelesssys/constellation/v2/cli/internal/gcp/client"
+	"github.com/edgelesssys/constellation/v2/internal/azureshared"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudtypes"
+	"github.com/edgelesssys/constellation/v2/internal/state"
 	"go.uber.org/goleak"
 )
 

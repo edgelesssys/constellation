@@ -1,4 +1,4 @@
-module github.com/edgelesssys/constellation/hack
+module github.com/edgelesssys/constellation/v2/hack
 
 go 1.18
 
@@ -30,13 +30,13 @@ replace (
 	k8s.io/sample-apiserver v0.0.0 => k8s.io/sample-apiserver v0.24.3
 )
 
-replace github.com/edgelesssys/constellation => ./..
+replace github.com/edgelesssys/constellation/v2 => ./..
 
 require (
 	cloud.google.com/go/compute v1.7.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.1.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.1.0
-	github.com/edgelesssys/constellation v1.0.0
+	github.com/edgelesssys/constellation/v2 v2.0.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/google/go-tpm-tools v0.3.8
 	github.com/google/uuid v1.3.0

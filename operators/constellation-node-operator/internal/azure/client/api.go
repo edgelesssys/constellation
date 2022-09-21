@@ -11,7 +11,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
-	"github.com/edgelesssys/constellation/operators/constellation-node-operator/internal/poller"
+	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/poller"
 )
 
 type virtualMachineScaleSetVMsAPI interface {

@@ -11,9 +11,9 @@ package license
 import (
 	"context"
 
-	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/internal/config"
-	"github.com/edgelesssys/constellation/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/file"
 )
 
 type Checker struct{}

@@ -9,10 +9,10 @@ package k8sapi
 import (
 	"path/filepath"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubelet"
-	"github.com/edgelesssys/constellation/internal/constants"
-	"github.com/edgelesssys/constellation/internal/kubernetes"
-	"github.com/edgelesssys/constellation/internal/versions"
+	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubelet"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeletconf "k8s.io/kubelet/config/v1beta1"

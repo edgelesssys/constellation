@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 package aws
 
-import "github.com/edgelesssys/constellation/internal/oid"
+import "github.com/edgelesssys/constellation/v2/internal/oid"
 
 type Issuer struct {
 	oid.AWS

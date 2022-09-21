@@ -11,7 +11,7 @@ import (
 	"crypto/x509/pkix"
 	"net"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/certificate"
+	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/certificate"
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 

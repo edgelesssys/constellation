@@ -11,9 +11,9 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/edgelesssys/constellation/hack/build-manifest/azure"
-	"github.com/edgelesssys/constellation/hack/build-manifest/gcp"
-	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/v2/hack/build-manifest/azure"
+	"github.com/edgelesssys/constellation/v2/hack/build-manifest/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"go.uber.org/zap/zapcore"
 )
 

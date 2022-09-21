@@ -11,8 +11,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/edgelesssys/constellation/operators/constellation-node-operator/api/v1alpha1"
-	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/api/v1alpha1"
+	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/api/v1alpha1"
+	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/api/v1alpha1"
 	"google.golang.org/api/googleapi"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 )

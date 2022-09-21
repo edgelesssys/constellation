@@ -17,9 +17,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
-	"github.com/edgelesssys/constellation/cli/internal/azure"
-	"github.com/edgelesssys/constellation/cli/internal/azure/internal/poller"
-	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
+	"github.com/edgelesssys/constellation/v2/cli/internal/azure"
+	"github.com/edgelesssys/constellation/v2/cli/internal/azure/internal/poller"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudtypes"
 )
 
 const (

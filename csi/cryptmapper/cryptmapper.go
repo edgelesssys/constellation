@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgelesssys/constellation/internal/crypto"
+	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	cryptsetup "github.com/martinjungblut/go-cryptsetup"
 	mount "k8s.io/mount-utils"
 	utilexec "k8s.io/utils/exec"

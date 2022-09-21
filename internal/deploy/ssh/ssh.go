@@ -12,8 +12,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/edgelesssys/constellation/internal/deploy/user"
-	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/deploy/user"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"go.uber.org/zap"
 )
 

@@ -10,9 +10,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/internal/config"
-	"github.com/edgelesssys/constellation/internal/state"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/state"
 	"go.uber.org/goleak"
 )
 

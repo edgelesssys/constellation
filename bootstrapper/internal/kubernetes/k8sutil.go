@@ -10,11 +10,11 @@ import (
 	"context"
 	"net"
 
-	"github.com/edgelesssys/constellation/bootstrapper/internal/kubernetes/k8sapi"
-	"github.com/edgelesssys/constellation/internal/kubernetes"
-	"github.com/edgelesssys/constellation/internal/logger"
-	"github.com/edgelesssys/constellation/internal/role"
-	"github.com/edgelesssys/constellation/internal/versions"
+	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
+	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/role"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
 
 type clusterUtil interface {

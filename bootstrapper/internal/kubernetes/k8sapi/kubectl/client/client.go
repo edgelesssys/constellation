@@ -11,7 +11,7 @@ import (
 	"context"
 	"fmt"
 
-	kubernetesshared "github.com/edgelesssys/constellation/internal/kubernetes"
+	kubernetesshared "github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclientv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"

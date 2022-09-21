@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
-	internalCrypto "github.com/edgelesssys/constellation/internal/crypto"
-	"github.com/edgelesssys/constellation/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	internalCrypto "github.com/edgelesssys/constellation/v2/internal/crypto"
+	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/google/go-tpm/tpm2"
 )
 

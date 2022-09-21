@@ -9,7 +9,7 @@ package resources
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	k8s "k8s.io/api/core/v1"

@@ -11,14 +11,14 @@ import (
 	"fmt"
 	"io"
 
-	azurecl "github.com/edgelesssys/constellation/cli/internal/azure/client"
-	"github.com/edgelesssys/constellation/cli/internal/gcp"
-	gcpcl "github.com/edgelesssys/constellation/cli/internal/gcp/client"
-	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
-	"github.com/edgelesssys/constellation/internal/config"
-	"github.com/edgelesssys/constellation/internal/constants"
-	"github.com/edgelesssys/constellation/internal/state"
+	azurecl "github.com/edgelesssys/constellation/v2/cli/internal/azure/client"
+	"github.com/edgelesssys/constellation/v2/cli/internal/gcp"
+	gcpcl "github.com/edgelesssys/constellation/v2/cli/internal/gcp/client"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudtypes"
+	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/state"
 )
 
 // Creator creates cloud resources.

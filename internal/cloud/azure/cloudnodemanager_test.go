@@ -9,7 +9,7 @@ package azure
 import (
 	"testing"
 
-	"github.com/edgelesssys/constellation/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/stretchr/testify/assert"
 )
 

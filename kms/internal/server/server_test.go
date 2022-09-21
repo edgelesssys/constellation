@@ -11,8 +11,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/internal/logger"
-	"github.com/edgelesssys/constellation/kms/kmsproto"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/kms/kmsproto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"

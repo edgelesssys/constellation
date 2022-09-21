@@ -14,15 +14,15 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/edgelesssys/constellation/internal/atls"
-	"github.com/edgelesssys/constellation/internal/attestation/azure/snp"
-	"github.com/edgelesssys/constellation/internal/attestation/azure/trustedlaunch"
-	"github.com/edgelesssys/constellation/internal/attestation/gcp"
-	"github.com/edgelesssys/constellation/internal/attestation/qemu"
-	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/internal/constants"
-	"github.com/edgelesssys/constellation/internal/file"
-	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 )
 
 // Updatable implements an updatable atls.Validator.

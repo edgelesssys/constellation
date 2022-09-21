@@ -9,9 +9,9 @@ package state
 import (
 	"errors"
 
-	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
-	"github.com/edgelesssys/constellation/internal/config"
-	"github.com/edgelesssys/constellation/internal/state"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudtypes"
+	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/state"
 )
 
 // Code in this file is mostly copied from constellation-controlPlane

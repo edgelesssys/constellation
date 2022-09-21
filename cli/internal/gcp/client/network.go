@@ -10,7 +10,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudtypes"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
 )

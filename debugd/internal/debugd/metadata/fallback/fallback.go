@@ -9,8 +9,8 @@ package fallback
 import (
 	"context"
 
-	"github.com/edgelesssys/constellation/internal/deploy/ssh"
-	"github.com/edgelesssys/constellation/internal/role"
+	"github.com/edgelesssys/constellation/v2/internal/deploy/ssh"
+	"github.com/edgelesssys/constellation/v2/internal/role"
 )
 
 // Fetcher implements metadata.Fetcher interface but does not actually fetch cloud provider metadata.

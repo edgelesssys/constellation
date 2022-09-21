@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package resources
 
 import (
-	"github.com/edgelesssys/constellation/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 )

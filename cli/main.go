@@ -9,7 +9,7 @@ package main
 import (
 	"os"
 
-	"github.com/edgelesssys/constellation/cli/cmd"
+	"github.com/edgelesssys/constellation/v2/cli/cmd"
 )
 
 func main() {

@@ -15,7 +15,7 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/edgelesssys/constellation/csi/cryptmapper"
+	"github.com/edgelesssys/constellation/v2/csi/cryptmapper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"

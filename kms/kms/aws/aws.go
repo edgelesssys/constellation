@@ -17,10 +17,10 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/kms/types"
-	"github.com/edgelesssys/constellation/kms/internal/config"
-	"github.com/edgelesssys/constellation/kms/internal/storage"
-	kmsInterface "github.com/edgelesssys/constellation/kms/kms"
-	"github.com/edgelesssys/constellation/kms/kms/util"
+	"github.com/edgelesssys/constellation/v2/kms/internal/config"
+	"github.com/edgelesssys/constellation/v2/kms/internal/storage"
+	kmsInterface "github.com/edgelesssys/constellation/v2/kms/kms"
+	"github.com/edgelesssys/constellation/v2/kms/kms/util"
 )
 
 const (

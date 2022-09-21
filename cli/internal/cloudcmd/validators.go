@@ -13,14 +13,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/edgelesssys/constellation/internal/atls"
-	"github.com/edgelesssys/constellation/internal/attestation/azure/snp"
-	"github.com/edgelesssys/constellation/internal/attestation/azure/trustedlaunch"
-	"github.com/edgelesssys/constellation/internal/attestation/gcp"
-	"github.com/edgelesssys/constellation/internal/attestation/qemu"
-	"github.com/edgelesssys/constellation/internal/attestation/vtpm"
-	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/spf13/cobra"
 )
 

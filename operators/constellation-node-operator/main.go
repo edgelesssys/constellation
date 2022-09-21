@@ -24,13 +24,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	azureclient "github.com/edgelesssys/constellation/operators/constellation-node-operator/internal/azure/client"
-	"github.com/edgelesssys/constellation/operators/constellation-node-operator/internal/deploy"
-	gcpclient "github.com/edgelesssys/constellation/operators/constellation-node-operator/internal/gcp/client"
+	azureclient "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/azure/client"
+	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/deploy"
+	gcpclient "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/gcp/client"
 
-	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/api/v1alpha1"
-	"github.com/edgelesssys/constellation/operators/constellation-node-operator/controllers"
-	"github.com/edgelesssys/constellation/operators/constellation-node-operator/internal/etcd"
+	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/api/v1alpha1"
+	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/controllers"
+	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/etcd"
 	nodemaintenancev1beta1 "github.com/medik8s/node-maintenance-operator/api/v1beta1"
 	//+kubebuilder:scaffold:imports
 )

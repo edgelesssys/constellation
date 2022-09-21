@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 package resources
 
-import "github.com/edgelesssys/constellation/internal/crds"
+import "github.com/edgelesssys/constellation/v2/internal/crds"
 
 // OLMCRDNames are the names of the custom resource definitions that are used by the olm operator.
 var OLMCRDNames = []string{

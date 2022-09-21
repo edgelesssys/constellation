@@ -16,9 +16,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edgelesssys/constellation/hack/qemu-metadata-api/virtwrapper"
-	"github.com/edgelesssys/constellation/internal/cloud/metadata"
-	"github.com/edgelesssys/constellation/internal/logger"
+	"github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/virtwrapper"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"libvirt.org/go/libvirt"

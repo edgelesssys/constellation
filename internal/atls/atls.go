@@ -23,8 +23,8 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/edgelesssys/constellation/internal/crypto"
-	"github.com/edgelesssys/constellation/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/crypto"
+	"github.com/edgelesssys/constellation/v2/internal/oid"
 )
 
 // CreateAttestationServerTLSConfig creates a tls.Config object with a self-signed certificate and an embedded attestation document.

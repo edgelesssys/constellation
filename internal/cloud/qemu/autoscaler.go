@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package qemu
 
 import (
-	"github.com/edgelesssys/constellation/internal/kubernetes"
+	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	k8s "k8s.io/api/core/v1"
 )
 

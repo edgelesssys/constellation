@@ -13,9 +13,9 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/edgelesssys/constellation/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
-	"github.com/edgelesssys/constellation/internal/state"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudtypes"
+	"github.com/edgelesssys/constellation/v2/internal/state"
 )
 
 type terraformOutput struct {

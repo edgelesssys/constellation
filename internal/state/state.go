@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package state
 
 import (
-	"github.com/edgelesssys/constellation/internal/cloud/cloudtypes"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudtypes"
 )
 
 // ConstellationState is the state of a Constellation.

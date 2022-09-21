@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/edgelesssys/constellation/internal/config/instancetypes"
+	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
 	"github.com/spf13/cobra"
 )
 
