@@ -23,33 +23,52 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
+type IsolationTEE struct {
+	IDKeyDigest   string `json:"x-ms-sevsnpvm-idkeydigest"`
+	TEESvn        int    `json:"x-ms-sevsnpvm-tee-svn"`
+	SNPFwSvn      int    `json:"x-ms-sevsnpvm-snpfw-svn"`
+	MicrocodeSvn  int    `json:"x-ms-sevsnpvm-microcode-svn"`
+	BootloaderSvn int    `json:"x-ms-sevsnpvm-bootloader-svn"`
+	GuestSvn      int    `json:"x-ms-sevsnpvm-guestsvn"`
+}
+
+func (i *IsolationTEE) PrintSVNs() {
+	fmt.Println("\tTEE SVN:", i.TEESvn)
+	fmt.Println("\tSNP FW SVN:", i.SNPFwSvn)
+	fmt.Println("\tMicrocode SVN:", i.MicrocodeSvn)
+	fmt.Println("\tBootloader SVN:", i.BootloaderSvn)
+	fmt.Println("\tGuest SVN:", i.GuestSvn)
+}
+
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Println("Usage:", os.Args[0], "<maa-jwt>")
 		return
 	}
-	idKeyDigest, err := getIDKeyDigest(os.Args[1])
+	report, err := getTEEReport(os.Args[1])
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Successfully validated ID key digest:", idKeyDigest)
+	fmt.Println("Successfully validated ID key digest:", report.IDKeyDigest)
+	fmt.Println("Currently reported SVNs:")
+	report.PrintSVNs()
 }
 
-func getIDKeyDigest(rawToken string) (string, error) {
+func getTEEReport(rawToken string) (IsolationTEE, error) {
 	// Parse token.
 	token, err := jwt.ParseSigned(rawToken)
 	if err != nil {
-		return "", err
+		return IsolationTEE{}, err
 	}
 
 	// Get JSON Web Key set.
 	keySetBytes, err := httpGet(context.Background(), "https://sharedeus.eus.attest.azure.net/certs")
 	if err != nil {
-		return "", err
+		return IsolationTEE{}, err
 	}
 	keySet, err := parseKeySet(keySetBytes)
 	if err != nil {
-		return "", err
+		return IsolationTEE{}, err
 	}
 
 	// Get claims. Private claims contain ID Key digest.
@@ -57,19 +76,17 @@ func getIDKeyDigest(rawToken string) (string, error) {
 	var publicClaims jwt.Claims
 
 	var privateClaims struct {
-		IsolationTEE struct {
-			IDKeyDigest string `json:"x-ms-sevsnpvm-idkeydigest"`
-		} `json:"x-ms-isolation-tee"`
+		IsolationTEE IsolationTEE `json:"x-ms-isolation-tee"`
 	}
 
 	if err := token.Claims(&keySet, &publicClaims, &privateClaims); err != nil {
-		return "", err
+		return IsolationTEE{}, err
 	}
 	if err := publicClaims.Validate(jwt.Expected{Time: time.Now()}); err != nil {
-		return "", err
+		return IsolationTEE{}, err
 	}
 
-	return privateClaims.IsolationTEE.IDKeyDigest, nil
+	return privateClaims.IsolationTEE, nil
 }
 
 func parseKeySet(keySetBytes []byte) (jose.JSONWebKeySet, error) {

@@ -10,7 +10,7 @@ RUN wget -q https://github.com/Azure/confidential-computing-cvm-guest-attestatio
   && touch Utils.h \
   && g++ -Os -I/usr/include/azguestattestation1 -oclient main.cpp -lazguestattestation
 
-FROM ubuntu:20.04
+FROM ubuntu:20.04 AS release
 COPY --from=build client azguestattestation1_1.0.2_amd64.deb /
 RUN apt-get update && apt-get install -y /azguestattestation1_1.0.2_amd64.deb
 ENTRYPOINT ["/client"]

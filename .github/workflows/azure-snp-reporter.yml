@@ -1,0 +1,81 @@
+name: Fetch, validate and report SNP report data.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 14 * * 0"
+
+# Abort runs of *this* workflow, if a new commit with the same ref is pushed that is not main.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  build-snp-reporter:
+    name: "Build SNP-reporter container"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+
+      - name: Set up Go
+        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
+        with:
+          go-version: 1.18
+
+      - name: Build and upload azure SNP reporter container image
+        id: build-and-upload
+        uses: ./.github/actions/build_micro_service
+        with:
+          name: azure-snp-reporter
+          dockerfile: ./hack/azure-snp-report-verify/Dockerfile
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+
+  fetch-snp-report:
+    needs: build-snp-reporter
+    name: "Fetch SNP report"
+    runs-on: [self-hosted, azure-cvm]
+    env:
+      SHELL: /bin/bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+
+      - name: Fetch SNP report
+        uses: ./.github/actions/azure_snp_reporter
+        with:
+          outputPath: ${{ github.workspace }}/maa-report.jwt
+
+      - name: Upload report JWT
+        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+        with:
+          name: maa-report.jwt
+          path: "${{ github.workspace }}/maa-report.jwt"
+
+  validate-snp-report:
+    needs: fetch-snp-report
+    name: "Validate SNP report"
+    runs-on: ubuntu-latest
+    env:
+      SHELL: /bin/bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        with:
+          submodules: recursive
+          token: ${{ secrets.CI_GITHUB_REPOSITORY }}
+
+      - name: Set up Go
+        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
+        with:
+          go-version: 1.18
+
+      - name: Download report JWT
+        uses: actions/download-artifact@v3
+        with:
+          name: "maa-report.jwt"
+          path: "."
+
+      - name: Verify report
+        shell: bash
+        run: go run ./hack/azure-snp-report-verify/verify.go $(cat ./maa-report.jwt)
