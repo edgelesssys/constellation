@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	versionRegex = regexp.MustCompile(`^v\d+\.\d+\.\d+$`)
+	versionRegex = regexp.MustCompile(`^v\d+\.\d+\.\d+(?:-pre)?$`)
 	tagReference = regexp.MustCompile(`^refs/tags/([^/]+)$`)
 )
 
@@ -123,11 +123,15 @@ func (g *Git) tagsByRevisionHash() (map[string][]string, error) {
 	}
 	if err := refs.ForEach(
 		func(ref *plumbing.Reference) error {
+			hash, err := g.tagRefToHash(ref)
+			if err != nil {
+				return err
+			}
 			message, err := tagRefToName(ref)
 			if err != nil {
 				return err
 			}
-			tags[ref.Hash().String()] = append(tags[ref.Hash().String()], message)
+			tags[hash] = append(tags[hash], message)
 			return nil
 		},
 	); err != nil {
@@ -144,6 +148,19 @@ func (g *Git) findVersionTag(tags []string) *string {
 		}
 	}
 	return nil
+}
+
+func (g *Git) tagRefToHash(tagRef *plumbing.Reference) (string, error) {
+	tagObject, err := g.repo.TagObject(tagRef.Hash())
+	switch err {
+	case nil:
+		return tagObject.Target.String(), nil
+	case plumbing.ErrObjectNotFound:
+		return tagRef.Hash().String(), nil
+	default:
+		// Some other error
+		return "", err
+	}
 }
 
 // tagRefToName extracts the name of a tag reference.
