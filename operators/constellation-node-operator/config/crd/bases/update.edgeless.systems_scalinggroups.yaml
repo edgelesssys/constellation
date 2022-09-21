@@ -47,11 +47,13 @@ spec:
                   a scaling group.
                 type: string
               max:
-                description: Max is the maximum number of nodes in the scaling group.
+                description: Max is the maximum number of autoscaled nodes in the
+                  scaling group (used by cluster-autoscaler).
                 format: int32
                 type: integer
               min:
-                description: Min is the minimum number of nodes in the scaling group.
+                description: Min is the minimum number of nodes in the scaling group
+                  (used by cluster-autoscaler).
                 format: int32
                 type: integer
               nodeImage:
