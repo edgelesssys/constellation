@@ -93,7 +93,7 @@ Refer to [`CONTRIBUTING.md`](CONTRIBUTING.md) on how to contribute. The most imp
 
 ## License
 
-The Constellation source code is licensed under the [GNU Affero General Public License v3.0](LICENSE). Edgeless Systems provides pre-built and signed binaries and images for Constellation. You may use these free of charge to create and run services for internal consumption. You can find more information in the [license] section of the docs.
+The Constellation source code is licensed under the [GNU Affero General Public License v3.0](LICENSE). Edgeless Systems provides pre-built and signed binaries and images for Constellation. You may use these free of charge to create and run services for internal consumption, evaluation purposes, or non-commercial use. You can find more information in the [license] section of the docs.
 
 <!-- refs -->
 [architecture]: https://docs.edgeless.systems/constellation/architecture/overview
