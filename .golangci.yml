@@ -22,6 +22,7 @@ linters:
     - bodyclose
     - errname
     - exportloopref
+    - gocyclo
     - godot
     - gofmt
     - gofumpt
@@ -42,3 +43,6 @@ linters-settings:
     exclude-functions:
       - (*go.uber.org/zap.Logger).Sync
       - (*google.golang.org/grpc.Server).Serve
+  gocyclo:
+    # Minimum code complexity to report, 15 is used by goreportcard.com.
+    min-complexity: 15
