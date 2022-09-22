@@ -67,6 +67,8 @@ type Client struct {
 }
 
 // NewFromDefault creates an uninitialized client.
+//
+//gocyclo:ignore
 func NewFromDefault(ctx context.Context) (*Client, error) {
 	var closers []closer
 	insAPI, err := compute.NewInstancesRESTClient(ctx)

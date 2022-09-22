@@ -148,6 +148,13 @@ func (c *Client) CreateInstances(ctx context.Context, input CreateInstancesInput
 
 // TerminateInstances terminates the clients instances.
 func (c *Client) TerminateInstances(ctx context.Context) error {
+	if err := c.terminateInstanceGroupManagers(ctx); err != nil {
+		return err
+	}
+	return c.deleteInstanceTemplates(ctx)
+}
+
+func (c *Client) terminateInstanceGroupManagers(ctx context.Context) error {
 	ops := []Operation{}
 	if c.workerInstanceGroup != "" {
 		op, err := c.deleteInstanceGroupManager(ctx, c.workerInstanceGroup)
@@ -172,10 +179,12 @@ func (c *Client) TerminateInstances(ctx context.Context) error {
 		c.controlPlaneInstanceGroup = ""
 		c.controlPlanes = make(cloudtypes.Instances)
 	}
-	if err := c.waitForOperations(ctx, ops); err != nil {
-		return err
-	}
-	ops = []Operation{}
+
+	return c.waitForOperations(ctx, ops)
+}
+
+func (c *Client) deleteInstanceTemplates(ctx context.Context) error {
+	ops := []Operation{}
 
 	if c.workerTemplate != "" {
 		op, err := c.deleteInstanceTemplate(ctx, c.workerTemplate)
