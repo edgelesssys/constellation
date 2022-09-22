@@ -10,7 +10,7 @@ AMD and Azure jointly released a [performance benchmark](https://community.amd.c
 
 ## Performance impact from other features
 
-To assess the overall performance of Constellation, we benchmarked Constellation v1.3.0 using [K-Bench](https://github.com/vmware-tanzu/k-bench). K-Bench is a configurable framework to benchmark Kubernetes clusters in terms of storage I/O, network performance, and creating/scaling resources.
+To assess the overall performance of Constellation, we benchmarked Constellation v2.0.0 using [K-Bench](https://github.com/vmware-tanzu/k-bench). K-Bench is a configurable framework to benchmark Kubernetes clusters in terms of storage I/O, network performance, and creating/scaling resources.
 
 As a baseline, we compare Constellation with the non-confidential managed Kubernetes offerings on Microsoft Azure and Google Cloud Platform (GCP). These are AKS on Azure and GKE on GCP.
 
@@ -21,16 +21,16 @@ We used the following configurations for the benchmarks.
 #### Constellation and GKE on GCP
 
 - Nodes: 3
-- Machines: `n2d-standard-2`
-- Kubernetes version: `1.23.6-gke.2200`
+- Machines: `n2d-standard-4`
+- CVM: `true`
 - Zone: `europe-west3-b`
 
 #### Constellation and AKS on Azure
 
 - Nodes: 3
-- Machines: `D2a_v4`
-- Kubernetes version: `1.23.5`
-- Region: `North Europe`
+- Machines: `DC4as_v5`
+- CVM: `true`
+- Region: `West Europe`
 - Zone: `2`
 
 #### K-Bench
@@ -38,7 +38,6 @@ We used the following configurations for the benchmarks.
 Using the default [K-Bench test configurations](https://github.com/vmware-tanzu/k-bench/tree/master/config), we ran the following tests on the clusters:
 
 - `default`
-- `dp_netperf_internode`
 - `dp_network_internode`
 - `dp_network_intranode`
 - `dp_fio`
@@ -67,14 +66,14 @@ Deployments: Constellation has the lowest latency for all cases except for scali
 #### Network
 
 There are two main indicators for network performance: intra-node and inter-node transmission speed.
-K-Bench provides benchmark tests for both, configured as `dp_netperf_internode`, `dp_network_internode`, and `dp_network_intranode`.
+K-Bench provides benchmark tests for both, configured as `dp_network_internode` and `dp_network_intranode`. The tests use [`iperf`](https://iperf.fr/) to measure the bandwidth available.
 
 ##### Inter-node
 
-K-Bench has two benchmarks to evaluate the network performance between different nodes.
+Inter-node communication is the network transmission between different Kubernetes nodes.
 
-The first test (`dp_netperf_internode`) uses [`netperf`](https://hewlettpackard.github.io/netperf/) to measure the throughput. Constellation has a slightly lower network throughput than AKS and GKE.
-This can largely be attributed to its [network encryption](../architecture/networking.md).
+The first test (`dp_network_internode`) measures the throughput between nodes. Constellation has an inter-node throughput of around 816 Mbps on Azure to 872 Mbps on GCP. While that's faster than the average throughput of AKS at 577 Mbps, GKE provides faster networking at 9.55 Gbps.
+The difference can largely be attributed to Constellation's [network encryption](../architecture/networking.md) that protects data in-transit.
 
 ##### Intra-node
 
@@ -82,8 +81,7 @@ Intra-node communication happens between pods running on the same node.
 The connections directly pass through the node's OS layer and never hit the network.
 The benchmark evaluates how the [Constellation's node OS image](../architecture/images.md) and runtime encryption influence the throughput.
 
-The K-Bench tests `dp_network_internode` and `dp_network_intranode`. The tests use [`iperf`](https://iperf.fr/) to measure the bandwidth available.
-Constellation's bandwidth for both sending and receiving is at 20 Gbps while AKS achieves slightly higher numbers and GKE achieves about 30 Gbps in the tests.
+Constellation's bandwidth for both sending and receiving is at 31 Gbps on Azure and 22 Gbps on GCP. AKS achieves 26 Gbps and GKE achieves about 27 Gbps in the tests.
 
 ![](../_media/benchmark_net.png)
 
@@ -103,11 +101,7 @@ The following graph shows I/O throughput in MiB/s (higher is better).
 
 Comparing Constellation on GCP with GKE, you see that Constellation offers similar read/write speeds in all scenarios.
 
-Constellation on Azure and AKS, however, partially differ. Only for the full write mix, Constellation and AKS have similar storage access speeds. In the `70/30 mix`, AKS outperforms Constellation.
-
-:::note
-For the sequential reads with a `0/100 read-write mix`, no data could be measured on AKS, hence the missing data bar.
-:::
+Constellation on Azure and AKS, however, partially differ. In read-write mixes, Constellation on Azure outperforms AKS in terms of I/O. On full-write access, Constellation and AKS have the same speed.
 
 ## Conclusion
 
