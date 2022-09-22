@@ -14,9 +14,7 @@ The Constellation CLI displays relevant license information when you initialize 
 
 ### Community License
 
-You are free to use the Constellation binaries provided by Edgeless Systems to create services for internal consumption. You must not use the Constellation binaries to provide hosted services of any type to third parties. Edgeless Systems gives no warranties and offers no support.
-
-These terms may be different for future releases.
+You are free to use the Constellation binaries provided by Edgeless Systems to create services for internal consumption, evaluation purposes, or non-commercial use. You must not use the Constellation binaries to provide commercial hosted services to third parties. Edgeless Systems gives no warranties and offers no support.
 
 ### Enterprise License
 
