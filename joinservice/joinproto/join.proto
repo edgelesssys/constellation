@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package join;
 
-option go_package = "github.com/edgelesssys/constellation/joinservice/joinproto";
+option go_package = "github.com/edgelesssys/constellation/v2/joinservice/joinproto";
 
 service API {
     rpc IssueJoinTicket(IssueJoinTicketRequest) returns (IssueJoinTicketResponse);

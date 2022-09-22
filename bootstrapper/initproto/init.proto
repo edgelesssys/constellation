@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package init;
 
-option go_package = "github.com/edgelesssys/constellation/bootstrapper/initproto";
+option go_package = "github.com/edgelesssys/constellation/v2/bootstrapper/initproto";
 
 service API {
   rpc Init(InitRequest) returns (InitResponse);

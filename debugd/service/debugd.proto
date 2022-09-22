@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/edgelesssys/constellation/debugd/service";
+option go_package = "github.com/edgelesssys/constellation/v2/debugd/service";
 
 package debugd;
 
