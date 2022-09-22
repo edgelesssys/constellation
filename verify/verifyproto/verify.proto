@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package verify;
 
-option go_package = "github.com/edgelesssys/constellation/verify/verifyproto";
+option go_package = "github.com/edgelesssys/constellation/v2/verify/verifyproto";
 
 service API {
     rpc GetAttestation(GetAttestationRequest) returns (GetAttestationResponse);

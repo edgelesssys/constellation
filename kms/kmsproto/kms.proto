@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package kms;
 
-option go_package = "github.com/edgelesssys/constellation/kms/kmsproto";
+option go_package = "github.com/edgelesssys/constellation/v2/kms/kmsproto";
 
 service API {
     rpc GetDataKey(GetDataKeyRequest) returns (GetDataKeyResponse);

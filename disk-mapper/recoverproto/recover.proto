@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package recoverproto;
 
-option go_package = "github.com/edgelesssys/constellation/disk-mapper/recoverproto";
+option go_package = "github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto";
 
 service API {
     rpc Recover(stream RecoverMessage) returns (stream RecoverResponse) {}
