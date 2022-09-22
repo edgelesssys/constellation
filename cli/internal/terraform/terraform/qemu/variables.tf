@@ -41,5 +41,17 @@ variable "ip_range_start" {
 
 variable "machine" {
   type        = string
+  default     = "q35"
   description = "machine type. use 'q35' for secure boot and 'pc' for non secure boot. See 'qemu-system-x86_64 -machine help'"
+}
+
+variable "metadata_api_image" {
+  type        = string
+  description = "container image of the QEMU metadata api server"
+}
+
+variable "name" {
+  type        = string
+  default     = "constellation"
+  description = "name prefix of the cluster VMs"
 }

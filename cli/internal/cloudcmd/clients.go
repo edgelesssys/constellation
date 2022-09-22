@@ -42,7 +42,7 @@ type azureclient interface {
 
 type qemuclient interface {
 	GetState() state.ConstellationState
-	CreateCluster(ctx context.Context, input terraform.CreateClusterInput) error
+	CreateCluster(ctx context.Context, name string, input terraform.CreateClusterInput) error
 	DestroyCluster(ctx context.Context) error
 	CleanUpWorkspace() error
 	RemoveInstaller()

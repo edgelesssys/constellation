@@ -12,7 +12,7 @@ locals {
 }
 
 resource "libvirt_domain" "instance_group" {
-  name    = "${var.role}-${count.index}"
+  name    = "${var.name}-${var.role}-${count.index}"
   count   = var.amount
   memory  = var.memory
   vcpu    = var.vcpus

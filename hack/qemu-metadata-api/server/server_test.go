@@ -71,7 +71,7 @@ func TestListAll(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			server := New(logger.NewTest(t), tc.connect)
+			server := New(logger.NewTest(t), "test", tc.connect)
 
 			res, err := server.listAll()
 
@@ -148,7 +148,7 @@ func TestListSelf(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			server := New(logger.NewTest(t), tc.connect)
+			server := New(logger.NewTest(t), "test", tc.connect)
 
 			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.0.1/self", nil)
 			require.NoError(err)
@@ -210,7 +210,7 @@ func TestListPeers(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			server := New(logger.NewTest(t), tc.connect)
+			server := New(logger.NewTest(t), "test", tc.connect)
 
 			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.0.1/peers", nil)
 			require.NoError(err)
@@ -265,7 +265,7 @@ func TestPostLog(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			server := New(logger.NewTest(t), &stubConnect{})
+			server := New(logger.NewTest(t), "test", &stubConnect{})
 
 			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.0.1/logs", tc.message)
 			require.NoError(err)
@@ -345,7 +345,7 @@ func TestExportPCRs(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			server := New(logger.NewTest(t), tc.connect)
+			server := New(logger.NewTest(t), "test", tc.connect)
 
 			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.0.1/pcrs", strings.NewReader(tc.message))
 			require.NoError(err)

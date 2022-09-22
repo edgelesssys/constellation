@@ -192,8 +192,8 @@ type QEMUConfig struct {
 	//   First IP address to use within a node group's subnet.
 	IPRangeStart int `yaml:"ipRangeStart" validate:"required"`
 	// description: |
-	//   QEMU Machine type. See 'qemu-system-x86_64 -machine help for details.
-	Machine string `yaml:"machine" validate:"required"`
+	//   Container image to use for the QEMU metadata server.
+	MetadataAPIImage string `yaml:"metadataAPIServer" validate:"required"`
 	// description: |
 	//   Measurement used to enable measured boot.
 	Measurements Measurements `yaml:"measurements"`
@@ -240,8 +240,8 @@ func Default() *Config {
 				VCPUs:                2,
 				Memory:               2048,
 				IPRangeStart:         100,
-				Machine:              "q35",
 				Measurements:         copyPCRMap(qemuPCRs),
+				MetadataAPIImage:     "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v1.4.1-0.20220817163854-84e9f659542d",
 				EnforcedMeasurements: []uint32{11, 12},
 			},
 		},

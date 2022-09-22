@@ -93,7 +93,7 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 			return state.ConstellationState{}, err
 		}
 		defer cl.RemoveInstaller()
-		return c.createQEMU(ctx, cl, config, controlPlaneCount, workerCount)
+		return c.createQEMU(ctx, cl, name, config, controlPlaneCount, workerCount)
 	default:
 		return state.ConstellationState{}, fmt.Errorf("unsupported cloud provider: %s", provider)
 	}
@@ -211,7 +211,7 @@ func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *confi
 	return cl.GetState(), nil
 }
 
-func (c *Creator) createQEMU(ctx context.Context, cl qemuclient, config *config.Config, controlPlaneCount, workerCount int,
+func (c *Creator) createQEMU(ctx context.Context, cl qemuclient, name string, config *config.Config, controlPlaneCount, workerCount int,
 ) (stat state.ConstellationState, retErr error) {
 	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerQEMU{client: cl})
 
@@ -219,17 +219,17 @@ func (c *Creator) createQEMU(ctx context.Context, cl qemuclient, config *config.
 		CountControlPlanes: controlPlaneCount,
 		CountWorkers:       workerCount,
 		QEMU: terraform.QEMUInput{
-			ImagePath:       config.Provider.QEMU.Image,
-			ImageFormat:     config.Provider.QEMU.ImageFormat,
-			CPUCount:        config.Provider.QEMU.VCPUs,
-			MemorySizeMiB:   config.Provider.QEMU.Memory,
-			StateDiskSizeGB: config.StateDiskSizeGB,
-			IPRangeStart:    config.Provider.QEMU.IPRangeStart,
-			Machine:         config.Provider.QEMU.Machine,
+			ImagePath:        config.Provider.QEMU.Image,
+			ImageFormat:      config.Provider.QEMU.ImageFormat,
+			CPUCount:         config.Provider.QEMU.VCPUs,
+			MemorySizeMiB:    config.Provider.QEMU.Memory,
+			StateDiskSizeGB:  config.StateDiskSizeGB,
+			IPRangeStart:     config.Provider.QEMU.IPRangeStart,
+			MetadataAPIImage: config.Provider.QEMU.MetadataAPIImage,
 		},
 	}
 
-	if err := cl.CreateCluster(ctx, input); err != nil {
+	if err := cl.CreateCluster(ctx, name, input); err != nil {
 		return state.ConstellationState{}, err
 	}
 

@@ -52,3 +52,8 @@ variable "machine" {
   type        = string
   description = "machine type. use 'q35' for secure boot and 'pc' for non secure boot. See 'qemu-system-x86_64 -machine help'"
 }
+
+variable "name" {
+  type        = string
+  description = "name prefix of the cluster VMs"
+}

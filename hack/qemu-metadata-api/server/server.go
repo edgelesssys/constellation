@@ -22,14 +22,16 @@ import (
 )
 
 type Server struct {
-	log  *logger.Logger
-	virt virConnect
+	log     *logger.Logger
+	virt    virConnect
+	network string
 }
 
-func New(log *logger.Logger, conn virConnect) *Server {
+func New(log *logger.Logger, network string, conn virConnect) *Server {
 	return &Server{
-		log:  log,
-		virt: conn,
+		log:     log,
+		virt:    conn,
+		network: network,
 	}
 }
 
@@ -186,7 +188,7 @@ func (s *Server) exportPCRs(w http.ResponseWriter, r *http.Request) {
 
 // listAll returns a list of all active peers.
 func (s *Server) listAll() ([]metadata.InstanceMetadata, error) {
-	net, err := s.virt.LookupNetworkByName("constellation")
+	net, err := s.virt.LookupNetworkByName(s.network)
 	if err != nil {
 		return nil, err
 	}

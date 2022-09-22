@@ -111,7 +111,7 @@ func TestCreateInstances(t *testing.T) {
 				loader:   tc.loader,
 			}
 
-			err := c.CreateCluster(context.Background(), tc.input)
+			err := c.CreateCluster(context.Background(), "test", tc.input)
 			if tc.wantErr {
 				assert.Error(err)
 				return
