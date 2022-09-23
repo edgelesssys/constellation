@@ -108,7 +108,7 @@ func (c *Client) GetAutoscalingGroupName(scalingGroupID string) (string, error) 
 // ListScalingGroups retrieves a list of scaling groups for the cluster.
 func (c *Client) ListScalingGroups(ctx context.Context, uid string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error) {
 	iter := c.instanceGroupManagersAPI.AggregatedList(ctx, &computepb.AggregatedListInstanceGroupManagersRequest{
-		Filter:  proto.String(fmt.Sprintf("name eq \".+-.+-%s\"", uid)), // filter by constellation UID
+		Filter:  proto.String(fmt.Sprintf("name eq \".+-%s-.+\"", uid)), // filter by constellation UID
 		Project: c.projectID,
 	})
 	for instanceGroupManagerScopedListPair, err := iter.Next(); ; instanceGroupManagerScopedListPair, err = iter.Next() {
