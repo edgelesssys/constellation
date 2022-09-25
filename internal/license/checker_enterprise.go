@@ -37,7 +37,7 @@ func NewChecker(quotaChecker QuotaChecker, fileHandler file.Handler) *Checker {
 func (c *Checker) CheckLicense(ctx context.Context, provider cloudprovider.Provider, providerCfg config.ProviderConfig, printer func(string, ...any)) error {
 	licenseID, err := FromFile(c.fileHandler, constants.LicenseFilename)
 	if errors.Is(err, fs.ErrNotExist) {
-		printer("Unable to find license file. Assuming community license.\n")
+		printer("Using community license.\n")
 		licenseID = CommunityLicense
 	} else if err != nil {
 		printer("Error: %v\nContinuing with community license.\n", err)
@@ -63,7 +63,6 @@ func (c *Checker) CheckLicense(ctx context.Context, provider cloudprovider.Provi
 		printer("Unable to contact license server.\n")
 		printer("Please keep your vCPU quota in mind.\n")
 	} else if licenseID == CommunityLicense {
-		printer("You can use Constellation to create services for internal consumption.\n")
 		printer("For details, see https://docs.edgeless.systems/constellation/overview/license\n")
 	} else {
 		printer("Please keep your vCPU quota (%d) in mind.\n", quotaResp.Quota)
