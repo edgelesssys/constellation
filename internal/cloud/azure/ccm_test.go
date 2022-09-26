@@ -11,7 +11,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/stretchr/testify/assert"
@@ -99,7 +98,7 @@ func TestTrivialCCMFunctions(t *testing.T) {
 	assert.NotEmpty(cloud.Path())
 	assert.NotEmpty(cloud.Name())
 	assert.NotEmpty(cloud.ExtraArgs())
-	assert.Empty(cloud.ConfigMaps(metadata.InstanceMetadata{}))
+	assert.Empty(cloud.ConfigMaps())
 	assert.NotEmpty(cloud.Volumes())
 	assert.NotEmpty(cloud.VolumeMounts())
 	assert.Empty(cloud.Env())

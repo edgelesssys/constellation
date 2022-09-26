@@ -40,7 +40,7 @@ func (c CloudControllerManager) ExtraArgs() []string {
 
 // ConfigMaps returns a list of ConfigMaps to deploy together with the k8s cloud-controller-manager
 // Reference: https://kubernetes.io/docs/concepts/configuration/configmap/ .
-func (c CloudControllerManager) ConfigMaps(instance metadata.InstanceMetadata) (kubernetes.ConfigMaps, error) {
+func (c CloudControllerManager) ConfigMaps() (kubernetes.ConfigMaps, error) {
 	return kubernetes.ConfigMaps{}, nil
 }
 

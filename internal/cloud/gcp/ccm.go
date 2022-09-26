@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
@@ -21,7 +20,27 @@ import (
 )
 
 // CloudControllerManager holds the gcp cloud-controller-manager configuration.
-type CloudControllerManager struct{}
+type CloudControllerManager struct {
+	uid       string
+	projectID string
+}
+
+// NewCloudControllerManager returns an initialized cloud controller manager configuration struct for GCP.
+func NewCloudControllerManager(metadata *Metadata) (*CloudControllerManager, error) {
+	uid, err := metadata.api.UID()
+	if err != nil {
+		return nil, fmt.Errorf("getting uid from metadata: %w", err)
+	}
+	projectID, err := metadata.api.RetrieveProjectID()
+	if err != nil {
+		return nil, fmt.Errorf("getting project id from metadata: %w", err)
+	}
+
+	return &CloudControllerManager{
+		uid:       uid,
+		projectID: projectID,
+	}, nil
+}
 
 // Image returns the container image used to provide cloud-controller-manager for the cloud-provider.
 func (c *CloudControllerManager) Image(k8sVersion versions.ValidK8sVersion) (string, error) {
@@ -52,20 +71,14 @@ func (c *CloudControllerManager) ExtraArgs() []string {
 
 // ConfigMaps returns a list of ConfigMaps to deploy together with the k8s cloud-controller-manager
 // Reference: https://kubernetes.io/docs/concepts/configuration/configmap/ .
-func (c *CloudControllerManager) ConfigMaps(instance metadata.InstanceMetadata) (kubernetes.ConfigMaps, error) {
+func (c *CloudControllerManager) ConfigMaps() (kubernetes.ConfigMaps, error) {
 	// GCP CCM expects cloud config to contain the GCP project-id and other configuration.
 	// reference: https://github.com/kubernetes/cloud-provider-gcp/blob/master/cluster/gce/gci/configure-helper.sh#L791-L892
 	var config strings.Builder
 	config.WriteString("[global]\n")
-	projectID, _, _, err := gcpshared.SplitProviderID(instance.ProviderID)
-	if err != nil {
-		return kubernetes.ConfigMaps{}, err
-	}
-	config.WriteString(fmt.Sprintf("project-id = %s\n", projectID))
+	config.WriteString(fmt.Sprintf("project-id = %s\n", c.projectID))
 	config.WriteString("use-metadata-server = true\n")
-
-	nameParts := strings.Split(instance.Name, "-")
-	config.WriteString("node-tags = constellation-" + nameParts[len(nameParts)-2] + "\n")
+	config.WriteString(fmt.Sprintf("node-tags = constellation-%s\n", c.uid))
 
 	return kubernetes.ConfigMaps{
 		&k8s.ConfigMap{
@@ -86,7 +99,7 @@ func (c *CloudControllerManager) ConfigMaps(instance metadata.InstanceMetadata) 
 
 // Secrets returns a list of secrets to deploy together with the k8s cloud-controller-manager.
 // Reference: https://kubernetes.io/docs/concepts/configuration/secret/ .
-func (c *CloudControllerManager) Secrets(ctx context.Context, _ string, cloudServiceAccountURI string) (kubernetes.Secrets, error) {
+func (c *CloudControllerManager) Secrets(_ context.Context, _ string, cloudServiceAccountURI string) (kubernetes.Secrets, error) {
 	serviceAccountKey, err := gcpshared.ServiceAccountKeyFromURI(cloudServiceAccountURI)
 	if err != nil {
 		return kubernetes.Secrets{}, err
