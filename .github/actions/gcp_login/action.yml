@@ -13,3 +13,7 @@ runs:
       uses: google-github-actions/auth@c4799db9111fba4461e9f9da8732e5057b394f72 # tag=v0.8.3
       with:
         credentials_json: ${{ inputs.gcp_service_account_json }}
+
+    # Even if preinstalled in Github Actions runner image, this setup does some magic authentication required for gsutil.
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@877d4953d2c70a0ba7ef3290ae968eb24af233bb
