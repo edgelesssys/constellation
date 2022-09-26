@@ -14,49 +14,41 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLoader(t *testing.T) {
 	testCases := map[string]struct {
 		provider cloudprovider.Provider
+		fileList []string
 	}{
 		"qemu": {
 			provider: cloudprovider.QEMU,
+			fileList: []string{
+				"main.tf",
+				"variables.tf",
+				"outputs.tf",
+				"modules",
+			},
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+			require := require.New(t)
 
 			file := file.NewHandler(afero.NewMemMapFs())
-			loader := newLoader(file, tc.provider)
 
-			err := loader.prepareWorkspace()
-			assert.NoError(err)
+			err := prepareWorkspace(file, tc.provider)
+			require.NoError(err)
 
-			checkFiles(t, file,
-				func(err error) { assert.NoError(err) },
-				[]string{
-					"main.tf",
-					"variables.tf",
-					"outputs.tf",
-					"modules",
-				},
-			)
+			checkFiles(t, file, func(err error) { assert.NoError(err) }, tc.fileList)
 
-			err = loader.cleanUpWorkspace()
-			assert.NoError(err)
+			err = cleanUpWorkspace(file, tc.provider)
+			require.NoError(err)
 
-			checkFiles(t, file,
-				func(err error) { assert.ErrorIs(err, fs.ErrNotExist) },
-				[]string{
-					"main.tf",
-					"variables.tf",
-					"outputs.tf",
-					"modules",
-				},
-			)
+			checkFiles(t, file, func(err error) { assert.ErrorIs(err, fs.ErrNotExist) }, tc.fileList)
 		})
 	}
 }

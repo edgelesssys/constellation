@@ -32,8 +32,7 @@ const (
 
 // Client manages interaction with Terraform.
 type Client struct {
-	tf     tfInterface
-	loader tfLoaderInterface
+	tf tfInterface
 
 	provider cloudprovider.Provider
 
@@ -53,7 +52,6 @@ func New(ctx context.Context, provider cloudprovider.Provider) (*Client, error) 
 
 	return &Client{
 		tf:       tf,
-		loader:   newLoader(file, provider),
 		provider: provider,
 		remove:   remove,
 		file:     file,
@@ -62,7 +60,7 @@ func New(ctx context.Context, provider cloudprovider.Provider) (*Client, error) 
 
 // CreateCluster creates a Constellation cluster using Terraform.
 func (c *Client) CreateCluster(ctx context.Context, name string, input CreateClusterInput) error {
-	if err := c.loader.prepareWorkspace(); err != nil {
+	if err := prepareWorkspace(c.file, c.provider); err != nil {
 		return err
 	}
 
@@ -111,7 +109,7 @@ func (c *Client) RemoveInstaller() {
 
 // CleanUpWorkspace removes terraform files from the current directory.
 func (c *Client) CleanUpWorkspace() error {
-	if err := c.loader.cleanUpWorkspace(); err != nil {
+	if err := cleanUpWorkspace(c.file, c.provider); err != nil {
 		return err
 	}
 
@@ -122,6 +120,12 @@ func (c *Client) CleanUpWorkspace() error {
 		return err
 	}
 	if err := ignoreFileNotFoundErr(c.file.Remove("terraform.tfstate.backup")); err != nil {
+		return err
+	}
+	if err := ignoreFileNotFoundErr(c.file.Remove(".terraform.lock.hcl")); err != nil {
+		return err
+	}
+	if err := ignoreFileNotFoundErr(c.file.RemoveAll(".terraform")); err != nil {
 		return err
 	}
 
@@ -196,9 +200,4 @@ type tfInterface interface {
 	Destroy(context.Context, ...tfexec.DestroyOption) error
 	Init(context.Context, ...tfexec.InitOption) error
 	Show(context.Context, ...tfexec.ShowOption) (*tfjson.State, error)
-}
-
-type tfLoaderInterface interface {
-	cleanUpWorkspace() error
-	prepareWorkspace() error
 }

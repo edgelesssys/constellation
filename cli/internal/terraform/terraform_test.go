@@ -41,8 +41,8 @@ func TestCreateInstances(t *testing.T) {
 	testCases := map[string]struct {
 		provider cloudprovider.Provider
 		input    CreateClusterInput
-		loader   *stubLoader
 		tf       *stubTerraform
+		fs       afero.Fs
 		wantErr  bool
 	}{
 		"works": {
@@ -50,7 +50,7 @@ func TestCreateInstances(t *testing.T) {
 			tf: &stubTerraform{
 				showState: getState(),
 			},
-			loader: &stubLoader{},
+			fs: afero.NewMemMapFs(),
 		},
 		"init fails": {
 			provider: cloudprovider.QEMU,
@@ -58,7 +58,7 @@ func TestCreateInstances(t *testing.T) {
 				initErr:   someErr,
 				showState: getState(),
 			},
-			loader:  &stubLoader{},
+			fs:      afero.NewMemMapFs(),
 			wantErr: true,
 		},
 		"apply fails": {
@@ -67,7 +67,7 @@ func TestCreateInstances(t *testing.T) {
 				applyErr:  someErr,
 				showState: getState(),
 			},
-			loader:  &stubLoader{},
+			fs:      afero.NewMemMapFs(),
 			wantErr: true,
 		},
 		"show fails": {
@@ -75,7 +75,7 @@ func TestCreateInstances(t *testing.T) {
 			tf: &stubTerraform{
 				showErr: someErr,
 			},
-			loader:  &stubLoader{},
+			fs:      afero.NewMemMapFs(),
 			wantErr: true,
 		},
 		"no ip": {
@@ -87,7 +87,7 @@ func TestCreateInstances(t *testing.T) {
 					},
 				},
 			},
-			loader:  &stubLoader{},
+			fs:      afero.NewMemMapFs(),
 			wantErr: true,
 		},
 		"prepare workspace fails": {
@@ -95,7 +95,7 @@ func TestCreateInstances(t *testing.T) {
 			tf: &stubTerraform{
 				showState: getState(),
 			},
-			loader:  &stubLoader{prepareErr: someErr},
+			fs:      afero.NewReadOnlyFs(afero.NewMemMapFs()),
 			wantErr: true,
 		},
 	}
@@ -107,8 +107,7 @@ func TestCreateInstances(t *testing.T) {
 			c := &Client{
 				provider: tc.provider,
 				tf:       tc.tf,
-				file:     file.NewHandler(afero.NewMemMapFs()),
-				loader:   tc.loader,
+				file:     file.NewHandler(tc.fs),
 			}
 
 			err := c.CreateCluster(context.Background(), "test", tc.input)
@@ -163,13 +162,11 @@ func TestCleanupWorkspace(t *testing.T) {
 
 	testCases := map[string]struct {
 		provider  cloudprovider.Provider
-		loader    *stubLoader
 		prepareFS func(file.Handler) error
 		wantErr   bool
 	}{
 		"files are cleaned up": {
 			provider: cloudprovider.QEMU,
-			loader:   &stubLoader{},
 			prepareFS: func(f file.Handler) error {
 				var err error
 				err = multierr.Append(err, f.Write("terraform.tfvars", someContent))
@@ -179,7 +176,6 @@ func TestCleanupWorkspace(t *testing.T) {
 		},
 		"no error if files do not exist": {
 			provider:  cloudprovider.QEMU,
-			loader:    &stubLoader{},
 			prepareFS: func(f file.Handler) error { return nil },
 		},
 	}
@@ -194,7 +190,6 @@ func TestCleanupWorkspace(t *testing.T) {
 
 			c := &Client{
 				provider: tc.provider,
-				loader:   tc.loader,
 				file:     file,
 				tf:       &stubTerraform{},
 			}
@@ -237,17 +232,4 @@ func (s *stubTerraform) Init(context.Context, ...tfexec.InitOption) error {
 
 func (s *stubTerraform) Show(context.Context, ...tfexec.ShowOption) (*tfjson.State, error) {
 	return s.showState, s.showErr
-}
-
-type stubLoader struct {
-	prepareErr error
-	cleanupErr error
-}
-
-func (s *stubLoader) prepareWorkspace() error {
-	return s.prepareErr
-}
-
-func (s *stubLoader) cleanUpWorkspace() error {
-	return s.cleanupErr
 }
