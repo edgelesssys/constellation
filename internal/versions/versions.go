@@ -51,7 +51,7 @@ const (
 	VerificationImage        = "ghcr.io/edgelesssys/constellation/verification-service:v2.0.0"
 	GcpGuestImage            = "ghcr.io/edgelesssys/gcp-guest-agent:20220713.00"
 	NodeOperatorCatalogImage = "ghcr.io/edgelesssys/constellation/node-operator-catalog"
-	NodeOperatorVersion      = "v0.0.1-0.20220920083838-788cfd9bd98a"
+	NodeOperatorVersion      = "v2.1.0-pre.0.20220923151951-a93f76d31c3f"
 	// TODO: switch node maintenance operator catalog back to upstream quay.io/medik8s/node-maintenance-operator-catalog
 	// once https://github.com/medik8s/node-maintenance-operator/issues/49 is resolved.
 	NodeMaintenanceOperatorCatalogImage = "ghcr.io/edgelesssys/constellation/node-maintenance-operator-catalog"
