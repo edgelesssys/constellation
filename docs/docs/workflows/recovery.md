@@ -51,7 +51,7 @@ If that fails, because the control plane is unhealthy, you will see log messages
 {"level":"ERROR","ts":"2022-09-08T09:57:23Z","logger":"rejoinClient","caller":"rejoinclient/client.go:110","msg":"Failed to rejoin on all endpoints"}
 ```
 
-This means that you have to recover the node manually. For this, you need its IP address, which can be obtained from the *Overview* page under *Private IP address*.
+This means that you have to recover the node manually.
 
 </tabItem>
 <tabItem value="gcp" label="GCP">
@@ -88,33 +88,26 @@ If that fails, because the control plane is unhealthy, you will see log messages
 {"level":"ERROR","ts":"2022-09-08T10:22:13Z","logger":"rejoinClient","caller":"rejoinclient/client.go:110","msg":"Failed to rejoin on all endpoints"}
 ```
 
-This means that you have to recover the node manually. For this, you need its IP address, which can be obtained from the *"VM Instance" -> "network interfaces"* page under *"Primary internal IP address."*
+This means that you have to recover the node manually.
 
 </tabItem>
 </tabs>
 
 ## Recover your cluster
 
-The following process needs to be repeated until a [member quorum for etcd](https://etcd.io/docs/v3.5/faq/#what-is-failure-tolerance) is established.
-For example, assume you have 5 control-plane nodes in your cluster and 4 of them have been rebooted due to a maintenance downtime in the cloud environment.
-You have to run through the following process for 2 of these nodes and recover them manually to recover the quorum.
-From there, your cluster will auto heal the remaining 2 control-plane nodes and the rest of your cluster.
+Recovering a cluster requires the following parameters:
 
-Recovering a node requires the following parameters:
-
-* The node's IP address
+* The `constellation-id.json` file in your working directory or the cluster's load balancer IP address
 * Access to the master secret of the cluster
 
-See the [Identify unhealthy clusters](#identify-unhealthy-clusters) description of how to obtain the node's IP address.
-Note that the recovery command needs to connect to the recovering nodes.
-Nodes only have private IP addresses in the VPC of the cluster, hence, the command needs to be issued from within the VPC network of the cluster.
-The easiest approach is to set up a jump host connected to the VPC network and perform the recovery from there.
+A cluster can be recovered like this:
 
-Given these prerequisites a node can be recovered like this:
-
-```
-$ constellation recover -e 34.107.89.208 --master-secret constellation-mastersecret.json
+```bash
+$ constellation recover --master-secret constellation-mastersecret.json
 Pushed recovery key.
+Pushed recovery key.
+Pushed recovery key.
+Recovered 3 control-plane nodes.
 ```
 
 In the serial console output of the node you'll see a similar output to the following:

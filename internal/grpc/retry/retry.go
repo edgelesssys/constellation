@@ -14,15 +14,54 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const (
+	authEOFErr       = `connection error: desc = "transport: authentication handshake failed: EOF"`
+	authReadTCPErr   = `connection error: desc = "transport: authentication handshake failed: read tcp`
+	authHandshakeErr = `connection error: desc = "transport: authentication handshake failed`
+)
+
+// grpcErr is the error type that is returned by the grpc client.
+// taken from google.golang.org/grpc/status.FromError.
+type grpcErr interface {
+	GRPCStatus() *status.Status
+	Error() string
+}
+
 // ServiceIsUnavailable checks if the error is a grpc status with code Unavailable.
 // In the special case of an authentication handshake failure, false is returned to prevent further retries.
+// Since the GCP proxy loadbalancer may error with an authentication handshake failure if no available backends are ready,
+// the special handshake errors caused by the GCP LB (e.g. "read tcp", "EOF") are retried.
 func ServiceIsUnavailable(err error) bool {
-	// taken from google.golang.org/grpc/status.FromError
-	var targetErr interface {
-		GRPCStatus() *status.Status
-		Error() string
+	var targetErr grpcErr
+	if !errors.As(err, &targetErr) {
+		return false
 	}
 
+	statusErr, ok := status.FromError(targetErr)
+	if !ok {
+		return false
+	}
+
+	if statusErr.Code() != codes.Unavailable {
+		return false
+	}
+
+	// retry if GCP proxy LB isn't available
+	if strings.HasPrefix(statusErr.Message(), authEOFErr) {
+		return true
+	}
+
+	// retry if GCP proxy LB isn't fully available yet
+	if strings.HasPrefix(statusErr.Message(), authReadTCPErr) {
+		return true
+	}
+
+	return !strings.HasPrefix(statusErr.Message(), authHandshakeErr)
+}
+
+// LoadbalancerIsNotReady checks if the error was caused by a GCP LB not being ready yet.
+func LoadbalancerIsNotReady(err error) bool {
+	var targetErr grpcErr
 	if !errors.As(err, &targetErr) {
 		return false
 	}
@@ -37,15 +76,5 @@ func ServiceIsUnavailable(err error) bool {
 	}
 
 	// retry if GCP proxy LB isn't fully available yet
-	if strings.HasPrefix(statusErr.Message(), `connection error: desc = "transport: authentication handshake failed: EOF"`) {
-		return true
-	}
-
-	// retry if GCP proxy LB isn't fully available yet
-	if strings.HasPrefix(statusErr.Message(), `connection error: desc = "transport: authentication handshake failed: read tcp`) {
-		return true
-	}
-
-	// ideally we would check the error type directly, but grpc only provides a string
-	return !strings.HasPrefix(statusErr.Message(), `connection error: desc = "transport: authentication handshake failed`)
+	return strings.HasPrefix(statusErr.Message(), authReadTCPErr)
 }

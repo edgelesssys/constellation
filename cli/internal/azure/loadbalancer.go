@@ -98,8 +98,9 @@ func (l LoadBalancer) Azure() armnetwork.LoadBalancer {
 				{
 					Name: to.Ptr(recoveryHealthProbeName),
 					Properties: &armnetwork.ProbePropertiesFormat{
-						Protocol: to.Ptr(armnetwork.ProbeProtocolTCP),
-						Port:     to.Ptr[int32](constants.RecoveryPort),
+						Protocol:          to.Ptr(armnetwork.ProbeProtocolTCP),
+						Port:              to.Ptr[int32](constants.RecoveryPort),
+						IntervalInSeconds: to.Ptr[int32](5),
 					},
 				},
 			},
