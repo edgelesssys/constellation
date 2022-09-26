@@ -180,7 +180,7 @@ The following steps guide you through the process of creating a cluster and depl
 
     :::tip
 
-    On Azure, after creating a user-assigned managed identity and app registration, Azure AD needs time to propagate permissions to different regions due to replication lag. To avoid permission errors, it's recommended to wait at least 15 minutes after role assignments before creating the cluster.
+    On Azure, you may need to wait 15+ minutes at this point for role assignments to propagate.
 
     :::
 
@@ -219,6 +219,12 @@ The following steps guide you through the process of creating a cluster and depl
     The cluster's identifier will be different in your output.
     Keep `constellation-mastersecret.json` somewhere safe.
     This will allow you to [recover your cluster](../workflows/recovery.md) in case of a disaster.
+
+    :::info
+
+    Depending on your CSP and region, `constellation init` may take 10+ minutes to complete.
+
+    :::
 
 6. Configure kubectl
 

@@ -135,7 +135,7 @@ Follow Google's guide on [understanding](https://cloud.google.com/iam/docs/under
 
 You need to authenticate with your CSP. The following lists the required steps for *testing* and *production* environments.
 
-:::danger
+:::note
 The steps for a *testing* environment are simpler. However, they may expose secrets to the CSP. If in doubt, follow the *production* steps.
 :::
 
