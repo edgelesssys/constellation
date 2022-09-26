@@ -1,5 +1,6 @@
 variable "name" {
   type = string
+  description = "Name of your Constellation"
 }
 
 variable "worker_nodes_iam_instance_profile" {

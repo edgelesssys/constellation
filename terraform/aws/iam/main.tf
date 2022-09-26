@@ -17,12 +17,12 @@ resource "random_id" "uid" {
 }
 
 resource "aws_iam_instance_profile" "control_plane_instance_profile" {
-  name = "${var.name}_control_plane_instance_profile"
+  name = "${var.name_prefix}_control_plane_instance_profile"
   role = aws_iam_role.control_plane_role.name
 }
 
 resource "aws_iam_role" "control_plane_role" {
-  name = "${var.name}_control_plane_role"
+  name = "${var.name_prefix}_control_plane_role"
   path = "/"
 
   assume_role_policy = <<EOF
@@ -43,7 +43,7 @@ EOF
 }
 
 resource "aws_iam_policy" "control_plane_policy" {
-  name   = "${var.name}_control_plane_policy"
+  name   = "${var.name_prefix}_control_plane_policy"
   policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -122,12 +122,12 @@ resource "aws_iam_role_policy_attachment" "attach_control_plane_policy" {
 }
 
 resource "aws_iam_instance_profile" "worker_node_instance_profile" {
-  name = "${var.name}_worker_node_instance_profile"
+  name = "${var.name_prefix}_worker_node_instance_profile"
   role = aws_iam_role.control_plane_role.name
 }
 
 resource "aws_iam_role" "worker_node_role" {
-  name = "${var.name}_worker_node_role"
+  name = "${var.name_prefix}_worker_node_role"
   path = "/"
 
   assume_role_policy = <<EOF
@@ -148,7 +148,7 @@ EOF
 }
 
 resource "aws_iam_policy" "worker_node_policy" {
-  name   = "${var.name}_worker_node_policy"
+  name   = "${var.name_prefix}_worker_node_policy"
   policy = <<EOF
 {
   "Version": "2012-10-17",

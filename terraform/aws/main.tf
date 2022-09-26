@@ -33,7 +33,7 @@ locals {
 }
 
 resource "random_id" "uid" {
-  byte_length = 8
+  byte_length = 4
 }
 
 resource "aws_vpc" "vpc" {
@@ -116,7 +116,7 @@ resource "aws_security_group" "security_group" {
 
 module "load_balancer_bootstrapper" {
   source = "./modules/load_balancer"
-  name   = "${local.name}-lb-bootstrapper"
+  name   = "${local.name}-bootstrapper"
   vpc    = aws_vpc.vpc.id
   subnet = aws_subnet.main.id
   port   = local.ports_bootstrapper
@@ -124,15 +124,15 @@ module "load_balancer_bootstrapper" {
 
 module "load_balancer_kubernetes" {
   source = "./modules/load_balancer"
-  name   = "${local.name}-lb-kubernetes"
+  name   = "${local.name}-kubernetes"
   vpc    = aws_vpc.vpc.id
   subnet = aws_subnet.main.id
-  port   = local.ports_kubernets
+  port   = local.ports_kubernetes
 }
 
 module "load_balancer_verify" {
   source = "./modules/load_balancer"
-  name   = "${local.name}-lb-verify"
+  name   = "${local.name}-verify"
   vpc    = aws_vpc.vpc.id
   subnet = aws_subnet.main.id
   port   = local.ports_verify
@@ -140,7 +140,7 @@ module "load_balancer_verify" {
 
 module "load_balancer_debugd" {
   source = "./modules/load_balancer"
-  name   = "${local.name}-lb-debugd"
+  name   = "${local.name}-debugd"
   vpc    = aws_vpc.vpc.id
   subnet = aws_subnet.main.id
   port   = local.ports_debugd
@@ -148,7 +148,7 @@ module "load_balancer_debugd" {
 
 module "load_balancer_konnectivity" {
   source = "./modules/load_balancer"
-  name   = "${local.name}-lb-konnectivity"
+  name   = "${local.name}-konnectivity"
   vpc    = aws_vpc.vpc.id
   subnet = aws_subnet.main.id
   port   = local.ports_konnectivity
@@ -162,7 +162,7 @@ module "instance_group_control_plane" {
   uid            = local.uid
   instance_type  = var.instance_type
   instance_count = var.count_control_plane
-  image_id       = local.image_id
+  image_id       = var.ami
   disk_size      = var.disk_size
   target_group_arns = [
     module.load_balancer_bootstrapper.target_group_arn,
@@ -180,8 +180,8 @@ module "instance_group_worker_nodes" {
   role                 = "worker"
   uid                  = local.uid
   instance_type        = var.instance_type
-  instance_count       = var.count_worker
-  image_id             = local.image_id
+  instance_count       = var.count_worker_nodes
+  image_id             = var.ami
   disk_size            = var.disk_size
   subnetwork           = aws_subnet.main.id
   target_group_arns    = []
