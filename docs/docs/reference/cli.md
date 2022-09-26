@@ -288,7 +288,7 @@ constellation recover [flags]
 ### Options
 
 ```
-  -e, --endpoint string        endpoint of the instance, passed as HOST[:PORT] (required)
+  -e, --endpoint string        endpoint of the instance, passed as HOST[:PORT]
   -h, --help                   help for recover
       --master-secret string   path to master secret file (default "constellation-mastersecret.json")
 ```
