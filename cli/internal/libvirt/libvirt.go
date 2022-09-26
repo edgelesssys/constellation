@@ -17,6 +17,11 @@ import (
 	"github.com/spf13/afero"
 )
 
+// LibvirtTCPConnectURI is the default URI to connect to containerized libvirt.
+// Non standard port to avoid conflict with host libvirt.
+// Changes here should also be reflected in the Dockerfile in "cli/internal/libvirt/Dockerfile".
+const LibvirtTCPConnectURI = "qemu+tcp://localhost:16599/system"
+
 // Runner handles starting and stopping of containerized libvirt instances.
 type Runner struct {
 	nameFile string

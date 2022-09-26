@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/state"
@@ -23,11 +24,17 @@ import (
 )
 
 func TestCreate(t *testing.T) {
+	fsWithDefaultConfig := func(require *require.Assertions, provider cloudprovider.Provider) afero.Fs {
+		fs := afero.NewMemMapFs()
+		file := file.NewHandler(fs)
+		require.NoError(file.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
+		return fs
+	}
 	testState := state.ConstellationState{Name: "test", LoadBalancerIP: "192.0.2.1"}
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		setupFs             func(*require.Assertions) afero.Fs
+		setupFs             func(*require.Assertions, cloudprovider.Provider) afero.Fs
 		creator             *stubCloudCreator
 		provider            cloudprovider.Provider
 		yesFlag             bool
@@ -40,7 +47,7 @@ func TestCreate(t *testing.T) {
 		wantAbbort          bool
 	}{
 		"create": {
-			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			setupFs:             fsWithDefaultConfig,
 			creator:             &stubCloudCreator{state: testState},
 			provider:            cloudprovider.GCP,
 			controllerCountFlag: intPtr(1),
@@ -48,7 +55,7 @@ func TestCreate(t *testing.T) {
 			yesFlag:             true,
 		},
 		"interactive": {
-			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			setupFs:             fsWithDefaultConfig,
 			creator:             &stubCloudCreator{state: testState},
 			provider:            cloudprovider.Azure,
 			controllerCountFlag: intPtr(2),
@@ -56,7 +63,7 @@ func TestCreate(t *testing.T) {
 			stdin:               "yes\n",
 		},
 		"interactive abort": {
-			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			setupFs:             fsWithDefaultConfig,
 			creator:             &stubCloudCreator{},
 			provider:            cloudprovider.GCP,
 			controllerCountFlag: intPtr(1),
@@ -65,7 +72,7 @@ func TestCreate(t *testing.T) {
 			wantAbbort:          true,
 		},
 		"interactive error": {
-			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			setupFs:             fsWithDefaultConfig,
 			creator:             &stubCloudCreator{},
 			provider:            cloudprovider.GCP,
 			controllerCountFlag: intPtr(1),
@@ -74,7 +81,7 @@ func TestCreate(t *testing.T) {
 			wantErr:             true,
 		},
 		"flag name to long": {
-			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			setupFs:             fsWithDefaultConfig,
 			creator:             &stubCloudCreator{},
 			provider:            cloudprovider.GCP,
 			controllerCountFlag: intPtr(1),
@@ -83,7 +90,7 @@ func TestCreate(t *testing.T) {
 			wantErr:             true,
 		},
 		"flag control-plane-count invalid": {
-			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			setupFs:             fsWithDefaultConfig,
 			creator:             &stubCloudCreator{},
 			provider:            cloudprovider.GCP,
 			controllerCountFlag: intPtr(0),
@@ -91,7 +98,7 @@ func TestCreate(t *testing.T) {
 			wantErr:             true,
 		},
 		"flag worker-count invalid": {
-			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			setupFs:             fsWithDefaultConfig,
 			creator:             &stubCloudCreator{},
 			provider:            cloudprovider.GCP,
 			controllerCountFlag: intPtr(3),
@@ -99,24 +106,25 @@ func TestCreate(t *testing.T) {
 			wantErr:             true,
 		},
 		"flag control-plane-count missing": {
-			setupFs:         func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			setupFs:         fsWithDefaultConfig,
 			creator:         &stubCloudCreator{},
 			provider:        cloudprovider.GCP,
 			workerCountFlag: intPtr(3),
 			wantErr:         true,
 		},
 		"flag worker-count missing": {
-			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			setupFs:             fsWithDefaultConfig,
 			creator:             &stubCloudCreator{},
 			provider:            cloudprovider.GCP,
 			controllerCountFlag: intPtr(3),
 			wantErr:             true,
 		},
 		"old state in directory": {
-			setupFs: func(require *require.Assertions) afero.Fs {
+			setupFs: func(require *require.Assertions, csp cloudprovider.Provider) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
 				require.NoError(fileHandler.Write(constants.StateFilename, []byte{1}, file.OptNone))
+				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return fs
 			},
 			creator:             &stubCloudCreator{},
@@ -127,10 +135,11 @@ func TestCreate(t *testing.T) {
 			wantErr:             true,
 		},
 		"old adminConf in directory": {
-			setupFs: func(require *require.Assertions) afero.Fs {
+			setupFs: func(require *require.Assertions, csp cloudprovider.Provider) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
 				require.NoError(fileHandler.Write(constants.AdminConfFilename, []byte{1}, file.OptNone))
+				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return fs
 			},
 			creator:             &stubCloudCreator{},
@@ -141,10 +150,11 @@ func TestCreate(t *testing.T) {
 			wantErr:             true,
 		},
 		"old masterSecret in directory": {
-			setupFs: func(require *require.Assertions) afero.Fs {
+			setupFs: func(require *require.Assertions, csp cloudprovider.Provider) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
 				require.NoError(fileHandler.Write(constants.MasterSecretFilename, []byte{1}, file.OptNone))
+				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return fs
 			},
 			creator:             &stubCloudCreator{},
@@ -155,17 +165,17 @@ func TestCreate(t *testing.T) {
 			wantErr:             true,
 		},
 		"config does not exist": {
-			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			setupFs:             fsWithDefaultConfig,
 			creator:             &stubCloudCreator{},
 			provider:            cloudprovider.GCP,
 			controllerCountFlag: intPtr(1),
 			workerCountFlag:     intPtr(1),
 			yesFlag:             true,
-			configFlag:          constants.ConfigFilename,
+			configFlag:          "/does/not/exist",
 			wantErr:             true,
 		},
 		"create error": {
-			setupFs:             func(require *require.Assertions) afero.Fs { return afero.NewMemMapFs() },
+			setupFs:             fsWithDefaultConfig,
 			creator:             &stubCloudCreator{createErr: someErr},
 			provider:            cloudprovider.GCP,
 			controllerCountFlag: intPtr(1),
@@ -174,8 +184,10 @@ func TestCreate(t *testing.T) {
 			wantErr:             true,
 		},
 		"write state error": {
-			setupFs: func(require *require.Assertions) afero.Fs {
+			setupFs: func(require *require.Assertions, csp cloudprovider.Provider) afero.Fs {
 				fs := afero.NewMemMapFs()
+				fileHandler := file.NewHandler(fs)
+				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
 				return afero.NewReadOnlyFs(fs)
 			},
 			creator:             &stubCloudCreator{},
@@ -196,7 +208,7 @@ func TestCreate(t *testing.T) {
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
-			cmd.Flags().String("config", "", "") // register persisten flag manually
+			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 			if tc.yesFlag {
 				require.NoError(cmd.Flags().Set("yes", "true"))
 			}
@@ -213,7 +225,7 @@ func TestCreate(t *testing.T) {
 				require.NoError(cmd.Flags().Set("worker-nodes", strconv.Itoa(*tc.workerCountFlag)))
 			}
 
-			fileHandler := file.NewHandler(tc.setupFs(require))
+			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider))
 
 			err := create(cmd, tc.creator, fileHandler)
 

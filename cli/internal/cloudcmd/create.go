@@ -176,9 +176,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 		if err := lv.Start(ctx, name, config.Provider.QEMU.LibvirtContainerImage); err != nil {
 			return state.ConstellationState{}, err
 		}
-		// non standard port to avoid conflict with host libvirt
-		// changes here should also be reflected in the Dockerfile in "cli/internal/libvirt/Dockerfile"
-		libvirtURI = "qemu+tcp://localhost:16599/system"
+		libvirtURI = libvirt.LibvirtTCPConnectURI
 
 	// socket for system URI should be in /var/run/libvirt/libvirt-sock
 	case libvirtURI == "qemu:///system":

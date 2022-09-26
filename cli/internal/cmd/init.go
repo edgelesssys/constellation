@@ -114,7 +114,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return err
 	}
 
-	helmDeployments, err := helmLoader.Load(provider.String(), flags.conformance)
+	helmDeployments, err := helmLoader.Load(provider, flags.conformance)
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
 	}

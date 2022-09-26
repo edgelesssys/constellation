@@ -16,10 +16,6 @@ import (
 )
 
 func readConfig(out io.Writer, fileHandler file.Handler, name string) (*config.Config, error) {
-	if name == "" {
-		return config.Default(), nil
-	}
-
 	cnf, err := config.FromFile(fileHandler, name)
 	if err != nil {
 		return nil, err
