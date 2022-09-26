@@ -339,7 +339,7 @@ func (k *KubeWrapper) setupCCM(ctx context.Context, subnetworkPodCIDR, cloudServ
 	if !k.cloudControllerManager.Supported() {
 		return nil
 	}
-	ccmConfigMaps, err := k.cloudControllerManager.ConfigMaps(instance)
+	ccmConfigMaps, err := k.cloudControllerManager.ConfigMaps()
 	if err != nil {
 		return fmt.Errorf("defining ConfigMaps for CCM: %w", err)
 	}
