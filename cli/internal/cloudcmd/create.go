@@ -10,10 +10,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"runtime"
 
 	azurecl "github.com/edgelesssys/constellation/v2/cli/internal/azure/client"
 	"github.com/edgelesssys/constellation/v2/cli/internal/gcp"
 	gcpcl "github.com/edgelesssys/constellation/v2/cli/internal/gcp/client"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -26,6 +28,7 @@ type Creator struct {
 	out            io.Writer
 	newGCPClient   func(ctx context.Context, project, zone, region, name string) (gcpclient, error)
 	newAzureClient func(subscriptionID, tenantID, name, location, resourceGroup string) (azureclient, error)
+	newQEMUClient  func(ctx context.Context) (qemuclient, error)
 }
 
 // NewCreator creates a new creator.
@@ -37,6 +40,12 @@ func NewCreator(out io.Writer) *Creator {
 		},
 		newAzureClient: func(subscriptionID, tenantID, name, location, resourceGroup string) (azureclient, error) {
 			return azurecl.NewInitialized(subscriptionID, tenantID, name, location, resourceGroup)
+		},
+		newQEMUClient: func(ctx context.Context) (qemuclient, error) {
+			if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
+				return nil, fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
+			}
+			return terraform.New(ctx, cloudprovider.QEMU)
 		},
 	}
 }
@@ -78,6 +87,13 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 			return state.ConstellationState{}, err
 		}
 		return c.createAzure(ctx, cl, config, insType, controlPlaneCount, workerCount, ingressRules)
+	case cloudprovider.QEMU:
+		cl, err := c.newQEMUClient(ctx)
+		if err != nil {
+			return state.ConstellationState{}, err
+		}
+		defer cl.RemoveInstaller()
+		return c.createQEMU(ctx, cl, name, config, controlPlaneCount, workerCount)
 	default:
 		return state.ConstellationState{}, fmt.Errorf("unsupported cloud provider: %s", provider)
 	}
@@ -189,6 +205,31 @@ func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *confi
 		ConfidentialVM:       *config.Provider.Azure.ConfidentialVM,
 	}
 	if err := cl.CreateInstances(ctx, createInput); err != nil {
+		return state.ConstellationState{}, err
+	}
+
+	return cl.GetState(), nil
+}
+
+func (c *Creator) createQEMU(ctx context.Context, cl qemuclient, name string, config *config.Config, controlPlaneCount, workerCount int,
+) (stat state.ConstellationState, retErr error) {
+	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerQEMU{client: cl})
+
+	input := terraform.CreateClusterInput{
+		CountControlPlanes: controlPlaneCount,
+		CountWorkers:       workerCount,
+		QEMU: terraform.QEMUInput{
+			ImagePath:        config.Provider.QEMU.Image,
+			ImageFormat:      config.Provider.QEMU.ImageFormat,
+			CPUCount:         config.Provider.QEMU.VCPUs,
+			MemorySizeMiB:    config.Provider.QEMU.Memory,
+			StateDiskSizeGB:  config.StateDiskSizeGB,
+			IPRangeStart:     config.Provider.QEMU.IPRangeStart,
+			MetadataAPIImage: config.Provider.QEMU.MetadataAPIImage,
+		},
+	}
+
+	if err := cl.CreateCluster(ctx, name, input); err != nil {
 		return state.ConstellationState{}, err
 	}
 

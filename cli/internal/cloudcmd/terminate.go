@@ -12,6 +12,7 @@ import (
 
 	azurecl "github.com/edgelesssys/constellation/v2/cli/internal/azure/client"
 	gcpcl "github.com/edgelesssys/constellation/v2/cli/internal/gcp/client"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/state"
 )
@@ -20,6 +21,7 @@ import (
 type Terminator struct {
 	newGCPClient   func(ctx context.Context) (gcpclient, error)
 	newAzureClient func(subscriptionID, tenantID string) (azureclient, error)
+	newQEMUClient  func(ctx context.Context) (qemuclient, error)
 }
 
 // NewTerminator create a new cloud terminator.
@@ -30,6 +32,9 @@ func NewTerminator() *Terminator {
 		},
 		newAzureClient: func(subscriptionID, tenantID string) (azureclient, error) {
 			return azurecl.NewFromDefault(subscriptionID, tenantID)
+		},
+		newQEMUClient: func(ctx context.Context) (qemuclient, error) {
+			return terraform.New(ctx, cloudprovider.QEMU)
 		},
 	}
 }
@@ -51,6 +56,13 @@ func (t *Terminator) Terminate(ctx context.Context, state state.ConstellationSta
 			return err
 		}
 		return t.terminateAzure(ctx, cl, state)
+	case cloudprovider.QEMU:
+		cl, err := t.newQEMUClient(ctx)
+		if err != nil {
+			return err
+		}
+		defer cl.RemoveInstaller()
+		return t.terminateQEMU(ctx, cl)
 	default:
 		return fmt.Errorf("unsupported provider: %s", provider)
 	}
@@ -79,4 +91,12 @@ func (t *Terminator) terminateAzure(ctx context.Context, cl azureclient, state s
 	cl.SetState(state)
 
 	return cl.TerminateResourceGroupResources(ctx)
+}
+
+func (t *Terminator) terminateQEMU(ctx context.Context, cl qemuclient) error {
+	if err := cl.DestroyCluster(ctx); err != nil {
+		return err
+	}
+
+	return cl.CleanUpWorkspace()
 }

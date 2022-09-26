@@ -177,6 +177,24 @@ type GCPConfig struct {
 
 type QEMUConfig struct {
 	// description: |
+	//   Path to the image to use for the VMs.
+	Image string `yaml:"image" validate:"required"`
+	// description: |
+	//   Format of the image to use for the VMs. Should be either qcow2 or raw.
+	ImageFormat string `yaml:"imageFormat" validate:"oneof=qcow2 raw"`
+	// description: |
+	//   vCPU count for the VMs.
+	VCPUs int `yaml:"vcpus" validate:"required"`
+	// description: |
+	//   Amount of memory per instance (MiB).
+	Memory int `yaml:"memory" validate:"required"`
+	// description: |
+	//   First IP address to use within a node group's subnet.
+	IPRangeStart int `yaml:"ipRangeStart" validate:"required"`
+	// description: |
+	//   Container image to use for the QEMU metadata server.
+	MetadataAPIImage string `yaml:"metadataAPIServer" validate:"required"`
+	// description: |
 	//   Measurement used to enable measured boot.
 	Measurements Measurements `yaml:"measurements"`
 	// description: |
@@ -218,7 +236,12 @@ func Default() *Config {
 				EnforcedMeasurements:  []uint32{0, 4, 8, 9, 11, 12},
 			},
 			QEMU: &QEMUConfig{
+				ImageFormat:          "qcow2",
+				VCPUs:                2,
+				Memory:               2048,
+				IPRangeStart:         100,
 				Measurements:         copyPCRMap(qemuPCRs),
+				MetadataAPIImage:     "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.1.0-pre.0.20220922072347-abb78344bc2a",
 				EnforcedMeasurements: []uint32{11, 12},
 			},
 		},

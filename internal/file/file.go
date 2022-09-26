@@ -157,6 +157,11 @@ func (h *Handler) Remove(name string) error {
 	return h.fs.Remove(name)
 }
 
+// RemoveAll deletes the file or directory with the given name.
+func (h *Handler) RemoveAll(name string) error {
+	return h.fs.RemoveAll(name)
+}
+
 // Stat returns a FileInfo describing the named file, or an error, if any
 // happens.
 func (h *Handler) Stat(name string) (fs.FileInfo, error) {

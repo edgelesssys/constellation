@@ -25,15 +25,19 @@ provider "docker" {
 }
 
 resource "docker_image" "qemu-metadata" {
-  name         = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v1.4.1-0.20220817163854-84e9f659542d"
+  name         = "${var.metadata_api_image}"
   keep_locally = true
 }
 
 resource "docker_container" "qemu-metadata" {
-  name         = "qemu-metadata"
+  name         = "${var.name}-qemu-metadata"
   image        = docker_image.qemu-metadata.latest
   network_mode = "host"
   rm           = true
+  command = [ 
+    "--network",
+    "${var.name}-network",
+  ]
   mounts {
     source = "/var/run/libvirt/libvirt-sock"
     target = "/var/run/libvirt/libvirt-sock"
@@ -54,6 +58,7 @@ module "control_plane" {
   pool            = libvirt_pool.cluster.name
   boot_volume_id  = libvirt_volume.constellation_coreos_image.id
   machine         = var.machine
+  name            = var.name
 }
 
 module "worker" {
@@ -69,23 +74,24 @@ module "worker" {
   pool            = libvirt_pool.cluster.name
   boot_volume_id  = libvirt_volume.constellation_coreos_image.id
   machine         = var.machine
+  name            = var.name
 }
 
 resource "libvirt_pool" "cluster" {
-  name = "constellation"
+  name = "${var.name}-storage-pool"
   type = "dir"
   path = "/var/lib/libvirt/images"
 }
 
 resource "libvirt_volume" "constellation_coreos_image" {
-  name   = "constellation-coreos-image"
+  name   = "${var.name}-node-image"
   pool   = libvirt_pool.cluster.name
   source = var.constellation_coreos_image
   format = var.image_format
 }
 
 resource "libvirt_network" "constellation" {
-  name      = "constellation"
+  name      = "${var.name}-network"
   mode      = "nat"
   addresses = ["10.42.0.0/16"]
   dhcp {

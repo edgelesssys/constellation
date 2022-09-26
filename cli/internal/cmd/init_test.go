@@ -413,6 +413,7 @@ func TestAttestation(t *testing.T) {
 
 	cfg := config.Default()
 	cfg.RemoveProviderExcept(cloudprovider.QEMU)
+	cfg.Provider.QEMU.Image = "some/image/location"
 	cfg.Provider.QEMU.Measurements[0] = []byte("00000000000000000000000000000000")
 	cfg.Provider.QEMU.Measurements[1] = []byte("11111111111111111111111111111111")
 	cfg.Provider.QEMU.Measurements[2] = []byte("22222222222222222222222222222222")
@@ -506,6 +507,7 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 		conf.Provider.GCP.Measurements[8] = []byte("00000000000000000000000000000000")
 		conf.Provider.GCP.Measurements[9] = []byte("11111111111111111111111111111111")
 	case cloudprovider.QEMU:
+		conf.Provider.QEMU.Image = "some/image/location"
 		conf.Provider.QEMU.Measurements[8] = []byte("00000000000000000000000000000000")
 		conf.Provider.QEMU.Measurements[9] = []byte("11111111111111111111111111111111")
 	}

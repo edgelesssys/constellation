@@ -155,7 +155,7 @@ func TestFromFileStrictErrors(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	const defaultMsgCount = 14 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
+	const defaultMsgCount = 15 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
 
 	testCases := map[string]struct {
 		cnf          *Config

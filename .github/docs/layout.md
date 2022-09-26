@@ -17,8 +17,6 @@ Development components:
 * [debugd](/debugd): Debug daemon and client
 * [hack](/hack): Development tools
 * [proto](/proto): Proto files generator
-* [terraform](/terraform): Infrastructure management using terraform (instead of `constellation create/destroy`)
-  * [libvirt](/terraform/libvirt): Deploy local cluster using terraform, libvirt and QEMU
 
 Additional repositories:
 
