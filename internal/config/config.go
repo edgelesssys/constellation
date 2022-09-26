@@ -241,7 +241,7 @@ func Default() *Config {
 				Memory:               2048,
 				IPRangeStart:         100,
 				Measurements:         copyPCRMap(qemuPCRs),
-				MetadataAPIImage:     "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v1.4.1-0.20220817163854-84e9f659542d",
+				MetadataAPIImage:     "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.1.0-pre.0.20220922072347-abb78344bc2a",
 				EnforcedMeasurements: []uint32{11, 12},
 			},
 		},
