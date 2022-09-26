@@ -4,22 +4,12 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 4.0"
     }
-    random = {
-      source  = "hashicorp/random"
-      version = "3.4.1"
-    }
   }
 }
 
 # Configure the AWS Provider
 provider "aws" {
-  region = "us-east-2"
-}
-
-locals {
-  uid  = random_id.uid.hex
-  name = "${var.name}-${local.uid}"
-  tag  = "constellation-${local.uid}"
+  region = var.region
 }
 
 resource "random_id" "uid" {
@@ -53,7 +43,7 @@ EOF
 }
 
 resource "aws_iam_policy" "control_plane_policy" {
-  name   = "control_plane_policy"
+  name   = "${var.name}_control_plane_policy"
   policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -158,7 +148,7 @@ EOF
 }
 
 resource "aws_iam_policy" "worker_node_policy" {
-  name   = "worker_node_policy"
+  name   = "${var.name}_worker_node_policy"
   policy = <<EOF
 {
   "Version": "2012-10-17",

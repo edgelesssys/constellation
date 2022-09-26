@@ -17,6 +17,9 @@ resource "aws_launch_configuration" "control_plane_launch_config" {
   image_id             = var.image_id
   instance_type        = var.instance_type
   iam_instance_profile = var.iam_instance_profile
+  metadata_options {
+    http_tokens = "required"
+  }
 
 
   lifecycle {

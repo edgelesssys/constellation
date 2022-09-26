@@ -13,7 +13,7 @@ terraform {
 
 # Configure the AWS Provider
 provider "aws" {
-  region = "us-east-2"
+  region = var.region
 }
 
 locals {
@@ -23,18 +23,13 @@ locals {
   ports_node_range = "30000-32767"
   ports_ssh        = "22"
 
-  ports_kubernets    = "6443"
+  ports_kubernetes   = "6443"
   ports_bootstrapper = "9000"
   ports_konnectivity = "8132"
   ports_verify       = "30081"
   ports_debugd       = "4000"
 
   cidr_vpc_subnet_nodes = "192.168.178.0/24"
-  count_control_plane   = 1
-  count_worker          = 1
-  image_id              = "ami-02f3416038bdb17fb" // Ubuntu 22.04 LTS
-  instance_type         = "t2.micro"
-  disk_size             = 30
 }
 
 resource "random_id" "uid" {
@@ -65,14 +60,16 @@ resource "aws_internet_gateway" "gw" {
 }
 
 resource "aws_security_group" "security_group" {
-  name   = local.name
-  vpc_id = aws_vpc.vpc.id
+  name        = local.name
+  vpc_id      = aws_vpc.vpc.id
+  description = "Security group for ${local.name}"
 
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow all outbound traffic"
   }
 
   ingress {
@@ -80,6 +77,7 @@ resource "aws_security_group" "security_group" {
     to_port     = split("-", local.ports_node_range)[1]
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "K8s node ports"
   }
 
   ingress {
@@ -87,13 +85,15 @@ resource "aws_security_group" "security_group" {
     to_port     = local.ports_bootstrapper
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "bootstrapper"
   }
 
   ingress {
-    from_port   = local.ports_kubernets
-    to_port     = local.ports_kubernets
+    from_port   = local.ports_kubernetes
+    to_port     = local.ports_kubernetes
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "kubernetes"
   }
 
   ingress {
@@ -101,6 +101,7 @@ resource "aws_security_group" "security_group" {
     to_port     = local.ports_konnectivity
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "konnectivity"
   }
 
   ingress {
@@ -108,13 +109,14 @@ resource "aws_security_group" "security_group" {
     to_port     = local.ports_debugd
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "debugd"
   }
 
 }
 
 module "load_balancer_bootstrapper" {
   source = "./modules/load_balancer"
-  name   = "bootstrapper"
+  name   = "${local.name}-lb-bootstrapper"
   vpc    = aws_vpc.vpc.id
   subnet = aws_subnet.main.id
   port   = local.ports_bootstrapper
@@ -122,7 +124,7 @@ module "load_balancer_bootstrapper" {
 
 module "load_balancer_kubernetes" {
   source = "./modules/load_balancer"
-  name   = "kubernetes"
+  name   = "${local.name}-lb-kubernetes"
   vpc    = aws_vpc.vpc.id
   subnet = aws_subnet.main.id
   port   = local.ports_kubernets
@@ -130,7 +132,7 @@ module "load_balancer_kubernetes" {
 
 module "load_balancer_verify" {
   source = "./modules/load_balancer"
-  name   = "verify"
+  name   = "${local.name}-lb-verify"
   vpc    = aws_vpc.vpc.id
   subnet = aws_subnet.main.id
   port   = local.ports_verify
@@ -138,7 +140,7 @@ module "load_balancer_verify" {
 
 module "load_balancer_debugd" {
   source = "./modules/load_balancer"
-  name   = "debugd"
+  name   = "${local.name}-lb-debugd"
   vpc    = aws_vpc.vpc.id
   subnet = aws_subnet.main.id
   port   = local.ports_debugd
@@ -146,7 +148,7 @@ module "load_balancer_debugd" {
 
 module "load_balancer_konnectivity" {
   source = "./modules/load_balancer"
-  name   = "konnectivity"
+  name   = "${local.name}-lb-konnectivity"
   vpc    = aws_vpc.vpc.id
   subnet = aws_subnet.main.id
   port   = local.ports_konnectivity
@@ -158,10 +160,10 @@ module "instance_group_control_plane" {
   role   = "control-plane"
 
   uid            = local.uid
-  instance_type  = local.instance_type
-  instance_count = local.count_control_plane
+  instance_type  = var.instance_type
+  instance_count = var.count_control_plane
   image_id       = local.image_id
-  disk_size      = local.disk_size
+  disk_size      = var.disk_size
   target_group_arns = [
     module.load_balancer_bootstrapper.target_group_arn,
     module.load_balancer_kubernetes.target_group_arn,
@@ -177,10 +179,10 @@ module "instance_group_worker_nodes" {
   name                 = local.name
   role                 = "worker"
   uid                  = local.uid
-  instance_type        = local.instance_type
-  instance_count       = local.count_worker
+  instance_type        = var.instance_type
+  instance_count       = var.count_worker
   image_id             = local.image_id
-  disk_size            = local.disk_size
+  disk_size            = var.disk_size
   subnetwork           = aws_subnet.main.id
   target_group_arns    = []
   iam_instance_profile = var.worker_nodes_iam_instance_profile
