@@ -47,7 +47,7 @@ type CloudControllerManager interface {
 	ExtraArgs() []string
 	// ConfigMaps returns a list of ConfigMaps to deploy together with the k8s cloud-controller-manager
 	// Reference: https://kubernetes.io/docs/concepts/configuration/configmap/ .
-	ConfigMaps(instance metadata.InstanceMetadata) (kubernetes.ConfigMaps, error)
+	ConfigMaps() (kubernetes.ConfigMaps, error)
 	// Secrets returns a list of secrets to deploy together with the k8s cloud-controller-manager.
 	// Reference: https://kubernetes.io/docs/concepts/configuration/secret/ .
 	Secrets(ctx context.Context, providerID, cloudServiceAccountURI string) (kubernetes.Secrets, error)
@@ -165,7 +165,7 @@ func (m *stubCloudControllerManager) ExtraArgs() []string {
 	return []string{}
 }
 
-func (m *stubCloudControllerManager) ConfigMaps(instance metadata.InstanceMetadata) (kubernetes.ConfigMaps, error) {
+func (m *stubCloudControllerManager) ConfigMaps() (kubernetes.ConfigMaps, error) {
 	return []*k8s.ConfigMap{}, nil
 }
 

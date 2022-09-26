@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 
 	"github.com/edgelesssys/constellation/v2/internal/azureshared"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	k8s "k8s.io/api/core/v1"
@@ -61,7 +60,7 @@ func (c *CloudControllerManager) ExtraArgs() []string {
 
 // ConfigMaps returns a list of ConfigMaps to deploy together with the k8s cloud-controller-manager
 // Reference: https://kubernetes.io/docs/concepts/configuration/configmap/ .
-func (c *CloudControllerManager) ConfigMaps(instance metadata.InstanceMetadata) (kubernetes.ConfigMaps, error) {
+func (c *CloudControllerManager) ConfigMaps() (kubernetes.ConfigMaps, error) {
 	return kubernetes.ConfigMaps{}, nil
 }
 
