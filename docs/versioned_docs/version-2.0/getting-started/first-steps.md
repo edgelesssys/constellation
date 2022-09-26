@@ -222,7 +222,7 @@ The following steps guide you through the process of creating a cluster and depl
 
     :::info
 
-    Depending on your CSP and region, `constellation init` may take 10+ min. to complete.
+    Depending on your CSP and region, `constellation init` may take 10+ minutes to complete.
 
     :::
 
