@@ -48,7 +48,6 @@ resource "google_compute_instance_template" "template" {
   network_interface {
     network    = var.network
     subnetwork = var.subnetwork
-    access_config {}
     alias_ip_range {
       ip_cidr_range         = "/24"
       subnetwork_range_name = var.name
