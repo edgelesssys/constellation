@@ -18,25 +18,6 @@ import (
 )
 
 func TestTerminator(t *testing.T) {
-	someGCPState := func() state.ConstellationState {
-		return state.ConstellationState{
-			CloudProvider: cloudprovider.GCP.String(),
-			GCPProject:    "project",
-			GCPWorkerInstances: cloudtypes.Instances{
-				"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-				"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-			},
-			GCPControlPlaneInstances: cloudtypes.Instances{
-				"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-			},
-			GCPWorkerInstanceGroup:          "worker-group",
-			GCPControlPlaneInstanceGroup:    "controlplane-group",
-			GCPWorkerInstanceTemplate:       "template",
-			GCPControlPlaneInstanceTemplate: "template",
-			GCPNetwork:                      "network",
-			GCPFirewalls:                    []string{"a", "b", "c"},
-		}
-	}
 	someAzureState := func() state.ConstellationState {
 		return state.ConstellationState{
 			CloudProvider: cloudprovider.Azure.String(),
@@ -53,36 +34,45 @@ func TestTerminator(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		gcpclient         gcpclient
-		newGCPClientErr   error
+		tfClient          terraformClient
+		newTfClientErr    error
 		azureclient       azureclient
 		newAzureClientErr error
 		state             state.ConstellationState
 		wantErr           bool
 	}{
 		"gcp": {
-			gcpclient: &stubGcpClient{},
-			state:     someGCPState(),
+			tfClient: &stubTerraformClient{},
+			state:    state.ConstellationState{CloudProvider: cloudprovider.GCP.String()},
 		},
-		"gcp newGCPClient error": {
-			newGCPClientErr: someErr,
-			state:           someGCPState(),
-			wantErr:         true,
+		"gcp newTfClientErr": {
+			newTfClientErr: someErr,
+			state:          state.ConstellationState{CloudProvider: cloudprovider.GCP.String()},
+			wantErr:        true,
 		},
-		"gcp terminateInstances error": {
-			gcpclient: &stubGcpClient{terminateInstancesErr: someErr},
-			state:     someGCPState(),
-			wantErr:   true,
+		"gcp destroy cluster error": {
+			tfClient: &stubTerraformClient{destroyClusterErr: someErr},
+			state:    state.ConstellationState{CloudProvider: cloudprovider.GCP.String()},
+			wantErr:  true,
 		},
-		"gcp terminateFirewall error": {
-			gcpclient: &stubGcpClient{terminateFirewallErr: someErr},
-			state:     someGCPState(),
-			wantErr:   true,
+		"gcp clean up workspace error": {
+			tfClient: &stubTerraformClient{cleanUpWorkspaceErr: someErr},
+			state:    state.ConstellationState{CloudProvider: cloudprovider.GCP.String()},
+			wantErr:  true,
 		},
-		"gcp terminateVPCs error": {
-			gcpclient: &stubGcpClient{terminateVPCsErr: someErr},
-			state:     someGCPState(),
-			wantErr:   true,
+		"qemu": {
+			tfClient: &stubTerraformClient{},
+			state:    state.ConstellationState{CloudProvider: cloudprovider.QEMU.String()},
+		},
+		"qemu destroy cluster error": {
+			tfClient: &stubTerraformClient{destroyClusterErr: someErr},
+			state:    state.ConstellationState{CloudProvider: cloudprovider.QEMU.String()},
+			wantErr:  true,
+		},
+		"qemu clean up workspace error": {
+			tfClient: &stubTerraformClient{cleanUpWorkspaceErr: someErr},
+			state:    state.ConstellationState{CloudProvider: cloudprovider.QEMU.String()},
+			wantErr:  true,
 		},
 		"azure": {
 			azureclient: &stubAzureClient{},
@@ -109,8 +99,8 @@ func TestTerminator(t *testing.T) {
 			assert := assert.New(t)
 
 			terminator := &Terminator{
-				newGCPClient: func(ctx context.Context) (gcpclient, error) {
-					return tc.gcpclient, tc.newGCPClientErr
+				newTerraformClient: func(ctx context.Context) (terraformClient, error) {
+					return tc.tfClient, tc.newTfClientErr
 				},
 				newAzureClient: func(subscriptionID, tenantID string) (azureclient, error) {
 					return tc.azureclient, tc.newAzureClientErr
@@ -125,11 +115,11 @@ func TestTerminator(t *testing.T) {
 				assert.NoError(err)
 				switch cloudprovider.FromString(tc.state.CloudProvider) {
 				case cloudprovider.GCP:
-					cl := tc.gcpclient.(*stubGcpClient)
-					assert.True(cl.terminateFirewallCalled)
-					assert.True(cl.terminateInstancesCalled)
-					assert.True(cl.terminateVPCsCalled)
-					assert.True(cl.closeCalled)
+					fallthrough
+				case cloudprovider.QEMU:
+					cl := tc.tfClient.(*stubTerraformClient)
+					assert.True(cl.destroyClusterCalled)
+					assert.True(cl.removeInstallerCalled)
 				case cloudprovider.Azure:
 					cl := tc.azureclient.(*stubAzureClient)
 					assert.True(cl.terminateResourceGroupResourcesCalled)

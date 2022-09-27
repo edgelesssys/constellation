@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 <!-- For changes in existing functionality.  -->
 - Autoscaling is now directly managed inside Kubernetes, by the Constellation node operator.
+- The `constellation create` on GCP now uses Terraform to create and destroy cloud resources.
+- GCP instances are now created without public IPs by default.
 
 ### Deprecated
 <!-- For soon-to-be removed features. -->

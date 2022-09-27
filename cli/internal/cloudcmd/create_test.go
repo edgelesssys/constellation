@@ -21,29 +21,8 @@ import (
 
 func TestCreator(t *testing.T) {
 	wantGCPState := state.ConstellationState{
-		CloudProvider: cloudprovider.GCP.String(),
-		GCPProject:    "project",
-		GCPControlPlaneInstances: cloudtypes.Instances{
-			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-		},
-		GCPWorkerInstances: cloudtypes.Instances{
-			"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-			"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-			"id-2": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-		},
-		GCPWorkerInstanceGroup:          "workers-group",
-		GCPControlPlaneInstanceGroup:    "controlplane-group",
-		GCPWorkerInstanceTemplate:       "worker-template",
-		GCPControlPlaneInstanceTemplate: "controlplane-template",
-		GCPNetwork:                      "network",
-		GCPSubnetwork:                   "subnetwork",
-		GCPLoadbalancers:                []string{"kube-lb", "boot-lb", "verify-lb"},
-		GCPFirewalls: []string{
-			"bootstrapper", "ssh", "nodeport", "kubernetes", "konnectivity", "recovery",
-			"allow-cluster-internal-tcp", "allow-cluster-internal-udp", "allow-cluster-internal-icmp",
-			"allow-node-internal-tcp", "allow-node-internal-udp", "allow-node-internal-icmp",
-		},
+		CloudProvider:  cloudprovider.GCP.String(),
+		LoadBalancerIP: "192.0.2.1",
 	}
 
 	wantAzureState := state.ConstellationState{
@@ -66,8 +45,8 @@ func TestCreator(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		gcpclient         gcpclient
-		newGCPClientErr   error
+		tfClient          terraformClient
+		newTfClientErr    error
 		azureclient       azureclient
 		newAzureClientErr error
 		provider          cloudprovider.Provider
@@ -77,40 +56,19 @@ func TestCreator(t *testing.T) {
 		wantRollback      bool // Use only together with stubClients.
 	}{
 		"gcp": {
-			gcpclient: &fakeGcpClient{project: "project"},
+			tfClient:  &stubTerraformClient{state: wantGCPState},
 			provider:  cloudprovider.GCP,
 			config:    config.Default(),
 			wantState: wantGCPState,
 		},
 		"gcp newGCPClient error": {
-			newGCPClientErr: someErr,
-			provider:        cloudprovider.GCP,
-			config:          config.Default(),
-			wantErr:         true,
+			newTfClientErr: someErr,
+			provider:       cloudprovider.GCP,
+			config:         config.Default(),
+			wantErr:        true,
 		},
-		"gcp CreateVPCs error": {
-			gcpclient:    &stubGcpClient{createVPCsErr: someErr},
-			provider:     cloudprovider.GCP,
-			config:       config.Default(),
-			wantErr:      true,
-			wantRollback: true,
-		},
-		"gcp CreateFirewall error": {
-			gcpclient:    &stubGcpClient{createFirewallErr: someErr},
-			provider:     cloudprovider.GCP,
-			config:       config.Default(),
-			wantErr:      true,
-			wantRollback: true,
-		},
-		"gcp CreateInstances error": {
-			gcpclient:    &stubGcpClient{createInstancesErr: someErr},
-			provider:     cloudprovider.GCP,
-			config:       config.Default(),
-			wantErr:      true,
-			wantRollback: true,
-		},
-		"gcp CreateLoadBalancer error": {
-			gcpclient:    &stubGcpClient{createLoadBalancerErr: someErr},
+		"gcp create cluster error": {
+			tfClient:     &stubTerraformClient{createClusterErr: someErr},
 			provider:     cloudprovider.GCP,
 			config:       config.Default(),
 			wantErr:      true,
@@ -162,8 +120,8 @@ func TestCreator(t *testing.T) {
 
 			creator := &Creator{
 				out: &bytes.Buffer{},
-				newGCPClient: func(ctx context.Context, project, zone, region, name string) (gcpclient, error) {
-					return tc.gcpclient, tc.newGCPClientErr
+				newTerraformClient: func(ctx context.Context, provider cloudprovider.Provider) (terraformClient, error) {
+					return tc.tfClient, tc.newTfClientErr
 				},
 				newAzureClient: func(subscriptionID, tenantID, name, location, resourceGroup string) (azureclient, error) {
 					return tc.azureclient, tc.newAzureClientErr
@@ -176,12 +134,12 @@ func TestCreator(t *testing.T) {
 				assert.Error(err)
 				if tc.wantRollback {
 					switch tc.provider {
+					case cloudprovider.QEMU:
+						fallthrough
 					case cloudprovider.GCP:
-						cl := tc.gcpclient.(*stubGcpClient)
-						assert.True(cl.terminateFirewallCalled)
-						assert.True(cl.terminateInstancesCalled)
-						assert.True(cl.terminateVPCsCalled)
-						assert.True(cl.closeCalled)
+						cl := tc.tfClient.(*stubTerraformClient)
+						assert.True(cl.destroyClusterCalled)
+						assert.True(cl.cleanUpWorkspaceCalled)
 					case cloudprovider.Azure:
 						cl := tc.azureclient.(*stubAzureClient)
 						assert.True(cl.terminateResourceGroupResourcesCalled)

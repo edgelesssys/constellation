@@ -10,23 +10,16 @@ import (
 	"context"
 
 	azurecl "github.com/edgelesssys/constellation/v2/cli/internal/azure/client"
-	gcpcl "github.com/edgelesssys/constellation/v2/cli/internal/gcp/client"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/state"
 )
 
-type gcpclient interface {
+type terraformClient interface {
 	GetState() state.ConstellationState
-	SetState(state.ConstellationState)
-	CreateVPCs(ctx context.Context) error
-	CreateFirewall(ctx context.Context, input gcpcl.FirewallInput) error
-	CreateInstances(ctx context.Context, input gcpcl.CreateInstancesInput) error
-	CreateLoadBalancers(ctx context.Context, isDebugCluster bool) error
-	TerminateFirewall(ctx context.Context) error
-	TerminateVPCs(context.Context) error
-	TerminateLoadBalancers(context.Context) error
-	TerminateInstances(context.Context) error
-	Close() error
+	CreateCluster(ctx context.Context, name string, input terraform.Variables) error
+	DestroyCluster(ctx context.Context) error
+	CleanUpWorkspace() error
+	RemoveInstaller()
 }
 
 type azureclient interface {
@@ -38,12 +31,4 @@ type azureclient interface {
 	CreateSecurityGroup(ctx context.Context, input azurecl.NetworkSecurityGroupInput) error
 	CreateInstances(ctx context.Context, input azurecl.CreateInstancesInput) error
 	TerminateResourceGroupResources(ctx context.Context) error
-}
-
-type qemuclient interface {
-	GetState() state.ConstellationState
-	CreateCluster(ctx context.Context, name string, input terraform.CreateClusterInput) error
-	DestroyCluster(ctx context.Context) error
-	CleanUpWorkspace() error
-	RemoveInstaller()
 }
