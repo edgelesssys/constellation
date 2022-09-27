@@ -288,7 +288,7 @@ func init() {
 			FieldName: "qemu",
 		},
 	}
-	QEMUConfigDoc.Fields = make([]encoder.Doc, 8)
+	QEMUConfigDoc.Fields = make([]encoder.Doc, 7)
 	QEMUConfigDoc.Fields[0].Name = "image"
 	QEMUConfigDoc.Fields[0].Type = "string"
 	QEMUConfigDoc.Fields[0].Note = ""
@@ -309,26 +309,21 @@ func init() {
 	QEMUConfigDoc.Fields[3].Note = ""
 	QEMUConfigDoc.Fields[3].Description = "Amount of memory per instance (MiB)."
 	QEMUConfigDoc.Fields[3].Comments[encoder.LineComment] = "Amount of memory per instance (MiB)."
-	QEMUConfigDoc.Fields[4].Name = "ipRangeStart"
-	QEMUConfigDoc.Fields[4].Type = "int"
+	QEMUConfigDoc.Fields[4].Name = "metadataAPIServer"
+	QEMUConfigDoc.Fields[4].Type = "string"
 	QEMUConfigDoc.Fields[4].Note = ""
-	QEMUConfigDoc.Fields[4].Description = "First IP address to use within a node group's subnet."
-	QEMUConfigDoc.Fields[4].Comments[encoder.LineComment] = "First IP address to use within a node group's subnet."
-	QEMUConfigDoc.Fields[5].Name = "metadataAPIServer"
-	QEMUConfigDoc.Fields[5].Type = "string"
+	QEMUConfigDoc.Fields[4].Description = "Container image to use for the QEMU metadata server."
+	QEMUConfigDoc.Fields[4].Comments[encoder.LineComment] = "Container image to use for the QEMU metadata server."
+	QEMUConfigDoc.Fields[5].Name = "measurements"
+	QEMUConfigDoc.Fields[5].Type = "Measurements"
 	QEMUConfigDoc.Fields[5].Note = ""
-	QEMUConfigDoc.Fields[5].Description = "Container image to use for the QEMU metadata server."
-	QEMUConfigDoc.Fields[5].Comments[encoder.LineComment] = "Container image to use for the QEMU metadata server."
-	QEMUConfigDoc.Fields[6].Name = "measurements"
-	QEMUConfigDoc.Fields[6].Type = "Measurements"
+	QEMUConfigDoc.Fields[5].Description = "Measurement used to enable measured boot."
+	QEMUConfigDoc.Fields[5].Comments[encoder.LineComment] = "Measurement used to enable measured boot."
+	QEMUConfigDoc.Fields[6].Name = "enforcedMeasurements"
+	QEMUConfigDoc.Fields[6].Type = "[]uint32"
 	QEMUConfigDoc.Fields[6].Note = ""
-	QEMUConfigDoc.Fields[6].Description = "Measurement used to enable measured boot."
-	QEMUConfigDoc.Fields[6].Comments[encoder.LineComment] = "Measurement used to enable measured boot."
-	QEMUConfigDoc.Fields[7].Name = "enforcedMeasurements"
-	QEMUConfigDoc.Fields[7].Type = "[]uint32"
-	QEMUConfigDoc.Fields[7].Note = ""
-	QEMUConfigDoc.Fields[7].Description = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
-	QEMUConfigDoc.Fields[7].Comments[encoder.LineComment] = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
+	QEMUConfigDoc.Fields[6].Description = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
+	QEMUConfigDoc.Fields[6].Comments[encoder.LineComment] = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
 }
 
 func (_ Config) Doc() *encoder.Doc {
