@@ -88,8 +88,6 @@ type QEMUVariables struct {
 	// MemorySizeMiB is the amount of memory to allocate to each node, in MiB.
 	MemorySizeMiB int
 	// IPRangeStart is the first IP address in the IP range to allocate to the cluster.
-	IPRangeStart int
-	// ImagePath is the path to the image to use for the nodes.
 	ImagePath string
 	// ImageFormat is the format of the image from ImagePath.
 	ImageFormat string
@@ -105,7 +103,6 @@ func (v *QEMUVariables) String() string {
 	writeLinef(b, "image_format = %q", v.ImageFormat)
 	writeLinef(b, "vcpus = %d", v.CPUCount)
 	writeLinef(b, "memory = %d", v.MemorySizeMiB)
-	writeLinef(b, "ip_range_start = %d", v.IPRangeStart)
 	writeLinef(b, "metadata_api_image = %q", v.MetadataAPIImage)
 
 	return b.String()

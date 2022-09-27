@@ -45,7 +45,6 @@ func TestCreateCluster(t *testing.T) {
 		},
 		CPUCount:         1,
 		MemorySizeMiB:    1024,
-		IPRangeStart:     100,
 		ImagePath:        "path",
 		ImageFormat:      "format",
 		MetadataAPIImage: "api",

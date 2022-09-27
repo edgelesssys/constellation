@@ -169,7 +169,6 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, name strin
 		ImageFormat:      config.Provider.QEMU.ImageFormat,
 		CPUCount:         config.Provider.QEMU.VCPUs,
 		MemorySizeMiB:    config.Provider.QEMU.Memory,
-		IPRangeStart:     config.Provider.QEMU.IPRangeStart,
 		MetadataAPIImage: config.Provider.QEMU.MetadataAPIImage,
 	}
 
