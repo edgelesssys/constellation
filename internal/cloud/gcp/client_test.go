@@ -33,56 +33,54 @@ func TestMain(m *testing.M) {
 func TestRetrieveInstances(t *testing.T) {
 	uid := "1234"
 	someErr := errors.New("failed")
-	newTestIter := func() *stubInstanceIterator {
-		return &stubInstanceIterator{
-			instances: []*computepb.Instance{
+	newTestInstance := func() *computepb.Instance {
+		return &computepb.Instance{
+			Name: proto.String("someInstance"),
+			Zone: proto.String("/project/someProject/zones/someZone"),
+			Metadata: &computepb.Metadata{
+				Items: []*computepb.Items{
+					{
+						Key:   proto.String("ssh-keys"),
+						Value: proto.String("bob:ssh-rsa bobskey"),
+					},
+					{
+						Key:   proto.String("key-2"),
+						Value: proto.String("value-2"),
+					},
+					{
+						Key:   proto.String(constellationUIDMetadataKey),
+						Value: proto.String(uid),
+					},
+					{
+						Key:   proto.String(roleMetadataKey),
+						Value: proto.String(role.ControlPlane.String()),
+					},
+				},
+			},
+			NetworkInterfaces: []*computepb.NetworkInterface{
 				{
-					Name: proto.String("someInstance"),
-					Metadata: &computepb.Metadata{
-						Items: []*computepb.Items{
-							{
-								Key:   proto.String("ssh-keys"),
-								Value: proto.String("bob:ssh-rsa bobskey"),
-							},
-							{
-								Key:   proto.String("key-2"),
-								Value: proto.String("value-2"),
-							},
-							{
-								Key:   proto.String(constellationUIDMetadataKey),
-								Value: proto.String(uid),
-							},
-							{
-								Key:   proto.String(roleMetadataKey),
-								Value: proto.String(role.ControlPlane.String()),
-							},
-						},
-					},
-					NetworkInterfaces: []*computepb.NetworkInterface{
-						{
-							Name:          proto.String("nic0"),
-							NetworkIP:     proto.String("192.0.2.0"),
-							AliasIpRanges: []*computepb.AliasIpRange{{IpCidrRange: proto.String("192.0.2.0/16")}},
-							AccessConfigs: []*computepb.AccessConfig{{NatIP: proto.String("192.0.2.1")}},
-						},
-					},
+					Name:          proto.String("nic0"),
+					NetworkIP:     proto.String("192.0.2.0"),
+					AliasIpRanges: []*computepb.AliasIpRange{{IpCidrRange: proto.String("192.0.2.0/16")}},
+					AccessConfigs: []*computepb.AccessConfig{{NatIP: proto.String("192.0.2.1")}},
 				},
 			},
 		}
 	}
 
 	testCases := map[string]struct {
-		client              stubInstancesClient
-		metadata            stubMetadataClient
-		instanceIter        *stubInstanceIterator
-		instanceIterMutator func(*stubInstanceIterator)
-		wantInstances       []metadata.InstanceMetadata
-		wantErr             bool
+		client               stubInstancesClient
+		metadata             stubMetadataClient
+		instanceIterInstance *computepb.Instance
+		iterInstanceMutator  func(*computepb.Instance)
+		instanceIterErr      error
+		wantInstances        []metadata.InstanceMetadata
+		wantErr              bool
 	}{
 		"retrieve works": {
-			client:       stubInstancesClient{},
-			metadata:     stubMetadataClient{InstanceValue: uid},
-			instanceIter: newTestIter(),
+			client:               stubInstancesClient{},
+			metadata:             stubMetadataClient{InstanceValue: uid},
+			instanceIterInstance: newTestInstance(),
 			wantInstances: []metadata.InstanceMetadata{
 				{
 					Name:          "someInstance",
@@ -96,17 +94,16 @@ func TestRetrieveInstances(t *testing.T) {
 			},
 		},
 		"instance name is null": {
-			client:              stubInstancesClient{},
-			metadata:            stubMetadataClient{InstanceValue: uid},
-			instanceIter:        newTestIter(),
-			instanceIterMutator: func(sii *stubInstanceIterator) { sii.instances[0].Name = nil },
-			wantErr:             true,
+			client:               stubInstancesClient{},
+			metadata:             stubMetadataClient{InstanceValue: uid},
+			instanceIterInstance: &computepb.Instance{Name: nil},
+			wantErr:              true,
 		},
 		"no instance with network ip": {
-			client:              stubInstancesClient{},
-			metadata:            stubMetadataClient{InstanceValue: uid},
-			instanceIter:        newTestIter(),
-			instanceIterMutator: func(sii *stubInstanceIterator) { sii.instances[0].NetworkInterfaces = nil },
+			client:               stubInstancesClient{},
+			metadata:             stubMetadataClient{InstanceValue: uid},
+			instanceIterInstance: newTestInstance(),
+			iterInstanceMutator:  func(i *computepb.Instance) { i.NetworkInterfaces = nil },
 			wantInstances: []metadata.InstanceMetadata{
 				{
 					Name:          "someInstance",
@@ -120,10 +117,10 @@ func TestRetrieveInstances(t *testing.T) {
 			},
 		},
 		"network ip is nil": {
-			client:              stubInstancesClient{},
-			metadata:            stubMetadataClient{InstanceValue: uid},
-			instanceIter:        newTestIter(),
-			instanceIterMutator: func(sii *stubInstanceIterator) { sii.instances[0].NetworkInterfaces[0].NetworkIP = nil },
+			client:               stubInstancesClient{},
+			metadata:             stubMetadataClient{InstanceValue: uid},
+			instanceIterInstance: newTestInstance(),
+			iterInstanceMutator:  func(i *computepb.Instance) { i.NetworkInterfaces[0].NetworkIP = nil },
 			wantInstances: []metadata.InstanceMetadata{
 				{
 					Name:          "someInstance",
@@ -136,24 +133,17 @@ func TestRetrieveInstances(t *testing.T) {
 				},
 			},
 		},
-		"constellation id is not set": {
-			client:              stubInstancesClient{},
-			metadata:            stubMetadataClient{InstanceValue: uid},
-			instanceIter:        newTestIter(),
-			instanceIterMutator: func(sii *stubInstanceIterator) { sii.instances[0].Metadata.Items[2].Key = proto.String("") },
-			wantInstances:       []metadata.InstanceMetadata{},
-		},
 		"constellation retrieval fails": {
-			client:       stubInstancesClient{},
-			metadata:     stubMetadataClient{InstanceErr: someErr},
-			instanceIter: newTestIter(),
-			wantErr:      true,
+			client:               stubInstancesClient{},
+			metadata:             stubMetadataClient{InstanceErr: someErr},
+			instanceIterInstance: newTestInstance(),
+			wantErr:              true,
 		},
 		"role is not set": {
-			client:              stubInstancesClient{},
-			metadata:            stubMetadataClient{InstanceValue: uid},
-			instanceIter:        newTestIter(),
-			instanceIterMutator: func(sii *stubInstanceIterator) { sii.instances[0].Metadata.Items[3].Key = proto.String("") },
+			client:               stubInstancesClient{},
+			metadata:             stubMetadataClient{InstanceValue: uid},
+			instanceIterInstance: newTestInstance(),
+			iterInstanceMutator:  func(i *computepb.Instance) { i.Metadata.Items[3].Key = proto.String("") },
 			wantInstances: []metadata.InstanceMetadata{
 				{
 					Name:          "someInstance",
@@ -167,10 +157,10 @@ func TestRetrieveInstances(t *testing.T) {
 			},
 		},
 		"instance iterator Next() errors": {
-			client:       stubInstancesClient{},
-			metadata:     stubMetadataClient{InstanceValue: uid},
-			instanceIter: &stubInstanceIterator{nextErr: someErr},
-			wantErr:      true,
+			client:          stubInstancesClient{},
+			metadata:        stubMetadataClient{InstanceValue: uid},
+			instanceIterErr: someErr,
+			wantErr:         true,
 		},
 	}
 
@@ -179,16 +169,18 @@ func TestRetrieveInstances(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			if tc.instanceIterMutator != nil {
-				tc.instanceIterMutator(tc.instanceIter)
+			if tc.iterInstanceMutator != nil {
+				tc.iterInstanceMutator(tc.instanceIterInstance)
 			}
-			tc.client.ListInstanceIterator = tc.instanceIter
+			tc.client.ListInstanceIterator = newStubInstancesScopedListPairIterator(
+				[]*computepb.Instance{tc.instanceIterInstance}, tc.instanceIterErr,
+			)
 			client := Client{
 				instanceAPI: tc.client,
 				metadataAPI: tc.metadata,
 			}
 
-			instances, err := client.RetrieveInstances(context.Background(), "someProject", "someZone")
+			instances, err := client.RetrieveInstances(context.Background(), "someProject")
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -204,6 +196,7 @@ func TestRetrieveInstance(t *testing.T) {
 	newTestInstance := func() *computepb.Instance {
 		return &computepb.Instance{
 			Name: proto.String("someInstance"),
+			Zone: proto.String("/project/someProject/zones/someZone"),
 			Metadata: &computepb.Metadata{
 				Items: []*computepb.Items{
 					{
@@ -948,22 +941,34 @@ func TestFetchSSHKeys(t *testing.T) {
 	}
 }
 
-type stubInstanceIterator struct {
-	instances []*computepb.Instance
-	nextErr   error
+type stubInstancesScopedListPairIterator struct {
+	pairs   []compute.InstancesScopedListPair
+	nextErr error
 
 	internalCounter int
 }
 
-func (i *stubInstanceIterator) Next() (*computepb.Instance, error) {
+func newStubInstancesScopedListPairIterator(instances []*computepb.Instance, nextErr error) *stubInstancesScopedListPairIterator {
+	return &stubInstancesScopedListPairIterator{
+		pairs: []compute.InstancesScopedListPair{
+			{
+				Key:   "zone",
+				Value: &computepb.InstancesScopedList{Instances: instances},
+			},
+		},
+		nextErr: nextErr,
+	}
+}
+
+func (i *stubInstancesScopedListPairIterator) Next() (compute.InstancesScopedListPair, error) {
 	if i.nextErr != nil {
-		return nil, i.nextErr
+		return compute.InstancesScopedListPair{}, i.nextErr
 	}
-	if i.internalCounter >= len(i.instances) {
+	if i.internalCounter >= len(i.pairs) {
 		i.internalCounter = 0
-		return nil, iterator.Done
+		return compute.InstancesScopedListPair{}, iterator.Done
 	}
-	resp := i.instances[i.internalCounter]
+	resp := i.pairs[i.internalCounter]
 	i.internalCounter++
 	return resp, nil
 }
@@ -971,7 +976,7 @@ func (i *stubInstanceIterator) Next() (*computepb.Instance, error) {
 type stubInstancesClient struct {
 	GetInstance          *computepb.Instance
 	GetErr               error
-	ListInstanceIterator InstanceIterator
+	ListInstanceIterator InstancesScopedListPairIterator
 	SetMetadataOperation *compute.Operation
 	SetMetadataErr       error
 	CloseErr             error
@@ -981,7 +986,7 @@ func (s stubInstancesClient) Get(ctx context.Context, req *computepb.GetInstance
 	return s.GetInstance, s.GetErr
 }
 
-func (s stubInstancesClient) List(ctx context.Context, req *computepb.ListInstancesRequest, opts ...gax.CallOption) InstanceIterator {
+func (s stubInstancesClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListInstancesRequest, opts ...gax.CallOption) InstancesScopedListPairIterator {
 	return s.ListInstanceIterator
 }
 

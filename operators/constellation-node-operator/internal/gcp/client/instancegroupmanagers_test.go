@@ -21,14 +21,14 @@ func TestSplitInstanceGroupID(t *testing.T) {
 		instanceGroupID string
 
 		wantProject       string
-		wantZone          string
+		wantRegion        string
 		wantInstanceGroup string
 		wantErr           bool
 	}{
 		"valid request": {
-			instanceGroupID:   "projects/project/zones/zone/instanceGroupManagers/instanceGroup",
+			instanceGroupID:   "projects/project/regions/region/instanceGroupManagers/instanceGroup",
 			wantProject:       "project",
-			wantZone:          "zone",
+			wantRegion:        "region",
 			wantInstanceGroup: "instanceGroup",
 		},
 		"wrong format": {
@@ -40,15 +40,53 @@ func TestSplitInstanceGroupID(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
-			gotProject, gotZone, gotInstanceGroup, err := splitInstanceGroupID(tc.instanceGroupID)
+			gotProject, gotRegion, gotInstanceGroup, err := splitInstanceGroupID(tc.instanceGroupID)
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			require.NoError(err)
 			assert.Equal(tc.wantProject, gotProject)
-			assert.Equal(tc.wantZone, gotZone)
+			assert.Equal(tc.wantRegion, gotRegion)
 			assert.Equal(tc.wantInstanceGroup, gotInstanceGroup)
+		})
+	}
+}
+
+func TestSplitInstanceID(t *testing.T) {
+	testCases := map[string]struct {
+		instanceID       string
+		wantProject      string
+		wantZone         string
+		wantInstanceName string
+		wantErr          bool
+	}{
+		"valid request": {
+			instanceID:       "projects/project/zones/zone/instances/name",
+			wantProject:      "project",
+			wantZone:         "zone",
+			wantInstanceName: "name",
+		},
+		"wrong format": {
+			instanceID: "wrong-format",
+			wantErr:    true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			gotProject, gotZone, gotInstanceName, err := splitInstanceID(tc.instanceID)
+
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal(tc.wantProject, gotProject)
+			assert.Equal(tc.wantZone, gotZone)
+			assert.Equal(tc.wantInstanceName, gotInstanceName)
 		})
 	}
 }

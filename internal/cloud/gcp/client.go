@@ -60,39 +60,39 @@ func NewClient(ctx context.Context) (*Client, error) {
 }
 
 // RetrieveInstances returns list of instances including their ips and metadata.
-func (c *Client) RetrieveInstances(ctx context.Context, project, zone string) ([]metadata.InstanceMetadata, error) {
+func (c *Client) RetrieveInstances(ctx context.Context, project string) ([]metadata.InstanceMetadata, error) {
 	uid, err := c.UID()
 	if err != nil {
 		return nil, err
 	}
-	req := &computepb.ListInstancesRequest{
+	req := &computepb.AggregatedListInstancesRequest{
 		Project: project,
-		Zone:    zone,
+		Filter:  proto.String(fmt.Sprintf("name eq \".+-%s-.+\"", uid)), // filter by constellation UID
 	}
-	instanceIterator := c.instanceAPI.List(ctx, req)
+	listPairIterator := c.instanceAPI.AggregatedList(ctx, req)
 
-	instances := []metadata.InstanceMetadata{}
+	instancesMetadataList := []metadata.InstanceMetadata{}
 	for {
-		resp, err := instanceIterator.Next()
+		resp, err := listPairIterator.Next()
 		if err == iterator.Done {
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("retrieving instance list from compute API client: %w", err)
+			return nil, fmt.Errorf("retrieving instances scoped list pair from compute API client: %w", err)
 		}
-		metadata := extractInstanceMetadata(resp.Metadata, "", false)
-		// skip instances not belonging to the current constellation
-		if instanceUID, ok := metadata[constellationUIDMetadataKey]; !ok || instanceUID != uid {
-			continue
-		}
-		instance, err := convertToCoreInstance(resp, project, zone)
-		if err != nil {
-			return nil, err
+		if resp.Value == nil {
+			return nil, fmt.Errorf("retrieving instances scoped list pair from compute API client returned invalid results")
 		}
 
-		instances = append(instances, instance)
+		for _, instance := range resp.Value.Instances {
+			instanceMetadata, err := convertToMetadataInstance(instance, project)
+			if err != nil {
+				return nil, fmt.Errorf("extracting metadata of instance: %w", err)
+			}
+			instancesMetadataList = append(instancesMetadataList, instanceMetadata)
+		}
 	}
-	return instances, nil
+	return instancesMetadataList, nil
 }
 
 // RetrieveInstance returns a an instance including ips and metadata.
@@ -102,7 +102,7 @@ func (c *Client) RetrieveInstance(ctx context.Context, project, zone, instanceNa
 		return metadata.InstanceMetadata{}, err
 	}
 
-	return convertToCoreInstance(instance, project, zone)
+	return convertToMetadataInstance(instance, project)
 }
 
 // RetrieveProjectID retrieves the GCP projectID containing the current instance.
@@ -376,10 +376,29 @@ func extractSSHKeys(metadata map[string]string) map[string][]string {
 	return keys
 }
 
-// convertToCoreInstance converts a *computepb.Instance to a core.Instance.
-func convertToCoreInstance(in *computepb.Instance, project string, zone string) (metadata.InstanceMetadata, error) {
+func extractZone(in *computepb.Instance) (string, error) {
+	if in == nil {
+		return "", errors.New("instance is nil")
+	}
+	if in.Zone == nil {
+		return "", errors.New("instance zone is nil")
+	}
+	zoneURL := *in.Zone
+	zoneParts := strings.Split(zoneURL, "/")
+	if zoneParts[len(zoneParts)-2] != "zones" {
+		return "", fmt.Errorf("invalid zone URL: %s", zoneURL)
+	}
+	return zoneParts[len(zoneParts)-1], nil
+}
+
+// convertToMetadataInstance converts a *computepb.Instance to a core.Instance.
+func convertToMetadataInstance(in *computepb.Instance, project string) (metadata.InstanceMetadata, error) {
 	if in.Name == nil {
-		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving instance from compute API client returned invalid instance Name: %v", in.Name)
+		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving instance from compute API client returned invalid instance name: %v", in.Name)
+	}
+	zone, err := extractZone(in)
+	if err != nil {
+		return metadata.InstanceMetadata{}, fmt.Errorf("extracting zone from instance: %w", err)
 	}
 	mdata := extractInstanceMetadata(in.Metadata, "", false)
 	return metadata.InstanceMetadata{

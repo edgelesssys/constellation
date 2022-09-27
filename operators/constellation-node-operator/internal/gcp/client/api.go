@@ -38,15 +38,22 @@ type instanceTemplateAPI interface {
 
 type instanceGroupManagersAPI interface {
 	Close() error
-	Get(ctx context.Context, req *computepb.GetInstanceGroupManagerRequest,
-		opts ...gax.CallOption) (*computepb.InstanceGroupManager, error)
 	AggregatedList(ctx context.Context, req *computepb.AggregatedListInstanceGroupManagersRequest,
 		opts ...gax.CallOption) InstanceGroupManagerScopedListIterator
-	SetInstanceTemplate(ctx context.Context, req *computepb.SetInstanceTemplateInstanceGroupManagerRequest,
+}
+
+type regionInstanceGroupManagersAPI interface {
+	Close() error
+	Get(ctx context.Context, req *computepb.GetRegionInstanceGroupManagerRequest,
+		opts ...gax.CallOption) (*computepb.InstanceGroupManager, error)
+	ListManagedInstances(ctx context.Context,
+		req *computepb.ListManagedInstancesRegionInstanceGroupManagersRequest,
+		opts ...gax.CallOption) ManagedInstanceIterator
+	SetInstanceTemplate(ctx context.Context, req *computepb.SetInstanceTemplateRegionInstanceGroupManagerRequest,
 		opts ...gax.CallOption) (Operation, error)
-	CreateInstances(ctx context.Context, req *computepb.CreateInstancesInstanceGroupManagerRequest,
+	CreateInstances(ctx context.Context, req *computepb.CreateInstancesRegionInstanceGroupManagerRequest,
 		opts ...gax.CallOption) (Operation, error)
-	DeleteInstances(ctx context.Context, req *computepb.DeleteInstancesInstanceGroupManagerRequest,
+	DeleteInstances(ctx context.Context, req *computepb.DeleteInstancesRegionInstanceGroupManagerRequest,
 		opts ...gax.CallOption) (Operation, error)
 }
 
@@ -64,6 +71,14 @@ type Operation interface {
 
 type InstanceGroupManagerScopedListIterator interface {
 	Next() (compute.InstanceGroupManagersScopedListPair, error)
+}
+
+type ManagedInstanceIterator interface {
+	Next() (*computepb.ManagedInstance, error)
+}
+
+type InstanceGroupIterator interface {
+	Next() (*computepb.InstanceGroup, error)
 }
 
 type prng interface {

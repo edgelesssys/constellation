@@ -43,6 +43,7 @@ func TestConfigMaps(t *testing.T) {
 project-id = project-id
 use-metadata-server = true
 node-tags = constellation-UID
+regional = true
 `,
 					},
 				},

@@ -19,7 +19,7 @@ type API interface {
 	// UID retrieves the current instances uid.
 	UID() (string, error)
 	// RetrieveInstances retrieves a list of all accessible GCP instances with their metadata.
-	RetrieveInstances(ctx context.Context, project, zone string) ([]metadata.InstanceMetadata, error)
+	RetrieveInstances(ctx context.Context, project string) ([]metadata.InstanceMetadata, error)
 	// RetrieveInstances retrieves a single GCP instances with its metadata.
 	RetrieveInstance(ctx context.Context, project, zone, instanceName string) (metadata.InstanceMetadata, error)
 	// RetrieveInstanceMetadata retrieves the GCP instance metadata of the current instance.
@@ -58,11 +58,7 @@ func (m *Metadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error
 	if err != nil {
 		return nil, err
 	}
-	zone, err := m.api.RetrieveZone()
-	if err != nil {
-		return nil, err
-	}
-	instances, err := m.api.RetrieveInstances(ctx, project, zone)
+	instances, err := m.api.RetrieveInstances(ctx, project)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving instances list from GCP api: %w", err)
 	}

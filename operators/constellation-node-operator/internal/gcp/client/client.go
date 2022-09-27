@@ -23,6 +23,7 @@ type Client struct {
 	instanceAPI
 	instanceTemplateAPI
 	instanceGroupManagersAPI
+	regionInstanceGroupManagersAPI
 	diskAPI
 	// prng is a pseudo-random number generator seeded with time. Not used for security.
 	prng
@@ -40,7 +41,6 @@ func New(ctx context.Context, configPath string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	closers = append(closers, projectAPI)
 	insAPI, err := compute.NewInstancesRESTClient(ctx)
 	if err != nil {
@@ -60,19 +60,26 @@ func New(ctx context.Context, configPath string) (*Client, error) {
 		return nil, err
 	}
 	closers = append(closers, groupAPI)
+	regionGroupAPI, err := compute.NewRegionInstanceGroupManagersRESTClient(ctx)
+	if err != nil {
+		_ = closeAll(closers)
+		return nil, err
+	}
+	closers = append(closers, regionGroupAPI)
 	diskAPI, err := compute.NewDisksRESTClient(ctx)
 	if err != nil {
 		_ = closeAll(closers)
 		return nil, err
 	}
 	return &Client{
-		projectID:                projectID,
-		projectAPI:               projectAPI,
-		instanceAPI:              insAPI,
-		instanceTemplateAPI:      &instanceTemplateClient{templAPI},
-		instanceGroupManagersAPI: &instanceGroupManagersClient{groupAPI},
-		diskAPI:                  diskAPI,
-		prng:                     rand.New(rand.NewSource(int64(time.Now().Nanosecond()))),
+		projectID:                      projectID,
+		projectAPI:                     projectAPI,
+		instanceAPI:                    insAPI,
+		instanceTemplateAPI:            &instanceTemplateClient{templAPI},
+		instanceGroupManagersAPI:       &instanceGroupManagersClient{groupAPI},
+		regionInstanceGroupManagersAPI: &regionInstanceGroupManagersClient{regionGroupAPI},
+		diskAPI:                        diskAPI,
+		prng:                           rand.New(rand.NewSource(int64(time.Now().Nanosecond()))),
 	}, nil
 }
 
@@ -82,7 +89,7 @@ func (c *Client) Close() error {
 		c.projectAPI,
 		c.instanceAPI,
 		c.instanceTemplateAPI,
-		c.instanceGroupManagersAPI,
+		c.regionInstanceGroupManagersAPI,
 		c.diskAPI,
 	}
 	return closeAll(closers)

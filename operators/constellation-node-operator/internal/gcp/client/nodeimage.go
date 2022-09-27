@@ -8,8 +8,10 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"google.golang.org/api/iterator"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
 )
@@ -80,7 +82,7 @@ func (c *Client) GetScalingGroupID(ctx context.Context, providerID string) (stri
 
 // CreateNode creates a node in the specified scaling group.
 func (c *Client) CreateNode(ctx context.Context, scalingGroupID string) (nodeName, providerID string, err error) {
-	project, zone, instanceGroupName, err := splitInstanceGroupID(scalingGroupID)
+	project, region, instanceGroupName, err := splitInstanceGroupID(scalingGroupID)
 	if err != nil {
 		return "", "", err
 	}
@@ -88,10 +90,10 @@ func (c *Client) CreateNode(ctx context.Context, scalingGroupID string) (nodeNam
 	if err != nil {
 		return "", "", err
 	}
-	instanceGroupManager, err := c.instanceGroupManagersAPI.Get(ctx, &computepb.GetInstanceGroupManagerRequest{
+	instanceGroupManager, err := c.regionInstanceGroupManagersAPI.Get(ctx, &computepb.GetRegionInstanceGroupManagerRequest{
 		InstanceGroupManager: instanceGroupName,
 		Project:              project,
-		Zone:                 zone,
+		Region:               region,
 	})
 	if err != nil {
 		return "", "", err
@@ -100,11 +102,11 @@ func (c *Client) CreateNode(ctx context.Context, scalingGroupID string) (nodeNam
 		return "", "", fmt.Errorf("instance group manager %q has no base instance name", instanceGroupName)
 	}
 	instanceName := generateInstanceName(*instanceGroupManager.BaseInstanceName, c.prng)
-	op, err := c.instanceGroupManagersAPI.CreateInstances(ctx, &computepb.CreateInstancesInstanceGroupManagerRequest{
+	op, err := c.regionInstanceGroupManagersAPI.CreateInstances(ctx, &computepb.CreateInstancesRegionInstanceGroupManagerRequest{
 		InstanceGroupManager: instanceGroupName,
 		Project:              project,
-		Zone:                 zone,
-		InstanceGroupManagersCreateInstancesRequestResource: &computepb.InstanceGroupManagersCreateInstancesRequest{
+		Region:               region,
+		RegionInstanceGroupManagersCreateInstancesRequestResource: &computepb.RegionInstanceGroupManagersCreateInstancesRequest{
 			Instances: []*computepb.PerInstanceConfig{
 				{Name: proto.String(instanceName)},
 			},
@@ -116,6 +118,31 @@ func (c *Client) CreateNode(ctx context.Context, scalingGroupID string) (nodeNam
 	if err := op.Wait(ctx); err != nil {
 		return "", "", err
 	}
+
+	managedInstanceIter := c.regionInstanceGroupManagersAPI.ListManagedInstances(ctx,
+		&computepb.ListManagedInstancesRegionInstanceGroupManagersRequest{
+			InstanceGroupManager: instanceGroupName,
+			Project:              project,
+			Region:               region,
+			Filter:               proto.String(fmt.Sprintf("instance eq '.*%s'", instanceName)),
+		},
+	)
+	managedInstance, err := managedInstanceIter.Next()
+	if err != nil {
+		return "", "", fmt.Errorf("getting managed instance %q: %w", instanceName, err)
+	}
+	if _, err := managedInstanceIter.Next(); err != iterator.Done {
+		return "", "", fmt.Errorf("expected 1 managed instance with name %q but found multiple", instanceName)
+	}
+	if managedInstance.Instance == nil {
+		return "", "", errors.New("ListManagedInstances returned managedInstance with empty instance field")
+	}
+
+	_, zone, _, err := splitInstanceID(uriNormalize(*managedInstance.Instance))
+	if err != nil {
+		return "", "", fmt.Errorf("parsing zone of managed instance %q: %w", instanceName, err)
+	}
+
 	return instanceName, joinProviderID(project, zone, instanceName), nil
 }
 
@@ -129,16 +156,16 @@ func (c *Client) DeleteNode(ctx context.Context, providerID string) error {
 	if err != nil {
 		return err
 	}
-	instanceGroupProject, instanceGroupZone, instanceGroupName, err := splitInstanceGroupID(scalingGroupID)
+	instanceGroupProject, instanceGroupRegion, instanceGroupName, err := splitInstanceGroupID(scalingGroupID)
 	if err != nil {
 		return err
 	}
 	instanceID := joinInstanceID(zone, instanceName)
-	op, err := c.instanceGroupManagersAPI.DeleteInstances(ctx, &computepb.DeleteInstancesInstanceGroupManagerRequest{
+	op, err := c.regionInstanceGroupManagersAPI.DeleteInstances(ctx, &computepb.DeleteInstancesRegionInstanceGroupManagerRequest{
 		InstanceGroupManager: instanceGroupName,
 		Project:              instanceGroupProject,
-		Zone:                 instanceGroupZone,
-		InstanceGroupManagersDeleteInstancesRequestResource: &computepb.InstanceGroupManagersDeleteInstancesRequest{
+		Region:               instanceGroupRegion,
+		RegionInstanceGroupManagersDeleteInstancesRequestResource: &computepb.RegionInstanceGroupManagersDeleteInstancesRequest{
 			Instances: []string{instanceID},
 		},
 	})

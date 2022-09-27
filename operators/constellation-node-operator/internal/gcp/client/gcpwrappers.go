@@ -42,32 +42,52 @@ func (c *instanceGroupManagersClient) Close() error {
 	return c.InstanceGroupManagersClient.Close()
 }
 
-func (c *instanceGroupManagersClient) Get(ctx context.Context, req *computepb.GetInstanceGroupManagerRequest,
-	opts ...gax.CallOption,
-) (*computepb.InstanceGroupManager, error) {
-	return c.InstanceGroupManagersClient.Get(ctx, req, opts...)
-}
-
-func (c *instanceGroupManagersClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListInstanceGroupManagersRequest,
+func (c *instanceGroupManagersClient) AggregatedList(ctx context.Context,
+	req *computepb.AggregatedListInstanceGroupManagersRequest,
 	opts ...gax.CallOption,
 ) InstanceGroupManagerScopedListIterator {
 	return c.InstanceGroupManagersClient.AggregatedList(ctx, req, opts...)
 }
 
-func (c *instanceGroupManagersClient) SetInstanceTemplate(ctx context.Context, req *computepb.SetInstanceTemplateInstanceGroupManagerRequest,
-	opts ...gax.CallOption,
-) (Operation, error) {
-	return c.InstanceGroupManagersClient.SetInstanceTemplate(ctx, req, opts...)
+type regionInstanceGroupManagersClient struct {
+	*compute.RegionInstanceGroupManagersClient
 }
 
-func (c *instanceGroupManagersClient) CreateInstances(ctx context.Context, req *computepb.CreateInstancesInstanceGroupManagerRequest,
-	opts ...gax.CallOption,
-) (Operation, error) {
-	return c.InstanceGroupManagersClient.CreateInstances(ctx, req, opts...)
+func (c *regionInstanceGroupManagersClient) Close() error {
+	return c.RegionInstanceGroupManagersClient.Close()
 }
 
-func (c *instanceGroupManagersClient) DeleteInstances(ctx context.Context, req *computepb.DeleteInstancesInstanceGroupManagerRequest,
+func (c *regionInstanceGroupManagersClient) Get(ctx context.Context,
+	req *computepb.GetRegionInstanceGroupManagerRequest,
+	opts ...gax.CallOption,
+) (*computepb.InstanceGroupManager, error) {
+	return c.RegionInstanceGroupManagersClient.Get(ctx, req, opts...)
+}
+
+func (c *regionInstanceGroupManagersClient) ListManagedInstances(ctx context.Context,
+	req *computepb.ListManagedInstancesRegionInstanceGroupManagersRequest,
+	opts ...gax.CallOption,
+) ManagedInstanceIterator {
+	return c.RegionInstanceGroupManagersClient.ListManagedInstances(ctx, req, opts...)
+}
+
+func (c *regionInstanceGroupManagersClient) SetInstanceTemplate(ctx context.Context,
+	req *computepb.SetInstanceTemplateRegionInstanceGroupManagerRequest,
 	opts ...gax.CallOption,
 ) (Operation, error) {
-	return c.InstanceGroupManagersClient.DeleteInstances(ctx, req, opts...)
+	return c.RegionInstanceGroupManagersClient.SetInstanceTemplate(ctx, req, opts...)
+}
+
+func (c *regionInstanceGroupManagersClient) CreateInstances(ctx context.Context,
+	req *computepb.CreateInstancesRegionInstanceGroupManagerRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	return c.RegionInstanceGroupManagersClient.CreateInstances(ctx, req, opts...)
+}
+
+func (c *regionInstanceGroupManagersClient) DeleteInstances(ctx context.Context,
+	req *computepb.DeleteInstancesRegionInstanceGroupManagerRequest,
+	opts ...gax.CallOption,
+) (Operation, error) {
+	return c.RegionInstanceGroupManagersClient.DeleteInstances(ctx, req, opts...)
 }

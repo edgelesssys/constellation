@@ -28,7 +28,7 @@ func TestGetScalingGroupImage(t *testing.T) {
 		wantErr                        bool
 	}{
 		"getting image works": {
-			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID:                 "projects/project/regions/region/instanceGroupManagers/instance-group",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
 			instanceTemplate: &computepb.InstanceTemplate{
 				Properties: &computepb.InstanceProperties{
@@ -48,27 +48,27 @@ func TestGetScalingGroupImage(t *testing.T) {
 			wantErr:        true,
 		},
 		"get instance fails": {
-			scalingGroupID:             "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID:             "projects/project/regions/region/instanceGroupManagers/instance-group",
 			getInstanceGroupManagerErr: errors.New("get instance error"),
 			wantErr:                    true,
 		},
 		"instance group manager has no template": {
-			scalingGroupID: "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID: "projects/project/regions/region/instanceGroupManagers/instance-group",
 			wantErr:        true,
 		},
 		"instance group manager template id is invalid": {
-			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID:                 "projects/project/regions/region/instanceGroupManagers/instance-group",
 			instanceGroupManagerTemplateID: proto.String("invalid"),
 			wantErr:                        true,
 		},
 		"get instance template fails": {
-			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID:                 "projects/project/regions/region/instanceGroupManagers/instance-group",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
 			getInstanceTemplateErr:         errors.New("get instance template error"),
 			wantErr:                        true,
 		},
 		"instance template has no disks": {
-			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID:                 "projects/project/regions/region/instanceGroupManagers/instance-group",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
 			instanceTemplate: &computepb.InstanceTemplate{
 				Properties: &computepb.InstanceProperties{},
@@ -83,7 +83,7 @@ func TestGetScalingGroupImage(t *testing.T) {
 			require := require.New(t)
 
 			client := Client{
-				instanceGroupManagersAPI: &stubInstanceGroupManagersAPI{
+				regionInstanceGroupManagersAPI: &stubRegionInstanceGroupManagersAPI{
 					getErr: tc.getInstanceGroupManagerErr,
 					instanceGroupManager: &computepb.InstanceGroupManager{
 						InstanceTemplate: tc.instanceGroupManagerTemplateID,
@@ -118,7 +118,7 @@ func TestSetScalingGroupImage(t *testing.T) {
 		wantErr                        bool
 	}{
 		"setting image works": {
-			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID:                 "projects/project/regions/region/instanceGroupManagers/instance-group",
 			imageURI:                       "projects/project/global/images/image-2",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
 			instanceTemplate: &computepb.InstanceTemplate{
@@ -135,7 +135,7 @@ func TestSetScalingGroupImage(t *testing.T) {
 			},
 		},
 		"same image already in use": {
-			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID:                 "projects/project/regions/region/instanceGroupManagers/instance-group",
 			imageURI:                       "projects/project/global/images/image",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
 			instanceTemplate: &computepb.InstanceTemplate{
@@ -158,27 +158,27 @@ func TestSetScalingGroupImage(t *testing.T) {
 			wantErr:        true,
 		},
 		"get instance fails": {
-			scalingGroupID:             "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID:             "projects/project/regions/region/instanceGroupManagers/instance-group",
 			getInstanceGroupManagerErr: errors.New("get instance error"),
 			wantErr:                    true,
 		},
 		"instance group manager has no template": {
-			scalingGroupID: "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID: "projects/project/regions/region/instanceGroupManagers/instance-group",
 			wantErr:        true,
 		},
 		"instance group manager template id is invalid": {
-			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID:                 "projects/project/regions/region/instanceGroupManagers/instance-group",
 			instanceGroupManagerTemplateID: proto.String("invalid"),
 			wantErr:                        true,
 		},
 		"get instance template fails": {
-			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID:                 "projects/project/regions/region/instanceGroupManagers/instance-group",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
 			getInstanceTemplateErr:         errors.New("get instance template error"),
 			wantErr:                        true,
 		},
 		"instance template has no disks": {
-			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID:                 "projects/project/regions/region/instanceGroupManagers/instance-group",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
 			instanceTemplate: &computepb.InstanceTemplate{
 				Properties: &computepb.InstanceProperties{},
@@ -186,7 +186,7 @@ func TestSetScalingGroupImage(t *testing.T) {
 			wantErr: true,
 		},
 		"instance template has no name": {
-			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID:                 "projects/project/regions/region/instanceGroupManagers/instance-group",
 			imageURI:                       "projects/project/global/images/image-2",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
 			instanceTemplate: &computepb.InstanceTemplate{
@@ -203,7 +203,7 @@ func TestSetScalingGroupImage(t *testing.T) {
 			wantErr: true,
 		},
 		"instance template name generation fails": {
-			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID:                 "projects/project/regions/region/instanceGroupManagers/instance-group",
 			imageURI:                       "projects/project/global/images/image-2",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
 			instanceTemplate: &computepb.InstanceTemplate{
@@ -221,7 +221,7 @@ func TestSetScalingGroupImage(t *testing.T) {
 			wantErr: true,
 		},
 		"instance template insert fails": {
-			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID:                 "projects/project/regions/region/instanceGroupManagers/instance-group",
 			imageURI:                       "projects/project/global/images/image-2",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
 			instanceTemplate: &computepb.InstanceTemplate{
@@ -240,7 +240,7 @@ func TestSetScalingGroupImage(t *testing.T) {
 			wantErr:                   true,
 		},
 		"setting instance template fails": {
-			scalingGroupID:                 "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID:                 "projects/project/regions/region/instanceGroupManagers/instance-group",
 			imageURI:                       "projects/project/global/images/image-2",
 			instanceGroupManagerTemplateID: proto.String("projects/project/global/instanceTemplates/instance-template"),
 			instanceTemplate: &computepb.InstanceTemplate{
@@ -266,7 +266,7 @@ func TestSetScalingGroupImage(t *testing.T) {
 			require := require.New(t)
 
 			client := Client{
-				instanceGroupManagersAPI: &stubInstanceGroupManagersAPI{
+				regionInstanceGroupManagersAPI: &stubRegionInstanceGroupManagersAPI{
 					getErr:                 tc.getInstanceGroupManagerErr,
 					setInstanceTemplateErr: tc.setInstanceTemplateErr,
 					instanceGroupManager: &computepb.InstanceGroupManager{
@@ -296,7 +296,7 @@ func TestGetScalingGroupName(t *testing.T) {
 		wantErr        bool
 	}{
 		"valid scaling group ID": {
-			scalingGroupID: "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID: "projects/project/regions/region/instanceGroupManagers/instance-group",
 			wantName:       "instance-group",
 		},
 		"invalid scaling group ID": {
@@ -337,21 +337,21 @@ func TestListScalingGroups(t *testing.T) {
 		},
 		"list instance group managers for control plane": {
 			name:    proto.String("test-control-plane-uid"),
-			groupID: proto.String("projects/project/zones/zone/instanceGroupManagers/test-control-plane-uid"),
+			groupID: proto.String("projects/project/regions/region/instanceGroupManagers/test-control-plane-uid"),
 			wantControlPlanes: []string{
-				"projects/project/zones/zone/instanceGroupManagers/test-control-plane-uid",
+				"projects/project/regions/region/instanceGroupManagers/test-control-plane-uid",
 			},
 		},
 		"list instance group managers for worker": {
 			name:    proto.String("test-worker-uid"),
-			groupID: proto.String("projects/project/zones/zone/instanceGroupManagers/test-worker-uid"),
+			groupID: proto.String("projects/project/regions/region/instanceGroupManagers/test-worker-uid"),
 			wantWorkers: []string{
-				"projects/project/zones/zone/instanceGroupManagers/test-worker-uid",
+				"projects/project/regions/region/instanceGroupManagers/test-worker-uid",
 			},
 		},
 		"unrelated instance group manager": {
 			name:    proto.String("test-unrelated-uid"),
-			groupID: proto.String("projects/project/zones/zone/instanceGroupManagers/test-unrelated-uid"),
+			groupID: proto.String("projects/project/regions/region/instanceGroupManagers/test-unrelated-uid"),
 		},
 		"invalid instance group manager": {},
 	}

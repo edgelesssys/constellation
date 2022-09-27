@@ -74,11 +74,13 @@ func (c *CloudControllerManager) ExtraArgs() []string {
 func (c *CloudControllerManager) ConfigMaps() (kubernetes.ConfigMaps, error) {
 	// GCP CCM expects cloud config to contain the GCP project-id and other configuration.
 	// reference: https://github.com/kubernetes/cloud-provider-gcp/blob/master/cluster/gce/gci/configure-helper.sh#L791-L892
+	// reference: https://github.com/kubernetes/cloud-provider-gcp/blob/d2b22ad6f19d3b11e9c6e2f308dd69a2bab6d660/providers/gce/gce.go#L183-L216
 	var config strings.Builder
 	config.WriteString("[global]\n")
 	config.WriteString(fmt.Sprintf("project-id = %s\n", c.projectID))
 	config.WriteString("use-metadata-server = true\n")
 	config.WriteString(fmt.Sprintf("node-tags = constellation-%s\n", c.uid))
+	config.WriteString("regional = true\n")
 
 	return kubernetes.ConfigMaps{
 		&k8s.ConfigMap{

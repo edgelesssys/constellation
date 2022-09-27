@@ -23,10 +23,10 @@ func (c *instanceClient) Close() error {
 	return c.InstancesClient.Close()
 }
 
-func (c *instanceClient) List(ctx context.Context, req *computepb.ListInstancesRequest,
+func (c *instanceClient) AggregatedList(ctx context.Context, req *computepb.AggregatedListInstancesRequest,
 	opts ...gax.CallOption,
-) InstanceIterator {
-	return c.InstancesClient.List(ctx, req)
+) InstancesScopedListPairIterator {
+	return c.InstancesClient.AggregatedList(ctx, req)
 }
 
 type subnetworkClient struct {

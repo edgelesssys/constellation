@@ -122,8 +122,8 @@ func TestGetScalingGroupID(t *testing.T) {
 	}{
 		"scaling group is found": {
 			providerID:         "gce://project/zone/instance-name",
-			createdBy:          "projects/project/zones/zone/instanceGroupManagers/instance-group",
-			wantScalingGroupID: "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			createdBy:          "projects/project/regions/region/instanceGroupManagers/instance-group",
+			wantScalingGroupID: "projects/project/regions/region/instanceGroupManagers/instance-group",
 		},
 		"splitting providerID fails": {
 			providerID: "invalid",
@@ -177,12 +177,13 @@ func TestCreateNode(t *testing.T) {
 	testCases := map[string]struct {
 		scalingGroupID             string
 		baseInstanceName           *string
+		createdInstance            *string
 		getInstanceGroupManagerErr error
 		createInstanceErr          error
 		wantErr                    bool
 	}{
 		"scaling group is found": {
-			scalingGroupID:   "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID:   "projects/project/regions/region/instanceGroupManagers/instance-group",
 			baseInstanceName: proto.String("base-name"),
 		},
 		"splitting scalingGroupID fails": {
@@ -190,16 +191,16 @@ func TestCreateNode(t *testing.T) {
 			wantErr:        true,
 		},
 		"get instance group manager fails": {
-			scalingGroupID:             "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID:             "projects/project/regions/region/instanceGroupManagers/instance-group",
 			getInstanceGroupManagerErr: errors.New("get instance group manager error"),
 			wantErr:                    true,
 		},
 		"instance group manager has no base instance name": {
-			scalingGroupID: "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID: "projects/project/regions/region/instanceGroupManagers/instance-group",
 			wantErr:        true,
 		},
 		"create instance fails": {
-			scalingGroupID:    "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			scalingGroupID:    "projects/project/regions/region/instanceGroupManagers/instance-group",
 			baseInstanceName:  proto.String("base-name"),
 			createInstanceErr: errors.New("create instance error"),
 			wantErr:           true,
@@ -212,11 +213,14 @@ func TestCreateNode(t *testing.T) {
 			require := require.New(t)
 
 			client := Client{
-				instanceGroupManagersAPI: &stubInstanceGroupManagersAPI{
+				regionInstanceGroupManagersAPI: &stubRegionInstanceGroupManagersAPI{
 					getErr:             tc.getInstanceGroupManagerErr,
 					createInstancesErr: tc.createInstanceErr,
 					instanceGroupManager: &computepb.InstanceGroupManager{
 						BaseInstanceName: tc.baseInstanceName,
+					},
+					managedInstance: &computepb.ManagedInstance{
+						Instance: tc.createdInstance,
 					},
 				},
 				prng: rand.New(rand.NewSource(int64(time.Now().Nanosecond()))),
@@ -236,14 +240,14 @@ func TestCreateNode(t *testing.T) {
 func TestDeleteNode(t *testing.T) {
 	testCases := map[string]struct {
 		providerID        string
-		scalingGroupID    string
+		instanceGroupID   string
 		getInstanceErr    error
 		deleteInstanceErr error
 		wantErr           bool
 	}{
 		"node is deleted": {
-			providerID:     "gce://project/zone/instance-name",
-			scalingGroupID: "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			providerID:      "gce://project/zone/instance-name",
+			instanceGroupID: "projects/project/regions/region/instanceGroupManagers/instance-group",
 		},
 		"splitting providerID fails": {
 			providerID: "invalid",
@@ -254,14 +258,14 @@ func TestDeleteNode(t *testing.T) {
 			getInstanceErr: errors.New("get instance error"),
 			wantErr:        true,
 		},
-		"splitting scalingGroupID fails": {
-			providerID:     "gce://project/zone/instance-name",
-			scalingGroupID: "invalid",
-			wantErr:        true,
+		"splitting instanceGroupID fails": {
+			providerID:      "gce://project/zone/instance-name",
+			instanceGroupID: "invalid",
+			wantErr:         true,
 		},
 		"delete instance fails": {
 			providerID:        "gce://project/zone/instance-name",
-			scalingGroupID:    "projects/project/zones/zone/instanceGroupManagers/instance-group",
+			instanceGroupID:   "projects/project/regions/region/instanceGroupManagers/instance-group",
 			deleteInstanceErr: errors.New("delete instance error"),
 			wantErr:           true,
 		},
@@ -273,7 +277,7 @@ func TestDeleteNode(t *testing.T) {
 			require := require.New(t)
 
 			client := Client{
-				instanceGroupManagersAPI: &stubInstanceGroupManagersAPI{
+				regionInstanceGroupManagersAPI: &stubRegionInstanceGroupManagersAPI{
 					deleteInstancesErr: tc.deleteInstanceErr,
 				},
 				instanceAPI: &stubInstanceAPI{
@@ -281,7 +285,7 @@ func TestDeleteNode(t *testing.T) {
 					instance: &computepb.Instance{
 						Metadata: &computepb.Metadata{
 							Items: []*computepb.Items{
-								{Key: proto.String("created-by"), Value: &tc.scalingGroupID},
+								{Key: proto.String("created-by"), Value: &tc.instanceGroupID},
 							},
 						},
 					},

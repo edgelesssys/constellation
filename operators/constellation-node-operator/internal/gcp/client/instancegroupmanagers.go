@@ -13,10 +13,13 @@ import (
 	"strings"
 )
 
-var instanceGroupIDRegex = regexp.MustCompile(`^projects/([^/]+)/zones/([^/]+)/instanceGroupManagers/([^/]+)$`)
+var (
+	instanceGroupIDRegex = regexp.MustCompile(`^projects/([^/]+)/regions/([^/]+)/instanceGroupManagers/([^/]+)$`)
+	instanceIDRegex      = regexp.MustCompile(`^projects/([^/]+)/zones/([^/]+)/instances/([^/]+)$`)
+)
 
 func (c *Client) canonicalInstanceGroupID(ctx context.Context, instanceGroupID string) (string, error) {
-	project, zone, instanceGroup, err := splitInstanceGroupID(uriNormalize(instanceGroupID))
+	project, region, instanceGroup, err := splitInstanceGroupID(uriNormalize(instanceGroupID))
 	if err != nil {
 		return "", err
 	}
@@ -24,14 +27,23 @@ func (c *Client) canonicalInstanceGroupID(ctx context.Context, instanceGroupID s
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("projects/%s/zones/%s/instanceGroupManagers/%s", project, zone, instanceGroup), nil
+	return fmt.Sprintf("projects/%s/regions/%s/instanceGroupManagers/%s", project, region, instanceGroup), nil
 }
 
 // splitInstanceGroupID splits an instance group ID into core components.
-func splitInstanceGroupID(instanceGroupID string) (project, zone, instanceGroup string, err error) {
+func splitInstanceGroupID(instanceGroupID string) (project, region, instanceGroup string, err error) {
 	matches := instanceGroupIDRegex.FindStringSubmatch(instanceGroupID)
 	if len(matches) != 4 {
 		return "", "", "", fmt.Errorf("error splitting instanceGroupID: %v", instanceGroupID)
+	}
+	return matches[1], matches[2], matches[3], nil
+}
+
+// splitInstanceID splits an instance ID into core components.
+func splitInstanceID(instanceID string) (project, zone, instanceName string, err error) {
+	matches := instanceIDRegex.FindStringSubmatch(instanceID)
+	if len(matches) != 4 {
+		return "", "", "", fmt.Errorf("error splitting instanceID: %v", instanceID)
 	}
 	return matches[1], matches[2], matches[3], nil
 }

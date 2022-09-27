@@ -27,7 +27,7 @@ func (c *Client) GetScalingGroupImage(ctx context.Context, scalingGroupID string
 
 // SetScalingGroupImage sets the image URI of the scaling group.
 func (c *Client) SetScalingGroupImage(ctx context.Context, scalingGroupID, imageURI string) error {
-	project, zone, instanceGroupName, err := splitInstanceGroupID(scalingGroupID)
+	project, region, instanceGroupName, err := splitInstanceGroupID(scalingGroupID)
 	if err != nil {
 		return err
 	}
@@ -68,11 +68,11 @@ func (c *Client) SetScalingGroupImage(ctx context.Context, scalingGroupID, image
 
 	newTemplateURI := joinInstanceTemplateURI(project, newTemplateName)
 	// update instance group manager to use new template
-	op, err = c.instanceGroupManagersAPI.SetInstanceTemplate(ctx, &computepb.SetInstanceTemplateInstanceGroupManagerRequest{
+	op, err = c.regionInstanceGroupManagersAPI.SetInstanceTemplate(ctx, &computepb.SetInstanceTemplateRegionInstanceGroupManagerRequest{
 		InstanceGroupManager: instanceGroupName,
 		Project:              project,
-		Zone:                 zone,
-		InstanceGroupManagersSetInstanceTemplateRequestResource: &computepb.InstanceGroupManagersSetInstanceTemplateRequest{
+		Region:               region,
+		RegionInstanceGroupManagersSetTemplateRequestResource: &computepb.RegionInstanceGroupManagersSetTemplateRequest{
 			InstanceTemplate: &newTemplateURI,
 		},
 	})
@@ -98,11 +98,11 @@ func (c *Client) GetScalingGroupName(scalingGroupID string) (string, error) {
 
 // GetScalingGroupName retrieves the name of a scaling group as needed by the cluster-autoscaler.
 func (c *Client) GetAutoscalingGroupName(scalingGroupID string) (string, error) {
-	project, zone, instanceGroupName, err := splitInstanceGroupID(scalingGroupID)
+	project, region, instanceGroupName, err := splitInstanceGroupID(scalingGroupID)
 	if err != nil {
 		return "", fmt.Errorf("getting autoscaling scaling group name: %w", err)
 	}
-	return ensureURIPrefixed(fmt.Sprintf("projects/%s/zones/%s/instanceGroups/%s", project, zone, instanceGroupName)), nil
+	return ensureURIPrefixed(fmt.Sprintf("projects/%s/regions/%s/instanceGroups/%s", project, region, instanceGroupName)), nil
 }
 
 // ListScalingGroups retrieves a list of scaling groups for the cluster.
@@ -141,14 +141,14 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) (controlPlan
 }
 
 func (c *Client) getScalingGroupTemplate(ctx context.Context, scalingGroupID string) (*computepb.InstanceTemplate, error) {
-	project, zone, instanceGroupName, err := splitInstanceGroupID(scalingGroupID)
+	project, region, instanceGroupName, err := splitInstanceGroupID(scalingGroupID)
 	if err != nil {
 		return nil, err
 	}
-	instanceGroupManager, err := c.instanceGroupManagersAPI.Get(ctx, &computepb.GetInstanceGroupManagerRequest{
+	instanceGroupManager, err := c.regionInstanceGroupManagersAPI.Get(ctx, &computepb.GetRegionInstanceGroupManagerRequest{
 		InstanceGroupManager: instanceGroupName,
 		Project:              project,
-		Zone:                 zone,
+		Region:               region,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("getting instance group manager %q: %w", instanceGroupName, err)

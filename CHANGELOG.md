@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Loadbalancer for control-plane recovery
 - K8s conformance mode
 - Local cluster creation based on QEMU
+- GCP instances groups are now spread across multiple zones for high availability per default.
 
 ### Changed
 <!-- For changes in existing functionality.  -->

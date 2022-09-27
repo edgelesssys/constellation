@@ -72,13 +72,6 @@ func TestList(t *testing.T) {
 			instancesGenerator: instancesGenerator,
 			wantErr:            true,
 		},
-		"zone retrieval error is detected": {
-			client: stubGCPClient{
-				retrieveZoneErr: err,
-			},
-			instancesGenerator: instancesGenerator,
-			wantErr:            true,
-		},
 	}
 
 	for name, tc := range testCases {
@@ -269,7 +262,7 @@ type stubGCPClient struct {
 	unsetMetadataKeys          []string
 }
 
-func (s *stubGCPClient) RetrieveInstances(ctx context.Context, project, zone string) ([]metadata.InstanceMetadata, error) {
+func (s *stubGCPClient) RetrieveInstances(ctx context.Context, project string) ([]metadata.InstanceMetadata, error) {
 	return s.retrieveInstancesValues, s.retrieveInstancesErr
 }
 

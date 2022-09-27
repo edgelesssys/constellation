@@ -17,7 +17,7 @@ import (
 
 type instanceAPI interface {
 	Get(ctx context.Context, req *computepb.GetInstanceRequest, opts ...gax.CallOption) (*computepb.Instance, error)
-	List(ctx context.Context, req *computepb.ListInstancesRequest, opts ...gax.CallOption) InstanceIterator
+	AggregatedList(ctx context.Context, req *computepb.AggregatedListInstancesRequest, opts ...gax.CallOption) InstancesScopedListPairIterator
 	SetMetadata(ctx context.Context, req *computepb.SetMetadataInstanceRequest, opts ...gax.CallOption) (*compute.Operation, error)
 	Close() error
 }
@@ -44,8 +44,8 @@ type Operation interface {
 	Proto() *computepb.Operation
 }
 
-type InstanceIterator interface {
-	Next() (*computepb.Instance, error)
+type InstancesScopedListPairIterator interface {
+	Next() (compute.InstancesScopedListPair, error)
 }
 
 type SubnetworkIterator interface {
