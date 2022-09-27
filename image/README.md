@@ -40,8 +40,8 @@ Important settings are:
 - `COSA_INIT_REPO`: Git repository containing CoreOS config. Cloned in `cosa-init` target.
 - `COSA_INIT_BRANCH`: Git branch checked out from `COSA_INIT_REPO`. Can be used to test out changes on another branch before merging.
 - `NETRC` path to a netrc file containing a GitHub PAT. Used to authenticate to GitHub from within the COSA container.
-- `GCP_IMAGE_NAME`: Image name for the GCP image. Set to include a timestamp when using the build pipeline. Can be set to a custom value if you wat to upload a custom image for testing on GCP.
-- `AZURE_IMAGE_NAME`: Image name for the Azure image. Can be set to a custom value if you wat to upload a custom image for testing on Azure.
+- `GCP_IMAGE_NAME`: Image name for the GCP image. Set to include a timestamp when using the build pipeline. Can be set to a custom value if you want to upload a custom image for testing on GCP.
+- `AZURE_IMAGE_NAME`: Image name for the Azure image. Can be set to a custom value if you want to upload a custom image for testing on Azure.
 
 Example `config.mk` to create a debug image with docker and name it `my-custom-image`:
 
