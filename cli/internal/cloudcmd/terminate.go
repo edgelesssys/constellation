@@ -11,7 +11,6 @@ import (
 	"fmt"
 
 	azurecl "github.com/edgelesssys/constellation/v2/cli/internal/azure/client"
-	gcpcl "github.com/edgelesssys/constellation/v2/cli/internal/gcp/client"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/state"
@@ -19,22 +18,18 @@ import (
 
 // Terminator deletes cloud provider resources.
 type Terminator struct {
-	newGCPClient   func(ctx context.Context) (gcpclient, error)
-	newAzureClient func(subscriptionID, tenantID string) (azureclient, error)
-	newQEMUClient  func(ctx context.Context) (qemuclient, error)
+	newTerraformClient func(ctx context.Context) (terraformClient, error)
+	newAzureClient     func(subscriptionID, tenantID string) (azureclient, error)
 }
 
 // NewTerminator create a new cloud terminator.
 func NewTerminator() *Terminator {
 	return &Terminator{
-		newGCPClient: func(ctx context.Context) (gcpclient, error) {
-			return gcpcl.NewFromDefault(ctx)
+		newTerraformClient: func(ctx context.Context) (terraformClient, error) {
+			return terraform.New(ctx, cloudprovider.GCP)
 		},
 		newAzureClient: func(subscriptionID, tenantID string) (azureclient, error) {
 			return azurecl.NewFromDefault(subscriptionID, tenantID)
-		},
-		newQEMUClient: func(ctx context.Context) (qemuclient, error) {
-			return terraform.New(ctx, cloudprovider.QEMU)
 		},
 	}
 }
@@ -43,48 +38,24 @@ func NewTerminator() *Terminator {
 func (t *Terminator) Terminate(ctx context.Context, state state.ConstellationState) error {
 	provider := cloudprovider.FromString(state.CloudProvider)
 	switch provider {
-	case cloudprovider.GCP:
-		cl, err := t.newGCPClient(ctx)
-		if err != nil {
-			return err
-		}
-		defer cl.Close()
-		return t.terminateGCP(ctx, cl, state)
 	case cloudprovider.Azure:
 		cl, err := t.newAzureClient(state.AzureSubscription, state.AzureTenant)
 		if err != nil {
 			return err
 		}
 		return t.terminateAzure(ctx, cl, state)
+	case cloudprovider.GCP:
+		fallthrough
 	case cloudprovider.QEMU:
-		cl, err := t.newQEMUClient(ctx)
+		cl, err := t.newTerraformClient(ctx)
 		if err != nil {
 			return err
 		}
 		defer cl.RemoveInstaller()
-		return t.terminateQEMU(ctx, cl)
+		return t.terminateTerraform(ctx, cl)
 	default:
 		return fmt.Errorf("unsupported provider: %s", provider)
 	}
-}
-
-func (t *Terminator) terminateGCP(ctx context.Context, cl gcpclient, state state.ConstellationState) error {
-	cl.SetState(state)
-
-	if err := cl.TerminateLoadBalancers(ctx); err != nil {
-		return err
-	}
-	if err := cl.TerminateInstances(ctx); err != nil {
-		return err
-	}
-	if err := cl.TerminateFirewall(ctx); err != nil {
-		return err
-	}
-	if err := cl.TerminateVPCs(ctx); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (t *Terminator) terminateAzure(ctx context.Context, cl azureclient, state state.ConstellationState) error {
@@ -93,7 +64,7 @@ func (t *Terminator) terminateAzure(ctx context.Context, cl azureclient, state s
 	return cl.TerminateResourceGroupResources(ctx)
 }
 
-func (t *Terminator) terminateQEMU(ctx context.Context, cl qemuclient) error {
+func (t *Terminator) terminateTerraform(ctx context.Context, cl terraformClient) error {
 	if err := cl.DestroyCluster(ctx); err != nil {
 		return err
 	}

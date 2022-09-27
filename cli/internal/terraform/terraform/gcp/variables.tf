@@ -4,6 +4,22 @@ variable "name" {
   description = "Base name of the cluster."
 }
 
+variable "control_plane_count" {
+  type        = number
+  description = "The number of control plane nodes to deploy."
+}
+
+variable "worker_count" {
+  type        = number
+  description = "The number of worker nodes to deploy."
+}
+
+variable "state_disk_size" {
+  type        = number
+  default     = 30
+  description = "The size of the state disk in GB."
+}
+
 variable "project" {
   type        = string
   description = "The GCP project to deploy the cluster in."
@@ -24,25 +40,9 @@ variable "credentials_file" {
   description = "The path to the GCP credentials file."
 }
 
-variable "control_plane_count" {
-  type        = number
-  description = "The number of control plane nodes to deploy."
-}
-
-variable "worker_count" {
-  type        = number
-  description = "The number of worker nodes to deploy."
-}
-
 variable "instance_type" {
   type        = string
   description = "The GCP instance type to deploy."
-}
-
-variable "state_disk_size" {
-  type        = number
-  default     = 30
-  description = "The size of the state disk in GB."
 }
 
 variable "state_disk_type" {

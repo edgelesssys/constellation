@@ -9,7 +9,6 @@ package terraform
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -59,7 +58,7 @@ func New(ctx context.Context, provider cloudprovider.Provider) (*Client, error) 
 }
 
 // CreateCluster creates a Constellation cluster using Terraform.
-func (c *Client) CreateCluster(ctx context.Context, name string, input CreateClusterInput) error {
+func (c *Client) CreateCluster(ctx context.Context, name string, vars Variables) error {
 	if err := prepareWorkspace(c.file, c.provider); err != nil {
 		return err
 	}
@@ -68,7 +67,7 @@ func (c *Client) CreateCluster(ctx context.Context, name string, input CreateClu
 		return err
 	}
 
-	if err := writeUserConfig(c.file, c.provider, name, input); err != nil {
+	if err := c.file.Write(terraformVarsFile, []byte(vars.String())); err != nil {
 		return err
 	}
 
@@ -135,35 +134,6 @@ func (c *Client) CleanUpWorkspace() error {
 // GetState returns the state of the cluster.
 func (c *Client) GetState() state.ConstellationState {
 	return c.state
-}
-
-// writeUserConfig writes the user config file for Terraform.
-func writeUserConfig(file file.Handler, provider cloudprovider.Provider, name string, input CreateClusterInput) error {
-	var userConfig string
-	switch provider {
-	case cloudprovider.QEMU:
-		userConfig = fmt.Sprintf(`
-constellation_coreos_image = "%s"
-image_format = "%s"
-control_plane_count = %d
-worker_count = %d
-vcpus = %d
-memory = %d
-state_disk_size = %d
-ip_range_start = %d
-metadata_api_image = "%s"
-name = "%s"
-`,
-			input.QEMU.ImagePath, input.QEMU.ImageFormat,
-			input.CountControlPlanes, input.CountWorkers,
-			input.QEMU.CPUCount, input.QEMU.MemorySizeMiB, input.QEMU.StateDiskSizeGB,
-			input.QEMU.IPRangeStart,
-			input.QEMU.MetadataAPIImage,
-			name,
-		)
-	}
-
-	return file.Write(terraformVarsFile, []byte(userConfig))
 }
 
 // GetExecutable returns a Terraform executable either from the local filesystem,
