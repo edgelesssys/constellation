@@ -43,6 +43,7 @@ resource "google_compute_instance_template" "template" {
     kube-env           = var.kube_env
     constellation-uid  = var.uid
     constellation-role = var.role
+    serial-port-enable = var.debug ? "TRUE" : "FALSE"
   }
 
   network_interface {
@@ -77,8 +78,9 @@ resource "google_compute_instance_template" "template" {
   }
 }
 
-resource "google_compute_instance_group_manager" "instance_group_manager" {
+resource "google_compute_region_instance_group_manager" "instance_group_manager" {
   name               = local.name
+  description        = "Instance group manager for Constellation"
   base_instance_name = local.name
   target_size        = var.instance_count
 

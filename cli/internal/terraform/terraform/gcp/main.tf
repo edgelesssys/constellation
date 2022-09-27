@@ -128,6 +128,7 @@ module "instance_group_control_plane" {
   network        = google_compute_network.vpc_network.id
   subnetwork     = google_compute_subnetwork.vpc_subnetwork.id
   kube_env       = local.kube_env
+  debug          = var.debug
   named_ports = flatten([
     { name = "kubernetes", port = local.ports_kubernetes },
     { name = "bootstrapper", port = local.ports_bootstrapper },
@@ -151,6 +152,7 @@ module "instance_group_worker" {
   network        = google_compute_network.vpc_network.id
   subnetwork     = google_compute_subnetwork.vpc_subnetwork.id
   kube_env       = local.kube_env
+  debug          = var.debug
 }
 
 resource "google_compute_global_address" "loadbalancer_ip" {
