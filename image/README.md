@@ -41,6 +41,7 @@ Important settings are:
 - `COSA_INIT_BRANCH`: Git branch checked out from `COSA_INIT_REPO`. Can be used to test out changes on another branch before merging.
 - `NETRC` path to a netrc file containing a GitHub PAT. Used to authenticate to GitHub from within the COSA container.
 - `GCP_IMAGE_NAME`: Image name for the GCP image. Set to include a timestamp when using the build pipeline. Can be set to a custom value if you want to upload a custom image for testing on GCP.
+- `GCP_PROJECT`: GCP project to upload the image to, set to `constellation-331613` for uploading development images.
 - `AZURE_IMAGE_NAME`: Image name for the Azure image. Can be set to a custom value if you want to upload a custom image for testing on Azure.
 
 Example `config.mk` to create a debug image with docker and name it `my-custom-image`:
@@ -109,5 +110,8 @@ sudo make clean
   ```shell-session
   make image-gcp upload-gcp
   ```
+
+  If the build fails with `ERROR: (gcloud.compute.images.create) Could not fetch resource: - Required 'compute.images.create' permission for 'projects/constellation-images/...`
+  you can repeat the upload command with the `--project` flag changed from `constellation-images` to `constellation-331613` for uploading the image internally.
 
 Resulting images for the CSPs can be found under [images](images/). QEMU images are stored at `build/builds/latest/` with a name ending in `.qcow2`.
