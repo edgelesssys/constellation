@@ -49,8 +49,7 @@ func TestInitArgumentValidation(t *testing.T) {
 
 func TestInitialize(t *testing.T) {
 	testGcpState := &state.ConstellationState{
-		CloudProvider:      "GCP",
-		GCPWorkerInstances: cloudtypes.Instances{"id-0": {}, "id-1": {}},
+		CloudProvider: "GCP",
 	}
 	gcpServiceAccKey := &gcpshared.ServiceAccountKey{
 		Type: "service_account",
