@@ -58,3 +58,9 @@ variable "named_ports" {
   default     = []
   description = "Named ports for the instance group."
 }
+
+variable "debug" {
+  type        = bool
+  default     = false
+  description = "Enable debug mode. This will enable serial port access on the instances."
+}
