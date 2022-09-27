@@ -189,9 +189,6 @@ type QEMUConfig struct {
 	//   Amount of memory per instance (MiB).
 	Memory int `yaml:"memory" validate:"required"`
 	// description: |
-	//   First IP address to use within a node group's subnet.
-	IPRangeStart int `yaml:"ipRangeStart" validate:"required"`
-	// description: |
 	//   Container image to use for the QEMU metadata server.
 	MetadataAPIImage string `yaml:"metadataAPIServer" validate:"required"`
 	// description: |
@@ -239,7 +236,6 @@ func Default() *Config {
 				ImageFormat:          "qcow2",
 				VCPUs:                2,
 				Memory:               2048,
-				IPRangeStart:         100,
 				Measurements:         copyPCRMap(qemuPCRs),
 				MetadataAPIImage:     "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.1.0-pre.0.20220922072347-abb78344bc2a",
 				EnforcedMeasurements: []uint32{11, 12},

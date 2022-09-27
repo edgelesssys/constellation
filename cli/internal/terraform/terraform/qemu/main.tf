@@ -25,7 +25,7 @@ provider "docker" {
 }
 
 resource "docker_image" "qemu-metadata" {
-  name         = "${var.metadata_api_image}"
+  name         = var.metadata_api_image
   keep_locally = true
 }
 
@@ -34,7 +34,7 @@ resource "docker_container" "qemu-metadata" {
   image        = docker_image.qemu-metadata.latest
   network_mode = "host"
   rm           = true
-  command = [ 
+  command = [
     "--network",
     "${var.name}-network",
   ]
@@ -52,7 +52,6 @@ module "control_plane" {
   vcpus           = var.vcpus
   memory          = var.memory
   state_disk_size = var.state_disk_size
-  ip_range_start  = var.ip_range_start
   cidr            = "10.42.1.0/24"
   network_id      = libvirt_network.constellation.id
   pool            = libvirt_pool.cluster.name
@@ -68,7 +67,6 @@ module "worker" {
   vcpus           = var.vcpus
   memory          = var.memory
   state_disk_size = var.state_disk_size
-  ip_range_start  = var.ip_range_start
   cidr            = "10.42.2.0/24"
   network_id      = libvirt_network.constellation.id
   pool            = libvirt_pool.cluster.name

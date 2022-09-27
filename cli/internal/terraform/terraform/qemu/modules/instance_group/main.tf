@@ -9,6 +9,7 @@ terraform {
 
 locals {
   state_disk_size_byte = 1073741824 * var.state_disk_size
+  ip_range_start       = 100
 }
 
 resource "libvirt_domain" "instance_group" {
@@ -44,7 +45,7 @@ resource "libvirt_domain" "instance_group" {
   network_interface {
     network_id     = var.network_id
     hostname       = "${var.role}-${count.index}"
-    addresses      = [cidrhost(var.cidr, var.ip_range_start + count.index)]
+    addresses      = [cidrhost(var.cidr, local.ip_range_start + count.index)]
     wait_for_lease = true
   }
   console {
