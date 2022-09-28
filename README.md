@@ -16,7 +16,7 @@ Constellation is a Kubernetes engine that aims to provide the best possible data
 
 ## Goals
 
-From a security perspective, Constellation is designed to keep all data always encrypted and to prevent access from the infrastructure layer (i.e., remove the infrastructure from the TCB). This includes access from datacenter employees, privileged cloud admins, and attackers coming through the infrastructure (e.g., malicious co-tenants escalating their privileges).
+From a security perspective, Constellation is designed to keep all data always encrypted and to prevent access from the infrastructure layer. This includes access from datacenter employees, privileged cloud admins, and attackers coming through the infrastructure ,e.g., malicious co-tenants escalating their privileges.
 
 From a DevOps perspective, Constellation is designed to work just like what you would expect from a modern K8s engine.
 
