@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Local cluster creation based on QEMU
 - Verification of Azure trusted launch attestation keys
 - Kubernetes version v1.25 is now fully supported.
+- Enabled Konnectivity.
 
 ### Changed
 <!-- For changes in existing functionality.  -->
