@@ -108,52 +108,6 @@ func TestFromFile(t *testing.T) {
 	}
 }
 
-func TestFromFileStrictErrors(t *testing.T) {
-	testCases := map[string]struct {
-		yamlConfig string
-		wantErr    bool
-	}{
-		"valid config": {
-			yamlConfig: `
-			autoscalingNodeGroupMin: 5
-			autoscalingNodeGroupMax: 10
-			stateDisksizeGB: 25
-			`,
-		},
-		"typo": {
-			yamlConfig: `
-			autoscalingNodeGroupMini: 5
-			autoscalingNodeGroupMax: 10
-			stateDisksizeGB: 25
-			`,
-			wantErr: true,
-		},
-		"unsupported version": {
-			yamlConfig: `
-			version: v5
-			autoscalingNodeGroupMin: 1
-			autoscalingNodeGroupMax: 10
-			stateDisksizeGB: 30
-			`,
-			wantErr: true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			fileHandler := file.NewHandler(afero.NewMemMapFs())
-			err := fileHandler.Write(constants.ConfigFilename, []byte(tc.yamlConfig), file.OptNone)
-			assert.NoError(err)
-
-			// TODO: Test should fail because of unknown field "autoscalingNodeGroupMin" but it doesn't.
-			_, err = FromFile(fileHandler, constants.ConfigFilename)
-			assert.Error(err)
-		})
-	}
-}
-
 func TestValidate(t *testing.T) {
 	const defaultMsgCount = 15 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
 
