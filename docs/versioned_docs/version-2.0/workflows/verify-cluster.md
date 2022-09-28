@@ -12,7 +12,7 @@ constellation config fetch-measurements
 
 This command performs the following steps:
 1. Download the signed measurements for the configured image. By default, this will use Edgeless Systems' public measurement registry.
-2. Verify the signed images. This will use Edgeless Systems' [public key](https://edgeless.systems/es.pub).
+2. Verify the signature of the measurements. This will use Edgeless Systems' [public key](https://edgeless.systems/es.pub).
 3. Write measurements into configuration file.
 
 ## The *verify* command
@@ -30,7 +30,7 @@ constellation verify [--cluster-id ...]
 From the attestation statement, the command verifies the following properties:
 * The cluster is using the correct Confidential VM (CVM) type.
 * Inside the CVMs, the correct node images are running. The node images are identified through the measurements obtained in the previous step.
-* The unique ID of the cluster matches the one passed in via `--cluster-id`.
+* The unique ID of the cluster matches the one from your `constellation-id.json` file or passed in via `--cluster-id`.
 
 Once the above properties are verified, you know that you are talking to the right Constellation cluster and it's in a good and trustworthy shape.
 

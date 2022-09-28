@@ -17,26 +17,24 @@ To address this, Constellation provides CSI drivers for Azure Disk and GCE PD, o
 
 For more details see [encrypted persistent storage](../architecture/encrypted-storage.md).
 
-## CSI Drivers
+## CSI drivers
 
 Constellation supports the following drivers, which offer node-level encryption and optional integrity protection.
 
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure">
 
-1. [Azure Disk Storage](https://github.com/edgelesssys/constellation-azuredisk-csi-driver)
-
-   Mount Azure [Disk Storage](https://azure.microsoft.com/en-us/services/storage/disks/#overview) into your Constellation cluster. See the example below on how to install the modified Azure Disk CSI driver or check out the [repository](https://github.com/edgelesssys/constellation-azuredisk-csi-driver) for installation and more information about the Constellation-managed version of the driver. Since Azure Disks are mounted as ReadWriteOnce, they're only available to a single pod.
+**Constellation CSI driver for Azure Disk**:
+Mount Azure [Disk Storage](https://azure.microsoft.com/en-us/services/storage/disks/#overview) into your Constellation cluster. See the instructions on how to [install the Constellation CSI driver](#installation) or check out the [repository](https://github.com/edgelesssys/constellation-azuredisk-csi-driver) for more information. Since Azure Disks are mounted as ReadWriteOnce, they're only available to a single pod.
 
 </tabItem>
 <tabItem value="gcp" label="GCP">
 
-1. [Persistent Disk](https://github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver):
-
-    Mount GCP [Persistent Disk](https://cloud.google.com/persistent-disk) block storage into your Constellation cluster.
-    This includes support for [volume snapshots](https://cloud.google.com/kubernetes-engine/docs/how-to/persistent-volumes/volume-snapshots), which let you create copies of your volume at a specific point in time.
-    You can use them to bring a volume back to a prior state or provision new volumes.
-    Follow the examples listed below to setup the modified GCP PD CSI driver, or check out the [repository](https://github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver) for information about the configuration.
+**Constellation CSI driver for GCP Persistent Disk**:
+Mount [Persistent Disk](https://cloud.google.com/persistent-disk) block storage into your Constellation cluster.
+This includes support for [volume snapshots](https://cloud.google.com/kubernetes-engine/docs/how-to/persistent-volumes/volume-snapshots), which let you create copies of your volume at a specific point in time.
+You can use them to bring a volume back to a prior state or provision new volumes.
+Follow the instructions on how to [install the Constellation CSI driver](#installation) or check out the [repository](https://github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver) for information about the configuration.
 
 </tabItem>
 </tabs>
@@ -63,7 +61,7 @@ The following installation guide gives an overview of how to securely use CSI-ba
 
     A storage class configures the driver responsible for provisioning storage for persistent volume claims.
     A storage class only needs to be created once and can then be used by multiple volumes.
-    The following snippet creates a simple storage class using a [Standard SSD](https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#standard-ssds) as the backing storage device when the first Pod claiming the volume is created.
+    The following snippet creates a simple storage class using [Standard SSDs](https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#standard-ssds) as the backing storage device when the first Pod claiming the volume is created.
 
     ```bash
     cat <<EOF | kubectl apply -f -
@@ -94,7 +92,7 @@ The following installation guide gives an overview of how to securely use CSI-ba
 
     A storage class configures the driver responsible for provisioning storage for persistent volume claims.
     A storage class only needs to be created once and can then be used by multiple volumes.
-    The following snippet creates a simple storage class for the GCE PD driver, utilizing [balanced persistent disks](https://cloud.google.com/compute/docs/disks#pdspecs) as the storage backend device when the first Pod claiming the volume is created.
+    The following snippet creates a simple storage class using [balanced persistent disks](https://cloud.google.com/compute/docs/disks#pdspecs) as the backing storage device when the first Pod claiming the volume is created.
 
     ```bash
     cat <<EOF | kubectl apply -f -

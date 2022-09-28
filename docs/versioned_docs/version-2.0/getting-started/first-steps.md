@@ -180,7 +180,7 @@ The following steps guide you through the process of creating a cluster and depl
 
     :::tip
 
-    On Azure, you may need to wait 15+ min. at this point for role assignments to propagate.
+    On Azure, you may need to wait 15+ minutes at this point for role assignments to propagate.
 
     :::
 
