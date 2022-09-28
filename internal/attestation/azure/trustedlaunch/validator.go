@@ -8,39 +8,98 @@ package trustedlaunch
 
 import (
 	"crypto"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/json"
+	"errors"
+	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	certutil "github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/google/go-tpm/tpm2"
 )
+
+// ameRoot is the AME root CA certificate used to sign Azure's AME Infra CA certificates.
+// The certificate can be found at http://crl.microsoft.com/pkiinfra/certs/AMERoot_ameroot.crt.
+const ameRoot = "-----BEGIN CERTIFICATE-----\nMIIFVjCCAz6gAwIBAgIQJdrLVcnGd4FAnlaUgt5N/jANBgkqhkiG9w0BAQsFADA8\nMRMwEQYKCZImiZPyLGQBGRYDR0JMMRMwEQYKCZImiZPyLGQBGRYDQU1FMRAwDgYD\nVQQDEwdhbWVyb290MB4XDTE2MDUyNDIyNTI1NFoXDTI2MDUyNDIyNTcwM1owPDET\nMBEGCgmSJomT8ixkARkWA0dCTDETMBEGCgmSJomT8ixkARkWA0FNRTEQMA4GA1UE\nAxMHYW1lcm9vdDCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBALv4uChY\noVuO+bxBOcn8v4FajoGkxo0YgVwEqEPDVPI6vzmnEqHVhQ1GMVeDyiRrgQT1vCk1\nHMMzo9LlWowPrzbXOwjOTFbXc36+UU41yNN2GeNa49RXbAkfbzKE/SYLfbqOD0dN\nZLwvOhgIb25oA1eAxW/DI/hvJLLKh2SscvkIyd3o2BUeFm7NtyYG/buCKJh8lOq8\n0iBwRoEoInb0vhorHaswSMmqY1g+AJndY/M7uGUqkhDGBhLu53bU9wbUPHsEI+wa\nq6WypCijZYT+C4BS5GJrEPZ2O92pztd+ULqhzNRoPj5RuElUww7+z5RnbCaupyBY\nOmmJMH30EiRSq8dK/irixXXwJraSywR5kyfmAkv6GYWlRlxFUiK3/co47JLA3TDK\nN0wfutbpqxdZQYyGfO2nZrr5JbKfSU0sMtOZDkK6hlafV++hfkVSvFfNHE5B5uN1\nMK6agl1dzi28HfJT9aO7cmjGxl1SJ5qoCvcwZNQ2SPHFdrslcwXEFOMDaEzVOA3V\n7j3+6lrT8sHXg0sErkcd8lrBImfzhLxM/Wh8CgOUNeUu3flUoxmFv3el+QWalSNy\n2SXs2NgWuYE5Iog7CHD/xCnoEnZwwjqLkrro4hYWE4Xj3VlA2Eq+VxqJOgdyFl3m\nckSZ08OcwLeprY4+2GEvCXNGNdXUmNNgk2PvAgMBAAGjVDBSMAsGA1UdDwQEAwIB\nhjASBgNVHRMBAf8ECDAGAQH/AgEBMB0GA1UdDgQWBBQpXlFeZK40ueusnA2njHUB\n0QkLKDAQBgkrBgEEAYI3FQEEAwIBADANBgkqhkiG9w0BAQsFAAOCAgEAcznFDnJx\nsXaazFY1DuIPvUaiWS7ELxAVXMGZ7ROjLrDq1FNYVewL4emDqyEIEMFncec8rqyk\nVBvLQA5YqMCxQWJpL0SlgRSknzLh9ZVcQw1TshC49/XV2N/CLOuyInEQwS//46so\nT20Cf8UGUiOK472LZlvM4KchyDR3FTNtmMg0B/LKVjevpX9sk5MiyjjLUj3jtPIP\n7jpsfZDd/BNsg/89kpsIF5O64I7iYFj3MHu9o4UJcEX0hRt7OzUxqa9THTssvzE5\nVkWo8Rtou2T5TobKV6Rr5Ob9wchLXqVtCyZF16voEKheBnalhGUvErI/6VtBwLb7\n13C0JkKLBNMen+HClNliicVIaubnpY2g+AqxOgKBHiZnzq2HhE1qqEUf4VfqahNU\niaXtbtyo54f2dCf9UL9uG9dllN3nxBE/Y/aWF6E1M8Bslj1aYAtfUQ/xlhEXCly6\nzohw697i3XFUt76RwvfW8quvqdH9Mx0PBpYo4wJJRwAecSJQNy6wIJhAuDgOemXJ\nYViBi/bDnhPcFEVQxsypQSw91BUw7Mxh+W59H5MC25SAIw9fLMT9LRqSYpPyasNp\n4nACjR+bv/6cI+ICOrGmD2mrk2c4dNnYpDx96FfX/Y158RV0wotqIglACk6m1qyo\nyTra6P0Kvo6xz4KaVm8F7VDzUP+heAAhPAs=\n-----END CERTIFICATE-----\n"
 
 // Validator for Azure trusted launch VM attestation.
 type Validator struct {
 	oid.AzureTrustedLaunch
 	*vtpm.Validator
+	rootCA []byte
 }
 
 // NewValidator initializes a new Azure validator with the provided PCR values.
 func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, log vtpm.WarnLogger) *Validator {
-	return &Validator{
-		Validator: vtpm.NewValidator(
-			pcrs,
-			enforcedPCRs,
-			trustedKey,
-			validateVM,
-			vtpm.VerifyPKCS1v15,
-			log,
-		),
-	}
+	v := &Validator{rootCA: []byte(ameRoot)}
+	v.Validator = vtpm.NewValidator(
+		pcrs,
+		enforcedPCRs,
+		v.verifyAttestationKey,
+		validateVM,
+		vtpm.VerifyPKCS1v15,
+		log,
+	)
+	return v
 }
 
-// trustedKey returns the key encoded in the given TPMT_PUBLIC message.
-func trustedKey(akPub, instanceInfo []byte) (crypto.PublicKey, error) {
+// verifyAttestationKey establishes trust in an attestation key.
+// It does so by verifying the certificate chain of the attestation key certificate.
+func (v *Validator) verifyAttestationKey(akPub, instanceInfo []byte) (crypto.PublicKey, error) {
 	pubArea, err := tpm2.DecodePublic(akPub)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decoding attestation key public area: %w", err)
 	}
-	return pubArea.Key()
+
+	var akSigner akSigner
+	if err := json.Unmarshal(instanceInfo, &akSigner); err != nil {
+		return nil, fmt.Errorf("unmarshaling attestation key signer info: %w", err)
+	}
+
+	akCert, err := x509.ParseCertificate(akSigner.AkCert)
+	if err != nil {
+		return nil, fmt.Errorf("parsing attestation key certificate: %w", err)
+	}
+	akCertCA, err := x509.ParseCertificate(akSigner.CA)
+	if err != nil {
+		return nil, fmt.Errorf("parsing attestation key CA certificate: %w", err)
+	}
+
+	rootCA, err := certutil.PemToX509Cert(v.rootCA)
+	if err != nil {
+		return nil, fmt.Errorf("parsing AME root CA: %w", err)
+	}
+	roots := x509.NewCertPool()
+	roots.AddCert(rootCA)
+
+	intermediates := x509.NewCertPool()
+	intermediates.AddCert(akCertCA)
+
+	if _, err := akCert.Verify(x509.VerifyOptions{
+		Roots:         roots,
+		Intermediates: intermediates,
+		KeyUsages:     []x509.ExtKeyUsage{x509.ExtKeyUsageAny},
+	}); err != nil {
+		return nil, fmt.Errorf("verifying attestation key certificate: %w", err)
+	}
+
+	pubKey, err := pubArea.Key()
+	if err != nil {
+		return nil, fmt.Errorf("getting public key: %w", err)
+	}
+
+	pubKeyRSA, ok := pubKey.(*rsa.PublicKey)
+	if !ok {
+		return nil, errors.New("attestation key is not an RSA key")
+	}
+
+	if !pubKeyRSA.Equal(akCert.PublicKey) {
+		return nil, errors.New("certificate public key does not match attestation key")
+	}
+
+	return pubKeyRSA, nil
 }
 
 // validateVM returns nil.
