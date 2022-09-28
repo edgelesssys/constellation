@@ -46,7 +46,7 @@ kubectl -n kube-system get nodes
 
 ### Manual scaling
 
-Alternatively, you can choose to manually scale your cluster up or down:
+Alternatively, you can manually scale your cluster up or down:
 
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure">
