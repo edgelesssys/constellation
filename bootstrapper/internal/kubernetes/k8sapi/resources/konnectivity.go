@@ -113,10 +113,10 @@ func NewKonnectivityAgents(konnectivityServerAddress string) *KonnectivityAgents
 									// https://github.com/kubernetes-sigs/apiserver-network-proxy/issues/273
 									"--sync-forever=true",
 									// Ensure stable connection to the konnectivity server.
-									"--keepalive-time=60s",
-									"--sync-interval=1s",
-									"--sync-interval-cap=3s",
-									"--probe-interval=1s",
+									"--keepalive-time=60m",
+									"--sync-interval=5s",
+									"--sync-interval-cap=30s",
+									"--probe-interval=5s",
 									"--v=3",
 								},
 								Env: []corev1.EnvVar{
@@ -253,7 +253,7 @@ func NewKonnectivityServerStaticPod() *KonnectivityServerStaticPod {
 							"--agent-service-account=konnectivity-agent",
 							"--kubeconfig=/etc/kubernetes/konnectivity-server.conf",
 							"--authentication-audience=system:konnectivity-server",
-							"--proxy-strategies=destHost,default",
+							"--proxy-strategies=default",
 						},
 						LivenessProbe: &corev1.Probe{
 							ProbeHandler: corev1.ProbeHandler{
