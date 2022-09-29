@@ -85,6 +85,9 @@ type UserKey struct {
 // if not required.
 type ProviderConfig struct {
 	// description: |
+	//   Configuration for AWS as provider.
+	AWS *AWSConfig `yaml:"aws,omitempty" validate:"omitempty,dive"`
+	// description: |
 	//   Configuration for Azure as provider.
 	Azure *AzureConfig `yaml:"azure,omitempty" validate:"omitempty,dive"`
 	// description: |
@@ -93,6 +96,31 @@ type ProviderConfig struct {
 	// description: |
 	//   Configuration for QEMU as provider.
 	QEMU *QEMUConfig `yaml:"qemu,omitempty" validate:"omitempty,dive"`
+}
+
+// AWSConfig are AWS specific configuration values used by the CLI.
+type AWSConfig struct {
+	// description: |
+	//   AWS datacenter region. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions
+	Region string `yaml:"region" validate:"required"`
+	// description: |
+	//   AMI ID of the machine image used to create Constellation nodes.
+	Image string `yaml:"image" validate:"required"`
+	// description: |
+	//   VM instance type to use for Constellation nodes. Needs to be Nitro-enabled. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html#ec2-nitro-instances
+	InstanceType string `yaml:"instanceType" validate:"aws_instance_type"`
+	// description: |
+	//   Name of the IAM profile to use for the control plane nodes.
+	IAMGroupControlPlane string `yaml:"iamGroupControlPlane" validate:"required"`
+	// description: |
+	//   Name of the IAM profile to use for the worker nodes.
+	IAMGroupWorkerNodes string `yaml:"iamGroupWorkersNodes" validate:"required"`
+	// description: |
+	//   Expected confidential VM measurements.
+	Measurements Measurements `yaml:"measurements"`
+	// description: |
+	//   List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning.
+	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
 }
 
 // AzureConfig are Azure specific configuration values used by the CLI.
@@ -212,6 +240,15 @@ func Default() *Config {
 		StateDiskSizeGB: 30,
 		DebugCluster:    func() *bool { b := false; return &b }(),
 		Provider: ProviderConfig{
+			AWS: &AWSConfig{
+				Region:               "",
+				Image:                "",
+				InstanceType:         "t3.xlarge",
+				IAMGroupControlPlane: "",
+				IAMGroupWorkerNodes:  "",
+				Measurements:         copyPCRMap(awsPCRs),
+				EnforcedMeasurements: []uint32{}, // TODO: add default values
+			},
 			Azure: &AzureConfig{
 				SubscriptionID:       "",
 				TenantID:             "",
@@ -257,6 +294,10 @@ func validateK8sVersion(fl validator.FieldLevel) bool {
 	return versions.IsSupportedK8sVersion(fl.Field().String())
 }
 
+func validateAWSInstanceType(fl validator.FieldLevel) bool {
+	return validInstanceTypeForProvider(fl.Field().String(), false, cloudprovider.AWS)
+}
+
 func validateAzureInstanceType(fl validator.FieldLevel) bool {
 	azureConfig := fl.Parent().Interface().(AzureConfig)
 	var acceptNonCVM bool
@@ -277,6 +318,9 @@ func validateProvider(sl validator.StructLevel) {
 	provider := sl.Current().Interface().(ProviderConfig)
 	providerCount := 0
 
+	if provider.AWS != nil {
+		providerCount++
+	}
 	if provider.Azure != nil {
 		providerCount++
 	}
@@ -303,7 +347,11 @@ func (c *Config) Validate() ([]string, error) {
 		return nil, err
 	}
 
-	// Register Azure & GCP InstanceType validation error types
+	// Register AWS, Azure & GCP InstanceType validation error types
+	if err := validate.RegisterTranslation("aws_instance_type", trans, registerTranslateAWSInstanceTypeError, translateAWSInstanceTypeError); err != nil {
+		return nil, err
+	}
+
 	if err := validate.RegisterTranslation("azure_instance_type", trans, registerTranslateAzureInstanceTypeError, c.translateAzureInstanceTypeError); err != nil {
 		return nil, err
 	}
@@ -326,12 +374,17 @@ func (c *Config) Validate() ([]string, error) {
 		return nil, err
 	}
 
-	// register custom validator with label azure_instance_type to validate version based on available versionConfigs.
+	// register custom validator with label aws_instance_type to validate the AWS instance type from config input.
+	if err := validate.RegisterValidation("aws_instance_type", validateAWSInstanceType); err != nil {
+		return nil, err
+	}
+
+	// register custom validator with label azure_instance_type to validate the Azure instance type from config input.
 	if err := validate.RegisterValidation("azure_instance_type", validateAzureInstanceType); err != nil {
 		return nil, err
 	}
 
-	// register custom validator with label gcp_instance_type to validate version based on available versionConfigs.
+	// register custom validator with label gcp_instance_type to validate the GCP instance type from config input.
 	if err := validate.RegisterValidation("gcp_instance_type", validateGCPInstanceType); err != nil {
 		return nil, err
 	}
@@ -373,6 +426,16 @@ func (c *Config) translateAzureInstanceTypeError(ut ut.Translator, fe validator.
 	return t
 }
 
+func registerTranslateAWSInstanceTypeError(ut ut.Translator) error {
+	return ut.Add("aws_instance_type", fmt.Sprintf("{0} must be a non-Graviton instance from one of the following families/instance types with size xlarge or higher: %v", instancetypes.AWSSupportedInstanceTypesOrFamilies), true)
+}
+
+func translateAWSInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
+	t, _ := ut.T("aws_instance_type", fe.Field())
+
+	return t
+}
+
 func registerTranslateGCPInstanceTypeError(ut ut.Translator) error {
 	return ut.Add("gcp_instance_type", fmt.Sprintf("{0} must be one of %v", instancetypes.GCPInstanceTypes), true)
 }
@@ -402,6 +465,9 @@ func (c *Config) translateMoreThanOneProviderError(ut ut.Translator, fe validato
 	definedProviders := make([]string, 0)
 
 	// c.Provider should not be nil as Provider would need to be defined for the validation to fail in this place.
+	if c.Provider.AWS != nil {
+		definedProviders = append(definedProviders, "AWS")
+	}
 	if c.Provider.Azure != nil {
 		definedProviders = append(definedProviders, "Azure")
 	}
@@ -421,6 +487,8 @@ func (c *Config) translateMoreThanOneProviderError(ut ut.Translator, fe validato
 // HasProvider checks whether the config contains the provider.
 func (c *Config) HasProvider(provider cloudprovider.Provider) bool {
 	switch provider {
+	case cloudprovider.AWS:
+		return c.Provider.AWS != nil
 	case cloudprovider.Azure:
 		return c.Provider.Azure != nil
 	case cloudprovider.GCP:
@@ -435,6 +503,9 @@ func (c *Config) HasProvider(provider cloudprovider.Provider) bool {
 // If multiple cloud providers are configured (which is not supported)
 // only a single image is returned.
 func (c *Config) Image() string {
+	if c.HasProvider(cloudprovider.AWS) {
+		return c.Provider.AWS.Image
+	}
 	if c.HasProvider(cloudprovider.Azure) {
 		return c.Provider.Azure.Image
 	}
@@ -445,6 +516,9 @@ func (c *Config) Image() string {
 }
 
 func (c *Config) UpdateMeasurements(newMeasurements Measurements) {
+	if c.Provider.AWS != nil {
+		c.Provider.AWS.Measurements.CopyFrom(newMeasurements)
+	}
 	if c.Provider.Azure != nil {
 		c.Provider.Azure.Measurements.CopyFrom(newMeasurements)
 	}
@@ -463,6 +537,8 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 	currentProviderConfigs := c.Provider
 	c.Provider = ProviderConfig{}
 	switch provider {
+	case cloudprovider.AWS:
+		c.Provider.AWS = currentProviderConfigs.AWS
 	case cloudprovider.Azure:
 		c.Provider.Azure = currentProviderConfigs.Azure
 	case cloudprovider.GCP:
@@ -479,12 +555,15 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 // was put inside an image just by looking at its name.
 func (c *Config) IsDebugImage() bool {
 	switch {
-	case c.Provider.GCP != nil:
-		gcpRegex := regexp.MustCompile(`^projects\/constellation-images\/global\/images\/constellation-v[\d]+-[\d]+-[\d]+$`)
-		return !gcpRegex.MatchString(c.Provider.GCP.Image)
+	case c.Provider.AWS != nil:
+		// TODO: Add proper image name validation for AWS when we are closer to release.
+		return true
 	case c.Provider.Azure != nil:
 		azureRegex := regexp.MustCompile(`^\/CommunityGalleries\/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df\/Images\/constellation\/Versions\/[\d]+.[\d]+.[\d]+$`)
 		return !azureRegex.MatchString(c.Provider.Azure.Image)
+	case c.Provider.GCP != nil:
+		gcpRegex := regexp.MustCompile(`^projects\/constellation-images\/global\/images\/constellation-v[\d]+-[\d]+-[\d]+$`)
+		return !gcpRegex.MatchString(c.Provider.GCP.Image)
 	default:
 		return false
 	}
@@ -492,6 +571,9 @@ func (c *Config) IsDebugImage() bool {
 
 // GetProvider returns the configured cloud provider.
 func (c *Config) GetProvider() cloudprovider.Provider {
+	if c.Provider.AWS != nil {
+		return cloudprovider.AWS
+	}
 	if c.Provider.Azure != nil {
 		return cloudprovider.Azure
 	}
@@ -534,13 +616,8 @@ func copyPCRMap(m map[uint32][]byte) map[uint32][]byte {
 
 func validInstanceTypeForProvider(insType string, acceptNonCVM bool, provider cloudprovider.Provider) bool {
 	switch provider {
-	case cloudprovider.GCP:
-		for _, instanceType := range instancetypes.GCPInstanceTypes {
-			if insType == instanceType {
-				return true
-			}
-		}
-		return false
+	case cloudprovider.AWS:
+		return checkIfAWSInstanceTypeIsValid(insType)
 	case cloudprovider.Azure:
 		if acceptNonCVM {
 			for _, instanceType := range instancetypes.AzureTrustedLaunchInstanceTypes {
@@ -556,9 +633,60 @@ func validInstanceTypeForProvider(insType string, acceptNonCVM bool, provider cl
 			}
 		}
 		return false
+	case cloudprovider.GCP:
+		for _, instanceType := range instancetypes.GCPInstanceTypes {
+			if insType == instanceType {
+				return true
+			}
+		}
+		return false
 	default:
 		return false
 	}
+}
+
+// checkIfAWSInstanceTypeIsValid checks if an AWS instance type passed as user input is in one of the many supported instance families or single instances.
+func checkIfAWSInstanceTypeIsValid(userInput string) bool {
+	/*
+		Check for supported instances with the following characterics:
+		- must be an instance built on "Nitro System"
+		- at least 4 vCPUs (contains xlarge in string, everything > 4 vCPUs is a multiplicator of xlarge)
+		- not Graviton (arm64) based, as we do not have ARM images yet
+		Graviton instances have 'g' in their name, but not at the very beginning (these are 'G' family instances)
+
+		If we do support Graviton instances in the future, this check can be easily removed but we would need to make sure that the images are built for arm64.
+	*/
+
+	// Check if user or code does anything weird and tries to pass multiple strings as one
+	if strings.Contains(userInput, " ") {
+		return false
+	}
+	if strings.Contains(userInput, ",") {
+		return false
+	}
+	if strings.Contains(userInput, ";") {
+		return false
+	}
+
+	userInputLowercase := strings.ToLower(userInput)
+	family := strings.Split(userInputLowercase, ".")[0]
+	isGraviton := strings.LastIndex(family, "g") > 0
+	hasEnoughVCPUs := strings.Contains(userInputLowercase, "xlarge") || strings.Contains(userInputLowercase, "metal")
+
+	if isGraviton || !hasEnoughVCPUs {
+		return false
+	}
+
+	// Now check if the user input is a supported family
+	// Note that we cannot directly use the family split from the Graviton check above, as some instances are directly specified by their full name and not just the family in general
+	for _, supportedFamily := range instancetypes.AWSSupportedInstanceTypesOrFamilies {
+		supportedFamilyLowercase := strings.ToLower(supportedFamily)
+		if strings.Contains(userInputLowercase, supportedFamilyLowercase) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // IsDebugCluster checks whether the cluster is configured as a debug cluster.

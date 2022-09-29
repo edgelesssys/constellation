@@ -15,6 +15,7 @@ var (
 	UpgradeConfigDoc  encoder.Doc
 	UserKeyDoc        encoder.Doc
 	ProviderConfigDoc encoder.Doc
+	AWSConfigDoc      encoder.Doc
 	AzureConfigDoc    encoder.Doc
 	GCPConfigDoc      encoder.Doc
 	QEMUConfigDoc     encoder.Doc
@@ -120,22 +121,73 @@ func init() {
 			FieldName: "provider",
 		},
 	}
-	ProviderConfigDoc.Fields = make([]encoder.Doc, 3)
-	ProviderConfigDoc.Fields[0].Name = "azure"
-	ProviderConfigDoc.Fields[0].Type = "AzureConfig"
+	ProviderConfigDoc.Fields = make([]encoder.Doc, 4)
+	ProviderConfigDoc.Fields[0].Name = "aws"
+	ProviderConfigDoc.Fields[0].Type = "AWSConfig"
 	ProviderConfigDoc.Fields[0].Note = ""
-	ProviderConfigDoc.Fields[0].Description = "Configuration for Azure as provider."
-	ProviderConfigDoc.Fields[0].Comments[encoder.LineComment] = "Configuration for Azure as provider."
-	ProviderConfigDoc.Fields[1].Name = "gcp"
-	ProviderConfigDoc.Fields[1].Type = "GCPConfig"
+	ProviderConfigDoc.Fields[0].Description = "Configuration for AWS as provider."
+	ProviderConfigDoc.Fields[0].Comments[encoder.LineComment] = "Configuration for AWS as provider."
+	ProviderConfigDoc.Fields[1].Name = "azure"
+	ProviderConfigDoc.Fields[1].Type = "AzureConfig"
 	ProviderConfigDoc.Fields[1].Note = ""
-	ProviderConfigDoc.Fields[1].Description = "Configuration for Google Cloud as provider."
-	ProviderConfigDoc.Fields[1].Comments[encoder.LineComment] = "Configuration for Google Cloud as provider."
-	ProviderConfigDoc.Fields[2].Name = "qemu"
-	ProviderConfigDoc.Fields[2].Type = "QEMUConfig"
+	ProviderConfigDoc.Fields[1].Description = "Configuration for Azure as provider."
+	ProviderConfigDoc.Fields[1].Comments[encoder.LineComment] = "Configuration for Azure as provider."
+	ProviderConfigDoc.Fields[2].Name = "gcp"
+	ProviderConfigDoc.Fields[2].Type = "GCPConfig"
 	ProviderConfigDoc.Fields[2].Note = ""
-	ProviderConfigDoc.Fields[2].Description = "Configuration for QEMU as provider."
-	ProviderConfigDoc.Fields[2].Comments[encoder.LineComment] = "Configuration for QEMU as provider."
+	ProviderConfigDoc.Fields[2].Description = "Configuration for Google Cloud as provider."
+	ProviderConfigDoc.Fields[2].Comments[encoder.LineComment] = "Configuration for Google Cloud as provider."
+	ProviderConfigDoc.Fields[3].Name = "qemu"
+	ProviderConfigDoc.Fields[3].Type = "QEMUConfig"
+	ProviderConfigDoc.Fields[3].Note = ""
+	ProviderConfigDoc.Fields[3].Description = "Configuration for QEMU as provider."
+	ProviderConfigDoc.Fields[3].Comments[encoder.LineComment] = "Configuration for QEMU as provider."
+
+	AWSConfigDoc.Type = "AWSConfig"
+	AWSConfigDoc.Comments[encoder.LineComment] = "AWSConfig are AWS specific configuration values used by the CLI."
+	AWSConfigDoc.Description = "AWSConfig are AWS specific configuration values used by the CLI."
+	AWSConfigDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "ProviderConfig",
+			FieldName: "aws",
+		},
+	}
+	AWSConfigDoc.Fields = make([]encoder.Doc, 7)
+	AWSConfigDoc.Fields[0].Name = "region"
+	AWSConfigDoc.Fields[0].Type = "string"
+	AWSConfigDoc.Fields[0].Note = ""
+	AWSConfigDoc.Fields[0].Description = "AWS datacenter region. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions"
+	AWSConfigDoc.Fields[0].Comments[encoder.LineComment] = "AWS datacenter region. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions"
+	AWSConfigDoc.Fields[1].Name = "image"
+	AWSConfigDoc.Fields[1].Type = "string"
+	AWSConfigDoc.Fields[1].Note = ""
+	AWSConfigDoc.Fields[1].Description = "AMI ID of the machine image used to create Constellation nodes."
+	AWSConfigDoc.Fields[1].Comments[encoder.LineComment] = "AMI ID of the machine image used to create Constellation nodes."
+	AWSConfigDoc.Fields[2].Name = "instanceType"
+	AWSConfigDoc.Fields[2].Type = "string"
+	AWSConfigDoc.Fields[2].Note = ""
+	AWSConfigDoc.Fields[2].Description = "VM instance type to use for Constellation nodes. Needs to be Nitro-enabled. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html#ec2-nitro-instances"
+	AWSConfigDoc.Fields[2].Comments[encoder.LineComment] = "VM instance type to use for Constellation nodes. Needs to be Nitro-enabled. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html#ec2-nitro-instances"
+	AWSConfigDoc.Fields[3].Name = "iamGroupControlPlane"
+	AWSConfigDoc.Fields[3].Type = "string"
+	AWSConfigDoc.Fields[3].Note = ""
+	AWSConfigDoc.Fields[3].Description = "Name of the IAM profile to use for the control plane nodes."
+	AWSConfigDoc.Fields[3].Comments[encoder.LineComment] = "Name of the IAM profile to use for the control plane nodes."
+	AWSConfigDoc.Fields[4].Name = "iamGroupWorkersNodes"
+	AWSConfigDoc.Fields[4].Type = "string"
+	AWSConfigDoc.Fields[4].Note = ""
+	AWSConfigDoc.Fields[4].Description = "Name of the IAM profile to use for the worker nodes."
+	AWSConfigDoc.Fields[4].Comments[encoder.LineComment] = "Name of the IAM profile to use for the worker nodes."
+	AWSConfigDoc.Fields[5].Name = "measurements"
+	AWSConfigDoc.Fields[5].Type = "Measurements"
+	AWSConfigDoc.Fields[5].Note = ""
+	AWSConfigDoc.Fields[5].Description = "Expected confidential VM measurements."
+	AWSConfigDoc.Fields[5].Comments[encoder.LineComment] = "Expected confidential VM measurements."
+	AWSConfigDoc.Fields[6].Name = "enforcedMeasurements"
+	AWSConfigDoc.Fields[6].Type = "[]uint32"
+	AWSConfigDoc.Fields[6].Note = ""
+	AWSConfigDoc.Fields[6].Description = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
+	AWSConfigDoc.Fields[6].Comments[encoder.LineComment] = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
 
 	AzureConfigDoc.Type = "AzureConfig"
 	AzureConfigDoc.Comments[encoder.LineComment] = "AzureConfig are Azure specific configuration values used by the CLI."
@@ -352,6 +404,10 @@ func (_ ProviderConfig) Doc() *encoder.Doc {
 	return &ProviderConfigDoc
 }
 
+func (_ AWSConfig) Doc() *encoder.Doc {
+	return &AWSConfigDoc
+}
+
 func (_ AzureConfig) Doc() *encoder.Doc {
 	return &AzureConfigDoc
 }
@@ -374,6 +430,7 @@ func GetConfigurationDoc() *encoder.FileDoc {
 			&UpgradeConfigDoc,
 			&UserKeyDoc,
 			&ProviderConfigDoc,
+			&AWSConfigDoc,
 			&AzureConfigDoc,
 			&GCPConfigDoc,
 			&QEMUConfigDoc,
