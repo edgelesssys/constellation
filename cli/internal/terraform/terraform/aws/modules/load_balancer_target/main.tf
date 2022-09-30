@@ -7,19 +7,6 @@ terraform {
   }
 }
 
-resource "aws_lb" "front_end" {
-  name               = var.name
-  internal           = false
-  load_balancer_type = "network"
-  subnets            = [var.subnet]
-
-  tags = {
-    Name = "loadbalancer"
-  }
-
-  enable_cross_zone_load_balancing = true
-}
-
 resource "aws_lb_target_group" "front_end" {
   name     = var.name
   port     = var.port
@@ -37,7 +24,7 @@ resource "aws_lb_target_group" "front_end" {
 }
 
 resource "aws_lb_listener" "front_end" {
-  load_balancer_arn = aws_lb.front_end.arn
+  load_balancer_arn = var.lb_arn
   port              = var.port
   protocol          = "TCP"
 

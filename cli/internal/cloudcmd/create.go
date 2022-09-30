@@ -46,6 +46,17 @@ func NewCreator(out io.Writer) *Creator {
 func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, config *config.Config, name, insType string, controlPlaneCount, workerCount int,
 ) (clusterid.File, error) {
 	switch provider {
+	case cloudprovider.AWS:
+		// TODO: Remove this once AWS is supported.
+		if os.Getenv("CONSTELLATION_AWS_DEV") != "1" {
+			return state.ConstellationState{}, fmt.Errorf("AWS isn't supported yet")
+		}
+		cl, err := c.newTerraformClient(ctx, provider)
+		if err != nil {
+			return state.ConstellationState{}, err
+		}
+		defer cl.RemoveInstaller()
+		return c.createAWS(ctx, cl, config, name, insType, controlPlaneCount, workerCount)
 	case cloudprovider.GCP:
 		cl, err := c.newTerraformClient(ctx, provider)
 		if err != nil {
@@ -74,6 +85,32 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 	default:
 		return clusterid.File{}, fmt.Errorf("unsupported cloud provider: %s", provider)
 	}
+}
+
+func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *config.Config,
+	name, insType string, controlPlaneCount, workerCount int,
+) (stat state.ConstellationState, retErr error) {
+	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
+
+	vars := &terraform.AWSVariables{
+		CommonVariables: terraform.CommonVariables{
+			Name:               name,
+			CountControlPlanes: controlPlaneCount,
+			CountWorkers:       workerCount,
+			StateDiskSizeGB:    config.StateDiskSizeGB,
+		},
+		Region:                 config.Provider.AWS.Region,
+		InstanceType:           insType,
+		AMIImageID:             config.Provider.AWS.Image,
+		IAMProfileControlPlane: config.Provider.AWS.IAMProfileControlPlane,
+		IAMProfileWorkerNodes:  config.Provider.AWS.IAMProfileWorkerNodes,
+	}
+
+	if err := cl.CreateCluster(ctx, name, vars); err != nil {
+		return state.ConstellationState{}, err
+	}
+
+	return cl.GetState(), nil
 }
 
 func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *config.Config,
