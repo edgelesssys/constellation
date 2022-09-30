@@ -186,7 +186,7 @@ func getCompatibleImageMeasurements(ctx context.Context, client *http.Client, pu
 			return err
 		}
 
-		if err := img.Measurements.FetchAndVerify(ctx, client, measurementsURL, signatureURL, pubK); err != nil {
+		if _, err := img.Measurements.FetchAndVerify(ctx, client, measurementsURL, signatureURL, pubK); err != nil {
 			return err
 		}
 		images[idx] = img

@@ -1,3 +1,9 @@
+/*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
 package sigstore
 
 import (
@@ -10,7 +16,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/sigstore/rekor/pkg/client"
 	genclient "github.com/sigstore/rekor/pkg/generated/client"
@@ -89,6 +94,8 @@ func (r *Rekor) GetEntry(ctx context.Context, uuid string) (models.LogEntryAnon,
 	return models.LogEntryAnon{}, fmt.Errorf("no entry returned")
 }
 
+// VerifyEntry performs inclusion proof verification, SignedEntryTimestamp
+// verification, and checkpoint verification of the provided entry in Rekor.
 func (r *Rekor) VerifyEntry(ctx context.Context, entry models.LogEntryAnon) (bool, error) {
 	keyResp, err := r.client.Pubkey.GetPublicKey(nil)
 	if err != nil {
@@ -118,6 +125,7 @@ func (r *Rekor) VerifyEntry(ctx context.Context, entry models.LogEntryAnon) (boo
 	return true, nil
 }
 
+// GetAndVerifyEntry performs both GetEntry and VerifyEntry.
 func (r *Rekor) GetAndVerifyEntry(ctx context.Context, uuid string) (models.LogEntryAnon, bool, error) {
 	entry, err := r.GetEntry(ctx, uuid)
 	if err != nil {
@@ -132,15 +140,15 @@ func (r *Rekor) GetAndVerifyEntry(ctx context.Context, uuid string) (models.LogE
 	return entry, valid, nil
 }
 
-func (r *Rekor) HashedRekordFromEntry(entry models.LogEntryAnon) (*hashedrekord.V001Entry, error) {
+// HashedRekordFromEntry extract the base64 encoded polymorphic Body field
+// and unmarshals the contained JSON into the correct type.
+func HashedRekordFromEntry(entry models.LogEntryAnon) (*hashedrekord.V001Entry, error) {
 	var rekord models.Hashedrekord
 
 	decoded, err := base64.StdEncoding.DecodeString(entry.Body.(string))
 	if err != nil {
 		return nil, err
 	}
-
-	log.Printf("%s\n", decoded)
 
 	err = json.NewDecoder(bytes.NewReader(decoded)).Decode(&rekord)
 	if err != nil {
@@ -153,4 +161,9 @@ func (r *Rekor) HashedRekordFromEntry(entry models.LogEntryAnon) (*hashedrekord.
 	}
 
 	return hashedRekord, nil
+}
+
+func IsEntrySignedBy(rekord *hashedrekord.V001Entry, publicKey string) bool {
+	actualKey := rekord.HashedRekordObj.Signature.PublicKey.Content.String()
+	return actualKey == publicKey
 }

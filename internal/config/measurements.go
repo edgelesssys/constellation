@@ -9,7 +9,9 @@ package config
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -44,22 +46,26 @@ var (
 
 // FetchAndVerify fetches measurement and signature files via provided URLs,
 // using client for download. The publicKey is used to verify the measurements.
-func (m *Measurements) FetchAndVerify(ctx context.Context, client *http.Client, measurementsURL *url.URL, signatureURL *url.URL, publicKey []byte) error {
+// The hash of the fetched measurements is returned.
+func (m *Measurements) FetchAndVerify(ctx context.Context, client *http.Client, measurementsURL *url.URL, signatureURL *url.URL, publicKey []byte) (string, error) {
 	measurements, err := getFromURL(ctx, client, measurementsURL)
 	if err != nil {
-		return fmt.Errorf("failed to fetch measurements: %w", err)
+		return "", fmt.Errorf("failed to fetch measurements: %w", err)
 	}
 	signature, err := getFromURL(ctx, client, signatureURL)
 	if err != nil {
-		return fmt.Errorf("failed to fetch signature: %w", err)
+		return "", fmt.Errorf("failed to fetch signature: %w", err)
 	}
 	if err := sigstore.VerifySignature(measurements, signature, publicKey); err != nil {
-		return err
+		return "", err
 	}
 	if err := yaml.NewDecoder(bytes.NewReader(measurements)).Decode(&m); err != nil {
-		return err
+		return "", err
 	}
-	return nil
+
+	shaHash := sha256.Sum256(measurements)
+
+	return hex.EncodeToString(shaHash[:]), nil
 }
 
 // CopyFrom copies over all values from other. Overwriting existing values,

@@ -8,6 +8,8 @@ package cmd
 
 import (
 	"context"
+	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -16,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -67,8 +70,14 @@ func configFetchMeasurements(cmd *cobra.Command, fileHandler file.Handler, clien
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	var fetchedMeasurements config.Measurements
-	if err := fetchedMeasurements.FetchAndVerify(ctx, client, flags.measurementsURL, flags.signatureURL, []byte(constants.CosignPublicKey)); err != nil {
+	hash, err := fetchedMeasurements.FetchAndVerify(ctx, client, flags.measurementsURL, flags.signatureURL, []byte(constants.CosignPublicKey))
+	if err != nil {
 		return err
+	}
+
+	if err := verifyWithRekor(cmd, hash); err != nil {
+		cmd.Printf("Ignoring Rekor related error: %v\n", err)
+		cmd.Println("Make sure the downloaded measurements are trustworthy!")
 	}
 
 	conf.UpdateMeasurements(fetchedMeasurements)
@@ -76,6 +85,46 @@ func configFetchMeasurements(cmd *cobra.Command, fileHandler file.Handler, clien
 		return err
 	}
 
+	return nil
+}
+
+func verifyWithRekor(cmd *cobra.Command, hash string) error {
+	r, err := sigstore.NewRekor()
+	if err != nil {
+		cmd.PrintErrln("Unable to construct Rekor client.")
+		return err
+	}
+
+	uuids, err := r.SearchByHash(cmd.Context(), hash)
+	if err != nil {
+		cmd.PrintErrln("Unable to find hash in Rekor.")
+		return err
+	}
+
+	// We expect the first entry in Rekor to be our original entry.
+	// SHA256 should ensure there is no entry with the same hash.
+	// Any subsequent hashes are treated as potential attacks and are ignored.
+	artifactUUID := uuids[0]
+
+	entry, valid, err := r.GetAndVerifyEntry(cmd.Context(), artifactUUID)
+	if err != nil {
+		cmd.PrintErrln("Unable to verify Rekor entry.")
+		return err
+	}
+	if !valid {
+		return errors.New("Rekor entry verification failed.")
+	}
+
+	rekord, err := sigstore.HashedRekordFromEntry(entry)
+	if err != nil {
+		cmd.PrintErrln("Unable to extract rekord from Rekor entry.")
+		return err
+	}
+
+	cosignPubBase64 := base64.StdEncoding.EncodeToString([]byte(constants.CosignPublicKey))
+	if !sigstore.IsEntrySignedBy(rekord, cosignPubBase64) {
+		return errors.New("Rekord signed by unknown key.")
+	}
 	return nil
 }
 

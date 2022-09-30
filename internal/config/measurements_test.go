@@ -231,6 +231,7 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 		signatureStatus    int
 		publicKey          []byte
 		wantMeasurements   Measurements
+		wantSHA            string
 		wantError          bool
 	}{
 		"simple": {
@@ -242,6 +243,7 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 			wantMeasurements: Measurements{
 				0: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 			},
+			wantSHA: "4cd9d6ed8d9322150dff7738994c5e2fabff35f3bae6f5c993412d13249a5e87",
 		},
 		"404 measurements": {
 			measurements:       "0: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\n",
@@ -307,12 +309,13 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 			})
 
 			m := Measurements{}
-			err := m.FetchAndVerify(context.Background(), client, measurementsURL, signatureURL, tc.publicKey)
+			hash, err := m.FetchAndVerify(context.Background(), client, measurementsURL, signatureURL, tc.publicKey)
 
 			if tc.wantError {
 				assert.Error(err)
 				return
 			}
+			assert.Equal(tc.wantSHA, hash)
 			assert.NoError(err)
 			assert.EqualValues(tc.wantMeasurements, m)
 		})
