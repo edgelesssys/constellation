@@ -111,10 +111,10 @@ type AWSConfig struct {
 	InstanceType string `yaml:"instanceType" validate:"aws_instance_type"`
 	// description: |
 	//   Name of the IAM profile to use for the control plane nodes.
-	IAMGroupControlPlane string `yaml:"iamGroupControlPlane" validate:"required"`
+	IAMProfileControlPlane string `yaml:"iamProfileControlPlane" validate:"required"`
 	// description: |
 	//   Name of the IAM profile to use for the worker nodes.
-	IAMGroupWorkerNodes string `yaml:"iamGroupWorkersNodes" validate:"required"`
+	IAMProfileWorkerNodes string `yaml:"iamProfileWorkerNodes" validate:"required"`
 	// description: |
 	//   Expected confidential VM measurements.
 	Measurements Measurements `yaml:"measurements"`
@@ -241,13 +241,13 @@ func Default() *Config {
 		DebugCluster:    func() *bool { b := false; return &b }(),
 		Provider: ProviderConfig{
 			AWS: &AWSConfig{
-				Region:               "",
-				Image:                "",
-				InstanceType:         "t3.xlarge",
-				IAMGroupControlPlane: "",
-				IAMGroupWorkerNodes:  "",
-				Measurements:         copyPCRMap(awsPCRs),
-				EnforcedMeasurements: []uint32{}, // TODO: add default values
+				Region:                 "",
+				Image:                  "",
+				InstanceType:           "t3.xlarge",
+				IAMProfileControlPlane: "",
+				IAMProfileWorkerNodes:  "",
+				Measurements:           copyPCRMap(awsPCRs),
+				EnforcedMeasurements:   []uint32{}, // TODO: add default values
 			},
 			Azure: &AzureConfig{
 				SubscriptionID:       "",
