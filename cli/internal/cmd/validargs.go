@@ -9,16 +9,19 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/spf13/cobra"
 )
 
+var ErrAWSNotSupportedYet = errors.New("AWS is not supported yet")
+
 // warnAWS warns that AWS isn't supported.
 func warnAWS(providerPos int) cobra.PositionalArgs {
 	return func(cmd *cobra.Command, args []string) error {
-		if cloudprovider.FromString(args[providerPos]) == cloudprovider.AWS {
-			return errors.New("AWS isn't supported by this version of Constellation")
+		if cloudprovider.FromString(args[providerPos]) == cloudprovider.AWS && os.Getenv("CONSTELLATION_AWS_DEV") != "1" {
+			return ErrAWSNotSupportedYet
 		}
 		return nil
 	}

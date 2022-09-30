@@ -20,7 +20,7 @@ func NewConfigCmd() *cobra.Command {
 
 	cmd.AddCommand(newConfigGenerateCmd())
 	cmd.AddCommand(newConfigFetchMeasurementsCmd())
-	cmd.AddCommand(NewConfigInstanceTypesCmd())
+	cmd.AddCommand(newConfigInstanceTypesCmd())
 
 	return cmd
 }
