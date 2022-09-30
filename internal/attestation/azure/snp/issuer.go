@@ -25,6 +25,7 @@ const (
 	lenSnpReport                   = 0x4a0
 	lenSnpReportRuntimeDataPadding = 0x14
 	tpmReportIdx                   = 0x01400001
+	tpmAkIdx                       = 0x81000003
 )
 
 // GetIdKeyDigest reads the idkeydigest from the snp report saved in the TPM's non-volatile memory.
@@ -109,7 +110,7 @@ func getInstanceInfo(reportGetter tpmReportGetter, imdsAPI imdsApi) func(tpm io.
 
 // getAttestationKey reads the attesation key put into the TPM during early boot.
 func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
-	ak, err := tpmclient.LoadCachedKey(tpm, 0x81000003)
+	ak, err := tpmclient.LoadCachedKey(tpm, tpmAkIdx)
 	if err != nil {
 		return nil, fmt.Errorf("reading HCL attestation key from TPM: %w", err)
 	}

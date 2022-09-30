@@ -14,7 +14,9 @@ import (
 	"io"
 	"testing"
 
+	tpmclient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/simulator"
+	"github.com/google/go-tpm/tpm2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -91,12 +93,34 @@ func TestGetSNPAttestation(t *testing.T) {
 // Testing anything else will only verify that the simulator works as expected, since getAkPub
 // only retrieves the attestation key from the TPM.
 func TestGetHCLAttestationKey(t *testing.T) {
+	require := require.New(t)
 	assert := assert.New(t)
 
 	tpm, err := simulator.Get()
-	assert.NoError(err)
+	require.NoError(err)
 	defer tpm.Close()
 
+	// we should receive an error if no key was saved at index `tpmAkIdx`
+	_, err = getAttestationKey(tpm)
+	assert.Error(err)
+
+	// create a key at the index
+	tpmAk, err := tpmclient.NewCachedKey(tpm, tpm2.HandleOwner, tpm2.Public{
+		Type:       tpm2.AlgRSA,
+		NameAlg:    tpm2.AlgSHA256,
+		Attributes: tpm2.FlagFixedTPM | tpm2.FlagFixedParent | tpm2.FlagSensitiveDataOrigin | tpm2.FlagUserWithAuth | tpm2.FlagNoDA | tpm2.FlagRestricted | tpm2.FlagSign,
+		RSAParameters: &tpm2.RSAParams{
+			Sign: &tpm2.SigScheme{
+				Alg:  tpm2.AlgRSASSA,
+				Hash: tpm2.AlgSHA256,
+			},
+			KeyBits: 2048,
+		},
+	}, tpmAkIdx)
+	require.NoError(err)
+	defer tpmAk.Close()
+
+	// we should now be able to retrieve the key
 	_, err = getAttestationKey(tpm)
 	assert.NoError(err)
 }
