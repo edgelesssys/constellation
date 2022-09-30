@@ -29,7 +29,10 @@ locals {
   ports_verify       = "30081"
   ports_debugd       = "4000"
 
-  cidr_vpc_subnet_nodes = "192.168.178.0/24"
+  disk_size = 10
+
+  cidr_vpc_subnet_nodes    = "192.168.178.0/24"
+  cidr_vpc_subnet_internet = "192.168.0.0/24"
 }
 
 resource "random_id" "uid" {
@@ -43,11 +46,21 @@ resource "aws_vpc" "vpc" {
   }
 }
 
-resource "aws_subnet" "main" {
+# TODO: This dual subnet setup can end up in two different zones, and the LB needs IPs in each subnet to work. Pin a zone, or get this working properly with multiple zones?
+resource "aws_subnet" "private" {
   vpc_id     = aws_vpc.vpc.id
   cidr_block = local.cidr_vpc_subnet_nodes
   tags = {
-    Name = "${local.name}-subnet"
+    Name = "${local.name}-subnet-nodes"
+  }
+}
+
+resource "aws_subnet" "public" {
+  vpc_id                  = aws_vpc.vpc.id
+  cidr_block              = local.cidr_vpc_subnet_internet
+  map_public_ip_on_launch = true # TODO: Not sure if required here for LB/NAT/Internet Gateway to work
+  tags = {
+    Name = "${local.name}-subnet-internet"
   }
 }
 
@@ -55,8 +68,78 @@ resource "aws_internet_gateway" "gw" {
   vpc_id = aws_vpc.vpc.id
 
   tags = {
-    Name = "${local.name}-gateway"
+    Name = "${local.name}-internet-gateway"
   }
+}
+
+resource "aws_nat_gateway" "gw" {
+  subnet_id     = aws_subnet.public.id
+  allocation_id = aws_eip.nat.id
+
+  tags = {
+    Name = "${local.name}-nat-gateway"
+  }
+}
+
+resource "aws_route_table" "private_nat" {
+  vpc_id = aws_vpc.vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_nat_gateway.gw.id
+  }
+
+  tags = {
+    Name = "${local.name}-nat-route"
+  }
+}
+
+resource "aws_route_table" "public_igw" {
+  vpc_id = aws_vpc.vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.gw.id
+  }
+
+  tags = {
+    Name = "${local.name}-nat-route"
+  }
+}
+
+resource "aws_route_table_association" "private-nat" {
+  subnet_id      = aws_subnet.private.id
+  route_table_id = aws_route_table.private_nat.id
+}
+
+resource "aws_route_table_association" "route_to_internet" {
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public_igw.id
+}
+
+resource "aws_eip" "lb" {
+  vpc = true
+}
+
+resource "aws_eip" "nat" {
+  vpc = true
+}
+
+resource "aws_lb" "front_end" {
+  name               = "${local.name}-loadbalancer"
+  internal           = false
+  load_balancer_type = "network"
+
+  subnet_mapping {
+    subnet_id     = aws_subnet.public.id
+    allocation_id = aws_eip.lb.id
+  }
+
+  tags = {
+    Name = "loadbalancer"
+  }
+
+  enable_cross_zone_load_balancing = true
 }
 
 resource "aws_security_group" "security_group" {
@@ -78,6 +161,15 @@ resource "aws_security_group" "security_group" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
     description = "K8s node ports"
+  }
+
+  # TODO REMOVE PLS PLS PLS PLS PLS
+  ingress {
+    from_port   = local.ports_ssh
+    to_port     = local.ports_ssh
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "SSH"
   }
 
   ingress {
@@ -114,44 +206,52 @@ resource "aws_security_group" "security_group" {
 
 }
 
-module "load_balancer_bootstrapper" {
-  source = "./modules/load_balancer"
+module "load_balancer_target_bootstrapper" {
+  source = "./modules/load_balancer_target"
   name   = "${local.name}-bootstrapper"
   vpc    = aws_vpc.vpc.id
-  subnet = aws_subnet.main.id
+  lb_arn = aws_lb.front_end.arn
   port   = local.ports_bootstrapper
 }
 
-module "load_balancer_kubernetes" {
-  source = "./modules/load_balancer"
+module "load_balancer_target_kubernetes" {
+  source = "./modules/load_balancer_target"
   name   = "${local.name}-kubernetes"
   vpc    = aws_vpc.vpc.id
-  subnet = aws_subnet.main.id
+  lb_arn = aws_lb.front_end.arn
   port   = local.ports_kubernetes
 }
 
-module "load_balancer_verify" {
-  source = "./modules/load_balancer"
+module "load_balancer_target_verify" {
+  source = "./modules/load_balancer_target"
   name   = "${local.name}-verify"
   vpc    = aws_vpc.vpc.id
-  subnet = aws_subnet.main.id
+  lb_arn = aws_lb.front_end.arn
   port   = local.ports_verify
 }
 
-module "load_balancer_debugd" {
-  source = "./modules/load_balancer"
+module "load_balancer_target_debugd" {
+  source = "./modules/load_balancer_target"
   name   = "${local.name}-debugd"
   vpc    = aws_vpc.vpc.id
-  subnet = aws_subnet.main.id
+  lb_arn = aws_lb.front_end.arn
   port   = local.ports_debugd
 }
 
-module "load_balancer_konnectivity" {
-  source = "./modules/load_balancer"
+module "load_balancer_target_konnectivity" {
+  source = "./modules/load_balancer_target"
   name   = "${local.name}-konnectivity"
   vpc    = aws_vpc.vpc.id
-  subnet = aws_subnet.main.id
+  lb_arn = aws_lb.front_end.arn
   port   = local.ports_konnectivity
+}
+
+module "load_balancer_target_ssh" {
+  source = "./modules/load_balancer_target"
+  name   = "${local.name}-ssh"
+  vpc    = aws_vpc.vpc.id
+  lb_arn = aws_lb.front_end.arn
+  port   = local.ports_ssh
 }
 
 module "instance_group_control_plane" {
@@ -161,17 +261,21 @@ module "instance_group_control_plane" {
 
   uid            = local.uid
   instance_type  = var.instance_type
-  instance_count = var.count_control_plane
+  instance_count = var.control_plane_count
   image_id       = var.ami
-  disk_size      = var.disk_size
+  disk_size      = local.disk_size
+
   target_group_arns = [
-    module.load_balancer_bootstrapper.target_group_arn,
-    module.load_balancer_kubernetes.target_group_arn,
-    module.load_balancer_verify.target_group_arn,
-    module.load_balancer_debugd.target_group_arn
+    module.load_balancer_target_bootstrapper.target_group_arn,
+    module.load_balancer_target_kubernetes.target_group_arn,
+    module.load_balancer_target_verify.target_group_arn,
+    module.load_balancer_target_debugd.target_group_arn,
+    module.load_balancer_target_konnectivity.target_group_arn,
+    module.load_balancer_target_ssh.target_group_arn,
   ]
-  subnetwork           = aws_subnet.main.id
-  iam_instance_profile = var.control_plane_iam_instance_profile
+  security_groups      = [aws_security_group.security_group.id]
+  subnetwork           = aws_subnet.private.id
+  iam_instance_profile = var.iam_instance_profile_control_plane
 }
 
 module "instance_group_worker_nodes" {
@@ -180,10 +284,11 @@ module "instance_group_worker_nodes" {
   role                 = "worker"
   uid                  = local.uid
   instance_type        = var.instance_type
-  instance_count       = var.count_worker_nodes
+  instance_count       = var.worker_count
   image_id             = var.ami
-  disk_size            = var.disk_size
-  subnetwork           = aws_subnet.main.id
+  disk_size            = local.disk_size
+  subnetwork           = aws_subnet.private.id
   target_group_arns    = []
-  iam_instance_profile = var.worker_nodes_iam_instance_profile
+  security_groups      = []
+  iam_instance_profile = var.iam_instance_profile_worker_nodes
 }

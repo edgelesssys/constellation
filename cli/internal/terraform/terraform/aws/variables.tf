@@ -1,14 +1,14 @@
 variable "name" {
-  type = string
+  type        = string
   description = "Name of your Constellation"
 }
 
-variable "worker_nodes_iam_instance_profile" {
+variable "iam_instance_profile_worker_nodes" {
   type        = string
   description = "Name of the IAM instance profile for worker nodes"
 }
 
-variable "control_plane_iam_instance_profile" {
+variable "iam_instance_profile_control_plane" {
   type        = string
   description = "Name of the IAM instance profile for control plane nodes"
 }
@@ -16,22 +16,22 @@ variable "control_plane_iam_instance_profile" {
 variable "instance_type" {
   type        = string
   description = "Instance type for worker nodes"
-  default     = "t2.micro"
+  default     = "t3.micro"
 }
 
-variable "disk_size" {
+variable "state_disk_size" {
   type        = number
   description = "Disk size for nodes [GB]"
   default     = 30
 }
 
-variable "count_control_plane" {
+variable "control_plane_count" {
   type        = number
   description = "Number of control plane nodes"
   default     = 1
 }
 
-variable "count_worker_nodes" {
+variable "worker_count" {
   type        = number
   description = "Number of worker nodes"
   default     = 1

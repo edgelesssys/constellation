@@ -15,13 +15,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var ErrAWSNotSupportedYet = errors.New("AWS is not supported yet")
-
 // warnAWS warns that AWS isn't supported.
 func warnAWS(providerPos int) cobra.PositionalArgs {
 	return func(cmd *cobra.Command, args []string) error {
 		if cloudprovider.FromString(args[providerPos]) == cloudprovider.AWS && os.Getenv("CONSTELLATION_AWS_DEV") != "1" {
-			return ErrAWSNotSupportedYet
+			return errors.New("AWS is not supported yet")
 		}
 		return nil
 	}

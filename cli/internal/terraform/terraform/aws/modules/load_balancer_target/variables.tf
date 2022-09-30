@@ -1,11 +1,11 @@
 variable "name" {
   type        = string
-  description = "Name of the load balancer."
+  description = "Name of the load balancer target."
 }
 
 variable "port" {
   type        = string
-  description = "Port of the load balancer."
+  description = "Port of the load balancer target."
 }
 
 variable "vpc" {
@@ -13,7 +13,7 @@ variable "vpc" {
   description = "ID of the VPC."
 }
 
-variable "subnet" {
+variable "lb_arn" {
   type        = string
-  description = "ID of the subnets."
+  description = "ARN of the load balancer."
 }

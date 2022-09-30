@@ -93,6 +93,8 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 	provider := config.GetProvider()
 	var instanceType string
 	switch provider {
+	case cloudprovider.AWS:
+		instanceType = config.Provider.AWS.InstanceType
 	case cloudprovider.Azure:
 		instanceType = config.Provider.Azure.InstanceType
 	case cloudprovider.GCP:

@@ -49,6 +49,8 @@ func (t *Terminator) Terminate(ctx context.Context, state state.ConstellationSta
 			return err
 		}
 		return t.terminateAzure(ctx, cl, state)
+	case cloudprovider.AWS:
+		fallthrough
 	case cloudprovider.GCP:
 		cl, err := t.newTerraformClient(ctx)
 		if err != nil {
