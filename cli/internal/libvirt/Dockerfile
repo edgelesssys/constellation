@@ -18,7 +18,6 @@ RUN echo "cgroup_controllers = []" >> /etc/libvirt/qemu.conf && \
     echo "listen_addr = \"localhost\"" >> /etc/libvirt/libvirtd.conf && \
     echo "auth_tcp = \"none\"" >> /etc/libvirt/libvirtd.conf
 
-COPY ./cli/internal/libvirt/start.sh /start.sh
-RUN chmod +x /start.sh
+COPY --chmod=755 ./cli/internal/libvirt/start.sh /start.sh
 
 ENTRYPOINT ["/start.sh"]

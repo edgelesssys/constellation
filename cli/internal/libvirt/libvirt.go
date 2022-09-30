@@ -9,7 +9,6 @@ package libvirt
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -74,7 +73,7 @@ func (r *Runner) Start(ctx context.Context, name, imageName string) error {
 		return err
 	}
 
-	time.Sleep(15 * time.Second)
+	// time.Sleep(15 * time.Second)
 
 	return nil
 }
