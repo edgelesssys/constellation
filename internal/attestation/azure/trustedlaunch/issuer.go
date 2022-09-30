@@ -57,7 +57,7 @@ type akSigner struct {
 func (i *Issuer) getAttestationCert(tpm io.ReadWriteCloser) ([]byte, error) {
 	certDER, err := tpm2.NVReadEx(tpm, tpmAkCertIdx, tpm2.HandleOwner, "", 0)
 	if err != nil {
-		return nil, fmt.Errorf("reading attestation key certificate from TMP: %w", err)
+		return nil, fmt.Errorf("reading attestation key certificate from TPM: %w", err)
 	}
 
 	cert, err := x509.ParseCertificate(certDER)

@@ -38,7 +38,7 @@ func GetIdKeyDigest(open vtpm.TPMOpenFunc) ([]byte, error) {
 
 	reportRaw, err := tpm2.NVReadEx(tpm, tpmReportIdx, tpm2.HandleOwner, "", 0)
 	if err != nil {
-		return nil, fmt.Errorf("reading idx %x from TMP: %w", tpmReportIdx, err)
+		return nil, fmt.Errorf("reading idx %x from TPM: %w", tpmReportIdx, err)
 	}
 
 	report, err := newSNPReportFromBytes(reportRaw[lenHclHeader:])

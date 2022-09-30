@@ -12,7 +12,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/pem"
 	"io"
 	"net/http"
 	"testing"
@@ -90,7 +89,6 @@ func TestGetAttestationCert(t *testing.T) {
 	testCases := map[string]struct {
 		crlServer       roundTripFunc
 		getAkCert       func(*testing.T) *x509.Certificate
-		rootCert        []byte
 		wantIssueErr    bool
 		wantValidateErr bool
 	}{
@@ -101,7 +99,6 @@ func TestGetAttestationCert(t *testing.T) {
 					Body:       io.NopCloser(bytes.NewReader(intermediateCert.Raw)),
 				}
 			},
-			rootCert:  pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: rootCert.Raw}),
 			getAkCert: defaultAkCertFunc,
 		},
 		"intermediate cert is fetched from multiple URLs": {
@@ -114,7 +111,6 @@ func TestGetAttestationCert(t *testing.T) {
 					Body:       io.NopCloser(bytes.NewReader(intermediateCert.Raw)),
 				}
 			},
-			rootCert: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: rootCert.Raw}),
 			getAkCert: func(*testing.T) *x509.Certificate {
 				t.Helper()
 				_, certTemplate := fillCertTemplate(t, &x509.Certificate{
@@ -132,7 +128,6 @@ func TestGetAttestationCert(t *testing.T) {
 			crlServer: func(req *http.Request) *http.Response {
 				return &http.Response{StatusCode: http.StatusNotFound}
 			},
-			rootCert:     pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: rootCert.Raw}),
 			getAkCert:    defaultAkCertFunc,
 			wantIssueErr: true,
 		},
@@ -143,7 +138,6 @@ func TestGetAttestationCert(t *testing.T) {
 					Body:       io.NopCloser(bytes.NewReader(rootCert.Raw)),
 				}
 			},
-			rootCert:        pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: rootCert.Raw}),
 			getAkCert:       defaultAkCertFunc,
 			wantValidateErr: true,
 		},
@@ -154,7 +148,6 @@ func TestGetAttestationCert(t *testing.T) {
 					Body:       io.NopCloser(bytes.NewReader(intermediateCert.Raw)),
 				}
 			},
-			rootCert: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: rootCert.Raw}),
 			getAkCert: func(*testing.T) *x509.Certificate {
 				t.Helper()
 				key, certTemplate := fillCertTemplate(t, &x509.Certificate{
@@ -196,7 +189,11 @@ func TestGetAttestationCert(t *testing.T) {
 			require.NoError(err)
 
 			validator := NewValidator(map[uint32][]byte{}, []uint32{}, nil)
-			validator.rootCA = tc.rootCert
+			cert, err := x509.ParseCertificate(rootCert.Raw)
+			require.NoError(err)
+			roots := x509.NewCertPool()
+			roots.AddCert(cert)
+			validator.roots = roots
 
 			key, err := validator.verifyAttestationKey(akPub, certs)
 			if tc.wantValidateErr {
