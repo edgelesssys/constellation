@@ -124,7 +124,8 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
 	}
 
-	cmd.Println("Initializing cluster ...")
+	spinner := NewSpinner(cmd, "Initializing cluster ", true)
+	spinner.Start()
 	req := &initproto.InitRequest{
 		MasterSecret:           masterSecret.Key,
 		Salt:                   masterSecret.Salt,
@@ -141,6 +142,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		ConformanceMode:        flags.conformance,
 	}
 	resp, err := initCall(cmd.Context(), newDialer(validator), flags.endpoint, req)
+	spinner.Stop()
 	if err != nil {
 		return err
 	}
