@@ -1,15 +1,24 @@
+/*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
 package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/spf13/cobra"
 )
 
-var spinnerStates = []string{"⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"}
-var dotsStates = []string{".", "..", "..."}
+var (
+	spinnerStates = []string{"⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"}
+	dotsStates    = []string{".", "..", "..."}
+)
 
 type Spinner struct {
 	out      *cobra.Command
@@ -21,7 +30,8 @@ type Spinner struct {
 }
 
 func NewSpinner(c *cobra.Command, text string, showDots bool) *Spinner {
-	return &Spinner{out: c,
+	return &Spinner{
+		out:      c,
 		text:     text,
 		showDots: showDots,
 		wg:       &sync.WaitGroup{},

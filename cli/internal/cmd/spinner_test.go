@@ -1,16 +1,25 @@
+/*
+Copyright (c) Edgeless Systems GmbH
+
+SPDX-License-Identifier: AGPL-3.0-only
+*/
+
 package cmd
 
 import (
 	"bytes"
 	"fmt"
-	"github.com/stretchr/testify/require"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
-const baseWait = 1
-const baseText = "Loading"
+const (
+	baseWait = 1
+	baseText = "Loading"
+)
 
 func TestSpinnerInitialState(t *testing.T) {
 	// Command
