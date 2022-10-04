@@ -92,9 +92,6 @@ require (
 	go.mongodb.org/mongo-driver v1.10.0 // indirect
 	golang.org/x/exp v0.0.0-20220823124025-807a23277127 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-)
-
-require (
 	cloud.google.com/go v0.103.0 // indirect
 	cloud.google.com/go/iam v0.3.0 // indirect
 	cloud.google.com/go/kms v1.4.0 // indirect
