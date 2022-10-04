@@ -22,6 +22,25 @@ func TestLoader(t *testing.T) {
 		provider cloudprovider.Provider
 		fileList []string
 	}{
+		"aws": {
+			provider: cloudprovider.AWS,
+			fileList: []string{
+				"main.tf",
+				"variables.tf",
+				"outputs.tf",
+				"modules",
+				"iam",
+			},
+		},
+		"gcp": {
+			provider: cloudprovider.GCP,
+			fileList: []string{
+				"main.tf",
+				"variables.tf",
+				"outputs.tf",
+				"modules",
+			},
+		},
 		"qemu": {
 			provider: cloudprovider.QEMU,
 			fileList: []string{
