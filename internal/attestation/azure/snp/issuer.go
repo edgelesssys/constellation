@@ -25,6 +25,7 @@ const (
 	lenSnpReport                   = 0x4a0
 	lenSnpReportRuntimeDataPadding = 0x14
 	tpmReportIdx                   = 0x01400001
+	tpmAkIdx                       = 0x81000003
 )
 
 // GetIdKeyDigest reads the idkeydigest from the snp report saved in the TPM's non-volatile memory.
@@ -37,7 +38,7 @@ func GetIdKeyDigest(open vtpm.TPMOpenFunc) ([]byte, error) {
 
 	reportRaw, err := tpm2.NVReadEx(tpm, tpmReportIdx, tpm2.HandleOwner, "", 0)
 	if err != nil {
-		return nil, fmt.Errorf("reading idx %x from TMP: %w", tpmReportIdx, err)
+		return nil, fmt.Errorf("reading idx %x from TPM: %w", tpmReportIdx, err)
 	}
 
 	report, err := newSNPReportFromBytes(reportRaw[lenHclHeader:])
@@ -107,30 +108,9 @@ func getInstanceInfo(reportGetter tpmReportGetter, imdsAPI imdsApi) func(tpm io.
 	}
 }
 
-func hclAkTemplate() tpm2.Public {
-	akFlags := tpm2.FlagFixedTPM | tpm2.FlagFixedParent | tpm2.FlagSensitiveDataOrigin | tpm2.FlagUserWithAuth | tpm2.FlagNoDA | tpm2.FlagRestricted | tpm2.FlagSign
-	return tpm2.Public{
-		Type:       tpm2.AlgRSA,
-		NameAlg:    tpm2.AlgSHA256,
-		Attributes: akFlags,
-		RSAParameters: &tpm2.RSAParams{
-			Sign: &tpm2.SigScheme{
-				Alg:  tpm2.AlgRSASSA,
-				Hash: tpm2.AlgSHA256,
-			},
-			KeyBits: 2048,
-		},
-	}
-}
-
 // getAttestationKey reads the attesation key put into the TPM during early boot.
 func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
-	// A minor drawback of `NewCachedKey` is that it will transparently create/overwrite a key if it does not find one matching the template at the given index.
-	// We actually wouldn't want to continue at this point if we realize that the key at the index is not present, due to
-	// easier debuggability. If `NewCachedKey` creates a new key, attestation will fail at the validator.
-	// The function in tpmclient that doesn't create a new key, ReadPublic, can't be used as we would have to create
-	// a tpmclient.Key object manually, which we can't since there is no constructor exported.
-	ak, err := tpmclient.NewCachedKey(tpm, tpm2.HandleOwner, hclAkTemplate(), 0x81000003)
+	ak, err := tpmclient.LoadCachedKey(tpm, tpmAkIdx)
 	if err != nil {
 		return nil, fmt.Errorf("reading HCL attestation key from TPM: %w", err)
 	}

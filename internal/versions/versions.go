@@ -45,7 +45,7 @@ const (
 	// These images are built in a way that they support all versions currently listed in VersionConfigs.
 	KonnectivityAgentImage   = "us.gcr.io/k8s-artifacts-prod/kas-network-proxy/proxy-agent:v0.0.32"
 	KonnectivityServerImage  = "registry.k8s.io/kas-network-proxy/proxy-server:v0.0.32"
-	JoinImage                = "ghcr.io/edgelesssys/constellation/join-service:v2.0.0"
+	JoinImage                = "ghcr.io/edgelesssys/constellation/join-service:v2.1.0-pre.0.20220928143744-c46d6e390f2d"
 	AccessManagerImage       = "ghcr.io/edgelesssys/constellation/access-manager:v2.0.0"
 	KmsImage                 = "ghcr.io/edgelesssys/constellation/kmsserver:v2.0.0"
 	VerificationImage        = "ghcr.io/edgelesssys/constellation/verification-service:v2.0.0"
