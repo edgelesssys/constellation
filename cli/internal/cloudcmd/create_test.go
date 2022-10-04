@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"runtime"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -20,6 +21,8 @@ import (
 )
 
 func TestCreator(t *testing.T) {
+	failOnNonAMD64 := (runtime.GOARCH != "amd64") || (runtime.GOOS != "linux")
+
 	wantGCPState := state.ConstellationState{
 		CloudProvider:  cloudprovider.GCP.String(),
 		LoadBalancerIP: "192.0.2.1",
@@ -86,6 +89,7 @@ func TestCreator(t *testing.T) {
 			provider:  cloudprovider.QEMU,
 			config:    config.Default(),
 			wantState: wantQEMUState,
+			wantErr:   failOnNonAMD64,
 		},
 		"qemu newTerraformClient error": {
 			newTfClientErr: someErr,
@@ -100,7 +104,7 @@ func TestCreator(t *testing.T) {
 			provider:     cloudprovider.QEMU,
 			config:       config.Default(),
 			wantErr:      true,
-			wantRollback: true,
+			wantRollback: !failOnNonAMD64, // if we run on non-AMD64/linux, we don't get to a point where rollback is needed
 		},
 		"qemu start libvirt error": {
 			tfClient:     &stubTerraformClient{state: wantQEMUState},
@@ -108,7 +112,7 @@ func TestCreator(t *testing.T) {
 			provider:     cloudprovider.QEMU,
 			config:       config.Default(),
 			wantErr:      true,
-			wantRollback: true,
+			wantRollback: !failOnNonAMD64,
 		},
 		"azure": {
 			azureclient: &fakeAzureClient{},
