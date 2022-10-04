@@ -54,3 +54,9 @@ variable "zone" {
   description = "The AWS availability zone name to create the cluster in"
   default     = "us-east-2a"
 }
+
+variable "debug" {
+  type        = bool
+  description = "Enable debug mode. This opens up a debugd port that can be used to deploy a custom bootstrapper."
+  default     = false
+}

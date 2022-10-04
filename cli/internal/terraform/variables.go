@@ -55,7 +55,8 @@ type AWSVariables struct {
 	IAMProfileControlPlane string
 	// IAMGroupWorkerNodes is the IAM group to use for the worker nodes.
 	IAMProfileWorkerNodes string
-	// TODO: Add more variables as development goes on (e.g. Debug flag).
+	// Debug is true if debug mode is enabled.
+	Debug bool
 }
 
 // GCPVariables is user configuration for creating a cluster with Terraform on GCP.
@@ -90,6 +91,7 @@ func (v *AWSVariables) String() string {
 	writeLinef(b, "instance_type = %q", v.InstanceType)
 	writeLinef(b, "iam_instance_profile_control_plane = %q", v.IAMProfileControlPlane)
 	writeLinef(b, "iam_instance_profile_worker_nodes = %q", v.IAMProfileWorkerNodes)
+	writeLinef(b, "debug = %t", v.Debug)
 
 	return b.String()
 }
