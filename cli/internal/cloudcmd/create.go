@@ -125,6 +125,7 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *con
 		AMIImageID:             config.Provider.AWS.Image,
 		IAMProfileControlPlane: config.Provider.AWS.IAMProfileControlPlane,
 		IAMProfileWorkerNodes:  config.Provider.AWS.IAMProfileWorkerNodes,
+		Debug:                  config.IsDebugCluster(),
 	}
 
 	if err := cl.CreateCluster(ctx, name, vars); err != nil {

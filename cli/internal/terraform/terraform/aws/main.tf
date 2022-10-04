@@ -163,13 +163,16 @@ resource "aws_security_group" "security_group" {
     description = "K8s node ports"
   }
 
-  # TODO REMOVE PLS PLS PLS PLS PLS
-  ingress {
-    from_port   = local.ports_ssh
-    to_port     = local.ports_ssh
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "SSH"
+  # TODO: Remove when development is more advanced
+  dynamic "ingress" {
+    for_each = var.debug ? [1] : []
+    content {
+      from_port   = local.ports_ssh
+      to_port     = local.ports_ssh
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+      description = "SSH"
+    }
   }
 
   ingress {
@@ -196,14 +199,16 @@ resource "aws_security_group" "security_group" {
     description = "konnectivity"
   }
 
-  ingress {
-    from_port   = local.ports_debugd
-    to_port     = local.ports_debugd
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "debugd"
+  dynamic "ingress" {
+    for_each = var.debug ? [1] : []
+    content {
+      from_port   = local.ports_debugd
+      to_port     = local.ports_debugd
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+      description = "debugd"
+    }
   }
-
 }
 
 module "load_balancer_target_bootstrapper" {
@@ -231,6 +236,7 @@ module "load_balancer_target_verify" {
 }
 
 module "load_balancer_target_debugd" {
+  count  = var.debug ? 1 : 0 // only deploy debugd in debug mode
   source = "./modules/load_balancer_target"
   name   = "${local.name}-debugd"
   vpc    = aws_vpc.vpc.id
@@ -246,7 +252,9 @@ module "load_balancer_target_konnectivity" {
   port   = local.ports_konnectivity
 }
 
+# TODO: Remove when development is more advanced
 module "load_balancer_target_ssh" {
+  count  = var.debug ? 1 : 0 // only deploy SSH in debug mode
   source = "./modules/load_balancer_target"
   name   = "${local.name}-ssh"
   vpc    = aws_vpc.vpc.id
@@ -264,15 +272,14 @@ module "instance_group_control_plane" {
   instance_count = var.control_plane_count
   image_id       = var.ami
   disk_size      = local.disk_size
-
-  target_group_arns = [
+  target_group_arns = flatten([
     module.load_balancer_target_bootstrapper.target_group_arn,
     module.load_balancer_target_kubernetes.target_group_arn,
     module.load_balancer_target_verify.target_group_arn,
-    module.load_balancer_target_debugd.target_group_arn,
     module.load_balancer_target_konnectivity.target_group_arn,
-    module.load_balancer_target_ssh.target_group_arn,
-  ]
+    var.debug ? [module.load_balancer_target_debugd[0].target_group_arn,
+    module.load_balancer_target_ssh[0].target_group_arn] : [],
+  ])
   security_groups      = [aws_security_group.security_group.id]
   subnetwork           = aws_subnet.private.id
   iam_instance_profile = var.iam_instance_profile_control_plane
