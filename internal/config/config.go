@@ -242,9 +242,9 @@ func Default() *Config {
 				ImageFormat:           "qcow2",
 				VCPUs:                 2,
 				Memory:                2048,
-				MetadataAPIImage:      "localhost/qemu-metadata", // TODO: Build and set new image.
+				MetadataAPIImage:      "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.1.0-pre.0.20221004080046-26a21f00b8cb",
 				LibvirtURI:            "",
-				LibvirtContainerImage: "localhost/libvirt", // TODO: Build and set new image.
+				LibvirtContainerImage: "ghcr.io/edgelesssys/constellation/libvirt:v2.1.0-pre.0.20221004080046-26a21f00b8cb",
 				Measurements:          copyPCRMap(qemuPCRs),
 				EnforcedMeasurements:  []uint32{11, 12},
 			},
