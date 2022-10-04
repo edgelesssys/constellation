@@ -45,6 +45,12 @@ variable "ami" {
 
 variable "region" {
   type        = string
-  description = "AWS region"
+  description = "The AWS region to create the cluster in"
   default     = "us-east-2"
+}
+
+variable "zone" {
+  type        = string
+  description = "The AWS availability zone name to create the cluster in"
+  default     = "us-east-2a"
 }

@@ -101,8 +101,11 @@ type ProviderConfig struct {
 // AWSConfig are AWS specific configuration values used by the CLI.
 type AWSConfig struct {
 	// description: |
-	//   AWS datacenter region. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions
+	//   AWS data center region. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions
 	Region string `yaml:"region" validate:"required"`
+	// description: |
+	//   AWS data center zone name in defined region. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones
+	Zone string `yaml:"zone" validate:"required"`
 	// description: |
 	//   AMI ID of the machine image used to create Constellation nodes.
 	Image string `yaml:"image" validate:"required"`
@@ -116,7 +119,7 @@ type AWSConfig struct {
 	//   Name of the IAM profile to use for the worker nodes.
 	IAMProfileWorkerNodes string `yaml:"iamProfileWorkerNodes" validate:"required"`
 	// description: |
-	//   Expected confidential VM measurements.
+	//   Expected VM measurements.
 	Measurements Measurements `yaml:"measurements"`
 	// description: |
 	//   List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning.
@@ -648,7 +651,7 @@ func validInstanceTypeForProvider(insType string, acceptNonCVM bool, provider cl
 // checkIfAWSInstanceTypeIsValid checks if an AWS instance type passed as user input is in one of the many supported instance families or single instances.
 func checkIfAWSInstanceTypeIsValid(userInput string) bool {
 	/*
-		Check for supported instances with the following characterics:
+		Check for supported instances with the following characteristics:
 		- must be an instance built on "Nitro System"
 		- at least 4 vCPUs (contains xlarge in string, everything > 4 vCPUs is a multiplicator of xlarge)
 		- not Graviton (arm64) based, as we do not have ARM images yet
