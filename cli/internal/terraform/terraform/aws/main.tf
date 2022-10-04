@@ -56,10 +56,9 @@ resource "aws_subnet" "private" {
 }
 
 resource "aws_subnet" "public" {
-  vpc_id                  = aws_vpc.vpc.id
-  cidr_block              = local.cidr_vpc_subnet_internet
-  availability_zone       = var.zone
-  map_public_ip_on_launch = true # TODO: Not sure if required here for LB/NAT/Internet Gateway to work
+  vpc_id            = aws_vpc.vpc.id
+  cidr_block        = local.cidr_vpc_subnet_internet
+  availability_zone = var.zone
   tags = {
     Name = "${local.name}-subnet-internet"
   }
