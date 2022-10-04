@@ -91,14 +91,12 @@ func configFetchMeasurements(cmd *cobra.Command, fileHandler file.Handler, clien
 func verifyWithRekor(cmd *cobra.Command, hash string) error {
 	rekor, err := sigstore.NewRekor()
 	if err != nil {
-		cmd.PrintErrln("Unable to construct Rekor client.")
-		return err
+		return fmt.Errorf("constructing Rekor client: %w", err)
 	}
 
 	uuids, err := rekor.SearchByHash(cmd.Context(), hash)
 	if err != nil {
-		cmd.PrintErrln("Unable to find hash in Rekor.")
-		return err
+		return fmt.Errorf("searching Rekor for hash: %w", err)
 	}
 
 	// We expect the first entry in Rekor to be our original entry.
@@ -108,19 +106,17 @@ func verifyWithRekor(cmd *cobra.Command, hash string) error {
 
 	entry, err := rekor.GetAndVerifyEntry(cmd.Context(), artifactUUID)
 	if err != nil {
-		cmd.PrintErrln("Unable to verify Rekor entry.")
-		return err
+		return fmt.Errorf("verifying Rekor entry: %w", err)
 	}
 
 	rekord, err := sigstore.HashedRekordFromEntry(entry)
 	if err != nil {
-		cmd.PrintErrln("Unable to extract rekord from Rekor entry.")
-		return err
+		return fmt.Errorf("extracting rekord from Rekor entry: %w", err)
 	}
 
 	cosignPubBase64 := base64.StdEncoding.EncodeToString([]byte(constants.CosignPublicKey))
 	if !sigstore.IsEntrySignedBy(rekord, cosignPubBase64) {
-		return errors.New("Rekord signed by unknown key.")
+		return errors.New("rekord signed by unknown key")
 	}
 	return nil
 }

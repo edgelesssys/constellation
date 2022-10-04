@@ -146,7 +146,11 @@ func (r *Rekor) GetAndVerifyEntry(ctx context.Context, uuid string) (models.LogE
 func HashedRekordFromEntry(entry models.LogEntryAnon) (*hashedrekord.V001Entry, error) {
 	var rekord models.Hashedrekord
 
-	decoded, err := base64.StdEncoding.DecodeString(entry.Body.(string))
+	body, ok := entry.Body.(string)
+	if !ok {
+		return nil, errors.New("body is not a string")
+	}
+	decoded, err := base64.StdEncoding.DecodeString(body)
 	if err != nil {
 		return nil, err
 	}
@@ -158,12 +162,13 @@ func HashedRekordFromEntry(entry models.LogEntryAnon) (*hashedrekord.V001Entry, 
 
 	hashedRekord := &hashedrekord.V001Entry{}
 	if err := hashedRekord.Unmarshal(&rekord); err != nil {
-		return nil, errors.New("lkasjd")
+		return nil, errors.New("failed to unmarshal entry")
 	}
 
 	return hashedRekord, nil
 }
 
+// IsEntrySignedBy checks whether rekord was signed with provided publicKey
 func IsEntrySignedBy(rekord *hashedrekord.V001Entry, publicKey string) bool {
 	if rekord == nil {
 		return false
