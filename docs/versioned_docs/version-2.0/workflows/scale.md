@@ -4,7 +4,7 @@ Constellation provides all features of a Kubernetes cluster including scaling an
 
 ## Worker node scaling
 
-[During cluster initialization](create.md#init) you can choose to deploy the [cluster autoscaler](https://github.com/kubernetes/autoscaler). It automatically provisions additional worker nodes so that all pods have a place to run. Alternatively, you can choose to manually scale your cluster up or down:
+[During cluster initialization](create.md#the-init-step) you can choose to deploy the [cluster autoscaler](https://github.com/kubernetes/autoscaler). It automatically provisions additional worker nodes so that all pods have a place to run. Alternatively, you can choose to manually scale your cluster up or down:
 
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure">

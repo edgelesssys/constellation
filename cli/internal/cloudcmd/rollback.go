@@ -34,19 +34,6 @@ func rollbackOnError(ctx context.Context, w io.Writer, onErr *error, roll rollba
 	fmt.Fprintln(w, "Rollback succeeded.")
 }
 
-type rollbackerGCP struct {
-	client gcpclient
-}
-
-func (r *rollbackerGCP) rollback(ctx context.Context) error {
-	var err error
-	err = multierr.Append(err, r.client.TerminateLoadBalancers(ctx))
-	err = multierr.Append(err, r.client.TerminateInstances(ctx))
-	err = multierr.Append(err, r.client.TerminateFirewall(ctx))
-	err = multierr.Append(err, r.client.TerminateVPCs(ctx))
-	return err
-}
-
 type rollbackerAzure struct {
 	client azureclient
 }
@@ -55,11 +42,11 @@ func (r *rollbackerAzure) rollback(ctx context.Context) error {
 	return r.client.TerminateResourceGroupResources(ctx)
 }
 
-type rollbackerQEMU struct {
-	client qemuclient
+type rollbackerTerraform struct {
+	client terraformClient
 }
 
-func (r *rollbackerQEMU) rollback(ctx context.Context) error {
+func (r *rollbackerTerraform) rollback(ctx context.Context) error {
 	var err error
 	err = multierr.Append(err, r.client.DestroyCluster(ctx))
 	err = multierr.Append(err, r.client.CleanUpWorkspace())

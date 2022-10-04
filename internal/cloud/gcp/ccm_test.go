@@ -28,7 +28,6 @@ func TestConfigMaps(t *testing.T) {
 		wantErr        bool
 	}{
 		"ConfigMaps works": {
-			instance: metadata.InstanceMetadata{ProviderID: "gce://project-id/zone/instanceName-UID-0", Name: "instanceName-UID-0"},
 			wantConfigMaps: kubernetes.ConfigMaps{
 				&k8s.ConfigMap{
 					TypeMeta: v1.TypeMeta{
@@ -49,10 +48,6 @@ node-tags = constellation-UID
 				},
 			},
 		},
-		"invalid providerID fails": {
-			instance: metadata.InstanceMetadata{ProviderID: "invalid"},
-			wantErr:  true,
-		},
 	}
 
 	for name, tc := range testCases {
@@ -60,8 +55,11 @@ node-tags = constellation-UID
 			assert := assert.New(t)
 			require := require.New(t)
 
-			cloud := CloudControllerManager{}
-			configMaps, err := cloud.ConfigMaps(tc.instance)
+			cloud := CloudControllerManager{
+				projectID: "project-id",
+				uid:       "UID",
+			}
+			configMaps, err := cloud.ConfigMaps()
 
 			if tc.wantErr {
 				assert.Error(err)

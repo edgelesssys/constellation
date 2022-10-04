@@ -2,7 +2,7 @@
 
 In a confidential computing (CC) environment, attested TLS (aTLS) can be used to establish secure connections between two parties utilizing the remote attestation features of the CC components.
 
-aTLs modifies the TLS handshake by embedding an attestation statement into the TLS certificate.
+aTLS modifies the TLS handshake by embedding an attestation statement into the TLS certificate.
 Instead of relying on a Certificate Authority, aTLS uses this attestation statement to establish trust in the certificate.
 
 The protocol can be used by clients to verify a server certificate, by a server to verify a client certificate, or for mutual verification (mutual aTLS).

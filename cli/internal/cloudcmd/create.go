@@ -13,8 +13,6 @@ import (
 	"runtime"
 
 	azurecl "github.com/edgelesssys/constellation/v2/cli/internal/azure/client"
-	"github.com/edgelesssys/constellation/v2/cli/internal/gcp"
-	gcpcl "github.com/edgelesssys/constellation/v2/cli/internal/gcp/client"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudtypes"
@@ -25,27 +23,20 @@ import (
 
 // Creator creates cloud resources.
 type Creator struct {
-	out            io.Writer
-	newGCPClient   func(ctx context.Context, project, zone, region, name string) (gcpclient, error)
-	newAzureClient func(subscriptionID, tenantID, name, location, resourceGroup string) (azureclient, error)
-	newQEMUClient  func(ctx context.Context) (qemuclient, error)
+	out                io.Writer
+	newTerraformClient func(ctx context.Context, provider cloudprovider.Provider) (terraformClient, error)
+	newAzureClient     func(subscriptionID, tenantID, name, location, resourceGroup string) (azureclient, error)
 }
 
 // NewCreator creates a new creator.
 func NewCreator(out io.Writer) *Creator {
 	return &Creator{
 		out: out,
-		newGCPClient: func(ctx context.Context, project, zone, region, name string) (gcpclient, error) {
-			return gcpcl.NewInitialized(ctx, project, zone, region, name)
+		newTerraformClient: func(ctx context.Context, provider cloudprovider.Provider) (terraformClient, error) {
+			return terraform.New(ctx, provider)
 		},
 		newAzureClient: func(subscriptionID, tenantID, name, location, resourceGroup string) (azureclient, error) {
 			return azurecl.NewInitialized(subscriptionID, tenantID, name, location, resourceGroup)
-		},
-		newQEMUClient: func(ctx context.Context) (qemuclient, error) {
-			if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
-				return nil, fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
-			}
-			return terraform.New(ctx, cloudprovider.QEMU)
 		},
 	}
 }
@@ -63,18 +54,12 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 
 	switch provider {
 	case cloudprovider.GCP:
-		cl, err := c.newGCPClient(
-			ctx,
-			config.Provider.GCP.Project,
-			config.Provider.GCP.Zone,
-			config.Provider.GCP.Region,
-			name,
-		)
+		cl, err := c.newTerraformClient(ctx, provider)
 		if err != nil {
 			return state.ConstellationState{}, err
 		}
-		defer cl.Close()
-		return c.createGCP(ctx, cl, config, insType, controlPlaneCount, workerCount, ingressRules)
+		defer cl.RemoveInstaller()
+		return c.createGCP(ctx, cl, config, name, insType, controlPlaneCount, workerCount)
 	case cloudprovider.Azure:
 		cl, err := c.newAzureClient(
 			config.Provider.Azure.SubscriptionID,
@@ -88,7 +73,10 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 		}
 		return c.createAzure(ctx, cl, config, insType, controlPlaneCount, workerCount, ingressRules)
 	case cloudprovider.QEMU:
-		cl, err := c.newQEMUClient(ctx)
+		if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
+			return state.ConstellationState{}, fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
+		}
+		cl, err := c.newTerraformClient(ctx, provider)
 		if err != nil {
 			return state.ConstellationState{}, err
 		}
@@ -99,75 +87,29 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 	}
 }
 
-func (c *Creator) createGCP(ctx context.Context, cl gcpclient, config *config.Config, insType string, controlPlaneCount, workerCount int, ingressRules cloudtypes.Firewall,
+func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *config.Config,
+	name, insType string, controlPlaneCount, workerCount int,
 ) (stat state.ConstellationState, retErr error) {
-	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerGCP{client: cl})
+	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
 
-	if err := cl.CreateVPCs(ctx); err != nil {
-		return state.ConstellationState{}, err
-	}
-
-	if err := cl.CreateFirewall(ctx, gcpcl.FirewallInput{
-		Ingress: ingressRules,
-		Egress:  constants.EgressRules,
-	}); err != nil {
-		return state.ConstellationState{}, err
-	}
-
-	// additionally create allow-internal rules
-	internalFirewallInput := gcpcl.FirewallInput{
-		Ingress: cloudtypes.Firewall{
-			{
-				Name:     "allow-cluster-internal-tcp",
-				Protocol: "tcp",
-				IPRange:  gcpcl.SubnetExtCIDR,
-			},
-			{
-				Name:     "allow-cluster-internal-udp",
-				Protocol: "udp",
-				IPRange:  gcpcl.SubnetExtCIDR,
-			},
-			{
-				Name:     "allow-cluster-internal-icmp",
-				Protocol: "icmp",
-				IPRange:  gcpcl.SubnetExtCIDR,
-			},
-			{
-				Name:     "allow-node-internal-tcp",
-				Protocol: "tcp",
-				IPRange:  gcpcl.SubnetCIDR,
-			},
-			{
-				Name:     "allow-node-internal-udp",
-				Protocol: "udp",
-				IPRange:  gcpcl.SubnetCIDR,
-			},
-			{
-				Name:     "allow-node-internal-icmp",
-				Protocol: "icmp",
-				IPRange:  gcpcl.SubnetCIDR,
-			},
+	vars := &terraform.GCPVariables{
+		CommonVariables: terraform.CommonVariables{
+			Name:               name,
+			CountControlPlanes: controlPlaneCount,
+			CountWorkers:       workerCount,
+			StateDiskSizeGB:    config.StateDiskSizeGB,
 		},
-	}
-	if err := cl.CreateFirewall(ctx, internalFirewallInput); err != nil {
-		return state.ConstellationState{}, err
-	}
-
-	createInput := gcpcl.CreateInstancesInput{
-		EnableSerialConsole: config.IsDebugCluster(),
-		CountControlPlanes:  controlPlaneCount,
-		CountWorkers:        workerCount,
-		ImageID:             config.Provider.GCP.Image,
-		InstanceType:        insType,
-		StateDiskSizeGB:     config.StateDiskSizeGB,
-		StateDiskType:       config.Provider.GCP.StateDiskType,
-		KubeEnv:             gcp.KubeEnv,
-	}
-	if err := cl.CreateInstances(ctx, createInput); err != nil {
-		return state.ConstellationState{}, err
+		Project:         config.Provider.GCP.Project,
+		Region:          config.Provider.GCP.Region,
+		Zone:            config.Provider.GCP.Zone,
+		CredentialsFile: config.Provider.GCP.ServiceAccountKeyPath,
+		InstanceType:    insType,
+		StateDiskType:   config.Provider.GCP.StateDiskType,
+		ImageID:         config.Provider.GCP.Image,
+		Debug:           config.IsDebugCluster(),
 	}
 
-	if err := cl.CreateLoadBalancers(ctx, config.IsDebugCluster()); err != nil {
+	if err := cl.CreateCluster(ctx, name, vars); err != nil {
 		return state.ConstellationState{}, err
 	}
 
@@ -211,25 +153,26 @@ func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *confi
 	return cl.GetState(), nil
 }
 
-func (c *Creator) createQEMU(ctx context.Context, cl qemuclient, name string, config *config.Config, controlPlaneCount, workerCount int,
+func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, name string, config *config.Config,
+	controlPlaneCount, workerCount int,
 ) (stat state.ConstellationState, retErr error) {
-	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerQEMU{client: cl})
+	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
 
-	input := terraform.CreateClusterInput{
-		CountControlPlanes: controlPlaneCount,
-		CountWorkers:       workerCount,
-		QEMU: terraform.QEMUInput{
-			ImagePath:        config.Provider.QEMU.Image,
-			ImageFormat:      config.Provider.QEMU.ImageFormat,
-			CPUCount:         config.Provider.QEMU.VCPUs,
-			MemorySizeMiB:    config.Provider.QEMU.Memory,
-			StateDiskSizeGB:  config.StateDiskSizeGB,
-			IPRangeStart:     config.Provider.QEMU.IPRangeStart,
-			MetadataAPIImage: config.Provider.QEMU.MetadataAPIImage,
+	vars := &terraform.QEMUVariables{
+		CommonVariables: terraform.CommonVariables{
+			Name:               name,
+			CountControlPlanes: controlPlaneCount,
+			CountWorkers:       workerCount,
+			StateDiskSizeGB:    config.StateDiskSizeGB,
 		},
+		ImagePath:        config.Provider.QEMU.Image,
+		ImageFormat:      config.Provider.QEMU.ImageFormat,
+		CPUCount:         config.Provider.QEMU.VCPUs,
+		MemorySizeMiB:    config.Provider.QEMU.Memory,
+		MetadataAPIImage: config.Provider.QEMU.MetadataAPIImage,
 	}
 
-	if err := cl.CreateCluster(ctx, name, input); err != nil {
+	if err := cl.CreateCluster(ctx, name, vars); err != nil {
 		return state.ConstellationState{}, err
 	}
 

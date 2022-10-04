@@ -98,8 +98,12 @@ func main() {
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to marshal PCRs")
 		}
+		cloudControllerManager, err := gcpcloud.NewCloudControllerManager(metadata)
+		if err != nil {
+			log.With(zap.Error(err)).Fatalf("Failed to create cloud controller manager")
+		}
 		clusterInitJoiner = kubernetes.New(
-			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &gcpcloud.CloudControllerManager{},
+			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), cloudControllerManager,
 			&gcpcloud.CloudNodeManager{}, &gcpcloud.Autoscaler{}, metadata, pcrsJSON,
 		)
 		openTPM = vtpm.OpenVTPM

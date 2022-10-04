@@ -18,11 +18,6 @@ variable "state_disk_size" {
   description = "size of state disk (GiB)"
 }
 
-variable "ip_range_start" {
-  type        = number
-  description = "first ip address to use within subnet"
-}
-
 variable "cidr" {
   type        = string
   description = "subnet to use for dhcp"

@@ -11,19 +11,9 @@ See the [architecture](../architecture/orchestration.md) section for details on 
 
 This step creates the necessary resources for your cluster in your cloud environment.
 
-### Prerequisites
-
-Before creating your cluster you need to decide on
-
-* the initial size of your cluster (the number of control-plane and worker nodes)
-* the machine type of your nodes (depending on the availability in your cloud environment)
-* whether to enable autoscaling for your cluster (automatically adding and removing nodes depending on resource demands)
-
-You can find the currently supported machine types for your cloud environment in the [installation guide](../architecture/orchestration.md).
-
 ### Configuration
 
-Constellation can generate a configuration file for your cloud provider:
+Generate a configuration file for your cloud service provider (CSP):
 
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure">
@@ -42,27 +32,28 @@ constellation config generate gcp
 </tabItem>
 </tabs>
 
-This creates the file `constellation-conf.yaml` in the current directory. You must edit it before you can execute the next steps.
+This creates the file `constellation-conf.yaml` in the current directory. [Fill in your CSP-specific information](../getting-started/first-steps.md#create-a-cluster) before you continue.
 
-Next, download the latest trusted measurements for your configured image.
+Next, download the trusted measurements for your configured image.
 
 ```bash
 constellation config fetch-measurements
 ```
 
-For more details, see the [verification section](../workflows/verify-cluster.md).
+For details, see the [verification section](../workflows/verify-cluster.md).
 
 ### Create
 
+Choose the initial size of your cluster.
 The following command creates a cluster with one control-plane and two worker nodes:
 
 ```bash
-constellation create --control-plane-nodes 1 --worker-nodes 2 -y
+constellation create --control-plane-nodes 1 --worker-nodes 2
 ```
 
-For details on the flags and a list of supported instance types, consult the command help via `constellation create -h`.
+For details on the flags, consult the command help via `constellation create -h`.
 
-*create* will store your cluster's configuration to a file named [`constellation-state.json`](../architecture/orchestration.md#installation-process) in your current directory.
+*create* stores your cluster's configuration to a file named [`constellation-state.json`](../architecture/orchestration.md#installation-process) in your current directory.
 
 ## The *init* step
 
@@ -78,11 +69,10 @@ To enable autoscaling in your cluster, add the `--autoscale` flag:
 constellation init --autoscale
 ```
 
-Next, configure `kubectl` for your Constellation cluster:
+Next, configure `kubectl` for your cluster:
 
 ```bash
 export KUBECONFIG="$PWD/constellation-admin.conf"
-kubectl get nodes -o wide
 ```
 
 🏁 That's it. You've successfully created a Constellation cluster.

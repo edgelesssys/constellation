@@ -22,9 +22,9 @@ import (
 	"go.uber.org/multierr"
 )
 
-func TestCreateInstances(t *testing.T) {
-	someErr := errors.New("error")
-	getState := func() *tfjson.State {
+func TestCreateCluster(t *testing.T) {
+	someErr := errors.New("failed")
+	newTestState := func() *tfjson.State {
 		workingState := tfjson.State{
 			Values: &tfjson.StateValues{
 				Outputs: map[string]*tfjson.StateOutput{
@@ -34,52 +34,58 @@ func TestCreateInstances(t *testing.T) {
 				},
 			},
 		}
-
 		return &workingState
+	}
+	qemuVars := &QEMUVariables{
+		CommonVariables: CommonVariables{
+			Name:               "name",
+			CountControlPlanes: 1,
+			CountWorkers:       2,
+			StateDiskSizeGB:    11,
+		},
+		CPUCount:         1,
+		MemorySizeMiB:    1024,
+		ImagePath:        "path",
+		ImageFormat:      "format",
+		MetadataAPIImage: "api",
 	}
 
 	testCases := map[string]struct {
 		provider cloudprovider.Provider
-		input    CreateClusterInput
+		vars     Variables
 		tf       *stubTerraform
 		fs       afero.Fs
 		wantErr  bool
 	}{
 		"works": {
 			provider: cloudprovider.QEMU,
-			tf: &stubTerraform{
-				showState: getState(),
-			},
-			fs: afero.NewMemMapFs(),
+			vars:     qemuVars,
+			tf:       &stubTerraform{showState: newTestState()},
+			fs:       afero.NewMemMapFs(),
 		},
 		"init fails": {
 			provider: cloudprovider.QEMU,
-			tf: &stubTerraform{
-				initErr:   someErr,
-				showState: getState(),
-			},
-			fs:      afero.NewMemMapFs(),
-			wantErr: true,
+			tf:       &stubTerraform{initErr: someErr},
+			fs:       afero.NewMemMapFs(),
+			wantErr:  true,
 		},
 		"apply fails": {
 			provider: cloudprovider.QEMU,
-			tf: &stubTerraform{
-				applyErr:  someErr,
-				showState: getState(),
-			},
-			fs:      afero.NewMemMapFs(),
-			wantErr: true,
+			vars:     qemuVars,
+			tf:       &stubTerraform{applyErr: someErr},
+			fs:       afero.NewMemMapFs(),
+			wantErr:  true,
 		},
 		"show fails": {
 			provider: cloudprovider.QEMU,
-			tf: &stubTerraform{
-				showErr: someErr,
-			},
-			fs:      afero.NewMemMapFs(),
-			wantErr: true,
+			vars:     qemuVars,
+			tf:       &stubTerraform{showErr: someErr},
+			fs:       afero.NewMemMapFs(),
+			wantErr:  true,
 		},
 		"no ip": {
 			provider: cloudprovider.QEMU,
+			vars:     qemuVars,
 			tf: &stubTerraform{
 				showState: &tfjson.State{
 					Values: &tfjson.StateValues{
@@ -90,13 +96,24 @@ func TestCreateInstances(t *testing.T) {
 			fs:      afero.NewMemMapFs(),
 			wantErr: true,
 		},
+		"ip has wrong type": {
+			provider: cloudprovider.QEMU,
+			vars:     qemuVars,
+			tf: &stubTerraform{
+				showState: &tfjson.State{
+					Values: &tfjson.StateValues{
+						Outputs: map[string]*tfjson.StateOutput{"ip": {Value: 42}},
+					},
+				},
+			},
+			fs:      afero.NewMemMapFs(),
+			wantErr: true,
+		},
 		"prepare workspace fails": {
 			provider: cloudprovider.QEMU,
-			tf: &stubTerraform{
-				showState: getState(),
-			},
-			fs:      afero.NewReadOnlyFs(afero.NewMemMapFs()),
-			wantErr: true,
+			tf:       &stubTerraform{showState: newTestState()},
+			fs:       afero.NewReadOnlyFs(afero.NewMemMapFs()),
+			wantErr:  true,
 		},
 	}
 
@@ -110,12 +127,12 @@ func TestCreateInstances(t *testing.T) {
 				file:     file.NewHandler(tc.fs),
 			}
 
-			err := c.CreateCluster(context.Background(), "test", tc.input)
+			err := c.CreateCluster(context.Background(), "test", tc.vars)
+
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
-
 			assert.NoError(err)
 		})
 	}
