@@ -89,13 +89,13 @@ func configFetchMeasurements(cmd *cobra.Command, fileHandler file.Handler, clien
 }
 
 func verifyWithRekor(cmd *cobra.Command, hash string) error {
-	r, err := sigstore.NewRekor()
+	rekor, err := sigstore.NewRekor()
 	if err != nil {
 		cmd.PrintErrln("Unable to construct Rekor client.")
 		return err
 	}
 
-	uuids, err := r.SearchByHash(cmd.Context(), hash)
+	uuids, err := rekor.SearchByHash(cmd.Context(), hash)
 	if err != nil {
 		cmd.PrintErrln("Unable to find hash in Rekor.")
 		return err
@@ -106,13 +106,10 @@ func verifyWithRekor(cmd *cobra.Command, hash string) error {
 	// Any subsequent hashes are treated as potential attacks and are ignored.
 	artifactUUID := uuids[0]
 
-	entry, valid, err := r.GetAndVerifyEntry(cmd.Context(), artifactUUID)
+	entry, err := rekor.GetAndVerifyEntry(cmd.Context(), artifactUUID)
 	if err != nil {
 		cmd.PrintErrln("Unable to verify Rekor entry.")
 		return err
-	}
-	if !valid {
-		return errors.New("Rekor entry verification failed.")
 	}
 
 	rekord, err := sigstore.HashedRekordFromEntry(entry)

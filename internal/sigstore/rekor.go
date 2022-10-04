@@ -96,48 +96,49 @@ func (r *Rekor) GetEntry(ctx context.Context, uuid string) (models.LogEntryAnon,
 
 // VerifyEntry performs inclusion proof verification, SignedEntryTimestamp
 // verification, and checkpoint verification of the provided entry in Rekor.
-func (r *Rekor) VerifyEntry(ctx context.Context, entry models.LogEntryAnon) (bool, error) {
+// A return value of nil indicated successful verification.
+func (r *Rekor) VerifyEntry(ctx context.Context, entry models.LogEntryAnon) error {
 	keyResp, err := r.client.Pubkey.GetPublicKey(nil)
 	if err != nil {
-		return false, err
+		return err
 	}
 	publicKey := keyResp.Payload
 
 	block, _ := pem.Decode([]byte(publicKey))
 	if block == nil {
-		return false, errors.New("failed to decode key")
+		return errors.New("failed to decode key")
 	}
 	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	verifier, err := signature.LoadVerifier(pub, crypto.SHA256)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	err = verify.VerifyLogEntry(ctx, &entry, verifier)
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	return true, nil
+	return nil
 }
 
 // GetAndVerifyEntry performs both GetEntry and VerifyEntry.
-func (r *Rekor) GetAndVerifyEntry(ctx context.Context, uuid string) (models.LogEntryAnon, bool, error) {
+func (r *Rekor) GetAndVerifyEntry(ctx context.Context, uuid string) (models.LogEntryAnon, error) {
 	entry, err := r.GetEntry(ctx, uuid)
 	if err != nil {
-		return models.LogEntryAnon{}, false, err
+		return models.LogEntryAnon{}, err
 	}
 
-	valid, err := r.VerifyEntry(ctx, entry)
+	err = r.VerifyEntry(ctx, entry)
 	if err != nil {
-		return models.LogEntryAnon{}, valid, err
+		return models.LogEntryAnon{}, err
 	}
 
-	return entry, valid, nil
+	return entry, nil
 }
 
 // HashedRekordFromEntry extract the base64 encoded polymorphic Body field
@@ -164,6 +165,16 @@ func HashedRekordFromEntry(entry models.LogEntryAnon) (*hashedrekord.V001Entry, 
 }
 
 func IsEntrySignedBy(rekord *hashedrekord.V001Entry, publicKey string) bool {
+	if rekord == nil {
+		return false
+	}
+	if rekord.HashedRekordObj.Signature == nil {
+		return false
+	}
+	if rekord.HashedRekordObj.Signature.PublicKey == nil {
+		return false
+	}
+
 	actualKey := rekord.HashedRekordObj.Signature.PublicKey.Content.String()
 	return actualKey == publicKey
 }
