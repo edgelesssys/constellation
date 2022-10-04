@@ -11,6 +11,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/spf13/cobra"
+	"go.uber.org/multierr"
 )
 
 func newMiniDownCmd() *cobra.Command {
@@ -26,8 +27,9 @@ func newMiniDownCmd() *cobra.Command {
 }
 
 func runDown(cmd *cobra.Command, args []string) error {
-	if err := runTerminate(cmd, args); err != nil {
-		return err
+	err := runTerminate(cmd, args)
+	if removeErr := os.Remove(constants.MasterSecretFilename); removeErr != nil && !os.IsNotExist(removeErr) {
+		err = multierr.Append(err, removeErr)
 	}
-	return os.Remove(constants.MasterSecretFilename)
+	return err
 }

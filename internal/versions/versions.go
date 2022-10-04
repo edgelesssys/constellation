@@ -56,6 +56,10 @@ const (
 	// once https://github.com/medik8s/node-maintenance-operator/issues/49 is resolved.
 	NodeMaintenanceOperatorCatalogImage = "ghcr.io/edgelesssys/constellation/node-maintenance-operator-catalog:v0.13.1-alpha1@sha256:d382c3aaf9bc470cde6f6c05c2c6ff5c9dcfd90540d5b11f9cf69c4e1dd1ca9d"
 
+	// ConstellationQEMUImageURL is the artifact URL for QEMU qcow2 images.
+	// TODO: Replace with actual artifact URL once we have one (S3, Google Bucket or similar).
+	ConstellationQEMUImageURL = "http://localhost/files/constellation.qcow2"
+
 	// currently supported versions.
 	//nolint:revive
 	V1_23 ValidK8sVersion = "1.23"

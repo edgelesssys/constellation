@@ -9,6 +9,7 @@ package libvirt
 import (
 	"context"
 	"errors"
+	"io"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -45,6 +46,15 @@ func (r *Runner) Start(ctx context.Context, name, imageName string) error {
 	defer docker.Close()
 
 	containerName := name + "-libvirt"
+	reader, err := docker.ImagePull(ctx, imageName, types.ImagePullOptions{})
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+	if _, err := io.Copy(io.Discard, reader); err != nil {
+		return err
+	}
+
 	if _, err := docker.ContainerCreate(ctx,
 		&container.Config{
 			Image: imageName,
