@@ -22,14 +22,13 @@ const (
 )
 
 func TestSpinnerInitialState(t *testing.T) {
-	// Command
 	cmd := NewInitCmd()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	var errOut bytes.Buffer
 	cmd.SetErr(&errOut)
 
-	s := NewSpinner(cmd, baseText, true)
+	s := newSpinner(cmd, baseText, true)
 	s.Start()
 	time.Sleep(baseWait * time.Second)
 	s.Stop()
@@ -41,14 +40,13 @@ func TestSpinnerInitialState(t *testing.T) {
 }
 
 func TestSpinnerFinalState(t *testing.T) {
-	// Command
 	cmd := NewInitCmd()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	var errOut bytes.Buffer
 	cmd.SetErr(&errOut)
 
-	s := NewSpinner(cmd, baseText, true)
+	s := newSpinner(cmd, baseText, true)
 	s.Start()
 	time.Sleep(baseWait * time.Second)
 	s.Stop()
@@ -56,18 +54,17 @@ func TestSpinnerFinalState(t *testing.T) {
 	require.True(t, errOut.Len() == 0)
 
 	outStr := out.String()
-	require.True(t, strings.HasSuffix(outStr, baseText+"...\n"))
+	require.True(t, strings.HasSuffix(outStr, baseText+"...  \n"))
 }
 
 func TestSpinnerDisabledShowDotsFlag(t *testing.T) {
-	// Command
 	cmd := NewInitCmd()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	var errOut bytes.Buffer
 	cmd.SetErr(&errOut)
 
-	s := NewSpinner(cmd, baseText, false)
+	s := newSpinner(cmd, baseText, false)
 	s.Start()
 	time.Sleep(baseWait * time.Second)
 	s.Stop()
@@ -76,6 +73,7 @@ func TestSpinnerDisabledShowDotsFlag(t *testing.T) {
 
 	outStr := out.String()
 	require.True(t, strings.HasPrefix(outStr, generateAllStatesAsString(baseText, false)))
+	require.True(t, strings.HasSuffix(outStr, baseText+"  \n"))
 }
 
 func generateAllStatesAsString(text string, showDots bool) string {

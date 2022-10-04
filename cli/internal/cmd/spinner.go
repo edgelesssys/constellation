@@ -20,7 +20,7 @@ var (
 	dotsStates    = []string{".", "..", "..."}
 )
 
-type Spinner struct {
+type spinner struct {
 	out      *cobra.Command
 	text     string
 	showDots bool
@@ -29,8 +29,8 @@ type Spinner struct {
 	stop     int32
 }
 
-func NewSpinner(c *cobra.Command, text string, showDots bool) *Spinner {
-	return &Spinner{
+func newSpinner(c *cobra.Command, text string, showDots bool) *spinner {
+	return &spinner{
 		out:      c,
 		text:     text,
 		showDots: showDots,
@@ -40,38 +40,34 @@ func NewSpinner(c *cobra.Command, text string, showDots bool) *Spinner {
 	}
 }
 
-func (s *Spinner) Start() {
+func (s *spinner) Start() {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
 
-	out:
-		for {
-			for i := 0; i < len(spinnerStates); i++ {
-				if atomic.LoadInt32(&s.stop) == 0 {
-					dotsState := ""
-					if s.showDots {
-						dotsState = dotsStates[i%len(dotsStates)]
-					}
-					state := fmt.Sprintf("\r%s %s%s", spinnerStates[i], s.text, dotsState)
-					s.out.Print(state)
-					time.Sleep(s.delay)
-				} else {
-					break out
-				}
+		for i := 0; ; i = (i + 1) % len(spinnerStates) {
+			if atomic.LoadInt32(&s.stop) != 0 {
+				break
 			}
+			dotsState := ""
+			if s.showDots {
+				dotsState = dotsStates[i%len(dotsStates)]
+			}
+			state := fmt.Sprintf("\r%s %s%s", spinnerStates[i], s.text, dotsState)
+			s.out.Print(state)
+			time.Sleep(s.delay)
 		}
 
 		dotsState := ""
 		if s.showDots {
 			dotsState = dotsStates[len(dotsStates)-1]
 		}
-		finalState := fmt.Sprintf("\r%s%s", s.text, dotsState)
+		finalState := fmt.Sprintf("\r%s%s  ", s.text, dotsState)
 		s.out.Println(finalState)
 	}()
 }
 
-func (s *Spinner) Stop() {
+func (s *spinner) Stop() {
 	atomic.StoreInt32(&s.stop, 1)
 	s.wg.Wait()
 }
