@@ -46,10 +46,10 @@ resource "aws_vpc" "vpc" {
   }
 }
 
-# TODO: This dual subnet setup can end up in two different zones, and the LB needs IPs in each subnet to work. Pin a zone, or get this working properly with multiple zones?
 resource "aws_subnet" "private" {
-  vpc_id     = aws_vpc.vpc.id
-  cidr_block = local.cidr_vpc_subnet_nodes
+  vpc_id            = aws_vpc.vpc.id
+  cidr_block        = local.cidr_vpc_subnet_nodes
+  availability_zone = var.zone
   tags = {
     Name = "${local.name}-subnet-nodes"
   }
@@ -58,6 +58,7 @@ resource "aws_subnet" "private" {
 resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.vpc.id
   cidr_block              = local.cidr_vpc_subnet_internet
+  availability_zone       = var.zone
   map_public_ip_on_launch = true # TODO: Not sure if required here for LB/NAT/Internet Gateway to work
   tags = {
     Name = "${local.name}-subnet-internet"

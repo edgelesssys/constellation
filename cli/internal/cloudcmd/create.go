@@ -120,6 +120,7 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *con
 			StateDiskSizeGB:    config.StateDiskSizeGB,
 		},
 		Region:                 config.Provider.AWS.Region,
+		Zone:                   config.Provider.AWS.Zone,
 		InstanceType:           insType,
 		AMIImageID:             config.Provider.AWS.Image,
 		IAMProfileControlPlane: config.Provider.AWS.IAMProfileControlPlane,

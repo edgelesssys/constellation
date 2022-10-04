@@ -45,6 +45,8 @@ type AWSVariables struct {
 	CommonVariables
 	// Region is the AWS region to use.
 	Region string
+	// Zone is the AWS zone to use in the given region.
+	Zone string
 	// AMIImageID is the ID of the AMI image to use.
 	AMIImageID string
 	// InstanceType is the type of the EC2 instance to use.
@@ -83,6 +85,7 @@ func (v *AWSVariables) String() string {
 	b := &strings.Builder{}
 	b.WriteString(v.CommonVariables.String())
 	writeLinef(b, "region = %q", v.Region)
+	writeLinef(b, "zone = %q", v.Zone)
 	writeLinef(b, "ami = %q", v.AMIImageID)
 	writeLinef(b, "instance_type = %q", v.InstanceType)
 	writeLinef(b, "iam_instance_profile_control_plane = %q", v.IAMProfileControlPlane)
