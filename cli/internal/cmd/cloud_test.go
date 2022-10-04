@@ -20,6 +20,7 @@ func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m,
 		// https://github.com/census-instrumentation/opencensus-go/issues/1262
 		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		goleak.IgnoreTopFunction("internal/poll.runtime_pollWait"),
 	)
 }
 

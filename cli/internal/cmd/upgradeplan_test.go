@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/mod/semver"
@@ -237,6 +238,9 @@ func TestGetCompatibleImages(t *testing.T) {
 func TestGetCompatibleImageMeasurements(t *testing.T) {
 	assert := assert.New(t)
 
+	var cmd cobra.Command
+	cmd.SetContext(context.Background())
+
 	testImages := map[string]config.UpgradeConfig{
 		"v0.0.0": {
 			Image: "azure-v0.0.0",
@@ -271,7 +275,7 @@ func TestGetCompatibleImageMeasurements(t *testing.T) {
 
 	pubK := []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----")
 
-	err := getCompatibleImageMeasurements(context.Background(), client, pubK, testImages)
+	err := getCompatibleImageMeasurements(&cmd, client, pubK, testImages)
 	assert.NoError(err)
 
 	for _, image := range testImages {

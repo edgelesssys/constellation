@@ -99,6 +99,10 @@ func verifyWithRekor(cmd *cobra.Command, hash string) error {
 		return fmt.Errorf("searching Rekor for hash: %w", err)
 	}
 
+	if len(uuids) == 0 {
+		return fmt.Errorf("no matching entries in Rekor")
+	}
+
 	// We expect the first entry in Rekor to be our original entry.
 	// SHA256 should ensure there is no entry with the same hash.
 	// Any subsequent hashes are treated as potential attacks and are ignored.
