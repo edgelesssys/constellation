@@ -109,7 +109,7 @@ func TestTerminator(t *testing.T) {
 			assert := assert.New(t)
 
 			terminator := &Terminator{
-				newTerraformClient: func(ctx context.Context) (terraformClient, error) {
+				newTerraformClient: func(ctx context.Context, provider cloudprovider.Provider) (terraformClient, error) {
 					return tc.tfClient, tc.newTfClientErr
 				},
 				newAzureClient: func(subscriptionID, tenantID string) (azureclient, error) {

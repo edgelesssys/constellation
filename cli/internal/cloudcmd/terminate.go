@@ -19,7 +19,7 @@ import (
 
 // Terminator deletes cloud provider resources.
 type Terminator struct {
-	newTerraformClient func(ctx context.Context) (terraformClient, error)
+	newTerraformClient func(ctx context.Context, provider cloudprovider.Provider) (terraformClient, error)
 	newAzureClient     func(subscriptionID, tenantID string) (azureclient, error)
 	newLibvirtRunner   func() libvirtRunner
 }
@@ -27,8 +27,8 @@ type Terminator struct {
 // NewTerminator create a new cloud terminator.
 func NewTerminator() *Terminator {
 	return &Terminator{
-		newTerraformClient: func(ctx context.Context) (terraformClient, error) {
-			return terraform.New(ctx, cloudprovider.GCP)
+		newTerraformClient: func(ctx context.Context, provider cloudprovider.Provider) (terraformClient, error) {
+			return terraform.New(ctx, provider)
 		},
 		newAzureClient: func(subscriptionID, tenantID string) (azureclient, error) {
 			return azurecl.NewFromDefault(subscriptionID, tenantID)
@@ -52,14 +52,14 @@ func (t *Terminator) Terminate(ctx context.Context, state state.ConstellationSta
 	case cloudprovider.AWS:
 		fallthrough
 	case cloudprovider.GCP:
-		cl, err := t.newTerraformClient(ctx)
+		cl, err := t.newTerraformClient(ctx, provider)
 		if err != nil {
 			return err
 		}
 		defer cl.RemoveInstaller()
 		return t.terminateTerraform(ctx, cl)
 	case cloudprovider.QEMU:
-		cl, err := t.newTerraformClient(ctx)
+		cl, err := t.newTerraformClient(ctx, provider)
 		if err != nil {
 			return err
 		}
