@@ -222,7 +222,7 @@ func TestCreateNode(t *testing.T) {
 				list:     tc.preexistingVMs,
 				fetchErr: tc.fetchErr,
 			}
-			poller := NewStubCapacityPoller(tc.pollErr)
+			poller := newStubCapacityPoller(tc.pollErr)
 			client := Client{
 				virtualMachineScaleSetVMsAPI: &stubvirtualMachineScaleSetVMsAPI{
 					pager: pager,
@@ -351,21 +351,21 @@ func TestCapacityPollingHandler(t *testing.T) {
 	assert.Equal(wantCapacity, gotCapacity)
 }
 
-type StubCapacityPoller struct {
+type stubCapacityPoller struct {
 	pollErr error
 	pollC   chan struct{}
 	doneC   chan struct{}
 }
 
-func NewStubCapacityPoller(pollErr error) *StubCapacityPoller {
-	return &StubCapacityPoller{
+func newStubCapacityPoller(pollErr error) *stubCapacityPoller {
+	return &stubCapacityPoller{
 		pollErr: pollErr,
 		pollC:   make(chan struct{}),
 		doneC:   make(chan struct{}),
 	}
 }
 
-func (p *StubCapacityPoller) PollUntilDone(context.Context, *poller.PollUntilDoneOptions) (int64, error) {
+func (p *stubCapacityPoller) PollUntilDone(context.Context, *poller.PollUntilDoneOptions) (int64, error) {
 	p.pollC <- struct{}{}
 	<-p.doneC
 	return 0, p.pollErr
