@@ -225,3 +225,20 @@ func (c *stubTerraformClient) CleanUpWorkspace() error {
 func (c *stubTerraformClient) RemoveInstaller() {
 	c.removeInstallerCalled = true
 }
+
+type stubLibvirtRunner struct {
+	startCalled bool
+	stopCalled  bool
+	startErr    error
+	stopErr     error
+}
+
+func (r *stubLibvirtRunner) Start(_ context.Context, _, _ string) error {
+	r.startCalled = true
+	return r.startErr
+}
+
+func (r *stubLibvirtRunner) Stop(context.Context) error {
+	r.stopCalled = true
+	return r.stopErr
+}

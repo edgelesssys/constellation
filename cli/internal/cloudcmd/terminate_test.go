@@ -38,6 +38,7 @@ func TestTerminator(t *testing.T) {
 		newTfClientErr    error
 		azureclient       azureclient
 		newAzureClientErr error
+		libvirt           *stubLibvirtRunner
 		state             state.ConstellationState
 		wantErr           bool
 	}{
@@ -62,15 +63,24 @@ func TestTerminator(t *testing.T) {
 		},
 		"qemu": {
 			tfClient: &stubTerraformClient{},
+			libvirt:  &stubLibvirtRunner{},
 			state:    state.ConstellationState{CloudProvider: cloudprovider.QEMU.String()},
 		},
 		"qemu destroy cluster error": {
 			tfClient: &stubTerraformClient{destroyClusterErr: someErr},
+			libvirt:  &stubLibvirtRunner{},
 			state:    state.ConstellationState{CloudProvider: cloudprovider.QEMU.String()},
 			wantErr:  true,
 		},
 		"qemu clean up workspace error": {
 			tfClient: &stubTerraformClient{cleanUpWorkspaceErr: someErr},
+			libvirt:  &stubLibvirtRunner{},
+			state:    state.ConstellationState{CloudProvider: cloudprovider.QEMU.String()},
+			wantErr:  true,
+		},
+		"qemu stop libvirt error": {
+			tfClient: &stubTerraformClient{},
+			libvirt:  &stubLibvirtRunner{stopErr: someErr},
 			state:    state.ConstellationState{CloudProvider: cloudprovider.QEMU.String()},
 			wantErr:  true,
 		},
@@ -105,6 +115,9 @@ func TestTerminator(t *testing.T) {
 				newAzureClient: func(subscriptionID, tenantID string) (azureclient, error) {
 					return tc.azureclient, tc.newAzureClientErr
 				},
+				newLibvirtRunner: func() libvirtRunner {
+					return tc.libvirt
+				},
 			}
 
 			err := terminator.Terminate(context.Background(), tc.state)
@@ -114,9 +127,10 @@ func TestTerminator(t *testing.T) {
 			} else {
 				assert.NoError(err)
 				switch cloudprovider.FromString(tc.state.CloudProvider) {
-				case cloudprovider.GCP:
-					fallthrough
 				case cloudprovider.QEMU:
+					assert.True(tc.libvirt.stopCalled)
+					fallthrough
+				case cloudprovider.GCP:
 					cl := tc.tfClient.(*stubTerraformClient)
 					assert.True(cl.destroyClusterCalled)
 					assert.True(cl.removeInstallerCalled)

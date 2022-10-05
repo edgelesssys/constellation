@@ -83,6 +83,10 @@ type QEMUVariables struct {
 	// CommonVariables contains common variables.
 	CommonVariables
 
+	// LibvirtURI is the libvirt connection URI.
+	LibvirtURI string
+	// LibvirtSocketPath is the path to the libvirt socket in case of unix socket.
+	LibvirtSocketPath string
 	// CPUCount is the number of CPUs to allocate to each node.
 	CPUCount int
 	// MemorySizeMiB is the amount of memory to allocate to each node, in MiB.
@@ -93,17 +97,24 @@ type QEMUVariables struct {
 	ImageFormat string
 	// MetadataAPIImage is the container image to use for the metadata API.
 	MetadataAPIImage string
+	// MetadataLibvirtURI is the libvirt connection URI used by the metadata container.
+	// In case of unix socket, this should be "qemu:///system".
+	// Other wise it should be the same as LibvirtURI.
+	MetadataLibvirtURI string
 }
 
 // String returns a string representation of the variables, formatted as Terraform variables.
 func (v *QEMUVariables) String() string {
 	b := &strings.Builder{}
 	b.WriteString(v.CommonVariables.String())
+	writeLinef(b, "libvirt_uri = %q", v.LibvirtURI)
+	writeLinef(b, "libvirt_socket_path = %q", v.LibvirtSocketPath)
 	writeLinef(b, "constellation_coreos_image = %q", v.ImagePath)
 	writeLinef(b, "image_format = %q", v.ImageFormat)
 	writeLinef(b, "vcpus = %d", v.CPUCount)
 	writeLinef(b, "memory = %d", v.MemorySizeMiB)
 	writeLinef(b, "metadata_api_image = %q", v.MetadataAPIImage)
+	writeLinef(b, "metadata_libvirt_uri = %q", v.MetadataLibvirtURI)
 
 	return b.String()
 }

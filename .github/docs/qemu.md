@@ -3,10 +3,17 @@
 To create local testing clusters using QEMU, some prerequisites have to be met:
 
 - [qcow2 constellation image](/image/README.md)
-- [libvirt setup](#setup-libvirt)
 - [qemu-metadata-api container image](/hack/qemu-metadata-api/README.md)
 
-## Setup libvirt
+Deploying the VMs requires `libvirt` to be installed and configured correctly.
+You may either use [your local libvirt setup](#local-libvirt-setup) if it meets the requirements, or use a [containerized libvirt in docker](#containerized-libvirt).
+
+## Containerized libvirt
+
+Constellation will automatically deploy a containerized libvirt instance, if no connection URI is defined in the Constellation config file.
+Follow the steps in our [libvirt readme](../../cli/internal/libvirt/README.md) if you wish to build your own image.
+
+## Local libvirt setup
 
 <details>
 <summary>Ubuntu</summary>
@@ -73,7 +80,7 @@ sudo usermod -a -G libvirt $USER
 
 </details>
 
-## Update libvirt settings
+### Update libvirt settings
 
 Open `/etc/libvirt/qemu.conf` and change the following settings:
 
@@ -87,7 +94,40 @@ Then restart libvirt
 sudo systemctl restart libvirtd
 ```
 
-## Misc
+## Troubleshooting
+
+### VMs are not properly cleaned up after a failed `constellation create` command
+
+Terraform may fail to remove your VMs, in which case you need to do so manually.
 
 - List all domains: `virsh list --all`
-- Destroy domain with nvram: `virsh undefine --nvram <name>`
+- Destroy domains with nvram: `virsh undefine --nvram <name>`
+
+### VMs have no internet access
+
+`iptables` rules may prevent your VMs form properly accessing the internet.
+Make sure your rules are not dropping forwarded packages.
+
+List your rules:
+
+```shell
+sudo iptables -S
+```
+
+The output may look similar to the following:
+
+```shell
+-P INPUT ACCEPT
+-P FORWARD DROP
+-P OUTPUT ACCEPT
+-N DOCKER
+-N DOCKER-ISOLATION-STAGE-1
+-N DOCKER-ISOLATION-STAGE-2
+-N DOCKER-USER
+```
+
+If your `FORWARD` chain is set to `DROP`, you will need to update your rules:
+
+```shell
+sudo iptables -P FORWARD ACCEPT
+```
