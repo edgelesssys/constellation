@@ -146,8 +146,8 @@ func (s *ServiceManager) WriteSystemdUnitFile(ctx context.Context, unit SystemdU
 	return nil
 }
 
-// DeployDefaultServiceUnit will write the default "bootstrapper.service" unit file.
-func DeployDefaultServiceUnit(ctx context.Context, serviceManager *ServiceManager) error {
+// DefaultServiceUnit will write the default "bootstrapper.service" unit file.
+func DefaultServiceUnit(ctx context.Context, serviceManager *ServiceManager) error {
 	if err := serviceManager.WriteSystemdUnitFile(ctx, SystemdUnit{
 		Name:     debugd.BootstrapperSystemdUnitName,
 		Contents: debugd.BootstrapperSystemdUnitContents,

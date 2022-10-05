@@ -131,11 +131,11 @@ func TestGetKMS(t *testing.T) {
 func TestSetUpKMS(t *testing.T) {
 	assert := assert.New(t)
 
-	kms, err := SetUpKMS(context.Background(), "storage://unknown", "kms://unknown")
+	kms, err := KMS(context.Background(), "storage://unknown", "kms://unknown")
 	assert.Error(err)
 	assert.Nil(kms)
 
-	kms, err = SetUpKMS(context.Background(), "storage://no-store", "kms://cluster-kms?salt="+base64.URLEncoding.EncodeToString([]byte("salt")))
+	kms, err = KMS(context.Background(), "storage://no-store", "kms://cluster-kms?salt="+base64.URLEncoding.EncodeToString([]byte("salt")))
 	assert.NoError(err)
 	assert.NotNil(kms)
 }
