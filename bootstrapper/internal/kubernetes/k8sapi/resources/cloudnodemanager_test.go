@@ -22,7 +22,7 @@ func TestCloudNodeManagerMarshalUnmarshal(t *testing.T) {
 	data, err := cloudNodeManagerDepl.Marshal()
 	require.NoError(err)
 
-	var recreated cloudNodeManagerDeployment
+	var recreated CloudNodeManagerDeployment
 	require.NoError(kubernetes.UnmarshalK8SResources(data, &recreated))
 	assert.Equal(cloudNodeManagerDepl, &recreated)
 }

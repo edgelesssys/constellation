@@ -22,7 +22,7 @@ func TestKonnectivityMarshalUnmarshal(t *testing.T) {
 	data, err := kmsDepl.Marshal()
 	require.NoError(err)
 
-	var recreated konnectivityAgents
+	var recreated KonnectivityAgents
 	require.NoError(kubernetes.UnmarshalK8SResources(data, &recreated))
 	assert.Equal(kmsDepl, &recreated)
 }

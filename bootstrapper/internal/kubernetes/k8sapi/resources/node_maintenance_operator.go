@@ -21,7 +21,7 @@ const (
 	nodeMaintenanceOperatorCatalogNamespace = "olm"
 )
 
-type nodeMaintenanceOperatorDeployment struct {
+type NodeMaintenanceOperatorDeployment struct {
 	CatalogSource operatorsv1alpha1.CatalogSource
 	OperatorGroup operatorsv1.OperatorGroup
 	Subscription  operatorsv1alpha1.Subscription
@@ -29,8 +29,8 @@ type nodeMaintenanceOperatorDeployment struct {
 
 // NewNodeMaintenanceOperatorDeployment creates a new node maintenance operator (NMO) deployment.
 // See https://github.com/medik8s/node-maintenance-operator for more information.
-func NewNodeMaintenanceOperatorDeployment() *nodeMaintenanceOperatorDeployment {
-	return &nodeMaintenanceOperatorDeployment{
+func NewNodeMaintenanceOperatorDeployment() *NodeMaintenanceOperatorDeployment {
+	return &NodeMaintenanceOperatorDeployment{
 		CatalogSource: operatorsv1alpha1.CatalogSource{
 			TypeMeta: metav1.TypeMeta{APIVersion: "operators.coreos.com/v1alpha1", Kind: "CatalogSource"},
 			ObjectMeta: metav1.ObjectMeta{
@@ -80,6 +80,6 @@ func NewNodeMaintenanceOperatorDeployment() *nodeMaintenanceOperatorDeployment {
 	}
 }
 
-func (c *nodeMaintenanceOperatorDeployment) Marshal() ([]byte, error) {
+func (c *NodeMaintenanceOperatorDeployment) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(c)
 }

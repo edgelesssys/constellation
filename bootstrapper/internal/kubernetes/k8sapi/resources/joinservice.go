@@ -20,7 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-type joinServiceDaemonset struct {
+type JoinServiceDaemonset struct {
 	ClusterRole        rbac.ClusterRole
 	ClusterRoleBinding rbac.ClusterRoleBinding
 	ConfigMap          k8s.ConfigMap
@@ -30,7 +30,7 @@ type joinServiceDaemonset struct {
 }
 
 // NewJoinServiceDaemonset returns a daemonset for the join service.
-func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON, initialIDKeyDigest, enforceIDKeyDigest string, measurementSalt []byte) *joinServiceDaemonset {
+func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON, initialIDKeyDigest, enforceIDKeyDigest string, measurementSalt []byte) *JoinServiceDaemonset {
 	joinConfigData := map[string]string{
 		constants.MeasurementsFilename: measurementsJSON,
 		constants.EnforcedPCRsFilename: enforcedPCRsJSON,
@@ -40,7 +40,7 @@ func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON, initialIDK
 		joinConfigData[constants.IDKeyDigestFilename] = initialIDKeyDigest
 	}
 
-	return &joinServiceDaemonset{
+	return &JoinServiceDaemonset{
 		ClusterRole: rbac.ClusterRole{
 			TypeMeta: meta.TypeMeta{
 				APIVersion: "rbac.authorization.k8s.io/v1",
@@ -272,6 +272,6 @@ func NewJoinServiceDaemonset(csp, measurementsJSON, enforcedPCRsJSON, initialIDK
 }
 
 // Marshal the daemonset using the Kubernetes resource marshaller.
-func (a *joinServiceDaemonset) Marshal() ([]byte, error) {
+func (a *JoinServiceDaemonset) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(a)
 }

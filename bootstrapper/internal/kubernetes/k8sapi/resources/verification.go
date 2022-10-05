@@ -21,13 +21,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-type verificationDaemonset struct {
+type VerificationDaemonset struct {
 	DaemonSet    apps.DaemonSet
 	Service      k8s.Service
 	LoadBalancer k8s.Service
 }
 
-func NewVerificationDaemonSet(csp, loadBalancerIP string) *verificationDaemonset {
+func NewVerificationDaemonSet(csp, loadBalancerIP string) *VerificationDaemonset {
 	var err error
 	if strings.Contains(loadBalancerIP, ":") {
 		loadBalancerIP, _, err = net.SplitHostPort(loadBalancerIP)
@@ -35,7 +35,7 @@ func NewVerificationDaemonSet(csp, loadBalancerIP string) *verificationDaemonset
 			panic(err)
 		}
 	}
-	return &verificationDaemonset{
+	return &VerificationDaemonset{
 		DaemonSet: apps.DaemonSet{
 			TypeMeta: meta.TypeMeta{
 				APIVersion: "apps/v1",
@@ -188,6 +188,6 @@ func NewVerificationDaemonSet(csp, loadBalancerIP string) *verificationDaemonset
 	}
 }
 
-func (v *verificationDaemonset) Marshal() ([]byte, error) {
+func (v *VerificationDaemonset) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(v)
 }

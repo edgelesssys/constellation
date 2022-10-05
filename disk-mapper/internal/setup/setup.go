@@ -168,14 +168,14 @@ type RejoinClient interface {
 	Start(context.Context, string) (key, secret []byte)
 }
 
-type nodeRecoverer struct {
+type NodeRecoverer struct {
 	recoveryServer RecoveryServer
 	rejoinClient   RejoinClient
 }
 
 // NewNodeRecoverer initializes a new nodeRecoverer.
-func NewNodeRecoverer(recoveryServer RecoveryServer, rejoinClient RejoinClient) *nodeRecoverer {
-	return &nodeRecoverer{
+func NewNodeRecoverer(recoveryServer RecoveryServer, rejoinClient RejoinClient) *NodeRecoverer {
+	return &NodeRecoverer{
 		recoveryServer: recoveryServer,
 		rejoinClient:   rejoinClient,
 	}
@@ -184,7 +184,7 @@ func NewNodeRecoverer(recoveryServer RecoveryServer, rejoinClient RejoinClient) 
 // Do performs a recovery procedure on the given state disk.
 // The method starts a gRPC server to allow manual recovery by a user.
 // At the same time it tries to request a decryption key from all available Constellation control-plane nodes.
-func (r *nodeRecoverer) Do(uuid, endpoint string) (passphrase, measurementSecret []byte, err error) {
+func (r *NodeRecoverer) Do(uuid, endpoint string) (passphrase, measurementSecret []byte, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	lis, err := net.Listen("tcp", endpoint)

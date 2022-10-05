@@ -130,19 +130,19 @@ func (s *RecoveryServer) Recover(stream recoverproto.API_RecoverServer) error {
 	return nil
 }
 
-// stubServer implements the RecoveryServer interface but does not actually start a server.
-type stubServer struct {
+// StubServer implements the RecoveryServer interface but does not actually start a server.
+type StubServer struct {
 	log *logger.Logger
 }
 
 // NewStub returns a new stubbed RecoveryServer.
 // We use this to avoid having to start a server for worker nodes, since they don't require manual recovery.
-func NewStub(log *logger.Logger) *stubServer {
-	return &stubServer{log: log}
+func NewStub(log *logger.Logger) *StubServer {
+	return &StubServer{log: log}
 }
 
 // Serve waits until the context is canceled and returns nil.
-func (s *stubServer) Serve(ctx context.Context, _ net.Listener, _ string) ([]byte, []byte, error) {
+func (s *StubServer) Serve(ctx context.Context, _ net.Listener, _ string) ([]byte, []byte, error) {
 	s.log.Infof("Running as worker node, skipping recovery server")
 	<-ctx.Done()
 	return nil, nil, ctx.Err()

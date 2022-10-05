@@ -18,7 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-type autoscalerDeployment struct {
+type AutoscalerDeployment struct {
 	PodDisruptionBudget policy.PodDisruptionBudget
 	ServiceAccount      k8s.ServiceAccount
 	ClusterRole         rbac.ClusterRole
@@ -30,8 +30,8 @@ type autoscalerDeployment struct {
 }
 
 // NewDefaultAutoscalerDeployment creates a new *autoscalerDeployment, customized for the CSP.
-func NewDefaultAutoscalerDeployment(extraVolumes []k8s.Volume, extraVolumeMounts []k8s.VolumeMount, env []k8s.EnvVar, k8sVersion versions.ValidK8sVersion) *autoscalerDeployment {
-	return &autoscalerDeployment{
+func NewDefaultAutoscalerDeployment(extraVolumes []k8s.Volume, extraVolumeMounts []k8s.VolumeMount, env []k8s.EnvVar, k8sVersion versions.ValidK8sVersion) *AutoscalerDeployment {
+	return &AutoscalerDeployment{
 		PodDisruptionBudget: policy.PodDisruptionBudget{
 			TypeMeta: v1.TypeMeta{
 				APIVersion: "policy/v1",
@@ -491,6 +491,6 @@ func NewDefaultAutoscalerDeployment(extraVolumes []k8s.Volume, extraVolumeMounts
 	}
 }
 
-func (a *autoscalerDeployment) Marshal() ([]byte, error) {
+func (a *AutoscalerDeployment) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(a)
 }

@@ -15,7 +15,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type cloudNodeManagerDeployment struct {
+type CloudNodeManagerDeployment struct {
 	ServiceAccount     k8s.ServiceAccount
 	ClusterRole        rbac.ClusterRole
 	ClusterRoleBinding rbac.ClusterRoleBinding
@@ -23,13 +23,13 @@ type cloudNodeManagerDeployment struct {
 }
 
 // NewDefaultCloudNodeManagerDeployment creates a new *cloudNodeManagerDeployment, customized for the CSP.
-func NewDefaultCloudNodeManagerDeployment(image, path string, extraArgs []string) *cloudNodeManagerDeployment {
+func NewDefaultCloudNodeManagerDeployment(image, path string, extraArgs []string) *CloudNodeManagerDeployment {
 	command := []string{
 		path,
 		"--node-name=$(NODE_NAME)",
 	}
 	command = append(command, extraArgs...)
-	return &cloudNodeManagerDeployment{
+	return &CloudNodeManagerDeployment{
 		ServiceAccount: k8s.ServiceAccount{
 			TypeMeta: meta.TypeMeta{
 				APIVersion: "v1",
@@ -182,6 +182,6 @@ func NewDefaultCloudNodeManagerDeployment(image, path string, extraArgs []string
 }
 
 // Marshal marshals the cloud-node-manager deployment as YAML documents.
-func (c *cloudNodeManagerDeployment) Marshal() ([]byte, error) {
+func (c *CloudNodeManagerDeployment) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(c)
 }
