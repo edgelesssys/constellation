@@ -43,12 +43,3 @@ linters-settings:
     exclude-functions:
       - (*go.uber.org/zap.Logger).Sync
       - (*google.golang.org/grpc.Server).Serve
-  # revive:
-  #   rules:
-  #     - name: file-header
-  #       arguments:
-  #         - "/*"
-  #         - "Copyright (c) Edgeless Systems GmbH"
-  #         - ""
-  #         - "SPDX-License-Identifier: AGPL-3.0-only"
-  #         - "*/"
