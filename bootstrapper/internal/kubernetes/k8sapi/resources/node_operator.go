@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package resources
 
 import (
-	_ "embed"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
