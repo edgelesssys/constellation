@@ -18,7 +18,6 @@ import (
 func NewIssuer() atls.Issuer {
 	if _, err := snp.GetIDKeyDigest(vtpm.OpenVTPM); err == nil {
 		return snp.NewIssuer()
-	} else {
-		return trustedlaunch.NewIssuer()
 	}
+	return trustedlaunch.NewIssuer()
 }
