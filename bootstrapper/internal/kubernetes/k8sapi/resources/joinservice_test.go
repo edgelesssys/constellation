@@ -19,7 +19,7 @@ func TestNewJoinServiceDaemonset(t *testing.T) {
 	deploymentYAML, err := deployment.Marshal()
 	require.NoError(t, err)
 
-	var recreated joinServiceDaemonset
+	var recreated JoinServiceDaemonset
 	require.NoError(t, kubernetes.UnmarshalK8SResources(deploymentYAML, &recreated))
 	assert.Equal(t, deployment, &recreated)
 }

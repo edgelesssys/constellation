@@ -22,7 +22,7 @@ func TestNodeOperatorMarshalUnmarshal(t *testing.T) {
 	data, err := nmoDepl.Marshal()
 	require.NoError(err)
 
-	var recreated nodeOperatorDeployment
+	var recreated NodeOperatorDeployment
 	require.NoError(kubernetes.UnmarshalK8SResources(data, &recreated))
 	assert.Equal(nmoDepl, &recreated)
 }

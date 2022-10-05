@@ -135,7 +135,7 @@ func TestPrepareExistingDisk(t *testing.T) {
 				require.NoError(t, handler.WriteJSON(stateInfoPath, nodestate.NodeState{MeasurementSalt: salt}, file.OptMkdirAll))
 			}
 
-			setupManager := &SetupManager{
+			setupManager := &Manager{
 				log:      logger.NewTest(t),
 				csp:      "test",
 				diskPath: "disk-path",
@@ -213,7 +213,7 @@ func TestPrepareNewDisk(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			setupManager := &SetupManager{
+			setupManager := &Manager{
 				log:      logger.NewTest(t),
 				csp:      "test",
 				diskPath: "disk-path",

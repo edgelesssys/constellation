@@ -23,7 +23,7 @@ func TestCloudControllerMarshalUnmarshal(t *testing.T) {
 	data, err := cloudControllerManagerDepl.Marshal()
 	require.NoError(err)
 
-	var recreated cloudControllerManagerDeployment
+	var recreated CloudControllerManagerDeployment
 	require.NoError(kubernetes.UnmarshalK8SResources(data, &recreated))
 	assert.Equal(cloudControllerManagerDepl, &recreated)
 }

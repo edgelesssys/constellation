@@ -28,22 +28,22 @@ const (
 	KonnectivityKeyFilename = "/etc/kubernetes/konnectivity.key"
 )
 
-type konnectivityAgents struct {
+type KonnectivityAgents struct {
 	DaemonSet          appsv1.DaemonSet
 	ClusterRoleBinding rbacv1.ClusterRoleBinding
 	ServiceAccount     corev1.ServiceAccount
 }
 
-type konnectivityServerStaticPod struct {
+type KonnectivityServerStaticPod struct {
 	StaticPod corev1.Pod
 }
 
-type egressSelectorConfiguration struct {
+type EgressSelectorConfiguration struct {
 	EgressSelectorConfiguration apiserver.EgressSelectorConfiguration
 }
 
-func NewKonnectivityAgents(konnectivityServerAddress string) *konnectivityAgents {
-	return &konnectivityAgents{
+func NewKonnectivityAgents(konnectivityServerAddress string) *KonnectivityAgents {
+	return &KonnectivityAgents{
 		DaemonSet: appsv1.DaemonSet{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "apps/v1",
@@ -213,9 +213,9 @@ func NewKonnectivityAgents(konnectivityServerAddress string) *konnectivityAgents
 	}
 }
 
-func NewKonnectivityServerStaticPod() *konnectivityServerStaticPod {
+func NewKonnectivityServerStaticPod() *KonnectivityServerStaticPod {
 	udsHostPathType := corev1.HostPathDirectoryOrCreate
-	return &konnectivityServerStaticPod{
+	return &KonnectivityServerStaticPod{
 		StaticPod: corev1.Pod{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "v1",
@@ -333,8 +333,8 @@ func NewKonnectivityServerStaticPod() *konnectivityServerStaticPod {
 	}
 }
 
-func NewEgressSelectorConfiguration() *egressSelectorConfiguration {
-	return &egressSelectorConfiguration{
+func NewEgressSelectorConfiguration() *EgressSelectorConfiguration {
+	return &EgressSelectorConfiguration{
 		EgressSelectorConfiguration: apiserver.EgressSelectorConfiguration{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "apiserver.k8s.io/v1beta1",
@@ -357,15 +357,15 @@ func NewEgressSelectorConfiguration() *egressSelectorConfiguration {
 	}
 }
 
-func (v *konnectivityAgents) Marshal() ([]byte, error) {
+func (v *KonnectivityAgents) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(v)
 }
 
-func (v *konnectivityServerStaticPod) Marshal() ([]byte, error) {
+func (v *KonnectivityServerStaticPod) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(v)
 }
 
-func (v *egressSelectorConfiguration) Marshal() ([]byte, error) {
+func (v *EgressSelectorConfiguration) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(v)
 }
 

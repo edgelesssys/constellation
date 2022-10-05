@@ -29,7 +29,7 @@ type Validator struct {
 	pcrs               map[uint32][]byte
 	enforcedPCRs       []uint32
 	idkeydigest        []byte
-	enforceIdKeyDigest bool
+	enforceIDKeyDigest bool
 	azureCVM           bool
 	validator          atls.Validator
 }
@@ -47,11 +47,11 @@ func NewValidator(provider cloudprovider.Provider, config *config.Config) (*Vali
 	if v.provider == cloudprovider.Azure {
 		v.azureCVM = *config.Provider.Azure.ConfidentialVM
 		if v.azureCVM {
-			idkeydigest, err := hex.DecodeString(config.Provider.Azure.IdKeyDigest)
+			idkeydigest, err := hex.DecodeString(config.Provider.Azure.IDKeyDigest)
 			if err != nil {
 				return nil, fmt.Errorf("bad config: decoding idkeydigest from config: %w", err)
 			}
-			v.enforceIdKeyDigest = *config.Provider.Azure.EnforceIdKeyDigest
+			v.enforceIDKeyDigest = *config.Provider.Azure.EnforceIDKeyDigest
 			v.idkeydigest = idkeydigest
 		}
 	}
@@ -146,7 +146,7 @@ func (v *Validator) updateValidator(cmd *cobra.Command) {
 		v.validator = gcp.NewValidator(v.pcrs, v.enforcedPCRs, log)
 	case cloudprovider.Azure:
 		if v.azureCVM {
-			v.validator = snp.NewValidator(v.pcrs, v.enforcedPCRs, v.idkeydigest, v.enforceIdKeyDigest, log)
+			v.validator = snp.NewValidator(v.pcrs, v.enforcedPCRs, v.idkeydigest, v.enforceIDKeyDigest, log)
 		} else {
 			v.validator = trustedlaunch.NewValidator(v.pcrs, v.enforcedPCRs, log)
 		}

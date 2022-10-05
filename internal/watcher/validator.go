@@ -108,21 +108,21 @@ func (u *Updatable) Update() error {
 	u.log.Debugf("Enforced PCRs: %v", enforced)
 
 	var idkeydigest []byte
-	var enforceIdKeyDigest bool
+	var enforceIDKeyDigest bool
 	if u.csp == cloudprovider.Azure && u.azureCVM {
 		u.log.Infof("Updating encforceIdKeyDigest value")
-		enforceRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.EnforceIdKeyDigestFilename))
+		enforceRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.EnforceIDKeyDigestFilename))
 		if err != nil {
 			return err
 		}
-		enforceIdKeyDigest, err = strconv.ParseBool(string(enforceRaw))
+		enforceIDKeyDigest, err = strconv.ParseBool(string(enforceRaw))
 		if err != nil {
 			return fmt.Errorf("parsing content of EnforceIdKeyDigestFilename: %s: %w", enforceRaw, err)
 		}
-		u.log.Debugf("New encforceIdKeyDigest value: %v", enforceIdKeyDigest)
+		u.log.Debugf("New encforceIdKeyDigest value: %v", enforceIDKeyDigest)
 
 		u.log.Infof("Updating expected idkeydigest")
-		idkeydigestRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.IdKeyDigestFilename))
+		idkeydigestRaw, err := u.fileHandler.Read(filepath.Join(constants.ServiceBasePath, constants.IDKeyDigestFilename))
 		if err != nil {
 			return err
 		}
@@ -133,7 +133,7 @@ func (u *Updatable) Update() error {
 		u.log.Debugf("New idkeydigest: %x", idkeydigest)
 	}
 
-	u.Validator = u.newValidator(measurements, enforced, idkeydigest, enforceIdKeyDigest, u.log)
+	u.Validator = u.newValidator(measurements, enforced, idkeydigest, enforceIDKeyDigest, u.log)
 
 	return nil
 }

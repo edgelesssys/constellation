@@ -76,7 +76,7 @@ func main() {
 	}
 	sched := metadata.NewScheduler(log.Named("scheduler"), fetcher, ssh, download)
 	serv := server.New(log.Named("server"), ssh, serviceManager, streamer)
-	if err := deploy.DeployDefaultServiceUnit(ctx, serviceManager); err != nil {
+	if err := deploy.DefaultServiceUnit(ctx, serviceManager); err != nil {
 		log.Fatalf("%s", err)
 	}
 

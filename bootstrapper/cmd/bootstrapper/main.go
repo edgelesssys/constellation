@@ -115,7 +115,7 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
 
-		if idkeydigest, err := snp.GetIdKeyDigest(vtpm.OpenVTPM); err == nil {
+		if idkeydigest, err := snp.GetIDKeyDigest(vtpm.OpenVTPM); err == nil {
 			issuer = initserver.NewIssuerWrapper(snp.NewIssuer(), vmtype.AzureCVM, idkeydigest)
 		} else {
 			// assume we are running in a trusted-launch VM

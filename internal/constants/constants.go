@@ -81,10 +81,10 @@ const (
 	MeasurementSaltFilename = "measurementSalt"
 	// MeasurementSecretFilename is the filename of the secret used in creation of the clusterID.
 	MeasurementSecretFilename = "measurementSecret"
-	// IdKeyDigestFilename is the name of the file holding the currently enforced idkeydigest.
-	IdKeyDigestFilename = "idkeydigest"
-	// EnforceIdKeyDigestFilename is the name of the file configuring whether idkeydigest is enforced or not.
-	EnforceIdKeyDigestFilename = "enforceIdKeyDigest"
+	// IDKeyDigestFilename is the name of the file holding the currently enforced idkeydigest.
+	IDKeyDigestFilename = "idkeydigest"
+	// EnforceIDKeyDigestFilename is the name of the file configuring whether idkeydigest is enforced or not.
+	EnforceIDKeyDigestFilename = "enforceIdKeyDigest"
 	// AzureCVM is the name of the file indicating whether the cluster is expected to run on CVMs or not.
 	AzureCVM = "azureCVM"
 	// K8sVersion is the filename of the mapped "k8s-version" configMap file.

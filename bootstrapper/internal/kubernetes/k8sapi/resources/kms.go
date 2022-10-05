@@ -21,7 +21,7 @@ import (
 
 const kmsNamespace = "kube-system"
 
-type kmsDeployment struct {
+type KMSDeployment struct {
 	ServiceAccount     k8s.ServiceAccount
 	Service            k8s.Service
 	ClusterRole        rbac.ClusterRole
@@ -41,8 +41,8 @@ type KMSConfig struct {
 }
 
 // NewKMSDeployment creates a new *kmsDeployment to use as the key management system inside Constellation.
-func NewKMSDeployment(csp string, config KMSConfig) *kmsDeployment {
-	return &kmsDeployment{
+func NewKMSDeployment(csp string, config KMSConfig) *KMSDeployment {
+	return &KMSDeployment{
 		ServiceAccount: k8s.ServiceAccount{
 			TypeMeta: meta.TypeMeta{
 				APIVersion: "v1",
@@ -254,6 +254,6 @@ func NewKMSDeployment(csp string, config KMSConfig) *kmsDeployment {
 	}
 }
 
-func (c *kmsDeployment) Marshal() ([]byte, error) {
+func (c *KMSDeployment) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(c)
 }

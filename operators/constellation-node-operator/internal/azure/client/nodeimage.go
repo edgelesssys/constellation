@@ -32,9 +32,8 @@ func (c *Client) GetNodeImage(ctx context.Context, providerID string) (string, e
 	}
 	if resp.Properties.StorageProfile.ImageReference.ID != nil {
 		return *resp.Properties.StorageProfile.ImageReference.ID, nil
-	} else {
-		return *resp.Properties.StorageProfile.ImageReference.CommunityGalleryImageID, nil
 	}
+	return *resp.Properties.StorageProfile.ImageReference.CommunityGalleryImageID, nil
 }
 
 // GetScalingGroupID returns the scaling group ID of the node.

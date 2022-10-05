@@ -179,13 +179,13 @@ type fakeDownloadServer struct {
 	pb.UnimplementedDebugdServer
 }
 
-func (f *fakeDownloadServer) DownloadBootstrapper(request *pb.DownloadBootstrapperRequest, stream pb.Debugd_DownloadBootstrapperServer) error {
-	for _, chunk := range f.chunks {
+func (s *fakeDownloadServer) DownloadBootstrapper(request *pb.DownloadBootstrapperRequest, stream pb.Debugd_DownloadBootstrapperServer) error {
+	for _, chunk := range s.chunks {
 		if err := stream.Send(&pb.Chunk{Content: chunk}); err != nil {
 			return fmt.Errorf("sending chunk: %w", err)
 		}
 	}
-	return f.downladErr
+	return s.downladErr
 }
 
 func (s *fakeDownloadServer) DownloadAuthorizedKeys(context.Context, *pb.DownloadAuthorizedKeysRequest) (*pb.DownloadAuthorizedKeysResponse, error) {

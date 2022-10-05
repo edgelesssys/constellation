@@ -22,7 +22,7 @@ func TestKMSMarshalUnmarshal(t *testing.T) {
 	data, err := kmsDepl.Marshal()
 	require.NoError(err)
 
-	var recreated kmsDeployment
+	var recreated KMSDeployment
 	require.NoError(kubernetes.UnmarshalK8SResources(data, &recreated))
 	assert.Equal(kmsDepl, &recreated)
 }
