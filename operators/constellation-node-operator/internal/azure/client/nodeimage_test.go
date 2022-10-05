@@ -351,21 +351,21 @@ func TestCapacityPollingHandler(t *testing.T) {
 	assert.Equal(wantCapacity, gotCapacity)
 }
 
-type stubCapacityPoller struct {
+type StubCapacityPoller struct {
 	pollErr error
 	pollC   chan struct{}
 	doneC   chan struct{}
 }
 
-func NewStubCapacityPoller(pollErr error) *stubCapacityPoller {
-	return &stubCapacityPoller{
+func NewStubCapacityPoller(pollErr error) *StubCapacityPoller {
+	return &StubCapacityPoller{
 		pollErr: pollErr,
 		pollC:   make(chan struct{}),
 		doneC:   make(chan struct{}),
 	}
 }
 
-func (p *stubCapacityPoller) PollUntilDone(context.Context, *poller.PollUntilDoneOptions) (int64, error) {
+func (p *StubCapacityPoller) PollUntilDone(context.Context, *poller.PollUntilDoneOptions) (int64, error) {
 	p.pollC <- struct{}{}
 	<-p.doneC
 	return 0, p.pollErr
