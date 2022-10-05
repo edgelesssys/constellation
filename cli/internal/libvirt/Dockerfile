@@ -6,7 +6,6 @@ RUN dnf -y update && \
         qemu-kvm \
         swtpm \
         swtpm-tools \
-        xsltproc \
         libvirt-client && \
     dnf clean all
 

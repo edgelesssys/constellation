@@ -103,11 +103,11 @@ func checkSystemRequirements(out io.Writer) error {
 	}
 
 	// check CPU cores
-	if runtime.NumCPU() <= 4 {
+	if runtime.NumCPU() < 4 {
 		return fmt.Errorf("insufficient CPU cores: %d, at least 4 cores are required by a QEMU cluster", runtime.NumCPU())
 	}
-	if runtime.NumCPU() <= 6 {
-		fmt.Fprintf(out, "WARNING: Only %d CPU cores available. This may cause performance issues.", runtime.NumCPU())
+	if runtime.NumCPU() < 6 {
+		fmt.Fprintf(out, "WARNING: Only %d CPU cores available. This may cause performance issues.\n", runtime.NumCPU())
 	}
 
 	// check memory
@@ -162,7 +162,7 @@ func prepareConfig(cmd *cobra.Command, fileHandler file.Handler) (*config.Config
 		cmd.Printf("Using existing image at %s\n\n", imagePath)
 	} else if errors.Is(err, os.ErrNotExist) {
 		cmd.Println("Downloading image to ./constellation.qcow2")
-		if err := installImage(cmd.Context(), cmd.OutOrStdout(), versions.ConstellationQEMUImageURL, "./constellation.qcow2"); err != nil {
+		if err := installImage(cmd.Context(), cmd.OutOrStdout(), versions.ConstellationQEMUImageURL, imagePath); err != nil {
 			return nil, fmt.Errorf("downloading image to %s: %w", imagePath, err)
 		}
 	} else {
