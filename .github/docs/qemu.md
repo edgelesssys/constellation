@@ -108,15 +108,22 @@ Terraform may fail to remove your VMs, in which case you need to do so manually.
 `iptables` rules may prevent your VMs form properly accessing the internet.
 Make sure your rules are not dropping forwarded packages.
 
-List and check your rules:
+List your rules:
 
 ```shell
-$ sudo iptables -S
+sudo iptables -S
+```
+
+The output may look similar to the following:
+
+```shell
 -P INPUT ACCEPT
 -P FORWARD DROP
 -P OUTPUT ACCEPT
 -N DOCKER
-...
+-N DOCKER-ISOLATION-STAGE-1
+-N DOCKER-ISOLATION-STAGE-2
+-N DOCKER-USER
 ```
 
 If your `FORWARD` chain is set to `DROP`, you will need to update your rules:

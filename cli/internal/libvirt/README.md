@@ -25,7 +25,6 @@ You can also run the image manually using the following command:
 ```shell
 docker run -it --rm \
     --network host \
-    --device /dev/kvm \
     --privileged true \
     ghcr.io/edgelesssys/constellation/libvirt:latest
 ```

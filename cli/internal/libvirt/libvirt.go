@@ -12,7 +12,6 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
 	docker "github.com/docker/docker/client"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
@@ -47,15 +46,9 @@ func (r *Runner) Start(ctx context.Context, name, imageName string) error {
 		},
 		&container.HostConfig{
 			NetworkMode: container.NetworkMode("host"),
-			Privileged:  true,
 			AutoRemove:  true,
-			Mounts: []mount.Mount{
-				{
-					Type:   mount.TypeBind,
-					Source: "/dev/kvm",
-					Target: "/dev/kvm",
-				},
-			},
+			// container has to be "privileged" so libvirt has access to proc fs
+			Privileged: true,
 		},
 		nil,
 		nil,
