@@ -84,11 +84,11 @@ func TestNewUpdateableValidator(t *testing.T) {
 					[]uint32{11},
 				))
 				require.NoError(handler.Write(
-					filepath.Join(constants.ServiceBasePath, constants.IdKeyDigestFilename),
+					filepath.Join(constants.ServiceBasePath, constants.IDKeyDigestFilename),
 					[]byte{},
 				))
 				require.NoError(handler.Write(
-					filepath.Join(constants.ServiceBasePath, constants.EnforceIdKeyDigestFilename),
+					filepath.Join(constants.ServiceBasePath, constants.EnforceIDKeyDigestFilename),
 					[]byte("false"),
 				))
 				require.NoError(handler.Write(
@@ -145,11 +145,11 @@ func TestUpdate(t *testing.T) {
 		[]uint32{11},
 	))
 	require.NoError(handler.Write(
-		filepath.Join(constants.ServiceBasePath, constants.IdKeyDigestFilename),
+		filepath.Join(constants.ServiceBasePath, constants.IDKeyDigestFilename),
 		[]byte{},
 	))
 	require.NoError(handler.Write(
-		filepath.Join(constants.ServiceBasePath, constants.EnforceIdKeyDigestFilename),
+		filepath.Join(constants.ServiceBasePath, constants.EnforceIDKeyDigestFilename),
 		[]byte("false"),
 	))
 	require.NoError(handler.Write(
@@ -215,11 +215,11 @@ func TestUpdateConcurrency(t *testing.T) {
 		[]uint32{11},
 	))
 	require.NoError(handler.Write(
-		filepath.Join(constants.ServiceBasePath, constants.IdKeyDigestFilename),
+		filepath.Join(constants.ServiceBasePath, constants.IDKeyDigestFilename),
 		[]byte{},
 	))
 	require.NoError(handler.Write(
-		filepath.Join(constants.ServiceBasePath, constants.EnforceIdKeyDigestFilename),
+		filepath.Join(constants.ServiceBasePath, constants.EnforceIDKeyDigestFilename),
 		[]byte("false"),
 	))
 	require.NoError(handler.Write(

@@ -58,15 +58,20 @@ const (
 	NodeMaintenanceOperatorVersion      = "v0.13.1-alpha1"
 
 	// currently supported versions.
-	V1_22   ValidK8sVersion = "1.22"
-	V1_23   ValidK8sVersion = "1.23"
-	V1_24   ValidK8sVersion = "1.24"
-	V1_25   ValidK8sVersion = "1.25"
+	//nolint:revive
+	V1_22 ValidK8sVersion = "1.22"
+	//nolint:revive
+	V1_23 ValidK8sVersion = "1.23"
+	//nolint:revive
+	V1_24 ValidK8sVersion = "1.24"
+	//nolint:revive
+	V1_25 ValidK8sVersion = "1.25"
+
 	Default ValidK8sVersion = V1_23
 )
 
 // versionConfigs holds download URLs for all required kubernetes components for every supported version.
-var VersionConfigs map[ValidK8sVersion]KubernetesVersion = map[ValidK8sVersion]KubernetesVersion{
+var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 	V1_22: {
 		PatchVersion:      "1.22.12",
 		CNIPluginsURL:     "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz",
