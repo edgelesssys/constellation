@@ -34,14 +34,6 @@ func rollbackOnError(ctx context.Context, w io.Writer, onErr *error, roll rollba
 	fmt.Fprintln(w, "Rollback succeeded.")
 }
 
-type rollbackerAzure struct {
-	client azureclient
-}
-
-func (r *rollbackerAzure) rollback(ctx context.Context) error {
-	return r.client.TerminateResourceGroupResources(ctx)
-}
-
 type rollbackerTerraform struct {
 	client terraformClient
 }

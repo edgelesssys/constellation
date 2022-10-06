@@ -15,13 +15,10 @@ import (
 	"runtime"
 	"strings"
 
-	azurecl "github.com/edgelesssys/constellation/v2/cli/internal/azure/client"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/state"
 )
 
@@ -29,7 +26,6 @@ import (
 type Creator struct {
 	out                io.Writer
 	newTerraformClient func(ctx context.Context, provider cloudprovider.Provider) (terraformClient, error)
-	newAzureClient     func(subscriptionID, tenantID, name, location, resourceGroup string) (azureclient, error)
 	newLibvirtRunner   func() libvirtRunner
 }
 
@@ -40,9 +36,6 @@ func NewCreator(out io.Writer) *Creator {
 		newTerraformClient: func(ctx context.Context, provider cloudprovider.Provider) (terraformClient, error) {
 			return terraform.New(ctx, provider)
 		},
-		newAzureClient: func(subscriptionID, tenantID, name, location, resourceGroup string) (azureclient, error) {
-			return azurecl.NewInitialized(subscriptionID, tenantID, name, location, resourceGroup)
-		},
 		newLibvirtRunner: func() libvirtRunner {
 			return libvirt.New()
 		},
@@ -52,14 +45,6 @@ func NewCreator(out io.Writer) *Creator {
 // Create creates the handed amount of instances and all the needed resources.
 func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, config *config.Config, name, insType string, controlPlaneCount, workerCount int,
 ) (state.ConstellationState, error) {
-	// Use debug ingress firewall rules when debug mode / image is enabled
-	var ingressRules cloudtypes.Firewall
-	if config.IsDebugCluster() {
-		ingressRules = constants.IngressRulesDebug
-	} else {
-		ingressRules = constants.IngressRulesNoDebug
-	}
-
 	switch provider {
 	case cloudprovider.GCP:
 		cl, err := c.newTerraformClient(ctx, provider)
@@ -69,17 +54,12 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 		defer cl.RemoveInstaller()
 		return c.createGCP(ctx, cl, config, name, insType, controlPlaneCount, workerCount)
 	case cloudprovider.Azure:
-		cl, err := c.newAzureClient(
-			config.Provider.Azure.SubscriptionID,
-			config.Provider.Azure.TenantID,
-			name,
-			config.Provider.Azure.Location,
-			config.Provider.Azure.ResourceGroup,
-		)
+		cl, err := c.newTerraformClient(ctx, provider)
 		if err != nil {
 			return state.ConstellationState{}, err
 		}
-		return c.createAzure(ctx, cl, config, insType, controlPlaneCount, workerCount, ingressRules)
+		defer cl.RemoveInstaller()
+		return c.createAzure(ctx, cl, config, name, insType, controlPlaneCount, workerCount)
 	case cloudprovider.QEMU:
 		if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
 			return state.ConstellationState{}, fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
@@ -125,37 +105,29 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 	return cl.GetState(), nil
 }
 
-func (c *Creator) createAzure(ctx context.Context, cl azureclient, config *config.Config, insType string, controlPlaneCount, workerCount int, ingressRules cloudtypes.Firewall,
+func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *config.Config,
+	name, insType string, controlPlaneCount, workerCount int,
 ) (stat state.ConstellationState, retErr error) {
-	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerAzure{client: cl})
+	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
 
-	if err := cl.CreateApplicationInsight(ctx); err != nil {
-		return state.ConstellationState{}, err
-	}
-	if err := cl.CreateExternalLoadBalancer(ctx, config.IsDebugCluster()); err != nil {
-		return state.ConstellationState{}, err
-	}
-	if err := cl.CreateVirtualNetwork(ctx); err != nil {
-		return state.ConstellationState{}, err
-	}
-
-	if err := cl.CreateSecurityGroup(ctx, azurecl.NetworkSecurityGroupInput{
-		Ingress: ingressRules,
-		Egress:  constants.EgressRules,
-	}); err != nil {
-		return state.ConstellationState{}, err
-	}
-	createInput := azurecl.CreateInstancesInput{
-		CountControlPlanes:   controlPlaneCount,
-		CountWorkers:         workerCount,
+	vars := &terraform.AzureVariables{
+		CommonVariables: terraform.CommonVariables{
+			Name:               name,
+			CountControlPlanes: controlPlaneCount,
+			CountWorkers:       workerCount,
+			StateDiskSizeGB:    config.StateDiskSizeGB,
+		},
+		Location:             config.Provider.Azure.Location,
+		ResourceGroup:        config.Provider.Azure.ResourceGroup,
+		UserAssignedIdentity: config.Provider.Azure.UserAssignedIdentity,
 		InstanceType:         insType,
-		StateDiskSizeGB:      config.StateDiskSizeGB,
 		StateDiskType:        config.Provider.Azure.StateDiskType,
-		Image:                config.Provider.Azure.Image,
-		UserAssingedIdentity: config.Provider.Azure.UserAssignedIdentity,
+		ImageID:              config.Provider.Azure.Image,
 		ConfidentialVM:       *config.Provider.Azure.ConfidentialVM,
+		Debug:                config.IsDebugCluster(),
 	}
-	if err := cl.CreateInstances(ctx, createInput); err != nil {
+
+	if err := cl.CreateCluster(ctx, name, vars); err != nil {
 		return state.ConstellationState{}, err
 	}
 

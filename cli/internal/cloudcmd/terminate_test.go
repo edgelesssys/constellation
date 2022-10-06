@@ -12,35 +12,19 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/v2/internal/state"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTerminator(t *testing.T) {
-	someAzureState := func() state.ConstellationState {
-		return state.ConstellationState{
-			CloudProvider: cloudprovider.Azure.String(),
-			AzureWorkerInstances: cloudtypes.Instances{
-				"id-0": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-				"id-1": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-			},
-			AzureControlPlaneInstances: cloudtypes.Instances{
-				"id-c": {PrivateIP: "192.0.2.1", PublicIP: "192.0.2.1"},
-			},
-			AzureADAppObjectID: "00000000-0000-0000-0000-000000000001",
-		}
-	}
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		tfClient          terraformClient
-		newTfClientErr    error
-		azureclient       azureclient
-		newAzureClientErr error
-		libvirt           *stubLibvirtRunner
-		state             state.ConstellationState
-		wantErr           bool
+		tfClient       terraformClient
+		newTfClientErr error
+		libvirt        *stubLibvirtRunner
+		state          state.ConstellationState
+		wantErr        bool
 	}{
 		"gcp": {
 			tfClient: &stubTerraformClient{},
@@ -84,20 +68,6 @@ func TestTerminator(t *testing.T) {
 			state:    state.ConstellationState{CloudProvider: cloudprovider.QEMU.String()},
 			wantErr:  true,
 		},
-		"azure": {
-			azureclient: &stubAzureClient{},
-			state:       someAzureState(),
-		},
-		"azure newAzureClient error": {
-			newAzureClientErr: someErr,
-			state:             someAzureState(),
-			wantErr:           true,
-		},
-		"azure terminateResourceGroupResources error": {
-			azureclient: &stubAzureClient{terminateResourceGroupResourcesErr: someErr},
-			state:       someAzureState(),
-			wantErr:     true,
-		},
 		"unknown cloud provider": {
 			state:   state.ConstellationState{},
 			wantErr: true,
@@ -109,11 +79,8 @@ func TestTerminator(t *testing.T) {
 			assert := assert.New(t)
 
 			terminator := &Terminator{
-				newTerraformClient: func(ctx context.Context) (terraformClient, error) {
+				newTerraformClient: func(ctx context.Context, provider cloudprovider.Provider) (terraformClient, error) {
 					return tc.tfClient, tc.newTfClientErr
-				},
-				newAzureClient: func(subscriptionID, tenantID string) (azureclient, error) {
-					return tc.azureclient, tc.newAzureClientErr
 				},
 				newLibvirtRunner: func() libvirtRunner {
 					return tc.libvirt
@@ -126,17 +93,11 @@ func TestTerminator(t *testing.T) {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				switch cloudprovider.FromString(tc.state.CloudProvider) {
-				case cloudprovider.QEMU:
+				cl := tc.tfClient.(*stubTerraformClient)
+				assert.True(cl.destroyClusterCalled)
+				assert.True(cl.removeInstallerCalled)
+				if cloudprovider.FromString(tc.state.CloudProvider) == cloudprovider.QEMU {
 					assert.True(tc.libvirt.stopCalled)
-					fallthrough
-				case cloudprovider.GCP:
-					cl := tc.tfClient.(*stubTerraformClient)
-					assert.True(cl.destroyClusterCalled)
-					assert.True(cl.removeInstallerCalled)
-				case cloudprovider.Azure:
-					cl := tc.azureclient.(*stubAzureClient)
-					assert.True(cl.terminateResourceGroupResourcesCalled)
 				}
 			}
 		})
