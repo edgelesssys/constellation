@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- For soon-to-be removed features. -->
 ### Removed
 <!-- For now removed features. -->
+- `endpoint` flag of `constellation init`. IP is now always taken from the `constellation-id.json` file.
+
 ### Fixed
 
 ### Security
