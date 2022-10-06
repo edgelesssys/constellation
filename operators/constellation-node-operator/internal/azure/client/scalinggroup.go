@@ -89,13 +89,23 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) (controlPlan
 		if err != nil {
 			return nil, nil, fmt.Errorf("getting scaling group name: %w", err)
 		}
-		if scaleSet == "constellation-scale-set-controlplanes-"+uid {
+		if isControlPlaneInstanceGroup(scaleSet) {
 			controlPlaneGroupIDs = append(controlPlaneGroupIDs, scaleSetID)
-		} else if strings.HasPrefix(scaleSet, "constellation-scale-set-workers-"+uid) {
+		} else if isWorkerInstanceGroup(scaleSet) {
 			workerGroupIDs = append(workerGroupIDs, scaleSetID)
 		}
 	}
 	return controlPlaneGroupIDs, workerGroupIDs, nil
+}
+
+// isControlPlaneInstanceGroup returns true if the instance group is a control plane instance group.
+func isControlPlaneInstanceGroup(instanceGroupName string) bool {
+	return strings.Contains(instanceGroupName, "control-plane")
+}
+
+// isWorkerInstanceGroup returns true if the instance group is a worker instance group.
+func isWorkerInstanceGroup(instanceGroupName string) bool {
+	return strings.Contains(instanceGroupName, "worker")
 }
 
 func imageReferenceFromImage(img string) *armcompute.ImageReference {

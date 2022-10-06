@@ -192,9 +192,9 @@ func TestListScalingGroups(t *testing.T) {
 	}{
 		"listing control-plane works": {
 			scaleSet: armcomputev2.VirtualMachineScaleSet{
-				ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-controlplanes-uid"),
+				ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-control-planes-uid"),
 			},
-			wantControlPlanes: []string{"/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-controlplanes-uid"},
+			wantControlPlanes: []string{"/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-control-planes-uid"},
 		},
 		"listing worker works": {
 			scaleSet: armcomputev2.VirtualMachineScaleSet{
