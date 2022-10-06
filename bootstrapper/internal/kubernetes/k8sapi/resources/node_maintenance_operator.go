@@ -39,7 +39,7 @@ func NewNodeMaintenanceOperatorDeployment() *NodeMaintenanceOperatorDeployment {
 			},
 			Spec: operatorsv1alpha1.CatalogSourceSpec{
 				SourceType:  "grpc",
-				Image:       versions.NodeMaintenanceOperatorCatalogImage + ":" + versions.NodeMaintenanceOperatorVersion,
+				Image:       versions.NodeMaintenanceOperatorCatalogImage,
 				DisplayName: "Node Maintenance Operator",
 				Publisher:   "Medik8s Team",
 				UpdateStrategy: &operatorsv1alpha1.UpdateStrategy{
