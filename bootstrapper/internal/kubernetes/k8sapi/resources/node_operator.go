@@ -48,7 +48,7 @@ func NewNodeOperatorDeployment(cloudProvider string, uid string) *NodeOperatorDe
 			},
 			Spec: operatorsv1alpha1.CatalogSourceSpec{
 				SourceType:  "grpc",
-				Image:       versions.NodeOperatorCatalogImage + ":" + versions.NodeOperatorVersion,
+				Image:       versions.NodeOperatorCatalogImage,
 				DisplayName: "Constellation Node Operator",
 				Publisher:   "Edgeless Systems",
 				UpdateStrategy: &operatorsv1alpha1.UpdateStrategy{
