@@ -108,7 +108,7 @@ func getInstanceInfo(reportGetter tpmReportGetter, imdsapi imdsAPI) func(tpm io.
 	}
 }
 
-// getAttestationKey reads the attesation key put into the TPM during early boot.
+// getAttestationKey reads the attestation key put into the TPM during early boot.
 func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
 	ak, err := tpmclient.LoadCachedKey(tpm, tpmAkIdx)
 	if err != nil {
