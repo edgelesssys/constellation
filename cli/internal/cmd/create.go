@@ -114,7 +114,7 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler) 
 		}
 	}
 
-	spinner := newSpinner(cmd, "Loading ", true)
+	spinner := newSpinner(cmd, "Creating", false)
 	spinner.Start()
 	state, err := creator.Create(cmd.Context(), provider, config, flags.name, instanceType, flags.controllerCount, flags.workerCount)
 	spinner.Stop()
