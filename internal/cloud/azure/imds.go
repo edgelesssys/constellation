@@ -10,9 +10,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/edgelesssys/constellation/v2/internal/role"
 )
 
 // subset of azure imds API: https://docs.microsoft.com/en-us/azure/virtual-machines/windows/instance-metadata-service?tabs=linux
@@ -87,17 +90,29 @@ func (c *imdsClient) UID(ctx context.Context) (string, error) {
 		}
 	}
 
-	if len(c.cache.Compute.Tags) == 0 {
-		return "", errors.New("unable to get uid")
-	}
-
 	for _, tag := range c.cache.Compute.Tags {
-		if tag.Name == "uid" {
+		if tag.Name == "constellation-uid" {
 			return tag.Value, nil
 		}
 	}
 
-	return "", errors.New("unable to get uid from metadata tags")
+	return "", fmt.Errorf("unable to get uid from metadata tags %v", c.cache.Compute.Tags)
+}
+
+func (c *imdsClient) Role(ctx context.Context) (role.Role, error) {
+	if c.timeForUpdate() || len(c.cache.Compute.Tags) == 0 {
+		if err := c.update(ctx); err != nil {
+			return role.Unknown, err
+		}
+	}
+
+	for _, tag := range c.cache.Compute.Tags {
+		if tag.Name == "role" {
+			return role.FromString(tag.Value), nil
+		}
+	}
+
+	return role.Unknown, fmt.Errorf("unable to get role from metadata tags %v", c.cache.Compute.Tags)
 }
 
 // timeForUpdate checks whether an update is needed due to cache age.

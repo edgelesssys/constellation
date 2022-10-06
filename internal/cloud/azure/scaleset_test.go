@@ -24,6 +24,7 @@ func TestGetScaleSetVM(t *testing.T) {
 	wantInstance := metadata.InstanceMetadata{
 		Name:       "scale-set-name-instance-id",
 		ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
+		Role:       role.Worker,
 		VPCIP:      "192.0.2.0",
 		SSHKeys:    map[string][]string{"user": {"key-data"}},
 	}
@@ -83,6 +84,7 @@ func TestListScaleSetVMs(t *testing.T) {
 		{
 			Name:       "scale-set-name-instance-id",
 			ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
+			Role:       role.Worker,
 			VPCIP:      "192.0.2.0",
 			SSHKeys:    map[string][]string{"user": {"key-data"}},
 		},
@@ -203,7 +205,7 @@ func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			instance, err := convertScaleSetVMToCoreInstance("scale-set", tc.inVM, tc.inInterface, tc.inPublicIP)
+			instance, err := convertScaleSetVMToCoreInstance(tc.inVM, tc.inInterface, tc.inPublicIP)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -217,19 +219,31 @@ func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 
 func TestExtractScaleSetVMRole(t *testing.T) {
 	testCases := map[string]struct {
-		scaleSet string
+		tags     map[string]*string
 		wantRole role.Role
 	}{
-		"bootstrapper role": {
-			scaleSet: "constellation-scale-set-controlplanes-abcd123",
+		"control-plane role": {
+			tags:     map[string]*string{"role": to.Ptr("control-plane")},
 			wantRole: role.ControlPlane,
 		},
-		"node role": {
-			scaleSet: "constellation-scale-set-workers-abcd123",
+		"worker role": {
+			tags:     map[string]*string{"role": to.Ptr("worker")},
 			wantRole: role.Worker,
 		},
 		"unknown role": {
-			scaleSet: "unknown",
+			tags:     map[string]*string{"role": to.Ptr("foo")},
+			wantRole: role.Unknown,
+		},
+		"no role": {
+			tags:     map[string]*string{},
+			wantRole: role.Unknown,
+		},
+		"nil role": {
+			tags:     map[string]*string{"role": nil},
+			wantRole: role.Unknown,
+		},
+		"nil tags": {
+			tags:     nil,
 			wantRole: role.Unknown,
 		},
 	}
@@ -238,7 +252,7 @@ func TestExtractScaleSetVMRole(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			role := extractScaleSetVMRole(tc.scaleSet)
+			role := extractScaleSetVMRole(tc.tags)
 
 			assert.Equal(tc.wantRole, role)
 		})
@@ -266,7 +280,7 @@ func newListContainingNilScaleSetVirtualMachinesStub() *stubVirtualMachineScaleS
 					ID:         to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"),
 					InstanceID: to.Ptr("instance-id"),
 					Tags: map[string]*string{
-						"tag-key": to.Ptr("tag-value"),
+						"role": to.Ptr("worker"),
 					},
 					Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
 						NetworkProfile: &armcomputev2.NetworkProfile{

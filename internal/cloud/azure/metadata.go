@@ -300,7 +300,13 @@ func (m *Metadata) getAppInsights(ctx context.Context) (*armapplicationinsights.
 			if component == nil || component.Tags == nil {
 				continue
 			}
-			if *component.Tags["uid"] == uid {
+
+			tag, ok := component.Tags["constellation-uid"]
+			if !ok || tag == nil {
+				continue
+			}
+
+			if *tag == uid {
 				return component, nil
 			}
 		}

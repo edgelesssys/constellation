@@ -10,7 +10,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -19,11 +18,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/role"
-)
-
-var (
-	controlPlaneScaleSetRegexp = regexp.MustCompile(`constellation-scale-set-controlplanes-[0-9a-zA-Z]+$`)
-	workerScaleSetRegexp       = regexp.MustCompile(`constellation-scale-set-workers-[0-9a-zA-Z]+$`)
 )
 
 // getScaleSetVM tries to get an azure vm belonging to a scale set.
@@ -45,7 +39,7 @@ func (m *Metadata) getScaleSetVM(ctx context.Context, providerID string) (metada
 		return metadata.InstanceMetadata{}, err
 	}
 
-	return convertScaleSetVMToCoreInstance(scaleSet, vmResp.VirtualMachineScaleSetVM, networkInterfaces, publicIPAddress)
+	return convertScaleSetVMToCoreInstance(vmResp.VirtualMachineScaleSetVM, networkInterfaces, publicIPAddress)
 }
 
 // listScaleSetVMs lists all scale set VMs in the current resource group.
@@ -75,7 +69,7 @@ func (m *Metadata) listScaleSetVMs(ctx context.Context, resourceGroup string) ([
 					if err != nil {
 						return nil, err
 					}
-					instance, err := convertScaleSetVMToCoreInstance(*scaleSet.Name, *vm, interfaces, "")
+					instance, err := convertScaleSetVMToCoreInstance(*vm, interfaces, "")
 					if err != nil {
 						return nil, err
 					}
@@ -88,7 +82,9 @@ func (m *Metadata) listScaleSetVMs(ctx context.Context, resourceGroup string) ([
 }
 
 // convertScaleSetVMToCoreInstance converts an azure scale set virtual machine with interface configurations into a core.Instance.
-func convertScaleSetVMToCoreInstance(scaleSet string, vm armcomputev2.VirtualMachineScaleSetVM, networkInterfaces []armnetwork.Interface, publicIPAddress string) (metadata.InstanceMetadata, error) {
+func convertScaleSetVMToCoreInstance(vm armcomputev2.VirtualMachineScaleSetVM, networkInterfaces []armnetwork.Interface,
+	publicIPAddress string,
+) (metadata.InstanceMetadata, error) {
 	if vm.ID == nil {
 		return metadata.InstanceMetadata{}, errors.New("retrieving instance from armcompute API client returned no instance ID")
 	}
@@ -101,10 +97,15 @@ func convertScaleSetVMToCoreInstance(scaleSet string, vm armcomputev2.VirtualMac
 	} else {
 		sshKeys = extractSSHKeys(*vm.Properties.OSProfile.LinuxConfiguration.SSH)
 	}
+
+	if vm.Tags == nil {
+		return metadata.InstanceMetadata{}, errors.New("retrieving instance from armcompute API client returned no tags")
+	}
+
 	return metadata.InstanceMetadata{
 		Name:       *vm.Properties.OSProfile.ComputerName,
 		ProviderID: "azure://" + *vm.ID,
-		Role:       extractScaleSetVMRole(scaleSet),
+		Role:       extractScaleSetVMRole(vm.Tags),
 		VPCIP:      extractVPCIP(networkInterfaces),
 		PublicIP:   publicIPAddress,
 		SSHKeys:    sshKeys,
@@ -112,14 +113,18 @@ func convertScaleSetVMToCoreInstance(scaleSet string, vm armcomputev2.VirtualMac
 }
 
 // extractScaleSetVMRole extracts the constellation role of a scale set using its name.
-func extractScaleSetVMRole(scaleSet string) role.Role {
-	if controlPlaneScaleSetRegexp.MatchString(scaleSet) {
-		return role.ControlPlane
+func extractScaleSetVMRole(tags map[string]*string) role.Role {
+	if tags == nil {
+		return role.Unknown
 	}
-	if workerScaleSetRegexp.MatchString(scaleSet) {
-		return role.Worker
+	roleStr, ok := tags["role"]
+	if !ok {
+		return role.Unknown
 	}
-	return role.Unknown
+	if roleStr == nil {
+		return role.Unknown
+	}
+	return role.FromString(*roleStr)
 }
 
 // ImageReferenceFromImage sets the `ID` or `CommunityGalleryImageID` field
