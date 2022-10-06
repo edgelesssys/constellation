@@ -34,23 +34,14 @@ func (r *Role) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &roleString); err != nil {
 		return err
 	}
-	switch strings.ToLower(roleString) {
-	case "controlplane":
-		*r = ControlPlane
-	case "worker":
-		*r = Worker
-	case "admin":
-		*r = Admin
-	default:
-		*r = Unknown
-	}
+	*r = FromString(roleString)
 	return nil
 }
 
-// FromString converts a string to a Role.
+// FromString returns the Role for the given string.
 func FromString(s string) Role {
 	switch strings.ToLower(s) {
-	case "controlplane":
+	case "controlplane", "control-plane":
 		return ControlPlane
 	case "worker":
 		return Worker

@@ -69,6 +69,10 @@ func TestUnmarshal(t *testing.T) {
 			json:     `"ControlPlane"`,
 			wantRole: ControlPlane,
 		},
+		"dashed ControlPlane can be unmarshaled": {
+			json:     `"Control-Plane"`,
+			wantRole: ControlPlane,
+		},
 		"lowercase controlPlane can be unmarshaled": {
 			json:     `"controlPlane"`,
 			wantRole: ControlPlane,
