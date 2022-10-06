@@ -78,6 +78,45 @@ func (v *GCPVariables) String() string {
 	return b.String()
 }
 
+// AzureVariables is user configuration for creating a cluster with Terraform on Azure.
+type AzureVariables struct {
+	// CommonVariables contains common variables.
+	CommonVariables
+
+	// ResourceGroup is the name of the Azure resource group to use.
+	ResourceGroup string
+	// Location is the Azure location to use.
+	Location string
+	// UserAssignedIdentity is the name of the Azure user-assigned identity to use.
+	UserAssignedIdentity string
+	// InstanceType is the Azure instance type to use.
+	InstanceType string
+	// StateDiskType is the Azure disk type to use for the state disk.
+	StateDiskType string
+	// ImageID is the ID of the Azure image to use.
+	ImageID string
+	// ConfidentialVM sets the VM to be confidential.
+	ConfidentialVM bool
+	// Debug is true if debug mode is enabled.
+	Debug bool
+}
+
+// String returns a string representation of the variables, formatted as Terraform variables.
+func (v *AzureVariables) String() string {
+	b := &strings.Builder{}
+	b.WriteString(v.CommonVariables.String())
+	writeLinef(b, "resource_group = %q", v.ResourceGroup)
+	writeLinef(b, "location = %q", v.Location)
+	writeLinef(b, "user_assigned_identity = %q", v.UserAssignedIdentity)
+	writeLinef(b, "instance_type = %q", v.InstanceType)
+	writeLinef(b, "state_disk_type = %q", v.StateDiskType)
+	writeLinef(b, "image_id = %q", v.ImageID)
+	writeLinef(b, "confidential_vm = %t", v.ConfidentialVM)
+	writeLinef(b, "debug = %t", v.Debug)
+
+	return b.String()
+}
+
 // QEMUVariables is user configuration for creating a QEMU cluster with Terraform.
 type QEMUVariables struct {
 	// CommonVariables contains common variables.
