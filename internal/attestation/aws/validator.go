@@ -17,3 +17,9 @@ type Validator struct {
 func (a *Validator) Validate(attDoc []byte, nonce []byte) ([]byte, error) {
 	panic("aws validator not implemented")
 }
+
+type awsInstanceInfo struct {
+	Region     string `json:"region"`
+	AccountId  string `json:"accountId"`
+	InstanceId string `json:"instanceId"`
+}
