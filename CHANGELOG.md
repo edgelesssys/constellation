@@ -26,18 +26,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - K8s conformance mode
 - Local cluster creation based on QEMU
 - Verification of Azure trusted launch attestation keys
+- Kubernetes version v1.25 is now fully supported.
 
 ### Changed
 <!-- For changes in existing functionality.  -->
 - Autoscaling is now directly managed inside Kubernetes, by the Constellation node operator.
 - The `constellation create` on GCP now uses Terraform to create and destroy cloud resources.
 - GCP instances are now created without public IPs by default.
+- Kubernetes default version used in Constellation is now v1.24.
 
 ### Deprecated
 <!-- For soon-to-be removed features. -->
 ### Removed
 <!-- For now removed features. -->
 - CLI options for autoscaling, as this is now managed inside Kubernetes.
+- Kubernetes version v1.22 is no longer supported.
 
 ### Fixed
 
