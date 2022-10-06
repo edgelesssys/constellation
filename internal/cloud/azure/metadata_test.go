@@ -15,6 +15,7 @@ import (
 	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -24,6 +25,7 @@ func TestList(t *testing.T) {
 		{
 			Name:       "scale-set-name-instance-id",
 			ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
+			Role:       role.Worker,
 			VPCIP:      "192.0.2.0",
 			SSHKeys:    map[string][]string{"user": {"key-data"}},
 		},
@@ -87,6 +89,7 @@ func TestSelf(t *testing.T) {
 	wantScaleSetInstance := metadata.InstanceMetadata{
 		Name:       "scale-set-name-instance-id",
 		ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
+		Role:       role.Worker,
 		VPCIP:      "192.0.2.0",
 		SSHKeys:    map[string][]string{"user": {"key-data"}},
 	}
@@ -650,6 +653,10 @@ func newScaleSetsStub() *stubScaleSetsAPI {
 		pager: &stubVirtualMachineScaleSetsClientListPager{
 			list: []armcomputev2.VirtualMachineScaleSet{{
 				Name: to.Ptr("scale-set-name"),
+				Tags: map[string]*string{
+					"constellation-uid": to.Ptr("uid"),
+					"role":              to.Ptr("worker"),
+				},
 			}},
 		},
 	}
@@ -683,35 +690,45 @@ func newVirtualMachineScaleSetsVMsStub() *stubVirtualMachineScaleSetVMsAPI {
 					},
 				},
 			},
+			Tags: map[string]*string{
+				"constellation-uid": to.Ptr("uid"),
+				"role":              to.Ptr("worker"),
+			},
 		},
 		pager: &stubVirtualMachineScaleSetVMPager{
-			list: []armcomputev2.VirtualMachineScaleSetVM{{
-				Name:       to.Ptr("scale-set-name_instance-id"),
-				InstanceID: to.Ptr("instance-id"),
-				ID:         to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"),
-				Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
-					NetworkProfile: &armcomputev2.NetworkProfile{
-						NetworkInterfaces: []*armcomputev2.NetworkInterfaceReference{
-							{
-								ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id/networkInterfaces/interface-name"),
+			list: []armcomputev2.VirtualMachineScaleSetVM{
+				{
+					Name:       to.Ptr("scale-set-name_instance-id"),
+					InstanceID: to.Ptr("instance-id"),
+					ID:         to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"),
+					Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
+						NetworkProfile: &armcomputev2.NetworkProfile{
+							NetworkInterfaces: []*armcomputev2.NetworkInterfaceReference{
+								{
+									ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id/networkInterfaces/interface-name"),
+								},
 							},
 						},
-					},
-					OSProfile: &armcomputev2.OSProfile{
-						ComputerName: to.Ptr("scale-set-name-instance-id"),
-						LinuxConfiguration: &armcomputev2.LinuxConfiguration{
-							SSH: &armcomputev2.SSHConfiguration{
-								PublicKeys: []*armcomputev2.SSHPublicKey{
-									{
-										KeyData: to.Ptr("key-data"),
-										Path:    to.Ptr("/home/user/.ssh/authorized_keys"),
+						OSProfile: &armcomputev2.OSProfile{
+							ComputerName: to.Ptr("scale-set-name-instance-id"),
+							LinuxConfiguration: &armcomputev2.LinuxConfiguration{
+								SSH: &armcomputev2.SSHConfiguration{
+									PublicKeys: []*armcomputev2.SSHPublicKey{
+										{
+											KeyData: to.Ptr("key-data"),
+											Path:    to.Ptr("/home/user/.ssh/authorized_keys"),
+										},
 									},
 								},
 							},
 						},
 					},
+					Tags: map[string]*string{
+						"constellation-uid": to.Ptr("uid"),
+						"role":              to.Ptr("worker"),
+					},
 				},
-			}},
+			},
 		},
 	}
 }

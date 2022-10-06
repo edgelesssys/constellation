@@ -15,12 +15,16 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/test/bufconn"
 )
 
 func TestIMDSClient(t *testing.T) {
-	uidTags := []metadataTag{{Name: "uid", Value: "uid"}}
+	uidTags := []metadataTag{
+		{Name: "constellation-uid", Value: "uid"},
+		{Name: "role", Value: "worker"},
+	}
 	response := metadataResponse{
 		Compute: metadataResponseCompute{
 			ResourceID:    "resource-id",
@@ -44,6 +48,14 @@ func TestIMDSClient(t *testing.T) {
 		Compute: metadataResponseCompute{
 			ResourceID:    "resource-id",
 			ResourceGroup: "resource-group",
+			Tags:          []metadataTag{{Name: "role", Value: "worker"}},
+		},
+	}
+	responseWithoutRole := metadataResponse{
+		Compute: metadataResponseCompute{
+			ResourceID:    "resource-id",
+			ResourceGroup: "resource-group",
+			Tags:          []metadataTag{{Name: "constellation-uid", Value: "uid"}},
 		},
 	}
 
@@ -55,30 +67,43 @@ func TestIMDSClient(t *testing.T) {
 		wantResourceGroup    string
 		wantUIDErr           bool
 		wantUID              string
+		wantRoleErr          bool
+		wantRole             role.Role
 	}{
 		"metadata response parsed": {
 			server:            newHTTPBufconnServerWithMetadataResponse(response),
 			wantProviderID:    "resource-id",
 			wantResourceGroup: "resource-group",
 			wantUID:           "uid",
+			wantRole:          role.Worker,
 		},
 		"metadata response without resource ID": {
 			server:            newHTTPBufconnServerWithMetadataResponse(responseWithoutID),
 			wantProviderIDErr: true,
 			wantResourceGroup: "resource-group",
 			wantUID:           "uid",
+			wantRole:          role.Worker,
 		},
 		"metadata response without UID tag": {
 			server:            newHTTPBufconnServerWithMetadataResponse(responseWithoutUID),
 			wantProviderID:    "resource-id",
 			wantResourceGroup: "resource-group",
 			wantUIDErr:        true,
+			wantRole:          role.Worker,
+		},
+		"metadata response without role tag": {
+			server:            newHTTPBufconnServerWithMetadataResponse(responseWithoutRole),
+			wantProviderID:    "resource-id",
+			wantResourceGroup: "resource-group",
+			wantUID:           "uid",
+			wantRoleErr:       true,
 		},
 		"metadata response without resource group": {
 			server:               newHTTPBufconnServerWithMetadataResponse(responseWithoutGroup),
 			wantProviderID:       "resource-id",
 			wantResourceGroupErr: true,
 			wantUID:              "uid",
+			wantRole:             role.Worker,
 		},
 		"invalid imds response detected": {
 			server: newHTTPBufconnServer(func(writer http.ResponseWriter, request *http.Request) {
@@ -87,6 +112,7 @@ func TestIMDSClient(t *testing.T) {
 			wantProviderIDErr:    true,
 			wantResourceGroupErr: true,
 			wantUIDErr:           true,
+			wantRoleErr:          true,
 		},
 	}
 
@@ -130,6 +156,14 @@ func TestIMDSClient(t *testing.T) {
 			} else {
 				assert.NoError(err)
 				assert.Equal(tc.wantUID, uid)
+			}
+
+			role, err := iClient.Role(ctx)
+			if tc.wantRoleErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.wantRole, role)
 			}
 		})
 	}
