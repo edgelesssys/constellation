@@ -31,6 +31,7 @@ import (
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+	"golang.org/x/sys/unix"
 )
 
 func newMiniUpCmd() *cobra.Command {
@@ -89,8 +90,9 @@ func runUp(cmd *cobra.Command, args []string) error {
 // We do so by verifying that the host:
 // - arch/os is linux/amd64.
 // - has access to /dev/kvm.
-// - has more than 4 CPU cores.
-// - has more than 4GB of memory.
+// - has at least 4 CPU cores.
+// - has at least 4GB of memory.
+// - has at least 20GB of free disk space.
 func checkSystemRequirements(out io.Writer) error {
 	// check arch/os
 	if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
@@ -104,7 +106,7 @@ func checkSystemRequirements(out io.Writer) error {
 
 	// check CPU cores
 	if runtime.NumCPU() < 4 {
-		return fmt.Errorf("insufficient CPU cores: %d, at least 4 cores are required by a QEMU cluster", runtime.NumCPU())
+		return fmt.Errorf("insufficient CPU cores: %d, at least 4 cores are required by mini Constellation", runtime.NumCPU())
 	}
 	if runtime.NumCPU() < 6 {
 		fmt.Fprintf(out, "WARNING: Only %d CPU cores available. This may cause performance issues.\n", runtime.NumCPU())
@@ -116,22 +118,31 @@ func checkSystemRequirements(out io.Writer) error {
 		return fmt.Errorf("determining available memory: failed to open /proc/meminfo: %w", err)
 	}
 	defer f.Close()
-	var memTotal int
+	var memKB int
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		if strings.HasPrefix(scanner.Text(), "MemTotal:") {
-			_, err = fmt.Sscanf(scanner.Text(), "MemTotal:%d", &memTotal)
+			_, err = fmt.Sscanf(scanner.Text(), "MemTotal:%d", &memKB)
 			if err != nil {
 				return fmt.Errorf("determining available memory: failed to parse /proc/meminfo: %w", err)
 			}
 		}
 	}
-	memGB := memTotal / 1024 / 1024
+	memGB := memKB / 1024 / 1024
 	if memGB < 4 {
-		return fmt.Errorf("insufficient memory: %dGB, at least 4GB of memory are required by a QEMU cluster", memTotal)
+		return fmt.Errorf("insufficient memory: %dGB, at least 4GB of memory are required by mini Constellation", memGB)
 	}
 	if memGB < 6 {
 		fmt.Fprintln(out, "WARNING: Less than 6GB of memory available. This may cause performance issues.")
+	}
+
+	var stat unix.Statfs_t
+	if err := unix.Statfs(".", &stat); err != nil {
+		return err
+	}
+	freeSpaceGB := stat.Bavail * uint64(stat.Bsize) / 1024 / 1024 / 1024
+	if freeSpaceGB < 20 {
+		return fmt.Errorf("insufficient disk space: %dGB, at least 20GB of disk space are required by mini Constellation", freeSpaceGB)
 	}
 
 	return nil
@@ -157,11 +168,11 @@ func prepareConfig(cmd *cobra.Command, fileHandler file.Handler) (*config.Config
 	}
 
 	// download image to current directory if it doesn't exist
-	imagePath := "./constellation.qcow2"
+	const imagePath = "./constellation.qcow2"
 	if _, err := os.Stat(imagePath); err == nil {
 		cmd.Printf("Using existing image at %s\n\n", imagePath)
 	} else if errors.Is(err, os.ErrNotExist) {
-		cmd.Println("Downloading image to ./constellation.qcow2")
+		cmd.Printf("Downloading image to %s\n", imagePath)
 		if err := installImage(cmd.Context(), cmd.OutOrStdout(), versions.ConstellationQEMUImageURL, imagePath); err != nil {
 			return nil, fmt.Errorf("downloading image to %s: %w", imagePath, err)
 		}
