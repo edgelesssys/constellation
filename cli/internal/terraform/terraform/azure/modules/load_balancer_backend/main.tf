@@ -1,0 +1,37 @@
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "3.23.0"
+    }
+  }
+}
+
+resource "azurerm_lb_backend_address_pool" "backend_pool" {
+  loadbalancer_id = var.loadbalancer_id
+  name            = var.name
+}
+
+resource "azurerm_lb_probe" "health_probes" {
+  for_each = { for port in var.ports : port.name => port }
+
+  loadbalancer_id     = var.loadbalancer_id
+  name                = each.value.name
+  port                = each.value.port
+  protocol            = "Tcp"
+  interval_in_seconds = 5
+}
+
+resource "azurerm_lb_rule" "rules" {
+  for_each = azurerm_lb_probe.health_probes
+
+  loadbalancer_id                = var.loadbalancer_id
+  name                           = each.value.name
+  protocol                       = each.value.protocol
+  frontend_port                  = each.value.port
+  backend_port                   = each.value.port
+  frontend_ip_configuration_name = "PublicIPAddress"
+  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.backend_pool.id]
+  probe_id                       = each.value.id
+  disable_outbound_snat          = true
+}
