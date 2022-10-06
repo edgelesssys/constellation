@@ -42,7 +42,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
-<!-- In case of vulnerabilities. -->
+Vulnerability inside the Go standard library fixed by updating to Go 1.19.2:
+- [GO-2022-1037](https://pkg.go.dev/vuln/GO-2022-1037) ([CVE-2022-2879](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-2879))
+- [GO-2022-1038](https://pkg.go.dev/vuln/GO-2022-1038) ([CVE-2022-2880](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-2880))
+- [GO-2022-0969](https://pkg.go.dev/vuln/GO-2022-0969) ([CVE-2022-27664](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-27664))
+
 ### Internal
 
 ## [2.0.0] - 2022-09-12
