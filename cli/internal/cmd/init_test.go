@@ -55,9 +55,7 @@ func TestInitialize(t *testing.T) {
 		Type: "service_account",
 	}
 	testAzureState := &state.ConstellationState{
-		CloudProvider:        "Azure",
-		AzureWorkerInstances: cloudtypes.Instances{"id-0": {}, "id-1": {}},
-		AzureResourceGroup:   "test",
+		CloudProvider: "Azure",
 	}
 	testQemuState := &state.ConstellationState{
 		CloudProvider: "QEMU",
