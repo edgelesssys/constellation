@@ -22,8 +22,6 @@ func NewValidK8sVersion(k8sVersion string) (ValidK8sVersion, error) {
 // IsSupportedK8sVersion checks if a given Kubernetes version is supported by Constellation.
 func IsSupportedK8sVersion(version string) bool {
 	switch version {
-	case string(V1_22):
-		return true
 	case string(V1_23):
 		return true
 	case string(V1_24):
@@ -37,7 +35,7 @@ func IsSupportedK8sVersion(version string) bool {
 
 // IsPreviewK8sVersion checks if a given Kubernetes version is still in preview and not fully supported.
 func IsPreviewK8sVersion(version ValidK8sVersion) bool {
-	return version == V1_25
+	return false
 }
 
 const (
@@ -59,38 +57,17 @@ const (
 
 	// currently supported versions.
 	//nolint:revive
-	V1_22 ValidK8sVersion = "1.22"
-	//nolint:revive
 	V1_23 ValidK8sVersion = "1.23"
 	//nolint:revive
 	V1_24 ValidK8sVersion = "1.24"
 	//nolint:revive
 	V1_25 ValidK8sVersion = "1.25"
 
-	Default ValidK8sVersion = V1_23
+	Default ValidK8sVersion = V1_24
 )
 
 // versionConfigs holds download URLs for all required kubernetes components for every supported version.
 var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
-	V1_22: {
-		PatchVersion:      "1.22.12",
-		CNIPluginsURL:     "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz",
-		CrictlURL:         "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.24.1/crictl-v1.24.1-linux-amd64.tar.gz",
-		KubeletServiceURL: "https://raw.githubusercontent.com/kubernetes/release/v0.13.0/cmd/kubepkg/templates/latest/deb/kubelet/lib/systemd/system/kubelet.service",
-		KubeadmConfURL:    "https://raw.githubusercontent.com/kubernetes/release/v0.13.0/cmd/kubepkg/templates/latest/deb/kubeadm/10-kubeadm.conf",
-		KubeletURL:        "https://storage.googleapis.com/kubernetes-release/release/v1.22.12/bin/linux/amd64/kubelet",
-		KubeadmURL:        "https://storage.googleapis.com/kubernetes-release/release/v1.22.12/bin/linux/amd64/kubeadm",
-		KubectlURL:        "https://storage.googleapis.com/kubernetes-release/release/v1.22.12/bin/linux/amd64/kubectl",
-		// CloudControllerManagerImageGCP is the CCM image used on GCP.
-		// TODO: use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
-		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v22",
-		// CloudControllerManagerImageAzure is the CCM image used on Azure.
-		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.1.18",
-		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
-		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.1.18",
-		// External service image. Depends on k8s version.
-		ClusterAutoscalerImage: "k8s.gcr.io/autoscaling/cluster-autoscaler:v1.22.3",
-	},
 	V1_23: {
 		PatchVersion:      "1.23.9",
 		CNIPluginsURL:     "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz",
