@@ -15,93 +15,76 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
-	baseWait = 1
+	baseWait = 100
 	baseText = "Loading"
 )
 
 func TestSpinnerInitialState(t *testing.T) {
 	assert := assert.New(t)
 
-	cmd := NewInitCmd()
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	var errOut bytes.Buffer
-	cmd.SetErr(&errOut)
+	out := &bytes.Buffer{}
 
-	s, _ := newSpinner(cmd, nil)
+	s := newSpinner(out)
+	s.delay = time.Millisecond * 10
 	s.Start(baseText, true)
-	time.Sleep(baseWait * time.Second)
+	time.Sleep(baseWait * time.Millisecond)
 	s.Stop()
-	assert.True(out.Len() > 0)
-	assert.True(errOut.Len() == 0)
+	assert.Greater(out.Len(), 0)
 
 	outStr := out.String()
-	assert.True(strings.HasPrefix(outStr, generateAllStatesAsString(baseText, true)))
+	assert.True(strings.HasPrefix(outStr, hideCursor+generateAllStatesAsString(t, baseText, true)))
 }
 
 func TestSpinnerFinalState(t *testing.T) {
-	assert := assert.New(t)
+	out := &bytes.Buffer{}
 
-	cmd := NewInitCmd()
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	var errOut bytes.Buffer
-	cmd.SetErr(&errOut)
-
-	s, _ := newSpinner(cmd, nil)
+	s := newSpinner(out)
+	s.delay = time.Millisecond * 10
 	s.Start(baseText, true)
-	time.Sleep(baseWait * time.Second)
+	time.Sleep(baseWait * time.Millisecond)
 	s.Stop()
-	assert.True(out.Len() > 0)
-	assert.True(errOut.Len() == 0)
+	require.True(t, out.Len() > 0)
 
 	outStr := out.String()
-	assert.True(strings.HasSuffix(outStr, baseText+"...  \n"))
+	require.True(t, strings.HasSuffix(outStr, baseText+"...  \n"+showCursor))
 }
 
 func TestSpinnerDisabledShowDotsFlag(t *testing.T) {
-	assert := assert.New(t)
+	out := &bytes.Buffer{}
 
-	cmd := NewInitCmd()
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	var errOut bytes.Buffer
-	cmd.SetErr(&errOut)
-
-	s, _ := newSpinner(cmd, nil)
+	s := newSpinner(out)
+	s.delay = time.Millisecond * 10
 	s.Start(baseText, false)
-	time.Sleep(baseWait * time.Second)
+	time.Sleep(baseWait * time.Millisecond)
 	s.Stop()
-	assert.True(out.Len() > 0)
-	assert.True(errOut.Len() == 0)
+	require.True(t, out.Len() > 0)
 
 	outStr := out.String()
-	assert.True(strings.HasPrefix(outStr, generateAllStatesAsString(baseText, false)))
-	assert.True(strings.HasSuffix(outStr, baseText+"  \n"))
+	require.True(t, strings.HasPrefix(outStr, hideCursor+generateAllStatesAsString(t, baseText, false)))
+	require.True(t, strings.HasSuffix(outStr, baseText+"  \n"+showCursor))
 }
 
 func TestSpinnerInterruptWriter(t *testing.T) {
 	assert := assert.New(t)
 
-	cmd := NewInitCmd()
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	var errOut bytes.Buffer
-	cmd.SetErr(&errOut)
+	out := &bytes.Buffer{}
 
-	s, interruptWriter := newSpinner(cmd, &out)
+	s := newSpinner(out)
 	s.Start(baseText, false)
 	time.Sleep(200 * time.Millisecond)
-	_, err := interruptWriter.Write([]byte("test"))
+	_, err := s.Write([]byte("test"))
 	assert.NoError(err)
 	assert.Equal(int32(1), atomic.LoadInt32(&s.stop))
 	assert.True(strings.HasSuffix(out.String(), "test"))
 }
 
-func generateAllStatesAsString(text string, showDots bool) string {
+func generateAllStatesAsString(t *testing.T, text string, showDots bool) string {
+	t.Helper()
+
 	var builder strings.Builder
 
 	for i := 0; i < len(spinnerStates); i++ {

@@ -41,9 +41,9 @@ func NewCreateCmd() *cobra.Command {
 
 func runCreate(cmd *cobra.Command, args []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	spinner, writer := newSpinner(cmd, cmd.OutOrStdout())
+	spinner := newSpinner(cmd.OutOrStdout())
 	defer spinner.Stop()
-	creator := cloudcmd.NewCreator(writer)
+	creator := cloudcmd.NewCreator(spinner)
 
 	return create(cmd, creator, fileHandler, spinner)
 }

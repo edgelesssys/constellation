@@ -12,13 +12,17 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+)
 
-	"github.com/spf13/cobra"
+const (
+	// hideCursor and showCursor are ANSI escape sequences to hide and show the cursor.
+	hideCursor = "\033[?25l"
+	showCursor = "\033[?25h"
 )
 
 var (
-	spinnerStates = []string{"⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"}
-	dotsStates    = []string{".", "..", "..."}
+	spinnerStates = []string{"⣷", "⣯", "⣟", "⡿", "⢿", "⣻", "⣽", "⣾"}
+	dotsStates    = []string{".  ", ".. ", "..."}
 )
 
 type spinnerInterf interface {
@@ -27,33 +31,26 @@ type spinnerInterf interface {
 }
 
 type spinner struct {
-	out   *cobra.Command
+	out   io.Writer
 	delay time.Duration
 	wg    *sync.WaitGroup
 	stop  int32
 }
 
-func newSpinner(c *cobra.Command, writer io.Writer) (*spinner, *interruptSpinWriter) {
-	spinner := &spinner{
-		out:   c,
+func newSpinner(writer io.Writer) *spinner {
+	return &spinner{
+		out:   writer,
 		wg:    &sync.WaitGroup{},
 		delay: 100 * time.Millisecond,
 		stop:  0,
 	}
-
-	if writer != nil {
-		interruptWriter := &interruptSpinWriter{
-			writer:  writer,
-			spinner: spinner,
-		}
-		return spinner, interruptWriter
-	}
-
-	return spinner, nil
 }
 
+// Start starts the spinner using the given text.
 func (s *spinner) Start(text string, showDots bool) {
 	s.wg.Add(1)
+	fmt.Fprint(s.out, hideCursor)
+
 	go func() {
 		defer s.wg.Done()
 
@@ -66,7 +63,7 @@ func (s *spinner) Start(text string, showDots bool) {
 				dotsState = dotsStates[i%len(dotsStates)]
 			}
 			state := fmt.Sprintf("\r%s %s%s", spinnerStates[i], text, dotsState)
-			s.out.Print(state)
+			fmt.Fprint(s.out, state)
 			time.Sleep(s.delay)
 		}
 
@@ -75,23 +72,21 @@ func (s *spinner) Start(text string, showDots bool) {
 			dotsState = dotsStates[len(dotsStates)-1]
 		}
 		finalState := fmt.Sprintf("\r%s%s  ", text, dotsState)
-		s.out.Println(finalState)
+		fmt.Fprintln(s.out, finalState)
 	}()
 }
 
+// Stop stops the spinner.
 func (s *spinner) Stop() {
 	atomic.StoreInt32(&s.stop, 1)
 	s.wg.Wait()
+	fmt.Fprint(s.out, showCursor)
 }
 
-type interruptSpinWriter struct {
-	spinner *spinner
-	writer  io.Writer
-}
-
-func (w *interruptSpinWriter) Write(p []byte) (n int, err error) {
-	w.spinner.Stop()
-	return w.writer.Write(p)
+// Write stops the spinner and writes the given bytes to the underlying writer.
+func (s *spinner) Write(p []byte) (n int, err error) {
+	s.Stop()
+	return s.out.Write(p)
 }
 
 type nopSpinner struct{}

@@ -51,7 +51,7 @@ func newMiniUpCmd() *cobra.Command {
 }
 
 func runUp(cmd *cobra.Command, args []string) error {
-	spinner, _ := newSpinner(cmd, cmd.OutOrStdout())
+	spinner := newSpinner(cmd.OutOrStdout())
 	defer spinner.Stop()
 
 	return up(cmd, spinner)
