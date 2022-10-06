@@ -47,7 +47,7 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 		return fmt.Errorf("reading Constellation state: %w", err)
 	}
 
-	spinner := newSpinner(cmd, "Terminating ", true)
+	spinner := newSpinner(cmd, "Terminating", false)
 	spinner.Start()
 	err := terminator.Terminate(cmd.Context(), stat)
 	spinner.Stop()
