@@ -1,32 +1,41 @@
 # Mini Constellation
 
-With `constellation mini`, users can quickly deploy and test Constellation without the need for a cloud subscription.
+With `constellation mini`, users can deploy and test Constellation without the need for a cloud subscription.
 
 The command uses virtualization to create a local cluster with one control-plane and one worker node.
 
 :::info
 
 Since mini Constellation is running on your local system, please note that common cloud features, such as load-balancing,
-attaching persistent storage, or auto-scaling, are unavailable.
+attaching persistent storage, or autoscaling, are unavailable.
 
 :::
 
 ## Prerequisites
 
 * [Constellation CLI](./install.md#install-the-constellation-cli)
-* Linux operating system on amd64 hardware
-* At least 6GB RAM
-* A CPU with at least 4 cores
-* 20GB of free disk space
+* A x86-64 CPU with at least 4 cores
+  * Recommended are 6 cores or more
+* Hardware virtualization enabled in the BIOS/UEFI (often referred to as Intel VT-x or AMD-V/SVM)
+* At least 4 GB RAM
+  * Recommend are 6 GB or more
+* 20 GB of free disk space
+* a Linux operating system
 * [KVM kernel module](https://www.linux-kvm.org/page/Main_Page) enabled
-  * Ensure your user is allowed to access `/dev/kvm` by running the following
+* [Docker](https://docs.docker.com/engine/install/)
+* [xsltproc](https://gitlab.gnome.org/GNOME/libxslt/-/wikis/home)
+  * Install on Ubuntu:
 
-    ```shell
-    sudo chmod 666 /dev/kvm
+    ```bash
+    sudo apt install xsltproc
     ```
 
-* [Docker](https://docs.docker.com/engine/install/)
-* [xsltproc](http://xmlsoft.org/xslt/xsltproc.html)
+  * Install on Fedora
+
+    ```bash
+    sudo dnf install xsltproc
+    ```
+
 * (Optional) [`virsh`](https://www.libvirt.org/manpages/virsh.html) to observe and access your nodes
 
 ## Create your cluster
@@ -70,7 +79,7 @@ You can now configure `kubectl` to connect to your local Constellation cluster:
 export KUBECONFIG="$PWD/constellation-admin.conf"
 ```
 
-It may take a minute for all cluster resources to be available.
+It may take a couple of minutes for all cluster resources to be available.
 You can check on the state of your cluster by running the following:
 
 ```bash
@@ -113,3 +122,34 @@ constellation mini down
 
 This will destroy your cluster and clean up the your working directory.
 The VM image and cluster configuration file (`constellation-conf.yaml`) will be left behind and may be reused to create new clusters.
+
+## Troubleshooting
+
+### VMs have no internet access
+
+`iptables` rules may prevent your VMs form properly accessing the internet.
+Make sure your rules are'nt dropping forwarded packages.
+
+List your rules:
+
+```shell
+sudo iptables -S
+```
+
+The output may look similar to the following:
+
+```shell
+-P INPUT ACCEPT
+-P FORWARD DROP
+-P OUTPUT ACCEPT
+-N DOCKER
+-N DOCKER-ISOLATION-STAGE-1
+-N DOCKER-ISOLATION-STAGE-2
+-N DOCKER-USER
+```
+
+If your `FORWARD` chain is set to `DROP`, you will need to update your rules:
+
+```shell
+sudo iptables -P FORWARD ACCEPT
+```

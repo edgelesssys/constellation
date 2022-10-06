@@ -42,3 +42,4 @@ WireGuard
 Xeon
 Nginx
 rollout
+xsltproc
