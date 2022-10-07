@@ -189,16 +189,6 @@ const sidebars = {
         },
         {
           type: 'doc',
-          label: 'Components',
-          id: 'architecture/components',
-        },
-        {
-          type: 'doc',
-          label: 'Attestation',
-          id: 'architecture/attestation',
-        },
-        {
-          type: 'doc',
           label: 'Cluster orchestration',
           id: 'architecture/orchestration',
         },
@@ -206,6 +196,16 @@ const sidebars = {
           type: 'doc',
           label: 'Versions and support',
           id: 'architecture/versions',
+        },
+        {
+          type: 'doc',
+          label: 'Components',
+          id: 'architecture/components',
+        },
+        {
+          type: 'doc',
+          label: 'Attestation',
+          id: 'architecture/attestation',
         },
         {
           type: 'doc',
