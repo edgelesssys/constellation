@@ -98,7 +98,7 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner,
 	}
 
 	// get expected measurements for each image
-	if err := getCompatibleImageMeasurements(cmd, client, rekor, []byte(flags.cosignPubKey), compatibleImages); err != nil {
+	if err := getCompatibleImageMeasurements(cmd.Context(), client, rekor, []byte(flags.cosignPubKey), compatibleImages); err != nil {
 		return fmt.Errorf("fetching measurements for compatible images: %w", err)
 	}
 
@@ -179,7 +179,7 @@ func getCompatibleImages(csp cloudprovider.Provider, currentVersion string, imag
 }
 
 // getCompatibleImageMeasurements retrieves the expected measurements for each image.
-func getCompatibleImageMeasurements(cmd *cobra.Command, client *http.Client, rekor RekorVerifier, pubK []byte, images map[string]config.UpgradeConfig) error {
+func getCompatibleImageMeasurements(ctx context.Context, client *http.Client, rekor RekorVerifier, pubK []byte, images map[string]config.UpgradeConfig) error {
 	for idx, img := range images {
 		measurementsURL, err := url.Parse(constants.S3PublicBucket + img.Image + "/measurements.yaml")
 		if err != nil {
@@ -191,12 +191,12 @@ func getCompatibleImageMeasurements(cmd *cobra.Command, client *http.Client, rek
 			return err
 		}
 
-		hash, err := img.Measurements.FetchAndVerify(cmd.Context(), client, measurementsURL, signatureURL, pubK)
+		hash, err := img.Measurements.FetchAndVerify(ctx, client, measurementsURL, signatureURL, pubK)
 		if err != nil {
 			return err
 		}
 
-		if err = verifyWithRekor(cmd.Context(), rekor, hash); err != nil {
+		if err = verifyWithRekor(ctx, rekor, hash); err != nil {
 			fmt.Printf("Warning: Unable to verify '%s' in Rekor.\n", hash)
 			fmt.Printf("Make sure measurements are correct.\n")
 		}

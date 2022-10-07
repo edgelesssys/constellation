@@ -70,7 +70,7 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 			require := require.New(t)
 
 			cmd := newConfigFetchMeasurementsCmd()
-			cmd.Flags().String("config", constants.ConfigFilename, "") // register persisten flag manually
+			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 
 			if tc.urlFlag != "" {
 				require.NoError(cmd.Flags().Set("url", tc.urlFlag))
@@ -209,7 +209,7 @@ func TestConfigFetchMeasurements(t *testing.T) {
 			require := require.New(t)
 
 			cmd := newConfigFetchMeasurementsCmd()
-			cmd.Flags().String("config", constants.ConfigFilename, "") // register persisten flag manually
+			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 
 			gcpConfig := config.Default()
