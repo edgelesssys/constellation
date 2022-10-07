@@ -39,6 +39,7 @@ resource "google_compute_backend_service" "backend" {
   load_balancing_scheme = "EXTERNAL"
   health_checks         = [google_compute_health_check.health.self_link]
   port_name             = var.backend_port_name
+  timeout_sec           = 240
 
   backend {
     group          = var.backend_instance_group
