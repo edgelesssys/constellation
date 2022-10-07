@@ -64,7 +64,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 	}
 
 	// create cluster
-	spinner := newSpinner(cmd, "Creating cluster in QEMU ", true)
+	spinner := newSpinner(cmd, "Creating cluster in QEMU ", false)
 	spinner.Start()
 	err = createMiniCluster(cmd.Context(), fileHandler, cloudcmd.NewCreator(cmd.OutOrStdout()), config)
 	spinner.Stop()
