@@ -61,7 +61,7 @@ const (
 	LibvirtImage      = "ghcr.io/edgelesssys/constellation/libvirt:v2.1.0@sha256:9769a2b88e2acc0986fdf2ab4a358b60c50a8cd330c183df4435f56e10758b37"
 
 	// ConstellationQEMUImageURL is the artifact URL for QEMU qcow2 images.
-	ConstellationQEMUImageURL = "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/mini-constellation/mini-constellation-v2.1.0-prerelease.qcow2"
+	ConstellationQEMUImageURL = "https://d1gl9j3ejrmbpr.cloudfront.net/mini-constellation-v2.1.0.qcow2"
 
 	// currently supported versions.
 	//nolint:revive
