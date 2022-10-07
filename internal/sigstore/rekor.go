@@ -70,7 +70,9 @@ func (r *Rekor) SearchByHash(ctx context.Context, hash string) ([]string, error)
 	return index.GetPayload(), nil
 }
 
-// VerifyEntry performs both VerifyLogEntry.
+// VerifyEntry performs log entry verification (see verifyLogEntry) and
+// verifies that the provided publicKey was used to sign the entry.
+// An error is returned if any verification fails.
 func (r *Rekor) VerifyEntry(ctx context.Context, uuid, publicKey string) error {
 	entry, err := r.getEntry(ctx, uuid)
 	if err != nil {
@@ -94,7 +96,7 @@ func (r *Rekor) VerifyEntry(ctx context.Context, uuid, publicKey string) error {
 	return nil
 }
 
-// getEntry downloads entries for the provided UUID.
+// getEntry downloads entry for the provided UUID.
 func (r *Rekor) getEntry(ctx context.Context, uuid string) (models.LogEntryAnon, error) {
 	params := entries.NewGetLogEntryByUUIDParamsWithContext(ctx)
 	params.SetEntryUUID(uuid)
@@ -120,7 +122,7 @@ func (r *Rekor) getEntry(ctx context.Context, uuid string) (models.LogEntryAnon,
 
 // verifyLogEntry performs inclusion proof verification, SignedEntryTimestamp
 // verification, and checkpoint verification of the provided entry in Rekor.
-// A return value of nil indicated successful verification.
+// A return value of nil indicates successful verification.
 func (r *Rekor) verifyLogEntry(ctx context.Context, entry models.LogEntryAnon) error {
 	keyResp, err := r.client.Pubkey.GetPublicKey(nil)
 	if err != nil {
@@ -150,7 +152,7 @@ func (r *Rekor) verifyLogEntry(ctx context.Context, entry models.LogEntryAnon) e
 	return nil
 }
 
-// HashedRekordFromEntry extract the base64 encoded polymorphic Body field
+// hashedRekordFromEntry extracts the base64 encoded polymorphic Body field
 // and unmarshals the contained JSON into the correct type.
 func hashedRekordFromEntry(entry models.LogEntryAnon) (*hashedrekord.V001Entry, error) {
 	var rekord models.Hashedrekord
@@ -177,7 +179,7 @@ func hashedRekordFromEntry(entry models.LogEntryAnon) (*hashedrekord.V001Entry, 
 	return hashedRekord, nil
 }
 
-// IsEntrySignedBy checks whether rekord was signed with provided publicKey
+// isEntrySignedBy checks whether rekord was signed with provided publicKey
 func isEntrySignedBy(rekord *hashedrekord.V001Entry, publicKey string) bool {
 	if rekord == nil {
 		return false
