@@ -44,20 +44,21 @@ func IsPreviewK8sVersion(version ValidK8sVersion) bool {
 const (
 	// Constellation images.
 	// These images are built in a way that they support all versions currently listed in VersionConfigs.
-	KonnectivityAgentImage   = "us.gcr.io/k8s-artifacts-prod/kas-network-proxy/proxy-agent:v0.0.33@sha256:48f2a4ec3e10553a81b8dd1c6fa5fe4bcc9617f78e71c1ca89c6921335e2d7da"
-	KonnectivityServerImage  = "registry.k8s.io/kas-network-proxy/proxy-server:v0.0.33@sha256:2c111f004bec24888d8cfa2a812a38fb8341350abac67dcd0ac64e709dfe389c"
-	JoinImage                = "ghcr.io/edgelesssys/constellation/join-service:v2.1.0-pre.0.20220928143744-c46d6e390f2d@sha256:723aead5b049da4e4c64b602f2ab4dbd9f464c63ac274ac4ae2f4c12b38db2fb"
-	AccessManagerImage       = "ghcr.io/edgelesssys/constellation/access-manager:v2.0.0@sha256:194b8b5f20658867fd291882ea25bf472bd706bcd5575f37bc9ec92dcdbc2f20"
-	KmsImage                 = "ghcr.io/edgelesssys/constellation/kmsserver:v2.0.0@sha256:8c603d9c76c0a1823dab651a0102c6e337bd9ae72b6da31343763e5cc2baaeeb"
-	VerificationImage        = "ghcr.io/edgelesssys/constellation/verification-service:v2.0.0@sha256:61929d4b0092462d417b7fe36450688619c0a0c74f44f3c4e215023782b489ae"
-	GcpGuestImage            = "ghcr.io/edgelesssys/gcp-guest-agent:20220713.00@sha256:6dca3b81b54ce204f3c7898190a28397d2c79b8f07001f6cf90cb492ef05e9f0"
-	NodeOperatorCatalogImage = "ghcr.io/edgelesssys/constellation/node-operator-catalog:v2.1.0-pre.0.20220927150426-f69db6f26ecb@sha256:4a9b0d36309fa788bd70a0ee4d691e4d4b5473d0aa430cc7fd70e4921f0dedd8"
+	KonnectivityAgentImage  = "us.gcr.io/k8s-artifacts-prod/kas-network-proxy/proxy-agent:v0.0.33@sha256:48f2a4ec3e10553a81b8dd1c6fa5fe4bcc9617f78e71c1ca89c6921335e2d7da"
+	KonnectivityServerImage = "registry.k8s.io/kas-network-proxy/proxy-server:v0.0.33@sha256:2c111f004bec24888d8cfa2a812a38fb8341350abac67dcd0ac64e709dfe389c"
+	JoinImage               = "ghcr.io/edgelesssys/constellation/join-service:v2.1.0@sha256:b0a78ae13d8ff4ed6bc920f5a27ba575e689986ef2d1ee9dd9ba4410a5e30e56"
+	AccessManagerImage      = "ghcr.io/edgelesssys/constellation/access-manager:v2.1.0@sha256:e1c083702a5a8e34eb14f0514b8d2b1bbeeb100ab837012d05482da041fc5c40"
+	KmsImage                = "ghcr.io/edgelesssys/constellation/kmsserver:v2.1.0@sha256:f56f901bd805550ac8232b4f7fdc8091a03ab16de5deddb1edd22b607413f406"
+	VerificationImage       = "ghcr.io/edgelesssys/constellation/verification-service:v2.1.0@sha256:7a1e6bec4cda270924c3495466fa536a2b6cd2d2f9c0be319fc6368710c255e8"
+	// Check for new versions at https://github.com/GoogleCloudPlatform/guest-agent/releases and update in /.github/workflows/build-gcp-guest-agent.yml.
+	GcpGuestImage            = "ghcr.io/edgelesssys/gcp-guest-agent:20220927.00@sha256:3dea1ae3f162d2353e6584b325f0e325a39cda5f380f41e5a0ee43c6641d3905"
+	NodeOperatorCatalogImage = "ghcr.io/edgelesssys/constellation/node-operator-catalog:v2.1.0@sha256:43fbf5bd0024df11245f8f8afbf6ad935e9d2ce80bc3902684a49147da4624b0"
 	// TODO: switch node maintenance operator catalog back to upstream quay.io/medik8s/node-maintenance-operator-catalog
 	// once https://github.com/medik8s/node-maintenance-operator/issues/49 is resolved.
 	NodeMaintenanceOperatorCatalogImage = "ghcr.io/edgelesssys/constellation/node-maintenance-operator-catalog:v0.13.1-alpha1@sha256:d382c3aaf9bc470cde6f6c05c2c6ff5c9dcfd90540d5b11f9cf69c4e1dd1ca9d"
 
-	QEMUMetadataImage = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.1.0-pre.0.20221004080046-26a21f00b8cb"
-	LibvirtImage      = "ghcr.io/edgelesssys/constellation/libvirt:v2.1.0-pre.0.20221006160540-96e6381ca9e2"
+	QEMUMetadataImage = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.1.0@sha256:abfc36fcd02a145412074cdbb54597878594aa1cfb0ffd66e36d3b3e95ee9e7f"
+	LibvirtImage      = "ghcr.io/edgelesssys/constellation/libvirt:v2.1.0@sha256:9769a2b88e2acc0986fdf2ab4a358b60c50a8cd330c183df4435f56e10758b37"
 
 	// ConstellationQEMUImageURL is the artifact URL for QEMU qcow2 images.
 	ConstellationQEMUImageURL = "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/mini-constellation/mini-constellation-v2.1.0-prerelease.qcow2"
