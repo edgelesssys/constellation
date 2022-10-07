@@ -227,7 +227,7 @@ func TestCreate(t *testing.T) {
 
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider))
 
-			err := create(cmd, tc.creator, fileHandler)
+			err := create(cmd, tc.creator, fileHandler, nopSpinner{})
 
 			if tc.wantErr {
 				assert.Error(err)

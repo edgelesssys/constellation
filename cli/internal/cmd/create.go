@@ -42,12 +42,15 @@ func NewCreateCmd() *cobra.Command {
 
 func runCreate(cmd *cobra.Command, args []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	creator := cloudcmd.NewCreator(cmd.OutOrStdout())
+	spinner, writer := newSpinner(cmd, cmd.OutOrStdout())
+	defer spinner.Stop()
+	creator := cloudcmd.NewCreator(writer)
 
-	return create(cmd, creator, fileHandler)
+	return create(cmd, creator, fileHandler, spinner)
 }
 
-func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler) (retErr error) {
+func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, spinner spinnerInterf,
+) (retErr error) {
 	flags, err := parseCreateFlags(cmd)
 	if err != nil {
 		return err
@@ -114,8 +117,7 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler) 
 		}
 	}
 
-	spinner := newSpinner(cmd, "Creating", false)
-	spinner.Start()
+	spinner.Start("Creating", false)
 	state, err := creator.Create(cmd.Context(), provider, config, flags.name, instanceType, flags.controllerCount, flags.workerCount)
 	spinner.Stop()
 	if err != nil {
