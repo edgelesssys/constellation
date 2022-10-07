@@ -17,6 +17,9 @@ Commands:
   * [instance-types](#constellation-config-instance-types): Print the supported instance types for all cloud providers
 * [create](#constellation-create): Create instances on a cloud platform for your Constellation cluster
 * [init](#constellation-init): Initialize the Constellation cluster
+* [mini](#constellation-mini): Manage mini Constellation clusters
+  * [up](#constellation-mini-up): Create and initialize a new mini Constellation cluster
+  * [down](#constellation-mini-down): Destroy a mini Constellation cluster
 * [verify](#constellation-verify): Verify the confidential properties of a Constellation cluster
 * [upgrade](#constellation-upgrade): Plan and perform an upgrade of a Constellation cluster
   * [plan](#constellation-upgrade-plan): Plan an upgrade of a Constellation cluster
@@ -167,6 +170,76 @@ constellation init [flags]
       --endpoint string        endpoint of the bootstrapper, passed as HOST[:PORT]
   -h, --help                   help for init
       --master-secret string   path to base64-encoded master secret
+```
+
+### Options inherited from parent commands
+
+```
+      --config string   path to the configuration file (default "constellation-conf.yaml")
+```
+
+## constellation mini
+
+Manage mini Constellation clusters
+
+### Synopsis
+
+Manage mini Constellation clusters.
+
+### Options
+
+```
+  -h, --help   help for mini
+```
+
+### Options inherited from parent commands
+
+```
+      --config string   path to the configuration file (default "constellation-conf.yaml")
+```
+
+## constellation mini up
+
+Create and initialize a new mini Constellation cluster
+
+### Synopsis
+
+Create and initialize a new mini Constellation cluster.
+A mini cluster consists of a single control-plane and worker node, hosted using QEMU/KVM.
+
+
+```
+constellation mini up [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for up
+```
+
+### Options inherited from parent commands
+
+```
+      --config string   path to the configuration file (default "constellation-conf.yaml")
+```
+
+## constellation mini down
+
+Destroy a mini Constellation cluster
+
+### Synopsis
+
+Destroy a mini Constellation cluster.
+
+```
+constellation mini down [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for down
 ```
 
 ### Options inherited from parent commands
