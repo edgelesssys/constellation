@@ -275,7 +275,7 @@ func TestGetCompatibleImageMeasurements(t *testing.T) {
 
 	pubK := []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----")
 
-	err := getCompatibleImageMeasurements(&cmd, client, pubK, testImages)
+	err := getCompatibleImageMeasurements(&cmd, client, SingleUUIDVerifier(), pubK, testImages)
 	assert.NoError(err)
 
 	for _, image := range testImages {
@@ -299,6 +299,7 @@ func TestUpgradePlan(t *testing.T) {
 		planner                 stubUpgradePlanner
 		flags                   upgradePlanFlags
 		csp                     cloudprovider.Provider
+		verifier                RekorVerifier
 		imageFetchStatus        int
 		measurementsFetchStatus int
 		wantUpgrade             bool
@@ -316,6 +317,7 @@ func TestUpgradePlan(t *testing.T) {
 				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
 			},
 			csp:         cloudprovider.GCP,
+			verifier:    SingleUUIDVerifier(),
 			wantUpgrade: false,
 		},
 		"upgrades gcp": {
@@ -330,6 +332,7 @@ func TestUpgradePlan(t *testing.T) {
 				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
 			},
 			csp:         cloudprovider.GCP,
+			verifier:    SingleUUIDVerifier(),
 			wantUpgrade: true,
 		},
 		"upgrades azure": {
@@ -344,6 +347,7 @@ func TestUpgradePlan(t *testing.T) {
 				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
 			},
 			csp:         cloudprovider.Azure,
+			verifier:    SingleUUIDVerifier(),
 			wantUpgrade: true,
 		},
 		"upgrade to stdout": {
@@ -358,6 +362,7 @@ func TestUpgradePlan(t *testing.T) {
 				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
 			},
 			csp:         cloudprovider.GCP,
+			verifier:    SingleUUIDVerifier(),
 			wantUpgrade: true,
 		},
 		"current image not valid": {
@@ -371,8 +376,9 @@ func TestUpgradePlan(t *testing.T) {
 				filePath:     "upgrade-plan.yaml",
 				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
 			},
-			csp:     cloudprovider.GCP,
-			wantErr: true,
+			csp:      cloudprovider.GCP,
+			verifier: SingleUUIDVerifier(),
+			wantErr:  true,
 		},
 		"image fetch error": {
 			planner: stubUpgradePlanner{
@@ -385,8 +391,9 @@ func TestUpgradePlan(t *testing.T) {
 				filePath:     "upgrade-plan.yaml",
 				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
 			},
-			csp:     cloudprovider.GCP,
-			wantErr: true,
+			csp:      cloudprovider.GCP,
+			verifier: SingleUUIDVerifier(),
+			wantErr:  true,
 		},
 		"measurements fetch error": {
 			planner: stubUpgradePlanner{
@@ -399,8 +406,45 @@ func TestUpgradePlan(t *testing.T) {
 				filePath:     "upgrade-plan.yaml",
 				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
 			},
-			csp:     cloudprovider.GCP,
-			wantErr: true,
+			csp:      cloudprovider.GCP,
+			verifier: SingleUUIDVerifier(),
+			wantErr:  true,
+		},
+		"failing search should not result in error": {
+			planner: stubUpgradePlanner{
+				image: "projects/constellation-images/global/images/constellation-v1-0-0",
+			},
+			imageFetchStatus:        http.StatusOK,
+			measurementsFetchStatus: http.StatusOK,
+			flags: upgradePlanFlags{
+				configPath:   constants.ConfigFilename,
+				filePath:     "upgrade-plan.yaml",
+				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
+			},
+			csp: cloudprovider.GCP,
+			verifier: &StubRekorVerifier{
+				SearchByHashUUIDs: []string{},
+				SearchByHashError: errors.New("some error"),
+			},
+			wantUpgrade: true,
+		},
+		"failing verify should not result in error": {
+			planner: stubUpgradePlanner{
+				image: "projects/constellation-images/global/images/constellation-v1-0-0",
+			},
+			imageFetchStatus:        http.StatusOK,
+			measurementsFetchStatus: http.StatusOK,
+			flags: upgradePlanFlags{
+				configPath:   constants.ConfigFilename,
+				filePath:     "upgrade-plan.yaml",
+				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
+			},
+			csp: cloudprovider.GCP,
+			verifier: &StubRekorVerifier{
+				SearchByHashUUIDs: []string{"11111111111111111111111111111111111111111111111111111111111111111111111111111111"},
+				VerifyEntryError:  errors.New("some error"),
+			},
+			wantUpgrade: true,
 		},
 	}
 
@@ -449,7 +493,7 @@ func TestUpgradePlan(t *testing.T) {
 				}
 			})
 
-			err := upgradePlan(cmd, tc.planner, fileHandler, client, tc.flags)
+			err := upgradePlan(cmd, tc.planner, fileHandler, client, tc.verifier, tc.flags)
 			if tc.wantErr {
 				assert.Error(err)
 				return

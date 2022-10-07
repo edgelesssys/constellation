@@ -8,8 +8,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/base64"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -45,10 +43,14 @@ type fetchMeasurementsFlags struct {
 
 func runConfigFetchMeasurements(cmd *cobra.Command, args []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	return configFetchMeasurements(cmd, fileHandler, http.DefaultClient)
+	rekor, err := sigstore.NewRekor()
+	if err != nil {
+		return fmt.Errorf("constructing Rekor client: %w", err)
+	}
+	return configFetchMeasurements(cmd, rekor, fileHandler, http.DefaultClient)
 }
 
-func configFetchMeasurements(cmd *cobra.Command, fileHandler file.Handler, client *http.Client) error {
+func configFetchMeasurements(cmd *cobra.Command, verifier RekorVerifier, fileHandler file.Handler, client *http.Client) error {
 	flags, err := parseFetchMeasurementsFlags(cmd)
 	if err != nil {
 		return err
@@ -75,7 +77,7 @@ func configFetchMeasurements(cmd *cobra.Command, fileHandler file.Handler, clien
 		return err
 	}
 
-	if err := verifyWithRekor(cmd, hash); err != nil {
+	if err := verifyWithRekor(cmd.Context(), verifier, hash); err != nil {
 		cmd.Printf("Ignoring Rekor related error: %v\n", err)
 		cmd.Println("Make sure the downloaded measurements are trustworthy!")
 	}
@@ -85,43 +87,6 @@ func configFetchMeasurements(cmd *cobra.Command, fileHandler file.Handler, clien
 		return err
 	}
 
-	return nil
-}
-
-func verifyWithRekor(cmd *cobra.Command, hash string) error {
-	rekor, err := sigstore.NewRekor()
-	if err != nil {
-		return fmt.Errorf("constructing Rekor client: %w", err)
-	}
-
-	uuids, err := rekor.SearchByHash(cmd.Context(), hash)
-	if err != nil {
-		return fmt.Errorf("searching Rekor for hash: %w", err)
-	}
-
-	if len(uuids) == 0 {
-		return fmt.Errorf("no matching entries in Rekor")
-	}
-
-	// We expect the first entry in Rekor to be our original entry.
-	// SHA256 should ensure there is no entry with the same hash.
-	// Any subsequent hashes are treated as potential attacks and are ignored.
-	artifactUUID := uuids[0]
-
-	entry, err := rekor.GetAndVerifyEntry(cmd.Context(), artifactUUID)
-	if err != nil {
-		return fmt.Errorf("verifying Rekor entry: %w", err)
-	}
-
-	rekord, err := sigstore.HashedRekordFromEntry(entry)
-	if err != nil {
-		return fmt.Errorf("extracting rekord from Rekor entry: %w", err)
-	}
-
-	cosignPubBase64 := base64.StdEncoding.EncodeToString([]byte(constants.CosignPublicKey))
-	if !sigstore.IsEntrySignedBy(rekord, cosignPubBase64) {
-		return errors.New("rekord signed by unknown key")
-	}
 	return nil
 }
 

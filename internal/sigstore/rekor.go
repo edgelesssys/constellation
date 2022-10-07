@@ -70,8 +70,32 @@ func (r *Rekor) SearchByHash(ctx context.Context, hash string) ([]string, error)
 	return index.GetPayload(), nil
 }
 
-// GetEntry downloads entries for the provided UUID.
-func (r *Rekor) GetEntry(ctx context.Context, uuid string) (models.LogEntryAnon, error) {
+// VerifyEntry performs both VerifyLogEntry.
+func (r *Rekor) VerifyEntry(ctx context.Context, uuid, publicKey string) error {
+	entry, err := r.getEntry(ctx, uuid)
+	if err != nil {
+		return err
+	}
+
+	err = r.verifyLogEntry(ctx, entry)
+	if err != nil {
+		return err
+	}
+
+	rekord, err := hashedRekordFromEntry(entry)
+	if err != nil {
+		return fmt.Errorf("extracting rekord from Rekor entry: %w", err)
+	}
+
+	if !isEntrySignedBy(rekord, publicKey) {
+		return errors.New("rekord signed by unknown key")
+	}
+
+	return nil
+}
+
+// getEntry downloads entries for the provided UUID.
+func (r *Rekor) getEntry(ctx context.Context, uuid string) (models.LogEntryAnon, error) {
 	params := entries.NewGetLogEntryByUUIDParamsWithContext(ctx)
 	params.SetEntryUUID(uuid)
 
@@ -94,10 +118,10 @@ func (r *Rekor) GetEntry(ctx context.Context, uuid string) (models.LogEntryAnon,
 	return models.LogEntryAnon{}, fmt.Errorf("no entry returned")
 }
 
-// VerifyEntry performs inclusion proof verification, SignedEntryTimestamp
+// verifyLogEntry performs inclusion proof verification, SignedEntryTimestamp
 // verification, and checkpoint verification of the provided entry in Rekor.
 // A return value of nil indicated successful verification.
-func (r *Rekor) VerifyEntry(ctx context.Context, entry models.LogEntryAnon) error {
+func (r *Rekor) verifyLogEntry(ctx context.Context, entry models.LogEntryAnon) error {
 	keyResp, err := r.client.Pubkey.GetPublicKey(nil)
 	if err != nil {
 		return err
@@ -126,24 +150,9 @@ func (r *Rekor) VerifyEntry(ctx context.Context, entry models.LogEntryAnon) erro
 	return nil
 }
 
-// GetAndVerifyEntry performs both GetEntry and VerifyEntry.
-func (r *Rekor) GetAndVerifyEntry(ctx context.Context, uuid string) (models.LogEntryAnon, error) {
-	entry, err := r.GetEntry(ctx, uuid)
-	if err != nil {
-		return models.LogEntryAnon{}, err
-	}
-
-	err = r.VerifyEntry(ctx, entry)
-	if err != nil {
-		return models.LogEntryAnon{}, err
-	}
-
-	return entry, nil
-}
-
 // HashedRekordFromEntry extract the base64 encoded polymorphic Body field
 // and unmarshals the contained JSON into the correct type.
-func HashedRekordFromEntry(entry models.LogEntryAnon) (*hashedrekord.V001Entry, error) {
+func hashedRekordFromEntry(entry models.LogEntryAnon) (*hashedrekord.V001Entry, error) {
 	var rekord models.Hashedrekord
 
 	body, ok := entry.Body.(string)
@@ -169,7 +178,7 @@ func HashedRekordFromEntry(entry models.LogEntryAnon) (*hashedrekord.V001Entry, 
 }
 
 // IsEntrySignedBy checks whether rekord was signed with provided publicKey
-func IsEntrySignedBy(rekord *hashedrekord.V001Entry, publicKey string) bool {
+func isEntrySignedBy(rekord *hashedrekord.V001Entry, publicKey string) bool {
 	if rekord == nil {
 		return false
 	}
