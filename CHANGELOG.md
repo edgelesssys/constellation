@@ -20,6 +20,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+### Added
+
+### Changed
+<!-- For changes in existing functionality.  -->
+### Deprecated
+<!-- For soon-to-be removed features. -->
+### Removed
+<!-- For now removed features. -->
+### Fixed
+
+### Security
+
+### Internal
+
+## [2.1.0] - 2022-10-07
+
 ### Added
 
 - Mini Constellation: Try out Constellation locally without any cloud subscription required just with one command: `constellation mini up`
@@ -58,5 +75,6 @@ Vulnerability inside the Go standard library fixed by updating to Go 1.19.2:
 
 Initial release of Constellation.
 
-[Unreleased]: https://github.com/edgelesssys/constellation/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/edgelesssys/constellation/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/edgelesssys/constellation/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/edgelesssys/constellation/releases/tag/v2.0.0
