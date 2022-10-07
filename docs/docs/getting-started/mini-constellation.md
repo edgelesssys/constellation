@@ -1,6 +1,6 @@
 # Mini Constellation
 
-With `constellation mini`, users can deploy and test Constellation without the need for a cloud subscription.
+With `constellation mini`, users can deploy and test Constellation locally without the need for a cloud subscription.
 
 The command uses virtualization to create a local cluster with one control-plane and one worker node.
 
@@ -47,7 +47,7 @@ constellation mini up
 ```
 
 This will configure your current directory as the working directory for Constellation.
-All `constellation` commands concerning this cluster should be issued from this directory.
+All `constellation` commands concerning this cluster need to be issued from this directory.
 
 The command will create your cluster and initialize it. Depending on your system, this may take up to 10 minutes.
 The output should look like the following:
