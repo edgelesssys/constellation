@@ -119,7 +119,7 @@ func TestTerminate(t *testing.T) {
 			require.NotNil(tc.setupFs)
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.state))
 
-			err := terminate(cmd, tc.terminator, fileHandler)
+			err := terminate(cmd, tc.terminator, fileHandler, nopSpinner{})
 
 			if tc.wantErr {
 				assert.Error(err)
