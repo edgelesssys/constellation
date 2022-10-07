@@ -12,19 +12,19 @@ func SingleUUIDVerifier() *StubRekorVerifier {
 	}
 }
 
-// SubRekorVerifier is a stub for RekorVerifier
+// SubRekorVerifier is a stub for RekorVerifier.
 type StubRekorVerifier struct {
 	SearchByHashUUIDs []string
 	SearchByHashError error
 	VerifyEntryError  error
 }
 
-// SearchByHash returns the exported fields SearchByHashUUIDs, SearchByHashError
+// SearchByHash returns the exported fields SearchByHashUUIDs, SearchByHashError.
 func (v *StubRekorVerifier) SearchByHash(context.Context, string) ([]string, error) {
 	return v.SearchByHashUUIDs, v.SearchByHashError
 }
 
-// VerifyEntry returns the exported field VerifyEntryError
+// VerifyEntry returns the exported field VerifyEntryError.
 func (v *StubRekorVerifier) VerifyEntry(context.Context, string, string) error {
 	return v.VerifyEntryError
 }

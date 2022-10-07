@@ -179,7 +179,7 @@ func hashedRekordFromEntry(entry models.LogEntryAnon) (*hashedrekord.V001Entry, 
 	return hashedRekord, nil
 }
 
-// isEntrySignedBy checks whether rekord was signed with provided publicKey
+// isEntrySignedBy checks whether rekord was signed with provided publicKey.
 func isEntrySignedBy(rekord *hashedrekord.V001Entry, publicKey string) bool {
 	if rekord == nil {
 		return false
