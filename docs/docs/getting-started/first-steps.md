@@ -1,6 +1,8 @@
 # First steps
 
-The following steps guide you through the process of creating a cluster and deploying a sample app. This example assumes that you have successfully [installed and set up Constellation](install.md).
+The following steps guide you through the process of creating a cluster and deploying a sample app. This example assumes that you have successfully [installed and set up Constellation](install.md),
+and have access to a cloud subscription.
+For setting up a local Constellation cluster, check out [mini Constellation](mini-constellation.md).
 
 ## Create a cluster
 
@@ -25,7 +27,7 @@ The following steps guide you through the process of creating a cluster and depl
 
     This creates the file `constellation-conf.yaml` in your current working directory.
 
-2.  Fill in your cloud provider specific information.
+2. Fill in your cloud provider specific information.
 
     <tabs groupId="csp">
     <tabItem value="azure" label="Azure (CLI)">
