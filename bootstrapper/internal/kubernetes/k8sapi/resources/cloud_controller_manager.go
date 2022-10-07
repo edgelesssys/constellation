@@ -16,7 +16,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type cloudControllerManagerDeployment struct {
+type CloudControllerManagerDeployment struct {
 	ServiceAccount     k8s.ServiceAccount
 	ClusterRoleBinding rbac.ClusterRoleBinding
 	DaemonSet          apps.DaemonSet
@@ -27,7 +27,7 @@ type cloudControllerManagerDeployment struct {
 // https://kubernetes.io/docs/tasks/administer-cluster/running-cloud-controller/#cloud-controller-manager
 
 // NewDefaultCloudControllerManagerDeployment creates a new *cloudControllerManagerDeployment, customized for the CSP.
-func NewDefaultCloudControllerManagerDeployment(cloudProvider, image, path, podCIDR string, extraArgs []string, extraVolumes []k8s.Volume, extraVolumeMounts []k8s.VolumeMount, env []k8s.EnvVar) *cloudControllerManagerDeployment {
+func NewDefaultCloudControllerManagerDeployment(cloudProvider, image, path, podCIDR string, extraArgs []string, extraVolumes []k8s.Volume, extraVolumeMounts []k8s.VolumeMount, env []k8s.EnvVar) *CloudControllerManagerDeployment {
 	command := []string{
 		path,
 		fmt.Sprintf("--cloud-provider=%s", cloudProvider),
@@ -76,7 +76,7 @@ func NewDefaultCloudControllerManagerDeployment(cloudProvider, image, path, podC
 	}
 	volumeMounts = append(volumeMounts, extraVolumeMounts...)
 
-	return &cloudControllerManagerDeployment{
+	return &CloudControllerManagerDeployment{
 		ServiceAccount: k8s.ServiceAccount{
 			TypeMeta: meta.TypeMeta{
 				APIVersion: "v1",
@@ -174,6 +174,6 @@ func NewDefaultCloudControllerManagerDeployment(cloudProvider, image, path, podC
 	}
 }
 
-func (c *cloudControllerManagerDeployment) Marshal() ([]byte, error) {
+func (c *CloudControllerManagerDeployment) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(c)
 }

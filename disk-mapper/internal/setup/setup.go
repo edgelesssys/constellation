@@ -38,8 +38,8 @@ const (
 	stateInfoPath       = stateDiskMountPath + "/constellation/node_state.json"
 )
 
-// SetupManager handles formatting, mapping, mounting and unmounting of state disks.
-type SetupManager struct {
+// Manager handles formatting, mapping, mounting and unmounting of state disks.
+type Manager struct {
 	log      *logger.Logger
 	csp      string
 	diskPath string
@@ -53,8 +53,8 @@ type SetupManager struct {
 // New initializes a SetupManager with the given parameters.
 func New(log *logger.Logger, csp string, diskPath string, fs afero.Afero,
 	mapper DeviceMapper, mounter Mounter, openTPM vtpm.TPMOpenFunc,
-) *SetupManager {
-	return &SetupManager{
+) *Manager {
+	return &Manager{
 		log:      log,
 		csp:      csp,
 		diskPath: diskPath,
@@ -68,7 +68,7 @@ func New(log *logger.Logger, csp string, diskPath string, fs afero.Afero,
 
 // PrepareExistingDisk requests and waits for a decryption key to remap the encrypted state disk.
 // Once the disk is mapped, the function taints the node as initialized by updating it's PCRs.
-func (s *SetupManager) PrepareExistingDisk(recover RecoveryDoer) error {
+func (s *Manager) PrepareExistingDisk(recover RecoveryDoer) error {
 	s.log.Infof("Preparing existing state disk")
 	uuid := s.mapper.DiskUUID()
 
@@ -113,7 +113,7 @@ func (s *SetupManager) PrepareExistingDisk(recover RecoveryDoer) error {
 }
 
 // PrepareNewDisk prepares an instances state disk by formatting the disk as a LUKS device using a random passphrase.
-func (s *SetupManager) PrepareNewDisk() error {
+func (s *Manager) PrepareNewDisk() error {
 	s.log.Infof("Preparing new state disk")
 
 	// generate and save temporary passphrase
@@ -132,7 +132,7 @@ func (s *SetupManager) PrepareNewDisk() error {
 	return s.mapper.MapDisk(stateDiskMappedName, string(passphrase))
 }
 
-func (s *SetupManager) readMeasurementSalt(path string) ([]byte, error) {
+func (s *Manager) readMeasurementSalt(path string) ([]byte, error) {
 	handler := file.NewHandler(s.fs)
 	var state nodestate.NodeState
 	if err := handler.ReadJSON(path, &state); err != nil {
@@ -147,7 +147,7 @@ func (s *SetupManager) readMeasurementSalt(path string) ([]byte, error) {
 }
 
 // saveConfiguration saves the given passphrase and cryptsetup mapping configuration to disk.
-func (s *SetupManager) saveConfiguration(passphrase []byte) error {
+func (s *Manager) saveConfiguration(passphrase []byte) error {
 	// passphrase
 	if err := s.fs.MkdirAll(keyPath, os.ModePerm); err != nil {
 		return err
@@ -168,14 +168,14 @@ type RejoinClient interface {
 	Start(context.Context, string) (key, secret []byte)
 }
 
-type nodeRecoverer struct {
+type NodeRecoverer struct {
 	recoveryServer RecoveryServer
 	rejoinClient   RejoinClient
 }
 
 // NewNodeRecoverer initializes a new nodeRecoverer.
-func NewNodeRecoverer(recoveryServer RecoveryServer, rejoinClient RejoinClient) *nodeRecoverer {
-	return &nodeRecoverer{
+func NewNodeRecoverer(recoveryServer RecoveryServer, rejoinClient RejoinClient) *NodeRecoverer {
+	return &NodeRecoverer{
 		recoveryServer: recoveryServer,
 		rejoinClient:   rejoinClient,
 	}
@@ -184,7 +184,7 @@ func NewNodeRecoverer(recoveryServer RecoveryServer, rejoinClient RejoinClient) 
 // Do performs a recovery procedure on the given state disk.
 // The method starts a gRPC server to allow manual recovery by a user.
 // At the same time it tries to request a decryption key from all available Constellation control-plane nodes.
-func (r *nodeRecoverer) Do(uuid, endpoint string) (passphrase, measurementSecret []byte, err error) {
+func (r *NodeRecoverer) Do(uuid, endpoint string) (passphrase, measurementSecret []byte, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	lis, err := net.Listen("tcp", endpoint)

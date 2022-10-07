@@ -31,7 +31,7 @@ var HelmFS embed.FS
 
 type ChartLoader struct{}
 
-func (i *ChartLoader) Load(csp string, conformanceMode bool) ([]byte, error) {
+func (i *ChartLoader) Load(csp cloudprovider.Provider, conformanceMode bool) ([]byte, error) {
 	ciliumDeployment, err := i.loadCilium(csp, conformanceMode)
 	if err != nil {
 		return nil, err
@@ -44,13 +44,13 @@ func (i *ChartLoader) Load(csp string, conformanceMode bool) ([]byte, error) {
 	return depl, nil
 }
 
-func (i *ChartLoader) loadCilium(csp string, conformanceMode bool) (helm.Deployment, error) {
+func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode bool) (helm.Deployment, error) {
 	chart, err := loadChartsDir(HelmFS, "charts/cilium")
 	if err != nil {
 		return helm.Deployment{}, err
 	}
 	var ciliumVals map[string]interface{}
-	switch cloudprovider.FromString(csp) {
+	switch csp {
 	case cloudprovider.GCP:
 		ciliumVals = gcpVals
 	case cloudprovider.Azure:

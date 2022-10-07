@@ -28,7 +28,7 @@ func TestAccessManagerMarshalUnmarshal(t *testing.T) {
 	data, err := accessManagerDeplNil.Marshal()
 	require.NoError(err)
 
-	var recreated accessManagerDeployment
+	var recreated AccessManagerDeployment
 	require.NoError(kubernetes.UnmarshalK8SResources(data, &recreated))
 	assert.Equal(accessManagerDeplNil, &recreated)
 

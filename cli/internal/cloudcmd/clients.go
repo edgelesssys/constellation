@@ -32,3 +32,8 @@ type azureclient interface {
 	CreateInstances(ctx context.Context, input azurecl.CreateInstancesInput) error
 	TerminateResourceGroupResources(ctx context.Context) error
 }
+
+type libvirtRunner interface {
+	Start(ctx context.Context, containerName, imageName string) error
+	Stop(ctx context.Context) error
+}

@@ -80,6 +80,11 @@ const sidebars = {
           id: 'getting-started/first-steps',
         },
         {
+          type: 'doc',
+          label: 'Mini Constellation',
+          id: 'getting-started/mini-constellation',
+        },
+        {
           type: 'category',
           label: 'Examples',
           link: {

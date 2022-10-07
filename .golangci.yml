@@ -27,6 +27,7 @@ linters:
     - gofumpt
     - misspell
     - noctx
+    - revive
     - tenv
     - unconvert
     - unparam

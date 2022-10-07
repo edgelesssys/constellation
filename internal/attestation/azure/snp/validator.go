@@ -159,16 +159,16 @@ func validateSNPReport(cert *x509.Certificate, expectedIDKeyDigest []byte, enfor
 		return fmt.Errorf("mismatching vcek extensions: %w", err)
 	}
 
-	sig_r := report.Signature.R[:]
-	sig_s := report.Signature.S[:]
+	sigR := report.Signature.R[:]
+	sigS := report.Signature.S[:]
 
 	// Table 107 in https://www.amd.com/system/files/TechDocs/56860.pdf mentions little endian signature components.
 	// They come out of the certificate as big endian.
-	reverseEndian(sig_r)
-	reverseEndian(sig_s)
+	reverseEndian(sigR)
+	reverseEndian(sigS)
 
-	rParam := new(big.Int).SetBytes(sig_r)
-	sParam := new(big.Int).SetBytes(sig_s)
+	rParam := new(big.Int).SetBytes(sigR)
+	sParam := new(big.Int).SetBytes(sigS)
 	sequence := ecdsaSig{rParam, sParam}
 	sigEncoded, err := asn1.Marshal(sequence)
 	if err != nil {

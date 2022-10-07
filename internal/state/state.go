@@ -28,7 +28,4 @@ type ConstellationState struct {
 	AzureWorkerScaleSet        string               `json:"azureworkersscaleset,omitempty"`
 	AzureControlPlaneScaleSet  string               `json:"azurecontrolplanesscaleset,omitempty"`
 	AzureADAppObjectID         string               `json:"azureadappobjectid,omitempty"`
-
-	QEMUWorkerInstances       cloudtypes.Instances `json:"qemuworkers,omitempty"`
-	QEMUControlPlaneInstances cloudtypes.Instances `json:"qemucontrolplanes,omitempty"`
 }

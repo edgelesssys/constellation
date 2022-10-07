@@ -12,7 +12,7 @@ terraform {
 }
 
 provider "libvirt" {
-  uri = "qemu:///session"
+  uri = var.libvirt_uri
 }
 
 provider "docker" {
@@ -24,22 +24,24 @@ provider "docker" {
   }
 }
 
-resource "docker_image" "qemu-metadata" {
+resource "docker_image" "qemu_metadata" {
   name         = var.metadata_api_image
   keep_locally = true
 }
 
-resource "docker_container" "qemu-metadata" {
+resource "docker_container" "qemu_metadata" {
   name         = "${var.name}-qemu-metadata"
-  image        = docker_image.qemu-metadata.latest
+  image        = docker_image.qemu_metadata.latest
   network_mode = "host"
   rm           = true
   command = [
     "--network",
     "${var.name}-network",
+    "--libvirt-uri",
+    "${var.metadata_libvirt_uri}",
   ]
   mounts {
-    source = "/var/run/libvirt/libvirt-sock"
+    source = abspath(var.libvirt_socket_path)
     target = "/var/run/libvirt/libvirt-sock"
     type   = "bind"
   }

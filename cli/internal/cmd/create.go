@@ -77,7 +77,7 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler) 
 	if config.IsAzureNonCVM() {
 		cmd.Println("Disabling Confidential VMs is insecure. Use only for evaluation purposes.")
 		printedAWarning = true
-		if config.EnforcesIdKeyDigest() {
+		if config.EnforcesIDKeyDigest() {
 			cmd.Println("Your config asks for enforcing the idkeydigest. This is only available on Confidential VMs. It will not be enforced.")
 		}
 	}
@@ -114,7 +114,10 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler) 
 		}
 	}
 
+	spinner := newSpinner(cmd, "Creating", false)
+	spinner.Start()
 	state, err := creator.Create(cmd.Context(), provider, config, flags.name, instanceType, flags.controllerCount, flags.workerCount)
+	spinner.Stop()
 	if err != nil {
 		return err
 	}

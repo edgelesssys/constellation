@@ -135,10 +135,10 @@ type AzureConfig struct {
 	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
 	// description: |
 	//   Expected value for the field 'idkeydigest' in the AMD SEV-SNP attestation report. Only usable with ConfidentialVMs. See 4.6 and 7.3 in: https://www.amd.com/system/files/TechDocs/56860.pdf
-	IdKeyDigest string `yaml:"idKeyDigest" validate:"required_if=EnforceIdKeyDigest true,omitempty,hexadecimal,len=96"`
+	IDKeyDigest string `yaml:"idKeyDigest" validate:"required_if=EnforceIdKeyDigest true,omitempty,hexadecimal,len=96"`
 	// description: |
 	//   Enforce the specified idKeyDigest value during remote attestation.
-	EnforceIdKeyDigest *bool `yaml:"enforceIdKeyDigest" validate:"required"`
+	EnforceIDKeyDigest *bool `yaml:"enforceIdKeyDigest" validate:"required"`
 	// description: |
 	//   Use Confidential VMs. If set to false, Trusted Launch VMs are used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview
 	ConfidentialVM *bool `yaml:"confidentialVM" validate:"required"`
@@ -192,6 +192,12 @@ type QEMUConfig struct {
 	//   Container image to use for the QEMU metadata server.
 	MetadataAPIImage string `yaml:"metadataAPIServer" validate:"required"`
 	// description: |
+	//   Libvirt connection URI. Leave empty to start a libvirt instance in Docker.
+	LibvirtURI string `yaml:"libvirtSocket"`
+	// description: |
+	//   Container image to use for launching a containerized libvirt daemon. Only relevant if `libvirtSocket = ""`.
+	LibvirtContainerImage string `yaml:"libvirtContainerImage"`
+	// description: |
 	//   Measurement used to enable measured boot.
 	Measurements Measurements `yaml:"measurements"`
 	// description: |
@@ -217,8 +223,8 @@ func Default() *Config {
 				StateDiskType:        "Premium_LRS",
 				Measurements:         copyPCRMap(azurePCRs),
 				EnforcedMeasurements: []uint32{4, 8, 9, 11, 12},
-				IdKeyDigest:          "57486a447ec0f1958002a22a06b7673b9fd27d11e1c6527498056054c5fa92d23c50f9de44072760fe2b6fb89740b696",
-				EnforceIdKeyDigest:   func() *bool { b := true; return &b }(),
+				IDKeyDigest:          "57486a447ec0f1958002a22a06b7673b9fd27d11e1c6527498056054c5fa92d23c50f9de44072760fe2b6fb89740b696",
+				EnforceIDKeyDigest:   func() *bool { b := true; return &b }(),
 				ConfidentialVM:       func() *bool { b := true; return &b }(),
 			},
 			GCP: &GCPConfig{
@@ -233,12 +239,14 @@ func Default() *Config {
 				EnforcedMeasurements:  []uint32{0, 4, 8, 9, 11, 12},
 			},
 			QEMU: &QEMUConfig{
-				ImageFormat:          "qcow2",
-				VCPUs:                2,
-				Memory:               2048,
-				Measurements:         copyPCRMap(qemuPCRs),
-				MetadataAPIImage:     "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.1.0-pre.0.20220922072347-abb78344bc2a",
-				EnforcedMeasurements: []uint32{11, 12},
+				ImageFormat:           "qcow2",
+				VCPUs:                 2,
+				Memory:                2048,
+				MetadataAPIImage:      versions.QEMUMetadataImage,
+				LibvirtURI:            "",
+				LibvirtContainerImage: versions.LibvirtImage,
+				Measurements:          copyPCRMap(qemuPCRs),
+				EnforcedMeasurements:  []uint32{11, 12},
 			},
 		},
 		KubernetesVersion: string(versions.Default),
@@ -501,8 +509,8 @@ func (c *Config) IsAzureNonCVM() bool {
 	return c.Provider.Azure != nil && c.Provider.Azure.ConfidentialVM != nil && !*c.Provider.Azure.ConfidentialVM
 }
 
-func (c *Config) EnforcesIdKeyDigest() bool {
-	return c.Provider.Azure != nil && c.Provider.Azure.EnforceIdKeyDigest != nil && *c.Provider.Azure.EnforceIdKeyDigest
+func (c *Config) EnforcesIDKeyDigest() bool {
+	return c.Provider.Azure != nil && c.Provider.Azure.EnforceIDKeyDigest != nil && *c.Provider.Azure.EnforceIDKeyDigest
 }
 
 // FromFile returns config file with `name` read from `fileHandler` by parsing

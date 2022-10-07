@@ -67,7 +67,7 @@ func TestGetSNPAttestation(t *testing.T) {
 				err:        nil,
 			}
 
-			attestationJson, err := getInstanceInfo(&snpAttestationReport, imdsClient)(tpm)
+			attestationJSON, err := getInstanceInfo(&snpAttestationReport, imdsClient)(tpm)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -75,7 +75,7 @@ func TestGetSNPAttestation(t *testing.T) {
 			assert.NoError(err)
 
 			var instanceInfo azureInstanceInfo
-			err = json.Unmarshal(attestationJson, &instanceInfo)
+			err = json.Unmarshal(attestationJSON, &instanceInfo)
 			assert.NoError(err)
 
 			if tc.wantErr {

@@ -130,7 +130,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		measurementSalt,
 		req.EnforcedPcrs,
 		req.EnforceIdkeydigest,
-		s.issuerWrapper.IdKeyDigest(),
+		s.issuerWrapper.IDKeyDigest(),
 		s.issuerWrapper.VMType() == vmtype.AzureCVM,
 		resources.KMSConfig{
 			MasterSecret:       req.MasterSecret,
@@ -199,7 +199,7 @@ func (i *IssuerWrapper) VMType() vmtype.VMType {
 	return i.vmType
 }
 
-func (i *IssuerWrapper) IdKeyDigest() []byte {
+func (i *IssuerWrapper) IDKeyDigest() []byte {
 	return i.idkeydigest
 }
 
@@ -237,7 +237,7 @@ type ClusterInitializer interface {
 		k8sVersion string,
 		measurementSalt []byte,
 		enforcedPcrs []uint32,
-		enforceIdKeyDigest bool,
+		enforceIDKeyDigest bool,
 		idKeyDigest []byte,
 		azureCVM bool,
 		kmsConfig resources.KMSConfig,

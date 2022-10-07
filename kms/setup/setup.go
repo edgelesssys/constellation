@@ -40,8 +40,8 @@ type KMSInformation struct {
 	KeyEncryptionKeyID string
 }
 
-// SetUpKMS creates a KMS and key store from the given parameters.
-func SetUpKMS(ctx context.Context, storageURI, kmsURI string) (kms.CloudKMS, error) {
+// KMS creates a KMS and key store from the given parameters.
+func KMS(ctx context.Context, storageURI, kmsURI string) (kms.CloudKMS, error) {
 	store, err := getStore(ctx, storageURI)
 	if err != nil {
 		return nil, err

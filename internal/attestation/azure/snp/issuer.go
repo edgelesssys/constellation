@@ -28,8 +28,8 @@ const (
 	tpmAkIdx                       = 0x81000003
 )
 
-// GetIdKeyDigest reads the idkeydigest from the snp report saved in the TPM's non-volatile memory.
-func GetIdKeyDigest(open vtpm.TPMOpenFunc) ([]byte, error) {
+// GetIDKeyDigest reads the idkeydigest from the snp report saved in the TPM's non-volatile memory.
+func GetIDKeyDigest(open vtpm.TPMOpenFunc) ([]byte, error) {
 	tpm, err := open()
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func NewIssuer() *Issuer {
 // The attestation report is loaded from the TPM, the certificate chain is queried
 // from the cloud metadata API.
 // [1] https://github.com/AMDESE/sev-guest/blob/main/include/attestation.h
-func getInstanceInfo(reportGetter tpmReportGetter, imdsAPI imdsApi) func(tpm io.ReadWriteCloser) ([]byte, error) {
+func getInstanceInfo(reportGetter tpmReportGetter, imdsapi imdsAPI) func(tpm io.ReadWriteCloser) ([]byte, error) {
 	return func(tpm io.ReadWriteCloser) ([]byte, error) {
 		hclReport, err := reportGetter.get(tpm)
 		if err != nil {
@@ -88,7 +88,7 @@ func getInstanceInfo(reportGetter tpmReportGetter, imdsAPI imdsApi) func(tpm io.
 
 		runtimeData, _, _ := bytes.Cut(hclReport[lenSnpReport+lenSnpReportRuntimeDataPadding:], []byte{0})
 
-		vcekResponse, err := imdsAPI.getVcek(context.TODO())
+		vcekResponse, err := imdsapi.getVcek(context.TODO())
 		if err != nil {
 			return nil, fmt.Errorf("getVcekFromIMDS: %w", err)
 		}
@@ -128,6 +128,6 @@ type tpmReportGetter interface {
 	get(tpm io.ReadWriteCloser) ([]byte, error)
 }
 
-type imdsApi interface {
+type imdsAPI interface {
 	getVcek(ctx context.Context) (vcekResponse, error)
 }

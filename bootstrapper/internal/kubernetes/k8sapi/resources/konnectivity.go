@@ -28,22 +28,22 @@ const (
 	KonnectivityKeyFilename = "/etc/kubernetes/konnectivity.key"
 )
 
-type konnectivityAgents struct {
+type KonnectivityAgents struct {
 	DaemonSet          appsv1.DaemonSet
 	ClusterRoleBinding rbacv1.ClusterRoleBinding
 	ServiceAccount     corev1.ServiceAccount
 }
 
-type konnectivityServerStaticPod struct {
+type KonnectivityServerStaticPod struct {
 	StaticPod corev1.Pod
 }
 
-type egressSelectorConfiguration struct {
+type EgressSelectorConfiguration struct {
 	EgressSelectorConfiguration apiserver.EgressSelectorConfiguration
 }
 
-func NewKonnectivityAgents(konnectivityServerAddress string) *konnectivityAgents {
-	return &konnectivityAgents{
+func NewKonnectivityAgents(konnectivityServerAddress string) *KonnectivityAgents {
+	return &KonnectivityAgents{
 		DaemonSet: appsv1.DaemonSet{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "apps/v1",
@@ -113,10 +113,10 @@ func NewKonnectivityAgents(konnectivityServerAddress string) *konnectivityAgents
 									// https://github.com/kubernetes-sigs/apiserver-network-proxy/issues/273
 									"--sync-forever=true",
 									// Ensure stable connection to the konnectivity server.
-									"--keepalive-time=60s",
-									"--sync-interval=1s",
-									"--sync-interval-cap=3s",
-									"--probe-interval=1s",
+									"--keepalive-time=60m",
+									"--sync-interval=5s",
+									"--sync-interval-cap=30s",
+									"--probe-interval=5s",
 									"--v=3",
 								},
 								Env: []corev1.EnvVar{
@@ -213,9 +213,9 @@ func NewKonnectivityAgents(konnectivityServerAddress string) *konnectivityAgents
 	}
 }
 
-func NewKonnectivityServerStaticPod() *konnectivityServerStaticPod {
+func NewKonnectivityServerStaticPod() *KonnectivityServerStaticPod {
 	udsHostPathType := corev1.HostPathDirectoryOrCreate
-	return &konnectivityServerStaticPod{
+	return &KonnectivityServerStaticPod{
 		StaticPod: corev1.Pod{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "v1",
@@ -253,7 +253,7 @@ func NewKonnectivityServerStaticPod() *konnectivityServerStaticPod {
 							"--agent-service-account=konnectivity-agent",
 							"--kubeconfig=/etc/kubernetes/konnectivity-server.conf",
 							"--authentication-audience=system:konnectivity-server",
-							"--proxy-strategies=destHost,default",
+							"--proxy-strategies=default",
 						},
 						LivenessProbe: &corev1.Probe{
 							ProbeHandler: corev1.ProbeHandler{
@@ -333,8 +333,8 @@ func NewKonnectivityServerStaticPod() *konnectivityServerStaticPod {
 	}
 }
 
-func NewEgressSelectorConfiguration() *egressSelectorConfiguration {
-	return &egressSelectorConfiguration{
+func NewEgressSelectorConfiguration() *EgressSelectorConfiguration {
+	return &EgressSelectorConfiguration{
 		EgressSelectorConfiguration: apiserver.EgressSelectorConfiguration{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "apiserver.k8s.io/v1beta1",
@@ -357,15 +357,15 @@ func NewEgressSelectorConfiguration() *egressSelectorConfiguration {
 	}
 }
 
-func (v *konnectivityAgents) Marshal() ([]byte, error) {
+func (v *KonnectivityAgents) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(v)
 }
 
-func (v *konnectivityServerStaticPod) Marshal() ([]byte, error) {
+func (v *KonnectivityServerStaticPod) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(v)
 }
 
-func (v *egressSelectorConfiguration) Marshal() ([]byte, error) {
+func (v *EgressSelectorConfiguration) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(v)
 }
 

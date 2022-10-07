@@ -16,6 +16,7 @@ deallocate
 etcd
 Filestore
 Fulcio
+Mbps
 Gbps
 iam
 IAM
@@ -41,3 +42,4 @@ WireGuard
 Xeon
 Nginx
 rollout
+xsltproc

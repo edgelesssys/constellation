@@ -58,7 +58,7 @@ func main() {
 	// set up Key Management Service
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
-	conKMS, err := setup.SetUpKMS(ctx, setup.NoStoreURI, keyURI)
+	conKMS, err := setup.KMS(ctx, setup.NoStoreURI, keyURI)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to setup KMS")
 	}

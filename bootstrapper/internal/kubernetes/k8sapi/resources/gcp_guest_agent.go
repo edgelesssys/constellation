@@ -14,14 +14,14 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type gcpGuestAgentDaemonset struct {
+type GCPGuestAgentDaemonset struct {
 	DaemonSet apps.DaemonSet
 }
 
 // NewGCPGuestAgentDaemonset creates a new GCP Guest Agent Daemonset.
 // It is used automatically to add loadbalancer IPs to the local routing table of GCP instances.
-func NewGCPGuestAgentDaemonset() *gcpGuestAgentDaemonset {
-	return &gcpGuestAgentDaemonset{
+func NewGCPGuestAgentDaemonset() *GCPGuestAgentDaemonset {
+	return &GCPGuestAgentDaemonset{
 		DaemonSet: apps.DaemonSet{
 			TypeMeta: meta.TypeMeta{
 				APIVersion: "apps/v1",
@@ -178,6 +178,6 @@ func NewGCPGuestAgentDaemonset() *gcpGuestAgentDaemonset {
 }
 
 // Marshal marshals the access-manager deployment as YAML documents.
-func (c *gcpGuestAgentDaemonset) Marshal() ([]byte, error) {
+func (c *GCPGuestAgentDaemonset) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(c)
 }

@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package resources
 
 import (
-	_ "embed"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
@@ -31,7 +30,7 @@ var NodeOperatorCRDNames = []string{
 	"scalinggroups.update.edgeless.systems",
 }
 
-type nodeOperatorDeployment struct {
+type NodeOperatorDeployment struct {
 	CatalogSource operatorsv1alpha1.CatalogSource
 	OperatorGroup operatorsv1.OperatorGroup
 	Subscription  operatorsv1alpha1.Subscription
@@ -39,8 +38,8 @@ type nodeOperatorDeployment struct {
 
 // NewNodeOperatorDeployment creates a new constellation node operator deployment.
 // See /operators/constellation-node-operator for more information.
-func NewNodeOperatorDeployment(cloudProvider string, uid string) *nodeOperatorDeployment {
-	return &nodeOperatorDeployment{
+func NewNodeOperatorDeployment(cloudProvider string, uid string) *NodeOperatorDeployment {
+	return &NodeOperatorDeployment{
 		CatalogSource: operatorsv1alpha1.CatalogSource{
 			TypeMeta: metav1.TypeMeta{APIVersion: "operators.coreos.com/v1alpha1", Kind: "CatalogSource"},
 			ObjectMeta: metav1.ObjectMeta{
@@ -49,7 +48,7 @@ func NewNodeOperatorDeployment(cloudProvider string, uid string) *nodeOperatorDe
 			},
 			Spec: operatorsv1alpha1.CatalogSourceSpec{
 				SourceType:  "grpc",
-				Image:       versions.NodeOperatorCatalogImage + ":" + versions.NodeOperatorVersion,
+				Image:       versions.NodeOperatorCatalogImage,
 				DisplayName: "Constellation Node Operator",
 				Publisher:   "Edgeless Systems",
 				UpdateStrategy: &operatorsv1alpha1.UpdateStrategy{
@@ -94,6 +93,6 @@ func NewNodeOperatorDeployment(cloudProvider string, uid string) *nodeOperatorDe
 	}
 }
 
-func (c *nodeOperatorDeployment) Marshal() ([]byte, error) {
+func (c *NodeOperatorDeployment) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(c)
 }

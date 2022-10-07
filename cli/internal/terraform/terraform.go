@@ -89,6 +89,7 @@ func (c *Client) CreateCluster(ctx context.Context, name string, vars Variables)
 		return errors.New("invalid type in IP output: not a string")
 	}
 	c.state = state.ConstellationState{
+		Name:           name,
 		CloudProvider:  c.provider.String(),
 		LoadBalancerIP: ip,
 	}

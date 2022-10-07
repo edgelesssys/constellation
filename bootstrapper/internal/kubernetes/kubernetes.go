@@ -77,7 +77,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, cloudServiceAccountURI, versionString string, measurementSalt []byte, enforcedPCRs []uint32,
-	enforceIdKeyDigest bool, idKeyDigest []byte, azureCVM bool, kmsConfig resources.KMSConfig, sshUsers map[string]string,
+	enforceIDKeyDigest bool, idKeyDigest []byte, azureCVM bool, kmsConfig resources.KMSConfig, sshUsers map[string]string,
 	helmDeployments []byte, conformanceMode bool, log *logger.Logger,
 ) ([]byte, error) {
 	k8sVersion, err := versions.NewValidK8sVersion(versionString)
@@ -200,7 +200,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("failed to setup internal ConfigMap: %w", err)
 	}
 
-	if err := k.setupJoinService(k.cloudProvider, k.initialMeasurementsJSON, measurementSalt, enforcedPCRs, idKeyDigest, enforceIdKeyDigest); err != nil {
+	if err := k.setupJoinService(k.cloudProvider, k.initialMeasurementsJSON, measurementSalt, enforcedPCRs, idKeyDigest, enforceIDKeyDigest); err != nil {
 		return nil, fmt.Errorf("setting up join service failed: %w", err)
 	}
 
@@ -321,7 +321,7 @@ func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
 }
 
 func (k *KubeWrapper) setupJoinService(
-	csp string, measurementsJSON, measurementSalt []byte, enforcedPCRs []uint32, initialIdKeyDigest []byte, enforceIdKeyDigest bool,
+	csp string, measurementsJSON, measurementSalt []byte, enforcedPCRs []uint32, initialIDKeyDigest []byte, enforceIDKeyDigest bool,
 ) error {
 	enforcedPCRsJSON, err := json.Marshal(enforcedPCRs)
 	if err != nil {
@@ -329,7 +329,7 @@ func (k *KubeWrapper) setupJoinService(
 	}
 
 	joinConfiguration := resources.NewJoinServiceDaemonset(
-		csp, string(measurementsJSON), string(enforcedPCRsJSON), hex.EncodeToString(initialIdKeyDigest), strconv.FormatBool(enforceIdKeyDigest), measurementSalt,
+		csp, string(measurementsJSON), string(enforcedPCRsJSON), hex.EncodeToString(initialIDKeyDigest), strconv.FormatBool(enforceIDKeyDigest), measurementSalt,
 	)
 
 	return k.clusterUtil.SetupJoinService(k.client, joinConfiguration)

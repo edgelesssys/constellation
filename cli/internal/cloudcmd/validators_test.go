@@ -39,8 +39,8 @@ func TestNewValidator(t *testing.T) {
 		provider           cloudprovider.Provider
 		config             *config.Config
 		pcrs               map[uint32][]byte
-		enforceIdKeyDigest bool
-		idkeydigest        string
+		enforceIDKeyDigest bool
+		idKeyDigest        string
 		azureCVM           bool
 		wantErr            bool
 	}{
@@ -80,14 +80,14 @@ func TestNewValidator(t *testing.T) {
 		"set idkeydigest": {
 			provider:           cloudprovider.Azure,
 			pcrs:               testPCRs,
-			idkeydigest:        "414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141",
-			enforceIdKeyDigest: true,
+			idKeyDigest:        "414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141",
+			enforceIDKeyDigest: true,
 		},
 		"invalid idkeydigest": {
 			provider:           cloudprovider.Azure,
 			pcrs:               testPCRs,
-			idkeydigest:        "41414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414",
-			enforceIdKeyDigest: true,
+			idKeyDigest:        "41414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414",
+			enforceIDKeyDigest: true,
 			azureCVM:           true,
 			wantErr:            true,
 		},
@@ -104,7 +104,7 @@ func TestNewValidator(t *testing.T) {
 			}
 			if tc.provider == cloudprovider.Azure {
 				measurements := config.Measurements(tc.pcrs)
-				conf.Provider.Azure = &config.AzureConfig{Measurements: measurements, EnforceIdKeyDigest: &tc.enforceIdKeyDigest, IdKeyDigest: tc.idkeydigest, ConfidentialVM: &tc.azureCVM}
+				conf.Provider.Azure = &config.AzureConfig{Measurements: measurements, EnforceIDKeyDigest: &tc.enforceIDKeyDigest, IDKeyDigest: tc.idKeyDigest, ConfidentialVM: &tc.azureCVM}
 			}
 			if tc.provider == cloudprovider.QEMU {
 				measurements := config.Measurements(tc.pcrs)

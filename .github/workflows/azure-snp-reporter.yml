@@ -15,12 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
 
       - name: Set up Go
         uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
         with:
-          go-version: 1.18
+          go-version: 1.19.2
 
       - name: Build and upload azure SNP reporter container image
         id: build-and-upload
@@ -30,7 +30,6 @@ jobs:
           dockerfile: ./hack/azure-snp-report-verify/Dockerfile
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 
-
   fetch-snp-report:
     needs: build-snp-reporter
     name: "Fetch SNP report"
@@ -39,7 +38,7 @@ jobs:
       SHELL: /bin/bash
     steps:
       - name: Checkout
-        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
 
       - name: Fetch SNP report
         uses: ./.github/actions/azure_snp_reporter
@@ -60,7 +59,7 @@ jobs:
       SHELL: /bin/bash
     steps:
       - name: Checkout
-        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
         with:
           submodules: recursive
           token: ${{ secrets.CI_GITHUB_REPOSITORY }}
@@ -68,7 +67,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
         with:
-          go-version: 1.18
+          go-version: 1.19.2
 
       - name: Download report JWT
         uses: actions/download-artifact@v3

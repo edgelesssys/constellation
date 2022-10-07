@@ -25,7 +25,7 @@ func TestAutoscalerDeploymentMarshalUnmarshal(t *testing.T) {
 
 	t.Log(string(data))
 
-	var recreated autoscalerDeployment
+	var recreated AutoscalerDeployment
 	require.NoError(kubernetes.UnmarshalK8SResources(data, &recreated))
 	assert.Equal(autoscalerDepl, &recreated)
 }
@@ -41,7 +41,7 @@ func TestAutoscalerDeploymentWithCommandMarshalUnmarshal(t *testing.T) {
 
 	t.Log(string(data))
 
-	var recreated autoscalerDeployment
+	var recreated AutoscalerDeployment
 	require.NoError(kubernetes.UnmarshalK8SResources(data, &recreated))
 	assert.Equal(autoscalerDepl, &recreated)
 }

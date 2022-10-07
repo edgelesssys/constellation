@@ -18,8 +18,8 @@ import (
 
 const accessManagerNamespace = "kube-system"
 
-// accessManagerDeployment holds the configuration for the SSH user creation pods. User/Key definitions are stored in the ConfigMap, and the manager is deployed on each node by the DaemonSet.
-type accessManagerDeployment struct {
+// AccessManagerDeployment holds the configuration for the SSH user creation pods. User/Key definitions are stored in the ConfigMap, and the manager is deployed on each node by the DaemonSet.
+type AccessManagerDeployment struct {
 	ConfigMap      k8s.ConfigMap
 	ServiceAccount k8s.ServiceAccount
 	Role           rbac.Role
@@ -28,8 +28,8 @@ type accessManagerDeployment struct {
 }
 
 // NewAccessManagerDeployment creates a new *accessManagerDeployment which manages the SSH users for the cluster.
-func NewAccessManagerDeployment(sshUsers map[string]string) *accessManagerDeployment {
-	return &accessManagerDeployment{
+func NewAccessManagerDeployment(sshUsers map[string]string) *AccessManagerDeployment {
+	return &AccessManagerDeployment{
 		ServiceAccount: k8s.ServiceAccount{
 			TypeMeta: v1.TypeMeta{
 				APIVersion: "v1",
@@ -198,6 +198,6 @@ func NewAccessManagerDeployment(sshUsers map[string]string) *accessManagerDeploy
 }
 
 // Marshal marshals the access-manager deployment as YAML documents.
-func (c *accessManagerDeployment) Marshal() ([]byte, error) {
+func (c *AccessManagerDeployment) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(c)
 }

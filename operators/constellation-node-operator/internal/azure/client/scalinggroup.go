@@ -34,9 +34,8 @@ func (c *Client) GetScalingGroupImage(ctx context.Context, scalingGroupID string
 	}
 	if res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.ID != nil {
 		return *res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.ID, nil
-	} else {
-		return *res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.CommunityGalleryImageID, nil
 	}
+	return *res.Properties.VirtualMachineProfile.StorageProfile.ImageReference.CommunityGalleryImageID, nil
 }
 
 // SetScalingGroupImage sets the image URI of the scaling group.
