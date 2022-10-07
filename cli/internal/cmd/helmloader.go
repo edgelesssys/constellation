@@ -6,14 +6,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 package cmd
 
+import "github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+
 type helmLoader interface {
-	Load(csp string, conformanceMode bool) ([]byte, error)
+	Load(csp cloudprovider.Provider, conformanceMode bool) ([]byte, error)
 }
 
 type stubHelmLoader struct {
 	loadErr error
 }
 
-func (d *stubHelmLoader) Load(csp string, conformanceMode bool) ([]byte, error) {
+func (d *stubHelmLoader) Load(csp cloudprovider.Provider, conformanceMode bool) ([]byte, error) {
 	return nil, d.loadErr
 }

@@ -60,8 +60,7 @@ func TestInitialize(t *testing.T) {
 		AzureResourceGroup:   "test",
 	}
 	testQemuState := &state.ConstellationState{
-		CloudProvider:       "QEMU",
-		QEMUWorkerInstances: cloudtypes.Instances{"id-0": {}, "id-1": {}},
+		CloudProvider: "QEMU",
 	}
 	testInitResp := &initproto.InitResponse{
 		Kubeconfig: []byte("kubeconfig"),
