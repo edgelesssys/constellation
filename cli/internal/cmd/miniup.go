@@ -51,6 +51,13 @@ func newMiniUpCmd() *cobra.Command {
 }
 
 func runUp(cmd *cobra.Command, args []string) error {
+	spinner, _ := newSpinner(cmd, cmd.OutOrStdout())
+	defer spinner.Stop()
+
+	return up(cmd, spinner)
+}
+
+func up(cmd *cobra.Command, spinner spinnerInterf) error {
 	if err := checkSystemRequirements(cmd.OutOrStdout()); err != nil {
 		return fmt.Errorf("system requirements not met: %w", err)
 	}
@@ -64,8 +71,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 	}
 
 	// create cluster
-	spinner := newSpinner(cmd, "Creating cluster in QEMU ", false)
-	spinner.Start()
+	spinner.Start("Creating cluster in QEMU ", false)
 	err = createMiniCluster(cmd.Context(), fileHandler, cloudcmd.NewCreator(cmd.OutOrStdout()), config)
 	spinner.Stop()
 	if err != nil {
@@ -224,7 +230,7 @@ func initializeMiniCluster(cmd *cobra.Command, fileHandler file.Handler) (retErr
 	cmd.Flags().String("endpoint", "", "")
 	cmd.Flags().Bool("conformance", false, "")
 
-	if err := initialize(cmd, newDialer, fileHandler, helmLoader, license.NewClient()); err != nil {
+	if err := initialize(cmd, newDialer, fileHandler, helmLoader, license.NewClient(), nopSpinner{}); err != nil {
 		return err
 	}
 	return nil
