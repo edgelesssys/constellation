@@ -25,7 +25,7 @@ The following steps guide you through the process of creating a cluster and depl
 
     This creates the file `constellation-conf.yaml` in your current working directory.
 
-2.  Fill in your cloud provider specific information.
+2. Fill in your cloud provider specific information.
 
     <tabs groupId="csp">
     <tabItem value="azure" label="Azure (CLI)">
