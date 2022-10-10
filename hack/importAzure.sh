@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # importAzure imports a downloaded Azure VM image into Azure cloud.
 # Parameters are provided via environment variables.

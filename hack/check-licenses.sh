@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Compare licenses of Go dependencies against a whitelist.
 
