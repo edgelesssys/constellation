@@ -7,13 +7,14 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
 
     ```sh
     cd docs
+    npm install
     npm run docusaurus docs:version 1.3
     # push upstream via PR
     ```
 
 3. On the [CoreOS config repo](https://github.com/edgelesssys/constellation-fedora-coreos-config), create two new branches `release/v1.3`, `stream/v1.3` (new minor version) or use the existing ones (new patch version).
    The release branch contains the squashed changeset and is branched from main while the stream branch contains the rebased changesets on top of the latest upstream changes.
-   [Consult this guide on rebasing forks (INTERNAL)](https://github.com/edgelesssys/wiki/blob/master/documentation/rebasing_forks.md#managing-release-branches) for guidance.
+   [Consult this guide on rebasing forks (INTERNAL)](https://github.com/edgelesssys/wiki/blob/master/documentation/rebasing_forks.md#managing-release-branches) on how to create those two branches.
 4. Create a new branch `release/v1.3` (new minor version) or use the existing one (new patch version)
 5. On this branch, prepare the following things:
     1. (new patch version) `cherry-pick` (only) the required commits from `main`
@@ -22,12 +23,22 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         * Container image tag: `v1.3.0`
         * Version of the image to build: `1.3.0`
 
+       ```sh
+       ver=1.3.0
+       ```
+
         ```sh
-        # Alternative from CLI
-        gh workflow run build-micro-service-manual.yml --ref release/v1.3 -F microService=access-manager -F imageTag=v1.3.0 -F version=1.3.0
-        gh workflow run build-micro-service-manual.yml --ref release/v1.3 -F microService=join-service -F imageTag=v1.3.0 -F version=1.3.0
-        gh workflow run build-micro-service-manual.yml --ref release/v1.3 -F microService=kmsserver -F imageTag=v1.3.0 -F version=1.3.0
-        gh workflow run build-micro-service-manual.yml --ref release/v1.3 -F microService=verification-service -F imageTag=v1.3.0 -F version=1.3.0
+        minor=$(echo $ver | cut -d '.' -f 1,2)
+        gcpVer=$(echo $ver | tr "." "-")
+        echo $minor # should be 1.3
+        echo $gcpVer # should be 1-3-0
+        ```
+
+        ```sh
+        gh workflow run build-micro-service-manual.yml --ref release/v$minor -F microService=access-manager -F imageTag=v$ver -F version=$ver --repo edgelesssys/constellation
+        gh workflow run build-micro-service-manual.yml --ref release/v$minor -F microService=join-service -F imageTag=v$ver -F version=$ver --repo edgelesssys/constellation
+        gh workflow run build-micro-service-manual.yml --ref release/v$minor -F microService=kmsserver -F imageTag=v$ver -F version=$ver --repo edgelesssys/constellation
+        gh workflow run build-micro-service-manual.yml --ref release/v$minor -F microService=verification-service -F imageTag=v$ver -F version=$ver --repo edgelesssys/constellation
         ```
 
     3. Use [Build operator manual](https://github.com/edgelesssys/constellation/actions/workflows/build-operator-manual.yml) and run the pipeline once with the following parameters:
@@ -36,43 +47,48 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
 
         ```sh
         # Alternative from CLI
-        gh workflow run build-operator-manual.yml --ref release/v1.3 -F imageTag=v1.3.0
+        gh workflow run build-operator-manual.yml --ref release/v$minor -F imageTag=v$ver --repo edgelesssys/constellation
         ```
 
     4. Review and update changelog with all changes since last release. [GitHub's diff view](https://github.com/edgelesssys/constellation/compare/v2.0.0...main) helps a lot!
        1. Rename the "Unreleased" heading to "[v1.3.0] - YYYY-MM-DD" and link the version to the upcoming release tag.
        2. Create a new block for unreleased changes
     5. Update project version in [CMakeLists.txt](/CMakeLists.txt) to `1.3.0` (without v).
-    6. Update versions [versions.go](../../internal/versions/versions.go#L33-L39) to `v1.3.0` and **push your changes**.
+    6. When the microservice builds are finished update versions in [versions.go](../../internal/versions/versions.go#L33-L39) to `v1.3.0`, **add the container hashes** and **push your changes**.
     7. Create a [production coreOS image](/.github/workflows/build-coreos.yml)
 
         ```sh
-        gh workflow run build-coreos.yml --ref release/v1.3 -F debug=false -F coreOSConfigBranch=release/v1.3 -F imageVersion=v1.3.0
+        gh workflow run build-coreos.yml --ref release/v$minor -F debug=false -F coreOSConfigBranch=release/v$minor -F imageVersion=v$ver
         ```
 
     8. Update [default images in config](/internal/config/images_enterprise.go)
     9. Run manual E2E tests using [Linux](/.github/workflows/e2e-test-manual.yml) and [macOS](/.github/workflows/e2e-test-manual-macos.yml) to confirm functionality and stability.
 
         ```sh
-        gh workflow run e2e-test-manual.yml --ref release/v1.3 -F workerNodesCount=2 -F controlNodesCount=1 -F cloudProvider=azure -F machineType=Standard_DC4as_v5 -F sonobuoyTestSuiteCmd="--mode quick" -F kubernetesVersion=1.23 -F coreosImage=/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/1.3.0 -F isDebugImage=false
-        gh workflow run e2e-test-manual-macos.yml --ref release/v1.3 -F workerNodesCount=2 -F controlNodesCount=1 -F cloudProvider=azure -F machineType=Standard_DC4as_v5 -F sonobuoyTestSuiteCmd="--mode quick" -F kubernetesVersion=1.23 -F coreosImage=/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/1.3.0 -F isDebugImage=false
-        gh workflow run e2e-test-manual.yml --ref release/v1.3 -F workerNodesCount=2 -F controlNodesCount=1 -F cloudProvider=gcp -F machineType=n2d-standard-4 -F sonobuoyTestSuiteCmd="--mode quick" -F kubernetesVersion=1.23 -F coreosImage=projects/constellation-images/global/images/constellation-v1-3-0 -F isDebugImage=false
-        gh workflow run e2e-test-manual-macos.yml --ref release/v1.3 -F workerNodesCount=2 -F controlNodesCount=1 -F cloudProvider=gcp -F machineType=n2d-standard-4 -F sonobuoyTestSuiteCmd="--mode quick" -F kubernetesVersion=1.23 -F coreosImage=projects/constellation-images/global/images/constellation-v1-3-0 -F isDebugImage=false
+        sono='--plugin e2e --plugin-env e2e.E2E_FOCUS="\[Conformance\]" --plugin-env e2e.E2E_SKIP="for service with type clusterIP|HostPort validates that there is no conflict between pods with same hostPort but different hostIP and protocol" --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-plugin.yaml --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-master-plugin.yaml'
+        gh workflow run e2e-test-manual.yml --ref release/v$minor -F cloudProvider=azure -F machineType=Standard_DC4as_v5 -F sonobuoyTestSuiteCmd="$sono" -F coreosImage=/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/$ver -F isDebugImage=false
+        gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=azure -F machineType=Standard_DC4as_v5 -F sonobuoyTestSuiteCmd="$sono" -F coreosImage=/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/$ver -F isDebugImage=false
+        gh workflow run e2e-test-manual.yml --ref release/v$minor -F cloudProvider=gcp -F machineType=n2d-standard-4 -F sonobuoyTestSuiteCmd="$sono" -F coreosImage=projects/constellation-images/global/images/constellation-v$gcpVer -F isDebugImage=false
+        gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=gcp -F machineType=n2d-standard-4 -F sonobuoyTestSuiteCmd="$sono" -F coreosImage=projects/constellation-images/global/images/constellation-v$gcpVer -F isDebugImage=false
         ```
 
     10. [Generate measurements](/.github/workflows/generate-measurements.yml) for the images on each CSP.
 
         ```sh
-           gh workflow run generate-measurements.yml --ref release/v1.3 -F cloudProvider=azure -F coreosImage=/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/1.3.0 -F isDebugImage=false
-           gh workflow run generate-measurements.yml --ref release/v1.3 -F cloudProvider=gcp -F coreosImage=projects/constellation-images/global/images/constellation-v1-3-0 -F isDebugImage=false
+           gh workflow run generate-measurements.yml --ref release/v$minor -F cloudProvider=azure -F coreosImage=/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/$ver -F isDebugImage=false
+           gh workflow run generate-measurements.yml --ref release/v$minor -F cloudProvider=gcp -F coreosImage=projects/constellation-images/global/images/constellation-v$gcpVer -F isDebugImage=false
         ```
 
     11. Create a new tag on this release branch
-        * `git tag v1.3.0`
+        ```sh
+        git tag v$ver
+        git tags --push
+        ```
+
         * Run [Release CLI](https://github.com/edgelesssys/constellation/actions/workflows/release-cli.yml) action on the tag
 
         ```sh
-        gh workflow run release-cli.yml --ref v1.3.0
+        gh workflow run release-cli.yml --ref v$ver
         ```
 
         * The previous step will create a draft release. Check build output for link to draft release. Review & approve.
@@ -83,11 +99,12 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
    2. Add the next release manager and an approximate release date to the milestone description
    3. Close the milestone for the release
    4. Move open issues and PRs from closed milestone to next milestone
-9. If the release is the new latest version, create an empty commit on main and tag it as the start of the next pre-release phase.
+9. If the release is a minor version release, create an empty commit on main and tag it as the start of the next pre-release phase.
     ```sh
+    nextMinorVer=$(echo $ver | awk -F. -v OFS=. '{$2 += 1 ; print}')
     git checkout main
     git pull
-    git commit --allow-empty -m "Start v1.4.0-pre"
-    git tag v1.4.0-pre
-    git push origin main v1.4.0-pre
+    git commit --allow-empty -m "Start v$nextMinorVer-pre"
+    git tag v$nextMinorVer-pre
+    git push origin main v$nextMinorVer-pre
     ```
