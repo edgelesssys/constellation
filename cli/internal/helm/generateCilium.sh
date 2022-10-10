@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 CALLDIR=$(pwd)
 CILIUMTMPDIR=$(mktemp -d)

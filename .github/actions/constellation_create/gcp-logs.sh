@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Usage: ./gcp-logs.sh <control-instance-group-name> <worker-instance-group-name> <zone>
 

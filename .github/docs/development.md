@@ -106,7 +106,7 @@ In order to download an image you will have to export it to a bucket you have ac
 To download an image from Azure you will have to create a disk from the image and generate a download link for that disk:
 
 ```bash
-#!/bin/bash
+#!/usr/bin/env bash
 
 VERSION=0.0.1
 TARGET_DISK=export-${VERSION}

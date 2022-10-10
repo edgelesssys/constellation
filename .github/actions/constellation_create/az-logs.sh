@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 printf "Fetching logs of instances in resource group %s\n" $1
 
