@@ -4,7 +4,7 @@ This page explains Constellation's attestation process and highlights the corner
 
 ## Terms
 
-The following lists a few terms and concepts that helps to understand the attestation concept of Constellation.
+The following lists terms and concepts that help to understand the attestation concept of Constellation.
 
 ### Trusted Platform Module (TPM)
 
@@ -32,8 +32,8 @@ Thus, storing the measurements of multiple components into the same PCR irrevers
 ### Measured boot
 
 Measured boot builds on the concept of chained runtime measurements.
-Each component in the boot-chain loads and measures the next component into the PCR before executing it.
-By comparing the resulting PCR values against trusted reference values, the integrity of the entire boot chain and thereby, the running system can be ensured.
+Each component in the boot chain loads and measures the next component into the PCR before executing it.
+By comparing the resulting PCR values against trusted reference values, the integrity of the entire boot chain and thereby the running system can be ensured.
 
 ### Remote attestation (RA)
 
@@ -54,7 +54,7 @@ Such an attestation statement guarantees the confidentiality and integrity of a 
 
 ### Attested TLS (aTLS)
 
-In a CC environment, attested TLS (aTLS) can be used to establish secure connections between two parties utilizing the remote attestation features of the CC components.
+In a CC environment, attested TLS (aTLS) can be used to establish secure connections between two parties using the remote attestation features of the CC components.
 
 aTLS modifies the TLS handshake by embedding an attestation statement into the TLS certificate.
 Instead of relying on a certificate authority, aTLS uses this attestation statement to establish trust in the certificate.
@@ -80,7 +80,7 @@ The solution is a verifiable boot chain and an integrity-protected runtime envir
 Constellation uses measured boot within CVMs, measuring each component in the boot process before executing it.
 Outside of CC, it's usually implemented via TPMs.
 CVM technologies differ in how they implement runtime measurements, but the general concepts are similar to those of a TPM.
-For simplicity, we use TPM terminology like *PCR* in the following.
+For simplicity, TPM terminology like *PCR* is used in the following.
 
 When a Constellation node image boots inside a CVM, it uses measured boot for all stages and components of the boot chain.
 This process goes up to the root filesystem.
@@ -100,42 +100,39 @@ Finally, the measurement of the *clusterID* can be compared by calculating it wi
 
 ### Runtime measurements
 
-Constellation utilizes runtime measurement to implement the measured boot approach.
+Constellation uses runtime measurements to implement the measured boot approach.
 As stated above, the underlying hardware technology and guest firmware differ in their implementations of runtime measurements.
 The following gives a detailed description of the available measurements in the different cloud environments.
 
-The runtime measurements contain two types of values.
+The runtime measurements consist of two types of values:
 
-First, are the ones produced by the cloud infrastructure and firmware of the CVM.
-Depending on the cloud environment they can contain non-reproducible values.
-Those correspond to measurements of closed-source firmware components and other values controlled by the cloud provider.
-While not being directly verifiable, they can be compared against previously observed values.
-As part of the [signed image measurements](#chain-of-trust), Constellation provides measurements that are known, previously observed values.
-Thereby, Constellation enables users to identify changes and deviations and allows them to act accordingly.
-See how to [fetch](../workflows/verify-cluster.md#fetch-measurements) the latest measurements and verify a cluster.
+* **Measurements produced by the cloud infrastructure and firmware of the CVM**:
+These are measurements of closed-source firmware and other values controlled by the cloud provider.
+While not being reproducible for the user, some of them can be compared against previously observed values.
+Others may change frequently and aren't suitable for verification.
+The [signed image measurements](#chain-of-trust) include measurements that are known, previously observed values.
 
-Second, are the measurements produced by the Constellation bootloader and boot chain itself.
-The Constellation Bootloader is the first part of the Constellation stack that takes over from the CVM firmware and measures the rest of the boot chain.
-Refer to [images](images.md) for more details on the Constellation boot chain.
+* **Measurements produced by the Constellation bootloader and boot chain**:
+The Constellation Bootloader takes over from the CVM firmware and [measures the rest of the boot chain](images.md).
 The Constellation [Bootstrapper](components.md#bootstrapper) is the first user mode component that runs in a Constellation image.
 It extends PCR registers with the [IDs](keys.md#cluster-identity) of the cluster marking a node as initialized.
 
-Constellation allows to specify in the config which measurements should be enforced during the attestation process
+Constellation allows to specify in the config which measurements should be enforced during the attestation process.
 Enforcing non-reproducible measurements controlled by the cloud provider means that changes in these values require manual updates to the cluster's config.
 By default, Constellation only enforces measurements that are stable values produced by the infrastructure or by Constellation directly.
 
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure">
 
-Constellation leverages the [vTPM](https://docs.microsoft.com/en-us/azure/virtual-machines/trusted-launch#vtpm) feature of Azure CVMs for runtime measurements.
-The vTPM on Azure CVMs adheres to the [TPM 2.0](https://trustedcomputinggroup.org/resource/tpm-library-specification/) specification of the [Trusted Computing Group](https://trustedcomputinggroup.org/resource/trusted-platform-module-tpm-summary/).
+Constellation uses the [vTPM](https://docs.microsoft.com/en-us/azure/virtual-machines/trusted-launch#vtpm) feature of Azure CVMs for runtime measurements.
+This vTPM adheres to the [TPM 2.0](https://trustedcomputinggroup.org/resource/tpm-library-specification/) specification.
 It provides a [measured boot](https://docs.microsoft.com/en-us/azure/security/fundamentals/measured-boot-host-attestation#measured-boot) verification that's based on the trusted launch feature of [Trusted Launch VMs](https://docs.microsoft.com/en-us/azure/virtual-machines/trusted-launch).
 
 The following table lists all PCR values of the vTPM and the measured components.
 It also lists what components of the boot chain did the measurements and if the value is reproducible and verifiable.
-The latter means that value can be generated offline and compared to the one in the vTPM
+The latter means that the value can be generated offline and compared to the one in the vTPM.
 
-| PCR           | Components                          | Measured by                     | Reproducible and Verifiable |
+| PCR           | Components                          | Measured by                     | Reproducible and verifiable |
 |---------------|-------------------------------------|---------------------------------|-----------------------------|
 | 0             |    Firmware                         | Azure                           | No                          |
 | 1             |    Firmware                         | Azure                           | No                          |
@@ -155,17 +152,17 @@ The latter means that value can be generated offline and compared to the one in 
 </tabItem>
 <tabItem value="gcp" label="GCP">
 
-Constellation leverages the [vTPM](https://cloud.google.com/compute/confidential-vm/docs/about-cvm) feature of CVMs on GCP for runtime measurements.
-Note that the vTPM in GCP doesn't run inside the hardware-protected CVM context, but is emulated on the hypervisor level.
+Constellation uses the [vTPM](https://cloud.google.com/compute/confidential-vm/docs/about-cvm) feature of CVMs on GCP for runtime measurements.
+Note that this vTPM doesn't run inside the hardware-protected CVM context, but is emulated by the hypervisor.
 
-The vTPM on GCP CVMs adheres to the [TPM 2.0](https://trustedcomputinggroup.org/resource/tpm-library-specification/) specification of the [Trusted Computing Group](https://trustedcomputinggroup.org/resource/trusted-platform-module-tpm-summary/).
-It provides a [launch attestation report](https://cloud.google.com/compute/confidential-vm/docs/monitoring#about_launch_attestation_report_events) that's based on the Measured Boot feature of [Shielded VMs](https://cloud.google.com/compute/shielded-vm/docs/shielded-vm#measured-boot).
+The vTPM adheres to the [TPM 2.0](https://trustedcomputinggroup.org/resource/tpm-library-specification/) specification.
+It provides a [launch attestation report](https://cloud.google.com/compute/confidential-vm/docs/monitoring#about_launch_attestation_report_events) that's based on the measured boot feature of [Shielded VMs](https://cloud.google.com/compute/shielded-vm/docs/shielded-vm#measured-boot).
 
 The following table lists all PCR values of the vTPM and the measured components.
 It also lists what components of the boot chain did the measurements and if the value is reproducible and verifiable.
-The latter means that value can be generated offline and compared to the one in the vTPM.
+The latter means that the value can be generated offline and compared to the one in the vTPM.
 
-| PCR           | Components                       | Measured by                   | Reproducible and Verifiable |
+| PCR           | Components                       | Measured by                   | Reproducible and verifiable |
 |---------------|----------------------------------|-------------------------------|-----------------------------|
 | 0             | CVM constant string              | GCP                           | No                          |
 | 1             | Reserved                         | GCP                           | No                          |
@@ -212,19 +209,16 @@ A user can [verify](../workflows/verify-cluster.md) this statement and compare t
 So far, this page described how an entire Constellation cluster can be verified using hardware attestation capabilities and runtime measurements.
 The last missing link is how the ground truth in the form of runtime measurements can be securely distributed to the verifying party.
 
-When building Constellation images the process entails creating the ground truth runtime measurements.
-The builds of Constellation images are reproducible and the measurements of an image can be recalculated and verified by everyone.
+The build process of Constellation images also creates the ground truth runtime measurements. <!-- soon: The builds of Constellation images are reproducible and the measurements of an image can be recalculated and verified by everyone. -->
 With every release, Edgeless Systems publishes signed runtime measurements.
 
-When installing the Constellation CLI, the release binary is also signed by Edgeless Systems.
-The [installation guide](../architecture/orchestration.md#verify-your-cli-installation) explains how this signature can be verified.
+The release binary is also signed by Edgeless Systems.
+The [installation guide](../architecture/orchestration.md#verify-your-cli-installation) explains how you can verify this signature.
 
 The CLI contains the public key required to verify signed runtime measurements from Edgeless Systems.
-When a new cluster is [created](../workflows/create.md) or updated, the CLI automatically verifies the measurements for the selected image.
-Alternatively, Constellation has the option to use and verify custom build images.
-For this, the CLI can be provided with a custom public key for verification.
+When a cluster is [created](../workflows/create.md) or [upgraded](../workflows/upgrade.md), the CLI automatically verifies the measurements for the selected image.
 
-Thus, we've a chain of trust based on cryptographic signatures, which goes from CLI to runtime measurements to images. This is illustrated in the following diagram.
+Thus, there's a chain of trust based on cryptographic signatures, which goes from CLI to runtime measurements to images. This is illustrated in the following diagram.
 
 ```mermaid
 flowchart LR
@@ -232,6 +226,6 @@ flowchart LR
   C[User]-- "verifies (cosign)" -->B[CLI]
   B[CLI]-- "contains" -->D["Public Key"]
   A[Edgeless]-- "signs" -->E["Runtime measurements"]
-  D["Public Key"]-- "verifies" -->E["Runtime measurements"]
+  D["Public key"]-- "verifies" -->E["Runtime measurements"]
   E["Runtime measurements"]-- "verify" -->F["Constellation cluster"]
 ```
