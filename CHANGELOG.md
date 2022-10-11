@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 <!-- For changes in existing functionality.  -->
+- Verify measurements using [Rekor](https://github.com/sigstore/rekor) transparency log.
+
 ### Deprecated
 <!-- For soon-to-be removed features. -->
 ### Removed
@@ -46,7 +48,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Verification of Azure trusted launch attestation keys
 - Kubernetes version v1.25 is now fully supported.
 - Enabled Konnectivity.
-- Verify measurements using [Rekor](https://github.com/sigstore/rekor) transparency log.
 
 ### Changed
 <!-- For changes in existing functionality.  -->
