@@ -60,17 +60,19 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 		return dialer.New(nil, validator.V(cmd), &net.Dialer{})
 	}
 	helmLoader := &helm.ChartLoader{}
+	spinner, _ := newSpinner(cmd, cmd.OutOrStdout())
+	defer spinner.Stop()
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	return initialize(cmd, newDialer, fileHandler, helmLoader, license.NewClient())
+	return initialize(cmd, newDialer, fileHandler, helmLoader, license.NewClient(), spinner)
 }
 
 // initialize initializes a Constellation.
 func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator) *dialer.Dialer,
-	fileHandler file.Handler, helmLoader helmLoader, quotaChecker license.QuotaChecker,
+	fileHandler file.Handler, helmLoader helmLoader, quotaChecker license.QuotaChecker, spinner spinnerInterf,
 ) error {
 	flags, err := evalFlagArgs(cmd, fileHandler)
 	if err != nil {
@@ -124,8 +126,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
 	}
 
-	spinner := newSpinner(cmd, "Initializing cluster ", false)
-	spinner.Start()
+	spinner.Start("Initializing cluster ", false)
 	req := &initproto.InitRequest{
 		MasterSecret:           masterSecret.Key,
 		Salt:                   masterSecret.Salt,

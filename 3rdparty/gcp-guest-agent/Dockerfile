@@ -1,4 +1,4 @@
-FROM ubuntu:22.04 as build
+FROM ubuntu:22.04@sha256:a8fe6fd30333dc60fc5306982a7c51385c2091af1e0ee887166b40a905691fd0 as build
 
 # Install packages
 RUN apt-get update && apt-get install -y \

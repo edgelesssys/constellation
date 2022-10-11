@@ -33,9 +33,9 @@ The remote attestation statement of a Constellation cluster combines *baseID* an
 Constellation encrypts all cluster network communication using the [container network interface (CNI)](https://github.com/containernetworking/cni).
 See [network encryption](networking.md) for more details.
 
-The Cilium agent running on each cluster node will establish a secure WireGuard tunnel between it and all other known nodes in the cluster.
-Each node automatically creates its own [Curve25519](http://cr.yp.to/ecdh.html) encryption key-pair and distributes its public key via Kubernetes.
-Each node’s public key is then used by other nodes to decrypt and encrypt traffic from and to Cilium-managed endpoints running on that node.
+The Cilium agent running on each node establishes a secure [WireGuard](https://www.wireguard.com/) tunnel between it and all other known nodes in the cluster.
+Each node creates its own [Curve25519](http://cr.yp.to/ecdh.html) encryption key pair and distributes its public key via Kubernetes.
+A node uses another node's public key to decrypt and encrypt traffic from and to Cilium-managed endpoints running on that node.
 Connections are always encrypted peer-to-peer using [ChaCha20](http://cr.yp.to/chacha.html) with [Poly1305](http://cr.yp.to/mac.html).
 WireGuard implements [forward secrecy with key rotation every 2 minutes](https://lists.zx2c4.com/pipermail/wireguard/2017-December/002141.html).
 Cilium supports [key rotation](https://docs.cilium.io/en/stable/gettingstarted/encryption-ipsec/#key-rotation) for the long-term node keys via Kubernetes secrets.
@@ -61,10 +61,10 @@ As a cluster administrator, when creating a cluster, you can use the Constellati
 
 #### Key material and key derivation
 
-During the creation of a Constellation, the cluster's master secret is used to derive a KEK.
+During the creation of a Constellation cluster, the cluster's master secret is used to derive a KEK.
 This means creating two clusters with the same master secret will yield the same KEK.
 Any data encryption key (DEK) is derived from the KEK via HKDF.
-Note that the master secret is recommended to be unique for every Constellation cluster and shouldn't be reused (except in case of [recovering](../workflows/recovery.md) a cluster).
+Note that the master secret is recommended to be unique for every cluster and shouldn't be reused (except in case of [recovering](../workflows/recovery.md) a cluster).
 
 #### State and storage
 
@@ -91,7 +91,7 @@ User-managed key management is under active development and will be available so
 In scenarios where constellation-managed key management isn't an option, this mode allows you to keep full control of your keys.
 For example, compliance requirements may force you to keep your KEKs in an on-prem key management system (KMS).
 
-During the creation of a Constellation, you specify a KEK present in a remote KMS.
+During the creation of a Constellation cluster, you specify a KEK present in a remote KMS.
 This follows the common scheme of "bring your own key" (BYOK).
 Constellation will support several KMSs for managing the storage and access of your KEK.
 Initially, it will support the following KMSs:

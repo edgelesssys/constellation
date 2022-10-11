@@ -36,19 +36,21 @@ func NewTerminateCmd() *cobra.Command {
 // runTerminate runs the terminate command.
 func runTerminate(cmd *cobra.Command, args []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
+	spinner, _ := newSpinner(cmd, cmd.OutOrStdout())
+	defer spinner.Stop()
 	terminator := cloudcmd.NewTerminator()
 
-	return terminate(cmd, terminator, fileHandler)
+	return terminate(cmd, terminator, fileHandler, spinner)
 }
 
-func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.Handler) error {
+func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.Handler, spinner spinnerInterf,
+) error {
 	var stat state.ConstellationState
 	if err := fileHandler.ReadJSON(constants.StateFilename, &stat); err != nil {
 		return fmt.Errorf("reading Constellation state: %w", err)
 	}
 
-	spinner := newSpinner(cmd, "Terminating", false)
-	spinner.Start()
+	spinner.Start("Terminating", false)
 	err := terminator.Terminate(cmd.Context(), stat)
 	spinner.Stop()
 	if err != nil {
