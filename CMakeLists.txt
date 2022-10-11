@@ -26,7 +26,7 @@ add_custom_target(bootstrapper ALL
 # cli
 #
 add_custom_target(cli ALL
-  CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/constellation -tags='${CLI_BUILD_TAGS}' -ldflags "-buildid='' -X github.com/edgelesssys/constellation/internal/constants.VersionInfo=${PROJECT_VERSION}"
+  CGO_ENABLED=0 go build -o ${CMAKE_BINARY_DIR}/constellation -tags='${CLI_BUILD_TAGS}' -ldflags "-buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}"
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/cli
   BYPRODUCTS constellation
 )
