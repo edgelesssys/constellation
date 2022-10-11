@@ -27,20 +27,25 @@ const (
 	tagUID  = "constellation-uid"
 )
 
-type API interface {
+type ec2API interface {
+	DescribeInstances(context.Context, *ec2.DescribeInstancesInput, ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error)
+}
+
+type imdsAPI interface {
 	GetInstanceIdentityDocument(context.Context, *imds.GetInstanceIdentityDocumentInput, ...func(*imds.Options)) (*imds.GetInstanceIdentityDocumentOutput, error)
 	GetMetadata(context.Context, *imds.GetMetadataInput, ...func(*imds.Options)) (*imds.GetMetadataOutput, error)
-	DescribeInstances(context.Context, *ec2.DescribeInstancesInput, ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error)
 }
 
 // Metadata implements core.ProviderMetadata interface for AWS.
 type Metadata struct {
-	api API
+	ec2  ec2API
+	imds imdsAPI
 }
 
-func New(api API) *Metadata {
+func New(cfg aws.Config) *Metadata {
 	return &Metadata{
-		api: api,
+		ec2:  ec2.NewFromConfig(cfg),
+		imds: imds.New(imds.Options{}),
 	}
 }
 
@@ -65,7 +70,7 @@ func (m *Metadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error
 
 // Self retrieves the current instance.
 func (m *Metadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
-	identity, err := m.api.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
+	identity, err := m.imds.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
 	if err != nil {
 		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving instance identity: %w", err)
 	}
@@ -98,7 +103,7 @@ func (m *Metadata) getAllInstancesInGroup(ctx context.Context, uid string) ([]ty
 	}
 
 	for nextToken != nil || first() {
-		describeOutput, err := m.api.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
+		describeOutput, err := m.ec2.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
 			Filters: []types.Filter{
 				{
 					Name:   aws.String("tag:" + tagUID),
@@ -169,7 +174,7 @@ func (m *Metadata) convertToMetadataInstance(ec2Instances []types.Instance) ([]m
 }
 
 func (m *Metadata) readInstanceTag(ctx context.Context, tag string) (string, error) {
-	reader, err := m.api.GetMetadata(ctx, &imds.GetMetadataInput{
+	reader, err := m.imds.GetMetadata(ctx, &imds.GetMetadataInput{
 		Path: "/tags/instance/" + tag,
 	})
 	if err != nil {

@@ -26,12 +26,13 @@ func TestSelf(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		api      *stubAPI
+		imds     *stubIMDS
+		ec2      *stubEC2
 		wantSelf metadata.InstanceMetadata
 		wantErr  bool
 	}{
 		"success control-plane": {
-			api: &stubAPI{
+			imds: &stubIMDS{
 				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
 					InstanceIdentityDocument: imds.InstanceIdentityDocument{
 						InstanceID:       "test-instance-id",
@@ -52,7 +53,7 @@ func TestSelf(t *testing.T) {
 			},
 		},
 		"success worker": {
-			api: &stubAPI{
+			imds: &stubIMDS{
 				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
 					InstanceIdentityDocument: imds.InstanceIdentityDocument{
 						InstanceID:       "test-instance-id",
@@ -73,7 +74,7 @@ func TestSelf(t *testing.T) {
 			},
 		},
 		"get instance document error": {
-			api: &stubAPI{
+			imds: &stubIMDS{
 				getInstanceIdentityDocumentErr: someErr,
 				tags: map[string]string{
 					tagName: "test-instance",
@@ -83,7 +84,7 @@ func TestSelf(t *testing.T) {
 			wantErr: true,
 		},
 		"get metadata error": {
-			api: &stubAPI{
+			imds: &stubIMDS{
 				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
 					InstanceIdentityDocument: imds.InstanceIdentityDocument{
 						InstanceID:       "test-instance-id",
@@ -96,7 +97,7 @@ func TestSelf(t *testing.T) {
 			wantErr: true,
 		},
 		"name not set": {
-			api: &stubAPI{
+			imds: &stubIMDS{
 				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
 					InstanceIdentityDocument: imds.InstanceIdentityDocument{
 						InstanceID:       "test-instance-id",
@@ -111,7 +112,7 @@ func TestSelf(t *testing.T) {
 			wantErr: true,
 		},
 		"role not set": {
-			api: &stubAPI{
+			imds: &stubIMDS{
 				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
 					InstanceIdentityDocument: imds.InstanceIdentityDocument{
 						InstanceID:       "test-instance-id",
@@ -130,7 +131,7 @@ func TestSelf(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			m := New(tc.api)
+			m := &Metadata{imds: tc.imds, ec2: &stubEC2{}}
 
 			self, err := m.Self(context.Background())
 			if tc.wantErr {
@@ -201,15 +202,18 @@ func TestList(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		api      *stubAPI
+		imds     *stubIMDS
+		ec2      *stubEC2
 		wantList []metadata.InstanceMetadata
 		wantErr  bool
 	}{
 		"success single page": {
-			api: &stubAPI{
+			imds: &stubIMDS{
 				tags: map[string]string{
 					tagUID: "uid",
 				},
+			},
+			ec2: &stubEC2{
 				describeInstancesResp1: successfulResp,
 			},
 			wantList: []metadata.InstanceMetadata{
@@ -228,10 +232,12 @@ func TestList(t *testing.T) {
 			},
 		},
 		"success multiple pages": {
-			api: &stubAPI{
+			imds: &stubIMDS{
 				tags: map[string]string{
 					tagUID: "uid",
 				},
+			},
+			ec2: &stubEC2{
 				describeInstancesResp1: &ec2.DescribeInstancesOutput{
 					Reservations: []types.Reservation{
 						{
@@ -287,16 +293,19 @@ func TestList(t *testing.T) {
 			},
 		},
 		"fail to get UID": {
-			api: &stubAPI{
+			imds: &stubIMDS{},
+			ec2: &stubEC2{
 				describeInstancesResp1: successfulResp,
 			},
 			wantErr: true,
 		},
 		"describe instances fails": {
-			api: &stubAPI{
+			imds: &stubIMDS{
 				tags: map[string]string{
 					tagUID: "uid",
 				},
+			},
+			ec2: &stubEC2{
 				describeInstancesErr: someErr,
 			},
 			wantErr: true,
@@ -306,7 +315,7 @@ func TestList(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			m := New(tc.api)
+			m := &Metadata{ec2: tc.ec2, imds: tc.imds}
 
 			list, err := m.List(context.Background())
 			if tc.wantErr {
@@ -481,7 +490,7 @@ func TestConvertToMetadataInstance(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			m := New(nil)
+			m := &Metadata{}
 
 			instances, err := m.convertToMetadataInstance(tc.in)
 			if tc.wantErr {
@@ -495,21 +504,18 @@ func TestConvertToMetadataInstance(t *testing.T) {
 	}
 }
 
-type stubAPI struct {
+type stubIMDS struct {
 	getInstanceIdentityDocumentErr error
 	getMetadataErr                 error
-	describeInstancesErr           error
 	instanceDocumentResp           *imds.GetInstanceIdentityDocumentOutput
 	tags                           map[string]string
-	describeInstancesResp1         *ec2.DescribeInstancesOutput
-	describeInstancesResp2         *ec2.DescribeInstancesOutput
 }
 
-func (s *stubAPI) GetInstanceIdentityDocument(context.Context, *imds.GetInstanceIdentityDocumentInput, ...func(*imds.Options)) (*imds.GetInstanceIdentityDocumentOutput, error) {
+func (s *stubIMDS) GetInstanceIdentityDocument(context.Context, *imds.GetInstanceIdentityDocumentInput, ...func(*imds.Options)) (*imds.GetInstanceIdentityDocumentOutput, error) {
 	return s.instanceDocumentResp, s.getInstanceIdentityDocumentErr
 }
 
-func (s *stubAPI) GetMetadata(_ context.Context, in *imds.GetMetadataInput, _ ...func(*imds.Options)) (*imds.GetMetadataOutput, error) {
+func (s *stubIMDS) GetMetadata(_ context.Context, in *imds.GetMetadataInput, _ ...func(*imds.Options)) (*imds.GetMetadataOutput, error) {
 	tag, ok := s.tags[strings.TrimPrefix(in.Path, "/tags/instance/")]
 	if !ok {
 		return nil, errors.New("not found")
@@ -523,7 +529,13 @@ func (s *stubAPI) GetMetadata(_ context.Context, in *imds.GetMetadataInput, _ ..
 	}, s.getMetadataErr
 }
 
-func (s *stubAPI) DescribeInstances(_ context.Context, in *ec2.DescribeInstancesInput, _ ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error) {
+type stubEC2 struct {
+	describeInstancesErr   error
+	describeInstancesResp1 *ec2.DescribeInstancesOutput
+	describeInstancesResp2 *ec2.DescribeInstancesOutput
+}
+
+func (s *stubEC2) DescribeInstances(_ context.Context, in *ec2.DescribeInstancesInput, _ ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error) {
 	if in.NextToken == nil {
 		return s.describeInstancesResp1, s.describeInstancesErr
 	}
