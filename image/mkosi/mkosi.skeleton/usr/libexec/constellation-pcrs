@@ -1,4 +1,8 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
+# Copyright (c) Edgeless Systems GmbH
+#
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # This script reads the PCR state of the system
 # and prints the message to the serial console
 

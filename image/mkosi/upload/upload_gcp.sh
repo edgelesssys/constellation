@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Copyright (c) Edgeless Systems GmbH
+#
+# SPDX-License-Identifier: AGPL-3.0-only
+
 set -euo pipefail
 
 if [ -z "${CONFIG_FILE-}" ] && [ -f "${CONFIG_FILE-}" ]; then

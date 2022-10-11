@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Copyright (c) Edgeless Systems GmbH
+#
+# SPDX-License-Identifier: AGPL-3.0-only
+
 set -euxo pipefail
 
 # recreate kubelet systemd unit after reboot.
