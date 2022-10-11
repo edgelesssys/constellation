@@ -25,7 +25,7 @@ FROM build AS build-bootstrapper
 WORKDIR /constellation/bootstrapper/
 
 ARG PROJECT_VERSION
-RUN go build -o bootstrapper -tags=disable_tpm_simulator -buildvcs=false -ldflags "-s -w -buildid='' -X main.version=${PROJECT_VERSION}" ./cmd/bootstrapper/
+RUN go build -o bootstrapper -tags=disable_tpm_simulator -buildvcs=false -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}" ./cmd/bootstrapper/
 
 FROM build AS build-disk-mapper
 WORKDIR /constellation/disk-mapper/
