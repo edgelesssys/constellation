@@ -1,4 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Copyright (c) Edgeless Systems GmbH
+#
+# SPDX-License-Identifier: AGPL-3.0-only
+
 set -euo pipefail
 
 # Prepare the encrypted volume by either initializing it with a random key or by aquiring the key from another bootstrapper.

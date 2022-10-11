@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright (c) Edgeless Systems GmbH
+#
+# SPDX-License-Identifier: AGPL-3.0-only
 
 # This script generates a PKI for secure boot.
 # It is based on the example from https://github.com/systemd/systemd/blob/main/man/loader.conf.xml

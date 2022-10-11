@@ -1,4 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Copyright (c) Edgeless Systems GmbH
+#
+# SPDX-License-Identifier: AGPL-3.0-only
 
 depends() {
     echo systemd

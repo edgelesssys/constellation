@@ -1,4 +1,8 @@
-#!/bin/env bash
+#!/usr/bin/env bash
+# Copyright (c) Edgeless Systems GmbH
+#
+# SPDX-License-Identifier: AGPL-3.0-only
+
 set -euo pipefail
 # This script is used to add a signed shim to the image.raw file EFI partition after running `mkosi build`.
 
