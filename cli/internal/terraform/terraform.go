@@ -12,7 +12,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/state"
 	"github.com/hashicorp/go-version"
 	install "github.com/hashicorp/hc-install"
 	"github.com/hashicorp/hc-install/fs"
@@ -36,7 +35,6 @@ type Client struct {
 	provider cloudprovider.Provider
 
 	file   file.Handler
-	state  state.ConstellationState
 	remove func()
 }
 
@@ -58,43 +56,38 @@ func New(ctx context.Context, provider cloudprovider.Provider) (*Client, error) 
 }
 
 // CreateCluster creates a Constellation cluster using Terraform.
-func (c *Client) CreateCluster(ctx context.Context, name string, vars Variables) error {
+func (c *Client) CreateCluster(ctx context.Context, name string, vars Variables) (string, error) {
 	if err := prepareWorkspace(c.file, c.provider); err != nil {
-		return err
+		return "", err
 	}
 
 	if err := c.tf.Init(ctx); err != nil {
-		return err
+		return "", err
 	}
 
 	if err := c.file.Write(terraformVarsFile, []byte(vars.String())); err != nil {
-		return err
+		return "", err
 	}
 
 	if err := c.tf.Apply(ctx); err != nil {
-		return err
+		return "", err
 	}
 
 	tfState, err := c.tf.Show(ctx)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	ipOutput, ok := tfState.Values.Outputs["ip"]
 	if !ok {
-		return errors.New("no IP output found")
+		return "", errors.New("no IP output found")
 	}
 	ip, ok := ipOutput.Value.(string)
 	if !ok {
-		return errors.New("invalid type in IP output: not a string")
-	}
-	c.state = state.ConstellationState{
-		Name:           name,
-		CloudProvider:  c.provider.String(),
-		LoadBalancerIP: ip,
+		return "", errors.New("invalid type in IP output: not a string")
 	}
 
-	return nil
+	return ip, nil
 }
 
 // DestroyInstances destroys a Constellation cluster using Terraform.
@@ -130,11 +123,6 @@ func (c *Client) CleanUpWorkspace() error {
 	}
 
 	return nil
-}
-
-// GetState returns the state of the cluster.
-func (c *Client) GetState() state.ConstellationState {
-	return c.state
 }
 
 // GetExecutable returns a Terraform executable either from the local filesystem,

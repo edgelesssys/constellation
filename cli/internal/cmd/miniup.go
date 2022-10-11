@@ -199,15 +199,14 @@ func prepareConfig(cmd *cobra.Command, fileHandler file.Handler) (*config.Config
 
 // createMiniCluster creates a new cluster using the given config.
 func createMiniCluster(ctx context.Context, fileHandler file.Handler, creator cloudCreator, config *config.Config) error {
-	state, err := creator.Create(ctx, cloudprovider.QEMU, config, "mini", "", 1, 1)
+	idFile, err := creator.Create(ctx, cloudprovider.QEMU, config, "mini", "", 1, 1)
 	if err != nil {
 		return err
 	}
-	if err := fileHandler.WriteJSON(constants.StateFilename, state); err != nil {
-		return err
-	}
 
-	return writeIPtoIDFile(fileHandler, state)
+	idFile.UID = "mini" // use UID "mini" to identify mini constellation clusters.
+
+	return fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptNone)
 }
 
 // initializeMiniCluster initializes a QEMU cluster.

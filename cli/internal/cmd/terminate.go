@@ -16,9 +16,9 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/state"
 )
 
 // NewTerminateCmd returns a new cobra.Command for the terminate command.
@@ -45,13 +45,13 @@ func runTerminate(cmd *cobra.Command, args []string) error {
 
 func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.Handler, spinner spinnerInterf,
 ) error {
-	var stat state.ConstellationState
-	if err := fileHandler.ReadJSON(constants.StateFilename, &stat); err != nil {
-		return fmt.Errorf("reading Constellation state: %w", err)
+	var idFile clusterid.File
+	if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
+		return err
 	}
 
 	spinner.Start("Terminating", false)
-	err := terminator.Terminate(cmd.Context(), stat)
+	err := terminator.Terminate(cmd.Context(), idFile.CloudProvider)
 	spinner.Stop()
 	if err != nil {
 		return fmt.Errorf("terminating Constellation cluster: %w", err)
@@ -60,10 +60,6 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 	cmd.Println("Your Constellation cluster was terminated successfully.")
 
 	var retErr error
-	if err := fileHandler.Remove(constants.StateFilename); err != nil {
-		retErr = multierr.Append(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", constants.StateFilename))
-	}
-
 	if err := fileHandler.Remove(constants.AdminConfFilename); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		retErr = multierr.Append(err, fmt.Errorf("failed to remove file: '%s', please remove it manually", constants.AdminConfFilename))
 	}

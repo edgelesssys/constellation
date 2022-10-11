@@ -15,7 +15,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/state"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -118,17 +117,13 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 	}
 
 	spinner.Start("Creating", false)
-	state, err := creator.Create(cmd.Context(), provider, config, flags.name, instanceType, flags.controllerCount, flags.workerCount)
+	idFile, err := creator.Create(cmd.Context(), provider, config, flags.name, instanceType, flags.controllerCount, flags.workerCount)
 	spinner.Stop()
 	if err != nil {
 		return err
 	}
 
-	if err := fileHandler.WriteJSON(constants.StateFilename, state, file.OptNone); err != nil {
-		return err
-	}
-
-	if err := writeIPtoIDFile(fileHandler, state); err != nil {
+	if err := fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptNone); err != nil {
 		return err
 	}
 
@@ -195,9 +190,6 @@ type createFlags struct {
 
 // checkDirClean checks if files of a previous Constellation are left in the current working dir.
 func checkDirClean(fileHandler file.Handler) error {
-	if _, err := fileHandler.Stat(constants.StateFilename); !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("file '%s' already exists in working directory, run 'constellation terminate' before creating a new one", constants.StateFilename)
-	}
 	if _, err := fileHandler.Stat(constants.AdminConfFilename); !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("file '%s' already exists in working directory, run 'constellation terminate' before creating a new one", constants.AdminConfFilename)
 	}
@@ -209,15 +201,6 @@ func checkDirClean(fileHandler file.Handler) error {
 	}
 
 	return nil
-}
-
-func writeIPtoIDFile(fileHandler file.Handler, state state.ConstellationState) error {
-	ip := state.LoadBalancerIP
-	if ip == "" {
-		return fmt.Errorf("bootstrapper ip not found")
-	}
-	idFile := clusterIDsFile{IP: ip}
-	return fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptNone)
 }
 
 func must(err error) {

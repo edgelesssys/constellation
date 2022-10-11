@@ -15,23 +15,12 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/state"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCreator(t *testing.T) {
 	failOnNonAMD64 := (runtime.GOARCH != "amd64") || (runtime.GOOS != "linux")
-
-	wantGCPState := state.ConstellationState{
-		CloudProvider:  cloudprovider.GCP.String(),
-		LoadBalancerIP: "192.0.2.1",
-	}
-
-	wantQEMUState := state.ConstellationState{
-		CloudProvider:  cloudprovider.QEMU.String(),
-		LoadBalancerIP: "192.0.2.1",
-	}
-
+	ip := "192.0.2.1"
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
@@ -40,15 +29,13 @@ func TestCreator(t *testing.T) {
 		libvirt        *stubLibvirtRunner
 		provider       cloudprovider.Provider
 		config         *config.Config
-		wantState      state.ConstellationState
 		wantErr        bool
 		wantRollback   bool // Use only together with stubClients.
 	}{
 		"gcp": {
-			tfClient:  &stubTerraformClient{state: wantGCPState},
-			provider:  cloudprovider.GCP,
-			config:    config.Default(),
-			wantState: wantGCPState,
+			tfClient: &stubTerraformClient{ip: ip},
+			provider: cloudprovider.GCP,
+			config:   config.Default(),
 		},
 		"gcp newTerraformClient error": {
 			newTfClientErr: someErr,
@@ -64,12 +51,11 @@ func TestCreator(t *testing.T) {
 			wantRollback: true,
 		},
 		"qemu": {
-			tfClient:  &stubTerraformClient{state: wantQEMUState},
-			libvirt:   &stubLibvirtRunner{},
-			provider:  cloudprovider.QEMU,
-			config:    config.Default(),
-			wantState: wantQEMUState,
-			wantErr:   failOnNonAMD64,
+			tfClient: &stubTerraformClient{ip: ip},
+			libvirt:  &stubLibvirtRunner{},
+			provider: cloudprovider.QEMU,
+			config:   config.Default(),
+			wantErr:  failOnNonAMD64,
 		},
 		"qemu newTerraformClient error": {
 			newTfClientErr: someErr,
@@ -87,7 +73,7 @@ func TestCreator(t *testing.T) {
 			wantRollback: !failOnNonAMD64, // if we run on non-AMD64/linux, we don't get to a point where rollback is needed
 		},
 		"qemu start libvirt error": {
-			tfClient:     &stubTerraformClient{state: wantQEMUState},
+			tfClient:     &stubTerraformClient{ip: ip},
 			libvirt:      &stubLibvirtRunner{startErr: someErr},
 			provider:     cloudprovider.QEMU,
 			config:       config.Default(),
@@ -115,7 +101,7 @@ func TestCreator(t *testing.T) {
 				},
 			}
 
-			state, err := creator.Create(context.Background(), tc.provider, tc.config, "name", "type", 2, 3)
+			idFile, err := creator.Create(context.Background(), tc.provider, tc.config, "name", "type", 2, 3)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -129,7 +115,8 @@ func TestCreator(t *testing.T) {
 				}
 			} else {
 				assert.NoError(err)
-				assert.Equal(tc.wantState, state)
+				assert.Equal(tc.provider, idFile.CloudProvider)
+				assert.Equal(ip, idFile.IP)
 			}
 		})
 	}

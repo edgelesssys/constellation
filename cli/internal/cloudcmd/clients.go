@@ -10,12 +10,10 @@ import (
 	"context"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
-	"github.com/edgelesssys/constellation/v2/internal/state"
 )
 
 type terraformClient interface {
-	GetState() state.ConstellationState
-	CreateCluster(ctx context.Context, name string, input terraform.Variables) error
+	CreateCluster(ctx context.Context, name string, input terraform.Variables) (string, error)
 	DestroyCluster(ctx context.Context) error
 	CleanUpWorkspace() error
 	RemoveInstaller()

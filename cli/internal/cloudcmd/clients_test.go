@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
-	"github.com/edgelesssys/constellation/v2/internal/state"
 	"go.uber.org/goleak"
 )
 
@@ -23,7 +22,7 @@ func TestMain(m *testing.M) {
 }
 
 type stubTerraformClient struct {
-	state                  state.ConstellationState
+	ip                     string
 	cleanUpWorkspaceCalled bool
 	removeInstallerCalled  bool
 	destroyClusterCalled   bool
@@ -32,12 +31,8 @@ type stubTerraformClient struct {
 	cleanUpWorkspaceErr    error
 }
 
-func (c *stubTerraformClient) GetState() state.ConstellationState {
-	return c.state
-}
-
-func (c *stubTerraformClient) CreateCluster(ctx context.Context, name string, input terraform.Variables) error {
-	return c.createClusterErr
+func (c *stubTerraformClient) CreateCluster(ctx context.Context, name string, input terraform.Variables) (string, error) {
+	return c.ip, c.createClusterErr
 }
 
 func (c *stubTerraformClient) DestroyCluster(ctx context.Context) error {

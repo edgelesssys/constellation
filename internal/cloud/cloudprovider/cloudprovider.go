@@ -6,7 +6,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 package cloudprovider
 
-import "strings"
+import (
+	"encoding/json"
+	"strings"
+)
 
 //go:generate stringer -type=Provider
 
@@ -20,6 +23,21 @@ const (
 	GCP
 	QEMU
 )
+
+// MarshalJSON marshals the Provider to JSON string.
+func (p Provider) MarshalJSON() ([]byte, error) {
+	return json.Marshal(p.String())
+}
+
+// UnmarshalJSON unmarshals the Provider from JSON string.
+func (p *Provider) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+	*p = FromString(s)
+	return nil
+}
 
 // FromString returns cloud provider from string.
 func FromString(s string) Provider {

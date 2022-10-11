@@ -13,11 +13,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/state"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,7 +30,7 @@ func TestCreate(t *testing.T) {
 		require.NoError(file.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
 		return fs
 	}
-	testState := state.ConstellationState{Name: "test", LoadBalancerIP: "192.0.2.1"}
+	idFile := clusterid.File{IP: "192.0.2.1"}
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
@@ -48,7 +48,7 @@ func TestCreate(t *testing.T) {
 	}{
 		"create": {
 			setupFs:             fsWithDefaultConfig,
-			creator:             &stubCloudCreator{state: testState},
+			creator:             &stubCloudCreator{id: idFile},
 			provider:            cloudprovider.GCP,
 			controllerCountFlag: intPtr(1),
 			workerCountFlag:     intPtr(2),
@@ -56,7 +56,7 @@ func TestCreate(t *testing.T) {
 		},
 		"interactive": {
 			setupFs:             fsWithDefaultConfig,
-			creator:             &stubCloudCreator{state: testState},
+			creator:             &stubCloudCreator{id: idFile},
 			provider:            cloudprovider.Azure,
 			controllerCountFlag: intPtr(2),
 			workerCountFlag:     intPtr(1),
@@ -117,21 +117,6 @@ func TestCreate(t *testing.T) {
 			creator:             &stubCloudCreator{},
 			provider:            cloudprovider.GCP,
 			controllerCountFlag: intPtr(3),
-			wantErr:             true,
-		},
-		"old state in directory": {
-			setupFs: func(require *require.Assertions, csp cloudprovider.Provider) afero.Fs {
-				fs := afero.NewMemMapFs()
-				fileHandler := file.NewHandler(fs)
-				require.NoError(fileHandler.Write(constants.StateFilename, []byte{1}, file.OptNone))
-				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), csp)))
-				return fs
-			},
-			creator:             &stubCloudCreator{},
-			provider:            cloudprovider.GCP,
-			controllerCountFlag: intPtr(1),
-			workerCountFlag:     intPtr(1),
-			yesFlag:             true,
 			wantErr:             true,
 		},
 		"old adminConf in directory": {
@@ -237,11 +222,12 @@ func TestCreate(t *testing.T) {
 					assert.False(tc.creator.createCalled)
 				} else {
 					assert.True(tc.creator.createCalled)
-					var state state.ConstellationState
-					require.NoError(fileHandler.ReadJSON(constants.StateFilename, &state))
-					var idFile clusterIDsFile
-					require.NoError(fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile))
-					assert.Equal(state, testState)
+					var gotIDFile clusterid.File
+					require.NoError(fileHandler.ReadJSON(constants.ClusterIDsFileName, &gotIDFile))
+					assert.Equal(gotIDFile, clusterid.File{
+						IP:            idFile.IP,
+						CloudProvider: tc.provider,
+					})
 				}
 			}
 		})
@@ -267,14 +253,9 @@ func TestCheckDirClean(t *testing.T) {
 			existingFiles: []string{constants.MasterSecretFilename},
 			wantErr:       true,
 		},
-		"state file exists": {
-			fileHandler:   file.NewHandler(afero.NewMemMapFs()),
-			existingFiles: []string{constants.StateFilename},
-			wantErr:       true,
-		},
 		"multiple exist": {
 			fileHandler:   file.NewHandler(afero.NewMemMapFs()),
-			existingFiles: []string{constants.AdminConfFilename, constants.MasterSecretFilename, constants.StateFilename},
+			existingFiles: []string{constants.AdminConfFilename, constants.MasterSecretFilename},
 			wantErr:       true,
 		},
 	}

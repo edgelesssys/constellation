@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -226,7 +227,7 @@ func TestParseRecoverFlags(t *testing.T) {
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 			if tc.writeIDFile {
-				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, &clusterIDsFile{IP: "192.0.2.42"}))
+				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, &clusterid.File{IP: "192.0.2.42"}))
 			}
 
 			flags, err := parseRecoverFlags(cmd, fileHandler)

@@ -10,9 +10,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/state"
 	"go.uber.org/goleak"
 )
 
@@ -25,7 +25,7 @@ func TestMain(m *testing.M) {
 
 type stubCloudCreator struct {
 	createCalled bool
-	state        state.ConstellationState
+	id           clusterid.File
 	createErr    error
 }
 
@@ -35,9 +35,10 @@ func (c *stubCloudCreator) Create(
 	config *config.Config,
 	name, insType string,
 	coordCount, nodeCount int,
-) (state.ConstellationState, error) {
+) (clusterid.File, error) {
 	c.createCalled = true
-	return c.state, c.createErr
+	c.id.CloudProvider = provider
+	return c.id, c.createErr
 }
 
 type stubCloudTerminator struct {
@@ -45,7 +46,7 @@ type stubCloudTerminator struct {
 	terminateErr error
 }
 
-func (c *stubCloudTerminator) Terminate(context.Context, state.ConstellationState) error {
+func (c *stubCloudTerminator) Terminate(context.Context, cloudprovider.Provider) error {
 	c.called = true
 	return c.terminateErr
 }

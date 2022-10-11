@@ -15,11 +15,11 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/state"
 )
 
 // Creator creates cloud resources.
@@ -44,41 +44,41 @@ func NewCreator(out io.Writer) *Creator {
 
 // Create creates the handed amount of instances and all the needed resources.
 func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, config *config.Config, name, insType string, controlPlaneCount, workerCount int,
-) (state.ConstellationState, error) {
+) (clusterid.File, error) {
 	switch provider {
 	case cloudprovider.GCP:
 		cl, err := c.newTerraformClient(ctx, provider)
 		if err != nil {
-			return state.ConstellationState{}, err
+			return clusterid.File{}, err
 		}
 		defer cl.RemoveInstaller()
 		return c.createGCP(ctx, cl, config, name, insType, controlPlaneCount, workerCount)
 	case cloudprovider.Azure:
 		cl, err := c.newTerraformClient(ctx, provider)
 		if err != nil {
-			return state.ConstellationState{}, err
+			return clusterid.File{}, err
 		}
 		defer cl.RemoveInstaller()
 		return c.createAzure(ctx, cl, config, name, insType, controlPlaneCount, workerCount)
 	case cloudprovider.QEMU:
 		if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
-			return state.ConstellationState{}, fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
+			return clusterid.File{}, fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
 		}
 		cl, err := c.newTerraformClient(ctx, provider)
 		if err != nil {
-			return state.ConstellationState{}, err
+			return clusterid.File{}, err
 		}
 		defer cl.RemoveInstaller()
 		lv := c.newLibvirtRunner()
 		return c.createQEMU(ctx, cl, lv, name, config, controlPlaneCount, workerCount)
 	default:
-		return state.ConstellationState{}, fmt.Errorf("unsupported cloud provider: %s", provider)
+		return clusterid.File{}, fmt.Errorf("unsupported cloud provider: %s", provider)
 	}
 }
 
 func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *config.Config,
 	name, insType string, controlPlaneCount, workerCount int,
-) (stat state.ConstellationState, retErr error) {
+) (idFile clusterid.File, retErr error) {
 	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
 
 	vars := &terraform.GCPVariables{
@@ -98,16 +98,20 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 		Debug:           config.IsDebugCluster(),
 	}
 
-	if err := cl.CreateCluster(ctx, name, vars); err != nil {
-		return state.ConstellationState{}, err
+	ip, err := cl.CreateCluster(ctx, name, vars)
+	if err != nil {
+		return clusterid.File{}, err
 	}
 
-	return cl.GetState(), nil
+	return clusterid.File{
+		CloudProvider: cloudprovider.GCP,
+		IP:            ip,
+	}, nil
 }
 
 func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *config.Config,
 	name, insType string, controlPlaneCount, workerCount int,
-) (stat state.ConstellationState, retErr error) {
+) (idFile clusterid.File, retErr error) {
 	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
 
 	vars := &terraform.AzureVariables{
@@ -127,16 +131,20 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 		Debug:                config.IsDebugCluster(),
 	}
 
-	if err := cl.CreateCluster(ctx, name, vars); err != nil {
-		return state.ConstellationState{}, err
+	ip, err := cl.CreateCluster(ctx, name, vars)
+	if err != nil {
+		return clusterid.File{}, err
 	}
 
-	return cl.GetState(), nil
+	return clusterid.File{
+		CloudProvider: cloudprovider.Azure,
+		IP:            ip,
+	}, nil
 }
 
 func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirtRunner, name string, config *config.Config,
 	controlPlaneCount, workerCount int,
-) (stat state.ConstellationState, retErr error) {
+) (idFile clusterid.File, retErr error) {
 	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerQEMU{client: cl, libvirt: lv})
 
 	libvirtURI := config.Provider.QEMU.LibvirtURI
@@ -146,7 +154,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 	// if no libvirt URI is specified, start a libvirt container
 	case libvirtURI == "":
 		if err := lv.Start(ctx, name, config.Provider.QEMU.LibvirtContainerImage); err != nil {
-			return state.ConstellationState{}, err
+			return clusterid.File{}, err
 		}
 		libvirtURI = libvirt.LibvirtTCPConnectURI
 
@@ -162,11 +170,11 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 	case strings.HasPrefix(libvirtURI, "qemu+unix://"):
 		unixURI, err := url.Parse(strings.TrimPrefix(libvirtURI, "qemu+unix://"))
 		if err != nil {
-			return state.ConstellationState{}, err
+			return clusterid.File{}, err
 		}
 		libvirtSocketPath = unixURI.Query().Get("socket")
 		if libvirtSocketPath == "" {
-			return state.ConstellationState{}, fmt.Errorf("socket path not specified in qemu+unix URI: %s", libvirtURI)
+			return clusterid.File{}, fmt.Errorf("socket path not specified in qemu+unix URI: %s", libvirtURI)
 		}
 	}
 
@@ -192,9 +200,13 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 		MetadataLibvirtURI: metadataLibvirtURI,
 	}
 
-	if err := cl.CreateCluster(ctx, name, vars); err != nil {
-		return state.ConstellationState{}, err
+	ip, err := cl.CreateCluster(ctx, name, vars)
+	if err != nil {
+		return clusterid.File{}, err
 	}
 
-	return cl.GetState(), nil
+	return clusterid.File{
+		CloudProvider: cloudprovider.QEMU,
+		IP:            ip,
+	}, nil
 }

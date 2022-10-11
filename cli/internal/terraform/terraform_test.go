@@ -127,13 +127,14 @@ func TestCreateCluster(t *testing.T) {
 				file:     file.NewHandler(tc.fs),
 			}
 
-			err := c.CreateCluster(context.Background(), "test", tc.vars)
+			ip, err := c.CreateCluster(context.Background(), "test", tc.vars)
 
 			if tc.wantErr {
 				assert.Error(err)
 				return
 			}
 			assert.NoError(err)
+			assert.Equal("192.0.2.100", ip)
 		})
 	}
 }
