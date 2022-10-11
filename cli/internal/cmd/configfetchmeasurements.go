@@ -16,6 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -42,10 +43,14 @@ type fetchMeasurementsFlags struct {
 
 func runConfigFetchMeasurements(cmd *cobra.Command, args []string) error {
 	fileHandler := file.NewHandler(afero.NewOsFs())
-	return configFetchMeasurements(cmd, fileHandler, http.DefaultClient)
+	rekor, err := sigstore.NewRekor()
+	if err != nil {
+		return fmt.Errorf("constructing Rekor client: %w", err)
+	}
+	return configFetchMeasurements(cmd, rekor, fileHandler, http.DefaultClient)
 }
 
-func configFetchMeasurements(cmd *cobra.Command, fileHandler file.Handler, client *http.Client) error {
+func configFetchMeasurements(cmd *cobra.Command, verifier rekorVerifier, fileHandler file.Handler, client *http.Client) error {
 	flags, err := parseFetchMeasurementsFlags(cmd)
 	if err != nil {
 		return err
@@ -67,8 +72,14 @@ func configFetchMeasurements(cmd *cobra.Command, fileHandler file.Handler, clien
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	var fetchedMeasurements config.Measurements
-	if err := fetchedMeasurements.FetchAndVerify(ctx, client, flags.measurementsURL, flags.signatureURL, []byte(constants.CosignPublicKey)); err != nil {
+	hash, err := fetchedMeasurements.FetchAndVerify(ctx, client, flags.measurementsURL, flags.signatureURL, []byte(constants.CosignPublicKey))
+	if err != nil {
 		return err
+	}
+
+	if err := verifyWithRekor(cmd.Context(), verifier, hash); err != nil {
+		cmd.Printf("Ignoring Rekor related error: %v\n", err)
+		cmd.Println("Make sure the downloaded measurements are trustworthy!")
 	}
 
 	conf.UpdateMeasurements(fetchedMeasurements)

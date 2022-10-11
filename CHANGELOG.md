@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 <!-- For changes in existing functionality.  -->
+- Verify measurements using [Rekor](https://github.com/sigstore/rekor) transparency log.
+
 ### Deprecated
 <!-- For soon-to-be removed features. -->
 ### Removed

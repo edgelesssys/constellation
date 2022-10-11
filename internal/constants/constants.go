@@ -10,7 +10,9 @@ Constants should never be overwritable by command line flags or configuration fi
 */
 package constants
 
-import "time"
+import (
+	"time"
+)
 
 const (
 	//
@@ -122,7 +124,8 @@ const (
 	CosignPublicKey = `-----BEGIN PUBLIC KEY-----
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEf8F1hpmwE+YCFXzjGtaQcrL6XZVT
 JmEe5iSLvG1SyQSAew7WdMKF6o9t8e2TFuCkzlOhhlws2OHWbiFZnFWCFw==
------END PUBLIC KEY-----`
+-----END PUBLIC KEY-----
+`
 )
 
 // VersionInfo is the version of a binary. Left as a separate variable to allow override during build.

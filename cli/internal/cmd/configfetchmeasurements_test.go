@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -69,7 +70,7 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 			require := require.New(t)
 
 			cmd := newConfigFetchMeasurementsCmd()
-			cmd.Flags().String("config", constants.ConfigFilename, "") // register persisten flag manually
+			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 
 			if tc.urlFlag != "" {
 				require.NoError(cmd.Flags().Set("url", tc.urlFlag))
@@ -149,9 +150,6 @@ func newTestClient(fn roundTripFunc) *http.Client {
 }
 
 func TestConfigFetchMeasurements(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
 	measurements := `1: fPRxd3lV3uybnSVhcBmM6XLzcvMitXW78G0RRuQxYGc=
 2: PUWM/lXMA+ofRD8VYr7sjfUcdeFKn8+acjShPxmOeWk=
 3: PUWM/lXMA+ofRD8VYr7sjfUcdeFKn8+acjShPxmOeWk=
@@ -162,17 +160,6 @@ func TestConfigFetchMeasurements(t *testing.T) {
 9: Gw5gq8D1WXfz46sF/OKiWbkBssyt4ayGybzNyV9cUCQ=
 `
 	signature := "MEUCIFdJ5dH6HDywxQWTUh9Bw77wMrq0mNCUjMQGYP+6QsVmAiEAmazj/L7rFGA4/Gz8y+kI5h5E5cDgc3brihvXBKF6qZA="
-
-	cmd := newConfigFetchMeasurementsCmd()
-	cmd.Flags().String("config", constants.ConfigFilename, "") // register persisten flag manually
-	fileHandler := file.NewHandler(afero.NewMemMapFs())
-
-	gcpConfig := config.Default()
-	gcpConfig.RemoveProviderExcept(cloudprovider.GCP)
-	gcpConfig.Provider.GCP.Image = "projects/constellation-images/global/images/constellation-coreos-1658216163"
-
-	err := fileHandler.WriteYAML(constants.ConfigFilename, gcpConfig, file.OptMkdirAll)
-	require.NoError(err)
 
 	client := newTestClient(func(req *http.Request) *http.Response {
 		if req.URL.String() == "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/projects/constellation-images/global/images/constellation-coreos-1658216163/measurements.yaml" {
@@ -196,5 +183,43 @@ func TestConfigFetchMeasurements(t *testing.T) {
 		}
 	})
 
-	assert.NoError(configFetchMeasurements(cmd, fileHandler, client))
+	testCases := map[string]struct {
+		verifier rekorVerifier
+	}{
+		"success": {
+			verifier: singleUUIDVerifier(),
+		},
+		"failing search should not result in error": {
+			verifier: &stubRekorVerifier{
+				SearchByHashUUIDs: []string{},
+				SearchByHashError: errors.New("some error"),
+			},
+		},
+		"failing verify should not result in error": {
+			verifier: &stubRekorVerifier{
+				SearchByHashUUIDs: []string{"11111111111111111111111111111111111111111111111111111111111111111111111111111111"},
+				VerifyEntryError:  errors.New("some error"),
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			cmd := newConfigFetchMeasurementsCmd()
+			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
+			fileHandler := file.NewHandler(afero.NewMemMapFs())
+
+			gcpConfig := config.Default()
+			gcpConfig.RemoveProviderExcept(cloudprovider.GCP)
+			gcpConfig.Provider.GCP.Image = "projects/constellation-images/global/images/constellation-coreos-1658216163"
+
+			err := fileHandler.WriteYAML(constants.ConfigFilename, gcpConfig, file.OptMkdirAll)
+			require.NoError(err)
+
+			assert.NoError(configFetchMeasurements(cmd, tc.verifier, fileHandler, client))
+		})
+	}
 }
