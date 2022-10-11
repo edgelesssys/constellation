@@ -20,8 +20,8 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudtypes"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -31,7 +31,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
 	"github.com/edgelesssys/constellation/v2/internal/license"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
-	"github.com/edgelesssys/constellation/v2/internal/state"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,17 +47,8 @@ func TestInitArgumentValidation(t *testing.T) {
 }
 
 func TestInitialize(t *testing.T) {
-	testGcpState := &state.ConstellationState{
-		CloudProvider: "GCP",
-	}
 	gcpServiceAccKey := &gcpshared.ServiceAccountKey{
 		Type: "service_account",
-	}
-	testAzureState := &state.ConstellationState{
-		CloudProvider: "Azure",
-	}
-	testQemuState := &state.ConstellationState{
-		CloudProvider: "QEMU",
 	}
 	testInitResp := &initproto.InitResponse{
 		Kubeconfig: []byte("kubeconfig"),
@@ -69,59 +59,51 @@ func TestInitialize(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		state                   *state.ConstellationState
-		idFile                  *clusterIDsFile
+		provider                cloudprovider.Provider
+		idFile                  *clusterid.File
 		configMutator           func(*config.Config)
 		serviceAccKey           *gcpshared.ServiceAccountKey
 		helmLoader              stubHelmLoader
 		initServerAPI           *stubInitServer
-		endpointFlag            string
 		masterSecretShouldExist bool
 		wantErr                 bool
 	}{
 		"initialize some gcp instances": {
-			state:         testGcpState,
-			idFile:        &clusterIDsFile{IP: "192.0.2.1"},
+			provider:      cloudprovider.GCP,
+			idFile:        &clusterid.File{IP: "192.0.2.1"},
 			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
 			serviceAccKey: gcpServiceAccKey,
 			initServerAPI: &stubInitServer{initResp: testInitResp},
 		},
 		"initialize some azure instances": {
-			state:         testAzureState,
-			idFile:        &clusterIDsFile{IP: "192.0.2.1"},
+			provider:      cloudprovider.Azure,
+			idFile:        &clusterid.File{IP: "192.0.2.1"},
 			initServerAPI: &stubInitServer{initResp: testInitResp},
 		},
 		"initialize some qemu instances": {
-			state:         testQemuState,
-			idFile:        &clusterIDsFile{IP: "192.0.2.1"},
+			provider:      cloudprovider.QEMU,
+			idFile:        &clusterid.File{IP: "192.0.2.1"},
 			initServerAPI: &stubInitServer{initResp: testInitResp},
 		},
-		"initialize with endpoint flag": {
-			state:         testGcpState,
-			configMutator: func(c *config.Config) { c.Provider.GCP.ServiceAccountKeyPath = serviceAccPath },
-			serviceAccKey: gcpServiceAccKey,
-			initServerAPI: &stubInitServer{initResp: testInitResp},
-			endpointFlag:  "192.0.2.1",
-		},
-		"empty state": {
-			state:         &state.ConstellationState{},
-			idFile:        &clusterIDsFile{IP: "192.0.2.1"},
+		"empty id file": {
+			provider:      cloudprovider.GCP,
+			idFile:        &clusterid.File{},
 			initServerAPI: &stubInitServer{},
 			wantErr:       true,
 		},
-		"neither endpoint flag nor id file": {
-			state:   &state.ConstellationState{},
-			wantErr: true,
+		"no id file": {
+			provider: cloudprovider.GCP,
+			wantErr:  true,
 		},
 		"init call fails": {
-			state:         testGcpState,
-			idFile:        &clusterIDsFile{IP: "192.0.2.1"},
+			provider:      cloudprovider.GCP,
+			idFile:        &clusterid.File{IP: "192.0.2.1"},
 			initServerAPI: &stubInitServer{initErr: someErr},
 			wantErr:       true,
 		},
 		"fail missing enforced PCR": {
-			state:  testGcpState,
-			idFile: &clusterIDsFile{IP: "192.0.2.1"},
+			provider: cloudprovider.GCP,
+			idFile:   &clusterid.File{IP: "192.0.2.1"},
 			configMutator: func(c *config.Config) {
 				c.Provider.GCP.EnforcedMeasurements = append(c.Provider.GCP.EnforcedMeasurements, 10)
 			},
@@ -158,22 +140,17 @@ func TestInitialize(t *testing.T) {
 
 			// Flags
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
-			if tc.endpointFlag != "" {
-				require.NoError(cmd.Flags().Set("endpoint", tc.endpointFlag))
-			}
 
 			// File system preparation
 			fs := afero.NewMemMapFs()
 			fileHandler := file.NewHandler(fs)
-			config := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.FromString(tc.state.CloudProvider))
+			config := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.provider)
 			if tc.configMutator != nil {
 				tc.configMutator(config)
 			}
 			require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, config, file.OptNone))
-			if tc.state != nil {
-				require.NoError(fileHandler.WriteJSON(constants.StateFilename, tc.state, file.OptNone))
-			}
 			if tc.idFile != nil {
+				tc.idFile.CloudProvider = tc.provider
 				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, tc.idFile, file.OptNone))
 			}
 			if tc.serviceAccKey != nil {
@@ -218,17 +195,22 @@ func TestWriteOutput(t *testing.T) {
 	ownerID := base64.StdEncoding.EncodeToString(resp.OwnerId)
 	clusterID := base64.StdEncoding.EncodeToString(resp.ClusterId)
 
-	expectedIDFile := clusterIDsFile{
+	expectedIDFile := clusterid.File{
 		ClusterID: clusterID,
 		OwnerID:   ownerID,
 		IP:        "cluster-ip",
+		UID:       "test-uid",
 	}
 
 	var out bytes.Buffer
 	testFs := afero.NewMemMapFs()
 	fileHandler := file.NewHandler(testFs)
 
-	err := writeOutput(resp, "cluster-ip", &out, fileHandler)
+	idFile := clusterid.File{
+		UID: "test-uid",
+		IP:  "cluster-ip",
+	}
+	err := writeOutput(idFile, resp, &out, fileHandler)
 	assert.NoError(err)
 	// assert.Contains(out.String(), ownerID)
 	assert.Contains(out.String(), clusterID)
@@ -241,7 +223,7 @@ func TestWriteOutput(t *testing.T) {
 
 	idsFile, err := afs.ReadFile(constants.ClusterIDsFileName)
 	assert.NoError(err)
-	var testIDFile clusterIDsFile
+	var testIDFile clusterid.File
 	err = json.Unmarshal(idsFile, &testIDFile)
 	assert.NoError(err)
 	assert.Equal(expectedIDFile, testIDFile)
@@ -366,8 +348,7 @@ func TestAttestation(t *testing.T) {
 		OwnerId:    []byte("ownerID"),
 		ClusterId:  []byte("clusterID"),
 	}}
-	existingState := state.ConstellationState{CloudProvider: "QEMU"}
-	existingIDFile := &clusterIDsFile{IP: "192.0.2.4"}
+	existingIDFile := &clusterid.File{IP: "192.0.2.4", CloudProvider: cloudprovider.QEMU}
 
 	netDialer := testdialer.NewBufconnDialer()
 	newDialer := func(v *cloudcmd.Validator) *dialer.Dialer {
@@ -404,7 +385,6 @@ func TestAttestation(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 	fileHandler := file.NewHandler(fs)
-	require.NoError(fileHandler.WriteJSON(constants.StateFilename, existingState, file.OptNone))
 	require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, existingIDFile, file.OptNone))
 
 	cfg := config.Default()

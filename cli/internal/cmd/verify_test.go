@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -44,7 +45,7 @@ func TestVerify(t *testing.T) {
 		configFlag       string
 		ownerIDFlag      string
 		clusterIDFlag    string
-		idFile           *clusterIDsFile
+		idFile           *clusterid.File
 		wantEndpoint     string
 		wantErr          bool
 	}{
@@ -79,7 +80,7 @@ func TestVerify(t *testing.T) {
 			provider:      cloudprovider.GCP,
 			clusterIDFlag: zeroBase64,
 			protoClient:   &stubVerifyClient{},
-			idFile:        &clusterIDsFile{IP: "192.0.2.1"},
+			idFile:        &clusterid.File{IP: "192.0.2.1"},
 			wantEndpoint:  "192.0.2.1:" + strconv.Itoa(constants.VerifyServiceNodePortGRPC),
 		},
 		"override endpoint from details file": {
@@ -87,7 +88,7 @@ func TestVerify(t *testing.T) {
 			nodeEndpointFlag: "192.0.2.2:1234",
 			clusterIDFlag:    zeroBase64,
 			protoClient:      &stubVerifyClient{},
-			idFile:           &clusterIDsFile{IP: "192.0.2.1"},
+			idFile:           &clusterid.File{IP: "192.0.2.1"},
 			wantEndpoint:     "192.0.2.2:1234",
 		},
 		"invalid endpoint": {
@@ -106,7 +107,7 @@ func TestVerify(t *testing.T) {
 			provider:         cloudprovider.GCP,
 			nodeEndpointFlag: "192.0.2.1:1234",
 			protoClient:      &stubVerifyClient{},
-			idFile:           &clusterIDsFile{OwnerID: zeroBase64},
+			idFile:           &clusterid.File{OwnerID: zeroBase64},
 			wantEndpoint:     "192.0.2.1:1234",
 		},
 		"config file not existing": {

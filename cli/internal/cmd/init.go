@@ -18,6 +18,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -48,7 +49,6 @@ func NewInitCmd() *cobra.Command {
 		RunE:  runInitialize,
 	}
 	cmd.Flags().String("master-secret", "", "path to base64-encoded master secret")
-	cmd.Flags().String("endpoint", "", "endpoint of the bootstrapper, passed as HOST[:PORT]")
 	cmd.Flags().Bool("conformance", false, "enable conformance mode")
 	return cmd
 }
@@ -74,7 +74,7 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator) *dialer.Dialer,
 	fileHandler file.Handler, helmLoader helmLoader, quotaChecker license.QuotaChecker, spinner spinnerInterf,
 ) error {
-	flags, err := evalFlagArgs(cmd, fileHandler)
+	flags, err := evalFlagArgs(cmd)
 	if err != nil {
 		return err
 	}
@@ -82,6 +82,11 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath)
 	if err != nil {
 		return fmt.Errorf("reading and validating config: %w", err)
+	}
+
+	var idFile clusterid.File
+	if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
+		return fmt.Errorf("reading cluster ID file: %w", err)
 	}
 
 	k8sVersion, err := versions.NewValidK8sVersion(config.KubernetesVersion)
@@ -142,13 +147,14 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		EnforceIdkeydigest:     getEnforceIDKeyDigest(provider, config),
 		ConformanceMode:        flags.conformance,
 	}
-	resp, err := initCall(cmd.Context(), newDialer(validator), flags.endpoint, req)
+	resp, err := initCall(cmd.Context(), newDialer(validator), idFile.IP, req)
 	spinner.Stop()
 	if err != nil {
 		return err
 	}
 
-	if err := writeOutput(resp, flags.endpoint, cmd.OutOrStdout(), fileHandler); err != nil {
+	idFile.CloudProvider = provider
+	if err := writeOutput(idFile, resp, cmd.OutOrStdout(), fileHandler); err != nil {
 		return err
 	}
 
@@ -190,7 +196,7 @@ func (d *initDoer) Do(ctx context.Context) error {
 	return nil
 }
 
-func writeOutput(resp *initproto.InitResponse, ip string, wr io.Writer, fileHandler file.Handler) error {
+func writeOutput(idFile clusterid.File, resp *initproto.InitResponse, wr io.Writer, fileHandler file.Handler) error {
 	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
 	ownerID := base64.StdEncoding.EncodeToString(resp.OwnerId)
@@ -207,11 +213,9 @@ func writeOutput(resp *initproto.InitResponse, ip string, wr io.Writer, fileHand
 		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
 
-	idFile := clusterIDsFile{
-		ClusterID: clusterID,
-		OwnerID:   ownerID,
-		IP:        ip,
-	}
+	idFile.OwnerID = ownerID
+	idFile.ClusterID = clusterID
+
 	if err := fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptOverwrite); err != nil {
 		return fmt.Errorf("writing Constellation id file: %w", err)
 	}
@@ -249,20 +253,10 @@ func getEnforceIDKeyDigest(provider cloudprovider.Provider, config *config.Confi
 
 // evalFlagArgs gets the flag values and does preprocessing of these values like
 // reading the content from file path flags and deriving other values from flag combinations.
-func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (initFlags, error) {
+func evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 	masterSecretPath, err := cmd.Flags().GetString("master-secret")
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing master-secret path flag: %w", err)
-	}
-	endpoint, err := cmd.Flags().GetString("endpoint")
-	if err != nil {
-		return initFlags{}, fmt.Errorf("parsing endpoint flag: %w", err)
-	}
-	if endpoint == "" {
-		endpoint, err = readIPFromIDFile(fileHandler)
-		if err != nil {
-			return initFlags{}, fmt.Errorf("getting bootstrapper endpoint: %w", err)
-		}
 	}
 	conformance, err := cmd.Flags().GetBool("conformance")
 	if err != nil {
@@ -275,7 +269,6 @@ func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (initFlags, erro
 
 	return initFlags{
 		configPath:       configPath,
-		endpoint:         endpoint,
 		conformance:      conformance,
 		masterSecretPath: masterSecretPath,
 	}, nil
@@ -285,7 +278,6 @@ func evalFlagArgs(cmd *cobra.Command, fileHandler file.Handler) (initFlags, erro
 type initFlags struct {
 	configPath       string
 	masterSecretPath string
-	endpoint         string
 	conformance      bool
 }
 
@@ -334,7 +326,7 @@ func readOrGenerateMasterSecret(writer io.Writer, fileHandler file.Handler, file
 }
 
 func readIPFromIDFile(fileHandler file.Handler) (string, error) {
-	var idFile clusterIDsFile
+	var idFile clusterid.File
 	if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
 		return "", err
 	}

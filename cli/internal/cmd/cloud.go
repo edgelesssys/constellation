@@ -9,9 +9,9 @@ package cmd
 import (
 	"context"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
-	"github.com/edgelesssys/constellation/v2/internal/state"
 )
 
 type cloudCreator interface {
@@ -21,9 +21,9 @@ type cloudCreator interface {
 		config *config.Config,
 		name, insType string,
 		coordCount, nodeCount int,
-	) (state.ConstellationState, error)
+	) (clusterid.File, error)
 }
 
 type cloudTerminator interface {
-	Terminate(context.Context, state.ConstellationState) error
+	Terminate(context.Context, cloudprovider.Provider) error
 }

@@ -8,12 +8,11 @@ package cloudcmd
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/state"
 )
 
 // Terminator deletes cloud provider resources.
@@ -35,10 +34,18 @@ func NewTerminator() *Terminator {
 }
 
 // Terminate deletes the could provider resources defined in the constellation state.
-func (t *Terminator) Terminate(ctx context.Context, state state.ConstellationState) error {
-	provider := cloudprovider.FromString(state.CloudProvider)
+func (t *Terminator) Terminate(ctx context.Context, provider cloudprovider.Provider) (retErr error) {
 	if provider == cloudprovider.Unknown {
-		return fmt.Errorf("unknown cloud provider %s", state.CloudProvider)
+		return errors.New("unknown cloud provider")
+	}
+
+	if provider == cloudprovider.QEMU {
+		libvirt := t.newLibvirtRunner()
+		defer func() {
+			if retErr == nil {
+				retErr = libvirt.Stop(ctx)
+			}
+		}()
 	}
 
 	cl, err := t.newTerraformClient(ctx, provider)
@@ -47,26 +54,11 @@ func (t *Terminator) Terminate(ctx context.Context, state state.ConstellationSta
 	}
 	defer cl.RemoveInstaller()
 
-	if provider == cloudprovider.QEMU {
-		libvirt := t.newLibvirtRunner()
-		return t.terminateQEMU(ctx, cl, libvirt)
-	}
-
 	return t.terminateTerraform(ctx, cl)
 }
 
 func (t *Terminator) terminateTerraform(ctx context.Context, cl terraformClient) error {
 	if err := cl.DestroyCluster(ctx); err != nil {
-		return err
-	}
-	return cl.CleanUpWorkspace()
-}
-
-func (t *Terminator) terminateQEMU(ctx context.Context, cl terraformClient, lv libvirtRunner) error {
-	if err := cl.DestroyCluster(ctx); err != nil {
-		return err
-	}
-	if err := lv.Stop(ctx); err != nil {
 		return err
 	}
 	return cl.CleanUpWorkspace()

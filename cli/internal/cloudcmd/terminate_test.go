@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/state"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,53 +22,52 @@ func TestTerminator(t *testing.T) {
 		tfClient       terraformClient
 		newTfClientErr error
 		libvirt        *stubLibvirtRunner
-		state          state.ConstellationState
+		provider       cloudprovider.Provider
 		wantErr        bool
 	}{
 		"gcp": {
 			tfClient: &stubTerraformClient{},
-			state:    state.ConstellationState{CloudProvider: cloudprovider.GCP.String()},
+			provider: cloudprovider.GCP,
 		},
 		"gcp newTfClientErr": {
 			newTfClientErr: someErr,
-			state:          state.ConstellationState{CloudProvider: cloudprovider.GCP.String()},
+			provider:       cloudprovider.GCP,
 			wantErr:        true,
 		},
 		"gcp destroy cluster error": {
 			tfClient: &stubTerraformClient{destroyClusterErr: someErr},
-			state:    state.ConstellationState{CloudProvider: cloudprovider.GCP.String()},
+			provider: cloudprovider.GCP,
 			wantErr:  true,
 		},
 		"gcp clean up workspace error": {
 			tfClient: &stubTerraformClient{cleanUpWorkspaceErr: someErr},
-			state:    state.ConstellationState{CloudProvider: cloudprovider.GCP.String()},
+			provider: cloudprovider.GCP,
 			wantErr:  true,
 		},
 		"qemu": {
 			tfClient: &stubTerraformClient{},
 			libvirt:  &stubLibvirtRunner{},
-			state:    state.ConstellationState{CloudProvider: cloudprovider.QEMU.String()},
+			provider: cloudprovider.QEMU,
 		},
 		"qemu destroy cluster error": {
 			tfClient: &stubTerraformClient{destroyClusterErr: someErr},
 			libvirt:  &stubLibvirtRunner{},
-			state:    state.ConstellationState{CloudProvider: cloudprovider.QEMU.String()},
+			provider: cloudprovider.QEMU,
 			wantErr:  true,
 		},
 		"qemu clean up workspace error": {
 			tfClient: &stubTerraformClient{cleanUpWorkspaceErr: someErr},
 			libvirt:  &stubLibvirtRunner{},
-			state:    state.ConstellationState{CloudProvider: cloudprovider.QEMU.String()},
+			provider: cloudprovider.QEMU,
 			wantErr:  true,
 		},
 		"qemu stop libvirt error": {
 			tfClient: &stubTerraformClient{},
 			libvirt:  &stubLibvirtRunner{stopErr: someErr},
-			state:    state.ConstellationState{CloudProvider: cloudprovider.QEMU.String()},
+			provider: cloudprovider.QEMU,
 			wantErr:  true,
 		},
 		"unknown cloud provider": {
-			state:   state.ConstellationState{},
 			wantErr: true,
 		},
 	}
@@ -87,7 +85,7 @@ func TestTerminator(t *testing.T) {
 				},
 			}
 
-			err := terminator.Terminate(context.Background(), tc.state)
+			err := terminator.Terminate(context.Background(), tc.provider)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -96,7 +94,7 @@ func TestTerminator(t *testing.T) {
 				cl := tc.tfClient.(*stubTerraformClient)
 				assert.True(cl.destroyClusterCalled)
 				assert.True(cl.removeInstallerCalled)
-				if cloudprovider.FromString(tc.state.CloudProvider) == cloudprovider.QEMU {
+				if tc.provider == cloudprovider.QEMU {
 					assert.True(tc.libvirt.stopCalled)
 				}
 			}
