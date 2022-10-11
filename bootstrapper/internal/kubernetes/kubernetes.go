@@ -224,10 +224,11 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up cluster autoscaler: %w", err)
 	}
 
-	accessManager := resources.NewAccessManagerDeployment(sshUsers)
-	if err := k.clusterUtil.SetupAccessManager(k.client, accessManager); err != nil {
-		return nil, fmt.Errorf("failed to setup access-manager: %w", err)
-	}
+	// TODO: remove access manager or re-enable with support for readonly /etc
+	// accessManager := resources.NewAccessManagerDeployment(sshUsers)
+	// if err := k.clusterUtil.SetupAccessManager(k.client, accessManager); err != nil {
+	// 	return nil, fmt.Errorf("failed to setup access-manager: %w", err)
+	// }
 
 	if err := k.clusterUtil.SetupVerificationService(
 		k.client, resources.NewVerificationDaemonSet(k.cloudProvider, controlPlaneEndpoint),
