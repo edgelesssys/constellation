@@ -44,8 +44,8 @@ type Metadata struct {
 
 // New initializes a new AWS Metadata client using instance default credentials.
 // Default region is set up using the AWS imds api.
-func New() (*Metadata, error) {
-	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithEC2IMDSRegion())
+func New(ctx context.Context) (*Metadata, error) {
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithEC2IMDSRegion())
 	if err != nil {
 		return nil, err
 	}
