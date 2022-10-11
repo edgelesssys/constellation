@@ -288,13 +288,30 @@ func (k *KubernetesUtil) FixCilium(log *logger.Logger) {
 		}
 	}
 
-	// get cilium pod name
-	out, err := exec.CommandContext(context.Background(), "/bin/bash", "-c", "/run/state/bin/crictl ps -o json | jq -r '.containers[] | select(.metadata.name == \"cilium-agent\") | .podSandboxId'").CombinedOutput()
+	// get cilium container id
+	out, err := exec.CommandContext(context.Background(), "/run/state/bin/crictl", "ps", "--name", "cilium-agent", "-q").CombinedOutput()
 	if err != nil {
-		log.With(zap.Error(err)).Errorf("Getting pod id failed: %s", out)
+		log.With(zap.Error(err)).Errorf("Getting cilium container id failed: %s", out)
 		return
 	}
 	outLines := strings.Split(string(out), "\n")
+	if len(outLines) < 2 {
+		log.Errorf("Getting cilium container id returned invalid output: %s", out)
+		return
+	}
+	containerID := outLines[len(outLines)-2]
+
+	// get cilium pod id
+	out, err = exec.CommandContext(context.Background(), "/run/state/bin/crictl", "inspect", "-o", "go-template", "--template", "{{ .info.sandboxID }}", containerID).CombinedOutput()
+	if err != nil {
+		log.With(zap.Error(err)).Errorf("Getting cilium pod id failed: %s", out)
+		return
+	}
+	outLines = strings.Split(string(out), "\n")
+	if len(outLines) < 2 {
+		log.Errorf("Getting cilium pod id returned invalid output: %s", out)
+		return
+	}
 	podID := outLines[len(outLines)-2]
 
 	// stop and delete pod
