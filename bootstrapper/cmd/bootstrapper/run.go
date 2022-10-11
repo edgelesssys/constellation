@@ -17,13 +17,12 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/logging"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/nodelock"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"go.uber.org/zap"
 )
-
-var version = "0.0.0"
 
 func run(issuerWrapper initserver.IssuerWrapper, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
 	kube clusterInitJoiner, metadata metadataAPI,
@@ -32,7 +31,7 @@ func run(issuerWrapper initserver.IssuerWrapper, tpm vtpm.TPMOpenFunc, fileHandl
 ) {
 	defer cloudLogger.Close()
 
-	log.With(zap.String("version", version)).Infof("Starting bootstrapper")
+	log.With(zap.String("version", constants.VersionInfo)).Infof("Starting bootstrapper")
 	cloudLogger.Disclose("bootstrapper started running...")
 
 	uuid, err := getDiskUUID()
