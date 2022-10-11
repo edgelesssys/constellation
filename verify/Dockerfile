@@ -23,7 +23,7 @@ RUN rm -rf ./hack/
 
 WORKDIR /constellation/verify
 ARG PROJECT_VERSION=0.0.0
-RUN CGO_ENABLED=0 go build -o verify-service -trimpath -buildvcs=false -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/internal/constants.VersionInfo=${PROJECT_VERSION}" ./cmd/
+RUN CGO_ENABLED=0 go build -o verify-service -trimpath -buildvcs=false -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}" ./cmd/
 
 FROM scratch AS release
 COPY --from=build /constellation/verify/verify-service /verify
