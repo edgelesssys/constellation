@@ -11,9 +11,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -42,11 +42,17 @@ type Metadata struct {
 	imds imdsAPI
 }
 
-func New(cfg aws.Config) *Metadata {
+// New initializes a new AWS Metadata client using instance default credentials.
+// Default region is set up using the AWS imds api.
+func New() (*Metadata, error) {
+	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithEC2IMDSRegion())
+	if err != nil {
+		return nil, err
+	}
 	return &Metadata{
 		ec2:  ec2.NewFromConfig(cfg),
 		imds: imds.New(imds.Options{}),
-	}
+	}, nil
 }
 
 // Supported is used to determine if metadata API is implemented for this cloud provider.
@@ -94,36 +100,29 @@ func (m *Metadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) 
 
 func (m *Metadata) getAllInstancesInGroup(ctx context.Context, uid string) ([]types.Instance, error) {
 	var instances []types.Instance
-	nextToken := (*string)(nil)
-	once := sync.Once{}
-	first := func() bool {
-		var ret bool
-		once.Do(func() { ret = true })
-		return ret
+	instanceReq := &ec2.DescribeInstancesInput{
+		Filters: []types.Filter{
+			{
+				Name:   aws.String("tag:" + tagUID),
+				Values: []string{uid},
+			},
+		},
 	}
 
-	for nextToken != nil || first() {
-		describeOutput, err := m.ec2.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
-			Filters: []types.Filter{
-				{
-					Name:   aws.String("tag:" + tagUID),
-					Values: []string{uid},
-				},
-			},
-			NextToken: nextToken,
-		})
+	for out, err := m.ec2.DescribeInstances(ctx, instanceReq); ; out, err = m.ec2.DescribeInstances(ctx, instanceReq) {
 		if err != nil {
 			return nil, fmt.Errorf("retrieving instances: %w", err)
 		}
 
-		for _, reservation := range describeOutput.Reservations {
+		for _, reservation := range out.Reservations {
 			instances = append(instances, reservation.Instances...)
 		}
 
-		nextToken = describeOutput.NextToken
+		if out.NextToken == nil {
+			return instances, nil
+		}
+		instanceReq.NextToken = out.NextToken
 	}
-
-	return instances, nil
 }
 
 func (m *Metadata) convertToMetadataInstance(ec2Instances []types.Instance) ([]metadata.InstanceMetadata, error) {
@@ -187,6 +186,9 @@ func (m *Metadata) readInstanceTag(ctx context.Context, tag string) (string, err
 
 func findTag(tags []types.Tag, wantKey string) (string, error) {
 	for _, tag := range tags {
+		if tag.Key == nil || tag.Value == nil {
+			continue
+		}
 		if *tag.Key == wantKey {
 			return *tag.Value, nil
 		}
