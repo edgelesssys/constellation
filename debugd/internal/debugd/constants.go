@@ -32,4 +32,8 @@ ExecStart=/run/state/bin/bootstrapper
 [Install]
 WantedBy=multi-user.target
 `
+	GettyAutologinOverrideFilename     = "/run/systemd/system/serial-getty@ttyS0.service.d/autologin.conf"
+	GettyAutologinOverrideUnitContents = `[Service]
+ExecStart=
+ExecStart=-/sbin/agetty -o '-p -f -- \\u' --autologin root --keep-baud 115200,57600,38400,9600 - $TERM`
 )

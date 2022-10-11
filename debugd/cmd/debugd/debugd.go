@@ -47,7 +47,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if err := deploy.DeleteUserPassword(ctx, "root"); err != nil {
+	if err := deploy.EnableAutoLogin(ctx, fs, serviceManager); err != nil {
 		log.Errorf("root login: %w")
 	}
 
