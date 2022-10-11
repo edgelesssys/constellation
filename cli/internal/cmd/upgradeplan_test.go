@@ -271,7 +271,7 @@ func TestGetCompatibleImageMeasurements(t *testing.T) {
 
 	pubK := []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----")
 
-	err := getCompatibleImageMeasurements(context.Background(), client, SingleUUIDVerifier(), pubK, testImages)
+	err := getCompatibleImageMeasurements(context.Background(), client, singleUUIDVerifier(), pubK, testImages)
 	assert.NoError(err)
 
 	for _, image := range testImages {
@@ -295,7 +295,7 @@ func TestUpgradePlan(t *testing.T) {
 		planner                 stubUpgradePlanner
 		flags                   upgradePlanFlags
 		csp                     cloudprovider.Provider
-		verifier                RekorVerifier
+		verifier                rekorVerifier
 		imageFetchStatus        int
 		measurementsFetchStatus int
 		wantUpgrade             bool
@@ -313,7 +313,7 @@ func TestUpgradePlan(t *testing.T) {
 				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
 			},
 			csp:         cloudprovider.GCP,
-			verifier:    SingleUUIDVerifier(),
+			verifier:    singleUUIDVerifier(),
 			wantUpgrade: false,
 		},
 		"upgrades gcp": {
@@ -328,7 +328,7 @@ func TestUpgradePlan(t *testing.T) {
 				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
 			},
 			csp:         cloudprovider.GCP,
-			verifier:    SingleUUIDVerifier(),
+			verifier:    singleUUIDVerifier(),
 			wantUpgrade: true,
 		},
 		"upgrades azure": {
@@ -343,7 +343,7 @@ func TestUpgradePlan(t *testing.T) {
 				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
 			},
 			csp:         cloudprovider.Azure,
-			verifier:    SingleUUIDVerifier(),
+			verifier:    singleUUIDVerifier(),
 			wantUpgrade: true,
 		},
 		"upgrade to stdout": {
@@ -358,7 +358,7 @@ func TestUpgradePlan(t *testing.T) {
 				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
 			},
 			csp:         cloudprovider.GCP,
-			verifier:    SingleUUIDVerifier(),
+			verifier:    singleUUIDVerifier(),
 			wantUpgrade: true,
 		},
 		"current image not valid": {
@@ -373,7 +373,7 @@ func TestUpgradePlan(t *testing.T) {
 				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
 			},
 			csp:      cloudprovider.GCP,
-			verifier: SingleUUIDVerifier(),
+			verifier: singleUUIDVerifier(),
 			wantErr:  true,
 		},
 		"image fetch error": {
@@ -388,7 +388,7 @@ func TestUpgradePlan(t *testing.T) {
 				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
 			},
 			csp:      cloudprovider.GCP,
-			verifier: SingleUUIDVerifier(),
+			verifier: singleUUIDVerifier(),
 			wantErr:  true,
 		},
 		"measurements fetch error": {
@@ -403,7 +403,7 @@ func TestUpgradePlan(t *testing.T) {
 				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
 			},
 			csp:      cloudprovider.GCP,
-			verifier: SingleUUIDVerifier(),
+			verifier: singleUUIDVerifier(),
 			wantErr:  true,
 		},
 		"failing search should not result in error": {
@@ -418,7 +418,7 @@ func TestUpgradePlan(t *testing.T) {
 				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
 			},
 			csp: cloudprovider.GCP,
-			verifier: &StubRekorVerifier{
+			verifier: &stubRekorVerifier{
 				SearchByHashUUIDs: []string{},
 				SearchByHashError: errors.New("some error"),
 			},
@@ -436,7 +436,7 @@ func TestUpgradePlan(t *testing.T) {
 				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
 			},
 			csp: cloudprovider.GCP,
-			verifier: &StubRekorVerifier{
+			verifier: &stubRekorVerifier{
 				SearchByHashUUIDs: []string{"11111111111111111111111111111111111111111111111111111111111111111111111111111111"},
 				VerifyEntryError:  errors.New("some error"),
 			},

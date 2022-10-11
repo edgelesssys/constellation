@@ -184,19 +184,19 @@ func TestConfigFetchMeasurements(t *testing.T) {
 	})
 
 	testCases := map[string]struct {
-		verifier RekorVerifier
+		verifier rekorVerifier
 	}{
 		"success": {
-			verifier: SingleUUIDVerifier(),
+			verifier: singleUUIDVerifier(),
 		},
 		"failing search should not result in error": {
-			verifier: &StubRekorVerifier{
+			verifier: &stubRekorVerifier{
 				SearchByHashUUIDs: []string{},
 				SearchByHashError: errors.New("some error"),
 			},
 		},
 		"failing verify should not result in error": {
-			verifier: &StubRekorVerifier{
+			verifier: &stubRekorVerifier{
 				SearchByHashUUIDs: []string{"11111111111111111111111111111111111111111111111111111111111111111111111111111111"},
 				VerifyEntryError:  errors.New("some error"),
 			},

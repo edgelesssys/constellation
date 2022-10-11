@@ -50,7 +50,7 @@ func runConfigFetchMeasurements(cmd *cobra.Command, args []string) error {
 	return configFetchMeasurements(cmd, rekor, fileHandler, http.DefaultClient)
 }
 
-func configFetchMeasurements(cmd *cobra.Command, verifier RekorVerifier, fileHandler file.Handler, client *http.Client) error {
+func configFetchMeasurements(cmd *cobra.Command, verifier rekorVerifier, fileHandler file.Handler, client *http.Client) error {
 	flags, err := parseFetchMeasurementsFlags(cmd)
 	if err != nil {
 		return err

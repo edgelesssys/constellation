@@ -71,7 +71,7 @@ func runUpgradePlan(cmd *cobra.Command, args []string) error {
 
 // upgradePlan plans an upgrade of a Constellation cluster.
 func upgradePlan(cmd *cobra.Command, planner upgradePlanner,
-	fileHandler file.Handler, client *http.Client, rekor RekorVerifier, flags upgradePlanFlags,
+	fileHandler file.Handler, client *http.Client, rekor rekorVerifier, flags upgradePlanFlags,
 ) error {
 	config, err := config.FromFile(fileHandler, flags.configPath)
 	if err != nil {
@@ -179,7 +179,7 @@ func getCompatibleImages(csp cloudprovider.Provider, currentVersion string, imag
 }
 
 // getCompatibleImageMeasurements retrieves the expected measurements for each image.
-func getCompatibleImageMeasurements(ctx context.Context, client *http.Client, rekor RekorVerifier, pubK []byte, images map[string]config.UpgradeConfig) error {
+func getCompatibleImageMeasurements(ctx context.Context, client *http.Client, rekor rekorVerifier, pubK []byte, images map[string]config.UpgradeConfig) error {
 	for idx, img := range images {
 		measurementsURL, err := url.Parse(constants.S3PublicBucket + img.Image + "/measurements.yaml")
 		if err != nil {

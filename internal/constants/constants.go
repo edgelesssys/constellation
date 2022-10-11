@@ -11,7 +11,6 @@ Constants should never be overwritable by command line flags or configuration fi
 package constants
 
 import (
-	"encoding/base64"
 	"time"
 )
 
@@ -131,10 +130,3 @@ JmEe5iSLvG1SyQSAew7WdMKF6o9t8e2TFuCkzlOhhlws2OHWbiFZnFWCFw==
 
 // VersionInfo is the version of a binary. Left as a separate variable to allow override during build.
 var VersionInfo = "0.0.0"
-
-// CosignPublicKeyBase64 converts CosignPublicKey to base64.
-func CosignPublicKeyBase64() string {
-	return base64.StdEncoding.EncodeToString(
-		[]byte(CosignPublicKey),
-	)
-}
