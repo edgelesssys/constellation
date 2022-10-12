@@ -1,6 +1,7 @@
 name: Go mod tidy check
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
