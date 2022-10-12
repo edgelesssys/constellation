@@ -46,7 +46,7 @@ jobs:
         run: |
           mods=$(go list -f '{{.Dir}}/...' -m | xargs)
           echo "Found mods: $mods"
-          echo "submods=${mods} >> $GITHUB_OUTPUT"
+          echo "submods=${mods}" >> $GITHUB_OUTPUT
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@537aa1903e5d359d0b27dbc19ddd22c5087f3fbc
