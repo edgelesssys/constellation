@@ -22,6 +22,9 @@ resource "aws_launch_configuration" "control_plane_launch_config" {
     http_tokens = "required"
   }
 
+  root_block_device {
+    encrypted = true
+  }
 
   lifecycle {
     create_before_destroy = true
