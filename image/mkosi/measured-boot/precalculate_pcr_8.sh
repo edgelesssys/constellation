@@ -66,5 +66,6 @@ echo "Kernel commandline:            ${cmdline}"
 echo "Kernel Commandline measurement ${cmdline_hash}"
 echo ""
 echo "Expected PCR[8]:               ${expected_pcr_8}"
+echo ""
 
 write_output "${OUT}"
