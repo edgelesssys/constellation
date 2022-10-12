@@ -1,5 +1,6 @@
 name: Create Pull Request for CLI reference update
 on:
+  workflow_dispatch:
   push:
     branches:
       - action/constellation/update-cli-reference

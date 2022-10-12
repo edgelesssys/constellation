@@ -1,5 +1,6 @@
 name: Publish CLI reference to documentation
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -7,7 +8,6 @@ on:
       - "cli/cmd/**"
       - "cli/internal/cmd/**"
       - "hack/clidocgen/**"
-  workflow_dispatch:
 
 jobs:
   publish-to-docs:
