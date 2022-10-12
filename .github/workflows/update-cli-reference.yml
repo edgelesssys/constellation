@@ -15,10 +15,10 @@ jobs:
 
     steps:
       - name: Checkout Constellation
-        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
 
       - name: Setup Go environment
-        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
+        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f # tag=v3.3.0
         with:
           go-version: "1.19.2"
           cache: true
@@ -38,7 +38,7 @@ jobs:
 
       - name: Publish new reference (create new branch)
         if: ${{ env.EXISTS == 0 }}
-        uses: dmnemec/copy_file_to_another_repo_action@c93037aa10fa8893de271f19978c980d0c1a9b37
+        uses: dmnemec/copy_file_to_another_repo_action@c93037aa10fa8893de271f19978c980d0c1a9b37 # tag=v1.1.1
         env:
           API_TOKEN_GITHUB: ${{ secrets.CI_GITHUB_REPOSITORY }}
         with:
@@ -52,7 +52,7 @@ jobs:
 
       - name: Publish new reference (update branch)
         if: ${{ env.EXISTS == 1 }}
-        uses: dmnemec/copy_file_to_another_repo_action@c93037aa10fa8893de271f19978c980d0c1a9b37
+        uses: dmnemec/copy_file_to_another_repo_action@c93037aa10fa8893de271f19978c980d0c1a9b37 # tag=v1.1.1
         env:
           API_TOKEN_GITHUB: ${{ secrets.CI_GITHUB_REPOSITORY }}
         with:

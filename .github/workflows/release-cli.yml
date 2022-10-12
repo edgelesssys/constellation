@@ -9,10 +9,10 @@ jobs:
     steps:
       - name: Checkout
         id: checkout
-        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
 
       - name: Setup Go environment
-        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
+        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f # tag=v3.3.0
         with:
           go-version: "1.19.2"
 
@@ -88,7 +88,7 @@ jobs:
 
       - name: Create release with artifacts
         # GitHub endorsed release project. See: https://github.com/actions/create-release
-        uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5
+        uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5 # tag=v0.1.14
         if: startsWith(github.ref, 'refs/tags/v')
         with:
           draft: true

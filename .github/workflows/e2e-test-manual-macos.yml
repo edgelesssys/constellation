@@ -50,14 +50,14 @@ jobs:
     if: ${{ github.event.inputs.isDebugImage == 'true' }}
     steps:
       - name: Setup Go environment
-        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
+        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f # tag=v3.3.0
         if: ${{ github.event.steps.check-bootstrapper-cache.cache-hit != 'true'}}
         with:
           go-version: "1.19.2"
 
       - name: Check out repository
         if: ${{ github.event.steps.check-bootstrapper-cache.cache-hit != 'true'}}
-        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
 
       - name: Build bootstrapper
         if: ${{ github.event.steps.check-bootstrapper-cache.cache-hit != 'true'}}
@@ -65,7 +65,7 @@ jobs:
 
       - name: Upload bootstrapper to cache
         if: ${{ github.event.steps.check-bootstrapper-cache.cache-hit != 'true'}}
-        uses: actions/cache@56461b9eb0f8438fd15c7a9968e3c9ebb18ceff1
+        uses: actions/cache@56461b9eb0f8438fd15c7a9968e3c9ebb18ceff1 # tag=v3.0.10
         with:
           key: bootstrapper-${{ github.sha }}
           path: "build/bootstrapper"
@@ -81,10 +81,10 @@ jobs:
         run: brew install coreutils
 
       - name: Check out repository
-        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
 
       - name: Setup Go environment
-        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
+        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f # tag=v3.3.0
         with:
           go-version: "1.19.2"
 
@@ -106,7 +106,7 @@ jobs:
 
       - name: Set up gcloud CLI
         if: ${{ github.event.inputs.cloudProvider == 'gcp' }}
-        uses: google-github-actions/setup-gcloud@877d4953d2c70a0ba7ef3290ae968eb24af233bb
+        uses: google-github-actions/setup-gcloud@877d4953d2c70a0ba7ef3290ae968eb24af233bb # tag=v0.6.0
 
       - name: Run manual E2E test
         uses: ./.github/actions/e2e_test

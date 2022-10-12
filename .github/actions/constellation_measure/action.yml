@@ -67,7 +67,7 @@ runs:
     # TODO: Replace with https://github.com/sigstore/sigstore-installer/tree/initial
     # once it has the functionality
     - name: Install Cosign
-      uses: sigstore/cosign-installer@48866aa521d8bf870604709cd43ec2f602d03ff2
+      uses: sigstore/cosign-installer@7cc35d7fdbe70d4278a0c96779081e6fac665f88 # tag=v2.8.0
       if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
     - name: Install Rekor
       run: |
