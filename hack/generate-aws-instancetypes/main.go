@@ -106,6 +106,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 package instancetypes
 
-var AWSSupportedInstanceTypesOrFamilies = []string{"%s"}
-`, strings.Join(allInstances, "\", \""))
+var AWSSupportedInstanceTypesOrFamilies = []string{
+	"%s",
+}
+`, strings.Join(allInstances, "\",\n\t\""))
 }
