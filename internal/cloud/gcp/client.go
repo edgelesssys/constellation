@@ -240,7 +240,7 @@ func (c *Client) RetrieveLoadBalancerEndpoint(ctx context.Context, project strin
 		if err != nil {
 			return "", fmt.Errorf("retrieving load balancer IP failed: %w", err)
 		}
-		if resp.Labels["constellation-uid"] == uid {
+		if resp.Labels["constellation-uid"] == uid && resp.Labels["constellation-use"] == "kubernetes" {
 			if resp.PortRange == nil {
 				return "", errors.New("load balancer with searched UID has no ports")
 			}

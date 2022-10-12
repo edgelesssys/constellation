@@ -782,6 +782,7 @@ func TestRetrieveSubnetworkAliasCIDR(t *testing.T) {
 func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 	loadBalancerIP := "192.0.2.1"
 	uid := "uid"
+	use := "kubernetes"
 	someErr := errors.New("some error")
 	testCases := map[string]struct {
 		stubForwardingRulesClient stubForwardingRulesClient
@@ -797,7 +798,7 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 						{
 							IPAddress: proto.String(loadBalancerIP),
 							PortRange: proto.String("100-100"),
-							Labels:    map[string]string{"constellation-uid": uid},
+							Labels:    map[string]string{"constellation-uid": uid, "constellation-use": use},
 						},
 					},
 				},
@@ -826,7 +827,7 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 						{
 							IPAddress: proto.String(loadBalancerIP),
 							PortRange: proto.String("100-100"),
-							Labels:    map[string]string{"constellation-uid": uid},
+							Labels:    map[string]string{"constellation-uid": uid, "constellation-use": use},
 						},
 					},
 				},
@@ -840,7 +841,7 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 					rules: []*computepb.ForwardingRule{
 						{
 							IPAddress: proto.String(loadBalancerIP),
-							Labels:    map[string]string{"constellation-uid": uid},
+							Labels:    map[string]string{"constellation-uid": uid, "constellation-use": use},
 						},
 					},
 				},
@@ -856,7 +857,22 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 						{
 							IPAddress: proto.String(loadBalancerIP),
 							PortRange: proto.String("100-100"),
-							Labels:    map[string]string{"constellation-uid": uid},
+							Labels:    map[string]string{"constellation-uid": uid, "constellation-use": use},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		"fails on incorrect use label": {
+			stubMetadataClient: stubMetadataClient{InstanceValue: uid},
+			stubForwardingRulesClient: stubForwardingRulesClient{
+				ForwardingRuleIterator: &stubForwardingRuleIterator{
+					rules: []*computepb.ForwardingRule{
+						{
+							IPAddress: proto.String(loadBalancerIP),
+							PortRange: proto.String("100-100"),
+							Labels:    map[string]string{"constellation-uid": uid, "constellation-use": "bootstrapper"},
 						},
 					},
 				},

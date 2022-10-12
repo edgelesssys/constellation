@@ -13,6 +13,12 @@ variable "uid" {
   description = "UID of the cluster. This is used for tags."
 }
 
+variable "labels" {
+  type        = map(string)
+  default     = {}
+  description = "Labels to apply to the instance group."
+}
+
 variable "instance_type" {
   type        = string
   description = "Instance type for the nodes."

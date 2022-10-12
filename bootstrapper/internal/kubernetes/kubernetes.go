@@ -144,7 +144,7 @@ func (k *KubeWrapper) InitCluster(
 		zap.String("nodeName", nodeName),
 		zap.String("providerID", providerID),
 		zap.String("nodeIP", nodeIP),
-		zap.String("controlPlaneEndpointEndpoint", controlPlaneEndpoint),
+		zap.String("controlPlaneEndpoint", controlPlaneEndpoint),
 		zap.String("podCIDR", subnetworkPodCIDR),
 	).Infof("Setting information for node")
 
