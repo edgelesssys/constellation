@@ -67,5 +67,6 @@ echo "Stage 2 – sd-boot:                    ${sd_boot_authentihash}"
 echo "Stage 3 – Unified Kernel Image (UKI): ${uki_authentihash}"
 echo ""
 echo "Expected PCR[4]:                      ${expected_pcr_4}"
+echo ""
 
 write_output "$2"
