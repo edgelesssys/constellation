@@ -17,8 +17,8 @@ flowchart LR
     subgraph admin [Admin's machine]
         A[Constellation CLI]
     end
-    subgraph img [CoreOS image]
-        B[CoreOS]
+    subgraph img [Constellation OS image]
+        B[Constellation OS]
         C[Bootstrapper]
     end
     subgraph Kubernetes
