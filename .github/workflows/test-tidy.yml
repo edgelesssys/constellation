@@ -36,7 +36,7 @@ jobs:
         run: |
           mods=$(go list -f '{{.Dir}}' -m | xargs)
           echo "Found mods: $mods"
-          echo "::set-output name=submods::${mods}"
+          echo "submods=${mods} >> $GITHUB_OUTPUT"
 
       - name: Go tidy check
         uses: katexochen/go-tidy-check@45731e0013a976d5d616d79007c7ba52de6ce542

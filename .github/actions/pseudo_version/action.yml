@@ -39,10 +39,10 @@ runs:
         timestamp=$(go run . -print-timestamp)
         branchName=$(go run . -print-branch)
         releaseVersion=$(go run . -print-release-branch)
-        echo "::set-output name=pseudoVersion::${pseudoVersion}"
-        echo "::set-output name=semanticVersion::${semanticVersion}"
-        echo "::set-output name=timestamp::${timestamp}"
-        echo "::set-output name=branchName::${branchName}"
-        echo "::set-output name=releaseVersion::${releaseVersion}"
+        echo "pseudoVersion=${pseudoVersion} >> $GITHUB_OUTPUT"
+        echo "semanticVersion=${semanticVersion} >> $GITHUB_OUTPUT"
+        echo "timestamp=${timestamp} >> $GITHUB_OUTPUT"
+        echo "branchName=${branchName} >> $GITHUB_OUTPUT"
+        echo "releaseVersion=${releaseVersion} >> $GITHUB_OUTPUT"
       working-directory: hack/pseudo-version
       shell: bash

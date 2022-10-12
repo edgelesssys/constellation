@@ -47,8 +47,8 @@ runs:
       id: determine-build-target
       shell: bash
       run: |
-        echo "::set-output name=hostOS::$(go env GOOS)"
-        echo "::set-output name=hostArch::$(go env GOARCH)"
+        echo "hostOS=$(go env GOOS) >> $GITHUB_OUTPUT"
+        echo "hostArch=$(go env GOARCH) >> $GITHUB_OUTPUT"
 
     - name: Build CLI
       uses: ./.github/actions/build_cli
