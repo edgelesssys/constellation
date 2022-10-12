@@ -31,6 +31,11 @@ const (
 	Version1 = "v1"
 )
 
+var (
+	azureReleaseImageRegex = regexp.MustCompile(`^\/CommunityGalleries\/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df\/Images\/constellation\/Versions\/[\d]+.[\d]+.[\d]+$`)
+	gcpReleaseImageRegex   = regexp.MustCompile(`^projects\/constellation-images\/global\/images\/constellation-v[\d]+-[\d]+-[\d]+$`)
+)
+
 // Config defines configuration used by CLI.
 type Config struct {
 	// description: |
@@ -562,11 +567,9 @@ func (c *Config) IsDebugImage() bool {
 		// TODO: Add proper image name validation for AWS when we are closer to release.
 		return true
 	case c.Provider.Azure != nil:
-		azureRegex := regexp.MustCompile(`^\/CommunityGalleries\/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df\/Images\/constellation\/Versions\/[\d]+.[\d]+.[\d]+$`)
-		return !azureRegex.MatchString(c.Provider.Azure.Image)
+		return !azureReleaseImageRegex.MatchString(c.Provider.Azure.Image)
 	case c.Provider.GCP != nil:
-		gcpRegex := regexp.MustCompile(`^projects\/constellation-images\/global\/images\/constellation-v[\d]+-[\d]+-[\d]+$`)
-		return !gcpRegex.MatchString(c.Provider.GCP.Image)
+		return !gcpReleaseImageRegex.MatchString(c.Provider.GCP.Image)
 	default:
 		return false
 	}
