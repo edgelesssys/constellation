@@ -11,7 +11,7 @@ resource "aws_lb_target_group" "front_end" {
   name     = var.name
   port     = var.port
   protocol = "TCP"
-  vpc_id   = var.vpc
+  vpc_id   = var.vpc_id
 
   health_check {
     port     = var.port

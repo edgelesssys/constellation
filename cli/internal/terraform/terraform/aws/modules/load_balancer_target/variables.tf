@@ -8,7 +8,7 @@ variable "port" {
   description = "Port of the load balancer target."
 }
 
-variable "vpc" {
+variable "vpc_id" {
   type        = string
   description = "ID of the VPC."
 }
