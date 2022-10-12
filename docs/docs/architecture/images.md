@@ -1,16 +1,20 @@
 # Constellation images
 
-Constellation uses [Fedora CoreOS](https://docs.fedoraproject.org/en-US/fedora-coreos/) as the operating system running inside confidential VMs. This Linux distribution is optimized for containers and is designed to have an immutable filesystem.
-The Constellation images extend on that concept by leveraging measured boot and verification of the root filesystem.
+Constellation uses a minimal version of Fedora as the operating system running inside confidential VMs. This Linux distribution is optimized for containers and designed to be stateless.
+The Constellation images provide measured boot and an immutable filesystem.
 
 ## Measured boot
 
 ```mermaid
 flowchart LR
   Firmware   --> Bootloader
-  Bootloader --> kernel
-  Bootloader --> initramfs
-  initramfs  --> rootfs[root filesystem]
+  Bootloader --> uki
+  subgraph uki[Unified Kernel Image]
+  Kernel[Kernel]
+  initramfs[Initramfs]
+  cmdline[Kernel Command Line]
+  end
+  uki --> rootfs[Root Filesystem]
 ```
 
 Measured boot uses a Trusted Platform Module (TPM) to measure every part of the boot process. This allows for verification of the integrity of a running system at any point in time. To ensure correct measurements of every stage, each stage is responsible to measure the next stage before transitioning.

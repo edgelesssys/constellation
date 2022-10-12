@@ -132,22 +132,25 @@ The following table lists all PCR values of the vTPM and the measured components
 It also lists what components of the boot chain did the measurements and if the value is reproducible and verifiable.
 The latter means that the value can be generated offline and compared to the one in the vTPM.
 
-| PCR           | Components                          | Measured by                     | Reproducible and verifiable |
-|---------------|-------------------------------------|---------------------------------|-----------------------------|
-| 0             |    Firmware                         | Azure                           | No                          |
-| 1             |    Firmware                         | Azure                           | No                          |
-| 2             |    Firmware                         | Azure                           | No                          |
-| 3             |    Firmware                         | Azure                           | No                          |
-| 4             |    Constellation Bootloader, GRUB   | Azure, Constellation Bootloader | Yes                         |
-| 5             |    Reserved                         | Azure                           | No                          |
-| 6             |    VM Unique ID                     | Azure                           | No                          |
-| 7             |    Secure Boot State                | Azure, Constellation Bootloader | No                          |
-| 8             |    Kernel command line, GRUB config | Constellation Bootloader        | Yes                         |
-| 9             |    Kernel, initramfs                | Constellation Bootloader        | Yes                         |
-| 10            |    Reserved                         | -                               | No                          |
-| 11            |    Reserved                         | Constellation Bootstrapper      | Yes                         |
-| 12            |    ClusterID                        | Constellation Bootstrapper      | Yes                         |
-| 13&ndash;23   |    Unused                           | -                               | -                           |
+| PCR         | Components                                                       | Measured by                     | Reproducible and verifiable |
+| ----------- | ---------------------------------------------------------------- | ------------------------------- | --------------------------- |
+| 0           | Firmware                                                         | Azure                           | No                          |
+| 1           | Firmware                                                         | Azure                           | No                          |
+| 2           | Firmware                                                         | Azure                           | No                          |
+| 3           | Firmware                                                         | Azure                           | No                          |
+| 4           | Constellation Bootloader, Kernel, initramfs, Kernel command line | Azure, Constellation Bootloader | Yes                         |
+| 5           | Reserved                                                         | Azure                           | No                          |
+| 6           | VM Unique ID                                                     | Azure                           | No                          |
+| 7           | Secure Boot State                                                | Azure, Constellation Bootloader | No                          |
+| 8           | Kernel command line                                              | Constellation Bootloader        | Yes                         |
+| 9           | initramfs                                                        | Linux Kernel                    | Yes                         |
+| 10          | Reserved                                                         | -                               | No                          |
+| 11          | Reserved for Unified Kernel Image components                     | (Constellation Bootloader)      | Yes                         |
+| 12          | Reserved                                                         | (Constellation Bootloader)      | Yes                         |
+| 13          | Reserved                                                         | (Constellation Bootloader)      | Yes                         |
+| 14          | Secure Boot State                                                | Constellation Bootloader        | No                          |
+| 15          | ClusterID                                                        | Constellation Bootstrapper      | Yes                         |
+| 16&ndash;23 | Unused                                                           | -                               | -                           |
 
 </tabItem>
 <tabItem value="gcp" label="GCP">
@@ -162,22 +165,25 @@ The following table lists all PCR values of the vTPM and the measured components
 It also lists what components of the boot chain did the measurements and if the value is reproducible and verifiable.
 The latter means that the value can be generated offline and compared to the one in the vTPM.
 
-| PCR           | Components                       | Measured by                   | Reproducible and verifiable |
-|---------------|----------------------------------|-------------------------------|-----------------------------|
-| 0             | CVM constant string              | GCP                           | No                          |
-| 1             | Reserved                         | GCP                           | No                          |
-| 2             | Reserved                         | GCP                           | No                          |
-| 3             | Reserved                         | GCP                           | No                          |
-| 4             | Constellation Bootloader, GRUB   | GCP, Constellation Bootloader | Yes                         |
-| 5             | Disk GUID partition table        | GCP                           | No                          |
-| 6             | Disk GUID partition table        | GCP                           | No                          |
-| 7             | GCP Secure Boot Policy           | GCP, Constellation Bootloader | No                          |
-| 8             | Kernel command line, GRUB config | Constellation Bootloader      | Yes                         |
-| 9             | Kernel, initramfs                | Constellation Bootloader      | Yes                         |
-| 10            | Reserved                         | -                             | No                          |
-| 11            | Reserved                         | Constellation Bootstrapper    | Yes                         |
-| 12            | ClusterID                        | Constellation Bootstrapper    | Yes                         |
-| 13&ndash;23   | Unused                           |-                              | -                           |
+| PCR         | Components                                                       | Measured by                   | Reproducible and verifiable |
+| ----------- | ---------------------------------------------------------------- | ----------------------------- | --------------------------- |
+| 0           | CVM constant string                                              | GCP                           | No                          |
+| 1           | Reserved                                                         | GCP                           | No                          |
+| 2           | Reserved                                                         | GCP                           | No                          |
+| 3           | Reserved                                                         | GCP                           | No                          |
+| 4           | Constellation Bootloader, Kernel, initramfs, Kernel command line | GCP, Constellation Bootloader | Yes                         |
+| 5           | Disk GUID partition table                                        | GCP                           | No                          |
+| 6           | Disk GUID partition table                                        | GCP                           | No                          |
+| 7           | GCP Secure Boot Policy                                           | GCP, Constellation Bootloader | No                          |
+| 8           | Kernel command line                                              | Constellation Bootloader      | Yes                         |
+| 9           | initramfs                                                        | Linux Kernel                  | Yes                         |
+| 10          | Reserved                                                         | -                             | No                          |
+| 11          | Reserved for Unified Kernel Image components                     | (Constellation Bootloader)    | Yes                         |
+| 12          | Reserved                                                         | (Constellation Bootloader)    | Yes                         |
+| 13          | Reserved                                                         | (Constellation Bootloader)    | Yes                         |
+| 14          | Secure Boot State                                                | Constellation Bootloader      | No                          |
+| 15          | ClusterID                                                        | Constellation Bootstrapper    | Yes                         |
+| 16&ndash;23 | Unused                                                           | -                             | -                           |
 
 </tabItem>
 </tabs>
