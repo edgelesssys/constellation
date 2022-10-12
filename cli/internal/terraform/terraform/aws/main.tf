@@ -17,19 +17,17 @@ provider "aws" {
 }
 
 locals {
-  uid              = random_id.uid.hex
-  name             = "${var.name}-${local.uid}"
-  tag              = "constellation-${local.uid}"
-  ports_node_range = "30000-32767"
-  ports_ssh        = "22"
-
+  uid                = random_id.uid.hex
+  name               = "${var.name}-${local.uid}"
+  ports_node_range   = "30000-32767"
+  ports_ssh          = "22"
   ports_kubernetes   = "6443"
   ports_bootstrapper = "9000"
   ports_konnectivity = "8132"
   ports_verify       = "30081"
   ports_debugd       = "4000"
-
-  disk_size = 10
+  tags               = { constellation-uid = local.uid }
+  disk_size          = 10
 }
 
 resource "random_id" "uid" {
@@ -38,9 +36,7 @@ resource "random_id" "uid" {
 
 resource "aws_vpc" "vpc" {
   cidr_block = "192.168.0.0/16"
-  tags = {
-    Name = "${local.name}-vpc"
-  }
+  tags = merge(local.tags, { Name = "${local.name}-vpc" })
 }
 
 module "private_public_subnet" {
@@ -50,26 +46,24 @@ module "private_public_subnet" {
   cidr_vpc_subnet_nodes    = "192.168.178.0/24"
   cidr_vpc_subnet_internet = "192.168.0.0/24"
   zone                     = var.zone
+  tags                     = local.tags
 }
 
 resource "aws_eip" "lb" {
-  vpc = true
+  vpc  = true
+  tags = local.tags
 }
 
 resource "aws_lb" "front_end" {
   name               = "${local.name}-loadbalancer"
   internal           = false
   load_balancer_type = "network"
+  tags               = local.tags
 
   subnet_mapping {
     subnet_id     = module.private_public_subnet.public_subnet_id
     allocation_id = aws_eip.lb.id
   }
-
-  tags = {
-    Name = "loadbalancer"
-  }
-
   enable_cross_zone_load_balancing = true
 }
 
@@ -77,6 +71,7 @@ resource "aws_security_group" "security_group" {
   name        = local.name
   vpc_id      = aws_vpc.vpc.id
   description = "Security group for ${local.name}"
+  tags        = local.tags
 
   egress {
     from_port   = 0
@@ -142,12 +137,19 @@ resource "aws_security_group" "security_group" {
   }
 }
 
+resource "aws_cloudwatch_log_group" "log_group" {
+  name              = local.name
+  retention_in_days = 30
+  tags              = local.tags
+}
+
 module "load_balancer_target_bootstrapper" {
   source = "./modules/load_balancer_target"
   name   = "${local.name}-bootstrapper"
   vpc_id = aws_vpc.vpc.id
   lb_arn = aws_lb.front_end.arn
   port   = local.ports_bootstrapper
+  tags   = local.tags
 }
 
 module "load_balancer_target_kubernetes" {
@@ -156,6 +158,7 @@ module "load_balancer_target_kubernetes" {
   vpc_id = aws_vpc.vpc.id
   lb_arn = aws_lb.front_end.arn
   port   = local.ports_kubernetes
+  tags   = local.tags
 }
 
 module "load_balancer_target_verify" {
@@ -164,6 +167,7 @@ module "load_balancer_target_verify" {
   vpc_id = aws_vpc.vpc.id
   lb_arn = aws_lb.front_end.arn
   port   = local.ports_verify
+  tags   = local.tags
 }
 
 module "load_balancer_target_debugd" {
@@ -173,6 +177,7 @@ module "load_balancer_target_debugd" {
   vpc_id = aws_vpc.vpc.id
   lb_arn = aws_lb.front_end.arn
   port   = local.ports_debugd
+  tags   = local.tags
 }
 
 module "load_balancer_target_konnectivity" {
@@ -181,6 +186,7 @@ module "load_balancer_target_konnectivity" {
   vpc_id = aws_vpc.vpc.id
   lb_arn = aws_lb.front_end.arn
   port   = local.ports_konnectivity
+  tags   = local.tags
 }
 
 # TODO: Remove when development is more advanced
@@ -191,6 +197,7 @@ module "load_balancer_target_ssh" {
   vpc_id = aws_vpc.vpc.id
   lb_arn = aws_lb.front_end.arn
   port   = local.ports_ssh
+  tags   = local.tags
 }
 
 module "instance_group_control_plane" {
