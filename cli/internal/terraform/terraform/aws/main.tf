@@ -30,9 +30,6 @@ locals {
   ports_debugd       = "4000"
 
   disk_size = 10
-
-  cidr_vpc_subnet_nodes    = "192.168.178.0/24"
-  cidr_vpc_subnet_internet = "192.168.0.0/24"
 }
 
 resource "random_id" "uid" {
@@ -46,82 +43,16 @@ resource "aws_vpc" "vpc" {
   }
 }
 
-resource "aws_subnet" "private" {
-  vpc_id            = aws_vpc.vpc.id
-  cidr_block        = local.cidr_vpc_subnet_nodes
-  availability_zone = var.zone
-  tags = {
-    Name = "${local.name}-subnet-nodes"
-  }
-}
-
-resource "aws_subnet" "public" {
-  vpc_id            = aws_vpc.vpc.id
-  cidr_block        = local.cidr_vpc_subnet_internet
-  availability_zone = var.zone
-  tags = {
-    Name = "${local.name}-subnet-internet"
-  }
-}
-
-resource "aws_internet_gateway" "gw" {
-  vpc_id = aws_vpc.vpc.id
-
-  tags = {
-    Name = "${local.name}-internet-gateway"
-  }
-}
-
-resource "aws_nat_gateway" "gw" {
-  subnet_id     = aws_subnet.public.id
-  allocation_id = aws_eip.nat.id
-
-  tags = {
-    Name = "${local.name}-nat-gateway"
-  }
-}
-
-resource "aws_route_table" "private_nat" {
-  vpc_id = aws_vpc.vpc.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.gw.id
-  }
-
-  tags = {
-    Name = "${local.name}-nat-route"
-  }
-}
-
-resource "aws_route_table" "public_igw" {
-  vpc_id = aws_vpc.vpc.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.gw.id
-  }
-
-  tags = {
-    Name = "${local.name}-nat-route"
-  }
-}
-
-resource "aws_route_table_association" "private-nat" {
-  subnet_id      = aws_subnet.private.id
-  route_table_id = aws_route_table.private_nat.id
-}
-
-resource "aws_route_table_association" "route_to_internet" {
-  subnet_id      = aws_subnet.public.id
-  route_table_id = aws_route_table.public_igw.id
+module "private_public_subnet" {
+  source                   = "./modules/private_public_subnet"
+  name                     = local.name
+  vpc_id                   = aws_vpc.vpc.id
+  cidr_vpc_subnet_nodes    = "192.168.178.0/24"
+  cidr_vpc_subnet_internet = "192.168.0.0/24"
+  zone                     = var.zone
 }
 
 resource "aws_eip" "lb" {
-  vpc = true
-}
-
-resource "aws_eip" "nat" {
   vpc = true
 }
 
@@ -131,7 +62,7 @@ resource "aws_lb" "front_end" {
   load_balancer_type = "network"
 
   subnet_mapping {
-    subnet_id     = aws_subnet.public.id
+    subnet_id     = module.private_public_subnet.public_subnet_id
     allocation_id = aws_eip.lb.id
   }
 
@@ -214,7 +145,7 @@ resource "aws_security_group" "security_group" {
 module "load_balancer_target_bootstrapper" {
   source = "./modules/load_balancer_target"
   name   = "${local.name}-bootstrapper"
-  vpc    = aws_vpc.vpc.id
+  vpc_id = aws_vpc.vpc.id
   lb_arn = aws_lb.front_end.arn
   port   = local.ports_bootstrapper
 }
@@ -222,7 +153,7 @@ module "load_balancer_target_bootstrapper" {
 module "load_balancer_target_kubernetes" {
   source = "./modules/load_balancer_target"
   name   = "${local.name}-kubernetes"
-  vpc    = aws_vpc.vpc.id
+  vpc_id = aws_vpc.vpc.id
   lb_arn = aws_lb.front_end.arn
   port   = local.ports_kubernetes
 }
@@ -230,7 +161,7 @@ module "load_balancer_target_kubernetes" {
 module "load_balancer_target_verify" {
   source = "./modules/load_balancer_target"
   name   = "${local.name}-verify"
-  vpc    = aws_vpc.vpc.id
+  vpc_id = aws_vpc.vpc.id
   lb_arn = aws_lb.front_end.arn
   port   = local.ports_verify
 }
@@ -239,7 +170,7 @@ module "load_balancer_target_debugd" {
   count  = var.debug ? 1 : 0 // only deploy debugd in debug mode
   source = "./modules/load_balancer_target"
   name   = "${local.name}-debugd"
-  vpc    = aws_vpc.vpc.id
+  vpc_id = aws_vpc.vpc.id
   lb_arn = aws_lb.front_end.arn
   port   = local.ports_debugd
 }
@@ -247,7 +178,7 @@ module "load_balancer_target_debugd" {
 module "load_balancer_target_konnectivity" {
   source = "./modules/load_balancer_target"
   name   = "${local.name}-konnectivity"
-  vpc    = aws_vpc.vpc.id
+  vpc_id = aws_vpc.vpc.id
   lb_arn = aws_lb.front_end.arn
   port   = local.ports_konnectivity
 }
@@ -257,7 +188,7 @@ module "load_balancer_target_ssh" {
   count  = var.debug ? 1 : 0 // only deploy SSH in debug mode
   source = "./modules/load_balancer_target"
   name   = "${local.name}-ssh"
-  vpc    = aws_vpc.vpc.id
+  vpc_id = aws_vpc.vpc.id
   lb_arn = aws_lb.front_end.arn
   port   = local.ports_ssh
 }
@@ -281,7 +212,7 @@ module "instance_group_control_plane" {
     module.load_balancer_target_ssh[0].target_group_arn] : [],
   ])
   security_groups      = [aws_security_group.security_group.id]
-  subnetwork           = aws_subnet.private.id
+  subnetwork           = module.private_public_subnet.private_subnet_id
   iam_instance_profile = var.iam_instance_profile_control_plane
 }
 
@@ -294,7 +225,7 @@ module "instance_group_worker_nodes" {
   instance_count       = var.worker_count
   image_id             = var.ami
   disk_size            = local.disk_size
-  subnetwork           = aws_subnet.private.id
+  subnetwork           = module.private_public_subnet.private_subnet_id
   target_group_arns    = []
   security_groups      = []
   iam_instance_profile = var.iam_instance_profile_worker_nodes
