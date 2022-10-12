@@ -41,7 +41,7 @@ jobs:
         run: |
           mods=$(go list -f '{{.Dir}}/...' -m | xargs)
           echo "Found mods: $mods"
-          echo "submods=${mods} >> $GITHUB_OUTPUT"
+          echo "submods=${mods}" >> $GITHUB_OUTPUT
 
       - name: Govulncheck
         shell: bash
