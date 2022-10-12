@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/stretchr/testify/assert"
@@ -118,6 +119,50 @@ func TestCreator(t *testing.T) {
 				assert.Equal(tc.provider, idFile.CloudProvider)
 				assert.Equal(ip, idFile.IP)
 			}
+		})
+	}
+}
+
+func TestNormalizeAzureURIs(t *testing.T) {
+	testCases := map[string]struct {
+		in   terraform.AzureVariables
+		want terraform.AzureVariables
+	}{
+		"empty": {
+			in:   terraform.AzureVariables{},
+			want: terraform.AzureVariables{},
+		},
+		"no change": {
+			in: terraform.AzureVariables{
+				ImageID: "/communityGalleries/foo/images/constellation/versions/2.1.0",
+			},
+			want: terraform.AzureVariables{
+				ImageID: "/communityGalleries/foo/images/constellation/versions/2.1.0",
+			},
+		},
+		"fix image id": {
+			in: terraform.AzureVariables{
+				ImageID: "/CommunityGalleries/foo/Images/constellation/Versions/2.1.0",
+			},
+			want: terraform.AzureVariables{
+				ImageID: "/communityGalleries/foo/images/constellation/versions/2.1.0",
+			},
+		},
+		"fix resource group": {
+			in: terraform.AzureVariables{
+				UserAssignedIdentity: "/subscriptions/foo/resourcegroups/test/providers/Microsoft.ManagedIdentity/userAssignedIdentities/uai",
+			},
+			want: terraform.AzureVariables{
+				UserAssignedIdentity: "/subscriptions/foo/resourceGroups/test/providers/Microsoft.ManagedIdentity/userAssignedIdentities/uai",
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			out := normalizeAzureURIs(tc.in)
+			assert.Equal(tc.want, out)
 		})
 	}
 }

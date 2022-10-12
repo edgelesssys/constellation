@@ -81,7 +81,7 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 ) (idFile clusterid.File, retErr error) {
 	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
 
-	vars := &terraform.GCPVariables{
+	vars := terraform.GCPVariables{
 		CommonVariables: terraform.CommonVariables{
 			Name:               name,
 			CountControlPlanes: controlPlaneCount,
@@ -98,7 +98,7 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 		Debug:           config.IsDebugCluster(),
 	}
 
-	ip, err := cl.CreateCluster(ctx, name, vars)
+	ip, err := cl.CreateCluster(ctx, name, &vars)
 	if err != nil {
 		return clusterid.File{}, err
 	}
@@ -114,7 +114,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 ) (idFile clusterid.File, retErr error) {
 	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
 
-	vars := &terraform.AzureVariables{
+	vars := terraform.AzureVariables{
 		CommonVariables: terraform.CommonVariables{
 			Name:               name,
 			CountControlPlanes: controlPlaneCount,
@@ -131,7 +131,9 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 		Debug:                config.IsDebugCluster(),
 	}
 
-	ip, err := cl.CreateCluster(ctx, name, vars)
+	vars = normalizeAzureURIs(vars)
+
+	ip, err := cl.CreateCluster(ctx, name, &vars)
 	if err != nil {
 		return clusterid.File{}, err
 	}
@@ -140,6 +142,16 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 		CloudProvider: cloudprovider.Azure,
 		IP:            ip,
 	}, nil
+}
+
+func normalizeAzureURIs(vars terraform.AzureVariables) terraform.AzureVariables {
+	vars.UserAssignedIdentity = strings.ReplaceAll(vars.UserAssignedIdentity, "resourcegroup", "resourceGroup")
+
+	vars.ImageID = strings.ReplaceAll(vars.ImageID, "CommunityGalleries", "communityGalleries")
+	vars.ImageID = strings.ReplaceAll(vars.ImageID, "Images", "images")
+	vars.ImageID = strings.ReplaceAll(vars.ImageID, "Versions", "versions")
+
+	return vars
 }
 
 func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirtRunner, name string, config *config.Config,
@@ -183,7 +195,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 		metadataLibvirtURI = "qemu:///system"
 	}
 
-	vars := &terraform.QEMUVariables{
+	vars := terraform.QEMUVariables{
 		CommonVariables: terraform.CommonVariables{
 			Name:               name,
 			CountControlPlanes: controlPlaneCount,
@@ -200,7 +212,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 		MetadataLibvirtURI: metadataLibvirtURI,
 	}
 
-	ip, err := cl.CreateCluster(ctx, name, vars)
+	ip, err := cl.CreateCluster(ctx, name, &vars)
 	if err != nil {
 		return clusterid.File{}, err
 	}
