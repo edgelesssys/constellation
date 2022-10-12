@@ -29,7 +29,6 @@ func TestLoader(t *testing.T) {
 				"variables.tf",
 				"outputs.tf",
 				"modules",
-				"iam",
 			},
 		},
 		"gcp": {
