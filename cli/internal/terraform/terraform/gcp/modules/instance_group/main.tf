@@ -16,6 +16,7 @@ resource "google_compute_instance_template" "template" {
   name         = local.name
   machine_type = var.instance_type
   tags         = ["constellation-${var.uid}"]
+  labels       = merge(var.labels, { constellation-role = local.role_dashed })
 
   confidential_instance_config {
     enable_confidential_compute = true
