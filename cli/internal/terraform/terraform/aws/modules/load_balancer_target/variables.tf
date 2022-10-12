@@ -17,3 +17,8 @@ variable "lb_arn" {
   type        = string
   description = "ARN of the load balancer."
 }
+
+variable "tags" {
+  type        = map(string)
+  description = "The tags to add to the loadbalancer."
+}

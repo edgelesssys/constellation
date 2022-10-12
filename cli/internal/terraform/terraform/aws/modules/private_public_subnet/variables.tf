@@ -22,3 +22,8 @@ variable "cidr_vpc_subnet_internet" {
   type        = string
   description = "CIDR block for the subnet that contains resources reachable from the Internet."
 }
+
+variable "tags" {
+  type        = map(string)
+  description = "The tags to add to the resource."
+}
