@@ -26,8 +26,8 @@ locals {
   ports_konnectivity = "8132"
   ports_verify       = "30081"
   ports_debugd       = "4000"
-  tags               = { constellation-uid = local.uid }
-  disk_size          = 10
+
+  tags = { constellation-uid = local.uid }
 }
 
 resource "random_id" "uid" {
@@ -36,7 +36,7 @@ resource "random_id" "uid" {
 
 resource "aws_vpc" "vpc" {
   cidr_block = "192.168.0.0/16"
-  tags = merge(local.tags, { Name = "${local.name}-vpc" })
+  tags       = merge(local.tags, { Name = "${local.name}-vpc" })
 }
 
 module "private_public_subnet" {
@@ -201,15 +201,15 @@ module "load_balancer_target_ssh" {
 }
 
 module "instance_group_control_plane" {
-  source = "./modules/instance_group"
-  name   = local.name
-  role   = "control-plane"
-
-  uid            = local.uid
-  instance_type  = var.instance_type
-  instance_count = var.control_plane_count
-  image_id       = var.ami
-  disk_size      = local.disk_size
+  source          = "./modules/instance_group"
+  name            = local.name
+  role            = "control-plane"
+  uid             = local.uid
+  instance_type   = var.instance_type
+  instance_count  = var.control_plane_count
+  image_id        = var.ami
+  state_disk_type = var.state_disk_type
+  state_disk_size = var.state_disk_size
   target_group_arns = flatten([
     module.load_balancer_target_bootstrapper.target_group_arn,
     module.load_balancer_target_kubernetes.target_group_arn,
@@ -231,7 +231,8 @@ module "instance_group_worker_nodes" {
   instance_type        = var.instance_type
   instance_count       = var.worker_count
   image_id             = var.ami
-  disk_size            = local.disk_size
+  state_disk_type      = var.state_disk_type
+  state_disk_size      = var.state_disk_size
   subnetwork           = module.private_public_subnet.private_subnet_id
   target_group_arns    = []
   security_groups      = []

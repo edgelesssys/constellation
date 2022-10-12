@@ -28,9 +28,14 @@ variable "image_id" {
   description = "Image ID for the nodes."
 }
 
-variable "disk_size" {
+variable "state_disk_type" {
+  type        = string
+  description = "EBS disk type for the state disk of the nodes."
+}
+
+variable "state_disk_size" {
   type        = number
-  description = "Disk size for the nodes, in GB."
+  description = "Disk size for the state disk of the nodes [GB]."
 }
 
 variable "target_group_arns" {

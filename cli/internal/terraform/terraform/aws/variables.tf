@@ -19,9 +19,15 @@ variable "instance_type" {
   default     = "t3.micro"
 }
 
+variable "state_disk_type" {
+  type        = string
+  description = "EBS disk type for the state disk of the nodes"
+  default     = "gp2"
+}
+
 variable "state_disk_size" {
   type        = number
-  description = "Disk size for nodes [GB]"
+  description = "Disk size for the state disk of the nodes [GB]"
   default     = 30
 }
 

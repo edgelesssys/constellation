@@ -51,6 +51,8 @@ type AWSVariables struct {
 	AMIImageID string
 	// InstanceType is the type of the EC2 instance to use.
 	InstanceType string
+	// StateDiskType is the EBS disk type to use for the state disk.
+	StateDiskType string
 	// IAMGroupControlPlane is the IAM group to use for the control-plane nodes.
 	IAMProfileControlPlane string
 	// IAMGroupWorkerNodes is the IAM group to use for the worker nodes.
@@ -89,6 +91,7 @@ func (v *AWSVariables) String() string {
 	writeLinef(b, "zone = %q", v.Zone)
 	writeLinef(b, "ami = %q", v.AMIImageID)
 	writeLinef(b, "instance_type = %q", v.InstanceType)
+	writeLinef(b, "state_disk_type = %q", v.StateDiskType)
 	writeLinef(b, "iam_instance_profile_control_plane = %q", v.IAMProfileControlPlane)
 	writeLinef(b, "iam_instance_profile_worker_nodes = %q", v.IAMProfileWorkerNodes)
 	writeLinef(b, "debug = %t", v.Debug)
