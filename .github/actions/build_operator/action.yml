@@ -29,7 +29,7 @@ runs:
 
     - name: Log in to the Container registry
       id: docker-login
-      uses: docker/login-action@dd4fa0671be5250ee6f50aedf4cb05514abda2c7
+      uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # tag=v2.1.0
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
@@ -37,7 +37,7 @@ runs:
 
     - name: Docker metadata
       id: meta
-      uses: docker/metadata-action@b2391d37b4157fa4aa2e118d643f417910ff3242
+      uses: docker/metadata-action@12cce9efe0d49980455aaaca9b071c0befcdd702 # tag=v4.1.0
       with:
         images: |
           ghcr.io/${{ github.repository }}/${{ inputs.name }}
@@ -48,7 +48,7 @@ runs:
           type=ref,event=branch
 
     - name: Build and push container image
-      uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
+      uses: docker/build-push-action@c56af957549030174b10d6867f20e78cfd7debc5 # tag=v3.2.0
       with:
         context: ${{ inputs.sourceDir }}
         file: ${{ inputs.sourceDir }}/Dockerfile
@@ -73,7 +73,7 @@ runs:
 
     - name: Docker metadata for bundle
       id: bundle-meta
-      uses: docker/metadata-action@b2391d37b4157fa4aa2e118d643f417910ff3242
+      uses: docker/metadata-action@12cce9efe0d49980455aaaca9b071c0befcdd702 # tag=v4.1.0
       with:
         images: |
           ghcr.io/${{ github.repository }}/${{ inputs.name }}-bundle
@@ -84,7 +84,7 @@ runs:
           type=ref,event=branch
 
     - name: Build and push bundle image
-      uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
+      uses: docker/build-push-action@c56af957549030174b10d6867f20e78cfd7debc5 # tag=v3.2.0
       with:
         context: ${{ inputs.sourceDir }}
         file: ${{ inputs.sourceDir }}/bundle.Dockerfile

@@ -21,12 +21,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@203a3fd018dfe73f8ae7e3aa8da2c149a5f41c33
+        uses: ludeeus/action-shellcheck@b2bbefc2e6b9dcbc6355b85e366c9e55bf8d57e1 # master
         with:
           severity: error
           ignore_paths: charts/cilium
