@@ -68,7 +68,7 @@ jobs:
           uuid=$(cat /proc/sys/kernel/random/uuid)
           name=e2e-test-${uuid%%-*}
           az group create --location westus --name $name --tags e2e
-          echo "::set-output name=res_group_name::$name"
+          echo "res_group_name=$name >> $GITHUB_OUTPUT"
 
       - name: Run manual E2E test
         uses: ./.github/actions/e2e_test

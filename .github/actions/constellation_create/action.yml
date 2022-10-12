@@ -148,7 +148,7 @@ runs:
       id: constellation-init
       run: |
         constellation init
-        echo "::set-output name=KUBECONFIG::$(pwd)/constellation-admin.conf"
+        echo "KUBECONFIG=$(pwd)/constellation-admin.conf >> $GITHUB_OUTPUT"
       shell: bash
 
     - name: Wait for nodes to join and become ready
