@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -188,12 +189,28 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 	}, nil
 }
 
-func normalizeAzureURIs(vars terraform.AzureVariables) terraform.AzureVariables {
-	vars.UserAssignedIdentity = strings.ReplaceAll(vars.UserAssignedIdentity, "resourcegroup", "resourceGroup")
+// The azurerm Terraform provider enforces its own convention of case sensitivity for Azure URIs which Azure's API itself does not enforce or, even worse, actually returns.
+// Let's go loco with case insensitive Regexp here and fix the user input here to be compliant with this arbitrary design decision.
+var (
+	caseInsensitiveSubscriptionsRegexp          = regexp.MustCompile(`(?i)\/subscriptions\/`)
+	caseInsensitiveResourceGroupRegexp          = regexp.MustCompile(`(?i)\/resourcegroups\/`)
+	caseInsensitiveProvidersRegexp              = regexp.MustCompile(`(?i)\/providers\/`)
+	caseInsensitiveUserAssignedIdentitiesRegexp = regexp.MustCompile(`(?i)\/userassignedidentities\/`)
+	caseInsensitiveMicrosoftManagedIdentity     = regexp.MustCompile(`(?i)\/microsoft.managedidentity\/`)
+	caseInsensitiveCommunityGalleriesRegexp     = regexp.MustCompile(`(?i)\/communitygalleries\/`)
+	caseInsensitiveImagesRegExp                 = regexp.MustCompile(`(?i)\/images\/`)
+	caseInsensitiveVersionsRegExp               = regexp.MustCompile(`(?i)\/versions\/`)
+)
 
-	vars.ImageID = strings.ReplaceAll(vars.ImageID, "CommunityGalleries", "communityGalleries")
-	vars.ImageID = strings.ReplaceAll(vars.ImageID, "Images", "images")
-	vars.ImageID = strings.ReplaceAll(vars.ImageID, "Versions", "versions")
+func normalizeAzureURIs(vars terraform.AzureVariables) terraform.AzureVariables {
+	vars.UserAssignedIdentity = caseInsensitiveSubscriptionsRegexp.ReplaceAllString(vars.UserAssignedIdentity, "/subscriptions/")
+	vars.UserAssignedIdentity = caseInsensitiveResourceGroupRegexp.ReplaceAllString(vars.UserAssignedIdentity, "/resourceGroups/")
+	vars.UserAssignedIdentity = caseInsensitiveProvidersRegexp.ReplaceAllString(vars.UserAssignedIdentity, "/providers/")
+	vars.UserAssignedIdentity = caseInsensitiveUserAssignedIdentitiesRegexp.ReplaceAllString(vars.UserAssignedIdentity, "/userAssignedIdentities/")
+	vars.UserAssignedIdentity = caseInsensitiveMicrosoftManagedIdentity.ReplaceAllString(vars.UserAssignedIdentity, "/Microsoft.ManagedIdentity/")
+	vars.ImageID = caseInsensitiveCommunityGalleriesRegexp.ReplaceAllString(vars.ImageID, "/communityGalleries/")
+	vars.ImageID = caseInsensitiveImagesRegExp.ReplaceAllString(vars.ImageID, "/images/")
+	vars.ImageID = caseInsensitiveVersionsRegExp.ReplaceAllString(vars.ImageID, "/versions/")
 
 	return vars
 }
