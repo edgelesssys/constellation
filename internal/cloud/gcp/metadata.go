@@ -17,7 +17,7 @@ import (
 // API handles all GCP API requests.
 type API interface {
 	// UID retrieves the current instances uid.
-	UID() (string, error)
+	UID(context.Context) (string, error)
 	// RetrieveInstances retrieves a list of all accessible GCP instances with their metadata.
 	RetrieveInstances(ctx context.Context, project, zone string) ([]metadata.InstanceMetadata, error)
 	// RetrieveInstances retrieves a single GCP instances with its metadata.
@@ -128,7 +128,7 @@ func (m *Metadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) 
 
 // UID retrieves the UID of the constellation.
 func (m *Metadata) UID(ctx context.Context) (string, error) {
-	return m.api.UID()
+	return m.api.UID(ctx)
 }
 
 // Supported is used to determine if metadata API is implemented for this cloud provider.

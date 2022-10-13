@@ -35,6 +35,7 @@ type forwardingRulesAPI interface {
 
 type metadataAPI interface {
 	InstanceAttributeValue(attr string) (string, error)
+	InstanceID() (string, error)
 	ProjectID() (string, error)
 	Zone() (string, error)
 	InstanceName() (string, error)

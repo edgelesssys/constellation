@@ -297,7 +297,7 @@ func (s *stubGCPClient) RetrieveLoadBalancerEndpoint(ctx context.Context, projec
 	return s.loadBalancerIP, s.retrieveLoadBalancerErr
 }
 
-func (s *stubGCPClient) UID() (string, error) {
+func (s *stubGCPClient) UID(context.Context) (string, error) {
 	return s.retrieveUIDValue, s.retrieveUIDErr
 }
 
