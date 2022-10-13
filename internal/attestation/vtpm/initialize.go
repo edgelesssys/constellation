@@ -14,12 +14,13 @@ import (
 )
 
 const (
-	// PCRIndexOwnerID is a PCR we extend to mark the node as initialized.
-	// The value used to extend is derived from Constellation's master key.
-	PCRIndexOwnerID = tpmutil.Handle(11)
 	// PCRIndexClusterID is a PCR we extend to mark the node as initialized.
 	// The value used to extend is a random generated 32 Byte value.
-	PCRIndexClusterID = tpmutil.Handle(12)
+	PCRIndexClusterID = tpmutil.Handle(15)
+	// PCRIndexOwnerID is a PCR we extend to mark the node as initialized.
+	// The value used to extend is derived from Constellation's master key.
+	// TODO: move to stable, non-debug PCR before use.
+	PCRIndexOwnerID = tpmutil.Handle(16)
 )
 
 // MarkNodeAsBootstrapped marks a node as initialized by extending PCRs.

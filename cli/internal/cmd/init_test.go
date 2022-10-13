@@ -394,6 +394,9 @@ func TestAttestation(t *testing.T) {
 	cfg.Provider.QEMU.Measurements[1] = []byte("11111111111111111111111111111111")
 	cfg.Provider.QEMU.Measurements[2] = []byte("22222222222222222222222222222222")
 	cfg.Provider.QEMU.Measurements[3] = []byte("33333333333333333333333333333333")
+	cfg.Provider.QEMU.Measurements[4] = []byte("44444444444444444444444444444444")
+	cfg.Provider.QEMU.Measurements[8] = []byte("88888888888888888888888888888888")
+	cfg.Provider.QEMU.Measurements[9] = []byte("99999999999999999999999999999999")
 	require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg, file.OptNone))
 
 	ctx := context.Background()
@@ -484,6 +487,7 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 		conf.Provider.GCP.Measurements[9] = []byte("11111111111111111111111111111111")
 	case cloudprovider.QEMU:
 		conf.Provider.QEMU.Image = "some/image/location"
+		conf.Provider.QEMU.Measurements[4] = []byte("44444444444444444444444444444444")
 		conf.Provider.QEMU.Measurements[8] = []byte("00000000000000000000000000000000")
 		conf.Provider.QEMU.Measurements[9] = []byte("11111111111111111111111111111111")
 	}
