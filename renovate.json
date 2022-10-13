@@ -3,7 +3,8 @@
   "extends": [
     "config:base",
     ":preserveSemverRanges",
-    "helpers:pinGitHubActionDigests"
+    "helpers:pinGitHubActionDigests",
+    ":separateMajorReleases"
   ],
   "addLabels": ["dependencies"],
   "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"]
