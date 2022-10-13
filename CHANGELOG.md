@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- For changes in existing functionality.  -->
 - Verify measurements using [Rekor](https://github.com/sigstore/rekor) transparency log.
 - The `constellation create` on Azure now uses Terraform to create and destroy cloud resources.
+- Constellation OS images are now based on Fedora directly and are built using [mkosi](https://github.com/systemd/mkosi).
 
 ### Deprecated
 <!-- For soon-to-be removed features. -->
