@@ -474,17 +474,17 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 	}
 }
 
+var gcpRegex = regexp.MustCompile(`^projects\/constellation-images\/global\/images\/constellation-v[\d]+-[\d]+-[\d]+$`)
+
 // IsDebugImage checks whether image name looks like a release image, if not it is
 // probably a debug image. In the end we do not if bootstrapper or debugd
 // was put inside an image just by looking at its name.
 func (c *Config) IsDebugImage() bool {
 	switch {
 	case c.Provider.GCP != nil:
-		gcpRegex := regexp.MustCompile(`^projects\/constellation-images\/global\/images\/constellation-v[\d]+-[\d]+-[\d]+$`)
 		return !gcpRegex.MatchString(c.Provider.GCP.Image)
 	case c.Provider.Azure != nil:
-		azureRegex := regexp.MustCompile(`^\/CommunityGalleries\/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df\/Images\/constellation\/Versions\/[\d]+.[\d]+.[\d]+$`)
-		return !azureRegex.MatchString(c.Provider.Azure.Image)
+		return !strings.Contains(c.Provider.Azure.Image, "ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df")
 	default:
 		return false
 	}
