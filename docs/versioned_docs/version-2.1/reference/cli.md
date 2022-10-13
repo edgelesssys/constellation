@@ -17,9 +17,9 @@ Commands:
   * [instance-types](#constellation-config-instance-types): Print the supported instance types for all cloud providers
 * [create](#constellation-create): Create instances on a cloud platform for your Constellation cluster
 * [init](#constellation-init): Initialize the Constellation cluster
-* [mini](#constellation-mini): Manage mini Constellation clusters
-  * [up](#constellation-mini-up): Create and initialize a new mini Constellation cluster
-  * [down](#constellation-mini-down): Destroy a mini Constellation cluster
+* [mini](#constellation-mini): Manage MiniConstellation clusters
+  * [up](#constellation-mini-up): Create and initialize a new MiniConstellation cluster
+  * [down](#constellation-mini-down): Destroy a MiniConstellation cluster
 * [verify](#constellation-verify): Verify the confidential properties of a Constellation cluster
 * [upgrade](#constellation-upgrade): Plan and perform an upgrade of a Constellation cluster
   * [plan](#constellation-upgrade-plan): Plan an upgrade of a Constellation cluster
@@ -180,11 +180,11 @@ constellation init [flags]
 
 ## constellation mini
 
-Manage mini Constellation clusters
+Manage MiniConstellation clusters
 
 ### Synopsis
 
-Manage mini Constellation clusters.
+Manage MiniConstellation clusters.
 
 ### Options
 
@@ -200,11 +200,11 @@ Manage mini Constellation clusters.
 
 ## constellation mini up
 
-Create and initialize a new mini Constellation cluster
+Create and initialize a new MiniConstellation cluster
 
 ### Synopsis
 
-Create and initialize a new mini Constellation cluster.
+Create and initialize a new MiniConstellation cluster.
 A mini cluster consists of a single control-plane and worker node, hosted using QEMU/KVM.
 
 
@@ -226,11 +226,11 @@ constellation mini up [flags]
 
 ## constellation mini down
 
-Destroy a mini Constellation cluster
+Destroy a MiniConstellation cluster
 
 ### Synopsis
 
-Destroy a mini Constellation cluster.
+Destroy a MiniConstellation cluster.
 
 ```
 constellation mini down [flags]
