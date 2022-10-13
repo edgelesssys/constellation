@@ -162,6 +162,7 @@ module "scale_set_control_plane" {
   resource_group            = var.resource_group
   location                  = var.location
   instance_type             = var.instance_type
+  confidential_vm           = var.confidential_vm
   tags                      = merge(local.tags, { role = "control-plane" })
   image_id                  = var.image_id
   user_assigned_identity    = var.user_assigned_identity
@@ -183,6 +184,7 @@ module "scale_set_worker" {
   resource_group            = var.resource_group
   location                  = var.location
   instance_type             = var.instance_type
+  confidential_vm           = var.confidential_vm
   tags                      = merge(local.tags, { role = "worker" })
   image_id                  = var.image_id
   user_assigned_identity    = var.user_assigned_identity
