@@ -10,5 +10,11 @@
   "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"],
   "ignorePaths": [
     "cli/internal/helm/charts/cilium/**"
+  ],
+  "packageRules": [
+    {
+      "matchPackagePatterns": ["^k8s.io", "^sigs.k8s.io"],
+      "groupName": "k8s dependencies"
+    }
   ]
 }
