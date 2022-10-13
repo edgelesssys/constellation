@@ -32,10 +32,10 @@ type Logger struct {
 	logs          []types.InputLogEvent
 	sequenceToken *string
 
-	flushMux sync.Mutex
+	mux      sync.Mutex
 	interval time.Duration
 	clock    clock.WithTicker
-	wg       *sync.WaitGroup
+	wg       sync.WaitGroup
 	stopCh   chan struct{}
 }
 
@@ -51,7 +51,7 @@ func NewLogger(ctx context.Context) (*Logger, error) {
 		api:      client,
 		interval: time.Second,
 		clock:    clock.RealClock{},
-		wg:       &sync.WaitGroup{},
+		wg:       sync.WaitGroup{},
 		stopCh:   make(chan struct{}, 1),
 	}
 
@@ -67,9 +67,11 @@ func NewLogger(ctx context.Context) (*Logger, error) {
 // Disclose adds a message to the log queue.
 // The messages are flushed periodically to AWS Cloudwatch Logs.
 func (l *Logger) Disclose(msg string) {
+	l.mux.Lock()
+	defer l.mux.Unlock()
 	l.logs = append(l.logs, types.InputLogEvent{
 		Message:   aws.String(msg),
-		Timestamp: aws.Int64(time.Now().UnixMilli()),
+		Timestamp: aws.Int64(l.clock.Now().UnixMilli()),
 	})
 }
 
@@ -83,38 +85,37 @@ func (l *Logger) Close() error {
 // flushLogs flushes the aggregated log messages to AWS Cloudwatch Logs.
 func (l *Logger) flushLogs() error {
 	// make sure only one flush operation is running at a time
-	l.flushMux.Lock()
-	defer l.flushMux.Unlock()
+	l.mux.Lock()
+	defer l.mux.Unlock()
 
 	if len(l.logs) == 0 {
 		return nil // no logs to flush
 	}
 
-	res, err := l.api.PutLogEvents(context.Background(), &logs.PutLogEventsInput{
+	ctx := context.Background()
+	logRequest := &logs.PutLogEventsInput{
 		LogEvents:     l.logs,
 		LogGroupName:  &l.groupName,
 		LogStreamName: &l.streamName,
 		SequenceToken: l.sequenceToken,
-	})
-	if err != nil {
+	}
+
+	for res, err := l.api.PutLogEvents(ctx, logRequest); ; res, err = l.api.PutLogEvents(ctx, logRequest) {
+		if err == nil {
+			l.sequenceToken = res.NextSequenceToken
+			l.logs = nil
+			return nil
+		}
 		// If the flush operation was called on a pre-existing stream,
 		// or another operation sent logs to the same stream,
 		// the sequence token may not be set correctly.
 		// We can retrieve the correct sequence token from the error message.
 		var sequenceErr *types.InvalidSequenceTokenException
-		if errors.As(err, &sequenceErr) {
-			l.sequenceToken = sequenceErr.ExpectedSequenceToken
-			l.flushMux.Unlock()
-			err = l.flushLogs()
-			l.flushMux.Lock()
+		if !errors.As(err, &sequenceErr) {
 			return err
 		}
-		return err
+		logRequest.SequenceToken = sequenceErr.ExpectedSequenceToken
 	}
-	l.sequenceToken = res.NextSequenceToken
-
-	l.logs = nil
-	return nil
 }
 
 // flushLoop periodically flushes the logs to AWS Cloudwatch Logs.

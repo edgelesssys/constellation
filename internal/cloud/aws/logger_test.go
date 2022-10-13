@@ -18,7 +18,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
+	testclock "k8s.io/utils/clock/testing"
 )
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+}
 
 func TestCreateStream(t *testing.T) {
 	someErr := errors.New("failed")
@@ -221,6 +227,7 @@ func TestLogging(t *testing.T) {
 	l := &Logger{
 		api:      logAPI,
 		interval: 1 * time.Millisecond,
+		clock:    testclock.NewFakeClock(time.Time{}),
 	}
 
 	l.Disclose("msg")
@@ -246,6 +253,29 @@ func TestLogging(t *testing.T) {
 	logAPI.putErr = errors.New("failed")
 	l.Disclose("msg")
 	assert.Error(l.flushLogs())
+}
+
+func TestFlushLoop(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	logAPI := &stubLogs{}
+	clock := testclock.NewFakeClock(time.Time{})
+
+	l := &Logger{
+		api:      logAPI,
+		interval: 1 * time.Second,
+		clock:    clock,
+		stopCh:   make(chan struct{}, 1),
+	}
+
+	l.Disclose("msg")
+	l.Disclose("msg")
+
+	l.flushLoop()
+	clock.Step(1 * time.Second)
+	require.NoError(l.Close())
+	assert.Len(logAPI.logs, 2)
 }
 
 type stubLogs struct {
