@@ -156,6 +156,16 @@ func TestNormalizeAzureURIs(t *testing.T) {
 				UserAssignedIdentity: "/subscriptions/foo/resourceGroups/test/providers/Microsoft.ManagedIdentity/userAssignedIdentities/uai",
 			},
 		},
+		"fix arbitrary casing": {
+			in: terraform.AzureVariables{
+				ImageID:              "/CoMMUnitygaLLeries/foo/iMAges/constellation/vERsions/2.1.0",
+				UserAssignedIdentity: "/subsCRiptions/foo/resoURCegroups/test/proViDers/MICROsoft.mANAgedIdentity/USerASsignediDENtities/uai",
+			},
+			want: terraform.AzureVariables{
+				ImageID:              "/communityGalleries/foo/images/constellation/versions/2.1.0",
+				UserAssignedIdentity: "/subscriptions/foo/resourceGroups/test/providers/Microsoft.ManagedIdentity/userAssignedIdentities/uai",
+			},
+		},
 	}
 
 	for name, tc := range testCases {
