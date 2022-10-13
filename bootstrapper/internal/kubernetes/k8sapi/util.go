@@ -51,7 +51,7 @@ const (
 	// kubeletStartTimeout is the maximum time given to the kubelet service to (re)start.
 	kubeletStartTimeout = 10 * time.Minute
 	// crdTimeout is the maximum time given to the CRDs to be created.
-	crdTimeout = 15 * time.Second
+	crdTimeout = 30 * time.Second
 	// helmTimeout is the maximum time given to the helm client.
 	helmTimeout = 5 * time.Minute
 )
