@@ -6,7 +6,7 @@ terraform {
     }
     docker = {
       source  = "kreuzwerker/docker"
-      version = "2.17.0"
+      version = "2.22.0"
     }
   }
 }
@@ -31,7 +31,7 @@ resource "docker_image" "qemu_metadata" {
 
 resource "docker_container" "qemu_metadata" {
   name         = "${var.name}-qemu-metadata"
-  image        = docker_image.qemu_metadata.latest
+  image        = docker_image.qemu_metadata.image_id
   network_mode = "host"
   rm           = true
   command = [
