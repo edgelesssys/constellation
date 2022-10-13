@@ -358,7 +358,8 @@ jobs:
           ./precalculate_pcr_4.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcr-4-${{ matrix.csp }}.json >> $GITHUB_STEP_SUMMARY
           ./precalculate_pcr_8.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcr-8-${{ matrix.csp }}.json ${{ matrix.csp }}  >> $GITHUB_STEP_SUMMARY
           ./precalculate_pcr_9.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcr-9-${{ matrix.csp }}.json >> $GITHUB_STEP_SUMMARY
-          jq --sort-keys -s '.[0] * .[1] * .[2]' ${{ github.workspace }}/pcr-* > ${{ github.workspace }}/pcrs-${{ matrix.csp }}.json
+          cp pcr-stable.json ${{ github.workspace }}/
+          jq --sort-keys -s '.[0] * .[1] * .[2] * .[3]' ${{ github.workspace }}/pcr-* > ${{ github.workspace }}/pcrs-${{ matrix.csp }}.json
           echo "::endgroup::"
         working-directory: ${{ github.workspace }}/image/mkosi/measured-boot
 
