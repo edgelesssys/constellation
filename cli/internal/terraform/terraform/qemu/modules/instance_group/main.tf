@@ -53,7 +53,7 @@ resource "libvirt_domain" "instance_group" {
     target_port = "0"
   }
   xml {
-    xslt = file("modules/instance_group/domain.xsl")
+    xslt = file("${path.module}/domain.xsl")
   }
 }
 
