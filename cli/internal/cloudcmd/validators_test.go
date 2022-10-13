@@ -208,6 +208,17 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 			10: zero,
 			11: zero,
 			12: zero,
+			13: zero,
+			14: zero,
+			15: zero,
+			16: zero,
+			17: one,
+			18: one,
+			19: one,
+			20: one,
+			21: one,
+			22: one,
+			23: zero,
 		}
 	}
 
@@ -298,7 +309,11 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 					assert.Equal(pcrZeroUpdatedOne[:], pcr)
 
 				default:
-					assert.Equal(zero, validators.pcrs[uint32(i)])
+					if i >= 17 && i <= 22 {
+						assert.Equal(one, validators.pcrs[uint32(i)])
+					} else {
+						assert.Equal(zero, validators.pcrs[uint32(i)])
+					}
 				}
 			}
 		})
