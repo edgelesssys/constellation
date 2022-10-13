@@ -39,8 +39,8 @@ resource "aws_vpc" "vpc" {
   tags       = merge(local.tags, { Name = "${local.name}-vpc" })
 }
 
-module "private_public_subnet" {
-  source                   = "./modules/private_public_subnet"
+module "public_private_subnet" {
+  source                   = "./modules/public_private_subnet"
   name                     = local.name
   vpc_id                   = aws_vpc.vpc.id
   cidr_vpc_subnet_nodes    = "192.168.178.0/24"
@@ -61,7 +61,7 @@ resource "aws_lb" "front_end" {
   tags               = local.tags
 
   subnet_mapping {
-    subnet_id     = module.private_public_subnet.public_subnet_id
+    subnet_id     = module.public_private_subnet.public_subnet_id
     allocation_id = aws_eip.lb.id
   }
   enable_cross_zone_load_balancing = true
@@ -219,7 +219,7 @@ module "instance_group_control_plane" {
     module.load_balancer_target_ssh[0].target_group_arn] : [],
   ])
   security_groups      = [aws_security_group.security_group.id]
-  subnetwork           = module.private_public_subnet.private_subnet_id
+  subnetwork           = module.public_private_subnet.private_subnet_id
   iam_instance_profile = var.iam_instance_profile_control_plane
 }
 
@@ -233,7 +233,7 @@ module "instance_group_worker_nodes" {
   image_id             = var.ami
   state_disk_type      = var.state_disk_type
   state_disk_size      = var.state_disk_size
-  subnetwork           = module.private_public_subnet.private_subnet_id
+  subnetwork           = module.public_private_subnet.private_subnet_id
   target_group_arns    = []
   security_groups      = []
   iam_instance_profile = var.iam_instance_profile_worker_nodes
