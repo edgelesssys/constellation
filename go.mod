@@ -92,7 +92,7 @@ require (
 	go.uber.org/zap v1.23.0
 	golang.org/x/crypto v0.0.0-20221012134737-56aed061732a
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4
-	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8
+	golang.org/x/sys v0.0.0-20221010170243-090e33056c14
 	golang.org/x/text v0.3.8-0.20211004125949-5bd84dd9b33b
 	google.golang.org/api v0.96.0
 	google.golang.org/genproto v0.0.0-20220720214146-176da50484ac
