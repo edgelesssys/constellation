@@ -159,7 +159,7 @@ module "instance_group_worker" {
 }
 
 resource "google_compute_global_address" "loadbalancer_ip" {
-  name   = local.name
+  name = local.name
 }
 
 module "loadbalancer_kube" {
