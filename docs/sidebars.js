@@ -76,12 +76,12 @@ const sidebars = {
         },
         {
           type: 'doc',
-          label: 'First steps',
+          label: 'First steps (cloud)',
           id: 'getting-started/first-steps',
         },
         {
           type: 'doc',
-          label: 'Mini Constellation',
+          label: 'First steps (local)',
           id: 'getting-started/mini-constellation',
         },
         {

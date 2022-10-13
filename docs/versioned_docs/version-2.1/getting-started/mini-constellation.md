@@ -1,4 +1,4 @@
-# Mini Constellation
+# MiniConstellation
 
 With `constellation mini`, you can deploy and test Constellation locally without a cloud subscription.
 
@@ -6,7 +6,7 @@ The command uses virtualization to create a local cluster with one control-plane
 
 :::info
 
-Since mini Constellation is running on your local system, common cloud features, such as load-balancing,
+Since MiniConstellation is running on your local system, common cloud features, such as load-balancing,
 attaching persistent storage, or autoscaling, are unavailable.
 
 :::
@@ -40,7 +40,7 @@ attaching persistent storage, or autoscaling, are unavailable.
 
 ## Create your cluster
 
-Setting up your mini Constellation cluster is as easy as running the following command:
+Setting up your MiniConstellation cluster is as easy as running the following command:
 
 ```bash
 constellation mini up
