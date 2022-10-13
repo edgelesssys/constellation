@@ -1,0 +1,24 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    ":preserveSemverRanges",
+    "helpers:pinGitHubActionDigests",
+    ":separateMajorReleases"
+  ],
+  "addLabels": ["dependencies"],
+  "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"],
+  "ignorePaths": [
+    "cli/internal/helm/charts/cilium/**"
+  ],
+  "packageRules": [
+    {
+      "matchPackagePatterns": ["^k8s.io", "^sigs.k8s.io"],
+      "groupName": "k8s dependencies"
+    },
+    {
+      "matchDatasources": ["golang-version"],
+      "allowedVersions": "1.18"
+    }
+  ]
+}
