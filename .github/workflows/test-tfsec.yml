@@ -31,7 +31,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: tfsec
-        uses: aquasecurity/tfsec-pr-commenter-action@1015a3975c7f1400ee4d9f423a7786a3df9fcbec
+        uses: aquasecurity/tfsec-pr-commenter-action@d9fa64305ec243e19f9be1200dfc8e8154dc364f
         with:
           tfsec_formats: default,text
           tfsec_args: --force-all-dirs
