@@ -46,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Mini Constellation: Try out Constellation locally without any cloud subscription required just with one command: `constellation mini up`
+- MiniConstellation: Try out Constellation locally without any cloud subscription required just with one command: `constellation mini up`
 - Loadbalancer for control-plane recovery
 - K8s conformance mode
 - Local cluster creation based on QEMU
