@@ -15,6 +15,10 @@
     {
       "matchPackagePatterns": ["^k8s.io", "^sigs.k8s.io"],
       "groupName": "k8s dependencies"
+    },
+    {
+      "matchDatasources": ["golang-version"],
+      "allowedVersions": "1.18"
     }
   ]
 }
