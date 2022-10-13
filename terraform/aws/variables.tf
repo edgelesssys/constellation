@@ -1,5 +1,5 @@
 variable "name" {
-  type = string
+  type        = string
   description = "Name of your Constellation"
 }
 
