@@ -38,6 +38,10 @@ func TestRetrieveInstances(t *testing.T) {
 			instances: []*computepb.Instance{
 				{
 					Name: proto.String("someInstance"),
+					Labels: map[string]string{
+						labelRole: role.ControlPlane.String(),
+						labelUID:  uid,
+					},
 					Metadata: &computepb.Metadata{
 						Items: []*computepb.Items{
 							{
@@ -47,14 +51,6 @@ func TestRetrieveInstances(t *testing.T) {
 							{
 								Key:   proto.String("key-2"),
 								Value: proto.String("value-2"),
-							},
-							{
-								Key:   proto.String(constellationUIDMetadataKey),
-								Value: proto.String(uid),
-							},
-							{
-								Key:   proto.String(roleMetadataKey),
-								Value: proto.String(role.ControlPlane.String()),
 							},
 						},
 					},
@@ -70,6 +66,13 @@ func TestRetrieveInstances(t *testing.T) {
 			},
 		}
 	}
+	instance := &computepb.Instance{
+		Name: proto.String("instance"),
+		Labels: map[string]string{
+			labelRole: role.ControlPlane.String(),
+			labelUID:  uid,
+		},
+	}
 
 	testCases := map[string]struct {
 		client              stubInstancesClient
@@ -80,7 +83,7 @@ func TestRetrieveInstances(t *testing.T) {
 		wantErr             bool
 	}{
 		"retrieve works": {
-			client:       stubInstancesClient{},
+			client:       stubInstancesClient{GetInstance: instance},
 			metadata:     stubMetadataClient{InstanceValue: uid},
 			instanceIter: newTestIter(),
 			wantInstances: []metadata.InstanceMetadata{
@@ -96,14 +99,14 @@ func TestRetrieveInstances(t *testing.T) {
 			},
 		},
 		"instance name is null": {
-			client:              stubInstancesClient{},
+			client:              stubInstancesClient{GetInstance: instance},
 			metadata:            stubMetadataClient{InstanceValue: uid},
 			instanceIter:        newTestIter(),
 			instanceIterMutator: func(sii *stubInstanceIterator) { sii.instances[0].Name = nil },
 			wantErr:             true,
 		},
 		"no instance with network ip": {
-			client:              stubInstancesClient{},
+			client:              stubInstancesClient{GetInstance: instance},
 			metadata:            stubMetadataClient{InstanceValue: uid},
 			instanceIter:        newTestIter(),
 			instanceIterMutator: func(sii *stubInstanceIterator) { sii.instances[0].NetworkInterfaces = nil },
@@ -120,7 +123,7 @@ func TestRetrieveInstances(t *testing.T) {
 			},
 		},
 		"network ip is nil": {
-			client:              stubInstancesClient{},
+			client:              stubInstancesClient{GetInstance: instance},
 			metadata:            stubMetadataClient{InstanceValue: uid},
 			instanceIter:        newTestIter(),
 			instanceIterMutator: func(sii *stubInstanceIterator) { sii.instances[0].NetworkInterfaces[0].NetworkIP = nil },
@@ -137,23 +140,23 @@ func TestRetrieveInstances(t *testing.T) {
 			},
 		},
 		"constellation id is not set": {
-			client:              stubInstancesClient{},
+			client:              stubInstancesClient{GetInstance: instance},
 			metadata:            stubMetadataClient{InstanceValue: uid},
 			instanceIter:        newTestIter(),
-			instanceIterMutator: func(sii *stubInstanceIterator) { sii.instances[0].Metadata.Items[2].Key = proto.String("") },
+			instanceIterMutator: func(sii *stubInstanceIterator) { delete(sii.instances[0].Labels, labelUID) },
 			wantInstances:       []metadata.InstanceMetadata{},
 		},
 		"constellation retrieval fails": {
-			client:       stubInstancesClient{},
-			metadata:     stubMetadataClient{InstanceErr: someErr},
+			client:       stubInstancesClient{GetInstance: instance},
+			metadata:     stubMetadataClient{instanceIDErr: someErr},
 			instanceIter: newTestIter(),
 			wantErr:      true,
 		},
 		"role is not set": {
-			client:              stubInstancesClient{},
+			client:              stubInstancesClient{GetInstance: instance},
 			metadata:            stubMetadataClient{InstanceValue: uid},
 			instanceIter:        newTestIter(),
-			instanceIterMutator: func(sii *stubInstanceIterator) { sii.instances[0].Metadata.Items[3].Key = proto.String("") },
+			instanceIterMutator: func(sii *stubInstanceIterator) { delete(sii.instances[0].Labels, labelRole) },
 			wantInstances: []metadata.InstanceMetadata{
 				{
 					Name:          "someInstance",
@@ -167,7 +170,7 @@ func TestRetrieveInstances(t *testing.T) {
 			},
 		},
 		"instance iterator Next() errors": {
-			client:       stubInstancesClient{},
+			client:       stubInstancesClient{GetInstance: instance},
 			metadata:     stubMetadataClient{InstanceValue: uid},
 			instanceIter: &stubInstanceIterator{nextErr: someErr},
 			wantErr:      true,
@@ -203,7 +206,8 @@ func TestRetrieveInstances(t *testing.T) {
 func TestRetrieveInstance(t *testing.T) {
 	newTestInstance := func() *computepb.Instance {
 		return &computepb.Instance{
-			Name: proto.String("someInstance"),
+			Name:   proto.String("someInstance"),
+			Labels: map[string]string{},
 			Metadata: &computepb.Metadata{
 				Items: []*computepb.Items{
 					{
@@ -266,8 +270,7 @@ func TestRetrieveInstance(t *testing.T) {
 			client:         stubInstancesClient{},
 			clientInstance: newTestInstance(),
 			clientInstanceMutator: func(i *computepb.Instance) {
-				i.Metadata.Items[0].Key = proto.String(roleMetadataKey)
-				i.Metadata.Items[0].Value = proto.String(role.ControlPlane.String())
+				i.Labels[labelRole] = role.ControlPlane.String()
 			},
 			wantInstance: metadata.InstanceMetadata{
 				Name:          "someInstance",
@@ -784,14 +787,22 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 	uid := "uid"
 	use := "kubernetes"
 	someErr := errors.New("some error")
+	instance := &computepb.Instance{
+		Labels: map[string]string{
+			labelUID: uid,
+		},
+	}
+
 	testCases := map[string]struct {
+		instanceAPI               stubInstancesClient
 		stubForwardingRulesClient stubForwardingRulesClient
 		stubMetadataClient        stubMetadataClient
 		wantLoadBalancerIP        string
 		wantErr                   bool
 	}{
 		"works": {
-			stubMetadataClient: stubMetadataClient{InstanceValue: uid},
+			instanceAPI:        stubInstancesClient{GetInstance: instance},
+			stubMetadataClient: stubMetadataClient{},
 			stubForwardingRulesClient: stubForwardingRulesClient{
 				ForwardingRuleIterator: &stubForwardingRuleIterator{
 					rules: []*computepb.ForwardingRule{
@@ -806,7 +817,8 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 			wantLoadBalancerIP: loadBalancerIP,
 		},
 		"fails when no matching load balancers exists": {
-			stubMetadataClient: stubMetadataClient{InstanceValue: uid},
+			instanceAPI:        stubInstancesClient{GetInstance: instance},
+			stubMetadataClient: stubMetadataClient{},
 			stubForwardingRulesClient: stubForwardingRulesClient{
 				ForwardingRuleIterator: &stubForwardingRuleIterator{
 					rules: []*computepb.ForwardingRule{
@@ -820,7 +832,8 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 			wantErr: true,
 		},
 		"fails when retrieving uid": {
-			stubMetadataClient: stubMetadataClient{InstanceErr: someErr},
+			instanceAPI:        stubInstancesClient{GetInstance: instance},
+			stubMetadataClient: stubMetadataClient{instanceIDErr: someErr},
 			stubForwardingRulesClient: stubForwardingRulesClient{
 				ForwardingRuleIterator: &stubForwardingRuleIterator{
 					rules: []*computepb.ForwardingRule{
@@ -835,7 +848,8 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 			wantErr: true,
 		},
 		"fails when answer has empty port range": {
-			stubMetadataClient: stubMetadataClient{InstanceErr: someErr},
+			instanceAPI:        stubInstancesClient{GetInstance: instance},
+			stubMetadataClient: stubMetadataClient{},
 			stubForwardingRulesClient: stubForwardingRulesClient{
 				ForwardingRuleIterator: &stubForwardingRuleIterator{
 					rules: []*computepb.ForwardingRule{
@@ -849,6 +863,7 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 			wantErr: true,
 		},
 		"fails when retrieving loadbalancer IP": {
+			instanceAPI:        stubInstancesClient{GetInstance: instance},
 			stubMetadataClient: stubMetadataClient{},
 			stubForwardingRulesClient: stubForwardingRulesClient{
 				ForwardingRuleIterator: &stubForwardingRuleIterator{
@@ -865,6 +880,7 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 			wantErr: true,
 		},
 		"fails on incorrect use label": {
+			instanceAPI:        stubInstancesClient{GetInstance: instance},
 			stubMetadataClient: stubMetadataClient{InstanceValue: uid},
 			stubForwardingRulesClient: stubForwardingRulesClient{
 				ForwardingRuleIterator: &stubForwardingRuleIterator{
@@ -885,7 +901,7 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			client := Client{forwardingRulesAPI: tc.stubForwardingRulesClient, metadataAPI: tc.stubMetadataClient}
+			client := Client{instanceAPI: tc.instanceAPI, forwardingRulesAPI: tc.stubForwardingRulesClient, metadataAPI: tc.stubMetadataClient}
 			aliasCIDR, err := client.RetrieveLoadBalancerEndpoint(context.Background(), "project")
 
 			if tc.wantErr {
@@ -1065,6 +1081,8 @@ func (s stubForwardingRulesClient) Close() error {
 type stubMetadataClient struct {
 	InstanceValue     string
 	InstanceErr       error
+	instanceIDValue   string
+	instanceIDErr     error
 	ProjectIDValue    string
 	ProjectIDErr      error
 	ZoneValue         string
@@ -1075,6 +1093,10 @@ type stubMetadataClient struct {
 
 func (s stubMetadataClient) InstanceAttributeValue(attr string) (string, error) {
 	return s.InstanceValue, s.InstanceErr
+}
+
+func (s stubMetadataClient) InstanceID() (string, error) {
+	return s.instanceIDValue, s.instanceIDErr
 }
 
 func (s stubMetadataClient) ProjectID() (string, error) {

@@ -98,7 +98,7 @@ func main() {
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to marshal PCRs")
 		}
-		cloudControllerManager, err := gcpcloud.NewCloudControllerManager(metadata)
+		cloudControllerManager, err := gcpcloud.NewCloudControllerManager(ctx, metadata)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to create cloud controller manager")
 		}

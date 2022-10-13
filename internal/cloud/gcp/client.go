@@ -17,14 +17,16 @@ import (
 	compute "cloud.google.com/go/compute/apiv1"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/gcpshared"
+	"github.com/edgelesssys/constellation/v2/internal/role"
 	"google.golang.org/api/iterator"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
 )
 
 const (
-	gcpSSHMetadataKey           = "ssh-keys"
-	constellationUIDMetadataKey = "constellation-uid"
+	gcpSSHMetadataKey = "ssh-keys"
+	labelUID          = "constellation-uid"
+	labelRole         = "constellation-role"
 )
 
 var zoneFromRegionRegex = regexp.MustCompile("([a-z]*-[a-z]*[0-9])")
@@ -61,7 +63,7 @@ func NewClient(ctx context.Context) (*Client, error) {
 
 // RetrieveInstances returns list of instances including their ips and metadata.
 func (c *Client) RetrieveInstances(ctx context.Context, project, zone string) ([]metadata.InstanceMetadata, error) {
-	uid, err := c.UID()
+	uid, err := c.UID(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -80,11 +82,11 @@ func (c *Client) RetrieveInstances(ctx context.Context, project, zone string) ([
 		if err != nil {
 			return nil, fmt.Errorf("retrieving instance list from compute API client: %w", err)
 		}
-		metadata := extractInstanceMetadata(resp.Metadata, "", false)
-		// skip instances not belonging to the current constellation
-		if instanceUID, ok := metadata[constellationUIDMetadataKey]; !ok || instanceUID != uid {
+		if resp.Labels[labelUID] != uid {
+			// skip instances not belonging to the current constellation
 			continue
 		}
+
 		instance, err := convertToCoreInstance(resp, project, zone)
 		if err != nil {
 			return nil, err
@@ -223,7 +225,7 @@ func (c *Client) RetrieveSubnetworkAliasCIDR(ctx context.Context, project, zone,
 
 // RetrieveLoadBalancerEndpoint returns the endpoint of the load balancer with the constellation-uid tag.
 func (c *Client) RetrieveLoadBalancerEndpoint(ctx context.Context, project string) (string, error) {
-	uid, err := c.UID()
+	uid, err := c.UID(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -292,13 +294,30 @@ func (c *Client) updateInstanceMetadata(ctx context.Context, project, zone, inst
 }
 
 // UID retrieves the current instances uid.
-func (c *Client) UID() (string, error) {
+func (c *Client) UID(ctx context.Context) (string, error) {
 	// API endpoint: http://metadata.google.internal/computeMetadata/v1/instance/attributes/constellation-uid
-	uid, err := c.RetrieveInstanceMetadata(constellationUIDMetadataKey)
+	instanceID, err := c.InstanceID()
 	if err != nil {
-		return "", fmt.Errorf("retrieving constellation uid: %w", err)
+		return "", fmt.Errorf("retrieving instance ID: %w", err)
 	}
-	return uid, nil
+	project, err := c.ProjectID()
+	if err != nil {
+		return "", fmt.Errorf("retrieving project ID: %w", err)
+	}
+	zone, err := c.Zone()
+	if err != nil {
+		return "", fmt.Errorf("retrieving zone: %w", err)
+	}
+
+	instance, err := c.instanceAPI.Get(ctx, &computepb.GetInstanceRequest{
+		Project:  project,
+		Zone:     zone,
+		Instance: instanceID,
+	})
+	if err != nil {
+		return "", fmt.Errorf("retrieving instance labels: %w", err)
+	}
+	return instance.Labels[labelUID], nil
 }
 
 // extractVPCIP extracts the primary private IP from a list of interfaces.
@@ -385,7 +404,7 @@ func convertToCoreInstance(in *computepb.Instance, project string, zone string) 
 	return metadata.InstanceMetadata{
 		Name:          *in.Name,
 		ProviderID:    gcpshared.JoinProviderID(project, zone, *in.Name),
-		Role:          extractRole(mdata),
+		Role:          role.FromString(in.Labels[labelRole]),
 		VPCIP:         extractVPCIP(in.NetworkInterfaces),
 		PublicIP:      extractPublicIP(in.NetworkInterfaces),
 		AliasIPRanges: extractAliasIPRanges(in.NetworkInterfaces),

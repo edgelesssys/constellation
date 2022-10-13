@@ -42,8 +42,6 @@ resource "google_compute_instance_template" "template" {
 
   metadata = {
     kube-env           = var.kube_env
-    constellation-uid  = var.uid
-    constellation-role = var.role
     serial-port-enable = var.debug ? "TRUE" : "FALSE"
   }
 

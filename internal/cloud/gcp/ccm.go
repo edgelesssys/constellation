@@ -26,8 +26,8 @@ type CloudControllerManager struct {
 }
 
 // NewCloudControllerManager returns an initialized cloud controller manager configuration struct for GCP.
-func NewCloudControllerManager(metadata *Metadata) (*CloudControllerManager, error) {
-	uid, err := metadata.api.UID()
+func NewCloudControllerManager(ctx context.Context, metadata *Metadata) (*CloudControllerManager, error) {
+	uid, err := metadata.api.UID(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting uid from metadata: %w", err)
 	}
