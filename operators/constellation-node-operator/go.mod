@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	cloud.google.com/go/compute v1.7.0
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.1.1
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.1.4
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2 v2.0.0
 	github.com/googleapis/gax-go/v2 v2.4.0
