@@ -178,7 +178,7 @@ module "scale_set_worker" {
   source = "./modules/scale_set"
 
   name                      = "${local.name}-worker"
-  instance_count            = var.control_plane_count
+  instance_count            = var.worker_count
   state_disk_size           = var.state_disk_size
   state_disk_type           = var.state_disk_type
   resource_group            = var.resource_group
