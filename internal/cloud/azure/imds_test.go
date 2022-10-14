@@ -15,6 +15,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/cloud"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/test/bufconn"
@@ -22,8 +23,8 @@ import (
 
 func TestIMDSClient(t *testing.T) {
 	uidTags := []metadataTag{
-		{Name: "constellation-uid", Value: "uid"},
-		{Name: "role", Value: "worker"},
+		{Name: cloud.TagUID, Value: "uid"},
+		{Name: cloud.TagRole, Value: "worker"},
 	}
 	response := metadataResponse{
 		Compute: metadataResponseCompute{
@@ -48,14 +49,14 @@ func TestIMDSClient(t *testing.T) {
 		Compute: metadataResponseCompute{
 			ResourceID:    "resource-id",
 			ResourceGroup: "resource-group",
-			Tags:          []metadataTag{{Name: "role", Value: "worker"}},
+			Tags:          []metadataTag{{Name: cloud.TagRole, Value: "worker"}},
 		},
 	}
 	responseWithoutRole := metadataResponse{
 		Compute: metadataResponseCompute{
 			ResourceID:    "resource-id",
 			ResourceGroup: "resource-group",
-			Tags:          []metadataTag{{Name: "constellation-uid", Value: "uid"}},
+			Tags:          []metadataTag{{Name: cloud.TagUID, Value: "uid"}},
 		},
 	}
 

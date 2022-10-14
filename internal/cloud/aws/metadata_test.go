@@ -17,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/edgelesssys/constellation/v2/internal/cloud"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/stretchr/testify/assert"
@@ -41,8 +42,8 @@ func TestSelf(t *testing.T) {
 					},
 				},
 				tags: map[string]string{
-					tagName: "test-instance",
-					tagRole: "controlplane",
+					tagName:       "test-instance",
+					cloud.TagRole: "controlplane",
 				},
 			},
 			wantSelf: metadata.InstanceMetadata{
@@ -62,8 +63,8 @@ func TestSelf(t *testing.T) {
 					},
 				},
 				tags: map[string]string{
-					tagName: "test-instance",
-					tagRole: "worker",
+					tagName:       "test-instance",
+					cloud.TagRole: "worker",
 				},
 			},
 			wantSelf: metadata.InstanceMetadata{
@@ -77,8 +78,8 @@ func TestSelf(t *testing.T) {
 			imds: &stubIMDS{
 				getInstanceIdentityDocumentErr: someErr,
 				tags: map[string]string{
-					tagName: "test-instance",
-					tagRole: "controlplane",
+					tagName:       "test-instance",
+					cloud.TagRole: "controlplane",
 				},
 			},
 			wantErr: true,
@@ -106,7 +107,7 @@ func TestSelf(t *testing.T) {
 					},
 				},
 				tags: map[string]string{
-					tagRole: "controlplane",
+					cloud.TagRole: "controlplane",
 				},
 			},
 			wantErr: true,
@@ -165,11 +166,11 @@ func TestList(t *testing.T) {
 								Value: aws.String("name-1"),
 							},
 							{
-								Key:   aws.String(tagRole),
+								Key:   aws.String(cloud.TagRole),
 								Value: aws.String("controlplane"),
 							},
 							{
-								Key:   aws.String(tagUID),
+								Key:   aws.String(cloud.TagUID),
 								Value: aws.String("uid"),
 							},
 						},
@@ -187,11 +188,11 @@ func TestList(t *testing.T) {
 								Value: aws.String("name-2"),
 							},
 							{
-								Key:   aws.String(tagRole),
+								Key:   aws.String(cloud.TagRole),
 								Value: aws.String("worker"),
 							},
 							{
-								Key:   aws.String(tagUID),
+								Key:   aws.String(cloud.TagUID),
 								Value: aws.String("uid"),
 							},
 						},
@@ -210,7 +211,7 @@ func TestList(t *testing.T) {
 		"success single page": {
 			imds: &stubIMDS{
 				tags: map[string]string{
-					tagUID: "uid",
+					cloud.TagUID: "uid",
 				},
 			},
 			ec2: &stubEC2{
@@ -234,7 +235,7 @@ func TestList(t *testing.T) {
 		"success multiple pages": {
 			imds: &stubIMDS{
 				tags: map[string]string{
-					tagUID: "uid",
+					cloud.TagUID: "uid",
 				},
 			},
 			ec2: &stubEC2{
@@ -255,11 +256,11 @@ func TestList(t *testing.T) {
 											Value: aws.String("name-3"),
 										},
 										{
-											Key:   aws.String(tagRole),
+											Key:   aws.String(cloud.TagRole),
 											Value: aws.String("worker"),
 										},
 										{
-											Key:   aws.String(tagUID),
+											Key:   aws.String(cloud.TagUID),
 											Value: aws.String("uid"),
 										},
 									},
@@ -302,7 +303,7 @@ func TestList(t *testing.T) {
 		"describe instances fails": {
 			imds: &stubIMDS{
 				tags: map[string]string{
-					tagUID: "uid",
+					cloud.TagUID: "uid",
 				},
 			},
 			ec2: &stubEC2{
@@ -350,7 +351,7 @@ func TestConvertToMetadataInstance(t *testing.T) {
 							Value: aws.String("name-1"),
 						},
 						{
-							Key:   aws.String(tagRole),
+							Key:   aws.String(cloud.TagRole),
 							Value: aws.String("controlplane"),
 						},
 					},
@@ -377,7 +378,7 @@ func TestConvertToMetadataInstance(t *testing.T) {
 							Value: aws.String("name-1"),
 						},
 						{
-							Key:   aws.String(tagRole),
+							Key:   aws.String(cloud.TagRole),
 							Value: aws.String("controlplane"),
 						},
 					},
@@ -417,7 +418,7 @@ func TestConvertToMetadataInstance(t *testing.T) {
 							Value: aws.String("name-1"),
 						},
 						{
-							Key:   aws.String(tagRole),
+							Key:   aws.String(cloud.TagRole),
 							Value: aws.String("controlplane"),
 						},
 					},
@@ -439,7 +440,7 @@ func TestConvertToMetadataInstance(t *testing.T) {
 							Value: aws.String("name-1"),
 						},
 						{
-							Key:   aws.String(tagRole),
+							Key:   aws.String(cloud.TagRole),
 							Value: aws.String("controlplane"),
 						},
 					},
@@ -458,7 +459,7 @@ func TestConvertToMetadataInstance(t *testing.T) {
 					},
 					Tags: []types.Tag{
 						{
-							Key:   aws.String(tagRole),
+							Key:   aws.String(cloud.TagRole),
 							Value: aws.String("controlplane"),
 						},
 					},

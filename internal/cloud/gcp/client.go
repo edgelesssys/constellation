@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	compute "cloud.google.com/go/compute/apiv1"
+	"github.com/edgelesssys/constellation/v2/internal/cloud"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/role"
@@ -25,8 +26,6 @@ import (
 
 const (
 	gcpSSHMetadataKey = "ssh-keys"
-	labelUID          = "constellation-uid"
-	labelRole         = "constellation-role"
 )
 
 var zoneFromRegionRegex = regexp.MustCompile("([a-z]*-[a-z]*[0-9])")
@@ -82,7 +81,7 @@ func (c *Client) RetrieveInstances(ctx context.Context, project, zone string) ([
 		if err != nil {
 			return nil, fmt.Errorf("retrieving instance list from compute API client: %w", err)
 		}
-		if resp.Labels[labelUID] != uid {
+		if resp.Labels[cloud.TagUID] != uid {
 			// skip instances not belonging to the current constellation
 			continue
 		}
@@ -242,7 +241,7 @@ func (c *Client) RetrieveLoadBalancerEndpoint(ctx context.Context, project strin
 		if err != nil {
 			return "", fmt.Errorf("retrieving load balancer IP failed: %w", err)
 		}
-		if resp.Labels["constellation-uid"] == uid && resp.Labels["constellation-use"] == "kubernetes" {
+		if resp.Labels[cloud.TagUID] == uid && resp.Labels["constellation-use"] == "kubernetes" {
 			if resp.PortRange == nil {
 				return "", errors.New("load balancer with searched UID has no ports")
 			}
@@ -317,7 +316,7 @@ func (c *Client) UID(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("retrieving instance labels: %w", err)
 	}
-	return instance.Labels[labelUID], nil
+	return instance.Labels[cloud.TagUID], nil
 }
 
 // extractVPCIP extracts the primary private IP from a list of interfaces.
@@ -404,7 +403,7 @@ func convertToCoreInstance(in *computepb.Instance, project string, zone string) 
 	return metadata.InstanceMetadata{
 		Name:          *in.Name,
 		ProviderID:    gcpshared.JoinProviderID(project, zone, *in.Name),
-		Role:          role.FromString(in.Labels[labelRole]),
+		Role:          role.FromString(in.Labels[cloud.TagRole]),
 		VPCIP:         extractVPCIP(in.NetworkInterfaces),
 		PublicIP:      extractPublicIP(in.NetworkInterfaces),
 		AliasIPRanges: extractAliasIPRanges(in.NetworkInterfaces),
