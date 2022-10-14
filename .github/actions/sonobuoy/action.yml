@@ -36,7 +36,7 @@ runs:
         path: "**/junit_01.xml"
       if: ${{ always() && !env.ACT }}
     - name: Publish test results
-      uses: mikepenz/action-junit-report@9d7e8d109968bf1cd319822043687171efae7de7 # tag=v3.5.1
+      uses: mikepenz/action-junit-report@ab07dd7abefd456d92ecbeb22f81392fafe3d528 # tag=v3.5.2
       if: ${{ !env.ACT }}
       with:
         report_paths: "**/junit_01.xml"
