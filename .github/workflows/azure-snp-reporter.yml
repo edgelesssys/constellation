@@ -4,11 +4,6 @@ on:
   schedule:
     - cron: "0 14 * * 0"
 
-# Abort runs of *this* workflow, if a new commit with the same ref is pushed that is not main.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
-
 jobs:
   build-snp-reporter:
     name: "Build SNP-reporter container"

@@ -3,11 +3,6 @@ env:
   REGISTRY: ghcr.io
 on: [workflow_dispatch]
 
-# Abort runs of *this* workflow, if a new commit with the same ref is pushed.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build-gcp-guest-agent:
     runs-on: ubuntu-latest
