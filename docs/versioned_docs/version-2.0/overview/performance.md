@@ -8,7 +8,7 @@ All nodes in a Constellation cluster run inside Confidential VMs (CVMs). Thus, C
 
 AMD and Azure jointly released a [performance benchmark](https://community.amd.com/t5/business/microsoft-azure-confidential-computing-powered-by-3rd-gen-epyc/ba-p/497796) for CVMs based on 3rd Gen AMD EPYC processors (Milan) with SEV-SNP. With a range of mostly compute-intensive benchmarks like SPEC CPU 2017 and CoreMark, they found that CVMs only have a small (2%--8%) performance degradation compared to standard VMs. You can expect to see similar performance for compute-intensive workloads running on Constellation.
 
-## Performance impact from other features
+## Performance analysis with K-Bench
 
 To assess the overall performance of Constellation, we benchmarked Constellation v2.0.0 using [K-Bench](https://github.com/vmware-tanzu/k-bench). K-Bench is a configurable framework to benchmark Kubernetes clusters in terms of storage I/O, network performance, and creating/scaling resources.
 
@@ -85,7 +85,7 @@ Constellation's bandwidth for both sending and receiving is at 31 Gbps on Azure 
 
 ![](../_media/benchmark_net.png)
 
-### Storage I/O
+#### Storage I/O
 
 Azure and GCP offer persistent storage for their Kubernetes services AKS and GKE via the Container Storage Interface (CSI). CSI storage in Kubernetes is available via `PersistentVolumes` (PV) and consumed via `PersistentVolumeClaims` (PVC).
 Upon requesting persistent storage through a PVC, GKE and AKS will provision a PV as defined by a default [storage class](https://kubernetes.io/docs/concepts/storage/storage-classes/).
