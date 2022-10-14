@@ -167,7 +167,6 @@ constellation init [flags]
 
 ```
       --conformance            enable conformance mode
-      --endpoint string        endpoint of the bootstrapper, passed as HOST[:PORT]
   -h, --help                   help for init
       --master-secret string   path to base64-encoded master secret
 ```
@@ -224,7 +223,7 @@ constellation mini up [flags]
       --config string   path to the configuration file (default "constellation-conf.yaml")
 ```
 
-## constellation mini **down**
+## constellation mini down
 
 Destroy a MiniConstellation cluster
 

@@ -23,8 +23,8 @@ import (
 func newMiniDownCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "down",
-		Short: "Destroy a mini Constellation cluster",
-		Long:  "Destroy a mini Constellation cluster.",
+		Short: "Destroy a MiniConstellation cluster",
+		Long:  "Destroy a MiniConstellation cluster.",
 		Args:  cobra.ExactArgs(0),
 		RunE:  runDown,
 	}
@@ -53,7 +53,7 @@ func checkForMiniCluster(fileHandler file.Handler) error {
 		return errors.New("cluster is not a QEMU based Constellation")
 	}
 	if idFile.UID != "mini" {
-		return errors.New("cluster is not a mini Constellation cluster")
+		return errors.New("cluster is not a MiniConstellation cluster")
 	}
 
 	return nil

@@ -37,8 +37,8 @@ import (
 func newMiniUpCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "up",
-		Short: "Create and initialize a new mini Constellation cluster",
-		Long: "Create and initialize a new mini Constellation cluster.\n" +
+		Short: "Create and initialize a new MiniConstellation cluster",
+		Long: "Create and initialize a new MiniConstellation cluster.\n" +
 			"A mini cluster consists of a single control-plane and worker node, hosted using QEMU/KVM.\n",
 		Args: cobra.ExactArgs(0),
 		RunE: runUp,
@@ -92,7 +92,7 @@ func up(cmd *cobra.Command, spinner spinnerInterf) error {
 	return nil
 }
 
-// checkSystemRequirements checks if the system meets the requirements for running a mini Constellation cluster.
+// checkSystemRequirements checks if the system meets the requirements for running a MiniConstellation cluster.
 // We do so by verifying that the host:
 // - arch/os is linux/amd64.
 // - has access to /dev/kvm.
@@ -112,7 +112,7 @@ func checkSystemRequirements(out io.Writer) error {
 
 	// check CPU cores
 	if runtime.NumCPU() < 4 {
-		return fmt.Errorf("insufficient CPU cores: %d, at least 4 cores are required by mini Constellation", runtime.NumCPU())
+		return fmt.Errorf("insufficient CPU cores: %d, at least 4 cores are required by MiniConstellation", runtime.NumCPU())
 	}
 	if runtime.NumCPU() < 6 {
 		fmt.Fprintf(out, "WARNING: Only %d CPU cores available. This may cause performance issues.\n", runtime.NumCPU())
@@ -136,7 +136,7 @@ func checkSystemRequirements(out io.Writer) error {
 	}
 	memGB := memKB / 1024 / 1024
 	if memGB < 4 {
-		return fmt.Errorf("insufficient memory: %dGB, at least 4GB of memory are required by mini Constellation", memGB)
+		return fmt.Errorf("insufficient memory: %dGB, at least 4GB of memory are required by MiniConstellation", memGB)
 	}
 	if memGB < 6 {
 		fmt.Fprintln(out, "WARNING: Less than 6GB of memory available. This may cause performance issues.")
@@ -148,7 +148,7 @@ func checkSystemRequirements(out io.Writer) error {
 	}
 	freeSpaceGB := stat.Bavail * uint64(stat.Bsize) / 1024 / 1024 / 1024
 	if freeSpaceGB < 20 {
-		return fmt.Errorf("insufficient disk space: %dGB, at least 20GB of disk space are required by mini Constellation", freeSpaceGB)
+		return fmt.Errorf("insufficient disk space: %dGB, at least 20GB of disk space are required by MiniConstellation", freeSpaceGB)
 	}
 
 	return nil
@@ -168,7 +168,7 @@ func prepareConfig(cmd *cobra.Command, fileHandler file.Handler) (*config.Config
 			return nil, err
 		}
 		if config.GetProvider() != cloudprovider.QEMU {
-			return nil, errors.New("invalid provider for mini constellation cluster")
+			return nil, errors.New("invalid provider for MiniConstellation cluster")
 		}
 		return config, nil
 	}
@@ -204,7 +204,7 @@ func createMiniCluster(ctx context.Context, fileHandler file.Handler, creator cl
 		return err
 	}
 
-	idFile.UID = "mini" // use UID "mini" to identify mini constellation clusters.
+	idFile.UID = "mini" // use UID "mini" to identify MiniConstellation clusters.
 
 	return fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptNone)
 }

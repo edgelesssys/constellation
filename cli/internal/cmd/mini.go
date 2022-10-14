@@ -8,12 +8,12 @@ package cmd
 
 import "github.com/spf13/cobra"
 
-// NewMiniCmd creates a new cobra.Command for managing mini Constellation clusters.
+// NewMiniCmd creates a new cobra.Command for managing MiniConstellation clusters.
 func NewMiniCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "mini",
-		Short: "Manage mini Constellation clusters",
-		Long:  "Manage mini Constellation clusters.",
+		Short: "Manage MiniConstellation clusters",
+		Long:  "Manage MiniConstellation clusters.",
 		Args:  cobra.ExactArgs(0),
 	}
 
