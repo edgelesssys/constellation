@@ -9,6 +9,17 @@ package aws
 import "testing"
 
 func TestGetAWSInstanceInfo(t *testing.T) {
-	t.Skip("aws validator not implemented")
+	//t.Skip("aws validator not implemented")
+	testCases := map[string]struct {
+		client fakeMetadata
+	}
+}
 
+type fakeMetadataClient struct {
+	projectIDString    string
+	instanceNameString string
+	zoneString         string
+	projecIDErr        error
+	instanceNameErr    error
+	zoneErr            error
 }

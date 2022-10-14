@@ -72,6 +72,7 @@ func main() {
 	switch cloudprovider.FromString(os.Getenv(constellationCSP)) {
 	case cloudprovider.AWS:
 		panic("AWS cloud provider currently unsupported")
+
 	case cloudprovider.GCP:
 		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.GCPPCRSelection)
 		if err != nil {
@@ -109,6 +110,7 @@ func main() {
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 		log.Infof("Added load balancer IP to routing table")
+
 	case cloudprovider.Azure:
 		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.AzurePCRSelection)
 		if err != nil {
@@ -142,6 +144,7 @@ func main() {
 
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
+
 	case cloudprovider.QEMU:
 		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.QEMUPCRSelection)
 		if err != nil {

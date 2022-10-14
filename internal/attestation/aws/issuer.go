@@ -13,12 +13,12 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
-	"github.com/edgelesssys/constellation/v2/internal/oid"
+
+	"github.com/google/go-tpm-tools/client"
 	tpmclient "github.com/google/go-tpm-tools/client"
 )
 
 type Issuer struct {
-	oid.AWS
 	*vtpm.Issuer
 }
 
@@ -33,7 +33,12 @@ func NewIssuer() *Issuer {
 }
 
 func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
-	panic("aws issuer not implemented")
+	key, err := client.AttestationKeyRSA(tpm)
+	if err != nil {
+		return nil, errors.New("unable to retrieve attestation key")
+	}
+
+	return key, nil
 }
 
 // Get the metadta infos from the AWS Instance Document (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-identity-documents.html)

@@ -38,6 +38,11 @@ var (
 	// QEMUPCRSelection are the PCR values verified for QEMU based Contellations.
 	// PCR[1] is excluded. See: https://trustedcomputinggroup.org/wp-content/uploads/TCG_PCClient_PFP_r1p05_v23_pub.pdf#%5B%7B%22num%22:157,%22gen%22:0%7D,%7B%22name%22:%22XYZ%22%7D,33,400,0%5D
 	// PCR[10] is excluded since its value is derived from a digest of PCR[0-7]. See: https://sourceforge.net/p/linux-ima/wiki/Home/#ima-measurement-list
+	AWSPCRSelection = tpm2.PCRSelection{
+		Hash: tpm2.AlgSHA256,
+		PCRs: []int{0, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23},
+	}
+
 	QEMUPCRSelection = tpm2.PCRSelection{
 		Hash: tpm2.AlgSHA256,
 		PCRs: []int{0, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23},
