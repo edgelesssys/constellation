@@ -7,15 +7,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 package aws
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
 
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 
 	"github.com/google/go-tpm-tools/client"
 	tpmclient "github.com/google/go-tpm-tools/client"
+	"github.com/google/go-tpm/tpm2"
+	"github.com/google/go-tpm/tpmutil"
 )
 
 type Issuer struct {
@@ -23,37 +26,64 @@ type Issuer struct {
 }
 
 func NewIssuer() *Issuer {
+	GetInstanceInfo := getInstanceInfo(metadataClient{})
 	return &Issuer{
 		Issuer: vtpm.NewIssuer(
 			vtpm.OpenVTPM,
 			getAttestationKey,
-			getInstanceInfo(ec2metadata.New(nil)),
+			GetInstanceInfo,
 		),
 	}
 }
 
 func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
-	key, err := client.AttestationKeyRSA(tpm)
-	if err != nil {
-		return nil, errors.New("unable to retrieve attestation key")
+	akIndex := 0x81000001
+	keyTemplate := tpm2.Public{
+		Type:       tpm2.AlgRSA,
+		NameAlg:    tpm2.AlgSHA256,
+		Attributes: tpm2.FlagFixedTPM | tpm2.FlagFixedParent | tpm2.FlagSensitiveDataOrigin | tpm2.FlagUserWithAuth | tpm2.FlagNoDA | tpm2.FlagRestricted | tpm2.FlagSign,
+		RSAParameters: &tpm2.RSAParams{
+			Sign: &tpm2.SigScheme{
+				Alg:  tpm2.AlgRSASSA,
+				Hash: tpm2.AlgSHA256,
+			},
+			KeyBits: 2048,
+		},
 	}
 
-	return key, nil
+	tpmAk, err := client.NewCachedKey(tpm, tpm2.HandleOwner, keyTemplate, tpmutil.Handle(akIndex))
+
+	if err != nil {
+		return nil, errors.New("Cannot get cached key")
+	}
+
+	return tpmAk, nil
 }
 
-// Get the metadta infos from the AWS Instance Document (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-identity-documents.html)
-func getInstanceInfo(client awsMetadataClient) func(tpm io.ReadWriteCloser) ([]byte, error) {
-	return func(tpm io.ReadWriteCloser) ([]byte, error) {
-		identityDocument, err := client.GetInstanceIdentityDocument()
+func getInstanceInfo(client awsMetaData) func(tpm io.ReadWriteCloser) ([]byte, error) {
+	return func(io.ReadWriteCloser) ([]byte, error) {
+		ctx := context.TODO()
+		ec2InstanceIdentityOutput, err := client.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
+		ec2InstanceIdentityDocument := ec2InstanceIdentityOutput.InstanceIdentityDocument
+
+		//ctx := context.TODO()
+		//metadata, err := New(&ctx)
+		//InstanceMetadata, err := metadata.Self(ctx)
+
+		//instanceInfo := awsInstanceInfo{
+		//	ec2InstanceIdentityDocument.Name,
+		//	ec2InstanceIdentityDocument.ProviderID,
+		//	ec2InstanceIdentityDocument.Role,
+		//}
+
 		if err != nil {
 			return nil, errors.New("unable to fetch instance identity document")
 		}
 
-		//
 		instanceInfo := awsInstanceInfo{
-			identityDocument.Region,
-			identityDocument.AccountID,
-			identityDocument.InstanceID,
+			ec2InstanceIdentityDocument.Region,
+			ec2InstanceIdentityDocument.AccountID,
+			ec2InstanceIdentityDocument.InstanceID,
 		}
 
 		statement, err := json.Marshal(instanceInfo)
@@ -65,6 +95,8 @@ func getInstanceInfo(client awsMetadataClient) func(tpm io.ReadWriteCloser) ([]b
 	}
 }
 
-type awsMetadataClient interface {
-	GetInstanceIdentityDocument() (ec2metadata.EC2InstanceIdentityDocument, error)
+type awsMetaData interface {
+	GetInstanceIdentityDocument(context.Context, *imds.GetInstanceIdentityDocumentInput, ...func(*imds.Options)) (*imds.GetInstanceIdentityDocumentOutput, error)
 }
+
+type metadataClient struct{}
