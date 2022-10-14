@@ -4,7 +4,7 @@ This page explains Constellation's attestation process and highlights the corner
 
 ## Terms
 
-The following lists terms and concepts that help to understand the attestation concept of Constellation.
+The following lists important terms and concepts.
 
 ### Trusted Platform Module (TPM)
 
@@ -18,22 +18,20 @@ A runtime measurement is a cryptographic hash of the memory pages of a so called
 
 ### Platform Configuration Register (PCR)
 
-A Platform Configuration Register (PCR) is a memory location in the TPM that has some unique properties.
-To store a new value in a PCR, the existing value is extended with a new value as follows:
+A Platform Configuration Register (PCR) is a memory location in the TPM that has some unique properties. PCRs cannot be written, they can only be "extended". 
+When a PCR is extended with a value, the PCR's new value `PCR[n]` is calculated as follows:
 
 ```
-PCR[N] = HASHalg( PCR[N] || ArgumentOfExtend )
+PCR[n] = Hash( PCR[n-1] || value )
 ```
 
-The PCRs are typically used to store runtime measurements.
-The new value of a PCR is always an extension of the existing value.
-Thus, storing the measurements of multiple components into the same PCR irreversibly links them together.
+Thus, the value of a PCR always depends on all previous values. PCRs are typically used to store runtime measurements. In that case, the value of a PCR uniquely reflects the sequence of runtime measurements it was extended with. 
 
 ### Measured boot
 
 Measured boot builds on the concept of chained runtime measurements.
-Each component in the boot chain loads and measures the next component into the PCR before executing it.
-By comparing the resulting PCR values against trusted reference values, the integrity of the entire boot chain and thereby the running system can be ensured.
+Each component in the boot chain loads and measures the next component and extends the measurements into the PCR.
+By comparing the resulting PCR values against reference values, the integrity of the entire boot chain can be ensured.
 
 ### Remote attestation (RA)
 

@@ -1,7 +1,9 @@
 # Components
 
-Constellation takes care of bootstrapping and initializing a Confidential Kubernetes cluster.
-During the lifetime of the cluster, it handles day 2 operations such as key management, remote attestation, and updates.
+(**FS: Overall, good**)
+
+Constellation takes care of bootstrapping and initializing a Confidential Kubernetes cluster. (**FS: weird**)
+During the lifetime of the cluster, it handles day 2 operations such as key management, remote attestation, and updates. (**FS: features**)
 These features are provided by several components:
 
 * The [Bootstrapper](components.md#bootstrapper) initializes a Constellation node and bootstraps the cluster
@@ -9,7 +11,7 @@ These features are provided by several components:
 * The [VerificationService](components.md#verificationservice) provides remote attestation functionality
 * The [Key Management Service (KMS)](components.md#kms) manages Constellation-internal keys
 
-The relations between components are shown in the following diagram:
+The relations between components are shown in the following diagram: (**FS: this doesn't look quite right. Talk to Moritz. Maybe remove.**)
 
 ```mermaid
 flowchart LR
@@ -34,18 +36,19 @@ flowchart LR
 
 ## Bootstrapper
 
+**FS: some context missing**
 The *Bootstrapper* is the first component launched after booting a Constellation node image.
 It sets up that machine as a Kubernetes node and integrates that node into the Kubernetes cluster.
-To this end, the *Bootstrapper* first downloads and [verifies](https://blog.sigstore.dev/kubernetes-signals-massive-adoption-of-sigstore-for-protecting-open-source-ecosystem-73a6757da73) the [Kubernetes components](https://kubernetes.io/docs/concepts/overview/components/) at the configured versions.
+To this end, the *Bootstrapper* first downloads and [verifies](https://blog.sigstore.dev/kubernetes-signals-massive-adoption-of-sigstore-for-protecting-open-source-ecosystem-73a6757da73) the [Kubernetes components](https://kubernetes.io/docs/concepts/overview/components/) at the configured versions. (**FS: where are they configured?**)
 The *Bootstrapper* tries to find an existing cluster and if successful, communicates with the [JoinService](components.md#joinservice) to join the node.
 Otherwise, it waits for an initialization request to create a new Kubernetes cluster.
 
 ## JoinService
 
-The *JoinService* runs as [DaemonSet](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/) on each control-plane node.
+The *JoinService* runs as [DaemonSet](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/) on each control-plane node (**FS: should we define control-plane somewhere?**).
 New nodes (at cluster start, or later through autoscaling) send a request to the service over [attested TLS (aTLS)](attestation.md#attested-tls-atls).
 The *JoinService* verifies the new node's certificate and attestation statement.
-If attestation is successful, the new node is supplied with an encryption key from the [*KMS*](components.md#kms) for its state disk, and a Kubernetes bootstrap token.
+If attestation is successful, the new node is supplied with an encryption key from the [*KMS*](components.md#kms) (**FS: we should make clear that this is our own KMS**) for its state disk and a Kubernetes bootstrap token.
 
 
 ```mermaid

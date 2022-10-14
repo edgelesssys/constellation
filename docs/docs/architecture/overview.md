@@ -1,11 +1,13 @@
 # Overview
 
+**FS: OK'ish but not great. Do we need this section at all? Probably not.**
 Constellation is a cloud-based confidential orchestration platform.
 The foundation of Constellation is Kubernetes and therefore shares the same technology stack and architecture principles.
 To learn more about Constellation and Kubernetes, see [product overview](../overview/product.md).
 
 ## About orchestration and updates
 
+**FS: this is more like How-To**
 As a cluster administrator, you can use the [Constellation CLI](orchestration.md) to install and deploy a cluster.
 Updates are provided in accordance with the [support policy](versions.md).
 
