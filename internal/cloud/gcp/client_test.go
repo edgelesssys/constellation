@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	compute "cloud.google.com/go/compute/apiv1"
+	"github.com/edgelesssys/constellation/v2/internal/cloud"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	gax "github.com/googleapis/gax-go/v2"
@@ -39,8 +40,8 @@ func TestRetrieveInstances(t *testing.T) {
 				{
 					Name: proto.String("someInstance"),
 					Labels: map[string]string{
-						labelRole: role.ControlPlane.String(),
-						labelUID:  uid,
+						cloud.TagRole: role.ControlPlane.String(),
+						cloud.TagUID:  uid,
 					},
 					Metadata: &computepb.Metadata{
 						Items: []*computepb.Items{
@@ -69,8 +70,8 @@ func TestRetrieveInstances(t *testing.T) {
 	instance := &computepb.Instance{
 		Name: proto.String("instance"),
 		Labels: map[string]string{
-			labelRole: role.ControlPlane.String(),
-			labelUID:  uid,
+			cloud.TagRole: role.ControlPlane.String(),
+			cloud.TagUID:  uid,
 		},
 	}
 
@@ -143,7 +144,7 @@ func TestRetrieveInstances(t *testing.T) {
 			client:              stubInstancesClient{GetInstance: instance},
 			metadata:            stubMetadataClient{InstanceValue: uid},
 			instanceIter:        newTestIter(),
-			instanceIterMutator: func(sii *stubInstanceIterator) { delete(sii.instances[0].Labels, labelUID) },
+			instanceIterMutator: func(sii *stubInstanceIterator) { delete(sii.instances[0].Labels, cloud.TagUID) },
 			wantInstances:       []metadata.InstanceMetadata{},
 		},
 		"constellation retrieval fails": {
@@ -156,7 +157,7 @@ func TestRetrieveInstances(t *testing.T) {
 			client:              stubInstancesClient{GetInstance: instance},
 			metadata:            stubMetadataClient{InstanceValue: uid},
 			instanceIter:        newTestIter(),
-			instanceIterMutator: func(sii *stubInstanceIterator) { delete(sii.instances[0].Labels, labelRole) },
+			instanceIterMutator: func(sii *stubInstanceIterator) { delete(sii.instances[0].Labels, cloud.TagRole) },
 			wantInstances: []metadata.InstanceMetadata{
 				{
 					Name:          "someInstance",
@@ -270,7 +271,7 @@ func TestRetrieveInstance(t *testing.T) {
 			client:         stubInstancesClient{},
 			clientInstance: newTestInstance(),
 			clientInstanceMutator: func(i *computepb.Instance) {
-				i.Labels[labelRole] = role.ControlPlane.String()
+				i.Labels[cloud.TagRole] = role.ControlPlane.String()
 			},
 			wantInstance: metadata.InstanceMetadata{
 				Name:          "someInstance",
@@ -789,7 +790,7 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 	someErr := errors.New("some error")
 	instance := &computepb.Instance{
 		Labels: map[string]string{
-			labelUID: uid,
+			cloud.TagUID: uid,
 		},
 	}
 
@@ -809,7 +810,7 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 						{
 							IPAddress: proto.String(loadBalancerIP),
 							PortRange: proto.String("100-100"),
-							Labels:    map[string]string{"constellation-uid": uid, "constellation-use": use},
+							Labels:    map[string]string{cloud.TagUID: uid, "constellation-use": use},
 						},
 					},
 				},
@@ -840,7 +841,7 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 						{
 							IPAddress: proto.String(loadBalancerIP),
 							PortRange: proto.String("100-100"),
-							Labels:    map[string]string{"constellation-uid": uid, "constellation-use": use},
+							Labels:    map[string]string{cloud.TagUID: uid, "constellation-use": use},
 						},
 					},
 				},
@@ -855,7 +856,7 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 					rules: []*computepb.ForwardingRule{
 						{
 							IPAddress: proto.String(loadBalancerIP),
-							Labels:    map[string]string{"constellation-uid": uid, "constellation-use": use},
+							Labels:    map[string]string{cloud.TagUID: uid, "constellation-use": use},
 						},
 					},
 				},
@@ -872,7 +873,7 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 						{
 							IPAddress: proto.String(loadBalancerIP),
 							PortRange: proto.String("100-100"),
-							Labels:    map[string]string{"constellation-uid": uid, "constellation-use": use},
+							Labels:    map[string]string{cloud.TagUID: uid, "constellation-use": use},
 						},
 					},
 				},
@@ -888,7 +889,7 @@ func TestRetrieveLoadBalancerEndpoint(t *testing.T) {
 						{
 							IPAddress: proto.String(loadBalancerIP),
 							PortRange: proto.String("100-100"),
-							Labels:    map[string]string{"constellation-uid": uid, "constellation-use": "bootstrapper"},
+							Labels:    map[string]string{cloud.TagUID: uid, "constellation-use": "bootstrapper"},
 						},
 					},
 				},

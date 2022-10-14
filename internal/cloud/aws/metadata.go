@@ -17,14 +17,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/edgelesssys/constellation/v2/internal/cloud"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 )
 
 const (
 	tagName = "Name"
-	tagRole = "constellation-role"
-	tagUID  = "constellation-uid"
 )
 
 type ec2API interface {
@@ -62,7 +61,7 @@ func (m *Metadata) Supported() bool {
 
 // List retrieves all instances belonging to the current Constellation.
 func (m *Metadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
-	uid, err := readInstanceTag(ctx, m.imds, tagUID)
+	uid, err := readInstanceTag(ctx, m.imds, cloud.TagUID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving uid tag: %w", err)
 	}
@@ -85,7 +84,7 @@ func (m *Metadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) 
 	if err != nil {
 		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving name tag: %w", err)
 	}
-	instanceRole, err := readInstanceTag(ctx, m.imds, tagRole)
+	instanceRole, err := readInstanceTag(ctx, m.imds, cloud.TagRole)
 	if err != nil {
 		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving role tag: %w", err)
 	}
@@ -151,7 +150,7 @@ func (m *Metadata) getAllInstancesInGroup(ctx context.Context, uid string) ([]ty
 	instanceReq := &ec2.DescribeInstancesInput{
 		Filters: []types.Filter{
 			{
-				Name:   aws.String("tag:" + tagUID),
+				Name:   aws.String("tag:" + cloud.TagUID),
 				Values: []string{uid},
 			},
 		},
@@ -199,7 +198,7 @@ func (m *Metadata) convertToMetadataInstance(ec2Instances []types.Instance) ([]m
 		}
 		newInstance.Name = name
 
-		instanceRole, err := findTag(ec2Instance.Tags, tagRole)
+		instanceRole, err := findTag(ec2Instance.Tags, cloud.TagRole)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving tag for instance %s: %w", *ec2Instance.InstanceId, err)
 		}

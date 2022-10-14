@@ -11,6 +11,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/cloud"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,7 +42,7 @@ func TestList(t *testing.T) {
 				projectID: "someProjectID",
 				zone:      "someZone",
 				retrieveInstanceMetadaValues: map[string]string{
-					"constellation-uid": uid,
+					cloud.TagUID: uid,
 				},
 			},
 			instancesGenerator: instancesGenerator,
@@ -58,7 +59,7 @@ func TestList(t *testing.T) {
 				projectID: "someProjectID",
 				zone:      "someZone",
 				retrieveInstanceMetadaValues: map[string]string{
-					"constellation-uid": uid,
+					cloud.TagUID: uid,
 				},
 				retrieveInstancesErr: err,
 			},
@@ -133,7 +134,7 @@ func TestSelf(t *testing.T) {
 				projectID: "someProjectID",
 				zone:      "someZone",
 				retrieveInstanceMetadaValues: map[string]string{
-					"constellation-uid": uid,
+					cloud.TagUID: uid,
 				},
 				retrieveInstanceErr: err,
 			},
