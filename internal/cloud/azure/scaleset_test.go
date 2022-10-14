@@ -14,6 +14,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
+	"github.com/edgelesssys/constellation/v2/internal/cloud"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/stretchr/testify/assert"
@@ -223,15 +224,15 @@ func TestExtractScaleSetVMRole(t *testing.T) {
 		wantRole role.Role
 	}{
 		"control-plane role": {
-			tags:     map[string]*string{"role": to.Ptr("control-plane")},
+			tags:     map[string]*string{cloud.TagRole: to.Ptr("control-plane")},
 			wantRole: role.ControlPlane,
 		},
 		"worker role": {
-			tags:     map[string]*string{"role": to.Ptr("worker")},
+			tags:     map[string]*string{cloud.TagRole: to.Ptr("worker")},
 			wantRole: role.Worker,
 		},
 		"unknown role": {
-			tags:     map[string]*string{"role": to.Ptr("foo")},
+			tags:     map[string]*string{cloud.TagRole: to.Ptr("foo")},
 			wantRole: role.Unknown,
 		},
 		"no role": {
@@ -239,7 +240,7 @@ func TestExtractScaleSetVMRole(t *testing.T) {
 			wantRole: role.Unknown,
 		},
 		"nil role": {
-			tags:     map[string]*string{"role": nil},
+			tags:     map[string]*string{cloud.TagRole: nil},
 			wantRole: role.Unknown,
 		},
 		"nil tags": {
@@ -280,7 +281,7 @@ func newListContainingNilScaleSetVirtualMachinesStub() *stubVirtualMachineScaleS
 					ID:         to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"),
 					InstanceID: to.Ptr("instance-id"),
 					Tags: map[string]*string{
-						"role": to.Ptr("worker"),
+						cloud.TagRole: to.Ptr("worker"),
 					},
 					Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
 						NetworkProfile: &armcomputev2.NetworkProfile{

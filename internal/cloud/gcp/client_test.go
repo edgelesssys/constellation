@@ -157,7 +157,7 @@ func TestRetrieveInstances(t *testing.T) {
 			client:              stubInstancesClient{GetInstance: instance},
 			metadata:            stubMetadataClient{InstanceValue: uid},
 			instanceIter:        newTestIter(),
-			instanceIterMutator: func(sii *stubInstanceIterator) { delete(sii.instances[0].Labels, cloud.TagUID) },
+			instanceIterMutator: func(sii *stubInstanceIterator) { delete(sii.instances[0].Labels, cloud.TagRole) },
 			wantInstances: []metadata.InstanceMetadata{
 				{
 					Name:          "someInstance",
@@ -271,7 +271,7 @@ func TestRetrieveInstance(t *testing.T) {
 			client:         stubInstancesClient{},
 			clientInstance: newTestInstance(),
 			clientInstanceMutator: func(i *computepb.Instance) {
-				i.Labels[cloud.TagUID] = role.ControlPlane.String()
+				i.Labels[cloud.TagRole] = role.ControlPlane.String()
 			},
 			wantInstance: metadata.InstanceMetadata{
 				Name:          "someInstance",

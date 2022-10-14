@@ -16,6 +16,7 @@ import (
 	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/edgelesssys/constellation/v2/internal/azureshared"
+	"github.com/edgelesssys/constellation/v2/internal/cloud"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 )
@@ -117,7 +118,7 @@ func extractScaleSetVMRole(tags map[string]*string) role.Role {
 	if tags == nil {
 		return role.Unknown
 	}
-	roleStr, ok := tags["role"]
+	roleStr, ok := tags[cloud.TagRole]
 	if !ok {
 		return role.Unknown
 	}
