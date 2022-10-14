@@ -7,9 +7,13 @@ on:
       - main
     paths:
       - "**.go"
+      - "**/go.mod"
+      - "**/go.sum"
   pull_request:
     paths:
       - "**.go"
+      - "**/go.mod"
+      - "**/go.sum"
 
 # Abort runs of *this* workflow, if a new commit with the same ref is pushed.
 concurrency:
