@@ -6,6 +6,13 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "0 19 * * 0"
+
+env:
+  ARM_CLIENT_ID: "b657a00e-813a-4dc7-9b09-fa498a254d71"
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: "0d202bbb-4fa7-4af8-8125-58c269a05435"
+  ARM_TENANT_ID: "adb650a8-5da3-4b15-b4b0-3daf65ff7626"
+
 jobs:
   test-other-versions:
     strategy:
