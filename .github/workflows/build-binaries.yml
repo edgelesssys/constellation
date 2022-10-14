@@ -16,11 +16,6 @@ on:
       - "**/go.mod"
       - "**/go.sum"
 
-# Abort runs of *this* workflow, if a new commit with the same ref is pushed.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
-
 jobs:
   build-bootstrapper:
     runs-on: ubuntu-latest
