@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -276,6 +277,43 @@ func TestFlushLoop(t *testing.T) {
 	clock.Step(1 * time.Second)
 	require.NoError(l.Close())
 	assert.Len(logAPI.logs, 2)
+}
+
+func TestConcurrency(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	l := &Logger{
+		api:      &stubLogs{},
+		interval: 1 * time.Second,
+		clock:    testclock.NewFakeClock(time.Time{}),
+		stopCh:   make(chan struct{}, 1),
+	}
+	var wg sync.WaitGroup
+
+	wg.Add(100)
+	for i := 0; i < 100; i++ {
+		go func() {
+			defer wg.Done()
+			l.Disclose("msg")
+		}()
+	}
+
+	wg.Wait()
+	assert.Len(l.logs, 100)
+	require.NoError(l.flushLogs())
+	assert.Len(l.logs, 0)
+
+	wg.Add(100)
+	for i := 0; i < 100; i++ {
+		go func() {
+			defer wg.Done()
+			l.Disclose("msg")
+			require.NoError(l.flushLogs())
+		}()
+	}
+	wg.Wait()
+	assert.Len(l.logs, 0)
 }
 
 type stubLogs struct {
