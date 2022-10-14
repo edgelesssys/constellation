@@ -26,12 +26,6 @@ type Issuer struct {
 }
 
 func NewIssuer() *Issuer {
-	//ctx := context.TODO()
-	//awsMetadataClient, err := awsMeta.New(ctx)
-	//
-	//if err != nil {
-	//	panic("Cannot initialize awsmetadata")
-	//}
 	awsIMDS := imds.New(imds.Options{})
 	GetInstanceInfo := getInstanceInfo(awsIMDS)
 
@@ -62,7 +56,7 @@ func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
 	tpmAk, err := client.NewCachedKey(tpm, tpm2.HandleOwner, keyTemplate, tpmutil.Handle(akIndex))
 
 	if err != nil {
-		return nil, errors.New("Cannot get cached key")
+		return nil, errors.New("cannot get cached key")
 	}
 
 	return tpmAk, nil
@@ -73,16 +67,6 @@ func getInstanceInfo(client awsMetaData) func(tpm io.ReadWriteCloser) ([]byte, e
 		ctx := context.TODO()
 		ec2InstanceIdentityOutput, err := client.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
 		ec2InstanceIdentityDocument := ec2InstanceIdentityOutput.InstanceIdentityDocument
-
-		//ctx := context.TODO()
-		//metadata, err := New(&ctx)
-		//InstanceMetadata, err := metadata.Self(ctx)
-
-		//instanceInfo := awsInstanceInfo{
-		//	ec2InstanceIdentityDocument.Name,
-		//	ec2InstanceIdentityDocument.ProviderID,
-		//	ec2InstanceIdentityDocument.Role,
-		//}
 
 		if err != nil {
 			return nil, errors.New("unable to fetch instance identity document")
