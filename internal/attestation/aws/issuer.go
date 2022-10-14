@@ -26,7 +26,15 @@ type Issuer struct {
 }
 
 func NewIssuer() *Issuer {
-	GetInstanceInfo := getInstanceInfo(metadataClient{})
+	//ctx := context.TODO()
+	//awsMetadataClient, err := awsMeta.New(ctx)
+	//
+	//if err != nil {
+	//	panic("Cannot initialize awsmetadata")
+	//}
+	awsIMDS := imds.New(imds.Options{})
+	GetInstanceInfo := getInstanceInfo(awsIMDS)
+
 	return &Issuer{
 		Issuer: vtpm.NewIssuer(
 			vtpm.OpenVTPM,
@@ -98,5 +106,3 @@ func getInstanceInfo(client awsMetaData) func(tpm io.ReadWriteCloser) ([]byte, e
 type awsMetaData interface {
 	GetInstanceIdentityDocument(context.Context, *imds.GetInstanceIdentityDocumentInput, ...func(*imds.Options)) (*imds.GetInstanceIdentityDocumentOutput, error)
 }
-
-type metadataClient struct{}
