@@ -79,7 +79,49 @@ Configure `kubectl` to connect to your local Constellation cluster:
 export KUBECONFIG="$PWD/constellation-admin.conf"
 ```
 
-It may take a couple of minutes for all cluster resources to be available.
+Your cluster initially consists of a single control-plane node:
+
+```shell-session
+$ kubectl get nodes
+NAME              STATUS   ROLES           AGE   VERSION
+control-plane-0   Ready    control-plane   66s   v1.24.6
+```
+
+A worker node will request to join the cluster shortly.
+
+Before the new worker node is allowed to join the cluster, its state is verified using remote attestation by the [JoinService](../architecture/components.md#joinservice).
+If verification passes successfully, the new node receives keys and certificates to join the cluster.
+
+You can follow this process by viewing the logs of the JoinService:
+
+```shell-session
+$ kubectl logs -n kube-system daemonsets/join-service -f
+{"level":"INFO","ts":"2022-10-14T09:32:20Z","caller":"cmd/main.go:48","msg":"Constellation Node Join Service","version":"2.1.0","cloudProvider":"qemu"}
+{"level":"INFO","ts":"2022-10-14T09:32:20Z","logger":"validator","caller":"watcher/validator.go:96","msg":"Updating expected measurements"}
+{"level":"INFO","ts":"2022-10-14T09:32:20Z","logger":"server","caller":"server/server.go:73","msg":"Starting join service on [::]:9090"}
+{"level":"INFO","ts":"2022-10-14T09:32:20Z","caller":"cmd/main.go:103","msg":"starting file watcher for measurements file /var/config/measurements"}
+{"level":"INFO","ts":"2022-10-14T09:32:21Z","logger":"server","caller":"server/server.go:86","msg":"IssueJoinTicket called","peerAddress":"10.42.2.100:59988"}
+{"level":"INFO","ts":"2022-10-14T09:32:21Z","logger":"server","caller":"server/server.go:88","msg":"Requesting measurement secret","peerAddress":"10.42.2.100:59988"}
+{"level":"INFO","ts":"2022-10-14T09:32:21Z","logger":"kms","caller":"kms/kms.go:41","msg":"Connecting to KMS at kms.kube-system:9000","keyID":"measurementSecret","endpoint":"kms.kube-system:9000"}
+{"level":"INFO","ts":"2022-10-14T09:32:21Z","logger":"kms","caller":"kms/kms.go:48","msg":"Requesting data key","keyID":"measurementSecret","endpoint":"kms.kube-system:9000"}
+{"level":"INFO","ts":"2022-10-14T09:32:21Z","logger":"kms","caller":"kms/kms.go:61","msg":"Data key request successful","keyID":"measurementSecret","endpoint":"kms.kube-system:9000"}
+{"level":"INFO","ts":"2022-10-14T09:32:21Z","logger":"server","caller":"server/server.go:95","msg":"Requesting disk encryption key","peerAddress":"10.42.2.100:59988"}
+{"level":"INFO","ts":"2022-10-14T09:32:21Z","logger":"kms","caller":"kms/kms.go:41","msg":"Connecting to KMS at kms.kube-system:9000","keyID":"0f87c61f-31e7-466d-be22-e7300e7d9e76","endpoint":"kms.kube-system:9000"}
+{"level":"INFO","ts":"2022-10-14T09:32:21Z","logger":"kms","caller":"kms/kms.go:48","msg":"Requesting data key","keyID":"0f87c61f-31e7-466d-be22-e7300e7d9e76","endpoint":"kms.kube-system:9000"}
+{"level":"INFO","ts":"2022-10-14T09:32:21Z","logger":"kms","caller":"kms/kms.go:61","msg":"Data key request successful","keyID":"0f87c61f-31e7-466d-be22-e7300e7d9e76","endpoint":"kms.kube-system:9000"}
+{"level":"INFO","ts":"2022-10-14T09:32:21Z","logger":"server","caller":"server/server.go:102","msg":"Creating Kubernetes join token","peerAddress":"10.42.2.100:59988"}
+{"level":"INFO","ts":"2022-10-14T09:32:21Z","logger":"kubeadm","caller":"kubeadm/kubeadm.go:63","msg":"Generating new random bootstrap token"}
+{"level":"INFO","ts":"2022-10-14T09:32:21Z","logger":"kubeadm","caller":"kubeadm/kubeadm.go:81","msg":"Creating bootstrap token in Kubernetes"}
+{"level":"INFO","ts":"2022-10-14T09:32:21Z","logger":"kubeadm","caller":"kubeadm/kubeadm.go:87","msg":"Preparing join token for new node"}
+{"level":"INFO","ts":"2022-10-14T09:32:21Z","logger":"kubeadm","caller":"kubeadm/kubeadm.go:109","msg":"Join token creation successful"}
+{"level":"INFO","ts":"2022-10-14T09:32:21Z","logger":"server","caller":"server/server.go:109","msg":"Querying K8sVersion ConfigMap","peerAddress":"10.42.2.100:59988"}
+{"level":"INFO","ts":"2022-10-14T09:32:21Z","logger":"server","caller":"server/server.go:115","msg":"Creating signed kubelet certificate","peerAddress":"10.42.2.100:59988"}
+{"level":"INFO","ts":"2022-10-14T09:32:21Z","logger":"certificateAuthority","caller":"kubernetesca/kubernetesca.go:84","msg":"Creating kubelet certificate"}
+{"level":"INFO","ts":"2022-10-14T09:32:21Z","logger":"server","caller":"server/server.go:138","msg":"IssueJoinTicket successful","peerAddress":"10.42.2.100:59988"}
+{"level":"INFO","ts":"2022-10-14T09:32:21Z","logger":"server.gRPC","caller":"zap/server_interceptors.go:39","msg":"finished unary call with code OK","grpc.start_time":"2022-10-14T09:32:21Z","grpc.request.deadline":"2022-10-14T09:32:51Z","system":"grpc","span.kind":"server","grpc.service":"join.API","grpc.method":"IssueJoinTicket","peer.address":"10.42.2.100:59988","grpc.code":"OK","grpc.time_ms":27.715}
+```
+
+Once the worker node has joined your cluster, it may take a couple of minutes for all resources to be available.
 You can check on the state of your cluster by running the following:
 
 ```bash
@@ -90,9 +132,9 @@ If your cluster is running as expected the output should look like the following
 
 ```shell-session
 $ kubectl get nodes
-NAME              STATUS   ROLES                  AGE     VERSION
-control-plane-0   Ready    control-plane,master   2m59s   v1.23.9
-worker-0          Ready    <none>                 32s     v1.23.9
+NAME              STATUS   ROLES           AGE     VERSION
+control-plane-0   Ready    control-plane   2m59s   v1.24.6
+worker-0          Ready    <none>          32s     v1.24.6
 ```
 
 ## Deploy a sample application

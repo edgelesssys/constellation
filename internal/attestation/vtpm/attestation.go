@@ -57,8 +57,9 @@ type (
 	VerifyUserData func(pub crypto.PublicKey, hash crypto.Hash, hashed, sig []byte) error
 )
 
-// WarnLogger is a logger used to print warnings during attestation validation.
-type WarnLogger interface {
+// AttestationLogger is a logger used to print warnings and infos during attestation validation.
+type AttestationLogger interface {
+	Infof(format string, args ...interface{})
 	Warnf(format string, args ...interface{})
 }
 
@@ -139,12 +140,12 @@ type Validator struct {
 	validateCVM    ValidateCVM
 	verifyUserData VerifyUserData
 
-	log WarnLogger
+	log AttestationLogger
 }
 
 // NewValidator returns a new Validator.
-func NewValidator(expectedPCRs map[uint32][]byte, enforcedPCRs []uint32,
-	getTrustedKey GetTPMTrustedAttestationPublicKey, validateCVM ValidateCVM, verifyUserData VerifyUserData, log WarnLogger,
+func NewValidator(expectedPCRs map[uint32][]byte, enforcedPCRs []uint32, getTrustedKey GetTPMTrustedAttestationPublicKey,
+	validateCVM ValidateCVM, verifyUserData VerifyUserData, log AttestationLogger,
 ) *Validator {
 	// Convert the enforced PCR list to a map for convenient and fast lookup
 	enforcedMap := make(map[uint32]struct{})
@@ -164,6 +165,10 @@ func NewValidator(expectedPCRs map[uint32][]byte, enforcedPCRs []uint32,
 
 // Validate a TPM based attestation.
 func (v *Validator) Validate(attDocRaw []byte, nonce []byte) ([]byte, error) {
+	if v.log != nil {
+		v.log.Infof("Validating attestation document")
+	}
+
 	var attDoc AttestationDocument
 	if err := json.Unmarshal(attDocRaw, &attDoc); err != nil {
 		return nil, fmt.Errorf("unmarshaling TPM attestation document: %w", err)
@@ -212,6 +217,10 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) ([]byte, error) {
 	digest := sha256.Sum256(attDoc.UserData)
 	if err = v.verifyUserData(aKP, crypto.SHA256, digest[:], attDoc.UserDataSignature); err != nil {
 		return nil, fmt.Errorf("verifying signed user data: %w", err)
+	}
+
+	if v.log != nil {
+		v.log.Infof("Successfully validated attestation document")
 	}
 	return attDoc.UserData, nil
 }
