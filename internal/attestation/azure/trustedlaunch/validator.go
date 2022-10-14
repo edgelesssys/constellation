@@ -32,7 +32,7 @@ type Validator struct {
 }
 
 // NewValidator initializes a new Azure validator with the provided PCR values.
-func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, log vtpm.WarnLogger) *Validator {
+func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, log vtpm.AttestationLogger) *Validator {
 	rootPool := x509.NewCertPool()
 	rootPool.AddCert(ameRoot)
 	v := &Validator{roots: rootPool}

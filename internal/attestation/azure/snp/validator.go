@@ -41,7 +41,7 @@ type Validator struct {
 }
 
 // NewValidator initializes a new Azure validator with the provided PCR values.
-func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, idKeyDigest []byte, enforceIDKeyDigest bool, log vtpm.WarnLogger) *Validator {
+func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, idKeyDigest []byte, enforceIDKeyDigest bool, log vtpm.AttestationLogger) *Validator {
 	return &Validator{
 		Validator: vtpm.NewValidator(
 			pcrs,
@@ -76,7 +76,9 @@ func reverseEndian(b []byte) {
 
 // getTrustedKey establishes trust in the given public key.
 // It does so by verifying the SNP attestation statement in instanceInfo.
-func getTrustedKey(hclAk HCLAkValidator, idKeyDigest []byte, enforceIDKeyDigest bool, log vtpm.WarnLogger) func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
+func getTrustedKey(
+	hclAk HCLAkValidator, idKeyDigest []byte, enforceIDKeyDigest bool, log vtpm.AttestationLogger,
+) func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
 	return func(akPub, instanceInfoRaw []byte) (crypto.PublicKey, error) {
 		var instanceInfo azureInstanceInfo
 		if err := json.Unmarshal(instanceInfoRaw, &instanceInfo); err != nil {
@@ -140,7 +142,10 @@ func validateVCEK(vcekRaw []byte, certChain []byte) (*x509.Certificate, error) {
 	return vcek, nil
 }
 
-func validateSNPReport(cert *x509.Certificate, expectedIDKeyDigest []byte, enforceIDKeyDigest bool, report snpAttestationReport, log vtpm.WarnLogger) error {
+func validateSNPReport(
+	cert *x509.Certificate, expectedIDKeyDigest []byte, enforceIDKeyDigest bool,
+	report snpAttestationReport, log vtpm.AttestationLogger,
+) error {
 	if report.Policy.Debug() {
 		return errDebugEnabled
 	}

@@ -177,6 +177,10 @@ type warnLogger struct {
 	cmd *cobra.Command
 }
 
+// Infof is a no-op.
+func (wl warnLogger) Infof(format string, args ...interface{}) {
+}
+
 // Warnf prints a formatted warning from the validator.
 func (wl warnLogger) Warnf(fmtStr string, args ...interface{}) {
 	wl.cmd.PrintErrf("Warning: %s\n", fmt.Sprintf(fmtStr, args...))
