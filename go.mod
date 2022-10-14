@@ -55,7 +55,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.17
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.2
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.32.0
-	github.com/aws/aws-sdk-go-v2/service/kms v1.18.10
+	github.com/aws/aws-sdk-go-v2/service/kms v1.18.12
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.26.2
 	github.com/coreos/go-systemd/v22 v22.3.2
 	github.com/docker/docker v20.10.17+incompatible
