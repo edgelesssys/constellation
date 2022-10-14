@@ -79,22 +79,22 @@ Configure `kubectl` to connect to your local Constellation cluster:
 export KUBECONFIG="$PWD/constellation-admin.conf"
 ```
 
-Your cluster now consists of a single control-plane node:
+Your cluster initially consists of a single control-plane node:
 
-```bash
+```shell-session
 $ kubectl get nodes
-NAME              STATUS   ROLES           AGE   VERSION                                                                                                                                                                                                      
+NAME              STATUS   ROLES           AGE   VERSION
 control-plane-0   Ready    control-plane   66s   v1.24.6
 ```
 
 A worker node will request to join the cluster shortly.
 
-Before the new worker node is allowed to join the cluster, it's state is verified using remote attestation by the join-service.
+Before the new worker node is allowed to join the cluster, its state is verified using remote attestation by the [JoinService](../architecture/components.md#joinservice).
 If verification passes successfully, the new node receives keys and certificates to join the cluster.
 
-You can follow this process by viewing the logs of the join-service:
+You can follow this process by viewing the logs of the JoinService:
 
-```bash
+```shell-session
 $ kubectl logs -n kube-system daemonsets/join-service -f
 {"level":"INFO","ts":"2022-10-14T09:32:20Z","caller":"cmd/main.go:48","msg":"Constellation Node Join Service","version":"2.1.0","cloudProvider":"qemu"}
 {"level":"INFO","ts":"2022-10-14T09:32:20Z","logger":"validator","caller":"watcher/validator.go:96","msg":"Updating expected measurements"}
