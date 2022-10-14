@@ -19,7 +19,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
       - name: Vale
-        uses: errata-ai/vale-action@c4213d4de3d5f718b8497bd86161531c78992084 # tag=v2.0.1
+        uses: errata-ai/vale-action@753427452ff1d6cf7a7b76a552aa0cbee3971551 # tag=v1.5.0
         with:
           files: docs/docs
         env:
