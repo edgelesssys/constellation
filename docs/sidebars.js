@@ -82,7 +82,7 @@ const sidebars = {
         {
           type: 'doc',
           label: 'First steps (local)',
-          id: 'getting-started/mini-constellation',
+          id: 'getting-started/first-steps-local',
         },
         {
           type: 'category',

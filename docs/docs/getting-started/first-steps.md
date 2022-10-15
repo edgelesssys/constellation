@@ -1,10 +1,10 @@
-# First steps
+# First steps with Constellation 
 
 The following steps guide you through the process of creating a cluster and deploying a sample app. This example assumes that you have successfully [installed and set up Constellation](install.md),
 and have access to a cloud subscription.
 
 :::tip
-If you don't have a cloud subscription, check out [MiniConstellation](mini-constellation.md), which lets you set up a local Constellation cluster using virtualization.
+If you don't have a cloud subscription, check out [MiniConstellation](first-steps-local.md), which lets you set up a local Constellation cluster using virtualization.
 :::
 
 ## Create a cluster
