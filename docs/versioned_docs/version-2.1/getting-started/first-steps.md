@@ -1,4 +1,4 @@
-# First steps
+# First steps with Constellation 
 
 The following steps guide you through the process of creating a cluster and deploying a sample app. This example assumes that you have successfully [installed and set up Constellation](install.md),
 and have access to a cloud subscription.
