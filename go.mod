@@ -30,10 +30,7 @@ replace (
 	k8s.io/sample-apiserver v0.0.0 => k8s.io/sample-apiserver v0.24.6
 )
 
-replace (
-	github.com/google/go-attestation => github.com/malt3/go-attestation v0.0.0-20220816131639-92b6394e4e0e
-	github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools v0.0.0-20220929072523-22862750ed86
-)
+replace github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools v0.0.0-20220929072523-22862750ed86
 
 require (
 	cloud.google.com/go/compute v1.7.0
@@ -65,7 +62,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.0
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/google/go-tpm v0.3.3
-	github.com/google/go-tpm-tools v0.3.8
+	github.com/google/go-tpm-tools v0.3.9
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/tink/go v1.6.1
 	github.com/googleapis/gax-go/v2 v2.4.0
@@ -193,7 +190,7 @@ require (
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/certificate-transparency-go v1.1.2 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
-	github.com/google/go-attestation v0.4.4-0.20220404204839-8820d49b18d9 // indirect
+	github.com/google/go-attestation v0.4.4-0.20221011162210-17f9c05652a9 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-containerregistry v0.11.0 // indirect
 	github.com/google/go-tspi v0.3.0 // indirect
