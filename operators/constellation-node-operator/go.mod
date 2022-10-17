@@ -14,7 +14,7 @@ require (
 	github.com/spf13/afero v1.9.2
 	github.com/stretchr/testify v1.7.5
 	go.etcd.io/etcd/api/v3 v3.5.4
-	go.etcd.io/etcd/client/pkg/v3 v3.5.4
+	go.etcd.io/etcd/client/pkg/v3 v3.5.5
 	go.etcd.io/etcd/client/v3 v3.5.4
 	go.uber.org/multierr v1.8.0
 	google.golang.org/api v0.86.0
