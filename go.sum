@@ -114,12 +114,12 @@ github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.1.0 h1:QkAcEIAKbNL4KoFr4Sath
 github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.1.0/go.mod h1:bhXu1AjYL+wutSL/kpSq6s7733q2Rb0yuot9Zgfqa/0=
 github.com/Azure/azure-sdk-for-go/sdk/internal v1.0.0 h1:jp0dGvZ7ZK0mgqnTSClMxa5xuRL7NZgHameVYF6BurY=
 github.com/Azure/azure-sdk-for-go/sdk/internal v1.0.0/go.mod h1:eWRD7oawr1Mu1sLCawqVc0CUiF43ia3qQMxLscsKQ9w=
-github.com/Azure/azure-sdk-for-go/sdk/keyvault/azkeys v0.6.0 h1:3Onh5qkCDHpIJplrRI/DbbzWPnFKHRjQV4idRwLrghQ=
-github.com/Azure/azure-sdk-for-go/sdk/keyvault/azkeys v0.6.0/go.mod h1:y8KaF8j2nkUhLFJPccRG+vCxSKF22wZEit6pMINlvEo=
+github.com/Azure/azure-sdk-for-go/sdk/keyvault/azkeys v0.8.1 h1:11WqUxXzxqALlSLk0z69I/cA8VlQYu7qgA5mUMBiiyE=
+github.com/Azure/azure-sdk-for-go/sdk/keyvault/azkeys v0.8.1/go.mod h1:EAyXOW1F6BTJPiK2pDvmnvxOHPxoTYWoqBeIlql+QhI=
 github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets v0.8.0 h1:A6Kf8v5DPFR+V7/qQOefHEU8W71OBVJvXu7UO0EHJkA=
 github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets v0.8.0/go.mod h1:u5EGU7cPuj/T2qhJWXDbWgv0dy3ORAEaAzR1zP6p4X8=
-github.com/Azure/azure-sdk-for-go/sdk/keyvault/internal v0.5.0 h1:9cn6ICCGiWFNA/slKnrkf+ENyvaCRKHtuoGtnLIAgao=
-github.com/Azure/azure-sdk-for-go/sdk/keyvault/internal v0.5.0/go.mod h1:9V2j0jn9jDEkCkv8w/bKTNppX/d0FVA1ud77xCIP4KA=
+github.com/Azure/azure-sdk-for-go/sdk/keyvault/internal v0.7.0 h1:Lg6BW0VPmCwcMlvOviL3ruHFO+H9tZNqscK0AeuFjGM=
+github.com/Azure/azure-sdk-for-go/sdk/keyvault/internal v0.7.0/go.mod h1:9V2j0jn9jDEkCkv8w/bKTNppX/d0FVA1ud77xCIP4KA=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights v1.0.0 h1:BpGGvzarSyE7kQF1x1hptUcGmNzZEE3yYI+uqBSNRxk=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights v1.0.0/go.mod h1:1ijUM40peD7YK5MFEJja2wjjp4eimFNWv0NXoY3nsZM=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute v1.0.0 h1:/Di3vB4sNeQ+7A8efjUVENvyB945Wruvstucqp7ZArg=
