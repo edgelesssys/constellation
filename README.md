@@ -57,7 +57,7 @@ Encrypting your K8s is good for:
 
 * Constellation is a [CNCF-certified][certified] Kubernetes. It's aligned to Kubernetes' [version support policy][k8s-version-support] and will likely work with your existing workloads and tools.
 * Support for Azure and GCP (more to come).
-* Support for local and edge installations with [MiniConstellation][first-steps-local].
+* Support for local installations with [MiniConstellation][first-steps-local].
 
 ## Getting started
 
