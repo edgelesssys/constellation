@@ -56,14 +56,15 @@ Encrypting your K8s is good for:
 <a href="https://landscape.cncf.io/?selected=constellation"><img src="https://raw.githubusercontent.com/cncf/artwork/1c1a10d9cc7de24235e07c8831923874331ef233/projects/kubernetes/certified-kubernetes/versionless/color/certified-kubernetes-color.svg" align="right" width="100px"></a>
 
 * Constellation is a [CNCF-certified][certified] Kubernetes. It's aligned to Kubernetes' [version support policy][k8s-version-support] and will likely work with your existing workloads and tools.
-* Support for Azure and GCP, more to come.
+* Support for Azure and GCP (more to come).
+* Support for local installations with [MiniConstellation][first-steps-local].
 
 ## Getting started
 
 If you're already familiar with Kubernetes, it's easy to get started with Constellation:
 
 1. 📦 [Install the CLI][install]
-2. ⌨️ [Create a Constellation cluster][create-cluster]
+2. ⌨️ Create a Constellation cluster in the [cloud][first-steps] or [locally][first-steps-local]
 3. 🏎️ [Run your app][examples]
 
 ![Constellation Shell](docs/static/img/shell-windowframe.svg)
@@ -104,7 +105,8 @@ The Constellation source code is licensed under the [GNU Affero General Public L
 [confidential-kubernetes]: https://docs.edgeless.systems/constellation/overview/confidential-kubernetes
 [discord]: https://discord.gg/rH8QTH56JN
 [enterprise-support]: https://www.edgeless.systems/products/constellation/
-[create-cluster]: https://docs.edgeless.systems/constellation/workflows/create
+[first-steps]: https://docs.edgeless.systems/constellation/getting-started/first-steps
+[first-steps-local]: https://docs.edgeless.systems/constellation/getting-started/first-steps-local
 [documentation]: https://docs.edgeless.systems/constellation/latest
 [examples]: https://docs.edgeless.systems/constellation/getting-started/examples
 [github-issues]: https://github.com/edgelesssys/constellation/issues
