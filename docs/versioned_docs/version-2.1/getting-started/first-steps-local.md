@@ -1,6 +1,8 @@
 # First steps with MiniConstellation
 
+<!-- vale off -->
 With the `constellation mini` command, you can deploy and test Constellation locally without a cloud subscription. This mode is called MiniConstellation. Conceptually, MiniConstellation is similar to [MicroK8s](https://microk8s.io/), [K3s](https://k3s.io/), and [minikube](https://minikube.sigs.k8s.io/docs/).
+<!-- vale on -->
 
 MiniConstellation uses virtualization to create a local cluster with one control-plane node and one worker node. 
 
