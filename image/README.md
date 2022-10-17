@@ -31,7 +31,8 @@
         curl \
         jq \
         util-linux \
-        virt-manager
+        virt-manager \
+        python3-crc32c
     ```
 
     </details>
@@ -133,6 +134,34 @@ secure-boot/azure/delete.sh --name "${AZURE_DISK_NAME}-setup-secure-boot"
 </details>
 
 ## Upload to CSP
+
+<details>
+<summary>AWS</summary>
+
+- Install `aws` cli (see [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html))
+- Login to AWS (see [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html))
+- Choose secure boot PKI public keys (one of `pki_dev`, `pki_test`, `pki_prod`)
+    - `pki_dev` can be used for local image builds
+    - `pki_test` is used by the CI for non-release images
+    - `pki_prod` is used for release images
+
+```sh
+# set these variables
+export AWS_IMAGE_NAME= # e.g. "constellation-v1.0.0"
+export PKI=${PWD}/pki
+
+export AWS_REGION=eu-central-1
+export AWS_REPLICATION_REGIONS="us-east-2"
+export AWS_BUCKET=constellation-images
+export AWS_EFIVARS_PATH=${PWD}/mkosi.output.aws/fedora~36/efivars.bin
+export AWS_IMAGE_PATH=${PWD}/mkosi.output.aws/fedora~36/image.raw
+export AWS_IMAGE_FILENAME=image-$(date +%s).raw
+export AWS_AMI_OUTPUT=${PWD}/mkosi.output.aws/fedora~36/ami.txt
+secure-boot/aws/create_uefivars.sh "${AWS_EFIVARS_PATH}"
+upload/upload_aws.sh "${AWS_AMI_OUTPUT}"
+```
+
+</details>
 
 <details>
 <summary>GCP</summary>

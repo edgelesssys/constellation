@@ -6,7 +6,7 @@ DISK_MAPPER_BINARY               ?= $(BASE_PATH)/../build/disk-mapper
 PKI                              ?= $(BASE_PATH)/pki
 MKOSI_EXTRA                      ?= $(BASE_PATH)/mkosi.extra
 -include $(CURDIR)/config.mk
-csps := qemu gcp azure
+csps := aws qemu gcp azure
 certs := $(PKI)/PK.cer $(PKI)/KEK.cer $(PKI)/db.cer
 
 .PHONY: all clean inject-bins $(csps)
