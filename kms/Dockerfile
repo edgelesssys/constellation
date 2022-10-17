@@ -26,7 +26,6 @@ WORKDIR /constellation/kms/cmd
 ARG PROJECT_VERSION=0.0.0
 RUN CGO_ENABLED=0 go build -o /constellation/build/kmsserver -trimpath -buildvcs=false -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}"
 
-# Use gcr.io/distroless/static here since we need CA certificates to be installed for aTLS operations on GCP.
-FROM gcr.io/distroless/static@sha256:f6ba6e4b2b5881fb94a99113de3c886c5f72e589946ece055dee2aade9486b8f as release
+FROM gcr.io/distroless/static:nonroot@sha256:d8afc7d6973f357162e2283551cf3347b2bb847a03d24510ee837f289505f8e3 as release
 COPY --from=build /constellation/build/kmsserver /kmsserver
 ENTRYPOINT ["/kmsserver"]
