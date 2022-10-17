@@ -9,9 +9,12 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	tty "github.com/mattn/go-isatty"
 )
 
 const (
@@ -38,10 +41,16 @@ type spinner struct {
 }
 
 func newSpinner(writer io.Writer) *spinner {
+	delay := time.Millisecond * 100
+	// slow down spinner if output is not a tty
+	if !(writer == os.Stdout && tty.IsTerminal(os.Stdout.Fd())) {
+		delay = time.Second * 20
+	}
+
 	return &spinner{
 		out:   writer,
 		wg:    &sync.WaitGroup{},
-		delay: 100 * time.Millisecond,
+		delay: delay,
 		stop:  0,
 	}
 }
