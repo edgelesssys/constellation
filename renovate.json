@@ -25,6 +25,12 @@
       "groupName": "k8s dependencies"
     },
     {
+      "matchPackagePatterns": [
+        "^go.etcd.io/etcd"
+      ],
+      "groupName": "etcd"
+    },
+    {
       "matchDatasources": [
         "golang-version"
       ],
