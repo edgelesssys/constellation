@@ -56,7 +56,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kms v1.18.12
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.27.11
 	github.com/coreos/go-systemd/v22 v22.3.2
-	github.com/docker/docker v20.10.17+incompatible
+	github.com/docker/docker v20.10.19+incompatible
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/go-playground/locales v0.14.0
 	github.com/go-playground/universal-translator v0.18.0
