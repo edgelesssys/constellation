@@ -642,8 +642,9 @@ github.com/google/certificate-transparency-go v1.1.2/go.mod h1:3OL+HKDqHPUfdKrHV
 github.com/google/gnostic v0.5.7-v3refs h1:FhTMOKj2VhjpouxvWJAV1TL304uMlb9zcDqkl6cEI54=
 github.com/google/gnostic v0.5.7-v3refs/go.mod h1:73MKFl6jIHelAJNaBGFzt3SPtZULs9dYrGFt8OiIsHQ=
 github.com/google/go-attestation v0.3.2/go.mod h1:N0ADdnY0cr7eLJyZ75o8kofGGTUF2XrZTJuTPo5acwk=
-github.com/google/go-attestation v0.4.4-0.20220404204839-8820d49b18d9 h1:uspQ6yStR6DVxLT7UomcSc/cKEOtM3z6MOslXeXH1Gg=
 github.com/google/go-attestation v0.4.4-0.20220404204839-8820d49b18d9/go.mod h1:KDsPHk8a2MX9g20kYSdxB21t7je5NghSaFeVn0Zu3Ao=
+github.com/google/go-attestation v0.4.4-0.20221011162210-17f9c05652a9 h1:V3P3BqDEVzAAEw0nlx7OhVRynBUUNgL4znTlqg2Udbc=
+github.com/google/go-attestation v0.4.4-0.20221011162210-17f9c05652a9/go.mod h1:hYP3lyq8hO11DmeEBjZ28norJ2uCFhm/Jj5m8V+hmNE=
 github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5aqRK0M=
 github.com/google/go-cmp v0.3.0/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=
 github.com/google/go-cmp v0.3.1/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=
@@ -676,8 +677,8 @@ github.com/google/go-tpm-tools v0.0.0-20190906225433-1614c142f845/go.mod h1:AVfH
 github.com/google/go-tpm-tools v0.2.0/go.mod h1:npUd03rQ60lxN7tzeBJreG38RvWwme2N1reF/eeiBk4=
 github.com/google/go-tpm-tools v0.2.1/go.mod h1:npUd03rQ60lxN7tzeBJreG38RvWwme2N1reF/eeiBk4=
 github.com/google/go-tpm-tools v0.3.1/go.mod h1:PSg+r5hSZI5tP3X7LBQx2sW1VSZUqZHBSrKyDqrB21U=
-github.com/google/go-tpm-tools v0.3.8 h1:ecZgxez5lyKWjnkK8lP3ru4rkgLyIM7pPY36FOFnAx4=
-github.com/google/go-tpm-tools v0.3.8/go.mod h1:rp+rDmmDCnWiMmxOTF3ypWxpChEQ4vwA6wtAIq09Qtc=
+github.com/google/go-tpm-tools v0.3.9 h1:66nkOHZtqmHXVnqonQvPDmiPRn8lcKW3FXzynJiBphg=
+github.com/google/go-tpm-tools v0.3.9/go.mod h1:22JvWmHcD5w55cs+nMeqDGDxgNS15/2pDq2cLqnc3rc=
 github.com/google/go-tspi v0.2.1-0.20190423175329-115dea689aad/go.mod h1:xfMGI3G0PhxCdNVcYr1C4C+EizojDg/TXuX5by8CiHI=
 github.com/google/go-tspi v0.3.0 h1:ADtq8RKfP+jrTyIWIZDIYcKOMecRqNJFOew2IT0Inus=
 github.com/google/go-tspi v0.3.0/go.mod h1:xfMGI3G0PhxCdNVcYr1C4C+EizojDg/TXuX5by8CiHI=
