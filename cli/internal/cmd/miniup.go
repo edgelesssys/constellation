@@ -53,11 +53,12 @@ func newMiniUpCmd() *cobra.Command {
 func runUp(cmd *cobra.Command, args []string) error {
 	spinner := newSpinner(cmd.OutOrStdout())
 	defer spinner.Stop()
+	creator := cloudcmd.NewCreator(spinner)
 
-	return up(cmd, spinner)
+	return up(cmd, creator, spinner)
 }
 
-func up(cmd *cobra.Command, spinner spinnerInterf) error {
+func up(cmd *cobra.Command, creator cloudCreator, spinner spinnerInterf) error {
 	if err := checkSystemRequirements(cmd.OutOrStdout()); err != nil {
 		return fmt.Errorf("system requirements not met: %w", err)
 	}
@@ -72,7 +73,7 @@ func up(cmd *cobra.Command, spinner spinnerInterf) error {
 
 	// create cluster
 	spinner.Start("Creating cluster in QEMU ", false)
-	err = createMiniCluster(cmd.Context(), fileHandler, cloudcmd.NewCreator(cmd.OutOrStdout()), config)
+	err = createMiniCluster(cmd.Context(), fileHandler, creator, config)
 	spinner.Stop()
 	if err != nil {
 		return fmt.Errorf("creating cluster: %w", err)
@@ -86,7 +87,7 @@ func up(cmd *cobra.Command, spinner spinnerInterf) error {
 	cmd.Printf("\tvirsh -c %s\n\n", connectURI)
 
 	// initialize cluster
-	if err := initializeMiniCluster(cmd, fileHandler); err != nil {
+	if err := initializeMiniCluster(cmd, fileHandler, spinner); err != nil {
 		return fmt.Errorf("initializing cluster: %w", err)
 	}
 	return nil
@@ -222,7 +223,7 @@ func createMiniCluster(ctx context.Context, fileHandler file.Handler, creator cl
 }
 
 // initializeMiniCluster initializes a QEMU cluster.
-func initializeMiniCluster(cmd *cobra.Command, fileHandler file.Handler) (retErr error) {
+func initializeMiniCluster(cmd *cobra.Command, fileHandler file.Handler, spinner spinnerInterf) (retErr error) {
 	// clean up cluster resources if initialization fails
 	defer func() {
 		if retErr != nil {
@@ -241,7 +242,7 @@ func initializeMiniCluster(cmd *cobra.Command, fileHandler file.Handler) (retErr
 	cmd.Flags().String("endpoint", "", "")
 	cmd.Flags().Bool("conformance", false, "")
 
-	if err := initialize(cmd, newDialer, fileHandler, helmLoader, license.NewClient(), nopSpinner{}); err != nil {
+	if err := initialize(cmd, newDialer, fileHandler, helmLoader, license.NewClient(), spinner); err != nil {
 		return err
 	}
 	return nil

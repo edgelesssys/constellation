@@ -48,6 +48,7 @@ func newSpinner(writer io.Writer) *spinner {
 
 // Start starts the spinner using the given text.
 func (s *spinner) Start(text string, showDots bool) {
+	atomic.StoreInt32(&s.stop, 0)
 	s.wg.Add(1)
 	fmt.Fprint(s.out, hideCursor)
 
