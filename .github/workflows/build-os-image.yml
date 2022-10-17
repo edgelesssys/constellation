@@ -64,33 +64,41 @@ jobs:
     # TODO: flatten outputs once possible
     # https://github.com/community/community/discussions/17245
     outputs:
+      image-raw-aws-sha256: ${{ steps.collect-hashes.outputs.image-raw-aws-sha256 }}
       image-raw-azure-sha256: ${{ steps.collect-hashes.outputs.image-raw-azure-sha256 }}
       image-raw-gcp-sha256: ${{ steps.collect-hashes.outputs.image-raw-gcp-sha256 }}
       image-raw-qemu-sha256: ${{ steps.collect-hashes.outputs.image-raw-qemu-sha256 }}
+      image-efi-aws-sha256: ${{ steps.collect-hashes.outputs.image-efi-aws-sha256 }}
       image-efi-azure-sha256: ${{ steps.collect-hashes.outputs.image-efi-azure-sha256 }}
       image-efi-gcp-sha256: ${{ steps.collect-hashes.outputs.image-efi-gcp-sha256 }}
       image-efi-qemu-sha256: ${{ steps.collect-hashes.outputs.image-efi-qemu-sha256 }}
+      image-initrd-aws-sha256: ${{ steps.collect-hashes.outputs.image-initrd-aws-sha256 }}
       image-initrd-azure-sha256: ${{ steps.collect-hashes.outputs.image-initrd-azure-sha256 }}
       image-initrd-gcp-sha256: ${{ steps.collect-hashes.outputs.image-initrd-gcp-sha256 }}
       image-initrd-qemu-sha256: ${{ steps.collect-hashes.outputs.image-initrd-qemu-sha256 }}
+      image-root-raw-aws-sha256: ${{ steps.collect-hashes.outputs.image-root-raw-aws-sha256 }}
       image-root-raw-azure-sha256: ${{ steps.collect-hashes.outputs.image-root-raw-azure-sha256 }}
       image-root-raw-gcp-sha256: ${{ steps.collect-hashes.outputs.image-root-raw-gcp-sha256 }}
       image-root-raw-qemu-sha256: ${{ steps.collect-hashes.outputs.image-root-raw-qemu-sha256 }}
+      image-root-verity-aws-sha256: ${{ steps.collect-hashes.outputs.image-root-verity-aws-sha256 }}
       image-root-verity-azure-sha256: ${{ steps.collect-hashes.outputs.image-root-verity-azure-sha256 }}
       image-root-verity-gcp-sha256: ${{ steps.collect-hashes.outputs.image-root-verity-gcp-sha256 }}
       image-root-verity-qemu-sha256: ${{ steps.collect-hashes.outputs.image-root-verity-qemu-sha256 }}
+      image-vmlinuz-aws-sha256: ${{ steps.collect-hashes.outputs.image-vmlinuz-aws-sha256 }}
       image-vmlinuz-azure-sha256: ${{ steps.collect-hashes.outputs.image-vmlinuz-azure-sha256 }}
       image-vmlinuz-gcp-sha256: ${{ steps.collect-hashes.outputs.image-vmlinuz-gcp-sha256 }}
       image-vmlinuz-qemu-sha256: ${{ steps.collect-hashes.outputs.image-vmlinuz-qemu-sha256 }}
+      image-raw-changelog-aws-sha256: ${{ steps.collect-hashes.outputs.image-raw-changelog-aws-sha256 }}
       image-raw-changelog-azure-sha256: ${{ steps.collect-hashes.outputs.image-raw-changelog-azure-sha256 }}
       image-raw-changelog-gcp-sha256: ${{ steps.collect-hashes.outputs.image-raw-changelog-gcp-sha256 }}
       image-raw-changelog-qemu-sha256: ${{ steps.collect-hashes.outputs.image-raw-changelog-qemu-sha256 }}
+      image-raw-manifest-aws-sha256: ${{ steps.collect-hashes.outputs.image-raw-manifest-aws-sha256 }}
       image-raw-manifest-azure-sha256: ${{ steps.collect-hashes.outputs.image-raw-manifest-azure-sha256 }}
       image-raw-manifest-gcp-sha256: ${{ steps.collect-hashes.outputs.image-raw-manifest-gcp-sha256 }}
       image-raw-manifest-qemu-sha256: ${{ steps.collect-hashes.outputs.image-raw-manifest-qemu-sha256 }}
     strategy:
       matrix:
-        csp: [azure, gcp, qemu]
+        csp: [aws, azure, gcp, qemu]
     steps:
       - name: Checkout
         uses: actions/checkout@e2f20e631ae6d7dd3b768f56a5d2af784dd54791
@@ -183,9 +191,12 @@ jobs:
     name: "Upload OS image to CSP"
     needs: make-os-image
     runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
     strategy:
       matrix:
-        csp: [azure, gcp]
+        csp: [aws, azure, gcp]
         upload-variant: [""]
         include:
           - csp: azure
@@ -205,8 +216,18 @@ jobs:
         run: |
           echo "::group::Install tools"
           sudo apt-get update
-          sudo apt-get install -y pigz qemu-utils
+          sudo apt-get install -y \
+            pigz \
+            qemu-utils \
+            python3-crc32c
           echo "::endgroup::"
+
+      - name: Login to AWS
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838
+        if: ${{ matrix.csp == 'aws' || matrix.csp == 'azure' }}
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
+          aws-region: eu-central-1
 
       - name: Login to Azure
         uses: azure/login@92a5484dfaf04ca78a94597f4f19fea633851fa2
@@ -229,7 +250,7 @@ jobs:
         id: version
         uses: ./.github/actions/pseudo_version
 
-      # Make sure to set valid names for GCP and Azure
+      # Make sure to set valid names for AWS, Azure and GCP
       #  Azure
       #    gallery name may include alphanumeric characters, dots and underscores. Must end and begin with an alphanumeric character
       #    image definition may include alphanumeric characters, dots, dashes and underscores. Must end and begin with an alphanumeric character
@@ -245,6 +266,13 @@ jobs:
           imageVersion=${{ inputs.imageVersion }}
           pseudover=${{ steps.version.outputs.pseudoVersion }}
           echo "PKI=${{ github.workspace }}/image/pki" >> $GITHUB_ENV
+          echo "AWS_REGION=eu-central-1" >> $GITHUB_ENV
+          echo "AWS_REPLICATION_REGIONS=us-east-2 ap-south-1" >> $GITHUB_ENV
+          echo "AWS_BUCKET=constellation-images" >> $GITHUB_ENV
+          echo "AWS_EFIVARS_PATH=${{ github.workspace }}/image/mkosi.output.aws/fedora~36/efivars.bin" >> $GITHUB_ENV
+          echo "AWS_IMAGE_PATH=${{ github.workspace }}/image/mkosi.output.aws/fedora~36/image.raw" >> $GITHUB_ENV
+          echo "AWS_AMI_OUTPUT=${{ github.workspace }}/image/mkosi.output.aws/fedora~36/ami.json" >> $GITHUB_ENV
+          echo "AWS_IMAGE_FILENAME=image-$(date +%s).raw" >> $GITHUB_ENV
           echo "GCP_PROJECT=constellation-images" >> $GITHUB_ENV
           echo "GCP_BUCKET=constellation-images" >> $GITHUB_ENV
           echo "GCP_REGION=europe-west3" >> $GITHUB_ENV
@@ -266,6 +294,7 @@ jobs:
           echo "AZURE_DISK_NAME=constellation-${pseudover//./-}-${AZURE_SECURITY_TYPE,,}" >> $GITHUB_ENV
           if [ "${{ startsWith(github.ref, 'refs/heads/release/') && (inputs.debug == false) }}" = true ]
           then
+            echo "AWS_IMAGE_NAME=constellation-${imageVersion}" >> $GITHUB_ENV
             GCP_IMAGE_NAME=constellation-${imageVersion//./-}
             echo "GCP_IMAGE_FAMILY=constellation" >> $GITHUB_ENV
             AZURE_IMAGE_DEFINITION=constellation
@@ -273,12 +302,14 @@ jobs:
             AZURE_GALLERY_NAME=Constellation
           elif [ "${{ ((github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/')) && (inputs.debug == true) }}" = true ]
           then
+            echo "AWS_IMAGE_NAME=constellation-debug-${semver}-${{ steps.version.outputs.timestamp }}" >> $GITHUB_ENV
             GCP_IMAGE_NAME=constellation-${{ steps.version.outputs.timestamp }}
             echo "GCP_IMAGE_FAMILY=constellation-debug-${semver//./-}" >> $GITHUB_ENV
             AZURE_IMAGE_DEFINITION=${semver}
             echo "AZURE_IMAGE_VERSION=${timestamp:0:4}.${timestamp:4:4}.${timestamp:8}" >> $GITHUB_ENV
             AZURE_GALLERY_NAME=Constellation_Debug
           else
+            echo "AWS_IMAGE_NAME=constellation-${{ steps.version.outputs.branchName }}-${{ steps.version.outputs.timestamp }}" >> $GITHUB_ENV
             GCP_IMAGE_NAME=constellation-${{ steps.version.outputs.timestamp }}
             echo "GCP_IMAGE_FAMILY=constellation-${{ steps.version.outputs.branchName }}" >> $GITHUB_ENV
             AZURE_IMAGE_DEFINITION=${{ steps.version.outputs.branchName }}
@@ -299,12 +330,25 @@ jobs:
           echo "GCP_IMAGE_FILENAME=${GCP_IMAGE_NAME}.tar.gz" >> $GITHUB_ENV
 
       - name: Download VMGS blob
-        run: aws s3 cp \
-          s3://constellation-secure-boot/pki_testing/${AZURE_SECURITY_TYPE}.vmgs \
-          pki_testing/${AZURE_SECURITY_TYPE}.vmgs \
-          --no-progress
+        run: |
+          aws s3 cp \
+            --region ${AWS_REGION} \
+            s3://constellation-secure-boot/pki_testing/${AZURE_SECURITY_TYPE}.vmgs \
+            pki_testing/${AZURE_SECURITY_TYPE}.vmgs \
+            --no-progress
         working-directory: ${{ github.workspace }}/image
-        if: ${{ matrix.csp == 'azure' }}
+        if: ${{ matrix.csp == 'azure' && !endsWith(env.AZURE_SECURITY_TYPE, 'Supported') }}
+
+      - name: Upload AWS image
+        shell: bash
+        run: |
+          echo "::group::Upload AWS image"
+          secure-boot/aws/create_uefivars.sh "${AWS_EFIVARS_PATH}"
+          upload/upload_aws.sh "${AWS_AMI_OUTPUT}"
+          echo -e "Uploaded AWS image: \`\`\`$(cat "${AWS_AMI_OUTPUT}" | jq)\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "::endgroup::"
+        working-directory: ${{ github.workspace }}/image
+        if: ${{ matrix.csp == 'aws' }}
 
       - name: Upload GCP image
         shell: bash
@@ -334,7 +378,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        csp: [azure, gcp, qemu]
+        csp: [aws, azure, gcp, qemu]
     steps:
       - name: Checkout repository
         uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
@@ -417,6 +461,14 @@ jobs:
           cat > SHA256SUMS <<EOF
           ${{ needs.build-dependencies.outputs.bootstrapper-sha256 }} bootstrapper
           ${{ needs.build-dependencies.outputs.disk-mapper-sha256 }} disk-mapper
+          ${{ needs.make-os-image.outputs.image-raw-aws-sha256 }} aws/image.raw
+          ${{ needs.make-os-image.outputs.image-raw-changelog-aws-sha256 }} aws/image.raw.changelog
+          ${{ needs.make-os-image.outputs.image-raw-manifest-aws-sha256 }} aws/image.raw.manifest
+          ${{ needs.make-os-image.outputs.image-efi-aws-sha256 }} aws/image.efi
+          ${{ needs.make-os-image.outputs.image-initrd-aws-sha256 }} aws/image.initrd
+          ${{ needs.make-os-image.outputs.image-root-raw-aws-sha256 }} aws/image.root.raw
+          ${{ needs.make-os-image.outputs.image-root-verity-aws-sha256 }} aws/image.root.verity
+          ${{ needs.make-os-image.outputs.image-vmlinuz-aws-sha256 }} aws/image.vmlinuz
           ${{ needs.make-os-image.outputs.image-raw-azure-sha256 }} azure/image.raw
           ${{ needs.make-os-image.outputs.image-raw-changelog-azure-sha256 }} azure/image.raw.changelog
           ${{ needs.make-os-image.outputs.image-raw-manifest-azure-sha256 }} azure/image.raw.manifest
