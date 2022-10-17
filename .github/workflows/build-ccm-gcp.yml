@@ -11,9 +11,9 @@ jobs:
       packages: write
     strategy:
       matrix:
-        version: [v24.0.0, v23.0.0, v22.1.0]
+        version: [v25.2.0, v24.0.0, v23.0.0]
         include:
-          - version: v24.0.0
+          - version: v25.2.0
             latest: true
     steps:
       - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
@@ -44,7 +44,7 @@ jobs:
 
       - name: Install bazelisk
         run: |
-          curl -sLO "https://github.com/bazelbuild/bazelisk/releases/download/v1.12.0/bazelisk-linux-amd64"
+          curl -sLO "https://github.com/bazelbuild/bazelisk/releases/download/v1.14.0/bazelisk-linux-amd64"
           mkdir -p "${GITHUB_WORKSPACE}/bin/"
           mv bazelisk-linux-amd64 "${GITHUB_WORKSPACE}/bin/bazel"
           chmod +x "${GITHUB_WORKSPACE}/bin/bazel"
@@ -54,6 +54,8 @@ jobs:
           "${GITHUB_WORKSPACE}/bin/bazel" build //cmd/cloud-controller-manager:cloud-controller-manager
       - name: Copy CCM
         run: |
+          # support new and old bazel output paths
+          cp ./bazel-bin/cmd/cloud-controller-manager/cloud-controller-manager_/cloud-controller-manager ./cloud-controller-manager || \
           cp ./bazel-bin/cmd/cloud-controller-manager/linux_amd64_pure_stripped/cloud-controller-manager ./cloud-controller-manager
       - name: Prepare Dockerfile
         run: |

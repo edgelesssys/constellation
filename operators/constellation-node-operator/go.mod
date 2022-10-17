@@ -8,7 +8,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2 v2.0.0
 	github.com/googleapis/gax-go/v2 v2.4.0
-	github.com/medik8s/node-maintenance-operator v0.13.0
+	github.com/medik8s/node-maintenance-operator v0.13.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.18.1
 	github.com/spf13/afero v1.9.2

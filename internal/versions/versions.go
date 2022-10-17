@@ -61,7 +61,7 @@ const (
 	LibvirtImage      = "ghcr.io/edgelesssys/constellation/libvirt:v2.1.0@sha256:9769a2b88e2acc0986fdf2ab4a358b60c50a8cd330c183df4435f56e10758b37"
 
 	// ConstellationQEMUImageURL is the artifact URL for QEMU qcow2 images.
-	ConstellationQEMUImageURL = "https://d1gl9j3ejrmbpr.cloudfront.net/mini-constellation-v2.1.0.qcow2"
+	ConstellationQEMUImageURL = "https://d1gl9j3ejrmbpr.cloudfront.net/first-steps-local-v2.1.0.qcow2"
 
 	// currently supported versions.
 	//nolint:revive
@@ -92,7 +92,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		KubectlURL:        "https://storage.googleapis.com/kubernetes-release/release/v1.23.12/bin/linux/amd64/kubectl",
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
 		// TODO: use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
-		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v23@sha256:476616939b85345d7188815045847fcbea8d502464083407cdbb6c934e35820d",
+		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v23.0.0@sha256:476616939b85345d7188815045847fcbea8d502464083407cdbb6c934e35820d",
 		// CloudControllerManagerImageAzure is the CCM image used on Azure.
 		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.23.21@sha256:8dea59c658fb7f4ada03bb15bd8a6a5ff8a03b27ff1da2f2b9dc30ee7ee78831",
 		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
@@ -111,13 +111,13 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		KubectlURL:        "https://storage.googleapis.com/kubernetes-release/release/v1.24.6/bin/linux/amd64/kubectl",
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
 		// TODO: use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
-		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v24@sha256:8ee4261980019d3ee8517e12f36fc313fe3ea3e44dd40ee2e004b57f6e5ef171",
+		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v24.0.0@sha256:8ee4261980019d3ee8517e12f36fc313fe3ea3e44dd40ee2e004b57f6e5ef171",
 		// CloudControllerManagerImageAzure is the CCM image used on Azure.
 		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.24.8@sha256:109de6e558fa3f68c5d786adddf2eb864fde36c1887a3a04e0d11c85a39954c0",
 		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
 		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.24.8@sha256:b98d0a9a683d86c58ea27956f3c7e1263f95541e41b5053c6209c4c5fc647cba",
 		// External service image. Depends on k8s version.
-		ClusterAutoscalerImage: "k8s.gcr.io/autoscaling/cluster-autoscaler:v1.23.1@sha256:cd2101ba67f3d6ec719f7792d4bdaa3a50e1b716f3a9ccee8931086496c655b7",
+		ClusterAutoscalerImage: "k8s.gcr.io/autoscaling/cluster-autoscaler:v1.24.0@sha256:5bd22353ae7f30c9abfaa08189281367ef47ea1b3d09eb13eb26bd13de241e72",
 	},
 	V1_25: {
 		PatchVersion:      "1.25.2",
@@ -130,13 +130,13 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		KubectlURL:        "https://storage.googleapis.com/kubernetes-release/release/v1.25.2/bin/linux/amd64/kubectl",
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
 		// TODO: use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
-		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v24@sha256:8ee4261980019d3ee8517e12f36fc313fe3ea3e44dd40ee2e004b57f6e5ef171",
+		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v25.2.0@sha256:86fa9d31ed0b3d0d8806f13d6e7debd3471028b2cb7cca3a876d8a31612a7ba5",
 		// CloudControllerManagerImageAzure is the CCM image used on Azure.
 		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
-		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.25.0@sha256:df926a931f9c8cb62bf135efeb5dd9540bc155ec51fc2e79f8d0cefbb7d6188b",
+		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.25.2@sha256:d6f128bfdfc2496b67afff35ae22269cd6ac87af4e367a7802d67a65938b2f4e",
 		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
 		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
-		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.25.0@sha256:137a5e0aaf6c4e7a59a00157614c700b1f538c04d5412924d98cc5865c7dbf78",
+		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.25.2@sha256:a372695fe6ec9297e20943728990ac4f2213741a9e3cb26c7b93f722298f6aaf",
 		// External service image. Depends on k8s version.
 		// Check for new versions at https://github.com/kubernetes/autoscaler/releases.
 		ClusterAutoscalerImage: "k8s.gcr.io/autoscaling/cluster-autoscaler:v1.25.0@sha256:f509ffab618dbd07d129b69ec56963aac7f61aaa792851206b54a2f0bbe046df",

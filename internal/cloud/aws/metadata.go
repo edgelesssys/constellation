@@ -62,7 +62,7 @@ func (m *Metadata) Supported() bool {
 
 // List retrieves all instances belonging to the current Constellation.
 func (m *Metadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
-	uid, err := m.readInstanceTag(ctx, tagUID)
+	uid, err := readInstanceTag(ctx, m.imds, tagUID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving uid tag: %w", err)
 	}
@@ -81,11 +81,11 @@ func (m *Metadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) 
 		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving instance identity: %w", err)
 	}
 
-	name, err := m.readInstanceTag(ctx, tagName)
+	name, err := readInstanceTag(ctx, m.imds, tagName)
 	if err != nil {
 		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving name tag: %w", err)
 	}
-	instanceRole, err := m.readInstanceTag(ctx, tagRole)
+	instanceRole, err := readInstanceTag(ctx, m.imds, tagRole)
 	if err != nil {
 		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving role tag: %w", err)
 	}
@@ -172,8 +172,8 @@ func (m *Metadata) convertToMetadataInstance(ec2Instances []types.Instance) ([]m
 	return instances, nil
 }
 
-func (m *Metadata) readInstanceTag(ctx context.Context, tag string) (string, error) {
-	reader, err := m.imds.GetMetadata(ctx, &imds.GetMetadataInput{
+func readInstanceTag(ctx context.Context, api imdsAPI, tag string) (string, error) {
+	reader, err := api.GetMetadata(ctx, &imds.GetMetadataInput{
 		Path: "/tags/instance/" + tag,
 	})
 	if err != nil {
