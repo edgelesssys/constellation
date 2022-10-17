@@ -10,17 +10,9 @@
     "dependencies"
   ],
   "postUpdateOptions": [
+    "gomodTidy",
     "gomodUpdateImportPaths"
   ],
-  "postUpgradeTasks": {
-    "commands": [
-      "for mod in $(go list -f '{{.Dir}}' -m); do (cd $mod; go mod tidy); done"
-    ],
-    "fileFilters": [
-      "**/go.mod",
-      "**/go.sum"
-    ]
-  },
   "ignorePaths": [
     "cli/internal/helm/charts/cilium/**"
   ],
