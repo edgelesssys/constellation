@@ -22,26 +22,24 @@ resource "libvirt_domain" "instance_group" {
     backend_type    = "emulator"
     backend_version = "2.0"
   }
-  disk = [
-    {
-      volume_id = element(libvirt_volume.boot_volume.*.id, count.index)
-      scsi : true,
-      // fix for https://github.com/dmacvicar/terraform-provider-libvirt/issues/728
-      block_device : null,
-      file : null,
-      url : null,
-      wwn : null
-    },
-    {
-      volume_id = element(libvirt_volume.state_volume.*.id, count.index)
-      // fix for https://github.com/dmacvicar/terraform-provider-libvirt/issues/728
-      block_device : null,
-      file : null,
-      scsi : null,
-      url : null,
-      wwn : null
-    },
-  ]
+  disk {
+    volume_id = element(libvirt_volume.boot_volume.*.id, count.index)
+    scsi      = true
+    // fix for https://github.com/dmacvicar/terraform-provider-libvirt/issues/728
+    block_device = null
+    file         = null
+    url          = null
+    wwn          = null
+  }
+  disk {
+    volume_id = element(libvirt_volume.state_volume.*.id, count.index)
+    // fix for https://github.com/dmacvicar/terraform-provider-libvirt/issues/728
+    block_device = null
+    file         = null
+    scsi         = null
+    url          = null
+    wwn          = null
+  }
   network_interface {
     network_id     = var.network_id
     hostname       = "${var.role}-${count.index}"
