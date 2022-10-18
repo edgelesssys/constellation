@@ -328,6 +328,43 @@ jobs:
         working-directory: ${{ github.workspace }}/image/mkosi
         if: ${{ matrix.csp == 'azure' }}
 
+  calculate-pcrs:
+    name: "Calculate PCRs"
+    needs: [make-os-image]
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        csp: [azure, gcp, qemu]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+
+      - name: Download OS image artifact
+        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
+        with:
+          name: image-${{ matrix.csp }}
+
+      - name: Install dependencies
+        run: |
+          echo "::group::Install dependencies"
+          python -m pip install --user lief==0.12.2
+          sudo apt-get update
+          sudo apt-get install -y systemd-container # for systemd-dissect
+          echo "::endgroup::"
+
+      - name: Calculate expected PCRs
+        run: |
+          echo "::group::Calculate expected PCRs"
+          ./precalculate_pcr_4.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcrs-${{ matrix.csp }}.json >> $GITHUB_STEP_SUMMARY
+          echo "::endgroup::"
+        working-directory: ${{ github.workspace }}/image/mkosi/measured-boot
+
+      - name: Upload expected PCRs as artifact
+        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+        with:
+          name: pcrs
+          path: pcrs-${{ matrix.csp }}.json
+
   generate-sbom:
     name: "Generate SBOM"
     needs: [build-dependencies, make-os-image]
