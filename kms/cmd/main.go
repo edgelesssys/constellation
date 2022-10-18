@@ -28,7 +28,7 @@ import (
 func main() {
 	port := flag.String("port", strconv.Itoa(constants.KMSPort), "Port gRPC server listens on")
 	masterSecretPath := flag.String("master-secret", filepath.Join(constants.ServiceBasePath, constants.ConstellationMasterSecretKey), "Path to the Constellation master secret")
-	saltPath := flag.String("salt", filepath.Join(constants.ServiceBasePath, constants.ConstellationMasterSecretSalt), "Path to the Constellation salt")
+	saltPath := flag.String("salt", filepath.Join(constants.ServiceBasePath, constants.ConstellationSaltKey), "Path to the Constellation salt")
 	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 
 	flag.Parse()

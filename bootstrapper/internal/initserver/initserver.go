@@ -15,7 +15,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/diskencryption"
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/vmtype"
@@ -132,13 +132,9 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		req.EnforceIdkeydigest,
 		s.issuerWrapper.IDKeyDigest(),
 		s.issuerWrapper.VMType() == vmtype.AzureCVM,
-		resources.KMSConfig{
-			MasterSecret:       req.MasterSecret,
-			Salt:               req.Salt,
-			KMSURI:             req.KmsUri,
-			StorageURI:         req.StorageUri,
-			KeyEncryptionKeyID: req.KeyEncryptionKeyId,
-			UseExistingKEK:     req.UseExistingKek,
+		helm.KMSConfig{
+			MasterSecret: req.MasterSecret,
+			Salt:         req.Salt,
 		},
 		sshProtoKeysToMap(req.SshUserKeys),
 		req.HelmDeployments,
@@ -240,7 +236,7 @@ type ClusterInitializer interface {
 		enforceIDKeyDigest bool,
 		idKeyDigest []byte,
 		azureCVM bool,
-		kmsConfig resources.KMSConfig,
+		kmsConfig helm.KMSConfig,
 		sshUserKeys map[string]string,
 		helmDeployments []byte,
 		conformanceMode bool,

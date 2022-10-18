@@ -14,10 +14,11 @@ import (
 	"strconv"
 	"testing"
 
+	helmClient "github.com/edgelesssys/constellation/v2/bootstrapper/internal/helm"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
@@ -47,6 +48,7 @@ func TestInitCluster(t *testing.T) {
 
 	testCases := map[string]struct {
 		clusterUtil            stubClusterUtil
+		helmUtil               stubHelmClient
 		kubectl                stubKubectl
 		providerMetadata       ProviderMetadata
 		CloudControllerManager CloudControllerManager
@@ -178,8 +180,9 @@ func TestInitCluster(t *testing.T) {
 			wantErr:                true,
 			k8sVersion:             versions.Default,
 		},
-		"kubeadm init fails when deploying helm charts": {
-			clusterUtil: stubClusterUtil{setupHelmDeploymentsErr: someErr},
+		"kubeadm init fails when deploying cilium": {
+			clusterUtil: stubClusterUtil{},
+			helmUtil:    stubHelmClient{ciliumError: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
@@ -251,7 +254,8 @@ func TestInitCluster(t *testing.T) {
 			k8sVersion:             versions.Default,
 		},
 		"kubeadm init fails when setting up the kms": {
-			clusterUtil: stubClusterUtil{setupKMSError: someErr},
+			clusterUtil: stubClusterUtil{},
+			helmUtil:    stubHelmClient{kmsError: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
@@ -307,6 +311,7 @@ func TestInitCluster(t *testing.T) {
 
 			kube := KubeWrapper{
 				clusterUtil:            &tc.clusterUtil,
+				helmUtil:               &tc.helmUtil,
 				providerMetadata:       tc.providerMetadata,
 				cloudControllerManager: tc.CloudControllerManager,
 				cloudNodeManager:       tc.CloudNodeManager,
@@ -319,7 +324,7 @@ func TestInitCluster(t *testing.T) {
 
 			_, err := kube.InitCluster(
 				context.Background(), serviceAccountURI, string(tc.k8sVersion),
-				nil, nil, false, nil, true, resources.KMSConfig{MasterSecret: masterSecret}, nil, nil, false, logger.NewTest(t),
+				nil, nil, false, nil, true, helmClient.KMSConfig{MasterSecret: masterSecret}, nil, []byte("{}"), false, logger.NewTest(t),
 			)
 
 			if tc.wantErr {
@@ -528,13 +533,11 @@ func TestK8sCompliantHostname(t *testing.T) {
 type stubClusterUtil struct {
 	installComponentsErr             error
 	initClusterErr                   error
-	setupHelmDeploymentsErr          error
 	setupAutoscalingError            error
 	setupJoinServiceError            error
 	setupCloudControllerManagerError error
 	setupCloudNodeManagerError       error
 	setupKonnectivityError           error
-	setupKMSError                    error
 	setupAccessManagerError          error
 	setupVerificationServiceErr      error
 	setupGCPGuestAgentErr            error
@@ -561,10 +564,6 @@ func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte, no
 	return s.initClusterErr
 }
 
-func (s *stubClusterUtil) SetupHelmDeployments(context.Context, k8sapi.Client, []byte, k8sapi.SetupPodNetworkInput, *logger.Logger) error {
-	return s.setupHelmDeploymentsErr
-}
-
 func (s *stubClusterUtil) SetupAutoscaling(kubectl k8sapi.Client, clusterAutoscalerConfiguration kubernetes.Marshaler, secrets kubernetes.Marshaler) error {
 	return s.setupAutoscalingError
 }
@@ -579,10 +578,6 @@ func (s *stubClusterUtil) SetupGCPGuestAgent(kubectl k8sapi.Client, gcpGuestAgen
 
 func (s *stubClusterUtil) SetupCloudControllerManager(kubectl k8sapi.Client, cloudControllerManagerConfiguration kubernetes.Marshaler, configMaps kubernetes.Marshaler, secrets kubernetes.Marshaler) error {
 	return s.setupCloudControllerManagerError
-}
-
-func (s *stubClusterUtil) SetupKMS(kubectl k8sapi.Client, kmsDeployment kubernetes.Marshaler) error {
-	return s.setupKMSError
 }
 
 func (s *stubClusterUtil) SetupAccessManager(kubectl k8sapi.Client, accessManagerConfiguration kubernetes.Marshaler) error {
@@ -684,4 +679,17 @@ type stubKubeconfigReader struct {
 
 func (s *stubKubeconfigReader) ReadKubeconfig() ([]byte, error) {
 	return s.Kubeconfig, s.ReadErr
+}
+
+type stubHelmClient struct {
+	ciliumError error
+	kmsError    error
+}
+
+func (s *stubHelmClient) InstallCilium(ctx context.Context, kubectl k8sapi.Client, release helm.Release, in k8sapi.SetupPodNetworkInput) error {
+	return s.ciliumError
+}
+
+func (s *stubHelmClient) InstallKMS(ctx context.Context, release helm.Release, kmsConfig helmClient.KMSConfig) error {
+	return s.kmsError
 }
