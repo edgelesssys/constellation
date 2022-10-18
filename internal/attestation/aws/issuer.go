@@ -11,14 +11,13 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 
 	"github.com/google/go-tpm-tools/client"
 	tpmclient "github.com/google/go-tpm-tools/client"
-	"github.com/google/go-tpm/tpm2"
-	"github.com/google/go-tpm/tpmutil"
 )
 
 type Issuer struct {
@@ -39,29 +38,15 @@ func NewIssuer() *Issuer {
 }
 
 func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
-	akIndex := 0x81000001
-	keyTemplate := tpm2.Public{
-		Type:       tpm2.AlgRSA,
-		NameAlg:    tpm2.AlgSHA256,
-		Attributes: tpm2.FlagFixedTPM | tpm2.FlagFixedParent | tpm2.FlagSensitiveDataOrigin | tpm2.FlagUserWithAuth | tpm2.FlagNoDA | tpm2.FlagRestricted | tpm2.FlagSign,
-		RSAParameters: &tpm2.RSAParams{
-			Sign: &tpm2.SigScheme{
-				Alg:  tpm2.AlgRSASSA,
-				Hash: tpm2.AlgSHA256,
-			},
-			KeyBits: 2048,
-		},
-	}
-
-	tpmAk, err := client.NewCachedKey(tpm, tpm2.HandleOwner, keyTemplate, tpmutil.Handle(akIndex))
-
+	tpmAk, err := client.AttestationKeyRSA(tpm)
 	if err != nil {
-		return nil, errors.New("cannot get cached key")
+		log.Fatalf("error getting RSA Endorsement key!")
 	}
 
 	return tpmAk, nil
 }
 
+// get information about the current instance using the aws Metadata SDK
 func getInstanceInfo(client awsMetaData) func(tpm io.ReadWriteCloser) ([]byte, error) {
 	return func(io.ReadWriteCloser) ([]byte, error) {
 		ctx := context.TODO()

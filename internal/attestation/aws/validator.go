@@ -47,13 +47,13 @@ func getTrustedKey(akPub []byte, instanceInfo []byte) (crypto.PublicKey, error) 
 }
 
 // verify if the virtual machine has the tpm2.0 featiure enabled
-// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/verify-nitrotpm-support-on-ami.html
-// 1. get the vm's ami (from IdentidyDocument.imageId)
-// 2. check the value of key "TpmSupport": {"Value": "v2.0"}"
 func tpmEnabled(idDocument imds.GetInstanceIdentityDocumentOutput) error {
-	// parse values for later use
-	vmRegion := idDocument.Region
-	imageId := idDocument.ImageID
+	// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/verify-nitrotpm-support-on-ami.html
+	// 1. get the vm's ami (from IdentidyDocument.imageId)
+	// 2. check the value of key "TpmSupport": {"Value": "v2.0"}"
+
+	vmRegion := idDocument.InstanceIdentityDocument.Region
+	imageId := idDocument.InstanceIdentityDocument.ImageID
 
 	// create session for ec2 requests
 	session := session.Must(session.NewSession())
