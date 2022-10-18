@@ -110,7 +110,7 @@ require (
 	k8s.io/kubelet v0.25.3
 	k8s.io/kubernetes v1.24.6
 	k8s.io/mount-utils v0.25.3
-	k8s.io/utils v0.0.0-20220812165043-ad590609e2e5
+	k8s.io/utils v0.0.0-20221012122500-cfd413dd9e85
 )
 
 require (
@@ -291,7 +291,7 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	k8s.io/component-base v0.25.3 // indirect
-	k8s.io/klog/v2 v2.70.1 // indirect
+	k8s.io/klog/v2 v2.80.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1 // indirect
 	k8s.io/kubectl v0.24.2 // indirect
 	oras.land/oras-go v1.2.0 // indirect
