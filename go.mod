@@ -35,7 +35,7 @@ replace github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools 
 require (
 	cloud.google.com/go/compute v1.7.0
 	cloud.google.com/go/kms v1.4.0
-	cloud.google.com/go/logging v1.4.2
+	cloud.google.com/go/logging v1.5.0
 	cloud.google.com/go/storage v1.23.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.1.4
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.1.0
