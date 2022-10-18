@@ -1,0 +1,40 @@
+name: Lint Helm Charts
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "cli/internal/helm/charts/**"
+  pull_request:
+    paths:
+      - "cli/internal/helm/charts/**"
+
+# Abort runs of *this* workflow, if a new commit with the same ref is pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  helm-lint:
+    runs-on: ubuntu-latest
+    env:
+      CTEST_OUTPUT_ON_FAILURE: True
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'v3.9.0' # default is latest (stable)
+
+      - name: Create and populate build folder
+        run: mkdir build && cd build && cmake ..
+
+      - name: Unit Tests
+        run: ctest -R helm-lint
+        working-directory: build
