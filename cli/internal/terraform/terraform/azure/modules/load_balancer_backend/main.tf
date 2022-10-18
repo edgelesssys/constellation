@@ -18,7 +18,8 @@ resource "azurerm_lb_probe" "health_probes" {
   loadbalancer_id     = var.loadbalancer_id
   name                = each.value.name
   port                = each.value.port
-  protocol            = "Tcp"
+  protocol            = each.value.protocol
+  request_path        = each.value.path
   interval_in_seconds = 5
 }
 
@@ -27,7 +28,7 @@ resource "azurerm_lb_rule" "rules" {
 
   loadbalancer_id                = var.loadbalancer_id
   name                           = each.value.name
-  protocol                       = each.value.protocol
+  protocol                       = "Tcp"
   frontend_port                  = each.value.port
   backend_port                   = each.value.port
   frontend_ip_configuration_name = "PublicIPAddress"

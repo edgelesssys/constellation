@@ -70,12 +70,42 @@ module "loadbalancer_backend_control_plane" {
   name            = "${local.name}-control-plane"
   loadbalancer_id = azurerm_lb.loadbalancer.id
   ports = flatten([
-    { name = "bootstrapper", port = local.ports_bootstrapper },
-    { name = "kubernetes", port = local.ports_kubernetes },
-    { name = "konnectivity", port = local.ports_konnectivity },
-    { name = "verify", port = local.ports_verify },
-    { name = "recovery", port = local.ports_recovery },
-    var.debug ? [{ name = "debugd", port = local.ports_debugd }] : [],
+    {
+      name     = "bootstrapper",
+      port     = local.ports_bootstrapper,
+      protocol = "Tcp",
+      path     = null
+    },
+    {
+      name     = "kubernetes",
+      port     = local.ports_kubernetes,
+      protocol = "Https",
+      path     = "/readyz"
+    },
+    {
+      name     = "konnectivity",
+      port     = local.ports_konnectivity,
+      protocol = "Tcp",
+      path     = null
+    },
+    {
+      name     = "verify",
+      port     = local.ports_verify,
+      protocol = "Tcp",
+      path     = null
+    },
+    {
+      name     = "recovery",
+      port     = local.ports_recovery,
+      protocol = "Tcp",
+      path     = null
+    },
+    var.debug ? [{
+      name     = "debugd",
+      port     = local.ports_debugd,
+      protocol = "Tcp",
+      path     = null
+    }] : [],
   ])
 }
 
