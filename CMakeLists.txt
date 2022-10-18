@@ -63,3 +63,4 @@ add_test(NAME integration-node-operator COMMAND make test WORKING_DIRECTORY ${CM
 add_test(NAME integration-csi COMMAND bash -c "go test -tags integration -c ./test/ && sudo ./test.test -test.v" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/csi)
 add_test(NAME integration-dm COMMAND bash -c "go test -tags integration -c ./test/ && sudo ./test.test -test.v" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/disk-mapper/internal)
 add_test(NAME integration-license COMMAND bash -c "go test -tags integration" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/internal/license)
+add_test(NAME helm-lint COMMAND bash -c "helm lint --strict *" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/cli/internal/helm/charts/edgeless/)
