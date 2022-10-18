@@ -38,7 +38,6 @@ type HSMClient struct {
 	client      hsmClientAPI
 	storage     kms.Storage
 	vaultURL    string
-	opts        *azcore.ClientOptions
 }
 
 // NewHSM initializes a KMS client for Azure manged HSM Key Vault.
@@ -46,13 +45,13 @@ func NewHSM(ctx context.Context, vaultName string, store kms.Storage, opts *Opts
 	if opts == nil {
 		opts = &Opts{}
 	}
-	cred, err := azidentity.NewDefaultAzureCredential(opts.credentials)
+	cred, err := azidentity.NewDefaultAzureCredential(opts.Credentials)
 	if err != nil {
 		return nil, fmt.Errorf("loading credentials: %w", err)
 	}
 
 	vaultURL := vaultPrefix + vaultName + string(HSMDefaultCloud)
-	client := azkeys.NewClient(vaultURL, cred, opts.keys)
+	client := azkeys.NewClient(vaultURL, cred, opts.Keys)
 
 	// `azkeys.NewClient()` does not error if the vault is non existent
 	// Test here if we can reach the vault, and error otherwise
@@ -70,7 +69,6 @@ func NewHSM(ctx context.Context, vaultName string, store kms.Storage, opts *Opts
 		client:      client,
 		credentials: cred,
 		storage:     store,
-		opts:        opts.client,
 	}, nil
 }
 

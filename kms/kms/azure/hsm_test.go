@@ -11,7 +11,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/keyvault/azkeys"
 	"github.com/edgelesssys/constellation/v2/kms/internal/storage"
@@ -164,7 +163,6 @@ func TestHSMGetNewDEK(t *testing.T) {
 			client := HSMClient{
 				client:  tc.client,
 				storage: tc.storage,
-				opts:    &azcore.ClientOptions{},
 			}
 
 			dek, err := client.GetDEK(context.Background(), "test-key", "volume-01", 32)
@@ -208,7 +206,6 @@ func TestHSMGetExistingDEK(t *testing.T) {
 			client := HSMClient{
 				client:  tc.client,
 				storage: storage,
-				opts:    &azcore.ClientOptions{},
 			}
 
 			dek, err := client.GetDEK(context.Background(), "test-key", keyID, len(testKey))
