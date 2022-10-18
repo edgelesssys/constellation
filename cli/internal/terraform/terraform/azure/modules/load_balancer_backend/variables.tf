@@ -11,8 +11,10 @@ variable "loadbalancer_id" {
 
 variable "ports" {
   type = list(object({
-    name = string
-    port = number
+    name     = string
+    port     = number
+    protocol = string
+    path     = string
   }))
-  description = "The ports to add to the backend."
+  description = "The ports to add to the backend. Protocol can be either 'Tcp' or 'Https'. Path is only used for 'Https' protocol and can otherwise be null."
 }
