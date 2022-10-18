@@ -23,10 +23,10 @@ const (
 	ConstellationNameLength = 37
 	// ConstellationMasterSecretStoreName is the name for the Constellation secrets in Kubernetes.
 	ConstellationMasterSecretStoreName = "constellation-mastersecret"
-	// ConstellationMasterSecretKey is the name of the key for master secret in the master secret store secret.
+	// ConstellationMasterSecretKey is the name of the key for the master secret in the master secret kubernetes secret.
 	ConstellationMasterSecretKey = "mastersecret"
-	// ConstellationMasterSecretSalt is the name of the key for salt in the master secret store secret.
-	ConstellationMasterSecretSalt = "salt"
+	// ConstellationSaltKey is the name of the key for the salt in the master secret kubernetes secret.
+	ConstellationSaltKey = "salt"
 
 	//
 	// Ports.
@@ -68,6 +68,7 @@ const (
 	WGQuickConfigFilename   = "wg0.conf"
 	CoreOSAdminConfFilename = "/etc/kubernetes/admin.conf"
 	KubeadmCertificateDir   = "/etc/kubernetes/pki"
+	KubectlPath             = "/run/state/bin/kubectl"
 
 	//
 	// Filenames for Constellation's micro services.

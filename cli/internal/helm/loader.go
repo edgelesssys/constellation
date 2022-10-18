@@ -16,7 +16,9 @@ import (
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/pkg/errors"
 	"helm.sh/helm/pkg/ignore"
 	"helm.sh/helm/v3/pkg/chart"
@@ -26,28 +28,33 @@ import (
 // Run `go generate` to deterministically create the patched Helm deployment for cilium
 //go:generate ./generateCilium.sh
 
-//go:embed all:charts/cilium/*
+//go:embed all:charts/*
 var HelmFS embed.FS
 
 type ChartLoader struct{}
 
 func (i *ChartLoader) Load(csp cloudprovider.Provider, conformanceMode bool) ([]byte, error) {
-	ciliumDeployment, err := i.loadCilium(csp, conformanceMode)
+	ciliumRelease, err := i.loadCilium(csp, conformanceMode)
 	if err != nil {
 		return nil, err
 	}
-	deployments := helm.Deployments{Cilium: ciliumDeployment}
-	depl, err := json.Marshal(deployments)
+
+	kmsRelease, err := i.loadKMS()
 	if err != nil {
 		return nil, err
 	}
-	return depl, nil
+	releases := helm.Releases{Cilium: ciliumRelease, KMS: kmsRelease}
+	rel, err := json.Marshal(releases)
+	if err != nil {
+		return nil, err
+	}
+	return rel, nil
 }
 
-func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode bool) (helm.Deployment, error) {
+func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode bool) (helm.Release, error) {
 	chart, err := loadChartsDir(HelmFS, "charts/cilium")
 	if err != nil {
-		return helm.Deployment{}, err
+		return helm.Release{}, err
 	}
 	var ciliumVals map[string]interface{}
 	switch csp {
@@ -58,7 +65,7 @@ func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode boo
 	case cloudprovider.QEMU:
 		ciliumVals = qemuVals
 	default:
-		return helm.Deployment{}, fmt.Errorf("unknown csp: %s", csp)
+		return helm.Release{}, fmt.Errorf("unknown csp: %s", csp)
 	}
 	if conformanceMode {
 		ciliumVals["kubeProxyReplacementHealthzBindAddr"] = ""
@@ -70,7 +77,27 @@ func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode boo
 
 	}
 
-	return helm.Deployment{Chart: chart, Values: ciliumVals}, nil
+	return helm.Release{Chart: chart, Values: ciliumVals, ReleaseName: "cilium", Wait: true}, nil
+}
+
+func (i *ChartLoader) loadKMS() (helm.Release, error) {
+	chart, err := loadChartsDir(HelmFS, "charts/edgeless/kms")
+	if err != nil {
+		return helm.Release{}, err
+	}
+	kmsVals := map[string]interface{}{
+		"namespace":            constants.ConstellationNamespace,
+		"kmsPort":              constants.KMSPort,
+		"joinConfigCMName":     constants.JoinConfigMap,
+		"serviceBasePath":      constants.ServiceBasePath,
+		"kmsImage":             versions.KmsImage,
+		"masterSecretName":     constants.ConstellationMasterSecretStoreName,
+		"masterSecretKeyName":  constants.ConstellationMasterSecretKey,
+		"saltKeyName":          constants.ConstellationSaltKey,
+		"measurementsFilename": constants.MeasurementsFilename,
+	}
+
+	return helm.Release{Chart: chart, Values: kmsVals, ReleaseName: "kms", Wait: true}, nil
 }
 
 // taken from loader.LoadDir from the helm go module

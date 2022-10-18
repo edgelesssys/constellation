@@ -8,11 +8,15 @@ package helm
 
 import "helm.sh/helm/v3/pkg/chart"
 
-type Deployment struct {
-	Chart  *chart.Chart
-	Values map[string]interface{}
+// Release bundles all information necessary to create a helm release.
+type Release struct {
+	Chart       *chart.Chart
+	Values      map[string]interface{}
+	ReleaseName string
+	Wait        bool
 }
 
-type Deployments struct {
-	Cilium Deployment
+type Releases struct {
+	Cilium Release
+	KMS    Release
 }

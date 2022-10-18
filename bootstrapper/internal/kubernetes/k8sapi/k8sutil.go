@@ -10,7 +10,6 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/x509"
-	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -32,7 +31,6 @@ import (
 	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
@@ -40,20 +38,14 @@ import (
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 	"golang.org/x/text/transform"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/cli"
 	corev1 "k8s.io/api/core/v1"
 )
 
 const (
-	// kubeConfig is the path to the Kubernetes admin config (used for authentication).
-	kubeConfig = "/etc/kubernetes/admin.conf"
 	// kubeletStartTimeout is the maximum time given to the kubelet service to (re)start.
 	kubeletStartTimeout = 10 * time.Minute
 	// crdTimeout is the maximum time given to the CRDs to be created.
 	crdTimeout = 30 * time.Second
-	// helmTimeout is the maximum time given to the helm client.
-	helmTimeout = 5 * time.Minute
 )
 
 // Client provides the functions to talk to the k8s API.
@@ -122,7 +114,7 @@ func (k *KubernetesUtil) InstallComponents(ctx context.Context, version versions
 		return fmt.Errorf("installing kubeadm: %w", err)
 	}
 	if err := k.inst.Install(
-		ctx, versionConf.KubectlURL, []string{kubectlPath}, executablePerm, false,
+		ctx, versionConf.KubectlURL, []string{constants.KubectlPath}, executablePerm, false,
 	); err != nil {
 		return fmt.Errorf("installing kubectl: %w", err)
 	}
@@ -235,19 +227,19 @@ func (k *KubernetesUtil) prepareControlPlaneForKonnectivity(ctx context.Context,
 		return fmt.Errorf("generating konnectivity server certificate: %w", err)
 	}
 
-	if out, err := exec.CommandContext(ctx, kubectlPath, "config", "set-credentials", "--kubeconfig", "/etc/kubernetes/konnectivity-server.conf", "system:konnectivity-server",
+	if out, err := exec.CommandContext(ctx, constants.KubectlPath, "config", "set-credentials", "--kubeconfig", "/etc/kubernetes/konnectivity-server.conf", "system:konnectivity-server",
 		"--client-certificate", "/etc/kubernetes/konnectivity.crt", "--client-key", "/etc/kubernetes/konnectivity.key", "--embed-certs=true").CombinedOutput(); err != nil {
 		return fmt.Errorf("konnectivity kubeconfig set-credentials: %w, %s", err, string(out))
 	}
-	if out, err := exec.CommandContext(ctx, kubectlPath, "--kubeconfig", "/etc/kubernetes/konnectivity-server.conf", "config", "set-cluster", "kubernetes", "--server", "https://"+loadBalancerEndpoint,
+	if out, err := exec.CommandContext(ctx, constants.KubectlPath, "--kubeconfig", "/etc/kubernetes/konnectivity-server.conf", "config", "set-cluster", "kubernetes", "--server", "https://"+loadBalancerEndpoint,
 		"--certificate-authority", "/etc/kubernetes/pki/ca.crt", "--embed-certs=true").CombinedOutput(); err != nil {
 		return fmt.Errorf("konnectivity kubeconfig set-cluster: %w, %s", err, string(out))
 	}
-	if out, err := exec.CommandContext(ctx, kubectlPath, "--kubeconfig", "/etc/kubernetes/konnectivity-server.conf", "config", "set-context", "system:konnectivity-server@kubernetes",
+	if out, err := exec.CommandContext(ctx, constants.KubectlPath, "--kubeconfig", "/etc/kubernetes/konnectivity-server.conf", "config", "set-context", "system:konnectivity-server@kubernetes",
 		"--cluster", "kubernetes", "--user", "system:konnectivity-server").CombinedOutput(); err != nil {
 		return fmt.Errorf("konnectivity kubeconfig set-context: %w, %s", err, string(out))
 	}
-	if out, err := exec.CommandContext(ctx, kubectlPath, "--kubeconfig", "/etc/kubernetes/konnectivity-server.conf", "config", "use-context", "system:konnectivity-server@kubernetes").CombinedOutput(); err != nil {
+	if out, err := exec.CommandContext(ctx, constants.KubectlPath, "--kubeconfig", "/etc/kubernetes/konnectivity-server.conf", "config", "use-context", "system:konnectivity-server@kubernetes").CombinedOutput(); err != nil {
 		return fmt.Errorf("konnectivity kubeconfig use-context: %w, %s", err, string(out))
 	}
 	// cleanup
@@ -264,33 +256,6 @@ func (k *KubernetesUtil) SetupKonnectivity(kubectl Client, konnectivityAgentsDae
 	return kubectl.Apply(konnectivityAgentsDaemonSet, true)
 }
 
-func (k *KubernetesUtil) SetupHelmDeployments(ctx context.Context, kubectl Client, helmDeployments []byte, in SetupPodNetworkInput, log *logger.Logger) error {
-	var helmDeploy helm.Deployments
-	if err := json.Unmarshal(helmDeployments, &helmDeploy); err != nil {
-		return fmt.Errorf("unmarshalling helm deployments: %w", err)
-	}
-	settings := cli.New()
-	settings.KubeConfig = kubeConfig
-
-	actionConfig := new(action.Configuration)
-	if err := actionConfig.Init(settings.RESTClientGetter(), constants.HelmNamespace,
-		"secret", log.Infof); err != nil {
-		return err
-	}
-
-	helmClient := action.NewInstall(actionConfig)
-	helmClient.Namespace = constants.HelmNamespace
-	helmClient.ReleaseName = "cilium"
-	helmClient.Wait = true
-	helmClient.Timeout = helmTimeout
-
-	if err := k.deployCilium(ctx, in, helmClient, helmDeploy.Cilium, kubectl); err != nil {
-		return fmt.Errorf("deploying cilium: %w", err)
-	}
-
-	return nil
-}
-
 type SetupPodNetworkInput struct {
 	CloudProvider        string
 	NodeName             string
@@ -298,85 +263,6 @@ type SetupPodNetworkInput struct {
 	SubnetworkPodCIDR    string
 	ProviderID           string
 	LoadBalancerEndpoint string
-}
-
-// deployCilium sets up the cilium pod network.
-func (k *KubernetesUtil) deployCilium(ctx context.Context, in SetupPodNetworkInput, helmClient *action.Install, ciliumDeployment helm.Deployment, kubectl Client) error {
-	switch in.CloudProvider {
-	case "gcp":
-		return k.deployCiliumGCP(ctx, helmClient, kubectl, ciliumDeployment, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR, in.LoadBalancerEndpoint)
-	case "azure":
-		return k.deployCiliumAzure(ctx, helmClient, ciliumDeployment, in.LoadBalancerEndpoint)
-	case "qemu":
-		return k.deployCiliumQEMU(ctx, helmClient, ciliumDeployment, in.SubnetworkPodCIDR, in.LoadBalancerEndpoint)
-	default:
-		return fmt.Errorf("unsupported cloud provider %q", in.CloudProvider)
-	}
-}
-
-func (k *KubernetesUtil) deployCiliumAzure(ctx context.Context, helmClient *action.Install, ciliumDeployment helm.Deployment, kubeAPIEndpoint string) error {
-	host := kubeAPIEndpoint
-	ciliumDeployment.Values["k8sServiceHost"] = host
-	ciliumDeployment.Values["k8sServicePort"] = strconv.Itoa(constants.KubernetesPort)
-
-	_, err := helmClient.RunWithContext(ctx, ciliumDeployment.Chart, ciliumDeployment.Values)
-	if err != nil {
-		return fmt.Errorf("installing cilium: %w", err)
-	}
-	return nil
-}
-
-func (k *KubernetesUtil) deployCiliumGCP(ctx context.Context, helmClient *action.Install, kubectl Client, ciliumDeployment helm.Deployment, nodeName, nodePodCIDR, subnetworkPodCIDR, kubeAPIEndpoint string) error {
-	out, err := exec.CommandContext(ctx, kubectlPath, "--kubeconfig", kubeConfig, "patch", "node", nodeName, "-p", "{\"spec\":{\"podCIDR\": \""+nodePodCIDR+"\"}}").CombinedOutput()
-	if err != nil {
-		err = errors.New(string(out))
-		return err
-	}
-
-	timeoutS := int64(10)
-	// allow coredns to run on uninitialized nodes (required by cloud-controller-manager)
-	tolerations := []corev1.Toleration{
-		{
-			Key:    "node.cloudprovider.kubernetes.io/uninitialized",
-			Value:  "true",
-			Effect: corev1.TaintEffectNoSchedule,
-		},
-		{
-			Key:               "node.kubernetes.io/unreachable",
-			Operator:          corev1.TolerationOpExists,
-			Effect:            corev1.TaintEffectNoExecute,
-			TolerationSeconds: &timeoutS,
-		},
-	}
-	if err = kubectl.AddTolerationsToDeployment(ctx, tolerations, "coredns", "kube-system"); err != nil {
-		return err
-	}
-	selectors := map[string]string{
-		"node-role.kubernetes.io/control-plane": "",
-	}
-	if err = kubectl.AddNodeSelectorsToDeployment(ctx, selectors, "coredns", "kube-system"); err != nil {
-		return err
-	}
-
-	host, port, err := net.SplitHostPort(kubeAPIEndpoint)
-	if err != nil {
-		return err
-	}
-
-	// configure pod network CIDR
-	ciliumDeployment.Values["ipv4NativeRoutingCIDR"] = subnetworkPodCIDR
-	ciliumDeployment.Values["strictModeCIDR"] = subnetworkPodCIDR
-	ciliumDeployment.Values["k8sServiceHost"] = host
-	if port != "" {
-		ciliumDeployment.Values["k8sServicePort"] = port
-	}
-
-	_, err = helmClient.RunWithContext(ctx, ciliumDeployment.Chart, ciliumDeployment.Values)
-	if err != nil {
-		return fmt.Errorf("installing cilium: %w", err)
-	}
-
-	return nil
 }
 
 // FixCilium fixes https://github.com/cilium/cilium/issues/19958 but instead of a rollout restart of
@@ -423,26 +309,6 @@ func (k *KubernetesUtil) FixCilium(log *logger.Logger) {
 	}
 }
 
-func (k *KubernetesUtil) deployCiliumQEMU(ctx context.Context, helmClient *action.Install, ciliumDeployment helm.Deployment, subnetworkPodCIDR, kubeAPIEndpoint string) error {
-	// configure pod network CIDR
-	ciliumDeployment.Values["ipam"] = map[string]interface{}{
-		"operator": map[string]interface{}{
-			"clusterPoolIPv4PodCIDRList": []interface{}{
-				subnetworkPodCIDR,
-			},
-		},
-	}
-
-	ciliumDeployment.Values["k8sServiceHost"] = kubeAPIEndpoint
-	ciliumDeployment.Values["k8sServicePort"] = strconv.Itoa(constants.KubernetesPort)
-
-	_, err := helmClient.RunWithContext(ctx, ciliumDeployment.Chart, ciliumDeployment.Values)
-	if err != nil {
-		return fmt.Errorf("installing cilium: %w", err)
-	}
-	return nil
-}
-
 // SetupAutoscaling deploys the k8s cluster autoscaler.
 func (k *KubernetesUtil) SetupAutoscaling(kubectl Client, clusterAutoscalerConfiguration kubernetes.Marshaler, secrets kubernetes.Marshaler) error {
 	if err := kubectl.Apply(secrets, true); err != nil {
@@ -483,14 +349,6 @@ func (k *KubernetesUtil) SetupCloudNodeManager(kubectl Client, cloudNodeManagerC
 // SetupAccessManager deploys the constellation-access-manager for deploying SSH keys on control-plane & worker nodes.
 func (k *KubernetesUtil) SetupAccessManager(kubectl Client, accessManagerConfiguration kubernetes.Marshaler) error {
 	return kubectl.Apply(accessManagerConfiguration, true)
-}
-
-// SetupKMS deploys the KMS deployment.
-func (k *KubernetesUtil) SetupKMS(kubectl Client, kmsConfiguration kubernetes.Marshaler) error {
-	if err := kubectl.Apply(kmsConfiguration, true); err != nil {
-		return fmt.Errorf("applying KMS configuration: %w", err)
-	}
-	return nil
 }
 
 // SetupVerificationService deploys the verification service.
