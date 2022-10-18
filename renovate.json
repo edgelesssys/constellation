@@ -31,6 +31,12 @@
       "groupName": "etcd"
     },
     {
+      "matchPackagePatterns": [
+        "^cloud.google.com/go"
+      ],
+      "groupName": "google-go"
+    },
+    {
       "matchDatasources": [
         "golang-version"
       ],
