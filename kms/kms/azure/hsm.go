@@ -52,7 +52,7 @@ func NewHSM(ctx context.Context, vaultName string, store kms.Storage, opts *Opts
 	}
 
 	vaultURL := vaultPrefix + vaultName + string(HSMDefaultCloud)
-	client := azkeys.NewClient(vaultURL, cred, opts.client)
+	client := azkeys.NewClient(vaultURL, cred, opts.keys)
 
 	// `azkeys.NewClient()` does not error if the vault is non existent
 	// Test here if we can reach the vault, and error otherwise

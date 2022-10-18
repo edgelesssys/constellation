@@ -16,6 +16,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/keyvault/azkeys"
 	"github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets"
 	"github.com/edgelesssys/constellation/v2/kms/internal/config"
 	"github.com/edgelesssys/constellation/v2/kms/internal/storage"
@@ -54,6 +55,8 @@ type KMSClient struct {
 type Opts struct {
 	credentials *azidentity.DefaultAzureCredentialOptions
 	client      *azcore.ClientOptions
+	keys        *azkeys.ClientOptions
+	secrets     *azsecrets.ClientOptions
 }
 
 // New initializes a KMS client for Azure Key Vault.
@@ -65,7 +68,7 @@ func New(ctx context.Context, vaultName string, vaultType VaultSuffix, store kms
 	if err != nil {
 		return nil, fmt.Errorf("loading credentials: %w", err)
 	}
-	client := azsecrets.NewClient(vaultPrefix+vaultName+string(vaultType), cred, opts.client)
+	client := azsecrets.NewClient(vaultPrefix+vaultName+string(vaultType), cred, opts.secrets)
 
 	// `azsecrets.NewClient()` does not error if the vault is non existent
 	// Test here if we can reach the vault, and error otherwise
