@@ -13,9 +13,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/keyvault/azkeys"
 	"github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets"
 	"github.com/edgelesssys/constellation/v2/kms/internal/config"
 	"github.com/edgelesssys/constellation/v2/kms/internal/storage"
@@ -47,13 +47,13 @@ type kmsClientAPI interface {
 type KMSClient struct {
 	client  kmsClientAPI
 	storage kms.Storage
-	opts    *Opts
 }
 
 // Opts are optional settings for AKV clients.
 type Opts struct {
-	credentials *azidentity.DefaultAzureCredentialOptions
-	client      *azcore.ClientOptions
+	Credentials *azidentity.DefaultAzureCredentialOptions
+	Keys        *azkeys.ClientOptions
+	Secrets     *azsecrets.ClientOptions
 }
 
 // New initializes a KMS client for Azure Key Vault.
@@ -61,11 +61,11 @@ func New(ctx context.Context, vaultName string, vaultType VaultSuffix, store kms
 	if opts == nil {
 		opts = &Opts{}
 	}
-	cred, err := azidentity.NewDefaultAzureCredential(opts.credentials)
+	cred, err := azidentity.NewDefaultAzureCredential(opts.Credentials)
 	if err != nil {
 		return nil, fmt.Errorf("loading credentials: %w", err)
 	}
-	client := azsecrets.NewClient(vaultPrefix+vaultName+string(vaultType), cred, opts.client)
+	client := azsecrets.NewClient(vaultPrefix+vaultName+string(vaultType), cred, opts.Secrets)
 
 	// `azsecrets.NewClient()` does not error if the vault is non existent
 	// Test here if we can reach the vault, and error otherwise
@@ -77,7 +77,7 @@ func New(ctx context.Context, vaultName string, vaultType VaultSuffix, store kms
 	if store == nil {
 		store = storage.NewMemMapStorage()
 	}
-	return &KMSClient{client: client, storage: store, opts: opts}, nil
+	return &KMSClient{client: client, storage: store}, nil
 }
 
 // CreateKEK saves a new Key Encryption Key using Azure Key Vault.

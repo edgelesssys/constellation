@@ -80,7 +80,6 @@ func TestKMSCreateKEK(t *testing.T) {
 
 			client := &KMSClient{
 				client: tc.client,
-				opts:   &Opts{},
 			}
 
 			err := client.CreateKEK(context.Background(), "test-key", tc.importKey)
@@ -154,7 +153,6 @@ func TestKMSGetDEK(t *testing.T) {
 			client := KMSClient{
 				client:  tc.client,
 				storage: tc.storage,
-				opts:    &Opts{},
 			}
 
 			dek, err := client.GetDEK(context.Background(), "test-key", "volume-01", 32)
