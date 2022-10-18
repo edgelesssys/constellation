@@ -4,6 +4,6 @@
 
 azure-functions
 azure-mgmt-resource==21.1.0
-azure-identity==1.10.0
+azure-identity==1.11.0
 azure-mgmt-subscription==3.1.1
 azure-keyvault==4.2.0
