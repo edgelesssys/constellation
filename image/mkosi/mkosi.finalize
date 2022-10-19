@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euxo pipefail
+
+# recreate kubelet systemd unit after reboot.
+# tmpfile config has to be written late as it interferes with the systemd-nspawn build environment
+cat >"${BUILDROOT}/usr/lib/tmpfiles.d/kubelet-service.conf" <<EOF
+C     /run/systemd/system/kubelet.service                   -    -    -     -           /run/state/systemd/system/kubelet.service
+C     /run/systemd/system/kubelet.service.d/10-kubeadm.conf -    -    -     -           /run/state/systemd/system/kubelet.service.d/10-kubeadm.conf
+EOF
+
+# cleanup dracut generation files (disk-mapper) to save space
+rm -rf "${BUILDROOT}/usr/lib/dracut/modules.d/39constellation-mount/"

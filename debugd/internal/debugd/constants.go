@@ -14,7 +14,7 @@ const (
 	SSHCheckInterval                 = 30 * time.Second
 	DiscoverDebugdInterval           = 30 * time.Second
 	BootstrapperDownloadRetryBackoff = 1 * time.Minute
-	BootstrapperDeployFilename       = "/opt/bootstrapper"
+	BootstrapperDeployFilename       = "/run/state/bin/bootstrapper"
 	Chunksize                        = 1024
 	BootstrapperSystemdUnitName      = "bootstrapper.service"
 	BootstrapperSystemdUnitContents  = `[Unit]
@@ -25,12 +25,10 @@ After=network-online.target
 Type=simple
 RemainAfterExit=yes
 Restart=on-failure
-EnvironmentFile=/etc/constellation.env
+EnvironmentFile=/run/constellation.env
+Environment=PATH=/run/state/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
 ExecStartPre=-setenforce Permissive
-ExecStartPre=/usr/bin/mkdir -p /opt/cni/bin/
-# merge all CNI binaries in writable folder until containerd can use multiple CNI bins: https://github.com/containerd/containerd/issues/6600
-ExecStartPre=/bin/sh -c "/usr/bin/cp /usr/libexec/cni/* /opt/cni/bin/"
-ExecStart=/opt/bootstrapper
+ExecStart=/run/state/bin/bootstrapper
 [Install]
 WantedBy=multi-user.target
 `

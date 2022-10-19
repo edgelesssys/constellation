@@ -17,6 +17,11 @@ RUN echo "cgroup_controllers = []" >> /etc/libvirt/qemu.conf && \
     echo "listen_addr = \"localhost\"" >> /etc/libvirt/libvirtd.conf && \
     echo "auth_tcp = \"none\"" >> /etc/libvirt/libvirtd.conf
 
+# Copy nvram templates
+COPY ./cli/internal/libvirt/nvram/constellation_vars.testing.fd /usr/share/OVMF/constellation_vars.testing.fd
+# TODO: Uncomment this line when we have a production template
+# COPY ./cli/internal/libvirt/nvram/constellation_vars.production.fd /usr/share/OVMF/constellation_vars.production.fd
+
 COPY --chmod=755 ./cli/internal/libvirt/start.sh /start.sh
 
 ENTRYPOINT ["/start.sh"]

@@ -1,0 +1,10 @@
+#!/usr/bin/bash
+# This script reads the PCR state of the system
+# and prints the message to the serial console
+
+main() {
+    pcr_state="$(tpm2_pcrread sha256)"
+    echo -e "PCR state:\n${pcr_state}\n" > /run/issue.d/35_constellation_pcrs.issue
+}
+
+main

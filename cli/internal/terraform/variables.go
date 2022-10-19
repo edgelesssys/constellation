@@ -97,6 +97,8 @@ type AzureVariables struct {
 	ImageID string
 	// ConfidentialVM sets the VM to be confidential.
 	ConfidentialVM bool
+	// SecureBoot sets the VM to use secure boot.
+	SecureBoot bool
 	// Debug is true if debug mode is enabled.
 	Debug bool
 }
@@ -112,6 +114,7 @@ func (v *AzureVariables) String() string {
 	writeLinef(b, "state_disk_type = %q", v.StateDiskType)
 	writeLinef(b, "image_id = %q", v.ImageID)
 	writeLinef(b, "confidential_vm = %t", v.ConfidentialVM)
+	writeLinef(b, "secure_boot = %t", v.SecureBoot)
 	writeLinef(b, "debug = %t", v.Debug)
 
 	return b.String()
@@ -140,6 +143,10 @@ type QEMUVariables struct {
 	// In case of unix socket, this should be "qemu:///system".
 	// Other wise it should be the same as LibvirtURI.
 	MetadataLibvirtURI string
+	// NVRAM is the path to the NVRAM template.
+	NVRAM string
+	// Firmware is the path to the firmware.
+	Firmware string
 }
 
 // String returns a string representation of the variables, formatted as Terraform variables.
@@ -154,6 +161,17 @@ func (v *QEMUVariables) String() string {
 	writeLinef(b, "memory = %d", v.MemorySizeMiB)
 	writeLinef(b, "metadata_api_image = %q", v.MetadataAPIImage)
 	writeLinef(b, "metadata_libvirt_uri = %q", v.MetadataLibvirtURI)
+	switch v.NVRAM {
+	case "production":
+		b.WriteString("nvram = \"/usr/share/OVMF/constellation_vars.production.fd\"\n")
+	case "testing":
+		b.WriteString("nvram = \"/usr/share/OVMF/constellation_vars.testing.fd\"\n")
+	default:
+		writeLinef(b, "nvram = %q", v.NVRAM)
+	}
+	if v.Firmware != "" {
+		writeLinef(b, "firmware = %q", v.Firmware)
+	}
 
 	return b.String()
 }

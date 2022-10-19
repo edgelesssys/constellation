@@ -57,6 +57,12 @@ variable "confidential_vm" {
   description = "Whether to deploy the cluster nodes as confidential VMs."
 }
 
+variable "secure_boot" {
+  type        = bool
+  default     = false
+  description = "Whether to deploy the cluster nodes with secure boot."
+}
+
 variable "debug" {
   type        = bool
   default     = false

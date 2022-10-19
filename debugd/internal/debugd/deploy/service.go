@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	systemdUnitFolder = "/etc/systemd/system"
+	systemdUnitFolder = "/run/systemd/system"
 )
 
 //go:generate stringer -type=SystemdAction

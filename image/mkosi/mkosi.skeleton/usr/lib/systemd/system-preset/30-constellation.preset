@@ -1,0 +1,5 @@
+enable constellation-bootstrapper.service
+enable configure-constel-csp.service
+enable containerd.service
+enable tpm-pcrs.service
+enable systemd-networkd.service

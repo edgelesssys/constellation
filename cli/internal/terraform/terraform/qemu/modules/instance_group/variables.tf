@@ -48,7 +48,18 @@ variable "machine" {
   description = "machine type. use 'q35' for secure boot and 'pc' for non secure boot. See 'qemu-system-x86_64 -machine help'"
 }
 
+variable "firmware" {
+  type        = string
+  description = "path to UEFI firmware file."
+}
+
+variable "nvram" {
+  type        = string
+  description = "path to UEFI NVRAM template file. Used for secure boot."
+}
+
 variable "name" {
   type        = string
   description = "name prefix of the cluster VMs"
 }
+

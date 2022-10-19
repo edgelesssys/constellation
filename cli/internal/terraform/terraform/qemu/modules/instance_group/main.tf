@@ -13,11 +13,16 @@ locals {
 }
 
 resource "libvirt_domain" "instance_group" {
-  name    = "${var.name}-${var.role}-${count.index}"
-  count   = var.amount
-  memory  = var.memory
-  vcpu    = var.vcpus
-  machine = var.machine
+  name     = "${var.name}-${var.role}-${count.index}"
+  count    = var.amount
+  memory   = var.memory
+  vcpu     = var.vcpus
+  machine  = var.machine
+  firmware = var.firmware
+  nvram {
+    file     = "/var/lib/libvirt/qemu/nvram/${var.role}-${count.index}_VARS.fd"
+    template = var.nvram
+  }
   tpm {
     backend_type    = "emulator"
     backend_version = "2.0"

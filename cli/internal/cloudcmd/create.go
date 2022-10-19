@@ -128,6 +128,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 		StateDiskType:        config.Provider.Azure.StateDiskType,
 		ImageID:              config.Provider.Azure.Image,
 		ConfidentialVM:       *config.Provider.Azure.ConfidentialVM,
+		SecureBoot:           *config.Provider.Azure.SecureBoot,
 		Debug:                config.IsDebugCluster(),
 	}
 
@@ -210,6 +211,8 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 		MemorySizeMiB:      config.Provider.QEMU.Memory,
 		MetadataAPIImage:   config.Provider.QEMU.MetadataAPIImage,
 		MetadataLibvirtURI: metadataLibvirtURI,
+		NVRAM:              config.Provider.QEMU.NVRAM,
+		Firmware:           config.Provider.QEMU.Firmware,
 	}
 
 	ip, err := cl.CreateCluster(ctx, name, &vars)
