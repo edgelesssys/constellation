@@ -24,7 +24,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@1f9a0c22da41e6ebfa534300ef656657ea2c6707
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.head_ref }}
 
       - name: tfsec
         uses: aquasecurity/tfsec-pr-commenter-action@d9fa64305ec243e19f9be1200dfc8e8154dc364f

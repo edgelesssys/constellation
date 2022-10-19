@@ -18,7 +18,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.head_ref }}
       - name: Vale
         uses: errata-ai/vale-action@753427452ff1d6cf7a7b76a552aa0cbee3971551 # tag=v1.5.0
         with:

@@ -20,7 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@1f9a0c22da41e6ebfa534300ef656657ea2c6707
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.head_ref }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@a2a0e9d877cffca80feedfc0d9072834be6c42e7
