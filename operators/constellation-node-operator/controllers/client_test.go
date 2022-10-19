@@ -50,7 +50,7 @@ func newStubReaderClient(t *testing.T, objects []runtime.Object, getErr, listErr
 	}
 }
 
-func (c *stubReaderClient) Get(_ context.Context, key client.ObjectKey, out client.Object) error {
+func (c *stubReaderClient) Get(_ context.Context, key client.ObjectKey, out client.Object, opts ...client.GetOption) error {
 	gvks, _, err := c.scheme.ObjectKinds(out)
 	if err != nil {
 		panic(err)
@@ -132,8 +132,8 @@ type stubReadWriterClient struct {
 	client.Client
 }
 
-func (c *stubReadWriterClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
-	return c.stubReaderClient.Get(ctx, key, obj)
+func (c *stubReadWriterClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+	return c.stubReaderClient.Get(ctx, key, obj, opts...)
 }
 
 func (c *stubReadWriterClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
