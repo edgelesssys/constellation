@@ -22,9 +22,9 @@ jobs:
           targetOS: linux
           targetArch: amd64
           enterpriseCLI: true
-          cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
-          cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
+          cosignPublicKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
+          cosignPassword: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
 
       - name: Build cli-linux-arm64
         uses: ./.github/actions/build_cli
@@ -32,9 +32,9 @@ jobs:
           targetOS: linux
           targetArch: arm64
           enterpriseCLI: true
-          cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
-          cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
+          cosignPublicKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
+          cosignPassword: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
 
       - name: Build cli-darwin-amd64
         uses: ./.github/actions/build_cli
@@ -42,9 +42,9 @@ jobs:
           targetOS: darwin
           targetArch: amd64
           enterpriseCLI: true
-          cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
-          cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
+          cosignPublicKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
+          cosignPassword: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
 
       - name: Build cli-darwin-arm64
         uses: ./.github/actions/build_cli
@@ -52,9 +52,9 @@ jobs:
           targetOS: darwin
           targetArch: arm64
           enterpriseCLI: true
-          cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
-          cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
+          cosignPublicKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
+          cosignPassword: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
 
       - name: Login to Azure
         uses: ./.github/actions/azure_login
