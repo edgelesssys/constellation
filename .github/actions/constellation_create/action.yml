@@ -35,14 +35,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install kubectl
-      run: |
-        HOSTOS="$(go env GOOS)"
-        HOSTARCH="$(go env GOARCH)"
-        curl -sLO https://dl.k8s.io/release/v1.23.0/bin/{$HOSTOS}/{$HOSTARCH}/kubectl
-        install kubectl /usr/local/bin
-      shell: bash
-
     - name: Constellation config generate
       run: |
         constellation config generate ${{ inputs.cloudProvider }}
