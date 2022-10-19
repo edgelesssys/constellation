@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestDownloadBootstrapper(t *testing.T) {
-	filename := "/opt/bootstrapper"
+	filename := "/run/state/bin/bootstrapper"
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {

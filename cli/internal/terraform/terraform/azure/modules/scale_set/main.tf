@@ -27,7 +27,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
   vtpm_enabled                    = true
   disable_password_authentication = false
   upgrade_mode                    = "Manual"
-  secure_boot_enabled             = true
+  secure_boot_enabled             = var.secure_boot
   source_image_id                 = var.image_id
   tags                            = var.tags
 

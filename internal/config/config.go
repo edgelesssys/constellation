@@ -142,6 +142,9 @@ type AzureConfig struct {
 	// description: |
 	//   Use Confidential VMs. If set to false, Trusted Launch VMs are used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview
 	ConfidentialVM *bool `yaml:"confidentialVM" validate:"required"`
+	// description: |
+	//   Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob.
+	SecureBoot *bool `yaml:"secureBoot" validate:"required"`
 }
 
 // GCPConfig are GCP specific configuration values used by the CLI.
@@ -203,6 +206,12 @@ type QEMUConfig struct {
 	// description: |
 	//   List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning.
 	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
+	// description: |
+	//   NVRAM template to be used for secure boot. Can be sentinel value "production", "testing" or a path to a custom NVRAM template
+	NVRAM string `yaml:"nvram" validate:"required"`
+	// description: |
+	//   Path to the OVMF firmware. Leave empty for auto selection.
+	Firmware string `yaml:"firmware"`
 }
 
 // Default returns a struct with the default config.
@@ -226,6 +235,7 @@ func Default() *Config {
 				IDKeyDigest:          "57486a447ec0f1958002a22a06b7673b9fd27d11e1c6527498056054c5fa92d23c50f9de44072760fe2b6fb89740b696",
 				EnforceIDKeyDigest:   func() *bool { b := true; return &b }(),
 				ConfidentialVM:       func() *bool { b := true; return &b }(),
+				SecureBoot:           func() *bool { b := false; return &b }(),
 			},
 			GCP: &GCPConfig{
 				Project:               "",
@@ -246,7 +256,8 @@ func Default() *Config {
 				LibvirtURI:            "",
 				LibvirtContainerImage: versions.LibvirtImage,
 				Measurements:          copyPCRMap(qemuPCRs),
-				EnforcedMeasurements:  []uint32{11, 12},
+				EnforcedMeasurements:  []uint32{4, 8, 9, 11, 12, 13, 15},
+				NVRAM:                 "testing",
 			},
 		},
 		KubernetesVersion: string(versions.Default),

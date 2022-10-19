@@ -1,0 +1,11 @@
+[Unit]
+Description=Print PCR state on startup
+Before=constellation-bootstrapper.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/constellation-pcrs
+
+[Install]
+WantedBy=multi-user.target

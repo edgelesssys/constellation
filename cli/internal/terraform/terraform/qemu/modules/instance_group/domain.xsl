@@ -6,9 +6,30 @@
         </xsl:copy>
     </xsl:template>
     <xsl:template match="os">
-        <os firmware="efi">
+        <os>
             <xsl:apply-templates select="@*|node()"/>
         </os>
+    </xsl:template>
+    <xsl:template match="/domain/os/loader">
+        <xsl:copy>
+            <!--<xsl:apply-templates select="node()|@*"/>-->
+            <xsl:attribute name="secure">
+                <xsl:value-of select="'yes'"/>
+            </xsl:attribute>
+            <xsl:attribute name="readonly">
+                <xsl:value-of select="'yes'"/>
+            </xsl:attribute>
+            <xsl:attribute name="type">
+                <xsl:value-of select="'pflash'"/>
+            </xsl:attribute>
+            <xsl:value-of select="."/>
+        </xsl:copy>
+    </xsl:template>
+    <xsl:template match="/domain/features">
+        <xsl:copy>
+            <xsl:apply-templates select="node()|@*"/>
+            <xsl:element name ="smm" />
+        </xsl:copy>
     </xsl:template>
     <xsl:template match="/domain/devices/tpm/backend">
     <xsl:copy>

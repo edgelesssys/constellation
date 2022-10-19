@@ -1,113 +1,193 @@
-# Constellation images
-
-We use the [Fedora CoreOS Assembler](https://coreos.github.io/coreos-assembler/) to build the base image for Constellation nodes.
-
 ## Setup
 
-1. Install prerequisites:
-   - [Docker](https://docs.docker.com/engine/install/) or [Podman](https://podman.io/getting-started/installation)
-   - [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-linux)
-   - [azcopy](https://docs.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10)
-   - [Google Cloud CLI](https://cloud.google.com/sdk/docs/install)
-   - [gsutil](https://cloud.google.com/storage/docs/gsutil_install#linux)
-   - Ubuntu:
+- Install mkosi (from git):
 
-        ```shell-session
-        sudo apt install -y bash coreutils cryptsetup-bin grep libguestfs-tools make parted pv qemu-system qemu-utils sed tar util-linux wget
-        ```
-
-2. Log in to GCP and Azure
-
-   ```shell-session
-   gcloud auth login
-   az login
-   ```
-
-3. [Log in to the ghcr.io package registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry)
-4. Ensure read and write access to `/dev/kvm` (and repeat after every reboot)
-
-    ```shell-session
-    sudo chmod 666 /dev/kvm
+    ```sh
+    cd /tmp/
+    git clone https://github.com/systemd/mkosi
+    cd mkosi
+    tools/generate-zipapp.sh
+    cp builddir/mkosi /usr/local/bin/
     ```
 
-## Configuration
+- Install tools:
 
-Create a configuration file in `image/config.mk` to override any of the variables found at the top of the [Makefile](Makefile).
-Important settings are:
+    <details>
+    <summary>Ubuntu / Debian</summary>
 
-- `BOOTSTRAPPER_BINARY`: path to a bootstrapper binary. Can be substituted with a path to a `debugd` binary if a debug image should be built. The binary has to be built before!
-- `CONTAINER_ENGINE`: container engine used to run COSA. either `podman` or `docker`.
-- `COSA_INIT_REPO`: Git repository containing CoreOS config. Cloned in `cosa-init` target.
-- `COSA_INIT_BRANCH`: Git branch checked out from `COSA_INIT_REPO`. Can be used to test out changes on another branch before merging.
-- `NETRC` path to a netrc file containing a GitHub PAT. Used to authenticate to GitHub from within the COSA container.
-- `GCP_IMAGE_NAME`: Image name for the GCP image. Set to include a timestamp when using the build pipeline. Can be set to a custom value if you want to upload a custom image for testing on GCP.
-- `AZURE_IMAGE_NAME`: Image name for the Azure image. Can be set to a custom value if you want to upload a custom image for testing on Azure.
+    ```sh
+    sudo apt-get update
+    sudo apt-get install --assume-yes --no-install-recommends \
+        dnf \
+        systemd-container \
+        qemu-system-x86 \
+        qemu-utils \
+        ovmf \
+        e2fsprogs \
+        squashfs-tools \
+        efitools \
+        sbsigntool \
+        coreutils \
+        curl \
+        jq \
+        util-linux \
+        virt-manager
+    ```
 
-Example `config.mk` to create a debug image with docker and name it `my-custom-image`:
+    </details>
 
-```Makefile
-BOOTSTRAPPER_BINARY = ../build/debugd
-CONTAINER_ENGINE = docker
-GCP_IMAGE_NAME = my-custom-image
-AZURE_IMAGE_NAME = my-custom-image
+    <details>
+    <summary>Fedora</summary>
+
+    ```sh
+    sudo dnf install -y \
+        edk2-ovmf \
+        systemd-container \
+        qemu \
+        e2fsprogs \
+        squashfs-tools \
+        efitools \
+        sbsigntools \
+        coreutils \
+        curl \
+        jq \
+        util-linux \
+        virt-manager
+    ```
+
+    </details>
+
+- Prepare secure boot PKI (see `secure-boot/genkeys.sh`)
+
+## Build
+
+When building your first image, prepare the secure boot PKI (see `secure-boot/genkeys.sh`) for self-signed, locally built images.
+
+After that, you can build the image with:
+
+```sh
+# OPTIONAL: to create a debug image, export the following line
+# export BOOTSTRAPPER_BINARY=$(realpath ${PWD}/../../build/debugd)
+# OPTIONAL: symlink custom path to secure boot PKI to ./pki
+# ln -s /path/to/pki/folder ./pki
+sudo make -j $(nproc)
 ```
 
-## Build an image
+Raw images will be placed in `mkosi.output.<CSP>/fedora~36/image.raw`.
 
-Ensure you have the modified cosa container image installed:
+## Prepare Secure Boot
 
-```shell-session
-docker image ls | grep localhost/coreos-assembler
+The generated images are partially signed by Microsoft ([shim loader](https://github.com/rhboot/shim)), and partially signed by Edgeless Systems (systemd-boot and unified kernel images consisting of the linux kernel, initramfs and kernel commandline).
+
+For QEMU and Azure, you can pre-generate the NVRAM variables for secure boot. This is not necessary for GCP, as you can specify secure boot parameters via the GCP API on image creation.
+
+<details>
+<summary>libvirt / QEMU / KVM</summary>
+
+```sh
+secure-boot/generate_nvram_vars.sh mkosi.output.qemu/fedora~36/image.raw
 ```
 
-or
+</details>
 
-```shell-session
-podman image ls | grep localhost/coreos-assembler
+<details>
+<summary><a id="azure-secure-boot">Azure</a></summary>
+
+These steps only have to performed once for a fresh set of secure boot certificates.
+VMGS blobs for testing and release images already exist.
+
+First, create a disk without embedded MOK EFI variables.
+
+```sh
+# set these variables
+export AZURE_SECURITY_TYPE=ConfidentialVM # or TrustedLaunch
+export AZURE_RESOURCE_GROUP_NAME= # e.g. "constellation-images"
+
+export AZURE_REGION=northeurope
+export AZURE_DISK_NAME=constellation-$(date +%s)
+export AZURE_SNAPSHOT_NAME=${AZURE_DISK_NAME}
+export AZURE_RAW_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~36/image.raw
+export AZURE_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~36/image.vhd
+export AZURE_VMGS_FILENAME=${AZURE_SECURITY_TYPE}.vmgs
+export BLOBS_DIR=${PWD}/blobs
+upload/pack.sh azure "${AZURE_RAW_IMAGE_PATH}" "${AZURE_IMAGE_PATH}"
+upload/upload_azure.sh --disk-name "${AZURE_DISK_NAME}-setup-secure-boot" ""
+secure-boot/azure/launch.sh -n "${AZURE_DISK_NAME}-setup-secure-boot" -d --secure-boot true --disk-name "${AZURE_DISK_NAME}-setup-secure-boot"
 ```
 
-If not present, install with
+Ignore the running launch script and connect to the serial console once available.
+The console shows the message "Verification failed: (0x1A) Security Violation". You can import the MOK certificate via the UEFI shell:
 
-```shell-session
-make cosa-image
+Press OK, then ENTER, then "Enroll key from disk".
+Select the following key: `/EFI/loader/keys/auto/db.cer`.
+Press Continue, then choose "Yes" to the question "Enroll the key(s)?".
+Choose reboot.
+
+Extract the VMGS from the running VM (this includes the MOK EFI variables) and delete the VM:
+
+```sh
+secure-boot/azure/extract_vmgs.sh --name "${AZURE_DISK_NAME}-setup-secure-boot"
+secure-boot/azure/delete.sh --name "${AZURE_DISK_NAME}-setup-secure-boot"
 ```
 
-> It is always advisable to create an image from a clean `build` dir.
+</details>
 
-Clean up the `build` dir and remove old images (⚠ this will undo any local changes to the CoreOS configuration!):
+## Upload to CSP
 
-```shell-session
-sudo make clean
+<details>
+<summary>GCP</summary>
+
+- Install `gcloud` and `gsutil` (see [here](https://cloud.google.com/sdk/docs/install))
+- Login to GCP (see [here](https://cloud.google.com/sdk/docs/authorizing))
+- Choose secure boot PKI public keys (one of `pki_dev`, `pki_test`, `pki_prod`)
+    - `pki_dev` can be used for local image builds
+    - `pki_test` is used by the CI for non-release images
+    - `pki_prod` is used for release images
+
+```sh
+# set these variables
+export GCP_IMAGE_FAMILY= # e.g. "constellation"
+export GCP_IMAGE_NAME= # e.g. "constellation-v1.0.0"
+export PKI=${PWD}/pki
+
+export GCP_PROJECT=constellation-images
+export GCP_REGION=europe-west3
+export GCP_BUCKET=constellation-images
+export GCP_RAW_IMAGE_PATH=${PWD}/mkosi.output.gcp/fedora~36/image.raw
+export GCP_IMAGE_FILENAME=$(date +%s).tar.gz
+export GCP_IMAGE_PATH=${PWD}/mkosi.output.gcp/fedora~36/image.tar.gz
+upload/pack.sh gcp ${GCP_RAW_IMAGE_PATH} ${GCP_IMAGE_PATH}
+upload/upload_gcp.sh
 ```
 
-- Build QEMU image (for local testing only)
+</details>
 
-  ```shell-session
-  make coreos
-  ```
+<details>
+<summary>Azure</summary>
 
-- Build Azure image (without upload)
+- Install `az` and `azcopy` (see [here](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli))
+- Login to Azure (see [here](https://docs.microsoft.com/en-us/cli/azure/authenticate-azure-cli))
+- [Prepare virtual machine guest state (VMGS) with customized NVRAM or use existing VMGS blob](#azure-secure-boot)
 
-  ```shell-session
-  make image-azure
-  ```
+```sh
+# set these variables
+export AZURE_GALLERY_NAME= # e.g. "Constellation"
+export AZURE_IMAGE_DEFINITION= # e.g. "constellation"
+export AZURE_IMAGE_VERSION= # e.g. "1.0.0"
+export AZURE_VMGS_PATH= # e.g. "path/to/ConfidentialVM.vmgs"
+export AZURE_SECURITY_TYPE=ConfidentialVM # or TrustedLaunch
 
-- Build Azure image (with upload)
+export AZURE_RESOURCE_GROUP_NAME=constellation-images
+export AZURE_REGION=northeurope
+export AZURE_REPLICATION_REGIONS="northeurope eastus westeurope westus"
+export AZURE_IMAGE_OFFER=constellation
+export AZURE_SKU=constellation
+export AZURE_PUBLISHER=edgelesssys
+export AZURE_DISK_NAME=constellation-$(date +%s)
+export AZURE_RAW_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~36/image.raw
+export AZURE_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~36/image.vhd
+upload/pack.sh azure "${AZURE_RAW_IMAGE_PATH}" "${AZURE_IMAGE_PATH}"
+upload/upload_azure.sh -g --disk-name "${AZURE_DISK_NAME}" "${AZURE_VMGS_PATH}"
+```
 
-  ```shell-session
-  make image-azure upload-azure
-  ```
-
-- Build GCP image (without upload)
-
-  ```shell-session
-  make image-gcp
-  ```
-
-- Build GCP image (with upload)
-
-  ```shell-session
-  make image-gcp upload-gcp
-  ```
-
-Resulting images for the CSPs can be found under [images](images/). QEMU images are stored at `build/builds/latest/` with a name ending in `.qcow2`.
+</details>

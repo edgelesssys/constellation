@@ -188,7 +188,7 @@ func TestUploadBootstrapper(t *testing.T) {
 			assert.Equal(tc.wantResponseStatus, resp.Status)
 			if tc.wantFile {
 				assert.Equal(tc.wantChunks, tc.streamer.writeStreamChunks)
-				assert.Equal("/opt/bootstrapper", tc.streamer.writeStreamFilename)
+				assert.Equal("/run/state/bin/bootstrapper", tc.streamer.writeStreamFilename)
 			} else {
 				assert.Empty(tc.streamer.writeStreamChunks)
 				assert.Empty(tc.streamer.writeStreamFilename)
@@ -256,7 +256,7 @@ func TestDownloadBootstrapper(t *testing.T) {
 			}
 			require.NoError(err)
 			assert.Equal(tc.wantChunks, chunks)
-			assert.Equal("/opt/bootstrapper", tc.streamer.readStreamFilename)
+			assert.Equal("/run/state/bin/bootstrapper", tc.streamer.readStreamFilename)
 		})
 	}
 }

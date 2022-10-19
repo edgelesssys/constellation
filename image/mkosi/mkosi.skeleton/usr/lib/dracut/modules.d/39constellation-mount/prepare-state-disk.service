@@ -1,0 +1,17 @@
+[Unit]
+Description=Prepare encrypted state disk
+Before=initrd-fs.target
+After=network-online.target configure-constel-csp.service
+Wants=network-online.target
+Requires=initrd-root-fs.target
+FailureAction=reboot-immediate
+
+[Service]
+Type=oneshot
+EnvironmentFile=/run/constellation.env
+ExecStart=/bin/bash /usr/sbin/prepare-state-disk
+RemainAfterExit=yes
+StandardOutput=tty
+StandardInput=tty
+StandardError=tty
+TimeoutSec=infinity

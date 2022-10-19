@@ -146,7 +146,7 @@ func init() {
 			FieldName: "azure",
 		},
 	}
-	AzureConfigDoc.Fields = make([]encoder.Doc, 15)
+	AzureConfigDoc.Fields = make([]encoder.Doc, 16)
 	AzureConfigDoc.Fields[0].Name = "subscription"
 	AzureConfigDoc.Fields[0].Type = "string"
 	AzureConfigDoc.Fields[0].Note = ""
@@ -222,6 +222,11 @@ func init() {
 	AzureConfigDoc.Fields[14].Note = ""
 	AzureConfigDoc.Fields[14].Description = "Use Confidential VMs. If set to false, Trusted Launch VMs are used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview"
 	AzureConfigDoc.Fields[14].Comments[encoder.LineComment] = "Use Confidential VMs. If set to false, Trusted Launch VMs are used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview"
+	AzureConfigDoc.Fields[15].Name = "secureBoot"
+	AzureConfigDoc.Fields[15].Type = "bool"
+	AzureConfigDoc.Fields[15].Note = ""
+	AzureConfigDoc.Fields[15].Description = "Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob."
+	AzureConfigDoc.Fields[15].Comments[encoder.LineComment] = "Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob."
 
 	GCPConfigDoc.Type = "GCPConfig"
 	GCPConfigDoc.Comments[encoder.LineComment] = "GCPConfig are GCP specific configuration values used by the CLI."
@@ -288,7 +293,7 @@ func init() {
 			FieldName: "qemu",
 		},
 	}
-	QEMUConfigDoc.Fields = make([]encoder.Doc, 9)
+	QEMUConfigDoc.Fields = make([]encoder.Doc, 11)
 	QEMUConfigDoc.Fields[0].Name = "image"
 	QEMUConfigDoc.Fields[0].Type = "string"
 	QEMUConfigDoc.Fields[0].Note = ""
@@ -334,6 +339,16 @@ func init() {
 	QEMUConfigDoc.Fields[8].Note = ""
 	QEMUConfigDoc.Fields[8].Description = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
 	QEMUConfigDoc.Fields[8].Comments[encoder.LineComment] = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
+	QEMUConfigDoc.Fields[9].Name = "nvram"
+	QEMUConfigDoc.Fields[9].Type = "string"
+	QEMUConfigDoc.Fields[9].Note = ""
+	QEMUConfigDoc.Fields[9].Description = "NVRAM template to be used for secure boot. Can be sentinel value \"production\", \"testing\" or a path to a custom NVRAM template"
+	QEMUConfigDoc.Fields[9].Comments[encoder.LineComment] = "NVRAM template to be used for secure boot. Can be sentinel value \"production\", \"testing\" or a path to a custom NVRAM template"
+	QEMUConfigDoc.Fields[10].Name = "firmware"
+	QEMUConfigDoc.Fields[10].Type = "string"
+	QEMUConfigDoc.Fields[10].Note = ""
+	QEMUConfigDoc.Fields[10].Description = "Path to the OVMF firmware. Leave empty for auto selection."
+	QEMUConfigDoc.Fields[10].Comments[encoder.LineComment] = "Path to the OVMF firmware. Leave empty for auto selection."
 }
 
 func (_ Config) Doc() *encoder.Doc {

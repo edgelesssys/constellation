@@ -59,6 +59,8 @@ module "control_plane" {
   pool            = libvirt_pool.cluster.name
   boot_volume_id  = libvirt_volume.constellation_coreos_image.id
   machine         = var.machine
+  firmware        = var.firmware
+  nvram           = var.nvram
   name            = var.name
 }
 
@@ -74,6 +76,8 @@ module "worker" {
   pool            = libvirt_pool.cluster.name
   boot_volume_id  = libvirt_volume.constellation_coreos_image.id
   machine         = var.machine
+  firmware        = var.firmware
+  nvram           = var.nvram
   name            = var.name
 }
 

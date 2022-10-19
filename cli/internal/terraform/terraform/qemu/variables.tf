@@ -45,6 +45,17 @@ variable "machine" {
   description = "machine type. use 'q35' for secure boot and 'pc' for non secure boot. See 'qemu-system-x86_64 -machine help'"
 }
 
+variable "firmware" {
+  type        = string
+  default     = "/usr/share/OVMF/OVMF_CODE.secboot.fd"
+  description = "path to UEFI firmware file. Use \"OVMF_CODE_4M.ms.fd\" on Ubuntu and \"OVMF_CODE.secboot.fd\" on Fedora."
+}
+
+variable "nvram" {
+  type        = string
+  description = "path to UEFI NVRAM template file. Used for secure boot."
+}
+
 variable "metadata_api_image" {
   type        = string
   description = "container image of the QEMU metadata api server"

@@ -1,0 +1,42 @@
+name: Setup mkosi
+description: Install mkosi and all its dependencies
+inputs:
+  version:
+    description: "Version (commit hash) of mkosi to install."
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Dependencies
+      shell: bash
+      run: |
+        echo "::group::Dependencies"
+        echo "deb-src http://archive.ubuntu.com/ubuntu/ $(lsb_release -cs) main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+        sudo add-apt-repository ppa:michel-slm/kernel-utils
+        sudo apt-get update
+        sudo apt-get install --assume-yes --no-install-recommends \
+          dnf \
+          makepkg \
+          systemd-container \
+          qemu-system-x86 \
+          ovmf \
+          e2fsprogs \
+          squashfs-tools
+        echo "::endgroup::"
+    # Try to eliminate "Failed to dissect image: Connection timed out" errors from nspawn by compiling
+    # systemd-nspawn from v251 from source.
+    - name: Update systemd-nspawn
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |
+        echo "::group::Update systemd-nspawn"
+        sudo apt-get build-dep systemd
+        git clone https://github.com/systemd/systemd-stable --branch v251.2 --depth=1
+        meson systemd-stable/build systemd-stable
+        ninja -C systemd-stable/build systemd-nspawn
+        sudo ln -svf $PWD/systemd-stable/build/systemd-nspawn $(which systemd-nspawn)
+        systemd-nspawn --version
+        echo "::endgroup::"
+    - name: Install
+      shell: bash
+      run: sudo python3 -m pip install git+https://github.com/systemd/mkosi.git@${{ inputs.version }}

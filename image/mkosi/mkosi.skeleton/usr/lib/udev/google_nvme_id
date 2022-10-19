@@ -1,0 +1,245 @@
+#!/bin/bash
+# Copyright 2020 Google Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Used to generate symlinks for PD-NVMe devices using the disk names reported by
+# the metadata server
+
+# Locations of the script's dependencies
+readonly nvme_cli_bin=/usr/sbin/nvme
+
+# Bash regex to parse device paths and controller identification
+readonly NAMESPACE_NUMBER_REGEX="/dev/nvme[[:digit:]]+n([[:digit:]]+).*"
+readonly PARTITION_NUMBER_REGEX="/dev/nvme[[:digit:]]+n[[:digit:]]+p([[:digit:]]+)"
+readonly PD_NVME_REGEX="sn[[:space:]]+:[[:space]]+nvme_card-pd"
+
+# Globals used to generate the symlinks for a PD-NVMe disk.  These are populated
+# by the identify_pd_disk function and exported for consumption by udev rules.
+ID_SERIAL=''
+ID_SERIAL_SHORT=''
+
+#######################################
+# Helper function to log an error message to stderr.
+# Globals:
+#   None
+# Arguments:
+#   String to print as the log message
+# Outputs:
+#   Writes error to STDERR
+#######################################
+function err() {
+  echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')]: $*" >&2
+}
+
+#######################################
+# Retrieves the device name for an NVMe namespace using nvme-cli.
+# Globals:
+#   Uses nvme_cli_bin
+# Arguments:
+#   The path to the nvme namespace (/dev/nvme0n?)
+# Outputs:
+#   The device name parsed from the JSON in the vendor ext of the ns-id command.
+# Returns:
+#   0 if the device name for the namespace could be retrieved, 1 otherwise
+#######################################
+function get_namespace_device_name() {
+  local nvme_json
+  nvme_json="$("$nvme_cli_bin" id-ns -b "$1" | xxd -p -seek 384 | xxd -p -r)"
+  if [[ $? -ne 0 ]]; then
+    return 1
+  fi
+
+  if [[ -z "$nvme_json" ]]; then
+    err "NVMe Vendor Extension disk information not present"
+    return 1
+  fi
+
+  local device_name
+  device_name="$(echo "$nvme_json" | grep device_name | sed -e 's/.*"device_name":[  \t]*"\([a-zA-Z0-9_-]\+\)".*/\1/')"
+
+  # Error if our device name is empty
+  if [[ -z "$device_name" ]]; then
+    err "Empty name"
+    return 1
+  fi
+
+  echo "$device_name"
+  return 0
+}
+
+#######################################
+# Retrieves the nsid for an NVMe namespace
+# Globals:
+#   None
+# Arguments:
+#   The path to the nvme namespace (/dev/nvme0n*)
+# Outputs:
+#   The namespace number/id
+# Returns:
+#   0 if the namespace id could be retrieved, 1 otherwise
+#######################################
+function get_namespace_number() {
+  local dev_path="$1"
+  local namespace_number
+  if [[ "$dev_path" =~ $NAMESPACE_NUMBER_REGEX ]]; then
+    namespace_number="${BASH_REMATCH[1]}"
+  else
+    return 1
+  fi
+
+  echo "$namespace_number"
+  return 0
+}
+
+#######################################
+# Retrieves the partition number for a device path if it exists
+# Globals:
+#   None
+# Arguments:
+#   The path to the device partition (/dev/nvme0n*p*)
+# Outputs:
+#   The value after 'p' in the device path, or an empty string if the path has
+#   no partition.
+#######################################
+function get_partition_number() {
+  local dev_path="$1"
+  local partition_number
+  if [[ "$dev_path" =~ $PARTITION_NUMBER_REGEX ]]; then
+    partition_number="${BASH_REMATCH[1]}"
+    echo "$partition_number"
+  else
+    echo ''
+  fi
+  return 0
+}
+
+#######################################
+# Generates a symlink for a PD-NVMe device using the metadata's disk name.
+# Primarily used for testing but can be used if the script is directly invoked.
+# Globals:
+#   Uses ID_SERIAL_SHORT (can be populated by identify_pd_disk)
+# Arguments:
+#   The device path for the disk
+#######################################
+function gen_symlink() {
+  local dev_path="$1"
+  local partition_number="$(get_partition_number "$dev_path")"
+
+  if [[ -n "$partition_number" ]]; then
+    ln -s "$dev_path" /dev/disk/by-id/google-"$ID_SERIAL_SHORT"-part"$partition_number" > /dev/null 2>&1
+  else
+    ln -s "$dev_path" /dev/disk/by-id/google-"$ID_SERIAL_SHORT" > /dev/null 2>&1
+  fi
+
+  return 0
+}
+
+#######################################
+# Populates the ID_* global variables with a disk's device name and namespace
+# Globals:
+#   Populates ID_SERIAL_SHORT, and ID_SERIAL
+# Arguments:
+#   The device path for the disk
+# Returns:
+#   0 on success and 1 if an error occurrs
+#######################################
+function identify_pd_disk() {
+  local dev_path="$1"
+  local dev_name
+  dev_name="$(get_namespace_device_name "$dev_path")"
+  if [[ $? -ne 0 ]]; then
+    return 1
+  fi
+
+  ID_SERIAL_SHORT="$dev_name"
+  ID_SERIAL="Google_PersistentDisk_${ID_SERIAL_SHORT}"
+  return 0
+}
+
+function print_help_message() {
+  echo "Usage: google_nvme_id [-s] [-h] -d device_path"
+  echo "  -d <device_path> (Required): Specifies the path to generate a name"
+  echo "        for.  This needs to be a path to an nvme device or namespace"
+  echo "  -s: Create symbolic link for the disk under /dev/disk/by-id."
+  echo "        Otherwise, the disk name will be printed to STDOUT"
+  echo "  -h: Print this help message"
+}
+
+function main() {
+  local opt_gen_symlink='false'
+  local device_path=''
+
+  while getopts :d:sh flag; do
+    case "$flag" in
+      d) device_path="$OPTARG";;
+      s) opt_gen_symlink='true';;
+      h) print_help_message
+         return 0
+         ;;
+      :) echo "Invalid option: ${OPTARG} requires an argument" 1>&2
+         return 1
+         ;;
+      *) return 1
+    esac
+  done
+
+  if [[ -z "$device_path" ]]; then
+    echo "Device path (-d) argument required. Use -h for full usage." 1>&2
+    exit 1
+  fi
+
+  # Ensure the nvme-cli command is installed
+  command -v "$nvme_cli_bin" > /dev/null 2>&1
+  if [[ $? -ne 0 ]]; then
+    err "The nvme utility (/usr/sbin/nvme) was not found. You may need to run \
+with sudo or install nvme-cli."
+    return 1
+  fi
+
+  # Ensure the passed device is actually an NVMe device
+  "$nvme_cli_bin" id-ctrl "$device_path" &>/dev/null
+  if [[ $? -ne 0 ]]; then
+    err "Passed device was not an NVMe device.  (You may need to run this \
+script as root/with sudo)."
+    return 1
+  fi
+
+  # Detect the type of attached nvme device
+  local controller_id
+  controller_id=$("$nvme_cli_bin" id-ctrl "$device_path")
+  if [[ ! "$controller_id" =~ nvme_card-pd ]] ; then
+    err "Device is not a PD-NVMe device"
+    return 1
+  fi
+
+  # Fill the global variables for the id command for the given disk type
+  # Error messages will be printed closer to error, no need to reprint here
+  identify_pd_disk "$device_path"
+  if [[ $? -ne 0 ]]; then
+    return $?
+  fi
+
+  # Gen symlinks or print out the globals set by the identify command
+  if [[ "$opt_gen_symlink" == 'true' ]]; then
+    gen_symlink "$device_path"
+  else
+    # These will be consumed by udev
+    echo "ID_SERIAL_SHORT=${ID_SERIAL_SHORT}"
+    echo "ID_SERIAL=${ID_SERIAL}"
+  fi
+
+  return $?
+
+}
+main "$@"
