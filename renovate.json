@@ -16,6 +16,9 @@
   "ignorePaths": [
     "cli/internal/helm/charts/cilium/**"
   ],
+  "ignoreDeps": [
+    "github.com/edgelesssys/constellation/v2"
+  ],
   "packageRules": [
     {
       "matchPackagePatterns": [
