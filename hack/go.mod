@@ -37,7 +37,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.1.4
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2 v2.0.0
-	github.com/edgelesssys/constellation/v2 v2.0.0
+	github.com/edgelesssys/constellation/v2 v2.1.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/google/go-tpm-tools v0.3.9
 	github.com/google/uuid v1.3.0
