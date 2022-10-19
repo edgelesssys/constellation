@@ -33,10 +33,10 @@ replace (
 replace github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools v0.0.0-20220929072523-22862750ed86
 
 require (
-	cloud.google.com/go/compute v1.7.0
+	cloud.google.com/go/compute v1.10.0
 	cloud.google.com/go/kms v1.4.0
-	cloud.google.com/go/logging v1.4.2
-	cloud.google.com/go/storage v1.23.0
+	cloud.google.com/go/logging v1.5.0
+	cloud.google.com/go/storage v1.27.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.1.4
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/azkeys v0.8.1
@@ -64,7 +64,7 @@ require (
 	github.com/google/go-tpm-tools v0.3.9
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/tink/go v1.7.0
-	github.com/googleapis/gax-go/v2 v2.4.0
+	github.com/googleapis/gax-go/v2 v2.5.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-version v1.6.0
@@ -91,7 +91,7 @@ require (
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4
 	golang.org/x/sys v0.0.0-20221013171732-95e765b1cc43
 	golang.org/x/text v0.3.8
-	google.golang.org/api v0.96.0
+	google.golang.org/api v0.97.0
 	google.golang.org/genproto v0.0.0-20221014213838-99cd37c6964a
 	google.golang.org/grpc v1.50.0
 	google.golang.org/protobuf v1.28.1
@@ -113,7 +113,7 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.103.0 // indirect
+	cloud.google.com/go v0.104.0 // indirect
 	cloud.google.com/go/iam v0.3.0 // indirect
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.0.1 // indirect
@@ -197,7 +197,6 @@ require (
 	github.com/google/trillian v1.5.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.1.0 // indirect
-	github.com/googleapis/go-type-adapters v1.0.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gosuri/uitable v0.0.4 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
@@ -281,7 +280,7 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/exp v0.0.0-20220823124025-807a23277127 // indirect
 	golang.org/x/net v0.0.0-20220909164309-bea034e7d591 // indirect
-	golang.org/x/oauth2 v0.0.0-20220822191816-0ebed06d0094 // indirect
+	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1 // indirect
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
 	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467 // indirect
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9 // indirect
