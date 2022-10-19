@@ -7,91 +7,35 @@ SPDX-License-Identifier: AGPL-3.0-only
 package storage
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/stretchr/testify/assert"
 )
 
-type stubAzureContainerAPI struct {
-	newClientErr error
-	createErr    error
-	createCalled *bool
-	blockBlobAPI stubAzureBlockBlobAPI
-}
-
-func newStubClientFactory(stub stubAzureContainerAPI) func(ctx context.Context, connectionString, containerName string, opts *azblob.ClientOptions) (azureContainerAPI, error) {
-	return func(ctx context.Context, connectionString, containerName string, opts *azblob.ClientOptions) (azureContainerAPI, error) {
-		return stub, stub.newClientErr
-	}
-}
-
-func (s stubAzureContainerAPI) Create(ctx context.Context, options *azblob.ContainerCreateOptions) (azblob.ContainerCreateResponse, error) {
-	*s.createCalled = true
-	return azblob.ContainerCreateResponse{}, s.createErr
-}
-
-func (s stubAzureContainerAPI) NewBlockBlobClient(blobName string) (azureBlobAPI, error) {
-	return s.blockBlobAPI, nil
-}
-
-type stubAzureBlockBlobAPI struct {
-	downloadBlobToWriterAtErr  error
-	downloadBlobToWriterOutput []byte
-	uploadErr                  error
-	uploadData                 chan []byte
-}
-
-func (s stubAzureBlockBlobAPI) DownloadToWriterAt(ctx context.Context, offset int64, count int64, writer io.WriterAt, o azblob.DownloadOptions) error {
-	if _, err := writer.WriteAt(s.downloadBlobToWriterOutput, 0); err != nil {
-		panic(err)
-	}
-	return s.downloadBlobToWriterAtErr
-}
-
-func (s stubAzureBlockBlobAPI) Upload(ctx context.Context, body io.ReadSeekCloser, options *azblob.BlockBlobUploadOptions) (azblob.BlockBlobUploadResponse, error) {
-	res, err := io.ReadAll(body)
-	if err != nil {
-		panic(err)
-	}
-	s.uploadData <- res
-	return azblob.BlockBlobUploadResponse{}, s.uploadErr
-}
-
 func TestAzureGet(t *testing.T) {
-	someErr := errors.New("error")
-
 	testCases := map[string]struct {
-		client     stubAzureContainerAPI
+		client     stubAzureBlobAPI
 		unsetError bool
 		wantErr    bool
 	}{
 		"success": {
-			client: stubAzureContainerAPI{
-				blockBlobAPI: stubAzureBlockBlobAPI{downloadBlobToWriterOutput: []byte("test-data")},
-			},
+			client: stubAzureBlobAPI{downloadData: []byte{0x1, 0x2, 0x3}},
 		},
-		"creating client fails": {
-			client:  stubAzureContainerAPI{newClientErr: someErr},
-			wantErr: true,
-		},
-		"DownloadBlobToBuffer fails": {
-			client: stubAzureContainerAPI{
-				blockBlobAPI: stubAzureBlockBlobAPI{downloadBlobToWriterAtErr: someErr},
-			},
+		"DownloadBuffer fails": {
+			client:  stubAzureBlobAPI{downloadErr: errors.New("failed")},
 			wantErr: true,
 		},
 		"BlobNotFound error": {
-			client: stubAzureContainerAPI{
-				blockBlobAPI: stubAzureBlockBlobAPI{
-					downloadBlobToWriterAtErr: &azblob.StorageError{
-						ErrorCode: azblob.StorageErrorCodeBlobNotFound,
-					},
-				},
-			},
+			client:     stubAzureBlobAPI{downloadErr: &azcore.ResponseError{ErrorCode: string(bloberror.BlobNotFound)}},
 			unsetError: true,
 			wantErr:    true,
 		},
@@ -102,7 +46,7 @@ func TestAzureGet(t *testing.T) {
 			assert := assert.New(t)
 
 			client := &AzureStorage{
-				newClient:        newStubClientFactory(tc.client),
+				client:           &tc.client,
 				connectionString: "test",
 				containerName:    "test",
 				opts:             &AzureOpts{},
@@ -117,33 +61,24 @@ func TestAzureGet(t *testing.T) {
 				} else {
 					assert.False(errors.Is(err, ErrDEKUnset))
 				}
-
-			} else {
-				assert.NoError(err)
-				assert.Equal(tc.client.blockBlobAPI.downloadBlobToWriterOutput, out)
+				return
 			}
+			assert.NoError(err)
+			assert.Equal(tc.client.downloadData, out)
 		})
 	}
 }
 
 func TestAzurePut(t *testing.T) {
-	someErr := errors.New("error")
-
 	testCases := map[string]struct {
-		client  stubAzureContainerAPI
+		client  stubAzureBlobAPI
 		wantErr bool
 	}{
 		"success": {
-			client: stubAzureContainerAPI{},
-		},
-		"creating client fails": {
-			client:  stubAzureContainerAPI{newClientErr: someErr},
-			wantErr: true,
+			client: stubAzureBlobAPI{},
 		},
 		"Upload fails": {
-			client: stubAzureContainerAPI{
-				blockBlobAPI: stubAzureBlockBlobAPI{uploadErr: someErr},
-			},
+			client:  stubAzureBlobAPI{uploadErr: errors.New("failed")},
 			wantErr: true,
 		},
 	}
@@ -153,10 +88,9 @@ func TestAzurePut(t *testing.T) {
 			assert := assert.New(t)
 
 			testData := []byte{0x1, 0x2, 0x3}
-			tc.client.blockBlobAPI.uploadData = make(chan []byte, len(testData))
 
 			client := &AzureStorage{
-				newClient:        newStubClientFactory(tc.client),
+				client:           &tc.client,
 				connectionString: "test",
 				containerName:    "test",
 				opts:             &AzureOpts{},
@@ -165,32 +99,27 @@ func TestAzurePut(t *testing.T) {
 			err := client.Put(context.Background(), "test-key", testData)
 			if tc.wantErr {
 				assert.Error(err)
-			} else {
-				assert.NoError(err)
-				assert.Equal(testData, <-tc.client.blockBlobAPI.uploadData)
+				return
 			}
+			assert.NoError(err)
+			assert.Equal(testData, tc.client.uploadData)
 		})
 	}
 }
 
 func TestCreateContainerOrContinue(t *testing.T) {
-	someErr := errors.New("error")
 	testCases := map[string]struct {
-		client  stubAzureContainerAPI
+		client  stubAzureBlobAPI
 		wantErr bool
 	}{
 		"success": {
-			client: stubAzureContainerAPI{},
+			client: stubAzureBlobAPI{},
 		},
 		"container already exists": {
-			client: stubAzureContainerAPI{createErr: &azblob.StorageError{ErrorCode: azblob.StorageErrorCodeContainerAlreadyExists}},
+			client: stubAzureBlobAPI{createErr: &azcore.ResponseError{ErrorCode: string(bloberror.ContainerAlreadyExists)}},
 		},
-		"creating client fails": {
-			client:  stubAzureContainerAPI{newClientErr: someErr},
-			wantErr: true,
-		},
-		"Create fails": {
-			client:  stubAzureContainerAPI{createErr: someErr},
+		"CreateContainer fails": {
+			client:  stubAzureBlobAPI{createErr: errors.New("failed")},
 			wantErr: true,
 		},
 	}
@@ -199,9 +128,8 @@ func TestCreateContainerOrContinue(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			tc.client.createCalled = new(bool)
 			client := &AzureStorage{
-				newClient:        newStubClientFactory(tc.client),
+				client:           &tc.client,
 				connectionString: "test",
 				containerName:    "test",
 				opts:             &AzureOpts{},
@@ -212,8 +140,37 @@ func TestCreateContainerOrContinue(t *testing.T) {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				assert.True(*tc.client.createCalled)
+				assert.True(tc.client.createCalled)
 			}
 		})
 	}
+}
+
+type stubAzureBlobAPI struct {
+	createErr    error
+	createCalled bool
+	downloadErr  error
+	downloadData []byte
+	uploadErr    error
+	uploadData   []byte
+}
+
+func (s *stubAzureBlobAPI) CreateContainer(context.Context, string, *container.CreateOptions) (azblob.CreateContainerResponse, error) {
+	s.createCalled = true
+	return azblob.CreateContainerResponse{}, s.createErr
+}
+
+func (s *stubAzureBlobAPI) DownloadStream(context.Context, string, string, *blob.DownloadStreamOptions) (blob.DownloadStreamResponse, error) {
+	res := blob.DownloadStreamResponse{}
+	res.Body = io.NopCloser(bytes.NewReader(s.downloadData))
+	return res, s.downloadErr
+}
+
+func (s *stubAzureBlobAPI) UploadStream(_ context.Context, _, _ string, data io.Reader, _ *azblob.UploadStreamOptions) (azblob.UploadStreamResponse, error) {
+	uploadData, err := io.ReadAll(data)
+	if err != nil {
+		return azblob.UploadStreamResponse{}, err
+	}
+	s.uploadData = uploadData
+	return azblob.UploadStreamResponse{}, s.uploadErr
 }
