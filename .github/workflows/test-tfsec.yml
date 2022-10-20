@@ -29,6 +29,7 @@ jobs:
       - name: tfsec
         uses: aquasecurity/tfsec-pr-commenter-action@d9fa64305ec243e19f9be1200dfc8e8154dc364f
         with:
+          soft_fail_commenter: true
           tfsec_formats: default,text
           tfsec_args: --force-all-dirs
           github_token: ${{ github.token }}
