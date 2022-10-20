@@ -22,7 +22,7 @@ The current manual approach is:
 * `kubeadm upgrade plan`
 * `kubeadm upgrade apply vX.Y.Z`
 * bump K8s version in configmap/k8s-version to `vX.Y`
-* [upgrade your cluster](https://constellation-docs.edgeless.systems/constellation/workflows/upgrade) with a new VM image
+* [upgrade your cluster](https://docs.edgeless.systems/constellation/workflows/upgrade) with a new VM image
 
 For more details on the first steps see the [official K8s documentation](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/).
 
