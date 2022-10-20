@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"testing"
 
-	helmClient "github.com/edgelesssys/constellation/v2/bootstrapper/internal/helm"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -37,7 +36,6 @@ func TestMain(m *testing.M) {
 func TestInitCluster(t *testing.T) {
 	someErr := errors.New("failed")
 	serviceAccountURI := "some-service-account-uri"
-	masterSecret := []byte("some-master-secret")
 
 	nodeName := "node-name"
 	providerID := "provider-id"
@@ -48,7 +46,7 @@ func TestInitCluster(t *testing.T) {
 
 	testCases := map[string]struct {
 		clusterUtil            stubClusterUtil
-		helmUtil               stubHelmClient
+		helmClient             stubHelmClient
 		kubectl                stubKubectl
 		providerMetadata       ProviderMetadata
 		CloudControllerManager CloudControllerManager
@@ -182,7 +180,7 @@ func TestInitCluster(t *testing.T) {
 		},
 		"kubeadm init fails when deploying cilium": {
 			clusterUtil: stubClusterUtil{},
-			helmUtil:    stubHelmClient{ciliumError: someErr},
+			helmClient:  stubHelmClient{ciliumError: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
@@ -255,7 +253,7 @@ func TestInitCluster(t *testing.T) {
 		},
 		"kubeadm init fails when setting up the kms": {
 			clusterUtil: stubClusterUtil{},
-			helmUtil:    stubHelmClient{kmsError: someErr},
+			helmClient:  stubHelmClient{servicesError: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
@@ -311,7 +309,7 @@ func TestInitCluster(t *testing.T) {
 
 			kube := KubeWrapper{
 				clusterUtil:            &tc.clusterUtil,
-				helmUtil:               &tc.helmUtil,
+				helmClient:             &tc.helmClient,
 				providerMetadata:       tc.providerMetadata,
 				cloudControllerManager: tc.CloudControllerManager,
 				cloudNodeManager:       tc.CloudNodeManager,
@@ -324,7 +322,7 @@ func TestInitCluster(t *testing.T) {
 
 			_, err := kube.InitCluster(
 				context.Background(), serviceAccountURI, string(tc.k8sVersion),
-				nil, nil, false, nil, true, helmClient.KMSConfig{MasterSecret: masterSecret}, nil, []byte("{}"), false, logger.NewTest(t),
+				nil, nil, false, nil, true, nil, []byte("{}"), false, logger.NewTest(t),
 			)
 
 			if tc.wantErr {
@@ -682,14 +680,14 @@ func (s *stubKubeconfigReader) ReadKubeconfig() ([]byte, error) {
 }
 
 type stubHelmClient struct {
-	ciliumError error
-	kmsError    error
+	ciliumError   error
+	servicesError error
 }
 
 func (s *stubHelmClient) InstallCilium(ctx context.Context, kubectl k8sapi.Client, release helm.Release, in k8sapi.SetupPodNetworkInput) error {
 	return s.ciliumError
 }
 
-func (s *stubHelmClient) InstallKMS(ctx context.Context, release helm.Release, kmsConfig helmClient.KMSConfig) error {
-	return s.kmsError
+func (s *stubHelmClient) InstallConstellationServices(ctx context.Context, release helm.Release) error {
+	return s.servicesError
 }

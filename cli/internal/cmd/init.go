@@ -121,14 +121,14 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return err
 	}
 
-	helmDeployments, err := helmLoader.Load(provider, flags.conformance)
-	if err != nil {
-		return fmt.Errorf("loading Helm charts: %w", err)
-	}
-
 	masterSecret, err := readOrGenerateMasterSecret(cmd.OutOrStdout(), fileHandler, flags.masterSecretPath)
 	if err != nil {
 		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
+	}
+
+	helmDeployments, err := helmLoader.Load(provider, flags.conformance, masterSecret.Key, masterSecret.Salt)
+	if err != nil {
+		return fmt.Errorf("loading Helm charts: %w", err)
 	}
 
 	spinner.Start("Initializing cluster ", false)

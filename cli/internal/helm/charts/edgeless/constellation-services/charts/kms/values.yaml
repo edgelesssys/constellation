@@ -1,13 +1,13 @@
 # Namespace to which KMS will be deployed.
 namespace: "kube-system"
 # Port on which the service will listen.
-kmsPort: 9000
+port: 9000
 # Name of the ConfigMap that holds measurements and other info.
 joinConfigCMName: join-config
 # Path to which secrets/CMs are mounted.
 serviceBasePath: /var/config
 # Container image.
-kmsImage: setFullImagePathHere
+image: setFullImagePathHere
 # Salt for key derivation.
 salt: ""
 # Name of the key within the respective secret that holds the salt.
