@@ -40,18 +40,18 @@ jobs:
           echo "Found mods: $mods"
           echo "submods=${mods}" >> $GITHUB_OUTPUT
 
-      - name: Go tidy check
-        id: tidycheck
-        uses: katexochen/go-tidy-check@45731e0013a976d5d616d79007c7ba52de6ce542 # tag=v1.0.2
-        with:
-          modules: ${{ steps.submods.outputs.submods }}
+      # - name: Go tidy check
+      #   id: tidycheck
+      #   uses: katexochen/go-tidy-check@45731e0013a976d5d616d79007c7ba52de6ce542 # tag=v1.0.2
+      #   with:
+      #     modules: ${{ steps.submods.outputs.submods }}
 
       # The following steps are only executed if the previous tidy check failed
       # and the action runs on an renovat branche. In this case, we tidy all
       # modules again and commit the changes, so the user doesn't need to do it.
 
       - name: Tidy modules on renovate branches
-        if: ${{ failure() && (steps.tidycheck.conclusion == 'failure') && startsWith(github.head_ref, 'renovate/') }}
+        # if: ${{ failure() && (steps.tidycheck.conclusion == 'failure') && startsWith(github.head_ref, 'renovate/') }}
         shell: bash
         run: |
           for mod in ${{ steps.submods.outputs.submods }}; do
@@ -59,5 +59,5 @@ jobs:
           done
 
       - name: Push changes
-        if: ${{ failure() && (steps.tidycheck.conclusion == 'failure') && startsWith(github.head_ref, 'renovate/') }}
+        # if: ${{ failure() && (steps.tidycheck.conclusion == 'failure') && startsWith(github.head_ref, 'renovate/') }}
         uses: EndBug/add-and-commit@v9
