@@ -19,7 +19,7 @@ spec:
       containers:
       - args:
         - --port={{ .Values.port }}
-        image: {{ .Values.image }}
+        image: {{ required "Requires a valid container image URL to be set." .Values.image }}
         name: kms
         resources: {}
         volumeMounts:

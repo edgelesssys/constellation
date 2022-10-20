@@ -6,8 +6,6 @@ port: 9000
 joinConfigCMName: join-config
 # Path to which secrets/CMs are mounted.
 serviceBasePath: /var/config
-# Container image.
-image: setFullImagePathHere
 # Salt for key derivation.
 salt: ""
 # Name of the key within the respective secret that holds the salt.
