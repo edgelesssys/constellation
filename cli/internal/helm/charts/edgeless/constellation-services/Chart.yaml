@@ -7,3 +7,5 @@ version: 2.2.0-pre
 dependencies:
   - name: kms
     version: 2.2.0-pre
+  - name: join-service
+    version: 2.2.0-pre

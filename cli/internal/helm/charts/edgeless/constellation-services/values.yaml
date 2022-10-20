@@ -1,0 +1,11 @@
+global:
+  # Port on which the KMS service will listen. Global since join-service also uses the value.
+  kmsPort: 9000
+  # Path to which secrets/CMs are mounted.
+  serviceBasePath: /var/config
+  # Name of the ConfigMap that holds measurements and other info.
+  joinConfigCMName: join-config
+  # Name of the ConfigMap that holds the installed k8s version.
+  k8sVersionCMName: k8s-version
+  # Name of the ConfigMap that holds configs that should not be modified by the user.
+  internalCMName: internal-config

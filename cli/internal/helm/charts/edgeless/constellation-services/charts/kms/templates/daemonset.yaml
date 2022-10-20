@@ -18,12 +18,12 @@ spec:
     spec:
       containers:
       - args:
-        - --port={{ .Values.port }}
+        - --port={{ .Values.global.kmsPort }}
         image: {{ .Values.image }}
         name: kms
         resources: {}
         volumeMounts:
-        - mountPath: {{ .Values.serviceBasePath }}
+        - mountPath: {{ .Values.global.serviceBasePath }}
           name: config
           readOnly: true
       nodeSelector:
@@ -52,7 +52,7 @@ spec:
               items:
               - key: {{ .Values.measurementsFilename }}
                 path: {{ .Values.measurementsFilename }}
-              name: {{ .Values.joinConfigCMName }}
+              name: {{ .Values.global.joinConfigCMName }}
           - secret:
               items:
               - key: {{ .Values.masterSecretKeyName }}

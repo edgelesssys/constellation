@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: join-config
+  namespace: kube-system
+data:
+  enforcedPCRs: {{ .Values.enforcedPCRs }}
+  measurements: {{ .Values.measurements }}
+  {{- if eq .Values.csp "azure" }}
+  enforceIdKeyDigest: {{ .Values.enforceIdKeyDigest }}
+  idkeydigest: {{ .Values.idkeydigest }}
+  {{- end }}
+binaryData:
+  measurementSalt: {{ .Values.measurementSalt }}
