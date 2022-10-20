@@ -66,7 +66,7 @@ async function createConfig() {
             // Remove this to remove the "edit this page" links.
             editUrl: 'https://github.com/edgelesssys/constellation/edit/main/docs',
             routeBasePath: "/",
-            latestVersion: "2.1",
+            lastVersion: "2.1",
             versions: {
               2.1: {
                 label: "2.1",
