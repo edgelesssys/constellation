@@ -655,7 +655,7 @@ func validInstanceTypeForProvider(insType string, acceptNonCVM bool, provider cl
 	}
 }
 
-// checkIfAWSInstanceTypeIsValid checks if an AWS instance type passed as user input is in one of the instance families supporting NitroTPM-
+// checkIfAWSInstanceTypeIsValid checks if an AWS instance type passed as user input is in one of the instance families supporting NitroTPM.
 func checkIfAWSInstanceTypeIsValid(userInput string) bool {
 	// Check if user or code does anything weird and tries to pass multiple strings as one
 	if strings.Contains(userInput, " ") {
