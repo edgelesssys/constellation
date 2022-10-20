@@ -33,84 +33,84 @@ func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
 }
 
-func TestUploadAuthorizedKeys(t *testing.T) {
-	endpoint := "192.0.2.1:" + strconv.Itoa(constants.DebugdPort)
+// func TestUploadAuthorizedKeys(t *testing.T) {
+// 	endpoint := "192.0.2.1:" + strconv.Itoa(constants.DebugdPort)
 
-	testCases := map[string]struct {
-		ssh                stubSSHDeployer
-		serviceManager     stubServiceManager
-		request            *pb.UploadAuthorizedKeysRequest
-		wantErr            bool
-		wantResponseStatus pb.UploadAuthorizedKeysStatus
-		wantKeys           []ssh.UserKey
-	}{
-		"upload authorized keys works": {
-			request: &pb.UploadAuthorizedKeysRequest{
-				Keys: []*pb.AuthorizedKey{
-					{
-						Username: "testuser",
-						KeyValue: "teskey",
-					},
-				},
-			},
-			wantResponseStatus: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_SUCCESS,
-			wantKeys: []ssh.UserKey{
-				{
-					Username:  "testuser",
-					PublicKey: "teskey",
-				},
-			},
-		},
-		"deploy fails": {
-			request: &pb.UploadAuthorizedKeysRequest{
-				Keys: []*pb.AuthorizedKey{
-					{
-						Username: "testuser",
-						KeyValue: "teskey",
-					},
-				},
-			},
-			ssh:                stubSSHDeployer{deployErr: errors.New("ssh key deployment error")},
-			wantResponseStatus: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_FAILURE,
-			wantKeys: []ssh.UserKey{
-				{
-					Username:  "testuser",
-					PublicKey: "teskey",
-				},
-			},
-		},
-	}
+// 	testCases := map[string]struct {
+// 		ssh                stubSSHDeployer
+// 		serviceManager     stubServiceManager
+// 		request            *pb.UploadAuthorizedKeysRequest
+// 		wantErr            bool
+// 		wantResponseStatus pb.UploadAuthorizedKeysStatus
+// 		wantKeys           []ssh.UserKey
+// 	}{
+// 		"upload authorized keys works": {
+// 			request: &pb.UploadAuthorizedKeysRequest{
+// 				Keys: []*pb.AuthorizedKey{
+// 					{
+// 						Username: "testuser",
+// 						KeyValue: "teskey",
+// 					},
+// 				},
+// 			},
+// 			wantResponseStatus: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_SUCCESS,
+// 			wantKeys: []ssh.UserKey{
+// 				{
+// 					Username:  "testuser",
+// 					PublicKey: "teskey",
+// 				},
+// 			},
+// 		},
+// 		"deploy fails": {
+// 			request: &pb.UploadAuthorizedKeysRequest{
+// 				Keys: []*pb.AuthorizedKey{
+// 					{
+// 						Username: "testuser",
+// 						KeyValue: "teskey",
+// 					},
+// 				},
+// 			},
+// 			ssh:                stubSSHDeployer{deployErr: errors.New("ssh key deployment error")},
+// 			wantResponseStatus: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_FAILURE,
+// 			wantKeys: []ssh.UserKey{
+// 				{
+// 					Username:  "testuser",
+// 					PublicKey: "teskey",
+// 				},
+// 			},
+// 		},
+// 	}
 
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
+// 	for name, tc := range testCases {
+// 		t.Run(name, func(t *testing.T) {
+// 			assert := assert.New(t)
+// 			require := require.New(t)
 
-			serv := debugdServer{
-				log:            logger.NewTest(t),
-				ssh:            &tc.ssh,
-				serviceManager: &tc.serviceManager,
-				streamer:       &fakeStreamer{},
-			}
+// 			serv := debugdServer{
+// 				log:            logger.NewTest(t),
+// 				ssh:            &tc.ssh,
+// 				serviceManager: &tc.serviceManager,
+// 				streamer:       &fakeStreamer{},
+// 			}
 
-			grpcServ, conn, err := setupServerWithConn(endpoint, &serv)
-			require.NoError(err)
-			defer conn.Close()
-			client := pb.NewDebugdClient(conn)
-			resp, err := client.UploadAuthorizedKeys(context.Background(), tc.request)
+// 			grpcServ, conn, err := setupServerWithConn(endpoint, &serv)
+// 			require.NoError(err)
+// 			defer conn.Close()
+// 			client := pb.NewDebugdClient(conn)
+// 			resp, err := client.UploadAuthorizedKeys(context.Background(), tc.request)
 
-			grpcServ.GracefulStop()
+// 			grpcServ.GracefulStop()
 
-			if tc.wantErr {
-				assert.Error(err)
-				return
-			}
-			require.NoError(err)
-			assert.Equal(tc.wantResponseStatus, resp.Status)
-			assert.ElementsMatch(tc.ssh.sshKeys, tc.wantKeys)
-		})
-	}
-}
+// 			if tc.wantErr {
+// 				assert.Error(err)
+// 				return
+// 			}
+// 			require.NoError(err)
+// 			assert.Equal(tc.wantResponseStatus, resp.Status)
+// 			assert.ElementsMatch(tc.ssh.sshKeys, tc.wantKeys)
+// 		})
+// 	}
+// }
 
 func TestUploadBootstrapper(t *testing.T) {
 	endpoint := "192.0.2.1:" + strconv.Itoa(constants.DebugdPort)

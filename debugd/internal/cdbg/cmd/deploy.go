@@ -117,20 +117,24 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	defer conn.Close()
 	client := pb.NewDebugdClient(conn)
 
-	log.Println("Uploading authorized keys")
-	pbKeys := []*pb.AuthorizedKey{}
-	for _, key := range in.authorizedKeys {
-		pbKeys = append(pbKeys, &pb.AuthorizedKey{
-			Username: key.Username,
-			KeyValue: key.PublicKey,
-		})
+	if len(in.authorizedKeys) > 0 {
+		log.Println("Warning: Uploading authorized keys is currently disabled.")
 	}
-	authorizedKeysResponse, err := client.UploadAuthorizedKeys(ctx, &pb.UploadAuthorizedKeysRequest{Keys: pbKeys}, grpc.WaitForReady(true))
-	if err != nil || authorizedKeysResponse.Status != pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_SUCCESS {
-		return fmt.Errorf("uploading authorized keys to instance %v failed: %v / %w", in.debugdEndpoint, authorizedKeysResponse, err)
-	}
+	// TODO (stateless-ssh): re-enable once ssh keys can be deployed on readonly rootfs.
+	// log.Println("Uploading authorized keys")
+	// pbKeys := []*pb.AuthorizedKey{}
+	// for _, key := range in.authorizedKeys {
+	// 	pbKeys = append(pbKeys, &pb.AuthorizedKey{
+	// 		Username: key.Username,
+	// 		KeyValue: key.PublicKey,
+	// 	})
+	// }
+	// authorizedKeysResponse, err := client.UploadAuthorizedKeys(ctx, &pb.UploadAuthorizedKeysRequest{Keys: pbKeys}, grpc.WaitForReady(true))
+	// if err != nil || authorizedKeysResponse.Status != pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_SUCCESS {
+	// 	return fmt.Errorf("uploading authorized keys to instance %v failed: %v / %w", in.debugdEndpoint, authorizedKeysResponse, err)
+	// }
 
-	stream, err := client.UploadBootstrapper(ctx)
+	stream, err := client.UploadBootstrapper(ctx, grpc.WaitForReady(true))
 	if err != nil {
 		return fmt.Errorf("starting bootstrapper upload to instance %v: %w", in.debugdEndpoint, err)
 	}

@@ -36,12 +36,13 @@ func TestSchedulerStart(t *testing.T) {
 		wantDebugdDownloads []string
 	}{
 		"scheduler works and calls fetcher functions at least once": {},
-		"ssh keys are fetched": {
-			fetcher: stubFetcher{
-				keys: []ssh.UserKey{{Username: "test", PublicKey: "testkey"}},
-			},
-			wantSSHKeys: []ssh.UserKey{{Username: "test", PublicKey: "testkey"}},
-		},
+		// TODO (stateless-ssh): re-enable once ssh keys can be deployed on readonly rootfs.
+		// "ssh keys are fetched": {
+		// 	fetcher: stubFetcher{
+		// 		keys: []ssh.UserKey{{Username: "test", PublicKey: "testkey"}},
+		// 	},
+		// 	wantSSHKeys: []ssh.UserKey{{Username: "test", PublicKey: "testkey"}},
+		// },
 		"download for discovered debugd ips is started": {
 			fetcher: stubFetcher{
 				ips: []string{"192.0.2.1", "192.0.2.2"},
@@ -58,9 +59,10 @@ func TestSchedulerStart(t *testing.T) {
 		"endpoint discovery can fail": {
 			fetcher: stubFetcher{discoverErr: someErr},
 		},
-		"ssh key fetch can fail": {
-			fetcher: stubFetcher{fetchSSHKeysErr: someErr},
-		},
+		// TODO (stateless-ssh): re-enable once ssh keys can be deployed on readonly rootfs.
+		// "ssh key fetch can fail": {
+		// 	fetcher: stubFetcher{fetchSSHKeysErr: someErr},
+		// },
 	}
 
 	for name, tc := range testCases {
@@ -80,10 +82,12 @@ func TestSchedulerStart(t *testing.T) {
 			go scheduler.Start(ctx, wg)
 
 			wg.Wait()
-			assert.Equal(tc.wantSSHKeys, tc.ssh.sshKeys)
+			// TODO (stateless-ssh): re-enable once ssh keys can be deployed on readonly rootfs.
+			// assert.Equal(tc.wantSSHKeys, tc.ssh.sshKeys)
 			assert.Equal(tc.wantDebugdDownloads, tc.downloader.ips)
 			assert.Greater(tc.fetcher.discoverCalls, 0)
-			assert.Greater(tc.fetcher.fetchSSHKeysCalls, 0)
+			// TODO (stateless-ssh): re-enable once ssh keys can be deployed on readonly rootfs.
+			// assert.Greater(tc.fetcher.fetchSSHKeysCalls, 0)
 		})
 	}
 }

@@ -50,9 +50,11 @@ func NewScheduler(log *logger.Logger, fetcher Fetcher, ssh sshDeployer, download
 func (s *Scheduler) Start(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	wg.Add(2)
+	wg.Add(1)
 	go s.discoveryLoop(ctx, wg)
-	go s.sshLoop(ctx, wg)
+	// TODO (stateless-ssh): re-enable once
+	// ssh keys can be deployed on readonly rootfs
+	// go s.sshLoop(ctx, wg)
 }
 
 // discoveryLoop discovers new debugd endpoints from cloud-provider metadata periodically.
@@ -90,33 +92,35 @@ func (s *Scheduler) discoveryLoop(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 // sshLoop discovers new ssh keys from cloud provider metadata periodically.
-func (s *Scheduler) sshLoop(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
+// TODO (stateless-ssh): re-enable once ssh keys can be deployed on readonly rootfs
+// func (s *Scheduler) sshLoop(ctx context.Context, wg *sync.WaitGroup) {
+// 	defer wg.Done()
 
-	ticker := time.NewTicker(debugd.SSHCheckInterval)
-	defer ticker.Stop()
-	for {
-		keys, err := s.fetcher.FetchSSHKeys(ctx)
-		if err != nil {
-			s.log.With(zap.Error(err)).Errorf("Fetching SSH keys failed")
-		} else {
-			s.deploySSHKeys(ctx, keys)
-		}
+// 	ticker := time.NewTicker(debugd.SSHCheckInterval)
+// 	defer ticker.Stop()
+// 	for {
+// 		keys, err := s.fetcher.FetchSSHKeys(ctx)
+// 		if err != nil {
+// 			s.log.With(zap.Error(err)).Errorf("Fetching SSH keys failed")
+// 		} else {
+// 			s.deploySSHKeys(ctx, keys)
+// 		}
 
-		select {
-		case <-ticker.C:
-		case <-ctx.Done():
-			return
-		}
-	}
-}
+// 		select {
+// 		case <-ticker.C:
+// 		case <-ctx.Done():
+// 			return
+// 		}
+// 	}
+// }
 
 // downloadDeployment tries to download deployment from a list of ips and logs errors encountered.
 func (s *Scheduler) downloadDeployment(ctx context.Context, ips []string) (success bool) {
 	for _, ip := range ips {
-		keys, err := s.downloader.DownloadDeployment(ctx, ip)
+		_, err := s.downloader.DownloadDeployment(ctx, ip)
 		if err == nil {
-			s.deploySSHKeys(ctx, keys)
+			// TODO (stateless-ssh): re-enable once ssh keys can be deployed on readonly rootfs
+			// s.deploySSHKeys(ctx, keys)
 			return true
 		}
 		if errors.Is(err, fs.ErrExist) {
@@ -129,16 +133,17 @@ func (s *Scheduler) downloadDeployment(ctx context.Context, ips []string) (succe
 	return false
 }
 
+// TODO (stateless-ssh): re-enable once ssh keys can be deployed on readonly rootfs
 // deploySSHKeys tries to deploy a list of SSH keys and logs errors encountered.
-func (s *Scheduler) deploySSHKeys(ctx context.Context, keys []ssh.UserKey) {
-	for _, key := range keys {
-		err := s.ssh.DeployAuthorizedKey(ctx, key)
-		if err != nil {
-			s.log.With(zap.Error(err), zap.Any("key", key)).Errorf("Deploying SSH key failed")
-			continue
-		}
-	}
-}
+// func (s *Scheduler) deploySSHKeys(ctx context.Context, keys []ssh.UserKey) {
+// 	for _, key := range keys {
+// 		err := s.ssh.DeployAuthorizedKey(ctx, key)
+// 		if err != nil {
+// 			s.log.With(zap.Error(err), zap.Any("key", key)).Errorf("Deploying SSH key failed")
+// 			continue
+// 		}
+// 	}
+// }
 
 type downloader interface {
 	DownloadDeployment(ctx context.Context, ip string) ([]ssh.UserKey, error)
