@@ -58,9 +58,9 @@ jobs:
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
           coreosImage: ${{ github.event.inputs.coreosImage }}
           isDebugImage: ${{ github.event.inputs.isDebugImage }}
-          cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
-          cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
+          cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
+          cosignPassword: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
           awsAccessKeyID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           awsSecretAccessKey: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           awsDefaultRegion: ${{ secrets.AWS_DEFAULT_REGION }}
