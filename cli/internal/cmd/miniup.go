@@ -172,6 +172,21 @@ func prepareConfig(cmd *cobra.Command, fileHandler file.Handler) (*config.Config
 		}
 		return config, nil
 	}
+	if err := cmd.Flags().Set("config", constants.ConfigFilename); err != nil {
+		return nil, err
+	}
+	_, err = fileHandler.Stat(constants.ConfigFilename)
+	if err == nil {
+		// config already exists, prompt user to overwrite
+		cmd.Println("A config file already exists in the current workspace.")
+		ok, err := askToConfirm(cmd, "Do you want to overwrite it?")
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, errors.New("not overwriting existing config")
+		}
+	}
 
 	// download image to current directory if it doesn't exist
 	const imagePath = "./constellation.qcow2"
@@ -186,9 +201,6 @@ func prepareConfig(cmd *cobra.Command, fileHandler file.Handler) (*config.Config
 		return nil, fmt.Errorf("checking if image exists: %w", err)
 	}
 
-	if err := cmd.Flags().Set("config", constants.ConfigFilename); err != nil {
-		return nil, err
-	}
 	config := config.Default()
 	config.RemoveProviderExcept(cloudprovider.QEMU)
 	config.StateDiskSizeGB = 8
