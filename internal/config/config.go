@@ -439,7 +439,7 @@ func (c *Config) translateAzureInstanceTypeError(ut ut.Translator, fe validator.
 }
 
 func registerTranslateAWSInstanceTypeError(ut ut.Translator) error {
-	return ut.Add("aws_instance_type", fmt.Sprintf("{0} must be a non-Graviton instance from one of the following families/instance types with size xlarge or higher: %v", instancetypes.AWSSupportedInstanceFamilies), true)
+	return ut.Add("aws_instance_type", fmt.Sprintf("{0} must be an instance from one of the following families types with size xlarge or higher: %v", instancetypes.AWSSupportedInstanceFamilies), true)
 }
 
 func translateAWSInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
