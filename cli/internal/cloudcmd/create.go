@@ -49,11 +49,11 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 	case cloudprovider.AWS:
 		// TODO: Remove this once AWS is supported.
 		if os.Getenv("CONSTELLATION_AWS_DEV") != "1" {
-			return state.ConstellationState{}, fmt.Errorf("AWS isn't supported yet")
+			return clusterid.File{}, fmt.Errorf("AWS isn't supported yet")
 		}
 		cl, err := c.newTerraformClient(ctx, provider)
 		if err != nil {
-			return state.ConstellationState{}, err
+			return clusterid.File{}, err
 		}
 		defer cl.RemoveInstaller()
 		return c.createAWS(ctx, cl, config, name, insType, controlPlaneCount, workerCount)
@@ -89,7 +89,7 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 
 func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *config.Config,
 	name, insType string, controlPlaneCount, workerCount int,
-) (stat state.ConstellationState, retErr error) {
+) (idFile clusterid.File, retErr error) {
 	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
 
 	vars := &terraform.AWSVariables{
@@ -108,11 +108,15 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *con
 		Debug:                  config.IsDebugCluster(),
 	}
 
-	if err := cl.CreateCluster(ctx, name, vars); err != nil {
-		return state.ConstellationState{}, err
+	ip, err := cl.CreateCluster(ctx, name, vars)
+	if err != nil {
+		return clusterid.File{}, err
 	}
 
-	return cl.GetState(), nil
+	return clusterid.File{
+		CloudProvider: cloudprovider.AWS,
+		IP:            ip,
+	}, nil
 }
 
 func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *config.Config,
