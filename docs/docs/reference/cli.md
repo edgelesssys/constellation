@@ -214,13 +214,8 @@ constellation mini up [flags]
 ### Options
 
 ```
-  -h, --help   help for up
-```
-
-### Options inherited from parent commands
-
-```
-      --config string   path to the configuration file (default "constellation-conf.yaml")
+      --config string   path to the config file to use for the cluster
+  -h, --help            help for up
 ```
 
 ## constellation mini down
