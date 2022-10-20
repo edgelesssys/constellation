@@ -13,6 +13,7 @@
     "gomodTidy",
     "gomodUpdateImportPaths"
   ],
+  "prConcurrentLimit": 4,
   "ignorePaths": [
     "cli/internal/helm/charts/cilium/**"
   ],
@@ -31,13 +32,13 @@
       "matchPackagePatterns": [
         "^go.etcd.io/etcd"
       ],
-      "groupName": "etcd"
+      "groupName": "etcd dependencies"
     },
     {
       "matchPackagePatterns": [
         "^cloud.google.com/go"
       ],
-      "groupName": "google-go"
+      "groupName": "Google cloud SDK"
     },
     {
       "matchDatasources": [
