@@ -70,7 +70,7 @@ func (f *FileWatcher) Watch(file string) error {
 			}
 
 			// if a file gets removed, e.g. by a rename event, we need to re-add the file to the watcher
-			if event.Op&fsnotify.Remove == fsnotify.Remove {
+			if event.Has(fsnotify.Remove) {
 				if err := f.watcher.Add(event.Name); err != nil {
 					log.With(zap.Error(err)).Errorf("Failed to re-add file to watcher")
 					return fmt.Errorf("failed to re-add file %q to watcher: %w", event.Name, err)
