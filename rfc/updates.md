@@ -1,19 +1,17 @@
-
-
-
 # Constellation updates
+
 Things we manage for the user:
+
 1. VM Image
 2. Kubernetes
 3. Cilium
 4. Constellation microservices
 
+## VM Image
 
-### VM Image
-Updating the VM Image is already implemented. 
+Updating the VM Image is already implemented.
 
-
-### Kubernetes
+## Kubernetes
 
 The current manual approach is:
 
@@ -28,15 +26,13 @@ The current manual approach is:
 
 For more details on the first steps see the [official K8s documentation](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/).
 
+## Cilium
 
-### Cilium
-Cilium is installed via helm. In the long term, we don't need to maintain our fork and Cilium can be updated independently using the official releases. 
+Cilium is installed via helm. In the long term, we don't need to maintain our fork and Cilium can be updated independently using the official releases.
 
-
-### Constellation microservices
+## Constellation microservices
 
 All Constellation microservices will be bundled into and therefore updated via one helm chart.
-
 
 # Automatic Updates
 
@@ -54,6 +50,7 @@ data:
   k8s-version: "1.23.12"
   components: "k8s-components-1.23.12" # This references the ConfigMap below.
 ```
+
 ```yaml
 apiVersion: v1
 kind: ConfigMap
@@ -84,10 +81,14 @@ data:
     hash: "sha256:2f04ce10b514912da87fc9979aa2e82e3a0e431c14fc0ea5c7c7209de74a1491"
 ```
 
-## Creating a upgrade agent
-We somehow need to download and execute `kubeadm upgrade plan` and `kubeadm upgrade apply vX.Y.Z` on the host system of a control plane node. For security reasons, we don't those capabilities attached to any pod. Therefore, we opted for a simple and small agent, which exposes a narrow and predefined API as a socket on the control-plane host. This socket can then be mounted into the node operator pod running on a control plane node. 
+The JoinService will consume the `k8s-components-1.23.12` ConfigMap in addition to the `k8s-version` ConfigMap. If a new node wants to join the cluster, the JoinService looks up the current Kubernetes version and all the component download URLs and hashes and sends them to the joining node.
+
+## Creating an upgrade agent
+
+We somehow need to download and execute `kubeadm upgrade plan` and `kubeadm upgrade apply vX.Y.Z` on the host system of a control plane node. For security reasons, we don't want those capabilities attached to any pod. Therefore, we opted for a simple and small agent, which exposes a narrow and predefined API as a socket on the control-plane host. This socket can then be mounted into the node operator pod running on a control plane node.
 
 The agent will expose the following service:
+
 ```proto
 service Update {
     rpc ExecuteUpdate(ExecuteUpdateRequest) returns (ExecuteUpdateResponse);
@@ -105,35 +106,33 @@ message ExecuteUpdateResponse {
 
 The dependency and usage of the upgrade agent by the node operator is explained in the next section.
 
-
 ## Extending the node operator
 
-We need to extend the node operator to also handle Kubernetes updates. The operator already receives information about the Kubernetes version of each node. 
+We need to extend the node operator to also handle Kubernetes updates. The operator already receives information about the Kubernetes version of each node.
 
-The CLI hands uses the same mechanism to deliver the Kubernetes version to the operator as we [currently use for the image reference](https://github.com/edgelesssys/constellation/blob/main/operators/constellation-node-operator/api/v1alpha1/nodeimage_types.go#L14):
-
+The CLI hands users the same mechanism to deliver the Kubernetes version to the operator as we [currently use for the image reference](https://github.com/edgelesssys/constellation/blob/main/operators/constellation-node-operator/api/v1alpha1/nodeimage_types.go#L14):
 
 ```patch
 // NodeImageSpec defines the desired state of NodeImage.
 -type NodeImageSpec struct {
 +type NodeSpec struct {
-	// ImageReference is the image to use for all nodes.
-	ImageReference string `json:"image,omitempty"`
+    // ImageReference is the image to use for all nodes.
+    ImageReference string `json:"image,omitempty"`
 +   // KubernetesVersion defines the Kubernetes version for all nodes.
 +   KubernetesVersion string `json:"kubernetesVersion,omitempty"`
 }
 ```
 
-Additionally, we will change the `NodeImageStatus` to `NodeStatus` (see `nodeimage_types.go`) along with the corresponding controllers. 
+Additionally, we will change the `NodeImageStatus` to `NodeStatus` (see `nodeimage_types.go`) along with the corresponding controllers.
 
 The Controller will need to take the following steps to update the Kubernetes version:
-* disable autoscaling 
+
+* disable autoscaling
 * get the kubeadm download URL and hash from the `k8s-components-1.23.12` ConfigMap
 * pass the URL and hash over a socket mounted into its container to the local update agent running on the same node
-    * The agent downloads the new kubeadm binary, checks its hash and executes `kubeadm upgrade plan` and `kubeadm upgrade apply v1.23.12`   
-* After the agent returned successfully, update the Kubernetes version to `1.23.12` and components reference to `k8s-components-1.23.12` in the `k8s-version` ConfigMap 
+  * The agent downloads the new kubeadm binary, checks its hash and executes `kubeadm upgrade plan` and `kubeadm upgrade apply v1.23.12`
+* After the agent returned successfully, update the Kubernetes version to `1.23.12` and components reference to `k8s-components-1.23.12` in the `k8s-version` ConfigMap
 * Now, iterate over all nodes, and replace them if their Kubernetes version is outdated
-
 
 ## Extending the `constellation upgrade` command
 
@@ -147,7 +146,7 @@ upgrade:
     12: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
 ```
 
-Instead of having a separate `upgrade` section, we will opt for a declarative approach by updating the existing values of the config file. 
+Instead of having a separate `upgrade` section, we will opt for a declarative approach by updating the existing values of the config file.
 
 ```yaml
 kubernetesVersion: 1.24.3
@@ -162,8 +161,9 @@ provider:
 ```
 
 Note that:
+
 * `constellationVersion` 2.2.0 contains components which are all released in version 2.2.0
-* `kubernetesServicesVersion` 1.24.5 could contain Autoscaler 1.24.2, CCM 1.24.8 since their patch versions are not in sync with Kubernetes. Moreover, those component versions will be bundled by us. Think: public lookup table from `kubernetesServicesVersion` -> component version. 
+* `kubernetesServicesVersion` 1.24.5 could contain Autoscaler 1.24.2, CCM 1.24.8 since their patch versions are not in sync with Kubernetes. Moreover, those component versions will be bundled by us. Think: public lookup table from `kubernetesServicesVersion` -> component version.
 
 When `constellation upgrade execute` is called the CLI needs to perform the following steps:
 
@@ -182,7 +182,7 @@ Updating wanted Kubernetes version to 1.24.3 ...
 Updating wanted Image to /communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.3.0
 
 Updating Kubernetes services version to 1.24.5:
-  Autoscaler: 1.24.3 --> 1.24.3
+  Autoscaler: 1.24.3 --> 1.24.3 (not updated)
   CloudControllerManager: 1.24.5 --> 1.24.8
   CloudNodeManager: 1.24.1 --> 1.24.2
 
@@ -191,9 +191,3 @@ Updating Constellation microservices to 2.2.0:
   joinService: 2.1.3 --> 2.2.0
   nodeOperator: 2.1.3 --> 2.2.0
 ```
-
-
-
-
-
-
