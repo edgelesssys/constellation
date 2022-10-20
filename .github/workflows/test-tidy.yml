@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
         with:
           ref: ${{ github.head_ref }}
-          token: ${{ secrets.RENOVATE_TIDY_PUSH }}
+          ssh-key: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Go environment
         uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
@@ -59,10 +59,4 @@ jobs:
           done
 
       - name: Push changes
-        if: ${{ failure() && (steps.tidycheck.conclusion == 'failure') && startsWith(github.head_ref, 'renovate/') }}
-        shell: bash
-        run: |
-          git config --global user.name "${{ github.actor }}"
-          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
-          git commit -am "[bot] Tidy all modules"
-          git push
+        uses: stefanzweifel/git-auto-commit-action@v4
