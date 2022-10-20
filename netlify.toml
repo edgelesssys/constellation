@@ -14,3 +14,11 @@
 
   # Default build command.
   command = "npm run build"
+  
+  [[redirects]]
+  # Redirect the latest version to /
+  # Allow to create permalinks for the latest version
+  # IMPORTANT: Update with every release
+  from = "/2.1"
+  to = "/"
+  status = 301
