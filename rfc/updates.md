@@ -38,7 +38,7 @@ All Constellation microservices will be bundled into and therefore updated via o
 
 ## Extending the JoinService
 
-The CLI will use a lookup table to map the Kubernetes version from the config to URLs and hashes. Those are sent over during `constellation init` and used by the first bootstrapper. Then, the URLs and hashes are pushed to the `k8s-components-1.23.12` ConfigMap and the Kubernetes version with a reference to the `k8s-components-1.23.12` ConfigMap is pushed to `k8s-versions`.
+The CLI will use a lookup table to map the Kubernetes version from the config to URLs and hashes. Those are sent over during `constellation init` and used by the first Bootstrapper. Then, the URLs and hashes are pushed to the `k8s-components-1.23.12` ConfigMap and the Kubernetes version with a reference to the `k8s-components-1.23.12` ConfigMap is pushed to `k8s-versions`.
 
 ```yaml
 apiVersion: v1
@@ -48,15 +48,16 @@ metadata:
   namespace: kube-system
 data:
   k8s-version: "1.23.12"
-  components: "k8s-components-1.23.12" # This references the ConfigMap below.
+  components: "k8s-components-1.23.12-sha256-8ae09b7e922a90fea7a4259fb096f73e9efa948ea2f09349618102a328c44b8b" # This references the ConfigMap below.
 ```
 
 ```yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: k8s-components-1.23.12
+  name: k8s-components-1.23.12-sha256-8ae09b7e922a90fea7a4259fb096f73e9efa948ea2f09349618102a328c44b8b
   namespace: kube-system
+immutable: true
 data:
   kubeadm:
     url: "https://storage.googleapis.com/kubernetes-release/release/v1.23.12/bin/linux/amd64/kubeadm"
@@ -81,7 +82,28 @@ data:
     hash: "sha256:2f04ce10b514912da87fc9979aa2e82e3a0e431c14fc0ea5c7c7209de74a1491"
 ```
 
-The JoinService will consume the `k8s-components-1.23.12` ConfigMap in addition to the `k8s-version` ConfigMap. If a new node wants to join the cluster, the JoinService looks up the current Kubernetes version and all the component download URLs and hashes and sends them to the joining node.
+The JoinService will consume the `k8s-components-1.23.12` ConfigMap in addition to the `k8s-version` ConfigMap. Currently, the `k8s-version` ConfigMap is mounted into the JoinService pod. We will change that so that the JoinService requests the ConfigMap values via the Kubernetes API. If a new node wants to join the cluster, the JoinService looks up the current Kubernetes version and all the component download URLs and hashes and sends them to the joining node.
+
+## Extending the Bootstrapper
+
+During the cluster initialization we need to create the first ConfigMap with components and hashes.
+We receive all necessary information from the CLI in the first place, since we need to download them to create a initialize the cluster in the first place.
+
+To be able to even update singular components, we need to know if the set of components of a node is the desired one. To achieve that, the Bootstrapper will calculate a hash of all the components' hashes. The node then labels itself during `kubeadm join` with this hash. The hash will later be read by the node operator. The first Bootstrapper needs to be labeled during `kubeadm init`.
+
+```yaml
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: JoinConfiguration
+discovery:
+  bootstrapToken:
+    token: XXX
+    apiServerEndpoint: "XXX"
+    caCertHashes: ["sha256:123456789012345678901234567890564b934be406f13e28f118b32cc0b6e6db"]
+nodeRegistration:
+  name: worker-node-1
+  kubeletExtraArgs:
+    node-labels: "edgeless.systems/kubernetes-components-hash="sha256:8ae09b7e922a90fea7a4259fb096f73e9efa948ea2f09349618102a328c44b8b""
+```
 
 ## Creating an upgrade agent
 
@@ -146,7 +168,8 @@ upgrade:
     12: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
 ```
 
-Instead of having a separate `upgrade` section, we will opt for a declarative approach by updating the existing values of the config file.
+Instead of having a separate `upgrade` section, we will opt for a declarative approach by updating the existing values of the config file. Since only parts of the config behave in a declarative way,
+we should add comments to those fields who will not update the cluster.
 
 ```yaml
 kubernetesVersion: 1.24.3
