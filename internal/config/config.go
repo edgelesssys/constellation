@@ -254,7 +254,7 @@ func Default() *Config {
 			AWS: &AWSConfig{
 				Region:                 "",
 				Image:                  "",
-				InstanceType:           "c5a.xlarge",
+				InstanceType:           "m6a.xlarge",
 				StateDiskType:          "gp2",
 				IAMProfileControlPlane: "",
 				IAMProfileWorkerNodes:  "",
