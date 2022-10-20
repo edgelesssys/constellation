@@ -116,7 +116,7 @@ type AWSConfig struct {
 	Image string `yaml:"image" validate:"required"`
 	// description: |
 	//   VM instance type to use for Constellation nodes. Needs to be Nitro-enabled. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html#ec2-nitro-instances
-	InstanceType string `yaml:"instanceType" validate:"aws_instance_type"`
+	InstanceType string `yaml:"instanceType" validate:"lowercase,aws_instance_type"`
 	// description: |
 	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html
 	StateDiskType string `yaml:"stateDiskType" validate:"oneof=standard gp2 gp3 st1 sc1 io1"`
@@ -668,8 +668,7 @@ func checkIfAWSInstanceTypeIsValid(userInput string) bool {
 		return false
 	}
 
-	userInputLowercase := strings.ToLower(userInput)
-	splitInstanceType := strings.Split(userInputLowercase, ".")
+	splitInstanceType := strings.Split(userInput, ".")
 
 	if len(splitInstanceType) != 2 {
 		return false
