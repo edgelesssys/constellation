@@ -255,7 +255,7 @@ func Default() *Config {
 				Region:                 "",
 				Image:                  "",
 				InstanceType:           "m6a.xlarge",
-				StateDiskType:          "gp2",
+				StateDiskType:          "gp3",
 				IAMProfileControlPlane: "",
 				IAMProfileWorkerNodes:  "",
 				Measurements:           copyPCRMap(awsPCRs),
