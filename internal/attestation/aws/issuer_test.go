@@ -13,26 +13,11 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/smithy-go/middleware"
+	tpmclient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/simulator"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	tpmclient "github.com/google/go-tpm-tools/client"
-
 )
-
-func TestGetInstanceInfo(t *testing.T) {
-	testCases := map[string]struct {
-
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-		})
-	}
-}
 
 func TestGetAttestationKey(t *testing.T) {
 	require := require.New(t)
@@ -42,15 +27,18 @@ func TestGetAttestationKey(t *testing.T) {
 	require.NoError(err)
 	defer tpm.Close()
 
-	key, err := getAttestationKey(tpm)
-	assert.Error(err)
-
-	tpmAK, err := tpmclient.AttestationKeyRSA(tpm)
+	// craete the attestation ket in RSA format
+	tpmAk, err := tpmclient.AttestationKeyRSA(tpm)
 	assert.NoError(err)
-	require
+	assert.NotNil(tpmAk)
 
-	_, err := getAttestationKey(tpm)
+	// get the cached, already created key
+	getAk, err := getAttestationKey(tpm)
 	assert.NoError(err)
+	assert.NotNil(getAk)
+
+	// if everythin worked fine, tpmAk and getAk are the same key
+	assert.Equal(tpmAk, getAk)
 }
 
 type fakeMetadataClient struct {

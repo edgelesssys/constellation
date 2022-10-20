@@ -40,7 +40,7 @@ func NewIssuer() *Issuer {
 func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
 	tpmAk, err := client.AttestationKeyRSA(tpm)
 	if err != nil {
-		log.Fatalf("error getting RSA Endorsement key!")
+		log.Fatalf("error creating RSA Endorsement key!")
 	}
 
 	return tpmAk, nil
