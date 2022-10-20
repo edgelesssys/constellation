@@ -59,4 +59,5 @@ jobs:
           done
 
       - name: Push changes
+        if: ${{ failure() && (steps.tidycheck.conclusion == 'failure') && startsWith(github.head_ref, 'renovate/') }}
         uses: stefanzweifel/git-auto-commit-action@v4
