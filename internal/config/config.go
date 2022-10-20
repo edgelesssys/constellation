@@ -254,7 +254,7 @@ func Default() *Config {
 			AWS: &AWSConfig{
 				Region:                 "",
 				Image:                  "",
-				InstanceType:           "t3.xlarge",
+				InstanceType:           "c5a.xlarge",
 				StateDiskType:          "gp2",
 				IAMProfileControlPlane: "",
 				IAMProfileWorkerNodes:  "",
@@ -439,7 +439,7 @@ func (c *Config) translateAzureInstanceTypeError(ut ut.Translator, fe validator.
 }
 
 func registerTranslateAWSInstanceTypeError(ut ut.Translator) error {
-	return ut.Add("aws_instance_type", fmt.Sprintf("{0} must be a non-Graviton instance from one of the following families/instance types with size xlarge or higher: %v", instancetypes.AWSSupportedInstanceTypesOrFamilies), true)
+	return ut.Add("aws_instance_type", fmt.Sprintf("{0} must be a non-Graviton instance from one of the following families/instance types with size xlarge or higher: %v", instancetypes.AWSSupportedInstanceFamilies), true)
 }
 
 func translateAWSInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
@@ -655,18 +655,8 @@ func validInstanceTypeForProvider(insType string, acceptNonCVM bool, provider cl
 	}
 }
 
-// checkIfAWSInstanceTypeIsValid checks if an AWS instance type passed as user input is in one of the many supported instance families or single instances.
+// checkIfAWSInstanceTypeIsValid checks if an AWS instance type passed as user input is in one of the instance families supporting NitroTPM-
 func checkIfAWSInstanceTypeIsValid(userInput string) bool {
-	/*
-		Check for supported instances with the following characteristics:
-		- must be an instance built on "Nitro System"
-		- at least 4 vCPUs (contains xlarge in string, everything > 4 vCPUs is a multiplicator of xlarge)
-		- not Graviton (arm64) based, as we do not have ARM images yet
-		Graviton instances have 'g' in their name, but not at the very beginning (these are 'G' family instances)
-
-		If we do support Graviton instances in the future, this check can be easily removed but we would need to make sure that the images are built for arm64.
-	*/
-
 	// Check if user or code does anything weird and tries to pass multiple strings as one
 	if strings.Contains(userInput, " ") {
 		return false
@@ -679,19 +669,26 @@ func checkIfAWSInstanceTypeIsValid(userInput string) bool {
 	}
 
 	userInputLowercase := strings.ToLower(userInput)
-	family := strings.Split(userInputLowercase, ".")[0]
-	isGraviton := strings.LastIndex(family, "g") > 0
-	hasEnoughVCPUs := strings.Contains(userInputLowercase, "xlarge") || strings.Contains(userInputLowercase, "metal")
+	splitInstanceType := strings.Split(userInputLowercase, ".")
 
-	if isGraviton || !hasEnoughVCPUs {
+	if len(splitInstanceType) != 2 {
+		return false
+	}
+
+	userDefinedFamily := splitInstanceType[0]
+	userDefinedSize := splitInstanceType[1]
+
+	// Check if instace type has at least 4 vCPUs (= contains "xlarge" in its name)
+	hasEnoughVCPUs := strings.Contains(userDefinedSize, "xlarge")
+	if !hasEnoughVCPUs {
 		return false
 	}
 
 	// Now check if the user input is a supported family
 	// Note that we cannot directly use the family split from the Graviton check above, as some instances are directly specified by their full name and not just the family in general
-	for _, supportedFamily := range instancetypes.AWSSupportedInstanceTypesOrFamilies {
+	for _, supportedFamily := range instancetypes.AWSSupportedInstanceFamilies {
 		supportedFamilyLowercase := strings.ToLower(supportedFamily)
-		if strings.Contains(userInputLowercase, supportedFamilyLowercase) {
+		if userDefinedFamily == supportedFamilyLowercase {
 			return true
 		}
 	}

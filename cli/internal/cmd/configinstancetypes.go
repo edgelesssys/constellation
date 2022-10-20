@@ -47,7 +47,7 @@ GCP instance types:
 }
 
 func printSupportedInstanceTypesWithAWS() {
-	fmt.Printf(`AWS Nitro instance families / types:
+	fmt.Printf(`AWS instance families:
 %v
 Azure Confidential VM instance types:
 %v
@@ -55,7 +55,7 @@ Azure Trusted Launch instance types:
 %v
 GCP instance types:
 %v
-`, formatInstanceTypes(instancetypes.AWSSupportedInstanceTypesOrFamilies), formatInstanceTypes(instancetypes.AzureCVMInstanceTypes), formatInstanceTypes(instancetypes.AzureTrustedLaunchInstanceTypes), formatInstanceTypes(instancetypes.GCPInstanceTypes))
+`, formatInstanceTypes(instancetypes.AWSSupportedInstanceFamilies), formatInstanceTypes(instancetypes.AzureCVMInstanceTypes), formatInstanceTypes(instancetypes.AzureTrustedLaunchInstanceTypes), formatInstanceTypes(instancetypes.GCPInstanceTypes))
 }
 
 func formatInstanceTypes(types []string) string {

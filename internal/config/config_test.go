@@ -443,41 +443,26 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 			nonCVMsAllowed: true,
 			expectedResult: false,
 		},
-		// Testing every possible instance type for AWS is not feasible, so we just test a few.
+		// Testing every possible instance type for AWS is not feasible, so we just test a few based on known supported / unsupported families
 		// Also serves as a test for checkIfInstanceInValidAWSFamilys
 		"aws two valid instances": {
 			provider:       cloudprovider.AWS,
-			instanceTypes:  []string{"t3.xlarge", "g5.2xlarge"},
-			expectedResult: true,
-		},
-		"aws one valid metal instance": {
-			provider:       cloudprovider.AWS,
-			instanceTypes:  []string{"m6id.metal"},
+			instanceTypes:  []string{"c5.xlarge", "c5a.2xlarge", "c5a.16xlarge", "u-12tb1.112xlarge"},
 			expectedResult: true,
 		},
 		"aws one valid instance one with too little vCPUs": {
 			provider:       cloudprovider.AWS,
-			instanceTypes:  []string{"t3.xlarge, t3.medium"},
+			instanceTypes:  []string{"c5.medium"},
 			expectedResult: false,
 		},
-		"aws one valid instance one graviton": {
+		"aws graviton sub-family unsupported": {
 			provider:       cloudprovider.AWS,
-			instanceTypes:  []string{"t3.xlarge, a1.xlarge"},
+			instanceTypes:  []string{"m6g.xlarge", "r6g.2xlarge", "x2gd.xlarge", "g5g.8xlarge"},
 			expectedResult: false,
 		},
-		"aws combined two instances as one": {
+		"aws combined two valid instances as one string": {
 			provider:       cloudprovider.AWS,
-			instanceTypes:  []string{"t3.xlarge, t3.2xlarge"},
-			expectedResult: false,
-		},
-		"aws explicit definition of a specific size (supported)": {
-			provider:       cloudprovider.AWS,
-			instanceTypes:  []string{"u-12tb1.112xlarge", "u-6tb1.metal"},
-			expectedResult: true,
-		},
-		"aws explicit definition of a specific size (unsupported)": {
-			provider:       cloudprovider.AWS,
-			instanceTypes:  []string{"u-6tb1.92xlarge"}, // This instance type is made up just to test whether the check works explicitly on the full name, not just the family
+			instanceTypes:  []string{"c5.xlarge, c5a.2xlarge"},
 			expectedResult: false,
 		},
 	}
