@@ -46,17 +46,27 @@ func New(log *logger.Logger, ssh sshDeployer, serviceManager serviceManager, str
 	}
 }
 
+// TODO (stateless-ssh): re-enable once ssh keys can be deployed on readonly rootfs.
+// UploadAuthorizedKeys receives a list of authorized keys and forwards them to a channel.
+//
+//	func (s *debugdServer) UploadAuthorizedKeys(ctx context.Context, in *pb.UploadAuthorizedKeysRequest) (*pb.UploadAuthorizedKeysResponse, error) {
+//		s.log.Infof("Uploading authorized keys")
+//		for _, key := range in.Keys {
+//			if err := s.ssh.DeployAuthorizedKey(ctx, ssh.UserKey{Username: key.Username, PublicKey: key.KeyValue}); err != nil {
+//				s.log.With(zap.Error(err)).Errorf("Uploading authorized keys failed")
+//				return &pb.UploadAuthorizedKeysResponse{
+//					Status: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_FAILURE,
+//				}, nil
+//			}
+//		}
+//		return &pb.UploadAuthorizedKeysResponse{
+//			Status: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_SUCCESS,
+//		}, nil
+//	}
+//
 // UploadAuthorizedKeys receives a list of authorized keys and forwards them to a channel.
 func (s *debugdServer) UploadAuthorizedKeys(ctx context.Context, in *pb.UploadAuthorizedKeysRequest) (*pb.UploadAuthorizedKeysResponse, error) {
-	s.log.Infof("Uploading authorized keys")
-	for _, key := range in.Keys {
-		if err := s.ssh.DeployAuthorizedKey(ctx, ssh.UserKey{Username: key.Username, PublicKey: key.KeyValue}); err != nil {
-			s.log.With(zap.Error(err)).Errorf("Uploading authorized keys failed")
-			return &pb.UploadAuthorizedKeysResponse{
-				Status: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_FAILURE,
-			}, nil
-		}
-	}
+	s.log.Infof("Uploading authorized keys (Disabled feature)")
 	return &pb.UploadAuthorizedKeysResponse{
 		Status: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_SUCCESS,
 	}, nil
