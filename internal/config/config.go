@@ -115,7 +115,7 @@ type AWSConfig struct {
 	//   AMI ID of the machine image used to create Constellation nodes.
 	Image string `yaml:"image" validate:"required"`
 	// description: |
-	//   VM instance type to use for Constellation nodes. Needs to be Nitro-enabled. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html#ec2-nitro-instances
+	//   VM instance type to use for Constellation nodes. Needs to support NitroTPM. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html
 	InstanceType string `yaml:"instanceType" validate:"lowercase,aws_instance_type"`
 	// description: |
 	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html
