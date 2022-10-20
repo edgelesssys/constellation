@@ -60,4 +60,4 @@ jobs:
 
       - name: Push changes
         if: ${{ failure() && (steps.tidycheck.conclusion == 'failure') && startsWith(github.head_ref, 'renovate/') }}
-        uses: stefanzweifel/git-auto-commit-action@v4
+        uses: EndBug/add-and-commit@v9
