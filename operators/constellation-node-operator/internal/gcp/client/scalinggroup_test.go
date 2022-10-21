@@ -326,7 +326,10 @@ func TestListScalingGroups(t *testing.T) {
 	testCases := map[string]struct {
 		name                         *string
 		groupID                      *string
+		templateRef                  *string
+		templateLabels               map[string]string
 		listInstanceGroupManagersErr error
+		templateGetErr               error
 		wantControlPlanes            []string
 		wantWorkers                  []string
 		wantErr                      bool
@@ -335,23 +338,56 @@ func TestListScalingGroups(t *testing.T) {
 			listInstanceGroupManagersErr: errors.New("list instance group managers error"),
 			wantErr:                      true,
 		},
+		"get instance template fails": {
+			name:           proto.String("test-control-plane-uid"),
+			groupID:        proto.String("projects/project/zones/zone/instanceGroupManagers/test-control-plane-uid"),
+			templateRef:    proto.String("projects/project/global/instanceTemplates/test-control-plane-uid"),
+			templateGetErr: errors.New("get instance template error"),
+			wantErr:        true,
+		},
 		"list instance group managers for control plane": {
-			name:    proto.String("test-control-plane-uid"),
-			groupID: proto.String("projects/project/zones/zone/instanceGroupManagers/test-control-plane-uid"),
+			name:        proto.String("test-control-plane-uid"),
+			groupID:     proto.String("projects/project/zones/zone/instanceGroupManagers/test-control-plane-uid"),
+			templateRef: proto.String("projects/project/global/instanceTemplates/test-control-plane-uid"),
+			templateLabels: map[string]string{
+				"constellation-uid":  "uid",
+				"constellation-role": "control-plane",
+			},
 			wantControlPlanes: []string{
 				"projects/project/zones/zone/instanceGroupManagers/test-control-plane-uid",
 			},
 		},
 		"list instance group managers for worker": {
-			name:    proto.String("test-worker-uid"),
-			groupID: proto.String("projects/project/zones/zone/instanceGroupManagers/test-worker-uid"),
+			name:        proto.String("test-worker-uid"),
+			groupID:     proto.String("projects/project/zones/zone/instanceGroupManagers/test-worker-uid"),
+			templateRef: proto.String("projects/project/global/instanceTemplates/test-control-plane-uid"),
+			templateLabels: map[string]string{
+				"constellation-uid":  "uid",
+				"constellation-role": "worker",
+			},
 			wantWorkers: []string{
 				"projects/project/zones/zone/instanceGroupManagers/test-worker-uid",
 			},
 		},
+		"listing instance group managers is not dependant on resource name": {
+			name:        proto.String("some-instance-group-manager"),
+			groupID:     proto.String("projects/project/zones/zone/instanceGroupManagers/some-instance-group-manager"),
+			templateRef: proto.String("projects/project/global/instanceTemplates/some-instance-group-template"),
+			templateLabels: map[string]string{
+				"constellation-uid":  "uid",
+				"constellation-role": "control-plane",
+			},
+			wantControlPlanes: []string{
+				"projects/project/zones/zone/instanceGroupManagers/some-instance-group-manager",
+			},
+		},
 		"unrelated instance group manager": {
-			name:    proto.String("test-unrelated-uid"),
-			groupID: proto.String("projects/project/zones/zone/instanceGroupManagers/test-unrelated-uid"),
+			name:        proto.String("test-control-plane-uid"),
+			groupID:     proto.String("projects/project/zones/zone/instanceGroupManagers/test-unrelated-uid"),
+			templateRef: proto.String("projects/project/global/instanceTemplates/test-control-plane-uid"),
+			templateLabels: map[string]string{
+				"label": "value",
+			},
 		},
 		"invalid instance group manager": {},
 	}
@@ -365,9 +401,18 @@ func TestListScalingGroups(t *testing.T) {
 				instanceGroupManagersAPI: &stubInstanceGroupManagersAPI{
 					aggregatedListErr: tc.listInstanceGroupManagersErr,
 					instanceGroupManager: &computepb.InstanceGroupManager{
-						Name:     tc.name,
-						SelfLink: tc.groupID,
+						Name:             tc.name,
+						SelfLink:         tc.groupID,
+						InstanceTemplate: tc.templateRef,
 					},
+				},
+				instanceTemplateAPI: &stubInstanceTemplateAPI{
+					template: &computepb.InstanceTemplate{
+						Properties: &computepb.InstanceProperties{
+							Labels: tc.templateLabels,
+						},
+					},
+					getErr: tc.templateGetErr,
 				},
 			}
 			gotControlPlanes, gotWorkers, err := client.ListScalingGroups(context.Background(), "uid")

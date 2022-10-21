@@ -10,10 +10,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"google.golang.org/api/iterator"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
-	"google.golang.org/protobuf/proto"
 )
 
 // GetScalingGroupImage returns the image URI of the scaling group.
@@ -108,7 +108,6 @@ func (c *Client) GetAutoscalingGroupName(scalingGroupID string) (string, error) 
 // ListScalingGroups retrieves a list of scaling groups for the cluster.
 func (c *Client) ListScalingGroups(ctx context.Context, uid string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error) {
 	iter := c.instanceGroupManagersAPI.AggregatedList(ctx, &computepb.AggregatedListInstanceGroupManagersRequest{
-		Filter:  proto.String(fmt.Sprintf("name eq \".+-%s-.+\"", uid)), // filter by constellation UID
 		Project: c.projectID,
 	})
 	for instanceGroupManagerScopedListPair, err := iter.Next(); ; instanceGroupManagerScopedListPair, err = iter.Next() {
@@ -121,18 +120,38 @@ func (c *Client) ListScalingGroups(ctx context.Context, uid string) (controlPlan
 		if instanceGroupManagerScopedListPair.Value == nil {
 			continue
 		}
-		for _, instanceGroupManager := range instanceGroupManagerScopedListPair.Value.InstanceGroupManagers {
-			if instanceGroupManager == nil || instanceGroupManager.Name == nil || instanceGroupManager.SelfLink == nil {
+		for _, grpManager := range instanceGroupManagerScopedListPair.Value.InstanceGroupManagers {
+			if grpManager == nil || grpManager.Name == nil || grpManager.SelfLink == nil || grpManager.InstanceTemplate == nil {
 				continue
 			}
-			groupID, err := c.canonicalInstanceGroupID(ctx, *instanceGroupManager.SelfLink)
+
+			templateURI := strings.Split(*grpManager.InstanceTemplate, "/")
+			if len(templateURI) < 1 {
+				continue // invalid template URI
+			}
+			template, err := c.instanceTemplateAPI.Get(ctx, &computepb.GetInstanceTemplateRequest{
+				Project:          c.projectID,
+				InstanceTemplate: templateURI[len(templateURI)-1],
+			})
+			if err != nil {
+				return nil, nil, fmt.Errorf("getting instance template: %w", err)
+			}
+			if template.Properties == nil || template.Properties.Labels == nil {
+				continue
+			}
+			if template.Properties.Labels["constellation-uid"] != uid {
+				continue
+			}
+
+			groupID, err := c.canonicalInstanceGroupID(ctx, *grpManager.SelfLink)
 			if err != nil {
 				return nil, nil, fmt.Errorf("normalizing instance group ID: %w", err)
 			}
 
-			if isControlPlaneInstanceGroup(*instanceGroupManager.Name) {
+			switch strings.ToLower(template.Properties.Labels["constellation-role"]) {
+			case "control-plane", "controlplane":
 				controlPlaneGroupIDs = append(controlPlaneGroupIDs, groupID)
-			} else if isWorkerInstanceGroup(*instanceGroupManager.Name) {
+			case "worker":
 				workerGroupIDs = append(workerGroupIDs, groupID)
 			}
 		}
