@@ -18,8 +18,8 @@ spec:
     spec:
       containers:
       - args:
-        - --port={{ .Values.kmsPort }}
-        image: {{ .Values.kmsImage }}
+        - --port={{ .Values.port }}
+        image: {{ .Values.image }}
         name: kms
         resources: {}
         volumeMounts:

@@ -51,15 +51,16 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
        1. Rename the "Unreleased" heading to "[v1.3.0] - YYYY-MM-DD" and link the version to the upcoming release tag.
        2. Create a new block for unreleased changes
     5. Update project version in [CMakeLists.txt](/CMakeLists.txt) to `1.3.0` (without v).
-    6. When the microservice builds are finished update versions in [versions.go](../../internal/versions/versions.go#L33-L39) to `v1.3.0`, **add the container hashes** and **push your changes**.
-    7. Create a [production OS image](/.github/workflows/build-coreos.yml)
+    6. Update the `version` key in [constellation-services/Chart.yaml](/cli/internal/helm/charts/edgeless/constellation-services/Chart.yaml). Also update the `version` key for all subcharts, e.g. [Chart.yaml](/cli/internal/helm/charts/edgeless/constellation-services/charts/kms/Chart.yaml). Lastly, update the `dependencies.*.version` key for all dependencies in the main chart [constellation-services/Chart.yaml](/cli/internal/helm/charts/edgeless/constellation-services/Chart.yaml).
+    7. When the microservice builds are finished update versions in [versions.go](../../internal/versions/versions.go#L33-L39) to `v1.3.0`, **add the container hashes** and **push your changes**.
+    8. Create a [production coreOS image](/.github/workflows/build-coreos.yml)
 
         ```sh
         gh workflow run build-os-image.yml --ref release/v$minor -F debug=false -F imageVersion=v$ver
         ```
 
-    8. Update [default images in config](/internal/config/images_enterprise.go)
-    9. Run manual E2E tests using [Linux](/.github/workflows/e2e-test-manual.yml) and [macOS](/.github/workflows/e2e-test-manual-macos.yml) to confirm functionality and stability.
+    9. Update [default images in config](/internal/config/images_enterprise.go)
+    10. Run manual E2E tests using [Linux](/.github/workflows/e2e-test-manual.yml) and [macOS](/.github/workflows/e2e-test-manual-macos.yml) to confirm functionality and stability.
 
         ```sh
         sono='--plugin e2e --plugin-env e2e.E2E_FOCUS="\[Conformance\]" --plugin-env e2e.E2E_SKIP="for service with type clusterIP|HostPort validates that there is no conflict between pods with same hostPort but different hostIP and protocol" --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-plugin.yaml --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-master-plugin.yaml'
@@ -69,14 +70,14 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=gcp -F machineType=n2d-standard-4 -F sonobuoyTestSuiteCmd="$sono" -F osImage=projects/constellation-images/global/images/constellation-v$gcpVer -F isDebugImage=false
         ```
 
-    10. [Generate measurements](/.github/workflows/generate-measurements.yml) for the images on each CSP.
+    11. [Generate measurements](/.github/workflows/generate-measurements.yml) for the images on each CSP.
 
         ```sh
            gh workflow run generate-measurements.yml --ref release/v$minor -F cloudProvider=azure -F osImage=/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/$ver -F isDebugImage=false
            gh workflow run generate-measurements.yml --ref release/v$minor -F cloudProvider=gcp -F osImage=projects/constellation-images/global/images/constellation-v$gcpVer -F isDebugImage=false
         ```
 
-    11. Create a new tag on this release branch
+    12. Create a new tag on this release branch
         ```sh
         git tag v$ver
         git tags --push

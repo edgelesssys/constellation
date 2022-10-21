@@ -7,8 +7,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 package helm
 
 import (
+	"bytes"
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"net"
@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/cli"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -51,6 +52,31 @@ func New(log *logger.Logger) (*Client, error) {
 	}, nil
 }
 
+// InstallConstellationServices installs the constellation-services chart. In the future this chart should bundle all microservices.
+func (h *Client) InstallConstellationServices(ctx context.Context, release helm.Release) error {
+	h.Namespace = constants.HelmNamespace
+	h.ReleaseName = release.ReleaseName
+	h.Wait = release.Wait
+	h.Timeout = timeout
+	// update dependencies - unsure if necessary for local deps.
+	h.DependencyUpdate = true
+
+	// TODO: Possibly fetch metadata to extend values here.
+
+	reader := bytes.NewReader(release.Chart)
+	chart, err := loader.LoadArchive(reader)
+	if err != nil {
+		return fmt.Errorf("helm load archive: %w", err)
+	}
+
+	_, err = h.RunWithContext(ctx, chart, release.Values)
+	if err != nil {
+		return fmt.Errorf("helm install services: %w", err)
+	}
+
+	return nil
+}
+
 // InstallCilium sets up the cilium pod network.
 func (h *Client) InstallCilium(ctx context.Context, kubectl k8sapi.Client, release helm.Release, in k8sapi.SetupPodNetworkInput) error {
 	h.Namespace = constants.HelmNamespace
@@ -75,7 +101,13 @@ func (h *Client) installCiliumAzure(ctx context.Context, release helm.Release, k
 	release.Values["k8sServiceHost"] = host
 	release.Values["k8sServicePort"] = strconv.Itoa(constants.KubernetesPort)
 
-	_, err := h.RunWithContext(ctx, release.Chart, release.Values)
+	reader := bytes.NewReader(release.Chart)
+	chart, err := loader.LoadArchive(reader)
+	if err != nil {
+		return fmt.Errorf("helm load archive: %w", err)
+	}
+
+	_, err = h.RunWithContext(ctx, chart, release.Values)
 	if err != nil {
 		return fmt.Errorf("installing cilium: %w", err)
 	}
@@ -127,7 +159,13 @@ func (h *Client) installlCiliumGCP(ctx context.Context, kubectl k8sapi.Client, r
 		release.Values["k8sServicePort"] = port
 	}
 
-	_, err = h.RunWithContext(ctx, release.Chart, release.Values)
+	reader := bytes.NewReader(release.Chart)
+	chart, err := loader.LoadArchive(reader)
+	if err != nil {
+		return fmt.Errorf("helm load archive: %w", err)
+	}
+
+	_, err = h.RunWithContext(ctx, chart, release.Values)
 	if err != nil {
 		return fmt.Errorf("helm install cilium: %w", err)
 	}
@@ -148,27 +186,15 @@ func (h *Client) installCiliumQEMU(ctx context.Context, release helm.Release, su
 	release.Values["k8sServiceHost"] = kubeAPIEndpoint
 	release.Values["k8sServicePort"] = strconv.Itoa(constants.KubernetesPort)
 
-	_, err := h.RunWithContext(ctx, release.Chart, release.Values)
+	reader := bytes.NewReader(release.Chart)
+	chart, err := loader.LoadArchive(reader)
+	if err != nil {
+		return fmt.Errorf("helm load archive: %w", err)
+	}
+
+	_, err = h.RunWithContext(ctx, chart, release.Values)
 	if err != nil {
 		return fmt.Errorf("helm install cilium: %w", err)
 	}
-	return nil
-}
-
-// InstallKMS deploys the KMS deployment.
-func (h *Client) InstallKMS(ctx context.Context, release helm.Release, kmsConfig KMSConfig) error {
-	h.Namespace = constants.HelmNamespace
-	h.ReleaseName = release.ReleaseName
-	h.Wait = release.Wait
-	h.Timeout = timeout
-
-	release.Values["masterSecret"] = base64.StdEncoding.EncodeToString(kmsConfig.MasterSecret[:])
-	release.Values["salt"] = base64.StdEncoding.EncodeToString(kmsConfig.Salt[:])
-
-	_, err := h.RunWithContext(ctx, release.Chart, release.Values)
-	if err != nil {
-		return fmt.Errorf("helm install kms: %w", err)
-	}
-
 	return nil
 }

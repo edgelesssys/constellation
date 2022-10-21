@@ -9,9 +9,11 @@ package helm
 import (
 	"bytes"
 	"embed"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -23,6 +25,7 @@ import (
 	"helm.sh/helm/pkg/ignore"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/chartutil"
 )
 
 // Run `go generate` to deterministically create the patched Helm deployment for cilium
@@ -33,17 +36,18 @@ var HelmFS embed.FS
 
 type ChartLoader struct{}
 
-func (i *ChartLoader) Load(csp cloudprovider.Provider, conformanceMode bool) ([]byte, error) {
+func (i *ChartLoader) Load(csp cloudprovider.Provider, conformanceMode bool, masterSecret []byte, salt []byte) ([]byte, error) {
 	ciliumRelease, err := i.loadCilium(csp, conformanceMode)
 	if err != nil {
 		return nil, err
 	}
 
-	kmsRelease, err := i.loadKMS()
+	conServicesRelease, err := i.loadConstellationServices(masterSecret, salt)
 	if err != nil {
 		return nil, err
 	}
-	releases := helm.Releases{Cilium: ciliumRelease, KMS: kmsRelease}
+	releases := helm.Releases{Cilium: ciliumRelease, ConstellationServices: conServicesRelease}
+
 	rel, err := json.Marshal(releases)
 	if err != nil {
 		return nil, err
@@ -54,8 +58,14 @@ func (i *ChartLoader) Load(csp cloudprovider.Provider, conformanceMode bool) ([]
 func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode bool) (helm.Release, error) {
 	chart, err := loadChartsDir(HelmFS, "charts/cilium")
 	if err != nil {
-		return helm.Release{}, err
+		return helm.Release{}, fmt.Errorf("loading cilium chart: %w", err)
 	}
+
+	chartRaw, err := i.marshalChart(chart)
+	if err != nil {
+		return helm.Release{}, fmt.Errorf("packaging chart: %w", err)
+	}
+
 	var ciliumVals map[string]interface{}
 	switch csp {
 	case cloudprovider.GCP:
@@ -77,27 +87,54 @@ func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode boo
 
 	}
 
-	return helm.Release{Chart: chart, Values: ciliumVals, ReleaseName: "cilium", Wait: true}, nil
+	return helm.Release{Chart: chartRaw, Values: ciliumVals, ReleaseName: "cilium", Wait: true}, nil
 }
 
-func (i *ChartLoader) loadKMS() (helm.Release, error) {
-	chart, err := loadChartsDir(HelmFS, "charts/edgeless/kms")
+func (i *ChartLoader) loadConstellationServices(masterSecret []byte, salt []byte) (helm.Release, error) {
+	chart, err := loadChartsDir(HelmFS, "charts/edgeless/constellation-services")
 	if err != nil {
-		return helm.Release{}, err
-	}
-	kmsVals := map[string]interface{}{
-		"namespace":            constants.ConstellationNamespace,
-		"kmsPort":              constants.KMSPort,
-		"joinConfigCMName":     constants.JoinConfigMap,
-		"serviceBasePath":      constants.ServiceBasePath,
-		"kmsImage":             versions.KmsImage,
-		"masterSecretName":     constants.ConstellationMasterSecretStoreName,
-		"masterSecretKeyName":  constants.ConstellationMasterSecretKey,
-		"saltKeyName":          constants.ConstellationSaltKey,
-		"measurementsFilename": constants.MeasurementsFilename,
+		return helm.Release{}, fmt.Errorf("loading constellation-services chart: %w", err)
 	}
 
-	return helm.Release{Chart: chart, Values: kmsVals, ReleaseName: "kms", Wait: true}, nil
+	chartRaw, err := i.marshalChart(chart)
+	if err != nil {
+		return helm.Release{}, fmt.Errorf("packaging chart: %w", err)
+	}
+
+	vals := map[string]interface{}{
+		"kms": map[string]interface{}{
+			"namespace":            constants.ConstellationNamespace,
+			"port":                 constants.KMSPort,
+			"joinConfigCMName":     constants.JoinConfigMap,
+			"serviceBasePath":      constants.ServiceBasePath,
+			"image":                versions.KmsImage,
+			"masterSecretName":     constants.ConstellationMasterSecretStoreName,
+			"masterSecretKeyName":  constants.ConstellationMasterSecretKey,
+			"saltKeyName":          constants.ConstellationSaltKey,
+			"measurementsFilename": constants.MeasurementsFilename,
+			"masterSecret":         base64.StdEncoding.EncodeToString(masterSecret),
+			"salt":                 base64.StdEncoding.EncodeToString(salt),
+		},
+	}
+
+	return helm.Release{Chart: chartRaw, Values: vals, ReleaseName: "constellation-services", Wait: true}, nil
+}
+
+// marshalChart takes a Chart object, packages it to a temporary file and returns the content of that file.
+// We currently need to take this approach of marshaling as dependencies are not marshaled correctly with json.Marshal.
+// This stems from the fact that chart.Chart does not export the dependencies property.
+// See: https://github.com/helm/helm/issues/11454
+func (i *ChartLoader) marshalChart(chart *chart.Chart) ([]byte, error) {
+	path, err := chartutil.Save(chart, os.TempDir())
+	defer os.Remove(path)
+	if err != nil {
+		return nil, fmt.Errorf("packaging chart: %w", err)
+	}
+	chartRaw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading packaged chart: %w", err)
+	}
+	return chartRaw, nil
 }
 
 // taken from loader.LoadDir from the helm go module

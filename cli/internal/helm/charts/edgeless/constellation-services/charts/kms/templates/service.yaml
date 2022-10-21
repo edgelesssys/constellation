@@ -6,9 +6,9 @@ metadata:
 spec:
   ports:
   - name: grpc
-    port: {{ .Values.kmsPort }}
+    port: {{ .Values.port }}
     protocol: TCP
-    targetPort: {{ .Values.kmsPort }}
+    targetPort: {{ .Values.port }}
   selector:
     k8s-app: kms
   type: ClusterIP

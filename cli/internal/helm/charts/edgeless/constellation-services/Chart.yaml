@@ -1,0 +1,9 @@
+apiVersion: v2
+name: constellation-services
+description: A chart to deploy all microservices that are part of a valid constellation cluster
+type: application
+version: 2.2.0-pre
+
+dependencies:
+  - name: kms
+    version: 2.2.0-pre

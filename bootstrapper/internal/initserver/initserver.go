@@ -15,7 +15,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/diskencryption"
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/vmtype"
@@ -132,10 +131,6 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		req.EnforceIdkeydigest,
 		s.issuerWrapper.IDKeyDigest(),
 		s.issuerWrapper.VMType() == vmtype.AzureCVM,
-		helm.KMSConfig{
-			MasterSecret: req.MasterSecret,
-			Salt:         req.Salt,
-		},
 		sshProtoKeysToMap(req.SshUserKeys),
 		req.HelmDeployments,
 		req.ConformanceMode,
@@ -236,7 +231,6 @@ type ClusterInitializer interface {
 		enforceIDKeyDigest bool,
 		idKeyDigest []byte,
 		azureCVM bool,
-		kmsConfig helm.KMSConfig,
 		sshUserKeys map[string]string,
 		helmDeployments []byte,
 		conformanceMode bool,

@@ -10,7 +10,6 @@ import (
 	"context"
 	"net"
 
-	helmClient "github.com/edgelesssys/constellation/v2/bootstrapper/internal/helm"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
@@ -38,10 +37,10 @@ type clusterUtil interface {
 	StartKubelet() error
 }
 
-// HelmUtil bundles functions related to microservice deployment. Only microservices that can be deployed purely via Helm are deployed with this interface.
+// helmClient bundles functions related to microservice deployment. Only microservices that can be deployed purely via Helm are deployed with this interface.
 // Currently only a subset of microservices is deployed via Helm.
 // Naming is inspired by Helm.
-type HelmUtil interface {
+type helmClient interface {
 	InstallCilium(context.Context, k8sapi.Client, helm.Release, k8sapi.SetupPodNetworkInput) error
-	InstallKMS(context.Context, helm.Release, helmClient.KMSConfig) error
+	InstallConstellationServices(ctx context.Context, release helm.Release) error
 }

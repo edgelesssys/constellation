@@ -9,7 +9,6 @@ package main
 import (
 	"context"
 
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
@@ -22,7 +21,7 @@ type clusterFake struct{}
 // InitCluster fakes bootstrapping a new cluster with the current node being the master, returning the arguments required to join the cluster.
 func (c *clusterFake) InitCluster(
 	context.Context, string, string, []byte, []uint32, bool, []byte, bool,
-	helm.KMSConfig, map[string]string, []byte, bool, *logger.Logger,
+	map[string]string, []byte, bool, *logger.Logger,
 ) ([]byte, error) {
 	return []byte{}, nil
 }

@@ -15,7 +15,6 @@ import (
 	"strconv"
 	"strings"
 
-	helmClient "github.com/edgelesssys/constellation/v2/bootstrapper/internal/helm"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
@@ -46,7 +45,7 @@ type configurationProvider interface {
 type KubeWrapper struct {
 	cloudProvider           string
 	clusterUtil             clusterUtil
-	helmUtil                HelmUtil
+	helmClient              helmClient
 	configProvider          configurationProvider
 	client                  k8sapi.Client
 	kubeconfigReader        configReader
@@ -60,12 +59,12 @@ type KubeWrapper struct {
 
 // New creates a new KubeWrapper with real values.
 func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client, cloudControllerManager CloudControllerManager,
-	cloudNodeManager CloudNodeManager, clusterAutoscaler ClusterAutoscaler, providerMetadata ProviderMetadata, initialMeasurementsJSON []byte, helmUtil HelmUtil,
+	cloudNodeManager CloudNodeManager, clusterAutoscaler ClusterAutoscaler, providerMetadata ProviderMetadata, initialMeasurementsJSON []byte, helmClient helmClient,
 ) *KubeWrapper {
 	return &KubeWrapper{
 		cloudProvider:           cloudProvider,
 		clusterUtil:             clusterUtil,
-		helmUtil:                helmUtil,
+		helmClient:              helmClient,
 		configProvider:          configProvider,
 		client:                  client,
 		kubeconfigReader:        &KubeconfigReader{fs: afero.Afero{Fs: afero.NewOsFs()}},
@@ -81,7 +80,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, cloudServiceAccountURI, versionString string, measurementSalt []byte, enforcedPCRs []uint32,
-	enforceIDKeyDigest bool, idKeyDigest []byte, azureCVM bool, kmsConfig helmClient.KMSConfig, sshUsers map[string]string,
+	enforceIDKeyDigest bool, idKeyDigest []byte, azureCVM bool, sshUsers map[string]string,
 	helmReleasesRaw []byte, conformanceMode bool, log *logger.Logger,
 ) ([]byte, error) {
 	k8sVersion, err := versions.NewValidK8sVersion(versionString)
@@ -184,7 +183,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("unmarshalling helm releases: %w", err)
 	}
 
-	if err = k.helmUtil.InstallCilium(ctx, k.client, helmReleases.Cilium, setupPodNetworkInput); err != nil {
+	if err = k.helmClient.InstallCilium(ctx, k.client, helmReleases.Cilium, setupPodNetworkInput); err != nil {
 		return nil, fmt.Errorf("installing pod network: %w", err)
 	}
 
@@ -201,7 +200,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up konnectivity: %w", err)
 	}
 
-	if err = k.helmUtil.InstallKMS(ctx, helmReleases.KMS, kmsConfig); err != nil {
+	if err = k.helmClient.InstallConstellationServices(ctx, helmReleases.ConstellationServices); err != nil {
 		return nil, fmt.Errorf("installing kms: %w", err)
 	}
 
