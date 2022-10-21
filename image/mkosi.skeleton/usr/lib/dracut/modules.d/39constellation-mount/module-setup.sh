@@ -69,4 +69,9 @@ install() {
         "/usr/sbin/ec2udev-vbd"
     inst_simple "/usr/lib/udev/rules.d/70-ec2-nvme-devices.rules" \
         "/usr/lib/udev/rules.d/70-ec2-nvme-devices.rules"
+
+    inst_script "$moddir/aws-nvme-disk.sh" \
+        "/usr/sbin/aws-nvme-disk"
+    install_and_enable_unit "aws-nvme-disk.service" \
+        "basic.target"
 }
