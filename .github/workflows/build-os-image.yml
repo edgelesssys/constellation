@@ -230,10 +230,9 @@ jobs:
           aws-region: eu-central-1
 
       - name: Login to Azure
-        uses: azure/login@642a43caaacadeef67ecede5930b25d56e8277af
-        if: ${{ matrix.csp == 'azure' }}
+        uses: ./.github/actions/azure_login
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Login to GCP
         uses: ./.github/actions/gcp_login
