@@ -64,12 +64,12 @@ func New(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *Chart
 func (i *ChartLoader) Load(csp cloudprovider.Provider, conformanceMode bool, masterSecret []byte, salt []byte, enforcedPCRs []uint32, enforceIDKeyDigest bool) ([]byte, error) {
 	ciliumRelease, err := i.loadCilium(csp, conformanceMode)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("loading cilium: %w", err)
 	}
 
 	conServicesRelease, err := i.loadConstellationServices(csp, masterSecret, salt, enforcedPCRs, enforceIDKeyDigest)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("loading constellation-services: %w", err)
 	}
 	releases := helm.Releases{Cilium: ciliumRelease, ConstellationServices: conServicesRelease}
 
