@@ -9,16 +9,23 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/spf13/cobra"
+	tty "github.com/mattn/go-isatty"
+)
+
+const (
+	// hideCursor and showCursor are ANSI escape sequences to hide and show the cursor.
+	hideCursor = "\033[?25l"
+	showCursor = "\033[?25h"
 )
 
 var (
-	spinnerStates = []string{"⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"}
-	dotsStates    = []string{".", "..", "..."}
+	spinnerStates = []string{"⣷", "⣯", "⣟", "⡿", "⢿", "⣻", "⣽", "⣾"}
+	dotsStates    = []string{".  ", ".. ", "..."}
 )
 
 type spinnerInterf interface {
@@ -27,71 +34,77 @@ type spinnerInterf interface {
 }
 
 type spinner struct {
-	out   *cobra.Command
-	delay time.Duration
-	wg    *sync.WaitGroup
-	stop  int32
+	out      io.Writer
+	delay    time.Duration
+	wg       *sync.WaitGroup
+	stop     int32
+	spinFunc func(out io.Writer, wg *sync.WaitGroup, stop *int32, delay time.Duration, text string, showDots bool)
 }
 
-func newSpinner(c *cobra.Command, writer io.Writer) (*spinner, *interruptSpinWriter) {
-	spinner := &spinner{
-		out:   c,
+func newSpinner(writer io.Writer) *spinner {
+	s := &spinner{
+		out:   writer,
 		wg:    &sync.WaitGroup{},
-		delay: 100 * time.Millisecond,
-		stop:  0,
+		delay: time.Millisecond * 100,
 	}
 
-	if writer != nil {
-		interruptWriter := &interruptSpinWriter{
-			writer:  writer,
-			spinner: spinner,
-		}
-		return spinner, interruptWriter
+	s.spinFunc = spinTTY
+	//
+	if !(writer == os.Stdout && tty.IsTerminal(os.Stdout.Fd())) {
+		s.spinFunc = spinNoTTY
 	}
 
-	return spinner, nil
+	return s
 }
 
+// Start starts the spinner using the given text.
 func (s *spinner) Start(text string, showDots bool) {
 	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
 
-		for i := 0; ; i = (i + 1) % len(spinnerStates) {
-			if atomic.LoadInt32(&s.stop) != 0 {
-				break
-			}
-			dotsState := ""
-			if showDots {
-				dotsState = dotsStates[i%len(dotsStates)]
-			}
-			state := fmt.Sprintf("\r%s %s%s", spinnerStates[i], text, dotsState)
-			s.out.Print(state)
-			time.Sleep(s.delay)
-		}
-
-		dotsState := ""
-		if showDots {
-			dotsState = dotsStates[len(dotsStates)-1]
-		}
-		finalState := fmt.Sprintf("\r%s%s  ", text, dotsState)
-		s.out.Println(finalState)
-	}()
+	go s.spinFunc(s.out, s.wg, &s.stop, s.delay, text, showDots)
 }
 
+// Stop stops the spinner.
 func (s *spinner) Stop() {
 	atomic.StoreInt32(&s.stop, 1)
 	s.wg.Wait()
 }
 
-type interruptSpinWriter struct {
-	spinner *spinner
-	writer  io.Writer
+// Write stops the spinner and writes the given bytes to the underlying writer.
+func (s *spinner) Write(p []byte) (n int, err error) {
+	s.Stop()
+	return s.out.Write(p)
 }
 
-func (w *interruptSpinWriter) Write(p []byte) (n int, err error) {
-	w.spinner.Stop()
-	return w.writer.Write(p)
+func spinTTY(out io.Writer, wg *sync.WaitGroup, stop *int32, delay time.Duration, text string, showDots bool) {
+	defer wg.Done()
+
+	fmt.Fprint(out, hideCursor)
+
+	for i := 0; ; i = (i + 1) % len(spinnerStates) {
+		if atomic.LoadInt32(stop) != 0 {
+			break
+		}
+		dotsState := ""
+		if showDots {
+			dotsState = dotsStates[i%len(dotsStates)]
+		}
+		state := fmt.Sprintf("\r%s %s%s", spinnerStates[i], text, dotsState)
+		fmt.Fprint(out, state)
+		time.Sleep(delay)
+	}
+	dotsState := ""
+	if showDots {
+		dotsState = dotsStates[len(dotsStates)-1]
+	}
+	finalState := fmt.Sprintf("\r%s%s  ", text, dotsState)
+	fmt.Fprintln(out, finalState)
+	fmt.Fprint(out, showCursor)
+}
+
+func spinNoTTY(out io.Writer, wg *sync.WaitGroup, _ *int32, _ time.Duration, text string, _ bool) {
+	defer wg.Done()
+	fmt.Fprintln(out, text+"...")
 }
 
 type nopSpinner struct{}

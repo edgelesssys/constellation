@@ -74,6 +74,7 @@ require (
 	github.com/icholy/replace v0.5.0
 	github.com/manifoldco/promptui v0.9.0
 	github.com/martinjungblut/go-cryptsetup v0.0.0-20220520180014-fd0874fd07a6
+	github.com/mattn/go-isatty v0.0.14
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
 	github.com/operator-framework/api v0.15.0
 	github.com/pkg/errors v0.9.1
@@ -223,7 +224,6 @@ require (
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
-	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
