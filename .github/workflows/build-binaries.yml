@@ -117,12 +117,6 @@ jobs:
           targetOS: "windows"
           targetArch: "amd64"
 
-      - name: Build cdbg (Windows, arm64)
-        uses: ./.github/actions/build_cdbg
-        with:
-          targetOS: "windows"
-          targetArch: "arm64"
-
   build-disk-mapper:
     runs-on: ubuntu-latest
     steps:
@@ -206,9 +200,3 @@ jobs:
         with:
           targetOS: windows
           targetArch: amd64
-
-      - name: Build CLI (Windows, arm64)
-        uses: ./.github/actions/build_cli
-        with:
-          targetOS: windows
-          targetArch: arm64

@@ -65,15 +65,6 @@ jobs:
           cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
           cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
 
-      - name: Build cli-windows-arm64
-        uses: ./.github/actions/build_cli
-        with:
-          targetOS: windows
-          targetArch: arm64
-          cosignPublicKey: ${{ secrets.COSIGN_PUBLIC_KEY }}
-          cosignPrivateKey: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          cosignPassword: ${{ secrets.COSIGN_PASSWORD }}
-
       - name: Login to Azure
         uses: ./.github/actions/azure_login
         with:
