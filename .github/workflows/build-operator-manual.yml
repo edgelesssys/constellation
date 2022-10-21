@@ -5,6 +5,7 @@ on:
     inputs:
       imageTag:
         description: "Container image tag."
+        required: false
 
 jobs:
   build-operator-manual:
@@ -29,3 +30,6 @@ jobs:
           sourceDir: operators/constellation-node-operator
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           pushTag: ${{ inputs.imageTag }}
+          cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
+          cosignPassword: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}

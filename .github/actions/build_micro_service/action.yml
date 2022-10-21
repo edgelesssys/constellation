@@ -17,6 +17,15 @@ inputs:
   githubToken:
     description: "GitHub authorization token"
     required: true
+  cosignPublicKey:
+    description: "Cosign public key"
+    required: false
+  cosignPrivateKey:
+    description: "Cosign private key"
+    required: false
+  cosignPassword:
+    description: "Password for Cosign private key"
+    required: false
 
 # Linux runner only (Docker required)
 runs:
@@ -56,3 +65,12 @@ runs:
         tags: ${{ steps.meta.outputs.tags }}
         build-args: |
           PROJECT_VERSION=${{ inputs.projectVersion }}
+
+    - name: Generate SBOM
+      uses: ./.github/actions/container_sbom
+      with:
+        containerReference: ghcr.io/${{ github.repository }}/${{ inputs.name }}@${{ steps.build-micro-service.outputs.digest }}
+        cosignPublicKey: ${{ inputs.cosignPublicKey }}
+        cosignPrivateKey: ${{ inputs.cosignPrivateKey }}
+        cosignPassword: ${{ inputs.cosignPassword }}
+      if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}

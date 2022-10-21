@@ -170,6 +170,11 @@ const sidebars = {
         },
         {
           type: 'doc',
+          label: 'Consume SBOMs',
+          id: 'workflows/sbom',
+        },
+        {
+          type: 'doc',
           label: 'Troubleshooting',
           id: 'workflows/troubleshooting',
         },

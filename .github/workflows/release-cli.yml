@@ -71,20 +71,29 @@ jobs:
           AZURE_SUBSCRIPTION_ID=0d202bbb-4fa7-4af8-8125-58c269a05435 go run . > versions-manifest.json
           cat versions-manifest.json
 
-      - name: Build SBOMs
+      - name: Download syft & grype
         run: |
-          SYFT_VERSION=0.55.0
+          SYFT_VERSION=0.59.0
+          GRYPE_VERSION=0.50.2
           curl -LO https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_linux_amd64.tar.gz
           tar -xzf syft_${SYFT_VERSION}_linux_amd64.tar.gz
           ./syft version
-          ./syft . --catalogers go-module --file constellation.spdx.sbom -o spdx-json
-          CONTAINER_VERSION=${GITHUB_REF##*/}
-          ./syft ghcr.io/edgelesssys/constellation/verification-service:${CONTAINER_VERSION} --file verification-service.spdx.sbom -o spdx-json
-          ./syft ghcr.io/edgelesssys/constellation/access-manager:${CONTAINER_VERSION} --file access-manager.spdx.sbom -o spdx-json
-          ./syft ghcr.io/edgelesssys/constellation/join-service:${CONTAINER_VERSION} --file join-service.spdx.sbom -o spdx-json
-          ./syft ghcr.io/edgelesssys/constellation/kmsserver:${CONTAINER_VERSION} --file kmsserver.spdx.sbom -o spdx-json
-          ./syft ghcr.io/edgelesssys/constellation/node-operator:${CONTAINER_VERSION} --file node-operator.spdx.sbom -o spdx-json
-        if: startsWith(github.ref, 'refs/tags/v')
+          curl -LO https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_linux_amd64.tar.gz
+          tar -xzf grype_${GRYPE_VERSION}_linux_amd64.tar.gz
+          ./grype version
+          echo $(pwd) >> $GITHUB_PATH
+        shell: bash
+
+      - name: Build signed SBOMs
+        run: |
+          syft . --catalogers go-module --file constellation.spdx.sbom -o spdx-json
+          cosign sign-blob --key env://COSIGN_PRIVATE_KEY constellation.spdx.sbom > constellation.spdx.sbom.sig
+          grype constellation.spdx.sbom --fail-on high --only-fixed
+        env:
+          COSIGN_EXPERIMENTAL: 1
+          cosignPublicKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
+          cosignPassword: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
 
       - name: Create release with artifacts
         # GitHub endorsed release project. See: https://github.com/actions/create-release
@@ -96,4 +105,5 @@ jobs:
             build/constellation-*
             build/cosign.pub
             hack/build-manifest/versions-manifest.json
-            *.spdx.sbom
+            constellation.spdx.sbom
+            constellation.spdx.sbom.sig

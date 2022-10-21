@@ -13,6 +13,15 @@ inputs:
   githubToken:
     description: "GitHub authorization token"
     required: true
+  cosignPublicKey:
+    description: "Cosign public key"
+    required: false
+  cosignPrivateKey:
+    description: "Cosign private key"
+    required: false
+  cosignPassword:
+    description: "Password for Cosign private key"
+    required: false
 
 # Linux runner only (Docker required)
 runs:
@@ -48,12 +57,22 @@ runs:
           type=ref,event=branch
 
     - name: Build and push container image
+      id: build-image
       uses: docker/build-push-action@c56af957549030174b10d6867f20e78cfd7debc5 # tag=v3.2.0
       with:
         context: ${{ inputs.sourceDir }}
         file: ${{ inputs.sourceDir }}/Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}
+
+    - name: Generate SBOM
+      uses: ./.github/actions/container_sbom
+      with:
+        containerReference: ghcr.io/${{ github.repository }}/${{ inputs.name }}@${{ steps.build-image.outputs.digest }}
+        cosignPublicKey: ${{ inputs.cosignPublicKey }}
+        cosignPrivateKey: ${{ inputs.cosignPrivateKey }}
+        cosignPassword: ${{ inputs.cosignPassword }}
+      if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
 
     - name: Bundle for pseudo version
       if: ${{ steps.pseudo-version.outputs.pseudoVersion != '' && inputs.pushTag == '' }}
@@ -84,12 +103,23 @@ runs:
           type=ref,event=branch
 
     - name: Build and push bundle image
+      id: build-image-bundle
       uses: docker/build-push-action@c56af957549030174b10d6867f20e78cfd7debc5 # tag=v3.2.0
       with:
         context: ${{ inputs.sourceDir }}
         file: ${{ inputs.sourceDir }}/bundle.Dockerfile
         push: true
         tags: ${{ steps.bundle-meta.outputs.tags }}
+
+    - name: Generate Bundle SBOM
+      uses: ./.github/actions/container_sbom
+      with:
+        containerReference: ghcr.io/${{ github.repository }}/${{ inputs.name }}-bundle@${{ steps.build-image-bundle.outputs.digest }}
+        cosignPublicKey: ${{ inputs.cosignPublicKey }}
+        cosignPrivateKey: ${{ inputs.cosignPrivateKey }}
+        cosignPassword: ${{ inputs.cosignPassword }}
+      if: ${{ inputs.cosignPublicKey != '' && inputs.cosignPrivateKey != '' && inputs.cosignPassword != '' }}
+
 
     - name: Build and push catalog for pseudo versions
       if: ${{ steps.pseudo-version.outputs.pseudoVersion != '' && inputs.pushTag == '' }}

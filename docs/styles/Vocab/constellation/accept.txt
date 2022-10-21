@@ -18,6 +18,7 @@ Filestore
 Fulcio
 Mbps
 Gbps
+Grype
 iam
 IAM
 initramfs
@@ -36,6 +37,7 @@ Rekor
 resizable
 rollout
 sigstore
+Syft
 systemd
 [Uu]nencrypted
 unspoofable
