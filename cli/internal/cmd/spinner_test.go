@@ -35,7 +35,12 @@ func TestSpinnerInitialState(t *testing.T) {
 	assert.Greater(out.Len(), 0)
 
 	outStr := out.String()
-	assert.True(strings.HasPrefix(outStr, hideCursor+generateAllStatesAsString(t, baseText, true)))
+	generateStr := hideCursor + generateAllStatesAsString(t, baseText, true)
+	assert.True(strings.HasPrefix(outStr, generateStr))
+	fmt.Println(outStr)
+	fmt.Println(generateStr)
+	fmt.Println([]byte(outStr))
+	fmt.Println([]byte(generateStr))
 }
 
 func TestSpinnerFinalState(t *testing.T) {
@@ -67,8 +72,13 @@ func TestSpinnerDisabledShowDotsFlag(t *testing.T) {
 	assert.True(out.Len() > 0)
 
 	outStr := out.String()
-	assert.True(strings.HasPrefix(outStr, hideCursor+generateAllStatesAsString(t, baseText, false)))
+	generateStr := hideCursor + generateAllStatesAsString(t, baseText, false)
+	assert.True(strings.HasPrefix(outStr, generateStr))
 	assert.True(strings.HasSuffix(outStr, baseText+"  \n"+showCursor))
+	fmt.Println(outStr)
+	fmt.Println(generateStr)
+	fmt.Println([]byte(outStr))
+	fmt.Println([]byte(generateStr))
 }
 
 func TestSpinnerInterruptWriter(t *testing.T) {
