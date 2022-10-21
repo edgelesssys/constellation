@@ -33,6 +33,12 @@ attaching persistent storage, or autoscaling aren't available.
   * At least 4 GB RAM (6 GB are recommended)
   * 20 GB of free disk space
   * Hardware virtualization enabled in the BIOS/UEFI (often referred to as Intel VT-x or AMD-V/SVM)
+  * `iptables` rules configured to not drop forwarded packages.
+    If running the following command returns no error, please follow [the troubleshooting guide](#vms-have-no-internet-access):
+
+    ```bash
+    sudo iptables -S | grep -q -- '-P FORWARD DROP'
+    ```
 
 ## Create your cluster
 
