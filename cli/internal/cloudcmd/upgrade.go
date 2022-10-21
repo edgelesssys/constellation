@@ -71,7 +71,7 @@ func (u *Upgrader) Upgrade(ctx context.Context, image string, measurements map[u
 
 // GetCurrentImage returns the currently used image of the cluster.
 func (u *Upgrader) GetCurrentImage(ctx context.Context) (*unstructured.Unstructured, string, error) {
-	imageStruct, err := u.imageUpdater.getCurrent(ctx, "constellation-coreos")
+	imageStruct, err := u.imageUpdater.getCurrent(ctx, "constellation-os")
 	if err != nil {
 		return nil, "", err
 	}

@@ -24,7 +24,7 @@ Example for GCP:
 apiVersion: update.edgeless.systems/v1alpha1
 kind: NodeImage
 metadata:
-  name: constellation-coreos
+  name: constellation-os
 spec:
   image: "projects/constellation-images/global/images/<image-name>"
 ```
@@ -34,7 +34,7 @@ Example for Azure:
 apiVersion: update.edgeless.systems/v1alpha1
 kind: NodeImage
 metadata:
-  name: constellation-coreos
+  name: constellation-os
 spec:
   image: "/subscriptions/<subscription-id>/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/<image-definition-name>/versions/<image-version>"
 ```
@@ -70,7 +70,7 @@ kind: ScalingGroup
 metadata:
   name: scalinggroup-worker
 spec:
-  nodeImage: "constellation-coreos"
+  nodeImage: "constellation-os"
   groupId: "projects/<project-id>/zones/<zone>/instanceGroupManagers/<instance-group-name>"
   autoscaling: true
 ```
@@ -83,7 +83,7 @@ kind: ScalingGroup
 metadata:
   name: scalinggroup-worker
 spec:
-  nodeImage: "constellation-coreos"
+  nodeImage: "constellation-os"
   groupId: "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Compute/virtualMachineScaleSets/<scale-set-name>"
   autoscaling: true
 ```

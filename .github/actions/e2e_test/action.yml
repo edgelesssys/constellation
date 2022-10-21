@@ -13,12 +13,12 @@ inputs:
   machineType:
     description: "VM machine type. Make sure it matches selected cloud provider!"
     required: false
-  coreosImage:
-    description: "CoreOS image to run. The default value 'debug-latest' will select the latest available debug image."
+  osImage:
+    description: "OS image to run. The default value 'debug-latest' will select the latest available debug image."
     default: "debug-latest"
     required: true
   isDebugImage:
-    description: "Is CoreOS img a debug img?"
+    description: "Is OS img a debug img?"
     default: "true"
     required: true
   kubernetesVersion:
@@ -93,7 +93,7 @@ runs:
         workerNodesCount: ${{ inputs.workerNodesCount }}
         controlNodesCount: ${{ inputs.controlNodesCount }}
         machineType: ${{ inputs.machineType }}
-        coreosImage: ${{ inputs.coreosImage }}
+        osImage: ${{ inputs.osImage }}
         isDebugImage: ${{ inputs.isDebugImage }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
         azureClientSecret: ${{ inputs.azureClientSecret }}

@@ -8,7 +8,7 @@ package constants
 
 const (
 	AutoscalingStrategyResourceName      = "autoscalingstrategy"
-	NodeImageResourceName                = "constellation-coreos"
+	NodeImageResourceName                = "constellation-os"
 	ControlPlaneScalingGroupResourceName = "scalinggroup-controlplane"
 	WorkerScalingGroupResourceName       = "scalinggroup-worker"
 )

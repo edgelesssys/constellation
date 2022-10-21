@@ -65,6 +65,7 @@ func (s *Access) GetAuthorizedKeys() []UserKey {
 }
 
 // DeployAuthorizedKey takes an user & public key pair, creates the user if required and deploy a SSH key for them.
+// TODO: Refactor to not write to /etc or /home.
 func (s *Access) DeployAuthorizedKey(ctx context.Context, sshKey UserKey) error {
 	// allow only one thread to write to authorized keys, create users and update the authorized map at a time
 	s.mux.Lock()

@@ -43,7 +43,7 @@ AZURE_PUBLISHER="${AZURE_PUBLISHER:-edgelesssys}"
 AZURE_IMAGE_NAME="${AZURE_IMAGE_NAME:-upload-target}"
 AZURE_IMAGE_OFFER="${AZURE_IMAGE_OFFER:-constellation}"
 AZURE_IMAGE_DEFINITION="${AZURE_IMAGE_DEFINITION:-constellation}"
-AZURE_SKU="${AZURE_SKU:-constellation-coreos}"
+AZURE_SKU="${AZURE_SKU:-constellation}"
 AZURE_SECURITY_TYPE="${AZURE_SECURITY_TYPE:-TrustedLaunch}"
 
 if [[ -z "${AZURE_RESOURCE_GROUP_NAME}" ]]; then

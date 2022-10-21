@@ -58,16 +58,16 @@ const (
 	//
 	// Filenames.
 	//
-	ClusterIDsFileName      = "constellation-id.json"
-	ConfigFilename          = "constellation-conf.yaml"
-	LicenseFilename         = "constellation.license"
-	DebugdConfigFilename    = "cdbg-conf.yaml"
-	AdminConfFilename       = "constellation-admin.conf"
-	MasterSecretFilename    = "constellation-mastersecret.json"
-	WGQuickConfigFilename   = "wg0.conf"
-	CoreOSAdminConfFilename = "/etc/kubernetes/admin.conf"
-	KubeadmCertificateDir   = "/etc/kubernetes/pki"
-	KubectlPath             = "/run/state/bin/kubectl"
+	ClusterIDsFileName            = "constellation-id.json"
+	ConfigFilename                = "constellation-conf.yaml"
+	LicenseFilename               = "constellation.license"
+	DebugdConfigFilename          = "cdbg-conf.yaml"
+	AdminConfFilename             = "constellation-admin.conf"
+	MasterSecretFilename          = "constellation-mastersecret.json"
+	WGQuickConfigFilename         = "wg0.conf"
+	ControlPlaneAdminConfFilename = "/etc/kubernetes/admin.conf"
+	KubeadmCertificateDir         = "/etc/kubernetes/pki"
+	KubectlPath                   = "/run/state/bin/kubectl"
 
 	//
 	// Filenames for Constellation's micro services.

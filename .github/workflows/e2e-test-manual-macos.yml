@@ -27,13 +27,13 @@ on:
         description: "Kubernetes version to create the cluster from."
         default: "1.24"
         required: true
-      coreosImage:
-        description: "CoreOS image (full path). Examples are in internal/config/config.go."
+      osImage:
+        description: "OS image (full path). Examples are in internal/config/config.go."
         default: "debug-latest"
         type: string
         required: true
       isDebugImage:
-        description: "Is CoreOS image a debug image?"
+        description: "Is OS image a debug image?"
         type: boolean
         default: true
         required: false
@@ -127,7 +127,7 @@ jobs:
           kubernetesVersion: ${{ github.event.inputs.kubernetesVersion }}
           azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
-          coreosImage: ${{ github.event.inputs.coreosImage }}
+          osImage: ${{ github.event.inputs.osImage }}
           isDebugImage: ${{ github.event.inputs.isDebugImage }}
 
       - name: Always terminate cluster

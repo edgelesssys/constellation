@@ -29,9 +29,9 @@ const (
 	auditPolicyPath = "/etc/kubernetes/audit-policy.yaml"
 )
 
-type CoreOSConfiguration struct{}
+type KubdeadmConfiguration struct{}
 
-func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool, k8sVersion versions.ValidK8sVersion) KubeadmInitYAML {
+func (c *KubdeadmConfiguration) InitConfiguration(externalCloudProvider bool, k8sVersion versions.ValidK8sVersion) KubeadmInitYAML {
 	var cloudProvider string
 	if externalCloudProvider {
 		cloudProvider = "external"
@@ -171,7 +171,7 @@ func (c *CoreOSConfiguration) InitConfiguration(externalCloudProvider bool, k8sV
 	}
 }
 
-func (c *CoreOSConfiguration) JoinConfiguration(externalCloudProvider bool) KubeadmJoinYAML {
+func (c *KubdeadmConfiguration) JoinConfiguration(externalCloudProvider bool) KubeadmJoinYAML {
 	var cloudProvider string
 	if externalCloudProvider {
 		cloudProvider = "external"

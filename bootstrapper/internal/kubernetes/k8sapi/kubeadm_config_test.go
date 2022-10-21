@@ -22,17 +22,17 @@ func TestMain(m *testing.M) {
 }
 
 func TestInitConfiguration(t *testing.T) {
-	coreOSConfig := CoreOSConfiguration{}
+	kubeadmConfig := KubdeadmConfiguration{}
 
 	testCases := map[string]struct {
 		config KubeadmInitYAML
 	}{
-		"CoreOS init config can be created": {
-			config: coreOSConfig.InitConfiguration(true, versions.Default),
+		"kubeadm init config can be created": {
+			config: kubeadmConfig.InitConfiguration(true, versions.Default),
 		},
-		"CoreOS init config with all fields can be created": {
+		"kubeadm init config with all fields can be created": {
 			config: func() KubeadmInitYAML {
-				c := coreOSConfig.InitConfiguration(true, versions.Default)
+				c := kubeadmConfig.InitConfiguration(true, versions.Default)
 				c.SetAPIServerAdvertiseAddress("192.0.2.0")
 				c.SetNodeIP("192.0.2.0")
 				c.SetNodeName("node")
@@ -60,7 +60,7 @@ func TestInitConfiguration(t *testing.T) {
 }
 
 func TestInitConfigurationKubeadmCompatibility(t *testing.T) {
-	coreOSConfig := CoreOSConfiguration{}
+	kubeadmConfig := KubdeadmConfiguration{}
 
 	testCases := map[string]struct {
 		config          KubeadmInitYAML
@@ -68,11 +68,11 @@ func TestInitConfigurationKubeadmCompatibility(t *testing.T) {
 		wantErr         bool
 	}{
 		"Kubeadm accepts version 'Latest'": {
-			config:          coreOSConfig.InitConfiguration(true, versions.Default),
+			config:          kubeadmConfig.InitConfiguration(true, versions.Default),
 			expectedVersion: fmt.Sprintf("v%s", versions.VersionConfigs[versions.Default].PatchVersion),
 		},
 		"Kubeadm receives incompatible version": {
-			config:  coreOSConfig.InitConfiguration(true, "1.19"),
+			config:  kubeadmConfig.InitConfiguration(true, "1.19"),
 			wantErr: true,
 		},
 	}
@@ -92,17 +92,17 @@ func TestInitConfigurationKubeadmCompatibility(t *testing.T) {
 }
 
 func TestJoinConfiguration(t *testing.T) {
-	coreOSConfig := CoreOSConfiguration{}
+	kubdeadmConfig := KubdeadmConfiguration{}
 
 	testCases := map[string]struct {
 		config KubeadmJoinYAML
 	}{
-		"CoreOS join config can be created": {
-			config: coreOSConfig.JoinConfiguration(true),
+		"kubeadm join config can be created": {
+			config: kubdeadmConfig.JoinConfiguration(true),
 		},
-		"CoreOS join config with all fields can be created": {
+		"kubeadm join config with all fields can be created": {
 			config: func() KubeadmJoinYAML {
-				c := coreOSConfig.JoinConfiguration(true)
+				c := kubdeadmConfig.JoinConfiguration(true)
 				c.SetAPIServerEndpoint("192.0.2.0:6443")
 				c.SetNodeIP("192.0.2.0")
 				c.SetNodeName("node")

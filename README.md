@@ -42,7 +42,7 @@ Encrypting your K8s is good for:
 ### 🔍 Everything verifiable
 
 * "Whole cluster" [attestation][cluster-attestation] based on the remote-attestation feature of CVMs
-* Confidential computing-optimized [node images][images] based on Fedora CoreOS; fully measured and integrity-protected
+* Confidential computing-optimized [node images][images]; fully measured and integrity-protected
 * [Supply chain protection][supply-chain] with [sigstore](https://www.sigstore.dev/)
 
 ### 🚀 Performance and scale
