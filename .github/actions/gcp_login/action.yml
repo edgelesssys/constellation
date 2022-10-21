@@ -16,4 +16,4 @@ runs:
 
     # Even if preinstalled in Github Actions runner image, this setup does some magic authentication required for gsutil.
     - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@877d4953d2c70a0ba7ef3290ae968eb24af233bb
+      uses: google-github-actions/setup-gcloud@ee9693ff89cdf73862b8a13988f6a71070e8fc58
