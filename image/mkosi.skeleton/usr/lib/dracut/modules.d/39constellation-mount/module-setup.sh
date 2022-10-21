@@ -33,6 +33,11 @@ install() {
     install_and_enable_unit "configure-constel-csp.service" \
         "basic.target"
 
+    # aws nvme disks
+    inst_multiple \
+        tail \
+        tr
+
     # azure scsi disks
     inst_multiple \
         cut \
