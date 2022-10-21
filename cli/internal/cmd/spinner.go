@@ -104,7 +104,7 @@ func spinTTY(out io.Writer, wg *sync.WaitGroup, stop *int32, delay time.Duration
 
 func spinNoTTY(out io.Writer, wg *sync.WaitGroup, _ *int32, _ time.Duration, text string, _ bool) {
 	defer wg.Done()
-	fmt.Fprintln(out, text)
+	fmt.Fprintln(out, text+"...")
 }
 
 type nopSpinner struct{}

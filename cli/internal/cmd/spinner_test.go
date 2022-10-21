@@ -96,7 +96,7 @@ func TestSpinNoTTY(t *testing.T) {
 	time.Sleep(baseWait * time.Millisecond)
 	s.Stop()
 	assert.Greater(out.Len(), 0)
-	assert.Equal(baseText+"\n", out.String())
+	assert.Equal(baseText+"...\n", out.String())
 }
 
 func generateAllStatesAsString(t *testing.T, text string, showDots bool) string {
