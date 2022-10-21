@@ -6,14 +6,6 @@ on:
     branches:
       - main
       - "release/**"
-    paths:
-      - "joinservice/**"
-      - "internal/atls/**"
-      - "internal/attestation/**"
-      - "internal/constants/**"
-      - "internal/file/**"
-      - "internal/grpc/**"
-      - "internal/oid/**"
 
 jobs:
   build-join-service:

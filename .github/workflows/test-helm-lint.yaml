@@ -6,11 +6,7 @@ on:
     branches:
       - main
       - "release/**"
-    paths:
-      - "cli/internal/helm/charts/**"
   pull_request:
-    paths:
-      - "cli/internal/helm/charts/**"
 
 # Abort runs of *this* workflow, if a new commit with the same ref is pushed.
 concurrency:
