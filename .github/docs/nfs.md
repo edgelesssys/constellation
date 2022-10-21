@@ -2,19 +2,16 @@
 
 This document describes how to deploy NFS in Constellation using Rook.
 
-## Prerequisites
-Rook/Ceph currently only works with containterd version 1.5.9 or below. Therefore, you need to use a custom VM image. Ask @3u13r for details.
-
-
 ## Create a Cluster
 
 The cluster needs at least 3 worker nodes, default machines are powerful enough.
 
 ```bash
-$ constellation create --name nfs -c 1 -w 3
+constellation create --name nfs -c 1 -w 3
 ```
 
 ## Deploy CSI Driver
+
 We need block storage form somewhere. We will use the official Azure CSI for that. We need to create the azure config secret again with the expected fields. Replace "XXX" with the corresponding value from the secret `azureconfig`.
 
 ```bash
@@ -24,7 +21,9 @@ helm repo add azuredisk-csi-driver https://raw.githubusercontent.com/kubernetes-
 helm repo update azuredisk-csi-driver
 helm install azuredisk-csi-driver azuredisk-csi-driver/azuredisk-csi-driver --namespace kube-system --set linux.distro=fedora --set controller.cloudConfigSecretName=azure-config --set node.cloudConfigSecretName=azure-config
 ```
-## Deploy the StorageClass:
+
+## Deploy the StorageClass
+
 ```yaml
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -38,7 +37,8 @@ parameters:
 volumeBindingMode: WaitForFirstConsumer
 ```
 
-## Deploy Rook:
+## Deploy Rook
+
 ```bash
 git clone https://github.com/rook/rook.git
 cd rook/deploy/examples
@@ -47,12 +47,22 @@ kubectl rollout status -n rook-ceph deployment/rook-ceph-operator
 ```
 
 Apply the following changes to `cluster-on-pvc.yaml`:
+
 ```diff
 euler@work:~/projects/rook/deploy/examples$ git diff cluster-on-pvc.yaml
 diff --git a/deploy/examples/cluster-on-pvc.yaml b/deploy/examples/cluster-on-pvc.yaml
 index ee4976be2..b5cf294cb 100644
 --- a/deploy/examples/cluster-on-pvc.yaml
 +++ b/deploy/examples/cluster-on-pvc.yaml
+@@ -16,7 +16,7 @@ spec:
+   mon:
+     # Set the number of mons to be started. Generally recommended to be 3.
+     # For highest availability, an odd number of mons should be specified.
+-    count: 3
++    count: 1
+     # The mons should be on unique nodes. For production, at least 3 nodes are recommended for this reason.
+     # Mons should only be allowed on the same node for test environments where data loss is acceptable.
+     allowMultiplePerNode: false
 @@ -28,7 +28,7 @@ spec:
      # size appropriate for monitor data will be used.
      volumeClaimTemplate:
@@ -62,7 +72,7 @@ index ee4976be2..b5cf294cb 100644
          resources:
            requests:
              storage: 10Gi
-@@ -59,11 +59,11 @@ spec:
+@@ -59,13 +59,13 @@ spec:
          # Certain storage class in the Cloud are slow
          # Rook can configure the OSD running on PVC to accommodate that by tuning some of the Ceph internal
          # Currently, "gp2" has been identified as such
@@ -74,8 +84,11 @@ index ee4976be2..b5cf294cb 100644
 -        tuneFastDeviceClass: false
 +        tuneFastDeviceClass: true
          # whether to encrypt the deviceSet or not
-         encrypted: false
+-        encrypted: false
++        encrypted: true
          # Since the OSDs could end up on any node, an effort needs to be made to spread the OSDs
+         # across nodes as much as possible. Unfortunately the pod anti-affinity breaks down
+         # as soon as you have more than one OSD per node. The topology spread constraints will
 @@ -100,7 +100,7 @@ spec:
            topologySpreadConstraints:
              - maxSkew: 1
@@ -97,11 +110,13 @@ index ee4976be2..b5cf294cb 100644
 ```
 
 Now apply the yaml:
+
 ```bash
 kubectl apply -f cluster-on-pvc.yaml
 ```
 
 Verify the health of the ceph cluster:
+
 ```bash
 $ kubectl apply -f toolbox.yaml
 $ kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- ceph status
@@ -122,6 +137,7 @@ $ kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- ceph status
 ```
 
 Deploy the filesystem:
+
 ```bash
 $ kubectl apply -f filesystem.yaml
 $ kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- ceph status
@@ -149,12 +165,21 @@ $ kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- ceph status
 ```
 
 Deploy the StorageClass:
+
 ```bash
-$ kubectl apply -f csi/cephfs/storageclass.yaml
+kubectl apply -f csi/cephfs/storageclass.yaml
+```
+
+Rescale the monitor count to 3:
+
+```bash
+kubectl -n rook-ceph patch cephcluster rook-ceph --type merge -p '{"spec":{"mon":{"count":3}}}'
 ```
 
 ## Use the NFS
+
 The following deployment will create a PVC based on NFS and mount it into 3 pods.
+
 ```yaml
 apiVersion: v1
 kind: PersistentVolumeClaim
