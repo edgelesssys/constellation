@@ -240,17 +240,17 @@ type QEMUConfig struct {
 	//   Container image to use for launching a containerized libvirt daemon. Only relevant if `libvirtSocket = ""`.
 	LibvirtContainerImage string `yaml:"libvirtContainerImage"`
 	// description: |
-	//   Measurement used to enable measured boot.
-	Measurements Measurements `yaml:"measurements"`
-	// description: |
-	//   List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning.
-	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
-	// description: |
 	//   NVRAM template to be used for secure boot. Can be sentinel value "production", "testing" or a path to a custom NVRAM template
 	NVRAM string `yaml:"nvram" validate:"required"`
 	// description: |
 	//   Path to the OVMF firmware. Leave empty for auto selection.
 	Firmware string `yaml:"firmware"`
+	// description: |
+	//   Measurement used to enable measured boot.
+	Measurements Measurements `yaml:"measurements"`
+	// description: |
+	//   List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning.
+	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
 }
 
 // Default returns a struct with the default config.
