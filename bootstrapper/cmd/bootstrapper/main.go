@@ -91,7 +91,7 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to marshal PCRs")
 		}
 
-		issuer = initserver.NewIssuerWrapper(&aws.Issuer{}, vmtype.Unknown, nil)
+		issuer = initserver.NewIssuerWrapper(aws.NewIssuer(), vmtype.Unknown, nil)
 
 		metadata, err := awscloud.New(ctx)
 		if err != nil {

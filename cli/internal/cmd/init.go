@@ -231,6 +231,8 @@ func writeRow(wr io.Writer, col1 string, col2 string) {
 
 func getEnforcedPCRs(provider cloudprovider.Provider, config *config.Config) []uint32 {
 	switch provider {
+	case cloudprovider.AWS:
+		return config.Provider.AWS.EnforcedMeasurements
 	case cloudprovider.Azure:
 		return config.Provider.Azure.EnforcedMeasurements
 	case cloudprovider.GCP:
