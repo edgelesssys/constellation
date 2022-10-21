@@ -23,7 +23,7 @@ jobs:
       disk-mapper-sha256: ${{ steps.collect-hashes.outputs.disk-mapper-sha256 }}
     steps:
       - name: Checkout
-        uses: actions/checkout@1f9a0c22da41e6ebfa534300ef656657ea2c6707
+        uses: actions/checkout@e2f20e631ae6d7dd3b768f56a5d2af784dd54791 # tag=v2.5.0
 
       - name: Build bootstrapper
         if: ${{ inputs.debug == false }}
@@ -43,7 +43,7 @@ jobs:
           outputPath: ${{ github.workspace }}/build/disk-mapper
 
       - name: Upload dependencies
-        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # tag=v3.1.0
         with:
           name: dependencies
           path: |
@@ -101,10 +101,10 @@ jobs:
         csp: [aws, azure, gcp, qemu]
     steps:
       - name: Checkout
-        uses: actions/checkout@1f9a0c22da41e6ebfa534300ef656657ea2c6707
+        uses: actions/checkout@e2f20e631ae6d7dd3b768f56a5d2af784dd54791 # tag=v2.5.0
 
       - name: Download build dependencies
-        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
         with:
           name: dependencies
           path: ${{ github.workspace }}/build
@@ -155,7 +155,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload raw OS image as artifact
-        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # tag=v3.1.0
         with:
           name: image-${{ matrix.csp }}
           path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.raw
@@ -163,7 +163,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload individual OS parts as artifacts
-        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # tag=v3.1.0
         with:
           name: parts-${{ matrix.csp }}
           path: |
@@ -178,7 +178,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload manifest as artifact
-        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # tag=v3.1.0
         with:
           name: manifest-${{ matrix.csp }}
           path: |
@@ -203,10 +203,10 @@ jobs:
             upload-variant: TrustedLaunch
     steps:
       - name: Checkout
-        uses: actions/checkout@1f9a0c22da41e6ebfa534300ef656657ea2c6707
+        uses: actions/checkout@e2f20e631ae6d7dd3b768f56a5d2af784dd54791 # tag=v2.5.0
 
       - name: Download OS image artifact
-        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
         with:
           name: image-${{ matrix.csp }}
           path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36
@@ -223,7 +223,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Login to AWS
-        uses: aws-actions/configure-aws-credentials@a12c5029930fcd33589131d496622beb4e256718
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1.7.0
         if: ${{ matrix.csp == 'aws' || matrix.csp == 'azure' }}
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
@@ -380,10 +380,10 @@ jobs:
         csp: [aws, azure, gcp, qemu]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@1f9a0c22da41e6ebfa534300ef656657ea2c6707
+        uses: actions/checkout@e2f20e631ae6d7dd3b768f56a5d2af784dd54791 # tag=v2.5.0
 
       - name: Download OS image artifact
-        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
         with:
           name: image-${{ matrix.csp }}
 
@@ -407,7 +407,7 @@ jobs:
         working-directory: ${{ github.workspace }}/image/measured-boot
 
       - name: Upload expected PCRs as artifact
-        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # tag=v3.1.0
         with:
           name: pcrs
           path: pcrs-${{ matrix.csp }}.json
@@ -425,7 +425,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Download rootfs
-        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
         with:
           # downloading / using only the QEMU rootfs is fine
           # since the images only differ in the ESP partition
@@ -437,19 +437,19 @@ jobs:
           unsquashfs -user-xattrs -d image.root.tree image.root.raw
           echo "::endgroup::"
 
-      - uses: anchore/sbom-action@2424de21c44622889b4c7cf9098c0e57648c58bf
+      - uses: anchore/sbom-action@b5042e9d19d8b32849779bfe17673ff84aec702d # tag=v0.12.0
         with:
           path: image.root.tree
           artifact-name: sbom.spdx.json
           format: spdx-json
 
-      - uses: anchore/sbom-action@2424de21c44622889b4c7cf9098c0e57648c58bf
+      - uses: anchore/sbom-action@b5042e9d19d8b32849779bfe17673ff84aec702d # tag=v0.12.0
         with:
           path: image.root.tree
           artifact-name: sbom.cyclonedx.json
           format: cyclonedx-json
 
-      - uses: anchore/sbom-action@2424de21c44622889b4c7cf9098c0e57648c58bf
+      - uses: anchore/sbom-action@b5042e9d19d8b32849779bfe17673ff84aec702d # tag=v0.12.0
         with:
           path: image.root.tree
           artifact-name: sbom.syft.json
