@@ -1,6 +1,6 @@
 name: Constellation create
 description: |
-  Create a new Constellation cluster using latest CoreOS image.
+  Create a new Constellation cluster using latest OS image.
 inputs:
   workerNodesCount:
     description: "Number of worker nodes to spawn."
@@ -17,11 +17,11 @@ inputs:
   machineType:
     description: "Machine type of VM to spawn."
     required: false
-  coreosImage:
-    description: "CoreOS image to use. The default value 'debug-latest' will select the latest available debug image."
+  osImage:
+    description: "OS image to use. The default value 'debug-latest' will select the latest available debug image."
     required: true
   isDebugImage:
-    description: "Is CoreOS img a debug img?"
+    description: "Is OS img a debug img?"
     required: true
   kubernetesVersion:
     description: "Kubernetes version to create the cluster from."
@@ -74,23 +74,23 @@ runs:
       run: |
         case $CSP in
           azure)
-            if [ "${{ inputs.coreosImage == 'debug-latest' }}" = true ]
+            if [ "${{ inputs.osImage == 'debug-latest' }}" = true ]
             then
               IMAGE_DEFINITION=$(az sig image-definition list --resource-group constellation-images --gallery-name Constellation_Debug_CVM --query "[].name" -o tsv | sort --version-sort | tail -n 1)
               AZURE_IMAGE=$(az sig image-version list --resource-group constellation-images --gallery-name Constellation_Debug_CVM --gallery-image-definition ${IMAGE_DEFINITION} --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table | tail -n 1)
             else
-              AZURE_IMAGE=${{ inputs.coreosImage }}
+              AZURE_IMAGE=${{ inputs.osImage }}
             fi
 
             yq eval -i "(.provider.azure.image) = \"${AZURE_IMAGE}\"" constellation-conf.yaml
             ;;
           gcp)
-            if [ "${{ inputs.coreosImage == 'debug-latest' }}" = true ]
+            if [ "${{ inputs.osImage == 'debug-latest' }}" = true ]
             then
               GCP_IMAGE_NAME=$(gcloud compute images list --project constellation-images --filter="name ~ constellation-\d{10} AND family~constellation-debug-v\d+-\d+-\d+" --sort-by=creationTimestamp --format="table(name)" | tail -n 1)
               GCP_IMAGE="projects/constellation-images/global/images/${GCP_IMAGE_NAME}"
             else
-              GCP_IMAGE=${{ inputs.coreosImage }}
+              GCP_IMAGE=${{ inputs.osImage }}
             fi
 
             yq eval -i "(.provider.gcp.image) = \"${GCP_IMAGE}\"" constellation-conf.yaml

@@ -155,7 +155,7 @@ func (v *QEMUVariables) String() string {
 	b.WriteString(v.CommonVariables.String())
 	writeLinef(b, "libvirt_uri = %q", v.LibvirtURI)
 	writeLinef(b, "libvirt_socket_path = %q", v.LibvirtSocketPath)
-	writeLinef(b, "constellation_coreos_image = %q", v.ImagePath)
+	writeLinef(b, "constellation_os_image = %q", v.ImagePath)
 	writeLinef(b, "image_format = %q", v.ImageFormat)
 	writeLinef(b, "vcpus = %d", v.CPUCount)
 	writeLinef(b, "memory = %d", v.MemorySizeMiB)

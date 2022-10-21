@@ -85,7 +85,7 @@ func (k *Kubeadm) GetJoinToken(ttl time.Duration) (*kubeadm.BootstrapTokenDiscov
 
 	// parse Kubernetes CA certs
 	k.log.Infof("Preparing join token for new node")
-	rawConfig, err := k.file.Read(constants.CoreOSAdminConfFilename)
+	rawConfig, err := k.file.Read(constants.ControlPlaneAdminConfFilename)
 	if err != nil {
 		return nil, fmt.Errorf("loading kubeconfig file: %w", err)
 	}

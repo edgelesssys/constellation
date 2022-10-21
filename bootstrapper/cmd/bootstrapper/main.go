@@ -109,7 +109,7 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to create cloud controller manager")
 		}
 		clusterInitJoiner = kubernetes.New(
-			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), cloudControllerManager,
+			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), cloudControllerManager,
 			&gcpcloud.CloudNodeManager{}, &gcpcloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
 		)
 		openTPM = vtpm.OpenVTPM
@@ -142,7 +142,7 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to marshal PCRs")
 		}
 		clusterInitJoiner = kubernetes.New(
-			"azure", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), azurecloud.NewCloudControllerManager(metadata),
+			"azure", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), azurecloud.NewCloudControllerManager(metadata),
 			&azurecloud.CloudNodeManager{}, &azurecloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
 		)
 
@@ -163,7 +163,7 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to marshal PCRs")
 		}
 		clusterInitJoiner = kubernetes.New(
-			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.CoreOSConfiguration{}, kubectl.New(), &qemucloud.CloudControllerManager{},
+			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), &qemucloud.CloudControllerManager{},
 			&qemucloud.CloudNodeManager{}, &qemucloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
 		)
 		metadataAPI = metadata

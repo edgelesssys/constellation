@@ -3,7 +3,7 @@ variable "libvirt_uri" {
   description = "libvirt socket uri"
 }
 
-variable "constellation_coreos_image" {
+variable "constellation_os_image" {
   type        = string
   description = "constellation OS file path"
 }

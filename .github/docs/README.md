@@ -107,7 +107,7 @@ For information on how to achieve this, refer to the [First steps](https://docs.
 
 ## Image versions
 
-The [build-coreos](../workflows/build-coreos.yml) workflow can be used to trigger an image build.
+The [build-os-image](../workflows/build-os-image.yml) workflow can be used to trigger an image build.
 
 The workflow can be used to build debug or release images.
 A debug image uses [`debugd`](../../debugd/) as its bootstrapper binary, while release images use the actual [`bootstrapper`](../../bootstrapper/)

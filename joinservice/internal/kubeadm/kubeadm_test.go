@@ -90,7 +90,7 @@ kind: Config`,
 				client: fake.NewSimpleClientset(),
 			}
 			if tc.adminConf != "" {
-				require.NoError(client.file.Write(constants.CoreOSAdminConfFilename, []byte(tc.adminConf), file.OptNone))
+				require.NoError(client.file.Write(constants.ControlPlaneAdminConfFilename, []byte(tc.adminConf), file.OptNone))
 			}
 
 			res, err := client.GetJoinToken(time.Minute)

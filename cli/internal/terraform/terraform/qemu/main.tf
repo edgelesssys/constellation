@@ -57,7 +57,7 @@ module "control_plane" {
   cidr            = "10.42.1.0/24"
   network_id      = libvirt_network.constellation.id
   pool            = libvirt_pool.cluster.name
-  boot_volume_id  = libvirt_volume.constellation_coreos_image.id
+  boot_volume_id  = libvirt_volume.constellation_os_image.id
   machine         = var.machine
   firmware        = var.firmware
   nvram           = var.nvram
@@ -74,7 +74,7 @@ module "worker" {
   cidr            = "10.42.2.0/24"
   network_id      = libvirt_network.constellation.id
   pool            = libvirt_pool.cluster.name
-  boot_volume_id  = libvirt_volume.constellation_coreos_image.id
+  boot_volume_id  = libvirt_volume.constellation_os_image.id
   machine         = var.machine
   firmware        = var.firmware
   nvram           = var.nvram
@@ -87,10 +87,10 @@ resource "libvirt_pool" "cluster" {
   path = "/var/lib/libvirt/images"
 }
 
-resource "libvirt_volume" "constellation_coreos_image" {
+resource "libvirt_volume" "constellation_os_image" {
   name   = "${var.name}-node-image"
   pool   = libvirt_pool.cluster.name
-  source = var.constellation_coreos_image
+  source = var.constellation_os_image
   format = var.image_format
 }
 

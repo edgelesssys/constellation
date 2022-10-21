@@ -4,11 +4,11 @@ inputs:
   cloudProvider:
     description: "Which cloud provider to use."
     required: true
-  coreosImage:
-    description: "CoreOS image to run. The default value 'debug-latest' will select the latest available debug image."
+  osImage:
+    description: "OS image to run. The default value 'debug-latest' will select the latest available debug image."
     required: true
   isDebugImage:
-    description: "Is CoreOS img a debug img?"
+    description: "Is OS img a debug img?"
     required: true
   workerNodesCount:
     description: "Number of worker nodes to spawn."
@@ -87,7 +87,7 @@ runs:
         workerNodesCount: ${{ inputs.workerNodesCount }}
         controlNodesCount: ${{ inputs.controlNodesCount }}
         machineType: ${{ inputs.machineType }}
-        coreosImage: ${{ inputs.coreosImage }}
+        osImage: ${{ inputs.osImage }}
         isDebugImage: ${{ inputs.isDebugImage }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
         azureClientSecret: ${{ inputs.azureClientSecret }}

@@ -4,7 +4,7 @@ metadata:
   name: scalinggroup-worker-azure
   namespace: kube-system
 spec:
-  nodeImage: "constellation-coreos-azure"
+  nodeImage: "constellation-os-azure"
   groupId: "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Compute/virtualMachineScaleSets/<scale-set-name>"
   autoscaling: true
 ---
@@ -14,6 +14,6 @@ metadata:
   name: scalinggroup-worker-gcp
   namespace: kube-system
 spec:
-  nodeImage: "constellation-coreos-gcp"
+  nodeImage: "constellation-os-gcp"
   groupId: "projects/<project>/zones/<zone>/instanceGroupManagers/<instance-group-name>"
   autoscaling: true

@@ -307,8 +307,8 @@ type upgradePlanFlags struct {
 }
 
 type imageManifest struct {
-	AzureImage string `json:"AzureCoreOSImage"`
-	GCPImage   string `json:"GCPCoreOSImage"`
+	AzureImage string `json:"AzureOSImage"`
+	GCPImage   string `json:"GCPOSImage"`
 }
 
 type nopWriteCloser struct {

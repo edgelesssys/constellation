@@ -38,7 +38,7 @@ type Client struct {
 // New creates a new client with the given logger.
 func New(log *logger.Logger) (*Client, error) {
 	settings := cli.New()
-	settings.KubeConfig = constants.CoreOSAdminConfFilename
+	settings.KubeConfig = constants.ControlPlaneAdminConfFilename
 
 	actionConfig := &action.Configuration{}
 	if err := actionConfig.Init(settings.RESTClientGetter(), constants.HelmNamespace,
@@ -83,7 +83,7 @@ func (h *Client) installCiliumAzure(ctx context.Context, release helm.Release, k
 }
 
 func (h *Client) installlCiliumGCP(ctx context.Context, kubectl k8sapi.Client, release helm.Release, nodeName, nodePodCIDR, subnetworkPodCIDR, kubeAPIEndpoint string) error {
-	out, err := exec.CommandContext(ctx, constants.KubectlPath, "--kubeconfig", constants.CoreOSAdminConfFilename, "patch", "node", nodeName, "-p", "{\"spec\":{\"podCIDR\": \""+nodePodCIDR+"\"}}").CombinedOutput()
+	out, err := exec.CommandContext(ctx, constants.KubectlPath, "--kubeconfig", constants.ControlPlaneAdminConfFilename, "patch", "node", nodeName, "-p", "{\"spec\":{\"podCIDR\": \""+nodePodCIDR+"\"}}").CombinedOutput()
 	if err != nil {
 		err = errors.New(string(out))
 		return err
