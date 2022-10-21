@@ -2,22 +2,26 @@
 
 ## Prerequisites
 
-[Install & configure `gcloud` CLI](https://cloud.google.com/sdk/gcloud) for access to GCP.
+[Follow the docs on how to set up cloud credentials for GCP](https://docs.edgeless.systems/constellation/getting-started/install#set-up-cloud-credentials)
 
 [Install kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/) for working with Kubernetes
 
-For more information [follow our documentation.](https://docs.edgeless.systems/constellation/getting-started/install)
-
 Additionally, [Sonobuoy CLI is required.](https://github.com/vmware-tanzu/sonobuoy/releases)
-These tests results were produced using Sonobuoy v0.56.4.
+These tests results were produced using Sonobuoy v0.56.10
 
 ## Provision Constellation Cluster
 
-Tests were made using GCP `n2d-standard-4` VMs.
+```sh
+constellation config generate gcp
+```
+
+Fill the config with the needed values for your cloud subscription.
+Set `kubernetesVersion: "1.x"`.
 
 ```sh
-constellation create -c 1 -w 2 -y
-constellation init
+constellation config fetch-measurements
+constellation create -c3 -w2 -y
+constellation init --conformance
 export KUBECONFIG="$PWD/constellation-admin.conf"
 ```
 
@@ -49,16 +53,6 @@ cat plugins/e2e/results/global/junit_01.xml
 # Remove test deployments
 sonobuoy delete --wait
 # Or, shutdown cluster
-./constellation terminate
+constellation terminate
 rm constellation-mastersecret.base64
-```
-
-## Run CIS Benchmark Tests
-
-```sh
-# Runs for <1 min.
-sonobuoy run --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-plugin.yaml --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-master-plugin.yaml --wait
-# ... download & display results.
-outfile=$(sonobuoy retrieve)
-sonobuoy results $outfiles
 ```
