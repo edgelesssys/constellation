@@ -62,3 +62,23 @@ jobs:
 
       - name: cdbg/debugd Unit Tests
         run: go test -race -count=3 ./debugd/...
+
+  test-windows:
+    runs-on: windows-latest
+    env:
+      CTEST_OUTPUT_ON_FAILURE: True
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+
+      - name: Setup Go environment
+        uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
+        with:
+          go-version: "1.19.2"
+          cache: true
+
+      - name: CLI Unit Tests
+        run: go test -race -count=3 ./cli/...
+
+      - name: cdbg/debugd Unit Tests
+        run: go test -race -count=3 ./debugd/...
