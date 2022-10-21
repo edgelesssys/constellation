@@ -1,8 +1,8 @@
 SHELL                             = /bin/bash
 SRC_PATH                          = $(CURDIR)
 BASE_PATH                        ?= $(SRC_PATH)
-BOOTSTRAPPER_BINARY              ?= $(BASE_PATH)/../../build/bootstrapper
-DISK_MAPPER_BINARY               ?= $(BASE_PATH)/../../build/disk-mapper
+BOOTSTRAPPER_BINARY              ?= $(BASE_PATH)/../build/bootstrapper
+DISK_MAPPER_BINARY               ?= $(BASE_PATH)/../build/disk-mapper
 PKI                              ?= $(BASE_PATH)/pki
 MKOSI_EXTRA                      ?= $(BASE_PATH)/mkosi.extra
 -include $(CURDIR)/config.mk
