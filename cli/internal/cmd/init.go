@@ -350,6 +350,8 @@ func getMarshaledServiceAccountURI(provider cloudprovider.Provider, config *conf
 
 		return key.ToCloudServiceAccountURI(), nil
 
+	case cloudprovider.AWS:
+		return "", nil // AWS does not need a service account URI
 	case cloudprovider.Azure:
 		creds := azureshared.ApplicationCredentials{
 			TenantID:          config.Provider.Azure.TenantID,
