@@ -24,6 +24,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
   admin_username                  = "adminuser"
   admin_password                  = random_password.password.result
   overprovision                   = false
+  provision_vm_agent              = false
   vtpm_enabled                    = true
   disable_password_authentication = false
   upgrade_mode                    = "Manual"
