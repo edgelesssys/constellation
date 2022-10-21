@@ -56,4 +56,17 @@ install() {
         "/usr/lib/udev/rules.d/64-gce-disk-removal.rules"
     inst_simple "/usr/lib/udev/rules.d/65-gce-disk-naming.rules" \
         "/usr/lib/udev/rules.d/65-gce-disk-naming.rules"
+
+    inst_script "/usr/sbin/ebsnvme-id" \
+        "/usr/sbin/ebsnvme-id"
+    inst_script "/usr/bin/ec2-metadata" \
+        "/usr/bin/ec2-metadata"
+    inst_script "/usr/lib/udev/ec2nvme-nsid" \
+        "/usr/lib/udev/ec2nvme-nsid"
+    inst_script "/usr/lib/udev/ec2nvme-nsid" \
+        "/usr/sbin/ec2nvme-nsid"
+    inst_script "/usr/sbin/ec2udev-vbd" \
+        "/usr/sbin/ec2udev-vbd"
+    inst_simple "/usr/lib/udev/rules.d/70-ec2-nvme-devices.rules" \
+        "/usr/lib/udev/rules.d/70-ec2-nvme-devices.rules"
 }
