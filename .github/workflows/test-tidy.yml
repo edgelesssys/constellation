@@ -24,6 +24,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
         with:
+          token: ${{ secrets.TIDY_RENOVATE_PUSH }}
           ref: ${{ github.head_ref }}
 
       - name: Setup Go environment
@@ -31,37 +32,14 @@ jobs:
         with:
           go-version: "1.19.2"
 
-      - name: Get Go submodules
-        id: submods
+      - name: Tidy all modules
         shell: bash
         run: |
           mods=$(go list -f '{{.Dir}}' -m | xargs)
           echo "Found mods: $mods"
-          echo "submods=${mods}" >> $GITHUB_OUTPUT
-
-      - name: Go tidy check
-        id: tidycheck
-        uses: katexochen/go-tidy-check@45731e0013a976d5d616d79007c7ba52de6ce542 # tag=v1.0.2
-        with:
-          modules: ${{ steps.submods.outputs.submods }}
-
-      # The following steps are only executed if the previous tidy check failed
-      # and the action runs on an renovat branche. In this case, we tidy all
-      # modules again and commit the changes, so the user doesn't need to do it.
-
-      - name: Tidy modules on renovate branches
-        if: ${{ failure() && (steps.tidycheck.conclusion == 'failure') && startsWith(github.head_ref, 'renovate/') }}
-        shell: bash
-        run: |
-          for mod in ${{ steps.submods.outputs.submods }}; do
+          for mod in ${mods}; do
             (cd $mod; go mod tidy)
           done
 
-      - name: Push changes
-        if: ${{ failure() && (steps.tidycheck.conclusion == 'failure') && startsWith(github.head_ref, 'renovate/') }}
-        shell: bash
-        run: |
-          git config --global user.name "${{ github.actor }}"
-          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
-          git commit -am "[bot] Tidy all modules"
-          git push
+      - name: Commit changes (if any)
+        uses: EndBug/add-and-commit@61a88be553afe4206585b31aa72387c64295d08b # tag=v9.1.1
