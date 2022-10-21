@@ -40,6 +40,28 @@ func (v *CommonVariables) String() string {
 }
 
 // GCPVariables is user configuration for creating a cluster with Terraform on GCP.
+type AWSVariables struct {
+	// CommonVariables contains common variables.
+	CommonVariables
+	// Region is the AWS region to use.
+	Region string
+	// Zone is the AWS zone to use in the given region.
+	Zone string
+	// AMIImageID is the ID of the AMI image to use.
+	AMIImageID string
+	// InstanceType is the type of the EC2 instance to use.
+	InstanceType string
+	// StateDiskType is the EBS disk type to use for the state disk.
+	StateDiskType string
+	// IAMGroupControlPlane is the IAM group to use for the control-plane nodes.
+	IAMProfileControlPlane string
+	// IAMGroupWorkerNodes is the IAM group to use for the worker nodes.
+	IAMProfileWorkerNodes string
+	// Debug is true if debug mode is enabled.
+	Debug bool
+}
+
+// GCPVariables is user configuration for creating a cluster with Terraform on GCP.
 type GCPVariables struct {
 	// CommonVariables contains common variables.
 	CommonVariables
@@ -60,6 +82,21 @@ type GCPVariables struct {
 	ImageID string
 	// Debug is true if debug mode is enabled.
 	Debug bool
+}
+
+func (v *AWSVariables) String() string {
+	b := &strings.Builder{}
+	b.WriteString(v.CommonVariables.String())
+	writeLinef(b, "region = %q", v.Region)
+	writeLinef(b, "zone = %q", v.Zone)
+	writeLinef(b, "ami = %q", v.AMIImageID)
+	writeLinef(b, "instance_type = %q", v.InstanceType)
+	writeLinef(b, "state_disk_type = %q", v.StateDiskType)
+	writeLinef(b, "iam_instance_profile_control_plane = %q", v.IAMProfileControlPlane)
+	writeLinef(b, "iam_instance_profile_worker_nodes = %q", v.IAMProfileWorkerNodes)
+	writeLinef(b, "debug = %t", v.Debug)
+
+	return b.String()
 }
 
 // String returns a string representation of the variables, formatted as Terraform variables.

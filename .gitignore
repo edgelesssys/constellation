@@ -43,3 +43,6 @@ image/config.mk
 .terraform.lock.hcl
 .terraform.tfstate.lock.info
 *.tfvars
+
+# macOS
+.DS_Store

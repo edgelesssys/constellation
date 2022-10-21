@@ -17,10 +17,22 @@ resource "aws_launch_configuration" "control_plane_launch_config" {
   image_id             = var.image_id
   instance_type        = var.instance_type
   iam_instance_profile = var.iam_instance_profile
+  security_groups      = var.security_groups
   metadata_options {
     http_tokens = "required"
   }
 
+  root_block_device {
+    encrypted = true
+  }
+
+  ebs_block_device {
+    device_name           = "/dev/sdb" # Note: AWS may adjust this to /dev/xvdb, /dev/hdb or /dev/nvme1n1 depending on the disk type. See: https://docs.aws.amazon.com/en_us/AWSEC2/latest/UserGuide/device_naming.html
+    volume_size           = var.state_disk_size
+    volume_type           = var.state_disk_type
+    encrypted             = true
+    delete_on_termination = true
+  }
 
   lifecycle {
     create_before_destroy = true

@@ -109,7 +109,7 @@ func TestFromFile(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	const defaultMsgCount = 15 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
+	const defaultMsgCount = 20 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
 
 	testCases := map[string]struct {
 		cnf          *Config
@@ -170,6 +170,10 @@ func TestImage(t *testing.T) {
 		cfg       *Config
 		wantImage string
 	}{
+		"default aws": {
+			cfg:       func() *Config { c := Default(); c.RemoveProviderExcept(cloudprovider.AWS); return c }(),
+			wantImage: Default().Provider.AWS.Image,
+		},
 		"default azure": {
 			cfg:       func() *Config { c := Default(); c.RemoveProviderExcept(cloudprovider.Azure); return c }(),
 			wantImage: Default().Provider.Azure.Image,
@@ -197,10 +201,15 @@ func TestImage(t *testing.T) {
 func TestConfigRemoveProviderExcept(t *testing.T) {
 	testCases := map[string]struct {
 		removeExcept cloudprovider.Provider
+		wantAWS      *AWSConfig
 		wantAzure    *AzureConfig
 		wantGCP      *GCPConfig
 		wantQEMU     *QEMUConfig
 	}{
+		"except aws": {
+			removeExcept: cloudprovider.AWS,
+			wantAWS:      Default().Provider.AWS,
+		},
 		"except azure": {
 			removeExcept: cloudprovider.Azure,
 			wantAzure:    Default().Provider.Azure,
@@ -215,6 +224,7 @@ func TestConfigRemoveProviderExcept(t *testing.T) {
 		},
 		"unknown provider": {
 			removeExcept: cloudprovider.Unknown,
+			wantAWS:      Default().Provider.AWS,
 			wantAzure:    Default().Provider.Azure,
 			wantGCP:      Default().Provider.GCP,
 			wantQEMU:     Default().Provider.QEMU,
@@ -228,6 +238,7 @@ func TestConfigRemoveProviderExcept(t *testing.T) {
 			conf := Default()
 			conf.RemoveProviderExcept(tc.removeExcept)
 
+			assert.Equal(tc.wantAWS, conf.Provider.AWS)
 			assert.Equal(tc.wantAzure, conf.Provider.Azure)
 			assert.Equal(tc.wantGCP, conf.Provider.GCP)
 			assert.Equal(tc.wantQEMU, conf.Provider.QEMU)
@@ -256,6 +267,15 @@ func TestConfig_UpdateMeasurements(t *testing.T) {
 		3: []byte{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2},
 	}
 
+	{ // AWS
+		conf := Default()
+		conf.RemoveProviderExcept(cloudprovider.AWS)
+		for k := range conf.Provider.AWS.Measurements {
+			delete(conf.Provider.AWS.Measurements, k)
+		}
+		conf.UpdateMeasurements(newMeasurements)
+		assert.Equal(newMeasurements, conf.Provider.AWS.Measurements)
+	}
 	{ // Azure
 		conf := Default()
 		conf.RemoveProviderExcept(cloudprovider.Azure)
@@ -290,6 +310,7 @@ func TestConfig_IsImageDebug(t *testing.T) {
 		conf *Config
 		want bool
 	}{
+		// TODO: Add AWS when we know the format of published images & debug images
 		"gcp release": {
 			conf: func() *Config {
 				conf := Default()
@@ -352,6 +373,11 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 			instanceTypes:  []string{},
 			expectedResult: false,
 		},
+		"empty aws": {
+			provider:       cloudprovider.AWS,
+			instanceTypes:  []string{},
+			expectedResult: false,
+		},
 		"empty azure only CVMs": {
 			provider:       cloudprovider.Azure,
 			instanceTypes:  []string{},
@@ -384,7 +410,7 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 			instanceTypes:  instancetypes.AzureTrustedLaunchInstanceTypes,
 			expectedResult: false,
 		},
-		"azure trusted launch VMs with CVMs disbled": {
+		"azure trusted launch VMs with CVMs disabled": {
 			provider:       cloudprovider.Azure,
 			instanceTypes:  instancetypes.AzureTrustedLaunchInstanceTypes,
 			nonCVMsAllowed: true,
@@ -415,6 +441,28 @@ func TestValidInstanceTypeForProvider(t *testing.T) {
 			provider:       cloudprovider.GCP,
 			instanceTypes:  instancetypes.AzureTrustedLaunchInstanceTypes,
 			nonCVMsAllowed: true,
+			expectedResult: false,
+		},
+		// Testing every possible instance type for AWS is not feasible, so we just test a few based on known supported / unsupported families
+		// Also serves as a test for checkIfInstanceInValidAWSFamilys
+		"aws two valid instances": {
+			provider:       cloudprovider.AWS,
+			instanceTypes:  []string{"c5.xlarge", "c5a.2xlarge", "c5a.16xlarge", "u-12tb1.112xlarge"},
+			expectedResult: true,
+		},
+		"aws one valid instance one with too little vCPUs": {
+			provider:       cloudprovider.AWS,
+			instanceTypes:  []string{"c5.medium"},
+			expectedResult: false,
+		},
+		"aws graviton sub-family unsupported": {
+			provider:       cloudprovider.AWS,
+			instanceTypes:  []string{"m6g.xlarge", "r6g.2xlarge", "x2gd.xlarge", "g5g.8xlarge"},
+			expectedResult: false,
+		},
+		"aws combined two valid instances as one string": {
+			provider:       cloudprovider.AWS,
+			instanceTypes:  []string{"c5.xlarge, c5a.2xlarge"},
 			expectedResult: false,
 		},
 	}

@@ -36,6 +36,10 @@ type Validator struct {
 
 func NewValidator(provider cloudprovider.Provider, config *config.Config) (*Validator, error) {
 	v := Validator{}
+	if provider == cloudprovider.AWS {
+		// TODO: Implement AWS validator
+		return nil, errors.New("no validator for AWS available yet")
+	}
 	if provider == cloudprovider.Unknown {
 		return nil, errors.New("unknown cloud provider")
 	}
@@ -100,14 +104,14 @@ func (v *Validator) updatePCR(pcrIndex uint32, encoded string) error {
 
 func (v *Validator) setPCRs(config *config.Config) error {
 	switch v.provider {
-	case cloudprovider.GCP:
-		gcpPCRs := config.Provider.GCP.Measurements
-		enforcedPCRs := config.Provider.GCP.EnforcedMeasurements
-		if err := v.checkPCRs(gcpPCRs, enforcedPCRs); err != nil {
+	case cloudprovider.AWS:
+		awsPCRs := config.Provider.AWS.Measurements
+		enforcedPCRs := config.Provider.AWS.EnforcedMeasurements
+		if err := v.checkPCRs(awsPCRs, enforcedPCRs); err != nil {
 			return err
 		}
 		v.enforcedPCRs = enforcedPCRs
-		v.pcrs = gcpPCRs
+		v.pcrs = awsPCRs
 	case cloudprovider.Azure:
 		azurePCRs := config.Provider.Azure.Measurements
 		enforcedPCRs := config.Provider.Azure.EnforcedMeasurements
@@ -116,6 +120,14 @@ func (v *Validator) setPCRs(config *config.Config) error {
 		}
 		v.enforcedPCRs = enforcedPCRs
 		v.pcrs = azurePCRs
+	case cloudprovider.GCP:
+		gcpPCRs := config.Provider.GCP.Measurements
+		enforcedPCRs := config.Provider.GCP.EnforcedMeasurements
+		if err := v.checkPCRs(gcpPCRs, enforcedPCRs); err != nil {
+			return err
+		}
+		v.enforcedPCRs = enforcedPCRs
+		v.pcrs = gcpPCRs
 	case cloudprovider.QEMU:
 		qemuPCRs := config.Provider.QEMU.Measurements
 		enforcedPCRs := config.Provider.QEMU.EnforcedMeasurements
