@@ -58,7 +58,7 @@ const (
 	NodeMaintenanceOperatorCatalogImage = "ghcr.io/edgelesssys/constellation/node-maintenance-operator-catalog:v0.13.1-alpha1@sha256:d382c3aaf9bc470cde6f6c05c2c6ff5c9dcfd90540d5b11f9cf69c4e1dd1ca9d"
 
 	QEMUMetadataImage = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.1.0@sha256:abfc36fcd02a145412074cdbb54597878594aa1cfb0ffd66e36d3b3e95ee9e7f"
-	LibvirtImage      = "ghcr.io/edgelesssys/constellation/libvirt:v2.1.0@sha256:9769a2b88e2acc0986fdf2ab4a358b60c50a8cd330c183df4435f56e10758b37"
+	LibvirtImage      = "ghcr.io/edgelesssys/constellation/libvirt:v2.2.0-pre.0.20221021080602-f3d78a573fb2@sha256:f42fa5f009415f2c6631b83e8831790d324c27d5f3ae883c59ea7bfeba50facd"
 
 	// ConstellationQEMUImageURL is the artifact URL for QEMU qcow2 images.
 	ConstellationQEMUImageURL = "https://d1gl9j3ejrmbpr.cloudfront.net/mini-constellation-v2.1.0.qcow2"
