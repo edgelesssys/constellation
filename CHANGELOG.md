@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Sign generated SBOMs and store container image SBOMs in registry for easier usage.
 
 ### Changed
 <!-- For changes in existing functionality.  -->
