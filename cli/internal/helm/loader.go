@@ -93,10 +93,12 @@ func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode boo
 
 	var ciliumVals map[string]any
 	switch csp {
-	case cloudprovider.GCP:
-		ciliumVals = gcpVals
+	case cloudprovider.AWS:
+		ciliumVals = awsVals
 	case cloudprovider.Azure:
 		ciliumVals = azureVals
+	case cloudprovider.GCP:
+		ciliumVals = gcpVals
 	case cloudprovider.QEMU:
 		ciliumVals = qemuVals
 	default:
