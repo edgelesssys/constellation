@@ -27,8 +27,6 @@ type ProviderMetadata interface {
 	GetLoadBalancerEndpoint(ctx context.Context) (string, error)
 	// GetInstance retrieves an instance using its providerID.
 	GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error)
-	// Supported is used to determine if metadata API is implemented for this cloud provider.
-	Supported() bool
 }
 
 // CloudControllerManager implementers provide configuration for the k8s cloud-controller-manager.

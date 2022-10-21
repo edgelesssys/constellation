@@ -23,10 +23,10 @@ import (
 	kubewaiter "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubeWaiter"
 	"github.com/edgelesssys/constellation/v2/internal/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
-	"github.com/edgelesssys/constellation/v2/internal/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
@@ -101,45 +101,34 @@ func (k *KubeWrapper) InitCluster(
 		return nil, err
 	}
 
-	ip, err := k.getIPAddr()
-	if err != nil {
-		return nil, err
-	}
-	nodeName := ip
-	var providerID string
-	var instance metadata.InstanceMetadata
 	var nodePodCIDR string
-	var subnetworkPodCIDR string
-	var controlPlaneEndpoint string // this is the endpoint in "kubeadm init --control-plane-endpoint=<IP/DNS>:<port>"
-	var nodeIP string
 	var validIPs []net.IP
 
 	// Step 1: retrieve cloud metadata for Kubernetes configuration
-	if k.providerMetadata.Supported() {
-		log.Infof("Retrieving node metadata")
-		instance, err = k.providerMetadata.Self(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("retrieving own instance metadata: %w", err)
-		}
-		if instance.VPCIP != "" {
-			validIPs = append(validIPs, net.ParseIP(instance.VPCIP))
-		}
-		nodeName = k8sCompliantHostname(instance.Name)
-		providerID = instance.ProviderID
-		nodeIP = instance.VPCIP
-		subnetworkPodCIDR = instance.SecondaryIPRange
-
-		if len(instance.AliasIPRanges) > 0 {
-			nodePodCIDR = instance.AliasIPRanges[0]
-		}
-		controlPlaneEndpoint, err = k.providerMetadata.GetLoadBalancerEndpoint(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("retrieving load balancer endpoint: %w", err)
-		}
+	log.Infof("Retrieving node metadata")
+	instance, err := k.providerMetadata.Self(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving own instance metadata: %w", err)
 	}
+	if instance.VPCIP != "" {
+		validIPs = append(validIPs, net.ParseIP(instance.VPCIP))
+	}
+	nodeName := k8sCompliantHostname(instance.Name)
+	nodeIP := instance.VPCIP
+	subnetworkPodCIDR := instance.SecondaryIPRange
+	if len(instance.AliasIPRanges) > 0 {
+		nodePodCIDR = instance.AliasIPRanges[0]
+	}
+
+	// this is the endpoint in "kubeadm init --control-plane-endpoint=<IP/DNS>:<port>"
+	controlPlaneEndpoint, err := k.providerMetadata.GetLoadBalancerEndpoint(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving load balancer endpoint: %w", err)
+	}
+
 	log.With(
 		zap.String("nodeName", nodeName),
-		zap.String("providerID", providerID),
+		zap.String("providerID", instance.ProviderID),
 		zap.String("nodeIP", nodeIP),
 		zap.String("controlPlaneEndpoint", controlPlaneEndpoint),
 		zap.String("podCIDR", subnetworkPodCIDR),
@@ -150,7 +139,7 @@ func (k *KubeWrapper) InitCluster(
 	initConfig.SetNodeIP(nodeIP)
 	initConfig.SetCertSANs([]string{nodeIP})
 	initConfig.SetNodeName(nodeName)
-	initConfig.SetProviderID(providerID)
+	initConfig.SetProviderID(instance.ProviderID)
 	initConfig.SetControlPlaneEndpoint(controlPlaneEndpoint)
 	initConfigYAML, err := initConfig.Marshal()
 	if err != nil {
@@ -262,28 +251,19 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	}
 
 	// Step 1: retrieve cloud metadata for Kubernetes configuration
-	nodeInternalIP, err := k.getIPAddr()
+	log.Infof("Retrieving node metadata")
+	instance, err := k.providerMetadata.Self(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("retrieving own instance metadata: %w", err)
 	}
-	nodeName := nodeInternalIP
-	var providerID string
-	var loadbalancerEndpoint string
-	if k.providerMetadata.Supported() {
-		log.Infof("Retrieving node metadata")
-		instance, err := k.providerMetadata.Self(ctx)
-		if err != nil {
-			return fmt.Errorf("retrieving own instance metadata: %w", err)
-		}
-		providerID = instance.ProviderID
-		nodeName = instance.Name
-		nodeInternalIP = instance.VPCIP
-		loadbalancerEndpoint, err = k.providerMetadata.GetLoadBalancerEndpoint(ctx)
-		if err != nil {
-			return fmt.Errorf("retrieving loadbalancer endpoint: %w", err)
-		}
+	providerID := instance.ProviderID
+	nodeInternalIP := instance.VPCIP
+	nodeName := k8sCompliantHostname(instance.Name)
+
+	loadbalancerEndpoint, err := k.providerMetadata.GetLoadBalancerEndpoint(ctx)
+	if err != nil {
+		return fmt.Errorf("retrieving own instance metadata: %w", err)
 	}
-	nodeName = k8sCompliantHostname(nodeName)
 
 	log.With(
 		zap.String("nodeName", nodeName),
@@ -449,12 +429,12 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSO
 				return nil, fmt.Errorf("getting uid: %w", err)
 			}
 
-			projectID, _, _, err := gcpshared.SplitProviderID(instance.ProviderID)
+			projectID, _, _, err := gcp.SplitProviderID(instance.ProviderID)
 			if err != nil {
 				return nil, fmt.Errorf("splitting providerID: %w", err)
 			}
 
-			serviceAccountKey, err := gcpshared.ServiceAccountKeyFromURI(cloudServiceAccountURI)
+			serviceAccountKey, err := gcp.ServiceAccountKeyFromURI(cloudServiceAccountURI)
 			if err != nil {
 				return nil, fmt.Errorf("getting service account key: %w", err)
 			}

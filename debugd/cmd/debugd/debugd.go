@@ -20,11 +20,16 @@ import (
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/metadata/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/metadata/fallback"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/server"
+	awscloud "github.com/edgelesssys/constellation/v2/internal/cloud/aws"
+	azurecloud "github.com/edgelesssys/constellation/v2/internal/cloud/azure"
 	platform "github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	gcpcloud "github.com/edgelesssys/constellation/v2/internal/cloud/gcp"
+	qemucloud "github.com/edgelesssys/constellation/v2/internal/cloud/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/user"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
+	"go.uber.org/zap"
 )
 
 const debugBanner = `
@@ -56,34 +61,42 @@ func main() {
 	csp := os.Getenv("CONSTEL_CSP")
 	switch platform.FromString(csp) {
 	case platform.AWS:
-		awsFetcher, err := cloudprovider.NewAWS(ctx)
+		meta, err := awscloud.New(ctx)
 		if err != nil {
-			log.Fatalf("%s", err)
+			log.With(zap.Error(err)).Fatalf("Failed to initialize AWS metadata")
 		}
-		fetcher = awsFetcher
+		fetcher = cloudprovider.New(meta)
+
 	case platform.Azure:
-		azureFetcher, err := cloudprovider.NewAzure(ctx)
+		meta, err := azurecloud.NewMetadata(ctx)
 		if err != nil {
-			log.Fatalf("%s", err)
+			log.With(zap.Error(err)).Fatalf("Failed to initialize Azure metadata")
 		}
-		fetcher = azureFetcher
+		fetcher = cloudprovider.New(meta)
+
 	case platform.GCP:
-		gcpFetcher, err := cloudprovider.NewGCP(ctx)
+		meta, err := gcpcloud.New(ctx)
 		if err != nil {
-			log.Fatalf("%s", err)
+			log.With(zap.Error(err)).Fatalf("Failed to initialize GCP metadata")
 		}
-		fetcher = gcpFetcher
-		log.Infof("Added load balancer IP to local routing table")
+		defer meta.Close()
+		fetcher = cloudprovider.New(meta)
+
+		// Is this message still relevant?
+		// log.Infof("Added load balancer IP to local routing table")
+
 	case platform.QEMU:
-		fetcher = cloudprovider.NewQEMU()
+		fetcher = cloudprovider.New(&qemucloud.Metadata{})
+
 	default:
 		log.Errorf("Unknown / unimplemented cloud provider CONSTEL_CSP=%v. Using fallback", csp)
 		fetcher = fallback.Fetcher{}
 	}
+
 	sched := metadata.NewScheduler(log.Named("scheduler"), fetcher, ssh, download)
 	serv := server.New(log.Named("server"), ssh, serviceManager, streamer)
 	if err := deploy.DefaultServiceUnit(ctx, serviceManager); err != nil {
-		log.Fatalf("%s", err)
+		log.With(zap.Error(err)).Fatalf("Failed to create default service unit")
 	}
 
 	writeDebugBanner(log)
@@ -101,11 +114,11 @@ func main() {
 func writeDebugBanner(log *logger.Logger) {
 	tty, err := os.OpenFile("/dev/ttyS0", os.O_WRONLY, os.ModeAppend)
 	if err != nil {
-		log.Infof("Unable to open /dev/ttyS0 for printing banner: %v", err)
+		log.With(zap.Error(err)).Errorf("Unable to open /dev/ttyS0 for printing banner")
 		return
 	}
 	defer tty.Close()
 	if _, err := fmt.Fprint(tty, debugBanner); err != nil {
-		log.Infof("Unable to print to /dev/ttyS0: %v", err)
+		log.With(zap.Error(err)).Errorf("Unable to print to /dev/ttyS0")
 	}
 }

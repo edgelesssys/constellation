@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/internal/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	k8s "k8s.io/api/core/v1"
@@ -26,16 +25,7 @@ type CloudControllerManager struct {
 }
 
 // NewCloudControllerManager returns an initialized cloud controller manager configuration struct for GCP.
-func NewCloudControllerManager(ctx context.Context, metadata *Metadata) (*CloudControllerManager, error) {
-	uid, err := metadata.api.UID(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("getting uid from metadata: %w", err)
-	}
-	projectID, err := metadata.api.RetrieveProjectID()
-	if err != nil {
-		return nil, fmt.Errorf("getting project id from metadata: %w", err)
-	}
-
+func NewCloudControllerManager(ctx context.Context, uid, projectID string) (*CloudControllerManager, error) {
 	return &CloudControllerManager{
 		uid:       uid,
 		projectID: projectID,
@@ -100,7 +90,7 @@ func (c *CloudControllerManager) ConfigMaps() (kubernetes.ConfigMaps, error) {
 // Secrets returns a list of secrets to deploy together with the k8s cloud-controller-manager.
 // Reference: https://kubernetes.io/docs/concepts/configuration/secret/ .
 func (c *CloudControllerManager) Secrets(_ context.Context, _ string, cloudServiceAccountURI string) (kubernetes.Secrets, error) {
-	serviceAccountKey, err := gcpshared.ServiceAccountKeyFromURI(cloudServiceAccountURI)
+	serviceAccountKey, err := ServiceAccountKeyFromURI(cloudServiceAccountURI)
 	if err != nil {
 		return kubernetes.Secrets{}, err
 	}

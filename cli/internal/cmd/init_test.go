@@ -22,10 +22,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	gcpcloud "github.com/edgelesssys/constellation/v2/internal/cloud/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/atlscredentials"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
@@ -47,7 +47,7 @@ func TestInitArgumentValidation(t *testing.T) {
 }
 
 func TestInitialize(t *testing.T) {
-	gcpServiceAccKey := &gcpshared.ServiceAccountKey{
+	gcpServiceAccKey := &gcpcloud.ServiceAccountKey{
 		Type: "service_account",
 	}
 	testInitResp := &initproto.InitResponse{
@@ -62,7 +62,7 @@ func TestInitialize(t *testing.T) {
 		provider                cloudprovider.Provider
 		idFile                  *clusterid.File
 		configMutator           func(*config.Config)
-		serviceAccKey           *gcpshared.ServiceAccountKey
+		serviceAccKey           *gcpcloud.ServiceAccountKey
 		initServerAPI           *stubInitServer
 		masterSecretShouldExist bool
 		wantErr                 bool

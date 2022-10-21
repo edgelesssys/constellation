@@ -121,25 +121,36 @@ func main() {
 
 		issuer = initserver.NewIssuerWrapper(gcp.NewIssuer(), vmtype.Unknown, nil)
 
-		gcpClient, err := gcpcloud.NewClient(ctx)
+		metadata, err := gcpcloud.New(ctx)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to create GCP metadata client")
 		}
-		metadata := gcpcloud.New(gcpClient)
-		descr, err := metadata.Self(ctx)
+		defer metadata.Close()
+
+		uid, err := metadata.UID(ctx)
+		if err != nil {
+			log.With(zap.Error(err)).Fatalf("Failed to get GCP instance UID")
+		}
+		providerID, err := metadata.ProviderID(ctx)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to get instance metadata")
 		}
-		cloudLogger, err = gcpcloud.NewLogger(ctx, descr.ProviderID, "constellation-boot-log")
+		projectID, _, _, err := gcpcloud.SplitProviderID(providerID)
+		if err != nil {
+			log.With(zap.Error(err)).Fatalf("Failed to parse provider ID")
+		}
+
+		cloudLogger, err = gcpcloud.NewLogger(ctx, providerID, "constellation-boot-log")
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to set up cloud logger")
 		}
+
 		metadataAPI = metadata
 		pcrsJSON, err := json.Marshal(pcrs)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to marshal PCRs")
 		}
-		cloudControllerManager, err := gcpcloud.NewCloudControllerManager(ctx, metadata)
+		cloudControllerManager, err := gcpcloud.NewCloudControllerManager(ctx, uid, projectID)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to create cloud controller manager")
 		}

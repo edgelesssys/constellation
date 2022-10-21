@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
-	"github.com/edgelesssys/constellation/v2/internal/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/stretchr/testify/assert"
@@ -72,7 +71,7 @@ node-tags = constellation-UID
 }
 
 func TestSecrets(t *testing.T) {
-	serviceAccountKey := gcpshared.ServiceAccountKey{
+	serviceAccountKey := ServiceAccountKey{
 		Type:                    "type",
 		ProjectID:               "project-id",
 		PrivateKeyID:            "private-key-id",

@@ -101,11 +101,12 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Unable to resolve GCP state disk path")
 		}
 		issuer = gcp.NewIssuer()
-		gcpClient, err := gcpcloud.NewClient(context.Background())
+		gcpMeta, err := gcpcloud.New(context.Background())
 		if err != nil {
 			log.With(zap.Error).Fatalf("Failed to create GCP client")
 		}
-		metadataAPI = gcpcloud.New(gcpClient)
+		defer gcpMeta.Close()
+		metadataAPI = gcpMeta
 
 	case cloudprovider.QEMU:
 		diskPath = qemuStateDiskPath

@@ -130,11 +130,12 @@ func getVPCIP(ctx context.Context, provider string) (string, error) {
 			return "", err
 		}
 	case cloudprovider.GCP:
-		gcpClient, err := gcpcloud.NewClient(ctx)
+		gcpMeta, err := gcpcloud.New(ctx)
 		if err != nil {
 			return "", err
 		}
-		metadata = gcpcloud.New(gcpClient)
+		defer gcpMeta.Close()
+		metadata = gcpMeta
 	case cloudprovider.QEMU:
 		metadata = &qemucloud.Metadata{}
 	default:
