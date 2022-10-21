@@ -91,12 +91,36 @@ jobs:
         uses: ./.github/actions/build_cdbg
         with:
           targetOS: "darwin"
-          targetArch: "arm64"
+          targetArch: "amd64"
 
       - name: Build cdbg (macOS, arm64)
         uses: ./.github/actions/build_cdbg
         with:
           targetOS: "darwin"
+          targetArch: "arm64"
+
+  build-cdbg-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Setup Go environment
+        uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
+        with:
+          go-version: "1.19.2"
+      - name: Build cdbg (Windows, amd64)
+        uses: ./.github/actions/build_cdbg
+        with:
+          targetOS: "windows"
+          targetArch: "amd64"
+
+      - name: Build cdbg (Windows, arm64)
+        uses: ./.github/actions/build_cdbg
+        with:
+          targetOS: "windows"
           targetArch: "arm64"
 
   build-disk-mapper:
@@ -162,4 +186,29 @@ jobs:
         uses: ./.github/actions/build_cli
         with:
           targetOS: darwin
+          targetArch: arm64
+
+  build-cli-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Setup Go environment
+        uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
+        with:
+          go-version: "1.19.2"
+
+      - name: Build CLI (Windows, amd64)
+        uses: ./.github/actions/build_cli
+        with:
+          targetOS: windows
+          targetArch: amd64
+
+      - name: Build CLI (Windows, arm64)
+        uses: ./.github/actions/build_cli
+        with:
+          targetOS: windows
           targetArch: arm64
