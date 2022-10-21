@@ -116,7 +116,7 @@ jobs:
         run: |
           ln -s pki_testing pki
           echo "${DB_KEY}" > pki/db.key
-        working-directory: ${{ github.workspace }}/image/mkosi
+        working-directory: ${{ github.workspace }}/image
         env:
           DB_KEY: ${{ secrets.SECURE_BOOT_TESTING_DB_KEY }}
 
@@ -126,7 +126,7 @@ jobs:
           echo "::group::Build"
           sudo make "${CSP}"
           echo "::endgroup::"
-        working-directory: ${{ github.workspace }}/image/mkosi
+        working-directory: ${{ github.workspace }}/image
         env:
           BOOTSTRAPPER_BINARY: ${{ github.workspace }}/build/bootstrapper
           DISK_MAPPER_BINARY: ${{ github.workspace }}/build/disk-mapper
@@ -143,14 +143,14 @@ jobs:
           echo "image-vmlinuz-${{ matrix.csp }}-sha256=$(sha256sum image.vmlinuz | head -c 64)" >> $GITHUB_OUTPUT
           echo "image-raw-changelog-${{ matrix.csp }}-sha256=$(sha256sum image.raw.changelog | head -c 64)" >> $GITHUB_OUTPUT
           echo "image-raw-manifest-${{ matrix.csp }}-sha256=$(sha256sum image.raw.manifest | head -c 64)" >> $GITHUB_OUTPUT
-        working-directory: ${{ github.workspace }}/image/mkosi/mkosi.output.${{ matrix.csp }}/fedora~36
+        working-directory: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36
         continue-on-error: true
 
       - name: Upload raw OS image as artifact
         uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: image-${{ matrix.csp }}
-          path: ${{ github.workspace }}/image/mkosi/mkosi.output.${{ matrix.csp }}/fedora~36/image.raw
+          path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.raw
         if: always()
         continue-on-error: true
 
@@ -159,13 +159,13 @@ jobs:
         with:
           name: parts-${{ matrix.csp }}
           path: |
-            ${{ github.workspace }}/image/mkosi/mkosi.output.${{ matrix.csp }}/fedora~36/image.cmdline
-            ${{ github.workspace }}/image/mkosi/mkosi.output.${{ matrix.csp }}/fedora~36/image.efi
-            ${{ github.workspace }}/image/mkosi/mkosi.output.${{ matrix.csp }}/fedora~36/image.initrd
-            ${{ github.workspace }}/image/mkosi/mkosi.output.${{ matrix.csp }}/fedora~36/image.root.raw
-            ${{ github.workspace }}/image/mkosi/mkosi.output.${{ matrix.csp }}/fedora~36/image.root.roothash
-            ${{ github.workspace }}/image/mkosi/mkosi.output.${{ matrix.csp }}/fedora~36/image.root.verity
-            ${{ github.workspace }}/image/mkosi/mkosi.output.${{ matrix.csp }}/fedora~36/image.vmlinuz
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.cmdline
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.efi
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.initrd
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.root.raw
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.root.roothash
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.root.verity
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.vmlinuz
         if: always()
         continue-on-error: true
 
@@ -174,8 +174,8 @@ jobs:
         with:
           name: manifest-${{ matrix.csp }}
           path: |
-            ${{ github.workspace }}/image/mkosi/mkosi.output.${{ matrix.csp }}/fedora~36/image.raw.changelog
-            ${{ github.workspace }}/image/mkosi/mkosi.output.${{ matrix.csp }}/fedora~36/image.raw.manifest
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.raw.changelog
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.raw.manifest
         if: always()
         continue-on-error: true
 
@@ -198,7 +198,7 @@ jobs:
         uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
         with:
           name: image-${{ matrix.csp }}
-          path: ${{ github.workspace }}/image/mkosi/mkosi.output.${{ matrix.csp }}/fedora~36
+          path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36
 
       - name: Install tools
         shell: bash
@@ -223,7 +223,7 @@ jobs:
       - name: Prepare PKI for image upload
         shell: bash
         run: ln -s pki_testing pki
-        working-directory: ${{ github.workspace }}/image/mkosi
+        working-directory: ${{ github.workspace }}/image
 
       - name: Determine version
         id: version
@@ -244,19 +244,19 @@ jobs:
           semver=${{ steps.version.outputs.semanticVersion }}
           imageVersion=${{ inputs.imageVersion }}
           pseudover=${{ steps.version.outputs.pseudoVersion }}
-          echo "PKI=${{ github.workspace }}/image/mkosi/pki" >> $GITHUB_ENV
+          echo "PKI=${{ github.workspace }}/image/pki" >> $GITHUB_ENV
           echo "GCP_PROJECT=constellation-images" >> $GITHUB_ENV
           echo "GCP_BUCKET=constellation-images" >> $GITHUB_ENV
           echo "GCP_REGION=europe-west3" >> $GITHUB_ENV
-          echo "GCP_RAW_IMAGE_PATH=${{ github.workspace }}/image/mkosi/mkosi.output.gcp/fedora~36/image.raw" >> $GITHUB_ENV
-          echo "GCP_IMAGE_PATH=${{ github.workspace }}/image/mkosi/mkosi.output.gcp/fedora~36/image.tar.gz" >> $GITHUB_ENV
+          echo "GCP_RAW_IMAGE_PATH=${{ github.workspace }}/image/mkosi.output.gcp/fedora~36/image.raw" >> $GITHUB_ENV
+          echo "GCP_IMAGE_PATH=${{ github.workspace }}/image/mkosi.output.gcp/fedora~36/image.tar.gz" >> $GITHUB_ENV
           echo "AZURE_RESOURCE_GROUP_NAME=constellation-images" >> $GITHUB_ENV
           echo "AZURE_REGION=northeurope" >> $GITHUB_ENV
           echo "AZURE_REPLICATION_REGIONS=northeurope eastus westeurope westus" >> $GITHUB_ENV
           echo "AZURE_SKU=constellation" >> $GITHUB_ENV
           echo "AZURE_PUBLISHER=edgelesssys" >> $GITHUB_ENV
-          echo "AZURE_RAW_IMAGE_PATH=${{ github.workspace }}/image/mkosi/mkosi.output.azure/fedora~36/image.raw" >> $GITHUB_ENV
-          echo "AZURE_IMAGE_PATH=${{ github.workspace }}/image/mkosi/mkosi.output.azure/fedora~36/image.vhd" >> $GITHUB_ENV
+          echo "AZURE_RAW_IMAGE_PATH=${{ github.workspace }}/image/mkosi.output.azure/fedora~36/image.raw" >> $GITHUB_ENV
+          echo "AZURE_IMAGE_PATH=${{ github.workspace }}/image/mkosi.output.azure/fedora~36/image.vhd" >> $GITHUB_ENV
           # TODO: set default security type to "ConfidentialVM" once replication is possible
           AZURE_SECURITY_TYPE=${{ matrix.upload-variant }}
           if [ -z "${AZURE_SECURITY_TYPE}" ]; then
@@ -291,7 +291,7 @@ jobs:
             echo "AZURE_VMGS_PATH=" >> $GITHUB_ENV
           else
             echo "AZURE_GALLERY_NAME=${AZURE_GALLERY_NAME}" >> $GITHUB_ENV
-            echo "AZURE_VMGS_PATH=${{ github.workspace }}/image/mkosi/pki/${AZURE_SECURITY_TYPE}.vmgs" >> $GITHUB_ENV
+            echo "AZURE_VMGS_PATH=${{ github.workspace }}/image/pki/${AZURE_SECURITY_TYPE}.vmgs" >> $GITHUB_ENV
           fi
           echo "AZURE_IMAGE_DEFINITION=${AZURE_IMAGE_DEFINITION}" >> $GITHUB_ENV
           echo "AZURE_IMAGE_OFFER=${AZURE_IMAGE_DEFINITION}" >> $GITHUB_ENV
@@ -303,7 +303,7 @@ jobs:
           s3://constellation-secure-boot/pki_testing/${AZURE_SECURITY_TYPE}.vmgs \
           pki_testing/${AZURE_SECURITY_TYPE}.vmgs \
           --no-progress
-        working-directory: ${{ github.workspace }}/image/mkosi
+        working-directory: ${{ github.workspace }}/image
         if: ${{ matrix.csp == 'azure' }}
 
       - name: Upload GCP image
@@ -314,7 +314,7 @@ jobs:
           upload/upload_gcp.sh
           echo -e "Uploaded GCP image: \`projects/${GCP_PROJECT}/global/images/${GCP_IMAGE_NAME}\`" >> $GITHUB_STEP_SUMMARY
           echo "::endgroup::"
-        working-directory: ${{ github.workspace }}/image/mkosi
+        working-directory: ${{ github.workspace }}/image
         if: ${{ matrix.csp == 'gcp' }}
 
       - name: Upload Azure image
@@ -325,7 +325,7 @@ jobs:
           upload/upload_azure.sh -g --disk-name "${AZURE_DISK_NAME}" "${AZURE_VMGS_PATH}"
           echo -e "Uploaded Azure ${AZURE_SECURITY_TYPE} image: \`/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/${AZURE_RESOURCE_GROUP_NAME^^}/providers/Microsoft.Compute/galleries/${AZURE_GALLERY_NAME}/images/${AZURE_IMAGE_DEFINITION}/versions/${AZURE_IMAGE_VERSION}\`" >> $GITHUB_STEP_SUMMARY
           echo "::endgroup::"
-        working-directory: ${{ github.workspace }}/image/mkosi
+        working-directory: ${{ github.workspace }}/image
         if: ${{ matrix.csp == 'azure' }}
 
   calculate-pcrs:
@@ -361,7 +361,7 @@ jobs:
           cp pcr-stable.json ${{ github.workspace }}/
           jq --sort-keys -s '.[0] * .[1] * .[2] * .[3]' ${{ github.workspace }}/pcr-* > ${{ github.workspace }}/pcrs-${{ matrix.csp }}.json
           echo "::endgroup::"
-        working-directory: ${{ github.workspace }}/image/mkosi/measured-boot
+        working-directory: ${{ github.workspace }}/image/measured-boot
 
       - name: Upload expected PCRs as artifact
         uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
