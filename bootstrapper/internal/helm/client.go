@@ -104,18 +104,19 @@ func (h *Client) InstallCilium(ctx context.Context, kubectl k8sapi.Client, relea
 	h.Timeout = timeout
 
 	switch in.CloudProvider {
+	case "aws", "azure", "qemu":
+		return h.installCiliumGeneric(ctx, release, in.LoadBalancerEndpoint)
 	case "gcp":
-		return h.installlCiliumGCP(ctx, kubectl, release, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR, in.LoadBalancerEndpoint)
-	case "azure":
-		return h.installCiliumAzure(ctx, release, in.LoadBalancerEndpoint)
-	case "qemu":
-		return h.installCiliumQEMU(ctx, release, in.SubnetworkPodCIDR, in.LoadBalancerEndpoint)
+		return h.installCiliumGCP(ctx, kubectl, release, in.NodeName, in.FirstNodePodCIDR, in.SubnetworkPodCIDR, in.LoadBalancerEndpoint)
 	default:
 		return fmt.Errorf("unsupported cloud provider %q", in.CloudProvider)
 	}
 }
 
-func (h *Client) installCiliumAzure(ctx context.Context, release helm.Release, kubeAPIEndpoint string) error {
+// installCiliumGeneric installs cilium with the given load balancer endpoint.
+// This is used for cloud providers that do not require special server-side configuration.
+// Currently this is AWS, Azure, and QEMU.
+func (h *Client) installCiliumGeneric(ctx context.Context, release helm.Release, kubeAPIEndpoint string) error {
 	host := kubeAPIEndpoint
 	release.Values["k8sServiceHost"] = host
 	release.Values["k8sServicePort"] = strconv.Itoa(constants.KubernetesPort)
@@ -133,7 +134,7 @@ func (h *Client) installCiliumAzure(ctx context.Context, release helm.Release, k
 	return nil
 }
 
-func (h *Client) installlCiliumGCP(ctx context.Context, kubectl k8sapi.Client, release helm.Release, nodeName, nodePodCIDR, subnetworkPodCIDR, kubeAPIEndpoint string) error {
+func (h *Client) installCiliumGCP(ctx context.Context, kubectl k8sapi.Client, release helm.Release, nodeName, nodePodCIDR, subnetworkPodCIDR, kubeAPIEndpoint string) error {
 	out, err := exec.CommandContext(ctx, constants.KubectlPath, "--kubeconfig", constants.ControlPlaneAdminConfFilename, "patch", "node", nodeName, "-p", "{\"spec\":{\"podCIDR\": \""+nodePodCIDR+"\"}}").CombinedOutput()
 	if err != nil {
 		err = errors.New(string(out))
@@ -189,31 +190,5 @@ func (h *Client) installlCiliumGCP(ctx context.Context, kubectl k8sapi.Client, r
 		return fmt.Errorf("helm install cilium: %w", err)
 	}
 
-	return nil
-}
-
-func (h *Client) installCiliumQEMU(ctx context.Context, release helm.Release, subnetworkPodCIDR, kubeAPIEndpoint string) error {
-	// configure pod network CIDR
-	release.Values["ipam"] = map[string]any{
-		"operator": map[string]any{
-			"clusterPoolIPv4PodCIDRList": []any{
-				subnetworkPodCIDR,
-			},
-		},
-	}
-
-	release.Values["k8sServiceHost"] = kubeAPIEndpoint
-	release.Values["k8sServicePort"] = strconv.Itoa(constants.KubernetesPort)
-
-	reader := bytes.NewReader(release.Chart)
-	chart, err := loader.LoadArchive(reader)
-	if err != nil {
-		return fmt.Errorf("helm load archive: %w", err)
-	}
-
-	_, err = h.RunWithContext(ctx, chart, release.Values)
-	if err != nil {
-		return fmt.Errorf("helm install cilium: %w", err)
-	}
 	return nil
 }
