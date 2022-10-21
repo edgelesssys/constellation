@@ -140,13 +140,6 @@ func TestRetrieveInstances(t *testing.T) {
 				},
 			},
 		},
-		"constellation id is not set": {
-			client:              stubInstancesClient{GetInstance: instance},
-			metadata:            stubMetadataClient{InstanceValue: uid},
-			instanceIter:        newTestIter(),
-			instanceIterMutator: func(sii *stubInstanceIterator) { delete(sii.instances[0].Labels, cloud.TagUID) },
-			wantInstances:       []metadata.InstanceMetadata{},
-		},
 		"constellation retrieval fails": {
 			client:       stubInstancesClient{GetInstance: instance},
 			metadata:     stubMetadataClient{instanceIDErr: someErr},

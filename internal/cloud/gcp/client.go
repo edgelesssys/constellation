@@ -67,6 +67,7 @@ func (c *Client) RetrieveInstances(ctx context.Context, project, zone string) ([
 		return nil, err
 	}
 	req := &computepb.ListInstancesRequest{
+		Filter:  proto.String(fmt.Sprintf("labels.%s:%s", cloud.TagUID, uid)),
 		Project: project,
 		Zone:    zone,
 	}
@@ -81,11 +82,6 @@ func (c *Client) RetrieveInstances(ctx context.Context, project, zone string) ([
 		if err != nil {
 			return nil, fmt.Errorf("retrieving instance list from compute API client: %w", err)
 		}
-		if resp.Labels[cloud.TagUID] != uid {
-			// skip instances not belonging to the current constellation
-			continue
-		}
-
 		instance, err := convertToCoreInstance(resp, project, zone)
 		if err != nil {
 			return nil, err

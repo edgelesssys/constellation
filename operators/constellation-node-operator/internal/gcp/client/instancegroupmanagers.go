@@ -10,7 +10,6 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"strings"
 )
 
 var instanceGroupIDRegex = regexp.MustCompile(`^projects/([^/]+)/zones/([^/]+)/instanceGroupManagers/([^/]+)$`)
@@ -34,16 +33,6 @@ func splitInstanceGroupID(instanceGroupID string) (project, zone, instanceGroup 
 		return "", "", "", fmt.Errorf("error splitting instanceGroupID: %v", instanceGroupID)
 	}
 	return matches[1], matches[2], matches[3], nil
-}
-
-// isControlPlaneInstanceGroup returns true if the instance group is a control plane instance group.
-func isControlPlaneInstanceGroup(instanceGroupName string) bool {
-	return strings.Contains(instanceGroupName, "control-plane")
-}
-
-// isWorkerInstanceGroup returns true if the instance group is a worker instance group.
-func isWorkerInstanceGroup(instanceGroupName string) bool {
-	return strings.Contains(instanceGroupName, "worker")
 }
 
 // generateInstanceName generates a random instance name.
