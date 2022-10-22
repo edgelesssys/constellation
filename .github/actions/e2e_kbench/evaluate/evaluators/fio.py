@@ -14,7 +14,6 @@ Run status group 0 (all jobs):
 
 import os
 import re
-from collections import defaultdict
 from pathlib import Path
 from typing import Dict
 
@@ -26,26 +25,28 @@ subtests = {
 }
 
 
-def eval(tests: Dict[str, str]) -> Dict[str, Dict[str, float]]:
+def evaluate(tests: Dict[str, str]) -> Dict[str, Dict[str, float]]:
     """Read the results of the fio tests.
     Return a result dictionary.
     """
     result = {}
     for t in tests:
         base_path = os.path.join(tests[t], 'dp_fio')
-        row = defaultdict(str)
+        row = {}
         for subtest in subtests:
             try:
                 log_path = next(Path(base_path).rglob(subtests[subtest]))
             except StopIteration:
                 raise Exception(
-                    f"Error: No iperfclient.out found for network test {subtest} in {base_path}"
+                    "Error: No iperfclient.out found for network test {subtest} in {base_path}".format(
+                        subtest=subtest, base_path=base_path)
                 )
 
             with open(log_path) as f:
                 fio = f.readlines()
             if not fio:
-                raise Exception(f"Empty fio log {subtest}?")
+                raise Exception(
+                    "Empty fio log {subtest}?".format(subtest=subtest))
 
             for line in fio:
                 if "READ" in line:
@@ -58,7 +59,7 @@ def eval(tests: Dict[str, str]) -> Dict[str, Dict[str, float]]:
     return result
 
 
-# Dictionary to convert units
+# Dictionary for conversion to MiB
 units = {
     'KiB': 1/1024,
     'MiB': 1,
@@ -76,6 +77,8 @@ def get_io_bw_from_line(line) -> float:
     if not match:
         raise Exception("Could not extract bw from fio line.")
     num = float(match.group(1))
+
+    # return in MiB/s with 2 decimal digits
     num = num * units[match.group(2)]
-    # return in MiB/s
+    num = round(num, 2)
     return num

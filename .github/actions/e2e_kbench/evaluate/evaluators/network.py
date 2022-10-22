@@ -14,7 +14,6 @@ s1:  iperf Done.
 """
 import os
 import re
-from collections import defaultdict
 from pathlib import Path
 from typing import Dict
 
@@ -24,20 +23,21 @@ subtests = {
 }
 
 
-def eval(tests: Dict[str, str]) -> Dict[str, Dict[str, float]]:
+def evaluate(tests: Dict[str, str]) -> Dict[str, Dict[str, float]]:
     """Read the results of the network tests.
     Return a result dictionary.
     """
     result = {}
     for t in tests:
-        row = defaultdict(str)
+        row = {}
         for subtest in subtests:
             base_path = os.path.join(tests[t], subtests[subtest])
             try:
                 log_path = next(Path(base_path).rglob('iperfclient.out'))
             except StopIteration:
                 raise Exception(
-                    f"Error: No iperfclient.out found for network test {subtest} in {base_path}"
+                    "Error: No iperfclient.out found for network test {subtest} in {base_path}".format(
+                        subtest=subtest, base_path=base_path)
                 )
 
             with open(log_path) as f:
@@ -59,7 +59,7 @@ def eval(tests: Dict[str, str]) -> Dict[str, Dict[str, float]]:
     return result
 
 
-# Dictionary to convert units
+# Dictionary for conversion to Mbit
 units = {
     'bits': 1e-6,
     'Mbits': 1,
@@ -78,6 +78,8 @@ def get_speed_from_line(line) -> float:
     if not match:
         raise Exception("Could not extract speed from iperf line.")
     num = float(match.group(1))
+
+    # return in Mbit/s with 2 decimal digits
     num = num * units[match.group(2)]
-    # return in Mbit/s
+    num = round(num, 2)
     return float(num)
