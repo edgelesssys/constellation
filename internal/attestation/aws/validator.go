@@ -61,17 +61,20 @@ func tpmEnabled(idDocument imds.InstanceIdentityDocument) error {
 		aws.NewConfig().
 			WithRegion(vmRegion))
 
-	imageAttributeOutput, err := svc.DescribeImageAttribute(&ec2.DescribeImageAttributeInput{
-		ImageId:   aws.String(imageId),
-		Attribute: aws.String("tpmSupport"),
+	var images []*string
+	images = append(images, &imageId)
+
+	// Currently, there seems to be a problem with retrieving image attributes directly.
+	// Alternatively, parse it from the general output.
+	imageOutput, err := svc.DescribeImages(&ec2.DescribeImagesInput{
+		ImageIds: images,
 	})
 
 	if err != nil {
-		fmt.Printf("Got error %v", err)
 		return err
 	}
 
-	if *imageAttributeOutput.TpmSupport.Value == "v2.0" {
+	if *imageOutput.Images[0].TpmSupport == "v2.0" {
 		return nil
 	}
 

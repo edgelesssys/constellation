@@ -43,6 +43,7 @@ func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
 	tpmAk, err := client.AttestationKeyRSA(tpm)
 	if err != nil {
 		log.Fatalf("error creating RSA Endorsement key!")
+		return nil, err
 	}
 
 	return tpmAk, nil
