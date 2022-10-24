@@ -28,4 +28,3 @@ done
 
 echo "AWS state disk found"
 echo ${AWS_STATE_DISK_SYMLINK} → $(readlink -f "${AWS_STATE_DISK_SYMLINK}")
-sleep 2
