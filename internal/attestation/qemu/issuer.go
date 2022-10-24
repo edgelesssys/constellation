@@ -20,7 +20,7 @@ type Issuer struct {
 	*vtpm.Issuer
 }
 
-// NewIssuer initializes a new Azure Issuer.
+// NewIssuer initializes a new QEMU Issuer.
 func NewIssuer() *Issuer {
 	return &Issuer{
 		Issuer: vtpm.NewIssuer(
