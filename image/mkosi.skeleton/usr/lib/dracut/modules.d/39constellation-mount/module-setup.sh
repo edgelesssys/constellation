@@ -33,6 +33,11 @@ install() {
     install_and_enable_unit "configure-constel-csp.service" \
         "basic.target"
 
+    # aws nvme disks
+    inst_multiple \
+        tail \
+        tr
+
     # azure scsi disks
     inst_multiple \
         cut \
@@ -57,16 +62,8 @@ install() {
     inst_simple "/usr/lib/udev/rules.d/65-gce-disk-naming.rules" \
         "/usr/lib/udev/rules.d/65-gce-disk-naming.rules"
 
-    inst_script "/usr/sbin/ebsnvme-id" \
-        "/usr/sbin/ebsnvme-id"
-    inst_script "/usr/bin/ec2-metadata" \
-        "/usr/bin/ec2-metadata"
-    inst_script "/usr/lib/udev/ec2nvme-nsid" \
-        "/usr/lib/udev/ec2nvme-nsid"
-    inst_script "/usr/lib/udev/ec2nvme-nsid" \
-        "/usr/sbin/ec2nvme-nsid"
-    inst_script "/usr/sbin/ec2udev-vbd" \
-        "/usr/sbin/ec2udev-vbd"
-    inst_simple "/usr/lib/udev/rules.d/70-ec2-nvme-devices.rules" \
-        "/usr/lib/udev/rules.d/70-ec2-nvme-devices.rules"
+    inst_script "$moddir/aws-nvme-disk.sh" \
+        "/usr/sbin/aws-nvme-disk"
+    install_and_enable_unit "aws-nvme-disk.service" \
+        "basic.target"
 }
