@@ -75,6 +75,7 @@ func (h *Handler) Read(name string) ([]byte, error) {
 	return io.ReadAll(file)
 }
 
+// ReadDir reads the directory with the given name and returns os.FileInfo for each entry in it.
 func (h *Handler) ReadDir(name string) ([]os.FileInfo, error) {
 	dir, err := h.fs.ReadDir(name)
 	if err != nil {
