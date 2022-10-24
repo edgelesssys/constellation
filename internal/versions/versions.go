@@ -52,7 +52,7 @@ const (
 	VerificationImage       = "ghcr.io/edgelesssys/constellation/verification-service:v2.1.0@sha256:7a1e6bec4cda270924c3495466fa536a2b6cd2d2f9c0be319fc6368710c255e8"
 	// Check for new versions at https://github.com/GoogleCloudPlatform/guest-agent/releases and update in /.github/workflows/build-gcp-guest-agent.yml.
 	GcpGuestImage            = "ghcr.io/edgelesssys/gcp-guest-agent:20220927.00@sha256:3dea1ae3f162d2353e6584b325f0e325a39cda5f380f41e5a0ee43c6641d3905"
-	NodeOperatorCatalogImage = "ghcr.io/edgelesssys/constellation/node-operator-catalog:v2.2.0-pre.0.20221012150059-4b2dd1317a77@sha256:f840435fe3a7669afe78aa12b0ba7f36a0087dc6d86d4fe3f3e340395f002e3f"
+	NodeOperatorCatalogImage = "ghcr.io/edgelesssys/constellation/node-operator-catalog:v2.2.0-pre.0.20221021130530-c6623f2ebd72@sha256:f2750cb3c0f8368808686ffd5835b6d7152ae2845e35ee9891e910738dc26718"
 	// TODO: switch node maintenance operator catalog back to upstream quay.io/medik8s/node-maintenance-operator-catalog
 	// once https://github.com/medik8s/node-maintenance-operator/issues/49 is resolved.
 	NodeMaintenanceOperatorCatalogImage = "ghcr.io/edgelesssys/constellation/node-maintenance-operator-catalog:v0.13.1-alpha1@sha256:d382c3aaf9bc470cde6f6c05c2c6ff5c9dcfd90540d5b11f9cf69c4e1dd1ca9d"
