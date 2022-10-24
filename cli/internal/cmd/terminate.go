@@ -50,8 +50,7 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 	}
 
 	if !foundTerraformData {
-		fmt.Println("Did not find a cluster to terminate.")
-		return nil
+		return fmt.Errorf("did not find a cluster to terminate")
 	}
 
 	configPath, err := cmd.Flags().GetString("config")
