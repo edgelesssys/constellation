@@ -6,16 +6,17 @@
 set -euo pipefail
 shopt -s extglob nullglob
 
-AWS_STATE_DISK_SYMLINK="/dev/sdb"
+AWS_STATE_DISK_DEVICENAME="sdb"
+AWS_STATE_DISK_SYMLINK="/dev/${AWS_STATE_DISK_DEVICENAME}"
 
 # hack: aws nvme udev rules are never executed. Create symlinks for the nvme devices manually.
 while [ ! -L "${AWS_STATE_DISK_SYMLINK}" ]
 do
-    for nvmedisk in /dev/nvme+([0-9])
+    for nvmedisk in /dev/nvme+([0-9])n1
     do
         linkname=$(nvme amzn id-ctrl -b "${nvmedisk}" | tail -c +3072 | tr -d ' ') || true
-        if [ -n "${linkname}" ]; then
-            ln -s "${nvmedisk}" "/dev/${linkname}"
+        if [ -n "${linkname}" ] && [ "${linkname}" == "${AWS_STATE_DISK_DEVICENAME}" ]; then
+            ln -s "${nvmedisk}" "${AWS_STATE_DISK_SYMLINK}"
         fi
     done
     if [ -L "${AWS_STATE_DISK_SYMLINK}" ]; then
