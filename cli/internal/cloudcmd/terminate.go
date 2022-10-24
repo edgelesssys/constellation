@@ -9,6 +9,8 @@ package cloudcmd
 import (
 	"context"
 	"errors"
+	"fmt"
+	"runtime"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
@@ -40,6 +42,10 @@ func (t *Terminator) Terminate(ctx context.Context, provider cloudprovider.Provi
 	}
 
 	if provider == cloudprovider.QEMU {
+		if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
+			return fmt.Errorf("termination of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
+		}
+
 		libvirt := t.newLibvirtRunner()
 		defer func() {
 			if retErr == nil {
