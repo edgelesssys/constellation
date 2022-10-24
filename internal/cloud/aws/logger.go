@@ -18,6 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	logs "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
+	"github.com/edgelesssys/constellation/v2/internal/cloud"
 	"k8s.io/utils/clock"
 )
 
@@ -147,7 +148,7 @@ func (l *Logger) createStream(ctx context.Context, imds imdsAPI) error {
 	l.streamName = name
 
 	// find log group with matching Constellation UID
-	uid, err := readInstanceTag(ctx, imds, tagUID)
+	uid, err := readInstanceTag(ctx, imds, cloud.TagUID)
 	if err != nil {
 		return err
 	}
@@ -162,7 +163,7 @@ func (l *Logger) createStream(ctx context.Context, imds imdsAPI) error {
 			if err != nil {
 				continue // we may not have permission to read the tags of a log group outside the Constellation scope
 			}
-			if tags.Tags[tagUID] == uid {
+			if tags.Tags[cloud.TagUID] == uid {
 				l.groupName = *group.LogGroupName
 				res.NextToken = nil // stop pagination
 				break

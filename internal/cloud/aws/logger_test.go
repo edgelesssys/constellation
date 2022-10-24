@@ -17,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	logs "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
+	"github.com/edgelesssys/constellation/v2/internal/cloud"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -40,8 +41,8 @@ func TestCreateStream(t *testing.T) {
 		"success new stream minimal": {
 			imds: &stubIMDS{
 				tags: map[string]string{
-					tagName: "test-instance",
-					tagUID:  "uid",
+					tagName:      "test-instance",
+					cloud.TagUID: "uid",
 				},
 			},
 			logs: &stubLogs{
@@ -50,7 +51,7 @@ func TestCreateStream(t *testing.T) {
 						{LogGroupName: aws.String("test-group")},
 					},
 				},
-				listTags: map[string]map[string]string{"test-group": {tagUID: "uid"}},
+				listTags: map[string]map[string]string{"test-group": {cloud.TagUID: "uid"}},
 			},
 			wantStream: "test-instance",
 			wantGroup:  "test-group",
@@ -58,8 +59,8 @@ func TestCreateStream(t *testing.T) {
 		"success one group of many": {
 			imds: &stubIMDS{
 				tags: map[string]string{
-					tagName: "test-instance",
-					tagUID:  "uid",
+					tagName:      "test-instance",
+					cloud.TagUID: "uid",
 				},
 			},
 			logs: &stubLogs{
@@ -89,13 +90,13 @@ func TestCreateStream(t *testing.T) {
 						"some-tag": "random-tag",
 					},
 					"other-group": {
-						tagUID: "other-uid",
+						cloud.TagUID: "other-uid",
 					},
 					"another-group": {
 						"some-tag": "uid",
 					},
 					"test-group": {
-						tagUID: "uid",
+						cloud.TagUID: "uid",
 					},
 				},
 			},
@@ -105,8 +106,8 @@ func TestCreateStream(t *testing.T) {
 		"success stream exists": {
 			imds: &stubIMDS{
 				tags: map[string]string{
-					tagName: "test-instance",
-					tagUID:  "uid",
+					tagName:      "test-instance",
+					cloud.TagUID: "uid",
 				},
 			},
 			logs: &stubLogs{
@@ -115,7 +116,7 @@ func TestCreateStream(t *testing.T) {
 						{LogGroupName: aws.String("test-group")},
 					},
 				},
-				listTags:  map[string]map[string]string{"test-group": {tagUID: "uid"}},
+				listTags:  map[string]map[string]string{"test-group": {cloud.TagUID: "uid"}},
 				createErr: &types.ResourceAlreadyExistsException{},
 			},
 			wantStream: "test-instance",
@@ -124,8 +125,8 @@ func TestCreateStream(t *testing.T) {
 		"create stream error": {
 			imds: &stubIMDS{
 				tags: map[string]string{
-					tagName: "test-instance",
-					tagUID:  "uid",
+					tagName:      "test-instance",
+					cloud.TagUID: "uid",
 				},
 			},
 			logs: &stubLogs{
@@ -134,7 +135,7 @@ func TestCreateStream(t *testing.T) {
 						{LogGroupName: aws.String("test-group")},
 					},
 				},
-				listTags:  map[string]map[string]string{"test-group": {tagUID: "uid"}},
+				listTags:  map[string]map[string]string{"test-group": {cloud.TagUID: "uid"}},
 				createErr: someErr,
 			},
 			wantErr: true,
@@ -151,14 +152,14 @@ func TestCreateStream(t *testing.T) {
 						{LogGroupName: aws.String("test-group")},
 					},
 				},
-				listTags: map[string]map[string]string{"test-group": {tagUID: "uid"}},
+				listTags: map[string]map[string]string{"test-group": {cloud.TagUID: "uid"}},
 			},
 			wantErr: true,
 		},
 		"missing name tag": {
 			imds: &stubIMDS{
 				tags: map[string]string{
-					tagUID: "uid",
+					cloud.TagUID: "uid",
 				},
 			},
 			logs: &stubLogs{
@@ -167,33 +168,33 @@ func TestCreateStream(t *testing.T) {
 						{LogGroupName: aws.String("test-group")},
 					},
 				},
-				listTags: map[string]map[string]string{"test-group": {tagUID: "uid"}},
+				listTags: map[string]map[string]string{"test-group": {cloud.TagUID: "uid"}},
 			},
 			wantErr: true,
 		},
 		"describe groups error": {
 			imds: &stubIMDS{
 				tags: map[string]string{
-					tagName: "test-instance",
-					tagUID:  "uid",
+					tagName:      "test-instance",
+					cloud.TagUID: "uid",
 				},
 			},
 			logs: &stubLogs{
 				describeErr: someErr,
-				listTags:    map[string]map[string]string{"test-group": {tagUID: "uid"}},
+				listTags:    map[string]map[string]string{"test-group": {cloud.TagUID: "uid"}},
 			},
 			wantErr: true,
 		},
 		"no matching groups": {
 			imds: &stubIMDS{
 				tags: map[string]string{
-					tagName: "test-instance",
-					tagUID:  "uid",
+					tagName:      "test-instance",
+					cloud.TagUID: "uid",
 				},
 			},
 			logs: &stubLogs{
 				describeRes1: &logs.DescribeLogGroupsOutput{},
-				listTags:     map[string]map[string]string{"test-group": {tagUID: "uid"}},
+				listTags:     map[string]map[string]string{"test-group": {cloud.TagUID: "uid"}},
 			},
 			wantErr: true,
 		},

@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/cloud"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 )
 
@@ -91,7 +92,7 @@ func (c *imdsClient) UID(ctx context.Context) (string, error) {
 	}
 
 	for _, tag := range c.cache.Compute.Tags {
-		if tag.Name == "constellation-uid" {
+		if tag.Name == cloud.TagUID {
 			return tag.Value, nil
 		}
 	}
@@ -107,7 +108,7 @@ func (c *imdsClient) Role(ctx context.Context) (role.Role, error) {
 	}
 
 	for _, tag := range c.cache.Compute.Tags {
-		if tag.Name == "role" {
+		if tag.Name == cloud.TagRole {
 			return role.FromString(tag.Value), nil
 		}
 	}

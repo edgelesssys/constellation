@@ -194,7 +194,7 @@ module "scale_set_control_plane" {
   instance_type             = var.instance_type
   confidential_vm           = var.confidential_vm
   secure_boot               = var.secure_boot
-  tags                      = merge(local.tags, { role = "control-plane" })
+  tags                      = merge(local.tags, { constellation-role = "control-plane" })
   image_id                  = var.image_id
   user_assigned_identity    = var.user_assigned_identity
   network_security_group_id = azurerm_network_security_group.security_group.id
@@ -217,7 +217,7 @@ module "scale_set_worker" {
   instance_type             = var.instance_type
   confidential_vm           = var.confidential_vm
   secure_boot               = var.secure_boot
-  tags                      = merge(local.tags, { role = "worker" })
+  tags                      = merge(local.tags, { constellation-role = "worker" })
   image_id                  = var.image_id
   user_assigned_identity    = var.user_assigned_identity
   network_security_group_id = azurerm_network_security_group.security_group.id

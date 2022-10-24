@@ -80,32 +80,33 @@ func (c *Client) GetAutoscalingGroupName(scalingGroupID string) (string, error) 
 
 // ListScalingGroups retrieves a list of scaling groups for the cluster.
 func (c *Client) ListScalingGroups(ctx context.Context, uid string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error) {
-	scaleSetIDs, err := c.getScaleSets(ctx)
-	if err != nil {
-		return nil, nil, fmt.Errorf("listing scaling groups: %w", err)
-	}
-	for _, scaleSetID := range scaleSetIDs {
-		_, _, scaleSet, err := splitVMSSID(scaleSetID)
+	pager := c.scaleSetsAPI.NewListPager(c.config.ResourceGroup, nil)
+
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
 		if err != nil {
-			return nil, nil, fmt.Errorf("getting scaling group name: %w", err)
+			return nil, nil, fmt.Errorf("paging scale sets: %w", err)
 		}
-		if isControlPlaneInstanceGroup(scaleSet) {
-			controlPlaneGroupIDs = append(controlPlaneGroupIDs, scaleSetID)
-		} else if isWorkerInstanceGroup(scaleSet) {
-			workerGroupIDs = append(workerGroupIDs, scaleSetID)
+		for _, scaleSet := range page.Value {
+			if scaleSet == nil || scaleSet.ID == nil {
+				continue
+			}
+			if scaleSet.Tags == nil || scaleSet.Tags["constellation-uid"] == nil || *scaleSet.Tags["constellation-uid"] != uid {
+				continue
+			}
+
+			if err != nil {
+				return nil, nil, fmt.Errorf("getting scaling group name: %w", err)
+			}
+			switch *scaleSet.Tags["constellation-role"] {
+			case "control-plane", "controlplane":
+				controlPlaneGroupIDs = append(controlPlaneGroupIDs, *scaleSet.ID)
+			case "worker":
+				workerGroupIDs = append(workerGroupIDs, *scaleSet.ID)
+			}
 		}
 	}
 	return controlPlaneGroupIDs, workerGroupIDs, nil
-}
-
-// isControlPlaneInstanceGroup returns true if the instance group is a control plane instance group.
-func isControlPlaneInstanceGroup(instanceGroupName string) bool {
-	return strings.Contains(instanceGroupName, "control-plane")
-}
-
-// isWorkerInstanceGroup returns true if the instance group is a worker instance group.
-func isWorkerInstanceGroup(instanceGroupName string) bool {
-	return strings.Contains(instanceGroupName, "worker")
 }
 
 func imageReferenceFromImage(img string) *armcompute.ImageReference {

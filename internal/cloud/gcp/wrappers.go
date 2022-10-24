@@ -69,6 +69,10 @@ func (c *metadataClient) InstanceAttributeValue(attr string) (string, error) {
 	return metadata.InstanceAttributeValue(attr)
 }
 
+func (c *metadataClient) InstanceID() (string, error) {
+	return metadata.InstanceID()
+}
+
 func (c *metadataClient) ProjectID() (string, error) {
 	return metadata.ProjectID()
 }

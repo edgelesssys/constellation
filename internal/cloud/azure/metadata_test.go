@@ -14,6 +14,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
+	"github.com/edgelesssys/constellation/v2/internal/cloud"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/stretchr/testify/assert"
@@ -654,8 +655,8 @@ func newScaleSetsStub() *stubScaleSetsAPI {
 			list: []armcomputev2.VirtualMachineScaleSet{{
 				Name: to.Ptr("scale-set-name"),
 				Tags: map[string]*string{
-					"constellation-uid": to.Ptr("uid"),
-					"role":              to.Ptr("worker"),
+					cloud.TagUID:  to.Ptr("uid"),
+					cloud.TagRole: to.Ptr("worker"),
 				},
 			}},
 		},
@@ -691,8 +692,8 @@ func newVirtualMachineScaleSetsVMsStub() *stubVirtualMachineScaleSetVMsAPI {
 				},
 			},
 			Tags: map[string]*string{
-				"constellation-uid": to.Ptr("uid"),
-				"role":              to.Ptr("worker"),
+				cloud.TagUID:  to.Ptr("uid"),
+				cloud.TagRole: to.Ptr("worker"),
 			},
 		},
 		pager: &stubVirtualMachineScaleSetVMPager{
@@ -724,8 +725,8 @@ func newVirtualMachineScaleSetsVMsStub() *stubVirtualMachineScaleSetVMsAPI {
 						},
 					},
 					Tags: map[string]*string{
-						"constellation-uid": to.Ptr("uid"),
-						"role":              to.Ptr("worker"),
+						cloud.TagUID:  to.Ptr("uid"),
+						cloud.TagRole: to.Ptr("worker"),
 					},
 				},
 			},

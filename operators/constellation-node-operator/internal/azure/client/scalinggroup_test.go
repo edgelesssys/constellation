@@ -193,14 +193,32 @@ func TestListScalingGroups(t *testing.T) {
 		"listing control-plane works": {
 			scaleSet: armcomputev2.VirtualMachineScaleSet{
 				ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-control-planes-uid"),
+				Tags: map[string]*string{
+					"constellation-uid":  to.Ptr("uid"),
+					"constellation-role": to.Ptr("control-plane"),
+				},
 			},
 			wantControlPlanes: []string{"/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-control-planes-uid"},
 		},
 		"listing worker works": {
 			scaleSet: armcomputev2.VirtualMachineScaleSet{
 				ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-workers-uid"),
+				Tags: map[string]*string{
+					"constellation-uid":  to.Ptr("uid"),
+					"constellation-role": to.Ptr("worker"),
+				},
 			},
 			wantWorkers: []string{"/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/constellation-scale-set-workers-uid"},
+		},
+		"listing is not dependent on resource name": {
+			scaleSet: armcomputev2.VirtualMachineScaleSet{
+				ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/some-scale-set"),
+				Tags: map[string]*string{
+					"constellation-uid":  to.Ptr("uid"),
+					"constellation-role": to.Ptr("control-plane"),
+				},
+			},
+			wantControlPlanes: []string{"/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/some-scale-set"},
 		},
 		"listing other works": {
 			scaleSet: armcomputev2.VirtualMachineScaleSet{
