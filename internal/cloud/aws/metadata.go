@@ -127,7 +127,7 @@ func (m *Metadata) GetInstance(ctx context.Context, providerID string) (metadata
 
 // UID returns the UID of the Constellation.
 func (m *Metadata) UID(ctx context.Context) (string, error) {
-	return readInstanceTag(ctx, m.imds, tagUID)
+	return readInstanceTag(ctx, m.imds, cloud.TagUID)
 }
 
 // SupportsLoadBalancer returns true if the cloud provider supports load balancers.
