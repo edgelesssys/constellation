@@ -47,8 +47,7 @@ jobs:
           cloudProvider: "azure"
           azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
-          # TODO: Remove E2E_SKIP once AB#2174 is resolved
-          sonobuoyTestSuiteCmd: '--plugin e2e --plugin-env e2e.E2E_FOCUS="\[Conformance\]" --plugin-env e2e.E2E_SKIP="for service with type clusterIP|HostPort validates that there is no conflict between pods with same hostPort but different hostIP and protocol" --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-plugin.yaml --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-master-plugin.yaml'
+          test: "sonobuoy full"
 
       - name: Always terminate cluster
         if: always()
@@ -119,7 +118,7 @@ jobs:
           cloudProvider: "azure"
           azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
-          sonobuoyTestSuiteCmd: "--mode quick"
+          test: "sonobuoy quick"
           kubernetesVersion: ${{ matrix.version }}
 
       - name: Always terminate cluster

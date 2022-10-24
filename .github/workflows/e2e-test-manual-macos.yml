@@ -17,11 +17,15 @@ on:
         options:
           - "gcp"
           - "azure"
-        default: "gcp"
+        default: "azure"
         required: true
-      sonobuoyTestSuiteCmd:
-        description: "Which tests should be run? Check README for guidance!"
-        default: "--mode quick"
+      test:
+        description: "The test to run."
+        type: choice
+        options:
+          - "sonobuoy fast"
+          - "sonobuoy full"
+          - "autoscaling"
         required: true
       kubernetesVersion:
         description: "Kubernetes version to create the cluster from."
@@ -84,7 +88,7 @@ jobs:
     steps:
       - name: Install the basics
         shell: bash
-        run: brew install coreutils kubectl
+        run: brew install coreutils kubectl bash
 
       - name: Check out repository
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
@@ -123,7 +127,7 @@ jobs:
           machineType: ${{ github.event.inputs.machineType }}
           gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
-          sonobuoyTestSuiteCmd: ${{ github.event.inputs.sonobuoyTestSuiteCmd }}
+          test: ${{ github.event.inputs.test }}
           kubernetesVersion: ${{ github.event.inputs.kubernetesVersion }}
           azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}

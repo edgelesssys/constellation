@@ -1,12 +1,15 @@
-name: E2E test
-description: "Run Constellation e2e test."
+name: E2E meta test
+description: "This test does the infrastructure management and runs the e2e test of your choice."
+
 inputs:
   workerNodesCount:
     description: "Number of worker nodes to spawn."
-    required: true
+    required: false
+    default: "2"
   controlNodesCount:
     description: "Number of control-plane nodes to spawn."
-    required: true
+    required: false
+    default: "3"
   cloudProvider:
     description: "Which cloud provider to use."
     required: true
@@ -36,13 +39,23 @@ inputs:
   azureResourceGroup:
     description: "The resource group to use"
     required: false
-  sonobuoyTestSuiteCmd:
-    description: "Which tests should be run? Check README for guidance!"
+  test:
+    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy fast, autoscaling]."
     required: true
+  sonobuoyTestSuiteCmd:
+    description: "The sonobuoy test suite to run."
+    required: false
 
 runs:
   using: "composite"
   steps:
+    - name: Check input
+      if: ${{ !contains(fromJson('["sonobuoy full", "sonobuoy fast", "autoscaling"]'), inputs.test) }}
+      shell: bash
+      run: |
+        echo "Invalid input for test field: ${{ inputs.test }}"
+        exit 1
+
     - name: Determine build target
       id: determine-build-target
       shell: bash
@@ -68,24 +81,25 @@ runs:
 
     - name: Build the bootstrapper
       id: build-bootstrapper
-      uses: ./.github/actions/build_bootstrapper
       if: inputs.isDebugImage == 'true' && runner.os != 'macOS'
+      uses: ./.github/actions/build_bootstrapper
 
     - name: Build cdbg
       id: build-cdbg
-      uses: ./.github/actions/build_cdbg
       if: inputs.isDebugImage == 'true'
+      uses: ./.github/actions/build_cdbg
       with:
         targetOS: ${{ steps.determine-build-target.outputs.hostOS }}
         targetArch: ${{ steps.determine-build-target.outputs.hostArch }}
 
     - name: Login to GCP
+      if: inputs.cloudProvider == 'gcp'
       uses: ./.github/actions/gcp_login
       with:
         gcp_service_account_json: ${{ inputs.gcp_service_account_json }}
-      if: inputs.cloudProvider == 'gcp'
 
     - name: Create cluster
+      id: constellation-create
       uses: ./.github/actions/constellation_create
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
@@ -99,7 +113,27 @@ runs:
         azureClientSecret: ${{ inputs.azureClientSecret }}
         azureResourceGroup: ${{ inputs.azureResourceGroup }}
 
-    - name: Run e2e tests
+    #
+    # Test payloads
+    #
+
+    - name: Run sonobuoy fast test
+      if: inputs.test == 'sonobuoy fast'
       uses: ./.github/actions/sonobuoy
       with:
-        sonobuoyTestSuiteCmd: ${{ inputs.sonobuoyTestSuiteCmd }}
+        sonobuoyTestSuiteCmd: "--mode quick"
+        kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
+
+    - name: Run sonobuoy full test
+      if: inputs.test == 'sonobuoy full'
+      uses: ./.github/actions/sonobuoy
+      with:
+        # TODO: Remove E2E_SKIP once AB#2174 is resolved
+        sonobuoyTestSuiteCmd: '--plugin e2e --plugin-env e2e.E2E_FOCUS="\[Conformance\]" --plugin-env e2e.E2E_SKIP="for service with type clusterIP|HostPort validates that there is no conflict between pods with same hostPort but different hostIP and protocol" --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-plugin.yaml --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-master-plugin.yaml'
+        kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
+
+    - name: Run autoscaling test
+      if: inputs.test == 'autoscaling'
+      uses: ./.github/actions/e2e_autoscaling
+      with:
+        kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
