@@ -44,12 +44,12 @@ func runTerminate(cmd *cobra.Command, args []string) error {
 
 func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.Handler, spinner spinnerInterf,
 ) error {
-	foundTerraformData, err := checkForTerraformData(fileHandler)
+	foundExistingClusterData, err := checkForExistingClusterData(fileHandler)
 	if err != nil {
 		return err
 	}
 
-	if !foundTerraformData {
+	if !foundExistingClusterData {
 		return fmt.Errorf("did not find a cluster to terminate")
 	}
 
@@ -88,7 +88,7 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 	return retErr
 }
 
-func checkForTerraformData(fileHandler file.Handler) (bool, error) {
+func checkForExistingClusterData(fileHandler file.Handler) (bool, error) {
 	currentDirectory, err := fileHandler.ReadDir(".")
 	if err != nil {
 		return false, err
@@ -97,6 +97,10 @@ func checkForTerraformData(fileHandler file.Handler) (bool, error) {
 	for _, file := range currentDirectory {
 		filename := file.Name()
 		switch filename {
+		// libvirt container (QEMU only)
+		case "libvirt.name":
+			return true, nil
+		// Terraform resources
 		case "terraform.tfvars":
 			return true, nil
 		case "terraform.tfstate":

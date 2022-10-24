@@ -162,14 +162,14 @@ func TestForTerraformData(t *testing.T) {
 	expectedDirs := []string{".terraform"}
 
 	// Check empty current directory
-	result, err := checkForTerraformData(fileHandler)
+	result, err := checkForExistingClusterData(fileHandler)
 	assert.NoError(err)
 	assert.False(result)
 
 	for _, singleFilename := range expectedFiles {
 		_, err := fs.Create(singleFilename)
 		require.NoError(err)
-		foundTerraformData, err := checkForTerraformData(fileHandler)
+		foundTerraformData, err := checkForExistingClusterData(fileHandler)
 		require.NoError(err)
 		assert.True(foundTerraformData)
 		require.NoError(fs.Remove(singleFilename))
@@ -177,7 +177,7 @@ func TestForTerraformData(t *testing.T) {
 
 	for _, singleDirname := range expectedDirs {
 		require.NoError(fs.Mkdir(singleDirname, 0o700))
-		foundTerraformData, err := checkForTerraformData(fileHandler)
+		foundTerraformData, err := checkForExistingClusterData(fileHandler)
 		require.NoError(err)
 		assert.True(foundTerraformData)
 		require.NoError(fs.Remove(singleDirname))
