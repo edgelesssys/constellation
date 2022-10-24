@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: join-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    component: join-service
+    k8s-app: join-service
+    kubernetes.io/cluster-service: "true"
+spec:
+  selector:
+    matchLabels:
+      k8s-app: join-service
+  template:
+    metadata:
+      labels:
+        k8s-app: join-service
+    spec:
+      priorityClassName: system-cluster-critical
+      serviceAccountName: join-service
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Equal
+          value: "true"
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      containers:
+        - name: join-service
+          image: {{ .Values.image }}
+          args:
+            - --cloud-provider={{ .Values.csp }}
+            - --kms-endpoint=kms.kube-system:{{ .Values.global.kmsPort }}
+          volumeMounts:
+            - mountPath: {{ .Values.global.serviceBasePath }}
+              name: config
+              readOnly: true
+            - mountPath: /etc/kubernetes
+              name: kubeadm
+              readOnly: true
+          ports:
+            - containerPort: {{ .Values.joinServicePort }}
+              name: tcp
+          resources: {}
+          securityContext:
+            privileged: true
+      volumes:
+        - name: config
+          projected:
+            sources:
+              - configMap:
+                  name: {{ .Values.global.joinConfigCMName }}
+              - configMap:
+                  name: {{ .Values.global.k8sVersionCMName }}
+              - configMap:
+                  name: {{ .Values.global.internalCMName }}
+        - name: kubeadm
+          hostPath:
+            path: /etc/kubernetes
+  updateStrategy: {}

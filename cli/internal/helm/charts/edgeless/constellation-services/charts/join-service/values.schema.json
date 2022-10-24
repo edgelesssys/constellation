@@ -1,0 +1,53 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "properties": {
+        "csp": {
+            "description": "CSP to which the chart is deployed.",
+            "enum": ["Azure", "GCP", "AWS", "QEMU"]
+        },
+        "enforcedPCRs": {
+            "description": "JSON-string to describe the enforced PCRs.",
+            "type": "string",
+            "examples": ["[1, 15]"]
+        },
+        "measurements": {
+            "description": "JSON-string to describe the expected measurements.",
+            "type": "string",
+            "examples": ["{'1':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA','15':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='}"]
+        },
+        "enforceIdKeyDigest": {
+            "description": "Whether or not idkeydigest should be enforced during attestation on azure.",
+            "type": "boolean"
+        },
+        "idkeydigest": {
+            "description": "Expected idkeydigest value for Azure SNP attestation.",
+            "type": "string",
+            "examples": ["57486a447ec0f1958002a22a06b7673b9fd27d11e1c6527498056054c5fa92d23c50f9de44072760fe2b6fb89740b696"]
+        },
+        "image": {
+            "description": "Container image to use for the spawned pods.",
+            "type": "string",
+            "examples": ["ghcr.io/edgelesssys/constellation/join-service:latest"],
+            "pattern": "ghcr.io/edgelesssys/constellation/join-service:.+"
+        },
+        "measurementSalt": {
+            "description": "Salt used to generate node measurements",
+            "type": "string",
+            "examples": ["AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"]
+        }
+    },
+    "required": [
+        "csp",
+        "enforcedPCRs",
+        "measurements",
+        "measurementSalt",
+        "image"
+    ],
+    "if": {
+        "properties": { "csp": { "const": "azure" } },
+        "required": ["csp"]
+    },
+    "then": { "required": ["enforceIdKeyDigest", "idkeydigest"] },
+    "title": "Values",
+    "type": "object"
+}

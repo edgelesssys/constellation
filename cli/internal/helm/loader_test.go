@@ -21,7 +21,7 @@ func TestLoad(t *testing.T) {
 	assert := assert.New(t)
 
 	chartLoader := ChartLoader{}
-	release, err := chartLoader.Load(cloudprovider.GCP, true, []byte("secret"), []byte("salt"))
+	release, err := chartLoader.Load(cloudprovider.GCP, true, []byte("secret"), []byte("salt"), nil, false)
 	assert.NoError(err)
 
 	var helmReleases helm.Releases

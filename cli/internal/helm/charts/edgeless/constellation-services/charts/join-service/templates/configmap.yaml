@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: join-config
+  namespace: kube-system
+data:
+  # mustToJson is required so the json-strings passed from go are properly quoted in the rendered yaml.
+  enforcedPCRs: {{ .Values.enforcedPCRs | mustToJson }}
+  measurements: {{ .Values.measurements | mustToJson }}
+  {{- if eq .Values.csp "azure" }}
+  enforceIdKeyDigest: {{ .Values.enforceIdKeyDigest }}
+  idkeydigest: {{ .Values.idkeydigest }}
+  {{- end }}
+binaryData:
+  measurementSalt: {{ .Values.measurementSalt }}

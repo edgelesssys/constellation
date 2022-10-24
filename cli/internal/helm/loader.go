@@ -36,13 +36,13 @@ var HelmFS embed.FS
 
 type ChartLoader struct{}
 
-func (i *ChartLoader) Load(csp cloudprovider.Provider, conformanceMode bool, masterSecret []byte, salt []byte) ([]byte, error) {
+func (i *ChartLoader) Load(csp cloudprovider.Provider, conformanceMode bool, masterSecret []byte, salt []byte, enforcedPCRs []uint32, enforceIDKeyDigest bool) ([]byte, error) {
 	ciliumRelease, err := i.loadCilium(csp, conformanceMode)
 	if err != nil {
 		return nil, err
 	}
 
-	conServicesRelease, err := i.loadConstellationServices(masterSecret, salt)
+	conServicesRelease, err := i.loadConstellationServices(csp, masterSecret, salt, enforcedPCRs, enforceIDKeyDigest)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,8 @@ func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode boo
 	return helm.Release{Chart: chartRaw, Values: ciliumVals, ReleaseName: "cilium", Wait: true}, nil
 }
 
-func (i *ChartLoader) loadConstellationServices(masterSecret []byte, salt []byte) (helm.Release, error) {
+// loadConstellationServices loads the constellation-services chart from the embed.FS, marshals it into a helm-package .tgz and sets the values that can be set in the CLI.
+func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider, masterSecret []byte, salt []byte, enforcedPCRs []uint32, enforceIDKeyDigest bool) (helm.Release, error) {
 	chart, err := loadChartsDir(HelmFS, "charts/edgeless/constellation-services")
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("loading constellation-services chart: %w", err)
@@ -101,20 +102,40 @@ func (i *ChartLoader) loadConstellationServices(masterSecret []byte, salt []byte
 		return helm.Release{}, fmt.Errorf("packaging chart: %w", err)
 	}
 
+	enforcedPCRsJSON, err := json.Marshal(enforcedPCRs)
+	if err != nil {
+		return helm.Release{}, fmt.Errorf("marshaling enforcedPCRs: %w", err)
+	}
+
 	vals := map[string]interface{}{
+		"global": map[string]interface{}{
+			"kmsPort":          constants.KMSPort,
+			"serviceBasePath":  constants.ServiceBasePath,
+			"joinConfigCMName": constants.JoinConfigMap,
+			"k8sVersionCMName": constants.K8sVersion,
+			"internalCMName":   constants.InternalConfigMap,
+		},
 		"kms": map[string]interface{}{
-			"namespace":            constants.ConstellationNamespace,
-			"port":                 constants.KMSPort,
-			"joinConfigCMName":     constants.JoinConfigMap,
-			"serviceBasePath":      constants.ServiceBasePath,
 			"image":                versions.KmsImage,
-			"masterSecretName":     constants.ConstellationMasterSecretStoreName,
-			"masterSecretKeyName":  constants.ConstellationMasterSecretKey,
-			"saltKeyName":          constants.ConstellationSaltKey,
-			"measurementsFilename": constants.MeasurementsFilename,
 			"masterSecret":         base64.StdEncoding.EncodeToString(masterSecret),
 			"salt":                 base64.StdEncoding.EncodeToString(salt),
+			"namespace":            constants.ConstellationNamespace,
+			"saltKeyName":          constants.ConstellationSaltKey,
+			"masterSecretKeyName":  constants.ConstellationMasterSecretKey,
+			"masterSecretName":     constants.ConstellationMasterSecretStoreName,
+			"measurementsFilename": constants.MeasurementsFilename,
 		},
+		"join-service": map[string]interface{}{
+			"csp":          csp,
+			"enforcedPCRs": string(enforcedPCRsJSON),
+			"image":        versions.JoinImage,
+			"namespace":    constants.ConstellationNamespace,
+		},
+	}
+
+	if csp == cloudprovider.Azure {
+		joinServiceVals := vals["join-service"].(map[string]interface{})
+		joinServiceVals["enforceIDKeyDigest"] = enforceIDKeyDigest
 	}
 
 	return helm.Release{Chart: chartRaw, Values: vals, ReleaseName: "constellation-services", Wait: true}, nil

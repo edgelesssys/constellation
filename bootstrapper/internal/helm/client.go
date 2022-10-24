@@ -53,7 +53,7 @@ func New(log *logger.Logger) (*Client, error) {
 }
 
 // InstallConstellationServices installs the constellation-services chart. In the future this chart should bundle all microservices.
-func (h *Client) InstallConstellationServices(ctx context.Context, release helm.Release) error {
+func (h *Client) InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]interface{}) error {
 	h.Namespace = constants.HelmNamespace
 	h.ReleaseName = release.ReleaseName
 	h.Wait = release.Wait
@@ -61,7 +61,7 @@ func (h *Client) InstallConstellationServices(ctx context.Context, release helm.
 	// update dependencies - unsure if necessary for local deps.
 	h.DependencyUpdate = true
 
-	// TODO: Possibly fetch metadata to extend values here.
+	mergedVals := mergeMaps(release.Values, extraVals)
 
 	reader := bytes.NewReader(release.Chart)
 	chart, err := loader.LoadArchive(reader)
@@ -69,12 +69,33 @@ func (h *Client) InstallConstellationServices(ctx context.Context, release helm.
 		return fmt.Errorf("helm load archive: %w", err)
 	}
 
-	_, err = h.RunWithContext(ctx, chart, release.Values)
+	_, err = h.RunWithContext(ctx, chart, mergedVals)
 	if err != nil {
 		return fmt.Errorf("helm install services: %w", err)
 	}
 
 	return nil
+}
+
+// mergeMaps returns a new map that is the merger of it's inputs.
+// Taken from: https://github.com/helm/helm/blob/dbc6d8e20fe1d58d50e6ed30f09a04a77e4c68db/pkg/cli/values/options.go#L91-L108.
+func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
+	out := make(map[string]interface{}, len(a))
+	for k, v := range a {
+		out[k] = v
+	}
+	for k, v := range b {
+		if v, ok := v.(map[string]interface{}); ok {
+			if bv, ok := out[k]; ok {
+				if bv, ok := bv.(map[string]interface{}); ok {
+					out[k] = mergeMaps(bv, v)
+					continue
+				}
+			}
+		}
+		out[k] = v
+	}
+	return out
 }
 
 // InstallCilium sets up the cilium pod network.

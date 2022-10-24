@@ -334,11 +334,6 @@ func (k *KubernetesUtil) SetupAutoscaling(kubectl Client, clusterAutoscalerConfi
 	return kubectl.Apply(clusterAutoscalerConfiguration, true)
 }
 
-// SetupJoinService deploys the Constellation node join service.
-func (k *KubernetesUtil) SetupJoinService(kubectl Client, joinServiceConfiguration kubernetes.Marshaler) error {
-	return kubectl.Apply(joinServiceConfiguration, true)
-}
-
 // SetupGCPGuestAgent deploys the GCP guest agent daemon set.
 func (k *KubernetesUtil) SetupGCPGuestAgent(kubectl Client, guestAgentDaemonset kubernetes.Marshaler) error {
 	return kubectl.Apply(guestAgentDaemonset, true)

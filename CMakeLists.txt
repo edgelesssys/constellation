@@ -63,4 +63,7 @@ add_test(NAME integration-node-operator COMMAND make test WORKING_DIRECTORY ${CM
 add_test(NAME integration-csi COMMAND bash -c "go test -tags integration -c ./test/ && sudo ./test.test -test.v" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/csi)
 add_test(NAME integration-dm COMMAND bash -c "go test -tags integration -c ./test/ && sudo ./test.test -test.v" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/disk-mapper/internal)
 add_test(NAME integration-license COMMAND bash -c "go test -tags integration" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/internal/license)
-add_test(NAME helm-lint COMMAND bash -c "helm lint * --set kms.image='ghcr.io/edgelesssys/constellation/kms:latest' --set kms.salt='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' --set kms.masterSecret='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/cli/internal/helm/charts/edgeless/)
+add_test(NAME helm-lint COMMAND bash -c "helm lint * --set kms.image='ghcr.io/edgelesssys/constellation/kms:latest' --set join-service.csp='QEMU' \
+  --set join-service.enforcedPCRs='[]' --set join-service.image='ghcr.io/edgelesssys/constellation/join-service:latest' --set join-service.measurements='[]' \
+  --set join-service.measurementSalt='deadbeef' --set kms.salt='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' --set kms.masterSecret='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'"
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/cli/internal/helm/charts/edgeless/)

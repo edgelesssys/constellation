@@ -12,7 +12,6 @@ const (
 	binDir                  = "/run/state/bin"
 	kubeadmPath             = "/run/state/bin/kubeadm"
 	kubeletPath             = "/run/state/bin/kubelet"
-	kubectlPath             = "/run/state/bin/kubectl"
 	kubeletServiceEtcPath   = "/run/systemd/system/kubelet.service"
 	kubeletServiceStatePath = "/run/state/systemd/system/kubelet.service"
 	kubeadmConfEtcPath      = "/run/systemd/system/kubelet.service.d/10-kubeadm.conf"
