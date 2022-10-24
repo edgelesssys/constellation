@@ -18,8 +18,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/google/go-tpm/tpm2"
 )
 
+// Issuer for AWS TPM attestation
 type Validator struct {
 	oid.AWS
 	*vtpm.Validator
@@ -38,21 +40,28 @@ func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, log vtpm.WarnLo
 	}
 }
 
+// getTrustedKeys return the public area of the provides attestation key.
+// Normally, here the trust of this key should be verified, but currently AWS does not provide this feature.
 func getTrustedKey(akPub []byte, instanceInfo []byte) (crypto.PublicKey, error) {
-	//return nil, fmt.Errorf("for now you have to trust aws on this")
-	return nil, nil
+	// Copied from https://github.com/edgelesssys/constellation/blob/main/internal/attestation/qemu/validator.go
+	pubArea, err := tpm2.DecodePublic(akPub)
+	if err != nil {
+		return nil, err
+	}
+
+	return pubArea.Key()
 }
 
-// verify if the virtual machine has the tpm2.0 feature enabled
+// tpmEnabled verifies if the virtual machine has the tpm2.0 feature enabled
 func tpmEnabled(idDocument imds.InstanceIdentityDocument) error {
 	// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/verify-nitrotpm-support-on-ami.html
 	// 1. get the vm's ami (from IdentiTyDocument.imageId)
 	// 2. check the value of key "TpmSupport": {"Value": "v2.0"}"
 
-	vmRegion := idDocument.Region
 	imageId := idDocument.ImageID
+	ctx := context.Background()
 
-	conf, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(vmRegion))
+	conf, err := config.LoadDefaultConfig(ctx, config.WithEC2IMDSRegion())
 	if err != nil {
 		return err
 	}
@@ -61,7 +70,7 @@ func tpmEnabled(idDocument imds.InstanceIdentityDocument) error {
 
 	// Currently, there seems to be a problem with retrieving image attributes directly.
 	// Alternatively, parse it from the general output.
-	imageOutput, err := client.DescribeImages(context.TODO(), &ec2.DescribeImagesInput{ImageIds: []string{imageId}})
+	imageOutput, err := client.DescribeImages(ctx, &ec2.DescribeImagesInput{ImageIds: []string{imageId}})
 	if err != nil {
 		return err
 	}
@@ -73,7 +82,7 @@ func tpmEnabled(idDocument imds.InstanceIdentityDocument) error {
 	return fmt.Errorf("iam image %s does not support TPM v2.0", imageId)
 }
 
-// Validate if the current instance is a CVM instance.
+// validateVCM validates if the current instance is a CVM instance.
 // This information is retrieved by the helper function tpmEnabled
 func validateCVM(attestation vtpm.AttestationDocument) error {
 	if attestation.Attestation == nil {

@@ -21,14 +21,14 @@ import (
 	tpmclient "github.com/google/go-tpm-tools/client"
 )
 
+// Issuer for AWS TPM attestation
 type Issuer struct {
 	oid.AWS
 	*vtpm.Issuer
 }
 
 func NewIssuer() *Issuer {
-	awsIMDS := imds.New(imds.Options{})
-	GetInstanceInfo := getInstanceInfo(awsIMDS)
+	GetInstanceInfo := getInstanceInfo(imds.New(imds.Options{}))
 
 	return &Issuer{
 		Issuer: vtpm.NewIssuer(
@@ -39,6 +39,7 @@ func NewIssuer() *Issuer {
 	}
 }
 
+// getAttestationKey returns a new attestation key
 func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
 	tpmAk, err := client.AttestationKeyRSA(tpm)
 	if err != nil {
@@ -49,24 +50,16 @@ func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
 	return tpmAk, nil
 }
 
-// Get information about the current instance using the aws Metadata SDK
+// getInstanceInfo returns information about the current instance using the aws Metadata SDK
 // The returned bytes will be written into the attestation document
 func getInstanceInfo(client awsMetaData) func(tpm io.ReadWriteCloser) ([]byte, error) {
 	return func(io.ReadWriteCloser) ([]byte, error) {
-		ctx := context.TODO()
-		ec2InstanceIdentityOutput, err := client.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
-		ec2InstanceIdentityDocument := ec2InstanceIdentityOutput.InstanceIdentityDocument
+		ec2InstanceIdentityOutput, err := client.GetInstanceIdentityDocument(context.Background(), &imds.GetInstanceIdentityDocumentInput{})
 
 		if err != nil {
 			return nil, errors.New("unable to fetch instance identity document")
 		}
-
-		statement, err := json.Marshal(ec2InstanceIdentityDocument)
-		if err != nil {
-			return nil, errors.New("unable to marshal aws instance info")
-		}
-
-		return statement, nil
+		return json.Marshal(ec2InstanceIdentityOutput.InstanceIdentityDocument)
 	}
 }
 

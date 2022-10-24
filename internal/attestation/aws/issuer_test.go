@@ -8,6 +8,7 @@ package aws
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -46,7 +47,18 @@ func TestGetInstanceInfo(t *testing.T) {
 		client  fakeMetadataClient
 		wantErr bool
 	}{
-		"test 1": {
+		"metadata not ok": {
+			client: fakeMetadataClient{
+				"1",
+				"test",
+				"us-east-0",
+				nil,
+				nil,
+				nil,
+			},
+			wantErr: true,
+		},
+		"metadata ok": {
 			client: fakeMetadataClient{
 				"1",
 				"test",
@@ -92,6 +104,12 @@ type fakeMetadataClient struct {
 }
 
 func (c *fakeMetadataClient) GetInstanceIdentityDocument(context.Context, *imds.GetInstanceIdentityDocumentInput, ...func(*imds.Options)) (*imds.GetInstanceIdentityDocumentOutput, error) {
+	testRegions := []string{
+		"us-east-2", "us-east-1", "us-west-1", "us-west-2",
+	}
+
+	fmt.Printf("%v", testRegions)
+
 	return &imds.GetInstanceIdentityDocumentOutput{
 		InstanceIdentityDocument: imds.InstanceIdentityDocument{
 			DevpayProductCodes:      []string{"devpayProductCodes"},
