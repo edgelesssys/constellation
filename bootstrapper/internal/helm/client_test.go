@@ -17,7 +17,6 @@ func TestMe(t *testing.T) {
 		vals      map[string]interface{}
 		extraVals map[string]interface{}
 		expected  map[string]interface{}
-		wantErr   bool
 	}{
 		"equal": {
 			vals: map[string]interface{}{
@@ -54,11 +53,12 @@ func TestMe(t *testing.T) {
 			},
 			expected: map[string]interface{}{
 				"join-service": map[string]interface{}{
-					"key1":      "foo",
-					"extraKey2": "extraBar",
+					"key1": "foo",
+					"key2": "bar",
 				},
+				"extraKey1": "extraFoo",
+				"extraKey2": "extraBar",
 			},
-			wantErr: true,
 		},
 		"missing join-service vals": {
 			vals: map[string]interface{}{
@@ -72,27 +72,21 @@ func TestMe(t *testing.T) {
 				},
 			},
 			expected: map[string]interface{}{
+				"key1": "foo",
+				"key2": "bar",
 				"join-service": map[string]interface{}{
-					"key1":      "foo",
-					"key2":      "bar",
 					"extraKey1": "extraFoo",
 					"extraKey2": "extraBar",
 				},
 			},
-			wantErr: true,
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			newVals, err := mergeExtraVals(tc.vals, tc.extraVals)
-			if !tc.wantErr {
-				assert.NoError(err)
-				assert.Equal(tc.expected, newVals)
-			} else {
-				assert.Error(err)
-			}
+			newVals := mergeMaps(tc.vals, tc.extraVals)
+			assert.Equal(tc.expected, newVals)
 		})
 	}
 }

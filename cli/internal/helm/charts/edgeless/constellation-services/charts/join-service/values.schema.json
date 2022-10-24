@@ -20,9 +20,9 @@
             "type": "boolean"
         },
         "idkeydigest": {
-            "description": "",
+            "description": "Expected idkeydigest value for Azure SNP attestation.",
             "type": "string",
-            "examples": [""]
+            "examples": ["57486a447ec0f1958002a22a06b7673b9fd27d11e1c6527498056054c5fa92d23c50f9de44072760fe2b6fb89740b696"]
         },
         "image": {
             "description": "Container image to use for the spawned pods.",
@@ -31,9 +31,9 @@
             "pattern": "ghcr.io/edgelesssys/constellation/join-service:.+"
         },
         "measurementSalt": {
-            "description": "",
+            "description": "Salt used to generate node measurements",
             "type": "string",
-            "examples": [""]
+            "examples": ["AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"]
         }
     },
     "required": [

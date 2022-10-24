@@ -61,11 +61,7 @@ func (h *Client) InstallConstellationServices(ctx context.Context, release helm.
 	// update dependencies - unsure if necessary for local deps.
 	h.DependencyUpdate = true
 
-	// merge join-service extraVals
-	mergedVals, err := mergeExtraVals(release.Values, extraVals)
-	if err != nil {
-		return fmt.Errorf("merging vals: %w", err)
-	}
+	mergedVals := mergeMaps(release.Values, extraVals)
 
 	reader := bytes.NewReader(release.Chart)
 	chart, err := loader.LoadArchive(reader)
@@ -75,26 +71,31 @@ func (h *Client) InstallConstellationServices(ctx context.Context, release helm.
 
 	_, err = h.RunWithContext(ctx, chart, mergedVals)
 	if err != nil {
-		return fmt.Errorf("helm install services: %w \n vals: %s", err, mergedVals)
+		return fmt.Errorf("helm install services: %w", err)
 	}
 
 	return nil
 }
 
-func mergeExtraVals(vals map[string]interface{}, extraVals map[string]interface{}) (map[string]interface{}, error) {
-	newVals := vals
-	if _, ok := extraVals["join-service"]; ok {
-		for k, v := range extraVals["join-service"].(map[string]interface{}) {
-			if _, ok := newVals["join-service"]; ok {
-				newVals["join-service"].(map[string]interface{})[k] = v
-			} else {
-				return nil, errors.New("missing join-service key in extraVals")
+// mergeMaps returns a new map that is the merger of it's inputs.
+// Taken from: https://github.com/helm/helm/blob/dbc6d8e20fe1d58d50e6ed30f09a04a77e4c68db/pkg/cli/values/options.go#L91-L108.
+func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
+	out := make(map[string]interface{}, len(a))
+	for k, v := range a {
+		out[k] = v
+	}
+	for k, v := range b {
+		if v, ok := v.(map[string]interface{}); ok {
+			if bv, ok := out[k]; ok {
+				if bv, ok := bv.(map[string]interface{}); ok {
+					out[k] = mergeMaps(bv, v)
+					continue
+				}
 			}
 		}
-	} else {
-		return nil, errors.New("missing join-service key in vals")
+		out[k] = v
 	}
-	return newVals, nil
+	return out
 }
 
 // InstallCilium sets up the cilium pod network.
