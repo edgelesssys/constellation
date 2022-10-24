@@ -13,7 +13,7 @@ while [ ! -L "${AWS_STATE_DISK_SYMLINK}" ]
 do
     for nvmedisk in /dev/nvme+([0-9])
     do
-        linkname=$(nvme admin-passthru --opcode=0x06 --cdw10=1 -b --data-len=4096 -r "${nvmedisk}" | tail -c +3072 | tr -d ' ') || true
+        linkname=$(nvme amzn id-ctrl -b "${nvmedisk}" | tail -c +3072 | tr -d ' ') || true
         if [ -n "${linkname}" ]; then
             ln -s "${nvmedisk}" "/dev/${linkname}"
         fi
