@@ -95,8 +95,8 @@ func NewMetadata(ctx context.Context) (*Metadata, error) {
 
 	return &Metadata{
 		imdsAPI:                      &imdsAPI,
-		virtualNetworksAPI:           virtualNetworksAPI,
 		networkInterfacesAPI:         networkInterfacesAPI,
+		virtualNetworksAPI:           virtualNetworksAPI,
 		securityGroupsAPI:            securityGroupsAPI,
 		publicIPAddressesAPI:         publicIPAddressesAPI,
 		loadBalancerAPI:              loadBalancerAPI,
@@ -155,8 +155,8 @@ func (m *Metadata) GetNetworkSecurityGroupName(ctx context.Context) (string, err
 	return *nsg.Name, nil
 }
 
-// GetSubnetworkCIDR retrieves the subnetwork CIDR from cloud provider metadata.
-func (m *Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
+// getSubnetworkCIDR retrieves the subnetwork CIDR from cloud provider metadata.
+func (m *Metadata) getSubnetworkCIDR(ctx context.Context) (string, error) {
 	resourceGroup, err := m.imdsAPI.ResourceGroup(ctx)
 	if err != nil {
 		return "", err
