@@ -22,6 +22,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 )
 
+// ErrQEMUCreationNotSupportedOnPlatform is returned when trying to create a QEMU cluster on a platform other than linux/amd64
+var ErrQEMUCreationNotSupportedOnPlatform = fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s (only linux/amd64 is supported)", runtime.GOOS, runtime.GOARCH)
+
 // Creator creates cloud resources.
 type Creator struct {
 	out                io.Writer
@@ -73,7 +76,7 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 		return c.createAzure(ctx, cl, config, name, insType, controlPlaneCount, workerCount)
 	case cloudprovider.QEMU:
 		if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
-			return clusterid.File{}, fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
+			return clusterid.File{}, ErrQEMUCreationNotSupportedOnPlatform
 		}
 		cl, err := c.newTerraformClient(ctx, provider)
 		if err != nil {

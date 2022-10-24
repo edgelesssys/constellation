@@ -17,6 +17,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 )
 
+// ErrQEMUCreationNotSupportedOnPlatform is returned when trying to destroy a QEMU cluster on a platform other than linux/amd64
+var ErrQEMUTerminationNotSupportedOnPlatform = fmt.Errorf("termination of a QEMU based Constellation is not supported for %s/%s (only linux/amd64 is supported)", runtime.GOOS, runtime.GOARCH)
+
 // Terminator deletes cloud provider resources.
 type Terminator struct {
 	newTerraformClient func(ctx context.Context, provider cloudprovider.Provider) (terraformClient, error)
@@ -43,7 +46,7 @@ func (t *Terminator) Terminate(ctx context.Context, provider cloudprovider.Provi
 
 	if provider == cloudprovider.QEMU {
 		if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
-			return fmt.Errorf("termination of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
+			return ErrQEMUTerminationNotSupportedOnPlatform
 		}
 
 		libvirt := t.newLibvirtRunner()

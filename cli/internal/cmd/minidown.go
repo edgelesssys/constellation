@@ -10,6 +10,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"runtime"
+
+	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -33,6 +36,10 @@ func newMiniDownCmd() *cobra.Command {
 }
 
 func runDown(cmd *cobra.Command, args []string) error {
+	if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
+		return cloudcmd.ErrQEMUTerminationNotSupportedOnPlatform
+	}
+
 	if err := checkForMiniCluster(file.NewHandler(afero.NewOsFs())); err != nil {
 		return fmt.Errorf("failed to destroy cluster: %w. Are you in the correct working directory?", err)
 	}

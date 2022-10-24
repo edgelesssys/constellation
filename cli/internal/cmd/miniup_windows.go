@@ -10,9 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
-	"fmt"
-	"runtime"
-
+	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/spf13/cobra"
 )
 
@@ -33,5 +31,5 @@ func newMiniUpCmd() *cobra.Command {
 }
 
 func runUp(cmd *cobra.Command, args []string) error {
-	return fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
+	return cloudcmd.ErrQEMUCreationNotSupportedOnPlatform
 }
