@@ -28,7 +28,7 @@ func rollbackOnError(ctx context.Context, w io.Writer, onErr *error, roll rollba
 	fmt.Fprintf(w, "An error occurred: %s\n", *onErr)
 	fmt.Fprintln(w, "Attempting to roll back.")
 	if err := roll.rollback(ctx); err != nil {
-		*onErr = multierr.Append(*onErr, fmt.Errorf("Rollback failed: %w", err)) // TODO: print the error, or return it?
+		*onErr = multierr.Append(*onErr, fmt.Errorf("rollback failed: %w", err)) // TODO: print the error, or return it?
 		fmt.Fprintln(w, "Try running 'constellation terminate', or manually clean up dangling resources on your CSP.")
 		return
 	}
