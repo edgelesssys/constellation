@@ -15,12 +15,14 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/oid"
 
 	"github.com/google/go-tpm-tools/client"
 	tpmclient "github.com/google/go-tpm-tools/client"
 )
 
 type Issuer struct {
+	oid.AWS
 	*vtpm.Issuer
 }
 
@@ -46,7 +48,8 @@ func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
 	return tpmAk, nil
 }
 
-// get information about the current instance using the aws Metadata SDK
+// Get information about the current instance using the aws Metadata SDK
+// The returned bytes will be written into the attestation document
 func getInstanceInfo(client awsMetaData) func(tpm io.ReadWriteCloser) ([]byte, error) {
 	return func(io.ReadWriteCloser) ([]byte, error) {
 		ctx := context.TODO()
@@ -57,13 +60,7 @@ func getInstanceInfo(client awsMetaData) func(tpm io.ReadWriteCloser) ([]byte, e
 			return nil, errors.New("unable to fetch instance identity document")
 		}
 
-		instanceInfo := awsInstanceInfo{
-			ec2InstanceIdentityDocument.Region,
-			ec2InstanceIdentityDocument.AccountID,
-			ec2InstanceIdentityDocument.InstanceID,
-		}
-
-		statement, err := json.Marshal(instanceInfo)
+		statement, err := json.Marshal(ec2InstanceIdentityDocument)
 		if err != nil {
 			return nil, errors.New("unable to marshal aws instance info")
 		}

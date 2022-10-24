@@ -37,8 +37,49 @@ func TestGetAttestationKey(t *testing.T) {
 	assert.NoError(err)
 	assert.NotNil(getAk)
 
-	// if everythin worked fine, tpmAk and getAk are the same key
+	// if everything worked fine, tpmAk and getAk are the same key
 	assert.Equal(tpmAk, getAk)
+}
+
+func TestGetInstanceInfo(t *testing.T) {
+	testCases := map[string]struct {
+		client  fakeMetadataClient
+		wantErr bool
+	}{
+		"test 1": {
+			client: fakeMetadataClient{
+				"1",
+				"test",
+				"us-east-2",
+				nil,
+				nil,
+				nil,
+			},
+			wantErr: false,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			tpm, err := simulator.Get()
+			assert.NoError(err)
+			defer tpm.Close()
+
+			instanceInfoFunc := getInstanceInfo(&tc.client)
+			assert.NotNil(instanceInfoFunc)
+
+			info, err := instanceInfoFunc(tpm)
+			if tc.wantErr {
+				assert.Error(err)
+				assert.Nil(info)
+			} else {
+				assert.Nil(err)
+				assert.NotNil(info)
+			}
+		})
+	}
 }
 
 type fakeMetadataClient struct {
