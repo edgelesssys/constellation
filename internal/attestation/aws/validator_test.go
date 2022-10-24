@@ -71,8 +71,8 @@ func TestTpmEnabled(t *testing.T) {
 	}
 
 	// The pinned images are valid at the time of this commit.
-	// When we finally suppoer AWS, we should make these values part of the version bump.
-	// Make sure, that the image is visable to all required users/clients. Verify using
+	// When we finally support AWS, we should make these values part of the version bump.
+	// Make sure, that the image is visible to all required users/clients. Verify using
 	// aws ec2 describe-image-attribute  --region <REGION> --image-id <IMAGE_ID> --attribute tpmSupport
 
 	// Since Amazon does not offer Linux stock AMI's with TPM support enabled, we use Windows images in this test.

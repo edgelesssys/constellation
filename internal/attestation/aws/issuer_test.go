@@ -27,7 +27,7 @@ func TestGetAttestationKey(t *testing.T) {
 	require.NoError(err)
 	defer tpm.Close()
 
-	// craete the attestation ket in RSA format
+	// create the attestation ket in RSA format
 	tpmAk, err := tpmclient.AttestationKeyRSA(tpm)
 	assert.NoError(err)
 	assert.NotNil(tpmAk)

@@ -39,13 +39,14 @@ func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, log vtpm.WarnLo
 }
 
 func getTrustedKey(akPub []byte, instanceInfo []byte) (crypto.PublicKey, error) {
-	return nil, fmt.Errorf("for now you have to trust aws on this")
+	//return nil, fmt.Errorf("for now you have to trust aws on this")
+	return nil, nil
 }
 
-// verify if the virtual machine has the tpm2.0 featiure enabled
+// verify if the virtual machine has the tpm2.0 feature enabled
 func tpmEnabled(idDocument imds.InstanceIdentityDocument) error {
 	// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/verify-nitrotpm-support-on-ami.html
-	// 1. get the vm's ami (from IdentidyDocument.imageId)
+	// 1. get the vm's ami (from IdentiTyDocument.imageId)
 	// 2. check the value of key "TpmSupport": {"Value": "v2.0"}"
 
 	vmRegion := idDocument.Region
@@ -73,7 +74,7 @@ func tpmEnabled(idDocument imds.InstanceIdentityDocument) error {
 }
 
 // Validate if the current instance is a CVM instance.
-// This information is retreived by the helper function tpmEnabled
+// This information is retrieved by the helper function tpmEnabled
 func validateCVM(attestation vtpm.AttestationDocument) error {
 	if attestation.Attestation == nil {
 		return errors.New("missing attestation document")
