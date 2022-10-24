@@ -7,15 +7,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 package aws
 
 import (
+	"context"
 	"crypto"
 	"encoding/json"
 	"errors"
 	"fmt"
 
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 )
@@ -51,34 +51,25 @@ func tpmEnabled(idDocument imds.InstanceIdentityDocument) error {
 	vmRegion := idDocument.Region
 	imageId := idDocument.ImageID
 
-	// create session for ec2 requests
-	session, err := session.NewSession()
+	conf, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(vmRegion))
 	if err != nil {
 		return err
 	}
 
-	svc := ec2.New(session,
-		aws.NewConfig().
-			WithRegion(vmRegion))
-
-	var images []*string
-	images = append(images, &imageId)
+	client := ec2.NewFromConfig(conf)
 
 	// Currently, there seems to be a problem with retrieving image attributes directly.
 	// Alternatively, parse it from the general output.
-	imageOutput, err := svc.DescribeImages(&ec2.DescribeImagesInput{
-		ImageIds: images,
-	})
-
+	imageOutput, err := client.DescribeImages(context.TODO(), &ec2.DescribeImagesInput{ImageIds: []string{imageId}})
 	if err != nil {
 		return err
 	}
 
-	if *imageOutput.Images[0].TpmSupport == "v2.0" {
+	if imageOutput.Images[0].TpmSupport == "v2.0" {
 		return nil
 	}
 
-	return fmt.Errorf("iam image %s does not support tpm2.0", imageId)
+	return fmt.Errorf("iam image %s does not support TPM v2.0", imageId)
 }
 
 // Validate if the current instance is a CVM instance.
