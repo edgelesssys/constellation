@@ -88,6 +88,8 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		KubeletURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.23.12/bin/linux/amd64/kubelet",
 		KubeadmURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.23.12/bin/linux/amd64/kubeadm",
 		KubectlURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.23.12/bin/linux/amd64/kubectl",
+		// CloudControllerManagerImageAWS is the CCM image used on AWS.
+		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.23.2@sha256:5caf74bfe1c6e1b7b7d40345db52b54eeea7229a8fd73c7db9488ef87dc7a496",
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
 		// TODO: use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
 		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v23.0.0@sha256:476616939b85345d7188815045847fcbea8d502464083407cdbb6c934e35820d",
@@ -105,6 +107,8 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		KubeletURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.24.6/bin/linux/amd64/kubelet",
 		KubeadmURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.24.6/bin/linux/amd64/kubeadm",
 		KubectlURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.24.6/bin/linux/amd64/kubectl",
+		// CloudControllerManagerImageAWS is the CCM image used on AWS.
+		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.24.1@sha256:4b75b09cc5b3959d06a8c2fb84f165e8163ec0153eaa6a48ece6c8113e78e720",
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
 		// TODO: use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
 		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v24.0.0@sha256:8ee4261980019d3ee8517e12f36fc313fe3ea3e44dd40ee2e004b57f6e5ef171",
@@ -122,6 +126,8 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		KubeletURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.25.2/bin/linux/amd64/kubelet",
 		KubeadmURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.25.2/bin/linux/amd64/kubeadm",
 		KubectlURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.25.2/bin/linux/amd64/kubectl",
+		// CloudControllerManagerImageAWS is the CCM image used on AWS.
+		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.25.1@sha256:85d3f1e9dacc72531445989bb10999e1e70ebc409d11be57e5baa5f031a893b0",
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
 		// TODO: use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
 		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v25.2.0@sha256:86fa9d31ed0b3d0d8806f13d6e7debd3471028b2cb7cca3a876d8a31612a7ba5",
@@ -145,6 +151,7 @@ type KubernetesVersion struct {
 	KubeletURL                       string // k8s version dependency.
 	KubeadmURL                       string // k8s version dependency.
 	KubectlURL                       string // k8s version dependency.
+	CloudControllerManagerImageAWS   string // k8s version dependency.
 	CloudControllerManagerImageGCP   string // Using self-built image until resolved: https://github.com/kubernetes/cloud-provider-gcp/issues/289
 	CloudControllerManagerImageAzure string // k8s version dependency.
 	CloudNodeManagerImageAzure       string // k8s version dependency. Same version as above.
