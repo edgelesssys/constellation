@@ -35,24 +35,24 @@ spec:
       nodeSelector:
         node-role.kubernetes.io/control-plane: ""
       containers:
-        name: join-service
-        image: {{ .Values.image }}
-        - args:
+        - name: join-service
+          image: {{ .Values.image }}
+          args:
             - --cloud-provider={{ .Values.csp }}
             - --kms-endpoint=kms.kube-system:{{ .Values.global.kmsPort }}
-        ports:
-          - containerPort: {{ .Values.joinServicePort }}
-            name: tcp
-        resources: {}
-        securityContext:
-          privileged: true
-        volumeMounts:
-          - mountPath: {{ .Values.global.serviceBasePath }}
-            name: config
-            readOnly: true
-          - mountPath: /etc/kubernetes
-            name: kubeadm
-            readOnly: true
+          volumeMounts:
+            - mountPath: {{ .Values.global.serviceBasePath }}
+              name: config
+              readOnly: true
+            - mountPath: /etc/kubernetes
+              name: kubeadm
+              readOnly: true
+          ports:
+            - containerPort: {{ .Values.joinServicePort }}
+              name: tcp
+          resources: {}
+          securityContext:
+            privileged: true
       volumes:
         - name: config
           projected:

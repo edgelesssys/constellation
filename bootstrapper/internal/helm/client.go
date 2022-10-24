@@ -53,7 +53,7 @@ func New(log *logger.Logger) (*Client, error) {
 }
 
 // InstallConstellationServices installs the constellation-services chart. In the future this chart should bundle all microservices.
-func (h *Client) InstallConstellationServices(ctx context.Context, release helm.Release) error {
+func (h *Client) InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]interface{}) error {
 	h.Namespace = constants.HelmNamespace
 	h.ReleaseName = release.ReleaseName
 	h.Wait = release.Wait
@@ -61,7 +61,11 @@ func (h *Client) InstallConstellationServices(ctx context.Context, release helm.
 	// update dependencies - unsure if necessary for local deps.
 	h.DependencyUpdate = true
 
-	// TODO: Possibly fetch metadata to extend values here.
+	// merge join-service extraVals
+	mergedVals, err := mergeExtraVals(release.Values, extraVals)
+	if err != nil {
+		return fmt.Errorf("merging vals: %w", err)
+	}
 
 	reader := bytes.NewReader(release.Chart)
 	chart, err := loader.LoadArchive(reader)
@@ -69,12 +73,28 @@ func (h *Client) InstallConstellationServices(ctx context.Context, release helm.
 		return fmt.Errorf("helm load archive: %w", err)
 	}
 
-	_, err = h.RunWithContext(ctx, chart, release.Values)
+	_, err = h.RunWithContext(ctx, chart, mergedVals)
 	if err != nil {
-		return fmt.Errorf("helm install services: %w", err)
+		return fmt.Errorf("helm install services: %w \n vals: %s", err, mergedVals)
 	}
 
 	return nil
+}
+
+func mergeExtraVals(vals map[string]interface{}, extraVals map[string]interface{}) (map[string]interface{}, error) {
+	newVals := vals
+	if _, ok := extraVals["join-service"]; ok {
+		for k, v := range extraVals["join-service"].(map[string]interface{}) {
+			if _, ok := newVals["join-service"]; ok {
+				newVals["join-service"].(map[string]interface{})[k] = v
+			} else {
+				return nil, errors.New("missing join-service key in extraVals")
+			}
+		}
+	} else {
+		return nil, errors.New("missing join-service key in vals")
+	}
+	return newVals, nil
 }
 
 // InstallCilium sets up the cilium pod network.

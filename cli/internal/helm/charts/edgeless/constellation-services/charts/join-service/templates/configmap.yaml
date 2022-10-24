@@ -5,8 +5,9 @@ metadata:
   name: join-config
   namespace: kube-system
 data:
-  enforcedPCRs: {{ .Values.enforcedPCRs }}
-  measurements: {{ .Values.measurements }}
+  # mustToJson is required so the json-strings passed from go are properly quoted in the rendered yaml.
+  enforcedPCRs: {{ .Values.enforcedPCRs | mustToJson }}
+  measurements: {{ .Values.measurements | mustToJson }}
   {{- if eq .Values.csp "azure" }}
   enforceIdKeyDigest: {{ .Values.enforceIdKeyDigest }}
   idkeydigest: {{ .Values.idkeydigest }}

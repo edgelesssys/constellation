@@ -3,7 +3,7 @@
     "properties": {
         "csp": {
             "description": "CSP to which the chart is deployed.",
-            "enum": ["azure", "gcp", "aws", "qemu"]
+            "enum": ["Azure", "GCP", "AWS", "QEMU"]
         },
         "enforcedPCRs": {
             "description": "JSON-string to describe the enforced PCRs.",
@@ -29,12 +29,18 @@
             "type": "string",
             "examples": ["ghcr.io/edgelesssys/constellation/join-service:latest"],
             "pattern": "ghcr.io/edgelesssys/constellation/join-service:.+"
+        },
+        "measurementSalt": {
+            "description": "",
+            "type": "string",
+            "examples": [""]
         }
     },
     "required": [
         "csp",
         "enforcedPCRs",
         "measurements",
+        "measurementSalt",
         "image"
     ],
     "if": {

@@ -17,15 +17,15 @@ spec:
         k8s-app: kms
     spec:
       containers:
-      - args:
-        - --port={{ .Values.global.kmsPort }}
-        image: {{ .Values.image }}
-        name: kms
-        resources: {}
-        volumeMounts:
-        - mountPath: {{ .Values.global.serviceBasePath }}
-          name: config
-          readOnly: true
+        - name: kms
+          image: {{ .Values.image }}
+          args:
+            - --port={{ .Values.global.kmsPort }}
+          volumeMounts:
+            - mountPath: {{ .Values.global.serviceBasePath }}
+              name: config
+              readOnly: true
+          resources: {}
       nodeSelector:
         node-role.kubernetes.io/control-plane: ""
       priorityClassName: system-cluster-critical

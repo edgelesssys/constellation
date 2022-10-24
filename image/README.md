@@ -32,7 +32,8 @@
         jq \
         util-linux \
         virt-manager \
-        python3-crc32c
+        python3-crc32c \
+        rpm
     ```
 
     </details>

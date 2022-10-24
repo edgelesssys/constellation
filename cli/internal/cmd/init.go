@@ -126,7 +126,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
 	}
 
-	helmDeployments, err := helmLoader.Load(provider, flags.conformance, masterSecret.Key, masterSecret.Salt)
+	helmDeployments, err := helmLoader.Load(provider, flags.conformance, masterSecret.Key, masterSecret.Salt, getEnforcedPCRs(provider, config), getEnforceIDKeyDigest(provider, config))
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
 	}
@@ -143,7 +143,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		KubernetesVersion:      config.KubernetesVersion,
 		SshUserKeys:            ssh.ToProtoSlice(sshUsers),
 		HelmDeployments:        helmDeployments,
-		EnforcedPcrs:           getEnforcedMeasurements(provider, config),
+		EnforcedPcrs:           getEnforcedPCRs(provider, config),
 		EnforceIdkeydigest:     getEnforceIDKeyDigest(provider, config),
 		ConformanceMode:        flags.conformance,
 	}
@@ -229,7 +229,7 @@ func writeRow(wr io.Writer, col1 string, col2 string) {
 	fmt.Fprint(wr, col1, "\t", col2, "\n")
 }
 
-func getEnforcedMeasurements(provider cloudprovider.Provider, config *config.Config) []uint32 {
+func getEnforcedPCRs(provider cloudprovider.Provider, config *config.Config) []uint32 {
 	switch provider {
 	case cloudprovider.Azure:
 		return config.Provider.Azure.EnforcedMeasurements

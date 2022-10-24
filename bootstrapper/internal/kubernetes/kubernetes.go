@@ -8,6 +8,7 @@ package kubernetes
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -200,16 +201,14 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up konnectivity: %w", err)
 	}
 
-	if err = k.helmClient.InstallConstellationServices(ctx, helmReleases.ConstellationServices); err != nil {
-		return nil, fmt.Errorf("installing kms: %w", err)
+	extraVals := setupExtraVals(k.initialMeasurementsJSON, idKeyDigest, measurementSalt)
+
+	if err = k.helmClient.InstallConstellationServices(ctx, helmReleases.ConstellationServices, extraVals); err != nil {
+		return nil, fmt.Errorf("installing constellation-services: %w", err)
 	}
 
 	if err := k.setupInternalConfigMap(ctx, strconv.FormatBool(azureCVM)); err != nil {
 		return nil, fmt.Errorf("failed to setup internal ConfigMap: %w", err)
-	}
-
-	if err := k.setupJoinService(k.cloudProvider, k.initialMeasurementsJSON, measurementSalt, enforcedPCRs, idKeyDigest, enforceIDKeyDigest); err != nil {
-		return nil, fmt.Errorf("setting up join service failed: %w", err)
 	}
 
 	if err := k.setupCCM(ctx, subnetworkPodCIDR, cloudServiceAccountURI, instance, k8sVersion); err != nil {
@@ -327,21 +326,6 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 // GetKubeconfig returns the current nodes kubeconfig of stored on disk.
 func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
 	return k.kubeconfigReader.ReadKubeconfig()
-}
-
-func (k *KubeWrapper) setupJoinService(
-	csp string, measurementsJSON, measurementSalt []byte, enforcedPCRs []uint32, initialIDKeyDigest []byte, enforceIDKeyDigest bool,
-) error {
-	enforcedPCRsJSON, err := json.Marshal(enforcedPCRs)
-	if err != nil {
-		return fmt.Errorf("marshaling enforcedPCRs: %w", err)
-	}
-
-	joinConfiguration := resources.NewJoinServiceDaemonset(
-		csp, string(measurementsJSON), string(enforcedPCRsJSON), hex.EncodeToString(initialIDKeyDigest), strconv.FormatBool(enforceIDKeyDigest), measurementSalt,
-	)
-
-	return k.clusterUtil.SetupJoinService(k.client, joinConfiguration)
 }
 
 func (k *KubeWrapper) setupCCM(ctx context.Context, subnetworkPodCIDR, cloudServiceAccountURI string, instance metadata.InstanceMetadata, k8sVersion versions.ValidK8sVersion) error {
@@ -510,4 +494,16 @@ func getIPAddr() (string, error) {
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 
 	return localAddr.IP.String(), nil
+}
+
+// setupExtraVals create a helm values map for consumption by helm-install.
+// Will move to a more dedicated place once that place becomes apparent.
+func setupExtraVals(initialMeasurementsJSON []byte, idkeydigest []byte, measurementSalt []byte) map[string]interface{} {
+	return map[string]interface{}{
+		"join-service": map[string]interface{}{
+			"measurements":    string(initialMeasurementsJSON),
+			"idkeydigest":     hex.EncodeToString(idkeydigest),
+			"measurementSalt": base64.StdEncoding.EncodeToString(measurementSalt),
+		},
+	}
 }

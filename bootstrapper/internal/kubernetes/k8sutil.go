@@ -24,7 +24,6 @@ type clusterUtil interface {
 	JoinCluster(ctx context.Context, joinConfig []byte, peerRole role.Role, controlPlaneEndpoint string, log *logger.Logger) error
 	SetupAccessManager(kubectl k8sapi.Client, sshUsers kubernetes.Marshaler) error
 	SetupAutoscaling(kubectl k8sapi.Client, clusterAutoscalerConfiguration kubernetes.Marshaler, secrets kubernetes.Marshaler) error
-	SetupJoinService(kubectl k8sapi.Client, joinServiceConfiguration kubernetes.Marshaler) error
 	SetupCloudControllerManager(kubectl k8sapi.Client, cloudControllerManagerConfiguration kubernetes.Marshaler, configMaps kubernetes.Marshaler, secrets kubernetes.Marshaler) error
 	SetupCloudNodeManager(kubectl k8sapi.Client, cloudNodeManagerConfiguration kubernetes.Marshaler) error
 	SetupKonnectivity(kubectl k8sapi.Client, konnectivityAgentsDaemonSet kubernetes.Marshaler) error
@@ -42,5 +41,5 @@ type clusterUtil interface {
 // Naming is inspired by Helm.
 type helmClient interface {
 	InstallCilium(context.Context, k8sapi.Client, helm.Release, k8sapi.SetupPodNetworkInput) error
-	InstallConstellationServices(ctx context.Context, release helm.Release) error
+	InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]interface{}) error
 }

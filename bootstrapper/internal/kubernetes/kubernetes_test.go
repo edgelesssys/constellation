@@ -192,7 +192,8 @@ func TestInitCluster(t *testing.T) {
 			k8sVersion:             versions.Default,
 		},
 		"kubeadm init fails when setting up the join service": {
-			clusterUtil: stubClusterUtil{setupJoinServiceError: someErr},
+			clusterUtil: stubClusterUtil{},
+			helmClient:  stubHelmClient{servicesError: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
@@ -532,7 +533,6 @@ type stubClusterUtil struct {
 	installComponentsErr             error
 	initClusterErr                   error
 	setupAutoscalingError            error
-	setupJoinServiceError            error
 	setupCloudControllerManagerError error
 	setupCloudNodeManagerError       error
 	setupKonnectivityError           error
@@ -564,10 +564,6 @@ func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte, no
 
 func (s *stubClusterUtil) SetupAutoscaling(kubectl k8sapi.Client, clusterAutoscalerConfiguration kubernetes.Marshaler, secrets kubernetes.Marshaler) error {
 	return s.setupAutoscalingError
-}
-
-func (s *stubClusterUtil) SetupJoinService(kubectl k8sapi.Client, joinServiceConfiguration kubernetes.Marshaler) error {
-	return s.setupJoinServiceError
 }
 
 func (s *stubClusterUtil) SetupGCPGuestAgent(kubectl k8sapi.Client, gcpGuestAgentConfiguration kubernetes.Marshaler) error {
@@ -688,6 +684,6 @@ func (s *stubHelmClient) InstallCilium(ctx context.Context, kubectl k8sapi.Clien
 	return s.ciliumError
 }
 
-func (s *stubHelmClient) InstallConstellationServices(ctx context.Context, release helm.Release) error {
+func (s *stubHelmClient) InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]interface{}) error {
 	return s.servicesError
 }
