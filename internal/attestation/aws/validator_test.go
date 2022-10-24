@@ -7,13 +7,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 package aws
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"testing"
-	"time"
+
+	//"github.com/aws/aws-sdk-go-v2/config"
 
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
-	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -52,50 +56,44 @@ func TestGeTrustedKey(t *testing.T) {
 }
 
 func TestTpmEnabled(t *testing.T) {
-	mockDocBase := imds.InstanceIdentityDocument{
-		DevpayProductCodes:      []string{"devpayProductCodes"},
-		MarketplaceProductCodes: []string{"marketplaceProductCodes"},
-		AvailabilityZone:        "availabilityZone",
-		PrivateIP:               "privateIp",
-		Version:                 "version",
-		Region:                  "region",
-		InstanceID:              "instanceId",
-		BillingProducts:         []string{"billingProducts"},
-		InstanceType:            "instanceType",
-		AccountID:               "accountId",
-		PendingTime:             time.Now(),
-		ImageID:                 "imageId",
-		KernelID:                "kernelId",
-		RamdiskID:               "ramdiskId",
-		Architecture:            "architecture",
+	idDocNoTPM := imds.InstanceIdentityDocument{
+		ImageID: "ami-tpm-disabled",
+	}
+	userDataNoTPM, _ := json.Marshal(idDocNoTPM)
+	attDocNoTPM := vtpm.AttestationDocument{
+		UserData: userDataNoTPM,
 	}
 
-	// The pinned images are valid at the time of this commit.
-	// When we finally support AWS, we should make these values part of the version bump.
-	// Make sure, that the image is visible to all required users/clients. Verify using
-	// aws ec2 describe-image-attribute  --region <REGION> --image-id <IMAGE_ID> --attribute tpmSupport
-
-	// Since Amazon does not offer Linux stock AMI's with TPM support enabled, we use Windows images in this test.
-	// https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/enable-nitrotpm-prerequisites.html
-	mockDocTpm := mockDocBase
-	mockDocTpm.ImageID = "ami-0e6b1588acc5a055f"
-	mockDocTpm.Region = "us-east-2"
-
-	// Stock aws linux (per default no TPM enabled), here could be the ami of ANY stock linux.
-	mockDocNoTpm := mockDocBase
-	mockDocNoTpm.ImageID = "ami-0b59bfac6be064b78"
-	mockDocTpm.Region = "us-east-2"
+	idDocTPM := imds.InstanceIdentityDocument{
+		ImageID: "ami-tpm-enabled",
+	}
+	userDataTPM, _ := json.Marshal(idDocTPM)
+	attDocTPM := vtpm.AttestationDocument{
+		UserData: userDataTPM,
+	}
 
 	testCases := map[string]struct {
-		idDoc   imds.InstanceIdentityDocument
+		attDoc  vtpm.AttestationDocument
+		awsAPI  awsMetadataAPI
 		wantErr bool
 	}{
 		"ami with tpm": {
-			idDoc:   mockDocTpm,
-			wantErr: false,
+			attDoc:  attDocNoTPM,
+			awsAPI:  &AWSMetadataStub{describeImagesTPMSupport: "v2.0"},
 		},
 		"ami without tpm": {
-			idDoc:   mockDocNoTpm,
+			attDoc:  attDocTPM,
+			awsAPI:  &AWSMetadataStub{describeImagesTPMSupport: "v1.0"},
+			wantErr: true,
+		},
+		"ami undefined": {
+			attDoc:  vtpm.AttestationDocument{},
+			awsAPI:  &AWSMetadataStub{describeImagesErr: errors.New("failed")},
+			wantErr: true,
+		},
+		"invalid instanceIdentityDocument": {
+			attDoc:  vtpm.AttestationDocument{},
+			awsAPI:  &AWSMetadataStub{describeImagesErr: errors.New("failed")},
 			wantErr: true,
 		},
 	}
@@ -104,7 +102,11 @@ func TestTpmEnabled(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			err := tpmEnabled(tc.idDoc)
+			v := Validator{
+				metadataClient: tc.awsAPI,
+			}
+
+			err := v.tpmEnabled(tc.attDoc)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -114,65 +116,21 @@ func TestTpmEnabled(t *testing.T) {
 	}
 }
 
-func TestValidateCVM(t *testing.T) {
-	mockDocBase := imds.InstanceIdentityDocument{
-		DevpayProductCodes:      []string{"devpayProductCodes"},
-		MarketplaceProductCodes: []string{"marketplaceProductCodes"},
-		AvailabilityZone:        "availabilityZone",
-		PrivateIP:               "privateIp",
-		Version:                 "version",
-		Region:                  "region",
-		InstanceID:              "instanceId",
-		BillingProducts:         []string{"billingProducts"},
-		InstanceType:            "instanceType",
-		AccountID:               "accountId",
-		PendingTime:             time.Now(),
-		ImageID:                 "imageId",
-		KernelID:                "kernelId",
-		RamdiskID:               "ramdiskId",
-		Architecture:            "architecture",
-	}
+type AWSMetadataStub struct {
+	describeImagesErr        error
+	describeImagesTPMSupport string
+}
 
-	mockDocTpm := mockDocBase
-	mockDocTpm.ImageID = "ami-0e6b1588acc5a055f"
-	mockDocTpm.Region = "us-east-2"
+// DescribeImages is a mock function for testing.
+// Although the original function works for multiple supplied image id's, this function ignores this, since in our code we also only get the information for one image.
+func (a *AWSMetadataStub) DescribeImages(ctx context.Context, params *ec2.DescribeImagesInput,
+	optFns ...func(*ec2.Options)) (*ec2.DescribeImagesOutput, error) {
 
-	mockDocNoTpm := mockDocBase
-	mockDocNoTpm.ImageID = "ami-0b59bfac6be064b78"
-	mockDocTpm.Region = "us-east-2"
-
-	attDocTpm := vtpm.AttestationDocument{}
-	attDocTpm.UserData, _ = json.Marshal(mockDocTpm)
-	attDocTpm.Attestation = &attest.Attestation{}
-
-	attDocNoTpm := vtpm.AttestationDocument{}
-	attDocNoTpm.UserData, _ = json.Marshal(mockDocNoTpm)
-	attDocNoTpm.Attestation = &attest.Attestation{}
-
-	testCases := map[string]struct {
-		attestationDoc vtpm.AttestationDocument
-		wantErr        bool
-	}{
-		"CVM enabled": {
-			attestationDoc: attDocTpm,
-			wantErr:        false,
-		},
-		"CVM disabled": {
-			attestationDoc: attDocNoTpm,
-			wantErr:        true,
+	output := &ec2.DescribeImagesOutput{
+		Images: []types.Image{
+			{TpmSupport: types.TpmSupportValues(a.describeImagesTPMSupport)},
 		},
 	}
 
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			err := validateCVM(tc.attestationDoc)
-			if tc.wantErr {
-				assert.Error(err)
-			} else {
-				assert.Nil(err)
-			}
-		})
-	}
+	return output, a.describeImagesErr
 }
