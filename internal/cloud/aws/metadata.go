@@ -98,6 +98,54 @@ func (m *Metadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) 
 	}, nil
 }
 
+// GetInstance retrieves the instance with the given providerID.
+func (m *Metadata) GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error) {
+	instances, err := m.ec2.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
+		InstanceIds: []string{providerID},
+	})
+	if err != nil {
+		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving instance: %w", err)
+	}
+	if len(instances.Reservations) == 0 {
+		return metadata.InstanceMetadata{}, errors.New("instance not found")
+	}
+	if len(instances.Reservations) > 1 {
+		return metadata.InstanceMetadata{}, errors.New("providerID matches multiple instances")
+	}
+	if len(instances.Reservations[0].Instances) == 0 {
+		return metadata.InstanceMetadata{}, errors.New("instance not found")
+	}
+	if len(instances.Reservations[0].Instances) > 1 {
+		return metadata.InstanceMetadata{}, errors.New("providerID matches multiple instances")
+	}
+	instance, err := m.convertToMetadataInstance(instances.Reservations[0].Instances)
+	if err != nil {
+		return metadata.InstanceMetadata{}, fmt.Errorf("converting instance: %w", err)
+	}
+
+	return instance[0], nil
+}
+
+// UID returns the UID of the Constellation.
+func (m *Metadata) UID(ctx context.Context) (string, error) {
+	return readInstanceTag(ctx, m.imds, tagUID)
+}
+
+// SupportsLoadBalancer returns true if the cloud provider supports load balancers.
+func (m *Metadata) SupportsLoadBalancer() bool {
+	return false
+}
+
+// GetLoadBalancerEndpoint returns the endpoint of the load balancer.
+func (m *Metadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
+	panic("function *Metadata.GetLoadBalancerEndpoint not implemented")
+}
+
+// GetSubnetworkCIDR retrieves the subnetwork CIDR from cloud provider metadata.
+func (m *Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
+	panic("function *Metadata.GetSubnetworkCIDR not implemented")
+}
+
 func (m *Metadata) getAllInstancesInGroup(ctx context.Context, uid string) ([]types.Instance, error) {
 	var instances []types.Instance
 	instanceReq := &ec2.DescribeInstancesInput{

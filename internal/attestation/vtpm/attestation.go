@@ -24,6 +24,12 @@ import (
 )
 
 var (
+	// AWSPCRSelection are the PCR values verified for AWS Nitro TPM based Constellations.
+	// TODO: determine which PCRs are required.
+	AWSPCRSelection = tpm2.PCRSelection{
+		Hash: tpm2.AlgSHA256,
+		PCRs: []int{},
+	}
 	// AzurePCRSelection are the PCR values verified for Azure Constellations.
 	// PCR[0] is excluded due to changing rarely, but unpredictably.
 	// PCR[6] is excluded due to being different for any 2 VMs. See: https://trustedcomputinggroup.org/wp-content/uploads/TCG_PCClient_PFP_r1p05_v23_pub.pdf#%5B%7B%22num%22%3A157%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C33%2C400%2C0%5D

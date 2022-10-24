@@ -21,12 +21,14 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/kubectl"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/logging"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/aws"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	awscloud "github.com/edgelesssys/constellation/v2/internal/cloud/aws"
 	azurecloud "github.com/edgelesssys/constellation/v2/internal/cloud/azure"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	gcpcloud "github.com/edgelesssys/constellation/v2/internal/cloud/gcp"
@@ -77,7 +79,36 @@ func main() {
 
 	switch cloudprovider.FromString(os.Getenv(constellationCSP)) {
 	case cloudprovider.AWS:
-		panic("AWS cloud provider currently unsupported")
+		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.AWSPCRSelection)
+		if err != nil {
+			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
+		}
+		pcrsJSON, err := json.Marshal(pcrs)
+		if err != nil {
+			log.With(zap.Error(err)).Fatalf("Failed to marshal PCRs")
+		}
+
+		issuer = initserver.NewIssuerWrapper(&aws.Issuer{}, vmtype.Unknown, nil)
+
+		metadata, err := awscloud.New(ctx)
+		if err != nil {
+			log.With(zap.Error(err)).Fatalf("Failed to set up AWS metadata API")
+		}
+		metadataAPI = metadata
+
+		cloudLogger, err = awscloud.NewLogger(ctx)
+		if err != nil {
+			log.With(zap.Error(err)).Fatalf("Failed to set up cloud logger")
+		}
+
+		nodeManager := &awscloud.CloudNodeManager{}
+		cloudControllerManager := &awscloud.CloudControllerManager{}
+		clusterInitJoiner = kubernetes.New(
+			"aws", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), cloudControllerManager,
+			nodeManager, &gcpcloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
+		)
+		openTPM = vtpm.OpenVTPM
+		fs = afero.NewOsFs()
 	case cloudprovider.GCP:
 		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.GCPPCRSelection)
 		if err != nil {
