@@ -75,6 +75,14 @@ func (h *Handler) Read(name string) ([]byte, error) {
 	return io.ReadAll(file)
 }
 
+func (h *Handler) ReadDir(name string) ([]os.FileInfo, error) {
+	dir, err := h.fs.ReadDir(name)
+	if err != nil {
+		return nil, err
+	}
+	return dir, nil
+}
+
 // Write writes the data bytes into the file with the given name.
 func (h *Handler) Write(name string, data []byte, options ...Option) error {
 	if hasOption(options, OptMkdirAll) {

@@ -11,6 +11,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/config"
+
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -47,9 +49,11 @@ func TestTerminateCmdArgumentValidation(t *testing.T) {
 }
 
 func TestTerminate(t *testing.T) {
-	setupFs := func(require *require.Assertions, idFile clusterid.File) afero.Fs {
+	setupFs := func(require *require.Assertions, idFile clusterid.File, provider cloudprovider.Provider) afero.Fs {
 		fs := afero.NewMemMapFs()
 		fileHandler := file.NewHandler(fs)
+		require.NoError(fileHandler.Write("terraform.tfstate", []byte{1, 2}, file.OptNone))
+		require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
 		require.NoError(fileHandler.Write(constants.AdminConfFilename, []byte{1, 2}, file.OptNone))
 		require.NoError(fileHandler.Write(constants.WGQuickConfigFilename, []byte{1, 2}, file.OptNone))
 		require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptNone))
@@ -59,36 +63,44 @@ func TestTerminate(t *testing.T) {
 
 	testCases := map[string]struct {
 		idFile     clusterid.File
-		setupFs    func(*require.Assertions, clusterid.File) afero.Fs
+		provider   cloudprovider.Provider
+		setupFs    func(*require.Assertions, clusterid.File, cloudprovider.Provider) afero.Fs
 		terminator spyCloudTerminator
 		wantErr    bool
 	}{
 		"success": {
+			provider:   cloudprovider.GCP,
 			idFile:     clusterid.File{CloudProvider: cloudprovider.GCP},
 			setupFs:    setupFs,
 			terminator: &stubCloudTerminator{},
 		},
 		"files to remove do not exist": {
-			idFile: clusterid.File{CloudProvider: cloudprovider.GCP},
-			setupFs: func(require *require.Assertions, idFile clusterid.File) afero.Fs {
+			provider: cloudprovider.GCP,
+			idFile:   clusterid.File{CloudProvider: cloudprovider.GCP},
+			setupFs: func(require *require.Assertions, idFile clusterid.File, provider cloudprovider.Provider) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
+				require.NoError(fileHandler.Write("terraform.tfstate", []byte{1, 2}, file.OptNone))
+				require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, defaultConfigWithExpectedMeasurements(t, config.Default(), provider)))
 				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptNone))
 				return fs
 			},
 			terminator: &stubCloudTerminator{},
 		},
 		"terminate error": {
+			provider:   cloudprovider.GCP,
 			idFile:     clusterid.File{CloudProvider: cloudprovider.GCP},
 			setupFs:    setupFs,
 			terminator: &stubCloudTerminator{terminateErr: someErr},
 			wantErr:    true,
 		},
-		"missing state file": {
-			idFile: clusterid.File{CloudProvider: cloudprovider.GCP},
-			setupFs: func(require *require.Assertions, idFile clusterid.File) afero.Fs {
+		"missing config file": {
+			provider: cloudprovider.GCP,
+			idFile:   clusterid.File{CloudProvider: cloudprovider.GCP},
+			setupFs: func(require *require.Assertions, idFile clusterid.File, provider cloudprovider.Provider) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
+				require.NoError(fileHandler.Write("terraform.tfstate", []byte{1, 2}, file.OptNone))
 				require.NoError(fileHandler.Write(constants.AdminConfFilename, []byte{1, 2}, file.OptNone))
 				require.NoError(fileHandler.Write(constants.WGQuickConfigFilename, []byte{1, 2}, file.OptNone))
 				return fs
@@ -97,9 +109,10 @@ func TestTerminate(t *testing.T) {
 			wantErr:    true,
 		},
 		"remove file fails": {
-			idFile: clusterid.File{CloudProvider: cloudprovider.GCP},
-			setupFs: func(require *require.Assertions, idFile clusterid.File) afero.Fs {
-				fs := setupFs(require, idFile)
+			provider: cloudprovider.GCP,
+			idFile:   clusterid.File{CloudProvider: cloudprovider.GCP},
+			setupFs: func(require *require.Assertions, idFile clusterid.File, provider cloudprovider.Provider) afero.Fs {
+				fs := setupFs(require, idFile, provider)
 				return afero.NewReadOnlyFs(fs)
 			},
 			terminator: &stubCloudTerminator{},
@@ -115,9 +128,10 @@ func TestTerminate(t *testing.T) {
 			cmd := NewTerminateCmd()
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
+			cmd.Flags().String("config", constants.ConfigFilename, "")
 
 			require.NotNil(tc.setupFs)
-			fileHandler := file.NewHandler(tc.setupFs(require, tc.idFile))
+			fileHandler := file.NewHandler(tc.setupFs(require, tc.idFile, tc.provider))
 
 			err := terminate(cmd, tc.terminator, fileHandler, nopSpinner{})
 
@@ -134,6 +148,39 @@ func TestTerminate(t *testing.T) {
 				assert.Error(err)
 			}
 		})
+	}
+}
+
+func TestForTerraformData(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
+
+	fs := afero.NewMemMapFs()
+	fileHandler := file.NewHandler(fs)
+
+	expectedFiles := []string{"terraform.tfvars", "terraform.tfstate", "terraform.tfstate.backup", ".terraform.lock.hcl"}
+	expectedDirs := []string{".terraform"}
+
+	// Check empty current directory
+	result, err := checkForTerraformData(fileHandler)
+	assert.NoError(err)
+	assert.False(result)
+
+	for _, singleFilename := range expectedFiles {
+		_, err := fs.Create(singleFilename)
+		require.NoError(err)
+		foundTerraformData, err := checkForTerraformData(fileHandler)
+		require.NoError(err)
+		assert.True(foundTerraformData)
+		require.NoError(fs.Remove(singleFilename))
+	}
+
+	for _, singleDirname := range expectedDirs {
+		require.NoError(fs.Mkdir(singleDirname, 0o700))
+		foundTerraformData, err := checkForTerraformData(fileHandler)
+		require.NoError(err)
+		assert.True(foundTerraformData)
+		require.NoError(fs.Remove(singleDirname))
 	}
 }
 

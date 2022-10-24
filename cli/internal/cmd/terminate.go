@@ -16,7 +16,6 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 )
@@ -45,13 +44,28 @@ func runTerminate(cmd *cobra.Command, args []string) error {
 
 func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.Handler, spinner spinnerInterf,
 ) error {
-	var idFile clusterid.File
-	if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
+	foundTerraformData, err := checkForTerraformData(fileHandler)
+	if err != nil {
 		return err
 	}
 
+	if !foundTerraformData {
+		fmt.Println("Did not find a cluster to terminate.")
+		return nil
+	}
+
+	configPath, err := cmd.Flags().GetString("config")
+	if err != nil {
+		return fmt.Errorf("parsing config path argument: %w", err)
+	}
+
+	config, err := readConfig(cmd.OutOrStdout(), fileHandler, configPath)
+	if err != nil {
+		return fmt.Errorf("reading and validating config: %w", err)
+	}
+
 	spinner.Start("Terminating", false)
-	err := terminator.Terminate(cmd.Context(), idFile.CloudProvider)
+	err = terminator.Terminate(cmd.Context(), config.GetProvider())
 	spinner.Stop()
 	if err != nil {
 		return fmt.Errorf("terminating Constellation cluster: %w", err)
@@ -73,4 +87,31 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 	}
 
 	return retErr
+}
+
+func checkForTerraformData(fileHandler file.Handler) (bool, error) {
+	currentDirectory, err := fileHandler.ReadDir(".")
+	if err != nil {
+		return false, err
+	}
+
+	for _, file := range currentDirectory {
+		filename := file.Name()
+		switch filename {
+		case "terraform.tfvars":
+			return true, nil
+		case "terraform.tfstate":
+			return true, nil
+		case "terraform.tfstate.backup":
+			return true, nil
+		case ".terraform.lock.hcl":
+			return true, nil
+		case ".terraform":
+			return true, nil
+		default:
+			continue
+		}
+	}
+
+	return false, nil
 }
