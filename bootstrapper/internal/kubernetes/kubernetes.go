@@ -120,15 +120,11 @@ func (k *KubeWrapper) InitCluster(
 		nodeName = k8sCompliantHostname(instance.Name)
 		providerID = instance.ProviderID
 		nodeIP = instance.VPCIP
+		subnetworkPodCIDR = instance.SubnetworkCIDR
 
 		if len(instance.AliasIPRanges) > 0 {
 			nodePodCIDR = instance.AliasIPRanges[0]
 		}
-		subnetworkPodCIDR, err = k.providerMetadata.GetSubnetworkCIDR(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("retrieving subnetwork CIDR: %w", err)
-		}
-
 		controlPlaneEndpoint, err = k.providerMetadata.GetLoadBalancerEndpoint(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving load balancer endpoint: %w", err)

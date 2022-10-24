@@ -245,7 +245,7 @@ func TestGetSubnetworkCIDR(t *testing.T) {
 				imdsAPI:            tc.imdsAPI,
 				virtualNetworksAPI: tc.virtualNetworksAPI,
 			}
-			subnetworkCIDR, err := metadata.GetSubnetworkCIDR(context.Background())
+			subnetworkCIDR, err := metadata.getSubnetworkCIDR(context.Background())
 			if tc.wantErr {
 				assert.Error(err)
 				return

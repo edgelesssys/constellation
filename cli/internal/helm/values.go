@@ -142,6 +142,13 @@ var qemuVals = map[string]any{
 			"useDigest":     true,
 		},
 	},
+	"ipam": map[string]any{
+		"operator": map[string]any{
+			"clusterPoolIPv4PodCIDRList": []string{
+				"10.244.0.0/16",
+			},
+		},
+	},
 	"kubeProxyReplacement":                "strict",
 	"enableCiliumEndpointSlice":           true,
 	"kubeProxyReplacementHealthzBindAddr": "0.0.0.0:10256",

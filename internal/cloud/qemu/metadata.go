@@ -85,11 +85,6 @@ func (m *Metadata) UID(ctx context.Context) (string, error) {
 	return "", nil
 }
 
-// GetSubnetworkCIDR retrieves the subnetwork CIDR from cloud provider metadata.
-func (m *Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
-	return "10.244.0.0/16", nil
-}
-
 func (m *Metadata) retrieveMetadata(ctx context.Context, uri string) ([]byte, error) {
 	url := &url.URL{
 		Scheme: "http",

@@ -28,6 +28,10 @@ type InstanceMetadata struct {
 	AliasIPRanges []string
 	// SSHKeys maps usernames to ssh public keys.
 	SSHKeys map[string][]string
+
+	// SubnetworkCIDR is the CIDR of the subnetwork the instance is in.
+	// May be empty on certain CSPs.
+	SubnetworkCIDR string
 }
 
 type InstanceSelfer interface {

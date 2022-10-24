@@ -129,20 +129,6 @@ func TestInitCluster(t *testing.T) {
 			wantErr:                true,
 			k8sVersion:             versions.Default,
 		},
-		"kubeadm init fails when retrieving metadata subnetwork cidr": {
-			clusterUtil: stubClusterUtil{},
-			kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
-			},
-			providerMetadata: &stubProviderMetadata{
-				GetSubnetworkCIDRErr: someErr,
-				SupportedResp:        true,
-			},
-			CloudControllerManager: &stubCloudControllerManager{},
-			ClusterAutoscaler:      &stubClusterAutoscaler{},
-			wantErr:                true,
-			k8sVersion:             versions.Default,
-		},
 		"kubeadm init fails when retrieving metadata loadbalancer ip": {
 			clusterUtil: stubClusterUtil{},
 			kubeconfigReader: &stubKubeconfigReader{
