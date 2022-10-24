@@ -9,6 +9,7 @@ package cloudcmd
 import (
 	"context"
 	"errors"
+	"runtime"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -75,6 +76,14 @@ func TestTerminator(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+
+			// Skip QEMU tests on non-Linux
+			// In theory the tests are fine but in reality creation/termination is marked as not supported so termination doesn't need to be supported, too.
+			if tc.provider == cloudprovider.QEMU {
+				if runtime.GOOS != "linux" || runtime.GOARCH != "amd64" {
+					t.Skip()
+				}
+			}
 
 			terminator := &Terminator{
 				newTerraformClient: func(ctx context.Context, provider cloudprovider.Provider) (terraformClient, error) {
