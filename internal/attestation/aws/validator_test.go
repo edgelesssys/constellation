@@ -13,6 +13,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -142,9 +143,11 @@ func TestValidateCVM(t *testing.T) {
 
 	attDocTpm := vtpm.AttestationDocument{}
 	attDocTpm.UserData, _ = json.Marshal(mockDocTpm)
+	attDocTpm.Attestation = &attest.Attestation{}
 
 	attDocNoTpm := vtpm.AttestationDocument{}
 	attDocNoTpm.UserData, _ = json.Marshal(mockDocNoTpm)
+	attDocNoTpm.Attestation = &attest.Attestation{}
 
 	testCases := map[string]struct {
 		attestationDoc vtpm.AttestationDocument
