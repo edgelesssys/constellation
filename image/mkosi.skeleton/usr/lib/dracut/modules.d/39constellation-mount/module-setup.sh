@@ -26,10 +26,6 @@ install() {
         "/usr/sbin/prepare-state-disk"
     install_and_enable_unit "prepare-state-disk.service" \
         "basic.target"
-    inst_script "$moddir/google-nvme-disk.sh" \
-        "/usr/sbin/google-nvme-disk"
-    install_and_enable_unit "google-nvme-disk.service" \
-        "basic.target"
     install_and_enable_unit "configure-constel-csp.service" \
         "basic.target"
 
@@ -52,10 +48,7 @@ install() {
         "/usr/sbin/nvme"
     inst_script "/usr/lib/udev/google_nvme_id" \
         "/usr/lib/udev/google_nvme_id"
-    inst_simple "/usr/lib/udev/rules.d/64-gce-disk-removal.rules" \
-        "/usr/lib/udev/rules.d/64-gce-disk-removal.rules"
-    inst_simple "/usr/lib/udev/rules.d/65-gce-disk-naming.rules" \
-        "/usr/lib/udev/rules.d/65-gce-disk-naming.rules"
+    inst_rules "64-gce-disk-removal.rules" "65-gce-disk-naming.rules"
 
     inst_script "/usr/sbin/ebsnvme-id" \
         "/usr/sbin/ebsnvme-id"
