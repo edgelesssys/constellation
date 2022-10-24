@@ -1,6 +1,6 @@
 name: Constellation create
-description: |
-  Create a new Constellation cluster using latest OS image.
+description: Create a new Constellation cluster using latest OS image.
+
 inputs:
   workerNodesCount:
     description: "Number of worker nodes to spawn."
@@ -32,10 +32,17 @@ inputs:
   azureResourceGroup:
     description: "The resource group to use for Constellation cluster"
     required: false
+
+outputs:
+  kubeconfig:
+    description: "The kubeconfig for the cluster."
+    value: ${{ steps.constellation-init.outputs.KUBECONFIG }}
+
 runs:
   using: "composite"
   steps:
     - name: Constellation config generate
+      shell: bash
       run: |
         constellation config generate ${{ inputs.cloudProvider }}
 
@@ -60,9 +67,11 @@ runs:
         if [ ${{ inputs.kubernetesVersion != '' }} = true ]; then
           yq eval -i "(.kubernetesVersion) = ${{ inputs.kubernetesVersion }}" constellation-conf.yaml
         fi
-      shell: bash
 
     - name: Set image
+      shell: bash
+      env:
+        CSP: ${{ inputs.cloudProvider }}
       run: |
         case $CSP in
           azure)
@@ -89,10 +98,6 @@ runs:
             ;;
         esac
 
-      shell: bash
-      env:
-        CSP: ${{ inputs.cloudProvider }}
-
     - name: Set instanceType
       if: ${{ inputs.machineType && inputs.machineType != 'default' }}
       shell: bash
@@ -103,41 +108,45 @@ runs:
     - name: Create serviceAccountKey.json
       if: ${{ inputs.cloudProvider == 'gcp' }}
       shell: bash
-      run: |
-        echo "$GCP_CLUSTER_SERVICE_ACCOUNT_KEY" > serviceAccountKey.json
       env:
         GCP_CLUSTER_SERVICE_ACCOUNT_KEY: ${{ inputs.gcpClusterServiceAccountKey }}
+      run: |
+        echo "$GCP_CLUSTER_SERVICE_ACCOUNT_KEY" > serviceAccountKey.json
 
     - name: Enable debugCluster flag
+      if: ${{ inputs.isDebugImage == 'true' }}
+      shell: bash
       run: |
         yq eval -i '(.debugCluster) = true' constellation-conf.yaml
-      shell: bash
-      if: ${{ inputs.isDebugImage == 'true' }}
 
     - name: Constellation create
+      shell: bash
       run: |
         echo "Creating cluster using config:"
         cat constellation-conf.yaml
         constellation create -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} --name e2e-test -y
-      shell: bash
 
     - name: Cdbg deploy
+      if: ${{ inputs.isDebugImage == 'true' }}
+      shell: bash
       run: |
         echo "::group::cdbg deploy"
         chmod +x $GITHUB_WORKSPACE/build/cdbg
         cdbg deploy --bootstrapper $GITHUB_WORKSPACE/build/bootstrapper
         echo "::endgroup::"
-      shell: bash
-      if: ${{ inputs.isDebugImage == 'true' }}
 
     - name: Constellation init
       id: constellation-init
+      shell: bash
       run: |
         constellation init
         echo "KUBECONFIG=$(pwd)/constellation-admin.conf" >> $GITHUB_OUTPUT
-      shell: bash
 
     - name: Wait for nodes to join and become ready
+      shell: bash
+      env:
+        KUBECONFIG: "${{ steps.constellation-init.outputs.KUBECONFIG }}"
+        JOINTIMEOUT: "1200" # 20 minutes timeout for all nodes to join
       run: |
         echo "::group::Wait for nodes"
         NODES_COUNT=$((${{ inputs.controlNodesCount }} + ${{ inputs.workerNodesCount }}))
@@ -155,12 +164,13 @@ runs:
         echo "$(kubectl get nodes -o json | jq '.items | length')/"${NODES_COUNT}" nodes have joined"
         kubectl wait --for=condition=ready --all nodes --timeout=10m
         echo "::endgroup::"
-      shell: bash
-      env:
-        KUBECONFIG: "${{ steps.constellation-init.outputs.KUBECONFIG }}"
-        JOINTIMEOUT: "1200" # 20 minutes timeout for all nodes to join
 
     - name: Download boot logs
+      if: ${{ always() }}
+      continue-on-error: true
+      shell: bash
+      env:
+        CSP: ${{ inputs.cloudProvider }}
       run: |
         echo "::group::Download boot logs"
         case $CSP in
@@ -176,14 +186,10 @@ runs:
             ;;
         esac
         echo "::endgroup::"
-      shell: bash
-      env:
-        CSP: ${{ inputs.cloudProvider }}
-      continue-on-error: true
-      if: ${{ always() }}
+
     - name: Upload boot logs
+      if: ${{ always() && !env.ACT }}
       uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
       with:
         name: serial-logs
         path: "*.log"
-      if: ${{ always() && !env.ACT }}

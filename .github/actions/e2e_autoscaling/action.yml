@@ -1,0 +1,104 @@
+name: E2E autoscaling test
+description: "Test autoscaling functionality of the operator."
+
+inputs:
+  kubeconfig:
+    description: "The kubeconfig of the cluster to test."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    # This action assumes that the cluster is in an ready state, with all nodes joined and ready.
+
+    - name: Determine number of workers in cluster
+      id: worker_count
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      run: |
+        worker_count=$(kubectl get nodes -o json --selector='!node-role.kubernetes.io/control-plane' | jq '.items | length')
+        echo "worker_count=${worker_count}" >> $GITHUB_OUTPUT
+        echo "The cluster currently has ${worker_count} nodes."
+
+    # The following step identifies the name of the worker scaling group. As the scaling group is
+    # a custom resource definition, we need to wait for its creation.
+
+    - name: Find worker scaling group
+      id: worker_name
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      run: |
+        TIMEOUT=1200
+        WAIT=0
+        until [[ $(( "$(kubectl get scalinggroups -o json | jq '.items | length')" )) -ge 2 ]] || [[ $WAIT -gt $TIMEOUT ]];
+        do
+            echo "Waiting for creation of custom resource definitions..."
+            WAIT=$((WAIT+30))
+            sleep 30
+        done
+        if [[ $WAIT -gt $TIMEOUT ]]; then
+            echo "Timed out waiting for nodes to join"
+            exit 1
+        fi
+        worker_group=$(kubectl get scalinggroups -o json | jq -r '.items[].metadata.name | select(contains("worker"))')
+        echo "worker_name=${worker_group}" >> $GITHUB_OUTPUT
+        echo "The name of your worker scaling group is '${worker_group}'."
+
+    - name: Patch autoscaling to true
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      run: |
+        worker_group=${{ steps.worker_name.outputs.worker_name }}
+        kubectl patch scalinggroups ${worker_group} --patch '{"spec":{"autoscaling": true}}' --type='merge'
+        kubectl get scalinggroup ${worker_group} -o jsonpath='{.spec}' | jq
+
+    - name: Set an autoscaling target/limit
+      id: scaling_limit
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      run: |
+        worker_group=${{ steps.worker_name.outputs.worker_name }}
+        worker_count=${{ steps.worker_count.outputs.worker_count }}
+        worker_target=$((worker_count + 2))
+        echo "worker_target=${worker_target}" >> $GITHUB_OUTPUT
+        kubectl patch scalinggroups ${worker_group} --patch '{"spec":{"max": '${worker_target}'}}' --type='merge'
+        kubectl get scalinggroup ${worker_group} -o jsonpath='{.spec}' | jq
+
+    # Number of replicas that are deployed to trigger autoscaling of nodes can't be determined exact.
+    # The following steps calculates a value based on the limit of 110 pods per nodes, that is
+    # described at https://kubernetes.io/docs/setup/best-practices/cluster-large/.
+    # We try to fill the existing nodes and one additional node up to the limit,
+    # and add half capacity for the second additional node so we have some space to the upper and
+    # lower bound. If we deploy to many replicas, the deployment won't finish as we run into our
+    # scaling limit. If we deploy not enough replicas, we won't see the desired number of nodes.
+
+    - name: Deployment to trigger autoscaling
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      run: |
+        worker_count=${{ steps.worker_count.outputs.worker_count }}
+        kubectl create -n default deployment nginx --image=nginx --replicas $(( 110 * (worker_count + 1) + 55 ))
+
+    - name: Wait for autoscaling and check result
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      run: |
+        kubectl wait deployment nginx --for condition=available --timeout=15m
+        worker_count=$(kubectl get nodes -o json --selector='!node-role.kubernetes.io/control-plane' | jq '.items | length')
+        if [[ $(( "${{ steps.scaling_limit.outputs.worker_target }}" )) -ne $(( "${worker_count}" )) ]]; then
+          echo "::error::Expected worker count ${{ steps.scaling_limit.outputs.worker_target }}, but was ${worker_count}"
+          exit 1
+        fi
+
+    - name: Delete deployment
+      if: always()
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      run: kubectl delete deployment nginx

@@ -50,7 +50,7 @@ jobs:
           workerNodesCount: "2"
           controlNodesCount: "3"
           cloudProvider: "azure"
-          sonobuoyTestSuiteCmd: '--plugin e2e --plugin-env e2e.E2E_FOCUS="\[Conformance\]" --plugin-env e2e.E2E_SKIP="for service with type clusterIP|HostPort validates that there is no conflict between pods with same hostPort but different hostIP and protocol" --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-plugin.yaml --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-master-plugin.yaml'
+          test: "sonobuoy full"
           kubernetesVersion: ${{ matrix.version }}
           azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
