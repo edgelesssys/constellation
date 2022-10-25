@@ -120,7 +120,7 @@ func (k *KubeWrapper) InitCluster(
 		nodeName = k8sCompliantHostname(instance.Name)
 		providerID = instance.ProviderID
 		nodeIP = instance.VPCIP
-		subnetworkPodCIDR = instance.SubnetworkCIDR
+		subnetworkPodCIDR = instance.SecondaryIPRange
 
 		if len(instance.AliasIPRanges) > 0 {
 			nodePodCIDR = instance.AliasIPRanges[0]

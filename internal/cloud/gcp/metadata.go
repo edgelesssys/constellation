@@ -92,7 +92,7 @@ func (m *Metadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) 
 	if err != nil {
 		return metadata.InstanceMetadata{}, err
 	}
-	instance.SubnetworkCIDR = subnetCIDR
+	instance.SecondaryIPRange = subnetCIDR
 
 	return instance, nil
 }
