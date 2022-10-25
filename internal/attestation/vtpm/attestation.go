@@ -42,7 +42,7 @@ var (
 	// PCR[10] is excluded since its value is derived from a digest of PCR[0-7]. See: https://sourceforge.net/p/linux-ima/wiki/Home/#ima-measurement-list
 	AWSPCRSelection = tpm2.PCRSelection{
 		Hash: tpm2.AlgSHA256,
-		PCRs: []int{0, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23},
+		PCRs: []int{0, 2, 3, 4, 5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23},
 	}
 
 	// QEMUPCRSelection are the PCR values verified for QEMU based Constellations.

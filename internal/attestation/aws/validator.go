@@ -67,7 +67,7 @@ func (v *Validator) tpmEnabled(attestation vtpm.AttestationDocument) error {
 		return err
 	}
 
-	imageId := idDocument.ImageID
+	imageID := idDocument.ImageID
 
 	client, err := v.getDescribeClient(ctx)
 	if err != nil {
@@ -75,7 +75,7 @@ func (v *Validator) tpmEnabled(attestation vtpm.AttestationDocument) error {
 	}
 	// Currently, there seems to be a problem with retrieving image attributes directly.
 	// Alternatively, parse it from the general output.
-	imageOutput, err := client.DescribeImages(ctx, &ec2.DescribeImagesInput{ImageIds: []string{imageId}})
+	imageOutput, err := client.DescribeImages(ctx, &ec2.DescribeImagesInput{ImageIds: []string{imageID}})
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func (v *Validator) tpmEnabled(attestation vtpm.AttestationDocument) error {
 		return nil
 	}
 
-	return fmt.Errorf("iam image %s does not support TPM v2.0", imageId)
+	return fmt.Errorf("iam image %s does not support TPM v2.0", imageID)
 }
 
 func getEC2Client(ctx context.Context) (awsMetadataAPI, error) {

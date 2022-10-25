@@ -115,5 +115,4 @@ func (c *stubMetadataAPI) GetInstanceIdentityDocument(context.Context, *imds.Get
 		InstanceIdentityDocument: *output,
 		ResultMetadata:           middleware.Metadata{},
 	}, c.instanceErr
-
 }

@@ -53,7 +53,6 @@ func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
 func getInstanceInfo(client awsMetaData) func(tpm io.ReadWriteCloser) ([]byte, error) {
 	return func(io.ReadWriteCloser) ([]byte, error) {
 		ec2InstanceIdentityOutput, err := client.GetInstanceIdentityDocument(context.Background(), &imds.GetInstanceIdentityDocumentInput{})
-
 		if err != nil {
 			return nil, errors.New("unable to fetch instance identity document")
 		}
