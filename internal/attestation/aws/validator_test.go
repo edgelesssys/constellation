@@ -12,8 +12,6 @@ import (
 	"errors"
 	"testing"
 
-	//"github.com/aws/aws-sdk-go-v2/config"
-
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -79,23 +77,23 @@ func TestTpmEnabled(t *testing.T) {
 	}{
 		"ami with tpm": {
 			attDoc:  attDocNoTPM,
-			awsAPI:  &AWSMetadataStub{describeImagesTPMSupport: "v2.0"},
+			awsAPI:  &stubDescribeAPI{describeImagesTPMSupport: "v2.0"},
 		},
 		"ami without tpm": {
 			attDoc:  attDocTPM,
-			awsAPI:  &AWSMetadataStub{describeImagesTPMSupport: "v1.0"},
+			awsAPI:  &stubDescribeAPI{describeImagesTPMSupport: "v1.0"},
 			wantErr: true,
 		},
 		"ami undefined": {
 			attDoc:  vtpm.AttestationDocument{},
-			awsAPI:  &AWSMetadataStub{describeImagesErr: errors.New("failed")},
+			awsAPI:  &stubDescribeAPI{describeImagesErr: errors.New("failed")},
 			wantErr: true,
 		},
 		"invalid json instanceIdentityDocument": {
 			attDoc:  vtpm.AttestationDocument{
 				UserData: []byte("{invalid}"),
 			},
-			awsAPI:  &AWSMetadataStub{describeImagesErr: errors.New("failed")},
+			awsAPI:  &stubDescribeAPI{describeImagesErr: errors.New("failed")},
 			wantErr: true,
 		},
 	}
@@ -118,14 +116,12 @@ func TestTpmEnabled(t *testing.T) {
 	}
 }
 
-type AWSMetadataStub struct {
+type stubDescribeAPI struct {
 	describeImagesErr        error
 	describeImagesTPMSupport string
 }
 
-// DescribeImages is a mock function for testing.
-// Although the original function works for multiple supplied image id's, this function ignores this, since in our code we also only get the information for one image.
-func (a *AWSMetadataStub) DescribeImages(ctx context.Context, params *ec2.DescribeImagesInput,
+func (a *stubDescribeAPI) DescribeImages(ctx context.Context, params *ec2.DescribeImagesInput,
 	optFns ...func(*ec2.Options)) (*ec2.DescribeImagesOutput, error) {
 
 	output := &ec2.DescribeImagesOutput{

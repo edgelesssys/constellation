@@ -43,11 +43,11 @@ func TestGetAttestationKey(t *testing.T) {
 
 func TestGetInstanceInfo(t *testing.T) {
 	testCases := map[string]struct {
-		client  AWSMetadataAPIStub
+		client  stubMetadataAPI
 		wantErr bool
 	}{
 		"invalid region": {
-			client: AWSMetadataAPIStub{
+			client: stubMetadataAPI{
 				instanceDoc: imds.InstanceIdentityDocument{
 					Region: "invalid-region",
 				},
@@ -56,14 +56,14 @@ func TestGetInstanceInfo(t *testing.T) {
 			wantErr: true,
 		},
 		"valid region": {
-			client: AWSMetadataAPIStub{
+			client: stubMetadataAPI{
 				instanceDoc: imds.InstanceIdentityDocument{
 					Region: "us-east-2",
 				},
 			},
 		},
 		"invalid imageID": {
-			client: AWSMetadataAPIStub{
+			client: stubMetadataAPI{
 				instanceDoc: imds.InstanceIdentityDocument{
 					ImageID: "ami-fail",
 				},
@@ -72,7 +72,7 @@ func TestGetInstanceInfo(t *testing.T) {
 			wantErr: true,
 		},
 		"valid imageID": {
-			client: AWSMetadataAPIStub{
+			client: stubMetadataAPI{
 				instanceDoc: imds.InstanceIdentityDocument{
 					ImageID: "ami-09e7c7f5617a47830",
 				},
@@ -103,12 +103,12 @@ func TestGetInstanceInfo(t *testing.T) {
 	}
 }
 
-type AWSMetadataAPIStub struct {
+type stubMetadataAPI struct {
 	instanceDoc imds.InstanceIdentityDocument
 	instanceErr error
 }
 
-func (c *AWSMetadataAPIStub) GetInstanceIdentityDocument(context.Context, *imds.GetInstanceIdentityDocumentInput, ...func(*imds.Options)) (*imds.GetInstanceIdentityDocumentOutput, error) {
+func (c *stubMetadataAPI) GetInstanceIdentityDocument(context.Context, *imds.GetInstanceIdentityDocumentInput, ...func(*imds.Options)) (*imds.GetInstanceIdentityDocumentOutput, error) {
 	output := &imds.InstanceIdentityDocument{}
 
 	return &imds.GetInstanceIdentityDocumentOutput{
