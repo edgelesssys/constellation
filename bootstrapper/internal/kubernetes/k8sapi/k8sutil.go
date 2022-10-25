@@ -34,7 +34,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
-	"github.com/icholy/replace"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 	"golang.org/x/text/transform"
@@ -94,16 +93,6 @@ func (k *KubernetesUtil) InstallComponents(ctx context.Context, version versions
 		return fmt.Errorf("installing crictl: %w", err)
 	}
 	if err := k.inst.Install(
-		ctx, versionConf.KubeletServiceURL, []string{kubeletServiceEtcPath, kubeletServiceStatePath}, systemdUnitPerm, false, replace.String("/usr/bin", binDir),
-	); err != nil {
-		return fmt.Errorf("installing kubelet service: %w", err)
-	}
-	if err := k.inst.Install(
-		ctx, versionConf.KubeadmConfURL, []string{kubeadmConfEtcPath, kubeadmConfStatePath}, systemdUnitPerm, false, replace.String("/usr/bin", binDir),
-	); err != nil {
-		return fmt.Errorf("installing kubeadm conf: %w", err)
-	}
-	if err := k.inst.Install(
 		ctx, versionConf.KubeletURL, []string{kubeletPath}, executablePerm, false,
 	); err != nil {
 		return fmt.Errorf("installing kubelet: %w", err)
@@ -119,7 +108,7 @@ func (k *KubernetesUtil) InstallComponents(ctx context.Context, version versions
 		return fmt.Errorf("installing kubectl: %w", err)
 	}
 
-	return enableSystemdUnit(ctx, kubeletServiceEtcPath)
+	return enableSystemdUnit(ctx, kubeletServicePath)
 }
 
 func (k *KubernetesUtil) InitCluster(
@@ -434,7 +423,7 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, pee
 func (k *KubernetesUtil) StartKubelet() error {
 	ctx, cancel := context.WithTimeout(context.TODO(), kubeletStartTimeout)
 	defer cancel()
-	if err := enableSystemdUnit(ctx, kubeletServiceEtcPath); err != nil {
+	if err := enableSystemdUnit(ctx, kubeletServicePath); err != nil {
 		return fmt.Errorf("enabling kubelet systemd unit: %w", err)
 	}
 	return startSystemdUnit(ctx, "kubelet.service")
