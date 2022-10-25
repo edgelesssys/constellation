@@ -64,7 +64,6 @@ const (
 	DebugdConfigFilename          = "cdbg-conf.yaml"
 	AdminConfFilename             = "constellation-admin.conf"
 	MasterSecretFilename          = "constellation-mastersecret.json"
-	WGQuickConfigFilename         = "wg0.conf"
 	ControlPlaneAdminConfFilename = "/etc/kubernetes/admin.conf"
 	KubeadmCertificateDir         = "/etc/kubernetes/pki"
 	KubectlPath                   = "/run/state/bin/kubectl"

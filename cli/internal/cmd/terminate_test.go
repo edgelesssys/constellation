@@ -51,7 +51,6 @@ func TestTerminate(t *testing.T) {
 		fs := afero.NewMemMapFs()
 		fileHandler := file.NewHandler(fs)
 		require.NoError(fileHandler.Write(constants.AdminConfFilename, []byte{1, 2}, file.OptNone))
-		require.NoError(fileHandler.Write(constants.WGQuickConfigFilename, []byte{1, 2}, file.OptNone))
 		require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptNone))
 		return fs
 	}
@@ -90,7 +89,6 @@ func TestTerminate(t *testing.T) {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)
 				require.NoError(fileHandler.Write(constants.AdminConfFilename, []byte{1, 2}, file.OptNone))
-				require.NoError(fileHandler.Write(constants.WGQuickConfigFilename, []byte{1, 2}, file.OptNone))
 				return fs
 			},
 			terminator: &stubCloudTerminator{},
@@ -127,8 +125,6 @@ func TestTerminate(t *testing.T) {
 				assert.NoError(err)
 				assert.True(tc.terminator.Called())
 				_, err = fileHandler.Stat(constants.AdminConfFilename)
-				assert.Error(err)
-				_, err = fileHandler.Stat(constants.WGQuickConfigFilename)
 				assert.Error(err)
 				_, err = fileHandler.Stat(constants.ClusterIDsFileName)
 				assert.Error(err)
