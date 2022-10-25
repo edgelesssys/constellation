@@ -19,6 +19,7 @@ import (
 )
 
 //go:embed terraform/*
+//go:embed terraform/*/.terraform.lock.hcl
 var terraformFS embed.FS
 
 // prepareWorkspace loads the embedded Terraform files,

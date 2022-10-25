@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 4.0"
+      version = "4.36.1"
     }
   }
 }
@@ -39,7 +39,7 @@ resource "aws_iam_role" "control_plane_role" {
     }
   ]
 }
-EOF 
+EOF
 }
 
 resource "aws_iam_policy" "control_plane_policy" {
@@ -144,7 +144,7 @@ resource "aws_iam_role" "worker_node_role" {
     }
   ]
 }
-EOF 
+EOF
 }
 
 resource "aws_iam_policy" "worker_node_policy" {
