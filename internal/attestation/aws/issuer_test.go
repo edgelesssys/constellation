@@ -8,9 +8,8 @@ package aws
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/smithy-go/middleware"
@@ -44,30 +43,40 @@ func TestGetAttestationKey(t *testing.T) {
 
 func TestGetInstanceInfo(t *testing.T) {
 	testCases := map[string]struct {
-		client  fakeMetadataClient
+		client  AWSMetadataAPIStub
 		wantErr bool
 	}{
-		"metadata not ok": {
-			client: fakeMetadataClient{
-				"1",
-				"test",
-				"us-east-0",
-				nil,
-				nil,
-				nil,
+		"invalid region": {
+			client: AWSMetadataAPIStub{
+				instanceDoc: imds.InstanceIdentityDocument{
+					Region: "invalid-region",
+				},
+				instanceErr: errors.New("failed"),
 			},
 			wantErr: true,
 		},
-		"metadata ok": {
-			client: fakeMetadataClient{
-				"1",
-				"test",
-				"us-east-2",
-				nil,
-				nil,
-				nil,
+		"valid region": {
+			client: AWSMetadataAPIStub{
+				instanceDoc: imds.InstanceIdentityDocument{
+					Region: "us-east-2",
+				},
 			},
-			wantErr: false,
+		},
+		"invalid imageID": {
+			client: AWSMetadataAPIStub{
+				instanceDoc: imds.InstanceIdentityDocument{
+					ImageID: "ami-fail",
+				},
+				instanceErr: errors.New("failed"),
+			},
+			wantErr: true,
+		},
+		"valid imageID": {
+			client: AWSMetadataAPIStub{
+				instanceDoc: imds.InstanceIdentityDocument{
+					ImageID: "ami-09e7c7f5617a47830",
+				},
+			},
 		},
 	}
 
@@ -94,40 +103,17 @@ func TestGetInstanceInfo(t *testing.T) {
 	}
 }
 
-type fakeMetadataClient struct {
-	projectIDString    string
-	instanceNameString string
-	zoneString         string
-	projecIDErr        error
-	instanceNameErr    error
-	zoneErr            error
+type AWSMetadataAPIStub struct {
+	instanceDoc imds.InstanceIdentityDocument
+	instanceErr error
 }
 
-func (c *fakeMetadataClient) GetInstanceIdentityDocument(context.Context, *imds.GetInstanceIdentityDocumentInput, ...func(*imds.Options)) (*imds.GetInstanceIdentityDocumentOutput, error) {
-	testRegions := []string{
-		"us-east-2", "us-east-1", "us-west-1", "us-west-2",
-	}
-
-	fmt.Printf("%v", testRegions)
+func (c *AWSMetadataAPIStub) GetInstanceIdentityDocument(context.Context, *imds.GetInstanceIdentityDocumentInput, ...func(*imds.Options)) (*imds.GetInstanceIdentityDocumentOutput, error) {
+	output := &imds.InstanceIdentityDocument{}
 
 	return &imds.GetInstanceIdentityDocumentOutput{
-		InstanceIdentityDocument: imds.InstanceIdentityDocument{
-			DevpayProductCodes:      []string{"devpayProductCodes"},
-			MarketplaceProductCodes: []string{"marketplaceProductCodes"},
-			AvailabilityZone:        "availabilityZone",
-			PrivateIP:               "privateIp",
-			Version:                 "version",
-			Region:                  "region",
-			InstanceID:              "instanceId",
-			BillingProducts:         []string{"billingProducts"},
-			InstanceType:            "instanceType",
-			AccountID:               "accountId",
-			PendingTime:             time.Now(),
-			ImageID:                 "imageId",
-			KernelID:                "kernelId",
-			RamdiskID:               "ramdiskId",
-			Architecture:            "architecture",
-		},
-		ResultMetadata: middleware.Metadata{},
-	}, nil
+		InstanceIdentityDocument: *output,
+		ResultMetadata:           middleware.Metadata{},
+	}, c.instanceErr
+
 }

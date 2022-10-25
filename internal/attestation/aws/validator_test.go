@@ -91,8 +91,10 @@ func TestTpmEnabled(t *testing.T) {
 			awsAPI:  &AWSMetadataStub{describeImagesErr: errors.New("failed")},
 			wantErr: true,
 		},
-		"invalid instanceIdentityDocument": {
-			attDoc:  vtpm.AttestationDocument{},
+		"invalid json instanceIdentityDocument": {
+			attDoc:  vtpm.AttestationDocument{
+				UserData: []byte("{invalid}"),
+			},
 			awsAPI:  &AWSMetadataStub{describeImagesErr: errors.New("failed")},
 			wantErr: true,
 		},

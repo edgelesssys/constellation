@@ -21,25 +21,23 @@ import (
 	tpmclient "github.com/google/go-tpm-tools/client"
 )
 
-// Issuer for AWS TPM attestation
+// Issuer for AWS TPM attestation.
 type Issuer struct {
 	oid.AWS
 	*vtpm.Issuer
 }
 
 func NewIssuer() *Issuer {
-	GetInstanceInfo := getInstanceInfo(imds.New(imds.Options{}))
-
 	return &Issuer{
 		Issuer: vtpm.NewIssuer(
 			vtpm.OpenVTPM,
 			getAttestationKey,
-			GetInstanceInfo,
+			getInstanceInfo(imds.New(imds.Options{})),
 		),
 	}
 }
 
-// getAttestationKey returns a new attestation key
+// getAttestationKey returns a new attestation key.
 func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
 	tpmAk, err := client.AttestationKeyRSA(tpm)
 	if err != nil {
@@ -50,8 +48,8 @@ func getAttestationKey(tpm io.ReadWriter) (*tpmclient.Key, error) {
 	return tpmAk, nil
 }
 
-// getInstanceInfo returns information about the current instance using the aws Metadata SDK
-// The returned bytes will be written into the attestation document
+// getInstanceInfo returns information about the current instance using the aws Metadata SDK.
+// The returned bytes will be written into the attestation document.
 func getInstanceInfo(client awsMetaData) func(tpm io.ReadWriteCloser) ([]byte, error) {
 	return func(io.ReadWriteCloser) ([]byte, error) {
 		ec2InstanceIdentityOutput, err := client.GetInstanceIdentityDocument(context.Background(), &imds.GetInstanceIdentityDocumentInput{})

@@ -20,7 +20,7 @@ import (
 	"github.com/google/go-tpm/tpm2"
 )
 
-// Issuer for AWS TPM attestation
+// Validator for AWS TPM attestation.
 type Validator struct {
 	oid.AWS
 	*vtpm.Validator
@@ -59,11 +59,11 @@ func getTrustedKey(akPub []byte, instanceInfo []byte) (crypto.PublicKey, error) 
 	return pubArea.Key()
 }
 
-// tpmEnabled verifies if the virtual machine has the tpm2.0 feature enabled
+// tpmEnabled verifies if the virtual machine has the tpm2.0 feature enabled.
 func (v *Validator) tpmEnabled(attestation vtpm.AttestationDocument) error {
 	// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/verify-nitrotpm-support-on-ami.html
-	// 1. get the vm's ami (from IdentiTyDocument.imageId)
-	// 2. check the value of key "TpmSupport": {"Value": "v2.0"}"
+	// 1. Get the vm's ami (from IdentiTyDocument.imageId)
+	// 2. Check the value of key "TpmSupport": {"Value": "v2.0"}"
 	ctx := context.Background()
 
 	idDocument := imds.InstanceIdentityDocument{}
@@ -86,10 +86,6 @@ func (v *Validator) tpmEnabled(attestation vtpm.AttestationDocument) error {
 	}
 
 	return fmt.Errorf("iam image %s does not support TPM v2.0", imageId)
-}
-
-type awsMetaDataClient struct {
-	awsMetadataAPI
 }
 
 type awsMetadataAPI interface {

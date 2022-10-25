@@ -26,12 +26,11 @@ type Issuer struct {
 
 // NewIssuer initializes a new GCP Issuer.
 func NewIssuer() *Issuer {
-	GetInstanceInfo := getGCEInstanceInfo(metadataClient{})
 	return &Issuer{
 		Issuer: vtpm.NewIssuer(
 			vtpm.OpenVTPM,
 			tpmclient.GceAttestationKeyRSA,
-			GetInstanceInfo,
+			getGCEInstanceInfo(metadataClient{}),
 		),
 	}
 }
