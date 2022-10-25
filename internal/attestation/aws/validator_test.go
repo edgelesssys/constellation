@@ -76,8 +76,8 @@ func TestTpmEnabled(t *testing.T) {
 		wantErr bool
 	}{
 		"ami with tpm": {
-			attDoc:  attDocNoTPM,
-			awsAPI:  &stubDescribeAPI{describeImagesTPMSupport: "v2.0"},
+			attDoc: attDocNoTPM,
+			awsAPI: &stubDescribeAPI{describeImagesTPMSupport: "v2.0"},
 		},
 		"ami without tpm": {
 			attDoc:  attDocTPM,
@@ -90,7 +90,7 @@ func TestTpmEnabled(t *testing.T) {
 			wantErr: true,
 		},
 		"invalid json instanceIdentityDocument": {
-			attDoc:  vtpm.AttestationDocument{
+			attDoc: vtpm.AttestationDocument{
 				UserData: []byte("{invalid}"),
 			},
 			awsAPI:  &stubDescribeAPI{describeImagesErr: errors.New("failed")},
@@ -103,7 +103,9 @@ func TestTpmEnabled(t *testing.T) {
 			assert := assert.New(t)
 
 			v := Validator{
-				metadataClient: tc.awsAPI,
+				getDescribeClient: func(context.Context) (awsMetadataAPI, error) {
+					return tc.awsAPI, nil
+				},
 			}
 
 			err := v.tpmEnabled(tc.attDoc)
@@ -121,9 +123,9 @@ type stubDescribeAPI struct {
 	describeImagesTPMSupport string
 }
 
-func (a *stubDescribeAPI) DescribeImages(ctx context.Context, params *ec2.DescribeImagesInput,
-	optFns ...func(*ec2.Options)) (*ec2.DescribeImagesOutput, error) {
-
+func (a *stubDescribeAPI) DescribeImages(
+	ctx context.Context, params *ec2.DescribeImagesInput, optFns ...func(*ec2.Options),
+) (*ec2.DescribeImagesOutput, error) {
 	output := &ec2.DescribeImagesOutput{
 		Images: []types.Image{
 			{TpmSupport: types.TpmSupportValues(a.describeImagesTPMSupport)},

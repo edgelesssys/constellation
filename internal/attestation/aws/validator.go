@@ -24,7 +24,7 @@ import (
 type Validator struct {
 	oid.AWS
 	*vtpm.Validator
-	metadataClient awsMetadataAPI
+	getDescribeClient func(context.Context) (awsMetadataAPI, error)
 }
 
 // NewValidator create a new Validator structure and returns it.
@@ -38,12 +38,7 @@ func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, log vtpm.Attest
 		vtpm.VerifyPKCS1v15,
 		log,
 	)
-	client, err := config.LoadDefaultConfig(context.Background(), config.WithEC2IMDSRegion())
-	if err != nil {
-		return nil
-	}
-
-	v.metadataClient = ec2.NewFromConfig(client)
+	v.getDescribeClient = getEC2Client
 	return v
 }
 
@@ -74,9 +69,13 @@ func (v *Validator) tpmEnabled(attestation vtpm.AttestationDocument) error {
 
 	imageId := idDocument.ImageID
 
+	client, err := v.getDescribeClient(ctx)
+	if err != nil {
+		return err
+	}
 	// Currently, there seems to be a problem with retrieving image attributes directly.
 	// Alternatively, parse it from the general output.
-	imageOutput, err := v.metadataClient.DescribeImages(ctx, &ec2.DescribeImagesInput{ImageIds: []string{imageId}})
+	imageOutput, err := client.DescribeImages(ctx, &ec2.DescribeImagesInput{ImageIds: []string{imageId}})
 	if err != nil {
 		return err
 	}
@@ -86,6 +85,14 @@ func (v *Validator) tpmEnabled(attestation vtpm.AttestationDocument) error {
 	}
 
 	return fmt.Errorf("iam image %s does not support TPM v2.0", imageId)
+}
+
+func getEC2Client(ctx context.Context) (awsMetadataAPI, error) {
+	client, err := config.LoadDefaultConfig(ctx, config.WithEC2IMDSRegion())
+	if err != nil {
+		return nil, err
+	}
+	return ec2.NewFromConfig(client), nil
 }
 
 type awsMetadataAPI interface {
