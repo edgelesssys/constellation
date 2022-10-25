@@ -7,7 +7,7 @@ data:
   # mustToJson is required so the json-strings passed from go are properly quoted in the rendered yaml.
   enforcedPCRs: {{ .Values.enforcedPCRs | mustToJson }}
   measurements: {{ .Values.measurements | mustToJson }}
-  {{- if eq .Values.csp "azure" }}
+  {{- if eq .Values.csp "Azure" }}
   enforceIdKeyDigest: {{ .Values.enforceIdKeyDigest }}
   idkeydigest: {{ .Values.idkeydigest }}
   {{- end }}
