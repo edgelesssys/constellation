@@ -94,4 +94,11 @@ resource "google_compute_instance_group_manager" "instance_group_manager" {
       port = named_port.value.port
     }
   }
+
+  lifecycle {
+    ignore_changes = [
+      target_size, # autoscaling modifies the instance count externally
+      version,     # update procedure modifies the instance template externally
+    ]
+  }
 }
