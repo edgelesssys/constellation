@@ -406,10 +406,10 @@ type testAttestationLogger struct {
 	warnings []string
 }
 
-func (w *testAttestationLogger) Infof(format string, args ...interface{}) {
+func (w *testAttestationLogger) Infof(format string, args ...any) {
 	w.infos = append(w.infos, fmt.Sprintf(format, args...))
 }
 
-func (w *testAttestationLogger) Warnf(format string, args ...interface{}) {
+func (w *testAttestationLogger) Warnf(format string, args ...any) {
 	w.warnings = append(w.warnings, fmt.Sprintf(format, args...))
 }

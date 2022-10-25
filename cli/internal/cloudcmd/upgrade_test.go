@@ -124,8 +124,8 @@ func TestUpdateImage(t *testing.T) {
 		"success": {
 			updater: &stubImageUpdater{
 				setImage: &unstructured.Unstructured{
-					Object: map[string]interface{}{
-						"spec": map[string]interface{}{
+					Object: map[string]any{
+						"spec": map[string]any{
 							"image": "old-image",
 						},
 					},
@@ -137,8 +137,8 @@ func TestUpdateImage(t *testing.T) {
 		"image is the same": {
 			updater: &stubImageUpdater{
 				setImage: &unstructured.Unstructured{
-					Object: map[string]interface{}{
-						"spec": map[string]interface{}{
+					Object: map[string]any{
+						"spec": map[string]any{
 							"image": "old-image",
 						},
 					},
@@ -153,8 +153,8 @@ func TestUpdateImage(t *testing.T) {
 		"update error": {
 			updater: &stubImageUpdater{
 				setImage: &unstructured.Unstructured{
-					Object: map[string]interface{}{
-						"spec": map[string]interface{}{
+					Object: map[string]any{
+						"spec": map[string]any{
 							"image": "old-image",
 						},
 					},
@@ -167,7 +167,7 @@ func TestUpdateImage(t *testing.T) {
 		"no spec": {
 			updater: &stubImageUpdater{
 				setImage: &unstructured.Unstructured{
-					Object: map[string]interface{}{},
+					Object: map[string]any{},
 				},
 			},
 			newImage: "new-image",
@@ -176,7 +176,7 @@ func TestUpdateImage(t *testing.T) {
 		"not a map": {
 			updater: &stubImageUpdater{
 				setImage: &unstructured.Unstructured{
-					Object: map[string]interface{}{
+					Object: map[string]any{
 						"spec": "not a map",
 					},
 				},
@@ -187,8 +187,8 @@ func TestUpdateImage(t *testing.T) {
 		"no spec.image": {
 			updater: &stubImageUpdater{
 				setImage: &unstructured.Unstructured{
-					Object: map[string]interface{}{
-						"spec": map[string]interface{}{},
+					Object: map[string]any{
+						"spec": map[string]any{},
 					},
 				},
 			},
@@ -215,7 +215,7 @@ func TestUpdateImage(t *testing.T) {
 
 			assert.NoError(err)
 			if tc.wantUpdate {
-				assert.Equal(tc.newImage, tc.updater.updatedImage.Object["spec"].(map[string]interface{})["image"])
+				assert.Equal(tc.newImage, tc.updater.updatedImage.Object["spec"].(map[string]any)["image"])
 			} else {
 				assert.Nil(tc.updater.updatedImage)
 			}

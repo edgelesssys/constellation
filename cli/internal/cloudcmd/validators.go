@@ -190,9 +190,9 @@ type warnLogger struct {
 }
 
 // Infof is a no-op since we don't want extra info messages when using the CLI.
-func (wl warnLogger) Infof(format string, args ...interface{}) {}
+func (wl warnLogger) Infof(format string, args ...any) {}
 
 // Warnf prints a formatted warning from the validator.
-func (wl warnLogger) Warnf(fmtStr string, args ...interface{}) {
+func (wl warnLogger) Warnf(fmtStr string, args ...any) {
 	wl.cmd.PrintErrf("Warning: %s\n", fmt.Sprintf(fmtStr, args...))
 }

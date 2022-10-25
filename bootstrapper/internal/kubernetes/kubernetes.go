@@ -498,9 +498,9 @@ func getIPAddr() (string, error) {
 
 // setupExtraVals create a helm values map for consumption by helm-install.
 // Will move to a more dedicated place once that place becomes apparent.
-func setupExtraVals(initialMeasurementsJSON []byte, idkeydigest []byte, measurementSalt []byte) map[string]interface{} {
-	return map[string]interface{}{
-		"join-service": map[string]interface{}{
+func setupExtraVals(initialMeasurementsJSON []byte, idkeydigest []byte, measurementSalt []byte) map[string]any {
+	return map[string]any{
+		"join-service": map[string]any{
 			"measurements":    string(initialMeasurementsJSON),
 			"idkeydigest":     hex.EncodeToString(idkeydigest),
 			"measurementSalt": base64.StdEncoding.EncodeToString(measurementSalt),
