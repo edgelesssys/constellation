@@ -8,7 +8,7 @@ data:
   enforcedPCRs: {{ .Values.enforcedPCRs | mustToJson }}
   measurements: {{ .Values.measurements | mustToJson }}
   {{- if eq .Values.csp "Azure" }}
-  enforceIdKeyDigest: {{ .Values.enforceIdKeyDigest }}
+  enforceIdKeyDigest: {{ .Values.enforceIdKeyDigest | quote }}
   idkeydigest: {{ .Values.idkeydigest }}
   {{- end }}
 binaryData:
