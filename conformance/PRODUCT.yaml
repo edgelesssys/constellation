@@ -1,9 +1,0 @@
-vendor: Edgeless Systems
-name: Constellation
-version: v2.1.0
-website_url: https://www.edgeless.systems/products/constellation/
-documentation_url: https://docs.edgeless.systems/constellation
-product_logo_url: https://docs.edgeless.systems/constellation/img/logos/constellation_white_bg.svg
-repo_url: https://github.com/edgelesssys/constellation
-type: distribution
-description: Constellation leverages confidential computing to isolate entire Kubernetes clusters from the infrastructure.

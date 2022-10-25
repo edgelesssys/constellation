@@ -13,7 +13,6 @@ Core components:
 Development components:
 
 * [3rdparty](/3rdparty): Contains the third party dependencies used by Constellation
-* [conformance](/conformance): Kubernetes conformance tests
 * [debugd](/debugd): Debug daemon and client
 * [hack](/hack): Development tools
 * [proto](/proto): Proto files generator
