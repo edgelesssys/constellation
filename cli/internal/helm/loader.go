@@ -91,7 +91,10 @@ func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode boo
 }
 
 // loadConstellationServices loads the constellation-services chart from the embed.FS, marshals it into a helm-package .tgz and sets the values that can be set in the CLI.
-func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider, masterSecret []byte, salt []byte, enforcedPCRs []uint32, enforceIDKeyDigest bool) (helm.Release, error) {
+func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
+	masterSecret []byte, salt []byte, enforcedPCRs []uint32,
+	enforceIDKeyDigest bool,
+) (helm.Release, error) {
 	chart, err := loadChartsDir(HelmFS, "charts/edgeless/constellation-services")
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("loading constellation-services chart: %w", err)
@@ -134,8 +137,11 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider, mast
 	}
 
 	if csp == cloudprovider.Azure {
-		joinServiceVals := vals["join-service"].(map[string]interface{})
-		joinServiceVals["enforceIDKeyDigest"] = enforceIDKeyDigest
+		joinServiceVals, ok := vals["join-service"].(map[string]any)
+		if !ok {
+			return helm.Release{}, errors.New("invalid join-service values")
+		}
+		joinServiceVals["enforceIdKeyDigest"] = enforceIDKeyDigest
 	}
 
 	return helm.Release{Chart: chartRaw, Values: vals, ReleaseName: "constellation-services", Wait: true}, nil
