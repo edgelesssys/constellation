@@ -168,7 +168,7 @@ func TestCreate(t *testing.T) {
 			yesFlag:             true,
 			wantErr:             true,
 		},
-		"write state error": {
+		"write id file error": {
 			setupFs: func(require *require.Assertions, csp cloudprovider.Provider) afero.Fs {
 				fs := afero.NewMemMapFs()
 				fileHandler := file.NewHandler(fs)

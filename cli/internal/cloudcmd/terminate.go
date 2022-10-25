@@ -33,7 +33,7 @@ func NewTerminator() *Terminator {
 	}
 }
 
-// Terminate deletes the could provider resources defined in the constellation state.
+// Terminate deletes the could provider resources.
 func (t *Terminator) Terminate(ctx context.Context, provider cloudprovider.Provider) (retErr error) {
 	if provider == cloudprovider.Unknown {
 		return errors.New("unknown cloud provider")
