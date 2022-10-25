@@ -517,7 +517,7 @@ func TestUpgradePlan(t *testing.T) {
 	}
 }
 
-func mustMarshal(t *testing.T, v interface{}) []byte {
+func mustMarshal(t *testing.T, v any) []byte {
 	t.Helper()
 	b, err := json.Marshal(v)
 	if err != nil {

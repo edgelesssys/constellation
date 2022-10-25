@@ -65,8 +65,8 @@ type (
 
 // AttestationLogger is a logger used to print warnings and infos during attestation validation.
 type AttestationLogger interface {
-	Infof(format string, args ...interface{})
-	Warnf(format string, args ...interface{})
+	Infof(format string, args ...any)
+	Warnf(format string, args ...any)
 }
 
 // AttestationDocument contains the TPM attestation with signed user data.

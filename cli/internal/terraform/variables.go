@@ -213,7 +213,7 @@ func (v *QEMUVariables) String() string {
 	return b.String()
 }
 
-func writeLinef(builder *strings.Builder, format string, a ...interface{}) {
+func writeLinef(builder *strings.Builder, format string, a ...any) {
 	builder.WriteString(fmt.Sprintf(format, a...))
 	builder.WriteByte('\n')
 }

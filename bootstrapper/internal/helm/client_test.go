@@ -14,25 +14,25 @@ import (
 
 func TestMe(t *testing.T) {
 	testCases := map[string]struct {
-		vals      map[string]interface{}
-		extraVals map[string]interface{}
-		expected  map[string]interface{}
+		vals      map[string]any
+		extraVals map[string]any
+		expected  map[string]any
 	}{
 		"equal": {
-			vals: map[string]interface{}{
-				"join-service": map[string]interface{}{
+			vals: map[string]any{
+				"join-service": map[string]any{
 					"key1": "foo",
 					"key2": "bar",
 				},
 			},
-			extraVals: map[string]interface{}{
-				"join-service": map[string]interface{}{
+			extraVals: map[string]any{
+				"join-service": map[string]any{
 					"extraKey1": "extraFoo",
 					"extraKey2": "extraBar",
 				},
 			},
-			expected: map[string]interface{}{
-				"join-service": map[string]interface{}{
+			expected: map[string]any{
+				"join-service": map[string]any{
 					"key1":      "foo",
 					"key2":      "bar",
 					"extraKey1": "extraFoo",
@@ -41,18 +41,18 @@ func TestMe(t *testing.T) {
 			},
 		},
 		"missing join-service extraVals": {
-			vals: map[string]interface{}{
-				"join-service": map[string]interface{}{
+			vals: map[string]any{
+				"join-service": map[string]any{
 					"key1": "foo",
 					"key2": "bar",
 				},
 			},
-			extraVals: map[string]interface{}{
+			extraVals: map[string]any{
 				"extraKey1": "extraFoo",
 				"extraKey2": "extraBar",
 			},
-			expected: map[string]interface{}{
-				"join-service": map[string]interface{}{
+			expected: map[string]any{
+				"join-service": map[string]any{
 					"key1": "foo",
 					"key2": "bar",
 				},
@@ -61,20 +61,20 @@ func TestMe(t *testing.T) {
 			},
 		},
 		"missing join-service vals": {
-			vals: map[string]interface{}{
+			vals: map[string]any{
 				"key1": "foo",
 				"key2": "bar",
 			},
-			extraVals: map[string]interface{}{
-				"join-service": map[string]interface{}{
+			extraVals: map[string]any{
+				"join-service": map[string]any{
 					"extraKey1": "extraFoo",
 					"extraKey2": "extraBar",
 				},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"key1": "foo",
 				"key2": "bar",
-				"join-service": map[string]interface{}{
+				"join-service": map[string]any{
 					"extraKey1": "extraFoo",
 					"extraKey2": "extraBar",
 				},

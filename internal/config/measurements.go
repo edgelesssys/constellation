@@ -91,7 +91,7 @@ func (m Measurements) CopyFrom(other Measurements) {
 
 // MarshalYAML overwrites the default behaviour of writing out []byte not as
 // single bytes, but as a single base64 encoded string.
-func (m Measurements) MarshalYAML() (interface{}, error) {
+func (m Measurements) MarshalYAML() (any, error) {
 	base64Map := make(map[uint32]string)
 
 	for key, value := range m {
@@ -103,7 +103,7 @@ func (m Measurements) MarshalYAML() (interface{}, error) {
 
 // UnmarshalYAML overwrites the default behaviour of reading []byte not as
 // single bytes, but as a single base64 encoded string.
-func (m *Measurements) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (m *Measurements) UnmarshalYAML(unmarshal func(any) error) error {
 	base64Map := make(map[uint32]string)
 	err := unmarshal(base64Map)
 	if err != nil {

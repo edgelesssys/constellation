@@ -66,7 +66,7 @@ func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode boo
 		return helm.Release{}, fmt.Errorf("packaging chart: %w", err)
 	}
 
-	var ciliumVals map[string]interface{}
+	var ciliumVals map[string]any
 	switch csp {
 	case cloudprovider.GCP:
 		ciliumVals = gcpVals
@@ -81,7 +81,7 @@ func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode boo
 		ciliumVals["kubeProxyReplacementHealthzBindAddr"] = ""
 		ciliumVals["kubeProxyReplacement"] = "partial"
 		ciliumVals["sessionAffinity"] = true
-		ciliumVals["cni"] = map[string]interface{}{
+		ciliumVals["cni"] = map[string]any{
 			"chainingMode": "portmap",
 		}
 
@@ -107,15 +107,15 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider, mast
 		return helm.Release{}, fmt.Errorf("marshaling enforcedPCRs: %w", err)
 	}
 
-	vals := map[string]interface{}{
-		"global": map[string]interface{}{
+	vals := map[string]any{
+		"global": map[string]any{
 			"kmsPort":          constants.KMSPort,
 			"serviceBasePath":  constants.ServiceBasePath,
 			"joinConfigCMName": constants.JoinConfigMap,
 			"k8sVersionCMName": constants.K8sVersion,
 			"internalCMName":   constants.InternalConfigMap,
 		},
-		"kms": map[string]interface{}{
+		"kms": map[string]any{
 			"image":                versions.KmsImage,
 			"masterSecret":         base64.StdEncoding.EncodeToString(masterSecret),
 			"salt":                 base64.StdEncoding.EncodeToString(salt),
@@ -125,7 +125,7 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider, mast
 			"masterSecretName":     constants.ConstellationMasterSecretStoreName,
 			"measurementsFilename": constants.MeasurementsFilename,
 		},
-		"join-service": map[string]interface{}{
+		"join-service": map[string]any{
 			"csp":          csp,
 			"enforcedPCRs": string(enforcedPCRsJSON),
 			"image":        versions.JoinImage,

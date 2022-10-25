@@ -117,7 +117,7 @@ func TestUnmarshalYAML(t *testing.T) {
 			require := require.New(t)
 
 			var m Measurements
-			err := m.UnmarshalYAML(func(i interface{}) error {
+			err := m.UnmarshalYAML(func(i any) error {
 				if base64Map, ok := i.(map[uint32]string); ok {
 					for key, value := range tc.inputBase64Map {
 						base64Map[key] = value

@@ -684,6 +684,6 @@ func (s *stubHelmClient) InstallCilium(ctx context.Context, kubectl k8sapi.Clien
 	return s.ciliumError
 }
 
-func (s *stubHelmClient) InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]interface{}) error {
+func (s *stubHelmClient) InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]any) error {
 	return s.servicesError
 }

@@ -9,7 +9,7 @@ package helm
 // Release bundles all information necessary to create a helm release.
 type Release struct {
 	Chart       []byte
-	Values      map[string]interface{}
+	Values      map[string]any
 	ReleaseName string
 	Wait        bool
 }

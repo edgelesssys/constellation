@@ -6,32 +6,32 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 package helm
 
-var azureVals = map[string]interface{}{
-	"endpointRoutes": map[string]interface{}{
+var azureVals = map[string]any{
+	"endpointRoutes": map[string]any{
 		"enabled": true,
 	},
-	"encryption": map[string]interface{}{
+	"encryption": map[string]any{
 		"enabled": true,
 		"type":    "wireguard",
 	},
 	"l7Proxy": false,
-	"ipam": map[string]interface{}{
-		"operator": map[string]interface{}{
+	"ipam": map[string]any{
+		"operator": map[string]any{
 			"clusterPoolIPv4PodCIDRList": []string{
 				"10.244.0.0/16",
 			},
 		},
 	},
 	"strictModeCIDR": "10.244.0.0/16",
-	"image": map[string]interface{}{
+	"image": map[string]any{
 		"repository": "ghcr.io/3u13r/cilium",
 		"suffix":     "",
 		"tag":        "v1.12.1-edg",
 		"digest":     "sha256:fdac430143fe719331698b76fbe66410631a21afd3405407d56db260d2d6999b",
 		"useDigest":  true,
 	},
-	"operator": map[string]interface{}{
-		"image": map[string]interface{}{
+	"operator": map[string]any{
+		"image": map[string]any{
 			"repository":    "ghcr.io/3u13r/operator",
 			"tag":           "v1.12.1-edg",
 			"suffix":        "",
@@ -46,24 +46,24 @@ var azureVals = map[string]interface{}{
 	"kubeProxyReplacementHealthzBindAddr": "0.0.0.0:10256",
 }
 
-var gcpVals = map[string]interface{}{
-	"endpointRoutes": map[string]interface{}{
+var gcpVals = map[string]any{
+	"endpointRoutes": map[string]any{
 		"enabled": true,
 	},
 	"tunnel": "disabled",
-	"encryption": map[string]interface{}{
+	"encryption": map[string]any{
 		"enabled": true,
 		"type":    "wireguard",
 	},
-	"image": map[string]interface{}{
+	"image": map[string]any{
 		"repository": "ghcr.io/3u13r/cilium",
 		"suffix":     "",
 		"tag":        "v1.12.1-edg",
 		"digest":     "sha256:fdac430143fe719331698b76fbe66410631a21afd3405407d56db260d2d6999b",
 		"useDigest":  true,
 	},
-	"operator": map[string]interface{}{
-		"image": map[string]interface{}{
+	"operator": map[string]any{
+		"image": map[string]any{
 			"repository":    "ghcr.io/3u13r/operator",
 			"suffix":        "",
 			"tag":           "v1.12.1-edg",
@@ -72,7 +72,7 @@ var gcpVals = map[string]interface{}{
 		},
 	},
 	"l7Proxy": false,
-	"ipam": map[string]interface{}{
+	"ipam": map[string]any{
 		"mode": "kubernetes",
 	},
 	"kubeProxyReplacement":                "strict",
@@ -80,23 +80,23 @@ var gcpVals = map[string]interface{}{
 	"kubeProxyReplacementHealthzBindAddr": "0.0.0.0:10256",
 }
 
-var qemuVals = map[string]interface{}{
-	"endpointRoutes": map[string]interface{}{
+var qemuVals = map[string]any{
+	"endpointRoutes": map[string]any{
 		"enabled": true,
 	},
-	"encryption": map[string]interface{}{
+	"encryption": map[string]any{
 		"enabled": true,
 		"type":    "wireguard",
 	},
-	"image": map[string]interface{}{
+	"image": map[string]any{
 		"repository": "ghcr.io/3u13r/cilium",
 		"suffix":     "",
 		"tag":        "v1.12.1-edg",
 		"digest":     "sha256:fdac430143fe719331698b76fbe66410631a21afd3405407d56db260d2d6999b",
 		"useDigest":  true,
 	},
-	"operator": map[string]interface{}{
-		"image": map[string]interface{}{
+	"operator": map[string]any{
+		"image": map[string]any{
 			"repository":    "ghcr.io/3u13r/operator",
 			"suffix":        "",
 			"tag":           "v1.12.1-edg",

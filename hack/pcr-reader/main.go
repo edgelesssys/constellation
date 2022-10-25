@@ -74,7 +74,7 @@ var _ yaml.Marshaler = Measurements{}
 
 // MarshalYAML forces that measurements are written as base64. Default would
 // be to print list of bytes.
-func (m Measurements) MarshalYAML() (interface{}, error) {
+func (m Measurements) MarshalYAML() (any, error) {
 	base64Map := make(map[uint32]string)
 
 	for key, value := range m {

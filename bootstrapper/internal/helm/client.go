@@ -53,7 +53,7 @@ func New(log *logger.Logger) (*Client, error) {
 }
 
 // InstallConstellationServices installs the constellation-services chart. In the future this chart should bundle all microservices.
-func (h *Client) InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]interface{}) error {
+func (h *Client) InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]any) error {
 	h.Namespace = constants.HelmNamespace
 	h.ReleaseName = release.ReleaseName
 	h.Wait = release.Wait
@@ -79,15 +79,15 @@ func (h *Client) InstallConstellationServices(ctx context.Context, release helm.
 
 // mergeMaps returns a new map that is the merger of it's inputs.
 // Taken from: https://github.com/helm/helm/blob/dbc6d8e20fe1d58d50e6ed30f09a04a77e4c68db/pkg/cli/values/options.go#L91-L108.
-func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
-	out := make(map[string]interface{}, len(a))
+func mergeMaps(a, b map[string]any) map[string]any {
+	out := make(map[string]any, len(a))
 	for k, v := range a {
 		out[k] = v
 	}
 	for k, v := range b {
-		if v, ok := v.(map[string]interface{}); ok {
+		if v, ok := v.(map[string]any); ok {
 			if bv, ok := out[k]; ok {
-				if bv, ok := bv.(map[string]interface{}); ok {
+				if bv, ok := bv.(map[string]any); ok {
 					out[k] = mergeMaps(bv, v)
 					continue
 				}
@@ -196,9 +196,9 @@ func (h *Client) installlCiliumGCP(ctx context.Context, kubectl k8sapi.Client, r
 
 func (h *Client) installCiliumQEMU(ctx context.Context, release helm.Release, subnetworkPodCIDR, kubeAPIEndpoint string) error {
 	// configure pod network CIDR
-	release.Values["ipam"] = map[string]interface{}{
-		"operator": map[string]interface{}{
-			"clusterPoolIPv4PodCIDRList": []interface{}{
+	release.Values["ipam"] = map[string]any{
+		"operator": map[string]any{
+			"clusterPoolIPv4PodCIDRList": []any{
 				subnetworkPodCIDR,
 			},
 		},
