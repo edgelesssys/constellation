@@ -9,3 +9,10 @@ global:
   k8sVersionCMName: k8s-version
   # Name of the ConfigMap that holds configs that should not be modified by the user.
   internalCMName: internal-config
+
+# Set one of the tags to true to indicate which CSP you are deploying to.
+tags:
+  Azure: false
+  GCP: false
+  AWS: false
+  QEMU: false

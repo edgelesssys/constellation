@@ -280,11 +280,6 @@ func TestGetObjects(t *testing.T) {
 			resourcesYAML: string(nginxDeplYAML),
 			wantErr:       false,
 		},
-		"GetObjects works on cloud-controller-manager deployment": {
-			wantResources: resources.NewDefaultCloudControllerManagerDeployment("someProvider", "someImage", "somePath", "someCIDR", nil, nil, nil, nil),
-			resourcesYAML: string(nginxDeplYAML),
-			wantErr:       false,
-		},
 		"GetObjects Marshal failure detected": {
 			wantResources: &unmarshableResource{},
 			resourcesYAML: string(nginxDeplYAML),

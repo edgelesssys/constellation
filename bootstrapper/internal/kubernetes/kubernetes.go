@@ -11,6 +11,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -18,9 +19,11 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
+	"github.com/edgelesssys/constellation/v2/internal/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
@@ -201,7 +204,10 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up konnectivity: %w", err)
 	}
 
-	extraVals := setupExtraVals(k.initialMeasurementsJSON, idKeyDigest, measurementSalt)
+	extraVals, err := k.setupExtraVals(ctx, k.initialMeasurementsJSON, idKeyDigest, measurementSalt, subnetworkPodCIDR, cloudServiceAccountURI)
+	if err != nil {
+		return nil, fmt.Errorf("setting up extraVals: %w", err)
+	}
 
 	if err = k.helmClient.InstallConstellationServices(ctx, helmReleases.ConstellationServices, extraVals); err != nil {
 		return nil, fmt.Errorf("installing constellation-services: %w", err)
@@ -211,9 +217,6 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("failed to setup internal ConfigMap: %w", err)
 	}
 
-	if err := k.setupCCM(ctx, subnetworkPodCIDR, cloudServiceAccountURI, instance, k8sVersion); err != nil {
-		return nil, fmt.Errorf("setting up cloud controller manager: %w", err)
-	}
 	if err := k.setupCloudNodeManager(k8sVersion); err != nil {
 		return nil, fmt.Errorf("setting up cloud node manager: %w", err)
 	}
@@ -326,34 +329,6 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 // GetKubeconfig returns the current nodes kubeconfig of stored on disk.
 func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
 	return k.kubeconfigReader.ReadKubeconfig()
-}
-
-func (k *KubeWrapper) setupCCM(ctx context.Context, subnetworkPodCIDR, cloudServiceAccountURI string, instance metadata.InstanceMetadata, k8sVersion versions.ValidK8sVersion) error {
-	if !k.cloudControllerManager.Supported() {
-		return nil
-	}
-	ccmConfigMaps, err := k.cloudControllerManager.ConfigMaps()
-	if err != nil {
-		return fmt.Errorf("defining ConfigMaps for CCM: %w", err)
-	}
-	ccmSecrets, err := k.cloudControllerManager.Secrets(ctx, instance.ProviderID, cloudServiceAccountURI)
-	if err != nil {
-		return fmt.Errorf("defining Secrets for CCM: %w", err)
-	}
-	ccmImage, err := k.cloudControllerManager.Image(k8sVersion)
-	if err != nil {
-		return fmt.Errorf("defining Image for CCM: %w", err)
-	}
-
-	cloudControllerManagerConfiguration := resources.NewDefaultCloudControllerManagerDeployment(
-		k.cloudControllerManager.Name(), ccmImage, k.cloudControllerManager.Path(), subnetworkPodCIDR,
-		k.cloudControllerManager.ExtraArgs(), k.cloudControllerManager.Volumes(), k.cloudControllerManager.VolumeMounts(), k.cloudControllerManager.Env(),
-	)
-	if err := k.clusterUtil.SetupCloudControllerManager(k.client, cloudControllerManagerConfiguration, ccmConfigMaps, ccmSecrets); err != nil {
-		return fmt.Errorf("setting up cloud-controller-manager: %w", err)
-	}
-
-	return nil
 }
 
 func (k *KubeWrapper) setupCloudNodeManager(k8sVersion versions.ValidK8sVersion) error {
@@ -498,12 +473,82 @@ func getIPAddr() (string, error) {
 
 // setupExtraVals create a helm values map for consumption by helm-install.
 // Will move to a more dedicated place once that place becomes apparent.
-func setupExtraVals(initialMeasurementsJSON []byte, idkeydigest []byte, measurementSalt []byte) map[string]any {
-	return map[string]any{
+func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSON []byte, idkeydigest []byte, measurementSalt []byte, subnetworkCIDR string, cloudServiceAccountURI string) (map[string]any, error) {
+	extraVals := map[string]any{
 		"join-service": map[string]any{
 			"measurements":    string(initialMeasurementsJSON),
-			"idkeydigest":     hex.EncodeToString(idkeydigest),
 			"measurementSalt": base64.StdEncoding.EncodeToString(measurementSalt),
 		},
+		"ccm": map[string]any{
+			"subnetworkCIDR": subnetworkCIDR,
+		},
 	}
+
+	instance, err := k.providerMetadata.Self(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving current instance: %w", err)
+	}
+
+	switch cloudprovider.FromString(k.cloudProvider) {
+	case cloudprovider.GCP:
+		{
+			uid, err := k.providerMetadata.UID(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("getting uid: %w", err)
+			}
+
+			projectID, _, _, err := gcpshared.SplitProviderID(instance.ProviderID)
+			if err != nil {
+				return nil, fmt.Errorf("splitting providerID: %w", err)
+			}
+
+			serviceAccountKey, err := gcpshared.ServiceAccountKeyFromURI(cloudServiceAccountURI)
+			if err != nil {
+				return nil, fmt.Errorf("getting service account key: %w", err)
+			}
+			rawKey, err := json.Marshal(serviceAccountKey)
+			if err != nil {
+				return nil, fmt.Errorf("marshaling service account key: %w", err)
+			}
+
+			ccmVals, ok := extraVals["ccm"].(map[string]any)
+			if !ok {
+				return nil, errors.New("invalid ccm values")
+			}
+			ccmVals["GCP"] = map[string]any{
+				"projectID":  projectID,
+				"uid":        uid,
+				"secretData": string(rawKey),
+			}
+		}
+	case cloudprovider.Azure:
+		{
+			// TODO: After refactoring the ProviderMetadata interface this section should be rewritten.
+			// Currently, we have to rely on the Secrets(..) method, as GetNetworkSecurityGroupName & GetLoadBalancerName
+			// rely on Azure specific API endpoints.
+			ccmSecrets, err := k.cloudControllerManager.Secrets(ctx, instance.ProviderID, cloudServiceAccountURI)
+			if err != nil {
+				return nil, fmt.Errorf("creating ccm secret: %w", err)
+			}
+			if len(ccmSecrets) < 1 {
+				return nil, errors.New("missing secret")
+			}
+			rawConfig := ccmSecrets[0].Data["azure.json"]
+
+			ccmVals, ok := extraVals["ccm"].(map[string]any)
+			if !ok {
+				return nil, errors.New("invalid ccm values")
+			}
+			ccmVals["Azure"] = map[string]any{
+				"azureConfig": string(rawConfig),
+			}
+
+			joinVals, ok := extraVals["join-service"].(map[string]any)
+			if !ok {
+				return nil, errors.New("invalid join-service values")
+			}
+			joinVals["idkeydigest"] = hex.EncodeToString(idkeydigest)
+		}
+	}
+	return extraVals, nil
 }

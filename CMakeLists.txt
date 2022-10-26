@@ -63,7 +63,9 @@ add_test(NAME integration-node-operator COMMAND make test WORKING_DIRECTORY ${CM
 add_test(NAME integration-csi COMMAND bash -c "go test -tags integration -c ./test/ && sudo ./test.test -test.v" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/csi)
 add_test(NAME integration-dm COMMAND bash -c "go test -tags integration -c ./test/ && sudo ./test.test -test.v" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/disk-mapper/internal)
 add_test(NAME integration-license COMMAND bash -c "go test -tags integration" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/internal/license)
-add_test(NAME helm-lint COMMAND bash -c "helm lint * --set kms.image='ghcr.io/edgelesssys/constellation/kms:latest' --set join-service.csp='QEMU' \
+add_test(NAME helm-lint COMMAND bash -c "helm lint * --set tags.GCP=true --set kms.image='ghcr.io/edgelesssys/constellation/kms:latest' --set join-service.csp='GCP' \
   --set join-service.enforcedPCRs='[]' --set join-service.image='ghcr.io/edgelesssys/constellation/join-service:latest' --set join-service.measurements='[]' \
-  --set join-service.measurementSalt='deadbeef' --set kms.salt='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' --set kms.masterSecret='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'"
+  --set join-service.measurementSalt='deadbeef' --set kms.salt='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' --set kms.masterSecret='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' \
+  --set ccm.csp='GCP' --set ccm.subnetworkCIDR='192.0.2.0/24' --set ccm.GCP.image='ghcr.io/edgelesssys/cloud-provider-gcp:latest' --set ccm.GCP.projectID='demoproject-581925' \
+  --set ccm.GCP.uid='foobar' --set ccm.GCP.secretData='jsonstring'"
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/cli/internal/helm/charts/edgeless/)

@@ -14,5 +14,4 @@ const (
 	kubeletPath        = "/run/state/bin/kubelet"
 	kubeletServicePath = "/usr/lib/systemd/system/kubelet.service"
 	executablePerm     = 0o544
-	systemdUnitPerm    = 0o644
 )

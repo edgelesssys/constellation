@@ -31,6 +31,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
 	"github.com/edgelesssys/constellation/v2/internal/license"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -502,4 +503,12 @@ func (c *stubLicenseClient) QuotaCheck(ctx context.Context, checkRequest license
 	return license.QuotaCheckResponse{
 		Quota: 25,
 	}, nil
+}
+
+type stubHelmLoader struct {
+	loadErr error
+}
+
+func (d *stubHelmLoader) Load(csp cloudprovider.Provider, conformanceMode bool, masterSecret []byte, salt []byte, enforcedPCRs []uint32, enforceIDKeyDigest bool, k8sVersion versions.ValidK8sVersion) ([]byte, error) {
+	return nil, d.loadErr
 }

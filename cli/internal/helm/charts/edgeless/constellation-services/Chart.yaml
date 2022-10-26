@@ -7,5 +7,21 @@ version: 2.2.0-pre
 dependencies:
   - name: kms
     version: 2.2.0-pre
+    tags:
+      - Azure
+      - GCP
+      - AWS
+      - QEMU
   - name: join-service
     version: 2.2.0-pre
+    tags:
+      - Azure
+      - GCP
+      - AWS
+      - QEMU
+  - name: ccm
+    version: 2.2.0-pre
+    tags:
+      - Azure
+      - GCP
+      - AWS
