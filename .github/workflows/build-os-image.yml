@@ -43,7 +43,7 @@ jobs:
           outputPath: ${{ github.workspace }}/build/disk-mapper
 
       - name: Upload dependencies
-        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # tag=v3.1.0
+        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
         with:
           name: dependencies
           path: |
@@ -155,7 +155,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload raw OS image as artifact
-        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # tag=v3.1.0
+        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
         with:
           name: image-${{ matrix.csp }}
           path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.raw
@@ -163,7 +163,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload individual OS parts as artifacts
-        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # tag=v3.1.0
+        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
         with:
           name: parts-${{ matrix.csp }}
           path: |
@@ -178,7 +178,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload manifest as artifact
-        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # tag=v3.1.0
+        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
         with:
           name: manifest-${{ matrix.csp }}
           path: |
@@ -407,7 +407,7 @@ jobs:
         working-directory: ${{ github.workspace }}/image/measured-boot
 
       - name: Upload expected PCRs as artifact
-        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # tag=v3.1.0
+        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
         with:
           name: pcrs
           path: pcrs-${{ matrix.csp }}.json
