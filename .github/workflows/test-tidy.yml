@@ -21,10 +21,18 @@ jobs:
     name: Go mod tidy check
     runs-on: ubuntu-latest
     steps:
+      - name: Generate token
+        id: generate_token
+        uses: tibdex/github-app-token@021a2405c7f990db57f5eae5397423dcc554159c # tag=v1.7.0
+        with:
+          app_id: ${{ secrets.EDGELESS_CONSTELLATION_COMMITBOT_APP_ID }}
+          private_key: ${{ secrets.EDGELESS_CONSTELLATION_COMMITBOT_APP_KEY }}
+
       - name: Checkout
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
         with:
           ref: ${{ github.head_ref }}
+          token: ${{ steps.generate_token.outputs.token }}
 
       - name: Setup Go environment
         uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
@@ -46,7 +54,7 @@ jobs:
           modules: ${{ steps.submods.outputs.submods }}
 
       # The following steps are only executed if the previous tidy check failed
-      # and the action runs on an renovat branche. In this case, we tidy all
+      # and the action runs on an renovate branch. In this case, we tidy all
       # modules again and commit the changes, so the user doesn't need to do it.
 
       - name: Tidy modules on renovate branches
