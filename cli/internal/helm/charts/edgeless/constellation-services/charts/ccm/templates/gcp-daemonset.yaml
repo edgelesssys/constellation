@@ -1,4 +1,4 @@
-{{ if eq .Values.csp "GCP" }}
+{{- if eq .Values.csp "GCP" -}}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -81,4 +81,4 @@ spec:
           secret:
             secretName: gcekey
   updateStrategy: {}
-{{ end }}
+{{- end -}}

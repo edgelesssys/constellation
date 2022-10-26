@@ -1,4 +1,4 @@
-{{ if eq .Values.csp "AWS" }}
+{{- if eq .Values.csp "AWS" -}}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -60,4 +60,4 @@ spec:
         hostPath:
           path: /etc/pki
   updateStrategy: {}
-{{ end }}
+{{- end -}}

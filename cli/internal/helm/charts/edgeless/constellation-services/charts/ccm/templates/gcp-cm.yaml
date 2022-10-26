@@ -1,4 +1,4 @@
-{{ if eq .Values.csp "GCP" }}
+{{- if eq .Values.csp "GCP" -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -6,4 +6,4 @@ metadata:
   namespace: {{ .Release.Namespace }}
 data:
   gce.conf: "[global]\nproject-id = {{.Values.GCP.projectID }}\nuse-metadata-server = true\nnode-tags = constellation-{{ .Values.GCP.uid }}\n"
-{{ end }}
+{{- end -}}

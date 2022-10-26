@@ -10,7 +10,7 @@ data:
   {{- if eq .Values.csp "Azure" }}
   # ConfigMap.data is of type map[string]string. quote will not quote a quoted string.
   enforceIdKeyDigest: {{ .Values.enforceIdKeyDigest | quote }}
-  idkeydigest: {{ .Values.idkeydigest }}
+  idkeydigest: {{ .Values.idkeydigest | quote }}
   {{- end }}
 binaryData:
   measurementSalt: {{ .Values.measurementSalt }}
