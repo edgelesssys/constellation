@@ -188,21 +188,22 @@ Note that:
 * `constellationVersion` 2.2.0 contains components which are all released in version 2.2.0
 * `kubernetesServicesVersion` 1.24.5 could contain Autoscaler 1.24.2, CCM 1.24.8 since their patch versions are not in sync with Kubernetes. Moreover, those component versions will be bundled by us. Think: public lookup table from `kubernetesServicesVersion` -> component version.
 
-When `constellation upgrade execute` is called the CLI needs to perform the following steps:
+When `constellation upgrade apply` is called the CLI needs to perform the following steps:
 
-1. create a new `k8s-components-1.24.3` ConfigMap with the corresponding URLs and hashes from the lookup table in the CLI
-2. update the measurements in the `join-config` ConfigMap
-3. update the Kubernetes version and VM image in the `nodeimage` CRD
-4. update Cilium + Constellation microservices
+1. warn the user to create a Constellation/etcd backup before updating as documented in the [official K8s update docs](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/#before-you-begin)
+2. create a new `k8s-components-1.24.3` ConfigMap with the corresponding URLs and hashes from the lookup table in the CLI
+3. update the measurements in the `join-config` ConfigMap
+4. update the Kubernetes version and VM image in the `nodeimage` CRD
+5. update Cilium + Constellation microservices
 
 The actual update in step 2. and 3. will be handled by the node-operator inside Constellation. Step 4. will be done via client side helm deployments.
 
-Since the actual Kubernetes components and Constellation microservice versions are hidden, we will show the user for the actual changes taking place:
+Since the actual Kubernetes components and Constellation microservice versions are hidden, we will show the user for the actual changes taking place. We also print a warning to back up any important components when the upgrade necessitates a node replacement, i.e. on Kubernetes and VM image upgrades.
 
 ```bash
-$ constellation upgrade execute
-Updating wanted Kubernetes version to 1.24.3 ...
-Updating wanted Image to /communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.3.0
+$ constellation upgrade apply
+Upgrading Kubernetes: 1.24.2 --> 1.24.3 ...
+Upgrading VM image: /communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.3.0 --> /communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.3.0 (not updated)
 
 Updating Kubernetes services version to 1.24.5:
   Autoscaler: 1.24.3 --> 1.24.3 (not updated)
@@ -213,4 +214,7 @@ Updating Constellation microservices to 2.2.0:
   KMS: 2.1.3 --> 2.2.0
   joinService: 2.1.3 --> 2.2.0
   nodeOperator: 2.1.3 --> 2.2.0
+
+Warning: Please backup any important components before upgrading Kubernetes
+Apply change [yes/No]? 
 ```
