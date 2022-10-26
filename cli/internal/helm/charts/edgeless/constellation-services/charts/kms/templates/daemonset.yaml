@@ -6,7 +6,7 @@ metadata:
     k8s-app: kms
     kubernetes.io/cluster-service: "true"
   name: kms
-  namespace: {{ .Values.namespace }}
+  namespace: {{ .Release.Namespace }}
 spec:
   selector:
     matchLabels:
