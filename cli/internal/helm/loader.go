@@ -36,13 +36,13 @@ var HelmFS embed.FS
 
 type ChartLoader struct{}
 
-func (i *ChartLoader) Load(csp cloudprovider.Provider, conformanceMode bool, masterSecret []byte, salt []byte, enforcedPCRs []uint32, enforceIDKeyDigest bool) ([]byte, error) {
+func (i *ChartLoader) Load(csp cloudprovider.Provider, conformanceMode bool, masterSecret []byte, salt []byte, enforcedPCRs []uint32, enforceIDKeyDigest bool, k8sVersion versions.ValidK8sVersion) ([]byte, error) {
 	ciliumRelease, err := i.loadCilium(csp, conformanceMode)
 	if err != nil {
 		return nil, err
 	}
 
-	conServicesRelease, err := i.loadConstellationServices(csp, masterSecret, salt, enforcedPCRs, enforceIDKeyDigest)
+	conServicesRelease, err := i.loadConstellationServices(csp, masterSecret, salt, enforcedPCRs, enforceIDKeyDigest, k8sVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode boo
 // loadConstellationServices loads the constellation-services chart from the embed.FS, marshals it into a helm-package .tgz and sets the values that can be set in the CLI.
 func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 	masterSecret []byte, salt []byte, enforcedPCRs []uint32,
-	enforceIDKeyDigest bool,
+	enforceIDKeyDigest bool, k8sVersion versions.ValidK8sVersion,
 ) (helm.Release, error) {
 	chart, err := loadChartsDir(HelmFS, "charts/edgeless/constellation-services")
 	if err != nil {
@@ -134,14 +134,64 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 			"image":        versions.JoinImage,
 			"namespace":    constants.ConstellationNamespace,
 		},
+		"ccm": map[string]interface{}{
+			"csp": csp,
+		},
 	}
 
-	if csp == cloudprovider.Azure {
-		joinServiceVals, ok := vals["join-service"].(map[string]any)
-		if !ok {
-			return helm.Release{}, errors.New("invalid join-service values")
+	switch csp {
+	case cloudprovider.Azure:
+		{
+			joinServiceVals, ok := vals["join-service"].(map[string]any)
+			if !ok {
+				return helm.Release{}, errors.New("invalid join-service values")
+			}
+			joinServiceVals["enforceIdKeyDigest"] = enforceIDKeyDigest
+
+			ccmVals, ok := vals["ccm"].(map[string]any)
+			if !ok {
+				return helm.Release{}, errors.New("invalid ccm values")
+			}
+			ccmVals["Azure"] = map[string]any{
+				"image": versions.VersionConfigs[k8sVersion].CloudControllerManagerImageAzure,
+			}
+
+			vals["tags"] = map[string]any{
+				"Azure": true,
+			}
 		}
-		joinServiceVals["enforceIdKeyDigest"] = enforceIDKeyDigest
+	case cloudprovider.GCP:
+		{
+			ccmVals, ok := vals["ccm"].(map[string]any)
+			if !ok {
+				return helm.Release{}, errors.New("invalid ccm values")
+			}
+			ccmVals["GCP"] = map[string]any{
+				"image": versions.VersionConfigs[k8sVersion].CloudControllerManagerImageGCP,
+			}
+
+			vals["tags"] = map[string]any{
+				"GCP": true,
+			}
+		}
+	case cloudprovider.QEMU:
+		{
+			vals["tags"] = map[string]interface{}{
+				"QEMU": true,
+			}
+		}
+	case cloudprovider.AWS:
+		ccmVals, ok := vals["ccm"].(map[string]any)
+		if !ok {
+			return helm.Release{}, errors.New("invalid ccm values")
+		}
+		ccmVals["AWS"] = map[string]any{
+			"image": versions.VersionConfigs[k8sVersion].CloudControllerManagerImageAWS,
+		}
+
+		vals["tags"] = map[string]any{
+			"AWS": true,
+		}
 	}
 
 	return helm.Release{Chart: chartRaw, Values: vals, ReleaseName: "constellation-services", Wait: true}, nil

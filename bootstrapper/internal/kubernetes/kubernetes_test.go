@@ -191,21 +191,9 @@ func TestInitCluster(t *testing.T) {
 			wantErr:                true,
 			k8sVersion:             versions.Default,
 		},
-		"kubeadm init fails when setting up the join service": {
+		"kubeadm init fails when setting up constellation-services chart": {
 			clusterUtil: stubClusterUtil{},
 			helmClient:  stubHelmClient{servicesError: someErr},
-			kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
-			},
-			providerMetadata:       &stubProviderMetadata{},
-			CloudControllerManager: &stubCloudControllerManager{SupportedResp: true},
-			CloudNodeManager:       &stubCloudNodeManager{},
-			ClusterAutoscaler:      &stubClusterAutoscaler{},
-			wantErr:                true,
-			k8sVersion:             versions.Default,
-		},
-		"kubeadm init fails when setting the cloud contoller manager": {
-			clusterUtil: stubClusterUtil{setupCloudControllerManagerError: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
@@ -248,19 +236,6 @@ func TestInitCluster(t *testing.T) {
 			providerMetadata:       &stubProviderMetadata{},
 			CloudControllerManager: &stubCloudControllerManager{},
 			CloudNodeManager:       &stubCloudNodeManager{},
-			ClusterAutoscaler:      &stubClusterAutoscaler{},
-			wantErr:                true,
-			k8sVersion:             versions.Default,
-		},
-		"kubeadm init fails when setting up the kms": {
-			clusterUtil: stubClusterUtil{},
-			helmClient:  stubHelmClient{servicesError: someErr},
-			kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
-			},
-			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
-			CloudControllerManager: &stubCloudControllerManager{},
-			CloudNodeManager:       &stubCloudNodeManager{SupportedResp: false},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
 			k8sVersion:             versions.Default,

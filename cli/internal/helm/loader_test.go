@@ -13,6 +13,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/stretchr/testify/assert"
 	"helm.sh/helm/v3/pkg/chart/loader"
 )
@@ -21,7 +22,7 @@ func TestLoad(t *testing.T) {
 	assert := assert.New(t)
 
 	chartLoader := ChartLoader{}
-	release, err := chartLoader.Load(cloudprovider.GCP, true, []byte("secret"), []byte("salt"), nil, false)
+	release, err := chartLoader.Load(cloudprovider.GCP, true, []byte("secret"), []byte("salt"), nil, false, versions.Default)
 	assert.NoError(err)
 
 	var helmReleases helm.Releases

@@ -1,0 +1,84 @@
+{{ if eq .Values.csp "GCP" }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cloud-controller-manager
+  namespace: {{ .Release.Namespace }}
+  labels:
+    k8s-app: cloud-controller-manager
+spec:
+  selector:
+    matchLabels:
+      k8s-app: cloud-controller-manager
+  template:
+    metadata:
+      labels:
+        k8s-app: cloud-controller-manager
+    spec:
+      containers:
+        - name: cloud-controller-manager
+          image: {{ .Values.GCP.image }}
+          command:
+          - /cloud-controller-manager
+          - --cloud-provider=gce
+          - --leader-elect=true
+          - --cluster-cidr={{ .Values.subnetworkCIDR }}
+          - -v=2
+          - --use-service-account-credentials
+          - --controllers=cloud-node,cloud-node-lifecycle,nodeipam,service,route
+          - --cloud-config=/etc/gce/gce.conf
+          - --cidr-allocator-type=CloudAllocator
+          - --allocate-node-cidrs=true
+          - --configure-cloud-routes=false
+          volumeMounts:
+            - mountPath: /etc/kubernetes
+              name: etckubernetes
+              readOnly: true
+            - mountPath: /etc/ssl
+              name: etcssl
+              readOnly: true
+            - mountPath: /etc/pki
+              name: etcpki
+              readOnly: true
+            - mountPath: /etc/gce
+              name: gceconf
+              readOnly: true
+            - mountPath: /var/secrets/google
+              name: gcekey
+              readOnly: true
+          resources: {}
+          env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /var/secrets/google/key.json
+      serviceAccountName: cloud-controller-manager
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      tolerations:
+        - effect: NoSchedule
+          key: node.cloudprovider.kubernetes.io/uninitialized
+          value: "true"
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+          operator: Exists
+        - effect: NoSchedule
+          key: node.kubernetes.io/not-ready
+      volumes:
+        - name: etckubernetes
+          hostPath:
+            path: /etc/kubernetes
+        - name: etcssl
+          hostPath:
+            path: /etc/ssl
+        - name: etcpki
+          hostPath:
+            path: /etc/pki
+        - name: gceconf
+          configMap:
+            name: gceconf
+        - name: gcekey
+          secret:
+            secretName: gcekey
+  updateStrategy: {}
+{{ end }}
