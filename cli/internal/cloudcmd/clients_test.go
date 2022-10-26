@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"go.uber.org/goleak"
 )
 
@@ -31,7 +32,7 @@ type stubTerraformClient struct {
 	cleanUpWorkspaceErr    error
 }
 
-func (c *stubTerraformClient) CreateCluster(ctx context.Context, name string, input terraform.Variables) (string, error) {
+func (c *stubTerraformClient) CreateCluster(ctx context.Context, provider cloudprovider.Provider, name string, input terraform.Variables) (string, error) {
 	return c.ip, c.createClusterErr
 }
 

@@ -25,7 +25,7 @@ import (
 // Creator creates cloud resources.
 type Creator struct {
 	out                io.Writer
-	newTerraformClient func(ctx context.Context, provider cloudprovider.Provider) (terraformClient, error)
+	newTerraformClient func(ctx context.Context) (terraformClient, error)
 	newLibvirtRunner   func() libvirtRunner
 }
 
@@ -33,8 +33,8 @@ type Creator struct {
 func NewCreator(out io.Writer) *Creator {
 	return &Creator{
 		out: out,
-		newTerraformClient: func(ctx context.Context, provider cloudprovider.Provider) (terraformClient, error) {
-			return terraform.New(ctx, provider)
+		newTerraformClient: func(ctx context.Context) (terraformClient, error) {
+			return terraform.New(ctx)
 		},
 		newLibvirtRunner: func() libvirtRunner {
 			return libvirt.New()
@@ -51,21 +51,21 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 		if os.Getenv("CONSTELLATION_AWS_DEV") != "1" {
 			return clusterid.File{}, fmt.Errorf("AWS isn't supported yet")
 		}
-		cl, err := c.newTerraformClient(ctx, provider)
+		cl, err := c.newTerraformClient(ctx)
 		if err != nil {
 			return clusterid.File{}, err
 		}
 		defer cl.RemoveInstaller()
 		return c.createAWS(ctx, cl, config, name, insType, controlPlaneCount, workerCount)
 	case cloudprovider.GCP:
-		cl, err := c.newTerraformClient(ctx, provider)
+		cl, err := c.newTerraformClient(ctx)
 		if err != nil {
 			return clusterid.File{}, err
 		}
 		defer cl.RemoveInstaller()
 		return c.createGCP(ctx, cl, config, name, insType, controlPlaneCount, workerCount)
 	case cloudprovider.Azure:
-		cl, err := c.newTerraformClient(ctx, provider)
+		cl, err := c.newTerraformClient(ctx)
 		if err != nil {
 			return clusterid.File{}, err
 		}
@@ -75,7 +75,7 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 		if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
 			return clusterid.File{}, fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
 		}
-		cl, err := c.newTerraformClient(ctx, provider)
+		cl, err := c.newTerraformClient(ctx)
 		if err != nil {
 			return clusterid.File{}, err
 		}
@@ -108,7 +108,7 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *con
 		Debug:                  config.IsDebugCluster(),
 	}
 
-	ip, err := cl.CreateCluster(ctx, name, vars)
+	ip, err := cl.CreateCluster(ctx, cloudprovider.AWS, name, vars)
 	if err != nil {
 		return clusterid.File{}, err
 	}
@@ -141,7 +141,7 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 		Debug:           config.IsDebugCluster(),
 	}
 
-	ip, err := cl.CreateCluster(ctx, name, &vars)
+	ip, err := cl.CreateCluster(ctx, cloudprovider.GCP, name, &vars)
 	if err != nil {
 		return clusterid.File{}, err
 	}
@@ -177,7 +177,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 
 	vars = normalizeAzureURIs(vars)
 
-	ip, err := cl.CreateCluster(ctx, name, &vars)
+	ip, err := cl.CreateCluster(ctx, cloudprovider.Azure, name, &vars)
 	if err != nil {
 		return clusterid.File{}, err
 	}
@@ -258,7 +258,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 		Firmware:           config.Provider.QEMU.Firmware,
 	}
 
-	ip, err := cl.CreateCluster(ctx, name, &vars)
+	ip, err := cl.CreateCluster(ctx, cloudprovider.QEMU, name, &vars)
 	if err != nil {
 		return clusterid.File{}, err
 	}

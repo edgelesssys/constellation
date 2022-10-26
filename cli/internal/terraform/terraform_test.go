@@ -122,12 +122,11 @@ func TestCreateCluster(t *testing.T) {
 			assert := assert.New(t)
 
 			c := &Client{
-				provider: tc.provider,
-				tf:       tc.tf,
-				file:     file.NewHandler(tc.fs),
+				tf:   tc.tf,
+				file: file.NewHandler(tc.fs),
 			}
 
-			ip, err := c.CreateCluster(context.Background(), "test", tc.vars)
+			ip, err := c.CreateCluster(context.Background(), tc.provider, "test", tc.vars)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -160,8 +159,7 @@ func TestDestroyInstances(t *testing.T) {
 			assert := assert.New(t)
 
 			c := &Client{
-				provider: cloudprovider.QEMU,
-				tf:       tc.tf,
+				tf: tc.tf,
 			}
 
 			err := c.DestroyCluster(context.Background())
@@ -207,9 +205,8 @@ func TestCleanupWorkspace(t *testing.T) {
 			require.NoError(tc.prepareFS(file))
 
 			c := &Client{
-				provider: tc.provider,
-				file:     file,
-				tf:       &stubTerraform{},
+				file: file,
+				tf:   &stubTerraform{},
 			}
 
 			err := c.CleanUpWorkspace()

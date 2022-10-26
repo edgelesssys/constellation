@@ -46,7 +46,7 @@ type stubCloudTerminator struct {
 	terminateErr error
 }
 
-func (c *stubCloudTerminator) Terminate(context.Context, cloudprovider.Provider) error {
+func (c *stubCloudTerminator) Terminate(context.Context) error {
 	c.called = true
 	return c.terminateErr
 }

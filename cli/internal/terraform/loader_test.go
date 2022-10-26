@@ -63,7 +63,7 @@ func TestLoader(t *testing.T) {
 
 			checkFiles(t, file, func(err error) { assert.NoError(err) }, tc.fileList)
 
-			err = cleanUpWorkspace(file, tc.provider)
+			err = cleanUpWorkspace(file)
 			require.NoError(err)
 
 			checkFiles(t, file, func(err error) { assert.ErrorIs(err, fs.ErrNotExist) }, tc.fileList)

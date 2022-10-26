@@ -25,5 +25,5 @@ type cloudCreator interface {
 }
 
 type cloudTerminator interface {
-	Terminate(context.Context, cloudprovider.Provider) error
+	Terminate(context.Context) error
 }

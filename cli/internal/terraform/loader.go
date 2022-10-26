@@ -45,15 +45,21 @@ func prepareWorkspace(fileHandler file.Handler, provider cloudprovider.Provider)
 }
 
 // cleanUpWorkspace removes files that were loaded into the workspace.
-func cleanUpWorkspace(fileHandler file.Handler, provider cloudprovider.Provider) error {
-	rootDir := path.Join("terraform", strings.ToLower(provider.String()))
-	return fs.WalkDir(terraformFS, rootDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
+func cleanUpWorkspace(fileHandler file.Handler) error {
+	// try to remove any terraform files in the workspace
+	for _, csp := range []string{"aws", "azure", "gcp", "qemu"} {
+		rootDir := path.Join("terraform", csp)
+		if err := fs.WalkDir(terraformFS, rootDir, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			fileName := strings.TrimPrefix(path, rootDir+"/")
+			return ignoreFileNotFoundErr(fileHandler.RemoveAll(fileName))
+		}); err != nil {
 			return err
 		}
-		fileName := strings.TrimPrefix(path, rootDir+"/")
-		return ignoreFileNotFoundErr(fileHandler.RemoveAll(fileName))
-	})
+	}
+	return nil
 }
 
 // ignoreFileNotFoundErr ignores the error if it is a file not found error.

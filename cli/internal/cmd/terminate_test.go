@@ -83,7 +83,7 @@ func TestTerminate(t *testing.T) {
 			terminator: &stubCloudTerminator{terminateErr: someErr},
 			wantErr:    true,
 		},
-		"missing id file": {
+		"missing id file does not error": {
 			idFile: clusterid.File{CloudProvider: cloudprovider.GCP},
 			setupFs: func(require *require.Assertions, idFile clusterid.File) afero.Fs {
 				fs := afero.NewMemMapFs()
@@ -92,7 +92,6 @@ func TestTerminate(t *testing.T) {
 				return fs
 			},
 			terminator: &stubCloudTerminator{},
-			wantErr:    true,
 		},
 		"remove file fails": {
 			idFile: clusterid.File{CloudProvider: cloudprovider.GCP},

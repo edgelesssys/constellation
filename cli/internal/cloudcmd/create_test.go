@@ -94,7 +94,7 @@ func TestCreator(t *testing.T) {
 
 			creator := &Creator{
 				out: &bytes.Buffer{},
-				newTerraformClient: func(ctx context.Context, provider cloudprovider.Provider) (terraformClient, error) {
+				newTerraformClient: func(ctx context.Context) (terraformClient, error) {
 					return tc.tfClient, tc.newTfClientErr
 				},
 				newLibvirtRunner: func() libvirtRunner {
