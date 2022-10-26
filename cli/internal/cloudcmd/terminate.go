@@ -8,24 +8,22 @@ package cloudcmd
 
 import (
 	"context"
-	"errors"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 )
 
 // Terminator deletes cloud provider resources.
 type Terminator struct {
-	newTerraformClient func(ctx context.Context, provider cloudprovider.Provider) (terraformClient, error)
+	newTerraformClient func(ctx context.Context) (terraformClient, error)
 	newLibvirtRunner   func() libvirtRunner
 }
 
 // NewTerminator create a new cloud terminator.
 func NewTerminator() *Terminator {
 	return &Terminator{
-		newTerraformClient: func(ctx context.Context, provider cloudprovider.Provider) (terraformClient, error) {
-			return terraform.New(ctx, provider)
+		newTerraformClient: func(ctx context.Context) (terraformClient, error) {
+			return terraform.New(ctx)
 		},
 		newLibvirtRunner: func() libvirtRunner {
 			return libvirt.New()
@@ -34,21 +32,14 @@ func NewTerminator() *Terminator {
 }
 
 // Terminate deletes the could provider resources.
-func (t *Terminator) Terminate(ctx context.Context, provider cloudprovider.Provider) (retErr error) {
-	if provider == cloudprovider.Unknown {
-		return errors.New("unknown cloud provider")
-	}
+func (t *Terminator) Terminate(ctx context.Context) (retErr error) {
+	defer func() {
+		if retErr == nil {
+			retErr = t.newLibvirtRunner().Stop(ctx)
+		}
+	}()
 
-	if provider == cloudprovider.QEMU {
-		libvirt := t.newLibvirtRunner()
-		defer func() {
-			if retErr == nil {
-				retErr = libvirt.Stop(ctx)
-			}
-		}()
-	}
-
-	cl, err := t.newTerraformClient(ctx, provider)
+	cl, err := t.newTerraformClient(ctx)
 	if err != nil {
 		return err
 	}

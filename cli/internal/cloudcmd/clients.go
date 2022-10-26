@@ -10,10 +10,11 @@ import (
 	"context"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 )
 
 type terraformClient interface {
-	CreateCluster(ctx context.Context, name string, input terraform.Variables) (string, error)
+	CreateCluster(ctx context.Context, provider cloudprovider.Provider, name string, input terraform.Variables) (string, error)
 	DestroyCluster(ctx context.Context) error
 	CleanUpWorkspace() error
 	RemoveInstaller()

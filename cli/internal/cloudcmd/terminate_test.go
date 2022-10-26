@@ -11,7 +11,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,53 +21,31 @@ func TestTerminator(t *testing.T) {
 		tfClient       terraformClient
 		newTfClientErr error
 		libvirt        *stubLibvirtRunner
-		provider       cloudprovider.Provider
 		wantErr        bool
 	}{
 		"gcp": {
+			libvirt:  &stubLibvirtRunner{},
 			tfClient: &stubTerraformClient{},
-			provider: cloudprovider.GCP,
 		},
-		"gcp newTfClientErr": {
+		"newTfClientErr": {
+			libvirt:        &stubLibvirtRunner{},
 			newTfClientErr: someErr,
-			provider:       cloudprovider.GCP,
 			wantErr:        true,
 		},
-		"gcp destroy cluster error": {
-			tfClient: &stubTerraformClient{destroyClusterErr: someErr},
-			provider: cloudprovider.GCP,
-			wantErr:  true,
-		},
-		"gcp clean up workspace error": {
-			tfClient: &stubTerraformClient{cleanUpWorkspaceErr: someErr},
-			provider: cloudprovider.GCP,
-			wantErr:  true,
-		},
-		"qemu": {
-			tfClient: &stubTerraformClient{},
-			libvirt:  &stubLibvirtRunner{},
-			provider: cloudprovider.QEMU,
-		},
-		"qemu destroy cluster error": {
+		"destroy cluster error": {
 			tfClient: &stubTerraformClient{destroyClusterErr: someErr},
 			libvirt:  &stubLibvirtRunner{},
-			provider: cloudprovider.QEMU,
 			wantErr:  true,
 		},
-		"qemu clean up workspace error": {
+		"clean up workspace error": {
 			tfClient: &stubTerraformClient{cleanUpWorkspaceErr: someErr},
 			libvirt:  &stubLibvirtRunner{},
-			provider: cloudprovider.QEMU,
 			wantErr:  true,
 		},
 		"qemu stop libvirt error": {
 			tfClient: &stubTerraformClient{},
 			libvirt:  &stubLibvirtRunner{stopErr: someErr},
-			provider: cloudprovider.QEMU,
 			wantErr:  true,
-		},
-		"unknown cloud provider": {
-			wantErr: true,
 		},
 	}
 
@@ -77,7 +54,7 @@ func TestTerminator(t *testing.T) {
 			assert := assert.New(t)
 
 			terminator := &Terminator{
-				newTerraformClient: func(ctx context.Context, provider cloudprovider.Provider) (terraformClient, error) {
+				newTerraformClient: func(ctx context.Context) (terraformClient, error) {
 					return tc.tfClient, tc.newTfClientErr
 				},
 				newLibvirtRunner: func() libvirtRunner {
@@ -85,19 +62,17 @@ func TestTerminator(t *testing.T) {
 				},
 			}
 
-			err := terminator.Terminate(context.Background(), tc.provider)
+			err := terminator.Terminate(context.Background())
 
 			if tc.wantErr {
 				assert.Error(err)
-			} else {
-				assert.NoError(err)
-				cl := tc.tfClient.(*stubTerraformClient)
-				assert.True(cl.destroyClusterCalled)
-				assert.True(cl.removeInstallerCalled)
-				if tc.provider == cloudprovider.QEMU {
-					assert.True(tc.libvirt.stopCalled)
-				}
+				return
 			}
+			assert.NoError(err)
+			cl := tc.tfClient.(*stubTerraformClient)
+			assert.True(cl.destroyClusterCalled)
+			assert.True(cl.removeInstallerCalled)
+			assert.True(tc.libvirt.stopCalled)
 		})
 	}
 }

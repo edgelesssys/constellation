@@ -32,14 +32,12 @@ const (
 type Client struct {
 	tf tfInterface
 
-	provider cloudprovider.Provider
-
 	file   file.Handler
 	remove func()
 }
 
 // New sets up a new Client for Terraform.
-func New(ctx context.Context, provider cloudprovider.Provider) (*Client, error) {
+func New(ctx context.Context) (*Client, error) {
 	tf, remove, err := GetExecutable(ctx, ".")
 	if err != nil {
 		return nil, err
@@ -48,16 +46,17 @@ func New(ctx context.Context, provider cloudprovider.Provider) (*Client, error) 
 	file := file.NewHandler(afero.NewOsFs())
 
 	return &Client{
-		tf:       tf,
-		provider: provider,
-		remove:   remove,
-		file:     file,
+		tf:     tf,
+		remove: remove,
+		file:   file,
 	}, nil
 }
 
 // CreateCluster creates a Constellation cluster using Terraform.
-func (c *Client) CreateCluster(ctx context.Context, name string, vars Variables) (string, error) {
-	if err := prepareWorkspace(c.file, c.provider); err != nil {
+func (c *Client) CreateCluster(
+	ctx context.Context, provider cloudprovider.Provider, name string, vars Variables,
+) (string, error) {
+	if err := prepareWorkspace(c.file, provider); err != nil {
 		return "", err
 	}
 
@@ -102,7 +101,7 @@ func (c *Client) RemoveInstaller() {
 
 // CleanUpWorkspace removes terraform files from the current directory.
 func (c *Client) CleanUpWorkspace() error {
-	if err := cleanUpWorkspace(c.file, c.provider); err != nil {
+	if err := cleanUpWorkspace(c.file); err != nil {
 		return err
 	}
 
