@@ -42,7 +42,7 @@ require (
 	github.com/google/go-tpm-tools v0.3.9
 	github.com/google/uuid v1.3.0
 	github.com/spf13/afero v1.9.2
-	github.com/spf13/cobra v1.6.0
+	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.0
 	go.uber.org/goleak v1.2.0
 	go.uber.org/multierr v1.8.0

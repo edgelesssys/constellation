@@ -82,7 +82,7 @@ require (
 	github.com/sigstore/rekor v0.12.2
 	github.com/sigstore/sigstore v1.4.2
 	github.com/spf13/afero v1.9.2
-	github.com/spf13/cobra v1.6.0
+	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.0
 	github.com/talos-systems/talos/pkg/machinery v1.0.4
 	go.uber.org/goleak v1.2.0
