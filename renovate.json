@@ -36,6 +36,19 @@
     },
     {
       "matchPackagePatterns": [
+        "^github.com/aws/aws-sdk-go-v2"
+      ],
+      "groupName": "AWS SDK"
+    },
+    {
+      "matchPackagePatterns": [
+        "^github.com/Azure/",
+        "^github.com/AzureAD/microsoft-authentication-library-for-go"
+      ],
+      "groupName": "Azure SDK"
+    },
+    {
+      "matchPackagePatterns": [
         "^cloud.google.com/go"
       ],
       "groupName": "Google cloud SDK"
