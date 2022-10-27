@@ -24,12 +24,6 @@ import (
 )
 
 var (
-	// AWSPCRSelection are the PCR values verified for AWS Nitro TPM based Constellations.
-	// TODO: determine which PCRs are required.
-	AWSPCRSelection = tpm2.PCRSelection{
-		Hash: tpm2.AlgSHA256,
-		PCRs: []int{},
-	}
 	// AzurePCRSelection are the PCR values verified for Azure Constellations.
 	// PCR[0] is excluded due to changing rarely, but unpredictably.
 	// PCR[6] is excluded due to being different for any 2 VMs. See: https://trustedcomputinggroup.org/wp-content/uploads/TCG_PCClient_PFP_r1p05_v23_pub.pdf#%5B%7B%22num%22%3A157%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C33%2C400%2C0%5D
@@ -38,10 +32,20 @@ var (
 		Hash: tpm2.AlgSHA256,
 		PCRs: []int{1, 2, 3, 4, 5, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23},
 	}
+
 	// GCPPCRSelection are the PCR values verified for GCP Constellations.
 	// On GCP firmware and other host controlled systems are static. This results in the same PCRs for any 2 VMs using the same image.
 	GCPPCRSelection = tpmClient.FullPcrSel(tpm2.AlgSHA256)
-	// QEMUPCRSelection are the PCR values verified for QEMU based Contellations.
+
+	// AWSPCRSelection are the PCR values verified for AWS based Constellations.
+	// PCR[1] is excluded. See: https://trustedcomputinggroup.org/wp-content/uploads/TCG_PCClient_PFP_r1p05_v23_pub.pdf#%5B%7B%22num%22:157,%22gen%22:0%7D,%7B%22name%22:%22XYZ%22%7D,33,400,0%5D
+	// PCR[10] is excluded since its value is derived from a digest of PCR[0-7]. See: https://sourceforge.net/p/linux-ima/wiki/Home/#ima-measurement-list
+	AWSPCRSelection = tpm2.PCRSelection{
+		Hash: tpm2.AlgSHA256,
+		PCRs: []int{0, 2, 3, 4, 5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23},
+	}
+
+	// QEMUPCRSelection are the PCR values verified for QEMU based Constellations.
 	// PCR[1] is excluded. See: https://trustedcomputinggroup.org/wp-content/uploads/TCG_PCClient_PFP_r1p05_v23_pub.pdf#%5B%7B%22num%22:157,%22gen%22:0%7D,%7B%22name%22:%22XYZ%22%7D,33,400,0%5D
 	// PCR[10] is excluded since its value is derived from a digest of PCR[0-7]. See: https://sourceforge.net/p/linux-ima/wiki/Home/#ima-measurement-list
 	QEMUPCRSelection = tpm2.PCRSelection{
