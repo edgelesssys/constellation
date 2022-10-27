@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package k8sapi
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/versions"
@@ -69,7 +68,7 @@ func TestInitConfigurationKubeadmCompatibility(t *testing.T) {
 	}{
 		"Kubeadm accepts version 'Latest'": {
 			config:          kubeadmConfig.InitConfiguration(true, versions.Default),
-			expectedVersion: fmt.Sprintf("v%s", versions.VersionConfigs[versions.Default].PatchVersion),
+			expectedVersion: versions.VersionConfigs[versions.Default].PatchVersion,
 		},
 		"Kubeadm receives incompatible version": {
 			config:  kubeadmConfig.InitConfiguration(true, "1.19"),

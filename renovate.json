@@ -64,6 +64,92 @@
         "github-actions"
       ],
       "groupName": "github actions dependencies"
+    },
+    {
+      "matchPackageNames": [
+        "kubernetes/kubernetes",
+        "registry.k8s.io/provider-aws/cloud-controller-manager",
+        "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager",
+        "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager",
+        "k8s.gcr.io/autoscaling/cluster-autoscaler"
+      ],
+      "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
+      "groupName": "K8s constrained versions"
+    },
+    {
+      "matchPackageNames": [
+        "ghcr.io/edgelesssys/cloud-provider-gcp"
+      ],
+      "versioning": "regex:^(?<compatibility>v\\d+\\.)(?<minor>\\d+)\\.(?<patch>\\d+)$",
+      "groupName": "K8s version constrained containers (missing v1 prefix)"
+    },
+    {
+      "matchPackagePrefixes": [
+        "ghcr.io/edgelesssys/constellation/"
+      ],
+      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(-(?<build>.*))?$",
+      "groupName": "Constellation containers"
+    },
+    {
+      "matchPackageNames": [
+        "us.gcr.io/k8s-artifacts-prod/kas-network-proxy/proxy-agent",
+        "registry.k8s.io/kas-network-proxy/proxy-server"
+      ],
+      "versioning": "semver",
+      "groupName": "K8s version independent containers"
+    }
+  ],
+  "regexManagers": [
+    {
+      "fileMatch": [
+        "(^|\\/)versions.go$"
+      ],
+      "matchStrings": [
+        " \"(?<depName>[^\"]*?):(?<currentValue>[^\"]*?)@(?<currentDigest>sha256:[a-f0-9]+)\"[^\\n]+\\/\\/ renovate:container"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "fileMatch": [
+        "(^|\\/)versions.go$"
+      ],
+      "matchStrings": [
+        " \"https:\\/\\/storage\\.googleapis\\.com\\/kubernetes-release\\/release\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"[^\\n]+\\/\\/ renovate:kubernetes-release",
+        " \"(?<currentValue>v\\d+\\.\\d+\\.\\d+)\"[^\\n]+\\/\\/ renovate:kubernetes-release"
+      ],
+      "depNameTemplate": "kubernetes/kubernetes",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "fileMatch": [
+        "(^|\\/)versions.go$"
+      ],
+      "matchStrings": [
+        " \"https:\\/\\/github\\.com\\/(?<depName>[^\\/\\s\"]+\\/[^\\/\\s\"]+)\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\"[^\\n]+\\/\\/ renovate:github-release"
+      ],
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "fileMatch": [
+        "(^|\\/)versions.go$"
+      ],
+      "matchStrings": [
+        " \"https:\\/\\/github\\.com\\/kubernetes-sigs\\/cri-tools\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\""
+      ],
+      "depNameTemplate": "kubernetes-sigs/cri-tools",
+      "datasourceTemplate": "github-releases",
+      "autoReplaceStringTemplate": " \"https://github.com/kubernetes-sigs/cri-tools/releases/download/{{{newValue}}}/crictl-{{{newValue}}}-linux-amd64.tar.gz\""
+    },
+    {
+      "fileMatch": [
+        "(^|\\/)versions.go$"
+      ],
+      "matchStrings": [
+        " \"https:\\/\\/github\\.com\\/containernetworking\\/plugins\\/releases\\/download\\/(?<currentValue>[^\\/\\s\"]+)\\/[^\"]+\""
+      ],
+      "depNameTemplate": "containernetworking/plugins",
+      "datasourceTemplate": "github-releases",
+      "autoReplaceStringTemplate": " \"https://github.com/containernetworking/plugins/releases/download/{{{newValue}}}/cni-plugins-linux-amd64-{{{newValue}}}.tgz\""
     }
   ]
 }
