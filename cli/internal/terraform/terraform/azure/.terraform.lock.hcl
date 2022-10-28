@@ -2,26 +2,20 @@
 # Manual edits may be lost in future updates.
 
 provider "registry.terraform.io/hashicorp/azurerm" {
-  version     = "3.28.0"
-  constraints = "3.28.0"
+  version     = "3.29.1"
+  constraints = "3.29.1"
   hashes = [
-    "h1:4tvv5ZbzO72buPGQ1087T+Z/+LGvUfDWAgVeUgHMFPY=",
-    "h1:TnQAM2SUV3bttqp3OvWGdFi0Qd3NWD5C4aSR+Z/x58g=",
-    "h1:eQRgBnX2TQ6H4q3sg4WUV1OhN21UdhQYrcyAnyu3U/U=",
-    "h1:jnr5G4X8apGMF63WeMQn6gMGEoM87mI2lwTIj8D36Vg=",
-    "h1:o/m0W585KwCcRw83rBHTcDoiHyb8qVaBGAJGDpYaP+o=",
-    "zh:1c01bc8cba03c642d108df034744253ac7e625d7528d77ae57b65809cd08e519",
-    "zh:52e8a26edde4e9254063b0961079497defc4d3255c2adcc00caca8b960347571",
-    "zh:694e4f0e6c79265ebfe62656dfd7b30e245e3adba513f70711a050f46819f1a5",
-    "zh:6ff9fddb694afa04851dcd38e1865bf7afe02690a33b717137a27dc48c049dd1",
-    "zh:77152823230857b1b0f3b66ff0e38ccc1cca245d531813e8ad4ec0e7dee64b6e",
-    "zh:7fb273228e63de7846ae64539cf0836eac652a045b915e9cc470c63131cbf88f",
-    "zh:8f3c784f3b953a6de44c23828a8a47a77bfdb63b09af7cca9ae3175b2870151e",
-    "zh:92f5feaf7a109dd30d6982af5c68d914c62b294c872f84fa0e1ab24ffea55d1c",
-    "zh:b74a67fc97966184e7d111fd66316313dfa0ff592ebd9fc1ae4672df317cf3bf",
-    "zh:f15e22acf5a9186d8647e1539bb904c5605606094b7ebec7d8eb479735573b37",
-    "zh:f569b65999264a9416862bca5cd2a6177d94ccb0424f3a4ef424428912b9cb3c",
-    "zh:f91ddbf9310b0f815477a88bdf9969b06a50752c330250b9a6626d89e620ee23",
+    "h1:+6KiOvXQN7VMm+/zqmk/x7RngJe600qqmY8Sx48b6tk=",
+    "h1:/p/OxNNwz+TC1w24fOhAlbHbHSxdEYPRTnZ3glNu57g=",
+    "h1:1bJXRN+1M+W7taTk5lwQqlK/XyN8+VybNh7m+hCo/pc=",
+    "h1:9gUnEE/cOko3ghM+UoIv9LkRujUFTFOFr8iRjAhDS8U=",
+    "h1:KEy+4fQvzQWR0M/5gdAe0wUZvkpxmPpNAvIMW7mjHlk=",
+    "h1:QpDVUlx7a1WcBYbp+4zg+8sgsz9tYp+HYfm4Kqn9W+Y=",
+    "h1:VmyJj31dNzega1uz0vIzRFGHFj+9oSmS/hjLkrnvQOo=",
+    "h1:lHBnr0mUXYOl7hN/FhAcr+1Vgnt0zXASixk6xN4mtNg=",
+    "h1:nML8hiSBqmh5xJQ76UASsDt/atFMA9f8qS6vFfi+dMU=",
+    "h1:qkt2cWJ6/Igf1aCchJY+hvzRgnmVoOiGIMYoR+2pIb8=",
+    "h1:uQEALXE4mSnSKbqBv/EGo+sws/rXOjrJC8Ha3lg1PnY=",
   ]
 }
 
