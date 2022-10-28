@@ -30,7 +30,7 @@ replace (
 	k8s.io/sample-apiserver v0.0.0 => k8s.io/sample-apiserver v0.25.3
 )
 
-replace github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools v0.0.0-20220929072523-22862750ed86
+replace github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools v0.0.0-20221028071648-f2255501dfc4
 
 require (
 	cloud.google.com/go/compute v1.7.0
@@ -185,6 +185,7 @@ require (
 	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
+	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/btree v1.1.2 // indirect
@@ -193,6 +194,7 @@ require (
 	github.com/google/go-attestation v0.4.4-0.20221011162210-17f9c05652a9 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-containerregistry v0.11.0 // indirect
+	github.com/google/go-sev-guest v0.2.4 // indirect
 	github.com/google/go-tspi v0.3.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/trillian v1.5.0 // indirect
@@ -244,6 +246,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.3-0.20220114050600-8b9d41f48198 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
+	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
