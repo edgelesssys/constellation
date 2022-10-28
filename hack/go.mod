@@ -48,7 +48,7 @@ require (
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 	golang.org/x/mod v0.6.0
-	google.golang.org/api v0.96.0
+	google.golang.org/api v0.98.0
 	google.golang.org/genproto v0.0.0-20221025140454-527a21cfbd71
 	google.golang.org/grpc v1.50.1
 	gopkg.in/square/go-jose.v2 v2.6.0
@@ -140,7 +140,7 @@ require (
 	github.com/google/tink/go v1.7.0 // indirect
 	github.com/google/trillian v1.5.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.1.0 // indirect
-	github.com/googleapis/gax-go/v2 v2.4.0 // indirect
+	github.com/googleapis/gax-go/v2 v2.6.0 // indirect
 	github.com/googleapis/go-type-adapters v1.0.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
