@@ -49,9 +49,12 @@ const (
 
 func main() {
 	gRPCDebug := flag.Bool("debug", false, "Enable gRPC debug logging")
-	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
+
+	// FIXME: define flag again once its definition no longer collides with glog.
+	// This should happen as soon as https://github.com/google/go-sev-guest/issues/23 is merged and consumed by us.
+	verbosity := 0 // flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 	flag.Parse()
-	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity)).Named("bootstrapper")
+	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(verbosity)).Named("bootstrapper")
 	defer log.Sync()
 
 	if *gRPCDebug {
