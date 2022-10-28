@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 func TestNew(t *testing.T) {
 	assert := assert.New(t)
 
-	cleaner := New(&spyStopper{})
+	cleaner := New(&spyStopper{stopped: &atomic.Bool{}})
 	assert.NotNil(cleaner)
 	assert.NotEmpty(cleaner.stoppers)
 }
@@ -30,40 +30,40 @@ func TestNew(t *testing.T) {
 func TestWith(t *testing.T) {
 	assert := assert.New(t)
 
-	cleaner := New().With(&spyStopper{})
+	cleaner := New().With(&spyStopper{stopped: &atomic.Bool{}})
 	assert.NotEmpty(cleaner.stoppers)
 }
 
 func TestClean(t *testing.T) {
 	assert := assert.New(t)
 
-	stopper := &spyStopper{}
+	stopper := &spyStopper{stopped: &atomic.Bool{}}
 	cleaner := New(stopper)
 	go cleaner.Start()
 	cleaner.Clean()
 	cleaner.Done()
-	assert.Equal(int64(1), atomic.LoadInt64(&stopper.stopped))
+	assert.True(stopper.stopped.Load())
 	// call again to make sure it doesn't panic or block or clean up again
 	cleaner.Clean()
-	assert.Equal(int64(1), atomic.LoadInt64(&stopper.stopped))
+	assert.True(stopper.stopped.Load())
 }
 
 func TestCleanBeforeStart(t *testing.T) {
 	assert := assert.New(t)
 	// calling Clean before Start should work
-	stopper := &spyStopper{}
+	stopper := &spyStopper{stopped: &atomic.Bool{}}
 	cleaner := New(stopper)
 	cleaner.Clean()
 	cleaner.Start()
 	cleaner.Done()
-	assert.Equal(int64(1), atomic.LoadInt64(&stopper.stopped))
+	assert.True(stopper.stopped.Load())
 }
 
 func TestConcurrent(t *testing.T) {
 	assert := assert.New(t)
 	// calling Clean concurrently should call Stop exactly once
 
-	stopper := &spyStopper{}
+	stopper := &spyStopper{stopped: &atomic.Bool{}}
 	cleaner := New(stopper)
 
 	parallelism := 10
@@ -92,13 +92,13 @@ func TestConcurrent(t *testing.T) {
 	}
 	wg.Wait()
 	cleaner.Done()
-	assert.Equal(int64(1), atomic.LoadInt64(&stopper.stopped))
+	assert.True(stopper.stopped.Load())
 }
 
 type spyStopper struct {
-	stopped int64
+	stopped *atomic.Bool
 }
 
 func (s *spyStopper) Stop() {
-	atomic.AddInt64(&s.stopped, 1)
+	s.stopped.Store(true)
 }

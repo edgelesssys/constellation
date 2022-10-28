@@ -37,8 +37,8 @@ type spinner struct {
 	out      io.Writer
 	delay    time.Duration
 	wg       *sync.WaitGroup
-	stop     int32
-	spinFunc func(out io.Writer, wg *sync.WaitGroup, stop *int32, delay time.Duration, text string, showDots bool)
+	stop     *atomic.Bool
+	spinFunc func(out io.Writer, wg *sync.WaitGroup, stop *atomic.Bool, delay time.Duration, text string, showDots bool)
 }
 
 func newSpinner(writer io.Writer) *spinner {
@@ -46,10 +46,11 @@ func newSpinner(writer io.Writer) *spinner {
 		out:   writer,
 		wg:    &sync.WaitGroup{},
 		delay: time.Millisecond * 100,
+		stop:  &atomic.Bool{},
 	}
 
 	s.spinFunc = spinTTY
-	//
+
 	if !(writer == os.Stdout && tty.IsTerminal(os.Stdout.Fd())) {
 		s.spinFunc = spinNoTTY
 	}
@@ -61,12 +62,12 @@ func newSpinner(writer io.Writer) *spinner {
 func (s *spinner) Start(text string, showDots bool) {
 	s.wg.Add(1)
 
-	go s.spinFunc(s.out, s.wg, &s.stop, s.delay, text, showDots)
+	go s.spinFunc(s.out, s.wg, s.stop, s.delay, text, showDots)
 }
 
 // Stop stops the spinner.
 func (s *spinner) Stop() {
-	atomic.StoreInt32(&s.stop, 1)
+	s.stop.Store(true)
 	s.wg.Wait()
 }
 
@@ -76,13 +77,13 @@ func (s *spinner) Write(p []byte) (n int, err error) {
 	return s.out.Write(p)
 }
 
-func spinTTY(out io.Writer, wg *sync.WaitGroup, stop *int32, delay time.Duration, text string, showDots bool) {
+func spinTTY(out io.Writer, wg *sync.WaitGroup, stop *atomic.Bool, delay time.Duration, text string, showDots bool) {
 	defer wg.Done()
 
 	fmt.Fprint(out, hideCursor)
 
 	for i := 0; ; i = (i + 1) % len(spinnerStates) {
-		if atomic.LoadInt32(stop) != 0 {
+		if stop.Load() {
 			break
 		}
 		dotsState := ""
@@ -102,7 +103,7 @@ func spinTTY(out io.Writer, wg *sync.WaitGroup, stop *int32, delay time.Duration
 	fmt.Fprint(out, showCursor)
 }
 
-func spinNoTTY(out io.Writer, wg *sync.WaitGroup, _ *int32, _ time.Duration, text string, _ bool) {
+func spinNoTTY(out io.Writer, wg *sync.WaitGroup, _ *atomic.Bool, _ time.Duration, text string, _ bool) {
 	defer wg.Done()
 	fmt.Fprintln(out, text+"...")
 }
