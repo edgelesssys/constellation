@@ -40,7 +40,7 @@ inputs:
     description: "The resource group to use"
     required: false
   test:
-    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling]."
+    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling, nop]."
     required: true
   sonobuoyTestSuiteCmd:
     description: "The sonobuoy test suite to run."
@@ -50,7 +50,7 @@ runs:
   using: "composite"
   steps:
     - name: Check input
-      if: ${{ !contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling"]'), inputs.test) }}
+      if: ${{ !contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "nop"]'), inputs.test) }}
       shell: bash
       run: |
         echo "Invalid input for test field: ${{ inputs.test }}"
@@ -116,6 +116,11 @@ runs:
     #
     # Test payloads
     #
+
+    - name: Nop test payload
+      if: inputs.test == 'nop'
+      shell: bash
+      run: echo "::warning::This test has a nop payload. It doesn't run any tests."
 
     - name: Run sonobuoy quick test
       if: inputs.test == 'sonobuoy quick'

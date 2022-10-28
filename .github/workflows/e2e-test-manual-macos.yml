@@ -26,6 +26,7 @@ on:
           - "sonobuoy quick"
           - "sonobuoy full"
           - "autoscaling"
+          - "nop"
         required: true
       kubernetesVersion:
         description: "Kubernetes version to create the cluster from."
