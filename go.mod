@@ -65,7 +65,7 @@ require (
 	github.com/google/go-tpm-tools v0.3.9
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/tink/go v1.7.0
-	github.com/googleapis/gax-go/v2 v2.4.0
+	github.com/googleapis/gax-go/v2 v2.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-version v1.6.0
@@ -93,7 +93,7 @@ require (
 	golang.org/x/mod v0.6.0
 	golang.org/x/sys v0.1.0
 	golang.org/x/text v0.4.0
-	google.golang.org/api v0.96.0
+	google.golang.org/api v0.98.0
 	google.golang.org/genproto v0.0.0-20221025140454-527a21cfbd71
 	google.golang.org/grpc v1.50.1
 	google.golang.org/protobuf v1.28.1
