@@ -61,6 +61,11 @@
     },
     {
       "matchManagers": [
+        "pip_requirements"
+      ]
+    },
+    {
+      "matchManagers": [
         "github-actions"
       ],
       "groupName": "github actions dependencies"
