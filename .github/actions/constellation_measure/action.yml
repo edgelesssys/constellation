@@ -49,7 +49,7 @@ runs:
     - name: Fetch PCRs
       run: |
         KUBECONFIG="$PWD/constellation-admin.conf" kubectl rollout status ds/verification-service -n kube-system --timeout=3m
-        CONSTELL_IP=$(jq -r ".bootstrapperhost" constellation-state.json)
+        CONSTELL_IP=$(jq -r ".ip" constellation-id.json)
         pcr-reader --constell-ip ${CONSTELL_IP} -format yaml > measurements.yaml
         case $CSP in
           azure)
