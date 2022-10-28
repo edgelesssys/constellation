@@ -57,21 +57,7 @@ It is also recommended to use golangci-lint (and [gofumpt](https://github.com/mv
 
 ## Nested Go modules
 
-As this project contains nested Go modules, it is recommended to create a local Go workspace, so your IDE can lint multiple modules at once.
-
-```go
-go 1.18
-
-use (
- .
- ./hack
- ./operators/constellation-node-operator
-)
-```
-
-You can find an introduction in the [Go workspace tutorial](https://go.dev/doc/tutorial/workspaces).
-
-If you have changed dependencies within a module and have run `go mod tidy`, you can use `go work sync` to sync versions of the same dependency of the different modules.
+As this project contains nested Go modules, we use a Go work file to ease integration with IDEs. You can find an introduction in the [Go workspace tutorial](https://go.dev/doc/tutorial/workspaces).
 
 ## Recommended VS Code Settings
 

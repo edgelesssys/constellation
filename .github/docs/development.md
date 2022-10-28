@@ -5,12 +5,7 @@ The following are instructions for building all components in the constellation 
 Prerequisites:
 
 * 20 GB disk space
-* [Go 1.18](https://go.dev/doc/install). Can be installed with these commands:
-
-  ```sh
-  wget https://go.dev/dl/go1.18.linux-amd64.tar.gz && sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.18.linux-amd64.tar.gz && export PATH=$PATH:/usr/local/go/bin
-  ```
-
+* [Latest version of Go](https://go.dev/doc/install).
 * [Docker](https://docs.docker.com/engine/install/). Can be installed with these commands on Ubuntu 22.04: `sudo apt update && sudo apt install docker.io`. As the build spawns docker containers your user account either needs to be in the `docker` group (Add with `sudo usermod -a -G docker $USER`) or you have to run builds with `sudo`. When using `sudo` remember that your root user might (depending on your distro and local config) not have the go binary in it's PATH. The current PATH can be forwarded to the root env with `sudo env PATH=$PATH <cmd>`.
 
 * Packages on Ubuntu:
