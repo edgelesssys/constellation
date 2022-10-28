@@ -168,7 +168,7 @@ func TestListSelf(t *testing.T) {
 			var metadata metadata.InstanceMetadata
 			require.NoError(json.Unmarshal(metadataRaw, &metadata))
 			assert.Equal(tc.connect.network.leases[0].Hostname, metadata.Name)
-			assert.Equal(tc.connect.network.leases[0].IPaddr, metadata.PublicIP)
+			assert.Equal(tc.connect.network.leases[0].IPaddr, metadata.VPCIP)
 		})
 	}
 }

@@ -40,7 +40,6 @@ func TestInitCluster(t *testing.T) {
 	nodeName := "node-name"
 	providerID := "provider-id"
 	privateIP := "192.0.2.1"
-	publicIP := "192.0.2.2"
 	loadbalancerIP := "192.0.2.3"
 	aliasIPRange := "192.0.2.0/24"
 
@@ -91,7 +90,6 @@ func TestInitCluster(t *testing.T) {
 					Name:          nodeName,
 					ProviderID:    providerID,
 					VPCIP:         privateIP,
-					PublicIP:      publicIP,
 					AliasIPRanges: []string{aliasIPRange},
 				},
 				GetLoadBalancerEndpointResp: loadbalancerIP,
@@ -113,7 +111,7 @@ func TestInitCluster(t *testing.T) {
 				ClusterConfiguration: kubeadm.ClusterConfiguration{
 					ControlPlaneEndpoint: loadbalancerIP,
 					APIServer: kubeadm.APIServer{
-						CertSANs: []string{publicIP, privateIP},
+						CertSANs: []string{privateIP},
 					},
 				},
 			},

@@ -52,7 +52,7 @@ func (m *Metadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) 
 }
 
 // GetInstance retrieves an instance using its providerID.
-func (m Metadata) GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error) {
+func (m *Metadata) GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error) {
 	instances, err := m.List(ctx)
 	if err != nil {
 		return metadata.InstanceMetadata{}, err
@@ -66,29 +66,31 @@ func (m Metadata) GetInstance(ctx context.Context, providerID string) (metadata.
 	return metadata.InstanceMetadata{}, errors.New("instance not found")
 }
 
-// SupportsLoadBalancer returns true if the cloud provider supports load balancers.
-func (m Metadata) SupportsLoadBalancer() bool {
-	return false
-}
-
 // GetLoadBalancerEndpoint returns the endpoint of the load balancer.
-func (m Metadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
-	panic("function *Metadata.GetLoadBalancerEndpoint not implemented")
+// For QEMU, the load balancer is the first control plane node returned by the metadata API.
+func (m *Metadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
+	endpointRaw, err := m.retrieveMetadata(ctx, "/endpoint")
+	if err != nil {
+		return "", err
+	}
+	var endpoint string
+	err = json.Unmarshal(endpointRaw, &endpoint)
+	return endpoint, err
 }
 
 // UID returns the UID of the constellation.
-func (m Metadata) UID(ctx context.Context) (string, error) {
+func (m *Metadata) UID(ctx context.Context) (string, error) {
 	// We expect only one constellation to be deployed in the same QEMU / libvirt environment.
 	// the UID can be an empty string.
 	return "", nil
 }
 
 // GetSubnetworkCIDR retrieves the subnetwork CIDR from cloud provider metadata.
-func (m Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
+func (m *Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
 	return "10.244.0.0/16", nil
 }
 
-func (m Metadata) retrieveMetadata(ctx context.Context, uri string) ([]byte, error) {
+func (m *Metadata) retrieveMetadata(ctx context.Context, uri string) ([]byte, error) {
 	url := &url.URL{
 		Scheme: "http",
 		Host:   qemuMetadataEndpoint,

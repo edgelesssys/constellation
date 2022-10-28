@@ -25,8 +25,6 @@ type ProviderMetadata interface {
 	Self(ctx context.Context) (metadata.InstanceMetadata, error)
 	// GetSubnetworkCIDR retrieves the subnetwork CIDR for the current instance.
 	GetSubnetworkCIDR(ctx context.Context) (string, error)
-	// SupportsLoadBalancer returns true if the cloud provider supports load balancers.
-	SupportsLoadBalancer() bool
 	// GetLoadBalancerEndpoint retrieves the load balancer endpoint.
 	GetLoadBalancerEndpoint(ctx context.Context) (string, error)
 	// GetInstance retrieves an instance using its providerID.
