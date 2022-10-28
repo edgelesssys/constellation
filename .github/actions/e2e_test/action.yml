@@ -40,7 +40,7 @@ inputs:
     description: "The resource group to use"
     required: false
   test:
-    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy fast, autoscaling]."
+    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling]."
     required: true
   sonobuoyTestSuiteCmd:
     description: "The sonobuoy test suite to run."
@@ -50,7 +50,7 @@ runs:
   using: "composite"
   steps:
     - name: Check input
-      if: ${{ !contains(fromJson('["sonobuoy full", "sonobuoy fast", "autoscaling"]'), inputs.test) }}
+      if: ${{ !contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling"]'), inputs.test) }}
       shell: bash
       run: |
         echo "Invalid input for test field: ${{ inputs.test }}"
@@ -117,8 +117,8 @@ runs:
     # Test payloads
     #
 
-    - name: Run sonobuoy fast test
-      if: inputs.test == 'sonobuoy fast'
+    - name: Run sonobuoy quick test
+      if: inputs.test == 'sonobuoy quick'
       uses: ./.github/actions/e2e_sonobuoy
       with:
         sonobuoyTestSuiteCmd: "--mode quick"

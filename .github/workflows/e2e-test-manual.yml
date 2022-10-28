@@ -23,7 +23,7 @@ on:
         description: "The test to run."
         type: choice
         options:
-          - "sonobuoy fast"
+          - "sonobuoy quick"
           - "sonobuoy full"
           - "autoscaling"
         required: true
