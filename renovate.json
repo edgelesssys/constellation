@@ -62,7 +62,8 @@
     {
       "matchManagers": [
         "pip_requirements"
-      ]
+      ],
+      "groupName": "Python dependencies"
     },
     {
       "matchManagers": [
