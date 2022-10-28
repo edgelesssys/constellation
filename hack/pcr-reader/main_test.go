@@ -26,6 +26,8 @@ func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m,
 		// https://github.com/census-instrumentation/opencensus-go/issues/1262
 		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		// https://github.com/google/go-sev-guest/issues/23
+		goleak.IgnoreTopFunction("github.com/golang/glog.(*loggingT).flushDaemon"),
 	)
 }
 

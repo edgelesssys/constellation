@@ -24,7 +24,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+	goleak.VerifyTestMain(m,
+		// https://github.com/google/go-sev-guest/issues/23
+		goleak.IgnoreTopFunction("github.com/golang/glog.(*loggingT).flushDaemon"),
+	)
 }
 
 func TestDefaultConfig(t *testing.T) {

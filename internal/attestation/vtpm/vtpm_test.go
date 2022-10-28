@@ -14,7 +14,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+	goleak.VerifyTestMain(m,
+		// internal/attestation/vtpm/vtpm_test.go
+		goleak.IgnoreTopFunction("github.com/golang/glog.(*loggingT).flushDaemon"),
+	)
 }
 
 func TestNOPTPM(t *testing.T) {
