@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net"
 
+	awscloud "github.com/edgelesssys/constellation/v2/internal/cloud/aws"
 	azurecloud "github.com/edgelesssys/constellation/v2/internal/cloud/azure"
 	gcpcloud "github.com/edgelesssys/constellation/v2/internal/cloud/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
@@ -40,6 +41,18 @@ func NewGCP(ctx context.Context) (*Fetcher, error) {
 		return nil, err
 	}
 	metaAPI := gcpcloud.New(gcpClient)
+
+	return &Fetcher{
+		metaAPI: metaAPI,
+	}, nil
+}
+
+// NewAzure creates a new Azure fetcher.
+func NewAWS(ctx context.Context) (*Fetcher, error) {
+	metaAPI, err := awscloud.New(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Fetcher{
 		metaAPI: metaAPI,
