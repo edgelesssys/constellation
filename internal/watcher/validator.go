@@ -15,6 +15,7 @@ import (
 	"sync"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/aws"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
@@ -40,6 +41,10 @@ type Updatable struct {
 func NewValidator(log *logger.Logger, csp string, fileHandler file.Handler, azureCVM bool) (*Updatable, error) {
 	var newValidator newValidatorFunc
 	switch cloudprovider.FromString(csp) {
+	case cloudprovider.AWS:
+		newValidator = func(m map[uint32][]byte, e []uint32, _ []byte, _ bool, log *logger.Logger) atls.Validator {
+			return aws.NewValidator(m, e, log)
+		}
 	case cloudprovider.Azure:
 		if azureCVM {
 			newValidator = func(m map[uint32][]byte, e []uint32, idkeydigest []byte, enforceIdKeyDigest bool, log *logger.Logger) atls.Validator {
