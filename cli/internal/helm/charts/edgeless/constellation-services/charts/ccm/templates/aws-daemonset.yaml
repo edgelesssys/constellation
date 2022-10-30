@@ -18,11 +18,11 @@ spec:
       containers:
         - name: cloud-controller-manager
           image: {{ .Values.AWS.image }}
-          command:
-          - /aws-cloud-controller-manager
+          args:
           - --cloud-provider=aws
           - --leader-elect=true
-          - --cluster-cidr={{ .Values.subnetworkCIDR }}
+          - --allocate-node-cidrs=false
+          - --configure-cloud-routes=false
           - -v=2
           volumeMounts:
           - name: etckubernetes

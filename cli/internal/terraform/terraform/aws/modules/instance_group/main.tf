@@ -21,9 +21,10 @@ resource "aws_launch_template" "launch_template" {
   }
   vpc_security_group_ids = var.security_groups
   metadata_options {
-    http_endpoint          = "enabled"
-    http_tokens            = "required"
-    instance_metadata_tags = "enabled"
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    instance_metadata_tags      = "enabled"
+    http_put_response_hop_limit = 2
   }
 
   block_device_mappings {
@@ -69,6 +70,12 @@ resource "aws_autoscaling_group" "control_plane_autoscaling_group" {
   tag {
     key                 = "constellation-uid"
     value               = var.uid
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "KubernetesCluster"
+    value               = "Constellation-${var.uid}"
     propagate_at_launch = true
   }
 }
