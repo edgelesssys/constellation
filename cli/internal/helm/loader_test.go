@@ -19,6 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/engine"
@@ -27,17 +28,18 @@ import (
 // TestLoad checks if the serialized format that Load returns correctly preserves the dependencies of the loaded chart.
 func TestLoad(t *testing.T) {
 	assert := assert.New(t)
+	require := require.New(t)
 
 	chartLoader := ChartLoader{}
 	release, err := chartLoader.Load(cloudprovider.GCP, true, []byte("secret"), []byte("salt"), nil, false)
-	assert.NoError(err)
+	require.NoError(err)
 
 	var helmReleases helm.Releases
 	err = json.Unmarshal(release, &helmReleases)
-	assert.NoError(err)
+	require.NoError(err)
 	reader := bytes.NewReader(helmReleases.ConstellationServices.Chart)
 	chart, err := loader.LoadArchive(reader)
-	assert.NoError(err)
+	require.NoError(err)
 	assert.NotNil(chart.Dependencies())
 }
 
@@ -71,17 +73,18 @@ func TestTemplate(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+			require := require.New(t)
 
 			chartLoader := ChartLoader{joinServiceImage: "joinServiceImage", kmsImage: "kmsImage", ccmImage: tc.ccmImage}
 			release, err := chartLoader.Load(tc.csp, true, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []uint32{1, 11}, tc.enforceIDKeyDigest)
-			assert.NoError(err)
+			require.NoError(err)
 
 			var helmReleases helm.Releases
 			err = json.Unmarshal(release, &helmReleases)
-			assert.NoError(err)
+			require.NoError(err)
 			reader := bytes.NewReader(helmReleases.ConstellationServices.Chart)
 			chart, err := loader.LoadArchive(reader)
-			assert.NoError(err)
+			require.NoError(err)
 
 			options := chartutil.ReleaseOptions{
 				Name:      "testRelease",
@@ -93,12 +96,12 @@ func TestTemplate(t *testing.T) {
 			caps := &chartutil.Capabilities{}
 
 			err = tc.valuesModifier(helmReleases.ConstellationServices.Values)
-			assert.NoError(err)
+			require.NoError(err)
 
 			valuesToRender, err := chartutil.ToRenderValues(chart, helmReleases.ConstellationServices.Values, options, caps)
-			assert.NoError(err)
+			require.NoError(err)
 			result, err := engine.Render(chart, valuesToRender)
-			assert.NoError(err)
+			require.NoError(err)
 			for k, v := range result {
 				currentFile := path.Join("testdata", tc.csp.String(), k)
 				content, err := os.ReadFile(currentFile)
