@@ -179,10 +179,7 @@ runs:
             ./.github/actions/constellation_create/az-logs.sh ${AZURE_RESOURCE_GROUP}
             ;;
           gcp)
-            CONTROL_NODES=$(jq -r '.gcpcontrolplaneinstancegroup' constellation-state.json)
-            WORKER_NODES=$(jq -r '.gcpworkerinstancegroup' constellation-state.json)
-            ZONE=$(jq -r '.gcpzone' constellation-state.json)
-            ./.github/actions/constellation_create/gcp-logs.sh ${CONTROL_NODES} ${WORKER_NODES} ${ZONE}
+            ./.github/actions/constellation_create/gcp-logs.sh
             ;;
         esac
         echo "::endgroup::"
