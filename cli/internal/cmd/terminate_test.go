@@ -58,14 +58,31 @@ func TestTerminate(t *testing.T) {
 
 	testCases := map[string]struct {
 		idFile     clusterid.File
+		yesFlag    bool
+		stdin      string
 		setupFs    func(*require.Assertions, clusterid.File) afero.Fs
 		terminator spyCloudTerminator
 		wantErr    bool
+		wantAbort  bool
 	}{
 		"success": {
 			idFile:     clusterid.File{CloudProvider: cloudprovider.GCP},
 			setupFs:    setupFs,
 			terminator: &stubCloudTerminator{},
+			yesFlag:    true,
+		},
+		"interactive": {
+			idFile:     clusterid.File{CloudProvider: cloudprovider.GCP},
+			setupFs:    setupFs,
+			terminator: &stubCloudTerminator{},
+			stdin:      "yes\n",
+		},
+		"interactive abort": {
+			idFile:     clusterid.File{CloudProvider: cloudprovider.GCP},
+			setupFs:    setupFs,
+			terminator: &stubCloudTerminator{},
+			stdin:      "no\n",
+			wantAbort:  true,
 		},
 		"files to remove do not exist": {
 			idFile: clusterid.File{CloudProvider: cloudprovider.GCP},
@@ -76,11 +93,13 @@ func TestTerminate(t *testing.T) {
 				return fs
 			},
 			terminator: &stubCloudTerminator{},
+			yesFlag:    true,
 		},
 		"terminate error": {
 			idFile:     clusterid.File{CloudProvider: cloudprovider.GCP},
 			setupFs:    setupFs,
 			terminator: &stubCloudTerminator{terminateErr: someErr},
+			yesFlag:    true,
 			wantErr:    true,
 		},
 		"missing id file does not error": {
@@ -92,6 +111,7 @@ func TestTerminate(t *testing.T) {
 				return fs
 			},
 			terminator: &stubCloudTerminator{},
+			yesFlag:    true,
 		},
 		"remove file fails": {
 			idFile: clusterid.File{CloudProvider: cloudprovider.GCP},
@@ -100,6 +120,7 @@ func TestTerminate(t *testing.T) {
 				return afero.NewReadOnlyFs(fs)
 			},
 			terminator: &stubCloudTerminator{},
+			yesFlag:    true,
 			wantErr:    true,
 		},
 	}
@@ -112,9 +133,14 @@ func TestTerminate(t *testing.T) {
 			cmd := NewTerminateCmd()
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
+			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 
 			require.NotNil(tc.setupFs)
 			fileHandler := file.NewHandler(tc.setupFs(require, tc.idFile))
+
+			if tc.yesFlag {
+				require.NoError(cmd.Flags().Set("yes", "true"))
+			}
 
 			err := terminate(cmd, tc.terminator, fileHandler, nopSpinner{})
 
@@ -122,11 +148,15 @@ func TestTerminate(t *testing.T) {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				assert.True(tc.terminator.Called())
-				_, err = fileHandler.Stat(constants.AdminConfFilename)
-				assert.Error(err)
-				_, err = fileHandler.Stat(constants.ClusterIDsFileName)
-				assert.Error(err)
+				if tc.wantAbort {
+					assert.False(tc.terminator.Called())
+				} else {
+					assert.True(tc.terminator.Called())
+					_, err = fileHandler.Stat(constants.AdminConfFilename)
+					assert.Error(err)
+					_, err = fileHandler.Stat(constants.ClusterIDsFileName)
+					assert.Error(err)
+				}
 			}
 		})
 	}
