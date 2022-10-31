@@ -59,7 +59,7 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 	newDialer := func(validator *cloudcmd.Validator) *dialer.Dialer {
 		return dialer.New(nil, validator.V(cmd), &net.Dialer{})
 	}
-	helmLoader := &helm.ChartLoader{}
+
 	spinner := newSpinner(cmd.OutOrStdout())
 	defer spinner.Stop()
 
@@ -67,12 +67,12 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	return initialize(cmd, newDialer, fileHandler, helmLoader, license.NewClient(), spinner)
+	return initialize(cmd, newDialer, fileHandler, license.NewClient(), spinner)
 }
 
 // initialize initializes a Constellation.
 func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator) *dialer.Dialer,
-	fileHandler file.Handler, helmLoader helmLoader, quotaChecker license.QuotaChecker, spinner spinnerInterf,
+	fileHandler file.Handler, quotaChecker license.QuotaChecker, spinner spinnerInterf,
 ) error {
 	flags, err := evalFlagArgs(cmd)
 	if err != nil {
@@ -125,8 +125,8 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 	if err != nil {
 		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
 	}
-
-	helmDeployments, err := helmLoader.Load(provider, flags.conformance, masterSecret.Key, masterSecret.Salt, getEnforcedPCRs(provider, config), getEnforceIDKeyDigest(provider, config), k8sVersion)
+	helmLoader := helm.New(provider, k8sVersion)
+	helmDeployments, err := helmLoader.Load(provider, flags.conformance, masterSecret.Key, masterSecret.Salt, getEnforcedPCRs(provider, config), getEnforceIDKeyDigest(provider, config))
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
 	}
@@ -367,8 +367,4 @@ func getMarshaledServiceAccountURI(provider cloudprovider.Provider, config *conf
 
 type grpcDialer interface {
 	Dial(ctx context.Context, target string) (*grpc.ClientConn, error)
-}
-
-type helmLoader interface {
-	Load(csp cloudprovider.Provider, conformanceMode bool, masterSecret []byte, salt []byte, enforcedPCRs []uint32, enforceIDKeyDigest bool, k8sVersion versions.ValidK8sVersion) ([]byte, error)
 }

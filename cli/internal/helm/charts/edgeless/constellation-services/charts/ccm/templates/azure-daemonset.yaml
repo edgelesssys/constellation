@@ -1,4 +1,4 @@
-{{ if eq .Values.csp "Azure" }}
+{{- if eq .Values.csp "Azure" -}}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -70,4 +70,4 @@ spec:
         secret:
           secretName: azureconfig
   updateStrategy: {}
-{{ end }}
+{{- end -}}

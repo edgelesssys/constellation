@@ -31,7 +31,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
 	"github.com/edgelesssys/constellation/v2/internal/license"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -64,7 +63,6 @@ func TestInitialize(t *testing.T) {
 		idFile                  *clusterid.File
 		configMutator           func(*config.Config)
 		serviceAccKey           *gcpshared.ServiceAccountKey
-		helmLoader              stubHelmLoader
 		initServerAPI           *stubInitServer
 		masterSecretShouldExist bool
 		wantErr                 bool
@@ -163,7 +161,7 @@ func TestInitialize(t *testing.T) {
 			defer cancel()
 			cmd.SetContext(ctx)
 
-			err := initialize(cmd, newDialer, fileHandler, &tc.helmLoader, &stubLicenseClient{}, nopSpinner{})
+			err := initialize(cmd, newDialer, fileHandler, &stubLicenseClient{}, nopSpinner{})
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -405,7 +403,7 @@ func TestAttestation(t *testing.T) {
 	defer cancel()
 	cmd.SetContext(ctx)
 
-	err := initialize(cmd, newDialer, fileHandler, &stubHelmLoader{}, &stubLicenseClient{}, nopSpinner{})
+	err := initialize(cmd, newDialer, fileHandler, &stubLicenseClient{}, nopSpinner{})
 	assert.Error(err)
 	// make sure the error is actually a TLS handshake error
 	assert.Contains(err.Error(), "transport: authentication handshake failed")
@@ -503,12 +501,4 @@ func (c *stubLicenseClient) QuotaCheck(ctx context.Context, checkRequest license
 	return license.QuotaCheckResponse{
 		Quota: 25,
 	}, nil
-}
-
-type stubHelmLoader struct {
-	loadErr error
-}
-
-func (d *stubHelmLoader) Load(csp cloudprovider.Provider, conformanceMode bool, masterSecret []byte, salt []byte, enforcedPCRs []uint32, enforceIDKeyDigest bool, k8sVersion versions.ValidK8sVersion) ([]byte, error) {
-	return nil, d.loadErr
 }

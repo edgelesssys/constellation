@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
-	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -236,13 +235,12 @@ func initializeMiniCluster(cmd *cobra.Command, fileHandler file.Handler, spinner
 	newDialer := func(validator *cloudcmd.Validator) *dialer.Dialer {
 		return dialer.New(nil, validator.V(cmd), &net.Dialer{})
 	}
-	helmLoader := &helm.ChartLoader{}
 
 	cmd.Flags().String("master-secret", "", "")
 	cmd.Flags().String("endpoint", "", "")
 	cmd.Flags().Bool("conformance", false, "")
 
-	if err := initialize(cmd, newDialer, fileHandler, helmLoader, license.NewClient(), spinner); err != nil {
+	if err := initialize(cmd, newDialer, fileHandler, license.NewClient(), spinner); err != nil {
 		return err
 	}
 	return nil

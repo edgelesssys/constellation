@@ -42,6 +42,8 @@ jobs:
       - name: Unit Tests
         run: ctest -R unit
         working-directory: build
+        env:
+          TMPDIR: ${{ runner.temp }}
 
   test-darwin:
     runs-on: macos-12

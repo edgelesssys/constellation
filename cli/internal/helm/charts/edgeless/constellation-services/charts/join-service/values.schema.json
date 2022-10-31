@@ -27,8 +27,7 @@
         "image": {
             "description": "Container image to use for the spawned pods.",
             "type": "string",
-            "examples": ["ghcr.io/edgelesssys/constellation/join-service:latest"],
-            "pattern": "ghcr.io/edgelesssys/constellation/join-service:.+"
+            "examples": ["ghcr.io/edgelesssys/constellation/join-service:latest"]
         },
         "measurementSalt": {
             "description": "Salt used to generate node measurements",

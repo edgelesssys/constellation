@@ -34,15 +34,37 @@ import (
 //go:embed all:charts/*
 var HelmFS embed.FS
 
-type ChartLoader struct{}
+type ChartLoader struct {
+	joinServiceImage string
+	kmsImage         string
+	ccmImage         string
+}
 
-func (i *ChartLoader) Load(csp cloudprovider.Provider, conformanceMode bool, masterSecret []byte, salt []byte, enforcedPCRs []uint32, enforceIDKeyDigest bool, k8sVersion versions.ValidK8sVersion) ([]byte, error) {
+func New(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *ChartLoader {
+	var ccmImage string
+	switch csp {
+	case cloudprovider.AWS:
+		ccmImage = versions.VersionConfigs[k8sVersion].CloudControllerManagerImageAWS
+	case cloudprovider.Azure:
+		ccmImage = versions.VersionConfigs[k8sVersion].CloudControllerManagerImageAzure
+	case cloudprovider.GCP:
+		ccmImage = versions.VersionConfigs[k8sVersion].CloudControllerManagerImageGCP
+	}
+
+	return &ChartLoader{
+		joinServiceImage: versions.JoinImage,
+		kmsImage:         versions.KmsImage,
+		ccmImage:         ccmImage,
+	}
+}
+
+func (i *ChartLoader) Load(csp cloudprovider.Provider, conformanceMode bool, masterSecret []byte, salt []byte, enforcedPCRs []uint32, enforceIDKeyDigest bool) ([]byte, error) {
 	ciliumRelease, err := i.loadCilium(csp, conformanceMode)
 	if err != nil {
 		return nil, err
 	}
 
-	conServicesRelease, err := i.loadConstellationServices(csp, masterSecret, salt, enforcedPCRs, enforceIDKeyDigest, k8sVersion)
+	conServicesRelease, err := i.loadConstellationServices(csp, masterSecret, salt, enforcedPCRs, enforceIDKeyDigest)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +115,7 @@ func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode boo
 // loadConstellationServices loads the constellation-services chart from the embed.FS, marshals it into a helm-package .tgz and sets the values that can be set in the CLI.
 func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 	masterSecret []byte, salt []byte, enforcedPCRs []uint32,
-	enforceIDKeyDigest bool, k8sVersion versions.ValidK8sVersion,
+	enforceIDKeyDigest bool,
 ) (helm.Release, error) {
 	chart, err := loadChartsDir(HelmFS, "charts/edgeless/constellation-services")
 	if err != nil {
@@ -119,7 +141,7 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 			"internalCMName":   constants.InternalConfigMap,
 		},
 		"kms": map[string]any{
-			"image":                versions.KmsImage,
+			"image":                i.kmsImage,
 			"masterSecret":         base64.StdEncoding.EncodeToString(masterSecret),
 			"salt":                 base64.StdEncoding.EncodeToString(salt),
 			"namespace":            constants.ConstellationNamespace,
@@ -131,7 +153,7 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 		"join-service": map[string]any{
 			"csp":          csp,
 			"enforcedPCRs": string(enforcedPCRsJSON),
-			"image":        versions.JoinImage,
+			"image":        i.joinServiceImage,
 			"namespace":    constants.ConstellationNamespace,
 		},
 		"ccm": map[string]interface{}{
@@ -153,7 +175,7 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 				return helm.Release{}, errors.New("invalid ccm values")
 			}
 			ccmVals["Azure"] = map[string]any{
-				"image": versions.VersionConfigs[k8sVersion].CloudControllerManagerImageAzure,
+				"image": i.ccmImage,
 			}
 
 			vals["tags"] = map[string]any{
@@ -167,7 +189,7 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 				return helm.Release{}, errors.New("invalid ccm values")
 			}
 			ccmVals["GCP"] = map[string]any{
-				"image": versions.VersionConfigs[k8sVersion].CloudControllerManagerImageGCP,
+				"image": i.ccmImage,
 			}
 
 			vals["tags"] = map[string]any{
@@ -186,7 +208,7 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 			return helm.Release{}, errors.New("invalid ccm values")
 		}
 		ccmVals["AWS"] = map[string]any{
-			"image": versions.VersionConfigs[k8sVersion].CloudControllerManagerImageAWS,
+			"image": i.ccmImage,
 		}
 
 		vals["tags"] = map[string]any{
@@ -200,12 +222,18 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 // marshalChart takes a Chart object, packages it to a temporary file and returns the content of that file.
 // We currently need to take this approach of marshaling as dependencies are not marshaled correctly with json.Marshal.
 // This stems from the fact that chart.Chart does not export the dependencies property.
-// See: https://github.com/helm/helm/issues/11454
 func (i *ChartLoader) marshalChart(chart *chart.Chart) ([]byte, error) {
-	path, err := chartutil.Save(chart, os.TempDir())
+	// A separate tmpdir path is necessary since during unit testing multiple go routines are accessing the same path, possibly deleting files for other routines.
+	tmpDirPath, err := os.MkdirTemp("", "*")
+	defer os.Remove(tmpDirPath)
+	if err != nil {
+		return nil, fmt.Errorf("creating tmp dir: %w", err)
+	}
+
+	path, err := chartutil.Save(chart, tmpDirPath)
 	defer os.Remove(path)
 	if err != nil {
-		return nil, fmt.Errorf("packaging chart: %w", err)
+		return nil, fmt.Errorf("chartutil save: %w", err)
 	}
 	chartRaw, err := os.ReadFile(path)
 	if err != nil {
