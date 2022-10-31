@@ -44,12 +44,12 @@ func IsPreviewK8sVersion(version ValidK8sVersion) bool {
 const (
 	// Constellation images.
 	// These images are built in a way that they support all versions currently listed in VersionConfigs.
-	KonnectivityAgentImage  = "us.gcr.io/k8s-artifacts-prod/kas-network-proxy/proxy-agent:v0.0.33@sha256:48f2a4ec3e10553a81b8dd1c6fa5fe4bcc9617f78e71c1ca89c6921335e2d7da" // renovate:container
-	KonnectivityServerImage = "registry.k8s.io/kas-network-proxy/proxy-server:v0.0.33@sha256:2c111f004bec24888d8cfa2a812a38fb8341350abac67dcd0ac64e709dfe389c"             // renovate:container
-	JoinImage               = "ghcr.io/edgelesssys/constellation/join-service:v2.2.0-pre.0.20221030024656-7a6a0766e8d2@sha256:25176790084c35fcf4d2da93b7b4014118ea3af959f8f63fae6e107b6c16ddef"              // renovate:container
-	AccessManagerImage      = "ghcr.io/edgelesssys/constellation/access-manager:v2.2.0-pre.0.20221025135123-2d121d9243cf@sha256:08588f0c23353b53750b79122536260870d57b8dff1a1ff1020799e1e0b9f565"            // renovate:container
-	KmsImage                = "ghcr.io/edgelesssys/constellation/kmsserver:v2.2.0-pre.0.20221026125949-06ce47d16cbd@sha256:544ef14afee3ddca26effb9bacc858a8ee009bca409c7c3c042abc8a1345226b"                 // renovate:container
-	VerificationImage       = "ghcr.io/edgelesssys/constellation/verification-service:v2.2.0-pre.0.20221028155724-79f52e67cb0d@sha256:6e0600b22df4c7530e5f5e62bcf51bff9aeffbf9d44c2baa20ab6742bff858b8"      // renovate:container
+	KonnectivityAgentImage  = "us.gcr.io/k8s-artifacts-prod/kas-network-proxy/proxy-agent:v0.0.33@sha256:48f2a4ec3e10553a81b8dd1c6fa5fe4bcc9617f78e71c1ca89c6921335e2d7da"                              // renovate:container
+	KonnectivityServerImage = "registry.k8s.io/kas-network-proxy/proxy-server:v0.0.33@sha256:2c111f004bec24888d8cfa2a812a38fb8341350abac67dcd0ac64e709dfe389c"                                          // renovate:container
+	JoinImage               = "ghcr.io/edgelesssys/constellation/join-service:v2.2.0-pre.0.20221030024656-7a6a0766e8d2@sha256:25176790084c35fcf4d2da93b7b4014118ea3af959f8f63fae6e107b6c16ddef"         // renovate:container
+	AccessManagerImage      = "ghcr.io/edgelesssys/constellation/access-manager:v2.2.0-pre.0.20221025135123-2d121d9243cf@sha256:08588f0c23353b53750b79122536260870d57b8dff1a1ff1020799e1e0b9f565"       // renovate:container
+	KmsImage                = "ghcr.io/edgelesssys/constellation/kmsserver:v2.2.0-pre.0.20221026125949-06ce47d16cbd@sha256:544ef14afee3ddca26effb9bacc858a8ee009bca409c7c3c042abc8a1345226b"            // renovate:container
+	VerificationImage       = "ghcr.io/edgelesssys/constellation/verification-service:v2.2.0-pre.0.20221028155724-79f52e67cb0d@sha256:6e0600b22df4c7530e5f5e62bcf51bff9aeffbf9d44c2baa20ab6742bff858b8" // renovate:container
 	// Check for new versions at https://github.com/GoogleCloudPlatform/guest-agent/releases and update in /.github/workflows/build-gcp-guest-agent.yml.
 	GcpGuestImage            = "ghcr.io/edgelesssys/gcp-guest-agent:20220927.00@sha256:3dea1ae3f162d2353e6584b325f0e325a39cda5f380f41e5a0ee43c6641d3905"                                                  // renovate:container
 	NodeOperatorCatalogImage = "ghcr.io/edgelesssys/constellation/node-operator-catalog:v2.2.0-pre.0.20221024145821-b35b74b77278@sha256:f1ee4e2642fd758083344df10a98195213dda299fbbc720bf57873e392e001f1" // renovate:container
