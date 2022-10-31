@@ -114,7 +114,7 @@ The `image` field is independent of the CSP and is a used to discover the CSP-sp
 The CLI can find a CSP- and region specific image reference by looking up the `image version uid` in the following order:
 
 - if a local file `<IMAGE-VERSION-UID>.json` exists, use the lookup table in that file
-- otherwise, load the image lookup table from a well known URL (e.g. `https://cdn.edgeless.systems/images/<IMAGE-VERSION-UID>.json`) and use the lookup table in that file
+- otherwise, load the image lookup table from a well known URL (e.g. `https://cdn.confidential.cloud/images/<IMAGE-VERSION-UID>.json`) and use the lookup table in that file
 - choose the CSP-specific image reference for the current region and security type:
   - On AWS, use the AMI ID for the current region (e.g. `.aws.us-east-1`)
   - On Azure, use the image ID for the security type (CVM or Trusted Launch) (e.g. `.azure.cvm`)
