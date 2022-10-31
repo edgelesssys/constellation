@@ -1,11 +1,9 @@
-name: e2e Test Azure Weekly
-# This workflow only runs once per week. It executes the full e2e tests on the latest-1 and latest-2 versions. Currently 1.23 and 1.22.
-# It is executed every sunday at 19:00.
+name: e2e test daily
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 19 * * 0"
+    - cron: "0 3 * * 2-5" # At 03:00 on every day-of-week from Tuesday through Friday.
 
 env:
   ARM_CLIENT_ID: "b657a00e-813a-4dc7-9b09-fa498a254d71"
@@ -14,10 +12,10 @@ env:
   ARM_TENANT_ID: "adb650a8-5da3-4b15-b4b0-3daf65ff7626"
 
 jobs:
-  test-other-versions:
+  e2e-daily:
     strategy:
       matrix:
-        version: ["1.23", "1.25"]
+        provider: ["gcp", "azure"]
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -31,29 +29,32 @@ jobs:
           go-version: "1.19.2"
 
       - name: Login to Azure
+        if: matrix.provider == 'azure'
         uses: ./.github/actions/azure_login
         with:
           azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
 
       - name: Create Azure resource group
+        if: matrix.provider == 'azure'
         id: az_resource_group_gen
         shell: bash
         run: |
           uuid=$(cat /proc/sys/kernel/random/uuid)
           name=e2e-test-${uuid%%-*}
-          az group create --location westus --name $name --tags e2e
+          az group create --location northeurope --name $name --tags e2e
           echo "res_group_name=$name" >> $GITHUB_OUTPUT
 
-      - name: Run Azure E2E test
+      - name: Run E2E test
         uses: ./.github/actions/e2e_test
         with:
           workerNodesCount: "2"
           controlNodesCount: "3"
-          cloudProvider: "azure"
-          test: "sonobuoy full"
-          kubernetesVersion: ${{ matrix.version }}
+          cloudProvider: ${{ matrix.provider }}
           azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
+          gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
+          test: "sonobuoy full"
 
       - name: Always terminate cluster
         if: always()
@@ -63,20 +64,20 @@ jobs:
       - name: Notify teams channel
         if: ${{ failure() && github.ref == 'refs/heads/main' }}
         continue-on-error: true
+        shell: bash
+        working-directory: .github/actions/e2e_test
         run: |
           sudo apt-get install gettext-base -y
-          export TEAMS_JOB_NAME=azure
+          export TEAMS_JOB_NAME=${{ matrix.provider }}
           export TEAMS_RUN_ID=${{ github.run_id }}
           envsubst < teams-payload.json > to-be-send.json
           curl                                          \
             -H "Content-Type: application/json"         \
             -d @to-be-send.json                         \
             "${{ secrets.MS_TEAMS_WEBHOOK_URI }}"
-        shell: bash
-        working-directory: .github/actions/e2e_test
 
       - name: Always destroy Azure resource group
-        if: always()
+        if: always() && matrix.provider == 'azure'
         shell: bash
         run: |
           az group delete \
