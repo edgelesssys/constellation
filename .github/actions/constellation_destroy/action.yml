@@ -4,5 +4,5 @@ runs:
   using: 'composite'
   steps:
   - name: Constellation terminate
-    run: constellation terminate
+    run: constellation terminate --yes
     shell: bash
