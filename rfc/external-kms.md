@@ -28,7 +28,7 @@ Particularly, it replicates the DEK derivation of the CKMS in ClusterKMS mode.
 The CKMS serves a gRPC API to get DEKs.
 It's designed to support different (cloud) KMS services as backend.
 Currently, only the ClusterKMS backend is used, which uses the master secret from the Kubernetes secrets to derive the DEKs.
-The only clients of the CKMS are the CSI drivers for now.
+The clients of the CKMS are the join-service and the CSI drivers.
 
 ### Implemented, but yet unused features
 
@@ -85,7 +85,7 @@ https://github.com/hashicorp/go-kms-wrapping
 This library wraps various KMS services and provides a common interface to them.
 It's similar to the CKMS implementation.
 We may consider to replace our own implementation with this.
-However, it also hasn't support for KMIP.
+However, it also doesn't have support for KMIP.
 
 ### Conclusion
 
