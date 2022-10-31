@@ -92,7 +92,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.23.2@sha256:5caf74bfe1c6e1b7b7d40345db52b54eeea7229a8fd73c7db9488ef87dc7a496", // renovate:container
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
 		// TODO: use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
-		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v23.0.0@sha256:476616939b85345d7188815045847fcbea8d502464083407cdbb6c934e35820d", // renovate:container
+		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v23.0.0@sha256:bf54ecb58fef5b1358d1dd25b1068598a74adbc7e7622b42a2708d1ed4bdc4bc", // renovate:container
 		// CloudControllerManagerImageAzure is the CCM image used on Azure.
 		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.23.21@sha256:8dea59c658fb7f4ada03bb15bd8a6a5ff8a03b27ff1da2f2b9dc30ee7ee78831", // renovate:container
 		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
@@ -111,7 +111,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.24.1@sha256:4b75b09cc5b3959d06a8c2fb84f165e8163ec0153eaa6a48ece6c8113e78e720", // renovate:container
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
 		// TODO: use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
-		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v24.0.0@sha256:8ee4261980019d3ee8517e12f36fc313fe3ea3e44dd40ee2e004b57f6e5ef171", // renovate:container
+		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v24.0.0@sha256:80e2910509ccb4d99b2e08182c2101fbed64f0663194adae08fc1cf878ecc58b", // renovate:container
 		// CloudControllerManagerImageAzure is the CCM image used on Azure.
 		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.24.8@sha256:109de6e558fa3f68c5d786adddf2eb864fde36c1887a3a04e0d11c85a39954c0", // renovate:container
 		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
