@@ -222,12 +222,11 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 // marshalChart takes a Chart object, packages it to a temporary file and returns the content of that file.
 // We currently need to take this approach of marshaling as dependencies are not marshaled correctly with json.Marshal.
 // This stems from the fact that chart.Chart does not export the dependencies property.
-// See: https://github.com/helm/helm/issues/11454
 func (i *ChartLoader) marshalChart(chart *chart.Chart) ([]byte, error) {
 	path, err := chartutil.Save(chart, os.TempDir())
 	defer os.Remove(path)
 	if err != nil {
-		return nil, fmt.Errorf("packaging chart: %w", err)
+		return nil, fmt.Errorf("chartutil save: %w", err)
 	}
 	chartRaw, err := os.ReadFile(path)
 	if err != nil {
