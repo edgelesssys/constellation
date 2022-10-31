@@ -33,7 +33,7 @@ import (
 const imageReleaseURL = "https://github.com/edgelesssys/constellation/releases/latest/download/versions-manifest.json"
 
 var (
-	azureCVMRxp = regexp.MustCompile(`^\/CommunityGalleries\/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df\/Images\/constellation\/Versions\/[\d]+.[\d]+.[\d]+$`)
+	azureCVMRxp = regexp.MustCompile(`^(?i)\/CommunityGalleries\/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df\/Images\/constellation\/Versions\/[\d]+.[\d]+.[\d]+$`)
 	gcpCVMRxp   = regexp.MustCompile(`^projects\/constellation-images\/global\/images\/constellation-(v[\d]+-[\d]+-[\d]+)$`)
 )
 
