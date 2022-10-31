@@ -29,6 +29,7 @@ func NewTerminateCmd() *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE:  runTerminate,
 	}
+	cmd.Flags().BoolP("yes", "y", false, "terminate the cluster without further confirmation")
 	return cmd
 }
 
@@ -44,8 +45,28 @@ func runTerminate(cmd *cobra.Command, args []string) error {
 
 func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.Handler, spinner spinnerInterf,
 ) error {
+	flags, err := parseTerminateFlags(cmd)
+	if err != nil {
+		return err
+	}
+
+	if !flags.yes {
+		cmd.Println("You are about to terminate a Constellation cluster.")
+		cmd.Println("All of its associated resources will be DESTROYED.")
+		cmd.Println("This includes any other Terraform workspace in the current directory.")
+		cmd.Println("This action is irreversible and ALL DATA WILL BE LOST.")
+		ok, err := askToConfirm(cmd, "Do you want to continue?")
+		if err != nil {
+			return err
+		}
+		if !ok {
+			cmd.Println("The termination of the cluster was aborted.")
+			return nil
+		}
+	}
+
 	spinner.Start("Terminating", false)
-	err := terminator.Terminate(cmd.Context())
+	err = terminator.Terminate(cmd.Context())
 	spinner.Stop()
 	if err != nil {
 		return fmt.Errorf("terminating Constellation cluster: %w", err)
@@ -63,4 +84,19 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 	}
 
 	return retErr
+}
+
+type terminateFlags struct {
+	yes bool
+}
+
+func parseTerminateFlags(cmd *cobra.Command) (terminateFlags, error) {
+	yes, err := cmd.Flags().GetBool("yes")
+	if err != nil {
+		return terminateFlags{}, err
+	}
+
+	return terminateFlags{
+		yes: yes,
+	}, nil
 }
