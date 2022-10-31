@@ -223,7 +223,14 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 // We currently need to take this approach of marshaling as dependencies are not marshaled correctly with json.Marshal.
 // This stems from the fact that chart.Chart does not export the dependencies property.
 func (i *ChartLoader) marshalChart(chart *chart.Chart) ([]byte, error) {
-	path, err := chartutil.Save(chart, os.TempDir())
+	// A separate tmpdir path is necessary since during unit testing multiple go routines are accessing the same path, possibly deleting files for other routines.
+	tmpDirPath, err := os.MkdirTemp("", "*")
+	defer os.Remove(tmpDirPath)
+	if err != nil {
+		return nil, fmt.Errorf("creating tmp dir: %w", err)
+	}
+
+	path, err := chartutil.Save(chart, tmpDirPath)
 	defer os.Remove(path)
 	if err != nil {
 		return nil, fmt.Errorf("chartutil save: %w", err)
