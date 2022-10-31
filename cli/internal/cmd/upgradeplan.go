@@ -181,12 +181,12 @@ func getCompatibleImages(csp cloudprovider.Provider, currentVersion string, imag
 // getCompatibleImageMeasurements retrieves the expected measurements for each image.
 func getCompatibleImageMeasurements(ctx context.Context, client *http.Client, rekor rekorVerifier, pubK []byte, images map[string]config.UpgradeConfig) error {
 	for idx, img := range images {
-		measurementsURL, err := url.Parse(constants.S3PublicBucket + img.Image + "/measurements.yaml")
+		measurementsURL, err := url.Parse(constants.S3PublicBucket + strings.ToLower(img.Image) + "/measurements.yaml")
 		if err != nil {
 			return err
 		}
 
-		signatureURL, err := url.Parse(constants.S3PublicBucket + img.Image + "/measurements.yaml.sig")
+		signatureURL, err := url.Parse(constants.S3PublicBucket + strings.ToLower(img.Image) + "/measurements.yaml.sig")
 		if err != nil {
 			return err
 		}
