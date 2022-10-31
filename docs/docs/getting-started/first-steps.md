@@ -271,7 +271,7 @@ This action is irreversible and ALL DATA WILL BE LOST.
 Do you want to continue? [y/n]:
 ```
 
-After confirming with either "y" or "yes", the cluster will be terminated :
+After confirming with either `y` or `yes`, the cluster will be terminated :
 
 ```shell-session
 Terminating ...
