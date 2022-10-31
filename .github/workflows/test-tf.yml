@@ -23,7 +23,7 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@b3bda2d04e14ddd6caa48ba578d4547f1c7de8d5
+        uses: hashicorp/setup-terraform@bbe167fbdaa1a3bd046bdd70eba9dd3dddcca99c # tag=v2.0.2
 
       - name: Terraform format and validate
         shell: bash
