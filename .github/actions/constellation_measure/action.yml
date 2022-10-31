@@ -39,6 +39,7 @@ runs:
   steps:
     - name: Build hack/pcr-reader
       run: |
+        echo "::group::Build pcr-reader"
         go build .
         echo "$(pwd)" >> $GITHUB_PATH
       working-directory: hack/pcr-reader
