@@ -22,10 +22,12 @@ import (
 
 func main() {
 	provider := flag.String("cloud-provider", "", "cloud service provider this binary is running on")
-	verbosity := flag.Int("v", 0, logger.CmdLineVerbosityDescription)
+	// FIXME: define flag again once its definition no longer collides with glog.
+	// This should happen as soon as https://github.com/google/go-sev-guest/issues/23 is merged and consumed by us.
+	verbosity := 0 // flag.Int("v", 0, logger.CmdLineVerbosityDescription)
 
 	flag.Parse()
-	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(*verbosity))
+	log := logger.New(logger.JSONLog, logger.VerbosityFromInt(verbosity))
 
 	log.With(zap.String("version", constants.VersionInfo), zap.String("cloudProvider", *provider)).
 		Infof("Constellation Verification Service")
