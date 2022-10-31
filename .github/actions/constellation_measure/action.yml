@@ -99,7 +99,7 @@ runs:
     - name: Upload to S3
       run: |
         IMAGE=$(yq e ".provider.${CSP}.image" constellation-conf.yaml)
-        S3_PATH=s3://${PUBLIC_BUCKET_NAME}/${IMAGE}
+        S3_PATH=s3://${PUBLIC_BUCKET_NAME}/${IMAGE,,}
         aws s3 cp measurements.yaml ${S3_PATH}/measurements.yaml
         if test -f measurements.yaml.sig; then
           aws s3 cp measurements.yaml.sig ${S3_PATH}/measurements.yaml.sig
