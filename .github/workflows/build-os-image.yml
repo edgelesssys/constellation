@@ -437,19 +437,19 @@ jobs:
           unsquashfs -user-xattrs -d image.root.tree image.root.raw
           echo "::endgroup::"
 
-      - uses: anchore/sbom-action@b5042e9d19d8b32849779bfe17673ff84aec702d # tag=v0.12.0
+      - uses: anchore/sbom-action@b7e8507c6a3c89b7099a0198366d862c8f3ad8f1 # tag=v0.13.0
         with:
           path: image.root.tree
           artifact-name: sbom.spdx.json
           format: spdx-json
 
-      - uses: anchore/sbom-action@b5042e9d19d8b32849779bfe17673ff84aec702d # tag=v0.12.0
+      - uses: anchore/sbom-action@b7e8507c6a3c89b7099a0198366d862c8f3ad8f1 # tag=v0.13.0
         with:
           path: image.root.tree
           artifact-name: sbom.cyclonedx.json
           format: cyclonedx-json
 
-      - uses: anchore/sbom-action@b5042e9d19d8b32849779bfe17673ff84aec702d # tag=v0.12.0
+      - uses: anchore/sbom-action@b7e8507c6a3c89b7099a0198366d862c8f3ad8f1 # tag=v0.13.0
         with:
           path: image.root.tree
           artifact-name: sbom.syft.json
