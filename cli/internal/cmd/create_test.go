@@ -44,7 +44,7 @@ func TestCreate(t *testing.T) {
 		nameFlag            string
 		stdin               string
 		wantErr             bool
-		wantAbbort          bool
+		wantAbort           bool
 	}{
 		"create": {
 			setupFs:             fsWithDefaultConfig,
@@ -69,7 +69,7 @@ func TestCreate(t *testing.T) {
 			controllerCountFlag: intPtr(1),
 			workerCountFlag:     intPtr(1),
 			stdin:               "no\n",
-			wantAbbort:          true,
+			wantAbort:           true,
 		},
 		"interactive error": {
 			setupFs:             fsWithDefaultConfig,
@@ -218,7 +218,7 @@ func TestCreate(t *testing.T) {
 				assert.Error(err)
 			} else {
 				assert.NoError(err)
-				if tc.wantAbbort {
+				if tc.wantAbort {
 					assert.False(tc.creator.createCalled)
 				} else {
 					assert.True(tc.creator.createCalled)
