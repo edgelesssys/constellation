@@ -45,12 +45,12 @@ func runTerminate(cmd *cobra.Command, args []string) error {
 
 func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.Handler, spinner spinnerInterf,
 ) error {
-	flags, err := parseTerminateFlags(cmd)
+	yesFlag, err := cmd.Flags().GetBool("yes")
 	if err != nil {
 		return err
 	}
 
-	if !flags.yes {
+	if !yesFlag {
 		cmd.Println("You are about to terminate a Constellation cluster.")
 		cmd.Println("All of its associated resources will be DESTROYED.")
 		cmd.Println("This includes any other Terraform workspace in the current directory.")
@@ -84,19 +84,4 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 	}
 
 	return retErr
-}
-
-type terminateFlags struct {
-	yes bool
-}
-
-func parseTerminateFlags(cmd *cobra.Command) (terminateFlags, error) {
-	yes, err := cmd.Flags().GetBool("yes")
-	if err != nil {
-		return terminateFlags{}, err
-	}
-
-	return terminateFlags{
-		yes: yes,
-	}, nil
 }
