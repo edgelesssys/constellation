@@ -26,6 +26,7 @@ on:
           - "sonobuoy quick"
           - "sonobuoy full"
           - "autoscaling"
+          - "k-bench"
           - "nop"
         required: true
       kubernetesVersion:
