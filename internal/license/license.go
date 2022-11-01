@@ -23,11 +23,14 @@ const (
 )
 
 type (
+	// Action performed by Constellation.
 	Action string
 )
 
 const (
+	// Init action denotes the initialization of a Constellation cluster.
 	Init Action = "init"
+	// test action is only to be used in testing.
 	test Action = "test"
 )
 
@@ -97,6 +100,7 @@ func licenseURL() *url.URL {
 	}
 }
 
+// QuotaChecker checks the vCPU quota for a given license.
 type QuotaChecker interface {
 	QuotaCheck(ctx context.Context, checkRequest QuotaCheckRequest) (QuotaCheckResponse, error)
 }

@@ -160,14 +160,17 @@ func (s *Manager) saveConfiguration(passphrase []byte) error {
 	return s.config.Generate(stateDiskMappedName, s.diskPath, filepath.Join(keyPath, keyFile), cryptsetupOptions)
 }
 
+// RecoveryServer interface serves a recovery server.
 type RecoveryServer interface {
 	Serve(context.Context, net.Listener, string) (key, secret []byte, err error)
 }
 
+// RejoinClient interface starts a rejoin client.
 type RejoinClient interface {
 	Start(context.Context, string) (key, secret []byte)
 }
 
+// NodeRecoverer bundles a RecoveryServer and RejoinClient.
 type NodeRecoverer struct {
 	recoveryServer RecoveryServer
 	rejoinClient   RejoinClient

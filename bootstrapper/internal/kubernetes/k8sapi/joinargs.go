@@ -14,10 +14,13 @@ import (
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
+// ParseJoinCommand parses API server endpoint, token and CA cert hash from
+// provided kubeadm join shell command, and returns it as a BootstrapTokenDiscovery.
+//
+// Expected format:
+// kubeadm join [API_SERVER_ENDPOINT] --token [TOKEN] --discovery-token-ca-cert-hash [DISCOVERY_TOKEN_CA_CERT_HASH] --control-plane
+// .
 func ParseJoinCommand(joinCommand string) (*kubeadm.BootstrapTokenDiscovery, error) {
-	// Format:
-	// kubeadm join [API_SERVER_ENDPOINT] --token [TOKEN] --discovery-token-ca-cert-hash [DISCOVERY_TOKEN_CA_CERT_HASH] --control-plane
-
 	// split and verify that this is a kubeadm join command
 	argv, err := shlex.Split(joinCommand)
 	if err != nil {

@@ -34,12 +34,14 @@ import (
 //go:embed all:charts/*
 var helmFS embed.FS
 
+// ChartLoader loads embedded helm charts.
 type ChartLoader struct {
 	joinServiceImage string
 	kmsImage         string
 	ccmImage         string
 }
 
+// New creates a new ChartLoader.
 func New(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *ChartLoader {
 	var ccmImage string
 	switch csp {
@@ -58,6 +60,7 @@ func New(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *Chart
 	}
 }
 
+// Load the embedded helm charts.
 func (i *ChartLoader) Load(csp cloudprovider.Provider, conformanceMode bool, masterSecret []byte, salt []byte, enforcedPCRs []uint32, enforceIDKeyDigest bool) ([]byte, error) {
 	ciliumRelease, err := i.loadCilium(csp, conformanceMode)
 	if err != nil {

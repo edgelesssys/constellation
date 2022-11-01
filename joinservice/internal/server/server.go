@@ -149,6 +149,7 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 	}, nil
 }
 
+// IssueRejoinTicket issues a ticket for nodes to rejoin cluster.
 func (s *Server) IssueRejoinTicket(ctx context.Context, req *joinproto.IssueRejoinTicketRequest) (*joinproto.IssueRejoinTicketResponse, error) {
 	log := s.log.With(zap.String("peerAddress", grpclog.PeerAddrFromContext(ctx)))
 	log.Infof("IssueRejoinTicket called")

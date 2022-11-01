@@ -27,6 +27,7 @@ type Issuer struct {
 	*vtpm.Issuer
 }
 
+// NewIssuer creates a new OpenVTPM based issuer for AWS.
 func NewIssuer() *Issuer {
 	return &Issuer{
 		Issuer: vtpm.NewIssuer(

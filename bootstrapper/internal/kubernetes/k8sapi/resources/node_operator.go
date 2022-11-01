@@ -30,6 +30,7 @@ var NodeOperatorCRDNames = []string{
 	"scalinggroups.update.edgeless.systems",
 }
 
+// NodeOperatorDeployment groups all deployments for node operator.
 type NodeOperatorDeployment struct {
 	CatalogSource operatorsv1alpha1.CatalogSource
 	OperatorGroup operatorsv1.OperatorGroup
@@ -93,6 +94,7 @@ func NewNodeOperatorDeployment(cloudProvider string, uid string) *NodeOperatorDe
 	}
 }
 
+// Marshal to Kubernetes YAML.
 func (c *NodeOperatorDeployment) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(c)
 }

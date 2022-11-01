@@ -41,18 +41,24 @@ type metadataAPI interface {
 	InstanceName() (string, error)
 }
 
+// Operation represents a GCP Operation resource, which is one of: global, regional
+// or zonal.
 type Operation interface {
 	Proto() *computepb.Operation
 }
 
+// InstanceIterator iterates over GCP VM instances.
 type InstanceIterator interface {
 	Next() (*computepb.Instance, error)
 }
 
+// SubnetworkIterator iterates over GCP subnetworks.
 type SubnetworkIterator interface {
 	Next() (*computepb.Subnetwork, error)
 }
 
+// ForwardingRuleIterator iterates over GCP forwards rules. Those rules forward
+// traffic to a different target when receiving traffic.
 type ForwardingRuleIterator interface {
 	Next() (*computepb.ForwardingRule, error)
 }

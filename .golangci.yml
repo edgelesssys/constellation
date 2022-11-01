@@ -36,6 +36,7 @@ issues:
   max-issues-per-linter: 0
   max-same-issues: 20
   include:
+    - EXC0012
     - EXC0014
 
 linters-settings:

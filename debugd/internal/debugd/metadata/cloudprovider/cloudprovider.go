@@ -58,12 +58,14 @@ func NewAzure(ctx context.Context) (*Fetcher, error) {
 	}, nil
 }
 
+// NewQEMU creates a new Fetcher with QEMU metadata API.
 func NewQEMU() *Fetcher {
 	return &Fetcher{
 		metaAPI: &qemucloud.Metadata{},
 	}
 }
 
+// Role returns node role via meta data API.
 func (f *Fetcher) Role(ctx context.Context) (role.Role, error) {
 	self, err := f.metaAPI.Self(ctx)
 	if err != nil {
@@ -99,6 +101,7 @@ func (f *Fetcher) DiscoverDebugdIPs(ctx context.Context) ([]string, error) {
 	return ips, nil
 }
 
+// DiscoverLoadbalancerIP gets load balancer IP from metadata API.
 func (f *Fetcher) DiscoverLoadbalancerIP(ctx context.Context) (string, error) {
 	lbEndpoint, err := f.metaAPI.GetLoadBalancerEndpoint(ctx)
 	if err != nil {

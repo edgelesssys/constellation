@@ -15,6 +15,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// CloudNodeManagerDeployment defines a CSP specific node manager deployment.
 type CloudNodeManagerDeployment struct {
 	ServiceAccount     k8s.ServiceAccount
 	ClusterRole        rbac.ClusterRole

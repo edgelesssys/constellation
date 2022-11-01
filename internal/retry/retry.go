@@ -59,6 +59,7 @@ func (r *IntervalRetrier) Do(ctx context.Context) error {
 	}
 }
 
+// Doer does something and returns an error.
 type Doer interface {
 	// Do performs an operation.
 	//

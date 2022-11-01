@@ -27,6 +27,7 @@ type CloudControllerManager struct {
 	metadata ccmMetadata
 }
 
+// NewCloudControllerManager created a new cloud controller manager.
 func NewCloudControllerManager(metadata ccmMetadata) *CloudControllerManager {
 	return &CloudControllerManager{
 		metadata: metadata,

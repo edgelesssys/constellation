@@ -120,6 +120,7 @@ func (c *Client) RetrieveZone() (string, error) {
 	return value, nil
 }
 
+// RetrieveInstanceName retrieves the name of the current instance.
 func (c *Client) RetrieveInstanceName() (string, error) {
 	value, err := c.metadataAPI.InstanceName()
 	if err != nil {
@@ -128,6 +129,7 @@ func (c *Client) RetrieveInstanceName() (string, error) {
 	return value, nil
 }
 
+// RetrieveInstanceMetadata retrieves the metadata of the current instance.
 func (c *Client) RetrieveInstanceMetadata(attr string) (string, error) {
 	value, err := c.metadataAPI.InstanceAttributeValue(attr)
 	if err != nil {

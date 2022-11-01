@@ -27,10 +27,15 @@ const (
 type SystemdAction uint32
 
 const (
+	// Unknown is the default SystemdAction and does nothing.
 	Unknown SystemdAction = iota
+	// Start a systemd service.
 	Start
+	// Stop a systemd service.
 	Stop
+	// Restart a systemd service.
 	Restart
+	// Reload a systemd service.
 	Reload
 )
 

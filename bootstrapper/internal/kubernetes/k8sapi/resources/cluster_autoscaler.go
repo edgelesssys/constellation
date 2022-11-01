@@ -18,6 +18,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+// AutoscalerDeployment is used to deploy the [K8s autoscaler].
+//
+// [K8s autoscaler]: https://github.com/kubernetes/autoscaler
 type AutoscalerDeployment struct {
 	PodDisruptionBudget policy.PodDisruptionBudget
 	ServiceAccount      k8s.ServiceAccount
@@ -491,6 +494,7 @@ func NewDefaultAutoscalerDeployment(extraVolumes []k8s.Volume, extraVolumeMounts
 	}
 }
 
+// Marshal into k8s resource YAML.
 func (a *AutoscalerDeployment) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(a)
 }

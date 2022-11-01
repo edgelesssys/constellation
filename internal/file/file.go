@@ -49,9 +49,12 @@ const (
 )
 
 var (
-	OptNone      = Option{optNone}
+	// OptNone is a no-op.
+	OptNone = Option{optNone}
+	// OptOverwrite overwrites an existing file.
 	OptOverwrite = Option{optOverwrite}
-	OptMkdirAll  = Option{optMkdirAll}
+	// OptMkdirAll creates the path to the file.
+	OptMkdirAll = Option{optMkdirAll}
 )
 
 // Handler handles file interaction.

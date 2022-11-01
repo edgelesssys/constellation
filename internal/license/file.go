@@ -13,6 +13,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 )
 
+// FromFile reads the license from fileHandler at path and returns it as a string.
 func FromFile(fileHandler file.Handler, path string) (string, error) {
 	readBytes, err := fileHandler.Read(path)
 	if err != nil {

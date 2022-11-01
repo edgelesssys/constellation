@@ -22,6 +22,7 @@ import (
 	kmspb "google.golang.org/genproto/googleapis/cloud/kms/v1"
 )
 
+// Well known endpoints for KMS services.
 const (
 	AWSKMSURI     = "kms://aws?keyPolicy=%s"
 	AzureKMSURI   = "kms://azure-kms?name=%s&type=%s"
@@ -34,6 +35,7 @@ const (
 	NoStoreURI    = "storage://no-store"
 )
 
+// KMSInformation about an existing KMS.
 type KMSInformation struct {
 	KMSURI             string
 	StorageURI         string

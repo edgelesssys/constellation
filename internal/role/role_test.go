@@ -32,10 +32,6 @@ func TestMarshal(t *testing.T) {
 			role:     Worker,
 			wantJSON: `"Worker"`,
 		},
-		"admin role": {
-			role:     Admin,
-			wantJSON: `"Admin"`,
-		},
 		"unknown role": {
 			role:     Unknown,
 			wantJSON: `"Unknown"`,
@@ -84,14 +80,6 @@ func TestUnmarshal(t *testing.T) {
 		"lowercase worker can be unmarshaled": {
 			json:     `"worker"`,
 			wantRole: Worker,
-		},
-		"Admin can be unmarshaled": {
-			json:     `"Admin"`,
-			wantRole: Admin,
-		},
-		"lowercase admin can be unmarshaled": {
-			json:     `"admin"`,
-			wantRole: Admin,
 		},
 		"other strings unmarshal to the unknown role": {
 			json:     `"anything"`,

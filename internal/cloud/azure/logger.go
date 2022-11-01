@@ -14,6 +14,8 @@ import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 )
 
+// Logger implements CloudLogger interface for Azure to Disclose early boot
+// logs into Azure's App Insights service.
 type Logger struct {
 	client appinsights.TelemetryClient
 }

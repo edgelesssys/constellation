@@ -84,11 +84,14 @@ const (
 	//nolint:revive
 	V1_25 ValidK8sVersion = "1.25"
 
+	// Default k8s version deployed by Constellation.
 	Default ValidK8sVersion = V1_24
 )
 
 var (
-	NodeOperatorVersion            = versionFromDockerImage(NodeOperatorCatalogImage)
+	// NodeOperatorVersion version of node operator.
+	NodeOperatorVersion = versionFromDockerImage(NodeOperatorCatalogImage)
+	// NodeMaintenanceOperatorVersion version of node maintenance operator.
 	NodeMaintenanceOperatorVersion = versionFromDockerImage(NodeMaintenanceOperatorCatalogImage)
 )
 

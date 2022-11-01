@@ -31,6 +31,7 @@ type FirewallRule struct {
 // Firewall contains all firewall rules to be applied for either ingress or egress.
 type Firewall []FirewallRule
 
+// GCP returns firewall as GCP Firewall object.
 func (f Firewall) GCP() ([]*computepb.Firewall, error) {
 	var fw []*computepb.Firewall
 	for _, rule := range f {
@@ -63,6 +64,7 @@ func (f Firewall) GCP() ([]*computepb.Firewall, error) {
 	return fw, nil
 }
 
+// Azure returns firewall as Azure SecurityRule object.
 func (f Firewall) Azure() ([]*armnetwork.SecurityRule, error) {
 	var fw []*armnetwork.SecurityRule
 	for i, rule := range f {
@@ -92,6 +94,7 @@ func (f Firewall) Azure() ([]*armnetwork.SecurityRule, error) {
 	return fw, nil
 }
 
+// AWS returns firewall as IpPermission object.
 func (f Firewall) AWS() []ec2types.IpPermission {
 	var fw []ec2types.IpPermission
 	for _, rule := range f {
@@ -111,7 +114,9 @@ func (f Firewall) AWS() []ec2types.IpPermission {
 }
 
 const (
+	// MinPort is the minimum TCP port number.
 	MinPort = 0
+	// MaxPort is the maximum TCP port number.
 	MaxPort = 65535
 )
 

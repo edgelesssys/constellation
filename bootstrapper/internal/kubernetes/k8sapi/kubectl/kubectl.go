@@ -80,6 +80,7 @@ func (k *Kubectl) SetKubeconfig(kubeconfig []byte) {
 	k.kubeconfig = kubeconfig
 }
 
+// CreateConfigMap creates the provided configmap.
 func (k *Kubectl) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error {
 	client, err := k.clientGenerator.NewClient(k.kubeconfig)
 	if err != nil {
@@ -94,6 +95,10 @@ func (k *Kubectl) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMa
 	return nil
 }
 
+// AddTolerationsToDeployment adds [K8s tolerations] to the deployment, identified
+// by name and namespace.
+//
+// [K8s tolerations]: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
 func (k *Kubectl) AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error {
 	client, err := k.clientGenerator.NewClient(k.kubeconfig)
 	if err != nil {
@@ -107,6 +112,10 @@ func (k *Kubectl) AddTolerationsToDeployment(ctx context.Context, tolerations []
 	return nil
 }
 
+// AddNodeSelectorsToDeployment adds [K8s selectors] to the deployment, identified
+// by name and namespace.
+//
+// [K8s selectors]: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 func (k *Kubectl) AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error {
 	client, err := k.clientGenerator.NewClient(k.kubeconfig)
 	if err != nil {

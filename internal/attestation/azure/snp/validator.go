@@ -308,6 +308,9 @@ func (a *azureInstanceInfo) validateAk(runtimeDataRaw []byte, reportData []byte,
 	return nil
 }
 
+// HCLAkValidator uses the Host Compatibility Layer, which is written by Azure,
+// and sits between Hypervisor and CVM OS as part of CVM, to validate an
+// attestation report.
 type HCLAkValidator interface {
 	validateAk(runtimeDataRaw []byte, reportData []byte, rsaParameters *tpm2.RSAParams) error
 }
