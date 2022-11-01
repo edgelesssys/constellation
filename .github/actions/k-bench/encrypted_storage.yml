@@ -1,0 +1,39 @@
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: fio-block-pvc
+  namespace: kbench-pod-namespace
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: encrypted-storage
+  resources:
+    requests:
+      storage: 10Gi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: netperfserver-pvc
+  namespace: kbench-pod-namespace
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: encrypted-storage
+  resources:
+    requests:
+      storage: 10Gi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: netperfclient-pvc
+  namespace: kbench-pod-namespace
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: encrypted-storage
+  resources:
+    requests:
+      storage: 10Gi
