@@ -50,7 +50,7 @@ const (
 	NVMEOverTCPPort  = 8009
 	DebugdPort       = 4000
 	KonnectivityPort = 8132
-	// Default NodePort Range
+	// NodePortFrom start of range to use for K8s node port
 	// https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
 	NodePortFrom = 30000
 	NodePortTo   = 32767
@@ -58,6 +58,7 @@ const (
 	//
 	// Filenames.
 	//
+
 	ClusterIDsFileName            = "constellation-id.json"
 	ConfigFilename                = "constellation-conf.yaml"
 	LicenseFilename               = "constellation.license"

@@ -39,7 +39,7 @@ func (v *CommonVariables) String() string {
 	return b.String()
 }
 
-// GCPVariables is user configuration for creating a cluster with Terraform on GCP.
+// AWSVariables is user configuration for creating a cluster with Terraform on GCP.
 type AWSVariables struct {
 	// CommonVariables contains common variables.
 	CommonVariables

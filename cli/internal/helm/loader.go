@@ -32,7 +32,7 @@ import (
 //go:generate ./generateCilium.sh
 
 //go:embed all:charts/*
-var HelmFS embed.FS
+var helmFS embed.FS
 
 type ChartLoader struct {
 	joinServiceImage string
@@ -78,7 +78,7 @@ func (i *ChartLoader) Load(csp cloudprovider.Provider, conformanceMode bool, mas
 }
 
 func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode bool) (helm.Release, error) {
-	chart, err := loadChartsDir(HelmFS, "charts/cilium")
+	chart, err := loadChartsDir(helmFS, "charts/cilium")
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("loading cilium chart: %w", err)
 	}
@@ -117,7 +117,7 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 	masterSecret []byte, salt []byte, enforcedPCRs []uint32,
 	enforceIDKeyDigest bool,
 ) (helm.Release, error) {
-	chart, err := loadChartsDir(HelmFS, "charts/edgeless/constellation-services")
+	chart, err := loadChartsDir(helmFS, "charts/edgeless/constellation-services")
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("loading constellation-services chart: %w", err)
 	}

@@ -369,7 +369,7 @@ func (v *EgressSelectorConfiguration) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(v)
 }
 
-// GetCertificateRequest returns a certificate request and matching private key for the konnectivity server.
+// GetKonnectivityCertificateRequest returns a certificate request and matching private key for the konnectivity server.
 func GetKonnectivityCertificateRequest() (certificateRequest []byte, privateKey []byte, err error) {
 	csrTemplate := &x509.CertificateRequest{
 		Subject: pkix.Name{

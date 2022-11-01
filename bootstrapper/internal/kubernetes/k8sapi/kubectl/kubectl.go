@@ -120,7 +120,7 @@ func (k *Kubectl) AddNodeSelectorsToDeployment(ctx context.Context, selectors ma
 	return nil
 }
 
-// WaitForCRD waits for a list of CRDs to be established.
+// WaitForCRDs waits for a list of CRDs to be established.
 func (k *Kubectl) WaitForCRDs(ctx context.Context, crds []string) error {
 	client, err := k.clientGenerator.NewClient(k.kubeconfig)
 	if err != nil {

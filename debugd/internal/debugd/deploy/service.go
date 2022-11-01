@@ -21,6 +21,8 @@ const (
 	systemdUnitFolder = "/run/systemd/system"
 )
 
+// SystemdAction encodes the available actions.
+//
 //go:generate stringer -type=SystemdAction
 type SystemdAction uint32
 

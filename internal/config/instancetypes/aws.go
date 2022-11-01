@@ -6,7 +6,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 package instancetypes
 
-// Derived from: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html (Last updated: October 20th, 2022).
+// AWSSupportedInstanceFamilies is derived from:
+// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html (Last updated: October 20th, 2022).
 var AWSSupportedInstanceFamilies = []string{
 	"C5",
 	"C5a",
