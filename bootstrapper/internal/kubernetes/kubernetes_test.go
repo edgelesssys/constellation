@@ -205,7 +205,8 @@ func TestInitCluster(t *testing.T) {
 			k8sVersion:             versions.Default,
 		},
 		"kubeadm init fails when setting the cloud node manager": {
-			clusterUtil: stubClusterUtil{setupCloudNodeManagerError: someErr},
+			clusterUtil: stubClusterUtil{},
+			helmClient:  stubHelmClient{servicesError: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
@@ -288,7 +289,6 @@ func TestInitCluster(t *testing.T) {
 				helmClient:             &tc.helmClient,
 				providerMetadata:       tc.providerMetadata,
 				cloudControllerManager: tc.CloudControllerManager,
-				cloudNodeManager:       tc.CloudNodeManager,
 				clusterAutoscaler:      tc.ClusterAutoscaler,
 				configProvider:         &stubConfigProvider{InitConfig: k8sapi.KubeadmInitYAML{}},
 				client:                 &tc.kubectl,

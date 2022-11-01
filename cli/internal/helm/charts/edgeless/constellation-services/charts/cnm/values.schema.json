@@ -1,0 +1,58 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "properties": {
+        "csp": {
+            "description": "CSP to which the chart is deployed.",
+            "enum": ["Azure", "GCP", "AWS", "QEMU"]
+        },
+        "Azure": {
+            "description": "Config values required for deployment on Azure",
+            "type": "object",
+            "properties": {
+                "image": {
+                    "description": "Container image to use for the spawned pods.",
+                    "type": "string",
+                    "examples": ["mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:latest"]
+                }
+            },
+            "required": [
+                "image"
+            ]
+        }
+    },
+    "required": [
+        "csp"
+    ],
+    "allOf": [
+        {
+            "if": {
+                "properties": { "csp": { "const": "GCP" } },
+                "required": ["csp"]
+            },
+            "then": { "required": [] }
+        },
+        {
+            "if": {
+                "properties": { "csp": { "const": "Azure" } },
+                "required": ["csp"]
+            },
+            "then": { "required": ["Azure"] }
+        },
+        {
+            "if": {
+                "properties": { "csp": { "const": "AWS" } },
+                "required": ["csp"]
+            },
+            "then": { "required": [] }
+        },
+        {
+            "if": {
+                "properties": { "csp": { "const": "QEMU" } },
+                "required": ["csp"]
+            },
+            "then": { "required": [] }
+        }
+    ],
+    "title": "Values",
+    "type": "object"
+}

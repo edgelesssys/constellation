@@ -25,3 +25,7 @@ dependencies:
       - Azure
       - GCP
       - AWS
+  - name: cnm
+    version: 2.2.0-pre
+    tags:
+      - Azure

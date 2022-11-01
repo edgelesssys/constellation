@@ -54,7 +54,6 @@ type KubeWrapper struct {
 	client                  k8sapi.Client
 	kubeconfigReader        configReader
 	cloudControllerManager  CloudControllerManager
-	cloudNodeManager        CloudNodeManager
 	clusterAutoscaler       ClusterAutoscaler
 	providerMetadata        ProviderMetadata
 	initialMeasurementsJSON []byte
@@ -63,7 +62,7 @@ type KubeWrapper struct {
 
 // New creates a new KubeWrapper with real values.
 func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client, cloudControllerManager CloudControllerManager,
-	cloudNodeManager CloudNodeManager, clusterAutoscaler ClusterAutoscaler, providerMetadata ProviderMetadata, initialMeasurementsJSON []byte, helmClient helmClient,
+	clusterAutoscaler ClusterAutoscaler, providerMetadata ProviderMetadata, initialMeasurementsJSON []byte, helmClient helmClient,
 ) *KubeWrapper {
 	return &KubeWrapper{
 		cloudProvider:           cloudProvider,
@@ -73,7 +72,6 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 		client:                  client,
 		kubeconfigReader:        &KubeconfigReader{fs: afero.Afero{Fs: afero.NewOsFs()}},
 		cloudControllerManager:  cloudControllerManager,
-		cloudNodeManager:        cloudNodeManager,
 		clusterAutoscaler:       clusterAutoscaler,
 		providerMetadata:        providerMetadata,
 		initialMeasurementsJSON: initialMeasurementsJSON,
@@ -217,10 +215,6 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("failed to setup internal ConfigMap: %w", err)
 	}
 
-	if err := k.setupCloudNodeManager(k8sVersion); err != nil {
-		return nil, fmt.Errorf("setting up cloud node manager: %w", err)
-	}
-
 	if err := k.setupClusterAutoscaler(instance, cloudServiceAccountURI, k8sVersion); err != nil {
 		return nil, fmt.Errorf("setting up cluster autoscaler: %w", err)
 	}
@@ -329,25 +323,6 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 // GetKubeconfig returns the current nodes kubeconfig of stored on disk.
 func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
 	return k.kubeconfigReader.ReadKubeconfig()
-}
-
-func (k *KubeWrapper) setupCloudNodeManager(k8sVersion versions.ValidK8sVersion) error {
-	if !k.cloudNodeManager.Supported() {
-		return nil
-	}
-	nodeManagerImage, err := k.cloudNodeManager.Image(k8sVersion)
-	if err != nil {
-		return fmt.Errorf("defining Image for Node Manager: %w", err)
-	}
-
-	cloudNodeManagerConfiguration := resources.NewDefaultCloudNodeManagerDeployment(
-		nodeManagerImage, k.cloudNodeManager.Path(), k.cloudNodeManager.ExtraArgs(),
-	)
-	if err := k.clusterUtil.SetupCloudNodeManager(k.client, cloudNodeManagerConfiguration); err != nil {
-		return fmt.Errorf("setting up cloud-node-manager: %w", err)
-	}
-
-	return nil
 }
 
 func (k *KubeWrapper) setupClusterAutoscaler(instance metadata.InstanceMetadata, cloudServiceAccountURI string, k8sVersion versions.ValidK8sVersion) error {
