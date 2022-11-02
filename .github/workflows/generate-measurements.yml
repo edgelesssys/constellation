@@ -58,9 +58,14 @@ jobs:
         uses: ./.github/actions/generate_measurements
         with:
           cloudProvider: ${{ github.event.inputs.cloudProvider }}
+          gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
           gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
+          azureSubscription: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
+          azureTenant: ${{ secrets.AZURE_E2E_TENANT_ID }}
+          azureClientID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
           azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
+          azureUserAssignedIdentity: ${{ secrets.AZURE_E2E_USER_ASSIGNED_IDENTITY }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
           osImage: ${{ github.event.inputs.osImage }}
           isDebugImage: ${{ github.event.inputs.isDebugImage }}

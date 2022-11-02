@@ -25,11 +25,23 @@ inputs:
     description: "Kubernetes version to create the cluster from."
     required: false
     default: "1.23"
+  gcpProject:
+    description: "The GCP project to deploy Constellation in."
+    required: false
   gcp_service_account_json:
     description: "Service account with permissions to create Constellation on GCP."
     required: false
   gcpClusterServiceAccountKey:
     description: "Service account to use inside the created Constellation cluster on GCP."
+    required: false
+  azureSubscription:
+    description: "The Azure subscription ID to deploy Constellation in."
+    required: false
+  azureTenant:
+    description: "The Azure tenant ID to deploy Constellation in."
+    required: false
+  azureClientID:
+    description: "The client ID of the application registration created for Constellation in Azure."
     required: false
   azureClientSecret:
     description: "The client secret value of the used secret"
