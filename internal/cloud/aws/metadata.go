@@ -96,17 +96,13 @@ func (m *Metadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) 
 		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving instance identity: %w", err)
 	}
 
-	name, err := readInstanceTag(ctx, m.imds, tagName)
-	if err != nil {
-		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving name tag: %w", err)
-	}
 	instanceRole, err := readInstanceTag(ctx, m.imds, cloud.TagRole)
 	if err != nil {
 		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving role tag: %w", err)
 	}
 
 	return metadata.InstanceMetadata{
-		Name:       name,
+		Name:       identity.InstanceID,
 		ProviderID: fmt.Sprintf("aws:///%s/%s", identity.AvailabilityZone, identity.InstanceID),
 		Role:       role.FromString(instanceRole),
 		VPCIP:      identity.PrivateIP,

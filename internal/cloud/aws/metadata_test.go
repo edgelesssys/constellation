@@ -47,12 +47,11 @@ func TestSelf(t *testing.T) {
 					},
 				},
 				tags: map[string]string{
-					tagName:       "test-instance",
 					cloud.TagRole: "controlplane",
 				},
 			},
 			wantSelf: metadata.InstanceMetadata{
-				Name:       "test-instance",
+				Name:       "test-instance-id",
 				ProviderID: "aws:///test-zone/test-instance-id",
 				Role:       role.ControlPlane,
 				VPCIP:      "192.0.2.1",
@@ -68,12 +67,11 @@ func TestSelf(t *testing.T) {
 					},
 				},
 				tags: map[string]string{
-					tagName:       "test-instance",
 					cloud.TagRole: "worker",
 				},
 			},
 			wantSelf: metadata.InstanceMetadata{
-				Name:       "test-instance",
+				Name:       "test-instance-id",
 				ProviderID: "aws:///test-zone/test-instance-id",
 				Role:       role.Worker,
 				VPCIP:      "192.0.2.1",
@@ -99,21 +97,6 @@ func TestSelf(t *testing.T) {
 					},
 				},
 				getMetadataErr: someErr,
-			},
-			wantErr: true,
-		},
-		"name not set": {
-			imds: &stubIMDS{
-				instanceDocumentResp: &imds.GetInstanceIdentityDocumentOutput{
-					InstanceIdentityDocument: imds.InstanceIdentityDocument{
-						InstanceID:       "test-instance-id",
-						AvailabilityZone: "test-zone",
-						PrivateIP:        "192.0.2.1",
-					},
-				},
-				tags: map[string]string{
-					cloud.TagRole: "controlplane",
-				},
 			},
 			wantErr: true,
 		},
