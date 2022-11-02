@@ -39,6 +39,7 @@ type ChartLoader struct {
 	kmsImage         string
 	ccmImage         string
 	cnmImage         string
+	autoscalerImage  string
 }
 
 func New(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *ChartLoader {
@@ -58,6 +59,7 @@ func New(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *Chart
 		kmsImage:         versions.KmsImage,
 		ccmImage:         ccmImage,
 		cnmImage:         cnmImage,
+		autoscalerImage:  versions.VersionConfigs[k8sVersion].ClusterAutoscalerImage,
 	}
 }
 
@@ -163,6 +165,10 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 		},
 		"ccm": map[string]any{
 			"csp": csp,
+		},
+		"autoscaler": map[string]any{
+			"csp":   csp,
+			"image": i.autoscalerImage,
 		},
 	}
 

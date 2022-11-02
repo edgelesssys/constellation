@@ -1,4 +1,3 @@
-
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -16,31 +15,32 @@ spec:
         k8s-app: cloud-controller-manager
     spec:
       containers:
-      - name: cloud-controller-manager
-        image: ccmImageForAzure
-        command:
-        - cloud-controller-manager
-        - --cloud-provider=azure
-        - --leader-elect=true
-        - -v=2
-        - --controllers=*,-cloud-node
-        - --cloud-config=/etc/azure/azure.json
-        - --allocate-node-cidrs=false
-        - --configure-cloud-routes=false
-        resources: {}
-        volumeMounts:
-        - name: etckubernetes
-          mountPath: /etc/kubernetes
-          readOnly: true
-        - name: etcssl
-          mountPath: /etc/ssl
-          readOnly: true
-        - name: etcpki
-          mountPath: /etc/pki
-          readOnly: true
-        - name: azureconfig
-          mountPath: /etc/azure
-          readOnly: true
+        - name: cloud-controller-manager
+          image: ccmImageForAzure
+          command:
+          - cloud-controller-manager
+          - --cloud-provider=azure
+          - --leader-elect=true
+          - --cluster-cidr=192.0.2.0/24
+          - -v=2
+          - --controllers=*,-cloud-node
+          - --cloud-config=/etc/azure/azure.json
+          - --allocate-node-cidrs=false
+          - --configure-cloud-routes=true
+          volumeMounts:
+          - name: etckubernetes
+            mountPath: /etc/kubernetes
+            readOnly: true
+          - name: etcssl
+            mountPath: /etc/ssl
+            readOnly: true
+          - name: etcpki
+            mountPath: /etc/pki
+            readOnly: true
+          - name: azureconfig
+            mountPath: /etc/azure
+            readOnly: true
+          resources: {}
       nodeSelector:
         node-role.kubernetes.io/control-plane: ""
       serviceAccountName: cloud-controller-manager

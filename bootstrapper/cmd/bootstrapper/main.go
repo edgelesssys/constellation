@@ -107,7 +107,7 @@ func main() {
 		cloudControllerManager := &awscloud.CloudControllerManager{}
 		clusterInitJoiner = kubernetes.New(
 			"aws", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), cloudControllerManager,
-			&gcpcloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
+			metadata, pcrsJSON, helmClient,
 		)
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
@@ -144,7 +144,7 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), cloudControllerManager,
-			&gcpcloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
+			metadata, pcrsJSON, helmClient,
 		)
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
@@ -178,7 +178,7 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"azure", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), azurecloud.NewCloudControllerManager(metadata),
-			&azurecloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
+			metadata, pcrsJSON, helmClient,
 		)
 
 		openTPM = vtpm.OpenVTPM
@@ -200,7 +200,7 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), &qemucloud.CloudControllerManager{},
-			&qemucloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
+			metadata, pcrsJSON, helmClient,
 		)
 		metadataAPI = metadata
 

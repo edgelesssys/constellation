@@ -77,7 +77,7 @@ func TestTemplate(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			chartLoader := ChartLoader{joinServiceImage: "joinServiceImage", kmsImage: "kmsImage", ccmImage: tc.ccmImage, cnmImage: tc.cnmImage}
+			chartLoader := ChartLoader{joinServiceImage: "joinServiceImage", kmsImage: "kmsImage", ccmImage: tc.ccmImage, cnmImage: tc.cnmImage, autoscalerImage: "autoscalerImage"}
 			release, err := chartLoader.Load(tc.csp, true, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []uint32{1, 11}, tc.enforceIDKeyDigest)
 			require.NoError(err)
 
@@ -161,6 +161,17 @@ func prepareAzureValues(values map[string]any) error {
 	ccmVals["Azure"].(map[string]any)["subnetworkPodCIDR"] = "192.0.2.0/24"
 	ccmVals["Azure"].(map[string]any)["azureConfig"] = "baaaaaad"
 
+	autoscalerVals, ok := values["autoscaler"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'autoscaler' key")
+	}
+	autoscalerVals["Azure"] = map[string]any{
+		"clientID":       "AppClientID",
+		"clientSecret":   "ClientSecretValue",
+		"resourceGroup":  "resourceGroup",
+		"subscriptionID": "subscriptionID",
+		"tenantID":       "TenantID",
+	}
 	return nil
 }
 

@@ -1,0 +1,59 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "properties": {
+        "csp": {
+            "description": "CSP to which the chart is deployed.",
+            "enum": ["Azure", "GCP", "AWS", "QEMU"]
+        },
+        "image": {
+            "description": "Container image to use for the spawned pods.",
+            "type": "string",
+            "examples": ["k8s.gcr.io/autoscaling/cluster-autoscaler:v1.23.1"]
+
+        },
+        "Azure": {
+            "description": "Config values required for deployment on Azure",
+            "type": "object",
+            "properties": {
+                "clientID": {
+                    "description": "Client ID of the service account used to access the Azure API.",
+                    "type": "string"
+                },
+                "clientSecret": {
+                    "description": "Secret of the service account used to access the Azure API.",
+                    "type": "string"
+                },
+                "resourceGroup": {
+                    "description": "Resource group in which the cluster is running.",
+                    "type": "string"
+                },
+                "subscriptionID": {
+                    "description": "Subscription ID of the Azure subscription.",
+                    "type": "string"
+                },
+                "tenantID": {
+                    "description": "Tenant ID of the Azure subscription.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "clientID",
+                "clientSecret",
+                "resourceGroup",
+                "subscriptionID",
+                "tenantID"
+            ]
+        }
+    },
+    "required": [
+        "csp",
+        "image"
+    ],
+    "if": {
+        "properties": { "csp": { "const": "Azure" } },
+        "required": ["csp"]
+    },
+    "then": { "required": ["Azure"] },
+    "title": "Values",
+    "type": "object"
+}

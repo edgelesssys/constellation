@@ -19,6 +19,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/resources"
+	"github.com/edgelesssys/constellation/v2/internal/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -54,7 +55,6 @@ type KubeWrapper struct {
 	client                  k8sapi.Client
 	kubeconfigReader        configReader
 	cloudControllerManager  CloudControllerManager
-	clusterAutoscaler       ClusterAutoscaler
 	providerMetadata        ProviderMetadata
 	initialMeasurementsJSON []byte
 	getIPAddr               func() (string, error)
@@ -62,7 +62,7 @@ type KubeWrapper struct {
 
 // New creates a new KubeWrapper with real values.
 func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client, cloudControllerManager CloudControllerManager,
-	clusterAutoscaler ClusterAutoscaler, providerMetadata ProviderMetadata, initialMeasurementsJSON []byte, helmClient helmClient,
+	providerMetadata ProviderMetadata, initialMeasurementsJSON []byte, helmClient helmClient,
 ) *KubeWrapper {
 	return &KubeWrapper{
 		cloudProvider:           cloudProvider,
@@ -72,7 +72,6 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 		client:                  client,
 		kubeconfigReader:        &KubeconfigReader{fs: afero.Afero{Fs: afero.NewOsFs()}},
 		cloudControllerManager:  cloudControllerManager,
-		clusterAutoscaler:       clusterAutoscaler,
 		providerMetadata:        providerMetadata,
 		initialMeasurementsJSON: initialMeasurementsJSON,
 		getIPAddr:               getIPAddr,
@@ -204,10 +203,6 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("failed to setup internal ConfigMap: %w", err)
 	}
 
-	if err := k.setupClusterAutoscaler(instance, cloudServiceAccountURI, k8sVersion); err != nil {
-		return nil, fmt.Errorf("setting up cluster autoscaler: %w", err)
-	}
-
 	// TODO: remove access manager or re-enable with support for readonly /etc
 	// accessManager := resources.NewAccessManagerDeployment(sshUsers)
 	// if err := k.clusterUtil.SetupAccessManager(k.client, accessManager); err != nil {
@@ -310,23 +305,6 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 // GetKubeconfig returns the current nodes kubeconfig of stored on disk.
 func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
 	return k.kubeconfigReader.ReadKubeconfig()
-}
-
-func (k *KubeWrapper) setupClusterAutoscaler(instance metadata.InstanceMetadata, cloudServiceAccountURI string, k8sVersion versions.ValidK8sVersion) error {
-	if !k.clusterAutoscaler.Supported() {
-		return nil
-	}
-	caSecrets, err := k.clusterAutoscaler.Secrets(instance.ProviderID, cloudServiceAccountURI)
-	if err != nil {
-		return fmt.Errorf("defining Secrets for cluster-autoscaler: %w", err)
-	}
-
-	clusterAutoscalerConfiguration := resources.NewDefaultAutoscalerDeployment(k.clusterAutoscaler.Volumes(), k.clusterAutoscaler.VolumeMounts(), k.clusterAutoscaler.Env(), k8sVersion)
-	if err := k.clusterUtil.SetupAutoscaling(k.client, clusterAutoscalerConfiguration, caSecrets); err != nil {
-		return fmt.Errorf("setting up cluster-autoscaler: %w", err)
-	}
-
-	return nil
 }
 
 // setupK8sVersionConfigMap applies a ConfigMap (cf. server-side apply) to consistently store the installed k8s version.
@@ -510,6 +488,25 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSO
 				return nil, errors.New("invalid join-service values")
 			}
 			joinVals["idkeydigest"] = hex.EncodeToString(idkeydigest)
+
+			subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(instance.ProviderID)
+			if err != nil {
+				return nil, err
+			}
+			creds, err := azureshared.ApplicationCredentialsFromURI(cloudServiceAccountURI)
+			if err != nil {
+				return nil, err
+			}
+
+			extraVals["autoscaler"] = map[string]any{
+				"Azure": map[string]any{
+					"clientID":       creds.AppClientID,
+					"clientSecret":   creds.ClientSecretValue,
+					"resourceGroup":  resourceGroup,
+					"subscriptionID": subscriptionID,
+					"tenantID":       creds.TenantID,
+				},
+			}
 		}
 	}
 	return extraVals, nil
