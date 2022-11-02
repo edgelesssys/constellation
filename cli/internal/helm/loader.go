@@ -162,9 +162,6 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 		"ccm": map[string]any{
 			"csp": csp,
 		},
-		"cnm": map[string]any{
-			"csp": csp,
-		},
 	}
 
 	switch csp {
@@ -184,11 +181,7 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 				"image": i.ccmImage,
 			}
 
-			cnmVals, ok := vals["cnm"].(map[string]any)
-			if !ok {
-				return helm.Release{}, errors.New("invalid cnm values")
-			}
-			cnmVals["Azure"] = map[string]any{
+			vals["cnm"] = map[string]any{
 				"image": i.cnmImage,
 			}
 

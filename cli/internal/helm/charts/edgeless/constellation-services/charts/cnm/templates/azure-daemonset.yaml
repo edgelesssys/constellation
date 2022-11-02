@@ -1,4 +1,3 @@
-{{- if eq .Values.csp "Azure" -}}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -21,7 +20,7 @@ spec:
     spec:
       containers:
       - name: cloud-node-manager
-        image: {{ .Values.Azure.image }}
+        image: {{ .Values.image }}
         imagePullPolicy: IfNotPresent
         command:
           - cloud-node-manager
@@ -56,4 +55,3 @@ spec:
         - effect: NoSchedule
           operator: Exists
   updateStrategy: {}
-{{- end -}}
