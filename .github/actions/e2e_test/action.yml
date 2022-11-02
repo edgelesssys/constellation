@@ -56,6 +56,16 @@ runs:
         echo "Invalid input for test field: ${{ inputs.test }}"
         exit 1
 
+    # K-Bench's network benchmarks require at least two distinct worker nodes.
+    - name: Validate k-bench inputs
+      if: inputs.test == 'k-bench'
+      shell: bash
+      run: |
+        if [[ "${{ inputs.workerNodesCount }}" -lt 2 ]]; then
+          echo "::error::Test K-Bench requires at least 2 worker nodes."
+          exit 1
+        fi
+
     - name: Determine build target
       id: determine-build-target
       shell: bash
