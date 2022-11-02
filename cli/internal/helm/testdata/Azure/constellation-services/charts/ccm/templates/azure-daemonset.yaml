@@ -22,12 +22,11 @@ spec:
         - cloud-controller-manager
         - --cloud-provider=azure
         - --leader-elect=true
-        - --cluster-cidr=192.0.2.0/24
         - -v=2
         - --controllers=*,-cloud-node
         - --cloud-config=/etc/azure/azure.json
         - --allocate-node-cidrs=false
-        - --configure-cloud-routes=true
+        - --configure-cloud-routes=false
         resources: {}
         volumeMounts:
         - name: etckubernetes
