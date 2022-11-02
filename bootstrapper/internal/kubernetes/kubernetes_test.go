@@ -280,15 +280,14 @@ func TestInitCluster(t *testing.T) {
 			require := require.New(t)
 
 			kube := KubeWrapper{
-				clusterUtil:            &tc.clusterUtil,
-				helmClient:             &tc.helmClient,
-				providerMetadata:       tc.providerMetadata,
-				kubeAPIWaiter:          &tc.kubeAPIWaiter,
-				cloudControllerManager: tc.CloudControllerManager,
-				configProvider:         &stubConfigProvider{InitConfig: k8sapi.KubeadmInitYAML{}},
-				client:                 &tc.kubectl,
-				kubeconfigReader:       tc.kubeconfigReader,
-				getIPAddr:              func() (string, error) { return privateIP, nil },
+				clusterUtil:      &tc.clusterUtil,
+				helmClient:       &tc.helmClient,
+				providerMetadata: tc.providerMetadata,
+				kubeAPIWaiter:    &tc.kubeAPIWaiter,
+				configProvider:   &stubConfigProvider{InitConfig: k8sapi.KubeadmInitYAML{}},
+				client:           &tc.kubectl,
+				kubeconfigReader: tc.kubeconfigReader,
+				getIPAddr:        func() (string, error) { return privateIP, nil },
 			}
 
 			_, err := kube.InitCluster(
@@ -444,11 +443,10 @@ func TestJoinCluster(t *testing.T) {
 			require := require.New(t)
 
 			kube := KubeWrapper{
-				clusterUtil:            &tc.clusterUtil,
-				providerMetadata:       tc.providerMetadata,
-				cloudControllerManager: tc.CloudControllerManager,
-				configProvider:         &stubConfigProvider{},
-				getIPAddr:              func() (string, error) { return privateIP, nil },
+				clusterUtil:      &tc.clusterUtil,
+				providerMetadata: tc.providerMetadata,
+				configProvider:   &stubConfigProvider{},
+				getIPAddr:        func() (string, error) { return privateIP, nil },
 			}
 
 			err := kube.JoinCluster(context.Background(), joinCommand, tc.role, string(k8sVersion), logger.NewTest(t))

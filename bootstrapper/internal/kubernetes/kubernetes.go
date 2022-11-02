@@ -24,7 +24,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcp"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -61,14 +60,13 @@ type KubeWrapper struct {
 	configProvider          configurationProvider
 	client                  k8sapi.Client
 	kubeconfigReader        configReader
-	cloudControllerManager  CloudControllerManager
 	providerMetadata        ProviderMetadata
 	initialMeasurementsJSON []byte
 	getIPAddr               func() (string, error)
 }
 
 // New creates a new KubeWrapper with real values.
-func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client, cloudControllerManager CloudControllerManager,
+func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client,
 	providerMetadata ProviderMetadata, initialMeasurementsJSON []byte, helmClient helmClient, kubeAPIWaiter kubeAPIWaiter,
 ) *KubeWrapper {
 	return &KubeWrapper{
@@ -79,7 +77,6 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 		configProvider:          configProvider,
 		client:                  client,
 		kubeconfigReader:        &KubeconfigReader{fs: afero.Afero{Fs: afero.NewOsFs()}},
-		cloudControllerManager:  cloudControllerManager,
 		providerMetadata:        providerMetadata,
 		initialMeasurementsJSON: initialMeasurementsJSON,
 		getIPAddr:               getIPAddr,
@@ -135,7 +132,9 @@ func (k *KubeWrapper) InitCluster(
 	).Infof("Setting information for node")
 
 	// Step 2: configure kubeadm init config
-	initConfig := k.configProvider.InitConfiguration(k.cloudControllerManager.Supported(), k8sVersion)
+	ccmSupported := cloudprovider.FromString(k.cloudProvider) == cloudprovider.Azure ||
+		cloudprovider.FromString(k.cloudProvider) == cloudprovider.GCP
+	initConfig := k.configProvider.InitConfiguration(ccmSupported, k8sVersion)
 	initConfig.SetNodeIP(nodeIP)
 	initConfig.SetCertSANs([]string{nodeIP})
 	initConfig.SetNodeName(nodeName)
@@ -272,7 +271,9 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	).Infof("Setting information for node")
 
 	// Step 2: configure kubeadm join config
-	joinConfig := k.configProvider.JoinConfiguration(k.cloudControllerManager.Supported())
+	ccmSupported := cloudprovider.FromString(k.cloudProvider) == cloudprovider.Azure ||
+		cloudprovider.FromString(k.cloudProvider) == cloudprovider.GCP
+	joinConfig := k.configProvider.JoinConfiguration(ccmSupported)
 	joinConfig.SetAPIServerEndpoint(args.APIServerEndpoint)
 	joinConfig.SetToken(args.Token)
 	joinConfig.AppendDiscoveryTokenCaCertHash(args.CACertHashes[0])
@@ -423,85 +424,85 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSO
 
 	switch cloudprovider.FromString(k.cloudProvider) {
 	case cloudprovider.GCP:
-		{
-			uid, err := k.providerMetadata.UID(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("getting uid: %w", err)
-			}
-
-			projectID, _, _, err := gcp.SplitProviderID(instance.ProviderID)
-			if err != nil {
-				return nil, fmt.Errorf("splitting providerID: %w", err)
-			}
-
-			serviceAccountKey, err := gcp.ServiceAccountKeyFromURI(cloudServiceAccountURI)
-			if err != nil {
-				return nil, fmt.Errorf("getting service account key: %w", err)
-			}
-			rawKey, err := json.Marshal(serviceAccountKey)
-			if err != nil {
-				return nil, fmt.Errorf("marshaling service account key: %w", err)
-			}
-
-			ccmVals, ok := extraVals["ccm"].(map[string]any)
-			if !ok {
-				return nil, errors.New("invalid ccm values")
-			}
-			ccmVals["GCP"] = map[string]any{
-				"projectID":         projectID,
-				"uid":               uid,
-				"secretData":        string(rawKey),
-				"subnetworkPodCIDR": subnetworkPodCIDR,
-			}
+		uid, err := k.providerMetadata.UID(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting uid: %w", err)
 		}
+
+		projectID, _, _, err := gcp.SplitProviderID(instance.ProviderID)
+		if err != nil {
+			return nil, fmt.Errorf("splitting providerID: %w", err)
+		}
+
+		serviceAccountKey, err := gcp.ServiceAccountKeyFromURI(cloudServiceAccountURI)
+		if err != nil {
+			return nil, fmt.Errorf("getting service account key: %w", err)
+		}
+		rawKey, err := json.Marshal(serviceAccountKey)
+		if err != nil {
+			return nil, fmt.Errorf("marshaling service account key: %w", err)
+		}
+
+		ccmVals, ok := extraVals["ccm"].(map[string]any)
+		if !ok {
+			return nil, errors.New("invalid ccm values")
+		}
+		ccmVals["GCP"] = map[string]any{
+			"projectID":         projectID,
+			"uid":               uid,
+			"secretData":        string(rawKey),
+			"subnetworkPodCIDR": subnetworkPodCIDR,
+		}
+
 	case cloudprovider.Azure:
-		{
-			// TODO: After refactoring the ProviderMetadata interface this section should be rewritten.
-			// Currently, we have to rely on the Secrets(..) method, as GetNetworkSecurityGroupName & GetLoadBalancerName
-			// rely on Azure specific API endpoints.
-			ccmSecrets, err := k.cloudControllerManager.Secrets(ctx, instance.ProviderID, cloudServiceAccountURI)
-			if err != nil {
-				return nil, fmt.Errorf("creating ccm secret: %w", err)
-			}
-			if len(ccmSecrets) < 1 {
-				return nil, errors.New("missing secret")
-			}
-			rawConfig := ccmSecrets[0].Data["azure.json"]
-
-			ccmVals, ok := extraVals["ccm"].(map[string]any)
-			if !ok {
-				return nil, errors.New("invalid ccm values")
-			}
-			ccmVals["Azure"] = map[string]any{
-				"azureConfig":       string(rawConfig),
-				"subnetworkPodCIDR": subnetworkPodCIDR,
-			}
-
-			joinVals, ok := extraVals["join-service"].(map[string]any)
-			if !ok {
-				return nil, errors.New("invalid join-service values")
-			}
-			joinVals["idkeydigest"] = hex.EncodeToString(idkeydigest)
-
-			subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(instance.ProviderID)
-			if err != nil {
-				return nil, err
-			}
-			creds, err := azureshared.ApplicationCredentialsFromURI(cloudServiceAccountURI)
-			if err != nil {
-				return nil, err
-			}
-
-			extraVals["autoscaler"] = map[string]any{
-				"Azure": map[string]any{
-					"clientID":       creds.AppClientID,
-					"clientSecret":   creds.ClientSecretValue,
-					"resourceGroup":  resourceGroup,
-					"subscriptionID": subscriptionID,
-					"tenantID":       creds.TenantID,
-				},
-			}
+		ccmAzure, ok := k.providerMetadata.(ccmConfigGetter)
+		if !ok {
+			return nil, errors.New("invalid cloud provider metadata for Azure")
 		}
+
+		ccmConfig, err := ccmAzure.GetCCMConfig(ctx, instance.ProviderID, cloudServiceAccountURI)
+		if err != nil {
+			return nil, fmt.Errorf("creating ccm secret: %w", err)
+		}
+
+		ccmVals, ok := extraVals["ccm"].(map[string]any)
+		if !ok {
+			return nil, errors.New("invalid ccm values")
+		}
+		ccmVals["Azure"] = map[string]any{
+			"azureConfig":       string(ccmConfig),
+			"subnetworkPodCIDR": subnetworkPodCIDR,
+		}
+
+		joinVals, ok := extraVals["join-service"].(map[string]any)
+		if !ok {
+			return nil, errors.New("invalid join-service values")
+		}
+		joinVals["idkeydigest"] = hex.EncodeToString(idkeydigest)
+
+		subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(instance.ProviderID)
+		if err != nil {
+			return nil, err
+		}
+		creds, err := azureshared.ApplicationCredentialsFromURI(cloudServiceAccountURI)
+		if err != nil {
+			return nil, err
+		}
+
+		extraVals["autoscaler"] = map[string]any{
+			"Azure": map[string]any{
+				"clientID":       creds.AppClientID,
+				"clientSecret":   creds.ClientSecretValue,
+				"resourceGroup":  resourceGroup,
+				"subscriptionID": subscriptionID,
+				"tenantID":       creds.TenantID,
+			},
+		}
+
 	}
 	return extraVals, nil
+}
+
+type ccmConfigGetter interface {
+	GetCCMConfig(ctx context.Context, providerID, cloudServiceAccountURI string) ([]byte, error)
 }

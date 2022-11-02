@@ -8,8 +8,10 @@ package gcp
 
 import (
 	"context"
+	"fmt"
 	"log"
 
+	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/logging"
 )
 
@@ -20,7 +22,12 @@ type Logger struct {
 
 // NewLogger creates a new Cloud Logger for GCP.
 // https://cloud.google.com/logging/docs/setup/go
-func NewLogger(ctx context.Context, projectID string, logName string) (*Logger, error) {
+func NewLogger(ctx context.Context, logName string) (*Logger, error) {
+	projectID, err := metadata.NewClient(nil).ProjectID()
+	if err != nil {
+		return nil, fmt.Errorf("retrieving project ID from imds: %w", err)
+	}
+
 	client, err := logging.NewClient(ctx, projectID)
 	if err != nil {
 		return nil, err

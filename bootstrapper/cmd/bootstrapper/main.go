@@ -105,9 +105,8 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to set up cloud logger")
 		}
 
-		cloudControllerManager := &awscloud.CloudControllerManager{}
 		clusterInitJoiner = kubernetes.New(
-			"aws", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), cloudControllerManager,
+			"aws", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
 			metadata, pcrsJSON, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		openTPM = vtpm.OpenVTPM
@@ -127,20 +126,7 @@ func main() {
 		}
 		defer metadata.Close()
 
-		uid, err := metadata.UID(ctx)
-		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to get GCP instance UID")
-		}
-		providerID, err := metadata.ProviderID(ctx)
-		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to get instance metadata")
-		}
-		projectID, _, _, err := gcpcloud.SplitProviderID(providerID)
-		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to parse provider ID")
-		}
-
-		cloudLogger, err = gcpcloud.NewLogger(ctx, providerID, "constellation-boot-log")
+		cloudLogger, err = gcpcloud.NewLogger(ctx, "constellation-boot-log")
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to set up cloud logger")
 		}
@@ -150,12 +136,8 @@ func main() {
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to marshal PCRs")
 		}
-		cloudControllerManager, err := gcpcloud.NewCloudControllerManager(ctx, uid, projectID)
-		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to create cloud controller manager")
-		}
 		clusterInitJoiner = kubernetes.New(
-			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), cloudControllerManager,
+			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
 			metadata, pcrsJSON, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		openTPM = vtpm.OpenVTPM
@@ -189,7 +171,7 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to marshal PCRs")
 		}
 		clusterInitJoiner = kubernetes.New(
-			"azure", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), azurecloud.NewCloudControllerManager(metadata),
+			"azure", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
 			metadata, pcrsJSON, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 
@@ -211,7 +193,7 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to marshal PCRs")
 		}
 		clusterInitJoiner = kubernetes.New(
-			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), &qemucloud.CloudControllerManager{},
+			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
 			metadata, pcrsJSON, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		metadataAPI = metadata
