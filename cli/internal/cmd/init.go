@@ -20,9 +20,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
-	"github.com/edgelesssys/constellation/v2/internal/azureshared"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	gcpcloud "github.com/edgelesssys/constellation/v2/internal/cloud/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
@@ -343,7 +343,7 @@ func getMarshaledServiceAccountURI(provider cloudprovider.Provider, config *conf
 	case cloudprovider.GCP:
 		path := config.Provider.GCP.ServiceAccountKeyPath
 
-		var key gcpcloud.ServiceAccountKey
+		var key gcpshared.ServiceAccountKey
 		if err := fileHandler.ReadJSON(path, &key); err != nil {
 			return "", fmt.Errorf("reading service account key from path %q: %w", path, err)
 		}

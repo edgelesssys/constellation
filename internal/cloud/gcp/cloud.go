@@ -17,6 +17,7 @@ import (
 	compute "cloud.google.com/go/compute/apiv1"
 	imds "cloud.google.com/go/compute/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/cloud"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"google.golang.org/api/iterator"
@@ -29,10 +30,7 @@ const (
 	tagUsage = "constellation-use"
 )
 
-var (
-	zoneFromRegionRegex = regexp.MustCompile("([a-z]*-[a-z]*[0-9])")
-	providerIDRegex     = regexp.MustCompile(`^gce://([^/]+)/([^/]+)/([^/]+)$`)
-)
+var zoneFromRegionRegex = regexp.MustCompile("([a-z]*-[a-z]*[0-9])")
 
 // Cloud provides GCP cloud metadata information and API access.
 type Cloud struct {
@@ -83,7 +81,7 @@ func (c *Cloud) Close() {
 
 // GetInstance retrieves an instance using its providerID.
 func (c *Cloud) GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error) {
-	project, zone, instanceName, err := SplitProviderID(providerID)
+	project, zone, instanceName, err := gcpshared.SplitProviderID(providerID)
 	if err != nil {
 		return metadata.InstanceMetadata{}, fmt.Errorf("invalid providerID: %w", err)
 	}
@@ -171,7 +169,7 @@ func (c *Cloud) ProviderID(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return JoinProviderID(project, zone, instanceName), nil
+	return gcpshared.JoinProviderID(project, zone, instanceName), nil
 }
 
 // Self retrieves the current instance.
@@ -288,22 +286,6 @@ func (c *Cloud) uid(ctx context.Context, project, zone, instanceName string) (st
 	return instance.Labels[cloud.TagUID], nil
 }
 
-// SplitProviderID splits a k8s provider ID for GCP instances into its core components.
-// A provider ID is build after the schema 'gce://<project-id>/<zone>/<instance-name>'
-func SplitProviderID(providerID string) (project, zone, instance string, err error) {
-	matches := providerIDRegex.FindStringSubmatch(providerID)
-	if len(matches) != 4 {
-		return "", "", "", fmt.Errorf("error splitting providerID: %v", providerID)
-	}
-	return matches[1], matches[2], matches[3], nil
-}
-
-// JoinProviderID builds a k8s provider ID for GCP instances.
-// A providerID is build after the schema 'gce://<project-id>/<zone>/<instance-name>'
-func JoinProviderID(project, zone, instanceName string) string {
-	return fmt.Sprintf("gce://%v/%v/%v", project, zone, instanceName)
-}
-
 // convertToInstanceMetadata converts a *computepb.Instance to a metadata.InstanceMetadata.
 func convertToInstanceMetadata(in *computepb.Instance, project string, zone string) (metadata.InstanceMetadata, error) {
 	if in.Name == nil {
@@ -334,7 +316,7 @@ func convertToInstanceMetadata(in *computepb.Instance, project string, zone stri
 
 	return metadata.InstanceMetadata{
 		Name:          *in.Name,
-		ProviderID:    JoinProviderID(project, zone, *in.Name),
+		ProviderID:    gcpshared.JoinProviderID(project, zone, *in.Name),
 		Role:          role.FromString(in.Labels[cloud.TagRole]),
 		VPCIP:         vpcIP,
 		AliasIPRanges: ips,

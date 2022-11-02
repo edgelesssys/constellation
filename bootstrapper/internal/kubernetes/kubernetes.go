@@ -21,9 +21,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/resources"
 	kubewaiter "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubeWaiter"
-	"github.com/edgelesssys/constellation/v2/internal/azureshared"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -429,12 +429,12 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSO
 			return nil, fmt.Errorf("getting uid: %w", err)
 		}
 
-		projectID, _, _, err := gcp.SplitProviderID(instance.ProviderID)
+		projectID, _, _, err := gcpshared.SplitProviderID(instance.ProviderID)
 		if err != nil {
 			return nil, fmt.Errorf("splitting providerID: %w", err)
 		}
 
-		serviceAccountKey, err := gcp.ServiceAccountKeyFromURI(cloudServiceAccountURI)
+		serviceAccountKey, err := gcpshared.ServiceAccountKeyFromURI(cloudServiceAccountURI)
 		if err != nil {
 			return nil, fmt.Errorf("getting service account key: %w", err)
 		}
