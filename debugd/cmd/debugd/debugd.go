@@ -65,7 +65,7 @@ func main() {
 		fetcher = cloudprovider.New(meta)
 
 	case platform.Azure:
-		meta, err := azurecloud.NewMetadata(ctx)
+		meta, err := azurecloud.New(ctx)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to initialize Azure metadata")
 		}

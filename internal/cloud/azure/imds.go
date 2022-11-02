@@ -35,8 +35,8 @@ type imdsClient struct {
 	cacheTime time.Time
 }
 
-// ProviderID returns the provider ID of the instance the function is called from.
-func (c *imdsClient) ProviderID(ctx context.Context) (string, error) {
+// providerID returns the provider ID of the instance the function is called from.
+func (c *imdsClient) providerID(ctx context.Context) (string, error) {
 	if c.timeForUpdate() || c.cache.Compute.ResourceID == "" {
 		if err := c.update(ctx); err != nil {
 			return "", err
@@ -50,9 +50,23 @@ func (c *imdsClient) ProviderID(ctx context.Context) (string, error) {
 	return c.cache.Compute.ResourceID, nil
 }
 
-// SubscriptionID returns the subscription ID of the instance the function
+func (c *imdsClient) name(ctx context.Context) (string, error) {
+	if c.timeForUpdate() || c.cache.Compute.OSProfile.ComputerName == "" {
+		if err := c.update(ctx); err != nil {
+			return "", err
+		}
+	}
+
+	if c.cache.Compute.OSProfile.ComputerName == "" {
+		return "", errors.New("unable to get name")
+	}
+
+	return c.cache.Compute.OSProfile.ComputerName, nil
+}
+
+// subscriptionID returns the subscription ID of the instance the function
 // is called from.
-func (c *imdsClient) SubscriptionID(ctx context.Context) (string, error) {
+func (c *imdsClient) subscriptionID(ctx context.Context) (string, error) {
 	if c.timeForUpdate() || c.cache.Compute.SubscriptionID == "" {
 		if err := c.update(ctx); err != nil {
 			return "", err
@@ -66,9 +80,9 @@ func (c *imdsClient) SubscriptionID(ctx context.Context) (string, error) {
 	return c.cache.Compute.SubscriptionID, nil
 }
 
-// ResourceGroup returns the resource group of the instance the function
+// resourceGroup returns the resource group of the instance the function
 // is called from.
-func (c *imdsClient) ResourceGroup(ctx context.Context) (string, error) {
+func (c *imdsClient) resourceGroup(ctx context.Context) (string, error) {
 	if c.timeForUpdate() || c.cache.Compute.ResourceGroup == "" {
 		if err := c.update(ctx); err != nil {
 			return "", err
@@ -82,9 +96,9 @@ func (c *imdsClient) ResourceGroup(ctx context.Context) (string, error) {
 	return c.cache.Compute.ResourceGroup, nil
 }
 
-// UID returns the UID of the cluster, based on the tags on the instance
-// the function is calles from, which are inherited from the scale set.
-func (c *imdsClient) UID(ctx context.Context) (string, error) {
+// uid returns the UID of the cluster, based on the tags on the instance
+// the function is called from, which are inherited from the scale set.
+func (c *imdsClient) uid(ctx context.Context) (string, error) {
 	if c.timeForUpdate() || len(c.cache.Compute.Tags) == 0 {
 		if err := c.update(ctx); err != nil {
 			return "", err
@@ -100,7 +114,8 @@ func (c *imdsClient) UID(ctx context.Context) (string, error) {
 	return "", fmt.Errorf("unable to get uid from metadata tags %v", c.cache.Compute.Tags)
 }
 
-func (c *imdsClient) Role(ctx context.Context) (role.Role, error) {
+// role returns the role of the instance the function is called from.
+func (c *imdsClient) role(ctx context.Context) (role.Role, error) {
 	if c.timeForUpdate() || len(c.cache.Compute.Tags) == 0 {
 		if err := c.update(ctx); err != nil {
 			return role.Unknown, err
@@ -161,6 +176,9 @@ type metadataResponseCompute struct {
 	SubscriptionID string        `json:"subscriptionId,omitempty"`
 	ResourceGroup  string        `json:"resourceGroupName,omitempty"`
 	Tags           []metadataTag `json:"tagsList,omitempty"`
+	OSProfile      struct {
+		ComputerName string `json:"computerName,omitempty"`
+	} `json:"osProfile,omitempty"`
 }
 
 type metadataTag struct {

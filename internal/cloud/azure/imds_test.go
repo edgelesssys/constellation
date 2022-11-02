@@ -135,7 +135,7 @@ func TestIMDSClient(t *testing.T) {
 
 			ctx := context.Background()
 
-			id, err := iClient.ProviderID(ctx)
+			id, err := iClient.providerID(ctx)
 			if tc.wantProviderIDErr {
 				assert.Error(err)
 			} else {
@@ -143,7 +143,7 @@ func TestIMDSClient(t *testing.T) {
 				assert.Equal(tc.wantProviderID, id)
 			}
 
-			group, err := iClient.ResourceGroup(ctx)
+			group, err := iClient.resourceGroup(ctx)
 			if tc.wantResourceGroupErr {
 				assert.Error(err)
 			} else {
@@ -151,7 +151,7 @@ func TestIMDSClient(t *testing.T) {
 				assert.Equal(tc.wantResourceGroup, group)
 			}
 
-			uid, err := iClient.UID(ctx)
+			uid, err := iClient.uid(ctx)
 			if tc.wantUIDErr {
 				assert.Error(err)
 			} else {
@@ -159,7 +159,7 @@ func TestIMDSClient(t *testing.T) {
 				assert.Equal(tc.wantUID, uid)
 			}
 
-			role, err := iClient.Role(ctx)
+			role, err := iClient.role(ctx)
 			if tc.wantRoleErr {
 				assert.Error(err)
 			} else {

@@ -85,7 +85,7 @@ func main() {
 			_ = exportPCRs()
 			log.With(zap.Error(err)).Fatalf("Unable to resolve Azure state disk path")
 		}
-		metadataAPI, err = azurecloud.NewMetadata(context.Background())
+		metadataAPI, err = azurecloud.New(context.Background())
 		if err != nil {
 			log.With(zap.Error).Fatalf("Failed to set up Azure metadata API")
 		}
