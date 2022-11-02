@@ -31,7 +31,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+	goleak.VerifyTestMain(m,
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+	)
 }
 
 func TestInitCluster(t *testing.T) {
@@ -57,29 +59,6 @@ func TestInitCluster(t *testing.T) {
 		wantErr                bool
 		k8sVersion             versions.ValidK8sVersion
 	}{
-		"kubeadm init works without metadata": {
-			clusterUtil: stubClusterUtil{},
-			kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
-			},
-			kubeAPIWaiter:          stubKubeAPIWaiter{},
-			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
-			CloudControllerManager: &stubCloudControllerManager{},
-			ClusterAutoscaler:      &stubClusterAutoscaler{},
-			wantConfig: k8sapi.KubeadmInitYAML{
-				InitConfiguration: kubeadm.InitConfiguration{
-					NodeRegistration: kubeadm.NodeRegistrationOptions{
-						KubeletExtraArgs: map[string]string{
-							"node-ip":     "",
-							"provider-id": "",
-						},
-						Name: privateIP,
-					},
-				},
-				ClusterConfiguration: kubeadm.ClusterConfiguration{},
-			},
-			k8sVersion: versions.Default,
-		},
 		"kubeadm init works with metadata and loadbalancer": {
 			clusterUtil: stubClusterUtil{},
 			kubeconfigReader: &stubKubeconfigReader{
@@ -328,21 +307,6 @@ func TestJoinCluster(t *testing.T) {
 		role                   role.Role
 		wantErr                bool
 	}{
-		"kubeadm join worker works without metadata": {
-			clusterUtil:            stubClusterUtil{},
-			providerMetadata:       &stubProviderMetadata{},
-			CloudControllerManager: &stubCloudControllerManager{},
-			role:                   role.Worker,
-			wantConfig: kubeadm.JoinConfiguration{
-				Discovery: kubeadm.Discovery{
-					BootstrapToken: joinCommand,
-				},
-				NodeRegistration: kubeadm.NodeRegistrationOptions{
-					Name:             privateIP,
-					KubeletExtraArgs: map[string]string{"node-ip": privateIP},
-				},
-			},
-		},
 		"kubeadm join worker works with metadata": {
 			clusterUtil: stubClusterUtil{},
 			providerMetadata: &stubProviderMetadata{
