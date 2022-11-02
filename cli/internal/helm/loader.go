@@ -38,15 +38,17 @@ type ChartLoader struct {
 	joinServiceImage string
 	kmsImage         string
 	ccmImage         string
+	cnmImage         string
 }
 
 func New(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *ChartLoader {
-	var ccmImage string
+	var ccmImage, cnmImage string
 	switch csp {
 	case cloudprovider.AWS:
 		ccmImage = versions.VersionConfigs[k8sVersion].CloudControllerManagerImageAWS
 	case cloudprovider.Azure:
 		ccmImage = versions.VersionConfigs[k8sVersion].CloudControllerManagerImageAzure
+		cnmImage = versions.VersionConfigs[k8sVersion].CloudNodeManagerImageAzure
 	case cloudprovider.GCP:
 		ccmImage = versions.VersionConfigs[k8sVersion].CloudControllerManagerImageGCP
 	}
@@ -55,6 +57,7 @@ func New(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *Chart
 		joinServiceImage: versions.JoinImage,
 		kmsImage:         versions.KmsImage,
 		ccmImage:         ccmImage,
+		cnmImage:         cnmImage,
 	}
 }
 
@@ -156,7 +159,7 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 			"image":        i.joinServiceImage,
 			"namespace":    constants.ConstellationNamespace,
 		},
-		"ccm": map[string]interface{}{
+		"ccm": map[string]any{
 			"csp": csp,
 		},
 	}
@@ -176,6 +179,10 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 			}
 			ccmVals["Azure"] = map[string]any{
 				"image": i.ccmImage,
+			}
+
+			vals["cnm"] = map[string]any{
+				"image": i.cnmImage,
 			}
 
 			vals["tags"] = map[string]any{

@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cloud-node-manager
+  namespace: {{ .Release.Namespace}}
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+    component: cloud-node-manager
+    kubernetes.io/cluster-service: "true"
+spec:
+  selector:
+    matchLabels:
+      k8s-app: cloud-node-manager
+  template:
+    metadata:
+      annotations:
+        cluster-autoscaler.kubernetes.io/daemonset-pod: "true"
+      labels:
+        k8s-app: cloud-node-manager
+    spec:
+      containers:
+      - name: cloud-node-manager
+        image: {{ .Values.image }}
+        imagePullPolicy: IfNotPresent
+        command:
+          - cloud-node-manager
+          - --node-name=$(NODE_NAME)
+          - --wait-routes=true
+        env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+        resources:
+          requests:
+            cpu: 50m
+            memory: 50Mi
+      hostNetwork: true
+      nodeSelector:
+        kubernetes.io/os: linux
+      priorityClassName: system-node-critical
+      serviceAccountName: cloud-node-manager
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Equal
+          value: "true"
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+  updateStrategy: {}

@@ -1,0 +1,15 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "properties": {
+        "image": {
+            "description": "Container image to use for the spawned pods.",
+            "type": "string",
+            "examples": ["mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.23.21"]
+        }
+    },
+    "required": [
+        "image"
+    ],
+    "title": "Values",
+    "type": "object"
+}

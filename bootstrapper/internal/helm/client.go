@@ -58,8 +58,6 @@ func (h *Client) InstallConstellationServices(ctx context.Context, release helm.
 	h.ReleaseName = release.ReleaseName
 	h.Wait = release.Wait
 	h.Timeout = timeout
-	// update dependencies - unsure if necessary for local deps.
-	h.DependencyUpdate = true
 
 	mergedVals := mergeMaps(release.Values, extraVals)
 

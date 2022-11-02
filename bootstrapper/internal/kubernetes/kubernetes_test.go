@@ -49,7 +49,6 @@ func TestInitCluster(t *testing.T) {
 		kubectl                stubKubectl
 		providerMetadata       ProviderMetadata
 		CloudControllerManager CloudControllerManager
-		CloudNodeManager       CloudNodeManager
 		ClusterAutoscaler      ClusterAutoscaler
 		kubeconfigReader       configReader
 		wantConfig             k8sapi.KubeadmInitYAML
@@ -63,7 +62,6 @@ func TestInitCluster(t *testing.T) {
 			},
 			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
 			CloudControllerManager: &stubCloudControllerManager{},
-			CloudNodeManager:       &stubCloudNodeManager{SupportedResp: false},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantConfig: k8sapi.KubeadmInitYAML{
 				InitConfiguration: kubeadm.InitConfiguration{
@@ -96,7 +94,6 @@ func TestInitCluster(t *testing.T) {
 				SupportsLoadBalancerResp:    true,
 			},
 			CloudControllerManager: &stubCloudControllerManager{},
-			CloudNodeManager:       &stubCloudNodeManager{SupportedResp: false},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantConfig: k8sapi.KubeadmInitYAML{
 				InitConfiguration: kubeadm.InitConfiguration{
@@ -128,7 +125,6 @@ func TestInitCluster(t *testing.T) {
 				SupportedResp: true,
 			},
 			CloudControllerManager: &stubCloudControllerManager{},
-			CloudNodeManager:       &stubCloudNodeManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
 			k8sVersion:             versions.Default,
@@ -143,7 +139,6 @@ func TestInitCluster(t *testing.T) {
 				SupportedResp:        true,
 			},
 			CloudControllerManager: &stubCloudControllerManager{},
-			CloudNodeManager:       &stubCloudNodeManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
 			k8sVersion:             versions.Default,
@@ -159,7 +154,6 @@ func TestInitCluster(t *testing.T) {
 				SupportedResp:              true,
 			},
 			CloudControllerManager: &stubCloudControllerManager{},
-			CloudNodeManager:       &stubCloudNodeManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
 			k8sVersion:             versions.Default,
@@ -171,7 +165,6 @@ func TestInitCluster(t *testing.T) {
 			},
 			providerMetadata:       &stubProviderMetadata{},
 			CloudControllerManager: &stubCloudControllerManager{},
-			CloudNodeManager:       &stubCloudNodeManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
 			k8sVersion:             versions.Default,
@@ -184,7 +177,6 @@ func TestInitCluster(t *testing.T) {
 			},
 			providerMetadata:       &stubProviderMetadata{},
 			CloudControllerManager: &stubCloudControllerManager{},
-			CloudNodeManager:       &stubCloudNodeManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
 			k8sVersion:             versions.Default,
@@ -197,19 +189,18 @@ func TestInitCluster(t *testing.T) {
 			},
 			providerMetadata:       &stubProviderMetadata{},
 			CloudControllerManager: &stubCloudControllerManager{SupportedResp: true},
-			CloudNodeManager:       &stubCloudNodeManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
 			k8sVersion:             versions.Default,
 		},
 		"kubeadm init fails when setting the cloud node manager": {
-			clusterUtil: stubClusterUtil{setupCloudNodeManagerError: someErr},
+			clusterUtil: stubClusterUtil{},
+			helmClient:  stubHelmClient{servicesError: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
 			providerMetadata:       &stubProviderMetadata{},
 			CloudControllerManager: &stubCloudControllerManager{},
-			CloudNodeManager:       &stubCloudNodeManager{SupportedResp: true},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
 			k8sVersion:             versions.Default,
@@ -221,7 +212,6 @@ func TestInitCluster(t *testing.T) {
 			},
 			providerMetadata:       &stubProviderMetadata{},
 			CloudControllerManager: &stubCloudControllerManager{},
-			CloudNodeManager:       &stubCloudNodeManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{SupportedResp: true},
 			wantErr:                true,
 			k8sVersion:             versions.Default,
@@ -233,7 +223,6 @@ func TestInitCluster(t *testing.T) {
 			},
 			providerMetadata:       &stubProviderMetadata{},
 			CloudControllerManager: &stubCloudControllerManager{},
-			CloudNodeManager:       &stubCloudNodeManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
 			k8sVersion:             versions.Default,
@@ -245,7 +234,6 @@ func TestInitCluster(t *testing.T) {
 			},
 			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
 			CloudControllerManager: &stubCloudControllerManager{},
-			CloudNodeManager:       &stubCloudNodeManager{SupportedResp: false},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
 			k8sVersion:             versions.Default,
@@ -257,7 +245,6 @@ func TestInitCluster(t *testing.T) {
 			},
 			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
 			CloudControllerManager: &stubCloudControllerManager{},
-			CloudNodeManager:       &stubCloudNodeManager{SupportedResp: false},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
 			k8sVersion:             versions.Default,
@@ -269,7 +256,6 @@ func TestInitCluster(t *testing.T) {
 			},
 			providerMetadata:       &stubProviderMetadata{},
 			CloudControllerManager: &stubCloudControllerManager{},
-			CloudNodeManager:       &stubCloudNodeManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			k8sVersion:             "1.19",
 			wantErr:                true,
@@ -286,7 +272,6 @@ func TestInitCluster(t *testing.T) {
 				helmClient:             &tc.helmClient,
 				providerMetadata:       tc.providerMetadata,
 				cloudControllerManager: tc.CloudControllerManager,
-				cloudNodeManager:       tc.CloudNodeManager,
 				clusterAutoscaler:      tc.ClusterAutoscaler,
 				configProvider:         &stubConfigProvider{InitConfig: k8sapi.KubeadmInitYAML{}},
 				client:                 &tc.kubectl,
@@ -503,20 +488,18 @@ func TestK8sCompliantHostname(t *testing.T) {
 }
 
 type stubClusterUtil struct {
-	installComponentsErr             error
-	initClusterErr                   error
-	setupAutoscalingError            error
-	setupCloudControllerManagerError error
-	setupCloudNodeManagerError       error
-	setupKonnectivityError           error
-	setupAccessManagerError          error
-	setupVerificationServiceErr      error
-	setupGCPGuestAgentErr            error
-	setupOLMErr                      error
-	setupNMOErr                      error
-	setupNodeOperatorErr             error
-	joinClusterErr                   error
-	startKubeletErr                  error
+	installComponentsErr        error
+	initClusterErr              error
+	setupAutoscalingError       error
+	setupKonnectivityError      error
+	setupAccessManagerError     error
+	setupVerificationServiceErr error
+	setupGCPGuestAgentErr       error
+	setupOLMErr                 error
+	setupNMOErr                 error
+	setupNodeOperatorErr        error
+	joinClusterErr              error
+	startKubeletErr             error
 
 	initConfigs [][]byte
 	joinConfigs [][]byte
@@ -543,16 +526,8 @@ func (s *stubClusterUtil) SetupGCPGuestAgent(kubectl k8sapi.Client, gcpGuestAgen
 	return s.setupGCPGuestAgentErr
 }
 
-func (s *stubClusterUtil) SetupCloudControllerManager(kubectl k8sapi.Client, cloudControllerManagerConfiguration kubernetes.Marshaler, configMaps kubernetes.Marshaler, secrets kubernetes.Marshaler) error {
-	return s.setupCloudControllerManagerError
-}
-
 func (s *stubClusterUtil) SetupAccessManager(kubectl k8sapi.Client, accessManagerConfiguration kubernetes.Marshaler) error {
 	return s.setupAccessManagerError
-}
-
-func (s *stubClusterUtil) SetupCloudNodeManager(kubectl k8sapi.Client, cloudNodeManagerConfiguration kubernetes.Marshaler) error {
-	return s.setupCloudNodeManagerError
 }
 
 func (s *stubClusterUtil) SetupVerificationService(kubectl k8sapi.Client, verificationServiceConfiguration kubernetes.Marshaler) error {

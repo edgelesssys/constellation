@@ -50,6 +50,7 @@ func TestTemplate(t *testing.T) {
 		enforceIDKeyDigest bool
 		valuesModifier     func(map[string]any) error
 		ccmImage           string
+		cnmImage           string
 	}{
 		"GCP": {
 			csp:                cloudprovider.GCP,
@@ -62,6 +63,7 @@ func TestTemplate(t *testing.T) {
 			enforceIDKeyDigest: true,
 			valuesModifier:     prepareAzureValues,
 			ccmImage:           "ccmImageForAzure",
+			cnmImage:           "cnmImageForAzure",
 		},
 		"QEMU": {
 			csp:                cloudprovider.QEMU,
@@ -75,7 +77,7 @@ func TestTemplate(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			chartLoader := ChartLoader{joinServiceImage: "joinServiceImage", kmsImage: "kmsImage", ccmImage: tc.ccmImage}
+			chartLoader := ChartLoader{joinServiceImage: "joinServiceImage", kmsImage: "kmsImage", ccmImage: tc.ccmImage, cnmImage: tc.cnmImage}
 			release, err := chartLoader.Load(tc.csp, true, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []uint32{1, 11}, tc.enforceIDKeyDigest)
 			require.NoError(err)
 
@@ -98,8 +100,13 @@ func TestTemplate(t *testing.T) {
 			err = tc.valuesModifier(helmReleases.ConstellationServices.Values)
 			require.NoError(err)
 
+			// This step is needed to enabled/disable subcharts according to their tags/conditions.
+			err = chartutil.ProcessDependencies(chart, helmReleases.ConstellationServices.Values)
+			require.NoError(err)
+
 			valuesToRender, err := chartutil.ToRenderValues(chart, helmReleases.ConstellationServices.Values, options, caps)
 			require.NoError(err)
+
 			result, err := engine.Render(chart, valuesToRender)
 			require.NoError(err)
 			for k, v := range result {

@@ -104,11 +104,10 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to set up cloud logger")
 		}
 
-		nodeManager := &awscloud.CloudNodeManager{}
 		cloudControllerManager := &awscloud.CloudControllerManager{}
 		clusterInitJoiner = kubernetes.New(
 			"aws", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), cloudControllerManager,
-			nodeManager, &gcpcloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
+			&gcpcloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
 		)
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
@@ -145,7 +144,7 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), cloudControllerManager,
-			&gcpcloud.CloudNodeManager{}, &gcpcloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
+			&gcpcloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
 		)
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
@@ -179,7 +178,7 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"azure", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), azurecloud.NewCloudControllerManager(metadata),
-			&azurecloud.CloudNodeManager{}, &azurecloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
+			&azurecloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
 		)
 
 		openTPM = vtpm.OpenVTPM
@@ -201,7 +200,7 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), &qemucloud.CloudControllerManager{},
-			&qemucloud.CloudNodeManager{}, &qemucloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
+			&qemucloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
 		)
 		metadataAPI = metadata
 

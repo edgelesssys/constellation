@@ -187,30 +187,6 @@ func (m *stubCloudControllerManager) Supported() bool {
 	return m.SupportedResp
 }
 
-type stubCloudNodeManager struct {
-	SupportedResp bool
-
-	ImageResp     string
-	PathResp      string
-	ExtraArgsResp []string
-}
-
-func (m *stubCloudNodeManager) Image(k8sVersion versions.ValidK8sVersion) (string, error) {
-	return m.ImageResp, nil
-}
-
-func (m *stubCloudNodeManager) Path() string {
-	return m.PathResp
-}
-
-func (m *stubCloudNodeManager) ExtraArgs() []string {
-	return m.ExtraArgsResp
-}
-
-func (m *stubCloudNodeManager) Supported() bool {
-	return m.SupportedResp
-}
-
 type stubClusterAutoscaler struct {
 	SupportedResp bool
 }
