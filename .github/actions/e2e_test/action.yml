@@ -27,14 +27,29 @@ inputs:
   kubernetesVersion:
     description: "Kubernetes version to create the cluster from."
     required: false
+  gcpProject:
+    description: "The GCP project to deploy Constellation in."
+    required: false
   gcp_service_account_json:
     description: "Service account with permissions to create Constellation on GCP."
     required: false
   gcpClusterServiceAccountKey:
     description: "Service account to use inside the created Constellation cluster on GCP."
     required: false
+  azureSubscription:
+    description: "The Azure subscription ID to deploy Constellation in."
+    required: false
+  azureTenant:
+    description: "The Azure tenant ID to deploy Constellation in."
+    required: false
+  azureClientID:
+    description: "The client ID of the application registration created for Constellation in Azure."
+    required: false
   azureClientSecret:
     description: "The client secret value of the used secret"
+    required: false
+  azureUserAssignedIdentity:
+    description: "The Azure user assigned identity to use for Constellation."
     required: false
   azureResourceGroup:
     description: "The resource group to use"
@@ -113,6 +128,7 @@ runs:
       uses: ./.github/actions/constellation_create
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
+        gcpProject: ${{ inputs.gcpProject }}
         gcpClusterServiceAccountKey: ${{ inputs.gcpClusterServiceAccountKey }}
         workerNodesCount: ${{ inputs.workerNodesCount }}
         controlNodesCount: ${{ inputs.controlNodesCount }}
@@ -120,7 +136,11 @@ runs:
         osImage: ${{ inputs.osImage }}
         isDebugImage: ${{ inputs.isDebugImage }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
+        azureSubscription: ${{ inputs.azureSubscription }}
+        azureTenant: ${{ inputs.azureTenant }}
+        azureClientID: ${{ inputs.azureClientID }}
         azureClientSecret: ${{ inputs.azureClientSecret }}
+        azureUserAssignedIdentity: ${{ inputs.azureUserAssignedIdentity }}
         azureResourceGroup: ${{ inputs.azureResourceGroup }}
 
     #
