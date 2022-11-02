@@ -125,6 +125,14 @@ resource "aws_security_group" "security_group" {
     description = "konnectivity"
   }
 
+  ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = [aws_vpc.vpc.cidr_block]
+    description = "allow all internal"
+  }
+
   dynamic "ingress" {
     for_each = var.debug ? [1] : []
     content {
@@ -144,60 +152,67 @@ resource "aws_cloudwatch_log_group" "log_group" {
 }
 
 module "load_balancer_target_bootstrapper" {
-  source = "./modules/load_balancer_target"
-  name   = "${local.name}-bootstrapper"
-  vpc_id = aws_vpc.vpc.id
-  lb_arn = aws_lb.front_end.arn
-  port   = local.ports_bootstrapper
-  tags   = local.tags
+  source               = "./modules/load_balancer_target"
+  name                 = "${local.name}-bootstrapper"
+  vpc_id               = aws_vpc.vpc.id
+  lb_arn               = aws_lb.front_end.arn
+  port                 = local.ports_bootstrapper
+  tags                 = local.tags
+  healthcheck_protocol = "TCP"
 }
 
 module "load_balancer_target_kubernetes" {
-  source = "./modules/load_balancer_target"
-  name   = "${local.name}-kubernetes"
-  vpc_id = aws_vpc.vpc.id
-  lb_arn = aws_lb.front_end.arn
-  port   = local.ports_kubernetes
-  tags   = local.tags
+  source               = "./modules/load_balancer_target"
+  name                 = "${local.name}-kubernetes"
+  vpc_id               = aws_vpc.vpc.id
+  lb_arn               = aws_lb.front_end.arn
+  port                 = local.ports_kubernetes
+  tags                 = local.tags
+  healthcheck_protocol = "HTTPS"
+  healthcheck_path     = "/readyz"
 }
 
 module "load_balancer_target_verify" {
-  source = "./modules/load_balancer_target"
-  name   = "${local.name}-verify"
-  vpc_id = aws_vpc.vpc.id
-  lb_arn = aws_lb.front_end.arn
-  port   = local.ports_verify
-  tags   = local.tags
+  source               = "./modules/load_balancer_target"
+  name                 = "${local.name}-verify"
+  vpc_id               = aws_vpc.vpc.id
+  lb_arn               = aws_lb.front_end.arn
+  port                 = local.ports_verify
+  tags                 = local.tags
+  healthcheck_protocol = "TCP"
 }
 
 module "load_balancer_target_debugd" {
-  count  = var.debug ? 1 : 0 // only deploy debugd in debug mode
-  source = "./modules/load_balancer_target"
-  name   = "${local.name}-debugd"
-  vpc_id = aws_vpc.vpc.id
-  lb_arn = aws_lb.front_end.arn
-  port   = local.ports_debugd
-  tags   = local.tags
+  count                = var.debug ? 1 : 0 // only deploy debugd in debug mode
+  source               = "./modules/load_balancer_target"
+  name                 = "${local.name}-debugd"
+  vpc_id               = aws_vpc.vpc.id
+  lb_arn               = aws_lb.front_end.arn
+  port                 = local.ports_debugd
+  tags                 = local.tags
+  healthcheck_protocol = "TCP"
 }
 
 module "load_balancer_target_konnectivity" {
-  source = "./modules/load_balancer_target"
-  name   = "${local.name}-konnectivity"
-  vpc_id = aws_vpc.vpc.id
-  lb_arn = aws_lb.front_end.arn
-  port   = local.ports_konnectivity
-  tags   = local.tags
+  source               = "./modules/load_balancer_target"
+  name                 = "${local.name}-konnectivity"
+  vpc_id               = aws_vpc.vpc.id
+  lb_arn               = aws_lb.front_end.arn
+  port                 = local.ports_konnectivity
+  tags                 = local.tags
+  healthcheck_protocol = "TCP"
 }
 
 # TODO: Remove when development is more advanced
 module "load_balancer_target_ssh" {
-  count  = var.debug ? 1 : 0 // only deploy SSH in debug mode
-  source = "./modules/load_balancer_target"
-  name   = "${local.name}-ssh"
-  vpc_id = aws_vpc.vpc.id
-  lb_arn = aws_lb.front_end.arn
-  port   = local.ports_ssh
-  tags   = local.tags
+  count                = var.debug ? 1 : 0 // only deploy SSH in debug mode
+  source               = "./modules/load_balancer_target"
+  name                 = "${local.name}-ssh"
+  vpc_id               = aws_vpc.vpc.id
+  lb_arn               = aws_lb.front_end.arn
+  port                 = local.ports_ssh
+  tags                 = local.tags
+  healthcheck_protocol = "TCP"
 }
 
 module "instance_group_control_plane" {
