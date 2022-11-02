@@ -46,7 +46,7 @@ const (
 	// These images are built in a way that they support all versions currently listed in VersionConfigs.
 	KonnectivityAgentImage  = "us.gcr.io/k8s-artifacts-prod/kas-network-proxy/proxy-agent:v0.0.33@sha256:48f2a4ec3e10553a81b8dd1c6fa5fe4bcc9617f78e71c1ca89c6921335e2d7da"                              // renovate:container
 	KonnectivityServerImage = "registry.k8s.io/kas-network-proxy/proxy-server:v0.0.33@sha256:2c111f004bec24888d8cfa2a812a38fb8341350abac67dcd0ac64e709dfe389c"                                          // renovate:container
-	JoinImage               = "ghcr.io/edgelesssys/constellation/join-service:v2.2.0-pre.0.20221030024656-7a6a0766e8d2@sha256:25176790084c35fcf4d2da93b7b4014118ea3af959f8f63fae6e107b6c16ddef"         // renovate:container
+	JoinImage               = "ghcr.io/edgelesssys/constellation/join-service:v2.2.0-pre.0.20221102120022-1f9a788c213d@sha256:41bd333cae47e55d711dee93cd5da0fe3dc66885ab9949d0e76ffe07d2f7dd34"         // renovate:container
 	AccessManagerImage      = "ghcr.io/edgelesssys/constellation/access-manager:v2.2.0-pre.0.20221025135123-2d121d9243cf@sha256:08588f0c23353b53750b79122536260870d57b8dff1a1ff1020799e1e0b9f565"       // renovate:container
 	KmsImage                = "ghcr.io/edgelesssys/constellation/kmsserver:v2.2.0-pre.0.20221026125949-06ce47d16cbd@sha256:544ef14afee3ddca26effb9bacc858a8ee009bca409c7c3c042abc8a1345226b"            // renovate:container
 	VerificationImage       = "ghcr.io/edgelesssys/constellation/verification-service:v2.2.0-pre.0.20221031131238-9fd0b4a94f0d@sha256:186dd1b718b37b7fbf4faedee8448835f9b47804896d6f94a355f0fe6fe5d766" // renovate:container
