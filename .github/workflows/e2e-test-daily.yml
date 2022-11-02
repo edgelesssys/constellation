@@ -6,10 +6,10 @@ on:
     - cron: "0 3 * * 2-5" # At 03:00 on every day-of-week from Tuesday through Friday.
 
 env:
-  ARM_CLIENT_ID: "b657a00e-813a-4dc7-9b09-fa498a254d71"
+  ARM_CLIENT_ID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
   ARM_CLIENT_SECRET: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
-  ARM_SUBSCRIPTION_ID: "0d202bbb-4fa7-4af8-8125-58c269a05435"
-  ARM_TENANT_ID: "adb650a8-5da3-4b15-b4b0-3daf65ff7626"
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_E2E_TENANT_ID }}
 
 jobs:
   e2e-daily:
