@@ -439,15 +439,13 @@ func getIPAddr() (string, error) {
 
 // setupExtraVals create a helm values map for consumption by helm-install.
 // Will move to a more dedicated place once that place becomes apparent.
-func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSON []byte, idkeydigest []byte, measurementSalt []byte, subnetworkCIDR string, cloudServiceAccountURI string) (map[string]any, error) {
+func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSON []byte, idkeydigest []byte, measurementSalt []byte, subnetworkPodCIDR string, cloudServiceAccountURI string) (map[string]any, error) {
 	extraVals := map[string]any{
 		"join-service": map[string]any{
 			"measurements":    string(initialMeasurementsJSON),
 			"measurementSalt": base64.StdEncoding.EncodeToString(measurementSalt),
 		},
-		"ccm": map[string]any{
-			"subnetworkCIDR": subnetworkCIDR,
-		},
+		"ccm": map[string]any{},
 	}
 
 	instance, err := k.providerMetadata.Self(ctx)
@@ -482,9 +480,10 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSO
 				return nil, errors.New("invalid ccm values")
 			}
 			ccmVals["GCP"] = map[string]any{
-				"projectID":  projectID,
-				"uid":        uid,
-				"secretData": string(rawKey),
+				"projectID":         projectID,
+				"uid":               uid,
+				"secretData":        string(rawKey),
+				"subnetworkPodCIDR": subnetworkPodCIDR,
 			}
 		}
 	case cloudprovider.Azure:
@@ -506,7 +505,8 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSO
 				return nil, errors.New("invalid ccm values")
 			}
 			ccmVals["Azure"] = map[string]any{
-				"azureConfig": string(rawConfig),
+				"azureConfig":       string(rawConfig),
+				"subnetworkPodCIDR": subnetworkPodCIDR,
 			}
 
 			joinVals, ok := extraVals["join-service"].(map[string]any)

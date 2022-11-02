@@ -137,7 +137,7 @@ func prepareGCPValues(values map[string]any) error {
 	if !ok {
 		return errors.New("missing 'ccm' key")
 	}
-	ccmVals["subnetworkCIDR"] = "192.0.2.0/24"
+	ccmVals["GCP"].(map[string]any)["subnetworkPodCIDR"] = "192.0.2.0/24"
 	ccmVals["GCP"].(map[string]any)["projectID"] = "42424242424242"
 	ccmVals["GCP"].(map[string]any)["uid"] = "242424242424"
 	ccmVals["GCP"].(map[string]any)["secretData"] = "baaaaaad"
@@ -158,7 +158,7 @@ func prepareAzureValues(values map[string]any) error {
 	if !ok {
 		return errors.New("missing 'ccm' key")
 	}
-	ccmVals["subnetworkCIDR"] = "192.0.2.0/24"
+	ccmVals["Azure"].(map[string]any)["subnetworkPodCIDR"] = "192.0.2.0/24"
 	ccmVals["Azure"].(map[string]any)["azureConfig"] = "baaaaaad"
 
 	return nil
@@ -171,12 +171,6 @@ func prepareQEMUValues(values map[string]any) error {
 	}
 	joinVals["measurements"] = "{'1':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA','15':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='}"
 	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-
-	ccmVals, ok := values["ccm"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'ccm' key")
-	}
-	ccmVals["subnetworkCIDR"] = "192.0.2.0/24"
 
 	return nil
 }
