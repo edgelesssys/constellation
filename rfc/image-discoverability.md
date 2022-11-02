@@ -77,7 +77,9 @@ s3://<BUCKET-NAME>/images/<IMAGE-VERSION-UID>.json
     "cvm": "azure-cvm-123",
     "trustedlaunch": "azure-trusted-launch-123"
   },
-  "gcp": "gcp-image-123",
+  "gcp": {
+    "sev-es": "gcp-image-123"
+  }
   "qemu": "https://cdn.edgeless.systems/.../qemu.raw"
 }
 ```
