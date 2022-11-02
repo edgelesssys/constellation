@@ -29,7 +29,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
         with:
-          go-version: "1.19.2"
+          go-version: "1.19.3"
 
       - name: Build the bootstrapper
         uses: ./.github/actions/build_bootstrapper
@@ -45,7 +45,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
         with:
-          go-version: "1.19.2"
+          go-version: "1.19.3"
 
       - name: Build debugd
         uses: ./.github/actions/build_debugd
@@ -61,7 +61,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
         with:
-          go-version: "1.19.2"
+          go-version: "1.19.3"
 
       - name: Build cdbg (Linux, amd64)
         uses: ./.github/actions/build_cdbg
@@ -86,7 +86,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
         with:
-          go-version: "1.19.2"
+          go-version: "1.19.3"
       - name: Build cdbg (macOS, amd64)
         uses: ./.github/actions/build_cdbg
         with:
@@ -110,7 +110,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
         with:
-          go-version: "1.19.2"
+          go-version: "1.19.3"
       - name: Build disk-mapper
         uses: ./.github/actions/build_disk_mapper
 
@@ -125,7 +125,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
         with:
-          go-version: "1.19.2"
+          go-version: "1.19.3"
 
       - name: Build CLI (Linux, amd64)
         uses: ./.github/actions/build_cli
@@ -150,7 +150,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
         with:
-          go-version: "1.19.2"
+          go-version: "1.19.3"
 
       - name: Build CLI (macOS, amd64)
         uses: ./.github/actions/build_cli
