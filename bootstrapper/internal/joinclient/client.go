@@ -314,9 +314,6 @@ func (c *JoinClient) getNodeMetadata() error {
 	if inst.VPCIP != "" {
 		ips = append(ips, net.ParseIP(inst.VPCIP))
 	}
-	if inst.PublicIP != "" {
-		ips = append(ips, net.ParseIP(inst.PublicIP))
-	}
 
 	c.nodeName = inst.Name
 	c.role = inst.Role

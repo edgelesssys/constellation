@@ -103,7 +103,6 @@ func (k *KubeWrapper) InitCluster(
 	nodeName := ip
 	var providerID string
 	var instance metadata.InstanceMetadata
-	var publicIP string
 	var nodePodCIDR string
 	var subnetworkPodCIDR string
 	var controlPlaneEndpoint string // this is the endpoint in "kubeadm init --control-plane-endpoint=<IP/DNS>:<port>"
@@ -120,13 +119,9 @@ func (k *KubeWrapper) InitCluster(
 		if instance.VPCIP != "" {
 			validIPs = append(validIPs, net.ParseIP(instance.VPCIP))
 		}
-		if instance.PublicIP != "" {
-			validIPs = append(validIPs, net.ParseIP(instance.PublicIP))
-		}
 		nodeName = k8sCompliantHostname(instance.Name)
 		providerID = instance.ProviderID
 		nodeIP = instance.VPCIP
-		publicIP = instance.PublicIP
 
 		if len(instance.AliasIPRanges) > 0 {
 			nodePodCIDR = instance.AliasIPRanges[0]
@@ -135,12 +130,10 @@ func (k *KubeWrapper) InitCluster(
 		if err != nil {
 			return nil, fmt.Errorf("retrieving subnetwork CIDR: %w", err)
 		}
-		controlPlaneEndpoint = publicIP
-		if k.providerMetadata.SupportsLoadBalancer() {
-			controlPlaneEndpoint, err = k.providerMetadata.GetLoadBalancerEndpoint(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("retrieving load balancer endpoint: %w", err)
-			}
+
+		controlPlaneEndpoint, err = k.providerMetadata.GetLoadBalancerEndpoint(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("retrieving load balancer endpoint: %w", err)
 		}
 	}
 	log.With(
@@ -154,7 +147,7 @@ func (k *KubeWrapper) InitCluster(
 	// Step 2: configure kubeadm init config
 	initConfig := k.configProvider.InitConfiguration(k.cloudControllerManager.Supported(), k8sVersion)
 	initConfig.SetNodeIP(nodeIP)
-	initConfig.SetCertSANs([]string{publicIP, nodeIP})
+	initConfig.SetCertSANs([]string{nodeIP})
 	initConfig.SetNodeName(nodeName)
 	initConfig.SetProviderID(providerID)
 	initConfig.SetControlPlaneEndpoint(controlPlaneEndpoint)
@@ -286,11 +279,9 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 		providerID = instance.ProviderID
 		nodeName = instance.Name
 		nodeInternalIP = instance.VPCIP
-		if k.providerMetadata.SupportsLoadBalancer() {
-			loadbalancerEndpoint, err = k.providerMetadata.GetLoadBalancerEndpoint(ctx)
-			if err != nil {
-				return fmt.Errorf("retrieving loadbalancer endpoint: %w", err)
-			}
+		loadbalancerEndpoint, err = k.providerMetadata.GetLoadBalancerEndpoint(ctx)
+		if err != nil {
+			return fmt.Errorf("retrieving loadbalancer endpoint: %w", err)
 		}
 	}
 	nodeName = k8sCompliantHostname(nodeName)
