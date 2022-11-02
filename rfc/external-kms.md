@@ -10,7 +10,7 @@ Main goals are:
 * The KEK (master secret) never leaves the KMS. Unencrypted DEKs only exist temporarily.
 * Auto recovery of a cluster without manual intervention.
 
-We need to decide whether we can use Hashicorp Vault as a "proxy" that will allow us to support multiple KMSs while only implementing against one API.
+We need to decide on how to implement the KMIP client and what reference KMIP servers we want to implement against in the first iteration.
 
 ## Details on status quo
 
@@ -89,14 +89,29 @@ However, it also doesn't have support for KMIP.
 
 ### Conclusion
 
-We can't use Vault to add KMIP support to Constellation.
+We can't use Vault as a component of Constellation to add KMIP support.
 We also can't use it as a cloud KMS proxy because it only supports GCP.
 
 We could use Vault as DEK storage and use auto unseal with cloud KMS to replace the master secret.
 However, we would need a separate way for KMIP support.
 
-Overall, Vault doesn't seem a good fit for our use case.
 We should probably go with adding native support for external KMSs.
+
+We may use Vault as a reference KMIP server to implement against, but we need to procure Vault Enterprise and the ADP module for it.
+
+## Other tools and libraries
+
+### PyKMIP
+
+[PyKMIP](https://github.com/OpenKMIP/PyKMIP) is a KMIP client library for Python.
+Part of the project is a [KMIP server](https://pykmip.readthedocs.io/en/latest/server.html) for testing.
+We may use it as a reference KMIP server to implement against.
+
+### kmip-go
+
+[kmip-go](https://github.com/ThalesGroup/kmip-go) provides [KMIP protocol structures and can encode](https://pkg.go.dev/github.com/gemalto/kmip-go#example-package-Client) and decode them.
+We can use this as a building block of the Constellation KMIP client.
+It also has a [server type](https://pkg.go.dev/github.com/gemalto/kmip-go#Server) that may be useful in unit tests.
 
 ## Tasks
 
@@ -106,6 +121,10 @@ We should probably go with adding native support for external KMSs.
   * Implement the variant that uses an external KMS instead of the master key for these functionalities
 * Expose CKMS configuration to the user
 * Implement KMIP as a backend for the CKMS
+  * Use kmip-go for the client logic
+  * Use kmip-go's server type for unit tests
+  * Use PyKMIP's server for integration tests
+  * Use Vault Enterprise+ADP for extended integration and/or e2e tests
 
 ## Issues
 
