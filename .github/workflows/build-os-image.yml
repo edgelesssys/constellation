@@ -117,7 +117,7 @@ jobs:
       - name: Setup mkosi
         uses: ./.github/actions/setup_mkosi
         with:
-          version: 1750fc261a071f39c54f8b64ce2424195f750ee0
+          version: 058046019e7ed2e8e93af87b8c14a808dcc6bbc3
 
       - name: Prepare PKI for secure boot signing
         shell: bash
