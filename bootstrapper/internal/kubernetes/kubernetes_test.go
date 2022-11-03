@@ -192,7 +192,8 @@ func TestInitCluster(t *testing.T) {
 			k8sVersion:             versions.Default,
 		},
 		"kubeadm init fails when setting the cluster autoscaler": {
-			clusterUtil: stubClusterUtil{setupAutoscalingError: someErr},
+			clusterUtil: stubClusterUtil{},
+			helmClient:  stubHelmClient{servicesError: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
@@ -258,7 +259,6 @@ func TestInitCluster(t *testing.T) {
 				helmClient:             &tc.helmClient,
 				providerMetadata:       tc.providerMetadata,
 				cloudControllerManager: tc.CloudControllerManager,
-				clusterAutoscaler:      tc.ClusterAutoscaler,
 				configProvider:         &stubConfigProvider{InitConfig: k8sapi.KubeadmInitYAML{}},
 				client:                 &tc.kubectl,
 				kubeconfigReader:       tc.kubeconfigReader,
