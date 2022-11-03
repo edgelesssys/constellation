@@ -116,6 +116,11 @@ func (c *Client) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap
 	return nil
 }
 
+// ListAllNamespaces returns a list of all namespaces.
+func (c *Client) ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error) {
+	return c.clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+}
+
 func (c *Client) AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error {
 	deployments := c.clientset.AppsV1().Deployments(namespace)
 

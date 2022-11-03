@@ -13,8 +13,10 @@ import (
 	"regexp"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
+	kubewaiter "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubeWaiter"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
@@ -47,6 +49,7 @@ func TestInitCluster(t *testing.T) {
 		clusterUtil            stubClusterUtil
 		helmClient             stubHelmClient
 		kubectl                stubKubectl
+		kubeAPIWaiter          stubKubeAPIWaiter
 		providerMetadata       ProviderMetadata
 		CloudControllerManager CloudControllerManager
 		ClusterAutoscaler      ClusterAutoscaler
@@ -60,6 +63,7 @@ func TestInitCluster(t *testing.T) {
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
+			kubeAPIWaiter:          stubKubeAPIWaiter{},
 			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
 			CloudControllerManager: &stubCloudControllerManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
@@ -82,6 +86,7 @@ func TestInitCluster(t *testing.T) {
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
+			kubeAPIWaiter: stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{
 				SupportedResp: true,
 				SelfResp: metadata.InstanceMetadata{
@@ -120,6 +125,7 @@ func TestInitCluster(t *testing.T) {
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
+			kubeAPIWaiter: stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{
 				SelfErr:       someErr,
 				SupportedResp: true,
@@ -149,6 +155,7 @@ func TestInitCluster(t *testing.T) {
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
+			kubeAPIWaiter:          stubKubeAPIWaiter{},
 			providerMetadata:       &stubProviderMetadata{},
 			CloudControllerManager: &stubCloudControllerManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
@@ -173,6 +180,7 @@ func TestInitCluster(t *testing.T) {
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
+			kubeAPIWaiter:          stubKubeAPIWaiter{},
 			providerMetadata:       &stubProviderMetadata{},
 			CloudControllerManager: &stubCloudControllerManager{SupportedResp: true},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
@@ -185,6 +193,7 @@ func TestInitCluster(t *testing.T) {
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
+			kubeAPIWaiter:          stubKubeAPIWaiter{},
 			providerMetadata:       &stubProviderMetadata{},
 			CloudControllerManager: &stubCloudControllerManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
@@ -197,6 +206,7 @@ func TestInitCluster(t *testing.T) {
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
+			kubeAPIWaiter:          stubKubeAPIWaiter{},
 			providerMetadata:       &stubProviderMetadata{},
 			CloudControllerManager: &stubCloudControllerManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{SupportedResp: true},
@@ -208,6 +218,7 @@ func TestInitCluster(t *testing.T) {
 			kubeconfigReader: &stubKubeconfigReader{
 				ReadErr: someErr,
 			},
+			kubeAPIWaiter:          stubKubeAPIWaiter{},
 			providerMetadata:       &stubProviderMetadata{},
 			CloudControllerManager: &stubCloudControllerManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
@@ -219,6 +230,7 @@ func TestInitCluster(t *testing.T) {
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
+			kubeAPIWaiter:          stubKubeAPIWaiter{},
 			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
 			CloudControllerManager: &stubCloudControllerManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
@@ -230,17 +242,31 @@ func TestInitCluster(t *testing.T) {
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
+			kubeAPIWaiter:          stubKubeAPIWaiter{},
 			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
 			CloudControllerManager: &stubCloudControllerManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
 			k8sVersion:             versions.Default,
 		},
+		"kubeadm init fails when waiting for kubeAPI server": {
+			clusterUtil: stubClusterUtil{},
+			kubeconfigReader: &stubKubeconfigReader{
+				Kubeconfig: []byte("someKubeconfig"),
+			},
+			kubeAPIWaiter:          stubKubeAPIWaiter{waitErr: someErr},
+			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
+			CloudControllerManager: &stubCloudControllerManager{},
+			ClusterAutoscaler:      &stubClusterAutoscaler{},
+			k8sVersion:             versions.Default,
+			wantErr:                true,
+		},
 		"unsupported k8sVersion fails cluster creation": {
 			clusterUtil: stubClusterUtil{},
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
+			kubeAPIWaiter:          stubKubeAPIWaiter{},
 			providerMetadata:       &stubProviderMetadata{},
 			CloudControllerManager: &stubCloudControllerManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
@@ -258,6 +284,7 @@ func TestInitCluster(t *testing.T) {
 				clusterUtil:            &tc.clusterUtil,
 				helmClient:             &tc.helmClient,
 				providerMetadata:       tc.providerMetadata,
+				kubeAPIWaiter:          &tc.kubeAPIWaiter,
 				cloudControllerManager: tc.CloudControllerManager,
 				configProvider:         &stubConfigProvider{InitConfig: k8sapi.KubeadmInitYAML{}},
 				client:                 &tc.kubectl,
@@ -570,9 +597,11 @@ type stubKubectl struct {
 	AddTolerationsToDeploymentErr    error
 	AddTNodeSelectorsToDeploymentErr error
 	waitForCRDsErr                   error
+	listAllNamespacesErr             error
 
-	resources   []kubernetes.Marshaler
-	kubeconfigs [][]byte
+	listAllNamespacesResp *corev1.NamespaceList
+	resources             []kubernetes.Marshaler
+	kubeconfigs           [][]byte
 }
 
 func (s *stubKubectl) Apply(resources kubernetes.Marshaler, forceConflicts bool) error {
@@ -600,6 +629,10 @@ func (s *stubKubectl) WaitForCRDs(ctx context.Context, crds []string) error {
 	return s.waitForCRDsErr
 }
 
+func (s *stubKubectl) ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error) {
+	return s.listAllNamespacesResp, s.listAllNamespacesErr
+}
+
 type stubKubeconfigReader struct {
 	Kubeconfig []byte
 	ReadErr    error
@@ -620,4 +653,12 @@ func (s *stubHelmClient) InstallCilium(ctx context.Context, kubectl k8sapi.Clien
 
 func (s *stubHelmClient) InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]any) error {
 	return s.servicesError
+}
+
+type stubKubeAPIWaiter struct {
+	waitErr error
+}
+
+func (s *stubKubeAPIWaiter) Wait(_ context.Context, _ kubewaiter.KubernetesClient, _ time.Duration) error {
+	return s.waitErr
 }

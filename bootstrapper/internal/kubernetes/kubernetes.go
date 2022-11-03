@@ -16,9 +16,11 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/resources"
+	kubewaiter "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubeWaiter"
 	"github.com/edgelesssys/constellation/v2/internal/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
@@ -46,11 +48,16 @@ type configurationProvider interface {
 	JoinConfiguration(externalCloudProvider bool) k8sapi.KubeadmJoinYAML
 }
 
+type kubeAPIWaiter interface {
+	Wait(ctx context.Context, kubernetesClient kubewaiter.KubernetesClient, timeout time.Duration) error
+}
+
 // KubeWrapper implements Cluster interface.
 type KubeWrapper struct {
 	cloudProvider           string
 	clusterUtil             clusterUtil
 	helmClient              helmClient
+	kubeAPIWaiter           kubeAPIWaiter
 	configProvider          configurationProvider
 	client                  k8sapi.Client
 	kubeconfigReader        configReader
@@ -62,12 +69,13 @@ type KubeWrapper struct {
 
 // New creates a new KubeWrapper with real values.
 func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client, cloudControllerManager CloudControllerManager,
-	providerMetadata ProviderMetadata, initialMeasurementsJSON []byte, helmClient helmClient,
+	providerMetadata ProviderMetadata, initialMeasurementsJSON []byte, helmClient helmClient, kubeAPIWaiter kubeAPIWaiter,
 ) *KubeWrapper {
 	return &KubeWrapper{
 		cloudProvider:           cloudProvider,
 		clusterUtil:             clusterUtil,
 		helmClient:              helmClient,
+		kubeAPIWaiter:           kubeAPIWaiter,
 		configProvider:          configProvider,
 		client:                  client,
 		kubeconfigReader:        &KubeconfigReader{fs: afero.Afero{Fs: afero.NewOsFs()}},
@@ -157,6 +165,10 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("reading kubeconfig after cluster initialization: %w", err)
 	}
 	k.client.SetKubeconfig(kubeConfig)
+
+	if err := k.kubeAPIWaiter.Wait(ctx, k.client, 2*time.Minute); err != nil {
+		return nil, fmt.Errorf("waiting for Kubernetes API to be available: %w", err)
+	}
 
 	// Step 3: configure & start kubernetes controllers
 	log.Infof("Starting Kubernetes controllers and deployments")
