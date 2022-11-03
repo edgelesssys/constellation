@@ -37,6 +37,11 @@ You can use them to bring a volume back to a prior state or provision new volume
 Follow the instructions on how to [install the Constellation CSI driver](#installation) or check out the [repository](https://github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver) for information about the configuration.
 
 </tabItem>
+<tabItem value="aws" label="AWS">
+
+TODO: Is this already supported? Test or write note here!
+
+</tabItem>
 </tabs>
 
 Note that in case the options above aren't a suitable solution for you, Constellation is compatible with all other CSI-based storage options. For example, you can use [Azure Files](https://docs.microsoft.com/en-us/azure/storage/files/storage-files-introduction) or [GCP Filestore](https://cloud.google.com/filestore) with Constellation out of the box. Constellation is just not providing transparent encryption on the node level for these storage types yet.
@@ -109,6 +114,11 @@ The following installation guide gives an overview of how to securely use CSI-ba
     volumeBindingMode: WaitForFirstConsumer
     EOF
     ```
+
+</tabItem>
+<tabItem value="aws" label="AWS">
+
+TODO: Is this already supported? Test or write note here!
 
 </tabItem>
 </tabs>
@@ -266,6 +276,11 @@ The examples above are defined to be automatically set as the default storage cl
       some-storage                pd.csi.storage.gke.io       1d
       encrypted-storage (default) gcp.csi.confidential.cloud  1d
       ```
+
+</tabItem>
+<tabItem value="aws" label="AWS">
+
+TODO: Is this already supported? Test or write note here!
 
 </tabItem>
 </tabs>

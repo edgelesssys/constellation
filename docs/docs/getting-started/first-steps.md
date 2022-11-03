@@ -1,4 +1,4 @@
-# First steps with Constellation 
+# First steps with Constellation
 
 The following steps guide you through the process of creating a cluster and deploying a sample app. This example assumes that you have successfully [installed and set up Constellation](install.md),
 and have access to a cloud subscription.
@@ -165,6 +165,35 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
         Supported are all machines from the N2D family. It defaults to `n2d-standard-4` (4 vCPUs, 16 GB RAM), but you can use any other VMs from the same family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
 
     </tabItem>
+    <tabItem value="aws" label="AWS">
+
+    * **region**: The name of your chosen AWS data center region, e.g., `us-east-2`.
+
+        TODO: What is the list of supported regions for our images?
+
+        You can find a list of all [available regions in AWS' documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
+
+    * **zone**: The name of your chosen AWS data center availability zone, e.g., `us-east-2a`.
+
+        Learn more about [availability zones in AWS' documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones).
+
+    * **image**: TODO: How do customers find these?
+
+        Further explanation if necessary...
+
+    * **iamProfileControlPlane**: The name of a profile attached to all control plane nodes.
+
+        Use our provided Terraform script to generate the necessary profile. It will be provided as Terraform output variable: `control_plane_instance_profile`.
+
+        Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [https://github.com/edgelesssys/constellation/blob/main/hack/terraform/aws/iam/main.tf](main.tf) in the resource `aws_iam_policy.control_plane_policy`.
+
+    * **iamProfileWorkerNodes**: The name of a profile attached to all control plane nodes.
+
+        Use our provided Terraform script to generate the necessary profile. It will be provided as Terraform output variable: `worker_nodes_instance_profile`.
+
+        Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [https://github.com/edgelesssys/constellation/blob/main/hack/terraform/aws/iam/main.tf](main.tf) in the resource `aws_iam_policy.worker_node_policy`.
+
+    </tabItem>
     </tabs>
 
     :::info
@@ -178,6 +207,8 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     ```bash
     constellation config fetch-measurements
     ```
+
+    TODO: Is this supported for AWS? Or do we need a hint?
 
     For details, see the [verification section](../workflows/verify-cluster.md).
 

@@ -34,6 +34,15 @@ constellation config generate gcp
 ```
 
 </tabItem>
+<tabItem value="aws" label="AWS">
+
+```bash
+constellation config generate aws
+```
+
+TODO: Make sure we have removed CONSTELLATION_AWS_DEV=1 before merging!
+
+</tabItem>
 </tabs>
 
 This creates the file `constellation-conf.yaml` in the current directory. [Fill in your CSP-specific information](../getting-started/first-steps.md#create-a-cluster) before you continue.

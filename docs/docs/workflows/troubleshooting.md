@@ -36,4 +36,9 @@ Constellation uses the default bucket to store logs. Its [default retention peri
 :::
 
 </tabItem>
+<tabItem value="aws" label="AWS">
+
+TODO: Is this already supported? Test or write note here!
+
+</tabItem>
 </tabs>

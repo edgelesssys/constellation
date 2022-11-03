@@ -11,7 +11,7 @@ Make sure the following requirements are met:
 - Your machine is running Linux or macOS
 - You have admin rights on your machine
 - [kubectl](https://kubernetes.io/docs/tasks/tools/) is installed
-- Your CSP is Microsoft Azure or Google Cloud Platform (GCP)
+- Your CSP is Microsoft Azure, Google Cloud Platform (GCP) or Amazon Web Services (AWS)
 
 ## Install the Constellation CLI
 
@@ -133,6 +133,51 @@ You need the following permissions on this project:
 Follow Google's guide on [understanding](https://cloud.google.com/iam/docs/understanding-roles) and [assigning roles](https://cloud.google.com/iam/docs/granting-changing-revoking-access).
 
 </tabItem>
+<tabItem value="aws" label="AWS">
+
+In subsequent steps AWS IAM policies need to be created. Make sure your
+user has the following minimal set of permissions:
+
+TODO: What kind of permissions does a user need for executing `constellation create?`?
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "sts:GetCallerIdentity",
+                "ec2:DescribeAccountAttributes",
+                "iam:CreateRole",
+                "iam:CreatePolicy",
+                "iam:GetPolicy",
+                "iam:GetRole",
+                "iam:GetPolicyVersion",
+                "iam:ListRolePolicies",
+                "iam:ListAttachedRolePolicies",
+                "iam:CreateInstanceProfile",
+                "iam:AttachRolePolicy",
+                "iam:GetInstanceProfile",
+                "iam:AddRoleToInstanceProfile",
+                "iam:PassRole",
+                "iam:RemoveRoleFromInstanceProfile",
+                "iam:DetachRolePolicy",
+                "iam:DeleteInstanceProfile",
+                "iam:ListPolicyVersions",
+                "iam:ListInstanceProfilesForRole",
+                "iam:DeletePolicy",
+                "iam:DeleteRole"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+Follow Amazons' guide on [understanding](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html) and [managing policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html), and [roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_iam-tags.html).
+
+</tabItem>
 </tabs>
 
 ### Authentication
@@ -185,6 +230,25 @@ Use one of the following options on a trusted machine:
     Follow [Google's guide](https://cloud.google.com/docs/authentication/production#manually) for setting up your credentials.
 
 </tabItem>
+<tabItem value="aws" label="AWS">
+
+**Testing**
+
+You can use the [AWS CloudShell](https://console.aws.amazon.com/cloudshell/home). Make sure you are [authorized to use it](https://docs.aws.amazon.com/cloudshell/latest/userguide/sec-auth-with-identities.html).
+
+**Production**
+
+Use the latest version of the [AWS CLI](https://aws.amazon.com/cli/) on a trusted machine:
+
+```bash
+aws configure
+```
+
+Options and first steps are described in the [AWS CLI documentation](https://docs.aws.amazon.com/cli/index.html).
+
+</tabItem>
+
+
 </tabs>
 
 ## Next steps

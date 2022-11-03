@@ -64,6 +64,11 @@ Alternatively, you can manually scale your cluster up or down:
 3. Set the new **number of instances** and **save**.
 
 </tabItem>
+<tabItem value="aws" label="AWS">
+
+TODO: Is this already supported? Test or write note here!
+
+</tabItem>
 </tabs>
 
 ## Control-plane node scaling
@@ -87,6 +92,11 @@ To increase the number of control-plane nodes, follow these steps:
 1. In Compute Engine go to [Instance Groups](https://console.cloud.google.com/compute/instanceGroups/).
 2. **Edit** the **control-plane** instance group.
 3. Set the new (increased) **number of instances** and **save**.
+
+</tabItem>
+<tabItem value="aws" label="AWS">
+
+TODO: Is this already supported? Test or write note here!
 
 </tabItem>
 </tabs>

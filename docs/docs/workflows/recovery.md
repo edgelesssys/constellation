@@ -88,6 +88,11 @@ If this fails due to an unhealthy control plane, you will see log messages simil
 This means that you have to recover the node manually.
 
 </tabItem>
+<tabItem value="aws" label="AWS">
+
+TODO: Is this already supported? Test or write note here!
+
+</tabItem>
 </tabs>
 
 ## Recover a cluster
