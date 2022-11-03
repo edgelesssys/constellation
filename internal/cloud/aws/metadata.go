@@ -142,11 +142,6 @@ func (m *Metadata) UID(ctx context.Context) (string, error) {
 	return readInstanceTag(ctx, m.imds, cloud.TagUID)
 }
 
-// SupportsLoadBalancer returns true if the cloud provider supports load balancers.
-func (m *Metadata) SupportsLoadBalancer() bool {
-	return true
-}
-
 // GetLoadBalancerEndpoint returns the endpoint of the load balancer.
 func (m *Metadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
 	uid, err := readInstanceTag(ctx, m.imds, cloud.TagUID)

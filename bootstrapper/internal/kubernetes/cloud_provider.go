@@ -97,9 +97,6 @@ type stubProviderMetadata struct {
 	GetInstanceErr  error
 	GetInstanceResp metadata.InstanceMetadata
 
-	SupportedResp            bool
-	SupportsLoadBalancerResp bool
-
 	UIDErr  error
 	UIDResp string
 }
@@ -118,14 +115,6 @@ func (m *stubProviderMetadata) Self(ctx context.Context) (metadata.InstanceMetad
 
 func (m *stubProviderMetadata) GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error) {
 	return m.GetInstanceResp, m.GetInstanceErr
-}
-
-func (m *stubProviderMetadata) Supported() bool {
-	return m.SupportedResp
-}
-
-func (m *stubProviderMetadata) SupportsLoadBalancer() bool {
-	return m.SupportsLoadBalancerResp
 }
 
 func (m *stubProviderMetadata) UID(ctx context.Context) (string, error) {

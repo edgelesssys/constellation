@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"path"
 	"regexp"
 	"strings"
 
@@ -181,12 +182,6 @@ func (c *Cloud) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
 	return c.getInstance(ctx, project, zone, instanceName)
 }
 
-// SupportsLoadBalancer returns true if the cloud provider supports load balancers.
-// TODO: Remove this function once load balancers are not deployed based on metadata.
-func (c *Cloud) SupportsLoadBalancer() bool {
-	return true
-}
-
 // UID retrieves the UID of the constellation.
 func (c *Cloud) UID(ctx context.Context) (string, error) {
 	project, zone, instanceName, err := c.retrieveInstanceInfo()
@@ -242,8 +237,8 @@ func (c *Cloud) retrieveInstanceInfo() (project, zone, instanceName string, err 
 }
 
 // retrieveSubnetworkAliasCIDR retrieves the secondary IP range CIDR of the subnetwork,
-// identified by project, zone and subnetworkName.
-func (c *Cloud) retrieveSubnetworkAliasCIDR(ctx context.Context, project, zone, subnetworkName string) (string, error) {
+// identified by project, zone and subnetworkURI.
+func (c *Cloud) retrieveSubnetworkAliasCIDR(ctx context.Context, project, zone, subnetworkURI string) (string, error) {
 	// convert:
 	//           zone --> region
 	// europe-west3-b --> europe-west3
@@ -255,7 +250,7 @@ func (c *Cloud) retrieveSubnetworkAliasCIDR(ctx context.Context, project, zone, 
 	req := &computepb.GetSubnetworkRequest{
 		Project:    project,
 		Region:     region,
-		Subnetwork: subnetworkName,
+		Subnetwork: path.Base(subnetworkURI),
 	}
 	subnetwork, err := c.subnetAPI.Get(ctx, req)
 	if err != nil {

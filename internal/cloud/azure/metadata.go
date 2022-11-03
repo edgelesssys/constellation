@@ -203,11 +203,6 @@ func (m *Metadata) getLoadBalancer(ctx context.Context) (*armnetwork.LoadBalance
 	return nil, fmt.Errorf("could not get any load balancer")
 }
 
-// SupportsLoadBalancer returns true if the cloud provider supports load balancers.
-func (m *Metadata) SupportsLoadBalancer() bool {
-	return true
-}
-
 // GetLoadBalancerName returns the load balancer name of the resource group.
 func (m *Metadata) GetLoadBalancerName(ctx context.Context) (string, error) {
 	lb, err := m.getLoadBalancer(ctx)

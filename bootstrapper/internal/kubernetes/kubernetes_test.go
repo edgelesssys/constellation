@@ -64,7 +64,6 @@ func TestInitCluster(t *testing.T) {
 			},
 			kubeAPIWaiter: stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{
-				SupportedResp: true,
 				SelfResp: metadata.InstanceMetadata{
 					Name:          nodeName,
 					ProviderID:    providerID,
@@ -72,7 +71,6 @@ func TestInitCluster(t *testing.T) {
 					AliasIPRanges: []string{aliasIPRange},
 				},
 				GetLoadBalancerEndpointResp: loadbalancerIP,
-				SupportsLoadBalancerResp:    true,
 			},
 			CloudControllerManager: &stubCloudControllerManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
@@ -103,8 +101,7 @@ func TestInitCluster(t *testing.T) {
 			},
 			kubeAPIWaiter: stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{
-				SelfErr:       someErr,
-				SupportedResp: true,
+				SelfErr: someErr,
 			},
 			CloudControllerManager: &stubCloudControllerManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
@@ -118,8 +115,6 @@ func TestInitCluster(t *testing.T) {
 			},
 			providerMetadata: &stubProviderMetadata{
 				GetLoadBalancerEndpointErr: someErr,
-				SupportsLoadBalancerResp:   true,
-				SupportedResp:              true,
 			},
 			CloudControllerManager: &stubCloudControllerManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
@@ -207,7 +202,7 @@ func TestInitCluster(t *testing.T) {
 				Kubeconfig: []byte("someKubeconfig"),
 			},
 			kubeAPIWaiter:          stubKubeAPIWaiter{},
-			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
+			providerMetadata:       &stubProviderMetadata{},
 			CloudControllerManager: &stubCloudControllerManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
@@ -219,7 +214,7 @@ func TestInitCluster(t *testing.T) {
 				Kubeconfig: []byte("someKubeconfig"),
 			},
 			kubeAPIWaiter:          stubKubeAPIWaiter{},
-			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
+			providerMetadata:       &stubProviderMetadata{},
 			CloudControllerManager: &stubCloudControllerManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantErr:                true,
@@ -231,7 +226,7 @@ func TestInitCluster(t *testing.T) {
 				Kubeconfig: []byte("someKubeconfig"),
 			},
 			kubeAPIWaiter:          stubKubeAPIWaiter{waitErr: someErr},
-			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
+			providerMetadata:       &stubProviderMetadata{},
 			CloudControllerManager: &stubCloudControllerManager{},
 			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			k8sVersion:             versions.Default,
@@ -308,7 +303,6 @@ func TestJoinCluster(t *testing.T) {
 		"kubeadm join worker works with metadata": {
 			clusterUtil: stubClusterUtil{},
 			providerMetadata: &stubProviderMetadata{
-				SupportedResp: true,
 				SelfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
 					Name:       "metadata-name",
@@ -330,7 +324,6 @@ func TestJoinCluster(t *testing.T) {
 		"kubeadm join worker works with metadata and cloud controller manager": {
 			clusterUtil: stubClusterUtil{},
 			providerMetadata: &stubProviderMetadata{
-				SupportedResp: true,
 				SelfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
 					Name:       "metadata-name",
@@ -354,7 +347,6 @@ func TestJoinCluster(t *testing.T) {
 		"kubeadm join control-plane node works with metadata": {
 			clusterUtil: stubClusterUtil{},
 			providerMetadata: &stubProviderMetadata{
-				SupportedResp: true,
 				SelfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
 					Name:       "metadata-name",
@@ -383,8 +375,7 @@ func TestJoinCluster(t *testing.T) {
 		"kubeadm join worker fails when retrieving self metadata": {
 			clusterUtil: stubClusterUtil{},
 			providerMetadata: &stubProviderMetadata{
-				SupportedResp: true,
-				SelfErr:       someErr,
+				SelfErr: someErr,
 			},
 			CloudControllerManager: &stubCloudControllerManager{},
 			role:                   role.Worker,
