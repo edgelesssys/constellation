@@ -64,6 +64,8 @@ jobs:
     # TODO: flatten outputs once possible
     # https://github.com/community/community/discussions/17245
     outputs:
+      image-type: ${{ steps.image-type.outputs.image-type }}
+      pki-set: ${{ steps.prepare-pki.outputs.pki-set }}
       image-raw-aws-sha256: ${{ steps.collect-hashes.outputs.image-raw-aws-sha256 }}
       image-raw-azure-sha256: ${{ steps.collect-hashes.outputs.image-raw-azure-sha256 }}
       image-raw-gcp-sha256: ${{ steps.collect-hashes.outputs.image-raw-gcp-sha256 }}
@@ -120,14 +122,35 @@ jobs:
         with:
           version: 058046019e7ed2e8e93af87b8c14a808dcc6bbc3
 
+      - name: Determine type of image build
+        id: image-type
+        run: |
+          if [ "${{ startsWith(github.ref, 'refs/heads/release/') && (inputs.debug == false) }}" = true ]
+          then
+            echo "image-type=release" >> $GITHUB_OUTPUT
+          elif [ "${{ ((github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/')) && (inputs.debug == true) }}" = true ]
+          then
+            echo "image-type=debug" >> $GITHUB_OUTPUT
+          else
+            echo "image-type=branch" >> $GITHUB_OUTPUT
+          fi
+
       - name: Prepare PKI for secure boot signing
+        id: prepare-pki
         shell: bash
         run: |
-          ln -s pki_testing pki
+          if [ "${{ steps.image-type.outputs.image-type }}" = "release" ]
+          then
+            PKI_SET="pki_prod"
+          else
+            PKI_SET="pki_testing"
+          fi
+          ln -s ${PKI_SET} pki
           echo "${DB_KEY}" > pki/db.key
+          echo "pki-set=${PKI_SET}" >> $GITHUB_OUTPUT
         working-directory: ${{ github.workspace }}/image
         env:
-          DB_KEY: ${{ secrets.SECURE_BOOT_TESTING_DB_KEY }}
+          DB_KEY: ${{ (steps.image-type.outputs.image-type == 'release' && secrets.SECURE_BOOT_RELEASE_DB_KEY) || secrets.SECURE_BOOT_TESTING_DB_KEY }}
 
       - name: Build
         shell: bash
@@ -243,8 +266,10 @@ jobs:
           gcp_service_account_json: ${{ secrets.GCP_IMAGE_UPLOAD_SERVICE_ACCOUNT }}
 
       - name: Prepare PKI for image upload
+        id: prepare-pki
         shell: bash
-        run: ln -s pki_testing pki
+        run: |
+          ln -s ${{ needs.make-os-image.outputs.pki-set }} pki
         working-directory: ${{ github.workspace }}/image
 
       - name: Determine version
@@ -293,7 +318,7 @@ jobs:
           fi
           echo "AZURE_SECURITY_TYPE=${AZURE_SECURITY_TYPE}" >> $GITHUB_ENV
           echo "AZURE_DISK_NAME=constellation-${pseudover//./-}-${AZURE_SECURITY_TYPE,,}" >> $GITHUB_ENV
-          if [ "${{ startsWith(github.ref, 'refs/heads/release/') && (inputs.debug == false) }}" = true ]
+          if [ "${{ needs.make-os-image.outputs.image-type }}" = release ]
           then
             echo "AWS_IMAGE_NAME=constellation-${imageVersion}" >> $GITHUB_ENV
             GCP_IMAGE_NAME=constellation-${imageVersion//./-}
@@ -301,7 +326,7 @@ jobs:
             AZURE_IMAGE_DEFINITION=constellation
             echo "AZURE_IMAGE_VERSION=${imageVersion:1}" >> $GITHUB_ENV
             AZURE_GALLERY_NAME=Constellation
-          elif [ "${{ ((github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/')) && (inputs.debug == true) }}" = true ]
+          elif [ "${{ needs.make-os-image.outputs.image-type }}" = debug ]
           then
             echo "AWS_IMAGE_NAME=constellation-debug-${semver}-${{ steps.version.outputs.timestamp }}" >> $GITHUB_ENV
             GCP_IMAGE_NAME=constellation-${{ steps.version.outputs.timestamp }}
@@ -334,11 +359,13 @@ jobs:
         run: |
           aws s3 cp \
             --region ${AWS_REGION} \
-            s3://constellation-secure-boot/pki_testing/${AZURE_SECURITY_TYPE}.vmgs \
-            pki_testing/${AZURE_SECURITY_TYPE}.vmgs \
+            s3://constellation-secure-boot/${PKI_SET}/${AZURE_SECURITY_TYPE}.vmgs \
+            ${PKI_SET}/${AZURE_SECURITY_TYPE}.vmgs \
             --no-progress
         working-directory: ${{ github.workspace }}/image
         if: ${{ matrix.csp == 'azure' && !endsWith(env.AZURE_SECURITY_TYPE, 'Supported') }}
+        env:
+          PKI_SET: ${{ needs.make-os-image.outputs.pki-set }}
 
       - name: Upload AWS image
         shell: bash
