@@ -226,7 +226,6 @@ type stubMetadata struct {
 	getInstanceErr   error
 	getLBEndpointRes string
 	getLBEndpointErr error
-	supportedRes     bool
 }
 
 func (m *stubMetadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
@@ -243,8 +242,4 @@ func (m *stubMetadata) GetInstance(ctx context.Context, providerID string) (meta
 
 func (m *stubMetadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
 	return m.getLBEndpointRes, m.getLBEndpointErr
-}
-
-func (m *stubMetadata) Supported() bool {
-	return m.supportedRes
 }

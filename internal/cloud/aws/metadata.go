@@ -70,11 +70,6 @@ func New(ctx context.Context) (*Metadata, error) {
 	}, nil
 }
 
-// Supported is used to determine if metadata API is implemented for this cloud provider.
-func (m *Metadata) Supported() bool {
-	return true
-}
-
 // List retrieves all instances belonging to the current Constellation.
 func (m *Metadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
 	uid, err := readInstanceTag(ctx, m.imds, cloud.TagUID)

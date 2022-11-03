@@ -82,9 +82,6 @@ func main() {
 		defer meta.Close()
 		fetcher = cloudprovider.New(meta)
 
-		// Is this message still relevant?
-		// log.Infof("Added load balancer IP to local routing table")
-
 	case platform.QEMU:
 		fetcher = cloudprovider.New(&qemucloud.Metadata{})
 

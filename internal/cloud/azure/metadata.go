@@ -262,11 +262,6 @@ func (m *Metadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) 
 	return *resp.Properties.IPAddress, nil
 }
 
-// Supported is used to determine if metadata API is implemented for this cloud provider.
-func (m *Metadata) Supported() bool {
-	return true
-}
-
 // GetCCMConfig returns the configuration needed for the CCM on Azure.
 func (m *Metadata) GetCCMConfig(ctx context.Context, providerID string, cloudServiceAccountURI string) ([]byte, error) {
 	subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
