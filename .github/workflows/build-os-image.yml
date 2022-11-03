@@ -97,6 +97,7 @@ jobs:
       image-raw-manifest-gcp-sha256: ${{ steps.collect-hashes.outputs.image-raw-manifest-gcp-sha256 }}
       image-raw-manifest-qemu-sha256: ${{ steps.collect-hashes.outputs.image-raw-manifest-qemu-sha256 }}
     strategy:
+      fail-fast: false
       matrix:
         csp: [aws, azure, gcp, qemu]
     steps:
@@ -195,6 +196,7 @@ jobs:
       id-token: write
       contents: read
     strategy:
+      fail-fast: false
       matrix:
         csp: [aws, azure, gcp]
         upload-variant: [""]
@@ -376,6 +378,7 @@ jobs:
     needs: [make-os-image]
     runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
         csp: [aws, azure, gcp, qemu]
     steps:
