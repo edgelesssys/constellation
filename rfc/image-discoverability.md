@@ -127,4 +127,5 @@ This allows customers to upload images to their own cloud subscription and use t
 
 ## Future extensions
 
-A lookup table for available image versions might be added in the future.
+- A lookup table for available image versions might be added in the future.
+- The lookup table can be signed using a signing key that is only used for that purpose.
