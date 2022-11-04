@@ -55,7 +55,7 @@ resource "aws_eip" "lb" {
 }
 
 resource "aws_lb" "front_end" {
-  name               = "${local.name}-loadbalancer"
+  name               = "${local.name}-lb"
   internal           = false
   load_balancer_type = "network"
   tags               = local.tags
