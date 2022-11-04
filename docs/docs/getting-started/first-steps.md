@@ -169,9 +169,14 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     * **region**: The name of your chosen AWS data center region, e.g., `us-east-2`.
 
-        TODO: What is the list of supported regions for our images?
+        Constellation OS images are only replicated to the following regions:
+        * `eu-central-1`
+        * `us-east-2`
+        * `ap-south-1`
 
-        You can find a list of all [available regions in AWS' documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
+        If you require the OS image to be available in a new region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+AWS+image+region:+xx-xxxx-x).
+
+        You can find a list of all [AWS regions in AWS' documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
 
     * **zone**: The name of your chosen AWS data center availability zone, e.g., `us-east-2a`.
 
@@ -179,7 +184,13 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     * **image**: TODO: How do customers find these?
 
-        Further explanation if necessary...
+        Constellation OS images are available with the following IDs:
+
+        | AMI | Region |
+        | - | - |
+        | `ami-0xxxxxxxxxxxxxxxx` | `eu-central-1` |
+        | `ami-0xxxxxxxxxxxxxxxx` | `us-east-2` |
+        | `ami-0xxxxxxxxxxxxxxxx` | `ap-south-1` |
 
     * **iamProfileControlPlane**: The name of a profile attached to all control plane nodes.
 
