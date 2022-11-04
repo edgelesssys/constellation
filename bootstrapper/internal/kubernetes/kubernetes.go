@@ -16,9 +16,12 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/resources"
+	kubewaiter "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubeWaiter"
+	"github.com/edgelesssys/constellation/v2/internal/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -45,17 +48,20 @@ type configurationProvider interface {
 	JoinConfiguration(externalCloudProvider bool) k8sapi.KubeadmJoinYAML
 }
 
+type kubeAPIWaiter interface {
+	Wait(ctx context.Context, kubernetesClient kubewaiter.KubernetesClient) error
+}
+
 // KubeWrapper implements Cluster interface.
 type KubeWrapper struct {
 	cloudProvider           string
 	clusterUtil             clusterUtil
 	helmClient              helmClient
+	kubeAPIWaiter           kubeAPIWaiter
 	configProvider          configurationProvider
 	client                  k8sapi.Client
 	kubeconfigReader        configReader
 	cloudControllerManager  CloudControllerManager
-	cloudNodeManager        CloudNodeManager
-	clusterAutoscaler       ClusterAutoscaler
 	providerMetadata        ProviderMetadata
 	initialMeasurementsJSON []byte
 	getIPAddr               func() (string, error)
@@ -63,18 +69,17 @@ type KubeWrapper struct {
 
 // New creates a new KubeWrapper with real values.
 func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client, cloudControllerManager CloudControllerManager,
-	cloudNodeManager CloudNodeManager, clusterAutoscaler ClusterAutoscaler, providerMetadata ProviderMetadata, initialMeasurementsJSON []byte, helmClient helmClient,
+	providerMetadata ProviderMetadata, initialMeasurementsJSON []byte, helmClient helmClient, kubeAPIWaiter kubeAPIWaiter,
 ) *KubeWrapper {
 	return &KubeWrapper{
 		cloudProvider:           cloudProvider,
 		clusterUtil:             clusterUtil,
 		helmClient:              helmClient,
+		kubeAPIWaiter:           kubeAPIWaiter,
 		configProvider:          configProvider,
 		client:                  client,
 		kubeconfigReader:        &KubeconfigReader{fs: afero.Afero{Fs: afero.NewOsFs()}},
 		cloudControllerManager:  cloudControllerManager,
-		cloudNodeManager:        cloudNodeManager,
-		clusterAutoscaler:       clusterAutoscaler,
 		providerMetadata:        providerMetadata,
 		initialMeasurementsJSON: initialMeasurementsJSON,
 		getIPAddr:               getIPAddr,
@@ -122,15 +127,11 @@ func (k *KubeWrapper) InitCluster(
 		nodeName = k8sCompliantHostname(instance.Name)
 		providerID = instance.ProviderID
 		nodeIP = instance.VPCIP
+		subnetworkPodCIDR = instance.SecondaryIPRange
 
 		if len(instance.AliasIPRanges) > 0 {
 			nodePodCIDR = instance.AliasIPRanges[0]
 		}
-		subnetworkPodCIDR, err = k.providerMetadata.GetSubnetworkCIDR(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("retrieving subnetwork CIDR: %w", err)
-		}
-
 		controlPlaneEndpoint, err = k.providerMetadata.GetLoadBalancerEndpoint(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("retrieving load balancer endpoint: %w", err)
@@ -164,6 +165,12 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("reading kubeconfig after cluster initialization: %w", err)
 	}
 	k.client.SetKubeconfig(kubeConfig)
+
+	waitCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+	if err := k.kubeAPIWaiter.Wait(waitCtx, k.client); err != nil {
+		return nil, fmt.Errorf("waiting for Kubernetes API to be available: %w", err)
+	}
 
 	// Step 3: configure & start kubernetes controllers
 	log.Infof("Starting Kubernetes controllers and deployments")
@@ -208,14 +215,6 @@ func (k *KubeWrapper) InitCluster(
 
 	if err := k.setupInternalConfigMap(ctx, strconv.FormatBool(azureCVM)); err != nil {
 		return nil, fmt.Errorf("failed to setup internal ConfigMap: %w", err)
-	}
-
-	if err := k.setupCloudNodeManager(k8sVersion); err != nil {
-		return nil, fmt.Errorf("setting up cloud node manager: %w", err)
-	}
-
-	if err := k.setupClusterAutoscaler(instance, cloudServiceAccountURI, k8sVersion); err != nil {
-		return nil, fmt.Errorf("setting up cluster autoscaler: %w", err)
 	}
 
 	// TODO: remove access manager or re-enable with support for readonly /etc
@@ -320,42 +319,6 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 // GetKubeconfig returns the current nodes kubeconfig of stored on disk.
 func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
 	return k.kubeconfigReader.ReadKubeconfig()
-}
-
-func (k *KubeWrapper) setupCloudNodeManager(k8sVersion versions.ValidK8sVersion) error {
-	if !k.cloudNodeManager.Supported() {
-		return nil
-	}
-	nodeManagerImage, err := k.cloudNodeManager.Image(k8sVersion)
-	if err != nil {
-		return fmt.Errorf("defining Image for Node Manager: %w", err)
-	}
-
-	cloudNodeManagerConfiguration := resources.NewDefaultCloudNodeManagerDeployment(
-		nodeManagerImage, k.cloudNodeManager.Path(), k.cloudNodeManager.ExtraArgs(),
-	)
-	if err := k.clusterUtil.SetupCloudNodeManager(k.client, cloudNodeManagerConfiguration); err != nil {
-		return fmt.Errorf("setting up cloud-node-manager: %w", err)
-	}
-
-	return nil
-}
-
-func (k *KubeWrapper) setupClusterAutoscaler(instance metadata.InstanceMetadata, cloudServiceAccountURI string, k8sVersion versions.ValidK8sVersion) error {
-	if !k.clusterAutoscaler.Supported() {
-		return nil
-	}
-	caSecrets, err := k.clusterAutoscaler.Secrets(instance.ProviderID, cloudServiceAccountURI)
-	if err != nil {
-		return fmt.Errorf("defining Secrets for cluster-autoscaler: %w", err)
-	}
-
-	clusterAutoscalerConfiguration := resources.NewDefaultAutoscalerDeployment(k.clusterAutoscaler.Volumes(), k.clusterAutoscaler.VolumeMounts(), k.clusterAutoscaler.Env(), k8sVersion)
-	if err := k.clusterUtil.SetupAutoscaling(k.client, clusterAutoscalerConfiguration, caSecrets); err != nil {
-		return fmt.Errorf("setting up cluster-autoscaler: %w", err)
-	}
-
-	return nil
 }
 
 // setupK8sVersionConfigMap applies a ConfigMap (cf. server-side apply) to consistently store the installed k8s version.
@@ -464,15 +427,13 @@ func getIPAddr() (string, error) {
 
 // setupExtraVals create a helm values map for consumption by helm-install.
 // Will move to a more dedicated place once that place becomes apparent.
-func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSON []byte, idkeydigest []byte, measurementSalt []byte, subnetworkCIDR string, cloudServiceAccountURI string) (map[string]any, error) {
+func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSON []byte, idkeydigest []byte, measurementSalt []byte, subnetworkPodCIDR string, cloudServiceAccountURI string) (map[string]any, error) {
 	extraVals := map[string]any{
 		"join-service": map[string]any{
 			"measurements":    string(initialMeasurementsJSON),
 			"measurementSalt": base64.StdEncoding.EncodeToString(measurementSalt),
 		},
-		"ccm": map[string]any{
-			"subnetworkCIDR": subnetworkCIDR,
-		},
+		"ccm": map[string]any{},
 	}
 
 	instance, err := k.providerMetadata.Self(ctx)
@@ -507,9 +468,10 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSO
 				return nil, errors.New("invalid ccm values")
 			}
 			ccmVals["GCP"] = map[string]any{
-				"projectID":  projectID,
-				"uid":        uid,
-				"secretData": string(rawKey),
+				"projectID":         projectID,
+				"uid":               uid,
+				"secretData":        string(rawKey),
+				"subnetworkPodCIDR": subnetworkPodCIDR,
 			}
 		}
 	case cloudprovider.Azure:
@@ -531,7 +493,8 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSO
 				return nil, errors.New("invalid ccm values")
 			}
 			ccmVals["Azure"] = map[string]any{
-				"azureConfig": string(rawConfig),
+				"azureConfig":       string(rawConfig),
+				"subnetworkPodCIDR": subnetworkPodCIDR,
 			}
 
 			joinVals, ok := extraVals["join-service"].(map[string]any)
@@ -539,6 +502,25 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSO
 				return nil, errors.New("invalid join-service values")
 			}
 			joinVals["idkeydigest"] = hex.EncodeToString(idkeydigest)
+
+			subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(instance.ProviderID)
+			if err != nil {
+				return nil, err
+			}
+			creds, err := azureshared.ApplicationCredentialsFromURI(cloudServiceAccountURI)
+			if err != nil {
+				return nil, err
+			}
+
+			extraVals["autoscaler"] = map[string]any{
+				"Azure": map[string]any{
+					"clientID":       creds.AppClientID,
+					"clientSecret":   creds.ClientSecretValue,
+					"resourceGroup":  resourceGroup,
+					"subscriptionID": subscriptionID,
+					"tenantID":       creds.TenantID,
+				},
+			}
 		}
 	}
 	return extraVals, nil

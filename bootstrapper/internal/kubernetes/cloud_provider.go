@@ -23,8 +23,6 @@ type ProviderMetadata interface {
 	List(ctx context.Context) ([]metadata.InstanceMetadata, error)
 	// Self retrieves the current instance.
 	Self(ctx context.Context) (metadata.InstanceMetadata, error)
-	// GetSubnetworkCIDR retrieves the subnetwork CIDR for the current instance.
-	GetSubnetworkCIDR(ctx context.Context) (string, error)
 	// GetLoadBalancerEndpoint retrieves the load balancer endpoint.
 	GetLoadBalancerEndpoint(ctx context.Context) (string, error)
 	// GetInstance retrieves an instance using its providerID.
@@ -92,9 +90,6 @@ type stubProviderMetadata struct {
 	GetLoadBalancerEndpointErr  error
 	GetLoadBalancerEndpointResp string
 
-	GetSubnetworkCIDRErr  error
-	GetSubnetworkCIDRResp string
-
 	ListErr  error
 	ListResp []metadata.InstanceMetadata
 
@@ -113,10 +108,6 @@ type stubProviderMetadata struct {
 
 func (m *stubProviderMetadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
 	return m.GetLoadBalancerEndpointResp, m.GetLoadBalancerEndpointErr
-}
-
-func (m *stubProviderMetadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
-	return m.GetSubnetworkCIDRResp, m.GetSubnetworkCIDRErr
 }
 
 func (m *stubProviderMetadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
@@ -184,30 +175,6 @@ func (m *stubCloudControllerManager) Env() []k8s.EnvVar {
 }
 
 func (m *stubCloudControllerManager) Supported() bool {
-	return m.SupportedResp
-}
-
-type stubCloudNodeManager struct {
-	SupportedResp bool
-
-	ImageResp     string
-	PathResp      string
-	ExtraArgsResp []string
-}
-
-func (m *stubCloudNodeManager) Image(k8sVersion versions.ValidK8sVersion) (string, error) {
-	return m.ImageResp, nil
-}
-
-func (m *stubCloudNodeManager) Path() string {
-	return m.PathResp
-}
-
-func (m *stubCloudNodeManager) ExtraArgs() []string {
-	return m.ExtraArgsResp
-}
-
-func (m *stubCloudNodeManager) Supported() bool {
 	return m.SupportedResp
 }
 

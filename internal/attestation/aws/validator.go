@@ -24,7 +24,7 @@ import (
 type Validator struct {
 	oid.AWS
 	*vtpm.Validator
-	getDescribeClient func(context.Context) (awsMetadataAPI, error)
+	getDescribeClient func(context.Context, string) (awsMetadataAPI, error)
 }
 
 // NewValidator create a new Validator structure and returns it.
@@ -62,14 +62,14 @@ func (v *Validator) tpmEnabled(attestation vtpm.AttestationDocument) error {
 	ctx := context.Background()
 
 	idDocument := imds.InstanceIdentityDocument{}
-	err := json.Unmarshal(attestation.UserData, &idDocument)
+	err := json.Unmarshal(attestation.InstanceInfo, &idDocument)
 	if err != nil {
 		return err
 	}
 
 	imageID := idDocument.ImageID
 
-	client, err := v.getDescribeClient(ctx)
+	client, err := v.getDescribeClient(ctx, idDocument.Region)
 	if err != nil {
 		return err
 	}
@@ -87,8 +87,8 @@ func (v *Validator) tpmEnabled(attestation vtpm.AttestationDocument) error {
 	return fmt.Errorf("iam image %s does not support TPM v2.0", imageID)
 }
 
-func getEC2Client(ctx context.Context) (awsMetadataAPI, error) {
-	client, err := config.LoadDefaultConfig(ctx, config.WithEC2IMDSRegion())
+func getEC2Client(ctx context.Context, region string) (awsMetadataAPI, error) {
+	client, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
 		return nil, err
 	}

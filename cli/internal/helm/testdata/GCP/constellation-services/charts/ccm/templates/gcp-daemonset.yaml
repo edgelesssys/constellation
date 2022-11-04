@@ -1,4 +1,3 @@
-
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -30,9 +29,6 @@ spec:
           - --cidr-allocator-type=CloudAllocator
           - --allocate-node-cidrs=true
           - --configure-cloud-routes=false
-          env:
-            - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: /var/secrets/google/key.json
           volumeMounts:
             - mountPath: /etc/kubernetes
               name: etckubernetes
@@ -50,6 +46,9 @@ spec:
               name: gcekey
               readOnly: true
           resources: {}
+          env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /var/secrets/google/key.json
       serviceAccountName: cloud-controller-manager
       nodeSelector:
         node-role.kubernetes.io/control-plane: ""

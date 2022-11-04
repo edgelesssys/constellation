@@ -100,6 +100,7 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *con
 			CountWorkers:       workerCount,
 			StateDiskSizeGB:    config.StateDiskSizeGB,
 		},
+		StateDiskType:          config.Provider.AWS.StateDiskType,
 		Region:                 config.Provider.AWS.Region,
 		Zone:                   config.Provider.AWS.Zone,
 		InstanceType:           insType,

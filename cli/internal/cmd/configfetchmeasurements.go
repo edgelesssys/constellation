@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -128,7 +129,7 @@ func parseFetchMeasurementsFlags(cmd *cobra.Command) (*fetchMeasurementsFlags, e
 
 func (f *fetchMeasurementsFlags) updateURLs(conf *config.Config) error {
 	if f.measurementsURL == nil {
-		parsedURL, err := url.Parse(constants.S3PublicBucket + conf.Image() + "/measurements.yaml")
+		parsedURL, err := url.Parse(constants.S3PublicBucket + strings.ToLower(conf.Image()) + "/measurements.yaml")
 		if err != nil {
 			return err
 		}
@@ -136,7 +137,7 @@ func (f *fetchMeasurementsFlags) updateURLs(conf *config.Config) error {
 	}
 
 	if f.signatureURL == nil {
-		parsedURL, err := url.Parse(constants.S3PublicBucket + conf.Image() + "/measurements.yaml.sig")
+		parsedURL, err := url.Parse(constants.S3PublicBucket + strings.ToLower(conf.Image()) + "/measurements.yaml.sig")
 		if err != nil {
 			return err
 		}

@@ -264,9 +264,21 @@ This should give the following output:
 
 ```shell-session
 $ constellation terminate
+You are about to terminate a Constellation cluster.
+All of its associated resources will be DESTROYED.
+This includes any other Terraform workspace in the current directory.
+This action is irreversible and ALL DATA WILL BE LOST.
+Do you want to continue? [y/n]:
+```
+
+After confirming with either `y` or `yes`, the cluster will be terminated :
+
+```shell-session
 Terminating ...
 Your Constellation cluster was terminated successfully.
 ```
+
+For automation purposes, you can skip the prompt by passing `--yes` as a flag to `constellation terminate`.
 
 :::tip
 

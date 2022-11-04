@@ -24,6 +24,9 @@ bootstrapper-*
 
 # VS Code configuration folder
 .vscode
+# IntelliJ-based IDEs configuration folder (e.g. GoLand)
+.idea
+
 # Debug and testing files
 debug/
 

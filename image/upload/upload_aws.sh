@@ -83,6 +83,15 @@ tag_ami_with_backing_snapshot() {
         --tags "Key=Name,Value=${AWS_IMAGE_NAME}"
 }
 
+make_ami_public() {
+    local ami_id=$1
+    local region=$2
+    aws ec2 modify-image-attribute \
+        --region "${region}" \
+        --image-id "${ami_id}" \
+        --launch-permission "Add=[{Group=all}]"
+}
+
 create_ami_from_raw_disk() {
     echo "Uploading raw disk image to S3"
     aws s3 cp "${AWS_IMAGE_PATH}" "s3://${AWS_BUCKET}/${AWS_IMAGE_FILENAME}" --no-progress
@@ -116,6 +125,7 @@ create_ami_from_raw_disk() {
     IMAGE_ID=$(echo $REGISTER_OUT | jq -r '.ImageId')
     AMI_FOR_REGION=( ["${AWS_REGION}"]="${IMAGE_ID}")
     tag_ami_with_backing_snapshot "${IMAGE_ID}" "${AWS_REGION}"
+    make_ami_public "${IMAGE_ID}" "${AWS_REGION}"
     echo "Imported initial AMI as ${IMAGE_ID} in ${AWS_REGION}"
 }
 
@@ -138,9 +148,10 @@ create_ami_from_raw_disk
 for region in ${AWS_REPLICATION_REGIONS}; do
     replicate_ami "${region}"
 done
-# wait for all images to be available and tag them
+# wait for all images to be available and tag + publish them
 for region in ${AWS_REPLICATION_REGIONS}; do
     tag_ami_with_backing_snapshot "${AMI_FOR_REGION[${region}]}" "${region}"
+    make_ami_public "${AMI_FOR_REGION[${region}]}" "${region}"
 done
 echo -n "{\"${AWS_REGION}\": \"${AMI_FOR_REGION[${AWS_REGION}]}\"" > "${AMI_OUTPUT}"
 for region in ${AWS_REPLICATION_REGIONS}; do

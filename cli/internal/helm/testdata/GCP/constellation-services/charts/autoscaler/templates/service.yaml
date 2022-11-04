@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: constellation-cluster-autoscaler
+  namespace: testNamespace
+  labels:
+    app.kubernetes.io/instance: constellation
+    app.kubernetes.io/managed-by: Constellation
+    app.kubernetes.io/name: cluster-autoscaler
+spec:
+  ports:
+  - name: http
+    port: 8085
+    protocol: TCP
+    targetPort: 8085
+  selector:
+    app.kubernetes.io/instance: constellation
+    app.kubernetes.io/name: cluster-autoscaler
+  type: ClusterIP

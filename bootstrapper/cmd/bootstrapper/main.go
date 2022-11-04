@@ -19,6 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/kubectl"
+	kubewaiter "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubeWaiter"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/logging"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/aws"
@@ -91,7 +92,7 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to marshal PCRs")
 		}
 
-		issuer = initserver.NewIssuerWrapper(&aws.Issuer{}, vmtype.Unknown, nil)
+		issuer = initserver.NewIssuerWrapper(aws.NewIssuer(), vmtype.Unknown, nil)
 
 		metadata, err := awscloud.New(ctx)
 		if err != nil {
@@ -104,11 +105,10 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to set up cloud logger")
 		}
 
-		nodeManager := &awscloud.CloudNodeManager{}
 		cloudControllerManager := &awscloud.CloudControllerManager{}
 		clusterInitJoiner = kubernetes.New(
 			"aws", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), cloudControllerManager,
-			nodeManager, &gcpcloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
+			metadata, pcrsJSON, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
@@ -145,7 +145,7 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), cloudControllerManager,
-			&gcpcloud.CloudNodeManager{}, &gcpcloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
+			metadata, pcrsJSON, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
@@ -179,7 +179,7 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"azure", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), azurecloud.NewCloudControllerManager(metadata),
-			&azurecloud.CloudNodeManager{}, &azurecloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
+			metadata, pcrsJSON, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 
 		openTPM = vtpm.OpenVTPM
@@ -201,7 +201,7 @@ func main() {
 		}
 		clusterInitJoiner = kubernetes.New(
 			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(), &qemucloud.CloudControllerManager{},
-			&qemucloud.CloudNodeManager{}, &qemucloud.Autoscaler{}, metadata, pcrsJSON, helmClient,
+			metadata, pcrsJSON, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		metadataAPI = metadata
 

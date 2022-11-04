@@ -16,7 +16,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	ec2Types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
+	"github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi"
+	tagType "github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi/types"
 	"github.com/edgelesssys/constellation/v2/internal/cloud"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/role"
@@ -25,6 +28,15 @@ import (
 const (
 	tagName = "Name"
 )
+
+type resourceAPI interface {
+	GetResources(context.Context, *resourcegroupstaggingapi.GetResourcesInput, ...func(*resourcegroupstaggingapi.Options)) (*resourcegroupstaggingapi.GetResourcesOutput, error)
+}
+
+type loadbalancerAPI interface {
+	DescribeLoadBalancers(ctx context.Context, params *elasticloadbalancingv2.DescribeLoadBalancersInput,
+		optFns ...func(*elasticloadbalancingv2.Options)) (*elasticloadbalancingv2.DescribeLoadBalancersOutput, error)
+}
 
 type ec2API interface {
 	DescribeInstances(context.Context, *ec2.DescribeInstancesInput, ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error)
@@ -37,8 +49,10 @@ type imdsAPI interface {
 
 // Metadata implements core.ProviderMetadata interface for AWS.
 type Metadata struct {
-	ec2  ec2API
-	imds imdsAPI
+	ec2               ec2API
+	imds              imdsAPI
+	loadbalancer      loadbalancerAPI
+	resourceapiClient resourceAPI
 }
 
 // New initializes a new AWS Metadata client using instance default credentials.
@@ -49,8 +63,10 @@ func New(ctx context.Context) (*Metadata, error) {
 		return nil, err
 	}
 	return &Metadata{
-		ec2:  ec2.NewFromConfig(cfg),
-		imds: imds.New(imds.Options{}),
+		ec2:               ec2.NewFromConfig(cfg),
+		imds:              imds.New(imds.Options{}),
+		loadbalancer:      elasticloadbalancingv2.NewFromConfig(cfg),
+		resourceapiClient: resourcegroupstaggingapi.NewFromConfig(cfg),
 	}, nil
 }
 
@@ -80,17 +96,13 @@ func (m *Metadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) 
 		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving instance identity: %w", err)
 	}
 
-	name, err := readInstanceTag(ctx, m.imds, tagName)
-	if err != nil {
-		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving name tag: %w", err)
-	}
 	instanceRole, err := readInstanceTag(ctx, m.imds, cloud.TagRole)
 	if err != nil {
 		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving role tag: %w", err)
 	}
 
 	return metadata.InstanceMetadata{
-		Name:       name,
+		Name:       identity.InstanceID,
 		ProviderID: fmt.Sprintf("aws:///%s/%s", identity.AvailabilityZone, identity.InstanceID),
 		Role:       role.FromString(instanceRole),
 		VPCIP:      identity.PrivateIP,
@@ -132,23 +144,81 @@ func (m *Metadata) UID(ctx context.Context) (string, error) {
 
 // SupportsLoadBalancer returns true if the cloud provider supports load balancers.
 func (m *Metadata) SupportsLoadBalancer() bool {
-	return false
+	return true
 }
 
 // GetLoadBalancerEndpoint returns the endpoint of the load balancer.
 func (m *Metadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
-	panic("function *Metadata.GetLoadBalancerEndpoint not implemented")
+	uid, err := readInstanceTag(ctx, m.imds, cloud.TagUID)
+	if err != nil {
+		return "", fmt.Errorf("retrieving uid tag: %w", err)
+	}
+	arns, err := m.getARNsByTag(ctx, uid, "elasticloadbalancing:loadbalancer")
+	if err != nil {
+		return "", fmt.Errorf("retrieving load balancer ARNs: %w", err)
+	}
+	if len(arns) != 1 {
+		return "", fmt.Errorf("%d load balancers found", len(arns))
+	}
+
+	output, err := m.loadbalancer.DescribeLoadBalancers(ctx, &elasticloadbalancingv2.DescribeLoadBalancersInput{
+		LoadBalancerArns: arns,
+	})
+	if err != nil {
+		return "", fmt.Errorf("retrieving load balancer: %w", err)
+	}
+	if len(output.LoadBalancers) != 1 {
+		return "", fmt.Errorf("%d load balancers found; expected 1", len(output.LoadBalancers))
+	}
+
+	if len(output.LoadBalancers[0].AvailabilityZones) != 1 {
+		return "", fmt.Errorf("%d availability zones found; expected 1", len(output.LoadBalancers[0].AvailabilityZones))
+	}
+	if len(output.LoadBalancers[0].AvailabilityZones[0].LoadBalancerAddresses) != 1 {
+		return "", fmt.Errorf("%d load balancer addresses found; expected 1", len(output.LoadBalancers[0].AvailabilityZones[0].LoadBalancerAddresses))
+	}
+	if output.LoadBalancers[0].AvailabilityZones[0].LoadBalancerAddresses[0].IpAddress == nil {
+		return "", errors.New("load balancer address is nil")
+	}
+
+	return *output.LoadBalancers[0].AvailabilityZones[0].LoadBalancerAddresses[0].IpAddress, nil
 }
 
-// GetSubnetworkCIDR retrieves the subnetwork CIDR from cloud provider metadata.
-func (m *Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
-	panic("function *Metadata.GetSubnetworkCIDR not implemented")
+// getARNsByTag returns a list of ARNs that have the given tag.
+func (m *Metadata) getARNsByTag(ctx context.Context, uid, resourceType string) ([]string, error) {
+	var ARNs []string
+	resourcesReq := &resourcegroupstaggingapi.GetResourcesInput{
+		TagFilters: []tagType.TagFilter{
+			{
+				Key:    aws.String(cloud.TagUID),
+				Values: []string{uid},
+			},
+		},
+		ResourceTypeFilters: []string{resourceType},
+	}
+
+	for out, err := m.resourceapiClient.GetResources(ctx, resourcesReq); ; out, err = m.resourceapiClient.GetResources(ctx, resourcesReq) {
+		if err != nil {
+			return nil, fmt.Errorf("retrieving resources: %w", err)
+		}
+
+		for _, resource := range out.ResourceTagMappingList {
+			if resource.ResourceARN != nil {
+				ARNs = append(ARNs, *resource.ResourceARN)
+			}
+		}
+
+		if out.PaginationToken == nil || *out.PaginationToken == "" {
+			return ARNs, nil
+		}
+		resourcesReq.PaginationToken = out.PaginationToken
+	}
 }
 
-func (m *Metadata) getAllInstancesInGroup(ctx context.Context, uid string) ([]types.Instance, error) {
-	var instances []types.Instance
+func (m *Metadata) getAllInstancesInGroup(ctx context.Context, uid string) ([]ec2Types.Instance, error) {
+	var instances []ec2Types.Instance
 	instanceReq := &ec2.DescribeInstancesInput{
-		Filters: []types.Filter{
+		Filters: []ec2Types.Filter{
 			{
 				Name:   aws.String("tag:" + cloud.TagUID),
 				Values: []string{uid},
@@ -172,11 +242,11 @@ func (m *Metadata) getAllInstancesInGroup(ctx context.Context, uid string) ([]ty
 	}
 }
 
-func (m *Metadata) convertToMetadataInstance(ec2Instances []types.Instance) ([]metadata.InstanceMetadata, error) {
+func (m *Metadata) convertToMetadataInstance(ec2Instances []ec2Types.Instance) ([]metadata.InstanceMetadata, error) {
 	var instances []metadata.InstanceMetadata
 	for _, ec2Instance := range ec2Instances {
 		// ignore not running instances
-		if ec2Instance.State == nil || ec2Instance.State.Name != types.InstanceStateNameRunning {
+		if ec2Instance.State == nil || ec2Instance.State.Name != ec2Types.InstanceStateNameRunning {
 			continue
 		}
 
@@ -231,7 +301,7 @@ func readInstanceTag(ctx context.Context, api imdsAPI, tag string) (string, erro
 	return string(instanceTag), err
 }
 
-func findTag(tags []types.Tag, wantKey string) (string, error) {
+func findTag(tags []ec2Types.Tag, wantKey string) (string, error) {
 	for _, tag := range tags {
 		if tag.Key == nil || tag.Value == nil {
 			continue

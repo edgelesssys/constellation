@@ -83,7 +83,18 @@ func (m *Metadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) 
 	if err != nil {
 		return metadata.InstanceMetadata{}, err
 	}
-	return m.api.RetrieveInstance(ctx, project, zone, instanceName)
+	subnetCIDR, err := m.api.RetrieveSubnetworkAliasCIDR(ctx, project, zone, instanceName)
+	if err != nil {
+		return metadata.InstanceMetadata{}, err
+	}
+
+	instance, err := m.api.RetrieveInstance(ctx, project, zone, instanceName)
+	if err != nil {
+		return metadata.InstanceMetadata{}, err
+	}
+	instance.SecondaryIPRange = subnetCIDR
+
+	return instance, nil
 }
 
 // GetInstance retrieves an instance using its providerID.
@@ -93,23 +104,6 @@ func (m *Metadata) GetInstance(ctx context.Context, providerID string) (metadata
 		return metadata.InstanceMetadata{}, fmt.Errorf("invalid providerID: %w", err)
 	}
 	return m.api.RetrieveInstance(ctx, project, zone, instanceName)
-}
-
-// GetSubnetworkCIDR returns the subnetwork CIDR of the current instance.
-func (m *Metadata) GetSubnetworkCIDR(ctx context.Context) (string, error) {
-	project, err := m.api.RetrieveProjectID()
-	if err != nil {
-		return "", err
-	}
-	zone, err := m.api.RetrieveZone()
-	if err != nil {
-		return "", err
-	}
-	instanceName, err := m.api.RetrieveInstanceName()
-	if err != nil {
-		return "", err
-	}
-	return m.api.RetrieveSubnetworkAliasCIDR(ctx, project, zone, instanceName)
 }
 
 // SupportsLoadBalancer returns true if the cloud provider supports load balancers.

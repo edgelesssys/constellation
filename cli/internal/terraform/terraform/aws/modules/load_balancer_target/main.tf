@@ -15,8 +15,12 @@ resource "aws_lb_target_group" "front_end" {
   tags     = var.tags
 
   health_check {
-    port     = var.port
-    protocol = "TCP"
+    port                = var.port
+    protocol            = var.healthcheck_protocol
+    path                = var.healthcheck_protocol == "HTTPS" ? var.healthcheck_path : null
+    interval            = 10
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
   }
 
   lifecycle {

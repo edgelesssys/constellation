@@ -12,26 +12,29 @@ locals {
 }
 
 
-resource "aws_launch_configuration" "control_plane_launch_config" {
-  name_prefix          = local.name
-  image_id             = var.image_id
-  instance_type        = var.instance_type
-  iam_instance_profile = var.iam_instance_profile
-  security_groups      = var.security_groups
+resource "aws_launch_template" "launch_template" {
+  name_prefix   = local.name
+  image_id      = var.image_id
+  instance_type = var.instance_type
+  iam_instance_profile {
+    name = var.iam_instance_profile
+  }
+  vpc_security_group_ids = var.security_groups
   metadata_options {
-    http_tokens = "required"
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    instance_metadata_tags      = "enabled"
+    http_put_response_hop_limit = 2
   }
 
-  root_block_device {
-    encrypted = true
-  }
-
-  ebs_block_device {
-    device_name           = "/dev/sdb" # Note: AWS may adjust this to /dev/xvdb, /dev/hdb or /dev/nvme1n1 depending on the disk type. See: https://docs.aws.amazon.com/en_us/AWSEC2/latest/UserGuide/device_naming.html
-    volume_size           = var.state_disk_size
-    volume_type           = var.state_disk_type
-    encrypted             = true
-    delete_on_termination = true
+  block_device_mappings {
+    device_name = "/dev/sdb"
+    ebs {
+      volume_size           = var.state_disk_size
+      volume_type           = var.state_disk_type
+      encrypted             = true
+      delete_on_termination = true
+    }
   }
 
   lifecycle {
@@ -40,13 +43,15 @@ resource "aws_launch_configuration" "control_plane_launch_config" {
 }
 
 resource "aws_autoscaling_group" "control_plane_autoscaling_group" {
-  name                 = local.name
-  launch_configuration = aws_launch_configuration.control_plane_launch_config.name
-  min_size             = 1
-  max_size             = 10
-  desired_capacity     = var.instance_count
-  vpc_zone_identifier  = [var.subnetwork]
-  target_group_arns    = var.target_group_arns
+  name = local.name
+  launch_template {
+    id = aws_launch_template.launch_template.id
+  }
+  min_size            = 1
+  max_size            = 10
+  desired_capacity    = var.instance_count
+  vpc_zone_identifier = [var.subnetwork]
+  target_group_arns   = var.target_group_arns
 
   lifecycle {
     create_before_destroy = true
@@ -65,6 +70,12 @@ resource "aws_autoscaling_group" "control_plane_autoscaling_group" {
   tag {
     key                 = "constellation-uid"
     value               = var.uid
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "KubernetesCluster"
+    value               = "Constellation-${var.uid}"
     propagate_at_launch = true
   }
 }

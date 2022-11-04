@@ -55,6 +55,7 @@ type Client interface {
 	AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error
 	AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error
 	WaitForCRDs(ctx context.Context, crds []string) error
+	ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error)
 }
 
 type installer interface {
@@ -326,25 +327,6 @@ func (k *KubernetesUtil) SetupAutoscaling(kubectl Client, clusterAutoscalerConfi
 // SetupGCPGuestAgent deploys the GCP guest agent daemon set.
 func (k *KubernetesUtil) SetupGCPGuestAgent(kubectl Client, guestAgentDaemonset kubernetes.Marshaler) error {
 	return kubectl.Apply(guestAgentDaemonset, true)
-}
-
-// SetupCloudControllerManager deploys the k8s cloud-controller-manager.
-func (k *KubernetesUtil) SetupCloudControllerManager(kubectl Client, cloudControllerManagerConfiguration kubernetes.Marshaler, configMaps kubernetes.Marshaler, secrets kubernetes.Marshaler) error {
-	if err := kubectl.Apply(configMaps, true); err != nil {
-		return fmt.Errorf("applying ccm ConfigMaps: %w", err)
-	}
-	if err := kubectl.Apply(secrets, true); err != nil {
-		return fmt.Errorf("applying ccm Secrets: %w", err)
-	}
-	if err := kubectl.Apply(cloudControllerManagerConfiguration, true); err != nil {
-		return fmt.Errorf("applying ccm: %w", err)
-	}
-	return nil
-}
-
-// SetupCloudNodeManager deploys the k8s cloud-node-manager.
-func (k *KubernetesUtil) SetupCloudNodeManager(kubectl Client, cloudNodeManagerConfiguration kubernetes.Marshaler) error {
-	return kubectl.Apply(cloudNodeManagerConfiguration, true)
 }
 
 // SetupAccessManager deploys the constellation-access-manager for deploying SSH keys on control-plane & worker nodes.

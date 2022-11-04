@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -275,11 +274,6 @@ func TestGetObjects(t *testing.T) {
 		resourcesYAML    string
 		wantErr          bool
 	}{
-		"GetObjects works on cluster-autoscaler deployment": {
-			wantResources: resources.NewDefaultAutoscalerDeployment(nil, nil, nil, ""),
-			resourcesYAML: string(nginxDeplYAML),
-			wantErr:       false,
-		},
 		"GetObjects Marshal failure detected": {
 			wantResources: &unmarshableResource{},
 			resourcesYAML: string(nginxDeplYAML),

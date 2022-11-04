@@ -69,6 +69,12 @@ If you're already familiar with Kubernetes, it's easy to get started with Conste
 
 ![Constellation Shell](docs/static/img/shell-windowframe.svg)
 
+## Demo
+
+We're running a [Rocket.Chat](https://github.com/RocketChat/Rocket.Chat) server on Constellation at https://rocket.edgeless.systems/. 
+
+This [blog post](https://dev.to/flxflx/rocketchat-constellation-most-secure-chat-server-ever--50oa) gives details on the setup.
+
 ## Documentation
 
 To learn more, see the [documentation](https://docs.edgeless.systems/constellation).

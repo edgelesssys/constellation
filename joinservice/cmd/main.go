@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	awscloud "github.com/edgelesssys/constellation/v2/internal/cloud/aws"
 	azurecloud "github.com/edgelesssys/constellation/v2/internal/cloud/azure"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	gcpcloud "github.com/edgelesssys/constellation/v2/internal/cloud/gcp"
@@ -118,6 +119,11 @@ func getVPCIP(ctx context.Context, provider string) (string, error) {
 	var err error
 
 	switch cloudprovider.FromString(provider) {
+	case cloudprovider.AWS:
+		metadata, err = awscloud.New(ctx)
+		if err != nil {
+			return "", err
+		}
 	case cloudprovider.Azure:
 		metadata, err = azurecloud.NewMetadata(ctx)
 		if err != nil {

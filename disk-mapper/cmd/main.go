@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/rejoinclient"
 	"github.com/edgelesssys/constellation/v2/disk-mapper/internal/setup"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/aws"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
@@ -78,8 +79,7 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to set up AWS metadata API")
 		}
 
-		// TODO: Add attestation issuer for AWS
-		// issuer = aws.NewIssuer()
+		issuer = aws.NewIssuer()
 
 	case cloudprovider.Azure:
 		diskPath, err = filepath.EvalSymlinks(azureStateDiskPath)

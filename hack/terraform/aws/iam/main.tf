@@ -105,7 +105,12 @@ resource "aws_iam_policy" "control_plane_policy" {
         "elasticloadbalancing:DeregisterTargets",
         "elasticloadbalancing:SetLoadBalancerPoliciesOfListener",
         "iam:CreateServiceLinkedRole",
-        "kms:DescribeKey"
+        "kms:DescribeKey",
+        "logs:DescribeLogGroups",
+        "logs:ListTagsLogGroup",
+        "logs:CreateLogStream",
+        "tag:GetResources",
+        "ec2:DescribeImages"
       ],
       "Resource": [
         "*"
@@ -164,7 +169,12 @@ resource "aws_iam_policy" "worker_node_policy" {
         "ecr:GetRepositoryPolicy",
         "ecr:DescribeRepositories",
         "ecr:ListImages",
-        "ecr:BatchGetImage"
+        "ecr:BatchGetImage",
+        "logs:DescribeLogGroups",
+        "logs:ListTagsLogGroup",
+        "logs:CreateLogStream",
+        "tag:GetResources",
+        "ec2:DescribeImages"
       ],
       "Resource": "*"
     }

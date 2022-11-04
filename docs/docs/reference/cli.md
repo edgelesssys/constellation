@@ -382,6 +382,7 @@ constellation terminate [flags]
 
 ```
   -h, --help   help for terminate
+  -y, --yes    terminate the cluster without further confirmation
 ```
 
 ### Options inherited from parent commands

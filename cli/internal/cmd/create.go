@@ -94,6 +94,9 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 	switch provider {
 	case cloudprovider.AWS:
 		instanceType = config.Provider.AWS.InstanceType
+		if len(flags.name) > 10 {
+			return fmt.Errorf("cluster name on AWS must not be longer than 10 characters")
+		}
 	case cloudprovider.Azure:
 		instanceType = config.Provider.Azure.InstanceType
 	case cloudprovider.GCP:

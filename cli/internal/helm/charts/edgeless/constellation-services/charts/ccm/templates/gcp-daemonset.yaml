@@ -22,7 +22,7 @@ spec:
           - /cloud-controller-manager
           - --cloud-provider=gce
           - --leader-elect=true
-          - --cluster-cidr={{ .Values.subnetworkCIDR }}
+          - --cluster-cidr={{ .Values.GCP.subnetworkPodCIDR }}
           - -v=2
           - --use-service-account-credentials
           - --controllers=cloud-node,cloud-node-lifecycle,nodeipam,service,route
