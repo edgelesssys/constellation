@@ -48,10 +48,6 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 ) (clusterid.File, error) {
 	switch provider {
 	case cloudprovider.AWS:
-		// TODO: Remove this once AWS is supported.
-		if os.Getenv("CONSTELLATION_AWS_DEV") != "1" {
-			return clusterid.File{}, fmt.Errorf("AWS isn't supported yet")
-		}
 		cl, err := c.newTerraformClient(ctx)
 		if err != nil {
 			return clusterid.File{}, err
