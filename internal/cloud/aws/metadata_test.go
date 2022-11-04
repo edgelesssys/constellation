@@ -356,7 +356,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 				getResourcesOut1: &resourcegroupstaggingapi.GetResourcesOutput{
 					ResourceTagMappingList: []tagTypes.ResourceTagMapping{
 						{
-							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-lb/50dc6c495c0c9188"),
+							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-loadbalancer/50dc6c495c0c9188"),
 						},
 					},
 				},
@@ -390,10 +390,10 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 				getResourcesOut1: &resourcegroupstaggingapi.GetResourcesOutput{
 					ResourceTagMappingList: []tagTypes.ResourceTagMapping{
 						{
-							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-lb/50dc6c495c0c9188"),
+							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-loadbalancer/50dc6c495c0c9188"),
 						},
 						{
-							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-lb/50dc6c495c0c9188"),
+							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-loadbalancer/50dc6c495c0c9188"),
 						},
 					},
 				},
@@ -427,7 +427,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 				getResourcesOut1: &resourcegroupstaggingapi.GetResourcesOutput{
 					ResourceTagMappingList: []tagTypes.ResourceTagMapping{
 						{
-							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-lb/50dc6c495c0c9188"),
+							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-loadbalancer/50dc6c495c0c9188"),
 						},
 					},
 					PaginationToken: aws.String("token"),
@@ -435,7 +435,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 				getResourcesOut2: &resourcegroupstaggingapi.GetResourcesOutput{
 					ResourceTagMappingList: []tagTypes.ResourceTagMapping{
 						{
-							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-lb/50dc6c495c0c9188"),
+							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-loadbalancer/50dc6c495c0c9188"),
 						},
 					},
 				},
@@ -461,7 +461,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 				getResourcesOut1: &resourcegroupstaggingapi.GetResourcesOutput{
 					ResourceTagMappingList: []tagTypes.ResourceTagMapping{
 						{
-							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-lb/50dc6c495c0c9188"),
+							ResourceARN: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test-loadbalancer/50dc6c495c0c9188"),
 						},
 					},
 				},
