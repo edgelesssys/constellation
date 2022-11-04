@@ -109,6 +109,7 @@ resource "aws_iam_policy" "control_plane_policy" {
         "logs:DescribeLogGroups",
         "logs:ListTagsLogGroup",
         "logs:CreateLogStream",
+        "logs:PutLogEvents",
         "tag:GetResources",
         "ec2:DescribeImages"
       ],
@@ -173,6 +174,7 @@ resource "aws_iam_policy" "worker_node_policy" {
         "logs:DescribeLogGroups",
         "logs:ListTagsLogGroup",
         "logs:CreateLogStream",
+        "logs:PutLogEvents",
         "tag:GetResources",
         "ec2:DescribeImages"
       ],
