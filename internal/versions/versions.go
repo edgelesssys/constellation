@@ -84,7 +84,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 	V1_23: {
 		PatchVersion:  "v1.23.13",                                                                                                   // renovate:kubernetes-release
 		CNIPluginsURL: "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
-		CrictlURL:     "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.24.1/crictl-v1.24.1-linux-amd64.tar.gz",   // renovate:crictl-release
+		CrictlURL:     "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.25.0/crictl-v1.25.0-linux-amd64.tar.gz",   // renovate:crictl-release
 		KubeletURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.23.13/bin/linux/amd64/kubelet",                 // renovate:kubernetes-release
 		KubeadmURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.23.13/bin/linux/amd64/kubeadm",                 // renovate:kubernetes-release
 		KubectlURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.23.13/bin/linux/amd64/kubectl",                 // renovate:kubernetes-release
@@ -103,7 +103,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 	V1_24: {
 		PatchVersion:  "v1.24.7",                                                                                                    // renovate:kubernetes-release
 		CNIPluginsURL: "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
-		CrictlURL:     "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.24.2/crictl-v1.24.2-linux-amd64.tar.gz",   // renovate:crictl-release
+		CrictlURL:     "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.25.0/crictl-v1.25.0-linux-amd64.tar.gz",   // renovate:crictl-release
 		KubeletURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.24.7/bin/linux/amd64/kubelet",                  // renovate:kubernetes-release
 		KubeadmURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.24.7/bin/linux/amd64/kubeadm",                  // renovate:kubernetes-release
 		KubectlURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.24.7/bin/linux/amd64/kubectl",                  // renovate:kubernetes-release
