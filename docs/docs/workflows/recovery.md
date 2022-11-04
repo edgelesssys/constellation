@@ -90,7 +90,11 @@ This means that you have to recover the node manually.
 </tabItem>
 <tabItem value="aws" label="AWS">
 
-TODO: Is this already supported? Test or write note here!
+:::caution
+
+Recovery isn't yet implemented for AWS. If you require this feature, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md)!
+
+:::
 
 </tabItem>
 </tabs>
