@@ -33,7 +33,7 @@ replace (
 replace github.com/edgelesssys/constellation/v2 => ./..
 
 require (
-	cloud.google.com/go/compute v1.10.0
+	cloud.google.com/go/compute v1.12.1
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.1.4
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2 v2.0.0
@@ -59,6 +59,7 @@ require (
 
 require (
 	cloud.google.com/go v0.104.0 // indirect
+	cloud.google.com/go/compute/metadata v0.1.0 // indirect
 	cloud.google.com/go/iam v0.5.0 // indirect
 	cloud.google.com/go/kms v1.4.0 // indirect
 	cloud.google.com/go/storage v1.23.0 // indirect

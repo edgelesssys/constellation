@@ -33,10 +33,11 @@ replace (
 replace github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools v0.0.0-20221028071648-f2255501dfc4
 
 require (
-	cloud.google.com/go/compute v1.10.0
-	cloud.google.com/go/kms v1.4.0
-	cloud.google.com/go/logging v1.4.2
-	cloud.google.com/go/storage v1.23.0
+	cloud.google.com/go/compute v1.12.1
+	cloud.google.com/go/compute/metadata v0.2.1
+	cloud.google.com/go/kms v1.6.0
+	cloud.google.com/go/logging v1.5.0
+	cloud.google.com/go/storage v1.27.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.1.4
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/azkeys v0.8.1
@@ -93,8 +94,8 @@ require (
 	golang.org/x/mod v0.6.0
 	golang.org/x/sys v0.1.0
 	golang.org/x/text v0.4.0
-	google.golang.org/api v0.100.0
-	google.golang.org/genproto v0.0.0-20221025140454-527a21cfbd71
+	google.golang.org/api v0.102.0
+	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c
 	google.golang.org/grpc v1.50.1
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -114,11 +115,14 @@ require (
 	k8s.io/utils v0.0.0-20221101230645-61b03e2f6476
 )
 
-require github.com/hashicorp/go-retryablehttp v0.7.1 // indirect
+require (
+	cloud.google.com/go/longrunning v0.1.1 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.1 // indirect
+)
 
 require (
-	cloud.google.com/go v0.104.0 // indirect
-	cloud.google.com/go/iam v0.5.0 // indirect
+	cloud.google.com/go v0.105.0 // indirect
+	cloud.google.com/go/iam v0.6.0 // indirect
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.0.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/internal v0.7.0 // indirect
@@ -204,7 +208,6 @@ require (
 	github.com/google/trillian v1.5.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.0 // indirect
-	github.com/googleapis/go-type-adapters v1.0.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gosuri/uitable v0.0.4 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
