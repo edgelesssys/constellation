@@ -38,7 +38,10 @@ Constellation uses the default bucket to store logs. Its [default retention peri
 </tabItem>
 <tabItem value="aws" label="AWS">
 
-TODO: Is this already supported? Test or write note here!
+1. Open [AWS CloudWatch](https://console.aws.amazon.com/cloudwatch/home)
+2. Select [Log Groups](https://console.aws.amazon.com/cloudwatch/home#logsV2:log-groups)
+3. Select the log group that matches the name of your cluster.
+4. Select the log stream for control or worker type nodes.
 
 </tabItem>
 </tabs>
