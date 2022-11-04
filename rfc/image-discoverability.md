@@ -4,8 +4,8 @@ The Constellation OS image build pipeline generates a set of images using a chos
 
 ```mermaid
 graph LR
-    version["input: version (<code>v2.2.0</code>)"] --> imageid["image version uid (<code>v2.2.0-cc0de5c</code>)"]
-    commit["input: Constellation repo commit hash (<code>cc0de5c</code>)"] --> imageid
+    version["input: version (<code>v2.2.0</code>)"] --> imageid["image version uid (<code>v2.2.0</code>)"]
+    commit["input: Constellation repo commit hash (<code>cc0de5c</code>)"] --> pipeline
     imageid --> pipeline{build images}
     pipeline --> awsimage["raw AWS image"]
     pipeline --> azureimage[raw Azure image]
@@ -25,13 +25,13 @@ graph LR
     awsmeasure --> awsmeasurements[measurements.yml]
     azuremeasure --> azuremeasurements[measurements.yml]
     gcpmeasure --> gcpmeasurements[measurements.yml]
-    awsimage1 --> lut{Upload image lookup table to S3<br>key: <code>v2.2.0-cc0de5c</code><br>value: lookup table for image references specific to each CSP}
+    awsimage1 --> lut{Upload image lookup table to S3<br>key: <code>v2.2.0</code><br>value: lookup table for image references specific to each CSP}
     awsimage2 --> lut
     awsimage3 --> lut
     azureimage1 --> lut
     azureimage2 --> lut
     gcpimage1 --> lut
-    awsmeasurements --> s3measurements{"Upload image measurements to S3<br><code>aws/v2.2.0-cc0de5c/measurements.yaml<br>azure/v2.2.0-cc0de5c/measurements.yaml<br>gcp/v2.2.0-cc0de5c/measurements.yaml<br></code>"}
+    awsmeasurements --> s3measurements{"Upload image measurements to S3<br><code>aws/v2.2.0/measurements.yaml<br>azure/v2.2.0/measurements.yaml<br>gcp/v2.2.0/measurements.yaml<br></code>"}
     azuremeasurements --> s3measurements
     gcpmeasurements --> s3measurements
 ```
@@ -46,7 +46,8 @@ The build pipeline takes as inputs:
   - a pseudo-version number (e.g. `v2.3.0-pre-branch-name`) for branch images
 - a commit hash of the Constellation monorepo that is used to build the images (e.g. `cc0de5c68d41f31dd0b284d574f137e0b0ad106b`)
 
-To identify images belonging to one invocation of the build pipeline, the pipeline uses a unique identifier for the set of images, referred to as `image version uid` that combines the version number and the commit hash (e.g. `v2.2.0-cc0de5c68d41f31dd0b284d574f137e0b0ad106b`).
+To identify images belonging to one invocation of the build pipeline, the pipeline uses a unique identifier for the set of images, referred to as `image version uid`.
+This is either the release version number (e.g. `v2.2.0`) or a pseudo version that combines the version number and the commit hash (e.g. `v2.3.0-pre-debug-cc0de5c68d41f31dd0b284d574f137e0b0ad106b`).
 
 The build pipeline produces as outputs:
 
@@ -107,7 +108,7 @@ s3://<BUCKET-NAME>/measurements/<CSP>/<IMAGE-VERSION-UID>/measurements.yaml.sig
 ## CLI image discovery
 
 The CLI needs to be able to discover the image references for a given `image version uid`.
-By default, the CLI will prefill the `image` field of the `constellation-conf.yaml` when `constellation config generate <CSP>` is run with a hardcoded `image version uid` (e.g. `v2.2.0-cc0de5c68d41f31dd0b284d574f137e0b0ad106b`).
+By default, the CLI will prefill the `image` field of the `constellation-conf.yaml` when `constellation config generate <CSP>` is run with a hardcoded `image version uid` (e.g. `v2.2.0`).
 The `image` field is independent of the CSP and is a used to discover the CSP-specific image reference as needed for the following operations:
 
 - `constellation create`
