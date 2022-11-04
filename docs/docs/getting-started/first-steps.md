@@ -185,13 +185,13 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
         Use our provided Terraform script to generate the necessary profile. It will be provided as Terraform output variable: `control_plane_instance_profile`.
 
-        Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [https://github.com/edgelesssys/constellation/blob/main/hack/terraform/aws/iam/main.tf](main.tf) in the resource `aws_iam_policy.control_plane_policy`.
+        Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/blob/main/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.control_plane_policy`.
 
     * **iamProfileWorkerNodes**: The name of a profile attached to all control plane nodes.
 
         Use our provided Terraform script to generate the necessary profile. It will be provided as Terraform output variable: `worker_nodes_instance_profile`.
 
-        Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [https://github.com/edgelesssys/constellation/blob/main/hack/terraform/aws/iam/main.tf](main.tf) in the resource `aws_iam_policy.worker_node_policy`.
+        Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/blob/main/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.worker_node_policy`.
 
     </tabItem>
     </tabs>
