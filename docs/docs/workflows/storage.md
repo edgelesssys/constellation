@@ -41,7 +41,7 @@ Follow the instructions on how to [install the Constellation CSI driver](#instal
 
 :::caution
 
-Storage is not yet implemented for AWS. If you require this feature, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md)!
+Storage isn't yet implemented for AWS. If you require this feature, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md)!
 
 Other CSI drivers that are compatible with K8s on AWS can be used.
 
@@ -126,7 +126,7 @@ The following installation guide gives an overview of how to securely use CSI-ba
 
 :::caution
 
-Storage is not yet implemented for AWS. If you require this feature, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md)!
+Storage isn't yet implemented for AWS. If you require this feature, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md)!
 
 Other CSI drivers that are compatible with K8s on AWS can be used.
 
@@ -294,7 +294,7 @@ The examples above are defined to be automatically set as the default storage cl
 
 :::caution
 
-Storage is not yet implemented for AWS. If you require this feature, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md)!
+Storage isn't yet implemented for AWS. If you require this feature, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md)!
 
 Other CSI drivers that are compatible with K8s on AWS can be used.
 

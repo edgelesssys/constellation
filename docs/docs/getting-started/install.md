@@ -135,10 +135,10 @@ Follow Google's guide on [understanding](https://cloud.google.com/iam/docs/under
 </tabItem>
 <tabItem value="aws" label="AWS">
 
-In subsequent steps AWS IAM policies need to be created. Make sure your
-user has the following minimal set of permissions:
+In the following steps you will use Constellation to perform two tasks: create policies & infrastructure.
 
-TODO: What kind of permissions does a user need for executing `constellation create?`?
+To create the AWS IAM policies, make sure your
+user has the following minimal set of permissions:
 
 ```json
 {
@@ -168,6 +168,93 @@ TODO: What kind of permissions does a user need for executing `constellation cre
                 "iam:ListInstanceProfilesForRole",
                 "iam:DeletePolicy",
                 "iam:DeleteRole"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+To create the infrastructure you can either use a predefined role from Amazon,
+such as `AmazonEC2FullAccess`, or use the following set for a minimal set of permissions:
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "sts:GetCallerIdentity",
+                "ec2:DescribeAccountAttributes",
+                "ec2:AllocateAddress",
+                "ec2:CreateVpc",
+                "ec2:CreateTags",
+                "logs:CreateLogGroup",
+                "ec2:CreateLaunchTemplate",
+                "ec2:DescribeAddresses",
+                "ec2:DescribeLaunchTemplates",
+                "logs:PutRetentionPolicy",
+                "logs:DescribeLogGroups",
+                "ec2:DescribeVpcs",
+                "ec2:DescribeLaunchTemplateVersions",
+                "logs:ListTagsLogGroup",
+                "ec2:DescribeVpcClassicLink",
+                "ec2:DescribeVpcClassicLinkDnsSupport",
+                "ec2:DescribeVpcAttribute",
+                "ec2:DescribeNetworkAcls",
+                "ec2:DescribeRouteTables",
+                "ec2:DescribeSecurityGroups",
+                "ec2:CreateSubnet",
+                "ec2:CreateSecurityGroup",
+                "elasticloadbalancing:CreateTargetGroup",
+                "ec2:CreateInternetGateway",
+                "ec2:DescribeSubnets",
+                "elasticloadbalancing:DescribeTargetGroups",
+                "ec2:AttachInternetGateway",
+                "elasticloadbalancing:ModifyTargetGroupAttributes",
+                "ec2:DescribeInternetGateways",
+                "autoscaling:CreateAutoScalingGroup",
+                "iam:PassRole",
+                "ec2:CreateNatGateway",
+                "ec2:RevokeSecurityGroupEgress",
+                "elasticloadbalancing:DescribeTargetGroupAttributes",
+                "elasticloadbalancing:CreateLoadBalancer",
+                "ec2:DescribeNatGateways",
+                "elasticloadbalancing:DescribeTags",
+                "autoscaling:DescribeScalingActivities",
+                "ec2:CreateRouteTable",
+                "autoscaling:DescribeAutoScalingGroups",
+                "ec2:AuthorizeSecurityGroupIngress",
+                "ec2:AuthorizeSecurityGroupEgress",
+                "ec2:CreateRoute",
+                "ec2:AssociateRouteTable",
+                "elasticloadbalancing:DescribeTargetHealth",
+                "elasticloadbalancing:DescribeLoadBalancers",
+                "elasticloadbalancing:ModifyLoadBalancerAttributes",
+                "elasticloadbalancing:AddTags",
+                "elasticloadbalancing:DescribeLoadBalancerAttributes",
+                "elasticloadbalancing:CreateListener",
+                "elasticloadbalancing:DescribeListeners",
+                "logs:DeleteLogGroup",
+                "elasticloadbalancing:DeleteListener",
+                "ec2:DisassociateRouteTable",
+                "autoscaling:UpdateAutoScalingGroup",
+                "elasticloadbalancing:DeleteLoadBalancer",
+                "autoscaling:SetInstanceProtection",
+                "ec2:DescribeNetworkInterfaces",
+                "ec2:DeleteRouteTable",
+                "ec2:DeleteNatGateway",
+                "ec2:DetachInternetGateway",
+                "ec2:DisassociateAddress",
+                "ec2:ReleaseAddress",
+                "ec2:DeleteInternetGateway",
+                "ec2:DeleteSubnet",
+                "autoscaling:DeleteAutoScalingGroup",
+                "ec2:DeleteLaunchTemplate",
+                "elasticloadbalancing:DeleteTargetGroup",
+                "ec2:DeleteSecurityGroup",
+                "ec2:DeleteVpc"
             ],
             "Resource": "*"
         }

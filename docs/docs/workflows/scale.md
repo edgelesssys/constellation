@@ -98,7 +98,7 @@ To increase the number of control-plane nodes, follow these steps:
 
 :::caution
 
-Scaling is not yet implemented for AWS. If you require this feature, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md)!
+Scaling isn't yet implemented for AWS. If you require this feature, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md)!
 
 :::
 

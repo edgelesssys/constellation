@@ -40,8 +40,6 @@ constellation config generate gcp
 constellation config generate aws
 ```
 
-TODO: Make sure we have removed CONSTELLATION_AWS_DEV=1 before merging!
-
 </tabItem>
 </tabs>
 
