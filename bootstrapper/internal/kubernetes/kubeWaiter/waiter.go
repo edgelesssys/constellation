@@ -15,6 +15,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/retry"
 )
 
+// KubernetesClient is an interface for the Kubernetes client.
+// It is used to check if the Kubernetes API is available.
 type KubernetesClient interface {
 	ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error)
 }
@@ -24,10 +26,7 @@ type CloudKubeAPIWaiter struct{}
 
 // Wait waits for the Kubernetes API to be available.
 // Note that the kubernetesClient must have the kubeconfig already set.
-func (w *CloudKubeAPIWaiter) Wait(ctx context.Context, kubernetesClient KubernetesClient, timeout time.Duration) error {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
+func (w *CloudKubeAPIWaiter) Wait(ctx context.Context, kubernetesClient KubernetesClient) error {
 	funcAlwaysRetriable := func(err error) bool { return true }
 
 	doer := &kubeDoer{kubeClient: kubernetesClient}

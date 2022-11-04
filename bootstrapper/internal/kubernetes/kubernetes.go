@@ -49,7 +49,7 @@ type configurationProvider interface {
 }
 
 type kubeAPIWaiter interface {
-	Wait(ctx context.Context, kubernetesClient kubewaiter.KubernetesClient, timeout time.Duration) error
+	Wait(ctx context.Context, kubernetesClient kubewaiter.KubernetesClient) error
 }
 
 // KubeWrapper implements Cluster interface.
@@ -166,7 +166,9 @@ func (k *KubeWrapper) InitCluster(
 	}
 	k.client.SetKubeconfig(kubeConfig)
 
-	if err := k.kubeAPIWaiter.Wait(ctx, k.client, 2*time.Minute); err != nil {
+	waitCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+	if err := k.kubeAPIWaiter.Wait(waitCtx, k.client); err != nil {
 		return nil, fmt.Errorf("waiting for Kubernetes API to be available: %w", err)
 	}
 

@@ -13,7 +13,6 @@ import (
 	"regexp"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	kubewaiter "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubeWaiter"
@@ -659,6 +658,6 @@ type stubKubeAPIWaiter struct {
 	waitErr error
 }
 
-func (s *stubKubeAPIWaiter) Wait(_ context.Context, _ kubewaiter.KubernetesClient, _ time.Duration) error {
+func (s *stubKubeAPIWaiter) Wait(_ context.Context, _ kubewaiter.KubernetesClient) error {
 	return s.waitErr
 }
