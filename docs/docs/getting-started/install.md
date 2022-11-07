@@ -261,7 +261,7 @@ such as `AmazonEC2FullAccess`, or use the following minimal set of permissions:
 }
 ```
 
-Follow Amazon's guide on [understanding](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html) and [managing policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html), and [roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_iam-tags.html).
+Follow Amazon's guide on [understanding](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html) and [managing policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html).
 
 </tabItem>
 </tabs>
