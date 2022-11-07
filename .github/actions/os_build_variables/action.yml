@@ -137,9 +137,9 @@ runs:
         echo "region=eu-central-1" >> $GITHUB_OUTPUT
         echo "replicationRegions=us-east-2 ap-south-1" >> $GITHUB_OUTPUT
         echo "bucket=constellation-images" >> $GITHUB_OUTPUT
-        echo "efivarsPath=${basePath}/mkosi.output.aws/fedora~36/efivars.bin" >> $GITHUB_OUTPUT
-        echo "imagePath=${basePath}/mkosi.output.aws/fedora~36/image.raw" >> $GITHUB_OUTPUT
-        echo "amiOutput=${basePath}/mkosi.output.aws/fedora~36/ami.json" >> $GITHUB_OUTPUT
+        echo "efivarsPath=${basePath}/mkosi.output.aws/fedora~37/efivars.bin" >> $GITHUB_OUTPUT
+        echo "imagePath=${basePath}/mkosi.output.aws/fedora~37/image.raw" >> $GITHUB_OUTPUT
+        echo "amiOutput=${basePath}/mkosi.output.aws/fedora~37/ami.json" >> $GITHUB_OUTPUT
         echo "imageFilename=image-$(date +%s).raw" >> $GITHUB_OUTPUT
         if [ "${imageType}" = release ]
         then
@@ -173,8 +173,8 @@ runs:
         echo "replicationRegions=northeurope eastus westeurope westus" >> $GITHUB_OUTPUT
         echo "sku=constellation" >> $GITHUB_OUTPUT
         echo "publisher=edgelesssys" >> $GITHUB_OUTPUT
-        echo "rawImagePath=${basePath}/mkosi.output.azure/fedora~36/image.raw" >> $GITHUB_OUTPUT
-        echo "imagePath=${basePath}/mkosi.output.azure/fedora~36/image.vhd" >> $GITHUB_OUTPUT
+        echo "rawImagePath=${basePath}/mkosi.output.azure/fedora~37/image.raw" >> $GITHUB_OUTPUT
+        echo "imagePath=${basePath}/mkosi.output.azure/fedora~37/image.vhd" >> $GITHUB_OUTPUT
         # TODO: set default security type to "ConfidentialVM" once replication is possible
         securityType=${{ inputs.uploadVariant }}
         if [ -z "${securityType}" ]; then
@@ -226,8 +226,8 @@ runs:
         echo "project=constellation-images" >> $GITHUB_OUTPUT
         echo "bucket=constellation-images" >> $GITHUB_OUTPUT
         echo "region=europe-west3" >> $GITHUB_OUTPUT
-        echo "rawImagePath=${basePath}/mkosi.output.gcp/fedora~36/image.raw" >> $GITHUB_OUTPUT
-        echo "imagePath=${basePath}/mkosi.output.gcp/fedora~36/image.tar.gz" >> $GITHUB_OUTPUT
+        echo "rawImagePath=${basePath}/mkosi.output.gcp/fedora~37/image.raw" >> $GITHUB_OUTPUT
+        echo "imagePath=${basePath}/mkosi.output.gcp/fedora~37/image.tar.gz" >> $GITHUB_OUTPUT
         if [ "${imageType}" = release ]
         then
           echo "imageName=constellation-${imageVersion//./-}" >> $GITHUB_OUTPUT
