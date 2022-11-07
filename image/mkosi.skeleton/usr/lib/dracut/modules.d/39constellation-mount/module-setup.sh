@@ -70,4 +70,7 @@ install() {
     install_path /etc/pki/tls/certs/
     inst_simple /etc/pki/tls/certs/ca-bundle.crt \
         /etc/pki/tls/certs/ca-bundle.crt
+
+    # backport of https://github.com/dracutdevs/dracut/commit/dcbe23c14d13ca335ad327b7bb985071ca442f12
+    inst_simple "$moddir/sysusers-dracut.conf" "$systemdsystemunitdir/systemd-sysusers.service.d/sysusers-dracut.conf"
 }
