@@ -39,10 +39,14 @@ resource "aws_launch_template" "launch_template" {
 
   lifecycle {
     create_before_destroy = true
+    ignore_changes = [
+      default_version, # required. update procedure creates new versions of the launch template
+      image_id,        # required. update procedure modifies the image id externally
+    ]
   }
 }
 
-resource "aws_autoscaling_group" "control_plane_autoscaling_group" {
+resource "aws_autoscaling_group" "autoscaling_group" {
   name = local.name
   launch_template {
     id = aws_launch_template.launch_template.id
@@ -52,10 +56,6 @@ resource "aws_autoscaling_group" "control_plane_autoscaling_group" {
   desired_capacity    = var.instance_count
   vpc_zone_identifier = [var.subnetwork]
   target_group_arns   = var.target_group_arns
-
-  lifecycle {
-    create_before_destroy = true
-  }
 
   tag {
     key                 = "Name"
@@ -77,5 +77,15 @@ resource "aws_autoscaling_group" "control_plane_autoscaling_group" {
     key                 = "KubernetesCluster"
     value               = "Constellation-${var.uid}"
     propagate_at_launch = true
+  }
+
+  lifecycle {
+    create_before_destroy = true
+    ignore_changes = [
+      launch_template.0.version, # required. update procedure creates new versions of the launch template
+      min_size,                  # required. autoscaling modifies the instance count externally
+      max_size,                  # required. autoscaling modifies the instance count externally
+      desired_capacity,          # required. autoscaling modifies the instance count externally
+    ]
   }
 }

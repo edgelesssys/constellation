@@ -78,4 +78,11 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
       load_balancer_backend_address_pool_ids = var.backend_address_pool_ids
     }
   }
+
+  lifecycle {
+    ignore_changes = [
+      instances,       # required. autoscaling modifies the instance count externally
+      source_image_id, # required. update procedure modifies the image id externally
+    ]
+  }
 }
