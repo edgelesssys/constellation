@@ -1,0 +1,5 @@
+#!/bin/sh
+set -euxo pipefail
+
+# backport of https://github.com/dracutdevs/dracut/commit/dcbe23c14d13ca335ad327b7bb985071ca442f12
+sed -i 's/WantedBy=multi-user.target/WantedBy=basic.target/' /usr/lib/systemd/system/systemd-resolved.service
