@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 depends() {
-    echo systemd
+    # expands to: systemd systemd-hostnamed systemd-networkd systemd-resolved systemd-timedated systemd-timesyncd
+    echo systemd-network-management
 }
 
 install_and_enable_unit() {
