@@ -1,0 +1,5 @@
+apiVersion: v2
+name: node-maintenance-operator
+description: A Helm chart for Kubernetes
+type: application
+version: 2.3.0-pre

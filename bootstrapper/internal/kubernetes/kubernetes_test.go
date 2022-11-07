@@ -551,12 +551,22 @@ func (s *stubKubeconfigReader) ReadKubeconfig() ([]byte, error) {
 }
 
 type stubHelmClient struct {
-	ciliumError   error
-	servicesError error
+	ciliumError      error
+	certManagerError error
+	operatorsError   error
+	servicesError    error
 }
 
 func (s *stubHelmClient) InstallCilium(ctx context.Context, kubectl k8sapi.Client, release helm.Release, in k8sapi.SetupPodNetworkInput) error {
 	return s.ciliumError
+}
+
+func (s *stubHelmClient) InstallCertManager(ctx context.Context, release helm.Release) error {
+	return s.certManagerError
+}
+
+func (s *stubHelmClient) InstallOperators(ctx context.Context, release helm.Release, extraVals map[string]any) error {
+	return s.operatorsError
 }
 
 func (s *stubHelmClient) InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]any) error {

@@ -1,0 +1,33 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "properties": {
+        "controllerManager": {
+            "description": "Container image to use for the spawned pods.",
+            "type": "object",
+            "properties": {
+                "manager": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "description": "Container image to use for the spawned pods.",
+                            "type": "string",
+                            "examples": ["k8s.gcr.io/autoscaling/cluster-autoscaler:v1.23.1"]
+
+                        }
+                    },
+                    "required": [
+                        "image"
+                    ]
+                }
+            },
+            "required": [
+                "manager"
+            ]
+        }
+    },
+    "required": [
+        "controllerManager"
+    ],
+    "title": "Values",
+    "type": "object"
+}

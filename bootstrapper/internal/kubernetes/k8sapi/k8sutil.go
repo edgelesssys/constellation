@@ -42,8 +42,6 @@ import (
 const (
 	// kubeletStartTimeout is the maximum time given to the kubelet service to (re)start.
 	kubeletStartTimeout = 10 * time.Minute
-	// crdTimeout is the maximum time given to the CRDs to be created.
-	crdTimeout = 30 * time.Second
 )
 
 // Client provides the functions to talk to the k8s API.
@@ -324,19 +322,6 @@ func (k *KubernetesUtil) SetupGCPGuestAgent(kubectl Client, guestAgentDaemonset 
 // SetupVerificationService deploys the verification service.
 func (k *KubernetesUtil) SetupVerificationService(kubectl Client, verificationServiceConfiguration kubernetes.Marshaler) error {
 	return kubectl.Apply(verificationServiceConfiguration, true)
-}
-
-// SetupOperatorLifecycleManager deploys operator lifecycle manager.
-func (k *KubernetesUtil) SetupOperatorLifecycleManager(ctx context.Context, kubectl Client, olmCRDs, olmConfiguration kubernetes.Marshaler, crdNames []string) error {
-	if err := kubectl.Apply(olmCRDs, true); err != nil {
-		return fmt.Errorf("applying OLM CRDs: %w", err)
-	}
-	crdReadyTimeout, cancel := context.WithTimeout(ctx, crdTimeout)
-	defer cancel()
-	if err := kubectl.WaitForCRDs(crdReadyTimeout, crdNames); err != nil {
-		return fmt.Errorf("waiting for OLM CRDs: %w", err)
-	}
-	return kubectl.Apply(olmConfiguration, true)
 }
 
 // SetupNodeMaintenanceOperator deploys node maintenance operator.

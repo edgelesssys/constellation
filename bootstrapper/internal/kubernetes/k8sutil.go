@@ -25,9 +25,6 @@ type clusterUtil interface {
 	SetupKonnectivity(kubectl k8sapi.Client, konnectivityAgentsDaemonSet kubernetes.Marshaler) error
 	SetupVerificationService(kubectl k8sapi.Client, verificationServiceConfiguration kubernetes.Marshaler) error
 	SetupGCPGuestAgent(kubectl k8sapi.Client, gcpGuestAgentConfiguration kubernetes.Marshaler) error
-	SetupOperatorLifecycleManager(ctx context.Context, kubectl k8sapi.Client, olmCRDs, olmConfiguration kubernetes.Marshaler, crdNames []string) error
-	SetupNodeMaintenanceOperator(kubectl k8sapi.Client, nodeMaintenanceOperatorConfiguration kubernetes.Marshaler) error
-	SetupNodeOperator(ctx context.Context, kubectl k8sapi.Client, nodeOperatorConfiguration kubernetes.Marshaler) error
 	FixCilium(log *logger.Logger)
 	StartKubelet() error
 }
@@ -37,5 +34,7 @@ type clusterUtil interface {
 // Naming is inspired by Helm.
 type helmClient interface {
 	InstallCilium(context.Context, k8sapi.Client, helm.Release, k8sapi.SetupPodNetworkInput) error
+	InstallCertManager(ctx context.Context, release helm.Release) error
+	InstallOperators(ctx context.Context, release helm.Release, extraVals map[string]any) error
 	InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]any) error
 }

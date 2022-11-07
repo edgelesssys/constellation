@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: node-maintenance-operator-webhook-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    node-maintenance-operator: ""
+  {{- include "chart.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.webhookService.type }}
+  selector:
+    control-plane: controller-manager
+    node-maintenance-operator: ""
+  {{- include "chart.selectorLabels" . | nindent 4 }}
+  ports:
+	{{- .Values.webhookService.ports | toYaml | nindent 2 -}}

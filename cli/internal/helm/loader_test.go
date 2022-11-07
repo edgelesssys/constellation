@@ -44,8 +44,8 @@ func TestLoad(t *testing.T) {
 	assert.NotNil(chart.Dependencies())
 }
 
-// TestTemplate checks if the rendered constellation-services chart produces the expected yaml files.
-func TestTemplate(t *testing.T) {
+// TestConstellationServices checks if the rendered constellation-services chart produces the expected yaml files.
+func TestConstellationServices(t *testing.T) {
 	testCases := map[string]struct {
 		config             *config.Config
 		enforceIDKeyDigest bool
@@ -121,6 +121,76 @@ func TestTemplate(t *testing.T) {
 			require.NoError(err)
 			for k, v := range result {
 				currentFile := path.Join("testdata", tc.config.GetProvider().String(), k)
+				content, err := os.ReadFile(currentFile)
+
+				// If a file does not exist, we expect the render for that path to be empty.
+				if errors.Is(err, fs.ErrNotExist) {
+					assert.YAMLEq("", v, fmt.Sprintf("current file: %s", currentFile))
+					continue
+				}
+				assert.NoError(err)
+				assert.YAMLEq(string(content), v, fmt.Sprintf("current file: %s", currentFile))
+			}
+		})
+	}
+}
+
+// TestOperators checks if the rendered constellation-services chart produces the expected yaml files.
+func TestOperators(t *testing.T) {
+	testCases := map[string]struct {
+		csp cloudprovider.Provider
+	}{
+		"GCP": {
+			csp: cloudprovider.GCP,
+		},
+		"Azure": {
+			csp: cloudprovider.Azure,
+		},
+		"QEMU": {
+			csp: cloudprovider.QEMU,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			chartLoader := ChartLoader{joinServiceImage: "joinServiceImage", kmsImage: "kmsImage", ccmImage: "ccmImage", cnmImage: "cnmImage", autoscalerImage: "autoscalerImage"}
+			release, err := chartLoader.Load(tc.csp, true, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []uint32{1, 11}, false)
+			require.NoError(err)
+
+			var helmReleases helm.Releases
+			err = json.Unmarshal(release, &helmReleases)
+			require.NoError(err)
+			reader := bytes.NewReader(helmReleases.Operators.Chart)
+			chart, err := loader.LoadArchive(reader)
+			require.NoError(err)
+
+			options := chartutil.ReleaseOptions{
+				Name:      "testRelease",
+				Namespace: "testNamespace",
+				Revision:  1,
+				IsInstall: true,
+				IsUpgrade: false,
+			}
+			caps := &chartutil.Capabilities{}
+
+			conOpVals, ok := helmReleases.Operators.Values["constellation-operator"].(map[string]any)
+			require.True(ok)
+			conOpVals["constellationUID"] = "42424242424242"
+
+			// This step is needed to enabled/disable subcharts according to their tags/conditions.
+			err = chartutil.ProcessDependencies(chart, helmReleases.Operators.Values)
+			require.NoError(err)
+
+			valuesToRender, err := chartutil.ToRenderValues(chart, helmReleases.Operators.Values, options, caps)
+			require.NoError(err)
+
+			result, err := engine.Render(chart, valuesToRender)
+			require.NoError(err)
+			for k, v := range result {
+				currentFile := path.Join("testdata", tc.csp.String(), k)
 				content, err := os.ReadFile(currentFile)
 
 				// If a file does not exist, we expect the render for that path to be empty.

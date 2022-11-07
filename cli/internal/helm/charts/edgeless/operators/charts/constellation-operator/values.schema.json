@@ -1,0 +1,43 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "properties": {
+        "controllerManager": {
+            "description": "Container image to use for the spawned pods.",
+            "type": "object",
+            "properties": {
+                "manager": {
+                    "type": "object",
+                    "properties": {
+                        "image": {
+                            "description": "Container image to use for the spawned pods.",
+                            "type": "string",
+                            "examples": ["k8s.gcr.io/autoscaling/cluster-autoscaler:v1.23.1"]
+
+                        }
+                    },
+                    "required": [
+                        "image"
+                    ]
+                }
+            },
+            "required": [
+                "manager"
+            ]
+        },
+        "csp": {
+            "description": "CSP to which the chart is deployed.",
+            "enum": ["Azure", "GCP", "AWS", "QEMU"]
+        },
+        "constellationUID": {
+            "description": "UID for the specific cluster",
+            "type": "string"
+        }
+    },
+    "required": [
+        "controllerManager",
+        "csp",
+        "constellationUID"
+    ],
+    "title": "Values",
+    "type": "object"
+}

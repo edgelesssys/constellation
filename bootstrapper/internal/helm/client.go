@@ -47,29 +47,24 @@ func New(log *logger.Logger) (*Client, error) {
 		return nil, err
 	}
 
+	action := action.NewInstall(actionConfig)
+	action.Namespace = constants.HelmNamespace
+	action.Timeout = timeout
+
 	return &Client{
-		action.NewInstall(actionConfig),
+		action,
 	}, nil
 }
 
 // InstallConstellationServices installs the constellation-services chart. In the future this chart should bundle all microservices.
 func (h *Client) InstallConstellationServices(ctx context.Context, release helm.Release, extraVals map[string]any) error {
-	h.Namespace = constants.HelmNamespace
 	h.ReleaseName = release.ReleaseName
 	h.Wait = release.Wait
-	h.Timeout = timeout
 
 	mergedVals := mergeMaps(release.Values, extraVals)
 
-	reader := bytes.NewReader(release.Chart)
-	chart, err := loader.LoadArchive(reader)
-	if err != nil {
-		return fmt.Errorf("helm load archive: %w", err)
-	}
-
-	_, err = h.RunWithContext(ctx, chart, mergedVals)
-	if err != nil {
-		return fmt.Errorf("helm install services: %w", err)
+	if err := h.install(ctx, release.Chart, mergedVals); err != nil {
+		return err
 	}
 
 	return nil
@@ -96,12 +91,35 @@ func mergeMaps(a, b map[string]any) map[string]any {
 	return out
 }
 
-// InstallCilium sets up the cilium pod network.
-func (h *Client) InstallCilium(ctx context.Context, kubectl k8sapi.Client, release helm.Release, in k8sapi.SetupPodNetworkInput) error {
-	h.Namespace = constants.HelmNamespace
+// InstallCertManager installs the cert-manager chart.
+func (h *Client) InstallCertManager(ctx context.Context, release helm.Release) error {
 	h.ReleaseName = release.ReleaseName
 	h.Wait = release.Wait
-	h.Timeout = timeout
+
+	if err := h.install(ctx, release.Chart, release.Values); err != nil {
+		return err
+	}
+	return nil
+}
+
+// InstallOperators installs the Constellation Operators.
+func (h *Client) InstallOperators(ctx context.Context, release helm.Release, extraVals map[string]any) error {
+	h.ReleaseName = release.ReleaseName
+	h.Wait = release.Wait
+
+	mergedVals := mergeMaps(release.Values, extraVals)
+
+	if err := h.install(ctx, release.Chart, mergedVals); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// InstallCilium sets up the cilium pod network.
+func (h *Client) InstallCilium(ctx context.Context, kubectl k8sapi.Client, release helm.Release, in k8sapi.SetupPodNetworkInput) error {
+	h.ReleaseName = release.ReleaseName
+	h.Wait = release.Wait
 
 	switch in.CloudProvider {
 	case "aws", "azure", "qemu":
@@ -121,15 +139,8 @@ func (h *Client) installCiliumGeneric(ctx context.Context, release helm.Release,
 	release.Values["k8sServiceHost"] = host
 	release.Values["k8sServicePort"] = strconv.Itoa(constants.KubernetesPort)
 
-	reader := bytes.NewReader(release.Chart)
-	chart, err := loader.LoadArchive(reader)
-	if err != nil {
-		return fmt.Errorf("helm load archive: %w", err)
-	}
-
-	_, err = h.RunWithContext(ctx, chart, release.Values)
-	if err != nil {
-		return fmt.Errorf("installing cilium: %w", err)
+	if err := h.install(ctx, release.Chart, release.Values); err != nil {
+		return err
 	}
 	return nil
 }
@@ -179,16 +190,23 @@ func (h *Client) installCiliumGCP(ctx context.Context, kubectl k8sapi.Client, re
 		release.Values["k8sServicePort"] = port
 	}
 
-	reader := bytes.NewReader(release.Chart)
+	if err := h.install(ctx, release.Chart, release.Values); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (h *Client) install(ctx context.Context, chartRaw []byte, values map[string]any) error {
+	reader := bytes.NewReader(chartRaw)
 	chart, err := loader.LoadArchive(reader)
 	if err != nil {
 		return fmt.Errorf("helm load archive: %w", err)
 	}
 
-	_, err = h.RunWithContext(ctx, chart, release.Values)
+	_, err = h.RunWithContext(ctx, chart, values)
 	if err != nil {
-		return fmt.Errorf("helm install cilium: %w", err)
+		return fmt.Errorf("helm install: %w", err)
 	}
-
 	return nil
 }

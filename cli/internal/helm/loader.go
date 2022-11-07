@@ -29,10 +29,10 @@ import (
 	"helm.sh/helm/v3/pkg/chartutil"
 )
 
-// Run `go generate` to deterministically create the patched Helm deployment for cilium
+// Run `go generate` to download (and patch) upstream helm charts.
 //go:generate ./generateCilium.sh
-// Run `go generate` to load CSI driver charts from the CSI repositories
 //go:generate ./update-csi-charts.sh
+//go:generate ./generateCertManager.sh
 
 //go:embed all:charts/*
 var helmFS embed.FS
@@ -77,11 +77,21 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSe
 		return nil, fmt.Errorf("loading cilium: %w", err)
 	}
 
+	certManagerRelease, err := i.loadCertManager()
+	if err != nil {
+		return nil, fmt.Errorf("loading cilium: %w", err)
+	}
+
+	operatorRelease, err := i.loadOperators(csp)
+	if err != nil {
+		return nil, fmt.Errorf("loading operators: %w", err)
+	}
+
 	conServicesRelease, err := i.loadConstellationServices(config, masterSecret, salt)
 	if err != nil {
 		return nil, fmt.Errorf("loading constellation-services: %w", err)
 	}
-	releases := helm.Releases{Cilium: ciliumRelease, ConstellationServices: conServicesRelease}
+	releases := helm.Releases{Cilium: ciliumRelease, CertManager: certManagerRelease, Operators: operatorRelease, ConstellationServices: conServicesRelease}
 
 	rel, err := json.Marshal(releases)
 	if err != nil {
@@ -98,7 +108,7 @@ func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode boo
 
 	chartRaw, err := i.marshalChart(chart)
 	if err != nil {
-		return helm.Release{}, fmt.Errorf("packaging chart: %w", err)
+		return helm.Release{}, fmt.Errorf("packaging cilium chart: %w", err)
 	}
 
 	var ciliumVals map[string]any
@@ -124,7 +134,101 @@ func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode boo
 
 	}
 
-	return helm.Release{Chart: chartRaw, Values: ciliumVals, ReleaseName: "cilium", Wait: true}, nil
+	return helm.Release{Chart: chartRaw, Values: ciliumVals, ReleaseName: "cilium", Wait: false}, nil
+}
+
+func (i *ChartLoader) loadCertManager() (helm.Release, error) {
+	chart, err := loadChartsDir(helmFS, "charts/cert-manager")
+	if err != nil {
+		return helm.Release{}, fmt.Errorf("loading cert-manager chart: %w", err)
+	}
+
+	chartRaw, err := i.marshalChart(chart)
+	if err != nil {
+		return helm.Release{}, fmt.Errorf("packaging cert-manager chart: %w", err)
+	}
+
+	values := map[string]any{
+		"installCRDs": true,
+		"prometheus": map[string]any{
+			"enabled": false,
+		},
+	}
+
+	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: "cert-manager", Wait: false}, nil
+}
+
+func (i *ChartLoader) loadOperators(csp cloudprovider.Provider) (helm.Release, error) {
+	chart, err := loadChartsDir(helmFS, "charts/edgeless/operators")
+	if err != nil {
+		return helm.Release{}, fmt.Errorf("loading operators chart: %w", err)
+	}
+
+	chartRaw, err := i.marshalChart(chart)
+	if err != nil {
+		return helm.Release{}, fmt.Errorf("packaging operators chart: %w", err)
+	}
+
+	vals := map[string]any{
+		"constellation-operator": map[string]any{
+			"controllerManager": map[string]any{
+				"manager": map[string]any{
+					"image": versions.ConstellationOperatorImage,
+				},
+			},
+		},
+		"node-maintenance-operator": map[string]any{
+			"controllerManager": map[string]any{
+				"manager": map[string]any{
+					"image": versions.NodeMaintenanceOperatorImage,
+				},
+			},
+		},
+	}
+	switch csp {
+	case cloudprovider.Azure:
+		conOpVals, ok := vals["constellation-operator"].(map[string]any)
+		if !ok {
+			return helm.Release{}, errors.New("invalid constellation-operator values")
+		}
+		conOpVals["csp"] = "Azure"
+
+		vals["tags"] = map[string]any{
+			"Azure": true,
+		}
+	case cloudprovider.GCP:
+		conOpVals, ok := vals["constellation-operator"].(map[string]any)
+		if !ok {
+			return helm.Release{}, errors.New("invalid constellation-operator values")
+		}
+		conOpVals["csp"] = "GCP"
+
+		vals["tags"] = map[string]any{
+			"GCP": true,
+		}
+	case cloudprovider.QEMU:
+		conOpVals, ok := vals["constellation-operator"].(map[string]any)
+		if !ok {
+			return helm.Release{}, errors.New("invalid constellation-operator values")
+		}
+		conOpVals["csp"] = "QEMU"
+
+		vals["tags"] = map[string]any{
+			"QEMU": true,
+		}
+	case cloudprovider.AWS:
+		conOpVals, ok := vals["constellation-operator"].(map[string]any)
+		if !ok {
+			return helm.Release{}, errors.New("invalid constellation-operator values")
+		}
+		conOpVals["csp"] = "AWS"
+
+		vals["tags"] = map[string]any{
+			"AWS": true,
+		}
+	}
+
+	return helm.Release{Chart: chartRaw, Values: vals, ReleaseName: "con-operators", Wait: false}, nil
 }
 
 // loadConstellationServices loads the constellation-services chart from the embed.FS,
@@ -137,7 +241,7 @@ func (i *ChartLoader) loadConstellationServices(config *config.Config, masterSec
 
 	chartRaw, err := i.marshalChart(chart)
 	if err != nil {
-		return helm.Release{}, fmt.Errorf("packaging chart: %w", err)
+		return helm.Release{}, fmt.Errorf("packaging constellation-services chart: %w", err)
 	}
 
 	enforcedPCRsJSON, err := json.Marshal(config.GetEnforcedPCRs())
@@ -255,7 +359,7 @@ func (i *ChartLoader) loadConstellationServices(config *config.Config, masterSec
 		}
 	}
 
-	return helm.Release{Chart: chartRaw, Values: vals, ReleaseName: "constellation-services", Wait: true}, nil
+	return helm.Release{Chart: chartRaw, Values: vals, ReleaseName: "constellation-services", Wait: false}, nil
 }
 
 // marshalChart takes a Chart object, packages it to a temporary file and returns the content of that file.
