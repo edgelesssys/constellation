@@ -268,7 +268,7 @@ func Default() *Config {
 				IAMProfileControlPlane: "",
 				IAMProfileWorkerNodes:  "",
 				Measurements:           copyPCRMap(awsPCRs),
-				EnforcedMeasurements:   []uint32{}, // TODO: add default values
+				EnforcedMeasurements:   []uint32{4, 8, 9, 11, 12, 13, 15},
 			},
 			Azure: &AzureConfig{
 				SubscriptionID:       "",
