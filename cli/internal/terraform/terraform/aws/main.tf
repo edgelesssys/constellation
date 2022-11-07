@@ -20,7 +20,6 @@ locals {
   uid                = random_id.uid.hex
   name               = "${var.name}-${local.uid}"
   ports_node_range   = "30000-32767"
-  ports_ssh          = "22"
   ports_kubernetes   = "6443"
   ports_bootstrapper = "9000"
   ports_konnectivity = "8132"
@@ -87,18 +86,6 @@ resource "aws_security_group" "security_group" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
     description = "K8s node ports"
-  }
-
-  # TODO: Remove when development is more advanced
-  dynamic "ingress" {
-    for_each = var.debug ? [1] : []
-    content {
-      from_port   = local.ports_ssh
-      to_port     = local.ports_ssh
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-      description = "SSH"
-    }
   }
 
   ingress {
@@ -203,18 +190,6 @@ module "load_balancer_target_konnectivity" {
   healthcheck_protocol = "TCP"
 }
 
-# TODO: Remove when development is more advanced
-module "load_balancer_target_ssh" {
-  count                = var.debug ? 1 : 0 // only deploy SSH in debug mode
-  source               = "./modules/load_balancer_target"
-  name                 = "${local.name}-ssh"
-  vpc_id               = aws_vpc.vpc.id
-  lb_arn               = aws_lb.front_end.arn
-  port                 = local.ports_ssh
-  tags                 = local.tags
-  healthcheck_protocol = "TCP"
-}
-
 module "instance_group_control_plane" {
   source          = "./modules/instance_group"
   name            = local.name
@@ -230,8 +205,7 @@ module "instance_group_control_plane" {
     module.load_balancer_target_kubernetes.target_group_arn,
     module.load_balancer_target_verify.target_group_arn,
     module.load_balancer_target_konnectivity.target_group_arn,
-    var.debug ? [module.load_balancer_target_debugd[0].target_group_arn,
-    module.load_balancer_target_ssh[0].target_group_arn] : [],
+    var.debug ? [module.load_balancer_target_debugd[0].target_group_arn] : [],
   ])
   security_groups      = [aws_security_group.security_group.id]
   subnetwork           = module.public_private_subnet.private_subnet_id
