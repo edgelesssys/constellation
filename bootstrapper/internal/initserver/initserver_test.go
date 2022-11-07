@@ -155,45 +155,6 @@ func TestInit(t *testing.T) {
 	}
 }
 
-func TestSSHProtoKeysToMap(t *testing.T) {
-	testCases := map[string]struct {
-		keys []*initproto.SSHUserKey
-		want map[string]string
-	}{
-		"empty": {
-			keys: []*initproto.SSHUserKey{},
-			want: map[string]string{},
-		},
-		"one key": {
-			keys: []*initproto.SSHUserKey{
-				{Username: "key1", PublicKey: "key1-key"},
-			},
-			want: map[string]string{
-				"key1": "key1-key",
-			},
-		},
-		"two keys": {
-			keys: []*initproto.SSHUserKey{
-				{Username: "key1", PublicKey: "key1-key"},
-				{Username: "key2", PublicKey: "key2-key"},
-			},
-			want: map[string]string{
-				"key1": "key1-key",
-				"key2": "key2-key",
-			},
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			got := sshProtoKeysToMap(tc.keys)
-			assert.Equal(tc.want, got)
-		})
-	}
-}
-
 func TestSetupDisk(t *testing.T) {
 	testCases := map[string]struct {
 		uuid         string
@@ -289,7 +250,7 @@ type stubClusterInitializer struct {
 
 func (i *stubClusterInitializer) InitCluster(
 	context.Context, string, string, []byte, []uint32, bool, []byte, bool,
-	map[string]string, []byte, bool, *logger.Logger,
+	[]byte, bool, *logger.Logger,
 ) ([]byte, error) {
 	return i.initClusterKubeconfig, i.initClusterErr
 }

@@ -37,3 +37,7 @@ Constellation uses the default bucket to store logs. Its [default retention peri
 
 </tabItem>
 </tabs>
+
+## Connect to nodes via SSH
+
+TODO: Explain how to use `kubectl debug`

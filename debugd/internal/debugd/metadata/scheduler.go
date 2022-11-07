@@ -14,17 +14,15 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"go.uber.org/zap"
 )
 
-// Fetcher retrieves other debugd IPs and SSH keys from cloud provider metadata.
+// Fetcher retrieves other debugd IPs from cloud provider metadata.
 type Fetcher interface {
 	Role(ctx context.Context) (role.Role, error)
 	DiscoverDebugdIPs(ctx context.Context) ([]string, error)
-	FetchSSHKeys(ctx context.Context) ([]ssh.UserKey, error)
 	DiscoverLoadbalancerIP(ctx context.Context) (string, error)
 }
 
@@ -32,29 +30,24 @@ type Fetcher interface {
 type Scheduler struct {
 	log        *logger.Logger
 	fetcher    Fetcher
-	ssh        sshDeployer
 	downloader downloader
 }
 
 // NewScheduler returns a new scheduler.
-func NewScheduler(log *logger.Logger, fetcher Fetcher, ssh sshDeployer, downloader downloader) *Scheduler {
+func NewScheduler(log *logger.Logger, fetcher Fetcher, downloader downloader) *Scheduler {
 	return &Scheduler{
 		log:        log,
 		fetcher:    fetcher,
-		ssh:        ssh,
 		downloader: downloader,
 	}
 }
 
-// Start will start the loops for discovering debugd endpoints and ssh keys.
+// Start the loops for discovering debugd endpoints.
 func (s *Scheduler) Start(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	wg.Add(1)
 	go s.discoveryLoop(ctx, wg)
-	// TODO (stateless-ssh): re-enable once
-	// ssh keys can be deployed on readonly rootfs
-	// go s.sshLoop(ctx, wg)
 }
 
 // discoveryLoop discovers new debugd endpoints from cloud-provider metadata periodically.
@@ -91,36 +84,11 @@ func (s *Scheduler) discoveryLoop(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-// sshLoop discovers new ssh keys from cloud provider metadata periodically.
-// TODO (stateless-ssh): re-enable once ssh keys can be deployed on readonly rootfs
-// func (s *Scheduler) sshLoop(ctx context.Context, wg *sync.WaitGroup) {
-// 	defer wg.Done()
-
-// 	ticker := time.NewTicker(debugd.SSHCheckInterval)
-// 	defer ticker.Stop()
-// 	for {
-// 		keys, err := s.fetcher.FetchSSHKeys(ctx)
-// 		if err != nil {
-// 			s.log.With(zap.Error(err)).Errorf("Fetching SSH keys failed")
-// 		} else {
-// 			s.deploySSHKeys(ctx, keys)
-// 		}
-
-// 		select {
-// 		case <-ticker.C:
-// 		case <-ctx.Done():
-// 			return
-// 		}
-// 	}
-// }
-
 // downloadDeployment tries to download deployment from a list of ips and logs errors encountered.
 func (s *Scheduler) downloadDeployment(ctx context.Context, ips []string) (success bool) {
 	for _, ip := range ips {
-		_, err := s.downloader.DownloadDeployment(ctx, ip)
+		err := s.downloader.DownloadDeployment(ctx, ip)
 		if err == nil {
-			// TODO (stateless-ssh): re-enable once ssh keys can be deployed on readonly rootfs
-			// s.deploySSHKeys(ctx, keys)
 			return true
 		}
 		if errors.Is(err, fs.ErrExist) {
@@ -133,22 +101,6 @@ func (s *Scheduler) downloadDeployment(ctx context.Context, ips []string) (succe
 	return false
 }
 
-// TODO (stateless-ssh): re-enable once ssh keys can be deployed on readonly rootfs
-// deploySSHKeys tries to deploy a list of SSH keys and logs errors encountered.
-// func (s *Scheduler) deploySSHKeys(ctx context.Context, keys []ssh.UserKey) {
-// 	for _, key := range keys {
-// 		err := s.ssh.DeployAuthorizedKey(ctx, key)
-// 		if err != nil {
-// 			s.log.With(zap.Error(err), zap.Any("key", key)).Errorf("Deploying SSH key failed")
-// 			continue
-// 		}
-// 	}
-// }
-
 type downloader interface {
-	DownloadDeployment(ctx context.Context, ip string) ([]ssh.UserKey, error)
-}
-
-type sshDeployer interface {
-	DeployAuthorizedKey(ctx context.Context, sshKey ssh.UserKey) error
+	DownloadDeployment(ctx context.Context, ip string) error
 }

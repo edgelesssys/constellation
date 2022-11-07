@@ -24,10 +24,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-const (
-	gcpSSHMetadataKey = "ssh-keys"
-)
-
 var zoneFromRegionRegex = regexp.MustCompile("([a-z]*-[a-z]*[0-9])")
 
 // Client implements the gcp.API interface.
@@ -363,39 +359,11 @@ func extractAliasIPRanges(interfaces []*computepb.NetworkInterface) []string {
 	return ips
 }
 
-// extractSSHKeys extracts SSH keys from GCP instance metadata.
-// reference: https://cloud.google.com/compute/docs/connect/add-ssh-keys .
-func extractSSHKeys(metadata map[string]string) map[string][]string {
-	sshKeysRaw, ok := metadata[gcpSSHMetadataKey]
-	if !ok {
-		// ignore missing metadata entry
-		return map[string][]string{}
-	}
-
-	sshKeyLines := strings.Split(sshKeysRaw, "\n")
-	keys := map[string][]string{}
-	for _, sshKeyRaw := range sshKeyLines {
-		keyParts := strings.SplitN(sshKeyRaw, ":", 2)
-		if len(keyParts) != 2 {
-			continue
-		}
-		username := keyParts[0]
-		keyParts = strings.SplitN(keyParts[1], " ", 3)
-		if len(keyParts) < 2 {
-			continue
-		}
-		keyValue := fmt.Sprintf("%s %s", keyParts[0], keyParts[1])
-		keys[username] = append(keys[username], keyValue)
-	}
-	return keys
-}
-
 // convertToCoreInstance converts a *computepb.Instance to a core.Instance.
 func convertToCoreInstance(in *computepb.Instance, project string, zone string) (metadata.InstanceMetadata, error) {
 	if in.Name == nil {
 		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving instance from compute API client returned invalid instance Name: %v", in.Name)
 	}
-	mdata := extractInstanceMetadata(in.Metadata, "", false)
 	return metadata.InstanceMetadata{
 		Name:          *in.Name,
 		ProviderID:    gcpshared.JoinProviderID(project, zone, *in.Name),
@@ -403,7 +371,6 @@ func convertToCoreInstance(in *computepb.Instance, project string, zone string) 
 		VPCIP:         extractVPCIP(in.NetworkInterfaces),
 		PublicIP:      extractPublicIP(in.NetworkInterfaces),
 		AliasIPRanges: extractAliasIPRanges(in.NetworkInterfaces),
-		SSHKeys:       extractSSHKeys(mdata),
 	}, nil
 }
 

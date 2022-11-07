@@ -9,7 +9,6 @@ package fallback
 import (
 	"context"
 
-	"github.com/edgelesssys/constellation/v2/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 )
 
@@ -29,9 +28,4 @@ func (f Fetcher) DiscoverDebugdIPs(ctx context.Context) ([]string, error) {
 func (f Fetcher) DiscoverLoadbalancerIP(ctx context.Context) (string, error) {
 	// Fallback fetcher does not try to discover loadbalancer IP
 	return "", nil
-}
-
-func (f Fetcher) FetchSSHKeys(ctx context.Context) ([]ssh.UserKey, error) {
-	// Fallback fetcher does not try to fetch ssh keys
-	return nil, nil
 }

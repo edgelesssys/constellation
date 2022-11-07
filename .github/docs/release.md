@@ -32,7 +32,6 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         ```
 
         ```sh
-        gh workflow run build-micro-service-manual.yml --ref release/v$minor -F microService=access-manager -F imageTag=v$ver -F version=$ver --repo edgelesssys/constellation
         gh workflow run build-micro-service-manual.yml --ref release/v$minor -F microService=join-service -F imageTag=v$ver -F version=$ver --repo edgelesssys/constellation
         gh workflow run build-micro-service-manual.yml --ref release/v$minor -F microService=kmsserver -F imageTag=v$ver -F version=$ver --repo edgelesssys/constellation
         gh workflow run build-micro-service-manual.yml --ref release/v$minor -F microService=verification-service -F imageTag=v$ver -F version=$ver --repo edgelesssys/constellation

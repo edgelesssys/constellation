@@ -28,8 +28,8 @@ import (
 func newDeployCmd() *cobra.Command {
 	deployCmd := &cobra.Command{
 		Use:   "deploy",
-		Short: "Deploys a self-compiled bootstrapper binary and SSH keys on the current constellation",
-		Long: `Deploys a self-compiled bootstrapper binary and SSH keys on the current constellation.
+		Short: "Deploys a self-compiled bootstrapper binary on the current constellation",
+		Long: `Deploys a self-compiled bootstrapper binary on the current constellation.
 	Uses config provided by --config and reads constellation config from its default location.
 	If required, you can override the IP addresses that are used for a deployment by specifying "--ips" and a list of IP addresses.
 	Specifying --bootstrapper will upload the bootstrapper from the specified path.`,
@@ -88,7 +88,6 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 			debugdEndpoint:   net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort)),
 			bootstrapperPath: bootstrapperPath,
 			reader:           reader,
-			authorizedKeys:   constellationConfig.SSHUsers,
 		}
 		if err := deployOnEndpoint(cmd.Context(), input); err != nil {
 			return err
@@ -102,10 +101,9 @@ type deployOnEndpointInput struct {
 	debugdEndpoint   string
 	bootstrapperPath string
 	reader           fileToStreamReader
-	authorizedKeys   []config.UserKey
 }
 
-// deployOnEndpoint deploys SSH public keys and a locally built bootstrapper binary to a debugd endpoint.
+// deployOnEndpoint deploys a custom built bootstrapper binary to a debugd endpoint.
 func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	log.Printf("Deploying on %v\n", in.debugdEndpoint)
 	dialCTX, cancel := context.WithTimeout(ctx, debugd.GRPCTimeout)
@@ -116,23 +114,6 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	}
 	defer conn.Close()
 	client := pb.NewDebugdClient(conn)
-
-	if len(in.authorizedKeys) > 0 {
-		log.Println("Warning: Uploading authorized keys is currently disabled.")
-	}
-	// TODO (stateless-ssh): re-enable once ssh keys can be deployed on readonly rootfs.
-	// log.Println("Uploading authorized keys")
-	// pbKeys := []*pb.AuthorizedKey{}
-	// for _, key := range in.authorizedKeys {
-	// 	pbKeys = append(pbKeys, &pb.AuthorizedKey{
-	// 		Username: key.Username,
-	// 		KeyValue: key.PublicKey,
-	// 	})
-	// }
-	// authorizedKeysResponse, err := client.UploadAuthorizedKeys(ctx, &pb.UploadAuthorizedKeysRequest{Keys: pbKeys}, grpc.WaitForReady(true))
-	// if err != nil || authorizedKeysResponse.Status != pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_SUCCESS {
-	// 	return fmt.Errorf("uploading authorized keys to instance %v failed: %v / %w", in.debugdEndpoint, authorizedKeysResponse, err)
-	// }
 
 	stream, err := client.UploadBootstrapper(ctx, grpc.WaitForReady(true))
 	if err != nil {

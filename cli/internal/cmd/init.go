@@ -25,7 +25,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
@@ -103,14 +102,6 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		cmd.Printf("License check failed: %v", err)
 	}
 
-	var sshUsers []*ssh.UserKey
-	for _, user := range config.SSHUsers {
-		sshUsers = append(sshUsers, &ssh.UserKey{
-			Username:  user.Username,
-			PublicKey: user.PublicKey,
-		})
-	}
-
 	validator, err := cloudcmd.NewValidator(provider, config)
 	if err != nil {
 		return err
@@ -141,7 +132,6 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		UseExistingKek:         false,
 		CloudServiceAccountUri: serviceAccURI,
 		KubernetesVersion:      config.KubernetesVersion,
-		SshUserKeys:            ssh.ToProtoSlice(sshUsers),
 		HelmDeployments:        helmDeployments,
 		EnforcedPcrs:           getEnforcedPCRs(provider, config),
 		EnforceIdkeydigest:     getEnforceIDKeyDigest(provider, config),

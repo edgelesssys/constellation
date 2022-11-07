@@ -2,7 +2,6 @@
 
 Core components:
 
-* [access_manager](/access_manager): Contains the access-manager pod used to persist SSH users based on a K8s ConfigMap
 * [cli](/cli): The CLI is used to manage a Constellation cluster
 * [bootstrapper](/bootstrapper): The bootstrapper is a node agent whose most important task is to bootstrap a node
 * [image](/image): Build files for the Constellation disk image

@@ -27,13 +27,3 @@ func TestDiscoverDebugdIPs(t *testing.T) {
 	assert.NoError(err)
 	assert.Empty(ips)
 }
-
-func TestFetchSSHKeys(t *testing.T) {
-	assert := assert.New(t)
-
-	fetcher := Fetcher{}
-	keys, err := fetcher.FetchSSHKeys(context.Background())
-
-	assert.NoError(err)
-	assert.Empty(keys)
-}

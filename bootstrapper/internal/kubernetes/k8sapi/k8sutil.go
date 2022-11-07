@@ -329,11 +329,6 @@ func (k *KubernetesUtil) SetupGCPGuestAgent(kubectl Client, guestAgentDaemonset 
 	return kubectl.Apply(guestAgentDaemonset, true)
 }
 
-// SetupAccessManager deploys the constellation-access-manager for deploying SSH keys on control-plane & worker nodes.
-func (k *KubernetesUtil) SetupAccessManager(kubectl Client, accessManagerConfiguration kubernetes.Marshaler) error {
-	return kubectl.Apply(accessManagerConfiguration, true)
-}
-
 // SetupVerificationService deploys the verification service.
 func (k *KubernetesUtil) SetupVerificationService(kubectl Client, verificationServiceConfiguration kubernetes.Marshaler) error {
 	return kubectl.Apply(verificationServiceConfiguration, true)

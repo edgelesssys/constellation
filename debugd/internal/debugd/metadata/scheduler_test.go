@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgelesssys/constellation/v2/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/stretchr/testify/assert"
@@ -29,20 +28,11 @@ func TestSchedulerStart(t *testing.T) {
 
 	testCases := map[string]struct {
 		fetcher             stubFetcher
-		ssh                 stubSSHDeployer
 		downloader          stubDownloader
 		timeout             time.Duration
-		wantSSHKeys         []ssh.UserKey
 		wantDebugdDownloads []string
 	}{
 		"scheduler works and calls fetcher functions at least once": {},
-		// TODO (stateless-ssh): re-enable once ssh keys can be deployed on readonly rootfs.
-		// "ssh keys are fetched": {
-		// 	fetcher: stubFetcher{
-		// 		keys: []ssh.UserKey{{Username: "test", PublicKey: "testkey"}},
-		// 	},
-		// 	wantSSHKeys: []ssh.UserKey{{Username: "test", PublicKey: "testkey"}},
-		// },
 		"download for discovered debugd ips is started": {
 			fetcher: stubFetcher{
 				ips: []string{"192.0.2.1", "192.0.2.2"},
@@ -59,10 +49,6 @@ func TestSchedulerStart(t *testing.T) {
 		"endpoint discovery can fail": {
 			fetcher: stubFetcher{discoverErr: someErr},
 		},
-		// TODO (stateless-ssh): re-enable once ssh keys can be deployed on readonly rootfs.
-		// "ssh key fetch can fail": {
-		// 	fetcher: stubFetcher{fetchSSHKeysErr: someErr},
-		// },
 	}
 
 	for name, tc := range testCases {
@@ -75,31 +61,23 @@ func TestSchedulerStart(t *testing.T) {
 			scheduler := Scheduler{
 				log:        logger.NewTest(t),
 				fetcher:    &tc.fetcher,
-				ssh:        &tc.ssh,
 				downloader: &tc.downloader,
 			}
 			wg.Add(1)
 			go scheduler.Start(ctx, wg)
 
 			wg.Wait()
-			// TODO (stateless-ssh): re-enable once ssh keys can be deployed on readonly rootfs.
-			// assert.Equal(tc.wantSSHKeys, tc.ssh.sshKeys)
 			assert.Equal(tc.wantDebugdDownloads, tc.downloader.ips)
 			assert.Greater(tc.fetcher.discoverCalls, 0)
-			// TODO (stateless-ssh): re-enable once ssh keys can be deployed on readonly rootfs.
-			// assert.Greater(tc.fetcher.fetchSSHKeysCalls, 0)
 		})
 	}
 }
 
 type stubFetcher struct {
-	discoverCalls     int
-	fetchSSHKeysCalls int
+	discoverCalls int
 
-	ips             []string
-	keys            []ssh.UserKey
-	discoverErr     error
-	fetchSSHKeysErr error
+	ips         []string
+	discoverErr error
 }
 
 func (s *stubFetcher) Role(_ context.Context) (role.Role, error) {
@@ -111,34 +89,16 @@ func (s *stubFetcher) DiscoverDebugdIPs(ctx context.Context) ([]string, error) {
 	return s.ips, s.discoverErr
 }
 
-func (s *stubFetcher) FetchSSHKeys(ctx context.Context) ([]ssh.UserKey, error) {
-	s.fetchSSHKeysCalls++
-	return s.keys, s.fetchSSHKeysErr
-}
-
 func (s *stubFetcher) DiscoverLoadbalancerIP(ctx context.Context) (string, error) {
 	return "", nil
-}
-
-type stubSSHDeployer struct {
-	sshKeys []ssh.UserKey
-
-	deployErr error
-}
-
-func (s *stubSSHDeployer) DeployAuthorizedKey(ctx context.Context, sshKey ssh.UserKey) error {
-	s.sshKeys = append(s.sshKeys, sshKey)
-
-	return s.deployErr
 }
 
 type stubDownloader struct {
 	ips         []string
 	downloadErr error
-	keys        []ssh.UserKey
 }
 
-func (s *stubDownloader) DownloadDeployment(ctx context.Context, ip string) ([]ssh.UserKey, error) {
+func (s *stubDownloader) DownloadDeployment(ctx context.Context, ip string) error {
 	s.ips = append(s.ips, ip)
-	return s.keys, s.downloadErr
+	return s.downloadErr
 }

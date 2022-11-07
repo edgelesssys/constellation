@@ -54,11 +54,6 @@ type Config struct {
 	//   Supported cloud providers and their specific configurations.
 	Provider ProviderConfig `yaml:"provider" validate:"dive"`
 	// description: |
-	//   Create SSH users on Constellation nodes.
-	// examples:
-	//   - value: '[]UserKey{ { Username:  "Alice", PublicKey: "ssh-rsa AAAAB3NzaC...5QXHKW1rufgtJeSeJ8= alice@domain.com" } }'
-	SSHUsers []UserKey `yaml:"sshUsers,omitempty" validate:"dive"`
-	// description: |
 	//   Configuration to apply during constellation upgrade.
 	// examples:
 	//   - value: 'UpgradeConfig{ Image: "", Measurements: Measurements{} }'
@@ -73,16 +68,6 @@ type UpgradeConfig struct {
 	// description: |
 	//   Measurements of the updated image.
 	Measurements Measurements `yaml:"measurements"`
-}
-
-// UserKey describes a user that should be created with corresponding public SSH key.
-type UserKey struct {
-	// description: |
-	//   Username of new SSH user.
-	Username string `yaml:"username" validate:"required"`
-	// description: |
-	//   Public key of new SSH user.
-	PublicKey string `yaml:"publicKey" validate:"required"`
 }
 
 // ProviderConfig are cloud-provider specific configuration values used by the CLI.

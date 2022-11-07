@@ -43,18 +43,6 @@ func TestRetrieveInstances(t *testing.T) {
 						cloud.TagRole: role.ControlPlane.String(),
 						cloud.TagUID:  uid,
 					},
-					Metadata: &computepb.Metadata{
-						Items: []*computepb.Items{
-							{
-								Key:   proto.String("ssh-keys"),
-								Value: proto.String("bob:ssh-rsa bobskey"),
-							},
-							{
-								Key:   proto.String("key-2"),
-								Value: proto.String("value-2"),
-							},
-						},
-					},
 					NetworkInterfaces: []*computepb.NetworkInterface{
 						{
 							Name:          proto.String("nic0"),
@@ -95,7 +83,6 @@ func TestRetrieveInstances(t *testing.T) {
 					AliasIPRanges: []string{"192.0.2.0/16"},
 					PublicIP:      "192.0.2.1",
 					VPCIP:         "192.0.2.0",
-					SSHKeys:       map[string][]string{"bob": {"ssh-rsa bobskey"}},
 				},
 			},
 		},
@@ -119,7 +106,6 @@ func TestRetrieveInstances(t *testing.T) {
 					AliasIPRanges: []string{},
 					PublicIP:      "",
 					VPCIP:         "",
-					SSHKeys:       map[string][]string{"bob": {"ssh-rsa bobskey"}},
 				},
 			},
 		},
@@ -136,7 +122,6 @@ func TestRetrieveInstances(t *testing.T) {
 					AliasIPRanges: []string{"192.0.2.0/16"},
 					PublicIP:      "192.0.2.1",
 					VPCIP:         "",
-					SSHKeys:       map[string][]string{"bob": {"ssh-rsa bobskey"}},
 				},
 			},
 		},
@@ -159,7 +144,6 @@ func TestRetrieveInstances(t *testing.T) {
 					AliasIPRanges: []string{"192.0.2.0/16"},
 					PublicIP:      "192.0.2.1",
 					VPCIP:         "192.0.2.0",
-					SSHKeys:       map[string][]string{"bob": {"ssh-rsa bobskey"}},
 				},
 			},
 		},
@@ -241,23 +225,6 @@ func TestRetrieveInstance(t *testing.T) {
 				AliasIPRanges: []string{"192.0.2.0/16"},
 				PublicIP:      "192.0.2.1",
 				VPCIP:         "192.0.2.0",
-				SSHKeys:       map[string][]string{},
-			},
-		},
-		"retrieve with SSH key works": {
-			client:         stubInstancesClient{},
-			clientInstance: newTestInstance(),
-			clientInstanceMutator: func(i *computepb.Instance) {
-				i.Metadata.Items[0].Key = proto.String("ssh-keys")
-				i.Metadata.Items[0].Value = proto.String("bob:ssh-rsa bobskey")
-			},
-			wantInstance: metadata.InstanceMetadata{
-				Name:          "someInstance",
-				ProviderID:    "gce://someProject/someZone/someInstance",
-				AliasIPRanges: []string{"192.0.2.0/16"},
-				PublicIP:      "192.0.2.1",
-				VPCIP:         "192.0.2.0",
-				SSHKeys:       map[string][]string{"bob": {"ssh-rsa bobskey"}},
 			},
 		},
 		"retrieve with Role works": {
@@ -273,7 +240,6 @@ func TestRetrieveInstance(t *testing.T) {
 				PublicIP:      "192.0.2.1",
 				Role:          role.ControlPlane,
 				VPCIP:         "192.0.2.0",
-				SSHKeys:       map[string][]string{},
 			},
 		},
 		"retrieve fails": {
@@ -293,7 +259,6 @@ func TestRetrieveInstance(t *testing.T) {
 				AliasIPRanges: []string{"192.0.2.0/16"},
 				PublicIP:      "192.0.2.1",
 				VPCIP:         "192.0.2.0",
-				SSHKeys:       map[string][]string{},
 			},
 		},
 		"metadata key is null": {
@@ -306,7 +271,6 @@ func TestRetrieveInstance(t *testing.T) {
 				AliasIPRanges: []string{"192.0.2.0/16"},
 				PublicIP:      "192.0.2.1",
 				VPCIP:         "192.0.2.0",
-				SSHKeys:       map[string][]string{},
 			},
 		},
 		"metadata value is null": {
@@ -319,7 +283,6 @@ func TestRetrieveInstance(t *testing.T) {
 				AliasIPRanges: []string{"192.0.2.0/16"},
 				PublicIP:      "192.0.2.1",
 				VPCIP:         "192.0.2.0",
-				SSHKeys:       map[string][]string{},
 			},
 		},
 		"instance without network ip": {
@@ -332,7 +295,6 @@ func TestRetrieveInstance(t *testing.T) {
 				AliasIPRanges: []string{},
 				PublicIP:      "",
 				VPCIP:         "",
-				SSHKeys:       map[string][]string{},
 			},
 		},
 		"network ip is nil": {
@@ -345,7 +307,6 @@ func TestRetrieveInstance(t *testing.T) {
 				AliasIPRanges: []string{"192.0.2.0/16"},
 				PublicIP:      "192.0.2.1",
 				VPCIP:         "",
-				SSHKeys:       map[string][]string{},
 			},
 		},
 		"network alias cidr is nil": {
@@ -358,7 +319,6 @@ func TestRetrieveInstance(t *testing.T) {
 				AliasIPRanges: []string{},
 				PublicIP:      "192.0.2.1",
 				VPCIP:         "192.0.2.0",
-				SSHKeys:       map[string][]string{},
 			},
 		},
 		"network public ip is nil": {
@@ -371,7 +331,6 @@ func TestRetrieveInstance(t *testing.T) {
 				AliasIPRanges: []string{"192.0.2.0/16"},
 				PublicIP:      "",
 				VPCIP:         "192.0.2.0",
-				SSHKeys:       map[string][]string{},
 			},
 		},
 	}
@@ -924,54 +883,6 @@ func TestClose(t *testing.T) {
 
 	client = Client{instanceAPI: stubInstancesClient{}, subnetworkAPI: stubSubnetworksClient{}, forwardingRulesAPI: stubForwardingRulesClient{CloseErr: someErr}}
 	assert.Error(client.Close())
-}
-
-func TestFetchSSHKeys(t *testing.T) {
-	testCases := map[string]struct {
-		metadata map[string]string
-		wantKeys map[string][]string
-	}{
-		"fetch works": {
-			metadata: map[string]string{"ssh-keys": "bob:ssh-rsa bobskey"},
-			wantKeys: map[string][]string{"bob": {"ssh-rsa bobskey"}},
-		},
-		"google ssh key metadata is ignored": {
-			metadata: map[string]string{"ssh-keys": "bob:ssh-rsa bobskey google-ssh {\"userName\":\"bob\",\"expireOn\":\"2021-06-14T16:59:03+0000\"}"},
-			wantKeys: map[string][]string{"bob": {"ssh-rsa bobskey"}},
-		},
-		"ssh key format error is ignored": {
-			metadata: map[string]string{"ssh-keys": "incorrect-format"},
-			wantKeys: map[string][]string{},
-		},
-		"ssh key format space error is ignored": {
-			metadata: map[string]string{"ssh-keys": "user:incorrect-key-format"},
-			wantKeys: map[string][]string{},
-		},
-		"metadata field empty": {
-			metadata: map[string]string{"ssh-keys": ""},
-			wantKeys: map[string][]string{},
-		},
-		"metadata field missing": {
-			metadata: map[string]string{},
-			wantKeys: map[string][]string{},
-		},
-		"multiple keys": {
-			metadata: map[string]string{"ssh-keys": "bob:ssh-rsa bobskey\nalice:ssh-rsa alicekey"},
-			wantKeys: map[string][]string{
-				"bob":   {"ssh-rsa bobskey"},
-				"alice": {"ssh-rsa alicekey"},
-			},
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			keys := extractSSHKeys(tc.metadata)
-			assert.Equal(tc.wantKeys, keys)
-		})
-	}
 }
 
 type stubInstanceIterator struct {

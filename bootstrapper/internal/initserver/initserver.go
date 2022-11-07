@@ -131,7 +131,6 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		req.EnforceIdkeydigest,
 		s.issuerWrapper.IDKeyDigest(),
 		s.issuerWrapper.VMType() == vmtype.AzureCVM,
-		sshProtoKeysToMap(req.SshUserKeys),
 		req.HelmDeployments,
 		req.ConformanceMode,
 		s.log,
@@ -194,14 +193,6 @@ func (i *IssuerWrapper) IDKeyDigest() []byte {
 	return i.idkeydigest
 }
 
-func sshProtoKeysToMap(keys []*initproto.SSHUserKey) map[string]string {
-	keyMap := make(map[string]string)
-	for _, key := range keys {
-		keyMap[key.Username] = key.PublicKey
-	}
-	return keyMap
-}
-
 func deriveMeasurementValues(masterSecret, hkdfSalt []byte) (salt, clusterID []byte, err error) {
 	salt, err = crypto.GenerateRandomBytes(crypto.RNGLengthDefault)
 	if err != nil {
@@ -231,7 +222,6 @@ type ClusterInitializer interface {
 		enforceIDKeyDigest bool,
 		idKeyDigest []byte,
 		azureCVM bool,
-		sshUserKeys map[string]string,
 		helmDeployments []byte,
 		conformanceMode bool,
 		log *logger.Logger,

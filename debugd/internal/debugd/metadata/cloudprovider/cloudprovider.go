@@ -16,7 +16,6 @@ import (
 	gcpcloud "github.com/edgelesssys/constellation/v2/internal/cloud/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	qemucloud "github.com/edgelesssys/constellation/v2/internal/cloud/qemu"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 )
 
@@ -29,7 +28,7 @@ type providerMetadata interface {
 	GetLoadBalancerEndpoint(ctx context.Context) (string, error)
 }
 
-// Fetcher checks the metadata service to search for instances that were set up for debugging and cloud provider specific SSH keys.
+// Fetcher checks the metadata service to search for instances that were set up for debugging.
 type Fetcher struct {
 	metaAPI providerMetadata
 }
@@ -129,21 +128,4 @@ func (f *Fetcher) DiscoverLoadbalancerIP(ctx context.Context) (string, error) {
 	}
 
 	return lbIP, nil
-}
-
-// FetchSSHKeys will query the metadata of the current instance and deploys any SSH keys found.
-func (f *Fetcher) FetchSSHKeys(ctx context.Context) ([]ssh.UserKey, error) {
-	self, err := f.metaAPI.Self(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("retrieving ssh keys from cloud provider metadata: %w", err)
-	}
-
-	keys := []ssh.UserKey{}
-	for username, userKeys := range self.SSHKeys {
-		for _, keyValue := range userKeys {
-			keys = append(keys, ssh.UserKey{Username: username, PublicKey: keyValue})
-		}
-	}
-
-	return keys, nil
 }

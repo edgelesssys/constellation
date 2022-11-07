@@ -21,8 +21,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/metadata/fallback"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/server"
 	platform "github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/ssh"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/user"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 )
@@ -42,7 +40,6 @@ func main() {
 	fs := afero.NewOsFs()
 	streamer := bootstrapper.NewFileStreamer(fs)
 	serviceManager := deploy.NewServiceManager(log.Named("serviceManager"))
-	ssh := ssh.NewAccess(log, user.NewLinuxUserManager(fs))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

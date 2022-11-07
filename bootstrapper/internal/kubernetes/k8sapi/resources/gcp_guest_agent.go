@@ -177,7 +177,7 @@ func NewGCPGuestAgentDaemonset() *GCPGuestAgentDaemonset {
 	}
 }
 
-// Marshal marshals the access-manager deployment as YAML documents.
+// Marshal marshals the gcp guest agent deployment as YAML documents.
 func (c *GCPGuestAgentDaemonset) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(c)
 }
