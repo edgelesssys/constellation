@@ -1,6 +1,6 @@
 # Terminate your cluster
 
-You can terminate your cluster using the CLI. For this, you need the state file of your running cluster named `constellation-state.json` in the current directory.
+You can terminate your cluster using the CLI. For this, you need the Terraform state file named `terraform.tfstate` in the current directory.
 
 :::danger
 
