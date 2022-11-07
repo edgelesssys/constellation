@@ -21,14 +21,12 @@ To allow for fine-grained configuration of your cluster and cloud environment, C
 Altogether, the following files are generated during the creation of a Constellation cluster and stored in the current workspace:
 
 * a configuration file
-* a state file
 * an ID file
 * a Base64-encoded master secret
+* Terraform artifacts such as `terraform.tfstate`
 * a Kubernetes `kubeconfig` file.
 
-Constellation must store the state of its created infrastructure and configuration.
-This state is used by Constellation to map real-world resources to your configuration and keep track of metadata.
-This state is stored in a local file named `constellation-state.json`.
+Constellation uses Terraform for infrastructure management. No setup of Terraform is needed. The CLI automatically fetches a copy of Terraform when required.
 
 After the creation of your cluster, the CLI will provide you with a Kubernetes `kubeconfig` file.
 This file grants you access to your Kubernetes cluster and configures the [kubectl](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/) tool.
@@ -53,7 +51,7 @@ Post-installation the CLI provides a configuration for [accessing the cluster us
 The `kubeconfig` file provides the credentials and configuration for connecting and authenticating to the API server.
 Once configured, orchestrate the Kubernetes cluster via `kubectl`.
 
-Keep the state files in the workspace directory such as the `constellation-state.json` for the CLI to be able to manage your cluster.
+Make sure to keep the state files such as `terraform.tfstate` in the workspace directory to be able to manage your cluster later on.
 Without it, you won't be able to modify or terminate your cluster.
 
 After the initialization, the CLI will present you with a couple of tokens:
