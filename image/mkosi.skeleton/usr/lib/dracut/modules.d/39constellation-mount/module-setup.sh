@@ -17,6 +17,11 @@ install_and_enable_unit() {
         "${systemdsystemconfdir}/${target}.wants/${unit}"
 }
 
+install_path() {
+    local dir="$1"; shift
+    mkdir -p "${initdir}/${dir}"
+}
+
 install() {
     inst_multiple \
         bash
@@ -60,4 +65,9 @@ install() {
         "/usr/sbin/aws-nvme-disk"
     install_and_enable_unit "aws-nvme-disk.service" \
         "basic.target"
+
+    # TLS / CA store in initramfs
+    install_path /etc/pki/tls/certs/
+    inst_simple /etc/pki/tls/certs/ca-bundle.crt \
+        /etc/pki/tls/certs/ca-bundle.crt
 }
