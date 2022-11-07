@@ -97,8 +97,8 @@ resource "google_compute_instance_group_manager" "instance_group_manager" {
 
   lifecycle {
     ignore_changes = [
-      target_size, # autoscaling modifies the instance count externally
-      version,     # update procedure modifies the instance template externally
+      target_size, # required. autoscaling modifies the instance count externally
+      version,     # required. update procedure modifies the instance template externally
     ]
   }
 }

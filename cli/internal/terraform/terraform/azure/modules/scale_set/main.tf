@@ -81,8 +81,8 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
 
   lifecycle {
     ignore_changes = [
-      instances,       # autoscaling modifies the instance count externally
-      source_image_id, # update procedure modifies the image id externally
+      instances,       # required. autoscaling modifies the instance count externally
+      source_image_id, # required. update procedure modifies the image id externally
     ]
   }
 }

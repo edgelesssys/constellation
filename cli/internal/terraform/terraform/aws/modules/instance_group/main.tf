@@ -40,8 +40,8 @@ resource "aws_launch_template" "launch_template" {
   lifecycle {
     create_before_destroy = true
     ignore_changes = [
-      default_version, # update procedure creates new versions of the launch template
-      image_id,        # update procedure modifies the image id externally
+      default_version, # required. update procedure creates new versions of the launch template
+      image_id,        # required. update procedure modifies the image id externally
     ]
   }
 }
@@ -82,10 +82,10 @@ resource "aws_autoscaling_group" "autoscaling_group" {
   lifecycle {
     create_before_destroy = true
     ignore_changes = [
-      launch_template.0.version, # update procedure creates new versions of the launch template
-      min_size,                  # autoscaling modifies the instance count externally
-      max_size,                  # autoscaling modifies the instance count externally
-      desired_capacity,          # autoscaling modifies the instance count externally
+      launch_template.0.version, # required. update procedure creates new versions of the launch template
+      min_size,                  # required. autoscaling modifies the instance count externally
+      max_size,                  # required. autoscaling modifies the instance count externally
+      desired_capacity,          # required. autoscaling modifies the instance count externally
     ]
   }
 }
