@@ -135,10 +135,9 @@ Follow Google's guide on [understanding](https://cloud.google.com/iam/docs/under
 </tabItem>
 <tabItem value="aws" label="AWS">
 
-In the following steps you will use Constellation to perform two tasks: create policies & infrastructure.
+In the following steps you will use Constellation to perform two tasks: create the infrastructure and create roles for cluster nodes. Both of these actions can be performed by different users, e.g., an administrator to create roles and a DevOps engieer to create the infrastructure. We therefore provide a set of permissions for each.
 
-To create the AWS IAM policies, make sure your
-user has the following minimal set of permissions:
+To create the AWS IAM policies, your user requires the following minimal set of permissions:
 
 ```json
 {

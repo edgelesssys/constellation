@@ -26,6 +26,13 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     ```
 
     </tabItem>
+    <tabItem value="aws" label="AWS">
+
+    ```bash
+    constellation config generate aws
+    ```
+
+    </tabItem>
     </tabs>
 
     This creates the file `constellation-conf.yaml` in your current working directory.
