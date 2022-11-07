@@ -23,7 +23,7 @@ RUN rm -rf ./hack/
 
 # Build the access_manager
 WORKDIR /constellation/access_manager/
-RUN CGO_ENABLED=0 go build -o /constellation/build/access_manager -ldflags "-s -w" .
+RUN --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=0 go build -o /constellation/build/access_manager -ldflags "-s -w" .
 
 # Copy the access_manager from build into a scratch container, which is eventually deployed into the cluster
 FROM scratch as release
