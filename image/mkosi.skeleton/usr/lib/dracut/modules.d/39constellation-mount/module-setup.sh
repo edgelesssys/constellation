@@ -17,11 +17,9 @@ install_and_enable_unit() {
         "${systemdsystemconfdir}/${target}.wants/${unit}"
 }
 
-install_dir_recursive() {
-    dir="$1"; shift
-    insert_location=$(dirname "${initdir}${dir}")
-    mkdir -p "${insert_location}"
-    cp -r "${dir}" "${insert_location}/"
+install_path() {
+    local dir="$1"; shift
+    mkdir -p "${initdir}/${dir}"
 }
 
 install() {
@@ -69,6 +67,7 @@ install() {
         "basic.target"
 
     # TLS / CA store in initramfs
-    install_dir_recursive /etc/pki
-    install_dir_recursive /usr/share/pki
+    install_path /etc/pki/tls/certs/
+    inst_simple /etc/pki/tls/certs/ca-bundle.crt \
+        /etc/pki/tls/certs/ca-bundle.crt
 }
