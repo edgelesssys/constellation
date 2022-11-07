@@ -78,6 +78,9 @@ outputs:
   azureImageDefinition:
     description: "Azure image definition"
     value: ${{ steps.azure.outputs.imageDefinition }}
+  azureImageOffer:
+    description: "Azure image offer"
+    value: ${{ steps.azure.outputs.imageOffer }}
   azureImageVersion:
     description: "Azure image version"
     value: ${{ steps.azure.outputs.imageVersion }}
