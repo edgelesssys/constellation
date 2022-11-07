@@ -17,6 +17,13 @@ install_and_enable_unit() {
         "${systemdsystemconfdir}/${target}.wants/${unit}"
 }
 
+install_dir_recursive() {
+    dir="$1"; shift
+    insert_location=$(dirname "${initdir}${dir}")
+    mkdir -p "${insert_location}"
+    cp -r "${dir}" "${insert_location}/"
+}
+
 install() {
     inst_multiple \
         bash
@@ -60,4 +67,8 @@ install() {
         "/usr/sbin/aws-nvme-disk"
     install_and_enable_unit "aws-nvme-disk.service" \
         "basic.target"
+
+    # TLS / CA store in initramfs
+    install_dir_recursive /etc/pki
+    install_dir_recursive /usr/share/pki
 }
