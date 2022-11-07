@@ -41,9 +41,9 @@ Follow the instructions on how to [install the Constellation CSI driver](#instal
 
 :::caution
 
-Storage isn't yet implemented for AWS. If you require this feature, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md)!
+Confidential storage isn't yet implemented for AWS. If you require this feature, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md)!
 
-Other CSI drivers that are compatible with Kubernetes on AWS can be used.
+You may use other (non-confidential) CSI drivers that are compatible with Kubernetes on AWS.
 
 :::
 

@@ -169,18 +169,18 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     * **region**: The name of your chosen AWS data center region, e.g., `us-east-2`.
 
-        Constellation OS images are only replicated to the following regions:
+        Constellation OS images are currently replicated to the following regions:
         * `eu-central-1`
         * `us-east-2`
         * `ap-south-1`
 
-        If you require the OS image to be available in a new region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+AWS+image+region:+xx-xxxx-x).
+        If you require the OS image to be available in another region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+AWS+image+region:+xx-xxxx-x).
 
-        You can find a list of all [AWS regions in AWS' documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
+        You can find a list of all [regions in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
 
     * **zone**: The name of your chosen AWS data center availability zone, e.g., `us-east-2a`.
 
-        Learn more about [availability zones in AWS' documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones).
+        Learn more about [availability zones in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones).
 
     * **image**: TODO: How do customers find these?
 
@@ -194,13 +194,13 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     * **iamProfileControlPlane**: The name of a profile attached to all control plane nodes.
 
-        Use our provided Terraform script to generate the necessary profile. It will be provided as Terraform output variable: `control_plane_instance_profile`.
+        Use the provided Terraform script to generate the necessary profile. It will be provided as Terraform output variable: `control_plane_instance_profile`.
 
         Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/blob/main/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.control_plane_policy`.
 
     * **iamProfileWorkerNodes**: The name of a profile attached to all control plane nodes.
 
-        Use our provided Terraform script to generate the necessary profile. It will be provided as Terraform output variable: `worker_nodes_instance_profile`.
+        Use the provided Terraform script to generate the necessary profile. It will be provided as Terraform output variable: `worker_nodes_instance_profile`.
 
         Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/blob/main/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.worker_node_policy`.
 

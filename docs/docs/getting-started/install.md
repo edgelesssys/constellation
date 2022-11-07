@@ -11,7 +11,7 @@ Make sure the following requirements are met:
 - Your machine is running Linux or macOS
 - You have admin rights on your machine
 - [kubectl](https://kubernetes.io/docs/tasks/tools/) is installed
-- Your CSP is Microsoft Azure, Google Cloud Platform (GCP) or Amazon Web Services (AWS)
+- Your CSP is Microsoft Azure, Google Cloud Platform (GCP), or Amazon Web Services (AWS)
 
 ## Install the Constellation CLI
 
@@ -175,8 +175,8 @@ user has the following minimal set of permissions:
 }
 ```
 
-To create the infrastructure you can either use a predefined role from Amazon,
-such as `AmazonEC2FullAccess`, or use the following set for a minimal set of permissions:
+To create the infrastructure, you can either use a predefined role from Amazon,
+such as `AmazonEC2FullAccess`, or use the following minimal set of permissions:
 
 ```json
 {
@@ -262,7 +262,7 @@ such as `AmazonEC2FullAccess`, or use the following set for a minimal set of per
 }
 ```
 
-Follow Amazons' guide on [understanding](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html) and [managing policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html), and [roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_iam-tags.html).
+Follow Amazon's guide on [understanding](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html) and [managing policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html), and [roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_iam-tags.html).
 
 </tabItem>
 </tabs>
