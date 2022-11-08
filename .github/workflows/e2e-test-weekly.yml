@@ -18,7 +18,7 @@ jobs:
       max-parallel: 5
       matrix:
         test: ["sonobuoy full", "autoscaling", "k-bench"]
-        provider: ["gcp", "azure"]
+        provider: ["gcp", "azure", "aws"]
         version: ["1.23", "1.24", "1.25"]
         exclude:
           # Autoscaling test runs only on latest version.
@@ -31,8 +31,15 @@ jobs:
             version: "1.23"
           - test: "k-bench"
             version: "1.24"
-
+          # Currently not supported on AWS.
+          - test: "autoscaling"
+            provider: "aws"
+          - test: "k-bench"
+            provider: "aws"
     runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Check out repository
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0

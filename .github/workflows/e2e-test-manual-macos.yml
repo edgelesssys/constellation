@@ -85,6 +85,9 @@ jobs:
   e2e-test-manual-darwin:
     name: "e2e Test Manual (macOS)"
     runs-on: macos-12
+    permissions:
+      id-token: write
+      contents: read
     needs: build-bootstrapper-linux
     if: ${{ always() && !cancelled() && (needs.build-bootstrapper-linux.result == 'success' || needs.build-bootstrapper-linux.result == 'skipped') }}
     steps:
