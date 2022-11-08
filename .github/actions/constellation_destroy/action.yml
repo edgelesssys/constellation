@@ -18,8 +18,15 @@ runs:
         PV_DELETION_TIMEOUT: "120" # 2 minutes timeout for pv deletion
       run: |
         ELAPSED=0
-        kubectl delete pvc --all --wait=true || true
         echo "::group::Wait for PV deletion"
+
+        # Scrap namespaces that contain PVCs
+        for namespace in `kubectl get namespace --no-headers=true -o custom-columns=":metadata.name"`; do
+          if [ `kubectl get pvc -n $namespace --no-headers=true -o custom-columns=":metadata.name" | wc -l` -gt 0 ]; then
+            kubectl delete namespace $namespace --wait
+          fi
+        done
+
         until [ "$(kubectl get pv -o json | jq '.items | length')" == "0" ] || [ $ELAPSED -gt $PV_DELETION_TIMEOUT ];
         do
           echo $(kubectl get pv -o json | jq '.items | length') PV remaining..
