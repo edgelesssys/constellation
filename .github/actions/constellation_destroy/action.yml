@@ -1,29 +1,36 @@
 name: Constellation destroy
 description: "Destroy a running Constellation cluster."
 
+inputs:
+  kubeconfig:
+    description: "The kubeconfig for the cluster."
+    required: true
+
 runs:
   using: "composite"
   steps:
-    - name: Delete PVs
+    - name: Delete persistent volumes
+      if: inputs.kubeconfig != ''
+      continue-on-error: true
       shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+        PV_DELETION_TIMEOUT: "120" # 2 minutes timeout for pv deletion
       run: |
         ELAPSED=0
         kubectl delete pvc --all --wait=true || true
         echo "::group::Wait for PV deletion"
         until [ "$(kubectl get pv -o json | jq '.items | length')" == "0" ] || [ $ELAPSED -gt $PV_DELETION_TIMEOUT ];
         do
-        echo $(kubectl get pv -o json | jq '.items | length') PV remaining..
-        sleep 1
-        ELAPSED=$((ELAPSED+1))
+          echo $(kubectl get pv -o json | jq '.items | length') PV remaining..
+          sleep 1
+          ELAPSED=$((ELAPSED+1))
         done
         if [ $ELAPSED -gt $PV_DELETION_TIMEOUT ]; then
-        echo "Timed out waiting for PV deletion.."
-        exit 1
+          echo "Timed out waiting for PV deletion.."
+          exit 1
         fi
         echo "::endgroup::"
-      env:
-        KUBECONFIG: ${{ github.workspace }}/constellation-admin.conf
-        PV_DELETION_TIMEOUT: "120" # 2 minutes timeout for pv deletion
 
     - name: Constellation terminate
       run: constellation terminate --yes
