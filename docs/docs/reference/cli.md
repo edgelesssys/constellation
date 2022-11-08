@@ -234,6 +234,7 @@ constellation mini down [flags]
 
 ```
   -h, --help   help for down
+  -y, --yes    terminate the cluster without further confirmation
 ```
 
 ### Options inherited from parent commands
