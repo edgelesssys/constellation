@@ -189,9 +189,9 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
         Learn more about [availability zones in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones).
 
-    * **image**: TODO: How do customers find these?
+    * **image**: The ID of the amazon machine image (AMI) the Constellation nodes will use:
 
-        Constellation OS images are available with the following IDs:
+        Constellation OS images are available with the following IDs: TODO: Fill in AMI IDs once released.
 
         | AMI | Region |
         | - | - |
@@ -225,8 +225,6 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     ```bash
     constellation config fetch-measurements
     ```
-
-    TODO: Is this supported for AWS? Or do we need a hint?
 
     For details, see the [verification section](../workflows/verify-cluster.md).
 
