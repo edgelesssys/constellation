@@ -32,7 +32,7 @@ The [CVMs available in GCP](https://cloud.google.com/compute/confidential-vm/doc
 
 ## Amazon Web Services (AWS)
 
-AWS currently doesn't offer CVMs. AWS proprietary Nitro Enclaves offer some related features but [are explicitly not designed to keep AWS itself out](https://aws.amazon.com/blogs/security/confidential-computing-an-aws-perspective/). Unfortunately, the Nitro Enclaves' architecture isn't designed to run entire Kubernetes nodes inside them. Therefore, Constellation uses regular EC2 instances on the AWS [Nitro](https://aws.amazon.com/ec2/nitro/) platform. Currently, AWS doesn't offer runtime encryption or attestation primitives for the Nitro EC2 VMs. Instead, AWS provides attestation statements via the [NitroTPM], which is a vTPM managed by the Nitro-Hypervisor. Hence, the hypervisor is currently part of Constellation's TCB.
+AWS currently doesn't offer CVMs. AWS proprietary Nitro Enclaves offer some related features but [are explicitly not designed to keep AWS itself out](https://aws.amazon.com/blogs/security/confidential-computing-an-aws-perspective/). Besides, they aren't suitable for running entire Kubernetes nodes inside them. Therefore, Constellation uses regular EC2 instances on AWS [Nitro](https://aws.amazon.com/ec2/nitro/) without runtime encryption. Attestation is based on the [NitroTPM], which is a vTPM managed by the Nitro hypervisor. Hence, the hypervisor is currently part of Constellation's TCB.
 
 ## OpenStack
 

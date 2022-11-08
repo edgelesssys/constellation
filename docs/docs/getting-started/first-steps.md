@@ -199,15 +199,15 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
         | `ami-0xxxxxxxxxxxxxxxx` | `us-east-2` |
         | `ami-0xxxxxxxxxxxxxxxx` | `ap-south-1` |
 
-    * **iamProfileControlPlane**: The name of a profile attached to all control plane nodes.
+    * **iamProfileControlPlane**: The name of an IAM instance profile attached to all control-plane nodes.
 
-        Use the [provided Terraform script](https://github.com/edgelesssys/constellation/blob/main/hack/terraform/aws/iam) to generate the necessary profile. It will be provided as Terraform output variable: `control_plane_instance_profile`.
+        Use the [provided Terraform script](https://github.com/edgelesssys/constellation/blob/main/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `control_plane_instance_profile`.
 
         Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/blob/main/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.control_plane_policy`.
 
-    * **iamProfileWorkerNodes**: The name of a profile attached to all control plane nodes.
+    * **iamProfileWorkerNodes**: The name of an IAM instance profile attached to all worker nodes.
 
-        Use the [provided Terraform script](https://github.com/edgelesssys/constellation/blob/main/hack/terraform/aws/iam) to generate the necessary profile. It will be provided as Terraform output variable: `worker_nodes_instance_profile`.
+        Use the [provided Terraform script](https://github.com/edgelesssys/constellation/blob/main/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `worker_nodes_instance_profile`.
 
         Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/blob/main/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.worker_node_policy`.
 
