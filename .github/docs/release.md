@@ -3,7 +3,8 @@
 This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers accordingly.
 
 1. Merge ready PRs
-2. Create docs release (new major or minor release)
+2. Search the code for TODOs and FIXMEs that should be resolved before releasing.
+3. Create docs release (new major or minor release)
 
     ```sh
     cd docs
@@ -12,8 +13,8 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
     # push upstream via PR
     ```
 
-3. Create a new branch `release/v1.3` (new minor version) or use the existing one (new patch version)
-4. On this branch, prepare the following things:
+4. Create a new branch `release/v1.3` (new minor version) or use the existing one (new patch version)
+5. On this branch, prepare the following things:
     1. (new patch version) `cherry-pick` (only) the required commits from `main`
     2. Use [Build micro-service manual](https://github.com/edgelesssys/constellation/actions/workflows/build-micro-service-manual.yml) and run the pipeline once for each micro-service with the following parameters:
         * branch: `release/v1.3`
@@ -90,14 +91,14 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         ```
 
         * The previous step will create a draft release. Check build output for link to draft release. Review & approve.
-5. Follow [export flow (INTERNAL)](https://github.com/edgelesssys/wiki/blob/master/documentation/constellation/customer-onboarding.md#manual-export-and-import) to make image available in S3 for trusted launch users.
-6. To bring updated version numbers and other changes (if any) to main, create a new branch `feat/release` from `release/v1.3`, rebase it onto main, and create a PR to main
-7. Milestones management
+6. Follow [export flow (INTERNAL)](https://github.com/edgelesssys/wiki/blob/master/documentation/constellation/customer-onboarding.md#manual-export-and-import) to make image available in S3 for trusted launch users.
+7. To bring updated version numbers and other changes (if any) to main, create a new branch `feat/release` from `release/v1.3`, rebase it onto main, and create a PR to main
+8. Milestones management
    1. Create a new milestone for the next release
    2. Add the next release manager and an approximate release date to the milestone description
    3. Close the milestone for the release
    4. Move open issues and PRs from closed milestone to next milestone
-8. If the release is a minor version release, create an empty commit on main and tag it as the start of the next pre-release phase.
+9. If the release is a minor version release, create an empty commit on main and tag it as the start of the next pre-release phase.
 
     ```sh
     nextMinorVer=$(echo $ver | awk -F. -v OFS=. '{$2 += 1 ; print}')
