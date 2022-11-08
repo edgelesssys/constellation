@@ -80,13 +80,13 @@ runs:
         path: "k-bench/out/kbench-constellation-${{ inputs.cloudProvider }}"
         name: "k-bench-constellation-${{ inputs.cloudProvider }}"
 
-    - name: Assume AWS S3 benchmark update role
+    - name: Assume AWS role to retrieve and update benchmarks in S3
       uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1.7.0
       with:
         role-to-assume: arn:aws:iam::795746500882:role/GithubActionUpdateBenchmarks
         aws-region: us-east-2
 
-    - name: Get previous benchmark records from s3
+    - name: Get previous benchmark records from S3
       shell: bash
       run: |
         S3_PATH=s3://${PUBLIC_BUCKET_NAME}/benchmarks
