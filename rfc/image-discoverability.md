@@ -127,5 +127,10 @@ This allows customers to upload images to their own cloud subscription and use t
 
 ## Future extensions
 
+This is a list of possible future extensions that are not part of this RFC.
+Their implementation is not guaranteed.
+They are listed here to ensure that the design of this RFC is flexible enough to support them.
+
 - A lookup table for available image versions might be added in the future.
 - The lookup table can be signed using a signing key that is only used for that purpose.
+- User managed repositories can be added in the future. This would allow users to reupload Constellation OS images to their cloud subscription and host their own lookup tables that resolve the same image versions to image references pointing to self managed images. An optional `repository` field could be added to the configuration file to allow users to specify the repository to use for image discovery.
