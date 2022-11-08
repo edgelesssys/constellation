@@ -109,7 +109,7 @@ runs:
         KBENCH_RESULTS: k-bench/out/
         # Working directory containing the previous results as JSON and to contain the graphs
         BDIR: benchmarks
-        # Paths to benchmark results as JSON of the previous run and the current run.
+        # Paths to benchmark results as JSON of the previous run and the current run
         PREV_BENCH: benchmarks/constellation-${{ inputs.cloudProvider }}-previous.json
         CURR_BENCH: benchmarks/constellation-${{ inputs.cloudProvider }}.json
         CSP: ${{ inputs.cloudProvider }}
