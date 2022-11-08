@@ -244,6 +244,6 @@ module "instance_group_worker_nodes" {
   state_disk_size      = var.state_disk_size
   subnetwork           = module.public_private_subnet.private_subnet_id
   target_group_arns    = []
-  security_groups      = []
+  security_groups      = [aws_security_group.security_group.id]
   iam_instance_profile = var.iam_instance_profile_worker_nodes
 }
