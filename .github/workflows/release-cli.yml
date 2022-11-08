@@ -60,6 +60,7 @@ jobs:
         uses: ./.github/actions/login_azure
         with:
           azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
+
       - name: Login to GCP
         uses: ./.github/actions/login_gcp
         with:

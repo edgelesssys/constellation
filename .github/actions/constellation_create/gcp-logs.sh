@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-# Usage: ./gcp-logs.sh
-
 CONTROL_INSTANCE_GROUP=$(terraform show -json | jq -r .'values.root_module.child_modules[] | select(.address == "module.instance_group_control_plane") | .resources[0].values.base_instance_name' )
 WORKER_INSTANCE_GROUP=$(terraform show -json | jq -r .'values.root_module.child_modules[] | select(.address == "module.instance_group_worker") | .resources[0].values.base_instance_name')
 ZONE=$(terraform show -json | jq -r .'values.root_module.child_modules[] | select(.address == "module.instance_group_control_plane") | .resources[0].values.zone' )
