@@ -18,6 +18,18 @@ variable "lb_arn" {
   description = "ARN of the load balancer."
 }
 
+variable "healthcheck_protocol" {
+  type        = string
+  default     = "TCP"
+  description = "Type of the load balancer target."
+}
+
+variable "healthcheck_path" {
+  type        = string
+  default     = ""
+  description = "Path for health check."
+}
+
 variable "tags" {
   type        = map(string)
   description = "The tags to add to the loadbalancer."

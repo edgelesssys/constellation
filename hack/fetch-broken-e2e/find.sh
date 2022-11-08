@@ -9,5 +9,5 @@ then
 else
     printf "Statefile found. You should run:\n\n"
     printf "cd %s\n" $TO_DELETE
-    printf "constellation terminate\n\n"
+    printf "constellation terminate --yes\n\n"
 fi

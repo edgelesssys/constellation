@@ -106,6 +106,7 @@ export AZURE_SECURITY_TYPE=ConfidentialVM # or TrustedLaunch
 export AZURE_RESOURCE_GROUP_NAME= # e.g. "constellation-images"
 
 export AZURE_REGION=northeurope
+export AZURE_REPLICATION_REGIONS=
 export AZURE_DISK_NAME=constellation-$(date +%s)
 export AZURE_SNAPSHOT_NAME=${AZURE_DISK_NAME}
 export AZURE_RAW_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~36/image.raw

@@ -41,6 +41,7 @@ func (s *Server) ListenAndServe(port string) error {
 	mux.Handle("/peers", http.HandlerFunc(s.listPeers))
 	mux.Handle("/log", http.HandlerFunc(s.postLog))
 	mux.Handle("/pcrs", http.HandlerFunc(s.exportPCRs))
+	mux.Handle("/endpoint", http.HandlerFunc(s.getEndpoint))
 
 	server := http.Server{
 		Handler: mux,
@@ -75,7 +76,7 @@ func (s *Server) listSelf(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, peer := range peers {
-		if peer.PublicIP == remoteIP {
+		if peer.VPCIP == remoteIP {
 			w.Header().Set("Content-Type", "application/json")
 			if err := json.NewEncoder(w).Encode(peer); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -108,6 +109,43 @@ func (s *Server) listPeers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Infof("Request successful")
+}
+
+// getEndpoint returns the IP address of the first control-plane instance.
+// This allows us to fake a load balancer for QEMU instances.
+func (s *Server) getEndpoint(w http.ResponseWriter, r *http.Request) {
+	log := s.log.With(zap.String("peer", r.RemoteAddr))
+	log.Infof("Serving GET request for /endpoint")
+
+	net, err := s.virt.LookupNetworkByName(s.network)
+	if err != nil {
+		log.With(zap.Error(err)).Errorf("Failed to lookup network")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer net.Free()
+
+	leases, err := net.GetDHCPLeases()
+	if err != nil {
+		log.With(zap.Error(err)).Errorf("Failed to get DHCP leases")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	for _, lease := range leases {
+		if strings.HasPrefix(lease.Hostname, "control-plane") &&
+			strings.HasSuffix(lease.Hostname, "0") {
+			w.Header().Set("Content-Type", "application/json")
+			if err := json.NewEncoder(w).Encode(lease.IPaddr); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			log.Infof("Request successful")
+			return
+		}
+	}
+
+	log.Errorf("Failed to find control-plane peer in active leases")
+	http.Error(w, "No matching peer found", http.StatusNotFound)
 }
 
 // postLog writes implements cloud-logging for QEMU instances.
@@ -178,7 +216,7 @@ func (s *Server) exportPCRs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, peer := range peers {
-		if peer.PublicIP == remoteIP {
+		if peer.VPCIP == remoteIP {
 			nodeName = peer.Name
 		}
 	}
@@ -210,7 +248,6 @@ func (s *Server) listAll() ([]metadata.InstanceMetadata, error) {
 			Name:       lease.Hostname,
 			Role:       instanceRole,
 			VPCIP:      lease.IPaddr,
-			PublicIP:   lease.IPaddr,
 			ProviderID: "qemu:///hostname/" + lease.Hostname,
 		})
 	}

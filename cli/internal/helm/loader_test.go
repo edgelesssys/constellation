@@ -50,6 +50,7 @@ func TestTemplate(t *testing.T) {
 		enforceIDKeyDigest bool
 		valuesModifier     func(map[string]any) error
 		ccmImage           string
+		cnmImage           string
 	}{
 		"GCP": {
 			csp:                cloudprovider.GCP,
@@ -62,6 +63,7 @@ func TestTemplate(t *testing.T) {
 			enforceIDKeyDigest: true,
 			valuesModifier:     prepareAzureValues,
 			ccmImage:           "ccmImageForAzure",
+			cnmImage:           "cnmImageForAzure",
 		},
 		"QEMU": {
 			csp:                cloudprovider.QEMU,
@@ -75,7 +77,7 @@ func TestTemplate(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			chartLoader := ChartLoader{joinServiceImage: "joinServiceImage", kmsImage: "kmsImage", ccmImage: tc.ccmImage}
+			chartLoader := ChartLoader{joinServiceImage: "joinServiceImage", kmsImage: "kmsImage", ccmImage: tc.ccmImage, cnmImage: tc.cnmImage, autoscalerImage: "autoscalerImage"}
 			release, err := chartLoader.Load(tc.csp, true, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []uint32{1, 11}, tc.enforceIDKeyDigest)
 			require.NoError(err)
 
@@ -98,8 +100,13 @@ func TestTemplate(t *testing.T) {
 			err = tc.valuesModifier(helmReleases.ConstellationServices.Values)
 			require.NoError(err)
 
+			// This step is needed to enabled/disable subcharts according to their tags/conditions.
+			err = chartutil.ProcessDependencies(chart, helmReleases.ConstellationServices.Values)
+			require.NoError(err)
+
 			valuesToRender, err := chartutil.ToRenderValues(chart, helmReleases.ConstellationServices.Values, options, caps)
 			require.NoError(err)
+
 			result, err := engine.Render(chart, valuesToRender)
 			require.NoError(err)
 			for k, v := range result {
@@ -130,7 +137,7 @@ func prepareGCPValues(values map[string]any) error {
 	if !ok {
 		return errors.New("missing 'ccm' key")
 	}
-	ccmVals["subnetworkCIDR"] = "192.0.2.0/24"
+	ccmVals["GCP"].(map[string]any)["subnetworkPodCIDR"] = "192.0.2.0/24"
 	ccmVals["GCP"].(map[string]any)["projectID"] = "42424242424242"
 	ccmVals["GCP"].(map[string]any)["uid"] = "242424242424"
 	ccmVals["GCP"].(map[string]any)["secretData"] = "baaaaaad"
@@ -151,9 +158,20 @@ func prepareAzureValues(values map[string]any) error {
 	if !ok {
 		return errors.New("missing 'ccm' key")
 	}
-	ccmVals["subnetworkCIDR"] = "192.0.2.0/24"
+	ccmVals["Azure"].(map[string]any)["subnetworkPodCIDR"] = "192.0.2.0/24"
 	ccmVals["Azure"].(map[string]any)["azureConfig"] = "baaaaaad"
 
+	autoscalerVals, ok := values["autoscaler"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'autoscaler' key")
+	}
+	autoscalerVals["Azure"] = map[string]any{
+		"clientID":       "AppClientID",
+		"clientSecret":   "ClientSecretValue",
+		"resourceGroup":  "resourceGroup",
+		"subscriptionID": "subscriptionID",
+		"tenantID":       "TenantID",
+	}
 	return nil
 }
 
@@ -164,12 +182,6 @@ func prepareQEMUValues(values map[string]any) error {
 	}
 	joinVals["measurements"] = "{'1':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA','15':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='}"
 	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-
-	ccmVals, ok := values["ccm"].(map[string]any)
-	if !ok {
-		return errors.New("missing 'ccm' key")
-	}
-	ccmVals["subnetworkCIDR"] = "192.0.2.0/24"
 
 	return nil
 }

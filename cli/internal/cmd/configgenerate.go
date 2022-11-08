@@ -26,7 +26,6 @@ func newConfigGenerateCmd() *cobra.Command {
 		Args: cobra.MatchAll(
 			cobra.ExactArgs(1),
 			isCloudProvider(0),
-			warnAWS(0),
 		),
 		ValidArgsFunction: generateCompletion,
 		RunE:              runConfigGenerate,
@@ -74,7 +73,7 @@ func configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloud
 	}
 	cmd.Println("Config file written to", flags.file)
 	cmd.Println("Please fill in your CSP-specific configuration before proceeding.")
-	cmd.Println("Fore more information refer to the documentation:")
+	cmd.Println("For more information refer to the documentation:")
 	cmd.Println("\thttps://docs.edgeless.systems/constellation/getting-started/first-steps")
 
 	return nil

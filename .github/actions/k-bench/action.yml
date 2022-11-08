@@ -13,10 +13,10 @@ runs:
   using: "composite"
   steps:
     - name: Setup python
-      uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5 # tag=v4.2.0
+      uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984 # tag=v4.3.0
       with:
         python-version: "3.10"
-    
+
     - name: Install evaluation dependencies
       shell: bash
       run: pip install -r .github/actions/k-bench/evaluate/requirements.txt
@@ -26,7 +26,7 @@ runs:
       with:
         fetch-depth: 0
         repository: "edgelesssys/k-bench"
-        ref: 'feat/constellation'
+        ref: "feat/constellation"
         path: k-bench
 
     - name: Install patched K-Bench
@@ -34,25 +34,11 @@ runs:
       run: ./install.sh
       shell: bash
 
-    - name: Install Constellation GCP CSI driver and create storage class
-      if: ${{ inputs.cloudProvider == 'gcp' }}
-      shell: bash
-      run: |
-        kubectl apply -k github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver/deploy/kubernetes/overlays/edgeless/latest
-        kubectl wait -n kube-system deployments csi-gce-pd-controller --for condition=available
-        kubectl apply -f .github/actions/k-bench/gcp_sc.yml
-      env:
-        KUBECONFIG: ${{ inputs.kubeconfig }}
-
-    - name: Install Constellation Azure CSI driver and create storage class
-      if: ${{ inputs.cloudProvider == 'azure' }}
-      shell: bash
-      run: |
-        helm install azuredisk-csi-driver https://raw.githubusercontent.com/edgelesssys/constellation-azuredisk-csi-driver/main/charts/edgeless/latest/azuredisk-csi-driver.tgz --namespace kube-system --set linux.distro=fedora --set controller.replicas=1
-        kubectl wait -n kube-system deployments csi-azuredisk-controller --for condition=available --timeout=300s
-        kubectl apply -f .github/actions/k-bench/azure_sc.yml
-      env:
-        KUBECONFIG: ${{ inputs.kubeconfig }}
+    - name: Install Constellation CSI drivers and create storage class
+      uses: ./.github/actions/install_csi_drivers
+      with:
+        kubeconfig: ${{ inputs.kubeconfig }}
+        cloudProvider: ${{ inputs.cloudProvider }}
 
     - name: Run K-Bench
       shell: bash
@@ -84,7 +70,7 @@ runs:
         kubectl delete namespace kbench-pod-namespace --wait=true || true
         echo "::group::Wait for PV deletion"
         until [ "$(kubectl get pv -o json | jq '.items | length')" == "0" ] || [ $ELAPSED -gt $PV_DELETION_TIMEOUT ];
-        do 
+        do
           echo $(kubectl get pv -o json | jq '.items | length') PV remaining..
           sleep 1
           ELAPSED=$((ELAPSED+1))
@@ -108,7 +94,7 @@ runs:
         cat ./out/kbench-constellation-${{ inputs.cloudProvider }}/*/kbench.log
 
     - name: Upload original benchmark results
-      uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # tag=v3.1.0
+      uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
       if: ${{ !env.ACT }}
       with:
         path: "k-bench/out/kbench-constellation-${{ inputs.cloudProvider }}"
@@ -122,7 +108,7 @@ runs:
         CSP: ${{ inputs.cloudProvider }}
 
     - name: Upload benchmark results
-      uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8 # tag=v3.1.0
+      uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
       if: ${{ !env.ACT }}
       with:
         path: |

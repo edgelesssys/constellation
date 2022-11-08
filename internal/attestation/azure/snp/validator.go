@@ -275,6 +275,9 @@ func (a *azureInstanceInfo) validateAk(runtimeDataRaw []byte, reportData []byte,
 	}
 
 	sum := sha256.Sum256(runtimeDataRaw)
+	if len(reportData) < len(sum) {
+		return fmt.Errorf("reportData has unexpected size: %d", len(reportData))
+	}
 	if !bytes.Equal(sum[:], reportData[:len(sum)]) {
 		return errors.New("unexpected runtimeData digest in TPM")
 	}
@@ -284,7 +287,7 @@ func (a *azureInstanceInfo) validateAk(runtimeDataRaw []byte, reportData []byte,
 	}
 	rawN, err := base64.RawURLEncoding.DecodeString(runtimeData.Keys[0].N)
 	if err != nil {
-		return err
+		return fmt.Errorf("decoding modulus string: %w", err)
 	}
 	if !bytes.Equal(rawN, rsaParameters.ModulusRaw) {
 		return fmt.Errorf("unexpected modulus value in TPM")
@@ -292,7 +295,7 @@ func (a *azureInstanceInfo) validateAk(runtimeDataRaw []byte, reportData []byte,
 
 	rawE, err := base64.RawURLEncoding.DecodeString(runtimeData.Keys[0].E)
 	if err != nil {
-		return err
+		return fmt.Errorf("decoding exponent string: %w", err)
 	}
 	paddedRawE := make([]byte, 4)
 	copy(paddedRawE, rawE)

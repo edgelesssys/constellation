@@ -1,10 +1,10 @@
-FROM fedora:36@sha256:486fd5578f93fbc57a519e34ad4b7cac927c3f8a95409baedf0c19e9f287c207 as build
+FROM fedora:36@sha256:455fec9590de794fbc21f61dbc7e90bf9918b58492d2a03fa269c09db47b43f6 as build
 
 RUN dnf -y update && \
     dnf -y install libvirt-devel @development-tools pkg-config wget git && \
     dnf clean all
 
-ARG GO_VER=1.19.2
+ARG GO_VER=1.19.3
 RUN wget -q https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go${GO_VER}.linux-amd64.tar.gz && \
     rm go${GO_VER}.linux-amd64.tar.gz
@@ -24,7 +24,7 @@ COPY . /qemu-metadata-api
 WORKDIR /qemu-metadata-api/hack/qemu-metadata-api
 RUN go build -o api-server ./main.go
 
-FROM fedora:36@sha256:486fd5578f93fbc57a519e34ad4b7cac927c3f8a95409baedf0c19e9f287c207 as release
+FROM fedora:36@sha256:455fec9590de794fbc21f61dbc7e90bf9918b58492d2a03fa269c09db47b43f6 as release
 RUN  dnf -y install libvirt-devel && \
     dnf clean all
 COPY --from=build /qemu-metadata-api/hack/qemu-metadata-api/api-server /server

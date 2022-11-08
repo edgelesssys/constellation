@@ -39,6 +39,7 @@ runs:
   steps:
     - name: Build hack/pcr-reader
       run: |
+        echo "::group::Build pcr-reader"
         go build .
         echo "$(pwd)" >> $GITHUB_PATH
       working-directory: hack/pcr-reader
@@ -49,7 +50,7 @@ runs:
     - name: Fetch PCRs
       run: |
         KUBECONFIG="$PWD/constellation-admin.conf" kubectl rollout status ds/verification-service -n kube-system --timeout=3m
-        CONSTELL_IP=$(jq -r ".bootstrapperhost" constellation-state.json)
+        CONSTELL_IP=$(jq -r ".ip" constellation-id.json)
         pcr-reader --constell-ip ${CONSTELL_IP} -format yaml > measurements.yaml
         case $CSP in
           azure)
@@ -98,7 +99,7 @@ runs:
     - name: Upload to S3
       run: |
         IMAGE=$(yq e ".provider.${CSP}.image" constellation-conf.yaml)
-        S3_PATH=s3://${PUBLIC_BUCKET_NAME}/${IMAGE}
+        S3_PATH=s3://${PUBLIC_BUCKET_NAME}/${IMAGE,,}
         aws s3 cp measurements.yaml ${S3_PATH}/measurements.yaml
         if test -f measurements.yaml.sig; then
           aws s3 cp measurements.yaml.sig ${S3_PATH}/measurements.yaml.sig

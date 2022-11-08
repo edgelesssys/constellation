@@ -27,7 +27,7 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - name: tfsec
-        uses: aquasecurity/tfsec-pr-commenter-action@d9fa64305ec243e19f9be1200dfc8e8154dc364f
+        uses: aquasecurity/tfsec-pr-commenter-action@7a44c5dcde5dfab737363e391800629e27b6376b
         with:
           soft_fail_commenter: true
           tfsec_formats: default,text

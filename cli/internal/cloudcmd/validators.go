@@ -14,6 +14,7 @@ import (
 	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/aws"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
@@ -36,28 +37,24 @@ type Validator struct {
 }
 
 // NewValidator creates a new Validator.
-func NewValidator(provider cloudprovider.Provider, config *config.Config) (*Validator, error) {
+func NewValidator(provider cloudprovider.Provider, conf *config.Config) (*Validator, error) {
 	v := Validator{}
-	if provider == cloudprovider.AWS {
-		// TODO: Implement AWS validator
-		return nil, errors.New("no validator for AWS available yet")
-	}
 	if provider == cloudprovider.Unknown {
 		return nil, errors.New("unknown cloud provider")
 	}
 	v.provider = provider
-	if err := v.setPCRs(config); err != nil {
+	if err := v.setPCRs(conf); err != nil {
 		return nil, err
 	}
 
 	if v.provider == cloudprovider.Azure {
-		v.azureCVM = *config.Provider.Azure.ConfidentialVM
+		v.azureCVM = *conf.Provider.Azure.ConfidentialVM
 		if v.azureCVM {
-			idkeydigest, err := hex.DecodeString(config.Provider.Azure.IDKeyDigest)
+			idkeydigest, err := hex.DecodeString(conf.Provider.Azure.IDKeyDigest)
 			if err != nil {
 				return nil, fmt.Errorf("bad config: decoding idkeydigest from config: %w", err)
 			}
-			v.enforceIDKeyDigest = *config.Provider.Azure.EnforceIDKeyDigest
+			v.enforceIDKeyDigest = *conf.Provider.Azure.EnforceIDKeyDigest
 			v.idkeydigest = idkeydigest
 		}
 	}
@@ -165,6 +162,8 @@ func (v *Validator) updateValidator(cmd *cobra.Command) {
 		} else {
 			v.validator = trustedlaunch.NewValidator(v.pcrs, v.enforcedPCRs, log)
 		}
+	case cloudprovider.AWS:
+		v.validator = aws.NewValidator(v.pcrs, v.enforcedPCRs, log)
 	case cloudprovider.QEMU:
 		v.validator = qemu.NewValidator(v.pcrs, v.enforcedPCRs, log)
 	}

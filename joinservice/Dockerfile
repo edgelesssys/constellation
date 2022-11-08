@@ -1,11 +1,11 @@
-FROM fedora@sha256:486fd5578f93fbc57a519e34ad4b7cac927c3f8a95409baedf0c19e9f287c207 as build
+FROM fedora:36@sha256:455fec9590de794fbc21f61dbc7e90bf9918b58492d2a03fa269c09db47b43f6 as build
 
 RUN dnf -y update && \
     dnf install -y iproute iputils wget git && \
     dnf clean all
 
 # Install Go
-ARG GO_VER=1.19.2
+ARG GO_VER=1.19.3
 RUN wget -q https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go${GO_VER}.linux-amd64.tar.gz && \
     rm go${GO_VER}.linux-amd64.tar.gz
@@ -23,9 +23,9 @@ RUN rm -rf ./hack/
 
 WORKDIR /constellation/joinservice
 ARG PROJECT_VERSION=0.0.0
-RUN CGO_ENABLED=0 go build -o join-service -trimpath -buildvcs=false -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}" ./cmd/
+RUN --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=0 go build -o join-service -trimpath -buildvcs=false -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}" ./cmd/
 
 # Use gcr.io/distroless/static here since we need CA certificates to be installed for aTLS operations on GCP.
-FROM gcr.io/distroless/static@sha256:f6ba6e4b2b5881fb94a99113de3c886c5f72e589946ece055dee2aade9486b8f as release
+FROM gcr.io/distroless/static@sha256:ebd8cc37d22551dce0957ba8e58f03b22a8448bbf844c8c9ded4feef883b36bc as release
 COPY --from=build /constellation/joinservice/join-service /joinservice
 ENTRYPOINT [ "/joinservice" ]

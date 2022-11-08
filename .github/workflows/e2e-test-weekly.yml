@@ -6,10 +6,10 @@ on:
     - cron: "0 3 * * 6" # At 03:00 on Saturday.
 
 env:
-  ARM_CLIENT_ID: "b657a00e-813a-4dc7-9b09-fa498a254d71"
+  ARM_CLIENT_ID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
   ARM_CLIENT_SECRET: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
-  ARM_SUBSCRIPTION_ID: "0d202bbb-4fa7-4af8-8125-58c269a05435"
-  ARM_TENANT_ID: "adb650a8-5da3-4b15-b4b0-3daf65ff7626"
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_E2E_TENANT_ID }}
 
 jobs:
   e2e-weekly:
@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       max-parallel: 5
       matrix:
-        test: ["sonobuoy full", "autoscaling"]
+        test: ["sonobuoy full", "autoscaling", "k-bench"]
         provider: ["gcp", "azure"]
         version: ["1.23", "1.24", "1.25"]
         exclude:
@@ -25,6 +25,11 @@ jobs:
           - test: "autoscaling"
             version: "1.23"
           - test: "autoscaling"
+            version: "1.24"
+          # K-bench test runs only on latest version.
+          - test: "k-bench"
+            version: "1.23"
+          - test: "k-bench"
             version: "1.24"
 
     runs-on: ubuntu-latest
@@ -37,7 +42,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
         with:
-          go-version: "1.19.2"
+          go-version: "1.19.3"
 
       - name: Login to Azure
         if: matrix.provider == 'azure'
@@ -55,15 +60,20 @@ jobs:
           az group create --location northeurope --name $name --tags e2e
           echo "res_group_name=$name" >> $GITHUB_OUTPUT
 
-      - name: Run Azure E2E test
+      - name: Run E2E test
         uses: ./.github/actions/e2e_test
         with:
           workerNodesCount: "2"
           controlNodesCount: "3"
           cloudProvider: ${{ matrix.provider }}
           kubernetesVersion: ${{ matrix.version }}
+          azureSubscription: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
+          azureTenant: ${{ secrets.AZURE_E2E_TENANT_ID }}
+          azureClientID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
           azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
+          azureUserAssignedIdentity: ${{ secrets.AZURE_E2E_USER_ASSIGNED_IDENTITY }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
+          gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
           gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
           test: ${{ matrix.test }}

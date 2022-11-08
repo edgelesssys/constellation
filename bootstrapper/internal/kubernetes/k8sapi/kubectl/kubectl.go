@@ -30,6 +30,7 @@ type Client interface {
 	AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error
 	// WaitForCRD waits for the given CRD to be established.
 	WaitForCRD(ctx context.Context, crd string) error
+	ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error)
 }
 
 // clientGenerator can generate new clients from a kubeconfig.
@@ -87,12 +88,17 @@ func (k *Kubectl) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMa
 		return err
 	}
 
-	err = client.CreateConfigMap(ctx, configMap)
+	return client.CreateConfigMap(ctx, configMap)
+}
+
+// ListAllNamespaces returns all namespaces in the cluster.
+func (k *Kubectl) ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error) {
+	client, err := k.clientGenerator.NewClient(k.kubeconfig)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return client.ListAllNamespaces(ctx)
 }
 
 // AddTolerationsToDeployment adds [K8s tolerations] to the deployment, identified

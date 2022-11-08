@@ -49,10 +49,10 @@ on:
         required: false
 
 env:
-  ARM_CLIENT_ID: "b657a00e-813a-4dc7-9b09-fa498a254d71"
+  ARM_CLIENT_ID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
   ARM_CLIENT_SECRET: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
-  ARM_SUBSCRIPTION_ID: "0d202bbb-4fa7-4af8-8125-58c269a05435"
-  ARM_TENANT_ID: "adb650a8-5da3-4b15-b4b0-3daf65ff7626"
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_E2E_TENANT_ID }}
 
 jobs:
   e2e-test-manual:
@@ -66,7 +66,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
         with:
-          go-version: "1.19.2"
+          go-version: "1.19.3"
 
       - name: Login to Azure
         if: ${{ github.event.inputs.cloudProvider == 'azure' }}
@@ -91,11 +91,16 @@ jobs:
           controlNodesCount: ${{ github.event.inputs.controlNodesCount }}
           cloudProvider: ${{ github.event.inputs.cloudProvider }}
           machineType: ${{ github.event.inputs.machineType }}
+          gcpProject: ${{ secrets.GCP_E2E_PROJECT }}
           gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
           test: ${{ github.event.inputs.test }}
           kubernetesVersion: ${{ github.event.inputs.kubernetesVersion }}
+          azureSubscription: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
+          azureTenant: ${{ secrets.AZURE_E2E_TENANT_ID }}
+          azureClientID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
           azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
+          azureUserAssignedIdentity: ${{ secrets.AZURE_E2E_USER_ASSIGNED_IDENTITY }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
           osImage: ${{ github.event.inputs.osImage }}
           isDebugImage: ${{ github.event.inputs.isDebugImage }}

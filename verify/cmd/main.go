@@ -11,9 +11,11 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/aws"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/verify/server"
@@ -33,12 +35,14 @@ func main() {
 		Infof("Constellation Verification Service")
 
 	var issuer server.AttestationIssuer
-	switch *provider {
-	case "gcp":
+	switch cloudprovider.FromString(*provider) {
+	case cloudprovider.AWS:
+		issuer = aws.NewIssuer()
+	case cloudprovider.GCP:
 		issuer = gcp.NewIssuer()
-	case "azure":
+	case cloudprovider.Azure:
 		issuer = azure.NewIssuer()
-	case "qemu":
+	case cloudprovider.QEMU:
 		issuer = qemu.NewIssuer()
 	default:
 		log.With(zap.String("cloudProvider", *provider)).Fatalf("Unknown cloud provider")

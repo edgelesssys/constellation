@@ -39,16 +39,19 @@ type ChartLoader struct {
 	joinServiceImage string
 	kmsImage         string
 	ccmImage         string
+	cnmImage         string
+	autoscalerImage  string
 }
 
 // New creates a new ChartLoader.
 func New(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *ChartLoader {
-	var ccmImage string
+	var ccmImage, cnmImage string
 	switch csp {
 	case cloudprovider.AWS:
 		ccmImage = versions.VersionConfigs[k8sVersion].CloudControllerManagerImageAWS
 	case cloudprovider.Azure:
 		ccmImage = versions.VersionConfigs[k8sVersion].CloudControllerManagerImageAzure
+		cnmImage = versions.VersionConfigs[k8sVersion].CloudNodeManagerImageAzure
 	case cloudprovider.GCP:
 		ccmImage = versions.VersionConfigs[k8sVersion].CloudControllerManagerImageGCP
 	}
@@ -57,6 +60,8 @@ func New(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *Chart
 		joinServiceImage: versions.JoinImage,
 		kmsImage:         versions.KmsImage,
 		ccmImage:         ccmImage,
+		cnmImage:         cnmImage,
+		autoscalerImage:  versions.VersionConfigs[k8sVersion].ClusterAutoscalerImage,
 	}
 }
 
@@ -64,12 +69,12 @@ func New(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *Chart
 func (i *ChartLoader) Load(csp cloudprovider.Provider, conformanceMode bool, masterSecret []byte, salt []byte, enforcedPCRs []uint32, enforceIDKeyDigest bool) ([]byte, error) {
 	ciliumRelease, err := i.loadCilium(csp, conformanceMode)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("loading cilium: %w", err)
 	}
 
 	conServicesRelease, err := i.loadConstellationServices(csp, masterSecret, salt, enforcedPCRs, enforceIDKeyDigest)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("loading constellation-services: %w", err)
 	}
 	releases := helm.Releases{Cilium: ciliumRelease, ConstellationServices: conServicesRelease}
 
@@ -93,10 +98,12 @@ func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode boo
 
 	var ciliumVals map[string]any
 	switch csp {
-	case cloudprovider.GCP:
-		ciliumVals = gcpVals
+	case cloudprovider.AWS:
+		ciliumVals = awsVals
 	case cloudprovider.Azure:
 		ciliumVals = azureVals
+	case cloudprovider.GCP:
+		ciliumVals = gcpVals
 	case cloudprovider.QEMU:
 		ciliumVals = qemuVals
 	default:
@@ -159,8 +166,12 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 			"image":        i.joinServiceImage,
 			"namespace":    constants.ConstellationNamespace,
 		},
-		"ccm": map[string]interface{}{
+		"ccm": map[string]any{
 			"csp": csp,
+		},
+		"autoscaler": map[string]any{
+			"csp":   csp,
+			"image": i.autoscalerImage,
 		},
 	}
 
@@ -179,6 +190,10 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 			}
 			ccmVals["Azure"] = map[string]any{
 				"image": i.ccmImage,
+			}
+
+			vals["cnm"] = map[string]any{
+				"image": i.cnmImage,
 			}
 
 			vals["tags"] = map[string]any{

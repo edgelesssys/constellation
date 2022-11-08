@@ -59,7 +59,7 @@ func TestTpmEnabled(t *testing.T) {
 	}
 	userDataNoTPM, _ := json.Marshal(idDocNoTPM)
 	attDocNoTPM := vtpm.AttestationDocument{
-		UserData: userDataNoTPM,
+		InstanceInfo: userDataNoTPM,
 	}
 
 	idDocTPM := imds.InstanceIdentityDocument{
@@ -67,7 +67,7 @@ func TestTpmEnabled(t *testing.T) {
 	}
 	userDataTPM, _ := json.Marshal(idDocTPM)
 	attDocTPM := vtpm.AttestationDocument{
-		UserData: userDataTPM,
+		InstanceInfo: userDataTPM,
 	}
 
 	testCases := map[string]struct {
@@ -103,7 +103,7 @@ func TestTpmEnabled(t *testing.T) {
 			assert := assert.New(t)
 
 			v := Validator{
-				getDescribeClient: func(context.Context) (awsMetadataAPI, error) {
+				getDescribeClient: func(context.Context, string) (awsMetadataAPI, error) {
 					return tc.awsAPI, nil
 				},
 			}

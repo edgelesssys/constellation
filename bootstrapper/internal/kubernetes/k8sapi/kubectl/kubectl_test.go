@@ -30,6 +30,8 @@ type stubClient struct {
 	addTolerationsToDeploymentErr  error
 	addNodeSelectorToDeploymentErr error
 	waitForCRDErr                  error
+	listAllNamespacesResp          *corev1.NamespaceList
+	listAllNamespacesErr           error
 }
 
 func (s *stubClient) ApplyOneObject(info *resource.Info, forceConflicts bool) error {
@@ -50,6 +52,10 @@ func (s *stubClient) AddTolerationsToDeployment(ctx context.Context, tolerations
 
 func (s *stubClient) AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error {
 	return s.addNodeSelectorToDeploymentErr
+}
+
+func (s *stubClient) ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error) {
+	return s.listAllNamespacesResp, s.listAllNamespacesErr
 }
 
 type stubClientGenerator struct {

@@ -2,7 +2,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "3.29.1"
+      version = "3.30.0"
     }
     random = {
       source  = "hashicorp/random"
@@ -12,7 +12,11 @@ terraform {
 }
 
 resource "random_password" "password" {
-  length = 16
+  length      = 16
+  min_lower   = 1
+  min_upper   = 1
+  min_numeric = 1
+  min_special = 1
 }
 
 resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
@@ -73,5 +77,12 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
       subnet_id                              = var.subnet_id
       load_balancer_backend_address_pool_ids = var.backend_address_pool_ids
     }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      instances,       # required. autoscaling modifies the instance count externally
+      source_image_id, # required. update procedure modifies the image id externally
+    ]
   }
 }

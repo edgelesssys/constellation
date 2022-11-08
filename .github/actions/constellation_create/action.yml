@@ -11,6 +11,9 @@ inputs:
   cloudProvider:
     description: "Either 'gcp' or 'azure'."
     required: true
+  gcpProject:
+    description: "The GCP project to deploy Constellation in."
+    required: false
   gcpClusterServiceAccountKey:
     description: "Service account to use inside the created Constellation cluster on GCP."
     required: false
@@ -26,8 +29,20 @@ inputs:
   kubernetesVersion:
     description: "Kubernetes version to create the cluster from."
     required: false
+  azureSubscription:
+    description: "The Azure subscription ID to deploy Constellation in."
+    required: false
+  azureTenant:
+    description: "The Azure tenant ID to deploy Constellation in."
+    required: false
+  azureClientID:
+    description: "The client ID of the application registration created for Constellation in Azure."
+    required: false
   azureClientSecret:
     description: "The client secret value of the used secret"
+    required: false
+  azureUserAssignedIdentity:
+    description: "The Azure user assigned identity to use for Constellation."
     required: false
   azureResourceGroup:
     description: "The resource group to use for Constellation cluster"
@@ -47,20 +62,20 @@ runs:
         constellation config generate ${{ inputs.cloudProvider }}
 
         yq eval -i \
-          "(.provider | select(. | has(\"azure\")).azure.subscription) = \"0d202bbb-4fa7-4af8-8125-58c269a05435\" |
-            (.provider | select(. | has(\"azure\")).azure.tenant) = \"adb650a8-5da3-4b15-b4b0-3daf65ff7626\" |
+          "(.provider | select(. | has(\"azure\")).azure.subscription) = \"${{ inputs.azureSubscription }}\" |
+            (.provider | select(. | has(\"azure\")).azure.tenant) = \"${{ inputs.azureTenant }}\" |
             (.provider | select(. | has(\"azure\")).azure.location) = \"North Europe\" |
-            (.provider | select(. | has(\"azure\")).azure.userAssignedIdentity) = \"/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/e2e-test-creds/providers/Microsoft.ManagedIdentity/userAssignedIdentities/e2e-test-user-assigned-id\" |
+            (.provider | select(. | has(\"azure\")).azure.userAssignedIdentity) = \"${{ inputs.azureUserAssignedIdentity }}\" |
             (.provider | select(. | has(\"azure\")).azure.resourceGroup) = \"${{ inputs.azureResourceGroup }}\" |
-            (.provider | select(. | has(\"azure\")).azure.appClientID) = \"b657a00e-813a-4dc7-9b09-fa498a254d71\" |
+            (.provider | select(. | has(\"azure\")).azure.appClientID) = \"${{ inputs.azureClientID }}\" |
             (.provider | select(. | has(\"azure\")).azure.clientSecretValue) = \"${{ inputs.azureClientSecret }}\" |
-            (.provider | select(. | has(\"azure\")).azure.enforcedMeasurements) = [11,12]" \
+            (.provider | select(. | has(\"azure\")).azure.enforcedMeasurements) = [15]" \
           constellation-conf.yaml
         yq eval -i \
-          "(.provider | select(. | has(\"gcp\")).gcp.project) = \"constellation-331613\" |
+          "(.provider | select(. | has(\"gcp\")).gcp.project) = \"${{ inputs.gcpProject }}\" |
             (.provider | select(. | has(\"gcp\")).gcp.region) = \"europe-west3\" |
             (.provider | select(. | has(\"gcp\")).gcp.zone) = \"europe-west3-b\" |
-            (.provider | select(. | has(\"gcp\")).gcp.enforcedMeasurements) = [11,12] |
+            (.provider | select(. | has(\"gcp\")).gcp.enforcedMeasurements) = [15] |
             (.provider | select(. | has(\"gcp\")).gcp.serviceAccountKeyPath) = \"serviceAccountKey.json\"" \
           constellation-conf.yaml
 

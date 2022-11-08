@@ -24,10 +24,17 @@ type InstanceMetadata struct {
 	// VPCIP is the primary IP address of the instance in the VPC.
 	VPCIP string
 	// PublicIP is the primary public IP of the instance, if available, empty string otherwise.
-	PublicIP      string
-	AliasIPRanges []string
+	PublicIP string
 	// SSHKeys maps usernames to ssh public keys.
 	SSHKeys map[string][]string
+
+	// SecondaryIPRange is the VPC wide CIDR from which subnets are attached to VMs as AliasIPRanges.
+	// May be empty on certain CSPs.
+	SecondaryIPRange string
+
+	// AliasIPRanges is a list of IP ranges that are attached.
+	// May be empty on certain CSPs.
+	AliasIPRanges []string
 }
 
 // InstanceSelfer provide instance metadata about themselves.

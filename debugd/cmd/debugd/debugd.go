@@ -55,6 +55,12 @@ func main() {
 	var fetcher metadata.Fetcher
 	csp := os.Getenv("CONSTEL_CSP")
 	switch platform.FromString(csp) {
+	case platform.AWS:
+		awsFetcher, err := cloudprovider.NewAWS(ctx)
+		if err != nil {
+			log.Fatalf("%s", err)
+		}
+		fetcher = awsFetcher
 	case platform.Azure:
 		azureFetcher, err := cloudprovider.NewAzure(ctx)
 		if err != nil {
