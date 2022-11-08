@@ -46,7 +46,7 @@ jobs:
 
       - name: Login to Azure
         if: matrix.provider == 'azure'
-        uses: ./.github/actions/azure_login
+        uses: ./.github/actions/login_azure
         with:
           azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
 

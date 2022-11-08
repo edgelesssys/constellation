@@ -19,7 +19,7 @@ runs:
 
     - name: Install evaluation dependencies
       shell: bash
-      run: pip install -r .github/actions/k-bench/evaluate/requirements.txt
+      run: pip install -r .github/actions/e2e_kbench/evaluate/requirements.txt
 
     - name: Checkout patched K-Bench
       uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
@@ -46,19 +46,19 @@ runs:
       run: |
         mkdir -p ./out
         kubectl create namespace kbench-pod-namespace --dry-run=client -o yaml | kubectl apply -f -
-        kubectl apply -f ../.github/actions/k-bench/encrypted_storage.yml
+        kubectl apply -f ../.github/actions/e2e_kbench/encrypted_storage.yml
         ./run.sh -r "kbench-constellation-${{ inputs.cloudProvider }}" -t "default" -o "./out/"
         kubectl delete namespace kbench-pod-namespace --wait=true || true
         kubectl create namespace kbench-pod-namespace --dry-run=client -o yaml |  kubectl apply -f -
-        kubectl apply -f ../.github/actions/k-bench/encrypted_storage.yml
+        kubectl apply -f ../.github/actions/e2e_kbench/encrypted_storage.yml
         ./run.sh -r "kbench-constellation-${{ inputs.cloudProvider }}" -t "dp_fio" -o "./out/"
         kubectl delete namespace kbench-pod-namespace --wait=true || true
         kubectl create namespace kbench-pod-namespace --dry-run=client -o yaml |  kubectl apply -f -
-        kubectl apply -f ../.github/actions/k-bench/encrypted_storage.yml
+        kubectl apply -f ../.github/actions/e2e_kbench/encrypted_storage.yml
         ./run.sh -r "kbench-constellation-${{ inputs.cloudProvider }}" -t "dp_network_internode" -o "./out/"
         kubectl delete namespace kbench-pod-namespace --wait=true || true
         kubectl create namespace kbench-pod-namespace --dry-run=client -o yaml |  kubectl apply -f -
-        kubectl apply -f ../.github/actions/k-bench/encrypted_storage.yml
+        kubectl apply -f ../.github/actions/e2e_kbench/encrypted_storage.yml
         ./run.sh -r "kbench-constellation-${{ inputs.cloudProvider }}" -t "dp_network_intranode" -o "./out/"
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
@@ -81,7 +81,7 @@ runs:
 
     - name: Parse test results and create diagrams
       shell: bash
-      run: python .github/actions/k-bench/evaluate/main.py
+      run: python .github/actions/e2e_kbench/evaluate/main.py
       env:
         KBENCH_RESULTS: ${{ github.workspace }}/k-bench/out/
         CSP: ${{ inputs.cloudProvider }}
