@@ -89,7 +89,7 @@ runs:
       if: ${{ inputs.isDebugImage == 'true' }}
 
     - name: Login to GCP
-      uses: ./.github/actions/gcp_login
+      uses: ./.github/actions/login_gcp
       with:
         gcp_service_account_json: ${{ inputs.gcp_service_account_json }}
       if: ${{ inputs.cloudProvider == 'gcp' }}

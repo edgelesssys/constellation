@@ -70,7 +70,7 @@ jobs:
 
       - name: Login to Azure
         if: ${{ github.event.inputs.cloudProvider == 'azure' }}
-        uses: ./.github/actions/azure_login
+        uses: ./.github/actions/login_azure
         with:
           azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
 
