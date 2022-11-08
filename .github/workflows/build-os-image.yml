@@ -90,7 +90,7 @@ jobs:
         id: pki-set
         shell: bash
         run: |
-          if [ "${{ steps.image-type.outputs.image-type }}" = "release" ]
+          if [ "${{ steps.image-type.outputs.imageType }}" = "release" ]
           then
             echo "pkiSet=pki_prod" >> $GITHUB_OUTPUT
           else
