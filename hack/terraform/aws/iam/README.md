@@ -12,7 +12,16 @@ terraform init
 terraform apply -auto-approve -var name_prefix=my_constellation
 ```
 
-Get the profile names from the Terraform output values `control_plane_instance_profile` and `worker_nodes_instance_profile` and add them to your Constellation configuration file.
+You can either get the profile names from the Terraform output values `control_plane_instance_profile` and `worker_nodes_instance_profile` and manually add them to your Constellation configuration file.
+
+Or you can do this with a `yq` command:
+
+```sh
+yq -i "
+  .provider.aws.iamProfileControlPlane = $(terraform output control_plane_instance_profile) |
+  .provider.aws.iamProfileWorkerNodes = $(terraform output worker_nodes_instance_profile)
+  " path/to/constellation-conf.yaml
+```
 
 ## Development
 
