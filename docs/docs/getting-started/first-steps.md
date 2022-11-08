@@ -191,13 +191,13 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     * **image**: The ID of the amazon machine image (AMI) the Constellation nodes will use:
 
-        Constellation OS images are available with the following IDs: TODO: Fill in AMI IDs once released.
+        Constellation OS images are available with the following IDs:
 
         | AMI | Region |
         | - | - |
-        | `ami-0xxxxxxxxxxxxxxxx` | `eu-central-1` |
-        | `ami-0xxxxxxxxxxxxxxxx` | `us-east-2` |
-        | `ami-0xxxxxxxxxxxxxxxx` | `ap-south-1` |
+        | `ami-0e27ebcefc38f648b` | `eu-central-1` |
+        | `ami-098cd37f66523b7c3` | `us-east-2` |
+        | `ami-04a87d302e2509aad` | `ap-south-1` |
 
     * **iamProfileControlPlane**: The name of an IAM instance profile attached to all control-plane nodes.
 
