@@ -201,15 +201,15 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     * **iamProfileControlPlane**: The name of an IAM instance profile attached to all control-plane nodes.
 
-        Use the [provided Terraform script](https://github.com/edgelesssys/constellation/blob/main/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `control_plane_instance_profile`.
+        Use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `control_plane_instance_profile`.
 
-        Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/blob/main/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.control_plane_policy`.
+        Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.control_plane_policy`.
 
     * **iamProfileWorkerNodes**: The name of an IAM instance profile attached to all worker nodes.
 
-        Use the [provided Terraform script](https://github.com/edgelesssys/constellation/blob/main/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `worker_nodes_instance_profile`.
+        Use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `worker_nodes_instance_profile`.
 
-        Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/blob/main/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.worker_node_policy`.
+        Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.worker_node_policy`.
 
     </tabItem>
     </tabs>
