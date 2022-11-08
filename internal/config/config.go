@@ -298,7 +298,7 @@ func Default() *Config {
 				EnforcedMeasurements:  []uint32{0, 4, 8, 9, 11, 12, 13, 15},
 			},
 			QEMU: &QEMUConfig{
-				ImageFormat:           "qcow2",
+				ImageFormat:           "raw",
 				VCPUs:                 2,
 				Memory:                2048,
 				MetadataAPIImage:      versions.QEMUMetadataImage,
@@ -306,7 +306,7 @@ func Default() *Config {
 				LibvirtContainerImage: versions.LibvirtImage,
 				Measurements:          copyPCRMap(qemuPCRs),
 				EnforcedMeasurements:  []uint32{4, 8, 9, 11, 12, 13, 15},
-				NVRAM:                 "testing",
+				NVRAM:                 "production",
 			},
 		},
 		KubernetesVersion: string(versions.Default),
