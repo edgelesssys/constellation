@@ -11,7 +11,7 @@ Make sure the following requirements are met:
 - Your machine is running Linux or macOS
 - You have admin rights on your machine
 - [kubectl](https://kubernetes.io/docs/tasks/tools/) is installed
-- Your CSP is Microsoft Azure or Google Cloud Platform (GCP)
+- Your CSP is Microsoft Azure, Google Cloud Platform (GCP), or Amazon Web Services (AWS)
 
 ## Install the Constellation CLI
 
@@ -133,6 +133,137 @@ You need the following permissions on this project:
 Follow Google's guide on [understanding](https://cloud.google.com/iam/docs/understanding-roles) and [assigning roles](https://cloud.google.com/iam/docs/granting-changing-revoking-access).
 
 </tabItem>
+<tabItem value="aws" label="AWS">
+
+To set up a Constellation cluster, you need to perform two tasks that require permissions: create the infrastructure and create roles for cluster nodes. Both of these actions can be performed by different users, e.g., an administrator to create roles and a DevOps engineer to create the infrastructure.
+
+To create the AWS IAM policies, your user requires the following minimal set of permissions:
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "sts:GetCallerIdentity",
+                "ec2:DescribeAccountAttributes",
+                "iam:CreateRole",
+                "iam:CreatePolicy",
+                "iam:GetPolicy",
+                "iam:GetRole",
+                "iam:GetPolicyVersion",
+                "iam:ListRolePolicies",
+                "iam:ListAttachedRolePolicies",
+                "iam:CreateInstanceProfile",
+                "iam:AttachRolePolicy",
+                "iam:GetInstanceProfile",
+                "iam:AddRoleToInstanceProfile",
+                "iam:PassRole",
+                "iam:RemoveRoleFromInstanceProfile",
+                "iam:DetachRolePolicy",
+                "iam:DeleteInstanceProfile",
+                "iam:ListPolicyVersions",
+                "iam:ListInstanceProfilesForRole",
+                "iam:DeletePolicy",
+                "iam:DeleteRole"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+To create the infrastructure, you can either use a predefined role from Amazon,
+such as `PowerUserAccess`, or use the following minimal set of permissions:
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "sts:GetCallerIdentity",
+                "ec2:DescribeAccountAttributes",
+                "ec2:AllocateAddress",
+                "ec2:CreateVpc",
+                "ec2:CreateTags",
+                "logs:CreateLogGroup",
+                "ec2:CreateLaunchTemplate",
+                "ec2:DescribeAddresses",
+                "ec2:DescribeLaunchTemplates",
+                "logs:PutRetentionPolicy",
+                "logs:DescribeLogGroups",
+                "ec2:DescribeVpcs",
+                "ec2:DescribeLaunchTemplateVersions",
+                "logs:ListTagsLogGroup",
+                "ec2:DescribeVpcClassicLink",
+                "ec2:DescribeVpcClassicLinkDnsSupport",
+                "ec2:DescribeVpcAttribute",
+                "ec2:DescribeNetworkAcls",
+                "ec2:DescribeRouteTables",
+                "ec2:DescribeSecurityGroups",
+                "ec2:CreateSubnet",
+                "ec2:CreateSecurityGroup",
+                "elasticloadbalancing:CreateTargetGroup",
+                "ec2:CreateInternetGateway",
+                "ec2:DescribeSubnets",
+                "elasticloadbalancing:DescribeTargetGroups",
+                "ec2:AttachInternetGateway",
+                "elasticloadbalancing:ModifyTargetGroupAttributes",
+                "ec2:DescribeInternetGateways",
+                "autoscaling:CreateAutoScalingGroup",
+                "iam:PassRole",
+                "ec2:CreateNatGateway",
+                "ec2:RevokeSecurityGroupEgress",
+                "elasticloadbalancing:DescribeTargetGroupAttributes",
+                "elasticloadbalancing:CreateLoadBalancer",
+                "ec2:DescribeNatGateways",
+                "elasticloadbalancing:DescribeTags",
+                "autoscaling:DescribeScalingActivities",
+                "ec2:CreateRouteTable",
+                "autoscaling:DescribeAutoScalingGroups",
+                "ec2:AuthorizeSecurityGroupIngress",
+                "ec2:AuthorizeSecurityGroupEgress",
+                "ec2:CreateRoute",
+                "ec2:AssociateRouteTable",
+                "elasticloadbalancing:DescribeTargetHealth",
+                "elasticloadbalancing:DescribeLoadBalancers",
+                "elasticloadbalancing:ModifyLoadBalancerAttributes",
+                "elasticloadbalancing:AddTags",
+                "elasticloadbalancing:DescribeLoadBalancerAttributes",
+                "elasticloadbalancing:CreateListener",
+                "elasticloadbalancing:DescribeListeners",
+                "logs:DeleteLogGroup",
+                "elasticloadbalancing:DeleteListener",
+                "ec2:DisassociateRouteTable",
+                "autoscaling:UpdateAutoScalingGroup",
+                "elasticloadbalancing:DeleteLoadBalancer",
+                "autoscaling:SetInstanceProtection",
+                "ec2:DescribeNetworkInterfaces",
+                "ec2:DeleteRouteTable",
+                "ec2:DeleteNatGateway",
+                "ec2:DetachInternetGateway",
+                "ec2:DisassociateAddress",
+                "ec2:ReleaseAddress",
+                "ec2:DeleteInternetGateway",
+                "ec2:DeleteSubnet",
+                "autoscaling:DeleteAutoScalingGroup",
+                "ec2:DeleteLaunchTemplate",
+                "elasticloadbalancing:DeleteTargetGroup",
+                "ec2:DeleteSecurityGroup",
+                "ec2:DeleteVpc"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+Follow Amazon's guide on [understanding](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html) and [managing policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html).
+
+</tabItem>
 </tabs>
 
 ### Authentication
@@ -185,6 +316,25 @@ Use one of the following options on a trusted machine:
     Follow [Google's guide](https://cloud.google.com/docs/authentication/production#manually) for setting up your credentials.
 
 </tabItem>
+<tabItem value="aws" label="AWS">
+
+**Testing**
+
+You can use the [AWS CloudShell](https://console.aws.amazon.com/cloudshell/home). Make sure you are [authorized to use it](https://docs.aws.amazon.com/cloudshell/latest/userguide/sec-auth-with-identities.html).
+
+**Production**
+
+Use the latest version of the [AWS CLI](https://aws.amazon.com/cli/) on a trusted machine:
+
+```bash
+aws configure
+```
+
+Options and first steps are described in the [AWS CLI documentation](https://docs.aws.amazon.com/cli/index.html).
+
+</tabItem>
+
+
 </tabs>
 
 ## Next steps

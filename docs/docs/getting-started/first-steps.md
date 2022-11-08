@@ -1,4 +1,4 @@
-# First steps with Constellation 
+# First steps with Constellation
 
 The following steps guide you through the process of creating a cluster and deploying a sample app. This example assumes that you have successfully [installed and set up Constellation](install.md),
 and have access to a cloud subscription.
@@ -23,6 +23,13 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     ```bash
     constellation config generate gcp
+    ```
+
+    </tabItem>
+    <tabItem value="aws" label="AWS">
+
+    ```bash
+    constellation config generate aws
     ```
 
     </tabItem>
@@ -163,6 +170,46 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     * **instanceType**: The VM type you want to use for your Constellation nodes.
 
         Supported are all machines from the N2D family. It defaults to `n2d-standard-4` (4 vCPUs, 16 GB RAM), but you can use any other VMs from the same family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
+
+    </tabItem>
+    <tabItem value="aws" label="AWS">
+
+    * **region**: The name of your chosen AWS data center region, e.g., `us-east-2`.
+
+        Constellation OS images are currently replicated to the following regions:
+        * `eu-central-1`
+        * `us-east-2`
+        * `ap-south-1`
+
+        If you require the OS image to be available in another region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+AWS+image+region:+xx-xxxx-x).
+
+        You can find a list of all [regions in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
+
+    * **zone**: The name of your chosen AWS data center availability zone, e.g., `us-east-2a`.
+
+        Learn more about [availability zones in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones).
+
+    * **image**: The ID of the amazon machine image (AMI) the Constellation nodes will use:
+
+        Constellation OS images are available with the following IDs:
+
+        | AMI | Region |
+        | - | - |
+        | `ami-0e27ebcefc38f648b` | `eu-central-1` |
+        | `ami-098cd37f66523b7c3` | `us-east-2` |
+        | `ami-04a87d302e2509aad` | `ap-south-1` |
+
+    * **iamProfileControlPlane**: The name of an IAM instance profile attached to all control-plane nodes.
+
+        Use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `control_plane_instance_profile`.
+
+        Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.control_plane_policy`.
+
+    * **iamProfileWorkerNodes**: The name of an IAM instance profile attached to all worker nodes.
+
+        Use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `worker_nodes_instance_profile`.
+
+        Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.worker_node_policy`.
 
     </tabItem>
     </tabs>

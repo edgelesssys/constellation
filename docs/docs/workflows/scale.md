@@ -64,6 +64,15 @@ Alternatively, you can manually scale your cluster up or down:
 3. Set the new **number of instances** and **save**.
 
 </tabItem>
+<tabItem value="aws" label="AWS">
+
+:::caution
+
+Scaling isn't yet implemented for AWS. If you require this feature, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md)!
+
+:::
+
+</tabItem>
 </tabs>
 
 ## Control-plane node scaling
@@ -87,6 +96,15 @@ To increase the number of control-plane nodes, follow these steps:
 1. In Compute Engine go to [Instance Groups](https://console.cloud.google.com/compute/instanceGroups/).
 2. **Edit** the **control-plane** instance group.
 3. Set the new (increased) **number of instances** and **save**.
+
+</tabItem>
+<tabItem value="aws" label="AWS">
+
+:::caution
+
+Scaling isn't yet implemented for AWS. If you require this feature, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md)!
+
+:::
 
 </tabItem>
 </tabs>
