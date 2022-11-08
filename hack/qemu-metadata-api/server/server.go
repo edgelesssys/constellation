@@ -21,12 +21,14 @@ import (
 	"go.uber.org/zap"
 )
 
+// Server that provides QEMU metadat.
 type Server struct {
 	log     *logger.Logger
 	virt    virConnect
 	network string
 }
 
+// New creates a new Server.
 func New(log *logger.Logger, network string, conn virConnect) *Server {
 	return &Server{
 		log:     log,
@@ -35,6 +37,7 @@ func New(log *logger.Logger, network string, conn virConnect) *Server {
 	}
 }
 
+// ListenAndServe on a given port.
 func (s *Server) ListenAndServe(port string) error {
 	mux := http.NewServeMux()
 	mux.Handle("/self", http.HandlerFunc(s.listSelf))

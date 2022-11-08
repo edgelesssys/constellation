@@ -13,16 +13,20 @@ import (
 )
 
 const (
-	DefaultProjectID   = "constellation-images"
+	// DefaultProjectID for Constellation images.
+	DefaultProjectID = "constellation-images"
+	// DefaultImageFamily for Constellation images.
 	DefaultImageFamily = "constellation"
 )
 
+// Options for GCP image API client.
 type Options struct {
 	ProjectID   string
 	ImageFamily string
 	Filter      func(image string) (version string, err error)
 }
 
+// DefaultOptions creates an Options object with good defaults.
 func DefaultOptions() Options {
 	return Options{
 		ProjectID:   DefaultProjectID,

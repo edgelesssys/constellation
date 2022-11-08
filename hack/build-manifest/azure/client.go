@@ -17,12 +17,14 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 )
 
+// Client for Azure Gallery API.
 type Client struct {
 	log           *logger.Logger
 	opts          Options
 	versionClient *armcompute.GalleryImageVersionsClient
 }
 
+// NewClient creates a new Client.
 func NewClient(log *logger.Logger, opts Options) *Client {
 	log = log.Named("azure-client")
 
@@ -43,6 +45,7 @@ func NewClient(log *logger.Logger, opts Options) *Client {
 	}
 }
 
+// FetchImages for the given client options.
 func (c *Client) FetchImages(ctx context.Context) (map[string]string, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
