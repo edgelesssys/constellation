@@ -285,6 +285,7 @@ jobs:
           aws-region: eu-central-1
 
       - name: Login to Azure
+        if: matrix.csp == 'azure'
         uses: ./.github/actions/login_azure
         with:
           azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
