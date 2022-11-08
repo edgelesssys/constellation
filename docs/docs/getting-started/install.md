@@ -175,7 +175,7 @@ To create the AWS IAM policies, your user requires the following minimal set of 
 ```
 
 To create the infrastructure, you can either use a predefined role from Amazon,
-such as `AmazonEC2FullAccess`, or use the following minimal set of permissions:
+such as `PowerUserAccess`, or use the following minimal set of permissions:
 
 ```json
 {
