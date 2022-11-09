@@ -32,8 +32,9 @@ import (
 //go:generate ./generateCilium.sh
 
 //go:embed all:charts/*
-var HelmFS embed.FS
+var helmFS embed.FS
 
+// ChartLoader loads embedded helm charts.
 type ChartLoader struct {
 	joinServiceImage string
 	kmsImage         string
@@ -42,6 +43,7 @@ type ChartLoader struct {
 	autoscalerImage  string
 }
 
+// New creates a new ChartLoader.
 func New(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *ChartLoader {
 	var ccmImage, cnmImage string
 	switch csp {
@@ -63,6 +65,7 @@ func New(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *Chart
 	}
 }
 
+// Load the embedded helm charts.
 func (i *ChartLoader) Load(csp cloudprovider.Provider, conformanceMode bool, masterSecret []byte, salt []byte, enforcedPCRs []uint32, enforceIDKeyDigest bool) ([]byte, error) {
 	ciliumRelease, err := i.loadCilium(csp, conformanceMode)
 	if err != nil {
@@ -83,7 +86,7 @@ func (i *ChartLoader) Load(csp cloudprovider.Provider, conformanceMode bool, mas
 }
 
 func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode bool) (helm.Release, error) {
-	chart, err := loadChartsDir(HelmFS, "charts/cilium")
+	chart, err := loadChartsDir(helmFS, "charts/cilium")
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("loading cilium chart: %w", err)
 	}
@@ -124,7 +127,7 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 	masterSecret []byte, salt []byte, enforcedPCRs []uint32,
 	enforceIDKeyDigest bool,
 ) (helm.Release, error) {
-	chart, err := loadChartsDir(HelmFS, "charts/edgeless/constellation-services")
+	chart, err := loadChartsDir(helmFS, "charts/edgeless/constellation-services")
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("loading constellation-services chart: %w", err)
 	}

@@ -56,12 +56,14 @@ type diskAPI interface {
 		opts ...gax.CallOption) (*computepb.Disk, error)
 }
 
+// Operation describes a generic protobuf operation that can be waited for.
 type Operation interface {
 	Proto() *computepb.Operation
 	Done() bool
 	Wait(ctx context.Context, opts ...gax.CallOption) error
 }
 
+// InstanceGroupManagerScopedListIterator can list the Next InstanceGroupManagersScopedListPair.
 type InstanceGroupManagerScopedListIterator interface {
 	Next() (compute.InstanceGroupManagersScopedListPair, error)
 }

@@ -96,7 +96,7 @@ func (c *Client) GetScalingGroupName(scalingGroupID string) (string, error) {
 	return instanceGroupName, nil
 }
 
-// GetScalingGroupName retrieves the name of a scaling group as needed by the cluster-autoscaler.
+// GetAutoscalingGroupName retrieves the name of a scaling group as needed by the cluster-autoscaler.
 func (c *Client) GetAutoscalingGroupName(scalingGroupID string) (string, error) {
 	project, zone, instanceGroupName, err := splitInstanceGroupID(scalingGroupID)
 	if err != nil {

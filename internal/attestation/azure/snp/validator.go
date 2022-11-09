@@ -311,6 +311,9 @@ func (a *azureInstanceInfo) validateAk(runtimeDataRaw []byte, reportData []byte,
 	return nil
 }
 
+// HCLAkValidator validates an attestation key issued by the Host Compatibility Layer (HCL).
+// The HCL is written by Azure, and sits between the Hypervisor and CVM OS.
+// The HCL runs in the protected context of the CVM.
 type HCLAkValidator interface {
 	validateAk(runtimeDataRaw []byte, reportData []byte, rsaParameters *tpm2.RSAParams) error
 }

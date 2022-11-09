@@ -22,6 +22,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// Measurements are Platform Configuration Register (PCR) values.
 type Measurements map[uint32][]byte
 
 var (

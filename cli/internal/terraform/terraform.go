@@ -89,7 +89,7 @@ func (c *Client) CreateCluster(
 	return ip, nil
 }
 
-// DestroyInstances destroys a Constellation cluster using Terraform.
+// DestroyCluster destroys a Constellation cluster using Terraform.
 func (c *Client) DestroyCluster(ctx context.Context) error {
 	return c.tf.Destroy(ctx)
 }

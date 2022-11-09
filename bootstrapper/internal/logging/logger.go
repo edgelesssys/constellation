@@ -19,10 +19,13 @@ type CloudLogger interface {
 	io.Closer
 }
 
+// NopLogger implements CloudLogger interface, but does nothing.
 type NopLogger struct{}
 
+// Disclose does nothing.
 func (l *NopLogger) Disclose(msg string) {}
 
+// Close does nothing.
 func (l *NopLogger) Close() error {
 	return nil
 }

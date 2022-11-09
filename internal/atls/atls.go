@@ -69,11 +69,13 @@ func CreateAttestationClientTLSConfig(issuer Issuer, validators []Validator) (*t
 	}, nil
 }
 
+// Issuer issues an attestation document.
 type Issuer interface {
 	oid.Getter
 	Issue(userData []byte, nonce []byte) (quote []byte, err error)
 }
 
+// Validator is able to validate an attestation document.
 type Validator interface {
 	oid.Getter
 	Validate(attDoc []byte, nonce []byte) ([]byte, error)

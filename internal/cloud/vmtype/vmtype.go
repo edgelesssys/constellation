@@ -14,8 +14,11 @@ import "strings"
 type VMType uint32
 
 const (
+	// Unknown is the default value for VMType and should not be used.
 	Unknown VMType = iota
+	// AzureCVM is an Azure Confidential Virtual Machine (CVM).
 	AzureCVM
+	// AzureTrustedLaunch is an Azure Trusted Launch VM.
 	AzureTrustedLaunch
 )
 

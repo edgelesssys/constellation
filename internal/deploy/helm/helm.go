@@ -14,6 +14,7 @@ type Release struct {
 	Wait        bool
 }
 
+// Releases bundles all helm releases to be deployed to Constellation.
 type Releases struct {
 	Cilium                Release
 	ConstellationServices Release

@@ -166,6 +166,7 @@ func (s *Server) getAttestationHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// AttestationIssuer issues an attestation document for the provided userData and nonce.
 type AttestationIssuer interface {
 	Issue(userData []byte, nonce []byte) (quote []byte, err error)
 }

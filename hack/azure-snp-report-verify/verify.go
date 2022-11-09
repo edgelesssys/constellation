@@ -23,6 +23,7 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
+// IsolationTEE describes an Azure SNP TEE.
 type IsolationTEE struct {
 	IDKeyDigest   string `json:"x-ms-sevsnpvm-idkeydigest"`
 	TEESvn        int    `json:"x-ms-sevsnpvm-tee-svn"`
@@ -32,6 +33,7 @@ type IsolationTEE struct {
 	GuestSvn      int    `json:"x-ms-sevsnpvm-guestsvn"`
 }
 
+// PrintSVNs prints the relevant Security Version Numbers (SVNs).
 func (i *IsolationTEE) PrintSVNs() {
 	fmt.Println("\tTEE SVN:", i.TEESvn)
 	fmt.Println("\tSNP FW SVN:", i.SNPFwSvn)

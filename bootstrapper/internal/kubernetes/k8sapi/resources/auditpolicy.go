@@ -18,6 +18,7 @@ type AuditPolicy struct {
 	Policy auditv1.Policy
 }
 
+// NewDefaultAuditPolicy create a new default Constellation audit policty.
 func NewDefaultAuditPolicy() *AuditPolicy {
 	return &AuditPolicy{
 		Policy: auditv1.Policy{

@@ -29,8 +29,10 @@ const (
 	auditPolicyPath = "/etc/kubernetes/audit-policy.yaml"
 )
 
+// KubdeadmConfiguration is used to generate kubeadm configurations.
 type KubdeadmConfiguration struct{}
 
+// InitConfiguration returns a new init configuration.
 func (c *KubdeadmConfiguration) InitConfiguration(externalCloudProvider bool, k8sVersion versions.ValidK8sVersion) KubeadmInitYAML {
 	var cloudProvider string
 	if externalCloudProvider {
@@ -171,6 +173,7 @@ func (c *KubdeadmConfiguration) InitConfiguration(externalCloudProvider bool, k8
 	}
 }
 
+// JoinConfiguration returns a new kubeadm join configuration.
 func (c *KubdeadmConfiguration) JoinConfiguration(externalCloudProvider bool) KubeadmJoinYAML {
 	var cloudProvider string
 	if externalCloudProvider {
@@ -201,27 +204,33 @@ func (c *KubdeadmConfiguration) JoinConfiguration(externalCloudProvider bool) Ku
 	}
 }
 
+// KubeadmJoinYAML holds configuration for kubeadm join workflow.
 type KubeadmJoinYAML struct {
 	JoinConfiguration    kubeadm.JoinConfiguration
 	KubeletConfiguration kubeletconf.KubeletConfiguration
 }
 
+// SetNodeName sets the node name.
 func (k *KubeadmJoinYAML) SetNodeName(nodeName string) {
 	k.JoinConfiguration.NodeRegistration.Name = nodeName
 }
 
+// SetAPIServerEndpoint sets the api server endpoint.
 func (k *KubeadmJoinYAML) SetAPIServerEndpoint(apiServerEndpoint string) {
 	k.JoinConfiguration.Discovery.BootstrapToken.APIServerEndpoint = apiServerEndpoint
 }
 
+// SetToken sets the boostrap token.
 func (k *KubeadmJoinYAML) SetToken(token string) {
 	k.JoinConfiguration.Discovery.BootstrapToken.Token = token
 }
 
+// AppendDiscoveryTokenCaCertHash appends another trusted discovery token CA hash.
 func (k *KubeadmJoinYAML) AppendDiscoveryTokenCaCertHash(discoveryTokenCaCertHash string) {
 	k.JoinConfiguration.Discovery.BootstrapToken.CACertHashes = append(k.JoinConfiguration.Discovery.BootstrapToken.CACertHashes, discoveryTokenCaCertHash)
 }
 
+// SetNodeIP sets the node IP.
 func (k *KubeadmJoinYAML) SetNodeIP(nodeIP string) {
 	if k.JoinConfiguration.NodeRegistration.KubeletExtraArgs == nil {
 		k.JoinConfiguration.NodeRegistration.KubeletExtraArgs = map[string]string{"node-ip": nodeIP}
@@ -230,10 +239,12 @@ func (k *KubeadmJoinYAML) SetNodeIP(nodeIP string) {
 	}
 }
 
+// SetProviderID sets the provider ID.
 func (k *KubeadmJoinYAML) SetProviderID(providerID string) {
 	k.KubeletConfiguration.ProviderID = providerID
 }
 
+// SetControlPlane sets the control plane with the advertised address.
 func (k *KubeadmJoinYAML) SetControlPlane(advertiseAddress string) {
 	k.JoinConfiguration.ControlPlane = &kubeadm.JoinControlPlane{
 		LocalAPIEndpoint: kubeadm.APIEndpoint{
@@ -244,21 +255,25 @@ func (k *KubeadmJoinYAML) SetControlPlane(advertiseAddress string) {
 	k.JoinConfiguration.SkipPhases = []string{"control-plane-prepare/download-certs"}
 }
 
+// Marshal into a k8s resource YAML.
 func (k *KubeadmJoinYAML) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(k)
 }
 
+// Unmarshal from a k8s resource YAML.
 func (k *KubeadmJoinYAML) Unmarshal(yamlData []byte) (KubeadmJoinYAML, error) {
 	var tmp KubeadmJoinYAML
 	return tmp, kubernetes.UnmarshalK8SResources(yamlData, &tmp)
 }
 
+// KubeadmInitYAML holds configuration for kubeadm init workflow.
 type KubeadmInitYAML struct {
 	InitConfiguration    kubeadm.InitConfiguration
 	ClusterConfiguration kubeadm.ClusterConfiguration
 	KubeletConfiguration kubeletconf.KubeletConfiguration
 }
 
+// SetNodeName sets name of node.
 func (k *KubeadmInitYAML) SetNodeName(nodeName string) {
 	k.InitConfiguration.NodeRegistration.Name = nodeName
 }
@@ -273,6 +288,7 @@ func (k *KubeadmInitYAML) SetCertSANs(certSANs []string) {
 	}
 }
 
+// SetAPIServerAdvertiseAddress sets the advertised API server address.
 func (k *KubeadmInitYAML) SetAPIServerAdvertiseAddress(apiServerAdvertiseAddress string) {
 	k.InitConfiguration.LocalAPIEndpoint.AdvertiseAddress = apiServerAdvertiseAddress
 }
@@ -284,18 +300,22 @@ func (k *KubeadmInitYAML) SetControlPlaneEndpoint(controlPlaneEndpoint string) {
 	}
 }
 
+// SetServiceCIDR sets the CIDR of service subnet.
 func (k *KubeadmInitYAML) SetServiceCIDR(serviceCIDR string) {
 	k.ClusterConfiguration.Networking.ServiceSubnet = serviceCIDR
 }
 
+// SetPodNetworkCIDR sets the CIDR of pod subnet.
 func (k *KubeadmInitYAML) SetPodNetworkCIDR(podNetworkCIDR string) {
 	k.ClusterConfiguration.Networking.PodSubnet = podNetworkCIDR
 }
 
+// SetServiceDNSDomain sets the dns domain.
 func (k *KubeadmInitYAML) SetServiceDNSDomain(serviceDNSDomain string) {
 	k.ClusterConfiguration.Networking.DNSDomain = serviceDNSDomain
 }
 
+// SetNodeIP sets the node IP.
 func (k *KubeadmInitYAML) SetNodeIP(nodeIP string) {
 	if k.InitConfiguration.NodeRegistration.KubeletExtraArgs == nil {
 		k.InitConfiguration.NodeRegistration.KubeletExtraArgs = map[string]string{"node-ip": nodeIP}
@@ -304,6 +324,7 @@ func (k *KubeadmInitYAML) SetNodeIP(nodeIP string) {
 	}
 }
 
+// SetProviderID sets the provider ID.
 func (k *KubeadmInitYAML) SetProviderID(providerID string) {
 	if k.InitConfiguration.NodeRegistration.KubeletExtraArgs == nil {
 		k.InitConfiguration.NodeRegistration.KubeletExtraArgs = map[string]string{"provider-id": providerID}
@@ -312,10 +333,12 @@ func (k *KubeadmInitYAML) SetProviderID(providerID string) {
 	}
 }
 
+// Marshal into a k8s resource YAML.
 func (k *KubeadmInitYAML) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(k)
 }
 
+// Unmarshal from a k8s resource YAML.
 func (k *KubeadmInitYAML) Unmarshal(yamlData []byte) (KubeadmInitYAML, error) {
 	var tmp KubeadmInitYAML
 	return tmp, kubernetes.UnmarshalK8SResources(yamlData, &tmp)

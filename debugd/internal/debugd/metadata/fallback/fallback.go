@@ -16,22 +16,22 @@ import (
 // Fetcher implements metadata.Fetcher interface but does not actually fetch cloud provider metadata.
 type Fetcher struct{}
 
+// Role for fallback fetcher does not try to fetch role.
 func (f Fetcher) Role(_ context.Context) (role.Role, error) {
-	// Fallback fetcher does not try to fetch role
 	return role.Unknown, nil
 }
 
+// DiscoverDebugdIPs for fallback fetcher does not try to discover debugd IPs.
 func (f Fetcher) DiscoverDebugdIPs(ctx context.Context) ([]string, error) {
-	// Fallback fetcher does not try to discover debugd IPs
 	return nil, nil
 }
 
+// DiscoverLoadbalancerIP for fallback fetcher does not try to discover loadbalancer IP.
 func (f Fetcher) DiscoverLoadbalancerIP(ctx context.Context) (string, error) {
-	// Fallback fetcher does not try to discover loadbalancer IP
 	return "", nil
 }
 
+// FetchSSHKeys for fallback fetcher does not try to fetch ssh keys.
 func (f Fetcher) FetchSSHKeys(ctx context.Context) ([]ssh.UserKey, error) {
-	// Fallback fetcher does not try to fetch ssh keys
 	return nil, nil
 }

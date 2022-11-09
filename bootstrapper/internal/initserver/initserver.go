@@ -172,12 +172,15 @@ func (s *Server) setupDisk(masterSecret, salt []byte) error {
 	return s.disk.UpdatePassphrase(string(diskKey))
 }
 
+// IssuerWrapper adds VM type context to an issuer to distinguish between
+// confidential and trusted launch VMs.
 type IssuerWrapper struct {
 	atls.Issuer
 	vmType      vmtype.VMType
 	idkeydigest []byte
 }
 
+// NewIssuerWrapper creates a new issuer with VM type context.
 func NewIssuerWrapper(issuer atls.Issuer, vmType vmtype.VMType, idkeydigest []byte) IssuerWrapper {
 	return IssuerWrapper{
 		Issuer:      issuer,
@@ -186,10 +189,12 @@ func NewIssuerWrapper(issuer atls.Issuer, vmType vmtype.VMType, idkeydigest []by
 	}
 }
 
+// VMType returns the VM type.
 func (i *IssuerWrapper) VMType() vmtype.VMType {
 	return i.vmType
 }
 
+// IDKeyDigest returns the ID key digest.
 func (i *IssuerWrapper) IDKeyDigest() []byte {
 	return i.idkeydigest
 }

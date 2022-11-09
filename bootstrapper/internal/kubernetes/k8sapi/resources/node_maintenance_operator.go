@@ -21,6 +21,7 @@ const (
 	nodeMaintenanceOperatorCatalogNamespace = "olm"
 )
 
+// NodeMaintenanceOperatorDeployment groups all deployments for node maintenance operator.
 type NodeMaintenanceOperatorDeployment struct {
 	CatalogSource operatorsv1alpha1.CatalogSource
 	OperatorGroup operatorsv1.OperatorGroup
@@ -80,6 +81,7 @@ func NewNodeMaintenanceOperatorDeployment() *NodeMaintenanceOperatorDeployment {
 	}
 }
 
+// Marshal to Kubernetes YAML.
 func (c *NodeMaintenanceOperatorDeployment) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(c)
 }

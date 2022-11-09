@@ -35,38 +35,54 @@ const (
 	// JoinServicePort is the port for reaching the join service within Kubernetes.
 	JoinServicePort = 9090
 	// JoinServiceNodePort is the port for reaching the join service outside of Kubernetes.
-	JoinServiceNodePort       = 30090
-	VerifyServicePortHTTP     = 8080
-	VerifyServicePortGRPC     = 9090
+	JoinServiceNodePort = 30090
+	// VerifyServicePortHTTP HTTP port for verification service.
+	VerifyServicePortHTTP = 8080
+	// VerifyServicePortGRPC GRPC port for verification service.
+	VerifyServicePortGRPC = 9090
+	// VerifyServiceNodePortHTTP HTTP node port for verification service.
 	VerifyServiceNodePortHTTP = 30080
+	// VerifyServiceNodePortGRPC GRPC node port for verification service.
 	VerifyServiceNodePortGRPC = 30081
 	// KMSPort is the port the KMS server listens on.
-	KMSPort          = 9000
+	KMSPort = 9000
+	// BootstrapperPort port of bootstrapper.
 	BootstrapperPort = 9000
-	KubernetesPort   = 6443
-	RecoveryPort     = 9999
-	EnclaveSSHPort   = 2222
-	SSHPort          = 22
-	NVMEOverTCPPort  = 8009
-	DebugdPort       = 4000
+	// KubernetesPort port for Kubernetes API.
+	KubernetesPort = 6443
+	// RecoveryPort port for Constellation recovery server.
+	RecoveryPort = 9999
+	// SSHPort port for SSH access.
+	SSHPort = 22
+	// DebugdPort port for debugd process.
+	DebugdPort = 4000
+	// KonnectivityPort port for konnectivity k8s service.
 	KonnectivityPort = 8132
-	// Default NodePort Range
+	// NodePortFrom start of range to use for K8s node port
 	// https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
 	NodePortFrom = 30000
-	NodePortTo   = 32767
+	// NodePortTo end of range to use for K8s node port
+	// https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
+	NodePortTo = 32767
 
 	//
 	// Filenames.
 	//
-	ClusterIDsFileName            = "constellation-id.json"
-	ConfigFilename                = "constellation-conf.yaml"
-	LicenseFilename               = "constellation.license"
-	DebugdConfigFilename          = "cdbg-conf.yaml"
-	AdminConfFilename             = "constellation-admin.conf"
-	MasterSecretFilename          = "constellation-mastersecret.json"
+
+	// ClusterIDsFileName filename that contains Constellation clusterID and IP.
+	ClusterIDsFileName = "constellation-id.json"
+	// ConfigFilename filename of Constellation config file.
+	ConfigFilename = "constellation-conf.yaml"
+	// LicenseFilename filename of Constellation license file.
+	LicenseFilename = "constellation.license"
+	// AdminConfFilename filename of KubeConfig for admin access to Constellation.
+	AdminConfFilename = "constellation-admin.conf"
+	// MasterSecretFilename filename of Constellation mastersecret.
+	MasterSecretFilename = "constellation-mastersecret.json"
+	// ControlPlaneAdminConfFilename filepath to control plane kubernetes admin config.
 	ControlPlaneAdminConfFilename = "/etc/kubernetes/admin.conf"
-	KubeadmCertificateDir         = "/etc/kubernetes/pki"
-	KubectlPath                   = "/run/state/bin/kubectl"
+	// KubectlPath path to kubectl binary.
+	KubectlPath = "/run/state/bin/kubectl"
 
 	//
 	// Filenames for Constellation's micro services.
@@ -95,22 +111,29 @@ const (
 	// CLI.
 	//
 
+	// MinControllerCount is the minimum number of control nodes.
 	MinControllerCount = 1
-	MinWorkerCount     = 1
+	// MinWorkerCount is the minimum number of worker nodes.
+	MinWorkerCount = 1
 
 	//
 	// Kubernetes.
 	//
 
+	// KubernetesJoinTokenTTL time to live for Kubernetes join token.
 	KubernetesJoinTokenTTL = 15 * time.Minute
+	// ConstellationNamespace namespace to deploy Constellation components into.
 	ConstellationNamespace = "kube-system"
-	JoinConfigMap          = "join-config"
-	InternalConfigMap      = "internal-config"
+	// JoinConfigMap k8s config map with node join config.
+	JoinConfigMap = "join-config"
+	// InternalConfigMap k8s config map with internal Constellation config.
+	InternalConfigMap = "internal-config"
 
 	//
 	// Helm.
 	//
 
+	// HelmNamespace namespace for helm charts.
 	HelmNamespace = "kube-system"
 
 	//

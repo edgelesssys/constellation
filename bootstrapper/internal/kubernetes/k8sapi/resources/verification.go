@@ -21,12 +21,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+// VerificationDaemonset groups all k8s resources for the verification service deployment.
 type VerificationDaemonset struct {
 	DaemonSet    apps.DaemonSet
 	Service      k8s.Service
 	LoadBalancer k8s.Service
 }
 
+// NewVerificationDaemonSet creates a new VerificationDaemonset.
 func NewVerificationDaemonSet(csp, loadBalancerIP string) *VerificationDaemonset {
 	var err error
 	if strings.Contains(loadBalancerIP, ":") {
@@ -188,6 +190,7 @@ func NewVerificationDaemonSet(csp, loadBalancerIP string) *VerificationDaemonset
 	}
 }
 
+// Marshal to Kubernetes YAML.
 func (v *VerificationDaemonset) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(v)
 }

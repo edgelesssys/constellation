@@ -28,6 +28,7 @@ import (
 )
 
 const (
+	// Version1 is the first version number for Constellation config file.
 	Version1 = "v1"
 )
 
@@ -217,6 +218,7 @@ type GCPConfig struct {
 	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
 }
 
+// QEMUConfig holds config information for QEMU based Constellation deployments.
 type QEMUConfig struct {
 	// description: |
 	//   Path to the image to use for the VMs.
@@ -538,6 +540,7 @@ func (c *Config) Image() string {
 	return ""
 }
 
+// UpdateMeasurements overwrites measurements in config with the provided ones.
 func (c *Config) UpdateMeasurements(newMeasurements Measurements) {
 	if c.Provider.AWS != nil {
 		c.Provider.AWS.Measurements.CopyFrom(newMeasurements)
@@ -612,6 +615,7 @@ func (c *Config) IsAzureNonCVM() bool {
 	return c.Provider.Azure != nil && c.Provider.Azure.ConfidentialVM != nil && !*c.Provider.Azure.ConfidentialVM
 }
 
+// EnforcesIDKeyDigest checks whether ID Key Digest should be enforced for respective cloud provider.
 func (c *Config) EnforcesIDKeyDigest() bool {
 	return c.Provider.Azure != nil && c.Provider.Azure.EnforceIDKeyDigest != nil && *c.Provider.Azure.EnforceIDKeyDigest
 }

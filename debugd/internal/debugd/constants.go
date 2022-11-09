@@ -8,6 +8,7 @@ package debugd
 
 import "time"
 
+// Debugd internal constants.
 const (
 	DebugdMetadataFlag               = "constellation-debugd"
 	GRPCTimeout                      = 5 * time.Minute

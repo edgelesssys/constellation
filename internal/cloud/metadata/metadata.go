@@ -35,11 +35,13 @@ type InstanceMetadata struct {
 	AliasIPRanges []string
 }
 
+// InstanceSelfer provide instance metadata about themselves.
 type InstanceSelfer interface {
 	// Self retrieves the current instance.
 	Self(ctx context.Context) (InstanceMetadata, error)
 }
 
+// InstanceLister list information about instance metadata.
 type InstanceLister interface {
 	// List retrieves all instances belonging to the current constellation.
 	List(ctx context.Context) ([]InstanceMetadata, error)

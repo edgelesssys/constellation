@@ -73,7 +73,7 @@ func (c *Client) GetScalingGroupName(scalingGroupID string) (string, error) {
 	return scaleSet, nil
 }
 
-// GetScalingGroupName retrieves the name of a scaling group as needed by the cluster-autoscaler.
+// GetAutoscalingGroupName retrieves the name of a scaling group as needed by the cluster-autoscaler.
 func (c *Client) GetAutoscalingGroupName(scalingGroupID string) (string, error) {
 	return c.GetScalingGroupName(scalingGroupID)
 }

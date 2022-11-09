@@ -25,6 +25,7 @@ type ServiceAccountKey struct {
 	ClientX509CertURL       string `json:"client_x509_cert_url"`
 }
 
+// ServiceAccountKeyFromURI parses ServiceAccountKey from URI.
 func ServiceAccountKeyFromURI(serviceAccountURI string) (ServiceAccountKey, error) {
 	uri, err := url.Parse(serviceAccountURI)
 	if err != nil {

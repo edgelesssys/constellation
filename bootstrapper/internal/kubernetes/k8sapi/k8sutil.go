@@ -112,6 +112,7 @@ func (k *KubernetesUtil) InstallComponents(ctx context.Context, version versions
 	return enableSystemdUnit(ctx, kubeletServicePath)
 }
 
+// InitCluster instruments kubeadm to initialize the K8s cluster.
 func (k *KubernetesUtil) InitCluster(
 	ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, controlPlaneEndpoint string, conformanceMode bool, log *logger.Logger,
 ) error {
@@ -242,10 +243,12 @@ func (k *KubernetesUtil) prepareControlPlaneForKonnectivity(ctx context.Context,
 	return nil
 }
 
+// SetupKonnectivity uses kubectl client to apply the provided konnectivity daemon set.
 func (k *KubernetesUtil) SetupKonnectivity(kubectl Client, konnectivityAgentsDaemonSet kubernetes.Marshaler) error {
 	return kubectl.Apply(konnectivityAgentsDaemonSet, true)
 }
 
+// SetupPodNetworkInput holds all configuration options to setup the pod network.
 type SetupPodNetworkInput struct {
 	CloudProvider        string
 	NodeName             string
@@ -339,6 +342,7 @@ func (k *KubernetesUtil) SetupVerificationService(kubectl Client, verificationSe
 	return kubectl.Apply(verificationServiceConfiguration, true)
 }
 
+// SetupOperatorLifecycleManager deploys operator lifecycle manager.
 func (k *KubernetesUtil) SetupOperatorLifecycleManager(ctx context.Context, kubectl Client, olmCRDs, olmConfiguration kubernetes.Marshaler, crdNames []string) error {
 	if err := kubectl.Apply(olmCRDs, true); err != nil {
 		return fmt.Errorf("applying OLM CRDs: %w", err)
@@ -351,10 +355,12 @@ func (k *KubernetesUtil) SetupOperatorLifecycleManager(ctx context.Context, kube
 	return kubectl.Apply(olmConfiguration, true)
 }
 
+// SetupNodeMaintenanceOperator deploys node maintenance operator.
 func (k *KubernetesUtil) SetupNodeMaintenanceOperator(kubectl Client, nodeMaintenanceOperatorConfiguration kubernetes.Marshaler) error {
 	return kubectl.Apply(nodeMaintenanceOperatorConfiguration, true)
 }
 
+// SetupNodeOperator deploys node operator.
 func (k *KubernetesUtil) SetupNodeOperator(ctx context.Context, kubectl Client, nodeOperatorConfiguration kubernetes.Marshaler) error {
 	return kubectl.Apply(nodeOperatorConfiguration, true)
 }

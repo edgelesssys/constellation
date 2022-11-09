@@ -15,6 +15,7 @@ import (
 	"cloud.google.com/go/logging"
 )
 
+// Logger logs to GCP cloud logging. Do not use to log sensitive information.
 type Logger struct {
 	client *logging.Client
 	logger *log.Logger
