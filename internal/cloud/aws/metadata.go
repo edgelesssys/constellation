@@ -70,11 +70,6 @@ func New(ctx context.Context) (*Metadata, error) {
 	}, nil
 }
 
-// Supported is used to determine if metadata API is implemented for this cloud provider.
-func (m *Metadata) Supported() bool {
-	return true
-}
-
 // List retrieves all instances belonging to the current Constellation.
 func (m *Metadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
 	uid, err := readInstanceTag(ctx, m.imds, cloud.TagUID)
@@ -140,11 +135,6 @@ func (m *Metadata) GetInstance(ctx context.Context, providerID string) (metadata
 // UID returns the UID of the Constellation.
 func (m *Metadata) UID(ctx context.Context) (string, error) {
 	return readInstanceTag(ctx, m.imds, cloud.TagUID)
-}
-
-// SupportsLoadBalancer returns true if the cloud provider supports load balancers.
-func (m *Metadata) SupportsLoadBalancer() bool {
-	return true
 }
 
 // GetLoadBalancerEndpoint returns the endpoint of the load balancer.

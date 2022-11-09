@@ -15,8 +15,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
-	"github.com/edgelesssys/constellation/v2/internal/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 )
@@ -35,12 +35,8 @@ func (m *Metadata) getScaleSetVM(ctx context.Context, providerID string) (metada
 	if err != nil {
 		return metadata.InstanceMetadata{}, err
 	}
-	publicIPAddress, err := m.getScaleSetVMPublicIPAddress(ctx, resourceGroup, scaleSet, instanceID, networkInterfaces)
-	if err != nil {
-		return metadata.InstanceMetadata{}, err
-	}
 
-	return convertScaleSetVMToCoreInstance(vmResp.VirtualMachineScaleSetVM, networkInterfaces, publicIPAddress)
+	return convertScaleSetVMToCoreInstance(vmResp.VirtualMachineScaleSetVM, networkInterfaces)
 }
 
 // listScaleSetVMs lists all scale set VMs in the current resource group.
@@ -70,7 +66,7 @@ func (m *Metadata) listScaleSetVMs(ctx context.Context, resourceGroup string) ([
 					if err != nil {
 						return nil, err
 					}
-					instance, err := convertScaleSetVMToCoreInstance(*vm, interfaces, "")
+					instance, err := convertScaleSetVMToCoreInstance(*vm, interfaces)
 					if err != nil {
 						return nil, err
 					}
@@ -84,7 +80,6 @@ func (m *Metadata) listScaleSetVMs(ctx context.Context, resourceGroup string) ([
 
 // convertScaleSetVMToCoreInstance converts an azure scale set virtual machine with interface configurations into a core.Instance.
 func convertScaleSetVMToCoreInstance(vm armcomputev2.VirtualMachineScaleSetVM, networkInterfaces []armnetwork.Interface,
-	publicIPAddress string,
 ) (metadata.InstanceMetadata, error) {
 	if vm.ID == nil {
 		return metadata.InstanceMetadata{}, errors.New("retrieving instance from armcompute API client returned no instance ID")
@@ -108,7 +103,6 @@ func convertScaleSetVMToCoreInstance(vm armcomputev2.VirtualMachineScaleSetVM, n
 		ProviderID: "azure://" + *vm.ID,
 		Role:       extractScaleSetVMRole(vm.Tags),
 		VPCIP:      extractVPCIP(networkInterfaces),
-		PublicIP:   publicIPAddress,
 		SSHKeys:    sshKeys,
 	}, nil
 }
