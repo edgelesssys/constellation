@@ -111,7 +111,7 @@ require (
 	k8s.io/kubelet v0.25.3
 	k8s.io/kubernetes v1.25.3
 	k8s.io/mount-utils v0.25.3
-	k8s.io/utils v0.0.0-20221107191617-1a15be271d1d
+	k8s.io/utils v0.0.0-20221108210102-8e77b1f39fe2
 )
 
 require github.com/hashicorp/go-retryablehttp v0.7.1 // indirect
