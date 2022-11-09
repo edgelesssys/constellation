@@ -6,12 +6,10 @@
 set -euo pipefail
 
 if [ -z "${CONFIG_FILE-}" ] && [ -f "${CONFIG_FILE-}" ]; then
+    # shellcheck source=/dev/null
     . "${CONFIG_FILE}"
 fi
 
-PK_FILE=${PKI}/PK.cer
-KEK_FILES=${PKI}/KEK.cer,${PKI}/MicCorKEKCA2011_2011-06-24.crt
-DB_FILES=${PKI}/db.cer,${PKI}/MicWinProPCA2011_2011-10-19.crt,${PKI}/MicCorUEFCA2011_2011-06-27.crt
 CONTAINERS_JSON=$(mktemp /tmp/containers-XXXXXXXXXXXXXX.json)
 declare -A AMI_FOR_REGION
 AMI_OUTPUT=$1
@@ -26,7 +24,8 @@ wait_for_import() {
     local status
     echo -n "Waiting for import to finish"
     while true; do
-        local status=$(import_status "${import_task_id}")
+        local status
+        status=$(import_status "${import_task_id}")
         case "${status}" in
             completed)
                 echo -e "\nImport completed."
@@ -50,8 +49,9 @@ wait_for_image_available() {
     echo -n "Waiting for image ${ami_id} to be available"
     while true; do
         # Waiter ImageAvailable failed: Max attempts exceeded
-        local status=$(aws ec2 wait image-available \
-            --region ${region} \
+        local status
+        status=$(aws ec2 wait image-available \
+            --region "${region}" \
             --image-ids "${ami_id}" 2>&1 || true)
         case "${status}" in
             "")
@@ -73,7 +73,8 @@ tag_ami_with_backing_snapshot() {
     local ami_id=$1
     local region=$2
     wait_for_image_available "${ami_id}" "${region}"
-    local snapshot_id=$(aws ec2 describe-images \
+    local snapshot_id
+    snapshot_id=$(aws ec2 describe-images \
         --region "${region}" \
         --image-ids "${ami_id}" \
         --output text --query "Images[0].BlockDeviceMappings[0].Ebs.SnapshotId")
@@ -104,8 +105,8 @@ create_ami_from_raw_disk() {
         }
     }' "${AWS_IMAGE_NAME}" "${AWS_BUCKET}" "${AWS_IMAGE_FILENAME}" > "${CONTAINERS_JSON}"
     IMPORT_SNAPSHOT=$(aws ec2 import-snapshot --region "${AWS_REGION}" --disk-container "file://${CONTAINERS_JSON}")
-    echo $IMPORT_SNAPSHOT
-    IMPORT_TASK_ID=$(echo $IMPORT_SNAPSHOT | jq -r '.ImportTaskId')
+    echo "$IMPORT_SNAPSHOT"
+    IMPORT_TASK_ID=$(echo "$IMPORT_SNAPSHOT" | jq -r '.ImportTaskId')
     aws ec2 describe-import-snapshot-tasks --region "${AWS_REGION}" --import-task-ids "${IMPORT_TASK_ID}"
     wait_for_import "${IMPORT_TASK_ID}"
     AWS_SNAPSHOT=$(aws ec2 describe-import-snapshot-tasks --region "${AWS_REGION}" --import-task-ids "${IMPORT_TASK_ID}" | jq -r '.ImportSnapshotTasks[0].SnapshotTaskDetail.SnapshotId')
@@ -121,8 +122,8 @@ create_ami_from_raw_disk() {
         --block-device-mappings "DeviceName=/dev/xvda,Ebs={SnapshotId=${AWS_SNAPSHOT}}" \
         --ena-support \
         --tpm-support v2.0 \
-        --uefi-data $(cat ${AWS_EFIVARS_PATH}))
-    IMAGE_ID=$(echo $REGISTER_OUT | jq -r '.ImageId')
+        --uefi-data "$(cat "${AWS_EFIVARS_PATH}")")
+    IMAGE_ID=$(echo "$REGISTER_OUT" | jq -r '.ImageId')
     AMI_FOR_REGION=( ["${AWS_REGION}"]="${IMAGE_ID}")
     tag_ami_with_backing_snapshot "${IMAGE_ID}" "${AWS_REGION}"
     make_ami_public "${IMAGE_ID}" "${AWS_REGION}"
@@ -131,12 +132,14 @@ create_ami_from_raw_disk() {
 
 replicate_ami() {
     local target_region=$1
-    local replicated_image_out=$(aws ec2 copy-image \
+    local replicated_image_out
+    replicated_image_out=$(aws ec2 copy-image \
         --name "${AWS_IMAGE_NAME}" \
         --source-region "${AWS_REGION}" \
         --source-image-id "${IMAGE_ID}" \
         --region "${target_region}")
-    local replicated_image_id=$(echo $replicated_image_out | jq -r '.ImageId')
+    local replicated_image_id
+    replicated_image_id=$(echo "$replicated_image_out" | jq -r '.ImageId')
     AMI_FOR_REGION["${target_region}"]=${replicated_image_id}
     echo "Replicated AMI as ${replicated_image_id} in ${target_region}"
 }
