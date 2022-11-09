@@ -45,6 +45,9 @@ outputs:
   awsImageName:
     description: "AWS image name"
     value: ${{ steps.aws.outputs.imageName }}
+  awsPublish:
+    description: "Should AWS AMI be published"
+    value: ${{ steps.aws.outputs.publish }}
   azureResourceGroupName:
     description: "Azure resource group name"
     value: ${{ steps.azure.outputs.resourceGroupName }}
@@ -144,11 +147,14 @@ runs:
         if [ "${imageType}" = release ]
         then
           echo "imageName=constellation-${imageVersion}" >> $GITHUB_OUTPUT
+          echo "publish=true" >> $GITHUB_OUTPUT
         elif [ "${imageType}" = debug ]
         then
           echo "imageName=constellation-debug-${semver}-${timestamp}" >> $GITHUB_OUTPUT
+          echo "publish=false" >> $GITHUB_OUTPUT
         else
           echo "imageName=constellation-${branchName}-${timestamp}" >> $GITHUB_OUTPUT
+          echo "publish=false" >> $GITHUB_OUTPUT
         fi
 
     #    gallery name may include alphanumeric characters, dots and underscores. Must end and begin with an alphanumeric character

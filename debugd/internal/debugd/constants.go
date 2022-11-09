@@ -28,7 +28,6 @@ RemainAfterExit=yes
 Restart=on-failure
 EnvironmentFile=/run/constellation.env
 Environment=PATH=/run/state/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
-ExecStartPre=-setenforce Permissive
 ExecStart=/run/state/bin/bootstrapper
 [Install]
 WantedBy=multi-user.target

@@ -582,8 +582,8 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 func (c *Config) IsDebugImage() bool {
 	switch {
 	case c.Provider.AWS != nil:
-		// TODO: Add proper image name validation for AWS when we are closer to release.
-		return true
+		// TODO: Add proper image name validation for AWS as part of rfc/image-discoverability.md
+		return false
 	case c.Provider.Azure != nil:
 		return !azureReleaseImageRegex.MatchString(c.Provider.Azure.Image)
 	case c.Provider.GCP != nil:

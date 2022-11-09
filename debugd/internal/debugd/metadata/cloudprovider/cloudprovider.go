@@ -11,11 +11,7 @@ import (
 	"fmt"
 	"net"
 
-	awscloud "github.com/edgelesssys/constellation/v2/internal/cloud/aws"
-	azurecloud "github.com/edgelesssys/constellation/v2/internal/cloud/azure"
-	gcpcloud "github.com/edgelesssys/constellation/v2/internal/cloud/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
-	qemucloud "github.com/edgelesssys/constellation/v2/internal/cloud/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 )
@@ -34,47 +30,10 @@ type Fetcher struct {
 	metaAPI providerMetadata
 }
 
-// NewGCP creates a new GCP fetcher.
-func NewGCP(ctx context.Context) (*Fetcher, error) {
-	gcpClient, err := gcpcloud.NewClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	metaAPI := gcpcloud.New(gcpClient)
-
+// New creates a new Fetcher.
+func New(cloud providerMetadata) *Fetcher {
 	return &Fetcher{
-		metaAPI: metaAPI,
-	}, nil
-}
-
-// NewAWS creates a new AWS fetcher.
-func NewAWS(ctx context.Context) (*Fetcher, error) {
-	metaAPI, err := awscloud.New(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Fetcher{
-		metaAPI: metaAPI,
-	}, nil
-}
-
-// NewAzure creates a new Azure fetcher.
-func NewAzure(ctx context.Context) (*Fetcher, error) {
-	metaAPI, err := azurecloud.NewMetadata(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Fetcher{
-		metaAPI: metaAPI,
-	}, nil
-}
-
-// NewQEMU creates a new Fetcher with QEMU metadata API.
-func NewQEMU() *Fetcher {
-	return &Fetcher{
-		metaAPI: &qemucloud.Metadata{},
+		metaAPI: cloud,
 	}
 }
 

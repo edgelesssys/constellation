@@ -23,11 +23,9 @@ type InstanceMetadata struct {
 	Role       role.Role
 	// VPCIP is the primary IP address of the instance in the VPC.
 	VPCIP string
-	// PublicIP is the primary public IP of the instance, if available, empty string otherwise.
-	PublicIP string
 	// SSHKeys maps usernames to ssh public keys.
+	// TODO: remove everywhere.
 	SSHKeys map[string][]string
-
 	// SecondaryIPRange is the VPC wide CIDR from which subnets are attached to VMs as AliasIPRanges.
 	// May be empty on certain CSPs.
 	SecondaryIPRange string

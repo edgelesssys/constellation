@@ -13,13 +13,13 @@ import (
 	"net/url"
 	"strconv"
 
+	"cloud.google.com/go/kms/apiv1/kmspb"
 	"github.com/edgelesssys/constellation/v2/kms/internal/storage"
 	"github.com/edgelesssys/constellation/v2/kms/kms"
 	"github.com/edgelesssys/constellation/v2/kms/kms/aws"
 	"github.com/edgelesssys/constellation/v2/kms/kms/azure"
 	"github.com/edgelesssys/constellation/v2/kms/kms/cluster"
 	"github.com/edgelesssys/constellation/v2/kms/kms/gcp"
-	kmspb "google.golang.org/genproto/googleapis/cloud/kms/v1"
 )
 
 // Well known endpoints for KMS services.

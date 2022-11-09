@@ -13,8 +13,8 @@ import (
 
 var providerIDRegex = regexp.MustCompile(`^gce://([^/]+)/([^/]+)/([^/]+)$`)
 
-// SplitProviderID splits a provider's id into core components.
-// A providerID is build after the schema 'gce://<project-id>/<zone>/<instance-name>'
+// SplitProviderID splits a k8s provider ID for GCP instances into its core components.
+// A provider ID is build after the schema 'gce://<project-id>/<zone>/<instance-name>'
 func SplitProviderID(providerID string) (project, zone, instance string, err error) {
 	matches := providerIDRegex.FindStringSubmatch(providerID)
 	if len(matches) != 4 {
