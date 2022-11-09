@@ -47,7 +47,7 @@ require (
 	go.uber.org/goleak v1.2.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
-	golang.org/x/mod v0.6.0
+	golang.org/x/mod v0.7.0
 	google.golang.org/api v0.102.0
 	google.golang.org/genproto v0.0.0-20221107162902-2d387536bcdd
 	google.golang.org/grpc v1.50.1
