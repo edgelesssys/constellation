@@ -26,7 +26,6 @@ func newConfigGenerateCmd() *cobra.Command {
 		Args: cobra.MatchAll(
 			cobra.ExactArgs(1),
 			isCloudProvider(0),
-			warnAWS(0),
 		),
 		ValidArgsFunction: generateCompletion,
 		RunE:              runConfigGenerate,

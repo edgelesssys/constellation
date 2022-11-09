@@ -104,26 +104,26 @@ measurements and keep them in a file (`measurements.yaml`) compatible with our c
 
 Comments should be omitted in final file. They show why certain values might be missing.
 
-Those measurements are signed and uploaded to AWS S3. Stored at a path matching the configured image.
+Those measurements are signed and uploaded to AWS S3. Stored at a path matching the configured image (see [image discoverability](image-discoverability.md)).
 
 ```yaml
-azure:
-    image: /subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.Compute/galleries/Constellation/images/constellation-coreos/versions/0.0.1655304334
-    measurements:
-        # 0: q27iAZeXGAiCPdu1bqRA2gAoyMO2KrXWY4YkTCQowc4=   # Unstable: UEFI on Azure
-        1: 0GqVBBcu78dlLW03pON6OJbjQTMsKZmN+SV88kWHPss=
-        2: PUWM/lXMA+ofRD8VYr7sjfUcdeFKn8+acjShPxmOeWk=
-        3: PUWM/lXMA+ofRD8VYr7sjfUcdeFKn8+acjShPxmOeWk=
-        4: Mnl6y16fHWpwSGWZsSFiLc4NYXRhQ39UqkClHcDbJ2s=
-        5: qJ2QqWHIFfV9UILu76d3fGXdZz/RpZ/TcFyw7kPHzj4=
-        # 6: glvMCHop3keeyU2xBHJTpYmEuqKqXJqCRQuQi8C3n4w=   # Unstable: VM Name Encoded on Azure
-        7: DnCqTk4YKN60heuvyzPoPH9uJ3yn3SgjaK1w59xmvvg=
-        8: hcLg6uP27lj28A+TExXlsv34EOmOh1jzdCofrBZS5gU=
-        9: hwxFDmhNROlS7oBh4dG3jzB4OeQAGhcZD9f6bwBtK/k=
-        # 10: PPiSI1eZHs+S/BgVWqewZAXDhkVgtIW8/PPgpR9Sr2o=  # Unstable: Linux IMA records on Azure
-        # 11: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=  # Set by us
-        # 12: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=  # Set by us
-        # 13..23 are all unused
+csp: azure
+image: v2.2.0-cc0de5c68d41f31dd0b284d574f137e0b0ad106b
+measurements:
+    # 0: q27iAZeXGAiCPdu1bqRA2gAoyMO2KrXWY4YkTCQowc4=   # Unstable: UEFI on Azure
+    1: 0GqVBBcu78dlLW03pON6OJbjQTMsKZmN+SV88kWHPss=
+    2: PUWM/lXMA+ofRD8VYr7sjfUcdeFKn8+acjShPxmOeWk=
+    3: PUWM/lXMA+ofRD8VYr7sjfUcdeFKn8+acjShPxmOeWk=
+    4: Mnl6y16fHWpwSGWZsSFiLc4NYXRhQ39UqkClHcDbJ2s=
+    5: qJ2QqWHIFfV9UILu76d3fGXdZz/RpZ/TcFyw7kPHzj4=
+    # 6: glvMCHop3keeyU2xBHJTpYmEuqKqXJqCRQuQi8C3n4w=   # Unstable: VM Name Encoded on Azure
+    7: DnCqTk4YKN60heuvyzPoPH9uJ3yn3SgjaK1w59xmvvg=
+    8: hcLg6uP27lj28A+TExXlsv34EOmOh1jzdCofrBZS5gU=
+    9: hwxFDmhNROlS7oBh4dG3jzB4OeQAGhcZD9f6bwBtK/k=
+    # 10: PPiSI1eZHs+S/BgVWqewZAXDhkVgtIW8/PPgpR9Sr2o=  # Unstable: Linux IMA records on Azure
+    # 11: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=  # Set by us
+    # 12: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=  # Set by us
+    # 13..23 are all unused
 ```
 
 ```sh
@@ -138,8 +138,9 @@ flowchart LR
     measurementssig[measurements.yaml signature]
     measurements[measurements.yaml]
     signer[Cosign Keypair]
-    cloud[Cloud Infrastructure<br />GCP/Azure]
+    cloud[Cloud Infrastructure<br />AWS/Azure/GCP]
     pcrreader[pcr-reader]
+    cloud -- uses --> ami
     cloud -- uses --> aig
     cloud -- uses --> gmi
     pcrreader -- writes --> measurements
@@ -154,17 +155,19 @@ flowchart LR
         rekor[Rekor]
         boots[Bootstrapper]
         s3[S3]
+        ami[Amazon Machine Images]
         aig[Azure Image Gallery]
         gmi[Google Machine Images]
-        gmi -- contains --> boots
         aig -- contains --> boots
+        ami -- contains --> boots
+        gmi -- contains --> boots
     end
 ```
 
 ### Verify Measurements
 
 `constellation config fetch-measurements`
-1. Read `.provider.[azure|gcp].image` from `constellation-conf.yaml`
+1. Read `.image` and used `provider` from `constellation-conf.yaml`
 2. Fetch measurements for this image from S3
    + Alternatively: Use rekor to fetch signature for this artifact
 3. Use embedded public key to verify signature.

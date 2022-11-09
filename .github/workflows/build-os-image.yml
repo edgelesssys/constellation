@@ -57,9 +57,49 @@ jobs:
           echo "disk-mapper-sha256=$(sha256sum disk-mapper | head -c 64)" >> $GITHUB_OUTPUT
         working-directory: ${{ github.workspace }}/build
 
+  build-settings:
+    name: "Determine build settings"
+    runs-on: ubuntu-22.04
+    outputs:
+      imageType: ${{ steps.image-type.outputs.imageType }}
+      pkiSet: ${{ steps.pki-set.outputs.pkiSet }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@e2f20e631ae6d7dd3b768f56a5d2af784dd54791 # tag=v2.5.0
+
+      - name: Determine version
+        id: version
+        uses: ./.github/actions/pseudo_version
+
+      - name: Determine type of image build
+        shell: bash
+        id: image-type
+        run: |
+          if [ "${{ startsWith(github.ref, 'refs/heads/release/') && (inputs.debug == false) }}" = true ]
+          then
+            echo "imageType=release" >> $GITHUB_OUTPUT
+          elif [ "${{ ((github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/')) && (inputs.debug == true) }}" = true ]
+          then
+            echo "imageType=debug" >> $GITHUB_OUTPUT
+          else
+            echo "imageType=branch" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine PKI set
+        id: pki-set
+        shell: bash
+        run: |
+          if [ "${{ steps.image-type.outputs.imageType }}" = "release" ]
+          then
+            echo "pkiSet=pki_prod" >> $GITHUB_OUTPUT
+          else
+            echo "pkiSet=pki_testing" >> $GITHUB_OUTPUT
+          fi
+
   make-os-image:
     name: "Build OS using mkosi"
-    needs: build-dependencies
+    needs: [build-settings, build-dependencies]
     runs-on: ubuntu-22.04
     # TODO: flatten outputs once possible
     # https://github.com/community/community/discussions/17245
@@ -121,13 +161,15 @@ jobs:
           version: 058046019e7ed2e8e93af87b8c14a808dcc6bbc3
 
       - name: Prepare PKI for secure boot signing
+        id: prepare-pki
         shell: bash
         run: |
-          ln -s pki_testing pki
-          echo "${DB_KEY}" > pki/db.key
+          echo "${DB_KEY}" > ${PKI_SET}/db.key
+          ln -s ${PKI_SET} pki
         working-directory: ${{ github.workspace }}/image
         env:
-          DB_KEY: ${{ secrets.SECURE_BOOT_TESTING_DB_KEY }}
+          PKI_SET: ${{ needs.build-settings.outputs.pkiSet }}
+          DB_KEY: ${{ (needs.build-settings.outputs.imageType == 'release' && secrets.SECURE_BOOT_RELEASE_DB_KEY) || secrets.SECURE_BOOT_TESTING_DB_KEY }}
 
       - name: Build
         shell: bash
@@ -190,7 +232,7 @@ jobs:
 
   upload-os-image:
     name: "Upload OS image to CSP"
-    needs: make-os-image
+    needs: [build-settings, make-os-image]
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
@@ -212,6 +254,17 @@ jobs:
         with:
           name: image-${{ matrix.csp }}
           path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36
+
+      - name: Configure input variables
+        id: vars
+        uses: ./.github/actions/os_build_variables
+        with:
+          csp: ${{ matrix.csp }}
+          uploadVariant: ${{ matrix.upload-variant }}
+          basePath: ${{ github.workspace }}/image
+          imageVersion: ${{ inputs.imageVersion }}
+          imageType: ${{ needs.build-settings.outputs.imageType }}
+          debug: ${{ inputs.debug }}
 
       - name: Install tools
         shell: bash
@@ -243,102 +296,25 @@ jobs:
           gcp_service_account_json: ${{ secrets.GCP_IMAGE_UPLOAD_SERVICE_ACCOUNT }}
 
       - name: Prepare PKI for image upload
-        shell: bash
-        run: ln -s pki_testing pki
-        working-directory: ${{ github.workspace }}/image
-
-      - name: Determine version
-        id: version
-        uses: ./.github/actions/pseudo_version
-
-      # Make sure to set valid names for AWS, Azure and GCP
-      #  Azure
-      #    gallery name may include alphanumeric characters, dots and underscores. Must end and begin with an alphanumeric character
-      #    image definition may include alphanumeric characters, dots, dashes and underscores. Must end and begin with an alphanumeric character
-      #    image version has to be semantic version in the form <uint>.<uint>.<uint> . uint may not be larger than 2,147,483,647
-      #
-      #  GCP
-      #    image family and image name may include lowercase alphanumeric characters and dashes. Must not end or begin with a dash
-      - name: Configure input variables
+        id: prepare-pki
         shell: bash
         run: |
-          timestamp=${{ steps.version.outputs.timestamp }}
-          semver=${{ steps.version.outputs.semanticVersion }}
-          imageVersion=${{ inputs.imageVersion }}
-          pseudover=${{ steps.version.outputs.pseudoVersion }}
-          echo "PKI=${{ github.workspace }}/image/pki" >> $GITHUB_ENV
-          echo "AWS_REGION=eu-central-1" >> $GITHUB_ENV
-          echo "AWS_REPLICATION_REGIONS=us-east-2 ap-south-1" >> $GITHUB_ENV
-          echo "AWS_BUCKET=constellation-images" >> $GITHUB_ENV
-          echo "AWS_EFIVARS_PATH=${{ github.workspace }}/image/mkosi.output.aws/fedora~36/efivars.bin" >> $GITHUB_ENV
-          echo "AWS_IMAGE_PATH=${{ github.workspace }}/image/mkosi.output.aws/fedora~36/image.raw" >> $GITHUB_ENV
-          echo "AWS_AMI_OUTPUT=${{ github.workspace }}/image/mkosi.output.aws/fedora~36/ami.json" >> $GITHUB_ENV
-          echo "AWS_IMAGE_FILENAME=image-$(date +%s).raw" >> $GITHUB_ENV
-          echo "GCP_PROJECT=constellation-images" >> $GITHUB_ENV
-          echo "GCP_BUCKET=constellation-images" >> $GITHUB_ENV
-          echo "GCP_REGION=europe-west3" >> $GITHUB_ENV
-          echo "GCP_RAW_IMAGE_PATH=${{ github.workspace }}/image/mkosi.output.gcp/fedora~36/image.raw" >> $GITHUB_ENV
-          echo "GCP_IMAGE_PATH=${{ github.workspace }}/image/mkosi.output.gcp/fedora~36/image.tar.gz" >> $GITHUB_ENV
-          echo "AZURE_RESOURCE_GROUP_NAME=constellation-images" >> $GITHUB_ENV
-          echo "AZURE_REGION=northeurope" >> $GITHUB_ENV
-          echo "AZURE_REPLICATION_REGIONS=northeurope eastus westeurope westus" >> $GITHUB_ENV
-          echo "AZURE_SKU=constellation" >> $GITHUB_ENV
-          echo "AZURE_PUBLISHER=edgelesssys" >> $GITHUB_ENV
-          echo "AZURE_RAW_IMAGE_PATH=${{ github.workspace }}/image/mkosi.output.azure/fedora~36/image.raw" >> $GITHUB_ENV
-          echo "AZURE_IMAGE_PATH=${{ github.workspace }}/image/mkosi.output.azure/fedora~36/image.vhd" >> $GITHUB_ENV
-          # TODO: set default security type to "ConfidentialVM" once replication is possible
-          AZURE_SECURITY_TYPE=${{ matrix.upload-variant }}
-          if [ -z "${AZURE_SECURITY_TYPE}" ]; then
-            AZURE_SECURITY_TYPE=ConfidentialVMSupported
-          fi
-          echo "AZURE_SECURITY_TYPE=${AZURE_SECURITY_TYPE}" >> $GITHUB_ENV
-          echo "AZURE_DISK_NAME=constellation-${pseudover//./-}-${AZURE_SECURITY_TYPE,,}" >> $GITHUB_ENV
-          if [ "${{ startsWith(github.ref, 'refs/heads/release/') && (inputs.debug == false) }}" = true ]
-          then
-            echo "AWS_IMAGE_NAME=constellation-${imageVersion}" >> $GITHUB_ENV
-            GCP_IMAGE_NAME=constellation-${imageVersion//./-}
-            echo "GCP_IMAGE_FAMILY=constellation" >> $GITHUB_ENV
-            AZURE_IMAGE_DEFINITION=constellation
-            echo "AZURE_IMAGE_VERSION=${imageVersion:1}" >> $GITHUB_ENV
-            AZURE_GALLERY_NAME=Constellation
-          elif [ "${{ ((github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/')) && (inputs.debug == true) }}" = true ]
-          then
-            echo "AWS_IMAGE_NAME=constellation-debug-${semver}-${{ steps.version.outputs.timestamp }}" >> $GITHUB_ENV
-            GCP_IMAGE_NAME=constellation-${{ steps.version.outputs.timestamp }}
-            echo "GCP_IMAGE_FAMILY=constellation-debug-${semver//./-}" >> $GITHUB_ENV
-            AZURE_IMAGE_DEFINITION=${semver}
-            echo "AZURE_IMAGE_VERSION=${timestamp:0:4}.${timestamp:4:4}.${timestamp:8}" >> $GITHUB_ENV
-            AZURE_GALLERY_NAME=Constellation_Debug
-          else
-            echo "AWS_IMAGE_NAME=constellation-${{ steps.version.outputs.branchName }}-${{ steps.version.outputs.timestamp }}" >> $GITHUB_ENV
-            GCP_IMAGE_NAME=constellation-${{ steps.version.outputs.timestamp }}
-            echo "GCP_IMAGE_FAMILY=constellation-${{ steps.version.outputs.branchName }}" >> $GITHUB_ENV
-            AZURE_IMAGE_DEFINITION=${{ steps.version.outputs.branchName }}
-            echo "AZURE_IMAGE_VERSION=${timestamp:0:4}.${timestamp:4:4}.${timestamp:8}" >> $GITHUB_ENV
-            AZURE_GALLERY_NAME=Constellation_Testing
-          fi
-          # TODO: enable VMGS upload for ConfidentialVM images once replication is possible
-          if [ "${AZURE_SECURITY_TYPE}" == "ConfidentialVMSupported" ]; then
-            echo "AZURE_GALLERY_NAME=${AZURE_GALLERY_NAME}_CVM" >> $GITHUB_ENV
-            echo "AZURE_VMGS_PATH=" >> $GITHUB_ENV
-          else
-            echo "AZURE_GALLERY_NAME=${AZURE_GALLERY_NAME}" >> $GITHUB_ENV
-            echo "AZURE_VMGS_PATH=${{ github.workspace }}/image/pki/${AZURE_SECURITY_TYPE}.vmgs" >> $GITHUB_ENV
-          fi
-          echo "AZURE_IMAGE_DEFINITION=${AZURE_IMAGE_DEFINITION}" >> $GITHUB_ENV
-          echo "AZURE_IMAGE_OFFER=${AZURE_IMAGE_DEFINITION}" >> $GITHUB_ENV
-          echo "GCP_IMAGE_NAME=${GCP_IMAGE_NAME}" >> $GITHUB_ENV
-          echo "GCP_IMAGE_FILENAME=${GCP_IMAGE_NAME}.tar.gz" >> $GITHUB_ENV
+          ln -s ${{ needs.build-settings.outputs.pkiSet }} pki
+        working-directory: ${{ github.workspace }}/image
 
       - name: Download VMGS blob
         run: |
           aws s3 cp \
-            --region ${AWS_REGION} \
-            s3://constellation-secure-boot/pki_testing/${AZURE_SECURITY_TYPE}.vmgs \
-            pki_testing/${AZURE_SECURITY_TYPE}.vmgs \
+            --region ${AZURE_VMGS_REGION} \
+            s3://constellation-secure-boot/${PKI_SET}/${AZURE_SECURITY_TYPE}.vmgs \
+            ${PKI_SET}/${AZURE_SECURITY_TYPE}.vmgs \
             --no-progress
         working-directory: ${{ github.workspace }}/image
         if: ${{ matrix.csp == 'azure' && !endsWith(env.AZURE_SECURITY_TYPE, 'Supported') }}
+        env:
+          PKI_SET: ${{ needs.build-settings.outputs.pkiSet }}
+          AZURE_VMGS_REGION: ${{ steps.vars.outputs.azureVmgsRegion }}
+          AZURE_SECURITY_TYPE: ${{ steps.vars.outputs.azureSecurityType }}
 
       - name: Upload AWS image
         shell: bash
@@ -350,6 +326,16 @@ jobs:
           echo "::endgroup::"
         working-directory: ${{ github.workspace }}/image
         if: ${{ matrix.csp == 'aws' }}
+        env:
+          PKI: ${{ github.workspace }}/image/pki
+          AWS_AMI_OUTPUT: ${{ steps.vars.outputs.awsAmiOutput }}
+          AWS_BUCKET: ${{ steps.vars.outputs.awsBucket }}
+          AWS_EFIVARS_PATH: ${{ steps.vars.outputs.awsEfivarsPath }}
+          AWS_IMAGE_FILENAME: ${{ steps.vars.outputs.awsImageFilename }}
+          AWS_IMAGE_NAME: ${{ steps.vars.outputs.awsImageName }}
+          AWS_IMAGE_PATH: ${{ steps.vars.outputs.awsImagePath }}
+          AWS_REGION: ${{ steps.vars.outputs.awsRegion }}
+          AWS_REPLICATION_REGIONS: ${{ steps.vars.outputs.awsReplicationRegions }}
 
       - name: Upload GCP image
         shell: bash
@@ -361,6 +347,16 @@ jobs:
           echo "::endgroup::"
         working-directory: ${{ github.workspace }}/image
         if: ${{ matrix.csp == 'gcp' }}
+        env:
+          PKI: ${{ github.workspace }}/image/pki
+          GCP_BUCKET: ${{ steps.vars.outputs.gcpBucket }}
+          GCP_IMAGE_FAMILY: ${{ steps.vars.outputs.gcpImageFamily }}
+          GCP_IMAGE_FILENAME: ${{ steps.vars.outputs.gcpImageFilename }}
+          GCP_IMAGE_NAME: ${{ steps.vars.outputs.gcpImageName }}
+          GCP_IMAGE_PATH: ${{ steps.vars.outputs.gcpImagePath }}
+          GCP_PROJECT: ${{ steps.vars.outputs.gcpProject }}
+          GCP_RAW_IMAGE_PATH: ${{ steps.vars.outputs.gcpRawImagePath }}
+          GCP_REGION: ${{ steps.vars.outputs.gcpRegion }}
 
       - name: Upload Azure image
         shell: bash
@@ -372,6 +368,23 @@ jobs:
           echo "::endgroup::"
         working-directory: ${{ github.workspace }}/image
         if: ${{ matrix.csp == 'azure' }}
+        env:
+          PKI: ${{ github.workspace }}/image/pki
+          AZURE_DISK_NAME: ${{ steps.vars.outputs.azureDiskName }}
+          AZURE_GALLERY_NAME: ${{ steps.vars.outputs.azureGalleryName }}
+          AZURE_IMAGE_DEFINITION: ${{ steps.vars.outputs.azureImageDefinition }}
+          AZURE_IMAGE_OFFER: ${{ steps.vars.outputs.azureImageOffer }}
+          AZURE_IMAGE_PATH: ${{ steps.vars.outputs.azureImagePath }}
+          AZURE_IMAGE_VERSION: ${{ steps.vars.outputs.azureImageVersion }}
+          AZURE_PUBLISHER: ${{ steps.vars.outputs.azurePublisher }}
+          AZURE_RAW_IMAGE_PATH: ${{ steps.vars.outputs.azureRawImagePath }}
+          AZURE_REGION: ${{ steps.vars.outputs.azureRegion }}
+          AZURE_REPLICATION_REGIONS: ${{ steps.vars.outputs.azureReplicationRegions }}
+          AZURE_VMGS_REGION: ${{ steps.vars.outputs.azureVmgsRegion }}
+          AZURE_RESOURCE_GROUP_NAME: ${{ steps.vars.outputs.azureResourceGroupName }}
+          AZURE_SECURITY_TYPE: ${{ steps.vars.outputs.azureSecurityType }}
+          AZURE_SKU: ${{ steps.vars.outputs.azureSku }}
+          AZURE_VMGS_PATH: ${{ steps.vars.outputs.azureVmgsPath }}
 
   calculate-pcrs:
     name: "Calculate PCRs"
@@ -440,19 +453,19 @@ jobs:
           unsquashfs -user-xattrs -d image.root.tree image.root.raw
           echo "::endgroup::"
 
-      - uses: anchore/sbom-action@b7e8507c6a3c89b7099a0198366d862c8f3ad8f1 # tag=v0.13.0
+      - uses: anchore/sbom-action@06e109483e6aa305a2b2395eabae554e51530e1d # tag=v0.13.1
         with:
           path: image.root.tree
           artifact-name: sbom.spdx.json
           format: spdx-json
 
-      - uses: anchore/sbom-action@b7e8507c6a3c89b7099a0198366d862c8f3ad8f1 # tag=v0.13.0
+      - uses: anchore/sbom-action@06e109483e6aa305a2b2395eabae554e51530e1d # tag=v0.13.1
         with:
           path: image.root.tree
           artifact-name: sbom.cyclonedx.json
           format: cyclonedx-json
 
-      - uses: anchore/sbom-action@b7e8507c6a3c89b7099a0198366d862c8f3ad8f1 # tag=v0.13.0
+      - uses: anchore/sbom-action@06e109483e6aa305a2b2395eabae554e51530e1d # tag=v0.13.1
         with:
           path: image.root.tree
           artifact-name: sbom.syft.json

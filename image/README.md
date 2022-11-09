@@ -106,6 +106,7 @@ export AZURE_SECURITY_TYPE=ConfidentialVM # or TrustedLaunch
 export AZURE_RESOURCE_GROUP_NAME= # e.g. "constellation-images"
 
 export AZURE_REGION=northeurope
+export AZURE_REPLICATION_REGIONS=
 export AZURE_DISK_NAME=constellation-$(date +%s)
 export AZURE_SNAPSHOT_NAME=${AZURE_DISK_NAME}
 export AZURE_RAW_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~36/image.raw
@@ -195,17 +196,28 @@ upload/upload_gcp.sh
 <details>
 <summary>Azure</summary>
 
+Note:
+
+> For testing purposes, it is a lot simpler to disable Secure Boot for the uploaded image!
+> Disabling Secure Boot allows you to skip the VMGS creation steps above.
+
 - Install `az` and `azcopy` (see [here](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli))
 - Login to Azure (see [here](https://docs.microsoft.com/en-us/cli/azure/authenticate-azure-cli))
-- [Prepare virtual machine guest state (VMGS) with customized NVRAM or use existing VMGS blob](#azure-secure-boot)
+- Optional (if Secure Boot should be enabled) [Prepare virtual machine guest state (VMGS) with customized NVRAM or use existing VMGS blob](#azure-secure-boot)
 
 ```sh
 # set these variables
 export AZURE_GALLERY_NAME= # e.g. "Constellation"
 export AZURE_IMAGE_DEFINITION= # e.g. "constellation"
 export AZURE_IMAGE_VERSION= # e.g. "1.0.0"
-export AZURE_VMGS_PATH= # e.g. "path/to/ConfidentialVM.vmgs"
-export AZURE_SECURITY_TYPE=ConfidentialVM # or TrustedLaunch
+# Set this variable to a path if you want to use Secure Boot.
+# Otherwise, set it to export AZURE_VMGS_PATH=
+export AZURE_VMGS_PATH= # e.g. nothing OR "path/to/ConfidentialVM.vmgs"
+# AZURE_SECURITY_TYPE can be one of
+# - "ConfidentialVMSupported" (ConfidentialVM with secure boot disabled),
+# - "ConfidentialVM" (ConfidentialVM with Secure Boot) or
+# - TrustedLaunch" (Trusted Launch with or without Secure Boot)
+export AZURE_SECURITY_TYPE=ConfidentialVMSupported
 
 export AZURE_RESOURCE_GROUP_NAME=constellation-images
 export AZURE_REGION=northeurope

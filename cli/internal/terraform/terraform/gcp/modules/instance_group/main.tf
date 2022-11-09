@@ -2,7 +2,7 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "4.42.1"
+      version = "4.43.0"
     }
   }
 }
@@ -93,5 +93,12 @@ resource "google_compute_instance_group_manager" "instance_group_manager" {
       name = named_port.value.name
       port = named_port.value.port
     }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      target_size, # required. autoscaling modifies the instance count externally
+      version,     # required. update procedure modifies the instance template externally
+    ]
   }
 }

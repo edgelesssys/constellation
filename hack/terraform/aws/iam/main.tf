@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "4.36.1"
+      version = "4.38.0"
     }
   }
 }
@@ -109,6 +109,7 @@ resource "aws_iam_policy" "control_plane_policy" {
         "logs:DescribeLogGroups",
         "logs:ListTagsLogGroup",
         "logs:CreateLogStream",
+        "logs:PutLogEvents",
         "tag:GetResources",
         "ec2:DescribeImages"
       ],
@@ -173,6 +174,7 @@ resource "aws_iam_policy" "worker_node_policy" {
         "logs:DescribeLogGroups",
         "logs:ListTagsLogGroup",
         "logs:CreateLogStream",
+        "logs:PutLogEvents",
         "tag:GetResources",
         "ec2:DescribeImages"
       ],

@@ -63,11 +63,10 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
     10. Run manual E2E tests using [Linux](/.github/workflows/e2e-test-manual.yml) and [macOS](/.github/workflows/e2e-test-manual-macos.yml) to confirm functionality and stability.
 
         ```sh
-        sono='--plugin e2e --plugin-env e2e.E2E_FOCUS="\[Conformance\]" --plugin-env e2e.E2E_SKIP="for service with type clusterIP|HostPort validates that there is no conflict between pods with same hostPort but different hostIP and protocol" --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-plugin.yaml --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-master-plugin.yaml'
-        gh workflow run e2e-test-manual.yml --ref release/v$minor -F cloudProvider=azure -F machineType=Standard_DC4as_v5 -F sonobuoyTestSuiteCmd="$sono" -F osImage=/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/$ver -F isDebugImage=false
-        gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=azure -F machineType=Standard_DC4as_v5 -F sonobuoyTestSuiteCmd="$sono" -F osImage=/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/$ver -F isDebugImage=false
-        gh workflow run e2e-test-manual.yml --ref release/v$minor -F cloudProvider=gcp -F machineType=n2d-standard-4 -F sonobuoyTestSuiteCmd="$sono" -F osImage=projects/constellation-images/global/images/constellation-v$gcpVer -F isDebugImage=false
-        gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=gcp -F machineType=n2d-standard-4 -F sonobuoyTestSuiteCmd="$sono" -F osImage=projects/constellation-images/global/images/constellation-v$gcpVer -F isDebugImage=false
+        gh workflow run e2e-test-manual.yml --ref release/v$minor -F cloudProvider=azure -F machineType=Standard_DC4as_v5 -F test="sonobuoy full" -F osImage=/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/$ver -F isDebugImage=false
+        gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=azure -F machineType=Standard_DC4as_v5 -F test="sonobuoy full" -F osImage=/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/$ver -F isDebugImage=false
+        gh workflow run e2e-test-manual.yml --ref release/v$minor -F cloudProvider=gcp -F machineType=n2d-standard-4 -F test="sonobuoy full" -F osImage=projects/constellation-images/global/images/constellation-v$gcpVer -F isDebugImage=false
+        gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=gcp -F machineType=n2d-standard-4 -F test="sonobuoy full" -F osImage=projects/constellation-images/global/images/constellation-v$gcpVer -F isDebugImage=false
         ```
 
     11. [Generate measurements](/.github/workflows/generate-measurements.yml) for the images on each CSP.
@@ -78,6 +77,7 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         ```
 
     12. Create a new tag on this release branch
+
         ```sh
         git tag v$ver
         git tags --push
@@ -98,6 +98,7 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
    3. Close the milestone for the release
    4. Move open issues and PRs from closed milestone to next milestone
 8. If the release is a minor version release, create an empty commit on main and tag it as the start of the next pre-release phase.
+
     ```sh
     nextMinorVer=$(echo $ver | awk -F. -v OFS=. '{$2 += 1 ; print}')
     git checkout main

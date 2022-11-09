@@ -1,7 +1,7 @@
 [Unit]
 Description=Prepare encrypted state disk
 Before=initrd-fs.target
-After=network-online.target configure-constel-csp.service
+After=network-online.target nss-lookup.target configure-constel-csp.service
 Wants=network-online.target
 Requires=initrd-root-fs.target
 FailureAction=reboot-immediate

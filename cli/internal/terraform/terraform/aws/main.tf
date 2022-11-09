@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "4.36.1"
+      version = "4.38.0"
     }
     random = {
       source  = "hashicorp/random"
@@ -20,11 +20,11 @@ locals {
   uid                = random_id.uid.hex
   name               = "${var.name}-${local.uid}"
   ports_node_range   = "30000-32767"
-  ports_ssh          = "22"
   ports_kubernetes   = "6443"
   ports_bootstrapper = "9000"
   ports_konnectivity = "8132"
   ports_verify       = "30081"
+  ports_recovery     = "9999"
   ports_debugd       = "4000"
 
   tags = { constellation-uid = local.uid }
@@ -89,18 +89,6 @@ resource "aws_security_group" "security_group" {
     description = "K8s node ports"
   }
 
-  # TODO: Remove when development is more advanced
-  dynamic "ingress" {
-    for_each = var.debug ? [1] : []
-    content {
-      from_port   = local.ports_ssh
-      to_port     = local.ports_ssh
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-      description = "SSH"
-    }
-  }
-
   ingress {
     from_port   = local.ports_bootstrapper
     to_port     = local.ports_bootstrapper
@@ -123,6 +111,14 @@ resource "aws_security_group" "security_group" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
     description = "konnectivity"
+  }
+
+  ingress {
+    from_port   = local.ports_recovery
+    to_port     = local.ports_recovery
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "recovery"
   }
 
   ingress {
@@ -182,6 +178,16 @@ module "load_balancer_target_verify" {
   healthcheck_protocol = "TCP"
 }
 
+module "load_balancer_target_recovery" {
+  source               = "./modules/load_balancer_target"
+  name                 = "${local.name}-recovery"
+  vpc_id               = aws_vpc.vpc.id
+  lb_arn               = aws_lb.front_end.arn
+  port                 = local.ports_recovery
+  tags                 = local.tags
+  healthcheck_protocol = "TCP"
+}
+
 module "load_balancer_target_debugd" {
   count                = var.debug ? 1 : 0 // only deploy debugd in debug mode
   source               = "./modules/load_balancer_target"
@@ -203,18 +209,6 @@ module "load_balancer_target_konnectivity" {
   healthcheck_protocol = "TCP"
 }
 
-# TODO: Remove when development is more advanced
-module "load_balancer_target_ssh" {
-  count                = var.debug ? 1 : 0 // only deploy SSH in debug mode
-  source               = "./modules/load_balancer_target"
-  name                 = "${local.name}-ssh"
-  vpc_id               = aws_vpc.vpc.id
-  lb_arn               = aws_lb.front_end.arn
-  port                 = local.ports_ssh
-  tags                 = local.tags
-  healthcheck_protocol = "TCP"
-}
-
 module "instance_group_control_plane" {
   source          = "./modules/instance_group"
   name            = local.name
@@ -229,9 +223,9 @@ module "instance_group_control_plane" {
     module.load_balancer_target_bootstrapper.target_group_arn,
     module.load_balancer_target_kubernetes.target_group_arn,
     module.load_balancer_target_verify.target_group_arn,
+    module.load_balancer_target_recovery.target_group_arn,
     module.load_balancer_target_konnectivity.target_group_arn,
-    var.debug ? [module.load_balancer_target_debugd[0].target_group_arn,
-    module.load_balancer_target_ssh[0].target_group_arn] : [],
+    var.debug ? [module.load_balancer_target_debugd[0].target_group_arn] : [],
   ])
   security_groups      = [aws_security_group.security_group.id]
   subnetwork           = module.public_private_subnet.private_subnet_id
@@ -250,6 +244,6 @@ module "instance_group_worker_nodes" {
   state_disk_size      = var.state_disk_size
   subnetwork           = module.public_private_subnet.private_subnet_id
   target_group_arns    = []
-  security_groups      = []
+  security_groups      = [aws_security_group.security_group.id]
   iam_instance_profile = var.iam_instance_profile_worker_nodes
 }

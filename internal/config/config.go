@@ -268,7 +268,7 @@ func Default() *Config {
 				IAMProfileControlPlane: "",
 				IAMProfileWorkerNodes:  "",
 				Measurements:           copyPCRMap(awsPCRs),
-				EnforcedMeasurements:   []uint32{}, // TODO: add default values
+				EnforcedMeasurements:   []uint32{4, 8, 9, 11, 12, 13, 15},
 			},
 			Azure: &AzureConfig{
 				SubscriptionID:       "",
@@ -298,7 +298,7 @@ func Default() *Config {
 				EnforcedMeasurements:  []uint32{0, 4, 8, 9, 11, 12, 13, 15},
 			},
 			QEMU: &QEMUConfig{
-				ImageFormat:           "qcow2",
+				ImageFormat:           "raw",
 				VCPUs:                 2,
 				Memory:                2048,
 				MetadataAPIImage:      versions.QEMUMetadataImage,
@@ -306,7 +306,7 @@ func Default() *Config {
 				LibvirtContainerImage: versions.LibvirtImage,
 				Measurements:          copyPCRMap(qemuPCRs),
 				EnforcedMeasurements:  []uint32{4, 8, 9, 11, 12, 13, 15},
-				NVRAM:                 "testing",
+				NVRAM:                 "production",
 			},
 		},
 		KubernetesVersion: string(versions.Default),
@@ -579,8 +579,8 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 func (c *Config) IsDebugImage() bool {
 	switch {
 	case c.Provider.AWS != nil:
-		// TODO: Add proper image name validation for AWS when we are closer to release.
-		return true
+		// TODO: Add proper image name validation for AWS as part of rfc/image-discoverability.md
+		return false
 	case c.Provider.Azure != nil:
 		return !azureReleaseImageRegex.MatchString(c.Provider.Azure.Image)
 	case c.Provider.GCP != nil:
