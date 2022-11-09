@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cmd
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
@@ -27,7 +26,7 @@ func newConfigInstanceTypesCmd() *cobra.Command {
 }
 
 func printSupportedInstanceTypes(cmd *cobra.Command, args []string) {
-	fmt.Printf(`AWS instance families:
+	cmd.Printf(`AWS instance families:
 %v
 Azure Confidential VM instance types:
 %v

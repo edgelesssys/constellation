@@ -50,7 +50,7 @@ func newMiniUpCmd() *cobra.Command {
 }
 
 func runUp(cmd *cobra.Command, args []string) error {
-	spinner := newSpinner(cmd.OutOrStdout())
+	spinner := newSpinner(cmd.ErrOrStderr())
 	defer spinner.Stop()
 	creator := cloudcmd.NewCreator(spinner)
 
@@ -58,7 +58,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 }
 
 func up(cmd *cobra.Command, creator cloudCreator, spinner spinnerInterf) error {
-	if err := checkSystemRequirements(cmd.OutOrStdout()); err != nil {
+	if err := checkSystemRequirements(cmd.ErrOrStderr()); err != nil {
 		return fmt.Errorf("system requirements not met: %w", err)
 	}
 
@@ -163,7 +163,7 @@ func prepareConfig(cmd *cobra.Command, fileHandler file.Handler) (*config.Config
 
 	// check for existing config
 	if configPath != "" {
-		config, err := readConfig(cmd.OutOrStdout(), fileHandler, configPath)
+		config, err := readConfig(cmd.ErrOrStderr(), fileHandler, configPath)
 		if err != nil {
 			return nil, err
 		}
@@ -178,7 +178,7 @@ func prepareConfig(cmd *cobra.Command, fileHandler file.Handler) (*config.Config
 	_, err = fileHandler.Stat(constants.ConfigFilename)
 	if err == nil {
 		// config already exists, prompt user to overwrite
-		cmd.Println("A config file already exists in the current workspace.")
+		cmd.PrintErrln("A config file already exists in the current workspace.")
 		ok, err := askToConfirm(cmd, "Do you want to overwrite it?")
 		if err != nil {
 			return nil, err
@@ -226,10 +226,10 @@ func initializeMiniCluster(cmd *cobra.Command, fileHandler file.Handler, spinner
 	// clean up cluster resources if initialization fails
 	defer func() {
 		if retErr != nil {
-			cmd.Printf("An error occurred: %s\n", retErr)
-			cmd.Println("Attempting to roll back.")
+			cmd.PrintErrf("An error occurred: %s\n", retErr)
+			cmd.PrintErrln("Attempting to roll back.")
 			_ = runDown(cmd, []string{})
-			cmd.Printf("Rollback succeeded.\n\n")
+			cmd.PrintErrf("Rollback succeeded.\n\n")
 		}
 	}()
 	newDialer := func(validator *cloudcmd.Validator) *dialer.Dialer {

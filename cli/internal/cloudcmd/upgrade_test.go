@@ -76,7 +76,7 @@ func TestUpdateMeasurements(t *testing.T) {
 
 			upgrader := &Upgrader{
 				measurementsUpdater: tc.updater,
-				writer:              &bytes.Buffer{},
+				outWriter:           &bytes.Buffer{},
 			}
 
 			err := upgrader.updateMeasurements(context.Background(), tc.newMeasurements)
@@ -203,7 +203,7 @@ func TestUpdateImage(t *testing.T) {
 
 			upgrader := &Upgrader{
 				imageUpdater: tc.updater,
-				writer:       &bytes.Buffer{},
+				outWriter:    &bytes.Buffer{},
 			}
 
 			err := upgrader.updateImage(context.Background(), tc.newImage)

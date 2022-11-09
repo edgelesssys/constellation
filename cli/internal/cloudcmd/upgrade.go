@@ -29,11 +29,11 @@ type Upgrader struct {
 	measurementsUpdater measurementsUpdater
 	imageUpdater        imageUpdater
 
-	writer io.Writer
+	outWriter io.Writer
 }
 
 // NewUpgrader returns a new Upgrader.
-func NewUpgrader(writer io.Writer) (*Upgrader, error) {
+func NewUpgrader(outWriter io.Writer) (*Upgrader, error) {
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", constants.AdminConfFilename)
 	if err != nil {
 		return nil, fmt.Errorf("building kubernetes config: %w", err)
@@ -53,7 +53,7 @@ func NewUpgrader(writer io.Writer) (*Upgrader, error) {
 	return &Upgrader{
 		measurementsUpdater: &kubeMeasurementsUpdater{client: kubeClient},
 		imageUpdater:        &kubeImageUpdater{client: unstructuredClient},
-		writer:              writer,
+		outWriter:           outWriter,
 	}, nil
 }
 
@@ -118,7 +118,7 @@ func (u *Upgrader) updateMeasurements(ctx context.Context, measurements map[uint
 		}
 		if !changed {
 			// measurements are the same, nothing to be done
-			fmt.Fprintln(u.writer, "Cluster is already using the chosen measurements, skipping measurements upgrade")
+			fmt.Fprintln(u.outWriter, "Cluster is already using the chosen measurements, skipping measurements upgrade")
 			return nil
 		}
 	}
@@ -136,7 +136,7 @@ func (u *Upgrader) updateMeasurements(ctx context.Context, measurements map[uint
 		return fmt.Errorf("setting new measurements: %w", err)
 	}
 
-	fmt.Fprintln(u.writer, "Successfully updated the cluster's expected measurements")
+	fmt.Fprintln(u.outWriter, "Successfully updated the cluster's expected measurements")
 	return nil
 }
 
@@ -147,7 +147,7 @@ func (u *Upgrader) updateImage(ctx context.Context, image string) error {
 	}
 
 	if currentImageDefinition == image {
-		fmt.Fprintln(u.writer, "Cluster is already using the chosen image, skipping image upgrade")
+		fmt.Fprintln(u.outWriter, "Cluster is already using the chosen image, skipping image upgrade")
 		return nil
 	}
 
@@ -156,7 +156,7 @@ func (u *Upgrader) updateImage(ctx context.Context, image string) error {
 		return fmt.Errorf("setting new image: %w", err)
 	}
 
-	fmt.Fprintln(u.writer, "Successfully updated the cluster's image, upgrades will be applied automatically")
+	fmt.Fprintln(u.outWriter, "Successfully updated the cluster's image, upgrades will be applied automatically")
 	return nil
 }
 
