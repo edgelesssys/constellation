@@ -14,7 +14,6 @@ s1:  iperf Done.
 """
 import os
 import re
-from collections import defaultdict
 from pathlib import Path
 from typing import Dict
 
@@ -30,7 +29,7 @@ def eval(tests: Dict[str, str]) -> Dict[str, Dict[str, float]]:
     """
     result = {}
     for t in tests:
-        row = defaultdict(str)
+        row = {}
         for subtest in subtests:
             base_path = os.path.join(tests[t], subtests[subtest])
             try:

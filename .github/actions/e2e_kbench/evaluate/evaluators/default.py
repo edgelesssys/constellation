@@ -1,7 +1,6 @@
 """Evaluator for the K-Bench default test."""
 import os
 import re
-from collections import defaultdict
 from typing import Dict
 
 pod_latencies = {
@@ -29,14 +28,14 @@ service_latencies = {
 }
 
 
-def eval(tests: Dict[str, str]) -> Dict[str, Dict[str, float]]:
+def eval(tests: Dict[str, str]) -> Dict[str, Dict[str, int]]:
     """Read the results of the default tests.
 
     Return a result dictionary.
     """
     result = {}
     for t in tests:
-        row = defaultdict(float)
+        row = {}
         # read the default result file
         kbench = []
         with open(os.path.join(tests[t], 'default', 'kbench.log'), 'r') as f:

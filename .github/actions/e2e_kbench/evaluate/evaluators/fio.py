@@ -14,7 +14,6 @@ Run status group 0 (all jobs):
 
 import os
 import re
-from collections import defaultdict
 from pathlib import Path
 from typing import Dict
 
@@ -33,7 +32,7 @@ def eval(tests: Dict[str, str]) -> Dict[str, Dict[str, float]]:
     result = {}
     for t in tests:
         base_path = os.path.join(tests[t], 'dp_fio')
-        row = defaultdict(str)
+        row = {}
         for subtest in subtests:
             try:
                 log_path = next(Path(base_path).rglob(subtests[subtest]))
