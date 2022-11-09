@@ -18,13 +18,13 @@ import (
 	"time"
 
 	kms "cloud.google.com/go/kms/apiv1"
+	"cloud.google.com/go/kms/apiv1/kmspb"
 	"github.com/edgelesssys/constellation/v2/kms/internal/config"
 	"github.com/edgelesssys/constellation/v2/kms/internal/storage"
 	kmsInterface "github.com/edgelesssys/constellation/v2/kms/kms"
 	"github.com/edgelesssys/constellation/v2/kms/kms/util"
 	"github.com/googleapis/gax-go/v2"
 	"google.golang.org/api/option"
-	kmspb "google.golang.org/genproto/googleapis/cloud/kms/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
