@@ -63,27 +63,6 @@ runs:
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
 
-    - name: Delete namespace and PVCs
-      shell: bash
-      run: |
-        ELAPSED=0
-        kubectl delete namespace kbench-pod-namespace --wait=true || true
-        echo "::group::Wait for PV deletion"
-        until [ "$(kubectl get pv -o json | jq '.items | length')" == "0" ] || [ $ELAPSED -gt $PV_DELETION_TIMEOUT ];
-        do
-          echo $(kubectl get pv -o json | jq '.items | length') PV remaining..
-          sleep 1
-          ELAPSED=$((ELAPSED+1))
-        done
-        if [ $ELAPSED -gt $PV_DELETION_TIMEOUT ]; then
-          echo "Timed out waiting for PV deletion.."
-          exit 1
-        fi
-        echo "::endgroup::"
-      env:
-        KUBECONFIG: ${{ inputs.kubeconfig }}
-        PV_DELETION_TIMEOUT: "120" # 2 minutes timeout for pv deletion
-
     - name: Merge K-Bench results
       working-directory: k-bench
       shell: bash
