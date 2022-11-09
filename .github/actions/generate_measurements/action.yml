@@ -49,6 +49,9 @@ inputs:
   azureResourceGroup:
     description: "The resource group to use"
     required: false
+  azureUserAssignedIdentity:
+     description: "The Azure user assigned identity to use for Constellation."
+     required: false
   cosignPublicKey:
     description: "Cosign public key to sign measurements."
     required: true
@@ -95,6 +98,7 @@ runs:
       uses: ./.github/actions/constellation_create
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
+        gcpProject: ${{ inputs.gcpProject }}
         gcpClusterServiceAccountKey: ${{ inputs.gcpClusterServiceAccountKey }}
         workerNodesCount: ${{ inputs.workerNodesCount }}
         controlNodesCount: ${{ inputs.controlNodesCount }}
@@ -102,7 +106,11 @@ runs:
         osImage: ${{ inputs.osImage }}
         isDebugImage: ${{ inputs.isDebugImage }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
+        azureSubscription: ${{ inputs.azureSubscription }}
+        azureTenant: ${{ inputs.azureTenant }}
+        azureClientID: ${{ inputs.azureClientID }}
         azureClientSecret: ${{ inputs.azureClientSecret }}
+        azureUserAssignedIdentity: ${{ inputs.azureUserAssignedIdentity }}
         azureResourceGroup: ${{ inputs.azureResourceGroup }}
 
     - name: Measure cluster

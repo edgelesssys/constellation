@@ -189,7 +189,7 @@ func prepareConfig(cmd *cobra.Command, fileHandler file.Handler) (*config.Config
 	}
 
 	// download image to current directory if it doesn't exist
-	const imagePath = "./constellation.qcow2"
+	const imagePath = "./constellation.raw"
 	if _, err := os.Stat(imagePath); err == nil {
 		cmd.Printf("Using existing image at %s\n\n", imagePath)
 	} else if errors.Is(err, os.ErrNotExist) {

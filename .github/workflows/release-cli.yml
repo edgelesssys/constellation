@@ -91,9 +91,9 @@ jobs:
           grype constellation.spdx.sbom --fail-on high --only-fixed
         env:
           COSIGN_EXPERIMENTAL: 1
-          cosignPublicKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
-          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
-          cosignPassword: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
+          COSIGN_PUBLIC_KEY: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+          COSIGN_PRIVATE_KEY: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
 
       - name: Create release with artifacts
         # GitHub endorsed release project. See: https://github.com/actions/create-release
