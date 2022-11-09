@@ -65,7 +65,7 @@ git clone https://github.com/edgelesssys/k-bench.git
 cd k-bench && git checkout feat/constellation
 ./install.sh
 
-# Remove the Constellation encrypted storage class 
+# Remove the Constellation encrypted storage class
 # Remember to revert this change before running K-Bench on Constellation!
 yq 'del(.spec.storageClassName)' config/dp_fio/fio_pvc.yaml
 yq 'del(.spec.storageClassName)' config/dp_netperf_internode/netperf_pvc.yml
@@ -99,7 +99,7 @@ KBENCH_RESULTS=k-bench/out/
 
 python constellation/.github/actions/k-bench/evaluate/parse.py
 
-# Upload result to S3 
+# Upload result to S3
 S3_PATH=s3://public-edgeless-constellation/benchmarks
 aws s3 cp benchmarks/AKS.json ${S3_PATH}/AKS.json
 ```
@@ -114,7 +114,7 @@ git clone https://github.com/edgelesssys/k-bench.git
 cd k-bench && git checkout feat/constellation
 ./install.sh
 
-# Remove the Constellation encrypted storage class 
+# Remove the Constellation encrypted storage class
 # Remember to revert this change before running K-Bench on Constellation!
 yq 'del(.spec.storageClassName)' config/dp_fio/fio_pvc.yaml
 yq 'del(.spec.storageClassName)' config/dp_netperf_internode/netperf_pvc.yml
@@ -148,7 +148,7 @@ KBENCH_RESULTS=k-bench/out/
 
 python constellation/.github/actions/k-bench/evaluate/parse.py
 
-# Upload result to S3 
+# Upload result to S3
 S3_PATH=s3://public-edgeless-constellation/benchmarks
 aws s3 cp benchmarks/GKE.json ${S3_PATH}/GKE.json
 ```

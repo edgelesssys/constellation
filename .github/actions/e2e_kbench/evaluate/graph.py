@@ -7,10 +7,17 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 SUBJECTS = [
-    "constellation-gcp",
-    "GKE",
     "constellation-azure",
     "AKS",
+    "constellation-gcp",
+    "GKE",
+]
+
+LEGEND_NAMES = [
+    "Constellation on Azure",
+    "AKS",
+    "Constellation on GCP",
+    "GKE",
 ]
 
 BAR_COLORS = ["#90FF99", '#929292', "#8B04DD", '#000000']
@@ -101,7 +108,7 @@ def bar_chart(data, headers, title='', suffix='', val_label=True, y_log=False):
     bars = []
 
     # Iterate over all data
-    for i, (name, values) in enumerate(data.items()):
+    for i, values in enumerate(data.values()):
         # The offset in x direction of that bar
         x_offset = (i - n_bars / 2) * bar_width + bar_width / 2
 
@@ -114,7 +121,7 @@ def bar_chart(data, headers, title='', suffix='', val_label=True, y_log=False):
         # Add a handle to the last drawn bar, which we'll need for the legend
         bars.append(bar[0])
     # Draw legend
-    ax.legend(bars, data.keys())
+    ax.legend(bars, LEGEND_NAMES)
     if y_log:
         ax.set_yscale('log')
     ax.set_xticks(np.arange(len(headers)))
