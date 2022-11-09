@@ -52,7 +52,8 @@ def eval(tests: Dict[str, str]) -> Dict[str, Dict[str, float]]:
                 line = get_line_containing_needle(
                     lines=kbench, needle=latency_dict[key])
                 median = get_median_from_line(line=line)
-                row[key] = float(median)
+                # round API latency to full ms granularity
+                row[key] = round(float(median))
 
         result[t] = row
     return result

@@ -79,7 +79,7 @@ def bar_chart(data, headers, title='', suffix='', val_label=True, y_log=False):
     """Draws a bar chart with multiple bars per data point.
 
     Args:
-        data (list): List of lists of value points.
+        data (dict[str, list]): Benchmark data dictionary: subject -> lists of value points
         headers (list): List of headers (x-axis).
         title (str, optional): The title for the chart. Defaults to "".
         suffix (str, optional): The suffix for values e.g. "MiB/s". Defaults to "".
@@ -109,7 +109,8 @@ def bar_chart(data, headers, title='', suffix='', val_label=True, y_log=False):
         for x, y in enumerate(values):
             bar = ax.bar(x + x_offset, y, width=bar_width * 0.9,
                          color=BAR_COLORS[i % len(BAR_COLORS)], edgecolor="black")
-            ax.bar_label(bar, fmt='%g {suffix}'.format(suffix=suffix))
+            if val_label:
+                ax.bar_label(bar, fmt='%g {suffix}'.format(suffix=suffix))
         # Add a handle to the last drawn bar, which we'll need for the legend
         bars.append(bar[0])
     # Draw legend
