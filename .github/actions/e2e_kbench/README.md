@@ -8,7 +8,7 @@ After testing, the action compares the results of the benchmarks to previous res
 
 The data of previous benchmarks is stored in the public S3 bucket.
 
-In order to support encrypted storage, the action deploys the [GCP CSI](https://github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver) and [Azure CSI](https://github.com/edgelesssys/constellation-azuredisk-csi-driver) drivers. It uses a [fork](https://github.com/edgelesssys/k-bench) of VMware's K-Bench. The fork deploys volumes that use the `encrypted-storage` storage class. Also, it has support to authenticate against GCP which is required to update the stored records for GKE.
+In order to support encrypted storage, the action deploys the [Azure CSI](https://github.com/edgelesssys/constellation-azuredisk-csi-driver) and [GCP CSI](https://github.com/edgelesssys/constellation-gcp-compute-persistent-disk-csi-driver) drivers. It uses a [fork](https://github.com/edgelesssys/k-bench) of VMware's K-Bench. The fork deploys volumes that use the `encrypted-storage` storage class. Also, it has support to authenticate against GCP which is required to update the stored records for GKE.
 
 ### Displaying Performance Progression
 The action creates a summary of the action and attaches it the workflow execution log.
