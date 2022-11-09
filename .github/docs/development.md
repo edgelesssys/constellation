@@ -56,7 +56,7 @@ You can do this by utilizing our terraform setup.
 Instructions on how to set it up can be found in it's [README](/terraform/libvirt/README.md).
 
 # Verification
-In order to verify your cluster we describe a [verification workflow](https://docs.edgeless.systems/constellation/workflows/verify) in our official docs.
+In order to verify your cluster we describe a [verification workflow](https://docs.edgeless.systems/constellation/workflows/verify-cluster) in our official docs.
 Apart from that you can also reproduce some of the measurements described in the [docs](https://docs.edgeless.systems/constellation/architecture/attestation#runtime-measurements) locally.
 To do so you have to create a cluster locally as described in the [previous section](/.github/docs/development.md#locally).
 However, you don't have to go through the full manual, you can stop after running `terraform apply`.
