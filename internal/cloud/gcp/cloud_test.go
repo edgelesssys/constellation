@@ -748,58 +748,6 @@ func TestUID(t *testing.T) {
 	}
 }
 
-func TestSelfGetInstance(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	cloud := &Cloud{
-		imds: &stubIMDS{
-			projectID:    "someProject",
-			zone:         "someZone-west3-b",
-			instanceName: "someInstance",
-		},
-		instanceAPI: &stubInstanceAPI{
-			instance: &computepb.Instance{
-				Name: proto.String("someInstance"),
-				Zone: proto.String("someZone-west3-b"),
-				Labels: map[string]string{
-					cloud.TagUID:  "1234",
-					cloud.TagRole: role.ControlPlane.String(),
-				},
-				NetworkInterfaces: []*computepb.NetworkInterface{
-					{
-						Name:      proto.String("nic0"),
-						NetworkIP: proto.String("192.0.2.0"),
-						AliasIpRanges: []*computepb.AliasIpRange{
-							{
-								IpCidrRange: proto.String("192.0.3.0/8"),
-							},
-						},
-						Subnetwork: proto.String("projects/someProject/regions/someRegion/subnetworks/someSubnetwork"),
-					},
-				},
-			},
-		},
-		subnetAPI: &stubSubnetAPI{
-			subnet: &computepb.Subnetwork{
-				SecondaryIpRanges: []*computepb.SubnetworkSecondaryRange{
-					{
-						IpCidrRange: proto.String("198.51.100.0/24"),
-					},
-				},
-			},
-		},
-	}
-
-	self, err := cloud.Self(context.Background())
-	require.NoError(err)
-
-	instance, err := cloud.GetInstance(context.Background(), self.ProviderID)
-	require.NoError(err)
-
-	assert.Equal(self, instance)
-}
-
 type stubForwardingRulesAPI struct {
 	iterator forwardingRuleIterator
 }

@@ -62,13 +62,13 @@ func TestInitCluster(t *testing.T) {
 			},
 			kubeAPIWaiter: stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{
-				SelfResp: metadata.InstanceMetadata{
+				selfResp: metadata.InstanceMetadata{
 					Name:          nodeName,
 					ProviderID:    providerID,
 					VPCIP:         privateIP,
 					AliasIPRanges: []string{aliasIPRange},
 				},
-				GetLoadBalancerEndpointResp: loadbalancerIP,
+				getLoadBalancerEndpointResp: loadbalancerIP,
 			},
 			wantConfig: k8sapi.KubeadmInitYAML{
 				InitConfiguration: kubeadm.InitConfiguration{
@@ -97,7 +97,7 @@ func TestInitCluster(t *testing.T) {
 			},
 			kubeAPIWaiter: stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{
-				SelfErr: someErr,
+				selfErr: someErr,
 			},
 			wantErr:    true,
 			k8sVersion: versions.Default,
@@ -108,7 +108,7 @@ func TestInitCluster(t *testing.T) {
 				Kubeconfig: []byte("someKubeconfig"),
 			},
 			providerMetadata: &stubProviderMetadata{
-				GetLoadBalancerEndpointErr: someErr,
+				getLoadBalancerEndpointErr: someErr,
 			},
 			wantErr:    true,
 			k8sVersion: versions.Default,
@@ -274,7 +274,7 @@ func TestJoinCluster(t *testing.T) {
 		"kubeadm join worker works with metadata": {
 			clusterUtil: stubClusterUtil{},
 			providerMetadata: &stubProviderMetadata{
-				SelfResp: metadata.InstanceMetadata{
+				selfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
 					Name:       "metadata-name",
 					VPCIP:      "192.0.2.1",
@@ -294,7 +294,7 @@ func TestJoinCluster(t *testing.T) {
 		"kubeadm join worker works with metadata and cloud controller manager": {
 			clusterUtil: stubClusterUtil{},
 			providerMetadata: &stubProviderMetadata{
-				SelfResp: metadata.InstanceMetadata{
+				selfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
 					Name:       "metadata-name",
 					VPCIP:      "192.0.2.1",
@@ -314,7 +314,7 @@ func TestJoinCluster(t *testing.T) {
 		"kubeadm join control-plane node works with metadata": {
 			clusterUtil: stubClusterUtil{},
 			providerMetadata: &stubProviderMetadata{
-				SelfResp: metadata.InstanceMetadata{
+				selfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
 					Name:       "metadata-name",
 					VPCIP:      "192.0.2.1",
@@ -341,7 +341,7 @@ func TestJoinCluster(t *testing.T) {
 		"kubeadm join worker fails when retrieving self metadata": {
 			clusterUtil: stubClusterUtil{},
 			providerMetadata: &stubProviderMetadata{
-				SelfErr: someErr,
+				selfErr: someErr,
 			},
 			role:    role.Worker,
 			wantErr: true,
@@ -374,8 +374,7 @@ func TestJoinCluster(t *testing.T) {
 			require.NoError(err)
 
 			var joinYaml k8sapi.KubeadmJoinYAML
-			joinYaml, err = joinYaml.Unmarshal(tc.clusterUtil.joinConfigs[0])
-			require.NoError(err)
+			require.NoError(kubernetes.UnmarshalK8SResources(tc.clusterUtil.joinConfigs[0], &joinYaml))
 
 			assert.Equal(tc.wantConfig, joinYaml.JoinConfiguration)
 		})

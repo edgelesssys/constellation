@@ -170,8 +170,6 @@ type stubMetadata struct {
 	listErr          error
 	selfRes          metadata.InstanceMetadata
 	selfErr          error
-	getInstanceRes   metadata.InstanceMetadata
-	getInstanceErr   error
 	getLBEndpointRes string
 	getLBEndpointErr error
 }
@@ -182,10 +180,6 @@ func (m *stubMetadata) List(ctx context.Context) ([]metadata.InstanceMetadata, e
 
 func (m *stubMetadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
 	return m.selfRes, m.selfErr
-}
-
-func (m *stubMetadata) GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error) {
-	return m.getInstanceRes, m.getInstanceErr
 }
 
 func (m *stubMetadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {

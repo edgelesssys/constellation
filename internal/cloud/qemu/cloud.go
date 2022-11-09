@@ -9,7 +9,6 @@ package qemu
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -49,21 +48,6 @@ func (c *Cloud) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
 	var instance metadata.InstanceMetadata
 	err = json.Unmarshal(instanceRaw, &instance)
 	return instance, err
-}
-
-// GetInstance retrieves an instance using its providerID.
-func (c *Cloud) GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error) {
-	instances, err := c.List(ctx)
-	if err != nil {
-		return metadata.InstanceMetadata{}, err
-	}
-
-	for _, instance := range instances {
-		if instance.ProviderID == providerID {
-			return instance, nil
-		}
-	}
-	return metadata.InstanceMetadata{}, errors.New("instance not found")
 }
 
 // GetLoadBalancerEndpoint returns the endpoint of the load balancer.

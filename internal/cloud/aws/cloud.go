@@ -104,34 +104,6 @@ func (c *Cloud) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
 	}, nil
 }
 
-// GetInstance retrieves the instance with the given providerID.
-func (c *Cloud) GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error) {
-	instances, err := c.ec2.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
-		InstanceIds: []string{providerID},
-	})
-	if err != nil {
-		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving instance: %w", err)
-	}
-	if len(instances.Reservations) == 0 {
-		return metadata.InstanceMetadata{}, errors.New("instance not found")
-	}
-	if len(instances.Reservations) > 1 {
-		return metadata.InstanceMetadata{}, errors.New("providerID matches multiple instances")
-	}
-	if len(instances.Reservations[0].Instances) == 0 {
-		return metadata.InstanceMetadata{}, errors.New("instance not found")
-	}
-	if len(instances.Reservations[0].Instances) > 1 {
-		return metadata.InstanceMetadata{}, errors.New("providerID matches multiple instances")
-	}
-	instance, err := c.convertToMetadataInstance(instances.Reservations[0].Instances)
-	if err != nil {
-		return metadata.InstanceMetadata{}, fmt.Errorf("converting instance: %w", err)
-	}
-
-	return instance[0], nil
-}
-
 // UID returns the UID of the Constellation.
 func (c *Cloud) UID(ctx context.Context) (string, error) {
 	return readInstanceTag(ctx, c.imds, cloud.TagUID)
