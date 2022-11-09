@@ -14,6 +14,12 @@ Terminate the cluster by running:
 constellation terminate
 ```
 
+Or without confirmation (e.g., for automation purposes):
+
+```bash
+constellation terminate --yes
+```
+
 This deletes all resources created by Constellation in your cloud environment.
 All local files created by the `create` and `init` commands are deleted as well, except for `constellation-mastersecret.json` and the configuration file.
 
