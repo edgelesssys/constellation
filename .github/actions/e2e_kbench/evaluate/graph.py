@@ -150,7 +150,7 @@ def main():
     for i, api in enumerate([pod_key2header, svc_key2header, depl_key2header]):
         api_data = {}
         for s in SUBJECTS:
-            points = combined_results[s]
+            points = combined_results["kbench"]
             subject_data = [points[h] for h in api]
             api_data[s] = subject_data
         hdrs = api.values()
@@ -163,7 +163,7 @@ def main():
     # Network chart
     net_data = {}
     for s in SUBJECTS:
-        points = combined_results[s]
+        points = combined_results["kbench"]
         subject_data = [points[h] for h in net_key2header]
         net_data[s] = subject_data
     hdrs = net_key2header.values()
@@ -175,7 +175,7 @@ def main():
     # fio chart
     fio_data = {}
     for s in SUBJECTS:
-        points = combined_results[s]
+        points = combined_results["kbench"]
         subject_data = [points[h] for h in fio_key2header]
         fio_data[s] = subject_data
     hdrs = fio_key2header.values()
