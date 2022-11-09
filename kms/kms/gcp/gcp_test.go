@@ -11,6 +11,7 @@ import (
 	"errors"
 	"testing"
 
+	"cloud.google.com/go/kms/apiv1/kmspb"
 	"github.com/edgelesssys/constellation/v2/kms/internal/storage"
 	kmsInterface "github.com/edgelesssys/constellation/v2/kms/kms"
 	"github.com/edgelesssys/constellation/v2/kms/kms/util"
@@ -18,7 +19,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
 	"google.golang.org/api/option"
-	kmspb "google.golang.org/genproto/googleapis/cloud/kms/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
