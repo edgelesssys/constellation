@@ -76,16 +76,16 @@ def main() -> None:
         '',
         '<details>',
         '',
-        '- Commit of current benchmark: {ch}'.format(ch=bench_curr["commit"]),
-        '- Commit of previous benchmark: {ch}'.format(ch=bench_prev["commit"]),
+        '- Commit of current benchmark: {ch}'.format(ch=bench_curr['commit']),
+        '- Commit of previous benchmark: {ch}'.format(ch=bench_prev['commit']),
         '',
         '| Benchmark suite | Current | Previous | Ratio |',
         '|-|-|-|-|',
     ]
 
-    for subtest, _ in bench_prev["kbench"].items():
-        val_prev = bench_prev["kbench"][subtest]
-        val_curr = bench_curr["kbench"][subtest]
+    for subtest, _ in bench_prev['kbench'].items():
+        val_prev = bench_prev['kbench'][subtest]
+        val_curr = bench_curr['kbench'][subtest]
 
         # get unit string or use default API unit string
         unit = UNIT_STR.get(subtest, API_UNIT_STR)
