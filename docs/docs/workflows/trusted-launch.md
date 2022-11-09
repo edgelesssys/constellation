@@ -14,7 +14,7 @@ Constellation supports trusted launch VMs with instance types `Standard_D*_v4` a
 
 Azure currently doesn't support [community galleries for trusted launch VMs](https://docs.microsoft.com/en-us/azure/virtual-machines/share-gallery-community). Thus, you need to manually import the Constellation node image into your cloud subscription.
 
-The latest image is available at [https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/azure_image_exports/2.0.0](https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/azure_image_exports/2.0.0). Simply adjust the last three digits to download a different version.
+The latest image is available at <https://cdn.confidential.cloud/constellation/images/azure/trusted-launch/v2.2.0/constellation.img>. Simply adjust the version number to download a newer version.
 
 After you've downloaded the image, create a resource group `constellation-images` in your Azure subscription and import the image.
 You can use a script to do this:
@@ -22,21 +22,21 @@ You can use a script to do this:
 ```bash
 wget https://raw.githubusercontent.com/edgelesssys/constellation/main/hack/importAzure.sh
 chmod +x importAzure.sh
-AZURE_IMAGE_VERSION=2.0.0 AZURE_RESOURCE_GROUP_NAME=constellation-images AZURE_IMAGE_FILE=./2.0.0 ./importAzure.sh
+AZURE_IMAGE_VERSION=2.2.0 AZURE_RESOURCE_GROUP_NAME=constellation-images AZURE_IMAGE_FILE=./constellation.img ./importAzure.sh
 ```
 
 The script creates the following resources:
 1. A new image gallery with the default name `constellation-import`
 2. A new image definition with the default name `constellation`
-3. The actual image with the provided version. In this case `2.0.0`
+3. The actual image with the provided version. In this case `2.2.0`
 
 Once the import is completed, use the `ID` of the image version in your `constellation-conf.yaml` for the `image` field. Set `confidentialVM` to `false`.
 
 Fetch the image measurements:
 
 ```bash
-IMAGE_VERSION=2.0.0
-URL=https://public-edgeless-constellation.s3.us-east-2.amazonaws.com//CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/$IMAGE_VERSION/measurements.yaml
+IMAGE_VERSION=2.2.0
+URL=https://public-edgeless-constellation.s3.us-east-2.amazonaws.com//communitygalleries/constellationcvm-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/$IMAGE_VERSION/measurements.yaml
 constellation config fetch-measurements -u$URL -s$URL.sig
 ```
 
