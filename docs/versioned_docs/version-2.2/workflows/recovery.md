@@ -90,7 +90,7 @@ This means that you have to recover the node manually.
 </tabItem>
 <tabItem value="aws" label="AWS">
 
-First, open the AWS console to view all Auto Scaling Groups (ASGs) in the region of your Constellation. Select the ASG of the control-plane `<cluster-name>-<UID>-control-plane` and check that enough members are in a *Running* state.
+First, open the AWS console to view all Auto Scaling Groups (ASGs) in the region of your cluster. Select the ASG of the control plane `<cluster-name>-<UID>-control-plane` and check that enough members are in a *Running* state.
 
 Second, check the boot logs of these *Instances*. In the ASG's *Instance management* view, select each desired instance. In the upper right corner, select **Action > Monitor and troubleshoot > Get system log**.
 

@@ -1,4 +1,4 @@
-# First steps with Constellation 
+# First steps with Constellation
 
 The following steps guide you through the process of creating a cluster and deploying a sample app. This example assumes that you have successfully [installed and set up Constellation](install.md),
 and have access to a cloud subscription.
@@ -69,41 +69,41 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     * **subscription**: The UUID of your Azure subscription, e.g., `8b8bd01f-efd9-4113-9bd1-c82137c32da7`.
 
-        You can view your subscription UUID via `az account show` and read the `id` field. For more information refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/azure-portal/get-subscription-tenant-id#find-your-azure-subscription).
+      You can view your subscription UUID via `az account show` and read the `id` field. For more information refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/azure-portal/get-subscription-tenant-id#find-your-azure-subscription).
 
     * **tenant**: The UUID of your Azure tenant, e.g., `3400e5a2-8fe2-492a-886c-38cb66170f25`.
 
-        You can view your tenant UUID via `az account show` and read the `tenant` field. For more information refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/azure-portal/get-subscription-tenant-id#find-your-azure-ad-tenant).
+      You can view your tenant UUID via `az account show` and read the `tenant` field. For more information refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/azure-portal/get-subscription-tenant-id#find-your-azure-ad-tenant).
 
     * **location**: The Azure datacenter location you want to deploy your cluster in, e.g., `westus`. CVMs are currently only supported in a few regions, check [Azure's products available by region](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all). These are:
 
-        * `westus`
-        * `eastus`
-        * `northeurope`
-        * `westeurope`
+      * `westus`
+      * `eastus`
+      * `northeurope`
+      * `westeurope`
 
     * **resourceGroup**: [Create a new resource group in Azure](https://portal.azure.com/#create/Microsoft.ResourceGroup) for your Constellation cluster. Set this configuration field to the name of the created resource group.
 
     * **userAssignedIdentity**: [Create a new managed identity in Azure](https://portal.azure.com/#create/Microsoft.ManagedIdentity). You should create the identity in a different resource group as all resources within the cluster resource group will be deleted on cluster termination.
 
-        Add two role assignments to the identity: `Virtual Machine Contributor` and `Application Insights Component Contributor`. The `scope` of both should refer to the previously created cluster resource group.
+      Add two role assignments to the identity: `Virtual Machine Contributor` and `Application Insights Component Contributor`. The `scope` of both should refer to the previously created cluster resource group.
 
-        Set the configuration value to the full ID of the created identity, e.g., `/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity`. You can get it by opening the `JSON View` from the `Overview` section of the identity.
+      Set the configuration value to the full ID of the created identity, e.g., `/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity`. You can get it by opening the `JSON View` from the `Overview` section of the identity.
 
-        The user-assigned identity is used by instances of the cluster to access other cloud resources.
-        For more information about managed identities refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-manage-user-assigned-managed-identities).
+      The user-assigned identity is used by instances of the cluster to access other cloud resources.
+      For more information about managed identities refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-manage-user-assigned-managed-identities).
 
     * **appClientID**: [Create a new app registration in Azure](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/CreateApplicationBlade/quickStartType~/null/isMSAApp~/false).
 
-        Set `Supported account types` to `Accounts in this organizational directory only` and leave the `Redirect URI` empty.
+      Set `Supported account types` to `Accounts in this organizational directory only` and leave the `Redirect URI` empty.
 
-        Set the configuration value to the `Application (client) ID`, e.g., `86ec31dd-532b-4a8c-a055-dd23f25fb12f`.
+      Set the configuration value to the `Application (client) ID`, e.g., `86ec31dd-532b-4a8c-a055-dd23f25fb12f`.
 
-        In the cluster resource group, go to `Access Control (IAM)` and set the created app registration as `Owner`.
+      In the cluster resource group, go to `Access Control (IAM)` and set the created app registration as `Owner`.
 
     * **clientSecretValue**: In the previously created app registration, go to `Certificates & secrets` and create a new `Client secret`.
 
-        Set the configuration value to the secret value.
+      Set the configuration value to the secret value.
 
     * **instanceType**: The VM type you want to use for your Constellation nodes.
 
@@ -140,29 +140,29 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     * **project**: The ID of your GCP project, e.g., `constellation-129857`.
 
-        You can find it on the [welcome screen of your GCP project](https://console.cloud.google.com/welcome). For more information refer to [Google's documentation](https://support.google.com/googleapi/answer/7014113).
+      You can find it on the [welcome screen of your GCP project](https://console.cloud.google.com/welcome). For more information refer to [Google's documentation](https://support.google.com/googleapi/answer/7014113).
 
     * **region**: The GCP region you want to deploy your cluster in, e.g., `us-west1`.
 
-        You can find a [list of all regions in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available).
+      You can find a [list of all regions in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available).
 
     * **zone**: The GCP zone you want to deploy your cluster in, e.g., `us-west1-a`.
 
-        You can find a [list of all zones in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available).
+      You can find a [list of all zones in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available).
 
     * **serviceAccountKeyPath**: To configure this, you need to create a GCP [service account](https://cloud.google.com/iam/docs/service-accounts) with the following permissions:
 
-        - `Compute Instance Admin (v1) (roles/compute.instanceAdmin.v1)`
-        - `Compute Network Admin (roles/compute.networkAdmin)`
-        - `Compute Security Admin (roles/compute.securityAdmin)`
-        - `Compute Storage Admin (roles/compute.storageAdmin)`
-        - `Service Account User (roles/iam.serviceAccountUser)`
+      - `Compute Instance Admin (v1) (roles/compute.instanceAdmin.v1)`
+      - `Compute Network Admin (roles/compute.networkAdmin)`
+      - `Compute Security Admin (roles/compute.securityAdmin)`
+      - `Compute Storage Admin (roles/compute.storageAdmin)`
+      - `Service Account User (roles/iam.serviceAccountUser)`
 
-        Afterward, create and download a new JSON key for this service account. Place the downloaded file in your Constellation workspace, and set the config parameter to the filename, e.g., `constellation-129857-15343dba46cb.json`.
+      Afterward, create and download a new JSON key for this service account. Place the downloaded file in your Constellation workspace, and set the config parameter to the filename, e.g., `constellation-129857-15343dba46cb.json`.
 
     * **instanceType**: The VM type you want to use for your Constellation nodes.
 
-        Supported are all machines from the N2D family. It defaults to `n2d-standard-4` (4 vCPUs, 16 GB RAM), but you can use any other VMs from the same family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
+      Supported are all machines from the N2D family. It defaults to `n2d-standard-4` (4 vCPUs, 16 GB RAM), but you can use any other VMs from the same family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
 
     </tabItem>
     </tabs>
