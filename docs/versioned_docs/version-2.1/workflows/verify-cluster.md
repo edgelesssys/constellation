@@ -38,7 +38,7 @@ Once the above properties are verified, you know that you are talking to the rig
 
 The `verify` command also allows you to verify any Constellation deployment that you have network access to. For this you need the following:
 
-* The IP address of a running Constellation cluster's [VerificationService](../architecture/components.md#verification-service). The `VerificationService` is exposed via a `NodePort` service using the external IP address of your cluster. Run `kubectl get nodes -o wide` and look for `EXTERNAL-IP`.
+* The IP address of a running Constellation cluster's [VerificationService](../architecture/components.md#verificationservice). The `VerificationService` is exposed via a `NodePort` service using the external IP address of your cluster. Run `kubectl get nodes -o wide` and look for `EXTERNAL-IP`.
 * The cluster's *clusterID*. See [cluster identity](../architecture/keys.md#cluster-identity) for more details.
 
 For example:

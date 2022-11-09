@@ -15,15 +15,13 @@ This command performs the following steps:
 2. Verify the signature of the measurements. This will use Edgeless Systems' [public key](https://edgeless.systems/es.pub).
 3. Write measurements into configuration file.
 
-After the command succeeded the configuration file will contain a list of key value pairs (index, hash) under the `measurements` key and a list of indices under `enforcedMeasurements`.
+The configuration file then contains a list of key-value pairs (index, hash) under the `measurements` key and a list of indices under `enforcedMeasurements`.
 Not all keys under `measurements` will have a matching index under `enforcedMeasurements`.
-This is because only a subset of the available measurements can be locally reproduced and verified.
-These non-reproducible values typically measure parts of the boot process that are controlled by the CSP.
-You can find a list with descriptions in the [runtime measurements](../architecture/attestation.md#runtime-measurements) section.
+This is because only a subset of the [available measurements](../architecture/attestation.md#runtime-measurements) can be locally reproduced and verified.
 
-During attestation, the validating side (CLI or [join service](../architecture/components.md#joinservice)) will compare each [measurement](../architecture/attestation.md##runtime-measurement) reported by the issuing side (first node or joining node) individually.
-For mismatching measurements that are set under the `measurements` key a warning will be emitted.
-For mismatching measurements that are additionally set under `enforcedMeasurements` an error will be emitted and attestation fails.
+During attestation, the validating side (CLI or [join service](../architecture/components.md#joinservice)) compares each measurement reported by the issuing side (first node or joining node) individually.
+For mismatching measurements that are only set under the `measurements` key a warning is emitted.
+For mismatching measurements that are additionally set under `enforcedMeasurements` an error is emitted and attestation fails.
 If attestation fails, the new node can't join the cluster.
 
 ## The *verify* command
@@ -49,7 +47,7 @@ Once the above properties are verified, you know that you are talking to the rig
 
 The `verify` command also allows you to verify any Constellation deployment that you have network access to. For this you need the following:
 
-* The IP address of a running Constellation cluster's [VerificationService](../architecture/components.md#verification-service). The `VerificationService` is exposed via a `NodePort` service using the external IP address of your cluster. Run `kubectl get nodes -o wide` and look for `EXTERNAL-IP`.
+* The IP address of a running Constellation cluster's [VerificationService](../architecture/components.md#verificationservice). The `VerificationService` is exposed via a `NodePort` service using the external IP address of your cluster. Run `kubectl get nodes -o wide` and look for `EXTERNAL-IP`.
 * The cluster's *clusterID*. See [cluster identity](../architecture/keys.md#cluster-identity) for more details.
 
 For example:

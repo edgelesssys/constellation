@@ -64,7 +64,7 @@ constellation create --control-plane-nodes 1 --worker-nodes 2
 
 For details on the flags, consult the command help via `constellation create -h`.
 
-*create* stores your cluster's state into a [`terraform.tfstate`](../architecture/orchestration.md#installation-process) file in your current directory.
+*create* stores your cluster's state into a [`terraform.tfstate`](../architecture/orchestration.md#cluster-creation-process) file in your current directory.
 
 ## The *init* step
 
