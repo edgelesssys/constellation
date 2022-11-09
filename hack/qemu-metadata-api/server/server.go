@@ -21,7 +21,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Server that provides QEMU metadat.
+// Server that provides QEMU metadata.
 type Server struct {
 	log     *logger.Logger
 	virt    virConnect

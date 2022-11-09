@@ -21,7 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-// VerificationDaemonset groups all deployments for verification service.
+// VerificationDaemonset groups all k8s resources for the verification service deployment.
 type VerificationDaemonset struct {
 	DaemonSet    apps.DaemonSet
 	Service      k8s.Service
