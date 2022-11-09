@@ -194,7 +194,7 @@ func prepareConfig(cmd *cobra.Command, fileHandler file.Handler) (*config.Config
 		cmd.Printf("Using existing image at %s\n\n", imagePath)
 	} else if errors.Is(err, os.ErrNotExist) {
 		cmd.Printf("Downloading image to %s\n", imagePath)
-		if err := installImage(cmd.Context(), cmd.OutOrStdout(), versions.ConstellationQEMUImageURL, imagePath); err != nil {
+		if err := installImage(cmd.Context(), cmd.ErrOrStderr(), versions.ConstellationQEMUImageURL, imagePath); err != nil {
 			return nil, fmt.Errorf("downloading image to %s: %w", imagePath, err)
 		}
 	} else {
@@ -247,7 +247,7 @@ func initializeMiniCluster(cmd *cobra.Command, fileHandler file.Handler, spinner
 }
 
 // installImage downloads the image from sourceURL to the destination.
-func installImage(ctx context.Context, out io.Writer, sourceURL, destination string) error {
+func installImage(ctx context.Context, errWriter io.Writer, sourceURL, destination string) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL, nil)
 	if err != nil {
 		return fmt.Errorf("creating request: %w", err)
@@ -270,7 +270,7 @@ func installImage(ctx context.Context, out io.Writer, sourceURL, destination str
 
 	bar := progressbar.NewOptions64(
 		resp.ContentLength,
-		progressbar.OptionSetWriter(out),
+		progressbar.OptionSetWriter(errWriter),
 		progressbar.OptionShowBytes(true),
 		progressbar.OptionSetPredictTime(true),
 		progressbar.OptionFullWidth(),
@@ -282,7 +282,7 @@ func installImage(ctx context.Context, out io.Writer, sourceURL, destination str
 			BarEnd:        "]",
 		}),
 		progressbar.OptionClearOnFinish(),
-		progressbar.OptionOnCompletion(func() { fmt.Fprintf(out, "Done.\n\n") }),
+		progressbar.OptionOnCompletion(func() { fmt.Fprintf(errWriter, "Done.\n\n") }),
 	)
 	defer bar.Close()
 
