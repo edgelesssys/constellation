@@ -167,6 +167,11 @@ runs:
         cat constellation-conf.yaml
         constellation create -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} --name e2e-test -y
 
+    - name: Print ID file
+      shell: bash
+      run: |
+        cat ./constellation-id.json
+
     - name: Cdbg deploy
       if: ${{ inputs.isDebugImage == 'true' }}
       shell: bash
