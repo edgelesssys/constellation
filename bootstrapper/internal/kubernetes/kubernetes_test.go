@@ -58,7 +58,7 @@ func TestInitCluster(t *testing.T) {
 		"kubeadm init works with metadata and loadbalancer": {
 			clusterUtil: stubClusterUtil{},
 			kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
+				kubeconfig: []byte("someKubeconfig"),
 			},
 			kubeAPIWaiter: stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{
@@ -93,7 +93,7 @@ func TestInitCluster(t *testing.T) {
 		"kubeadm init fails when retrieving metadata self": {
 			clusterUtil: stubClusterUtil{},
 			kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
+				kubeconfig: []byte("someKubeconfig"),
 			},
 			kubeAPIWaiter: stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{
@@ -105,7 +105,7 @@ func TestInitCluster(t *testing.T) {
 		"kubeadm init fails when retrieving metadata loadbalancer ip": {
 			clusterUtil: stubClusterUtil{},
 			kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
+				kubeconfig: []byte("someKubeconfig"),
 			},
 			providerMetadata: &stubProviderMetadata{
 				getLoadBalancerEndpointErr: someErr,
@@ -116,7 +116,7 @@ func TestInitCluster(t *testing.T) {
 		"kubeadm init fails when applying the init config": {
 			clusterUtil: stubClusterUtil{initClusterErr: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
+				kubeconfig: []byte("someKubeconfig"),
 			},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
@@ -127,7 +127,7 @@ func TestInitCluster(t *testing.T) {
 			clusterUtil: stubClusterUtil{},
 			helmClient:  stubHelmClient{ciliumError: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
+				kubeconfig: []byte("someKubeconfig"),
 			},
 			providerMetadata: &stubProviderMetadata{},
 			wantErr:          true,
@@ -137,7 +137,7 @@ func TestInitCluster(t *testing.T) {
 			clusterUtil: stubClusterUtil{},
 			helmClient:  stubHelmClient{servicesError: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
+				kubeconfig: []byte("someKubeconfig"),
 			},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
@@ -148,7 +148,7 @@ func TestInitCluster(t *testing.T) {
 			clusterUtil: stubClusterUtil{},
 			helmClient:  stubHelmClient{servicesError: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
+				kubeconfig: []byte("someKubeconfig"),
 			},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
@@ -159,7 +159,7 @@ func TestInitCluster(t *testing.T) {
 			clusterUtil: stubClusterUtil{},
 			helmClient:  stubHelmClient{servicesError: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
+				kubeconfig: []byte("someKubeconfig"),
 			},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
@@ -169,7 +169,7 @@ func TestInitCluster(t *testing.T) {
 		"kubeadm init fails when reading kubeconfig": {
 			clusterUtil: stubClusterUtil{},
 			kubeconfigReader: &stubKubeconfigReader{
-				ReadErr: someErr,
+				readErr: someErr,
 			},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
@@ -179,7 +179,7 @@ func TestInitCluster(t *testing.T) {
 		"kubeadm init fails when setting up konnectivity": {
 			clusterUtil: stubClusterUtil{setupKonnectivityError: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
+				kubeconfig: []byte("someKubeconfig"),
 			},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
@@ -189,7 +189,7 @@ func TestInitCluster(t *testing.T) {
 		"kubeadm init fails when setting up verification service": {
 			clusterUtil: stubClusterUtil{setupVerificationServiceErr: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
+				kubeconfig: []byte("someKubeconfig"),
 			},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
@@ -199,7 +199,7 @@ func TestInitCluster(t *testing.T) {
 		"kubeadm init fails when waiting for kubeAPI server": {
 			clusterUtil: stubClusterUtil{},
 			kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
+				kubeconfig: []byte("someKubeconfig"),
 			},
 			kubeAPIWaiter:    stubKubeAPIWaiter{waitErr: someErr},
 			providerMetadata: &stubProviderMetadata{},
@@ -209,7 +209,7 @@ func TestInitCluster(t *testing.T) {
 		"unsupported k8sVersion fails cluster creation": {
 			clusterUtil: stubClusterUtil{},
 			kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
+				kubeconfig: []byte("someKubeconfig"),
 			},
 			kubeAPIWaiter:    stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{},
@@ -228,7 +228,7 @@ func TestInitCluster(t *testing.T) {
 				helmClient:       &tc.helmClient,
 				providerMetadata: tc.providerMetadata,
 				kubeAPIWaiter:    &tc.kubeAPIWaiter,
-				configProvider:   &stubConfigProvider{InitConfig: k8sapi.KubeadmInitYAML{}},
+				configProvider:   &stubConfigProvider{initConfig: k8sapi.KubeadmInitYAML{}},
 				client:           &tc.kubectl,
 				kubeconfigReader: tc.kubeconfigReader,
 				getIPAddr:        func() (string, error) { return privateIP, nil },
@@ -480,30 +480,30 @@ func (s *stubClusterUtil) FixCilium(log *logger.Logger) {
 }
 
 type stubConfigProvider struct {
-	InitConfig k8sapi.KubeadmInitYAML
-	JoinConfig k8sapi.KubeadmJoinYAML
+	initConfig k8sapi.KubeadmInitYAML
+	joinConfig k8sapi.KubeadmJoinYAML
 }
 
 func (s *stubConfigProvider) InitConfiguration(_ bool, _ versions.ValidK8sVersion) k8sapi.KubeadmInitYAML {
-	return s.InitConfig
+	return s.initConfig
 }
 
 func (s *stubConfigProvider) JoinConfiguration(_ bool) k8sapi.KubeadmJoinYAML {
-	s.JoinConfig = k8sapi.KubeadmJoinYAML{
+	s.joinConfig = k8sapi.KubeadmJoinYAML{
 		JoinConfiguration: kubeadm.JoinConfiguration{
 			Discovery: kubeadm.Discovery{
 				BootstrapToken: &kubeadm.BootstrapTokenDiscovery{},
 			},
 		},
 	}
-	return s.JoinConfig
+	return s.joinConfig
 }
 
 type stubKubectl struct {
-	ApplyErr                         error
+	applyErr                         error
 	createConfigMapErr               error
-	AddTolerationsToDeploymentErr    error
-	AddTNodeSelectorsToDeploymentErr error
+	addTolerationsToDeploymentErr    error
+	addTNodeSelectorsToDeploymentErr error
 	waitForCRDsErr                   error
 	listAllNamespacesErr             error
 
@@ -514,7 +514,7 @@ type stubKubectl struct {
 
 func (s *stubKubectl) Apply(resources kubernetes.Marshaler, forceConflicts bool) error {
 	s.resources = append(s.resources, resources)
-	return s.ApplyErr
+	return s.applyErr
 }
 
 func (s *stubKubectl) SetKubeconfig(kubeconfig []byte) {
@@ -526,11 +526,11 @@ func (s *stubKubectl) CreateConfigMap(ctx context.Context, configMap corev1.Conf
 }
 
 func (s *stubKubectl) AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error {
-	return s.AddTolerationsToDeploymentErr
+	return s.addTolerationsToDeploymentErr
 }
 
 func (s *stubKubectl) AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error {
-	return s.AddTNodeSelectorsToDeploymentErr
+	return s.addTNodeSelectorsToDeploymentErr
 }
 
 func (s *stubKubectl) WaitForCRDs(ctx context.Context, crds []string) error {
@@ -542,12 +542,12 @@ func (s *stubKubectl) ListAllNamespaces(ctx context.Context) (*corev1.NamespaceL
 }
 
 type stubKubeconfigReader struct {
-	Kubeconfig []byte
-	ReadErr    error
+	kubeconfig []byte
+	readErr    error
 }
 
 func (s *stubKubeconfigReader) ReadKubeconfig() ([]byte, error) {
-	return s.Kubeconfig, s.ReadErr
+	return s.kubeconfig, s.readErr
 }
 
 type stubHelmClient struct {
