@@ -457,8 +457,10 @@ func TestUpgradePlan(t *testing.T) {
 
 			cmd := newUpgradePlanCmd()
 			cmd.SetContext(context.Background())
-			var out bytes.Buffer
-			cmd.SetOut(&out)
+			var outTarget bytes.Buffer
+			cmd.SetOut(&outTarget)
+			var errTarget bytes.Buffer
+			cmd.SetErr(&errTarget)
 
 			client := newTestClient(func(req *http.Request) *http.Response {
 				if req.URL.String() == imageReleaseURL {
@@ -498,13 +500,13 @@ func TestUpgradePlan(t *testing.T) {
 
 			assert.NoError(err)
 			if !tc.wantUpgrade {
-				assert.Contains(out.String(), "No compatible images")
+				assert.Contains(errTarget.String(), "No compatible images")
 				return
 			}
 
 			var availableUpgrades map[string]config.UpgradeConfig
 			if tc.flags.filePath == "-" {
-				require.NoError(yaml.Unmarshal(out.Bytes(), &availableUpgrades))
+				require.NoError(yaml.Unmarshal(outTarget.Bytes(), &availableUpgrades))
 			} else {
 				require.NoError(fileHandler.ReadYAMLStrict(tc.flags.filePath, &availableUpgrades))
 			}
