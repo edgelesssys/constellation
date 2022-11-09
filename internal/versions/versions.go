@@ -52,18 +52,18 @@ const (
 	// KonnectivityServerImage server image for konnectivity service.
 	KonnectivityServerImage = "registry.k8s.io/kas-network-proxy/proxy-server:v0.0.33@sha256:2c111f004bec24888d8cfa2a812a38fb8341350abac67dcd0ac64e709dfe389c" // renovate:container
 	// JoinImage image of Constellation join service.
-	JoinImage = "ghcr.io/edgelesssys/constellation/join-service:v2.2.0@sha256:8d2c4483e4bee8b2ed1eb32ad35298f51ad167e0aa074c9bc45c2a75ec0d1a22" // renovate:container
+	JoinImage = "ghcr.io/edgelesssys/constellation/join-service:v2.3.0-pre.0.20221109145754-0d12e37c9699@sha256:afe838fdf9753a6d50eef3a36a17d8993c1732397bb3f965dd25f291e7521acc" // renovate:container
 	// AccessManagerImage image of Constellation access manager.
-	AccessManagerImage = "ghcr.io/edgelesssys/constellation/access-manager:v2.2.0@sha256:e6aa2ef3a65e7d4be25569ad9cbf6cee1dafa2c00734fa85aeb4e56a5943f88e" // renovate:container
+	AccessManagerImage = "ghcr.io/edgelesssys/constellation/access-manager:v2.3.0-pre.0.20221109145754-0d12e37c9699@sha256:9fe850517115851a0e0969401cc407dad2f2f9157aac86b69db51e28ee4559c4" // renovate:container
 	// KmsImage image of Constellation KMS server.
-	KmsImage = "ghcr.io/edgelesssys/constellation/kmsserver:v2.2.0@sha256:df72c9a8e75a848023a4b86faf3399efb8693b980e324eaa41823bc6d0a15006" // renovate:container
+	KmsImage = "ghcr.io/edgelesssys/constellation/kmsserver:v2.3.0-pre.0.20221109145754-0d12e37c9699@sha256:bed58eff5ca1ad2bb0eddfdbb642a5dc5454bfd6a0248487ae8e2756227e0e80" // renovate:container
 	// VerificationImage image of Constellation verification service.
-	VerificationImage = "ghcr.io/edgelesssys/constellation/verification-service:v2.2.0@sha256:c928077e535507af7148c083bb1bde4d187eab8aee0e82be06f9b794aa2442e7" // renovate:container
+	VerificationImage = "ghcr.io/edgelesssys/constellation/verification-service:v2.3.0-pre.0.20221109145754-0d12e37c9699@sha256:4c6887fb6d14cfa1456e95819bc6fff4a360f9c4aa6e57b1fe90ebd469c3a0d6" // renovate:container
 	// GcpGuestImage image for GCP guest agent.
 	// Check for new versions at https://github.com/GoogleCloudPlatform/guest-agent/releases and update in /.github/workflows/build-gcp-guest-agent.yml.
 	GcpGuestImage = "ghcr.io/edgelesssys/gcp-guest-agent:20220927.00@sha256:3dea1ae3f162d2353e6584b325f0e325a39cda5f380f41e5a0ee43c6641d3905" // renovate:container
 	// NodeOperatorCatalogImage image of node operator catalog image.
-	NodeOperatorCatalogImage = "ghcr.io/edgelesssys/constellation/node-operator-catalog:v2.2.0@sha256:543ebc67183b580cfeda9e14ff3a0c5056813847ad3605719b54d72b22427a69" // renovate:container
+	NodeOperatorCatalogImage = "ghcr.io/edgelesssys/constellation/node-operator-catalog:v2.3.0-pre.0.20221109145754-0d12e37c9699@sha256:d11ec73033bbd698f7d614b836e3bfb1bbf647f2b972df952a0cf5d9c979f795" // renovate:container
 	// NodeMaintenanceOperatorCatalogImage image of node maintenance operator catalog.
 	// TODO: switch node maintenance operator catalog back to upstream quay.io/medik8s/node-maintenance-operator-catalog
 	// once https://github.com/medik8s/node-maintenance-operator/issues/49 is resolved.
