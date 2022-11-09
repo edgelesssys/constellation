@@ -26,37 +26,69 @@ func TestIMDSClient(t *testing.T) {
 		{Name: cloud.TagUID, Value: "uid"},
 		{Name: cloud.TagRole, Value: "worker"},
 	}
+	osProfile := struct {
+		ComputerName string `json:"computerName,omitempty"`
+	}{
+		ComputerName: "computer-name",
+	}
+
 	response := metadataResponse{
 		Compute: metadataResponseCompute{
-			ResourceID:    "resource-id",
-			ResourceGroup: "resource-group",
-			Tags:          uidTags,
+			ResourceID:     "resource-id",
+			SubscriptionID: "subscription-id",
+			ResourceGroup:  "resource-group",
+			Tags:           uidTags,
+			OSProfile:      osProfile,
 		},
 	}
 	responseWithoutID := metadataResponse{
 		Compute: metadataResponseCompute{
-			ResourceGroup: "resource-group",
-			Tags:          uidTags,
+			ResourceGroup:  "resource-group",
+			SubscriptionID: "subscription-id",
+			Tags:           uidTags,
+			OSProfile:      osProfile,
 		},
 	}
 	responseWithoutGroup := metadataResponse{
 		Compute: metadataResponseCompute{
-			ResourceID: "resource-id",
-			Tags:       uidTags,
+			ResourceID:     "resource-id",
+			SubscriptionID: "subscription-id",
+			Tags:           uidTags,
+			OSProfile:      osProfile,
 		},
 	}
 	responseWithoutUID := metadataResponse{
 		Compute: metadataResponseCompute{
-			ResourceID:    "resource-id",
-			ResourceGroup: "resource-group",
-			Tags:          []metadataTag{{Name: cloud.TagRole, Value: "worker"}},
+			ResourceID:     "resource-id",
+			SubscriptionID: "subscription-id",
+			ResourceGroup:  "resource-group",
+			Tags:           []metadataTag{{Name: cloud.TagRole, Value: "worker"}},
+			OSProfile:      osProfile,
 		},
 	}
 	responseWithoutRole := metadataResponse{
 		Compute: metadataResponseCompute{
+			ResourceID:     "resource-id",
+			SubscriptionID: "subscription-id",
+			ResourceGroup:  "resource-group",
+			Tags:           []metadataTag{{Name: cloud.TagUID, Value: "uid"}},
+			OSProfile:      osProfile,
+		},
+	}
+	responseWithoutName := metadataResponse{
+		Compute: metadataResponseCompute{
+			ResourceID:     "resource-id",
+			SubscriptionID: "subscription-id",
+			ResourceGroup:  "resource-group",
+			Tags:           uidTags,
+		},
+	}
+	responseWithoutSubscriptionID := metadataResponse{
+		Compute: metadataResponseCompute{
 			ResourceID:    "resource-id",
 			ResourceGroup: "resource-group",
-			Tags:          []metadataTag{{Name: cloud.TagUID, Value: "uid"}},
+			Tags:          uidTags,
+			OSProfile:     osProfile,
 		},
 	}
 
@@ -70,34 +102,46 @@ func TestIMDSClient(t *testing.T) {
 		wantUID              string
 		wantRoleErr          bool
 		wantRole             role.Role
+		wantNameErr          bool
+		wantName             string
+		wantSubscriptionErr  bool
+		wantSubscriptionID   string
 	}{
 		"metadata response parsed": {
-			server:            newHTTPBufconnServerWithMetadataResponse(response),
-			wantProviderID:    "resource-id",
-			wantResourceGroup: "resource-group",
-			wantUID:           "uid",
-			wantRole:          role.Worker,
+			server:             newHTTPBufconnServerWithMetadataResponse(response),
+			wantProviderID:     "resource-id",
+			wantResourceGroup:  "resource-group",
+			wantUID:            "uid",
+			wantRole:           role.Worker,
+			wantName:           "computer-name",
+			wantSubscriptionID: "subscription-id",
 		},
 		"metadata response without resource ID": {
-			server:            newHTTPBufconnServerWithMetadataResponse(responseWithoutID),
-			wantProviderIDErr: true,
-			wantResourceGroup: "resource-group",
-			wantUID:           "uid",
-			wantRole:          role.Worker,
+			server:             newHTTPBufconnServerWithMetadataResponse(responseWithoutID),
+			wantProviderIDErr:  true,
+			wantResourceGroup:  "resource-group",
+			wantUID:            "uid",
+			wantRole:           role.Worker,
+			wantName:           "computer-name",
+			wantSubscriptionID: "subscription-id",
 		},
 		"metadata response without UID tag": {
-			server:            newHTTPBufconnServerWithMetadataResponse(responseWithoutUID),
-			wantProviderID:    "resource-id",
-			wantResourceGroup: "resource-group",
-			wantUIDErr:        true,
-			wantRole:          role.Worker,
+			server:             newHTTPBufconnServerWithMetadataResponse(responseWithoutUID),
+			wantProviderID:     "resource-id",
+			wantResourceGroup:  "resource-group",
+			wantUIDErr:         true,
+			wantRole:           role.Worker,
+			wantName:           "computer-name",
+			wantSubscriptionID: "subscription-id",
 		},
 		"metadata response without role tag": {
-			server:            newHTTPBufconnServerWithMetadataResponse(responseWithoutRole),
-			wantProviderID:    "resource-id",
-			wantResourceGroup: "resource-group",
-			wantUID:           "uid",
-			wantRoleErr:       true,
+			server:             newHTTPBufconnServerWithMetadataResponse(responseWithoutRole),
+			wantProviderID:     "resource-id",
+			wantResourceGroup:  "resource-group",
+			wantUID:            "uid",
+			wantRoleErr:        true,
+			wantName:           "computer-name",
+			wantSubscriptionID: "subscription-id",
 		},
 		"metadata response without resource group": {
 			server:               newHTTPBufconnServerWithMetadataResponse(responseWithoutGroup),
@@ -105,6 +149,26 @@ func TestIMDSClient(t *testing.T) {
 			wantResourceGroupErr: true,
 			wantUID:              "uid",
 			wantRole:             role.Worker,
+			wantName:             "computer-name",
+			wantSubscriptionID:   "subscription-id",
+		},
+		"metadata response without name": {
+			server:             newHTTPBufconnServerWithMetadataResponse(responseWithoutName),
+			wantProviderID:     "resource-id",
+			wantResourceGroup:  "resource-group",
+			wantUID:            "uid",
+			wantRole:           role.Worker,
+			wantNameErr:        true,
+			wantSubscriptionID: "subscription-id",
+		},
+		"metadata response without subscription ID": {
+			server:              newHTTPBufconnServerWithMetadataResponse(responseWithoutSubscriptionID),
+			wantProviderID:      "resource-id",
+			wantResourceGroup:   "resource-group",
+			wantUID:             "uid",
+			wantRole:            role.Worker,
+			wantName:            "computer-name",
+			wantSubscriptionErr: true,
 		},
 		"invalid imds response detected": {
 			server: newHTTPBufconnServer(func(writer http.ResponseWriter, request *http.Request) {
@@ -114,6 +178,8 @@ func TestIMDSClient(t *testing.T) {
 			wantResourceGroupErr: true,
 			wantUIDErr:           true,
 			wantRoleErr:          true,
+			wantNameErr:          true,
+			wantSubscriptionErr:  true,
 		},
 	}
 
@@ -165,6 +231,22 @@ func TestIMDSClient(t *testing.T) {
 			} else {
 				assert.NoError(err)
 				assert.Equal(tc.wantRole, role)
+			}
+
+			name, err := iClient.name(ctx)
+			if tc.wantNameErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.wantName, name)
+			}
+
+			subscriptionID, err := iClient.subscriptionID(ctx)
+			if tc.wantSubscriptionErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.wantSubscriptionID, subscriptionID)
 			}
 		})
 	}

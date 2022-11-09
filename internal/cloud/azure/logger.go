@@ -91,21 +91,15 @@ func getAppInsightsKey(ctx context.Context, imdsAPI imdsAPI, appInsightAPI appli
 		}
 
 		for _, component := range page.Value {
-			if component == nil || component.Tags == nil {
+			if component == nil || component.Tags == nil ||
+				component.Tags[cloud.TagUID] == nil || *component.Tags[cloud.TagUID] != uid {
 				continue
 			}
 
-			tag, ok := component.Tags[cloud.TagUID]
-			if !ok || tag == nil {
-				continue
+			if component.Properties == nil || component.Properties.InstrumentationKey == nil {
+				return "", errors.New("unable to get instrumentation key")
 			}
-
-			if *tag == uid {
-				if component.Properties == nil || component.Properties.InstrumentationKey == nil {
-					return "", errors.New("unable to get instrumentation key")
-				}
-				return *component.Properties.InstrumentationKey, nil
-			}
+			return *component.Properties.InstrumentationKey, nil
 		}
 	}
 	return "", errors.New("could not find correctly tagged application insights")
