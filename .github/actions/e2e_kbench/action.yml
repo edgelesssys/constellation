@@ -131,4 +131,4 @@ runs:
       env:
         CSP: ${{ inputs.cloudProvider }}
         PUBLIC_BUCKET_NAME: "public-edgeless-constellation"
-      if: github.ref == 'refs/heads/main'
+      # if: github.ref == 'refs/heads/main'
