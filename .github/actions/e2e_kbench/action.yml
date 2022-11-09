@@ -103,6 +103,7 @@ runs:
       run: |
         python .github/actions/k-bench/evaluate/parse.py
         python .github/actions/k-bench/evaluate/graph.py
+        echo "Commit: $GITHUB_SHA" >> $GITHUB_STEP_SUMMARY
         python .github/actions/k-bench/evaluate/compare.py >> $GITHUB_STEP_SUMMARY
       env:
         # Original K-Bench result directory
