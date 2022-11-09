@@ -66,8 +66,8 @@ def main() -> None:
     with open(path_curr) as f_curr:
         bench_curr = json.load(f_curr)
 
-    name = next(iter(bench_prev.keys()))
-    if name != next(iter(bench_curr.keys())):
+    name = bench_curr['subject']
+    if name != bench_prev:
         raise ValueError(
             "Cloud providers of previous and current benchmark data don't match.")
 
@@ -76,13 +76,16 @@ def main() -> None:
         '',
         '<details>',
         '',
+        '- Commit of current benchmark: {ch}'.format(ch=bench_curr["commit"]),
+        '- Commit of previous benchmark: {ch}'.format(ch=bench_prev["commit"]),
+        '',
         '| Benchmark suite | Current | Previous | Ratio |',
         '|-|-|-|-|',
     ]
 
-    for subtest, _ in bench_prev[name].items():
-        val_prev = bench_prev[name][subtest]
-        val_curr = bench_curr[name][subtest]
+    for subtest, _ in bench_prev["kbench"].items():
+        val_prev = bench_prev["kbench"][subtest]
+        val_curr = bench_curr["kbench"][subtest]
 
         # get unit string or use default API unit string
         unit = UNIT_STR.get(subtest, API_UNIT_STR)
