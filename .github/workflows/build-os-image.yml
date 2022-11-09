@@ -336,6 +336,7 @@ jobs:
           AWS_IMAGE_PATH: ${{ steps.vars.outputs.awsImagePath }}
           AWS_REGION: ${{ steps.vars.outputs.awsRegion }}
           AWS_REPLICATION_REGIONS: ${{ steps.vars.outputs.awsReplicationRegions }}
+          AWS_PUBLISH: ${{ steps.vars.outputs.awsPublish }}
 
       - name: Upload GCP image
         shell: bash

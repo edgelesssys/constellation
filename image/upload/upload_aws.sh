@@ -87,6 +87,9 @@ tag_ami_with_backing_snapshot() {
 make_ami_public() {
     local ami_id=$1
     local region=$2
+    if [ "${AWS_PUBLISH-}" != "true" ]; then
+        return
+    fi
     aws ec2 modify-image-attribute \
         --region "${region}" \
         --image-id "${ami_id}" \
