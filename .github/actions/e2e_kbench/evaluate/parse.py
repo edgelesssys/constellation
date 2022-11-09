@@ -17,6 +17,7 @@ def configure() -> Tuple[str, str, str, str | None]:
 
     Optional:
     - EXT_NAME=AKS  # Overrides "constellation-$CSP" naming, used to parse results from managed Kubernetes
+    - GITHUB_SHA=ffac5... # Set by GitHub actions, stored in the result JSON.
 
     Raises TypeError if at least one of them is missing.
 
@@ -30,7 +31,8 @@ def configure() -> Tuple[str, str, str, str | None]:
             'ENV variables KBENCH_RESULTS, CSP, BDIR are required.')
 
     ext_provider_name = os.environ.get('EXT_NAME', None)
-    return base_path, csp, out_dir, ext_provider_name
+    commit_hash = os.environ.get('GITHUB_SHA', "N/A")
+    return base_path, csp, out_dir, ext_provider_name, commit_hash
 
 
 def main() -> None:
@@ -38,25 +40,20 @@ def main() -> None:
 
     Write results of the current environment to a JSON file.
     """
-    base_path, csp, out_dir, ext_provider_name = configure()
+    base_path, csp, out_dir, ext_provider_name, commit_hash = configure()
 
-    if ext_provider_name:
-        # Managed Kubernetes benchmark, expect the results in directory:
-        # kbench-EXT_NAME/
-        benchmark_path = os.path.join(
-            base_path,
-            "kbench-" + ext_provider_name,
-        )
-        tests = {ext_provider_name: benchmark_path}
-        out_file_name = "{nm}.json".format(nm=ext_provider_name)
-    else:
+    if not ext_provider_name:
         # Constellation benchmark.
-        benchmark_path = os.path.join(
-            base_path,
-            "kbench-constellation-" + csp,
-        )
-        tests = {f"constellation-{csp}": benchmark_path}
-        out_file_name = "constellation-{csp}.json".format(csp=csp)
+        ext_provider_name = f"constellation-{csp}"
+
+    # Expect the results in directory:
+    # kbench-EXT_PROVIDER_NAME/
+    benchmark_path = os.path.join(
+        base_path,
+        "kbench-" + ext_provider_name,
+    )
+    tests = {ext_provider_name: benchmark_path}
+    out_file_name = "{nm}.json".format(nm=ext_provider_name)
 
     if not os.path.exists(benchmark_path):
         raise Exception(
@@ -68,11 +65,13 @@ def main() -> None:
     fio_results = fio.eval(tests=tests)
 
     combined_results = defaultdict(dict)
+    combined_results["commit"] = commit_hash
+    combined_results["subject"] = next(iter(tests))
 
     for test in tests:
-        combined_results[test].update(default_results[test])
-        combined_results[test].update(network_results[test])
-        combined_results[test].update(fio_results[test])
+        combined_results["kbench"].update(default_results[test])
+        combined_results["kbench"].update(network_results[test])
+        combined_results["kbench"].update(fio_results[test])
 
     # Write the compact results.
     save_path = os.path.join(out_dir, out_file_name)
