@@ -124,6 +124,7 @@ See the [Identify unhealthy clusters](#identify-unhealthy-clusters) description 
 Note that the recovery command needs to connect to the recovering nodes.
 Nodes only have private IP addresses in the VPC of the cluster, hence, the command needs to be issued from within the VPC network of the cluster.
 The easiest approach is to set up a jump host connected to the VPC network and perform the recovery from there.
+For Azure you can find a script that does this for you in the repo at `/hack/azure-jump-host/jump-host-create`.
 
 Given these prerequisites a node can be recovered like this:
 

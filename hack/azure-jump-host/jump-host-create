@@ -5,6 +5,7 @@ set -o pipefail
 SCRIPTDIR="$( dirname --  $(realpath "${BASH_SOURCE}"); )";
 RG=$(jq -r .azureresourcegroup constellation-state.json)
 SUBNET=$(jq -r .azuresubnet constellation-state.json)
+LOCATION=$(jq -r .azurelocation constellation-state.json)
 VNET=${SUBNET%"/subnets/nodeNetwork"}
 PUBKEY=$(cat ~/.ssh/id_rsa.pub)
 DEPLOYMENT_NAME=jump-host
@@ -18,7 +19,8 @@ az deployment group create \
     --parameters "@${SCRIPTDIR}/parameters.json" \
     --parameters  "{ \"virtualNetworkId\": { \"value\": \"${VNET}\" } }" \
     --parameters  "{ \"subnetRef\": { \"value\": \"${SUBNET}\" } }" \
-    --parameters  "{ \"adminPublicKey\": { \"value\": \"${PUBKEY}\" } }"
+    --parameters  "{ \"adminPublicKey\": { \"value\": \"${PUBKEY}\" } }" \
+    --parameters  "{ \"location\": { \"value\": \"${LOCATION}\" } }"
 az deployment group wait --created --name "${DEPLOYMENT_NAME}" --resource-group "${RG}"
 PUBIP=$(az vm list-ip-addresses  --resource-group "${RG}" --name "${VM_NAME}" --query "[].virtualMachine.network.publicIpAddresses[0].ipAddress" --output tsv)
 echo "Jump host created. Cleanup by deleteing the resource group."

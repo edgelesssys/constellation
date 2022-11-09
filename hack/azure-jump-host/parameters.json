@@ -3,10 +3,10 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "location": {
-            "value": "westus"
+            "value": null
         },
         "networkInterfaceName": {
-            "value": "jump-host814"
+            "value": "jump-host"
         },
         "networkSecurityGroupName": {
             "value": "jump-host-nsg"
