@@ -1,6 +1,6 @@
 # K-Bench
 
-## Continous Benchmarking
+## Continuous Benchmarking
 The K-Bench action runs K-Bench benchmarks on Constellation clusters.
 The benchmark suite records storage, network, and Kubernetes API benchmarks.
 
