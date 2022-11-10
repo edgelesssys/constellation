@@ -13,6 +13,7 @@ import (
 var (
 	ConfigDoc         encoder.Doc
 	UpgradeConfigDoc  encoder.Doc
+	UserKeyDoc        encoder.Doc
 	ProviderConfigDoc encoder.Doc
 	AWSConfigDoc      encoder.Doc
 	AzureConfigDoc    encoder.Doc
@@ -24,7 +25,7 @@ func init() {
 	ConfigDoc.Type = "Config"
 	ConfigDoc.Comments[encoder.LineComment] = "Config defines configuration used by CLI."
 	ConfigDoc.Description = "Config defines configuration used by CLI."
-	ConfigDoc.Fields = make([]encoder.Doc, 6)
+	ConfigDoc.Fields = make([]encoder.Doc, 7)
 	ConfigDoc.Fields[0].Name = "version"
 	ConfigDoc.Fields[0].Type = "string"
 	ConfigDoc.Fields[0].Note = ""
@@ -50,13 +51,20 @@ func init() {
 	ConfigDoc.Fields[4].Note = ""
 	ConfigDoc.Fields[4].Description = "Supported cloud providers and their specific configurations."
 	ConfigDoc.Fields[4].Comments[encoder.LineComment] = "Supported cloud providers and their specific configurations."
-	ConfigDoc.Fields[5].Name = "upgrade"
-	ConfigDoc.Fields[5].Type = "UpgradeConfig"
+	ConfigDoc.Fields[5].Name = "sshUsers"
+	ConfigDoc.Fields[5].Type = "[]UserKey"
 	ConfigDoc.Fields[5].Note = ""
-	ConfigDoc.Fields[5].Description = "Configuration to apply during constellation upgrade."
-	ConfigDoc.Fields[5].Comments[encoder.LineComment] = "Configuration to apply during constellation upgrade."
+	ConfigDoc.Fields[5].Description = "Deprecated: Does nothing! To get node SSH access, see: https://constellation-docs.edgeless.systems/constellation/workflows/troubleshooting#connect-to-nodes-via-ssh"
+	ConfigDoc.Fields[5].Comments[encoder.LineComment] = "Deprecated: Does nothing! To get node SSH access, see: https://constellation-docs.edgeless.systems/constellation/workflows/troubleshooting#connect-to-nodes-via-ssh"
 
-	ConfigDoc.Fields[5].AddExample("", UpgradeConfig{Image: "", Measurements: Measurements{}})
+	ConfigDoc.Fields[5].AddExample("", []UserKey{{Username: "Alice", PublicKey: "ssh-rsa AAAAB3NzaC...5QXHKW1rufgtJeSeJ8= alice@domain.com"}})
+	ConfigDoc.Fields[6].Name = "upgrade"
+	ConfigDoc.Fields[6].Type = "UpgradeConfig"
+	ConfigDoc.Fields[6].Note = ""
+	ConfigDoc.Fields[6].Description = "Configuration to apply during constellation upgrade."
+	ConfigDoc.Fields[6].Comments[encoder.LineComment] = "Configuration to apply during constellation upgrade."
+
+	ConfigDoc.Fields[6].AddExample("", UpgradeConfig{Image: "", Measurements: Measurements{}})
 
 	UpgradeConfigDoc.Type = "UpgradeConfig"
 	UpgradeConfigDoc.Comments[encoder.LineComment] = "UpgradeConfig defines configuration used during constellation upgrade."
@@ -80,6 +88,29 @@ func init() {
 	UpgradeConfigDoc.Fields[1].Note = ""
 	UpgradeConfigDoc.Fields[1].Description = "Measurements of the updated image."
 	UpgradeConfigDoc.Fields[1].Comments[encoder.LineComment] = "Measurements of the updated image."
+
+	UserKeyDoc.Type = "UserKey"
+	UserKeyDoc.Comments[encoder.LineComment] = "UserKey describes a user that should be created with corresponding public SSH key."
+	UserKeyDoc.Description = "UserKey describes a user that should be created with corresponding public SSH key.\n\nDeprecated: UserKey was used as configuration for access-manager, which was removed\nin v2.2, but config needs to retain these values for backwards compatibility and\nconfig validation.\n"
+
+	UserKeyDoc.AddExample("", []UserKey{{Username: "Alice", PublicKey: "ssh-rsa AAAAB3NzaC...5QXHKW1rufgtJeSeJ8= alice@domain.com"}})
+	UserKeyDoc.AppearsIn = []encoder.Appearance{
+		{
+			TypeName:  "Config",
+			FieldName: "sshUsers",
+		},
+	}
+	UserKeyDoc.Fields = make([]encoder.Doc, 2)
+	UserKeyDoc.Fields[0].Name = "username"
+	UserKeyDoc.Fields[0].Type = "string"
+	UserKeyDoc.Fields[0].Note = ""
+	UserKeyDoc.Fields[0].Description = "Username of new SSH user.\n\nDeprecated: See UserKey."
+	UserKeyDoc.Fields[0].Comments[encoder.LineComment] = "Username of new SSH user."
+	UserKeyDoc.Fields[1].Name = "publicKey"
+	UserKeyDoc.Fields[1].Type = "string"
+	UserKeyDoc.Fields[1].Note = ""
+	UserKeyDoc.Fields[1].Description = "Public key of new SSH user.\n\nDeprecated: See UserKey."
+	UserKeyDoc.Fields[1].Comments[encoder.LineComment] = "Public key of new SSH user."
 
 	ProviderConfigDoc.Type = "ProviderConfig"
 	ProviderConfigDoc.Comments[encoder.LineComment] = "ProviderConfig are cloud-provider specific configuration values used by the CLI."
@@ -316,8 +347,8 @@ func init() {
 	GCPConfigDoc.Fields[8].Comments[encoder.LineComment] = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
 
 	QEMUConfigDoc.Type = "QEMUConfig"
-	QEMUConfigDoc.Comments[encoder.LineComment] = ""
-	QEMUConfigDoc.Description = ""
+	QEMUConfigDoc.Comments[encoder.LineComment] = "QEMUConfig holds config information for QEMU based Constellation deployments."
+	QEMUConfigDoc.Description = "QEMUConfig holds config information for QEMU based Constellation deployments."
 	QEMUConfigDoc.AppearsIn = []encoder.Appearance{
 		{
 			TypeName:  "ProviderConfig",
@@ -390,6 +421,10 @@ func (_ UpgradeConfig) Doc() *encoder.Doc {
 	return &UpgradeConfigDoc
 }
 
+func (_ UserKey) Doc() *encoder.Doc {
+	return &UserKeyDoc
+}
+
 func (_ ProviderConfig) Doc() *encoder.Doc {
 	return &ProviderConfigDoc
 }
@@ -418,6 +453,7 @@ func GetConfigurationDoc() *encoder.FileDoc {
 		Structs: []*encoder.Doc{
 			&ConfigDoc,
 			&UpgradeConfigDoc,
+			&UserKeyDoc,
 			&ProviderConfigDoc,
 			&AWSConfigDoc,
 			&AzureConfigDoc,
