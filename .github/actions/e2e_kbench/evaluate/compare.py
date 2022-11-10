@@ -67,7 +67,7 @@ def main() -> None:
         bench_curr = json.load(f_curr)
 
     name = bench_curr['subject']
-    if name != bench_prev:
+    if name != bench_prev['subject']:
         raise ValueError(
             "Cloud providers of previous and current benchmark data don't match.")
 
