@@ -79,7 +79,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return err
 	}
 
-	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath)
+	config, err := readConfig(cmd.ErrOrStderr(), fileHandler, flags.configPath)
 	if err != nil {
 		return fmt.Errorf("reading and validating config: %w", err)
 	}
@@ -94,13 +94,13 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return fmt.Errorf("validating kubernetes version: %w", err)
 	}
 	if versions.IsPreviewK8sVersion(k8sVersion) {
-		cmd.Printf("Warning: Constellation with Kubernetes %v is still in preview. Use only for evaluation purposes.\n", k8sVersion)
+		cmd.PrintErrf("Warning: Constellation with Kubernetes %v is still in preview. Use only for evaluation purposes.\n", k8sVersion)
 	}
 
 	provider := config.GetProvider()
 	checker := license.NewChecker(quotaChecker, fileHandler)
 	if err := checker.CheckLicense(cmd.Context(), provider, config.Provider, cmd.Printf); err != nil {
-		cmd.Printf("License check failed: %v", err)
+		cmd.PrintErrf("License check failed: %v", err)
 	}
 
 	var sshUsers []*ssh.UserKey
@@ -290,7 +290,7 @@ type masterSecret struct {
 }
 
 // readOrGenerateMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
-func readOrGenerateMasterSecret(writer io.Writer, fileHandler file.Handler, filename string) (masterSecret, error) {
+func readOrGenerateMasterSecret(outWriter io.Writer, fileHandler file.Handler, filename string) (masterSecret, error) {
 	if filename != "" {
 		var secret masterSecret
 		if err := fileHandler.ReadJSON(filename, &secret); err != nil {
@@ -323,7 +323,7 @@ func readOrGenerateMasterSecret(writer io.Writer, fileHandler file.Handler, file
 	if err := fileHandler.WriteJSON(constants.MasterSecretFilename, secret, file.OptNone); err != nil {
 		return masterSecret{}, err
 	}
-	fmt.Fprintf(writer, "Your Constellation master secret was successfully written to ./%s\n", constants.MasterSecretFilename)
+	fmt.Fprintf(outWriter, "Your Constellation master secret was successfully written to ./%s\n", constants.MasterSecretFilename)
 	return secret, nil
 }
 

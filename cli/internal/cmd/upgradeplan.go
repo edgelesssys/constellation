@@ -93,18 +93,18 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner,
 	}
 	compatibleImages := getCompatibleImages(csp, version, images)
 	if len(compatibleImages) == 0 {
-		cmd.Println("No compatible images found to upgrade to.")
+		cmd.PrintErrln("No compatible images found to upgrade to.")
 		return nil
 	}
 
 	// get expected measurements for each image
-	if err := getCompatibleImageMeasurements(cmd.Context(), client, rekor, []byte(flags.cosignPubKey), compatibleImages); err != nil {
+	if err := getCompatibleImageMeasurements(cmd.Context(), cmd, client, rekor, []byte(flags.cosignPubKey), compatibleImages); err != nil {
 		return fmt.Errorf("fetching measurements for compatible images: %w", err)
 	}
 
 	// interactive mode
 	if flags.filePath == "" {
-		fmt.Fprintf(cmd.OutOrStdout(), "Current version: %s\n", version)
+		cmd.Printf("Current version: %s\n", version)
 		return upgradePlanInteractive(
 			&nopWriteCloser{cmd.OutOrStdout()},
 			io.NopCloser(cmd.InOrStdin()),
@@ -179,7 +179,7 @@ func getCompatibleImages(csp cloudprovider.Provider, currentVersion string, imag
 }
 
 // getCompatibleImageMeasurements retrieves the expected measurements for each image.
-func getCompatibleImageMeasurements(ctx context.Context, client *http.Client, rekor rekorVerifier, pubK []byte, images map[string]config.UpgradeConfig) error {
+func getCompatibleImageMeasurements(ctx context.Context, cmd *cobra.Command, client *http.Client, rekor rekorVerifier, pubK []byte, images map[string]config.UpgradeConfig) error {
 	for idx, img := range images {
 		measurementsURL, err := url.Parse(constants.S3PublicBucket + strings.ToLower(img.Image) + "/measurements.yaml")
 		if err != nil {
@@ -197,8 +197,8 @@ func getCompatibleImageMeasurements(ctx context.Context, client *http.Client, re
 		}
 
 		if err = verifyWithRekor(ctx, rekor, hash); err != nil {
-			fmt.Printf("Warning: Unable to verify '%s' in Rekor.\n", hash)
-			fmt.Printf("Make sure measurements are correct.\n")
+			cmd.PrintErrf("Warning: Unable to verify '%s' in Rekor.\n", hash)
+			cmd.PrintErrf("Make sure measurements are correct.\n")
 		}
 
 		images[idx] = img

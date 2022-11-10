@@ -63,7 +63,7 @@ func configFetchMeasurements(cmd *cobra.Command, verifier rekorVerifier, fileHan
 	}
 
 	if conf.IsDebugImage() {
-		cmd.Println("Configured image doesn't look like a released production image. Double check image before deploying to production.")
+		cmd.PrintErrln("Configured image doesn't look like a released production image. Double check image before deploying to production.")
 	}
 
 	if err := flags.updateURLs(conf); err != nil {
@@ -79,8 +79,8 @@ func configFetchMeasurements(cmd *cobra.Command, verifier rekorVerifier, fileHan
 	}
 
 	if err := verifyWithRekor(cmd.Context(), verifier, hash); err != nil {
-		cmd.Printf("Ignoring Rekor related error: %v\n", err)
-		cmd.Println("Make sure the downloaded measurements are trustworthy!")
+		cmd.PrintErrf("Ignoring Rekor related error: %v\n", err)
+		cmd.PrintErrln("Make sure the downloaded measurements are trustworthy!")
 	}
 
 	conf.UpdateMeasurements(fetchedMeasurements)
