@@ -36,7 +36,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
-	"golang.org/x/text/transform"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -60,8 +59,7 @@ type Client interface {
 
 type installer interface {
 	Install(
-		ctx context.Context, sourceURL string, destinations []string, perm fs.FileMode,
-		extract bool, transforms ...transform.Transformer,
+		ctx context.Context, sourceURL string, destinations []string, perm fs.FileMode, extract bool,
 	) error
 }
 

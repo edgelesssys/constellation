@@ -73,7 +73,6 @@ require (
 	github.com/hashicorp/hc-install v0.4.0
 	github.com/hashicorp/terraform-exec v0.17.3
 	github.com/hashicorp/terraform-json v0.14.0
-	github.com/icholy/replace v0.5.0
 	github.com/manifoldco/promptui v0.9.0
 	github.com/martinjungblut/go-cryptsetup v0.0.0-20220520180014-fd0874fd07a6
 	github.com/mattn/go-isatty v0.0.16
@@ -93,7 +92,6 @@ require (
 	golang.org/x/crypto v0.2.0
 	golang.org/x/mod v0.7.0
 	golang.org/x/sys v0.2.0
-	golang.org/x/text v0.4.0
 	google.golang.org/api v0.102.0
 	google.golang.org/genproto v0.0.0-20221107162902-2d387536bcdd
 	google.golang.org/grpc v1.50.1
@@ -119,6 +117,7 @@ require (
 	cloud.google.com/go/longrunning v0.3.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.1 // indirect
+	golang.org/x/text v0.4.0 // indirect
 )
 
 require (
