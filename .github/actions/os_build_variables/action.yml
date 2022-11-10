@@ -197,7 +197,7 @@ runs:
         elif [ "${imageType}" = debug ]
         then
           echo "imageDefinition=${semver}" >> $GITHUB_OUTPUT
-          echo "imageDefinition=${semver}" >> $GITHUB_OUTPUT
+          echo "imageOffer=${semver}" >> $GITHUB_OUTPUT
           echo "imageVersion=${timestamp:0:4}.${timestamp:4:4}.${timestamp:8}" >> $GITHUB_OUTPUT
           galleryName=Constellation_Debug
         else
