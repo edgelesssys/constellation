@@ -3,7 +3,7 @@
 set -euo pipefail
 shopt -s inherit_errexit
 
-SCRIPTDIR="$(dirname --  "$(realpath "${BASH_SOURCE[0]}")"; )";
+SCRIPTDIR="$(dirname -- "$(realpath "${BASH_SOURCE[0]}")")"
 RG=$(jq -r .azureresourcegroup constellation-state.json)
 SUBNET=$(jq -r .azuresubnet constellation-state.json)
 VNET=${SUBNET%"/subnets/nodeNetwork"}
@@ -12,16 +12,22 @@ DEPLOYMENT_NAME=jump-host
 VM_NAME=jump-host
 
 az deployment group create \
-    -o none \
-    --name "${DEPLOYMENT_NAME}" \
-    --resource-group "${RG}" \
-    --template-file "${SCRIPTDIR}/template.json" \
-    --parameters "@${SCRIPTDIR}/parameters.json" \
-    --parameters  "{ \"virtualNetworkId\": { \"value\": \"${VNET}\" } }" \
-    --parameters  "{ \"subnetRef\": { \"value\": \"${SUBNET}\" } }" \
-    --parameters  "{ \"adminPublicKey\": { \"value\": \"${PUBKEY}\" } }"
+  -o none \
+  --name "${DEPLOYMENT_NAME}" \
+  --resource-group "${RG}" \
+  --template-file "${SCRIPTDIR}/template.json" \
+  --parameters "@${SCRIPTDIR}/parameters.json" \
+  --parameters "{ \"virtualNetworkId\": { \"value\": \"${VNET}\" } }" \
+  --parameters "{ \"subnetRef\": { \"value\": \"${SUBNET}\" } }" \
+  --parameters "{ \"adminPublicKey\": { \"value\": \"${PUBKEY}\" } }"
 az deployment group wait --created --name "${DEPLOYMENT_NAME}" --resource-group "${RG}"
-PUBIP=$(az vm list-ip-addresses  --resource-group "${RG}" --name "${VM_NAME}" --query "[].virtualMachine.network.publicIpAddresses[0].ipAddress" --output tsv)
+PUBIP=$(
+  az vm list-ip-addresses \
+    --resource-group "${RG}" \
+    --name "${VM_NAME}" \
+    --query "[].virtualMachine.network.publicIpAddresses[0].ipAddress" \
+    --output tsv
+)
 echo "Jump host created. Cleanup by deleteing the resource group."
 echo "Connect to the jump host with the following command:"
 echo -e "ssh azureuser@${PUBIP}\n"
