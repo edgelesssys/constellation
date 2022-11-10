@@ -94,15 +94,34 @@ var (
 	NodeMaintenanceOperatorVersion = versionFromDockerImage(NodeMaintenanceOperatorCatalogImage)
 )
 
+// Regenerate the hashes by running go generate.
+// To add another Kubernetes version, add a new entry to the VersionConfigs map below and fill the Hash field with an empty string.
+//go:generate go run generateHashes.go
+
 // VersionConfigs holds download URLs for all required kubernetes components for every supported version.
 var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 	V1_23: {
-		PatchVersion:  "v1.23.14",                                                                                                   // renovate:kubernetes-release
-		CNIPluginsURL: "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
-		CrictlURL:     "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.25.0/crictl-v1.25.0-linux-amd64.tar.gz",   // renovate:crictl-release
-		KubeletURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.23.14/bin/linux/amd64/kubelet",                 // renovate:kubernetes-release
-		KubeadmURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.23.14/bin/linux/amd64/kubeadm",                 // renovate:kubernetes-release
-		KubectlURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.23.14/bin/linux/amd64/kubectl",                 // renovate:kubernetes-release
+		PatchVersion: "v1.23.14", // renovate:kubernetes-release
+		CNIPlugins: ArtifactVersion{
+			URL:  "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
+			Hash: "sha256:b275772da4026d2161bf8a8b41ed4786754c8a93ebfb6564006d5da7f23831e5",
+		},
+		Crictl: ArtifactVersion{
+			URL:  "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.25.0/crictl-v1.25.0-linux-amd64.tar.gz", // renovate:crictl-release
+			Hash: "sha256:86ab210c007f521ac4cdcbcf0ae3fb2e10923e65f16de83e0e1db191a07f0235",
+		},
+		Kubelet: ArtifactVersion{
+			URL:  "https://storage.googleapis.com/kubernetes-release/release/v1.23.14/bin/linux/amd64/kubelet", // renovate:kubernetes-release
+			Hash: "sha256:f2bef00508790f632d035a6cfdd31539115611bfc93c5a3266ceb95bb2f27b76",
+		},
+		Kubeadm: ArtifactVersion{
+			URL:  "https://storage.googleapis.com/kubernetes-release/release/v1.23.14/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
+			Hash: "sha256:46c847e2699839b9ccf6673f0b946c4778a3a2e8e463d15854ba30d3f0cbd87a",
+		},
+		Kubectl: ArtifactVersion{
+			URL:  "https://storage.googleapis.com/kubernetes-release/release/v1.23.14/bin/linux/amd64/kubectl", // renovate:kubernetes-release
+			Hash: "sha256:13ce4b18ba6e15d5d259249c530637dd7fb9722d121df022099f3ed5f2bd74cd",
+		},
 		// CloudControllerManagerImageAWS is the CCM image used on AWS.
 		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.23.2@sha256:5caf74bfe1c6e1b7b7d40345db52b54eeea7229a8fd73c7db9488ef87dc7a496", // renovate:container
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
@@ -116,12 +135,27 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterAutoscalerImage: "k8s.gcr.io/autoscaling/cluster-autoscaler:v1.23.1@sha256:cd2101ba67f3d6ec719f7792d4bdaa3a50e1b716f3a9ccee8931086496c655b7", // renovate:container
 	},
 	V1_24: {
-		PatchVersion:  "v1.24.8",                                                                                                    // renovate:kubernetes-release
-		CNIPluginsURL: "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
-		CrictlURL:     "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.25.0/crictl-v1.25.0-linux-amd64.tar.gz",   // renovate:crictl-release
-		KubeletURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.24.8/bin/linux/amd64/kubelet",                  // renovate:kubernetes-release
-		KubeadmURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.24.8/bin/linux/amd64/kubeadm",                  // renovate:kubernetes-release
-		KubectlURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.24.8/bin/linux/amd64/kubectl",                  // renovate:kubernetes-release
+		PatchVersion: "v1.24.8", // renovate:kubernetes-release
+		CNIPlugins: ArtifactVersion{
+			URL:  "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
+			Hash: "sha256:b275772da4026d2161bf8a8b41ed4786754c8a93ebfb6564006d5da7f23831e5",
+		},
+		Crictl: ArtifactVersion{
+			URL:  "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.25.0/crictl-v1.25.0-linux-amd64.tar.gz", // renovate:crictl-release
+			Hash: "sha256:86ab210c007f521ac4cdcbcf0ae3fb2e10923e65f16de83e0e1db191a07f0235",
+		},
+		Kubelet: ArtifactVersion{
+			URL:  "https://storage.googleapis.com/kubernetes-release/release/v1.24.8/bin/linux/amd64/kubelet", // renovate:kubernetes-release
+			Hash: "sha256:2da0b93857cf352bff5d1eb42e34d398a5971b63a53d8687b45179a78540d6d6",
+		},
+		Kubeadm: ArtifactVersion{
+			URL:  "https://storage.googleapis.com/kubernetes-release/release/v1.24.8/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
+			Hash: "sha256:9fea42b4fb5eb2da638d20710ebb791dde221e6477793d3de70134ac058c4cc7",
+		},
+		Kubectl: ArtifactVersion{
+			URL:  "https://storage.googleapis.com/kubernetes-release/release/v1.24.8/bin/linux/amd64/kubectl", // renovate:kubernetes-release
+			Hash: "sha256:f93c18751ec715b4d4437e7ece18fe91948c71be1f24ab02a2dde150f5449855",
+		},
 		// CloudControllerManagerImageAWS is the CCM image used on AWS.
 		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.24.1@sha256:4b75b09cc5b3959d06a8c2fb84f165e8163ec0153eaa6a48ece6c8113e78e720", // renovate:container
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
@@ -135,12 +169,27 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterAutoscalerImage: "k8s.gcr.io/autoscaling/cluster-autoscaler:v1.24.0@sha256:5bd22353ae7f30c9abfaa08189281367ef47ea1b3d09eb13eb26bd13de241e72", // renovate:container
 	},
 	V1_25: {
-		PatchVersion:  "v1.25.4",                                                                                                    // renovate:kubernetes-release
-		CNIPluginsURL: "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
-		CrictlURL:     "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.25.0/crictl-v1.25.0-linux-amd64.tar.gz",   // renovate:crictl-release
-		KubeletURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.25.4/bin/linux/amd64/kubelet",                  // renovate:kubernetes-release
-		KubeadmURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.25.4/bin/linux/amd64/kubeadm",                  // renovate:kubernetes-release
-		KubectlURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.25.4/bin/linux/amd64/kubectl",                  // renovate:kubernetes-release
+		PatchVersion: "v1.25.4", // renovate:kubernetes-release
+		CNIPlugins: ArtifactVersion{
+			URL:  "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
+			Hash: "sha256:b275772da4026d2161bf8a8b41ed4786754c8a93ebfb6564006d5da7f23831e5",
+		},
+		Crictl: ArtifactVersion{
+			URL:  "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.25.0/crictl-v1.25.0-linux-amd64.tar.gz", // renovate:crictl-release
+			Hash: "sha256:86ab210c007f521ac4cdcbcf0ae3fb2e10923e65f16de83e0e1db191a07f0235",
+		},
+		Kubelet: ArtifactVersion{
+			URL:  "https://storage.googleapis.com/kubernetes-release/release/v1.25.4/bin/linux/amd64/kubelet", // renovate:kubernetes-release
+			Hash: "sha256:7f7437e361f829967ee02e30026d7e85219693432ac5e930cc98dd9c7ddb2fac",
+		},
+		Kubeadm: ArtifactVersion{
+			URL:  "https://storage.googleapis.com/kubernetes-release/release/v1.25.4/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
+			Hash: "sha256:b8a6119d2a3a7c6add43dcf8f920436bf7fe71a77a086e96e40aa9d6f70be826",
+		},
+		Kubectl: ArtifactVersion{
+			URL:  "https://storage.googleapis.com/kubernetes-release/release/v1.25.4/bin/linux/amd64/kubectl", // renovate:kubernetes-release
+			Hash: "sha256:e4e569249798a09f37e31b8b33571970fcfbdecdd99b1b81108adc93ca74b522",
+		},
 		// CloudControllerManagerImageAWS is the CCM image used on AWS.
 		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.25.1@sha256:85d3f1e9dacc72531445989bb10999e1e70ebc409d11be57e5baa5f031a893b0", // renovate:container
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
@@ -161,16 +210,22 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 // KubernetesVersion bundles download URLs to all version-releated binaries necessary for installing/deploying a particular Kubernetes version.
 type KubernetesVersion struct {
 	PatchVersion                     string
-	CNIPluginsURL                    string // No k8s version dependency.
-	CrictlURL                        string // k8s version dependency.
-	KubeletURL                       string // k8s version dependency.
-	KubeadmURL                       string // k8s version dependency.
-	KubectlURL                       string // k8s version dependency.
-	CloudControllerManagerImageAWS   string // k8s version dependency.
-	CloudControllerManagerImageGCP   string // Using self-built image until resolved: https://github.com/kubernetes/cloud-provider-gcp/issues/289
-	CloudControllerManagerImageAzure string // k8s version dependency.
-	CloudNodeManagerImageAzure       string // k8s version dependency. Same version as above.
-	ClusterAutoscalerImage           string // Matches k8s versioning scheme.
+	CNIPlugins                       ArtifactVersion // No k8s version dependency.
+	Crictl                           ArtifactVersion // k8s version dependency.
+	Kubelet                          ArtifactVersion // k8s version dependency.
+	Kubeadm                          ArtifactVersion // k8s version dependency.
+	Kubectl                          ArtifactVersion // k8s version dependency.
+	CloudControllerManagerImageAWS   string          // k8s version dependency.
+	CloudControllerManagerImageGCP   string          // Using self-built image until resolved: https://github.com/kubernetes/cloud-provider-gcp/issues/289
+	CloudControllerManagerImageAzure string          // k8s version dependency.
+	CloudNodeManagerImageAzure       string          // k8s version dependency. Same version as above.
+	ClusterAutoscalerImage           string          // Matches k8s versioning scheme.
+}
+
+// ArtifactVersion is a version of a particular artifact.
+type ArtifactVersion struct {
+	URL  string
+	Hash string
 }
 
 // versionFromDockerImage returns the version tag from the image name, e.g. "v1.22.2" from "foocr.io/org/repo:v1.22.2@sha256:3009fj0...".

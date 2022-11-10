@@ -82,27 +82,27 @@ func (k *KubernetesUtil) InstallComponents(ctx context.Context, version versions
 	versionConf := versions.VersionConfigs[version]
 
 	if err := k.inst.Install(
-		ctx, versionConf.CNIPluginsURL, []string{cniPluginsDir}, executablePerm, true,
+		ctx, versionConf.CNIPlugins.URL, []string{cniPluginsDir}, executablePerm, true,
 	); err != nil {
 		return fmt.Errorf("installing cni plugins: %w", err)
 	}
 	if err := k.inst.Install(
-		ctx, versionConf.CrictlURL, []string{binDir}, executablePerm, true,
+		ctx, versionConf.Crictl.URL, []string{binDir}, executablePerm, true,
 	); err != nil {
 		return fmt.Errorf("installing crictl: %w", err)
 	}
 	if err := k.inst.Install(
-		ctx, versionConf.KubeletURL, []string{kubeletPath}, executablePerm, false,
+		ctx, versionConf.Kubelet.URL, []string{kubeletPath}, executablePerm, false,
 	); err != nil {
 		return fmt.Errorf("installing kubelet: %w", err)
 	}
 	if err := k.inst.Install(
-		ctx, versionConf.KubeadmURL, []string{kubeadmPath}, executablePerm, false,
+		ctx, versionConf.Kubeadm.URL, []string{kubeadmPath}, executablePerm, false,
 	); err != nil {
 		return fmt.Errorf("installing kubeadm: %w", err)
 	}
 	if err := k.inst.Install(
-		ctx, versionConf.KubectlURL, []string{constants.KubectlPath}, executablePerm, false,
+		ctx, versionConf.Kubectl.URL, []string{constants.KubectlPath}, executablePerm, false,
 	); err != nil {
 		return fmt.Errorf("installing kubectl: %w", err)
 	}
