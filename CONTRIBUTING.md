@@ -13,7 +13,9 @@ If you want to support our development:
 Constellation is licensed under the [AGPLv3](LICENSE). When contributing, you also need to agree to our [Contributor License Agreement](https://cla-assistant.io/edgelesssys/constellation).
 
 # Developer docs
+
 We have some documentation, guidelines and conventions that you can go through to familiarize yourself with the project and get started hacking on it.
+
 * Building, testing, deploying: [local development](/.github/docs/development.md)
 * [Code conventions](/.github/docs/conventions.md#code-conventions)
 * [Process conventions](/.github/docs/conventions.md#process-conventions)
