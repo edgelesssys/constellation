@@ -60,7 +60,7 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 		return dialer.New(nil, validator.V(cmd), &net.Dialer{})
 	}
 
-	spinner := newSpinner(cmd.OutOrStdout())
+	spinner := newSpinner(cmd.ErrOrStderr())
 	defer spinner.Stop()
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
