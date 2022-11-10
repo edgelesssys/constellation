@@ -3,6 +3,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only
 
+set -euo pipefail
+shopt -s inherit_errexit
+
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 BASE_DIR=$(realpath "${SCRIPT_DIR}/..")
 
@@ -14,7 +17,7 @@ fi
 libvirt_nvram_gen () {
     local image_path="${1}"
     if test -f "${BASE_DIR}/image.nvram.template"; then
-        echo "NVRAM template already generated: $(realpath "--relative-to=$(pwd)" ${BASE_DIR}/image.nvram.template)"
+        echo "NVRAM template already generated: $(realpath "--relative-to=$(pwd)" "${BASE_DIR}"/image.nvram.template)"
         return
     fi
     if ! test -f "${image_path}"; then
@@ -36,7 +39,7 @@ libvirt_nvram_gen () {
 
     # generate nvram file using libvirt
     virt-install --name constell-nvram-gen \
-        --connect ${LIBVIRT_SOCK} \
+        --connect "${LIBVIRT_SOCK}" \
         --nonetworks \
         --description 'Constellation' \
         --ram 1024 \
@@ -80,13 +83,13 @@ libvirt_nvram_gen () {
     echo -e '    Reboot and continue this script.'
     echo -e ''
     echo -e 'Press ENTER to continue after you followed one of the guides from above.'
-    read
+    read -r
     sudo cp "${BASE_DIR}/image.nvram" "${BASE_DIR}/image.nvram.template"
     virsh --connect "${LIBVIRT_SOCK}" destroy --domain constell-nvram-gen
     virsh --connect "${LIBVIRT_SOCK}" undefine --nvram constell-nvram-gen
     rm -f "${BASE_DIR}/image.nvram"
 
-    echo "NVRAM template generated: $(realpath "--relative-to=$(pwd)" ${BASE_DIR}/image.nvram.template)"
+    echo "NVRAM template generated: $(realpath "--relative-to=$(pwd)" "${BASE_DIR}"/image.nvram.template)"
 }
 
-libvirt_nvram_gen $1
+libvirt_nvram_gen "$1"

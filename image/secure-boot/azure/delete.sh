@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
-if [ -z "${CONFIG_FILE-}" ] && [ -f "${CONFIG_FILE-}" ]; then
+set -euo pipefail
+shopt -s inherit_errexit
+
+if [[ -z "${CONFIG_FILE-}" ]] && [[ -f "${CONFIG_FILE-}" ]]; then
+    # shellcheck source=/dev/null
     . "${CONFIG_FILE}"
 fi
 POSITIONAL_ARGS=()
@@ -13,7 +16,7 @@ while [[ $# -gt 0 ]]; do
       shift # past argument
       shift # past value
       ;;
-    -*|--*)
+    -*)
       echo "Unknown option $1"
       exit 1
       ;;
@@ -32,7 +35,7 @@ NIC_INFO=$(az network nic show --ids "${NIC}" -o json)
 PUBIP=$(echo "${NIC_INFO}" | jq -r '.ipConfigurations[0].publicIpAddress.id')
 NSG=$(echo "${NIC_INFO}" | jq -r '.networkSecurityGroup.id')
 SUBNET=$(echo "${NIC_INFO}" | jq -r '.ipConfigurations[0].subnet.id')
-VNET=$(echo $SUBNET | sed 's#/subnets/.*##')
+VNET=${SUBNET//\/subnets\/.*/}
 DISK=$(echo "${AZ_VM_INFO}" | jq -r '.storageProfile.osDisk.managedDisk.id')
 
 

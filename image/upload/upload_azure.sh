@@ -4,8 +4,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 set -euo pipefail
+shopt -s inherit_errexit
 
-if [ -z "${CONFIG_FILE-}" ] && [ -f "${CONFIG_FILE-}" ]; then
+if [[ -z "${CONFIG_FILE-}" ]] && [[ -f "${CONFIG_FILE-}" ]]; then
+    # shellcheck source=/dev/null
     . "${CONFIG_FILE}"
 fi
 
@@ -24,7 +26,7 @@ while [[ $# -gt 0 ]]; do
       shift # past argument
       shift # past value
       ;;
-    -*|--*)
+    -*)
       echo "Unknown option $1"
       exit 1
       ;;
@@ -52,7 +54,7 @@ fi
 AZURE_CVM_ENCRYPTION_ARGS=""
 if [[ -n "${AZURE_SIG_VERSION_ENCRYPTION_TYPE-}" ]]; then
     AZURE_CVM_ENCRYPTION_ARGS=" --target-region-cvm-encryption "
-    for region in ${AZURE_REPLICATION_REGIONS}; do
+    for _ in ${AZURE_REPLICATION_REGIONS}; do
         AZURE_CVM_ENCRYPTION_ARGS=" ${AZURE_CVM_ENCRYPTION_ARGS} ${AZURE_SIG_VERSION_ENCRYPTION_TYPE}, "
     done
 fi
@@ -82,17 +84,17 @@ create_disk_with_vmgs () {
         --security-type "${AZURE_DISK_SECURITY_TYPE}"
     az disk wait --created -n "${AZURE_DISK_NAME}" -g "${AZURE_RESOURCE_GROUP_NAME}"
     az disk list --output table --query "[?name == '${AZURE_DISK_NAME}' && resourceGroup == '${AZURE_RESOURCE_GROUP_NAME^^}']"
-    DISK_SAS=$(az disk grant-access -n ${AZURE_DISK_NAME} -g ${AZURE_RESOURCE_GROUP_NAME} \
+    DISK_SAS=$(az disk grant-access -n "${AZURE_DISK_NAME}" -g "${AZURE_RESOURCE_GROUP_NAME}" \
         --access-level Write --duration-in-seconds 86400 \
          ${AZURE_VMGS_PATH+"--secure-vm-guest-state-sas"})
     azcopy copy "${AZURE_IMAGE_PATH}" \
-        "$(echo $DISK_SAS | jq -r .accessSas)" \
+        "$(echo "${DISK_SAS}" | jq -r .accessSas)" \
         --blob-type PageBlob
     if [[ -z "${AZURE_VMGS_PATH}" ]]; then
         echo "No VMGS path provided - skipping VMGS upload"
     else
         azcopy copy "${AZURE_VMGS_PATH}" \
-            "$(echo $DISK_SAS | jq -r .securityDataAccessSas)" \
+            "$(echo "${DISK_SAS}" | jq -r .securityDataAccessSas)" \
             --blob-type PageBlob
     fi
     az disk revoke-access -n "${AZURE_DISK_NAME}" -g "${AZURE_RESOURCE_GROUP_NAME}"
@@ -110,10 +112,10 @@ create_disk_without_vmgs () {
         --upload-type Upload
     az disk wait --created -n "${AZURE_DISK_NAME}" -g "${AZURE_RESOURCE_GROUP_NAME}"
     az disk list --output table --query "[?name == '${AZURE_DISK_NAME}' && resourceGroup == '${AZURE_RESOURCE_GROUP_NAME^^}']"
-    DISK_SAS=$(az disk grant-access -n ${AZURE_DISK_NAME} -g ${AZURE_RESOURCE_GROUP_NAME} \
+    DISK_SAS=$(az disk grant-access -n "${AZURE_DISK_NAME}" -g "${AZURE_RESOURCE_GROUP_NAME}" \
         --access-level Write --duration-in-seconds 86400)
     azcopy copy "${AZURE_IMAGE_PATH}" \
-        "$(echo $DISK_SAS | jq -r .accessSas)" \
+        "$(echo "${DISK_SAS}" | jq -r .accessSas)" \
         --blob-type PageBlob
     az disk revoke-access -n "${AZURE_DISK_NAME}" -g "${AZURE_RESOURCE_GROUP_NAME}"
 }
@@ -135,9 +137,9 @@ create_image () {
         return
     fi
     az image create \
-        --resource-group ${AZURE_RESOURCE_GROUP_NAME} \
-        -l ${AZURE_REGION} \
-        -n ${AZURE_DISK_NAME} \
+        --resource-group "${AZURE_RESOURCE_GROUP_NAME}" \
+        -l "${AZURE_REGION}" \
+        -n "${AZURE_DISK_NAME}" \
         --hyper-v-generation V2 \
         --os-type Linux \
         --source "$(az disk list --query "[?name == '${AZURE_DISK_NAME}' && resourceGroup == '${AZURE_RESOURCE_GROUP_NAME^^}'] | [0].id" --output tsv)"
@@ -152,10 +154,12 @@ delete_image () {
 
 create_sig_version () {
     if [[ -n "${AZURE_VMGS_PATH}" ]]; then
-        local DISK="$(az disk list --query "[?name == '${AZURE_DISK_NAME}' && resourceGroup == '${AZURE_RESOURCE_GROUP_NAME^^}'] | [0].id" --output tsv)"
+        local DISK
+        DISK="$(az disk list --query "[?name == '${AZURE_DISK_NAME}' && resourceGroup == '${AZURE_RESOURCE_GROUP_NAME^^}'] | [0].id" --output tsv)"
         local SOURCE="--os-snapshot ${DISK}"
     else
-        local IMAGE="$(az image list --query "[?name == '${AZURE_DISK_NAME}' && resourceGroup == '${AZURE_RESOURCE_GROUP_NAME^^}'] | [0].id" --output tsv)"
+        local IMAGE
+        IMAGE="$(az image list --query "[?name == '${AZURE_DISK_NAME}' && resourceGroup == '${AZURE_RESOURCE_GROUP_NAME^^}'] | [0].id" --output tsv)"
         local SOURCE="--managed-image ${IMAGE}"
     fi
     az sig create -l "${AZURE_REGION}" --gallery-name "${AZURE_GALLERY_NAME}" --resource-group "${AZURE_RESOURCE_GROUP_NAME}" || true
@@ -177,16 +181,16 @@ create_sig_version () {
         --gallery-name "${AZURE_GALLERY_NAME}" \
         --gallery-image-definition "${AZURE_IMAGE_DEFINITION}" \
         --gallery-image-version "${AZURE_IMAGE_VERSION}" \
-        --target-regions ${AZURE_REPLICATION_REGIONS} \
-        ${AZURE_CVM_ENCRYPTION_ARGS} \
+        --target-regions "${AZURE_REPLICATION_REGIONS}" \
+        "${AZURE_CVM_ENCRYPTION_ARGS}" \
         --replica-count 1 \
         --replication-mode Full \
-        ${SOURCE}
+        "${SOURCE}"
 }
 
 create_disk
 
-if [ "$CREATE_SIG_VERSION" = "YES" ]; then
+if [[ "${CREATE_SIG_VERSION}" = "YES" ]]; then
     create_image
     create_sig_version
     delete_image

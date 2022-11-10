@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
-if [ -z "${CONFIG_FILE-}" ] && [ -f "${CONFIG_FILE-}" ]; then
+set -euo pipefail
+shopt -s inherit_errexit
+
+if [[ -z "${CONFIG_FILE-}" ]] && [[ -f "${CONFIG_FILE-}" ]]; then
+    # shellcheck source=/dev/null
     . "${CONFIG_FILE}"
 fi
 POSITIONAL_ARGS=()
@@ -31,7 +34,7 @@ while [[ $# -gt 0 ]]; do
       shift # past argument
       shift # past value
       ;;
-    -*|--*)
+    -*)
       echo "Unknown option $1"
       exit 1
       ;;
@@ -54,10 +57,10 @@ else
 fi
 
 create_vm_from_disk () {
-    AZURE_DISK_REFERENCE=$(az disk show --resource-group ${AZURE_RESOURCE_GROUP_NAME} --name ${AZURE_DISK_NAME} --query id -o tsv)
+    AZURE_DISK_REFERENCE=$(az disk show --resource-group "${AZURE_RESOURCE_GROUP_NAME}" --name "${AZURE_DISK_NAME}" --query id -o tsv)
     az vm create --name "${AZURE_VM_NAME}" \
         --resource-group "${AZURE_RESOURCE_GROUP_NAME}" \
-        -l ${AZURE_REGION} \
+        -l "${AZURE_REGION}" \
         --size "${VMSIZE}" \
         --public-ip-sku Standard \
         --os-type Linux \
@@ -79,7 +82,7 @@ create_vm_from_sig () {
         --query id -o tsv)
     az vm create --name "${AZURE_VM_NAME}" \
         --resource-group "${AZURE_RESOURCE_GROUP_NAME}" \
-        -l ${AZURE_REGION} \
+        -l "${AZURE_REGION}" \
         --size "${VMSIZE}" \
         --public-ip-sku Standard \
         --image "${AZURE_IMAGE_REFERENCE}" \
@@ -91,7 +94,7 @@ create_vm_from_sig () {
         --no-wait
 }
 
-if [ "$CREATE_FROM_GALLERY" = "YES" ]; then
+if [[ "${CREATE_FROM_GALLERY}" = "YES" ]]; then
     create_vm_from_sig
 else
     create_vm_from_disk

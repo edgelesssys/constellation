@@ -4,8 +4,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 set -euo pipefail
+shopt -s inherit_errexit
 
-if [ -z "${CONFIG_FILE-}" ] && [ -f "${CONFIG_FILE-}" ]; then
+if [[ -z "${CONFIG_FILE-}" ]] && [[ -f "${CONFIG_FILE-}" ]]; then
+    # shellcheck source=/dev/null
     . "${CONFIG_FILE}"
 fi
 

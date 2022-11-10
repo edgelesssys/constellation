@@ -1,0 +1,13 @@
+external-sources=true
+source-path=SCRIPTDIR
+
+disable=SC2181
+
+# Enable optionals, see https://github.com/koalaman/shellcheck/wiki/optional.
+enable=add-default-case
+enable=avoid-nullary-conditions
+enable=check-set-e-suppressed
+enable=deprecate-which
+enable=quote-safe-variables
+enable=require-double-brackets
+enable=require-variable-braces

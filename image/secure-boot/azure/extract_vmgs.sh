@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
-if [ -z "${CONFIG_FILE-}" ] && [ -f "${CONFIG_FILE-}" ]; then
+set -euo pipefail
+shopt -s inherit_errexit
+
+if [[ -z "${CONFIG_FILE-}" ]] && [[ -f "${CONFIG_FILE-}" ]]; then
+    # shellcheck source=/dev/null
     . "${CONFIG_FILE}"
 fi
 AZURE_SUBSCRIPTION=$(az account show --query id -o tsv)
@@ -14,7 +17,7 @@ while [[ $# -gt 0 ]]; do
       shift # past argument
       shift # past value
       ;;
-    -*|--*)
+    -*)
       echo "Unknown option $1"
       exit 1
       ;;

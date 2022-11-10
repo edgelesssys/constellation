@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 set -euo pipefail
+shopt -s inherit_errexit
 
 # Prepare the encrypted volume by either initializing it with a random key or by aquiring the key from another bootstrapper.
 # Store encryption key (random or recovered key) in /run/cryptsetup-keys.d/state.key

@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 set -euo pipefail
+shopt -s inherit_errexit
 
 # Show progress on pipes if `pv` is installed
 # Otherwise use plain cat
@@ -24,9 +25,9 @@ pack () {
     unpacked_image_filename=disk.raw
     local tmp_tar_file
     tmp_tar_file=$(mktemp -t verity.XXXXXX.tar)
-    cp ${unpacked_image} "${unpacked_image_dir}/${unpacked_image_filename}"
+    cp "${unpacked_image}" "${unpacked_image_dir}/${unpacked_image_filename}"
 
-    case $cloudprovider in
+    case ${cloudprovider} in
 
     gcp)
         echo "📥 Packing GCP image..."
@@ -39,7 +40,7 @@ pack () {
     azure)
         echo "📥 Packing Azure image..."
         truncate -s %1MiB "${unpacked_image_dir}/${unpacked_image_filename}"
-        qemu-img convert -p -f raw -O vpc -o force_size,subformat=fixed "${unpacked_image_dir}/${unpacked_image_filename}" "$packed_image"
+        qemu-img convert -p -f raw -O vpc -o force_size,subformat=fixed "${unpacked_image_dir}/${unpacked_image_filename}" "${packed_image}"
         echo "  Repacked image stored in ${packed_image}"
         ;;
 
@@ -49,11 +50,11 @@ pack () {
         ;;
     esac
 
-    rm -r ${unpacked_image_dir}
+    rm -r "${unpacked_image_dir}"
 
 }
 
-if [ $# -ne 3 ]; then
+if [[ $# -ne 3 ]]; then
     echo "Usage: $0 <cloudprovider> <unpacked_image> <packed_image>"
     exit 1
 fi

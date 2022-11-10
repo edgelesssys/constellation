@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-set -e
-set -o pipefail
 
-SCRIPTDIR="$( dirname --  $(realpath "${BASH_SOURCE}"); )";
+set -euo pipefail
+shopt -s inherit_errexit
+
+SCRIPTDIR="$(dirname --  "$(realpath "${BASH_SOURCE[0]}")"; )";
 RG=$(jq -r .azureresourcegroup constellation-state.json)
 SUBNET=$(jq -r .azuresubnet constellation-state.json)
 VNET=${SUBNET%"/subnets/nodeNetwork"}
