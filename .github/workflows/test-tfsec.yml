@@ -19,7 +19,7 @@ permissions:
 jobs:
   tfsec:
     name: tfsec
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@1f9a0c22da41e6ebfa534300ef656657ea2c6707
