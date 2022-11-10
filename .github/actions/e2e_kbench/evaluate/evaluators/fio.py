@@ -57,7 +57,7 @@ def eval(tests: Dict[str, str]) -> Dict[str, Dict[str, float]]:
     return result
 
 
-# Dictionary to convert units
+# Dictionary for conversion to MiB
 units = {
     'KiB': 1/1024,
     'MiB': 1,
@@ -75,6 +75,8 @@ def get_io_bw_from_line(line) -> float:
     if not match:
         raise Exception("Could not extract bw from fio line.")
     num = float(match.group(1))
+
+    # return in MiB/s with 2 decimal digits
     num = num * units[match.group(2)]
-    # return in MiB/s
+    num = round(num, 2)
     return num

@@ -58,7 +58,7 @@ def eval(tests: Dict[str, str]) -> Dict[str, Dict[str, float]]:
     return result
 
 
-# Dictionary to convert units
+# Dictionary for conversion to Mbit
 units = {
     'bits': 1e-6,
     'Mbits': 1,
@@ -77,6 +77,8 @@ def get_speed_from_line(line) -> float:
     if not match:
         raise Exception("Could not extract speed from iperf line.")
     num = float(match.group(1))
+
+    # return in Mbit/s with 2 decimal digits
     num = num * units[match.group(2)]
-    # return in Mbit/s
+    num = round(num, 2)
     return float(num)
