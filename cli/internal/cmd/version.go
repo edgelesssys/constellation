@@ -28,7 +28,7 @@ func NewVersionCmd() *cobra.Command {
 func runVersion(cmd *cobra.Command, args []string) {
 	buildInfo, ok := debug.ReadBuildInfo()
 	if !ok {
-		cmd.Printf("Unable to retrieve build info. Is buildvcs enabled?")
+		cmd.PrintErrf("Unable to retrieve build info. Is buildvcs enabled?")
 		return
 	}
 
