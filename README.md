@@ -56,7 +56,7 @@ Encrypting your K8s is good for:
 <a href="https://landscape.cncf.io/?selected=constellation"><img src="https://raw.githubusercontent.com/cncf/artwork/1c1a10d9cc7de24235e07c8831923874331ef233/projects/kubernetes/certified-kubernetes/versionless/color/certified-kubernetes-color.svg" align="right" width="100px"></a>
 
 * Constellation is a [CNCF-certified][certified] Kubernetes. It's aligned to Kubernetes' [version support policy][k8s-version-support] and will likely work with your existing workloads and tools.
-* Support for Azure and GCP (more to come).
+* Support for Azure, GCP, and AWS.
 * Support for local installations with [MiniConstellation][first-steps-local].
 
 ## Getting started
@@ -71,7 +71,7 @@ If you're already familiar with Kubernetes, it's easy to get started with Conste
 
 ## Demo
 
-We're running a [Rocket.Chat](https://github.com/RocketChat/Rocket.Chat) server on Constellation at https://rocket.edgeless.systems/. 
+We're running a [Rocket.Chat](https://github.com/RocketChat/Rocket.Chat) server on Constellation at https://rocket.edgeless.systems/.
 
 This [blog post](https://dev.to/flxflx/rocketchat-constellation-most-secure-chat-server-ever--50oa) gives details on the setup.
 

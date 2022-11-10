@@ -69,13 +69,13 @@ runs:
             (.provider | select(. | has(\"azure\")).azure.resourceGroup) = \"${{ inputs.azureResourceGroup }}\" |
             (.provider | select(. | has(\"azure\")).azure.appClientID) = \"${{ inputs.azureClientID }}\" |
             (.provider | select(. | has(\"azure\")).azure.clientSecretValue) = \"${{ inputs.azureClientSecret }}\" |
-            (.provider | select(. | has(\"azure\")).azure.enforcedMeasurements) = [11,12]" \
+            (.provider | select(. | has(\"azure\")).azure.enforcedMeasurements) = [15]" \
           constellation-conf.yaml
         yq eval -i \
           "(.provider | select(. | has(\"gcp\")).gcp.project) = \"${{ inputs.gcpProject }}\" |
             (.provider | select(. | has(\"gcp\")).gcp.region) = \"europe-west3\" |
             (.provider | select(. | has(\"gcp\")).gcp.zone) = \"europe-west3-b\" |
-            (.provider | select(. | has(\"gcp\")).gcp.enforcedMeasurements) = [11,12] |
+            (.provider | select(. | has(\"gcp\")).gcp.enforcedMeasurements) = [15] |
             (.provider | select(. | has(\"gcp\")).gcp.serviceAccountKeyPath) = \"serviceAccountKey.json\"" \
           constellation-conf.yaml
 

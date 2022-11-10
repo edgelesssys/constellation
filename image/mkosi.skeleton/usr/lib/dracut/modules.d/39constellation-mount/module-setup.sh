@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 depends() {
-    echo systemd
+    # expands to: systemd systemd-hostnamed systemd-networkd systemd-resolved systemd-timedated systemd-timesyncd
+    echo systemd-network-management
 }
 
 install_and_enable_unit() {
@@ -14,6 +15,11 @@ install_and_enable_unit() {
     mkdir -p "${initdir}${systemdsystemconfdir}/${target}.wants"
     ln_r "${systemdsystemunitdir}/${unit}" \
         "${systemdsystemconfdir}/${target}.wants/${unit}"
+}
+
+install_path() {
+    local dir="$1"; shift
+    mkdir -p "${initdir}/${dir}"
 }
 
 install() {
@@ -59,4 +65,12 @@ install() {
         "/usr/sbin/aws-nvme-disk"
     install_and_enable_unit "aws-nvme-disk.service" \
         "basic.target"
+
+    # TLS / CA store in initramfs
+    install_path /etc/pki/tls/certs/
+    inst_simple /etc/pki/tls/certs/ca-bundle.crt \
+        /etc/pki/tls/certs/ca-bundle.crt
+
+    # backport of https://github.com/dracutdevs/dracut/commit/dcbe23c14d13ca335ad327b7bb985071ca442f12
+    inst_simple "$moddir/sysusers-dracut.conf" "$systemdsystemunitdir/systemd-sysusers.service.d/sysusers-dracut.conf"
 }

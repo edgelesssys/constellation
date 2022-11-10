@@ -174,7 +174,7 @@ we should add comments to those fields who will not update the cluster.
 ```yaml
 kubernetesVersion: 1.24.3
 kubernetesServicesVersion: 1.24.5 # Bundled Kubernetes components (Autoscaler, CloudControllerManager, CloudNodeManager, GCP Guest Agent, Konnectivity)
-constellationVersion: 2.2.0 # or microserviceVersion: (KMS, JoinService, NodeMaintainanceOperator, NodeOperator, OLM, Verification, Cilium)
+microserviceVersion: 2.2.0 # or constellationVersion: (KMS, AccessManager, JoinService, NodeMaintainanceOperator, NodeOperator, OLM, Verification, Cilium)
 provider:
   azure:
     image: /communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.3.0
@@ -185,7 +185,7 @@ provider:
 
 Note that:
 
-* `constellationVersion` 2.2.0 contains components which are all released in version 2.2.0
+* `microserviceVersion` 2.2.0 contains components which are all released in version 2.2.0
 * `kubernetesServicesVersion` 1.24.5 could contain Autoscaler 1.24.2, CCM 1.24.8 since their patch versions are not in sync with Kubernetes. Moreover, those component versions will be bundled by us. Think: public lookup table from `kubernetesServicesVersion` -> component version.
 
 When `constellation upgrade apply` is called the CLI needs to perform the following steps:

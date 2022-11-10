@@ -23,10 +23,12 @@ var (
 	tagReference = regexp.MustCompile(`^refs/tags/([^/]+)$`)
 )
 
+// Git represents a git repository.
 type Git struct {
 	repo *git.Repository
 }
 
+// New opens the git repository in current directory.
 func New() (*Git, error) {
 	repo, err := git.PlainOpenWithOptions("", &git.PlainOpenOptions{DetectDotGit: true})
 	return &Git{repo: repo}, err
@@ -106,6 +108,7 @@ func (g *Git) ParsedBranchName() (string, error) {
 	return strings.TrimSuffix(branch, "-"), nil
 }
 
+// BranchName of current HEAD.
 func (g *Git) BranchName() (string, error) {
 	commitRef, err := g.repo.Head()
 	if err != nil {

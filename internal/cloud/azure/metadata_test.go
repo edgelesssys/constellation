@@ -461,12 +461,6 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 	}
 }
 
-func TestMetadataSupported(t *testing.T) {
-	assert := assert.New(t)
-	metadata := Metadata{}
-	assert.True(metadata.Supported())
-}
-
 func TestProviderID(t *testing.T) {
 	testCases := map[string]struct {
 		imdsAPI        imdsAPI

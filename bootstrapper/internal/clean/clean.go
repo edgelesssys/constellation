@@ -10,6 +10,10 @@ import (
 	"sync"
 )
 
+// Cleaner can be used to stop a list of services gracefully.
+// To register an arbitrary amount of stoppers either use New or With.
+// Start needs to be called to ready the Cleaner, then Clean will activate it.
+// Done can be used to wait for Cleaner to run all registered stoppers.
 type Cleaner struct {
 	stoppers  []stopper
 	stopC     chan struct{}

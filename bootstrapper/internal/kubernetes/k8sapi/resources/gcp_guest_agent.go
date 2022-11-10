@@ -14,6 +14,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// GCPGuestAgentDaemonset is a GCP Guest Agent Daemonset.
 type GCPGuestAgentDaemonset struct {
 	DaemonSet apps.DaemonSet
 }

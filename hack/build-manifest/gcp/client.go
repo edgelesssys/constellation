@@ -16,12 +16,14 @@ import (
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 )
 
+// Client for GCP Image API.
 type Client struct {
 	client *compute.ImagesClient
 	log    *logger.Logger
 	opts   Options
 }
 
+// NewClient creates a new Client.
 func NewClient(ctx context.Context, log *logger.Logger, opts Options) *Client {
 	client, err := compute.NewImagesRESTClient(ctx)
 	if err != nil {
@@ -35,10 +37,12 @@ func NewClient(ctx context.Context, log *logger.Logger, opts Options) *Client {
 	}
 }
 
+// Close the GCP client.
 func (c *Client) Close() error {
 	return c.client.Close()
 }
 
+// FetchImages for the given client options.
 func (c *Client) FetchImages(ctx context.Context) (map[string]string, error) {
 	imgIterator := c.client.List(ctx, &computepb.ListImagesRequest{
 		Project: c.opts.ProjectID,

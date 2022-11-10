@@ -28,7 +28,7 @@ func newMiniDownCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 		RunE:  runDown,
 	}
-
+	cmd.Flags().BoolP("yes", "y", false, "terminate the cluster without further confirmation")
 	return cmd
 }
 

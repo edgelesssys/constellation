@@ -10,6 +10,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewConfigCmd creates a new config parent command. Config needs another
+// verb, and does nothing on its own.
 func NewConfigCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",

@@ -28,20 +28,24 @@ const (
 	KonnectivityKeyFilename = "/etc/kubernetes/konnectivity.key"
 )
 
+// KonnectivityAgents bundles all necessary agent deployments.
 type KonnectivityAgents struct {
 	DaemonSet          appsv1.DaemonSet
 	ClusterRoleBinding rbacv1.ClusterRoleBinding
 	ServiceAccount     corev1.ServiceAccount
 }
 
+// KonnectivityServerStaticPod deployment.
 type KonnectivityServerStaticPod struct {
 	StaticPod corev1.Pod
 }
 
+// EgressSelectorConfiguration deployment.
 type EgressSelectorConfiguration struct {
 	EgressSelectorConfiguration apiserver.EgressSelectorConfiguration
 }
 
+// NewKonnectivityAgents create new KonnectivityAgents.
 func NewKonnectivityAgents(konnectivityServerAddress string) *KonnectivityAgents {
 	return &KonnectivityAgents{
 		DaemonSet: appsv1.DaemonSet{
@@ -213,6 +217,7 @@ func NewKonnectivityAgents(konnectivityServerAddress string) *KonnectivityAgents
 	}
 }
 
+// NewKonnectivityServerStaticPod create a new KonnectivityServerStaticPod.
 func NewKonnectivityServerStaticPod() *KonnectivityServerStaticPod {
 	udsHostPathType := corev1.HostPathDirectoryOrCreate
 	return &KonnectivityServerStaticPod{
@@ -333,6 +338,7 @@ func NewKonnectivityServerStaticPod() *KonnectivityServerStaticPod {
 	}
 }
 
+// NewEgressSelectorConfiguration creates a new EgressSelectorConfiguration.
 func NewEgressSelectorConfiguration() *EgressSelectorConfiguration {
 	return &EgressSelectorConfiguration{
 		EgressSelectorConfiguration: apiserver.EgressSelectorConfiguration{
@@ -357,19 +363,22 @@ func NewEgressSelectorConfiguration() *EgressSelectorConfiguration {
 	}
 }
 
+// Marshal to Kubernetes YAML.
 func (v *KonnectivityAgents) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(v)
 }
 
+// Marshal to Kubernetes YAML.
 func (v *KonnectivityServerStaticPod) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(v)
 }
 
+// Marshal to Kubernetes YAML.
 func (v *EgressSelectorConfiguration) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(v)
 }
 
-// GetCertificateRequest returns a certificate request and matching private key for the konnectivity server.
+// GetKonnectivityCertificateRequest returns a certificate request and matching private key for the konnectivity server.
 func GetKonnectivityCertificateRequest() (certificateRequest []byte, privateKey []byte, err error) {
 	csrTemplate := &x509.CertificateRequest{
 		Subject: pkix.Name{

@@ -28,6 +28,7 @@ import (
 )
 
 const (
+	// Version1 is the first version number for Constellation config file.
 	Version1 = "v1"
 )
 
@@ -202,6 +203,7 @@ type GCPConfig struct {
 	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
 }
 
+// QEMUConfig holds config information for QEMU based Constellation deployments.
 type QEMUConfig struct {
 	// description: |
 	//   Path to the image to use for the VMs.
@@ -253,7 +255,7 @@ func Default() *Config {
 				IAMProfileControlPlane: "",
 				IAMProfileWorkerNodes:  "",
 				Measurements:           copyPCRMap(awsPCRs),
-				EnforcedMeasurements:   []uint32{}, // TODO: add default values
+				EnforcedMeasurements:   []uint32{4, 8, 9, 11, 12, 13, 15},
 			},
 			Azure: &AzureConfig{
 				SubscriptionID:       "",
@@ -283,7 +285,7 @@ func Default() *Config {
 				EnforcedMeasurements:  []uint32{0, 4, 8, 9, 11, 12, 13, 15},
 			},
 			QEMU: &QEMUConfig{
-				ImageFormat:           "qcow2",
+				ImageFormat:           "raw",
 				VCPUs:                 2,
 				Memory:                2048,
 				MetadataAPIImage:      versions.QEMUMetadataImage,
@@ -291,7 +293,7 @@ func Default() *Config {
 				LibvirtContainerImage: versions.LibvirtImage,
 				Measurements:          copyPCRMap(qemuPCRs),
 				EnforcedMeasurements:  []uint32{4, 8, 9, 11, 12, 13, 15},
-				NVRAM:                 "testing",
+				NVRAM:                 "production",
 			},
 		},
 		KubernetesVersion: string(versions.Default),
@@ -523,6 +525,7 @@ func (c *Config) Image() string {
 	return ""
 }
 
+// UpdateMeasurements overwrites measurements in config with the provided ones.
 func (c *Config) UpdateMeasurements(newMeasurements Measurements) {
 	if c.Provider.AWS != nil {
 		c.Provider.AWS.Measurements.CopyFrom(newMeasurements)
@@ -564,8 +567,8 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 func (c *Config) IsDebugImage() bool {
 	switch {
 	case c.Provider.AWS != nil:
-		// TODO: Add proper image name validation for AWS when we are closer to release.
-		return true
+		// TODO: Add proper image name validation for AWS as part of rfc/image-discoverability.md
+		return false
 	case c.Provider.Azure != nil:
 		return !azureReleaseImageRegex.MatchString(c.Provider.Azure.Image)
 	case c.Provider.GCP != nil:
@@ -597,6 +600,7 @@ func (c *Config) IsAzureNonCVM() bool {
 	return c.Provider.Azure != nil && c.Provider.Azure.ConfidentialVM != nil && !*c.Provider.Azure.ConfidentialVM
 }
 
+// EnforcesIDKeyDigest checks whether ID Key Digest should be enforced for respective cloud provider.
 func (c *Config) EnforcesIDKeyDigest() bool {
 	return c.Provider.Azure != nil && c.Provider.Azure.EnforceIDKeyDigest != nil && *c.Provider.Azure.EnforceIDKeyDigest
 }

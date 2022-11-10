@@ -8,10 +8,12 @@ package main
 
 import "encoding/json"
 
+// Manifest contains all Constellation releases.
 type Manifest struct {
 	releases map[string]Images
 }
 
+// Images for all supported cloud providers.
 type Images struct {
 	AzureOSImage string `json:"AzureOSImage"`
 	GCPOSImage   string `json:"GCPOSImage"`
@@ -50,10 +52,12 @@ func OldManifests() Manifest {
 	}
 }
 
+// MarshalJSON marshals releases to JSON.
 func (m *Manifest) MarshalJSON() ([]byte, error) {
 	return json.Marshal(m.releases)
 }
 
+// SetAzureImage for a given version.
 func (m *Manifest) SetAzureImage(version string, image string) {
 	if release, ok := m.releases[version]; !ok {
 		images := Images{AzureOSImage: image}
@@ -64,6 +68,7 @@ func (m *Manifest) SetAzureImage(version string, image string) {
 	}
 }
 
+// SetGCPImage for a given version.
 func (m *Manifest) SetGCPImage(version string, image string) {
 	if release, ok := m.releases[version]; !ok {
 		images := Images{GCPOSImage: image}

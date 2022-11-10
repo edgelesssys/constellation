@@ -8,6 +8,7 @@ package debugd
 
 import "time"
 
+// Debugd internal constants.
 const (
 	DebugdMetadataFlag               = "constellation-debugd"
 	GRPCTimeout                      = 5 * time.Minute
@@ -26,7 +27,6 @@ RemainAfterExit=yes
 Restart=on-failure
 EnvironmentFile=/run/constellation.env
 Environment=PATH=/run/state/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
-ExecStartPre=-setenforce Permissive
 ExecStart=/run/state/bin/bootstrapper
 [Install]
 WantedBy=multi-user.target

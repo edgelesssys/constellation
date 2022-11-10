@@ -68,6 +68,7 @@ func main() {
 	}
 }
 
+// Measurements contains all PCR values.
 type Measurements map[uint32][]byte
 
 var _ yaml.Marshaler = Measurements{}

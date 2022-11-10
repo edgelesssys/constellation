@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Server provides measurements.
 type Server struct {
 	log          *logger.Logger
 	server       http.Server
@@ -23,6 +24,7 @@ type Server struct {
 	done         chan<- struct{}
 }
 
+// New creates a new Server.
 func New(log *logger.Logger, done chan<- struct{}) *Server {
 	return &Server{
 		log:  log,
@@ -30,6 +32,7 @@ func New(log *logger.Logger, done chan<- struct{}) *Server {
 	}
 }
 
+// ListenAndServe on given port.
 func (s *Server) ListenAndServe(port string) error {
 	mux := http.NewServeMux()
 	mux.Handle("/pcrs", http.HandlerFunc(s.logPCRs))
@@ -46,6 +49,7 @@ func (s *Server) ListenAndServe(port string) error {
 	return s.server.Serve(lis)
 }
 
+// Shutdown server.
 func (s *Server) Shutdown() error {
 	return s.server.Shutdown(context.Background())
 }
@@ -84,6 +88,7 @@ func (s *Server) logPCRs(w http.ResponseWriter, r *http.Request) {
 	s.done <- struct{}{}
 }
 
+// GetMeasurements returns the static measurements for QEMU environment.
 func (s *Server) GetMeasurements() map[uint32][]byte {
 	return s.measurements
 }

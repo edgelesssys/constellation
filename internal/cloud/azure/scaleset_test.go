@@ -153,7 +153,6 @@ func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 	testCases := map[string]struct {
 		inVM         armcomputev2.VirtualMachineScaleSetVM
 		inInterface  []armnetwork.Interface
-		inPublicIP   string
 		wantErr      bool
 		wantInstance metadata.InstanceMetadata
 	}{
@@ -184,12 +183,10 @@ func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 					},
 				},
 			},
-			inPublicIP: "192.0.2.100",
 			wantInstance: metadata.InstanceMetadata{
 				Name:       "scale-set-name-instance-id",
 				ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 				VPCIP:      "192.0.2.0",
-				PublicIP:   "192.0.2.100",
 			},
 		},
 		"invalid instance": {
@@ -203,7 +200,7 @@ func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			instance, err := convertScaleSetVMToCoreInstance(tc.inVM, tc.inInterface, tc.inPublicIP)
+			instance, err := convertScaleSetVMToCoreInstance(tc.inVM, tc.inInterface)
 
 			if tc.wantErr {
 				assert.Error(err)

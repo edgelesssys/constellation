@@ -17,10 +17,12 @@ import (
 type Role uint
 
 const (
+	// Unknown is the default value for Role and should have no meaning.
 	Unknown Role = iota
+	// ControlPlane declares this node as a Kubernetes control plane node.
 	ControlPlane
+	// Worker declares this node as a Kubernetes worker node.
 	Worker
-	Admin
 )
 
 // MarshalJSON marshals the Role to JSON string.
@@ -45,8 +47,6 @@ func FromString(s string) Role {
 		return ControlPlane
 	case "worker":
 		return Worker
-	case "admin":
-		return Admin
 	default:
 		return Unknown
 	}

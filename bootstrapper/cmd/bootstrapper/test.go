@@ -52,18 +52,6 @@ func (f *providerMetadataFake) Self(ctx context.Context) (metadata.InstanceMetad
 	}, nil
 }
 
-func (f *providerMetadataFake) SignalRole(ctx context.Context, role role.Role) error {
-	return nil
-}
-
-func (f *providerMetadataFake) SetVPNIP(ctx context.Context, vpnIP string) error {
-	return nil
-}
-
 func (f *providerMetadataFake) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
 	return "", nil
-}
-
-func (f *providerMetadataFake) Supported() bool {
-	return true
 }

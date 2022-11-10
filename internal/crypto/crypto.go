@@ -20,6 +20,7 @@ import (
 )
 
 const (
+	// StateDiskKeyLength is key length in bytes for node state disk.
 	StateDiskKeyLength = 32
 	// DerivedKeyLengthDefault is the default length in bytes for KMS derived keys.
 	DerivedKeyLengthDefault = 32

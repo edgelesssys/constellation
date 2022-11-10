@@ -45,41 +45,16 @@ func TestInitCluster(t *testing.T) {
 	aliasIPRange := "192.0.2.0/24"
 
 	testCases := map[string]struct {
-		clusterUtil            stubClusterUtil
-		helmClient             stubHelmClient
-		kubectl                stubKubectl
-		kubeAPIWaiter          stubKubeAPIWaiter
-		providerMetadata       ProviderMetadata
-		CloudControllerManager CloudControllerManager
-		ClusterAutoscaler      ClusterAutoscaler
-		kubeconfigReader       configReader
-		wantConfig             k8sapi.KubeadmInitYAML
-		wantErr                bool
-		k8sVersion             versions.ValidK8sVersion
+		clusterUtil      stubClusterUtil
+		helmClient       stubHelmClient
+		kubectl          stubKubectl
+		kubeAPIWaiter    stubKubeAPIWaiter
+		providerMetadata ProviderMetadata
+		kubeconfigReader configReader
+		wantConfig       k8sapi.KubeadmInitYAML
+		wantErr          bool
+		k8sVersion       versions.ValidK8sVersion
 	}{
-		"kubeadm init works without metadata": {
-			clusterUtil: stubClusterUtil{},
-			kubeconfigReader: &stubKubeconfigReader{
-				Kubeconfig: []byte("someKubeconfig"),
-			},
-			kubeAPIWaiter:          stubKubeAPIWaiter{},
-			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
-			CloudControllerManager: &stubCloudControllerManager{},
-			ClusterAutoscaler:      &stubClusterAutoscaler{},
-			wantConfig: k8sapi.KubeadmInitYAML{
-				InitConfiguration: kubeadm.InitConfiguration{
-					NodeRegistration: kubeadm.NodeRegistrationOptions{
-						KubeletExtraArgs: map[string]string{
-							"node-ip":     "",
-							"provider-id": "",
-						},
-						Name: privateIP,
-					},
-				},
-				ClusterConfiguration: kubeadm.ClusterConfiguration{},
-			},
-			k8sVersion: versions.Default,
-		},
 		"kubeadm init works with metadata and loadbalancer": {
 			clusterUtil: stubClusterUtil{},
 			kubeconfigReader: &stubKubeconfigReader{
@@ -87,7 +62,6 @@ func TestInitCluster(t *testing.T) {
 			},
 			kubeAPIWaiter: stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{
-				SupportedResp: true,
 				SelfResp: metadata.InstanceMetadata{
 					Name:          nodeName,
 					ProviderID:    providerID,
@@ -95,10 +69,7 @@ func TestInitCluster(t *testing.T) {
 					AliasIPRanges: []string{aliasIPRange},
 				},
 				GetLoadBalancerEndpointResp: loadbalancerIP,
-				SupportsLoadBalancerResp:    true,
 			},
-			CloudControllerManager: &stubCloudControllerManager{},
-			ClusterAutoscaler:      &stubClusterAutoscaler{},
 			wantConfig: k8sapi.KubeadmInitYAML{
 				InitConfiguration: kubeadm.InitConfiguration{
 					NodeRegistration: kubeadm.NodeRegistrationOptions{
@@ -126,13 +97,10 @@ func TestInitCluster(t *testing.T) {
 			},
 			kubeAPIWaiter: stubKubeAPIWaiter{},
 			providerMetadata: &stubProviderMetadata{
-				SelfErr:       someErr,
-				SupportedResp: true,
+				SelfErr: someErr,
 			},
-			CloudControllerManager: &stubCloudControllerManager{},
-			ClusterAutoscaler:      &stubClusterAutoscaler{},
-			wantErr:                true,
-			k8sVersion:             versions.Default,
+			wantErr:    true,
+			k8sVersion: versions.Default,
 		},
 		"kubeadm init fails when retrieving metadata loadbalancer ip": {
 			clusterUtil: stubClusterUtil{},
@@ -141,25 +109,19 @@ func TestInitCluster(t *testing.T) {
 			},
 			providerMetadata: &stubProviderMetadata{
 				GetLoadBalancerEndpointErr: someErr,
-				SupportsLoadBalancerResp:   true,
-				SupportedResp:              true,
 			},
-			CloudControllerManager: &stubCloudControllerManager{},
-			ClusterAutoscaler:      &stubClusterAutoscaler{},
-			wantErr:                true,
-			k8sVersion:             versions.Default,
+			wantErr:    true,
+			k8sVersion: versions.Default,
 		},
 		"kubeadm init fails when applying the init config": {
 			clusterUtil: stubClusterUtil{initClusterErr: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
-			kubeAPIWaiter:          stubKubeAPIWaiter{},
-			providerMetadata:       &stubProviderMetadata{},
-			CloudControllerManager: &stubCloudControllerManager{},
-			ClusterAutoscaler:      &stubClusterAutoscaler{},
-			wantErr:                true,
-			k8sVersion:             versions.Default,
+			kubeAPIWaiter:    stubKubeAPIWaiter{},
+			providerMetadata: &stubProviderMetadata{},
+			wantErr:          true,
+			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when deploying cilium": {
 			clusterUtil: stubClusterUtil{},
@@ -167,11 +129,9 @@ func TestInitCluster(t *testing.T) {
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
-			providerMetadata:       &stubProviderMetadata{},
-			CloudControllerManager: &stubCloudControllerManager{},
-			ClusterAutoscaler:      &stubClusterAutoscaler{},
-			wantErr:                true,
-			k8sVersion:             versions.Default,
+			providerMetadata: &stubProviderMetadata{},
+			wantErr:          true,
+			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when setting up constellation-services chart": {
 			clusterUtil: stubClusterUtil{},
@@ -179,12 +139,10 @@ func TestInitCluster(t *testing.T) {
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
-			kubeAPIWaiter:          stubKubeAPIWaiter{},
-			providerMetadata:       &stubProviderMetadata{},
-			CloudControllerManager: &stubCloudControllerManager{SupportedResp: true},
-			ClusterAutoscaler:      &stubClusterAutoscaler{},
-			wantErr:                true,
-			k8sVersion:             versions.Default,
+			kubeAPIWaiter:    stubKubeAPIWaiter{},
+			providerMetadata: &stubProviderMetadata{},
+			wantErr:          true,
+			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when setting the cloud node manager": {
 			clusterUtil: stubClusterUtil{},
@@ -192,12 +150,10 @@ func TestInitCluster(t *testing.T) {
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
-			kubeAPIWaiter:          stubKubeAPIWaiter{},
-			providerMetadata:       &stubProviderMetadata{},
-			CloudControllerManager: &stubCloudControllerManager{},
-			ClusterAutoscaler:      &stubClusterAutoscaler{},
-			wantErr:                true,
-			k8sVersion:             versions.Default,
+			kubeAPIWaiter:    stubKubeAPIWaiter{},
+			providerMetadata: &stubProviderMetadata{},
+			wantErr:          true,
+			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when setting the cluster autoscaler": {
 			clusterUtil: stubClusterUtil{},
@@ -205,72 +161,60 @@ func TestInitCluster(t *testing.T) {
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
-			kubeAPIWaiter:          stubKubeAPIWaiter{},
-			providerMetadata:       &stubProviderMetadata{},
-			CloudControllerManager: &stubCloudControllerManager{},
-			ClusterAutoscaler:      &stubClusterAutoscaler{SupportedResp: true},
-			wantErr:                true,
-			k8sVersion:             versions.Default,
+			kubeAPIWaiter:    stubKubeAPIWaiter{},
+			providerMetadata: &stubProviderMetadata{},
+			wantErr:          true,
+			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when reading kubeconfig": {
 			clusterUtil: stubClusterUtil{},
 			kubeconfigReader: &stubKubeconfigReader{
 				ReadErr: someErr,
 			},
-			kubeAPIWaiter:          stubKubeAPIWaiter{},
-			providerMetadata:       &stubProviderMetadata{},
-			CloudControllerManager: &stubCloudControllerManager{},
-			ClusterAutoscaler:      &stubClusterAutoscaler{},
-			wantErr:                true,
-			k8sVersion:             versions.Default,
+			kubeAPIWaiter:    stubKubeAPIWaiter{},
+			providerMetadata: &stubProviderMetadata{},
+			wantErr:          true,
+			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when setting up konnectivity": {
 			clusterUtil: stubClusterUtil{setupKonnectivityError: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
-			kubeAPIWaiter:          stubKubeAPIWaiter{},
-			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
-			CloudControllerManager: &stubCloudControllerManager{},
-			ClusterAutoscaler:      &stubClusterAutoscaler{},
-			wantErr:                true,
-			k8sVersion:             versions.Default,
+			kubeAPIWaiter:    stubKubeAPIWaiter{},
+			providerMetadata: &stubProviderMetadata{},
+			wantErr:          true,
+			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when setting up verification service": {
 			clusterUtil: stubClusterUtil{setupVerificationServiceErr: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
-			kubeAPIWaiter:          stubKubeAPIWaiter{},
-			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
-			CloudControllerManager: &stubCloudControllerManager{},
-			ClusterAutoscaler:      &stubClusterAutoscaler{},
-			wantErr:                true,
-			k8sVersion:             versions.Default,
+			kubeAPIWaiter:    stubKubeAPIWaiter{},
+			providerMetadata: &stubProviderMetadata{},
+			wantErr:          true,
+			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when waiting for kubeAPI server": {
 			clusterUtil: stubClusterUtil{},
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
-			kubeAPIWaiter:          stubKubeAPIWaiter{waitErr: someErr},
-			providerMetadata:       &stubProviderMetadata{SupportedResp: false},
-			CloudControllerManager: &stubCloudControllerManager{},
-			ClusterAutoscaler:      &stubClusterAutoscaler{},
-			k8sVersion:             versions.Default,
-			wantErr:                true,
+			kubeAPIWaiter:    stubKubeAPIWaiter{waitErr: someErr},
+			providerMetadata: &stubProviderMetadata{},
+			k8sVersion:       versions.Default,
+			wantErr:          true,
 		},
 		"unsupported k8sVersion fails cluster creation": {
 			clusterUtil: stubClusterUtil{},
 			kubeconfigReader: &stubKubeconfigReader{
 				Kubeconfig: []byte("someKubeconfig"),
 			},
-			kubeAPIWaiter:          stubKubeAPIWaiter{},
-			providerMetadata:       &stubProviderMetadata{},
-			CloudControllerManager: &stubCloudControllerManager{},
-			ClusterAutoscaler:      &stubClusterAutoscaler{},
-			k8sVersion:             "1.19",
-			wantErr:                true,
+			kubeAPIWaiter:    stubKubeAPIWaiter{},
+			providerMetadata: &stubProviderMetadata{},
+			k8sVersion:       "1.19",
+			wantErr:          true,
 		},
 	}
 
@@ -280,15 +224,14 @@ func TestInitCluster(t *testing.T) {
 			require := require.New(t)
 
 			kube := KubeWrapper{
-				clusterUtil:            &tc.clusterUtil,
-				helmClient:             &tc.helmClient,
-				providerMetadata:       tc.providerMetadata,
-				kubeAPIWaiter:          &tc.kubeAPIWaiter,
-				cloudControllerManager: tc.CloudControllerManager,
-				configProvider:         &stubConfigProvider{InitConfig: k8sapi.KubeadmInitYAML{}},
-				client:                 &tc.kubectl,
-				kubeconfigReader:       tc.kubeconfigReader,
-				getIPAddr:              func() (string, error) { return privateIP, nil },
+				clusterUtil:      &tc.clusterUtil,
+				helmClient:       &tc.helmClient,
+				providerMetadata: tc.providerMetadata,
+				kubeAPIWaiter:    &tc.kubeAPIWaiter,
+				configProvider:   &stubConfigProvider{InitConfig: k8sapi.KubeadmInitYAML{}},
+				client:           &tc.kubectl,
+				kubeconfigReader: tc.kubeconfigReader,
+				getIPAddr:        func() (string, error) { return privateIP, nil },
 			}
 
 			_, err := kube.InitCluster(
@@ -322,40 +265,22 @@ func TestJoinCluster(t *testing.T) {
 	k8sVersion := versions.Default
 
 	testCases := map[string]struct {
-		clusterUtil            stubClusterUtil
-		providerMetadata       ProviderMetadata
-		CloudControllerManager CloudControllerManager
-		wantConfig             kubeadm.JoinConfiguration
-		role                   role.Role
-		wantErr                bool
+		clusterUtil      stubClusterUtil
+		providerMetadata ProviderMetadata
+		wantConfig       kubeadm.JoinConfiguration
+		role             role.Role
+		wantErr          bool
 	}{
-		"kubeadm join worker works without metadata": {
-			clusterUtil:            stubClusterUtil{},
-			providerMetadata:       &stubProviderMetadata{},
-			CloudControllerManager: &stubCloudControllerManager{},
-			role:                   role.Worker,
-			wantConfig: kubeadm.JoinConfiguration{
-				Discovery: kubeadm.Discovery{
-					BootstrapToken: joinCommand,
-				},
-				NodeRegistration: kubeadm.NodeRegistrationOptions{
-					Name:             privateIP,
-					KubeletExtraArgs: map[string]string{"node-ip": privateIP},
-				},
-			},
-		},
 		"kubeadm join worker works with metadata": {
 			clusterUtil: stubClusterUtil{},
 			providerMetadata: &stubProviderMetadata{
-				SupportedResp: true,
 				SelfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
 					Name:       "metadata-name",
 					VPCIP:      "192.0.2.1",
 				},
 			},
-			CloudControllerManager: &stubCloudControllerManager{},
-			role:                   role.Worker,
+			role: role.Worker,
 			wantConfig: kubeadm.JoinConfiguration{
 				Discovery: kubeadm.Discovery{
 					BootstrapToken: joinCommand,
@@ -369,15 +294,11 @@ func TestJoinCluster(t *testing.T) {
 		"kubeadm join worker works with metadata and cloud controller manager": {
 			clusterUtil: stubClusterUtil{},
 			providerMetadata: &stubProviderMetadata{
-				SupportedResp: true,
 				SelfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
 					Name:       "metadata-name",
 					VPCIP:      "192.0.2.1",
 				},
-			},
-			CloudControllerManager: &stubCloudControllerManager{
-				SupportedResp: true,
 			},
 			role: role.Worker,
 			wantConfig: kubeadm.JoinConfiguration{
@@ -393,15 +314,13 @@ func TestJoinCluster(t *testing.T) {
 		"kubeadm join control-plane node works with metadata": {
 			clusterUtil: stubClusterUtil{},
 			providerMetadata: &stubProviderMetadata{
-				SupportedResp: true,
 				SelfResp: metadata.InstanceMetadata{
 					ProviderID: "provider-id",
 					Name:       "metadata-name",
 					VPCIP:      "192.0.2.1",
 				},
 			},
-			CloudControllerManager: &stubCloudControllerManager{},
-			role:                   role.ControlPlane,
+			role: role.ControlPlane,
 			wantConfig: kubeadm.JoinConfiguration{
 				Discovery: kubeadm.Discovery{
 					BootstrapToken: joinCommand,
@@ -422,19 +341,16 @@ func TestJoinCluster(t *testing.T) {
 		"kubeadm join worker fails when retrieving self metadata": {
 			clusterUtil: stubClusterUtil{},
 			providerMetadata: &stubProviderMetadata{
-				SupportedResp: true,
-				SelfErr:       someErr,
+				SelfErr: someErr,
 			},
-			CloudControllerManager: &stubCloudControllerManager{},
-			role:                   role.Worker,
-			wantErr:                true,
+			role:    role.Worker,
+			wantErr: true,
 		},
 		"kubeadm join worker fails when applying the join config": {
-			clusterUtil:            stubClusterUtil{joinClusterErr: someErr},
-			providerMetadata:       &stubProviderMetadata{},
-			CloudControllerManager: &stubCloudControllerManager{},
-			role:                   role.Worker,
-			wantErr:                true,
+			clusterUtil:      stubClusterUtil{joinClusterErr: someErr},
+			providerMetadata: &stubProviderMetadata{},
+			role:             role.Worker,
+			wantErr:          true,
 		},
 	}
 
@@ -444,11 +360,10 @@ func TestJoinCluster(t *testing.T) {
 			require := require.New(t)
 
 			kube := KubeWrapper{
-				clusterUtil:            &tc.clusterUtil,
-				providerMetadata:       tc.providerMetadata,
-				cloudControllerManager: tc.CloudControllerManager,
-				configProvider:         &stubConfigProvider{},
-				getIPAddr:              func() (string, error) { return privateIP, nil },
+				clusterUtil:      &tc.clusterUtil,
+				providerMetadata: tc.providerMetadata,
+				configProvider:   &stubConfigProvider{},
+				getIPAddr:        func() (string, error) { return privateIP, nil },
 			}
 
 			err := kube.JoinCluster(context.Background(), joinCommand, tc.role, string(k8sVersion), logger.NewTest(t))

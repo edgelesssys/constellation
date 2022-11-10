@@ -76,10 +76,10 @@ jobs:
         shell: bash
         id: image-type
         run: |
-          if [ "${{ startsWith(github.ref, 'refs/heads/release/') && (inputs.debug == 'false') }}" = true ]
+          if [ "${{ startsWith(github.ref, 'refs/heads/release/') && (inputs.debug == false) }}" = true ]
           then
             echo "imageType=release" >> $GITHUB_OUTPUT
-          elif [ "${{ ((github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/')) && (inputs.debug == 'true') }}" = true ]
+          elif [ "${{ ((github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/')) && (inputs.debug == true) }}" = true ]
           then
             echo "imageType=debug" >> $GITHUB_OUTPUT
           else
@@ -90,7 +90,7 @@ jobs:
         id: pki-set
         shell: bash
         run: |
-          if [ "${{ steps.image-type.outputs.image-type }}" = "release" ]
+          if [ "${{ steps.image-type.outputs.imageType }}" = "release" ]
           then
             echo "pkiSet=pki_prod" >> $GITHUB_OUTPUT
           else
@@ -336,6 +336,7 @@ jobs:
           AWS_IMAGE_PATH: ${{ steps.vars.outputs.awsImagePath }}
           AWS_REGION: ${{ steps.vars.outputs.awsRegion }}
           AWS_REPLICATION_REGIONS: ${{ steps.vars.outputs.awsReplicationRegions }}
+          AWS_PUBLISH: ${{ steps.vars.outputs.awsPublish }}
 
       - name: Upload GCP image
         shell: bash

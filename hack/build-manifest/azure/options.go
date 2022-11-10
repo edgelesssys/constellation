@@ -13,11 +13,15 @@ import (
 )
 
 const (
+	// DefaultResourceGroupName to find Constellation images in.
 	DefaultResourceGroupName = "CONSTELLATION-IMAGES"
-	DefaultGalleryName       = "Constellation_CVM"
-	DefaultImageDefinition   = "constellation"
+	// DefaultGalleryName to find Constellation images in.
+	DefaultGalleryName = "Constellation_CVM"
+	// DefaultImageDefinition to find Constellation images in.
+	DefaultImageDefinition = "constellation"
 )
 
+// Options for Azure Client to download image references.
 type Options struct {
 	SubscriptionID    string
 	ResourceGroupName string
@@ -25,6 +29,7 @@ type Options struct {
 	ImageDefinition   string
 }
 
+// DefaultOptions creates an Options object with good defaults.
 func DefaultOptions() Options {
 	return Options{
 		SubscriptionID:    "",
@@ -34,6 +39,7 @@ func DefaultOptions() Options {
 	}
 }
 
+// SetSubscription sets subscription from string. It expects a UUID conform value.
 func (o *Options) SetSubscription(sub string) error {
 	if _, err := uuid.Parse(sub); err != nil {
 		return fmt.Errorf("unable to set subscription: %w", err)

@@ -8,6 +8,7 @@ package azure
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -18,6 +19,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/edgelesssys/constellation/v2/internal/cloud"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 )
 
@@ -198,11 +200,6 @@ func (m *Metadata) getLoadBalancer(ctx context.Context) (*armnetwork.LoadBalance
 	return nil, fmt.Errorf("could not get any load balancer")
 }
 
-// SupportsLoadBalancer returns true if the cloud provider supports load balancers.
-func (m *Metadata) SupportsLoadBalancer() bool {
-	return true
-}
-
 // GetLoadBalancerName returns the load balancer name of the resource group.
 func (m *Metadata) GetLoadBalancerName(ctx context.Context) (string, error) {
 	lb, err := m.getLoadBalancer(ctx)
@@ -262,9 +259,48 @@ func (m *Metadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) 
 	return *resp.Properties.IPAddress, nil
 }
 
-// Supported is used to determine if metadata API is implemented for this cloud provider.
-func (m *Metadata) Supported() bool {
-	return true
+// GetCCMConfig returns the configuration needed for the CCM on Azure.
+func (m *Metadata) GetCCMConfig(ctx context.Context, providerID string, cloudServiceAccountURI string) ([]byte, error) {
+	subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)
+	if err != nil {
+		return nil, err
+	}
+	creds, err := azureshared.ApplicationCredentialsFromURI(cloudServiceAccountURI)
+	if err != nil {
+		return nil, err
+	}
+
+	vmType := "standard"
+	if _, _, _, _, err := azureshared.ScaleSetInformationFromProviderID(providerID); err == nil {
+		vmType = "vmss"
+	}
+
+	securityGroupName, err := m.GetNetworkSecurityGroupName(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	loadBalancerName, err := m.GetLoadBalancerName(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	config := cloudConfig{
+		Cloud:               "AzurePublicCloud",
+		TenantID:            creds.TenantID,
+		SubscriptionID:      subscriptionID,
+		ResourceGroup:       resourceGroup,
+		LoadBalancerSku:     "standard",
+		SecurityGroupName:   securityGroupName,
+		LoadBalancerName:    loadBalancerName,
+		UseInstanceMetadata: true,
+		VMType:              vmType,
+		Location:            creds.Location,
+		AADClientID:         creds.AppClientID,
+		AADClientSecret:     creds.ClientSecretValue,
+	}
+
+	return json.Marshal(config)
 }
 
 // providerID retrieves the current instances providerID.
@@ -323,4 +359,24 @@ func extractInstanceTags(tags map[string]*string) map[string]string {
 		metadataMap[key] = *value
 	}
 	return metadataMap
+}
+
+type cloudConfig struct {
+	Cloud                      string `json:"cloud,omitempty"`
+	TenantID                   string `json:"tenantId,omitempty"`
+	SubscriptionID             string `json:"subscriptionId,omitempty"`
+	ResourceGroup              string `json:"resourceGroup,omitempty"`
+	Location                   string `json:"location,omitempty"`
+	SubnetName                 string `json:"subnetName,omitempty"`
+	SecurityGroupName          string `json:"securityGroupName,omitempty"`
+	SecurityGroupResourceGroup string `json:"securityGroupResourceGroup,omitempty"`
+	LoadBalancerName           string `json:"loadBalancerName,omitempty"`
+	LoadBalancerSku            string `json:"loadBalancerSku,omitempty"`
+	VNetName                   string `json:"vnetName,omitempty"`
+	VNetResourceGroup          string `json:"vnetResourceGroup,omitempty"`
+	CloudProviderBackoff       bool   `json:"cloudProviderBackoff,omitempty"`
+	UseInstanceMetadata        bool   `json:"useInstanceMetadata,omitempty"`
+	VMType                     string `json:"vmType,omitempty"`
+	AADClientID                string `json:"aadClientId,omitempty"`
+	AADClientSecret            string `json:"aadClientSecret,omitempty"`
 }

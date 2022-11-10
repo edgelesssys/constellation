@@ -12,6 +12,8 @@ constellation create --name nfs -c 1 -w 3
 
 ## Deploy CSI Driver
 
+> **_NOTE:_**  For additional integrity protection, use our [Constellation CSI drivers](https://docs.edgeless.systems/constellation/workflows/storage) with integrity protection enabled. With this option there is no need to enable encryption on Cephs side in the step [Deploy Rook](#deploy-rook).
+
 We need block storage form somewhere. We will use the official Azure CSI for that. We need to create the azure config secret again with the expected fields. Replace "XXX" with the corresponding value from the secret `azureconfig`.
 
 ```bash
@@ -228,4 +230,26 @@ spec:
   selector:
     matchLabels:
       app: nginx
+```
+
+## Verify Ceph OSD encryption
+
+To verify that Ceph created an encrypted device, [log into a node](https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/#ephemeral-container) via `kubectl debug`.
+
+```bash
+$ ls /dev/mapper/
+control  root  set1-data-1flnzz-block-dmcrypt  state  state_dif
+
+$ cryptsetup status /dev/mapper/set1-data-1flnzz-block-dmcrypt
+/dev/mapper/set1-data-1flnzz-block-dmcrypt is active and is in use.
+  type:    LUKS2
+  cipher:  aes-xts-plain64
+  keysize: 512 bits
+  key location: dm-crypt
+  device:  /dev/sdc
+  sector size:  512
+  offset:  32768 sectors
+  size:    20938752 sectors
+  mode:    read/write
+  flags:   discards
 ```

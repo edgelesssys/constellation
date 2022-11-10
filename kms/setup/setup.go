@@ -13,15 +13,16 @@ import (
 	"net/url"
 	"strconv"
 
+	"cloud.google.com/go/kms/apiv1/kmspb"
 	"github.com/edgelesssys/constellation/v2/kms/internal/storage"
 	"github.com/edgelesssys/constellation/v2/kms/kms"
 	"github.com/edgelesssys/constellation/v2/kms/kms/aws"
 	"github.com/edgelesssys/constellation/v2/kms/kms/azure"
 	"github.com/edgelesssys/constellation/v2/kms/kms/cluster"
 	"github.com/edgelesssys/constellation/v2/kms/kms/gcp"
-	kmspb "google.golang.org/genproto/googleapis/cloud/kms/v1"
 )
 
+// Well known endpoints for KMS services.
 const (
 	AWSKMSURI     = "kms://aws?keyPolicy=%s"
 	AzureKMSURI   = "kms://azure-kms?name=%s&type=%s"
@@ -34,6 +35,7 @@ const (
 	NoStoreURI    = "storage://no-store"
 )
 
+// KMSInformation about an existing KMS.
 type KMSInformation struct {
 	KMSURI             string
 	StorageURI         string

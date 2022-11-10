@@ -16,8 +16,10 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 )
 
+// Checker checks the Constellation license.
 type Checker struct{}
 
+// NewChecker creates a new Checker.
 func NewChecker(quotaChecker QuotaChecker, fileHandler file.Handler) *Checker {
 	return &Checker{}
 }

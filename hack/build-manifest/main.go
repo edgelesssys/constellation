@@ -18,6 +18,7 @@ import (
 )
 
 const (
+	// AzureSubscriptionIDEnv environment variable to provide Azure Subscription ID with.
 	AzureSubscriptionIDEnv = "AZURE_SUBSCRIPTION_ID"
 )
 

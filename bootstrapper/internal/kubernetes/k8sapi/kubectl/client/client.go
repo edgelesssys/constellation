@@ -121,6 +121,10 @@ func (c *Client) ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, 
 	return c.clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 }
 
+// AddTolerationsToDeployment adds [K8s tolerations] to the deployment, identified
+// by name and namespace.
+//
+// [K8s tolerations]: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
 func (c *Client) AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error {
 	deployments := c.clientset.AppsV1().Deployments(namespace)
 
@@ -143,6 +147,10 @@ func (c *Client) AddTolerationsToDeployment(ctx context.Context, tolerations []c
 	return nil
 }
 
+// AddNodeSelectorsToDeployment adds [K8s selectors] to the deployment, identified
+// by name and namespace.
+//
+// [K8s selectors]: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 func (c *Client) AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error {
 	deployments := c.clientset.AppsV1().Deployments(namespace)
 

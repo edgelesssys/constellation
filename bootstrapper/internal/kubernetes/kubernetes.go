@@ -21,12 +21,11 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/resources"
 	kubewaiter "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubeWaiter"
-	"github.com/edgelesssys/constellation/v2/internal/azureshared"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
-	"github.com/edgelesssys/constellation/v2/internal/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
@@ -61,14 +60,13 @@ type KubeWrapper struct {
 	configProvider          configurationProvider
 	client                  k8sapi.Client
 	kubeconfigReader        configReader
-	cloudControllerManager  CloudControllerManager
 	providerMetadata        ProviderMetadata
 	initialMeasurementsJSON []byte
 	getIPAddr               func() (string, error)
 }
 
 // New creates a new KubeWrapper with real values.
-func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client, cloudControllerManager CloudControllerManager,
+func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client,
 	providerMetadata ProviderMetadata, initialMeasurementsJSON []byte, helmClient helmClient, kubeAPIWaiter kubeAPIWaiter,
 ) *KubeWrapper {
 	return &KubeWrapper{
@@ -79,7 +77,6 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 		configProvider:          configProvider,
 		client:                  client,
 		kubeconfigReader:        &KubeconfigReader{fs: afero.Afero{Fs: afero.NewOsFs()}},
-		cloudControllerManager:  cloudControllerManager,
 		providerMetadata:        providerMetadata,
 		initialMeasurementsJSON: initialMeasurementsJSON,
 		getIPAddr:               getIPAddr,
@@ -101,56 +98,47 @@ func (k *KubeWrapper) InitCluster(
 		return nil, err
 	}
 
-	ip, err := k.getIPAddr()
-	if err != nil {
-		return nil, err
-	}
-	nodeName := ip
-	var providerID string
-	var instance metadata.InstanceMetadata
 	var nodePodCIDR string
-	var subnetworkPodCIDR string
-	var controlPlaneEndpoint string // this is the endpoint in "kubeadm init --control-plane-endpoint=<IP/DNS>:<port>"
-	var nodeIP string
 	var validIPs []net.IP
 
 	// Step 1: retrieve cloud metadata for Kubernetes configuration
-	if k.providerMetadata.Supported() {
-		log.Infof("Retrieving node metadata")
-		instance, err = k.providerMetadata.Self(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("retrieving own instance metadata: %w", err)
-		}
-		if instance.VPCIP != "" {
-			validIPs = append(validIPs, net.ParseIP(instance.VPCIP))
-		}
-		nodeName = k8sCompliantHostname(instance.Name)
-		providerID = instance.ProviderID
-		nodeIP = instance.VPCIP
-		subnetworkPodCIDR = instance.SecondaryIPRange
-
-		if len(instance.AliasIPRanges) > 0 {
-			nodePodCIDR = instance.AliasIPRanges[0]
-		}
-		controlPlaneEndpoint, err = k.providerMetadata.GetLoadBalancerEndpoint(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("retrieving load balancer endpoint: %w", err)
-		}
+	log.Infof("Retrieving node metadata")
+	instance, err := k.providerMetadata.Self(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving own instance metadata: %w", err)
 	}
+	if instance.VPCIP != "" {
+		validIPs = append(validIPs, net.ParseIP(instance.VPCIP))
+	}
+	nodeName := k8sCompliantHostname(instance.Name)
+	nodeIP := instance.VPCIP
+	subnetworkPodCIDR := instance.SecondaryIPRange
+	if len(instance.AliasIPRanges) > 0 {
+		nodePodCIDR = instance.AliasIPRanges[0]
+	}
+
+	// this is the endpoint in "kubeadm init --control-plane-endpoint=<IP/DNS>:<port>"
+	controlPlaneEndpoint, err := k.providerMetadata.GetLoadBalancerEndpoint(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving load balancer endpoint: %w", err)
+	}
+
 	log.With(
 		zap.String("nodeName", nodeName),
-		zap.String("providerID", providerID),
+		zap.String("providerID", instance.ProviderID),
 		zap.String("nodeIP", nodeIP),
 		zap.String("controlPlaneEndpoint", controlPlaneEndpoint),
 		zap.String("podCIDR", subnetworkPodCIDR),
 	).Infof("Setting information for node")
 
 	// Step 2: configure kubeadm init config
-	initConfig := k.configProvider.InitConfiguration(k.cloudControllerManager.Supported(), k8sVersion)
+	ccmSupported := cloudprovider.FromString(k.cloudProvider) == cloudprovider.Azure ||
+		cloudprovider.FromString(k.cloudProvider) == cloudprovider.GCP
+	initConfig := k.configProvider.InitConfiguration(ccmSupported, k8sVersion)
 	initConfig.SetNodeIP(nodeIP)
 	initConfig.SetCertSANs([]string{nodeIP})
 	initConfig.SetNodeName(nodeName)
-	initConfig.SetProviderID(providerID)
+	initConfig.SetProviderID(instance.ProviderID)
 	initConfig.SetControlPlaneEndpoint(controlPlaneEndpoint)
 	initConfigYAML, err := initConfig.Marshal()
 	if err != nil {
@@ -256,28 +244,19 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	}
 
 	// Step 1: retrieve cloud metadata for Kubernetes configuration
-	nodeInternalIP, err := k.getIPAddr()
+	log.Infof("Retrieving node metadata")
+	instance, err := k.providerMetadata.Self(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("retrieving own instance metadata: %w", err)
 	}
-	nodeName := nodeInternalIP
-	var providerID string
-	var loadbalancerEndpoint string
-	if k.providerMetadata.Supported() {
-		log.Infof("Retrieving node metadata")
-		instance, err := k.providerMetadata.Self(ctx)
-		if err != nil {
-			return fmt.Errorf("retrieving own instance metadata: %w", err)
-		}
-		providerID = instance.ProviderID
-		nodeName = instance.Name
-		nodeInternalIP = instance.VPCIP
-		loadbalancerEndpoint, err = k.providerMetadata.GetLoadBalancerEndpoint(ctx)
-		if err != nil {
-			return fmt.Errorf("retrieving loadbalancer endpoint: %w", err)
-		}
+	providerID := instance.ProviderID
+	nodeInternalIP := instance.VPCIP
+	nodeName := k8sCompliantHostname(instance.Name)
+
+	loadbalancerEndpoint, err := k.providerMetadata.GetLoadBalancerEndpoint(ctx)
+	if err != nil {
+		return fmt.Errorf("retrieving own instance metadata: %w", err)
 	}
-	nodeName = k8sCompliantHostname(nodeName)
 
 	log.With(
 		zap.String("nodeName", nodeName),
@@ -286,7 +265,9 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	).Infof("Setting information for node")
 
 	// Step 2: configure kubeadm join config
-	joinConfig := k.configProvider.JoinConfiguration(k.cloudControllerManager.Supported())
+	ccmSupported := cloudprovider.FromString(k.cloudProvider) == cloudprovider.Azure ||
+		cloudprovider.FromString(k.cloudProvider) == cloudprovider.GCP
+	joinConfig := k.configProvider.JoinConfiguration(ccmSupported)
 	joinConfig.SetAPIServerEndpoint(args.APIServerEndpoint)
 	joinConfig.SetToken(args.Token)
 	joinConfig.AppendDiscoveryTokenCaCertHash(args.CACertHashes[0])
@@ -437,85 +418,85 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSO
 
 	switch cloudprovider.FromString(k.cloudProvider) {
 	case cloudprovider.GCP:
-		{
-			uid, err := k.providerMetadata.UID(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("getting uid: %w", err)
-			}
-
-			projectID, _, _, err := gcpshared.SplitProviderID(instance.ProviderID)
-			if err != nil {
-				return nil, fmt.Errorf("splitting providerID: %w", err)
-			}
-
-			serviceAccountKey, err := gcpshared.ServiceAccountKeyFromURI(cloudServiceAccountURI)
-			if err != nil {
-				return nil, fmt.Errorf("getting service account key: %w", err)
-			}
-			rawKey, err := json.Marshal(serviceAccountKey)
-			if err != nil {
-				return nil, fmt.Errorf("marshaling service account key: %w", err)
-			}
-
-			ccmVals, ok := extraVals["ccm"].(map[string]any)
-			if !ok {
-				return nil, errors.New("invalid ccm values")
-			}
-			ccmVals["GCP"] = map[string]any{
-				"projectID":         projectID,
-				"uid":               uid,
-				"secretData":        string(rawKey),
-				"subnetworkPodCIDR": subnetworkPodCIDR,
-			}
+		uid, err := k.providerMetadata.UID(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting uid: %w", err)
 		}
+
+		projectID, _, _, err := gcpshared.SplitProviderID(instance.ProviderID)
+		if err != nil {
+			return nil, fmt.Errorf("splitting providerID: %w", err)
+		}
+
+		serviceAccountKey, err := gcpshared.ServiceAccountKeyFromURI(cloudServiceAccountURI)
+		if err != nil {
+			return nil, fmt.Errorf("getting service account key: %w", err)
+		}
+		rawKey, err := json.Marshal(serviceAccountKey)
+		if err != nil {
+			return nil, fmt.Errorf("marshaling service account key: %w", err)
+		}
+
+		ccmVals, ok := extraVals["ccm"].(map[string]any)
+		if !ok {
+			return nil, errors.New("invalid ccm values")
+		}
+		ccmVals["GCP"] = map[string]any{
+			"projectID":         projectID,
+			"uid":               uid,
+			"secretData":        string(rawKey),
+			"subnetworkPodCIDR": subnetworkPodCIDR,
+		}
+
 	case cloudprovider.Azure:
-		{
-			// TODO: After refactoring the ProviderMetadata interface this section should be rewritten.
-			// Currently, we have to rely on the Secrets(..) method, as GetNetworkSecurityGroupName & GetLoadBalancerName
-			// rely on Azure specific API endpoints.
-			ccmSecrets, err := k.cloudControllerManager.Secrets(ctx, instance.ProviderID, cloudServiceAccountURI)
-			if err != nil {
-				return nil, fmt.Errorf("creating ccm secret: %w", err)
-			}
-			if len(ccmSecrets) < 1 {
-				return nil, errors.New("missing secret")
-			}
-			rawConfig := ccmSecrets[0].Data["azure.json"]
-
-			ccmVals, ok := extraVals["ccm"].(map[string]any)
-			if !ok {
-				return nil, errors.New("invalid ccm values")
-			}
-			ccmVals["Azure"] = map[string]any{
-				"azureConfig":       string(rawConfig),
-				"subnetworkPodCIDR": subnetworkPodCIDR,
-			}
-
-			joinVals, ok := extraVals["join-service"].(map[string]any)
-			if !ok {
-				return nil, errors.New("invalid join-service values")
-			}
-			joinVals["idkeydigest"] = hex.EncodeToString(idkeydigest)
-
-			subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(instance.ProviderID)
-			if err != nil {
-				return nil, err
-			}
-			creds, err := azureshared.ApplicationCredentialsFromURI(cloudServiceAccountURI)
-			if err != nil {
-				return nil, err
-			}
-
-			extraVals["autoscaler"] = map[string]any{
-				"Azure": map[string]any{
-					"clientID":       creds.AppClientID,
-					"clientSecret":   creds.ClientSecretValue,
-					"resourceGroup":  resourceGroup,
-					"subscriptionID": subscriptionID,
-					"tenantID":       creds.TenantID,
-				},
-			}
+		ccmAzure, ok := k.providerMetadata.(ccmConfigGetter)
+		if !ok {
+			return nil, errors.New("invalid cloud provider metadata for Azure")
 		}
+
+		ccmConfig, err := ccmAzure.GetCCMConfig(ctx, instance.ProviderID, cloudServiceAccountURI)
+		if err != nil {
+			return nil, fmt.Errorf("creating ccm secret: %w", err)
+		}
+
+		ccmVals, ok := extraVals["ccm"].(map[string]any)
+		if !ok {
+			return nil, errors.New("invalid ccm values")
+		}
+		ccmVals["Azure"] = map[string]any{
+			"azureConfig":       string(ccmConfig),
+			"subnetworkPodCIDR": subnetworkPodCIDR,
+		}
+
+		joinVals, ok := extraVals["join-service"].(map[string]any)
+		if !ok {
+			return nil, errors.New("invalid join-service values")
+		}
+		joinVals["idkeydigest"] = hex.EncodeToString(idkeydigest)
+
+		subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(instance.ProviderID)
+		if err != nil {
+			return nil, err
+		}
+		creds, err := azureshared.ApplicationCredentialsFromURI(cloudServiceAccountURI)
+		if err != nil {
+			return nil, err
+		}
+
+		extraVals["autoscaler"] = map[string]any{
+			"Azure": map[string]any{
+				"clientID":       creds.AppClientID,
+				"clientSecret":   creds.ClientSecretValue,
+				"resourceGroup":  resourceGroup,
+				"subscriptionID": subscriptionID,
+				"tenantID":       creds.TenantID,
+			},
+		}
+
 	}
 	return extraVals, nil
+}
+
+type ccmConfigGetter interface {
+	GetCCMConfig(ctx context.Context, providerID, cloudServiceAccountURI string) ([]byte, error)
 }

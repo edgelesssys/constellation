@@ -22,11 +22,6 @@ const qemuMetadataEndpoint = "10.42.0.1:8080"
 // Metadata implements core.ProviderMetadata interface for QEMU.
 type Metadata struct{}
 
-// Supported is used to determine if metadata API is implemented for this cloud provider.
-func (m *Metadata) Supported() bool {
-	return true
-}
-
 // List retrieves all instances belonging to the current constellation.
 func (m *Metadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
 	instancesRaw, err := m.retrieveMetadata(ctx, "/peers")

@@ -212,8 +212,8 @@ The last missing link is how the ground truth in the form of runtime measurement
 The build process of Constellation images also creates the ground truth runtime measurements. <!-- soon: The builds of Constellation images are reproducible and the measurements of an image can be recalculated and verified by everyone. -->
 With every release, Edgeless Systems publishes signed runtime measurements.
 
-The release binary is also signed by Edgeless Systems.
-The [installation guide](../architecture/orchestration.md#verify-your-cli-installation) explains how you can verify this signature.
+The CLI executable is also signed by Edgeless Systems.
+You can [verify its signature](../workflows/verify-cli.md).
 
 The CLI contains the public key required to verify signed runtime measurements from Edgeless Systems.
 When a cluster is [created](../workflows/create.md) or [upgraded](../workflows/upgrade.md), the CLI automatically verifies the measurements for the selected image.

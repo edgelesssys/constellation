@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Validator validates Platform Configuration Registers (PCRs).
 type Validator struct {
 	provider           cloudprovider.Provider
 	pcrs               map[uint32][]byte
@@ -35,6 +36,7 @@ type Validator struct {
 	validator          atls.Validator
 }
 
+// NewValidator creates a new Validator.
 func NewValidator(provider cloudprovider.Provider, conf *config.Config) (*Validator, error) {
 	v := Validator{}
 	if provider == cloudprovider.Unknown {
@@ -60,6 +62,7 @@ func NewValidator(provider cloudprovider.Provider, conf *config.Config) (*Valida
 	return &v, nil
 }
 
+// UpdateInitPCRs sets the owner and cluster PCR values.
 func (v *Validator) UpdateInitPCRs(ownerID, clusterID string) error {
 	if err := v.updatePCR(uint32(vtpm.PCRIndexOwnerID), ownerID); err != nil {
 		return err

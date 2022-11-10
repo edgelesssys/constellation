@@ -17,10 +17,15 @@ import (
 type Provider uint32
 
 const (
+	// Unknown is default value for Provider.
 	Unknown Provider = iota
+	// AWS is Amazon Web Services.
 	AWS
+	// Azure cloud.
 	Azure
+	// GCP is Google Compute Platform.
 	GCP
+	// QEMU for a local emulated installation.
 	QEMU
 )
 

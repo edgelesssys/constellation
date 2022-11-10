@@ -42,25 +42,40 @@ func IsPreviewK8sVersion(version ValidK8sVersion) bool {
 }
 
 const (
+	//
 	// Constellation images.
 	// These images are built in a way that they support all versions currently listed in VersionConfigs.
-	KonnectivityAgentImage  = "us.gcr.io/k8s-artifacts-prod/kas-network-proxy/proxy-agent:v0.0.33@sha256:48f2a4ec3e10553a81b8dd1c6fa5fe4bcc9617f78e71c1ca89c6921335e2d7da"                              // renovate:container
-	KonnectivityServerImage = "registry.k8s.io/kas-network-proxy/proxy-server:v0.0.33@sha256:2c111f004bec24888d8cfa2a812a38fb8341350abac67dcd0ac64e709dfe389c"                                          // renovate:container
-	JoinImage               = "ghcr.io/edgelesssys/constellation/join-service:v2.2.0-pre.0.20221102120022-1f9a788c213d@sha256:41bd333cae47e55d711dee93cd5da0fe3dc66885ab9949d0e76ffe07d2f7dd34"         // renovate:container
-	KmsImage                = "ghcr.io/edgelesssys/constellation/kmsserver:v2.2.0-pre.0.20221026125949-06ce47d16cbd@sha256:544ef14afee3ddca26effb9bacc858a8ee009bca409c7c3c042abc8a1345226b"            // renovate:container
-	VerificationImage       = "ghcr.io/edgelesssys/constellation/verification-service:v2.2.0-pre.0.20221104104941-44b1a92d6bdf@sha256:9c550900be4eed8e192dc582910dda492267c2a69a43f6423992212e1adf7a1e" // renovate:container
+	//
+
+	// KonnectivityAgentImage agent image for konnectivity service.
+	KonnectivityAgentImage = "us.gcr.io/k8s-artifacts-prod/kas-network-proxy/proxy-agent:v0.0.33@sha256:48f2a4ec3e10553a81b8dd1c6fa5fe4bcc9617f78e71c1ca89c6921335e2d7da" // renovate:container
+	// KonnectivityServerImage server image for konnectivity service.
+	KonnectivityServerImage = "registry.k8s.io/kas-network-proxy/proxy-server:v0.0.33@sha256:2c111f004bec24888d8cfa2a812a38fb8341350abac67dcd0ac64e709dfe389c" // renovate:container
+	// JoinImage image of Constellation join service.
+	JoinImage = "ghcr.io/edgelesssys/constellation/join-service:v2.3.0-pre.0.20221109145754-0d12e37c9699@sha256:afe838fdf9753a6d50eef3a36a17d8993c1732397bb3f965dd25f291e7521acc" // renovate:container
+	// AccessManagerImage image of Constellation access manager.
+	AccessManagerImage = "ghcr.io/edgelesssys/constellation/access-manager:v2.3.0-pre.0.20221109145754-0d12e37c9699@sha256:9fe850517115851a0e0969401cc407dad2f2f9157aac86b69db51e28ee4559c4" // renovate:container
+	// KmsImage image of Constellation KMS server.
+	KmsImage = "ghcr.io/edgelesssys/constellation/kmsserver:v2.3.0-pre.0.20221109145754-0d12e37c9699@sha256:bed58eff5ca1ad2bb0eddfdbb642a5dc5454bfd6a0248487ae8e2756227e0e80" // renovate:container
+	// VerificationImage image of Constellation verification service.
+	VerificationImage = "ghcr.io/edgelesssys/constellation/verification-service:v2.3.0-pre.0.20221109145754-0d12e37c9699@sha256:4c6887fb6d14cfa1456e95819bc6fff4a360f9c4aa6e57b1fe90ebd469c3a0d6" // renovate:container
+	// GcpGuestImage image for GCP guest agent.
 	// Check for new versions at https://github.com/GoogleCloudPlatform/guest-agent/releases and update in /.github/workflows/build-gcp-guest-agent.yml.
-	GcpGuestImage            = "ghcr.io/edgelesssys/gcp-guest-agent:20220927.00@sha256:3dea1ae3f162d2353e6584b325f0e325a39cda5f380f41e5a0ee43c6641d3905"                                                  // renovate:container
-	NodeOperatorCatalogImage = "ghcr.io/edgelesssys/constellation/node-operator-catalog:v2.2.0-pre.0.20221024145821-b35b74b77278@sha256:f1ee4e2642fd758083344df10a98195213dda299fbbc720bf57873e392e001f1" // renovate:container
+	GcpGuestImage = "ghcr.io/edgelesssys/gcp-guest-agent:20220927.00@sha256:3dea1ae3f162d2353e6584b325f0e325a39cda5f380f41e5a0ee43c6641d3905" // renovate:container
+	// NodeOperatorCatalogImage image of node operator catalog image.
+	NodeOperatorCatalogImage = "ghcr.io/edgelesssys/constellation/node-operator-catalog:v2.3.0-pre.0.20221109145754-0d12e37c9699@sha256:d11ec73033bbd698f7d614b836e3bfb1bbf647f2b972df952a0cf5d9c979f795" // renovate:container
+	// NodeMaintenanceOperatorCatalogImage image of node maintenance operator catalog.
 	// TODO: switch node maintenance operator catalog back to upstream quay.io/medik8s/node-maintenance-operator-catalog
 	// once https://github.com/medik8s/node-maintenance-operator/issues/49 is resolved.
 	NodeMaintenanceOperatorCatalogImage = "ghcr.io/edgelesssys/constellation/node-maintenance-operator-catalog:v0.13.1-alpha1@sha256:d382c3aaf9bc470cde6f6c05c2c6ff5c9dcfd90540d5b11f9cf69c4e1dd1ca9d" // renovate:container
 
-	QEMUMetadataImage = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.1.0@sha256:abfc36fcd02a145412074cdbb54597878594aa1cfb0ffd66e36d3b3e95ee9e7f"                         // renovate:container
-	LibvirtImage      = "ghcr.io/edgelesssys/constellation/libvirt:v2.2.0-pre.0.20221021080602-f3d78a573fb2@sha256:f42fa5f009415f2c6631b83e8831790d324c27d5f3ae883c59ea7bfeba50facd" // renovate:container
+	// QEMUMetadataImage image of QEMU metadata api service.
+	QEMUMetadataImage = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.2.0@sha256:3c173639bbd258f56c7f4e97fa5dc7b7c63d7d45f96f7d7af5c43ed9eb2258ac" // renovate:container
+	// LibvirtImage image that provides libvirt.
+	LibvirtImage = "ghcr.io/edgelesssys/constellation/libvirt:v2.2.0@sha256:81ddc30cd679a95379e94e2f154861d9112bcabfffa96330c09a4917693f7cce" // renovate:container
 
 	// ConstellationQEMUImageURL is the artifact URL for QEMU qcow2 images.
-	ConstellationQEMUImageURL = "https://d1gl9j3ejrmbpr.cloudfront.net/mini-constellation-v2.1.0.qcow2"
+	ConstellationQEMUImageURL = "https://cdn.confidential.cloud/constellation/images/mini-constellation/v2.2.0/constellation.raw"
 
 	// currently supported versions.
 	//nolint:revive
@@ -70,15 +85,18 @@ const (
 	//nolint:revive
 	V1_25 ValidK8sVersion = "1.25"
 
+	// Default k8s version deployed by Constellation.
 	Default ValidK8sVersion = V1_24
 )
 
 var (
-	NodeOperatorVersion            = versionFromDockerImage(NodeOperatorCatalogImage)
+	// NodeOperatorVersion version of node operator.
+	NodeOperatorVersion = versionFromDockerImage(NodeOperatorCatalogImage)
+	// NodeMaintenanceOperatorVersion version of node maintenance operator.
 	NodeMaintenanceOperatorVersion = versionFromDockerImage(NodeMaintenanceOperatorCatalogImage)
 )
 
-// versionConfigs holds download URLs for all required kubernetes components for every supported version.
+// VersionConfigs holds download URLs for all required kubernetes components for every supported version.
 var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 	V1_23: {
 		PatchVersion:  "v1.23.13",                                                                                                   // renovate:kubernetes-release

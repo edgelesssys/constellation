@@ -21,19 +21,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Sign generated SBOMs and store container image SBOMs in registry for easier usage.
 
 ### Changed
 <!-- For changes in existing functionality.  -->
+
+### Deprecated
+<!-- For soon-to-be removed features. -->
+
+### Removed
+<!-- For now removed features. -->
+
+## [2.2.0] - 2022-11-08
+
+### Added
+
+- Sign generated SBOMs and store container image SBOMs in registry for easier usage.
+- Support for Constellation on AWS.
+- Constellation Kubernetes services are now managed using Helm.
+- Use tags to mark all applicable resources using a Constellation's UID on Azure.
+- Use labels to mark all applicable resources using a Constellation's UID on GCP.
+
+### Changed
+
 - Verify measurements using [Rekor](https://github.com/sigstore/rekor) transparency log.
 - The `constellation create` on Azure now uses Terraform to create and destroy cloud resources.
 - Constellation OS images are now based on Fedora directly and are built using [mkosi](https://github.com/systemd/mkosi).
 - `constellation terminate` will now prompt the user for confirmation before destroying any resources (can be skipped with `--yes`).
+- Use the `constellation-role` tag instead of `role` to indicate an instance's role on Azure.
+- Use labels instead of metadata to apply the `constellation-uid` and `constellation-role` tags on GCP.
 
 ### Deprecated
-<!-- For soon-to-be removed features. -->
+
+- `access-manager` is no longer deployed.
+
 ### Removed
-<!-- For now removed features. -->
+
 - `endpoint` flag of `constellation init`. IP is now always taken from the `constellation-id.json` file.
 - `constellation-state.json` file won't be created anymore. Resources are now managed through Terraform.
 - `access-manager` was removed from code base. K8s native way to SSH into nodes documented.
@@ -43,8 +65,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 ### Internal
-
-- Support for AWS metadata operations
 
 ## [2.1.0] - 2022-10-07
 

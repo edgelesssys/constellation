@@ -65,7 +65,10 @@ func New(ctx context.Context, vaultName string, vaultType VaultSuffix, store kms
 	if err != nil {
 		return nil, fmt.Errorf("loading credentials: %w", err)
 	}
-	client := azsecrets.NewClient(vaultPrefix+vaultName+string(vaultType), cred, opts.Secrets)
+	client, err := azsecrets.NewClient(vaultPrefix+vaultName+string(vaultType), cred, opts.Secrets)
+	if err != nil {
+		return nil, fmt.Errorf("creating azure secrets client: %w", err)
+	}
 
 	// `azsecrets.NewClient()` does not error if the vault is non existent
 	// Test here if we can reach the vault, and error otherwise
