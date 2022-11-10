@@ -84,7 +84,7 @@ The generated images are partially signed by Microsoft ([shim loader](https://gi
 For QEMU and Azure, you can pre-generate the NVRAM variables for secure boot. This is not necessary for GCP, as you can specify secure boot parameters via the GCP API on image creation.
 
 <details>
-<summary>libvirt / QEMU / KVM</summary>
+<summary><a id="qemu-secure-boot">libvirt / QEMU / KVM</a></summary>
 
 ```sh
 secure-boot/generate_nvram_vars.sh mkosi.output.qemu/fedora~36/image.raw
@@ -112,6 +112,7 @@ export AZURE_SNAPSHOT_NAME=${AZURE_DISK_NAME}
 export AZURE_RAW_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~36/image.raw
 export AZURE_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~36/image.vhd
 export AZURE_VMGS_FILENAME=${AZURE_SECURITY_TYPE}.vmgs
+export AZURE_JSON_OUTPUT=${PWD}/mkosi.output.azure/fedora~36/image-upload.json
 export BLOBS_DIR=${PWD}/blobs
 upload/pack.sh azure "${AZURE_RAW_IMAGE_PATH}" "${AZURE_IMAGE_PATH}"
 upload/upload_azure.sh --disk-name "${AZURE_DISK_NAME}-setup-secure-boot" ""
@@ -158,9 +159,9 @@ export AWS_BUCKET=constellation-images
 export AWS_EFIVARS_PATH=${PWD}/mkosi.output.aws/fedora~36/efivars.bin
 export AWS_IMAGE_PATH=${PWD}/mkosi.output.aws/fedora~36/image.raw
 export AWS_IMAGE_FILENAME=image-$(date +%s).raw
-export AWS_AMI_OUTPUT=${PWD}/mkosi.output.aws/fedora~36/ami.txt
+export AWS_JSON_OUTPUT=${PWD}/mkosi.output.aws/fedora~36/image-upload.json
 secure-boot/aws/create_uefivars.sh "${AWS_EFIVARS_PATH}"
-upload/upload_aws.sh "${AWS_AMI_OUTPUT}"
+upload/upload_aws.sh
 ```
 
 </details>
@@ -187,6 +188,7 @@ export GCP_BUCKET=constellation-images
 export GCP_RAW_IMAGE_PATH=${PWD}/mkosi.output.gcp/fedora~36/image.raw
 export GCP_IMAGE_FILENAME=$(date +%s).tar.gz
 export GCP_IMAGE_PATH=${PWD}/mkosi.output.gcp/fedora~36/image.tar.gz
+export GCP_JSON_OUTPUT=${PWD}/mkosi.output.gcp/fedora~36/image-upload.json
 upload/pack.sh gcp ${GCP_RAW_IMAGE_PATH} ${GCP_IMAGE_PATH}
 upload/upload_gcp.sh
 ```
@@ -228,8 +230,27 @@ export AZURE_PUBLISHER=edgelesssys
 export AZURE_DISK_NAME=constellation-$(date +%s)
 export AZURE_RAW_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~36/image.raw
 export AZURE_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~36/image.vhd
+export AZURE_JSON_OUTPUT=${PWD}/mkosi.output.azure/fedora~36/image-upload.json
 upload/pack.sh azure "${AZURE_RAW_IMAGE_PATH}" "${AZURE_IMAGE_PATH}"
 upload/upload_azure.sh -g --disk-name "${AZURE_DISK_NAME}" "${AZURE_VMGS_PATH}"
+```
+
+</details>
+
+<details>
+<summary>QEMU</summary>
+
+- Install `aws` cli (see [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html))
+- Login to AWS (see [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html))
+
+```sh
+# set these variables
+export IMAGE_VERSION_UID= # e.g. "test123" or "v2.1.0"
+export QEMU_BUCKET=cdn-confidential-cloud-backend
+export QEMU_BASE_URL="https://cdn.confidential.cloud"
+export QEMU_IMAGE_PATH=${PWD}/mkosi.output.qemu/fedora~36/image.raw
+export QEMU_JSON_OUTPUT=${PWD}/mkosi.output.qemu/fedora~36/image-upload.json
+upload/upload_qemu.sh
 ```
 
 </details>

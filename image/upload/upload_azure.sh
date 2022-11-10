@@ -41,10 +41,13 @@ set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
 if [[ ${AZURE_SECURITY_TYPE} == "ConfidentialVM" ]]; then
   AZURE_DISK_SECURITY_TYPE=ConfidentialVM_VMGuestStateOnlyEncryptedWithPlatformKey
   AZURE_SIG_VERSION_ENCRYPTION_TYPE=EncryptedVMGuestStateOnlyWithPmk
+  security_type_short_name="cvm"
 elif [[ ${AZURE_SECURITY_TYPE} == "ConfidentialVMSupported" ]]; then
   AZURE_DISK_SECURITY_TYPE=""
+  security_type_short_name="cvm"
 elif [[ ${AZURE_SECURITY_TYPE} == "TrustedLaunch" ]]; then
   AZURE_DISK_SECURITY_TYPE=TrustedLaunch
+  security_type_short_name="trustedlaunch"
 else
   echo "Unknown security type: ${AZURE_SECURITY_TYPE}"
   exit 1
@@ -188,6 +191,43 @@ create_sig_version() {
     ${SOURCE}
 }
 
+get_image_version_reference() {
+  local is_community_gallery
+  is_community_gallery=$(az sig show --gallery-name "${AZURE_GALLERY_NAME}" \
+    --resource-group "${AZURE_RESOURCE_GROUP_NAME}" \
+    --query 'sharingProfile.communityGalleryInfo.communityGalleryEnabled' \
+    -o tsv)
+  if [[ ${is_community_gallery} == "true" ]]; then
+    get_community_image_version_reference
+    return
+  fi
+  get_unshared_image_version_reference
+}
+
+get_community_image_version_reference() {
+  local communityGalleryName
+  communityGalleryName=$(az sig show --gallery-name "${AZURE_GALLERY_NAME}" \
+    --resource-group "${AZURE_RESOURCE_GROUP_NAME}" \
+    --query 'sharingProfile.communityGalleryInfo.publicNames[0]' \
+    -o tsv)
+  az sig image-version show-community \
+    --public-gallery-name "${communityGalleryName}" \
+    --gallery-image-definition "${AZURE_IMAGE_DEFINITION}" \
+    --gallery-image-version "${AZURE_IMAGE_VERSION}" \
+    --location "${AZURE_REGION}" \
+    --query 'uniqueId' \
+    -o tsv
+}
+
+get_unshared_image_version_reference() {
+  az sig image-version show \
+    --resource-group "${AZURE_RESOURCE_GROUP_NAME}" \
+    --gallery-name "${AZURE_GALLERY_NAME}" \
+    --gallery-image-definition "${AZURE_IMAGE_DEFINITION}" \
+    --gallery-image-version "${AZURE_IMAGE_VERSION}" \
+    --query id --output tsv
+}
+
 create_disk
 
 if [[ ${CREATE_SIG_VERSION} == "YES" ]]; then
@@ -196,3 +236,10 @@ if [[ ${CREATE_SIG_VERSION} == "YES" ]]; then
   delete_image
   delete_disk
 fi
+
+image_reference=$(get_image_version_reference)
+json=$(jq -ncS \
+  --arg security_type "${security_type_short_name}" \
+  --arg image_reference "${image_reference}" \
+  '{"azure": {($security_type): $image_reference}}')
+echo -n "${json}" > "${AZURE_JSON_OUTPUT}"

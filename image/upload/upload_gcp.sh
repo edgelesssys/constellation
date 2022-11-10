@@ -31,3 +31,11 @@ gcloud compute images add-iam-policy-binding "${GCP_IMAGE_NAME}" \
   --member='allAuthenticatedUsers' \
   --role='roles/compute.imageUser'
 gsutil rm "gs://${GCP_BUCKET}/${GCP_IMAGE_FILENAME}"
+
+image_reference=$(gcloud compute images describe "${GCP_IMAGE_NAME}" \
+  --project "${GCP_PROJECT}" \
+  '--format=value(selfLink.scope(v1))')
+json=$(jq -ncS \
+  --arg image_reference "${image_reference}" \
+  '{"gcp": {"sev-es": $image_reference}}')
+echo -n "${json}" > "${GCP_JSON_OUTPUT}"

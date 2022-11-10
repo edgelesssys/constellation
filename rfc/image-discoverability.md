@@ -42,12 +42,13 @@ The build pipeline takes as inputs:
 
 - a version number that is one of
   - a release version number (e.g. `v2.2.0`) for release images
-  - a pseudo-version number (e.g. `v2.3.0-pre-debug`) for development images
-  - a pseudo-version number (e.g. `v2.3.0-pre-branch-name`) for branch images
+  - a pseudo-version number (e.g. `debug-v2.3.0-pre.0.`) for development images
+  - a pseudo-version number (e.g. `branch-name-v2.3.0-pre.0,`) for branch images
 - a commit hash of the Constellation monorepo that is used to build the images (e.g. `cc0de5c68d41f31dd0b284d574f137e0b0ad106b`)
+- a commit timestamp of the Constellation monorepo that is used to build the images (e.g. `20221115082220`)
 
 To identify images belonging to one invocation of the build pipeline, the pipeline uses a unique identifier for the set of images, referred to as `image version uid`.
-This is either the release version number (e.g. `v2.2.0`) or a pseudo version that combines the version number and the commit hash (e.g. `v2.3.0-pre-debug-cc0de5c68d41f31dd0b284d574f137e0b0ad106b`).
+This is either the release version number (e.g. `v2.2.0`) or a pseudo version that combines the version number, commit timestamp and the commit hash (e.g. `debug-v2.3.0-pre.0.20221115082220-cc0de5c68d41f31dd0b284d574f137e0b0ad106b`).
 
 The build pipeline produces as outputs:
 
@@ -59,12 +60,34 @@ The build pipeline produces as outputs:
 The lookup table is uploaded to S3 and is used to identify the images that belong to a given `image version uid`.
 Measurements are uploaded to S3 and can be looked up for each cloud service provider and `image version uid`.
 
+## Image API
+
+The build pipeline produces artifacts that are uploaded to S3 and can be accessed via HTTP.
+The artifacts are organized in a directory structure that allows to look up the artifacts for a given `image version uid`.
+
+Where applicable, the API uses the following CSP names:
+
+- `aws` for Amazon Web Services
+- `azure` for Microsoft Azure
+- `gcp` for Google Cloud Platform
+- `qemu` for QEMU
+
+The following HTTP endpoints are available:
+
+- `GET /v1/images/<image version uid>.json` returns the lookup table for the given `image version uid`.
+- `GET /v1/measurements/<image version uid>/<csp>/` contains files with measurements and signatures for the given `image version uid` and CSP.
+  - `measurements.json` contains the final measurements for the given `image version uid` and CSP.
+  - `measurements.json.sig` returns the signature of the measurements file.
+  - `measurements.image.json` returns the measurements generated statically from the image.
+- `GET /v1/raw/<image version uid>/<csp>/image.raw` returns the raw image for the given `image version uid` and CSP.
+- `GET /v1/sbom/<image version uid>/` contains SBOM files for the given `image version uid`. The exact formats and file names are TBD.
+
 ## Image lookup table
 
 The image lookup table is a JSON file that maps the `image version uid` to the CSP-specific image references. It uses the `image version uid` as file name.
 
 ```
-s3://<BUCKET-NAME>/images/<IMAGE-VERSION-UID>.json
+s3://<BUCKET-NAME>/v1/images/<IMAGE-VERSION-UID>.json
 ```
 
 ```json
@@ -80,8 +103,10 @@ s3://<BUCKET-NAME>/images/<IMAGE-VERSION-UID>.json
   },
   "gcp": {
     "sev-es": "gcp-image-123"
+  },
+  "qemu": {
+    "default": "https://cdn.confidential.cloud/v1/raw/v2.2.0/qemu/image.raw"
   }
-  "qemu": "https://cdn.edgeless.systems/.../qemu.raw"
 }
 ```
 
@@ -101,8 +126,9 @@ The format of the image measurements is described in the [secure software distri
 The image measurements are stored in a folder structure in S3 that is organized by CSP and `image version uid`.
 
 ```
-s3://<BUCKET-NAME>/measurements/<CSP>/<IMAGE-VERSION-UID>/measurements.yaml
-s3://<BUCKET-NAME>/measurements/<CSP>/<IMAGE-VERSION-UID>/measurements.yaml.sig
+s3://<BUCKET-NAME>/v1/measurements/<CSP>/<IMAGE-VERSION-UID>/measurements.json
+s3://<BUCKET-NAME>/v1/measurements/<CSP>/<IMAGE-VERSION-UID>/measurements.json.sig
+s3://<BUCKET-NAME>/v1/measurements/<CSP>/<IMAGE-VERSION-UID>/measurements.image.json
 ```
 
 ## CLI image discovery
@@ -117,11 +143,12 @@ The `image` field is independent of the CSP and is a used to discover the CSP-sp
 The CLI can find a CSP- and region specific image reference by looking up the `image version uid` in the following order:
 
 - if a local file `<IMAGE-VERSION-UID>.json` exists, use the lookup table in that file
-- otherwise, load the image lookup table from a well known URL (e.g. `https://cdn.confidential.cloud/images/<IMAGE-VERSION-UID>.json`) and use the lookup table in that file
+- otherwise, load the image lookup table from a well known URL (e.g. `https://cdn.confidential.cloud/v1/images/<IMAGE-VERSION-UID>.json`) and use the lookup table in that file
 - choose the CSP-specific image reference for the current region and security type:
   - On AWS, use the AMI ID for the current region (e.g. `.aws.us-east-1`)
   - On Azure, use the image ID for the security type (CVM or Trusted Launch) (e.g. `.azure.cvm`)
-  - On GCP, use the only image ID (e.g. `.gcp`)
+  - On GCP, use the only image ID (e.g. `.gcp.sev-es`)
+  - On QEMU, use the only image ID (e.g. `.qemu.default`)
 
 This allows customers to upload images to their own cloud subscription and use them with the CLI by providing the image lookup table as a local file.
 

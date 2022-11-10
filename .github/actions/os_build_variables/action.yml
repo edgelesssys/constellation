@@ -36,9 +36,9 @@ outputs:
   awsImagePath:
     description: "AWS image path"
     value: ${{ steps.aws.outputs.imagePath }}
-  awsAmiOutput:
-    description: "AWS ami output path"
-    value: ${{ steps.aws.outputs.amiOutput }}
+  awsJsonOutput:
+    description: "AWS ami json output path"
+    value: ${{ steps.aws.outputs.jsonOutput }}
   awsImageFilename:
     description: "AWS raw image filename"
     value: ${{ steps.aws.outputs.imageFilename }}
@@ -72,6 +72,9 @@ outputs:
   azureImagePath:
     description: "Azure image path"
     value: ${{ steps.azure.outputs.imagePath }}
+  azureJsonOutput:
+    description: "Azure image json output path"
+    value: ${{ steps.azure.outputs.jsonOutput }}
   azureSecurityType:
     description: "Azure security type"
     value: ${{ steps.azure.outputs.securityType }}
@@ -108,6 +111,9 @@ outputs:
   gcpImagePath:
     description: "GCP image path"
     value: ${{ steps.gcp.outputs.imagePath }}
+  gcpJsonOutput:
+    description: "GCP image json output path"
+    value: ${{ steps.gcp.outputs.jsonOutput }}
   gcpImageName:
     description: "GCP image name"
     value: ${{ steps.gcp.outputs.imageName }}
@@ -117,6 +123,18 @@ outputs:
   gcpImageFamily:
     description: "GCP image family"
     value: ${{ steps.gcp.outputs.imageFamily }}
+  qemuJsonOutput:
+    description: "QEMU image json output path"
+    value: ${{ steps.qemu.outputs.jsonOutput }}
+  qemuBucket:
+    description: "QEMU S3 bucket"
+    value: ${{ steps.qemu.outputs.bucket }}
+  qemuBaseUrl:
+    description: "QEMU raw image base URL"
+    value: ${{ steps.qemu.outputs.baseUrl }}
+  qemuImagePath:
+    description: "QEMU image path"
+    value: ${{ steps.qemu.outputs.imagePath }}
 
 runs:
   using: "composite"
@@ -142,7 +160,7 @@ runs:
         echo "bucket=constellation-images" >> $GITHUB_OUTPUT
         echo "efivarsPath=${basePath}/mkosi.output.aws/fedora~36/efivars.bin" >> $GITHUB_OUTPUT
         echo "imagePath=${basePath}/mkosi.output.aws/fedora~36/image.raw" >> $GITHUB_OUTPUT
-        echo "amiOutput=${basePath}/mkosi.output.aws/fedora~36/ami.json" >> $GITHUB_OUTPUT
+        echo "jsonOutput=${basePath}/mkosi.output.aws/fedora~36/image-upload.json" >> $GITHUB_OUTPUT
         echo "imageFilename=image-$(date +%s).raw" >> $GITHUB_OUTPUT
         if [ "${imageType}" = release ]
         then
@@ -172,6 +190,7 @@ runs:
         semver: ${{ steps.version.outputs.semanticVersion }}
         pseudover: ${{ steps.version.outputs.pseudoVersion }}
         branchName: ${{ steps.version.outputs.branchName }}
+        uploadVariant: ${{ inputs.uploadVariant }}
       run: |
         echo "resourceGroupName=constellation-images" >> $GITHUB_OUTPUT
         echo "region=northeurope" >> $GITHUB_OUTPUT
@@ -181,6 +200,7 @@ runs:
         echo "publisher=edgelesssys" >> $GITHUB_OUTPUT
         echo "rawImagePath=${basePath}/mkosi.output.azure/fedora~36/image.raw" >> $GITHUB_OUTPUT
         echo "imagePath=${basePath}/mkosi.output.azure/fedora~36/image.vhd" >> $GITHUB_OUTPUT
+        echo "jsonOutput=${basePath}/mkosi.output.azure/fedora~36/image-upload${uploadVariant}.json" >> $GITHUB_OUTPUT
         # TODO: set default security type to "ConfidentialVM" once replication is possible
         securityType=${{ inputs.uploadVariant }}
         if [ -z "${securityType}" ]; then
@@ -234,6 +254,7 @@ runs:
         echo "region=europe-west3" >> $GITHUB_OUTPUT
         echo "rawImagePath=${basePath}/mkosi.output.gcp/fedora~36/image.raw" >> $GITHUB_OUTPUT
         echo "imagePath=${basePath}/mkosi.output.gcp/fedora~36/image.tar.gz" >> $GITHUB_OUTPUT
+        echo "jsonOutput=${basePath}/mkosi.output.gcp/fedora~36/image-upload.json" >> $GITHUB_OUTPUT
         if [ "${imageType}" = release ]
         then
           echo "imageName=constellation-${imageVersion//./-}" >> $GITHUB_OUTPUT
@@ -249,3 +270,15 @@ runs:
           echo "imageFilename=constellation-${timestamp}.tar.gz" >> $GITHUB_OUTPUT
           echo "imageFamily=constellation-${branchName}" >> $GITHUB_OUTPUT
         fi
+
+    - name: Configure QEMU input variables
+      id: qemu
+      if: ${{ inputs.csp == 'qemu' }}
+      shell: bash
+      env:
+        basePath: ${{ inputs.basePath }}
+      run: |
+        echo "bucket=cdn-confidential-cloud-backend" >> $GITHUB_OUTPUT
+        echo "baseUrl=https://cdn.confidential.cloud" >> $GITHUB_OUTPUT
+        echo "imagePath=${basePath}/mkosi.output.qemu/fedora~36/image.raw" >> $GITHUB_OUTPUT
+        echo "jsonOutput=${basePath}/mkosi.output.qemu/fedora~36/image-upload.json" >> $GITHUB_OUTPUT
