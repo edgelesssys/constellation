@@ -8,10 +8,9 @@
 set -euo pipefail
 shopt -s inherit_errexit
 
-if (( $# != 1 ))
-then
-    echo "Usage: $0 <image.raw>"
-    exit 1
+if (($# != 1)); then
+  echo "Usage: $0 <image.raw>"
+  exit 1
 fi
 
 # SOURCE is the URL used to download the signed shim RPM

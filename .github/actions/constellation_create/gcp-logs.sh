@@ -3,9 +3,9 @@
 set -euo pipefail
 shopt -s inherit_errexit
 
-controlInstanceGroup=$(terraform show -json | jq -r .'values.root_module.child_modules[] | select(.address == "module.instance_group_control_plane") | .resources[0].values.base_instance_name' )
+controlInstanceGroup=$(terraform show -json | jq -r .'values.root_module.child_modules[] | select(.address == "module.instance_group_control_plane") | .resources[0].values.base_instance_name')
 workerInstanceGroup=$(terraform show -json | jq -r .'values.root_module.child_modules[] | select(.address == "module.instance_group_worker") | .resources[0].values.base_instance_name')
-zone=$(terraform show -json | jq -r .'values.root_module.child_modules[] | select(.address == "module.instance_group_control_plane") | .resources[0].values.zone' )
+zone=$(terraform show -json | jq -r .'values.root_module.child_modules[] | select(.address == "module.instance_group_control_plane") | .resources[0].values.zone')
 
 controlInstanceGroup=${controlInstanceGroup##*/}
 workerInstanceGroupShort=${workerInstanceGroup##*/}

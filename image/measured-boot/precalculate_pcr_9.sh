@@ -12,21 +12,20 @@ shopt -s inherit_errexit
 
 source "$(dirname "$0")/measure_util.sh"
 
-get_initrd_from_uki () {
-    local uki="$1"
-    local output="$2"
-    objcopy -O binary --only-section=.initrd "${uki}" "${output}"
+get_initrd_from_uki() {
+  local uki="$1"
+  local output="$2"
+  objcopy -O binary --only-section=.initrd "${uki}" "${output}"
 }
 
-initrd_measure () {
-    local path="$1"
-    sha256sum "${path}" | cut -d " " -f 1
+initrd_measure() {
+  local path="$1"
+  sha256sum "${path}" | cut -d " " -f 1
 }
 
-
-write_output () {
-    local out="$1"
-    cat > "${out}" <<EOF
+write_output() {
+  local out="$1"
+  cat > "${out}" << EOF
 {
     "pcr9": "${expected_pcr_9}",
     "initrd": "${initrd_hash}"

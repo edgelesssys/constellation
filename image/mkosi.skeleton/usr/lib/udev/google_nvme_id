@@ -59,7 +59,7 @@ function get_namespace_device_name() {
     return 1
   fi
 
-  if [[ -z "${nvme_json}" ]]; then
+  if [[ -z ${nvme_json} ]]; then
     err "NVMe Vendor Extension disk information not present"
     return 1
   fi
@@ -68,7 +68,7 @@ function get_namespace_device_name() {
   device_name="$(echo "${nvme_json}" | grep device_name | sed -e 's/.*"device_name":[  \t]*"\([a-zA-Z0-9_-]\+\)".*/\1/')"
 
   # Error if our device name is empty
-  if [[ -z "${device_name}" ]]; then
+  if [[ -z ${device_name} ]]; then
     err "Empty name"
     return 1
   fi
@@ -91,7 +91,7 @@ function get_namespace_device_name() {
 function get_namespace_number() {
   local dev_path="$1"
   local namespace_number
-  if [[ "${dev_path}" =~ ${NAMESPACE_NUMBER_REGEX} ]]; then
+  if [[ ${dev_path} =~ ${NAMESPACE_NUMBER_REGEX} ]]; then
     namespace_number="${BASH_REMATCH[1]}"
   else
     return 1
@@ -114,7 +114,7 @@ function get_namespace_number() {
 function get_partition_number() {
   local dev_path="$1"
   local partition_number
-  if [[ "${dev_path}" =~ ${PARTITION_NUMBER_REGEX} ]]; then
+  if [[ ${dev_path} =~ ${PARTITION_NUMBER_REGEX} ]]; then
     partition_number="${BASH_REMATCH[1]}"
     echo "${partition_number}"
   else
@@ -136,7 +136,7 @@ function gen_symlink() {
   local partition_number
   partition_number="$(get_partition_number "${dev_path}")"
 
-  if [[ -n "${partition_number}" ]]; then
+  if [[ -n ${partition_number} ]]; then
     ln -s "${dev_path}" /dev/disk/by-id/google-"${ID_SERIAL_SHORT}"-part"${partition_number}" > /dev/null 2>&1
   else
     ln -s "${dev_path}" /dev/disk/by-id/google-"${ID_SERIAL_SHORT}" > /dev/null 2>&1
@@ -182,19 +182,21 @@ function main() {
 
   while getopts :d:sh flag; do
     case "${flag}" in
-      d) device_path="${OPTARG}";;
-      s) opt_gen_symlink='true';;
-      h) print_help_message
-         return 0
-         ;;
-      :) echo "Invalid option: ${OPTARG} requires an argument" 1>&2
-         return 1
-         ;;
-      *) return 1
+    d) device_path="${OPTARG}" ;;
+    s) opt_gen_symlink='true' ;;
+    h)
+      print_help_message
+      return 0
+      ;;
+    :)
+      echo "Invalid option: ${OPTARG} requires an argument" 1>&2
+      return 1
+      ;;
+    *) return 1 ;;
     esac
   done
 
-  if [[ -z "${device_path}" ]]; then
+  if [[ -z ${device_path} ]]; then
     echo "Device path (-d) argument required. Use -h for full usage." 1>&2
     exit 1
   fi
@@ -208,7 +210,7 @@ with sudo or install nvme-cli."
   fi
 
   # Ensure the passed device is actually an NVMe device
-  "${nvme_cli_bin}" id-ctrl "${device_path}" &>/dev/null
+  "${nvme_cli_bin}" id-ctrl "${device_path}" &> /dev/null
   if [[ $? -ne 0 ]]; then
     err "Passed device was not an NVMe device.  (You may need to run this \
 script as root/with sudo)."
@@ -218,7 +220,7 @@ script as root/with sudo)."
   # Detect the type of attached nvme device
   local controller_id
   controller_id=$("${nvme_cli_bin}" id-ctrl "${device_path}")
-  if [[ ! "${controller_id}" =~ nvme_card-pd ]] ; then
+  if [[ ! ${controller_id} =~ nvme_card-pd ]]; then
     err "Device is not a PD-NVMe device"
     return 1
   fi
@@ -231,7 +233,7 @@ script as root/with sudo)."
   fi
 
   # Gen symlinks or print out the globals set by the identify command
-  if [[ "${opt_gen_symlink}" == 'true' ]]; then
+  if [[ ${opt_gen_symlink} == 'true' ]]; then
     gen_symlink "${device_path}"
   else
     # These will be consumed by udev
