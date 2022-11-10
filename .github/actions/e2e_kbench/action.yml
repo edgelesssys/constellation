@@ -86,17 +86,21 @@ runs:
         role-to-assume: arn:aws:iam::795746500882:role/GithubActionUpdateBenchmarks
         aws-region: us-east-2
 
+    - name: Set S3 artifact store
+      shell: bash
+      run: echo S3_PATH=s3://${ARTIFACT_BUCKET_CONSTELLATION}/benchmarks >> $GITHUB_ENV
+      env:
+        ARTIFACT_BUCKET_CONSTELLATION: "edgeless-artifact-store/constellation"
+
     - name: Get previous benchmark records from S3
       shell: bash
       run: |
-        S3_PATH=s3://${PUBLIC_BUCKET_NAME}/benchmarks
         mkdir -p benchmarks
         aws s3 cp --recursive ${S3_PATH} benchmarks --no-progress
         mv benchmarks/constellation-${CSP}.json benchmarks/constellation-${CSP}-previous.json
       env:
         KBENCH_RESULTS: ${{ github.workspace }}/k-bench/out/
         CSP: ${{ inputs.cloudProvider }}
-        PUBLIC_BUCKET_NAME: "public-edgeless-constellation"
 
     - name: Parse K-Bench results, create diagrams and post the progression summary
       shell: bash
@@ -126,9 +130,7 @@ runs:
     - name: Update benchmark records in S3
       shell: bash
       run: |
-        S3_PATH=s3://${PUBLIC_BUCKET_NAME}/benchmarks
         aws s3 cp benchmarks/constellation-${CSP}.json ${S3_PATH}/constellation-${CSP}.json
       env:
         CSP: ${{ inputs.cloudProvider }}
-        PUBLIC_BUCKET_NAME: "public-edgeless-constellation"
       # if: github.ref == 'refs/heads/main'
