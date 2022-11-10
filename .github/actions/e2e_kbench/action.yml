@@ -13,6 +13,31 @@ runs:
   using: "composite"
 
   steps:
+    - name: Assume AWS role to retrieve and update benchmarks in S3
+      uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1.7.0
+      with:
+        role-to-assume: arn:aws:iam::795746500882:role/GithubActionUpdateBenchmarks
+        aws-region: us-east-2
+
+    - name: Set S3 artifact store
+      shell: bash
+      run: echo S3_PATH=s3://${ARTIFACT_BUCKET_CONSTELLATION}/benchmarks >> $GITHUB_ENV
+      env:
+        ARTIFACT_BUCKET_CONSTELLATION: "edgeless-artifact-store/constellation"
+
+    - name: Get previous benchmark records from S3
+      shell: bash
+      run: |
+        mkdir -p benchmarks
+        aws s3 cp --recursive ${S3_PATH} benchmarks --no-progress
+        mv benchmarks/constellation-${CSP}.json benchmarks/constellation-${CSP}-previous.json
+      env:
+        KBENCH_RESULTS: ${{ github.workspace }}/k-bench/out/
+        CSP: ${{ inputs.cloudProvider }}
+    - name: Debug
+      shell: bash
+      run: exit 1
+
     - name: Setup python
       uses: actions/setup-python@13ae5bb136fac2878aff31522b9efb785519f984 # tag=v4.3.0
       with:
@@ -79,28 +104,6 @@ runs:
       with:
         path: "k-bench/out/kbench-constellation-${{ inputs.cloudProvider }}"
         name: "k-bench-constellation-${{ inputs.cloudProvider }}"
-
-    - name: Assume AWS role to retrieve and update benchmarks in S3
-      uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1.7.0
-      with:
-        role-to-assume: arn:aws:iam::795746500882:role/GithubActionUpdateBenchmarks
-        aws-region: us-east-2
-
-    - name: Set S3 artifact store
-      shell: bash
-      run: echo S3_PATH=s3://${ARTIFACT_BUCKET_CONSTELLATION}/benchmarks >> $GITHUB_ENV
-      env:
-        ARTIFACT_BUCKET_CONSTELLATION: "edgeless-artifact-store/constellation"
-
-    - name: Get previous benchmark records from S3
-      shell: bash
-      run: |
-        mkdir -p benchmarks
-        aws s3 cp --recursive ${S3_PATH} benchmarks --no-progress
-        mv benchmarks/constellation-${CSP}.json benchmarks/constellation-${CSP}-previous.json
-      env:
-        KBENCH_RESULTS: ${{ github.workspace }}/k-bench/out/
-        CSP: ${{ inputs.cloudProvider }}
 
     - name: Parse K-Bench results, create diagrams and post the progression summary
       shell: bash
