@@ -35,7 +35,7 @@ You should discuss larger changes and feature requests with the maintainers. Ple
 
 [Run CI e2e tests](/.github/docs/README.md)
 
-# Code conventions
+# Go code conventions
 
 ## General
 
@@ -101,3 +101,8 @@ IP addresses:
 * key: symmetric key
 * pubKey: public key
 * privKey: private key
+
+# Shell script code conventions
+
+We use [shellcheck](https://github.com/koalaman/shellcheck) to ensure code quality.
+You might want to install an [IDE extension](https://marketplace.visualstudio.com/items?itemName=timonwong.shellcheck).
