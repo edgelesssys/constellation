@@ -73,7 +73,7 @@ require (
 	github.com/hashicorp/hc-install v0.4.0
 	github.com/hashicorp/terraform-exec v0.17.3
 	github.com/hashicorp/terraform-json v0.14.0
-	github.com/icholy/replace v0.5.0
+	github.com/icholy/replace v0.6.0
 	github.com/manifoldco/promptui v0.9.0
 	github.com/martinjungblut/go-cryptsetup v0.0.0-20220520180014-fd0874fd07a6
 	github.com/mattn/go-isatty v0.0.16
