@@ -4,8 +4,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 set -euo pipefail
+shopt -s inherit_errexit
 
-if [ -z "${CONFIG_FILE-}" ] && [ -f "${CONFIG_FILE-}" ]; then
+if [[ -z "${CONFIG_FILE-}" ]] && [[ -f "${CONFIG_FILE-}" ]]; then
     # shellcheck source=/dev/null
     . "${CONFIG_FILE}"
 fi
@@ -108,8 +109,8 @@ create_ami_from_raw_disk() {
         }
     }' "${AWS_IMAGE_NAME}" "${AWS_BUCKET}" "${AWS_IMAGE_FILENAME}" > "${CONTAINERS_JSON}"
     IMPORT_SNAPSHOT=$(aws ec2 import-snapshot --region "${AWS_REGION}" --disk-container "file://${CONTAINERS_JSON}")
-    echo "$IMPORT_SNAPSHOT"
-    IMPORT_TASK_ID=$(echo "$IMPORT_SNAPSHOT" | jq -r '.ImportTaskId')
+    echo "${IMPORT_SNAPSHOT}"
+    IMPORT_TASK_ID=$(echo "${IMPORT_SNAPSHOT}" | jq -r '.ImportTaskId')
     aws ec2 describe-import-snapshot-tasks --region "${AWS_REGION}" --import-task-ids "${IMPORT_TASK_ID}"
     wait_for_import "${IMPORT_TASK_ID}"
     AWS_SNAPSHOT=$(aws ec2 describe-import-snapshot-tasks --region "${AWS_REGION}" --import-task-ids "${IMPORT_TASK_ID}" | jq -r '.ImportSnapshotTasks[0].SnapshotTaskDetail.SnapshotId')
@@ -125,8 +126,9 @@ create_ami_from_raw_disk() {
         --block-device-mappings "DeviceName=/dev/xvda,Ebs={SnapshotId=${AWS_SNAPSHOT}}" \
         --ena-support \
         --tpm-support v2.0 \
-        --uefi-data "$(cat "${AWS_EFIVARS_PATH}")")
-    IMAGE_ID=$(echo "$REGISTER_OUT" | jq -r '.ImageId')
+        --uefi-data "$(cat "${AWS_EFIVARS_PATH}")" \
+    )
+    IMAGE_ID=$(echo "${REGISTER_OUT}" | jq -r '.ImageId')
     AMI_FOR_REGION=( ["${AWS_REGION}"]="${IMAGE_ID}")
     tag_ami_with_backing_snapshot "${IMAGE_ID}" "${AWS_REGION}"
     make_ami_public "${IMAGE_ID}" "${AWS_REGION}"
@@ -142,7 +144,7 @@ replicate_ami() {
         --source-image-id "${IMAGE_ID}" \
         --region "${target_region}")
     local replicated_image_id
-    replicated_image_id=$(echo "$replicated_image_out" | jq -r '.ImageId')
+    replicated_image_id=$(echo "${replicated_image_out}" | jq -r '.ImageId')
     AMI_FOR_REGION["${target_region}"]=${replicated_image_id}
     echo "Replicated AMI as ${replicated_image_id} in ${target_region}"
 }

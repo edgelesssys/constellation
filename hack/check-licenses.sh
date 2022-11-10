@@ -2,27 +2,28 @@
 
 # Compare licenses of Go dependencies against a whitelist.
 
-set -e -o pipefail
+set -euo pipefail
+shopt -s inherit_errexit
 
 not_allowed() {
-  echo "license not allowed for package: $line"
+  echo "license not allowed for package: ${line}"
   err=1
 }
 
 go mod download
 
 go-licenses csv ./... | {
-while read line; do
+while read -r line; do
 
   pkg=${line%%,*}
   lic=${line##*,}
 
-  case $lic in
+  case ${lic} in
     Apache-2.0|BSD-2-Clause|BSD-3-Clause|ISC|MIT)
       ;;
 
     MPL-2.0)
-      case $pkg in
+      case ${pkg} in
         github.com/talos-systems/talos/pkg/machinery/config/encoder)
           ;;
         github.com/letsencrypt/boulder)
@@ -36,7 +37,7 @@ while read line; do
       ;;
 
     AGPL-3.0)
-      case $pkg in
+      case ${pkg} in
         github.com/edgelesssys/constellation/v2)
           ;;
         *)
@@ -46,7 +47,7 @@ while read line; do
       ;;
 
     Unknown)
-      case $pkg in
+      case ${pkg} in
         *)
           not_allowed
           ;;
@@ -54,11 +55,11 @@ while read line; do
       ;;
 
     *)
-      echo "unknown license: $line"
+      echo "unknown license: ${line}"
       err=1
       ;;
   esac
 
 done
-exit $err
+exit "${err}"
 }

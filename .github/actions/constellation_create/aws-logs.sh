@@ -34,18 +34,18 @@ workerInstances=$(\
 
 echo "Fetching logs from control planes: ${controlInstances}"
 
-for instance in $controlInstances; do
-    printf "Fetching for %s\n" ${instance}
-    aws ec2 get-console-output --region ${1} --instance-id ${instance} | \
+for instance in ${controlInstances}; do
+    printf "Fetching for %s\n" "${instance}"
+    aws ec2 get-console-output --region "${1}" --instance-id "${instance}" | \
         jq -r .'Output' | \
-        tail -n +2 > control-plane-${instance}.log
+        tail -n +2 > control-plane-"${instance}".log
 done
 
 echo "Fetching logs from worker nodes: ${workerInstances}"
 
-for instance in $workerInstances; do
-    printf "Fetching for %s\n" ${instance}
-    aws ec2 get-console-output --region ${1} --instance-id ${instance} | \
+for instance in ${workerInstances}; do
+    printf "Fetching for %s\n" "${instance}"
+    aws ec2 get-console-output --region "${1}" --instance-id "${instance}" | \
         jq -r .'Output' | \
-        tail -n +2 > worker-${instance}.log
+        tail -n +2 > worker-"${instance}".log
 done

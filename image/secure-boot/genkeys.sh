@@ -9,27 +9,30 @@
 # Release images are signed using a different set of keys.
 # Set PKI to an empty folder and PKI_SET to "dev".
 
+set -euo pipefail
+shopt -s inherit_errexit
+
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 TEMPLATES=${SCRIPT_DIR}/templates
 BASE_DIR=$(realpath "${SCRIPT_DIR}/..")
-if [ -z "${PKI}" ]; then
+if [[ -z "${PKI}" ]]; then
     PKI=${BASE_DIR}/pki
 fi
-if [ -z "${PKI_SET}" ]; then
+if [[ -z "${PKI_SET}" ]]; then
     PKI_SET=dev
 fi
 
 gen_pki () {
     # Only use for non-production images.
     # Use real PKI for production images instead.
-    count=$(ls -1 ${PKI}/*.{key,crt,cer,esl,auth} 2>/dev/null | wc -l)
-    if [ $count != 0 ]
+    count=$(find "${PKI}" -maxdepth 1 \( -name '*.key' -o -name '*.crt' -o -name '*.cer' -o -name '*.esl' -o -name '*.auth' \) 2>/dev/null | wc -l)
+    if [[ "${count}" != 0 ]]
     then
-        echo PKI files $(ls -1 $(realpath "--relative-to=$(pwd)" ${PKI})/*.{key,crt,cer,esl,auth}) already exist
+        echo PKI files "$(ls -1 "$(realpath "--relative-to=$(pwd)" "${PKI}")"/*.{key,crt,cer,esl,auth})" already exist
         return
     fi
     mkdir -p "${PKI}"
-    pushd "${PKI}"
+    pushd "${PKI}" || exit 1
 
     uuid=$(systemd-id128 new --uuid)
     for key in PK KEK db; do
@@ -60,7 +63,7 @@ gen_pki () {
     sign-efi-sig-list -c PK.crt -k PK.key KEK KEK.esl KEK.auth
     sign-efi-sig-list -c KEK.crt -k KEK.key db db.esl db.auth
 
-    popd
+    popd || exit 1
 }
 
 # gen_pki generates a PKI for testing purposes only.

@@ -3,6 +3,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only
 
+set -euo pipefail
+shopt -s inherit_errexit
+
 depends() {
     echo systemd
 }
@@ -10,8 +13,8 @@ depends() {
 install_and_enable_unit() {
     unit="$1"; shift
     target="$1"; shift
-    inst_simple "$moddir/$unit" "$systemdsystemunitdir/$unit"
-    mkdir -p "${initdir}${systemdsystemconfdir}/${target}.wants"
+    inst_simple "${moddir:?}/${unit}" "${systemdsystemunitdir:?}/${unit}"
+    mkdir -p "${initdir:?}${systemdsystemconfdir:?}/${target}.wants"
     ln_r "${systemdsystemunitdir}/${unit}" \
         "${systemdsystemconfdir}/${target}.wants/${unit}"
 }
@@ -23,7 +26,7 @@ install() {
         grep \
         sed
 
-    inst_script "$moddir/azure-provisioning.sh" \
+    inst_script "${moddir}/azure-provisioning.sh" \
         "/usr/local/bin/azure-provisioning"
     install_and_enable_unit "azure-provisioning.service" \
         "basic.target"

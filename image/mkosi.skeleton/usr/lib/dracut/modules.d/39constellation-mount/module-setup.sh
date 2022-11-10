@@ -11,8 +11,8 @@ depends() {
 install_and_enable_unit() {
     unit="$1"; shift
     target="$1"; shift
-    inst_simple "$moddir/$unit" "$systemdsystemunitdir/$unit"
-    mkdir -p "${initdir}${systemdsystemconfdir}/${target}.wants"
+    inst_simple "${moddir:?}/${unit}" "${systemdsystemunitdir:?}/${unit}"
+    mkdir -p "${initdir:?}${systemdsystemconfdir:?}/${target}.wants"
     ln_r "${systemdsystemunitdir}/${unit}" \
         "${systemdsystemconfdir}/${target}.wants/${unit}"
 }
@@ -28,7 +28,7 @@ install() {
     inst_script "/usr/sbin/disk-mapper" \
         "/usr/sbin/disk-mapper"
 
-    inst_script "$moddir/prepare-state-disk.sh" \
+    inst_script "${moddir}/prepare-state-disk.sh" \
         "/usr/sbin/prepare-state-disk"
     install_and_enable_unit "prepare-state-disk.service" \
         "basic.target"
@@ -61,7 +61,7 @@ install() {
         "/usr/lib/udev/google_nvme_id"
     inst_rules "64-gce-disk-removal.rules" "65-gce-disk-naming.rules"
 
-    inst_script "$moddir/aws-nvme-disk.sh" \
+    inst_script "${moddir}/aws-nvme-disk.sh" \
         "/usr/sbin/aws-nvme-disk"
     install_and_enable_unit "aws-nvme-disk.service" \
         "basic.target"
@@ -72,5 +72,5 @@ install() {
         /etc/pki/tls/certs/ca-bundle.crt
 
     # backport of https://github.com/dracutdevs/dracut/commit/dcbe23c14d13ca335ad327b7bb985071ca442f12
-    inst_simple "$moddir/sysusers-dracut.conf" "$systemdsystemunitdir/systemd-sysusers.service.d/sysusers-dracut.conf"
+    inst_simple "${moddir}/sysusers-dracut.conf" "${systemdsystemunitdir}/systemd-sysusers.service.d/sysusers-dracut.conf"
 }

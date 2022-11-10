@@ -8,6 +8,8 @@
 # Usage: precalculate_pcr_9.sh <path to image> <path to output file>
 
 set -euo pipefail
+shopt -s inherit_errexit
+
 source "$(dirname "$0")/measure_util.sh"
 
 get_initrd_from_uki () {
@@ -36,8 +38,8 @@ DIR=$(mktempdir)
 trap 'cleanup "${DIR}"' EXIT
 
 extract "$1" "/efi/EFI/Linux" "${DIR}/uki"
-sudo chown -R "$USER:$USER" "${DIR}/uki"
-cp ${DIR}/uki/*.efi "${DIR}/03-uki.efi"
+sudo chown -R "${USER}:${USER}" "${DIR}/uki"
+cp "${DIR}"/uki/*.efi "${DIR}/03-uki.efi"
 get_initrd_from_uki "${DIR}/03-uki.efi" "${DIR}/initrd"
 
 initrd_hash=$(initrd_measure "${DIR}/initrd")
