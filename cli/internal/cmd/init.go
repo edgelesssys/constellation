@@ -117,7 +117,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
 	}
 	helmLoader := helm.New(provider, k8sVersion)
-	helmDeployments, err := helmLoader.Load(provider, flags.conformance, masterSecret.Key, masterSecret.Salt, getEnforcedPCRs(provider, conf), getEnforceIDKeyDigest(provider, conf))
+	helmDeployments, err := helmLoader.Load(conf, flags.conformance, masterSecret.Key, masterSecret.Salt)
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
 	}
@@ -133,8 +133,8 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		CloudServiceAccountUri: serviceAccURI,
 		KubernetesVersion:      conf.KubernetesVersion,
 		HelmDeployments:        helmDeployments,
-		EnforcedPcrs:           getEnforcedPCRs(provider, conf),
-		EnforceIdkeydigest:     getEnforceIDKeyDigest(provider, conf),
+		EnforcedPcrs:           conf.GetEnforcedPCRs(),
+		EnforceIdkeydigest:     conf.EnforcesIDKeyDigest(),
 		ConformanceMode:        flags.conformance,
 	}
 	resp, err := initCall(cmd.Context(), newDialer(validator), idFile.IP, req)
@@ -217,30 +217,6 @@ func writeOutput(idFile clusterid.File, resp *initproto.InitResponse, wr io.Writ
 
 func writeRow(wr io.Writer, col1 string, col2 string) {
 	fmt.Fprint(wr, col1, "\t", col2, "\n")
-}
-
-func getEnforcedPCRs(provider cloudprovider.Provider, config *config.Config) []uint32 {
-	switch provider {
-	case cloudprovider.AWS:
-		return config.Provider.AWS.EnforcedMeasurements
-	case cloudprovider.Azure:
-		return config.Provider.Azure.EnforcedMeasurements
-	case cloudprovider.GCP:
-		return config.Provider.GCP.EnforcedMeasurements
-	case cloudprovider.QEMU:
-		return config.Provider.QEMU.EnforcedMeasurements
-	default:
-		return nil
-	}
-}
-
-func getEnforceIDKeyDigest(provider cloudprovider.Provider, config *config.Config) bool {
-	switch provider {
-	case cloudprovider.Azure:
-		return *config.Provider.Azure.EnforceIDKeyDigest
-	default:
-		return false
-	}
 }
 
 // evalFlagArgs gets the flag values and does preprocessing of these values like

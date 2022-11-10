@@ -182,11 +182,14 @@ type AzureConfig struct {
 	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#disk-type-comparison
 	StateDiskType string `yaml:"stateDiskType" validate:"oneof=Premium_LRS Premium_ZRS Standard_LRS StandardSSD_LRS StandardSSD_ZRS"`
 	// description: |
-	//   Expected confidential VM measurements.
-	Measurements Measurements `yaml:"measurements"`
+	//   Deploy Azure Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage
+	DeployCSIDriver *bool `yaml:"deployCSIDriver" validate:"required"`
 	// description: |
-	//   List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning.
-	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
+	//   Use Confidential VMs. If set to false, Trusted Launch VMs are used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview
+	ConfidentialVM *bool `yaml:"confidentialVM" validate:"required"`
+	// description: |
+	//   Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob.
+	SecureBoot *bool `yaml:"secureBoot" validate:"required"`
 	// description: |
 	//   Expected value for the field 'idkeydigest' in the AMD SEV-SNP attestation report. Only usable with ConfidentialVMs. See 4.6 and 7.3 in: https://www.amd.com/system/files/TechDocs/56860.pdf
 	IDKeyDigest string `yaml:"idKeyDigest" validate:"required_if=EnforceIdKeyDigest true,omitempty,hexadecimal,len=96"`
@@ -194,11 +197,11 @@ type AzureConfig struct {
 	//   Enforce the specified idKeyDigest value during remote attestation.
 	EnforceIDKeyDigest *bool `yaml:"enforceIdKeyDigest" validate:"required"`
 	// description: |
-	//   Use Confidential VMs. If set to false, Trusted Launch VMs are used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview
-	ConfidentialVM *bool `yaml:"confidentialVM" validate:"required"`
+	//   Expected confidential VM measurements.
+	Measurements Measurements `yaml:"measurements"`
 	// description: |
-	//   Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob.
-	SecureBoot *bool `yaml:"secureBoot" validate:"required"`
+	//   List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning.
+	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
 }
 
 // GCPConfig are GCP specific configuration values used by the CLI.
@@ -224,6 +227,9 @@ type GCPConfig struct {
 	// description: |
 	//   Type of a node's state disk. The type influences boot time and I/O performance. See: https://cloud.google.com/compute/docs/disks#disk-types
 	StateDiskType string `yaml:"stateDiskType" validate:"oneof=pd-standard pd-balanced pd-ssd"`
+	// description: |
+	//   Deploy Persistent Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage
+	DeployCSIDriver *bool `yaml:"deployCSIDriver" validate:"required"`
 	// description: |
 	//   Expected confidential VM measurements.
 	Measurements Measurements `yaml:"measurements"`
@@ -295,21 +301,23 @@ func Default() *Config {
 				Image:                DefaultImageAzure,
 				InstanceType:         "Standard_DC4as_v5",
 				StateDiskType:        "Premium_LRS",
-				Measurements:         measurements.DefaultsFor(cloudprovider.Azure),
-				EnforcedMeasurements: []uint32{4, 8, 9, 11, 12, 13, 15},
+				DeployCSIDriver:      func() *bool { b := true; return &b }(),
 				IDKeyDigest:          "57486a447ec0f1958002a22a06b7673b9fd27d11e1c6527498056054c5fa92d23c50f9de44072760fe2b6fb89740b696",
 				EnforceIDKeyDigest:   func() *bool { b := true; return &b }(),
 				ConfidentialVM:       func() *bool { b := true; return &b }(),
 				SecureBoot:           func() *bool { b := false; return &b }(),
+				Measurements:         measurements.DefaultsFor(cloudprovider.Azure),
+				EnforcedMeasurements: []uint32{4, 8, 9, 11, 12, 13, 15},
 			},
 			GCP: &GCPConfig{
 				Project:               "",
 				Region:                "",
 				Zone:                  "",
+				ServiceAccountKeyPath: "",
 				Image:                 DefaultImageGCP,
 				InstanceType:          "n2d-standard-4",
 				StateDiskType:         "pd-ssd",
-				ServiceAccountKeyPath: "",
+				DeployCSIDriver:       func() *bool { b := true; return &b }(),
 				Measurements:          measurements.DefaultsFor(cloudprovider.GCP),
 				EnforcedMeasurements:  []uint32{0, 4, 8, 9, 11, 12, 13, 15},
 			},
@@ -320,9 +328,9 @@ func Default() *Config {
 				MetadataAPIImage:      versions.QEMUMetadataImage,
 				LibvirtURI:            "",
 				LibvirtContainerImage: versions.LibvirtImage,
+				NVRAM:                 "production",
 				Measurements:          measurements.DefaultsFor(cloudprovider.QEMU),
 				EnforcedMeasurements:  []uint32{4, 8, 9, 11, 12, 13, 15},
-				NVRAM:                 "production",
 			},
 		},
 		KubernetesVersion: string(versions.Default),
@@ -480,6 +488,29 @@ func (c *Config) GetProvider() cloudprovider.Provider {
 // EnforcesIDKeyDigest checks whether ID Key Digest should be enforced for respective cloud provider.
 func (c *Config) EnforcesIDKeyDigest() bool {
 	return c.Provider.Azure != nil && c.Provider.Azure.EnforceIDKeyDigest != nil && *c.Provider.Azure.EnforceIDKeyDigest
+}
+
+// GetEnforcedPCRs returns the list of enforced PCRs for the configured cloud provider.
+func (c *Config) GetEnforcedPCRs() []uint32 {
+	provider := c.GetProvider()
+	switch provider {
+	case cloudprovider.AWS:
+		return c.Provider.AWS.EnforcedMeasurements
+	case cloudprovider.Azure:
+		return c.Provider.Azure.EnforcedMeasurements
+	case cloudprovider.GCP:
+		return c.Provider.GCP.EnforcedMeasurements
+	case cloudprovider.QEMU:
+		return c.Provider.QEMU.EnforcedMeasurements
+	default:
+		return nil
+	}
+}
+
+// DeployCSIDriver returns whether the CSI driver should be deployed for a given cloud provider.
+func (c *Config) DeployCSIDriver() bool {
+	return c.Provider.Azure != nil && c.Provider.Azure.DeployCSIDriver != nil && *c.Provider.Azure.DeployCSIDriver ||
+		c.Provider.GCP != nil && c.Provider.GCP.DeployCSIDriver != nil && *c.Provider.GCP.DeployCSIDriver
 }
 
 // Validate checks the config values and returns validation errors.

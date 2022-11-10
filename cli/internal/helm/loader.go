@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
@@ -66,13 +67,18 @@ func New(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *Chart
 }
 
 // Load the embedded helm charts.
-func (i *ChartLoader) Load(csp cloudprovider.Provider, conformanceMode bool, masterSecret []byte, salt []byte, enforcedPCRs []uint32, enforceIDKeyDigest bool) ([]byte, error) {
+func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSecret, salt []byte) ([]byte, error) {
+	csp := config.GetProvider()
+
 	ciliumRelease, err := i.loadCilium(csp, conformanceMode)
 	if err != nil {
 		return nil, fmt.Errorf("loading cilium: %w", err)
 	}
 
-	conServicesRelease, err := i.loadConstellationServices(csp, masterSecret, salt, enforcedPCRs, enforceIDKeyDigest)
+	conServicesRelease, err := i.loadConstellationServices(
+		csp, masterSecret, salt, config.DeployCSIDriver(),
+		config.GetEnforcedPCRs(), config.EnforcesIDKeyDigest(),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("loading constellation-services: %w", err)
 	}
@@ -122,10 +128,11 @@ func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode boo
 	return helm.Release{Chart: chartRaw, Values: ciliumVals, ReleaseName: "cilium", Wait: true}, nil
 }
 
-// loadConstellationServices loads the constellation-services chart from the embed.FS, marshals it into a helm-package .tgz and sets the values that can be set in the CLI.
-func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
-	masterSecret []byte, salt []byte, enforcedPCRs []uint32,
-	enforceIDKeyDigest bool,
+// loadConstellationServices loads the constellation-services chart from the embed.FS,
+// marshals it into a helm-package .tgz and sets the values that can be set in the CLI.
+func (i *ChartLoader) loadConstellationServices(
+	csp cloudprovider.Provider, masterSecret, salt []byte,
+	deployCSIDriver bool, enforcedPCRs []uint32, enforceIDKeyDigest bool,
 ) (helm.Release, error) {
 	chart, err := loadChartsDir(helmFS, "charts/edgeless/constellation-services")
 	if err != nil {
@@ -196,6 +203,10 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 				"image": i.cnmImage,
 			}
 
+			vals["csi-azuredisk"] = map[string]any{
+				"deploy": deployCSIDriver,
+			}
+
 			vals["tags"] = map[string]any{
 				"Azure": true,
 			}
@@ -208,6 +219,10 @@ func (i *ChartLoader) loadConstellationServices(csp cloudprovider.Provider,
 			}
 			ccmVals["GCP"] = map[string]any{
 				"image": i.ccmImage,
+			}
+
+			vals["csi-gcp-pd"] = map[string]any{
+				"deploy": deployCSIDriver,
 			}
 
 			vals["tags"] = map[string]any{
