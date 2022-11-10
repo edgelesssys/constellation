@@ -58,7 +58,7 @@ env:
 jobs:
   build-bootstrapper-linux:
     name: "Build bootstrapper (debug image)"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: ${{ github.event.inputs.isDebugImage == 'true' }}
     steps:
       - name: Setup Go environment

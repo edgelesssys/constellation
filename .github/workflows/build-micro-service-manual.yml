@@ -24,7 +24,7 @@ on:
 
 jobs:
   build-micro-service:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     permissions:
       contents: read
       packages: write
