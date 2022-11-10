@@ -96,7 +96,7 @@ You may want to start with one of the following sections.
 Refer to [`CONTRIBUTING.md`](CONTRIBUTING.md) on how to contribute. The most important points:
 * Pull requests are welcome! You need to agree to our [Contributor License Agreement][cla-assistant].
 * Please follow the [Code of Conduct](/CODE_OF_CONDUCT.md).
-* ⚠️ To report a security issue, please write to security@edgeless.systems.
+* ⚠️ Please report any security issue via a [private GitHub vulnerability report](https://github.com/edgelesssys/constellation/security/advisories/new) or write to security@edgeless.systems.
 
 ## License
 
