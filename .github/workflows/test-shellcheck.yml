@@ -7,9 +7,11 @@ on:
       - "release/**"
     paths:
       - "**.sh"
+      - "**.bash"
   pull_request:
     paths:
       - "**.sh"
+      - "**.bash"
 
 jobs:
   shellcheck:
