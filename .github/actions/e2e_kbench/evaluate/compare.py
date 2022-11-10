@@ -60,16 +60,30 @@ def main() -> None:
     Print the result to stdout.
     """
     path_prev, path_curr = get_paths()
+    try:
+        with open(path_prev) as f_prev:
+            bench_prev = json.load(f_prev)
+        with open(path_curr) as f_curr:
+            bench_curr = json.load(f_curr)
+    except OSError as e:
+        raise ValueError("Failed reading benchmark file: {e}".format(e=e))
 
-    with open(path_prev) as f_prev:
-        bench_prev = json.load(f_prev)
-    with open(path_curr) as f_curr:
-        bench_curr = json.load(f_curr)
-
-    name = bench_curr['subject']
-    if name != bench_prev['subject']:
+    try:
+        name = bench_curr['subject']
+    except KeyError:
         raise ValueError(
-            "Cloud providers of previous and current benchmark data don't match.")
+            'Current benchmark record file does not contain subject.')
+    try:
+        prev_name = bench_prev['subject']
+    except KeyError:
+        raise ValueError(
+            'Previous benchmark record file does not contain subject.')
+    if name != prev_name:
+        raise ValueError(
+            'Cloud providers of previous and current benchmark data do not match.')
+
+    if 'kbench' not in bench_prev.keys() or 'kbench' not in bench_curr.keys():
+        raise ValueError('Benchmarks do not both contain K-Bench records.')
 
     md_lines = [
         '# {name}'.format(name=name),
@@ -84,6 +98,9 @@ def main() -> None:
     ]
 
     for subtest, _ in bench_prev['kbench'].items():
+        if subtest not in bench_curr['kbench']:
+            raise ValueError(
+                'Benchmark record from previous benchmark not in current.')
         val_prev = bench_prev['kbench'][subtest]
         val_curr = bench_curr['kbench'][subtest]
 

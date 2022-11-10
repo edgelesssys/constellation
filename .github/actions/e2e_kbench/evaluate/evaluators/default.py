@@ -28,7 +28,7 @@ service_latencies = {
 }
 
 
-def eval(tests: Dict[str, str]) -> Dict[str, Dict[str, int]]:
+def evaluate(tests: Dict[str, str]) -> Dict[str, Dict[str, int]]:
     """Read the results of the default tests.
 
     Return a result dictionary.
@@ -67,5 +67,6 @@ def get_line_containing_needle(lines, needle):
     """Find matching line from list of lines."""
     matches = list(filter(lambda l: needle in l, lines))
     if len(matches) > 1:
-        raise Exception(f"'{needle}' matched multiple times..")
+        raise Exception(
+            "'{needle}' matched multiple times..".format(needle=needle))
     return matches[0]

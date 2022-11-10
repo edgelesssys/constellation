@@ -23,7 +23,7 @@ subtests = {
 }
 
 
-def eval(tests: Dict[str, str]) -> Dict[str, Dict[str, float]]:
+def evaluate(tests: Dict[str, str]) -> Dict[str, Dict[str, float]]:
     """Read the results of the network tests.
     Return a result dictionary.
     """
@@ -36,7 +36,8 @@ def eval(tests: Dict[str, str]) -> Dict[str, Dict[str, float]]:
                 log_path = next(Path(base_path).rglob('iperfclient.out'))
             except StopIteration:
                 raise Exception(
-                    f"Error: No iperfclient.out found for network test {subtest} in {base_path}"
+                    "Error: No iperfclient.out found for network test {subtest} in {base_path}".format(
+                        subtest=subtest, base_path=base_path)
                 )
 
             with open(log_path) as f:

@@ -44,7 +44,7 @@ def main() -> None:
 
     if not ext_provider_name:
         # Constellation benchmark.
-        ext_provider_name = f"constellation-{csp}"
+        ext_provider_name = "constellation-{csp}".format(csp=csp)
 
     # Expect the results in directory:
     # kbench-EXT_PROVIDER_NAME/
@@ -56,17 +56,17 @@ def main() -> None:
     out_file_name = "{nm}.json".format(nm=ext_provider_name)
 
     if not os.path.exists(benchmark_path):
-        raise Exception(
-            f'Path to benchmarks {benchmark_path} does not exist.')
+        raise ValueError(
+            'Benchmarks do not exist at {benchmark_path}.'.format(path=benchmark_path))
 
     # Parse subtest
-    default_results = default.eval(tests=tests)
-    network_results = network.eval(tests=tests)
-    fio_results = fio.eval(tests=tests)
+    default_results = default.evaluate(tests=tests)
+    network_results = network.evaluate(tests=tests)
+    fio_results = fio.evaluate(tests=tests)
 
     combined_results = defaultdict(dict)
     combined_results["commit"] = commit_hash
-    combined_results["subject"] = next(iter(tests))
+    combined_results["subject"] = ext_provider_name
 
     for test in tests:
         combined_results["kbench"].update(default_results[test])

@@ -60,8 +60,8 @@ fio_key2header = {
 
 net_suffix = 'Mbit/s'
 net_key2header = {
-    'net_internode_snd':            f'iperf internode \n send ({net_suffix})',
-    'net_intranode_snd':            f'iperf intranode \n send ({net_suffix})',
+    'net_internode_snd':            'iperf internode \n send ({net_suffix})'.format(net_suffix=net_suffix),
+    'net_intranode_snd':            'iperf intranode \n send ({net_suffix})'.format(net_suffix=net_suffix),
 }
 
 
@@ -129,7 +129,7 @@ def bar_chart(data, headers, title='', suffix='', val_label=True, y_log=False):
 
     plt.setp(ax.get_xticklabels(), fontsize=LABEL_FONTSIZE,
              rotation=LABEL_ROTATE_BY)
-    plt.title(f'{title} ({suffix})')
+    plt.title('{title}({suffix})'.format(title=title, suffix=suffix))
     plt.tight_layout()
     return fig
 
@@ -143,8 +143,12 @@ def main():
         # Read the previous results
         read_path = os.path.join(
             out_dir, "{subject}.json".format(subject=test))
-        with open(read_path, 'r') as res_file:
-            combined_results[test].update(json.load(res_file))
+        try:
+            with open(read_path, 'r') as res_file:
+                combined_results[test].update(json.load(res_file))
+        except OSError as e:
+            raise ValueError(
+                "Failed reading {subject} benchmark records: {e}".format(subject=test, e=e))
 
     # Combine the evaluation of the Kubernetes API benchmarks
     for i, api in enumerate([pod_key2header, svc_key2header, depl_key2header]):
@@ -153,11 +157,11 @@ def main():
             points = combined_results[s]["kbench"]
             subject_data = [points[h] for h in api]
             api_data[s] = subject_data
-        hdrs = api.values()
+        hdrs = list(api.values())
         bar_chart(data=api_data, headers=hdrs,
                   title="API Latency", suffix=api_suffix, y_log=True)
 
-        save_name = os.path.join(out_dir, f'api_{i}_perf.png')
+        save_name = os.path.join(out_dir, 'api_{i}_perf.png'.format(i=i))
         plt.savefig(save_name, bbox_inches="tight")
 
     # Network chart
@@ -166,7 +170,7 @@ def main():
         points = combined_results[s]["kbench"]
         subject_data = [points[h] for h in net_key2header]
         net_data[s] = subject_data
-    hdrs = net_key2header.values()
+    hdrs = list(net_key2header.values())
     bar_chart(data=net_data, headers=hdrs,
               title="Network Throughput", suffix=net_suffix, y_log=True)
     save_name = os.path.join(out_dir, 'net_perf.png')
@@ -178,7 +182,7 @@ def main():
         points = combined_results[s]["kbench"]
         subject_data = [points[h] for h in fio_key2header]
         fio_data[s] = subject_data
-    hdrs = fio_key2header.values()
+    hdrs = list(fio_key2header.values())
     bar_chart(data=fio_data, headers=hdrs,
               title="Storage Throughput", suffix=fio_suffix, y_log=True)
     save_name = os.path.join(out_dir, 'storage_perf.png')
