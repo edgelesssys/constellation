@@ -21,7 +21,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/retry"
 	"github.com/spf13/afero"
-	"golang.org/x/text/transform"
 	"k8s.io/utils/clock"
 )
 
@@ -53,10 +52,9 @@ func newOSInstaller() *osInstaller {
 // Install downloads a resource from a URL, applies any given text transformations and extracts the resulting file if required.
 // The resulting file(s) are copied to all destinations.
 func (i *osInstaller) Install(
-	ctx context.Context, sourceURL string, destinations []string, perm fs.FileMode,
-	extract bool, transforms ...transform.Transformer,
+	ctx context.Context, sourceURL string, destinations []string, perm fs.FileMode, extract bool,
 ) error {
-	tempPath, err := i.retryDownloadToTempDir(ctx, sourceURL, transforms...)
+	tempPath, err := i.retryDownloadToTempDir(ctx, sourceURL)
 	if err != nil {
 		return err
 	}
@@ -150,10 +148,9 @@ func (i *osInstaller) extractArchive(archivePath, prefix string, perm fs.FileMod
 	}
 }
 
-func (i *osInstaller) retryDownloadToTempDir(ctx context.Context, url string, transforms ...transform.Transformer) (fileName string, someError error) {
+func (i *osInstaller) retryDownloadToTempDir(ctx context.Context, url string) (fileName string, someError error) {
 	doer := downloadDoer{
 		url:        url,
-		transforms: transforms,
 		downloader: i,
 	}
 
@@ -167,8 +164,8 @@ func (i *osInstaller) retryDownloadToTempDir(ctx context.Context, url string, tr
 	return doer.path, nil
 }
 
-// downloadToTempDir downloads a file to a temporary location, applying transform on-the-fly.
-func (i *osInstaller) downloadToTempDir(ctx context.Context, url string, transforms ...transform.Transformer) (fileName string, retErr error) {
+// downloadToTempDir downloads a file to a temporary location.
+func (i *osInstaller) downloadToTempDir(ctx context.Context, url string) (fileName string, retErr error) {
 	out, err := afero.TempFile(i.fs, "", "")
 	if err != nil {
 		return "", fmt.Errorf("creating destination temp file: %w", err)
@@ -195,9 +192,7 @@ func (i *osInstaller) downloadToTempDir(ctx context.Context, url string, transfo
 	}
 	defer resp.Body.Close()
 
-	transformReader := transform.NewReader(resp.Body, transform.Chain(transforms...))
-
-	if _, err = io.Copy(out, transformReader); err != nil {
+	if _, err = io.Copy(out, resp.Body); err != nil {
 		return "", fmt.Errorf("downloading %q: %w", url, err)
 	}
 	return out.Name(), nil
@@ -233,17 +228,16 @@ func (i *osInstaller) copy(oldname, newname string, perm fs.FileMode) (err error
 
 type downloadDoer struct {
 	url        string
-	transforms []transform.Transformer
 	downloader downloader
 	path       string
 }
 
 type downloader interface {
-	downloadToTempDir(ctx context.Context, url string, transforms ...transform.Transformer) (string, error)
+	downloadToTempDir(ctx context.Context, url string) (string, error)
 }
 
 func (d *downloadDoer) Do(ctx context.Context) error {
-	path, err := d.downloader.downloadToTempDir(ctx, d.url, d.transforms...)
+	path, err := d.downloader.downloadToTempDir(ctx, d.url)
 	d.path = path
 	return err
 }
