@@ -133,4 +133,4 @@ runs:
         aws s3 cp benchmarks/constellation-${CSP}.json ${S3_PATH}/constellation-${CSP}.json
       env:
         CSP: ${{ inputs.cloudProvider }}
-      # if: github.ref == 'refs/heads/main'
+      if: github.ref == 'refs/heads/main'
