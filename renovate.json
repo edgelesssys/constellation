@@ -26,7 +26,7 @@
         "^k8s.io",
         "^sigs.k8s.io"
       ],
-      "groupName": "k8s dependencies"
+      "groupName": "K8s dependencies"
     },
     {
       "matchPackagePatterns": [
@@ -51,7 +51,7 @@
       "matchPackagePatterns": [
         "^cloud.google.com/go"
       ],
-      "groupName": "Google cloud SDK"
+      "groupName": "Google SDK"
     },
     {
       "matchDatasources": [
@@ -69,7 +69,17 @@
       "matchManagers": [
         "github-actions"
       ],
-      "groupName": "github actions dependencies"
+      "groupName": "GitHub action dependencies",
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "pinDigest",
+        "digest",
+        "lockFileMaintenance",
+        "rollback",
+        "bump"
+      ]
     },
     {
       "matchPackageNames": [
