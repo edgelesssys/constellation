@@ -37,7 +37,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.1
 	cloud.google.com/go/kms v1.6.0
 	cloud.google.com/go/logging v1.5.0
-	cloud.google.com/go/storage v1.27.0
+	cloud.google.com/go/storage v1.28.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/azkeys v0.9.0
@@ -52,11 +52,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.17.10
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.19
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.16.1
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.68.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.69.0
 	github.com/aws/aws-sdk-go-v2/service/kms v1.18.15
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.29.1
 	github.com/aws/smithy-go v1.13.4
-	github.com/coreos/go-systemd/v22 v22.4.0
+	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/docker/docker v20.10.21+incompatible
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-playground/locales v0.14.0
@@ -73,7 +73,6 @@ require (
 	github.com/hashicorp/hc-install v0.4.0
 	github.com/hashicorp/terraform-exec v0.17.3
 	github.com/hashicorp/terraform-json v0.14.0
-	github.com/icholy/replace v0.5.0
 	github.com/manifoldco/promptui v0.9.0
 	github.com/martinjungblut/go-cryptsetup v0.0.0-20220520180014-fd0874fd07a6
 	github.com/mattn/go-isatty v0.0.16
@@ -93,7 +92,6 @@ require (
 	golang.org/x/crypto v0.2.0
 	golang.org/x/mod v0.7.0
 	golang.org/x/sys v0.2.0
-	golang.org/x/text v0.4.0
 	google.golang.org/api v0.102.0
 	google.golang.org/genproto v0.0.0-20221107162902-2d387536bcdd
 	google.golang.org/grpc v1.50.1
@@ -119,6 +117,7 @@ require (
 	cloud.google.com/go/longrunning v0.3.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.1 // indirect
+	golang.org/x/text v0.4.0 // indirect
 )
 
 require (

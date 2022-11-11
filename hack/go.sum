@@ -67,8 +67,8 @@ cloud.google.com/go/storage v1.6.0/go.mod h1:N7U0C8pVQ/+NIKOBQyamJIeKQKkZ+mxpohl
 cloud.google.com/go/storage v1.8.0/go.mod h1:Wv1Oy7z6Yz3DshWRJFhqM/UCfaWIRTdp0RXyy7KQOVs=
 cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9ullr3+Kg0=
 cloud.google.com/go/storage v1.14.0/go.mod h1:GrKmX003DSIwi9o29oFT7YDnHYwZoctc3fOKtUw0Xmo=
-cloud.google.com/go/storage v1.27.0 h1:YOO045NZI9RKfCj1c5A/ZtuuENUc8OAW+gHdGnDgyMQ=
-cloud.google.com/go/storage v1.27.0/go.mod h1:x9DOL8TK/ygDUMieqwfhdpQryTeEkhGKMi80i/iqR2s=
+cloud.google.com/go/storage v1.28.0 h1:DLrIZ6xkeZX6K70fU/boWx5INJumt6f+nwwWSHXzzGY=
+cloud.google.com/go/storage v1.28.0/go.mod h1:qlgZML35PXA3zoEnIkiPLY4/TOkUleufRlu6qmcf7sI=
 cloud.google.com/go/trace v0.1.0/go.mod h1:wxEwsoeRVPbeSkt7ZC9nWCgmoKQRAoySN7XHW2AmI7g=
 code.gitea.io/sdk/gitea v0.11.3/go.mod h1:z3uwDV/b9Ls47NGukYM9XhnHtqPh/J+t40lsUrR6JDY=
 contrib.go.opencensus.io/exporter/aws v0.0.0-20181029163544-2befc13012d0/go.mod h1:uu1P0UCM/6RbsMrgPa98ll8ZcHM858i/AD06a9aLRCA=
@@ -204,8 +204,8 @@ github.com/aws/aws-sdk-go-v2/internal/ini v1.3.26 h1:Mza+vlnZr+fPKFKRq/lKGVvM6B/
 github.com/aws/aws-sdk-go-v2/internal/ini v1.3.26/go.mod h1:Y2OJ+P+MC1u1VKnavT+PshiEuGPyh/7DqxoDNij4/bg=
 github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.16 h1:2EXB7dtGwRYIN3XQ9qwIW504DVbKIw3r89xQnonGdsQ=
 github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.16/go.mod h1:XH+3h395e3WVdd6T2Z3mPxuI+x/HVtdqVOREkTiyubs=
-github.com/aws/aws-sdk-go-v2/service/ec2 v1.68.0 h1:YV+y7FyJuT5krPhCMon9GvY9EJYgznY2nhzcicNYR3Q=
-github.com/aws/aws-sdk-go-v2/service/ec2 v1.68.0/go.mod h1:zul71QqzR4D1a90/5FloZiAnZ1CtuIjVH7R9MP997+A=
+github.com/aws/aws-sdk-go-v2/service/ec2 v1.69.0 h1:dBY+EjOC2/UqLMdPX9vZfmau9vjeBIqDsfyricAaxqA=
+github.com/aws/aws-sdk-go-v2/service/ec2 v1.69.0/go.mod h1:zul71QqzR4D1a90/5FloZiAnZ1CtuIjVH7R9MP997+A=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.10 h1:dpiPHgmFstgkLG07KaYAewvuptq5kvo52xn7tVSrtrQ=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.10/go.mod h1:9cBNUHI2aW4ho0A5T87O294iPDuuUOSIEDjnd1Lq/z0=
 github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.20 h1:KSvtm1+fPXE0swe9GPjc6msyrdTT0LB/BP8eLugL1FI=

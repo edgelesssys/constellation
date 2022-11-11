@@ -15,7 +15,7 @@ on:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
@@ -35,4 +35,4 @@ jobs:
         run: hack/check-licenses.sh
 
       - name: Check for files without license header
-        run: "! grep -rL --include='*.go' -e'SPDX-License-Identifier: AGPL-3.0-only' -e'DO NOT EDIT'"
+        run: "! grep -rL --include='*.go' -e'SPDX-License-Identifier: AGPL-3.0-only' -e'DO NOT EDIT' | grep ''"

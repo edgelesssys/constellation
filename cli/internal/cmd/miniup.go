@@ -50,7 +50,7 @@ func newMiniUpCmd() *cobra.Command {
 }
 
 func runUp(cmd *cobra.Command, args []string) error {
-	spinner := newSpinner(cmd.OutOrStdout())
+	spinner := newSpinner(cmd.ErrOrStderr())
 	defer spinner.Stop()
 	creator := cloudcmd.NewCreator(spinner)
 
@@ -58,7 +58,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 }
 
 func up(cmd *cobra.Command, creator cloudCreator, spinner spinnerInterf) error {
-	if err := checkSystemRequirements(cmd.OutOrStdout()); err != nil {
+	if err := checkSystemRequirements(cmd.ErrOrStderr()); err != nil {
 		return fmt.Errorf("system requirements not met: %w", err)
 	}
 
@@ -163,7 +163,7 @@ func prepareConfig(cmd *cobra.Command, fileHandler file.Handler) (*config.Config
 
 	// check for existing config
 	if configPath != "" {
-		config, err := readConfig(cmd.OutOrStdout(), fileHandler, configPath)
+		config, err := readConfig(cmd.ErrOrStderr(), fileHandler, configPath)
 		if err != nil {
 			return nil, err
 		}
@@ -178,7 +178,7 @@ func prepareConfig(cmd *cobra.Command, fileHandler file.Handler) (*config.Config
 	_, err = fileHandler.Stat(constants.ConfigFilename)
 	if err == nil {
 		// config already exists, prompt user to overwrite
-		cmd.Println("A config file already exists in the current workspace.")
+		cmd.PrintErrln("A config file already exists in the current workspace.")
 		ok, err := askToConfirm(cmd, "Do you want to overwrite it?")
 		if err != nil {
 			return nil, err
@@ -194,7 +194,7 @@ func prepareConfig(cmd *cobra.Command, fileHandler file.Handler) (*config.Config
 		cmd.Printf("Using existing image at %s\n\n", imagePath)
 	} else if errors.Is(err, os.ErrNotExist) {
 		cmd.Printf("Downloading image to %s\n", imagePath)
-		if err := installImage(cmd.Context(), cmd.OutOrStdout(), versions.ConstellationQEMUImageURL, imagePath); err != nil {
+		if err := installImage(cmd.Context(), cmd.ErrOrStderr(), versions.ConstellationQEMUImageURL, imagePath); err != nil {
 			return nil, fmt.Errorf("downloading image to %s: %w", imagePath, err)
 		}
 	} else {
@@ -226,10 +226,10 @@ func initializeMiniCluster(cmd *cobra.Command, fileHandler file.Handler, spinner
 	// clean up cluster resources if initialization fails
 	defer func() {
 		if retErr != nil {
-			cmd.Printf("An error occurred: %s\n", retErr)
-			cmd.Println("Attempting to roll back.")
+			cmd.PrintErrf("An error occurred: %s\n", retErr)
+			cmd.PrintErrln("Attempting to roll back.")
 			_ = runDown(cmd, []string{})
-			cmd.Printf("Rollback succeeded.\n\n")
+			cmd.PrintErrf("Rollback succeeded.\n\n")
 		}
 	}()
 	newDialer := func(validator *cloudcmd.Validator) *dialer.Dialer {
@@ -247,7 +247,7 @@ func initializeMiniCluster(cmd *cobra.Command, fileHandler file.Handler, spinner
 }
 
 // installImage downloads the image from sourceURL to the destination.
-func installImage(ctx context.Context, out io.Writer, sourceURL, destination string) error {
+func installImage(ctx context.Context, errWriter io.Writer, sourceURL, destination string) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL, nil)
 	if err != nil {
 		return fmt.Errorf("creating request: %w", err)
@@ -270,7 +270,7 @@ func installImage(ctx context.Context, out io.Writer, sourceURL, destination str
 
 	bar := progressbar.NewOptions64(
 		resp.ContentLength,
-		progressbar.OptionSetWriter(out),
+		progressbar.OptionSetWriter(errWriter),
 		progressbar.OptionShowBytes(true),
 		progressbar.OptionSetPredictTime(true),
 		progressbar.OptionFullWidth(),
@@ -282,7 +282,7 @@ func installImage(ctx context.Context, out io.Writer, sourceURL, destination str
 			BarEnd:        "]",
 		}),
 		progressbar.OptionClearOnFinish(),
-		progressbar.OptionOnCompletion(func() { fmt.Fprintf(out, "Done.\n\n") }),
+		progressbar.OptionOnCompletion(func() { fmt.Fprintf(errWriter, "Done.\n\n") }),
 	)
 	defer bar.Close()
 

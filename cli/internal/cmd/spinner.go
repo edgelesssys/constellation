@@ -51,7 +51,7 @@ func newSpinner(writer io.Writer) *spinner {
 
 	s.spinFunc = spinTTY
 
-	if !(writer == os.Stdout && tty.IsTerminal(os.Stdout.Fd())) {
+	if !(writer == os.Stderr && tty.IsTerminal(os.Stderr.Fd())) {
 		s.spinFunc = spinNoTTY
 	}
 

@@ -62,7 +62,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.1 // indirect
 	cloud.google.com/go/iam v0.7.0 // indirect
 	cloud.google.com/go/kms v1.6.0 // indirect
-	cloud.google.com/go/storage v1.27.0 // indirect
+	cloud.google.com/go/storage v1.28.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.0.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/azkeys v0.9.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets v0.11.0 // indirect
@@ -83,7 +83,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.19 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.26 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.16 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.68.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.69.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.10 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.20 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.19 // indirect

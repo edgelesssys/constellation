@@ -59,7 +59,7 @@ func verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyCli
 		return err
 	}
 
-	config, err := readConfig(cmd.OutOrStdout(), fileHandler, flags.configPath)
+	config, err := readConfig(cmd.ErrOrStderr(), fileHandler, flags.configPath)
 	if err != nil {
 		return fmt.Errorf("reading and validating config: %w", err)
 	}

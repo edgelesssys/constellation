@@ -23,11 +23,9 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/icholy/replace"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/text/transform"
 	"google.golang.org/grpc/test/bufconn"
 	testclock "k8s.io/utils/clock/testing"
 )
@@ -37,7 +35,6 @@ func TestInstall(t *testing.T) {
 		server      httpBufconnServer
 		destination string
 		extract     bool
-		transforms  []transform.Transformer
 		readonly    bool
 		wantErr     bool
 		wantFiles   map[string][]byte
@@ -52,14 +49,6 @@ func TestInstall(t *testing.T) {
 			destination: "/prefix",
 			extract:     true,
 			wantFiles:   map[string][]byte{"/prefix/destination": []byte("file-contents")},
-		},
-		"download with transform works": {
-			server:      newHTTPBufconnServerWithBody([]byte("/usr/bin/kubelet")),
-			destination: "/destination",
-			transforms: []transform.Transformer{
-				replace.String("/usr/bin", "/run/state/bin"),
-			},
-			wantFiles: map[string][]byte{"/destination": []byte("/run/state/bin/kubelet")},
 		},
 		"download fails": {
 			server:      newHTTPBufconnServer(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(500) }),
@@ -92,7 +81,7 @@ func TestInstall(t *testing.T) {
 				retriable: func(err error) bool { return false },
 			}
 
-			err := inst.Install(context.Background(), "http://server/path", []string{tc.destination}, fs.ModePerm, tc.extract, tc.transforms...)
+			err := inst.Install(context.Background(), "http://server/path", []string{tc.destination}, fs.ModePerm, tc.extract)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -309,7 +298,7 @@ func TestRetryDownloadToTempDir(t *testing.T) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				path, downloadErr = inst.retryDownloadToTempDir(ctx, "http://server/path", []transform.Transformer{}...)
+				path, downloadErr = inst.retryDownloadToTempDir(ctx, "http://server/path")
 			}()
 
 			// control the server's responses through stateCh.
@@ -338,22 +327,14 @@ func TestRetryDownloadToTempDir(t *testing.T) {
 
 func TestDownloadToTempDir(t *testing.T) {
 	testCases := map[string]struct {
-		server     httpBufconnServer
-		transforms []transform.Transformer
-		readonly   bool
-		wantErr    bool
-		wantFile   []byte
+		server   httpBufconnServer
+		readonly bool
+		wantErr  bool
+		wantFile []byte
 	}{
 		"download works": {
 			server:   newHTTPBufconnServerWithBody([]byte("file-contents")),
 			wantFile: []byte("file-contents"),
-		},
-		"download with transform works": {
-			server: newHTTPBufconnServerWithBody([]byte("/usr/bin/kubelet")),
-			transforms: []transform.Transformer{
-				replace.String("/usr/bin", "/run/state/bin"),
-			},
-			wantFile: []byte("/run/state/bin/kubelet"),
 		},
 		"download fails": {
 			server:  newHTTPBufconnServer(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(500) }),
@@ -397,7 +378,7 @@ func TestDownloadToTempDir(t *testing.T) {
 				fs:      &afero.Afero{Fs: afs},
 				hClient: &hClient,
 			}
-			path, err := inst.downloadToTempDir(context.Background(), "http://server/path", tc.transforms...)
+			path, err := inst.downloadToTempDir(context.Background(), "http://server/path")
 			if tc.wantErr {
 				assert.Error(err)
 				return
