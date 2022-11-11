@@ -36,4 +36,4 @@ jobs:
       - name: Run shellfmt
         shell: bash
         run: |
-          shfmt -i 2 -d -s -sr $(shfmt -f . | grep -v helm/charts/cilium)
+          shfmt -i 2 -d -s -sr "$(shfmt -f . | grep -v helm/charts/cilium)"
