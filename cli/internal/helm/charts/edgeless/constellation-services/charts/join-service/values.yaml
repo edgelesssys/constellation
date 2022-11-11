@@ -1,5 +1,3 @@
-# Namespace to which to deploy
-namespace: "kube-system"
 csp: "gcp"
 joinServicePort: 9090
 joinServiceNodePort: 30090

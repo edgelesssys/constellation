@@ -1,5 +1,3 @@
-# Namespace to which KMS will be deployed.
-namespace: "kube-system"
 # Name of the key within the respective secret that holds the salt.
 saltKeyName: salt
 # Name of the secret that contains the master secret.

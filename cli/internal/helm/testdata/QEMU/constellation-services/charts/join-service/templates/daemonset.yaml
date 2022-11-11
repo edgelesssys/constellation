@@ -39,7 +39,7 @@ spec:
           image: joinServiceImage
           args:
             - --cloud-provider=QEMU
-            - --kms-endpoint=kms.kube-system:9000
+            - --kms-endpoint=kms.testNamespace:9000
           volumeMounts:
             - mountPath: /var/config
               name: config
