@@ -35,3 +35,11 @@ dependencies:
       - Azure
       - GCP
       - AWS
+  - name: csi-gcp-pd
+    version: 1.0.1
+    tags:
+      - GCP
+  - name: csi-azuredisk
+    version: 1.0.1
+    tags:
+      - Azure

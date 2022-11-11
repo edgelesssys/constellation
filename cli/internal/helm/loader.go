@@ -161,7 +161,6 @@ func (i *ChartLoader) loadConstellationServices(
 			"image":                i.kmsImage,
 			"masterSecret":         base64.StdEncoding.EncodeToString(masterSecret),
 			"salt":                 base64.StdEncoding.EncodeToString(salt),
-			"namespace":            constants.ConstellationNamespace,
 			"saltKeyName":          constants.ConstellationSaltKey,
 			"masterSecretKeyName":  constants.ConstellationMasterSecretKey,
 			"masterSecretName":     constants.ConstellationMasterSecretStoreName,
@@ -171,7 +170,6 @@ func (i *ChartLoader) loadConstellationServices(
 			"csp":          csp,
 			"enforcedPCRs": string(enforcedPCRsJSON),
 			"image":        i.joinServiceImage,
-			"namespace":    constants.ConstellationNamespace,
 		},
 		"ccm": map[string]any{
 			"csp": csp,
@@ -184,57 +182,54 @@ func (i *ChartLoader) loadConstellationServices(
 
 	switch csp {
 	case cloudprovider.Azure:
-		{
-			joinServiceVals, ok := vals["join-service"].(map[string]any)
-			if !ok {
-				return helm.Release{}, errors.New("invalid join-service values")
-			}
-			joinServiceVals["enforceIdKeyDigest"] = enforceIDKeyDigest
-
-			ccmVals, ok := vals["ccm"].(map[string]any)
-			if !ok {
-				return helm.Release{}, errors.New("invalid ccm values")
-			}
-			ccmVals["Azure"] = map[string]any{
-				"image": i.ccmImage,
-			}
-
-			vals["cnm"] = map[string]any{
-				"image": i.cnmImage,
-			}
-
-			vals["csi-azuredisk"] = map[string]any{
-				"deploy": deployCSIDriver,
-			}
-
-			vals["tags"] = map[string]any{
-				"Azure": true,
-			}
+		joinServiceVals, ok := vals["join-service"].(map[string]any)
+		if !ok {
+			return helm.Release{}, errors.New("invalid join-service values")
 		}
+		joinServiceVals["enforceIdKeyDigest"] = enforceIDKeyDigest
+
+		ccmVals, ok := vals["ccm"].(map[string]any)
+		if !ok {
+			return helm.Release{}, errors.New("invalid ccm values")
+		}
+		ccmVals["Azure"] = map[string]any{
+			"image": i.ccmImage,
+		}
+
+		vals["cnm"] = map[string]any{
+			"image": i.cnmImage,
+		}
+
+		vals["csi-azuredisk"] = map[string]any{
+			"deploy": deployCSIDriver,
+		}
+
+		vals["tags"] = map[string]any{
+			"Azure": true,
+		}
+
 	case cloudprovider.GCP:
-		{
-			ccmVals, ok := vals["ccm"].(map[string]any)
-			if !ok {
-				return helm.Release{}, errors.New("invalid ccm values")
-			}
-			ccmVals["GCP"] = map[string]any{
-				"image": i.ccmImage,
-			}
-
-			vals["csi-gcp-pd"] = map[string]any{
-				"deploy": deployCSIDriver,
-			}
-
-			vals["tags"] = map[string]any{
-				"GCP": true,
-			}
+		ccmVals, ok := vals["ccm"].(map[string]any)
+		if !ok {
+			return helm.Release{}, errors.New("invalid ccm values")
 		}
+		ccmVals["GCP"] = map[string]any{
+			"image": i.ccmImage,
+		}
+
+		vals["csi-gcp-pd"] = map[string]any{
+			"deploy": deployCSIDriver,
+		}
+
+		vals["tags"] = map[string]any{
+			"GCP": true,
+		}
+
 	case cloudprovider.QEMU:
-		{
-			vals["tags"] = map[string]interface{}{
-				"QEMU": true,
-			}
+		vals["tags"] = map[string]interface{}{
+			"QEMU": true,
 		}
+
 	case cloudprovider.AWS:
 		ccmVals, ok := vals["ccm"].(map[string]any)
 		if !ok {
@@ -249,7 +244,7 @@ func (i *ChartLoader) loadConstellationServices(
 		}
 	}
 
-	return helm.Release{Chart: chartRaw, Values: vals, ReleaseName: "constellation-services", Wait: true}, nil
+	return helm.Release{Chart: chartRaw, Values: vals, ReleaseName: "constellation-services", Wait: false}, nil
 }
 
 // marshalChart takes a Chart object, packages it to a temporary file and returns the content of that file.
