@@ -174,7 +174,7 @@ we should add comments to those fields who will not update the cluster.
 ```yaml
 kubernetesVersion: 1.24.3
 kubernetesServicesVersion: 1.24.5 # Bundled Kubernetes components (Autoscaler, CloudControllerManager, CloudNodeManager, GCP Guest Agent, Konnectivity)
-microserviceVersion: 2.2.0 # or constellationVersion: (KMS, AccessManager, JoinService, NodeMaintainanceOperator, NodeOperator, OLM, Verification, Cilium)
+microserviceVersion: 2.2.0 # or constellationVersion: (KMS, JoinService, NodeMaintainanceOperator, NodeOperator, OLM, Verification, Cilium)
 provider:
   azure:
     image: /communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.3.0

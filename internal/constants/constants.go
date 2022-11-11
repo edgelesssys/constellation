@@ -52,8 +52,6 @@ const (
 	KubernetesPort = 6443
 	// RecoveryPort port for Constellation recovery server.
 	RecoveryPort = 9999
-	// SSHPort port for SSH access.
-	SSHPort = 22
 	// DebugdPort port for debugd process.
 	DebugdPort = 4000
 	// KonnectivityPort port for konnectivity k8s service.

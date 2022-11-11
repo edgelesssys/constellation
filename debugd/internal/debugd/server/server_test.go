@@ -19,7 +19,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/deploy"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/stretchr/testify/assert"
@@ -33,90 +32,10 @@ func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
 }
 
-// func TestUploadAuthorizedKeys(t *testing.T) {
-// 	endpoint := "192.0.2.1:" + strconv.Itoa(constants.DebugdPort)
-
-// 	testCases := map[string]struct {
-// 		ssh                stubSSHDeployer
-// 		serviceManager     stubServiceManager
-// 		request            *pb.UploadAuthorizedKeysRequest
-// 		wantErr            bool
-// 		wantResponseStatus pb.UploadAuthorizedKeysStatus
-// 		wantKeys           []ssh.UserKey
-// 	}{
-// 		"upload authorized keys works": {
-// 			request: &pb.UploadAuthorizedKeysRequest{
-// 				Keys: []*pb.AuthorizedKey{
-// 					{
-// 						Username: "testuser",
-// 						KeyValue: "teskey",
-// 					},
-// 				},
-// 			},
-// 			wantResponseStatus: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_SUCCESS,
-// 			wantKeys: []ssh.UserKey{
-// 				{
-// 					Username:  "testuser",
-// 					PublicKey: "teskey",
-// 				},
-// 			},
-// 		},
-// 		"deploy fails": {
-// 			request: &pb.UploadAuthorizedKeysRequest{
-// 				Keys: []*pb.AuthorizedKey{
-// 					{
-// 						Username: "testuser",
-// 						KeyValue: "teskey",
-// 					},
-// 				},
-// 			},
-// 			ssh:                stubSSHDeployer{deployErr: errors.New("ssh key deployment error")},
-// 			wantResponseStatus: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_FAILURE,
-// 			wantKeys: []ssh.UserKey{
-// 				{
-// 					Username:  "testuser",
-// 					PublicKey: "teskey",
-// 				},
-// 			},
-// 		},
-// 	}
-
-// 	for name, tc := range testCases {
-// 		t.Run(name, func(t *testing.T) {
-// 			assert := assert.New(t)
-// 			require := require.New(t)
-
-// 			serv := debugdServer{
-// 				log:            logger.NewTest(t),
-// 				ssh:            &tc.ssh,
-// 				serviceManager: &tc.serviceManager,
-// 				streamer:       &fakeStreamer{},
-// 			}
-
-// 			grpcServ, conn, err := setupServerWithConn(endpoint, &serv)
-// 			require.NoError(err)
-// 			defer conn.Close()
-// 			client := pb.NewDebugdClient(conn)
-// 			resp, err := client.UploadAuthorizedKeys(context.Background(), tc.request)
-
-// 			grpcServ.GracefulStop()
-
-// 			if tc.wantErr {
-// 				assert.Error(err)
-// 				return
-// 			}
-// 			require.NoError(err)
-// 			assert.Equal(tc.wantResponseStatus, resp.Status)
-// 			assert.ElementsMatch(tc.ssh.sshKeys, tc.wantKeys)
-// 		})
-// 	}
-// }
-
 func TestUploadBootstrapper(t *testing.T) {
 	endpoint := "192.0.2.1:" + strconv.Itoa(constants.DebugdPort)
 
 	testCases := map[string]struct {
-		ssh                stubSSHDeployer
 		serviceManager     stubServiceManager
 		streamer           fakeStreamer
 		uploadChunks       [][]byte
@@ -164,7 +83,6 @@ func TestUploadBootstrapper(t *testing.T) {
 
 			serv := debugdServer{
 				log:            logger.NewTest(t),
-				ssh:            &tc.ssh,
 				serviceManager: &tc.serviceManager,
 				streamer:       &tc.streamer,
 			}
@@ -201,7 +119,6 @@ func TestDownloadBootstrapper(t *testing.T) {
 	endpoint := "192.0.2.1:" + strconv.Itoa(constants.DebugdPort)
 
 	testCases := map[string]struct {
-		ssh            stubSSHDeployer
 		serviceManager stubServiceManager
 		request        *pb.DownloadBootstrapperRequest
 		streamer       fakeStreamer
@@ -236,7 +153,6 @@ func TestDownloadBootstrapper(t *testing.T) {
 
 			serv := debugdServer{
 				log:            logger.NewTest(t),
-				ssh:            &tc.ssh,
 				serviceManager: &tc.serviceManager,
 				streamer:       &tc.streamer,
 			}
@@ -261,44 +177,10 @@ func TestDownloadBootstrapper(t *testing.T) {
 	}
 }
 
-func TestDownloadAuthorizedKeys(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	endpoint := "192.0.2.1:" + strconv.Itoa(constants.DebugdPort)
-	deployer := &stubSSHDeployer{
-		sshKeys: []ssh.UserKey{
-			{Username: "test1", PublicKey: "foo"},
-			{Username: "test2", PublicKey: "bar"},
-		},
-	}
-
-	serv := debugdServer{
-		log: logger.NewTest(t),
-		ssh: deployer,
-	}
-
-	grpcServ, conn, err := setupServerWithConn(endpoint, &serv)
-	require.NoError(err)
-	defer conn.Close()
-	defer grpcServ.GracefulStop()
-	client := pb.NewDebugdClient(conn)
-
-	resp, err := client.DownloadAuthorizedKeys(context.Background(), &pb.DownloadAuthorizedKeysRequest{})
-
-	assert.NoError(err)
-	wantKeys := []*pb.AuthorizedKey{
-		{Username: "test1", KeyValue: "foo"},
-		{Username: "test2", KeyValue: "bar"},
-	}
-	assert.ElementsMatch(wantKeys, resp.Keys)
-}
-
 func TestUploadSystemServiceUnits(t *testing.T) {
 	endpoint := "192.0.2.1:" + strconv.Itoa(constants.DebugdPort)
 
 	testCases := map[string]struct {
-		ssh                stubSSHDeployer
 		serviceManager     stubServiceManager
 		request            *pb.UploadSystemdServiceUnitsRequest
 		wantErr            bool
@@ -351,7 +233,6 @@ func TestUploadSystemServiceUnits(t *testing.T) {
 
 			serv := debugdServer{
 				log:            logger.NewTest(t),
-				ssh:            &tc.ssh,
 				serviceManager: &tc.serviceManager,
 				streamer:       &fakeStreamer{},
 			}
@@ -373,22 +254,6 @@ func TestUploadSystemServiceUnits(t *testing.T) {
 			assert.ElementsMatch(tc.wantUnitFiles, tc.serviceManager.unitFiles)
 		})
 	}
-}
-
-type stubSSHDeployer struct {
-	sshKeys []ssh.UserKey
-
-	deployErr error
-}
-
-func (s *stubSSHDeployer) DeployAuthorizedKey(ctx context.Context, sshKey ssh.UserKey) error {
-	s.sshKeys = append(s.sshKeys, sshKey)
-
-	return s.deployErr
-}
-
-func (s *stubSSHDeployer) GetAuthorizedKeys() []ssh.UserKey {
-	return s.sshKeys
 }
 
 type stubServiceManager struct {

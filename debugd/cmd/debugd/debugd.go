@@ -25,8 +25,6 @@ import (
 	platform "github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	gcpcloud "github.com/edgelesssys/constellation/v2/internal/cloud/gcp"
 	qemucloud "github.com/edgelesssys/constellation/v2/internal/cloud/qemu"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/ssh"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/user"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
@@ -47,7 +45,6 @@ func main() {
 	fs := afero.NewOsFs()
 	streamer := bootstrapper.NewFileStreamer(fs)
 	serviceManager := deploy.NewServiceManager(log.Named("serviceManager"))
-	ssh := ssh.NewAccess(log, user.NewLinuxUserManager(fs))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -89,9 +86,8 @@ func main() {
 		log.Errorf("Unknown / unimplemented cloud provider CONSTEL_CSP=%v. Using fallback", csp)
 		fetcher = fallback.Fetcher{}
 	}
-
-	sched := metadata.NewScheduler(log.Named("scheduler"), fetcher, ssh, download)
-	serv := server.New(log.Named("server"), ssh, serviceManager, streamer)
+	sched := metadata.NewScheduler(log.Named("scheduler"), fetcher, download)
+	serv := server.New(log.Named("server"), serviceManager, streamer)
 	if err := deploy.DefaultServiceUnit(ctx, serviceManager); err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to create default service unit")
 	}

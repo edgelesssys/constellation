@@ -236,7 +236,7 @@ func TestInitCluster(t *testing.T) {
 
 			_, err := kube.InitCluster(
 				context.Background(), serviceAccountURI, string(tc.k8sVersion),
-				nil, nil, false, nil, true, nil, []byte("{}"), false, logger.NewTest(t),
+				nil, nil, false, nil, true, []byte("{}"), false, logger.NewTest(t),
 			)
 
 			if tc.wantErr {
@@ -419,7 +419,6 @@ type stubClusterUtil struct {
 	initClusterErr              error
 	setupAutoscalingError       error
 	setupKonnectivityError      error
-	setupAccessManagerError     error
 	setupVerificationServiceErr error
 	setupGCPGuestAgentErr       error
 	setupOLMErr                 error
@@ -451,10 +450,6 @@ func (s *stubClusterUtil) SetupAutoscaling(kubectl k8sapi.Client, clusterAutosca
 
 func (s *stubClusterUtil) SetupGCPGuestAgent(kubectl k8sapi.Client, gcpGuestAgentConfiguration kubernetes.Marshaler) error {
 	return s.setupGCPGuestAgentErr
-}
-
-func (s *stubClusterUtil) SetupAccessManager(kubectl k8sapi.Client, accessManagerConfiguration kubernetes.Marshaler) error {
-	return s.setupAccessManagerError
 }
 
 func (s *stubClusterUtil) SetupVerificationService(kubectl k8sapi.Client, verificationServiceConfiguration kubernetes.Marshaler) error {

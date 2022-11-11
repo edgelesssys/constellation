@@ -86,7 +86,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, cloudServiceAccountURI, versionString string, measurementSalt []byte, enforcedPCRs []uint32,
-	enforceIDKeyDigest bool, idKeyDigest []byte, azureCVM bool, sshUsers map[string]string,
+	enforceIDKeyDigest bool, idKeyDigest []byte, azureCVM bool,
 	helmReleasesRaw []byte, conformanceMode bool, log *logger.Logger,
 ) ([]byte, error) {
 	k8sVersion, err := versions.NewValidK8sVersion(versionString)
@@ -204,12 +204,6 @@ func (k *KubeWrapper) InitCluster(
 	if err := k.setupInternalConfigMap(ctx, strconv.FormatBool(azureCVM)); err != nil {
 		return nil, fmt.Errorf("failed to setup internal ConfigMap: %w", err)
 	}
-
-	// TODO: remove access manager or re-enable with support for readonly /etc
-	// accessManager := resources.NewAccessManagerDeployment(sshUsers)
-	// if err := k.clusterUtil.SetupAccessManager(k.client, accessManager); err != nil {
-	// 	return nil, fmt.Errorf("failed to setup access-manager: %w", err)
-	// }
 
 	if err := k.clusterUtil.SetupVerificationService(
 		k.client, resources.NewVerificationDaemonSet(k.cloudProvider, controlPlaneEndpoint),

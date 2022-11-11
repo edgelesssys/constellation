@@ -55,7 +55,7 @@ type Config struct {
 	//   Supported cloud providers and their specific configurations.
 	Provider ProviderConfig `yaml:"provider" validate:"dive"`
 	// description: |
-	//   Create SSH users on Constellation nodes.
+	//   Deprecated: Does nothing! To get node SSH access, see: https://constellation-docs.edgeless.systems/constellation/workflows/troubleshooting#connect-to-nodes-via-ssh
 	// examples:
 	//   - value: '[]UserKey{ { Username:  "Alice", PublicKey: "ssh-rsa AAAAB3NzaC...5QXHKW1rufgtJeSeJ8= alice@domain.com" } }'
 	SSHUsers []UserKey `yaml:"sshUsers,omitempty" validate:"dive"`
@@ -77,12 +77,20 @@ type UpgradeConfig struct {
 }
 
 // UserKey describes a user that should be created with corresponding public SSH key.
+//
+// Deprecated: UserKey was used as configuration for access-manager, which was removed
+// in v2.2, but config needs to retain these values for backwards compatibility and
+// config validation.
 type UserKey struct {
 	// description: |
 	//   Username of new SSH user.
+	//
+	//   Deprecated: See UserKey.
 	Username string `yaml:"username" validate:"required"`
 	// description: |
 	//   Public key of new SSH user.
+	//
+	//   Deprecated: See UserKey.
 	PublicKey string `yaml:"publicKey" validate:"required"`
 }
 

@@ -45,3 +45,31 @@ Constellation uses the default bucket to store logs. Its [default retention peri
 
 </tabItem>
 </tabs>
+
+## Connect to nodes via SSH
+
+Debugging via a shell on a node is [directly supported by Kubernetes](https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/#node-shell-session).
+
+1. Figure out which node to connect to:
+
+    ```sh
+    kubectl get nodes
+    # or to see more information, such as IPs:
+    kubectl get nodes -o wide
+    ```
+
+2. Connect to the node:
+
+    ```sh
+    kubectl debug node/constell-worker-xksa0-000000 -it --image=busybox
+    ```
+
+    You will be presented with a prompt.
+
+    The nodes file system is mounted at `/host`.
+
+3. Once finished, cleanup the debug pod:
+
+    ```sh
+    kubectl delete pod node-debugger-constell-worker-xksa0-000000-bjthj
+    ```

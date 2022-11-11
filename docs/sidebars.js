@@ -155,11 +155,6 @@ const sidebars = {
         },
         {
           type: 'doc',
-          label: 'Manage SSH keys',
-          id: 'workflows/ssh',
-        },
-        {
-          type: 'doc',
           label: 'Use persistent storage',
           id: 'workflows/storage',
         },

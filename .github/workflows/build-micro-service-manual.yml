@@ -7,12 +7,11 @@ on:
         description: "Name of the micro-service image to build"
         type: choice
         options:
-          - "access-manager"
           - "join-service"
           - "kmsserver"
           - "verification-service"
         required: true
-        default: "access-manager"
+        default: "join-service"
       imageTag:
         description: "Container image tag"
         required: true
@@ -43,8 +42,6 @@ jobs:
         id: set-variable
         run: |
           case "${{ inputs.microService }}" in
-            "access-manager" )
-              echo "microServiceDockerfile=access_manager/Dockerfile" >> $GITHUB_ENV ;;
             "join-service" )
               echo "microServiceDockerfile=joinservice/Dockerfile" >> $GITHUB_ENV ;;
             "kmsserver" )

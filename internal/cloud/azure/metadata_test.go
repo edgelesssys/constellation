@@ -28,7 +28,6 @@ func TestList(t *testing.T) {
 			ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 			Role:       role.Worker,
 			VPCIP:      "192.0.2.0",
-			SSHKeys:    map[string][]string{"user": {"key-data"}},
 		},
 	}
 	testCases := map[string]struct {
@@ -92,7 +91,6 @@ func TestSelf(t *testing.T) {
 		ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 		Role:       role.Worker,
 		VPCIP:      "192.0.2.0",
-		SSHKeys:    map[string][]string{"user": {"key-data"}},
 	}
 	testCases := map[string]struct {
 		imdsAPI                      imdsAPI
@@ -561,70 +559,6 @@ func TestExtractInstanceTags(t *testing.T) {
 	}
 }
 
-func TestExtractSSHKeys(t *testing.T) {
-	testCases := map[string]struct {
-		in       armcomputev2.SSHConfiguration
-		wantKeys map[string][]string
-	}{
-		"ssh key is extracted": {
-			in: armcomputev2.SSHConfiguration{
-				PublicKeys: []*armcomputev2.SSHPublicKey{
-					{
-						KeyData: to.Ptr("key-data"),
-						Path:    to.Ptr("/home/user/.ssh/authorized_keys"),
-					},
-				},
-			},
-			wantKeys: map[string][]string{"user": {"key-data"}},
-		},
-		"invalid path is skipped": {
-			in: armcomputev2.SSHConfiguration{
-				PublicKeys: []*armcomputev2.SSHPublicKey{
-					{
-						KeyData: to.Ptr("key-data"),
-						Path:    to.Ptr("invalid-path"),
-					},
-				},
-			},
-			wantKeys: map[string][]string{},
-		},
-		"key data is nil": {
-			in: armcomputev2.SSHConfiguration{
-				PublicKeys: []*armcomputev2.SSHPublicKey{
-					{
-						Path: to.Ptr("/home/user/.ssh/authorized_keys"),
-					},
-				},
-			},
-			wantKeys: map[string][]string{},
-		},
-		"path is nil": {
-			in: armcomputev2.SSHConfiguration{
-				PublicKeys: []*armcomputev2.SSHPublicKey{
-					{
-						KeyData: to.Ptr("key-data"),
-					},
-				},
-			},
-			wantKeys: map[string][]string{},
-		},
-		"public keys are nil": {
-			in:       armcomputev2.SSHConfiguration{},
-			wantKeys: map[string][]string{},
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			keys := extractSSHKeys(tc.in)
-
-			assert.Equal(tc.wantKeys, keys)
-		})
-	}
-}
-
 func newNetworkInterfacesStub() *stubNetworkInterfacesAPI {
 	return &stubNetworkInterfacesAPI{
 		getInterface: armnetwork.Interface{
@@ -673,16 +607,6 @@ func newVirtualMachineScaleSetsVMsStub() *stubVirtualMachineScaleSetVMsAPI {
 				},
 				OSProfile: &armcomputev2.OSProfile{
 					ComputerName: to.Ptr("scale-set-name-instance-id"),
-					LinuxConfiguration: &armcomputev2.LinuxConfiguration{
-						SSH: &armcomputev2.SSHConfiguration{
-							PublicKeys: []*armcomputev2.SSHPublicKey{
-								{
-									KeyData: to.Ptr("key-data"),
-									Path:    to.Ptr("/home/user/.ssh/authorized_keys"),
-								},
-							},
-						},
-					},
 				},
 			},
 			Tags: map[string]*string{
@@ -706,16 +630,6 @@ func newVirtualMachineScaleSetsVMsStub() *stubVirtualMachineScaleSetVMsAPI {
 						},
 						OSProfile: &armcomputev2.OSProfile{
 							ComputerName: to.Ptr("scale-set-name-instance-id"),
-							LinuxConfiguration: &armcomputev2.LinuxConfiguration{
-								SSH: &armcomputev2.SSHConfiguration{
-									PublicKeys: []*armcomputev2.SSHPublicKey{
-										{
-											KeyData: to.Ptr("key-data"),
-											Path:    to.Ptr("/home/user/.ssh/authorized_keys"),
-										},
-									},
-								},
-							},
 						},
 					},
 					Tags: map[string]*string{

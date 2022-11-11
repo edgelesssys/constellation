@@ -54,8 +54,8 @@ func init() {
 	ConfigDoc.Fields[5].Name = "sshUsers"
 	ConfigDoc.Fields[5].Type = "[]UserKey"
 	ConfigDoc.Fields[5].Note = ""
-	ConfigDoc.Fields[5].Description = "Create SSH users on Constellation nodes."
-	ConfigDoc.Fields[5].Comments[encoder.LineComment] = "Create SSH users on Constellation nodes."
+	ConfigDoc.Fields[5].Description = "Deprecated: Does nothing! To get node SSH access, see: https://constellation-docs.edgeless.systems/constellation/workflows/troubleshooting#connect-to-nodes-via-ssh"
+	ConfigDoc.Fields[5].Comments[encoder.LineComment] = "Deprecated: Does nothing! To get node SSH access, see: https://constellation-docs.edgeless.systems/constellation/workflows/troubleshooting#connect-to-nodes-via-ssh"
 
 	ConfigDoc.Fields[5].AddExample("", []UserKey{{Username: "Alice", PublicKey: "ssh-rsa AAAAB3NzaC...5QXHKW1rufgtJeSeJ8= alice@domain.com"}})
 	ConfigDoc.Fields[6].Name = "upgrade"
@@ -91,7 +91,7 @@ func init() {
 
 	UserKeyDoc.Type = "UserKey"
 	UserKeyDoc.Comments[encoder.LineComment] = "UserKey describes a user that should be created with corresponding public SSH key."
-	UserKeyDoc.Description = "UserKey describes a user that should be created with corresponding public SSH key."
+	UserKeyDoc.Description = "UserKey describes a user that should be created with corresponding public SSH key.\n\nDeprecated: UserKey was used as configuration for access-manager, which was removed\nin v2.2, but config needs to retain these values for backwards compatibility and\nconfig validation.\n"
 
 	UserKeyDoc.AddExample("", []UserKey{{Username: "Alice", PublicKey: "ssh-rsa AAAAB3NzaC...5QXHKW1rufgtJeSeJ8= alice@domain.com"}})
 	UserKeyDoc.AppearsIn = []encoder.Appearance{
@@ -104,12 +104,12 @@ func init() {
 	UserKeyDoc.Fields[0].Name = "username"
 	UserKeyDoc.Fields[0].Type = "string"
 	UserKeyDoc.Fields[0].Note = ""
-	UserKeyDoc.Fields[0].Description = "Username of new SSH user."
+	UserKeyDoc.Fields[0].Description = "Username of new SSH user.\n\nDeprecated: See UserKey."
 	UserKeyDoc.Fields[0].Comments[encoder.LineComment] = "Username of new SSH user."
 	UserKeyDoc.Fields[1].Name = "publicKey"
 	UserKeyDoc.Fields[1].Type = "string"
 	UserKeyDoc.Fields[1].Note = ""
-	UserKeyDoc.Fields[1].Description = "Public key of new SSH user."
+	UserKeyDoc.Fields[1].Description = "Public key of new SSH user.\n\nDeprecated: See UserKey."
 	UserKeyDoc.Fields[1].Comments[encoder.LineComment] = "Public key of new SSH user."
 
 	ProviderConfigDoc.Type = "ProviderConfig"
@@ -347,8 +347,8 @@ func init() {
 	GCPConfigDoc.Fields[8].Comments[encoder.LineComment] = "List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning."
 
 	QEMUConfigDoc.Type = "QEMUConfig"
-	QEMUConfigDoc.Comments[encoder.LineComment] = ""
-	QEMUConfigDoc.Description = ""
+	QEMUConfigDoc.Comments[encoder.LineComment] = "QEMUConfig holds config information for QEMU based Constellation deployments."
+	QEMUConfigDoc.Description = "QEMUConfig holds config information for QEMU based Constellation deployments."
 	QEMUConfigDoc.AppearsIn = []encoder.Appearance{
 		{
 			TypeName:  "ProviderConfig",

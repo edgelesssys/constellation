@@ -20,7 +20,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/stretchr/testify/assert"
@@ -48,12 +47,10 @@ func TestDownloadBootstrapper(t *testing.T) {
 		wantFile           bool
 		wantSystemdAction  bool
 		wantDeployed       bool
-		wantKeys           []ssh.UserKey
 	}{
 		"download works": {
 			server: fakeDownloadServer{
 				chunks: [][]byte{[]byte("test")},
-				keys:   []*pb.AuthorizedKey{{Username: "name", KeyValue: "key"}},
 			},
 			attemptedDownloads: map[string]time.Time{},
 			wantChunks:         [][]byte{[]byte("test")},
@@ -61,7 +58,6 @@ func TestDownloadBootstrapper(t *testing.T) {
 			wantFile:           true,
 			wantSystemdAction:  true,
 			wantDeployed:       true,
-			wantKeys:           []ssh.UserKey{{Username: "name", PublicKey: "key"}},
 		},
 		"second download is not attempted twice": {
 			server:             fakeDownloadServer{chunks: [][]byte{[]byte("test")}},
@@ -70,14 +66,6 @@ func TestDownloadBootstrapper(t *testing.T) {
 		},
 		"download rpc call error is detected": {
 			server:             fakeDownloadServer{downladErr: someErr},
-			attemptedDownloads: map[string]time.Time{},
-			wantDownloadErr:    true,
-		},
-		"download key error": {
-			server: fakeDownloadServer{
-				chunks:                    [][]byte{[]byte("test")},
-				downloadAuthorizedKeysErr: someErr,
-			},
 			attemptedDownloads: map[string]time.Time{},
 			wantDownloadErr:    true,
 		},
@@ -115,7 +103,7 @@ func TestDownloadBootstrapper(t *testing.T) {
 				attemptedDownloads: tc.attemptedDownloads,
 			}
 
-			keys, err := download.DownloadDeployment(context.Background(), ip)
+			err := download.DownloadDeployment(context.Background(), ip)
 
 			if tc.wantDownloadErr {
 				assert.Error(err)
@@ -135,7 +123,6 @@ func TestDownloadBootstrapper(t *testing.T) {
 					tc.serviceManager.requests,
 				)
 			}
-			assert.Equal(tc.wantKeys, keys)
 		})
 	}
 }
@@ -171,10 +158,8 @@ func (f *fakeStreamToFileWriter) WriteStream(filename string, stream bootstrappe
 
 // fakeDownloadServer implements DebugdServer; only fakes DownloadBootstrapper, panics on every other rpc.
 type fakeDownloadServer struct {
-	chunks                    [][]byte
-	downladErr                error
-	keys                      []*pb.AuthorizedKey
-	downloadAuthorizedKeysErr error
+	chunks     [][]byte
+	downladErr error
 
 	pb.UnimplementedDebugdServer
 }
@@ -186,8 +171,4 @@ func (s *fakeDownloadServer) DownloadBootstrapper(request *pb.DownloadBootstrapp
 		}
 	}
 	return s.downladErr
-}
-
-func (s *fakeDownloadServer) DownloadAuthorizedKeys(context.Context, *pb.DownloadAuthorizedKeysRequest) (*pb.DownloadAuthorizedKeysResponse, error) {
-	return &pb.DownloadAuthorizedKeysResponse{Keys: s.keys}, s.downloadAuthorizedKeysErr
 }

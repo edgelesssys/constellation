@@ -23,10 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 )
 
-var (
-	publicIPAddressRegexp = regexp.MustCompile(`/subscriptions/[^/]+/resourceGroups/[^/]+/providers/Microsoft.Network/publicIPAddresses/(?P<IPname>[^/]+)`)
-	keyPathRegexp         = regexp.MustCompile(`^\/home\/([^\/]+)\/\.ssh\/authorized_keys$`)
-)
+var publicIPAddressRegexp = regexp.MustCompile(`/subscriptions/[^/]+/resourceGroups/[^/]+/providers/Microsoft.Network/publicIPAddresses/(?P<IPname>[^/]+)`)
 
 // Metadata implements azure metadata APIs.
 type Metadata struct {
@@ -362,22 +359,6 @@ func extractInstanceTags(tags map[string]*string) map[string]string {
 		metadataMap[key] = *value
 	}
 	return metadataMap
-}
-
-// extractSSHKeys extracts SSH public keys from azure instance OS Profile.
-func extractSSHKeys(sshConfig armcomputev2.SSHConfiguration) map[string][]string {
-	sshKeys := map[string][]string{}
-	for _, key := range sshConfig.PublicKeys {
-		if key == nil || key.Path == nil || key.KeyData == nil {
-			continue
-		}
-		matches := keyPathRegexp.FindStringSubmatch(*key.Path)
-		if len(matches) != 2 {
-			continue
-		}
-		sshKeys[matches[1]] = append(sshKeys[matches[1]], *key.KeyData)
-	}
-	return sshKeys
 }
 
 type cloudConfig struct {

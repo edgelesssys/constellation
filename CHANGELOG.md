@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 <!-- For now removed features. -->
+- `access-manager` was removed from code base. K8s native way to SSH into nodes documented.
+
 
 ## [2.2.0] - 2022-11-08
 

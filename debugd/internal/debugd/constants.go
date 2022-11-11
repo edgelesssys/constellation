@@ -12,7 +12,6 @@ import "time"
 const (
 	DebugdMetadataFlag               = "constellation-debugd"
 	GRPCTimeout                      = 5 * time.Minute
-	SSHCheckInterval                 = 30 * time.Second
 	DiscoverDebugdInterval           = 30 * time.Second
 	BootstrapperDownloadRetryBackoff = 1 * time.Minute
 	BootstrapperDeployFilename       = "/run/state/bin/bootstrapper"

@@ -21,7 +21,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/deploy"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -30,46 +29,18 @@ import (
 
 type debugdServer struct {
 	log            *logger.Logger
-	ssh            sshDeployer
 	serviceManager serviceManager
 	streamer       streamer
 	pb.UnimplementedDebugdServer
 }
 
 // New creates a new debugdServer according to the gRPC spec.
-func New(log *logger.Logger, ssh sshDeployer, serviceManager serviceManager, streamer streamer) pb.DebugdServer {
+func New(log *logger.Logger, serviceManager serviceManager, streamer streamer) pb.DebugdServer {
 	return &debugdServer{
 		log:            log,
-		ssh:            ssh,
 		serviceManager: serviceManager,
 		streamer:       streamer,
 	}
-}
-
-// TODO (stateless-ssh): re-enable once ssh keys can be deployed on readonly rootfs.
-// UploadAuthorizedKeys receives a list of authorized keys and forwards them to a channel.
-//
-//	func (s *debugdServer) UploadAuthorizedKeys(ctx context.Context, in *pb.UploadAuthorizedKeysRequest) (*pb.UploadAuthorizedKeysResponse, error) {
-//		s.log.Infof("Uploading authorized keys")
-//		for _, key := range in.Keys {
-//			if err := s.ssh.DeployAuthorizedKey(ctx, ssh.UserKey{Username: key.Username, PublicKey: key.KeyValue}); err != nil {
-//				s.log.With(zap.Error(err)).Errorf("Uploading authorized keys failed")
-//				return &pb.UploadAuthorizedKeysResponse{
-//					Status: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_FAILURE,
-//				}, nil
-//			}
-//		}
-//		return &pb.UploadAuthorizedKeysResponse{
-//			Status: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_SUCCESS,
-//		}, nil
-//	}
-//
-// UploadAuthorizedKeys receives a list of authorized keys and forwards them to a channel.
-func (s *debugdServer) UploadAuthorizedKeys(ctx context.Context, in *pb.UploadAuthorizedKeysRequest) (*pb.UploadAuthorizedKeysResponse, error) {
-	s.log.Infof("Uploading authorized keys (Disabled feature)")
-	return &pb.UploadAuthorizedKeysResponse{
-		Status: pb.UploadAuthorizedKeysStatus_UPLOAD_AUTHORIZED_KEYS_SUCCESS,
-	}, nil
 }
 
 // UploadBootstrapper receives a bootstrapper binary in a stream of chunks and writes to a file.
@@ -114,21 +85,6 @@ func (s *debugdServer) DownloadBootstrapper(request *pb.DownloadBootstrapperRequ
 	return s.streamer.ReadStream(debugd.BootstrapperDeployFilename, stream, debugd.Chunksize, true)
 }
 
-// DownloadAuthorizedKeys streams the local authorized keys to other instances.
-func (s *debugdServer) DownloadAuthorizedKeys(_ context.Context, req *pb.DownloadAuthorizedKeysRequest) (*pb.DownloadAuthorizedKeysResponse, error) {
-	s.log.Infof("Sending authorized keys to other instance")
-
-	var authKeys []*pb.AuthorizedKey
-	for _, key := range s.ssh.GetAuthorizedKeys() {
-		authKeys = append(authKeys, &pb.AuthorizedKey{
-			Username: key.Username,
-			KeyValue: key.PublicKey,
-		})
-	}
-
-	return &pb.DownloadAuthorizedKeysResponse{Keys: authKeys}, nil
-}
-
 // UploadSystemServiceUnits receives systemd service units, writes them to a service file and schedules a daemon-reload.
 func (s *debugdServer) UploadSystemServiceUnits(ctx context.Context, in *pb.UploadSystemdServiceUnitsRequest) (*pb.UploadSystemdServiceUnitsResponse, error) {
 	s.log.Infof("Uploading systemd service units")
@@ -160,11 +116,6 @@ func Start(log *logger.Logger, wg *sync.WaitGroup, serv pb.DebugdServer) {
 	}
 	log.Infof("gRPC server is waiting for connections")
 	grpcServer.Serve(lis)
-}
-
-type sshDeployer interface {
-	DeployAuthorizedKey(ctx context.Context, sshKey ssh.UserKey) error
-	GetAuthorizedKeys() []ssh.UserKey
 }
 
 type serviceManager interface {

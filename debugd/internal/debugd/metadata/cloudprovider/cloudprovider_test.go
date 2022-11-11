@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
-	"github.com/edgelesssys/constellation/v2/internal/deploy/ssh"
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -162,57 +161,6 @@ func TestDiscoverLoadbalancerIP(t *testing.T) {
 				assert.NoError(err)
 				assert.Equal(tc.wantIP, ip)
 			}
-		})
-	}
-}
-
-func TestFetchSSHKeys(t *testing.T) {
-	err := errors.New("some err")
-
-	testCases := map[string]struct {
-		meta     stubMetadata
-		wantKeys []ssh.UserKey
-		wantErr  bool
-	}{
-		"fetch works": {
-			meta: stubMetadata{
-				selfRes: metadata.InstanceMetadata{
-					Name:       "name",
-					ProviderID: "provider-id",
-					SSHKeys:    map[string][]string{"bob": {"ssh-rsa bobskey"}},
-				},
-			},
-			wantKeys: []ssh.UserKey{
-				{
-					Username:  "bob",
-					PublicKey: "ssh-rsa bobskey",
-				},
-			},
-		},
-		"retrieve fails": {
-			meta: stubMetadata{
-				selfErr: err,
-			},
-			wantErr: true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			fetcher := Fetcher{
-				metaAPI: &tc.meta,
-			}
-			keys, err := fetcher.FetchSSHKeys(context.Background())
-
-			if tc.wantErr {
-				assert.Error(err)
-				return
-			}
-			require.NoError(err)
-			assert.ElementsMatch(tc.wantKeys, keys)
 		})
 	}
 }

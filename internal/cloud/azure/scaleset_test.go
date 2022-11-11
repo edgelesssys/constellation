@@ -27,7 +27,6 @@ func TestGetScaleSetVM(t *testing.T) {
 		ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 		Role:       role.Worker,
 		VPCIP:      "192.0.2.0",
-		SSHKeys:    map[string][]string{"user": {"key-data"}},
 	}
 	testCases := map[string]struct {
 		providerID                   string
@@ -87,7 +86,6 @@ func TestListScaleSetVMs(t *testing.T) {
 			ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 			Role:       role.Worker,
 			VPCIP:      "192.0.2.0",
-			SSHKeys:    map[string][]string{"user": {"key-data"}},
 		},
 	}
 	testCases := map[string]struct {
@@ -189,7 +187,6 @@ func TestConvertScaleSetVMToCoreInstance(t *testing.T) {
 				Name:       "scale-set-name-instance-id",
 				ProviderID: "azure:///subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
 				VPCIP:      "192.0.2.0",
-				SSHKeys:    map[string][]string{},
 			},
 		},
 		"invalid instance": {
@@ -290,16 +287,6 @@ func newListContainingNilScaleSetVirtualMachinesStub() *stubVirtualMachineScaleS
 						},
 						OSProfile: &armcomputev2.OSProfile{
 							ComputerName: to.Ptr("scale-set-name-instance-id"),
-							LinuxConfiguration: &armcomputev2.LinuxConfiguration{
-								SSH: &armcomputev2.SSHConfiguration{
-									PublicKeys: []*armcomputev2.SSHPublicKey{
-										{
-											KeyData: to.Ptr("key-data"),
-											Path:    to.Ptr("/home/user/.ssh/authorized_keys"),
-										},
-									},
-								},
-							},
 						},
 					},
 				},

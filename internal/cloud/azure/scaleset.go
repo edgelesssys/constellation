@@ -87,12 +87,6 @@ func convertScaleSetVMToCoreInstance(vm armcomputev2.VirtualMachineScaleSetVM, n
 	if vm.Properties == nil || vm.Properties.OSProfile == nil || vm.Properties.OSProfile.ComputerName == nil {
 		return metadata.InstanceMetadata{}, errors.New("retrieving instance from armcompute API client returned no computer name")
 	}
-	var sshKeys map[string][]string
-	if vm.Properties.OSProfile.LinuxConfiguration == nil || vm.Properties.OSProfile.LinuxConfiguration.SSH == nil {
-		sshKeys = map[string][]string{}
-	} else {
-		sshKeys = extractSSHKeys(*vm.Properties.OSProfile.LinuxConfiguration.SSH)
-	}
 
 	if vm.Tags == nil {
 		return metadata.InstanceMetadata{}, errors.New("retrieving instance from armcompute API client returned no tags")
@@ -103,7 +97,6 @@ func convertScaleSetVMToCoreInstance(vm armcomputev2.VirtualMachineScaleSetVM, n
 		ProviderID: "azure://" + *vm.ID,
 		Role:       extractScaleSetVMRole(vm.Tags),
 		VPCIP:      extractVPCIP(networkInterfaces),
-		SSHKeys:    sshKeys,
 	}, nil
 }
 
