@@ -13,6 +13,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,7 +25,7 @@ func TestUpdateMeasurements(t *testing.T) {
 	someErr := errors.New("error")
 	testCases := map[string]struct {
 		updater         *stubMeasurementsUpdater
-		newMeasurements map[uint32][]byte
+		newMeasurements measurements.Measurements
 		wantUpdate      bool
 		wantErr         bool
 	}{
@@ -36,7 +37,7 @@ func TestUpdateMeasurements(t *testing.T) {
 					},
 				},
 			},
-			newMeasurements: map[uint32][]byte{
+			newMeasurements: measurements.Measurements{
 				0: []byte("1"),
 			},
 			wantUpdate: true,
@@ -49,7 +50,7 @@ func TestUpdateMeasurements(t *testing.T) {
 					},
 				},
 			},
-			newMeasurements: map[uint32][]byte{
+			newMeasurements: measurements.Measurements{
 				0: []byte("1"),
 			},
 		},

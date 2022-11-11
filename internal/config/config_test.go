@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -263,10 +264,10 @@ func TestConfigGeneratedDocsFresh(t *testing.T) {
 
 func TestConfig_UpdateMeasurements(t *testing.T) {
 	assert := assert.New(t)
-	newMeasurements := Measurements{
-		1: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		2: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-		3: []byte{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2},
+	newMeasurements := measurements.Measurements{
+		1: measurements.Zero(),
+		2: measurements.AllBytes(0x01),
+		3: measurements.AllBytes(0x02),
 	}
 
 	{ // AWS

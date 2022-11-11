@@ -11,6 +11,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -57,6 +58,6 @@ type stubUpgrader struct {
 	err error
 }
 
-func (u stubUpgrader) Upgrade(context.Context, string, map[uint32][]byte) error {
+func (u stubUpgrader) Upgrade(context.Context, string, measurements.Measurements) error {
 	return u.err
 }

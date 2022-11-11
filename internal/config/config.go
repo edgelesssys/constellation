@@ -17,6 +17,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -26,6 +27,10 @@ import (
 	"github.com/go-playground/validator/v10"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
 )
+
+// Measurements is a required alias since docgen is not able to work with
+// types in other packaes.
+type Measurements = measurements.Measurements
 
 const (
 	// Version1 is the first version number for Constellation config file.
@@ -73,7 +78,7 @@ type UpgradeConfig struct {
 	Image string `yaml:"image"`
 	// description: |
 	//   Measurements of the updated image.
-	Measurements Measurements `yaml:"measurements"`
+	Measurements measurements.Measurements `yaml:"measurements"`
 }
 
 // UserKey describes a user that should be created with corresponding public SSH key.
@@ -277,7 +282,7 @@ func Default() *Config {
 				StateDiskType:          "gp3",
 				IAMProfileControlPlane: "",
 				IAMProfileWorkerNodes:  "",
-				Measurements:           copyPCRMap(awsPCRs),
+				Measurements:           measurements.DefaultsFor(cloudprovider.AWS),
 				EnforcedMeasurements:   []uint32{4, 8, 9, 11, 12, 13, 15},
 			},
 			Azure: &AzureConfig{
@@ -289,7 +294,7 @@ func Default() *Config {
 				Image:                DefaultImageAzure,
 				InstanceType:         "Standard_DC4as_v5",
 				StateDiskType:        "Premium_LRS",
-				Measurements:         copyPCRMap(azurePCRs),
+				Measurements:         measurements.DefaultsFor(cloudprovider.Azure),
 				EnforcedMeasurements: []uint32{4, 8, 9, 11, 12, 13, 15},
 				IDKeyDigest:          "57486a447ec0f1958002a22a06b7673b9fd27d11e1c6527498056054c5fa92d23c50f9de44072760fe2b6fb89740b696",
 				EnforceIDKeyDigest:   func() *bool { b := true; return &b }(),
@@ -304,7 +309,7 @@ func Default() *Config {
 				InstanceType:          "n2d-standard-4",
 				StateDiskType:         "pd-ssd",
 				ServiceAccountKeyPath: "",
-				Measurements:          copyPCRMap(gcpPCRs),
+				Measurements:          measurements.DefaultsFor(cloudprovider.GCP),
 				EnforcedMeasurements:  []uint32{0, 4, 8, 9, 11, 12, 13, 15},
 			},
 			QEMU: &QEMUConfig{
@@ -314,7 +319,7 @@ func Default() *Config {
 				MetadataAPIImage:      versions.QEMUMetadataImage,
 				LibvirtURI:            "",
 				LibvirtContainerImage: versions.LibvirtImage,
-				Measurements:          copyPCRMap(qemuPCRs),
+				Measurements:          measurements.DefaultsFor(cloudprovider.QEMU),
 				EnforcedMeasurements:  []uint32{4, 8, 9, 11, 12, 13, 15},
 				NVRAM:                 "production",
 			},
@@ -639,12 +644,6 @@ func FromFile(fileHandler file.Handler, name string) (*Config, error) {
 		return nil, fmt.Errorf("could not load config from file %s: %w", name, err)
 	}
 	return &conf, nil
-}
-
-func copyPCRMap(m map[uint32][]byte) map[uint32][]byte {
-	res := make(Measurements)
-	res.CopyFrom(m)
-	return res
 }
 
 func validInstanceTypeForProvider(insType string, acceptNonCVM bool, provider cloudprovider.Provider) bool {

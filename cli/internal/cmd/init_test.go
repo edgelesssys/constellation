@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
 	"github.com/edgelesssys/constellation/v2/internal/config"
@@ -360,11 +361,11 @@ func TestAttestation(t *testing.T) {
 
 	issuer := &testIssuer{
 		Getter: oid.QEMU{},
-		pcrs: map[uint32][]byte{
-			0: []byte("ffffffffffffffffffffffffffffffff"),
-			1: []byte("ffffffffffffffffffffffffffffffff"),
-			2: []byte("ffffffffffffffffffffffffffffffff"),
-			3: []byte("ffffffffffffffffffffffffffffffff"),
+		pcrs: measurements.Measurements{
+			0: measurements.One(),
+			1: measurements.One(),
+			2: measurements.One(),
+			3: measurements.One(),
 		},
 	}
 	serverCreds := atlscredentials.New(issuer, nil)
@@ -389,13 +390,13 @@ func TestAttestation(t *testing.T) {
 	cfg := config.Default()
 	cfg.RemoveProviderExcept(cloudprovider.QEMU)
 	cfg.Provider.QEMU.Image = "some/image/location"
-	cfg.Provider.QEMU.Measurements[0] = []byte("00000000000000000000000000000000")
-	cfg.Provider.QEMU.Measurements[1] = []byte("11111111111111111111111111111111")
-	cfg.Provider.QEMU.Measurements[2] = []byte("22222222222222222222222222222222")
-	cfg.Provider.QEMU.Measurements[3] = []byte("33333333333333333333333333333333")
-	cfg.Provider.QEMU.Measurements[4] = []byte("44444444444444444444444444444444")
-	cfg.Provider.QEMU.Measurements[8] = []byte("88888888888888888888888888888888")
-	cfg.Provider.QEMU.Measurements[9] = []byte("99999999999999999999999999999999")
+	cfg.Provider.QEMU.Measurements[0] = measurements.Zero()
+	cfg.Provider.QEMU.Measurements[1] = measurements.AllBytes(0x11)
+	cfg.Provider.QEMU.Measurements[2] = measurements.AllBytes(0x22)
+	cfg.Provider.QEMU.Measurements[3] = measurements.AllBytes(0x33)
+	cfg.Provider.QEMU.Measurements[4] = measurements.AllBytes(0x44)
+	cfg.Provider.QEMU.Measurements[8] = measurements.AllBytes(0x88)
+	cfg.Provider.QEMU.Measurements[9] = measurements.AllBytes(0x99)
 	require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg, file.OptNone))
 
 	ctx := context.Background()
@@ -411,13 +412,13 @@ func TestAttestation(t *testing.T) {
 
 type testValidator struct {
 	oid.Getter
-	pcrs map[uint32][]byte
+	pcrs measurements.Measurements
 }
 
 func (v *testValidator) Validate(attDoc []byte, nonce []byte) ([]byte, error) {
 	var attestation struct {
 		UserData []byte
-		PCRs     map[uint32][]byte
+		PCRs     measurements.Measurements
 	}
 	if err := json.Unmarshal(attDoc, &attestation); err != nil {
 		return nil, err
@@ -433,14 +434,14 @@ func (v *testValidator) Validate(attDoc []byte, nonce []byte) ([]byte, error) {
 
 type testIssuer struct {
 	oid.Getter
-	pcrs map[uint32][]byte
+	pcrs measurements.Measurements
 }
 
 func (i *testIssuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
 	return json.Marshal(
 		struct {
 			UserData []byte
-			PCRs     map[uint32][]byte
+			PCRs     measurements.Measurements
 		}{
 			UserData: userData,
 			PCRs:     i.pcrs,
@@ -472,23 +473,23 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 		conf.Provider.Azure.ResourceGroup = "test-resource-group"
 		conf.Provider.Azure.AppClientID = "01234567-0123-0123-0123-0123456789ab"
 		conf.Provider.Azure.ClientSecretValue = "test-client-secret"
-		conf.Provider.Azure.Measurements[4] = []byte("44444444444444444444444444444444")
-		conf.Provider.Azure.Measurements[8] = []byte("00000000000000000000000000000000")
-		conf.Provider.Azure.Measurements[9] = []byte("11111111111111111111111111111111")
+		conf.Provider.Azure.Measurements[4] = measurements.AllBytes(0x44)
+		conf.Provider.Azure.Measurements[8] = measurements.Zero()
+		conf.Provider.Azure.Measurements[9] = measurements.AllBytes(0x11)
 	case cloudprovider.GCP:
 		conf.Provider.GCP.Region = "test-region"
 		conf.Provider.GCP.Project = "test-project"
 		conf.Provider.GCP.Image = "some/image/location"
 		conf.Provider.GCP.Zone = "test-zone"
 		conf.Provider.GCP.ServiceAccountKeyPath = "test-key-path"
-		conf.Provider.GCP.Measurements[4] = []byte("44444444444444444444444444444444")
-		conf.Provider.GCP.Measurements[8] = []byte("00000000000000000000000000000000")
-		conf.Provider.GCP.Measurements[9] = []byte("11111111111111111111111111111111")
+		conf.Provider.GCP.Measurements[4] = measurements.AllBytes(0x44)
+		conf.Provider.GCP.Measurements[8] = measurements.Zero()
+		conf.Provider.GCP.Measurements[9] = measurements.AllBytes(0x11)
 	case cloudprovider.QEMU:
 		conf.Provider.QEMU.Image = "some/image/location"
-		conf.Provider.QEMU.Measurements[4] = []byte("44444444444444444444444444444444")
-		conf.Provider.QEMU.Measurements[8] = []byte("00000000000000000000000000000000")
-		conf.Provider.QEMU.Measurements[9] = []byte("11111111111111111111111111111111")
+		conf.Provider.QEMU.Measurements[4] = measurements.AllBytes(0x44)
+		conf.Provider.QEMU.Measurements[8] = measurements.Zero()
+		conf.Provider.QEMU.Measurements[9] = measurements.AllBytes(0x11)
 	}
 
 	conf.RemoveProviderExcept(csp)

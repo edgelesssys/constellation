@@ -12,9 +12,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go-v2/config"
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/google/go-tpm/tpm2"
@@ -28,7 +29,7 @@ type Validator struct {
 }
 
 // NewValidator create a new Validator structure and returns it.
-func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, log vtpm.AttestationLogger) *Validator {
+func NewValidator(pcrs measurements.Measurements, enforcedPCRs []uint32, log vtpm.AttestationLogger) *Validator {
 	v := &Validator{}
 	v.Validator = vtpm.NewValidator(
 		pcrs,
@@ -88,7 +89,7 @@ func (v *Validator) tpmEnabled(attestation vtpm.AttestationDocument) error {
 }
 
 func getEC2Client(ctx context.Context, region string) (awsMetadataAPI, error) {
-	client, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
+	client, err := awsConfig.LoadDefaultConfig(ctx, awsConfig.WithRegion(region))
 	if err != nil {
 		return nil, err
 	}

@@ -8,7 +8,6 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -20,6 +19,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
@@ -68,23 +68,6 @@ func main() {
 	}
 }
 
-// Measurements contains all PCR values.
-type Measurements map[uint32][]byte
-
-var _ yaml.Marshaler = Measurements{}
-
-// MarshalYAML forces that measurements are written as base64. Default would
-// be to print list of bytes.
-func (m Measurements) MarshalYAML() (any, error) {
-	base64Map := make(map[uint32]string)
-
-	for key, value := range m {
-		base64Map[key] = base64.StdEncoding.EncodeToString(value[:])
-	}
-
-	return base64Map, nil
-}
-
 // getAttestation connects to the Constellation verification service and returns its attestation document.
 func getAttestation(ctx context.Context, addr string) ([]byte, error) {
 	conn, err := grpc.DialContext(
@@ -109,7 +92,7 @@ func getAttestation(ctx context.Context, addr string) ([]byte, error) {
 }
 
 // validatePCRAttDoc parses and validates PCRs of an attestation document.
-func validatePCRAttDoc(attDocRaw []byte) (map[uint32][]byte, error) {
+func validatePCRAttDoc(attDocRaw []byte) (measurements.Measurements, error) {
 	attDoc := vtpm.AttestationDocument{}
 	if err := json.Unmarshal(attDocRaw, &attDoc); err != nil {
 		return nil, err
@@ -131,7 +114,7 @@ func validatePCRAttDoc(attDocRaw []byte) (map[uint32][]byte, error) {
 
 // printPCRs formates and prints PCRs to the given writer.
 // format can be one of 'json' or 'yaml'. If it doesnt match defaults to 'json'.
-func printPCRs(w io.Writer, pcrs map[uint32][]byte, format string) error {
+func printPCRs(w io.Writer, pcrs measurements.Measurements, format string) error {
 	switch format {
 	case "json":
 		return printPCRsJSON(w, pcrs)
@@ -142,7 +125,7 @@ func printPCRs(w io.Writer, pcrs map[uint32][]byte, format string) error {
 	}
 }
 
-func printPCRsYAML(w io.Writer, pcrs Measurements) error {
+func printPCRsYAML(w io.Writer, pcrs measurements.Measurements) error {
 	pcrYAML, err := yaml.Marshal(pcrs)
 	if err != nil {
 		return err
@@ -151,7 +134,7 @@ func printPCRsYAML(w io.Writer, pcrs Measurements) error {
 	return nil
 }
 
-func printPCRsJSON(w io.Writer, pcrs map[uint32][]byte) error {
+func printPCRsJSON(w io.Writer, pcrs measurements.Measurements) error {
 	pcrJSON, err := json.MarshalIndent(pcrs, "", "  ")
 	if err != nil {
 		return err
@@ -162,7 +145,7 @@ func printPCRsJSON(w io.Writer, pcrs map[uint32][]byte) error {
 
 // exportToFile writes pcrs to a file, formatted to be valid Go code.
 // Validity of the PCR map is not checked, and should be handled by the caller.
-func exportToFile(path string, pcrs map[uint32][]byte, fs *afero.Afero) error {
+func exportToFile(path string, pcrs measurements.Measurements, fs *afero.Afero) error {
 	goCode := `package pcrs
 
 var pcrs = map[uint32][]byte{%s

@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"go.uber.org/zap"
 )
@@ -20,7 +21,7 @@ import (
 type Server struct {
 	log          *logger.Logger
 	server       http.Server
-	measurements map[uint32][]byte
+	measurements measurements.Measurements
 	done         chan<- struct{}
 }
 
@@ -72,7 +73,7 @@ func (s *Server) logPCRs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// unmarshal the request body into a map of PCRs
-	var pcrs map[uint32][]byte
+	var pcrs measurements.Measurements
 	if err := json.NewDecoder(r.Body).Decode(&pcrs); err != nil {
 		log.With(zap.Error(err)).Errorf("Failed to read request body")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -89,6 +90,6 @@ func (s *Server) logPCRs(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetMeasurements returns the static measurements for QEMU environment.
-func (s *Server) GetMeasurements() map[uint32][]byte {
+func (s *Server) GetMeasurements() measurements.Measurements {
 	return s.measurements
 }

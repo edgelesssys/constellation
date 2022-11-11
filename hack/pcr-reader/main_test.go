@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm-tools/proto/tpm"
@@ -33,12 +34,12 @@ func TestMain(m *testing.M) {
 
 func TestExportToFile(t *testing.T) {
 	testCases := map[string]struct {
-		pcrs    map[uint32][]byte
+		pcrs    measurements.Measurements
 		fs      *afero.Afero
 		wantErr bool
 	}{
 		"file not writeable": {
-			pcrs: map[uint32][]byte{
+			pcrs: measurements.Measurements{
 				0: {0x1, 0x2, 0x3},
 				1: {0x1, 0x2, 0x3},
 				2: {0x1, 0x2, 0x3},
@@ -47,7 +48,7 @@ func TestExportToFile(t *testing.T) {
 			wantErr: true,
 		},
 		"file writeable": {
-			pcrs: map[uint32][]byte{
+			pcrs: measurements.Measurements{
 				0: {0x1, 0x2, 0x3},
 				1: {0x1, 0x2, 0x3},
 				2: {0x1, 0x2, 0x3},
@@ -107,7 +108,7 @@ func TestValidatePCRAttDoc(t *testing.T) {
 						{
 							Pcrs: &tpm.PCRs{
 								Hash: tpm.HashAlgo_SHA256,
-								Pcrs: map[uint32][]byte{
+								Pcrs: measurements.Measurements{
 									0: {0x1, 0x2, 0x3},
 								},
 							},
@@ -124,8 +125,8 @@ func TestValidatePCRAttDoc(t *testing.T) {
 						{
 							Pcrs: &tpm.PCRs{
 								Hash: tpm.HashAlgo_SHA256,
-								Pcrs: map[uint32][]byte{
-									0: []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
+								Pcrs: measurements.Measurements{
+									0: measurements.AllBytes(0xAA),
 								},
 							},
 						},
@@ -165,11 +166,11 @@ func mustMarshalAttDoc(t *testing.T, attDoc vtpm.AttestationDocument) []byte {
 
 func TestPrintPCRs(t *testing.T) {
 	testCases := map[string]struct {
-		pcrs   map[uint32][]byte
+		pcrs   measurements.Measurements
 		format string
 	}{
 		"json": {
-			pcrs: map[uint32][]byte{
+			pcrs: measurements.Measurements{
 				0: {0x1, 0x2, 0x3},
 				1: {0x1, 0x2, 0x3},
 				2: {0x1, 0x2, 0x3},
@@ -177,7 +178,7 @@ func TestPrintPCRs(t *testing.T) {
 			format: "json",
 		},
 		"empty format": {
-			pcrs: map[uint32][]byte{
+			pcrs: measurements.Measurements{
 				0: {0x1, 0x2, 0x3},
 				1: {0x1, 0x2, 0x3},
 				2: {0x1, 0x2, 0x3},
@@ -185,7 +186,7 @@ func TestPrintPCRs(t *testing.T) {
 			format: "",
 		},
 		"yaml": {
-			pcrs: map[uint32][]byte{
+			pcrs: measurements.Measurements{
 				0: {0x1, 0x2, 0x3},
 				1: {0x1, 0x2, 0x3},
 				2: {0x1, 0x2, 0x3},

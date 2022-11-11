@@ -9,6 +9,7 @@ package qemu
 import (
 	"crypto"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/google/go-tpm/tpm2"
@@ -21,7 +22,7 @@ type Validator struct {
 }
 
 // NewValidator initializes a new QEMU validator with the provided PCR values.
-func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, log vtpm.AttestationLogger) *Validator {
+func NewValidator(pcrs measurements.Measurements, enforcedPCRs []uint32, log vtpm.AttestationLogger) *Validator {
 	return &Validator{
 		Validator: vtpm.NewValidator(
 			pcrs,

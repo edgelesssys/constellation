@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/virtwrapper"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
@@ -197,7 +198,7 @@ func (s *Server) exportPCRs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// unmarshal the request body into a map of PCRs
-	var pcrs map[uint32][]byte
+	var pcrs measurements.Measurements
 	if err := json.NewDecoder(r.Body).Decode(&pcrs); err != nil {
 		log.With(zap.Error(err)).Errorf("Failed to read request body")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
