@@ -14,18 +14,19 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
 	"regexp"
-	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
-	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
+	"go.uber.org/multierr"
 )
 
 // Measurements is a required alias since docgen is not able to work with
@@ -169,7 +170,7 @@ type AzureConfig struct {
 	//    Application client ID of the Active Directory app registration.
 	AppClientID string `yaml:"appClientID" validate:"uuid"`
 	// description: |
-	//    Client secret value of the Active Directory app registration credentials.
+	//    Client secret value of the Active Directory app registration credentials. Alternative use CONSTELL_AZURE_CLIENT_SECRET_VALUE environment variable.
 	ClientSecretValue string `yaml:"clientSecretValue" validate:"required"`
 	// description: |
 	//   Machine image used to create Constellation nodes.
@@ -328,198 +329,79 @@ func Default() *Config {
 	}
 }
 
-func validateK8sVersion(fl validator.FieldLevel) bool {
-	return versions.IsSupportedK8sVersion(fl.Field().String())
+// FromFile returns config file with `name` read from `fileHandler` by parsing
+// it as YAML.
+func FromFile(fileHandler file.Handler, name string) (*Config, error) {
+	var conf Config
+	if err := fileHandler.ReadYAMLStrict(name, &conf); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, fmt.Errorf("unable to find %s - use `constellation config generate` to generate it first", name)
+		}
+		return nil, fmt.Errorf("could not load config from file %s: %w", name, err)
+	}
+	return &conf, nil
 }
 
-func validateAWSInstanceType(fl validator.FieldLevel) bool {
-	return validInstanceTypeForProvider(fl.Field().String(), false, cloudprovider.AWS)
-}
+// Options can be used to extend or configure creation of a New Config.
+type Options func(c *Config) error
 
-func validateAzureInstanceType(fl validator.FieldLevel) bool {
-	azureConfig := fl.Parent().Interface().(AzureConfig)
-	var acceptNonCVM bool
-	if azureConfig.ConfidentialVM != nil {
-		// This is the inverse of the config value (acceptNonCVMs is true if confidentialVM is false).
-		// We could make the validator the other way around, but this should be an explicit bypass rather than checking if CVMs are "allowed".
-		acceptNonCVM = !*azureConfig.ConfidentialVM
-	}
-	return validInstanceTypeForProvider(fl.Field().String(), acceptNonCVM, cloudprovider.Azure)
-}
-
-func validateGCPInstanceType(fl validator.FieldLevel) bool {
-	return validInstanceTypeForProvider(fl.Field().String(), false, cloudprovider.GCP)
-}
-
-// validateProvider checks if zero or more than one providers are defined in the config.
-func validateProvider(sl validator.StructLevel) {
-	provider := sl.Current().Interface().(ProviderConfig)
-	providerCount := 0
-
-	if provider.AWS != nil {
-		providerCount++
-	}
-	if provider.Azure != nil {
-		providerCount++
-	}
-	if provider.GCP != nil {
-		providerCount++
-	}
-	if provider.QEMU != nil {
-		providerCount++
-	}
-
-	if providerCount < 1 {
-		sl.ReportError(provider, "Provider", "Provider", "no_provider", "")
-	} else if providerCount > 1 {
-		sl.ReportError(provider, "Provider", "Provider", "more_than_one_provider", "")
+// WithDefaultOptions reads the config file via provided fileHandler from
+// file with provided name. It overwrites config with secrets from environment
+// variables known to WithSecretsFromEnv and validates the config afterwards.
+func WithDefaultOptions(fileHandler file.Handler, name string) []Options {
+	return []Options{
+		WithFromFile(fileHandler, name),
+		WithSecretsFromEnv(),
+		WithValidate(),
 	}
 }
 
-// Validate checks the config values and returns validation error messages.
-// The function only returns an error if the validation itself fails.
-func (c *Config) Validate() ([]string, error) {
-	trans := ut.New(en.New()).GetFallback()
-	validate := validator.New()
-	if err := en_translations.RegisterDefaultTranslations(validate, trans); err != nil {
-		return nil, err
+// WithFromFile reads in a configuration file from the fileHandler with the given
+// name.
+func WithFromFile(fileHandler file.Handler, name string) Options {
+	return func(c *Config) error {
+		readConfig, err := FromFile(fileHandler, name)
+		if err != nil {
+			return err
+		}
+		*c = *readConfig
+		return nil
 	}
-
-	// Register AWS, Azure & GCP InstanceType validation error types
-	if err := validate.RegisterTranslation("aws_instance_type", trans, registerTranslateAWSInstanceTypeError, translateAWSInstanceTypeError); err != nil {
-		return nil, err
-	}
-
-	if err := validate.RegisterTranslation("azure_instance_type", trans, registerTranslateAzureInstanceTypeError, c.translateAzureInstanceTypeError); err != nil {
-		return nil, err
-	}
-
-	if err := validate.RegisterTranslation("gcp_instance_type", trans, registerTranslateGCPInstanceTypeError, translateGCPInstanceTypeError); err != nil {
-		return nil, err
-	}
-
-	// Register Provider validation error types
-	if err := validate.RegisterTranslation("no_provider", trans, registerNoProviderError, translateNoProviderError); err != nil {
-		return nil, err
-	}
-
-	if err := validate.RegisterTranslation("more_than_one_provider", trans, registerMoreThanOneProviderError, c.translateMoreThanOneProviderError); err != nil {
-		return nil, err
-	}
-
-	// register custom validator with label supported_k8s_version to validate version based on available versionConfigs.
-	if err := validate.RegisterValidation("supported_k8s_version", validateK8sVersion); err != nil {
-		return nil, err
-	}
-
-	// register custom validator with label aws_instance_type to validate the AWS instance type from config input.
-	if err := validate.RegisterValidation("aws_instance_type", validateAWSInstanceType); err != nil {
-		return nil, err
-	}
-
-	// register custom validator with label azure_instance_type to validate the Azure instance type from config input.
-	if err := validate.RegisterValidation("azure_instance_type", validateAzureInstanceType); err != nil {
-		return nil, err
-	}
-
-	// register custom validator with label gcp_instance_type to validate the GCP instance type from config input.
-	if err := validate.RegisterValidation("gcp_instance_type", validateGCPInstanceType); err != nil {
-		return nil, err
-	}
-
-	// Register provider validation
-	validate.RegisterStructValidation(validateProvider, ProviderConfig{})
-
-	err := validate.Struct(c)
-	if err == nil {
-		return nil, nil
-	}
-
-	var errs validator.ValidationErrors
-	if !errors.As(err, &errs) {
-		return nil, err
-	}
-
-	var msgs []string
-	for _, e := range errs {
-		msgs = append(msgs, e.Translate(trans))
-	}
-	return msgs, nil
 }
 
-// Validation translation functions for Azure & GCP instance type errors.
-func registerTranslateAzureInstanceTypeError(ut ut.Translator) error {
-	return ut.Add("azure_instance_type", "{0} must be one of {1}", true)
-}
-
-func (c *Config) translateAzureInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
-	// Suggest trusted launch VMs if confidential VMs have been specifically disabled
-	var t string
-	if c.Provider.Azure != nil && c.Provider.Azure.ConfidentialVM != nil && !*c.Provider.Azure.ConfidentialVM {
-		t, _ = ut.T("azure_instance_type", fe.Field(), fmt.Sprintf("%v", instancetypes.AzureTrustedLaunchInstanceTypes))
-	} else {
-		t, _ = ut.T("azure_instance_type", fe.Field(), fmt.Sprintf("%v", instancetypes.AzureCVMInstanceTypes))
+// WithSecretsFromEnv reads in any environment variables recognized by config
+// to contain config secrets.
+func WithSecretsFromEnv() Options {
+	return func(c *Config) error {
+		clientSecretValue, ok := os.LookupEnv(constants.EnvVarAzureClientSecretValue)
+		if ok && len(clientSecretValue) > 0 && c.Provider.Azure != nil {
+			c.Provider.Azure.ClientSecretValue = clientSecretValue
+		}
+		return nil
 	}
-
-	return t
 }
 
-func registerTranslateAWSInstanceTypeError(ut ut.Translator) error {
-	return ut.Add("aws_instance_type", fmt.Sprintf("{0} must be an instance from one of the following families types with size xlarge or higher: %v", instancetypes.AWSSupportedInstanceFamilies), true)
-}
-
-func translateAWSInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
-	t, _ := ut.T("aws_instance_type", fe.Field())
-
-	return t
-}
-
-func registerTranslateGCPInstanceTypeError(ut ut.Translator) error {
-	return ut.Add("gcp_instance_type", fmt.Sprintf("{0} must be one of %v", instancetypes.GCPInstanceTypes), true)
-}
-
-func translateGCPInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
-	t, _ := ut.T("gcp_instance_type", fe.Field())
-
-	return t
-}
-
-// Validation translation functions for Provider errors.
-func registerNoProviderError(ut ut.Translator) error {
-	return ut.Add("no_provider", "{0}: No provider has been defined (requires either Azure, GCP or QEMU)", true)
-}
-
-func translateNoProviderError(ut ut.Translator, fe validator.FieldError) string {
-	t, _ := ut.T("no_provider", fe.Field())
-
-	return t
-}
-
-func registerMoreThanOneProviderError(ut ut.Translator) error {
-	return ut.Add("more_than_one_provider", "{0}: Only one provider can be defined ({1} are defined)", true)
-}
-
-func (c *Config) translateMoreThanOneProviderError(ut ut.Translator, fe validator.FieldError) string {
-	definedProviders := make([]string, 0)
-
-	// c.Provider should not be nil as Provider would need to be defined for the validation to fail in this place.
-	if c.Provider.AWS != nil {
-		definedProviders = append(definedProviders, "AWS")
+// WithValidate validates the configuration file and returns any validation errors.
+func WithValidate() Options {
+	return func(c *Config) error {
+		return c.Validate()
 	}
-	if c.Provider.Azure != nil {
-		definedProviders = append(definedProviders, "Azure")
-	}
-	if c.Provider.GCP != nil {
-		definedProviders = append(definedProviders, "GCP")
-	}
-	if c.Provider.QEMU != nil {
-		definedProviders = append(definedProviders, "QEMU")
-	}
+}
 
-	// Show single string if only one other provider is defined, show list with brackets if multiple are defined.
-	t, _ := ut.T("more_than_one_provider", fe.Field(), strings.Join(definedProviders, ", "))
-
-	return t
+// New creates a new configuration with optional Options.
+// New without any options is equivalent to &Config{}.
+// Use WithDefaultOptions as a sane default.
+// Options are applied in the order passed, e.g., make sure to use validate at the
+// correct point (or points), and keep in mind that options may overwrite values
+// from previous options.
+func New(opts ...Options) (*Config, error) {
+	c := &Config{}
+	for _, opt := range opts {
+		if err := opt(c); err != nil {
+			return nil, err
+		}
+	}
+	return c, nil
 }
 
 // HasProvider checks whether the config contains the provider.
@@ -589,6 +471,19 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 	}
 }
 
+// IsAzureNonCVM checks whether the chosen provider is azure and confidential VMs are disabled.
+func (c *Config) IsAzureNonCVM() bool {
+	return c.Provider.Azure != nil && c.Provider.Azure.ConfidentialVM != nil && !*c.Provider.Azure.ConfidentialVM
+}
+
+// IsDebugCluster checks whether the cluster is configured as a debug cluster.
+func (c *Config) IsDebugCluster() bool {
+	if c.DebugCluster != nil && *c.DebugCluster {
+		return true
+	}
+	return false
+}
+
 // IsDebugImage checks whether image name looks like a release image, if not it is
 // probably a debug image. In the end we do not if bootstrapper or debugd
 // was put inside an image just by looking at its name.
@@ -623,104 +518,81 @@ func (c *Config) GetProvider() cloudprovider.Provider {
 	return cloudprovider.Unknown
 }
 
-// IsAzureNonCVM checks whether the chosen provider is azure and confidential VMs are disabled.
-func (c *Config) IsAzureNonCVM() bool {
-	return c.Provider.Azure != nil && c.Provider.Azure.ConfidentialVM != nil && !*c.Provider.Azure.ConfidentialVM
-}
-
 // EnforcesIDKeyDigest checks whether ID Key Digest should be enforced for respective cloud provider.
 func (c *Config) EnforcesIDKeyDigest() bool {
 	return c.Provider.Azure != nil && c.Provider.Azure.EnforceIDKeyDigest != nil && *c.Provider.Azure.EnforceIDKeyDigest
 }
 
-// FromFile returns config file with `name` read from `fileHandler` by parsing
-// it as YAML.
-func FromFile(fileHandler file.Handler, name string) (*Config, error) {
-	var conf Config
-	if err := fileHandler.ReadYAMLStrict(name, &conf); err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return nil, fmt.Errorf("unable to find %s - use `constellation config generate` to generate it first", name)
-		}
-		return nil, fmt.Errorf("could not load config from file %s: %w", name, err)
-	}
-	return &conf, nil
-}
-
-func validInstanceTypeForProvider(insType string, acceptNonCVM bool, provider cloudprovider.Provider) bool {
-	switch provider {
-	case cloudprovider.AWS:
-		return checkIfAWSInstanceTypeIsValid(insType)
-	case cloudprovider.Azure:
-		if acceptNonCVM {
-			for _, instanceType := range instancetypes.AzureTrustedLaunchInstanceTypes {
-				if insType == instanceType {
-					return true
-				}
-			}
-		} else {
-			for _, instanceType := range instancetypes.AzureCVMInstanceTypes {
-				if insType == instanceType {
-					return true
-				}
-			}
-		}
-		return false
-	case cloudprovider.GCP:
-		for _, instanceType := range instancetypes.GCPInstanceTypes {
-			if insType == instanceType {
-				return true
-			}
-		}
-		return false
-	default:
-		return false
-	}
-}
-
-// checkIfAWSInstanceTypeIsValid checks if an AWS instance type passed as user input is in one of the instance families supporting NitroTPM.
-func checkIfAWSInstanceTypeIsValid(userInput string) bool {
-	// Check if user or code does anything weird and tries to pass multiple strings as one
-	if strings.Contains(userInput, " ") {
-		return false
-	}
-	if strings.Contains(userInput, ",") {
-		return false
-	}
-	if strings.Contains(userInput, ";") {
-		return false
+// Validate checks the config values and returns validation error messages.
+// The function only returns an error if the validation itself fails.
+func (c *Config) Validate() error {
+	trans := ut.New(en.New()).GetFallback()
+	validate := validator.New()
+	if err := en_translations.RegisterDefaultTranslations(validate, trans); err != nil {
+		return err
 	}
 
-	splitInstanceType := strings.Split(userInput, ".")
-
-	if len(splitInstanceType) != 2 {
-		return false
+	// Register AWS, Azure & GCP InstanceType validation error types
+	if err := validate.RegisterTranslation("aws_instance_type", trans, registerTranslateAWSInstanceTypeError, translateAWSInstanceTypeError); err != nil {
+		return err
 	}
 
-	userDefinedFamily := splitInstanceType[0]
-	userDefinedSize := splitInstanceType[1]
-
-	// Check if instace type has at least 4 vCPUs (= contains "xlarge" in its name)
-	hasEnoughVCPUs := strings.Contains(userDefinedSize, "xlarge")
-	if !hasEnoughVCPUs {
-		return false
+	if err := validate.RegisterTranslation("azure_instance_type", trans, registerTranslateAzureInstanceTypeError, c.translateAzureInstanceTypeError); err != nil {
+		return err
 	}
 
-	// Now check if the user input is a supported family
-	// Note that we cannot directly use the family split from the Graviton check above, as some instances are directly specified by their full name and not just the family in general
-	for _, supportedFamily := range instancetypes.AWSSupportedInstanceFamilies {
-		supportedFamilyLowercase := strings.ToLower(supportedFamily)
-		if userDefinedFamily == supportedFamilyLowercase {
-			return true
-		}
+	if err := validate.RegisterTranslation("gcp_instance_type", trans, registerTranslateGCPInstanceTypeError, translateGCPInstanceTypeError); err != nil {
+		return err
 	}
 
-	return false
-}
-
-// IsDebugCluster checks whether the cluster is configured as a debug cluster.
-func (c *Config) IsDebugCluster() bool {
-	if c.DebugCluster != nil && *c.DebugCluster {
-		return true
+	// Register Provider validation error types
+	if err := validate.RegisterTranslation("no_provider", trans, registerNoProviderError, translateNoProviderError); err != nil {
+		return err
 	}
-	return false
+
+	if err := validate.RegisterTranslation("more_than_one_provider", trans, registerMoreThanOneProviderError, c.translateMoreThanOneProviderError); err != nil {
+		return err
+	}
+
+	// register custom validator with label supported_k8s_version to validate version based on available versionConfigs.
+	if err := validate.RegisterValidation("supported_k8s_version", validateK8sVersion); err != nil {
+		return err
+	}
+
+	// register custom validator with label aws_instance_type to validate the AWS instance type from config input.
+	if err := validate.RegisterValidation("aws_instance_type", validateAWSInstanceType); err != nil {
+		return err
+	}
+
+	// register custom validator with label azure_instance_type to validate the Azure instance type from config input.
+	if err := validate.RegisterValidation("azure_instance_type", validateAzureInstanceType); err != nil {
+		return err
+	}
+
+	// register custom validator with label gcp_instance_type to validate the GCP instance type from config input.
+	if err := validate.RegisterValidation("gcp_instance_type", validateGCPInstanceType); err != nil {
+		return err
+	}
+
+	// Register provider validation
+	validate.RegisterStructValidation(validateProvider, ProviderConfig{})
+
+	err := validate.Struct(c)
+	if err == nil {
+		return nil
+	}
+
+	var errs validator.ValidationErrors
+	if !errors.As(err, &errs) {
+		return err
+	}
+
+	var validationErrors error
+	for _, e := range errs {
+		validationErrors = multierr.Append(
+			validationErrors,
+			errors.New(e.Translate(trans)),
+		)
+	}
+	return validationErrors
 }

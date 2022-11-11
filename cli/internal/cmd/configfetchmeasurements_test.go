@@ -40,7 +40,7 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 			wantFlags: &fetchMeasurementsFlags{
 				measurementsURL: nil,
 				signatureURL:    nil,
-				config:          constants.ConfigFilename,
+				configPath:      constants.ConfigFilename,
 			},
 		},
 		"url": {
@@ -49,7 +49,7 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 			wantFlags: &fetchMeasurementsFlags{
 				measurementsURL: urlMustParse("https://some.other.url/with/path"),
 				signatureURL:    urlMustParse("https://some.other.url/with/path.sig"),
-				config:          constants.ConfigFilename,
+				configPath:      constants.ConfigFilename,
 			},
 		},
 		"broken url": {
@@ -59,7 +59,7 @@ func TestParseFetchMeasurementsFlags(t *testing.T) {
 		"config": {
 			configFlag: "someOtherConfig.yaml",
 			wantFlags: &fetchMeasurementsFlags{
-				config: "someOtherConfig.yaml",
+				configPath: "someOtherConfig.yaml",
 			},
 		},
 	}
@@ -212,8 +212,7 @@ func TestConfigFetchMeasurements(t *testing.T) {
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 
-			gcpConfig := config.Default()
-			gcpConfig.RemoveProviderExcept(cloudprovider.GCP)
+			gcpConfig := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.GCP)
 			gcpConfig.Provider.GCP.Image = "projects/constellation-images/global/images/constellation-coreos-1658216163"
 
 			err := fileHandler.WriteYAML(constants.ConfigFilename, gcpConfig, file.OptMkdirAll)

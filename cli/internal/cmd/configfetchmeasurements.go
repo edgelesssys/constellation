@@ -40,7 +40,7 @@ func newConfigFetchMeasurementsCmd() *cobra.Command {
 type fetchMeasurementsFlags struct {
 	measurementsURL *url.URL
 	signatureURL    *url.URL
-	config          string
+	configPath      string
 }
 
 func runConfigFetchMeasurements(cmd *cobra.Command, args []string) error {
@@ -58,16 +58,16 @@ func configFetchMeasurements(cmd *cobra.Command, verifier rekorVerifier, fileHan
 		return err
 	}
 
-	conf, err := config.FromFile(fileHandler, flags.config)
+	config, err := config.New(config.WithDefaultOptions(fileHandler, flags.configPath)...)
 	if err != nil {
-		return err
+		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
-	if conf.IsDebugImage() {
+	if config.IsDebugImage() {
 		cmd.PrintErrln("Configured image doesn't look like a released production image. Double check image before deploying to production.")
 	}
 
-	if err := flags.updateURLs(conf); err != nil {
+	if err := flags.updateURLs(config); err != nil {
 		return err
 	}
 
@@ -84,8 +84,8 @@ func configFetchMeasurements(cmd *cobra.Command, verifier rekorVerifier, fileHan
 		cmd.PrintErrln("Make sure the downloaded measurements are trustworthy!")
 	}
 
-	conf.UpdateMeasurements(fetchedMeasurements)
-	if err := fileHandler.WriteYAML(flags.config, conf, file.OptOverwrite); err != nil {
+	config.UpdateMeasurements(fetchedMeasurements)
+	if err := fileHandler.WriteYAML(flags.configPath, config, file.OptOverwrite); err != nil {
 		return err
 	}
 
@@ -124,7 +124,7 @@ func parseFetchMeasurementsFlags(cmd *cobra.Command) (*fetchMeasurementsFlags, e
 	return &fetchMeasurementsFlags{
 		measurementsURL: measurementsURL,
 		signatureURL:    measurementsSignatureURL,
-		config:          config,
+		configPath:      config,
 	}, nil
 }
 

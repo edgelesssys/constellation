@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
+	"go.uber.org/multierr"
 )
 
 func TestMain(m *testing.M) {
@@ -112,33 +113,49 @@ func TestFromFile(t *testing.T) {
 	}
 }
 
-func TestValidate(t *testing.T) {
-	const defaultMsgCount = 20 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
-
+func TestNewWithDefaultOptions(t *testing.T) {
 	testCases := map[string]struct {
-		cnf          *Config
-		wantMsgCount int
+		confToWrite           *Config
+		envToSet              map[string]string
+		wantErr               bool
+		wantClientSecretValue string
 	}{
-		"default config is valid": {
-			cnf:          Default(),
-			wantMsgCount: defaultMsgCount,
-		},
-		"config with 1 error": {
-			cnf: func() *Config {
-				cnf := Default()
-				cnf.Version = "v0"
-				return cnf
+		"set env works": {
+			confToWrite: func() *Config { // valid config with all, but clientSecretValue
+				c := Default()
+				c.RemoveProviderExcept(cloudprovider.Azure)
+				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
+				c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
+				c.Provider.Azure.Location = "westus"
+				c.Provider.Azure.ResourceGroup = "test"
+				c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
+				c.Provider.Azure.AppClientID = "3ea4bdc1-1cc1-4237-ae78-0831eff3491e"
+				c.Provider.Azure.Image = "/communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.2.0"
+				return c
 			}(),
-			wantMsgCount: defaultMsgCount + 1,
+			envToSet: map[string]string{
+				constants.EnvVarAzureClientSecretValue: "some-secret",
+			},
+			wantClientSecretValue: "some-secret",
 		},
-		"config with 2 errors": {
-			cnf: func() *Config {
-				cnf := Default()
-				cnf.Version = "v0"
-				cnf.StateDiskSizeGB = -1
-				return cnf
+		"set env overwrites": {
+			confToWrite: func() *Config { // valid config with all, but clientSecretValue
+				c := Default()
+				c.RemoveProviderExcept(cloudprovider.Azure)
+				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
+				c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
+				c.Provider.Azure.Location = "westus"
+				c.Provider.Azure.ResourceGroup = "test"
+				c.Provider.Azure.ClientSecretValue = "other-value" // < Note secret set in config, as well.
+				c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
+				c.Provider.Azure.AppClientID = "3ea4bdc1-1cc1-4237-ae78-0831eff3491e"
+				c.Provider.Azure.Image = "/communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.2.0"
+				return c
 			}(),
-			wantMsgCount: defaultMsgCount + 2,
+			envToSet: map[string]string{
+				constants.EnvVarAzureClientSecretValue: "some-secret",
+			},
+			wantClientSecretValue: "some-secret",
 		},
 	}
 
@@ -147,9 +164,126 @@ func TestValidate(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			msgs, err := tc.cnf.Validate()
+			// Setup
+			fileHandler := file.NewHandler(afero.NewMemMapFs())
+			err := fileHandler.WriteYAML(constants.ConfigFilename, tc.confToWrite)
 			require.NoError(err)
-			assert.Len(msgs, tc.wantMsgCount)
+			for envKey, envValue := range tc.envToSet {
+				t.Setenv(envKey, envValue)
+			}
+
+			// Test
+			c, err := New(WithDefaultOptions(fileHandler, constants.ConfigFilename)...)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal(c.Provider.Azure.ClientSecretValue, tc.wantClientSecretValue)
+		})
+	}
+}
+
+func TestValidate(t *testing.T) {
+	const defaultErrCount = 20 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
+	const azErrCount = 8
+	const gcpErrCount = 5
+
+	testCases := map[string]struct {
+		cnf          *Config
+		wantErr      bool
+		wantErrCount int
+	}{
+		"default config is not valid": {
+			cnf:          Default(),
+			wantErr:      true,
+			wantErrCount: defaultErrCount,
+		},
+		"v0 is one error": {
+			cnf: func() *Config {
+				cnf := Default()
+				cnf.Version = "v0"
+				return cnf
+			}(),
+			wantErr:      true,
+			wantErrCount: defaultErrCount + 1,
+		},
+		"v0 and negative state disk are two errors": {
+			cnf: func() *Config {
+				cnf := Default()
+				cnf.Version = "v0"
+				cnf.StateDiskSizeGB = -1
+				return cnf
+			}(),
+			wantErr:      true,
+			wantErrCount: defaultErrCount + 2,
+		},
+		"default Azure config is not valid": {
+			cnf: func() *Config {
+				cnf := Default()
+				az := cnf.Provider.Azure
+				cnf.Provider = ProviderConfig{}
+				cnf.Provider.Azure = az
+				return cnf
+			}(),
+			wantErr:      true,
+			wantErrCount: azErrCount,
+		},
+		"Azure config with all required fields is valid": {
+			cnf: func() *Config {
+				cnf := Default()
+				az := cnf.Provider.Azure
+				az.SubscriptionID = "01234567-0123-0123-0123-0123456789ab"
+				az.TenantID = "01234567-0123-0123-0123-0123456789ab"
+				az.Location = "test-location"
+				az.UserAssignedIdentity = "test-identity"
+				az.Image = "some/image/location"
+				az.ResourceGroup = "test-resource-group"
+				az.AppClientID = "01234567-0123-0123-0123-0123456789ab"
+				az.ClientSecretValue = "test-client-secret"
+				cnf.Provider = ProviderConfig{}
+				cnf.Provider.Azure = az
+				return cnf
+			}(),
+		},
+		"default GCP config is not valid": {
+			cnf: func() *Config {
+				cnf := Default()
+				gcp := cnf.Provider.GCP
+				cnf.Provider = ProviderConfig{}
+				cnf.Provider.GCP = gcp
+				return cnf
+			}(),
+			wantErr:      true,
+			wantErrCount: gcpErrCount,
+		},
+		"GCP config with all required fields is valid": {
+			cnf: func() *Config {
+				cnf := Default()
+				gcp := cnf.Provider.GCP
+				gcp.Region = "test-region"
+				gcp.Project = "test-project"
+				gcp.Image = "some/image/location"
+				gcp.Zone = "test-zone"
+				gcp.ServiceAccountKeyPath = "test-key-path"
+				cnf.Provider = ProviderConfig{}
+				cnf.Provider.GCP = gcp
+				return cnf
+			}(),
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			err := tc.cnf.Validate()
+			if tc.wantErr {
+				assert.Error(err)
+				assert.Len(multierr.Errors(err), tc.wantErrCount)
+				return
+			}
+			assert.NoError(err)
 		})
 	}
 }

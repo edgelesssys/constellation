@@ -19,6 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -59,9 +60,9 @@ func verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyCli
 		return err
 	}
 
-	config, err := readConfig(cmd.ErrOrStderr(), fileHandler, flags.configPath)
+	config, err := config.New(config.WithDefaultOptions(fileHandler, flags.configPath)...)
 	if err != nil {
-		return fmt.Errorf("reading and validating config: %w", err)
+		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
 	provider := config.GetProvider()

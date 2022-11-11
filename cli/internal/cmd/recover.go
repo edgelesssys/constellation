@@ -19,6 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/disk-mapper/recoverproto"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -66,9 +67,9 @@ func recover(
 		return err
 	}
 
-	config, err := readConfig(cmd.ErrOrStderr(), fileHandler, flags.configPath)
+	config, err := config.New(config.WithDefaultOptions(fileHandler, flags.configPath)...)
 	if err != nil {
-		return fmt.Errorf("reading and validating config: %w", err)
+		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 	provider := config.GetProvider()
 	if provider == cloudprovider.Azure {

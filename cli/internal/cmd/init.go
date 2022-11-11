@@ -78,9 +78,9 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return err
 	}
 
-	config, err := readConfig(cmd.ErrOrStderr(), fileHandler, flags.configPath)
+	config, err := config.New(config.WithDefaultOptions(fileHandler, flags.configPath)...)
 	if err != nil {
-		return fmt.Errorf("reading and validating config: %w", err)
+		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
 	var idFile clusterid.File

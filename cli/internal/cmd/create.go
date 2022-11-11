@@ -13,6 +13,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
@@ -59,9 +60,9 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 		return err
 	}
 
-	config, err := readConfig(cmd.ErrOrStderr(), fileHandler, flags.configPath)
+	config, err := config.New(config.WithDefaultOptions(fileHandler, flags.configPath)...)
 	if err != nil {
-		return fmt.Errorf("reading and validating config: %w", err)
+		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
 	var printedAWarning bool
