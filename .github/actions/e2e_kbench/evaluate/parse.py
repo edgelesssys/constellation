@@ -16,7 +16,7 @@ def configure() -> Tuple[str, str, str, str | None]:
     - BDIR=benchmarks
 
     Optional:
-    - EXT_NAME=AKS  # Overrides "constellation-$CSP" naming, used to parse results from managed Kubernetes
+    - EXT_NAME=AKS  # Overrides "constellation-$CSP" naming to parse results from managed Kubernetes
     - GITHUB_SHA=ffac5... # Set by GitHub actions, stored in the result JSON.
 
     Raises TypeError if at least one of them is missing.
@@ -31,7 +31,7 @@ def configure() -> Tuple[str, str, str, str | None]:
             'ENV variables KBENCH_RESULTS, CSP, BDIR are required.')
 
     ext_provider_name = os.environ.get('EXT_NAME', None)
-    commit_hash = os.environ.get('GITHUB_SHA', "N/A")
+    commit_hash = os.environ.get('GITHUB_SHA', 'N/A')
     return base_path, csp, out_dir, ext_provider_name, commit_hash
 
 
@@ -44,20 +44,20 @@ def main() -> None:
 
     if not ext_provider_name:
         # Constellation benchmark.
-        ext_provider_name = "constellation-{csp}".format(csp=csp)
+        ext_provider_name = 'constellation-{csp}'.format(csp=csp)
 
     # Expect the results in directory:
     # kbench-EXT_PROVIDER_NAME/
     benchmark_path = os.path.join(
         base_path,
-        "kbench-" + ext_provider_name,
+        'kbench-{csp}'.format(csp=ext_provider_name),
     )
     tests = {ext_provider_name: benchmark_path}
-    out_file_name = "{nm}.json".format(nm=ext_provider_name)
+    out_file_name = '{nm}.json'.format(nm=ext_provider_name)
 
     if not os.path.exists(benchmark_path):
         raise ValueError(
-            'Benchmarks do not exist at {benchmark_path}.'.format(path=benchmark_path))
+            'Benchmarks do not exist at {path}.'.format(path=benchmark_path))
 
     # Parse subtest
     default_results = default.evaluate(tests=tests)
@@ -65,13 +65,13 @@ def main() -> None:
     fio_results = fio.evaluate(tests=tests)
 
     combined_results = defaultdict(dict)
-    combined_results["commit"] = commit_hash
-    combined_results["subject"] = ext_provider_name
+    combined_results['commit'] = commit_hash
+    combined_results['subject'] = ext_provider_name
 
     for test in tests:
-        combined_results["kbench"].update(default_results[test])
-        combined_results["kbench"].update(network_results[test])
-        combined_results["kbench"].update(fio_results[test])
+        combined_results['kbench'].update(default_results[test])
+        combined_results['kbench'].update(network_results[test])
+        combined_results['kbench'].update(fio_results[test])
 
     # Write the compact results.
     save_path = os.path.join(out_dir, out_file_name)
@@ -79,5 +79,5 @@ def main() -> None:
         json.dump(combined_results, fp=w, sort_keys=False, indent=2)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

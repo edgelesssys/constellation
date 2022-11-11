@@ -66,7 +66,7 @@ def main() -> None:
         with open(path_curr) as f_curr:
             bench_curr = json.load(f_curr)
     except OSError as e:
-        raise ValueError("Failed reading benchmark file: {e}".format(e=e))
+        raise ValueError('Failed reading benchmark file: {e}'.format(e=e))
 
     try:
         name = bench_curr['subject']

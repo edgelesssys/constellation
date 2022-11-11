@@ -7,20 +7,20 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 SUBJECTS = [
-    "constellation-azure",
-    "AKS",
-    "constellation-gcp",
-    "GKE",
+    'constellation-azure',
+    'AKS',
+    'constellation-gcp',
+    'GKE',
 ]
 
 LEGEND_NAMES = [
-    "Constellation on Azure",
-    "AKS",
-    "Constellation on GCP",
-    "GKE",
+    'Constellation on Azure',
+    'AKS',
+    'Constellation on GCP',
+    'GKE',
 ]
 
-BAR_COLORS = ["#90FF99", '#929292', "#8B04DD", '#000000']
+BAR_COLORS = ['#90FF99', '#929292', '#8B04DD', '#000000']
 
 # Rotate bar labels by X degrees
 LABEL_ROTATE_BY = 30
@@ -115,7 +115,7 @@ def bar_chart(data, headers, title='', suffix='', val_label=True, y_log=False):
         # Draw a bar for every value of that type
         for x, y in enumerate(values):
             bar = ax.bar(x + x_offset, y, width=bar_width * 0.9,
-                         color=BAR_COLORS[i % len(BAR_COLORS)], edgecolor="black")
+                         color=BAR_COLORS[i % len(BAR_COLORS)], edgecolor='black')
             if val_label:
                 ax.bar_label(bar, fmt='%g {suffix}'.format(suffix=suffix))
         # Add a handle to the last drawn bar, which we'll need for the legend
@@ -142,52 +142,52 @@ def main():
     for test in SUBJECTS:
         # Read the previous results
         read_path = os.path.join(
-            out_dir, "{subject}.json".format(subject=test))
+            out_dir, '{subject}.json'.format(subject=test))
         try:
             with open(read_path, 'r') as res_file:
                 combined_results[test].update(json.load(res_file))
         except OSError as e:
             raise ValueError(
-                "Failed reading {subject} benchmark records: {e}".format(subject=test, e=e))
+                'Failed reading {subject} benchmark records: {e}'.format(subject=test, e=e))
 
     # Combine the evaluation of the Kubernetes API benchmarks
     for i, api in enumerate([pod_key2header, svc_key2header, depl_key2header]):
         api_data = {}
         for s in SUBJECTS:
-            points = combined_results[s]["kbench"]
+            points = combined_results[s]['kbench']
             subject_data = [points[h] for h in api]
             api_data[s] = subject_data
         hdrs = list(api.values())
         bar_chart(data=api_data, headers=hdrs,
-                  title="API Latency", suffix=api_suffix, y_log=True)
+                  title='API Latency', suffix=api_suffix, y_log=True)
 
         save_name = os.path.join(out_dir, 'api_{i}_perf.png'.format(i=i))
-        plt.savefig(save_name, bbox_inches="tight")
+        plt.savefig(save_name, bbox_inches='tight')
 
     # Network chart
     net_data = {}
     for s in SUBJECTS:
-        points = combined_results[s]["kbench"]
+        points = combined_results[s]['kbench']
         subject_data = [points[h] for h in net_key2header]
         net_data[s] = subject_data
     hdrs = list(net_key2header.values())
     bar_chart(data=net_data, headers=hdrs,
-              title="Network Throughput", suffix=net_suffix, y_log=True)
+              title='Network Throughput', suffix=net_suffix, y_log=True)
     save_name = os.path.join(out_dir, 'net_perf.png')
-    plt.savefig(save_name, bbox_inches="tight")
+    plt.savefig(save_name, bbox_inches='tight')
 
     # fio chart
     fio_data = {}
     for s in SUBJECTS:
-        points = combined_results[s]["kbench"]
+        points = combined_results[s]['kbench']
         subject_data = [points[h] for h in fio_key2header]
         fio_data[s] = subject_data
     hdrs = list(fio_key2header.values())
     bar_chart(data=fio_data, headers=hdrs,
-              title="Storage Throughput", suffix=fio_suffix, y_log=True)
+              title='Storage Throughput', suffix=fio_suffix, y_log=True)
     save_name = os.path.join(out_dir, 'storage_perf.png')
-    plt.savefig(save_name, bbox_inches="tight")
+    plt.savefig(save_name, bbox_inches='tight')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
