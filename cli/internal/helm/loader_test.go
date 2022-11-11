@@ -55,6 +55,7 @@ func TestTemplate(t *testing.T) {
 	}{
 		"GCP": {
 			config: &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{
+				DeployCSIDriver:      func() *bool { b := true; return &b }(),
 				EnforcedMeasurements: []uint32{1, 11},
 			}}},
 			enforceIDKeyDigest: false,
@@ -149,6 +150,45 @@ func prepareGCPValues(values map[string]any) error {
 	ccmVals["GCP"].(map[string]any)["projectID"] = "42424242424242"
 	ccmVals["GCP"].(map[string]any)["uid"] = "242424242424"
 	ccmVals["GCP"].(map[string]any)["secretData"] = "baaaaaad"
+
+	testTag := "v0.0.0"
+	pullPolicy := "IfNotPresent"
+	csiVals, ok := values["csi-gcp-pd"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'csi-gcp-pd' key")
+	}
+	csiVals["image"] = map[string]any{
+		"csiProvisioner": map[string]any{
+			"repo":       "csi-provisioner",
+			"tag":        testTag,
+			"pullPolicy": pullPolicy,
+		},
+		"csiAttacher": map[string]any{
+			"repo":       "csi-attacher",
+			"tag":        testTag,
+			"pullPolicy": pullPolicy,
+		},
+		"csiResizer": map[string]any{
+			"repo":       "csi-resizer",
+			"tag":        testTag,
+			"pullPolicy": pullPolicy,
+		},
+		"csiSnapshotter": map[string]any{
+			"repo":       "csi-snapshotter",
+			"tag":        testTag,
+			"pullPolicy": pullPolicy,
+		},
+		"csiNodeRegistrar": map[string]any{
+			"repo":       "csi-registrar",
+			"tag":        testTag,
+			"pullPolicy": pullPolicy,
+		},
+		"gcepdDriver": map[string]any{
+			"repo":       "csi-driver",
+			"tag":        testTag,
+			"pullPolicy": pullPolicy,
+		},
+	}
 
 	return nil
 }
