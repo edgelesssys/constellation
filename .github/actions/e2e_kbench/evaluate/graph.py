@@ -129,7 +129,7 @@ def bar_chart(data, headers, title='', suffix='', val_label=True, y_log=False):
 
     plt.setp(ax.get_xticklabels(), fontsize=LABEL_FONTSIZE,
              rotation=LABEL_ROTATE_BY)
-    plt.title('{title}({suffix})'.format(title=title, suffix=suffix))
+    plt.title('{title} ({suffix})'.format(title=title, suffix=suffix))
     plt.tight_layout()
     return fig
 

@@ -7,7 +7,7 @@ from typing import Tuple
 from evaluators import default, fio, network
 
 
-def configure() -> Tuple[str, str, str, str | None]:
+def configure() -> Tuple[str, str, str, str | None, str]:
     """Read the benchmark data paths.
 
     Expects ENV vars (required):
@@ -42,7 +42,7 @@ def main() -> None:
     """
     base_path, csp, out_dir, ext_provider_name, commit_hash = configure()
 
-    if not ext_provider_name:
+    if ext_provider_name is None:
         # Constellation benchmark.
         ext_provider_name = 'constellation-{csp}'.format(csp=csp)
 
@@ -64,9 +64,8 @@ def main() -> None:
     network_results = network.evaluate(tests=tests)
     fio_results = fio.evaluate(tests=tests)
 
-    combined_results = defaultdict(dict)
-    combined_results['commit'] = commit_hash
-    combined_results['subject'] = ext_provider_name
+    combined_results = {'commit': commit_hash, 'subject': ext_provider_name}
+    combined_results['kbench'] = {}
 
     for test in tests:
         combined_results['kbench'].update(default_results[test])
