@@ -41,10 +41,10 @@ jobs:
         run: |
           mods=$(go list -f '{{.Dir}}/...' -m | xargs)
           echo "Found mods: $mods"
-          echo "submods=${mods}" >> $GITHUB_OUTPUT
+          echo "submods=${mods}" >> "$GITHUB_OUTPUT"
 
       - name: Govulncheck
         shell: bash
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
-          GOMEMLIMIT=5GiB govulncheck $(go list -f '{{.Dir}}/...' -m | xargs)
+          GOMEMLIMIT=5GiB govulncheck "$(go list -f '{{.Dir}}/...' -m | xargs)"

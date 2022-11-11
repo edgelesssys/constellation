@@ -45,11 +45,11 @@ jobs:
         run: |
           case "${{ inputs.microService }}" in
             "join-service" )
-              echo "microServiceDockerfile=joinservice/Dockerfile" >> $GITHUB_ENV ;;
+              echo "microServiceDockerfile=joinservice/Dockerfile" >> "$GITHUB_ENV" ;;
             "kmsserver" )
-              echo "microServiceDockerfile=kms/Dockerfile" >> $GITHUB_ENV ;;
+              echo "microServiceDockerfile=kms/Dockerfile" >> "$GITHUB_ENV" ;;
             "verification-service" )
-              echo "microServiceDockerfile=verify/Dockerfile" >> $GITHUB_ENV ;;
+              echo "microServiceDockerfile=verify/Dockerfile" >> "$GITHUB_ENV" ;;
           esac
 
       - name: Build and upload container image
