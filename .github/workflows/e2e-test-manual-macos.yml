@@ -120,8 +120,8 @@ jobs:
         run: |
           uuid=$(uuidgen)
           name=e2e-test-${uuid%%-*}
-          az group create --location westus --name $name --tags e2e
-          echo "res_group_name=$name" >> $GITHUB_OUTPUT
+          az group create --location westus --name "$name" --tags e2e
+          echo "res_group_name=$name" >> "$GITHUB_OUTPUT"
 
       - name: Set up gcloud CLI
         if: ${{ github.event.inputs.cloudProvider == 'gcp' }}
@@ -154,7 +154,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/constellation_destroy
         with:
-          cloudProvider: ${{ steps.e2e_test.outputs.kubeconfig }}
+          kubeconfig: ${{ steps.e2e_test.outputs.kubeconfig }}
 
       - name: Notify teams channel
         if: ${{ failure() && github.ref == 'refs/heads/main' }}

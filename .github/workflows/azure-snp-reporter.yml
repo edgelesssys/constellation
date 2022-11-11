@@ -75,4 +75,4 @@ jobs:
 
       - name: Verify report
         shell: bash
-        run: go run ./hack/azure-snp-report-verify/verify.go $(cat ./maa-report.jwt)
+        run: go run ./hack/azure-snp-report-verify/verify.go "$(cat ./maa-report.jwt)"

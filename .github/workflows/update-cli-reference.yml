@@ -31,12 +31,12 @@ jobs:
 
       - name: Get commit sha
         run: |
-          echo "COMMIT_END=$(echo ${{ github.sha }} | cut -c1-8)" >> $GITHUB_ENV
+          echo "COMMIT_END=$(echo ${{ github.sha }} | cut -c1-8)" >> "$GITHUB_ENV"
 
       - name: Check if action branch exists
         run: |
-          ex=$(git ls-remote --heads origin action/constellation/update-cli-reference)
-          echo "EXISTS=$(if [ -z "$ex" ]; then echo 0; else echo 1; fi)" >> $GITHUB_ENV
+          ex="$(git ls-remote --heads origin action/constellation/update-cli-reference)"
+          echo "EXISTS=$(if [ -z "$ex" ]; then echo 0; else echo 1; fi)" >> "$GITHUB_ENV"
 
       - name: Publish new reference (create new branch)
         if: ${{ env.EXISTS == 0 }}

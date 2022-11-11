@@ -53,10 +53,11 @@ jobs:
         run: |
           uuid=$(cat /proc/sys/kernel/random/uuid)
           name=e2e-test-${uuid%%-*}
-          az group create --location westus --name $name --tags e2e
-          echo "res_group_name=$name" >> $GITHUB_OUTPUT
+          az group create --location westus --name "$name" --tags e2e
+          echo "res_group_name=$name" >> "$GITHUB_OUTPUT"
 
       - name: Create Cluster & Generate Measurements
+        id: create_and_measure
         uses: ./.github/actions/generate_measurements
         with:
           cloudProvider: ${{ github.event.inputs.cloudProvider }}
@@ -83,6 +84,8 @@ jobs:
         if: always()
         continue-on-error: true
         uses: ./.github/actions/constellation_destroy
+        with:
+          kubeconfig: ${{ steps.create_and_measure.outputs.kubeconfig }}
 
       - name: Always destroy Azure resource group
         if: ${{ always() && github.event.inputs.cloudProvider == 'azure' }}

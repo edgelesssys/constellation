@@ -84,7 +84,7 @@ jobs:
           curl -LO https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_linux_amd64.tar.gz
           tar -xzf grype_${GRYPE_VERSION}_linux_amd64.tar.gz
           ./grype version
-          echo $(pwd) >> $GITHUB_PATH
+          pwd >> "$GITHUB_PATH"
         shell: bash
 
       - name: Build signed SBOMs

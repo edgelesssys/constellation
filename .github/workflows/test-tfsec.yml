@@ -36,4 +36,4 @@ jobs:
 
       - name: tfsec summary
         shell: bash
-        run: cat results.text |  tail -n 27 >> $GITHUB_STEP_SUMMARY
+        run: tail -n 27 results.text >> "$GITHUB_STEP_SUMMARY"

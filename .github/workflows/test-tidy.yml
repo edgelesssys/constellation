@@ -38,7 +38,7 @@ jobs:
         run: |
           mods=$(go list -f '{{.Dir}}' -m | xargs)
           echo "Found mods: $mods"
-          echo "submods=${mods}" >> $GITHUB_OUTPUT
+          echo "submods=${mods}" >> "$GITHUB_OUTPUT"
 
       - name: Go tidy check
         id: tidycheck
@@ -54,7 +54,8 @@ jobs:
         if: ${{ failure() && (steps.tidycheck.conclusion == 'failure') && startsWith(github.head_ref, 'renovate/') }}
         shell: bash
         run: |
-          for mod in ${{ steps.submods.outputs.submods }}; do
+          mods=${{ steps.submods.outputs.submods }}
+          for mod in $mods; do
             (cd $mod; go mod tidy)
           done
 
