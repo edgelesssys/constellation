@@ -64,8 +64,8 @@ def main() -> None:
     network_results = network.evaluate(tests=tests)
     fio_results = fio.evaluate(tests=tests)
 
-    combined_results = {'commit': commit_hash, 'subject': ext_provider_name}
-    combined_results['kbench'] = {}
+    combined_results = {'commit': commit_hash,
+                        'subject': ext_provider_name, 'kbench': {}}
 
     for test in tests:
         combined_results['kbench'].update(default_results[test])
