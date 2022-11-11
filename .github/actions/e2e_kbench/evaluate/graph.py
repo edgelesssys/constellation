@@ -117,7 +117,8 @@ def bar_chart(data, headers, title='', suffix='', val_label=True, y_log=False):
             bar = ax.bar(x + x_offset, y, width=bar_width * 0.9,
                          color=BAR_COLORS[i % len(BAR_COLORS)], edgecolor='black')
             if val_label:
-                ax.bar_label(bar, fmt='%g {suffix}'.format(suffix=suffix))
+                ax.bar_label(bar, padding=1,
+                             fmt='%g {suffix}'.format(suffix=suffix))
         # Add a handle to the last drawn bar, which we'll need for the legend
         bars.append(bar[0])
     # Draw legend
