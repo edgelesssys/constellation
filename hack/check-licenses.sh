@@ -10,6 +10,7 @@ not_allowed() {
   err=1
 }
 
+err=0
 go mod download
 
 go-licenses csv ./... | {
@@ -21,8 +22,7 @@ go-licenses csv ./... | {
     case ${lic} in
     Apache-2.0 | BSD-2-Clause | BSD-3-Clause | ISC | MIT) ;;
 
-    \
-      MPL-2.0)
+    MPL-2.0)
       case ${pkg} in
       github.com/talos-systems/talos/pkg/machinery/config/encoder) ;;
 
