@@ -82,12 +82,12 @@ var (
 // versionConfigs holds download URLs for all required kubernetes components for every supported version.
 var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 	V1_23: {
-		PatchVersion:  "v1.23.13",                                                                                                   // renovate:kubernetes-release
+		PatchVersion:  "v1.23.14",                                                                                                   // renovate:kubernetes-release
 		CNIPluginsURL: "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
 		CrictlURL:     "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.25.0/crictl-v1.25.0-linux-amd64.tar.gz",   // renovate:crictl-release
-		KubeletURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.23.13/bin/linux/amd64/kubelet",                 // renovate:kubernetes-release
-		KubeadmURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.23.13/bin/linux/amd64/kubeadm",                 // renovate:kubernetes-release
-		KubectlURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.23.13/bin/linux/amd64/kubectl",                 // renovate:kubernetes-release
+		KubeletURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.23.14/bin/linux/amd64/kubelet",                 // renovate:kubernetes-release
+		KubeadmURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.23.14/bin/linux/amd64/kubeadm",                 // renovate:kubernetes-release
+		KubectlURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.23.14/bin/linux/amd64/kubectl",                 // renovate:kubernetes-release
 		// CloudControllerManagerImageAWS is the CCM image used on AWS.
 		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.23.2@sha256:5caf74bfe1c6e1b7b7d40345db52b54eeea7229a8fd73c7db9488ef87dc7a496", // renovate:container
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
@@ -101,12 +101,12 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterAutoscalerImage: "k8s.gcr.io/autoscaling/cluster-autoscaler:v1.23.1@sha256:cd2101ba67f3d6ec719f7792d4bdaa3a50e1b716f3a9ccee8931086496c655b7", // renovate:container
 	},
 	V1_24: {
-		PatchVersion:  "v1.24.7",                                                                                                    // renovate:kubernetes-release
+		PatchVersion:  "v1.24.8",                                                                                                    // renovate:kubernetes-release
 		CNIPluginsURL: "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
 		CrictlURL:     "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.25.0/crictl-v1.25.0-linux-amd64.tar.gz",   // renovate:crictl-release
-		KubeletURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.24.7/bin/linux/amd64/kubelet",                  // renovate:kubernetes-release
-		KubeadmURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.24.7/bin/linux/amd64/kubeadm",                  // renovate:kubernetes-release
-		KubectlURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.24.7/bin/linux/amd64/kubectl",                  // renovate:kubernetes-release
+		KubeletURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.24.8/bin/linux/amd64/kubelet",                  // renovate:kubernetes-release
+		KubeadmURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.24.8/bin/linux/amd64/kubeadm",                  // renovate:kubernetes-release
+		KubectlURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.24.8/bin/linux/amd64/kubectl",                  // renovate:kubernetes-release
 		// CloudControllerManagerImageAWS is the CCM image used on AWS.
 		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.24.1@sha256:4b75b09cc5b3959d06a8c2fb84f165e8163ec0153eaa6a48ece6c8113e78e720", // renovate:container
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
@@ -120,12 +120,12 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		ClusterAutoscalerImage: "k8s.gcr.io/autoscaling/cluster-autoscaler:v1.24.0@sha256:5bd22353ae7f30c9abfaa08189281367ef47ea1b3d09eb13eb26bd13de241e72", // renovate:container
 	},
 	V1_25: {
-		PatchVersion:  "v1.25.3",                                                                                                    // renovate:kubernetes-release
+		PatchVersion:  "v1.25.4",                                                                                                    // renovate:kubernetes-release
 		CNIPluginsURL: "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
 		CrictlURL:     "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.25.0/crictl-v1.25.0-linux-amd64.tar.gz",   // renovate:crictl-release
-		KubeletURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.25.3/bin/linux/amd64/kubelet",                  // renovate:kubernetes-release
-		KubeadmURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.25.3/bin/linux/amd64/kubeadm",                  // renovate:kubernetes-release
-		KubectlURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.25.3/bin/linux/amd64/kubectl",                  // renovate:kubernetes-release
+		KubeletURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.25.4/bin/linux/amd64/kubelet",                  // renovate:kubernetes-release
+		KubeadmURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.25.4/bin/linux/amd64/kubeadm",                  // renovate:kubernetes-release
+		KubectlURL:    "https://storage.googleapis.com/kubernetes-release/release/v1.25.4/bin/linux/amd64/kubectl",                  // renovate:kubernetes-release
 		// CloudControllerManagerImageAWS is the CCM image used on AWS.
 		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.25.1@sha256:85d3f1e9dacc72531445989bb10999e1e70ebc409d11be57e5baa5f031a893b0", // renovate:container
 		// CloudControllerManagerImageGCP is the CCM image used on GCP.
