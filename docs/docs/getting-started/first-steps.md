@@ -71,6 +71,12 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     Run `constellation config instance-types` to get the list of all supported options.
 
+    :::tip
+
+    Alternative, you can leave `clientSecretValue` empty, and provide the secret via `CONSTELL_AZURE_CLIENT_SECRET_VALUE` environment variable.
+
+    :::
+
     </tabItem>
     <tabItem value="azure-portal" label="Azure (Portal)">
 
@@ -111,6 +117,12 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     * **clientSecretValue**: In the previously created app registration, go to `Certificates & secrets` and create a new `Client secret`.
 
       Set the configuration value to the secret value.
+
+      :::tip
+
+      Alternative, you can leave `clientSecretValue` empty, and provide the secret via `CONSTELL_AZURE_CLIENT_SECRET_VALUE` environment variable.
+
+      :::
 
     * **instanceType**: The VM type you want to use for your Constellation nodes.
 
