@@ -24,8 +24,15 @@ Every step of the build process must be deterministic.
 * Eliminate dependencies on libraries (make executable static)
 
 Striping metadata from the binary can be done in the building process.
-This can be achieved by setting the appropriate compiler flags.
+This can be achieved by setting the appropriate compiler and linker flags (see [`go tool link`](https://pkg.go.dev/cmd/link) and `[go help build]`(https://pkg.go.dev/cmd/go)).
 
+* `buildvcs=false`: Omit version control information
+* `-trimpath`: Remove file system paths from executable
+* `-s`: Remove the symbol table
+* `-w`: Disable [DWARF](https://en.wikipedia.org/wiki/DWARF) generation
+* `-buildid=""`: Unset build ID
+
+A reference compilation could look like this:
 ```bash
 $ CGO_ENABLED=0 go build -o <out_name> -buildvcs=false -trimpath -ldflags "-s -w -buildid=''"
 ```
