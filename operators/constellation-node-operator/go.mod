@@ -7,7 +7,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2 v2.0.0
-	github.com/googleapis/gax-go/v2 v2.6.0
+	github.com/googleapis/gax-go/v2 v2.7.0
 	github.com/medik8s/node-maintenance-operator v0.13.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.20.1
@@ -17,7 +17,7 @@ require (
 	go.etcd.io/etcd/client/pkg/v3 v3.5.5
 	go.etcd.io/etcd/client/v3 v3.5.5
 	go.uber.org/multierr v1.8.0
-	google.golang.org/api v0.100.0
+	google.golang.org/api v0.102.0
 	google.golang.org/genproto v0.0.0-20221107162902-2d387536bcdd
 	google.golang.org/protobuf v1.28.1
 	k8s.io/api v0.25.4
@@ -28,7 +28,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.1.0 // indirect
+	cloud.google.com/go/compute/metadata v0.2.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.0.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork v1.1.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
