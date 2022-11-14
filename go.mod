@@ -30,7 +30,7 @@ replace (
 	k8s.io/sample-apiserver v0.0.0 => k8s.io/sample-apiserver v0.25.3
 )
 
-replace github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools v0.0.0-20221028071648-f2255501dfc4
+replace github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools v0.0.0-20221111090237-e51fbcb20b1f
 
 require (
 	cloud.google.com/go/compute v1.12.1
@@ -116,6 +116,7 @@ require (
 require (
 	cloud.google.com/go/longrunning v0.3.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.2 // indirect
+	github.com/google/logger v1.1.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.1 // indirect
 	golang.org/x/text v0.4.0 // indirect
 )
@@ -192,7 +193,6 @@ require (
 	github.com/godbus/dbus/v5 v5.0.6 // indirect
 	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/btree v1.1.2 // indirect
@@ -201,7 +201,7 @@ require (
 	github.com/google/go-attestation v0.4.4-0.20221011162210-17f9c05652a9 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-containerregistry v0.12.0 // indirect
-	github.com/google/go-sev-guest v0.2.4 // indirect
+	github.com/google/go-sev-guest v0.2.6 // indirect
 	github.com/google/go-tspi v0.3.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/trillian v1.5.0 // indirect
