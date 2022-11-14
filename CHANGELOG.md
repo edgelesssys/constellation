@@ -32,6 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- For now removed features. -->
 - `access-manager` was removed from code base. K8s native way to SSH into nodes documented.
 
+### Security
+
+Vulnerabilities in `kube-apiserver` fixed by upgrading to v1.23.14, v1.24.8 and v1.25.4:
+- [CVE-2022-3162](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-3162)
+- [CVE-2022-3294](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-3294)
+
 
 ## [2.2.0] - 2022-11-08
 
