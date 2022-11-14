@@ -53,7 +53,6 @@ func terminate(cmd *cobra.Command, terminator cloudTerminator, fileHandler file.
 	if !yesFlag {
 		cmd.Println("You are about to terminate a Constellation cluster.")
 		cmd.Println("All of its associated resources will be DESTROYED.")
-		cmd.Println("This includes any other Terraform workspace in the current directory.")
 		cmd.Println("This action is irreversible and ALL DATA WILL BE LOST.")
 		ok, err := askToConfirm(cmd, "Do you want to continue?")
 		if err != nil {

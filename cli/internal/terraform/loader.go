@@ -11,6 +11,7 @@ import (
 	"errors"
 	"io/fs"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -24,7 +25,7 @@ var terraformFS embed.FS
 
 // prepareWorkspace loads the embedded Terraform files,
 // and writes them into the workspace.
-func prepareWorkspace(fileHandler file.Handler, provider cloudprovider.Provider) error {
+func prepareWorkspace(fileHandler file.Handler, provider cloudprovider.Provider, workingDir string) error {
 	// use path.Join to ensure no forward slashes are used to read the embedded FS
 	rootDir := path.Join("terraform", strings.ToLower(provider.String()))
 	return fs.WalkDir(terraformFS, rootDir, func(path string, d fs.DirEntry, err error) error {
@@ -39,27 +40,13 @@ func prepareWorkspace(fileHandler file.Handler, provider cloudprovider.Provider)
 		if err != nil {
 			return err
 		}
-		fileName := strings.TrimPrefix(path, rootDir+"/")
+		fileName := strings.Replace(filepath.Join(workingDir, path), rootDir+"/", "", 1)
 		return fileHandler.Write(fileName, content, file.OptMkdirAll)
 	})
 }
 
-// cleanUpWorkspace removes files that were loaded into the workspace.
-func cleanUpWorkspace(fileHandler file.Handler) error {
-	// try to remove any terraform files in the workspace
-	for _, csp := range []string{"aws", "azure", "gcp", "qemu"} {
-		rootDir := path.Join("terraform", csp)
-		if err := fs.WalkDir(terraformFS, rootDir, func(path string, d fs.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-			fileName := strings.TrimPrefix(path, rootDir+"/")
-			return ignoreFileNotFoundErr(fileHandler.RemoveAll(fileName))
-		}); err != nil {
-			return err
-		}
-	}
-	return nil
+func cleanUpWorkspace(fileHandler file.Handler, workingDir string) error {
+	return ignoreFileNotFoundErr(fileHandler.RemoveAll(workingDir))
 }
 
 // ignoreFileNotFoundErr ignores the error if it is a file not found error.

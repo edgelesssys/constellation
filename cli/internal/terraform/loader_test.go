@@ -8,9 +8,11 @@ package terraform
 
 import (
 	"io/fs"
+	"path/filepath"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -58,12 +60,12 @@ func TestLoader(t *testing.T) {
 
 			file := file.NewHandler(afero.NewMemMapFs())
 
-			err := prepareWorkspace(file, tc.provider)
+			err := prepareWorkspace(file, tc.provider, constants.TerraformWorkingDir)
 			require.NoError(err)
 
 			checkFiles(t, file, func(err error) { assert.NoError(err) }, tc.fileList)
 
-			err = cleanUpWorkspace(file)
+			err = cleanUpWorkspace(file, constants.TerraformWorkingDir)
 			require.NoError(err)
 
 			checkFiles(t, file, func(err error) { assert.ErrorIs(err, fs.ErrNotExist) }, tc.fileList)
@@ -74,7 +76,8 @@ func TestLoader(t *testing.T) {
 func checkFiles(t *testing.T, file file.Handler, assertion func(error), files []string) {
 	t.Helper()
 	for _, f := range files {
-		_, err := file.Stat(f)
+		path := filepath.Join(constants.TerraformWorkingDir, f)
+		_, err := file.Stat(path)
 		assertion(err)
 	}
 }

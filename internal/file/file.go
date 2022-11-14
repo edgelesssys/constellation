@@ -170,3 +170,8 @@ func (h *Handler) RemoveAll(name string) error {
 func (h *Handler) Stat(name string) (fs.FileInfo, error) {
 	return h.fs.Stat(name)
 }
+
+// MkdirAll creates a directory path and all parents that does not exist yet.
+func (h *Handler) MkdirAll(name string) error {
+	return h.fs.MkdirAll(name, 0o700)
+}
