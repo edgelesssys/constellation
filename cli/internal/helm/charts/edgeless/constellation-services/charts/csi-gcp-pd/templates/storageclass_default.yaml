@@ -1,4 +1,3 @@
-{{ if .Values.deploy }}
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
@@ -11,4 +10,3 @@ provisioner: gcp.csi.confidential.cloud
 allowVolumeExpansion: true
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
-{{ end }}

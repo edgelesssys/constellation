@@ -1,4 +1,3 @@
-{{ if .Values.deploy }}
 apiVersion: storage.k8s.io/v1
 kind: CSIDriver
 metadata:
@@ -6,4 +5,3 @@ metadata:
 spec:
   attachRequired: true
   podInfoOnMount: false
-{{ end }}

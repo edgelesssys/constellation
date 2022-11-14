@@ -200,8 +200,8 @@ func (i *ChartLoader) loadConstellationServices(
 			"image": i.cnmImage,
 		}
 
-		vals["csi-azuredisk"] = map[string]any{
-			"deploy": deployCSIDriver,
+		vals["azure"] = map[string]any{
+			"deployCSIDriver": deployCSIDriver,
 		}
 
 		vals["tags"] = map[string]any{
@@ -217,8 +217,8 @@ func (i *ChartLoader) loadConstellationServices(
 			"image": i.ccmImage,
 		}
 
-		vals["csi-gcp-pd"] = map[string]any{
-			"deploy": deployCSIDriver,
+		vals["gcp"] = map[string]any{
+			"deployCSIDriver": deployCSIDriver,
 		}
 
 		vals["tags"] = map[string]any{

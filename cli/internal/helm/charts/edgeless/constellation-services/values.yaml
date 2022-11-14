@@ -10,6 +10,14 @@ global:
   # Name of the ConfigMap that holds configs that should not be modified by the user.
   internalCMName: internal-config
 
+# GCP specific configuration
+gcp:
+  deployCSIDriver: false
+
+# Azure specific configuration
+azure:
+  deployCSIDriver: false
+
 # Set one of the tags to true to indicate which CSP you are deploying to.
 tags:
   Azure: false

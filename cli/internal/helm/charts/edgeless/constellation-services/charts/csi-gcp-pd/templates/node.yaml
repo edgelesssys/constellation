@@ -1,4 +1,3 @@
-{{ if .Values.deploy }}
 kind: DaemonSet
 apiVersion: apps/v1
 metadata:
@@ -116,4 +115,3 @@ spec:
       # be scheduled on all nodes.
       tolerations:
       - operator: Exists
-{{ end }}

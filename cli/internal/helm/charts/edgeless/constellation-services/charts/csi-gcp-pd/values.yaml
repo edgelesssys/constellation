@@ -24,5 +24,3 @@ image:
     # CSI driver version is independent of Constellation releases
     tag: "v1.0.0"
     pullPolicy: IfNotPresent
-
-deploy: false

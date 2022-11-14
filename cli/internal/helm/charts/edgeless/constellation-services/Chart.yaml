@@ -37,9 +37,11 @@ dependencies:
       - AWS
   - name: csi-gcp-pd
     version: 1.0.1
+    condition: gcp.deployCSIDriver
     tags:
       - GCP
   - name: csi-azuredisk
     version: 1.0.1
+    condition: azure.deployCSIDriver
     tags:
       - Azure
