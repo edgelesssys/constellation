@@ -1,0 +1,26 @@
+name: Install Docgen
+description: |
+  Install Docgen
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout talos
+      uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+      with:
+        fetch-depth: 0
+        repository: "siderolabs/talos"
+        ref: "v1.2.6"
+        path: talos
+
+    # This is required to be able to build docgen
+    - name: Remove go.work
+      shell: bash
+      working-directory: talos
+      run: rm go.work*
+
+    - name: Install Docgen
+      shell: bash
+      working-directory: talos/hack/docgen
+      run: |
+        go build -o docgen .
+        mv docgen /usr/local/bin
