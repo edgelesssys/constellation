@@ -19,6 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/crypto/testvector"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -250,7 +251,7 @@ type stubClusterInitializer struct {
 
 func (i *stubClusterInitializer) InitCluster(
 	context.Context, string, string, []byte, []uint32, bool, []byte, bool,
-	[]byte, bool, *logger.Logger,
+	[]byte, bool, versions.ComponentVersions, *logger.Logger,
 ) ([]byte, error) {
 	return i.initClusterKubeconfig, i.initClusterErr
 }

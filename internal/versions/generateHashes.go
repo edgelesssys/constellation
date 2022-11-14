@@ -102,43 +102,48 @@ func main() {
 			if !ok {
 				return true
 			}
-			if ident.Name == "ArtifactVersion" {
-				var url *ast.KeyValueExpr
-				var hash *ast.KeyValueExpr
-				// Find the URL field
-				for _, e := range x.Elts {
-					kv, ok := e.(*ast.KeyValueExpr)
-					if !ok {
-						continue
-					}
-					ident, ok := kv.Key.(*ast.Ident)
-					if !ok {
-						continue
-					}
-					if ident.Name == "URL" {
-						url = kv
-						break
-					}
-				}
-				// Find the Hash field
-				for _, e := range x.Elts {
-					kv, ok := e.(*ast.KeyValueExpr)
-					if !ok {
-						continue
-					}
-					ident, ok := kv.Key.(*ast.Ident)
-					if !ok {
-						continue
-					}
-					if ident.Name == "Hash" {
-						hash = kv
-						break
-					}
-				}
+			if ident.Name == "ComponentVersions" {
+				for _, elt := range x.Elts {
+					// component is one list element
+					component := elt.(*ast.CompositeLit)
 
-				// Generate the hash
-				fmt.Println("Generating hash for", url.Value.(*ast.BasicLit).Value)
-				hash.Value.(*ast.BasicLit).Value = mustGetHash(url.Value.(*ast.BasicLit).Value)
+					var url *ast.KeyValueExpr
+					var hash *ast.KeyValueExpr
+					// Find the URL field
+					for _, e := range component.Elts {
+						kv, ok := e.(*ast.KeyValueExpr)
+						if !ok {
+							continue
+						}
+						ident, ok := kv.Key.(*ast.Ident)
+						if !ok {
+							continue
+						}
+						if ident.Name == "URL" {
+							url = kv
+							break
+						}
+					}
+					// Find the Hash field
+					for _, e := range component.Elts {
+						kv, ok := e.(*ast.KeyValueExpr)
+						if !ok {
+							continue
+						}
+						ident, ok := kv.Key.(*ast.Ident)
+						if !ok {
+							continue
+						}
+						if ident.Name == "Hash" {
+							hash = kv
+							break
+						}
+					}
+
+					// Generate the hash
+					fmt.Println("Generating hash for", url.Value.(*ast.BasicLit).Value)
+					hash.Value.(*ast.BasicLit).Value = mustGetHash(url.Value.(*ast.BasicLit).Value)
+				}
 			}
 		}
 		return true

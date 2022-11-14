@@ -10,6 +10,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -20,6 +21,7 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/retry"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"k8s.io/utils/clock"
 )
@@ -50,28 +52,38 @@ func newOSInstaller() *osInstaller {
 }
 
 // Install downloads a resource from a URL, applies any given text transformations and extracts the resulting file if required.
-// The resulting file(s) are copied to all destinations.
-func (i *osInstaller) Install(
-	ctx context.Context, sourceURL string, destinations []string, perm fs.FileMode, extract bool,
-) error {
-	tempPath, err := i.retryDownloadToTempDir(ctx, sourceURL)
+// The resulting file(s) are copied to the destination. It also verifies the sha256 hash of the downloaded file.
+func (i *osInstaller) Install(ctx context.Context, kubernetesComponent versions.ComponentVersion) error {
+	tempPath, err := i.retryDownloadToTempDir(ctx, kubernetesComponent.URL)
 	if err != nil {
 		return err
 	}
+
+	file, err := i.fs.OpenFile(tempPath, os.O_RDONLY, 0)
+	if err != nil {
+		return fmt.Errorf("opening file %q: %w", tempPath, err)
+	}
+	sha := sha256.New()
+	if _, err := io.Copy(sha, file); err != nil {
+		return fmt.Errorf("reading file %q: %w", tempPath, err)
+	}
+	calculatedHash := fmt.Sprintf("sha256:%x", sha.Sum(nil))
+	if calculatedHash != kubernetesComponent.Hash {
+		return fmt.Errorf("hash of file %q %s does not match expected hash %s", tempPath, calculatedHash, kubernetesComponent.Hash)
+	}
+
 	defer func() {
 		_ = i.fs.Remove(tempPath)
 	}()
-	for _, destination := range destinations {
-		var err error
-		if extract {
-			err = i.extractArchive(tempPath, destination, perm)
-		} else {
-			err = i.copy(tempPath, destination, perm)
-		}
-		if err != nil {
-			return fmt.Errorf("installing from %q: copying to destination %q: %w", sourceURL, destination, err)
-		}
+	if kubernetesComponent.Extract {
+		err = i.extractArchive(tempPath, kubernetesComponent.InstallPath, executablePerm)
+	} else {
+		err = i.copy(tempPath, kubernetesComponent.InstallPath, executablePerm)
 	}
+	if err != nil {
+		return fmt.Errorf("installing from %q: copying to destination %q: %w", kubernetesComponent.URL, kubernetesComponent.InstallPath, err)
+	}
+
 	return nil
 }
 

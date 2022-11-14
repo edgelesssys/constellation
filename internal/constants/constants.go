@@ -56,12 +56,6 @@ const (
 	DebugdPort = 4000
 	// KonnectivityPort port for konnectivity k8s service.
 	KonnectivityPort = 8132
-	// NodePortFrom start of range to use for K8s node port
-	// https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
-	NodePortFrom = 30000
-	// NodePortTo end of range to use for K8s node port
-	// https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
-	NodePortTo = 32767
 
 	//
 	// Filenames.
@@ -83,6 +77,15 @@ const (
 	ControlPlaneAdminConfFilename = "/etc/kubernetes/admin.conf"
 	// KubectlPath path to kubectl binary.
 	KubectlPath = "/run/state/bin/kubectl"
+
+	// CniPluginsDir path directory for CNI plugins.
+	CniPluginsDir = "/opt/cni/bin"
+	// BinDir install path for CNI config.
+	BinDir = "/run/state/bin"
+	// KubeadmPath install path for kubeadm.
+	KubeadmPath = "/run/state/bin/kubeadm"
+	// KubeletPath install path for kubelet.
+	KubeletPath = "/run/state/bin/kubelet"
 
 	//
 	// Filenames for Constellation's micro services.

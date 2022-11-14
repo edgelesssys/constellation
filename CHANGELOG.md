@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Automatic CSI driver deployment for Azure and GCP during Constellation init
 
+- Improve reproducibility by pinning the Kubernetes components.
+
 ### Changed
 <!-- For changes in existing functionality.  -->
 - Constellation operators are now deployed using Helm.

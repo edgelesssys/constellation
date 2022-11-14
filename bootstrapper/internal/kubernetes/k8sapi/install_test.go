@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,29 +32,52 @@ import (
 )
 
 func TestInstall(t *testing.T) {
+	serverURL := "http://server/path"
 	testCases := map[string]struct {
 		server      httpBufconnServer
+		component   versions.ComponentVersion
+		hash        string
 		destination string
 		extract     bool
-		readonly    bool
 		wantErr     bool
 		wantFiles   map[string][]byte
 	}{
 		"download works": {
-			server:      newHTTPBufconnServerWithBody([]byte("file-contents")),
-			destination: "/destination",
-			wantFiles:   map[string][]byte{"/destination": []byte("file-contents")},
+			server: newHTTPBufconnServerWithBody([]byte("file-contents")),
+			component: versions.ComponentVersion{
+				URL:         serverURL,
+				Hash:        "sha256:f03779b36bece74893fd6533a67549675e21573eb0e288d87158738f9c24594e",
+				InstallPath: "/destination",
+			},
+			wantFiles: map[string][]byte{"/destination": []byte("file-contents")},
 		},
 		"download with extract works": {
-			server:      newHTTPBufconnServerWithBody(createTarGz([]byte("file-contents"), "/destination")),
-			destination: "/prefix",
-			extract:     true,
-			wantFiles:   map[string][]byte{"/prefix/destination": []byte("file-contents")},
+			server: newHTTPBufconnServerWithBody(createTarGz([]byte("file-contents"), "/destination")),
+			component: versions.ComponentVersion{
+				URL:         serverURL,
+				Hash:        "sha256:a52a1664ca0a6ec9790384e3d058852ab8b3a8f389a9113d150fdc6ab308d949",
+				InstallPath: "/prefix",
+				Extract:     true,
+			},
+			wantFiles: map[string][]byte{"/prefix/destination": []byte("file-contents")},
+		},
+		"hash validation fails": {
+			server: newHTTPBufconnServerWithBody([]byte("file-contents")),
+			component: versions.ComponentVersion{
+				URL:         serverURL,
+				Hash:        "sha256:abc",
+				InstallPath: "/destination",
+			},
+			wantErr: true,
 		},
 		"download fails": {
-			server:      newHTTPBufconnServer(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(500) }),
-			destination: "/destination",
-			wantErr:     true,
+			server: newHTTPBufconnServer(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(500) }),
+			component: versions.ComponentVersion{
+				URL:         serverURL,
+				Hash:        "sha256:abc",
+				InstallPath: "/destination",
+			},
+			wantErr: true,
 		},
 	}
 
@@ -81,7 +105,7 @@ func TestInstall(t *testing.T) {
 				retriable: func(err error) bool { return false },
 			}
 
-			err := inst.Install(context.Background(), "http://server/path", []string{tc.destination}, fs.ModePerm, tc.extract)
+			err := inst.Install(context.Background(), tc.component)
 			if tc.wantErr {
 				assert.Error(err)
 				return
