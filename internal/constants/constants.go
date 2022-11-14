@@ -77,6 +77,8 @@ const (
 	AdminConfFilename = "constellation-admin.conf"
 	// MasterSecretFilename filename of Constellation mastersecret.
 	MasterSecretFilename = "constellation-mastersecret.json"
+	// TerraformWorkingDir is the directory name for the TerraformClient workspace.
+	TerraformWorkingDir = "constellation-terraform"
 	// ControlPlaneAdminConfFilename filepath to control plane kubernetes admin config.
 	ControlPlaneAdminConfFilename = "/etc/kubernetes/admin.conf"
 	// KubectlPath path to kubectl binary.

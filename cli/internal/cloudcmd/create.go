@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
 // Creator creates cloud resources.
@@ -35,7 +36,7 @@ func NewCreator(out io.Writer) *Creator {
 	return &Creator{
 		out: out,
 		newTerraformClient: func(ctx context.Context) (terraformClient, error) {
-			return terraform.New(ctx)
+			return terraform.New(ctx, constants.TerraformWorkingDir)
 		},
 		newLibvirtRunner: func() libvirtRunner {
 			return libvirt.New()

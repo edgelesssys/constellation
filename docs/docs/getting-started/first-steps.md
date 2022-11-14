@@ -325,7 +325,6 @@ This should give the following output:
 $ constellation terminate
 You are about to terminate a Constellation cluster.
 All of its associated resources will be DESTROYED.
-This includes any other Terraform workspace in the current directory.
 This action is irreversible and ALL DATA WILL BE LOST.
 Do you want to continue? [y/n]:
 ```

@@ -9,6 +9,7 @@ package terraform
 import (
 	"context"
 	"errors"
+	"path/filepath"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -32,23 +33,27 @@ const (
 type Client struct {
 	tf tfInterface
 
-	file   file.Handler
-	remove func()
+	file       file.Handler
+	workingDir string
+	remove     func()
 }
 
 // New sets up a new Client for Terraform.
-func New(ctx context.Context) (*Client, error) {
-	tf, remove, err := GetExecutable(ctx, ".")
+func New(ctx context.Context, workingDir string) (*Client, error) {
+	file := file.NewHandler(afero.NewOsFs())
+	if err := file.MkdirAll(workingDir); err != nil {
+		return nil, err
+	}
+	tf, remove, err := GetExecutable(ctx, workingDir)
 	if err != nil {
 		return nil, err
 	}
 
-	file := file.NewHandler(afero.NewOsFs())
-
 	return &Client{
-		tf:     tf,
-		remove: remove,
-		file:   file,
+		tf:         tf,
+		remove:     remove,
+		file:       file,
+		workingDir: workingDir,
 	}, nil
 }
 
@@ -56,7 +61,7 @@ func New(ctx context.Context) (*Client, error) {
 func (c *Client) CreateCluster(
 	ctx context.Context, provider cloudprovider.Provider, name string, vars Variables,
 ) (string, error) {
-	if err := prepareWorkspace(c.file, provider); err != nil {
+	if err := prepareWorkspace(c.file, provider, c.workingDir); err != nil {
 		return "", err
 	}
 
@@ -64,7 +69,7 @@ func (c *Client) CreateCluster(
 		return "", err
 	}
 
-	if err := c.file.Write(terraformVarsFile, []byte(vars.String())); err != nil {
+	if err := c.file.Write(filepath.Join(c.workingDir, terraformVarsFile), []byte(vars.String())); err != nil {
 		return "", err
 	}
 
@@ -101,23 +106,7 @@ func (c *Client) RemoveInstaller() {
 
 // CleanUpWorkspace removes terraform files from the current directory.
 func (c *Client) CleanUpWorkspace() error {
-	if err := cleanUpWorkspace(c.file); err != nil {
-		return err
-	}
-
-	if err := ignoreFileNotFoundErr(c.file.Remove("terraform.tfvars")); err != nil {
-		return err
-	}
-	if err := ignoreFileNotFoundErr(c.file.Remove("terraform.tfstate")); err != nil {
-		return err
-	}
-	if err := ignoreFileNotFoundErr(c.file.Remove("terraform.tfstate.backup")); err != nil {
-		return err
-	}
-	if err := ignoreFileNotFoundErr(c.file.Remove(".terraform.lock.hcl")); err != nil {
-		return err
-	}
-	if err := ignoreFileNotFoundErr(c.file.RemoveAll(".terraform")); err != nil {
+	if err := cleanUpWorkspace(c.file, c.workingDir); err != nil {
 		return err
 	}
 

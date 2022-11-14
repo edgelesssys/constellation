@@ -11,6 +11,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/libvirt"
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 )
 
 // Terminator deletes cloud provider resources.
@@ -23,7 +24,7 @@ type Terminator struct {
 func NewTerminator() *Terminator {
 	return &Terminator{
 		newTerraformClient: func(ctx context.Context) (terraformClient, error) {
-			return terraform.New(ctx)
+			return terraform.New(ctx, constants.TerraformWorkingDir)
 		},
 		newLibvirtRunner: func() libvirtRunner {
 			return libvirt.New()

@@ -10,9 +10,11 @@ import (
 	"context"
 	"errors"
 	"io/fs"
+	"path/filepath"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
@@ -122,8 +124,9 @@ func TestCreateCluster(t *testing.T) {
 			assert := assert.New(t)
 
 			c := &Client{
-				tf:   tc.tf,
-				file: file.NewHandler(tc.fs),
+				tf:         tc.tf,
+				file:       file.NewHandler(tc.fs),
+				workingDir: constants.TerraformWorkingDir,
 			}
 
 			ip, err := c.CreateCluster(context.Background(), tc.provider, "test", tc.vars)
@@ -205,8 +208,9 @@ func TestCleanupWorkspace(t *testing.T) {
 			require.NoError(tc.prepareFS(file))
 
 			c := &Client{
-				file: file,
-				tf:   &stubTerraform{},
+				file:       file,
+				tf:         &stubTerraform{},
+				workingDir: constants.TerraformWorkingDir,
 			}
 
 			err := c.CleanUpWorkspace()
@@ -215,11 +219,11 @@ func TestCleanupWorkspace(t *testing.T) {
 				return
 			}
 			assert.NoError(err)
-			_, err = file.Stat("terraform.tfvars")
+			_, err = file.Stat(filepath.Join(c.workingDir, "terraform.tfvars"))
 			assert.ErrorIs(err, fs.ErrNotExist)
-			_, err = file.Stat("terraform.tfstate")
+			_, err = file.Stat(filepath.Join(c.workingDir, "terraform.tfstate"))
 			assert.ErrorIs(err, fs.ErrNotExist)
-			_, err = file.Stat("terraform.tfstate.backup")
+			_, err = file.Stat(filepath.Join(c.workingDir, "terraform.tfstate.backup"))
 			assert.ErrorIs(err, fs.ErrNotExist)
 		})
 	}
