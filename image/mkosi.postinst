@@ -20,3 +20,7 @@ mkdir -p /etc/{cni,kubernetes}
 mv /etc/issue.d /usr/lib/issue.d || true
 rm -f /etc/issue
 rm -f /etc/issue.net
+
+# update /etc/os-release
+echo "IMAGE_ID=\"${IMAGE_ID}\"" >> /etc/os-release
+echo "IMAGE_VERSION=\"${IMAGE_VERSION}\"" >> /etc/os-release
