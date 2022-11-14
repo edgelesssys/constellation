@@ -23,10 +23,18 @@ message InitRequest {
   repeated uint32 enforced_pcrs = 12;
   bool enforce_idkeydigest = 13;
   bool conformance_mode = 14;
+  repeated KubernetesComponent kubernetes_components = 15;
 }
 
 message InitResponse {
     bytes kubeconfig = 1;
     bytes owner_id = 2;
     bytes cluster_id = 3;
+}
+
+message KubernetesComponent {
+  string url = 1;
+  string hash = 2;
+  string install_path = 3;
+  bool extract = 4;
 }

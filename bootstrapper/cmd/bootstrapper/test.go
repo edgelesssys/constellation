@@ -12,6 +12,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/role"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
@@ -21,7 +22,7 @@ type clusterFake struct{}
 // InitCluster fakes bootstrapping a new cluster with the current node being the master, returning the arguments required to join the cluster.
 func (c *clusterFake) InitCluster(
 	context.Context, string, string, []byte, []uint32, bool, []byte, bool,
-	[]byte, bool, *logger.Logger,
+	[]byte, bool, versions.ComponentVersions, *logger.Logger,
 ) ([]byte, error) {
 	return []byte{}, nil
 }

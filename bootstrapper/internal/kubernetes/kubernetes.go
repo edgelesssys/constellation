@@ -87,14 +87,14 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, cloudServiceAccountURI, versionString string, measurementSalt []byte, enforcedPCRs []uint32,
 	enforceIDKeyDigest bool, idKeyDigest []byte, azureCVM bool,
-	helmReleasesRaw []byte, conformanceMode bool, log *logger.Logger,
+	helmReleasesRaw []byte, conformanceMode bool, kubernetesComponents versions.ComponentVersions, log *logger.Logger,
 ) ([]byte, error) {
 	k8sVersion, err := versions.NewValidK8sVersion(versionString)
 	if err != nil {
 		return nil, err
 	}
 	log.With(zap.String("version", string(k8sVersion))).Infof("Installing Kubernetes components")
-	if err := k.clusterUtil.InstallComponents(ctx, k8sVersion); err != nil {
+	if err := k.clusterUtil.InstallComponentsFromCLI(ctx, kubernetesComponents); err != nil {
 		return nil, err
 	}
 

@@ -237,7 +237,7 @@ func TestInitCluster(t *testing.T) {
 
 			_, err := kube.InitCluster(
 				context.Background(), serviceAccountURI, string(tc.k8sVersion),
-				nil, nil, false, nil, true, []byte("{}"), false, logger.NewTest(t),
+				nil, nil, false, nil, true, []byte("{}"), false, nil, logger.NewTest(t),
 			)
 
 			if tc.wantErr {
@@ -415,16 +415,17 @@ func TestK8sCompliantHostname(t *testing.T) {
 }
 
 type stubClusterUtil struct {
-	installComponentsErr   error
-	initClusterErr         error
-	setupAutoscalingError  error
-	setupKonnectivityError error
-	setupGCPGuestAgentErr  error
-	setupOLMErr            error
-	setupNMOErr            error
-	setupNodeOperatorErr   error
-	joinClusterErr         error
-	startKubeletErr        error
+	installComponentsErr        error
+	installComponentsFromCLIErr error
+	initClusterErr              error
+	setupAutoscalingError       error
+	setupKonnectivityError      error
+	setupGCPGuestAgentErr       error
+	setupOLMErr                 error
+	setupNMOErr                 error
+	setupNodeOperatorErr        error
+	joinClusterErr              error
+	startKubeletErr             error
 
 	initConfigs [][]byte
 	joinConfigs [][]byte
@@ -436,6 +437,10 @@ func (s *stubClusterUtil) SetupKonnectivity(kubectl k8sapi.Client, konnectivityA
 
 func (s *stubClusterUtil) InstallComponents(ctx context.Context, version versions.ValidK8sVersion) error {
 	return s.installComponentsErr
+}
+
+func (s *stubClusterUtil) InstallComponentsFromCLI(ctx context.Context, kubernetesComponents versions.ComponentVersions) error {
+	return s.installComponentsFromCLIErr
 }
 
 // TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.

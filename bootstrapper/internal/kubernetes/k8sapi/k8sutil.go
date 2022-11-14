@@ -13,7 +13,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/fs"
 	"net"
 	"net/http"
 	"os"
@@ -42,6 +41,10 @@ import (
 const (
 	// kubeletStartTimeout is the maximum time given to the kubelet service to (re)start.
 	kubeletStartTimeout = 10 * time.Minute
+	// crdTimeout is the maximum time given to the CRDs to be created.
+	crdTimeout         = 30 * time.Second
+	executablePerm     = 0o544
+	kubeletServicePath = "/usr/lib/systemd/system/kubelet.service"
 )
 
 // Client provides the functions to talk to the k8s API.
@@ -57,7 +60,7 @@ type Client interface {
 
 type installer interface {
 	Install(
-		ctx context.Context, sourceURL string, destinations []string, perm fs.FileMode, extract bool,
+		ctx context.Context, kubernetesComponent versions.ComponentVersion,
 	) error
 }
 
@@ -75,34 +78,26 @@ func NewKubernetesUtil() *KubernetesUtil {
 	}
 }
 
+// InstallComponentsFromCLI installs the kubernetes components passed from the CLI.
+func (k *KubernetesUtil) InstallComponentsFromCLI(ctx context.Context, kubernetesComponents versions.ComponentVersions) error {
+	for _, component := range kubernetesComponents {
+		if err := k.inst.Install(ctx, component); err != nil {
+			return fmt.Errorf("installing kubernetes component from URL %s: %w", component.URL, err)
+		}
+	}
+
+	return enableSystemdUnit(ctx, kubeletServicePath)
+}
+
 // InstallComponents installs kubernetes components in the version specified.
+// TODO(AB#2543,3u13r): Remove this function once the JoinService is extended.
 func (k *KubernetesUtil) InstallComponents(ctx context.Context, version versions.ValidK8sVersion) error {
 	versionConf := versions.VersionConfigs[version]
 
-	if err := k.inst.Install(
-		ctx, versionConf.CNIPlugins.URL, []string{cniPluginsDir}, executablePerm, true,
-	); err != nil {
-		return fmt.Errorf("installing cni plugins: %w", err)
-	}
-	if err := k.inst.Install(
-		ctx, versionConf.Crictl.URL, []string{binDir}, executablePerm, true,
-	); err != nil {
-		return fmt.Errorf("installing crictl: %w", err)
-	}
-	if err := k.inst.Install(
-		ctx, versionConf.Kubelet.URL, []string{kubeletPath}, executablePerm, false,
-	); err != nil {
-		return fmt.Errorf("installing kubelet: %w", err)
-	}
-	if err := k.inst.Install(
-		ctx, versionConf.Kubeadm.URL, []string{kubeadmPath}, executablePerm, false,
-	); err != nil {
-		return fmt.Errorf("installing kubeadm: %w", err)
-	}
-	if err := k.inst.Install(
-		ctx, versionConf.Kubectl.URL, []string{constants.KubectlPath}, executablePerm, false,
-	); err != nil {
-		return fmt.Errorf("installing kubectl: %w", err)
+	for _, component := range versionConf.KubernetesComponents {
+		if err := k.inst.Install(ctx, component); err != nil {
+			return fmt.Errorf("installing kubernetes component from URL %s: %w", component.URL, err)
+		}
 	}
 
 	return enableSystemdUnit(ctx, kubeletServicePath)
@@ -132,7 +127,7 @@ func (k *KubernetesUtil) InitCluster(
 
 	// preflight
 	log.Infof("Running kubeadm preflight checks")
-	cmd := exec.CommandContext(ctx, kubeadmPath, "init", "phase", "preflight", "-v=5", "--config", initConfigFile.Name())
+	cmd := exec.CommandContext(ctx, constants.KubeadmPath, "init", "phase", "preflight", "-v=5", "--config", initConfigFile.Name())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		var exitErr *exec.ExitError
@@ -144,7 +139,7 @@ func (k *KubernetesUtil) InitCluster(
 
 	// create CA certs
 	log.Infof("Creating Kubernetes control-plane certificates and keys")
-	cmd = exec.CommandContext(ctx, kubeadmPath, "init", "phase", "certs", "all", "-v=5", "--config", initConfigFile.Name())
+	cmd = exec.CommandContext(ctx, constants.KubeadmPath, "init", "phase", "certs", "all", "-v=5", "--config", initConfigFile.Name())
 	out, err = cmd.CombinedOutput()
 	if err != nil {
 		var exitErr *exec.ExitError
@@ -172,7 +167,7 @@ func (k *KubernetesUtil) InitCluster(
 		skipPhases += ",addon/kube-proxy"
 	}
 
-	cmd = exec.CommandContext(ctx, kubeadmPath, "init", "-v=5", skipPhases, "--config", initConfigFile.Name())
+	cmd = exec.CommandContext(ctx, constants.KubeadmPath, "init", "-v=5", skipPhases, "--config", initConfigFile.Name())
 	out, err = cmd.CombinedOutput()
 	if err != nil {
 		var exitErr *exec.ExitError
@@ -362,7 +357,7 @@ func (k *KubernetesUtil) JoinCluster(ctx context.Context, joinConfig []byte, pee
 	}
 
 	// run `kubeadm join` to join a worker node to an existing Kubernetes cluster
-	cmd := exec.CommandContext(ctx, kubeadmPath, "join", "-v=5", "--config", joinConfigFile.Name())
+	cmd := exec.CommandContext(ctx, constants.KubeadmPath, "join", "-v=5", "--config", joinConfigFile.Name())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		var exitErr *exec.ExitError
