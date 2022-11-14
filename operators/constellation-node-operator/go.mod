@@ -20,10 +20,10 @@ require (
 	google.golang.org/api v0.98.0
 	google.golang.org/genproto v0.0.0-20221025140454-527a21cfbd71
 	google.golang.org/protobuf v1.28.1
-	k8s.io/api v0.25.3
-	k8s.io/apimachinery v0.25.3
-	k8s.io/client-go v0.25.3
-	k8s.io/utils v0.0.0-20221101230645-61b03e2f6476
+	k8s.io/api v0.25.4
+	k8s.io/apimachinery v0.25.4
+	k8s.io/client-go v0.25.4
+	k8s.io/utils v0.0.0-20221108210102-8e77b1f39fe2
 	sigs.k8s.io/controller-runtime v0.13.1
 )
 
