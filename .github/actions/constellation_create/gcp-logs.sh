@@ -1,26 +1,27 @@
 #!/usr/bin/env bash
 
-# Usage: ./gcp-logs.sh
+set -euo pipefail
+shopt -s inherit_errexit
 
-CONTROL_INSTANCE_GROUP=$(terraform show -json | jq -r .'values.root_module.child_modules[] | select(.address == "module.instance_group_control_plane") | .resources[0].values.base_instance_name' )
-WORKER_INSTANCE_GROUP=$(terraform show -json | jq -r .'values.root_module.child_modules[] | select(.address == "module.instance_group_worker") | .resources[0].values.base_instance_name')
-ZONE=$(terraform show -json | jq -r .'values.root_module.child_modules[] | select(.address == "module.instance_group_control_plane") | .resources[0].values.zone' )
+controlInstanceGroup=$(terraform show -json | jq -r .'values.root_module.child_modules[] | select(.address == "module.instance_group_control_plane") | .resources[0].values.base_instance_name')
+workerInstanceGroup=$(terraform show -json | jq -r .'values.root_module.child_modules[] | select(.address == "module.instance_group_worker") | .resources[0].values.base_instance_name')
+zone=$(terraform show -json | jq -r .'values.root_module.child_modules[] | select(.address == "module.instance_group_control_plane") | .resources[0].values.zone')
 
-CONTROL_INSTANCE_GROUP_SHORT=${CONTROL_INSTANCE_GROUP##*/}
-WORKER_INSTANCE_GROUP_SHORT=${WORKER_INSTANCE_GROUP##*/}
+controlInstanceGroup=${controlInstanceGroup##*/}
+workerInstanceGroupShort=${workerInstanceGroup##*/}
 
-CONTROL_INSTANCES=$(gcloud compute instance-groups managed list-instances ${CONTROL_INSTANCE_GROUP_SHORT} --zone ${ZONE} --format=json | jq -r '.[] | .instance')
-WORKER_INSTANCES=$(gcloud compute instance-groups managed list-instances ${WORKER_INSTANCE_GROUP_SHORT} --zone ${ZONE} --format=json | jq -r '.[] | .instance')
+controlInstances=$(gcloud compute instance-groups managed list-instances "${controlInstanceGroup}" --zone "${zone}" --format=json | jq -r '.[] | .instance')
+workerInstances=$(gcloud compute instance-groups managed list-instances "${workerInstanceGroupShort}" --zone "${zone}" --format=json | jq -r '.[] | .instance')
 
-ALL_INSTANCES="$CONTROL_INSTANCES $WORKER_INSTANCES"
+ALL_INSTANCES="${controlInstances} ${workerInstances}"
 
-printf "Fetching logs for %s and %s\n" ${CONTROL_INSTANCES} ${WORKER_INSTANCES}
+printf "Fetching logs for %s and %s\n" "${controlInstances}" "${workerInstances}"
 
-for INSTANCE in $ALL_INSTANCES; do
+for INSTANCE in ${ALL_INSTANCES}; do
   SHORT_NAME=${INSTANCE##*/}
-  printf "Fetching for %s\n" ${SHORT_NAME}
-  gcloud compute instances get-serial-port-output ${INSTANCE} \
+  printf "Fetching for %s\n" "${SHORT_NAME}"
+  gcloud compute instances get-serial-port-output "${INSTANCE}" \
     --port 1 \
     --start 0 \
-    --zone ${ZONE} > ${SHORT_NAME}.log
+    --zone "${zone}" > "${SHORT_NAME}".log
 done

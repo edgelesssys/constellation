@@ -10,6 +10,8 @@ jobs:
       - name: Checkout
         id: checkout
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Setup Go environment
         uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
@@ -57,11 +59,12 @@ jobs:
           cosignPassword: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
 
       - name: Login to Azure
-        uses: ./.github/actions/azure_login
+        uses: ./.github/actions/login_azure
         with:
           azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
+
       - name: Login to GCP
-        uses: ./.github/actions/gcp_login
+        uses: ./.github/actions/login_gcp
         with:
           gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
@@ -81,7 +84,7 @@ jobs:
           curl -LO https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_linux_amd64.tar.gz
           tar -xzf grype_${GRYPE_VERSION}_linux_amd64.tar.gz
           ./grype version
-          echo $(pwd) >> $GITHUB_PATH
+          pwd >> "$GITHUB_PATH"
         shell: bash
 
       - name: Build signed SBOMs

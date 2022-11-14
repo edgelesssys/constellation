@@ -68,7 +68,7 @@ Debugging via a shell on a node is [directly supported by Kubernetes](https://ku
 
     The nodes file system is mounted at `/host`.
 
-3. Once finished, cleanup the debug pod:
+3. Once finished, clean up the debug pod:
 
     ```sh
     kubectl delete pod node-debugger-constell-worker-xksa0-000000-bjthj

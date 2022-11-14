@@ -7,9 +7,11 @@ on:
       - "release/**"
     paths:
       - "**.sh"
+      - "**.bash"
   pull_request:
     paths:
       - "**.sh"
+      - "**.bash"
 
 jobs:
   shellcheck:
@@ -24,5 +26,5 @@ jobs:
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@6d3f514f44620b9d4488e380339edc0d9bbe2fba # master
         with:
-          severity: error
+          severity: info
           ignore_paths: charts/cilium

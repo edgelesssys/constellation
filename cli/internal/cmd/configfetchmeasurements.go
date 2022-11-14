@@ -71,7 +71,7 @@ func configFetchMeasurements(cmd *cobra.Command, verifier rekorVerifier, fileHan
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	var fetchedMeasurements measurements.Measurements
 	hash, err := fetchedMeasurements.FetchAndVerify(ctx, client, flags.measurementsURL, flags.signatureURL, []byte(constants.CosignPublicKey))

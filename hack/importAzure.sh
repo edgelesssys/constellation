@@ -15,25 +15,23 @@
 # * AZURE_IMAGE_NAME: (optional, default: upload-target) Temporary image used for upload, must not exist.
 
 set -euo pipefail
+shopt -s inherit_errexit
 
 # Required tools
-if ! command -v az &> /dev/null
-then
-    echo "az CLI could not be found"
-    echo "Please instal it from: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli"
-    exit
+if ! command -v az &> /dev/null; then
+  echo "az CLI could not be found"
+  echo "Please instal it from: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli"
+  exit
 fi
-if ! command -v azcopy &> /dev/null
-then
-    echo "azcopy could not be found"
-    echo "Please instal it from: https://docs.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
-    exit
+if ! command -v azcopy &> /dev/null; then
+  echo "azcopy could not be found"
+  echo "Please instal it from: https://docs.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+  exit
 fi
-if ! command -v jq &> /dev/null
-then
-    echo "jq could not be found"
-    echo "Please instal it from: https://github.com/stedolan/jq"
-    exit
+if ! command -v jq &> /dev/null; then
+  echo "jq could not be found"
+  echo "Please instal it from: https://github.com/stedolan/jq"
+  exit
 fi
 
 AZURE_IMAGE_FILE="${AZURE_IMAGE_FILE:-$(pwd)/abcd}"
@@ -46,16 +44,15 @@ AZURE_IMAGE_DEFINITION="${AZURE_IMAGE_DEFINITION:-constellation}"
 AZURE_SKU="${AZURE_SKU:-constellation}"
 AZURE_SECURITY_TYPE="${AZURE_SECURITY_TYPE:-TrustedLaunch}"
 
-if [[ -z "${AZURE_RESOURCE_GROUP_NAME}" ]]; then
+if [[ -z ${AZURE_RESOURCE_GROUP_NAME} ]]; then
   echo "Please provide a value for AZURE_RESOURCE_GROUP_NAME."
   exit 1
 fi
 
-if [[ -z "${AZURE_IMAGE_VERSION}" ]]; then
+if [[ -z ${AZURE_IMAGE_VERSION} ]]; then
   echo "Please provide a value for AZURE_IMAGE_VERSION of pattern <major>.<minor>.<patch>"
   exit 1
 fi
-
 
 echo "Using following settings:"
 echo "AZURE_REGION=${AZURE_REGION}"
@@ -71,50 +68,115 @@ echo "AZURE_SKU=${AZURE_SKU}"
 echo "AZURE_SECURITY_TYPE=${AZURE_SECURITY_TYPE}"
 echo ""
 
-read -p "Continue (y/n)?" choice
-case "$choice" in
-  y|Y ) echo "Starting import...";;
-  n|N ) echo "Abort!"; exit 1;;
-  * ) echo "invalid"; exit 1;;
+read -r -p "Continue (y/n)?" choice
+case "${choice}" in
+y | Y) echo "Starting import..." ;;
+n | N)
+  echo "Abort!"
+  exit 1
+  ;;
+*)
+  echo "invalid"
+  exit 1
+  ;;
 esac
 
 echo "Preparing to upload '${AZURE_IMAGE_FILE} to Azure."
 
-SIZE=$(wc -c ${AZURE_IMAGE_FILE} | cut -d " " -f1)
+SIZE=$(wc -c "${AZURE_IMAGE_FILE}" | cut -d " " -f1)
 echo "Size is ${SIZE} bytes."
 
 echo "Creating disk (${AZURE_IMAGE_NAME}) as import target."
-az disk create -n ${AZURE_IMAGE_NAME} -g ${AZURE_RESOURCE_GROUP_NAME} -l ${AZURE_REGION} --hyper-v-generation V2 --os-type Linux --for-upload --upload-size-bytes ${SIZE} --sku standard_lrs
+az disk create \
+  -n "${AZURE_IMAGE_NAME}" \
+  -g "${AZURE_RESOURCE_GROUP_NAME}" \
+  -l "${AZURE_REGION}" \
+  --hyper-v-generation V2 \
+  --os-type Linux \
+  --for-upload \
+  -upload-size-bytes "${SIZE}" \
+  --sku standard_lrs
 echo "Waiting for disk to be created."
-az disk wait --created -n ${AZURE_IMAGE_NAME} -g ${AZURE_RESOURCE_GROUP_NAME}
+az disk wait --created -n "${AZURE_IMAGE_NAME}" -g "${AZURE_RESOURCE_GROUP_NAME}"
 echo "Retrieving disk ID."
-AZURE_DISK_ID=$(az disk list --query "[?name == '${AZURE_IMAGE_NAME}' && resourceGroup == '${AZURE_RESOURCE_GROUP_NAME^^}'] | [0].id" --output json | jq -r)
+AZURE_DISK_ID=$(
+  az disk list \
+    --query "[?name == '${AZURE_IMAGE_NAME}' && resourceGroup == '${AZURE_RESOURCE_GROUP_NAME^^}'] | [0].id" \
+    --output json |
+    jq -r
+)
 echo "Disk ID is ${AZURE_DISK_ID}"
 
 echo "Generating SAS URL for authorized upload."
-AZURE_SAS_URL=$(az disk grant-access -n ${AZURE_IMAGE_NAME} -g ${AZURE_RESOURCE_GROUP_NAME} --access-level Write --duration-in-seconds 86400 | jq -r .accessSas)
+AZURE_SAS_URL=$(
+  az disk grant-access \
+    -n "${AZURE_IMAGE_NAME}" \
+    -g "${AZURE_RESOURCE_GROUP_NAME}" \
+    --access-level Write \
+    --duration-in-seconds 86400 |
+    jq -r .accessSas
+)
 echo "Uploading image file to Azure disk."
-azcopy copy ${AZURE_IMAGE_FILE} ${AZURE_SAS_URL} --blob-type PageBlob
+azcopy copy "${AZURE_IMAGE_FILE}" "${AZURE_SAS_URL}" --blob-type PageBlob
 echo "Finalizing upload."
-az disk revoke-access -n ${AZURE_IMAGE_NAME} -g ${AZURE_RESOURCE_GROUP_NAME}
+az disk revoke-access -n "${AZURE_IMAGE_NAME}" -g "${AZURE_RESOURCE_GROUP_NAME}"
 
 echo "Creating Azure image."
-az image create -g ${AZURE_RESOURCE_GROUP_NAME} -l ${AZURE_REGION} -n ${AZURE_IMAGE_NAME} --hyper-v-generation V2 --os-type Linux --source ${AZURE_DISK_ID}
+az image create \
+  -g "${AZURE_RESOURCE_GROUP_NAME}" \
+  -l "${AZURE_REGION}" \
+  -n "${AZURE_IMAGE_NAME}" \
+  --hyper-v-generation V2 \
+  --os-type Linux \
+  --source "${AZURE_DISK_ID}"
 echo "Creating Azure Shared Image Gallery."
-az sig create -l ${AZURE_REGION} --gallery-name ${AZURE_GALLERY_NAME} --resource-group ${AZURE_RESOURCE_GROUP_NAME}
+az sig create \
+  -l "${AZURE_REGION}" \
+  --gallery-name "${AZURE_GALLERY_NAME}" \
+  --resource-group "${AZURE_RESOURCE_GROUP_NAME}"
 echo "Creating Image Definition."
-az sig image-definition create --resource-group ${AZURE_RESOURCE_GROUP_NAME} -l ${AZURE_REGION} --gallery-name ${AZURE_GALLERY_NAME} --gallery-image-definition ${AZURE_IMAGE_DEFINITION} --publisher ${AZURE_PUBLISHER} --offer ${AZURE_IMAGE_OFFER} --sku ${AZURE_SKU} --os-type Linux --os-state generalized --hyper-v-generation V2 --features SecurityType=${AZURE_SECURITY_TYPE}
+az sig image-definition create \
+  --resource-group "${AZURE_RESOURCE_GROUP_NAME}" \
+  -l "${AZURE_REGION}" \
+  --gallery-name "${AZURE_GALLERY_NAME}" \
+  --gallery-image-definition "${AZURE_IMAGE_DEFINITION}" \
+  --publisher "${AZURE_PUBLISHER}" \
+  --offer "${AZURE_IMAGE_OFFER}" --sku "${AZURE_SKU}" \
+  --os-type Linux \
+  --os-state generalized \
+  --hyper-v-generation V2 \
+  --features SecurityType="${AZURE_SECURITY_TYPE}"
 echo "Retrieving temporary image ID."
-AZURE_IMAGE_ID=$(az image list --query "[?name == '${AZURE_IMAGE_NAME}' && resourceGroup == '${AZURE_RESOURCE_GROUP_NAME^^}'] | [0].id" --output json | jq -r)
+AZURE_IMAGE_ID=$(
+  az image list \
+    --query "[?name == '${AZURE_IMAGE_NAME}' && resourceGroup == '${AZURE_RESOURCE_GROUP_NAME^^}'] | [0].id" \
+    --output json | jq -r
+)
 
 echo "Creating final image version."
-az sig image-version create --resource-group ${AZURE_RESOURCE_GROUP_NAME} -l ${AZURE_REGION} --gallery-name ${AZURE_GALLERY_NAME} --gallery-image-definition ${AZURE_IMAGE_DEFINITION} --gallery-image-version ${AZURE_IMAGE_VERSION} --target-regions ${AZURE_REGION} --replica-count 1 --managed-image ${AZURE_IMAGE_ID}
+az sig image-version create \
+  --resource-group "${AZURE_RESOURCE_GROUP_NAME}" \
+  -l "${AZURE_REGION}" \
+  --gallery-name "${AZURE_GALLERY_NAME}" \
+  --gallery-image-definition "${AZURE_IMAGE_DEFINITION}" \
+  --gallery-image-version "${AZURE_IMAGE_VERSION}" \
+  --target-regions "${AZURE_REGION}" \
+  --replica-count 1 \
+  --managed-image "${AZURE_IMAGE_ID}"
 
 echo "Cleaning up ephemeral resources."
-az image delete --ids ${AZURE_IMAGE_ID}
-az disk delete -y --ids ${AZURE_DISK_ID}
+az image delete --ids "${AZURE_IMAGE_ID}"
+az disk delete -y --ids "${AZURE_DISK_ID}"
 
-IMAGE_VERSION=$(az sig image-version show --resource-group ${AZURE_RESOURCE_GROUP_NAME}  --gallery-name ${AZURE_GALLERY_NAME} --gallery-image-definition ${AZURE_IMAGE_DEFINITION} --gallery-image-version ${AZURE_IMAGE_VERSION} -o tsv --query id)
+IMAGE_VERSION=$(
+  az sig image-version show \
+    --resource-group "${AZURE_RESOURCE_GROUP_NAME}" \
+    --gallery-name "${AZURE_GALLERY_NAME}" \
+    --gallery-image-definition "${AZURE_IMAGE_DEFINITION}" \
+    --gallery-image-version "${AZURE_IMAGE_VERSION}" \
+    -o tsv \
+    --query id
+)
 echo "Image ID is ${IMAGE_VERSION}"
 
 # # Cleanup all

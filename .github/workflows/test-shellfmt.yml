@@ -1,0 +1,39 @@
+name: Shellcheck
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - "release/**"
+    paths:
+      - "**.sh"
+      - "**.bash"
+  pull_request:
+    paths:
+      - "**.sh"
+      - "**.bash"
+
+jobs:
+  shellcheck:
+    name: Shellfmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Setup Go environment
+        uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
+        with:
+          go-version: "1.19.3"
+
+      - name: Install shellfmt
+        shell: bash
+        run: |
+          go install mvdan.cc/sh/v3/cmd/shfmt@latest
+
+      - name: Run shellfmt
+        shell: bash
+        run: |
+          shfmt -i 2 -d -s -sr "$(shfmt -f . | grep -v helm/charts/cilium)"

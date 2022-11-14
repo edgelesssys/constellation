@@ -17,6 +17,7 @@ on:
         options:
           - "gcp"
           - "azure"
+          - "aws"
         default: "azure"
         required: true
       test:
@@ -57,6 +58,9 @@ env:
 jobs:
   e2e-test-manual:
     runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Check out repository
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
@@ -70,7 +74,7 @@ jobs:
 
       - name: Login to Azure
         if: ${{ github.event.inputs.cloudProvider == 'azure' }}
-        uses: ./.github/actions/azure_login
+        uses: ./.github/actions/login_azure
         with:
           azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
 
@@ -81,8 +85,8 @@ jobs:
         run: |
           uuid=$(cat /proc/sys/kernel/random/uuid)
           name=e2e-test-${uuid%%-*}
-          az group create --location westus --name $name --tags e2e
-          echo "res_group_name=$name" >> $GITHUB_OUTPUT
+          az group create --location westus --name "$name" --tags e2e
+          echo "res_group_name=$name" >> "$GITHUB_OUTPUT"
 
       - name: Run manual E2E test
         id: e2e_test

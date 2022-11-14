@@ -11,12 +11,6 @@ inputs:
   cloudProvider:
     description: "Either 'gcp' or 'azure'."
     required: true
-  gcpProject:
-    description: "The GCP project to deploy Constellation in."
-    required: false
-  gcpClusterServiceAccountKey:
-    description: "Service account to use inside the created Constellation cluster on GCP."
-    required: false
   machineType:
     description: "Machine type of VM to spawn."
     required: false
@@ -29,6 +23,18 @@ inputs:
   kubernetesVersion:
     description: "Kubernetes version to create the cluster from."
     required: false
+  #
+  # GCP specific inputs
+  #
+  gcpProject:
+    description: "The GCP project to deploy Constellation in."
+    required: false
+  gcpClusterServiceAccountKey:
+    description: "The GCP Service account to use inside the created Constellation cluster."
+    required: false
+  #
+  # Azure specific inputs
+  #
   azureSubscription:
     description: "The Azure subscription ID to deploy Constellation in."
     required: false
@@ -36,16 +42,16 @@ inputs:
     description: "The Azure tenant ID to deploy Constellation in."
     required: false
   azureClientID:
-    description: "The client ID of the application registration created for Constellation in Azure."
+    description: "The Azure client ID of the application registration created for Constellation."
     required: false
   azureClientSecret:
-    description: "The client secret value of the used secret"
+    description: "The Azure client secret value of the used secret."
     required: false
   azureUserAssignedIdentity:
     description: "The Azure user assigned identity to use for Constellation."
     required: false
   azureResourceGroup:
-    description: "The resource group to use for Constellation cluster"
+    description: "The Azure resource group to use for Constellation cluster"
     required: false
 
 outputs:
@@ -71,12 +77,21 @@ runs:
             (.provider | select(. | has(\"azure\")).azure.clientSecretValue) = \"${{ inputs.azureClientSecret }}\" |
             (.provider | select(. | has(\"azure\")).azure.enforcedMeasurements) = [15]" \
           constellation-conf.yaml
+
         yq eval -i \
           "(.provider | select(. | has(\"gcp\")).gcp.project) = \"${{ inputs.gcpProject }}\" |
             (.provider | select(. | has(\"gcp\")).gcp.region) = \"europe-west3\" |
             (.provider | select(. | has(\"gcp\")).gcp.zone) = \"europe-west3-b\" |
             (.provider | select(. | has(\"gcp\")).gcp.enforcedMeasurements) = [15] |
             (.provider | select(. | has(\"gcp\")).gcp.serviceAccountKeyPath) = \"serviceAccountKey.json\"" \
+          constellation-conf.yaml
+
+        yq eval -i \
+          "(.provider | select(. | has(\"aws\")).aws.region) = \"eu-central-1\" |
+            (.provider | select(. | has(\"aws\")).aws.zone) = \"eu-central-1a\" |
+            (.provider | select(. | has(\"aws\")).aws.iamProfileControlPlane) = \"e2e_test_control_plane_instance_profile\" |
+            (.provider | select(. | has(\"aws\")).aws.iamProfileWorkerNodes) = \"e2e_test_worker_node_instance_profile\" |
+            (.provider | select(. | has(\"aws\")).aws.enforcedMeasurements) = [15]" \
           constellation-conf.yaml
 
         if [ ${{ inputs.kubernetesVersion != '' }} = true ]; then
@@ -111,6 +126,16 @@ runs:
 
             yq eval -i "(.provider.gcp.image) = \"${GCP_IMAGE}\"" constellation-conf.yaml
             ;;
+          aws)
+            if [ "${{ inputs.osImage == 'debug-latest' }}" = true ]
+            then
+              AWS_IMAGE=$(aws ec2 describe-images --owners 795746500882 --region eu-central-1 --filters "Name=name,Values=constellation-debug-v*" --query "sort_by(Images, &CreationDate)[].ImageId" | jq -r '.[-1]')
+            else
+              AWS_IMAGE=${{ inputs.osImage }}
+            fi
+
+            yq eval -i "(.provider.aws.image) = \"${AWS_IMAGE}\"" constellation-conf.yaml
+            ;;
         esac
 
     - name: Set instanceType
@@ -119,6 +144,7 @@ runs:
       run: |
         yq eval -i "(.provider | select(. | has(\"azure\")).azure.instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
         yq eval -i "(.provider | select(. | has(\"gcp\")).gcp.instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
+        yq eval -i "(.provider | select(. | has(\"aws\")).aws.instanceType) = \"${{ inputs.machineType }}\"" constellation-conf.yaml
 
     - name: Create serviceAccountKey.json
       if: ${{ inputs.cloudProvider == 'gcp' }}
@@ -140,6 +166,11 @@ runs:
         echo "Creating cluster using config:"
         cat constellation-conf.yaml
         constellation create -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} --name e2e-test -y
+
+    - name: Print ID file
+      shell: bash
+      run: |
+        cat ./constellation-id.json
 
     - name: Cdbg deploy
       if: ${{ inputs.isDebugImage == 'true' }}
@@ -195,6 +226,9 @@ runs:
             ;;
           gcp)
             ./.github/actions/constellation_create/gcp-logs.sh
+            ;;
+          aws)
+            ./.github/actions/constellation_create/aws-logs.sh eu-central-1
             ;;
         esac
         echo "::endgroup::"

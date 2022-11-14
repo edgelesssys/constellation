@@ -50,8 +50,8 @@ inputs:
     description: "The resource group to use"
     required: false
   azureUserAssignedIdentity:
-     description: "The Azure user assigned identity to use for Constellation."
-     required: false
+    description: "The Azure user assigned identity to use for Constellation."
+    required: false
   cosignPublicKey:
     description: "Cosign public key to sign measurements."
     required: true
@@ -74,6 +74,11 @@ inputs:
     description: "AWS S3 bucket name to upload measurements."
     required: true
 
+outputs:
+  kubeconfig:
+    description: "Kubeconfig file of the created cluster."
+    value: ${{ steps.create-cluster.outputs.kubeconfig }}
+
 runs:
   using: "composite"
   steps:
@@ -89,12 +94,13 @@ runs:
       if: ${{ inputs.isDebugImage == 'true' }}
 
     - name: Login to GCP
-      uses: ./.github/actions/gcp_login
+      uses: ./.github/actions/login_gcp
       with:
         gcp_service_account_json: ${{ inputs.gcp_service_account_json }}
       if: ${{ inputs.cloudProvider == 'gcp' }}
 
     - name: Create cluster
+      id: create-cluster
       uses: ./.github/actions/constellation_create
       with:
         cloudProvider: ${{ inputs.cloudProvider }}

@@ -124,9 +124,16 @@ runs:
 
     - name: Login to GCP
       if: inputs.cloudProvider == 'gcp'
-      uses: ./.github/actions/gcp_login
+      uses: ./.github/actions/login_gcp
       with:
         gcp_service_account_json: ${{ inputs.gcp_service_account_json }}
+
+    - name: Login to AWS
+      if: inputs.cloudProvider == 'aws'
+      uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1.7.0
+      with:
+        role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2E
+        aws-region: eu-central-1
 
     - name: Create cluster
       id: constellation-create
@@ -180,7 +187,7 @@ runs:
 
     - name: Run K-Bench
       if: inputs.test == 'k-bench'
-      uses: ./.github/actions/k-bench
+      uses: ./.github/actions/e2e_kbench
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}

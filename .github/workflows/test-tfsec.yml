@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@1f9a0c22da41e6ebfa534300ef656657ea2c6707
+        uses: actions/checkout@5c3ccc22eb2c950a0fa5bc7c47190d8e3f7e681a
         with:
           ref: ${{ github.head_ref }}
 
@@ -36,4 +36,4 @@ jobs:
 
       - name: tfsec summary
         shell: bash
-        run: cat results.text |  tail -n 27 >> $GITHUB_STEP_SUMMARY
+        run: tail -n 27 results.text >> "$GITHUB_STEP_SUMMARY"

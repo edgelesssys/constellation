@@ -23,7 +23,9 @@ jobs:
       disk-mapper-sha256: ${{ steps.collect-hashes.outputs.disk-mapper-sha256 }}
     steps:
       - name: Checkout
-        uses: actions/checkout@e2f20e631ae6d7dd3b768f56a5d2af784dd54791 # tag=v2.5.0
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Build bootstrapper
         if: ${{ inputs.debug == false }}
@@ -53,8 +55,10 @@ jobs:
       - name: Collect hashes
         id: collect-hashes
         run: |
-          echo "bootstrapper-sha256=$(sha256sum bootstrapper | head -c 64)" >> $GITHUB_OUTPUT
-          echo "disk-mapper-sha256=$(sha256sum disk-mapper | head -c 64)" >> $GITHUB_OUTPUT
+          {
+            echo "bootstrapper-sha256=$(sha256sum bootstrapper | head -c 64)"
+            echo "disk-mapper-sha256=$(sha256sum disk-mapper | head -c 64)"
+          } >> "$GITHUB_OUTPUT"
         working-directory: ${{ github.workspace }}/build
 
   build-settings:
@@ -66,7 +70,9 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@e2f20e631ae6d7dd3b768f56a5d2af784dd54791 # tag=v2.5.0
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Determine version
         id: version
@@ -78,12 +84,12 @@ jobs:
         run: |
           if [ "${{ startsWith(github.ref, 'refs/heads/release/') && (inputs.debug == false) }}" = true ]
           then
-            echo "imageType=release" >> $GITHUB_OUTPUT
+            echo "imageType=release" >> "$GITHUB_OUTPUT"
           elif [ "${{ ((github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/')) && (inputs.debug == true) }}" = true ]
           then
-            echo "imageType=debug" >> $GITHUB_OUTPUT
+            echo "imageType=debug" >> "$GITHUB_OUTPUT"
           else
-            echo "imageType=branch" >> $GITHUB_OUTPUT
+            echo "imageType=branch" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Determine PKI set
@@ -92,9 +98,9 @@ jobs:
         run: |
           if [ "${{ steps.image-type.outputs.imageType }}" = "release" ]
           then
-            echo "pkiSet=pki_prod" >> $GITHUB_OUTPUT
+            echo "pkiSet=pki_prod" >> "$GITHUB_OUTPUT"
           else
-            echo "pkiSet=pki_testing" >> $GITHUB_OUTPUT
+            echo "pkiSet=pki_testing" >> "$GITHUB_OUTPUT"
           fi
 
   make-os-image:
@@ -142,7 +148,9 @@ jobs:
         csp: [aws, azure, gcp, qemu]
     steps:
       - name: Checkout
-        uses: actions/checkout@e2f20e631ae6d7dd3b768f56a5d2af784dd54791 # tag=v2.5.0
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Download build dependencies
         uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
@@ -164,8 +172,8 @@ jobs:
         id: prepare-pki
         shell: bash
         run: |
-          echo "${DB_KEY}" > ${PKI_SET}/db.key
-          ln -s ${PKI_SET} pki
+          echo "${DB_KEY}" > "${PKI_SET}/db.key"
+          ln -s "${PKI_SET}" pki
         working-directory: ${{ github.workspace }}/image
         env:
           PKI_SET: ${{ needs.build-settings.outputs.pkiSet }}
@@ -186,14 +194,16 @@ jobs:
       - name: Collect hashes
         id: collect-hashes
         run: |
-          echo "image-raw-${{ matrix.csp }}-sha256=$(sha256sum image.raw | head -c 64)" >> $GITHUB_OUTPUT
-          echo "image-efi-${{ matrix.csp }}-sha256=$(sha256sum image.efi | head -c 64)" >> $GITHUB_OUTPUT
-          echo "image-initrd-${{ matrix.csp }}-sha256=$(sha256sum image.initrd | head -c 64)" >> $GITHUB_OUTPUT
-          echo "image-root-raw-${{ matrix.csp }}-sha256=$(sha256sum image.root.raw | head -c 64)" >> $GITHUB_OUTPUT
-          echo "image-root-verity-${{ matrix.csp }}-sha256=$(sha256sum image.root.verity | head -c 64)" >> $GITHUB_OUTPUT
-          echo "image-vmlinuz-${{ matrix.csp }}-sha256=$(sha256sum image.vmlinuz | head -c 64)" >> $GITHUB_OUTPUT
-          echo "image-raw-changelog-${{ matrix.csp }}-sha256=$(sha256sum image.raw.changelog | head -c 64)" >> $GITHUB_OUTPUT
-          echo "image-raw-manifest-${{ matrix.csp }}-sha256=$(sha256sum image.raw.manifest | head -c 64)" >> $GITHUB_OUTPUT
+          {
+            echo "image-raw-${{ matrix.csp }}-sha256=$(sha256sum image.raw | head -c 64)"
+            echo "image-efi-${{ matrix.csp }}-sha256=$(sha256sum image.efi | head -c 64)"
+            echo "image-initrd-${{ matrix.csp }}-sha256=$(sha256sum image.initrd | head -c 64)"
+            echo "image-root-raw-${{ matrix.csp }}-sha256=$(sha256sum image.root.raw | head -c 64)"
+            echo "image-root-verity-${{ matrix.csp }}-sha256=$(sha256sum image.root.verity | head -c 64)"
+            echo "image-vmlinuz-${{ matrix.csp }}-sha256=$(sha256sum image.vmlinuz | head -c 64)"
+            echo "image-raw-changelog-${{ matrix.csp }}-sha256=$(sha256sum image.raw.changelog | head -c 64)"
+            echo "image-raw-manifest-${{ matrix.csp }}-sha256=$(sha256sum image.raw.manifest | head -c 64)"
+          } >> "$GITHUB_OUTPUT"
         working-directory: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36
         continue-on-error: true
 
@@ -247,7 +257,9 @@ jobs:
             upload-variant: TrustedLaunch
     steps:
       - name: Checkout
-        uses: actions/checkout@e2f20e631ae6d7dd3b768f56a5d2af784dd54791 # tag=v2.5.0
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Download OS image artifact
         uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
@@ -285,12 +297,13 @@ jobs:
           aws-region: eu-central-1
 
       - name: Login to Azure
-        uses: ./.github/actions/azure_login
+        if: matrix.csp == 'azure'
+        uses: ./.github/actions/login_azure
         with:
           azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Login to GCP
-        uses: ./.github/actions/gcp_login
+        uses: ./.github/actions/login_gcp
         if: ${{ matrix.csp == 'gcp' }}
         with:
           gcp_service_account_json: ${{ secrets.GCP_IMAGE_UPLOAD_SERVICE_ACCOUNT }}
@@ -305,9 +318,9 @@ jobs:
       - name: Download VMGS blob
         run: |
           aws s3 cp \
-            --region ${AZURE_VMGS_REGION} \
-            s3://constellation-secure-boot/${PKI_SET}/${AZURE_SECURITY_TYPE}.vmgs \
-            ${PKI_SET}/${AZURE_SECURITY_TYPE}.vmgs \
+            --region "${AZURE_VMGS_REGION}" \
+            "s3://constellation-secure-boot/${PKI_SET}/${AZURE_SECURITY_TYPE}.vmgs" \
+            "${PKI_SET}/${AZURE_SECURITY_TYPE}.vmgs" \
             --no-progress
         working-directory: ${{ github.workspace }}/image
         if: ${{ matrix.csp == 'azure' && !endsWith(env.AZURE_SECURITY_TYPE, 'Supported') }}
@@ -322,7 +335,7 @@ jobs:
           echo "::group::Upload AWS image"
           secure-boot/aws/create_uefivars.sh "${AWS_EFIVARS_PATH}"
           upload/upload_aws.sh "${AWS_AMI_OUTPUT}"
-          echo -e "Uploaded AWS image: \`\`\`$(cat "${AWS_AMI_OUTPUT}" | jq)\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo -e "Uploaded AWS image: \`\`\`$(jq < "${AWS_AMI_OUTPUT}")\`\`\`" >> "$GITHUB_STEP_SUMMARY"
           echo "::endgroup::"
         working-directory: ${{ github.workspace }}/image
         if: ${{ matrix.csp == 'aws' }}
@@ -344,7 +357,7 @@ jobs:
           echo "::group::Upload GCP image"
           upload/pack.sh gcp "${GCP_RAW_IMAGE_PATH}" "${GCP_IMAGE_PATH}"
           upload/upload_gcp.sh
-          echo -e "Uploaded GCP image: \`projects/${GCP_PROJECT}/global/images/${GCP_IMAGE_NAME}\`" >> $GITHUB_STEP_SUMMARY
+          echo -e "Uploaded GCP image: \`projects/${GCP_PROJECT}/global/images/${GCP_IMAGE_NAME}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "::endgroup::"
         working-directory: ${{ github.workspace }}/image
         if: ${{ matrix.csp == 'gcp' }}
@@ -365,7 +378,7 @@ jobs:
           echo "::group::Upload Azure image"
           upload/pack.sh azure "${AZURE_RAW_IMAGE_PATH}" "${AZURE_IMAGE_PATH}"
           upload/upload_azure.sh -g --disk-name "${AZURE_DISK_NAME}" "${AZURE_VMGS_PATH}"
-          echo -e "Uploaded Azure ${AZURE_SECURITY_TYPE} image: \`/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/${AZURE_RESOURCE_GROUP_NAME^^}/providers/Microsoft.Compute/galleries/${AZURE_GALLERY_NAME}/images/${AZURE_IMAGE_DEFINITION}/versions/${AZURE_IMAGE_VERSION}\`" >> $GITHUB_STEP_SUMMARY
+          echo -e "Uploaded Azure ${AZURE_SECURITY_TYPE} image: \`/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/${AZURE_RESOURCE_GROUP_NAME^^}/providers/Microsoft.Compute/galleries/${AZURE_GALLERY_NAME}/images/${AZURE_IMAGE_DEFINITION}/versions/${AZURE_IMAGE_VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "::endgroup::"
         working-directory: ${{ github.workspace }}/image
         if: ${{ matrix.csp == 'azure' }}
@@ -397,7 +410,9 @@ jobs:
         csp: [aws, azure, gcp, qemu]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@e2f20e631ae6d7dd3b768f56a5d2af784dd54791 # tag=v2.5.0
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Download OS image artifact
         uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
@@ -415,9 +430,11 @@ jobs:
       - name: Calculate expected PCRs
         run: |
           echo "::group::Calculate expected PCRs"
-          ./precalculate_pcr_4.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcr-4-${{ matrix.csp }}.json >> $GITHUB_STEP_SUMMARY
-          ./precalculate_pcr_8.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcr-8-${{ matrix.csp }}.json ${{ matrix.csp }}  >> $GITHUB_STEP_SUMMARY
-          ./precalculate_pcr_9.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcr-9-${{ matrix.csp }}.json >> $GITHUB_STEP_SUMMARY
+          {
+            ./precalculate_pcr_4.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcr-4-${{ matrix.csp }}.json
+            ./precalculate_pcr_8.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcr-8-${{ matrix.csp }}.json ${{ matrix.csp }}
+            ./precalculate_pcr_9.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcr-9-${{ matrix.csp }}.json
+          } >> "$GITHUB_STEP_SUMMARY"
           cp pcr-stable.json ${{ github.workspace }}/
           jq --sort-keys -s '.[0] * .[1] * .[2] * .[3]' ${{ github.workspace }}/pcr-* > ${{ github.workspace }}/pcrs-${{ matrix.csp }}.json
           echo "::endgroup::"
@@ -511,4 +528,4 @@ jobs:
           ${{ needs.make-os-image.outputs.image-vmlinuz-qemu-sha256 }} qemu/image.vmlinuz
           EOF
           cat SHA256SUMS
-          echo -e "SHA256SUMS:\n\`\`\`\n$(cat SHA256SUMS)\n\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo -e "SHA256SUMS:\n\`\`\`\n$(cat SHA256SUMS)\n\`\`\`" >> "$GITHUB_STEP_SUMMARY"

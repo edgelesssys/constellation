@@ -8,23 +8,24 @@
 # Usage: precalculate_pcr_9.sh <path to image> <path to output file>
 
 set -euo pipefail
+shopt -s inherit_errexit
+
 source "$(dirname "$0")/measure_util.sh"
 
-get_initrd_from_uki () {
-    local uki="$1"
-    local output="$2"
-    objcopy -O binary --only-section=.initrd "${uki}" "${output}"
+get_initrd_from_uki() {
+  local uki="$1"
+  local output="$2"
+  objcopy -O binary --only-section=.initrd "${uki}" "${output}"
 }
 
-initrd_measure () {
-    local path="$1"
-    sha256sum "${path}" | cut -d " " -f 1
+initrd_measure() {
+  local path="$1"
+  sha256sum "${path}" | cut -d " " -f 1
 }
 
-
-write_output () {
-    local out="$1"
-    cat > "${out}" <<EOF
+write_output() {
+  local out="$1"
+  cat > "${out}" << EOF
 {
     "pcr9": "${expected_pcr_9}",
     "initrd": "${initrd_hash}"
@@ -36,8 +37,8 @@ DIR=$(mktempdir)
 trap 'cleanup "${DIR}"' EXIT
 
 extract "$1" "/efi/EFI/Linux" "${DIR}/uki"
-sudo chown -R "$USER:$USER" "${DIR}/uki"
-cp ${DIR}/uki/*.efi "${DIR}/03-uki.efi"
+sudo chown -R "${USER}:${USER}" "${DIR}/uki"
+cp "${DIR}"/uki/*.efi "${DIR}/03-uki.efi"
 get_initrd_from_uki "${DIR}/03-uki.efi" "${DIR}/initrd"
 
 initrd_hash=$(initrd_measure "${DIR}/initrd")

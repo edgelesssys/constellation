@@ -32,6 +32,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Setup Go environment
         uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
@@ -40,7 +42,7 @@ jobs:
 
       - name: Login to Azure
         if: ${{ github.event.inputs.cloudProvider == 'azure' }}
-        uses: ./.github/actions/azure_login
+        uses: ./.github/actions/login_azure
         with:
           azure_credentials: ${{ secrets.AZURE_E2E_CREDENTIALS }}
 
@@ -51,10 +53,11 @@ jobs:
         run: |
           uuid=$(cat /proc/sys/kernel/random/uuid)
           name=e2e-test-${uuid%%-*}
-          az group create --location westus --name $name --tags e2e
-          echo "res_group_name=$name" >> $GITHUB_OUTPUT
+          az group create --location westus --name "$name" --tags e2e
+          echo "res_group_name=$name" >> "$GITHUB_OUTPUT"
 
       - name: Create Cluster & Generate Measurements
+        id: create_and_measure
         uses: ./.github/actions/generate_measurements
         with:
           cloudProvider: ${{ github.event.inputs.cloudProvider }}
@@ -81,6 +84,8 @@ jobs:
         if: always()
         continue-on-error: true
         uses: ./.github/actions/constellation_destroy
+        with:
+          kubeconfig: ${{ steps.create_and_measure.outputs.kubeconfig }}
 
       - name: Always destroy Azure resource group
         if: ${{ always() && github.event.inputs.cloudProvider == 'azure' }}

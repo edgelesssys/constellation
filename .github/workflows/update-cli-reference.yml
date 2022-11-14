@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout Constellation
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Setup Go environment
         uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
@@ -29,12 +31,12 @@ jobs:
 
       - name: Get commit sha
         run: |
-          echo "COMMIT_END=$(echo ${{ github.sha }} | cut -c1-8)" >> $GITHUB_ENV
+          echo "COMMIT_END=$(echo ${{ github.sha }} | cut -c1-8)" >> "$GITHUB_ENV"
 
       - name: Check if action branch exists
         run: |
-          ex=$(git ls-remote --heads origin action/constellation/update-cli-reference)
-          echo "EXISTS=$(if [ -z "$ex" ]; then echo 0; else echo 1; fi)" >> $GITHUB_ENV
+          ex="$(git ls-remote --heads origin action/constellation/update-cli-reference)"
+          echo "EXISTS=$(if [ -z "$ex" ]; then echo 0; else echo 1; fi)" >> "$GITHUB_ENV"
 
       - name: Publish new reference (create new branch)
         if: ${{ env.EXISTS == 0 }}

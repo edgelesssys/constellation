@@ -22,7 +22,6 @@ readonly nvme_cli_bin=/usr/sbin/nvme
 # Bash regex to parse device paths and controller identification
 readonly NAMESPACE_NUMBER_REGEX="/dev/nvme[[:digit:]]+n([[:digit:]]+).*"
 readonly PARTITION_NUMBER_REGEX="/dev/nvme[[:digit:]]+n[[:digit:]]+p([[:digit:]]+)"
-readonly PD_NVME_REGEX="sn[[:space:]]+:[[:space]]+nvme_card-pd"
 
 # Globals used to generate the symlinks for a PD-NVMe disk.  These are populated
 # by the identify_pd_disk function and exported for consumption by udev rules.
@@ -55,26 +54,26 @@ function err() {
 #######################################
 function get_namespace_device_name() {
   local nvme_json
-  nvme_json="$("$nvme_cli_bin" id-ns -b "$1" | xxd -p -seek 384 | xxd -p -r)"
+  nvme_json="$("${nvme_cli_bin}" id-ns -b "$1" | xxd -p -seek 384 | xxd -p -r)"
   if [[ $? -ne 0 ]]; then
     return 1
   fi
 
-  if [[ -z "$nvme_json" ]]; then
+  if [[ -z ${nvme_json} ]]; then
     err "NVMe Vendor Extension disk information not present"
     return 1
   fi
 
   local device_name
-  device_name="$(echo "$nvme_json" | grep device_name | sed -e 's/.*"device_name":[  \t]*"\([a-zA-Z0-9_-]\+\)".*/\1/')"
+  device_name="$(echo "${nvme_json}" | grep device_name | sed -e 's/.*"device_name":[  \t]*"\([a-zA-Z0-9_-]\+\)".*/\1/')"
 
   # Error if our device name is empty
-  if [[ -z "$device_name" ]]; then
+  if [[ -z ${device_name} ]]; then
     err "Empty name"
     return 1
   fi
 
-  echo "$device_name"
+  echo "${device_name}"
   return 0
 }
 
@@ -92,13 +91,13 @@ function get_namespace_device_name() {
 function get_namespace_number() {
   local dev_path="$1"
   local namespace_number
-  if [[ "$dev_path" =~ $NAMESPACE_NUMBER_REGEX ]]; then
+  if [[ ${dev_path} =~ ${NAMESPACE_NUMBER_REGEX} ]]; then
     namespace_number="${BASH_REMATCH[1]}"
   else
     return 1
   fi
 
-  echo "$namespace_number"
+  echo "${namespace_number}"
   return 0
 }
 
@@ -115,9 +114,9 @@ function get_namespace_number() {
 function get_partition_number() {
   local dev_path="$1"
   local partition_number
-  if [[ "$dev_path" =~ $PARTITION_NUMBER_REGEX ]]; then
+  if [[ ${dev_path} =~ ${PARTITION_NUMBER_REGEX} ]]; then
     partition_number="${BASH_REMATCH[1]}"
-    echo "$partition_number"
+    echo "${partition_number}"
   else
     echo ''
   fi
@@ -134,12 +133,13 @@ function get_partition_number() {
 #######################################
 function gen_symlink() {
   local dev_path="$1"
-  local partition_number="$(get_partition_number "$dev_path")"
+  local partition_number
+  partition_number="$(get_partition_number "${dev_path}")"
 
-  if [[ -n "$partition_number" ]]; then
-    ln -s "$dev_path" /dev/disk/by-id/google-"$ID_SERIAL_SHORT"-part"$partition_number" > /dev/null 2>&1
+  if [[ -n ${partition_number} ]]; then
+    ln -s "${dev_path}" /dev/disk/by-id/google-"${ID_SERIAL_SHORT}"-part"${partition_number}" > /dev/null 2>&1
   else
-    ln -s "$dev_path" /dev/disk/by-id/google-"$ID_SERIAL_SHORT" > /dev/null 2>&1
+    ln -s "${dev_path}" /dev/disk/by-id/google-"${ID_SERIAL_SHORT}" > /dev/null 2>&1
   fi
 
   return 0
@@ -157,12 +157,12 @@ function gen_symlink() {
 function identify_pd_disk() {
   local dev_path="$1"
   local dev_name
-  dev_name="$(get_namespace_device_name "$dev_path")"
+  dev_name="$(get_namespace_device_name "${dev_path}")"
   if [[ $? -ne 0 ]]; then
     return 1
   fi
 
-  ID_SERIAL_SHORT="$dev_name"
+  ID_SERIAL_SHORT="${dev_name}"
   ID_SERIAL="Google_PersistentDisk_${ID_SERIAL_SHORT}"
   return 0
 }
@@ -181,26 +181,28 @@ function main() {
   local device_path=''
 
   while getopts :d:sh flag; do
-    case "$flag" in
-      d) device_path="$OPTARG";;
-      s) opt_gen_symlink='true';;
-      h) print_help_message
-         return 0
-         ;;
-      :) echo "Invalid option: ${OPTARG} requires an argument" 1>&2
-         return 1
-         ;;
-      *) return 1
+    case "${flag}" in
+    d) device_path="${OPTARG}" ;;
+    s) opt_gen_symlink='true' ;;
+    h)
+      print_help_message
+      return 0
+      ;;
+    :)
+      echo "Invalid option: ${OPTARG} requires an argument" 1>&2
+      return 1
+      ;;
+    *) return 1 ;;
     esac
   done
 
-  if [[ -z "$device_path" ]]; then
+  if [[ -z ${device_path} ]]; then
     echo "Device path (-d) argument required. Use -h for full usage." 1>&2
     exit 1
   fi
 
   # Ensure the nvme-cli command is installed
-  command -v "$nvme_cli_bin" > /dev/null 2>&1
+  command -v "${nvme_cli_bin}" > /dev/null 2>&1
   if [[ $? -ne 0 ]]; then
     err "The nvme utility (/usr/sbin/nvme) was not found. You may need to run \
 with sudo or install nvme-cli."
@@ -208,7 +210,7 @@ with sudo or install nvme-cli."
   fi
 
   # Ensure the passed device is actually an NVMe device
-  "$nvme_cli_bin" id-ctrl "$device_path" &>/dev/null
+  "${nvme_cli_bin}" id-ctrl "${device_path}" &> /dev/null
   if [[ $? -ne 0 ]]; then
     err "Passed device was not an NVMe device.  (You may need to run this \
 script as root/with sudo)."
@@ -217,22 +219,22 @@ script as root/with sudo)."
 
   # Detect the type of attached nvme device
   local controller_id
-  controller_id=$("$nvme_cli_bin" id-ctrl "$device_path")
-  if [[ ! "$controller_id" =~ nvme_card-pd ]] ; then
+  controller_id=$("${nvme_cli_bin}" id-ctrl "${device_path}")
+  if [[ ! ${controller_id} =~ nvme_card-pd ]]; then
     err "Device is not a PD-NVMe device"
     return 1
   fi
 
   # Fill the global variables for the id command for the given disk type
   # Error messages will be printed closer to error, no need to reprint here
-  identify_pd_disk "$device_path"
+  identify_pd_disk "${device_path}"
   if [[ $? -ne 0 ]]; then
     return $?
   fi
 
   # Gen symlinks or print out the globals set by the identify command
-  if [[ "$opt_gen_symlink" == 'true' ]]; then
-    gen_symlink "$device_path"
+  if [[ ${opt_gen_symlink} == 'true' ]]; then
+    gen_symlink "${device_path}"
   else
     # These will be consumed by udev
     echo "ID_SERIAL_SHORT=${ID_SERIAL_SHORT}"

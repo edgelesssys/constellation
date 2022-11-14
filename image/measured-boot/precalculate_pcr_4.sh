@@ -7,19 +7,20 @@
 # Usage: precalculate_pcr_4.sh <path to image> <path to output file>
 
 set -euo pipefail
+shopt -s inherit_errexit
 source "$(dirname "$0")/measure_util.sh"
 
 ev_efi_action_sha256=3d6772b4f84ed47595d72a2c4c5ffd15f5bb72c7507fe26f2aaee2c69d5633ba
 ev_efi_separator_sha256=df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119
 
-authentihash () {
-    local path="$1"
-    "$(dirname "$0")/extract_authentihash.py" "${path}"
+authentihash() {
+  local path="$1"
+  "$(dirname "$0")/extract_authentihash.py" "${path}"
 }
 
-write_output () {
-    local out="$1"
-    cat > "${out}" <<EOF
+write_output() {
+  local out="$1"
+  cat > "${out}" << EOF
 {
     "pcr4": "${expected_pcr_4}",
     "efistages": [
@@ -46,8 +47,8 @@ trap 'cleanup "${DIR}"' EXIT
 extract "$1" "/efi/EFI/BOOT/BOOTX64.EFI" "${DIR}/01-shim.efi"
 extract "$1" "/efi/EFI/BOOT/grubx64.efi" "${DIR}/02-sd-boot.efi"
 extract "$1" "/efi/EFI/Linux" "${DIR}/uki"
-sudo chown -R "$USER:$USER" "${DIR}/uki"
-cp ${DIR}/uki/*.efi "${DIR}/03-uki.efi"
+sudo chown -R "${USER}:${USER}" "${DIR}/uki"
+cp "${DIR}"/uki/*.efi "${DIR}/03-uki.efi"
 
 shim_authentihash=$(authentihash "${DIR}/01-shim.efi")
 sd_boot_authentihash=$(authentihash "${DIR}/02-sd-boot.efi")
@@ -62,9 +63,9 @@ expected_pcr_4=$(pcr_extend "${expected_pcr_4}" "${sd_boot_authentihash}" "sha25
 expected_pcr_4=$(pcr_extend "${expected_pcr_4}" "${uki_authentihash}" "sha256sum")
 
 echo "Authentihashes:"
-echo "Stage 1 – shim:                       ${shim_authentihash}"
-echo "Stage 2 – sd-boot:                    ${sd_boot_authentihash}"
-echo "Stage 3 – Unified Kernel Image (UKI): ${uki_authentihash}"
+echo "Stage 1 - shim:                       ${shim_authentihash}"
+echo "Stage 2 - sd-boot:                    ${sd_boot_authentihash}"
+echo "Stage 3 - Unified Kernel Image (UKI): ${uki_authentihash}"
 echo ""
 echo "Expected PCR[4]:                      ${expected_pcr_4}"
 echo ""

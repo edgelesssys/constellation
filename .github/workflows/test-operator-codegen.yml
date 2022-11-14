@@ -35,7 +35,7 @@ jobs:
         run: |
           dirs=$(find . \! -name . -prune -type d)
           for dir in $dirs; do
-            (cd $dir; make manifests generate)
+            (cd "$dir"; make manifests generate)
           done
 
       - name: Check diff and fail on changes
