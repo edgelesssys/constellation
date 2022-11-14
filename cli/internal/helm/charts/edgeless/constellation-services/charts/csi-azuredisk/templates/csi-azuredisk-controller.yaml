@@ -1,0 +1,223 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: {{ .Values.controller.name }}
+  namespace: {{ .Release.Namespace }}
+{{ include "azuredisk.labels" . | indent 2 }}
+spec:
+  replicas: {{ .Values.controller.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.controller.name }}
+  template:
+    metadata:
+{{ include "azuredisk.labels" . | indent 6 }}
+        app: {{ .Values.controller.name }}
+{{- with .Values.controller.podLabels }}
+{{ toYaml . | indent 8 }}
+{{- end }}
+    spec:
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | indent 8 }}
+      {{- end }}
+      serviceAccountName: {{ .Values.serviceAccount.controller }}
+      nodeSelector:
+        kubernetes.io/os: linux
+        {{- if .Values.controller.runOnMaster}}
+        node-role.kubernetes.io/master: ""
+        {{- end}}
+        {{- if .Values.controller.runOnControlPlane}}
+        node-role.kubernetes.io/control-plane: ""
+        {{- end}}
+      priorityClassName: system-cluster-critical
+{{- with .Values.controller.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.controller.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+      {{- include "azuredisk.pullSecrets" . | indent 6 }}
+      containers:
+        - name: csi-provisioner
+{{- if hasPrefix "/" .Values.image.csiProvisioner.repository }}
+          image: "{{ .Values.image.baseRepo }}{{ .Values.image.csiProvisioner.repository }}:{{ .Values.image.csiProvisioner.tag }}"
+{{- else }}
+          image: "{{ .Values.image.csiProvisioner.repository }}:{{ .Values.image.csiProvisioner.tag }}"
+{{- end }}
+          args:
+            - "--feature-gates=Topology=true"
+            - "--csi-address=$(ADDRESS)"
+            - "--v=2"
+            - "--timeout=15s"
+            - "--leader-election"
+            - "--leader-election-namespace={{ .Release.Namespace }}"
+            - "--worker-threads={{ .Values.controller.provisionerWorkerThreads }}"
+            - "--extra-create-metadata=true"
+            - "--strict-topology=true"
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+          volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
+          resources: {{- toYaml .Values.controller.resources.csiProvisioner | nindent 12 }}
+        - name: csi-attacher
+{{- if hasPrefix "/" .Values.image.csiAttacher.repository }}
+          image: "{{ .Values.image.baseRepo }}{{ .Values.image.csiAttacher.repository }}:{{ .Values.image.csiAttacher.tag }}"
+{{- else }}
+          image: "{{ .Values.image.csiAttacher.repository }}:{{ .Values.image.csiAttacher.tag }}"
+{{- end }}
+          args:
+            - "-v=2"
+            - "-csi-address=$(ADDRESS)"
+            - "-timeout=600s"
+            - "-leader-election"
+            - "--leader-election-namespace={{ .Release.Namespace }}"
+            - "-worker-threads={{ .Values.controller.attacherWorkerThreads }}"
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+          volumeMounts:
+          - mountPath: /csi
+            name: socket-dir
+          resources: {{- toYaml .Values.controller.resources.csiAttacher | nindent 12 }}
+        - name: csi-snapshotter
+{{- if hasPrefix "/" .Values.snapshot.image.csiSnapshotter.repository }}
+          image: "{{ .Values.image.baseRepo }}{{ .Values.snapshot.image.csiSnapshotter.repository }}:{{ .Values.snapshot.image.csiSnapshotter.tag }}"
+{{- else }}
+          image: "{{ .Values.snapshot.image.csiSnapshotter.repository }}:{{ .Values.snapshot.image.csiSnapshotter.tag }}"
+{{- end }}
+          args:
+            - "-csi-address=$(ADDRESS)"
+            - "-leader-election"
+            - "--leader-election-namespace={{ .Release.Namespace }}"
+            - "-v=2"
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+          resources: {{- toYaml .Values.controller.resources.csiSnapshotter | nindent 12 }}
+        - name: csi-resizer
+{{- if hasPrefix "/" .Values.image.csiResizer.repository }}
+          image: "{{ .Values.image.baseRepo }}{{ .Values.image.csiResizer.repository }}:{{ .Values.image.csiResizer.tag }}"
+{{- else }}
+          image: "{{ .Values.image.csiResizer.repository }}:{{ .Values.image.csiResizer.tag }}"
+{{- end }}
+          args:
+            - "-csi-address=$(ADDRESS)"
+            - "-v=2"
+            - "-leader-election"
+            - "--leader-election-namespace={{ .Release.Namespace }}"
+            - '-handle-volume-inuse-error=false'
+            - '-feature-gates=RecoverVolumeExpansionFailure=true'
+            - "-timeout=240s"
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+          resources: {{- toYaml .Values.controller.resources.csiResizer | nindent 12 }}
+        - name: liveness-probe
+{{- if hasPrefix "/" .Values.image.livenessProbe.repository }}
+          image: "{{ .Values.image.baseRepo }}{{ .Values.image.livenessProbe.repository }}:{{ .Values.image.livenessProbe.tag }}"
+{{- else }}
+          image: "{{ .Values.image.livenessProbe.repository }}:{{ .Values.image.livenessProbe.tag }}"
+{{- end }}
+          args:
+            - --csi-address=/csi/csi.sock
+            - --probe-timeout=3s
+            - --health-port={{ .Values.controller.livenessProbe.healthPort }}
+            - --v=2
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+          resources: {{- toYaml .Values.controller.resources.livenessProbe | nindent 12 }}
+        - name: azuredisk
+{{- if hasPrefix "/" .Values.image.azuredisk.repository }}
+          image: "{{ .Values.image.baseRepo }}{{ .Values.image.azuredisk.repository }}:{{ .Values.image.azuredisk.tag }}"
+{{- else }}
+          image: "{{ .Values.image.azuredisk.repository }}:{{ .Values.image.azuredisk.tag }}"
+{{- end }}
+          args:
+            - "--v={{ .Values.controller.logLevel }}"
+            - "--endpoint=$(CSI_ENDPOINT)"
+            - "--metrics-address=0.0.0.0:{{ .Values.controller.metricsPort }}"
+            - "--disable-avset-nodes={{ .Values.controller.disableAvailabilitySetNodes }}"
+            - "--vm-type={{ .Values.controller.vmType }}"
+            - "--drivername={{ .Values.driver.name }}"
+            - "--cloud-config-secret-name={{ .Values.controller.cloudConfigSecretName }}"
+            - "--cloud-config-secret-namespace={{ .Values.controller.cloudConfigSecretNamespace }}"
+            - "--custom-user-agent={{ .Values.driver.customUserAgent }}"
+            - "--user-agent-suffix={{ .Values.driver.userAgentSuffix }}"
+            - "--allow-empty-cloud-config={{ .Values.controller.allowEmptyCloudConfig }}"
+            - "--vmss-cache-ttl-seconds={{ .Values.controller.vmssCacheTTLInSeconds }}"
+          ports:
+            - containerPort: {{ .Values.controller.livenessProbe.healthPort }}
+              name: healthz
+              protocol: TCP
+            - containerPort: {{ .Values.controller.metricsPort }}
+              name: metrics
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /healthz
+              port: healthz
+            initialDelaySeconds: 30
+            timeoutSeconds: 10
+            periodSeconds: 30
+          env:
+            - name: AZURE_CREDENTIAL_FILE
+              valueFrom:
+                configMapKeyRef:
+                  name: azure-cred-file
+                  key: path
+                  optional: true
+            - name: CSI_ENDPOINT
+              value: unix:///csi/csi.sock
+            - name: AZURE_GO_SDK_LOG_LEVEL
+              value: {{ .Values.driver.azureGoSDKLogLevel }}
+            {{- if eq .Values.cloud "AzureStackCloud" }}
+            - name: AZURE_ENVIRONMENT_FILEPATH
+              value: /etc/kubernetes/azurestackcloud.json
+            {{- end }}
+          imagePullPolicy: {{ .Values.image.azuredisk.pullPolicy }}
+          volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
+            {{- if eq .Values.cloud "AzureStackCloud" }}
+            - name: ssl
+              mountPath: /etc/ssl/certs
+              readOnly: true
+            {{- end }}
+            {{- if eq .Values.linux.distro "fedora" }}
+            - name: ssl
+              mountPath: /etc/ssl/certs
+              readOnly: true
+            - name: ssl-pki
+              mountPath: /etc/pki/ca-trust/extracted
+              readOnly: true
+            {{- end }}
+          resources: {{- toYaml .Values.controller.resources.azuredisk | nindent 12 }}
+      volumes:
+        - name: socket-dir
+          emptyDir: {}
+        {{- if eq .Values.cloud "AzureStackCloud" }}
+        - name: ssl
+          hostPath:
+            path: /etc/ssl/certs
+        {{- end }}
+        {{- if eq .Values.linux.distro "fedora" }}
+        - name: ssl
+          hostPath:
+            path: /etc/ssl/certs
+        - name: ssl-pki
+          hostPath:
+            path: /etc/pki/ca-trust/extracted
+        {{- end }}

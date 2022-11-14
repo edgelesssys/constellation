@@ -1,0 +1,13 @@
+apiVersion: storage.k8s.io/v1
+kind: CSIDriver
+metadata:
+  name: {{ .Values.driver.name }}
+  annotations:
+    csiDriver: "{{ .Values.image.azuredisk.tag }}"
+    snapshot: "{{ .Values.snapshot.image.csiSnapshotter.tag }}"
+spec:
+  attachRequired: true
+  podInfoOnMount: false
+  {{- if .Values.feature.enableFSGroupPolicy}}
+  fsGroupPolicy: File
+  {{- end}}

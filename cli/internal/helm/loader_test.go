@@ -64,6 +64,7 @@ func TestTemplate(t *testing.T) {
 		},
 		"Azure": {
 			config: &config.Config{Provider: config.ProviderConfig{Azure: &config.AzureConfig{
+				DeployCSIDriver:      func() *bool { b := true; return &b }(),
 				EnforcedMeasurements: []uint32{1, 11},
 				EnforceIDKeyDigest:   func() *bool { b := true; return &b }(),
 			}}},
