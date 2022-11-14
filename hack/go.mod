@@ -219,10 +219,10 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	helm.sh/helm v2.17.0+incompatible // indirect
 	helm.sh/helm/v3 v3.10.1 // indirect
-	k8s.io/api v0.25.3 // indirect
-	k8s.io/apiextensions-apiserver v0.25.3 // indirect
-	k8s.io/apimachinery v0.25.3 // indirect
-	k8s.io/client-go v0.25.3 // indirect
+	k8s.io/api v0.25.4 // indirect
+	k8s.io/apiextensions-apiserver v0.25.4 // indirect
+	k8s.io/apimachinery v0.25.4 // indirect
+	k8s.io/client-go v0.25.4 // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1 // indirect
 	k8s.io/utils v0.0.0-20221108210102-8e77b1f39fe2 // indirect
