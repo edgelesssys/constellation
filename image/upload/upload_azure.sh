@@ -151,6 +151,7 @@ delete_image() {
   az image delete -n "${AZURE_DISK_NAME}" -g "${AZURE_RESOURCE_GROUP_NAME}"
 }
 
+# shellcheck disable=SC2086
 create_sig_version() {
   if [[ -n ${AZURE_VMGS_PATH} ]]; then
     local DISK
@@ -180,11 +181,11 @@ create_sig_version() {
     --gallery-name "${AZURE_GALLERY_NAME}" \
     --gallery-image-definition "${AZURE_IMAGE_DEFINITION}" \
     --gallery-image-version "${AZURE_IMAGE_VERSION}" \
-    --target-regions "${AZURE_REPLICATION_REGIONS}" \
-    "${AZURE_CVM_ENCRYPTION_ARGS}" \
+    --target-regions ${AZURE_REPLICATION_REGIONS} \
+    ${AZURE_CVM_ENCRYPTION_ARGS} \
     --replica-count 1 \
     --replication-mode Full \
-    "${SOURCE}"
+    ${SOURCE}
 }
 
 create_disk
