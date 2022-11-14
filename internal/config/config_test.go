@@ -364,9 +364,9 @@ func TestConfigGeneratedDocsFresh(t *testing.T) {
 func TestConfig_UpdateMeasurements(t *testing.T) {
 	assert := assert.New(t)
 	newMeasurements := measurements.M{
-		1: measurements.PCRWithAllBytes(0x00),
-		2: measurements.PCRWithAllBytes(0x01),
-		3: measurements.PCRWithAllBytes(0x02),
+		1: measurements.WithAllBytes(0x00, false),
+		2: measurements.WithAllBytes(0x01, false),
+		3: measurements.WithAllBytes(0x02, false),
 	}
 
 	{ // AWS

@@ -12,23 +12,45 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 
-	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
+	"github.com/google/go-tpm/tpmutil"
 	"gopkg.in/yaml.v2"
 )
 
-// M are Platform Configuration Register (PCR) values that make up the Measurements.
-type M map[uint32][]byte
+const (
+	// PCRIndexClusterID is a PCR we extend to mark the node as initialized.
+	// The value used to extend is a random generated 32 Byte value.
+	PCRIndexClusterID = tpmutil.Handle(15)
+	// PCRIndexOwnerID is a PCR we extend to mark the node as initialized.
+	// The value used to extend is derived from Constellation's master key.
+	// TODO: move to stable, non-debug PCR before use.
+	PCRIndexOwnerID = tpmutil.Handle(16)
+)
 
-// PCRWithAllBytes returns a PCR value where all 32 bytes are set to b.
-func PCRWithAllBytes(b byte) []byte {
-	return bytes.Repeat([]byte{b}, 32)
+// M are Platform Configuration Register (PCR) values that make up the Measurements.
+type M map[uint32]Measurement
+
+// Measurement wraps expected PCR value and whether it is enforced.
+type Measurement struct {
+	// Expected measurement value.
+	Expected [32]byte `yaml:"expected"`
+	// WarnOnly if set to true, a mismatching measurement will only result in a warning.
+	WarnOnly bool `yaml:"warnOnly"`
+}
+
+// WithAllBytes returns a measurement value where all 32 bytes are set to b.
+func WithAllBytes(b byte, warnOnly bool) Measurement {
+	return Measurement{
+		Expected: *(*[32]byte)(bytes.Repeat([]byte{b}, 32)),
+		WarnOnly: warnOnly,
+	}
 }
 
 // DefaultsFor provides the default measurements for given cloud provider.
@@ -36,32 +58,35 @@ func DefaultsFor(provider cloudprovider.Provider) M {
 	switch provider {
 	case cloudprovider.AWS:
 		return M{
-			8:                              PCRWithAllBytes(0x00),
-			11:                             PCRWithAllBytes(0x00),
-			13:                             PCRWithAllBytes(0x00),
-			uint32(vtpm.PCRIndexClusterID): PCRWithAllBytes(0x00),
+			8:                         WithAllBytes(0x00, false),
+			11:                        WithAllBytes(0x00, false),
+			13:                        WithAllBytes(0x00, false),
+			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
 		}
 	case cloudprovider.Azure:
 		return M{
-			8:                              PCRWithAllBytes(0x00),
-			11:                             PCRWithAllBytes(0x00),
-			13:                             PCRWithAllBytes(0x00),
-			uint32(vtpm.PCRIndexClusterID): PCRWithAllBytes(0x00),
+			8:                         WithAllBytes(0x00, false),
+			11:                        WithAllBytes(0x00, false),
+			13:                        WithAllBytes(0x00, false),
+			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
 		}
 	case cloudprovider.GCP:
 		return M{
-			0:                              {0x0F, 0x35, 0xC2, 0x14, 0x60, 0x8D, 0x93, 0xC7, 0xA6, 0xE6, 0x8A, 0xE7, 0x35, 0x9B, 0x4A, 0x8B, 0xE5, 0xA0, 0xE9, 0x9E, 0xEA, 0x91, 0x07, 0xEC, 0xE4, 0x27, 0xC4, 0xDE, 0xA4, 0xE4, 0x39, 0xCF},
-			8:                              PCRWithAllBytes(0x00),
-			11:                             PCRWithAllBytes(0x00),
-			13:                             PCRWithAllBytes(0x00),
-			uint32(vtpm.PCRIndexClusterID): PCRWithAllBytes(0x00),
+			0: {
+				Expected: [32]byte{0x0F, 0x35, 0xC2, 0x14, 0x60, 0x8D, 0x93, 0xC7, 0xA6, 0xE6, 0x8A, 0xE7, 0x35, 0x9B, 0x4A, 0x8B, 0xE5, 0xA0, 0xE9, 0x9E, 0xEA, 0x91, 0x07, 0xEC, 0xE4, 0x27, 0xC4, 0xDE, 0xA4, 0xE4, 0x39, 0xCF},
+				WarnOnly: false,
+			},
+			8:                         WithAllBytes(0x00, false),
+			11:                        WithAllBytes(0x00, false),
+			13:                        WithAllBytes(0x00, false),
+			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
 		}
 	case cloudprovider.QEMU:
 		return M{
-			8:                              PCRWithAllBytes(0x00),
-			11:                             PCRWithAllBytes(0x00),
-			13:                             PCRWithAllBytes(0x00),
-			uint32(vtpm.PCRIndexClusterID): PCRWithAllBytes(0x00),
+			8:                         WithAllBytes(0x00, false),
+			11:                        WithAllBytes(0x00, false),
+			13:                        WithAllBytes(0x00, false),
+			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
 		}
 	default:
 		return nil
@@ -107,41 +132,73 @@ func (m M) EqualTo(other M) bool {
 		return false
 	}
 	for k, v := range m {
-		if !bytes.Equal(v, other[k]) {
+		otherExpected := other[k].Expected
+		if !bytes.Equal(v.Expected[:], otherExpected[:]) {
+			return false
+		}
+		if v.WarnOnly != other[k].WarnOnly {
 			return false
 		}
 	}
 	return true
 }
 
-// MarshalYAML overwrites the default behaviour of writing out []byte not as
+// MarshalYAML overwrites the default behaviour of writing out [32]byte not as
 // single bytes, but as a single base64 encoded string.
 func (m M) MarshalYAML() (any, error) {
-	base64Map := make(map[uint32]string)
+	base64Map := make(map[uint32]b64Measurement)
 
 	for key, value := range m {
-		base64Map[key] = base64.StdEncoding.EncodeToString(value[:])
+		base64Map[key] = b64Measurement{
+			Expected: base64.StdEncoding.EncodeToString(value.Expected[:]),
+			WarnOnly: value.WarnOnly,
+		}
 	}
 
 	return base64Map, nil
 }
 
-// UnmarshalYAML overwrites the default behaviour of reading []byte not as
+// UnmarshalYAML overwrites the default behaviour of reading [32]byte not as
 // single bytes, but as a single base64 encoded string.
 func (m *M) UnmarshalYAML(unmarshal func(any) error) error {
-	base64Map := make(map[uint32]string)
+	base64Map := make(map[uint32]b64Measurement)
 	err := unmarshal(base64Map)
 	if err != nil {
-		return err
+		// If the unmarshal fails, try to unmarshal as a map of uint32 to string.
+		typeErr := &yaml.TypeError{}
+		if errors.As(err, &typeErr) {
+			base64SimpleMap := make(map[uint32]string)
+			err = unmarshal(base64SimpleMap)
+			if err != nil {
+				return err
+			}
+
+			for key, value := range base64SimpleMap {
+				base64Map[key] = b64Measurement{
+					Expected: value,
+					WarnOnly: false,
+				}
+			}
+		} else {
+			return err
+		}
 	}
 
 	*m = make(M)
 	for key, value := range base64Map {
-		measurement, err := base64.StdEncoding.DecodeString(value)
+		measurement, err := base64.StdEncoding.DecodeString(value.Expected)
 		if err != nil {
 			return err
 		}
-		(*m)[key] = measurement
+
+		if len(measurement) != 32 {
+			return fmt.Errorf("invalid measurement at key %d: invalid length: %d", key, len(measurement))
+		}
+
+		(*m)[key] = Measurement{
+			Expected: *(*[32]byte)(measurement),
+			WarnOnly: value.WarnOnly,
+		}
 	}
 	return nil
 }
@@ -165,4 +222,9 @@ func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([
 		return []byte{}, err
 	}
 	return content, nil
+}
+
+type b64Measurement struct {
+	Expected string `yaml:"expected"`
+	WarnOnly bool   `yaml:"warnOnly"`
 }

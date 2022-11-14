@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	tpmClient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
 	tpmProto "github.com/google/go-tpm-tools/proto/tpm"
@@ -144,8 +145,7 @@ func (i *Issuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
 
 // Validator handles validation of TPM based attestation.
 type Validator struct {
-	expectedPCRs   map[uint32][]byte
-	enforcedPCRs   map[uint32]struct{}
+	expected       measurements.M
 	getTrustedKey  GetTPMTrustedAttestationPublicKey
 	validateCVM    ValidateCVM
 	verifyUserData VerifyUserData
@@ -154,18 +154,11 @@ type Validator struct {
 }
 
 // NewValidator returns a new Validator.
-func NewValidator(expectedPCRs map[uint32][]byte, enforcedPCRs []uint32, getTrustedKey GetTPMTrustedAttestationPublicKey,
+func NewValidator(expected measurements.M, getTrustedKey GetTPMTrustedAttestationPublicKey,
 	validateCVM ValidateCVM, verifyUserData VerifyUserData, log AttestationLogger,
 ) *Validator {
-	// Convert the enforced PCR list to a map for convenient and fast lookup
-	enforcedMap := make(map[uint32]struct{})
-	for _, pcr := range enforcedPCRs {
-		enforcedMap[pcr] = struct{}{}
-	}
-
 	return &Validator{
-		expectedPCRs:   expectedPCRs,
-		enforcedPCRs:   enforcedMap,
+		expected:       expected,
 		getTrustedKey:  getTrustedKey,
 		validateCVM:    validateCVM,
 		verifyUserData: verifyUserData,
@@ -212,9 +205,9 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	for idx, pcr := range v.expectedPCRs {
-		if !bytes.Equal(pcr, attDoc.Attestation.Quotes[quoteIdx].Pcrs.Pcrs[idx]) {
-			if _, ok := v.enforcedPCRs[idx]; ok {
+	for idx, pcr := range v.expected {
+		if !bytes.Equal(pcr.Expected[:], attDoc.Attestation.Quotes[quoteIdx].Pcrs.Pcrs[idx]) {
+			if pcr.WarnOnly {
 				return nil, fmt.Errorf("untrusted PCR value at PCR index %d", idx)
 			}
 			if v.log != nil {

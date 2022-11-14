@@ -9,18 +9,8 @@ package vtpm
 import (
 	"errors"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/google/go-tpm/tpm2"
-	"github.com/google/go-tpm/tpmutil"
-)
-
-const (
-	// PCRIndexClusterID is a PCR we extend to mark the node as initialized.
-	// The value used to extend is a random generated 32 Byte value.
-	PCRIndexClusterID = tpmutil.Handle(15)
-	// PCRIndexOwnerID is a PCR we extend to mark the node as initialized.
-	// The value used to extend is derived from Constellation's master key.
-	// TODO: move to stable, non-debug PCR before use.
-	PCRIndexOwnerID = tpmutil.Handle(16)
 )
 
 // MarkNodeAsBootstrapped marks a node as initialized by extending PCRs.
@@ -32,7 +22,7 @@ func MarkNodeAsBootstrapped(openTPM TPMOpenFunc, clusterID []byte) error {
 	defer tpm.Close()
 
 	// clusterID is used to uniquely identify this running instance of Constellation
-	return tpm2.PCREvent(tpm, PCRIndexClusterID, clusterID)
+	return tpm2.PCREvent(tpm, measurements.PCRIndexClusterID, clusterID)
 }
 
 // IsNodeBootstrapped checks if a node is already bootstrapped by reading PCRs.
@@ -43,7 +33,7 @@ func IsNodeBootstrapped(openTPM TPMOpenFunc) (bool, error) {
 	}
 	defer tpm.Close()
 
-	idxClusterID := int(PCRIndexClusterID)
+	idxClusterID := int(measurements.PCRIndexClusterID)
 	pcrs, err := tpm2.ReadPCRs(tpm, tpm2.PCRSelection{
 		Hash: tpm2.AlgSHA256,
 		PCRs: []int{idxClusterID},

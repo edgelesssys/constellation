@@ -22,26 +22,50 @@ import (
 func TestMarshalYAML(t *testing.T) {
 	testCases := map[string]struct {
 		measurements  M
-		wantBase64Map map[uint32]string
+		wantBase64Map map[uint32]b64Measurement
 	}{
 		"valid measurements": {
 			measurements: M{
-				2: []byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53},
-				3: []byte{213, 164, 73, 109, 33, 222, 201, 165, 37, 141, 219, 25, 198, 254, 181, 59, 180, 211, 192, 70, 63, 230, 7, 242, 72, 141, 223, 79, 16, 6, 239, 158},
+				2: Measurement{
+					Expected: [32]byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53},
+					WarnOnly: false,
+				},
+				3: Measurement{
+					Expected: [32]byte{213, 164, 73, 109, 33, 222, 201, 165, 37, 141, 219, 25, 198, 254, 181, 59, 180, 211, 192, 70, 63, 230, 7, 242, 72, 141, 223, 79, 16, 6, 239, 158},
+					WarnOnly: true,
+				},
 			},
-			wantBase64Map: map[uint32]string{
-				2: "/V3p3zUOO8RBCsBrv+XM3rk/U7nvUSOfdSzmnbxgDzU=",
-				3: "1aRJbSHeyaUljdsZxv61O7TTwEY/5gfySI3fTxAG754=",
+			wantBase64Map: map[uint32]b64Measurement{
+				2: {
+					Expected: "/V3p3zUOO8RBCsBrv+XM3rk/U7nvUSOfdSzmnbxgDzU=",
+					WarnOnly: false,
+				},
+				3: {
+					Expected: "1aRJbSHeyaUljdsZxv61O7TTwEY/5gfySI3fTxAG754=",
+					WarnOnly: true,
+				},
 			},
 		},
 		"omit bytes": {
 			measurements: M{
-				2: []byte{},
-				3: []byte{1, 2, 3, 4},
+				2: {
+					Expected: [32]byte{}, // implicitly set to all 0s
+					WarnOnly: true,
+				},
+				3: {
+					Expected: [32]byte{1, 2, 3, 4}, // implicitly padded with 0s
+					WarnOnly: true,
+				},
 			},
-			wantBase64Map: map[uint32]string{
-				2: "",
-				3: "AQIDBA==",
+			wantBase64Map: map[uint32]b64Measurement{
+				2: {
+					Expected: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+					WarnOnly: true,
+				},
+				3: {
+					Expected: "AQIDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+					WarnOnly: true,
+				},
 			},
 		},
 	}
@@ -61,51 +85,83 @@ func TestMarshalYAML(t *testing.T) {
 
 func TestUnmarshalYAML(t *testing.T) {
 	testCases := map[string]struct {
-		inputBase64Map      map[uint32]string
+		inputBase64Map      map[uint32]b64Measurement
 		forceUnmarshalError bool
 		wantMeasurements    M
 		wantErr             bool
 	}{
 		"valid measurements": {
-			inputBase64Map: map[uint32]string{
-				2: "/V3p3zUOO8RBCsBrv+XM3rk/U7nvUSOfdSzmnbxgDzU=",
-				3: "1aRJbSHeyaUljdsZxv61O7TTwEY/5gfySI3fTxAG754=",
+			inputBase64Map: map[uint32]b64Measurement{
+				2: {
+					Expected: "/V3p3zUOO8RBCsBrv+XM3rk/U7nvUSOfdSzmnbxgDzU=",
+				},
+				3: {
+					Expected: "1aRJbSHeyaUljdsZxv61O7TTwEY/5gfySI3fTxAG754=",
+				},
 			},
 			wantMeasurements: M{
-				2: []byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53},
-				3: []byte{213, 164, 73, 109, 33, 222, 201, 165, 37, 141, 219, 25, 198, 254, 181, 59, 180, 211, 192, 70, 63, 230, 7, 242, 72, 141, 223, 79, 16, 6, 239, 158},
+				2: {
+					Expected: [32]byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53},
+				},
+				3: {
+					Expected: [32]byte{213, 164, 73, 109, 33, 222, 201, 165, 37, 141, 219, 25, 198, 254, 181, 59, 180, 211, 192, 70, 63, 230, 7, 242, 72, 141, 223, 79, 16, 6, 239, 158},
+				},
 			},
 		},
 		"empty bytes": {
-			inputBase64Map: map[uint32]string{
-				2: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-				3: "AQIDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+			inputBase64Map: map[uint32]b64Measurement{
+				2: {
+					Expected: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+				},
+				3: {
+					Expected: "AQIDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+				},
 			},
 			wantMeasurements: M{
-				2: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-				3: []byte{1, 2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+				2: {
+					Expected: [32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+				},
+				3: {
+					Expected: [32]byte{1, 2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+				},
 			},
 		},
 		"invalid base64": {
-			inputBase64Map: map[uint32]string{
-				2: "This is not base64",
-				3: "AQIDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+			inputBase64Map: map[uint32]b64Measurement{
+				2: {
+					Expected: "This is not base64",
+				},
+				3: {
+					Expected: "AQIDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+				},
 			},
 			wantMeasurements: M{
-				2: []byte{},
-				3: []byte{1, 2, 3, 4},
+				2: {
+					Expected: [32]byte{},
+				},
+				3: {
+					Expected: [32]byte{1, 2, 3, 4},
+				},
 			},
 			wantErr: true,
 		},
 		"simulated unmarshal error": {
-			inputBase64Map: map[uint32]string{
-				2: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-				3: "AQIDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+			inputBase64Map: map[uint32]b64Measurement{
+				2: {
+					Expected: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+				},
+				3: {
+					Expected: "AQIDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+				},
 			},
 			forceUnmarshalError: true,
 			wantMeasurements: M{
-				2: []byte{},
-				3: []byte{1, 2, 3, 4},
+				2: {
+					Expected: [32]byte{},
+				},
+				3: {
+					Expected: [32]byte{1, 2, 3, 4},
+				},
 			},
 			wantErr: true,
 		},
@@ -118,9 +174,12 @@ func TestUnmarshalYAML(t *testing.T) {
 
 			var m M
 			err := m.UnmarshalYAML(func(i any) error {
-				if base64Map, ok := i.(map[uint32]string); ok {
+				if base64Map, ok := i.(map[uint32]b64Measurement); ok {
 					for key, value := range tc.inputBase64Map {
-						base64Map[key] = value
+						base64Map[key] = b64Measurement{
+							Expected: value.Expected,
+							WarnOnly: value.WarnOnly,
+						}
 					}
 				}
 				if tc.forceUnmarshalError {
@@ -148,48 +207,48 @@ func TestMeasurementsCopyFrom(t *testing.T) {
 		"add to empty": {
 			current: M{},
 			newMeasurements: M{
-				1: PCRWithAllBytes(0x00),
-				2: PCRWithAllBytes(0x01),
-				3: PCRWithAllBytes(0x02),
+				1: WithAllBytes(0x00, true),
+				2: WithAllBytes(0x01, true),
+				3: WithAllBytes(0x02, true),
 			},
 			wantMeasurements: M{
-				1: PCRWithAllBytes(0x00),
-				2: PCRWithAllBytes(0x01),
-				3: PCRWithAllBytes(0x02),
+				1: WithAllBytes(0x00, true),
+				2: WithAllBytes(0x01, true),
+				3: WithAllBytes(0x02, true),
 			},
 		},
 		"keep existing": {
 			current: M{
-				4: PCRWithAllBytes(0x01),
-				5: PCRWithAllBytes(0x02),
+				4: WithAllBytes(0x01, false),
+				5: WithAllBytes(0x02, true),
 			},
 			newMeasurements: M{
-				1: PCRWithAllBytes(0x00),
-				2: PCRWithAllBytes(0x01),
-				3: PCRWithAllBytes(0x02),
+				1: WithAllBytes(0x00, true),
+				2: WithAllBytes(0x01, true),
+				3: WithAllBytes(0x02, true),
 			},
 			wantMeasurements: M{
-				1: PCRWithAllBytes(0x00),
-				2: PCRWithAllBytes(0x01),
-				3: PCRWithAllBytes(0x02),
-				4: PCRWithAllBytes(0x01),
-				5: PCRWithAllBytes(0x02),
+				1: WithAllBytes(0x00, true),
+				2: WithAllBytes(0x01, true),
+				3: WithAllBytes(0x02, true),
+				4: WithAllBytes(0x01, false),
+				5: WithAllBytes(0x02, true),
 			},
 		},
 		"overwrite existing": {
 			current: M{
-				2: PCRWithAllBytes(0x04),
-				3: PCRWithAllBytes(0x05),
+				2: WithAllBytes(0x04, false),
+				3: WithAllBytes(0x05, false),
 			},
 			newMeasurements: M{
-				1: PCRWithAllBytes(0x00),
-				2: PCRWithAllBytes(0x01),
-				3: PCRWithAllBytes(0x02),
+				1: WithAllBytes(0x00, true),
+				2: WithAllBytes(0x01, true),
+				3: WithAllBytes(0x02, true),
 			},
 			wantMeasurements: M{
-				1: PCRWithAllBytes(0x00),
-				2: PCRWithAllBytes(0x01),
-				3: PCRWithAllBytes(0x02),
+				1: WithAllBytes(0x00, true),
+				2: WithAllBytes(0x01, true),
+				3: WithAllBytes(0x02, true),
 			},
 		},
 	}
@@ -241,7 +300,7 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 			signatureStatus:    http.StatusOK,
 			publicKey:          []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----"),
 			wantMeasurements: M{
-				0: PCRWithAllBytes(0x00),
+				0: WithAllBytes(0x00, false),
 			},
 			wantSHA: "4cd9d6ed8d9322150dff7738994c5e2fabff35f3bae6f5c993412d13249a5e87",
 		},
@@ -322,30 +381,67 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 	}
 }
 
-func TestPCRWithAllBytes(t *testing.T) {
+func TestWithAllBytes(t *testing.T) {
 	testCases := map[string]struct {
-		b       byte
-		wantPCR []byte
+		b               byte
+		warnOnly        bool
+		wantMeasurement Measurement
 	}{
+		"0x00 warnOnly": {
+			b:        0x00,
+			warnOnly: true,
+			wantMeasurement: Measurement{
+				Expected: [32]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+				WarnOnly: true,
+			},
+		},
 		"0x00": {
-			b:       0x00,
-			wantPCR: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+			b:        0x00,
+			warnOnly: false,
+			wantMeasurement: Measurement{
+				Expected: [32]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+				WarnOnly: false,
+			},
+		},
+		"0x01 warnOnly": {
+			b:        0x01,
+			warnOnly: true,
+			wantMeasurement: Measurement{
+				Expected: [32]byte{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
+				WarnOnly: true,
+			},
 		},
 		"0x01": {
-			b:       0x01,
-			wantPCR: []byte{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
+			b:        0x01,
+			warnOnly: false,
+			wantMeasurement: Measurement{
+				Expected: [32]byte{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
+				WarnOnly: false,
+			},
+		},
+		"0xFF warnOnly": {
+			b:        0xFF,
+			warnOnly: true,
+			wantMeasurement: Measurement{
+				Expected: [32]byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+				WarnOnly: true,
+			},
 		},
 		"0xFF": {
-			b:       0xFF,
-			wantPCR: []byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+			b:        0xFF,
+			warnOnly: false,
+			wantMeasurement: Measurement{
+				Expected: [32]byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+				WarnOnly: false,
+			},
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			pcr := PCRWithAllBytes(tc.b)
-			assert.Equal(tc.wantPCR, pcr)
+			measurement := WithAllBytes(tc.b, tc.warnOnly)
+			assert.Equal(tc.wantMeasurement, measurement)
 		})
 	}
 }
@@ -358,33 +454,44 @@ func TestEqualTo(t *testing.T) {
 	}{
 		"same values": {
 			given: M{
-				0: PCRWithAllBytes(0x00),
-				1: PCRWithAllBytes(0xFF),
+				0: WithAllBytes(0x00, false),
+				1: WithAllBytes(0xFF, false),
 			},
 			other: M{
-				0: PCRWithAllBytes(0x00),
-				1: PCRWithAllBytes(0xFF),
+				0: WithAllBytes(0x00, false),
+				1: WithAllBytes(0xFF, false),
 			},
 			wantEqual: true,
 		},
 		"different number of elements": {
 			given: M{
-				0: PCRWithAllBytes(0x00),
-				1: PCRWithAllBytes(0xFF),
+				0: WithAllBytes(0x00, false),
+				1: WithAllBytes(0xFF, false),
 			},
 			other: M{
-				0: PCRWithAllBytes(0x00),
+				0: WithAllBytes(0x00, false),
 			},
 			wantEqual: false,
 		},
 		"different values": {
 			given: M{
-				0: PCRWithAllBytes(0x00),
-				1: PCRWithAllBytes(0xFF),
+				0: WithAllBytes(0x00, false),
+				1: WithAllBytes(0xFF, false),
 			},
 			other: M{
-				0: PCRWithAllBytes(0xFF),
-				1: PCRWithAllBytes(0x00),
+				0: WithAllBytes(0xFF, false),
+				1: WithAllBytes(0x00, false),
+			},
+			wantEqual: false,
+		},
+		"different warn settings": {
+			given: M{
+				0: WithAllBytes(0x00, false),
+				1: WithAllBytes(0xFF, false),
+			},
+			other: M{
+				0: WithAllBytes(0x00, false),
+				1: WithAllBytes(0xFF, true),
 			},
 			wantEqual: false,
 		},
