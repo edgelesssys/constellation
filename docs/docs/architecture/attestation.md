@@ -186,13 +186,12 @@ The latter means that the value can be generated offline and compared to the one
 | 16&ndash;23 | Unused                                                           | -                             | -                           |
 
 </tabItem>
-</tabItem>
 <tabItem value="aws" label="AWS">
 
 Constellation uses the [vTPM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nitrotpm.html) (NitroTPM) feature of the [AWS Nitro System](http://aws.amazon.com/ec2/nitro/) on AWS for runtime measurements.
 
 The vTPM adheres to the [TPM 2.0](https://trustedcomputinggroup.org/resource/tpm-library-specification/) specification.
-It provides [UEFI secure boot](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/uefi-secure-boot.html) that's based on the secure boot process feature of Amazon EC2.
+The VMs are attested by obtaining signed PCR values over the VM's boot configuration from the TPM and comparing them to a known, good state (measured boot).
 
 The following table lists all PCR values of the vTPM and the measured components.
 It also lists what components of the boot chain did the measurements and if the value is reproducible and verifiable.
@@ -219,7 +218,6 @@ The latter means that the value can be generated offline and compared to the one
 | 16&ndash;23 | Unused                                                           | -                             | -                           |
 
 </tabItem>
-</tabs>
 </tabs>
 
 ## Cluster attestation
