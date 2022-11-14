@@ -52,7 +52,7 @@ on:
 env:
   ARM_CLIENT_ID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
   ARM_CLIENT_SECRET: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
-  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
+  ARM_SUBSCRIPTION_ID: "0d202bbb-4fa7-4af8-8125-58c269a05435"
   ARM_TENANT_ID: ${{ secrets.AZURE_E2E_TENANT_ID }}
 
 jobs:
@@ -101,7 +101,7 @@ jobs:
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
           test: ${{ github.event.inputs.test }}
           kubernetesVersion: ${{ github.event.inputs.kubernetesVersion }}
-          azureSubscription: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
+          azureSubscription: "0d202bbb-4fa7-4af8-8125-58c269a05435"
           azureTenant: ${{ secrets.AZURE_E2E_TENANT_ID }}
           azureClientID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
           azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
