@@ -7,8 +7,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 package terraform
 
 import (
+	"bytes"
 	"embed"
 	"errors"
+	"fmt"
 	"io/fs"
 	"path"
 	"path/filepath"
@@ -41,7 +43,24 @@ func prepareWorkspace(fileHandler file.Handler, provider cloudprovider.Provider,
 			return err
 		}
 		fileName := strings.Replace(filepath.Join(workingDir, path), rootDir+"/", "", 1)
-		return fileHandler.Write(fileName, content, file.OptMkdirAll)
+		if err := fileHandler.Write(fileName, content, file.OptMkdirAll); errors.Is(err, afero.ErrFileExists) {
+			// If a file already exists, check if it is identical. If yes, continue and don't write anything to disk.
+			// If no, don't overwrite it and instead throw an error. The affected file could be from a different version,
+			// provider, corrupted or manually modified in general.
+			existingFileContent, err := fileHandler.Read(fileName)
+			if err != nil {
+				return err
+			}
+
+			if !bytes.Equal(content, existingFileContent) {
+				return fmt.Errorf("trying to overwrite existing Terraform file with different version")
+			}
+			return nil
+		} else if err != nil {
+			return err
+		}
+
+		return nil
 	})
 }
 

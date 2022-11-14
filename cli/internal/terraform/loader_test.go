@@ -21,8 +21,9 @@ import (
 
 func TestLoader(t *testing.T) {
 	testCases := map[string]struct {
-		provider cloudprovider.Provider
-		fileList []string
+		provider            cloudprovider.Provider
+		fileList            []string
+		testAlreadyUnpacked bool
 	}{
 		"aws": {
 			provider: cloudprovider.AWS,
@@ -51,6 +52,16 @@ func TestLoader(t *testing.T) {
 				"modules",
 			},
 		},
+		"continue on (partially) unpacked": {
+			provider: cloudprovider.AWS,
+			fileList: []string{
+				"main.tf",
+				"variables.tf",
+				"outputs.tf",
+				"modules",
+			},
+			testAlreadyUnpacked: true,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -62,8 +73,15 @@ func TestLoader(t *testing.T) {
 
 			err := prepareWorkspace(file, tc.provider, constants.TerraformWorkingDir)
 			require.NoError(err)
-
 			checkFiles(t, file, func(err error) { assert.NoError(err) }, tc.fileList)
+
+			if tc.testAlreadyUnpacked {
+				// Let's try the same again and check if we don't get a "file already exists" error.
+				require.NoError(file.Remove(filepath.Join(constants.TerraformWorkingDir, "variables.tf")))
+				err := prepareWorkspace(file, tc.provider, constants.TerraformWorkingDir)
+				assert.NoError(err)
+				checkFiles(t, file, func(err error) { assert.NoError(err) }, tc.fileList)
+			}
 
 			err = cleanUpWorkspace(file, constants.TerraformWorkingDir)
 			require.NoError(err)
