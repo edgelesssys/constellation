@@ -4,7 +4,7 @@ metadata:
   name: csi-gce-pd-controller
   namespace: {{ .Release.Namespace }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.csiController.replicas }}
   selector:
     matchLabels:
       app: gcp-compute-persistent-disk-csi-driver
@@ -13,6 +13,7 @@ spec:
       labels:
         app: gcp-compute-persistent-disk-csi-driver
     spec:
+{{- if .Values.csiController.runOnControlPlane }}
       tolerations:
         - effect: NoSchedule
           key: node-role.kubernetes.io/control-plane
@@ -26,9 +27,12 @@ spec:
         - effect: NoSchedule
           key: node.kubernetes.io/not-ready
           operator: Exists
+{{- end }}
       nodeSelector:
-        node-role.kubernetes.io/control-plane: ""
         kubernetes.io/os: linux
+{{- if .Values.csiController.runOnControlPlane }}
+        node-role.kubernetes.io/control-plane: ""
+{{- end }}
       serviceAccountName: csi-gce-pd-controller-sa
       priorityClassName: csi-gce-pd-controller
       containers:

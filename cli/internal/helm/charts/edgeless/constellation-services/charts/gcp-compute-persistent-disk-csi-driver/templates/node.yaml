@@ -48,7 +48,7 @@ spec:
             - "--v=5"
             - "--endpoint=unix:/csi/csi.sock"
             - "--run-controller-service=false"
-            - "--kms-addr=kms.{{ .Release.Namespace }}:{{ .Values.global.kmsPort }}"
+            - "--kms-addr=kms.{{ .Values.csiNode.kmsNamespace | default .Release.Namespace }}:{{ .Values.csiNode.kmsPort }}"
           securityContext:
             privileged: true
           volumeMounts:

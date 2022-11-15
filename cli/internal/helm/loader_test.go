@@ -153,38 +153,40 @@ func prepareGCPValues(values map[string]any) error {
 
 	testTag := "v0.0.0"
 	pullPolicy := "IfNotPresent"
-	values["csi-gcp-pd"] = map[string]any{
-		"image": map[string]any{
-			"csiProvisioner": map[string]any{
-				"repo":       "csi-provisioner",
-				"tag":        testTag,
-				"pullPolicy": pullPolicy,
-			},
-			"csiAttacher": map[string]any{
-				"repo":       "csi-attacher",
-				"tag":        testTag,
-				"pullPolicy": pullPolicy,
-			},
-			"csiResizer": map[string]any{
-				"repo":       "csi-resizer",
-				"tag":        testTag,
-				"pullPolicy": pullPolicy,
-			},
-			"csiSnapshotter": map[string]any{
-				"repo":       "csi-snapshotter",
-				"tag":        testTag,
-				"pullPolicy": pullPolicy,
-			},
-			"csiNodeRegistrar": map[string]any{
-				"repo":       "csi-registrar",
-				"tag":        testTag,
-				"pullPolicy": pullPolicy,
-			},
-			"gcepdDriver": map[string]any{
-				"repo":       "csi-driver",
-				"tag":        testTag,
-				"pullPolicy": pullPolicy,
-			},
+	csiVals, ok := values["gcp-compute-persistent-disk-csi-driver"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'gcp-compute-persistent-disk-csi-driver' key")
+	}
+	csiVals["image"] = map[string]any{
+		"csiProvisioner": map[string]any{
+			"repo":       "csi-provisioner",
+			"tag":        testTag,
+			"pullPolicy": pullPolicy,
+		},
+		"csiAttacher": map[string]any{
+			"repo":       "csi-attacher",
+			"tag":        testTag,
+			"pullPolicy": pullPolicy,
+		},
+		"csiResizer": map[string]any{
+			"repo":       "csi-resizer",
+			"tag":        testTag,
+			"pullPolicy": pullPolicy,
+		},
+		"csiSnapshotter": map[string]any{
+			"repo":       "csi-snapshotter",
+			"tag":        testTag,
+			"pullPolicy": pullPolicy,
+		},
+		"csiNodeRegistrar": map[string]any{
+			"repo":       "csi-registrar",
+			"tag":        testTag,
+			"pullPolicy": pullPolicy,
+		},
+		"gcepdDriver": map[string]any{
+			"repo":       "csi-driver",
+			"tag":        testTag,
+			"pullPolicy": pullPolicy,
 		},
 	}
 

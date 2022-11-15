@@ -35,7 +35,7 @@ dependencies:
       - Azure
       - GCP
       - AWS
-  - name: csi-gcp-pd
+  - name: gcp-compute-persistent-disk-csi-driver
     version: 1.0.1
     condition: gcp.deployCSIDriver
     tags:

@@ -26,7 +26,11 @@ image:
     pullPolicy: IfNotPresent
 
 csiController:
+  replicas: 1
   runOnControlPlane: true
 
 csiNode:
-  kmsAddress: "kms.kube-system:9000"
+  kmsPort: "9000"
+  kmsNamespace: "kube-system"
+
+createStorageClass: true
