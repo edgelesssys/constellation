@@ -47,8 +47,8 @@ type imdsAPI interface {
 	GetMetadata(context.Context, *imds.GetMetadataInput, ...func(*imds.Options)) (*imds.GetMetadataOutput, error)
 }
 
-// Metadata implements core.ProviderMetadata interface for AWS.
-type Metadata struct {
+// Cloud provides AWS metadata and API access.
+type Cloud struct {
 	ec2               ec2API
 	imds              imdsAPI
 	loadbalancer      loadbalancerAPI
@@ -57,12 +57,12 @@ type Metadata struct {
 
 // New initializes a new AWS Metadata client using instance default credentials.
 // Default region is set up using the AWS imds api.
-func New(ctx context.Context) (*Metadata, error) {
+func New(ctx context.Context) (*Cloud, error) {
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithEC2IMDSRegion())
 	if err != nil {
 		return nil, err
 	}
-	return &Metadata{
+	return &Cloud{
 		ec2:               ec2.NewFromConfig(cfg),
 		imds:              imds.New(imds.Options{}),
 		loadbalancer:      elasticloadbalancingv2.NewFromConfig(cfg),
@@ -71,27 +71,27 @@ func New(ctx context.Context) (*Metadata, error) {
 }
 
 // List retrieves all instances belonging to the current Constellation.
-func (m *Metadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
-	uid, err := readInstanceTag(ctx, m.imds, cloud.TagUID)
+func (c *Cloud) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
+	uid, err := readInstanceTag(ctx, c.imds, cloud.TagUID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving uid tag: %w", err)
 	}
-	ec2Instances, err := m.getAllInstancesInGroup(ctx, uid)
+	ec2Instances, err := c.getAllInstancesInGroup(ctx, uid)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving instances: %w", err)
 	}
 
-	return m.convertToMetadataInstance(ec2Instances)
+	return c.convertToMetadataInstance(ec2Instances)
 }
 
 // Self retrieves the current instance.
-func (m *Metadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
-	identity, err := m.imds.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
+func (c *Cloud) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
+	identity, err := c.imds.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
 	if err != nil {
 		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving instance identity: %w", err)
 	}
 
-	instanceRole, err := readInstanceTag(ctx, m.imds, cloud.TagRole)
+	instanceRole, err := readInstanceTag(ctx, c.imds, cloud.TagRole)
 	if err != nil {
 		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving role tag: %w", err)
 	}
@@ -104,46 +104,18 @@ func (m *Metadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) 
 	}, nil
 }
 
-// GetInstance retrieves the instance with the given providerID.
-func (m *Metadata) GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error) {
-	instances, err := m.ec2.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
-		InstanceIds: []string{providerID},
-	})
-	if err != nil {
-		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving instance: %w", err)
-	}
-	if len(instances.Reservations) == 0 {
-		return metadata.InstanceMetadata{}, errors.New("instance not found")
-	}
-	if len(instances.Reservations) > 1 {
-		return metadata.InstanceMetadata{}, errors.New("providerID matches multiple instances")
-	}
-	if len(instances.Reservations[0].Instances) == 0 {
-		return metadata.InstanceMetadata{}, errors.New("instance not found")
-	}
-	if len(instances.Reservations[0].Instances) > 1 {
-		return metadata.InstanceMetadata{}, errors.New("providerID matches multiple instances")
-	}
-	instance, err := m.convertToMetadataInstance(instances.Reservations[0].Instances)
-	if err != nil {
-		return metadata.InstanceMetadata{}, fmt.Errorf("converting instance: %w", err)
-	}
-
-	return instance[0], nil
-}
-
 // UID returns the UID of the Constellation.
-func (m *Metadata) UID(ctx context.Context) (string, error) {
-	return readInstanceTag(ctx, m.imds, cloud.TagUID)
+func (c *Cloud) UID(ctx context.Context) (string, error) {
+	return readInstanceTag(ctx, c.imds, cloud.TagUID)
 }
 
 // GetLoadBalancerEndpoint returns the endpoint of the load balancer.
-func (m *Metadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
-	uid, err := readInstanceTag(ctx, m.imds, cloud.TagUID)
+func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
+	uid, err := readInstanceTag(ctx, c.imds, cloud.TagUID)
 	if err != nil {
 		return "", fmt.Errorf("retrieving uid tag: %w", err)
 	}
-	arns, err := m.getARNsByTag(ctx, uid, "elasticloadbalancing:loadbalancer")
+	arns, err := c.getARNsByTag(ctx, uid, "elasticloadbalancing:loadbalancer")
 	if err != nil {
 		return "", fmt.Errorf("retrieving load balancer ARNs: %w", err)
 	}
@@ -151,7 +123,7 @@ func (m *Metadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) 
 		return "", fmt.Errorf("%d load balancers found", len(arns))
 	}
 
-	output, err := m.loadbalancer.DescribeLoadBalancers(ctx, &elasticloadbalancingv2.DescribeLoadBalancersInput{
+	output, err := c.loadbalancer.DescribeLoadBalancers(ctx, &elasticloadbalancingv2.DescribeLoadBalancersInput{
 		LoadBalancerArns: arns,
 	})
 	if err != nil {
@@ -175,7 +147,7 @@ func (m *Metadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) 
 }
 
 // getARNsByTag returns a list of ARNs that have the given tag.
-func (m *Metadata) getARNsByTag(ctx context.Context, uid, resourceType string) ([]string, error) {
+func (c *Cloud) getARNsByTag(ctx context.Context, uid, resourceType string) ([]string, error) {
 	var ARNs []string
 	resourcesReq := &resourcegroupstaggingapi.GetResourcesInput{
 		TagFilters: []tagType.TagFilter{
@@ -187,7 +159,7 @@ func (m *Metadata) getARNsByTag(ctx context.Context, uid, resourceType string) (
 		ResourceTypeFilters: []string{resourceType},
 	}
 
-	for out, err := m.resourceapiClient.GetResources(ctx, resourcesReq); ; out, err = m.resourceapiClient.GetResources(ctx, resourcesReq) {
+	for out, err := c.resourceapiClient.GetResources(ctx, resourcesReq); ; out, err = c.resourceapiClient.GetResources(ctx, resourcesReq) {
 		if err != nil {
 			return nil, fmt.Errorf("retrieving resources: %w", err)
 		}
@@ -205,7 +177,7 @@ func (m *Metadata) getARNsByTag(ctx context.Context, uid, resourceType string) (
 	}
 }
 
-func (m *Metadata) getAllInstancesInGroup(ctx context.Context, uid string) ([]ec2Types.Instance, error) {
+func (c *Cloud) getAllInstancesInGroup(ctx context.Context, uid string) ([]ec2Types.Instance, error) {
 	var instances []ec2Types.Instance
 	instanceReq := &ec2.DescribeInstancesInput{
 		Filters: []ec2Types.Filter{
@@ -216,7 +188,7 @@ func (m *Metadata) getAllInstancesInGroup(ctx context.Context, uid string) ([]ec
 		},
 	}
 
-	for out, err := m.ec2.DescribeInstances(ctx, instanceReq); ; out, err = m.ec2.DescribeInstances(ctx, instanceReq) {
+	for out, err := c.ec2.DescribeInstances(ctx, instanceReq); ; out, err = c.ec2.DescribeInstances(ctx, instanceReq) {
 		if err != nil {
 			return nil, fmt.Errorf("retrieving instances: %w", err)
 		}
@@ -232,7 +204,7 @@ func (m *Metadata) getAllInstancesInGroup(ctx context.Context, uid string) ([]ec
 	}
 }
 
-func (m *Metadata) convertToMetadataInstance(ec2Instances []ec2Types.Instance) ([]metadata.InstanceMetadata, error) {
+func (c *Cloud) convertToMetadataInstance(ec2Instances []ec2Types.Instance) ([]metadata.InstanceMetadata, error) {
 	var instances []metadata.InstanceMetadata
 	for _, ec2Instance := range ec2Instances {
 		// ignore not running instances

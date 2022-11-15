@@ -22,14 +22,6 @@ const (
 	nodeOperatorCatalogNamespace = "olm"
 )
 
-// NodeOperatorCRDNames are the names of the custom resource definitions that are used by the node operator.
-var NodeOperatorCRDNames = []string{
-	"autoscalingstrategies.update.edgeless.systems",
-	"nodeimages.update.edgeless.systems",
-	"pendingnodes.update.edgeless.systems",
-	"scalinggroups.update.edgeless.systems",
-}
-
 // NodeOperatorDeployment groups all deployments for node operator.
 type NodeOperatorDeployment struct {
 	CatalogSource operatorsv1alpha1.CatalogSource

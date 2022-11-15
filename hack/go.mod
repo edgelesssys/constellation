@@ -41,7 +41,7 @@ require (
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/google/go-tpm-tools v0.3.9
 	github.com/google/uuid v1.3.0
-	github.com/spf13/afero v1.9.2
+	github.com/spf13/afero v1.9.3
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.1
 	go.uber.org/goleak v1.2.0
@@ -185,7 +185,7 @@ require (
 	github.com/schollz/progressbar/v3 v3.8.6 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
-	github.com/sigstore/rekor v1.0.0 // indirect
+	github.com/sigstore/rekor v1.0.1 // indirect
 	github.com/sigstore/sigstore v1.4.5 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -210,7 +210,7 @@ require (
 	golang.org/x/term v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af // indirect
-	golang.org/x/tools v0.1.12 // indirect
+	golang.org/x/tools v0.3.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect

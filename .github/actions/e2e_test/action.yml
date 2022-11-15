@@ -134,6 +134,8 @@ runs:
       with:
         role-to-assume: arn:aws:iam::795746500882:role/GithubActionsE2E
         aws-region: eu-central-1
+        # extend token expiry to 6 hours to ensure constellation can terminate
+        role-duration-seconds: 21600
 
     - name: Create cluster
       id: constellation-create

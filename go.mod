@@ -45,7 +45,6 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights v1.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2 v2.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork v1.1.0
-	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.5.1
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/aws/aws-sdk-go-v2 v1.17.1
@@ -64,7 +63,6 @@ require (
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/google/go-tpm v0.3.3
 	github.com/google/go-tpm-tools v0.3.9
-	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/tink/go v1.7.0
 	github.com/googleapis/gax-go/v2 v2.7.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
@@ -79,9 +77,9 @@ require (
 	github.com/operator-framework/api v0.15.0
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.8.6
-	github.com/sigstore/rekor v1.0.0
+	github.com/sigstore/rekor v1.0.1
 	github.com/sigstore/sigstore v1.4.5
-	github.com/spf13/afero v1.9.2
+	github.com/spf13/afero v1.9.3
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.1
 	github.com/talos-systems/talos/pkg/machinery v1.0.4
@@ -114,10 +112,13 @@ require (
 
 require (
 	cloud.google.com/go/longrunning v0.3.0 // indirect
+	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.2 // indirect
 	github.com/google/logger v1.1.1 // indirect
+	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.1 // indirect
+	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	golang.org/x/text v0.4.0 // indirect
 )
 
@@ -128,7 +129,6 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.0.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/internal v0.7.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
-	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.7.0 // indirect
 	github.com/BurntSushi/toml v1.1.0 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
@@ -287,7 +287,7 @@ require (
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/term v0.2.0 // indirect
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af // indirect
-	golang.org/x/tools v0.1.12 // indirect
+	golang.org/x/tools v0.3.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

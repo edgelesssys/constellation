@@ -11,7 +11,7 @@ require (
 	github.com/medik8s/node-maintenance-operator v0.13.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.20.1
-	github.com/spf13/afero v1.9.2
+	github.com/spf13/afero v1.9.3
 	github.com/stretchr/testify v1.8.1
 	go.etcd.io/etcd/api/v3 v3.5.5
 	go.etcd.io/etcd/client/pkg/v3 v3.5.5

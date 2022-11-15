@@ -123,7 +123,7 @@ func getVPCIP(ctx context.Context, provider string) (string, error) {
 			return "", err
 		}
 	case cloudprovider.Azure:
-		metadata, err = azurecloud.NewMetadata(ctx)
+		metadata, err = azurecloud.New(ctx)
 		if err != nil {
 			return "", err
 		}
@@ -135,7 +135,7 @@ func getVPCIP(ctx context.Context, provider string) (string, error) {
 		defer gcpMeta.Close()
 		metadata = gcpMeta
 	case cloudprovider.QEMU:
-		metadata = &qemucloud.Metadata{}
+		metadata = qemucloud.New()
 	default:
 		return "", errors.New("unsupported cloud provider")
 	}

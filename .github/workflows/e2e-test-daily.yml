@@ -14,6 +14,7 @@ env:
 jobs:
   e2e-daily:
     strategy:
+      fail-fast: false
       matrix:
         provider: ["gcp", "azure", "aws"]
     runs-on: ubuntu-22.04
