@@ -65,11 +65,11 @@ func (c *Client) CreateCluster(
 		return "", err
 	}
 
-	if err := c.tf.Init(ctx); err != nil {
+	if err := c.writeVars(vars); err != nil {
 		return "", err
 	}
 
-	if err := c.file.Write(filepath.Join(c.workingDir, terraformVarsFile), []byte(vars.String())); err != nil {
+	if err := c.tf.Init(ctx); err != nil {
 		return "", err
 	}
 
@@ -140,6 +140,29 @@ func GetExecutable(ctx context.Context, workingDir string) (terraform *tfexec.Te
 	tf, err := tfexec.NewTerraform(workingDir, execPath)
 
 	return tf, func() { _ = inst.Remove(context.Background()) }, err
+}
+
+// writeVars tries to write the Terraform variables file or, if it exists, checks if it is the same as we are expecting.
+func (c *Client) writeVars(vars Variables) error {
+	if vars == nil {
+		return errors.New("creating cluster: vars is nil")
+	}
+
+	pathToVarsFile := filepath.Join(c.workingDir, terraformVarsFile)
+	if err := c.file.Write(pathToVarsFile, []byte(vars.String())); errors.Is(err, afero.ErrFileExists) {
+		// If a variables file already exists, check if it's the same as we're expecting, so we can continue using it.
+		varsContent, err := c.file.Read(pathToVarsFile)
+		if err != nil {
+			return err
+		}
+		if vars.String() != string(varsContent) {
+			return errors.New("creating cluster: workspace already exists with different variables")
+		}
+	} else if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type tfInterface interface {
