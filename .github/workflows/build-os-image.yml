@@ -442,7 +442,10 @@ jobs:
 
   calculate-pcrs:
     name: "Calculate PCRs"
-    needs: [make-os-image]
+    needs: [build-settings, make-os-image]
+    permissions:
+      id-token: write
+      contents: read
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
@@ -453,6 +456,12 @@ jobs:
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
         with:
           ref: ${{ github.head_ref }}
+
+      - name: Login to AWS
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
+          aws-region: eu-central-1
 
       - name: Download OS image artifact
         uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
@@ -476,7 +485,7 @@ jobs:
             ./precalculate_pcr_9.sh ${{ github.workspace }}/image.raw ${{ github.workspace }}/pcr-9-${{ matrix.csp }}.json
           } >> "$GITHUB_STEP_SUMMARY"
           cp pcr-stable.json ${{ github.workspace }}/
-          jq --sort-keys -s '.[0] * .[1] * .[2] * .[3]' ${{ github.workspace }}/pcr-* > ${{ github.workspace }}/pcrs-${{ matrix.csp }}.json
+          jq -sSc '.[0] * .[1] * .[2] * .[3]' ${{ github.workspace }}/pcr-* > ${{ github.workspace }}/pcrs-${{ matrix.csp }}.json
           echo "::endgroup::"
         working-directory: ${{ github.workspace }}/image/measured-boot
 
@@ -486,11 +495,28 @@ jobs:
           name: pcrs
           path: pcrs-${{ matrix.csp }}.json
 
+      - name: Upload expected PCRs to S3
+        shell: bash
+        run: |
+          aws s3 cp \
+            "pcrs-${{ matrix.csp }}.json" \
+            "s3://cdn-confidential-cloud-backend/v1/measurements/${{ needs.build-settings.outputs.imageVersionUid }}/${{ matrix.csp }}/measurements.image.json" \
+            --no-progress
+
   generate-sbom:
     name: "Generate SBOM"
-    needs: [build-dependencies, make-os-image]
+    needs: [build-settings, build-dependencies, make-os-image]
+    permissions:
+      id-token: write
+      contents: read
     runs-on: ubuntu-22.04
     steps:
+      - name: Login to AWS
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
+          aws-region: eu-central-1
+
       - name: Install squashfs tools
         run: |
           echo "::group::Install squashfs tools"
@@ -505,6 +531,13 @@ jobs:
           # since the images only differ in the ESP partition
           name: parts-qemu
 
+      - name: Download manifest
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          # downloading / using only the QEMU manifest is fine
+          # since the images only differ in the ESP partition
+          name: manifest-qemu
+
       - name: Unpack squashfs
         run: |
           echo "::group::Unpack squashfs"
@@ -515,18 +548,21 @@ jobs:
         with:
           path: image.root.tree
           artifact-name: sbom.spdx.json
+          output-file: sbom.spdx.json
           format: spdx-json
 
       - uses: anchore/sbom-action@06e109483e6aa305a2b2395eabae554e51530e1d # tag=v0.13.1
         with:
           path: image.root.tree
           artifact-name: sbom.cyclonedx.json
+          output-file: sbom.cyclonedx.json
           format: cyclonedx-json
 
       - uses: anchore/sbom-action@06e109483e6aa305a2b2395eabae554e51530e1d # tag=v0.13.1
         with:
           path: image.root.tree
           artifact-name: sbom.syft.json
+          output-file: sbom.syft.json
           format: syft-json
 
       - name: Combine hashes
@@ -569,6 +605,19 @@ jobs:
           EOF
           cat SHA256SUMS
           echo -e "SHA256SUMS:\n\`\`\`\n$(cat SHA256SUMS)\n\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload SBOMs to S3
+        shell: bash
+        run: |
+          sboms='sbom.spdx.json sbom.cyclonedx.json sbom.syft.json'
+          manifests='image.raw.manifest image.raw.changelog'
+          hashes='SHA256SUMS'
+          for file in ${sboms} ${manifests} ${hashes}; do
+            aws s3 cp \
+              "${file}" \
+              "s3://cdn-confidential-cloud-backend/v1/sbom/${{ needs.build-settings.outputs.imageVersionUid }}/${file}" \
+              --no-progress
+          done
 
   upload-image-lookup-table:
     name: "Upload image lookup table"

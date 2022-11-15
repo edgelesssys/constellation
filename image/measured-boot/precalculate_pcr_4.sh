@@ -22,21 +22,23 @@ write_output() {
   local out="$1"
   cat > "${out}" << EOF
 {
-    "pcr4": "${expected_pcr_4}",
-    "efistages": [
-        {
-            "name": "shim",
-            "sha256": "${shim_authentihash}"
-        },
-        {
-            "name": "systemd-boot",
-            "sha256": "${sd_boot_authentihash}"
-        },
-        {
-            "name": "uki",
-            "sha256": "${uki_authentihash}"
-        }
-    ]
+  "measurements": {
+    "4": "${json_expected_pcr_4}"
+  },
+  "efistages": [
+    {
+      "name": "shim",
+      "sha256": "${json_shim_authentihash}"
+    },
+    {
+      "name": "systemd-boot",
+      "sha256": "${json_sd_boot_authentihash}"
+    },
+    {
+      "name": "uki",
+      "sha256": "${json_uki_authentihash}"
+    }
+  ]
 }
 EOF
 }
@@ -69,5 +71,10 @@ echo "Stage 3 - Unified Kernel Image (UKI): ${uki_authentihash}"
 echo ""
 echo "Expected PCR[4]:                      ${expected_pcr_4}"
 echo ""
+
+json_shim_authentihash=$(pcr_marshal "${shim_authentihash}")
+json_sd_boot_authentihash=$(pcr_marshal "${sd_boot_authentihash}")
+json_uki_authentihash=$(pcr_marshal "${uki_authentihash}")
+json_expected_pcr_4=$(pcr_marshal "${expected_pcr_4}")
 
 write_output "$2"

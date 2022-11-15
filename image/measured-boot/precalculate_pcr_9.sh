@@ -27,8 +27,10 @@ write_output() {
   local out="$1"
   cat > "${out}" << EOF
 {
-    "pcr9": "${expected_pcr_9}",
-    "initrd": "${initrd_hash}"
+  "measurements": {
+    "9": "${json_expected_pcr_9}"
+  },
+  "initrd-sha256": "${json_initrd_hash}"
 }
 EOF
 }
@@ -51,5 +53,8 @@ echo "Initrd measurement ${initrd_hash}"
 echo ""
 echo "Expected PCR[9]:   ${expected_pcr_9}"
 echo ""
+
+json_initrd_hash=$(pcr_marshal "${initrd_hash}")
+json_expected_pcr_9=$(pcr_marshal "${expected_pcr_9}")
 
 write_output "$2"

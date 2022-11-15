@@ -7,7 +7,7 @@
 # PCR[8] contains the hash of the kernel command line and is measured by systemd-boot.
 # This value is deprecated and will be moved to PCR[12] in the future.
 # This script may produce wrong results after 2023 (when the kernel command line is only measured in PCR[12]).
-# Usage: precalculate_pcr_8.sh <path to image> <path to output file>
+# Usage: precalculate_pcr_8.sh <path to image> <path to output file> <csp>
 
 set -euo pipefail
 shopt -s inherit_errexit
@@ -34,8 +34,11 @@ write_output() {
   local out="$1"
   cat > "${out}" << EOF
 {
-    "pcr8": "${expected_pcr_8}",
-    "cmdline": "${cmdline}"
+  "measurements": {
+    "8": "${json_expected_pcr_8}"
+  },
+  "cmdline": "${cmdline}",
+  "cmdline-sha256": "${json_cmdline_hash}"
 }
 EOF
 }
@@ -69,5 +72,8 @@ echo "Kernel Commandline measurement ${cmdline_hash}"
 echo ""
 echo "Expected PCR[8]:               ${expected_pcr_8}"
 echo ""
+
+json_cmdline_hash=$(pcr_marshal "${cmdline_hash}")
+json_expected_pcr_8=$(pcr_marshal "${expected_pcr_8}")
 
 write_output "${OUT}"
