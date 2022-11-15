@@ -31,6 +31,8 @@ import (
 
 // Run `go generate` to deterministically create the patched Helm deployment for cilium
 //go:generate ./generateCilium.sh
+// Run `go generate` to load CSI driver charts from the CSI repositories
+//go:generate ./update-csi-charts.sh
 
 //go:embed all:charts/*
 var helmFS embed.FS
@@ -219,6 +221,13 @@ func (i *ChartLoader) loadConstellationServices(
 
 		vals["gcp"] = map[string]any{
 			"deployCSIDriver": deployCSIDriver,
+		}
+
+		vals["gcp-compute-persistent-disk-csi-driver"] = map[string]any{
+			"csiNode": map[string]any{
+				"kmsPort":      constants.KMSPort,
+				"kmsNamespace": "", // empty namespace means we use the release namespace
+			},
 		}
 
 		vals["tags"] = map[string]any{

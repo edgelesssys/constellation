@@ -2,4 +2,4 @@ apiVersion: v2
 version: 1.0.1
 appVersion: "v1.0.1"
 description: GCP Compute Persistent Disk Container Storage Interface (CSI) Storage Plugin with on-node encryption support
-name: csi-gcp-pd
+name: gcp-compute-persistent-disk-csi-driver
