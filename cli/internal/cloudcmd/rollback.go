@@ -48,13 +48,16 @@ func (r *rollbackerTerraform) rollback(ctx context.Context) error {
 }
 
 type rollbackerQEMU struct {
-	client  terraformClient
-	libvirt libvirtRunner
+	client           terraformClient
+	libvirt          libvirtRunner
+	createdWorkspace bool
 }
 
 func (r *rollbackerQEMU) rollback(ctx context.Context) error {
 	var err error
-	err = multierr.Append(err, r.client.DestroyCluster(ctx))
+	if r.createdWorkspace {
+		err = multierr.Append(err, r.client.DestroyCluster(ctx))
+	}
 	err = multierr.Append(err, r.libvirt.Stop(ctx))
 	if err == nil {
 		err = r.client.CleanUpWorkspace()

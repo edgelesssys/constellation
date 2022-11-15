@@ -24,6 +24,82 @@ import (
 	"go.uber.org/multierr"
 )
 
+func TestPrepareCluster(t *testing.T) {
+	qemuVars := &QEMUVariables{
+		CommonVariables: CommonVariables{
+			Name:               "name",
+			CountControlPlanes: 1,
+			CountWorkers:       2,
+			StateDiskSizeGB:    11,
+		},
+		CPUCount:         1,
+		MemorySizeMiB:    1024,
+		ImagePath:        "path",
+		ImageFormat:      "format",
+		MetadataAPIImage: "api",
+	}
+
+	testCases := map[string]struct {
+		provider           cloudprovider.Provider
+		vars               Variables
+		fs                 afero.Fs
+		partiallyExtracted bool
+		wantErr            bool
+	}{
+		"qemu": {
+			provider: cloudprovider.QEMU,
+			vars:     qemuVars,
+			fs:       afero.NewMemMapFs(),
+			wantErr:  false,
+		},
+		"no vars": {
+			provider: cloudprovider.QEMU,
+			fs:       afero.NewMemMapFs(),
+			wantErr:  true,
+		},
+		"continue on partially extracted": {
+			provider:           cloudprovider.QEMU,
+			vars:               qemuVars,
+			fs:                 afero.NewMemMapFs(),
+			partiallyExtracted: true,
+			wantErr:            false,
+		},
+		"prepare workspace fails": {
+			provider: cloudprovider.QEMU,
+			vars:     qemuVars,
+			fs:       afero.NewReadOnlyFs(afero.NewMemMapFs()),
+			wantErr:  true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			c := &Client{
+				tf:         &stubTerraform{},
+				file:       file.NewHandler(tc.fs),
+				workingDir: constants.TerraformWorkingDir,
+			}
+
+			err := c.PrepareWorkspace(tc.provider, tc.vars)
+
+			// Test case: Check if we can continue to create on an incomplete workspace.
+			if tc.partiallyExtracted {
+				require.NoError(c.file.Remove(filepath.Join(c.workingDir, "main.tf")))
+				err = c.PrepareWorkspace(tc.provider, tc.vars)
+			}
+
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+		})
+	}
+}
+
 func TestCreateCluster(t *testing.T) {
 	someErr := errors.New("failed")
 	newTestState := func() *tfjson.State {
@@ -67,6 +143,7 @@ func TestCreateCluster(t *testing.T) {
 		},
 		"init fails": {
 			provider: cloudprovider.QEMU,
+			vars:     qemuVars,
 			tf:       &stubTerraform{initErr: someErr},
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
@@ -111,17 +188,12 @@ func TestCreateCluster(t *testing.T) {
 			fs:      afero.NewMemMapFs(),
 			wantErr: true,
 		},
-		"prepare workspace fails": {
-			provider: cloudprovider.QEMU,
-			tf:       &stubTerraform{showState: newTestState()},
-			fs:       afero.NewReadOnlyFs(afero.NewMemMapFs()),
-			wantErr:  true,
-		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
+			require := require.New(t)
 
 			c := &Client{
 				tf:         tc.tf,
@@ -129,7 +201,8 @@ func TestCreateCluster(t *testing.T) {
 				workingDir: constants.TerraformWorkingDir,
 			}
 
-			ip, err := c.CreateCluster(context.Background(), tc.provider, tc.vars)
+			require.NoError(c.PrepareWorkspace(tc.provider, tc.vars))
+			ip, err := c.CreateCluster(context.Background())
 
 			if tc.wantErr {
 				assert.Error(err)

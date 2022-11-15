@@ -57,16 +57,21 @@ func New(ctx context.Context, workingDir string) (*Client, error) {
 	}, nil
 }
 
-// CreateCluster creates a Constellation cluster using Terraform.
-func (c *Client) CreateCluster(ctx context.Context, provider cloudprovider.Provider, vars Variables) (string, error) {
+// PrepareWorkspace prepares a Terraform workspace for a Constellation cluster.
+func (c *Client) PrepareWorkspace(provider cloudprovider.Provider, vars Variables) error {
 	if err := prepareWorkspace(c.file, provider, c.workingDir); err != nil {
-		return "", err
+		return err
 	}
 
 	if err := c.writeVars(vars); err != nil {
-		return "", err
+		return err
 	}
 
+	return nil
+}
+
+// CreateCluster creates a Constellation cluster using Terraform.
+func (c *Client) CreateCluster(ctx context.Context) (string, error) {
 	if err := c.tf.Init(ctx); err != nil {
 		return "", err
 	}
