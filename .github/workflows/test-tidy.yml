@@ -54,7 +54,7 @@ jobs:
         if: ${{ failure() && (steps.tidycheck.conclusion == 'failure') && startsWith(github.head_ref, 'renovate/') }}
         shell: bash
         run: |
-          mods=${{ steps.submods.outputs.submods }}
+          mods="${{ steps.submods.outputs.submods }}"
           for mod in $mods; do
             (cd $mod; go mod tidy)
           done
