@@ -112,7 +112,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
       Set the configuration value to the `Application (client) ID`, e.g., `86ec31dd-532b-4a8c-a055-dd23f25fb12f`.
 
-      In the cluster resource group, go to `Access Control (IAM)` and set the created app registration as `Owner`.
+      In the cluster resource group, go to `Access Control (IAM)` and set the created managed identity as `Owner`.
 
     * **clientSecretValue**: In the previously created app registration, go to `Certificates & secrets` and create a new `Client secret`.
 
@@ -205,11 +205,11 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
       Constellation OS images are available with the following IDs:
 
-      | AMI | Region |
-      | - | - |
+      | AMI                     | Region         |
+      | ----------------------- | -------------- |
       | `ami-0e27ebcefc38f648b` | `eu-central-1` |
-      | `ami-098cd37f66523b7c3` | `us-east-2` |
-      | `ami-04a87d302e2509aad` | `ap-south-1` |
+      | `ami-098cd37f66523b7c3` | `us-east-2`    |
+      | `ami-04a87d302e2509aad` | `ap-south-1`   |
 
     * **iamProfileControlPlane**: The name of an IAM instance profile attached to all control-plane nodes.
 
