@@ -13,14 +13,14 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights"
 	armcomputev2 "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 )
 
 type imdsAPI interface {
-	ProviderID(ctx context.Context) (string, error)
-	SubscriptionID(ctx context.Context) (string, error)
-	ResourceGroup(ctx context.Context) (string, error)
-	UID(ctx context.Context) (string, error)
+	providerID(ctx context.Context) (string, error)
+	name(ctx context.Context) (string, error)
+	resourceGroup(ctx context.Context) (string, error)
+	subscriptionID(ctx context.Context) (string, error)
+	uid(ctx context.Context) (string, error)
 }
 
 type virtualNetworksAPI interface {
@@ -72,15 +72,6 @@ type scaleSetsAPI interface {
 type loadBalancerAPI interface {
 	NewListPager(resourceGroupName string, options *armnetwork.LoadBalancersClientListOptions,
 	) *runtime.Pager[armnetwork.LoadBalancersClientListResponse]
-}
-
-type tagsAPI interface {
-	CreateOrUpdateAtScope(ctx context.Context, scope string, parameters armresources.TagsResource,
-		options *armresources.TagsClientCreateOrUpdateAtScopeOptions,
-	) (armresources.TagsClientCreateOrUpdateAtScopeResponse, error)
-	UpdateAtScope(ctx context.Context, scope string, parameters armresources.TagsPatchResource,
-		options *armresources.TagsClientUpdateAtScopeOptions,
-	) (armresources.TagsClientUpdateAtScopeResponse, error)
 }
 
 type applicationInsightsAPI interface {

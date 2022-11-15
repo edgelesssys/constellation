@@ -123,7 +123,7 @@ func getVPCIP(ctx context.Context, provider string) (string, error) {
 			return "", err
 		}
 	case cloudprovider.Azure:
-		metadata, err = azurecloud.NewMetadata(ctx)
+		metadata, err = azurecloud.New(ctx)
 		if err != nil {
 			return "", err
 		}

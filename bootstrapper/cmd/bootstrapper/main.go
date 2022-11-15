@@ -154,11 +154,11 @@ func main() {
 			issuer = initserver.NewIssuerWrapper(trustedlaunch.NewIssuer(), vmtype.AzureTrustedLaunch, idkeydigest)
 		}
 
-		metadata, err := azurecloud.NewMetadata(ctx)
+		metadata, err := azurecloud.New(ctx)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to create Azure metadata client")
 		}
-		cloudLogger, err = azurecloud.NewLogger(ctx, metadata)
+		cloudLogger, err = azurecloud.NewLogger(ctx)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to set up cloud logger")
 		}

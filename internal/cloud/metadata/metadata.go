@@ -27,7 +27,6 @@ type InstanceMetadata struct {
 	// SecondaryIPRange is the VPC wide CIDR from which subnets are attached to VMs as AliasIPRanges.
 	// May be empty on certain CSPs.
 	SecondaryIPRange string
-
 	// AliasIPRanges is a list of IP ranges that are attached.
 	// May be empty on certain CSPs.
 	AliasIPRanges []string
