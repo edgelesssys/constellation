@@ -79,7 +79,7 @@ type UpgradeConfig struct {
 	Image string `yaml:"image"`
 	// description: |
 	//   Measurements of the updated image.
-	Measurements measurements.M `yaml:"measurements"`
+	Measurements Measurements `yaml:"measurements"`
 }
 
 // UserKey describes a user that should be created with corresponding public SSH key.
@@ -330,7 +330,8 @@ func Default() *Config {
 }
 
 // FromFile returns config file with `name` read from `fileHandler` by parsing
-// it as YAML.
+// it as YAML. You should prefer config.New to read env vars and validate
+// config in a consistent manner.
 func FromFile(fileHandler file.Handler, name string) (*Config, error) {
 	var conf Config
 	if err := fileHandler.ReadYAMLStrict(name, &conf); err != nil {
@@ -347,14 +348,11 @@ func FromFile(fileHandler file.Handler, name string) (*Config, error) {
 // 2. Read secrets from environment variables.
 // 3. Validate config.
 func New(fileHandler file.Handler, name string) (*Config, error) {
-	c := &Config{}
-
 	// Read config file
-	readConfig, err := FromFile(fileHandler, name)
+	c, err := FromFile(fileHandler, name)
 	if err != nil {
 		return nil, err
 	}
-	*c = *readConfig
 
 	// Read secrets from env-vars.
 	clientSecretValue := os.Getenv(constants.EnvVarAzureClientSecretValue)
