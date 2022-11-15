@@ -107,7 +107,7 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *con
 		Debug:                  config.IsDebugCluster(),
 	}
 
-	ip, err := cl.CreateCluster(ctx, cloudprovider.AWS, name, vars)
+	ip, err := cl.CreateCluster(ctx, cloudprovider.AWS, vars)
 	if err != nil {
 		return clusterid.File{}, err
 	}
@@ -140,7 +140,7 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 		Debug:           config.IsDebugCluster(),
 	}
 
-	ip, err := cl.CreateCluster(ctx, cloudprovider.GCP, name, &vars)
+	ip, err := cl.CreateCluster(ctx, cloudprovider.GCP, &vars)
 	if err != nil {
 		return clusterid.File{}, err
 	}
@@ -176,7 +176,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 
 	vars = normalizeAzureURIs(vars)
 
-	ip, err := cl.CreateCluster(ctx, cloudprovider.Azure, name, &vars)
+	ip, err := cl.CreateCluster(ctx, cloudprovider.Azure, &vars)
 	if err != nil {
 		return clusterid.File{}, err
 	}
@@ -273,7 +273,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 		Firmware:           config.Provider.QEMU.Firmware,
 	}
 
-	ip, err := cl.CreateCluster(ctx, cloudprovider.QEMU, name, &vars)
+	ip, err := cl.CreateCluster(ctx, cloudprovider.QEMU, &vars)
 	if err != nil {
 		return clusterid.File{}, err
 	}
