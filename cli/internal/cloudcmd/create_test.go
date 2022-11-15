@@ -25,13 +25,14 @@ func TestCreator(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		tfClient       terraformClient
-		newTfClientErr error
-		libvirt        *stubLibvirtRunner
-		provider       cloudprovider.Provider
-		config         *config.Config
-		wantErr        bool
-		wantRollback   bool // Use only together with stubClients.
+		tfClient              terraformClient
+		newTfClientErr        error
+		libvirt               *stubLibvirtRunner
+		provider              cloudprovider.Provider
+		config                *config.Config
+		wantErr               bool
+		wantRollback          bool // Use only together with stubClients.
+		wantTerraformRollback bool // When libvirt fails, don't call into Terraform.
 	}{
 		"gcp": {
 			tfClient: &stubTerraformClient{ip: ip},
@@ -45,11 +46,12 @@ func TestCreator(t *testing.T) {
 			wantErr:        true,
 		},
 		"gcp create cluster error": {
-			tfClient:     &stubTerraformClient{createClusterErr: someErr},
-			provider:     cloudprovider.GCP,
-			config:       config.Default(),
-			wantErr:      true,
-			wantRollback: true,
+			tfClient:              &stubTerraformClient{createClusterErr: someErr},
+			provider:              cloudprovider.GCP,
+			config:                config.Default(),
+			wantErr:               true,
+			wantRollback:          true,
+			wantTerraformRollback: true,
 		},
 		"qemu": {
 			tfClient: &stubTerraformClient{ip: ip},
@@ -66,20 +68,22 @@ func TestCreator(t *testing.T) {
 			wantErr:        true,
 		},
 		"qemu create cluster error": {
-			tfClient:     &stubTerraformClient{createClusterErr: someErr},
-			libvirt:      &stubLibvirtRunner{},
-			provider:     cloudprovider.QEMU,
-			config:       config.Default(),
-			wantErr:      true,
-			wantRollback: !failOnNonAMD64, // if we run on non-AMD64/linux, we don't get to a point where rollback is needed
+			tfClient:              &stubTerraformClient{createClusterErr: someErr},
+			libvirt:               &stubLibvirtRunner{},
+			provider:              cloudprovider.QEMU,
+			config:                config.Default(),
+			wantErr:               true,
+			wantRollback:          !failOnNonAMD64, // if we run on non-AMD64/linux, we don't get to a point where rollback is needed
+			wantTerraformRollback: true,
 		},
 		"qemu start libvirt error": {
-			tfClient:     &stubTerraformClient{ip: ip},
-			libvirt:      &stubLibvirtRunner{startErr: someErr},
-			provider:     cloudprovider.QEMU,
-			config:       config.Default(),
-			wantErr:      true,
-			wantRollback: !failOnNonAMD64,
+			tfClient:              &stubTerraformClient{ip: ip},
+			libvirt:               &stubLibvirtRunner{startErr: someErr},
+			provider:              cloudprovider.QEMU,
+			config:                config.Default(),
+			wantRollback:          !failOnNonAMD64,
+			wantTerraformRollback: false,
+			wantErr:               true,
 		},
 		"unknown provider": {
 			provider: cloudprovider.Unknown,
@@ -108,7 +112,9 @@ func TestCreator(t *testing.T) {
 				assert.Error(err)
 				if tc.wantRollback {
 					cl := tc.tfClient.(*stubTerraformClient)
-					assert.True(cl.destroyClusterCalled)
+					if tc.wantTerraformRollback {
+						assert.True(cl.destroyClusterCalled)
+					}
 					assert.True(cl.cleanUpWorkspaceCalled)
 					if tc.provider == cloudprovider.QEMU {
 						assert.True(tc.libvirt.stopCalled)

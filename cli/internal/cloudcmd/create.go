@@ -88,8 +88,6 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *config.Config,
 	name, insType string, controlPlaneCount, workerCount int,
 ) (idFile clusterid.File, retErr error) {
-	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
-
 	vars := terraform.AWSVariables{
 		CommonVariables: terraform.CommonVariables{
 			Name:               name,
@@ -107,7 +105,12 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *con
 		Debug:                  config.IsDebugCluster(),
 	}
 
-	ip, err := cl.CreateCluster(ctx, cloudprovider.AWS, &vars)
+	if err := cl.PrepareWorkspace(cloudprovider.AWS, &vars); err != nil {
+		return clusterid.File{}, err
+	}
+
+	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
+	ip, err := cl.CreateCluster(ctx)
 	if err != nil {
 		return clusterid.File{}, err
 	}
@@ -121,8 +124,6 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *con
 func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *config.Config,
 	name, insType string, controlPlaneCount, workerCount int,
 ) (idFile clusterid.File, retErr error) {
-	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
-
 	vars := terraform.GCPVariables{
 		CommonVariables: terraform.CommonVariables{
 			Name:               name,
@@ -140,7 +141,12 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 		Debug:           config.IsDebugCluster(),
 	}
 
-	ip, err := cl.CreateCluster(ctx, cloudprovider.GCP, &vars)
+	if err := cl.PrepareWorkspace(cloudprovider.GCP, &vars); err != nil {
+		return clusterid.File{}, err
+	}
+
+	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
+	ip, err := cl.CreateCluster(ctx)
 	if err != nil {
 		return clusterid.File{}, err
 	}
@@ -154,8 +160,6 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *config.Config,
 	name, insType string, controlPlaneCount, workerCount int,
 ) (idFile clusterid.File, retErr error) {
-	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
-
 	vars := terraform.AzureVariables{
 		CommonVariables: terraform.CommonVariables{
 			Name:               name,
@@ -176,7 +180,12 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 
 	vars = normalizeAzureURIs(vars)
 
-	ip, err := cl.CreateCluster(ctx, cloudprovider.Azure, &vars)
+	if err := cl.PrepareWorkspace(cloudprovider.Azure, &vars); err != nil {
+		return clusterid.File{}, err
+	}
+
+	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
+	ip, err := cl.CreateCluster(ctx)
 	if err != nil {
 		return clusterid.File{}, err
 	}
@@ -216,7 +225,8 @@ func normalizeAzureURIs(vars terraform.AzureVariables) terraform.AzureVariables 
 func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirtRunner, name string, config *config.Config,
 	controlPlaneCount, workerCount int,
 ) (idFile clusterid.File, retErr error) {
-	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerQEMU{client: cl, libvirt: lv})
+	qemuRollbacker := &rollbackerQEMU{client: cl, libvirt: lv, createdWorkspace: false}
+	defer rollbackOnError(context.Background(), c.out, &retErr, qemuRollbacker)
 
 	libvirtURI := config.Provider.QEMU.LibvirtURI
 	libvirtSocketPath := "."
@@ -273,7 +283,14 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 		Firmware:           config.Provider.QEMU.Firmware,
 	}
 
-	ip, err := cl.CreateCluster(ctx, cloudprovider.QEMU, &vars)
+	if err := cl.PrepareWorkspace(cloudprovider.QEMU, &vars); err != nil {
+		return clusterid.File{}, err
+	}
+
+	// Allow rollback of QEMU Terraform workspace from this point on
+	qemuRollbacker.createdWorkspace = true
+
+	ip, err := cl.CreateCluster(ctx)
 	if err != nil {
 		return clusterid.File{}, err
 	}
