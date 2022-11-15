@@ -58,22 +58,22 @@ func configFetchMeasurements(cmd *cobra.Command, verifier rekorVerifier, fileHan
 		return err
 	}
 
-	config, err := config.New(config.WithDefaultOptions(fileHandler, flags.configPath)...)
+	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
-	if config.IsDebugImage() {
+	if conf.IsDebugImage() {
 		cmd.PrintErrln("Configured image doesn't look like a released production image. Double check image before deploying to production.")
 	}
 
-	if err := flags.updateURLs(config); err != nil {
+	if err := flags.updateURLs(conf); err != nil {
 		return err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-	var fetchedMeasurements measurements.Measurements
+	var fetchedMeasurements measurements.M
 	hash, err := fetchedMeasurements.FetchAndVerify(ctx, client, flags.measurementsURL, flags.signatureURL, []byte(constants.CosignPublicKey))
 	if err != nil {
 		return err
@@ -84,8 +84,8 @@ func configFetchMeasurements(cmd *cobra.Command, verifier rekorVerifier, fileHan
 		cmd.PrintErrln("Make sure the downloaded measurements are trustworthy!")
 	}
 
-	config.UpdateMeasurements(fetchedMeasurements)
-	if err := fileHandler.WriteYAML(flags.configPath, config, file.OptOverwrite); err != nil {
+	conf.UpdateMeasurements(fetchedMeasurements)
+	if err := fileHandler.WriteYAML(flags.configPath, conf, file.OptOverwrite); err != nil {
 		return err
 	}
 

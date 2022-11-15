@@ -282,7 +282,7 @@ func (l *libvirtInstance) deleteLibvirtInstance() error {
 	return err
 }
 
-func (l *libvirtInstance) obtainMeasurements() (measurements measurements.Measurements, err error) {
+func (l *libvirtInstance) obtainMeasurements() (measurements measurements.M, err error) {
 	// sanity check
 	if err := l.deleteLibvirtInstance(); err != nil {
 		return nil, err

@@ -25,7 +25,7 @@ func TestUpdateMeasurements(t *testing.T) {
 	someErr := errors.New("error")
 	testCases := map[string]struct {
 		updater         *stubMeasurementsUpdater
-		newMeasurements measurements.Measurements
+		newMeasurements measurements.M
 		wantUpdate      bool
 		wantErr         bool
 	}{
@@ -37,7 +37,7 @@ func TestUpdateMeasurements(t *testing.T) {
 					},
 				},
 			},
-			newMeasurements: measurements.Measurements{
+			newMeasurements: measurements.M{
 				0: []byte("1"),
 			},
 			wantUpdate: true,
@@ -50,7 +50,7 @@ func TestUpdateMeasurements(t *testing.T) {
 					},
 				},
 			},
-			newMeasurements: measurements.Measurements{
+			newMeasurements: measurements.M{
 				0: []byte("1"),
 			},
 		},

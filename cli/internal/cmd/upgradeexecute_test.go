@@ -60,6 +60,6 @@ type stubUpgrader struct {
 	err error
 }
 
-func (u stubUpgrader) Upgrade(context.Context, string, measurements.Measurements) error {
+func (u stubUpgrader) Upgrade(context.Context, string, measurements.M) error {
 	return u.err
 }

@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `CONSTELL_AZURE_CLIENT_SECRET_VALUE` as an alternative to provide `provider.azure.clientSecretValue` via environment variable instead.
+- Environment variable `CONSTELL_AZURE_CLIENT_SECRET_VALUE` as an alternative way to provide the configuration value `provider.azure.clientSecretValue`.
 
 ### Changed
 <!-- For changes in existing functionality.  -->

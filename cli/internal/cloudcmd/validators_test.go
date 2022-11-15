@@ -26,19 +26,19 @@ import (
 )
 
 func TestNewValidator(t *testing.T) {
-	testPCRs := measurements.Measurements{
-		0: measurements.Zero(),
-		1: measurements.One(),
-		2: measurements.Zero(),
-		3: measurements.One(),
-		4: measurements.Zero(),
-		5: measurements.Zero(),
+	testPCRs := measurements.M{
+		0: measurements.PCRWithAllBytes(0x00),
+		1: measurements.PCRWithAllBytes(0xFF),
+		2: measurements.PCRWithAllBytes(0x00),
+		3: measurements.PCRWithAllBytes(0xFF),
+		4: measurements.PCRWithAllBytes(0x00),
+		5: measurements.PCRWithAllBytes(0x00),
 	}
 
 	testCases := map[string]struct {
 		provider           cloudprovider.Provider
 		config             *config.Config
-		pcrs               measurements.Measurements
+		pcrs               measurements.M
 		enforceIDKeyDigest bool
 		idKeyDigest        string
 		azureCVM           bool
@@ -64,12 +64,12 @@ func TestNewValidator(t *testing.T) {
 		},
 		"no pcrs provided": {
 			provider: cloudprovider.Azure,
-			pcrs:     measurements.Measurements{},
+			pcrs:     measurements.M{},
 			wantErr:  true,
 		},
 		"invalid pcr length": {
 			provider: cloudprovider.GCP,
-			pcrs: measurements.Measurements{
+			pcrs: measurements.M{
 				0: bytes.Repeat([]byte{0x00}, 31),
 			},
 			wantErr: true,
@@ -124,27 +124,27 @@ func TestNewValidator(t *testing.T) {
 }
 
 func TestValidatorV(t *testing.T) {
-	newTestPCRs := func() measurements.Measurements {
-		return measurements.Measurements{
-			0:  measurements.Zero(),
-			1:  measurements.Zero(),
-			2:  measurements.Zero(),
-			3:  measurements.Zero(),
-			4:  measurements.Zero(),
-			5:  measurements.Zero(),
-			6:  measurements.Zero(),
-			7:  measurements.Zero(),
-			8:  measurements.Zero(),
-			9:  measurements.Zero(),
-			10: measurements.Zero(),
-			11: measurements.Zero(),
-			12: measurements.Zero(),
+	newTestPCRs := func() measurements.M {
+		return measurements.M{
+			0:  measurements.PCRWithAllBytes(0x00),
+			1:  measurements.PCRWithAllBytes(0x00),
+			2:  measurements.PCRWithAllBytes(0x00),
+			3:  measurements.PCRWithAllBytes(0x00),
+			4:  measurements.PCRWithAllBytes(0x00),
+			5:  measurements.PCRWithAllBytes(0x00),
+			6:  measurements.PCRWithAllBytes(0x00),
+			7:  measurements.PCRWithAllBytes(0x00),
+			8:  measurements.PCRWithAllBytes(0x00),
+			9:  measurements.PCRWithAllBytes(0x00),
+			10: measurements.PCRWithAllBytes(0x00),
+			11: measurements.PCRWithAllBytes(0x00),
+			12: measurements.PCRWithAllBytes(0x00),
 		}
 	}
 
 	testCases := map[string]struct {
 		provider cloudprovider.Provider
-		pcrs     measurements.Measurements
+		pcrs     measurements.M
 		wantVs   atls.Validator
 		azureCVM bool
 	}{
@@ -221,7 +221,7 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 
 	testCases := map[string]struct {
 		provider  cloudprovider.Provider
-		pcrs      measurements.Measurements
+		pcrs      measurements.M
 		ownerID   string
 		clusterID string
 		wantErr   bool
@@ -318,14 +318,14 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 }
 
 func TestUpdatePCR(t *testing.T) {
-	emptyMap := measurements.Measurements{}
-	defaultMap := measurements.Measurements{
-		0: measurements.AllBytes(0xAA),
-		1: measurements.AllBytes(0xBB),
+	emptyMap := measurements.M{}
+	defaultMap := measurements.M{
+		0: measurements.PCRWithAllBytes(0xAA),
+		1: measurements.PCRWithAllBytes(0xBB),
 	}
 
 	testCases := map[string]struct {
-		pcrMap      measurements.Measurements
+		pcrMap      measurements.M
 		pcrIndex    uint32
 		encoded     string
 		wantEntries int
@@ -386,7 +386,7 @@ func TestUpdatePCR(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			pcrs := make(measurements.Measurements)
+			pcrs := make(measurements.M)
 			for k, v := range tc.pcrMap {
 				pcrs[k] = v
 			}

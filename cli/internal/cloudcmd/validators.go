@@ -29,7 +29,7 @@ import (
 // Validator validates Platform Configuration Registers (PCRs).
 type Validator struct {
 	provider           cloudprovider.Provider
-	pcrs               measurements.Measurements
+	pcrs               measurements.M
 	enforcedPCRs       []uint32
 	idkeydigest        []byte
 	enforceIDKeyDigest bool
@@ -148,7 +148,7 @@ func (v *Validator) V(cmd *cobra.Command) atls.Validator {
 }
 
 // PCRS returns the validator's PCR map.
-func (v *Validator) PCRS() measurements.Measurements {
+func (v *Validator) PCRS() measurements.M {
 	return v.pcrs
 }
 
@@ -170,7 +170,7 @@ func (v *Validator) updateValidator(cmd *cobra.Command) {
 	}
 }
 
-func (v *Validator) checkPCRs(pcrs measurements.Measurements, enforcedPCRs []uint32) error {
+func (v *Validator) checkPCRs(pcrs measurements.M, enforcedPCRs []uint32) error {
 	if len(pcrs) == 0 {
 		return errors.New("no PCR values provided")
 	}

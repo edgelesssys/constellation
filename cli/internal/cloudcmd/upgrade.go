@@ -58,7 +58,7 @@ func NewUpgrader(outWriter io.Writer) (*Upgrader, error) {
 }
 
 // Upgrade upgrades the cluster to the given measurements and image.
-func (u *Upgrader) Upgrade(ctx context.Context, image string, measurements measurements.Measurements) error {
+func (u *Upgrader) Upgrade(ctx context.Context, image string, measurements measurements.M) error {
 	if err := u.updateMeasurements(ctx, measurements); err != nil {
 		return fmt.Errorf("updating measurements: %w", err)
 	}
@@ -97,13 +97,13 @@ func (u *Upgrader) GetCurrentImage(ctx context.Context) (*unstructured.Unstructu
 	return imageStruct, imageDefinition, nil
 }
 
-func (u *Upgrader) updateMeasurements(ctx context.Context, newMeasurements measurements.Measurements) error {
+func (u *Upgrader) updateMeasurements(ctx context.Context, newMeasurements measurements.M) error {
 	existingConf, err := u.measurementsUpdater.getCurrent(ctx, constants.JoinConfigMap)
 	if err != nil {
 		return fmt.Errorf("retrieving current measurements: %w", err)
 	}
 
-	var currentMeasurements measurements.Measurements
+	var currentMeasurements measurements.M
 	if err := json.Unmarshal([]byte(existingConf.Data[constants.MeasurementsFilename]), &currentMeasurements); err != nil {
 		return fmt.Errorf("retrieving current measurements: %w", err)
 	}

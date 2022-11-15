@@ -32,12 +32,12 @@ func TestMain(m *testing.M) {
 
 func TestExportToFile(t *testing.T) {
 	testCases := map[string]struct {
-		pcrs    measurements.Measurements
+		pcrs    measurements.M
 		fs      *afero.Afero
 		wantErr bool
 	}{
 		"file not writeable": {
-			pcrs: measurements.Measurements{
+			pcrs: measurements.M{
 				0: {0x1, 0x2, 0x3},
 				1: {0x1, 0x2, 0x3},
 				2: {0x1, 0x2, 0x3},
@@ -46,7 +46,7 @@ func TestExportToFile(t *testing.T) {
 			wantErr: true,
 		},
 		"file writeable": {
-			pcrs: measurements.Measurements{
+			pcrs: measurements.M{
 				0: {0x1, 0x2, 0x3},
 				1: {0x1, 0x2, 0x3},
 				2: {0x1, 0x2, 0x3},
@@ -106,7 +106,7 @@ func TestValidatePCRAttDoc(t *testing.T) {
 						{
 							Pcrs: &tpm.PCRs{
 								Hash: tpm.HashAlgo_SHA256,
-								Pcrs: measurements.Measurements{
+								Pcrs: measurements.M{
 									0: {0x1, 0x2, 0x3},
 								},
 							},
@@ -123,8 +123,8 @@ func TestValidatePCRAttDoc(t *testing.T) {
 						{
 							Pcrs: &tpm.PCRs{
 								Hash: tpm.HashAlgo_SHA256,
-								Pcrs: measurements.Measurements{
-									0: measurements.AllBytes(0xAA),
+								Pcrs: measurements.M{
+									0: measurements.PCRWithAllBytes(0xAA),
 								},
 							},
 						},
@@ -164,11 +164,11 @@ func mustMarshalAttDoc(t *testing.T, attDoc vtpm.AttestationDocument) []byte {
 
 func TestPrintPCRs(t *testing.T) {
 	testCases := map[string]struct {
-		pcrs   measurements.Measurements
+		pcrs   measurements.M
 		format string
 	}{
 		"json": {
-			pcrs: measurements.Measurements{
+			pcrs: measurements.M{
 				0: {0x1, 0x2, 0x3},
 				1: {0x1, 0x2, 0x3},
 				2: {0x1, 0x2, 0x3},
@@ -176,7 +176,7 @@ func TestPrintPCRs(t *testing.T) {
 			format: "json",
 		},
 		"empty format": {
-			pcrs: measurements.Measurements{
+			pcrs: measurements.M{
 				0: {0x1, 0x2, 0x3},
 				1: {0x1, 0x2, 0x3},
 				2: {0x1, 0x2, 0x3},
@@ -184,7 +184,7 @@ func TestPrintPCRs(t *testing.T) {
 			format: "",
 		},
 		"yaml": {
-			pcrs: measurements.Measurements{
+			pcrs: measurements.M{
 				0: {0x1, 0x2, 0x3},
 				1: {0x1, 0x2, 0x3},
 				2: {0x1, 0x2, 0x3},

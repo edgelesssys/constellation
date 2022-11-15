@@ -30,8 +30,8 @@ import (
 )
 
 // Measurements is a required alias since docgen is not able to work with
-// types in other packaes.
-type Measurements = measurements.Measurements
+// types in other packages.
+type Measurements = measurements.M
 
 const (
 	// Version1 is the first version number for Constellation config file.
@@ -79,7 +79,7 @@ type UpgradeConfig struct {
 	Image string `yaml:"image"`
 	// description: |
 	//   Measurements of the updated image.
-	Measurements measurements.Measurements `yaml:"measurements"`
+	Measurements measurements.M `yaml:"measurements"`
 }
 
 // UserKey describes a user that should be created with corresponding public SSH key.
@@ -170,7 +170,7 @@ type AzureConfig struct {
 	//    Application client ID of the Active Directory app registration.
 	AppClientID string `yaml:"appClientID" validate:"uuid"`
 	// description: |
-	//    Client secret value of the Active Directory app registration credentials. Alternative use CONSTELL_AZURE_CLIENT_SECRET_VALUE environment variable.
+	//    Client secret value of the Active Directory app registration credentials. Alternatively leave empty and pass value via CONSTELL_AZURE_CLIENT_SECRET_VALUE environment variable.
 	ClientSecretValue string `yaml:"clientSecretValue" validate:"required"`
 	// description: |
 	//   Machine image used to create Constellation nodes.
@@ -342,66 +342,27 @@ func FromFile(fileHandler file.Handler, name string) (*Config, error) {
 	return &conf, nil
 }
 
-// Options can be used to extend or configure creation of a New Config.
-type Options func(c *Config) error
-
-// WithDefaultOptions reads the config file via provided fileHandler from
-// file with provided name. It overwrites config with secrets from environment
-// variables known to WithSecretsFromEnv and validates the config afterwards.
-func WithDefaultOptions(fileHandler file.Handler, name string) []Options {
-	return []Options{
-		WithFromFile(fileHandler, name),
-		WithSecretsFromEnv(),
-		WithValidate(),
-	}
-}
-
-// WithFromFile reads in a configuration file from the fileHandler with the given
-// name.
-func WithFromFile(fileHandler file.Handler, name string) Options {
-	return func(c *Config) error {
-		readConfig, err := FromFile(fileHandler, name)
-		if err != nil {
-			return err
-		}
-		*c = *readConfig
-		return nil
-	}
-}
-
-// WithSecretsFromEnv reads in any environment variables recognized by config
-// to contain config secrets.
-func WithSecretsFromEnv() Options {
-	return func(c *Config) error {
-		clientSecretValue, ok := os.LookupEnv(constants.EnvVarAzureClientSecretValue)
-		if ok && len(clientSecretValue) > 0 && c.Provider.Azure != nil {
-			c.Provider.Azure.ClientSecretValue = clientSecretValue
-		}
-		return nil
-	}
-}
-
-// WithValidate validates the configuration file and returns any validation errors.
-func WithValidate() Options {
-	return func(c *Config) error {
-		return c.Validate()
-	}
-}
-
-// New creates a new configuration with optional Options.
-// New without any options is equivalent to &Config{}.
-// Use WithDefaultOptions as a sane default.
-// Options are applied in the order passed, e.g., make sure to use validate at the
-// correct point (or points), and keep in mind that options may overwrite values
-// from previous options.
-func New(opts ...Options) (*Config, error) {
+// New creates a new config by:
+// 1. Reading config file via provided fileHandler from file with name.
+// 2. Read secrets from environment variables.
+// 3. Validate config.
+func New(fileHandler file.Handler, name string) (*Config, error) {
 	c := &Config{}
-	for _, opt := range opts {
-		if err := opt(c); err != nil {
-			return nil, err
-		}
+
+	// Read config file
+	readConfig, err := FromFile(fileHandler, name)
+	if err != nil {
+		return nil, err
 	}
-	return c, nil
+	*c = *readConfig
+
+	// Read secrets from env-vars.
+	clientSecretValue := os.Getenv(constants.EnvVarAzureClientSecretValue)
+	if clientSecretValue != "" && c.Provider.Azure != nil {
+		c.Provider.Azure.ClientSecretValue = clientSecretValue
+	}
+
+	return c, c.Validate()
 }
 
 // HasProvider checks whether the config contains the provider.
@@ -523,8 +484,7 @@ func (c *Config) EnforcesIDKeyDigest() bool {
 	return c.Provider.Azure != nil && c.Provider.Azure.EnforceIDKeyDigest != nil && *c.Provider.Azure.EnforceIDKeyDigest
 }
 
-// Validate checks the config values and returns validation error messages.
-// The function only returns an error if the validation itself fails.
+// Validate checks the config values and returns validation errors.
 func (c *Config) Validate() error {
 	trans := ut.New(en.New()).GetFallback()
 	validate := validator.New()

@@ -136,7 +136,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			wantClientSecretValue: "some-secret",
 		},
 		"set env overwrites": {
-			confToWrite: func() *Config { // valid config with all, but clientSecretValue
+			confToWrite: func() *Config {
 				c := Default()
 				c.RemoveProviderExcept(cloudprovider.Azure)
 				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
@@ -170,7 +170,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			}
 
 			// Test
-			c, err := New(WithDefaultOptions(fileHandler, constants.ConfigFilename)...)
+			c, err := New(fileHandler, constants.ConfigFilename)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -395,10 +395,10 @@ func TestConfigGeneratedDocsFresh(t *testing.T) {
 
 func TestConfig_UpdateMeasurements(t *testing.T) {
 	assert := assert.New(t)
-	newMeasurements := measurements.Measurements{
-		1: measurements.Zero(),
-		2: measurements.AllBytes(0x01),
-		3: measurements.AllBytes(0x02),
+	newMeasurements := measurements.M{
+		1: measurements.PCRWithAllBytes(0x00),
+		2: measurements.PCRWithAllBytes(0x01),
+		3: measurements.PCRWithAllBytes(0x02),
 	}
 
 	{ // AWS

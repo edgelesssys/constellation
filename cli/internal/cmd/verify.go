@@ -60,13 +60,13 @@ func verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyCli
 		return err
 	}
 
-	config, err := config.New(config.WithDefaultOptions(fileHandler, flags.configPath)...)
+	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
-	provider := config.GetProvider()
-	validators, err := cloudcmd.NewValidator(provider, config)
+	provider := conf.GetProvider()
+	validators, err := cloudcmd.NewValidator(provider, conf)
 	if err != nil {
 		return err
 	}

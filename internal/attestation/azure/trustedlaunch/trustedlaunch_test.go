@@ -189,7 +189,7 @@ func TestGetAttestationCert(t *testing.T) {
 			}
 			require.NoError(err)
 
-			validator := NewValidator(measurements.Measurements{}, []uint32{}, nil)
+			validator := NewValidator(measurements.M{}, []uint32{}, nil)
 			cert, err := x509.ParseCertificate(rootCert.Raw)
 			require.NoError(err)
 			roots := x509.NewCertPool()

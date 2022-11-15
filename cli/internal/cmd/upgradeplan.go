@@ -73,13 +73,13 @@ func runUpgradePlan(cmd *cobra.Command, args []string) error {
 func upgradePlan(cmd *cobra.Command, planner upgradePlanner,
 	fileHandler file.Handler, client *http.Client, rekor rekorVerifier, flags upgradePlanFlags,
 ) error {
-	config, err := config.New(config.WithDefaultOptions(fileHandler, flags.configPath)...)
+	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
 	// get current image version of the cluster
-	csp := config.GetProvider()
+	csp := conf.GetProvider()
 
 	version, err := getCurrentImageVersion(cmd.Context(), planner, csp)
 	if err != nil {
@@ -108,7 +108,7 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner,
 		return upgradePlanInteractive(
 			&nopWriteCloser{cmd.OutOrStdout()},
 			io.NopCloser(cmd.InOrStdin()),
-			flags.configPath, config, fileHandler,
+			flags.configPath, conf, fileHandler,
 			compatibleImages,
 		)
 	}

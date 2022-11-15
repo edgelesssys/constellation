@@ -67,16 +67,16 @@ func recover(
 		return err
 	}
 
-	config, err := config.New(config.WithDefaultOptions(fileHandler, flags.configPath)...)
+	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
-	provider := config.GetProvider()
+	provider := conf.GetProvider()
 	if provider == cloudprovider.Azure {
 		interval = 20 * time.Second // Azure LB takes a while to remove unhealthy instances
 	}
 
-	validator, err := cloudcmd.NewValidator(provider, config)
+	validator, err := cloudcmd.NewValidator(provider, conf)
 	if err != nil {
 		return err
 	}

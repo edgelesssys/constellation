@@ -92,7 +92,7 @@ func getAttestation(ctx context.Context, addr string) ([]byte, error) {
 }
 
 // validatePCRAttDoc parses and validates PCRs of an attestation document.
-func validatePCRAttDoc(attDocRaw []byte) (measurements.Measurements, error) {
+func validatePCRAttDoc(attDocRaw []byte) (measurements.M, error) {
 	attDoc := vtpm.AttestationDocument{}
 	if err := json.Unmarshal(attDocRaw, &attDoc); err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func validatePCRAttDoc(attDocRaw []byte) (measurements.Measurements, error) {
 
 // printPCRs formates and prints PCRs to the given writer.
 // format can be one of 'json' or 'yaml'. If it doesnt match defaults to 'json'.
-func printPCRs(w io.Writer, pcrs measurements.Measurements, format string) error {
+func printPCRs(w io.Writer, pcrs measurements.M, format string) error {
 	switch format {
 	case "json":
 		return printPCRsJSON(w, pcrs)
@@ -125,7 +125,7 @@ func printPCRs(w io.Writer, pcrs measurements.Measurements, format string) error
 	}
 }
 
-func printPCRsYAML(w io.Writer, pcrs measurements.Measurements) error {
+func printPCRsYAML(w io.Writer, pcrs measurements.M) error {
 	pcrYAML, err := yaml.Marshal(pcrs)
 	if err != nil {
 		return err
@@ -134,7 +134,7 @@ func printPCRsYAML(w io.Writer, pcrs measurements.Measurements) error {
 	return nil
 }
 
-func printPCRsJSON(w io.Writer, pcrs measurements.Measurements) error {
+func printPCRsJSON(w io.Writer, pcrs measurements.M) error {
 	pcrJSON, err := json.MarshalIndent(pcrs, "", "  ")
 	if err != nil {
 		return err
@@ -145,7 +145,7 @@ func printPCRsJSON(w io.Writer, pcrs measurements.Measurements) error {
 
 // exportToFile writes pcrs to a file, formatted to be valid Go code.
 // Validity of the PCR map is not checked, and should be handled by the caller.
-func exportToFile(path string, pcrs measurements.Measurements, fs *afero.Afero) error {
+func exportToFile(path string, pcrs measurements.M, fs *afero.Afero) error {
 	goCode := `package pcrs
 
 var pcrs = map[uint32][]byte{%s

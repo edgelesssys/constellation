@@ -67,15 +67,15 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     Fill the values produced by the script into your configuration file.
 
+    :::tip
+
+    Alternatively, you can leave `clientSecretValue` empty and provide the secret via the `CONSTELL_AZURE_CLIENT_SECRET_VALUE` environment variable.
+
+    :::
+
     By default, Constellation uses `Standard_DC4as_v5` CVMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. For CVMs, any VM type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported.
 
     Run `constellation config instance-types` to get the list of all supported options.
-
-    :::tip
-
-    Alternative, you can leave `clientSecretValue` empty, and provide the secret via `CONSTELL_AZURE_CLIENT_SECRET_VALUE` environment variable.
-
-    :::
 
     </tabItem>
     <tabItem value="azure-portal" label="Azure (Portal)">
@@ -120,7 +120,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
       :::tip
 
-      Alternative, you can leave `clientSecretValue` empty, and provide the secret via `CONSTELL_AZURE_CLIENT_SECRET_VALUE` environment variable.
+      Alternatively, you can leave `clientSecretValue` empty and provide the secret via the `CONSTELL_AZURE_CLIENT_SECRET_VALUE` environment variable.
 
       :::
 

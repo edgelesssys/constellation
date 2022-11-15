@@ -44,7 +44,7 @@ func upgradeExecute(cmd *cobra.Command, upgrader cloudUpgrader, fileHandler file
 	if err != nil {
 		return err
 	}
-	config, err := config.New(config.WithDefaultOptions(fileHandler, configPath)...)
+	conf, err := config.New(fileHandler, configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
@@ -52,9 +52,9 @@ func upgradeExecute(cmd *cobra.Command, upgrader cloudUpgrader, fileHandler file
 	// TODO: validate upgrade config? Should be basic things like checking image is not an empty string
 	// More sophisticated validation, like making sure we don't downgrade the cluster, should be done by `constellation upgrade plan`
 
-	return upgrader.Upgrade(cmd.Context(), config.Upgrade.Image, config.Upgrade.Measurements)
+	return upgrader.Upgrade(cmd.Context(), conf.Upgrade.Image, conf.Upgrade.Measurements)
 }
 
 type cloudUpgrader interface {
-	Upgrade(ctx context.Context, image string, measurements measurements.Measurements) error
+	Upgrade(ctx context.Context, image string, measurements measurements.M) error
 }

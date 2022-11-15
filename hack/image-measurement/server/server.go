@@ -21,7 +21,7 @@ import (
 type Server struct {
 	log          *logger.Logger
 	server       http.Server
-	measurements measurements.Measurements
+	measurements measurements.M
 	done         chan<- struct{}
 }
 
@@ -73,7 +73,7 @@ func (s *Server) logPCRs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// unmarshal the request body into a map of PCRs
-	var pcrs measurements.Measurements
+	var pcrs measurements.M
 	if err := json.NewDecoder(r.Body).Decode(&pcrs); err != nil {
 		log.With(zap.Error(err)).Errorf("Failed to read request body")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -90,6 +90,6 @@ func (s *Server) logPCRs(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetMeasurements returns the static measurements for QEMU environment.
-func (s *Server) GetMeasurements() measurements.Measurements {
+func (s *Server) GetMeasurements() measurements.M {
 	return s.measurements
 }

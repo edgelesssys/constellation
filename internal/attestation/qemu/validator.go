@@ -22,7 +22,7 @@ type Validator struct {
 }
 
 // NewValidator initializes a new QEMU validator with the provided PCR values.
-func NewValidator(pcrs measurements.Measurements, enforcedPCRs []uint32, log vtpm.AttestationLogger) *Validator {
+func NewValidator(pcrs measurements.M, enforcedPCRs []uint32, log vtpm.AttestationLogger) *Validator {
 	return &Validator{
 		Validator: vtpm.NewValidator(
 			pcrs,
