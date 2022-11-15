@@ -90,7 +90,7 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *con
 ) (idFile clusterid.File, retErr error) {
 	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
 
-	vars := &terraform.AWSVariables{
+	vars := terraform.AWSVariables{
 		CommonVariables: terraform.CommonVariables{
 			Name:               name,
 			CountControlPlanes: controlPlaneCount,
@@ -107,7 +107,7 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *con
 		Debug:                  config.IsDebugCluster(),
 	}
 
-	ip, err := cl.CreateCluster(ctx, cloudprovider.AWS, vars)
+	ip, err := cl.CreateCluster(ctx, cloudprovider.AWS, &vars)
 	if err != nil {
 		return clusterid.File{}, err
 	}
