@@ -96,6 +96,9 @@ func (c *Client) CreateCluster(
 
 // DestroyCluster destroys a Constellation cluster using Terraform.
 func (c *Client) DestroyCluster(ctx context.Context) error {
+	if err := c.tf.Init(ctx); err != nil {
+		return err
+	}
 	return c.tf.Destroy(ctx)
 }
 
