@@ -109,7 +109,7 @@ func main() {
 	case cloudprovider.QEMU:
 		diskPath = qemuStateDiskPath
 		issuer = qemu.NewIssuer()
-		metadataAPI = &qemucloud.Metadata{}
+		metadataAPI = qemucloud.New()
 		_ = exportPCRs()
 
 	default:

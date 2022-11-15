@@ -9,7 +9,6 @@ package qemu
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -19,12 +18,17 @@ import (
 
 const qemuMetadataEndpoint = "10.42.0.1:8080"
 
-// Metadata implements core.ProviderMetadata interface for QEMU.
-type Metadata struct{}
+// Cloud provides an interface to fake a CSP API for QEMU instances.
+type Cloud struct{}
+
+// New returns a new Cloud instance.
+func New() *Cloud {
+	return &Cloud{}
+}
 
 // List retrieves all instances belonging to the current constellation.
-func (m *Metadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
-	instancesRaw, err := m.retrieveMetadata(ctx, "/peers")
+func (c *Cloud) List(ctx context.Context) ([]metadata.InstanceMetadata, error) {
+	instancesRaw, err := c.retrieveMetadata(ctx, "/peers")
 	if err != nil {
 		return nil, err
 	}
@@ -35,8 +39,8 @@ func (m *Metadata) List(ctx context.Context) ([]metadata.InstanceMetadata, error
 }
 
 // Self retrieves the current instance.
-func (m *Metadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
-	instanceRaw, err := m.retrieveMetadata(ctx, "/self")
+func (c *Cloud) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
+	instanceRaw, err := c.retrieveMetadata(ctx, "/self")
 	if err != nil {
 		return metadata.InstanceMetadata{}, err
 	}
@@ -46,25 +50,10 @@ func (m *Metadata) Self(ctx context.Context) (metadata.InstanceMetadata, error) 
 	return instance, err
 }
 
-// GetInstance retrieves an instance using its providerID.
-func (m *Metadata) GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error) {
-	instances, err := m.List(ctx)
-	if err != nil {
-		return metadata.InstanceMetadata{}, err
-	}
-
-	for _, instance := range instances {
-		if instance.ProviderID == providerID {
-			return instance, nil
-		}
-	}
-	return metadata.InstanceMetadata{}, errors.New("instance not found")
-}
-
 // GetLoadBalancerEndpoint returns the endpoint of the load balancer.
 // For QEMU, the load balancer is the first control plane node returned by the metadata API.
-func (m *Metadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
-	endpointRaw, err := m.retrieveMetadata(ctx, "/endpoint")
+func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
+	endpointRaw, err := c.retrieveMetadata(ctx, "/endpoint")
 	if err != nil {
 		return "", err
 	}
@@ -74,13 +63,13 @@ func (m *Metadata) GetLoadBalancerEndpoint(ctx context.Context) (string, error) 
 }
 
 // UID returns the UID of the constellation.
-func (m *Metadata) UID(ctx context.Context) (string, error) {
+func (c *Cloud) UID(ctx context.Context) (string, error) {
 	// We expect only one constellation to be deployed in the same QEMU / libvirt environment.
 	// the UID can be an empty string.
 	return "", nil
 }
 
-func (m *Metadata) retrieveMetadata(ctx context.Context, uri string) ([]byte, error) {
+func (c *Cloud) retrieveMetadata(ctx context.Context, uri string) ([]byte, error) {
 	url := &url.URL{
 		Scheme: "http",
 		Host:   qemuMetadataEndpoint,

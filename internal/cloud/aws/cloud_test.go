@@ -120,7 +120,7 @@ func TestSelf(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			m := &Metadata{imds: tc.imds, ec2: &stubEC2{}}
+			m := &Cloud{imds: tc.imds, ec2: &stubEC2{}}
 
 			self, err := m.Self(context.Background())
 			if tc.wantErr {
@@ -304,7 +304,7 @@ func TestList(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			m := &Metadata{ec2: tc.ec2, imds: tc.imds}
+			m := &Cloud{ec2: tc.ec2, imds: tc.imds}
 
 			list, err := m.List(context.Background())
 			if tc.wantErr {
@@ -501,7 +501,7 @@ func TestGetLoadBalancerEndpoint(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			m := &Metadata{
+			m := &Cloud{
 				imds:              tc.imds,
 				loadbalancer:      tc.loadbalancer,
 				resourceapiClient: tc.resourceapi,
@@ -680,7 +680,7 @@ func TestConvertToMetadataInstance(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			m := &Metadata{}
+			m := &Cloud{}
 
 			instances, err := m.convertToMetadataInstance(tc.in)
 			if tc.wantErr {

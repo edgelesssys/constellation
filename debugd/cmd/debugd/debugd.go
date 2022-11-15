@@ -80,7 +80,7 @@ func main() {
 		fetcher = cloudprovider.New(meta)
 
 	case platform.QEMU:
-		fetcher = cloudprovider.New(&qemucloud.Metadata{})
+		fetcher = cloudprovider.New(qemucloud.New())
 
 	default:
 		log.Errorf("Unknown / unimplemented cloud provider CONSTEL_CSP=%v. Using fallback", csp)

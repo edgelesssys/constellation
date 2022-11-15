@@ -445,60 +445,6 @@ func TestGetInstance(t *testing.T) {
 	}
 }
 
-func TestSelfGetInstance(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-
-	cloud := &Cloud{
-		scaleSetsVMAPI: &stubVirtualMachineScaleSetVMsAPI{
-			getVM: armcomputev2.VirtualMachineScaleSetVM{
-				Name: to.Ptr("scale-set-name-instance-id"),
-				ID:   to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id"),
-				Properties: &armcomputev2.VirtualMachineScaleSetVMProperties{
-					OSProfile: &armcomputev2.OSProfile{
-						ComputerName: to.Ptr("scale-set-name-instance-id"),
-					},
-					NetworkProfile: &armcomputev2.NetworkProfile{
-						NetworkInterfaces: []*armcomputev2.NetworkInterfaceReference{
-							{
-								ID: to.Ptr("/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Network/networkInterfaces/nic-name"),
-							},
-						},
-					},
-				},
-				Tags: map[string]*string{
-					cloud.TagRole: to.Ptr(role.Worker.String()),
-				},
-			},
-		},
-		netIfacAPI: &stubNetworkInterfacesAPI{
-			getInterface: armnetwork.Interface{
-				Properties: &armnetwork.InterfacePropertiesFormat{
-					IPConfigurations: []*armnetwork.InterfaceIPConfiguration{
-						{
-							Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
-								Primary:          to.Ptr(true),
-								PrivateIPAddress: to.Ptr("192.0.2.1"),
-							},
-						},
-					},
-				},
-			},
-		},
-		imds: &stubIMDSAPI{
-			providerIDVal: "/subscriptions/subscription-id/resourceGroups/resource-group/providers/Microsoft.Compute/virtualMachineScaleSets/scale-set-name/virtualMachines/instance-id",
-		},
-	}
-
-	self, err := cloud.Self(context.Background())
-	require.NoError(err)
-
-	instance, err := cloud.GetInstance(context.Background(), self.ProviderID)
-	require.NoError(err)
-
-	assert.Equal(self, instance)
-}
-
 func TestUID(t *testing.T) {
 	testCases := map[string]struct {
 		imdsAPI *stubIMDSAPI

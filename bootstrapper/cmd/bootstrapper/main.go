@@ -184,7 +184,7 @@ func main() {
 		issuer = initserver.NewIssuerWrapper(qemu.NewIssuer(), vmtype.Unknown, nil)
 
 		cloudLogger = qemucloud.NewLogger()
-		metadata := &qemucloud.Metadata{}
+		metadata := qemucloud.New()
 		pcrsJSON, err := json.Marshal(pcrs)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to marshal PCRs")

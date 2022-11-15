@@ -260,12 +260,6 @@ func (k *KubeadmJoinYAML) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(k)
 }
 
-// Unmarshal from a k8s resource YAML.
-func (k *KubeadmJoinYAML) Unmarshal(yamlData []byte) (KubeadmJoinYAML, error) {
-	var tmp KubeadmJoinYAML
-	return tmp, kubernetes.UnmarshalK8SResources(yamlData, &tmp)
-}
-
 // KubeadmInitYAML holds configuration for kubeadm init workflow.
 type KubeadmInitYAML struct {
 	InitConfiguration    kubeadm.InitConfiguration
@@ -288,31 +282,11 @@ func (k *KubeadmInitYAML) SetCertSANs(certSANs []string) {
 	}
 }
 
-// SetAPIServerAdvertiseAddress sets the advertised API server address.
-func (k *KubeadmInitYAML) SetAPIServerAdvertiseAddress(apiServerAdvertiseAddress string) {
-	k.InitConfiguration.LocalAPIEndpoint.AdvertiseAddress = apiServerAdvertiseAddress
-}
-
 // SetControlPlaneEndpoint sets the control plane endpoint if controlPlaneEndpoint is not empty.
 func (k *KubeadmInitYAML) SetControlPlaneEndpoint(controlPlaneEndpoint string) {
 	if controlPlaneEndpoint != "" {
 		k.ClusterConfiguration.ControlPlaneEndpoint = controlPlaneEndpoint
 	}
-}
-
-// SetServiceCIDR sets the CIDR of service subnet.
-func (k *KubeadmInitYAML) SetServiceCIDR(serviceCIDR string) {
-	k.ClusterConfiguration.Networking.ServiceSubnet = serviceCIDR
-}
-
-// SetPodNetworkCIDR sets the CIDR of pod subnet.
-func (k *KubeadmInitYAML) SetPodNetworkCIDR(podNetworkCIDR string) {
-	k.ClusterConfiguration.Networking.PodSubnet = podNetworkCIDR
-}
-
-// SetServiceDNSDomain sets the dns domain.
-func (k *KubeadmInitYAML) SetServiceDNSDomain(serviceDNSDomain string) {
-	k.ClusterConfiguration.Networking.DNSDomain = serviceDNSDomain
 }
 
 // SetNodeIP sets the node IP.
@@ -336,10 +310,4 @@ func (k *KubeadmInitYAML) SetProviderID(providerID string) {
 // Marshal into a k8s resource YAML.
 func (k *KubeadmInitYAML) Marshal() ([]byte, error) {
 	return kubernetes.MarshalK8SResources(k)
-}
-
-// Unmarshal from a k8s resource YAML.
-func (k *KubeadmInitYAML) Unmarshal(yamlData []byte) (KubeadmInitYAML, error) {
-	var tmp KubeadmInitYAML
-	return tmp, kubernetes.UnmarshalK8SResources(yamlData, &tmp)
 }

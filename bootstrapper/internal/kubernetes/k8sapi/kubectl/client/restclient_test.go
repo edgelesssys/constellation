@@ -39,30 +39,30 @@ users:
 `
 
 type stubClientConfig struct {
-	RawConfigConfig     clientcmdapi.Config
-	RawConfigErr        error
-	ClientConfigConfig  *restclient.Config
-	ClientConfigErr     error
-	NamespaceString     string
-	NamespaceOverridden bool
-	NamespaceErr        error
-	ConfigAccessResult  clientcmd.ConfigAccess
+	rawConfigConfig     clientcmdapi.Config
+	rawConfigErr        error
+	clientConfigConfig  *restclient.Config
+	clientConfigErr     error
+	namespaceString     string
+	namespaceOverridden bool
+	namespaceErr        error
+	configAccessResult  clientcmd.ConfigAccess
 }
 
 func (s *stubClientConfig) RawConfig() (clientcmdapi.Config, error) {
-	return s.RawConfigConfig, s.RawConfigErr
+	return s.rawConfigConfig, s.rawConfigErr
 }
 
 func (s *stubClientConfig) ClientConfig() (*restclient.Config, error) {
-	return s.ClientConfigConfig, s.ClientConfigErr
+	return s.clientConfigConfig, s.clientConfigErr
 }
 
 func (s *stubClientConfig) Namespace() (string, bool, error) {
-	return s.NamespaceString, s.NamespaceOverridden, s.NamespaceErr
+	return s.namespaceString, s.namespaceOverridden, s.namespaceErr
 }
 
 func (s *stubClientConfig) ConfigAccess() clientcmd.ConfigAccess {
-	return s.ConfigAccessResult
+	return s.configAccessResult
 }
 
 func TestNewRESTClientGetter(t *testing.T) {
@@ -76,7 +76,7 @@ func TestToRESTConfig(t *testing.T) {
 	require := require.New(t)
 	getter := restClientGetter{
 		clientconfig: &stubClientConfig{
-			ClientConfigConfig: &restclient.Config{},
+			clientConfigConfig: &restclient.Config{},
 		},
 	}
 	result, err := getter.ToRESTConfig()
@@ -88,7 +88,7 @@ func TestToDiscoveryClient(t *testing.T) {
 	require := require.New(t)
 	getter := restClientGetter{
 		clientconfig: &stubClientConfig{
-			ClientConfigConfig: &restclient.Config{},
+			clientConfigConfig: &restclient.Config{},
 		},
 	}
 	result, err := getter.ToDiscoveryClient()
@@ -100,7 +100,7 @@ func TestToDiscoveryClientFail(t *testing.T) {
 	require := require.New(t)
 	getter := restClientGetter{
 		clientconfig: &stubClientConfig{
-			ClientConfigErr: errors.New("someErr"),
+			clientConfigErr: errors.New("someErr"),
 		},
 	}
 	_, err := getter.ToDiscoveryClient()
@@ -111,7 +111,7 @@ func TestToRESTMapper(t *testing.T) {
 	require := require.New(t)
 	getter := restClientGetter{
 		clientconfig: &stubClientConfig{
-			ClientConfigConfig: &restclient.Config{},
+			clientConfigConfig: &restclient.Config{},
 		},
 	}
 	result, err := getter.ToRESTMapper()
@@ -123,7 +123,7 @@ func TestToRESTMapperFail(t *testing.T) {
 	require := require.New(t)
 	getter := restClientGetter{
 		clientconfig: &stubClientConfig{
-			ClientConfigErr: errors.New("someErr"),
+			clientConfigErr: errors.New("someErr"),
 		},
 	}
 	_, err := getter.ToRESTMapper()
@@ -132,7 +132,7 @@ func TestToRESTMapperFail(t *testing.T) {
 
 func TestToRawKubeConfigLoader(t *testing.T) {
 	clientConfig := stubClientConfig{
-		ClientConfigConfig: &restclient.Config{},
+		clientConfigConfig: &restclient.Config{},
 	}
 	require := require.New(t)
 	getter := restClientGetter{

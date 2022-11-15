@@ -252,7 +252,6 @@ type SetupPodNetworkInput struct {
 	NodeName             string
 	FirstNodePodCIDR     string
 	SubnetworkPodCIDR    string
-	ProviderID           string
 	LoadBalancerEndpoint string
 }
 
@@ -315,14 +314,6 @@ func (k *KubernetesUtil) FixCilium(log *logger.Logger) {
 	if err != nil {
 		log.With(zap.Error(err)).Errorf("Removing cilium agent pod failed: %s", out)
 	}
-}
-
-// SetupAutoscaling deploys the k8s cluster autoscaler.
-func (k *KubernetesUtil) SetupAutoscaling(kubectl Client, clusterAutoscalerConfiguration kubernetes.Marshaler, secrets kubernetes.Marshaler) error {
-	if err := kubectl.Apply(secrets, true); err != nil {
-		return fmt.Errorf("applying cluster-autoscaler Secrets: %w", err)
-	}
-	return kubectl.Apply(clusterAutoscalerConfiguration, true)
 }
 
 // SetupGCPGuestAgent deploys the GCP guest agent daemon set.

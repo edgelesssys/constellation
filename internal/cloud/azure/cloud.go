@@ -93,11 +93,6 @@ func New(ctx context.Context) (*Cloud, error) {
 	}, nil
 }
 
-// GetInstance retrieves an instance using its providerID.
-func (c *Cloud) GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error) {
-	return c.getInstance(ctx, providerID)
-}
-
 // GetCCMConfig returns the configuration needed for the Kubernetes Cloud Controller Manager on Azure.
 func (c *Cloud) GetCCMConfig(ctx context.Context, providerID string, cloudServiceAccountURI string) ([]byte, error) {
 	subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(providerID)

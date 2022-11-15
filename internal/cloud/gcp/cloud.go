@@ -80,16 +80,6 @@ func (c *Cloud) Close() {
 	}
 }
 
-// GetInstance retrieves an instance using its providerID.
-func (c *Cloud) GetInstance(ctx context.Context, providerID string) (metadata.InstanceMetadata, error) {
-	project, zone, instanceName, err := gcpshared.SplitProviderID(providerID)
-	if err != nil {
-		return metadata.InstanceMetadata{}, fmt.Errorf("invalid providerID: %w", err)
-	}
-
-	return c.getInstance(ctx, project, zone, instanceName)
-}
-
 // GetLoadBalancerEndpoint returns the endpoint of the load balancer.
 func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
 	project, zone, instanceName, err := c.retrieveInstanceInfo()

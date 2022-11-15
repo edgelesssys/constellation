@@ -9,6 +9,7 @@ package k8sapi
 import (
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,11 +33,8 @@ func TestInitConfiguration(t *testing.T) {
 		"kubeadm init config with all fields can be created": {
 			config: func() KubeadmInitYAML {
 				c := kubeadmConfig.InitConfiguration(true, versions.Default)
-				c.SetAPIServerAdvertiseAddress("192.0.2.0")
 				c.SetNodeIP("192.0.2.0")
 				c.SetNodeName("node")
-				c.SetPodNetworkCIDR("10.244.0.0/16")
-				c.SetServiceCIDR("10.245.0.0/24")
 				c.SetProviderID("somecloudprovider://instance-id")
 				return c
 			}(),
@@ -49,8 +47,8 @@ func TestInitConfiguration(t *testing.T) {
 
 			config, err := tc.config.Marshal()
 			require.NoError(err)
-			tmp, err := tc.config.Unmarshal(config)
-			require.NoError(err)
+			var tmp KubeadmInitYAML
+			require.NoError(kubernetes.UnmarshalK8SResources(config, &tmp))
 			// test on correct mashalling and unmarshalling
 			assert.Equal(tc.config.ClusterConfiguration, tmp.ClusterConfiguration)
 			assert.Equal(tc.config.InitConfiguration, tmp.InitConfiguration)
@@ -120,8 +118,8 @@ func TestJoinConfiguration(t *testing.T) {
 
 			config, err := tc.config.Marshal()
 			require.NoError(err)
-			tmp, err := tc.config.Unmarshal(config)
-			require.NoError(err)
+			var tmp KubeadmJoinYAML
+			require.NoError(kubernetes.UnmarshalK8SResources(config, &tmp))
 			// test on correct mashalling and unmarshalling
 			assert.Equal(tc.config.JoinConfiguration, tmp.JoinConfiguration)
 		})
