@@ -32,7 +32,7 @@ type stubTerraformClient struct {
 	cleanUpWorkspaceErr    error
 }
 
-func (c *stubTerraformClient) CreateCluster(ctx context.Context, provider cloudprovider.Provider, name string, input terraform.Variables) (string, error) {
+func (c *stubTerraformClient) CreateCluster(ctx context.Context, provider cloudprovider.Provider, input terraform.Variables) (string, error) {
 	return c.ip, c.createClusterErr
 }
 

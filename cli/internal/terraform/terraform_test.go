@@ -129,7 +129,7 @@ func TestCreateCluster(t *testing.T) {
 				workingDir: constants.TerraformWorkingDir,
 			}
 
-			ip, err := c.CreateCluster(context.Background(), tc.provider, "test", tc.vars)
+			ip, err := c.CreateCluster(context.Background(), tc.provider, tc.vars)
 
 			if tc.wantErr {
 				assert.Error(err)
