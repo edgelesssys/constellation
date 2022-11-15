@@ -78,7 +78,7 @@ require (
 	github.com/operator-framework/api v0.15.0
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.8.6
-	github.com/sigstore/rekor v1.0.0
+	github.com/sigstore/rekor v1.0.1
 	github.com/sigstore/sigstore v1.4.5
 	github.com/spf13/afero v1.9.2
 	github.com/spf13/cobra v1.6.1

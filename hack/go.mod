@@ -185,7 +185,7 @@ require (
 	github.com/schollz/progressbar/v3 v3.8.6 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
-	github.com/sigstore/rekor v1.0.0 // indirect
+	github.com/sigstore/rekor v1.0.1 // indirect
 	github.com/sigstore/sigstore v1.4.5 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
