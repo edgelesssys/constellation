@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package config
+package measurements
 
 import (
 	"bytes"
@@ -18,52 +18,60 @@ import (
 	"net/url"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"gopkg.in/yaml.v2"
 )
 
-// Measurements are Platform Configuration Register (PCR) values.
-type Measurements map[uint32][]byte
+// M are Platform Configuration Register (PCR) values that make up the Measurements.
+type M map[uint32][]byte
 
-var (
-	zero = []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
-	// gcpPCRs are the PCR values for a GCP Constellation node that are initially set in a generated config file.
-	gcpPCRs = Measurements{
-		0:                              {0x0F, 0x35, 0xC2, 0x14, 0x60, 0x8D, 0x93, 0xC7, 0xA6, 0xE6, 0x8A, 0xE7, 0x35, 0x9B, 0x4A, 0x8B, 0xE5, 0xA0, 0xE9, 0x9E, 0xEA, 0x91, 0x07, 0xEC, 0xE4, 0x27, 0xC4, 0xDE, 0xA4, 0xE4, 0x39, 0xCF},
-		11:                             zero,
-		12:                             zero,
-		13:                             zero,
-		uint32(vtpm.PCRIndexClusterID): zero,
-	}
+// PCRWithAllBytes returns a PCR value where all 32 bytes are set to b.
+func PCRWithAllBytes(b byte) []byte {
+	return bytes.Repeat([]byte{b}, 32)
+}
 
-	// azurePCRs are the PCR values for an Azure Constellation node that are initially set in a generated config file.
-	azurePCRs = Measurements{
-		11:                             zero,
-		12:                             zero,
-		13:                             zero,
-		uint32(vtpm.PCRIndexClusterID): zero,
+// DefaultsFor provides the default measurements for given cloud provider.
+func DefaultsFor(provider cloudprovider.Provider) M {
+	switch provider {
+	case cloudprovider.AWS:
+		return M{
+			11:                             PCRWithAllBytes(0x00),
+			12:                             PCRWithAllBytes(0x00),
+			13:                             PCRWithAllBytes(0x00),
+			uint32(vtpm.PCRIndexClusterID): PCRWithAllBytes(0x00),
+		}
+	case cloudprovider.Azure:
+		return M{
+			11:                             PCRWithAllBytes(0x00),
+			12:                             PCRWithAllBytes(0x00),
+			13:                             PCRWithAllBytes(0x00),
+			uint32(vtpm.PCRIndexClusterID): PCRWithAllBytes(0x00),
+		}
+	case cloudprovider.GCP:
+		return M{
+			0:                              {0x0F, 0x35, 0xC2, 0x14, 0x60, 0x8D, 0x93, 0xC7, 0xA6, 0xE6, 0x8A, 0xE7, 0x35, 0x9B, 0x4A, 0x8B, 0xE5, 0xA0, 0xE9, 0x9E, 0xEA, 0x91, 0x07, 0xEC, 0xE4, 0x27, 0xC4, 0xDE, 0xA4, 0xE4, 0x39, 0xCF},
+			11:                             PCRWithAllBytes(0x00),
+			12:                             PCRWithAllBytes(0x00),
+			13:                             PCRWithAllBytes(0x00),
+			uint32(vtpm.PCRIndexClusterID): PCRWithAllBytes(0x00),
+		}
+	case cloudprovider.QEMU:
+		return M{
+			11:                             PCRWithAllBytes(0x00),
+			12:                             PCRWithAllBytes(0x00),
+			13:                             PCRWithAllBytes(0x00),
+			uint32(vtpm.PCRIndexClusterID): PCRWithAllBytes(0x00),
+		}
+	default:
+		return nil
 	}
-
-	// awsPCRs are the PCR values for an AWS Nitro Constellation node that are initially set in a generated config file.
-	awsPCRs = Measurements{
-		11:                             zero,
-		12:                             zero,
-		13:                             zero,
-		uint32(vtpm.PCRIndexClusterID): zero,
-	}
-
-	qemuPCRs = Measurements{
-		11:                             zero,
-		12:                             zero,
-		13:                             zero,
-		uint32(vtpm.PCRIndexClusterID): zero,
-	}
-)
+}
 
 // FetchAndVerify fetches measurement and signature files via provided URLs,
 // using client for download. The publicKey is used to verify the measurements.
 // The hash of the fetched measurements is returned.
-func (m *Measurements) FetchAndVerify(ctx context.Context, client *http.Client, measurementsURL *url.URL, signatureURL *url.URL, publicKey []byte) (string, error) {
+func (m *M) FetchAndVerify(ctx context.Context, client *http.Client, measurementsURL *url.URL, signatureURL *url.URL, publicKey []byte) (string, error) {
 	measurements, err := getFromURL(ctx, client, measurementsURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch measurements: %w", err)
@@ -86,15 +94,29 @@ func (m *Measurements) FetchAndVerify(ctx context.Context, client *http.Client, 
 
 // CopyFrom copies over all values from other. Overwriting existing values,
 // but keeping not specified values untouched.
-func (m Measurements) CopyFrom(other Measurements) {
+func (m M) CopyFrom(other M) {
 	for idx := range other {
 		m[idx] = other[idx]
 	}
 }
 
+// EqualTo tests whether the provided other Measurements are equal to these
+// measurements.
+func (m M) EqualTo(other M) bool {
+	if len(m) != len(other) {
+		return false
+	}
+	for k, v := range m {
+		if !bytes.Equal(v, other[k]) {
+			return false
+		}
+	}
+	return true
+}
+
 // MarshalYAML overwrites the default behaviour of writing out []byte not as
 // single bytes, but as a single base64 encoded string.
-func (m Measurements) MarshalYAML() (any, error) {
+func (m M) MarshalYAML() (any, error) {
 	base64Map := make(map[uint32]string)
 
 	for key, value := range m {
@@ -106,14 +128,14 @@ func (m Measurements) MarshalYAML() (any, error) {
 
 // UnmarshalYAML overwrites the default behaviour of reading []byte not as
 // single bytes, but as a single base64 encoded string.
-func (m *Measurements) UnmarshalYAML(unmarshal func(any) error) error {
+func (m *M) UnmarshalYAML(unmarshal func(any) error) error {
 	base64Map := make(map[uint32]string)
 	err := unmarshal(base64Map)
 	if err != nil {
 		return err
 	}
 
-	*m = make(Measurements)
+	*m = make(M)
 	for key, value := range base64Map {
 		measurement, err := base64.StdEncoding.DecodeString(value)
 		if err != nil {

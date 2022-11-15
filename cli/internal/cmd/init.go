@@ -78,9 +78,9 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return err
 	}
 
-	config, err := readConfig(cmd.ErrOrStderr(), fileHandler, flags.configPath)
+	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
-		return fmt.Errorf("reading and validating config: %w", err)
+		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
 	var idFile clusterid.File
@@ -88,7 +88,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return fmt.Errorf("reading cluster ID file: %w", err)
 	}
 
-	k8sVersion, err := versions.NewValidK8sVersion(config.KubernetesVersion)
+	k8sVersion, err := versions.NewValidK8sVersion(conf.KubernetesVersion)
 	if err != nil {
 		return fmt.Errorf("validating kubernetes version: %w", err)
 	}
@@ -96,18 +96,18 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		cmd.PrintErrf("Warning: Constellation with Kubernetes %v is still in preview. Use only for evaluation purposes.\n", k8sVersion)
 	}
 
-	provider := config.GetProvider()
+	provider := conf.GetProvider()
 	checker := license.NewChecker(quotaChecker, fileHandler)
-	if err := checker.CheckLicense(cmd.Context(), provider, config.Provider, cmd.Printf); err != nil {
+	if err := checker.CheckLicense(cmd.Context(), provider, conf.Provider, cmd.Printf); err != nil {
 		cmd.PrintErrf("License check failed: %v", err)
 	}
 
-	validator, err := cloudcmd.NewValidator(provider, config)
+	validator, err := cloudcmd.NewValidator(provider, conf)
 	if err != nil {
 		return err
 	}
 
-	serviceAccURI, err := getMarshaledServiceAccountURI(provider, config, fileHandler)
+	serviceAccURI, err := getMarshaledServiceAccountURI(provider, conf, fileHandler)
 	if err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
 	}
 	helmLoader := helm.New(provider, k8sVersion)
-	helmDeployments, err := helmLoader.Load(provider, flags.conformance, masterSecret.Key, masterSecret.Salt, getEnforcedPCRs(provider, config), getEnforceIDKeyDigest(provider, config))
+	helmDeployments, err := helmLoader.Load(provider, flags.conformance, masterSecret.Key, masterSecret.Salt, getEnforcedPCRs(provider, conf), getEnforceIDKeyDigest(provider, conf))
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
 	}
@@ -131,10 +131,10 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		KeyEncryptionKeyId:     "",
 		UseExistingKek:         false,
 		CloudServiceAccountUri: serviceAccURI,
-		KubernetesVersion:      config.KubernetesVersion,
+		KubernetesVersion:      conf.KubernetesVersion,
 		HelmDeployments:        helmDeployments,
-		EnforcedPcrs:           getEnforcedPCRs(provider, config),
-		EnforceIdkeydigest:     getEnforceIDKeyDigest(provider, config),
+		EnforcedPcrs:           getEnforcedPCRs(provider, conf),
+		EnforceIdkeydigest:     getEnforceIDKeyDigest(provider, conf),
 		ConformanceMode:        flags.conformance,
 	}
 	resp, err := initCall(cmd.Context(), newDialer(validator), idFile.IP, req)

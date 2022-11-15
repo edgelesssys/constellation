@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -28,7 +29,7 @@ import (
 // Validator validates Platform Configuration Registers (PCRs).
 type Validator struct {
 	provider           cloudprovider.Provider
-	pcrs               map[uint32][]byte
+	pcrs               measurements.M
 	enforcedPCRs       []uint32
 	idkeydigest        []byte
 	enforceIDKeyDigest bool
@@ -147,7 +148,7 @@ func (v *Validator) V(cmd *cobra.Command) atls.Validator {
 }
 
 // PCRS returns the validator's PCR map.
-func (v *Validator) PCRS() map[uint32][]byte {
+func (v *Validator) PCRS() measurements.M {
 	return v.pcrs
 }
 
@@ -169,7 +170,7 @@ func (v *Validator) updateValidator(cmd *cobra.Command) {
 	}
 }
 
-func (v *Validator) checkPCRs(pcrs map[uint32][]byte, enforcedPCRs []uint32) error {
+func (v *Validator) checkPCRs(pcrs measurements.M, enforcedPCRs []uint32) error {
 	if len(pcrs) == 0 {
 		return errors.New("no PCR values provided")
 	}

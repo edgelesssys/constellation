@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -39,7 +40,7 @@ func newConfigFetchMeasurementsCmd() *cobra.Command {
 type fetchMeasurementsFlags struct {
 	measurementsURL *url.URL
 	signatureURL    *url.URL
-	config          string
+	configPath      string
 }
 
 func runConfigFetchMeasurements(cmd *cobra.Command, args []string) error {
@@ -57,9 +58,9 @@ func configFetchMeasurements(cmd *cobra.Command, verifier rekorVerifier, fileHan
 		return err
 	}
 
-	conf, err := config.FromFile(fileHandler, flags.config)
+	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
-		return err
+		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
 	if conf.IsDebugImage() {
@@ -72,7 +73,7 @@ func configFetchMeasurements(cmd *cobra.Command, verifier rekorVerifier, fileHan
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-	var fetchedMeasurements config.Measurements
+	var fetchedMeasurements measurements.M
 	hash, err := fetchedMeasurements.FetchAndVerify(ctx, client, flags.measurementsURL, flags.signatureURL, []byte(constants.CosignPublicKey))
 	if err != nil {
 		return err
@@ -84,7 +85,7 @@ func configFetchMeasurements(cmd *cobra.Command, verifier rekorVerifier, fileHan
 	}
 
 	conf.UpdateMeasurements(fetchedMeasurements)
-	if err := fileHandler.WriteYAML(flags.config, conf, file.OptOverwrite); err != nil {
+	if err := fileHandler.WriteYAML(flags.configPath, conf, file.OptOverwrite); err != nil {
 		return err
 	}
 
@@ -123,7 +124,7 @@ func parseFetchMeasurementsFlags(cmd *cobra.Command) (*fetchMeasurementsFlags, e
 	return &fetchMeasurementsFlags{
 		measurementsURL: measurementsURL,
 		signatureURL:    measurementsSignatureURL,
-		config:          config,
+		configPath:      config,
 	}, nil
 }
 

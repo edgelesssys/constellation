@@ -11,6 +11,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
@@ -41,7 +43,8 @@ func TestUpgradeExecute(t *testing.T) {
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 
 			handler := file.NewHandler(afero.NewMemMapFs())
-			require.NoError(handler.WriteYAML(constants.ConfigFilename, config.Default()))
+			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
+			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 
 			err := upgradeExecute(cmd, tc.upgrader, handler)
 			if tc.wantErr {
@@ -57,6 +60,6 @@ type stubUpgrader struct {
 	err error
 }
 
-func (u stubUpgrader) Upgrade(context.Context, string, map[uint32][]byte) error {
+func (u stubUpgrader) Upgrade(context.Context, string, measurements.M) error {
 	return u.err
 }

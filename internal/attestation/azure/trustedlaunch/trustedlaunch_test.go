@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	tpmclient "github.com/google/go-tpm-tools/client"
@@ -188,7 +189,7 @@ func TestGetAttestationCert(t *testing.T) {
 			}
 			require.NoError(err)
 
-			validator := NewValidator(map[uint32][]byte{}, []uint32{}, nil)
+			validator := NewValidator(measurements.M{}, []uint32{}, nil)
 			cert, err := x509.ParseCertificate(rootCert.Raw)
 			require.NoError(err)
 			roots := x509.NewCertPool()

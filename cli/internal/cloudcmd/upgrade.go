@@ -7,13 +7,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cloudcmd
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -58,7 +58,7 @@ func NewUpgrader(outWriter io.Writer) (*Upgrader, error) {
 }
 
 // Upgrade upgrades the cluster to the given measurements and image.
-func (u *Upgrader) Upgrade(ctx context.Context, image string, measurements map[uint32][]byte) error {
+func (u *Upgrader) Upgrade(ctx context.Context, image string, measurements measurements.M) error {
 	if err := u.updateMeasurements(ctx, measurements); err != nil {
 		return fmt.Errorf("updating measurements: %w", err)
 	}
@@ -97,36 +97,25 @@ func (u *Upgrader) GetCurrentImage(ctx context.Context) (*unstructured.Unstructu
 	return imageStruct, imageDefinition, nil
 }
 
-func (u *Upgrader) updateMeasurements(ctx context.Context, measurements map[uint32][]byte) error {
+func (u *Upgrader) updateMeasurements(ctx context.Context, newMeasurements measurements.M) error {
 	existingConf, err := u.measurementsUpdater.getCurrent(ctx, constants.JoinConfigMap)
 	if err != nil {
 		return fmt.Errorf("retrieving current measurements: %w", err)
 	}
 
-	var currentMeasurements map[uint32][]byte
+	var currentMeasurements measurements.M
 	if err := json.Unmarshal([]byte(existingConf.Data[constants.MeasurementsFilename]), &currentMeasurements); err != nil {
 		return fmt.Errorf("retrieving current measurements: %w", err)
 	}
-	if len(currentMeasurements) == len(measurements) {
-		changed := false
-		for k, v := range currentMeasurements {
-			if !bytes.Equal(v, measurements[k]) {
-				// measurements have changed
-				changed = true
-				break
-			}
-		}
-		if !changed {
-			// measurements are the same, nothing to be done
-			fmt.Fprintln(u.outWriter, "Cluster is already using the chosen measurements, skipping measurements upgrade")
-			return nil
-		}
+	if currentMeasurements.EqualTo(newMeasurements) {
+		fmt.Fprintln(u.outWriter, "Cluster is already using the chosen measurements, skipping measurements upgrade")
+		return nil
 	}
 
 	// backup of previous measurements
 	existingConf.Data["oldMeasurements"] = existingConf.Data[constants.MeasurementsFilename]
 
-	measurementsJSON, err := json.Marshal(measurements)
+	measurementsJSON, err := json.Marshal(newMeasurements)
 	if err != nil {
 		return fmt.Errorf("marshaling measurements: %w", err)
 	}

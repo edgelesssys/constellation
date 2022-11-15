@@ -13,6 +13,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
@@ -59,27 +60,27 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 		return err
 	}
 
-	config, err := readConfig(cmd.ErrOrStderr(), fileHandler, flags.configPath)
+	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
-		return fmt.Errorf("reading and validating config: %w", err)
+		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
 	var printedAWarning bool
-	if config.IsDebugImage() {
+	if conf.IsDebugImage() {
 		cmd.PrintErrln("Configured image doesn't look like a released production image. Double check image before deploying to production.")
 		printedAWarning = true
 	}
 
-	if config.IsDebugCluster() {
+	if conf.IsDebugCluster() {
 		cmd.PrintErrln("WARNING: Creating a debug cluster. This cluster is not secure and should only be used for debugging purposes.")
 		cmd.PrintErrln("DO NOT USE THIS CLUSTER IN PRODUCTION.")
 		printedAWarning = true
 	}
 
-	if config.IsAzureNonCVM() {
+	if conf.IsAzureNonCVM() {
 		cmd.PrintErrln("Disabling Confidential VMs is insecure. Use only for evaluation purposes.")
 		printedAWarning = true
-		if config.EnforcesIDKeyDigest() {
+		if conf.EnforcesIDKeyDigest() {
 			cmd.PrintErrln("Your config asks for enforcing the idkeydigest. This is only available on Confidential VMs. It will not be enforced.")
 		}
 	}
@@ -89,20 +90,20 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 		cmd.PrintErrln("")
 	}
 
-	provider := config.GetProvider()
+	provider := conf.GetProvider()
 	var instanceType string
 	switch provider {
 	case cloudprovider.AWS:
-		instanceType = config.Provider.AWS.InstanceType
+		instanceType = conf.Provider.AWS.InstanceType
 		if len(flags.name) > 10 {
 			return fmt.Errorf("cluster name on AWS must not be longer than 10 characters")
 		}
 	case cloudprovider.Azure:
-		instanceType = config.Provider.Azure.InstanceType
+		instanceType = conf.Provider.Azure.InstanceType
 	case cloudprovider.GCP:
-		instanceType = config.Provider.GCP.InstanceType
+		instanceType = conf.Provider.GCP.InstanceType
 	case cloudprovider.QEMU:
-		cpus := config.Provider.QEMU.VCPUs
+		cpus := conf.Provider.QEMU.VCPUs
 		instanceType = fmt.Sprintf("%d-vCPU", cpus)
 	}
 
@@ -122,7 +123,7 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 	}
 
 	spinner.Start("Creating", false)
-	idFile, err := creator.Create(cmd.Context(), provider, config, flags.name, instanceType, flags.controllerCount, flags.workerCount)
+	idFile, err := creator.Create(cmd.Context(), provider, conf, flags.name, instanceType, flags.controllerCount, flags.workerCount)
 	spinner.Stop()
 	if err != nil {
 		return err

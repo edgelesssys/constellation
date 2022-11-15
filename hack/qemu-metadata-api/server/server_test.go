@@ -17,6 +17,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api/virtwrapper"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/stretchr/testify/assert"
@@ -306,12 +307,12 @@ func TestExportPCRs(t *testing.T) {
 			remoteAddr: "192.0.100.1:1234",
 			connect:    defaultConnect,
 			method:     http.MethodPost,
-			message:    mustMarshal(t, map[uint32][]byte{0: []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")}),
+			message:    mustMarshal(t, measurements.M{0: []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")}),
 		},
 		"incorrect method": {
 			remoteAddr: "192.0.100.1:1234",
 			connect:    defaultConnect,
-			message:    mustMarshal(t, map[uint32][]byte{0: []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")}),
+			message:    mustMarshal(t, measurements.M{0: []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")}),
 			method:     http.MethodGet,
 			wantErr:    true,
 		},
@@ -320,7 +321,7 @@ func TestExportPCRs(t *testing.T) {
 			connect: &stubConnect{
 				getNetworkErr: errors.New("error"),
 			},
-			message: mustMarshal(t, map[uint32][]byte{0: []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")}),
+			message: mustMarshal(t, measurements.M{0: []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")}),
 			method:  http.MethodPost,
 			wantErr: true,
 		},
@@ -335,7 +336,7 @@ func TestExportPCRs(t *testing.T) {
 			remoteAddr: "localhost",
 			connect:    defaultConnect,
 			method:     http.MethodPost,
-			message:    mustMarshal(t, map[uint32][]byte{0: []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")}),
+			message:    mustMarshal(t, measurements.M{0: []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")}),
 			wantErr:    true,
 		},
 	}
