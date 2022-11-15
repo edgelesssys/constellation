@@ -6,9 +6,9 @@ metadata:
   labels:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
-    app.kubernetes.io/name: "csi-azuredisk"
+    app.kubernetes.io/name: "azuredisk-csi-driver"
     app.kubernetes.io/version: "v1.0.1"
-    helm.sh/chart: "csi-azuredisk-v1.0.1"
+    helm.sh/chart: "azuredisk-csi-driver-v1.0.1"
 spec:
   updateStrategy:
     rollingUpdate:
@@ -22,9 +22,9 @@ spec:
       labels:
         app.kubernetes.io/instance: "testRelease"
         app.kubernetes.io/managed-by: "Helm"
-        app.kubernetes.io/name: "csi-azuredisk"
+        app.kubernetes.io/name: "azuredisk-csi-driver"
         app.kubernetes.io/version: "v1.0.1"
-        helm.sh/chart: "csi-azuredisk-v1.0.1"
+        helm.sh/chart: "azuredisk-csi-driver-v1.0.1"
         app: csi-azuredisk-node
     spec:
       serviceAccountName: csi-azuredisk-node-sa
@@ -106,6 +106,7 @@ spec:
             - "--allow-empty-cloud-config=true"
             - "--support-zone=true"
             - "--get-node-info-from-labels=false"
+            - "--kms-addr=kms.testNamespace:9000"
           ports:
             - containerPort: 29603
               name: healthz
@@ -151,6 +152,12 @@ spec:
               name: sys-class
             - name: cryptsetup
               mountPath: /run/cryptsetup
+            - name: ssl
+              mountPath: /etc/ssl/certs
+              readOnly: true
+            - name: ssl-pki
+              mountPath: /etc/pki/ca-trust/extracted
+              readOnly: true
           resources:
             limits:
               memory: 200Mi
@@ -182,6 +189,12 @@ spec:
             path: /sys/class/
             type: Directory
           name: sys-class
+        - name: ssl
+          hostPath:
+            path: /etc/ssl/certs
+        - name: ssl-pki
+          hostPath:
+            path: /etc/pki/ca-trust/extracted
         - name: cryptsetup
           hostPath:
             path: /run/cryptsetup

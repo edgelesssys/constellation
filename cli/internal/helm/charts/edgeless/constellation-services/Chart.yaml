@@ -40,7 +40,7 @@ dependencies:
     condition: gcp.deployCSIDriver
     tags:
       - GCP
-  - name: csi-azuredisk
+  - name: azuredisk-csi-driver
     version: 1.0.1
     condition: azure.deployCSIDriver
     tags:

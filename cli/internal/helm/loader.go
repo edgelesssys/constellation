@@ -201,6 +201,13 @@ func (i *ChartLoader) loadConstellationServices(config *config.Config, masterSec
 			"deployCSIDriver": config.DeployCSIDriver(),
 		}
 
+		vals["azuredisk-csi-driver"] = map[string]any{
+			"node": map[string]any{
+				"kmsPort":      constants.KMSPort,
+				"kmsNamespace": "", // empty namespace means we use the release namespace
+			},
+		}
+
 		vals["tags"] = map[string]any{
 			"Azure": true,
 		}

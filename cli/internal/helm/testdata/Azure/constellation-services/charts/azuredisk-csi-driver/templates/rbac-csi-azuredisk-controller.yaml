@@ -5,9 +5,9 @@ metadata:
   labels:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
-    app.kubernetes.io/name: "csi-azuredisk"
+    app.kubernetes.io/name: "azuredisk-csi-driver"
     app.kubernetes.io/version: "v1.0.1"
-    helm.sh/chart: "csi-azuredisk-v1.0.1"
+    helm.sh/chart: "azuredisk-csi-driver-v1.0.1"
 rules:
   - apiGroups: [""]
     resources: ["persistentvolumes"]
@@ -44,9 +44,9 @@ metadata:
   labels:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
-    app.kubernetes.io/name: "csi-azuredisk"
+    app.kubernetes.io/name: "azuredisk-csi-driver"
     app.kubernetes.io/version: "v1.0.1"
-    helm.sh/chart: "csi-azuredisk-v1.0.1"
+    helm.sh/chart: "azuredisk-csi-driver-v1.0.1"
 rules:
   - apiGroups: [""]
     resources: ["persistentvolumes"]
@@ -74,9 +74,9 @@ metadata:
   labels:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
-    app.kubernetes.io/name: "csi-azuredisk"
+    app.kubernetes.io/name: "azuredisk-csi-driver"
     app.kubernetes.io/version: "v1.0.1"
-    helm.sh/chart: "csi-azuredisk-v1.0.1"
+    helm.sh/chart: "azuredisk-csi-driver-v1.0.1"
 rules:
   - apiGroups: [""]
     resources: ["events"]
@@ -104,9 +104,9 @@ metadata:
   labels:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
-    app.kubernetes.io/name: "csi-azuredisk"
+    app.kubernetes.io/name: "azuredisk-csi-driver"
     app.kubernetes.io/version: "v1.0.1"
-    helm.sh/chart: "csi-azuredisk-v1.0.1"
+    helm.sh/chart: "azuredisk-csi-driver-v1.0.1"
 rules:
   - apiGroups: [""]
     resources: ["persistentvolumes"]
@@ -130,7 +130,7 @@ rules:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: csi-azuredisk-controller-secret-role
+  name: azuredisk-csi-driver-controller-secret-role
 rules:
   - apiGroups: [""]
     resources: ["secrets"]
@@ -143,9 +143,9 @@ metadata:
   labels:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
-    app.kubernetes.io/name: "csi-azuredisk"
+    app.kubernetes.io/name: "azuredisk-csi-driver"
     app.kubernetes.io/version: "v1.0.1"
-    helm.sh/chart: "csi-azuredisk-v1.0.1"
+    helm.sh/chart: "azuredisk-csi-driver-v1.0.1"
 subjects:
   - kind: ServiceAccount
     name: csi-azuredisk-controller-sa
@@ -162,9 +162,9 @@ metadata:
   labels:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
-    app.kubernetes.io/name: "csi-azuredisk"
+    app.kubernetes.io/name: "azuredisk-csi-driver"
     app.kubernetes.io/version: "v1.0.1"
-    helm.sh/chart: "csi-azuredisk-v1.0.1"
+    helm.sh/chart: "azuredisk-csi-driver-v1.0.1"
 subjects:
   - kind: ServiceAccount
     name: csi-azuredisk-controller-sa
@@ -181,9 +181,9 @@ metadata:
   labels:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
-    app.kubernetes.io/name: "csi-azuredisk"
+    app.kubernetes.io/name: "azuredisk-csi-driver"
     app.kubernetes.io/version: "v1.0.1"
-    helm.sh/chart: "csi-azuredisk-v1.0.1"
+    helm.sh/chart: "azuredisk-csi-driver-v1.0.1"
 subjects:
   - kind: ServiceAccount
     name: csi-azuredisk-controller-sa
@@ -200,9 +200,9 @@ metadata:
   labels:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
-    app.kubernetes.io/name: "csi-azuredisk"
+    app.kubernetes.io/name: "azuredisk-csi-driver"
     app.kubernetes.io/version: "v1.0.1"
-    helm.sh/chart: "csi-azuredisk-v1.0.1"
+    helm.sh/chart: "azuredisk-csi-driver-v1.0.1"
 subjects:
   - kind: ServiceAccount
     name: csi-azuredisk-controller-sa
@@ -215,13 +215,13 @@ roleRef:
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: csi-azuredisk-controller-secret-binding
+  name: azuredisk-csi-driver-controller-secret-binding
 subjects:
   - kind: ServiceAccount
     name: csi-azuredisk-controller-sa
     namespace: testNamespace
 roleRef:
   kind: ClusterRole
-  name: csi-azuredisk-controller-secret-role
+  name: azuredisk-csi-driver-controller-secret-role
   apiGroup: rbac.authorization.k8s.io
 ---

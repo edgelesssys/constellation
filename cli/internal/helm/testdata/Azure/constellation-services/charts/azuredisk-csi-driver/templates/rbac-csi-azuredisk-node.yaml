@@ -13,7 +13,7 @@ rules:
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: csi-azuredisk-node-secret-binding
+  name: azuredisk-csi-driver-node-secret-binding
 subjects:
   - kind: ServiceAccount
     name: csi-azuredisk-node-sa

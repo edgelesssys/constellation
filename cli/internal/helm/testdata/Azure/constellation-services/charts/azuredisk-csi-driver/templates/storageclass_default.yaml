@@ -2,10 +2,10 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   annotations:
-  name: integrity-encrypted-storage
+    storageclass.kubernetes.io/is-default-class: "true"
+  name: encrypted-rwo
 parameters:
-  skuname: Premium_LRS
-  csi.storage.k8s.io/fstype: ext4-integrity
+  skuname: StandardSSD_LRS
 provisioner: azuredisk.csi.confidential.cloud
 allowVolumeExpansion: true
 reclaimPolicy: Delete

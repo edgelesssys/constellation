@@ -6,9 +6,9 @@ metadata:
   labels:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
-    app.kubernetes.io/name: "csi-azuredisk"
+    app.kubernetes.io/name: "azuredisk-csi-driver"
     app.kubernetes.io/version: "v1.0.1"
-    helm.sh/chart: "csi-azuredisk-v1.0.1"
+    helm.sh/chart: "azuredisk-csi-driver-v1.0.1"
 spec:
   replicas: 1
   selector:
@@ -19,9 +19,9 @@ spec:
       labels:
         app.kubernetes.io/instance: "testRelease"
         app.kubernetes.io/managed-by: "Helm"
-        app.kubernetes.io/name: "csi-azuredisk"
+        app.kubernetes.io/name: "azuredisk-csi-driver"
         app.kubernetes.io/version: "v1.0.1"
-        helm.sh/chart: "csi-azuredisk-v1.0.1"
+        helm.sh/chart: "azuredisk-csi-driver-v1.0.1"
         app: csi-azuredisk-controller
     spec:
       serviceAccountName: csi-azuredisk-controller-sa
@@ -193,6 +193,12 @@ spec:
           volumeMounts:
             - mountPath: /csi
               name: socket-dir
+            - name: ssl
+              mountPath: /etc/ssl/certs
+              readOnly: true
+            - name: ssl-pki
+              mountPath: /etc/pki/ca-trust/extracted
+              readOnly: true
           resources:
             limits:
               memory: 500Mi
@@ -202,3 +208,9 @@ spec:
       volumes:
         - name: socket-dir
           emptyDir: {}
+        - name: ssl
+          hostPath:
+            path: /etc/ssl/certs
+        - name: ssl-pki
+          hostPath:
+            path: /etc/pki/ca-trust/extracted          
