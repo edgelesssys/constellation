@@ -9,6 +9,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"strconv"
@@ -38,6 +39,7 @@ func newDeployCmd() *cobra.Command {
 	}
 	deployCmd.Flags().StringSlice("ips", nil, "override the ips that the bootstrapper will be uploaded to (defaults to ips from constellation config)")
 	deployCmd.Flags().String("bootstrapper", "./bootstrapper", "override the path to the bootstrapper binary uploaded to instances")
+	deployCmd.Flags().StringToString("info", nil, "additional info to be passed to the debugd, in the form --info key1=value1,key2=value2")
 	return deployCmd
 }
 
@@ -83,9 +85,16 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 		ips = []string{idFile.IP}
 	}
 
+	infos, err := cmd.Flags().GetStringToString("info")
+	if err != nil {
+		return err
+	}
+
 	for _, ip := range ips {
+
 		input := deployOnEndpointInput{
-			debugdEndpoint:   net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort)),
+			debugdEndpoint:   ip,
+			infos:            infos,
 			bootstrapperPath: bootstrapperPath,
 			reader:           reader,
 		}
@@ -100,20 +109,70 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 type deployOnEndpointInput struct {
 	debugdEndpoint   string
 	bootstrapperPath string
+	infos            map[string]string
 	reader           fileToStreamReader
 }
 
 // deployOnEndpoint deploys a custom built bootstrapper binary to a debugd endpoint.
 func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	log.Printf("Deploying on %v\n", in.debugdEndpoint)
-	dialCTX, cancel := context.WithTimeout(ctx, debugd.GRPCTimeout)
-	defer cancel()
-	conn, err := grpc.DialContext(dialCTX, in.debugdEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	client, closer, err := newDebugdClient(ctx, in.debugdEndpoint)
 	if err != nil {
-		return fmt.Errorf("connecting to other instance via gRPC: %w", err)
+		return fmt.Errorf("creating debugd client: %w", err)
 	}
-	defer conn.Close()
-	client := pb.NewDebugdClient(conn)
+	defer closer.Close()
+
+	if err := setInfo(ctx, client, in.infos); err != nil {
+		return fmt.Errorf("sending info: %w", err)
+	}
+
+	if err := uploadBootstrapper(ctx, client, in); err != nil {
+		return fmt.Errorf("uploading bootstrapper: %w", err)
+	}
+
+	return nil
+}
+
+func newDebugdClient(ctx context.Context, ip string) (pb.DebugdClient, io.Closer, error) {
+	conn, err := grpc.DialContext(
+		ctx,
+		net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort)),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		return nil, nil, fmt.Errorf("connecting to other instance via gRPC: %w", err)
+	}
+
+	return pb.NewDebugdClient(conn), conn, nil
+}
+
+func setInfo(ctx context.Context, client pb.DebugdClient, infos map[string]string) error {
+	ctx, cancel := context.WithTimeout(ctx, debugd.GRPCTimeout)
+	defer cancel()
+
+	log.Printf("Setting info with length %d", len(infos))
+
+	var infosPb []*pb.Info
+	for key, value := range infos {
+		infosPb = append(infosPb, &pb.Info{Key: key, Value: value})
+	}
+
+	req := &pb.SetInfoRequest{Info: infosPb}
+
+	if _, err := client.SetInfo(ctx, req, grpc.WaitForReady(true)); err != nil {
+		return fmt.Errorf("setting info: %w", err)
+	}
+
+	log.Println("Info set")
+	return nil
+}
+
+func uploadBootstrapper(ctx context.Context, client pb.DebugdClient, in deployOnEndpointInput) error {
+	ctx, cancel := context.WithTimeout(ctx, debugd.GRPCTimeout)
+	defer cancel()
+
+	log.Println("Uploading bootstrapper")
 
 	stream, err := client.UploadBootstrapper(ctx, grpc.WaitForReady(true))
 	if err != nil {
@@ -132,6 +191,7 @@ func deployOnEndpoint(ctx context.Context, in deployOnEndpointInput) error {
 	if uploadResponse.Status != pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_SUCCESS || streamErr != nil {
 		return fmt.Errorf("uploading bootstrapper to instance %v failed: %v / %w", in.debugdEndpoint, uploadResponse, streamErr)
 	}
+
 	log.Println("Uploaded bootstrapper")
 	return nil
 }

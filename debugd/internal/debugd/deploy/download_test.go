@@ -14,7 +14,6 @@ import (
 	"net"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/edgelesssys/constellation/v2/debugd/internal/bootstrapper"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
@@ -39,45 +38,36 @@ func TestDownloadBootstrapper(t *testing.T) {
 	someErr := errors.New("failed")
 
 	testCases := map[string]struct {
-		server             fakeDownloadServer
-		serviceManager     stubServiceManager
-		attemptedDownloads map[string]time.Time
-		wantChunks         [][]byte
-		wantDownloadErr    bool
-		wantFile           bool
-		wantSystemdAction  bool
-		wantDeployed       bool
+		server            fakeDownloadServer
+		serviceManager    stubServiceManager
+		wantChunks        [][]byte
+		wantDownloadErr   bool
+		wantFile          bool
+		wantSystemdAction bool
+		wantDeployed      bool
 	}{
 		"download works": {
 			server: fakeDownloadServer{
 				chunks: [][]byte{[]byte("test")},
 			},
-			attemptedDownloads: map[string]time.Time{},
-			wantChunks:         [][]byte{[]byte("test")},
-			wantDownloadErr:    false,
-			wantFile:           true,
-			wantSystemdAction:  true,
-			wantDeployed:       true,
-		},
-		"second download is not attempted twice": {
-			server:             fakeDownloadServer{chunks: [][]byte{[]byte("test")}},
-			attemptedDownloads: map[string]time.Time{"192.0.2.0:" + strconv.Itoa(constants.DebugdPort): time.Now()},
-			wantDownloadErr:    true,
+			wantChunks:        [][]byte{[]byte("test")},
+			wantDownloadErr:   false,
+			wantFile:          true,
+			wantSystemdAction: true,
+			wantDeployed:      true,
 		},
 		"download rpc call error is detected": {
-			server:             fakeDownloadServer{downladErr: someErr},
-			attemptedDownloads: map[string]time.Time{},
-			wantDownloadErr:    true,
+			server:          fakeDownloadServer{downladErr: someErr},
+			wantDownloadErr: true,
 		},
 		"service restart error is detected": {
-			server:             fakeDownloadServer{chunks: [][]byte{[]byte("test")}},
-			serviceManager:     stubServiceManager{systemdActionErr: someErr},
-			attemptedDownloads: map[string]time.Time{},
-			wantChunks:         [][]byte{[]byte("test")},
-			wantDownloadErr:    true,
-			wantFile:           true,
-			wantDeployed:       true,
-			wantSystemdAction:  false,
+			server:            fakeDownloadServer{chunks: [][]byte{[]byte("test")}},
+			serviceManager:    stubServiceManager{systemdActionErr: someErr},
+			wantChunks:        [][]byte{[]byte("test")},
+			wantDownloadErr:   true,
+			wantFile:          true,
+			wantDeployed:      true,
+			wantSystemdAction: false,
 		},
 	}
 
@@ -96,11 +86,10 @@ func TestDownloadBootstrapper(t *testing.T) {
 			defer grpcServ.GracefulStop()
 
 			download := &Download{
-				log:                logger.NewTest(t),
-				dialer:             dialer,
-				writer:             writer,
-				serviceManager:     &tc.serviceManager,
-				attemptedDownloads: tc.attemptedDownloads,
+				log:            logger.NewTest(t),
+				dialer:         dialer,
+				writer:         writer,
+				serviceManager: &tc.serviceManager,
 			}
 
 			err := download.DownloadDeployment(context.Background(), ip)
@@ -122,6 +111,76 @@ func TestDownloadBootstrapper(t *testing.T) {
 					},
 					tc.serviceManager.requests,
 				)
+			}
+		})
+	}
+}
+
+func TestDownloadInfo(t *testing.T) {
+	someErr := errors.New("failed")
+	someInfo := []*pb.Info{
+		{Key: "foo", Value: "bar"},
+		{Key: "baz", Value: "qux"},
+	}
+
+	testCases := map[string]struct {
+		server     stubDebugdServer
+		infoSetter stubInfoSetter
+		wantErr    bool
+		wantInfo   []*pb.Info
+	}{
+		"download works": {
+			server:     stubDebugdServer{info: someInfo},
+			infoSetter: stubInfoSetter{},
+			wantInfo:   someInfo,
+		},
+		"empty info ok": {
+			server:     stubDebugdServer{info: []*pb.Info{}},
+			infoSetter: stubInfoSetter{},
+			wantInfo:   nil,
+		},
+		"nil info ok": {
+			server:     stubDebugdServer{},
+			infoSetter: stubInfoSetter{},
+			wantInfo:   nil,
+		},
+		"getInfo fails": {
+			server:     stubDebugdServer{getInfoErr: someErr},
+			infoSetter: stubInfoSetter{},
+			wantErr:    true,
+		},
+		"setInfo fails": {
+			server:     stubDebugdServer{info: someInfo},
+			infoSetter: stubInfoSetter{setProtoErr: someErr},
+			wantErr:    true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			ip := "192.0.2.1"
+			dialer := testdialer.NewBufconnDialer()
+			grpcServer := grpc.NewServer()
+			pb.RegisterDebugdServer(grpcServer, &tc.server)
+			lis := dialer.GetListener(net.JoinHostPort(ip, strconv.Itoa(constants.DebugdPort)))
+			go grpcServer.Serve(lis)
+			defer grpcServer.GracefulStop()
+
+			download := &Download{
+				log:    logger.NewTest(t),
+				dialer: dialer,
+				info:   &tc.infoSetter,
+			}
+
+			err := download.DownloadInfo(context.Background(), ip)
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(len(tc.wantInfo), len(tc.infoSetter.info))
 			}
 		})
 	}
@@ -171,4 +230,24 @@ func (s *fakeDownloadServer) DownloadBootstrapper(request *pb.DownloadBootstrapp
 		}
 	}
 	return s.downladErr
+}
+
+type stubDebugdServer struct {
+	info       []*pb.Info
+	getInfoErr error
+	pb.UnimplementedDebugdServer
+}
+
+func (s *stubDebugdServer) GetInfo(ctx context.Context, request *pb.GetInfoRequest) (*pb.GetInfoResponse, error) {
+	return &pb.GetInfoResponse{Info: s.info}, s.getInfoErr
+}
+
+type stubInfoSetter struct {
+	info        []*pb.Info
+	setProtoErr error
+}
+
+func (s *stubInfoSetter) SetProto(infos []*pb.Info) error {
+	s.info = infos
+	return s.setProtoErr
 }

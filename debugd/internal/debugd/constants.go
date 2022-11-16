@@ -10,14 +10,14 @@ import "time"
 
 // Debugd internal constants.
 const (
-	DebugdMetadataFlag               = "constellation-debugd"
-	GRPCTimeout                      = 5 * time.Minute
-	DiscoverDebugdInterval           = 30 * time.Second
-	BootstrapperDownloadRetryBackoff = 1 * time.Minute
-	BootstrapperDeployFilename       = "/run/state/bin/bootstrapper"
-	Chunksize                        = 1024
-	BootstrapperSystemdUnitName      = "bootstrapper.service"
-	BootstrapperSystemdUnitContents  = `[Unit]
+	DebugdMetadataFlag              = "constellation-debugd"
+	GRPCTimeout                     = 5 * time.Minute
+	DiscoverDebugdInterval          = 30 * time.Second
+	DownloadRetryBackoff            = 1 * time.Minute
+	BootstrapperDeployFilename      = "/run/state/bin/bootstrapper"
+	Chunksize                       = 1024
+	BootstrapperSystemdUnitName     = "bootstrapper.service"
+	BootstrapperSystemdUnitContents = `[Unit]
 Description=Constellation Bootstrapper
 Wants=network-online.target
 After=network-online.target

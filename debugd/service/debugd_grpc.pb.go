@@ -22,6 +22,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DebugdClient interface {
+	SetInfo(ctx context.Context, in *SetInfoRequest, opts ...grpc.CallOption) (*SetInfoResponse, error)
+	GetInfo(ctx context.Context, in *GetInfoRequest, opts ...grpc.CallOption) (*GetInfoResponse, error)
 	UploadBootstrapper(ctx context.Context, opts ...grpc.CallOption) (Debugd_UploadBootstrapperClient, error)
 	DownloadBootstrapper(ctx context.Context, in *DownloadBootstrapperRequest, opts ...grpc.CallOption) (Debugd_DownloadBootstrapperClient, error)
 	UploadSystemServiceUnits(ctx context.Context, in *UploadSystemdServiceUnitsRequest, opts ...grpc.CallOption) (*UploadSystemdServiceUnitsResponse, error)
@@ -33,6 +35,24 @@ type debugdClient struct {
 
 func NewDebugdClient(cc grpc.ClientConnInterface) DebugdClient {
 	return &debugdClient{cc}
+}
+
+func (c *debugdClient) SetInfo(ctx context.Context, in *SetInfoRequest, opts ...grpc.CallOption) (*SetInfoResponse, error) {
+	out := new(SetInfoResponse)
+	err := c.cc.Invoke(ctx, "/debugd.Debugd/SetInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *debugdClient) GetInfo(ctx context.Context, in *GetInfoRequest, opts ...grpc.CallOption) (*GetInfoResponse, error) {
+	out := new(GetInfoResponse)
+	err := c.cc.Invoke(ctx, "/debugd.Debugd/GetInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *debugdClient) UploadBootstrapper(ctx context.Context, opts ...grpc.CallOption) (Debugd_UploadBootstrapperClient, error) {
@@ -114,6 +134,8 @@ func (c *debugdClient) UploadSystemServiceUnits(ctx context.Context, in *UploadS
 // All implementations must embed UnimplementedDebugdServer
 // for forward compatibility
 type DebugdServer interface {
+	SetInfo(context.Context, *SetInfoRequest) (*SetInfoResponse, error)
+	GetInfo(context.Context, *GetInfoRequest) (*GetInfoResponse, error)
 	UploadBootstrapper(Debugd_UploadBootstrapperServer) error
 	DownloadBootstrapper(*DownloadBootstrapperRequest, Debugd_DownloadBootstrapperServer) error
 	UploadSystemServiceUnits(context.Context, *UploadSystemdServiceUnitsRequest) (*UploadSystemdServiceUnitsResponse, error)
@@ -124,6 +146,12 @@ type DebugdServer interface {
 type UnimplementedDebugdServer struct {
 }
 
+func (UnimplementedDebugdServer) SetInfo(context.Context, *SetInfoRequest) (*SetInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetInfo not implemented")
+}
+func (UnimplementedDebugdServer) GetInfo(context.Context, *GetInfoRequest) (*GetInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetInfo not implemented")
+}
 func (UnimplementedDebugdServer) UploadBootstrapper(Debugd_UploadBootstrapperServer) error {
 	return status.Errorf(codes.Unimplemented, "method UploadBootstrapper not implemented")
 }
@@ -144,6 +172,42 @@ type UnsafeDebugdServer interface {
 
 func RegisterDebugdServer(s grpc.ServiceRegistrar, srv DebugdServer) {
 	s.RegisterService(&Debugd_ServiceDesc, srv)
+}
+
+func _Debugd_SetInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DebugdServer).SetInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/debugd.Debugd/SetInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DebugdServer).SetInfo(ctx, req.(*SetInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Debugd_GetInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DebugdServer).GetInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/debugd.Debugd/GetInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DebugdServer).GetInfo(ctx, req.(*GetInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Debugd_UploadBootstrapper_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -218,6 +282,14 @@ var Debugd_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "debugd.Debugd",
 	HandlerType: (*DebugdServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "SetInfo",
+			Handler:    _Debugd_SetInfo_Handler,
+		},
+		{
+			MethodName: "GetInfo",
+			Handler:    _Debugd_GetInfo_Handler,
+		},
 		{
 			MethodName: "UploadSystemServiceUnits",
 			Handler:    _Debugd_UploadSystemServiceUnits_Handler,
