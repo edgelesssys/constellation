@@ -5,7 +5,7 @@ BOOTSTRAPPER_BINARY              ?= $(BASE_PATH)/../build/bootstrapper
 DISK_MAPPER_BINARY               ?= $(BASE_PATH)/../build/disk-mapper
 PKI                              ?= $(BASE_PATH)/pki
 MKOSI_EXTRA                      ?= $(BASE_PATH)/mkosi.extra
-IMAGE_VERSION					 ?= v0.0.0
+IMAGE_VERSION                    ?= v0.0.0
 -include $(CURDIR)/config.mk
 csps := aws qemu gcp azure
 certs := $(PKI)/PK.cer $(PKI)/KEK.cer $(PKI)/db.cer
