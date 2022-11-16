@@ -18,11 +18,6 @@ pcr_extend() {
   ) | ${HASH_FUNCTION} | cut -d " " -f 1
 }
 
-pcr_marshal() {
-  local PCR="$1"
-  echo -n "${PCR}" | xxd -r -p | base64 -w0
-}
-
 extract() {
   local image="$1"
   local path="$2"

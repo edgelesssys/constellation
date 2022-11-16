@@ -35,10 +35,10 @@ write_output() {
   cat > "${out}" << EOF
 {
   "measurements": {
-    "8": "${json_expected_pcr_8}"
+    "8": "${expected_pcr_8}"
   },
   "cmdline": "${cmdline}",
-  "cmdline-sha256": "${json_cmdline_hash}"
+  "cmdline-sha256": "${cmdline_hash}"
 }
 EOF
 }
@@ -72,8 +72,5 @@ echo "Kernel Commandline measurement ${cmdline_hash}"
 echo ""
 echo "Expected PCR[8]:               ${expected_pcr_8}"
 echo ""
-
-json_cmdline_hash=$(pcr_marshal "${cmdline_hash}")
-json_expected_pcr_8=$(pcr_marshal "${expected_pcr_8}")
 
 write_output "${OUT}"
