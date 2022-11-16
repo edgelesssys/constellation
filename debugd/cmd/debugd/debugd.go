@@ -16,6 +16,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/debugd/internal/bootstrapper"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/deploy"
+	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/info"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/metadata"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/metadata/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/metadata/fallback"
@@ -53,7 +54,8 @@ func main() {
 		log.Errorf("root login: %w")
 	}
 
-	download := deploy.New(log.Named("download"), &net.Dialer{}, serviceManager, streamer)
+	infoMap := info.NewMap()
+	download := deploy.New(log.Named("download"), &net.Dialer{}, serviceManager, streamer, infoMap)
 	var fetcher metadata.Fetcher
 	csp := os.Getenv("CONSTEL_CSP")
 	switch platform.FromString(csp) {
@@ -87,7 +89,7 @@ func main() {
 		fetcher = fallback.Fetcher{}
 	}
 	sched := metadata.NewScheduler(log.Named("scheduler"), fetcher, download)
-	serv := server.New(log.Named("server"), serviceManager, streamer)
+	serv := server.New(log.Named("server"), serviceManager, streamer, infoMap)
 	if err := deploy.DefaultServiceUnit(ctx, serviceManager); err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to create default service unit")
 	}
@@ -95,12 +97,8 @@ func main() {
 	writeDebugBanner(log)
 
 	wg := &sync.WaitGroup{}
-
-	wg.Add(1)
-	go sched.Start(ctx, wg)
-	wg.Add(1)
-	go server.Start(log, wg, serv)
-
+	sched.Start(ctx, wg)
+	server.Start(log, wg, serv)
 	wg.Wait()
 }
 

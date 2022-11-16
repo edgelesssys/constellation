@@ -5,10 +5,30 @@ option go_package = "github.com/edgelesssys/constellation/v2/debugd/service";
 package debugd;
 
 service Debugd {
+    rpc SetInfo (SetInfoRequest) returns (SetInfoResponse) {}
+    rpc GetInfo (GetInfoRequest) returns (GetInfoResponse) {}
     rpc UploadBootstrapper(stream Chunk) returns (UploadBootstrapperResponse) {}
     rpc DownloadBootstrapper(DownloadBootstrapperRequest) returns (stream Chunk) {}
     rpc UploadSystemServiceUnits(UploadSystemdServiceUnitsRequest) returns (UploadSystemdServiceUnitsResponse) {}
 }
+
+message SetInfoRequest {
+    repeated Info info = 1;
+}
+
+message SetInfoResponse {}
+
+message GetInfoRequest {}
+
+message GetInfoResponse {
+    repeated Info info = 1;
+}
+
+message Info {
+    string key = 1;
+    string value = 2;
+}
+
 
 message DownloadBootstrapperRequest {}
 

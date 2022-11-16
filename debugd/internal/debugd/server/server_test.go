@@ -17,6 +17,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/debugd/internal/bootstrapper"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/deploy"
+	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/info"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
@@ -32,6 +33,125 @@ func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
 }
 
+func TestSetInfo(t *testing.T) {
+	endpoint := "192.0.2.1:" + strconv.Itoa(constants.DebugdPort)
+
+	testCases := map[string]struct {
+		info         *info.Map
+		infoReceived bool
+		setInfo      []*pb.Info
+		wantErr      bool
+	}{
+		"set info works": {
+			setInfo: []*pb.Info{{Key: "foo", Value: "bar"}},
+			info:    info.NewMap(),
+		},
+		"set empty info works": {
+			setInfo: []*pb.Info{},
+			info:    info.NewMap(),
+		},
+		"set fails when info already set": {
+			info:         info.NewMap(),
+			infoReceived: true,
+			setInfo:      []*pb.Info{{Key: "foo", Value: "bar"}},
+			wantErr:      true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			serv := debugdServer{
+				log:  logger.NewTest(t),
+				info: tc.info,
+			}
+
+			if tc.infoReceived {
+				err := tc.info.SetProto(tc.setInfo)
+				require.NoError(err)
+			}
+
+			grpcServ, conn, err := setupServerWithConn(endpoint, &serv)
+			require.NoError(err)
+			defer conn.Close()
+			client := pb.NewDebugdClient(conn)
+
+			_, err = client.SetInfo(context.Background(), &pb.SetInfoRequest{Info: tc.setInfo})
+			grpcServ.GracefulStop()
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				for i := range tc.setInfo {
+					value, ok, err := tc.info.Get(tc.setInfo[i].Key)
+					assert.NoError(err)
+					assert.True(ok)
+					assert.Equal(tc.setInfo[i].Value, value)
+				}
+			}
+		})
+	}
+}
+
+func TestGetInfo(t *testing.T) {
+	endpoint := "192.0.2.1:" + strconv.Itoa(constants.DebugdPort)
+
+	testCases := map[string]struct {
+		info    *info.Map
+		getInfo []*pb.Info
+		wantErr bool
+	}{
+		"get info works": {
+			getInfo: []*pb.Info{{Key: "foo", Value: "bar"}},
+			info:    info.NewMap(),
+		},
+		"get empty info works": {
+			getInfo: []*pb.Info{},
+			info:    info.NewMap(),
+		},
+		"get unset info fails": {
+			getInfo: nil,
+			info:    info.NewMap(),
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			if tc.getInfo != nil {
+				err := tc.info.SetProto(tc.getInfo)
+				require.NoError(err)
+			}
+
+			serv := debugdServer{
+				log:  logger.NewTest(t),
+				info: tc.info,
+			}
+
+			grpcServ, conn, err := setupServerWithConn(endpoint, &serv)
+			require.NoError(err)
+			defer conn.Close()
+			client := pb.NewDebugdClient(conn)
+
+			resp, err := client.GetInfo(context.Background(), &pb.GetInfoRequest{})
+			grpcServ.GracefulStop()
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(len(tc.getInfo), len(resp.Info))
+			}
+		})
+	}
+}
+
 func TestUploadBootstrapper(t *testing.T) {
 	endpoint := "192.0.2.1:" + strconv.Itoa(constants.DebugdPort)
 
@@ -45,33 +165,21 @@ func TestUploadBootstrapper(t *testing.T) {
 		wantChunks         [][]byte
 	}{
 		"upload works": {
-			uploadChunks: [][]byte{
-				[]byte("test"),
-			},
-			wantFile: true,
-			wantChunks: [][]byte{
-				[]byte("test"),
-			},
+			uploadChunks:       [][]byte{[]byte("test")},
+			wantFile:           true,
+			wantChunks:         [][]byte{[]byte("test")},
 			wantResponseStatus: pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_SUCCESS,
 		},
 		"recv fails": {
-			streamer: fakeStreamer{
-				writeStreamErr: errors.New("recv error"),
-			},
+			streamer:           fakeStreamer{writeStreamErr: errors.New("recv error")},
 			wantResponseStatus: pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_UPLOAD_FAILED,
 			wantErr:            true,
 		},
 		"starting bootstrapper fails": {
-			uploadChunks: [][]byte{
-				[]byte("test"),
-			},
-			serviceManager: stubServiceManager{
-				systemdActionErr: errors.New("starting bootstrapper error"),
-			},
-			wantFile: true,
-			wantChunks: [][]byte{
-				[]byte("test"),
-			},
+			uploadChunks:       [][]byte{[]byte("test")},
+			serviceManager:     stubServiceManager{systemdActionErr: errors.New("starting bootstrapper error")},
+			wantFile:           true,
+			wantChunks:         [][]byte{[]byte("test")},
 			wantResponseStatus: pb.UploadBootstrapperStatus_UPLOAD_BOOTSTRAPPER_START_FAILED,
 		},
 	}
@@ -126,23 +234,15 @@ func TestDownloadBootstrapper(t *testing.T) {
 		wantChunks     [][]byte
 	}{
 		"download works": {
-			request: &pb.DownloadBootstrapperRequest{},
-			streamer: fakeStreamer{
-				readStreamChunks: [][]byte{
-					[]byte("test"),
-				},
-			},
-			wantErr: false,
-			wantChunks: [][]byte{
-				[]byte("test"),
-			},
+			request:    &pb.DownloadBootstrapperRequest{},
+			streamer:   fakeStreamer{readStreamChunks: [][]byte{[]byte("test")}},
+			wantErr:    false,
+			wantChunks: [][]byte{[]byte("test")},
 		},
 		"download fails": {
-			request: &pb.DownloadBootstrapperRequest{},
-			streamer: fakeStreamer{
-				readStreamErr: errors.New("read bootstrapper fails"),
-			},
-			wantErr: true,
+			request:  &pb.DownloadBootstrapperRequest{},
+			streamer: fakeStreamer{readStreamErr: errors.New("read bootstrapper fails")},
+			wantErr:  true,
 		},
 	}
 
