@@ -451,8 +451,8 @@ func TestUpgradePlan(t *testing.T) {
 			require := require.New(t)
 
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
-			cfg := config.Default()
-			cfg.RemoveProviderExcept(tc.csp)
+			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), tc.csp)
+
 			require.NoError(fileHandler.WriteYAML(tc.flags.configPath, cfg))
 
 			cmd := newUpgradePlanCmd()

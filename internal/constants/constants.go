@@ -113,6 +113,11 @@ const (
 	MinControllerCount = 1
 	// MinWorkerCount is the minimum number of worker nodes.
 	MinWorkerCount = 1
+	// EnvVarPrefix is expected prefix for environment variables used to overwrite config parameters.
+	EnvVarPrefix = "CONSTELL_"
+	// EnvVarAzureClientSecretValue is environment variable to overwrite
+	// provider.azure.clientSecretValue .
+	EnvVarAzureClientSecretValue = EnvVarPrefix + "AZURE_CLIENT_SECRET_VALUE"
 
 	//
 	// Kubernetes.

@@ -18,6 +18,7 @@ import (
 	"time"
 
 	compute "cloud.google.com/go/compute/apiv1"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/google/go-tpm-tools/proto/attest"
@@ -34,7 +35,7 @@ type Validator struct {
 }
 
 // NewValidator initializes a new GCP validator with the provided PCR values.
-func NewValidator(pcrs map[uint32][]byte, enforcedPCRs []uint32, log vtpm.AttestationLogger) *Validator {
+func NewValidator(pcrs measurements.M, enforcedPCRs []uint32, log vtpm.AttestationLogger) *Validator {
 	return &Validator{
 		Validator: vtpm.NewValidator(
 			pcrs,

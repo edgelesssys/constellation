@@ -16,7 +16,7 @@ import (
 	"syscall"
 
 	"github.com/edgelesssys/constellation/v2/hack/image-measurement/server"
-	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -282,7 +282,7 @@ func (l *libvirtInstance) deleteLibvirtInstance() error {
 	return err
 }
 
-func (l *libvirtInstance) obtainMeasurements() (measurements config.Measurements, err error) {
+func (l *libvirtInstance) obtainMeasurements() (measurements measurements.M, err error) {
 	// sanity check
 	if err := l.deleteLibvirtInstance(); err != nil {
 		return nil, err
