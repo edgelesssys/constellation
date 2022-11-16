@@ -42,11 +42,10 @@ type Validator struct {
 }
 
 // NewValidator initializes a new Azure validator with the provided PCR values.
-func NewValidator(pcrs measurements.M, enforcedPCRs []uint32, idKeyDigest []byte, enforceIDKeyDigest bool, log vtpm.AttestationLogger) *Validator {
+func NewValidator(pcrs measurements.M, idKeyDigest []byte, enforceIDKeyDigest bool, log vtpm.AttestationLogger) *Validator {
 	return &Validator{
 		Validator: vtpm.NewValidator(
 			pcrs,
-			enforcedPCRs,
 			getTrustedKey(&azureInstanceInfo{}, idKeyDigest, enforceIDKeyDigest, log),
 			validateCVM,
 			vtpm.VerifyPKCS1v15,

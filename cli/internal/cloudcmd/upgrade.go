@@ -112,6 +112,17 @@ func (u *Upgrader) updateMeasurements(ctx context.Context, newMeasurements measu
 		return nil
 	}
 
+	// don't allow potential security downgrades by changing the warnOnly flag
+	for k, newM := range newMeasurements {
+		currentM, ok := currentMeasurements[k]
+		if !ok {
+			continue
+		}
+		if currentM.WarnOnly != newM.WarnOnly {
+			return fmt.Errorf("changing warnOnly flag of measurement %d: not allowed", k)
+		}
+	}
+
 	// backup of previous measurements
 	existingConf.Data["oldMeasurements"] = existingConf.Data[constants.MeasurementsFilename]
 

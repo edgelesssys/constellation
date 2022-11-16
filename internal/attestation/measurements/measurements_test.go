@@ -8,7 +8,7 @@ package measurements
 
 import (
 	"context"
-	"errors"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
@@ -17,56 +17,29 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 )
 
-func TestMarshalYAML(t *testing.T) {
+func TestMarshal(t *testing.T) {
 	testCases := map[string]struct {
-		measurements  M
-		wantBase64Map map[uint32]b64Measurement
+		m        Measurement
+		wantYAML string
+		wantJSON string
 	}{
-		"valid measurements": {
-			measurements: M{
-				2: Measurement{
-					Expected: [32]byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53},
-					WarnOnly: false,
-				},
-				3: Measurement{
-					Expected: [32]byte{213, 164, 73, 109, 33, 222, 201, 165, 37, 141, 219, 25, 198, 254, 181, 59, 180, 211, 192, 70, 63, 230, 7, 242, 72, 141, 223, 79, 16, 6, 239, 158},
-					WarnOnly: true,
-				},
+		"measurement": {
+			m: Measurement{
+				Expected: [32]byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53},
 			},
-			wantBase64Map: map[uint32]b64Measurement{
-				2: {
-					Expected: "/V3p3zUOO8RBCsBrv+XM3rk/U7nvUSOfdSzmnbxgDzU=",
-					WarnOnly: false,
-				},
-				3: {
-					Expected: "1aRJbSHeyaUljdsZxv61O7TTwEY/5gfySI3fTxAG754=",
-					WarnOnly: true,
-				},
-			},
+			wantYAML: "expected: \"FD5DE9DF350E3BC4410AC06BBFE5CCDEB93F53B9EF51239F752CE69DBC600F35\"\nwarnOnly: false",
+			wantJSON: `{"expected":"FD5DE9DF350E3BC4410AC06BBFE5CCDEB93F53B9EF51239F752CE69DBC600F35","warnOnly":false}`,
 		},
-		"omit bytes": {
-			measurements: M{
-				2: {
-					Expected: [32]byte{}, // implicitly set to all 0s
-					WarnOnly: true,
-				},
-				3: {
-					Expected: [32]byte{1, 2, 3, 4}, // implicitly padded with 0s
-					WarnOnly: true,
-				},
+		"warn only": {
+			m: Measurement{
+				Expected: [32]byte{1, 2, 3, 4}, // implicitly padded with 0s
+				WarnOnly: true,
 			},
-			wantBase64Map: map[uint32]b64Measurement{
-				2: {
-					Expected: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-					WarnOnly: true,
-				},
-				3: {
-					Expected: "AQIDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-					WarnOnly: true,
-				},
-			},
+			wantYAML: "expected: \"0102030400000000000000000000000000000000000000000000000000000000\"\nwarnOnly: true",
+			wantJSON: `{"expected":"0102030400000000000000000000000000000000000000000000000000000000","warnOnly":true}`,
 		},
 	}
 
@@ -75,30 +48,47 @@ func TestMarshalYAML(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			base64Map, err := tc.measurements.MarshalYAML()
-			require.NoError(err)
+			{
+				// YAML
+				yaml, err := yaml.Marshal(tc.m)
+				require.NoError(err)
 
-			assert.Equal(tc.wantBase64Map, base64Map)
+				assert.YAMLEq(tc.wantYAML, string(yaml))
+			}
+
+			{
+				// JSON
+				json, err := json.Marshal(tc.m)
+				require.NoError(err)
+
+				assert.JSONEq(tc.wantJSON, string(json))
+			}
 		})
 	}
 }
 
-func TestUnmarshalYAML(t *testing.T) {
+func TestUnmarshal(t *testing.T) {
 	testCases := map[string]struct {
-		inputBase64Map      map[uint32]b64Measurement
-		forceUnmarshalError bool
-		wantMeasurements    M
-		wantErr             bool
+		inputYAML        string
+		inputJSON        string
+		wantMeasurements M
+		wantErr          bool
 	}{
-		"valid measurements": {
-			inputBase64Map: map[uint32]b64Measurement{
+		"valid measurements base64": {
+			inputYAML: "2:\n expected: \"/V3p3zUOO8RBCsBrv+XM3rk/U7nvUSOfdSzmnbxgDzU=\"\n3:\n expected: \"1aRJbSHeyaUljdsZxv61O7TTwEY/5gfySI3fTxAG754=\"",
+			inputJSON: `{"2":{"expected":"/V3p3zUOO8RBCsBrv+XM3rk/U7nvUSOfdSzmnbxgDzU="},"3":{"expected":"1aRJbSHeyaUljdsZxv61O7TTwEY/5gfySI3fTxAG754="}}`,
+			wantMeasurements: M{
 				2: {
-					Expected: "/V3p3zUOO8RBCsBrv+XM3rk/U7nvUSOfdSzmnbxgDzU=",
+					Expected: [32]byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53},
 				},
 				3: {
-					Expected: "1aRJbSHeyaUljdsZxv61O7TTwEY/5gfySI3fTxAG754=",
+					Expected: [32]byte{213, 164, 73, 109, 33, 222, 201, 165, 37, 141, 219, 25, 198, 254, 181, 59, 180, 211, 192, 70, 63, 230, 7, 242, 72, 141, 223, 79, 16, 6, 239, 158},
 				},
 			},
+		},
+		"valid measurements hex": {
+			inputYAML: "2:\n expected: \"FD5DE9DF350E3BC4410AC06BBFE5CCDEB93F53B9EF51239F752CE69DBC600F35\"\n3:\n expected: \"D5A4496D21DEC9A5258DDB19C6FEB53BB4D3C0463FE607F2488DDF4F1006EF9E\"",
+			inputJSON: `{"2":{"expected":"FD5DE9DF350E3BC4410AC06BBFE5CCDEB93F53B9EF51239F752CE69DBC600F35"},"3":{"expected":"D5A4496D21DEC9A5258DDB19C6FEB53BB4D3C0463FE607F2488DDF4F1006EF9E"}}`,
 			wantMeasurements: M{
 				2: {
 					Expected: [32]byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53},
@@ -109,14 +99,8 @@ func TestUnmarshalYAML(t *testing.T) {
 			},
 		},
 		"empty bytes": {
-			inputBase64Map: map[uint32]b64Measurement{
-				2: {
-					Expected: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-				},
-				3: {
-					Expected: "AQIDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-				},
-			},
+			inputYAML: "2:\n expected: \"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\"\n3:\n expected: \"AQIDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\"",
+			inputJSON: `{"2":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="},"3":{"expected":"AQIDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}}`,
 			wantMeasurements: M{
 				2: {
 					Expected: [32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -127,43 +111,36 @@ func TestUnmarshalYAML(t *testing.T) {
 			},
 		},
 		"invalid base64": {
-			inputBase64Map: map[uint32]b64Measurement{
-				2: {
-					Expected: "This is not base64",
-				},
-				3: {
-					Expected: "AQIDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-				},
-			},
-			wantMeasurements: M{
-				2: {
-					Expected: [32]byte{},
-				},
-				3: {
-					Expected: [32]byte{1, 2, 3, 4},
-				},
-			},
-			wantErr: true,
+			inputYAML: "2:\n expected: \"This is not base64\"\n3:\n expected: \"AQIDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\"",
+			inputJSON: `{"2":{"expected":"This is not base64"},"3":{"expected":"AQIDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}}`,
+			wantErr:   true,
 		},
-		"simulated unmarshal error": {
-			inputBase64Map: map[uint32]b64Measurement{
-				2: {
-					Expected: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-				},
-				3: {
-					Expected: "AQIDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-				},
-			},
-			forceUnmarshalError: true,
+		"legacy format": {
+			inputYAML: "2: \"/V3p3zUOO8RBCsBrv+XM3rk/U7nvUSOfdSzmnbxgDzU=\"\n3: \"1aRJbSHeyaUljdsZxv61O7TTwEY/5gfySI3fTxAG754=\"",
+			inputJSON: `{"2":"/V3p3zUOO8RBCsBrv+XM3rk/U7nvUSOfdSzmnbxgDzU=","3":"1aRJbSHeyaUljdsZxv61O7TTwEY/5gfySI3fTxAG754="}`,
 			wantMeasurements: M{
 				2: {
-					Expected: [32]byte{},
+					Expected: [32]byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53},
 				},
 				3: {
-					Expected: [32]byte{1, 2, 3, 4},
+					Expected: [32]byte{213, 164, 73, 109, 33, 222, 201, 165, 37, 141, 219, 25, 198, 254, 181, 59, 180, 211, 192, 70, 63, 230, 7, 242, 72, 141, 223, 79, 16, 6, 239, 158},
 				},
 			},
-			wantErr: true,
+		},
+		"invalid length hex": {
+			inputYAML: "2:\n expected: \"FD5DE9DF350E3BC4410AC06BBFE5CCDEB93F53B9EF\"\n3:\n expected: \"D5A4496D21DEC9A5258DDB19C6FEB53BB4D3C0463F\"",
+			inputJSON: `{"2":{"expected":"FD5DE9DF350E3BC4410AC06BBFE5CCDEB93F53B9EF"},"3":{"expected":"D5A4496D21DEC9A5258DDB19C6FEB53BB4D3C0463F"}}`,
+			wantErr:   true,
+		},
+		"invalid length base64": {
+			inputYAML: "2:\n expected: \"AA==\"\n3:\n expected: \"AQIDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==\"",
+			inputJSON: `{"2":{"expected":"AA=="},"3":{"expected":"AQIDBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="}}`,
+			wantErr:   true,
+		},
+		"invalid format": {
+			inputYAML: "1:\n expected:\n  someKey: 12\n  anotherKey: 34",
+			inputJSON: `{"1":{"expected":{"someKey":12,"anotherKey":34}}}`,
+			wantErr:   true,
 		},
 	}
 
@@ -172,27 +149,30 @@ func TestUnmarshalYAML(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			var m M
-			err := m.UnmarshalYAML(func(i any) error {
-				if base64Map, ok := i.(map[uint32]b64Measurement); ok {
-					for key, value := range tc.inputBase64Map {
-						base64Map[key] = b64Measurement{
-							Expected: value.Expected,
-							WarnOnly: value.WarnOnly,
-						}
-					}
-				}
-				if tc.forceUnmarshalError {
-					return errors.New("unmarshal error")
-				}
-				return nil
-			})
+			{
+				// YAML
+				var m M
+				err := yaml.Unmarshal([]byte(tc.inputYAML), &m)
 
-			if tc.wantErr {
-				assert.Error(err)
-			} else {
-				require.NoError(err)
-				assert.Equal(tc.wantMeasurements, m)
+				if tc.wantErr {
+					assert.Error(err, "yaml.Unmarshal should have failed")
+				} else {
+					require.NoError(err, "yaml.Unmarshal failed")
+					assert.Equal(tc.wantMeasurements, m)
+				}
+			}
+
+			{
+				// JSON
+				var m M
+				err := json.Unmarshal([]byte(tc.inputJSON), &m)
+
+				if tc.wantErr {
+					assert.Error(err, "json.Unmarshal should have failed")
+				} else {
+					require.NoError(err, "json.Unmarshal failed")
+					assert.Equal(tc.wantMeasurements, m)
+				}
 			}
 		})
 	}

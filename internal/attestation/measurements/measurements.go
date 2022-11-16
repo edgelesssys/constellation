@@ -12,7 +12,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -21,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/google/go-tpm/tpmutil"
+	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
 )
 
@@ -37,12 +38,172 @@ const (
 // M are Platform Configuration Register (PCR) values that make up the Measurements.
 type M map[uint32]Measurement
 
+// FetchAndVerify fetches measurement and signature files via provided URLs,
+// using client for download. The publicKey is used to verify the measurements.
+// The hash of the fetched measurements is returned.
+func (m M) FetchAndVerify(ctx context.Context, client *http.Client, measurementsURL *url.URL, signatureURL *url.URL, publicKey []byte) (string, error) {
+	measurements, err := getFromURL(ctx, client, measurementsURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch measurements: %w", err)
+	}
+	signature, err := getFromURL(ctx, client, signatureURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch signature: %w", err)
+	}
+	if err := sigstore.VerifySignature(measurements, signature, publicKey); err != nil {
+		return "", err
+	}
+	//if err := yaml.NewDecoder(bytes.NewReader(measurements)).Decode(&m); err != nil {
+	//	return "", err
+	//}
+	if err := yaml.Unmarshal(measurements, &m); err != nil {
+		return "", err
+	}
+
+	shaHash := sha256.Sum256(measurements)
+
+	return hex.EncodeToString(shaHash[:]), nil
+}
+
+// CopyFrom copies over all values from other. Overwriting existing values,
+// but keeping not specified values untouched.
+func (m M) CopyFrom(other M) {
+	for idx := range other {
+		m[idx] = other[idx]
+	}
+}
+
+// EqualTo tests whether the provided other Measurements are equal to these
+// measurements.
+func (m M) EqualTo(other M) bool {
+	if len(m) != len(other) {
+		return false
+	}
+	for k, v := range m {
+		otherExpected := other[k].Expected
+		if !bytes.Equal(v.Expected[:], otherExpected[:]) {
+			return false
+		}
+		if v.WarnOnly != other[k].WarnOnly {
+			return false
+		}
+	}
+	return true
+}
+
+// GetEnforced returns a list of all enforced Measurements,
+// i.e. all Measurements that are not marked as WarnOnly.
+func (m M) GetEnforced() []uint32 {
+	var enforced []uint32
+	for idx, measurement := range m {
+		if !measurement.WarnOnly {
+			enforced = append(enforced, idx)
+		}
+	}
+	return enforced
+}
+
+// SetEnforced sets the WarnOnly flag to true for all Measurements
+// that are NOT included in the provided list of enforced measurements.
+func (m M) SetEnforced(enforced []uint32) {
+	enforcedMap := map[uint32]struct{}{}
+	for _, idx := range enforced {
+		enforcedMap[idx] = struct{}{}
+	}
+
+	for idx, measurement := range m {
+		if _, ok := enforcedMap[idx]; ok {
+			measurement.WarnOnly = false
+		} else {
+			measurement.WarnOnly = true
+		}
+	}
+}
+
 // Measurement wraps expected PCR value and whether it is enforced.
 type Measurement struct {
 	// Expected measurement value.
-	Expected [32]byte `yaml:"expected"`
+	Expected [32]byte `json:"expected" yaml:"expected"`
 	// WarnOnly if set to true, a mismatching measurement will only result in a warning.
-	WarnOnly bool `yaml:"warnOnly"`
+	WarnOnly bool `json:"warnOnly" yaml:"warnOnly"`
+}
+
+// UnmarshalJSON reads a Measurement either as json object,
+// or as a simple hex or base64 encoded string.
+func (m *Measurement) UnmarshalJSON(b []byte) error {
+	var eM encodedMeasurement
+	if err := json.Unmarshal(b, &eM); err != nil {
+		// Unmarshalling failed, Measurement might be in legacy format,
+		// or is a simple string instead of Measurement struct.
+		if legacyErr := json.Unmarshal(b, &eM.Expected); legacyErr != nil {
+			return multierr.Append(
+				fmt.Errorf("wrong format: %w", err),
+				fmt.Errorf("no legacy format: %w", legacyErr),
+			)
+		}
+	}
+
+	return m.unmarshal(eM)
+}
+
+// MarshalJSON writes out a Measurement with Expected encoded as a hex string.
+func (m Measurement) MarshalJSON() ([]byte, error) {
+	return json.Marshal(encodedMeasurement{
+		Expected: hex.EncodeToString(m.Expected[:]),
+		WarnOnly: m.WarnOnly,
+	})
+}
+
+// UnmarshalYAML reads a Measurement either as yaml object,
+// or as a simple hex or base64 encoded string.
+func (m *Measurement) UnmarshalYAML(unmarshal func(any) error) error {
+	var eM encodedMeasurement
+	if err := unmarshal(&eM); err != nil {
+		// Unmarshalling failed, Measurement might be in legacy format,
+		// or is a simple string instead of Measurement struct.
+		if legacyErr := unmarshal(&eM.Expected); legacyErr != nil {
+			return multierr.Append(
+				fmt.Errorf("wrong format: %w", err),
+				fmt.Errorf("no legacy format: %w", legacyErr),
+			)
+		}
+	}
+
+	return m.unmarshal(eM)
+}
+
+// MarshalYAML writes out a Measurement with Expected encoded as a hex string.
+func (m Measurement) MarshalYAML() (any, error) {
+	return encodedMeasurement{
+		Expected: hex.EncodeToString(m.Expected[:]),
+		WarnOnly: m.WarnOnly,
+	}, nil
+}
+
+// unmarshal parses a hex or base64 encoded Measurement.
+func (m *Measurement) unmarshal(eM encodedMeasurement) error {
+	expected, err := hex.DecodeString(eM.Expected)
+	if err != nil {
+		// expected value might be in base64 legacy format
+		// TODO: Remove with v2.4.0 or provide migration tools for v2.3.0
+		hexErr := err
+		expected, err = base64.StdEncoding.DecodeString(eM.Expected)
+		if err != nil {
+			return multierr.Append(
+				fmt.Errorf("invalid measurement: not a hex string %w", hexErr),
+				fmt.Errorf("not a base64 string %w", err),
+			)
+		}
+	}
+
+	if len(expected) != 32 {
+		return fmt.Errorf("invalid measurement: invalid length: %d", len(expected))
+	}
+
+	m.Expected = *(*[32]byte)(expected)
+	m.WarnOnly = eM.WarnOnly
+
+	return nil
 }
 
 // WithAllBytes returns a measurement value where all 32 bytes are set to b.
@@ -93,116 +254,6 @@ func DefaultsFor(provider cloudprovider.Provider) M {
 	}
 }
 
-// FetchAndVerify fetches measurement and signature files via provided URLs,
-// using client for download. The publicKey is used to verify the measurements.
-// The hash of the fetched measurements is returned.
-func (m *M) FetchAndVerify(ctx context.Context, client *http.Client, measurementsURL *url.URL, signatureURL *url.URL, publicKey []byte) (string, error) {
-	measurements, err := getFromURL(ctx, client, measurementsURL)
-	if err != nil {
-		return "", fmt.Errorf("failed to fetch measurements: %w", err)
-	}
-	signature, err := getFromURL(ctx, client, signatureURL)
-	if err != nil {
-		return "", fmt.Errorf("failed to fetch signature: %w", err)
-	}
-	if err := sigstore.VerifySignature(measurements, signature, publicKey); err != nil {
-		return "", err
-	}
-	if err := yaml.NewDecoder(bytes.NewReader(measurements)).Decode(&m); err != nil {
-		return "", err
-	}
-
-	shaHash := sha256.Sum256(measurements)
-
-	return hex.EncodeToString(shaHash[:]), nil
-}
-
-// CopyFrom copies over all values from other. Overwriting existing values,
-// but keeping not specified values untouched.
-func (m M) CopyFrom(other M) {
-	for idx := range other {
-		m[idx] = other[idx]
-	}
-}
-
-// EqualTo tests whether the provided other Measurements are equal to these
-// measurements.
-func (m M) EqualTo(other M) bool {
-	if len(m) != len(other) {
-		return false
-	}
-	for k, v := range m {
-		otherExpected := other[k].Expected
-		if !bytes.Equal(v.Expected[:], otherExpected[:]) {
-			return false
-		}
-		if v.WarnOnly != other[k].WarnOnly {
-			return false
-		}
-	}
-	return true
-}
-
-// MarshalYAML overwrites the default behaviour of writing out [32]byte not as
-// single bytes, but as a single base64 encoded string.
-func (m M) MarshalYAML() (any, error) {
-	base64Map := make(map[uint32]b64Measurement)
-
-	for key, value := range m {
-		base64Map[key] = b64Measurement{
-			Expected: base64.StdEncoding.EncodeToString(value.Expected[:]),
-			WarnOnly: value.WarnOnly,
-		}
-	}
-
-	return base64Map, nil
-}
-
-// UnmarshalYAML overwrites the default behaviour of reading [32]byte not as
-// single bytes, but as a single base64 encoded string.
-func (m *M) UnmarshalYAML(unmarshal func(any) error) error {
-	base64Map := make(map[uint32]b64Measurement)
-	err := unmarshal(base64Map)
-	if err != nil {
-		// If the unmarshal fails, try to unmarshal as a map of uint32 to string.
-		typeErr := &yaml.TypeError{}
-		if errors.As(err, &typeErr) {
-			base64SimpleMap := make(map[uint32]string)
-			err = unmarshal(base64SimpleMap)
-			if err != nil {
-				return err
-			}
-
-			for key, value := range base64SimpleMap {
-				base64Map[key] = b64Measurement{
-					Expected: value,
-					WarnOnly: false,
-				}
-			}
-		} else {
-			return err
-		}
-	}
-
-	*m = make(M)
-	for key, value := range base64Map {
-		measurement, err := base64.StdEncoding.DecodeString(value.Expected)
-		if err != nil {
-			return err
-		}
-
-		if len(measurement) != 32 {
-			return fmt.Errorf("invalid measurement at key %d: invalid length: %d", key, len(measurement))
-		}
-
-		(*m)[key] = Measurement{
-			Expected: *(*[32]byte)(measurement),
-			WarnOnly: value.WarnOnly,
-		}
-	}
-	return nil
-}
-
 func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL.String(), http.NoBody)
 	if err != nil {
@@ -224,7 +275,7 @@ func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([
 	return content, nil
 }
 
-type b64Measurement struct {
-	Expected string `yaml:"expected"`
-	WarnOnly bool   `yaml:"warnOnly"`
+type encodedMeasurement struct {
+	Expected string `json:"expected" yaml:"expected"`
+	WarnOnly bool   `json:"warnOnly" yaml:"warnOnly"`
 }

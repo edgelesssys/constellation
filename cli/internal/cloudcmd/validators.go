@@ -20,7 +20,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/spf13/cobra"
@@ -30,7 +29,6 @@ import (
 type Validator struct {
 	provider           cloudprovider.Provider
 	pcrs               measurements.M
-	enforcedPCRs       []uint32
 	idkeydigest        []byte
 	enforceIDKeyDigest bool
 	azureCVM           bool
@@ -65,10 +63,10 @@ func NewValidator(provider cloudprovider.Provider, conf *config.Config) (*Valida
 
 // UpdateInitPCRs sets the owner and cluster PCR values.
 func (v *Validator) UpdateInitPCRs(ownerID, clusterID string) error {
-	if err := v.updatePCR(uint32(vtpm.PCRIndexOwnerID), ownerID); err != nil {
+	if err := v.updatePCR(uint32(measurements.PCRIndexOwnerID), ownerID); err != nil {
 		return err
 	}
-	return v.updatePCR(uint32(vtpm.PCRIndexClusterID), clusterID)
+	return v.updatePCR(uint32(measurements.PCRIndexClusterID), clusterID)
 }
 
 // updatePCR adds a new entry to the pcr map of v, or removes the key if the input is an empty string.
@@ -79,16 +77,6 @@ func (v *Validator) UpdateInitPCRs(ownerID, clusterID string) error {
 func (v *Validator) updatePCR(pcrIndex uint32, encoded string) error {
 	if encoded == "" {
 		delete(v.pcrs, pcrIndex)
-
-		// remove enforced PCR if it exists
-		for i, enforcedIdx := range v.enforcedPCRs {
-			if enforcedIdx == pcrIndex {
-				v.enforcedPCRs[i] = v.enforcedPCRs[len(v.enforcedPCRs)-1]
-				v.enforcedPCRs = v.enforcedPCRs[:len(v.enforcedPCRs)-1]
-				break
-			}
-		}
-
 		return nil
 	}
 	decoded, err := base64.StdEncoding.DecodeString(encoded)
@@ -98,8 +86,12 @@ func (v *Validator) updatePCR(pcrIndex uint32, encoded string) error {
 	// new_pcr_value := hash(old_pcr_value || data_to_extend)
 	// Since we use the TPM2_PCR_Event call to extend the PCR, data_to_extend is the hash of our input
 	hashedInput := sha256.Sum256(decoded)
-	expectedPcr := sha256.Sum256(append(v.pcrs[pcrIndex], hashedInput[:]...))
-	v.pcrs[pcrIndex] = expectedPcr[:]
+	oldExpected := v.pcrs[pcrIndex].Expected
+	expectedPcr := sha256.Sum256(append(oldExpected[:], hashedInput[:]...))
+	v.pcrs[pcrIndex] = measurements.Measurement{
+		Expected: expectedPcr,
+		WarnOnly: v.pcrs[pcrIndex].WarnOnly,
+	}
 	return nil
 }
 
@@ -107,35 +99,27 @@ func (v *Validator) setPCRs(config *config.Config) error {
 	switch v.provider {
 	case cloudprovider.AWS:
 		awsPCRs := config.Provider.AWS.Measurements
-		enforcedPCRs := config.Provider.AWS.EnforcedMeasurements
-		if err := v.checkPCRs(awsPCRs, enforcedPCRs); err != nil {
-			return err
+		if len(awsPCRs) == 0 {
+			return errors.New("no PCR values provided")
 		}
-		v.enforcedPCRs = enforcedPCRs
 		v.pcrs = awsPCRs
 	case cloudprovider.Azure:
 		azurePCRs := config.Provider.Azure.Measurements
-		enforcedPCRs := config.Provider.Azure.EnforcedMeasurements
-		if err := v.checkPCRs(azurePCRs, enforcedPCRs); err != nil {
-			return err
+		if len(azurePCRs) == 0 {
+			return errors.New("no PCR values provided")
 		}
-		v.enforcedPCRs = enforcedPCRs
 		v.pcrs = azurePCRs
 	case cloudprovider.GCP:
 		gcpPCRs := config.Provider.GCP.Measurements
-		enforcedPCRs := config.Provider.GCP.EnforcedMeasurements
-		if err := v.checkPCRs(gcpPCRs, enforcedPCRs); err != nil {
-			return err
+		if len(gcpPCRs) == 0 {
+			return errors.New("no PCR values provided")
 		}
-		v.enforcedPCRs = enforcedPCRs
 		v.pcrs = gcpPCRs
 	case cloudprovider.QEMU:
 		qemuPCRs := config.Provider.QEMU.Measurements
-		enforcedPCRs := config.Provider.QEMU.EnforcedMeasurements
-		if err := v.checkPCRs(qemuPCRs, enforcedPCRs); err != nil {
-			return err
+		if len(qemuPCRs) == 0 {
+			return errors.New("no PCR values provided")
 		}
-		v.enforcedPCRs = enforcedPCRs
 		v.pcrs = qemuPCRs
 	}
 	return nil
@@ -156,35 +140,18 @@ func (v *Validator) updateValidator(cmd *cobra.Command) {
 	log := warnLogger{cmd: cmd}
 	switch v.provider {
 	case cloudprovider.GCP:
-		v.validator = gcp.NewValidator(v.pcrs, v.enforcedPCRs, log)
+		v.validator = gcp.NewValidator(v.pcrs, log)
 	case cloudprovider.Azure:
 		if v.azureCVM {
-			v.validator = snp.NewValidator(v.pcrs, v.enforcedPCRs, v.idkeydigest, v.enforceIDKeyDigest, log)
+			v.validator = snp.NewValidator(v.pcrs, v.idkeydigest, v.enforceIDKeyDigest, log)
 		} else {
-			v.validator = trustedlaunch.NewValidator(v.pcrs, v.enforcedPCRs, log)
+			v.validator = trustedlaunch.NewValidator(v.pcrs, log)
 		}
 	case cloudprovider.AWS:
-		v.validator = aws.NewValidator(v.pcrs, v.enforcedPCRs, log)
+		v.validator = aws.NewValidator(v.pcrs, log)
 	case cloudprovider.QEMU:
-		v.validator = qemu.NewValidator(v.pcrs, v.enforcedPCRs, log)
+		v.validator = qemu.NewValidator(v.pcrs, log)
 	}
-}
-
-func (v *Validator) checkPCRs(pcrs measurements.M, enforcedPCRs []uint32) error {
-	if len(pcrs) == 0 {
-		return errors.New("no PCR values provided")
-	}
-	for k, v := range pcrs {
-		if len(v) != 32 {
-			return fmt.Errorf("bad config: PCR[%d]: expected length: %d, but got: %d", k, 32, len(v))
-		}
-	}
-	for _, v := range enforcedPCRs {
-		if _, ok := pcrs[v]; !ok {
-			return fmt.Errorf("bad config: PCR[%d] is enforced, but no expected measurement is provided", v)
-		}
-	}
-	return nil
 }
 
 // warnLogger implements logging of warnings for validators.

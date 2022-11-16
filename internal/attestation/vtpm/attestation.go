@@ -207,7 +207,7 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) ([]byte, error) {
 	}
 	for idx, pcr := range v.expected {
 		if !bytes.Equal(pcr.Expected[:], attDoc.Attestation.Quotes[quoteIdx].Pcrs.Pcrs[idx]) {
-			if pcr.WarnOnly {
+			if !pcr.WarnOnly {
 				return nil, fmt.Errorf("untrusted PCR value at PCR index %d", idx)
 			}
 			if v.log != nil {
