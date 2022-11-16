@@ -43,7 +43,7 @@ The build pipeline takes as inputs:
 - a version number that is one of
   - a release version number (e.g. `v2.2.0`) for release images
   - a pseudo-version number (e.g. `debug-v2.3.0-pre.0.`) for development images
-  - a pseudo-version number (e.g. `branch-name-v2.3.0-pre.0,`) for branch images
+  - a pseudo-version number (e.g. `branch-name-v2.3.0-pre.0.`) for branch images
 - a commit hash of the Constellation monorepo that is used to build the images (e.g. `cc0de5c68d41f31dd0b284d574f137e0b0ad106b`)
 - a commit timestamp of the Constellation monorepo that is used to build the images (e.g. `20221115082220`)
 
