@@ -49,7 +49,7 @@ require (
 	go.uber.org/zap v1.23.0
 	golang.org/x/mod v0.7.0
 	google.golang.org/api v0.102.0
-	google.golang.org/genproto v0.0.0-20221107162902-2d387536bcdd
+	google.golang.org/genproto v0.0.0-20221116193143-41c2ba794472
 	google.golang.org/grpc v1.50.1
 	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v3 v3.0.1

@@ -18,7 +18,7 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.5
 	go.uber.org/multierr v1.8.0
 	google.golang.org/api v0.102.0
-	google.golang.org/genproto v0.0.0-20221107162902-2d387536bcdd
+	google.golang.org/genproto v0.0.0-20221116193143-41c2ba794472
 	google.golang.org/protobuf v1.28.1
 	k8s.io/api v0.25.4
 	k8s.io/apimachinery v0.25.4
