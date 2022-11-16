@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	baseWait = 100
+	baseWait = 300
 	baseText = "Loading"
 )
 
@@ -35,7 +35,8 @@ func TestSpinnerInitialState(t *testing.T) {
 	assert.Greater(out.Len(), 0)
 
 	outStr := out.String()
-	assert.True(strings.HasPrefix(outStr, hideCursor+generateAllStatesAsString(t, baseText, true)))
+	prefix := hideCursor + generateAllStatesAsString(t, baseText, true)
+	assert.True(strings.HasPrefix(outStr, prefix), fmt.Sprintf("\nOutStr: %#v\nPrefix: %#v\n", outStr, prefix))
 }
 
 func TestSpinnerFinalState(t *testing.T) {
