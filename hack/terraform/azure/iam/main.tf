@@ -59,7 +59,7 @@ resource "azurerm_role_assignment" "application_insights_component_contributor_r
   principal_id         = azurerm_user_assigned_identity.identity_uami.principal_id
 }
 
-# Create application registry
+# Create application registration
 resource "azuread_application" "base_application" {
   display_name = "${var.resource_group_name}-application"
   owners       = [data.azuread_client_config.current.object_id]
