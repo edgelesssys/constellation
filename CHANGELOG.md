@@ -41,7 +41,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `constellation create` on GCP now always uses the local default credentials.
 
 
-## [2.2.1] - 2022-11-14
+## [2.2.2] - 2022-11-16
+
+Contains no changes compared to v2.2.1.
+
+v2.2.2 was released, to fix a release process error encountered in v2.2.1. This lead to a broken QEMU-based Constellation deployment.
+
+## [2.2.1] - 2022-11-16
 
 ### Changed
 
