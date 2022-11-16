@@ -29,6 +29,9 @@ const (
 	terraformVarsFile = "terraform.tfvars"
 )
 
+// ErrTerraformWorkspaceExistsWithDifferentVariables is returned when existing Terraform files differ from the version the CLI wants to extract.
+var ErrTerraformWorkspaceExistsWithDifferentVariables = errors.New("creating cluster: a Terraform workspace already exists with different variables")
+
 // Client manages interaction with Terraform.
 type Client struct {
 	tf tfInterface
@@ -162,7 +165,7 @@ func (c *Client) writeVars(vars Variables) error {
 			return err
 		}
 		if vars.String() != string(varsContent) {
-			return errors.New("creating cluster: workspace already exists with different variables")
+			return ErrTerraformWorkspaceExistsWithDifferentVariables
 		}
 	} else if err != nil {
 		return err

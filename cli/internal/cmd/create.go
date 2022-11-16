@@ -12,6 +12,7 @@ import (
 	"io/fs"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -126,7 +127,7 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 	idFile, err := creator.Create(cmd.Context(), provider, conf, flags.name, instanceType, flags.controllerCount, flags.workerCount)
 	spinner.Stop()
 	if err != nil {
-		return err
+		return translateCreateErrors(cmd, err)
 	}
 
 	if err := fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptNone); err != nil {
@@ -207,6 +208,27 @@ func checkDirClean(fileHandler file.Handler) error {
 	}
 
 	return nil
+}
+
+func translateCreateErrors(cmd *cobra.Command, err error) error {
+	switch {
+	case errors.Is(err, terraform.ErrTerraformWorkspaceDifferentFiles):
+		cmd.PrintErrln("\nYour current working directory contains an existing Terraform workspace which does not match the expected state.")
+		cmd.PrintErrln("This can be due to a mix up between providers, versions or an otherwise corrupted workspace.")
+		cmd.PrintErrln("Before creating a new cluster, try \"constellation terminate\".")
+		cmd.PrintErrf("If this does not work, either move or delete the directory %q.\n", constants.TerraformWorkingDir)
+		cmd.PrintErrln("Please only delete the directory if you made sure that all created cloud resources have been terminated.")
+		return err
+	case errors.Is(err, terraform.ErrTerraformWorkspaceExistsWithDifferentVariables):
+		cmd.PrintErrln("\nYour current working directory contains an existing Terraform workspace which was initiated with different input variables.")
+		cmd.PrintErrln("This can be the case if you have tried to create a cluster before with different options which did not complete, or the workspace is corrupted.")
+		cmd.PrintErrln("Before creating a new cluster, try \"constellation terminate\".")
+		cmd.PrintErrf("If this does not work, either move or delete the directory %q.\n", constants.TerraformWorkingDir)
+		cmd.PrintErrln("Please only delete the directory if you made sure that all created cloud resources have been terminated.")
+		return err
+	default:
+		return err
+	}
 }
 
 func must(err error) {

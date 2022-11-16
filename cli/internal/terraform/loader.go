@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"embed"
 	"errors"
-	"fmt"
 	"io/fs"
 	"path"
 	"path/filepath"
@@ -20,6 +19,9 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 )
+
+// ErrTerraformWorkspaceDifferentFiles is returned when a re-used existing Terraform workspace has different files than the ones to be extracted (e.g. due to a version mix-up or incomplete writes).
+var ErrTerraformWorkspaceDifferentFiles = errors.New("creating cluster: trying to overwrite an existing Terraform file with a different version")
 
 //go:embed terraform/*
 //go:embed terraform/*/.terraform.lock.hcl
@@ -53,7 +55,7 @@ func prepareWorkspace(fileHandler file.Handler, provider cloudprovider.Provider,
 			}
 
 			if !bytes.Equal(content, existingFileContent) {
-				return fmt.Errorf("trying to overwrite existing Terraform file with different version")
+				return ErrTerraformWorkspaceDifferentFiles
 			}
 			return nil
 		} else if err != nil {
