@@ -1,4 +1,4 @@
-# IAM instance for Azure
+# Terraform Azure IAM creation
 
 This terraform configuration creates the necessary Azure resources that need to be available to host a Constellation cluster.
 
