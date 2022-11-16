@@ -78,9 +78,8 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
 
         Then update the QEMU measurements in [measurements.go](../../internal/config/measurements.go#L55-L57) with the values from "Calculate PCRs (qemu) summary" from the same pipeline. Note that some formatting is necessary:
 
-        ```python
-        s="1be79839dd353741b14f3d8cef4e361e4b17e6033a44919bf0ee4dbb03ea98dd"
-        for i in range(0, 64, 2): print(f"0x{s[i:i+2]}, ", end='')
+        ```sh
+        echo -n "1be79839dd353741b14f3d8cef4e361e4b17e6033a44919bf0ee4dbb03ea98dd" | xxd -r -p | xxd -i -c32
         # 0x1b, 0xe7, 0x98, 0x39, 0xdd, 0x35, 0x37, 0x41, 0xb1, 0x4f, ...
         ```
 
