@@ -6,7 +6,7 @@ You can create the resources with the following commands:
 ```sh
 mkdir constellation_azure_iam
 cd constellation_azure_iam
-curl --remote-name-all https://raw.githubusercontent.com/edgelesssys/constellation/main/hack/terraform/azure/iam/{main,output,variables}.tf
+curl --remote-name-all https://raw.githubusercontent.com/edgelesssys/constellation/main/hack/terraform/azure/iam/{main.tf,output.tf,variables.tf,.terraform.lock.hcl}
 terraform init
 terraform apply
 ```
