@@ -1,28 +1,28 @@
-output "subscription" {
+output "subscription_id" {
   value = data.azurerm_subscription.current.subscription_id
 }
 
-output "tenant" {
+output "tenant_id" {
   value = data.azurerm_subscription.current.tenant_id
 }
 
-output "location" {
+output "region" {
   value = var.region
 }
 
-output "resourceGroup" {
+output "base_resource_group_name" {
   value = var.resource_group_name
 }
 
-output "appClientID" {
+output "application_id" {
   value = azuread_application.base_application.application_id
 }
 
-output "userAssignedIdentity" {
+output "uami_id" {
   value = azurerm_user_assigned_identity.identity_uami.id
 }
 
-output "clientSecretValue" {
-    value = azuread_application_password.base_application_secret.value
-    sensitive = true
+output "application_client_secret_value" {
+  value     = azuread_application_password.base_application_secret.value
+  sensitive = true
 }

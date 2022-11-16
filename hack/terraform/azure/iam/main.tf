@@ -43,7 +43,7 @@ resource "azurerm_resource_group" "identity_resource_group" {
 resource "azurerm_user_assigned_identity" "identity_uami" {
   location            = var.region
   name                = var.service_principal_name
-  resource_group_name = "${var.resource_group_name}-identity"
+  resource_group_name = azurerm_resource_group.identity_resource_group.name
 }
 
 # Assign roles to managed identity
@@ -62,7 +62,7 @@ resource "azurerm_role_assignment" "application_insights_component_contributor_r
 # Create application registry
 resource "azuread_application" "base_application" {
   display_name = "${var.resource_group_name}-application"
-  # owners       = [data.azuread_client_config.current.object_id] # -> 403
+  owners       = [data.azuread_client_config.current.object_id]
 }
 
 # Set identity as base resource group owner
