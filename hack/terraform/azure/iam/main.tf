@@ -65,11 +65,17 @@ resource "azuread_application" "base_application" {
   owners       = [data.azuread_client_config.current.object_id]
 }
 
+resource "azuread_service_principal" "application_principal" {
+  application_id               = azuread_application.base_application.application_id
+  app_role_assignment_required = false
+  owners                       = [data.azuread_client_config.current.object_id]
+}
+
 # Set identity as base resource group owner
 resource "azurerm_role_assignment" "owner_role" {
   scope                = "/subscriptions/${data.azurerm_subscription.current.subscription_id}/resourceGroups/${var.resource_group_name}"
   role_definition_name = "Owner"
-  principal_id         = azurerm_user_assigned_identity.identity_uami.principal_id
+  principal_id         = azuread_service_principal.application_principal.object_id
 }
 
 # Create application secret (password)
