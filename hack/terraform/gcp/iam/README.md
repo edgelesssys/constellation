@@ -7,7 +7,7 @@ You can create the configuration with the following commands:
 ```sh
 mkdir constellation_gcp_iam
 cd constellation_gcp_iam
-curl --remote-name-all https://raw.githubusercontent.com/edgelesssys/constellation/main/hack/terraform/gcp/iam/{main,output,variables}.tf
+curl --remote-name-all https://raw.githubusercontent.com/edgelesssys/constellation/main/hack/terraform/gcp/iam/{main.tf,output.tf,variables.tf,.terraform.lock.hcl}
 terraform init
 terraform apply
 ```
