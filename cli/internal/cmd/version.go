@@ -18,7 +18,7 @@ func NewVersionCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Display version of this CLI",
-		Long:  "Display version of this CLI.",
+		Long:  "Display version of this CLI",
 		Args:  cobra.NoArgs,
 		Run:   runVersion,
 	}
