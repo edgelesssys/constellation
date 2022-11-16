@@ -27,8 +27,10 @@ write_output() {
   local out="$1"
   cat > "${out}" << EOF
 {
-    "pcr9": "${expected_pcr_9}",
-    "initrd": "${initrd_hash}"
+  "measurements": {
+    "9": "${expected_pcr_9}"
+  },
+  "initrd-sha256": "${initrd_hash}"
 }
 EOF
 }

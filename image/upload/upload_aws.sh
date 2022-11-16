@@ -13,7 +13,6 @@ fi
 
 CONTAINERS_JSON=$(mktemp /tmp/containers-XXXXXXXXXXXXXX.json)
 declare -A AMI_FOR_REGION
-AMI_OUTPUT=$1
 
 import_status() {
   local import_task_id=$1
@@ -160,8 +159,17 @@ for region in ${AWS_REPLICATION_REGIONS}; do
   tag_ami_with_backing_snapshot "${AMI_FOR_REGION[${region}]}" "${region}"
   make_ami_public "${AMI_FOR_REGION[${region}]}" "${region}"
 done
-echo -n "{\"${AWS_REGION}\": \"${AMI_FOR_REGION[${AWS_REGION}]}\"" > "${AMI_OUTPUT}"
+
+json=$(jq -ncS \
+  --arg region "${AWS_REGION}" \
+  --arg ami "${AMI_FOR_REGION[${AWS_REGION}]}" \
+  '{"aws":{($region): $ami}}')
 for region in ${AWS_REPLICATION_REGIONS}; do
-  echo -n ", \"${region}\": \"${AMI_FOR_REGION[${region}]}\"" >> "${AMI_OUTPUT}"
+  json=$(jq -ncS \
+    --argjson json "${json}" \
+    --arg region "${region}" \
+    --arg ami "${AMI_FOR_REGION[${region}]}" \
+    '$json * {"aws": {($region): $ami}}')
 done
-echo "}" >> "${AMI_OUTPUT}"
+
+echo "${json}" > "${AWS_JSON_OUTPUT}"
