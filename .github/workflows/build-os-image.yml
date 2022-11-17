@@ -628,7 +628,7 @@ jobs:
       contents: read
     steps:
       - name: Download image lookup table
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@f023be2c48cc18debc3bacd34cb396e0295e2869 # v2
         with:
           name: lookup-table
 
