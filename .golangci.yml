@@ -46,3 +46,10 @@ linters-settings:
     exclude-functions:
       - (*go.uber.org/zap.Logger).Sync
       - (*google.golang.org/grpc.Server).Serve
+  revive:
+    rules:
+      - name: argument-limit
+        disabled: false
+        arguments:
+          - 5
+        severity: warning
