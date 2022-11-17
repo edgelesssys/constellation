@@ -14,9 +14,9 @@ certs := $(PKI)/PK.cer $(PKI)/KEK.cer $(PKI)/db.cer
 
 all: $(csps)
 
-$(csps): %: mkosi.output.%/fedora~36/image.raw
+$(csps): %: mkosi.output.%/fedora~37/image.raw
 
-mkosi.output.%/fedora~36/image.raw: mkosi.files/mkosi.%.conf inject-bins inject-certs
+mkosi.output.%/fedora~37/image.raw: mkosi.files/mkosi.%.conf inject-bins inject-certs
 	mkosi --config mkosi.files/mkosi.$*.conf --image-version=$(IMAGE_VERSION) build
 	secure-boot/signed-shim.sh $@
 	@if [ -n $(SUDO_UID) ] && [ -n $(SUDO_GID) ]; then \

@@ -75,7 +75,7 @@ After that, you can build the image with:
 sudo make -j $(nproc)
 ```
 
-Raw images will be placed in `mkosi.output.<CSP>/fedora~36/image.raw`.
+Raw images will be placed in `mkosi.output.<CSP>/fedora~37/image.raw`.
 
 ## Prepare Secure Boot
 
@@ -87,7 +87,7 @@ For QEMU and Azure, you can pre-generate the NVRAM variables for secure boot. Th
 <summary><a id="qemu-secure-boot">libvirt / QEMU / KVM</a></summary>
 
 ```sh
-secure-boot/generate_nvram_vars.sh mkosi.output.qemu/fedora~36/image.raw
+secure-boot/generate_nvram_vars.sh mkosi.output.qemu/fedora~37/image.raw
 ```
 
 </details>
@@ -109,10 +109,10 @@ export AZURE_REGION=northeurope
 export AZURE_REPLICATION_REGIONS=
 export AZURE_DISK_NAME=constellation-$(date +%s)
 export AZURE_SNAPSHOT_NAME=${AZURE_DISK_NAME}
-export AZURE_RAW_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~36/image.raw
-export AZURE_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~36/image.vhd
+export AZURE_RAW_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~37/image.raw
+export AZURE_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~37/image.vhd
 export AZURE_VMGS_FILENAME=${AZURE_SECURITY_TYPE}.vmgs
-export AZURE_JSON_OUTPUT=${PWD}/mkosi.output.azure/fedora~36/image-upload.json
+export AZURE_JSON_OUTPUT=${PWD}/mkosi.output.azure/fedora~37/image-upload.json
 export BLOBS_DIR=${PWD}/blobs
 upload/pack.sh azure "${AZURE_RAW_IMAGE_PATH}" "${AZURE_IMAGE_PATH}"
 upload/upload_azure.sh --disk-name "${AZURE_DISK_NAME}-setup-secure-boot" ""
@@ -156,10 +156,10 @@ export PKI=${PWD}/pki
 export AWS_REGION=eu-central-1
 export AWS_REPLICATION_REGIONS="us-east-2"
 export AWS_BUCKET=constellation-images
-export AWS_EFIVARS_PATH=${PWD}/mkosi.output.aws/fedora~36/efivars.bin
-export AWS_IMAGE_PATH=${PWD}/mkosi.output.aws/fedora~36/image.raw
+export AWS_EFIVARS_PATH=${PWD}/mkosi.output.aws/fedora~37/efivars.bin
+export AWS_IMAGE_PATH=${PWD}/mkosi.output.aws/fedora~37/image.raw
 export AWS_IMAGE_FILENAME=image-$(date +%s).raw
-export AWS_JSON_OUTPUT=${PWD}/mkosi.output.aws/fedora~36/image-upload.json
+export AWS_JSON_OUTPUT=${PWD}/mkosi.output.aws/fedora~37/image-upload.json
 secure-boot/aws/create_uefivars.sh "${AWS_EFIVARS_PATH}"
 upload/upload_aws.sh
 ```
@@ -185,10 +185,10 @@ export PKI=${PWD}/pki
 export GCP_PROJECT=constellation-images
 export GCP_REGION=europe-west3
 export GCP_BUCKET=constellation-images
-export GCP_RAW_IMAGE_PATH=${PWD}/mkosi.output.gcp/fedora~36/image.raw
+export GCP_RAW_IMAGE_PATH=${PWD}/mkosi.output.gcp/fedora~37/image.raw
 export GCP_IMAGE_FILENAME=$(date +%s).tar.gz
-export GCP_IMAGE_PATH=${PWD}/mkosi.output.gcp/fedora~36/image.tar.gz
-export GCP_JSON_OUTPUT=${PWD}/mkosi.output.gcp/fedora~36/image-upload.json
+export GCP_IMAGE_PATH=${PWD}/mkosi.output.gcp/fedora~37/image.tar.gz
+export GCP_JSON_OUTPUT=${PWD}/mkosi.output.gcp/fedora~37/image-upload.json
 upload/pack.sh gcp ${GCP_RAW_IMAGE_PATH} ${GCP_IMAGE_PATH}
 upload/upload_gcp.sh
 ```
@@ -228,9 +228,9 @@ export AZURE_IMAGE_OFFER=constellation
 export AZURE_SKU=constellation
 export AZURE_PUBLISHER=edgelesssys
 export AZURE_DISK_NAME=constellation-$(date +%s)
-export AZURE_RAW_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~36/image.raw
-export AZURE_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~36/image.vhd
-export AZURE_JSON_OUTPUT=${PWD}/mkosi.output.azure/fedora~36/image-upload.json
+export AZURE_RAW_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~37/image.raw
+export AZURE_IMAGE_PATH=${PWD}/mkosi.output.azure/fedora~37/image.vhd
+export AZURE_JSON_OUTPUT=${PWD}/mkosi.output.azure/fedora~37/image-upload.json
 upload/pack.sh azure "${AZURE_RAW_IMAGE_PATH}" "${AZURE_IMAGE_PATH}"
 upload/upload_azure.sh -g --disk-name "${AZURE_DISK_NAME}" "${AZURE_VMGS_PATH}"
 ```
@@ -248,8 +248,8 @@ upload/upload_azure.sh -g --disk-name "${AZURE_DISK_NAME}" "${AZURE_VMGS_PATH}"
 export IMAGE_VERSION_UID= # e.g. "test123" or "v2.1.0"
 export QEMU_BUCKET=cdn-constellation-backend
 export QEMU_BASE_URL="https://cdn.confidential.cloud"
-export QEMU_IMAGE_PATH=${PWD}/mkosi.output.qemu/fedora~36/image.raw
-export QEMU_JSON_OUTPUT=${PWD}/mkosi.output.qemu/fedora~36/image-upload.json
+export QEMU_IMAGE_PATH=${PWD}/mkosi.output.qemu/fedora~37/image.raw
+export QEMU_JSON_OUTPUT=${PWD}/mkosi.output.qemu/fedora~37/image-upload.json
 upload/upload_qemu.sh
 ```
 
