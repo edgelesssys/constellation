@@ -36,30 +36,30 @@ func DefaultsFor(provider cloudprovider.Provider) M {
 	switch provider {
 	case cloudprovider.AWS:
 		return M{
+			8:                              PCRWithAllBytes(0x00),
 			11:                             PCRWithAllBytes(0x00),
-			12:                             PCRWithAllBytes(0x00),
 			13:                             PCRWithAllBytes(0x00),
 			uint32(vtpm.PCRIndexClusterID): PCRWithAllBytes(0x00),
 		}
 	case cloudprovider.Azure:
 		return M{
+			8:                              PCRWithAllBytes(0x00),
 			11:                             PCRWithAllBytes(0x00),
-			12:                             PCRWithAllBytes(0x00),
 			13:                             PCRWithAllBytes(0x00),
 			uint32(vtpm.PCRIndexClusterID): PCRWithAllBytes(0x00),
 		}
 	case cloudprovider.GCP:
 		return M{
 			0:                              {0x0F, 0x35, 0xC2, 0x14, 0x60, 0x8D, 0x93, 0xC7, 0xA6, 0xE6, 0x8A, 0xE7, 0x35, 0x9B, 0x4A, 0x8B, 0xE5, 0xA0, 0xE9, 0x9E, 0xEA, 0x91, 0x07, 0xEC, 0xE4, 0x27, 0xC4, 0xDE, 0xA4, 0xE4, 0x39, 0xCF},
+			8:                              PCRWithAllBytes(0x00),
 			11:                             PCRWithAllBytes(0x00),
-			12:                             PCRWithAllBytes(0x00),
 			13:                             PCRWithAllBytes(0x00),
 			uint32(vtpm.PCRIndexClusterID): PCRWithAllBytes(0x00),
 		}
 	case cloudprovider.QEMU:
 		return M{
+			8:                              PCRWithAllBytes(0x00),
 			11:                             PCRWithAllBytes(0x00),
-			12:                             PCRWithAllBytes(0x00),
 			13:                             PCRWithAllBytes(0x00),
 			uint32(vtpm.PCRIndexClusterID): PCRWithAllBytes(0x00),
 		}

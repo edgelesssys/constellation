@@ -142,11 +142,11 @@ The latter means that the value can be generated offline and compared to the one
 | 5           | Reserved                                                         | Azure                           | No                          |
 | 6           | VM Unique ID                                                     | Azure                           | No                          |
 | 7           | Secure Boot State                                                | Azure, Constellation Bootloader | No                          |
-| 8           | Kernel command line                                              | Constellation Bootloader        | Yes                         |
+| 8           | -                                                                | -                               | -                           |
 | 9           | initramfs                                                        | Linux Kernel                    | Yes                         |
 | 10          | Reserved                                                         | -                               | No                          |
 | 11          | Reserved for Unified Kernel Image components                     | (Constellation Bootloader)      | Yes                         |
-| 12          | Reserved                                                         | (Constellation Bootloader)      | Yes                         |
+| 12          | Kernel command line                                              | Constellation Bootloader        | Yes                         |
 | 13          | Reserved                                                         | (Constellation Bootloader)      | Yes                         |
 | 14          | Secure Boot State                                                | Constellation Bootloader        | No                          |
 | 15          | ClusterID                                                        | Constellation Bootstrapper      | Yes                         |
@@ -175,11 +175,11 @@ The latter means that the value can be generated offline and compared to the one
 | 5           | Disk GUID partition table                                        | GCP                           | No                          |
 | 6           | Disk GUID partition table                                        | GCP                           | No                          |
 | 7           | GCP Secure Boot Policy                                           | GCP, Constellation Bootloader | No                          |
-| 8           | Kernel command line                                              | Constellation Bootloader      | Yes                         |
+| 8           | -                                                                | -                             | -                           |
 | 9           | initramfs                                                        | Linux Kernel                  | Yes                         |
 | 10          | Reserved                                                         | -                             | No                          |
 | 11          | Reserved for Unified Kernel Image components                     | (Constellation Bootloader)    | Yes                         |
-| 12          | Reserved                                                         | (Constellation Bootloader)    | Yes                         |
+| 12          | Kernel command line                                              | Constellation Bootloader      | Yes                         |
 | 13          | Reserved                                                         | (Constellation Bootloader)    | Yes                         |
 | 14          | Secure Boot State                                                | Constellation Bootloader      | No                          |
 | 15          | ClusterID                                                        | Constellation Bootstrapper    | Yes                         |
@@ -207,11 +207,11 @@ The latter means that the value can be generated offline and compared to the one
 | 5           | Firmware                                                         | AWS                           | No                          |
 | 6           | Firmware                                                         | AWS                           | No                          |
 | 7           | Secure Boot Policy                                               | AWS, Constellation Bootloader | No                          |
-| 8           | Kernel command line                                              | Constellation Bootloader      | Yes                         |
+| 8           | -                                                                | -                             | -                           |
 | 9           | initramfs                                                        | Linux Kernel                  | Yes                         |
 | 10          | Reserved                                                         | -                             | No                          |
 | 11          | Reserved for Unified Kernel Image components                     | (Constellation Bootloader)    | Yes                         |
-| 12          | Reserved                                                         | (Constellation Bootloader)    | Yes                         |
+| 12          | Kernel command line                                              | Constellation Bootloader      | Yes                         |
 | 13          | Reserved                                                         | (Constellation Bootloader)    | Yes                         |
 | 14          | Secure Boot State                                                | Constellation Bootloader      | No                          |
 | 15          | ClusterID                                                        | Constellation Bootstrapper    | Yes                         |
