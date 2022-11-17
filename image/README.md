@@ -246,7 +246,7 @@ upload/upload_azure.sh -g --disk-name "${AZURE_DISK_NAME}" "${AZURE_VMGS_PATH}"
 ```sh
 # set these variables
 export IMAGE_VERSION_UID= # e.g. "test123" or "v2.1.0"
-export QEMU_BUCKET=cdn-confidential-cloud-backend
+export QEMU_BUCKET=cdn-constellation-backend
 export QEMU_BASE_URL="https://cdn.confidential.cloud"
 export QEMU_IMAGE_PATH=${PWD}/mkosi.output.qemu/fedora~36/image.raw
 export QEMU_JSON_OUTPUT=${PWD}/mkosi.output.qemu/fedora~36/image-upload.json

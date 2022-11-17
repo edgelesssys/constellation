@@ -74,20 +74,20 @@ Where applicable, the API uses the following CSP names:
 
 The following HTTP endpoints are available:
 
-- `GET /v1/images/<image version uid>.json` returns the lookup table for the given `image version uid`.
-- `GET /v1/measurements/<image version uid>/<csp>/` contains files with measurements and signatures for the given `image version uid` and CSP.
+- `GET /constellation/v1/images/<image version uid>.json` returns the lookup table for the given `image version uid`.
+- `GET /constellation/v1/measurements/<image version uid>/<csp>/` contains files with measurements and signatures for the given `image version uid` and CSP.
   - `measurements.json` contains the final measurements for the given `image version uid` and CSP.
   - `measurements.json.sig` returns the signature of the measurements file.
   - `measurements.image.json` returns the measurements generated statically from the image.
-- `GET /v1/raw/<image version uid>/<csp>/image.raw` returns the raw image for the given `image version uid` and CSP.
-- `GET /v1/sbom/<image version uid>/` contains SBOM files for the given `image version uid`. The exact formats and file names are TBD.
+- `GET /constellation/v1/raw/<image version uid>/<csp>/image.raw` returns the raw image for the given `image version uid` and CSP.
+- `GET /constellation/v1/sbom/<image version uid>/` contains SBOM files for the given `image version uid`. The exact formats and file names are TBD.
 
 ## Image lookup table
 
 The image lookup table is a JSON file that maps the `image version uid` to the CSP-specific image references. It uses the `image version uid` as file name.
 
 ```
-s3://<BUCKET-NAME>/v1/images/<IMAGE-VERSION-UID>.json
+s3://<BUCKET-NAME>/constellation/v1/images/<IMAGE-VERSION-UID>.json
 ```
 
 ```json
@@ -105,7 +105,7 @@ s3://<BUCKET-NAME>/v1/images/<IMAGE-VERSION-UID>.json
     "sev-es": "gcp-image-123"
   },
   "qemu": {
-    "default": "https://cdn.confidential.cloud/v1/raw/v2.2.0/qemu/image.raw"
+    "default": "https://cdn.confidential.cloud/constellation/v1/raw/v2.2.0/qemu/image.raw"
   }
 }
 ```
@@ -126,9 +126,9 @@ The format of the image measurements is described in the [secure software distri
 The image measurements are stored in a folder structure in S3 that is organized by CSP and `image version uid`.
 
 ```
-s3://<BUCKET-NAME>/v1/measurements/<CSP>/<IMAGE-VERSION-UID>/measurements.json
-s3://<BUCKET-NAME>/v1/measurements/<CSP>/<IMAGE-VERSION-UID>/measurements.json.sig
-s3://<BUCKET-NAME>/v1/measurements/<CSP>/<IMAGE-VERSION-UID>/measurements.image.json
+s3://<BUCKET-NAME>/constellation/v1/measurements/<CSP>/<IMAGE-VERSION-UID>/measurements.json
+s3://<BUCKET-NAME>/constellation/v1/measurements/<CSP>/<IMAGE-VERSION-UID>/measurements.json.sig
+s3://<BUCKET-NAME>/constellation/v1/measurements/<CSP>/<IMAGE-VERSION-UID>/measurements.image.json
 ```
 
 ## CLI image discovery
@@ -143,7 +143,7 @@ The `image` field is independent of the CSP and is a used to discover the CSP-sp
 The CLI can find a CSP- and region specific image reference by looking up the `image version uid` in the following order:
 
 - if a local file `<IMAGE-VERSION-UID>.json` exists, use the lookup table in that file
-- otherwise, load the image lookup table from a well known URL (e.g. `https://cdn.confidential.cloud/v1/images/<IMAGE-VERSION-UID>.json`) and use the lookup table in that file
+- otherwise, load the image lookup table from a well known URL (e.g. `https://cdn.confidential.cloud/constellation/v1/images/<IMAGE-VERSION-UID>.json`) and use the lookup table in that file
 - choose the CSP-specific image reference for the current region and security type:
   - On AWS, use the AMI ID for the current region (e.g. `.aws.us-east-1`)
   - On Azure, use the image ID for the security type (CVM or Trusted Launch) (e.g. `.azure.cvm`)

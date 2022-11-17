@@ -500,7 +500,7 @@ jobs:
         run: |
           aws s3 cp \
             "pcrs-${{ matrix.csp }}.json" \
-            "s3://cdn-confidential-cloud-backend/v1/measurements/${{ needs.build-settings.outputs.imageVersionUid }}/${{ matrix.csp }}/measurements.image.json" \
+            "s3://cdn-constellation-backend/constellation/v1/measurements/${{ needs.build-settings.outputs.imageVersionUid }}/${{ matrix.csp }}/measurements.image.json" \
             --no-progress
 
   generate-sbom:
@@ -615,7 +615,7 @@ jobs:
           for file in ${sboms} ${manifests} ${hashes}; do
             aws s3 cp \
               "${file}" \
-              "s3://cdn-confidential-cloud-backend/v1/sbom/${{ needs.build-settings.outputs.imageVersionUid }}/${file}" \
+              "s3://cdn-constellation-backend/constellation/v1/sbom/${{ needs.build-settings.outputs.imageVersionUid }}/${file}" \
               --no-progress
           done
 
@@ -654,6 +654,6 @@ jobs:
         run: |
           aws s3 cp \
             "${{ needs.build-settings.outputs.imageVersionUid }}.json" \
-            "s3://cdn-confidential-cloud-backend/v1/images/${{ needs.build-settings.outputs.imageVersionUid }}.json" \
+            "s3://cdn-constellation-backend/constellation/v1/images/${{ needs.build-settings.outputs.imageVersionUid }}.json" \
             --no-progress
-          echo -e "- [Lookup table](https://cdn.confidential.cloud/v1/images/${{ needs.build-settings.outputs.imageVersionUid }}.json)" >> "$GITHUB_STEP_SUMMARY"
+          echo -e "- [Lookup table](https://cdn.confidential.cloud/constellation/v1/images/${{ needs.build-settings.outputs.imageVersionUid }}.json)" >> "$GITHUB_STEP_SUMMARY"

@@ -278,7 +278,7 @@ runs:
       env:
         basePath: ${{ inputs.basePath }}
       run: |
-        echo "bucket=cdn-confidential-cloud-backend" >> $GITHUB_OUTPUT
+        echo "bucket=cdn-constellation-backend" >> $GITHUB_OUTPUT
         echo "baseUrl=https://cdn.confidential.cloud" >> $GITHUB_OUTPUT
         echo "imagePath=${basePath}/mkosi.output.qemu/fedora~36/image.raw" >> $GITHUB_OUTPUT
         echo "jsonOutput=${basePath}/mkosi.output.qemu/fedora~36/image-upload.json" >> $GITHUB_OUTPUT
