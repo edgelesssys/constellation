@@ -101,9 +101,9 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSe
 }
 
 func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode bool) (helm.Release, error) {
-	chart, err := loadChartsDir(helmFS, "charts/cilium")
+	chart, values, err := i.loadCiliumHelper(csp, conformanceMode)
 	if err != nil {
-		return helm.Release{}, fmt.Errorf("loading cilium chart: %w", err)
+		return helm.Release{}, err
 	}
 
 	chartRaw, err := i.marshalChart(chart)
@@ -111,41 +111,62 @@ func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode boo
 		return helm.Release{}, fmt.Errorf("packaging cilium chart: %w", err)
 	}
 
-	var ciliumVals map[string]any
+	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: "cilium", Wait: false}, nil
+}
+
+// loadCiliumHelper is used to separate the marshalling step from the loading step.
+// This reduces the time unit tests take to execute.
+func (i *ChartLoader) loadCiliumHelper(csp cloudprovider.Provider, conformanceMode bool) (*chart.Chart, map[string]any, error) {
+	chart, err := loadChartsDir(helmFS, "charts/cilium")
+	if err != nil {
+		return nil, nil, fmt.Errorf("loading cilium chart: %w", err)
+	}
+
+	var values map[string]any
 	switch csp {
 	case cloudprovider.AWS:
-		ciliumVals = awsVals
+		values = awsVals
 	case cloudprovider.Azure:
-		ciliumVals = azureVals
+		values = azureVals
 	case cloudprovider.GCP:
-		ciliumVals = gcpVals
+		values = gcpVals
 	case cloudprovider.QEMU:
-		ciliumVals = qemuVals
+		values = qemuVals
 	default:
-		return helm.Release{}, fmt.Errorf("unknown csp: %s", csp)
+		return nil, nil, fmt.Errorf("unknown csp: %s", csp)
 	}
 	if conformanceMode {
-		ciliumVals["kubeProxyReplacementHealthzBindAddr"] = ""
-		ciliumVals["kubeProxyReplacement"] = "partial"
-		ciliumVals["sessionAffinity"] = true
-		ciliumVals["cni"] = map[string]any{
+		values["kubeProxyReplacementHealthzBindAddr"] = ""
+		values["kubeProxyReplacement"] = "partial"
+		values["sessionAffinity"] = true
+		values["cni"] = map[string]any{
 			"chainingMode": "portmap",
 		}
 
 	}
-
-	return helm.Release{Chart: chartRaw, Values: ciliumVals, ReleaseName: "cilium", Wait: false}, nil
+	return chart, values, nil
 }
 
 func (i *ChartLoader) loadCertManager() (helm.Release, error) {
-	chart, err := loadChartsDir(helmFS, "charts/cert-manager")
+	chart, values, err := i.loadCertManagerHelper()
 	if err != nil {
-		return helm.Release{}, fmt.Errorf("loading cert-manager chart: %w", err)
+		return helm.Release{}, err
 	}
 
 	chartRaw, err := i.marshalChart(chart)
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("packaging cert-manager chart: %w", err)
+	}
+
+	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: "cert-manager", Wait: false}, nil
+}
+
+// loadCertManagerHelper is used to separate the marshalling step from the loading step.
+// This reduces the time unit tests take to execute.
+func (i *ChartLoader) loadCertManagerHelper() (*chart.Chart, map[string]any, error) {
+	chart, err := loadChartsDir(helmFS, "charts/cert-manager")
+	if err != nil {
+		return nil, nil, fmt.Errorf("loading cert-manager chart: %w", err)
 	}
 
 	values := map[string]any{
@@ -154,14 +175,13 @@ func (i *ChartLoader) loadCertManager() (helm.Release, error) {
 			"enabled": false,
 		},
 	}
-
-	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: "cert-manager", Wait: false}, nil
+	return chart, values, nil
 }
 
 func (i *ChartLoader) loadOperators(csp cloudprovider.Provider) (helm.Release, error) {
-	chart, err := loadChartsDir(helmFS, "charts/edgeless/operators")
+	chart, values, err := i.loadOperatorsHelper(csp)
 	if err != nil {
-		return helm.Release{}, fmt.Errorf("loading operators chart: %w", err)
+		return helm.Release{}, err
 	}
 
 	chartRaw, err := i.marshalChart(chart)
@@ -169,7 +189,18 @@ func (i *ChartLoader) loadOperators(csp cloudprovider.Provider) (helm.Release, e
 		return helm.Release{}, fmt.Errorf("packaging operators chart: %w", err)
 	}
 
-	vals := map[string]any{
+	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: "con-operators", Wait: false}, nil
+}
+
+// loadOperatorsHelper is used to separate the marshalling step from the loading step.
+// This reduces the time unit tests take to execute.
+func (i *ChartLoader) loadOperatorsHelper(csp cloudprovider.Provider) (*chart.Chart, map[string]any, error) {
+	chart, err := loadChartsDir(helmFS, "charts/edgeless/operators")
+	if err != nil {
+		return nil, nil, fmt.Errorf("loading operators chart: %w", err)
+	}
+
+	values := map[string]any{
 		"constellation-operator": map[string]any{
 			"controllerManager": map[string]any{
 				"manager": map[string]any{
@@ -187,56 +218,56 @@ func (i *ChartLoader) loadOperators(csp cloudprovider.Provider) (helm.Release, e
 	}
 	switch csp {
 	case cloudprovider.Azure:
-		conOpVals, ok := vals["constellation-operator"].(map[string]any)
+		conOpVals, ok := values["constellation-operator"].(map[string]any)
 		if !ok {
-			return helm.Release{}, errors.New("invalid constellation-operator values")
+			return nil, nil, errors.New("invalid constellation-operator values")
 		}
 		conOpVals["csp"] = "Azure"
 
-		vals["tags"] = map[string]any{
+		values["tags"] = map[string]any{
 			"Azure": true,
 		}
 	case cloudprovider.GCP:
-		conOpVals, ok := vals["constellation-operator"].(map[string]any)
+		conOpVals, ok := values["constellation-operator"].(map[string]any)
 		if !ok {
-			return helm.Release{}, errors.New("invalid constellation-operator values")
+			return nil, nil, errors.New("invalid constellation-operator values")
 		}
 		conOpVals["csp"] = "GCP"
 
-		vals["tags"] = map[string]any{
+		values["tags"] = map[string]any{
 			"GCP": true,
 		}
 	case cloudprovider.QEMU:
-		conOpVals, ok := vals["constellation-operator"].(map[string]any)
+		conOpVals, ok := values["constellation-operator"].(map[string]any)
 		if !ok {
-			return helm.Release{}, errors.New("invalid constellation-operator values")
+			return nil, nil, errors.New("invalid constellation-operator values")
 		}
 		conOpVals["csp"] = "QEMU"
 
-		vals["tags"] = map[string]any{
+		values["tags"] = map[string]any{
 			"QEMU": true,
 		}
 	case cloudprovider.AWS:
-		conOpVals, ok := vals["constellation-operator"].(map[string]any)
+		conOpVals, ok := values["constellation-operator"].(map[string]any)
 		if !ok {
-			return helm.Release{}, errors.New("invalid constellation-operator values")
+			return nil, nil, errors.New("invalid constellation-operator values")
 		}
 		conOpVals["csp"] = "AWS"
 
-		vals["tags"] = map[string]any{
+		values["tags"] = map[string]any{
 			"AWS": true,
 		}
 	}
 
-	return helm.Release{Chart: chartRaw, Values: vals, ReleaseName: "con-operators", Wait: false}, nil
+	return chart, values, nil
 }
 
 // loadConstellationServices loads the constellation-services chart from the embed.FS,
 // marshals it into a helm-package .tgz and sets the values that can be set in the CLI.
 func (i *ChartLoader) loadConstellationServices(config *config.Config, masterSecret, salt []byte) (helm.Release, error) {
-	chart, err := loadChartsDir(helmFS, "charts/edgeless/constellation-services")
+	chart, values, err := i.loadConstellationServicesHelper(config, masterSecret, salt)
 	if err != nil {
-		return helm.Release{}, fmt.Errorf("loading constellation-services chart: %w", err)
+		return helm.Release{}, err
 	}
 
 	chartRaw, err := i.marshalChart(chart)
@@ -244,13 +275,24 @@ func (i *ChartLoader) loadConstellationServices(config *config.Config, masterSec
 		return helm.Release{}, fmt.Errorf("packaging constellation-services chart: %w", err)
 	}
 
+	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: "constellation-services", Wait: false}, nil
+}
+
+// loadConstellationServicesHelper is used to separate the marshalling step from the loading step.
+// This reduces the time unit tests take to execute.
+func (i *ChartLoader) loadConstellationServicesHelper(config *config.Config, masterSecret, salt []byte) (*chart.Chart, map[string]any, error) {
+	chart, err := loadChartsDir(helmFS, "charts/edgeless/constellation-services")
+	if err != nil {
+		return nil, nil, fmt.Errorf("loading constellation-services chart: %w", err)
+	}
+
 	enforcedPCRsJSON, err := json.Marshal(config.GetEnforcedPCRs())
 	if err != nil {
-		return helm.Release{}, fmt.Errorf("marshaling enforcedPCRs: %w", err)
+		return nil, nil, fmt.Errorf("marshaling enforcedPCRs: %w", err)
 	}
 
 	csp := config.GetProvider()
-	vals := map[string]any{
+	values := map[string]any{
 		"global": map[string]any{
 			"kmsPort":          constants.KMSPort,
 			"serviceBasePath":  constants.ServiceBasePath,
@@ -268,98 +310,97 @@ func (i *ChartLoader) loadConstellationServices(config *config.Config, masterSec
 			"measurementsFilename": constants.MeasurementsFilename,
 		},
 		"join-service": map[string]any{
-			"csp":          csp,
+			"csp":          csp.String(),
 			"enforcedPCRs": string(enforcedPCRsJSON),
 			"image":        i.joinServiceImage,
 		},
 		"ccm": map[string]any{
-			"csp": csp,
+			"csp": csp.String(),
 		},
 		"autoscaler": map[string]any{
-			"csp":   csp,
+			"csp":   csp.String(),
 			"image": i.autoscalerImage,
 		},
 	}
 
 	switch csp {
 	case cloudprovider.Azure:
-		joinServiceVals, ok := vals["join-service"].(map[string]any)
+		joinServiceVals, ok := values["join-service"].(map[string]any)
 		if !ok {
-			return helm.Release{}, errors.New("invalid join-service values")
+			return nil, nil, errors.New("invalid join-service values")
 		}
 		joinServiceVals["enforceIdKeyDigest"] = config.EnforcesIDKeyDigest()
 
-		ccmVals, ok := vals["ccm"].(map[string]any)
+		ccmVals, ok := values["ccm"].(map[string]any)
 		if !ok {
-			return helm.Release{}, errors.New("invalid ccm values")
+			return nil, nil, errors.New("invalid ccm values")
 		}
 		ccmVals["Azure"] = map[string]any{
 			"image": i.ccmImage,
 		}
 
-		vals["cnm"] = map[string]any{
+		values["cnm"] = map[string]any{
 			"image": i.cnmImage,
 		}
 
-		vals["azure"] = map[string]any{
+		values["azure"] = map[string]any{
 			"deployCSIDriver": config.DeployCSIDriver(),
 		}
 
-		vals["azuredisk-csi-driver"] = map[string]any{
+		values["azuredisk-csi-driver"] = map[string]any{
 			"node": map[string]any{
 				"kmsPort":      constants.KMSPort,
 				"kmsNamespace": "", // empty namespace means we use the release namespace
 			},
 		}
 
-		vals["tags"] = map[string]any{
+		values["tags"] = map[string]any{
 			"Azure": true,
 		}
 
 	case cloudprovider.GCP:
-		ccmVals, ok := vals["ccm"].(map[string]any)
+		ccmVals, ok := values["ccm"].(map[string]any)
 		if !ok {
-			return helm.Release{}, errors.New("invalid ccm values")
+			return nil, nil, errors.New("invalid ccm values")
 		}
 		ccmVals["GCP"] = map[string]any{
 			"image": i.ccmImage,
 		}
 
-		vals["gcp"] = map[string]any{
+		values["gcp"] = map[string]any{
 			"deployCSIDriver": config.DeployCSIDriver(),
 		}
 
-		vals["gcp-compute-persistent-disk-csi-driver"] = map[string]any{
+		values["gcp-compute-persistent-disk-csi-driver"] = map[string]any{
 			"csiNode": map[string]any{
 				"kmsPort":      constants.KMSPort,
 				"kmsNamespace": "", // empty namespace means we use the release namespace
 			},
 		}
 
-		vals["tags"] = map[string]any{
+		values["tags"] = map[string]any{
 			"GCP": true,
 		}
 
 	case cloudprovider.QEMU:
-		vals["tags"] = map[string]interface{}{
+		values["tags"] = map[string]interface{}{
 			"QEMU": true,
 		}
 
 	case cloudprovider.AWS:
-		ccmVals, ok := vals["ccm"].(map[string]any)
+		ccmVals, ok := values["ccm"].(map[string]any)
 		if !ok {
-			return helm.Release{}, errors.New("invalid ccm values")
+			return nil, nil, errors.New("invalid ccm values")
 		}
 		ccmVals["AWS"] = map[string]any{
 			"image": i.ccmImage,
 		}
 
-		vals["tags"] = map[string]any{
+		values["tags"] = map[string]any{
 			"AWS": true,
 		}
 	}
-
-	return helm.Release{Chart: chartRaw, Values: vals, ReleaseName: "constellation-services", Wait: false}, nil
+	return chart, values, nil
 }
 
 // marshalChart takes a Chart object, packages it to a temporary file and returns the content of that file.

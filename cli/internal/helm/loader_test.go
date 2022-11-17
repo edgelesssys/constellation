@@ -15,6 +15,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/pkg/errors"
@@ -88,14 +89,7 @@ func TestConstellationServices(t *testing.T) {
 			require := require.New(t)
 
 			chartLoader := ChartLoader{joinServiceImage: "joinServiceImage", kmsImage: "kmsImage", ccmImage: tc.ccmImage, cnmImage: tc.cnmImage, autoscalerImage: "autoscalerImage"}
-			release, err := chartLoader.Load(tc.config, true, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
-			require.NoError(err)
-
-			var helmReleases helm.Releases
-			err = json.Unmarshal(release, &helmReleases)
-			require.NoError(err)
-			reader := bytes.NewReader(helmReleases.ConstellationServices.Chart)
-			chart, err := loader.LoadArchive(reader)
+			chart, values, err := chartLoader.loadConstellationServicesHelper(tc.config, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 			require.NoError(err)
 
 			options := chartutil.ReleaseOptions{
@@ -107,14 +101,14 @@ func TestConstellationServices(t *testing.T) {
 			}
 			caps := &chartutil.Capabilities{}
 
-			err = tc.valuesModifier(helmReleases.ConstellationServices.Values)
+			err = tc.valuesModifier(values)
 			require.NoError(err)
 
 			// This step is needed to enabled/disable subcharts according to their tags/conditions.
-			err = chartutil.ProcessDependencies(chart, helmReleases.ConstellationServices.Values)
+			err = chartutil.ProcessDependencies(chart, values)
 			require.NoError(err)
 
-			valuesToRender, err := chartutil.ToRenderValues(chart, helmReleases.ConstellationServices.Values, options, caps)
+			valuesToRender, err := chartutil.ToRenderValues(chart, values, options, caps)
 			require.NoError(err)
 
 			result, err := engine.Render(chart, valuesToRender)
@@ -157,14 +151,7 @@ func TestOperators(t *testing.T) {
 			require := require.New(t)
 
 			chartLoader := ChartLoader{joinServiceImage: "joinServiceImage", kmsImage: "kmsImage", ccmImage: "ccmImage", cnmImage: "cnmImage", autoscalerImage: "autoscalerImage"}
-			release, err := chartLoader.Load(tc.csp, true, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []uint32{1, 11}, false)
-			require.NoError(err)
-
-			var helmReleases helm.Releases
-			err = json.Unmarshal(release, &helmReleases)
-			require.NoError(err)
-			reader := bytes.NewReader(helmReleases.Operators.Chart)
-			chart, err := loader.LoadArchive(reader)
+			chart, vals, err := chartLoader.loadOperatorsHelper(tc.csp)
 			require.NoError(err)
 
 			options := chartutil.ReleaseOptions{
@@ -176,15 +163,15 @@ func TestOperators(t *testing.T) {
 			}
 			caps := &chartutil.Capabilities{}
 
-			conOpVals, ok := helmReleases.Operators.Values["constellation-operator"].(map[string]any)
+			conOpVals, ok := vals["constellation-operator"].(map[string]any)
 			require.True(ok)
 			conOpVals["constellationUID"] = "42424242424242"
 
 			// This step is needed to enabled/disable subcharts according to their tags/conditions.
-			err = chartutil.ProcessDependencies(chart, helmReleases.Operators.Values)
+			err = chartutil.ProcessDependencies(chart, vals)
 			require.NoError(err)
 
-			valuesToRender, err := chartutil.ToRenderValues(chart, helmReleases.Operators.Values, options, caps)
+			valuesToRender, err := chartutil.ToRenderValues(chart, vals, options, caps)
 			require.NoError(err)
 
 			result, err := engine.Render(chart, valuesToRender)
