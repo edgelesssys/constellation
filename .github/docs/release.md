@@ -65,7 +65,7 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         crane digest ghcr.io/edgelesssys/constellation/verification-service:v$ver
         ```
 
-    10. Create a [production coreOS image](/.github/workflows/build-coreos.yml)
+    10. Create a [production OS image](/.github/workflows/build-os-image.yml)
 
         ```sh
         gh workflow run build-os-image.yml --ref release/v$minor -F debug=false -F imageVersion=v$ver
