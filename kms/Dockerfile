@@ -1,4 +1,4 @@
-FROM fedora:36@sha256:455fec9590de794fbc21f61dbc7e90bf9918b58492d2a03fa269c09db47b43f6 as build
+FROM fedora:37@sha256:f2c083c0b7d2367a375f15e002c2dc7baaca2b3181ace61f9d5113a8fe2f6b44 as build
 
 RUN dnf -y update && \
     dnf install -y wget git
