@@ -23,8 +23,19 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
+      - name: Setup Go environment
+        uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
+        with:
+          go-version: "1.19.3"
+
+      - name: Install shellfmt
+        shell: bash
+        run: |
+          go install github.com/katexochen/sh/v3/cmd/shfmt@latest
+
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@6d3f514f44620b9d4488e380339edc0d9bbe2fba # master
         with:
           severity: info
           ignore_paths: charts/cilium
+          additional_files: $(shfmt -f . | grep -v helm/charts/cilium)
