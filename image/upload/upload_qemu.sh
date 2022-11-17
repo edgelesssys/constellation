@@ -11,9 +11,9 @@ if [[ -z ${CONFIG_FILE-} ]] && [[ -f ${CONFIG_FILE-} ]]; then
   . "${CONFIG_FILE}"
 fi
 
-aws s3 cp "${QEMU_IMAGE_PATH}" "s3://${QEMU_BUCKET}/v1/raw/${IMAGE_VERSION_UID}/qemu/image.raw" --no-progress
+aws s3 cp "${QEMU_IMAGE_PATH}" "s3://${QEMU_BUCKET}/constellation/v1/raw/${IMAGE_VERSION_UID}/qemu/image.raw" --no-progress
 
-image_url="${QEMU_BASE_URL}/v1/raw/${IMAGE_VERSION_UID}/qemu/image.raw"
+image_url="${QEMU_BASE_URL}/constellation/v1/raw/${IMAGE_VERSION_UID}/qemu/image.raw"
 
 json=$(jq -ncS \
   --arg image_url "${image_url}" \
