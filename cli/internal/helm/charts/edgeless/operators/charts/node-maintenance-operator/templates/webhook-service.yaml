@@ -13,4 +13,4 @@ spec:
     node-maintenance-operator: ""
   {{- include "chart.selectorLabels" . | nindent 4 }}
   ports:
-	{{- .Values.webhookService.ports | toYaml | nindent 2 -}}
+  {{- .Values.webhookService.ports | toYaml | nindent 2 -}}
