@@ -196,12 +196,13 @@ jobs:
         shell: bash
         run: |
           echo "::group::Build"
-          sudo make "${CSP}"
+          sudo make IMAGE_VERSION="${IMAGE_VERSION}" "${CSP}"
           echo "::endgroup::"
         working-directory: ${{ github.workspace }}/image
         env:
           BOOTSTRAPPER_BINARY: ${{ github.workspace }}/build/bootstrapper
           DISK_MAPPER_BINARY: ${{ github.workspace }}/build/disk-mapper
+          IMAGE_VERSION: ${{ needs.build-settings.outputs.imageVersionUid }}
           CSP: ${{ matrix.csp }}
 
       - name: Collect hashes
