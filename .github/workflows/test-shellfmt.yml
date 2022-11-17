@@ -1,4 +1,4 @@
-name: Shellcheck
+name: Shellfmt
 on:
   workflow_dispatch:
   push:
