@@ -36,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 <!-- For security related changes. -->
 
+### Fixed
+
+- `constellation create` on GCP now always uses the local default credentials.
+
 
 ## [2.2.1] - 2022-11-14
 
