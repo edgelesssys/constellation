@@ -76,13 +76,6 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         * Go to the [S3 bucket for QEMU images](https://s3.console.aws.amazon.com/s3/buckets/cdn-constellation-backend?region=eu-central-1&prefix=constellation/images/mini-constellation/&showversions=false)
         * Create a new folder for the given version, and upload `constellation.raw` into it.
 
-        Then update the QEMU measurements in [measurements.go](../../internal/config/measurements.go#L55-L57) with the values from "Calculate PCRs (qemu) summary" from the same pipeline. Note that some formatting is necessary:
-
-        ```sh
-        echo -n "1be79839dd353741b14f3d8cef4e361e4b17e6033a44919bf0ee4dbb03ea98dd" | xxd -r -p | xxd -i -c32
-        # 0x1b, 0xe7, 0x98, 0x39, 0xdd, 0x35, 0x37, 0x41, 0xb1, 0x4f, ...
-        ```
-
         * Replace AWS AMIs for this version and next in docs in `first-steps.md`.
 
     11. Run manual E2E tests using [Linux](/.github/workflows/e2e-test-manual.yml) and [macOS](/.github/workflows/e2e-test-manual-macos.yml) to confirm functionality and stability.
