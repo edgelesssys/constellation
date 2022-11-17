@@ -38,6 +38,13 @@ const (
 // M are Platform Configuration Register (PCR) values that make up the Measurements.
 type M map[uint32]Measurement
 
+// WithMetadata is a struct supposed to provide CSP & image metadata next to measurements.
+type WithMetadata struct {
+	CSP          string `json:"csp" yaml:"csp"`
+	Image        string `json:"image" yaml:"image"`
+	Measurements M      `json:"measurements" yaml:"measurements"`
+}
+
 // FetchAndVerify fetches measurement and signature files via provided URLs,
 // using client for download. The publicKey is used to verify the measurements.
 // The hash of the fetched measurements is returned.
