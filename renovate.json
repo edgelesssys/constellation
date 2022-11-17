@@ -54,6 +54,12 @@
       "groupName": "Google SDK"
     },
     {
+      "matchPackagePatterns": [
+        "^libvirt.org/go"
+      ],
+      "groupName": "libvirt.org/go"
+    },
+    {
       "matchDatasources": [
         "golang-version"
       ],
