@@ -3,9 +3,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only
 
-# warning: file is loaded by dracut, so default "set" and "shopt" options are not set
-# set -euo pipefail
-# shopt -s inherit_errexit
+# Note: This script is sourced.
 
 depends() {
   echo systemd
