@@ -15,6 +15,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
@@ -56,8 +57,7 @@ func TestConstellationServices(t *testing.T) {
 	}{
 		"GCP": {
 			config: &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{
-				DeployCSIDriver:      func() *bool { b := true; return &b }(),
-				EnforcedMeasurements: []uint32{1, 11},
+				DeployCSIDriver: func() *bool { b := true; return &b }(),
 			}}},
 			enforceIDKeyDigest: false,
 			valuesModifier:     prepareGCPValues,
@@ -65,9 +65,8 @@ func TestConstellationServices(t *testing.T) {
 		},
 		"Azure": {
 			config: &config.Config{Provider: config.ProviderConfig{Azure: &config.AzureConfig{
-				DeployCSIDriver:      func() *bool { b := true; return &b }(),
-				EnforcedMeasurements: []uint32{1, 11},
-				EnforceIDKeyDigest:   func() *bool { b := true; return &b }(),
+				DeployCSIDriver:    func() *bool { b := true; return &b }(),
+				EnforceIDKeyDigest: func() *bool { b := true; return &b }(),
 			}}},
 			enforceIDKeyDigest: true,
 			valuesModifier:     prepareAzureValues,
@@ -75,9 +74,7 @@ func TestConstellationServices(t *testing.T) {
 			cnmImage:           "cnmImageForAzure",
 		},
 		"QEMU": {
-			config: &config.Config{Provider: config.ProviderConfig{QEMU: &config.QEMUConfig{
-				EnforcedMeasurements: []uint32{1, 11},
-			}}},
+			config:             &config.Config{Provider: config.ProviderConfig{QEMU: &config.QEMUConfig{}}},
 			enforceIDKeyDigest: false,
 			valuesModifier:     prepareQEMUValues,
 		},
@@ -88,7 +85,14 @@ func TestConstellationServices(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			chartLoader := ChartLoader{joinServiceImage: "joinServiceImage", kmsImage: "kmsImage", ccmImage: tc.ccmImage, cnmImage: tc.cnmImage, autoscalerImage: "autoscalerImage", verificationServiceImage: "verificationImage"}
+			chartLoader := ChartLoader{
+				joinServiceImage:         "joinServiceImage",
+				kmsImage:                 "kmsImage",
+				ccmImage:                 tc.ccmImage,
+				cnmImage:                 tc.cnmImage,
+				autoscalerImage:          "autoscalerImage",
+				verificationServiceImage: "verificationImage",
+			}
 			chart, values, err := chartLoader.loadConstellationServicesHelper(tc.config, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 			require.NoError(err)
 
@@ -197,7 +201,15 @@ func prepareGCPValues(values map[string]any) error {
 	if !ok {
 		return errors.New("missing 'join-service' key")
 	}
-	joinVals["measurements"] = "{'1':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA','15':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='}"
+
+	m := measurements.M{
+		1: measurements.WithAllBytes(0xAA, false),
+	}
+	mJSON, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+	joinVals["measurements"] = string(mJSON)
 	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
 	ccmVals, ok := values["ccm"].(map[string]any)
@@ -269,7 +281,12 @@ func prepareAzureValues(values map[string]any) error {
 		return errors.New("missing 'join-service' key")
 	}
 	joinVals["idkeydigest"] = "baaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaad"
-	joinVals["measurements"] = "{'1':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA','15':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='}"
+	m := measurements.M{1: measurements.WithAllBytes(0xAA, false)}
+	mJSON, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+	joinVals["measurements"] = string(mJSON)
 	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
 	ccmVals, ok := values["ccm"].(map[string]any)
@@ -311,7 +328,12 @@ func prepareQEMUValues(values map[string]any) error {
 	if !ok {
 		return errors.New("missing 'join-service' key")
 	}
-	joinVals["measurements"] = "{'1':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA','15':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='}"
+	m := measurements.M{1: measurements.WithAllBytes(0xAA, false)}
+	mJSON, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+	joinVals["measurements"] = string(mJSON)
 	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
 	verificationVals, ok := values["verification-service"].(map[string]any)

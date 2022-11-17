@@ -138,10 +138,7 @@ type AWSConfig struct {
 	IAMProfileWorkerNodes string `yaml:"iamProfileWorkerNodes" validate:"required"`
 	// description: |
 	//   Expected VM measurements.
-	Measurements Measurements `yaml:"measurements"`
-	// description: |
-	//   List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning.
-	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
+	Measurements Measurements `yaml:"measurements" validate:"required"`
 }
 
 // AzureConfig are Azure specific configuration values used by the CLI.
@@ -191,9 +188,6 @@ type AzureConfig struct {
 	// description: |
 	//   Expected confidential VM measurements.
 	Measurements Measurements `yaml:"measurements"`
-	// description: |
-	//   List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning.
-	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
 }
 
 // GCPConfig are GCP specific configuration values used by the CLI.
@@ -221,10 +215,7 @@ type GCPConfig struct {
 	DeployCSIDriver *bool `yaml:"deployCSIDriver" validate:"required"`
 	// description: |
 	//   Expected confidential VM measurements.
-	Measurements Measurements `yaml:"measurements"`
-	// description: |
-	//   List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning.
-	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
+	Measurements Measurements `yaml:"measurements" validate:"required"`
 }
 
 // QEMUConfig holds config information for QEMU based Constellation deployments.
@@ -255,10 +246,7 @@ type QEMUConfig struct {
 	Firmware string `yaml:"firmware"`
 	// description: |
 	//   Measurement used to enable measured boot.
-	Measurements Measurements `yaml:"measurements"`
-	// description: |
-	//   List of values that should be enforced to be equal to the ones from the measurement list. Any non-equal values not in this list will only result in a warning.
-	EnforcedMeasurements []uint32 `yaml:"enforcedMeasurements"`
+	Measurements Measurements `yaml:"measurements" validate:"required"`
 }
 
 // Default returns a struct with the default config.
@@ -276,7 +264,6 @@ func Default() *Config {
 				IAMProfileControlPlane: "",
 				IAMProfileWorkerNodes:  "",
 				Measurements:           measurements.DefaultsFor(cloudprovider.AWS),
-				EnforcedMeasurements:   []uint32{4, 8, 9, 11, 12, 13, 15},
 			},
 			Azure: &AzureConfig{
 				SubscriptionID:       "",
@@ -292,7 +279,6 @@ func Default() *Config {
 				ConfidentialVM:       func() *bool { b := true; return &b }(),
 				SecureBoot:           func() *bool { b := false; return &b }(),
 				Measurements:         measurements.DefaultsFor(cloudprovider.Azure),
-				EnforcedMeasurements: []uint32{4, 8, 9, 11, 12, 13, 15},
 			},
 			GCP: &GCPConfig{
 				Project:               "",
@@ -303,7 +289,6 @@ func Default() *Config {
 				StateDiskType:         "pd-ssd",
 				DeployCSIDriver:       func() *bool { b := true; return &b }(),
 				Measurements:          measurements.DefaultsFor(cloudprovider.GCP),
-				EnforcedMeasurements:  []uint32{0, 4, 8, 9, 11, 12, 13, 15},
 			},
 			QEMU: &QEMUConfig{
 				ImageFormat:           "raw",
@@ -314,7 +299,6 @@ func Default() *Config {
 				LibvirtContainerImage: versions.LibvirtImage,
 				NVRAM:                 "production",
 				Measurements:          measurements.DefaultsFor(cloudprovider.QEMU),
-				EnforcedMeasurements:  []uint32{4, 8, 9, 11, 12, 13, 15},
 			},
 		},
 		KubernetesVersion: string(versions.Default),
@@ -451,13 +435,13 @@ func (c *Config) GetEnforcedPCRs() []uint32 {
 	provider := c.GetProvider()
 	switch provider {
 	case cloudprovider.AWS:
-		return c.Provider.AWS.EnforcedMeasurements
+		return c.Provider.AWS.Measurements.GetEnforced()
 	case cloudprovider.Azure:
-		return c.Provider.Azure.EnforcedMeasurements
+		return c.Provider.Azure.Measurements.GetEnforced()
 	case cloudprovider.GCP:
-		return c.Provider.GCP.EnforcedMeasurements
+		return c.Provider.GCP.Measurements.GetEnforced()
 	case cloudprovider.QEMU:
-		return c.Provider.QEMU.EnforcedMeasurements
+		return c.Provider.QEMU.Measurements.GetEnforced()
 	default:
 		return nil
 	}

@@ -76,9 +76,7 @@ func New(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *Chart
 
 // Load the embedded helm charts.
 func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSecret, salt []byte) ([]byte, error) {
-	csp := config.GetProvider()
-
-	ciliumRelease, err := i.loadCilium(csp, conformanceMode)
+	ciliumRelease, err := i.loadCilium(config.GetProvider(), conformanceMode)
 	if err != nil {
 		return nil, fmt.Errorf("loading cilium: %w", err)
 	}
@@ -350,11 +348,6 @@ func (i *ChartLoader) loadConstellationServicesHelper(config *config.Config, mas
 		return nil, nil, fmt.Errorf("loading constellation-services chart: %w", err)
 	}
 
-	enforcedPCRsJSON, err := json.Marshal(config.GetEnforcedPCRs())
-	if err != nil {
-		return nil, nil, fmt.Errorf("marshaling enforcedPCRs: %w", err)
-	}
-
 	csp := config.GetProvider()
 	values := map[string]any{
 		"global": map[string]any{
@@ -374,9 +367,8 @@ func (i *ChartLoader) loadConstellationServicesHelper(config *config.Config, mas
 			"measurementsFilename": constants.MeasurementsFilename,
 		},
 		"join-service": map[string]any{
-			"csp":          csp.String(),
-			"enforcedPCRs": string(enforcedPCRsJSON),
-			"image":        i.joinServiceImage,
+			"csp":   csp.String(),
+			"image": i.joinServiceImage,
 		},
 		"ccm": map[string]any{
 			"csp": csp.String(),

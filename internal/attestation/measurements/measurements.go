@@ -41,7 +41,7 @@ type M map[uint32]Measurement
 // FetchAndVerify fetches measurement and signature files via provided URLs,
 // using client for download. The publicKey is used to verify the measurements.
 // The hash of the fetched measurements is returned.
-func (m M) FetchAndVerify(ctx context.Context, client *http.Client, measurementsURL *url.URL, signatureURL *url.URL, publicKey []byte) (string, error) {
+func (m *M) FetchAndVerify(ctx context.Context, client *http.Client, measurementsURL *url.URL, signatureURL *url.URL, publicKey []byte) (string, error) {
 	measurements, err := getFromURL(ctx, client, measurementsURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch measurements: %w", err)
@@ -53,10 +53,7 @@ func (m M) FetchAndVerify(ctx context.Context, client *http.Client, measurements
 	if err := sigstore.VerifySignature(measurements, signature, publicKey); err != nil {
 		return "", err
 	}
-	//if err := yaml.NewDecoder(bytes.NewReader(measurements)).Decode(&m); err != nil {
-	//	return "", err
-	//}
-	if err := yaml.Unmarshal(measurements, &m); err != nil {
+	if err := yaml.Unmarshal(measurements, m); err != nil {
 		return "", err
 	}
 
@@ -67,19 +64,19 @@ func (m M) FetchAndVerify(ctx context.Context, client *http.Client, measurements
 
 // CopyFrom copies over all values from other. Overwriting existing values,
 // but keeping not specified values untouched.
-func (m M) CopyFrom(other M) {
+func (m *M) CopyFrom(other M) {
 	for idx := range other {
-		m[idx] = other[idx]
+		(*m)[idx] = other[idx]
 	}
 }
 
 // EqualTo tests whether the provided other Measurements are equal to these
 // measurements.
-func (m M) EqualTo(other M) bool {
-	if len(m) != len(other) {
+func (m *M) EqualTo(other M) bool {
+	if len(*m) != len(other) {
 		return false
 	}
-	for k, v := range m {
+	for k, v := range *m {
 		otherExpected := other[k].Expected
 		if !bytes.Equal(v.Expected[:], otherExpected[:]) {
 			return false
@@ -93,9 +90,9 @@ func (m M) EqualTo(other M) bool {
 
 // GetEnforced returns a list of all enforced Measurements,
 // i.e. all Measurements that are not marked as WarnOnly.
-func (m M) GetEnforced() []uint32 {
-	var enforced []uint32
-	for idx, measurement := range m {
+func (m *M) GetEnforced() []uint32 {
+	enforced := []uint32{}
+	for idx, measurement := range *m {
 		if !measurement.WarnOnly {
 			enforced = append(enforced, idx)
 		}
@@ -105,17 +102,23 @@ func (m M) GetEnforced() []uint32 {
 
 // SetEnforced sets the WarnOnly flag to true for all Measurements
 // that are NOT included in the provided list of enforced measurements.
-func (m M) SetEnforced(enforced []uint32) {
+func (m *M) SetEnforced(enforced []uint32) {
 	enforcedMap := map[uint32]struct{}{}
 	for _, idx := range enforced {
 		enforcedMap[idx] = struct{}{}
 	}
 
-	for idx, measurement := range m {
+	for idx, measurement := range *m {
 		if _, ok := enforcedMap[idx]; ok {
-			measurement.WarnOnly = false
+			(*m)[idx] = Measurement{
+				Expected: measurement.Expected,
+				WarnOnly: false,
+			}
 		} else {
-			measurement.WarnOnly = true
+			(*m)[idx] = Measurement{
+				Expected: measurement.Expected,
+				WarnOnly: true,
+			}
 		}
 	}
 }
@@ -134,7 +137,8 @@ func (m *Measurement) UnmarshalJSON(b []byte) error {
 	var eM encodedMeasurement
 	if err := json.Unmarshal(b, &eM); err != nil {
 		// Unmarshalling failed, Measurement might be in legacy format,
-		// or is a simple string instead of Measurement struct.
+		// meaning a simple string instead of Measurement struct.
+		// TODO: remove with v2.4.0
 		if legacyErr := json.Unmarshal(b, &eM.Expected); legacyErr != nil {
 			return multierr.Append(
 				fmt.Errorf("wrong format: %w", err),
@@ -160,7 +164,8 @@ func (m *Measurement) UnmarshalYAML(unmarshal func(any) error) error {
 	var eM encodedMeasurement
 	if err := unmarshal(&eM); err != nil {
 		// Unmarshalling failed, Measurement might be in legacy format,
-		// or is a simple string instead of Measurement struct.
+		// meaning a simple string instead of Measurement struct.
+		// TODO: remove with v2.4.0
 		if legacyErr := unmarshal(&eM.Expected); legacyErr != nil {
 			return multierr.Append(
 				fmt.Errorf("wrong format: %w", err),
@@ -185,7 +190,7 @@ func (m *Measurement) unmarshal(eM encodedMeasurement) error {
 	expected, err := hex.DecodeString(eM.Expected)
 	if err != nil {
 		// expected value might be in base64 legacy format
-		// TODO: Remove with v2.4.0 or provide migration tools for v2.3.0
+		// TODO: Remove with v2.4.0
 		hexErr := err
 		expected, err = base64.StdEncoding.DecodeString(eM.Expected)
 		if err != nil {

@@ -8,7 +8,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"io"
 	"os"
@@ -80,13 +79,9 @@ func main() {
 
 	switch cloudprovider.FromString(os.Getenv(constellationCSP)) {
 	case cloudprovider.AWS:
-		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.AWSPCRSelection)
+		measurements, err := vtpm.GetSelectedMeasurements(vtpm.OpenVTPM, vtpm.AWSPCRSelection)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
-		}
-		pcrsJSON, err := json.Marshal(pcrs)
-		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to marshal PCRs")
 		}
 
 		issuer = initserver.NewIssuerWrapper(aws.NewIssuer(), vmtype.Unknown, nil)
@@ -104,13 +99,13 @@ func main() {
 
 		clusterInitJoiner = kubernetes.New(
 			"aws", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
-			metadata, pcrsJSON, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
+			metadata, measurements, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 
 	case cloudprovider.GCP:
-		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.GCPPCRSelection)
+		measurements, err := vtpm.GetSelectedMeasurements(vtpm.OpenVTPM, vtpm.GCPPCRSelection)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
@@ -129,20 +124,16 @@ func main() {
 		}
 
 		metadataAPI = metadata
-		pcrsJSON, err := json.Marshal(pcrs)
-		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to marshal PCRs")
-		}
 		clusterInitJoiner = kubernetes.New(
 			"gcp", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
-			metadata, pcrsJSON, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
+			metadata, measurements, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 		log.Infof("Added load balancer IP to routing table")
 
 	case cloudprovider.Azure:
-		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.AzurePCRSelection)
+		measurements, err := vtpm.GetSelectedMeasurements(vtpm.OpenVTPM, vtpm.AzurePCRSelection)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
@@ -163,20 +154,16 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to set up cloud logger")
 		}
 		metadataAPI = metadata
-		pcrsJSON, err := json.Marshal(pcrs)
-		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to marshal PCRs")
-		}
 		clusterInitJoiner = kubernetes.New(
 			"azure", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
-			metadata, pcrsJSON, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
+			metadata, measurements, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 
 		openTPM = vtpm.OpenVTPM
 		fs = afero.NewOsFs()
 
 	case cloudprovider.QEMU:
-		pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, vtpm.QEMUPCRSelection)
+		measurements, err := vtpm.GetSelectedMeasurements(vtpm.OpenVTPM, vtpm.QEMUPCRSelection)
 		if err != nil {
 			log.With(zap.Error(err)).Fatalf("Failed to get selected PCRs")
 		}
@@ -185,13 +172,9 @@ func main() {
 
 		cloudLogger = qemucloud.NewLogger()
 		metadata := qemucloud.New()
-		pcrsJSON, err := json.Marshal(pcrs)
-		if err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to marshal PCRs")
-		}
 		clusterInitJoiner = kubernetes.New(
 			"qemu", k8sapi.NewKubernetesUtil(), &k8sapi.KubdeadmConfiguration{}, kubectl.New(),
-			metadata, pcrsJSON, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
+			metadata, measurements, helmClient, &kubewaiter.CloudKubeAPIWaiter{},
 		)
 		metadataAPI = metadata
 

@@ -136,14 +136,7 @@ func TestUpdate(t *testing.T) {
 	// write measurement config
 	require.NoError(handler.WriteJSON(
 		filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
-		map[uint32][]byte{
-			11: {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
-		},
-		file.OptNone,
-	))
-	require.NoError(handler.WriteJSON(
-		filepath.Join(constants.ServiceBasePath, constants.EnforcedPCRsFilename),
-		[]uint32{11},
+		measurements.M{11: measurements.WithAllBytes(0x00, false)},
 	))
 	require.NoError(handler.Write(
 		filepath.Join(constants.ServiceBasePath, constants.IDKeyDigestFilename),
@@ -190,6 +183,23 @@ func TestUpdate(t *testing.T) {
 		defer resp.Body.Close()
 	}
 	assert.Error(err)
+
+	// update should work for legacy measurement format
+	// TODO: remove with v2.4.0
+	require.NoError(handler.WriteJSON(
+		filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
+		map[uint32][]byte{
+			11: bytes.Repeat([]byte{0x0}, 32),
+			12: bytes.Repeat([]byte{0x1}, 32),
+		},
+		file.OptOverwrite,
+	))
+	require.NoError(handler.WriteJSON(
+		filepath.Join(constants.ServiceBasePath, constants.EnforcedPCRsFilename),
+		[]uint32{11},
+	))
+
+	assert.NoError(validator.Update())
 }
 
 func TestUpdateConcurrency(t *testing.T) {

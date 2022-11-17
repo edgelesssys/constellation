@@ -101,16 +101,6 @@ func TestInitialize(t *testing.T) {
 			initServerAPI: &stubInitServer{initErr: someErr},
 			wantErr:       true,
 		},
-		"fail missing enforced PCR": {
-			provider: cloudprovider.GCP,
-			idFile:   &clusterid.File{IP: "192.0.2.1"},
-			configMutator: func(c *config.Config) {
-				c.Provider.GCP.EnforcedMeasurements = append(c.Provider.GCP.EnforcedMeasurements, 10)
-			},
-			serviceAccKey: gcpServiceAccKey,
-			initServerAPI: &stubInitServer{initResp: testInitResp},
-			wantErr:       true,
-		},
 	}
 
 	for name, tc := range testCases {

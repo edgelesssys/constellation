@@ -5,15 +5,10 @@
             "description": "CSP to which the chart is deployed.",
             "enum": ["Azure", "GCP", "AWS", "QEMU"]
         },
-        "enforcedPCRs": {
-            "description": "JSON-string to describe the enforced PCRs.",
-            "type": "string",
-            "examples": ["[1, 15]"]
-        },
         "measurements": {
             "description": "JSON-string to describe the expected measurements.",
             "type": "string",
-            "examples": ["{'1':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA','15':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='}"]
+            "examples": ["{'1':{'expected':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA','warnOnly':true},'15':{'expected':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=','warnOnly':true}}"]
         },
         "enforceIdKeyDigest": {
             "description": "Whether or not idkeydigest should be enforced during attestation on azure.",
@@ -37,7 +32,6 @@
     },
     "required": [
         "csp",
-        "enforcedPCRs",
         "measurements",
         "measurementSalt",
         "image"

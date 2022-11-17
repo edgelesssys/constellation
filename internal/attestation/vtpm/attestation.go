@@ -256,8 +256,8 @@ func VerifyPKCS1v15(pub crypto.PublicKey, hash crypto.Hash, hashed, sig []byte) 
 	return rsa.VerifyPKCS1v15(key, hash, hashed, sig)
 }
 
-// GetSelectedPCRs returns a map of the selected PCR hashes.
-func GetSelectedPCRs(open TPMOpenFunc, selection tpm2.PCRSelection) (map[uint32][]byte, error) {
+// GetSelectedMeasurements returns a map of Measurments for the PCRs in selection.
+func GetSelectedMeasurements(open TPMOpenFunc, selection tpm2.PCRSelection) (measurements.M, error) {
 	tpm, err := open()
 	if err != nil {
 		return nil, err
@@ -269,5 +269,15 @@ func GetSelectedPCRs(open TPMOpenFunc, selection tpm2.PCRSelection) (map[uint32]
 		return nil, err
 	}
 
-	return pcrList.Pcrs, nil
+	m := make(measurements.M)
+	for i, pcr := range pcrList.Pcrs {
+		if len(pcr) != 32 {
+			return nil, fmt.Errorf("invalid measurement: invalid length: %d", len(pcr))
+		}
+		m[i] = measurements.Measurement{
+			Expected: *(*[32]byte)(pcr),
+		}
+	}
+
+	return m, nil
 }

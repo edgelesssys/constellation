@@ -361,7 +361,7 @@ func TestGetSHA256QuoteIndex(t *testing.T) {
 	}
 }
 
-func TestGetSelectedPCRs(t *testing.T) {
+func TestGetSelectedMeasurements(t *testing.T) {
 	testCases := map[string]struct {
 		openFunc     TPMOpenFunc
 		pcrSelection tpm2.PCRSelection
@@ -397,17 +397,13 @@ func TestGetSelectedPCRs(t *testing.T) {
 			require := require.New(t)
 			assert := assert.New(t)
 
-			pcrs, err := GetSelectedPCRs(tc.openFunc, tc.pcrSelection)
+			pcrs, err := GetSelectedMeasurements(tc.openFunc, tc.pcrSelection)
 			if tc.wantErr {
 				assert.Error(err)
-			} else {
-				require.NoError(err)
-
-				assert.Equal(len(pcrs), len(tc.pcrSelection.PCRs))
-				for _, pcr := range pcrs {
-					assert.Len(pcr, 32)
-				}
+				return
 			}
+			require.NoError(err)
+			assert.Len(pcrs, len(tc.pcrSelection.PCRs))
 		})
 	}
 }

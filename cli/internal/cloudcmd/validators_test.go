@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cloudcmd
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
 	"testing"
@@ -177,11 +176,11 @@ func TestValidatorV(t *testing.T) {
 }
 
 func TestValidatorUpdateInitPCRs(t *testing.T) {
-	zero := bytes.Repeat([]byte{0x00}, 32)
-	one := bytes.Repeat([]byte{0x11}, 32)
-	one64 := base64.StdEncoding.EncodeToString(one)
-	oneHash := sha256.Sum256(one)
-	pcrZeroUpdatedOne := sha256.Sum256(append(zero, oneHash[:]...))
+	zero := measurements.WithAllBytes(0x00, true)
+	one := measurements.WithAllBytes(0x11, true)
+	one64 := base64.StdEncoding.EncodeToString(one.Expected[:])
+	oneHash := sha256.Sum256(one.Expected[:])
+	pcrZeroUpdatedOne := sha256.Sum256(append(zero.Expected[:], oneHash[:]...))
 	newTestPCRs := func() measurements.M {
 		return measurements.M{
 			0:  measurements.WithAllBytes(0x00, true),
@@ -285,7 +284,7 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 				case i == int(measurements.PCRIndexClusterID):
 					pcr, ok := validators.pcrs[uint32(i)]
 					assert.True(ok)
-					assert.Equal(pcrZeroUpdatedOne[:], pcr)
+					assert.Equal(pcrZeroUpdatedOne, pcr.Expected)
 
 				case i == int(measurements.PCRIndexOwnerID) && tc.ownerID == "":
 					// should be deleted
@@ -295,7 +294,7 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 				case i == int(measurements.PCRIndexOwnerID):
 					pcr, ok := validators.pcrs[uint32(i)]
 					assert.True(ok)
-					assert.Equal(pcrZeroUpdatedOne[:], pcr)
+					assert.Equal(pcrZeroUpdatedOne, pcr.Expected)
 
 				default:
 					if i >= 17 && i <= 22 {
@@ -395,9 +394,6 @@ func TestUpdatePCR(t *testing.T) {
 				assert.NoError(err)
 			}
 			assert.Len(pcrs, tc.wantEntries)
-			for _, v := range pcrs {
-				assert.Len(v, 32)
-			}
 		})
 	}
 }

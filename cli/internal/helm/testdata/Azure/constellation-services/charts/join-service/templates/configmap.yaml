@@ -4,8 +4,7 @@ metadata:
   name: join-config
   namespace: testNamespace
 data:
-  enforcedPCRs: "[1,11]"
-  measurements: "{'1':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA','15':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='}"
+  measurements: "{\"1\":{\"expected\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"warnOnly\":false}}"
   enforceIdKeyDigest: "true"
   idkeydigest: "baaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaadbaaaaaad"
 binaryData:

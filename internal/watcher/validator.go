@@ -105,14 +105,20 @@ func (u *Updatable) Update() error {
 	if err := u.fileHandler.ReadJSON(filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename), &measurements); err != nil {
 		return err
 	}
-	u.log.Debugf("New measurements: %v", measurements)
+	u.log.Debugf("New measurements: %+v", measurements)
 
-	// TODO: handle merging legacy enforced values
-	var enforced []uint32
-	if err := u.fileHandler.ReadJSON(filepath.Join(constants.ServiceBasePath, constants.EnforcedPCRsFilename), &enforced); err != nil {
-		return err
+	// handle legacy measurement format, where expected measurements and enforced measurements were stored in separate data structures
+	// TODO: remove with v2.4.0
+	if _, err := u.fileHandler.Stat(filepath.Join(constants.ServiceBasePath, constants.EnforcedPCRsFilename)); err == nil {
+		u.log.Debugf("Detected legacy format. Loading enforced PCRs...")
+
+		var enforced []uint32
+		if err := u.fileHandler.ReadJSON(filepath.Join(constants.ServiceBasePath, constants.EnforcedPCRsFilename), &enforced); err != nil {
+			return err
+		}
+		measurements.SetEnforced(enforced)
+		u.log.Debugf("Merged measurements with enforced values: %+v", measurements)
 	}
-	u.log.Debugf("Enforced PCRs: %v", enforced)
 
 	var idkeydigest []byte
 	var enforceIDKeyDigest bool

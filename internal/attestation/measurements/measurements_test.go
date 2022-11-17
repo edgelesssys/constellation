@@ -30,8 +30,8 @@ func TestMarshal(t *testing.T) {
 			m: Measurement{
 				Expected: [32]byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53},
 			},
-			wantYAML: "expected: \"FD5DE9DF350E3BC4410AC06BBFE5CCDEB93F53B9EF51239F752CE69DBC600F35\"\nwarnOnly: false",
-			wantJSON: `{"expected":"FD5DE9DF350E3BC4410AC06BBFE5CCDEB93F53B9EF51239F752CE69DBC600F35","warnOnly":false}`,
+			wantYAML: "expected: \"fd5de9df350e3bc4410ac06bbfe5ccdeb93f53b9ef51239f752ce69dbc600f35\"\nwarnOnly: false",
+			wantJSON: `{"expected":"fd5de9df350e3bc4410ac06bbfe5ccdeb93f53b9ef51239f752ce69dbc600f35","warnOnly":false}`,
 		},
 		"warn only": {
 			m: Measurement{
@@ -87,8 +87,8 @@ func TestUnmarshal(t *testing.T) {
 			},
 		},
 		"valid measurements hex": {
-			inputYAML: "2:\n expected: \"FD5DE9DF350E3BC4410AC06BBFE5CCDEB93F53B9EF51239F752CE69DBC600F35\"\n3:\n expected: \"D5A4496D21DEC9A5258DDB19C6FEB53BB4D3C0463FE607F2488DDF4F1006EF9E\"",
-			inputJSON: `{"2":{"expected":"FD5DE9DF350E3BC4410AC06BBFE5CCDEB93F53B9EF51239F752CE69DBC600F35"},"3":{"expected":"D5A4496D21DEC9A5258DDB19C6FEB53BB4D3C0463FE607F2488DDF4F1006EF9E"}}`,
+			inputYAML: "2:\n expected: \"fd5de9df350e3bc4410ac06bbfe5ccdeb93f53b9ef51239f752ce69dbc600f35\"\n3:\n expected: \"d5a4496d21dec9a5258ddb19c6feb53bb4d3c0463fe607f2488ddf4f1006ef9e\"",
+			inputJSON: `{"2":{"expected":"fd5de9df350e3bc4410ac06bbfe5ccdeb93f53b9ef51239f752ce69dbc600f35"},"3":{"expected":"d5a4496d21dec9a5258ddb19c6feb53bb4d3c0463fe607f2488ddf4f1006ef9e"}}`,
 			wantMeasurements: M{
 				2: {
 					Expected: [32]byte{253, 93, 233, 223, 53, 14, 59, 196, 65, 10, 192, 107, 191, 229, 204, 222, 185, 63, 83, 185, 239, 81, 35, 159, 117, 44, 230, 157, 188, 96, 15, 53},
@@ -128,8 +128,8 @@ func TestUnmarshal(t *testing.T) {
 			},
 		},
 		"invalid length hex": {
-			inputYAML: "2:\n expected: \"FD5DE9DF350E3BC4410AC06BBFE5CCDEB93F53B9EF\"\n3:\n expected: \"D5A4496D21DEC9A5258DDB19C6FEB53BB4D3C0463F\"",
-			inputJSON: `{"2":{"expected":"FD5DE9DF350E3BC4410AC06BBFE5CCDEB93F53B9EF"},"3":{"expected":"D5A4496D21DEC9A5258DDB19C6FEB53BB4D3C0463F"}}`,
+			inputYAML: "2:\n expected: \"fd5de9df350e3bc4410ac06bbfe5ccdeb93f53b9ef\"\n3:\n expected: \"d5a4496d21dec9a5258ddb19c6feb53bb4d3c0463f\"",
+			inputJSON: `{"2":{"expected":"fd5de9df350e3bc4410ac06bbfe5ccdeb93f53b9ef"},"3":{"expected":"d5a4496d21dec9a5258ddb19c6feb53bb4d3c0463f"}}`,
 			wantErr:   true,
 		},
 		"invalid length base64": {
@@ -357,6 +357,121 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 			assert.Equal(tc.wantSHA, hash)
 			assert.NoError(err)
 			assert.EqualValues(tc.wantMeasurements, m)
+		})
+	}
+}
+
+func TestGetEnforced(t *testing.T) {
+	testCases := map[string]struct {
+		input M
+		want  map[uint32]struct{}
+	}{
+		"only warnings": {
+			input: M{
+				0: WithAllBytes(0x00, true),
+				1: WithAllBytes(0x01, true),
+			},
+			want: map[uint32]struct{}{},
+		},
+		"all enforced": {
+			input: M{
+				0: WithAllBytes(0x00, false),
+				1: WithAllBytes(0x01, false),
+			},
+			want: map[uint32]struct{}{
+				0: {},
+				1: {},
+			},
+		},
+		"mixed": {
+			input: M{
+				0: WithAllBytes(0x00, false),
+				1: WithAllBytes(0x01, true),
+				2: WithAllBytes(0x02, false),
+			},
+			want: map[uint32]struct{}{
+				0: {},
+				2: {},
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			got := tc.input.GetEnforced()
+			enforced := map[uint32]struct{}{}
+			for _, id := range got {
+				enforced[id] = struct{}{}
+			}
+			assert.Equal(tc.want, enforced)
+		})
+	}
+}
+
+func TestSetEnforced(t *testing.T) {
+	testCases := map[string]struct {
+		input    M
+		enforced []uint32
+		want     M
+	}{
+		"no enforced measurements": {
+			input: M{
+				0: WithAllBytes(0x00, false),
+				1: WithAllBytes(0x01, false),
+			},
+			enforced: []uint32{},
+			want: M{
+				0: WithAllBytes(0x00, true),
+				1: WithAllBytes(0x01, true),
+			},
+		},
+		"all enforced measurements": {
+			input: M{
+				0: WithAllBytes(0x00, false),
+				1: WithAllBytes(0x01, false),
+			},
+			enforced: []uint32{0, 1},
+			want: M{
+				0: WithAllBytes(0x00, false),
+				1: WithAllBytes(0x01, false),
+			},
+		},
+		"mixed": {
+			input: M{
+				0: WithAllBytes(0x00, false),
+				1: WithAllBytes(0x01, false),
+				2: WithAllBytes(0x02, false),
+				3: WithAllBytes(0x03, false),
+			},
+			enforced: []uint32{0, 2},
+			want: M{
+				0: WithAllBytes(0x00, false),
+				1: WithAllBytes(0x01, true),
+				2: WithAllBytes(0x02, false),
+				3: WithAllBytes(0x03, true),
+			},
+		},
+		"warn only to enforced": {
+			input: M{
+				0: WithAllBytes(0x00, true),
+				1: WithAllBytes(0x01, true),
+			},
+			enforced: []uint32{0, 1},
+			want: M{
+				0: WithAllBytes(0x00, false),
+				1: WithAllBytes(0x01, false),
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			tc.input.SetEnforced(tc.enforced)
+			assert.True(tc.input.EqualTo(tc.want))
 		})
 	}
 }
