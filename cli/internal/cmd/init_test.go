@@ -395,8 +395,8 @@ func TestAttestation(t *testing.T) {
 	cfg.Provider.QEMU.Measurements[2] = measurements.PCRWithAllBytes(0x22)
 	cfg.Provider.QEMU.Measurements[3] = measurements.PCRWithAllBytes(0x33)
 	cfg.Provider.QEMU.Measurements[4] = measurements.PCRWithAllBytes(0x44)
-	cfg.Provider.QEMU.Measurements[8] = measurements.PCRWithAllBytes(0x88)
 	cfg.Provider.QEMU.Measurements[9] = measurements.PCRWithAllBytes(0x99)
+	cfg.Provider.QEMU.Measurements[12] = measurements.PCRWithAllBytes(0xcc)
 	require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg, file.OptNone))
 
 	ctx := context.Background()
@@ -474,8 +474,8 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 		conf.Provider.Azure.AppClientID = "01234567-0123-0123-0123-0123456789ab"
 		conf.Provider.Azure.ClientSecretValue = "test-client-secret"
 		conf.Provider.Azure.Measurements[4] = measurements.PCRWithAllBytes(0x44)
-		conf.Provider.Azure.Measurements[8] = measurements.PCRWithAllBytes(0x00)
 		conf.Provider.Azure.Measurements[9] = measurements.PCRWithAllBytes(0x11)
+		conf.Provider.Azure.Measurements[12] = measurements.PCRWithAllBytes(0xcc)
 	case cloudprovider.GCP:
 		conf.Provider.GCP.Region = "test-region"
 		conf.Provider.GCP.Project = "test-project"
@@ -483,13 +483,13 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 		conf.Provider.GCP.Zone = "test-zone"
 		conf.Provider.GCP.ServiceAccountKeyPath = "test-key-path"
 		conf.Provider.GCP.Measurements[4] = measurements.PCRWithAllBytes(0x44)
-		conf.Provider.GCP.Measurements[8] = measurements.PCRWithAllBytes(0x00)
 		conf.Provider.GCP.Measurements[9] = measurements.PCRWithAllBytes(0x11)
+		conf.Provider.GCP.Measurements[12] = measurements.PCRWithAllBytes(0xcc)
 	case cloudprovider.QEMU:
 		conf.Provider.QEMU.Image = "some/image/location"
 		conf.Provider.QEMU.Measurements[4] = measurements.PCRWithAllBytes(0x44)
-		conf.Provider.QEMU.Measurements[8] = measurements.PCRWithAllBytes(0x00)
 		conf.Provider.QEMU.Measurements[9] = measurements.PCRWithAllBytes(0x11)
+		conf.Provider.QEMU.Measurements[12] = measurements.PCRWithAllBytes(0xcc)
 	}
 
 	conf.RemoveProviderExcept(csp)

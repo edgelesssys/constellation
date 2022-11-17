@@ -3,11 +3,11 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only
 
-# This script is used to precalculate the PCR[8] value for a Constellation OS image.
-# PCR[8] contains the hash of the kernel command line and is measured by systemd-boot.
-# This value is deprecated and will be moved to PCR[12] in the future.
-# This script may produce wrong results after 2023 (when the kernel command line is only measured in PCR[12]).
-# Usage: precalculate_pcr_8.sh <path to image> <path to output file> <csp>
+# This script is used to precalculate the PCR[12] value for a Constellation OS image.
+# PCR[12] contains the hash of the kernel command line and is measured by systemd-boot.
+# This value was previously measured into PCR[8].
+# This script may produce wrong results for systemd-boot versions < 251.
+# Usage: precalculate_pcr_12.sh <path to image> <path to output file> <csp>
 
 set -euo pipefail
 shopt -s inherit_errexit
@@ -35,7 +35,7 @@ write_output() {
   cat > "${out}" << EOF
 {
   "measurements": {
-    "8": "${expected_pcr_8}"
+    "12": "${expected_pcr_12}"
   },
   "cmdline": "${cmdline}",
   "cmdline-sha256": "${cmdline_hash}"
@@ -59,18 +59,18 @@ cmdline=$(cat "${DIR}/cmdline")
 cmdline_hash=$(cmdline_measure "${DIR}/cmdline")
 cleanup "${DIR}"
 
-expected_pcr_8=0000000000000000000000000000000000000000000000000000000000000000
-expected_pcr_8=$(pcr_extend "${expected_pcr_8}" "${cmdline_hash}" "sha256sum")
+expected_pcr_12=0000000000000000000000000000000000000000000000000000000000000000
+expected_pcr_12=$(pcr_extend "${expected_pcr_12}" "${cmdline_hash}" "sha256sum")
 if [[ ${CSP} == "azure" ]]; then
   # Azure displays the boot menu
   # triggering an extra measurement of the kernel command line.
-  expected_pcr_8=$(pcr_extend "${expected_pcr_8}" "${cmdline_hash}" "sha256sum")
+  expected_pcr_12=$(pcr_extend "${expected_pcr_12}" "${cmdline_hash}" "sha256sum")
 fi
 
 echo "Kernel commandline:            ${cmdline}"
 echo "Kernel Commandline measurement ${cmdline_hash}"
 echo ""
-echo "Expected PCR[8]:               ${expected_pcr_8}"
+echo "Expected PCR[12]:               ${expected_pcr_12}"
 echo ""
 
 write_output "${OUT}"
