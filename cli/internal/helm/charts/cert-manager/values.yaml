@@ -177,7 +177,7 @@ ingressShim: {}
   # defaultIssuerGroup: ""
 
 prometheus:
-  enabled: false
+  enabled: true
   servicemonitor:
     enabled: false
     prometheusInstance: default
@@ -214,13 +214,7 @@ affinity: {}
 #     operator: Equal
 #     value: master
 #     effect: NoSchedule
-tolerations:
-  - key: node-role.kubernetes.io/control-plane
-    effect: NoSchedule
-    operator: Exists
-  - key: node-role.kubernetes.io/master
-    effect: NoSchedule
-    operator: Exists
+tolerations: []
 
 # expects input structure as per specification https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#topologyspreadconstraint-v1-core
 # for example:
@@ -325,13 +319,7 @@ webhook:
 
   affinity: {}
 
-  tolerations:
-    - key: node-role.kubernetes.io/control-plane
-      effect: NoSchedule
-      operator: Exists
-    - key: node-role.kubernetes.io/master
-      effect: NoSchedule
-      operator: Exists
+  tolerations: []
 
   topologySpreadConstraints: []
 
@@ -472,13 +460,7 @@ cainjector:
 
   affinity: {}
 
-  tolerations:
-    - key: node-role.kubernetes.io/control-plane
-      effect: NoSchedule
-      operator: Exists
-    - key: node-role.kubernetes.io/master
-      effect: NoSchedule
-      operator: Exists
+  tolerations: []
 
   topologySpreadConstraints: []
 
@@ -572,13 +554,7 @@ startupapicheck:
 
   affinity: {}
 
-  tolerations:
-    - key: node-role.kubernetes.io/control-plane
-      effect: NoSchedule
-      operator: Exists
-    - key: node-role.kubernetes.io/master
-      effect: NoSchedule
-      operator: Exists
+  tolerations: []
 
   # Optional additional labels to add to the startupapicheck Pods
   podLabels: {}

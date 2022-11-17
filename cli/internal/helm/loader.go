@@ -174,6 +174,61 @@ func (i *ChartLoader) loadCertManagerHelper() (*chart.Chart, map[string]any, err
 		"prometheus": map[string]any{
 			"enabled": false,
 		},
+		"tolerations": []map[string]any{
+			{
+				"key":      "node-role.kubernetes.io/control-plane",
+				"effect":   "NoSchedule",
+				"operator": "Exists",
+			},
+			{
+				"key":      "node-role.kubernetes.io/master",
+				"effect":   "NoSchedule",
+				"operator": "Exists",
+			},
+		},
+		"webhook": map[string]any{
+			"tolerations": []map[string]any{
+				{
+					"key":      "node-role.kubernetes.io/control-plane",
+					"effect":   "NoSchedule",
+					"operator": "Exists",
+				},
+				{
+					"key":      "node-role.kubernetes.io/master",
+					"effect":   "NoSchedule",
+					"operator": "Exists",
+				},
+			},
+		},
+		"cainjector": map[string]any{
+			"tolerations": []map[string]any{
+				{
+					"key":      "node-role.kubernetes.io/control-plane",
+					"effect":   "NoSchedule",
+					"operator": "Exists",
+				},
+				{
+					"key":      "node-role.kubernetes.io/master",
+					"effect":   "NoSchedule",
+					"operator": "Exists",
+				},
+			},
+		},
+		"startupapicheck": map[string]any{
+			"timeout": "5m",
+			"tolerations": []map[string]any{
+				{
+					"key":      "node-role.kubernetes.io/control-plane",
+					"effect":   "NoSchedule",
+					"operator": "Exists",
+				},
+				{
+					"key":      "node-role.kubernetes.io/master",
+					"effect":   "NoSchedule",
+					"operator": "Exists",
+				},
+			},
+		},
 	}
 	return chart, values, nil
 }
