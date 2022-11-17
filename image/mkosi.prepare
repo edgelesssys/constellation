@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/env bash
 set -euxo pipefail
 
 # set selinux to permissive
