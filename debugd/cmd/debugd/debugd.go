@@ -17,6 +17,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/debugd/internal/bootstrapper"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/deploy"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/info"
+	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/logcollector"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/metadata"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/metadata/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/metadata/fallback"
@@ -54,10 +55,17 @@ func main() {
 		log.Errorf("root login: %w")
 	}
 
+	wg := &sync.WaitGroup{}
+
+	csp := os.Getenv("CONSTEL_CSP")
+
 	infoMap := info.NewMap()
+	infoMap.RegisterOnReceiveTrigger(
+		logcollector.NewStartTrigger(ctx, wg, platform.FromString(csp), log.Named("logcollector")),
+	)
+
 	download := deploy.New(log.Named("download"), &net.Dialer{}, serviceManager, streamer, infoMap)
 	var fetcher metadata.Fetcher
-	csp := os.Getenv("CONSTEL_CSP")
 	switch platform.FromString(csp) {
 	case platform.AWS:
 		meta, err := awscloud.New(ctx)
@@ -96,7 +104,6 @@ func main() {
 
 	writeDebugBanner(log)
 
-	wg := &sync.WaitGroup{}
 	sched.Start(ctx, wg)
 	server.Start(log, wg, serv)
 	wg.Wait()

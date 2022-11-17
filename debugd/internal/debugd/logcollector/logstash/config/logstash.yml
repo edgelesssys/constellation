@@ -1,0 +1,2 @@
+log.level: warn
+config.reload.automatic: true

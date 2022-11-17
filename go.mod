@@ -37,6 +37,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.1
 	cloud.google.com/go/kms v1.6.0
 	cloud.google.com/go/logging v1.5.0
+	cloud.google.com/go/secretmanager v1.9.0
 	cloud.google.com/go/storage v1.28.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.0
@@ -54,6 +55,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.73.0
 	github.com/aws/aws-sdk-go-v2/service/kms v1.18.18
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.29.4
+	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.16.8
 	github.com/aws/smithy-go v1.13.4
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/docker/docker v20.10.21+incompatible
@@ -116,6 +118,7 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.1 // indirect
+	github.com/mattn/go-sqlite3 v1.14.14 // indirect
 	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
@@ -189,7 +192,7 @@ require (
 	github.com/go-openapi/validate v0.22.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/godbus/dbus/v5 v5.0.6 // indirect
-	github.com/gofrs/uuid v4.0.0+incompatible // indirect
+	github.com/gofrs/uuid v4.2.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect

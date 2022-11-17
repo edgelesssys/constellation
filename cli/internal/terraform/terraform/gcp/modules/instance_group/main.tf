@@ -68,6 +68,7 @@ resource "google_compute_instance_template" "template" {
       "https://www.googleapis.com/auth/logging.write",
       "https://www.googleapis.com/auth/monitoring.write",
       "https://www.googleapis.com/auth/trace.append",
+      "https://www.googleapis.com/auth/cloud-platform",
     ]
   }
 
