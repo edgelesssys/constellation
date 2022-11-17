@@ -76,6 +76,11 @@ const (
 	// ConstellationQEMUImageURL is the artifact URL for QEMU qcow2 images.
 	ConstellationQEMUImageURL = "https://cdn.confidential.cloud/constellation/images/mini-constellation/v2.2.2/constellation.raw"
 
+	// LogstashImage is the container image of logstash, used for log collection by debugd.
+	LogstashImage = "ghcr.io/edgelesssys/constellation/logstash-debug:latest"
+	// FilebeatImage is the container image of filebeat, used for log collection by debugd.
+	FilebeatImage = "ghcr.io/edgelesssys/constellation/filebeat-debug:latest"
+
 	// currently supported versions.
 	//nolint:revive
 	V1_23 ValidK8sVersion = "1.23"

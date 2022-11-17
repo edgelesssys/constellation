@@ -1,0 +1,15 @@
+filebeat.inputs:
+  - type: journald
+    enabled: true
+    id: everything
+
+output.logstash:
+  hosts: ["localhost:5044"]
+
+output.console:
+  enabled: false
+
+logging:
+  to_files: false
+  metrics.enabled: false
+  level: warning
