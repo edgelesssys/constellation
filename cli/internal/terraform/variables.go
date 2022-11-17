@@ -106,7 +106,6 @@ func (v *GCPVariables) String() string {
 	writeLinef(b, "project = %q", v.Project)
 	writeLinef(b, "region = %q", v.Region)
 	writeLinef(b, "zone = %q", v.Zone)
-	writeLinef(b, "credentials_file = %q", v.CredentialsFile)
 	writeLinef(b, "instance_type = %q", v.InstanceType)
 	writeLinef(b, "state_disk_type = %q", v.StateDiskType)
 	writeLinef(b, "image_id = %q", v.ImageID)
