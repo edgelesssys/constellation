@@ -35,11 +35,6 @@ variable "zone" {
   description = "The GCP zone to deploy the cluster in."
 }
 
-variable "credentials_file" {
-  type        = string
-  description = "The path to the GCP credentials file."
-}
-
 variable "instance_type" {
   type        = string
   description = "The GCP instance type to deploy."
