@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 <!-- For changes in existing functionality.  -->
+- Constellation operators are now deployed using Helm.
 
 ### Deprecated
 <!-- For soon-to-be removed features. -->
