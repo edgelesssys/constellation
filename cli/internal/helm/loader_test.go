@@ -248,6 +248,11 @@ func prepareGCPValues(values map[string]any) error {
 		},
 	}
 
+	verificationVals, ok := values["verification-service"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'verification-service' key")
+	}
+	verificationVals["loadBalancerIP"] = "127.0.0.1"
 	return nil
 }
 
@@ -278,6 +283,12 @@ func prepareAzureValues(values map[string]any) error {
 		"subscriptionID": "subscriptionID",
 		"tenantID":       "TenantID",
 	}
+
+	verificationVals, ok := values["verification-service"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'verification-service' key")
+	}
+	verificationVals["loadBalancerIP"] = "127.0.0.1"
 	return nil
 }
 
@@ -288,6 +299,12 @@ func prepareQEMUValues(values map[string]any) error {
 	}
 	joinVals["measurements"] = "{'1':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA','15':'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='}"
 	joinVals["measurementSalt"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+	verificationVals, ok := values["verification-service"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'verification-service' key")
+	}
+	verificationVals["loadBalancerIP"] = "127.0.0.1"
 
 	return nil
 }

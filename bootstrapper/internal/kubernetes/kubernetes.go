@@ -192,7 +192,8 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up konnectivity: %w", err)
 	}
 
-	extraVals, err := k.setupExtraVals(ctx, k.initialMeasurementsJSON, idKeyDigest, measurementSalt, subnetworkPodCIDR, cloudServiceAccountURI)
+	serviceConfig := constellationServicesConfig{k.initialMeasurementsJSON, idKeyDigest, measurementSalt, subnetworkPodCIDR, cloudServiceAccountURI, controlPlaneEndpoint}
+	extraVals, err := k.setupExtraVals(ctx, serviceConfig)
 	if err != nil {
 		return nil, fmt.Errorf("setting up extraVals: %w", err)
 	}
@@ -203,12 +204,6 @@ func (k *KubeWrapper) InitCluster(
 
 	if err := k.setupInternalConfigMap(ctx, strconv.FormatBool(azureCVM)); err != nil {
 		return nil, fmt.Errorf("failed to setup internal ConfigMap: %w", err)
-	}
-
-	if err := k.clusterUtil.SetupVerificationService(
-		k.client, resources.NewVerificationDaemonSet(k.cloudProvider, controlPlaneEndpoint),
-	); err != nil {
-		return nil, fmt.Errorf("failed to setup verification service: %w", err)
 	}
 
 	// cert-manager is necessary for our operator deployments.
@@ -393,13 +388,25 @@ func getIPAddr() (string, error) {
 
 // setupExtraVals create a helm values map for consumption by helm-install.
 // Will move to a more dedicated place once that place becomes apparent.
-func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSON []byte, idkeydigest []byte, measurementSalt []byte, subnetworkPodCIDR string, cloudServiceAccountURI string) (map[string]any, error) {
+func (k *KubeWrapper) setupExtraVals(ctx context.Context, serviceConfig constellationServicesConfig) (map[string]any, error) {
+	loadBalancerIP := serviceConfig.loadBalancerIP
+	var err error
+	if strings.Contains(serviceConfig.loadBalancerIP, ":") {
+		loadBalancerIP, _, err = net.SplitHostPort(loadBalancerIP)
+		if err != nil {
+			return nil, fmt.Errorf("splitting host port: %w", err)
+		}
+	}
+
 	extraVals := map[string]any{
 		"join-service": map[string]any{
-			"measurements":    string(initialMeasurementsJSON),
-			"measurementSalt": base64.StdEncoding.EncodeToString(measurementSalt),
+			"measurements":    string(serviceConfig.initialMeasurementsJSON),
+			"measurementSalt": base64.StdEncoding.EncodeToString(serviceConfig.measurementSalt),
 		},
 		"ccm": map[string]any{},
+		"verification-service": map[string]any{
+			"loadBalancerIP": loadBalancerIP,
+		},
 	}
 
 	instance, err := k.providerMetadata.Self(ctx)
@@ -419,7 +426,7 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSO
 			return nil, fmt.Errorf("splitting providerID: %w", err)
 		}
 
-		serviceAccountKey, err := gcpshared.ServiceAccountKeyFromURI(cloudServiceAccountURI)
+		serviceAccountKey, err := gcpshared.ServiceAccountKeyFromURI(serviceConfig.cloudServiceAccountURI)
 		if err != nil {
 			return nil, fmt.Errorf("getting service account key: %w", err)
 		}
@@ -436,7 +443,7 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSO
 			"projectID":         projectID,
 			"uid":               uid,
 			"secretData":        string(rawKey),
-			"subnetworkPodCIDR": subnetworkPodCIDR,
+			"subnetworkPodCIDR": serviceConfig.subnetworkPodCIDR,
 		}
 
 	case cloudprovider.Azure:
@@ -445,7 +452,7 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSO
 			return nil, errors.New("invalid cloud provider metadata for Azure")
 		}
 
-		ccmConfig, err := ccmAzure.GetCCMConfig(ctx, instance.ProviderID, cloudServiceAccountURI)
+		ccmConfig, err := ccmAzure.GetCCMConfig(ctx, instance.ProviderID, serviceConfig.cloudServiceAccountURI)
 		if err != nil {
 			return nil, fmt.Errorf("creating ccm secret: %w", err)
 		}
@@ -456,20 +463,20 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSO
 		}
 		ccmVals["Azure"] = map[string]any{
 			"azureConfig":       string(ccmConfig),
-			"subnetworkPodCIDR": subnetworkPodCIDR,
+			"subnetworkPodCIDR": serviceConfig.subnetworkPodCIDR,
 		}
 
 		joinVals, ok := extraVals["join-service"].(map[string]any)
 		if !ok {
 			return nil, errors.New("invalid join-service values")
 		}
-		joinVals["idkeydigest"] = hex.EncodeToString(idkeydigest)
+		joinVals["idkeydigest"] = hex.EncodeToString(serviceConfig.idkeydigest)
 
 		subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(instance.ProviderID)
 		if err != nil {
 			return nil, err
 		}
-		creds, err := azureshared.ApplicationCredentialsFromURI(cloudServiceAccountURI)
+		creds, err := azureshared.ApplicationCredentialsFromURI(serviceConfig.cloudServiceAccountURI)
 		if err != nil {
 			return nil, err
 		}
@@ -503,4 +510,13 @@ func (k *KubeWrapper) setupOperatorVals(ctx context.Context) (map[string]any, er
 
 type ccmConfigGetter interface {
 	GetCCMConfig(ctx context.Context, providerID, cloudServiceAccountURI string) ([]byte, error)
+}
+
+type constellationServicesConfig struct {
+	initialMeasurementsJSON []byte
+	idkeydigest             []byte
+	measurementSalt         []byte
+	subnetworkPodCIDR       string
+	cloudServiceAccountURI  string
+	loadBalancerIP          string
 }

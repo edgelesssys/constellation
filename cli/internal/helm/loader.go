@@ -39,11 +39,19 @@ var helmFS embed.FS
 
 // ChartLoader loads embedded helm charts.
 type ChartLoader struct {
-	joinServiceImage string
-	kmsImage         string
-	ccmImage         string
-	cnmImage         string
-	autoscalerImage  string
+	joinServiceImage         string
+	kmsImage                 string
+	ccmImage                 string
+	cnmImage                 string
+	autoscalerImage          string
+	verificationServiceImage string
+}
+
+type LoadConfig struct {
+	Csp             cloudprovider.Provider
+	ConformanceMode bool
+	MasterSecret    []byte
+	Salt            []byte
 }
 
 // New creates a new ChartLoader.
@@ -60,11 +68,12 @@ func New(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *Chart
 	}
 
 	return &ChartLoader{
-		joinServiceImage: versions.JoinImage,
-		kmsImage:         versions.KmsImage,
-		ccmImage:         ccmImage,
-		cnmImage:         cnmImage,
-		autoscalerImage:  versions.VersionConfigs[k8sVersion].ClusterAutoscalerImage,
+		joinServiceImage:         versions.JoinImage,
+		kmsImage:                 versions.KmsImage,
+		ccmImage:                 ccmImage,
+		cnmImage:                 cnmImage,
+		autoscalerImage:          versions.VersionConfigs[k8sVersion].ClusterAutoscalerImage,
+		verificationServiceImage: versions.VerificationImage,
 	}
 }
 
@@ -375,6 +384,10 @@ func (i *ChartLoader) loadConstellationServicesHelper(config *config.Config, mas
 		"autoscaler": map[string]any{
 			"csp":   csp.String(),
 			"image": i.autoscalerImage,
+		},
+		"verification-service": map[string]any{
+			"csp":   csp.String(),
+			"image": i.verificationServiceImage,
 		},
 	}
 
