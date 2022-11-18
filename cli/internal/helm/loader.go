@@ -77,10 +77,7 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSe
 		return nil, fmt.Errorf("loading cilium: %w", err)
 	}
 
-	conServicesRelease, err := i.loadConstellationServices(
-		csp, masterSecret, salt, config.DeployCSIDriver(),
-		config.GetEnforcedPCRs(), config.EnforcesIDKeyDigest(),
-	)
+	conServicesRelease, err := i.loadConstellationServices(config, masterSecret, salt)
 	if err != nil {
 		return nil, fmt.Errorf("loading constellation-services: %w", err)
 	}
@@ -132,10 +129,7 @@ func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode boo
 
 // loadConstellationServices loads the constellation-services chart from the embed.FS,
 // marshals it into a helm-package .tgz and sets the values that can be set in the CLI.
-func (i *ChartLoader) loadConstellationServices(
-	csp cloudprovider.Provider, masterSecret, salt []byte,
-	deployCSIDriver bool, enforcedPCRs []uint32, enforceIDKeyDigest bool,
-) (helm.Release, error) {
+func (i *ChartLoader) loadConstellationServices(config *config.Config, masterSecret, salt []byte) (helm.Release, error) {
 	chart, err := loadChartsDir(helmFS, "charts/edgeless/constellation-services")
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("loading constellation-services chart: %w", err)
@@ -146,11 +140,12 @@ func (i *ChartLoader) loadConstellationServices(
 		return helm.Release{}, fmt.Errorf("packaging chart: %w", err)
 	}
 
-	enforcedPCRsJSON, err := json.Marshal(enforcedPCRs)
+	enforcedPCRsJSON, err := json.Marshal(config.GetEnforcedPCRs())
 	if err != nil {
 		return helm.Release{}, fmt.Errorf("marshaling enforcedPCRs: %w", err)
 	}
 
+	csp := config.GetProvider()
 	vals := map[string]any{
 		"global": map[string]any{
 			"kmsPort":          constants.KMSPort,
@@ -188,7 +183,7 @@ func (i *ChartLoader) loadConstellationServices(
 		if !ok {
 			return helm.Release{}, errors.New("invalid join-service values")
 		}
-		joinServiceVals["enforceIdKeyDigest"] = enforceIDKeyDigest
+		joinServiceVals["enforceIdKeyDigest"] = config.EnforcesIDKeyDigest()
 
 		ccmVals, ok := vals["ccm"].(map[string]any)
 		if !ok {
@@ -203,7 +198,7 @@ func (i *ChartLoader) loadConstellationServices(
 		}
 
 		vals["azure"] = map[string]any{
-			"deployCSIDriver": deployCSIDriver,
+			"deployCSIDriver": config.DeployCSIDriver(),
 		}
 
 		vals["tags"] = map[string]any{
@@ -220,7 +215,7 @@ func (i *ChartLoader) loadConstellationServices(
 		}
 
 		vals["gcp"] = map[string]any{
-			"deployCSIDriver": deployCSIDriver,
+			"deployCSIDriver": config.DeployCSIDriver(),
 		}
 
 		vals["gcp-compute-persistent-disk-csi-driver"] = map[string]any{

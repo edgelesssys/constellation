@@ -12,7 +12,7 @@ if ! command -v git &> /dev/null; then
 fi
 
 # download_chart downloads the Helm chart for the given CSI driver and version.
-# 
+#
 # Arguments:
 #   $1: URL of the git repo containing the Helm chart
 #   $2: branch or tag of the git repo
