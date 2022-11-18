@@ -187,7 +187,8 @@ func TestInitCluster(t *testing.T) {
 			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when setting up verification service": {
-			clusterUtil: stubClusterUtil{setupVerificationServiceErr: someErr},
+			clusterUtil: stubClusterUtil{},
+			helmClient:  stubHelmClient{servicesError: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
 				kubeconfig: []byte("someKubeconfig"),
 			},
@@ -414,17 +415,16 @@ func TestK8sCompliantHostname(t *testing.T) {
 }
 
 type stubClusterUtil struct {
-	installComponentsErr        error
-	initClusterErr              error
-	setupAutoscalingError       error
-	setupKonnectivityError      error
-	setupVerificationServiceErr error
-	setupGCPGuestAgentErr       error
-	setupOLMErr                 error
-	setupNMOErr                 error
-	setupNodeOperatorErr        error
-	joinClusterErr              error
-	startKubeletErr             error
+	installComponentsErr   error
+	initClusterErr         error
+	setupAutoscalingError  error
+	setupKonnectivityError error
+	setupGCPGuestAgentErr  error
+	setupOLMErr            error
+	setupNMOErr            error
+	setupNodeOperatorErr   error
+	joinClusterErr         error
+	startKubeletErr        error
 
 	initConfigs [][]byte
 	joinConfigs [][]byte
@@ -449,10 +449,6 @@ func (s *stubClusterUtil) SetupAutoscaling(kubectl k8sapi.Client, clusterAutosca
 
 func (s *stubClusterUtil) SetupGCPGuestAgent(kubectl k8sapi.Client, gcpGuestAgentConfiguration kubernetes.Marshaler) error {
 	return s.setupGCPGuestAgentErr
-}
-
-func (s *stubClusterUtil) SetupVerificationService(kubectl k8sapi.Client, verificationServiceConfiguration kubernetes.Marshaler) error {
-	return s.setupVerificationServiceErr
 }
 
 func (s *stubClusterUtil) SetupOperatorLifecycleManager(ctx context.Context, kubectl k8sapi.Client, olmCRDs, olmConfiguration kubernetes.Marshaler, crdNames []string) error {
