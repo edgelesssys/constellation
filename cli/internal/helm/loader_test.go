@@ -15,7 +15,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +31,8 @@ func TestLoad(t *testing.T) {
 	require := require.New(t)
 
 	chartLoader := ChartLoader{}
-	release, err := chartLoader.Load(cloudprovider.GCP, true, []byte("secret"), []byte("salt"), nil, false)
+	config := &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{}}}
+	release, err := chartLoader.Load(config, true, []byte("secret"), []byte("salt"))
 	require.NoError(err)
 
 	var helmReleases helm.Releases
@@ -46,27 +47,35 @@ func TestLoad(t *testing.T) {
 // TestTemplate checks if the rendered constellation-services chart produces the expected yaml files.
 func TestTemplate(t *testing.T) {
 	testCases := map[string]struct {
-		csp                cloudprovider.Provider
+		config             *config.Config
 		enforceIDKeyDigest bool
 		valuesModifier     func(map[string]any) error
 		ccmImage           string
 		cnmImage           string
 	}{
 		"GCP": {
-			csp:                cloudprovider.GCP,
+			config: &config.Config{Provider: config.ProviderConfig{GCP: &config.GCPConfig{
+				DeployCSIDriver:      func() *bool { b := true; return &b }(),
+				EnforcedMeasurements: []uint32{1, 11},
+			}}},
 			enforceIDKeyDigest: false,
 			valuesModifier:     prepareGCPValues,
 			ccmImage:           "ccmImageForGCP",
 		},
 		"Azure": {
-			csp:                cloudprovider.Azure,
+			config: &config.Config{Provider: config.ProviderConfig{Azure: &config.AzureConfig{
+				EnforcedMeasurements: []uint32{1, 11},
+				EnforceIDKeyDigest:   func() *bool { b := true; return &b }(),
+			}}},
 			enforceIDKeyDigest: true,
 			valuesModifier:     prepareAzureValues,
 			ccmImage:           "ccmImageForAzure",
 			cnmImage:           "cnmImageForAzure",
 		},
 		"QEMU": {
-			csp:                cloudprovider.QEMU,
+			config: &config.Config{Provider: config.ProviderConfig{QEMU: &config.QEMUConfig{
+				EnforcedMeasurements: []uint32{1, 11},
+			}}},
 			enforceIDKeyDigest: false,
 			valuesModifier:     prepareQEMUValues,
 		},
@@ -78,7 +87,7 @@ func TestTemplate(t *testing.T) {
 			require := require.New(t)
 
 			chartLoader := ChartLoader{joinServiceImage: "joinServiceImage", kmsImage: "kmsImage", ccmImage: tc.ccmImage, cnmImage: tc.cnmImage, autoscalerImage: "autoscalerImage"}
-			release, err := chartLoader.Load(tc.csp, true, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []uint32{1, 11}, tc.enforceIDKeyDigest)
+			release, err := chartLoader.Load(tc.config, true, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 			require.NoError(err)
 
 			var helmReleases helm.Releases
@@ -110,7 +119,7 @@ func TestTemplate(t *testing.T) {
 			result, err := engine.Render(chart, valuesToRender)
 			require.NoError(err)
 			for k, v := range result {
-				currentFile := path.Join("testdata", tc.csp.String(), k)
+				currentFile := path.Join("testdata", tc.config.GetProvider().String(), k)
 				content, err := os.ReadFile(currentFile)
 
 				// If a file does not exist, we expect the render for that path to be empty.
@@ -141,6 +150,45 @@ func prepareGCPValues(values map[string]any) error {
 	ccmVals["GCP"].(map[string]any)["projectID"] = "42424242424242"
 	ccmVals["GCP"].(map[string]any)["uid"] = "242424242424"
 	ccmVals["GCP"].(map[string]any)["secretData"] = "baaaaaad"
+
+	testTag := "v0.0.0"
+	pullPolicy := "IfNotPresent"
+	csiVals, ok := values["gcp-compute-persistent-disk-csi-driver"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'gcp-compute-persistent-disk-csi-driver' key")
+	}
+	csiVals["image"] = map[string]any{
+		"csiProvisioner": map[string]any{
+			"repo":       "csi-provisioner",
+			"tag":        testTag,
+			"pullPolicy": pullPolicy,
+		},
+		"csiAttacher": map[string]any{
+			"repo":       "csi-attacher",
+			"tag":        testTag,
+			"pullPolicy": pullPolicy,
+		},
+		"csiResizer": map[string]any{
+			"repo":       "csi-resizer",
+			"tag":        testTag,
+			"pullPolicy": pullPolicy,
+		},
+		"csiSnapshotter": map[string]any{
+			"repo":       "csi-snapshotter",
+			"tag":        testTag,
+			"pullPolicy": pullPolicy,
+		},
+		"csiNodeRegistrar": map[string]any{
+			"repo":       "csi-registrar",
+			"tag":        testTag,
+			"pullPolicy": pullPolicy,
+		},
+		"gcepdDriver": map[string]any{
+			"repo":       "csi-driver",
+			"tag":        testTag,
+			"pullPolicy": pullPolicy,
+		},
+	}
 
 	return nil
 }

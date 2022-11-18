@@ -23,8 +23,7 @@ spec:
           operator: Exists
         - effect: NoSchedule
           key: node-role.kubernetes.io/master
-          operator: Equal
-          value: "true"
+          operator: Exists
         - effect: NoSchedule
           key: node-role.kubernetes.io/control-plane
           operator: Exists
@@ -39,7 +38,7 @@ spec:
           image: {{ .Values.image }}
           args:
             - --cloud-provider={{ .Values.csp }}
-            - --kms-endpoint=kms.kube-system:{{ .Values.global.kmsPort }}
+            - --kms-endpoint=kms.{{ .Release.Namespace }}:{{ .Values.global.kmsPort }}
           volumeMounts:
             - mountPath: {{ .Values.global.serviceBasePath }}
               name: config

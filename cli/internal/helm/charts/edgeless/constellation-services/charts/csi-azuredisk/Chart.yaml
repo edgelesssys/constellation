@@ -1,0 +1,5 @@
+apiVersion: v2
+appVersion: "v1.0.1"
+description: Azure disk Container Storage Interface (CSI) Storage Plugin with on-node encryption support
+name: csi-azuredisk
+version: v1.0.1
