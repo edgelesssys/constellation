@@ -22,22 +22,15 @@ func validateK8sVersion(fl validator.FieldLevel) bool {
 }
 
 func validateAWSInstanceType(fl validator.FieldLevel) bool {
-	return validInstanceTypeForProvider(fl.Field().String(), false, cloudprovider.AWS)
+	return validInstanceTypeForProvider(fl.Field().String(), cloudprovider.AWS)
 }
 
 func validateAzureInstanceType(fl validator.FieldLevel) bool {
-	azureConfig := fl.Parent().Interface().(AzureConfig)
-	var acceptNonCVM bool
-	if azureConfig.ConfidentialVM != nil {
-		// This is the inverse of the config value (acceptNonCVMs is true if confidentialVM is false).
-		// We could make the validator the other way around, but this should be an explicit bypass rather than checking if CVMs are "allowed".
-		acceptNonCVM = !*azureConfig.ConfidentialVM
-	}
-	return validInstanceTypeForProvider(fl.Field().String(), acceptNonCVM, cloudprovider.Azure)
+	return validInstanceTypeForProvider(fl.Field().String(), cloudprovider.Azure)
 }
 
 func validateGCPInstanceType(fl validator.FieldLevel) bool {
-	return validInstanceTypeForProvider(fl.Field().String(), false, cloudprovider.GCP)
+	return validInstanceTypeForProvider(fl.Field().String(), cloudprovider.GCP)
 }
 
 // validateProvider checks if zero or more than one providers are defined in the config.
@@ -123,22 +116,14 @@ func (c *Config) translateMoreThanOneProviderError(ut ut.Translator, fe validato
 	return t
 }
 
-func validInstanceTypeForProvider(insType string, acceptNonCVM bool, provider cloudprovider.Provider) bool {
+func validInstanceTypeForProvider(insType string, provider cloudprovider.Provider) bool {
 	switch provider {
 	case cloudprovider.AWS:
 		return checkIfAWSInstanceTypeIsValid(insType)
 	case cloudprovider.Azure:
-		if acceptNonCVM {
-			for _, instanceType := range instancetypes.AzureTrustedLaunchInstanceTypes {
-				if insType == instanceType {
-					return true
-				}
-			}
-		} else {
-			for _, instanceType := range instancetypes.AzureCVMInstanceTypes {
-				if insType == instanceType {
-					return true
-				}
+		for _, instanceType := range instancetypes.AzureInstanceTypes {
+			if insType == instanceType {
+				return true
 			}
 		}
 		return false
@@ -199,14 +184,8 @@ func registerTranslateAzureInstanceTypeError(ut ut.Translator) error {
 	return ut.Add("azure_instance_type", "{0} must be one of {1}", true)
 }
 
-func (c *Config) translateAzureInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
-	// Suggest trusted launch VMs if confidential VMs have been specifically disabled
-	var t string
-	if c.Provider.Azure != nil && c.Provider.Azure.ConfidentialVM != nil && !*c.Provider.Azure.ConfidentialVM {
-		t, _ = ut.T("azure_instance_type", fe.Field(), fmt.Sprintf("%v", instancetypes.AzureTrustedLaunchInstanceTypes))
-	} else {
-		t, _ = ut.T("azure_instance_type", fe.Field(), fmt.Sprintf("%v", instancetypes.AzureCVMInstanceTypes))
-	}
+func translateAzureInstanceTypeError(ut ut.Translator, fe validator.FieldError) string {
+	t, _ := ut.T("azure_instance_type", fe.Field(), fmt.Sprintf("%v", instancetypes.AzureInstanceTypes))
 
 	return t
 }

@@ -43,20 +43,10 @@ resource "azurerm_linux_virtual_machine_scale_set" "scale_set" {
 
   boot_diagnostics {}
 
-  dynamic "os_disk" {
-    for_each = var.confidential_vm ? [1] : [] # if confidential_vm is true
-    content {
-      security_encryption_type = "VMGuestStateOnly"
-      caching                  = "ReadWrite"
-      storage_account_type     = "Premium_LRS"
-    }
-  }
-  dynamic "os_disk" {
-    for_each = var.confidential_vm ? [] : [1] # else
-    content {
-      caching              = "ReadWrite"
-      storage_account_type = "Premium_LRS"
-    }
+  os_disk {
+    security_encryption_type = "VMGuestStateOnly"
+    caching                  = "ReadWrite"
+    storage_account_type     = "Premium_LRS"
   }
 
   data_disk {

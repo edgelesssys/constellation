@@ -173,7 +173,6 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 		InstanceType:         insType,
 		StateDiskType:        config.Provider.Azure.StateDiskType,
 		ImageID:              config.Provider.Azure.Image,
-		ConfidentialVM:       *config.Provider.Azure.ConfidentialVM,
 		SecureBoot:           *config.Provider.Azure.SecureBoot,
 		Debug:                config.IsDebugCluster(),
 	}

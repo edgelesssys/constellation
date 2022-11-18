@@ -51,12 +51,6 @@ variable "image_id" {
   description = "The image to use for the cluster nodes."
 }
 
-variable "confidential_vm" {
-  type        = bool
-  default     = true
-  description = "Whether to deploy the cluster nodes as confidential VMs."
-}
-
 variable "secure_boot" {
   type        = bool
   default     = false

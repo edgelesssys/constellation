@@ -108,29 +108,14 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         ```
 
         * The previous step will create a draft release. Check build output for link to draft release. Review & approve.
-6. Export, download and make image available in S3 for trusted launch users. To achieve this:
 
-    ```sh
-    TARGET_DISK=export-${ver}
-    az disk create -g constellation-images -l westus -n ${TARGET_DISK} --hyper-v-generation V2 --os-type Linux --sku standard_lrs --security-type TrustedLaunch --gallery-image-reference /subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation/versions/${ver}
-    ```
-
-    * Find the created resource in Azure
-    * Go to `Settings` -> `Export` and `Generate URLs`
-    * Download both the disk image (first link) and VM state (second link)
-    * Rename disk (`abcd`) to `constellation.img`.
-    * Rename state (UUID) to `constellation.vmgs`.
-    * Go to [AWS S3 bucket for trusted launch](https://s3.console.aws.amazon.com/s3/buckets/cdn-constellation-backend?prefix=constellation/images/azure/trusted-launch/&region=eu-central-1), create a new folder with the given version number.
-    * Upload both image and state into the newly created folder.
-    * Delete the disk in Azure!
-
-7. To bring updated version numbers and other changes (if any) to main, create a new branch `feat/release` from `release/v1.3`, rebase it onto main, and create a PR to main
-8. Milestones management
+6. To bring updated version numbers and other changes (if any) to main, create a new branch `feat/release` from `release/v1.3`, rebase it onto main, and create a PR to main
+7. Milestones management
    1. Create a new milestone for the next release
    2. Add the next release manager and an approximate release date to the milestone description
    3. Close the milestone for the release
    4. Move open issues and PRs from closed milestone to next milestone
-9. If the release is a minor version release, create an empty commit on main and tag it as the start of the next pre-release phase.
+8. If the release is a minor version release, create an empty commit on main and tag it as the start of the next pre-release phase.
 
     ```sh
     nextMinorVer=$(echo $ver | awk -F. -v OFS=. '{$2 += 1 ; print}')
@@ -141,9 +126,9 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
     git push origin main v$nextMinorVer-pre
     ```
 
-10. Test Constellation mini up
+9. Test Constellation mini up
 
-11. Upload AWS measurements to S3 bucket:
+10. Upload AWS measurements to S3 bucket:
     * Create an AWS cluster using the released version.
     * Use `hack/pcr-reader` to download measurements.
     * Create a new folder named after each AWS AMI in [S3 public bucket](https://s3.console.aws.amazon.com/s3/buckets/public-edgeless-constellation?region=us-east-2&tab=objects).

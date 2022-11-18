@@ -53,12 +53,13 @@ type kubeAPIWaiter interface {
 
 // KubeWrapper implements Cluster interface.
 type KubeWrapper struct {
-	cloudProvider           string
+	cloudProvider           cloudprovider.Provider
 	clusterUtil             clusterUtil
 	helmClient              helmClient
 	kubeAPIWaiter           kubeAPIWaiter
 	configProvider          configurationProvider
 	client                  k8sapi.Client
+	idKeyDigest             []byte
 	kubeconfigReader        configReader
 	providerMetadata        ProviderMetadata
 	initialMeasurementsJSON []byte
@@ -66,8 +67,8 @@ type KubeWrapper struct {
 }
 
 // New creates a new KubeWrapper with real values.
-func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client,
-	providerMetadata ProviderMetadata, initialMeasurementsJSON []byte, helmClient helmClient, kubeAPIWaiter kubeAPIWaiter,
+func New(cloudProvider cloudprovider.Provider, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client,
+	providerMetadata ProviderMetadata, initialMeasurementsJSON, idKeyDigest []byte, helmClient helmClient, kubeAPIWaiter kubeAPIWaiter,
 ) *KubeWrapper {
 	return &KubeWrapper{
 		cloudProvider:           cloudProvider,
@@ -76,6 +77,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 		kubeAPIWaiter:           kubeAPIWaiter,
 		configProvider:          configProvider,
 		client:                  client,
+		idKeyDigest:             idKeyDigest,
 		kubeconfigReader:        &KubeconfigReader{fs: afero.Afero{Fs: afero.NewOsFs()}},
 		providerMetadata:        providerMetadata,
 		initialMeasurementsJSON: initialMeasurementsJSON,
@@ -86,8 +88,7 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, cloudServiceAccountURI, versionString string, measurementSalt []byte, enforcedPCRs []uint32,
-	enforceIDKeyDigest bool, idKeyDigest []byte, azureCVM bool,
-	helmReleasesRaw []byte, conformanceMode bool, log *logger.Logger,
+	enforceIDKeyDigest bool, helmReleasesRaw []byte, conformanceMode bool, log *logger.Logger,
 ) ([]byte, error) {
 	k8sVersion, err := versions.NewValidK8sVersion(versionString)
 	if err != nil {
@@ -132,8 +133,7 @@ func (k *KubeWrapper) InitCluster(
 	).Infof("Setting information for node")
 
 	// Step 2: configure kubeadm init config
-	ccmSupported := cloudprovider.FromString(k.cloudProvider) == cloudprovider.Azure ||
-		cloudprovider.FromString(k.cloudProvider) == cloudprovider.GCP
+	ccmSupported := k.cloudProvider == cloudprovider.Azure || k.cloudProvider == cloudprovider.GCP
 	initConfig := k.configProvider.InitConfiguration(ccmSupported, k8sVersion)
 	initConfig.SetNodeIP(nodeIP)
 	initConfig.SetCertSANs([]string{nodeIP})
@@ -163,7 +163,7 @@ func (k *KubeWrapper) InitCluster(
 	// Step 3: configure & start kubernetes controllers
 	log.Infof("Starting Kubernetes controllers and deployments")
 	setupPodNetworkInput := k8sapi.SetupPodNetworkInput{
-		CloudProvider:        k.cloudProvider,
+		CloudProvider:        k.cloudProvider.String(),
 		NodeName:             nodeName,
 		FirstNodePodCIDR:     nodePodCIDR,
 		SubnetworkPodCIDR:    subnetworkPodCIDR,
@@ -192,7 +192,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up konnectivity: %w", err)
 	}
 
-	extraVals, err := k.setupExtraVals(ctx, k.initialMeasurementsJSON, idKeyDigest, measurementSalt, subnetworkPodCIDR, cloudServiceAccountURI)
+	extraVals, err := k.setupExtraVals(ctx, k.initialMeasurementsJSON, k.idKeyDigest, measurementSalt, subnetworkPodCIDR, cloudServiceAccountURI)
 	if err != nil {
 		return nil, fmt.Errorf("setting up extraVals: %w", err)
 	}
@@ -201,12 +201,13 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("installing constellation-services: %w", err)
 	}
 
-	if err := k.setupInternalConfigMap(ctx, strconv.FormatBool(azureCVM)); err != nil {
+	isAzure := k.cloudProvider == cloudprovider.Azure
+	if err := k.setupInternalConfigMap(ctx, strconv.FormatBool(isAzure)); err != nil {
 		return nil, fmt.Errorf("failed to setup internal ConfigMap: %w", err)
 	}
 
 	if err := k.clusterUtil.SetupVerificationService(
-		k.client, resources.NewVerificationDaemonSet(k.cloudProvider, controlPlaneEndpoint),
+		k.client, resources.NewVerificationDaemonSet(k.cloudProvider.String(), controlPlaneEndpoint),
 	); err != nil {
 		return nil, fmt.Errorf("failed to setup verification service: %w", err)
 	}
@@ -215,7 +216,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up operators: %w", err)
 	}
 
-	if k.cloudProvider == "gcp" {
+	if k.cloudProvider == cloudprovider.GCP {
 		if err := k.clusterUtil.SetupGCPGuestAgent(k.client, resources.NewGCPGuestAgentDaemonset()); err != nil {
 			return nil, fmt.Errorf("failed to setup gcp guest agent: %w", err)
 		}
@@ -265,8 +266,8 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	).Infof("Setting information for node")
 
 	// Step 2: configure kubeadm join config
-	ccmSupported := cloudprovider.FromString(k.cloudProvider) == cloudprovider.Azure ||
-		cloudprovider.FromString(k.cloudProvider) == cloudprovider.GCP
+	ccmSupported := k.cloudProvider == cloudprovider.Azure ||
+		k.cloudProvider == cloudprovider.GCP
 	joinConfig := k.configProvider.JoinConfiguration(ccmSupported)
 	joinConfig.SetAPIServerEndpoint(args.APIServerEndpoint)
 	joinConfig.SetToken(args.Token)
@@ -361,7 +362,7 @@ func (k *KubeWrapper) setupOperators(ctx context.Context) error {
 		return fmt.Errorf("retrieving constellation UID: %w", err)
 	}
 
-	if err := k.clusterUtil.SetupNodeOperator(ctx, k.client, resources.NewNodeOperatorDeployment(k.cloudProvider, uid)); err != nil {
+	if err := k.clusterUtil.SetupNodeOperator(ctx, k.client, resources.NewNodeOperatorDeployment(k.cloudProvider.String(), uid)); err != nil {
 		return fmt.Errorf("setting up constellation node operator: %w", err)
 	}
 
@@ -402,7 +403,7 @@ func getIPAddr() (string, error) {
 
 // setupExtraVals create a helm values map for consumption by helm-install.
 // Will move to a more dedicated place once that place becomes apparent.
-func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSON []byte, idkeydigest []byte, measurementSalt []byte, subnetworkPodCIDR string, cloudServiceAccountURI string) (map[string]any, error) {
+func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSON []byte, idKeyDigest []byte, measurementSalt []byte, subnetworkPodCIDR string, cloudServiceAccountURI string) (map[string]any, error) {
 	extraVals := map[string]any{
 		"join-service": map[string]any{
 			"measurements":    string(initialMeasurementsJSON),
@@ -416,7 +417,7 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSO
 		return nil, fmt.Errorf("retrieving current instance: %w", err)
 	}
 
-	switch cloudprovider.FromString(k.cloudProvider) {
+	switch k.cloudProvider {
 	case cloudprovider.GCP:
 		uid, err := k.providerMetadata.UID(ctx)
 		if err != nil {
@@ -472,7 +473,7 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSO
 		if !ok {
 			return nil, errors.New("invalid join-service values")
 		}
-		joinVals["idkeydigest"] = hex.EncodeToString(idkeydigest)
+		joinVals["idkeydigest"] = hex.EncodeToString(idKeyDigest)
 
 		subscriptionID, resourceGroup, err := azureshared.BasicsFromProviderID(instance.ProviderID)
 		if err != nil {

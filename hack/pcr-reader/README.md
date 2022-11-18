@@ -62,7 +62,7 @@ An overview about what data is measured into the different registers can be foun
 
 We use the TPM and its PCRs to verify all nodes of a Constellation run with the same firmware and OS software.
 
-### Azure trusted launch
+### Azure
 
 PCR[0] measures the firmware volume (FV). Changes to FV also change PCR[0], making it unreliable for attestation.
 PCR[6] measures the VM ID. This is unusable for cluster attestation for two reasons:

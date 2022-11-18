@@ -131,8 +131,6 @@ type AzureVariables struct {
 	StateDiskType string
 	// ImageID is the ID of the Azure image to use.
 	ImageID string
-	// ConfidentialVM sets the VM to be confidential.
-	ConfidentialVM bool
 	// SecureBoot sets the VM to use secure boot.
 	SecureBoot bool
 	// Debug is true if debug mode is enabled.
@@ -149,7 +147,6 @@ func (v *AzureVariables) String() string {
 	writeLinef(b, "instance_type = %q", v.InstanceType)
 	writeLinef(b, "state_disk_type = %q", v.StateDiskType)
 	writeLinef(b, "image_id = %q", v.ImageID)
-	writeLinef(b, "confidential_vm = %t", v.ConfidentialVM)
 	writeLinef(b, "secure_boot = %t", v.SecureBoot)
 	writeLinef(b, "debug = %t", v.Debug)
 

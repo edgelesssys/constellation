@@ -66,12 +66,6 @@ variable "tags" {
   description = "The tags to add to the scale set."
 }
 
-variable "confidential_vm" {
-  type        = bool
-  default     = true
-  description = "Whether to deploy the cluster nodes as confidential VMs."
-}
-
 variable "secure_boot" {
   type        = bool
   default     = false

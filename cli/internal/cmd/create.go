@@ -78,14 +78,6 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 		printedAWarning = true
 	}
 
-	if conf.IsAzureNonCVM() {
-		cmd.PrintErrln("Disabling Confidential VMs is insecure. Use only for evaluation purposes.")
-		printedAWarning = true
-		if conf.EnforcesIDKeyDigest() {
-			cmd.PrintErrln("Your config asks for enforcing the idkeydigest. This is only available on Confidential VMs. It will not be enforced.")
-		}
-	}
-
 	// Print an extra new line later to separate warnings from the prompt message of the create command
 	if printedAWarning {
 		cmd.PrintErrln("")

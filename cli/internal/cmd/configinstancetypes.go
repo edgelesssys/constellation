@@ -28,13 +28,11 @@ func newConfigInstanceTypesCmd() *cobra.Command {
 func printSupportedInstanceTypes(cmd *cobra.Command, args []string) {
 	cmd.Printf(`AWS instance families:
 %v
-Azure Confidential VM instance types:
-%v
-Azure Trusted Launch instance types:
+Azure instance types:
 %v
 GCP instance types:
 %v
-`, formatInstanceTypes(instancetypes.AWSSupportedInstanceFamilies), formatInstanceTypes(instancetypes.AzureCVMInstanceTypes), formatInstanceTypes(instancetypes.AzureTrustedLaunchInstanceTypes), formatInstanceTypes(instancetypes.GCPInstanceTypes))
+`, formatInstanceTypes(instancetypes.AWSSupportedInstanceFamilies), formatInstanceTypes(instancetypes.AzureInstanceTypes), formatInstanceTypes(instancetypes.GCPInstanceTypes))
 }
 
 func formatInstanceTypes(types []string) string {

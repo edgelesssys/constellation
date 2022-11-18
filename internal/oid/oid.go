@@ -62,14 +62,6 @@ func (AzureSNP) OID() asn1.ObjectIdentifier {
 	return asn1.ObjectIdentifier{1, 3, 9900, 4, 1}
 }
 
-// AzureTrustedLaunch holds the OID for Azure TrustedLaunch VMs.
-type AzureTrustedLaunch struct{}
-
-// OID returns the struct's object identifier.
-func (AzureTrustedLaunch) OID() asn1.ObjectIdentifier {
-	return asn1.ObjectIdentifier{1, 3, 9900, 4, 2}
-}
-
 // QEMU holds the QEMU OID.
 type QEMU struct{}
 

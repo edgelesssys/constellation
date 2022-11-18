@@ -45,9 +45,6 @@ if [[ ${AZURE_SECURITY_TYPE} == "ConfidentialVM" ]]; then
 elif [[ ${AZURE_SECURITY_TYPE} == "ConfidentialVMSupported" ]]; then
   AZURE_DISK_SECURITY_TYPE=""
   security_type_short_name="cvm"
-elif [[ ${AZURE_SECURITY_TYPE} == "TrustedLaunch" ]]; then
-  AZURE_DISK_SECURITY_TYPE=TrustedLaunch
-  security_type_short_name="trustedlaunch"
 else
   echo "Unknown security type: ${AZURE_SECURITY_TYPE}"
   exit 1
@@ -66,9 +63,6 @@ AZURE_VMGS_PATH=$1
 if [[ -z ${AZURE_VMGS_PATH} ]] && [[ ${AZURE_SECURITY_TYPE} == "ConfidentialVM" ]]; then
   echo "No VMGS path provided - using default ConfidentialVM VMGS"
   AZURE_VMGS_PATH="${BLOBS_DIR}/cvm-vmgs.vhd"
-elif [[ -z ${AZURE_VMGS_PATH} ]] && [[ ${AZURE_SECURITY_TYPE} == "TrustedLaunch" ]]; then
-  echo "No VMGS path provided - using default TrsutedLaunch VMGS"
-  AZURE_VMGS_PATH="${BLOBS_DIR}/trusted-launch-vmgs.vhd"
 fi
 
 SIZE=$(wc -c "${AZURE_IMAGE_PATH}" | cut -d " " -f1)

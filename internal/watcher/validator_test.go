@@ -101,7 +101,6 @@ func TestNewUpdateableValidator(t *testing.T) {
 				logger.NewTest(t),
 				tc.provider,
 				handler,
-				false,
 			)
 			if tc.wantErr {
 				assert.Error(err)

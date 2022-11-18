@@ -49,8 +49,6 @@ set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
 
 if [[ ${AZURE_SECURITY_TYPE} == "ConfidentialVM" ]]; then
   VMSIZE="Standard_DC2as_v5"
-elif [[ ${AZURE_SECURITY_TYPE} == "TrustedLaunch" ]]; then
-  VMSIZE="standard_D2as_v5"
 else
   echo "Unknown security type: ${AZURE_SECURITY_TYPE}"
   exit 1

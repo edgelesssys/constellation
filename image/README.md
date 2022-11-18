@@ -102,7 +102,7 @@ First, create a disk without embedded MOK EFI variables.
 
 ```sh
 # set these variables
-export AZURE_SECURITY_TYPE=ConfidentialVM # or TrustedLaunch
+export AZURE_SECURITY_TYPE=ConfidentialVM
 export AZURE_RESOURCE_GROUP_NAME= # e.g. "constellation-images"
 
 export AZURE_REGION=northeurope
@@ -218,7 +218,6 @@ export AZURE_VMGS_PATH= # e.g. nothing OR "path/to/ConfidentialVM.vmgs"
 # AZURE_SECURITY_TYPE can be one of
 # - "ConfidentialVMSupported" (ConfidentialVM with secure boot disabled),
 # - "ConfidentialVM" (ConfidentialVM with Secure Boot) or
-# - TrustedLaunch" (Trusted Launch with or without Secure Boot)
 export AZURE_SECURITY_TYPE=ConfidentialVMSupported
 
 export AZURE_RESOURCE_GROUP_NAME=constellation-images

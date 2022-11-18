@@ -4,9 +4,6 @@ inputs:
   csp:
     description: "Cloud Service Provider"
     required: true
-  uploadVariant:
-    description: "Upload variant"
-    required: true
   basePath:
     description: "Base path to the image build directory"
     required: true
@@ -190,7 +187,6 @@ runs:
         semver: ${{ steps.version.outputs.semanticVersion }}
         pseudover: ${{ steps.version.outputs.pseudoVersion }}
         branchName: ${{ steps.version.outputs.branchName }}
-        uploadVariant: ${{ inputs.uploadVariant }}
       run: |
         echo "resourceGroupName=constellation-images" >> $GITHUB_OUTPUT
         echo "region=northeurope" >> $GITHUB_OUTPUT
@@ -200,13 +196,9 @@ runs:
         echo "publisher=edgelesssys" >> $GITHUB_OUTPUT
         echo "rawImagePath=${basePath}/mkosi.output.azure/fedora~37/image.raw" >> $GITHUB_OUTPUT
         echo "imagePath=${basePath}/mkosi.output.azure/fedora~37/image.vhd" >> $GITHUB_OUTPUT
-        echo "jsonOutput=${basePath}/mkosi.output.azure/fedora~37/image-upload${uploadVariant}.json" >> $GITHUB_OUTPUT
+        echo "jsonOutput=${basePath}/mkosi.output.azure/fedora~37/image-upload.json" >> $GITHUB_OUTPUT
         # TODO: set default security type to "ConfidentialVM" once replication is possible
-        securityType=${{ inputs.uploadVariant }}
-        if [ -z "${securityType}" ]; then
-          securityType=ConfidentialVMSupported
-        fi
-        echo "securityType=${securityType}" >> $GITHUB_OUTPUT
+        echo "securityType=ConfidentialVMSupported" >> $GITHUB_OUTPUT
         echo "diskName=constellation-${pseudover//./-}-${securityType,,}" >> $GITHUB_OUTPUT
         if [ "${imageType}" = release ]
         then

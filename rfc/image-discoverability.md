@@ -111,7 +111,7 @@ s3://<BUCKET-NAME>/constellation/v1/images/<IMAGE-VERSION-UID>.json
 ```
 
 - For AWS, the image lookup table contains the AMI IDs for each region
-- For Azure, the image lookup table contains the image IDs for the CVM and Trusted Launch images
+- For Azure, the image lookup table contains the image IDs for the CVM images
 - For GCP, the image lookup table contains the image ID
 - For QEMU, the image lookup table contains a URL to the QEMU image
 
@@ -146,7 +146,7 @@ The CLI can find a CSP- and region specific image reference by looking up the `i
 - otherwise, load the image lookup table from a well known URL (e.g. `https://cdn.confidential.cloud/constellation/v1/images/<IMAGE-VERSION-UID>.json`) and use the lookup table in that file
 - choose the CSP-specific image reference for the current region and security type:
   - On AWS, use the AMI ID for the current region (e.g. `.aws.us-east-1`)
-  - On Azure, use the image ID for the security type (CVM or Trusted Launch) (e.g. `.azure.cvm`)
+  - On Azure, use the image ID for the security type (CVM) (e.g. `.azure.cvm`)
   - On GCP, use the only image ID (e.g. `.gcp.sev-es`)
   - On QEMU, use the only image ID (e.g. `.qemu.default`)
 

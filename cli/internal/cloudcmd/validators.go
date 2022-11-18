@@ -15,8 +15,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/aws"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/azure"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
@@ -33,7 +32,6 @@ type Validator struct {
 	enforcedPCRs       []uint32
 	idkeydigest        []byte
 	enforceIDKeyDigest bool
-	azureCVM           bool
 	validator          atls.Validator
 }
 
@@ -49,15 +47,12 @@ func NewValidator(provider cloudprovider.Provider, conf *config.Config) (*Valida
 	}
 
 	if v.provider == cloudprovider.Azure {
-		v.azureCVM = *conf.Provider.Azure.ConfidentialVM
-		if v.azureCVM {
-			idkeydigest, err := hex.DecodeString(conf.Provider.Azure.IDKeyDigest)
-			if err != nil {
-				return nil, fmt.Errorf("bad config: decoding idkeydigest from config: %w", err)
-			}
-			v.enforceIDKeyDigest = *conf.Provider.Azure.EnforceIDKeyDigest
-			v.idkeydigest = idkeydigest
+		idkeydigest, err := hex.DecodeString(conf.Provider.Azure.IDKeyDigest)
+		if err != nil {
+			return nil, fmt.Errorf("bad config: decoding idkeydigest from config: %w", err)
 		}
+		v.enforceIDKeyDigest = *conf.Provider.Azure.EnforceIDKeyDigest
+		v.idkeydigest = idkeydigest
 	}
 
 	return &v, nil
@@ -158,11 +153,7 @@ func (v *Validator) updateValidator(cmd *cobra.Command) {
 	case cloudprovider.GCP:
 		v.validator = gcp.NewValidator(v.pcrs, v.enforcedPCRs, log)
 	case cloudprovider.Azure:
-		if v.azureCVM {
-			v.validator = snp.NewValidator(v.pcrs, v.enforcedPCRs, v.idkeydigest, v.enforceIDKeyDigest, log)
-		} else {
-			v.validator = trustedlaunch.NewValidator(v.pcrs, v.enforcedPCRs, log)
-		}
+		v.validator = azure.NewValidator(v.pcrs, v.enforcedPCRs, v.idkeydigest, v.enforceIDKeyDigest, log)
 	case cloudprovider.AWS:
 		v.validator = aws.NewValidator(v.pcrs, v.enforcedPCRs, log)
 	case cloudprovider.QEMU:

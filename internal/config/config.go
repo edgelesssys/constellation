@@ -185,13 +185,10 @@ type AzureConfig struct {
 	//   Deploy Azure Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage
 	DeployCSIDriver *bool `yaml:"deployCSIDriver" validate:"required"`
 	// description: |
-	//   Use Confidential VMs. If set to false, Trusted Launch VMs are used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview
-	ConfidentialVM *bool `yaml:"confidentialVM" validate:"required"`
-	// description: |
 	//   Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob.
 	SecureBoot *bool `yaml:"secureBoot" validate:"required"`
 	// description: |
-	//   Expected value for the field 'idkeydigest' in the AMD SEV-SNP attestation report. Only usable with ConfidentialVMs. See 4.6 and 7.3 in: https://www.amd.com/system/files/TechDocs/56860.pdf
+	//   Expected value for the field 'idkeydigest' in the AMD SEV-SNP attestation report. See 4.6 and 7.3 in: https://www.amd.com/system/files/TechDocs/56860.pdf
 	IDKeyDigest string `yaml:"idKeyDigest" validate:"required_if=EnforceIdKeyDigest true,omitempty,hexadecimal,len=96"`
 	// description: |
 	//   Enforce the specified idKeyDigest value during remote attestation.
@@ -304,7 +301,6 @@ func Default() *Config {
 				DeployCSIDriver:      func() *bool { b := true; return &b }(),
 				IDKeyDigest:          "57486a447ec0f1958002a22a06b7673b9fd27d11e1c6527498056054c5fa92d23c50f9de44072760fe2b6fb89740b696",
 				EnforceIDKeyDigest:   func() *bool { b := true; return &b }(),
-				ConfidentialVM:       func() *bool { b := true; return &b }(),
 				SecureBoot:           func() *bool { b := false; return &b }(),
 				Measurements:         measurements.DefaultsFor(cloudprovider.Azure),
 				EnforcedMeasurements: []uint32{4, 8, 9, 11, 12, 13, 15},
@@ -438,11 +434,6 @@ func (c *Config) RemoveProviderExcept(provider cloudprovider.Provider) {
 	}
 }
 
-// IsAzureNonCVM checks whether the chosen provider is azure and confidential VMs are disabled.
-func (c *Config) IsAzureNonCVM() bool {
-	return c.Provider.Azure != nil && c.Provider.Azure.ConfidentialVM != nil && !*c.Provider.Azure.ConfidentialVM
-}
-
 // IsDebugCluster checks whether the cluster is configured as a debug cluster.
 func (c *Config) IsDebugCluster() bool {
 	if c.DebugCluster != nil && *c.DebugCluster {
@@ -526,7 +517,7 @@ func (c *Config) Validate() error {
 		return err
 	}
 
-	if err := validate.RegisterTranslation("azure_instance_type", trans, registerTranslateAzureInstanceTypeError, c.translateAzureInstanceTypeError); err != nil {
+	if err := validate.RegisterTranslation("azure_instance_type", trans, registerTranslateAzureInstanceTypeError, translateAzureInstanceTypeError); err != nil {
 		return err
 	}
 
