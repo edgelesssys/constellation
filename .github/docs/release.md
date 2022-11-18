@@ -52,15 +52,33 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
        2. Create a new block for unreleased changes
     5. Update project version in [CMakeLists.txt](/CMakeLists.txt) to `1.3.0` (without v).
     6. Update the `version` key in [constellation-services/Chart.yaml](/cli/internal/helm/charts/edgeless/constellation-services/Chart.yaml). Also update the `version` key for all subcharts, e.g. [Chart.yaml](/cli/internal/helm/charts/edgeless/constellation-services/charts/kms/Chart.yaml). Lastly, update the `dependencies.*.version` key for all dependencies in the main chart [constellation-services/Chart.yaml](/cli/internal/helm/charts/edgeless/constellation-services/Chart.yaml).
-    7. When the microservice builds are finished update versions in [versions.go](../../internal/versions/versions.go#L33-L39) to `v1.3.0`, **add the container hashes** and **push your changes**.
-    8. Create a [production coreOS image](/.github/workflows/build-coreos.yml)
+    7. Update [default image versions in enterprise config](/internal/config/images_enterprise.go)
+    8. Increase version number of QEMU image `ConstellationQEMUImageURL` in [versions.go](../../internal/versions/versions.go#L64)
+    9. When the microservice builds are finished update versions in [versions.go](../../internal/versions/versions.go#L33-L39) to `v1.3.0`, **add the container hashes** and **push your changes**.
+
+        ```sh
+        # crane: https://github.com/google/go-containerregistry/blob/main/cmd/crane/doc/crane.md
+        crane digest ghcr.io/edgelesssys/constellation/node-operator-catalog:v$ver
+        crane digest ghcr.io/edgelesssys/constellation/join-service:v$ver
+        crane digest ghcr.io/edgelesssys/constellation/access-manager:v$ver
+        crane digest ghcr.io/edgelesssys/constellation/kmsserver:v$ver
+        crane digest ghcr.io/edgelesssys/constellation/verification-service:v$ver
+        ```
+
+    10. Create a [production OS image](/.github/workflows/build-os-image.yml)
 
         ```sh
         gh workflow run build-os-image.yml --ref release/v$minor -F debug=false -F imageVersion=v$ver
         ```
 
-    9. Update [default images in config](/internal/config/images_enterprise.go)
-    10. Run manual E2E tests using [Linux](/.github/workflows/e2e-test-manual.yml) and [macOS](/.github/workflows/e2e-test-manual-macos.yml) to confirm functionality and stability.
+        * Once the pipeline has finished, download the artifact `image-qemu`.
+        * Unzip the downloaded artifact, rename it to `constellation.raw`.
+        * Go to the [S3 bucket for QEMU images](https://s3.console.aws.amazon.com/s3/buckets/cdn-constellation-backend?region=eu-central-1&prefix=constellation/images/mini-constellation/&showversions=false)
+        * Create a new folder for the given version, and upload `constellation.raw` into it.
+
+        * Replace AWS AMIs for this version and next in docs in `first-steps.md`.
+
+    11. Run manual E2E tests using [Linux](/.github/workflows/e2e-test-manual.yml) and [macOS](/.github/workflows/e2e-test-manual-macos.yml) to confirm functionality and stability.
 
         ```sh
         gh workflow run e2e-test-manual.yml --ref release/v$minor -F cloudProvider=azure -F machineType=Standard_DC4as_v5 -F test="sonobuoy full" -F osImage=/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/$ver -F isDebugImage=false
@@ -69,14 +87,14 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=gcp -F machineType=n2d-standard-4 -F test="sonobuoy full" -F osImage=projects/constellation-images/global/images/constellation-v$gcpVer -F isDebugImage=false
         ```
 
-    11. [Generate measurements](/.github/workflows/generate-measurements.yml) for the images on each CSP.
+    12. [Generate measurements](/.github/workflows/generate-measurements.yml) for the images on each CSP.
 
         ```sh
            gh workflow run generate-measurements.yml --ref release/v$minor -F cloudProvider=azure -F osImage=/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/$ver -F isDebugImage=false
            gh workflow run generate-measurements.yml --ref release/v$minor -F cloudProvider=gcp -F osImage=projects/constellation-images/global/images/constellation-v$gcpVer -F isDebugImage=false
         ```
 
-    12. Create a new tag on this release branch
+    13. Create a new tag on this release branch
 
         ```sh
         git tag v$ver
@@ -90,7 +108,22 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         ```
 
         * The previous step will create a draft release. Check build output for link to draft release. Review & approve.
-6. Follow [export flow (INTERNAL)](https://github.com/edgelesssys/wiki/blob/master/documentation/constellation/customer-onboarding.md#manual-export-and-import) to make image available in S3 for trusted launch users.
+6. Export, download and make image available in S3 for trusted launch users. To achieve this:
+
+    ```sh
+    TARGET_DISK=export-${ver}
+    az disk create -g constellation-images -l westus -n ${TARGET_DISK} --hyper-v-generation V2 --os-type Linux --sku standard_lrs --security-type TrustedLaunch --gallery-image-reference /subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/CONSTELLATION-IMAGES/providers/Microsoft.Compute/galleries/Constellation/images/constellation/versions/${ver}
+    ```
+
+    * Find the created resource in Azure
+    * Go to `Settings` -> `Export` and `Generate URLs`
+    * Download both the disk image (first link) and VM state (second link)
+    * Rename disk (`abcd`) to `constellation.img`.
+    * Rename state (UUID) to `constellation.vmgs`.
+    * Go to [AWS S3 bucket for trusted launch](https://s3.console.aws.amazon.com/s3/buckets/cdn-constellation-backend?prefix=constellation/images/azure/trusted-launch/&region=eu-central-1), create a new folder with the given version number.
+    * Upload both image and state into the newly created folder.
+    * Delete the disk in Azure!
+
 7. To bring updated version numbers and other changes (if any) to main, create a new branch `feat/release` from `release/v1.3`, rebase it onto main, and create a PR to main
 8. Milestones management
    1. Create a new milestone for the next release
@@ -107,3 +140,13 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
     git tag v$nextMinorVer-pre
     git push origin main v$nextMinorVer-pre
     ```
+
+10. Test Constellation mini up
+
+11. Upload AWS measurements to S3 bucket:
+    * Create an AWS cluster using the released version.
+    * Use `hack/pcr-reader` to download measurements.
+    * Create a new folder named after each AWS AMI in [S3 public bucket](https://s3.console.aws.amazon.com/s3/buckets/public-edgeless-constellation?region=us-east-2&tab=objects).
+    * Keep measurements: 4, 8, 9, 11, 12, 13.
+    * Sign the measurements using `cosign sign-blob`.
+    * Upload both `measurements.yaml` & `measurements.yaml.sig` to each created folder in S3.

@@ -35,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- For now removed features. -->
 - `access-manager` was removed from code base. K8s native way to SSH into nodes documented.
 
+### Fixed
+
 ### Security
 <!-- For security related changes. -->
 
@@ -43,7 +45,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `constellation create` on GCP now always uses the local default credentials.
 
 
-## [2.2.1] - 2022-11-14
+## [2.2.2] - 2022-11-17
+
+### Fixed
+
+- `constellation create` on GCP now always uses the local default credentials.
+- A release process error encountered in v2.2.1. This led to a broken QEMU-based Constellation deployment, where PCR[8] didn't match.
+
+## [2.2.1] - 2022-11-16
 
 ### Changed
 
