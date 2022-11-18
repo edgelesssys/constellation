@@ -30,6 +30,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build go build -o bootstrapper -ta
 FROM build AS build-disk-mapper
 WORKDIR /constellation/disk-mapper/
 
+ARG PROJECT_VERSION
 RUN --mount=type=cache,target=/root/.cache/go-build go build -o disk-mapper -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}" ./cmd/
 
 FROM scratch AS bootstrapper
