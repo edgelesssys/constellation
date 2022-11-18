@@ -1,0 +1,204 @@
+image:
+  baseRepo: mcr.microsoft.com
+  azuredisk:
+    repository: ghcr.io/edgelesssys/constellation/azure-csi-driver
+    tag: v1.0.1
+    pullPolicy: IfNotPresent
+  csiProvisioner:
+    repository: /oss/kubernetes-csi/csi-provisioner
+    tag: v3.2.0
+    pullPolicy: IfNotPresent
+  csiAttacher:
+    repository: /oss/kubernetes-csi/csi-attacher
+    tag: v3.5.0
+    pullPolicy: IfNotPresent
+  csiResizer:
+    repository: /oss/kubernetes-csi/csi-resizer
+    tag: v1.5.0
+    pullPolicy: IfNotPresent
+  livenessProbe:
+    repository: /oss/kubernetes-csi/livenessprobe
+    tag: v2.7.0
+    pullPolicy: IfNotPresent
+  nodeDriverRegistrar:
+    repository: /oss/kubernetes-csi/csi-node-driver-registrar
+    tag: v2.5.1
+    pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true # When true, service accounts will be created for you. Set to false if you want to use your own.
+  controller: csi-azuredisk-controller-sa # Name of Service Account to be created or used
+  node: csi-azuredisk-node-sa # Name of Service Account to be created or used
+  snapshotController: csi-snapshot-controller-sa # Name of Service Account to be created or used
+
+rbac:
+  create: true
+  name: azuredisk
+
+controller:
+  name: csi-azuredisk-controller
+  cloudConfigSecretName: azureconfig
+  cloudConfigSecretNamespace: kube-system
+  allowEmptyCloudConfig: false
+  replicas: 1
+  metricsPort: 29604
+  livenessProbe:
+    healthPort: 29602
+  runOnMaster: false
+  runOnControlPlane: true
+  disableAvailabilitySetNodes: false
+  vmType: ""
+  provisionerWorkerThreads: 40
+  attacherWorkerThreads: 500
+  vmssCacheTTLInSeconds: -1
+  logLevel: 5
+  tolerations:
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/controlplane"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node.cloudprovider.kubernetes.io/uninitialized"
+      effect: NoSchedule
+      operator: Exists
+    - key: "node.kubernetes.io/not-ready"
+      effect: NoSchedule
+      operator: Exists
+  podLabels: {}
+  resources:
+    csiProvisioner:
+      limits:
+        memory: 500Mi
+      requests:
+        cpu: 10m
+        memory: 20Mi
+    csiAttacher:
+      limits:
+        memory: 500Mi
+      requests:
+        cpu: 10m
+        memory: 20Mi
+    csiResizer:
+      limits:
+        memory: 500Mi
+      requests:
+        cpu: 10m
+        memory: 20Mi
+    csiSnapshotter:
+      limits:
+        memory: 100Mi
+      requests:
+        cpu: 10m
+        memory: 20Mi
+    livenessProbe:
+      limits:
+        memory: 100Mi
+      requests:
+        cpu: 10m
+        memory: 20Mi
+    azuredisk:
+      limits:
+        memory: 500Mi
+      requests:
+        cpu: 10m
+        memory: 20Mi
+
+node:
+  cloudConfigSecretName: azureconfig
+  cloudConfigSecretNamespace: kube-system
+  supportZone: true
+  allowEmptyCloudConfig: true
+  maxUnavailable: 1
+  metricsPort: 29605
+  logLevel: 5
+  livenessProbe:
+    healthPort: 29603
+  kmsPort: "9000"
+  kmsNamespace: "kube-system"
+
+snapshot:
+  enabled: false
+  name: csi-snapshot-controller
+  image:
+    csiSnapshotter:
+      repository: /oss/kubernetes-csi/csi-snapshotter
+      tag: v5.0.1
+      pullPolicy: IfNotPresent
+    csiSnapshotController:
+      repository: /oss/kubernetes-csi/snapshot-controller
+      tag: v5.0.1
+      pullPolicy: IfNotPresent
+  snapshotController:
+    name: csi-snapshot-controller
+    replicas: 2
+    podLabels: {}
+    resources:
+      limits:
+        memory: 100Mi
+      requests:
+        cpu: 10m
+        memory: 20Mi
+
+feature:
+  enableFSGroupPolicy: true
+
+driver:
+  name: azuredisk.csi.confidential.cloud
+  # maximum number of attachable volumes per node,
+  # maximum number is defined according to node instance type by default(-1)
+  volumeAttachLimit: -1
+  customUserAgent: ""
+  userAgentSuffix: "OSS-helm"
+  azureGoSDKLogLevel: "" # available values: ""(no logs), DEBUG, INFO, WARNING, ERROR
+
+linux:
+  enabled: true
+  dsName: csi-azuredisk-node # daemonset name
+  kubelet: /var/lib/kubelet
+  distro: fedora # available values: debian, fedora
+  enablePerfOptimization: true
+  tolerations:
+    - operator: "Exists"
+  getNodeInfoFromLabels: false # get node info from node labels instead of IMDS
+  podLabels: {}
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: type
+              operator: NotIn
+              values:
+                - virtual-kubelet
+  resources:
+    livenessProbe:
+      limits:
+        memory: 100Mi
+      requests:
+        cpu: 10m
+        memory: 20Mi
+    nodeDriverRegistrar:
+      limits:
+        memory: 100Mi
+      requests:
+        cpu: 10m
+        memory: 20Mi
+    azuredisk:
+      limits:
+        memory: 200Mi
+      requests:
+        cpu: 10m
+        memory: 20Mi
+
+cloud: AzurePublicCloud
+
+createStorageClass: true
+
+## Reference to one or more secrets to be used when pulling images
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+##
+imagePullSecrets: []
+# - name: "image-pull-secret"

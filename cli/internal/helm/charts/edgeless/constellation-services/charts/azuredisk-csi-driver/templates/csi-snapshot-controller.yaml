@@ -1,0 +1,47 @@
+{{- if .Values.snapshot.enabled -}}
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: {{ .Values.snapshot.snapshotController.name }}
+  namespace: {{ .Release.Namespace }}
+{{ include "azuredisk.labels" . | indent 2 }}
+spec:
+  replicas: {{ .Values.snapshot.snapshotController.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.snapshot.snapshotController.name }}
+  template:
+    metadata:
+{{ include "azuredisk.labels" . | indent 6 }}
+        app: {{ .Values.snapshot.snapshotController.name }}
+{{- with .Values.snapshot.snapshotController.podLabels }}
+{{ toYaml . | indent 8 }}
+{{- end }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.snapshotController }}
+      nodeSelector:
+        kubernetes.io/os: linux
+      priorityClassName: system-cluster-critical
+{{- with .Values.controller.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.controller.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+      {{- include "azuredisk.pullSecrets" . | indent 6 }}
+      containers:
+        - name: {{ .Values.snapshot.snapshotController.name }}
+{{- if hasPrefix "/" .Values.snapshot.image.csiSnapshotController.repository }}
+          image: "{{ .Values.image.baseRepo }}{{ .Values.snapshot.image.csiSnapshotController.repository }}:{{ .Values.snapshot.image.csiSnapshotController.tag }}"
+{{- else }}
+          image: "{{ .Values.snapshot.image.csiSnapshotController.repository }}:{{ .Values.snapshot.image.csiSnapshotController.tag }}"
+{{- end }}
+          args:
+            - "--v=2"
+            - "--leader-election=true"
+            - "--leader-election-namespace={{ .Release.Namespace }}"
+          resources: {{- toYaml .Values.snapshot.snapshotController.resources | nindent 12 }}
+          imagePullPolicy: {{ .Values.snapshot.image.csiSnapshotController.pullPolicy }}
+{{- end -}}

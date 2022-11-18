@@ -1,0 +1,14 @@
+{{- if .Values.createStorageClass }}
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  annotations:
+  name: integrity-encrypted-rwo
+parameters:
+  skuname: Premium_LRS
+  csi.storage.k8s.io/fstype: ext4-integrity
+provisioner: azuredisk.csi.confidential.cloud
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+{{- end }}
