@@ -248,7 +248,7 @@ func (i *ChartLoader) loadConstellationServices(config *config.Config, masterSec
 		}
 	}
 
-	return helm.Release{Chart: chartRaw, Values: vals, ReleaseName: "constellation-services", Wait: false}, nil
+	return helm.Release{Chart: chartRaw, Values: vals, ReleaseName: "constellation-services", Wait: true}, nil
 }
 
 // marshalChart takes a Chart object, packages it to a temporary file and returns the content of that file.
