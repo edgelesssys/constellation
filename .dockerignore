@@ -11,14 +11,14 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-#ignore build files
-/build
+# ignore build files
+build
 admin.conf
 bootstrapper-*
 
 go.work
 go.work.sum
-/image
+image
 
 # Dockerfiles
 Dockerfile
