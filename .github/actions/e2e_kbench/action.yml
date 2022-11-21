@@ -35,12 +35,6 @@ runs:
       run: ./install.sh
       shell: bash
 
-    - name: Install Constellation CSI drivers and create storage class
-      uses: ./.github/actions/install_csi_drivers
-      with:
-        kubeconfig: ${{ inputs.kubeconfig }}
-        cloudProvider: ${{ inputs.cloudProvider }}
-
     - name: Run K-Bench
       shell: bash
       working-directory: k-bench

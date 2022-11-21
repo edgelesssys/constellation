@@ -7,7 +7,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: encrypted-storage
+  storageClassName: encrypted-rwo
   resources:
     requests:
       storage: 10Gi
@@ -20,7 +20,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: encrypted-storage
+  storageClassName: encrypted-rwo
   resources:
     requests:
       storage: 10Gi
@@ -33,7 +33,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: encrypted-storage
+  storageClassName: encrypted-rwo
   resources:
     requests:
       storage: 10Gi
