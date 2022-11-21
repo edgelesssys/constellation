@@ -52,7 +52,8 @@ func InitialResources(ctx context.Context, k8sClient client.Writer, scalingGroup
 		if err != nil {
 			return fmt.Errorf("determining autoscaling group name of %q: %w", groupID, err)
 		}
-		if err := createScalingGroup(ctx, k8sClient, groupID, groupName, autoscalingGroupName, updatev1alpha1.ControlPlaneRole); err != nil {
+		newScalingGroupConfig := newScalingGroupConfig{k8sClient, groupID, groupName, autoscalingGroupName, updatev1alpha1.ControlPlaneRole}
+		if err := createScalingGroup(ctx, newScalingGroupConfig); err != nil {
 			return fmt.Errorf("creating initial control plane scaling group: %w", err)
 		}
 	}
@@ -65,7 +66,8 @@ func InitialResources(ctx context.Context, k8sClient client.Writer, scalingGroup
 		if err != nil {
 			return fmt.Errorf("determining autoscaling group name of %q: %w", groupID, err)
 		}
-		if err := createScalingGroup(ctx, k8sClient, groupID, groupName, autoscalingGroupName, updatev1alpha1.WorkerRole); err != nil {
+		newScalingGroupConfig := newScalingGroupConfig{k8sClient, groupID, groupName, autoscalingGroupName, updatev1alpha1.WorkerRole}
+		if err := createScalingGroup(ctx, newScalingGroupConfig); err != nil {
 			return fmt.Errorf("creating initial worker scaling group: %w", err)
 		}
 	}
@@ -116,19 +118,19 @@ func createNodeImage(ctx context.Context, k8sClient client.Writer, imageReferenc
 }
 
 // createScalingGroup creates an initial scaling group resource if it does not exist yet.
-func createScalingGroup(ctx context.Context, k8sClient client.Writer, groupID, groupName, autoscalingGroupName string, role updatev1alpha1.NodeRole) error {
-	err := k8sClient.Create(ctx, &updatev1alpha1.ScalingGroup{
+func createScalingGroup(ctx context.Context, config newScalingGroupConfig) error {
+	err := config.k8sClient.Create(ctx, &updatev1alpha1.ScalingGroup{
 		TypeMeta: metav1.TypeMeta{APIVersion: "update.edgeless.systems/v1alpha1", Kind: "ScalingGroup"},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: strings.ToLower(groupName),
+			Name: strings.ToLower(config.groupName),
 		},
 		Spec: updatev1alpha1.ScalingGroupSpec{
 			NodeImage:           constants.NodeImageResourceName,
-			GroupID:             groupID,
-			AutoscalerGroupName: autoscalingGroupName,
+			GroupID:             config.groupID,
+			AutoscalerGroupName: config.autoscalingGroupName,
 			Min:                 1,
 			Max:                 10,
-			Role:                role,
+			Role:                config.role,
 		},
 	})
 	if k8sErrors.IsAlreadyExists(err) {
@@ -148,4 +150,12 @@ type scalingGroupGetter interface {
 	ListScalingGroups(ctx context.Context, uid string) (controlPlaneGroupIDs []string, workerGroupIDs []string, err error)
 	// AutoscalingCloudProvider returns the cloud-provider name as used by k8s cluster-autoscaler.
 	AutoscalingCloudProvider() string
+}
+
+type newScalingGroupConfig struct {
+	k8sClient            client.Writer
+	groupID              string
+	groupName            string
+	autoscalingGroupName string
+	role                 updatev1alpha1.NodeRole
 }

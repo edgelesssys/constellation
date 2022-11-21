@@ -192,7 +192,8 @@ func (r *NodeImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{Requeue: shouldRequeue}, nil
 	}
 
-	if err := r.createNewNodes(ctx, desiredNodeImage, groups.Outdated, pendingNodeList.Items, scalingGroupByID, newNodesBudget); err != nil {
+	newNodeConfig := newNodeConfig{desiredNodeImage, groups.Outdated, pendingNodeList.Items, scalingGroupByID, newNodesBudget}
+	if err := r.createNewNodes(ctx, newNodeConfig); err != nil {
 		return ctrl.Result{Requeue: shouldRequeue}, nil
 	}
 	// cleanup obsolete nodes
@@ -508,17 +509,13 @@ func (r *NodeImageReconciler) deleteNode(ctx context.Context, controller metav1.
 }
 
 // createNewNodes creates new nodes using up to date images as replacement for outdated nodes.
-func (r *NodeImageReconciler) createNewNodes(
-	ctx context.Context, desiredNodeImage updatev1alpha1.NodeImage,
-	outdatedNodes []corev1.Node, pendingNodes []updatev1alpha1.PendingNode,
-	scalingGroupByID map[string]updatev1alpha1.ScalingGroup, newNodesBudget int,
-) error {
+func (r *NodeImageReconciler) createNewNodes(ctx context.Context, config newNodeConfig) error {
 	logr := log.FromContext(ctx)
-	if newNodesBudget < 1 || len(outdatedNodes) == 0 {
+	if config.newNodesBudget < 1 || len(config.outdatedNodes) == 0 {
 		return nil
 	}
 	outdatedNodesPerScalingGroup := make(map[string]int)
-	for _, node := range outdatedNodes {
+	for _, node := range config.outdatedNodes {
 		// skip outdated nodes that got assigned an heir in this Reconcile call
 		if len(node.Annotations[heirAnnotation]) != 0 {
 			continue
@@ -526,7 +523,7 @@ func (r *NodeImageReconciler) createNewNodes(
 		outdatedNodesPerScalingGroup[strings.ToLower(node.Annotations[scalingGroupAnnotation])]++
 	}
 	pendingJoiningNodesPerScalingGroup := make(map[string]int)
-	for _, pendingNode := range pendingNodes {
+	for _, pendingNode := range config.pendingNodes {
 		// skip pending nodes that are not joining
 		if pendingNode.Spec.Goal != updatev1alpha1.NodeGoalJoin {
 			continue
@@ -541,20 +538,20 @@ func (r *NodeImageReconciler) createNewNodes(
 		}
 	}
 	for scalingGroupID := range requiredNodesPerScalingGroup {
-		scalingGroup, ok := scalingGroupByID[scalingGroupID]
+		scalingGroup, ok := config.scalingGroupByID[scalingGroupID]
 		if !ok {
-			logr.Info("Scaling group does not have matching resource", "scalingGroup", scalingGroupID, "scalingGroups", scalingGroupByID)
+			logr.Info("Scaling group does not have matching resource", "scalingGroup", scalingGroupID, "scalingGroups", config.scalingGroupByID)
 			continue
 		}
-		if !strings.EqualFold(scalingGroup.Status.ImageReference, desiredNodeImage.Spec.ImageReference) {
-			logr.Info("Scaling group does not use latest image", "scalingGroup", scalingGroupID, "usedImage", scalingGroup.Status.ImageReference, "wantedImage", desiredNodeImage.Spec.ImageReference)
+		if !strings.EqualFold(scalingGroup.Status.ImageReference, config.desiredNodeImage.Spec.ImageReference) {
+			logr.Info("Scaling group does not use latest image", "scalingGroup", scalingGroupID, "usedImage", scalingGroup.Status.ImageReference, "wantedImage", config.desiredNodeImage.Spec.ImageReference)
 			continue
 		}
 		if requiredNodesPerScalingGroup[scalingGroupID] == 0 {
 			continue
 		}
 		for {
-			if newNodesBudget == 0 {
+			if config.newNodesBudget == 0 {
 				return nil
 			}
 			if requiredNodesPerScalingGroup[scalingGroupID] == 0 {
@@ -576,7 +573,7 @@ func (r *NodeImageReconciler) createNewNodes(
 					Deadline:       &deadline,
 				},
 			}
-			if err := ctrl.SetControllerReference(&desiredNodeImage, pendingNode, r.Scheme); err != nil {
+			if err := ctrl.SetControllerReference(&config.desiredNodeImage, pendingNode, r.Scheme); err != nil {
 				return err
 			}
 			if err := r.Create(ctx, pendingNode); err != nil {
@@ -584,7 +581,7 @@ func (r *NodeImageReconciler) createNewNodes(
 			}
 			logr.Info("Created new node", "createdNode", nodeName, "scalingGroup", scalingGroupID)
 			requiredNodesPerScalingGroup[scalingGroupID]--
-			newNodesBudget--
+			config.newNodesBudget--
 		}
 	}
 	return nil
@@ -816,4 +813,12 @@ type nodeReplacer interface {
 type etcdRemover interface {
 	// RemoveEtcdMemberFromCluster removes an etcd member from the cluster.
 	RemoveEtcdMemberFromCluster(ctx context.Context, vpcIP string) error
+}
+
+type newNodeConfig struct {
+	desiredNodeImage updatev1alpha1.NodeImage
+	outdatedNodes    []corev1.Node
+	pendingNodes     []updatev1alpha1.PendingNode
+	scalingGroupByID map[string]updatev1alpha1.ScalingGroup
+	newNodesBudget   int
 }
