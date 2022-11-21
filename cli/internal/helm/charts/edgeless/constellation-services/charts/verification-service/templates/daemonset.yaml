@@ -5,7 +5,7 @@ metadata:
     component: verification-service
     k8s-app: verification-service
   name: verification-service
-  namespace: kube-system
+  namespace: {{ .Release.Namespace }}
 spec:
   selector:
     matchLabels:

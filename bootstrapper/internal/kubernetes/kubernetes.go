@@ -192,7 +192,14 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("setting up konnectivity: %w", err)
 	}
 
-	serviceConfig := constellationServicesConfig{k.initialMeasurementsJSON, idKeyDigest, measurementSalt, subnetworkPodCIDR, cloudServiceAccountURI, controlPlaneEndpoint}
+	loadBalancerIP := controlPlaneEndpoint
+	if strings.Contains(controlPlaneEndpoint, ":") {
+		loadBalancerIP, _, err = net.SplitHostPort(controlPlaneEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("splitting host port: %w", err)
+		}
+	}
+	serviceConfig := constellationServicesConfig{k.initialMeasurementsJSON, idKeyDigest, measurementSalt, subnetworkPodCIDR, cloudServiceAccountURI, loadBalancerIP}
 	extraVals, err := k.setupExtraVals(ctx, serviceConfig)
 	if err != nil {
 		return nil, fmt.Errorf("setting up extraVals: %w", err)
@@ -389,15 +396,6 @@ func getIPAddr() (string, error) {
 // setupExtraVals create a helm values map for consumption by helm-install.
 // Will move to a more dedicated place once that place becomes apparent.
 func (k *KubeWrapper) setupExtraVals(ctx context.Context, serviceConfig constellationServicesConfig) (map[string]any, error) {
-	loadBalancerIP := serviceConfig.loadBalancerIP
-	var err error
-	if strings.Contains(serviceConfig.loadBalancerIP, ":") {
-		loadBalancerIP, _, err = net.SplitHostPort(loadBalancerIP)
-		if err != nil {
-			return nil, fmt.Errorf("splitting host port: %w", err)
-		}
-	}
-
 	extraVals := map[string]any{
 		"join-service": map[string]any{
 			"measurements":    string(serviceConfig.initialMeasurementsJSON),
@@ -405,7 +403,7 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, serviceConfig constell
 		},
 		"ccm": map[string]any{},
 		"verification-service": map[string]any{
-			"loadBalancerIP": loadBalancerIP,
+			"loadBalancerIP": serviceConfig.loadBalancerIP,
 		},
 	}
 
