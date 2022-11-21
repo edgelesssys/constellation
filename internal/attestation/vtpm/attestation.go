@@ -154,6 +154,9 @@ type Validator struct {
 }
 
 // NewValidator returns a new Validator.
+// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
+//
+//revive:disable-next-line
 func NewValidator(expectedPCRs map[uint32][]byte, enforcedPCRs []uint32, getTrustedKey GetTPMTrustedAttestationPublicKey,
 	validateCVM ValidateCVM, verifyUserData VerifyUserData, log AttestationLogger,
 ) *Validator {

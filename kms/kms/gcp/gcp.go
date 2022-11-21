@@ -54,6 +54,9 @@ type KMSClient struct {
 }
 
 // New initializes a KMS client for Google Cloud Platform.
+// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
+//
+//revive:disable-next-line
 func New(ctx context.Context, projectID, locationID, keyRingID string, store kmsInterface.Storage, protectionLvl kmspb.ProtectionLevel, opts ...gax.CallOption) (*KMSClient, error) {
 	if store == nil {
 		store = storage.NewMemMapStorage()
