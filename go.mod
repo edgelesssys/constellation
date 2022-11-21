@@ -88,7 +88,7 @@ require (
 	golang.org/x/crypto v0.3.0
 	golang.org/x/mod v0.7.0
 	golang.org/x/sys v0.2.0
-	google.golang.org/api v0.102.0
+	google.golang.org/api v0.103.0
 	google.golang.org/genproto v0.0.0-20221116193143-41c2ba794472
 	google.golang.org/grpc v1.51.0
 	google.golang.org/protobuf v1.28.1
@@ -276,7 +276,7 @@ require (
 	github.com/zclconf/go-cty v1.11.0 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.4 // indirect
 	go.mongodb.org/mongo-driver v1.10.0 // indirect
-	go.opencensus.io v0.23.0 // indirect
+	go.opencensus.io v0.24.0 // indirect
 	go.starlark.net v0.0.0-20220223235035-243c74974e97 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/exp v0.0.0-20220823124025-807a23277127 // indirect
