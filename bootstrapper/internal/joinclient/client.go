@@ -58,6 +58,7 @@ type JoinClient struct {
 
 	dialer      grpcDialer
 	joiner      ClusterJoiner
+	cleaner     cleaner
 	metadataAPI MetadataAPI
 
 	log *logger.Logger
@@ -100,13 +101,13 @@ func (c *JoinClient) Start(cleaner cleaner) {
 	c.log.Infof("Starting")
 	c.stopC = make(chan struct{}, 1)
 	c.stopDone = make(chan struct{}, 1)
+	c.cleaner = cleaner
 
 	ticker := c.clock.NewTicker(c.interval)
 	go func() {
 		defer ticker.Stop()
 		defer func() { c.stopDone <- struct{}{} }()
 		defer c.log.Infof("Client stopped")
-		defer cleaner.Clean()
 
 		diskUUID, err := c.getDiskUUID()
 		if err != nil {
@@ -253,6 +254,8 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 		// as the initializing node is automatically part of the cluster.
 		return errors.New("node is already being initialized")
 	}
+
+	c.cleaner.Clean()
 
 	if err := c.updateDiskPassphrase(string(ticket.StateDiskKey)); err != nil {
 		return fmt.Errorf("updating disk passphrase: %w", err)

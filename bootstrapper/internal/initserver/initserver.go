@@ -148,7 +148,11 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 
 // Stop stops the initialization server gracefully.
 func (s *Server) Stop() {
+	s.log.Infof("Stopping")
+
 	s.grpcServer.GracefulStop()
+
+	s.log.Infof("Stopped")
 }
 
 func (s *Server) setupDisk(masterSecret, salt []byte) error {
