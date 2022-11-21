@@ -211,8 +211,12 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("failed to setup verification service: %w", err)
 	}
 
-	if err = k.helmClient.InstallCertManager(ctx, helmReleases.CertManager); err != nil {
-		return nil, fmt.Errorf("installing cert-manager: %w", err)
+	// cert-manager is necessary for our operator deployments.
+	// They are currently only deployed on GCP & Azure. This is why we deploy cert-manager only on GCP & Azure.
+	if k.cloudProvider == "gcp" || k.cloudProvider == "azure" {
+		if err = k.helmClient.InstallCertManager(ctx, helmReleases.CertManager); err != nil {
+			return nil, fmt.Errorf("installing cert-manager: %w", err)
+		}
 	}
 
 	operatorVals, err := k.setupOperatorVals(ctx)

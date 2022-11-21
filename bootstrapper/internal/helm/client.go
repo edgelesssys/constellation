@@ -99,6 +99,7 @@ func (h *Client) InstallCertManager(ctx context.Context, release helm.Release) e
 	if err := h.install(ctx, release.Chart, release.Values); err != nil {
 		return err
 	}
+
 	return nil
 }
 
