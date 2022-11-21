@@ -46,6 +46,7 @@ Work with the Constellation configuration file.
 
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
 ```
 
 ## constellation config generate
@@ -71,6 +72,7 @@ constellation config generate {aws|azure|gcp|qemu} [flags]
 
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
 ```
 
 ## constellation config fetch-measurements
@@ -97,6 +99,7 @@ constellation config fetch-measurements [flags]
 
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
 ```
 
 ## constellation config instance-types
@@ -121,6 +124,7 @@ constellation config instance-types [flags]
 
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
 ```
 
 ## constellation create
@@ -149,6 +153,7 @@ constellation create [flags]
 
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
 ```
 
 ## constellation init
@@ -175,6 +180,7 @@ constellation init [flags]
 
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
 ```
 
 ## constellation mini
@@ -195,6 +201,7 @@ Manage MiniConstellation clusters.
 
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
 ```
 
 ## constellation mini up
@@ -216,6 +223,12 @@ constellation mini up [flags]
 ```
       --config string   path to the config file to use for the cluster
   -h, --help            help for up
+```
+
+### Options inherited from parent commands
+
+```
+      --debug   enable debug logging
 ```
 
 ## constellation mini down
@@ -241,6 +254,7 @@ constellation mini down [flags]
 
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
 ```
 
 ## constellation verify
@@ -269,6 +283,7 @@ constellation verify [flags]
 
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
 ```
 
 ## constellation upgrade
@@ -289,6 +304,7 @@ Plan and perform an upgrade of a Constellation cluster.
 
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
 ```
 
 ## constellation upgrade plan
@@ -314,6 +330,7 @@ constellation upgrade plan [flags]
 
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
 ```
 
 ## constellation upgrade execute
@@ -338,6 +355,7 @@ constellation upgrade execute [flags]
 
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
 ```
 
 ## constellation recover
@@ -365,6 +383,7 @@ constellation recover [flags]
 
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
 ```
 
 ## constellation terminate
@@ -390,6 +409,7 @@ constellation terminate [flags]
 
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
 ```
 
 ## constellation version
@@ -414,5 +434,6 @@ constellation version [flags]
 
 ```
       --config string   path to the configuration file (default "constellation-conf.yaml")
+      --debug           enable debug logging
 ```
 
