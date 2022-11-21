@@ -234,3 +234,30 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+HELMIFY_DIR ?= $(LOCALBIN)/helmify
+HELMIFY = $(HELMIFY_DIR)/helmify
+
+.PHONY: helmify
+helmify: ## Download helmify locally if necessary.
+	$(call go-install-tool,$(HELMIFY),$(HELMIFY_DIR),github.com/arttor/helmify/cmd/helmify@v0.3.18)
+
+# go-install-tool will delete old package $2, then 'go install' any package $3 to $1.
+define go-install-tool
+@[ -f $(1) ]|| { \
+	set -e ;\
+	rm -rf $(2) ;\
+	TMP_DIR=$$(mktemp -d) ;\
+	cd $$TMP_DIR ;\
+	go mod init tmp ;\
+	BIN_DIR=$$(dirname $(1)) ;\
+	mkdir -p $$BIN_DIR ;\
+	echo "Downloading $(3)" ;\
+	GOBIN=$$BIN_DIR GOFLAGS='' go install $(3) ;\
+	rm -rf $$TMP_DIR ;\
+}
+endef
+
+.PHONY: helm
+helm: manifests kustomize helmify
+	$(KUSTOMIZE) build config/default | $(HELMIFY)

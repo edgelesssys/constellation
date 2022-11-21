@@ -211,8 +211,21 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("failed to setup verification service: %w", err)
 	}
 
-	if err := k.setupOperators(ctx); err != nil {
-		return nil, fmt.Errorf("setting up operators: %w", err)
+	// cert-manager is necessary for our operator deployments.
+	// They are currently only deployed on GCP & Azure. This is why we deploy cert-manager only on GCP & Azure.
+	if k.cloudProvider == "gcp" || k.cloudProvider == "azure" {
+		if err = k.helmClient.InstallCertManager(ctx, helmReleases.CertManager); err != nil {
+			return nil, fmt.Errorf("installing cert-manager: %w", err)
+		}
+	}
+
+	operatorVals, err := k.setupOperatorVals(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("setting up operator vals: %w", err)
+	}
+
+	if err = k.helmClient.InstallOperators(ctx, helmReleases.Operators, operatorVals); err != nil {
+		return nil, fmt.Errorf("installing operators: %w", err)
 	}
 
 	if k.cloudProvider == "gcp" {
@@ -346,28 +359,6 @@ func (k *KubeWrapper) setupInternalConfigMap(ctx context.Context, azureCVM strin
 	return nil
 }
 
-// setupOperators deploys the operator lifecycle manager and subscriptions to operators.
-func (k *KubeWrapper) setupOperators(ctx context.Context) error {
-	if err := k.clusterUtil.SetupOperatorLifecycleManager(ctx, k.client, &resources.OperatorLifecycleManagerCRDs{}, &resources.OperatorLifecycleManager{}, resources.OLMCRDNames); err != nil {
-		return fmt.Errorf("setting up OLM: %w", err)
-	}
-
-	if err := k.clusterUtil.SetupNodeMaintenanceOperator(k.client, resources.NewNodeMaintenanceOperatorDeployment()); err != nil {
-		return fmt.Errorf("setting up node maintenance operator: %w", err)
-	}
-
-	uid, err := k.providerMetadata.UID(ctx)
-	if err != nil {
-		return fmt.Errorf("retrieving constellation UID: %w", err)
-	}
-
-	if err := k.clusterUtil.SetupNodeOperator(ctx, k.client, resources.NewNodeOperatorDeployment(k.cloudProvider, uid)); err != nil {
-		return fmt.Errorf("setting up constellation node operator: %w", err)
-	}
-
-	return nil
-}
-
 // k8sCompliantHostname transforms a hostname to an RFC 1123 compliant, lowercase subdomain as required by Kubernetes node names.
 // The following regex is used by k8s for validation: /^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$/ .
 // Only a simple heuristic is used for now (to lowercase, replace underscores).
@@ -495,6 +486,19 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, initialMeasurementsJSO
 
 	}
 	return extraVals, nil
+}
+
+func (k *KubeWrapper) setupOperatorVals(ctx context.Context) (map[string]any, error) {
+	uid, err := k.providerMetadata.UID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving constellation UID: %w", err)
+	}
+
+	return map[string]any{
+		"constellation-operator": map[string]any{
+			"constellationUID": uid,
+		},
+	}, nil
 }
 
 type ccmConfigGetter interface {

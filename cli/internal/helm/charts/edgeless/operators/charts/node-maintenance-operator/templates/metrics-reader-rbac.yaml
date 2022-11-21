@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: node-maintenance-operator-metrics-reader
+  namespace: {{ .Release.Namespace }}
+  labels:
+    node-maintenance-operator: ""
+  {{- include "chart.labels" . | nindent 4 }}
+rules:
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get

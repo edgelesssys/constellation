@@ -196,62 +196,7 @@ More information can be found via the [Kubebuilder Documentation](https://book.k
 
 ## Production deployment
 
-In production, it is recommended to deploy the operator using the [operator lifecycle manager (OLM)](https://olm.operatorframework.io/).
-
-1. [Deploy OLM](https://olm.operatorframework.io/docs/getting-started/)
-
-    ```shell-session
-    operator-sdk olm install
-    ```
-
-2. [Deploy Node Maintenance Operator](https://github.com/medik8s/node-maintenance-operator)
-
-    ```shell-session
-    operator-sdk run bundle quay.io/medik8s/node-maintenance-operator-bundle:latest
-    ```
-
-3. Deploy node operator
-
-   ```yaml
-   apiVersion: operators.coreos.com/v1alpha1
-    kind: CatalogSource
-    metadata:
-        name: constellation-node-operator-catalog
-        namespace: olm
-    spec:
-        sourceType: grpc
-        # TODO: user: set desired operator catalog version here
-        image: ghcr.io/edgelesssys/constellation/node-operator-catalog:v0.0.1
-        displayName: Constellation Node Operator
-        publisher: Edgeless Systems
-        updateStrategy:
-            registryPoll:
-                interval: 10m
-    ---
-    apiVersion: operators.coreos.com/v1
-    kind: OperatorGroup
-    metadata:
-        name: constellation-og
-        namespace: kube-system
-    spec:
-        upgradeStrategy: Default
-    ---
-    apiVersion: operators.coreos.com/v1alpha1
-    kind: Subscription
-    metadata:
-        name: constellation-node-operator-sub
-        namespace: kube-system
-    spec:
-        channel: alpha
-        name: constellation-node-operator
-        source: constellation-node-operator-catalog
-        sourceNamespace: olm
-        installPlanApproval: Automatic
-        # TODO: user: set desired operator version here
-        startingCSV: node-operator.v0.0.1
-        config:
-            env:
-            # TODO: user: set correct CSP here ("azure" or "gcp")
-            - name: CONSTEL_CSP
-              value: "gcp"
-   ```
+The operator is deployed automatically during `constellation-init`.
+Prerequisite for this is that cert-manager is installed.
+cert-manager is also installed during `constellation-init`.
+To deploy you can use the Helm chart at `/cli/internal/helm/charts/edgeless/operators/constellation-operator`.

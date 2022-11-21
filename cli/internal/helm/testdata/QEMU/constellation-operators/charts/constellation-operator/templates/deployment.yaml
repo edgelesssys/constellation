@@ -1,0 +1,131 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: constellation-operator-controller-manager
+  namespace: testNamespace
+  labels:
+    helm.sh/chart: constellation-operator-2.3.0-pre
+    app.kubernetes.io/name: constellation-operator
+    app.kubernetes.io/instance: testRelease
+    app.kubernetes.io/managed-by: Helm
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: constellation-operator-controller-manager
+  namespace: testNamespace
+  labels:
+    control-plane: controller-manager
+    helm.sh/chart: constellation-operator-2.3.0-pre
+    app.kubernetes.io/name: constellation-operator
+    app.kubernetes.io/instance: testRelease
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+      app.kubernetes.io/name: constellation-operator
+      app.kubernetes.io/instance: testRelease
+  template:
+    metadata:
+      labels:
+        control-plane: controller-manager
+        app.kubernetes.io/name: constellation-operator
+        app.kubernetes.io/instance: testRelease
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+    spec:
+      containers:
+      - args:
+        - --secure-listen-address=0.0.0.0:8443
+        - --upstream=http://127.0.0.1:8080/
+        - --logtostderr=true
+        - --v=0
+        env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: cluster.local
+        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.11.0
+        name: kube-rbac-proxy
+        ports:
+        - containerPort: 8443
+          name: https
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 5m
+            memory: 64Mi
+      - args:
+        - --health-probe-bind-address=:8081
+        - --metrics-bind-address=127.0.0.1:8080
+        - --leader-elect
+        command:
+        - /manager
+        env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: cluster.local
+        - name: CONSTEL_CSP
+          value: QEMU
+        - name: constellation-uid
+          value: 42424242424242
+        image: ghcr.io/edgelesssys/constellation/node-operator:v2.3.0-pre.0.20221108173951-34435e439604
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        name: manager
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+        volumeMounts:
+        - mountPath: /etc/kubernetes/pki/etcd
+          name: etcd-certs
+        - mountPath: /etc/azure
+          name: azureconfig
+          readOnly: true
+        - mountPath: /etc/gce
+          name: gceconf
+          readOnly: true
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      securityContext:
+        runAsUser: 0
+      serviceAccountName: constellation-operator-controller-manager
+      terminationGracePeriodSeconds: 10
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      volumes:
+      - hostPath:
+          path: /etc/kubernetes/pki/etcd
+          type: Directory
+        name: etcd-certs
+      - name: azureconfig
+        secret:
+          optional: true
+          secretName: azureconfig
+      - configMap:
+          name: gceconf
+          optional: true
+        name: gceconf

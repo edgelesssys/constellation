@@ -17,5 +17,7 @@ type Release struct {
 // Releases bundles all helm releases to be deployed to Constellation.
 type Releases struct {
 	Cilium                Release
+	CertManager           Release
+	Operators             Release
 	ConstellationServices Release
 }
