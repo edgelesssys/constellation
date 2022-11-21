@@ -8,7 +8,7 @@ package cmd
 
 import (
 	"context"
-	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net"
@@ -190,8 +190,8 @@ func (d *initDoer) Do(ctx context.Context) error {
 func writeOutput(idFile clusterid.File, resp *initproto.InitResponse, wr io.Writer, fileHandler file.Handler) error {
 	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
-	ownerID := base64.StdEncoding.EncodeToString(resp.OwnerId)
-	clusterID := base64.StdEncoding.EncodeToString(resp.ClusterId)
+	ownerID := hex.EncodeToString(resp.OwnerId)
+	clusterID := hex.EncodeToString(resp.ClusterId)
 
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
 	// writeRow(tw, "Constellation cluster's owner identifier", ownerID)

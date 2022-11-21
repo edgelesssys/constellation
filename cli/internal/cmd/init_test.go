@@ -9,7 +9,7 @@ package cmd
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net"
@@ -164,7 +164,7 @@ func TestInitialize(t *testing.T) {
 			}
 			require.NoError(err)
 			// assert.Contains(out.String(), base64.StdEncoding.EncodeToString([]byte("ownerID")))
-			assert.Contains(out.String(), base64.StdEncoding.EncodeToString([]byte("clusterID")))
+			assert.Contains(out.String(), hex.EncodeToString([]byte("clusterID")))
 			var secret masterSecret
 			assert.NoError(fileHandler.ReadJSON(constants.MasterSecretFilename, &secret))
 			assert.NotEmpty(secret.Key)
@@ -182,8 +182,8 @@ func TestWriteOutput(t *testing.T) {
 		Kubeconfig: []byte("kubeconfig"),
 	}
 
-	ownerID := base64.StdEncoding.EncodeToString(resp.OwnerId)
-	clusterID := base64.StdEncoding.EncodeToString(resp.ClusterId)
+	ownerID := hex.EncodeToString(resp.OwnerId)
+	clusterID := hex.EncodeToString(resp.ClusterId)
 
 	expectedIDFile := clusterid.File{
 		ClusterID: clusterID,

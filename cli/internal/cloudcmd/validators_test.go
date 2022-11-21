@@ -9,6 +9,7 @@ package cloudcmd
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
@@ -347,6 +348,20 @@ func TestUpdatePCR(t *testing.T) {
 			pcrMap:      defaultMap,
 			pcrIndex:    10,
 			encoded:     base64.StdEncoding.EncodeToString([]byte("Constellation")),
+			wantEntries: len(defaultMap) + 1,
+			wantErr:     false,
+		},
+		"hex input, empty map": {
+			pcrMap:      emptyMap,
+			pcrIndex:    10,
+			encoded:     hex.EncodeToString([]byte("Constellation")),
+			wantEntries: 1,
+			wantErr:     false,
+		},
+		"hex input, default map": {
+			pcrMap:      defaultMap,
+			pcrIndex:    10,
+			encoded:     hex.EncodeToString([]byte("Constellation")),
 			wantEntries: len(defaultMap) + 1,
 			wantErr:     false,
 		},

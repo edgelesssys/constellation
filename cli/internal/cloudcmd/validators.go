@@ -23,6 +23,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/spf13/cobra"
+	"go.uber.org/multierr"
 )
 
 // Validator validates Platform Configuration Registers (PCRs).
@@ -79,9 +80,18 @@ func (v *Validator) updatePCR(pcrIndex uint32, encoded string) error {
 		delete(v.pcrs, pcrIndex)
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(encoded)
+
+	// decode from hex or base64
+	decoded, err := hex.DecodeString(encoded)
 	if err != nil {
-		return fmt.Errorf("input [%s] is not base64 encoded: %w", encoded, err)
+		hexErr := err
+		decoded, err = base64.StdEncoding.DecodeString(encoded)
+		if err != nil {
+			return multierr.Append(
+				fmt.Errorf("input [%s] is not hex encoded: %w", encoded, hexErr),
+				fmt.Errorf("input [%s] is not base64 encoded: %w", encoded, err),
+			)
+		}
 	}
 	// new_pcr_value := hash(old_pcr_value || data_to_extend)
 	// Since we use the TPM2_PCR_Event call to extend the PCR, data_to_extend is the hash of our input

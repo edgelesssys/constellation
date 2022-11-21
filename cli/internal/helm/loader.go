@@ -86,7 +86,7 @@ func (i *ChartLoader) Load(config *config.Config, conformanceMode bool, masterSe
 		return nil, fmt.Errorf("loading cilium: %w", err)
 	}
 
-	operatorRelease, err := i.loadOperators(csp)
+	operatorRelease, err := i.loadOperators(config.GetProvider())
 	if err != nil {
 		return nil, fmt.Errorf("loading operators: %w", err)
 	}
