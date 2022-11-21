@@ -8,7 +8,7 @@ parameters:
   skuname: Premium_LRS
   csi.storage.k8s.io/fstype: ext4-integrity
 provisioner: azuredisk.csi.confidential.cloud
-allowVolumeExpansion: true
+allowVolumeExpansion: false
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
 {{- end }}
