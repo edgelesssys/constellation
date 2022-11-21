@@ -38,7 +38,8 @@
       "matchPackagePatterns": [
         "^github.com/aws/aws-sdk-go-v2"
       ],
-      "groupName": "AWS SDK"
+      "groupName": "AWS SDK",
+      "prPriority": -10
     },
     {
       "matchPackagePatterns": [
@@ -52,6 +53,12 @@
         "^cloud.google.com/go"
       ],
       "groupName": "Google SDK"
+    },
+    {
+      "matchPackagePatterns": [
+        "^google.golang.org/genproto"
+      ],
+      "prPriority": -10
     },
     {
       "matchPackagePatterns": [
@@ -96,21 +103,24 @@
         "k8s.gcr.io/autoscaling/cluster-autoscaler"
       ],
       "versioning": "regex:^(?<compatibility>v?\\d+\\.\\d+\\.)(?<patch>\\d+)$",
-      "groupName": "K8s constrained versions"
+      "groupName": "K8s constrained versions",
+      "prPriority": 15
     },
     {
       "matchPackageNames": [
         "ghcr.io/edgelesssys/cloud-provider-gcp"
       ],
       "versioning": "regex:^(?<compatibility>v\\d+\\.)(?<minor>\\d+)\\.(?<patch>\\d+)$",
-      "groupName": "K8s version constrained containers (missing v1 prefix)"
+      "groupName": "K8s version constrained containers (missing v1 prefix)",
+      "prPriority": 15
     },
     {
       "matchPackagePrefixes": [
         "ghcr.io/edgelesssys/constellation/"
       ],
       "versioning": "semver",
-      "groupName": "Constellation containers"
+      "groupName": "Constellation containers",
+      "prPriority": 20
     },
     {
       "matchPackageNames": [
@@ -118,7 +128,16 @@
         "registry.k8s.io/kas-network-proxy/proxy-server"
       ],
       "versioning": "semver",
-      "groupName": "K8s version independent containers"
+      "groupName": "K8s version independent containers",
+      "prPriority": 15
+    },
+    {
+      "matchLanguages": [
+        "python",
+        "js",
+        "node"
+      ],
+      "prPriority": -20
     }
   ],
   "regexManagers": [
