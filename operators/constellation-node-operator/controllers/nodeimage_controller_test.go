@@ -590,7 +590,8 @@ func TestCreateNewNodes(t *testing.T) {
 				},
 				Scheme: getScheme(t),
 			}
-			err := reconciler.createNewNodes(context.Background(), desiredNodeImage, tc.outdatedNodes, tc.pendingNodes, tc.scalingGroupByID, tc.budget)
+			newNodeConfig := newNodeConfig{desiredNodeImage, tc.outdatedNodes, tc.pendingNodes, tc.scalingGroupByID, tc.budget}
+			err := reconciler.createNewNodes(context.Background(), newNodeConfig)
 			require.NoError(err)
 			assert.Equal(tc.wantCreateCalls, reconciler.nodeReplacer.(*stubNodeReplacerWriter).createCalls)
 		})

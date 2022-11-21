@@ -273,7 +273,8 @@ func TestCreateScalingGroup(t *testing.T) {
 			require := require.New(t)
 
 			k8sClient := &stubK8sClient{createErr: tc.createErr}
-			err := createScalingGroup(context.Background(), k8sClient, "group-id", "group-Name", "group-Name", updatev1alpha1.WorkerRole)
+			newScalingGroupConfig := newScalingGroupConfig{k8sClient, "group-id", "group-Name", "group-Name", updatev1alpha1.WorkerRole}
+			err := createScalingGroup(context.Background(), newScalingGroupConfig)
 			if tc.wantErr {
 				assert.Error(err)
 				return
