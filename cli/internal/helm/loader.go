@@ -6,6 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 package helm
 
+// Add some random comment to trigger golanci-lint.
 import (
 	"bytes"
 	"embed"
