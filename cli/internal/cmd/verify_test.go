@@ -24,6 +24,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/testdialer"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
 	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
 	"github.com/spf13/afero"
@@ -163,7 +164,8 @@ func TestVerify(t *testing.T) {
 				require.NoError(fileHandler.WriteJSON(constants.ClusterIDsFileName, tc.idFile, file.OptNone))
 			}
 
-			err := verify(cmd, fileHandler, tc.protoClient)
+			v := &verifyCmd{log: logger.NewTest(t)}
+			err := v.verify(cmd, fileHandler, tc.protoClient)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -244,7 +246,7 @@ func TestVerifyClient(t *testing.T) {
 			go verifyServer.Serve(listener)
 			defer verifyServer.GracefulStop()
 
-			verifier := &constellationVerifier{dialer: dialer}
+			verifier := &constellationVerifier{dialer: dialer, log: logger.NewTest(t)}
 			request := &verifyproto.GetAttestationRequest{
 				UserData: tc.userData,
 				Nonce:    tc.nonce,

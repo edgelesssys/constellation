@@ -39,7 +39,9 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.SetOut(os.Stdout)
 
 	rootCmd.PersistentFlags().String("config", constants.ConfigFilename, "path to the configuration file")
-	must(rootCmd.MarkPersistentFlagFilename("config", "json"))
+	must(rootCmd.MarkPersistentFlagFilename("config", "yaml"))
+
+	rootCmd.PersistentFlags().Bool("debug", false, "enable debug logging")
 
 	rootCmd.AddCommand(cmd.NewConfigCmd())
 	rootCmd.AddCommand(cmd.NewCreateCmd())

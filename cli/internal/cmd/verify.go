@@ -48,29 +48,48 @@ If arguments aren't specified, values are read from ` + "`" + constants.ClusterI
 	return cmd
 }
 
-func runVerify(cmd *cobra.Command, args []string) error {
-	fileHandler := file.NewHandler(afero.NewOsFs())
-	verifyClient := &constellationVerifier{dialer: dialer.New(nil, nil, &net.Dialer{})}
-	return verify(cmd, fileHandler, verifyClient)
+type verifyCmd struct {
+	log debugLog
 }
 
-func verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyClient) error {
-	flags, err := parseVerifyFlags(cmd, fileHandler)
+func runVerify(cmd *cobra.Command, args []string) error {
+	log, err := newCLILogger(cmd)
+	if err != nil {
+		return fmt.Errorf("creating logger: %w", err)
+	}
+	defer log.Sync()
+
+	fileHandler := file.NewHandler(afero.NewOsFs())
+	verifyClient := &constellationVerifier{
+		dialer: dialer.New(nil, nil, &net.Dialer{}),
+		log:    log,
+	}
+
+	v := &verifyCmd{log: log}
+	return v.verify(cmd, fileHandler, verifyClient)
+}
+
+func (v *verifyCmd) verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyClient) error {
+	flags, err := v.parseVerifyFlags(cmd, fileHandler)
 	if err != nil {
 		return err
 	}
+	v.log.Debugf("Using flags: %+v", flags)
 
+	v.log.Debugf("Loading config file from %s", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
 	provider := conf.GetProvider()
+	v.log.Debugf("Creating aTLS Validator for %s", provider)
 	validators, err := cloudcmd.NewValidator(provider, conf)
 	if err != nil {
 		return err
 	}
 
+	v.log.Debugf("Updating expected PCRs")
 	if err := validators.UpdateInitPCRs(flags.ownerID, flags.clusterID); err != nil {
 		return err
 	}
@@ -79,10 +98,12 @@ func verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyCli
 	if err != nil {
 		return err
 	}
+	v.log.Debugf("Generated random nonce: %x", nonce)
 	userData, err := crypto.GenerateRandomBytes(32)
 	if err != nil {
 		return err
 	}
+	v.log.Debugf("Generated random user data: %x", userData)
 
 	if err := verifyClient.Verify(
 		cmd.Context(),
@@ -100,25 +121,31 @@ func verify(cmd *cobra.Command, fileHandler file.Handler, verifyClient verifyCli
 	return nil
 }
 
-func parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handler) (verifyFlags, error) {
+func (v *verifyCmd) parseVerifyFlags(cmd *cobra.Command, fileHandler file.Handler) (verifyFlags, error) {
 	configPath, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
+	v.log.Debugf("config: %s", configPath)
+
 	ownerID := ""
 	clusterID, err := cmd.Flags().GetString("cluster-id")
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing cluster-id argument: %w", err)
 	}
+	v.log.Debugf("cluster-id: %s", clusterID)
+
 	endpoint, err := cmd.Flags().GetString("node-endpoint")
 	if err != nil {
 		return verifyFlags{}, fmt.Errorf("parsing node-endpoint argument: %w", err)
 	}
+	v.log.Debugf("node-endpoint: %s", endpoint)
 
 	// Get empty values from ID file
 	emptyEndpoint := endpoint == ""
 	emptyIDs := ownerID == "" && clusterID == ""
 	if emptyEndpoint || emptyIDs {
+		v.log.Debugf("Trying to supplement empty flag values from %s", constants.ClusterIDsFileName)
 		var idFile clusterid.File
 		if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err == nil {
 			if emptyEndpoint {
@@ -178,12 +205,14 @@ func addPortIfMissing(endpoint string, defaultPort int) (string, error) {
 
 type constellationVerifier struct {
 	dialer grpcInsecureDialer
+	log    debugLog
 }
 
 // Verify retrieves an attestation statement from the Constellation and verifies it using the validator.
 func (v *constellationVerifier) Verify(
 	ctx context.Context, endpoint string, req *verifyproto.GetAttestationRequest, validator atls.Validator,
 ) error {
+	v.log.Debugf("Dialing endpoint: %s", endpoint)
 	conn, err := v.dialer.DialInsecure(ctx, endpoint)
 	if err != nil {
 		return fmt.Errorf("dialing init server: %w", err)
@@ -192,11 +221,13 @@ func (v *constellationVerifier) Verify(
 
 	client := verifyproto.NewAPIClient(conn)
 
+	v.log.Debugf("Sending attestation request")
 	resp, err := client.GetAttestation(ctx, req)
 	if err != nil {
 		return fmt.Errorf("getting attestation: %w", err)
 	}
 
+	v.log.Debugf("Verifying attestation")
 	signedData, err := validator.Validate(resp.Attestation, req.Nonce)
 	if err != nil {
 		return fmt.Errorf("validating attestation: %w", err)
