@@ -109,7 +109,7 @@
       "matchPackagePrefixes": [
         "ghcr.io/edgelesssys/constellation/"
       ],
-      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(-(?<build>.*))?$",
+      "versioning": "semver",
       "groupName": "Constellation containers"
     },
     {
