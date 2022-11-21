@@ -51,13 +51,33 @@ runs:
       run: |
         KUBECONFIG="$PWD/constellation-admin.conf" kubectl rollout status ds/verification-service -n kube-system --timeout=3m
         CONSTELL_IP=$(jq -r ".ip" constellation-id.json)
-        pcr-reader --constell-ip ${CONSTELL_IP} -format yaml > measurements.yaml
+        # pcr-reader --constell-ip ${CONSTELL_IP} -format yaml > measurements.yaml
+        pcr-reader --constell-ip ${CONSTELL_IP} -format json > measurements.json
         case $CSP in
           azure)
-            yq e 'del(.[0,6,10,11,12,13,14,15,16,17,18,19,20,21,22,23])' -i measurements.yaml
+            yq e 'del(.[0,6,10,16,17,18,19,20,21,22,23])' -I 0 -o json -i measurements.json
+            yq '.4.warnOnly = false |
+              .8.warnOnly = false |
+              .9.warnOnly = false |
+              .11.warnOnly = false |
+              .12.warnOnly = false |
+              .13.warnOnly = false |
+              .15.warnOnly = false |
+              .15.expected = "0000000000000000000000000000000000000000000000000000000000000000"' \
+              -I 0 -o json -i measurements.json
             ;;
           gcp)
-            yq e 'del(.[11,12,13,14,15,16,17,18,19,20,21,22,23])' -i measurements.yaml
+            yq e 'del(.[16,17,18,19,20,21,22,23])' -I 0 -o json -i measurements.json
+            yq '.0.warnOnly = false |
+              .4.warnOnly = false |
+              .8.warnOnly = false |
+              .9.warnOnly = false |
+              .11.warnOnly = false |
+              .12.warnOnly = false |
+              .13.warnOnly = false |
+              .15.warnOnly = false |
+              .15.expected = "0000000000000000000000000000000000000000000000000000000000000000"' \
+              -I 0 -o json -i measurements.json
             ;;
         esac
         cat measurements.yaml

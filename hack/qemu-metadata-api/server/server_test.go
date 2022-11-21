@@ -307,12 +307,12 @@ func TestExportPCRs(t *testing.T) {
 			remoteAddr: "192.0.100.1:1234",
 			connect:    defaultConnect,
 			method:     http.MethodPost,
-			message:    mustMarshal(t, measurements.M{0: []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")}),
+			message:    mustMarshal(t, measurements.M{0: measurements.WithAllBytes(0xAA, false)}),
 		},
 		"incorrect method": {
 			remoteAddr: "192.0.100.1:1234",
 			connect:    defaultConnect,
-			message:    mustMarshal(t, measurements.M{0: []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")}),
+			message:    mustMarshal(t, measurements.M{0: measurements.WithAllBytes(0xAA, false)}),
 			method:     http.MethodGet,
 			wantErr:    true,
 		},
@@ -321,7 +321,7 @@ func TestExportPCRs(t *testing.T) {
 			connect: &stubConnect{
 				getNetworkErr: errors.New("error"),
 			},
-			message: mustMarshal(t, measurements.M{0: []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")}),
+			message: mustMarshal(t, measurements.M{0: measurements.WithAllBytes(0xAA, false)}),
 			method:  http.MethodPost,
 			wantErr: true,
 		},
@@ -336,7 +336,7 @@ func TestExportPCRs(t *testing.T) {
 			remoteAddr: "localhost",
 			connect:    defaultConnect,
 			method:     http.MethodPost,
-			message:    mustMarshal(t, measurements.M{0: []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")}),
+			message:    mustMarshal(t, measurements.M{0: measurements.WithAllBytes(0xAA, false)}),
 			wantErr:    true,
 		},
 	}
