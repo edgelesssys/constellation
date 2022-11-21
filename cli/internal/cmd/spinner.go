@@ -77,6 +77,9 @@ func (s *spinner) Write(p []byte) (n int, err error) {
 	return s.out.Write(p)
 }
 
+// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
+//
+//revive:disable-next-line
 func spinTTY(out io.Writer, wg *sync.WaitGroup, stop *atomic.Bool, delay time.Duration, text string, showDots bool) {
 	defer wg.Done()
 
@@ -103,6 +106,9 @@ func spinTTY(out io.Writer, wg *sync.WaitGroup, stop *atomic.Bool, delay time.Du
 	fmt.Fprint(out, showCursor)
 }
 
+// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
+//
+//revive:disable-next-line
 func spinNoTTY(out io.Writer, wg *sync.WaitGroup, _ *atomic.Bool, _ time.Duration, text string, _ bool) {
 	defer wg.Done()
 	fmt.Fprintln(out, text+"...")

@@ -217,6 +217,9 @@ func closeCryptDevice(device DeviceMapper, source, volumeID, deviceType string) 
 }
 
 // openCryptDevice maps the volume at source to the crypt device identified by volumeID.
+// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
+//
+//revive:disable-next-line
 func openCryptDevice(ctx context.Context, device DeviceMapper, source, volumeID string, integrity bool,
 	getKey func(ctx context.Context, keyID string, keySize int) ([]byte, error), diskInfo func(disk string) (string, error),
 ) (string, error) {

@@ -66,6 +66,9 @@ type KubeWrapper struct {
 }
 
 // New creates a new KubeWrapper with real values.
+// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
+//
+//revive:disable-next-line
 func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client,
 	providerMetadata ProviderMetadata, initialMeasurementsJSON []byte, helmClient helmClient, kubeAPIWaiter kubeAPIWaiter,
 ) *KubeWrapper {
@@ -84,6 +87,9 @@ func New(cloudProvider string, clusterUtil clusterUtil, configProvider configura
 }
 
 // InitCluster initializes a new Kubernetes cluster and applies pod network provider.
+// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
+//
+//revive:disable-next-line
 func (k *KubeWrapper) InitCluster(
 	ctx context.Context, cloudServiceAccountURI, versionString string, measurementSalt []byte, enforcedPCRs []uint32,
 	enforceIDKeyDigest bool, idKeyDigest []byte, azureCVM bool,

@@ -51,6 +51,9 @@ type Manager struct {
 }
 
 // New initializes a SetupManager with the given parameters.
+// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
+//
+//revive:disable-next-line
 func New(log *logger.Logger, csp string, diskPath string, fs afero.Afero,
 	mapper DeviceMapper, mounter Mounter, openTPM vtpm.TPMOpenFunc,
 ) *Manager {

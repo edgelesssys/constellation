@@ -45,6 +45,9 @@ func NewCreator(out io.Writer) *Creator {
 }
 
 // Create creates the handed amount of instances and all the needed resources.
+// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
+//
+//revive:disable-next-line
 func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, config *config.Config, name, insType string, controlPlaneCount, workerCount int,
 ) (clusterid.File, error) {
 	switch provider {
@@ -85,6 +88,9 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 	}
 }
 
+// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
+//
+//revive:disable-next-line
 func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *config.Config,
 	name, insType string, controlPlaneCount, workerCount int,
 ) (idFile clusterid.File, retErr error) {
@@ -121,6 +127,9 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *con
 	}, nil
 }
 
+// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
+//
+//revive:disable-next-line
 func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *config.Config,
 	name, insType string, controlPlaneCount, workerCount int,
 ) (idFile clusterid.File, retErr error) {
@@ -157,6 +166,9 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 	}, nil
 }
 
+// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
+//
+//revive:disable-next-line
 func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *config.Config,
 	name, insType string, controlPlaneCount, workerCount int,
 ) (idFile clusterid.File, retErr error) {
@@ -222,6 +234,9 @@ func normalizeAzureURIs(vars terraform.AzureVariables) terraform.AzureVariables 
 	return vars
 }
 
+// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
+//
+//revive:disable-next-line
 func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirtRunner, name string, config *config.Config,
 	controlPlaneCount, workerCount int,
 ) (idFile clusterid.File, retErr error) {
