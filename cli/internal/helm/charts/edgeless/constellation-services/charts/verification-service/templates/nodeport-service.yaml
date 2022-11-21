@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: verification-service
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+  - name: http
+    nodePort: {{ .Values.httpNodePort }}
+    port: {{ .Values.httpContainerPort }}
+    protocol: TCP
+    targetPort: {{ .Values.httpContainerPort }}
+  - name: grpc
+    nodePort: {{ .Values.grpcNodePort }}
+    port: {{ .Values.grpcContainerPort }}
+    protocol: TCP
+    targetPort: {{ .Values.grpcContainerPort }}
+  selector:
+    k8s-app: verification-service
+  type: NodePort
