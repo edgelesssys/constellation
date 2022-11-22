@@ -54,7 +54,7 @@ func TestUpdateMeasurements(t *testing.T) {
 				0: measurements.WithAllBytes(0xAA, false),
 			},
 		},
-		"trying to overwrite warnOnly results in error": {
+		"trying to set warnOnly to true results in error": {
 			updater: &stubMeasurementsUpdater{
 				oldMeasurements: &corev1.ConfigMap{
 					Data: map[string]string{
@@ -66,6 +66,19 @@ func TestUpdateMeasurements(t *testing.T) {
 				0: measurements.WithAllBytes(0xAA, true),
 			},
 			wantErr: true,
+		},
+		"setting warnOnly to false is allowed": {
+			updater: &stubMeasurementsUpdater{
+				oldMeasurements: &corev1.ConfigMap{
+					Data: map[string]string{
+						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":true}}`,
+					},
+				},
+			},
+			newMeasurements: measurements.M{
+				0: measurements.WithAllBytes(0xAA, false),
+			},
+			wantUpdate: true,
 		},
 		"getCurrent error": {
 			updater: &stubMeasurementsUpdater{getErr: someErr},
