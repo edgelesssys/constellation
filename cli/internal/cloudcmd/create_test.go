@@ -98,11 +98,19 @@ func TestCreator(t *testing.T) {
 
 			creator := &Creator{
 				out: &bytes.Buffer{},
+				image: &stubImageFetcher{
+					reference: "some-image",
+				},
 				newTerraformClient: func(ctx context.Context) (terraformClient, error) {
 					return tc.tfClient, tc.newTfClientErr
 				},
 				newLibvirtRunner: func() libvirtRunner {
 					return tc.libvirt
+				},
+				newRawDownloader: func() rawDownloader {
+					return &stubRawDownloader{
+						destination: "some-destination",
+					}
 				},
 			}
 

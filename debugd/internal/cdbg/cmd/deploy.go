@@ -61,7 +61,7 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 		return err
 	}
 
-	if !constellationConfig.IsDebugImage() {
+	if constellationConfig.IsReleaseImage() {
 		log.Println("WARNING: Constellation image does not look like a debug image. Are you using a debug image?")
 	}
 

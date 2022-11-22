@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"os"
 	"runtime"
 	"strings"
@@ -26,8 +25,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/dialer"
 	"github.com/edgelesssys/constellation/v2/internal/license"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
-	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
@@ -188,23 +185,9 @@ func prepareConfig(cmd *cobra.Command, fileHandler file.Handler) (*config.Config
 		}
 	}
 
-	// download image to current directory if it doesn't exist
-	const imagePath = "./constellation.raw"
-	if _, err := os.Stat(imagePath); err == nil {
-		cmd.Printf("Using existing image at %s\n\n", imagePath)
-	} else if errors.Is(err, os.ErrNotExist) {
-		cmd.Printf("Downloading image to %s\n", imagePath)
-		if err := installImage(cmd.Context(), cmd.ErrOrStderr(), versions.ConstellationQEMUImageURL, imagePath); err != nil {
-			return nil, fmt.Errorf("downloading image to %s: %w", imagePath, err)
-		}
-	} else {
-		return nil, fmt.Errorf("checking if image exists: %w", err)
-	}
-
 	config := config.Default()
 	config.RemoveProviderExcept(cloudprovider.QEMU)
 	config.StateDiskSizeGB = 8
-	config.Provider.QEMU.Image = imagePath
 
 	return config, fileHandler.WriteYAML(constants.ConfigFilename, config, file.OptOverwrite)
 }
@@ -243,53 +226,5 @@ func initializeMiniCluster(cmd *cobra.Command, fileHandler file.Handler, spinner
 	if err := initialize(cmd, newDialer, fileHandler, license.NewClient(), spinner); err != nil {
 		return err
 	}
-	return nil
-}
-
-// installImage downloads the image from sourceURL to the destination.
-func installImage(ctx context.Context, errWriter io.Writer, sourceURL, destination string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL, nil)
-	if err != nil {
-		return fmt.Errorf("creating request: %w", err)
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("downloading image: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("downloading image: %s", resp.Status)
-	}
-
-	f, err := os.OpenFile(destination, os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	bar := progressbar.NewOptions64(
-		resp.ContentLength,
-		progressbar.OptionSetWriter(errWriter),
-		progressbar.OptionShowBytes(true),
-		progressbar.OptionSetPredictTime(true),
-		progressbar.OptionFullWidth(),
-		progressbar.OptionSetTheme(progressbar.Theme{
-			Saucer:        "=",
-			SaucerHead:    ">",
-			SaucerPadding: " ",
-			BarStart:      "[",
-			BarEnd:        "]",
-		}),
-		progressbar.OptionClearOnFinish(),
-		progressbar.OptionOnCompletion(func() { fmt.Fprintf(errWriter, "Done.\n\n") }),
-	)
-	defer bar.Close()
-
-	_, err = io.Copy(io.MultiWriter(f, bar), resp.Body)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
