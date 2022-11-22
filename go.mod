@@ -81,7 +81,7 @@ require (
 	github.com/spf13/afero v1.9.3
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.1
-	github.com/talos-systems/talos/pkg/machinery v1.2.6
+	github.com/talos-systems/talos/pkg/machinery v1.2.7
 	go.uber.org/goleak v1.2.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
