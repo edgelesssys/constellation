@@ -109,17 +109,17 @@ func TestUpdateURLs(t *testing.T) {
 				},
 			},
 			flags:                  &fetchMeasurementsFlags{},
-			wantMeasurementsURL:    constants.S3PublicBucket + "some/image/path/image-123456/measurements.yaml",
-			wantMeasurementsSigURL: constants.S3PublicBucket + "some/image/path/image-123456/measurements.yaml.sig",
+			wantMeasurementsURL:    constants.S3PublicBucket + "some/image/path/image-123456/measurements.json",
+			wantMeasurementsSigURL: constants.S3PublicBucket + "some/image/path/image-123456/measurements.json.sig",
 		},
 		"both set by user": {
 			conf: &config.Config{},
 			flags: &fetchMeasurementsFlags{
-				measurementsURL: urlMustParse("get.my/measurements.yaml"),
-				signatureURL:    urlMustParse("get.my/measurements.yaml.sig"),
+				measurementsURL: urlMustParse("get.my/measurements.json"),
+				signatureURL:    urlMustParse("get.my/measurements.json.sig"),
 			},
-			wantMeasurementsURL:    "get.my/measurements.yaml",
-			wantMeasurementsSigURL: "get.my/measurements.yaml.sig",
+			wantMeasurementsURL:    "get.my/measurements.json",
+			wantMeasurementsSigURL: "get.my/measurements.json.sig",
 		},
 	}
 
@@ -164,14 +164,14 @@ func TestConfigFetchMeasurements(t *testing.T) {
 	signature := "MEUCIFdJ5dH6HDywxQWTUh9Bw77wMrq0mNCUjMQGYP+6QsVmAiEAmazj/L7rFGA4/Gz8y+kI5h5E5cDgc3brihvXBKF6qZA="
 
 	client := newTestClient(func(req *http.Request) *http.Response {
-		if req.URL.String() == "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/someImage/measurements.yaml" {
+		if req.URL.String() == "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/someImage/measurements.json" {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBufferString(measurements)),
 				Header:     make(http.Header),
 			}
 		}
-		if req.URL.String() == "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/someImage/measurements.yaml.sig" {
+		if req.URL.String() == "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/someImage/measurements.json.sig" {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBufferString(signature)),

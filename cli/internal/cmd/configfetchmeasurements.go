@@ -137,7 +137,7 @@ func (f *fetchMeasurementsFlags) updateURLs(ctx context.Context, conf *config.Co
 
 	if f.measurementsURL == nil {
 		// TODO(AB#2644): resolve image version to reference
-		parsedURL, err := url.Parse(constants.S3PublicBucket + imageRef + "/measurements.yaml")
+		parsedURL, err := url.Parse(constants.S3PublicBucket + imageRef + "/measurements.json")
 		if err != nil {
 			return err
 		}
@@ -145,7 +145,7 @@ func (f *fetchMeasurementsFlags) updateURLs(ctx context.Context, conf *config.Co
 	}
 
 	if f.signatureURL == nil {
-		parsedURL, err := url.Parse(constants.S3PublicBucket + imageRef + "/measurements.yaml.sig")
+		parsedURL, err := url.Parse(constants.S3PublicBucket + imageRef + "/measurements.json.sig")
 		if err != nil {
 			return err
 		}

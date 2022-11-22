@@ -53,8 +53,14 @@ func (m *M) FetchAndVerify(ctx context.Context, client *http.Client, measurement
 	if err := sigstore.VerifySignature(measurements, signature, publicKey); err != nil {
 		return "", err
 	}
-	if err := yaml.Unmarshal(measurements, m); err != nil {
-		return "", err
+
+	if err := json.Unmarshal(measurements, m); err != nil {
+		if yamlErr := yaml.Unmarshal(measurements, m); yamlErr != nil {
+			return "", multierr.Append(
+				err,
+				fmt.Errorf("trying yaml format: %w", yamlErr),
+			)
+		}
 	}
 
 	shaHash := sha256.Sum256(measurements)
