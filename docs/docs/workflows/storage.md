@@ -80,6 +80,7 @@ The default storage class is set to `encrypted-rwo` for performance reasons.
 If you want integrity-protected storage, set the `storageClassName` parameter of your persistent volume claim to `integrity-encrypted-rwo`
 Alternatively, you can create your own storage class with integrity protection enabled by adding `csi.storage.k8s.io/fstype: ext4-integrity` to the class `parameters`.
 Or use another filesystem by specifying another file system type with the suffix `-integrity`.
+For example `csi.storage.k8s.io/fstype: xfs-integrity`.
 Note that volume expansion isn't supported for integrity-protected disks.
 
 :::
@@ -107,6 +108,7 @@ The default storage class is set to `encrypted-rwo` for performance reasons.
 If you want integrity-protected storage, set the `storageClassName` parameter of your persistent volume claim to `integrity-encrypted-rwo`
 Alternatively, you can create your own storage class with integrity protection enabled by adding `csi.storage.k8s.io/fstype: ext4-integrity` to the class `parameters`.
 Or use another filesystem by specifying another file system type with the suffix `-integrity`.
+For example `csi.storage.k8s.io/fstype: xfs-integrity`.
 Note that volume expansion isn't supported for integrity-protected disks.
 
 :::
