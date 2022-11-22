@@ -54,4 +54,3 @@ jobs:
           skip-pkg-cache: true
           skip-build-cache: true
           args: --timeout=15m ${{ steps.submods.outputs.submods }}
-          only-new-issues: true
