@@ -51,7 +51,6 @@ runs:
       run: |
         KUBECONFIG="$PWD/constellation-admin.conf" kubectl rollout status ds/verification-service -n kube-system --timeout=3m
         CONSTELL_IP=$(jq -r ".ip" constellation-id.json)
-        # pcr-reader --constell-ip ${CONSTELL_IP} -format yaml > measurements.yaml
         pcr-reader --constell-ip ${CONSTELL_IP} -format json > measurements.json
         case $CSP in
           azure)
@@ -80,7 +79,7 @@ runs:
               -I 0 -o json -i measurements.json
             ;;
         esac
-        cat measurements.yaml
+        cat measurements.json
       shell: bash
       env:
         CSP: ${{ inputs.cloudProvider }}
@@ -101,14 +100,14 @@ runs:
       run: |
         echo "$COSIGN_PUBLIC_KEY" > cosign.pub
         # Enabling experimental mode also publishes signature to Rekor
-        COSIGN_EXPERIMENTAL=1 cosign sign-blob --key env://COSIGN_PRIVATE_KEY measurements.yaml > measurements.yaml.sig
+        COSIGN_EXPERIMENTAL=1 cosign sign-blob --key env://COSIGN_PRIVATE_KEY measurements.json > measurements.json.sig
         # Verify - As documentation & check
         # Local Signature (input: artifact, key, signature)
-        cosign verify-blob --key cosign.pub --signature measurements.yaml.sig measurements.yaml
+        cosign verify-blob --key cosign.pub --signature measurements.json.sig measurements.json
         # Transparency Log Signature (input: artifact, key)
-        uuid=$(rekor-cli search --artifact measurements.yaml | tail -n 1)
+        uuid=$(rekor-cli search --artifact measurements.json | tail -n 1)
         sig=$(rekor-cli get --uuid=$uuid --format=json | jq -r .Body.HashedRekordObj.signature.content)
-        cosign verify-blob --key cosign.pub --signature <(echo $sig) measurements.yaml
+        cosign verify-blob --key cosign.pub --signature <(echo $sig) measurements.json
       shell: bash
       env:
         COSIGN_PUBLIC_KEY: ${{ inputs.cosignPublicKey }}
@@ -120,9 +119,9 @@ runs:
       run: |
         IMAGE=$(yq e ".provider.${CSP}.image" constellation-conf.yaml)
         S3_PATH=s3://${PUBLIC_BUCKET_NAME}/${IMAGE,,}
-        aws s3 cp measurements.yaml ${S3_PATH}/measurements.yaml
-        if test -f measurements.yaml.sig; then
-          aws s3 cp measurements.yaml.sig ${S3_PATH}/measurements.yaml.sig
+        aws s3 cp measurements.json ${S3_PATH}/measurements.json
+        if test -f measurements.json.sig; then
+          aws s3 cp measurements.json.sig ${S3_PATH}/measurements.json.sig
         fi
       shell: bash
       env:
