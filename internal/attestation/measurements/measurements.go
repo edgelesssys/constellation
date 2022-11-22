@@ -97,7 +97,7 @@ func (m *M) EqualTo(other M) bool {
 // GetEnforced returns a list of all enforced Measurements,
 // i.e. all Measurements that are not marked as WarnOnly.
 func (m *M) GetEnforced() []uint32 {
-	enforced := []uint32{}
+	var enforced []uint32
 	for idx, measurement := range *m {
 		if !measurement.WarnOnly {
 			enforced = append(enforced, idx)

@@ -187,7 +187,7 @@ type AzureConfig struct {
 	EnforceIDKeyDigest *bool `yaml:"enforceIdKeyDigest" validate:"required"`
 	// description: |
 	//   Expected confidential VM measurements.
-	Measurements Measurements `yaml:"measurements"`
+	Measurements Measurements `yaml:"measurements" validate:"required"`
 }
 
 // GCPConfig are GCP specific configuration values used by the CLI.

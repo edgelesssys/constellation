@@ -114,11 +114,7 @@ func (u *Upgrader) updateMeasurements(ctx context.Context, newMeasurements measu
 
 	// don't allow potential security downgrades by setting the warnOnly flag to true
 	for k, newM := range newMeasurements {
-		currentM, ok := currentMeasurements[k]
-		if !ok {
-			continue
-		}
-		if !currentM.WarnOnly && newM.WarnOnly {
+		if currentM, ok := currentMeasurements[k]; ok && !currentM.WarnOnly && newM.WarnOnly {
 			return fmt.Errorf("setting enforced measurement %d to warn only: not allowed", k)
 		}
 	}

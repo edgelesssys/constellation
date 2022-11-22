@@ -70,9 +70,9 @@ func (v *Validator) UpdateInitPCRs(ownerID, clusterID string) error {
 	return v.updatePCR(uint32(measurements.PCRIndexClusterID), clusterID)
 }
 
-// updatePCR adds a new entry to the pcr map of v, or removes the key if the input is an empty string.
+// updatePCR adds a new entry to the measurements of v, or removes the key if the input is an empty string.
 //
-// When adding, the input is first decoded from base64.
+// When adding, the input is first decoded from hex or base64.
 // We then calculate the expected PCR by hashing the input using SHA256,
 // appending expected PCR for initialization, and then hashing once more.
 func (v *Validator) updatePCR(pcrIndex uint32, encoded string) error {
