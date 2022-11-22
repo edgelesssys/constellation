@@ -430,8 +430,8 @@ func (c *Config) EnforcesIDKeyDigest() bool {
 	return c.Provider.Azure != nil && c.Provider.Azure.EnforceIDKeyDigest != nil && *c.Provider.Azure.EnforceIDKeyDigest
 }
 
-// GetEnforcedPCRs returns the list of enforced PCRs for the configured cloud provider.
-func (c *Config) GetEnforcedPCRs() []uint32 {
+// EnforcedPCRs returns the list of enforced PCRs for the configured cloud provider.
+func (c *Config) EnforcedPCRs() []uint32 {
 	provider := c.GetProvider()
 	switch provider {
 	case cloudprovider.AWS:

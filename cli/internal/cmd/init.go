@@ -134,7 +134,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		KubernetesVersion:      conf.KubernetesVersion,
 		KubernetesComponents:   versions.VersionConfigs[k8sVersion].KubernetesComponents.ToProto(),
 		HelmDeployments:        helmDeployments,
-		EnforcedPcrs:           conf.GetEnforcedPCRs(),
+		EnforcedPcrs:           conf.EnforcedPCRs(),
 		EnforceIdkeydigest:     conf.EnforcesIDKeyDigest(),
 		ConformanceMode:        flags.conformance,
 	}
