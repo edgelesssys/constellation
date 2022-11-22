@@ -141,13 +141,16 @@ func (m *Measurement) UnmarshalJSON(b []byte) error {
 		// TODO: remove with v2.4.0
 		if legacyErr := json.Unmarshal(b, &eM.Expected); legacyErr != nil {
 			return multierr.Append(
-				fmt.Errorf("wrong format: %w", err),
-				fmt.Errorf("no legacy format: %w", legacyErr),
+				err,
+				fmt.Errorf("trying legacy format: %w", legacyErr),
 			)
 		}
 	}
 
-	return m.unmarshal(eM)
+	if err := m.unmarshal(eM); err != nil {
+		return fmt.Errorf("unmarshalling json: %w", err)
+	}
+	return nil
 }
 
 // MarshalJSON writes out a Measurement with Expected encoded as a hex string.
@@ -168,13 +171,16 @@ func (m *Measurement) UnmarshalYAML(unmarshal func(any) error) error {
 		// TODO: remove with v2.4.0
 		if legacyErr := unmarshal(&eM.Expected); legacyErr != nil {
 			return multierr.Append(
-				fmt.Errorf("wrong format: %w", err),
-				fmt.Errorf("no legacy format: %w", legacyErr),
+				err,
+				fmt.Errorf("trying legacy format: %w", legacyErr),
 			)
 		}
 	}
 
-	return m.unmarshal(eM)
+	if err := m.unmarshal(eM); err != nil {
+		return fmt.Errorf("unmarshalling yaml: %w", err)
+	}
+	return nil
 }
 
 // MarshalYAML writes out a Measurement with Expected encoded as a hex string.
@@ -196,7 +202,7 @@ func (m *Measurement) unmarshal(eM encodedMeasurement) error {
 		if err != nil {
 			return multierr.Append(
 				fmt.Errorf("invalid measurement: not a hex string %w", hexErr),
-				fmt.Errorf("not a base64 string %w", err),
+				fmt.Errorf("not a base64 string: %w", err),
 			)
 		}
 	}
