@@ -173,8 +173,7 @@ we should add comments to those fields who will not update the cluster.
 
 ```yaml
 kubernetesVersion: 1.24.3
-kubernetesServicesVersion: 1.24.5 # Bundled Kubernetes components (Autoscaler, CloudControllerManager, CloudNodeManager, GCP Guest Agent, Konnectivity)
-microserviceVersion: 2.2.0 # or constellationVersion: (KMS, JoinService, NodeMaintainanceOperator, NodeOperator, OLM, Verification, Cilium)
+microserviceVersion: 2.2.0 # All services deployed as part of installing Constellation
 provider:
   azure:
     image: /communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.3.0
@@ -185,8 +184,15 @@ provider:
 
 Note that:
 
-* `microserviceVersion` 2.2.0 contains components which are all released in version 2.2.0
-* `kubernetesServicesVersion` 1.24.5 could contain Autoscaler 1.24.2, CCM 1.24.8 since their patch versions are not in sync with Kubernetes. Moreover, those component versions will be bundled by us. Think: public lookup table from `kubernetesServicesVersion` -> component version.
+* `microserviceVersion` is a bundle of component versions which can be conceptually separated into two groups:
+  * Services that are versioned based on the constellation version: : KMS, JoinService, NodeMaintainanceOperator, NodeOperator, OLM, Verification, Cilium (for now).
+  There only exists one version of each service and it is compatible with all Kubernetes versions currently supported by Constellation.
+  The deployment and image version are the same for all three Kubernetes versions.
+  * Services that are versioned based on the kubernetes version: Autoscaler, CloudControllerManager, CloudNodeManager, GCP Guest Agent, Konnectivity.
+  There exist one version for each Kubernetes version.
+  The deployment is the same for all three Kuberenetes version, but the image is specific to the version.
+  Images are specified by the CLI upon loading the Helm chart, by inspeciting `constellation-conf.yaml`.
+  Deployment variations could be introduced into the Helm charts if they become necessary in the future.
 
 When `constellation upgrade apply` is called the CLI needs to perform the following steps:
 
@@ -194,11 +200,11 @@ When `constellation upgrade apply` is called the CLI needs to perform the follow
 2. create a new `k8s-components-1.24.3` ConfigMap with the corresponding URLs and hashes from the lookup table in the CLI
 3. update the measurements in the `join-config` ConfigMap
 4. update the Kubernetes version and VM image in the `nodeimage` CRD
-5. update Cilium + Constellation microservices
+5. update Constellation microservices
 
-The actual update in step 2. and 3. will be handled by the node-operator inside Constellation. Step 4. will be done via client side helm deployments.
+The actual update in step 2. and 3. will be handled by the node-operator inside Constellation. Step 5. will be done via client side helm deployments.
 
-Since the actual Kubernetes components and Constellation microservice versions are hidden, we will show the user for the actual changes taking place. We also print a warning to back up any important components when the upgrade necessitates a node replacement, i.e. on Kubernetes and VM image upgrades.
+Since the service versions bundled inside a `microserviceVersion` are hidden, the CLI will print the changes taking place. We also print a warning to back up any important components when the upgrade necessitates a node replacement, i.e. on Kubernetes and VM image upgrades.
 
 ```bash
 $ constellation upgrade apply
