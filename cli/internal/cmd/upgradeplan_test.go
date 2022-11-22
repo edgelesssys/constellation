@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/mod/semver"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -248,14 +248,14 @@ func TestGetCompatibleImageMeasurements(t *testing.T) {
 	}
 
 	client := newTestClient(func(req *http.Request) *http.Response {
-		if strings.HasSuffix(req.URL.String(), "/measurements.yaml") {
+		if strings.HasSuffix(req.URL.String(), "/measurements.json") {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(strings.NewReader("0: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\n")),
 				Header:     make(http.Header),
 			}
 		}
-		if strings.HasSuffix(req.URL.String(), "/measurements.yaml.sig") {
+		if strings.HasSuffix(req.URL.String(), "/measurements.json.sig") {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(strings.NewReader("MEUCIBs1g2/n0FsgPfJ+0uLD5TaunGhxwDcQcUGBroejKvg3AiEAzZtcLU9O6IiVhxB8tBS+ty6MXoPNwL8WRWMzyr35eKI=")),
@@ -470,14 +470,14 @@ func TestUpgradePlan(t *testing.T) {
 						Header:     make(http.Header),
 					}
 				}
-				if strings.HasSuffix(req.URL.String(), "/measurements.yaml") {
+				if strings.HasSuffix(req.URL.String(), "/measurements.json") {
 					return &http.Response{
 						StatusCode: tc.measurementsFetchStatus,
 						Body:       io.NopCloser(strings.NewReader("0: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\n")),
 						Header:     make(http.Header),
 					}
 				}
-				if strings.HasSuffix(req.URL.String(), "/measurements.yaml.sig") {
+				if strings.HasSuffix(req.URL.String(), "/measurements.json.sig") {
 					return &http.Response{
 						StatusCode: tc.measurementsFetchStatus,
 						Body:       io.NopCloser(strings.NewReader("MEUCIBs1g2/n0FsgPfJ+0uLD5TaunGhxwDcQcUGBroejKvg3AiEAzZtcLU9O6IiVhxB8tBS+ty6MXoPNwL8WRWMzyr35eKI=")),
