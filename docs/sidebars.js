@@ -241,6 +241,11 @@ const sidebars = {
           label: 'CLI',
           id: 'reference/cli',
         },
+        {
+          type: 'doc',
+          label: 'Configuration Migrations',
+          id: 'reference/config-migration',
+        },
       ],
     },
   ],
