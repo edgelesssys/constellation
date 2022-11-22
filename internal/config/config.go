@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"regexp"
+	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -38,16 +38,14 @@ const (
 	Version1 = "v1"
 )
 
-var (
-	azureReleaseImageRegex = regexp.MustCompile(`^(?i)\/CommunityGalleries\/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df\/Images\/constellation\/Versions\/[\d]+.[\d]+.[\d]+$`)
-	gcpReleaseImageRegex   = regexp.MustCompile(`^projects\/constellation-images\/global\/images\/constellation-v[\d]+-[\d]+-[\d]+$`)
-)
-
 // Config defines configuration used by CLI.
 type Config struct {
 	// description: |
 	//   Schema version of this configuration file.
 	Version string `yaml:"version" validate:"eq=v1"`
+	// description: |
+	//   Machine image used to create Constellation nodes.
+	Image string `yaml:"image" validate:"required,safe_image"`
 	// description: |
 	//   Size (in GB) of a node's disk to store the non-volatile state.
 	StateDiskSizeGB int `yaml:"stateDiskSizeGB" validate:"min=0"`
@@ -75,7 +73,7 @@ type Config struct {
 // UpgradeConfig defines configuration used during constellation upgrade.
 type UpgradeConfig struct {
 	// description: |
-	//   Updated machine image to install on all nodes.
+	//   Updated Constellation machine image to install on all nodes.
 	Image string `yaml:"image"`
 	// description: |
 	//   Measurements of the updated image.
@@ -127,9 +125,6 @@ type AWSConfig struct {
 	//   AWS data center zone name in defined region. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones
 	Zone string `yaml:"zone" validate:"required"`
 	// description: |
-	//   AMI ID of the machine image used to create Constellation nodes.
-	Image string `yaml:"image" validate:"required"`
-	// description: |
 	//   VM instance type to use for Constellation nodes. Needs to support NitroTPM. See: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html
 	InstanceType string `yaml:"instanceType" validate:"lowercase,aws_instance_type"`
 	// description: |
@@ -172,9 +167,6 @@ type AzureConfig struct {
 	// description: |
 	//    Client secret value of the Active Directory app registration credentials. Alternatively leave empty and pass value via CONSTELL_AZURE_CLIENT_SECRET_VALUE environment variable.
 	ClientSecretValue string `yaml:"clientSecretValue" validate:"required"`
-	// description: |
-	//   Machine image used to create Constellation nodes.
-	Image string `yaml:"image" validate:"required"`
 	// description: |
 	//   VM instance type to use for Constellation nodes.
 	InstanceType string `yaml:"instanceType" validate:"azure_instance_type"`
@@ -219,9 +211,6 @@ type GCPConfig struct {
 	//   Path of service account key file. For required service account roles, see https://docs.edgeless.systems/constellation/getting-started/install#authorization
 	ServiceAccountKeyPath string `yaml:"serviceAccountKeyPath" validate:"required"`
 	// description: |
-	//   Machine image used to create Constellation nodes.
-	Image string `yaml:"image" validate:"required"`
-	// description: |
 	//   VM instance type to use for Constellation nodes.
 	InstanceType string `yaml:"instanceType" validate:"gcp_instance_type"`
 	// description: |
@@ -240,9 +229,6 @@ type GCPConfig struct {
 
 // QEMUConfig holds config information for QEMU based Constellation deployments.
 type QEMUConfig struct {
-	// description: |
-	//   Path to the image to use for the VMs.
-	Image string `yaml:"image" validate:"required"`
 	// description: |
 	//   Format of the image to use for the VMs. Should be either qcow2 or raw.
 	ImageFormat string `yaml:"imageFormat" validate:"oneof=qcow2 raw"`
@@ -279,12 +265,12 @@ type QEMUConfig struct {
 func Default() *Config {
 	return &Config{
 		Version:         Version1,
+		Image:           defaultImage,
 		StateDiskSizeGB: 30,
 		DebugCluster:    func() *bool { b := false; return &b }(),
 		Provider: ProviderConfig{
 			AWS: &AWSConfig{
 				Region:                 "",
-				Image:                  "",
 				InstanceType:           "m6a.xlarge",
 				StateDiskType:          "gp3",
 				IAMProfileControlPlane: "",
@@ -298,7 +284,6 @@ func Default() *Config {
 				Location:             "",
 				UserAssignedIdentity: "",
 				ResourceGroup:        "",
-				Image:                DefaultImageAzure,
 				InstanceType:         "Standard_DC4as_v5",
 				StateDiskType:        "Premium_LRS",
 				DeployCSIDriver:      func() *bool { b := true; return &b }(),
@@ -314,7 +299,6 @@ func Default() *Config {
 				Region:                "",
 				Zone:                  "",
 				ServiceAccountKeyPath: "",
-				Image:                 DefaultImageGCP,
 				InstanceType:          "n2d-standard-4",
 				StateDiskType:         "pd-ssd",
 				DeployCSIDriver:       func() *bool { b := true; return &b }(),
@@ -386,22 +370,6 @@ func (c *Config) HasProvider(provider cloudprovider.Provider) bool {
 	return false
 }
 
-// Image returns OS image for the configured cloud provider.
-// If multiple cloud providers are configured (which is not supported)
-// only a single image is returned.
-func (c *Config) Image() string {
-	if c.HasProvider(cloudprovider.AWS) {
-		return c.Provider.AWS.Image
-	}
-	if c.HasProvider(cloudprovider.Azure) {
-		return c.Provider.Azure.Image
-	}
-	if c.HasProvider(cloudprovider.GCP) {
-		return c.Provider.GCP.Image
-	}
-	return ""
-}
-
 // UpdateMeasurements overwrites measurements in config with the provided ones.
 func (c *Config) UpdateMeasurements(newMeasurements Measurements) {
 	if c.Provider.AWS != nil {
@@ -451,21 +419,9 @@ func (c *Config) IsDebugCluster() bool {
 	return false
 }
 
-// IsDebugImage checks whether image name looks like a release image, if not it is
-// probably a debug image. In the end we do not if bootstrapper or debugd
-// was put inside an image just by looking at its name.
-func (c *Config) IsDebugImage() bool {
-	switch {
-	case c.Provider.AWS != nil:
-		// TODO: Add proper image name validation for AWS as part of rfc/image-discoverability.md
-		return false
-	case c.Provider.Azure != nil:
-		return !azureReleaseImageRegex.MatchString(c.Provider.Azure.Image)
-	case c.Provider.GCP != nil:
-		return !gcpReleaseImageRegex.MatchString(c.Provider.GCP.Image)
-	default:
-		return false
-	}
+// IsReleaseImage checks whether image name looks like a release image.
+func (c *Config) IsReleaseImage() bool {
+	return strings.HasPrefix(c.Image, "v")
 }
 
 // GetProvider returns the configured cloud provider.
@@ -540,6 +496,10 @@ func (c *Config) Validate() error {
 	}
 
 	if err := validate.RegisterTranslation("more_than_one_provider", trans, registerMoreThanOneProviderError, c.translateMoreThanOneProviderError); err != nil {
+		return err
+	}
+
+	if err := validate.RegisterValidation("safe_image", validateImage); err != nil {
 		return err
 	}
 

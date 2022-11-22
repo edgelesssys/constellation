@@ -8,9 +8,11 @@ package cloudcmd
 
 import (
 	"context"
+	"io"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 )
 
 type terraformClient interface {
@@ -24,4 +26,12 @@ type terraformClient interface {
 type libvirtRunner interface {
 	Start(ctx context.Context, containerName, imageName string) error
 	Stop(ctx context.Context) error
+}
+
+type imageFetcher interface {
+	FetchReference(ctx context.Context, config *config.Config) (string, error)
+}
+
+type rawDownloader interface {
+	Download(ctx context.Context, errWriter io.Writer, isTTY bool, source, version string) (string, error)
 }

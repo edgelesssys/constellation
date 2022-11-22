@@ -121,13 +121,13 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			confToWrite: func() *Config { // valid config with all, but clientSecretValue
 				c := Default()
 				c.RemoveProviderExcept(cloudprovider.Azure)
+				c.Image = "v0.0.0"
 				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
 				c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
 				c.Provider.Azure.Location = "westus"
 				c.Provider.Azure.ResourceGroup = "test"
 				c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
 				c.Provider.Azure.AppClientID = "3ea4bdc1-1cc1-4237-ae78-0831eff3491e"
-				c.Provider.Azure.Image = "/communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.2.0"
 				return c
 			}(),
 			envToSet: map[string]string{
@@ -139,6 +139,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 			confToWrite: func() *Config {
 				c := Default()
 				c.RemoveProviderExcept(cloudprovider.Azure)
+				c.Image = "v0.0.0"
 				c.Provider.Azure.SubscriptionID = "f4278079-288c-4766-a98c-ab9d5dba01a5"
 				c.Provider.Azure.TenantID = "d4ff9d63-6d6d-4042-8f6a-21e804add5aa"
 				c.Provider.Azure.Location = "westus"
@@ -146,7 +147,6 @@ func TestNewWithDefaultOptions(t *testing.T) {
 				c.Provider.Azure.ClientSecretValue = "other-value" // < Note secret set in config, as well.
 				c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
 				c.Provider.Azure.AppClientID = "3ea4bdc1-1cc1-4237-ae78-0831eff3491e"
-				c.Provider.Azure.Image = "/communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.2.0"
 				return c
 			}(),
 			envToSet: map[string]string{
@@ -182,7 +182,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	const defaultErrCount = 20 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
+	const defaultErrCount = 17 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
 	const azErrCount = 8
 	const gcpErrCount = 5
 
@@ -229,12 +229,12 @@ func TestValidate(t *testing.T) {
 		"Azure config with all required fields is valid": {
 			cnf: func() *Config {
 				cnf := Default()
+				cnf.Image = "v0.0.0"
 				az := cnf.Provider.Azure
 				az.SubscriptionID = "01234567-0123-0123-0123-0123456789ab"
 				az.TenantID = "01234567-0123-0123-0123-0123456789ab"
 				az.Location = "test-location"
 				az.UserAssignedIdentity = "test-identity"
-				az.Image = "some/image/location"
 				az.ResourceGroup = "test-resource-group"
 				az.AppClientID = "01234567-0123-0123-0123-0123456789ab"
 				az.ClientSecretValue = "test-client-secret"
@@ -257,10 +257,10 @@ func TestValidate(t *testing.T) {
 		"GCP config with all required fields is valid": {
 			cnf: func() *Config {
 				cnf := Default()
+				cnf.Image = "v0.0.0"
 				gcp := cnf.Provider.GCP
 				gcp.Region = "test-region"
 				gcp.Project = "test-project"
-				gcp.Image = "some/image/location"
 				gcp.Zone = "test-zone"
 				gcp.ServiceAccountKeyPath = "test-key-path"
 				cnf.Provider = ProviderConfig{}
@@ -298,39 +298,6 @@ func TestHasProvider(t *testing.T) {
 	assert.False(cnfWithAzure.HasProvider(cloudprovider.Unknown))
 	assert.True(cnfWithAzure.HasProvider(cloudprovider.Azure))
 	assert.False(cnfWithAzure.HasProvider(cloudprovider.GCP))
-}
-
-func TestImage(t *testing.T) {
-	testCases := map[string]struct {
-		cfg       *Config
-		wantImage string
-	}{
-		"default aws": {
-			cfg:       func() *Config { c := Default(); c.RemoveProviderExcept(cloudprovider.AWS); return c }(),
-			wantImage: Default().Provider.AWS.Image,
-		},
-		"default azure": {
-			cfg:       func() *Config { c := Default(); c.RemoveProviderExcept(cloudprovider.Azure); return c }(),
-			wantImage: Default().Provider.Azure.Image,
-		},
-		"default gcp": {
-			cfg:       func() *Config { c := Default(); c.RemoveProviderExcept(cloudprovider.GCP); return c }(),
-			wantImage: Default().Provider.GCP.Image,
-		},
-		"default qemu": {
-			cfg:       func() *Config { c := Default(); c.RemoveProviderExcept(cloudprovider.QEMU); return c }(),
-			wantImage: "",
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			image := tc.cfg.Image()
-			assert.Equal(tc.wantImage, image)
-		})
-	}
 }
 
 func TestConfigRemoveProviderExcept(t *testing.T) {
@@ -388,6 +355,7 @@ func TestConfigGeneratedDocsFresh(t *testing.T) {
 	assert.Len(ConfigDoc.Fields, reflect.ValueOf(Config{}).NumField(), updateMsg)
 	assert.Len(UpgradeConfigDoc.Fields, reflect.ValueOf(UpgradeConfig{}).NumField(), updateMsg)
 	assert.Len(ProviderConfigDoc.Fields, reflect.ValueOf(ProviderConfig{}).NumField(), updateMsg)
+	assert.Len(AWSConfigDoc.Fields, reflect.ValueOf(AWSConfig{}).NumField(), updateMsg)
 	assert.Len(AzureConfigDoc.Fields, reflect.ValueOf(AzureConfig{}).NumField(), updateMsg)
 	assert.Len(GCPConfigDoc.Fields, reflect.ValueOf(GCPConfig{}).NumField(), updateMsg)
 	assert.Len(QEMUConfigDoc.Fields, reflect.ValueOf(QEMUConfig{}).NumField(), updateMsg)
@@ -439,47 +407,34 @@ func TestConfig_UpdateMeasurements(t *testing.T) {
 	}
 }
 
-func TestConfig_IsImageDebug(t *testing.T) {
+func TestConfig_IsReleaseImage(t *testing.T) {
 	testCases := map[string]struct {
 		conf *Config
 		want bool
 	}{
-		// TODO: Add AWS when we know the format of published images & debug images
-		"gcp release": {
+		"release image v0.0.0": {
 			conf: func() *Config {
 				conf := Default()
-				conf.RemoveProviderExcept(cloudprovider.GCP)
-				conf.Provider.GCP.Image = "projects/constellation-images/global/images/constellation-v1-3-0"
-				return conf
-			}(),
-			want: false,
-		},
-		"gcp debug": {
-			conf: func() *Config {
-				conf := Default()
-				conf.RemoveProviderExcept(cloudprovider.GCP)
-				conf.Provider.GCP.Image = "projects/constellation-images/global/images/constellation-20220812102023"
+				conf.Image = "v0.0.0"
 				return conf
 			}(),
 			want: true,
 		},
-		"azure release": {
+		"branch image": {
 			conf: func() *Config {
 				conf := Default()
-				conf.RemoveProviderExcept(cloudprovider.Azure)
-				conf.Provider.Azure.Image = "/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/0.0.1"
+				conf.Image = "feat-x-vX.Y.Z-pre.0.yyyymmddhhmmss-abcdefabcdef"
 				return conf
 			}(),
 			want: false,
 		},
-		"azure debug": {
+		"debug image": {
 			conf: func() *Config {
 				conf := Default()
-				conf.RemoveProviderExcept(cloudprovider.Azure)
-				conf.Provider.Azure.Image = "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.Compute/galleries/Constellation_Debug/images/v1.4.0/versions/2022.0805.151600"
+				conf.Image = "debug-vX.Y.Z-pre.0.yyyymmddhhmmss-abcdefabcdef"
 				return conf
 			}(),
-			want: true,
+			want: false,
 		},
 		"empty config": {
 			conf: &Config{},
@@ -490,7 +445,7 @@ func TestConfig_IsImageDebug(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
-			assert.Equal(tc.want, tc.conf.IsDebugImage())
+			assert.Equal(tc.want, tc.conf.IsReleaseImage())
 		})
 	}
 }

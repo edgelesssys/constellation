@@ -11,13 +11,13 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/image"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -49,10 +49,10 @@ func runConfigFetchMeasurements(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("constructing Rekor client: %w", err)
 	}
-	return configFetchMeasurements(cmd, rekor, fileHandler, http.DefaultClient)
+	return configFetchMeasurements(cmd, rekor, fileHandler, http.DefaultClient, image.New())
 }
 
-func configFetchMeasurements(cmd *cobra.Command, verifier rekorVerifier, fileHandler file.Handler, client *http.Client) error {
+func configFetchMeasurements(cmd *cobra.Command, verifier rekorVerifier, fileHandler file.Handler, client *http.Client, img imageFetcher) error {
 	flags, err := parseFetchMeasurementsFlags(cmd)
 	if err != nil {
 		return err
@@ -63,16 +63,17 @@ func configFetchMeasurements(cmd *cobra.Command, verifier rekorVerifier, fileHan
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
-	if conf.IsDebugImage() {
+	if !conf.IsReleaseImage() {
 		cmd.PrintErrln("Configured image doesn't look like a released production image. Double check image before deploying to production.")
-	}
-
-	if err := flags.updateURLs(conf); err != nil {
-		return err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
+
+	if err := flags.updateURLs(ctx, conf, img); err != nil {
+		return err
+	}
+
 	var fetchedMeasurements measurements.M
 	hash, err := fetchedMeasurements.FetchAndVerify(ctx, client, flags.measurementsURL, flags.signatureURL, []byte(constants.CosignPublicKey))
 	if err != nil {
@@ -128,9 +129,15 @@ func parseFetchMeasurementsFlags(cmd *cobra.Command) (*fetchMeasurementsFlags, e
 	}, nil
 }
 
-func (f *fetchMeasurementsFlags) updateURLs(conf *config.Config) error {
+func (f *fetchMeasurementsFlags) updateURLs(ctx context.Context, conf *config.Config, img imageFetcher) error {
+	imageRef, err := img.FetchReference(ctx, conf)
+	if err != nil {
+		return err
+	}
+
 	if f.measurementsURL == nil {
-		parsedURL, err := url.Parse(constants.S3PublicBucket + strings.ToLower(conf.Image()) + "/measurements.yaml")
+		// TODO(AB#2644): resolve image version to reference
+		parsedURL, err := url.Parse(constants.S3PublicBucket + imageRef + "/measurements.yaml")
 		if err != nil {
 			return err
 		}
@@ -138,11 +145,15 @@ func (f *fetchMeasurementsFlags) updateURLs(conf *config.Config) error {
 	}
 
 	if f.signatureURL == nil {
-		parsedURL, err := url.Parse(constants.S3PublicBucket + strings.ToLower(conf.Image()) + "/measurements.yaml.sig")
+		parsedURL, err := url.Parse(constants.S3PublicBucket + imageRef + "/measurements.yaml.sig")
 		if err != nil {
 			return err
 		}
 		f.signatureURL = parsedURL
 	}
 	return nil
+}
+
+type imageFetcher interface {
+	FetchReference(ctx context.Context, config *config.Config) (string, error)
 }

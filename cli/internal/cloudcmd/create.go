@@ -22,24 +22,31 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/image"
 )
 
 // Creator creates cloud resources.
 type Creator struct {
 	out                io.Writer
+	image              imageFetcher
 	newTerraformClient func(ctx context.Context) (terraformClient, error)
 	newLibvirtRunner   func() libvirtRunner
+	newRawDownloader   func() rawDownloader
 }
 
 // NewCreator creates a new creator.
 func NewCreator(out io.Writer) *Creator {
 	return &Creator{
-		out: out,
+		out:   out,
+		image: image.New(),
 		newTerraformClient: func(ctx context.Context) (terraformClient, error) {
 			return terraform.New(ctx, constants.TerraformWorkingDir)
 		},
 		newLibvirtRunner: func() libvirtRunner {
 			return libvirt.New()
+		},
+		newRawDownloader: func() rawDownloader {
+			return image.NewDownloader()
 		},
 	}
 }
@@ -47,6 +54,11 @@ func NewCreator(out io.Writer) *Creator {
 // Create creates the handed amount of instances and all the needed resources.
 func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, config *config.Config, name, insType string, controlPlaneCount, workerCount int,
 ) (clusterid.File, error) {
+	image, err := c.image.FetchReference(ctx, config)
+	if err != nil {
+		return clusterid.File{}, fmt.Errorf("fetching image reference: %w", err)
+	}
+
 	switch provider {
 	case cloudprovider.AWS:
 		cl, err := c.newTerraformClient(ctx)
@@ -54,21 +66,21 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 			return clusterid.File{}, err
 		}
 		defer cl.RemoveInstaller()
-		return c.createAWS(ctx, cl, config, name, insType, controlPlaneCount, workerCount)
+		return c.createAWS(ctx, cl, config, name, insType, controlPlaneCount, workerCount, image)
 	case cloudprovider.GCP:
 		cl, err := c.newTerraformClient(ctx)
 		if err != nil {
 			return clusterid.File{}, err
 		}
 		defer cl.RemoveInstaller()
-		return c.createGCP(ctx, cl, config, name, insType, controlPlaneCount, workerCount)
+		return c.createGCP(ctx, cl, config, name, insType, controlPlaneCount, workerCount, image)
 	case cloudprovider.Azure:
 		cl, err := c.newTerraformClient(ctx)
 		if err != nil {
 			return clusterid.File{}, err
 		}
 		defer cl.RemoveInstaller()
-		return c.createAzure(ctx, cl, config, name, insType, controlPlaneCount, workerCount)
+		return c.createAzure(ctx, cl, config, name, insType, controlPlaneCount, workerCount, image)
 	case cloudprovider.QEMU:
 		if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
 			return clusterid.File{}, fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
@@ -79,14 +91,14 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 		}
 		defer cl.RemoveInstaller()
 		lv := c.newLibvirtRunner()
-		return c.createQEMU(ctx, cl, lv, name, config, controlPlaneCount, workerCount)
+		return c.createQEMU(ctx, cl, lv, name, config, controlPlaneCount, workerCount, image)
 	default:
 		return clusterid.File{}, fmt.Errorf("unsupported cloud provider: %s", provider)
 	}
 }
 
 func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *config.Config,
-	name, insType string, controlPlaneCount, workerCount int,
+	name, insType string, controlPlaneCount, workerCount int, image string,
 ) (idFile clusterid.File, retErr error) {
 	vars := terraform.AWSVariables{
 		CommonVariables: terraform.CommonVariables{
@@ -99,7 +111,7 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *con
 		Region:                 config.Provider.AWS.Region,
 		Zone:                   config.Provider.AWS.Zone,
 		InstanceType:           insType,
-		AMIImageID:             config.Provider.AWS.Image,
+		AMIImageID:             image,
 		IAMProfileControlPlane: config.Provider.AWS.IAMProfileControlPlane,
 		IAMProfileWorkerNodes:  config.Provider.AWS.IAMProfileWorkerNodes,
 		Debug:                  config.IsDebugCluster(),
@@ -122,7 +134,7 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *con
 }
 
 func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *config.Config,
-	name, insType string, controlPlaneCount, workerCount int,
+	name, insType string, controlPlaneCount, workerCount int, image string,
 ) (idFile clusterid.File, retErr error) {
 	vars := terraform.GCPVariables{
 		CommonVariables: terraform.CommonVariables{
@@ -137,7 +149,7 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 		CredentialsFile: config.Provider.GCP.ServiceAccountKeyPath,
 		InstanceType:    insType,
 		StateDiskType:   config.Provider.GCP.StateDiskType,
-		ImageID:         config.Provider.GCP.Image,
+		ImageID:         image,
 		Debug:           config.IsDebugCluster(),
 	}
 
@@ -158,7 +170,7 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 }
 
 func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *config.Config,
-	name, insType string, controlPlaneCount, workerCount int,
+	name, insType string, controlPlaneCount, workerCount int, image string,
 ) (idFile clusterid.File, retErr error) {
 	vars := terraform.AzureVariables{
 		CommonVariables: terraform.CommonVariables{
@@ -172,7 +184,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 		UserAssignedIdentity: config.Provider.Azure.UserAssignedIdentity,
 		InstanceType:         insType,
 		StateDiskType:        config.Provider.Azure.StateDiskType,
-		ImageID:              config.Provider.Azure.Image,
+		ImageID:              image,
 		ConfidentialVM:       *config.Provider.Azure.ConfidentialVM,
 		SecureBoot:           *config.Provider.Azure.SecureBoot,
 		Debug:                config.IsDebugCluster(),
@@ -223,10 +235,17 @@ func normalizeAzureURIs(vars terraform.AzureVariables) terraform.AzureVariables 
 }
 
 func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirtRunner, name string, config *config.Config,
-	controlPlaneCount, workerCount int,
+	controlPlaneCount, workerCount int, source string,
 ) (idFile clusterid.File, retErr error) {
 	qemuRollbacker := &rollbackerQEMU{client: cl, libvirt: lv, createdWorkspace: false}
 	defer rollbackOnError(context.Background(), c.out, &retErr, qemuRollbacker)
+
+	// TODO: render progress bar
+	downloader := c.newRawDownloader()
+	imagePath, err := downloader.Download(ctx, c.out, false, source, config.Image)
+	if err != nil {
+		return clusterid.File{}, fmt.Errorf("download raw image: %w", err)
+	}
 
 	libvirtURI := config.Provider.QEMU.LibvirtURI
 	libvirtSocketPath := "."
@@ -273,7 +292,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 		},
 		LibvirtURI:         libvirtURI,
 		LibvirtSocketPath:  libvirtSocketPath,
-		ImagePath:          config.Provider.QEMU.Image,
+		ImagePath:          imagePath,
 		ImageFormat:        config.Provider.QEMU.ImageFormat,
 		CPUCount:           config.Provider.QEMU.VCPUs,
 		MemorySizeMiB:      config.Provider.QEMU.Memory,

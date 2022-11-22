@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -102,10 +103,9 @@ func TestUpdateURLs(t *testing.T) {
 	}{
 		"both values nil": {
 			conf: &config.Config{
+				Image: "someImageVersion",
 				Provider: config.ProviderConfig{
-					GCP: &config.GCPConfig{
-						Image: "some/image/path/image-123456",
-					},
+					GCP: &config.GCPConfig{},
 				},
 			},
 			flags:                  &fetchMeasurementsFlags{},
@@ -127,7 +127,9 @@ func TestUpdateURLs(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			err := tc.flags.updateURLs(tc.conf)
+			err := tc.flags.updateURLs(context.Background(), tc.conf, &stubImageFetcher{
+				reference: "some/image/path/image-123456",
+			})
 			assert.NoError(err)
 			assert.Equal(tc.wantMeasurementsURL, tc.flags.measurementsURL.String())
 		})
@@ -162,14 +164,14 @@ func TestConfigFetchMeasurements(t *testing.T) {
 	signature := "MEUCIFdJ5dH6HDywxQWTUh9Bw77wMrq0mNCUjMQGYP+6QsVmAiEAmazj/L7rFGA4/Gz8y+kI5h5E5cDgc3brihvXBKF6qZA="
 
 	client := newTestClient(func(req *http.Request) *http.Response {
-		if req.URL.String() == "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/projects/constellation-images/global/images/constellation-coreos-1658216163/measurements.yaml" {
+		if req.URL.String() == "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/someImage/measurements.yaml" {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBufferString(measurements)),
 				Header:     make(http.Header),
 			}
 		}
-		if req.URL.String() == "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/projects/constellation-images/global/images/constellation-coreos-1658216163/measurements.yaml.sig" {
+		if req.URL.String() == "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/someImage/measurements.yaml.sig" {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBufferString(signature)),
@@ -213,12 +215,23 @@ func TestConfigFetchMeasurements(t *testing.T) {
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 
 			gcpConfig := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.GCP)
-			gcpConfig.Provider.GCP.Image = "projects/constellation-images/global/images/constellation-coreos-1658216163"
+			gcpConfig.Image = "someImage"
 
 			err := fileHandler.WriteYAML(constants.ConfigFilename, gcpConfig, file.OptMkdirAll)
 			require.NoError(err)
 
-			assert.NoError(configFetchMeasurements(cmd, tc.verifier, fileHandler, client))
+			assert.NoError(configFetchMeasurements(cmd, tc.verifier, fileHandler, client, &stubImageFetcher{
+				reference: "someImage",
+			}))
 		})
 	}
+}
+
+type stubImageFetcher struct {
+	reference         string
+	fetchReferenceErr error
+}
+
+func (f *stubImageFetcher) FetchReference(_ context.Context, _ *config.Config) (string, error) {
+	return f.reference, f.fetchReferenceErr
 }

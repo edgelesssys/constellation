@@ -17,6 +17,19 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+func validateImage(fl validator.FieldLevel) bool {
+	image := fl.Field().String()
+	switch {
+	case image == "":
+		return false
+	case image == "..":
+		return false
+	case strings.Contains(image, "/"):
+		return false
+	}
+	return true
+}
+
 func validateK8sVersion(fl validator.FieldLevel) bool {
 	return versions.IsSupportedK8sVersion(fl.Field().String())
 }

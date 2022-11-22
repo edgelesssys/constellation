@@ -67,7 +67,7 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 	}
 
 	var printedAWarning bool
-	if conf.IsDebugImage() {
+	if !conf.IsReleaseImage() {
 		cmd.PrintErrln("Configured image doesn't look like a released production image. Double check image before deploying to production.")
 		printedAWarning = true
 	}

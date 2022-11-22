@@ -8,10 +8,12 @@ package cloudcmd
 
 import (
 	"context"
+	"io"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/terraform"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 
 	"go.uber.org/goleak"
 )
@@ -71,4 +73,22 @@ func (r *stubLibvirtRunner) Start(_ context.Context, _, _ string) error {
 func (r *stubLibvirtRunner) Stop(context.Context) error {
 	r.stopCalled = true
 	return r.stopErr
+}
+
+type stubImageFetcher struct {
+	reference         string
+	fetchReferenceErr error
+}
+
+func (f *stubImageFetcher) FetchReference(_ context.Context, _ *config.Config) (string, error) {
+	return f.reference, f.fetchReferenceErr
+}
+
+type stubRawDownloader struct {
+	destination string
+	downloadErr error
+}
+
+func (d *stubRawDownloader) Download(_ context.Context, _ io.Writer, _ bool, _ string, _ string) (string, error) {
+	return d.destination, d.downloadErr
 }
