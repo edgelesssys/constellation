@@ -64,11 +64,11 @@ func TestFromFile(t *testing.T) {
 		},
 		"custom config from default file": {
 			config: &Config{
-				Version: Version1,
+				Version: Version2,
 			},
 			configName: constants.ConfigFilename,
 			wantResult: &Config{
-				Version: Version1,
+				Version: Version2,
 			},
 		},
 		"modify default config": {
