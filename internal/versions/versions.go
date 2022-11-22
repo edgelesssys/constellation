@@ -52,11 +52,11 @@ const (
 	// KonnectivityServerImage server image for konnectivity service.
 	KonnectivityServerImage = "registry.k8s.io/kas-network-proxy/proxy-server:v0.0.33@sha256:2c111f004bec24888d8cfa2a812a38fb8341350abac67dcd0ac64e709dfe389c" // renovate:container
 	// JoinImage image of Constellation join service.
-	JoinImage = "ghcr.io/edgelesssys/constellation/join-service:v2.3.0-pre.0.20221117144747-ed297ce23c05@sha256:9196790a0ab9178e2508dba963281d542c5012a0a894c6067d8d83bc17852e34" // renovate:container
+	JoinImage = "ghcr.io/edgelesssys/constellation/join-service:v2.3.0-pre.0.20221121163101-1362e40f53ad@sha256:7b3ffeeda705c08dbc1f3780ed90c60cf03bac2fc03b0d0d66e85411581722c8" // renovate:container
 	// KmsImage image of Constellation KMS server.
-	KmsImage = "ghcr.io/edgelesssys/constellation/kmsserver:v2.3.0-pre.0.20221117143853-9d4172002ca6@sha256:f3499065354f202f900870c811c5b26b1e30664e3860e07905326c73d91e5f37" // renovate:container
+	KmsImage = "ghcr.io/edgelesssys/constellation/kmsserver:v2.3.0-pre.0.20221121163101-1362e40f53ad@sha256:a61ba5b9f839a93e8799124c1240cb3aa7ef29a2d620358b6fc2e7bf12a28ea7" // renovate:container
 	// VerificationImage image of Constellation verification service.
-	VerificationImage = "ghcr.io/edgelesssys/constellation/verification-service:v2.3.0-pre.0.20221117143853-9d4172002ca6@sha256:33702b510da6f5b066309ad4303c61249e77e2ca923f65f77c94407576442e8f" // renovate:container
+	VerificationImage = "ghcr.io/edgelesssys/constellation/verification-service:v2.3.0-pre.0.20221121163101-1362e40f53ad@sha256:d9a4ac6ac13f7e3b3003e9c25f274c8a1271a05316f981d239d83bc7651042f8" // renovate:container
 	// GcpGuestImage image for GCP guest agent.
 	// Check for new versions at https://github.com/GoogleCloudPlatform/guest-agent/releases and update in /.github/workflows/build-gcp-guest-agent.yml.
 	GcpGuestImage = "ghcr.io/edgelesssys/gcp-guest-agent:20220927.00@sha256:3dea1ae3f162d2353e6584b325f0e325a39cda5f380f41e5a0ee43c6641d3905" // renovate:container
