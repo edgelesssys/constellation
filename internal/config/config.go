@@ -34,15 +34,15 @@ import (
 type Measurements = measurements.M
 
 const (
-	// Version1 is the first version number for Constellation config file.
-	Version1 = "v1"
+	// Version2 is the second version number for Constellation config file.
+	Version2 = "v2"
 )
 
 // Config defines configuration used by CLI.
 type Config struct {
 	// description: |
 	//   Schema version of this configuration file.
-	Version string `yaml:"version" validate:"eq=v1"`
+	Version string `yaml:"version" validate:"eq=v2"`
 	// description: |
 	//   Machine image used to create Constellation nodes.
 	Image string `yaml:"image" validate:"required,safe_image"`
@@ -264,7 +264,7 @@ type QEMUConfig struct {
 // Default returns a struct with the default config.
 func Default() *Config {
 	return &Config{
-		Version:         Version1,
+		Version:         Version2,
 		Image:           defaultImage,
 		StateDiskSizeGB: 30,
 		DebugCluster:    func() *bool { b := false; return &b }(),
