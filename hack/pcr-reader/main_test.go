@@ -23,10 +23,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m,
-		// https://github.com/census-instrumentation/opencensus-go/issues/1262
-		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
-	)
+	goleak.VerifyTestMain(m)
 }
 
 func TestValidatePCRAttDoc(t *testing.T) {
@@ -99,7 +96,10 @@ func TestValidatePCRAttDoc(t *testing.T) {
 				require.NoError(json.Unmarshal(tc.attDocRaw, &attDoc))
 				qIdx, err := vtpm.GetSHA256QuoteIndex(attDoc.Attestation.Quotes)
 				require.NoError(err)
-				assert.EqualValues(attDoc.Attestation.Quotes[qIdx].Pcrs.Pcrs, pcrs)
+
+				for pcrIdx, pcrVal := range pcrs {
+					assert.Equal(pcrVal.Expected[:], attDoc.Attestation.Quotes[qIdx].Pcrs.Pcrs[pcrIdx])
+				}
 			}
 		})
 	}

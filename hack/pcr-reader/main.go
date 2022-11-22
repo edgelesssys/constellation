@@ -144,18 +144,3 @@ func printPCRsJSON(w io.Writer, pcrs measurements.M) error {
 	fmt.Fprintf(w, "%s", string(pcrJSON))
 	return nil
 }
-
-func fromMap(pcrs map[uint32][]byte) (measurements.M, error) {
-	m := measurements.M{}
-	for idx, pcr := range pcrs {
-		if len(pcr) != 32 {
-			return nil, fmt.Errorf("incomplete PCR at index: %d", idx)
-		}
-
-		m[idx] = measurements.Measurement{
-			Expected: *(*[32]byte)(pcr),
-			WarnOnly: true,
-		}
-	}
-	return m, nil
-}
