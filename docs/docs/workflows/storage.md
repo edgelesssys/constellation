@@ -54,8 +54,8 @@ Note that in case the options above aren't a suitable solution for you, Constell
 
 ## Installation
 
-The Constellation CLI will automatically install the CSI driver for your CSP in your cluster.
-If you don't need a CSI driver, or wish to deploy your own, you can disable the automatic installation by setting `deployCSIDriver` to `false` in your Constellation config file.
+The Constellation CLI will automatically install Constellation's CSI driver for the selected CSP in your cluster.
+If you don't need a CSI driver or wish to deploy your own, you can disable the automatic installation by setting `deployCSIDriver` to `false` in your Constellation config file.
 
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure">
@@ -77,8 +77,8 @@ For more info on encryption algorithms and key sizes, please refer to [cryptogra
 :::info
 
 The default storage class is set to `encrypted-rwo` for performance reasons.
-If you want integrity protected storage, set the `storageClassName` parameter of your persistent volume claim to `integrity-encrypted-rwo`
-Alternatively, you can created your own storage class with integrity protection enabled by adding `csi.storage.k8s.io/fstype: ext4-integrity` to the class `parameters`.
+If you want integrity-protected storage, set the `storageClassName` parameter of your persistent volume claim to `integrity-encrypted-rwo`
+Alternatively, you can create your own storage class with integrity protection enabled by adding `csi.storage.k8s.io/fstype: ext4-integrity` to the class `parameters`.
 Or use another filesystem by specifying another file system type with the suffix `-integrity`.
 Note that volume expansion isn't supported for integrity-protected disks.
 
@@ -104,8 +104,8 @@ For more info on encryption algorithms and key sizes, please refer to [cryptogra
 :::info
 
 The default storage class is set to `encrypted-rwo` for performance reasons.
-If you want integrity protected storage, set the `storageClassName` parameter of your persistent volume claim to `integrity-encrypted-rwo`
-Alternatively, you can created your own storage class with integrity protection enabled by adding `csi.storage.k8s.io/fstype: ext4-integrity` to the class `parameters`.
+If you want integrity-protected storage, set the `storageClassName` parameter of your persistent volume claim to `integrity-encrypted-rwo`
+Alternatively, you can create your own storage class with integrity protection enabled by adding `csi.storage.k8s.io/fstype: ext4-integrity` to the class `parameters`.
 Or use another filesystem by specifying another file system type with the suffix `-integrity`.
 Note that volume expansion isn't supported for integrity-protected disks.
 
@@ -180,7 +180,7 @@ You may use other (non-confidential) CSI drivers that are compatible with Kubern
 
 The default storage class is responsible for all persistent volume claims that don't explicitly request `storageClassName`.
 Constellation creates a storage class with encryption enabled and sets this as the default class.
-In case you wish to change this, follow the steps below:
+In case you wish to change it, follow the steps below:
 
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure">
