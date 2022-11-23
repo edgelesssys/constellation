@@ -241,15 +241,21 @@ func DefaultsFor(provider cloudprovider.Provider) M {
 	switch provider {
 	case cloudprovider.AWS:
 		return M{
+			4:                         placeHolderMeasurement(),
 			8:                         WithAllBytes(0x00, false),
+			9:                         placeHolderMeasurement(),
 			11:                        WithAllBytes(0x00, false),
+			12:                        placeHolderMeasurement(),
 			13:                        WithAllBytes(0x00, false),
 			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
 		}
 	case cloudprovider.Azure:
 		return M{
+			4:                         placeHolderMeasurement(),
 			8:                         WithAllBytes(0x00, false),
+			9:                         placeHolderMeasurement(),
 			11:                        WithAllBytes(0x00, false),
+			12:                        placeHolderMeasurement(),
 			13:                        WithAllBytes(0x00, false),
 			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
 		}
@@ -259,15 +265,21 @@ func DefaultsFor(provider cloudprovider.Provider) M {
 				Expected: [32]byte{0x0F, 0x35, 0xC2, 0x14, 0x60, 0x8D, 0x93, 0xC7, 0xA6, 0xE6, 0x8A, 0xE7, 0x35, 0x9B, 0x4A, 0x8B, 0xE5, 0xA0, 0xE9, 0x9E, 0xEA, 0x91, 0x07, 0xEC, 0xE4, 0x27, 0xC4, 0xDE, 0xA4, 0xE4, 0x39, 0xCF},
 				WarnOnly: false,
 			},
+			4:                         placeHolderMeasurement(),
 			8:                         WithAllBytes(0x00, false),
+			9:                         placeHolderMeasurement(),
 			11:                        WithAllBytes(0x00, false),
+			12:                        placeHolderMeasurement(),
 			13:                        WithAllBytes(0x00, false),
 			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
 		}
 	case cloudprovider.QEMU:
 		return M{
+			4:                         placeHolderMeasurement(),
 			8:                         WithAllBytes(0x00, false),
+			9:                         placeHolderMeasurement(),
 			11:                        WithAllBytes(0x00, false),
+			12:                        placeHolderMeasurement(),
 			13:                        WithAllBytes(0x00, false),
 			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
 		}
@@ -295,6 +307,13 @@ func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([
 		return []byte{}, err
 	}
 	return content, nil
+}
+
+func placeHolderMeasurement() Measurement {
+	return Measurement{
+		Expected: *(*[32]byte)(bytes.Repeat([]byte{0x12, 0x34}, 16)),
+		WarnOnly: false,
+	}
 }
 
 type encodedMeasurement struct {

@@ -138,7 +138,7 @@ type AWSConfig struct {
 	IAMProfileWorkerNodes string `yaml:"iamProfileWorkerNodes" validate:"required"`
 	// description: |
 	//   Expected VM measurements.
-	Measurements Measurements `yaml:"measurements" validate:"required"`
+	Measurements Measurements `yaml:"measurements" validate:"required,no_placeholders"`
 }
 
 // AzureConfig are Azure specific configuration values used by the CLI.
@@ -187,7 +187,7 @@ type AzureConfig struct {
 	EnforceIDKeyDigest *bool `yaml:"enforceIdKeyDigest" validate:"required"`
 	// description: |
 	//   Expected confidential VM measurements.
-	Measurements Measurements `yaml:"measurements" validate:"required"`
+	Measurements Measurements `yaml:"measurements" validate:"required,no_placeholders"`
 }
 
 // GCPConfig are GCP specific configuration values used by the CLI.
@@ -215,7 +215,7 @@ type GCPConfig struct {
 	DeployCSIDriver *bool `yaml:"deployCSIDriver" validate:"required"`
 	// description: |
 	//   Expected confidential VM measurements.
-	Measurements Measurements `yaml:"measurements" validate:"required"`
+	Measurements Measurements `yaml:"measurements" validate:"required,no_placeholders"`
 }
 
 // QEMUConfig holds config information for QEMU based Constellation deployments.
@@ -246,7 +246,7 @@ type QEMUConfig struct {
 	Firmware string `yaml:"firmware"`
 	// description: |
 	//   Measurement used to enable measured boot.
-	Measurements Measurements `yaml:"measurements" validate:"required"`
+	Measurements Measurements `yaml:"measurements" validate:"required,no_placeholders"`
 }
 
 // Default returns a struct with the default config.
@@ -480,6 +480,14 @@ func (c *Config) Validate() error {
 	}
 
 	if err := validate.RegisterTranslation("more_than_one_provider", trans, registerMoreThanOneProviderError, c.translateMoreThanOneProviderError); err != nil {
+		return err
+	}
+
+	if err := validate.RegisterTranslation("no_placeholders", trans, registerContainsPlaceholderError, translateContainsPlaceholderError); err != nil {
+		return err
+	}
+
+	if err := validate.RegisterValidation("no_placeholders", validateNoPlaceholder); err != nil {
 		return err
 	}
 

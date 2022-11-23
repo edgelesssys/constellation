@@ -110,25 +110,25 @@ func (v *Validator) setPCRs(config *config.Config) error {
 	case cloudprovider.AWS:
 		awsPCRs := config.Provider.AWS.Measurements
 		if len(awsPCRs) == 0 {
-			return errors.New("no PCR values provided")
+			return errors.New("no expected measurement provided")
 		}
 		v.pcrs = awsPCRs
 	case cloudprovider.Azure:
 		azurePCRs := config.Provider.Azure.Measurements
 		if len(azurePCRs) == 0 {
-			return errors.New("no PCR values provided")
+			return errors.New("no expected measurement provided")
 		}
 		v.pcrs = azurePCRs
 	case cloudprovider.GCP:
 		gcpPCRs := config.Provider.GCP.Measurements
 		if len(gcpPCRs) == 0 {
-			return errors.New("no PCR values provided")
+			return errors.New("no expected measurement provided")
 		}
 		v.pcrs = gcpPCRs
 	case cloudprovider.QEMU:
 		qemuPCRs := config.Provider.QEMU.Measurements
 		if len(qemuPCRs) == 0 {
-			return errors.New("no PCR values provided")
+			return errors.New("no expected measurement provided")
 		}
 		v.pcrs = qemuPCRs
 	}
