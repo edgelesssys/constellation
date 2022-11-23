@@ -12,6 +12,26 @@ env:
   ARM_TENANT_ID: ${{ secrets.AZURE_E2E_TENANT_ID }}
 
 jobs:
+  find-latest-image:
+    name: Find latest debug image
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      image: ${{ steps.find-latest-image.outputs.image }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Find latest image
+        id: find-latest-image
+        uses: ./.github/actions/find_latest_image
+        with:
+          imageType: debug
+
   e2e-weekly:
     strategy:
       fail-fast: false
@@ -40,6 +60,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
+    needs: [find-latest-image]
     steps:
       - name: Check out repository
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
@@ -75,6 +96,7 @@ jobs:
           workerNodesCount: "2"
           controlNodesCount: "3"
           cloudProvider: ${{ matrix.provider }}
+          osImage: ${{ needs.find-latest-image.outputs.image }}
           kubernetesVersion: ${{ matrix.version }}
           azureSubscription: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
           azureTenant: ${{ secrets.AZURE_E2E_TENANT_ID }}

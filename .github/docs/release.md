@@ -81,17 +81,17 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
     11. Run manual E2E tests using [Linux](/.github/workflows/e2e-test-manual.yml) and [macOS](/.github/workflows/e2e-test-manual-macos.yml) to confirm functionality and stability.
 
         ```sh
-        gh workflow run e2e-test-manual.yml --ref release/v$minor -F cloudProvider=azure -F machineType=Standard_DC4as_v5 -F test="sonobuoy full" -F osImage=/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/$ver -F isDebugImage=false
-        gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=azure -F machineType=Standard_DC4as_v5 -F test="sonobuoy full" -F osImage=/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/$ver -F isDebugImage=false
-        gh workflow run e2e-test-manual.yml --ref release/v$minor -F cloudProvider=gcp -F machineType=n2d-standard-4 -F test="sonobuoy full" -F osImage=projects/constellation-images/global/images/constellation-v$gcpVer -F isDebugImage=false
-        gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=gcp -F machineType=n2d-standard-4 -F test="sonobuoy full" -F osImage=projects/constellation-images/global/images/constellation-v$gcpVer -F isDebugImage=false
+        gh workflow run e2e-test-manual.yml --ref release/v$minor -F cloudProvider=azure -F machineType=Standard_DC4as_v5 -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false
+        gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=azure -F machineType=Standard_DC4as_v5 -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false
+        gh workflow run e2e-test-manual.yml --ref release/v$minor -F cloudProvider=gcp -F machineType=n2d-standard-4 -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false
+        gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=gcp -F machineType=n2d-standard-4 -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false
         ```
 
     12. [Generate measurements](/.github/workflows/generate-measurements.yml) for the images on each CSP.
 
         ```sh
-           gh workflow run generate-measurements.yml --ref release/v$minor -F cloudProvider=azure -F osImage=/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/$ver -F isDebugImage=false
-           gh workflow run generate-measurements.yml --ref release/v$minor -F cloudProvider=gcp -F osImage=projects/constellation-images/global/images/constellation-v$gcpVer -F isDebugImage=false
+           gh workflow run generate-measurements.yml --ref release/v$minor -F cloudProvider=azure -F osImage=v$ver -F isDebugImage=false
+           gh workflow run generate-measurements.yml --ref release/v$minor -F cloudProvider=gcp -F osImage=v$ver -F isDebugImage=false
         ```
 
     13. Create a new tag on this release branch

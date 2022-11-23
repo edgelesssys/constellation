@@ -34,8 +34,7 @@ on:
         default: "1.24"
         required: true
       osImage:
-        description: "OS image (full path). Examples are in internal/config/config.go."
-        default: "debug-latest"
+        description: "Full name of OS image (CSP independent image version UID)."
         type: string
         required: true
       isDebugImage:

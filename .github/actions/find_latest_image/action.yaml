@@ -1,0 +1,50 @@
+name: Find latest OS image
+description: Finds the latest OS image of a given type.
+
+inputs:
+  imageType:
+    description: "Type of image to find. Can be one of [debug, release] or a custom prefix (branch name)."
+    required: true
+
+outputs:
+  image:
+    description: "The latest image of the given type."
+    value: ${{ steps.find-latest-image.outputs.image }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Login to AWS
+      uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1.7.0
+      with:
+        role-to-assume: arn:aws:iam::795746500882:role/GithubConstellationImageFinder
+        aws-region: eu-central-1
+
+    - name: Set search prefix
+      id: set-search-prefix
+      shell: bash
+      env:
+        image_type: ${{ inputs.imageType }}
+      run: |
+        if [[ "${image_type}" == "debug" ]]; then
+          echo "prefix=debug-v" >> "${GITHUB_OUTPUT}"
+        elif [[ "${image_type}" == "release" ]]; then
+          echo "prefix=v" >> "${GITHUB_OUTPUT}"
+        else
+          echo "prefix=${image_type}" >> "${GITHUB_OUTPUT}"
+        fi
+
+    - name: Find latest image
+      id: find-latest-image
+      shell: bash
+      env:
+        bucket: cdn-constellation-backend
+        prefix: constellation/v1/images/${{ steps.set-search-prefix.outputs.prefix }}
+      run: |
+        newest_debug_image_path=$(aws s3api list-objects-v2 \
+          --output text \
+          --bucket "${bucket}" \
+          --prefix "${prefix}" \
+          --query "reverse(sort_by(Contents, &LastModified))[0].Key")
+        image=$(basename "${newest_debug_image_path}" .json)
+        echo "image=${image}" >> "${GITHUB_OUTPUT}"
