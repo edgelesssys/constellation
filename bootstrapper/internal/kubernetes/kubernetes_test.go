@@ -443,9 +443,6 @@ func (s *stubClusterUtil) InstallComponentsFromCLI(ctx context.Context, kubernet
 	return s.installComponentsFromCLIErr
 }
 
-// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
-//
-//revive:disable-next-line
 func (s *stubClusterUtil) InitCluster(ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, controlPlaneEndpoint string, conformanceMode bool, log *logger.Logger) error {
 	s.initConfigs = append(s.initConfigs, initConfig)
 	return s.initClusterErr

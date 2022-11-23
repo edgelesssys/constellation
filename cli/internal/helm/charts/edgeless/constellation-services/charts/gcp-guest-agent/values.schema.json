@@ -1,0 +1,15 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "properties": {
+        "image": {
+            "description": "Container image to use for the spawned pods.",
+            "type": "string",
+            "examples": ["ghcr.io/edgelesssys/gcp-guest-agent:20220927.00@sha256:3dea1ae3f162d2353e6584b325f0e325a39cda5f380f41e5a0ee43c6641d3905"]
+        }
+    },
+    "required": [
+        "image"
+    ],
+    "title": "Values",
+    "type": "object"
+}

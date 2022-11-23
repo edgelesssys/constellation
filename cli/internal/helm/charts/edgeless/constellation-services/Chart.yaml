@@ -42,6 +42,10 @@ dependencies:
       - GCP
       - AWS
       - QEMU
+  - name: gcp-guest-agent
+    version: 2.3.0-pre
+    tags:
+      - GCP
   - name: gcp-compute-persistent-disk-csi-driver
     version: 1.0.1
     condition: gcp.deployCSIDriver
