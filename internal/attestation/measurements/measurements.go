@@ -109,14 +109,11 @@ func (m *M) GetEnforced() []uint32 {
 // SetEnforced sets the WarnOnly flag to true for all Measurements
 // that are NOT included in the provided list of enforced measurements.
 func (m *M) SetEnforced(enforced []uint32) error {
-	enforcedMap := map[uint32]struct{}{}
-	for _, idx := range enforced {
-		enforcedMap[idx] = struct{}{}
-	}
+	newM := make(M)
 
 	// set all measurements to warn only
 	for idx, measurement := range *m {
-		(*m)[idx] = Measurement{
+		newM[idx] = Measurement{
 			Expected: measurement.Expected,
 			WarnOnly: true,
 		}
@@ -124,13 +121,15 @@ func (m *M) SetEnforced(enforced []uint32) error {
 
 	// set enforced measurements from list
 	for _, idx := range enforced {
-		measurement, ok := (*m)[idx]
+		measurement, ok := newM[idx]
 		if !ok {
 			return fmt.Errorf("measurement %d not in list, but set to enforced", idx)
 		}
 		measurement.WarnOnly = false
-		(*m)[idx] = measurement
+		newM[idx] = measurement
 	}
+
+	*m = newM
 	return nil
 }
 
@@ -241,21 +240,21 @@ func DefaultsFor(provider cloudprovider.Provider) M {
 	switch provider {
 	case cloudprovider.AWS:
 		return M{
-			4:                         placeHolderMeasurement(),
+			4:                         PlaceHolderMeasurement(),
 			8:                         WithAllBytes(0x00, false),
-			9:                         placeHolderMeasurement(),
+			9:                         PlaceHolderMeasurement(),
 			11:                        WithAllBytes(0x00, false),
-			12:                        placeHolderMeasurement(),
+			12:                        PlaceHolderMeasurement(),
 			13:                        WithAllBytes(0x00, false),
 			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
 		}
 	case cloudprovider.Azure:
 		return M{
-			4:                         placeHolderMeasurement(),
+			4:                         PlaceHolderMeasurement(),
 			8:                         WithAllBytes(0x00, false),
-			9:                         placeHolderMeasurement(),
+			9:                         PlaceHolderMeasurement(),
 			11:                        WithAllBytes(0x00, false),
-			12:                        placeHolderMeasurement(),
+			12:                        PlaceHolderMeasurement(),
 			13:                        WithAllBytes(0x00, false),
 			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
 		}
@@ -265,26 +264,34 @@ func DefaultsFor(provider cloudprovider.Provider) M {
 				Expected: [32]byte{0x0F, 0x35, 0xC2, 0x14, 0x60, 0x8D, 0x93, 0xC7, 0xA6, 0xE6, 0x8A, 0xE7, 0x35, 0x9B, 0x4A, 0x8B, 0xE5, 0xA0, 0xE9, 0x9E, 0xEA, 0x91, 0x07, 0xEC, 0xE4, 0x27, 0xC4, 0xDE, 0xA4, 0xE4, 0x39, 0xCF},
 				WarnOnly: false,
 			},
-			4:                         placeHolderMeasurement(),
+			4:                         PlaceHolderMeasurement(),
 			8:                         WithAllBytes(0x00, false),
-			9:                         placeHolderMeasurement(),
+			9:                         PlaceHolderMeasurement(),
 			11:                        WithAllBytes(0x00, false),
-			12:                        placeHolderMeasurement(),
+			12:                        PlaceHolderMeasurement(),
 			13:                        WithAllBytes(0x00, false),
 			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
 		}
 	case cloudprovider.QEMU:
 		return M{
-			4:                         placeHolderMeasurement(),
+			4:                         PlaceHolderMeasurement(),
 			8:                         WithAllBytes(0x00, false),
-			9:                         placeHolderMeasurement(),
+			9:                         PlaceHolderMeasurement(),
 			11:                        WithAllBytes(0x00, false),
-			12:                        placeHolderMeasurement(),
+			12:                        PlaceHolderMeasurement(),
 			13:                        WithAllBytes(0x00, false),
 			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
 		}
 	default:
 		return nil
+	}
+}
+
+// PlaceHolderMeasurement returns a measurement with placeholder values for Expected.
+func PlaceHolderMeasurement() Measurement {
+	return Measurement{
+		Expected: *(*[32]byte)(bytes.Repeat([]byte{0x12, 0x34}, 16)),
+		WarnOnly: false,
 	}
 }
 
@@ -307,13 +314,6 @@ func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([
 		return []byte{}, err
 	}
 	return content, nil
-}
-
-func placeHolderMeasurement() Measurement {
-	return Measurement{
-		Expected: *(*[32]byte)(bytes.Repeat([]byte{0x12, 0x34}, 16)),
-		WarnOnly: false,
-	}
 }
 
 type encodedMeasurement struct {

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
@@ -244,11 +245,12 @@ func translateContainsPlaceholderError(ut ut.Translator, fe validator.FieldError
 	return t
 }
 
-func getPlaceholderEntries(measurements Measurements) []uint32 {
+func getPlaceholderEntries(m Measurements) []uint32 {
 	var placeholders []uint32
+	placeholder := measurements.PlaceHolderMeasurement()
 
-	for idx, measurement := range measurements {
-		if bytes.Equal(measurement.Expected[:], bytes.Repeat([]byte{0x12, 0x34}, 16)) {
+	for idx, measurement := range m {
+		if bytes.Equal(measurement.Expected[:], placeholder.Expected[:]) {
 			placeholders = append(placeholders, idx)
 		}
 	}
