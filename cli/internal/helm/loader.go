@@ -221,8 +221,10 @@ func (i *ChartLoader) loadCertManagerHelper() (*chart.Chart, map[string]any, err
 			},
 		},
 		"startupapicheck": map[string]any{
-			"timeout":   "5m",
-			"extraArgs": "--verbose",
+			"timeout": "5m",
+			"extraArgs": []string{
+				"--verbose",
+			},
 			"tolerations": []map[string]any{
 				{
 					"key":      "node-role.kubernetes.io/control-plane",
