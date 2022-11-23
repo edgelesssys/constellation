@@ -42,9 +42,6 @@ type Server struct {
 }
 
 // New initializes a new Server.
-// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
-//
-//revive:disable-next-line
 func New(
 	measurementSalt []byte, fileHandler file.Handler, ca certificateAuthority,
 	joinTokenGetter joinTokenGetter, dataKeyGetter dataKeyGetter, log *logger.Logger,

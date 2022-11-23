@@ -70,9 +70,6 @@ func runUpgradePlan(cmd *cobra.Command, args []string) error {
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
-// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
-//
-//revive:disable-next-line
 func upgradePlan(cmd *cobra.Command, planner upgradePlanner,
 	fileHandler file.Handler, client *http.Client, rekor rekorVerifier, flags upgradePlanFlags,
 ) error {
@@ -182,9 +179,6 @@ func getCompatibleImages(csp cloudprovider.Provider, currentVersion string, imag
 }
 
 // getCompatibleImageMeasurements retrieves the expected measurements for each image.
-// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
-//
-//revive:disable-next-line
 func getCompatibleImageMeasurements(ctx context.Context, cmd *cobra.Command, client *http.Client, rekor rekorVerifier, pubK []byte, images map[string]config.UpgradeConfig) error {
 	for idx, img := range images {
 		measurementsURL, err := url.Parse(constants.S3PublicBucket + strings.ToLower(img.Image) + "/measurements.yaml")
@@ -262,9 +256,6 @@ func parseUpgradePlanFlags(cmd *cobra.Command) (upgradePlanFlags, error) {
 	}, nil
 }
 
-// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
-//
-//revive:disable-next-line
 func upgradePlanInteractive(out io.WriteCloser, in io.ReadCloser,
 	configPath string, config *config.Config, fileHandler file.Handler,
 	compatibleImages map[string]config.UpgradeConfig,
