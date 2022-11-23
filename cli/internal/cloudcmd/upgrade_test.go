@@ -24,13 +24,13 @@ import (
 func TestUpdateMeasurements(t *testing.T) {
 	someErr := errors.New("error")
 	testCases := map[string]struct {
-		updater         *stubMeasurementsUpdater
+		updater         *stubClientInterface
 		newMeasurements measurements.M
 		wantUpdate      bool
 		wantErr         bool
 	}{
 		"success": {
-			updater: &stubMeasurementsUpdater{
+			updater: &stubClientInterface{
 				oldMeasurements: &corev1.ConfigMap{
 					Data: map[string]string{
 						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`,
@@ -43,7 +43,7 @@ func TestUpdateMeasurements(t *testing.T) {
 			wantUpdate: true,
 		},
 		"measurements are the same": {
-			updater: &stubMeasurementsUpdater{
+			updater: &stubClientInterface{
 				oldMeasurements: &corev1.ConfigMap{
 					Data: map[string]string{
 						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`,
@@ -81,11 +81,11 @@ func TestUpdateMeasurements(t *testing.T) {
 			wantUpdate: true,
 		},
 		"getCurrent error": {
-			updater: &stubMeasurementsUpdater{getErr: someErr},
+			updater: &stubClientInterface{getErr: someErr},
 			wantErr: true,
 		},
 		"update error": {
-			updater: &stubMeasurementsUpdater{
+			updater: &stubClientInterface{
 				oldMeasurements: &corev1.ConfigMap{
 					Data: map[string]string{
 						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`,
@@ -102,8 +102,8 @@ func TestUpdateMeasurements(t *testing.T) {
 			assert := assert.New(t)
 
 			upgrader := &Upgrader{
-				measurementsUpdater: tc.updater,
-				outWriter:           &bytes.Buffer{},
+				stableInterface: tc.updater,
+				outWriter:       &bytes.Buffer{},
 			}
 
 			err := upgrader.updateMeasurements(context.Background(), tc.newMeasurements)
@@ -124,20 +124,26 @@ func TestUpdateMeasurements(t *testing.T) {
 	}
 }
 
-type stubMeasurementsUpdater struct {
+type stubClientInterface struct {
 	oldMeasurements     *corev1.ConfigMap
 	updatedMeasurements *corev1.ConfigMap
+	k8sVersion          string
 	getErr              error
 	updateErr           error
+	k8sVersionErr       error
 }
 
-func (u *stubMeasurementsUpdater) getCurrent(context.Context, string) (*corev1.ConfigMap, error) {
+func (u *stubClientInterface) getCurrent(context.Context, string) (*corev1.ConfigMap, error) {
 	return u.oldMeasurements, u.getErr
 }
 
-func (u *stubMeasurementsUpdater) update(_ context.Context, updatedMeasurements *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+func (u *stubClientInterface) update(_ context.Context, updatedMeasurements *corev1.ConfigMap) (*corev1.ConfigMap, error) {
 	u.updatedMeasurements = updatedMeasurements
 	return nil, u.updateErr
+}
+
+func (u *stubClientInterface) kubernetesVersion() (string, error) {
+	return u.k8sVersion, u.k8sVersionErr
 }
 
 func TestUpdateImage(t *testing.T) {
@@ -229,8 +235,8 @@ func TestUpdateImage(t *testing.T) {
 			assert := assert.New(t)
 
 			upgrader := &Upgrader{
-				imageUpdater: tc.updater,
-				outWriter:    &bytes.Buffer{},
+				dynamicInterface: tc.updater,
+				outWriter:        &bytes.Buffer{},
 			}
 
 			err := upgrader.updateImage(context.Background(), tc.newImage)

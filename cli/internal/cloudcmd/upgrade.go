@@ -15,6 +15,8 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/cli"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -26,8 +28,9 @@ import (
 
 // Upgrader handles upgrading the cluster's components using the CLI.
 type Upgrader struct {
-	measurementsUpdater measurementsUpdater
-	imageUpdater        imageUpdater
+	stableInterface  stableInterface
+	dynamicInterface dynamicInterface
+	helmClient       helmInterface
 
 	outWriter io.Writer
 }
@@ -50,10 +53,19 @@ func NewUpgrader(outWriter io.Writer) (*Upgrader, error) {
 		return nil, fmt.Errorf("setting up custom resource client: %w", err)
 	}
 
+	settings := cli.New()
+	settings.KubeConfig = constants.AdminConfFilename
+
+	actionConfig := &action.Configuration{}
+	if err := actionConfig.Init(settings.RESTClientGetter(), constants.HelmNamespace, "secret", nil); err != nil {
+		return nil, fmt.Errorf("setting up helm client: %w", err)
+	}
+
 	return &Upgrader{
-		measurementsUpdater: &kubeMeasurementsUpdater{client: kubeClient},
-		imageUpdater:        &kubeImageUpdater{client: unstructuredClient},
-		outWriter:           outWriter,
+		stableInterface:  &stableClient{client: kubeClient},
+		dynamicInterface: &dynamicClient{client: unstructuredClient},
+		helmClient:       &helmClient{config: actionConfig},
+		outWriter:        outWriter,
 	}, nil
 }
 
@@ -71,7 +83,7 @@ func (u *Upgrader) Upgrade(ctx context.Context, image string, measurements measu
 
 // GetCurrentImage returns the currently used image of the cluster.
 func (u *Upgrader) GetCurrentImage(ctx context.Context) (*unstructured.Unstructured, string, error) {
-	imageStruct, err := u.imageUpdater.getCurrent(ctx, "constellation-os")
+	imageStruct, err := u.dynamicInterface.getCurrent(ctx, "constellation-os")
 	if err != nil {
 		return nil, "", err
 	}
@@ -97,8 +109,18 @@ func (u *Upgrader) GetCurrentImage(ctx context.Context) (*unstructured.Unstructu
 	return imageStruct, imageDefinition, nil
 }
 
+// CurrentHelmVersion returns the version of the currently installed helm release.
+func (u *Upgrader) CurrentHelmVersion(release string) (string, error) {
+	return u.helmClient.currentVersion(release)
+}
+
+// KubernetesVersion returns the version of Kubernetes the Constellation is currently running on.
+func (u *Upgrader) KubernetesVersion() (string, error) {
+	return u.stableInterface.kubernetesVersion()
+}
+
 func (u *Upgrader) updateMeasurements(ctx context.Context, newMeasurements measurements.M) error {
-	existingConf, err := u.measurementsUpdater.getCurrent(ctx, constants.JoinConfigMap)
+	existingConf, err := u.stableInterface.getCurrent(ctx, constants.JoinConfigMap)
 	if err != nil {
 		return fmt.Errorf("retrieving current measurements: %w", err)
 	}
@@ -127,7 +149,7 @@ func (u *Upgrader) updateMeasurements(ctx context.Context, newMeasurements measu
 		return fmt.Errorf("marshaling measurements: %w", err)
 	}
 	existingConf.Data[constants.MeasurementsFilename] = string(measurementsJSON)
-	_, err = u.measurementsUpdater.update(ctx, existingConf)
+	_, err = u.stableInterface.update(ctx, existingConf)
 	if err != nil {
 		return fmt.Errorf("setting new measurements: %w", err)
 	}
@@ -148,7 +170,7 @@ func (u *Upgrader) updateImage(ctx context.Context, image string) error {
 	}
 
 	currentImage.Object["spec"].(map[string]any)["image"] = image
-	if _, err := u.imageUpdater.update(ctx, currentImage); err != nil {
+	if _, err := u.dynamicInterface.update(ctx, currentImage); err != nil {
 		return fmt.Errorf("setting new image: %w", err)
 	}
 
@@ -156,22 +178,23 @@ func (u *Upgrader) updateImage(ctx context.Context, image string) error {
 	return nil
 }
 
-type imageUpdater interface {
+type dynamicInterface interface {
 	getCurrent(ctx context.Context, name string) (*unstructured.Unstructured, error)
 	update(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
 }
 
-type measurementsUpdater interface {
+type stableInterface interface {
 	getCurrent(ctx context.Context, name string) (*corev1.ConfigMap, error)
 	update(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error)
+	kubernetesVersion() (string, error)
 }
 
-type kubeImageUpdater struct {
+type dynamicClient struct {
 	client dynamic.Interface
 }
 
 // getCurrent returns the current image definition.
-func (u *kubeImageUpdater) getCurrent(ctx context.Context, name string) (*unstructured.Unstructured, error) {
+func (u *dynamicClient) getCurrent(ctx context.Context, name string) (*unstructured.Unstructured, error) {
 	return u.client.Resource(schema.GroupVersionResource{
 		Group:    "update.edgeless.systems",
 		Version:  "v1alpha1",
@@ -180,7 +203,7 @@ func (u *kubeImageUpdater) getCurrent(ctx context.Context, name string) (*unstru
 }
 
 // update updates the image definition.
-func (u *kubeImageUpdater) update(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+func (u *dynamicClient) update(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	return u.client.Resource(schema.GroupVersionResource{
 		Group:    "update.edgeless.systems",
 		Version:  "v1alpha1",
@@ -188,16 +211,54 @@ func (u *kubeImageUpdater) update(ctx context.Context, obj *unstructured.Unstruc
 	}).Update(ctx, obj, metav1.UpdateOptions{})
 }
 
-type kubeMeasurementsUpdater struct {
+type stableClient struct {
 	client kubernetes.Interface
 }
 
 // getCurrent returns the cluster's expected measurements.
-func (u *kubeMeasurementsUpdater) getCurrent(ctx context.Context, name string) (*corev1.ConfigMap, error) {
+func (u *stableClient) getCurrent(ctx context.Context, name string) (*corev1.ConfigMap, error) {
 	return u.client.CoreV1().ConfigMaps(constants.ConstellationNamespace).Get(ctx, name, metav1.GetOptions{})
 }
 
 // update updates the cluster's expected measurements in Kubernetes.
-func (u *kubeMeasurementsUpdater) update(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
+func (u *stableClient) update(ctx context.Context, configMap *corev1.ConfigMap) (*corev1.ConfigMap, error) {
 	return u.client.CoreV1().ConfigMaps(constants.ConstellationNamespace).Update(ctx, configMap, metav1.UpdateOptions{})
+}
+
+func (u *stableClient) kubernetesVersion() (string, error) {
+	serverVersion, err := u.client.Discovery().ServerVersion()
+	if err != nil {
+		return "", err
+	}
+	return serverVersion.GitVersion, nil
+}
+
+type helmInterface interface {
+	currentVersion(release string) (string, error)
+}
+
+type helmClient struct {
+	config *action.Configuration
+}
+
+func (c *helmClient) currentVersion(release string) (string, error) {
+	client := action.NewList(c.config)
+	client.Filter = release
+	rel, err := client.Run()
+	if err != nil {
+		return "", err
+	}
+
+	if len(rel) == 0 {
+		return "", fmt.Errorf("release %s not found", release)
+	}
+	if len(rel) > 1 {
+		return "", fmt.Errorf("multiple releases found for %s", release)
+	}
+
+	if rel[0] == nil || rel[0].Chart == nil || rel[0].Chart.Metadata == nil {
+		return "", fmt.Errorf("received invalid release %s", release)
+	}
+
+	return rel[0].Chart.Metadata.Version, nil
 }
