@@ -47,13 +47,6 @@ type ChartLoader struct {
 	verificationServiceImage string
 }
 
-type LoadConfig struct {
-	Csp             cloudprovider.Provider
-	ConformanceMode bool
-	MasterSecret    []byte
-	Salt            []byte
-}
-
 // New creates a new ChartLoader.
 func New(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *ChartLoader {
 	var ccmImage, cnmImage string
