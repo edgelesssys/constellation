@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    component: gcp-guest-agent
+    k8s-app: gcp-guest-agent
+    kubernetes.io/cluster-service: "true"
+  name: gcp-guest-agent
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      k8s-app: gcp-guest-agent
+  template:
+    metadata:
+      labels:
+        k8s-app: gcp-guest-agent
+    spec:
+      containers:
+      - image: {{ .Values.image }}
+        name: gcp-guest-agent
+        resources: {}
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+          privileged: true
+        volumeMounts:
+        - mountPath: /etc/ssl
+          name: etcssl
+          readOnly: true
+        - mountPath: /etc/pki
+          name: etcpki
+          readOnly: true
+        - mountPath: /bin
+          name: bin
+          readOnly: true
+        - mountPath: /usr/bin
+          name: usrbin
+          readOnly: true
+        - mountPath: /usr
+          name: usr
+          readOnly: true
+        - mountPath: /lib
+          name: lib
+          readOnly: true
+        - mountPath: /lib64
+          name: lib64
+          readOnly: true
+      hostNetwork: true
+      priorityClassName: system-cluster-critical
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+        operator: Exists
+      volumes:
+      - hostPath:
+          path: /etc/ssl
+        name: etcssl
+      - hostPath:
+          path: /etc/pki
+        name: etcpki
+      - hostPath:
+          path: /bin
+        name: bin
+      - hostPath:
+          path: /usr/bin
+        name: usrbin
+      - hostPath:
+          path: /usr
+        name: usr
+      - hostPath:
+          path: /lib
+        name: lib
+      - hostPath:
+          path: /lib64
+        name: lib64
+  updateStrategy: {}

@@ -24,7 +24,6 @@ type clusterUtil interface {
 	InitCluster(ctx context.Context, initConfig []byte, nodeName string, ips []net.IP, controlPlaneEndpoint string, conformanceMode bool, log *logger.Logger) error
 	JoinCluster(ctx context.Context, joinConfig []byte, peerRole role.Role, controlPlaneEndpoint string, log *logger.Logger) error
 	SetupKonnectivity(kubectl k8sapi.Client, konnectivityAgentsDaemonSet kubernetes.Marshaler) error
-	SetupGCPGuestAgent(kubectl k8sapi.Client, gcpGuestAgentConfiguration kubernetes.Marshaler) error
 	FixCilium(log *logger.Logger)
 	StartKubelet() error
 }

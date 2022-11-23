@@ -230,12 +230,6 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("installing operators: %w", err)
 	}
 
-	if k.cloudProvider == "gcp" {
-		if err := k.clusterUtil.SetupGCPGuestAgent(k.client, resources.NewGCPGuestAgentDaemonset()); err != nil {
-			return nil, fmt.Errorf("failed to setup gcp guest agent: %w", err)
-		}
-	}
-
 	// Store the received k8sVersion in a ConfigMap, overwriting existing values (there shouldn't be any).
 	// Joining nodes determine the kubernetes version they will install based on this ConfigMap.
 	if err := k.setupK8sVersionConfigMap(ctx, k8sVersion); err != nil {
