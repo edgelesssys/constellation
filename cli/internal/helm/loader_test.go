@@ -253,6 +253,13 @@ func prepareGCPValues(values map[string]any) error {
 		return errors.New("missing 'verification-service' key")
 	}
 	verificationVals["loadBalancerIP"] = "127.0.0.1"
+
+	konnectivityVals, ok := values["konnectivity"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'konnectivity' key")
+	}
+	konnectivityVals["loadBalancerIP"] = "127.0.0.1"
+
 	return nil
 }
 
@@ -289,6 +296,13 @@ func prepareAzureValues(values map[string]any) error {
 		return errors.New("missing 'verification-service' key")
 	}
 	verificationVals["loadBalancerIP"] = "127.0.0.1"
+
+	konnectivityVals, ok := values["konnectivity"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'konnectivity' key")
+	}
+	konnectivityVals["loadBalancerIP"] = "127.0.0.1"
+
 	return nil
 }
 
@@ -305,6 +319,12 @@ func prepareQEMUValues(values map[string]any) error {
 		return errors.New("missing 'verification-service' key")
 	}
 	verificationVals["loadBalancerIP"] = "127.0.0.1"
+
+	konnectivityVals, ok := values["konnectivity"].(map[string]any)
+	if !ok {
+		return errors.New("missing 'konnectivity' key")
+	}
+	konnectivityVals["loadBalancerIP"] = "127.0.0.1"
 
 	return nil
 }
