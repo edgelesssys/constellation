@@ -29,9 +29,6 @@ type stubCloudCreator struct {
 	createErr    error
 }
 
-// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
-//
-//revive:disable-next-line
 func (c *stubCloudCreator) Create(
 	ctx context.Context,
 	provider cloudprovider.Provider,

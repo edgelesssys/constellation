@@ -24,9 +24,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// TODO: Upon changing this function, please refactor it to reduce the number of arguments to <= 5.
-//
-//revive:disable-next-line
 func run(issuerWrapper initserver.IssuerWrapper, tpm vtpm.TPMOpenFunc, fileHandler file.Handler,
 	kube clusterInitJoiner, metadata metadataAPI,
 	bindIP, bindPort string, log *logger.Logger,
