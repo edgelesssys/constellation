@@ -85,7 +85,7 @@ func main() {
 		log.With(zap.Error(err)).Fatalf("Failed to read measurement salt")
 	}
 
-	server := server.New(
+	server, err := server.New(
 		measurementSalt,
 		handler,
 		kubernetesca.New(log.Named("certificateAuthority"), handler),
@@ -93,6 +93,9 @@ func main() {
 		kms,
 		log.Named("server"),
 	)
+	if err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to create server")
+	}
 
 	watcher, err := watcher.New(log.Named("fileWatcher"), validator)
 	if err != nil {

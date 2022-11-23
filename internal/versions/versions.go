@@ -7,11 +7,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 package versions
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/initproto"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
 )
 
 // ValidK8sVersion represents any of the three currently supported k8s versions.
@@ -261,8 +263,8 @@ type ComponentVersion struct {
 // ComponentVersions is a list of ComponentVersion.
 type ComponentVersions []ComponentVersion
 
-// NewComponentVersionsFromProto converts a protobuf KubernetesVersion to ComponentVersions.
-func NewComponentVersionsFromProto(protoComponents []*initproto.KubernetesComponent) ComponentVersions {
+// NewComponentVersionsFromInitProto converts a protobuf KubernetesVersion to ComponentVersions.
+func NewComponentVersionsFromInitProto(protoComponents []*initproto.KubernetesComponent) ComponentVersions {
 	components := ComponentVersions{}
 	for _, protoComponent := range protoComponents {
 		if protoComponent == nil {
@@ -273,13 +275,44 @@ func NewComponentVersionsFromProto(protoComponents []*initproto.KubernetesCompon
 	return components
 }
 
-// ToProto converts a ComponentVersions to a protobuf KubernetesVersion.
-func (c ComponentVersions) ToProto() []*initproto.KubernetesComponent {
+// NewComponentVersionsFromJoinProto converts a protobuf KubernetesVersion to ComponentVersions.
+func NewComponentVersionsFromJoinProto(protoComponents []*joinproto.KubernetesComponent) ComponentVersions {
+	components := ComponentVersions{}
+	for _, protoComponent := range protoComponents {
+		if protoComponent == nil {
+			continue
+		}
+		components = append(components, ComponentVersion{URL: protoComponent.Url, Hash: protoComponent.Hash, InstallPath: protoComponent.InstallPath, Extract: protoComponent.Extract})
+	}
+	return components
+}
+
+// ToInitProto converts a ComponentVersions to a protobuf KubernetesVersion.
+func (c ComponentVersions) ToInitProto() []*initproto.KubernetesComponent {
 	protoComponents := []*initproto.KubernetesComponent{}
 	for _, component := range c {
 		protoComponents = append(protoComponents, &initproto.KubernetesComponent{Url: component.URL, Hash: component.Hash, InstallPath: component.InstallPath, Extract: component.Extract})
 	}
 	return protoComponents
+}
+
+// ToJoinProto converts a ComponentVersions to a protobuf KubernetesVersion.
+func (c ComponentVersions) ToJoinProto() []*joinproto.KubernetesComponent {
+	protoComponents := []*joinproto.KubernetesComponent{}
+	for _, component := range c {
+		protoComponents = append(protoComponents, &joinproto.KubernetesComponent{Url: component.URL, Hash: component.Hash, InstallPath: component.InstallPath, Extract: component.Extract})
+	}
+	return protoComponents
+}
+
+// GetHash returns the hash over all component hashes.
+func (c ComponentVersions) GetHash() string {
+	sha := sha256.New()
+	for _, component := range c {
+		sha.Write([]byte(component.Hash))
+	}
+
+	return fmt.Sprintf("sha256:%x", sha.Sum(nil))
 }
 
 // versionFromDockerImage returns the version tag from the image name, e.g. "v1.22.2" from "foocr.io/org/repo:v1.22.2@sha256:3009fj0...".

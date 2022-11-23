@@ -150,7 +150,7 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 		s.issuerWrapper.VMType() == vmtype.AzureCVM,
 		req.HelmDeployments,
 		req.ConformanceMode,
-		versions.NewComponentVersionsFromProto(req.KubernetesComponents),
+		versions.NewComponentVersionsFromInitProto(req.KubernetesComponents),
 		s.log,
 	)
 	if err != nil {
