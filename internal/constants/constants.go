@@ -107,8 +107,18 @@ const (
 	EnforceIDKeyDigestFilename = "enforceIdKeyDigest"
 	// AzureCVM is the name of the file indicating whether the cluster is expected to run on CVMs or not.
 	AzureCVM = "azureCVM"
-	// K8sVersion is the filename of the mapped "k8s-version" configMap file.
-	K8sVersion = "k8s-version"
+
+	// K8sVersionConfigMapName is the filename of the mapped "k8s-version" configMap file.
+	K8sVersionConfigMapName = "k8s-version"
+
+	// K8sVersionFieldName is the key in the "k8s-version" configMap which references the string with the K8s version.
+	K8sVersionFieldName = "k8s-version"
+
+	// K8sComponentsFieldName is the name of the of the key holding the configMap name that holds the components configuration.
+	K8sComponentsFieldName = "components"
+
+	// ComponentsListKey is the name of the key holding the list of components in the components configMap.
+	ComponentsListKey = "components"
 
 	//
 	// CLI.

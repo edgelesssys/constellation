@@ -22,3 +22,11 @@ rules:
   verbs:
   - create
   - update
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - create
+  - update

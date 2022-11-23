@@ -238,7 +238,7 @@ func (k *KubeWrapper) InitCluster(
 
 	// Store the received k8sVersion in a ConfigMap, overwriting existing values (there shouldn't be any).
 	// Joining nodes determine the kubernetes version they will install based on this ConfigMap.
-	if err := k.setupK8sVersionConfigMap(ctx, k8sVersion); err != nil {
+	if err := k.setupK8sVersionConfigMap(ctx, k8sVersion, kubernetesComponents); err != nil {
 		return nil, fmt.Errorf("failed to setup k8s version ConfigMap: %w", err)
 	}
 
@@ -248,14 +248,22 @@ func (k *KubeWrapper) InitCluster(
 }
 
 // JoinCluster joins existing Kubernetes cluster.
-func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, peerRole role.Role, versionString string, log *logger.Logger) error {
+func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, peerRole role.Role, versionString string, k8sComponents versions.ComponentVersions, log *logger.Logger) error {
 	k8sVersion, err := versions.NewValidK8sVersion(versionString)
 	if err != nil {
 		return err
 	}
-	log.With(zap.String("version", string(k8sVersion))).Infof("Installing Kubernetes components")
-	if err := k.clusterUtil.InstallComponents(ctx, k8sVersion); err != nil {
-		return err
+
+	if len(k8sComponents) != 0 {
+		log.With("k8sComponents", k8sComponents).Infof("Using provided kubernetes components")
+		if err := k.clusterUtil.InstallComponentsFromCLI(ctx, k8sComponents); err != nil {
+			return fmt.Errorf("installing kubernetes components: %w", err)
+		}
+	} else {
+		log.With(zap.String("version", string(k8sVersion))).Infof("Installing Kubernetes components")
+		if err := k.clusterUtil.InstallComponents(ctx, k8sVersion); err != nil {
+			return fmt.Errorf("installing kubernetes components: %w", err)
+		}
 	}
 
 	// Step 1: retrieve cloud metadata for Kubernetes configuration
@@ -312,23 +320,50 @@ func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
 }
 
 // setupK8sVersionConfigMap applies a ConfigMap (cf. server-side apply) to consistently store the installed k8s version.
-func (k *KubeWrapper) setupK8sVersionConfigMap(ctx context.Context, k8sVersion versions.ValidK8sVersion) error {
+func (k *KubeWrapper) setupK8sVersionConfigMap(ctx context.Context, k8sVersion versions.ValidK8sVersion, components versions.ComponentVersions) error {
+	componentsMarshalled, err := json.Marshal(components)
+	if err != nil {
+		return fmt.Errorf("marshalling component versions: %w", err)
+	}
+	componentsHash := components.GetHash()
+	componentConfigMapName := fmt.Sprintf("k8s-component-%s", strings.ReplaceAll(componentsHash, ":", "-"))
+
+	componentsConfig := corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "ConfigMap",
+		},
+		Immutable: toPtr(true),
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      componentConfigMapName,
+			Namespace: "kube-system",
+		},
+		Data: map[string]string{
+			constants.K8sComponentsFieldName: string(componentsMarshalled),
+		},
+	}
+
+	if err := k.client.CreateConfigMap(ctx, componentsConfig); err != nil {
+		return fmt.Errorf("apply in KubeWrapper.setupK8sVersionConfigMap(..) for components config map failed with: %w", err)
+	}
+
 	config := corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
 			Kind:       "ConfigMap",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "k8s-version",
+			Name:      constants.K8sVersionConfigMapName,
 			Namespace: "kube-system",
 		},
 		Data: map[string]string{
-			constants.K8sVersion: string(k8sVersion),
+			constants.K8sVersionFieldName:    string(k8sVersion),
+			constants.K8sComponentsFieldName: componentConfigMapName,
 		},
 	}
 
 	if err := k.client.CreateConfigMap(ctx, config); err != nil {
-		return fmt.Errorf("apply in KubeWrapper.setupK8sVersionConfigMap(..) failed with: %w", err)
+		return fmt.Errorf("apply in KubeWrapper.setupK8sVersionConfigMap(..) for version config map failed with: %w", err)
 	}
 
 	return nil
@@ -518,4 +553,8 @@ type constellationServicesConfig struct {
 	subnetworkPodCIDR       string
 	cloudServiceAccountURI  string
 	loadBalancerIP          string
+}
+
+func toPtr[T any](v T) *T {
+	return &v
 }
