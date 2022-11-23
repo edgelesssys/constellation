@@ -5,7 +5,7 @@ inputs:
     description: "Which cloud provider to use."
     required: true
   osImage:
-    description: "OS image to run. The default value 'debug-latest' will select the latest available debug image."
+    description: "OS image to run."
     required: true
   isDebugImage:
     description: "Is OS img a debug img?"

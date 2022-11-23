@@ -15,7 +15,7 @@ inputs:
     description: "Machine type of VM to spawn."
     required: false
   osImage:
-    description: "OS image to use. The default value 'debug-latest' will select the latest available debug image."
+    description: "OS image to use."
     required: true
   isDebugImage:
     description: "Is OS img a debug img?"
@@ -101,42 +101,8 @@ runs:
     - name: Set image
       shell: bash
       env:
-        CSP: ${{ inputs.cloudProvider }}
-      run: |
-        case $CSP in
-          azure)
-            if [ "${{ inputs.osImage == 'debug-latest' }}" = true ]
-            then
-              IMAGE_DEFINITION=$(az sig image-definition list --resource-group constellation-images --gallery-name Constellation_Debug_CVM --query "[].name" -o tsv | sort --version-sort | tail -n 1)
-              AZURE_IMAGE=$(az sig image-version list --resource-group constellation-images --gallery-name Constellation_Debug_CVM --gallery-image-definition ${IMAGE_DEFINITION} --query "sort_by([], &publishingProfile.publishedDate)[].id" -o table | tail -n 1)
-            else
-              AZURE_IMAGE=${{ inputs.osImage }}
-            fi
-
-            yq eval -i "(.provider.azure.image) = \"${AZURE_IMAGE}\"" constellation-conf.yaml
-            ;;
-          gcp)
-            if [ "${{ inputs.osImage == 'debug-latest' }}" = true ]
-            then
-              GCP_IMAGE_NAME=$(gcloud compute images list --project constellation-images --filter="name ~ constellation-\d{10} AND family~constellation-debug-v\d+-\d+-\d+" --sort-by=creationTimestamp --format="table(name)" | tail -n 1)
-              GCP_IMAGE="projects/constellation-images/global/images/${GCP_IMAGE_NAME}"
-            else
-              GCP_IMAGE=${{ inputs.osImage }}
-            fi
-
-            yq eval -i "(.provider.gcp.image) = \"${GCP_IMAGE}\"" constellation-conf.yaml
-            ;;
-          aws)
-            if [ "${{ inputs.osImage == 'debug-latest' }}" = true ]
-            then
-              AWS_IMAGE=$(aws ec2 describe-images --owners 795746500882 --region eu-central-1 --filters "Name=name,Values=constellation-debug-v*" --query "sort_by(Images, &CreationDate)[].ImageId" | jq -r '.[-1]')
-            else
-              AWS_IMAGE=${{ inputs.osImage }}
-            fi
-
-            yq eval -i "(.provider.aws.image) = \"${AWS_IMAGE}\"" constellation-conf.yaml
-            ;;
-        esac
+        image: ${{ inputs.osImage }}
+      run: yq eval -i "(.image) = \"${image}\"" constellation-conf.yaml
 
     - name: Set instanceType
       if: ${{ inputs.machineType && inputs.machineType != 'default' }}

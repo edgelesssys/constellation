@@ -12,7 +12,7 @@ on:
         default: "gcp"
         required: true
       osImage:
-        description: "OS image (full path). Examples are in internal/config/config.go."
+        description: "Full name of OS image (CSP independent image version UID)."
         type: string
         required: true
       isDebugImage:
