@@ -452,7 +452,8 @@ func TestSetEnforced(t *testing.T) {
 	testCases := map[string]struct {
 		input    M
 		enforced []uint32
-		want     M
+		wantM    M
+		wantErr  bool
 	}{
 		"no enforced measurements": {
 			input: M{
@@ -460,7 +461,7 @@ func TestSetEnforced(t *testing.T) {
 				1: WithAllBytes(0x01, false),
 			},
 			enforced: []uint32{},
-			want: M{
+			wantM: M{
 				0: WithAllBytes(0x00, true),
 				1: WithAllBytes(0x01, true),
 			},
@@ -471,7 +472,7 @@ func TestSetEnforced(t *testing.T) {
 				1: WithAllBytes(0x01, false),
 			},
 			enforced: []uint32{0, 1},
-			want: M{
+			wantM: M{
 				0: WithAllBytes(0x00, false),
 				1: WithAllBytes(0x01, false),
 			},
@@ -484,7 +485,7 @@ func TestSetEnforced(t *testing.T) {
 				3: WithAllBytes(0x03, false),
 			},
 			enforced: []uint32{0, 2},
-			want: M{
+			wantM: M{
 				0: WithAllBytes(0x00, false),
 				1: WithAllBytes(0x01, true),
 				2: WithAllBytes(0x02, false),
@@ -497,10 +498,18 @@ func TestSetEnforced(t *testing.T) {
 				1: WithAllBytes(0x01, true),
 			},
 			enforced: []uint32{0, 1},
-			want: M{
+			wantM: M{
 				0: WithAllBytes(0x00, false),
 				1: WithAllBytes(0x01, false),
 			},
+		},
+		"more enforced than measurements": {
+			input: M{
+				0: WithAllBytes(0x00, true),
+				1: WithAllBytes(0x01, true),
+			},
+			enforced: []uint32{0, 1, 2},
+			wantErr:  true,
 		},
 	}
 
@@ -508,8 +517,13 @@ func TestSetEnforced(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			tc.input.SetEnforced(tc.enforced)
-			assert.True(tc.input.EqualTo(tc.want))
+			err := tc.input.SetEnforced(tc.enforced)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.True(tc.input.EqualTo(tc.wantM))
 		})
 	}
 }

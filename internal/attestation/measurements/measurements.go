@@ -108,25 +108,30 @@ func (m *M) GetEnforced() []uint32 {
 
 // SetEnforced sets the WarnOnly flag to true for all Measurements
 // that are NOT included in the provided list of enforced measurements.
-func (m *M) SetEnforced(enforced []uint32) {
+func (m *M) SetEnforced(enforced []uint32) error {
 	enforcedMap := map[uint32]struct{}{}
 	for _, idx := range enforced {
 		enforcedMap[idx] = struct{}{}
 	}
 
+	// set all measurements to warn only
 	for idx, measurement := range *m {
-		if _, ok := enforcedMap[idx]; ok {
-			(*m)[idx] = Measurement{
-				Expected: measurement.Expected,
-				WarnOnly: false,
-			}
-		} else {
-			(*m)[idx] = Measurement{
-				Expected: measurement.Expected,
-				WarnOnly: true,
-			}
+		(*m)[idx] = Measurement{
+			Expected: measurement.Expected,
+			WarnOnly: true,
 		}
 	}
+
+	// set enforced measurements from list
+	for _, idx := range enforced {
+		measurement, ok := (*m)[idx]
+		if !ok {
+			return fmt.Errorf("measurement %d not in list, but set to enforced", idx)
+		}
+		measurement.WarnOnly = false
+		(*m)[idx] = measurement
+	}
+	return nil
 }
 
 // Measurement wraps expected PCR value and whether it is enforced.

@@ -188,7 +188,9 @@ func (k *KubeWrapper) InitCluster(
 	} else {
 		controlPlaneIP = controlPlaneEndpoint
 	}
-	k.initialMeasurements.SetEnforced(enforcedPCRs)
+	if err := k.initialMeasurements.SetEnforced(enforcedPCRs); err != nil {
+		return nil, err
+	}
 	measurementsJSON, err := json.Marshal(k.initialMeasurements)
 	if err != nil {
 		return nil, fmt.Errorf("marshaling initial measurements: %w", err)

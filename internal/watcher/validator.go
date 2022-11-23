@@ -114,7 +114,9 @@ func (u *Updatable) Update() error {
 	var enforced []uint32
 	if err := u.fileHandler.ReadJSON(filepath.Join(constants.ServiceBasePath, constants.EnforcedPCRsFilename), &enforced); err == nil {
 		u.log.Debugf("Detected legacy format. Loading enforced PCRs...")
-		measurements.SetEnforced(enforced)
+		if err := measurements.SetEnforced(enforced); err != nil {
+			return err
+		}
 		u.log.Debugf("Merged measurements with enforced values: %+v", measurements)
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return err
