@@ -46,6 +46,7 @@ type ChartLoader struct {
 	autoscalerImage          string
 	verificationServiceImage string
 	gcpGuestAgentImage       string
+	konnectivityImage        string
 }
 
 // New creates a new ChartLoader.
@@ -69,6 +70,7 @@ func New(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *Chart
 		autoscalerImage:          versions.VersionConfigs[k8sVersion].ClusterAutoscalerImage,
 		verificationServiceImage: versions.VerificationImage,
 		gcpGuestAgentImage:       versions.GcpGuestImage,
+		konnectivityImage:        versions.KonnectivityAgentImage,
 	}
 }
 
@@ -387,6 +389,9 @@ func (i *ChartLoader) loadConstellationServicesHelper(config *config.Config, mas
 		},
 		"gcp-guest-agent": map[string]any{
 			"image": i.gcpGuestAgentImage,
+		},
+		"konnectivity": map[string]any{
+			"image": i.konnectivityImage,
 		},
 	}
 

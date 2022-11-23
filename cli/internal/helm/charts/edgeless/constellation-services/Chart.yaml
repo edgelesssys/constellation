@@ -42,6 +42,13 @@ dependencies:
       - GCP
       - AWS
       - QEMU
+  - name: konnectivity
+    version: 2.3.0-pre
+    tags:
+      - Azure
+      - GCP
+      - AWS
+      - QEMU
   - name: gcp-guest-agent
     version: 2.3.0-pre
     tags:

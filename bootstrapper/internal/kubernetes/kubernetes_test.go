@@ -177,7 +177,8 @@ func TestInitCluster(t *testing.T) {
 			k8sVersion:       versions.Default,
 		},
 		"kubeadm init fails when setting up konnectivity": {
-			clusterUtil: stubClusterUtil{setupKonnectivityError: someErr},
+			clusterUtil: stubClusterUtil{},
+			helmClient:  stubHelmClient{servicesError: someErr},
 			kubeconfigReader: &stubKubeconfigReader{
 				kubeconfig: []byte("someKubeconfig"),
 			},

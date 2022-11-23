@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
-	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/resources"
 	kubewaiter "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubeWaiter"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -188,18 +187,7 @@ func (k *KubeWrapper) InitCluster(
 	} else {
 		controlPlaneIP = controlPlaneEndpoint
 	}
-	if err = k.clusterUtil.SetupKonnectivity(k.client, resources.NewKonnectivityAgents(controlPlaneIP)); err != nil {
-		return nil, fmt.Errorf("setting up konnectivity: %w", err)
-	}
-
-	loadBalancerIP := controlPlaneEndpoint
-	if strings.Contains(controlPlaneEndpoint, ":") {
-		loadBalancerIP, _, err = net.SplitHostPort(controlPlaneEndpoint)
-		if err != nil {
-			return nil, fmt.Errorf("splitting host port: %w", err)
-		}
-	}
-	serviceConfig := constellationServicesConfig{k.initialMeasurementsJSON, idKeyDigest, measurementSalt, subnetworkPodCIDR, cloudServiceAccountURI, loadBalancerIP}
+	serviceConfig := constellationServicesConfig{k.initialMeasurementsJSON, idKeyDigest, measurementSalt, subnetworkPodCIDR, cloudServiceAccountURI, controlPlaneIP}
 	extraVals, err := k.setupExtraVals(ctx, serviceConfig)
 	if err != nil {
 		return nil, fmt.Errorf("setting up extraVals: %w", err)
@@ -397,6 +385,9 @@ func (k *KubeWrapper) setupExtraVals(ctx context.Context, serviceConfig constell
 		},
 		"ccm": map[string]any{},
 		"verification-service": map[string]any{
+			"loadBalancerIP": serviceConfig.loadBalancerIP,
+		},
+		"konnectivity": map[string]any{
 			"loadBalancerIP": serviceConfig.loadBalancerIP,
 		},
 	}
