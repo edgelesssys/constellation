@@ -49,8 +49,8 @@ type ChartLoader struct {
 	konnectivityImage        string
 }
 
-// New creates a new ChartLoader.
-func New(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *ChartLoader {
+// NewLoader creates a new ChartLoader.
+func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) *ChartLoader {
 	var ccmImage, cnmImage string
 	switch csp {
 	case cloudprovider.AWS:
