@@ -6,6 +6,8 @@ on:
 jobs:
   build-cli:
     runs-on: ubuntu-22.04
+    outputs:
+      provenance-subjects: ${{ steps.provenance-subjects.outputs.provenance-subjects }}
     steps:
       - name: Checkout
         id: checkout
@@ -58,6 +60,16 @@ jobs:
           cosignPrivateKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
           cosignPassword: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
 
+      - name: Generate provenance subjects
+        id: provenance-subjects
+        run: |
+          HASHES=$(sha256sum \
+            build/constellation-darwin-amd64 \
+            build/constellation-darwin-arm64 \
+            build/constellation-linux-amd64 \
+            build/constellation-linux-arm64 | base64 -w0)
+          echo provenance-subjects=${HASHES} >> $GITHUB_OUTPUT
+
       - name: Login to Azure
         uses: ./.github/actions/login_azure
         with:
@@ -76,8 +88,8 @@ jobs:
 
       - name: Download syft & grype
         run: |
-          SYFT_VERSION=0.59.0
-          GRYPE_VERSION=0.50.2
+          SYFT_VERSION=0.62.1
+          GRYPE_VERSION=0.53.1
           curl -LO https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_linux_amd64.tar.gz
           tar -xzf syft_${SYFT_VERSION}_linux_amd64.tar.gz
           ./syft version
@@ -110,3 +122,16 @@ jobs:
             hack/build-manifest/versions-manifest.json
             constellation.spdx.sbom
             constellation.spdx.sbom.sig
+
+  provenance:
+    permissions:
+      actions: read
+      contents: write
+      id-token: write
+    needs:
+      - build-cli
+    # This must not be pinned to digest. See:
+    # https://github.com/slsa-framework/slsa-github-generator#referencing-slsa-builders-and-generators
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.2.2
+    with:
+      base64-subjects: "${{ needs.build-cli.outputs.provenance-subjects }}"

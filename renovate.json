@@ -144,6 +144,11 @@
         "^errata-ai/vale-action$"
       ],
       "allowedVersions": ">2.0.1"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["slsa-framework/slsa-github-generator"],
+      "pinDigests": false
     }
   ],
   "regexManagers": [
