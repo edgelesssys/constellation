@@ -96,13 +96,13 @@ jobs:
       # for why we ignore certain measurement values.
       - name: Fetch PCRs from running cluster
         run: |
-          KUBECONFIG="$PWD/constellation-admin.conf" kubectl rollout status ds/verification-service -n kube-system --timeout=3m
+          KUBECONFIG="${PWD}/constellation-admin.conf" kubectl rollout status ds/verification-service -n kube-system --timeout=3m
           CONSTELL_IP=$(jq -r ".ip" constellation-id.json)
           mkdir -p "${{ github.workspace }}/generated-measurements"
-          pcr-reader -constell-ip ${CONSTELL_IP} -format json -metadata -csp ${{ matrix.provider }} -image ${{ github.event.inputs.osImage }} > ${{ github.workspace }}/generated-measurements/measurements.json
+          pcr-reader -constell-ip "${CONSTELL_IP}" -format json -metadata -csp "${{ matrix.provider }}" -image "${{ github.event.inputs.osImage }}" > "${{ github.workspace }}/generated-measurements/measurements.json"
           echo "All PCRs of current boot:"
-          cat ${{ github.workspace }}/generated-measurements/measurements.json
-          case $CSP in
+          cat "${{ github.workspace }}/generated-measurements/measurements.json"
+          case ${CSP} in
             aws)
               yq e 'del(.measurements.[1,10,16,17,18,19,20,21,22,23])' -i "${{ github.workspace }}/generated-measurements/measurements.json"
               yq '.measurements.4.warnOnly = false |
@@ -139,6 +139,11 @@ jobs:
             .measurements.15.warnOnly = false |
             .measurements.15.expected = "0000000000000000000000000000000000000000000000000000000000000000"' \
             -I 0 -o json -i "${{ github.workspace }}/generated-measurements/measurements.json"
+            ;;
+            *)
+              echo "CSP case check failed!"
+              exit 1
+            ;;
           esac
           echo "PCRs to be published after removing known variable ones:"
           cat "${{ github.workspace }}/generated-measurements/measurements.json"
