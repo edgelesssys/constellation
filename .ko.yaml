@@ -1,0 +1,78 @@
+defaltBaseImage: distroless.dev/static:latest@sha256:d624beaae60b10ec342896b1470421eb473549cb3ac3bf1c6ec074d8b460b4fc
+
+baseImageOverrides:
+  github.com/edgelesssys/constellation/v2/disk-mapper/cmd: leongross/alpine-libcryptsetup:base
+  github.com/edgelesssys/constellation/v2/bootstrapper/cmd/bootstrapper: leongross/alpine-libcryptsetup:base
+
+builds:
+- id: disk-mapper
+  dir: .
+  main: ./disk-mapper/cmd/
+  env:
+  - CGO_ENABLED=1
+  flags:
+  - -trimpath
+  - -buildvcs=false
+  ldflags:
+  - -s -w
+
+- id: bootstrapper
+  dir: .
+  main: ./bootstrapper/cmd/bootstrapper/
+  env:
+  - CGO_ENABLED=1
+  flags:
+  - -trimpath
+  - -buildvcs=false
+  ldflags:
+  - -s -w
+
+- id: debugd
+  dir: .
+  main: ./debugd/cmd/debugd/
+  env:
+  - CGO_ENABLED=0
+  flags:
+  - -trimpath
+  - -buildvcs=false
+  ldflags:
+  - -s -w
+  - -extldlfags "-static"
+
+- id: cdbg
+  dir: .
+  main: ./debugd/cmd/cdbg/
+  env:
+  - CGO_ENABLED=0
+  flags:
+  - -trimpath
+  - -buildvcs=false
+  ldflags:
+  - -s -w
+  - -extldflags "-static"
+
+- id: kms
+  dir: .
+  main: ./kms/cmd
+  env:
+  - CGO_ENABLED=0
+  flags:
+  - -trimpath
+  - -buildvcs=false
+  ldflags:
+  - -s -w -buildid=''
+  - -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}
+  - -extldflags "-static"
+
+- id: joinservice
+  dir: .
+  main: ./joinservice/cmd
+  env:
+  - CGO_ENABLED=0
+  flags:
+  - -trimpath
+  - -buildvcs=false
+  ldflags:
+  - -s -w -buildid=''
+  - -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}
+  - -extldflags "-static"
