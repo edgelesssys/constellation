@@ -138,12 +138,6 @@
         "node"
       ],
       "prPriority": -20
-    },
-    {
-      "matchPackageNames": [
-        "^errata-ai/vale-action$"
-      ],
-      "allowedVersions": ">2.0.1"
     }
   ],
   "regexManagers": [
