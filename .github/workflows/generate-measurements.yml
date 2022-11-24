@@ -51,7 +51,6 @@ jobs:
 
       - name: Build hack/pcr-reader
         run: |
-          echo "::group::Build pcr-reader"
           go build .
           echo "$(pwd)" >> $GITHUB_PATH
         working-directory: hack/pcr-reader
@@ -159,7 +158,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/constellation_destroy
         with:
-          kubeconfig: ${{ steps.create_and_measure.outputs.kubeconfig }}
+          kubeconfig: ${{ steps.create_cluster.outputs.kubeconfig }}
 
       - name: Always destroy Azure resource group
         if: always() && matrix.provider == 'azure'
@@ -193,7 +192,6 @@ jobs:
 
      - name: Build hack/pcr-compare
        run: |
-         echo "::group::Build pcr-compare"
          go build .
          echo "$(pwd)" >> $GITHUB_PATH
        working-directory: hack/pcr-compare
