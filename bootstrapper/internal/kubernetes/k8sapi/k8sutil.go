@@ -52,7 +52,6 @@ type Client interface {
 	CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error
 	AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error
 	AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error
-	WaitForCRDs(ctx context.Context, crds []string) error
 	ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error)
 }
 
