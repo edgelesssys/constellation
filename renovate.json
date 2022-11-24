@@ -132,6 +132,15 @@
       "prPriority": 15
     },
     {
+      "matchPackageNames": [
+        "^k8s.io/client-go"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "enabled": false
+    },
+    {
       "matchLanguages": [
         "python",
         "js",
