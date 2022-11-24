@@ -98,7 +98,7 @@ jobs:
         run: |
           KUBECONFIG="$PWD/constellation-admin.conf" kubectl rollout status ds/verification-service -n kube-system --timeout=3m
           CONSTELL_IP=$(jq -r ".ip" constellation-id.json)
-          mkdir -p ${{ github.workspace }}/generated-measurements
+          mkdir -p "${{ github.workspace }}/generated-measurements"
           pcr-reader -constell-ip ${CONSTELL_IP} -format json -metadata -csp ${{ matrix.provider }} -image ${{ github.event.inputs.osImage }} > ${{ github.workspace }}/generated-measurements/measurements.json
           echo "All PCRs of current boot:"
           cat ${{ github.workspace }}/generated-measurements/measurements.json
@@ -251,7 +251,7 @@ jobs:
           COSIGN_PRIVATE_KEY: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
         run: |
-          echo "$COSIGN_PUBLIC_KEY" > cosign.pub
+          echo "${COSIGN_PUBLIC_KEY}" > cosign.pub
           # Enabling experimental mode also publishes signature to Rekor
           COSIGN_EXPERIMENTAL=1 cosign sign-blob --key env://COSIGN_PRIVATE_KEY "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json" > "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json.sig"
           # Verify - As documentation & check
@@ -259,8 +259,8 @@ jobs:
           cosign verify-blob --key cosign.pub --signature "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json.sig" "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json"
           # Transparency Log Signature (input: artifact, key)
           uuid=$(rekor-cli search --artifact "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json" | tail -n 1)
-          sig=$(rekor-cli get --uuid=$uuid --format=json | jq -r .Body.HashedRekordObj.signature.content)
-          cosign verify-blob --key cosign.pub --signature <(echo $sig) "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json"
+          sig=$(rekor-cli get --uuid="${uuid}" --format=json | jq -r .Body.HashedRekordObj.signature.content)
+          cosign verify-blob --key cosign.pub --signature <(echo "${sig}") "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json"
 
       - name: Upload signed measurements as artifact
         uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
