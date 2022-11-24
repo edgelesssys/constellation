@@ -55,7 +55,7 @@ func TestUpdateMeasurements(t *testing.T) {
 			},
 		},
 		"trying to set warnOnly to true results in error": {
-			updater: &stubMeasurementsUpdater{
+			updater: &stubClientInterface{
 				oldMeasurements: &corev1.ConfigMap{
 					Data: map[string]string{
 						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`,
@@ -68,7 +68,7 @@ func TestUpdateMeasurements(t *testing.T) {
 			wantErr: true,
 		},
 		"setting warnOnly to false is allowed": {
-			updater: &stubMeasurementsUpdater{
+			updater: &stubClientInterface{
 				oldMeasurements: &corev1.ConfigMap{
 					Data: map[string]string{
 						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":true}}`,

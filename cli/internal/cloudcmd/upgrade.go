@@ -13,10 +13,9 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/cli"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -53,18 +52,15 @@ func NewUpgrader(outWriter io.Writer) (*Upgrader, error) {
 		return nil, fmt.Errorf("setting up custom resource client: %w", err)
 	}
 
-	settings := cli.New()
-	settings.KubeConfig = constants.AdminConfFilename
-
-	actionConfig := &action.Configuration{}
-	if err := actionConfig.Init(settings.RESTClientGetter(), constants.HelmNamespace, "secret", nil); err != nil {
+	helmClient, err := helm.NewClient(constants.AdminConfFilename, constants.HelmNamespace)
+	if err != nil {
 		return nil, fmt.Errorf("setting up helm client: %w", err)
 	}
 
 	return &Upgrader{
 		stableInterface:  &stableClient{client: kubeClient},
 		dynamicInterface: &dynamicClient{client: unstructuredClient},
-		helmClient:       &helmClient{config: actionConfig},
+		helmClient:       helmClient,
 		outWriter:        outWriter,
 	}, nil
 }
@@ -111,7 +107,7 @@ func (u *Upgrader) GetCurrentImage(ctx context.Context) (*unstructured.Unstructu
 
 // CurrentHelmVersion returns the version of the currently installed helm release.
 func (u *Upgrader) CurrentHelmVersion(release string) (string, error) {
-	return u.helmClient.currentVersion(release)
+	return u.helmClient.CurrentVersion(release)
 }
 
 // KubernetesVersion returns the version of Kubernetes the Constellation is currently running on.
@@ -234,31 +230,5 @@ func (u *stableClient) kubernetesVersion() (string, error) {
 }
 
 type helmInterface interface {
-	currentVersion(release string) (string, error)
-}
-
-type helmClient struct {
-	config *action.Configuration
-}
-
-func (c *helmClient) currentVersion(release string) (string, error) {
-	client := action.NewList(c.config)
-	client.Filter = release
-	rel, err := client.Run()
-	if err != nil {
-		return "", err
-	}
-
-	if len(rel) == 0 {
-		return "", fmt.Errorf("release %s not found", release)
-	}
-	if len(rel) > 1 {
-		return "", fmt.Errorf("multiple releases found for %s", release)
-	}
-
-	if rel[0] == nil || rel[0].Chart == nil || rel[0].Chart.Metadata == nil {
-		return "", fmt.Errorf("received invalid release %s", release)
-	}
-
-	return rel[0].Chart.Metadata.Version, nil
+	CurrentVersion(release string) (string, error)
 }
