@@ -20,6 +20,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      image: ${{ steps.build-and-upload.outputs.image }}
+      digest: ${{ steps.build-and-upload.outputs.digest }}
     steps:
       - name: Check out repository
         id: checkout
@@ -32,14 +35,14 @@ jobs:
         with:
           go-version: "1.19.3"
 
+      - name: Set up ko
+        uses: imjasonh/setup-ko@v0.6
+
       - name: Build and upload KMS server container image
         id: build-and-upload
-        uses: ./.github/actions/build_micro_service
-        with:
-          name: kmsserver
-          projectVersion: "0.0.0"
-          dockerfile: kms/Dockerfile
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
-          cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
-          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
-          cosignPassword: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
+        env:
+          KO_USER: ${{ github.actor }}
+          KO_CONFIG_PATH: ${{ github.workspace }}/.ko.yaml
+          KO_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          KO_DOCKER_REPO: ${{ env.REGISTRY }}/edgelesssys/constellation
+        run: ko build ./kms/cmd --preserve-import-paths -t ${{ github.sha }}
