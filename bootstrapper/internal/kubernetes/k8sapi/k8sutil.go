@@ -25,8 +25,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubelet"
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi/resources"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/internal/role"
+	corev1 "k8s.io/api/core/v1"
 	kubeconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
@@ -35,7 +35,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -49,8 +48,7 @@ const (
 
 // Client provides the functions to talk to the k8s API.
 type Client interface {
-	Apply(resources kubernetes.Marshaler, forceConflicts bool) error
-	SetKubeconfig(kubeconfig []byte)
+	Initialize(kubeconfig []byte) error
 	CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error
 	AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error
 	AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error
@@ -234,11 +232,6 @@ func (k *KubernetesUtil) prepareControlPlaneForKonnectivity(ctx context.Context,
 	return nil
 }
 
-// SetupKonnectivity uses kubectl client to apply the provided konnectivity daemon set.
-func (k *KubernetesUtil) SetupKonnectivity(kubectl Client, konnectivityAgentsDaemonSet kubernetes.Marshaler) error {
-	return kubectl.Apply(konnectivityAgentsDaemonSet, true)
-}
-
 // SetupPodNetworkInput holds all configuration options to setup the pod network.
 type SetupPodNetworkInput struct {
 	CloudProvider        string
@@ -307,26 +300,6 @@ func (k *KubernetesUtil) FixCilium(log *logger.Logger) {
 	if err != nil {
 		log.With(zap.Error(err)).Errorf("Removing cilium agent pod failed: %s", out)
 	}
-}
-
-// SetupGCPGuestAgent deploys the GCP guest agent daemon set.
-func (k *KubernetesUtil) SetupGCPGuestAgent(kubectl Client, guestAgentDaemonset kubernetes.Marshaler) error {
-	return kubectl.Apply(guestAgentDaemonset, true)
-}
-
-// SetupVerificationService deploys the verification service.
-func (k *KubernetesUtil) SetupVerificationService(kubectl Client, verificationServiceConfiguration kubernetes.Marshaler) error {
-	return kubectl.Apply(verificationServiceConfiguration, true)
-}
-
-// SetupNodeMaintenanceOperator deploys node maintenance operator.
-func (k *KubernetesUtil) SetupNodeMaintenanceOperator(kubectl Client, nodeMaintenanceOperatorConfiguration kubernetes.Marshaler) error {
-	return kubectl.Apply(nodeMaintenanceOperatorConfiguration, true)
-}
-
-// SetupNodeOperator deploys node operator.
-func (k *KubernetesUtil) SetupNodeOperator(ctx context.Context, kubectl Client, nodeOperatorConfiguration kubernetes.Marshaler) error {
-	return kubectl.Apply(nodeOperatorConfiguration, true)
 }
 
 // JoinCluster joins existing Kubernetes cluster using kubeadm join.
