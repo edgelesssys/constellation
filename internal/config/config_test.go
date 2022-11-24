@@ -128,6 +128,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 				c.Provider.Azure.ResourceGroup = "test"
 				c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
 				c.Provider.Azure.AppClientID = "3ea4bdc1-1cc1-4237-ae78-0831eff3491e"
+				c.Provider.Azure.Measurements = measurements.M{15: measurements.WithAllBytes(0x00, false)}
 				return c
 			}(),
 			envToSet: map[string]string{
@@ -147,6 +148,7 @@ func TestNewWithDefaultOptions(t *testing.T) {
 				c.Provider.Azure.ClientSecretValue = "other-value" // < Note secret set in config, as well.
 				c.Provider.Azure.UserAssignedIdentity = "/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity"
 				c.Provider.Azure.AppClientID = "3ea4bdc1-1cc1-4237-ae78-0831eff3491e"
+				c.Provider.Azure.Measurements = measurements.M{15: measurements.WithAllBytes(0x00, false)}
 				return c
 			}(),
 			envToSet: map[string]string{
@@ -182,9 +184,9 @@ func TestNewWithDefaultOptions(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	const defaultErrCount = 17 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
-	const azErrCount = 8
-	const gcpErrCount = 5
+	const defaultErrCount = 21 // expect this number of error messages by default because user-specific values are not set and multiple providers are defined by default
+	const azErrCount = 9
+	const gcpErrCount = 6
 
 	testCases := map[string]struct {
 		cnf          *Config
@@ -240,6 +242,7 @@ func TestValidate(t *testing.T) {
 				az.ClientSecretValue = "test-client-secret"
 				cnf.Provider = ProviderConfig{}
 				cnf.Provider.Azure = az
+				cnf.Provider.Azure.Measurements = measurements.M{15: measurements.WithAllBytes(0x00, false)}
 				return cnf
 			}(),
 		},
@@ -265,6 +268,7 @@ func TestValidate(t *testing.T) {
 				gcp.ServiceAccountKeyPath = "test-key-path"
 				cnf.Provider = ProviderConfig{}
 				cnf.Provider.GCP = gcp
+				cnf.Provider.GCP.Measurements = measurements.M{15: measurements.WithAllBytes(0x00, false)}
 				return cnf
 			}(),
 		},
