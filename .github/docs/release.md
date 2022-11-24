@@ -142,11 +142,3 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
     ```
 
 10. Test Constellation mini up
-
-11. Upload AWS measurements to S3 bucket:
-    * Create an AWS cluster using the released version.
-    * Use `hack/pcr-reader` to download measurements.
-    * Create a new folder named after each AWS AMI in [S3 public bucket](https://s3.console.aws.amazon.com/s3/buckets/public-edgeless-constellation?region=us-east-2&tab=objects).
-    * Keep measurements: 4, 8, 9, 11, 12, 13.
-    * Sign the measurements using `cosign sign-blob`.
-    * Upload both `measurements.yaml` & `measurements.yaml.sig` to each created folder in S3.
