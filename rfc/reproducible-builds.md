@@ -4,7 +4,7 @@ This is the only way to ensure a verifiable path from source code to binary.
 Every step of the build process must be deterministic.
 
 ## Definition of Goals
-1. All our OCIs executed in the cluster must be reproducible bit by bit .
+1. All our OCIs executed in the cluster must be reproducible bit by bit.
 1. For that, every compiled executable has to be deterministically compiled.
 1. If we change parts of our codebase (i.e. add several other programming languages) we should not have to make major changes to the image build system.
 1. Since docker does not offer built-in options to remove timestamps (which breaks reproducibility) we have to move to another OCI build system.
@@ -19,14 +19,17 @@ Since podman internally [uses](https://podman.io/blogs/2018/10/31/podman-buildah
 With buildah, Containerfiles/Dockerfiles can be used as usual. This means we can adjust the build to include necessary libraries for i.e CGO builds. Only the build command itself has to be adjusted to omit timestamps.
 
 ## `ko`
-Ko is limited to building OCI images for go applications. By default images such as [distroless](https://github.com/GoogleContainerTools/distroless) are used. These are minimal and hence very small images, that are stripped of anything but runtime dependencies. Problems arise when the default images do not satisfy our dependency needs (as they currently do with the `disk-mapper` which relies on a dynamically built `libcryptsetup` library). To solve this issue we have two options:
+Ko is limited to building OCI images for go applications. By default images such as [distroless](https://github.com/GoogleContainerTools/distroless) are used as base images. These are minimal and hence very small images, that are stripped of anything but runtime dependencies. Problems arise when the default images do not satisfy our dependency needs (as they currently do with the `disk-mapper` which relies on a dynamically built `libcryptsetup` library). To solve this issue we have three options:
 
 1. Build our own base images independent from or inspired by distroless
 2. Fork distroless, edit underlying [bazel dependencies](https://github.com/GoogleContainerTools/distroless/blob/main/debian_archives.bzl), build the image
+3. Use `apko` to build minimal Alpine images. These images can be configured via `apko` and a declarative `*.yaml` config file.
 
-Option `1.` results in a similar maintenance work as using buildah.
+Option `1.`: results in a similar maintenance work as using `buildah`.
 <br>
-Option `2.` results in an even bigger maintenance overhead since we currently do not use bazel at all.
+Option `2.`: results in an even bigger maintenance overhead since we currently do not use `bazel` at all.
+<br>
+Option `3.`: for our current use cases very easy to configure.
 
 ## `kaniko`
 Over time, issues complaining about breaking/inconsistent reproducibility accumulated.
@@ -34,7 +37,7 @@ This seems to happen more or less regularly. We should try to avoid a build syst
 
 ## Steps to Achieve Goals
 
-### Executables
+## Executables
 * Remove metadata from binaries, namely:
   * Timestamps
   * Build IDs
@@ -45,7 +48,7 @@ This seems to happen more or less regularly. We should try to avoid a build syst
 * Eliminate dependencies on libraries (make executable static)
 
 Striping metadata from the binary can be done in the building process.
-This can be achieved by setting the appropriate compiler and linker flags (see [`go tool link`](https://pkg.go.dev/cmd/link) and `[go help build]`(https://pkg.go.dev/cmd/go)).
+This can be achieved by setting the appropriate compiler and linker flags (see [`go tool link`](https://pkg.go.dev/cmd/link) and [`go help build`](https://pkg.go.dev/cmd/go).
 
 * `buildvcs=false`: Omit version control information
 * `-trimpath`: Remove file system paths from executable
@@ -58,16 +61,15 @@ A reference compilation could look like this:
 $ CGO_ENABLED=0 go build -o <out_name> -buildvcs=false -trimpath -ldflags "-s -w -buildid=''"
 ```
 
-### OCIs
-For the OCIs to be deterministic, each component of the image has to be deterministic as well.
+## OCIs
+* For the OCIs to be deterministic, each component of the image has to be deterministic as well.
 This includes:
 * The base image used to build the software must be the same for each build of a version. Pin the version with its `sha256` hash checksum. For that it has to guaranteed, that the image is available as long as we need it.
 * The timestamps of the files in the image (creation, modification) must be identical for each build.
 * Every component that is shipped with the image has to be identical.
-* We must ensure, that the pinned images are always available. For that we either have to use a registry or we use publicly available images that are guaranteed to be available.
-
+* We must ensure, that the pinned images are always available. Since we probably cannot use stock images due to our dependencies, this is a step we have to take anyway.
+### `buildah`
 To ensure that the final image is deterministic, a pattern such as the following should be followed:
-
 ```Dockerfile
 FROM <image>@sha256:<hash> as build
 RUN  <install_deps>
@@ -91,3 +93,35 @@ buildah build \
 
 The result is an image with one deterministic layer (pinned by the hash) and deterministic build artifacts.
 Hence, the entire build is reproducible.
+
+### `apko` / `ko`
+To include c libraries into a distroless minimal image, we have to rebuild the this base image.
+For that, we can use `apko`.
+It can be configured using a `*.yaml` file and is easy to use. An exemplary image definition could look like this:
+
+```yaml
+contents:
+  repositories:
+    - https://dl-cdn.alpinelinux.org/alpine/edge/main
+    - https://dl-cdn.alpinelinux.org/alpine/edge/community  # for cryptsetup
+  packages:
+    - alpine-base
+    - cryptsetup-dev  # for disk-mapper
+    - gcompat         # for glibc/musl comparability
+
+environment:
+  PATH: /usr/sbin:/sbin:/usr/bin:/bin
+```
+
+Then in our `.ko.yaml`, we can use the newly created image as a base image, also just for certain build ids:
+```yaml
+baseImageOverrides:
+  github.com/edgelesssys/constellation/v2/disk-mapper/cmd: edgelesssys/alpine-libcryptsetup:base
+```
+
+The result is also a reproducible OCI image with reproducible artifacts.
+
+## Considerations
+Finally we can conclude, that both `buildah` and `ko` get the job done.
+`buildah` constructs the images in a procedural way such as we are used to by writing `Dockerfile`s, while `ko`/`apko` configures the images in a declarative way.
+Since `ko`/`apko` are very easy to use and we currently only use `go` in our microservices, `ko`/`apko` can do everything we need right now. Further, the creation of minimal images is easier with `apko` than with `Containerfile`s.
