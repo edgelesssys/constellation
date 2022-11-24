@@ -6,86 +6,108 @@ on:
 jobs:
   build-cli:
     runs-on: ubuntu-22.04
-    outputs:
-      provenance-subjects: ${{ steps.provenance-subjects.outputs.provenance-subjects }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+        os: [linux, darwin]
     steps:
       - name: Checkout
         id: checkout
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
         with:
           ref: ${{ github.head_ref }}
-
       - name: Setup Go environment
         uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
         with:
           go-version: "1.19.3"
-
-      - name: Build cli-linux-amd64
+      - name: Build CLI
         uses: ./.github/actions/build_cli
         with:
-          targetOS: linux
-          targetArch: amd64
+          targetOS: ${{ matrix.os }}
+          targetArch: ${{ matrix.arch }}
           enterpriseCLI: true
           cosignPublicKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
           cosignPrivateKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
           cosignPassword: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
-
-      - name: Build cli-linux-arm64
-        uses: ./.github/actions/build_cli
+      - name: Upload CLI as artifact
+        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
         with:
-          targetOS: linux
-          targetArch: arm64
-          enterpriseCLI: true
-          cosignPublicKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
-          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
-          cosignPassword: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
+          name: constellation-${{ matrix.os }}-${{ matrix.arch }}
+          path: build/constellation-${{ matrix.os }}-${{ matrix.arch }}
 
-      - name: Build cli-darwin-amd64
-        uses: ./.github/actions/build_cli
+
+  provenance-subjects:
+    runs-on: ubuntu-22.04
+    needs:
+      - build-cli
+    outputs:
+      provenance-subjects: ${{ steps.provenance-subjects.outputs.provenance-subjects }}
+    steps:
+      - name: Download CLI binaries darwin-amd64
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
         with:
-          targetOS: darwin
-          targetArch: amd64
-          enterpriseCLI: true
-          cosignPublicKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
-          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
-          cosignPassword: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
-
-      - name: Build cli-darwin-arm64
-        uses: ./.github/actions/build_cli
+          name: constellation-darwin-amd64
+      - name: Download CLI binaries darwin-arm64
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
         with:
-          targetOS: darwin
-          targetArch: arm64
-          enterpriseCLI: true
-          cosignPublicKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
-          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
-          cosignPassword: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
-
+          name: constellation-darwin-arm64
+      - name: Download CLI binaries linux-amd64
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          name: constellation-linux-amd64
+      - name: Download CLI binaries linux-arm64
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          name: constellation-linux-arm64
       - name: Generate provenance subjects
         id: provenance-subjects
         run: |
           HASHES=$(sha256sum \
-            build/constellation-darwin-amd64 \
-            build/constellation-darwin-arm64 \
-            build/constellation-linux-amd64 \
-            build/constellation-linux-arm64 | base64 -w0)
-          echo provenance-subjects=${HASHES} >> $GITHUB_OUTPUT
+            constellation-darwin-amd64 \
+            constellation-darwin-arm64 \
+            constellation-linux-amd64 \
+            constellation-linux-arm64)
+          HASHESB64=$(echo "${HASHES}" | base64 -w0)
+          echo "${HASHES}"
+          echo "${HASHESB64}"
+          echo provenance-subjects=${HASHESB64} >> $GITHUB_OUTPUT
 
+  versions-manifest:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
       - name: Login to Azure
         uses: ./.github/actions/login_azure
         with:
           azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
-
       - name: Login to GCP
         uses: ./.github/actions/login_gcp
         with:
           gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-
       - name: Build version manifest
         run: |
           cd hack/build-manifest/
           AZURE_SUBSCRIPTION_ID=0d202bbb-4fa7-4af8-8125-58c269a05435 go run . > versions-manifest.json
           cat versions-manifest.json
+      - name: Upload versions-manifest
+        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
+        with:
+          name: versions-manifest.json
+          path: versions-manifest.json
 
+  signed-sbom:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
       - name: Download syft & grype
         run: |
           SYFT_VERSION=0.62.1
@@ -98,8 +120,9 @@ jobs:
           ./grype version
           pwd >> "$GITHUB_PATH"
         shell: bash
-
-      - name: Build signed SBOMs
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@9becc617647dfa20ae7b1151972e9b3a2c338a2b # tag=v2.8.1
+      - name: Build signed SBOM
         run: |
           syft . --catalogers go-module --file constellation.spdx.sbom -o spdx-json
           cosign sign-blob --key env://COSIGN_PRIVATE_KEY constellation.spdx.sbom > constellation.spdx.sbom.sig
@@ -109,19 +132,16 @@ jobs:
           COSIGN_PUBLIC_KEY: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
           COSIGN_PRIVATE_KEY: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
-
-      - name: Create release with artifacts
-        # GitHub endorsed release project. See: https://github.com/actions/create-release
-        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v0.1.15
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Upload Constellation CLI SBOM
+        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
         with:
-          draft: true
-          files: |
-            build/constellation-*
-            build/cosign.pub
-            hack/build-manifest/versions-manifest.json
-            constellation.spdx.sbom
-            constellation.spdx.sbom.sig
+          name: constellation.spdx.sbom
+          path: constellation.spdx.sbom
+      - name: Upload Constellation CLI SBOM's signature
+        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
+        with:
+          name: constellation.spdx.sbom.sig
+          path: constellation.spdx.sbom.sig
 
   provenance:
     permissions:
@@ -129,9 +149,117 @@ jobs:
       contents: write
       id-token: write
     needs:
-      - build-cli
+      - provenance-subjects
     # This must not be pinned to digest. See:
     # https://github.com/slsa-framework/slsa-github-generator#referencing-slsa-builders-and-generators
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.2.2
     with:
-      base64-subjects: "${{ needs.build-cli.outputs.provenance-subjects }}"
+      base64-subjects: "${{ needs.provenance-subjects.outputs.provenance-subjects }}"
+
+  provenance-verify:
+    runs-on: ubuntu-22.04
+    env:
+      SLSA_VERIFIER_VERSION: "1.4.1"
+    needs:
+      - build-cli
+      - provenance
+    steps:
+      - name: Download CLI binaries darwin-amd64
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          name: constellation-darwin-amd64
+      - name: Download CLI binaries darwin-arm64
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          name: constellation-darwin-arm64
+      - name: Download CLI binaries linux-amd64
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          name: constellation-linux-amd64
+      - name: Download CLI binaries linux-arm64
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          name: constellation-linux-arm64
+      - name: Download provenance
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          name: ${{ needs.provenance.outputs.provenance-name }}
+      - name: Install slsa-verifier
+        run: |
+          curl -LO https://github.com/slsa-framework/slsa-verifier/releases/download/v${{ env.SLSA_VERIFIER_VERSION }}/slsa-verifier-linux-amd64
+          install slsa-verifier-linux-amd64 /usr/local/bin/slsa-verifier
+      - name: Verify provenance
+        run: |
+          slsa-verifier verify-artifact constellation-darwin-amd64 \
+            --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
+            --source-uri github.com/edgelesssys/constellation
+          slsa-verifier verify-artifact constellation-darwin-arm64 \
+            --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
+            --source-uri github.com/edgelesssys/constellation
+          slsa-verifier verify-artifact constellation-linux-amd64 \
+            --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
+            --source-uri github.com/edgelesssys/constellation
+          slsa-verifier verify-artifact constellation-linux-arm64 \
+            --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
+            --source-uri github.com/edgelesssys/constellation
+
+  release:
+    runs-on: ubuntu-22.04
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - build-cli
+      - provenance
+      - signed-sbom
+      - versions-manifest
+    steps:
+      - name: Write cosign public key
+        run: echo "$COSIGN_PUBLIC_KEY" > cosign.pub
+        env:
+          COSIGN_PUBLIC_KEY: ${{ startsWith(github.ref, 'refs/tags/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+      - name: Download CLI binaries darwin-amd64
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          name: constellation-darwin-amd64
+      - name: Download CLI binaries darwin-arm64
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          name: constellation-darwin-arm64
+      - name: Download CLI binaries linux-amd64
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          name: constellation-linux-amd64
+      - name: Download CLI binaries linux-arm64
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          name: constellation-linux-arm64
+      - name: Download versions-manifest.json
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          name: versions-manifest.json
+      - name: Download Constellation CLI SBOM
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          name: constellation.spdx.sbom
+      - name: Download Constellation CLI SBOM's signature
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          name: constellation.spdx.sbom.sig
+      - name: Download Constellation provenance
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          name: ${{ needs.provenance.outputs.provenance-name }}
+      - name: Rename provenance file
+        run: |
+          mv ${{ needs.provenance.outputs.provenance-name }} constellation.intoto.jsonl
+      - name: Create release with artifacts
+        # GitHub endorsed release project. See: https://github.com/actions/create-release
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v0.1.15
+        with:
+          draft: true
+          files: |
+            constellation-*
+            cosign.pub
+            versions-manifest.json
+            constellation.spdx.sbom
+            constellation.spdx.sbom.sig
+            constellation.intoto.jsonl
