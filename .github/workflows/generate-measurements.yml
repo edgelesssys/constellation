@@ -52,7 +52,7 @@ jobs:
       - name: Build hack/pcr-reader
         run: |
           go build .
-          echo "$(pwd)" >> $GITHUB_PATH
+          pwd >> "$GITHUB_PATH"
         working-directory: hack/pcr-reader
         shell: bash
 
@@ -193,7 +193,7 @@ jobs:
      - name: Build hack/pcr-compare
        run: |
          go build .
-         echo "$(pwd)" >> $GITHUB_PATH
+         pwd >> "$GITHUB_PATH"
        working-directory: hack/pcr-compare
        shell: bash
 
@@ -302,8 +302,8 @@ jobs:
     - name: Upload to S3
       run: |
         S3_PATH=s3://cdn-constellation-backend/constellation/v1/measurements/${IMAGE_UID,,}/${{ matrix.provider }}
-        aws s3 cp ${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json ${S3_PATH}/measurements.json
-        aws s3 cp ${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json.sig ${S3_PATH}/measurements.json.sig
+        aws s3 cp "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json" "${S3_PATH}/measurements.json"
+        aws s3 cp "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json.sig" "${S3_PATH}/measurements.json.sig"
       shell: bash
       env:
         IMAGE_UID: ${{ inputs.osImage }}
