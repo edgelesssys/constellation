@@ -93,6 +93,8 @@ func (u *Updatable) Validate(attDoc []byte, nonce []byte) ([]byte, error) {
 
 // OID returns the validators Object Identifier.
 func (u *Updatable) OID() asn1.ObjectIdentifier {
+	u.mux.Lock()
+	defer u.mux.Unlock()
 	return u.Validator.OID()
 }
 
