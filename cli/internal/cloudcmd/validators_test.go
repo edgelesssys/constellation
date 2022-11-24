@@ -7,9 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cloudcmd
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
@@ -18,7 +18,6 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
-	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/spf13/cobra"
@@ -27,12 +26,12 @@ import (
 
 func TestNewValidator(t *testing.T) {
 	testPCRs := measurements.M{
-		0: measurements.PCRWithAllBytes(0x00),
-		1: measurements.PCRWithAllBytes(0xFF),
-		2: measurements.PCRWithAllBytes(0x00),
-		3: measurements.PCRWithAllBytes(0xFF),
-		4: measurements.PCRWithAllBytes(0x00),
-		5: measurements.PCRWithAllBytes(0x00),
+		0: measurements.WithAllBytes(0x00, false),
+		1: measurements.WithAllBytes(0xFF, false),
+		2: measurements.WithAllBytes(0x00, false),
+		3: measurements.WithAllBytes(0xFF, false),
+		4: measurements.WithAllBytes(0x00, false),
+		5: measurements.WithAllBytes(0x00, false),
 	}
 
 	testCases := map[string]struct {
@@ -66,13 +65,6 @@ func TestNewValidator(t *testing.T) {
 			provider: cloudprovider.Azure,
 			pcrs:     measurements.M{},
 			wantErr:  true,
-		},
-		"invalid pcr length": {
-			provider: cloudprovider.GCP,
-			pcrs: measurements.M{
-				0: bytes.Repeat([]byte{0x00}, 31),
-			},
-			wantErr: true,
 		},
 		"unknown provider": {
 			provider: cloudprovider.Unknown,
@@ -126,19 +118,19 @@ func TestNewValidator(t *testing.T) {
 func TestValidatorV(t *testing.T) {
 	newTestPCRs := func() measurements.M {
 		return measurements.M{
-			0:  measurements.PCRWithAllBytes(0x00),
-			1:  measurements.PCRWithAllBytes(0x00),
-			2:  measurements.PCRWithAllBytes(0x00),
-			3:  measurements.PCRWithAllBytes(0x00),
-			4:  measurements.PCRWithAllBytes(0x00),
-			5:  measurements.PCRWithAllBytes(0x00),
-			6:  measurements.PCRWithAllBytes(0x00),
-			7:  measurements.PCRWithAllBytes(0x00),
-			8:  measurements.PCRWithAllBytes(0x00),
-			9:  measurements.PCRWithAllBytes(0x00),
-			10: measurements.PCRWithAllBytes(0x00),
-			11: measurements.PCRWithAllBytes(0x00),
-			12: measurements.PCRWithAllBytes(0x00),
+			0:  measurements.WithAllBytes(0x00, true),
+			1:  measurements.WithAllBytes(0x00, true),
+			2:  measurements.WithAllBytes(0x00, true),
+			3:  measurements.WithAllBytes(0x00, true),
+			4:  measurements.WithAllBytes(0x00, true),
+			5:  measurements.WithAllBytes(0x00, true),
+			6:  measurements.WithAllBytes(0x00, true),
+			7:  measurements.WithAllBytes(0x00, true),
+			8:  measurements.WithAllBytes(0x00, true),
+			9:  measurements.WithAllBytes(0x00, true),
+			10: measurements.WithAllBytes(0x00, true),
+			11: measurements.WithAllBytes(0x00, true),
+			12: measurements.WithAllBytes(0x00, true),
 		}
 	}
 
@@ -151,23 +143,23 @@ func TestValidatorV(t *testing.T) {
 		"gcp": {
 			provider: cloudprovider.GCP,
 			pcrs:     newTestPCRs(),
-			wantVs:   gcp.NewValidator(newTestPCRs(), nil, nil),
+			wantVs:   gcp.NewValidator(newTestPCRs(), nil),
 		},
 		"azure cvm": {
 			provider: cloudprovider.Azure,
 			pcrs:     newTestPCRs(),
-			wantVs:   snp.NewValidator(newTestPCRs(), nil, nil, false, nil),
+			wantVs:   snp.NewValidator(newTestPCRs(), nil, false, nil),
 			azureCVM: true,
 		},
 		"azure trusted launch": {
 			provider: cloudprovider.Azure,
 			pcrs:     newTestPCRs(),
-			wantVs:   trustedlaunch.NewValidator(newTestPCRs(), nil, nil),
+			wantVs:   trustedlaunch.NewValidator(newTestPCRs(), nil),
 		},
 		"qemu": {
 			provider: cloudprovider.QEMU,
 			pcrs:     newTestPCRs(),
-			wantVs:   qemu.NewValidator(newTestPCRs(), nil, nil),
+			wantVs:   qemu.NewValidator(newTestPCRs(), nil),
 		},
 	}
 
@@ -185,37 +177,37 @@ func TestValidatorV(t *testing.T) {
 }
 
 func TestValidatorUpdateInitPCRs(t *testing.T) {
-	zero := []byte("00000000000000000000000000000000")
-	one := []byte("11111111111111111111111111111111")
-	one64 := base64.StdEncoding.EncodeToString(one)
-	oneHash := sha256.Sum256(one)
-	pcrZeroUpdatedOne := sha256.Sum256(append(zero, oneHash[:]...))
-	newTestPCRs := func() map[uint32][]byte {
-		return map[uint32][]byte{
-			0:  zero,
-			1:  zero,
-			2:  zero,
-			3:  zero,
-			4:  zero,
-			5:  zero,
-			6:  zero,
-			7:  zero,
-			8:  zero,
-			9:  zero,
-			10: zero,
-			11: zero,
-			12: zero,
-			13: zero,
-			14: zero,
-			15: zero,
-			16: zero,
-			17: one,
-			18: one,
-			19: one,
-			20: one,
-			21: one,
-			22: one,
-			23: zero,
+	zero := measurements.WithAllBytes(0x00, true)
+	one := measurements.WithAllBytes(0x11, true)
+	one64 := base64.StdEncoding.EncodeToString(one.Expected[:])
+	oneHash := sha256.Sum256(one.Expected[:])
+	pcrZeroUpdatedOne := sha256.Sum256(append(zero.Expected[:], oneHash[:]...))
+	newTestPCRs := func() measurements.M {
+		return measurements.M{
+			0:  measurements.WithAllBytes(0x00, true),
+			1:  measurements.WithAllBytes(0x00, true),
+			2:  measurements.WithAllBytes(0x00, true),
+			3:  measurements.WithAllBytes(0x00, true),
+			4:  measurements.WithAllBytes(0x00, true),
+			5:  measurements.WithAllBytes(0x00, true),
+			6:  measurements.WithAllBytes(0x00, true),
+			7:  measurements.WithAllBytes(0x00, true),
+			8:  measurements.WithAllBytes(0x00, true),
+			9:  measurements.WithAllBytes(0x00, true),
+			10: measurements.WithAllBytes(0x00, true),
+			11: measurements.WithAllBytes(0x00, true),
+			12: measurements.WithAllBytes(0x00, true),
+			13: measurements.WithAllBytes(0x00, true),
+			14: measurements.WithAllBytes(0x00, true),
+			15: measurements.WithAllBytes(0x00, true),
+			16: measurements.WithAllBytes(0x00, true),
+			17: measurements.WithAllBytes(0x11, true),
+			18: measurements.WithAllBytes(0x11, true),
+			19: measurements.WithAllBytes(0x11, true),
+			20: measurements.WithAllBytes(0x11, true),
+			21: measurements.WithAllBytes(0x11, true),
+			22: measurements.WithAllBytes(0x11, true),
+			23: measurements.WithAllBytes(0x00, true),
 		}
 	}
 
@@ -285,25 +277,25 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 			assert.NoError(err)
 			for i := 0; i < len(tc.pcrs); i++ {
 				switch {
-				case i == int(vtpm.PCRIndexClusterID) && tc.clusterID == "":
+				case i == int(measurements.PCRIndexClusterID) && tc.clusterID == "":
 					// should be deleted
 					_, ok := validators.pcrs[uint32(i)]
 					assert.False(ok)
 
-				case i == int(vtpm.PCRIndexClusterID):
+				case i == int(measurements.PCRIndexClusterID):
 					pcr, ok := validators.pcrs[uint32(i)]
 					assert.True(ok)
-					assert.Equal(pcrZeroUpdatedOne[:], pcr)
+					assert.Equal(pcrZeroUpdatedOne, pcr.Expected)
 
-				case i == int(vtpm.PCRIndexOwnerID) && tc.ownerID == "":
+				case i == int(measurements.PCRIndexOwnerID) && tc.ownerID == "":
 					// should be deleted
 					_, ok := validators.pcrs[uint32(i)]
 					assert.False(ok)
 
-				case i == int(vtpm.PCRIndexOwnerID):
+				case i == int(measurements.PCRIndexOwnerID):
 					pcr, ok := validators.pcrs[uint32(i)]
 					assert.True(ok)
-					assert.Equal(pcrZeroUpdatedOne[:], pcr)
+					assert.Equal(pcrZeroUpdatedOne, pcr.Expected)
 
 				default:
 					if i >= 17 && i <= 22 {
@@ -320,8 +312,8 @@ func TestValidatorUpdateInitPCRs(t *testing.T) {
 func TestUpdatePCR(t *testing.T) {
 	emptyMap := measurements.M{}
 	defaultMap := measurements.M{
-		0: measurements.PCRWithAllBytes(0xAA),
-		1: measurements.PCRWithAllBytes(0xBB),
+		0: measurements.WithAllBytes(0xAA, false),
+		1: measurements.WithAllBytes(0xBB, false),
 	}
 
 	testCases := map[string]struct {
@@ -356,6 +348,20 @@ func TestUpdatePCR(t *testing.T) {
 			pcrMap:      defaultMap,
 			pcrIndex:    10,
 			encoded:     base64.StdEncoding.EncodeToString([]byte("Constellation")),
+			wantEntries: len(defaultMap) + 1,
+			wantErr:     false,
+		},
+		"hex input, empty map": {
+			pcrMap:      emptyMap,
+			pcrIndex:    10,
+			encoded:     hex.EncodeToString([]byte("Constellation")),
+			wantEntries: 1,
+			wantErr:     false,
+		},
+		"hex input, default map": {
+			pcrMap:      defaultMap,
+			pcrIndex:    10,
+			encoded:     hex.EncodeToString([]byte("Constellation")),
 			wantEntries: len(defaultMap) + 1,
 			wantErr:     false,
 		},
@@ -403,9 +409,6 @@ func TestUpdatePCR(t *testing.T) {
 				assert.NoError(err)
 			}
 			assert.Len(pcrs, tc.wantEntries)
-			for _, v := range pcrs {
-				assert.Len(v, 32)
-			}
 		})
 	}
 }

@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	tpmClient "github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm-tools/proto/attest"
 	tpmProto "github.com/google/go-tpm-tools/proto/tpm"
@@ -144,8 +145,7 @@ func (i *Issuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
 
 // Validator handles validation of TPM based attestation.
 type Validator struct {
-	expectedPCRs   map[uint32][]byte
-	enforcedPCRs   map[uint32]struct{}
+	expected       measurements.M
 	getTrustedKey  GetTPMTrustedAttestationPublicKey
 	validateCVM    ValidateCVM
 	verifyUserData VerifyUserData
@@ -154,18 +154,11 @@ type Validator struct {
 }
 
 // NewValidator returns a new Validator.
-func NewValidator(expectedPCRs map[uint32][]byte, enforcedPCRs []uint32, getTrustedKey GetTPMTrustedAttestationPublicKey,
+func NewValidator(expected measurements.M, getTrustedKey GetTPMTrustedAttestationPublicKey,
 	validateCVM ValidateCVM, verifyUserData VerifyUserData, log AttestationLogger,
 ) *Validator {
-	// Convert the enforced PCR list to a map for convenient and fast lookup
-	enforcedMap := make(map[uint32]struct{})
-	for _, pcr := range enforcedPCRs {
-		enforcedMap[pcr] = struct{}{}
-	}
-
 	return &Validator{
-		expectedPCRs:   expectedPCRs,
-		enforcedPCRs:   enforcedMap,
+		expected:       expected,
 		getTrustedKey:  getTrustedKey,
 		validateCVM:    validateCVM,
 		verifyUserData: verifyUserData,
@@ -212,9 +205,9 @@ func (v *Validator) Validate(attDocRaw []byte, nonce []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	for idx, pcr := range v.expectedPCRs {
-		if !bytes.Equal(pcr, attDoc.Attestation.Quotes[quoteIdx].Pcrs.Pcrs[idx]) {
-			if _, ok := v.enforcedPCRs[idx]; ok {
+	for idx, pcr := range v.expected {
+		if !bytes.Equal(pcr.Expected[:], attDoc.Attestation.Quotes[quoteIdx].Pcrs.Pcrs[idx]) {
+			if !pcr.WarnOnly {
 				return nil, fmt.Errorf("untrusted PCR value at PCR index %d", idx)
 			}
 			if v.log != nil {
@@ -263,8 +256,8 @@ func VerifyPKCS1v15(pub crypto.PublicKey, hash crypto.Hash, hashed, sig []byte) 
 	return rsa.VerifyPKCS1v15(key, hash, hashed, sig)
 }
 
-// GetSelectedPCRs returns a map of the selected PCR hashes.
-func GetSelectedPCRs(open TPMOpenFunc, selection tpm2.PCRSelection) (map[uint32][]byte, error) {
+// GetSelectedMeasurements returns a map of Measurments for the PCRs in selection.
+func GetSelectedMeasurements(open TPMOpenFunc, selection tpm2.PCRSelection) (measurements.M, error) {
 	tpm, err := open()
 	if err != nil {
 		return nil, err
@@ -276,5 +269,15 @@ func GetSelectedPCRs(open TPMOpenFunc, selection tpm2.PCRSelection) (map[uint32]
 		return nil, err
 	}
 
-	return pcrList.Pcrs, nil
+	m := make(measurements.M)
+	for i, pcr := range pcrList.Pcrs {
+		if len(pcr) != 32 {
+			return nil, fmt.Errorf("invalid measurement: invalid length: %d", len(pcr))
+		}
+		m[i] = measurements.Measurement{
+			Expected: *(*[32]byte)(pcr),
+		}
+	}
+
+	return m, nil
 }

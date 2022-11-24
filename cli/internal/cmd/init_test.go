@@ -9,7 +9,7 @@ package cmd
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net"
@@ -101,16 +101,6 @@ func TestInitialize(t *testing.T) {
 			initServerAPI: &stubInitServer{initErr: someErr},
 			wantErr:       true,
 		},
-		"fail missing enforced PCR": {
-			provider: cloudprovider.GCP,
-			idFile:   &clusterid.File{IP: "192.0.2.1"},
-			configMutator: func(c *config.Config) {
-				c.Provider.GCP.EnforcedMeasurements = append(c.Provider.GCP.EnforcedMeasurements, 10)
-			},
-			serviceAccKey: gcpServiceAccKey,
-			initServerAPI: &stubInitServer{initResp: testInitResp},
-			wantErr:       true,
-		},
 	}
 
 	for name, tc := range testCases {
@@ -174,7 +164,7 @@ func TestInitialize(t *testing.T) {
 			}
 			require.NoError(err)
 			// assert.Contains(out.String(), base64.StdEncoding.EncodeToString([]byte("ownerID")))
-			assert.Contains(out.String(), base64.StdEncoding.EncodeToString([]byte("clusterID")))
+			assert.Contains(out.String(), hex.EncodeToString([]byte("clusterID")))
 			var secret masterSecret
 			assert.NoError(fileHandler.ReadJSON(constants.MasterSecretFilename, &secret))
 			assert.NotEmpty(secret.Key)
@@ -192,8 +182,8 @@ func TestWriteOutput(t *testing.T) {
 		Kubeconfig: []byte("kubeconfig"),
 	}
 
-	ownerID := base64.StdEncoding.EncodeToString(resp.OwnerId)
-	clusterID := base64.StdEncoding.EncodeToString(resp.ClusterId)
+	ownerID := hex.EncodeToString(resp.OwnerId)
+	clusterID := hex.EncodeToString(resp.ClusterId)
 
 	expectedIDFile := clusterid.File{
 		ClusterID: clusterID,
@@ -361,11 +351,11 @@ func TestAttestation(t *testing.T) {
 
 	issuer := &testIssuer{
 		Getter: oid.QEMU{},
-		pcrs: measurements.M{
-			0: measurements.PCRWithAllBytes(0xFF),
-			1: measurements.PCRWithAllBytes(0xFF),
-			2: measurements.PCRWithAllBytes(0xFF),
-			3: measurements.PCRWithAllBytes(0xFF),
+		pcrs: map[uint32][]byte{
+			0: bytes.Repeat([]byte{0xFF}, 32),
+			1: bytes.Repeat([]byte{0xFF}, 32),
+			2: bytes.Repeat([]byte{0xFF}, 32),
+			3: bytes.Repeat([]byte{0xFF}, 32),
 		},
 	}
 	serverCreds := atlscredentials.New(issuer, nil)
@@ -390,13 +380,13 @@ func TestAttestation(t *testing.T) {
 	cfg := config.Default()
 	cfg.Image = "image"
 	cfg.RemoveProviderExcept(cloudprovider.QEMU)
-	cfg.Provider.QEMU.Measurements[0] = measurements.PCRWithAllBytes(0x00)
-	cfg.Provider.QEMU.Measurements[1] = measurements.PCRWithAllBytes(0x11)
-	cfg.Provider.QEMU.Measurements[2] = measurements.PCRWithAllBytes(0x22)
-	cfg.Provider.QEMU.Measurements[3] = measurements.PCRWithAllBytes(0x33)
-	cfg.Provider.QEMU.Measurements[4] = measurements.PCRWithAllBytes(0x44)
-	cfg.Provider.QEMU.Measurements[9] = measurements.PCRWithAllBytes(0x99)
-	cfg.Provider.QEMU.Measurements[12] = measurements.PCRWithAllBytes(0xcc)
+	cfg.Provider.QEMU.Measurements[0] = measurements.WithAllBytes(0x00, false)
+	cfg.Provider.QEMU.Measurements[1] = measurements.WithAllBytes(0x11, false)
+	cfg.Provider.QEMU.Measurements[2] = measurements.WithAllBytes(0x22, false)
+	cfg.Provider.QEMU.Measurements[3] = measurements.WithAllBytes(0x33, false)
+	cfg.Provider.QEMU.Measurements[4] = measurements.WithAllBytes(0x44, false)
+	cfg.Provider.QEMU.Measurements[9] = measurements.WithAllBytes(0x99, false)
+	cfg.Provider.QEMU.Measurements[12] = measurements.WithAllBytes(0xcc, false)
 	require.NoError(fileHandler.WriteYAML(constants.ConfigFilename, cfg, file.OptNone))
 
 	ctx := context.Background()
@@ -418,14 +408,14 @@ type testValidator struct {
 func (v *testValidator) Validate(attDoc []byte, nonce []byte) ([]byte, error) {
 	var attestation struct {
 		UserData []byte
-		PCRs     measurements.M
+		PCRs     map[uint32][]byte
 	}
 	if err := json.Unmarshal(attDoc, &attestation); err != nil {
 		return nil, err
 	}
 
 	for k, pcr := range v.pcrs {
-		if !bytes.Equal(attestation.PCRs[k], pcr) {
+		if !bytes.Equal(attestation.PCRs[k], pcr.Expected[:]) {
 			return nil, errors.New("invalid PCR value")
 		}
 	}
@@ -434,14 +424,14 @@ func (v *testValidator) Validate(attDoc []byte, nonce []byte) ([]byte, error) {
 
 type testIssuer struct {
 	oid.Getter
-	pcrs measurements.M
+	pcrs map[uint32][]byte
 }
 
 func (i *testIssuer) Issue(userData []byte, nonce []byte) ([]byte, error) {
 	return json.Marshal(
 		struct {
 			UserData []byte
-			PCRs     measurements.M
+			PCRs     map[uint32][]byte
 		}{
 			UserData: userData,
 			PCRs:     i.pcrs,
@@ -474,21 +464,21 @@ func defaultConfigWithExpectedMeasurements(t *testing.T, conf *config.Config, cs
 		conf.Provider.Azure.ResourceGroup = "test-resource-group"
 		conf.Provider.Azure.AppClientID = "01234567-0123-0123-0123-0123456789ab"
 		conf.Provider.Azure.ClientSecretValue = "test-client-secret"
-		conf.Provider.Azure.Measurements[4] = measurements.PCRWithAllBytes(0x44)
-		conf.Provider.Azure.Measurements[9] = measurements.PCRWithAllBytes(0x11)
-		conf.Provider.Azure.Measurements[12] = measurements.PCRWithAllBytes(0xcc)
+		conf.Provider.Azure.Measurements[4] = measurements.WithAllBytes(0x44, false)
+		conf.Provider.Azure.Measurements[9] = measurements.WithAllBytes(0x11, false)
+		conf.Provider.Azure.Measurements[12] = measurements.WithAllBytes(0xcc, false)
 	case cloudprovider.GCP:
 		conf.Provider.GCP.Region = "test-region"
 		conf.Provider.GCP.Project = "test-project"
 		conf.Provider.GCP.Zone = "test-zone"
 		conf.Provider.GCP.ServiceAccountKeyPath = "test-key-path"
-		conf.Provider.GCP.Measurements[4] = measurements.PCRWithAllBytes(0x44)
-		conf.Provider.GCP.Measurements[9] = measurements.PCRWithAllBytes(0x11)
-		conf.Provider.GCP.Measurements[12] = measurements.PCRWithAllBytes(0xcc)
+		conf.Provider.GCP.Measurements[4] = measurements.WithAllBytes(0x44, false)
+		conf.Provider.GCP.Measurements[9] = measurements.WithAllBytes(0x11, false)
+		conf.Provider.GCP.Measurements[12] = measurements.WithAllBytes(0xcc, false)
 	case cloudprovider.QEMU:
-		conf.Provider.QEMU.Measurements[4] = measurements.PCRWithAllBytes(0x44)
-		conf.Provider.QEMU.Measurements[9] = measurements.PCRWithAllBytes(0x11)
-		conf.Provider.QEMU.Measurements[12] = measurements.PCRWithAllBytes(0xcc)
+		conf.Provider.QEMU.Measurements[4] = measurements.WithAllBytes(0x44, false)
+		conf.Provider.QEMU.Measurements[9] = measurements.WithAllBytes(0x11, false)
+		conf.Provider.QEMU.Measurements[12] = measurements.WithAllBytes(0xcc, false)
 	}
 
 	conf.RemoveProviderExcept(csp)

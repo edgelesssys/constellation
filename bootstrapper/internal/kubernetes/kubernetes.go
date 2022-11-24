@@ -20,6 +20,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/k8sapi"
 	kubewaiter "github.com/edgelesssys/constellation/v2/bootstrapper/internal/kubernetes/kubeWaiter"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/azureshared"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/gcpshared"
@@ -52,33 +53,33 @@ type kubeAPIWaiter interface {
 
 // KubeWrapper implements Cluster interface.
 type KubeWrapper struct {
-	cloudProvider           string
-	clusterUtil             clusterUtil
-	helmClient              helmClient
-	kubeAPIWaiter           kubeAPIWaiter
-	configProvider          configurationProvider
-	client                  k8sapi.Client
-	kubeconfigReader        configReader
-	providerMetadata        ProviderMetadata
-	initialMeasurementsJSON []byte
-	getIPAddr               func() (string, error)
+	cloudProvider       string
+	clusterUtil         clusterUtil
+	helmClient          helmClient
+	kubeAPIWaiter       kubeAPIWaiter
+	configProvider      configurationProvider
+	client              k8sapi.Client
+	kubeconfigReader    configReader
+	providerMetadata    ProviderMetadata
+	initialMeasurements measurements.M
+	getIPAddr           func() (string, error)
 }
 
 // New creates a new KubeWrapper with real values.
 func New(cloudProvider string, clusterUtil clusterUtil, configProvider configurationProvider, client k8sapi.Client,
-	providerMetadata ProviderMetadata, initialMeasurementsJSON []byte, helmClient helmClient, kubeAPIWaiter kubeAPIWaiter,
+	providerMetadata ProviderMetadata, measurements measurements.M, helmClient helmClient, kubeAPIWaiter kubeAPIWaiter,
 ) *KubeWrapper {
 	return &KubeWrapper{
-		cloudProvider:           cloudProvider,
-		clusterUtil:             clusterUtil,
-		helmClient:              helmClient,
-		kubeAPIWaiter:           kubeAPIWaiter,
-		configProvider:          configProvider,
-		client:                  client,
-		kubeconfigReader:        &KubeconfigReader{fs: afero.Afero{Fs: afero.NewOsFs()}},
-		providerMetadata:        providerMetadata,
-		initialMeasurementsJSON: initialMeasurementsJSON,
-		getIPAddr:               getIPAddr,
+		cloudProvider:       cloudProvider,
+		clusterUtil:         clusterUtil,
+		helmClient:          helmClient,
+		kubeAPIWaiter:       kubeAPIWaiter,
+		configProvider:      configProvider,
+		client:              client,
+		kubeconfigReader:    &KubeconfigReader{fs: afero.Afero{Fs: afero.NewOsFs()}},
+		providerMetadata:    providerMetadata,
+		initialMeasurements: measurements,
+		getIPAddr:           getIPAddr,
 	}
 }
 
@@ -187,7 +188,21 @@ func (k *KubeWrapper) InitCluster(
 	} else {
 		controlPlaneIP = controlPlaneEndpoint
 	}
-	serviceConfig := constellationServicesConfig{k.initialMeasurementsJSON, idKeyDigest, measurementSalt, subnetworkPodCIDR, cloudServiceAccountURI, controlPlaneIP}
+	if err := k.initialMeasurements.SetEnforced(enforcedPCRs); err != nil {
+		return nil, err
+	}
+	measurementsJSON, err := json.Marshal(k.initialMeasurements)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling initial measurements: %w", err)
+	}
+	serviceConfig := constellationServicesConfig{
+		initialMeasurementsJSON: measurementsJSON,
+		idkeydigest:             idKeyDigest,
+		measurementSalt:         measurementSalt,
+		subnetworkPodCIDR:       subnetworkPodCIDR,
+		cloudServiceAccountURI:  cloudServiceAccountURI,
+		loadBalancerIP:          controlPlaneIP,
+	}
 	extraVals, err := k.setupExtraVals(ctx, serviceConfig)
 	if err != nil {
 		return nil, fmt.Errorf("setting up extraVals: %w", err)

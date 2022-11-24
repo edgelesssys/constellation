@@ -33,12 +33,12 @@ func TestUpdateMeasurements(t *testing.T) {
 			updater: &stubMeasurementsUpdater{
 				oldMeasurements: &corev1.ConfigMap{
 					Data: map[string]string{
-						constants.MeasurementsFilename: `{"0":"AAAAAA=="}`,
+						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`,
 					},
 				},
 			},
 			newMeasurements: measurements.M{
-				0: []byte("1"),
+				0: measurements.WithAllBytes(0xBB, false),
 			},
 			wantUpdate: true,
 		},
@@ -46,13 +46,39 @@ func TestUpdateMeasurements(t *testing.T) {
 			updater: &stubMeasurementsUpdater{
 				oldMeasurements: &corev1.ConfigMap{
 					Data: map[string]string{
-						constants.MeasurementsFilename: `{"0":"MQ=="}`,
+						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`,
 					},
 				},
 			},
 			newMeasurements: measurements.M{
-				0: []byte("1"),
+				0: measurements.WithAllBytes(0xAA, false),
 			},
+		},
+		"trying to set warnOnly to true results in error": {
+			updater: &stubMeasurementsUpdater{
+				oldMeasurements: &corev1.ConfigMap{
+					Data: map[string]string{
+						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`,
+					},
+				},
+			},
+			newMeasurements: measurements.M{
+				0: measurements.WithAllBytes(0xAA, true),
+			},
+			wantErr: true,
+		},
+		"setting warnOnly to false is allowed": {
+			updater: &stubMeasurementsUpdater{
+				oldMeasurements: &corev1.ConfigMap{
+					Data: map[string]string{
+						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":true}}`,
+					},
+				},
+			},
+			newMeasurements: measurements.M{
+				0: measurements.WithAllBytes(0xAA, false),
+			},
+			wantUpdate: true,
 		},
 		"getCurrent error": {
 			updater: &stubMeasurementsUpdater{getErr: someErr},
@@ -62,7 +88,7 @@ func TestUpdateMeasurements(t *testing.T) {
 			updater: &stubMeasurementsUpdater{
 				oldMeasurements: &corev1.ConfigMap{
 					Data: map[string]string{
-						constants.MeasurementsFilename: `{"0":"AAAAAA=="}`,
+						constants.MeasurementsFilename: `{"0":{"expected":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","warnOnly":false}}`,
 					},
 				},
 				updateErr: someErr,
@@ -82,7 +108,7 @@ func TestUpdateMeasurements(t *testing.T) {
 
 			err := upgrader.updateMeasurements(context.Background(), tc.newMeasurements)
 			if tc.wantErr {
-				assert.ErrorIs(err, someErr)
+				assert.Error(err)
 				return
 			}
 

@@ -171,7 +171,7 @@ func main() {
 // We can use this to calculate the PCRs of the image locally.
 func exportPCRs() error {
 	// get TPM state
-	pcrs, err := vtpm.GetSelectedPCRs(vtpm.OpenVTPM, tpmClient.FullPcrSel(tpm2.AlgSHA256))
+	pcrs, err := vtpm.GetSelectedMeasurements(vtpm.OpenVTPM, tpmClient.FullPcrSel(tpm2.AlgSHA256))
 	if err != nil {
 		return err
 	}

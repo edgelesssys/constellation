@@ -7,9 +7,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config/instancetypes"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
@@ -222,4 +224,36 @@ func (c *Config) translateAzureInstanceTypeError(ut ut.Translator, fe validator.
 	}
 
 	return t
+}
+
+func validateNoPlaceholder(fl validator.FieldLevel) bool {
+	return len(getPlaceholderEntries(fl.Field().Interface().(Measurements))) == 0
+}
+
+func registerContainsPlaceholderError(ut ut.Translator) error {
+	return ut.Add("no_placeholders", "{0} placeholder values (repeated 1234...)", true)
+}
+
+func translateContainsPlaceholderError(ut ut.Translator, fe validator.FieldError) string {
+	placeholders := getPlaceholderEntries(fe.Value().(Measurements))
+	msg := fmt.Sprintf("Measurements %v contain", placeholders)
+	if len(placeholders) == 1 {
+		msg = fmt.Sprintf("Measurement %v contains", placeholders)
+	}
+
+	t, _ := ut.T("no_placeholders", msg)
+	return t
+}
+
+func getPlaceholderEntries(m Measurements) []uint32 {
+	var placeholders []uint32
+	placeholder := measurements.PlaceHolderMeasurement()
+
+	for idx, measurement := range m {
+		if bytes.Equal(measurement.Expected[:], placeholder.Expected[:]) {
+			placeholders = append(placeholders, idx)
+		}
+	}
+
+	return placeholders
 }

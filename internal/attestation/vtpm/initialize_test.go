@@ -11,6 +11,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/simulator"
 	"github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm/tpm2"
@@ -45,7 +46,7 @@ func TestMarkNodeAsBootstrapped(t *testing.T) {
 	require.NoError(err)
 
 	for i := range pcrs {
-		assert.NotEqual(pcrs[i].Pcrs[uint32(PCRIndexClusterID)], pcrsInitialized[i].Pcrs[uint32(PCRIndexClusterID)])
+		assert.NotEqual(pcrs[i].Pcrs[uint32(measurements.PCRIndexClusterID)], pcrsInitialized[i].Pcrs[uint32(measurements.PCRIndexClusterID)])
 	}
 }
 
@@ -76,7 +77,7 @@ func TestIsNodeInitialized(t *testing.T) {
 			require.NoError(err)
 			defer tpm.Close()
 			if tc.pcrValueClusterID != nil {
-				require.NoError(tpm2.PCREvent(tpm, PCRIndexClusterID, tc.pcrValueClusterID))
+				require.NoError(tpm2.PCREvent(tpm, measurements.PCRIndexClusterID, tc.pcrValueClusterID))
 			}
 			initialized, err := IsNodeBootstrapped(func() (io.ReadWriteCloser, error) {
 				return &simTPMNOPCloser{tpm}, nil

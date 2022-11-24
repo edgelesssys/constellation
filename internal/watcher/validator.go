@@ -9,7 +9,9 @@ package watcher
 import (
 	"encoding/asn1"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
@@ -19,6 +21,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/snp"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/azure/trustedlaunch"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/gcp"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/qemu"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -42,26 +45,26 @@ func NewValidator(log *logger.Logger, csp string, fileHandler file.Handler, azur
 	var newValidator newValidatorFunc
 	switch cloudprovider.FromString(csp) {
 	case cloudprovider.AWS:
-		newValidator = func(m map[uint32][]byte, e []uint32, _ []byte, _ bool, log *logger.Logger) atls.Validator {
-			return aws.NewValidator(m, e, log)
+		newValidator = func(m measurements.M, _ []byte, _ bool, log *logger.Logger) atls.Validator {
+			return aws.NewValidator(m, log)
 		}
 	case cloudprovider.Azure:
 		if azureCVM {
-			newValidator = func(m map[uint32][]byte, e []uint32, idkeydigest []byte, enforceIdKeyDigest bool, log *logger.Logger) atls.Validator {
-				return snp.NewValidator(m, e, idkeydigest, enforceIdKeyDigest, log)
+			newValidator = func(m measurements.M, idkeydigest []byte, enforceIdKeyDigest bool, log *logger.Logger) atls.Validator {
+				return snp.NewValidator(m, idkeydigest, enforceIdKeyDigest, log)
 			}
 		} else {
-			newValidator = func(m map[uint32][]byte, e []uint32, idkeydigest []byte, enforceIdKeyDigest bool, log *logger.Logger) atls.Validator {
-				return trustedlaunch.NewValidator(m, e, log)
+			newValidator = func(m measurements.M, idkeydigest []byte, enforceIdKeyDigest bool, log *logger.Logger) atls.Validator {
+				return trustedlaunch.NewValidator(m, log)
 			}
 		}
 	case cloudprovider.GCP:
-		newValidator = func(m map[uint32][]byte, e []uint32, _ []byte, _ bool, log *logger.Logger) atls.Validator {
-			return gcp.NewValidator(m, e, log)
+		newValidator = func(m measurements.M, _ []byte, _ bool, log *logger.Logger) atls.Validator {
+			return gcp.NewValidator(m, log)
 		}
 	case cloudprovider.QEMU:
-		newValidator = func(m map[uint32][]byte, e []uint32, _ []byte, _ bool, log *logger.Logger) atls.Validator {
-			return qemu.NewValidator(m, e, log)
+		newValidator = func(m measurements.M, _ []byte, _ bool, log *logger.Logger) atls.Validator {
+			return qemu.NewValidator(m, log)
 		}
 	default:
 		return nil, fmt.Errorf("unknown cloud service provider: %q", csp)
@@ -100,17 +103,24 @@ func (u *Updatable) Update() error {
 
 	u.log.Infof("Updating expected measurements")
 
-	var measurements map[uint32][]byte
+	var measurements measurements.M
 	if err := u.fileHandler.ReadJSON(filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename), &measurements); err != nil {
 		return err
 	}
-	u.log.Debugf("New measurements: %v", measurements)
+	u.log.Debugf("New measurements: %+v", measurements)
 
+	// handle legacy measurement format, where expected measurements and enforced measurements were stored in separate data structures
+	// TODO: remove with v2.4.0
 	var enforced []uint32
-	if err := u.fileHandler.ReadJSON(filepath.Join(constants.ServiceBasePath, constants.EnforcedPCRsFilename), &enforced); err != nil {
+	if err := u.fileHandler.ReadJSON(filepath.Join(constants.ServiceBasePath, constants.EnforcedPCRsFilename), &enforced); err == nil {
+		u.log.Debugf("Detected legacy format. Loading enforced PCRs...")
+		if err := measurements.SetEnforced(enforced); err != nil {
+			return err
+		}
+		u.log.Debugf("Merged measurements with enforced values: %+v", measurements)
+	} else if !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
-	u.log.Debugf("Enforced PCRs: %v", enforced)
 
 	var idkeydigest []byte
 	var enforceIDKeyDigest bool
@@ -138,9 +148,9 @@ func (u *Updatable) Update() error {
 		u.log.Debugf("New idkeydigest: %x", idkeydigest)
 	}
 
-	u.Validator = u.newValidator(measurements, enforced, idkeydigest, enforceIDKeyDigest, u.log)
+	u.Validator = u.newValidator(measurements, idkeydigest, enforceIDKeyDigest, u.log)
 
 	return nil
 }
 
-type newValidatorFunc func(measurements map[uint32][]byte, enforcedPCRs []uint32, idkeydigest []byte, enforceIdKeyDigest bool, log *logger.Logger) atls.Validator
+type newValidatorFunc func(measurements measurements.M, idkeydigest []byte, enforceIdKeyDigest bool, log *logger.Logger) atls.Validator

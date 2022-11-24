@@ -27,9 +27,9 @@ message InitRequest {
 }
 
 message InitResponse {
-    bytes kubeconfig = 1;
-    bytes owner_id = 2;
-    bytes cluster_id = 3;
+  bytes kubeconfig = 1;
+  bytes owner_id = 2;
+  bytes cluster_id = 3;
 }
 
 message KubernetesComponent {

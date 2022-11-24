@@ -12,61 +12,31 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 
-	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
-	"gopkg.in/yaml.v2"
+	"github.com/google/go-tpm/tpmutil"
+	"go.uber.org/multierr"
+	"gopkg.in/yaml.v3"
+)
+
+const (
+	// PCRIndexClusterID is a PCR we extend to mark the node as initialized.
+	// The value used to extend is a random generated 32 Byte value.
+	PCRIndexClusterID = tpmutil.Handle(15)
+	// PCRIndexOwnerID is a PCR we extend to mark the node as initialized.
+	// The value used to extend is derived from Constellation's master key.
+	// TODO: move to stable, non-debug PCR before use.
+	PCRIndexOwnerID = tpmutil.Handle(16)
 )
 
 // M are Platform Configuration Register (PCR) values that make up the Measurements.
-type M map[uint32][]byte
-
-// PCRWithAllBytes returns a PCR value where all 32 bytes are set to b.
-func PCRWithAllBytes(b byte) []byte {
-	return bytes.Repeat([]byte{b}, 32)
-}
-
-// DefaultsFor provides the default measurements for given cloud provider.
-func DefaultsFor(provider cloudprovider.Provider) M {
-	switch provider {
-	case cloudprovider.AWS:
-		return M{
-			8:                              PCRWithAllBytes(0x00),
-			11:                             PCRWithAllBytes(0x00),
-			13:                             PCRWithAllBytes(0x00),
-			uint32(vtpm.PCRIndexClusterID): PCRWithAllBytes(0x00),
-		}
-	case cloudprovider.Azure:
-		return M{
-			8:                              PCRWithAllBytes(0x00),
-			11:                             PCRWithAllBytes(0x00),
-			13:                             PCRWithAllBytes(0x00),
-			uint32(vtpm.PCRIndexClusterID): PCRWithAllBytes(0x00),
-		}
-	case cloudprovider.GCP:
-		return M{
-			0:                              {0x0F, 0x35, 0xC2, 0x14, 0x60, 0x8D, 0x93, 0xC7, 0xA6, 0xE6, 0x8A, 0xE7, 0x35, 0x9B, 0x4A, 0x8B, 0xE5, 0xA0, 0xE9, 0x9E, 0xEA, 0x91, 0x07, 0xEC, 0xE4, 0x27, 0xC4, 0xDE, 0xA4, 0xE4, 0x39, 0xCF},
-			8:                              PCRWithAllBytes(0x00),
-			11:                             PCRWithAllBytes(0x00),
-			13:                             PCRWithAllBytes(0x00),
-			uint32(vtpm.PCRIndexClusterID): PCRWithAllBytes(0x00),
-		}
-	case cloudprovider.QEMU:
-		return M{
-			8:                              PCRWithAllBytes(0x00),
-			11:                             PCRWithAllBytes(0x00),
-			13:                             PCRWithAllBytes(0x00),
-			uint32(vtpm.PCRIndexClusterID): PCRWithAllBytes(0x00),
-		}
-	default:
-		return nil
-	}
-}
+type M map[uint32]Measurement
 
 // FetchAndVerify fetches measurement and signature files via provided URLs,
 // using client for download. The publicKey is used to verify the measurements.
@@ -83,8 +53,14 @@ func (m *M) FetchAndVerify(ctx context.Context, client *http.Client, measurement
 	if err := sigstore.VerifySignature(measurements, signature, publicKey); err != nil {
 		return "", err
 	}
-	if err := yaml.NewDecoder(bytes.NewReader(measurements)).Decode(&m); err != nil {
-		return "", err
+
+	if err := json.Unmarshal(measurements, m); err != nil {
+		if yamlErr := yaml.Unmarshal(measurements, m); yamlErr != nil {
+			return "", multierr.Append(
+				err,
+				fmt.Errorf("trying yaml format: %w", yamlErr),
+			)
+		}
 	}
 
 	shaHash := sha256.Sum256(measurements)
@@ -94,56 +70,229 @@ func (m *M) FetchAndVerify(ctx context.Context, client *http.Client, measurement
 
 // CopyFrom copies over all values from other. Overwriting existing values,
 // but keeping not specified values untouched.
-func (m M) CopyFrom(other M) {
+func (m *M) CopyFrom(other M) {
 	for idx := range other {
-		m[idx] = other[idx]
+		(*m)[idx] = other[idx]
 	}
 }
 
 // EqualTo tests whether the provided other Measurements are equal to these
 // measurements.
-func (m M) EqualTo(other M) bool {
-	if len(m) != len(other) {
+func (m *M) EqualTo(other M) bool {
+	if len(*m) != len(other) {
 		return false
 	}
-	for k, v := range m {
-		if !bytes.Equal(v, other[k]) {
+	for k, v := range *m {
+		otherExpected := other[k].Expected
+		if !bytes.Equal(v.Expected[:], otherExpected[:]) {
+			return false
+		}
+		if v.WarnOnly != other[k].WarnOnly {
 			return false
 		}
 	}
 	return true
 }
 
-// MarshalYAML overwrites the default behaviour of writing out []byte not as
-// single bytes, but as a single base64 encoded string.
-func (m M) MarshalYAML() (any, error) {
-	base64Map := make(map[uint32]string)
-
-	for key, value := range m {
-		base64Map[key] = base64.StdEncoding.EncodeToString(value[:])
+// GetEnforced returns a list of all enforced Measurements,
+// i.e. all Measurements that are not marked as WarnOnly.
+func (m *M) GetEnforced() []uint32 {
+	var enforced []uint32
+	for idx, measurement := range *m {
+		if !measurement.WarnOnly {
+			enforced = append(enforced, idx)
+		}
 	}
-
-	return base64Map, nil
+	return enforced
 }
 
-// UnmarshalYAML overwrites the default behaviour of reading []byte not as
-// single bytes, but as a single base64 encoded string.
-func (m *M) UnmarshalYAML(unmarshal func(any) error) error {
-	base64Map := make(map[uint32]string)
-	err := unmarshal(base64Map)
-	if err != nil {
-		return err
+// SetEnforced sets the WarnOnly flag to true for all Measurements
+// that are NOT included in the provided list of enforced measurements.
+func (m *M) SetEnforced(enforced []uint32) error {
+	newM := make(M)
+
+	// set all measurements to warn only
+	for idx, measurement := range *m {
+		newM[idx] = Measurement{
+			Expected: measurement.Expected,
+			WarnOnly: true,
+		}
 	}
 
-	*m = make(M)
-	for key, value := range base64Map {
-		measurement, err := base64.StdEncoding.DecodeString(value)
-		if err != nil {
-			return err
+	// set enforced measurements from list
+	for _, idx := range enforced {
+		measurement, ok := newM[idx]
+		if !ok {
+			return fmt.Errorf("measurement %d not in list, but set to enforced", idx)
 		}
-		(*m)[key] = measurement
+		measurement.WarnOnly = false
+		newM[idx] = measurement
+	}
+
+	*m = newM
+	return nil
+}
+
+// Measurement wraps expected PCR value and whether it is enforced.
+type Measurement struct {
+	// Expected measurement value.
+	Expected [32]byte `json:"expected" yaml:"expected"`
+	// WarnOnly if set to true, a mismatching measurement will only result in a warning.
+	WarnOnly bool `json:"warnOnly" yaml:"warnOnly"`
+}
+
+// UnmarshalJSON reads a Measurement either as json object,
+// or as a simple hex or base64 encoded string.
+func (m *Measurement) UnmarshalJSON(b []byte) error {
+	var eM encodedMeasurement
+	if err := json.Unmarshal(b, &eM); err != nil {
+		// Unmarshalling failed, Measurement might be in legacy format,
+		// meaning a simple string instead of Measurement struct.
+		// TODO: remove with v2.4.0
+		if legacyErr := json.Unmarshal(b, &eM.Expected); legacyErr != nil {
+			return multierr.Append(
+				err,
+				fmt.Errorf("trying legacy format: %w", legacyErr),
+			)
+		}
+	}
+
+	if err := m.unmarshal(eM); err != nil {
+		return fmt.Errorf("unmarshalling json: %w", err)
 	}
 	return nil
+}
+
+// MarshalJSON writes out a Measurement with Expected encoded as a hex string.
+func (m Measurement) MarshalJSON() ([]byte, error) {
+	return json.Marshal(encodedMeasurement{
+		Expected: hex.EncodeToString(m.Expected[:]),
+		WarnOnly: m.WarnOnly,
+	})
+}
+
+// UnmarshalYAML reads a Measurement either as yaml object,
+// or as a simple hex or base64 encoded string.
+func (m *Measurement) UnmarshalYAML(unmarshal func(any) error) error {
+	var eM encodedMeasurement
+	if err := unmarshal(&eM); err != nil {
+		// Unmarshalling failed, Measurement might be in legacy format,
+		// meaning a simple string instead of Measurement struct.
+		// TODO: remove with v2.4.0
+		if legacyErr := unmarshal(&eM.Expected); legacyErr != nil {
+			return multierr.Append(
+				err,
+				fmt.Errorf("trying legacy format: %w", legacyErr),
+			)
+		}
+	}
+
+	if err := m.unmarshal(eM); err != nil {
+		return fmt.Errorf("unmarshalling yaml: %w", err)
+	}
+	return nil
+}
+
+// MarshalYAML writes out a Measurement with Expected encoded as a hex string.
+func (m Measurement) MarshalYAML() (any, error) {
+	return encodedMeasurement{
+		Expected: hex.EncodeToString(m.Expected[:]),
+		WarnOnly: m.WarnOnly,
+	}, nil
+}
+
+// unmarshal parses a hex or base64 encoded Measurement.
+func (m *Measurement) unmarshal(eM encodedMeasurement) error {
+	expected, err := hex.DecodeString(eM.Expected)
+	if err != nil {
+		// expected value might be in base64 legacy format
+		// TODO: Remove with v2.4.0
+		hexErr := err
+		expected, err = base64.StdEncoding.DecodeString(eM.Expected)
+		if err != nil {
+			return multierr.Append(
+				fmt.Errorf("invalid measurement: not a hex string %w", hexErr),
+				fmt.Errorf("not a base64 string: %w", err),
+			)
+		}
+	}
+
+	if len(expected) != 32 {
+		return fmt.Errorf("invalid measurement: invalid length: %d", len(expected))
+	}
+
+	m.Expected = *(*[32]byte)(expected)
+	m.WarnOnly = eM.WarnOnly
+
+	return nil
+}
+
+// WithAllBytes returns a measurement value where all 32 bytes are set to b.
+func WithAllBytes(b byte, warnOnly bool) Measurement {
+	return Measurement{
+		Expected: *(*[32]byte)(bytes.Repeat([]byte{b}, 32)),
+		WarnOnly: warnOnly,
+	}
+}
+
+// DefaultsFor provides the default measurements for given cloud provider.
+func DefaultsFor(provider cloudprovider.Provider) M {
+	switch provider {
+	case cloudprovider.AWS:
+		return M{
+			4:                         PlaceHolderMeasurement(),
+			8:                         WithAllBytes(0x00, false),
+			9:                         PlaceHolderMeasurement(),
+			11:                        WithAllBytes(0x00, false),
+			12:                        PlaceHolderMeasurement(),
+			13:                        WithAllBytes(0x00, false),
+			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
+		}
+	case cloudprovider.Azure:
+		return M{
+			4:                         PlaceHolderMeasurement(),
+			8:                         WithAllBytes(0x00, false),
+			9:                         PlaceHolderMeasurement(),
+			11:                        WithAllBytes(0x00, false),
+			12:                        PlaceHolderMeasurement(),
+			13:                        WithAllBytes(0x00, false),
+			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
+		}
+	case cloudprovider.GCP:
+		return M{
+			0: {
+				Expected: [32]byte{0x0F, 0x35, 0xC2, 0x14, 0x60, 0x8D, 0x93, 0xC7, 0xA6, 0xE6, 0x8A, 0xE7, 0x35, 0x9B, 0x4A, 0x8B, 0xE5, 0xA0, 0xE9, 0x9E, 0xEA, 0x91, 0x07, 0xEC, 0xE4, 0x27, 0xC4, 0xDE, 0xA4, 0xE4, 0x39, 0xCF},
+				WarnOnly: false,
+			},
+			4:                         PlaceHolderMeasurement(),
+			8:                         WithAllBytes(0x00, false),
+			9:                         PlaceHolderMeasurement(),
+			11:                        WithAllBytes(0x00, false),
+			12:                        PlaceHolderMeasurement(),
+			13:                        WithAllBytes(0x00, false),
+			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
+		}
+	case cloudprovider.QEMU:
+		return M{
+			4:                         PlaceHolderMeasurement(),
+			8:                         WithAllBytes(0x00, false),
+			9:                         PlaceHolderMeasurement(),
+			11:                        WithAllBytes(0x00, false),
+			12:                        PlaceHolderMeasurement(),
+			13:                        WithAllBytes(0x00, false),
+			uint32(PCRIndexClusterID): WithAllBytes(0x00, false),
+		}
+	default:
+		return nil
+	}
+}
+
+// PlaceHolderMeasurement returns a measurement with placeholder values for Expected.
+func PlaceHolderMeasurement() Measurement {
+	return Measurement{
+		Expected: *(*[32]byte)(bytes.Repeat([]byte{0x12, 0x34}, 16)),
+		WarnOnly: false,
+	}
 }
 
 func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([]byte, error) {
@@ -165,4 +314,9 @@ func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([
 		return []byte{}, err
 	}
 	return content, nil
+}
+
+type encodedMeasurement struct {
+	Expected string `json:"expected" yaml:"expected"`
+	WarnOnly bool   `json:"warnOnly" yaml:"warnOnly"`
 }

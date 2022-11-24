@@ -8,7 +8,7 @@ package main
 
 import (
 	"bytes"
-	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -17,67 +17,13 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm-tools/proto/tpm"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m,
-		// https://github.com/census-instrumentation/opencensus-go/issues/1262
-		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
-	)
-}
-
-func TestExportToFile(t *testing.T) {
-	testCases := map[string]struct {
-		pcrs    measurements.M
-		fs      *afero.Afero
-		wantErr bool
-	}{
-		"file not writeable": {
-			pcrs: measurements.M{
-				0: {0x1, 0x2, 0x3},
-				1: {0x1, 0x2, 0x3},
-				2: {0x1, 0x2, 0x3},
-			},
-			fs:      &afero.Afero{Fs: afero.NewReadOnlyFs(afero.NewMemMapFs())},
-			wantErr: true,
-		},
-		"file writeable": {
-			pcrs: measurements.M{
-				0: {0x1, 0x2, 0x3},
-				1: {0x1, 0x2, 0x3},
-				2: {0x1, 0x2, 0x3},
-			},
-			fs:      &afero.Afero{Fs: afero.NewMemMapFs()},
-			wantErr: false,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-			require := require.New(t)
-
-			path := "test-file"
-			err := exportToFile(path, tc.pcrs, tc.fs)
-			if tc.wantErr {
-				assert.Error(err)
-			} else {
-				assert.NoError(err)
-				content, err := tc.fs.ReadFile(path)
-				require.NoError(err)
-
-				for _, pcr := range tc.pcrs {
-					for _, register := range pcr {
-						assert.Contains(string(content), fmt.Sprintf("%#02X", register))
-					}
-				}
-			}
-		})
-	}
+	goleak.VerifyTestMain(m)
 }
 
 func TestValidatePCRAttDoc(t *testing.T) {
@@ -106,7 +52,7 @@ func TestValidatePCRAttDoc(t *testing.T) {
 						{
 							Pcrs: &tpm.PCRs{
 								Hash: tpm.HashAlgo_SHA256,
-								Pcrs: measurements.M{
+								Pcrs: map[uint32][]byte{
 									0: {0x1, 0x2, 0x3},
 								},
 							},
@@ -123,8 +69,8 @@ func TestValidatePCRAttDoc(t *testing.T) {
 						{
 							Pcrs: &tpm.PCRs{
 								Hash: tpm.HashAlgo_SHA256,
-								Pcrs: measurements.M{
-									0: measurements.PCRWithAllBytes(0xAA),
+								Pcrs: map[uint32][]byte{
+									0: bytes.Repeat([]byte{0xAA}, 32),
 								},
 							},
 						},
@@ -150,7 +96,10 @@ func TestValidatePCRAttDoc(t *testing.T) {
 				require.NoError(json.Unmarshal(tc.attDocRaw, &attDoc))
 				qIdx, err := vtpm.GetSHA256QuoteIndex(attDoc.Attestation.Quotes)
 				require.NoError(err)
-				assert.EqualValues(attDoc.Attestation.Quotes[qIdx].Pcrs.Pcrs, pcrs)
+
+				for pcrIdx, pcrVal := range pcrs {
+					assert.Equal(pcrVal.Expected[:], attDoc.Attestation.Quotes[qIdx].Pcrs.Pcrs[pcrIdx])
+				}
 			}
 		})
 	}
@@ -164,31 +113,15 @@ func mustMarshalAttDoc(t *testing.T, attDoc vtpm.AttestationDocument) []byte {
 
 func TestPrintPCRs(t *testing.T) {
 	testCases := map[string]struct {
-		pcrs   measurements.M
 		format string
 	}{
 		"json": {
-			pcrs: measurements.M{
-				0: {0x1, 0x2, 0x3},
-				1: {0x1, 0x2, 0x3},
-				2: {0x1, 0x2, 0x3},
-			},
 			format: "json",
 		},
 		"empty format": {
-			pcrs: measurements.M{
-				0: {0x1, 0x2, 0x3},
-				1: {0x1, 0x2, 0x3},
-				2: {0x1, 0x2, 0x3},
-			},
 			format: "",
 		},
 		"yaml": {
-			pcrs: measurements.M{
-				0: {0x1, 0x2, 0x3},
-				1: {0x1, 0x2, 0x3},
-				2: {0x1, 0x2, 0x3},
-			},
 			format: "yaml",
 		},
 	}
@@ -197,13 +130,19 @@ func TestPrintPCRs(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
+			pcrs := measurements.M{
+				0: measurements.WithAllBytes(0xAA, true),
+				1: measurements.WithAllBytes(0xBB, true),
+				2: measurements.WithAllBytes(0xCC, true),
+			}
+
 			var out bytes.Buffer
-			err := printPCRs(&out, tc.pcrs, tc.format)
+			err := printPCRs(&out, pcrs, tc.format)
 			assert.NoError(err)
 
-			for idx, pcr := range tc.pcrs {
+			for idx, pcr := range pcrs {
 				assert.Contains(out.String(), fmt.Sprintf("%d", idx))
-				assert.Contains(out.String(), base64.StdEncoding.EncodeToString(pcr))
+				assert.Contains(out.String(), hex.EncodeToString(pcr.Expected[:]))
 			}
 		})
 	}

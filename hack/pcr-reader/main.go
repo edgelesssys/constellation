@@ -24,23 +24,23 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
-	"github.com/spf13/afero"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"gopkg.in/yaml.v3"
 )
 
-var (
-	coordIP = flag.String("constell-ip", "", "Public IP of the Constellation")
-	port    = flag.String("constell-port", strconv.Itoa(constants.VerifyServiceNodePortGRPC), "NodePort of the Constellation's verification service")
-	export  = flag.String("o", "", "Write PCRs, formatted as Go code, to file")
-	format  = flag.String("format", "json", "Output format: json, yaml (default json)")
-	quiet   = flag.Bool("q", false, "Set to disable output")
-	timeout = flag.Duration("timeout", 2*time.Minute, "Wait this duration for the verification service to become available")
-)
-
 func main() {
+	coordIP := flag.String("constell-ip", "", "Public IP of the Constellation")
+	port := flag.String("constell-port", strconv.Itoa(constants.VerifyServiceNodePortGRPC), "NodePort of the Constellation's verification service")
+	format := flag.String("format", "json", "Output format: json, yaml (default json)")
+	quiet := flag.Bool("q", false, "Set to disable output")
+	timeout := flag.Duration("timeout", 2*time.Minute, "Wait this duration for the verification service to become available")
 	flag.Parse()
+
+	if *coordIP == "" || *port == "" {
+		flag.Usage()
+		os.Exit(1)
+	}
 
 	addr := net.JoinHostPort(*coordIP, *port)
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
@@ -51,18 +51,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	pcrs, err := validatePCRAttDoc(attDocRaw)
+	measurements, err := validatePCRAttDoc(attDocRaw)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	if !*quiet {
-		if err := printPCRs(os.Stdout, pcrs, *format); err != nil {
-			log.Fatal(err)
-		}
-	}
-	if *export != "" {
-		if err := exportToFile(*export, pcrs, &afero.Afero{Fs: afero.NewOsFs()}); err != nil {
+		if err := printPCRs(os.Stdout, measurements, *format); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -104,16 +99,23 @@ func validatePCRAttDoc(attDocRaw []byte) (measurements.M, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	m := measurements.M{}
 	for idx, pcr := range attDoc.Attestation.Quotes[qIdx].Pcrs.Pcrs {
 		if len(pcr) != 32 {
 			return nil, fmt.Errorf("incomplete PCR at index: %d", idx)
 		}
+
+		m[idx] = measurements.Measurement{
+			Expected: *(*[32]byte)(pcr),
+			WarnOnly: true,
+		}
 	}
-	return attDoc.Attestation.Quotes[qIdx].Pcrs.Pcrs, nil
+	return m, nil
 }
 
-// printPCRs formates and prints PCRs to the given writer.
-// format can be one of 'json' or 'yaml'. If it doesnt match defaults to 'json'.
+// printPCRs formats and prints PCRs to the given writer.
+// format can be one of 'json' or 'yaml'. If it doesn't match defaults to 'json'.
 func printPCRs(w io.Writer, pcrs measurements.M, format string) error {
 	switch format {
 	case "json":
@@ -141,25 +143,4 @@ func printPCRsJSON(w io.Writer, pcrs measurements.M) error {
 	}
 	fmt.Fprintf(w, "%s", string(pcrJSON))
 	return nil
-}
-
-// exportToFile writes pcrs to a file, formatted to be valid Go code.
-// Validity of the PCR map is not checked, and should be handled by the caller.
-func exportToFile(path string, pcrs measurements.M, fs *afero.Afero) error {
-	goCode := `package pcrs
-
-var pcrs = map[uint32][]byte{%s
-}
-`
-	pcrsFormatted := ""
-	for i := 0; i < len(pcrs); i++ {
-		pcrHex := fmt.Sprintf("%#02X", pcrs[uint32(i)][0])
-		for j := 1; j < len(pcrs[uint32(i)]); j++ {
-			pcrHex = fmt.Sprintf("%s, %#02X", pcrHex, pcrs[uint32(i)][j])
-		}
-
-		pcrsFormatted = pcrsFormatted + fmt.Sprintf("\n\t%d: {%s},", i, pcrHex)
-	}
-
-	return fs.WriteFile(path, []byte(fmt.Sprintf(goCode, pcrsFormatted)), 0o644)
 }

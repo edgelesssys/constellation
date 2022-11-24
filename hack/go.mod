@@ -41,7 +41,6 @@ require (
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/google/go-tpm-tools v0.3.9
 	github.com/google/uuid v1.3.0
-	github.com/spf13/afero v1.9.3
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.1
 	go.uber.org/goleak v1.2.0
@@ -189,6 +188,7 @@ require (
 	github.com/sigstore/rekor v1.0.1 // indirect
 	github.com/sigstore/sigstore v1.4.5 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
+	github.com/spf13/afero v1.9.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/talos-systems/talos/pkg/machinery v1.2.7 // indirect
 	github.com/tent/canonical-json-go v0.0.0-20130607151641-96e4ba3a7613 // indirect

@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/atls"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -117,7 +118,7 @@ func TestUpdate(t *testing.T) {
 	require := require.New(t)
 
 	oid := fakeOID{1, 3, 9900, 1}
-	newValidator := func(m map[uint32][]byte, e []uint32, idkeydigest []byte, enforceIdKeyDigest bool, _ *logger.Logger) atls.Validator {
+	newValidator := func(m measurements.M, idkeydigest []byte, enforceIdKeyDigest bool, _ *logger.Logger) atls.Validator {
 		return fakeValidator{fakeOID: oid}
 	}
 	handler := file.NewHandler(afero.NewMemMapFs())
@@ -135,14 +136,7 @@ func TestUpdate(t *testing.T) {
 	// write measurement config
 	require.NoError(handler.WriteJSON(
 		filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
-		map[uint32][]byte{
-			11: {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
-		},
-		file.OptNone,
-	))
-	require.NoError(handler.WriteJSON(
-		filepath.Join(constants.ServiceBasePath, constants.EnforcedPCRsFilename),
-		[]uint32{11},
+		measurements.M{11: measurements.WithAllBytes(0x00, false)},
 	))
 	require.NoError(handler.Write(
 		filepath.Join(constants.ServiceBasePath, constants.IDKeyDigestFilename),
@@ -189,6 +183,23 @@ func TestUpdate(t *testing.T) {
 		defer resp.Body.Close()
 	}
 	assert.Error(err)
+
+	// update should work for legacy measurement format
+	// TODO: remove with v2.4.0
+	require.NoError(handler.WriteJSON(
+		filepath.Join(constants.ServiceBasePath, constants.MeasurementsFilename),
+		map[uint32][]byte{
+			11: bytes.Repeat([]byte{0x0}, 32),
+			12: bytes.Repeat([]byte{0x1}, 32),
+		},
+		file.OptOverwrite,
+	))
+	require.NoError(handler.WriteJSON(
+		filepath.Join(constants.ServiceBasePath, constants.EnforcedPCRsFilename),
+		[]uint32{11},
+	))
+
+	assert.NoError(validator.Update())
 }
 
 func TestUpdateConcurrency(t *testing.T) {
@@ -199,7 +210,7 @@ func TestUpdateConcurrency(t *testing.T) {
 	validator := &Updatable{
 		log:         logger.NewTest(t),
 		fileHandler: handler,
-		newValidator: func(m map[uint32][]byte, e []uint32, idkeydigest []byte, enforceIdKeyDigest bool, _ *logger.Logger) atls.Validator {
+		newValidator: func(m measurements.M, idkeydigest []byte, enforceIdKeyDigest bool, _ *logger.Logger) atls.Validator {
 			return fakeValidator{fakeOID: fakeOID{1, 3, 9900, 1}}
 		},
 	}

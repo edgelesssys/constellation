@@ -29,11 +29,10 @@ type Validator struct {
 }
 
 // NewValidator create a new Validator structure and returns it.
-func NewValidator(pcrs measurements.M, enforcedPCRs []uint32, log vtpm.AttestationLogger) *Validator {
+func NewValidator(pcrs measurements.M, log vtpm.AttestationLogger) *Validator {
 	v := &Validator{}
 	v.Validator = vtpm.NewValidator(
 		pcrs,
-		enforcedPCRs,
 		getTrustedKey,
 		v.tpmEnabled,
 		vtpm.VerifyPKCS1v15,
