@@ -4,6 +4,8 @@ This document describes breaking changes in the configuration file format betwee
 
 ## Migrating from CLI versions < 2.3
 
+- The `sshUsers` was deprecated in v2.2 and now has been eventually removed from the configuration in v2.3.
+  As an alternative for SSH, check the workflow section [Connect to nodes](https://constellation-docs.edgeless.systems/constellation/workflows/troubleshooting#connect-to-nodes).
 - The `image` field for each cloud service provider has been replaced with a global `image` field. Use the following mapping to migrate your configuration:
     <details>
     <summary>Show all</summary>
