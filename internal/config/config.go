@@ -73,6 +73,10 @@ type UpgradeConfig struct {
 	// description: |
 	//   Measurements of the updated image.
 	Measurements Measurements `yaml:"measurements"`
+	// description: |
+	//   temporary field for upgrade migration
+	//   TODO(AB#2654): Remove with refactoring upgrade plan command
+	CSP cloudprovider.Provider `yaml:"csp"`
 }
 
 // ProviderConfig are cloud-provider specific configuration values used by the CLI.

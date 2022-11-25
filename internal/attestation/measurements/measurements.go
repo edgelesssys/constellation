@@ -40,15 +40,18 @@ type M map[uint32]Measurement
 
 // WithMetadata is a struct supposed to provide CSP & image metadata next to measurements.
 type WithMetadata struct {
-	CSP          string `json:"csp" yaml:"csp"`
-	Image        string `json:"image" yaml:"image"`
-	Measurements M      `json:"measurements" yaml:"measurements"`
+	CSP          cloudprovider.Provider `json:"csp" yaml:"csp"`
+	Image        string                 `json:"image" yaml:"image"`
+	Measurements M                      `json:"measurements" yaml:"measurements"`
 }
 
 // FetchAndVerify fetches measurement and signature files via provided URLs,
 // using client for download. The publicKey is used to verify the measurements.
 // The hash of the fetched measurements is returned.
-func (m *M) FetchAndVerify(ctx context.Context, client *http.Client, measurementsURL *url.URL, signatureURL *url.URL, publicKey []byte) (string, error) {
+func (m *M) FetchAndVerify(
+	ctx context.Context, client *http.Client, measurementsURL, signatureURL *url.URL,
+	publicKey []byte, metadata WithMetadata,
+) (string, error) {
 	measurements, err := getFromURL(ctx, client, measurementsURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch measurements: %w", err)
@@ -61,14 +64,24 @@ func (m *M) FetchAndVerify(ctx context.Context, client *http.Client, measurement
 		return "", err
 	}
 
-	if err := json.Unmarshal(measurements, m); err != nil {
-		if yamlErr := yaml.Unmarshal(measurements, m); yamlErr != nil {
+	var mWithMetadata WithMetadata
+	if err := json.Unmarshal(measurements, &mWithMetadata); err != nil {
+		if yamlErr := yaml.Unmarshal(measurements, &mWithMetadata); yamlErr != nil {
 			return "", multierr.Append(
 				err,
 				fmt.Errorf("trying yaml format: %w", yamlErr),
 			)
 		}
 	}
+
+	if mWithMetadata.CSP != metadata.CSP {
+		return "", fmt.Errorf("invalid measurement metadata: CSP mismatch: expected %s, got %s", metadata.CSP, mWithMetadata.CSP)
+	}
+	if mWithMetadata.Image != metadata.Image {
+		return "", fmt.Errorf("invalid measurement metadata: image mismatch: expected %s, got %s", metadata.Image, mWithMetadata.Image)
+	}
+
+	*m = mWithMetadata.Measurements
 
 	shaHash := sha256.Sum256(measurements)
 

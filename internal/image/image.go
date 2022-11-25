@@ -125,12 +125,12 @@ func getFromFile(fs *afero.Afero, version string) ([]byte, error) {
 
 // getFromURL fetches the image lookup table from a URL.
 func getFromURL(ctx context.Context, client httpc, version string) ([]byte, error) {
-	url, err := url.Parse(constants.ImageVersionRepositoryURL)
+	url, err := url.Parse(constants.CDNRepositoryURL)
 	if err != nil {
 		return nil, fmt.Errorf("parsing image version repository URL: %w", err)
 	}
 	versionFilename := path.Base(version) + ".json"
-	url.Path = path.Join("constellation/v1/images", versionFilename)
+	url.Path = path.Join(constants.CDNImagePath, versionFilename)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), http.NoBody)
 	if err != nil {
 		return nil, err

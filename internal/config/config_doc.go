@@ -74,7 +74,7 @@ func init() {
 			FieldName: "upgrade",
 		},
 	}
-	UpgradeConfigDoc.Fields = make([]encoder.Doc, 2)
+	UpgradeConfigDoc.Fields = make([]encoder.Doc, 3)
 	UpgradeConfigDoc.Fields[0].Name = "image"
 	UpgradeConfigDoc.Fields[0].Type = "string"
 	UpgradeConfigDoc.Fields[0].Note = ""
@@ -85,6 +85,11 @@ func init() {
 	UpgradeConfigDoc.Fields[1].Note = ""
 	UpgradeConfigDoc.Fields[1].Description = "Measurements of the updated image."
 	UpgradeConfigDoc.Fields[1].Comments[encoder.LineComment] = "Measurements of the updated image."
+	UpgradeConfigDoc.Fields[2].Name = "csp"
+	UpgradeConfigDoc.Fields[2].Type = "Provider"
+	UpgradeConfigDoc.Fields[2].Note = ""
+	UpgradeConfigDoc.Fields[2].Description = "temporary field for upgrade migration\nTODO(AB#2654): Remove with refactoring upgrade plan command"
+	UpgradeConfigDoc.Fields[2].Comments[encoder.LineComment] = "temporary field for upgrade migration"
 
 	ProviderConfigDoc.Type = "ProviderConfig"
 	ProviderConfigDoc.Comments[encoder.LineComment] = "ProviderConfig are cloud-provider specific configuration values used by the CLI."
