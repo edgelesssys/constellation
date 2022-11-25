@@ -38,7 +38,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Check if image definition from build pipeline exists (fail-fast)
+      - name: Check if image definition from build pipeline exists
         run: |
           wget -O /dev/null https://cdn.confidential.cloud/constellation/v1/images/${{ github.event.inputs.osImage }}.json
         shell: bash
