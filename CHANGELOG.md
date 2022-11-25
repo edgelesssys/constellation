@@ -29,7 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 <!-- For changes in existing functionality.  -->
+<!-- TODO: Remove `/next/` from URL before release -->
 - Constellation operators are now deployed using Helm.
+- Updated the config version to v2. Check [how to migrate your config](https://constellation-docs.edgeless.systems/constellation/next/reference/config-migration).
 - OS images are now configured globally in the `images` field of the configuration file.
 
 ### Deprecated
@@ -38,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 <!-- For now removed features. -->
 - `access-manager` was removed from code base. K8s native way to SSH into nodes documented.
+- `SSHUsers` has been removed from the user configuration following the removal of `access-manager`.
 
 ### Fixed
 
