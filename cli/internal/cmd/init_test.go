@@ -65,6 +65,7 @@ func TestInitialize(t *testing.T) {
 		configMutator           func(*config.Config)
 		serviceAccKey           *gcpshared.ServiceAccountKey
 		initServerAPI           *stubInitServer
+		retriable               bool
 		masterSecretShouldExist bool
 		wantErr                 bool
 	}{
@@ -85,20 +86,31 @@ func TestInitialize(t *testing.T) {
 			idFile:        &clusterid.File{IP: "192.0.2.1"},
 			initServerAPI: &stubInitServer{initResp: testInitResp},
 		},
+		"non retriable error": {
+			provider:                cloudprovider.QEMU,
+			idFile:                  &clusterid.File{IP: "192.0.2.1"},
+			initServerAPI:           &stubInitServer{initErr: &nonRetriableError{someErr}},
+			retriable:               false,
+			masterSecretShouldExist: true,
+			wantErr:                 true,
+		},
 		"empty id file": {
 			provider:      cloudprovider.GCP,
 			idFile:        &clusterid.File{},
 			initServerAPI: &stubInitServer{},
+			retriable:     true,
 			wantErr:       true,
 		},
 		"no id file": {
-			provider: cloudprovider.GCP,
-			wantErr:  true,
+			provider:  cloudprovider.GCP,
+			retriable: true,
+			wantErr:   true,
 		},
 		"init call fails": {
 			provider:      cloudprovider.GCP,
 			idFile:        &clusterid.File{IP: "192.0.2.1"},
 			initServerAPI: &stubInitServer{initErr: someErr},
+			retriable:     true,
 			wantErr:       true,
 		},
 	}
@@ -156,6 +168,11 @@ func TestInitialize(t *testing.T) {
 
 			if tc.wantErr {
 				assert.Error(err)
+				if !tc.retriable {
+					assert.Contains(errOut.String(), "This error is not recoverable")
+				} else {
+					assert.Empty(errOut.String())
+				}
 				if !tc.masterSecretShouldExist {
 					_, err = fileHandler.Stat(constants.MasterSecretFilename)
 					assert.Error(err)

@@ -132,18 +132,21 @@
       "prPriority": 15
     },
     {
+      "matchPackageNames": [
+        "^k8s.io/client-go"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "enabled": false
+    },
+    {
       "matchLanguages": [
         "python",
         "js",
         "node"
       ],
       "prPriority": -20
-    },
-    {
-      "matchPackageNames": [
-        "^errata-ai/vale-action$"
-      ],
-      "allowedVersions": ">2.0.1"
     },
     {
       "matchManagers": ["github-actions"],

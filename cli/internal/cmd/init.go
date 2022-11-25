@@ -9,6 +9,7 @@ package cmd
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -116,7 +117,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 	if err != nil {
 		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
 	}
-	helmLoader := helm.New(provider, k8sVersion)
+	helmLoader := helm.NewLoader(provider, k8sVersion)
 	helmDeployments, err := helmLoader.Load(conf, flags.conformance, masterSecret.Key, masterSecret.Salt)
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
@@ -141,6 +142,11 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 	resp, err := initCall(cmd.Context(), newDialer(validator), idFile.IP, req)
 	spinner.Stop()
 	if err != nil {
+		var nonRetriable *nonRetriableError
+		if errors.As(err, &nonRetriable) {
+			cmd.PrintErrln("Cluster initialization failed. This error is not recoverable.")
+			cmd.PrintErrln("Terminate your cluster and try again.")
+		}
 		return err
 	}
 
@@ -181,7 +187,7 @@ func (d *initDoer) Do(ctx context.Context) error {
 	protoClient := initproto.NewAPIClient(conn)
 	resp, err := protoClient.Init(ctx, d.req)
 	if err != nil {
-		return fmt.Errorf("init call: %w", err)
+		return &nonRetriableError{fmt.Errorf("init call: %w", err)}
 	}
 	d.resp = resp
 	return nil
@@ -338,4 +344,18 @@ func getMarshaledServiceAccountURI(provider cloudprovider.Provider, config *conf
 
 type grpcDialer interface {
 	Dial(ctx context.Context, target string) (*grpc.ClientConn, error)
+}
+
+type nonRetriableError struct {
+	err error
+}
+
+// Error returns the error message.
+func (e *nonRetriableError) Error() string {
+	return e.err.Error()
+}
+
+// Unwrap returns the wrapped error.
+func (e *nonRetriableError) Unwrap() error {
+	return e.err
 }
