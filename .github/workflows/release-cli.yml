@@ -71,7 +71,7 @@ jobs:
           HASHESB64=$(echo "${HASHES}" | base64 -w0)
           echo "${HASHES}"
           echo "${HASHESB64}"
-          echo provenance-subjects=${HASHESB64} >> $GITHUB_OUTPUT
+          echo provenance-subjects="${HASHESB64}" >> "$GITHUB_OUTPUT"
 
   versions-manifest:
     runs-on: ubuntu-22.04
