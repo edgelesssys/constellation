@@ -87,7 +87,7 @@ func TestInitialResources(t *testing.T) {
 
 			k8sClient := &stubK8sClient{createErr: tc.createErr}
 			scalingGroupGetter := newScalingGroupGetter(tc.items, tc.imageErr, tc.nameErr, tc.listErr)
-			err := InitialResources(context.Background(), k8sClient, scalingGroupGetter, "uid")
+			err := InitialResources(context.Background(), k8sClient, &stubImageInfo{}, scalingGroupGetter, "uid")
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -183,6 +183,7 @@ func TestCreateNodeImage(t *testing.T) {
 				},
 				Spec: updatev1alpha1.NodeImageSpec{
 					ImageReference: "image-reference",
+					ImageVersion:   "image-version",
 				},
 			},
 		},
@@ -199,6 +200,7 @@ func TestCreateNodeImage(t *testing.T) {
 				},
 				Spec: updatev1alpha1.NodeImageSpec{
 					ImageReference: "image-reference",
+					ImageVersion:   "image-version",
 				},
 			},
 		},
@@ -210,7 +212,7 @@ func TestCreateNodeImage(t *testing.T) {
 			require := require.New(t)
 
 			k8sClient := &stubK8sClient{createErr: tc.createErr}
-			err := createNodeImage(context.Background(), k8sClient, "image-reference")
+			err := createNodeImage(context.Background(), k8sClient, "image-reference", "image-version")
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -295,6 +297,15 @@ type stubK8sClient struct {
 func (s *stubK8sClient) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
 	s.createdObjects = append(s.createdObjects, obj)
 	return s.createErr
+}
+
+type stubImageInfo struct {
+	imageVersion string
+	err          error
+}
+
+func (s stubImageInfo) ImageVersion(_ string) (string, error) {
+	return s.imageVersion, s.err
 }
 
 type stubScalingGroupGetter struct {

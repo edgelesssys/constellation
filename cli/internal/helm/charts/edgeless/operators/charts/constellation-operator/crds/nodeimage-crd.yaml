@@ -36,6 +36,10 @@ spec:
               image:
                 description: ImageReference is the image to use for all nodes.
                 type: string
+              imageVersion:
+                description: ImageVersion is the CSP independent version of the image
+                  to use for all nodes.
+                type: string
             type: object
           status:
             description: NodeImageStatus defines the observed state of NodeImage.
