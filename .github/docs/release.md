@@ -90,8 +90,7 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
     12. [Generate measurements](/.github/workflows/generate-measurements.yml) for the images.
 
         ```sh
-           gh workflow run generate-measurements.yml --ref release/v$minor -F osImage=v$ver -F isDebugImage=false
-           gh workflow run generate-measurements.yml --ref release/v$minor -F osImage=v$ver -F isDebugImage=false
+           gh workflow run generate-measurements.yml --ref release/v$minor -F osImage=v$ver -F isDebugImage=false -F signMeasurements=true
         ```
 
     13. Create a new tag on this release branch
