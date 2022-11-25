@@ -87,11 +87,10 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=gcp -F machineType=n2d-standard-4 -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false
         ```
 
-    12. [Generate measurements](/.github/workflows/generate-measurements.yml) for the images on each CSP.
+    12. [Generate measurements](/.github/workflows/generate-measurements.yml) for the images.
 
         ```sh
-           gh workflow run generate-measurements.yml --ref release/v$minor -F cloudProvider=azure -F osImage=v$ver -F isDebugImage=false
-           gh workflow run generate-measurements.yml --ref release/v$minor -F cloudProvider=gcp -F osImage=v$ver -F isDebugImage=false
+           gh workflow run generate-measurements.yml --ref release/v$minor -F osImage=v$ver -F isDebugImage=false -F signMeasurements=true
         ```
 
     13. Create a new tag on this release branch
@@ -142,11 +141,3 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
     ```
 
 10. Test Constellation mini up
-
-11. Upload AWS measurements to S3 bucket:
-    * Create an AWS cluster using the released version.
-    * Use `hack/pcr-reader` to download measurements.
-    * Create a new folder named after each AWS AMI in [S3 public bucket](https://s3.console.aws.amazon.com/s3/buckets/public-edgeless-constellation?region=us-east-2&tab=objects).
-    * Keep measurements: 4, 8, 9, 11, 12, 13.
-    * Sign the measurements using `cosign sign-blob`.
-    * Upload both `measurements.yaml` & `measurements.yaml.sig` to each created folder in S3.

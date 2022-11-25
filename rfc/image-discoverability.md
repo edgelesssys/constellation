@@ -126,9 +126,9 @@ The format of the image measurements is described in the [secure software distri
 The image measurements are stored in a folder structure in S3 that is organized by CSP and `image version uid`.
 
 ```
-s3://<BUCKET-NAME>/constellation/v1/measurements/<CSP>/<IMAGE-VERSION-UID>/measurements.json
-s3://<BUCKET-NAME>/constellation/v1/measurements/<CSP>/<IMAGE-VERSION-UID>/measurements.json.sig
-s3://<BUCKET-NAME>/constellation/v1/measurements/<CSP>/<IMAGE-VERSION-UID>/measurements.image.json
+s3://<BUCKET-NAME>/constellation/v1/measurements/<IMAGE-VERSION-UID>/<CSP>/measurements.json
+s3://<BUCKET-NAME>/constellation/v1/measurements/<IMAGE-VERSION-UID>/<CSP>/measurements.json.sig
+s3://<BUCKET-NAME>/constellation/v1/measurements/<IMAGE-VERSION-UID>/<CSP>/measurements.image.json
 ```
 
 ## CLI image discovery
