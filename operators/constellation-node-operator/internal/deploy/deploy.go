@@ -18,10 +18,12 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // InitialResources creates the initial resources for the node operator.
-func InitialResources(ctx context.Context, k8sClient client.Writer, scalingGroupGetter scalingGroupGetter, uid string) error {
+func InitialResources(ctx context.Context, k8sClient client.Writer, imageInfo imageInfoGetter, scalingGroupGetter scalingGroupGetter, uid string) error {
+	logr := log.FromContext(ctx)
 	controlPlaneGroupIDs, workerGroupIDs, err := scalingGroupGetter.ListScalingGroups(ctx, uid)
 	if err != nil {
 		return fmt.Errorf("listing scaling groups: %w", err)
@@ -40,7 +42,15 @@ func InitialResources(ctx context.Context, k8sClient client.Writer, scalingGroup
 	if err != nil {
 		return fmt.Errorf("determining initial node image: %w", err)
 	}
-	if err := createNodeImage(ctx, k8sClient, imageReference); err != nil {
+	imageVersion, err := imageInfo.ImageVersion(imageReference)
+	if err != nil {
+		// do not fail if the image version cannot be determined
+		// this is important for backwards compatibility
+		logr.Error(err, "determining initial node image version")
+		imageVersion = ""
+	}
+
+	if err := createNodeImage(ctx, k8sClient, imageReference, imageVersion); err != nil {
 		return fmt.Errorf("creating initial node image %q: %w", imageReference, err)
 	}
 	for _, groupID := range controlPlaneGroupIDs {
@@ -101,7 +111,7 @@ func createAutoscalingStrategy(ctx context.Context, k8sClient client.Writer, pro
 }
 
 // createNodeImage creates the initial nodeimage resource if it does not exist yet.
-func createNodeImage(ctx context.Context, k8sClient client.Writer, imageReference string) error {
+func createNodeImage(ctx context.Context, k8sClient client.Writer, imageReference, imageVersion string) error {
 	err := k8sClient.Create(ctx, &updatev1alpha1.NodeImage{
 		TypeMeta: metav1.TypeMeta{APIVersion: "update.edgeless.systems/v1alpha1", Kind: "NodeImage"},
 		ObjectMeta: metav1.ObjectMeta{
@@ -109,6 +119,7 @@ func createNodeImage(ctx context.Context, k8sClient client.Writer, imageReferenc
 		},
 		Spec: updatev1alpha1.NodeImageSpec{
 			ImageReference: imageReference,
+			ImageVersion:   imageVersion,
 		},
 	})
 	if k8sErrors.IsAlreadyExists(err) {
@@ -137,6 +148,10 @@ func createScalingGroup(ctx context.Context, config newScalingGroupConfig) error
 		return nil
 	}
 	return err
+}
+
+type imageInfoGetter interface {
+	ImageVersion(imageReference string) (string, error)
 }
 
 type scalingGroupGetter interface {

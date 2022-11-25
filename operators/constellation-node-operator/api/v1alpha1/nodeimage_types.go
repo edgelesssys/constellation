@@ -15,6 +15,8 @@ import (
 type NodeImageSpec struct {
 	// ImageReference is the image to use for all nodes.
 	ImageReference string `json:"image,omitempty"`
+	// ImageVersion is the CSP independent version of the image to use for all nodes.
+	ImageVersion string `json:"imageVersion,omitempty"`
 }
 
 // NodeImageStatus defines the observed state of NodeImage.
