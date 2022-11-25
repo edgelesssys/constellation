@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: cloud-controller-manager
-  namespace: {{ .Release.Namespace}}
+  namespace: {{ .Release.Namespace }}
   labels:
     k8s-app: cloud-controller-manager
 spec:
@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: cloud-controller-manager
-          image: {{ .Values.Azure.image }}
+          image: {{ .Values.Azure.image | quote }}
           command:
           - cloud-controller-manager
           - --cloud-provider=azure

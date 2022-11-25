@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: cluster-autoscaler
-          image: {{ .Values.image }}
+          image: {{ .Values.image | quote }}
           imagePullPolicy: IfNotPresent
           livenessProbe:
             httpGet:

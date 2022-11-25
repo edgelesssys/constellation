@@ -70,7 +70,7 @@ spec:
         - name: CONSTEL_CSP
           value: GCP
         - name: constellation-uid
-          value: 42424242424242
+          value: "42424242424242"
         image: ghcr.io/edgelesssys/constellation/node-operator:v2.3.0-pre.0.20221125134926-1af3ff00adbc@sha256:fae7160eba0259d3dcbe974460ff983ae2c6cab18319a5b8ef585dd1630cb077
         livenessProbe:
           httpGet:

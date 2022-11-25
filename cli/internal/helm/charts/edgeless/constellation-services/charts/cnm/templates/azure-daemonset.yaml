@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: cloud-node-manager
-        image: {{ .Values.image }}
+        image: {{ .Values.image | quote }}
         imagePullPolicy: IfNotPresent
         command:
           - cloud-node-manager

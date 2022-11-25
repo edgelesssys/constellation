@@ -55,8 +55,8 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: KUBERNETES_CLUSTER_DOMAIN
-          value: {{ .Values.kubernetesClusterDomain }}
-        image: {{ .Values.controllerManager.manager.image }}
+          value: {{ .Values.kubernetesClusterDomain | quote }}
+        image: {{ .Values.controllerManager.manager.image | quote }}
         livenessProbe:
           httpGet:
             path: /healthz
@@ -74,8 +74,7 @@ spec:
             port: 8081
           initialDelaySeconds: 5
           periodSeconds: 10
-        resources: {{- toYaml .Values.controllerManager.manager.resources | nindent 10
-          }}
+        resources: {{- toYaml .Values.controllerManager.manager.resources | nindent 10 }}
         securityContext:
           allowPrivilegeEscalation: false
         volumeMounts:

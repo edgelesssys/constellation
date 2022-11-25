@@ -94,6 +94,8 @@ func TestConstellationServices(t *testing.T) {
 				cnmImage:                 tc.cnmImage,
 				autoscalerImage:          "autoscalerImage",
 				verificationServiceImage: "verificationImage",
+				konnectivityImage:        "konnectivityImage",
+				gcpGuestAgentImage:       "gcpGuestAgentImage",
 			}
 			chart, values, err := chartLoader.loadConstellationServicesHelper(tc.config, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 			require.NoError(err)
