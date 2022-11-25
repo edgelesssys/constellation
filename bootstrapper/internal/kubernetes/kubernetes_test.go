@@ -502,7 +502,6 @@ func (s *stubConfigProvider) JoinConfiguration(_ bool) k8sapi.KubeadmJoinYAML {
 }
 
 type stubKubectl struct {
-	applyErr                         error
 	createConfigMapErr               error
 	addTolerationsToDeploymentErr    error
 	addTNodeSelectorsToDeploymentErr error
@@ -510,17 +509,10 @@ type stubKubectl struct {
 	listAllNamespacesErr             error
 
 	listAllNamespacesResp *corev1.NamespaceList
-	resources             []kubernetes.Marshaler
-	kubeconfigs           [][]byte
 }
 
-func (s *stubKubectl) Apply(resources kubernetes.Marshaler, forceConflicts bool) error {
-	s.resources = append(s.resources, resources)
-	return s.applyErr
-}
-
-func (s *stubKubectl) SetKubeconfig(kubeconfig []byte) {
-	s.kubeconfigs = append(s.kubeconfigs, kubeconfig)
+func (s *stubKubectl) Initialize(kubeconfig []byte) error {
+	return nil
 }
 
 func (s *stubKubectl) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error {

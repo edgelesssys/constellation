@@ -152,7 +152,10 @@ func (k *KubeWrapper) InitCluster(
 	if err != nil {
 		return nil, fmt.Errorf("reading kubeconfig after cluster initialization: %w", err)
 	}
-	k.client.SetKubeconfig(kubeConfig)
+	err = k.client.Initialize(kubeConfig)
+	if err != nil {
+		return nil, fmt.Errorf("initializing kubectl client: %w", err)
+	}
 
 	waitCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
@@ -324,8 +327,6 @@ func (k *KubeWrapper) setupK8sVersionConfigMap(ctx context.Context, k8sVersion v
 		},
 	}
 
-	// We do not use the client's Apply method here since we are handling a kubernetes-native type.
-	// These types don't implement our custom Marshaler interface.
 	if err := k.client.CreateConfigMap(ctx, config); err != nil {
 		return fmt.Errorf("apply in KubeWrapper.setupK8sVersionConfigMap(..) failed with: %w", err)
 	}
