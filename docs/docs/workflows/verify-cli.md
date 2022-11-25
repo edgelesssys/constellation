@@ -1,6 +1,6 @@
 # Verify the CLI
 
-Edgeless Systems uses [sigstore](https://www.sigstore.dev/) to ensure supply-chain security for the Constellation CLI and node images ("artifacts"). sigstore consists of three components: [Cosign](https://docs.sigstore.dev/cosign/overview), [Rekor](https://docs.sigstore.dev/rekor/overview), and Fulcio. Edgeless Systems uses Cosign to sign artifacts. All signatures are uploaded to the public Rekor transparency log, which resides at https://rekor.sigstore.dev/.
+Edgeless Systems uses [sigstore](https://www.sigstore.dev/) and [SLSA](https://slsa.dev) to ensure supply-chain security for the Constellation CLI and node images ("artifacts"). sigstore consists of three components: [Cosign](https://docs.sigstore.dev/cosign/overview), [Rekor](https://docs.sigstore.dev/rekor/overview), and Fulcio. Edgeless Systems uses Cosign to sign artifacts. All signatures are uploaded to the public Rekor transparency log, which resides at https://rekor.sigstore.dev/.
 
 :::note
 The public key for Edgeless Systems' long-term code-signing key is:
@@ -38,6 +38,30 @@ $ COSIGN_EXPERIMENTAL=1 cosign verify-blob --key https://edgeless.systems/es.pub
 
 tlog entry verified with uuid: afaba7f6635b3e058888692841848e5514357315be9528474b23f5dcccb82b13 index: 3477047
 Verified OK
+```
+
+## Verify the provenance
+
+Provenance attests that a software artifact was produced by a specific repository and build system invocation. For more information on provenance visit [slsa.dev](https://slsa.dev/provenance/v0.2).
+
+Just as checking the signature on the CLI proves that the CLI wasn't manipulated, checking the provenance proves that the artifact was produced by our build process and hasn't been tampered with.
+
+First, download the [slsa-verifier](https://github.com/slsa-framework/slsa-verifier). Then make sure you have the provenance file (`constellation.intoto.jsonl`) and Constellation CLI downloaded. Both are available on our [GitHub release page](https://github.com/edgelesssys/constellation/releases).
+
+:::info
+The same provenance file is valid for all Constellation CLI binaries of a given version. Independent of the architecture and the OS the CLI was build for.
+:::
+
+Then use the verifier to perform the check:
+
+```sh
+$ slsa-verifier verify-artifact constellation-linux-amd64 \
+  --provenance-path constellation.intoto.jsonl \
+  --source-uri github.com/edgelesssys/constellation
+
+Verified signature against tlog entry index 7771317 at URL: https://rekor.sigstore.dev/api/v1/log/entries/24296fb24b8ad77af2c04c8b4ae0d5bc5...
+Verified build using builder https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@refs/tags/v1.2.2 at commit 18e9924b416323c37b9cdfd6cc728de8a947424a
+PASSED: Verified SLSA provenance
 ```
 
 🏁 You now know that your CLI executable was officially released and signed by Edgeless Systems.

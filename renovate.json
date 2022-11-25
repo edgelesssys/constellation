@@ -147,6 +147,11 @@
         "node"
       ],
       "prPriority": -20
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["slsa-framework/slsa-github-generator"],
+      "pinDigests": false
     }
   ],
   "regexManagers": [
