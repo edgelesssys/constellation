@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/fatih/color"
@@ -91,7 +92,8 @@ func compareMeasurements(expectedMeasurements, actualMeasurements measurements.M
 	redPrint := color.New(color.FgRed).SprintFunc()
 	greenPrint := color.New(color.FgGreen).SprintFunc()
 
-	for pcr := range expectedMeasurements {
+	expectedPCRs := getSortedKeysOfMap(expectedMeasurements)
+	for _, pcr := range expectedPCRs {
 		if _, ok := actualMeasurements[pcr]; !ok {
 			color.Magenta("Expected PCR %d not found in the calculated measurements.\n", pcr)
 			continue
@@ -112,4 +114,15 @@ func compareMeasurements(expectedMeasurements, actualMeasurements measurements.M
 	}
 
 	return areEqual
+}
+
+// getSortedKeysOfMap returns the sorted keys of a map to allow the PCR output to be ordered in the output.
+func getSortedKeysOfMap(inputMap measurements.M) []uint32 {
+	keys := make([]uint32, 0, len(inputMap))
+	for singleKey := range inputMap {
+		keys = append(keys, singleKey)
+	}
+	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+
+	return keys
 }
