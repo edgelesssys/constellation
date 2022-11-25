@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        provider: [ "aws", "azure", "gcp" ]
+        provider: ["aws", "azure", "gcp"]
     permissions:
       id-token: write
       contents: read
@@ -91,8 +91,6 @@ jobs:
           isDebugImage: ${{ github.event.inputs.isDebugImage }}
           test: "nop"
 
-      # Check /docs/secure_software_distribution.md#sign-measurements
-      # for why we ignore certain measurement values.
       - name: Fetch PCRs from running cluster
         run: |
           KUBECONFIG="${PWD}/constellation-admin.conf" kubectl rollout status ds/verification-service -n kube-system --timeout=3m
@@ -182,56 +180,56 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        provider: [ "aws", "azure", "gcp" ]
+        provider: ["aws", "azure", "gcp"]
     steps:
-     - name: Check out repository
-       uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
-       with:
-        ref: ${{ github.head_ref }}
+      - name: Check out repository
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
 
-     - name: Setup Go environment
-       uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
-       with:
-         go-version: "1.19.3"
+      - name: Setup Go environment
+        uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
+        with:
+          go-version: "1.19.3"
 
-     - name: Build hack/pcr-compare
-       run: |
-         go build .
-         pwd >> "$GITHUB_PATH"
-       working-directory: hack/pcr-compare
-       shell: bash
+      - name: Build hack/pcr-compare
+        run: |
+          go build .
+          pwd >> "$GITHUB_PATH"
+        working-directory: hack/pcr-compare
+        shell: bash
 
-     - name: Download calculated measurements from artifact
-       uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.1.1
-       with:
-         name: measurements-${{ matrix.provider }}.json
-         path: "${{ github.workspace }}/generated-measurements"
+      - name: Download calculated measurements from artifact
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.1.1
+        with:
+          name: measurements-${{ matrix.provider }}.json
+          path: "${{ github.workspace }}/generated-measurements"
 
-     - name: Download expected measurements from build pipeline for image
-       run: |
-        mkdir -p ${{ github.workspace }}/expected-measurements
-        wget -O ${{ github.workspace }}/expected-measurements/measurements.image.json https://cdn.confidential.cloud/constellation/v1/measurements/${{ github.event.inputs.osImage }}/${{ matrix.provider }}/measurements.image.json
-        cat ${{ github.workspace }}/expected-measurements/measurements.image.json
-       shell: bash
+      - name: Download expected measurements from build pipeline for image
+        run: |
+          mkdir -p ${{ github.workspace }}/expected-measurements
+          wget -O ${{ github.workspace }}/expected-measurements/measurements.image.json https://cdn.confidential.cloud/constellation/v1/measurements/${{ github.event.inputs.osImage }}/${{ matrix.provider }}/measurements.image.json
+          cat ${{ github.workspace }}/expected-measurements/measurements.image.json
+        shell: bash
 
-     - name: Check if expected measurements == actual measurements from running cluster
-       run: |
-         pcr-compare ${{ github.workspace }}/expected-measurements/measurements.image.json ${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json
-       shell: bash
+      - name: Check if expected measurements == actual measurements from running cluster
+        run: |
+          pcr-compare ${{ github.workspace }}/expected-measurements/measurements.image.json ${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json
+        shell: bash
 
   sign-measurements:
-      name: "Sign Measurements"
-      if: inputs.signMeasurements
-      needs: [calculate-measurements-on-csp, validate-measurements]
-      runs-on: ubuntu-22.04
-      strategy:
-        fail-fast: false
-        matrix:
-          provider: [ "aws", "azure", "gcp" ]
-      permissions:
-        id-token: write
-        contents: read
-      steps:
+    name: "Sign Measurements"
+    if: inputs.signMeasurements
+    needs: [calculate-measurements-on-csp, validate-measurements]
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: ["aws", "azure", "gcp"]
+    permissions:
+      id-token: write
+      contents: read
+    steps:
       - name: Install Cosign
         uses: sigstore/cosign-installer@9becc617647dfa20ae7b1151972e9b3a2c338a2b # tag=v2.8.1
 
@@ -275,41 +273,42 @@ jobs:
   publish-measurements:
     name: "Publish Measurements"
     if: inputs.signMeasurements
-    needs: [calculate-measurements-on-csp, validate-measurements, sign-measurements]
+    needs:
+      [calculate-measurements-on-csp, validate-measurements, sign-measurements]
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        provider: [ "aws", "azure", "gcp" ]
+        provider: ["aws", "azure", "gcp"]
     permissions:
       id-token: write
       contents: read
     steps:
-    - name: Download measurements from artifact
-      uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
-      with:
-        name: measurements-${{ matrix.provider }}.json
-        path: "${{ github.workspace }}/generated-measurements"
+      - name: Download measurements from artifact
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          name: measurements-${{ matrix.provider }}.json
+          path: "${{ github.workspace }}/generated-measurements"
 
-    - name: Download signature from artifact
-      uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
-      with:
-        name: measurements-${{ matrix.provider }}.json.sig
-        path: "${{ github.workspace }}/generated-measurements"
+      - name: Download signature from artifact
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          name: measurements-${{ matrix.provider }}.json.sig
+          path: "${{ github.workspace }}/generated-measurements"
 
-    - name: Login to AWS
-      uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1.7.0
-      with:
-        role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
-        aws-region: eu-central-1
+      - name: Login to AWS
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
+          aws-region: eu-central-1
 
-    - name: Upload to S3
-      run: |
-        S3_PATH=s3://cdn-constellation-backend/constellation/v1/measurements/${IMAGE_UID,,}/${{ matrix.provider }}
-        aws s3 cp "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json" "${S3_PATH}/measurements.json"
-        aws s3 cp "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json.sig" "${S3_PATH}/measurements.json.sig"
-      shell: bash
-      env:
-        IMAGE_UID: ${{ inputs.osImage }}
-        PUBLIC_BUCKET_NAME: ${{ secrets.PUBLIC_BUCKET_NAME }}
-        CSP: ${{ matrix.provider }}
+      - name: Upload to S3
+        run: |
+          S3_PATH=s3://cdn-constellation-backend/constellation/v1/measurements/${IMAGE_UID,,}/${{ matrix.provider }}
+          aws s3 cp "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json" "${S3_PATH}/measurements.json"
+          aws s3 cp "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json.sig" "${S3_PATH}/measurements.json.sig"
+        shell: bash
+        env:
+          IMAGE_UID: ${{ inputs.osImage }}
+          PUBLIC_BUCKET_NAME: ${{ secrets.PUBLIC_BUCKET_NAME }}
+          CSP: ${{ matrix.provider }}
