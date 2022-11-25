@@ -62,7 +62,9 @@ func parseMeasurements(filename string) (measurements.M, error) {
 	}
 
 	// Technically the expected version does not hold metadata, but we can use the same struct as both hold the measurements in `measurements`.
-	// We don't verify metadata here anyway, the client has to do that.
+	// This uses the fallback mechanism of the Measurements unmarshaller which accepts strings without the full struct, defaulting to warnOnly = false.
+	// warnOnly = false is expected for the expected measurements, so that's fine.
+	// We don't verify metadata here, the client has to do that.
 	var parsedMeasurements measurements.WithMetadata
 	if err := json.Unmarshal(fileData, &parsedMeasurements); err != nil {
 		return measurements.M{}, err
