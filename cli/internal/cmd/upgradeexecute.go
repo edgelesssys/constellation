@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -26,6 +27,9 @@ func newUpgradeExecuteCmd() *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE:  runUpgradeExecute,
 	}
+
+	// TODO: remove before merging to main. For testing only.
+	cmd.Flags().Bool("helm", false, "DEV ONLY: execute helm upgrade")
 
 	return cmd
 }
@@ -51,6 +55,26 @@ func upgradeExecute(cmd *cobra.Command, imageFetcher imageFetcher, upgrader clou
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
+	helm, err := cmd.Flags().GetBool("helm")
+	if err != nil {
+		return err
+	}
+	masterSecretPath, err := cmd.Flags().GetString("master-secret")
+	if err != nil {
+		return err
+	}
+	if helm {
+		masterSecret, err := readOrGenerateMasterSecret(cmd.OutOrStdout(), fileHandler, masterSecretPath)
+		if err != nil {
+			return fmt.Errorf("parsing or generating master secret from file %s: %w", masterSecretPath, err)
+		}
+
+		if err := upgrader.UpgradeHelmServices(cmd.Context(), conf, false, masterSecret.Key, masterSecret.Salt); err != nil {
+			return fmt.Errorf("upgrading helm: %w", err)
+		}
+		return nil
+	}
+
 	// TODO: validate upgrade config? Should be basic things like checking image is not an empty string
 	// More sophisticated validation, like making sure we don't downgrade the cluster, should be done by `constellation upgrade plan`
 
@@ -66,6 +90,7 @@ func upgradeExecute(cmd *cobra.Command, imageFetcher imageFetcher, upgrader clou
 
 type cloudUpgrader interface {
 	Upgrade(ctx context.Context, imageReference, imageVersion string, measurements measurements.M) error
+	UpgradeHelmServices(ctx context.Context, config *config.Config, conformanceMode bool, masterSecret, salt []byte) error
 }
 
 type imageFetcher interface {

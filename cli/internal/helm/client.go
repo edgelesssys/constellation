@@ -7,8 +7,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 package helm
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/edgelesssys/constellation/v2/internal/config"
+	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
 )
@@ -52,4 +56,52 @@ func (c *Client) CurrentVersion(release string) (string, error) {
 	}
 
 	return rel[0].Chart.Metadata.Version, nil
+}
+
+// Upgrade runs a helm-upgrade on all deployments that are managed via Helm.
+// TODO: Verify that CRDs are upgraded.
+// TODO: check helm cli how it handles ctrl+c.
+func (c *Client) Upgrade(ctx context.Context, config *config.Config, conformanceMode bool, masterSecret, salt []byte) error {
+	action := action.NewUpgrade(c.config)
+	action.Atomic = true
+	action.Namespace = constants.HelmNamespace
+	action.ReuseValues = true
+	action.DependencyUpdate = true
+
+	loader := NewLoader(config.GetProvider(), versions.ValidK8sVersion(config.KubernetesVersion))
+	ciliumChart, ciliumVals, err := loader.loadCiliumHelper(config.GetProvider(), conformanceMode)
+	if err != nil {
+		return fmt.Errorf("loading cilium: %w", err)
+	}
+	certManagerChart, certManagerVals, err := loader.loadCertManagerHelper()
+	if err != nil {
+		return fmt.Errorf("loading cilium: %w", err)
+	}
+	operatorChart, operatorVals, err := loader.loadOperatorsHelper(config.GetProvider())
+	if err != nil {
+		return fmt.Errorf("loading operators: %w", err)
+	}
+	conServicesChart, conServicesVals, err := loader.loadConstellationServicesHelper(config, masterSecret, salt)
+	if err != nil {
+		return fmt.Errorf("loading constellation-services: %w", err)
+	}
+
+	// Prevent half-finished upgrades
+	action.Lock.Lock()
+	defer action.Lock.Unlock()
+
+	if _, err := action.RunWithContext(ctx, ciliumReleaseName, ciliumChart, ciliumVals); err != nil {
+		return fmt.Errorf("upgrading cilium: %w", err)
+	}
+	if _, err := action.RunWithContext(ctx, ciliumReleaseName, certManagerChart, certManagerVals); err != nil {
+		return fmt.Errorf("upgrading cert-manager: %w", err)
+	}
+	if _, err := action.RunWithContext(ctx, ciliumReleaseName, operatorChart, operatorVals); err != nil {
+		return fmt.Errorf("upgrading services: %w", err)
+	}
+	if _, err := action.RunWithContext(ctx, ciliumReleaseName, conServicesChart, conServicesVals); err != nil {
+		return fmt.Errorf("upgrading operators: %w", err)
+	}
+
+	return nil
 }

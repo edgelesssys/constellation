@@ -37,6 +37,13 @@ import (
 //go:embed all:charts/*
 var helmFS embed.FS
 
+const (
+	ciliumReleaseName      = "cilium"
+	conServicesReleaseName = "constellation-services"
+	operatorsReleaseName   = "constellation-operators"
+	certManagerReleaseName = "cert-manager"
+)
+
 // ChartLoader loads embedded helm charts.
 type ChartLoader struct {
 	joinServiceImage             string
@@ -119,7 +126,7 @@ func (i *ChartLoader) loadCilium(csp cloudprovider.Provider, conformanceMode boo
 		return helm.Release{}, fmt.Errorf("packaging cilium chart: %w", err)
 	}
 
-	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: "cilium", Wait: false}, nil
+	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: ciliumReleaseName, Wait: false}, nil
 }
 
 // loadCiliumHelper is used to separate the marshalling step from the loading step.
@@ -166,7 +173,7 @@ func (i *ChartLoader) loadCertManager() (helm.Release, error) {
 		return helm.Release{}, fmt.Errorf("packaging cert-manager chart: %w", err)
 	}
 
-	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: "cert-manager", Wait: false}, nil
+	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: certManagerReleaseName, Wait: false}, nil
 }
 
 // loadCertManagerHelper is used to separate the marshalling step from the loading step.
@@ -255,7 +262,7 @@ func (i *ChartLoader) loadOperators(csp cloudprovider.Provider) (helm.Release, e
 		return helm.Release{}, fmt.Errorf("packaging operators chart: %w", err)
 	}
 
-	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: "con-operators", Wait: false}, nil
+	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: operatorsReleaseName, Wait: false}, nil
 }
 
 // loadOperatorsHelper is used to separate the marshalling step from the loading step.
@@ -341,7 +348,7 @@ func (i *ChartLoader) loadConstellationServices(config *config.Config, masterSec
 		return helm.Release{}, fmt.Errorf("packaging constellation-services chart: %w", err)
 	}
 
-	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: "constellation-services", Wait: false}, nil
+	return helm.Release{Chart: chartRaw, Values: values, ReleaseName: conServicesReleaseName, Wait: false}, nil
 }
 
 // loadConstellationServicesHelper is used to separate the marshalling step from the loading step.
