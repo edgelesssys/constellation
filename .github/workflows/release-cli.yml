@@ -41,6 +41,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs:
       - build-cli
+      - signed-sbom
     outputs:
       provenance-subjects: ${{ steps.provenance-subjects.outputs.provenance-subjects }}
     steps:
@@ -60,6 +61,10 @@ jobs:
         uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
         with:
           name: constellation-linux-arm64
+      - name: Download CLI SBOM
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          name: constellation.spdx.sbom
       - name: Generate provenance subjects
         id: provenance-subjects
         run: |
@@ -67,7 +72,8 @@ jobs:
             constellation-darwin-amd64 \
             constellation-darwin-arm64 \
             constellation-linux-amd64 \
-            constellation-linux-arm64)
+            constellation-linux-arm64 \
+            constellation.spdx.sbom)
           HASHESB64=$(echo "${HASHES}" | base64 -w0)
           echo "${HASHES}"
           echo "${HASHESB64}"
@@ -180,6 +186,10 @@ jobs:
         uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
         with:
           name: constellation-linux-arm64
+      - name: Download CLI SBOM
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
+        with:
+          name: constellation.spdx.sbom
       - name: Download provenance
         uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
         with:
@@ -200,6 +210,9 @@ jobs:
             --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
             --source-uri github.com/edgelesssys/constellation
           slsa-verifier verify-artifact constellation-linux-arm64 \
+            --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
+            --source-uri github.com/edgelesssys/constellation
+          slsa-verifier verify-artifact constellation.spdx.sbom \
             --provenance-path ${{ needs.provenance.outputs.provenance-name }} \
             --source-uri github.com/edgelesssys/constellation
 
