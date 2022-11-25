@@ -17,10 +17,13 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
+	"strconv"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/google/go-tpm/tpmutil"
+	"github.com/talos-systems/talos/pkg/machinery/config/encoder"
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v3"
 )
@@ -43,6 +46,20 @@ type WithMetadata struct {
 	CSP          string `json:"csp" yaml:"csp"`
 	Image        string `json:"image" yaml:"image"`
 	Measurements M      `json:"measurements" yaml:"measurements"`
+}
+
+// MarshalYAML returns the YAML encoding of m.
+func (m M) MarshalYAML() (any, error) {
+	// cast to prevent infinite recursion
+	node, err := encoder.NewEncoder(map[uint32]Measurement(m)).Marshal()
+	if err != nil {
+		return nil, err
+	}
+
+	// sort keys numerically
+	sort.Sort(mYamlContent(node.Content))
+
+	return node, nil
 }
 
 // FetchAndVerify fetches measurement and signature files via provided URLs,
@@ -324,4 +341,29 @@ func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([
 type encodedMeasurement struct {
 	Expected string `json:"expected" yaml:"expected"`
 	WarnOnly bool   `json:"warnOnly" yaml:"warnOnly"`
+}
+
+// mYamlContent is the Content of a yaml.Node encoding of an M. It implements sort.Interface.
+// The slice is filled like {key1, value1, key2, value2, ...}.
+type mYamlContent []*yaml.Node
+
+func (c mYamlContent) Len() int {
+	return len(c) / 2
+}
+
+func (c mYamlContent) Less(i, j int) bool {
+	lhs, err := strconv.Atoi(c[2*i].Value)
+	if err != nil {
+		panic(err)
+	}
+	rhs, err := strconv.Atoi(c[2*j].Value)
+	if err != nil {
+		panic(err)
+	}
+	return lhs < rhs
+}
+
+func (c mYamlContent) Swap(i, j int) {
+	c[2*i], c[2*j] = c[2*j], c[2*i]
+	c[2*i+1], c[2*j+1] = c[2*j+1], c[2*i+1]
 }
