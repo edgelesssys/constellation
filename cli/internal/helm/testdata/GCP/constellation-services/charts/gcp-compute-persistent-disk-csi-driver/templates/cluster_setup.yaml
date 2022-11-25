@@ -1,3 +1,4 @@
+##### Node Service Account, Roles, RoleBindings
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -6,6 +7,7 @@ metadata:
 
 ---
 
+##### Controller Service Account, Roles, Rolebindings
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -14,6 +16,7 @@ metadata:
 
 ---
 
+# xref: https://github.com/kubernetes-csi/external-provisioner/blob/master/deploy/kubernetes/rbac.yaml
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -43,6 +46,10 @@ rules:
   - apiGroups: ["snapshot.storage.k8s.io"]
     resources: ["volumesnapshotcontents"]
     verbs: ["get", "list"]
+  # Access to volumeattachments is only needed when the CSI driver
+  # has the PUBLISH_UNPUBLISH_VOLUME controller capability.
+  # In that case, external-provisioner will watch volumeattachments
+  # to determine when it is safe to delete a volume.
   - apiGroups: ["storage.k8s.io"]
     resources: ["volumeattachments"]
     verbs: ["get", "list", "watch"]
@@ -61,9 +68,10 @@ roleRef:
   kind: ClusterRole
   name: csi-gce-pd-provisioner-role
   apiGroup: rbac.authorization.k8s.io
-  
+
 ---
 
+# xref: https://github.com/kubernetes-csi/external-attacher/blob/master/deploy/kubernetes/rbac.yaml
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -122,6 +130,7 @@ description: "This priority class should be used for the GCE PD CSI driver node 
 
 ---
 
+# Resizer must be able to work with PVCs, PVs, SCs.
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -139,6 +148,7 @@ rules:
   - apiGroups: [""]
     resources: ["events"]
     verbs: ["list", "watch", "create", "update", "patch"]
+  # If handle-volume-inuse-error=true, the pod specific rbac is needed
   - apiGroups: [""]
     resources: ["pods"]
     verbs: ["get", "list", "watch"]
@@ -239,6 +249,7 @@ rules:
   - apiGroups: [""]
     resources: ["events"]
     verbs: ["list", "watch", "create", "update", "patch"]
+  # Secrets resource omitted since GCE PD snapshots does not require them
   - apiGroups: ["snapshot.storage.k8s.io"]
     resources: ["volumesnapshotclasses"]
     verbs: ["get", "list", "watch"]
