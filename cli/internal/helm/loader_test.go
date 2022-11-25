@@ -13,6 +13,8 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"sort"
+	"strings"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -117,17 +119,29 @@ func TestConstellationServices(t *testing.T) {
 
 			result, err := engine.Render(chart, valuesToRender)
 			require.NoError(err)
-			for k, v := range result {
+			for k, actual := range result {
 				currentFile := path.Join("testdata", tc.config.GetProvider().String(), k)
-				content, err := os.ReadFile(currentFile)
-
+				expected, err := os.ReadFile(currentFile)
 				// If a file does not exist, we expect the render for that path to be empty.
 				if errors.Is(err, fs.ErrNotExist) {
-					assert.YAMLEq("", v, fmt.Sprintf("current file: %s", currentFile))
+					assert.YAMLEq("", actual, fmt.Sprintf("current file: %s", currentFile))
 					continue
 				}
-				assert.NoError(err)
-				assert.YAMLEq(string(content), v, fmt.Sprintf("current file: %s", currentFile))
+				require.NoError(err)
+
+				// testify has an issue where when multiple documents are contained in one YAML string,
+				// only the first document is parsed [1]. For this reason we split the YAML string
+				// into a slice of strings, each entry containing one document.
+				// [1] https://github.com/stretchr/testify/issues/1281
+				expectedSplit := strings.Split(string(expected), "\n---\n")
+				sort.Strings(expectedSplit)
+				actualSplit := strings.Split(actual, "\n---\n")
+				sort.Strings(actualSplit)
+				assert.Equal(len(expectedSplit), len(actualSplit))
+
+				for i := range expectedSplit {
+					assert.YAMLEq(expectedSplit[i], actualSplit[i], fmt.Sprintf("current file: %s", currentFile))
+				}
 			}
 		})
 	}
@@ -180,17 +194,29 @@ func TestOperators(t *testing.T) {
 
 			result, err := engine.Render(chart, valuesToRender)
 			require.NoError(err)
-			for k, v := range result {
+			for k, actual := range result {
 				currentFile := path.Join("testdata", tc.csp.String(), k)
-				content, err := os.ReadFile(currentFile)
-
+				expected, err := os.ReadFile(currentFile)
 				// If a file does not exist, we expect the render for that path to be empty.
 				if errors.Is(err, fs.ErrNotExist) {
-					assert.YAMLEq("", v, fmt.Sprintf("current file: %s", currentFile))
+					assert.YAMLEq("", actual, fmt.Sprintf("current file: %s", currentFile))
 					continue
 				}
-				assert.NoError(err)
-				assert.YAMLEq(string(content), v, fmt.Sprintf("current file: %s", currentFile))
+				require.NoError(err)
+
+				// testify has an issue where when multiple documents are contained in one YAML string,
+				// only the first document is parsed [1]. For this reason we split the YAML string
+				// into a slice of strings, each entry containing one document.
+				// [1] https://github.com/stretchr/testify/issues/1281
+				expectedSplit := strings.Split(string(expected), "\n---\n")
+				sort.Strings(expectedSplit)
+				actualSplit := strings.Split(actual, "\n---\n")
+				sort.Strings(actualSplit)
+				assert.Equal(len(expectedSplit), len(actualSplit))
+
+				for i := range expectedSplit {
+					assert.YAMLEq(expectedSplit[i], actualSplit[i], fmt.Sprintf("current file: %s", currentFile))
+				}
 			}
 		})
 	}

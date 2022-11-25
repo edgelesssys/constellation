@@ -44,7 +44,7 @@ spec:
           operator: Exists
         - effect: NoSchedule
           key: node.kubernetes.io/not-ready
-          operator: Exists      
+          operator: Exists
       containers:
         - name: csi-provisioner
           image: "mcr.microsoft.com/oss/kubernetes-csi/csi-provisioner:v3.2.0"
@@ -188,7 +188,7 @@ spec:
             - name: CSI_ENDPOINT
               value: unix:///csi/csi.sock
             - name: AZURE_GO_SDK_LOG_LEVEL
-              value: 
+              value:
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /csi
@@ -213,4 +213,4 @@ spec:
             path: /etc/ssl/certs
         - name: ssl-pki
           hostPath:
-            path: /etc/pki/ca-trust/extracted          
+            path: /etc/pki/ca-trust/extracted

@@ -27,8 +27,8 @@ spec:
           key: node.kubernetes.io/not-ready
           operator: Exists
       nodeSelector:
-        node-role.kubernetes.io/control-plane: ""
         kubernetes.io/os: linux
+        node-role.kubernetes.io/control-plane: ""
       serviceAccountName: csi-gce-pd-controller-sa
       priorityClassName: csi-gce-pd-controller
       containers:
@@ -43,6 +43,8 @@ spec:
             - "--leader-election-namespace=$(PDCSI_NAMESPACE)"
             - "--timeout=450s"
             - "--extra-create-metadata"
+          # - "--run-controller-service=false"  # disable the controller service of the CSI driver
+          # - "--run-node-service=false"        # disable the node service of the CSI driver
             - "--leader-election"
             - "--default-fstype=ext4"
             - "--controller-publish-readonly=true"
@@ -145,6 +147,8 @@ spec:
             - name: socket-dir
               mountPath: /csi
         - name: gce-pd-driver
+          # Don't change base image without changing pdImagePlaceholder in
+          # test/k8s-integration/main.go
           image: csi-driver:v0.0.0
           imagePullPolicy: IfNotPresent
           args:
