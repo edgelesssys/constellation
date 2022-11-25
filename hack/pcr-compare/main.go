@@ -74,7 +74,9 @@ func stripMeasurements(input measurements.M) measurements.M {
 
 	strippedMeasurements := make(measurements.M, len(toBeChecked))
 	for _, pcr := range toBeChecked {
-		strippedMeasurements[pcr] = input[pcr]
+		if _, ok := input[pcr]; ok {
+			strippedMeasurements[pcr] = input[pcr]
+		}
 	}
 
 	return strippedMeasurements
