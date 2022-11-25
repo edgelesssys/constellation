@@ -35,12 +35,12 @@ spec:
         node-role.kubernetes.io/control-plane: ""
       containers:
         - name: join-service
-          image: {{ .Values.image }}
+          image: {{ .Values.image | quote }}
           args:
             - --cloud-provider={{ .Values.csp }}
             - --kms-endpoint=kms.{{ .Release.Namespace }}:{{ .Values.global.kmsPort }}
           volumeMounts:
-            - mountPath: {{ .Values.global.serviceBasePath }}
+            - mountPath: {{ .Values.global.serviceBasePath | quote }}
               name: config
               readOnly: true
             - mountPath: /etc/kubernetes
@@ -57,11 +57,11 @@ spec:
           projected:
             sources:
               - configMap:
-                  name: {{ .Values.global.joinConfigCMName }}
+                  name: {{ .Values.global.joinConfigCMName | quote }}
               - configMap:
-                  name: {{ .Values.global.k8sVersionCMName }}
+                  name: {{ .Values.global.k8sVersionCMName | quote }}
               - configMap:
-                  name: {{ .Values.global.internalCMName }}
+                  name: {{ .Values.global.internalCMName | quote }}
         - name: kubeadm
           hostPath:
             path: /etc/kubernetes

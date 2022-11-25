@@ -39,7 +39,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: status.hostIP
-        image: {{ .Values.image }}
+        image: {{ .Values.image | quote }}
         livenessProbe:
           httpGet:
             path: /healthz

@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: cloud-controller-manager
-          image: {{ .Values.GCP.image }}
+          image: {{ .Values.GCP.image | quote }}
           command:
           - /cloud-controller-manager
           - --cloud-provider=gce

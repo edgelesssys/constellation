@@ -6,7 +6,7 @@ metadata:
 spec:
   allocateLoadBalancerNodePorts: false
   externalIPs:
-  - {{ .Values.loadBalancerIP }}
+  - {{ .Values.loadBalancerIP | quote }}
   loadBalancerClass: constellation
   ports:
   - name: grpc

@@ -70,7 +70,7 @@ spec:
         - name: CONSTEL_CSP
           value: QEMU
         - name: constellation-uid
-          value: 42424242424242
+          value: "42424242424242"
         image: ghcr.io/edgelesssys/constellation/node-operator:v2.3.0-pre.0.20221108173951-34435e439604
         livenessProbe:
           httpGet:

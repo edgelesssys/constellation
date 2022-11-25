@@ -56,10 +56,10 @@ spec:
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ .Values.kubernetesClusterDomain }}
         - name: CONSTEL_CSP
-          value: {{ .Values.csp }}
+          value: {{ .Values.csp | quote }}
         - name: constellation-uid
-          value: {{ .Values.constellationUID }}
-        image: {{ .Values.controllerManager.manager.image }}
+          value: {{ .Values.constellationUID | quote }}
+        image: {{ .Values.controllerManager.manager.image | quote }}
         livenessProbe:
           httpGet:
             path: /healthz

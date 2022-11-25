@@ -17,7 +17,7 @@ spec:
         k8s-app: gcp-guest-agent
     spec:
       containers:
-      - image: {{ .Values.image }}
+      - image: {{ .Values.image | quote }}
         name: gcp-guest-agent
         resources: {}
         securityContext:

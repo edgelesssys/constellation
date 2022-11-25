@@ -8,7 +8,7 @@ metadata:
     node-maintenance-operator: ""
   {{- include "chart.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.metricsService.type }}
+  type: {{ .Values.metricsService.type | quote }}
   selector:
     control-plane: controller-manager
     node-maintenance-operator: ""

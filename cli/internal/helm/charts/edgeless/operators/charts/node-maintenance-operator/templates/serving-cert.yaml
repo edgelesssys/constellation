@@ -8,8 +8,7 @@ metadata:
 spec:
   dnsNames:
   - 'node-maintenance-operator-webhook-service.{{ .Release.Namespace }}.svc'
-  - 'node-maintenance-operator-webhook-service.{{ .Release.Namespace }}.svc.{{
-    .Values.kubernetesClusterDomain }}'
+  - 'node-maintenance-operator-webhook-service.{{ .Release.Namespace }}.svc.{{ .Values.kubernetesClusterDomain }}'
   issuerRef:
     kind: Issuer
     name: node-maintenance-operator-selfsigned-issuer
