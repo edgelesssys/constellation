@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       osImage:
-        description: "OS image UID"
+        description: "Full name of OS image (CSP independent image version UID)."
         type: string
         required: true
       isDebugImage:
