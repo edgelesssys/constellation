@@ -43,8 +43,11 @@ func main() {
 	strippedActualMeasurements := stripMeasurements(parsedActualMeasurements)
 	strippedExpectedMeasurements := stripMeasurements(parsedExpectedMeasurements)
 
-	// Do the comparison and print output.
-	areEqual := compareMeasurements(strippedExpectedMeasurements, strippedActualMeasurements)
+	// Do the check early.
+	areEqual := strippedExpectedMeasurements.EqualTo(strippedActualMeasurements)
+
+	// Print values and similarties / differences in addition.
+	compareMeasurements(strippedExpectedMeasurements, strippedActualMeasurements)
 
 	if !areEqual {
 		os.Exit(1)
@@ -84,11 +87,7 @@ func stripMeasurements(input measurements.M) measurements.M {
 }
 
 // compareMeasurements compares the expected PCRs with the actual PCRs.
-func compareMeasurements(expectedMeasurements, actualMeasurements measurements.M) bool {
-	// Do the check early.
-	areEqual := expectedMeasurements.EqualTo(actualMeasurements)
-
-	// Print values in addition.
+func compareMeasurements(expectedMeasurements, actualMeasurements measurements.M) {
 	redPrint := color.New(color.FgRed).SprintFunc()
 	greenPrint := color.New(color.FgGreen).SprintFunc()
 
@@ -99,21 +98,35 @@ func compareMeasurements(expectedMeasurements, actualMeasurements measurements.M
 			continue
 		}
 
-		actualValue := actualMeasurements[pcr].Expected
-		expectedValue := expectedMeasurements[pcr].Expected
+		actualValue := actualMeasurements[pcr]
+		expectedValue := expectedMeasurements[pcr]
 
-		fmt.Printf("Expected PCR %d: %s\n", pcr, hex.EncodeToString(expectedValue[:]))
+		fmt.Printf("Expected PCR %02d: %s (warnOnly: %t)\n", pcr, hex.EncodeToString(expectedValue.Expected[:]), expectedValue.WarnOnly)
 
-		if actualValue == expectedValue {
-			fmt.Printf("Measured PCR %d: %s\n", pcr, greenPrint(hex.EncodeToString(actualValue[:])))
-			color.Green("PCR %d matches.\n", pcr)
+		var foundMismatch bool
+		var coloredValue string
+		var coloredWarnOnly string
+		if actualValue.Expected == expectedValue.Expected {
+			coloredValue = greenPrint(hex.EncodeToString(actualValue.Expected[:]))
 		} else {
-			fmt.Printf("Measured PCR %d: %s\n", pcr, redPrint(hex.EncodeToString(actualValue[:])))
-			color.Red("PCR %d does not match.\n", pcr)
+			coloredValue = redPrint(hex.EncodeToString(actualValue.Expected[:]))
+			foundMismatch = true
+		}
+
+		if actualValue.WarnOnly == expectedValue.WarnOnly {
+			coloredWarnOnly = greenPrint(fmt.Sprintf("%t", actualValue.WarnOnly))
+		} else {
+			coloredWarnOnly = redPrint(fmt.Sprintf("%t", actualValue.WarnOnly))
+			foundMismatch = true
+		}
+
+		fmt.Printf("Measured PCR %02d: %s (warnOnly: %s)\n", pcr, coloredValue, coloredWarnOnly)
+		if !foundMismatch {
+			color.Green("PCR %02d matches.\n", pcr)
+		} else {
+			color.Red("PCR %02d does not match.\n", pcr)
 		}
 	}
-
-	return areEqual
 }
 
 // getSortedKeysOfMap returns the sorted keys of a map to allow the PCR output to be ordered in the output.
