@@ -364,6 +364,8 @@ func (c mYamlContent) Less(i, j int) bool {
 }
 
 func (c mYamlContent) Swap(i, j int) {
+	// The slice is filled like {key1, value1, key2, value2, ...}.
+	// We need to swap both key and value.
 	c[2*i], c[2*j] = c[2*j], c[2*i]
 	c[2*i+1], c[2*j+1] = c[2*j+1], c[2*i+1]
 }
