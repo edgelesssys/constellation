@@ -27,6 +27,7 @@ func TestMain(m *testing.M) {
 
 type stubTerraformClient struct {
 	ip                     string
+	initSecret             string
 	cleanUpWorkspaceCalled bool
 	removeInstallerCalled  bool
 	destroyClusterCalled   bool
@@ -36,8 +37,8 @@ type stubTerraformClient struct {
 	cleanUpWorkspaceErr    error
 }
 
-func (c *stubTerraformClient) CreateCluster(ctx context.Context) (string, error) {
-	return c.ip, c.createClusterErr
+func (c *stubTerraformClient) CreateCluster(ctx context.Context) (string, string, error) {
+	return c.ip, c.initSecret, c.createClusterErr
 }
 
 func (c *stubTerraformClient) PrepareWorkspace(provider cloudprovider.Provider, input terraform.Variables) error {

@@ -72,7 +72,7 @@ func TestListAll(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			server := New(logger.NewTest(t), "test", tc.connect)
+			server := New(logger.NewTest(t), "test", "initSecretHash", tc.connect)
 
 			res, err := server.listAll()
 
@@ -149,7 +149,7 @@ func TestListSelf(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			server := New(logger.NewTest(t), "test", tc.connect)
+			server := New(logger.NewTest(t), "test", "initSecretHash", tc.connect)
 
 			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.0.1/self", nil)
 			require.NoError(err)
@@ -211,7 +211,7 @@ func TestListPeers(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			server := New(logger.NewTest(t), "test", tc.connect)
+			server := New(logger.NewTest(t), "test", "initSecretHash", tc.connect)
 
 			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://192.0.0.1/peers", nil)
 			require.NoError(err)
@@ -266,7 +266,7 @@ func TestPostLog(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			server := New(logger.NewTest(t), "test", &stubConnect{})
+			server := New(logger.NewTest(t), "test", "initSecretHash", &stubConnect{})
 
 			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.0.1/logs", tc.message)
 			require.NoError(err)
@@ -346,7 +346,7 @@ func TestExportPCRs(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			server := New(logger.NewTest(t), "test", tc.connect)
+			server := New(logger.NewTest(t), "test", "initSecretHash", tc.connect)
 
 			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.0.1/pcrs", strings.NewReader(tc.message))
 			require.NoError(err)
@@ -361,6 +361,58 @@ func TestExportPCRs(t *testing.T) {
 			}
 
 			assert.Equal(http.StatusOK, w.Code)
+		})
+	}
+}
+
+func TestInitSecretHash(t *testing.T) {
+	defaultConnect := &stubConnect{
+		network: stubNetwork{
+			leases: []libvirt.NetworkDHCPLease{
+				{
+					IPaddr:   "192.0.100.1",
+					Hostname: "control-plane-0",
+				},
+			},
+		},
+	}
+	testCases := map[string]struct {
+		connect  *stubConnect
+		method   string
+		wantHash string
+		wantErr  bool
+	}{
+		"success": {
+			connect: defaultConnect,
+			method:  http.MethodGet,
+		},
+		"wrong method": {
+			connect: defaultConnect,
+			method:  http.MethodPost,
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			server := New(logger.NewTest(t), "test", tc.wantHash, defaultConnect)
+
+			req, err := http.NewRequestWithContext(context.Background(), tc.method, "http://192.0.0.1/initsecrethash", nil)
+			require.NoError(err)
+
+			w := httptest.NewRecorder()
+			server.initSecretHash(w, req)
+
+			if tc.wantErr {
+				assert.NotEqual(http.StatusOK, w.Code)
+				return
+			}
+
+			assert.Equal(http.StatusOK, w.Code)
+			assert.Equal(tc.wantHash, w.Body.String())
 		})
 	}
 }

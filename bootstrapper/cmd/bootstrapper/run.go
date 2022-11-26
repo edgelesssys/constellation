@@ -56,7 +56,10 @@ func run(issuerWrapper initserver.IssuerWrapper, tpm vtpm.TPMOpenFunc, fileHandl
 	}
 
 	nodeLock := nodelock.New(tpm)
-	initServer := initserver.New(nodeLock, kube, issuerWrapper, fileHandler, log)
+	initServer, err := initserver.New(context.Background(), nodeLock, kube, issuerWrapper, fileHandler, metadata, log)
+	if err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to create init server")
+	}
 
 	dialer := dialer.New(issuerWrapper, nil, &net.Dialer{})
 	joinClient := joinclient.New(nodeLock, dialer, kube, metadata, log)
@@ -92,5 +95,6 @@ type clusterInitJoiner interface {
 
 type metadataAPI interface {
 	joinclient.MetadataAPI
+	initserver.MetadataAPI
 	GetLoadBalancerEndpoint(ctx context.Context) (string, error)
 }

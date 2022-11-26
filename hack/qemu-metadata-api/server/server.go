@@ -24,17 +24,19 @@ import (
 
 // Server that provides QEMU metadata.
 type Server struct {
-	log     *logger.Logger
-	virt    virConnect
-	network string
+	log               *logger.Logger
+	virt              virConnect
+	network           string
+	initSecretHashVal []byte
 }
 
 // New creates a new Server.
-func New(log *logger.Logger, network string, conn virConnect) *Server {
+func New(log *logger.Logger, network, initSecretHash string, conn virConnect) *Server {
 	return &Server{
-		log:     log,
-		virt:    conn,
-		network: network,
+		log:               log,
+		virt:              conn,
+		network:           network,
+		initSecretHashVal: []byte(initSecretHash),
 	}
 }
 
@@ -46,6 +48,7 @@ func (s *Server) ListenAndServe(port string) error {
 	mux.Handle("/log", http.HandlerFunc(s.postLog))
 	mux.Handle("/pcrs", http.HandlerFunc(s.exportPCRs))
 	mux.Handle("/endpoint", http.HandlerFunc(s.getEndpoint))
+	mux.Handle("/initsecrethash", http.HandlerFunc(s.initSecretHash))
 
 	server := http.Server{
 		Handler: mux,
@@ -109,6 +112,26 @@ func (s *Server) listPeers(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(peers); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	log.Infof("Request successful")
+}
+
+// initSecretHash returns the hash of the init secret.
+func (s *Server) initSecretHash(w http.ResponseWriter, r *http.Request) {
+	log := s.log.With(zap.String("initSecretHash", r.RemoteAddr))
+	if r.Method != http.MethodGet {
+		log.With(zap.String("method", r.Method)).Errorf("Invalid method for /initSecretHash")
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	log.Infof("Serving GET request for /initsecrethash")
+
+	w.Header().Set("Content-Type", "text/plain")
+	_, err := w.Write(s.initSecretHashVal)
+	if err != nil {
+		log.With(zap.Error(err)).Errorf("Failed to write init secret hash")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -15,7 +15,7 @@ locals {
 resource "google_compute_instance_template" "template" {
   name         = local.name
   machine_type = var.instance_type
-  tags         = ["constellation-${var.uid}"]
+  tags         = ["constellation-${var.uid}"] // Note that this is also applied as a label 
   labels       = merge(var.labels, { constellation-role = local.role_dashed })
 
   confidential_instance_config {
@@ -41,8 +41,9 @@ resource "google_compute_instance_template" "template" {
   }
 
   metadata = {
-    kube-env           = var.kube_env
-    serial-port-enable = var.debug ? "TRUE" : "FALSE"
+    kube-env                       = var.kube_env
+    constellation-init-secret-hash = var.init_secret_hash
+    serial-port-enable             = var.debug ? "TRUE" : "FALSE"
   }
 
   network_interface {

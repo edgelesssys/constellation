@@ -67,7 +67,8 @@ func TestSelf(t *testing.T) {
 					},
 				},
 				tags: map[string]string{
-					cloud.TagRole: "worker",
+					cloud.TagRole:           "worker",
+					cloud.TagInitSecretHash: "initSecretHash",
 				},
 			},
 			wantSelf: metadata.InstanceMetadata{

@@ -250,6 +250,15 @@ func (c *Cloud) UID(ctx context.Context) (string, error) {
 	return uid, nil
 }
 
+// InitSecretHash retrieves the InitSecretHash of the current instance.
+func (c *Cloud) InitSecretHash(ctx context.Context) ([]byte, error) {
+	initSecretHash, err := c.imds.initSecretHash(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving init secret hash: %w", err)
+	}
+	return []byte(initSecretHash), nil
+}
+
 // getLoadBalancer retrieves a load balancer from cloud provider metadata.
 func (c *Cloud) getLoadBalancer(ctx context.Context, resourceGroup, uid string) (*armnetwork.LoadBalancer, error) {
 	pager := c.loadBalancerAPI.NewListPager(resourceGroup, nil)
@@ -283,8 +292,12 @@ func (c *Cloud) getInstance(ctx context.Context, providerID string) (metadata.In
 	if err != nil {
 		return metadata.InstanceMetadata{}, fmt.Errorf("retrieving VM network interfaces: %w", err)
 	}
+	instance, err := convertToInstanceMetadata(vmResp.VirtualMachineScaleSetVM, networkInterfaces)
+	if err != nil {
+		return metadata.InstanceMetadata{}, fmt.Errorf("converting VM to instance metadata: %w", err)
+	}
 
-	return convertToInstanceMetadata(vmResp.VirtualMachineScaleSetVM, networkInterfaces)
+	return instance, nil
 }
 
 // getNetworkSecurityGroupName returns the security group name of the resource group.

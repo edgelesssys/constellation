@@ -21,6 +21,7 @@ type imdsAPI interface {
 	resourceGroup(ctx context.Context) (string, error)
 	subscriptionID(ctx context.Context) (string, error)
 	uid(ctx context.Context) (string, error)
+	initSecretHash(ctx context.Context) (string, error)
 }
 
 type virtualNetworksAPI interface {
