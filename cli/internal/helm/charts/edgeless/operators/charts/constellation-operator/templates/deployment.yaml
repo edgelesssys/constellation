@@ -110,12 +110,10 @@ spec:
       - hostPath:
           path: /usr/lib/os-release
           type: File
-          optional: true
         name: usr-lib-os-release
       - hostPath:
           path: /etc/os-release
           type: File
-          optional: true
         name: etc-os-release
       - name: azureconfig
         secret:

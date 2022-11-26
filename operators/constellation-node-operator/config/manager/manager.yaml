@@ -27,77 +27,75 @@ spec:
       securityContext:
         runAsUser: 0 # required to read etcd certs and keys from /etc/kubernetes/pki
       containers:
-      - command:
-        - /manager
-        args:
-        - --leader-elect
-        image: controller:latest
-        name: manager
-        securityContext:
-          allowPrivilegeEscalation: false
-        livenessProbe:
-          httpGet:
-            path: /healthz
-            port: 8081
-          initialDelaySeconds: 15
-          periodSeconds: 20
-        readinessProbe:
-          httpGet:
-            path: /readyz
-            port: 8081
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        volumeMounts:
-        - mountPath: /etc/kubernetes/pki/etcd
-          name: etcd-certs
-        - mountPath: /host/usr/lib/os-release
-          name: usr-lib-os-release
-        - mountPath: /etc/os-release
-          name: etc-os-release
-        - mountPath: /etc/azure
-          name: azureconfig
-          readOnly: true
-        - mountPath: /etc/gce
-          name: gceconf
-          readOnly: true
-        resources:
-          limits:
-            cpu: 500m
-            memory: 128Mi
-          requests:
-            cpu: 10m
-            memory: 64Mi
+        - command:
+            - /manager
+          args:
+            - --leader-elect
+          image: controller:latest
+          name: manager
+          securityContext:
+            allowPrivilegeEscalation: false
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          volumeMounts:
+            - mountPath: /etc/kubernetes/pki/etcd
+              name: etcd-certs
+            - mountPath: /host/usr/lib/os-release
+              name: usr-lib-os-release
+            - mountPath: /etc/os-release
+              name: etc-os-release
+            - mountPath: /etc/azure
+              name: azureconfig
+              readOnly: true
+            - mountPath: /etc/gce
+              name: gceconf
+              readOnly: true
+          resources:
+            limits:
+              cpu: 500m
+              memory: 128Mi
+            requests:
+              cpu: 10m
+              memory: 64Mi
       volumes:
-      - name: etcd-certs
-        hostPath:
-          path: /etc/kubernetes/pki/etcd
-          type: Directory
-      - hostPath:
-          path: /usr/lib/os-release
-          type: File
-          optional: true
-        name: usr-lib-os-release
-      - hostPath:
-          path: /etc/os-release
-          type: File
-          optional: true
-        name: etc-os-release
-      - name: azureconfig
-        secret:
-          secretName: azureconfig
-          optional: true
-      - name: gceconf
-        configMap:
-          name: gceconf
-          optional: true
+        - name: etcd-certs
+          hostPath:
+            path: /etc/kubernetes/pki/etcd
+            type: Directory
+        - hostPath:
+            path: /usr/lib/os-release
+            type: File
+          name: usr-lib-os-release
+        - hostPath:
+            path: /etc/os-release
+            type: File
+          name: etc-os-release
+        - name: azureconfig
+          secret:
+            secretName: azureconfig
+            optional: true
+        - name: gceconf
+          configMap:
+            name: gceconf
+            optional: true
       nodeSelector:
         node-role.kubernetes.io/control-plane: ""
       tolerations:
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/control-plane
-        operator: Exists
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/master
-        operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+          operator: Exists
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
