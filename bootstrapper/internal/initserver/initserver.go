@@ -27,6 +27,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
@@ -45,22 +46,33 @@ type Server struct {
 	cleaner       cleaner
 	issuerWrapper IssuerWrapper
 
+	initSecretHash []byte
+
 	log *logger.Logger
 
 	initproto.UnimplementedAPIServer
 }
 
 // New creates a new initialization server.
-func New(lock locker, kube ClusterInitializer, issuerWrapper IssuerWrapper, fh file.Handler, log *logger.Logger) *Server {
+func New(ctx context.Context, lock locker, kube ClusterInitializer, issuerWrapper IssuerWrapper, fh file.Handler, metadata MetadataAPI, log *logger.Logger) (*Server, error) {
 	log = log.Named("initServer")
 
+	initSecretHash, err := metadata.InitSecretHash(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving init secret hash: %w", err)
+	}
+	if len(initSecretHash) == 0 {
+		return nil, fmt.Errorf("init secret hash is empty")
+	}
+
 	server := &Server{
-		nodeLock:      lock,
-		disk:          diskencryption.New(),
-		initializer:   kube,
-		fileHandler:   fh,
-		issuerWrapper: issuerWrapper,
-		log:           log,
+		nodeLock:       lock,
+		disk:           diskencryption.New(),
+		initializer:    kube,
+		fileHandler:    fh,
+		issuerWrapper:  issuerWrapper,
+		log:            log,
+		initSecretHash: initSecretHash,
 	}
 
 	grpcServer := grpc.NewServer(
@@ -71,7 +83,7 @@ func New(lock locker, kube ClusterInitializer, issuerWrapper IssuerWrapper, fh f
 	initproto.RegisterAPIServer(grpcServer, server)
 
 	server.grpcServer = grpcServer
-	return server
+	return server, nil
 }
 
 // Serve starts the initialization server.
@@ -91,6 +103,10 @@ func (s *Server) Init(ctx context.Context, req *initproto.InitRequest) (*initpro
 	defer s.cleaner.Clean()
 	log := s.log.With(zap.String("peer", grpclog.PeerAddrFromContext(ctx)))
 	log.Infof("Init called")
+
+	if err := bcrypt.CompareHashAndPassword(s.initSecretHash, req.InitSecret); err != nil {
+		return nil, status.Errorf(codes.Internal, "invalid init secret %s", err)
+	}
 
 	// generate values for cluster attestation
 	measurementSalt, clusterID, err := deriveMeasurementValues(req.MasterSecret, req.Salt)
@@ -266,4 +282,10 @@ type locker interface {
 
 type cleaner interface {
 	Clean()
+}
+
+// MetadataAPI provides information about the instances.
+type MetadataAPI interface {
+	// InitSecretHash returns the initSecretHash of the instance.
+	InitSecretHash(ctx context.Context) ([]byte, error)
 }

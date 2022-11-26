@@ -11,4 +11,6 @@ const (
 	TagRole = "constellation-role"
 	// TagUID is the tag/label key used to identify the UID of a cluster.
 	TagUID = "constellation-uid"
+	// TagInitSecretHash is the tag/label key used to identify the hash of the init secret.
+	TagInitSecretHash = "constellation-init-secret-hash"
 )

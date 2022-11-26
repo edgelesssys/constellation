@@ -109,6 +109,9 @@ func TestCreateCluster(t *testing.T) {
 					"ip": {
 						Value: "192.0.2.100",
 					},
+					"initSecret": {
+						Value: "initSecret",
+					},
 				},
 			},
 		}
@@ -202,7 +205,7 @@ func TestCreateCluster(t *testing.T) {
 			}
 
 			require.NoError(c.PrepareWorkspace(tc.provider, tc.vars))
-			ip, err := c.CreateCluster(context.Background())
+			ip, initSecret, err := c.CreateCluster(context.Background())
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -210,6 +213,7 @@ func TestCreateCluster(t *testing.T) {
 			}
 			assert.NoError(err)
 			assert.Equal("192.0.2.100", ip)
+			assert.Equal("initSecret", initSecret)
 		})
 	}
 }

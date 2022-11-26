@@ -114,6 +114,24 @@ func (c *imdsClient) uid(ctx context.Context) (string, error) {
 	return "", fmt.Errorf("unable to get uid from metadata tags %v", c.cache.Compute.Tags)
 }
 
+// initSecretHash returns the hash of the init secret of the cluster, based on the tags on the instance
+// the function is called from, which are inherited from the scale set.
+func (c *imdsClient) initSecretHash(ctx context.Context) (string, error) {
+	if c.timeForUpdate() || len(c.cache.Compute.Tags) == 0 {
+		if err := c.update(ctx); err != nil {
+			return "", err
+		}
+	}
+
+	for _, tag := range c.cache.Compute.Tags {
+		if tag.Name == cloud.TagInitSecretHash {
+			return tag.Value, nil
+		}
+	}
+
+	return "", fmt.Errorf("unable to get tag %s from metadata tags %v", cloud.TagInitSecretHash, c.cache.Compute.Tags)
+}
+
 // role returns the role of the instance the function is called from.
 func (c *imdsClient) role(ctx context.Context) (role.Role, error) {
 	if c.timeForUpdate() || len(c.cache.Compute.Tags) == 0 {

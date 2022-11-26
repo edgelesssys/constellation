@@ -21,11 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Environment variable `CONSTELL_AZURE_CLIENT_SECRET_VALUE` as an alternative way to provide the configuration value `provider.azure.clientSecretValue`.
-
 - Automatic CSI driver deployment for Azure and GCP during Constellation init
-
 - Improve reproducibility by pinning the Kubernetes components.
+- Client verification during `constellation init`
 
 ### Changed
 <!-- For changes in existing functionality.  -->
@@ -51,7 +51,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `constellation create` on GCP now always uses the local default credentials.
 
-
 ## [2.2.2] - 2022-11-17
 
 ### Fixed
@@ -69,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 Vulnerabilities in `kube-apiserver` fixed by upgrading to v1.23.14, v1.24.8 and v1.25.4:
+
 - [CVE-2022-3162](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-3162)
 - [CVE-2022-3294](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-3294)
 
@@ -135,7 +135,9 @@ Vulnerabilities in `kube-apiserver` fixed by upgrading to v1.23.14, v1.24.8 and 
 ### Fixed
 
 ### Security
+
 Vulnerability inside the Go standard library fixed by updating to Go 1.19.2:
+
 - [GO-2022-1037](https://pkg.go.dev/vuln/GO-2022-1037) ([CVE-2022-2879](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-2879))
 - [GO-2022-1038](https://pkg.go.dev/vuln/GO-2022-1038) ([CVE-2022-2880](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-2880))
 - [GO-2022-0969](https://pkg.go.dev/vuln/GO-2022-0969) ([CVE-2022-27664](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-27664))

@@ -9,6 +9,7 @@ package qemu
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -60,6 +61,15 @@ func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
 	var endpoint string
 	err = json.Unmarshal(endpointRaw, &endpoint)
 	return endpoint, err
+}
+
+// InitSecretHash returns the hash of the init secret.
+func (c *Cloud) InitSecretHash(ctx context.Context) ([]byte, error) {
+	initSecretHash, err := c.retrieveMetadata(ctx, "/initsecrethash")
+	if err != nil {
+		return nil, fmt.Errorf("could not retrieve init secret hash: %w", err)
+	}
+	return initSecretHash, nil
 }
 
 // UID returns the UID of the constellation.

@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestMain(m *testing.M) {
@@ -31,17 +32,45 @@ func TestMain(m *testing.M) {
 }
 
 func TestNew(t *testing.T) {
-	assert := assert.New(t)
-
 	fh := file.NewHandler(afero.NewMemMapFs())
-	server := New(newFakeLock(), &stubClusterInitializer{}, IssuerWrapper{}, fh, logger.NewTest(t))
-	assert.NotNil(server)
-	assert.NotNil(server.log)
-	assert.NotNil(server.nodeLock)
-	assert.NotNil(server.initializer)
-	assert.NotNil(server.grpcServer)
-	assert.NotNil(server.fileHandler)
-	assert.NotNil(server.disk)
+
+	testCases := map[string]struct {
+		metadata stubMetadata
+		wantErr  bool
+	}{
+		"success": {
+			metadata: stubMetadata{initSecretHashVal: []byte("hash")},
+		},
+		"empty init secret hash": {
+			metadata: stubMetadata{initSecretHashVal: nil},
+			wantErr:  true,
+		},
+		"metadata error": {
+			metadata: stubMetadata{initSecretHashErr: errors.New("error")},
+			wantErr:  true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			server, err := New(context.TODO(), newFakeLock(), &stubClusterInitializer{}, IssuerWrapper{}, fh, &tc.metadata, logger.NewTest(t))
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.NotNil(server)
+			assert.NotEmpty(server.initSecretHash)
+			assert.NotNil(server.log)
+			assert.NotNil(server.nodeLock)
+			assert.NotNil(server.initializer)
+			assert.NotNil(server.grpcServer)
+			assert.NotNil(server.fileHandler)
+			assert.NotNil(server.disk)
+		})
+	}
 }
 
 func TestInit(t *testing.T) {
@@ -51,70 +80,91 @@ func TestInit(t *testing.T) {
 	require.True(t, aqcuiredLock)
 	require.Nil(t, lockErr)
 
+	initSecret := []byte("password")
+	initSecretHash, err := bcrypt.GenerateFromPassword(initSecret, bcrypt.DefaultCost)
+	require.NoError(t, err)
+
 	testCases := map[string]struct {
-		nodeLock     *fakeLock
-		initializer  ClusterInitializer
-		disk         encryptedDisk
-		fileHandler  file.Handler
-		req          *initproto.InitRequest
-		wantErr      bool
-		wantShutdown bool
+		nodeLock       *fakeLock
+		initializer    ClusterInitializer
+		disk           encryptedDisk
+		fileHandler    file.Handler
+		req            *initproto.InitRequest
+		initSecretHash []byte
+		wantErr        bool
+		wantShutdown   bool
 	}{
 		"successful init": {
-			nodeLock:    newFakeLock(),
-			initializer: &stubClusterInitializer{},
-			disk:        &stubDisk{},
-			fileHandler: file.NewHandler(afero.NewMemMapFs()),
-			req:         &initproto.InitRequest{},
+			nodeLock:       newFakeLock(),
+			initializer:    &stubClusterInitializer{},
+			disk:           &stubDisk{},
+			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
+			initSecretHash: initSecretHash,
+			req:            &initproto.InitRequest{InitSecret: initSecret},
 		},
 		"node locked": {
-			nodeLock:     lockedLock,
-			initializer:  &stubClusterInitializer{},
-			disk:         &stubDisk{},
-			fileHandler:  file.NewHandler(afero.NewMemMapFs()),
-			req:          &initproto.InitRequest{},
-			wantErr:      true,
-			wantShutdown: true,
+			nodeLock:       lockedLock,
+			initializer:    &stubClusterInitializer{},
+			disk:           &stubDisk{},
+			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
+			req:            &initproto.InitRequest{InitSecret: initSecret},
+			initSecretHash: initSecretHash,
+			wantErr:        true,
+			wantShutdown:   true,
 		},
 		"disk open error": {
-			nodeLock:    newFakeLock(),
-			initializer: &stubClusterInitializer{},
-			disk:        &stubDisk{openErr: someErr},
-			fileHandler: file.NewHandler(afero.NewMemMapFs()),
-			req:         &initproto.InitRequest{},
-			wantErr:     true,
+			nodeLock:       newFakeLock(),
+			initializer:    &stubClusterInitializer{},
+			disk:           &stubDisk{openErr: someErr},
+			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
+			req:            &initproto.InitRequest{InitSecret: initSecret},
+			initSecretHash: initSecretHash,
+			wantErr:        true,
 		},
 		"disk uuid error": {
-			nodeLock:    newFakeLock(),
-			initializer: &stubClusterInitializer{},
-			disk:        &stubDisk{uuidErr: someErr},
-			fileHandler: file.NewHandler(afero.NewMemMapFs()),
-			req:         &initproto.InitRequest{},
-			wantErr:     true,
+			nodeLock:       newFakeLock(),
+			initializer:    &stubClusterInitializer{},
+			disk:           &stubDisk{uuidErr: someErr},
+			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
+			req:            &initproto.InitRequest{InitSecret: initSecret},
+			initSecretHash: initSecretHash,
+			wantErr:        true,
 		},
 		"disk update passphrase error": {
-			nodeLock:    newFakeLock(),
-			initializer: &stubClusterInitializer{},
-			disk:        &stubDisk{updatePassphraseErr: someErr},
-			fileHandler: file.NewHandler(afero.NewMemMapFs()),
-			req:         &initproto.InitRequest{},
-			wantErr:     true,
+			nodeLock:       newFakeLock(),
+			initializer:    &stubClusterInitializer{},
+			disk:           &stubDisk{updatePassphraseErr: someErr},
+			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
+			req:            &initproto.InitRequest{InitSecret: initSecret},
+			initSecretHash: initSecretHash,
+			wantErr:        true,
 		},
 		"write state file error": {
-			nodeLock:    newFakeLock(),
-			initializer: &stubClusterInitializer{},
-			disk:        &stubDisk{},
-			fileHandler: file.NewHandler(afero.NewReadOnlyFs(afero.NewMemMapFs())),
-			req:         &initproto.InitRequest{},
-			wantErr:     true,
+			nodeLock:       newFakeLock(),
+			initializer:    &stubClusterInitializer{},
+			disk:           &stubDisk{},
+			fileHandler:    file.NewHandler(afero.NewReadOnlyFs(afero.NewMemMapFs())),
+			req:            &initproto.InitRequest{InitSecret: initSecret},
+			initSecretHash: initSecretHash,
+			wantErr:        true,
 		},
 		"initialize cluster error": {
-			nodeLock:    newFakeLock(),
-			initializer: &stubClusterInitializer{initClusterErr: someErr},
-			disk:        &stubDisk{},
-			fileHandler: file.NewHandler(afero.NewMemMapFs()),
-			req:         &initproto.InitRequest{},
-			wantErr:     true,
+			nodeLock:       newFakeLock(),
+			initializer:    &stubClusterInitializer{initClusterErr: someErr},
+			disk:           &stubDisk{},
+			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
+			req:            &initproto.InitRequest{InitSecret: initSecret},
+			initSecretHash: initSecretHash,
+			wantErr:        true,
+		},
+		"wrong initSecret": {
+			nodeLock:       newFakeLock(),
+			initializer:    &stubClusterInitializer{},
+			disk:           &stubDisk{},
+			fileHandler:    file.NewHandler(afero.NewMemMapFs()),
+			initSecretHash: initSecretHash,
+			req:            &initproto.InitRequest{InitSecret: []byte("wrongpassword")},
+			wantErr:        true,
 		},
 	}
 
@@ -124,13 +174,14 @@ func TestInit(t *testing.T) {
 
 			serveStopper := newStubServeStopper()
 			server := &Server{
-				nodeLock:    tc.nodeLock,
-				initializer: tc.initializer,
-				disk:        tc.disk,
-				fileHandler: tc.fileHandler,
-				log:         logger.NewTest(t),
-				grpcServer:  serveStopper,
-				cleaner:     &fakeCleaner{serveStopper: serveStopper},
+				nodeLock:       tc.nodeLock,
+				initializer:    tc.initializer,
+				disk:           tc.disk,
+				fileHandler:    tc.fileHandler,
+				log:            logger.NewTest(t),
+				grpcServer:     serveStopper,
+				cleaner:        &fakeCleaner{serveStopper: serveStopper},
+				initSecretHash: tc.initSecretHash,
 			}
 
 			kubeconfig, err := server.Init(context.Background(), tc.req)
@@ -292,4 +343,13 @@ type fakeCleaner struct {
 
 func (f *fakeCleaner) Clean() {
 	go f.serveStopper.GracefulStop() // this is not the correct way to do this, but it's fine for testing
+}
+
+type stubMetadata struct {
+	initSecretHashVal []byte
+	initSecretHashErr error
+}
+
+func (m *stubMetadata) InitSecretHash(context.Context) ([]byte, error) {
+	return m.initSecretHashVal, m.initSecretHashErr
 }

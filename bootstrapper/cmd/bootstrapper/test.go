@@ -56,3 +56,7 @@ func (f *providerMetadataFake) Self(ctx context.Context) (metadata.InstanceMetad
 func (f *providerMetadataFake) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
 	return "", nil
 }
+
+func (f *providerMetadataFake) InitSecretHash(ctx context.Context) ([]byte, error) {
+	return nil, nil
+}

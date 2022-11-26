@@ -24,6 +24,7 @@ message InitRequest {
   bool enforce_idkeydigest = 13;
   bool conformance_mode = 14;
   repeated KubernetesComponent kubernetes_components = 15;
+  bytes init_secret = 16;
 }
 
 message InitResponse {

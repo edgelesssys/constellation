@@ -122,13 +122,14 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *con
 	}
 
 	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
-	ip, err := cl.CreateCluster(ctx)
+	ip, initSecret, err := cl.CreateCluster(ctx)
 	if err != nil {
 		return clusterid.File{}, err
 	}
 
 	return clusterid.File{
 		CloudProvider: cloudprovider.AWS,
+		InitSecret:    []byte(initSecret),
 		IP:            ip,
 	}, nil
 }
@@ -158,13 +159,14 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 	}
 
 	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
-	ip, err := cl.CreateCluster(ctx)
+	ip, initSecret, err := cl.CreateCluster(ctx)
 	if err != nil {
 		return clusterid.File{}, err
 	}
 
 	return clusterid.File{
 		CloudProvider: cloudprovider.GCP,
+		InitSecret:    []byte(initSecret),
 		IP:            ip,
 	}, nil
 }
@@ -197,7 +199,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 	}
 
 	defer rollbackOnError(context.Background(), c.out, &retErr, &rollbackerTerraform{client: cl})
-	ip, err := cl.CreateCluster(ctx)
+	ip, initSecret, err := cl.CreateCluster(ctx)
 	if err != nil {
 		return clusterid.File{}, err
 	}
@@ -205,6 +207,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 	return clusterid.File{
 		CloudProvider: cloudprovider.Azure,
 		IP:            ip,
+		InitSecret:    []byte(initSecret),
 	}, nil
 }
 
@@ -309,13 +312,14 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 	// Allow rollback of QEMU Terraform workspace from this point on
 	qemuRollbacker.createdWorkspace = true
 
-	ip, err := cl.CreateCluster(ctx)
+	ip, initSecret, err := cl.CreateCluster(ctx)
 	if err != nil {
 		return clusterid.File{}, err
 	}
 
 	return clusterid.File{
 		CloudProvider: cloudprovider.QEMU,
+		InitSecret:    []byte(initSecret),
 		IP:            ip,
 	}, nil
 }

@@ -181,6 +181,19 @@ func (c *Cloud) UID(ctx context.Context) (string, error) {
 	return c.uid(ctx, project, zone, instanceName)
 }
 
+// InitSecretHash retrieves the InitSecretHash of the current instance.
+func (c *Cloud) InitSecretHash(ctx context.Context) ([]byte, error) {
+	project, zone, instanceName, err := c.retrieveInstanceInfo()
+	if err != nil {
+		return nil, err
+	}
+	initSecretHash, err := c.initSecretHash(ctx, project, zone, instanceName)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving init secret hash: %w", err)
+	}
+	return []byte(initSecretHash), nil
+}
+
 // getInstance retrieves an instance using its project, zone and name, and parses it to metadata.InstanceMetadata.
 func (c *Cloud) getInstance(ctx context.Context, project, zone, instanceName string) (metadata.InstanceMetadata, error) {
 	gcpInstance, err := c.instanceAPI.Get(ctx, &computepb.GetInstanceRequest{
@@ -205,7 +218,9 @@ func (c *Cloud) getInstance(ctx context.Context, project, zone, instanceName str
 	if err != nil {
 		return metadata.InstanceMetadata{}, fmt.Errorf("converting instance: %w", err)
 	}
+
 	instance.SecondaryIPRange = subnetCIDR
+
 	return instance, nil
 }
 
@@ -268,7 +283,39 @@ func (c *Cloud) uid(ctx context.Context, project, zone, instanceName string) (st
 	if instance == nil || instance.Labels == nil {
 		return "", errors.New("retrieving compute instance: received instance with invalid labels")
 	}
-	return instance.Labels[cloud.TagUID], nil
+	uid, ok := instance.Labels[cloud.TagUID]
+	if !ok {
+		return "", errors.New("retrieving compute instance: received instance with no UID label")
+	}
+	return uid, nil
+}
+
+// initSecretHash retrieves the init secret hash of the instance identified by project, zone and instanceName.
+// The init secret hash is retrieved from the instance's labels.
+func (c *Cloud) initSecretHash(ctx context.Context, project, zone, instanceName string) (string, error) {
+	instance, err := c.instanceAPI.Get(ctx, &computepb.GetInstanceRequest{
+		Project:  project,
+		Zone:     zone,
+		Instance: instanceName,
+	})
+	if err != nil {
+		return "", fmt.Errorf("retrieving compute instance: %w", err)
+	}
+	if instance == nil || instance.Metadata == nil {
+		return "", errors.New("retrieving compute instance: received instance with invalid metadata")
+	}
+	if len(instance.Metadata.Items) == 0 {
+		return "", errors.New("retrieving compute instance: received instance with empty metadata")
+	}
+	for _, item := range instance.Metadata.Items {
+		if item == nil || item.Key == nil || item.Value == nil {
+			return "", errors.New("retrieving compute instance: received instance with invalid metadata item")
+		}
+		if *item.Key == cloud.TagInitSecretHash {
+			return *item.Value, nil
+		}
+	}
+	return "", errors.New("retrieving compute instance: received instance with no init secret hash label")
 }
 
 // convertToInstanceMetadata converts a *computepb.Instance to a metadata.InstanceMetadata.

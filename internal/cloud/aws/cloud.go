@@ -109,6 +109,15 @@ func (c *Cloud) UID(ctx context.Context) (string, error) {
 	return readInstanceTag(ctx, c.imds, cloud.TagUID)
 }
 
+// InitSecretHash returns the InitSecretHash of the current instance.
+func (c *Cloud) InitSecretHash(ctx context.Context) ([]byte, error) {
+	initSecretHash, err := readInstanceTag(ctx, c.imds, cloud.TagInitSecretHash)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving init secret hash tag: %w", err)
+	}
+	return []byte(initSecretHash), nil
+}
+
 // GetLoadBalancerEndpoint returns the endpoint of the load balancer.
 func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
 	uid, err := readInstanceTag(ctx, c.imds, cloud.TagUID)

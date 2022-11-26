@@ -360,6 +360,7 @@ func TestGetInstance(t *testing.T) {
 	testCases := map[string]struct {
 		scaleSetsVMAPI       *stubVirtualMachineScaleSetVMsAPI
 		networkInterfacesAPI *stubNetworkInterfacesAPI
+		IMDSAPI              *stubIMDSAPI
 		providerID           string
 		wantInstance         metadata.InstanceMetadata
 		wantErr              bool
@@ -368,6 +369,7 @@ func TestGetInstance(t *testing.T) {
 			scaleSetsVMAPI:       successVMAPI,
 			networkInterfacesAPI: successNetworkAPI,
 			providerID:           sampleProviderID,
+			IMDSAPI:              &stubIMDSAPI{},
 			wantInstance: metadata.InstanceMetadata{
 				Name:       "scale-set-name-instance-id",
 				ProviderID: sampleProviderID,
@@ -397,6 +399,7 @@ func TestGetInstance(t *testing.T) {
 					},
 				},
 			},
+			IMDSAPI:              &stubIMDSAPI{},
 			networkInterfacesAPI: successNetworkAPI,
 			providerID:           sampleProviderID,
 			wantInstance: metadata.InstanceMetadata{
@@ -408,12 +411,14 @@ func TestGetInstance(t *testing.T) {
 		},
 		"invalid provider ID": {
 			scaleSetsVMAPI:       successVMAPI,
+			IMDSAPI:              &stubIMDSAPI{},
 			networkInterfacesAPI: successNetworkAPI,
 			providerID:           "invalid",
 			wantErr:              true,
 		},
 		"vm API error": {
 			scaleSetsVMAPI:       &stubVirtualMachineScaleSetVMsAPI{getErr: someErr},
+			IMDSAPI:              &stubIMDSAPI{},
 			networkInterfacesAPI: successNetworkAPI,
 			providerID:           sampleProviderID,
 			wantErr:              true,
@@ -421,6 +426,7 @@ func TestGetInstance(t *testing.T) {
 		"network API error": {
 			scaleSetsVMAPI:       successVMAPI,
 			networkInterfacesAPI: &stubNetworkInterfacesAPI{getErr: someErr},
+			IMDSAPI:              &stubIMDSAPI{},
 			providerID:           sampleProviderID,
 			wantErr:              true,
 		},
@@ -431,6 +437,7 @@ func TestGetInstance(t *testing.T) {
 			assert := assert.New(t)
 
 			metadata := Cloud{
+				imds:           tc.IMDSAPI,
 				scaleSetsVMAPI: tc.scaleSetsVMAPI,
 				netIfacAPI:     tc.networkInterfacesAPI,
 			}
@@ -477,6 +484,42 @@ func TestUID(t *testing.T) {
 			}
 			assert.NoError(err)
 			assert.Equal(tc.imdsAPI.uidVal, uid)
+		})
+	}
+}
+
+func TestInitSecretHash(t *testing.T) {
+	testCases := map[string]struct {
+		imdsAPI *stubIMDSAPI
+		wantErr bool
+	}{
+		"success": {
+			imdsAPI: &stubIMDSAPI{
+				initSecretHashVal: "initSecretHash",
+			},
+		},
+		"error": {
+			imdsAPI: &stubIMDSAPI{
+				initSecretHashErr: errors.New("failed"),
+			},
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			cloud := &Cloud{
+				imds: tc.imdsAPI,
+			}
+			initSecretHash, err := cloud.InitSecretHash(context.Background())
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal([]byte(tc.imdsAPI.initSecretHashVal), initSecretHash)
 		})
 	}
 }
@@ -978,6 +1021,8 @@ type stubIMDSAPI struct {
 	uidVal            string
 	nameErr           error
 	nameVal           string
+	initSecretHashVal string
+	initSecretHashErr error
 }
 
 func (a *stubIMDSAPI) providerID(ctx context.Context) (string, error) {
@@ -998,6 +1043,10 @@ func (a *stubIMDSAPI) uid(ctx context.Context) (string, error) {
 
 func (a *stubIMDSAPI) name(ctx context.Context) (string, error) {
 	return a.nameVal, a.nameErr
+}
+
+func (a *stubIMDSAPI) initSecretHash(ctx context.Context) (string, error) {
+	return a.initSecretHashVal, a.initSecretHashErr
 }
 
 type stubVirtualMachineScaleSetVMPager struct {

@@ -138,6 +138,7 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		EnforcedPcrs:           conf.EnforcedPCRs(),
 		EnforceIdkeydigest:     conf.EnforcesIDKeyDigest(),
 		ConformanceMode:        flags.conformance,
+		InitSecret:             idFile.InitSecret,
 	}
 	resp, err := initCall(cmd.Context(), newDialer(validator), idFile.IP, req)
 	spinner.Stop()
