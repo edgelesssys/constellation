@@ -1,0 +1,40 @@
+name: Build and upload join service image (KO)
+env:
+  REGISTRY: ghcr.io
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  build-kms-server:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.build-and-upload.outputs.image }}
+      digest: ${{ steps.build-and-upload.outputs.digest }}
+    steps:
+      - name: Check out repository
+        id: checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Setup Go environment
+        uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
+        with:
+          go-version: "1.19.3"
+
+      - name: Set up ko
+        uses: imjasonh/setup-ko@v0.6
+
+      - name: Build and upload join service container image
+        id: build-and-upload
+        uses: ./.github/actions/build_micro_service_ko
+        with:
+          name: joinservice
+          koConfig: .ko.yaml
+          koTarget: ./joinservice/cmd
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
