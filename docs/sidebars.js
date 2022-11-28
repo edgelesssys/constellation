@@ -243,8 +243,13 @@ const sidebars = {
         },
         {
           type: 'doc',
-          label: 'Configuration Migrations',
+          label: 'Configuration migrations',
           id: 'reference/config-migration',
+        },
+        {
+          type: 'doc',
+          label: 'SLSA adoption',
+          id: 'reference/slsa',
         },
       ],
     },
