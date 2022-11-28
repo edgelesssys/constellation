@@ -93,20 +93,23 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
            gh workflow run generate-measurements.yml --ref release/v$minor -F osImage=v$ver -F isDebugImage=false -F signMeasurements=true
         ```
 
-    13. Create a new tag on this release branch
+    13. Create a new tag on this release branch.
 
         ```sh
         git tag v$ver
         git tags --push
         ```
 
-        * Run [Release CLI](https://github.com/edgelesssys/constellation/actions/workflows/release-cli.yml) action on the tag
+    14. Update expected measurements in [`measurements.go`](/internal/attestation/measurements/measurements.go) using the generated measurements from step 12 and **push your changes**.
+
+    15. Run [Release CLI](https://github.com/edgelesssys/constellation/actions/workflows/release-cli.yml) action on the tag.
 
         ```sh
         gh workflow run release-cli.yml --ref v$ver
         ```
 
         * The previous step will create a draft release. Check build output for link to draft release. Review & approve.
+
 6. Export, download and make image available in S3 for trusted launch users. To achieve this:
 
     ```sh
