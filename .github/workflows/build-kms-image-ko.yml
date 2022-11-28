@@ -6,13 +6,6 @@ env:
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
-      - "release/**"
-    paths:
-      - "kms/**"
-      - "internal/constants/**"
-      - "internal/file/**"
 
 jobs:
   build-kms-server:
