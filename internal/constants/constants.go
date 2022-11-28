@@ -148,9 +148,6 @@ const (
 	// Releases.
 	//
 
-	// S3PublicBucket contains measurements & releases.
-	S3PublicBucket = "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/"
-
 	// CDNRepositoryURL is the base URL of the Constellation CDN artifact repository.
 	CDNRepositoryURL = "https://cdn.confidential.cloud"
 	// CDNImagePath is the default path to image references in the CDN repository.
