@@ -39,14 +39,16 @@ var helmFS embed.FS
 
 // ChartLoader loads embedded helm charts.
 type ChartLoader struct {
-	joinServiceImage         string
-	kmsImage                 string
-	ccmImage                 string
-	cnmImage                 string
-	autoscalerImage          string
-	verificationServiceImage string
-	gcpGuestAgentImage       string
-	konnectivityImage        string
+	joinServiceImage             string
+	kmsImage                     string
+	ccmImage                     string
+	cnmImage                     string
+	autoscalerImage              string
+	verificationServiceImage     string
+	gcpGuestAgentImage           string
+	konnectivityImage            string
+	constellationOperatorImage   string
+	nodeMaintenanceOperatorImage string
 }
 
 // NewLoader creates a new ChartLoader.
@@ -63,14 +65,16 @@ func NewLoader(csp cloudprovider.Provider, k8sVersion versions.ValidK8sVersion) 
 	}
 
 	return &ChartLoader{
-		joinServiceImage:         versions.JoinImage,
-		kmsImage:                 versions.KmsImage,
-		ccmImage:                 ccmImage,
-		cnmImage:                 cnmImage,
-		autoscalerImage:          versions.VersionConfigs[k8sVersion].ClusterAutoscalerImage,
-		verificationServiceImage: versions.VerificationImage,
-		gcpGuestAgentImage:       versions.GcpGuestImage,
-		konnectivityImage:        versions.KonnectivityAgentImage,
+		joinServiceImage:             versions.JoinImage,
+		kmsImage:                     versions.KmsImage,
+		ccmImage:                     ccmImage,
+		cnmImage:                     cnmImage,
+		autoscalerImage:              versions.VersionConfigs[k8sVersion].ClusterAutoscalerImage,
+		verificationServiceImage:     versions.VerificationImage,
+		gcpGuestAgentImage:           versions.GcpGuestImage,
+		konnectivityImage:            versions.KonnectivityAgentImage,
+		constellationOperatorImage:   versions.ConstellationOperatorImage,
+		nodeMaintenanceOperatorImage: versions.NodeMaintenanceOperatorImage,
 	}
 }
 
@@ -266,14 +270,14 @@ func (i *ChartLoader) loadOperatorsHelper(csp cloudprovider.Provider) (*chart.Ch
 		"constellation-operator": map[string]any{
 			"controllerManager": map[string]any{
 				"manager": map[string]any{
-					"image": versions.ConstellationOperatorImage,
+					"image": i.constellationOperatorImage,
 				},
 			},
 		},
 		"node-maintenance-operator": map[string]any{
 			"controllerManager": map[string]any{
 				"manager": map[string]any{
-					"image": versions.NodeMaintenanceOperatorImage,
+					"image": i.nodeMaintenanceOperatorImage,
 				},
 			},
 		},
