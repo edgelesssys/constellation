@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/talos-systems/talos/pkg/machinery/config/encoder"
 	"gopkg.in/yaml.v3"
 )
 
@@ -175,6 +176,59 @@ func TestUnmarshal(t *testing.T) {
 					assert.Equal(tc.wantMeasurements, m)
 				}
 			}
+		})
+	}
+}
+
+func TestEncodeM(t *testing.T) {
+	testCases := map[string]struct {
+		m    M
+		want string
+	}{
+		"basic": {
+			m: M{
+				1: WithAllBytes(1, false),
+				2: WithAllBytes(2, true),
+			},
+			want: `1:
+    expected: "0101010101010101010101010101010101010101010101010101010101010101"
+    warnOnly: false
+2:
+    expected: "0202020202020202020202020202020202020202020202020202020202020202"
+    warnOnly: true
+`,
+		},
+		"output is sorted": {
+			m: M{
+				3:  {},
+				1:  {},
+				11: {},
+				2:  {},
+			},
+			want: `1:
+    expected: "0000000000000000000000000000000000000000000000000000000000000000"
+    warnOnly: false
+2:
+    expected: "0000000000000000000000000000000000000000000000000000000000000000"
+    warnOnly: false
+3:
+    expected: "0000000000000000000000000000000000000000000000000000000000000000"
+    warnOnly: false
+11:
+    expected: "0000000000000000000000000000000000000000000000000000000000000000"
+    warnOnly: false
+`,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			encoded, err := encoder.NewEncoder(tc.m).Encode()
+			require.NoError(err)
+			assert.Equal(tc.want, string(encoded))
 		})
 	}
 }
