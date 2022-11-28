@@ -61,7 +61,7 @@ This is because only a subset of the [available measurements](../architecture/at
 During attestation, the validating side (CLI or [join service](../architecture/components.md#joinservice)) compares each measurement reported by the issuing side (first node or joining node) individually.
 For mismatching measurements that have set `warnOnly` to `true` only warning is emitted.
 For mismatching measurements that have set `warnOnly` to `false` an error is emitted and attestation fails.
-If attestation fails for a newly joining node, the new node is not permitted to join the cluster.
+If attestation fails for a newly joining node, the new node isn't permitted to join the cluster.
 
 ## The *verify* command
 
