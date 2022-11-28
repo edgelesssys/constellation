@@ -1,0 +1,42 @@
+name: Build micro service
+description: Build and upload a container image for a Constellation micro-service
+inputs:
+  name:
+    description: "Name of the micro-service"
+    required: true
+  koConfig:
+    description: "Path to the .ko.yaml config file"
+    required: true
+  koTarget:
+    description: "Go package to build with ko"
+    required: true
+  pushTag:
+    description: "Use this image tag"
+    required: false
+  githubToken:
+    description: "GitHub authorization token"
+    required: true
+
+# Linux runner only
+# TODO: Add complete tagging
+runs:
+  using: "composite"
+  steps:
+    - name: Determine pseudo version
+      id: pseudo-version
+      uses: ./.github/actions/pseudo_version
+
+    - name: Set up ko
+      uses: imjasonh/setup-ko@v0.6
+
+    - name: Build and upload ko container image
+      id: build
+      env:
+        KO_USER: ${{ github.actor }}
+        KO_CONFIG_PATH: ${{ inputs.koConfig }}
+        KO_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        KO_DOCKER_REPO: ${{ env.REGISTRY }}/edgelesssys/constellation
+        GIT_REF: ${{ github.ref }}
+      run: |
+        tag=$(echo ${GIT_REF} | cut -d'/' -f3)
+        ko build ${{ inputs.koTarget }} --preserve-import-paths --tags ${tag}
