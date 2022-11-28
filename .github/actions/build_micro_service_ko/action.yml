@@ -36,8 +36,8 @@ runs:
         KO_USER: ${{ github.actor }}
         KO_CONFIG_PATH: ${{ inputs.koConfig }}
         KO_PASSWORD: ${{ inputs.githubToken }}
-        KO_DOCKER_REPO: ${{ env.REGISTRY }}/edgelesssys/constellation
+        KO_DOCKER_REPO: ${{ env.REGISTRY }}/edgelesssys/${{ inputs.name }}-ko
         GIT_REF: ${{ github.ref }}
       run: |
         tag=$(echo ${GIT_REF} | cut -d'/' -f3)
-        ko build ${{ inputs.koTarget }} --preserve-import-paths --tags ${tag}
+        ko build ${{ inputs.koTarget }} --bare --tags ${tag}
