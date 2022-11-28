@@ -95,7 +95,7 @@ The result is an image with one deterministic layer (pinned by the hash) and det
 Hence, the entire build is reproducible.
 
 ### `apko` / `ko`
-To include c libraries into a distroless minimal image, we have to rebuild the this base image.
+To include c libraries into a distroless minimal image, we have to rebuild the base image.
 For that, we can use `apko`.
 It can be configured using a `*.yaml` file and is easy to use. An exemplary image definition could look like this:
 
@@ -107,10 +107,16 @@ contents:
   packages:
     - alpine-base
     - cryptsetup-dev  # for disk-mapper
-    - gcompat         # for glibc/musl comparability
+    - gcompat         # for glibc/musl compatibility
 
 environment:
   PATH: /usr/sbin:/sbin:/usr/bin:/bin
+```
+
+To build this image, use the official docker container as [recommended](https://github.com/chainguard-dev/apko#installation) by `chainguard`.
+This produces a container image that can be pushed to a remote registry and a [tarred](https://docs.podman.io/en/latest/markdown/podman-save.1.html) export of the image locally.
+```sh
+docker run -v "$PWD":/work cgr.dev/chainguard/apko build <modified-base-image>.yaml <image-name>:<tag> <image-name>.tar
 ```
 
 Then in our `.ko.yaml`, we can use the newly created image as a base image, also just for certain build ids:
@@ -124,4 +130,5 @@ The result is also a reproducible OCI image with reproducible artifacts.
 ## Considerations
 Finally we can conclude, that both `buildah` and `ko` get the job done.
 `buildah` constructs the images in a procedural way such as we are used to by writing `Dockerfile`s, while `ko`/`apko` configures the images in a declarative way.
-Since `ko`/`apko` are very easy to use and we currently only use `go` in our microservices, `ko`/`apko` can do everything we need right now. Further, the creation of minimal images is easier with `apko` than with `Containerfile`s.
+Since `ko`/`apko` are very easy to use and we currently only use `go` in our microservices, `ko`/`apko` can do everything we need right now.
+Further, the creation of minimal images is easier with `apko` than with `Containerfile`s.
