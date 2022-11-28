@@ -8,8 +8,8 @@ package cmd
 
 import (
 	"bytes"
-	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -109,8 +109,8 @@ func TestUpdateURLs(t *testing.T) {
 				},
 			},
 			flags:                  &fetchMeasurementsFlags{},
-			wantMeasurementsURL:    constants.S3PublicBucket + "some/image/path/image-123456/measurements.json",
-			wantMeasurementsSigURL: constants.S3PublicBucket + "some/image/path/image-123456/measurements.json.sig",
+			wantMeasurementsURL:    constants.CDNRepositoryURL + "/" + constants.CDNMeasurementsPath + "/someImageVersion/gcp/measurements.json",
+			wantMeasurementsSigURL: constants.CDNRepositoryURL + "/" + constants.CDNMeasurementsPath + "/someImageVersion/gcp/measurements.json.sig",
 		},
 		"both set by user": {
 			conf: &config.Config{},
@@ -127,9 +127,7 @@ func TestUpdateURLs(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			err := tc.flags.updateURLs(context.Background(), tc.conf, &stubImageFetcher{
-				reference: "some/image/path/image-123456",
-			})
+			err := tc.flags.updateURLs(tc.conf)
 			assert.NoError(err)
 			assert.Equal(tc.wantMeasurementsURL, tc.flags.measurementsURL.String())
 		})
@@ -152,32 +150,57 @@ func newTestClient(fn roundTripFunc) *http.Client {
 }
 
 func TestConfigFetchMeasurements(t *testing.T) {
-	measurements := `1: fPRxd3lV3uybnSVhcBmM6XLzcvMitXW78G0RRuQxYGc=
-2: PUWM/lXMA+ofRD8VYr7sjfUcdeFKn8+acjShPxmOeWk=
-3: PUWM/lXMA+ofRD8VYr7sjfUcdeFKn8+acjShPxmOeWk=
-4: HaV5ivUAGzMxmKkfKjcG3wmW08MRUWr+vsfIMVQpOH0=
-5: PemdXV59WnLLzPz0F4GGCTKm8KbHskPRvon1dtNw7oY=
-7: 8dI/6SUmQ5sd8+bulPDpJ8ghs0UX0+fgLlW8kutAYKw=
-8: XJ5IBWy6b6vqojkTsk/GLOWyfNUB2qaf58+JjMYiAB4=
-9: Gw5gq8D1WXfz46sF/OKiWbkBssyt4ayGybzNyV9cUCQ=
+	// Cosign private key used to sign the measurements.
+	// Generated with: cosign generate-key-pair
+	// Password left empty.
+	//
+	// -----BEGIN ENCRYPTED COSIGN PRIVATE KEY-----
+	// eyJrZGYiOnsibmFtZSI6InNjcnlwdCIsInBhcmFtcyI6eyJOIjozMjc2OCwiciI6
+	// OCwicCI6MX0sInNhbHQiOiJlRHVYMWRQMGtIWVRnK0xkbjcxM0tjbFVJaU92eFVX
+	// VXgvNi9BbitFVk5BPSJ9LCJjaXBoZXIiOnsibmFtZSI6Im5hY2wvc2VjcmV0Ym94
+	// Iiwibm9uY2UiOiJwaWhLL2txNmFXa2hqSVVHR3RVUzhTVkdHTDNIWWp4TCJ9LCJj
+	// aXBoZXJ0ZXh0Ijoidm81SHVWRVFWcUZ2WFlQTTVPaTVaWHM5a255bndZU2dvcyth
+	// VklIeHcrOGFPamNZNEtvVjVmL3lHRHR0K3BHV2toanJPR1FLOWdBbmtsazFpQ0c5
+	// a2czUXpPQTZsU2JRaHgvZlowRVRZQ0hLeElncEdPRVRyTDlDenZDemhPZXVSOXJ6
+	// TDcvRjBBVy9vUDVqZXR3dmJMNmQxOEhjck9kWE8yVmYxY2w0YzNLZjVRcnFSZzlN
+	// dlRxQWFsNXJCNHNpY1JaMVhpUUJjb0YwNHc9PSJ9
+	// -----END ENCRYPTED COSIGN PRIVATE KEY-----
+
+	cosignPublicKey := []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu78QgxOOcao6U91CSzEXxrKhvFTt\nJHNy+eX6EMePtDm8CnDF9HSwnTlD0itGJ/XHPQA5YX10fJAqI1y+ehlFMw==\n-----END PUBLIC KEY-----")
+
+	measurements := `{
+	"csp": "gcp",
+	"image": "v999.999.999",
+	"measurements": {
+		"0": "0000000000000000000000000000000000000000000000000000000000000000",
+		"1": "1111111111111111111111111111111111111111111111111111111111111111",
+		"2": "2222222222222222222222222222222222222222222222222222222222222222",
+		"3": "3333333333333333333333333333333333333333333333333333333333333333",
+		"4": "4444444444444444444444444444444444444444444444444444444444444444",
+		"5": "5555555555555555555555555555555555555555555555555555555555555555",
+		"6": "6666666666666666666666666666666666666666666666666666666666666666"
+	}
+}
 `
-	signature := "MEUCIFdJ5dH6HDywxQWTUh9Bw77wMrq0mNCUjMQGYP+6QsVmAiEAmazj/L7rFGA4/Gz8y+kI5h5E5cDgc3brihvXBKF6qZA="
+	signature := "MEYCIQDRAQNK2NjHJBGrnw3HQAyBsXMCmVCptBdgA6VZ3IlyiAIhAPG42waF1aFZq7dnjP3b2jsMNUtaKYDQQSazW1AX8jgF"
 
 	client := newTestClient(func(req *http.Request) *http.Response {
-		if req.URL.String() == "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/someImage/measurements.json" {
+		if req.URL.String() == "https://cdn.confidential.cloud/constellation/v1/measurements/v999.999.999/gcp/measurements.json" {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBufferString(measurements)),
 				Header:     make(http.Header),
 			}
 		}
-		if req.URL.String() == "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/someImage/measurements.json.sig" {
+		if req.URL.String() == "https://cdn.confidential.cloud/constellation/v1/measurements/v999.999.999/gcp/measurements.json.sig" {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBufferString(signature)),
 				Header:     make(http.Header),
 			}
 		}
+
+		fmt.Println("unexpected request", req.URL.String())
 		return &http.Response{
 			StatusCode: http.StatusNotFound,
 			Body:       io.NopCloser(bytes.NewBufferString("Not found.")),
@@ -215,23 +238,12 @@ func TestConfigFetchMeasurements(t *testing.T) {
 			fileHandler := file.NewHandler(afero.NewMemMapFs())
 
 			gcpConfig := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.GCP)
-			gcpConfig.Image = "someImage"
+			gcpConfig.Image = "v999.999.999"
 
 			err := fileHandler.WriteYAML(constants.ConfigFilename, gcpConfig, file.OptMkdirAll)
 			require.NoError(err)
 
-			assert.NoError(configFetchMeasurements(cmd, tc.verifier, fileHandler, client, &stubImageFetcher{
-				reference: "someImage",
-			}))
+			assert.NoError(configFetchMeasurements(cmd, tc.verifier, cosignPublicKey, fileHandler, client))
 		})
 	}
-}
-
-type stubImageFetcher struct {
-	reference         string
-	fetchReferenceErr error
-}
-
-func (f *stubImageFetcher) FetchReference(_ context.Context, _ *config.Config) (string, error) {
-	return f.reference, f.fetchReferenceErr
 }

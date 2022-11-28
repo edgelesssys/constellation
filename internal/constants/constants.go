@@ -148,18 +148,12 @@ const (
 	// Releases.
 	//
 
-	// S3PublicBucket contains measurements & releases.
-	S3PublicBucket = "https://public-edgeless-constellation.s3.us-east-2.amazonaws.com/"
-	// CosignPublicKey signs all our releases.
-	CosignPublicKey = `-----BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEf8F1hpmwE+YCFXzjGtaQcrL6XZVT
-JmEe5iSLvG1SyQSAew7WdMKF6o9t8e2TFuCkzlOhhlws2OHWbiFZnFWCFw==
------END PUBLIC KEY-----
-`
-
-	// ImageVersionRepositoryURL is the base URL of the repository containing
-	// image version information.
-	ImageVersionRepositoryURL = "https://cdn.confidential.cloud"
+	// CDNRepositoryURL is the base URL of the Constellation CDN artifact repository.
+	CDNRepositoryURL = "https://cdn.confidential.cloud"
+	// CDNImagePath is the default path to image references in the CDN repository.
+	CDNImagePath = "constellation/v1/images"
+	// CDNMeasurementsPath is the default path to image measurements in the CDN repository.
+	CDNMeasurementsPath = "constellation/v1/measurements"
 )
 
 // VersionInfo is the version of a binary. Left as a separate variable to allow override during build.

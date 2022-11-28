@@ -44,6 +44,21 @@ func (p *Provider) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// MarshalYAML marshals the Provider to YAML string.
+func (p Provider) MarshalYAML() (interface{}, error) {
+	return p.String(), nil
+}
+
+// UnmarshalYAML unmarshals the Provider from YAML string.
+func (p *Provider) UnmarshalYAML(unmarshal func(any) error) error {
+	var s string
+	if err := unmarshal(&s); err != nil {
+		return err
+	}
+	*p = FromString(s)
+	return nil
+}
+
 // FromString returns cloud provider from string.
 func FromString(s string) Provider {
 	s = strings.ToLower(s)

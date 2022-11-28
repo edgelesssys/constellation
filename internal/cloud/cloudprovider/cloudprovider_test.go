@@ -7,9 +7,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 package cloudprovider
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v3"
 )
 
 func TestMarshalJSON(t *testing.T) {
@@ -43,7 +45,7 @@ func TestMarshalJSON(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			b, err := tc.input.MarshalJSON()
+			b, err := json.Marshal(tc.input)
 
 			assert.NoError(err)
 			assert.Equal(tc.want, b)
@@ -88,7 +90,95 @@ func TestUnmarshalJSON(t *testing.T) {
 			assert := assert.New(t)
 
 			var p Provider
-			err := p.UnmarshalJSON(tc.input)
+			err := json.Unmarshal(tc.input, &p)
+
+			if tc.wantErr {
+				assert.Error(err)
+			} else {
+				assert.NoError(err)
+				assert.Equal(tc.want, p)
+			}
+		})
+	}
+}
+
+func TestMarshalYAML(t *testing.T) {
+	testCases := map[string]struct {
+		input Provider
+		want  []byte
+	}{
+		"unknown": {
+			input: Unknown,
+			want:  []byte("Unknown\n"),
+		},
+		"aws": {
+			input: AWS,
+			want:  []byte("AWS\n"),
+		},
+		"azure": {
+			input: Azure,
+			want:  []byte("Azure\n"),
+		},
+		"gcp": {
+			input: GCP,
+			want:  []byte("GCP\n"),
+		},
+		"qemu": {
+			input: QEMU,
+			want:  []byte("QEMU\n"),
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			b, err := yaml.Marshal(tc.input)
+
+			assert.NoError(err)
+			assert.Equal(tc.want, b)
+		})
+	}
+}
+
+func TestUnmarshalYAML(t *testing.T) {
+	testCases := map[string]struct {
+		input   []byte
+		want    Provider
+		wantErr bool
+	}{
+		"empty": {
+			input:   []byte("foo: bar\n"),
+			wantErr: true,
+		},
+		"unknown": {
+			input: []byte("unknown\n"),
+			want:  Unknown,
+		},
+		"aws": {
+			input: []byte("aws\n"),
+			want:  AWS,
+		},
+		"azure": {
+			input: []byte("azure\n"),
+			want:  Azure,
+		},
+		"gcp": {
+			input: []byte("gcp\n"),
+			want:  GCP,
+		},
+		"qemu": {
+			input: []byte("qemu\n"),
+			want:  QEMU,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			var p Provider
+			err := yaml.Unmarshal(tc.input, &p)
 
 			if tc.wantErr {
 				assert.Error(err)

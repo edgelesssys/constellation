@@ -192,12 +192,15 @@ func TestGetCompatibleImages(t *testing.T) {
 			wantImages: map[string]config.UpgradeConfig{
 				"v1.0.1": {
 					Image: "azure-v1.0.1",
+					CSP:   cloudprovider.Azure,
 				},
 				"v1.0.2": {
 					Image: "azure-v1.0.2",
+					CSP:   cloudprovider.Azure,
 				},
 				"v1.1.0": {
 					Image: "azure-v1.1.0",
+					CSP:   cloudprovider.Azure,
 				},
 			},
 		},
@@ -208,12 +211,15 @@ func TestGetCompatibleImages(t *testing.T) {
 			wantImages: map[string]config.UpgradeConfig{
 				"v1.0.1": {
 					Image: "gcp-v1.0.1",
+					CSP:   cloudprovider.GCP,
 				},
 				"v1.0.2": {
 					Image: "gcp-v1.0.2",
+					CSP:   cloudprovider.GCP,
 				},
 				"v1.1.0": {
 					Image: "gcp-v1.1.0",
+					CSP:   cloudprovider.GCP,
 				},
 			},
 		},
@@ -240,25 +246,42 @@ func TestGetCompatibleImageMeasurements(t *testing.T) {
 
 	testImages := map[string]config.UpgradeConfig{
 		"v0.0.0": {
-			Image: "azure-v0.0.0",
+			Image: "v0.0.0",
+			CSP:   cloudprovider.Azure,
 		},
 		"v1.0.0": {
-			Image: "azure-v1.0.0",
+			Image: "v1.0.0",
+			CSP:   cloudprovider.Azure,
 		},
 	}
 
 	client := newTestClient(func(req *http.Request) *http.Response {
-		if strings.HasSuffix(req.URL.String(), "/measurements.json") {
+		if strings.HasSuffix(req.URL.String(), "v0.0.0/azure/measurements.json") {
 			return &http.Response{
 				StatusCode: http.StatusOK,
-				Body:       io.NopCloser(strings.NewReader("0: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\n")),
+				Body:       io.NopCloser(strings.NewReader(`{"csp":"azure","image":"v0.0.0","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`)),
 				Header:     make(http.Header),
 			}
 		}
-		if strings.HasSuffix(req.URL.String(), "/measurements.json.sig") {
+		if strings.HasSuffix(req.URL.String(), "v0.0.0/azure/measurements.json.sig") {
 			return &http.Response{
 				StatusCode: http.StatusOK,
-				Body:       io.NopCloser(strings.NewReader("MEUCIBs1g2/n0FsgPfJ+0uLD5TaunGhxwDcQcUGBroejKvg3AiEAzZtcLU9O6IiVhxB8tBS+ty6MXoPNwL8WRWMzyr35eKI=")),
+				Body:       io.NopCloser(strings.NewReader("MEQCIGRR7RaSMs892Ta06/Tz7LqPUxI05X4wQcP+nFFmZtmaAiBNl9X8mUKmUBfxg13LQBfmmpw6JwYQor5hOwM3NFVPAg==")),
+				Header:     make(http.Header),
+			}
+		}
+
+		if strings.HasSuffix(req.URL.String(), "v1.0.0/azure/measurements.json") {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(`{"csp":"azure","image":"v1.0.0","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`)),
+				Header:     make(http.Header),
+			}
+		}
+		if strings.HasSuffix(req.URL.String(), "v1.0.0/azure/measurements.json.sig") {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader("MEQCIFh8CVELp/Da2U2Jt404OXsUeDfqtrf3pqGRuvxnxhI8AiBTHF9tHEPwFedYG3Jgn2ELOxss+Ybc6135vEtClBrbpg==")),
 				Header:     make(http.Header),
 			}
 		}
@@ -270,7 +293,7 @@ func TestGetCompatibleImageMeasurements(t *testing.T) {
 		}
 	})
 
-	pubK := []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----")
+	pubK := []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu78QgxOOcao6U91CSzEXxrKhvFTt\nJHNy+eX6EMePtDm8CnDF9HSwnTlD0itGJ/XHPQA5YX10fJAqI1y+ehlFMw==\n-----END PUBLIC KEY-----")
 
 	err := getCompatibleImageMeasurements(context.Background(), &cobra.Command{}, client, singleUUIDVerifier(), pubK, testImages)
 	assert.NoError(err)
@@ -283,14 +306,27 @@ func TestGetCompatibleImageMeasurements(t *testing.T) {
 func TestUpgradePlan(t *testing.T) {
 	testImages := map[string]imageManifest{
 		"v1.0.0": {
-			AzureImage: "azure-v1.0.0",
-			GCPImage:   "gcp-v1.0.0",
-		},
-		"v2.0.0": {
-			AzureImage: "azure-v2.0.0",
-			GCPImage:   "gcp-v2.0.0",
+			AzureImage: "v1.0.0",
+			GCPImage:   "v1.0.0",
 		},
 	}
+
+	// Cosign private key used to sign the measurements.
+	// Generated with: cosign generate-key-pair
+	// Password left empty.
+	//
+	// -----BEGIN ENCRYPTED COSIGN PRIVATE KEY-----
+	// eyJrZGYiOnsibmFtZSI6InNjcnlwdCIsInBhcmFtcyI6eyJOIjozMjc2OCwiciI6
+	// OCwicCI6MX0sInNhbHQiOiJlRHVYMWRQMGtIWVRnK0xkbjcxM0tjbFVJaU92eFVX
+	// VXgvNi9BbitFVk5BPSJ9LCJjaXBoZXIiOnsibmFtZSI6Im5hY2wvc2VjcmV0Ym94
+	// Iiwibm9uY2UiOiJwaWhLL2txNmFXa2hqSVVHR3RVUzhTVkdHTDNIWWp4TCJ9LCJj
+	// aXBoZXJ0ZXh0Ijoidm81SHVWRVFWcUZ2WFlQTTVPaTVaWHM5a255bndZU2dvcyth
+	// VklIeHcrOGFPamNZNEtvVjVmL3lHRHR0K3BHV2toanJPR1FLOWdBbmtsazFpQ0c5
+	// a2czUXpPQTZsU2JRaHgvZlowRVRZQ0hLeElncEdPRVRyTDlDenZDemhPZXVSOXJ6
+	// TDcvRjBBVy9vUDVqZXR3dmJMNmQxOEhjck9kWE8yVmYxY2w0YzNLZjVRcnFSZzlN
+	// dlRxQWFsNXJCNHNpY1JaMVhpUUJjb0YwNHc9PSJ9
+	// -----END ENCRYPTED COSIGN PRIVATE KEY-----
+	pubK := "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu78QgxOOcao6U91CSzEXxrKhvFTt\nJHNy+eX6EMePtDm8CnDF9HSwnTlD0itGJ/XHPQA5YX10fJAqI1y+ehlFMw==\n-----END PUBLIC KEY-----"
 
 	testCases := map[string]struct {
 		planner                 stubUpgradePlanner
@@ -311,7 +347,7 @@ func TestUpgradePlan(t *testing.T) {
 			flags: upgradePlanFlags{
 				configPath:   constants.ConfigFilename,
 				filePath:     "upgrade-plan.yaml",
-				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
+				cosignPubKey: pubK,
 			},
 			csp:         cloudprovider.GCP,
 			verifier:    singleUUIDVerifier(),
@@ -319,14 +355,14 @@ func TestUpgradePlan(t *testing.T) {
 		},
 		"upgrades gcp": {
 			planner: stubUpgradePlanner{
-				image: "projects/constellation-images/global/images/constellation-v1-0-0",
+				image: "projects/constellation-images/global/images/constellation-v0-0-0",
 			},
 			imageFetchStatus:        http.StatusOK,
 			measurementsFetchStatus: http.StatusOK,
 			flags: upgradePlanFlags{
 				configPath:   constants.ConfigFilename,
 				filePath:     "upgrade-plan.yaml",
-				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
+				cosignPubKey: pubK,
 			},
 			csp:         cloudprovider.GCP,
 			verifier:    singleUUIDVerifier(),
@@ -341,7 +377,7 @@ func TestUpgradePlan(t *testing.T) {
 			flags: upgradePlanFlags{
 				configPath:   constants.ConfigFilename,
 				filePath:     "upgrade-plan.yaml",
-				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
+				cosignPubKey: pubK,
 			},
 			csp:         cloudprovider.Azure,
 			verifier:    singleUUIDVerifier(),
@@ -349,14 +385,14 @@ func TestUpgradePlan(t *testing.T) {
 		},
 		"upgrade to stdout": {
 			planner: stubUpgradePlanner{
-				image: "projects/constellation-images/global/images/constellation-v1-0-0",
+				image: "projects/constellation-images/global/images/constellation-v0-0-0",
 			},
 			imageFetchStatus:        http.StatusOK,
 			measurementsFetchStatus: http.StatusOK,
 			flags: upgradePlanFlags{
 				configPath:   constants.ConfigFilename,
 				filePath:     "-",
-				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
+				cosignPubKey: pubK,
 			},
 			csp:         cloudprovider.GCP,
 			verifier:    singleUUIDVerifier(),
@@ -371,7 +407,7 @@ func TestUpgradePlan(t *testing.T) {
 			flags: upgradePlanFlags{
 				configPath:   constants.ConfigFilename,
 				filePath:     "upgrade-plan.yaml",
-				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
+				cosignPubKey: pubK,
 			},
 			csp:      cloudprovider.GCP,
 			verifier: singleUUIDVerifier(),
@@ -379,14 +415,14 @@ func TestUpgradePlan(t *testing.T) {
 		},
 		"image fetch error": {
 			planner: stubUpgradePlanner{
-				image: "projects/constellation-images/global/images/constellation-v1-0-0",
+				image: "projects/constellation-images/global/images/constellation-v0-0-0",
 			},
 			imageFetchStatus:        http.StatusInternalServerError,
 			measurementsFetchStatus: http.StatusOK,
 			flags: upgradePlanFlags{
 				configPath:   constants.ConfigFilename,
 				filePath:     "upgrade-plan.yaml",
-				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
+				cosignPubKey: pubK,
 			},
 			csp:      cloudprovider.GCP,
 			verifier: singleUUIDVerifier(),
@@ -394,14 +430,14 @@ func TestUpgradePlan(t *testing.T) {
 		},
 		"measurements fetch error": {
 			planner: stubUpgradePlanner{
-				image: "projects/constellation-images/global/images/constellation-v1-0-0",
+				image: "projects/constellation-images/global/images/constellation-v0-0-0",
 			},
 			imageFetchStatus:        http.StatusOK,
 			measurementsFetchStatus: http.StatusInternalServerError,
 			flags: upgradePlanFlags{
 				configPath:   constants.ConfigFilename,
 				filePath:     "upgrade-plan.yaml",
-				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
+				cosignPubKey: pubK,
 			},
 			csp:      cloudprovider.GCP,
 			verifier: singleUUIDVerifier(),
@@ -409,14 +445,14 @@ func TestUpgradePlan(t *testing.T) {
 		},
 		"failing search should not result in error": {
 			planner: stubUpgradePlanner{
-				image: "projects/constellation-images/global/images/constellation-v1-0-0",
+				image: "projects/constellation-images/global/images/constellation-v0-0-0",
 			},
 			imageFetchStatus:        http.StatusOK,
 			measurementsFetchStatus: http.StatusOK,
 			flags: upgradePlanFlags{
 				configPath:   constants.ConfigFilename,
 				filePath:     "upgrade-plan.yaml",
-				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
+				cosignPubKey: pubK,
 			},
 			csp: cloudprovider.GCP,
 			verifier: &stubRekorVerifier{
@@ -427,14 +463,14 @@ func TestUpgradePlan(t *testing.T) {
 		},
 		"failing verify should not result in error": {
 			planner: stubUpgradePlanner{
-				image: "projects/constellation-images/global/images/constellation-v1-0-0",
+				image: "projects/constellation-images/global/images/constellation-v0-0-0",
 			},
 			imageFetchStatus:        http.StatusOK,
 			measurementsFetchStatus: http.StatusOK,
 			flags: upgradePlanFlags{
 				configPath:   constants.ConfigFilename,
 				filePath:     "upgrade-plan.yaml",
-				cosignPubKey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUs5fDUIz9aiwrfr8BK4VjN7jE6sl\ngz7UuXsOin8+dB0SGrbNHy7TJToa2fAiIKPVLTOfvY75DqRAtffhO1fpBA==\n-----END PUBLIC KEY-----",
+				cosignPubKey: pubK,
 			},
 			csp: cloudprovider.GCP,
 			verifier: &stubRekorVerifier{
@@ -470,17 +506,32 @@ func TestUpgradePlan(t *testing.T) {
 						Header:     make(http.Header),
 					}
 				}
-				if strings.HasSuffix(req.URL.String(), "/measurements.json") {
+				if strings.HasSuffix(req.URL.String(), "azure/measurements.json") {
 					return &http.Response{
 						StatusCode: tc.measurementsFetchStatus,
-						Body:       io.NopCloser(strings.NewReader("0: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\n")),
+						Body:       io.NopCloser(strings.NewReader(`{"csp":"azure","image":"v1.0.0","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`)),
 						Header:     make(http.Header),
 					}
 				}
-				if strings.HasSuffix(req.URL.String(), "/measurements.json.sig") {
+				if strings.HasSuffix(req.URL.String(), "azure/measurements.json.sig") {
 					return &http.Response{
 						StatusCode: tc.measurementsFetchStatus,
-						Body:       io.NopCloser(strings.NewReader("MEUCIBs1g2/n0FsgPfJ+0uLD5TaunGhxwDcQcUGBroejKvg3AiEAzZtcLU9O6IiVhxB8tBS+ty6MXoPNwL8WRWMzyr35eKI=")),
+						Body:       io.NopCloser(strings.NewReader("MEQCIFh8CVELp/Da2U2Jt404OXsUeDfqtrf3pqGRuvxnxhI8AiBTHF9tHEPwFedYG3Jgn2ELOxss+Ybc6135vEtClBrbpg==")),
+						Header:     make(http.Header),
+					}
+				}
+
+				if strings.HasSuffix(req.URL.String(), "gcp/measurements.json") {
+					return &http.Response{
+						StatusCode: tc.measurementsFetchStatus,
+						Body:       io.NopCloser(strings.NewReader(`{"csp":"gcp","image":"v1.0.0","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`)),
+						Header:     make(http.Header),
+					}
+				}
+				if strings.HasSuffix(req.URL.String(), "gcp/measurements.json.sig") {
+					return &http.Response{
+						StatusCode: tc.measurementsFetchStatus,
+						Body:       io.NopCloser(strings.NewReader("MEYCIQCr/gDGjj11mR5OeImwOLjxnBqMbBmqoK7yXqy0cXR3HQIhALpVDdYwR9VNJnWwtl8bTfrezyJbc7UNZJO4PJe+stFP")),
 						Header:     make(http.Header),
 					}
 				}

@@ -13,10 +13,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path"
 	"regexp"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -163,14 +165,20 @@ func getCompatibleImages(csp cloudprovider.Provider, currentVersion string, imag
 	case cloudprovider.Azure:
 		for imgVersion, image := range images {
 			if semver.Compare(currentVersion, imgVersion) < 0 {
-				compatibleImages[imgVersion] = config.UpgradeConfig{Image: image.AzureImage}
+				compatibleImages[imgVersion] = config.UpgradeConfig{
+					Image: image.AzureImage,
+					CSP:   cloudprovider.Azure,
+				}
 			}
 		}
 
 	case cloudprovider.GCP:
 		for imgVersion, image := range images {
 			if semver.Compare(currentVersion, imgVersion) < 0 {
-				compatibleImages[imgVersion] = config.UpgradeConfig{Image: image.GCPImage}
+				compatibleImages[imgVersion] = config.UpgradeConfig{
+					Image: image.GCPImage,
+					CSP:   cloudprovider.GCP,
+				}
 			}
 		}
 	}
@@ -181,17 +189,26 @@ func getCompatibleImages(csp cloudprovider.Provider, currentVersion string, imag
 // getCompatibleImageMeasurements retrieves the expected measurements for each image.
 func getCompatibleImageMeasurements(ctx context.Context, cmd *cobra.Command, client *http.Client, rekor rekorVerifier, pubK []byte, images map[string]config.UpgradeConfig) error {
 	for idx, img := range images {
-		measurementsURL, err := url.Parse(constants.S3PublicBucket + strings.ToLower(img.Image) + "/measurements.json")
+		measurementsURL, err := url.Parse(constants.CDNRepositoryURL + "/" + path.Join(img.Image, strings.ToLower(img.CSP.String()), "measurements.json"))
 		if err != nil {
 			return err
 		}
 
-		signatureURL, err := url.Parse(constants.S3PublicBucket + strings.ToLower(img.Image) + "/measurements.json.sig")
+		signatureURL, err := url.Parse(constants.CDNRepositoryURL + "/" + path.Join(img.Image, strings.ToLower(img.CSP.String()), "measurements.json.sig"))
 		if err != nil {
 			return err
 		}
 
-		hash, err := img.Measurements.FetchAndVerify(ctx, client, measurementsURL, signatureURL, pubK)
+		hash, err := img.Measurements.FetchAndVerify(
+			ctx, client,
+			measurementsURL,
+			signatureURL,
+			pubK,
+			measurements.WithMetadata{
+				Image: img.Image,
+				CSP:   img.CSP,
+			},
+		)
 		if err != nil {
 			return err
 		}
