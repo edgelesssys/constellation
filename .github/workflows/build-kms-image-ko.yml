@@ -33,18 +33,6 @@ jobs:
 
       - name: Build and upload KMS server container image
         id: build-and-upload
-        env:
-          KO_USER: ${{ github.actor }}
-          KO_CONFIG_PATH: ${{ github.workspace }}/.ko.yaml
-          KO_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-          KO_DOCKER_REPO: ${{ env.REGISTRY }}/edgelesssys/constellation
-          GIT_REF: ${{ github.ref }}
-        run: |
-          tag=$(echo ${GIT_REF} | cut -d'/' -f3)
-          ko build ./kms/cmd --preserve-import-paths -t ${tag}
-
-      - name: Build and upload KMS server container image
-        id: build-and-upload
         uses: ./.github/actions/build_micro_service_ko
         with:
           name: kmsserver
