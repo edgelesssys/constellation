@@ -1,9 +1,9 @@
 # Supply chain levels for software artifacts (SLSA) adoption
 
-[Supply chain Levels for Software Artifacts, or SLSA (salsa)](https://slsa.dev/) is a framework that provides incremental improvements to a projects build system and engineering processes. SLSA is structured in [four levels](https://slsa.dev/spec/v0.1/levels). This page describes the adoption of SLSA for Constellation.
+[Supply chain Levels for Software Artifacts, or SLSA (salsa)](https://slsa.dev/) is a framework that provides incremental improvements to a project's build system and engineering processes. SLSA is structured in [four levels](https://slsa.dev/spec/v0.1/levels). This page describes the adoption of SLSA for Constellation.
 
 :::info
-SLSA is still in alpha. The presented levels and their requirements might change in future. We will adopt any changes into our engineering processes, as they get defined.
+SLSA is still in alpha. The presented levels and their requirements might change in the future. We will adopt any changes into our engineering processes, as they get defined.
 :::
 
 ## Level 1 - Adopted
@@ -14,7 +14,7 @@ All build steps are automated via [CMake](https://github.com/edgelesssys/constel
 
 **[Provenance - Available](https://slsa.dev/spec/v0.1/requirements#available)**
 
-Provenance for our CLI is generated using the [slsa-github-generator](https://github.com/slsa-framework/slsa-github-generator).
+Provenance for the CLI is generated using the [slsa-github-generator](https://github.com/slsa-framework/slsa-github-generator).
 
 ## Level 2 - Adopted
 
@@ -28,11 +28,11 @@ All builds are carried out by [GitHub Actions](https://github.com/edgelesssys/co
 
 **[Provenance - Authenticated](https://slsa.dev/spec/v0.1/requirements#authenticated)**
 
-Provenance for our CLI is signed using the [slsa-github-generator](https://github.com/slsa-framework/slsa-github-generator). Learn [how to verify the CLI](../workflows/verify-cli.md) using the signed provenance, before using it for the first time.
+Provenance for the CLI is signed using the [slsa-github-generator](https://github.com/slsa-framework/slsa-github-generator). Learn [how to verify the CLI](../workflows/verify-cli.md) using the signed provenance, before using it for the first time.
 
 **[Provenance - Service Generated](https://slsa.dev/spec/v0.1/requirements#service-generated)**
 
-Provenance for our CLI is generated using the [slsa-github-generator](https://github.com/slsa-framework/slsa-github-generator) in GitHub Actions.
+Provenance for the CLI is generated using the [slsa-github-generator](https://github.com/slsa-framework/slsa-github-generator) in GitHub Actions.
 
 ## Level 3 - Adopted
 
@@ -42,11 +42,11 @@ The [Edgeless Systems](https://github.com/edgelesssys) GitHub organization [requ
 
 **[Source - Retained Indefinitely](https://slsa.dev/spec/v0.1/requirements#retained-indefinitely)**
 
-Since we use GitHub to host our repository, it's not possible for an external person to delete or modify the history. Before a pull request can be merged, an explicit approval from an [Edgeless Systems](https://github.com/edgelesssys) team member is required.
+Since we use GitHub to host the repository, it's impossible for an external person to delete or modify the history. Before a pull request can be merged, an explicit approval from an [Edgeless Systems](https://github.com/edgelesssys) team member is required.
 
-The same holds true for changes proposed by team members. Each change to master needs to be proposed via a pull request and requires at least one approval.
+The same holds true for changes proposed by team members. Each change to main needs to be proposed via a pull request and requires at least one approval.
 
-The [Edgeless Systems](https://github.com/edgelesssys) GitHub organization admins control these settings and are able to make changes to the repositorie's history should legal requirements necessitate it. These changes require two-party approval following the obliterate policy.
+The [Edgeless Systems](https://github.com/edgelesssys) GitHub organization admins control these settings and are able to make changes to the repository's history should legal requirements necessitate it. These changes require two-party approval following the obliterate policy.
 
 **[Build - Build as Code](https://slsa.dev/spec/v0.1/requirements#build-as-code)**
 
@@ -54,13 +54,13 @@ All build files for Constellation are stored in [the same repository](https://gi
 
 **[Build - Ephemeral Environment](https://slsa.dev/spec/v0.1/requirements#ephemeral-environment)**
 
-All GitHub Action workflows are executed on [GitHub-hosted runners](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners). These runners are only available for the duration of the workflow.
+All GitHub Action workflows are executed on [GitHub-hosted runners](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners). These runners are only available during workflow.
 
-We currently don't make use of [self-hosted runners](https://docs.github.com/en/actions/hosting-your-own-runners/about-self-hosted-runners).
+We currently don't use [self-hosted runners](https://docs.github.com/en/actions/hosting-your-own-runners/about-self-hosted-runners).
 
 **[Build - Isolated](https://slsa.dev/spec/v0.1/requirements#isolated)**
 
-As outlined in the previous section, we used GitHub-hosted runners, which provide a new, isolated and ephemeral environment for each build.
+As outlined in the previous section, we use GitHub-hosted runners, which provide a new, isolated and ephemeral environment for each build.
 
 Additionally, the [SLSA GitHub generator](https://github.com/slsa-framework/slsa-github-generator#generation-of-provenance) itself is run in an isolated workflow with the artifact hash as defined inputs.
 
