@@ -22,6 +22,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
@@ -73,7 +74,7 @@ func main() {
 
 	if *metadata {
 		outputWithMetadata := measurements.WithMetadata{
-			CSP:          strings.ToLower(*csp),
+			CSP:          cloudprovider.FromString(*csp),
 			Image:        strings.ToLower(*image),
 			Measurements: pcrs,
 		}

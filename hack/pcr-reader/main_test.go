@@ -15,6 +15,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm-tools/proto/tpm"
 	"github.com/stretchr/testify/assert"
@@ -152,22 +153,22 @@ func TestPrintPCRs(t *testing.T) {
 func TestPrintPCRsWithMetadata(t *testing.T) {
 	testCases := map[string]struct {
 		format string
-		csp    string
+		csp    cloudprovider.Provider
 		image  string
 	}{
 		"json": {
 			format: "json",
-			csp:    "azure",
+			csp:    cloudprovider.Azure,
 			image:  "v2.0.0",
 		},
 		"yaml": {
-			csp:    "gcp",
+			csp:    cloudprovider.GCP,
 			image:  "v2.0.0-testimage",
 			format: "yaml",
 		},
 		"empty format": {
 			format: "",
-			csp:    "qemu",
+			csp:    cloudprovider.QEMU,
 			image:  "v2.0.0-testimage",
 		},
 		"empty": {},
