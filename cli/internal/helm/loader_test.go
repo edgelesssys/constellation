@@ -170,7 +170,15 @@ func TestOperators(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			chartLoader := ChartLoader{joinServiceImage: "joinServiceImage", kmsImage: "kmsImage", ccmImage: "ccmImage", cnmImage: "cnmImage", autoscalerImage: "autoscalerImage"}
+			chartLoader := ChartLoader{
+				joinServiceImage:             "joinServiceImage",
+				kmsImage:                     "kmsImage",
+				ccmImage:                     "ccmImage",
+				cnmImage:                     "cnmImage",
+				autoscalerImage:              "autoscalerImage",
+				constellationOperatorImage:   "constellationOperatorImage",
+				nodeMaintenanceOperatorImage: "nodeMaintenanceOperatorImage",
+			}
 			chart, vals, err := chartLoader.loadOperatorsHelper(tc.csp)
 			require.NoError(err)
 
