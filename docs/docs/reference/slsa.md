@@ -1,6 +1,6 @@
 # Supply chain levels for software artifacts (SLSA) adoption
 
-[Supply chain Levels for Software Artifacts, or SLSA (salsa)](https://slsa.dev/) is a framework that provides incremental improvements to a project's build system and engineering processes. SLSA is structured in [four levels](https://slsa.dev/spec/v0.1/levels). This page describes the adoption of SLSA for Constellation.
+[Supply chain Levels for Software Artifacts, or SLSA (salsa)](https://slsa.dev/) is a framework that provides incremental improvements to a projects build system and engineering processes. SLSA focuses on security improvements for source code storage as well as build system definition, execution, and observation. SLSA is structured in [four levels](https://slsa.dev/spec/v0.1/levels). This page describes the adoption of SLSA for Constellation.
 
 :::info
 SLSA is still in alpha. The presented levels and their requirements might change in the future. We will adopt any changes into our engineering processes, as they get defined.
