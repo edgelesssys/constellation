@@ -18,7 +18,6 @@ inputs:
     required: true
 
 # Linux runner only
-# TODO: Add complete tagging
 runs:
   using: "composite"
   steps:
@@ -37,7 +36,28 @@ runs:
         KO_CONFIG_PATH: ${{ inputs.koConfig }}
         KO_PASSWORD: ${{ inputs.githubToken }}
         KO_DOCKER_REPO: ${{ env.REGISTRY }}/edgelesssys/${{ inputs.name }}-ko
-        GIT_REF: ${{ github.ref }}
       run: |
-        tag=$(echo ${GIT_REF} | cut -d'/' -f3)
-        ko build ${{ inputs.koTarget }} --bare --tags ${tag}
+        tags=""
+        if [ "${{ github.ref }}" == "${{ github.event.repository.default_branch }}" ]; then
+          tags="latest"
+        else:
+          tags="${{ github.sha }}"
+        fi
+
+        if [ -n "${{ inputs.pushTag }}" ]; then
+          if [ -n "${tags}" ]; then
+            tags="${tags},${{ inputs.pushTag }}"
+          else
+            tags="${{ inputs.pushTag }}"
+          fi
+        fi
+
+        if [ -n "${{ steps.pseudo-version.outputs.pseudoVersion }}" ]; then
+          if [ -n "${tags}" ]; then
+            tags="${tags},${{ steps.pseudo-version.outputs.pseudoVersion }}"
+          else
+            tags="${{ steps.pseudo-version.outputs.pseudoVersion }}"
+          fi
+        fi
+
+        ko build ${{ inputs.koTarget }} --bare --tags ${tags}
