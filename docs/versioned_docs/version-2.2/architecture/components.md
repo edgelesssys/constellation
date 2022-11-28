@@ -21,16 +21,15 @@ flowchart LR
         C[Bootstrapper]
     end
     subgraph Kubernetes
-        E[JoinService]
-        F[KMS]
-        G[VerificationService]
+        D[JoinService]
+        E[KMS]
+        F[VerificationService]
     end
     A -- deploys -->
     B -- starts --> C
     C -- deploys --> D
     C -- deploys --> E
     C -- deploys --> F
-    C -- deploys --> G
 ```
 
 ## Bootstrapper
