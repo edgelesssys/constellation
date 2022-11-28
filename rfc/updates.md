@@ -201,14 +201,25 @@ Note that:
 * `constellation upgrade check`
 * `constellation upgrade apply`
 
-When `constellation upgrade check` is called it checks if the current CLI embeds helm charts and kubernetes components which are newer than the ones defines in the `constellation-config.json`. If this is the case, it prints a detailed list of all the components that will be updated. Moreover, it checks via the update API (see: rfc/update-api.json) for new image patch versions as they are always compatible with inside a minor version.
+When `constellation upgrade check` is called it checks if the current CLI includes helm charts and kubernetes components that are newer than the ones configured in `constellation-config.json`.
+If this is the case, the CLI prints a list of all components that will be updated.
+Moreover, it checks for new image patch versions via the update API (see: rfc/update-api.json).
+Image patch versions are forward compatible within one minor version.
 
-Lastly, it uses the update API (see: rfc/update-api.json) if there is a newer CLI version available. If this is the case, it will print the latest version and omit ony of the points above since. If this version is more than +1 minor version apart it will also show the latest CLI of the next minor version, and suggest a way to download it. Note that if there are still e.g. microservice updates needed with the current CLI, we need to promt the user to first install those before continuing with the next minor release.
+Lastly, the CLI checks if a newer CLI version is available via the update API (see: rfc/update-api.json). If this is the case, it will print the latest CLI version instead of the output described above.
+If the current version and latest version diverge more than one minor version, it will also show the latest CLI of the next minor version, and suggest a way to download it.
+An example:
+current CLI version: `2.3.2`  
+available CLI version with minor version `2.4.0`: `2.4.1`, `2.4.2`, `2.4.3`  
+latest CLI version: `2.5.0`  
+`constellation upgrade check` will show `2.5.0` as latest, and suggest that the next step in the upgrade process is `2.4.3`.  
+Since any CLI can only upgrade from one minor version below to its own version, we need to perform the upgrade to `2.4.3` before upgrading to `2.5.0`.
+If there are still microservice updates needed with the current CLI, we need to prompt the user to first install those before continuing with the next minor release.
 
 We also print `In newer CLI versions there are even newer versions available.` if e.g. there is a newer patch version of Kubernetes available in one of the proposed minor versions.
 
-Then executing `constellation upgrade check --write-config` all the new version values are automatically written to the `constellation-conf.json` so that the user can directly
-execute `constellation upgrade apply` afterwards.
+Executing `constellation upgrade check --write-config` writes all new version values to `constellation-conf.json`.
+This allows the user to execute `constellation upgrade apply` without manually modifying `constellation-conf.json`.
 
 ```bash
 $ constellation upgrade check
@@ -230,7 +241,7 @@ Possible Constellation microservices upgrade to 2.2.0:
 
 There is a new CLI available: v2.6.0
 
-Your current CLI version is more than more minor version apart from the latest release.
+Your current CLI version is more than one minor version apart from the latest release.
 Please upgrade your cluster with the current CLI and then download the CLI of the next minor version
 and upgrade your cluster again.
 
