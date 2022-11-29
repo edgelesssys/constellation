@@ -13,9 +13,11 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"strings"
 
 	"github.com/edgelesssys/constellation/v2/debugd/internal/bootstrapper"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
+	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/logcollector"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -85,8 +87,11 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 		ips = []string{idFile.IP}
 	}
 
-	infos, err := cmd.Flags().GetStringToString("info")
+	info, err := cmd.Flags().GetStringToString("info")
 	if err != nil {
+		return err
+	}
+	if err := checkInfoMap(info); err != nil {
 		return err
 	}
 
@@ -94,7 +99,7 @@ func deploy(cmd *cobra.Command, fileHandler file.Handler, constellationConfig *c
 
 		input := deployOnEndpointInput{
 			debugdEndpoint:   ip,
-			infos:            infos,
+			infos:            info,
 			bootstrapperPath: bootstrapperPath,
 			reader:           reader,
 		}
@@ -193,6 +198,22 @@ func uploadBootstrapper(ctx context.Context, client pb.DebugdClient, in deployOn
 	}
 
 	log.Println("Uploaded bootstrapper")
+	return nil
+}
+
+func checkInfoMap(info map[string]string) error {
+	logPrefix, logFields := logcollector.InfoFields()
+	for k := range info {
+		if !strings.HasPrefix(k, logPrefix) {
+			continue
+		}
+		subkey := strings.TrimPrefix(k, logPrefix)
+
+		if _, ok := logFields[subkey]; !ok {
+			return fmt.Errorf("invalid subkey %q for info key %q", subkey, fmt.Sprintf("%s.%s", logPrefix, k))
+		}
+	}
+
 	return nil
 }
 
