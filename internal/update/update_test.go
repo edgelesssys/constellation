@@ -102,7 +102,7 @@ func TestValidate(t *testing.T) {
 			if tc.overrideFunc != nil {
 				tc.overrideFunc(list)
 			}
-			err := list.validate()
+			err := list.Validate()
 			if tc.wantErr {
 				assert.Error(err)
 				return

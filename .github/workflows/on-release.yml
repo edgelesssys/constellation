@@ -1,0 +1,39 @@
+name: Make updated OS images available on release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Semantic version tag of the release (vX.Y.Z)."
+        required: true
+
+jobs:
+  update:
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Setup Go environment
+        uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
+        with:
+          go-version: "1.19.3"
+          cache: true
+
+      - name: Login to AWS
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GithubAddReleaseVersion
+          aws-region: eu-central-1
+
+      - name: Update OS images
+        run: |
+          go run main.go --version "${{ github.event.release.tag_name }}${{ github.event.inputs.tag }}"
+        working-directory: hack/add-version
