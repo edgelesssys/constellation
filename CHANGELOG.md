@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improve reproducibility by pinning the Kubernetes components.
 - Client verification during `constellation init`
 
+- Release CLI with SLSA Level 3 requirements.
+
 ### Changed
 <!-- For changes in existing functionality.  -->
 <!-- TODO: Remove `/next/` from URL before release -->

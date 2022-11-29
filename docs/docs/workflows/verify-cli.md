@@ -42,7 +42,7 @@ Verified OK
 
 ## Verify the provenance
 
-Provenance attests that a software artifact was produced by a specific repository and build system invocation. For more information on provenance visit [slsa.dev](https://slsa.dev/provenance/v0.2).
+Provenance attests that a software artifact was produced by a specific repository and build system invocation. For more information on provenance visit [slsa.dev](https://slsa.dev/provenance/v0.2). We've also detailed our [adoption of SLSA](../reference/slsa.md).
 
 Just as checking the signature on the CLI proves that the CLI wasn't manipulated, checking the provenance proves that the artifact was produced by our build process and hasn't been tampered with.
 
