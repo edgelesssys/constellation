@@ -10,5 +10,5 @@ package config
 
 const (
 	// defaultImage is not set for OSS build.
-	defaultImage = ""
+	defaultImage = "feat-e2e-qemu-v2.3.0-pre.0.20221208104406-14fb80068017" // TODO: remove once tested
 )

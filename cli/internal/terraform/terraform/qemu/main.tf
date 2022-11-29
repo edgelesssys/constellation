@@ -17,11 +17,6 @@ provider "libvirt" {
 
 provider "docker" {
   host = "unix:///var/run/docker.sock"
-
-  registry_auth {
-    address     = "ghcr.io"
-    config_file = pathexpand("~/.docker/config.json")
-  }
 }
 
 resource "random_password" "initSecret" {

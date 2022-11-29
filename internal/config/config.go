@@ -278,7 +278,7 @@ func Default() *Config {
 				MetadataAPIImage:      versions.QEMUMetadataImage,
 				LibvirtURI:            "",
 				LibvirtContainerImage: versions.LibvirtImage,
-				NVRAM:                 "production",
+				NVRAM:                 "testing", // TODO: switch back before merging
 				Measurements:          measurements.DefaultsFor(cloudprovider.QEMU),
 			},
 		},
