@@ -105,7 +105,7 @@ require (
 	k8s.io/kubelet v0.25.4
 	k8s.io/kubernetes v1.25.4
 	k8s.io/mount-utils v0.25.4
-	k8s.io/utils v0.0.0-20221108210102-8e77b1f39fe2
+	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448
 )
 
 require (
