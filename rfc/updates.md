@@ -169,11 +169,11 @@ upgrade:
 ```
 
 Instead of having a separate `upgrade` section, we will opt for a declarative approach by updating the existing values of the config file. Since only parts of the config behave in a declarative way,
-we should add comments to those fields who will not update the cluster.
+we should add comments to those fields that will not update the cluster.
 
 ```yaml
-kubernetesVersion: 1.24.3
-microserviceVersion: 2.2.0 # All services deployed as part of installing Constellation
+kubernetesVersion: 1.24.2
+microserviceVersion: 2.1.3 # All services deployed as part of installing Constellation
 provider:
   azure:
     image: /communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.3.0
@@ -194,6 +194,62 @@ Note that:
   Images are specified by the CLI upon loading the Helm chart, by inspeciting `constellation-conf.yaml`.
   Deployment variations could be introduced into the Helm charts if they become necessary in the future.
 
+### CLI commands
+
+`constellation upgrade` has 2 sub commands:
+
+* `constellation upgrade check`
+* `constellation upgrade apply`
+
+When `constellation upgrade check` is called it checks if the current CLI includes helm charts and kubernetes components that are newer than the ones configured in `constellation-config.json`.
+If this is the case, the CLI prints a list of all components that will be updated.
+Moreover, it checks for new image patch versions via the update API (see: rfc/update-api.json).
+Image patch versions are forward compatible within one minor version.
+
+Lastly, the CLI checks if a newer CLI version is available via the update API (see: rfc/update-api.json). If this is the case, it will print the latest CLI version instead of the output described above.
+If the current version and latest version diverge more than one minor version, it will also show the latest CLI of the next minor version, and suggest a way to download it.
+An example:
+current CLI version: `2.3.2`  
+available CLI version with minor version `2.4.0`: `2.4.1`, `2.4.2`, `2.4.3`  
+latest CLI version: `2.5.0`  
+`constellation upgrade check` will show `2.5.0` as latest, and suggest that the next step in the upgrade process is `2.4.3`.  
+Since any CLI can only upgrade from one minor version below to its own version, we need to perform the upgrade to `2.4.3` before upgrading to `2.5.0`.
+If there are still microservice updates needed with the current CLI, we need to prompt the user to first install those before continuing with the next minor release.
+
+We also print `In newer CLI versions there are even newer versions available.` if e.g. there is a newer patch version of Kubernetes available in one of the proposed minor versions.
+
+Executing `constellation upgrade check --write-config` writes all new version values to `constellation-conf.json`.
+This allows the user to execute `constellation upgrade apply` without manually modifying `constellation-conf.json`.
+
+```bash
+$ constellation upgrade check
+Possible Kubernetes upgrade: 
+  1.24.2 --> 1.24.3 (or 1.25.2)
+  In newer CLIs there are even newer patch versions available. 
+Possible VM image upgrade: 
+  2.3.0 --> 2.3.0 (not updated)
+
+Possible Kubernetes services upgrade to 1.24.5:
+  Autoscaler: 1.24.3 --> 1.24.3 (not updated)
+  CloudControllerManager: 1.24.5 --> 1.24.8
+  CloudNodeManager: 1.24.1 --> 1.24.2
+
+Possible Constellation microservices upgrade to 2.2.0:
+  KMS: 2.1.3 --> 2.2.0
+  joinService: 2.1.3 --> 2.2.0
+  nodeOperator: 2.1.3 --> 2.2.0
+
+There is a new CLI available: v2.6.0
+
+Your current CLI version is more than one minor version apart from the latest release.
+Please upgrade your cluster with the current CLI and then download the CLI of the next minor version
+and upgrade your cluster again.
+
+You can download it via:
+
+$ wget <CDN link to the CLI with the latest patch version of the next minor version>
+```
+
 When `constellation upgrade apply` is called the CLI needs to perform the following steps:
 
 1. warn the user to create a Constellation/etcd backup before updating as documented in the [official K8s update docs](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/#before-you-begin)
@@ -211,12 +267,12 @@ $ constellation upgrade apply
 Upgrading Kubernetes: 1.24.2 --> 1.24.3 ...
 Upgrading VM image: /communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.3.0 --> /communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.3.0 (not updated)
 
-Updating Kubernetes services version to 1.24.5:
+Upgrading Kubernetes services version to 1.24.5:
   Autoscaler: 1.24.3 --> 1.24.3 (not updated)
   CloudControllerManager: 1.24.5 --> 1.24.8
   CloudNodeManager: 1.24.1 --> 1.24.2
 
-Updating Constellation microservices to 2.2.0:
+Upgrading Constellation microservices to 2.2.0:
   KMS: 2.1.3 --> 2.2.0
   joinService: 2.1.3 --> 2.2.0
   nodeOperator: 2.1.3 --> 2.2.0
