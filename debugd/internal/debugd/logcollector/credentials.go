@@ -20,6 +20,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	awssecretmanager "github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/info"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	gaxv2 "github.com/googleapis/gax-go/v2"
 )
@@ -41,7 +42,7 @@ type openseachCredsGetter interface {
 }
 
 // NewCloudCredentialGetter returns a new CloudCredentialGetter for the given cloud provider.
-func newCloudCredentialGetter(ctx context.Context, provider cloudprovider.Provider) (*credentialGetter, error) {
+func newCloudCredentialGetter(ctx context.Context, provider cloudprovider.Provider, infoMap *info.Map) (*credentialGetter, error) {
 	switch provider {
 	case cloudprovider.GCP:
 		getter, err := newGCPCloudCredentialGetter(ctx)
@@ -59,6 +60,12 @@ func newCloudCredentialGetter(ctx context.Context, provider cloudprovider.Provid
 		getter, err := newAWSCloudCredentialGetter(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("creating AWS cloud credential getter: %w", err)
+		}
+		return &credentialGetter{getter}, nil
+	case cloudprovider.QEMU:
+		getter, err := newQemuCloudCredentialGetter(infoMap)
+		if err != nil {
+			return nil, fmt.Errorf("creating QEMU cloud credential getter: %w", err)
 		}
 		return &credentialGetter{getter}, nil
 	default:
@@ -212,4 +219,35 @@ type awsSecretManagerAPI interface {
 	GetSecretValue(ctx context.Context, params *awssecretmanager.GetSecretValueInput,
 		optFns ...func(*awssecretmanager.Options),
 	) (*awssecretmanager.GetSecretValueOutput, error)
+}
+
+type qemuCloudCredentialGetter struct {
+	creds credentials
+}
+
+func newQemuCloudCredentialGetter(infoMap *info.Map) (*qemuCloudCredentialGetter, error) {
+	const username = "cluster-instance-qemu"
+
+	password, ok, err := infoMap.Get("qemu.opensearch-pw")
+	if err != nil {
+		return nil, fmt.Errorf("getting qemu.opensearch-pw from info: %w", err)
+	}
+	if !ok {
+		return nil, errors.New("qemu.opensearch-pw not found in info")
+	}
+
+	return &qemuCloudCredentialGetter{
+		creds: credentials{
+			Username: username,
+			Password: password,
+		},
+	}, nil
+}
+
+func (q *qemuCloudCredentialGetter) GetOpensearchCredentials(ctx context.Context) (credentials, error) {
+	return q.creds, nil
+}
+
+func (q *qemuCloudCredentialGetter) Close() error {
+	return nil
 }
