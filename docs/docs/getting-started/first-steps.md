@@ -226,11 +226,13 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     </tabItem>
     </tabs>
 
+<!--
     :::info
 
     In case you don't have access to CVMs on Azure, you may use less secure  [trusted launch VMs](../workflows/trusted-launch.md) instead. For this, set **confidentialVM** to `false` in the configuration file.
 
     :::
+-->
 
 3. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml`.
 

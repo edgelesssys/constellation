@@ -45,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- For now removed features. -->
 - `access-manager` was removed from code base. K8s native way to SSH into nodes documented.
 - `SSHUsers` has been removed from the user configuration following the removal of `access-manager`.
+- Azure Trusted Launch support. May come back in the future.
 
 ### Fixed
 
