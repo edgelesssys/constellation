@@ -77,7 +77,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.12.1
 	github.com/sigstore/rekor v1.0.1
-	github.com/sigstore/sigstore v1.4.5
+	github.com/sigstore/sigstore v1.4.6
 	github.com/spf13/afero v1.9.3
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.1
@@ -198,7 +198,7 @@ require (
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/google/go-attestation v0.4.4-0.20221011162210-17f9c05652a9 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/go-containerregistry v0.12.0 // indirect
+	github.com/google/go-containerregistry v0.12.1 // indirect
 	github.com/google/go-sev-guest v0.2.6 // indirect
 	github.com/google/go-tspi v0.3.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
@@ -223,7 +223,7 @@ require (
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/letsencrypt/boulder v0.0.0-20220929215747-76583552c2be // indirect
+	github.com/letsencrypt/boulder v0.0.0-20221109233200-85aa52084eaf // indirect
 	github.com/lib/pq v1.10.6 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -253,7 +253,7 @@ require (
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.13.0 // indirect
-	github.com/prometheus/client_model v0.2.0 // indirect
+	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/rivo/uniseg v0.4.2 // indirect
@@ -281,10 +281,10 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/exp v0.0.0-20220823124025-807a23277127 // indirect
 	golang.org/x/net v0.2.0 // indirect
-	golang.org/x/oauth2 v0.1.0 // indirect
+	golang.org/x/oauth2 v0.2.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/term v0.2.0 // indirect
-	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af // indirect
+	golang.org/x/time v0.2.0 // indirect
 	golang.org/x/tools v0.3.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
