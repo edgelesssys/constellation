@@ -43,14 +43,14 @@ type VersionsList struct {
 	Versions []string `json:"versions"`
 }
 
-// validate checks if the list is valid.
+// Validate checks if the list is valid.
 // This performs the following checks:
 // - The stream is supported.
 // - The granularity is "major" or "minor".
 // - The kind is supported.
 // - The base version is a valid semantic version that matches the granularity.
 // - All versions in the list are valid semantic versions that are finer-grained than the base version.
-func (l *VersionsList) validate() error {
+func (l *VersionsList) Validate() error {
 	var issues []string
 	if l.Stream != "stable" {
 		issues = append(issues, fmt.Sprintf("stream %q is not supported", l.Stream))
@@ -90,6 +90,16 @@ func (l *VersionsList) validate() error {
 	return nil
 }
 
+// Contains returns true if the list contains the given version.
+func (l *VersionsList) Contains(version string) bool {
+	for _, v := range l.Versions {
+		if v == version {
+			return true
+		}
+	}
+	return false
+}
+
 // VersionsFetcher fetches a list of versions.
 type VersionsFetcher struct {
 	httpc httpc
@@ -122,7 +132,7 @@ func (f *VersionsFetcher) list(ctx context.Context, stream, granularity, base, k
 	if err := json.Unmarshal(raw, &list); err != nil {
 		return nil, fmt.Errorf("decoding versions list: %w", err)
 	}
-	if err := list.validate(); err != nil {
+	if err := list.Validate(); err != nil {
 		return nil, fmt.Errorf("validating versions list: %w", err)
 	}
 	if !f.listMatchesRequest(list, stream, granularity, base, kind) {
