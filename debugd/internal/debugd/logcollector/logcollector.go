@@ -57,7 +57,7 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				return
 			}
 
-			cerdsGetter, err := newCloudCredentialGetter(ctx, provider)
+			cerdsGetter, err := newCloudCredentialGetter(ctx, provider, infoMap)
 			if err != nil {
 				logger.Errorf("Creating cloud credential getter: %v", err)
 				return
