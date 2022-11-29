@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -149,7 +150,7 @@ func TestVariant(t *testing.T) {
 func TestFetchReference(t *testing.T) {
 	imageVersionUID := "someImageVersionUID"
 	client := newTestClient(func(req *http.Request) *http.Response {
-		if req.URL.String() == "https://cdn.confidential.cloud/constellation/v1/images/someImageVersionUID.json" {
+		if strings.HasSuffix(req.URL.String(), "/constellation/v1/images/someImageVersionUID.json") {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBufferString(lut)),

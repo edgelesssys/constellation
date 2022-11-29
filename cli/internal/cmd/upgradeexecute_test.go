@@ -23,11 +23,20 @@ import (
 
 func TestUpgradeExecute(t *testing.T) {
 	testCases := map[string]struct {
-		upgrader stubUpgrader
-		wantErr  bool
+		upgrader     stubUpgrader
+		imageFetcher stubImageFetcher
+		wantErr      bool
 	}{
 		"success": {
-			upgrader: stubUpgrader{},
+			imageFetcher: stubImageFetcher{
+				reference: "someReference",
+			},
+		},
+		"fetch error": {
+			imageFetcher: stubImageFetcher{
+				fetchReferenceErr: errors.New("error"),
+			},
+			wantErr: true,
 		},
 		"upgrade error": {
 			upgrader: stubUpgrader{err: errors.New("error")},
@@ -46,7 +55,7 @@ func TestUpgradeExecute(t *testing.T) {
 			cfg := defaultConfigWithExpectedMeasurements(t, config.Default(), cloudprovider.Azure)
 			require.NoError(handler.WriteYAML(constants.ConfigFilename, cfg))
 
-			err := upgradeExecute(cmd, tc.upgrader, handler)
+			err := upgradeExecute(cmd, &tc.imageFetcher, tc.upgrader, handler)
 			if tc.wantErr {
 				assert.Error(err)
 			} else {
@@ -60,6 +69,15 @@ type stubUpgrader struct {
 	err error
 }
 
-func (u stubUpgrader) Upgrade(context.Context, string, measurements.M) error {
+func (u stubUpgrader) Upgrade(context.Context, string, string, measurements.M) error {
 	return u.err
+}
+
+type stubImageFetcher struct {
+	reference         string
+	fetchReferenceErr error
+}
+
+func (f *stubImageFetcher) FetchReference(_ context.Context, _ *config.Config) (string, error) {
+	return f.reference, f.fetchReferenceErr
 }

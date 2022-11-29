@@ -9,13 +9,13 @@ package cmd
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/update"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -32,47 +32,23 @@ import (
 func TestGetCurrentImageVersion(t *testing.T) {
 	testCases := map[string]struct {
 		stubUpgradePlanner stubUpgradePlanner
-		csp                cloudprovider.Provider
 		wantErr            bool
 	}{
-		"valid Azure": {
+		"valid version": {
 			stubUpgradePlanner: stubUpgradePlanner{
-				image: "/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/0.0.0",
+				image: "v1.0.0",
 			},
-			csp: cloudprovider.Azure,
 		},
-		"invalid Azure": {
+		"invalid version": {
 			stubUpgradePlanner: stubUpgradePlanner{
-				image: "/CommunityGalleries/someone-else/Images/constellation/Versions/0.0.1",
+				image: "invalid",
 			},
-			csp:     cloudprovider.Azure,
-			wantErr: true,
-		},
-		"valid GCP": {
-			stubUpgradePlanner: stubUpgradePlanner{
-				image: "projects/constellation-images/global/images/constellation-v0-0-0",
-			},
-			csp: cloudprovider.GCP,
-		},
-		"invalid GCP": {
-			stubUpgradePlanner: stubUpgradePlanner{
-				image: "projects/constellation-images/global/images/constellation-debug-image",
-			},
-			csp:     cloudprovider.GCP,
-			wantErr: true,
-		},
-		"invalid CSP": {
-			stubUpgradePlanner: stubUpgradePlanner{
-				image: "some-image",
-			},
-			csp:     cloudprovider.Unknown,
 			wantErr: true,
 		},
 		"GetCurrentImage error": {
 			stubUpgradePlanner: stubUpgradePlanner{
 				err: errors.New("error"),
 			},
-			csp:     cloudprovider.Azure,
 			wantErr: true,
 		},
 	}
@@ -81,7 +57,7 @@ func TestGetCurrentImageVersion(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			version, err := getCurrentImageVersion(context.Background(), tc.stubUpgradePlanner, tc.csp)
+			version, err := getCurrentImageVersion(context.Background(), tc.stubUpgradePlanner)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -93,141 +69,32 @@ func TestGetCurrentImageVersion(t *testing.T) {
 	}
 }
 
-type stubUpgradePlanner struct {
-	image string
-	err   error
-}
-
-func (u stubUpgradePlanner) GetCurrentImage(context.Context) (*unstructured.Unstructured, string, error) {
-	return nil, u.image, u.err
-}
-
-func TestFetchImages(t *testing.T) {
-	testImages := map[string]imageManifest{
-		"v0.0.0": {
-			AzureImage: "azure-v0.0.0",
-			GCPImage:   "gcp-v0.0.0",
-		},
-		"v999.999.999": {
-			AzureImage: "azure-v999.999.999",
-			GCPImage:   "gcp-v999.999.999",
-		},
-	}
-
-	testCases := map[string]struct {
-		client  *http.Client
-		wantErr bool
-	}{
-		"success": {
-			client: newTestClient(func(req *http.Request) *http.Response {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(bytes.NewBuffer(mustMarshal(t, testImages))),
-					Header:     make(http.Header),
-				}
-			}),
-		},
-		"error": {
-			client: newTestClient(func(req *http.Request) *http.Response {
-				return &http.Response{
-					StatusCode: http.StatusInternalServerError,
-					Body:       io.NopCloser(bytes.NewBuffer([]byte{})),
-					Header:     make(http.Header),
-				}
-			}),
-			wantErr: true,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			assert := assert.New(t)
-
-			images, err := fetchImages(context.Background(), tc.client)
-			if tc.wantErr {
-				assert.Error(err)
-				return
-			}
-
-			assert.NoError(err)
-			assert.NotNil(images)
-		})
-	}
-}
-
 func TestGetCompatibleImages(t *testing.T) {
-	imageList := map[string]imageManifest{
-		"v0.0.0": {
-			AzureImage: "azure-v0.0.0",
-			GCPImage:   "gcp-v0.0.0",
-		},
-		"v1.0.0": {
-			AzureImage: "azure-v1.0.0",
-			GCPImage:   "gcp-v1.0.0",
-		},
-		"v1.0.1": {
-			AzureImage: "azure-v1.0.1",
-			GCPImage:   "gcp-v1.0.1",
-		},
-		"v1.0.2": {
-			AzureImage: "azure-v1.0.2",
-			GCPImage:   "gcp-v1.0.2",
-		},
-		"v1.1.0": {
-			AzureImage: "azure-v1.1.0",
-			GCPImage:   "gcp-v1.1.0",
-		},
+	imageList := []string{
+		"v0.0.0",
+		"v1.0.0",
+		"v1.0.1",
+		"v1.0.2",
+		"v1.1.0",
 	}
 
 	testCases := map[string]struct {
-		images     map[string]imageManifest
-		csp        cloudprovider.Provider
+		images     []string
 		version    string
-		wantImages map[string]config.UpgradeConfig
+		wantImages []string
 	}{
-		"azure": {
+		"filters <= v1.0.0": {
 			images:  imageList,
-			csp:     cloudprovider.Azure,
 			version: "v1.0.0",
-			wantImages: map[string]config.UpgradeConfig{
-				"v1.0.1": {
-					Image: "azure-v1.0.1",
-					CSP:   cloudprovider.Azure,
-				},
-				"v1.0.2": {
-					Image: "azure-v1.0.2",
-					CSP:   cloudprovider.Azure,
-				},
-				"v1.1.0": {
-					Image: "azure-v1.1.0",
-					CSP:   cloudprovider.Azure,
-				},
-			},
-		},
-		"gcp": {
-			images:  imageList,
-			csp:     cloudprovider.GCP,
-			version: "v1.0.0",
-			wantImages: map[string]config.UpgradeConfig{
-				"v1.0.1": {
-					Image: "gcp-v1.0.1",
-					CSP:   cloudprovider.GCP,
-				},
-				"v1.0.2": {
-					Image: "gcp-v1.0.2",
-					CSP:   cloudprovider.GCP,
-				},
-				"v1.1.0": {
-					Image: "gcp-v1.1.0",
-					CSP:   cloudprovider.GCP,
-				},
+			wantImages: []string{
+				"v1.0.1",
+				"v1.0.2",
+				"v1.1.0",
 			},
 		},
 		"no compatible images": {
-			images:     imageList,
-			csp:        cloudprovider.Azure,
-			version:    "v999.999.999",
-			wantImages: map[string]config.UpgradeConfig{},
+			images:  imageList,
+			version: "v999.999.999",
 		},
 	}
 
@@ -235,8 +102,8 @@ func TestGetCompatibleImages(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			compatibleImages := getCompatibleImages(tc.csp, tc.version, tc.images)
-			assert.Equal(tc.wantImages, compatibleImages)
+			compatibleImages := getCompatibleImages(tc.version, tc.images)
+			assert.EqualValues(tc.wantImages, compatibleImages)
 		})
 	}
 }
@@ -244,16 +111,8 @@ func TestGetCompatibleImages(t *testing.T) {
 func TestGetCompatibleImageMeasurements(t *testing.T) {
 	assert := assert.New(t)
 
-	testImages := map[string]config.UpgradeConfig{
-		"v0.0.0": {
-			Image: "v0.0.0",
-			CSP:   cloudprovider.Azure,
-		},
-		"v1.0.0": {
-			Image: "v1.0.0",
-			CSP:   cloudprovider.Azure,
-		},
-	}
+	csp := cloudprovider.Azure
+	images := []string{"v0.0.0", "v1.0.0"}
 
 	client := newTestClient(func(req *http.Request) *http.Response {
 		if strings.HasSuffix(req.URL.String(), "v0.0.0/azure/measurements.json") {
@@ -295,20 +154,17 @@ func TestGetCompatibleImageMeasurements(t *testing.T) {
 
 	pubK := []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu78QgxOOcao6U91CSzEXxrKhvFTt\nJHNy+eX6EMePtDm8CnDF9HSwnTlD0itGJ/XHPQA5YX10fJAqI1y+ehlFMw==\n-----END PUBLIC KEY-----")
 
-	err := getCompatibleImageMeasurements(context.Background(), &cobra.Command{}, client, singleUUIDVerifier(), pubK, testImages)
+	upgrades, err := getCompatibleImageMeasurements(context.Background(), &cobra.Command{}, client, singleUUIDVerifier(), pubK, csp, images)
 	assert.NoError(err)
 
-	for _, image := range testImages {
+	for _, image := range upgrades {
 		assert.NotEmpty(image.Measurements)
 	}
 }
 
 func TestUpgradePlan(t *testing.T) {
-	testImages := map[string]imageManifest{
-		"v1.0.0": {
-			AzureImage: "v1.0.0",
-			GCPImage:   "v1.0.0",
-		},
+	availablePatches := update.VersionsList{
+		Versions: []string{"v1.0.0", "v1.0.1"},
 	}
 
 	// Cosign private key used to sign the measurements.
@@ -329,20 +185,53 @@ func TestUpgradePlan(t *testing.T) {
 	pubK := "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu78QgxOOcao6U91CSzEXxrKhvFTt\nJHNy+eX6EMePtDm8CnDF9HSwnTlD0itGJ/XHPQA5YX10fJAqI1y+ehlFMw==\n-----END PUBLIC KEY-----"
 
 	testCases := map[string]struct {
+		patchLister             stubPatchLister
 		planner                 stubUpgradePlanner
 		flags                   upgradePlanFlags
+		cliVersion              string
 		csp                     cloudprovider.Provider
 		verifier                rekorVerifier
-		imageFetchStatus        int
 		measurementsFetchStatus int
 		wantUpgrade             bool
 		wantErr                 bool
 	}{
-		"no compatible images": {
+		"upgrades gcp": {
+			patchLister: stubPatchLister{list: availablePatches},
 			planner: stubUpgradePlanner{
-				image: "projects/constellation-images/global/images/constellation-v999-999-999",
+				image: "v1.0.0",
 			},
-			imageFetchStatus:        http.StatusOK,
+			measurementsFetchStatus: http.StatusOK,
+			flags: upgradePlanFlags{
+				configPath:   constants.ConfigFilename,
+				filePath:     "upgrade-plan.yaml",
+				cosignPubKey: pubK,
+			},
+			cliVersion:  "v1.0.0",
+			csp:         cloudprovider.GCP,
+			verifier:    singleUUIDVerifier(),
+			wantUpgrade: true,
+		},
+		"upgrades azure": {
+			patchLister: stubPatchLister{list: availablePatches},
+			planner: stubUpgradePlanner{
+				image: "v1.0.0",
+			},
+			measurementsFetchStatus: http.StatusOK,
+			flags: upgradePlanFlags{
+				configPath:   constants.ConfigFilename,
+				filePath:     "upgrade-plan.yaml",
+				cosignPubKey: pubK,
+			},
+			csp:         cloudprovider.Azure,
+			cliVersion:  "v999.999.999",
+			verifier:    singleUUIDVerifier(),
+			wantUpgrade: true,
+		},
+		"current image newer than updates": {
+			patchLister: stubPatchLister{list: availablePatches},
+			planner: stubUpgradePlanner{
+				image: "v999.999.999",
+			},
 			measurementsFetchStatus: http.StatusOK,
 			flags: upgradePlanFlags{
 				configPath:   constants.ConfigFilename,
@@ -353,11 +242,11 @@ func TestUpgradePlan(t *testing.T) {
 			verifier:    singleUUIDVerifier(),
 			wantUpgrade: false,
 		},
-		"upgrades gcp": {
+		"current image newer than cli": {
+			patchLister: stubPatchLister{list: availablePatches},
 			planner: stubUpgradePlanner{
-				image: "projects/constellation-images/global/images/constellation-v0-0-0",
+				image: "v999.999.999",
 			},
-			imageFetchStatus:        http.StatusOK,
 			measurementsFetchStatus: http.StatusOK,
 			flags: upgradePlanFlags{
 				configPath:   constants.ConfigFilename,
@@ -365,29 +254,15 @@ func TestUpgradePlan(t *testing.T) {
 				cosignPubKey: pubK,
 			},
 			csp:         cloudprovider.GCP,
+			cliVersion:  "v1.0.0",
 			verifier:    singleUUIDVerifier(),
-			wantUpgrade: true,
-		},
-		"upgrades azure": {
-			planner: stubUpgradePlanner{
-				image: "/CommunityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/Images/constellation/Versions/0.0.0",
-			},
-			imageFetchStatus:        http.StatusOK,
-			measurementsFetchStatus: http.StatusOK,
-			flags: upgradePlanFlags{
-				configPath:   constants.ConfigFilename,
-				filePath:     "upgrade-plan.yaml",
-				cosignPubKey: pubK,
-			},
-			csp:         cloudprovider.Azure,
-			verifier:    singleUUIDVerifier(),
-			wantUpgrade: true,
+			wantUpgrade: false,
 		},
 		"upgrade to stdout": {
+			patchLister: stubPatchLister{list: availablePatches},
 			planner: stubUpgradePlanner{
-				image: "projects/constellation-images/global/images/constellation-v0-0-0",
+				image: "v1.0.0",
 			},
-			imageFetchStatus:        http.StatusOK,
 			measurementsFetchStatus: http.StatusOK,
 			flags: upgradePlanFlags{
 				configPath:   constants.ConfigFilename,
@@ -395,66 +270,69 @@ func TestUpgradePlan(t *testing.T) {
 				cosignPubKey: pubK,
 			},
 			csp:         cloudprovider.GCP,
+			cliVersion:  "v1.0.0",
 			verifier:    singleUUIDVerifier(),
 			wantUpgrade: true,
 		},
 		"current image not valid": {
+			patchLister: stubPatchLister{list: availablePatches},
 			planner: stubUpgradePlanner{
 				image: "not-valid",
 			},
-			imageFetchStatus:        http.StatusOK,
 			measurementsFetchStatus: http.StatusOK,
 			flags: upgradePlanFlags{
 				configPath:   constants.ConfigFilename,
 				filePath:     "upgrade-plan.yaml",
 				cosignPubKey: pubK,
 			},
-			csp:      cloudprovider.GCP,
-			verifier: singleUUIDVerifier(),
-			wantErr:  true,
+			csp:        cloudprovider.GCP,
+			cliVersion: "v1.0.0",
+			verifier:   singleUUIDVerifier(),
+			wantErr:    true,
 		},
 		"image fetch error": {
+			patchLister: stubPatchLister{err: errors.New("error")},
 			planner: stubUpgradePlanner{
-				image: "projects/constellation-images/global/images/constellation-v0-0-0",
+				image: "v1.0.0",
 			},
-			imageFetchStatus:        http.StatusInternalServerError,
 			measurementsFetchStatus: http.StatusOK,
 			flags: upgradePlanFlags{
 				configPath:   constants.ConfigFilename,
 				filePath:     "upgrade-plan.yaml",
 				cosignPubKey: pubK,
 			},
-			csp:      cloudprovider.GCP,
-			verifier: singleUUIDVerifier(),
-			wantErr:  true,
+			csp:        cloudprovider.GCP,
+			cliVersion: "v1.0.0",
+			verifier:   singleUUIDVerifier(),
 		},
 		"measurements fetch error": {
+			patchLister: stubPatchLister{list: availablePatches},
 			planner: stubUpgradePlanner{
-				image: "projects/constellation-images/global/images/constellation-v0-0-0",
+				image: "v1.0.0",
 			},
-			imageFetchStatus:        http.StatusOK,
 			measurementsFetchStatus: http.StatusInternalServerError,
 			flags: upgradePlanFlags{
 				configPath:   constants.ConfigFilename,
 				filePath:     "upgrade-plan.yaml",
 				cosignPubKey: pubK,
 			},
-			csp:      cloudprovider.GCP,
-			verifier: singleUUIDVerifier(),
-			wantErr:  true,
+			csp:        cloudprovider.GCP,
+			cliVersion: "v1.0.0",
+			verifier:   singleUUIDVerifier(),
 		},
 		"failing search should not result in error": {
+			patchLister: stubPatchLister{list: availablePatches},
 			planner: stubUpgradePlanner{
-				image: "projects/constellation-images/global/images/constellation-v0-0-0",
+				image: "v1.0.0",
 			},
-			imageFetchStatus:        http.StatusOK,
 			measurementsFetchStatus: http.StatusOK,
 			flags: upgradePlanFlags{
 				configPath:   constants.ConfigFilename,
 				filePath:     "upgrade-plan.yaml",
 				cosignPubKey: pubK,
 			},
-			csp: cloudprovider.GCP,
+			csp:        cloudprovider.GCP,
+			cliVersion: "v1.0.0",
 			verifier: &stubRekorVerifier{
 				SearchByHashUUIDs: []string{},
 				SearchByHashError: errors.New("some error"),
@@ -462,17 +340,18 @@ func TestUpgradePlan(t *testing.T) {
 			wantUpgrade: true,
 		},
 		"failing verify should not result in error": {
+			patchLister: stubPatchLister{list: availablePatches},
 			planner: stubUpgradePlanner{
-				image: "projects/constellation-images/global/images/constellation-v0-0-0",
+				image: "v1.0.0",
 			},
-			imageFetchStatus:        http.StatusOK,
 			measurementsFetchStatus: http.StatusOK,
 			flags: upgradePlanFlags{
 				configPath:   constants.ConfigFilename,
 				filePath:     "upgrade-plan.yaml",
 				cosignPubKey: pubK,
 			},
-			csp: cloudprovider.GCP,
+			csp:        cloudprovider.GCP,
+			cliVersion: "v1.0.0",
 			verifier: &stubRekorVerifier{
 				SearchByHashUUIDs: []string{"11111111111111111111111111111111111111111111111111111111111111111111111111111111"},
 				VerifyEntryError:  errors.New("some error"),
@@ -499,24 +378,17 @@ func TestUpgradePlan(t *testing.T) {
 			cmd.SetErr(&errTarget)
 
 			client := newTestClient(func(req *http.Request) *http.Response {
-				if req.URL.String() == imageReleaseURL {
-					return &http.Response{
-						StatusCode: tc.imageFetchStatus,
-						Body:       io.NopCloser(bytes.NewBuffer(mustMarshal(t, testImages))),
-						Header:     make(http.Header),
-					}
-				}
 				if strings.HasSuffix(req.URL.String(), "azure/measurements.json") {
 					return &http.Response{
 						StatusCode: tc.measurementsFetchStatus,
-						Body:       io.NopCloser(strings.NewReader(`{"csp":"azure","image":"v1.0.0","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`)),
+						Body:       io.NopCloser(strings.NewReader(`{"csp":"azure","image":"v1.0.1","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`)),
 						Header:     make(http.Header),
 					}
 				}
 				if strings.HasSuffix(req.URL.String(), "azure/measurements.json.sig") {
 					return &http.Response{
 						StatusCode: tc.measurementsFetchStatus,
-						Body:       io.NopCloser(strings.NewReader("MEQCIFh8CVELp/Da2U2Jt404OXsUeDfqtrf3pqGRuvxnxhI8AiBTHF9tHEPwFedYG3Jgn2ELOxss+Ybc6135vEtClBrbpg==")),
+						Body:       io.NopCloser(strings.NewReader("MEYCIQDu2Sft91FjN278uP+r/HFMms6IH/tRtaHzYvIN0xPgdwIhAJhiFxVsHCa0NK6bZOGLE9c4miZHIqFTKvgpTf3rJ9dW")),
 						Header:     make(http.Header),
 					}
 				}
@@ -524,14 +396,14 @@ func TestUpgradePlan(t *testing.T) {
 				if strings.HasSuffix(req.URL.String(), "gcp/measurements.json") {
 					return &http.Response{
 						StatusCode: tc.measurementsFetchStatus,
-						Body:       io.NopCloser(strings.NewReader(`{"csp":"gcp","image":"v1.0.0","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`)),
+						Body:       io.NopCloser(strings.NewReader(`{"csp":"gcp","image":"v1.0.1","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`)),
 						Header:     make(http.Header),
 					}
 				}
 				if strings.HasSuffix(req.URL.String(), "gcp/measurements.json.sig") {
 					return &http.Response{
 						StatusCode: tc.measurementsFetchStatus,
-						Body:       io.NopCloser(strings.NewReader("MEYCIQCr/gDGjj11mR5OeImwOLjxnBqMbBmqoK7yXqy0cXR3HQIhALpVDdYwR9VNJnWwtl8bTfrezyJbc7UNZJO4PJe+stFP")),
+						Body:       io.NopCloser(strings.NewReader("MEQCIBUssv92LpSMiXE1UAVf2fW8J9pZHiLseo2tdZjxv2OMAiB6K8e8yL0768jWjlFnRe3Rc2x/dX34uzX3h0XUrlYt1A==")),
 						Header:     make(http.Header),
 					}
 				}
@@ -543,7 +415,7 @@ func TestUpgradePlan(t *testing.T) {
 				}
 			})
 
-			err := upgradePlan(cmd, tc.planner, fileHandler, client, tc.verifier, tc.flags)
+			err := upgradePlan(cmd, tc.planner, tc.patchLister, fileHandler, client, tc.verifier, tc.flags, tc.cliVersion)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -571,11 +443,55 @@ func TestUpgradePlan(t *testing.T) {
 	}
 }
 
-func mustMarshal(t *testing.T, v any) []byte {
-	t.Helper()
-	b, err := json.Marshal(v)
-	if err != nil {
-		t.Fatalf("failed to marshal: %s", err)
+func TestNextMinorVersion(t *testing.T) {
+	testCases := map[string]struct {
+		version              string
+		wantNextMinorVersion string
+		wantErr              bool
+	}{
+		"gets next": {
+			version:              "v1.0.0",
+			wantNextMinorVersion: "v1.1",
+		},
+		"gets next from minor version": {
+			version:              "v1.0",
+			wantNextMinorVersion: "v1.1",
+		},
+		"empty version": {
+			wantErr: true,
+		},
 	}
-	return b
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			gotNext, err := nextMinorVersion(tc.version)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+
+			assert.NoError(err)
+			assert.Equal(tc.wantNextMinorVersion, gotNext)
+		})
+	}
+}
+
+type stubUpgradePlanner struct {
+	image string
+	err   error
+}
+
+func (u stubUpgradePlanner) GetCurrentImage(context.Context) (*unstructured.Unstructured, string, error) {
+	return nil, u.image, u.err
+}
+
+type stubPatchLister struct {
+	list update.VersionsList
+	err  error
+}
+
+func (s stubPatchLister) PatchVersionsOf(ctx context.Context, stream, minor, kind string) (*update.VersionsList, error) {
+	return &s.list, s.err
 }
