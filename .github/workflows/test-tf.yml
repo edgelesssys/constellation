@@ -37,3 +37,14 @@ jobs:
             terraform -chdir="$dir" validate -no-color || result=1
           done
           exit $result
+
+      - name: Check HCL lock files are up to date
+        shell: bash
+        run: |
+          dirs=$( find . -type f -name "*.lock.hcl" -exec dirname "{}" \; | sort -ud)
+          for dir in $dirs; do
+            echo "Checking $dir"
+            terraform -chdir="$dir" init
+            terraform -chdir="$dir" providers lock -platform=linux_arm64 -platform=linux_amd64 -platform=darwin_arm64 -platform=darwin_amd64 -platform=windows_amd64
+          done
+          git diff --exit-code
