@@ -100,7 +100,7 @@ require (
 	k8s.io/apimachinery v0.25.4
 	k8s.io/apiserver v0.25.4
 	k8s.io/cli-runtime v0.25.4
-	k8s.io/client-go v0.25.4
+	k8s.io/client-go/v11 v11.0.0+incompatible
 	k8s.io/cluster-bootstrap v0.25.4
 	k8s.io/kubelet v0.25.4
 	k8s.io/kubernetes v1.25.4
