@@ -12,23 +12,26 @@ Design goals:
     - CLI versions
     - Kubernetes versions
 
-The folowing HTTP endpoints are available:
+The following HTTP endpoints are available:
 
-- `GET /constellation/v1/updates/latest/` contains files showing the latest version available
+- `GET /constellation/v1/updates/<stream>/latest/` contains files showing the latest version available
     - `image.json` contains the latest image version
     - `microservice.json` contains the latest microservice version
     - `cli.json` contains the latest cli version
     - `kubernetes.json` contains the latest supported version of Kubernetes
-- `GET /constellation/v1/updates/major/<major-version>/` contains files with version information for this major version
+- `GET /constellation/v1/updates/<stream>/major/<major-version>/` contains files with version information for this major version
     - `image.json` contains a list of all minor image versions that belong to a major version
     - `microservice.json` contains a list of all minor microservice versions that belong to a major version
     - `cli.json` contains a list of all minor cli versions that belong to a major version
     - `kubernetes.json` contains a list of all supported minor version of Kubernetes that belong to a major version
-- `GET /constellation/v1/updates/minor/<minor-version>/` contains files with version information for this minor version
+- `GET /constellation/v1/updates/<stream>/minor/<minor-version>/` contains files with version information for this minor version
     - `image.json` contains a list of all patch image versions that belong to a minor version
     - `microservice.json` contains a list of all patch microservice versions that belong to a minor version
     - `cli.json` contains a list of all patch cli versions that belong to a minor version
     - `kubernetes.json` contains a list of all supported patch version of Kubernetes that belong to a minor version
+
+`stream` is used to distinguish between different release streams. For example, `stable` and `beta` could be two different streams.
+Currently, only `stable` is supported. The parameter exists to allow for future expansion.
 
 ## Examples
 
@@ -40,6 +43,8 @@ https://cdn.confidential.cloud/constellation/v1/updates/latest/image.json
 
 ```json
 {
+    "stream": "stable",
+    "kind": "image",
     "version": "v2.3.0"
 }
 ```
@@ -52,6 +57,8 @@ https://cdn.confidential.cloud/constellation/v1/updates/latest/kubernetes.json
 
 ```json
 {
+    "stream": "stable",
+    "kind": "kubernetes",
     "version": "v1.25.4"
 }
 ```
@@ -64,6 +71,10 @@ https://cdn.confidential.cloud/constellation/v1/updates/major/v2/microservice.js
 
 ```json
 {
+    "stream": "stable",
+    "granularity": "major",
+    "base": "v2",
+    "kind": "microservice",
     "versions": ["v2.0", "v2.1", "v2.2", "v2.3"]
 }
 ```
@@ -76,6 +87,10 @@ https://cdn.confidential.cloud/constellation/v1/updates/minor/v2.3/cli.json
 
 ```json
 {
+    "stream": "stable",
+    "granularity": "minor",
+    "base": "v2.3",
+    "kind": "cli",
     "versions": ["v2.3.0", "v2.3.1", "v2.3.2", "v2.3.3"]
 }
 ```
