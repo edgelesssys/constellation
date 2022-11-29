@@ -36,7 +36,6 @@ jobs:
           name: constellation-${{ matrix.os }}-${{ matrix.arch }}
           path: build/constellation-${{ matrix.os }}-${{ matrix.arch }}
 
-
   provenance-subjects:
     runs-on: ubuntu-22.04
     needs:
