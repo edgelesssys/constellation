@@ -93,14 +93,14 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
            gh workflow run generate-measurements.yml --ref release/v$minor -F osImage=v$ver -F isDebugImage=false -F signMeasurements=true
         ```
 
-    13. Create a new tag on this release branch.
+    13. Update expected measurements in [`measurements.go`](/internal/attestation/measurements/measurements.go) using the generated measurements from step 12 and **push your changes**.
+
+    14. Create a new tag on this release branch.
 
         ```sh
         git tag v$ver
         git tags --push
         ```
-
-    14. Update expected measurements in [`measurements.go`](/internal/attestation/measurements/measurements.go) using the generated measurements from step 12 and **push your changes**.
 
     15. Run [Release CLI](https://github.com/edgelesssys/constellation/actions/workflows/release-cli.yml) action on the tag.
 
