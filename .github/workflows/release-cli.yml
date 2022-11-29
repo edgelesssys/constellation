@@ -36,7 +36,6 @@ jobs:
           name: constellation-${{ matrix.os }}-${{ matrix.arch }}
           path: build/constellation-${{ matrix.os }}-${{ matrix.arch }}
 
-
   provenance-subjects:
     runs-on: ubuntu-22.04
     needs:
@@ -158,7 +157,7 @@ jobs:
       - provenance-subjects
     # This must not be pinned to digest. See:
     # https://github.com/slsa-framework/slsa-github-generator#referencing-slsa-builders-and-generators
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.3.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.2.2
     with:
       base64-subjects: "${{ needs.provenance-subjects.outputs.provenance-subjects }}"
 
