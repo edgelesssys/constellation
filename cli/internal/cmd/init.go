@@ -53,8 +53,17 @@ func NewInitCmd() *cobra.Command {
 	return cmd
 }
 
+type initCmd struct {
+	log debugLog
+}
+
 // runInitialize runs the initialize command.
 func runInitialize(cmd *cobra.Command, args []string) error {
+	log, err := newCLILogger(cmd)
+	if err != nil {
+		return fmt.Errorf("creating logger: %w", err)
+	}
+	defer log.Sync()
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	newDialer := func(validator *cloudcmd.Validator) *dialer.Dialer {
 		return dialer.New(nil, validator.V(cmd), &net.Dialer{})
@@ -66,24 +75,26 @@ func runInitialize(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(cmd.Context(), time.Hour)
 	defer cancel()
 	cmd.SetContext(ctx)
-
-	return initialize(cmd, newDialer, fileHandler, license.NewClient(), spinner)
+	i := &initCmd{log: log}
+	return i.initialize(cmd, newDialer, fileHandler, license.NewClient(), spinner)
 }
 
 // initialize initializes a Constellation.
-func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator) *dialer.Dialer,
+func (i *initCmd) initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator) *dialer.Dialer,
 	fileHandler file.Handler, quotaChecker license.QuotaChecker, spinner spinnerInterf,
 ) error {
-	flags, err := evalFlagArgs(cmd)
+	flags, err := i.evalFlagArgs(cmd)
 	if err != nil {
 		return err
 	}
-
+	i.log.Debugf("Using flags: %+v", flags)
+	i.log.Debugf("Loading config file from %s", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
+	i.log.Debugf("Checking cluster ID file")
 	var idFile clusterid.File
 	if err := fileHandler.ReadJSON(constants.ClusterIDsFileName, &idFile); err != nil {
 		return fmt.Errorf("reading cluster ID file: %w", err)
@@ -93,32 +104,37 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 	if err != nil {
 		return fmt.Errorf("validating kubernetes version: %w", err)
 	}
+	i.log.Debugf("Validated k8s version as %s", k8sVersion)
 	if versions.IsPreviewK8sVersion(k8sVersion) {
 		cmd.PrintErrf("Warning: Constellation with Kubernetes %v is still in preview. Use only for evaluation purposes.\n", k8sVersion)
 	}
 
 	provider := conf.GetProvider()
+	i.log.Debugf("Got provider %s", provider.String())
 	checker := license.NewChecker(quotaChecker, fileHandler)
 	if err := checker.CheckLicense(cmd.Context(), provider, conf.Provider, cmd.Printf); err != nil {
 		cmd.PrintErrf("License check failed: %v", err)
 	}
-
+	i.log.Debugf("Checked license")
 	validator, err := cloudcmd.NewValidator(provider, conf)
 	if err != nil {
 		return err
 	}
-
-	serviceAccURI, err := getMarshaledServiceAccountURI(provider, conf, fileHandler)
+	i.log.Debugf("Created a new validator")
+	serviceAccURI, err := i.getMarshaledServiceAccountURI(provider, conf, fileHandler)
 	if err != nil {
 		return err
 	}
-
-	masterSecret, err := readOrGenerateMasterSecret(cmd.OutOrStdout(), fileHandler, flags.masterSecretPath)
+	i.log.Debugf("Got service account uri %s", serviceAccURI)
+	i.log.Debugf("Loading master secret file from %s", flags.masterSecretPath)
+	masterSecret, err := i.readOrGenerateMasterSecret(cmd.OutOrStdout(), fileHandler, flags.masterSecretPath)
 	if err != nil {
 		return fmt.Errorf("parsing or generating master secret from file %s: %w", flags.masterSecretPath, err)
 	}
 	helmLoader := helm.NewLoader(provider, k8sVersion)
+	i.log.Debugf("Created new helm loader")
 	helmDeployments, err := helmLoader.Load(conf, flags.conformance, masterSecret.Key, masterSecret.Salt)
+	i.log.Debugf("Loaded helm heployments")
 	if err != nil {
 		return fmt.Errorf("loading Helm charts: %w", err)
 	}
@@ -140,7 +156,9 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		ConformanceMode:        flags.conformance,
 		InitSecret:             idFile.InitSecret,
 	}
-	resp, err := initCall(cmd.Context(), newDialer(validator), idFile.IP, req)
+	i.log.Debugf("Initialization request is %+v", req)
+	resp, err := i.initCall(cmd.Context(), newDialer(validator), idFile.IP, req)
+	i.log.Debugf("Initialization response is %+v", resp)
 	spinner.Stop()
 	if err != nil {
 		var nonRetriable *nonRetriableError
@@ -150,23 +168,26 @@ func initialize(cmd *cobra.Command, newDialer func(validator *cloudcmd.Validator
 		}
 		return err
 	}
-
+	i.log.Debugf("Writing Constellation id file")
 	idFile.CloudProvider = provider
-	if err := writeOutput(idFile, resp, cmd.OutOrStdout(), fileHandler); err != nil {
+	if err := i.writeOutput(idFile, resp, cmd.OutOrStdout(), fileHandler); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.InitRequest) (*initproto.InitResponse, error) {
+func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, req *initproto.InitRequest) (*initproto.InitResponse, error) {
 	doer := &initDoer{
 		dialer:   dialer,
 		endpoint: net.JoinHostPort(ip, strconv.Itoa(constants.BootstrapperPort)),
 		req:      req,
+		log:      i.log,
 	}
+	i.log.Debugf("Making initialization call, doer is %+v", doer)
 	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, grpcRetry.ServiceIsUnavailable)
 	if err := retrier.Do(ctx); err != nil {
+		i.log.Debugf("Initialization call errored, retrying...")
 		return nil, err
 	}
 	return doer.resp, nil
@@ -177,15 +198,18 @@ type initDoer struct {
 	endpoint string
 	req      *initproto.InitRequest
 	resp     *initproto.InitResponse
+	log      debugLog
 }
 
 func (d *initDoer) Do(ctx context.Context) error {
 	conn, err := d.dialer.Dial(ctx, d.endpoint)
+	d.log.Debugf("Dialed init server")
 	if err != nil {
 		return fmt.Errorf("dialing init server: %w", err)
 	}
 	defer conn.Close()
 	protoClient := initproto.NewAPIClient(conn)
+	d.log.Debugf("Created protoClient")
 	resp, err := protoClient.Init(ctx, d.req)
 	if err != nil {
 		return &nonRetriableError{fmt.Errorf("init call: %w", err)}
@@ -194,11 +218,13 @@ func (d *initDoer) Do(ctx context.Context) error {
 	return nil
 }
 
-func writeOutput(idFile clusterid.File, resp *initproto.InitResponse, wr io.Writer, fileHandler file.Handler) error {
+func (i *initCmd) writeOutput(idFile clusterid.File, resp *initproto.InitResponse, wr io.Writer, fileHandler file.Handler) error {
 	fmt.Fprint(wr, "Your Constellation cluster was successfully initialized.\n\n")
 
 	ownerID := hex.EncodeToString(resp.OwnerId)
+	i.log.Debugf("Owner id is %s", ownerID)
 	clusterID := hex.EncodeToString(resp.ClusterId)
+	i.log.Debugf("Cluster id is %s", clusterID)
 
 	tw := tabwriter.NewWriter(wr, 0, 0, 2, ' ', 0)
 	// writeRow(tw, "Constellation cluster's owner identifier", ownerID)
@@ -210,13 +236,14 @@ func writeOutput(idFile clusterid.File, resp *initproto.InitResponse, wr io.Writ
 	if err := fileHandler.Write(constants.AdminConfFilename, resp.Kubeconfig, file.OptNone); err != nil {
 		return fmt.Errorf("writing kubeconfig: %w", err)
 	}
-
+	i.log.Debugf("Wrote out kubeconfig")
 	idFile.OwnerID = ownerID
 	idFile.ClusterID = clusterID
 
 	if err := fileHandler.WriteJSON(constants.ClusterIDsFileName, idFile, file.OptOverwrite); err != nil {
 		return fmt.Errorf("writing Constellation id file: %w", err)
 	}
+	i.log.Debugf("Wrote out Constellation id file")
 
 	fmt.Fprintln(wr, "You can now connect to your cluster by executing:")
 	fmt.Fprintf(wr, "\texport KUBECONFIG=\"$PWD/%s\"\n", constants.AdminConfFilename)
@@ -229,16 +256,19 @@ func writeRow(wr io.Writer, col1 string, col2 string) {
 
 // evalFlagArgs gets the flag values and does preprocessing of these values like
 // reading the content from file path flags and deriving other values from flag combinations.
-func evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
+func (i *initCmd) evalFlagArgs(cmd *cobra.Command) (initFlags, error) {
 	masterSecretPath, err := cmd.Flags().GetString("master-secret")
+	i.log.Debugf("Master secret path flag value is %s", masterSecretPath)
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing master-secret path flag: %w", err)
 	}
 	conformance, err := cmd.Flags().GetBool("conformance")
+	i.log.Debugf("Conformance flag is %t", conformance)
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing autoscale flag: %w", err)
 	}
 	configPath, err := cmd.Flags().GetString("config")
+	i.log.Debugf("Config path flag is %s", conformance)
 	if err != nil {
 		return initFlags{}, fmt.Errorf("parsing config path flag: %w", err)
 	}
@@ -264,8 +294,9 @@ type masterSecret struct {
 }
 
 // readOrGenerateMasterSecret reads a base64 encoded master secret from file or generates a new 32 byte secret.
-func readOrGenerateMasterSecret(outWriter io.Writer, fileHandler file.Handler, filename string) (masterSecret, error) {
+func (i *initCmd) readOrGenerateMasterSecret(outWriter io.Writer, fileHandler file.Handler, filename string) (masterSecret, error) {
 	if filename != "" {
+		i.log.Debugf("Reading master secret from file")
 		var secret masterSecret
 		if err := fileHandler.ReadJSON(filename, &secret); err != nil {
 			return masterSecret{}, err
@@ -281,6 +312,7 @@ func readOrGenerateMasterSecret(outWriter io.Writer, fileHandler file.Handler, f
 	}
 
 	// No file given, generate a new secret, and save it to disk
+	i.log.Debugf("Generating new master secret")
 	key, err := crypto.GenerateRandomBytes(crypto.MasterSecretLengthDefault)
 	if err != nil {
 		return masterSecret{}, err
@@ -293,7 +325,7 @@ func readOrGenerateMasterSecret(outWriter io.Writer, fileHandler file.Handler, f
 		Key:  key,
 		Salt: salt,
 	}
-
+	i.log.Debugf("Generated master secret key and salt values")
 	if err := fileHandler.WriteJSON(constants.MasterSecretFilename, secret, file.OptNone); err != nil {
 		return masterSecret{}, err
 	}
@@ -312,30 +344,37 @@ func readIPFromIDFile(fileHandler file.Handler) (string, error) {
 	return idFile.IP, nil
 }
 
-func getMarshaledServiceAccountURI(provider cloudprovider.Provider, config *config.Config, fileHandler file.Handler) (string, error) {
+func (i *initCmd) getMarshaledServiceAccountURI(provider cloudprovider.Provider, config *config.Config, fileHandler file.Handler) (string, error) {
+	i.log.Debugf("Getting service account URI")
 	switch provider {
 	case cloudprovider.GCP:
+		i.log.Debugf("Handling case for GCP")
 		path := config.Provider.GCP.ServiceAccountKeyPath
+		i.log.Debugf("GCP service account key path %s", path)
 
 		var key gcpshared.ServiceAccountKey
 		if err := fileHandler.ReadJSON(path, &key); err != nil {
 			return "", fmt.Errorf("reading service account key from path %q: %w", path, err)
 		}
-
+		i.log.Debugf("Read GCP service account key from path")
 		return key.ToCloudServiceAccountURI(), nil
 
 	case cloudprovider.AWS:
+		i.log.Debugf("Handling case for AWS")
 		return "", nil // AWS does not need a service account URI
 	case cloudprovider.Azure:
+		i.log.Debugf("Handling case for Azure")
 		creds := azureshared.ApplicationCredentials{
 			TenantID:          config.Provider.Azure.TenantID,
 			AppClientID:       config.Provider.Azure.AppClientID,
 			ClientSecretValue: config.Provider.Azure.ClientSecretValue,
 			Location:          config.Provider.Azure.Location,
 		}
+		i.log.Debugf("Handling case for Azure")
 		return creds.ToCloudServiceAccountURI(), nil
 
 	case cloudprovider.QEMU:
+		i.log.Debugf("Handling case for QEMU")
 		return "", nil // QEMU does not use service account keys
 
 	default:

@@ -222,8 +222,13 @@ func initializeMiniCluster(cmd *cobra.Command, fileHandler file.Handler, spinner
 	cmd.Flags().String("master-secret", "", "")
 	cmd.Flags().String("endpoint", "", "")
 	cmd.Flags().Bool("conformance", false, "")
-
-	if err := initialize(cmd, newDialer, fileHandler, license.NewClient(), spinner); err != nil {
+	log, err := newCLILogger(cmd)
+	if err != nil {
+		return fmt.Errorf("creating logger: %w", err)
+	}
+	defer log.Sync()
+	i := &initCmd{log: log}
+	if err := i.initialize(cmd, newDialer, fileHandler, license.NewClient(), spinner); err != nil {
 		return err
 	}
 	return nil
