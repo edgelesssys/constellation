@@ -61,14 +61,17 @@ spec:
               mountPath: /dev
             # The following mounts are required to trigger host udevadm from
             # container
-            - name: udev-rules-etc
-              mountPath: /etc/udev
-            - name: udev-rules-lib
-              mountPath: /lib/udev
-            - name: udev-socket
-              mountPath: /run/udev
-            - name: sys
-              mountPath: /sys
+            # But we don't want that, because it breaks cryptsetup
+            # Also, the task done by manually triggering udevadm are already
+            # performed by having the correct udev rules configured
+            # - name: udev-rules-etc
+            #   mountPath: /etc/udev
+            # - name: udev-rules-lib
+            #   mountPath: /lib/udev
+            # - name: udev-socket
+            #   mountPath: /run/udev
+            # - name: sys
+            #   mountPath: /sys
             - name: cryptsetup
               mountPath: /run/cryptsetup
       volumes:
@@ -90,18 +93,21 @@ spec:
             type: Directory
         # The following mounts are required to trigger host udevadm from
         # container
-        - name: udev-rules-etc
-          hostPath:
-            path: /etc/udev
-            type: Directory
-        - name: udev-rules-lib
-          hostPath:
-            path: /lib/udev
-            type: Directory
-        - name: udev-socket
-          hostPath:
-            path: /run/udev
-            type: Directory
+        # But we don't want that, because it breaks cryptsetup
+        # Also, the task done by manually triggering udevadm are already
+        # performed by having the correct udev rules configured
+        # - name: udev-rules-etc
+        #   hostPath:
+        #     path: /etc/udev
+        #     type: Directory
+        # - name: udev-rules-lib
+        #   hostPath:
+        #     path: /lib/udev
+        #     type: Directory
+        # - name: udev-socket
+        #   hostPath:
+        #     path: /run/udev
+        #     type: Directory
         - name: sys
           hostPath:
             path: /sys
