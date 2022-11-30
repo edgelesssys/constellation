@@ -14,17 +14,17 @@ Design goals:
 
 The following HTTP endpoints are available:
 
-- `GET /constellation/v1/updates/stream/<stream>/latest/` contains files showing the latest version available
+- `GET /constellation/v1/versions/stream/<stream>/latest/` contains files showing the latest version available
     - `image.json` contains the latest image version
     - `microservice.json` contains the latest microservice version
     - `cli.json` contains the latest cli version
     - `kubernetes.json` contains the latest supported version of Kubernetes
-- `GET /constellation/v1/updates/stream/<stream>/major/<major-version>/` contains files with version information for this major version
+- `GET /constellation/v1/versions/stream/<stream>/major/<major-version>/` contains files with version information for this major version
     - `image.json` contains a list of all minor image versions that belong to a major version
     - `microservice.json` contains a list of all minor microservice versions that belong to a major version
     - `cli.json` contains a list of all minor cli versions that belong to a major version
     - `kubernetes.json` contains a list of all supported minor version of Kubernetes that belong to a major version
-- `GET /constellation/v1/updates/stream/<stream>/minor/<minor-version>/` contains files with version information for this minor version
+- `GET /constellation/v1/versions/stream/<stream>/minor/<minor-version>/` contains files with version information for this minor version
     - `image.json` contains a list of all patch image versions that belong to a minor version
     - `microservice.json` contains a list of all patch microservice versions that belong to a minor version
     - `cli.json` contains a list of all patch cli versions that belong to a minor version
@@ -38,7 +38,7 @@ Currently, only `stable` is supported. The parameter exists to allow for future 
 This shows the version information for the latest OS image. The file could be extended to include more metadata.
 
 ```
-https://cdn.confidential.cloud/constellation/v1/updates/stream/stable/latest/image.json
+https://cdn.confidential.cloud/constellation/v1/versions/stream/stable/latest/image.json
 ```
 
 ```json
@@ -52,7 +52,7 @@ https://cdn.confidential.cloud/constellation/v1/updates/stream/stable/latest/ima
 This shows the version information for the latest Kubernetes release. The file could be extended to include more metadata.
 
 ```
-https://cdn.confidential.cloud/constellation/v1/updates/stream/stable/latest/kubernetes.json
+https://cdn.confidential.cloud/constellation/v1/versions/stream/stable/latest/kubernetes.json
 ```
 
 ```json
@@ -66,7 +66,7 @@ https://cdn.confidential.cloud/constellation/v1/updates/stream/stable/latest/kub
 This shows a list of all minor releases of the microservices for the major version `v2`. The file could be extended to include more metadata.
 
 ```
-https://cdn.confidential.cloud/constellation/v1/updates/stream/stable/major/v2/microservice.json
+https://cdn.confidential.cloud/constellation/v1/versions/stream/stable/major/v2/microservice.json
 ```
 
 ```json
@@ -82,7 +82,7 @@ https://cdn.confidential.cloud/constellation/v1/updates/stream/stable/major/v2/m
 This shows a list of all patch releases of the CLI for the minor version `v2.3`. The file could be extended to include more metadata.
 
 ```
-https://cdn.confidential.cloud/constellation/v1/updates/stream/stable/minor/v2.3/cli.json
+https://cdn.confidential.cloud/constellation/v1/versions/stream/stable/minor/v2.3/cli.json
 ```
 
 ```json
@@ -95,16 +95,16 @@ https://cdn.confidential.cloud/constellation/v1/updates/stream/stable/minor/v2.3
 }
 ```
 
-## Update discovery
+## Version discovery
 
-The update API can be used to find new versions efficiently and can be used to perform simple selection of available upgrades using semantic versioning.
+The version API can be used to find new versions efficiently and can be used to perform simple selection of available upgrades using semantic versioning.
 Below are some example use cases.
 
-### Inform about updates
+### Inform about new versions
 
 The CLI can query the `latest` endpoint to inform users about new releases of the CLI itself.
 
-### Propose compatible image updates
+### Propose compatible image versions
 
 The CLI can query the `minor` endpoint to retrieve a list of all patch releases of a Constellation OS image. This can be used to only select compatible versions for image updates if combined with a downgrade protection (only allow updating to image versions that are newer than the one currently in use).
 
