@@ -140,6 +140,8 @@ The CLI hands users the same mechanism to deliver the Kubernetes version to the 
 +type NodeSpec struct {
     // ImageReference is the image to use for all nodes.
     ImageReference string `json:"image,omitempty"`
+    // ImageVersion is the CSP independent version of the image to use for all nodes.
+	ImageVersion string `json:"imageVersion,omitempty"`
 +   // KubernetesVersion defines the Kubernetes version for all nodes.
 +   KubernetesVersion string `json:"kubernetesVersion,omitempty"`
 }
@@ -162,10 +164,14 @@ Currently, `constellation upgrade` allows us to upgrade the VM image via the fol
 
 ```yaml
 upgrade:
-  image: /communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.3.0
+  image: v2.3.0
   measurements:
-    11: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-    12: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+    11:
+      expected: "0000000000000000000000000000000000000000000000000000000000000000"
+      warnOnly: false
+    12:
+      expected: "0000000000000000000000000000000000000000000000000000000000000000"
+      warnOnly: false
 ```
 
 Instead of having a separate `upgrade` section, we will opt for a declarative approach by updating the existing values of the config file. Since only parts of the config behave in a declarative way,
@@ -174,12 +180,16 @@ we should add comments to those fields that will not update the cluster.
 ```yaml
 kubernetesVersion: 1.24.2
 microserviceVersion: 2.1.3 # All services deployed as part of installing Constellation
+image: v2.3.0
 provider:
   azure:
-    image: /communityGalleries/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df/images/constellation/versions/2.3.0
     measurements:
-    11: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-    12: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      11:
+        expected: "0000000000000000000000000000000000000000000000000000000000000000"
+        warnOnly: false
+      12:
+        expected: "0000000000000000000000000000000000000000000000000000000000000000"
+        warnOnly: false
 ```
 
 Note that:
@@ -209,10 +219,10 @@ Image patch versions are forward compatible within one minor version.
 Lastly, the CLI checks if a newer CLI version is available via the update API (see: rfc/update-api.json). If this is the case, it will print the latest CLI version instead of the output described above.
 If the current version and latest version diverge more than one minor version, it will also show the latest CLI of the next minor version, and suggest a way to download it.
 An example:
-current CLI version: `2.3.2`  
-available CLI version with minor version `2.4.0`: `2.4.1`, `2.4.2`, `2.4.3`  
-latest CLI version: `2.5.0`  
-`constellation upgrade check` will show `2.5.0` as latest, and suggest that the next step in the upgrade process is `2.4.3`.  
+current CLI version: `2.3.2`
+available CLI version with minor version `2.4.0`: `2.4.1`, `2.4.2`, `2.4.3`
+latest CLI version: `2.5.0`
+`constellation upgrade check` will show `2.5.0` as latest, and suggest that the next step in the upgrade process is `2.4.3`.
 Since any CLI can only upgrade from one minor version below to its own version, we need to perform the upgrade to `2.4.3` before upgrading to `2.5.0`.
 If there are still microservice updates needed with the current CLI, we need to prompt the user to first install those before continuing with the next minor release.
 
@@ -223,10 +233,10 @@ This allows the user to execute `constellation upgrade apply` without manually m
 
 ```bash
 $ constellation upgrade check
-Possible Kubernetes upgrade: 
+Possible Kubernetes upgrade:
   1.24.2 --> 1.24.3 (or 1.25.2)
-  In newer CLIs there are even newer patch versions available. 
-Possible VM image upgrade: 
+  In newer CLIs there are even newer patch versions available.
+Possible VM image upgrade:
   2.3.0 --> 2.3.0 (not updated)
 
 Possible Kubernetes services upgrade to 1.24.5:
