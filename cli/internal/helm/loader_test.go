@@ -13,6 +13,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
@@ -121,30 +122,14 @@ func TestConstellationServices(t *testing.T) {
 
 			result, err := engine.Render(chart, valuesToRender)
 			require.NoError(err)
-			for k, actual := range result {
-				currentFile := path.Join("testdata", tc.config.GetProvider().String(), k)
-				expected, err := os.ReadFile(currentFile)
-				// If a file does not exist, we expect the render for that path to be empty.
-				if errors.Is(err, fs.ErrNotExist) {
-					assert.YAMLEq("", actual, fmt.Sprintf("current file: %s", currentFile))
-					continue
-				}
-				require.NoError(err)
+			testDataPath := path.Join("testdata", tc.config.GetProvider().String(), "constellation-services")
 
-				// testify has an issue where when multiple documents are contained in one YAML string,
-				// only the first document is parsed [1]. For this reason we split the YAML string
-				// into a slice of strings, each entry containing one document.
-				// [1] https://github.com/stretchr/testify/issues/1281
-				expectedSplit := strings.Split(string(expected), "\n---\n")
-				sort.Strings(expectedSplit)
-				actualSplit := strings.Split(actual, "\n---\n")
-				sort.Strings(actualSplit)
-				assert.Equal(len(expectedSplit), len(actualSplit))
+			// Build a map with the same structe as result: filepaths -> rendered template.
+			expectedData := map[string]string{}
+			err = filepath.Walk(testDataPath, buildTestdataMap(tc.config.GetProvider().String(), expectedData, require))
+			require.NoError(err)
 
-				for i := range expectedSplit {
-					assert.YAMLEq(expectedSplit[i], actualSplit[i], fmt.Sprintf("current file: %s", currentFile))
-				}
-			}
+			compareMaps(expectedData, result, assert, require, t)
 		})
 	}
 }
@@ -204,31 +189,84 @@ func TestOperators(t *testing.T) {
 
 			result, err := engine.Render(chart, valuesToRender)
 			require.NoError(err)
-			for k, actual := range result {
-				currentFile := path.Join("testdata", tc.csp.String(), k)
-				expected, err := os.ReadFile(currentFile)
-				// If a file does not exist, we expect the render for that path to be empty.
-				if errors.Is(err, fs.ErrNotExist) {
-					assert.YAMLEq("", actual, fmt.Sprintf("current file: %s", currentFile))
-					continue
-				}
-				require.NoError(err)
+			testDataPath := path.Join("testdata", tc.csp.String(), "constellation-operators")
 
-				// testify has an issue where when multiple documents are contained in one YAML string,
-				// only the first document is parsed [1]. For this reason we split the YAML string
-				// into a slice of strings, each entry containing one document.
-				// [1] https://github.com/stretchr/testify/issues/1281
-				expectedSplit := strings.Split(string(expected), "\n---\n")
-				sort.Strings(expectedSplit)
-				actualSplit := strings.Split(actual, "\n---\n")
-				sort.Strings(actualSplit)
-				assert.Equal(len(expectedSplit), len(actualSplit))
+			// Build a map with the same structe as result: filepaths -> rendered template.
+			expectedData := map[string]string{}
+			err = filepath.Walk(testDataPath, buildTestdataMap(tc.csp.String(), expectedData, require))
+			require.NoError(err)
 
-				for i := range expectedSplit {
-					assert.YAMLEq(expectedSplit[i], actualSplit[i], fmt.Sprintf("current file: %s", currentFile))
-				}
-			}
+			compareMaps(expectedData, result, assert, require, t)
 		})
+	}
+}
+
+// compareMaps ensures that both maps specify the same templates.
+func compareMaps(expectedData map[string]string, result map[string]string, assert *assert.Assertions, require *require.Assertions, t *testing.T) {
+	// This whole block is only to produce useful error messages.
+	// It should allow a developer to see the missing template from just the error message.
+	if len(expectedData) > len(result) {
+		keys := getKeys(expectedData)
+		sort.Strings(keys)
+		t.Logf("expected these templates:\n%s", strings.Join(keys, "\n"))
+
+		keys = getKeys(result)
+		sort.Strings(keys)
+		t.Logf("got these templates:\n%s", strings.Join(keys, "\n"))
+
+		require.FailNow("missing templates in results.")
+	}
+
+	// Walk the map and compare each result with it's expected render.
+	// Results where the expected-file is missing are errors.
+	for k, actualTemplates := range result {
+		if len(strings.TrimSpace(actualTemplates)) == 0 {
+			continue
+		}
+		// testify has an issue where when multiple documents are contained in one YAML string,
+		// only the first document is parsed [1]. For this reason we split the YAML string
+		// into a slice of strings, each entry containing one document.
+		// [1] https://github.com/stretchr/testify/issues/1281
+		renderedTemplates, ok := expectedData[k]
+		require.True(ok, fmt.Sprintf("unexpected render in results, missing file with expected data: %s len: %d", k, len(actualTemplates)))
+		expectedSplit := strings.Split(renderedTemplates, "\n---\n")
+		sort.Strings(expectedSplit)
+		actualSplit := strings.Split(actualTemplates, "\n---\n")
+		sort.Strings(actualSplit)
+		require.Equal(len(expectedSplit), len(actualSplit))
+
+		for i := range expectedSplit {
+			assert.YAMLEq(expectedSplit[i], actualSplit[i], fmt.Sprintf("current file: %s", k))
+		}
+	}
+}
+
+func getKeys(input map[string]string) []string {
+	keys := []string{}
+	for k := range input {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func buildTestdataMap(csp string, expectedData map[string]string, require *require.Assertions) func(path string, info fs.FileInfo, err error) error {
+	return func(currentPath string, _ os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !strings.HasSuffix(currentPath, ".yaml") {
+			return nil
+		}
+
+		_, after, _ := strings.Cut(currentPath, "testdata/"+csp+"/")
+
+		data, err := os.ReadFile(currentPath)
+		require.NoError(err)
+		_, ok := expectedData[after]
+		require.False(ok, "read same path twice during expected data collection.")
+		expectedData[after] = string(data)
+
+		return nil
 	}
 }
 
