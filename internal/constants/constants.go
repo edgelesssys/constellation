@@ -154,8 +154,8 @@ const (
 	CDNImagePath = "constellation/v1/images"
 	// CDNMeasurementsPath is the default path to image measurements in the CDN repository.
 	CDNMeasurementsPath = "constellation/v1/measurements"
-	// CDNUpdatesPath is the default path to updates in the CDN repository.
-	CDNUpdatesPath = "constellation/v1/updates"
+	// CDNVersionsPath is the default path to versions in the CDN repository.
+	CDNVersionsPath = "constellation/v1/versions"
 )
 
 // VersionInfo is the version of a binary. Left as a separate variable to allow override during build.
