@@ -152,7 +152,7 @@ func getFromURL(ctx context.Context, client httpc, stream, granularity, base, ki
 		return nil, fmt.Errorf("parsing image version repository URL: %w", err)
 	}
 	kindFilename := path.Base(kind) + ".json"
-	url.Path = path.Join("constellation/v1/updates", stream, granularity, base, kindFilename)
+	url.Path = path.Join(constants.CDNUpdatesPath, stream, granularity, base, kindFilename)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), http.NoBody)
 	if err != nil {
 		return nil, err

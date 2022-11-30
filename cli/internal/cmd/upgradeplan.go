@@ -175,12 +175,12 @@ func getCompatibleImageMeasurements(ctx context.Context, cmd *cobra.Command, cli
 ) (map[string]config.UpgradeConfig, error) {
 	upgrades := make(map[string]config.UpgradeConfig)
 	for _, img := range images {
-		measurementsURL, err := url.Parse(constants.CDNRepositoryURL + path.Join("/constellation/v1/measurements/", img, strings.ToLower(csp.String()), "measurements.json"))
+		measurementsURL, err := url.Parse(constants.CDNRepositoryURL + path.Join("/", constants.CDNMeasurementsPath, img, strings.ToLower(csp.String()), "measurements.json"))
 		if err != nil {
 			return nil, err
 		}
 
-		signatureURL, err := url.Parse(constants.CDNRepositoryURL + path.Join("/constellation/v1/measurements/", img, strings.ToLower(csp.String()), "measurements.json.sig"))
+		signatureURL, err := url.Parse(constants.CDNRepositoryURL + path.Join("/", constants.CDNMeasurementsPath, img, strings.ToLower(csp.String()), "measurements.json.sig"))
 		if err != nil {
 			return nil, err
 		}
