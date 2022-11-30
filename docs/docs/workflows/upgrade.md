@@ -1,16 +1,16 @@
 # Upgrade your cluster
 
 Constellation provides an easy way to upgrade to the next release.
-This involves updating the CLI, choosing a new VM image to use for all nodes in the cluster and updating the cluster's expected measurements.
+This involves updating the CLI, choosing a new VM image to use for all nodes in the cluster, and updating the cluster's expected measurements.
 
 ## Update the CLI
 
-New features and bug fixes are added to the CLI with every release. To use them, you need to update the CLI to the latest version by following the instructions in the [installation guide](../getting-started/install.md).
+New features and bug fixes are added to the CLI with every release. To use them, update the CLI to the latest version by following the instructions in the [installation guide](../getting-started/install.md).
 
 ## Migrate the configuration
 
-The Constellation configuration file is located in the file `constellation-conf.yaml` in the current working directory.
-Refer to the [migration reference](../reference/config-migration.md) to check if fields in your configuration file need to be updated.
+The Constellation configuration file is located in the file `constellation-conf.yaml` in your workspace.
+Refer to the [migration reference](../reference/config-migration.md) to check if you need to update fields in your configuration file.
 
 ## Plan the upgrade
 

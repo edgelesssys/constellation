@@ -6,7 +6,7 @@ allowing users to mount storage solutions directly into containers.
 The [Container Storage Interface (CSI)](https://kubernetes-csi.github.io/docs/) is the standard interface for exposing arbitrary block and file storage systems into containers in Kubernetes.
 Cloud service providers (CSPs) offer their own CSI-based solutions for cloud storage.
 
-### Confidential storage
+## Confidential storage
 
 Most cloud storage solutions support encryption, such as [GCE Persistent Disks (PD)](https://cloud.google.com/kubernetes-engine/docs/how-to/using-cmek).
 Constellation supports the available CSI-based storage options for Kubernetes engines in Azure and GCP.
