@@ -27,15 +27,14 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
 
         ```sh
         minor=$(echo $ver | cut -d '.' -f 1,2)
-        gcpVer=$(echo $ver | tr "." "-")
         echo $minor # should be 1.3
-        echo $gcpVer # should be 1-3-0
         ```
 
         ```sh
         gh workflow run build-micro-service-manual.yml --ref release/v$minor -F microService=join-service -F imageTag=v$ver -F version=$ver --repo edgelesssys/constellation
         gh workflow run build-micro-service-manual.yml --ref release/v$minor -F microService=kmsserver -F imageTag=v$ver -F version=$ver --repo edgelesssys/constellation
         gh workflow run build-micro-service-manual.yml --ref release/v$minor -F microService=verification-service -F imageTag=v$ver -F version=$ver --repo edgelesssys/constellation
+        gh workflow run build-micro-service-manual.yml --ref release/v$minor -F microService=qemu-metadata-api -F imageTag=v$ver -F version=$ver --repo edgelesssys/constellation
         ```
 
     3. Use [Build operator manual](https://github.com/edgelesssys/constellation/actions/workflows/build-operator-manual.yml) and run the pipeline once with the following parameters:
@@ -58,11 +57,12 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
 
         ```sh
         # crane: https://github.com/google/go-containerregistry/blob/main/cmd/crane/doc/crane.md
-        crane digest ghcr.io/edgelesssys/constellation/node-operator-catalog:v$ver
+        crane digest ghcr.io/edgelesssys/constellation/node-operator:v$ver
         crane digest ghcr.io/edgelesssys/constellation/join-service:v$ver
         crane digest ghcr.io/edgelesssys/constellation/access-manager:v$ver
         crane digest ghcr.io/edgelesssys/constellation/kmsserver:v$ver
         crane digest ghcr.io/edgelesssys/constellation/verification-service:v$ver
+        crane digest ghcr.io/edgelesssys/constellation/qemu-metadata-api:v$ver
         ```
 
     10. Create a [production OS image](/.github/workflows/build-os-image.yml)
@@ -70,13 +70,6 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         ```sh
         gh workflow run build-os-image.yml --ref release/v$minor -F debug=false -F imageVersion=v$ver
         ```
-
-        * Once the pipeline has finished, download the artifact `image-qemu`.
-        * Unzip the downloaded artifact, rename it to `constellation.raw`.
-        * Go to the [S3 bucket for QEMU images](https://s3.console.aws.amazon.com/s3/buckets/cdn-constellation-backend?region=eu-central-1&prefix=constellation/images/mini-constellation/&showversions=false)
-        * Create a new folder for the given version, and upload `constellation.raw` into it.
-
-        * Replace AWS AMIs for this version and next in docs in `first-steps.md`.
 
     11. Run manual E2E tests using [Linux](/.github/workflows/e2e-test-manual.yml) and [macOS](/.github/workflows/e2e-test-manual-macos.yml) to confirm functionality and stability.
 
@@ -110,7 +103,14 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
 
         * The previous step will create a draft release. Check build output for link to draft release. Review & approve.
 
-6. Export, download and make image available in S3 for trusted launch users. To achieve this:
+6. Check if the Constellation OS image is available via the versions API.
+
+    ```sh
+    curl -s "https://cdn.confidential.cloud/constellation/v1/versions/stream/stable/minor/v${minor}/image.json"
+    # list of versions should contain the new version
+    ```
+
+7. Export, download and make image available in S3 for trusted launch users. To achieve this:
 
     ```sh
     TARGET_DISK=export-${ver}
@@ -126,21 +126,22 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
     * Upload both image and state into the newly created folder.
     * Delete the disk in Azure!
 
-7. To bring updated version numbers and other changes (if any) to main, create a new branch `feat/release` from `release/v1.3`, rebase it onto main, and create a PR to main
-8. Milestones management
+8. To bring updated version numbers and other changes (if any) to main, create a new branch `feat/release` from `release/v1.3`, rebase it onto main, and create a PR to main
+9. Milestones management
    1. Create a new milestone for the next release
    2. Add the next release manager and an approximate release date to the milestone description
    3. Close the milestone for the release
    4. Move open issues and PRs from closed milestone to next milestone
-9. If the release is a minor version release, create an empty commit on main and tag it as the start of the next pre-release phase.
+10. If the release is a minor version release, create an empty commit on main and tag it as the start of the next pre-release phase.
 
     ```sh
-    nextMinorVer=$(echo $ver | awk -F. -v OFS=. '{$2 += 1 ; print}')
+    nextMinorVer=$(echo "${ver}" | awk -F. -v OFS=. '{$2 += 1 ; print}')
     git checkout main
     git pull
-    git commit --allow-empty -m "Start v$nextMinorVer-pre"
-    git tag v$nextMinorVer-pre
-    git push origin main v$nextMinorVer-pre
+    git commit --allow-empty -m "Start v${nextMinorVer}-pre"
+    git tag v${nextMinorVer}-pre
+    git push
+    git push origin refs/tags/v${nextMinorVer}-pre
     ```
 
-10. Test Constellation mini up
+11. Test Constellation mini up

@@ -73,9 +73,6 @@ const (
 	// LibvirtImage image that provides libvirt.
 	LibvirtImage = "ghcr.io/edgelesssys/constellation/libvirt:v2.2.0@sha256:81ddc30cd679a95379e94e2f154861d9112bcabfffa96330c09a4917693f7cce" // renovate:container
 
-	// ConstellationQEMUImageURL is the artifact URL for QEMU qcow2 images.
-	ConstellationQEMUImageURL = "https://cdn.confidential.cloud/constellation/images/mini-constellation/v2.2.2/constellation.raw"
-
 	// LogstashImage is the container image of logstash, used for log collection by debugd.
 	LogstashImage = "ghcr.io/edgelesssys/constellation/logstash-debug:latest"
 	// FilebeatImage is the container image of filebeat, used for log collection by debugd.
