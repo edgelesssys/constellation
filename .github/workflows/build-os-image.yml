@@ -637,11 +637,20 @@ jobs:
         shell: bash
         run: |
           echo '{}' > intermediate.json
+
+          jq '.version = "${{ needs.build-settings.outputs.imageVersionUid }}"' intermediate.json > lookup-table.json
+          cp lookup-table.json intermediate.json
+
+          jq '.debug = ${{ inputs.debug }}' intermediate.json > lookup-table.json
+          cp lookup-table.json intermediate.json
+
           for lut in mkosi.output.*/*/image-upload*.json; do
             jq -scS '.[0] * .[1]' intermediate.json "${lut}" > lookup-table.json
             cp lookup-table.json intermediate.json
           done
+
           rm -f intermediate.json
+
           mv lookup-table.json "${{ needs.build-settings.outputs.imageVersionUid }}.json"
 
       - name: Login to AWS

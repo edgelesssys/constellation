@@ -92,6 +92,8 @@ s3://<BUCKET-NAME>/constellation/v1/images/<IMAGE-VERSION-UID>.json
 
 ```json
 {
+  "version": "<IMAGE-VERSION-UID>",
+  "debug": true,
   "aws": {
     "us-east-1": "ami-123",
     "us-west-2": "ami-456",
