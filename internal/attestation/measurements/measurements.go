@@ -17,10 +17,13 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
+	"strconv"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
 	"github.com/google/go-tpm/tpmutil"
+	"github.com/talos-systems/talos/pkg/machinery/config/encoder"
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v3"
 )
@@ -38,10 +41,34 @@ const (
 // M are Platform Configuration Register (PCR) values that make up the Measurements.
 type M map[uint32]Measurement
 
+// WithMetadata is a struct supposed to provide CSP & image metadata next to measurements.
+type WithMetadata struct {
+	CSP          cloudprovider.Provider `json:"csp" yaml:"csp"`
+	Image        string                 `json:"image" yaml:"image"`
+	Measurements M                      `json:"measurements" yaml:"measurements"`
+}
+
+// MarshalYAML returns the YAML encoding of m.
+func (m M) MarshalYAML() (any, error) {
+	// cast to prevent infinite recursion
+	node, err := encoder.NewEncoder(map[uint32]Measurement(m)).Marshal()
+	if err != nil {
+		return nil, err
+	}
+
+	// sort keys numerically
+	sort.Sort(mYamlContent(node.Content))
+
+	return node, nil
+}
+
 // FetchAndVerify fetches measurement and signature files via provided URLs,
 // using client for download. The publicKey is used to verify the measurements.
 // The hash of the fetched measurements is returned.
-func (m *M) FetchAndVerify(ctx context.Context, client *http.Client, measurementsURL *url.URL, signatureURL *url.URL, publicKey []byte) (string, error) {
+func (m *M) FetchAndVerify(
+	ctx context.Context, client *http.Client, measurementsURL, signatureURL *url.URL,
+	publicKey []byte, metadata WithMetadata,
+) (string, error) {
 	measurements, err := getFromURL(ctx, client, measurementsURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch measurements: %w", err)
@@ -54,14 +81,24 @@ func (m *M) FetchAndVerify(ctx context.Context, client *http.Client, measurement
 		return "", err
 	}
 
-	if err := json.Unmarshal(measurements, m); err != nil {
-		if yamlErr := yaml.Unmarshal(measurements, m); yamlErr != nil {
+	var mWithMetadata WithMetadata
+	if err := json.Unmarshal(measurements, &mWithMetadata); err != nil {
+		if yamlErr := yaml.Unmarshal(measurements, &mWithMetadata); yamlErr != nil {
 			return "", multierr.Append(
 				err,
 				fmt.Errorf("trying yaml format: %w", yamlErr),
 			)
 		}
 	}
+
+	if mWithMetadata.CSP != metadata.CSP {
+		return "", fmt.Errorf("invalid measurement metadata: CSP mismatch: expected %s, got %s", metadata.CSP, mWithMetadata.CSP)
+	}
+	if mWithMetadata.Image != metadata.Image {
+		return "", fmt.Errorf("invalid measurement metadata: image mismatch: expected %s, got %s", metadata.Image, mWithMetadata.Image)
+	}
+
+	*m = mWithMetadata.Measurements
 
 	shaHash := sha256.Sum256(measurements)
 
@@ -146,9 +183,8 @@ type Measurement struct {
 func (m *Measurement) UnmarshalJSON(b []byte) error {
 	var eM encodedMeasurement
 	if err := json.Unmarshal(b, &eM); err != nil {
-		// Unmarshalling failed, Measurement might be in legacy format,
-		// meaning a simple string instead of Measurement struct.
-		// TODO: remove with v2.4.0
+		// Unmarshalling failed, Measurement might be a simple string instead of Measurement struct.
+		// These values will always be enforced.
 		if legacyErr := json.Unmarshal(b, &eM.Expected); legacyErr != nil {
 			return multierr.Append(
 				err,
@@ -176,9 +212,8 @@ func (m Measurement) MarshalJSON() ([]byte, error) {
 func (m *Measurement) UnmarshalYAML(unmarshal func(any) error) error {
 	var eM encodedMeasurement
 	if err := unmarshal(&eM); err != nil {
-		// Unmarshalling failed, Measurement might be in legacy format,
-		// meaning a simple string instead of Measurement struct.
-		// TODO: remove with v2.4.0
+		// Unmarshalling failed, Measurement might be a simple string instead of Measurement struct.
+		// These values will always be enforced.
 		if legacyErr := unmarshal(&eM.Expected); legacyErr != nil {
 			return multierr.Append(
 				err,
@@ -319,4 +354,31 @@ func getFromURL(ctx context.Context, client *http.Client, sourceURL *url.URL) ([
 type encodedMeasurement struct {
 	Expected string `json:"expected" yaml:"expected"`
 	WarnOnly bool   `json:"warnOnly" yaml:"warnOnly"`
+}
+
+// mYamlContent is the Content of a yaml.Node encoding of an M. It implements sort.Interface.
+// The slice is filled like {key1, value1, key2, value2, ...}.
+type mYamlContent []*yaml.Node
+
+func (c mYamlContent) Len() int {
+	return len(c) / 2
+}
+
+func (c mYamlContent) Less(i, j int) bool {
+	lhs, err := strconv.Atoi(c[2*i].Value)
+	if err != nil {
+		panic(err)
+	}
+	rhs, err := strconv.Atoi(c[2*j].Value)
+	if err != nil {
+		panic(err)
+	}
+	return lhs < rhs
+}
+
+func (c mYamlContent) Swap(i, j int) {
+	// The slice is filled like {key1, value1, key2, value2, ...}.
+	// We need to swap both key and value.
+	c[2*i], c[2*j] = c[2*j], c[2*i]
+	c[2*i+1], c[2*j+1] = c[2*j+1], c[2*i+1]
 }

@@ -13,12 +13,9 @@ data:
         | quote }}
     kind: ControllerManagerConfig
     leaderElection:
-      leaderElect: {{ .Values.managerConfig.controllerManagerConfigYaml.leaderElection.leaderElect
-        }}
-      resourceName: {{ .Values.managerConfig.controllerManagerConfigYaml.leaderElection.resourceName
-        | quote }}
+      leaderElect: {{ .Values.managerConfig.controllerManagerConfigYaml.leaderElection.leaderElect }}
+      resourceName: {{ .Values.managerConfig.controllerManagerConfigYaml.leaderElection.resourceName | quote }}
     metrics:
-      bindAddress: {{ .Values.managerConfig.controllerManagerConfigYaml.metrics.bindAddress
-        | quote }}
+      bindAddress: {{ .Values.managerConfig.controllerManagerConfigYaml.metrics.bindAddress | quote }}
     webhook:
       port: {{ .Values.managerConfig.controllerManagerConfigYaml.webhook.port }}

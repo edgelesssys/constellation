@@ -1,7 +1,4 @@
 name: Build and upload KMS image
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: kmsserver
 
 on:
   workflow_dispatch:

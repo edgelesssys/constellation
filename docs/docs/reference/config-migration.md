@@ -4,6 +4,8 @@ This document describes breaking changes in the configuration file format betwee
 
 ## Migrating from CLI versions < 2.3
 
+- The `sshUsers` was deprecated in v2.2 and has now been removed from the configuration in v2.3.
+  As an alternative for SSH, check the workflow section [Connect to nodes](https://constellation-docs.edgeless.systems/constellation/workflows/troubleshooting#connect-to-nodes).
 - The `image` field for each cloud service provider has been replaced with a global `image` field. Use the following mapping to migrate your configuration:
     <details>
     <summary>Show all</summary>
@@ -35,3 +37,20 @@ This document describes breaking changes in the configuration file format betwee
     | GCP   | `projects/constellation-images/global/images/constellation-v2-1-0`                                                                                                                    | `v2.1.0`  |
     | GCP   | `projects/constellation-images/global/images/constellation-v2-0-0`                                                                                                                    | `v2.0.0`  |
     </details>
+- The `enforcedMeasurements` field has been removed and merged with the `measurements` field.
+  - To migrate your config containing a new image (`v2.3` or greater), remove the old `measurements` and `enforcedMeasurements` entries from your config and run `constellation fetch-measurements`
+  - To migrate your config containing an image older than `v2.3`, remove the `enforcedMeasurements` entry and replace the entries in `measurements` as shown in the example below:
+
+    ```diff
+    measurements:
+    -    0: DzXCFGCNk8em5ornNZtKi+Wg6Z7qkQfs5CfE3qTkOc8=
+    +    0:
+    +        expected: DzXCFGCNk8em5ornNZtKi+Wg6Z7qkQfs5CfE3qTkOc8=
+    +        warnOnly: true
+    -    8: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+    +    8:
+    +        expected: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+    +        warnOnly: false
+    -enforcedMeasurements:
+    -    - 8
+    ```

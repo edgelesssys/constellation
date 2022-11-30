@@ -15,8 +15,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/talos-systems/talos/pkg/machinery/config/encoder"
 	"gopkg.in/yaml.v3"
 )
 
@@ -178,6 +180,59 @@ func TestUnmarshal(t *testing.T) {
 	}
 }
 
+func TestEncodeM(t *testing.T) {
+	testCases := map[string]struct {
+		m    M
+		want string
+	}{
+		"basic": {
+			m: M{
+				1: WithAllBytes(1, false),
+				2: WithAllBytes(2, true),
+			},
+			want: `1:
+    expected: "0101010101010101010101010101010101010101010101010101010101010101"
+    warnOnly: false
+2:
+    expected: "0202020202020202020202020202020202020202020202020202020202020202"
+    warnOnly: true
+`,
+		},
+		"output is sorted": {
+			m: M{
+				3:  {},
+				1:  {},
+				11: {},
+				2:  {},
+			},
+			want: `1:
+    expected: "0000000000000000000000000000000000000000000000000000000000000000"
+    warnOnly: false
+2:
+    expected: "0000000000000000000000000000000000000000000000000000000000000000"
+    warnOnly: false
+3:
+    expected: "0000000000000000000000000000000000000000000000000000000000000000"
+    warnOnly: false
+11:
+    expected: "0000000000000000000000000000000000000000000000000000000000000000"
+    warnOnly: false
+`,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			encoded, err := encoder.NewEncoder(tc.m).Encode()
+			require.NoError(err)
+			assert.Equal(tc.want, string(encoded))
+		})
+	}
+}
+
 func TestMeasurementsCopyFrom(t *testing.T) {
 	testCases := map[string]struct {
 		current          M
@@ -278,80 +333,86 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 	// TDcvRjBBVy9vUDVqZXR3dmJMNmQxOEhjck9kWE8yVmYxY2w0YzNLZjVRcnFSZzlN
 	// dlRxQWFsNXJCNHNpY1JaMVhpUUJjb0YwNHc9PSJ9
 	// -----END ENCRYPTED COSIGN PRIVATE KEY-----
+	cosignPublicKey := []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu78QgxOOcao6U91CSzEXxrKhvFTt\nJHNy+eX6EMePtDm8CnDF9HSwnTlD0itGJ/XHPQA5YX10fJAqI1y+ehlFMw==\n-----END PUBLIC KEY-----")
 
 	testCases := map[string]struct {
 		measurements       string
+		metadata           WithMetadata
 		measurementsStatus int
 		signature          string
 		signatureStatus    int
-		publicKey          []byte
 		wantMeasurements   M
 		wantSHA            string
 		wantError          bool
 	}{
-		"simple": {
-			measurements:       "0: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\n",
-			measurementsStatus: http.StatusOK,
-			signature:          "MEUCIQDcHS2bLls7OrLHpQKuiFGXhPrTcehPDwgVyERHl4V02wIgeIxK4J9oJpXWRBjokbog2lgifRXuJK8ljlAID26MbHk=",
-			signatureStatus:    http.StatusOK,
-			publicKey:          []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu78QgxOOcao6U91CSzEXxrKhvFTt\nJHNy+eX6EMePtDm8CnDF9HSwnTlD0itGJ/XHPQA5YX10fJAqI1y+ehlFMw==\n-----END PUBLIC KEY-----"),
-			wantMeasurements: M{
-				0: WithAllBytes(0x00, false),
-			},
-			wantSHA: "4cd9d6ed8d9322150dff7738994c5e2fabff35f3bae6f5c993412d13249a5e87",
-		},
 		"json measurements": {
-			measurements:       `{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}`,
+			measurements:       `{"csp":"test","image":"test","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`,
+			metadata:           WithMetadata{CSP: cloudprovider.Unknown, Image: "test"},
 			measurementsStatus: http.StatusOK,
-			signature:          "MEUCIQDh3nCgrdTiYWiV4NkiaZ6vxovj79Pk8V90mdWAnmCEOwIgMAVWAx5dW0saut+8X15SgtBEiKqEixYiSICSqqhxUMg=",
+			signature:          "MEYCIQD1RR91pWPw1BMWXTSmTBHg/JtfKerbZNQ9PJTWDdW0sgIhANQbETJGb67qzQmMVmcq007VUFbHRMtYWKZeeyRf0gVa",
 			signatureStatus:    http.StatusOK,
-			publicKey:          []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu78QgxOOcao6U91CSzEXxrKhvFTt\nJHNy+eX6EMePtDm8CnDF9HSwnTlD0itGJ/XHPQA5YX10fJAqI1y+ehlFMw==\n-----END PUBLIC KEY-----"),
 			wantMeasurements: M{
 				0: WithAllBytes(0x00, false),
 			},
-			wantSHA: "1da09758c89537946496358f80b892e508563fcbbc695c90b6c16bf158e69c11",
+			wantSHA: "c04e13c1312b6f5659303871d14bf49b05c99a6515548763b6322f60bbb61a24",
 		},
 		"yaml measurements": {
-			measurements:       "0:\n expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n warnOnly: false\n",
+			measurements:       "csp: test\nimage: test\nmeasurements:\n 0:\n  expected: \"0000000000000000000000000000000000000000000000000000000000000000\"\n  warnOnly: false\n",
+			metadata:           WithMetadata{CSP: cloudprovider.Unknown, Image: "test"},
 			measurementsStatus: http.StatusOK,
-			signature:          "MEUCIFzQdwBS92aJjY0bcIag1uQRl42lUSBmmjEvO0tM/N0ZAiEAvuWaP744qYMw5uEmc7BY4mm4Ij3TEqAWFgxNhFkckp4=",
+			signature:          "MEUCIQC9WI2ijlQjBktYFctKpbnqkUTey3U9W99Jp1NTLi5AbQIgNZxxOtiawgTkWPXLoH9D2CxpEjxQrqLn/zWF6NoKxWQ=",
 			signatureStatus:    http.StatusOK,
-			publicKey:          []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu78QgxOOcao6U91CSzEXxrKhvFTt\nJHNy+eX6EMePtDm8CnDF9HSwnTlD0itGJ/XHPQA5YX10fJAqI1y+ehlFMw==\n-----END PUBLIC KEY-----"),
 			wantMeasurements: M{
 				0: WithAllBytes(0x00, false),
 			},
-			wantSHA: "c651cd419fd536c63cfc5349ad44da140a09987465e31192660059d383413807",
+			wantSHA: "648fcfd5d22e623a948ab2dd4eb334be2701d8f158231726084323003daab8d4",
 		},
 		"404 measurements": {
-			measurements:       `{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}`,
+			measurements:       `{"csp":"test","image":"test","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`,
+			metadata:           WithMetadata{CSP: cloudprovider.Unknown, Image: "test"},
 			measurementsStatus: http.StatusNotFound,
-			signature:          "MEUCIQDh3nCgrdTiYWiV4NkiaZ6vxovj79Pk8V90mdWAnmCEOwIgMAVWAx5dW0saut+8X15SgtBEiKqEixYiSICSqqhxUMg=",
+			signature:          "MEYCIQD1RR91pWPw1BMWXTSmTBHg/JtfKerbZNQ9PJTWDdW0sgIhANQbETJGb67qzQmMVmcq007VUFbHRMtYWKZeeyRf0gVa",
 			signatureStatus:    http.StatusOK,
-			publicKey:          []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu78QgxOOcao6U91CSzEXxrKhvFTt\nJHNy+eX6EMePtDm8CnDF9HSwnTlD0itGJ/XHPQA5YX10fJAqI1y+ehlFMw==\n-----END PUBLIC KEY-----"),
 			wantError:          true,
 		},
 		"404 signature": {
-			measurements:       `{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}`,
+			measurements:       `{"csp":"test","image":"test","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`,
+			metadata:           WithMetadata{CSP: cloudprovider.Unknown, Image: "test"},
 			measurementsStatus: http.StatusOK,
-			signature:          "MEUCIQDh3nCgrdTiYWiV4NkiaZ6vxovj79Pk8V90mdWAnmCEOwIgMAVWAx5dW0saut+8X15SgtBEiKqEixYiSICSqqhxUMg=",
+			signature:          "MEYCIQD1RR91pWPw1BMWXTSmTBHg/JtfKerbZNQ9PJTWDdW0sgIhANQbETJGb67qzQmMVmcq007VUFbHRMtYWKZeeyRf0gVa",
 			signatureStatus:    http.StatusNotFound,
-			publicKey:          []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu78QgxOOcao6U91CSzEXxrKhvFTt\nJHNy+eX6EMePtDm8CnDF9HSwnTlD0itGJ/XHPQA5YX10fJAqI1y+ehlFMw==\n-----END PUBLIC KEY-----"),
 			wantError:          true,
 		},
 		"broken signature": {
-			measurements:       `{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}`,
+			measurements:       `{"csp":"test","image":"test","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`,
+			metadata:           WithMetadata{CSP: cloudprovider.Unknown, Image: "test"},
 			measurementsStatus: http.StatusOK,
-			signature:          "AAAAAAAA3nCgrdTiYWiV4NkiaZ6vxovj79Pk8V90mdWAnmCEOwIgMAVWAx5dW0saut+8X15SgtBEiKqEixYiSICSqqhxUMg=",
+			signature:          "AAAAAAA1RR91pWPw1BMWXTSmTBHg/JtfKerbZNQ9PJTWDdW0sgIhANQbETJGb67qzQmMVmcq007VUFbHRMtYWKZeeyRf0gVa",
 			signatureStatus:    http.StatusOK,
-			publicKey:          []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu78QgxOOcao6U91CSzEXxrKhvFTt\nJHNy+eX6EMePtDm8CnDF9HSwnTlD0itGJ/XHPQA5YX10fJAqI1y+ehlFMw==\n-----END PUBLIC KEY-----"),
+			wantError:          true,
+		},
+		"metadata CSP mismatch": {
+			measurements:       `{"csp":"test","image":"test","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`,
+			metadata:           WithMetadata{CSP: cloudprovider.GCP, Image: "test"},
+			measurementsStatus: http.StatusOK,
+			signature:          "MEYCIQD1RR91pWPw1BMWXTSmTBHg/JtfKerbZNQ9PJTWDdW0sgIhANQbETJGb67qzQmMVmcq007VUFbHRMtYWKZeeyRf0gVa",
+			signatureStatus:    http.StatusOK,
+			wantError:          true,
+		},
+		"metadata image mismatch": {
+			measurements:       `{"csp":"test","image":"test","measurements":{"0":{"expected":"0000000000000000000000000000000000000000000000000000000000000000","warnOnly":false}}}`,
+			metadata:           WithMetadata{CSP: cloudprovider.Unknown, Image: "another-image"},
+			measurementsStatus: http.StatusOK,
+			signature:          "MEYCIQD1RR91pWPw1BMWXTSmTBHg/JtfKerbZNQ9PJTWDdW0sgIhANQbETJGb67qzQmMVmcq007VUFbHRMtYWKZeeyRf0gVa",
+			signatureStatus:    http.StatusOK,
 			wantError:          true,
 		},
 		"not yaml or json": {
 			measurements:       "This is some content to be signed!\n",
+			metadata:           WithMetadata{CSP: cloudprovider.Unknown, Image: "test"},
 			measurementsStatus: http.StatusOK,
 			signature:          "MEUCIQCGA/lSu5qCJgNNvgMaTKJ9rj6vQMecUDaQo3ukaiAfUgIgWoxXRoDKLY9naN7YgxokM7r2fwnyYk3M2WKJJO1g6yo=",
 			signatureStatus:    http.StatusOK,
-			publicKey:          []byte("-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu78QgxOOcao6U91CSzEXxrKhvFTt\nJHNy+eX6EMePtDm8CnDF9HSwnTlD0itGJ/XHPQA5YX10fJAqI1y+ehlFMw==\n-----END PUBLIC KEY-----"),
 			wantError:          true,
 		},
 	}
@@ -386,7 +447,13 @@ func TestMeasurementsFetchAndVerify(t *testing.T) {
 			})
 
 			m := M{}
-			hash, err := m.FetchAndVerify(context.Background(), client, measurementsURL, signatureURL, tc.publicKey)
+
+			hash, err := m.FetchAndVerify(
+				context.Background(), client,
+				measurementsURL, signatureURL,
+				cosignPublicKey,
+				tc.metadata,
+			)
 
 			if tc.wantError {
 				assert.Error(err)

@@ -41,9 +41,11 @@ Encrypting your K8s is good for:
 
 ### 🔍 Everything verifiable
 
+<a href="https://slsa.dev/"><img src="docs/docs/_media/SLSA-Badge-full-level3.svg" align="right" width="225px"></a>
+
 * "Whole cluster" [attestation][cluster-attestation] based on the remote-attestation feature of CVMs
 * Confidential computing-optimized [node images][images]; fully measured and integrity-protected
-* [Supply chain protection][supply-chain] with [sigstore](https://www.sigstore.dev/)
+* [Supply chain protection][supply-chain] with [sigstore](https://www.sigstore.dev/) and [SLSA Level 3](https://slsa.dev/spec/v0.1/#security-levels).
 
 ### 🚀 Performance and scale
 

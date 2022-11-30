@@ -21,6 +21,7 @@ func main() {
 	bindPort := flag.String("port", "8080", "Port to bind to")
 	targetNetwork := flag.String("network", "constellation-network", "Name of the network in QEMU to use")
 	libvirtURI := flag.String("libvirt-uri", "qemu:///system", "URI of the libvirt connection")
+	initSecretHash := flag.String("initsecrethash", "", "brcypt hash of the init secret")
 	flag.Parse()
 
 	log := logger.New(logger.JSONLog, zapcore.InfoLevel)
@@ -31,7 +32,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	serv := server.New(log, *targetNetwork, &virtwrapper.Connect{Conn: conn})
+	serv := server.New(log, *targetNetwork, *initSecretHash, &virtwrapper.Connect{Conn: conn})
 	if err := serv.ListenAndServe(*bindPort); err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to serve")
 	}

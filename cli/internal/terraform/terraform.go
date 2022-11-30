@@ -74,30 +74,39 @@ func (c *Client) PrepareWorkspace(provider cloudprovider.Provider, vars Variable
 }
 
 // CreateCluster creates a Constellation cluster using Terraform.
-func (c *Client) CreateCluster(ctx context.Context) (string, error) {
+func (c *Client) CreateCluster(ctx context.Context) (string, string, error) {
 	if err := c.tf.Init(ctx); err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if err := c.tf.Apply(ctx); err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	tfState, err := c.tf.Show(ctx)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	ipOutput, ok := tfState.Values.Outputs["ip"]
 	if !ok {
-		return "", errors.New("no IP output found")
+		return "", "", errors.New("no IP output found")
 	}
 	ip, ok := ipOutput.Value.(string)
 	if !ok {
-		return "", errors.New("invalid type in IP output: not a string")
+		return "", "", errors.New("invalid type in IP output: not a string")
 	}
 
-	return ip, nil
+	secretOutput, ok := tfState.Values.Outputs["initSecret"]
+	if !ok {
+		return "", "", errors.New("no initSecret output found")
+	}
+	secret, ok := secretOutput.Value.(string)
+	if !ok {
+		return "", "", errors.New("invalid type in initSecret output: not a string")
+	}
+
+	return ip, secret, nil
 }
 
 // DestroyCluster destroys a Constellation cluster using Terraform.

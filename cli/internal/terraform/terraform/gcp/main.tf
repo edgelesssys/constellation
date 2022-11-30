@@ -2,7 +2,7 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "4.44.0"
+      version = "4.44.1"
     }
     random = {
       source  = "hashicorp/random"
@@ -20,6 +20,7 @@ provider "google" {
 locals {
   uid                   = random_id.uid.hex
   name                  = "${var.name}-${local.uid}"
+  initSecretHash        = random_password.initSecret.bcrypt_hash
   labels                = { constellation-uid = local.uid }
   ports_node_range      = "30000-32767"
   ports_kubernetes      = "6443"
@@ -35,6 +36,12 @@ locals {
 
 resource "random_id" "uid" {
   byte_length = 4
+}
+
+resource "random_password" "initSecret" {
+  length           = 32
+  special          = true
+  override_special = "_%@"
 }
 
 resource "google_compute_network" "vpc_network" {
@@ -136,24 +143,26 @@ module "instance_group_control_plane" {
     { name = "recovery", port = local.ports_recovery },
     var.debug ? [{ name = "debugd", port = local.ports_debugd }] : [],
   ])
-  labels = local.labels
+  labels           = local.labels
+  init_secret_hash = local.initSecretHash
 }
 
 module "instance_group_worker" {
-  source         = "./modules/instance_group"
-  name           = local.name
-  role           = "Worker"
-  uid            = local.uid
-  instance_type  = var.instance_type
-  instance_count = var.worker_count
-  image_id       = var.image_id
-  disk_size      = var.state_disk_size
-  disk_type      = var.state_disk_type
-  network        = google_compute_network.vpc_network.id
-  subnetwork     = google_compute_subnetwork.vpc_subnetwork.id
-  kube_env       = local.kube_env
-  debug          = var.debug
-  labels         = local.labels
+  source           = "./modules/instance_group"
+  name             = local.name
+  role             = "Worker"
+  uid              = local.uid
+  instance_type    = var.instance_type
+  instance_count   = var.worker_count
+  image_id         = var.image_id
+  disk_size        = var.state_disk_size
+  disk_type        = var.state_disk_type
+  network          = google_compute_network.vpc_network.id
+  subnetwork       = google_compute_subnetwork.vpc_subnetwork.id
+  kube_env         = local.kube_env
+  debug            = var.debug
+  labels           = local.labels
+  init_secret_hash = local.initSecretHash
 }
 
 resource "google_compute_global_address" "loadbalancer_ip" {

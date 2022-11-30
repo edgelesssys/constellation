@@ -18,11 +18,11 @@ spec:
     spec:
       containers:
         - name: kms
-          image: {{ .Values.image }}
+          image: {{ .Values.image | quote }}
           args:
             - --port={{ .Values.global.kmsPort }}
           volumeMounts:
-            - mountPath: {{ .Values.global.serviceBasePath }}
+            - mountPath: {{ .Values.global.serviceBasePath | quote }}
               name: config
               readOnly: true
           resources: {}
@@ -49,14 +49,14 @@ spec:
           sources:
           - configMap:
               items:
-              - key: {{ .Values.measurementsFilename }}
-                path: {{ .Values.measurementsFilename }}
-              name: {{ .Values.global.joinConfigCMName }}
+              - key: {{ .Values.measurementsFilename | quote }}
+                path: {{ .Values.measurementsFilename | quote }}
+              name: {{ .Values.global.joinConfigCMName | quote }}
           - secret:
               items:
-              - key: {{ .Values.masterSecretKeyName }}
-                path: {{ .Values.masterSecretKeyName }}
-              - key: {{ .Values.saltKeyName }}
-                path: {{ .Values.saltKeyName }}
-              name: {{ .Values.masterSecretName }}
+              - key: {{ .Values.masterSecretKeyName | quote }}
+                path: {{ .Values.masterSecretKeyName | quote }}
+              - key: {{ .Values.saltKeyName | quote }}
+                path: {{ .Values.saltKeyName | quote }}
+              name: {{ .Values.masterSecretName | quote }}
   updateStrategy: {}

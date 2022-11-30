@@ -59,6 +59,11 @@ variable "kube_env" {
   description = "Kubernetes env."
 }
 
+variable "init_secret_hash" {
+  type        = string
+  description = "Hash of the init secret."
+}
+
 variable "named_ports" {
   type        = list(object({ name = string, port = number }))
   default     = []

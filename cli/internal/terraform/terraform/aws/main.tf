@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "4.40.0"
+      version = "4.43.0"
     }
     random = {
       source  = "hashicorp/random"
@@ -19,6 +19,7 @@ provider "aws" {
 locals {
   uid                = random_id.uid.hex
   name               = "${var.name}-${local.uid}"
+  initSecretHash     = random_password.initSecret.bcrypt_hash
   ports_node_range   = "30000-32767"
   ports_kubernetes   = "6443"
   ports_bootstrapper = "9000"
@@ -32,6 +33,12 @@ locals {
 
 resource "random_id" "uid" {
   byte_length = 4
+}
+
+resource "random_password" "initSecret" {
+  length           = 32
+  special          = true
+  override_special = "_%@"
 }
 
 resource "aws_vpc" "vpc" {
@@ -230,6 +237,14 @@ module "instance_group_control_plane" {
   security_groups      = [aws_security_group.security_group.id]
   subnetwork           = module.public_private_subnet.private_subnet_id
   iam_instance_profile = var.iam_instance_profile_control_plane
+  tags = merge(
+    local.tags,
+    { Name = local.name },
+    { constellation-role = "control-plane" },
+    { constellation-uid = local.uid },
+    { KubernetesCluster = "Constellation-${local.uid}" },
+    { constellation-init-secret-hash = local.initSecretHash }
+  )
 }
 
 module "instance_group_worker_nodes" {
@@ -246,4 +261,12 @@ module "instance_group_worker_nodes" {
   target_group_arns    = []
   security_groups      = [aws_security_group.security_group.id]
   iam_instance_profile = var.iam_instance_profile_worker_nodes
+  tags = merge(
+    local.tags,
+    { Name = local.name },
+    { constellation-role = "worker" },
+    { constellation-uid = local.uid },
+    { KubernetesCluster = "Constellation-${local.uid}" },
+    { constellation-init-secret-hash = local.initSecretHash }
+  )
 }

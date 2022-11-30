@@ -22,4 +22,6 @@ type File struct {
 	CloudProvider cloudprovider.Provider `json:"cloudprovider,omitempty"`
 	// IP is the IP address the cluster can be reached at (often the load balancer).
 	IP string `json:"ip,omitempty"`
+	// InitSecret is the secret the first Bootstrapper uses to verify the user.
+	InitSecret []byte `json:"initsecret,omitempty"`
 }

@@ -126,8 +126,8 @@ func main() {
 		os.Exit(1)
 	}
 	defer etcdClient.Close()
-
-	if err := deploy.InitialResources(context.Background(), k8sClient, cspClient, os.Getenv(constellationUID)); err != nil {
+	imageInfo := deploy.NewImageInfo()
+	if err := deploy.InitialResources(context.Background(), k8sClient, imageInfo, cspClient, os.Getenv(constellationUID)); err != nil {
 		setupLog.Error(err, "Unable to deploy initial resources")
 		os.Exit(1)
 	}

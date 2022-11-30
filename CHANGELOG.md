@@ -21,16 +21,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Environment variable `CONSTELL_AZURE_CLIENT_SECRET_VALUE` as an alternative way to provide the configuration value `provider.azure.clientSecretValue`.
-
 - Automatic CSI driver deployment for Azure and GCP during Constellation init
-
 - Improve reproducibility by pinning the Kubernetes components.
+- Client verification during `constellation init`
+
+- Release CLI with SLSA Level 3 requirements.
 
 ### Changed
 <!-- For changes in existing functionality.  -->
+<!-- TODO: Remove `/next/` from URL before release -->
 - Constellation operators are now deployed using Helm.
+- Updated the config version to v2. Check [how to migrate your config](https://constellation-docs.edgeless.systems/constellation/next/reference/config-migration).
 - OS images are now configured globally in the `images` field of the configuration file.
+- The `measurements` entry in the CLI now uses an updated format, merging `enforcedMeasurements` and old `measurements` into one
+- Expected measurements in the config and Constellation's Cluster-ID are now hex encoded by default. Base64 is still supported.
 
 ### Deprecated
 <!-- For soon-to-be removed features. -->
@@ -38,6 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 <!-- For now removed features. -->
 - `access-manager` was removed from code base. K8s native way to SSH into nodes documented.
+- `SSHUsers` has been removed from the user configuration following the removal of `access-manager`.
+- Azure Trusted Launch support. May come back in the future.
 
 ### Fixed
 
@@ -47,7 +55,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `constellation create` on GCP now always uses the local default credentials.
-
 
 ## [2.2.2] - 2022-11-17
 
@@ -66,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 Vulnerabilities in `kube-apiserver` fixed by upgrading to v1.23.14, v1.24.8 and v1.25.4:
+
 - [CVE-2022-3162](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-3162)
 - [CVE-2022-3294](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-3294)
 
@@ -132,7 +140,9 @@ Vulnerabilities in `kube-apiserver` fixed by upgrading to v1.23.14, v1.24.8 and 
 ### Fixed
 
 ### Security
+
 Vulnerability inside the Go standard library fixed by updating to Go 1.19.2:
+
 - [GO-2022-1037](https://pkg.go.dev/vuln/GO-2022-1037) ([CVE-2022-2879](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-2879))
 - [GO-2022-1038](https://pkg.go.dev/vuln/GO-2022-1038) ([CVE-2022-2880](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-2880))
 - [GO-2022-0969](https://pkg.go.dev/vuln/GO-2022-0969) ([CVE-2022-27664](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-27664))

@@ -15,11 +15,13 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/google/go-tpm-tools/proto/tpm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
+	"gopkg.in/yaml.v3"
 )
 
 func TestMain(m *testing.M) {
@@ -139,6 +141,71 @@ func TestPrintPCRs(t *testing.T) {
 			var out bytes.Buffer
 			err := printPCRs(&out, pcrs, tc.format)
 			assert.NoError(err)
+
+			for idx, pcr := range pcrs {
+				assert.Contains(out.String(), fmt.Sprintf("%d", idx))
+				assert.Contains(out.String(), hex.EncodeToString(pcr.Expected[:]))
+			}
+		})
+	}
+}
+
+func TestPrintPCRsWithMetadata(t *testing.T) {
+	testCases := map[string]struct {
+		format string
+		csp    cloudprovider.Provider
+		image  string
+	}{
+		"json": {
+			format: "json",
+			csp:    cloudprovider.Azure,
+			image:  "v2.0.0",
+		},
+		"yaml": {
+			csp:    cloudprovider.GCP,
+			image:  "v2.0.0-testimage",
+			format: "yaml",
+		},
+		"empty format": {
+			format: "",
+			csp:    cloudprovider.QEMU,
+			image:  "v2.0.0-testimage",
+		},
+		"empty": {},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			pcrs := measurements.M{
+				0: measurements.WithAllBytes(0xAA, true),
+				1: measurements.WithAllBytes(0xBB, true),
+				2: measurements.WithAllBytes(0xCC, true),
+			}
+
+			outputWithMetadata := measurements.WithMetadata{
+				CSP:          tc.csp,
+				Image:        tc.image,
+				Measurements: pcrs,
+			}
+
+			var out bytes.Buffer
+			err := printPCRsWithMetadata(&out, outputWithMetadata, tc.format)
+			assert.NoError(err)
+
+			var unmarshalledOutput measurements.WithMetadata
+			if tc.format == "" || tc.format == "json" {
+				require.NoError(json.Unmarshal(out.Bytes(), &unmarshalledOutput))
+			} else if tc.format == "yaml" {
+				require.NoError(yaml.Unmarshal(out.Bytes(), &unmarshalledOutput))
+			}
+
+			assert.NotNil(unmarshalledOutput.CSP)
+			assert.NotNil(unmarshalledOutput.Image)
+			assert.Equal(tc.csp, unmarshalledOutput.CSP)
+			assert.Equal(tc.image, unmarshalledOutput.Image)
 
 			for idx, pcr := range pcrs {
 				assert.Contains(out.String(), fmt.Sprintf("%d", idx))

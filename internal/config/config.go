@@ -59,11 +59,6 @@ type Config struct {
 	//   Supported cloud providers and their specific configurations.
 	Provider ProviderConfig `yaml:"provider" validate:"dive"`
 	// description: |
-	//   Deprecated: Does nothing! To get node SSH access, see: https://constellation-docs.edgeless.systems/constellation/workflows/troubleshooting#connect-to-nodes-via-ssh
-	// examples:
-	//   - value: '[]UserKey{ { Username:  "Alice", PublicKey: "ssh-rsa AAAAB3NzaC...5QXHKW1rufgtJeSeJ8= alice@domain.com" } }'
-	SSHUsers []UserKey `yaml:"sshUsers,omitempty" validate:"dive"`
-	// description: |
 	//   Configuration to apply during constellation upgrade.
 	// examples:
 	//   - value: 'UpgradeConfig{ Image: "", Measurements: Measurements{} }'
@@ -78,24 +73,10 @@ type UpgradeConfig struct {
 	// description: |
 	//   Measurements of the updated image.
 	Measurements Measurements `yaml:"measurements"`
-}
-
-// UserKey describes a user that should be created with corresponding public SSH key.
-//
-// Deprecated: UserKey was used as configuration for access-manager, which was removed
-// in v2.2, but config needs to retain these values for backwards compatibility and
-// config validation.
-type UserKey struct {
 	// description: |
-	//   Username of new SSH user.
-	//
-	//   Deprecated: See UserKey.
-	Username string `yaml:"username" validate:"required"`
-	// description: |
-	//   Public key of new SSH user.
-	//
-	//   Deprecated: See UserKey.
-	PublicKey string `yaml:"publicKey" validate:"required"`
+	//   temporary field for upgrade migration
+	//   TODO(AB#2654): Remove with refactoring upgrade plan command
+	CSP cloudprovider.Provider `yaml:"csp"`
 }
 
 // ProviderConfig are cloud-provider specific configuration values used by the CLI.
@@ -174,7 +155,7 @@ type AzureConfig struct {
 	//   Deploy Azure Disk CSI driver with on-node encryption. For details see: https://docs.edgeless.systems/constellation/architecture/encrypted-storage
 	DeployCSIDriver *bool `yaml:"deployCSIDriver" validate:"required"`
 	// description: |
-	//   Use Confidential VMs. If set to false, Trusted Launch VMs are used instead. See: https://docs.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview
+	//   Use Confidential VMs. Always needs to be true.
 	ConfidentialVM *bool `yaml:"confidentialVM" validate:"required"`
 	// description: |
 	//   Enable secure boot for VMs. If enabled, the OS image has to include a virtual machine guest state (VMGS) blob.

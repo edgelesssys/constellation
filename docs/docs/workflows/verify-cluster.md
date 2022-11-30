@@ -11,18 +11,57 @@ constellation config fetch-measurements
 ```
 
 This command performs the following steps:
+
 1. Download the signed measurements for the configured image. By default, this will use Edgeless Systems' public measurement registry.
 2. Verify the signature of the measurements. This will use Edgeless Systems' [public key](https://edgeless.systems/es.pub).
 3. Write measurements into configuration file.
 
-The configuration file then contains a list of key-value pairs (index, hash) under the `measurements` key and a list of indices under `enforcedMeasurements`.
-Not all keys under `measurements` will have a matching index under `enforcedMeasurements`.
+The configuration file then contains a list of `measurements` looking similar to the following:
+
+```yaml
+# ...
+measurements:
+    0:
+        expected: "0f35c214608d93c7a6e68ae7359b4a8be5a0e99eea9107ece427c4dea4e439cf"
+        warnOnly: false
+    4:
+        expected: "02c7a67c01ec70ffaf23d73a12f749ab150a8ac6dc529bda2fe1096a98bf42ea"
+        warnOnly: false
+    5:
+        expected: "e6949026b72e5045706cd1318889b3874480f7a3f7c5c590912391a2d15e6975"
+        warnOnly: true
+    8:
+        expected: "0000000000000000000000000000000000000000000000000000000000000000"
+        warnOnly: false
+    9:
+        expected: "f0a6e8601b00e2fdc57195686cd4ef45eb43a556ac1209b8e25d993213d68384"
+        warnOnly: false
+    11:
+        expected: "0000000000000000000000000000000000000000000000000000000000000000"
+        warnOnly: false
+    12:
+        expected: "da99eb6cf7c7fbb692067c87fd5ca0b7117dc293578e4fea41f95d3d3d6af5e2"
+        warnOnly: false
+    13:
+        expected: "0000000000000000000000000000000000000000000000000000000000000000"
+        warnOnly: false
+    14:
+        expected: "d7c4cc7ff7933022f013e03bdee875b91720b5b86cf1753cad830f95e791926f"
+        warnOnly: true
+    15:
+        expected: "0000000000000000000000000000000000000000000000000000000000000000"
+        warnOnly: false
+# ...
+```
+
+Each entry specifies the expected value of the Constellation, and whether the measurement should be enforced (`warnOnly: false`), or only a warning should be logged (`warnOnly: true`).
+
 This is because only a subset of the [available measurements](../architecture/attestation.md#runtime-measurements) can be locally reproduced and verified.
 
 During attestation, the validating side (CLI or [join service](../architecture/components.md#joinservice)) compares each measurement reported by the issuing side (first node or joining node) individually.
-For mismatching measurements that are only set under the `measurements` key a warning is emitted.
-For mismatching measurements that are additionally set under `enforcedMeasurements` an error is emitted and attestation fails.
-If attestation fails, the new node can't join the cluster.
+For mismatching measurements that have set `warnOnly` to `true` only warning is emitted.
+For mismatching measurements that have set `warnOnly` to `false` an error is emitted and attestation fails.
+If attestation fails for a new node, it isn't permitted to join the cluster.
 
 ## The *verify* command
 
@@ -37,6 +76,7 @@ constellation verify [--cluster-id ...]
 ```
 
 From the attestation statement, the command verifies the following properties:
+
 * The cluster is using the correct Confidential VM (CVM) type.
 * Inside the CVMs, the correct node images are running. The node images are identified through the measurements obtained in the previous step.
 * The unique ID of the cluster matches the one from your `constellation-id.json` file or passed in via `--cluster-id`.

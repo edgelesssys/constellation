@@ -158,11 +158,11 @@ const sidebars = {
           label: 'Use persistent storage',
           id: 'workflows/storage',
         },
-        {
-          type: 'doc',
-          label: 'Use Azure trusted launch VMs',
-          id: 'workflows/trusted-launch',
-        },
+        // {
+        //   type: 'doc',
+        //   label: 'Use Azure trusted launch VMs',
+        //   id: 'workflows/trusted-launch',
+        // },
         {
           type: 'doc',
           label: 'Consume SBOMs',
@@ -243,8 +243,13 @@ const sidebars = {
         },
         {
           type: 'doc',
-          label: 'Configuration Migrations',
+          label: 'Configuration migrations',
           id: 'reference/config-migration',
+        },
+        {
+          type: 'doc',
+          label: 'SLSA adoption',
+          id: 'reference/slsa',
         },
       ],
     },

@@ -6,7 +6,7 @@ terraform {
     }
     docker = {
       source  = "kreuzwerker/docker"
-      version = "2.23.0"
+      version = "2.23.1"
     }
   }
 }
@@ -24,6 +24,11 @@ provider "docker" {
   }
 }
 
+resource "random_password" "initSecret" {
+  length           = 32
+  special          = true
+  override_special = "_%@"
+}
 resource "docker_image" "qemu_metadata" {
   name         = var.metadata_api_image
   keep_locally = true
@@ -39,6 +44,8 @@ resource "docker_container" "qemu_metadata" {
     "${var.name}-network",
     "--libvirt-uri",
     "${var.metadata_libvirt_uri}",
+    "--initsecrethash",
+    "${random_password.initSecret.bcrypt_hash}",
   ]
   mounts {
     source = abspath(var.libvirt_socket_path)
@@ -46,6 +53,8 @@ resource "docker_container" "qemu_metadata" {
     type   = "bind"
   }
 }
+
+
 
 module "control_plane" {
   source          = "./modules/instance_group"

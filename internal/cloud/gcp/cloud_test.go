@@ -36,8 +36,17 @@ func TestGetInstance(t *testing.T) {
 		Name: proto.String("someInstance"),
 		Zone: proto.String("someZone-west3-b"),
 		Labels: map[string]string{
-			cloud.TagUID:  "1234",
-			cloud.TagRole: role.ControlPlane.String(),
+			cloud.TagUID:            "1234",
+			cloud.TagRole:           role.ControlPlane.String(),
+			cloud.TagInitSecretHash: "initSecretHash",
+		},
+		Metadata: &computepb.Metadata{
+			Items: []*computepb.Items{
+				{
+					Key:   proto.String(cloud.TagInitSecretHash),
+					Value: proto.String("initSecretHash"),
+				},
+			},
 		},
 		NetworkInterfaces: []*computepb.NetworkInterface{
 			{
@@ -744,6 +753,110 @@ func TestUID(t *testing.T) {
 			}
 			assert.NoError(err)
 			assert.Equal(tc.wantUID, uid)
+		})
+	}
+}
+
+func TestInitSecretHash(t *testing.T) {
+	someErr := errors.New("failed")
+
+	testCases := map[string]struct {
+		imds               stubIMDS
+		instanceAPI        stubInstanceAPI
+		wantInitSecretHash string
+		wantErr            bool
+	}{
+		"success": {
+			imds: stubIMDS{
+				projectID:    "someProject",
+				zone:         "someZone-west3-b",
+				instanceName: "someInstance",
+			},
+			instanceAPI: stubInstanceAPI{
+				instance: &computepb.Instance{
+					Name: proto.String("someInstance"),
+					Zone: proto.String("someZone-west3-b"),
+					Labels: map[string]string{
+						cloud.TagRole: role.ControlPlane.String(),
+					},
+					Metadata: &computepb.Metadata{
+						Items: []*computepb.Items{
+							{
+								Key:   proto.String(cloud.TagInitSecretHash),
+								Value: proto.String("initSecretHash"),
+							},
+						},
+					},
+				},
+			},
+			wantInitSecretHash: "initSecretHash",
+		},
+		"imds error": {
+			imds: stubIMDS{
+				projectIDErr: someErr,
+				zone:         "someZone-west3-b",
+				instanceName: "someInstance",
+			},
+			instanceAPI: stubInstanceAPI{
+				instance: &computepb.Instance{
+					Name: proto.String("someInstance"),
+					Zone: proto.String("someZone-west3-b"),
+					Labels: map[string]string{
+						cloud.TagInitSecretHash: "initSecretHash",
+						cloud.TagRole:           role.ControlPlane.String(),
+					},
+					Metadata: &computepb.Metadata{
+						Items: []*computepb.Items{
+							{
+								Key:   proto.String(cloud.TagInitSecretHash),
+								Value: proto.String("initSecretHash"),
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		"instance error": {
+			imds: stubIMDS{
+				projectID:    "someProject",
+				zone:         "someZone-west3-b",
+				instanceName: "someInstance",
+			},
+			instanceAPI: stubInstanceAPI{
+				instanceErr: someErr,
+			},
+			wantErr: true,
+		},
+		"invalid instance": {
+			imds: stubIMDS{
+				projectID:    "someProject",
+				zone:         "someZone-west3-b",
+				instanceName: "someInstance",
+			},
+			instanceAPI: stubInstanceAPI{
+				instance: nil,
+			},
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			cloud := &Cloud{
+				imds:        &tc.imds,
+				instanceAPI: &tc.instanceAPI,
+			}
+
+			initSecretHash, err := cloud.InitSecretHash(context.Background())
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal([]byte(tc.wantInitSecretHash), initSecretHash)
 		})
 	}
 }

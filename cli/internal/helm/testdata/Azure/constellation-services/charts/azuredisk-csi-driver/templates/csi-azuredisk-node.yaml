@@ -41,7 +41,7 @@ spec:
                 - virtual-kubelet
       priorityClassName: system-node-critical
       tolerations:
-        - operator: Exists      
+        - operator: Exists
       containers:
         - name: liveness-probe
           volumeMounts:
@@ -134,7 +134,7 @@ spec:
                   apiVersion: v1
                   fieldPath: spec.nodeName
             - name: AZURE_GO_SDK_LOG_LEVEL
-              value: 
+              value:
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true

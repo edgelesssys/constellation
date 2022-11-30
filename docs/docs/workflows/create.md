@@ -45,14 +45,6 @@ constellation config generate aws
 
 This creates the file `constellation-conf.yaml` in the current directory. [Fill in your CSP-specific information](../getting-started/first-steps.md#create-a-cluster) before you continue.
 
-Next, download the trusted measurements for your configured image.
-
-```bash
-constellation config fetch-measurements
-```
-
-For details, see the [verification section](../workflows/verify-cluster.md).
-
 ### Create
 
 Choose the initial size of your cluster.

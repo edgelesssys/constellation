@@ -57,3 +57,8 @@ variable "security_groups" {
   type        = list(string)
   description = "List of IDs of the security groups for an instance."
 }
+
+variable "tags" {
+  type        = map(string)
+  description = "The tags to add to the instance group."
+}

@@ -149,35 +149,40 @@ func (u *stubClientInterface) kubernetesVersion() (string, error) {
 func TestUpdateImage(t *testing.T) {
 	someErr := errors.New("error")
 	testCases := map[string]struct {
-		updater    *stubImageUpdater
-		newImage   string
-		wantUpdate bool
-		wantErr    bool
+		updater           *stubImageUpdater
+		newImageReference string
+		newImageVersion   string
+		wantUpdate        bool
+		wantErr           bool
 	}{
 		"success": {
 			updater: &stubImageUpdater{
 				setImage: &unstructured.Unstructured{
 					Object: map[string]any{
 						"spec": map[string]any{
-							"image": "old-image",
+							"image":        "old-image-ref",
+							"imageVersion": "old-image-ver",
 						},
 					},
 				},
 			},
-			newImage:   "new-image",
-			wantUpdate: true,
+			newImageReference: "new-image-ref",
+			newImageVersion:   "new-image-ver",
+			wantUpdate:        true,
 		},
 		"image is the same": {
 			updater: &stubImageUpdater{
 				setImage: &unstructured.Unstructured{
 					Object: map[string]any{
 						"spec": map[string]any{
-							"image": "old-image",
+							"image":        "old-image-ref",
+							"imageVersion": "old-image-ver",
 						},
 					},
 				},
 			},
-			newImage: "old-image",
+			newImageReference: "old-image-ref",
+			newImageVersion:   "old-image-ver",
 		},
 		"getCurrent error": {
 			updater: &stubImageUpdater{getErr: someErr},
@@ -188,14 +193,16 @@ func TestUpdateImage(t *testing.T) {
 				setImage: &unstructured.Unstructured{
 					Object: map[string]any{
 						"spec": map[string]any{
-							"image": "old-image",
+							"image":        "old-image-ref",
+							"imageVersion": "old-image-ver",
 						},
 					},
 				},
 				updateErr: someErr,
 			},
-			newImage: "new-image",
-			wantErr:  true,
+			newImageReference: "new-image-ref",
+			newImageVersion:   "new-image-ver",
+			wantErr:           true,
 		},
 		"no spec": {
 			updater: &stubImageUpdater{
@@ -203,8 +210,9 @@ func TestUpdateImage(t *testing.T) {
 					Object: map[string]any{},
 				},
 			},
-			newImage: "new-image",
-			wantErr:  true,
+			newImageReference: "new-image-ref",
+			newImageVersion:   "new-image-ver",
+			wantErr:           true,
 		},
 		"not a map": {
 			updater: &stubImageUpdater{
@@ -214,8 +222,9 @@ func TestUpdateImage(t *testing.T) {
 					},
 				},
 			},
-			newImage: "new-image",
-			wantErr:  true,
+			newImageReference: "new-image-ref",
+			newImageVersion:   "new-image-ver",
+			wantErr:           true,
 		},
 		"no spec.image": {
 			updater: &stubImageUpdater{
@@ -225,8 +234,9 @@ func TestUpdateImage(t *testing.T) {
 					},
 				},
 			},
-			newImage: "new-image",
-			wantErr:  true,
+			newImageReference: "new-image-ref",
+			newImageVersion:   "new-image-ver",
+			wantErr:           true,
 		},
 	}
 
@@ -239,7 +249,7 @@ func TestUpdateImage(t *testing.T) {
 				outWriter:        &bytes.Buffer{},
 			}
 
-			err := upgrader.updateImage(context.Background(), tc.newImage)
+			err := upgrader.updateImage(context.Background(), tc.newImageReference, tc.newImageVersion)
 
 			if tc.wantErr {
 				assert.Error(err)
@@ -248,7 +258,8 @@ func TestUpdateImage(t *testing.T) {
 
 			assert.NoError(err)
 			if tc.wantUpdate {
-				assert.Equal(tc.newImage, tc.updater.updatedImage.Object["spec"].(map[string]any)["image"])
+				assert.Equal(tc.newImageReference, tc.updater.updatedImage.Object["spec"].(map[string]any)["image"])
+				assert.Equal(tc.newImageVersion, tc.updater.updatedImage.Object["spec"].(map[string]any)["imageVersion"])
 			} else {
 				assert.Nil(tc.updater.updatedImage)
 			}

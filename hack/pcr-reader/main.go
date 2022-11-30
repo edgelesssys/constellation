@@ -17,10 +17,12 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/verify/verifyproto"
@@ -35,9 +37,19 @@ func main() {
 	format := flag.String("format", "json", "Output format: json, yaml (default json)")
 	quiet := flag.Bool("q", false, "Set to disable output")
 	timeout := flag.Duration("timeout", 2*time.Minute, "Wait this duration for the verification service to become available")
+	metadata := flag.Bool("metadata", false, "Include image metadata (CSP, image UID) for publishing")
+	csp := flag.String("csp", "", "Define CSP for metadata")
+	image := flag.String("image", "", "Define image UID for metadata from which image the PCRs are taken from")
+
 	flag.Parse()
 
 	if *coordIP == "" || *port == "" {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	if *metadata && (*csp == "" || *image == "") {
+		fmt.Println("If you enable metadata, you also need to define a CSP and an image to include from as arguments.")
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -51,15 +63,28 @@ func main() {
 		log.Fatal(err)
 	}
 
-	measurements, err := validatePCRAttDoc(attDocRaw)
+	pcrs, err := validatePCRAttDoc(attDocRaw)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if !*quiet {
-		if err := printPCRs(os.Stdout, measurements, *format); err != nil {
-			log.Fatal(err)
+	if *quiet {
+		return
+	}
+
+	if *metadata {
+		outputWithMetadata := measurements.WithMetadata{
+			CSP:          cloudprovider.FromString(*csp),
+			Image:        strings.ToLower(*image),
+			Measurements: pcrs,
 		}
+		err = printPCRsWithMetadata(os.Stdout, outputWithMetadata, *format)
+	} else {
+		err = printPCRs(os.Stdout, pcrs, *format)
+	}
+
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 
@@ -127,6 +152,19 @@ func printPCRs(w io.Writer, pcrs measurements.M, format string) error {
 	}
 }
 
+// printPCRs formats and prints PCRs to the given writer.
+// format can be one of 'json' or 'yaml'. If it doesn't match defaults to 'json'.
+func printPCRsWithMetadata(w io.Writer, outputWithMetadata measurements.WithMetadata, format string) error {
+	switch format {
+	case "json":
+		return printPCRsJSONWithMetadata(w, outputWithMetadata)
+	case "yaml":
+		return printPCRsYAMLWithMetadata(w, outputWithMetadata)
+	default:
+		return printPCRsJSONWithMetadata(w, outputWithMetadata)
+	}
+}
+
 func printPCRsYAML(w io.Writer, pcrs measurements.M) error {
 	pcrYAML, err := yaml.Marshal(pcrs)
 	if err != nil {
@@ -136,8 +174,26 @@ func printPCRsYAML(w io.Writer, pcrs measurements.M) error {
 	return nil
 }
 
+func printPCRsYAMLWithMetadata(w io.Writer, outputWithMetadata measurements.WithMetadata) error {
+	pcrYAML, err := yaml.Marshal(outputWithMetadata)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(w, "%s", string(pcrYAML))
+	return nil
+}
+
 func printPCRsJSON(w io.Writer, pcrs measurements.M) error {
 	pcrJSON, err := json.MarshalIndent(pcrs, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(w, "%s", string(pcrJSON))
+	return nil
+}
+
+func printPCRsJSONWithMetadata(w io.Writer, outputWithMetadata measurements.WithMetadata) error {
+	pcrJSON, err := json.MarshalIndent(outputWithMetadata, "", "  ")
 	if err != nil {
 		return err
 	}

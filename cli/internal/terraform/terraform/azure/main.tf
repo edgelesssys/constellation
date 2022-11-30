@@ -2,7 +2,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "3.32.0"
+      version = "3.33.0"
     }
     random = {
       source  = "hashicorp/random"
@@ -18,6 +18,7 @@ provider "azurerm" {
 locals {
   uid                   = random_id.uid.hex
   name                  = "${var.name}-${local.uid}"
+  initSecretHash        = random_password.initSecret.bcrypt_hash
   tags                  = { constellation-uid = local.uid }
   ports_node_range      = "30000-32767"
   ports_kubernetes      = "6443"
@@ -32,6 +33,12 @@ locals {
 
 resource "random_id" "uid" {
   byte_length = 4
+}
+
+resource "random_password" "initSecret" {
+  length           = 32
+  special          = true
+  override_special = "_%@"
 }
 
 resource "azurerm_application_insights" "insights" {
@@ -194,7 +201,7 @@ module "scale_set_control_plane" {
   instance_type             = var.instance_type
   confidential_vm           = var.confidential_vm
   secure_boot               = var.secure_boot
-  tags                      = merge(local.tags, { constellation-role = "control-plane" })
+  tags                      = merge(local.tags, { constellation-role = "control-plane" }, { constellation-init-secret-hash = local.initSecretHash })
   image_id                  = var.image_id
   user_assigned_identity    = var.user_assigned_identity
   network_security_group_id = azurerm_network_security_group.security_group.id
@@ -217,7 +224,7 @@ module "scale_set_worker" {
   instance_type             = var.instance_type
   confidential_vm           = var.confidential_vm
   secure_boot               = var.secure_boot
-  tags                      = merge(local.tags, { constellation-role = "worker" })
+  tags                      = merge(local.tags, { constellation-role = "worker" }, { constellation-init-secret-hash = local.initSecretHash })
   image_id                  = var.image_id
   user_assigned_identity    = var.user_assigned_identity
   network_security_group_id = azurerm_network_security_group.security_group.id

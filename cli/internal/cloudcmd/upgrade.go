@@ -66,18 +66,18 @@ func NewUpgrader(outWriter io.Writer) (*Upgrader, error) {
 }
 
 // Upgrade upgrades the cluster to the given measurements and image.
-func (u *Upgrader) Upgrade(ctx context.Context, image string, measurements measurements.M) error {
+func (u *Upgrader) Upgrade(ctx context.Context, imageReference, imageVersion string, measurements measurements.M) error {
 	if err := u.updateMeasurements(ctx, measurements); err != nil {
 		return fmt.Errorf("updating measurements: %w", err)
 	}
 
-	if err := u.updateImage(ctx, image); err != nil {
+	if err := u.updateImage(ctx, imageReference, imageVersion); err != nil {
 		return fmt.Errorf("updating image: %w", err)
 	}
 	return nil
 }
 
-// GetCurrentImage returns the currently used image of the cluster.
+// GetCurrentImage returns the currently used image version of the cluster.
 func (u *Upgrader) GetCurrentImage(ctx context.Context) (*unstructured.Unstructured, string, error) {
 	imageStruct, err := u.dynamicInterface.getCurrent(ctx, "constellation-os")
 	if err != nil {
@@ -93,16 +93,16 @@ func (u *Upgrader) GetCurrentImage(ctx context.Context) (*unstructured.Unstructu
 	if !ok {
 		return nil, "", retErr
 	}
-	currentImageDefinition, ok := specMap["image"]
+	currentImageVersion, ok := specMap["imageVersion"]
 	if !ok {
 		return nil, "", retErr
 	}
-	imageDefinition, ok := currentImageDefinition.(string)
+	imageVersion, ok := currentImageVersion.(string)
 	if !ok {
 		return nil, "", retErr
 	}
 
-	return imageStruct, imageDefinition, nil
+	return imageStruct, imageVersion, nil
 }
 
 // CurrentHelmVersion returns the version of the currently installed helm release.
@@ -154,18 +154,19 @@ func (u *Upgrader) updateMeasurements(ctx context.Context, newMeasurements measu
 	return nil
 }
 
-func (u *Upgrader) updateImage(ctx context.Context, image string) error {
-	currentImage, currentImageDefinition, err := u.GetCurrentImage(ctx)
+func (u *Upgrader) updateImage(ctx context.Context, imageReference, imageVersion string) error {
+	currentImage, currentImageVersion, err := u.GetCurrentImage(ctx)
 	if err != nil {
 		return fmt.Errorf("retrieving current image: %w", err)
 	}
 
-	if currentImageDefinition == image {
+	if currentImageVersion == imageVersion {
 		fmt.Fprintln(u.outWriter, "Cluster is already using the chosen image, skipping image upgrade")
 		return nil
 	}
 
-	currentImage.Object["spec"].(map[string]any)["image"] = image
+	currentImage.Object["spec"].(map[string]any)["image"] = imageReference
+	currentImage.Object["spec"].(map[string]any)["imageVersion"] = imageVersion
 	if _, err := u.dynamicInterface.update(ctx, currentImage); err != nil {
 		return fmt.Errorf("setting new image: %w", err)
 	}

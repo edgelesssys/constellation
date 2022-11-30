@@ -52,6 +52,35 @@ With `cdbg` and `yq` installed in your path:
 
 6. Run `constellation init […]` as usual
 
+### Logcollection to Opensearch
+
+You can enable the logcollection of debugd to send logs to Opensearch.
+
+On Azure, ensure your user assigned identity has the `Key Vault Secrets User` role assigned on the key vault `opensearch-creds`.
+
+When deploying with cdbg, enable by setting the `logcollect=true` and your name `logcollect.admin=yourname`.
+
+```shell-session
+./cdbg deploy --info logcollect=true,logcollect.admin=yourname
+
+# OR
+
+./cdbg deploy --info logcollect=true --info logcollect.admin=yourname
+```
+
+Other available fields can be found in [the filed list](/debugd/internal/debugd/logcollector/fields.go)
+
+For QEMU, the credentials for Opensearch must be parsed via the info flag as well:
+
+```shell-session
+./cdbg deploy \
+    --info logcollect=true \
+    --info logcollect.admin=yourname \
+    --info qemu.opensearch-pw='xxxxxxx'
+
+```
+
+Remember to use single quotes for the password.
 
 ### debugd images
 

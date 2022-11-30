@@ -4,10 +4,10 @@ metadata:
   name: join-config
   namespace: {{ .Release.Namespace }}
 data:
-  # mustToJson is required so the json-strings passed from go are of type string in the rendered yaml.
+  {{/* mustToJson is required so the json-strings passed from go are of type string in the rendered yaml. */}}
   measurements: {{ .Values.measurements | mustToJson }}
   {{- if eq .Values.csp "Azure" }}
-  # ConfigMap.data is of type map[string]string. quote will not quote a quoted string.
+  {{/* ConfigMap.data is of type map[string]string. quote will not quote a quoted string. */}}
   enforceIdKeyDigest: {{ .Values.enforceIdKeyDigest | quote }}
   idkeydigest: {{ .Values.idkeydigest | quote }}
   {{- end }}

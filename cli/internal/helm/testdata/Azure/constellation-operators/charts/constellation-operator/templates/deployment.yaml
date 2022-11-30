@@ -70,8 +70,8 @@ spec:
         - name: CONSTEL_CSP
           value: Azure
         - name: constellation-uid
-          value: 42424242424242
-        image: ghcr.io/edgelesssys/constellation/node-operator:v2.3.0-pre.0.20221108173951-34435e439604
+          value: "42424242424242"
+        image: constellationOperatorImage
         livenessProbe:
           httpGet:
             path: /healthz
@@ -97,6 +97,10 @@ spec:
         volumeMounts:
         - mountPath: /etc/kubernetes/pki/etcd
           name: etcd-certs
+        - mountPath: /host/usr/lib/os-release
+          name: usr-lib-os-release
+        - mountPath: /etc/os-release
+          name: etc-os-release
         - mountPath: /etc/azure
           name: azureconfig
           readOnly: true
@@ -121,6 +125,14 @@ spec:
           path: /etc/kubernetes/pki/etcd
           type: Directory
         name: etcd-certs
+      - hostPath:
+          path: /usr/lib/os-release
+          type: File
+        name: usr-lib-os-release
+      - hostPath:
+          path: /etc/os-release
+          type: File
+        name: etc-os-release
       - name: azureconfig
         secret:
           optional: true

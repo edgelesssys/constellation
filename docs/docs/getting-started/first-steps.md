@@ -226,21 +226,15 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     </tabItem>
     </tabs>
 
+<!--
     :::info
 
     In case you don't have access to CVMs on Azure, you may use less secure  [trusted launch VMs](../workflows/trusted-launch.md) instead. For this, set **confidentialVM** to `false` in the configuration file.
 
     :::
+-->
 
-3. Download the trusted measurements for your configured image.
-
-    ```bash
-    constellation config fetch-measurements
-    ```
-
-    For details, see the [verification section](../workflows/verify-cluster.md).
-
-4. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml`.
+3. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml`.
 
     :::tip
 
@@ -259,7 +253,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     Your Constellation cluster was created successfully.
     ```
 
-5. Initialize the cluster
+4. Initialize the cluster
 
     ```bash
     constellation init
@@ -290,7 +284,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     :::
 
-6. Configure kubectl
+5. Configure kubectl
 
     ```bash
     export KUBECONFIG="$PWD/constellation-admin.conf"

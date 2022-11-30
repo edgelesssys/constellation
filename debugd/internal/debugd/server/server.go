@@ -19,6 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/debugd/internal/bootstrapper"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd"
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/deploy"
+	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/info"
 	pb "github.com/edgelesssys/constellation/v2/debugd/service"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
@@ -31,16 +32,48 @@ type debugdServer struct {
 	log            *logger.Logger
 	serviceManager serviceManager
 	streamer       streamer
+	info           *info.Map
+
 	pb.UnimplementedDebugdServer
 }
 
 // New creates a new debugdServer according to the gRPC spec.
-func New(log *logger.Logger, serviceManager serviceManager, streamer streamer) pb.DebugdServer {
+func New(log *logger.Logger, serviceManager serviceManager, streamer streamer, infos *info.Map) pb.DebugdServer {
 	return &debugdServer{
 		log:            log,
 		serviceManager: serviceManager,
 		streamer:       streamer,
+		info:           infos,
 	}
+}
+
+// SetInfo sets the info of the debugd instance.
+func (s *debugdServer) SetInfo(ctx context.Context, req *pb.SetInfoRequest) (*pb.SetInfoResponse, error) {
+	s.log.Infof("Received SetInfo request")
+
+	if len(req.Info) == 0 {
+		s.log.Infof("Info is empty")
+	}
+
+	if err := s.info.SetProto(req.Info); err != nil {
+		s.log.With(zap.Error(err)).Errorf("Setting info failed")
+		return &pb.SetInfoResponse{}, err
+	}
+	s.log.Infof("Info set")
+
+	return &pb.SetInfoResponse{}, nil
+}
+
+// GetInfo returns the info of the debugd instance.
+func (s *debugdServer) GetInfo(ctx context.Context, req *pb.GetInfoRequest) (*pb.GetInfoResponse, error) {
+	s.log.Infof("Received GetInfo request")
+
+	info, err := s.info.GetProto()
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.GetInfoResponse{Info: info}, nil
 }
 
 // UploadBootstrapper receives a bootstrapper binary in a stream of chunks and writes to a file.
@@ -97,25 +130,28 @@ func (s *debugdServer) UploadSystemServiceUnits(ctx context.Context, in *pb.Uplo
 	return &pb.UploadSystemdServiceUnitsResponse{Status: pb.UploadSystemdServiceUnitsStatus_UPLOAD_SYSTEMD_SERVICE_UNITS_SUCCESS}, nil
 }
 
-// Start will start the gRPC server and block.
+// Start will start the gRPC server as goroutine.
 func Start(log *logger.Logger, wg *sync.WaitGroup, serv pb.DebugdServer) {
-	defer wg.Done()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 
-	grpcLog := log.Named("gRPC")
-	grpcLog.WithIncreasedLevel(zap.WarnLevel).ReplaceGRPCLogger()
+		grpcLog := log.Named("gRPC")
+		grpcLog.WithIncreasedLevel(zap.WarnLevel).ReplaceGRPCLogger()
 
-	grpcServer := grpc.NewServer(
-		grpcLog.GetServerStreamInterceptor(),
-		grpcLog.GetServerUnaryInterceptor(),
-		grpc.KeepaliveParams(keepalive.ServerParameters{Time: 15 * time.Second}),
-	)
-	pb.RegisterDebugdServer(grpcServer, serv)
-	lis, err := net.Listen("tcp", net.JoinHostPort("0.0.0.0", strconv.Itoa(constants.DebugdPort)))
-	if err != nil {
-		log.With(zap.Error(err)).Fatalf("Listening failed")
-	}
-	log.Infof("gRPC server is waiting for connections")
-	grpcServer.Serve(lis)
+		grpcServer := grpc.NewServer(
+			grpcLog.GetServerStreamInterceptor(),
+			grpcLog.GetServerUnaryInterceptor(),
+			grpc.KeepaliveParams(keepalive.ServerParameters{Time: 15 * time.Second}),
+		)
+		pb.RegisterDebugdServer(grpcServer, serv)
+		lis, err := net.Listen("tcp", net.JoinHostPort("0.0.0.0", strconv.Itoa(constants.DebugdPort)))
+		if err != nil {
+			log.With(zap.Error(err)).Fatalf("Listening failed")
+		}
+		log.Infof("gRPC server is waiting for connections")
+		grpcServer.Serve(lis)
+	}()
 }
 
 type serviceManager interface {

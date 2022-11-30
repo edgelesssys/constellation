@@ -8,33 +8,27 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"regexp"
+	"path"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
+	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
+	"github.com/edgelesssys/constellation/v2/internal/update"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/talos-systems/talos/pkg/machinery/config/encoder"
 	"golang.org/x/mod/semver"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-)
-
-const imageReleaseURL = "https://github.com/edgelesssys/constellation/releases/latest/download/versions-manifest.json"
-
-var (
-	azureCVMRxp = regexp.MustCompile(`^(?i)\/CommunityGalleries\/ConstellationCVM-b3782fa0-0df7-4f2f-963e-fc7fc42663df\/Images\/constellation\/Versions\/[\d]+.[\d]+.[\d]+$`)
-	gcpCVMRxp   = regexp.MustCompile(`^projects\/constellation-images\/global\/images\/constellation-(v[\d]+-[\d]+-[\d]+)$`)
 )
 
 func newUpgradePlanCmd() *cobra.Command {
@@ -61,17 +55,20 @@ func runUpgradePlan(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	patchLister := update.New()
 	rekor, err := sigstore.NewRekor()
 	if err != nil {
 		return fmt.Errorf("constructing Rekor client: %w", err)
 	}
+	cliVersion := getCurrentCLIVersion()
 
-	return upgradePlan(cmd, planner, fileHandler, http.DefaultClient, rekor, flags)
+	return upgradePlan(cmd, planner, patchLister, fileHandler, http.DefaultClient, rekor, flags, cliVersion)
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
-func upgradePlan(cmd *cobra.Command, planner upgradePlanner,
+func upgradePlan(cmd *cobra.Command, planner upgradePlanner, patchLister patchLister,
 	fileHandler file.Handler, client *http.Client, rekor rekorVerifier, flags upgradePlanFlags,
+	cliVersion string,
 ) error {
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
@@ -81,25 +78,56 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner,
 	// get current image version of the cluster
 	csp := conf.GetProvider()
 
-	version, err := getCurrentImageVersion(cmd.Context(), planner, csp)
+	version, err := getCurrentImageVersion(cmd.Context(), planner)
 	if err != nil {
 		return fmt.Errorf("checking current image version: %w", err)
 	}
 
-	// fetch images definitions from GitHub and filter to only compatible images
-	images, err := fetchImages(cmd.Context(), client)
+	// find compatible images
+	// image updates should always be possible for the current minor version of the cluster
+	// (e.g. 0.1.0 -> 0.1.1, 0.1.2, 0.1.3, etc.)
+	// additionally, we allow updates to the next minor version (e.g. 0.1.0 -> 0.2.0)
+	// if the CLI minor version is newer than the cluster minor version
+	currentImageMinorVer := semver.MajorMinor(version)
+	currentCLIMinorVer := semver.MajorMinor(cliVersion)
+	nextImageMinorVer, err := nextMinorVersion(currentImageMinorVer)
 	if err != nil {
-		return fmt.Errorf("fetching available images: %w", err)
-	}
-	compatibleImages := getCompatibleImages(csp, version, images)
-	if len(compatibleImages) == 0 {
-		cmd.PrintErrln("No compatible images found to upgrade to.")
-		return nil
+		return fmt.Errorf("calculating next image minor version: %w", err)
 	}
 
+	var allowedMinorVersions []string
+
+	cliImageCompare := semver.Compare(currentCLIMinorVer, currentImageMinorVer)
+
+	switch {
+	case cliImageCompare < 0:
+		cmd.PrintErrln("Warning: CLI version is older than cluster image version. This is not supported.")
+	case cliImageCompare == 0:
+		allowedMinorVersions = []string{currentImageMinorVer}
+	case cliImageCompare > 0:
+		allowedMinorVersions = []string{currentImageMinorVer, nextImageMinorVer}
+	}
+
+	var updateCandidates []string
+	for _, minorVer := range allowedMinorVersions {
+		versionList, err := patchLister.PatchVersionsOf(cmd.Context(), "stable", minorVer, "image")
+		if err == nil {
+			updateCandidates = append(updateCandidates, versionList.Versions...)
+		}
+	}
+
+	// filter out versions that are not compatible with the current cluster
+	compatibleImages := getCompatibleImages(version, updateCandidates)
+
 	// get expected measurements for each image
-	if err := getCompatibleImageMeasurements(cmd.Context(), cmd, client, rekor, []byte(flags.cosignPubKey), compatibleImages); err != nil {
+	upgrades, err := getCompatibleImageMeasurements(cmd.Context(), cmd, client, rekor, []byte(flags.cosignPubKey), csp, compatibleImages)
+	if err != nil {
 		return fmt.Errorf("fetching measurements for compatible images: %w", err)
+	}
+
+	if len(upgrades) == 0 {
+		cmd.PrintErrln("No compatible images found to upgrade to.")
+		return nil
 	}
 
 	// interactive mode
@@ -109,13 +137,13 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner,
 			&nopWriteCloser{cmd.OutOrStdout()},
 			io.NopCloser(cmd.InOrStdin()),
 			flags.configPath, conf, fileHandler,
-			compatibleImages,
+			upgrades,
 		)
 	}
 
 	// write upgrade plan to stdout
 	if flags.filePath == "-" {
-		content, err := encoder.NewEncoder(compatibleImages).Encode()
+		content, err := encoder.NewEncoder(upgrades).Encode()
 		if err != nil {
 			return fmt.Errorf("encoding compatible images: %w", err)
 		}
@@ -124,76 +152,53 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner,
 	}
 
 	// write upgrade plan to file
-	return fileHandler.WriteYAML(flags.filePath, compatibleImages)
-}
-
-// fetchImages retrieves a list of the latest Constellation node images from GitHub.
-func fetchImages(ctx context.Context, client *http.Client) (map[string]imageManifest, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, imageReleaseURL, http.NoBody)
-	if err != nil {
-		return nil, err
-	}
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", res.StatusCode)
-	}
-
-	imagesJSON, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	images := make(map[string]imageManifest)
-	if err := json.Unmarshal(imagesJSON, &images); err != nil {
-		return nil, err
-	}
-
-	return images, nil
+	return fileHandler.WriteYAML(flags.filePath, upgrades)
 }
 
 // getCompatibleImages trims the list of images to only ones compatible with the current cluster.
-func getCompatibleImages(csp cloudprovider.Provider, currentVersion string, images map[string]imageManifest) map[string]config.UpgradeConfig {
-	compatibleImages := make(map[string]config.UpgradeConfig)
+func getCompatibleImages(currentImageVersion string, images []string) []string {
+	var compatibleImages []string
 
-	switch csp {
-	case cloudprovider.Azure:
-		for imgVersion, image := range images {
-			if semver.Compare(currentVersion, imgVersion) < 0 {
-				compatibleImages[imgVersion] = config.UpgradeConfig{Image: image.AzureImage}
-			}
+	for _, image := range images {
+		// check if image is newer than current version
+		if semver.Compare(image, currentImageVersion) <= 0 {
+			continue
 		}
-
-	case cloudprovider.GCP:
-		for imgVersion, image := range images {
-			if semver.Compare(currentVersion, imgVersion) < 0 {
-				compatibleImages[imgVersion] = config.UpgradeConfig{Image: image.GCPImage}
-			}
-		}
+		compatibleImages = append(compatibleImages, image)
 	}
-
 	return compatibleImages
 }
 
 // getCompatibleImageMeasurements retrieves the expected measurements for each image.
-func getCompatibleImageMeasurements(ctx context.Context, cmd *cobra.Command, client *http.Client, rekor rekorVerifier, pubK []byte, images map[string]config.UpgradeConfig) error {
-	for idx, img := range images {
-		measurementsURL, err := url.Parse(constants.S3PublicBucket + strings.ToLower(img.Image) + "/measurements.json")
+func getCompatibleImageMeasurements(ctx context.Context, cmd *cobra.Command, client *http.Client, rekor rekorVerifier, pubK []byte,
+	csp cloudprovider.Provider, images []string,
+) (map[string]config.UpgradeConfig, error) {
+	upgrades := make(map[string]config.UpgradeConfig)
+	for _, img := range images {
+		measurementsURL, err := url.Parse(constants.CDNRepositoryURL + path.Join("/", constants.CDNMeasurementsPath, img, strings.ToLower(csp.String()), "measurements.json"))
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		signatureURL, err := url.Parse(constants.S3PublicBucket + strings.ToLower(img.Image) + "/measurements.json.sig")
+		signatureURL, err := url.Parse(constants.CDNRepositoryURL + path.Join("/", constants.CDNMeasurementsPath, img, strings.ToLower(csp.String()), "measurements.json.sig"))
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		hash, err := img.Measurements.FetchAndVerify(ctx, client, measurementsURL, signatureURL, pubK)
+		var fetchedMeasurements measurements.M
+		hash, err := fetchedMeasurements.FetchAndVerify(
+			ctx, client,
+			measurementsURL,
+			signatureURL,
+			pubK,
+			measurements.WithMetadata{
+				CSP:   csp,
+				Image: img,
+			},
+		)
 		if err != nil {
-			return err
+			cmd.PrintErrf("Skipping image %q: %s\n", img, err)
+			continue
 		}
 
 		if err = verifyWithRekor(ctx, rekor, hash); err != nil {
@@ -201,42 +206,34 @@ func getCompatibleImageMeasurements(ctx context.Context, cmd *cobra.Command, cli
 			cmd.PrintErrf("Make sure measurements are correct.\n")
 		}
 
-		images[idx] = img
+		upgrades[img] = config.UpgradeConfig{
+			Image:        img,
+			Measurements: fetchedMeasurements,
+			CSP:          csp,
+		}
+
 	}
 
-	return nil
+	return upgrades, nil
 }
 
 // getCurrentImageVersion retrieves the semantic version of the image currently installed in the cluster.
 // If the cluster is not using a release image, an error is returned.
-func getCurrentImageVersion(ctx context.Context, planner upgradePlanner, csp cloudprovider.Provider) (string, error) {
-	_, image, err := planner.GetCurrentImage(ctx)
+func getCurrentImageVersion(ctx context.Context, planner upgradePlanner) (string, error) {
+	_, imageVersion, err := planner.GetCurrentImage(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	var version string
-	switch csp {
-	case cloudprovider.Azure:
-		if !azureCVMRxp.MatchString(image) {
-			return "", fmt.Errorf("image %q does not look like a released production image for Azure", image)
-		}
-		versionRxp := regexp.MustCompile(`[\d]+.[\d]+.[\d]+$`)
-		version = "v" + versionRxp.FindString(image)
-	case cloudprovider.GCP:
-		gcpVersion := gcpCVMRxp.FindStringSubmatch(image)
-		if len(gcpVersion) != 2 {
-			return "", fmt.Errorf("image %q does not look like a released production image for GCP", image)
-		}
-		version = strings.ReplaceAll(gcpVersion[1], "-", ".")
-	default:
-		return "", fmt.Errorf("unsupported cloud provider: %s", csp.String())
+	if !semver.IsValid(imageVersion) {
+		return "", fmt.Errorf("current image version is not a release image version: %q", imageVersion)
 	}
 
-	if !semver.IsValid(version) {
-		return "", fmt.Errorf("image %q has no valid semantic version", image)
-	}
-	return version, nil
+	return imageVersion, nil
+}
+
+func getCurrentCLIVersion() string {
+	return "v" + constants.VersionInfo
 }
 
 func parseUpgradePlanFlags(cmd *cobra.Command) (upgradePlanFlags, error) {
@@ -258,10 +255,10 @@ func parseUpgradePlanFlags(cmd *cobra.Command) (upgradePlanFlags, error) {
 
 func upgradePlanInteractive(out io.WriteCloser, in io.ReadCloser,
 	configPath string, config *config.Config, fileHandler file.Handler,
-	compatibleImages map[string]config.UpgradeConfig,
+	compatibleUpgrades map[string]config.UpgradeConfig,
 ) error {
 	var imageVersions []string
-	for k := range compatibleImages {
+	for k := range compatibleUpgrades {
 		imageVersions = append(imageVersions, k)
 	}
 	semver.Sort(imageVersions)
@@ -287,28 +284,44 @@ func upgradePlanInteractive(out io.WriteCloser, in io.ReadCloser,
 
 	fmt.Fprintln(out, "Updating config to the following:")
 
-	fmt.Fprintf(out, "Image: %s\n", compatibleImages[res].Image)
+	fmt.Fprintf(out, "Image: %s\n", compatibleUpgrades[res].Image)
 	fmt.Fprintln(out, "Measurements:")
-	content, err := encoder.NewEncoder(compatibleImages[res].Measurements).Encode()
+	content, err := encoder.NewEncoder(compatibleUpgrades[res].Measurements).Encode()
 	if err != nil {
 		return fmt.Errorf("encoding measurements: %w", err)
 	}
 	measurements := strings.TrimSuffix(strings.Replace("\t"+string(content), "\n", "\n\t", -1), "\n\t")
 	fmt.Fprintln(out, measurements)
 
-	config.Upgrade = compatibleImages[res]
+	config.Upgrade = compatibleUpgrades[res]
 	return fileHandler.WriteYAML(configPath, config, file.OptOverwrite)
+}
+
+func nextMinorVersion(version string) (string, error) {
+	major, minor, _, err := parseCanonicalSemver(version)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("v%d.%d", major, minor+1), nil
+}
+
+func parseCanonicalSemver(version string) (major int, minor int, patch int, err error) {
+	version = semver.Canonical(version) // ensure version is in canonical form (vX.Y.Z)
+	num, err := fmt.Sscanf(version, "v%d.%d.%d", &major, &minor, &patch)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("parsing version: %w", err)
+	}
+	if num != 3 {
+		return 0, 0, 0, fmt.Errorf("parsing version: expected 3 numbers, got %d", num)
+	}
+
+	return major, minor, patch, nil
 }
 
 type upgradePlanFlags struct {
 	configPath   string
 	filePath     string
 	cosignPubKey string
-}
-
-type imageManifest struct {
-	AzureImage string `json:"AzureOSImage"`
-	GCPImage   string `json:"GCPOSImage"`
 }
 
 type nopWriteCloser struct {
@@ -319,4 +332,8 @@ func (c *nopWriteCloser) Close() error { return nil }
 
 type upgradePlanner interface {
 	GetCurrentImage(ctx context.Context) (*unstructured.Unstructured, string, error)
+}
+
+type patchLister interface {
+	PatchVersionsOf(ctx context.Context, stream, minor, kind string) (*update.VersionsList, error)
 }

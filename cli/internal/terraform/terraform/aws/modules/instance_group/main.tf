@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "4.40.0"
+      version = "4.43.0"
     }
   }
 }
@@ -57,26 +57,13 @@ resource "aws_autoscaling_group" "autoscaling_group" {
   vpc_zone_identifier = [var.subnetwork]
   target_group_arns   = var.target_group_arns
 
-  tag {
-    key                 = "Name"
-    value               = local.name
-    propagate_at_launch = true
-  }
-  tag {
-    key                 = "constellation-role"
-    value               = var.role
-    propagate_at_launch = true
-  }
-  tag {
-    key                 = "constellation-uid"
-    value               = var.uid
-    propagate_at_launch = true
-  }
-
-  tag {
-    key                 = "KubernetesCluster"
-    value               = "Constellation-${var.uid}"
-    propagate_at_launch = true
+  dynamic "tag" {
+    for_each = var.tags
+    content {
+      key                 = tag.key
+      value               = tag.value
+      propagate_at_launch = true
+    }
   }
 
   lifecycle {

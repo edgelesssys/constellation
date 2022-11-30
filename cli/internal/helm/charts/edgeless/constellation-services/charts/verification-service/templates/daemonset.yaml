@@ -18,7 +18,7 @@ spec:
       containers:
       - args:
         - --cloud-provider={{ .Values.csp }}
-        image: {{ .Values.image }}
+        image: {{ .Values.image | quote }}
         name: verification-service
         ports:
         - containerPort: {{ .Values.httpContainerPort }}

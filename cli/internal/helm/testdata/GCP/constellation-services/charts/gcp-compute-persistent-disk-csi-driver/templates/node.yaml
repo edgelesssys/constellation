@@ -59,6 +59,8 @@ spec:
               mountPath: /csi
             - name: device-dir
               mountPath: /dev
+            # The following mounts are required to trigger host udevadm from
+            # container
             - name: udev-rules-etc
               mountPath: /etc/udev
             - name: udev-rules-lib
@@ -86,6 +88,8 @@ spec:
           hostPath:
             path: /dev
             type: Directory
+        # The following mounts are required to trigger host udevadm from
+        # container
         - name: udev-rules-etc
           hostPath:
             path: /etc/udev
@@ -106,5 +110,8 @@ spec:
           hostPath:
             path: /run/cryptsetup
             type: Directory
+      # https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+      # See "special case". This will tolerate everything. Node component should
+      # be scheduled on all nodes.
       tolerations:
       - operator: Exists

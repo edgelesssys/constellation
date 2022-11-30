@@ -64,7 +64,7 @@ spec:
               fieldPath: metadata.namespace
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: cluster.local
-        image: ghcr.io/edgelesssys/constellation/node-maintenance-operator:v0.13.1-alpha1
+        image: nodeMaintenanceOperatorImage
         livenessProbe:
           httpGet:
             path: /healthz

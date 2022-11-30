@@ -182,12 +182,7 @@ func (c *CryptMapper) OpenCryptDevice(ctx context.Context, source, volumeID stri
 
 // ResizeCryptDevice resizes the underlying crypt device and returns the mapped device path.
 func (c *CryptMapper) ResizeCryptDevice(ctx context.Context, volumeID string) (string, error) {
-	dek, err := c.kms.GetDEK(ctx, volumeID, crypto.StateDiskKeyLength)
-	if err != nil {
-		return "", err
-	}
-
-	if err := resizeCryptDevice(c.mapper, volumeID, string(dek)); err != nil {
+	if err := resizeCryptDevice(ctx, c.mapper, volumeID, c.kms.GetDEK); err != nil {
 		return "", err
 	}
 
@@ -352,7 +347,9 @@ func performWipe(device DeviceMapper, volumeID string) error {
 	return nil
 }
 
-func resizeCryptDevice(device DeviceMapper, name, passphrase string) error {
+func resizeCryptDevice(ctx context.Context, device DeviceMapper, name string,
+	getKey func(ctx context.Context, keyID string, keySize int) ([]byte, error),
+) error {
 	packageLock.Lock()
 	defer packageLock.Unlock()
 
@@ -365,7 +362,12 @@ func resizeCryptDevice(device DeviceMapper, name, passphrase string) error {
 		return fmt.Errorf("loading device: %w", err)
 	}
 
-	if err := device.ActivateByPassphrase("", 0, passphrase, cryptsetup.CRYPT_ACTIVATE_KEYRING_KEY); err != nil {
+	passphrase, err := getKey(ctx, device.GetUUID(), crypto.StateDiskKeyLength)
+	if err != nil {
+		return fmt.Errorf("getting key: %w", err)
+	}
+
+	if err := device.ActivateByPassphrase("", 0, string(passphrase), cryptsetup.CRYPT_ACTIVATE_KEYRING_KEY); err != nil {
 		return fmt.Errorf("activating keyrung for crypt device %q with passphrase: %w", name, err)
 	}
 
