@@ -40,33 +40,9 @@ tlog entry verified with uuid: afaba7f6635b3e058888692841848e5514357315be9528474
 Verified OK
 ```
 
-## Verify the provenance
-
-Provenance attests that a software artifact was produced by a specific repository and build system invocation. For more information on provenance visit [slsa.dev](https://slsa.dev/provenance/v0.2). We've also detailed our [adoption of SLSA](../reference/slsa.md).
-
-Just as checking the signature on the CLI proves that the CLI wasn't manipulated, checking the provenance proves that the artifact was produced by our build process and hasn't been tampered with.
-
-First, download the [slsa-verifier](https://github.com/slsa-framework/slsa-verifier). Then make sure you have the provenance file (`constellation.intoto.jsonl`) and Constellation CLI downloaded. Both are available on our [GitHub release page](https://github.com/edgelesssys/constellation/releases).
-
-:::info
-The same provenance file is valid for all Constellation CLI binaries of a given version. Independent of the architecture and the OS the CLI was build for.
-:::
-
-Then use the verifier to perform the check:
-
-```sh
-$ slsa-verifier verify-artifact constellation-linux-amd64 \
-  --provenance-path constellation.intoto.jsonl \
-  --source-uri github.com/edgelesssys/constellation
-
-Verified signature against tlog entry index 7771317 at URL: https://rekor.sigstore.dev/api/v1/log/entries/24296fb24b8ad77af2c04c8b4ae0d5bc5...
-Verified build using builder https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@refs/tags/v1.2.2 at commit 18e9924b416323c37b9cdfd6cc728de8a947424a
-PASSED: Verified SLSA provenance
-```
-
 🏁 You now know that your CLI executable was officially released and signed by Edgeless Systems.
 
-## Optional: Manually inspect the transparency log
+### Optional: Manually inspect the transparency log
 
 To further inspect the public Rekor transparency log, [install the Rekor CLI](https://docs.sigstore.dev/rekor/installation). A search for the CLI executable  should give a single UUID. (Note that this UUID contains the UUID from the previous `cosign` command.)
 
@@ -112,3 +88,27 @@ rekor-cli search --public-key https://edgeless.systems/es.pub --pki-format x509
 ```
 
 Edgeless Systems monitors this list to detect potential unauthorized use of its private key.
+
+## Verify the provenance
+
+Provenance attests that a software artifact was produced by a specific repository and build system invocation. For more information on provenance visit [slsa.dev](https://slsa.dev/provenance/v0.2) and learn about the [adoption of SLSA for Constellation](../reference/slsa.md).
+
+Just as checking its signature proves that the CLI hasn't been manipulated, checking the provenance proves that the artifact was produced by the expected build process and hasn't been tampered with.
+
+To verify the provenance, first install the [slsa-verifier](https://github.com/slsa-framework/slsa-verifier). Then make sure you have the provenance file (`constellation.intoto.jsonl`) and Constellation CLI downloaded. Both are available on the [GitHub release page](https://github.com/edgelesssys/constellation/releases).
+
+:::info
+The same provenance file is valid for all Constellation CLI executables of a given version independent of the target platform.
+:::
+
+Use the verifier to perform the check:
+
+```shell-session
+$ slsa-verifier verify-artifact constellation-linux-amd64 \
+  --provenance-path constellation.intoto.jsonl \
+  --source-uri github.com/edgelesssys/constellation
+
+Verified signature against tlog entry index 7771317 at URL: https://rekor.sigstore.dev/api/v1/log/entries/24296fb24b8ad77af2c04c8b4ae0d5bc5...
+Verified build using builder https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@refs/tags/v1.2.2 at commit 18e9924b416323c37b9cdfd6cc728de8a947424a
+PASSED: Verified SLSA provenance
+```
