@@ -1,9 +1,9 @@
 # Supply chain levels for software artifacts (SLSA) adoption
 
-[Supply chain Levels for Software Artifacts, or SLSA (salsa)](https://slsa.dev/) is a framework that provides incremental improvements to a projects build system and engineering processes. SLSA focuses on security improvements for source code storage as well as build system definition, execution, and observation. SLSA is structured in [four levels](https://slsa.dev/spec/v0.1/levels). This page describes the adoption of SLSA for Constellation.
+[Supply chain Levels for Software Artifacts, or SLSA (salsa)](https://slsa.dev/) is a framework for improving and grading a project's build system and engineering processes. SLSA focuses on security improvements for source code storage as well as build system definition, execution, and observation. SLSA is structured in [four levels](https://slsa.dev/spec/v0.1/levels). This page describes the adoption of SLSA for Constellation.
 
 :::info
-SLSA is still in alpha. The presented levels and their requirements might change in the future. We will adopt any changes into our engineering processes, as they get defined.
+SLSA is still in alpha status. The presented levels and their requirements might change in the future. We will adopt any changes into our engineering processes, as they get defined.
 :::
 
 ## Level 1 - Adopted
@@ -42,9 +42,9 @@ The [Edgeless Systems](https://github.com/edgelesssys) GitHub organization [requ
 
 **[Source - Retained Indefinitely](https://slsa.dev/spec/v0.1/requirements#retained-indefinitely)**
 
-Since we use GitHub to host the repository, it's impossible for an external person to delete or modify the history. Before a pull request can be merged, an explicit approval from an [Edgeless Systems](https://github.com/edgelesssys) team member is required.
+Since we use GitHub to host the repository, an external person can't modify or delete the history. Before a pull request can be merged, an explicit approval from an [Edgeless Systems](https://github.com/edgelesssys) team member is required.
 
-The same holds true for changes proposed by team members. Each change to main needs to be proposed via a pull request and requires at least one approval.
+The same holds true for changes proposed by team members. Each change to `main` needs to be proposed via a pull request and requires at least one approval.
 
 The [Edgeless Systems](https://github.com/edgelesssys) GitHub organization admins control these settings and are able to make changes to the repository's history should legal requirements necessitate it. These changes require two-party approval following the obliterate policy.
 
@@ -70,4 +70,4 @@ As outlined by [SLSA GitHub generator](https://github.com/slsa-framework/slsa-gi
 
 ## Level 4 - In Progress
 
-We strive to adopt certain aspect of SLSA Level 4 that support our engineering process. At the same time, SLSA is still in alpha and the biggest changes to SLSA are expected to be around Level 4.
+We strive to adopt certain aspect of SLSA Level 4 that support our engineering process. At the same time, SLSA is still in alpha status and the biggest changes to SLSA are expected to be around Level 4.
