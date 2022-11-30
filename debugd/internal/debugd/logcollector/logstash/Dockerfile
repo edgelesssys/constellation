@@ -1,4 +1,4 @@
-FROM docker.io/opensearchproject/logstash-oss-with-opensearch-output-plugin:7.16.2
+FROM docker.io/opensearchproject/logstash-oss-with-opensearch-output-plugin:8.4.0
 
 RUN rm -f /usr/share/logstash/pipeline/logstash.conf
 
