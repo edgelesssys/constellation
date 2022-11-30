@@ -314,7 +314,7 @@ func granularityFromVersion(version string) (string, error) {
 }
 
 func versionJSONPath(granularity, base string) string {
-	return path.Join("constellation/v1/updates", stream, granularity, base, imageKind+".json")
+	return path.Join(constants.CDNUpdatesPath, stream, granularity, base, imageKind+".json")
 }
 
 func versionURL(granularity, base string) string {
