@@ -46,6 +46,7 @@ runs:
           type=raw,value=${{ inputs.pushTag }},enable=${{ '' != inputs.pushTag }}
           type=raw,value=${{ steps.pseudo-version.outputs.pseudoVersion }},enable=${{ '' != steps.pseudo-version.outputs.pseudoVersion }}
           type=ref,event=branch
+
     - name: Log in to the Container registry
       id: docker-login
       uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # tag=v2.1.0

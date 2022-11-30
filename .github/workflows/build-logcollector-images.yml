@@ -1,0 +1,39 @@
+name: Build logcollector images
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "debugd/internal/debugd/logcollector/Makefile"
+      - "debugd/internal/debugd/logcollector/filebeat/**"
+      - "debugd/internal/debugd/logcollector/logstash/**"
+      - ".github/workflows/build-logcollector-images.yml"
+
+jobs:
+  build-logcollector-images:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out repository
+        id: checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Build and upload logstash container image
+        uses: ./.github/actions/build_micro_service
+        with:
+          name: logstash-debugd
+          dockerfile: debugd/internal/debugd/logcollector/logstash/Dockerfile
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and upload filebeat container image
+        uses: ./.github/actions/build_micro_service
+        with:
+          name: filebeat-debugd
+          dockerfile: debugd/internal/debugd/logcollector/filebeat/Dockerfile
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
