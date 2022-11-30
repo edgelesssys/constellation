@@ -123,37 +123,37 @@ func TestList(t *testing.T) {
 	require.NoError(t, err)
 	client := newTestClient(func(req *http.Request) *http.Response {
 		switch req.URL.Path {
-		case "/constellation/v1/updates/stable/major/v1/image.json":
+		case "/constellation/v1/versions/stream/stable/major/v1/image.json":
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBuffer(majorListJSON)),
 				Header:     make(http.Header),
 			}
-		case "/constellation/v1/updates/stable/minor/v1.1/image.json":
+		case "/constellation/v1/versions/stream/stable/minor/v1.1/image.json":
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBuffer(minorListJSON)),
 				Header:     make(http.Header),
 			}
-		case "/constellation/v1/updates/stable/major/v1/500.json": // 500 error
+		case "/constellation/v1/versions/stream/stable/major/v1/500.json": // 500 error
 			return &http.Response{
 				StatusCode: http.StatusInternalServerError,
 				Body:       io.NopCloser(bytes.NewBufferString("Server Error.")),
 				Header:     make(http.Header),
 			}
-		case "/constellation/v1/updates/stable/major/v1/nojson.json": // invalid format
+		case "/constellation/v1/versions/stream/stable/major/v1/nojson.json": // invalid format
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBufferString("not json")),
 				Header:     make(http.Header),
 			}
-		case "/constellation/v1/updates/stable/major/v2/image.json": // inconsistent list
+		case "/constellation/v1/versions/stream/stable/major/v2/image.json": // inconsistent list
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBuffer(inconsistentListJSON)),
 				Header:     make(http.Header),
 			}
-		case "/constellation/v1/updates/stable/major/v3/image.json": // does not match requested version
+		case "/constellation/v1/versions/stream/stable/major/v3/image.json": // does not match requested version
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBuffer(minorListJSON)),
