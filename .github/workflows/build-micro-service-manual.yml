@@ -10,6 +10,7 @@ on:
           - "join-service"
           - "kmsserver"
           - "verification-service"
+          - "qemu-metadata-api"
         required: true
         default: "join-service"
       imageTag:
@@ -50,6 +51,8 @@ jobs:
               echo "microServiceDockerfile=kms/Dockerfile" >> "$GITHUB_ENV" ;;
             "verification-service" )
               echo "microServiceDockerfile=verify/Dockerfile" >> "$GITHUB_ENV" ;;
+            "qemu-metadata-api" )
+              echo "microServiceDockerfile=hack/qemu-metadata-api/Dockerfile" >> "$GITHUB_ENV" ;;
           esac
 
       - name: Build and upload container image
