@@ -24,7 +24,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-// imageLookupTable is a lookup table for image references.
+// imageInfo is a lookup table for image references.
 //
 // Example:
 //
@@ -40,22 +40,49 @@ import (
 //	  },
 //	  "qemu": {
 //	    "default": "https://cdn.example.com/image.raw"
-//	  }
+//	},
+//	"version": "1.0.0",
+//	"debug": false
 //	}
-type imageLookupTable map[string]map[string]string
+type imageInfo struct {
+	AWS     map[string]string `json:"aws,omitempty"`
+	Azure   map[string]string `json:"azure,omitempty"`
+	GCP     map[string]string `json:"gcp,omitempty"`
+	QEMU    map[string]string `json:"qemu,omitempty"`
+	Debug   bool              `json:"debug,omitempty"`
+	Version string            `json:"version,omitempty"`
+}
 
 // getReference returns the image reference for a given CSP and image variant.
-func (l *imageLookupTable) getReference(csp, variant string) (string, error) {
+func (l *imageInfo) getReference(csp, variant string) (string, error) {
 	if l == nil {
-		return "", fmt.Errorf("image lookup table is nil")
+		return "", fmt.Errorf("image info is nil")
 	}
-	if _, ok := (*l)[csp]; !ok {
+
+	var cspList map[string]string
+	switch cloudprovider.FromString(csp) {
+	case cloudprovider.AWS:
+		cspList = l.AWS
+	case cloudprovider.Azure:
+		cspList = l.Azure
+	case cloudprovider.GCP:
+		cspList = l.GCP
+	case cloudprovider.QEMU:
+		cspList = l.QEMU
+	default:
 		return "", fmt.Errorf("image not available for CSP %q", csp)
 	}
-	if _, ok := (*l)[csp][variant]; !ok {
+
+	if cspList == nil {
+		return "", fmt.Errorf("image not available for CSP %q", csp)
+	}
+
+	ref, ok := cspList[variant]
+	if !ok {
 		return "", fmt.Errorf("image not available for variant %q", variant)
 	}
-	return (*l)[csp][variant], nil
+
+	return ref, nil
 }
 
 // Fetcher fetches image references using a lookup table.
@@ -91,11 +118,11 @@ func (f *Fetcher) fetch(ctx context.Context, csp cloudprovider.Provider, version
 	if err != nil {
 		return "", fmt.Errorf("fetching image reference: %w", err)
 	}
-	lut := make(imageLookupTable)
-	if err := json.Unmarshal(raw, &lut); err != nil {
+	var info imageInfo
+	if err := json.Unmarshal(raw, &info); err != nil {
 		return "", fmt.Errorf("decoding image reference: %w", err)
 	}
-	return lut.getReference(strings.ToLower(csp.String()), variant)
+	return info.getReference(strings.ToLower(csp.String()), variant)
 }
 
 // variant returns the image variant for a given CSP and configuration.

@@ -29,23 +29,39 @@ func TestMain(m *testing.M) {
 
 func TestGetReference(t *testing.T) {
 	testCases := map[string]struct {
+		info          *imageInfo
 		csp, variant  string
 		wantReference string
 		wantErr       bool
 	}{
 		"reference exists": {
-			csp:           "someCSP",
+			info:          &imageInfo{AWS: map[string]string{"someVariant": "someReference"}},
+			csp:           "aws",
 			variant:       "someVariant",
 			wantReference: "someReference",
 		},
 		"csp does not exist": {
+			info:    &imageInfo{AWS: map[string]string{"someVariant": "someReference"}},
 			csp:     "nonExistingCSP",
 			variant: "someVariant",
 			wantErr: true,
 		},
 		"variant does not exist": {
-			csp:     "someCSP",
+			info:    &imageInfo{AWS: map[string]string{"someVariant": "someReference"}},
+			csp:     "aws",
 			variant: "nonExistingVariant",
+			wantErr: true,
+		},
+		"info is nil": {
+			info:    nil,
+			csp:     "aws",
+			variant: "someVariant",
+			wantErr: true,
+		},
+		"csp is nil": {
+			info:    &imageInfo{AWS: nil},
+			csp:     "aws",
+			variant: "someVariant",
 			wantErr: true,
 		},
 	}
@@ -55,12 +71,8 @@ func TestGetReference(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			lut := &imageLookupTable{
-				"someCSP": {
-					"someVariant": "someReference",
-				},
-			}
-			reference, err := lut.getReference(tc.csp, tc.variant)
+			reference, err := tc.info.getReference(tc.csp, tc.variant)
+
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -74,7 +86,7 @@ func TestGetReference(t *testing.T) {
 func TestGetReferenceOnNil(t *testing.T) {
 	assert := assert.New(t)
 
-	var lut *imageLookupTable
+	var lut *imageInfo
 	_, err := lut.getReference("someCSP", "someVariant")
 	assert.Error(err)
 }
