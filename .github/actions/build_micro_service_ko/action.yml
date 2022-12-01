@@ -48,10 +48,21 @@ runs:
         githubToken: ${{ inputs.GITHUB_TOKEN }}
         pushTag: ci-test
 
+    - name: Download ko Container Data
+      id: download_container_data
+      uses: actions/download-artifact@v2
+      with:
+        name: container_data_ko
+        path: CONTAINER_DATA_KO
+    - shell: bash
+      run: |
+        container_full=$(jq -r .container_full < container_data_ko.json)
+        echo CONTAINER_FULL=$container_full >> $GITHUB_ENV
+
     - name: Generate SBOM
       uses: ./.github/actions/container_sbom
       with:
-        containerReference: ${{ steps.build-and-upload.outputs.container_full }}
+        containerReference: ${{ env.CONTAINER_FULL }}
         cosignPublicKey: ${{ inputs.cosignPublicKey }}
         cosignPrivateKey: ${{ inputs.cosignPrivateKey }}
         cosignPassword: ${{ inputs.cosignPassword }}

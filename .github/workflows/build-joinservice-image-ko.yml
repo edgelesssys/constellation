@@ -7,7 +7,7 @@ on:
   push:
 
 jobs:
-  build-join-service:
+  build-join-service-ko:
     runs-on: ubuntu-22.04
     permissions:
       contents: read
@@ -32,7 +32,6 @@ jobs:
         uses: ./.github/actions/build_micro_service_ko
         with:
           name: joinservice
-          koConfig: .ko.yaml
           koTarget: ./joinservice/cmd
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}

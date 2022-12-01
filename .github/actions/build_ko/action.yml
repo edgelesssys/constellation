@@ -10,7 +10,8 @@ inputs:
     default: "ghcr.io"
   koConfig:
     description: "Path to the .ko.yaml config file"
-    required: true
+    required: false
+    default: ".ko.yaml"
   koTarget:
     description: "Go package to build with ko"
     required: true
@@ -85,9 +86,19 @@ runs:
         fi
 
         container_full=$(ko build ${{ inputs.koTarget }} --bare --tags ${tags} ${sbom})
-        container_image=$(echo $container_full | cut -d: -f1)
+        container_image=$(echo $container_full | cut -d@ -f1)
         container_tag=$(echo $container_full | cut -d: -f2)
 
-        echo "container_full=$container_full" >> $GITHUB_OUTPUT
-        echo "container_image=$container_image" >> $GITHUB_OUTPUT
-        echo "container_tag=$container_tag" >> $GITHUB_OUTPUT
+        cat <<EOF > container_data_ko.json
+        {
+          "container_full": "${container_full}",
+          "container_image": "${container_image}",
+          "container_tag": "${container_tag}"
+        }
+        EOF
+
+    - name: Upload Container Data # since github censors hashes that may share data with secrets, we need to upload the data as an artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: container_data_ko
+        path: container_data_ko.json
