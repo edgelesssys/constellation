@@ -71,22 +71,24 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         gh workflow run build-os-image.yml --ref release/v$minor -F debug=false -F imageVersion=v$ver
         ```
 
-    11. Run manual E2E tests using [Linux](/.github/workflows/e2e-test-manual.yml) and [macOS](/.github/workflows/e2e-test-manual-macos.yml) to confirm functionality and stability.
+    11. [Generate measurements](/.github/workflows/generate-measurements.yml) for the images.
 
         ```sh
-        gh workflow run e2e-test-manual.yml --ref release/v$minor -F cloudProvider=azure -F machineType=Standard_DC4as_v5 -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false
-        gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=azure -F machineType=Standard_DC4as_v5 -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false
-        gh workflow run e2e-test-manual.yml --ref release/v$minor -F cloudProvider=gcp -F machineType=n2d-standard-4 -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false
-        gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=gcp -F machineType=n2d-standard-4 -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false
+        gh workflow run generate-measurements.yml --ref release/v$minor -F osImage=v$ver -F isDebugImage=false -F signMeasurements=true
         ```
 
-    12. [Generate measurements](/.github/workflows/generate-measurements.yml) for the images.
+    12. Update expected measurements in [`measurements.go`](/internal/attestation/measurements/measurements.go) using the generated measurements from step 12 and **push your changes**.
+
+    13. Run manual E2E tests using [Linux](/.github/workflows/e2e-test-manual.yml) and [macOS](/.github/workflows/e2e-test-manual-macos.yml) to confirm functionality and stability.
 
         ```sh
-           gh workflow run generate-measurements.yml --ref release/v$minor -F osImage=v$ver -F isDebugImage=false -F signMeasurements=true
+        gh workflow run e2e-test-manual.yml --ref release/v$minor -F cloudProvider=aws -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false -F keepMeasurements=true
+        gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=aws -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false -F keepMeasurements=true
+        gh workflow run e2e-test-manual.yml --ref release/v$minor -F cloudProvider=azure -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false -F keepMeasurements=true
+        gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=azure -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false -F keepMeasurements=true
+        gh workflow run e2e-test-manual.yml --ref release/v$minor -F cloudProvider=gcp -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false -F keepMeasurements=true
+        gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=gcp -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false -F keepMeasurements=true
         ```
-
-    13. Update expected measurements in [`measurements.go`](/internal/attestation/measurements/measurements.go) using the generated measurements from step 12 and **push your changes**.
 
     14. Create a new tag on this release branch.
 

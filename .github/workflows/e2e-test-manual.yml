@@ -34,6 +34,11 @@ on:
         description: "Kubernetes version to create the cluster from."
         default: "1.24"
         required: true
+      keepMeasurements:
+        description: "Keep measurements embedded in the CLI."
+        type: boolean
+        default: false
+        required: false
       osImage:
         description: "Full name of OS image (CSP independent image version UID)."
         type: string
@@ -135,6 +140,7 @@ jobs:
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
           test: ${{ github.event.inputs.test }}
           kubernetesVersion: ${{ github.event.inputs.kubernetesVersion }}
+          keepMeasurements: ${{ github.event.inputs.keepMeasurements }}
           azureSubscription: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
           azureTenant: ${{ secrets.AZURE_E2E_TENANT_ID }}
           azureClientID: ${{ secrets.AZURE_E2E_CLIENT_ID }}
