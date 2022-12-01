@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package update
+package versionsapi
 
 import (
 	"context"
@@ -20,14 +20,14 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-// VersionsList represents a list of versions for a kind of resource.
+// List represents a list of versions for a kind of resource.
 // It has a granularity of either "major" or "minor".
 //
-// For example, a VersionsList with granularity "major" could contain
+// For example, a List with granularity "major" could contain
 // the base version "v1" and a list of minor versions "v1.0", "v1.1", "v1.2" etc.
-// A VersionsList with granularity "minor" could contain the base version
+// A List with granularity "minor" could contain the base version
 // "v1.0" and a list of patch versions "v1.0.0", "v1.0.1", "v1.0.2" etc.
-type VersionsList struct {
+type List struct {
 	// Stream is the update stream of the list.
 	// Currently, only "stable" is supported.
 	Stream string `json:"stream"`
@@ -50,7 +50,7 @@ type VersionsList struct {
 // - The kind is supported.
 // - The base version is a valid semantic version that matches the granularity.
 // - All versions in the list are valid semantic versions that are finer-grained than the base version.
-func (l *VersionsList) Validate() error {
+func (l *List) Validate() error {
 	var issues []string
 	if l.Stream != "stable" {
 		issues = append(issues, fmt.Sprintf("stream %q is not supported", l.Stream))
@@ -91,7 +91,7 @@ func (l *VersionsList) Validate() error {
 }
 
 // Contains returns true if the list contains the given version.
-func (l *VersionsList) Contains(version string) bool {
+func (l *List) Contains(version string) bool {
 	for _, v := range l.Versions {
 		if v == version {
 			return true
@@ -100,35 +100,35 @@ func (l *VersionsList) Contains(version string) bool {
 	return false
 }
 
-// VersionsFetcher fetches a list of versions.
-type VersionsFetcher struct {
+// Fetcher fetches a list of versions.
+type Fetcher struct {
 	httpc httpc
 }
 
 // New returns a new VersionsFetcher.
-func New() *VersionsFetcher {
-	return &VersionsFetcher{
+func New() *Fetcher {
+	return &Fetcher{
 		httpc: http.DefaultClient,
 	}
 }
 
 // MinorVersionsOf fetches the list of minor versions for a given stream, major version and kind.
-func (f *VersionsFetcher) MinorVersionsOf(ctx context.Context, stream, major, kind string) (*VersionsList, error) {
+func (f *Fetcher) MinorVersionsOf(ctx context.Context, stream, major, kind string) (*List, error) {
 	return f.list(ctx, stream, "major", major, kind)
 }
 
 // PatchVersionsOf fetches the list of patch versions for a given stream, minor version and kind.
-func (f *VersionsFetcher) PatchVersionsOf(ctx context.Context, stream, minor, kind string) (*VersionsList, error) {
+func (f *Fetcher) PatchVersionsOf(ctx context.Context, stream, minor, kind string) (*List, error) {
 	return f.list(ctx, stream, "minor", minor, kind)
 }
 
 // list fetches the list of versions for a given stream, granularity, base and kind.
-func (f *VersionsFetcher) list(ctx context.Context, stream, granularity, base, kind string) (*VersionsList, error) {
+func (f *Fetcher) list(ctx context.Context, stream, granularity, base, kind string) (*List, error) {
 	raw, err := getFromURL(ctx, f.httpc, stream, granularity, base, kind)
 	if err != nil {
 		return nil, fmt.Errorf("fetching versions list: %w", err)
 	}
-	list := &VersionsList{}
+	list := &List{}
 	if err := json.Unmarshal(raw, &list); err != nil {
 		return nil, fmt.Errorf("decoding versions list: %w", err)
 	}
@@ -141,7 +141,7 @@ func (f *VersionsFetcher) list(ctx context.Context, stream, granularity, base, k
 	return list, nil
 }
 
-func (f *VersionsFetcher) listMatchesRequest(list *VersionsList, stream, granularity, base, kind string) bool {
+func (f *Fetcher) listMatchesRequest(list *List, stream, granularity, base, kind string) bool {
 	return list.Stream == stream && list.Granularity == granularity && list.Base == base && list.Kind == kind
 }
 

@@ -28,7 +28,7 @@ import (
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
-	"github.com/edgelesssys/constellation/v2/internal/update"
+	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/mod/semver"
@@ -61,7 +61,7 @@ func main() {
 
 	ctx := context.Background()
 
-	updateFetcher := update.New()
+	updateFetcher := versionsapi.New()
 	versionManager, err := newVersionManager(ctx, *region, *bucket, *distributionID)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to create version uploader")
@@ -74,7 +74,7 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to get minor versions")
 		}
 		log.Infof("Version list for minor versions under %q does not exist. Creating new list.", major)
-		minorVersions = &update.VersionsList{
+		minorVersions = &versionsapi.List{
 			Stream:      stream,
 			Granularity: "major",
 			Base:        major,
@@ -98,7 +98,7 @@ func main() {
 			log.With(zap.Error(err)).Fatalf("Failed to get patch versions")
 		}
 		log.Infof("Version list for patch versions under %q does not exist. Creating new list.", minor)
-		patchVersions = &update.VersionsList{
+		patchVersions = &versionsapi.List{
 			Stream:      stream,
 			Granularity: "minor",
 			Base:        minor,
@@ -150,7 +150,7 @@ func validateVersion(version string) error {
 	return nil
 }
 
-func ensureMinorVersionExists(ctx context.Context, fetcher *update.VersionsFetcher, version string) error {
+func ensureMinorVersionExists(ctx context.Context, fetcher *versionsapi.Fetcher, version string) error {
 	major := semver.Major(version)
 	minor := semver.MajorMinor(version)
 	existingMinorVersions, err := fetcher.MinorVersionsOf(ctx, stream, major, imageKind)
@@ -163,7 +163,7 @@ func ensureMinorVersionExists(ctx context.Context, fetcher *update.VersionsFetch
 	return nil
 }
 
-func ensurePatchVersionExists(ctx context.Context, fetcher *update.VersionsFetcher, version string) error {
+func ensurePatchVersionExists(ctx context.Context, fetcher *versionsapi.Fetcher, version string) error {
 	minor := semver.MajorMinor(version)
 	patch := semver.Canonical(version)
 	existingPatchVersions, err := fetcher.PatchVersionsOf(ctx, stream, minor, imageKind)
@@ -203,29 +203,29 @@ func newVersionManager(ctx context.Context, region, bucket, distributionID strin
 	}, nil
 }
 
-func (m *versionManager) getMinorVersions(ctx context.Context, version string) (*update.VersionsList, error) {
+func (m *versionManager) getMinorVersions(ctx context.Context, version string) (*versionsapi.List, error) {
 	baseVersion := semver.Major(version)
 	return m.getVersions(ctx, baseVersion)
 }
 
-func (m *versionManager) getPatchVersions(ctx context.Context, version string) (*update.VersionsList, error) {
+func (m *versionManager) getPatchVersions(ctx context.Context, version string) (*versionsapi.List, error) {
 	baseVersion := semver.MajorMinor(version)
 	return m.getVersions(ctx, baseVersion)
 }
 
-func (m *versionManager) addMinorVersion(ctx context.Context, version string, minorVersions *update.VersionsList) error {
+func (m *versionManager) addMinorVersion(ctx context.Context, version string, minorVersions *versionsapi.List) error {
 	baseVersion := semver.Major(version)
 	minorVersion := semver.MajorMinor(version)
 	return m.addVersion(ctx, baseVersion, minorVersion, minorVersions)
 }
 
-func (m *versionManager) addPatchVersion(ctx context.Context, version string, patchVersions *update.VersionsList) error {
+func (m *versionManager) addPatchVersion(ctx context.Context, version string, patchVersions *versionsapi.List) error {
 	baseVersion := semver.MajorMinor(version)
 	patchVersion := semver.Canonical(version)
 	return m.addVersion(ctx, baseVersion, patchVersion, patchVersions)
 }
 
-func (m *versionManager) getVersions(ctx context.Context, baseVersion string) (*update.VersionsList, error) {
+func (m *versionManager) getVersions(ctx context.Context, baseVersion string) (*versionsapi.List, error) {
 	granularity, err := granularityFromVersion(baseVersion)
 	if err != nil {
 		return nil, err
@@ -242,14 +242,14 @@ func (m *versionManager) getVersions(ctx context.Context, baseVersion string) (*
 		return nil, err
 	}
 	defer out.Body.Close()
-	var versions update.VersionsList
+	var versions versionsapi.List
 	if err := json.NewDecoder(out.Body).Decode(&versions); err != nil {
 		return nil, err
 	}
 	return &versions, nil
 }
 
-func (m *versionManager) addVersion(ctx context.Context, baseVersion, version string, list *update.VersionsList) error {
+func (m *versionManager) addVersion(ctx context.Context, baseVersion, version string, list *versionsapi.List) error {
 	granularity, err := granularityFromVersion(baseVersion)
 	if err != nil {
 		return err
