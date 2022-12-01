@@ -37,6 +37,7 @@ on:
       osImage:
         description: "Full name of OS image (CSP independent image version UID)."
         type: string
+        default: "main latest"
         required: true
       isDebugImage:
         description: "Is OS image a debug image?"
@@ -56,11 +57,44 @@ env:
   ARM_TENANT_ID: ${{ secrets.AZURE_E2E_TENANT_ID }}
 
 jobs:
+  find-latest-image:
+    name: Find latest debug image
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      image: ${{ steps.find-latest-image.outputs.image }}${{ steps.check-input.outputs.image }}
+    steps:
+      - name: Check input
+        id: check-input
+        shell: bash
+        run: |
+          if [[ "${{ inputs.osImage }}" == "main latest" ]]; then
+            echo "Using latest debug image from main."
+          else
+            echo "Using image '${{ inputs.osImage }}'."
+            echo "image=${{ inputs.osImage }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Find latest image
+        id: find-latest-image
+        uses: ./.github/actions/find_latest_image
+        with:
+          imageType: debug
+
   e2e-test-manual:
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
       contents: read
+    needs: [find-latest-image]
     steps:
       - name: Check out repository
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
@@ -107,7 +141,7 @@ jobs:
           azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
           azureUserAssignedIdentity: ${{ secrets.AZURE_E2E_USER_ASSIGNED_IDENTITY }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
-          osImage: ${{ github.event.inputs.osImage }}
+          osImage: ${{ needs.find-latest-image.outputs.image }}
           isDebugImage: ${{ github.event.inputs.isDebugImage }}
 
       - name: Always terminate cluster
