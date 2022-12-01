@@ -132,13 +132,12 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
    2. Add the next release manager and an approximate release date to the milestone description
    3. Close the milestone for the release
    4. Move open issues and PRs from closed milestone to next milestone
-10. If the release is a minor version release, create an empty commit on main and tag it as the start of the next pre-release phase.
+10. If the release is a minor version release, tag the latest commit on main as the start of the next pre-release phase.
 
     ```sh
     nextMinorVer=$(echo "${ver}" | awk -F. -v OFS=. '{$2 += 1 ; print}')
     git checkout main
-    git pull
-    git commit --allow-empty -m "Start v${nextMinorVer}-pre"
+    git pull{nextMinorVer}-pre"
     git tag v${nextMinorVer}-pre
     git push
     git push origin refs/tags/v${nextMinorVer}-pre
