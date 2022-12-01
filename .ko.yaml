@@ -5,52 +5,6 @@ baseImageOverrides:
   github.com/edgelesssys/constellation/v2/bootstrapper/cmd/bootstrapper: leongross/alpine-libcryptsetup:base
 
 builds:
-- id: disk-mapper
-  dir: .
-  main: ./disk-mapper/cmd/
-  env:
-  - CGO_ENABLED=1
-  flags:
-  - -trimpath
-  - -buildvcs=false
-  ldflags:
-  - -s -w
-
-- id: bootstrapper
-  dir: .
-  main: ./bootstrapper/cmd/bootstrapper/
-  env:
-  - CGO_ENABLED=1
-  flags:
-  - -trimpath
-  - -buildvcs=false
-  ldflags:
-  - -s -w
-
-- id: debugd
-  dir: .
-  main: ./debugd/cmd/debugd/
-  env:
-  - CGO_ENABLED=0
-  flags:
-  - -trimpath
-  - -buildvcs=false
-  ldflags:
-  - -s -w
-  - -extldlfags "-static"
-
-- id: cdbg
-  dir: .
-  main: ./debugd/cmd/cdbg/
-  env:
-  - CGO_ENABLED=0
-  flags:
-  - -trimpath
-  - -buildvcs=false
-  ldflags:
-  - -s -w
-  - -extldflags "-static"
-
 - id: kms
   dir: .
   main: ./kms/cmd
@@ -72,6 +26,23 @@ builds:
   flags:
   - -trimpath
   - -buildvcs=false
+  ldflags:
+  - -s -w -buildid=''
+  - -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}
+  - -extldflags "-static"
+
+# currently ignoring USER 65532:65532 from Dockerfile operators/constellation/Dockerfile
+- id: constellation-node-operator
+  dir: .
+  main: ./operators/constellation-node-operator/
+  env:
+  - CGO_ENABLED=0
+  - GOOS=linux
+  - GOARCH=amd64
+  flags:
+  - -trimpath
+  - -buildvcs=false
+  - -a
   ldflags:
   - -s -w -buildid=''
   - -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}
