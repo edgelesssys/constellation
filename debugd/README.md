@@ -82,6 +82,8 @@ For QEMU, the credentials for Opensearch must be parsed via the info flag as wel
 
 Remember to use single quotes for the password.
 
+You will also need to increase the memory size of QEMU to 4GB.
+
 ### debugd images
 
 For a full list of image naming conventions and how to retreive them check [image version documentation](/.github/docs/README.md#image-versions)
