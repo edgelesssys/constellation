@@ -86,7 +86,7 @@ require (
 	github.com/talos-systems/talos/pkg/machinery v1.2.7
 	go.uber.org/goleak v1.2.0
 	go.uber.org/multierr v1.8.0
-	go.uber.org/zap v1.23.0
+	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.3.0
 	golang.org/x/mod v0.7.0
 	golang.org/x/sys v0.2.0
