@@ -153,9 +153,6 @@ func newDebugdClient(ctx context.Context, ip string) (pb.DebugdClient, io.Closer
 }
 
 func setInfo(ctx context.Context, client pb.DebugdClient, infos map[string]string) error {
-	ctx, cancel := context.WithTimeout(ctx, debugd.GRPCTimeout)
-	defer cancel()
-
 	log.Printf("Setting info with length %d", len(infos))
 
 	var infosPb []*pb.Info
@@ -174,9 +171,6 @@ func setInfo(ctx context.Context, client pb.DebugdClient, infos map[string]strin
 }
 
 func uploadBootstrapper(ctx context.Context, client pb.DebugdClient, in deployOnEndpointInput) error {
-	ctx, cancel := context.WithTimeout(ctx, debugd.GRPCTimeout)
-	defer cancel()
-
 	log.Println("Uploading bootstrapper")
 
 	stream, err := client.UploadBootstrapper(ctx, grpc.WaitForReady(true))
