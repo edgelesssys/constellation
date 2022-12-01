@@ -201,16 +201,6 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
       Learn more about [availability zones in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-availability-zones).
 
-    * **image**: The ID of the amazon machine image (AMI) the Constellation nodes will use:
-
-      Constellation OS images are available with the following IDs:
-
-      | AMI | Region |
-      | - | - |
-      | `ami-0e27ebcefc38f648b` | `eu-central-1` |
-      | `ami-098cd37f66523b7c3` | `us-east-2` |
-      | `ami-04a87d302e2509aad` | `ap-south-1` |
-
     * **iamProfileControlPlane**: The name of an IAM instance profile attached to all control-plane nodes.
 
       Use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `control_plane_instance_profile`.
