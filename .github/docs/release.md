@@ -139,7 +139,6 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
     git checkout main
     git pull{nextMinorVer}-pre"
     git tag v${nextMinorVer}-pre
-    git push
     git push origin refs/tags/v${nextMinorVer}-pre
     ```
 
