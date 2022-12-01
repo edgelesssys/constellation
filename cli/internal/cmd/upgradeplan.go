@@ -22,7 +22,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
-	"github.com/edgelesssys/constellation/v2/internal/update"
+	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -55,7 +55,7 @@ func runUpgradePlan(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	patchLister := update.New()
+	patchLister := versionsapi.New()
 	rekor, err := sigstore.NewRekor()
 	if err != nil {
 		return fmt.Errorf("constructing Rekor client: %w", err)
@@ -335,5 +335,5 @@ type upgradePlanner interface {
 }
 
 type patchLister interface {
-	PatchVersionsOf(ctx context.Context, stream, minor, kind string) (*update.VersionsList, error)
+	PatchVersionsOf(ctx context.Context, stream, minor, kind string) (*versionsapi.List, error)
 }

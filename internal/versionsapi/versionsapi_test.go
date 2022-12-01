@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package update
+package versionsapi
 
 import (
 	"bytes"
@@ -25,8 +25,8 @@ func TestMain(m *testing.M) {
 
 func TestValidate(t *testing.T) {
 	testCases := map[string]struct {
-		listFunc     func() *VersionsList
-		overrideFunc func(list *VersionsList)
+		listFunc     func() *List
+		overrideFunc func(list *List)
 		wantErr      bool
 	}{
 		"valid major list": {
@@ -37,56 +37,56 @@ func TestValidate(t *testing.T) {
 		},
 		"invalid stream": {
 			listFunc: majorList,
-			overrideFunc: func(list *VersionsList) {
+			overrideFunc: func(list *List) {
 				list.Stream = "invalid"
 			},
 			wantErr: true,
 		},
 		"invalid granularity": {
 			listFunc: majorList,
-			overrideFunc: func(list *VersionsList) {
+			overrideFunc: func(list *List) {
 				list.Granularity = "invalid"
 			},
 			wantErr: true,
 		},
 		"invalid kind": {
 			listFunc: majorList,
-			overrideFunc: func(list *VersionsList) {
+			overrideFunc: func(list *List) {
 				list.Kind = "invalid"
 			},
 			wantErr: true,
 		},
 		"base ver is not semantic version": {
 			listFunc: majorList,
-			overrideFunc: func(list *VersionsList) {
+			overrideFunc: func(list *List) {
 				list.Base = "invalid"
 			},
 			wantErr: true,
 		},
 		"base ver does not reflect major granularity": {
 			listFunc: majorList,
-			overrideFunc: func(list *VersionsList) {
+			overrideFunc: func(list *List) {
 				list.Base = "v1.0"
 			},
 			wantErr: true,
 		},
 		"base ver does not reflect minor granularity": {
 			listFunc: minorList,
-			overrideFunc: func(list *VersionsList) {
+			overrideFunc: func(list *List) {
 				list.Base = "v1"
 			},
 			wantErr: true,
 		},
 		"version in list is not semantic version": {
 			listFunc: majorList,
-			overrideFunc: func(list *VersionsList) {
+			overrideFunc: func(list *List) {
 				list.Versions[0] = "invalid"
 			},
 			wantErr: true,
 		},
 		"version in list is not sub version of base": {
 			listFunc: majorList,
-			overrideFunc: func(list *VersionsList) {
+			overrideFunc: func(list *List) {
 				list.Versions[0] = "v2.1"
 			},
 			wantErr: true,
@@ -170,7 +170,7 @@ func TestList(t *testing.T) {
 	testCases := map[string]struct {
 		stream, granularity, base, kind string
 		overrideFile                    string
-		wantList                        VersionsList
+		wantList                        List
 		wantErr                         bool
 	}{
 		"major list fetched remotely": {
@@ -225,7 +225,7 @@ func TestList(t *testing.T) {
 				kind = tc.kind
 			}
 
-			fetcher := &VersionsFetcher{
+			fetcher := &Fetcher{
 				httpc: client,
 			}
 			list, err := fetcher.list(context.Background(), stream, granularity, base, kind)
@@ -254,8 +254,8 @@ func newTestClient(fn roundTripFunc) *http.Client {
 	}
 }
 
-func majorList() *VersionsList {
-	return &VersionsList{
+func majorList() *List {
+	return &List{
 		Stream:      "stable",
 		Granularity: "major",
 		Base:        "v1",
@@ -266,8 +266,8 @@ func majorList() *VersionsList {
 	}
 }
 
-func minorList() *VersionsList {
-	return &VersionsList{
+func minorList() *List {
+	return &List{
 		Stream:      "stable",
 		Granularity: "minor",
 		Base:        "v1.1",
