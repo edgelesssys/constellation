@@ -29,7 +29,7 @@ import (
 // "v1.0" and a list of patch versions "v1.0.0", "v1.0.1", "v1.0.2" etc.
 type List struct {
 	// Stream is the update stream of the list.
-	// Currently, only "stable" is supported.
+	// Currently, only "stable" and "debug" are supported.
 	Stream string `json:"stream"`
 	// Granularity is the granularity of the base version of this list.
 	// It can be either "major" or "minor".
@@ -52,7 +52,7 @@ type List struct {
 // - All versions in the list are valid semantic versions that are finer-grained than the base version.
 func (l *List) Validate() error {
 	var issues []string
-	if l.Stream != "stable" {
+	if !IsValidStream(l.Stream) {
 		issues = append(issues, fmt.Sprintf("stream %q is not supported", l.Stream))
 	}
 	if l.Granularity != "major" && l.Granularity != "minor" {
@@ -176,6 +176,19 @@ func getFromURL(ctx context.Context, client httpc, stream, granularity, base, ki
 		return nil, err
 	}
 	return content, nil
+}
+
+// IsValidStream returns true if the given stream is a valid stream.
+func IsValidStream(stream string) bool {
+	validStreams := []string{"stable", "debug"}
+
+	for _, validStream := range validStreams {
+		if stream == validStream {
+			return true
+		}
+	}
+
+	return false
 }
 
 type httpc interface {
