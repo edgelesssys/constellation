@@ -67,7 +67,7 @@ jobs:
     outputs:
       imageType: ${{ steps.image-type.outputs.imageType }}
       pkiSet: ${{ steps.pki-set.outputs.pkiSet }}
-      imageVersionUid: ${{ steps.image-version-uid.outputs.imageVersionUid }}
+      imageVersionUid: ${{ steps.version.outputs.pseudoVersion }}
 
     steps:
       - name: Checkout
@@ -102,18 +102,6 @@ jobs:
             echo "pkiSet=pki_prod" >> "$GITHUB_OUTPUT"
           else
             echo "pkiSet=pki_testing" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Determine image version uid
-        id: image-version-uid
-        shell: bash
-        run: |
-          if [ "${{ steps.image-type.outputs.imageType }}" = "release" ]; then
-            echo "imageVersionUid=${{ github.event.inputs.imageVersion }}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ steps.image-type.outputs.imageType }}" = "debug" ]; then
-            echo "imageVersionUid=debug-${{ steps.version.outputs.pseudoVersion }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "imageVersionUid=${{ steps.version.outputs.branchName }}-${{ steps.version.outputs.pseudoVersion }}" >> "$GITHUB_OUTPUT"
           fi
 
   make-os-image:
