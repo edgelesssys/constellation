@@ -44,7 +44,7 @@ func (g *Git) Revision() (string, time.Time, error) {
 	if err != nil {
 		return "", time.Time{}, err
 	}
-	return commitRef.Hash().String()[:12], commit.Author.When, nil
+	return commitRef.Hash().String()[:12], commit.Committer.When, nil
 }
 
 // FirstParentWithVersionTag returns the first parent of the HEAD commit (or HEAD itself) that has a version tag.
