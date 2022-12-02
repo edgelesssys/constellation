@@ -7,7 +7,7 @@ on:
       - main
       - "release/**"
     paths:
-      - "hackqemu-metadata-api/**"
+      - "hack/qemu-metadata-api/**"
       - "internal/**"
 
 jobs:

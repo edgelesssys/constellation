@@ -8,8 +8,7 @@ on:
       - "release/**"
     paths:
       - "kms/**"
-      - "internal/constants/**"
-      - "internal/file/**"
+      - "internal/**"
 
 jobs:
   build-kms-server:
