@@ -52,8 +52,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.3
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.19
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.17.0
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.73.0
-	github.com/aws/aws-sdk-go-v2/service/kms v1.18.18
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.74.0
+	github.com/aws/aws-sdk-go-v2/service/kms v1.19.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.29.4
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.16.8
 	github.com/aws/smithy-go v1.13.4

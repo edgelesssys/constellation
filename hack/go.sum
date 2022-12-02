@@ -219,8 +219,8 @@ github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.16 h1:2EXB7dtGwRYIN3XQ9qwIW504DVb
 github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.16/go.mod h1:XH+3h395e3WVdd6T2Z3mPxuI+x/HVtdqVOREkTiyubs=
 github.com/aws/aws-sdk-go-v2/service/cloudfront v1.21.0 h1:3bV+nNw0PPxkHvdRWUogUMtikIgIo2bVj48MvxQvoHA=
 github.com/aws/aws-sdk-go-v2/service/cloudfront v1.21.0/go.mod h1:fV9PzXIIT2xUvf5KXEGToDYxEXcqDyO33SRfv2rAs/8=
-github.com/aws/aws-sdk-go-v2/service/ec2 v1.73.0 h1:3AXOhjvPxEMWw5RItV47NRLuzqwlLly5GbS5aB3sXh4=
-github.com/aws/aws-sdk-go-v2/service/ec2 v1.73.0/go.mod h1:zul71QqzR4D1a90/5FloZiAnZ1CtuIjVH7R9MP997+A=
+github.com/aws/aws-sdk-go-v2/service/ec2 v1.74.0 h1:5MCRd9q1yrGoRdYZDxK6y048VNmQ6gKLdCFr+TZsvTY=
+github.com/aws/aws-sdk-go-v2/service/ec2 v1.74.0/go.mod h1:zul71QqzR4D1a90/5FloZiAnZ1CtuIjVH7R9MP997+A=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.10 h1:dpiPHgmFstgkLG07KaYAewvuptq5kvo52xn7tVSrtrQ=
 github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.10/go.mod h1:9cBNUHI2aW4ho0A5T87O294iPDuuUOSIEDjnd1Lq/z0=
 github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.20 h1:KSvtm1+fPXE0swe9GPjc6msyrdTT0LB/BP8eLugL1FI=
@@ -229,8 +229,8 @@ github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.19 h1:GE25AWCdN
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.19/go.mod h1:02CP6iuYP+IVnBX5HULVdSAku/85eHB2Y9EsFhrkEwU=
 github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.19 h1:piDBAaWkaxkkVV3xJJbTehXCZRXYs49kvpi/LG6LR2o=
 github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.19/go.mod h1:BmQWRVkLTmyNzYPFAZgon53qKLWBNSvonugD1MrSWUs=
-github.com/aws/aws-sdk-go-v2/service/kms v1.18.18 h1:VEj0VdYbmx12y3GKWSXm8hB/mPuSaYHnECRhokHy4Wo=
-github.com/aws/aws-sdk-go-v2/service/kms v1.18.18/go.mod h1:kZodDPTQjSH/qM6/OvyTfM5mms5JHB/EKYp5dhn/vI4=
+github.com/aws/aws-sdk-go-v2/service/kms v1.19.0 h1:ycl4Z01HQyprcfOFMAVwWTNaUm29qHRPZyJunDZZVXg=
+github.com/aws/aws-sdk-go-v2/service/kms v1.19.0/go.mod h1:kZodDPTQjSH/qM6/OvyTfM5mms5JHB/EKYp5dhn/vI4=
 github.com/aws/aws-sdk-go-v2/service/s3 v1.29.4 h1:QgmmWifaYZZcpaw3y1+ccRlgH6jAvLm4K/MBGUc7cNM=
 github.com/aws/aws-sdk-go-v2/service/s3 v1.29.4/go.mod h1:/NHbqPRiwxSPVOB2Xr+StDEH+GWV/64WwnUjv4KYzV0=
 github.com/aws/aws-sdk-go-v2/service/sso v1.11.25 h1:GFZitO48N/7EsFDt8fMa5iYdmWqkUDDB3Eje6z3kbG0=
