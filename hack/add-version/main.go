@@ -16,7 +16,6 @@ import (
 	"flag"
 	"fmt"
 	"path"
-	"sort"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -37,7 +36,6 @@ import (
 var errVersionListMissing = errors.New("version list does not exist")
 
 const (
-	stream                       = "stable"
 	imageKind                    = "image"
 	defaultRegion                = "eu-central-1"
 	defaultBucket                = "cdn-constellation-backend"
@@ -46,98 +44,175 @@ const (
 )
 
 func main() {
-	version := flag.String("version", "", "Version to add (format: \"v1.2.3\")")
-	region := flag.String("region", defaultRegion, "AWS region")
-	bucket := flag.String("bucket", defaultBucket, "S3 bucket")
-	distributionID := flag.String("distribution-id", defaultDistributionID, "cloudfront distribution id")
-	flag.Parse()
-
 	log := logger.New(logger.JSONLog, zapcore.InfoLevel)
-	if err := validateVersion(*version); err != nil {
-		log.With(zap.Error(err)).Fatalf("Invalid version")
-	}
-	major := semver.Major(*version)
-	minor := semver.MajorMinor(*version)
-
 	ctx := context.Background()
 
+	flags := flags{
+		version:        flag.String("version", "", "Version to add (format: \"v1.2.3\")"),
+		stream:         flag.String("stream", "", "Stream to add the version to"),
+		region:         flag.String("region", defaultRegion, "AWS region"),
+		bucket:         flag.String("bucket", defaultBucket, "S3 bucket"),
+		distributionID: flag.String("distribution-id", defaultDistributionID, "cloudfront distribution id"),
+	}
+	flag.Parse()
+	if err := flags.validate(); err != nil {
+		log.With(zap.Error(err)).Fatalf("Invalid flags")
+	}
+
 	updateFetcher := versionsapi.New()
-	versionManager, err := newVersionManager(ctx, *region, *bucket, *distributionID)
+	versionManager, err := newVersionManager(ctx, *flags.region, *flags.bucket, *flags.distributionID)
 	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to create version uploader")
 	}
 
-	// ensure minor version exists in list for base major version
-	minorVersions, err := versionManager.getMinorVersions(ctx, *version)
-	if err != nil {
-		if !errors.Is(err, errVersionListMissing) {
-			log.With(zap.Error(err)).Fatalf("Failed to get minor versions")
-		}
-		log.Infof("Version list for minor versions under %q does not exist. Creating new list.", major)
-		minorVersions = &versionsapi.List{
-			Stream:      stream,
-			Granularity: "major",
-			Base:        major,
-			Kind:        imageKind,
-			Versions:    []string{},
-		}
-	}
-	if minorVersions.Contains(minor) {
-		log.Infof("Version %q already exists in list %v.", minor, minorVersions.Versions)
-	} else {
-		if err := versionManager.addMinorVersion(ctx, *version, minorVersions); err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to add minor version")
-		}
-		log.Infof("Added %q to list.", minor)
+	ver := version{
+		versionStr: *flags.version,
+		stream:     *flags.stream,
 	}
 
-	// ensure patch version exists in list for base minor version
-	patchVersions, err := versionManager.getPatchVersions(ctx, *version)
-	if err != nil {
-		if !errors.Is(err, errVersionListMissing) {
-			log.With(zap.Error(err)).Fatalf("Failed to get patch versions")
-		}
-		log.Infof("Version list for patch versions under %q does not exist. Creating new list.", minor)
-		patchVersions = &versionsapi.List{
-			Stream:      stream,
-			Granularity: "minor",
-			Base:        minor,
-			Kind:        imageKind,
-			Versions:    []string{},
-		}
-	}
-	if patchVersions.Contains(*version) {
-		log.Infof("Version %q already exists in list %v.", *version, patchVersions.Versions)
-	} else {
-		if err := versionManager.addPatchVersion(ctx, *version, patchVersions); err != nil {
-			log.With(zap.Error(err)).Fatalf("Failed to add patch version")
-		}
-		log.Infof("Added %q to list.", *version)
+	if err := ensureMinorVersion(ctx, versionManager, ver, log); err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to ensure minor version")
 	}
 
-	log.Infof("Successfully added version %q at the following URLs:", *version)
-	log.Infof("major to minor url: %s", versionURL("major", major))
-	log.Infof("minor to patch url: %s", versionURL("minor", minor))
+	if err := ensurePatchVersion(ctx, versionManager, ver, log); err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to ensure patch version")
+	}
+
+	log.Infof("Major to minor url: %s", ver.URL(granularityMajor))
+	log.Infof("Minor to patch url: %s", ver.URL(granularityMinor))
+
+	if !versionManager.dirty {
+		log.Infof("No changes made, everything up to date.")
+		return
+	}
+	log.Infof("Successfully added version %q", *flags.version)
 
 	log.Infof("Waiting for cache invalidation.")
-	if err := versionManager.invalidateCaches(ctx, *version); err != nil {
+	if err := versionManager.invalidateCaches(ctx, ver); err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to invalidate caches")
 	}
 
-	sawAddedVersions := true
-	if err := ensureMinorVersionExists(ctx, updateFetcher, *version); err != nil {
-		sawAddedVersions = false
-		log.Warnf("Failed to ensure minor version exists: %v. This may be resolved by waiting.", err)
+	waitForCacheUpdate(ctx, updateFetcher, ver, log)
+}
+
+func ensureMinorVersion(ctx context.Context, versionManager *versionManager, ver version, log *logger.Logger) error {
+	minorVerList, err := versionManager.getVersionList(ctx, ver, granularityMajor)
+	log.Debugf("Minor version list: %v", minorVerList)
+	if errors.Is(err, errVersionListMissing) {
+		log.Infof("Version list for minor versions under %q does not exist. Creating new list.", ver.Major())
+		minorVerList = &versionsapi.List{
+			Stream:      ver.Stream(),
+			Granularity: "major",
+			Base:        ver.Major(),
+			Kind:        imageKind,
+			Versions:    []string{},
+		}
+	} else if err != nil {
+		return fmt.Errorf("failed to list minor versions: %w", err)
 	}
 
-	if err := ensurePatchVersionExists(ctx, updateFetcher, *version); err != nil {
-		sawAddedVersions = false
-		log.Warnf("Failed to ensure patch version exists: %v. This may be resolved by waiting.", err)
+	if minorVerList.Contains(ver.MajorMinor()) {
+		log.Infof("Version %q already exists in list %v.", ver.MajorMinor(), minorVerList.Versions)
+		return nil
 	}
 
-	if sawAddedVersions {
-		log.Infof("Versions are available via API.")
+	minorVerList.Versions = append(minorVerList.Versions, ver.MajorMinor())
+	log.Debugf("New minor version list: %v", minorVerList)
+
+	if err := versionManager.updateVersionList(ctx, minorVerList); err != nil {
+		return fmt.Errorf("failed to add minor version: %w", err)
 	}
+
+	log.Infof("Added %q to list.", ver.MajorMinor())
+	return nil
+}
+
+func ensurePatchVersion(ctx context.Context, versionManager *versionManager, ver version, log *logger.Logger) error {
+	pathVerList, err := versionManager.getVersionList(ctx, ver, granularityMinor)
+	if errors.Is(err, errVersionListMissing) {
+		log.Infof("Version list for patch versions under %q does not exist. Creating new list.", ver.MajorMinor())
+		pathVerList = &versionsapi.List{
+			Stream:      ver.Stream(),
+			Granularity: "minor",
+			Base:        ver.MajorMinor(),
+			Kind:        imageKind,
+			Versions:    []string{},
+		}
+	} else if err != nil {
+		return fmt.Errorf("failed to get patch versions: %w", err)
+	}
+
+	if pathVerList.Contains(ver.MajorMinorPatch()) {
+		log.Infof("Version %q already exists in list %v.", ver.MajorMinorPatch(), pathVerList.Versions)
+		return nil
+	}
+
+	pathVerList.Versions = append(pathVerList.Versions, ver.MajorMinorPatch())
+
+	if err := versionManager.updateVersionList(ctx, pathVerList); err != nil {
+		log.With(zap.Error(err)).Fatalf("Failed to add patch version")
+	}
+
+	log.Infof("Added %q to list.", ver.MajorMinorPatch())
+	return nil
+}
+
+type version struct {
+	versionStr string
+	stream     string
+}
+
+func (v *version) MajorMinorPatch() string {
+	return semver.Canonical(v.versionStr)
+}
+
+func (v *version) Major() string {
+	return semver.Major(v.versionStr)
+}
+
+func (v *version) MajorMinor() string {
+	return semver.MajorMinor(v.versionStr)
+}
+
+func (v *version) WithGranularity(gran granularity) string {
+	switch gran {
+	case granularityMajor:
+		return v.Major()
+	case granularityMinor:
+		return v.MajorMinor()
+	default:
+		return ""
+	}
+}
+
+func (v *version) URL(gran granularity) string {
+	return constants.CDNRepositoryURL + "/" + v.JSONPath(gran)
+}
+
+func (v *version) JSONPath(gran granularity) string {
+	return path.Join(constants.CDNVersionsPath, "stream", v.stream, gran.String(), v.WithGranularity(gran), imageKind+".json")
+}
+
+func (v *version) Stream() string {
+	return v.stream
+}
+
+type flags struct {
+	version        *string
+	stream         *string
+	region         *string
+	bucket         *string
+	distributionID *string
+}
+
+func (f *flags) validate() error {
+	if err := validateVersion(*f.version); err != nil {
+		return err
+	}
+	if *f.stream == "" {
+		return errors.New("stream must be set")
+	}
+	return nil
 }
 
 func validateVersion(version string) error {
@@ -150,27 +225,23 @@ func validateVersion(version string) error {
 	return nil
 }
 
-func ensureMinorVersionExists(ctx context.Context, fetcher *versionsapi.Fetcher, version string) error {
-	major := semver.Major(version)
-	minor := semver.MajorMinor(version)
-	existingMinorVersions, err := fetcher.MinorVersionsOf(ctx, stream, major, imageKind)
+func ensureMinorVersionExists(ctx context.Context, fetcher *versionsapi.Fetcher, ver version) error {
+	existingMinorVersions, err := fetcher.MinorVersionsOf(ctx, ver.Stream(), ver.Major(), imageKind)
 	if err != nil {
 		return err
 	}
-	if !existingMinorVersions.Contains(minor) {
+	if !existingMinorVersions.Contains(ver.MajorMinor()) {
 		return errors.New("minor version does not exist")
 	}
 	return nil
 }
 
-func ensurePatchVersionExists(ctx context.Context, fetcher *versionsapi.Fetcher, version string) error {
-	minor := semver.MajorMinor(version)
-	patch := semver.Canonical(version)
-	existingPatchVersions, err := fetcher.PatchVersionsOf(ctx, stream, minor, imageKind)
+func ensurePatchVersionExists(ctx context.Context, fetcher *versionsapi.Fetcher, ver version) error {
+	existingPatchVersions, err := fetcher.PatchVersionsOf(ctx, ver.Stream(), ver.MajorMinor(), imageKind)
 	if err != nil {
 		return err
 	}
-	if !existingPatchVersions.Contains(patch) {
+	if !existingPatchVersions.Contains(ver.MajorMinorPatch()) {
 		return errors.New("patch version does not exist")
 	}
 	return nil
@@ -183,6 +254,7 @@ type versionManager struct {
 	uploader       *s3manager.Uploader
 	bucket         string
 	distributionID string
+	dirty          bool // manager gets dirty on write
 }
 
 func newVersionManager(ctx context.Context, region, bucket, distributionID string) (*versionManager, error) {
@@ -203,120 +275,117 @@ func newVersionManager(ctx context.Context, region, bucket, distributionID strin
 	}, nil
 }
 
-func (m *versionManager) getMinorVersions(ctx context.Context, version string) (*versionsapi.List, error) {
-	baseVersion := semver.Major(version)
-	return m.getVersions(ctx, baseVersion)
-}
-
-func (m *versionManager) getPatchVersions(ctx context.Context, version string) (*versionsapi.List, error) {
-	baseVersion := semver.MajorMinor(version)
-	return m.getVersions(ctx, baseVersion)
-}
-
-func (m *versionManager) addMinorVersion(ctx context.Context, version string, minorVersions *versionsapi.List) error {
-	baseVersion := semver.Major(version)
-	minorVersion := semver.MajorMinor(version)
-	return m.addVersion(ctx, baseVersion, minorVersion, minorVersions)
-}
-
-func (m *versionManager) addPatchVersion(ctx context.Context, version string, patchVersions *versionsapi.List) error {
-	baseVersion := semver.MajorMinor(version)
-	patchVersion := semver.Canonical(version)
-	return m.addVersion(ctx, baseVersion, patchVersion, patchVersions)
-}
-
-func (m *versionManager) getVersions(ctx context.Context, baseVersion string) (*versionsapi.List, error) {
-	granularity, err := granularityFromVersion(baseVersion)
-	if err != nil {
-		return nil, err
-	}
-	out, err := m.s3c.GetObject(ctx, &s3.GetObjectInput{
+func (m *versionManager) getVersionList(ctx context.Context, ver version, gran granularity) (*versionsapi.List, error) {
+	in := &s3.GetObjectInput{
 		Bucket: aws.String(m.bucket),
-		Key:    aws.String(versionJSONPath(granularity, baseVersion)),
-	})
-	if err != nil {
-		var nosuchkey *s3types.NoSuchKey
-		if errors.As(err, &nosuchkey) {
-			return nil, errVersionListMissing
-		}
+		Key:    aws.String(ver.JSONPath(gran)),
+	}
+	out, err := m.s3c.GetObject(ctx, in)
+	var noSuchkey *s3types.NoSuchKey
+	if errors.As(err, &noSuchkey) {
+		return nil, errVersionListMissing
+	} else if err != nil {
 		return nil, err
 	}
 	defer out.Body.Close()
-	var versions versionsapi.List
-	if err := json.NewDecoder(out.Body).Decode(&versions); err != nil {
+
+	var list versionsapi.List
+	if err := json.NewDecoder(out.Body).Decode(&list); err != nil {
 		return nil, err
 	}
-	return &versions, nil
+
+	return &list, nil
 }
 
-func (m *versionManager) addVersion(ctx context.Context, baseVersion, version string, list *versionsapi.List) error {
-	granularity, err := granularityFromVersion(baseVersion)
-	if err != nil {
-		return err
-	}
-	list.Versions = append(list.Versions, version)
-	sort.Strings(list.Versions)
+func (m *versionManager) updateVersionList(ctx context.Context, list *versionsapi.List) error {
+	semver.Sort(list.Versions)
 	if err := list.Validate(); err != nil {
 		return err
 	}
+
 	rawList, err := json.Marshal(list)
 	if err != nil {
 		return err
 	}
-	_, err = m.uploader.Upload(ctx, &s3.PutObjectInput{
+
+	m.dirty = true
+
+	in := &s3.PutObjectInput{
 		Bucket: aws.String(m.bucket),
-		Key:    aws.String(versionJSONPath(granularity, baseVersion)),
+		Key:    aws.String(listJSONPath(list)),
 		Body:   bytes.NewBuffer(rawList),
-	})
+	}
+	_, err = m.uploader.Upload(ctx, in)
+
 	return err
 }
 
-func (m *versionManager) invalidateCaches(ctx context.Context, version string) error {
-	major := semver.Major(version)
-	minor := semver.MajorMinor(version)
-	invalidation, err := m.cloudfrontc.CreateInvalidation(ctx, &cloudfront.CreateInvalidationInput{
+func (m *versionManager) invalidateCaches(ctx context.Context, ver version) error {
+	invalidIn := &cloudfront.CreateInvalidationInput{
 		DistributionId: aws.String(m.distributionID),
 		InvalidationBatch: &cftypes.InvalidationBatch{
 			CallerReference: aws.String(fmt.Sprintf("%d", time.Now().Unix())),
 			Paths: &cftypes.Paths{
 				Quantity: aws.Int32(2),
 				Items: []string{
-					"/" + versionJSONPath("major", major),
-					"/" + versionJSONPath("minor", minor),
+					"/" + ver.URL(granularityMajor),
+					"/" + ver.URL(granularityMinor),
 				},
 			},
 		},
-	})
+	}
+	invalidation, err := m.cloudfrontc.CreateInvalidation(ctx, invalidIn)
 	if err != nil {
 		return err
 	}
+
 	waiter := cloudfront.NewInvalidationCompletedWaiter(m.cloudfrontc)
-	if err := waiter.Wait(ctx, &cloudfront.GetInvalidationInput{
+	waitIn := &cloudfront.GetInvalidationInput{
 		DistributionId: aws.String(m.distributionID),
 		Id:             invalidation.Invalidation.Id,
-	}, maxCacheInvalidationWaitTime); err != nil {
+	}
+	if err := waiter.Wait(ctx, waitIn, maxCacheInvalidationWaitTime); err != nil {
 		return err
 	}
+
 	return nil
 }
 
-func granularityFromVersion(version string) (string, error) {
-	switch {
-	case semver.Major(version) == version:
-		return "major", nil
-	case semver.MajorMinor(version) == version:
-		return "minor", nil
-	case semver.Canonical(version) == version:
-		return "patch", nil
-	default:
-		return "", fmt.Errorf("invalid version %q", version)
+func waitForCacheUpdate(ctx context.Context, updateFetcher *versionsapi.Fetcher, ver version, log *logger.Logger) {
+	sawAddedVersions := true
+	if err := ensureMinorVersionExists(ctx, updateFetcher, ver); err != nil {
+		sawAddedVersions = false
+		log.Warnf("Failed to ensure minor version exists: %v. This may be resolved by waiting.", err)
+	}
+
+	if err := ensurePatchVersionExists(ctx, updateFetcher, ver); err != nil {
+		sawAddedVersions = false
+		log.Warnf("Failed to ensure patch version exists: %v. This may be resolved by waiting.", err)
+	}
+
+	if sawAddedVersions {
+		log.Infof("Versions are available via API.")
 	}
 }
 
-func versionJSONPath(granularity, base string) string {
-	return path.Join(constants.CDNVersionsPath, "stream", stream, granularity, base, imageKind+".json")
+func listJSONPath(list *versionsapi.List) string {
+	return path.Join(constants.CDNVersionsPath, "stream", list.Stream, list.Granularity, list.Base, imageKind+".json")
 }
 
-func versionURL(granularity, base string) string {
-	return constants.CDNRepositoryURL + "/" + versionJSONPath(granularity, base)
+type granularity int
+
+const (
+	granularityMajor granularity = iota
+	granularityMinor
+)
+
+func (g granularity) String() string {
+	switch g {
+	case granularityMajor:
+		return "major"
+	case granularityMinor:
+		return "minor"
+	default:
+		return "unknown"
+	}
 }
