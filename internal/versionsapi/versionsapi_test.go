@@ -277,3 +277,22 @@ func minorList() *List {
 		},
 	}
 }
+
+func TestIsValidStream(t *testing.T) {
+	testCases := map[string]bool{
+		"stable":  true,
+		"debug":   true,
+		"beta":    false,
+		"alpha":   false,
+		"unknown": false,
+		"fast":    false,
+	}
+
+	for name, want := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			assert.Equal(want, IsValidStream(name))
+		})
+	}
+}
