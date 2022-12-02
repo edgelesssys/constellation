@@ -8,8 +8,7 @@ on:
       - "release/**"
     paths:
       - "verify/**"
-      - "internal/attestation/**"
-      - "internal/constants/**"
+      - "internal/**"
 
 jobs:
   build-verification-service:

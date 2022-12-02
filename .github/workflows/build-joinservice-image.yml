@@ -8,12 +8,7 @@ on:
       - "release/**"
     paths:
       - "joinservice/**"
-      - "internal/atls/**"
-      - "internal/attestation/**"
-      - "internal/constants/**"
-      - "internal/file/**"
-      - "internal/grpc/**"
-      - "internal/oid/**"
+      - "internal/**"
 
 jobs:
   build-join-service:
