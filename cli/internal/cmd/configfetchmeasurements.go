@@ -45,24 +45,37 @@ type fetchMeasurementsFlags struct {
 	configPath      string
 }
 
+type configFetchMeasurementsCmd struct {
+	log debugLog
+}
+
 func runConfigFetchMeasurements(cmd *cobra.Command, args []string) error {
+	log, err := newCLILogger(cmd)
+	if err != nil {
+		return fmt.Errorf("creating logger: %w", err)
+	}
+	defer log.Sync()
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	rekor, err := sigstore.NewRekor()
 	if err != nil {
 		return fmt.Errorf("constructing Rekor client: %w", err)
 	}
-	return configFetchMeasurements(cmd, rekor, []byte(constants.CosignPublicKey), fileHandler, http.DefaultClient)
+	cfm := &configFetchMeasurementsCmd{log: log}
+
+	return cfm.configFetchMeasurements(cmd, rekor, []byte(constants.CosignPublicKey), fileHandler, http.DefaultClient)
 }
 
-func configFetchMeasurements(
+func (cfm *configFetchMeasurementsCmd) configFetchMeasurements(
 	cmd *cobra.Command, verifier rekorVerifier, cosignPublicKey []byte,
 	fileHandler file.Handler, client *http.Client,
 ) error {
-	flags, err := parseFetchMeasurementsFlags(cmd)
+	flags, err := cfm.parseFetchMeasurementsFlags(cmd)
+	cfm.log.Debugf("Using flags %v", flags)
 	if err != nil {
 		return err
 	}
 
+	cfm.log.Debugf("Loading config file from %s", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
@@ -72,13 +85,16 @@ func configFetchMeasurements(
 		cmd.PrintErrln("Configured image doesn't look like a released production image. Double check image before deploying to production.")
 	}
 
+	cfm.log.Debugf("Creating context")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
+	cfm.log.Debugf("Updating URLs")
 	if err := flags.updateURLs(conf); err != nil {
 		return err
 	}
 
+	cfm.log.Debugf("Fetching and verifying measurements")
 	var fetchedMeasurements measurements.M
 	hash, err := fetchedMeasurements.FetchAndVerify(
 		ctx, client,
@@ -94,47 +110,54 @@ func configFetchMeasurements(
 		return err
 	}
 
+	cfm.log.Debugf("Fetched and verified measurements, hash is %s", hash)
 	if err := verifyWithRekor(cmd.Context(), verifier, hash); err != nil {
 		cmd.PrintErrf("Ignoring Rekor related error: %v\n", err)
 		cmd.PrintErrln("Make sure the downloaded measurements are trustworthy!")
 	}
 
+	cfm.log.Debugf("Verified measurements with Rekor, updating measurements in config")
 	conf.UpdateMeasurements(fetchedMeasurements)
 	if err := fileHandler.WriteYAML(flags.configPath, conf, file.OptOverwrite); err != nil {
 		return err
 	}
-
+	cfm.log.Debugf("Wrote configuration to YAML")
 	return nil
 }
 
 // parseURLFlag checks that flag can be parsed as URL.
 // If no value was provided for flag, nil is returned.
-func parseURLFlag(cmd *cobra.Command, flag string) (*url.URL, error) {
+func (cfm *configFetchMeasurementsCmd) parseURLFlag(cmd *cobra.Command, flag string) (*url.URL, error) {
 	rawURL, err := cmd.Flags().GetString(flag)
 	if err != nil {
 		return nil, fmt.Errorf("parsing config generate flags '%s': %w", flag, err)
 	}
+	cfm.log.Debugf("Flag %s has raw URL %s", flag, rawURL)
 	if rawURL != "" {
+		cfm.log.Debugf("Parsing raw URL %s", rawURL)
 		return url.Parse(rawURL)
 	}
 	return nil, nil
 }
 
-func parseFetchMeasurementsFlags(cmd *cobra.Command) (*fetchMeasurementsFlags, error) {
-	measurementsURL, err := parseURLFlag(cmd, "url")
+func (cfm *configFetchMeasurementsCmd) parseFetchMeasurementsFlags(cmd *cobra.Command) (*fetchMeasurementsFlags, error) {
+	measurementsURL, err := cfm.parseURLFlag(cmd, "url")
 	if err != nil {
 		return &fetchMeasurementsFlags{}, err
 	}
-
-	measurementsSignatureURL, err := parseURLFlag(cmd, "signature-url")
+	cfm.log.Debugf("Parsed measurements URL")
+	
+	measurementsSignatureURL, err := cfm.parseURLFlag(cmd, "signature-url")
 	if err != nil {
 		return &fetchMeasurementsFlags{}, err
 	}
+	cfm.log.Debugf("Parsed measurements signature URL")
 
 	config, err := cmd.Flags().GetString("config")
 	if err != nil {
 		return &fetchMeasurementsFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
+	cfm.log.Debugf("Config path is %s", config)
 
 	return &fetchMeasurementsFlags{
 		measurementsURL: measurementsURL,
