@@ -74,25 +74,83 @@ Where applicable, the API uses the following CSP names:
 
 The following HTTP endpoints are available:
 
-- `GET /constellation/v1/images/<image version uid>.json` returns the lookup table for the given `image version uid`.
-- `GET /constellation/v1/measurements/<image version uid>/<csp>/` contains files with measurements and signatures for the given `image version uid` and CSP.
-  - `measurements.json` contains the final measurements for the given `image version uid` and CSP.
+- `GET /constellation/v1/ref/<ref>/stream<stream>/image/<version>/`
+  - `info.json` returns the lookup table for the given image version.
+  - `sbom.<format>.json` contains SBOM files for the given image version. The exact formats and file names are TBD.
+- `GET /constellation/v1/ref/<ref>/stream<stream>/<version>/csp/<csp>/` contains files with measurements and signatures for the given image version and CSP.
+  - `measurements.json` contains the final measurements for the given image version and CSP.
   - `measurements.json.sig` returns the signature of the measurements file.
   - `measurements.image.json` returns the measurements generated statically from the image.
-- `GET /constellation/v1/raw/<image version uid>/<csp>/image.raw` returns the raw image for the given `image version uid` and CSP.
-- `GET /constellation/v1/sbom/<image version uid>/` contains SBOM files for the given `image version uid`. The exact formats and file names are TBD.
+  - `image.raw` returns the raw image for the given image version and CSP.
+
+## Image names
+
+An image can be identified by `ref/<ref>/stream/<stream>/<version>` and allows for short form encoding as explained above.
+
+### Meaning of `ref` and `stream` for images
+
+The special value `-` (dash) for images is used for releases. They are always built from the corresponding release branch (and tag).
+Every other value refers to a normalized branch name.
+
+For the `ref` `-` (dash), the `stream` value can be one of the following constants:
+
+- `stable`: Built with default settings (non-debug), for end users and with all security features enabled
+- `console`: Built with default settings (non-debug), allows access to the serial console
+- `debug`: Image containing the debugd, allows access to the serial console
+
+For other `ref` values, the `stream` value can be one of the following constants:
+
+- `nightly`: Built with default settings (non-debug), with all security features enabled
+- `console`: Built with default settings (non-debug), allows access to the serial console
+- `debug`: Image containing the debugd, allows access to the serial console
+
+### Examples
+
+Release v2.3.0 would use the following image name for the default, end-user image:
+
+```
+ short form:                     v2.3.0
+  long form: ref/-/stream/stable/v2.3.0
+```
+
+A debug image created from the same release:
+
+```
+ short form:       stream/debug/v2.3.0
+  long form: ref/-/stream/debug/v2.3.0
+```
+
+A debug image on the branch `feat/xyz`:
+
+```
+ref/feat-xyz/stream/debug/v2.4.0-pre.0.20230922011244-0744d001aa84
+```
+
+A nightly image on `main`:
+
+```
+ref/main/stream/nightly/v2.4.0-pre.0.20230922011244-0744d001aa84
+```
+
+A debug image on `main`:
+
+```
+ref/main/stream/debug/v2.4.0-pre.0.20230922011244-0744d001aa84
+```
 
 ## Image lookup table
 
 The image lookup table is a JSON file that maps the `image version uid` to the CSP-specific image references. It uses the `image version uid` as file name.
 
 ```
-s3://<BUCKET-NAME>/constellation/v1/images/<IMAGE-VERSION-UID>.json
+s3://<BUCKET-NAME>/constellation/v1/ref/<REF>/stream/<STREAM>/image/<VERSION-UID>/info.json
 ```
 
 ```json
 {
-  "version": "<IMAGE-VERSION-UID>",
+  "version": "<VERSION-UID>",
+  "ref": "<REF>",
+  "stream": "<STREAM>",
   "debug": true,
   "aws": {
     "us-east-1": "ami-123",
@@ -128,9 +186,9 @@ The format of the image measurements is described in the [secure software distri
 The image measurements are stored in a folder structure in S3 that is organized by CSP and `image version uid`.
 
 ```
-s3://<BUCKET-NAME>/constellation/v1/measurements/<IMAGE-VERSION-UID>/<CSP>/measurements.json
-s3://<BUCKET-NAME>/constellation/v1/measurements/<IMAGE-VERSION-UID>/<CSP>/measurements.json.sig
-s3://<BUCKET-NAME>/constellation/v1/measurements/<IMAGE-VERSION-UID>/<CSP>/measurements.image.json
+s3://<BUCKET-NAME>/constellation/v1//ref/<REF>/stream/<STREAM>/<VERSION-UID>/csp/<CSP>/measurements.json
+s3://<BUCKET-NAME>/constellation/v1//ref/<REF>/stream/<STREAM>/<VERSION-UID>/csp/<CSP>/measurements.json.sig
+s3://<BUCKET-NAME>/constellation/v1//ref/<REF>/stream/<STREAM>/<VERSION-UID>/csp/<CSP>/measurements.image.json
 ```
 
 ## CLI image discovery
@@ -144,8 +202,8 @@ The `image` field is independent of the CSP and is a used to discover the CSP-sp
 
 The CLI can find a CSP- and region specific image reference by looking up the `image version uid` in the following order:
 
-- if a local file `<IMAGE-VERSION-UID>.json` exists, use the lookup table in that file
-- otherwise, load the image lookup table from a well known URL (e.g. `https://cdn.confidential.cloud/constellation/v1/images/<IMAGE-VERSION-UID>.json`) and use the lookup table in that file
+- if a local file `<VERSION-UID>.json` exists, use the lookup table in that file
+- otherwise, load the image lookup table from a well known URL (e.g. `https://cdn.confidential.cloud/constellation/v1/images/<VERSION-UID>.json`) and use the lookup table in that file
 - choose the CSP-specific image reference for the current region and security type:
   - On AWS, use the AMI ID for the current region (e.g. `.aws.us-east-1`)
   - On Azure, use the image ID for the security type (CVM or Trusted Launch) (e.g. `.azure.cvm`)

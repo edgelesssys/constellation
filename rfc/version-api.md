@@ -14,17 +14,17 @@ Design goals:
 
 The following HTTP endpoints are available:
 
-- `GET /constellation/v1/versions/stream/<stream>/latest/` contains files showing the latest version available
+- `GET /constellation/v1/ref/<ref>/stream/<stream>/latest/` contains files showing the latest version available
     - `image.json` contains the latest image version
     - `microservice.json` contains the latest microservice version
     - `cli.json` contains the latest cli version
     - `kubernetes.json` contains the latest supported version of Kubernetes
-- `GET /constellation/v1/versions/stream/<stream>/major/<major-version>/` contains files with version information for this major version
+- `GET /constellation/v1/ref/<ref>/stream/<stream>/major/<major-version>/` contains files with version information for this major version
     - `image.json` contains a list of all minor image versions that belong to a major version
     - `microservice.json` contains a list of all minor microservice versions that belong to a major version
     - `cli.json` contains a list of all minor cli versions that belong to a major version
     - `kubernetes.json` contains a list of all supported minor version of Kubernetes that belong to a major version
-- `GET /constellation/v1/versions/stream/<stream>/minor/<minor-version>/` contains files with version information for this minor version
+- `GET /constellation/v1/ref/<ref>/stream/<stream>/minor/<major-minor-version>/` contains files with version information for this minor version
     - `image.json` contains a list of all patch image versions that belong to a minor version
     - `microservice.json` contains a list of all patch microservice versions that belong to a minor version
     - `cli.json` contains a list of all patch cli versions that belong to a minor version
