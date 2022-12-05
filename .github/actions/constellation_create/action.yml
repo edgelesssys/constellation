@@ -164,7 +164,16 @@ runs:
       run: |
         echo "::group::cdbg deploy"
         chmod +x $GITHUB_WORKSPACE/build/cdbg
-        cdbg deploy --bootstrapper $GITHUB_WORKSPACE/build/bootstrapper
+        cdbg deploy \
+          --bootstrapper "${{ github.workspace }}/build/bootstrapper" \
+          --info logcollect=true \
+          --info logcollect.github.actor="${{ github.triggering_actor }}" \
+          --info logcollect.github.workflow="${{ github.workflow }}" \
+          --info logcollect.github.run-id="${{ github.run_id }}" \
+          --info logcollect.github.run-attempt="${{ github.run_attempt }}" \
+          --info logcollect.github.ref-name="${{ github.ref_name }}" \
+          --info logcollect.github.sha="${{ github.sha }}" \
+          --info logcollect.github.runner-os="${{ runner.os }}"
         echo "::endgroup::"
 
     - name: Constellation init
