@@ -53,6 +53,7 @@ func main() {
 		stream:         flag.String("stream", "", "Stream to add the version to"),
 		ref:            flag.String("ref", "", "Ref to add the version to"),
 		release:        flag.Bool("release", false, "Whether the version is a release"),
+		latest:         flag.Bool("latest", false, "Whether to set this version as the new latest version"),
 		dryRun:         flag.Bool("dryrun", false, "Whether to run in dry-run mode (no changes are made)"),
 		region:         flag.String("region", defaultRegion, "AWS region"),
 		bucket:         flag.String("bucket", defaultBucket, "S3 bucket"),
@@ -79,8 +80,16 @@ func main() {
 		log.With(zap.Error(err)).Fatalf("Failed to ensure minor version")
 	}
 
-	if err := ensurePatchVersion(ctx, versionManager, ver, log); err != nil {
+	added, err := ensurePatchVersion(ctx, versionManager, ver, log)
+	if err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to ensure patch version")
+	}
+
+	if added && *flags.latest {
+		if err := versionManager.addLatest(ctx, ver); err != nil {
+			log.With(zap.Error(err)).Fatalf("Failed to update latest version object")
+		}
+		log.Infof("Added %q as latest version.", ver)
 	}
 
 	log.Infof("Major to minor url: %s", ver.URL(granularityMajor))
@@ -133,7 +142,7 @@ func ensureMinorVersion(ctx context.Context, versionManager *versionManager, ver
 	return nil
 }
 
-func ensurePatchVersion(ctx context.Context, versionManager *versionManager, ver version, log *logger.Logger) error {
+func ensurePatchVersion(ctx context.Context, versionManager *versionManager, ver version, log *logger.Logger) (bool, error) {
 	pathVerList, err := versionManager.getVersionList(ctx, ver, granularityMinor)
 	if errors.Is(err, errVersionListMissing) {
 		log.Infof("Version list for patch versions under %q does not exist. Creating new list.", ver.MajorMinor())
@@ -146,22 +155,22 @@ func ensurePatchVersion(ctx context.Context, versionManager *versionManager, ver
 			Versions:    []string{},
 		}
 	} else if err != nil {
-		return fmt.Errorf("failed to get patch versions: %w", err)
+		return false, fmt.Errorf("failed to get patch versions: %w", err)
 	}
 
-	if pathVerList.Contains(ver.MajorMinorPatch()) {
-		log.Infof("Version %q already exists in list %v.", ver.MajorMinorPatch(), pathVerList.Versions)
-		return nil
+	if pathVerList.Contains(ver.String()) {
+		log.Infof("Version %q already exists in list %v.", ver.String(), pathVerList.Versions)
+		return false, nil
 	}
 
-	pathVerList.Versions = append(pathVerList.Versions, ver.MajorMinorPatch())
+	pathVerList.Versions = append(pathVerList.Versions, ver.String())
 
 	if err := versionManager.updateVersionList(ctx, pathVerList); err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to add patch version")
 	}
 
-	log.Infof("Added %q to list.", ver.MajorMinorPatch())
-	return nil
+	log.Infof("Added %q to list.", ver.String())
+	return true, nil
 }
 
 type version struct {
@@ -170,7 +179,7 @@ type version struct {
 	ref        string
 }
 
-func (v *version) MajorMinorPatch() string {
+func (v *version) String() string {
 	return semver.Canonical(v.versionStr)
 }
 
@@ -214,6 +223,7 @@ type flags struct {
 	stream         *string
 	ref            *string
 	release        *bool
+	latest         *bool
 	dryRun         *bool
 	region         *string
 	bucket         *string
@@ -230,11 +240,15 @@ func (f *flags) validate() error {
 			return fmt.Errorf("branch flag must be set for non-release versions")
 		}
 	}
+
 	if *f.ref != "" && *f.release {
 		return fmt.Errorf("branch flag must not be set for release versions")
 	}
+
 	if *f.release {
 		*f.ref = skipRefStr
+	} else {
+		*f.latest = true // always set latest for non-release versions
 	}
 
 	ref := versionsapi.CanonicalRef(*f.ref)
@@ -276,7 +290,7 @@ func ensurePatchVersionExists(ctx context.Context, fetcher *versionsapi.Fetcher,
 	if err != nil {
 		return err
 	}
-	if !existingPatchVersions.Contains(ver.MajorMinorPatch()) {
+	if !existingPatchVersions.Contains(ver.String()) {
 		return errors.New("patch version does not exist")
 	}
 	return nil
@@ -349,13 +363,46 @@ func (m *versionManager) updateVersionList(ctx context.Context, list *versionsap
 
 	in := &s3.PutObjectInput{
 		Bucket: aws.String(m.bucket),
-		Key:    aws.String(listJSONPath(list)),
+		Key:    aws.String(list.JSONPath()),
 		Body:   bytes.NewBuffer(rawList),
 	}
 
 	if m.dryRun {
-		m.log.Infof("dryRun: s3 put object {Bucket: %v, Key: %v, Body: %v", m.bucket, listJSONPath(list), string(rawList))
+		m.log.Infof("dryRun: s3 put object {Bucket: %v, Key: %v, Body: %v", m.bucket, list.JSONPath(), string(rawList))
+		return nil
+	}
 
+	m.dirty = true
+
+	_, err = m.uploader.Upload(ctx, in)
+
+	return err
+}
+
+func (m *versionManager) addLatest(ctx context.Context, ver version) error {
+	latest := &versionsapi.Latest{
+		Ref:     ver.Ref(),
+		Stream:  ver.Stream(),
+		Kind:    imageKind,
+		Version: ver.String(),
+	}
+	if err := latest.Validate(); err != nil {
+		return err
+	}
+
+	rawLatest, err := json.Marshal(latest)
+	if err != nil {
+		return err
+	}
+
+	in := &s3.PutObjectInput{
+		Bucket: aws.String(m.bucket),
+		Key:    aws.String(latest.JSONPath()),
+		Body:   bytes.NewBuffer(rawLatest),
+	}
+
+	if m.dryRun {
+		m.log.Infof("dryRun: s3 put object {Bucket: %v, Key: %v, Body: %v", m.bucket, latest.JSONPath(), string(rawLatest))
 		return nil
 	}
 
@@ -412,10 +459,6 @@ func waitForCacheUpdate(ctx context.Context, updateFetcher *versionsapi.Fetcher,
 	if sawAddedVersions {
 		log.Infof("Versions are available via API.")
 	}
-}
-
-func listJSONPath(list *versionsapi.List) string {
-	return path.Join(constants.CDNAPIPrefix, "ref", list.Ref, "stream", list.Stream, "versions", list.Granularity, list.Base, imageKind+".json")
 }
 
 type granularity int
