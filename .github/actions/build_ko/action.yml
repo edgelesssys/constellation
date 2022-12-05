@@ -5,7 +5,7 @@ inputs:
     description: "Name of the micro-service"
     required: true
   registry:
-    description: "Name of the repository"
+    description: "Name of the registry to use"
     required: false
     default: "ghcr.io"
   koConfig:

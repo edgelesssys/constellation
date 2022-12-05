@@ -1,8 +1,7 @@
 defaltBaseImage: distroless.dev/static:latest@sha256:d624beaae60b10ec342896b1470421eb473549cb3ac3bf1c6ec074d8b460b4fc
 
 baseImageOverrides:
-  github.com/edgelesssys/constellation/v2/disk-mapper/cmd: leongross/alpine-libcryptsetup:base
-  github.com/edgelesssys/constellation/v2/bootstrapper/cmd/bootstrapper: leongross/alpine-libcryptsetup:base
+  github.com/edgelesssys/constellation/v2/operators/constellation-node-operator ghcr.io/edgelesssys/alpine-base-user-65532
 
 builds:
 - id: kms
@@ -31,7 +30,6 @@ builds:
   - -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}
   - -extldflags "-static"
 
-# currently ignoring USER 65532:65532 from Dockerfile operators/constellation/Dockerfile
 - id: constellation-node-operator
   dir: .
   main: ./operators/constellation-node-operator/
