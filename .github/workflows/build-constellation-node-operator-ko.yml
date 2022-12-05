@@ -2,9 +2,6 @@ name: Build and upload constellation node operator image (KO)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-    - feat/reproducible-builds-ko
 
 jobs:
   build-constellation-node-operator:

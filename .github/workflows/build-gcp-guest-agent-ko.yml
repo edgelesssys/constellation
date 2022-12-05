@@ -1,0 +1,62 @@
+name: Build and Upload GCP guest-agent container (KO)
+env:
+  REGISTRY: ghcr.io
+  KO_DATA_PATH: /etc/default/
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - "release/**"
+      - "feat/reproducible-builds-ko"
+
+jobs:
+  build-gcp-guest-agent:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: ./constellation
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        version: ["20220927.00"]
+        include:
+          - version: "20220927.00"
+            latest: true
+    steps:
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          repository: "GoogleCloudPlatform/guest-agent"
+          ref: refs/tags/${{ matrix.version }}
+          path: "guest-agent"
+
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
+          path: "constellation"
+
+
+      - name: Prepare hardcoded configuration file
+        working-directory: ${{ github.workspace }}
+        run: |
+          # https://ko.build/features/static-assets/
+          # cwd = /home/runner/work/constellation/constellation
+          koData="./guest-agent/kodata"
+          mkdir -p $koData
+          cp ./constellation/3rdparty/gcp-guest-agent/instance_configs.cfg $koData
+          cd ..
+
+      - name: Build and upload join service container image
+        id: build-and-upload
+        # assumes that we are currently in the root of the repo
+        uses: ./constellation/.github/actions/build_micro_service_ko
+        with:
+          name: gcp-guest-agent
+          koTarget: ./guest-agent/google-guest-agent/
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
+          cosignPassword: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}

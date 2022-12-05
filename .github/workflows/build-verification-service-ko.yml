@@ -2,15 +2,6 @@ name: Build and upload verification-service image (KO)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-      - "release/**"
-      - "feat/reproducible-builds-ko"
-    #paths:
-    #  - "verify/**"
-    #  - "internal/attestation/**"
-    #  - "internal/constants/**"
 
 jobs:
   build-verification-service:

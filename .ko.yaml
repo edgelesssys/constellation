@@ -45,3 +45,19 @@ builds:
   - -s -w -buildid=''
   - -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}
   - -extldflags "-static"
+
+- id: gcp-guest-agent
+  dir: .
+  main: ./3rdparty/gcp-guest-agent/
+  env:
+  - CGO_ENABLED=0
+  - GOOS=linux
+  - GOARCH=amd64
+  flags:
+  - -trimpath
+  - -buildvcs=false
+  - -a
+  ldflags:
+  - -s -w -buildid=''
+  - -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}
+  - -extldflags "-static"

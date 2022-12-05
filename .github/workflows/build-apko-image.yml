@@ -2,11 +2,6 @@ name: Build and upload all apko container images
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-      - "release/**"
-      - "feat/reproducible-builds-ko"
 
 jobs:
   build-apko-image:
