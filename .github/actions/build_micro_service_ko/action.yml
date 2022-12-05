@@ -42,9 +42,9 @@ runs:
       id: build-and-upload
       uses: ./.github/actions/build_ko
       with:
-        name: joinservice
-        koConfig: .ko.yaml
-        koTarget: ./joinservice/cmd
+        name: ${{ inputs.name }}
+        koConfig: ${{ inputs.koConfig }}
+        koTarget: ${{ inputs.koTarget }}
         githubToken: ${{ inputs.GITHUB_TOKEN }}
         pushTag: ci-test
 

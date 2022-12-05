@@ -19,16 +19,16 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Setup Go environment
-        uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
+      - name: Install operator-sdk
+        uses: ./.github/actions/install_operator_sdk
         with:
-          go-version: "1.19.3"
+          version: v1.22.2
 
       - name: Build and upload constellation-node-operator container image
-        uses: ./.github/actions/build_operator_ko
+        uses: ./.github/actions/build_micro_service_ko
         with:
           name: node-operator
-          sourceDir: operators/constellation-node-operator
+          koTarget: ./operators/constellation-node-operator
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
           cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
