@@ -1,0 +1,50 @@
+name: Build operator
+description: Build and upload a container image for a Constellation operator
+inputs:
+  name:
+    description: "Name of the operator"
+    required: true
+  sourceDir:
+    description: "Path to the operators source directory"
+    required: true
+  pushTag:
+    description: "Use this image tag"
+    required: false
+  githubToken:
+    description: "GitHub authorization token"
+    required: true
+  cosignPublicKey:
+    description: "Cosign public key"
+    required: false
+  cosignPrivateKey:
+    description: "Cosign private key"
+    required: false
+  cosignPassword:
+    description: "Password for Cosign private key"
+    required: false
+
+# Linux runner only
+runs:
+  using: "composite"
+  steps:
+    - name: Determine pseudo version
+      id: pseudo-version
+      uses: ./.github/actions/pseudo_version
+
+    - name: Install operator-sdk
+      uses: ./.github/actions/install_operator_sdk
+      with:
+        version: v1.22.2
+
+    - name: Build and upload operator image
+      id: build-and-upload
+      uses: ./.github/actions/build_micro_service_ko
+      with:
+        name: node-operator
+        koTarget: ./operators/constellation-node-operator
+        githubToken: ${{ inputs.GITHUB_TOKEN }}
+        cosignPublicKey: ${{ inputs.CosignPublicKey }}
+        cosignPrivateKey: ${{ inputs.CosignPrivateKey }}
+        cosignPassword: ${{ inputs.CosignPassword }}
+
+# ignoring bundle since we do not use it anymore

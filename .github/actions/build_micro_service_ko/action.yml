@@ -38,7 +38,7 @@ runs:
       id: pseudo-version
       uses: ./.github/actions/pseudo_version
 
-    - name: Build and upload join service container image
+    - name: Build and upload container image
       id: build-and-upload
       uses: ./.github/actions/build_ko
       with:
