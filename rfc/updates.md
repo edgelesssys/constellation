@@ -59,50 +59,37 @@ metadata:
   namespace: kube-system
 immutable: true
 data:
-  kubeadm:
-    url: "https://storage.googleapis.com/kubernetes-release/release/v1.23.12/bin/linux/amd64/kubeadm"
-    hash: "sha256:7dc4799eb1ae31daae0f4d1d09a643f7687dcc78c562e0b453d01799d183d6a0"
-  kubelet:
-    url: "https://storage.googleapis.com/kubernetes-release/release/v1.23.12/bin/linux/amd64/kubelet"
-    hash: "sha256:100413d0badd8b4273052bae43656d2167dc67f613b019adb7c61bd49f37283a"
-  kubectl:
-    url: "https://storage.googleapis.com/kubernetes-release/release/v1.23.12/bin/linux/amd64/kubectl"
-    hash: "sha256:d8a5fb9e2c2b633894648c97d402bc138987c9904212cd88386954e7b2c09865"
-  kubeadmConf:
-    url: "https://raw.githubusercontent.com/kubernetes/release/v0.14.0/cmd/kubepkg/templates/latest/deb/kubeadm/10-kubeadm.conf"
-    hash: "sha256:fa1dc2cc3fa48fcb83ddcf5e4f2b6853f2f13f2be6507c6fc80364f2e4b0ad6a"
-  kubeletService:
-    url: "https://raw.githubusercontent.com/kubernetes/release/v0.14.0/cmd/kubepkg/templates/latest/deb/kubelet/lib/systemd/system/kubelet.service"
-    hash: "sha256sum:0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0"
-  crictl:
-    url: "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.24.1/crictl-v1.24.1-linux-amd64.tar.gz"
-    hash: "sha256:ebaea1c7b914cdd548012c6cba44f8d760fd0c7915274ffecd6d764957aac83c"
-  cniplugins:
-    url: "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz"
-    hash: "sha256:2f04ce10b514912da87fc9979aa2e82e3a0e431c14fc0ea5c7c7209de74a1491"
+  components:
+    '[{"URL":"https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz","Hash":"sha256:b275772da4026d2161bf8a8b41ed4786754c8a93ebfb6564006d5da7f23831e5","InstallPath":"/opt/cni/bin","Extract":true},{"URL":"https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.25.0/crictl-v1.25.0-linux-amd64.tar.gz","Hash":"sha256:86ab210c007f521ac4cdcbcf0ae3fb2e10923e65f16de83e0e1db191a07f0235","InstallPath":"/run/state/bin","Extract":true},{"URL":"https://storage.googleapis.com/kubernetes-release/release/v1.23.12/bin/linux/amd64/kubelet","Hash":"sha256:2da0b93857cf352bff5d1eb42e34d398a5971b63a53d8687b45179a78540d6d6","InstallPath":"/run/state/bin/kubelet","Extract":false},{"URL":"https://storage.googleapis.com/kubernetes-release/release/v1.23.12/bin/linux/amd64/kubeadm","Hash":"sha256:9fea42b4fb5eb2da638d20710ebb791dde221e6477793d3de70134ac058c4cc7","InstallPath":"/run/state/bin/kubeadm","Extract":false},{"URL":"https://storage.googleapis.com/kubernetes-release/release/v1.23.12/bin/linux/amd64/kubectl","Hash":"sha256:f93c18751ec715b4d4437e7ece18fe91948c71be1f24ab02a2dde150f5449855","InstallPath":"/run/state/bin/kubectl","Extract":false}]'
 ```
 
 The JoinService will consume the `k8s-components-1.23.12` ConfigMap in addition to the `k8s-version` ConfigMap. Currently, the `k8s-version` ConfigMap is mounted into the JoinService pod. We will change that so that the JoinService requests the ConfigMap values via the Kubernetes API. If a new node wants to join the cluster, the JoinService looks up the current Kubernetes version and all the component download URLs and hashes and sends them to the joining node.
+
+Additionally, with each node trying to join the cluster is tracked.
+The JoinService creates a JoiningNode CRD for each issued JoinTicket with the node's name and the hash of the components it was sent. This JoiningNode CRD is consumed by the node operator.
 
 ## Extending the Bootstrapper
 
 During the cluster initialization we need to create the first ConfigMap with components and hashes.
 We receive all necessary information from the CLI in the first place, since we need to download them to create a initialize the cluster in the first place.
 
-To be able to even update singular components, we need to know if the set of components of a node is the desired one. To achieve that, the Bootstrapper will calculate a hash of all the components' hashes. The node then labels itself during `kubeadm join` with this hash. The hash will later be read by the node operator. The first Bootstrapper needs to be labeled during `kubeadm init`.
+To be able to even update singular components, we need to know if the set of components of a node is the desired one. To achieve that, the Bootstrapper calculates a hash of all the components' hashes.
+Because of the length restriction for labels, we need to attach this information as an annotation to the node.
+Annotations cannot be set during the join process (in contrast to node-labels).
+Therefore, for every JoinRequest, the JoinService writes an entry to a ConfigMap.
+This ConfigMap will later be consumed by the node operator.
+The ConfigMap will contain a `map[string]map[string]string` in `data.joining-nodes`.
+This map will map the node name to a map of annotation keys and annotation values.
 
 ```yaml
-apiVersion: kubeadm.k8s.io/v1beta2
-kind: JoinConfiguration
-discovery:
-  bootstrapToken:
-    token: XXX
-    apiServerEndpoint: "XXX"
-    caCertHashes: ["sha256:123456789012345678901234567890564b934be406f13e28f118b32cc0b6e6db"]
-nodeRegistration:
-  name: worker-node-1
-  kubeletExtraArgs:
-    node-labels: "edgeless.systems/kubernetes-components-hash="sha256:8ae09b7e922a90fea7a4259fb096f73e9efa948ea2f09349618102a328c44b8b""
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: joining-nodes
+  namespace: kube-system
+data:
+  joining-nodes: '{"constell-worker-83df2": {"constellation.edgeless.systems/kubernetes-components-hash": "sha256:f40d4b6feb791e069158b69bf7a70e4acd43600976673ea40f649919233fa783"},
+  "constell-worker-jsu3l": {"constellation.edgeless.systems/kubernetes-components-hash": "sha256:f40d4b6feb791e069158b69bf7a70e4acd43600976673ea40f649919233fa783"}}'
 ```
 
 ## Creating an upgrade agent
@@ -117,9 +104,9 @@ service Update {
 }
 
 message ExecuteUpdateRequest {
-    string kubeadm_URL = 1;
-    string kubeadm_Hash = 2;
-    string wanted_Kubernetes_Version = 3;
+    string kubeadm_url = 1;
+    string kubeadm_hash = 2;
+    string wanted_kubernetes_version = 3;
 }
 
 message ExecuteUpdateResponse {
@@ -130,7 +117,9 @@ The dependency and usage of the upgrade agent by the node operator is explained 
 
 ## Extending the node operator
 
-We need to extend the node operator to also handle Kubernetes updates. The operator already receives information about the Kubernetes version of each node.
+First, the node operator consumes the JoiningNode CRD. It watches on changes in the CRD list as well as changes in the node list. The controller reconciles the JoiningNode CRDs by trying to annotate the corresponding node. If successful, the controller deletes the CRD.
+
+Second, we need to extend the node operator to also handle Kubernetes updates. The operator already receives information about the Kubernetes version of each node.
 
 The CLI hands users the same mechanism to deliver the Kubernetes version to the operator as we [currently use for the image reference](https://github.com/edgelesssys/constellation/blob/main/operators/constellation-node-operator/api/v1alpha1/nodeimage_types.go#L14):
 
@@ -141,7 +130,7 @@ The CLI hands users the same mechanism to deliver the Kubernetes version to the 
     // ImageReference is the image to use for all nodes.
     ImageReference string `json:"image,omitempty"`
     // ImageVersion is the CSP independent version of the image to use for all nodes.
-	ImageVersion string `json:"imageVersion,omitempty"`
+    ImageVersion string `json:"imageVersion,omitempty"`
 +   // KubernetesVersion defines the Kubernetes version for all nodes.
 +   KubernetesVersion string `json:"kubernetesVersion,omitempty"`
 }
