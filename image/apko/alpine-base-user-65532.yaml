@@ -19,3 +19,7 @@ accounts:
 
 environment:
   PATH: /usr/sbin:/sbin:/usr/bin:/bin
+
+archs:
+  - amd64
+  - 386
