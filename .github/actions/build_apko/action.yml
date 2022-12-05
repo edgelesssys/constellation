@@ -28,6 +28,7 @@ runs:
     - name: Build apko images
       shell: bash
       run: |
+        # TODO: replace with apko publish
         if [ -z "${{ inputs.apkoConfig }}" ]; then
           echo "Building all images in image"
           for imageConfig in image/apko/*.yaml; do
@@ -35,8 +36,11 @@ runs:
 
             imageName=$(basename $imageConfig | cut -d. -f1 )
             registry=${{ inputs.registry }}/edgelesssys/apko-${imageName}
+            outTar=$imageName.tar
 
-            docker run -v "$PWD":/work cgr.dev/chainguard/apko publish $imageConfig $registry
+            docker run -v "$PWD":/work cgr.dev/chainguard/apko build $imageConfig $registry $outTar
+            docker load < $outTar
+            docker push $registry
 
           done
         else
@@ -44,6 +48,9 @@ runs:
 
           imageName=$(basename ${{ inputs.apkoConfig }} | cut -d. -f1 )
           registry=${{ inputs.registry }}/edgelesssys/apko-${imageName}
+          outTar=$imageName.tar
 
-          docker run -v "$PWD":/work cgr.dev/chainguard/apko publish ${{ inputs.apkoConfig }} $registry
+          docker run -v "$PWD":/work cgr.dev/chainguard/apko build ${{ inputs.apkoConfig }} $registry $outTar
+          docker load < $outTar
+          docker push $registry
         fi
