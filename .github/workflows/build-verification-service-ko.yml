@@ -1,20 +1,23 @@
-name: Build and upload join service image (KO)
-env:
-  REGISTRY: ghcr.io
+name: Build and upload verification-service image (KO)
 
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
+      - "release/**"
+      - "feat/reproducible-builds-ko"
+    #paths:
+    #  - "verify/**"
+    #  - "internal/attestation/**"
+    #  - "internal/constants/**"
 
 jobs:
-  build-join-service-ko:
+  build-verification-service:
     runs-on: ubuntu-22.04
     permissions:
       contents: read
       packages: write
-    outputs:
-      image: ${{ steps.build-and-upload.outputs.image }}
-      digest: ${{ steps.build-and-upload.outputs.digest }}
     steps:
       - name: Check out repository
         id: checkout
@@ -27,12 +30,12 @@ jobs:
         with:
           go-version: "1.19.3"
 
-      - name: Build and upload join service container image
+      - name: Build and upload verification-service container image (KO)
         id: build-and-upload
         uses: ./.github/actions/build_micro_service_ko
         with:
-          name: joinservice
-          koTarget: ./joinservice/cmd
+          name: verification-service
+          koTarget: ./verify/cmd
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
           cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}

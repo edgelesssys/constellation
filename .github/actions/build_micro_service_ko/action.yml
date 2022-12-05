@@ -6,7 +6,8 @@ inputs:
     required: true
   koConfig:
     description: "Path to the .ko.yaml config file"
-    required: true
+    default: ".ko.yaml"
+    required: false
   koTarget:
     description: "Go package to build with ko"
     required: true
