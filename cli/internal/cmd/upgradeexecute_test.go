@@ -66,11 +66,16 @@ func TestUpgradeExecute(t *testing.T) {
 }
 
 type stubUpgrader struct {
-	err error
+	err     error
+	helmErr error
 }
 
 func (u stubUpgrader) Upgrade(context.Context, string, string, measurements.M) error {
 	return u.err
+}
+
+func (u stubUpgrader) UpgradeHelmServices(ctx context.Context, config *config.Config) error {
+	return u.helmErr
 }
 
 type stubImageFetcher struct {

@@ -18,6 +18,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -53,7 +54,11 @@ func NewUpgrader(outWriter io.Writer) (*Upgrader, error) {
 		return nil, fmt.Errorf("setting up custom resource client: %w", err)
 	}
 
-	helmClient, err := helm.NewClient(constants.AdminConfFilename, constants.HelmNamespace)
+	client, err := apiextensionsclient.NewForConfig(kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+	helmClient, err := helm.NewClient(constants.AdminConfFilename, constants.HelmNamespace, client)
 	if err != nil {
 		return nil, fmt.Errorf("setting up helm client: %w", err)
 	}
@@ -107,8 +112,8 @@ func (u *Upgrader) GetCurrentImage(ctx context.Context) (*unstructured.Unstructu
 }
 
 // UpgradeHelmServices upgrade helm services.
-func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, conformanceMode bool, masterSecret, salt []byte) error {
-	return u.helmClient.Upgrade(ctx, config, conformanceMode, masterSecret, salt)
+func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config) error {
+	return u.helmClient.Upgrade(ctx, config)
 }
 
 // CurrentHelmVersion returns the version of the currently installed helm release.
@@ -238,5 +243,5 @@ func (u *stableClient) kubernetesVersion() (string, error) {
 
 type helmInterface interface {
 	CurrentVersion(release string) (string, error)
-	Upgrade(ctx context.Context, config *config.Config, conformanceMode bool, masterSecret, salt []byte) error
+	Upgrade(ctx context.Context, config *config.Config) error
 }

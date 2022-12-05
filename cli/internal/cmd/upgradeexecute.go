@@ -59,17 +59,8 @@ func upgradeExecute(cmd *cobra.Command, imageFetcher imageFetcher, upgrader clou
 	if err != nil {
 		return err
 	}
-	masterSecretPath, err := cmd.Flags().GetString("master-secret")
-	if err != nil {
-		return err
-	}
 	if helm {
-		masterSecret, err := readOrGenerateMasterSecret(cmd.OutOrStdout(), fileHandler, masterSecretPath)
-		if err != nil {
-			return fmt.Errorf("parsing or generating master secret from file %s: %w", masterSecretPath, err)
-		}
-
-		if err := upgrader.UpgradeHelmServices(cmd.Context(), conf, false, masterSecret.Key, masterSecret.Salt); err != nil {
+		if err := upgrader.UpgradeHelmServices(cmd.Context(), conf); err != nil {
 			return fmt.Errorf("upgrading helm: %w", err)
 		}
 		return nil
@@ -90,7 +81,7 @@ func upgradeExecute(cmd *cobra.Command, imageFetcher imageFetcher, upgrader clou
 
 type cloudUpgrader interface {
 	Upgrade(ctx context.Context, imageReference, imageVersion string, measurements measurements.M) error
-	UpgradeHelmServices(ctx context.Context, config *config.Config, conformanceMode bool, masterSecret, salt []byte) error
+	UpgradeHelmServices(ctx context.Context, config *config.Config) error
 }
 
 type imageFetcher interface {

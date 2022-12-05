@@ -9,30 +9,48 @@ package helm
 import (
 	"context"
 	"fmt"
+	"log"
+	"strings"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
-	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
+	"github.com/pkg/errors"
 	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/client-go/kubernetes/scheme"
+)
+
+const (
+	// timeout is the maximum time given to the helm client.
+	upgradeTimeout = 1 * time.Minute
 )
 
 // Client handles interaction with helm.
 type Client struct {
-	config *action.Configuration
+	config    *action.Configuration
+	crdClient *apiextensionsclient.Clientset
 }
 
 // NewClient returns a new initializes client for the namespace Client.
-func NewClient(kubeConfigPath, helmNamespace string) (*Client, error) {
+func NewClient(kubeConfigPath, helmNamespace string, client *apiextensionsclient.Clientset) (*Client, error) {
 	settings := cli.New()
 	settings.KubeConfig = kubeConfigPath // constants.AdminConfFilename
 
+	// TODO: Replace log.Printf with actual CLILogger during refactoring of upgrade cmd.
 	actionConfig := &action.Configuration{}
-	if err := actionConfig.Init(settings.RESTClientGetter(), helmNamespace, "secret", nil); err != nil {
+	if err := actionConfig.Init(settings.RESTClientGetter(), helmNamespace, "secret", log.Printf); err != nil {
 		return nil, fmt.Errorf("initializing config: %w", err)
 	}
 
-	return &Client{config: actionConfig}, nil
+	return &Client{config: actionConfig, crdClient: client}, nil
 }
 
 // CurrentVersion returns the version of the currently installed helm release.
@@ -61,47 +79,159 @@ func (c *Client) CurrentVersion(release string) (string, error) {
 // Upgrade runs a helm-upgrade on all deployments that are managed via Helm.
 // TODO: Verify that CRDs are upgraded.
 // TODO: check helm cli how it handles ctrl+c.
-func (c *Client) Upgrade(ctx context.Context, config *config.Config, conformanceMode bool, masterSecret, salt []byte) error {
+func (c *Client) Upgrade(ctx context.Context, config *config.Config) error {
 	action := action.NewUpgrade(c.config)
 	action.Atomic = true
 	action.Namespace = constants.HelmNamespace
-	action.ReuseValues = true
-	action.DependencyUpdate = true
+	action.ReuseValues = false
+	action.Timeout = upgradeTimeout
 
-	loader := NewLoader(config.GetProvider(), versions.ValidK8sVersion(config.KubernetesVersion))
-	ciliumChart, ciliumVals, err := loader.loadCiliumHelper(config.GetProvider(), conformanceMode)
+	ciliumChart, err := loadChartsDir(helmFS, ciliumPath)
 	if err != nil {
 		return fmt.Errorf("loading cilium: %w", err)
 	}
-	certManagerChart, certManagerVals, err := loader.loadCertManagerHelper()
+	certManagerChart, err := loadChartsDir(helmFS, certManagerPath)
 	if err != nil {
-		return fmt.Errorf("loading cilium: %w", err)
+		return fmt.Errorf("loading cert-manager: %w", err)
 	}
-	operatorChart, operatorVals, err := loader.loadOperatorsHelper(config.GetProvider())
+	conOperatorChart, err := loadChartsDir(helmFS, conOperatorsPath)
 	if err != nil {
 		return fmt.Errorf("loading operators: %w", err)
 	}
-	conServicesChart, conServicesVals, err := loader.loadConstellationServicesHelper(config, masterSecret, salt)
+	conServicesChart, err := loadChartsDir(helmFS, conServicesPath)
 	if err != nil {
-		return fmt.Errorf("loading constellation-services: %w", err)
+		return fmt.Errorf("loading constellation-services chart: %w", err)
 	}
 
 	// Prevent half-finished upgrades
-	action.Lock.Lock()
-	defer action.Lock.Unlock()
+	// action.Lock.Lock()
+	// defer action.Lock.Unlock()
 
-	if _, err := action.RunWithContext(ctx, ciliumReleaseName, ciliumChart, ciliumVals); err != nil {
+	values, err := c.prepareCiliumValues(ciliumChart)
+	if err != nil {
+		return err
+	}
+	if _, err := action.RunWithContext(ctx, ciliumReleaseName, ciliumChart, values); err != nil {
 		return fmt.Errorf("upgrading cilium: %w", err)
 	}
-	if _, err := action.RunWithContext(ctx, ciliumReleaseName, certManagerChart, certManagerVals); err != nil {
+
+	values, err = c.prepareCertManagerValues(certManagerChart)
+	if err != nil {
+		return err
+	}
+	if _, err := action.RunWithContext(ctx, certManagerReleaseName, certManagerChart, values); err != nil {
 		return fmt.Errorf("upgrading cert-manager: %w", err)
 	}
-	if _, err := action.RunWithContext(ctx, ciliumReleaseName, operatorChart, operatorVals); err != nil {
+
+	action.ReuseValues = true
+
+	// kubectl apply operators/crds
+	err = c.updateOperatorCRDs(ctx, conOperatorChart)
+	if err != nil {
+		return fmt.Errorf("updating operator CRDs: %w", err)
+	}
+	tagVals, ok := conOperatorChart.Values["tags"].(map[string]any)
+	if !ok {
+		return err
+	}
+	tagVals[config.GetProvider().String()] = true
+	if _, err := action.RunWithContext(ctx, conOperatorsReleaseName, conOperatorChart, conOperatorChart.Values); err != nil {
 		return fmt.Errorf("upgrading services: %w", err)
 	}
-	if _, err := action.RunWithContext(ctx, ciliumReleaseName, conServicesChart, conServicesVals); err != nil {
+
+	tagVals, ok = conServicesChart.Values["tags"].(map[string]any)
+	if !ok {
+		return err
+	}
+	tagVals[config.GetProvider().String()] = true
+	if _, err := action.RunWithContext(ctx, conServicesReleaseName, conServicesChart, conServicesChart.Values); err != nil {
 		return fmt.Errorf("upgrading operators: %w", err)
 	}
 
+	return nil
+}
+
+// prepareCertManagerValues returns a values map as required for helm-upgrade.
+// It imitates the behaviour of helm's reuse-values flag by fetching the current values from the cluster
+// and merging the fetched values with the locally found values.
+// This is done to ensure that new values (from upgrades of the local files) end up in the cluster.
+// reuse-values does not ensure this.
+func (c *Client) prepareCertManagerValues(certManagerChart *chart.Chart) (map[string]any, error) {
+	certManagerChart.Values["installCRDs"] = true
+	certManagerVals, err := c.GetValues(certManagerReleaseName)
+	if err != nil {
+		return nil, fmt.Errorf("getting values: %w", err)
+	}
+	return helm.MergeMaps(certManagerChart.Values, certManagerVals), nil
+}
+
+// prepareCiliumValues returns a values map as required for helm-upgrade.
+// It imitates the behaviour of helm's reuse-values flag by fetching the current values from the cluster
+// and merging the fetched values with the locally found values.
+// This is done to ensure that new values (from upgrades of the local files) end up in the cluster.
+// reuse-values does not ensure this.
+func (c *Client) prepareCiliumValues(ciliumChart *chart.Chart) (map[string]any, error) {
+	ciliumVals, err := c.GetValues(ciliumReleaseName)
+	if err != nil {
+		return nil, fmt.Errorf("getting values: %w", err)
+	}
+	return helm.MergeMaps(ciliumChart.Values, ciliumVals), nil
+}
+
+// GetValues queries the cluster for the values of the given release.
+func (c *Client) GetValues(release string) (map[string]any, error) {
+	client := action.NewGetValues(c.config)
+	// Version corresponds to the releases revision. Specifying a Version <= 0 yields the latest release.
+	client.Version = 0
+	values, err := client.Run(release)
+	if err != nil {
+		return nil, fmt.Errorf("getting values for %s: %w", release, err)
+	}
+	return values, nil
+}
+
+// ApplyCRD updates the given CRD by parsing it, querying it from the cluster and finally updating it.
+func (c *Client) ApplyCRD(ctx context.Context, rawCRD []byte) error {
+	crd, err := parseCRD(rawCRD)
+	if err != nil {
+		return fmt.Errorf("parsing crds: %w", err)
+	}
+
+	clusterCRD, err := c.crdClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crd.Name, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("getting crd: %w", err)
+	}
+	crd.ResourceVersion = clusterCRD.ResourceVersion
+	_, err = c.crdClient.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, crd, metav1.UpdateOptions{})
+	return err
+}
+
+func parseCRD(crdString []byte) (*v1.CustomResourceDefinition, error) {
+	sch := runtime.NewScheme()
+	_ = scheme.AddToScheme(sch)
+	_ = v1.AddToScheme(sch)
+	obj, groupVersionKind, err := serializer.NewCodecFactory(sch).UniversalDeserializer().Decode(crdString, nil, nil)
+	if err != nil {
+		return nil, fmt.Errorf("decoding crd: %w", err)
+	}
+	if groupVersionKind.Kind == "CustomResourceDefinition" {
+		return obj.(*v1.CustomResourceDefinition), nil
+	}
+
+	return nil, errors.New("parsed []byte, but did not find a CRD")
+}
+
+func (c *Client) updateOperatorCRDs(ctx context.Context, conOperatorChart *chart.Chart) error {
+	for _, dep := range conOperatorChart.Dependencies() {
+		for _, crdFile := range dep.Files {
+			if strings.HasPrefix(crdFile.Name, "crds/") {
+				log.Printf("updating crd: %s", crdFile.Name)
+				err := c.ApplyCRD(ctx, crdFile.Data)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
 	return nil
 }
