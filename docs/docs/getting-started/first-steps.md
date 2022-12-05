@@ -40,45 +40,61 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 2. Fill in your cloud provider specific information.
 
     <tabs groupId="csp">
-    <tabItem value="azure" label="Azure (CLI)">
 
-    You need several resources for the cluster. You can use the following `az` script to create them:
+    <tabItem value="azure-command" label="Azure">
+
+    Create the IAM configuration on Azure with the following command (You must be authenticated with the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) in the shell session):
 
     ```bash
-    RESOURCE_GROUP=constellation # enter name of new resource group for your cluster here
-    LOCATION=westus # enter location of resources here
-    SUBSCRIPTION_ID=$(az account show --query id --out tsv)
-    SERVICE_PRINCIPAL_NAME=constell
-    az group create --name "${RESOURCE_GROUP}" --location "${LOCATION}"
-    az group create --name "${RESOURCE_GROUP}-identity" --location "${LOCATION}"
-    az ad sp create-for-rbac -n "${SERVICE_PRINCIPAL_NAME}" --role Owner --scopes "/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}" | tee azureServiceAccountKey.json
-    az identity create -g "${RESOURCE_GROUP}-identity" -n "${SERVICE_PRINCIPAL_NAME}"
-    identityID=$(az identity show -n "${SERVICE_PRINCIPAL_NAME}" -g "${RESOURCE_GROUP}-identity" --query principalId --out tsv)
-    az role assignment create --assignee-principal-type ServicePrincipal --assignee-object-id "${identityID}" --role 'Virtual Machine Contributor' --scope "/subscriptions/${SUBSCRIPTION_ID}"
-    az role assignment create --assignee-principal-type ServicePrincipal --assignee-object-id "${identityID}" --role 'Application Insights Component Contributor' --scope "/subscriptions/${SUBSCRIPTION_ID}"
-    echo "subscription: ${SUBSCRIPTION_ID}
-    tenant: $(az account show --query tenantId -o tsv)
-    location: ${LOCATION}
-    resourceGroup: ${RESOURCE_GROUP}
-    userAssignedIdentity: $(az identity show -n "${SERVICE_PRINCIPAL_NAME}" -g "${RESOURCE_GROUP}-identity" --query id --out tsv)
-    appClientID: $(jq -r '.appId' azureServiceAccountKey.json)
-    clientSecretValue: $(jq -r '.password' azureServiceAccountKey.json)"
+    constellation iam create azure --region=westus --resourceGroup=constellTest --servicePrincipal=spTest
     ```
 
-    Fill the values produced by the script into your configuration file.
-
-    :::tip
-
-    Alternatively, you can leave `clientSecretValue` empty and provide the secret via the `CONSTELL_AZURE_CLIENT_SECRET_VALUE` environment variable.
-
-    :::
+    Find an exact command description in our [CLI reference](https://docs.edgeless.systems/constellation/reference/cli).
 
     By default, Constellation uses `Standard_DC4as_v5` CVMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. For CVMs, any VM type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported.
 
-    Run `constellation config instance-types` to get the list of all supported options.
+    You can also run `constellation config instance-types` to get the list of all supported options.
 
+    Paste the output into the corresponding fields of the `constellation-conf.yaml` file created in the previous step.
     </tabItem>
-    <tabItem value="azure-portal" label="Azure (Portal)">
+
+    <tabItem value="gcp-command" label="GCP">
+
+    Create the IAM configuration on GCP with the following command (You must be authenticated with the [GCP CLI](https://cloud.google.com/sdk/gcloud) in the shell session):
+
+    ```bash
+    constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west1-a --serviceAccountID=constell-test
+    ```
+
+    Find an exact command description in our [CLI reference](https://docs.edgeless.systems/constellation/reference/cli).
+
+    By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all machines from the N2D family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
+
+    Paste the output into the corresponding fields of the `constellation-conf.yaml` file created in the previous step.
+    </tabItem>
+
+    <tabItem value="aws-command" label="AWS">
+
+    Create the IAM configuration on AWS with the following command (You must be authenticated with the [AWS CLI](https://aws.amazon.com/en/cli/) in the shell session):
+
+    ```bash
+    constellation iam create aws --zone=eu-central-1a --prefix=constellTest
+    ```
+
+    Find an exact command description in our [CLI reference](https://docs.edgeless.systems/constellation/reference/cli).
+
+    Please note that currently, Constellation OS images are currently replicated to the following regions:
+      * `eu-central-1`
+      * `us-east-2`
+      * `ap-south-1`
+
+    If you require the OS image to be available in another region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+AWS+image+region:+xx-xxxx-x).
+
+    You can find a list of all [regions in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
+
+    Paste the output into the corresponding fields of the `constellation-conf.yaml` file created in the previous step.
+    </tabItem>
+    <tabItem value="azure-portal" label="Azure (Console)">
 
     * **subscription**: The UUID of your Azure subscription, e.g., `8b8bd01f-efd9-4113-9bd1-c82137c32da7`.
 
@@ -131,30 +147,6 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
       Run `constellation config instance-types` to get the list of all supported options.
 
     </tabItem>
-    <tabItem value="gcp" label="GCP (CLI)">
-
-    You need a service account for the cluster. You can use the following `gcloud` script to create it:
-
-    ```bash
-    SERVICE_ACCOUNT_ID=constell # enter name of service account here
-    PROJECT_ID= # enter project id here
-    SERVICE_ACCOUNT_EMAIL=${SERVICE_ACCOUNT_ID}@${PROJECT_ID}.iam.gserviceaccount.com
-    gcloud iam service-accounts create "${SERVICE_ACCOUNT_ID}" --description="Service account used inside Constellation" --display-name="Constellation service account" --project="${PROJECT_ID}"
-    gcloud projects add-iam-policy-binding "${PROJECT_ID}" --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" --role='roles/compute.instanceAdmin.v1'
-    gcloud projects add-iam-policy-binding "${PROJECT_ID}" --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" --role='roles/compute.networkAdmin'
-    gcloud projects add-iam-policy-binding "${PROJECT_ID}" --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" --role='roles/compute.securityAdmin'
-    gcloud projects add-iam-policy-binding "${PROJECT_ID}" --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" --role='roles/compute.storageAdmin'
-    gcloud projects add-iam-policy-binding "${PROJECT_ID}" --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" --role='roles/iam.serviceAccountUser'
-    gcloud iam service-accounts keys create gcpServiceAccountKey.json --iam-account="${SERVICE_ACCOUNT_EMAIL}"
-    echo "project: ${PROJECT_ID}
-    serviceAccountKeyPath: $(realpath gcpServiceAccountKey.json)"
-    ```
-
-    Fill the values produced by the script into your configuration file.
-
-    By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all machines from the N2D family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
-
-    </tabItem>
     <tabItem value="gcp-console" label="GCP (Console)">
 
     * **project**: The ID of your GCP project, e.g., `constellation-129857`.
@@ -184,7 +176,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
       Supported are all machines from the N2D family. It defaults to `n2d-standard-4` (4 vCPUs, 16 GB RAM), but you can use any other VMs from the same family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
 
     </tabItem>
-    <tabItem value="aws" label="AWS">
+    <tabItem value="aws" label="AWS (Console)">
 
     * **region**: The name of your chosen AWS data center region, e.g., `us-east-2`.
 
@@ -224,7 +216,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     :::
 -->
 
-3. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml`.
+1. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml`.
 
     :::tip
 
@@ -243,7 +235,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     Your Constellation cluster was created successfully.
     ```
 
-4. Initialize the cluster
+2. Initialize the cluster
 
     ```bash
     constellation init
@@ -274,7 +266,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     :::
 
-5. Configure kubectl
+3. Configure kubectl
 
     ```bash
     export KUBECONFIG="$PWD/constellation-admin.conf"
