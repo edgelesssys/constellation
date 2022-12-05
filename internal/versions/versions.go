@@ -76,9 +76,9 @@ const (
 	LibvirtImage = "ghcr.io/edgelesssys/constellation/libvirt:v2.2.0@sha256:81ddc30cd679a95379e94e2f154861d9112bcabfffa96330c09a4917693f7cce" // renovate:container
 
 	// LogstashImage is the container image of logstash, used for log collection by debugd.
-	LogstashImage = "ghcr.io/edgelesssys/constellation/logstash-debugd:latest" // renovate:container
+	LogstashImage = "ghcr.io/edgelesssys/constellation/logstash-debugd:v2.3.0-pre.0.20221202175424-c52dfb09b903@sha256:371a04208808a7647810282e0a0c4187fda0ceb22aa3361f9b557d16facd7ee5" // renovate:container
 	// FilebeatImage is the container image of filebeat, used for log collection by debugd.
-	FilebeatImage = "ghcr.io/edgelesssys/constellation/filebeat-debugd:latest" // renovate:container
+	FilebeatImage = "ghcr.io/edgelesssys/constellation/filebeat-debugd:v2.3.0-pre.0.20221202175424-c52dfb09b903@sha256:72aff7ec71fb02cce61b8b5b64349f6eb24a968458c41924bf290ee38c407b5f" // renovate:container
 
 	// currently supported versions.
 	//nolint:revive
