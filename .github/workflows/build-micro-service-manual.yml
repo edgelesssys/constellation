@@ -11,8 +11,8 @@ on:
           - "kmsserver"
           - "verification-service"
           - "qemu-metadata-api"
-          - "filebeat-debug"
-          - "logstash-debug"
+          - "filebeat-debugd"
+          - "logstash-debugd"
         required: true
         default: "join-service"
       imageTag:
@@ -55,9 +55,9 @@ jobs:
               echo "microServiceDockerfile=verify/Dockerfile" >> "$GITHUB_ENV" ;;
             "qemu-metadata-api" )
               echo "microServiceDockerfile=hack/qemu-metadata-api/Dockerfile" >> "$GITHUB_ENV" ;;
-            "filebeat-debug" )
+            "filebeat-debugd" )
               echo "microServiceDockerfile=debugd/internal/debugd/logcollector/filebeat/Dockerfile" >> "$GITHUB_ENV" ;;
-            "logstash-debug" )
+            "logstash-debugd" )
               echo "microServiceDockerfile=debugd/internal/debugd/logcollector/logstash/Dockerfile" >> "$GITHUB_ENV" ;;
           esac
 
