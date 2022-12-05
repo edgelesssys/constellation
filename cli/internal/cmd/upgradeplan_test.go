@@ -492,6 +492,6 @@ type stubPatchLister struct {
 	err  error
 }
 
-func (s stubPatchLister) PatchVersionsOf(ctx context.Context, stream, minor, kind string) (*versionsapi.List, error) {
+func (s stubPatchLister) PatchVersionsOf(ctx context.Context, ref, stream, minor, kind string) (*versionsapi.List, error) {
 	return &s.list, s.err
 }
