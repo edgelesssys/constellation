@@ -110,7 +110,7 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner, patchLister patchLi
 
 	var updateCandidates []string
 	for _, minorVer := range allowedMinorVersions {
-		versionList, err := patchLister.PatchVersionsOf(cmd.Context(), "stable", minorVer, "image")
+		versionList, err := patchLister.PatchVersionsOf(cmd.Context(), "-", "stable", minorVer, "image")
 		if err == nil {
 			updateCandidates = append(updateCandidates, versionList.Versions...)
 		}
@@ -335,5 +335,5 @@ type upgradePlanner interface {
 }
 
 type patchLister interface {
-	PatchVersionsOf(ctx context.Context, stream, minor, kind string) (*versionsapi.List, error)
+	PatchVersionsOf(ctx context.Context, ref, stream, minor, kind string) (*versionsapi.List, error)
 }

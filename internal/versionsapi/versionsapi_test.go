@@ -123,37 +123,37 @@ func TestList(t *testing.T) {
 	require.NoError(t, err)
 	client := newTestClient(func(req *http.Request) *http.Response {
 		switch req.URL.Path {
-		case "/constellation/v1/versions/stream/stable/major/v1/image.json":
+		case "/constellation/v1/ref/test-ref/stream/nightly/versions/major/v1/image.json":
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBuffer(majorListJSON)),
 				Header:     make(http.Header),
 			}
-		case "/constellation/v1/versions/stream/stable/minor/v1.1/image.json":
+		case "/constellation/v1/ref/test-ref/stream/nightly/versions/minor/v1.1/image.json":
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBuffer(minorListJSON)),
 				Header:     make(http.Header),
 			}
-		case "/constellation/v1/versions/stream/stable/major/v1/500.json": // 500 error
+		case "/constellation/v1/ref/test-ref/stream/nightly/versions/major/v1/500.json": // 500 error
 			return &http.Response{
 				StatusCode: http.StatusInternalServerError,
 				Body:       io.NopCloser(bytes.NewBufferString("Server Error.")),
 				Header:     make(http.Header),
 			}
-		case "/constellation/v1/versions/stream/stable/major/v1/nojson.json": // invalid format
+		case "/constellation/v1/ref/test-ref/stream/nightly/versions/major/v1/nojson.json": // invalid format
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBufferString("not json")),
 				Header:     make(http.Header),
 			}
-		case "/constellation/v1/versions/stream/stable/major/v2/image.json": // inconsistent list
+		case "/constellation/v1/ref/test-ref/stream/nightly/versions/major/v2/image.json": // inconsistent list
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBuffer(inconsistentListJSON)),
 				Header:     make(http.Header),
 			}
-		case "/constellation/v1/versions/stream/stable/major/v3/image.json": // does not match requested version
+		case "/constellation/v1/ref/test-ref/stream/nightly/versions/major/v3/image.json": // does not match requested version
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBuffer(minorListJSON)),
@@ -168,10 +168,10 @@ func TestList(t *testing.T) {
 	})
 
 	testCases := map[string]struct {
-		stream, granularity, base, kind string
-		overrideFile                    string
-		wantList                        List
-		wantErr                         bool
+		ref, stream, granularity, base, kind string
+		overrideFile                         string
+		wantList                             List
+		wantErr                              bool
 	}{
 		"major list fetched remotely": {
 			wantList: *majorList(),
@@ -208,7 +208,8 @@ func TestList(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			stream := "stable"
+			ref := "test-ref"
+			stream := "nightly"
 			granularity := "major"
 			base := "v1"
 			kind := "image"
@@ -228,7 +229,7 @@ func TestList(t *testing.T) {
 			fetcher := &Fetcher{
 				httpc: client,
 			}
-			list, err := fetcher.list(context.Background(), stream, granularity, base, kind)
+			list, err := fetcher.list(context.Background(), ref, stream, granularity, base, kind)
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -256,7 +257,8 @@ func newTestClient(fn roundTripFunc) *http.Client {
 
 func majorList() *List {
 	return &List{
-		Stream:      "stable",
+		Ref:         "test-ref",
+		Stream:      "nightly",
 		Granularity: "major",
 		Base:        "v1",
 		Kind:        "image",
@@ -268,7 +270,8 @@ func majorList() *List {
 
 func minorList() *List {
 	return &List{
-		Stream:      "stable",
+		Ref:         "test-ref",
+		Stream:      "nightly",
 		Granularity: "minor",
 		Base:        "v1.1",
 		Kind:        "image",
@@ -278,21 +281,67 @@ func minorList() *List {
 	}
 }
 
-func TestIsValidStream(t *testing.T) {
+func TestIsValidRef(t *testing.T) {
 	testCases := map[string]bool{
-		"stable":  true,
-		"debug":   true,
-		"beta":    false,
-		"alpha":   false,
-		"unknown": false,
-		"fast":    false,
+		"feat/foo":            false,
+		"feat-foo":            true,
+		"feat$foo":            false,
+		"3234":                true,
+		"feat foo":            false,
+		"refs-heads-feat-foo": false,
+		"":                    false,
 	}
 
-	for name, want := range testCases {
-		t.Run(name, func(t *testing.T) {
+	for ref, want := range testCases {
+		t.Run(ref, func(t *testing.T) {
+			assert := assert.New(t)
+			assert.Equal(want, IsValidRef(ref))
+		})
+	}
+}
+
+func TestCanonicalRef(t *testing.T) {
+	testCases := map[string]string{
+		"feat/foo": "feat-foo",
+		"feat-foo": "feat-foo",
+		"feat$foo": "feat-foo",
+		"3234":     "3234",
+		"feat foo": "feat-foo",
+	}
+
+	for ref, want := range testCases {
+		t.Run(ref, func(t *testing.T) {
+			assert := assert.New(t)
+			assert.Equal(want, CanonicalRef(ref))
+		})
+	}
+}
+
+func TestIsValidStream(t *testing.T) {
+	testCases := []struct {
+		branch string
+		stream string
+		want   bool
+	}{
+		{branch: "-", stream: "stable", want: true},
+		{branch: "-", stream: "debug", want: true},
+		{branch: "-", stream: "nightly", want: false},
+		{branch: "-", stream: "console", want: true},
+		{branch: "main", stream: "stable", want: false},
+		{branch: "main", stream: "debug", want: true},
+		{branch: "main", stream: "nightly", want: true},
+		{branch: "main", stream: "console", want: true},
+		{branch: "foo-branch", stream: "nightly", want: true},
+		{branch: "foo-branch", stream: "console", want: true},
+		{branch: "foo-branch", stream: "debug", want: true},
+		{branch: "foo-branch", stream: "stable", want: false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.branch+"+"+tc.stream, func(t *testing.T) {
 			assert := assert.New(t)
 
-			assert.Equal(want, IsValidStream(name))
+			assert.Equal(tc.want, IsValidStream(tc.branch, tc.stream))
 		})
 	}
 }
