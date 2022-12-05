@@ -32,7 +32,6 @@ type List struct {
 	// Ref is the branch name the list belongs to.
 	Ref string `json:"ref,omitempty"`
 	// Stream is the update stream of the list.
-	// Currently, only "stable" and "debug" are supported.
 	Stream string `json:"stream,omitempty"`
 	// Granularity is the granularity of the base version of this list.
 	// It can be either "major" or "minor".
@@ -95,6 +94,49 @@ func (l *List) Validate() error {
 		return fmt.Errorf("version list is invalid:\n%s", strings.Join(issues, "\n"))
 	}
 	return nil
+}
+
+// JSONPath returns the S3 JSON path for this object.
+func (l *List) JSONPath() string {
+	return path.Join(constants.CDNAPIPrefix, "ref", l.Ref, "stream", l.Stream, "versions", l.Granularity, l.Base, l.Kind+".json")
+}
+
+// Latest is the latest version of a kind of resource.
+type Latest struct {
+	// Ref is the branch name this latest version belongs to.
+	Ref string `json:"ref,omitempty"`
+	// Stream is stream name this latest version belongs to.
+	Stream string `json:"stream,omitempty"`
+	// Kind is the kind of resource this latest version is for.
+	Kind string `json:"kind,omitempty"`
+	// Version is the latest version for this ref, stream and kind.
+	Version string `json:"version,omitempty"`
+}
+
+// Validate checks if this latest version is valid.
+func (l *Latest) Validate() error {
+	var issues []string
+	if !IsValidRef(l.Ref) {
+		issues = append(issues, "ref is empty")
+	}
+	if !IsValidStream(l.Ref, l.Stream) {
+		issues = append(issues, fmt.Sprintf("stream %q is not supported on ref %q", l.Stream, l.Ref))
+	}
+	if l.Kind != "image" {
+		issues = append(issues, fmt.Sprintf("kind %q is not supported", l.Kind))
+	}
+	if !semver.IsValid(l.Version) {
+		issues = append(issues, fmt.Sprintf("version %q is not a valid semantic version", l.Version))
+	}
+	if len(issues) > 0 {
+		return fmt.Errorf("latest version is invalid:\n%s", strings.Join(issues, "\n"))
+	}
+	return nil
+}
+
+// JSONPath returns the S3 JSON path for this object.
+func (l *Latest) JSONPath() string {
+	return path.Join(constants.CDNAPIPrefix, "ref", l.Ref, "stream", l.Stream, "versions", "latest", l.Kind+".json")
 }
 
 // Contains returns true if the list contains the given version.
