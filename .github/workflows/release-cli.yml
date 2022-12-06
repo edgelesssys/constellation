@@ -157,7 +157,7 @@ jobs:
       - provenance-subjects
     # This must not be pinned to digest. See:
     # https://github.com/slsa-framework/slsa-github-generator#referencing-slsa-builders-and-generators
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@vc3a3e407b10cc6dbbb44d01e0ebdded5c6b22f12 # v1.2.2
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.2.2
     with:
       base64-subjects: "${{ needs.provenance-subjects.outputs.provenance-subjects }}"
 
