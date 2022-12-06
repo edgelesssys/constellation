@@ -15,13 +15,17 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
 // Client is a kubernetes client.
 type Client struct {
-	client *kubernetes.Clientset
+	client    *kubernetes.Clientset
+	dynClient dynamic.Interface
 }
 
 // New creates a new kubernetes client.
@@ -36,7 +40,13 @@ func New() (*Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create clientset: %w", err)
 	}
-	return &Client{client: clientset}, nil
+
+	dynClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create dynamic client: %w", err)
+	}
+
+	return &Client{client: clientset, dynClient: dynClient}, nil
 }
 
 // GetComponents returns the components of the cluster.
@@ -66,6 +76,30 @@ func (c *Client) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap
 	_, err := c.client.CoreV1().ConfigMaps(configMap.ObjectMeta.Namespace).Create(ctx, &configMap, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create configmap: %w", err)
+	}
+	return nil
+}
+
+// AddNodeToJoiningNodes adds the provided node as a joining node CRD.
+func (c *Client) AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsHash string) error {
+	joiningNodeResource := schema.GroupVersionResource{Group: "update.edgeless.systems", Version: "v1alpha1", Resource: "joiningnodes"}
+
+	joiningNode := &unstructured.Unstructured{}
+	joiningNode.SetUnstructuredContent(map[string]any{
+		"apiVersion": "update.edgeless.systems/v1alpha1",
+		"kind":       "JoiningNode",
+		"metadata": map[string]any{
+			"name": nodeName,
+		},
+		"spec": map[string]any{
+			"name":           nodeName,
+			"componentshash": componentsHash,
+		},
+	})
+
+	_, err := c.dynClient.Resource(joiningNodeResource).Apply(ctx, joiningNode.GetName(), joiningNode, metav1.ApplyOptions{FieldManager: "join-service"})
+	if err != nil {
+		return fmt.Errorf("failed to create joining node: %w", err)
 	}
 	return nil
 }

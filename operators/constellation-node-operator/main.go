@@ -145,6 +145,13 @@ func main() {
 		setupLog.Error(err, "Unable to create controller", "controller", "AutoscalingStrategy")
 		os.Exit(1)
 	}
+	if err = (&controllers.JoiningNodesReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "Unable to create controller", "controller", "JoiningNode")
+		os.Exit(1)
+	}
 	if err = controllers.NewScalingGroupReconciler(
 		cspClient, mgr.GetClient(), mgr.GetScheme(),
 	).SetupWithManager(mgr); err != nil {

@@ -163,6 +163,13 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("waiting for Kubernetes API to be available: %w", err)
 	}
 
+	// Annotate Node with the hash of the installed components
+	if err := k.client.AnnotateNode(ctx, nodeName,
+		constants.NodeKubernetesComponentsHashAnnotationKey, kubernetesComponents.GetHash(),
+	); err != nil {
+		return nil, fmt.Errorf("annotating node with Kubernetes components hash: %w", err)
+	}
+
 	// Step 3: configure & start kubernetes controllers
 	log.Infof("Starting Kubernetes controllers and deployments")
 	setupPodNetworkInput := k8sapi.SetupPodNetworkInput{

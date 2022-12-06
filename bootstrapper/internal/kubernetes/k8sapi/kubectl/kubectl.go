@@ -67,6 +67,22 @@ func (k *Kubectl) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMa
 	return nil
 }
 
+// AnnotateNode adds the provided annotations to the node, identified by name.
+func (k *Kubectl) AnnotateNode(ctx context.Context, nodeName, annotationKey, annotationValue string) error {
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		node, err := k.CoreV1().Nodes().Get(ctx, nodeName, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		if node.Annotations == nil {
+			node.Annotations = map[string]string{}
+		}
+		node.Annotations[annotationKey] = annotationValue
+		_, err = k.CoreV1().Nodes().Update(ctx, node, metav1.UpdateOptions{})
+		return err
+	})
+}
+
 // ListAllNamespaces returns all namespaces in the cluster.
 func (k *Kubectl) ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error) {
 	return k.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
