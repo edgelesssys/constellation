@@ -90,6 +90,25 @@ func TestInitCluster(t *testing.T) {
 			wantErr:    false,
 			k8sVersion: versions.Default,
 		},
+		"kubeadm init fails when annotating itself": {
+			clusterUtil: stubClusterUtil{},
+			kubeconfigReader: &stubKubeconfigReader{
+				kubeconfig: []byte("someKubeconfig"),
+			},
+			kubeAPIWaiter: stubKubeAPIWaiter{},
+			providerMetadata: &stubProviderMetadata{
+				selfResp: metadata.InstanceMetadata{
+					Name:          nodeName,
+					ProviderID:    providerID,
+					VPCIP:         privateIP,
+					AliasIPRanges: []string{aliasIPRange},
+				},
+				getLoadBalancerEndpointResp: loadbalancerIP,
+			},
+			kubectl:    stubKubectl{annotateNodeErr: someErr},
+			wantErr:    true,
+			k8sVersion: versions.Default,
+		},
 		"kubeadm init fails when retrieving metadata self": {
 			clusterUtil: stubClusterUtil{},
 			kubeconfigReader: &stubKubeconfigReader{
@@ -574,6 +593,7 @@ type stubKubectl struct {
 	addTNodeSelectorsToDeploymentErr error
 	waitForCRDsErr                   error
 	listAllNamespacesErr             error
+	annotateNodeErr                  error
 
 	listAllNamespacesResp *corev1.NamespaceList
 }
@@ -592,6 +612,10 @@ func (s *stubKubectl) AddTolerationsToDeployment(ctx context.Context, toleration
 
 func (s *stubKubectl) AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error {
 	return s.addTNodeSelectorsToDeploymentErr
+}
+
+func (s *stubKubectl) AnnotateNode(ctx context.Context, nodeName, annotationKey, annotationValue string) error {
+	return s.annotateNodeErr
 }
 
 func (s *stubKubectl) WaitForCRDs(ctx context.Context, crds []string) error {

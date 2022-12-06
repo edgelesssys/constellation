@@ -124,6 +124,12 @@ const (
 	// ComponentsListKey is the name of the key holding the list of components in the components configMap.
 	ComponentsListKey = "components"
 
+	// NodeKubernetesComponentsHashAnnotationKey is the name of the annotation holding the hash of the installed components of this node.
+	NodeKubernetesComponentsHashAnnotationKey = "updates.edgeless.systems/kubernetes-components-hash"
+
+	// JoiningNodesConfigMapName is the name of the configMap holding the joining nodes with the components hashes the node-operator should annotate the nodes with.
+	JoiningNodesConfigMapName = "joining-nodes"
+
 	//
 	// CLI.
 	//

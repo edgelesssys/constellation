@@ -40,6 +40,19 @@ func New(log *logger.Logger, fileHandler file.Handler) *KubernetesCA {
 	}
 }
 
+// GetNodeNameFromCSR extracts the node name from a CSR.
+func (c KubernetesCA) GetNodeNameFromCSR(csr []byte) (string, error) {
+	certRequest, err := x509.ParseCertificateRequest(csr)
+	if err != nil {
+		return "", err
+	}
+	if !strings.HasPrefix(certRequest.Subject.CommonName, kubeconstants.NodesUserPrefix) {
+		return "", fmt.Errorf("certificate request must have common name prefix %q but is %q", kubeconstants.NodesUserPrefix, certRequest.Subject.CommonName)
+	}
+
+	return strings.TrimPrefix(certRequest.Subject.CommonName, kubeconstants.NodesUserPrefix), nil
+}
+
 // GetCertificate creates a certificate for a node and signs it using the Kubernetes root CA.
 func (c KubernetesCA) GetCertificate(csr []byte) (cert []byte, err error) {
 	c.log.Debugf("Loading Kubernetes CA certificate")
