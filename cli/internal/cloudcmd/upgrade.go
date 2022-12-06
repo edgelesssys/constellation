@@ -12,7 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -38,7 +37,7 @@ type Upgrader struct {
 }
 
 // NewUpgrader returns a new Upgrader.
-func NewUpgrader(outWriter io.Writer) (*Upgrader, error) {
+func NewUpgrader(outWriter io.Writer, log debugLog) (*Upgrader, error) {
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", constants.AdminConfFilename)
 	if err != nil {
 		return nil, fmt.Errorf("building kubernetes config: %w", err)
@@ -60,7 +59,7 @@ func NewUpgrader(outWriter io.Writer) (*Upgrader, error) {
 		return nil, err
 	}
 
-	helmClient, err := helm.NewClient(constants.AdminConfFilename, constants.HelmNamespace, client, log.Default())
+	helmClient, err := helm.NewClient(constants.AdminConfFilename, constants.HelmNamespace, client, log)
 	if err != nil {
 		return nil, fmt.Errorf("setting up helm client: %w", err)
 	}
@@ -246,4 +245,10 @@ func (u *stableClient) kubernetesVersion() (string, error) {
 type helmInterface interface {
 	CurrentVersion(release string) (string, error)
 	Upgrade(ctx context.Context, config *config.Config) error
+}
+
+// Using the type from cli/internal/cmd would introduce the following import cycle: cli/internal/cmd (upgradeexecute.go) -> cli/internal/cloudcmd (upgrade.go) -> cli/internal/cloudcmd/helm (client.go) -> cli/internal/cmd (log.go)
+type debugLog interface {
+	Debugf(format string, args ...any)
+	Sync()
 }

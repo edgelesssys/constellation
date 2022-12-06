@@ -9,7 +9,6 @@ package helm
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -37,17 +36,17 @@ const (
 type Client struct {
 	config    *action.Configuration
 	crdClient *apiextensionsclient.Clientset
-	log       *log.Logger
+	log       debugLog
 }
 
 // NewClient returns a new initializes client for the namespace Client.
-func NewClient(kubeConfigPath, helmNamespace string, client *apiextensionsclient.Clientset, log *log.Logger) (*Client, error) {
+func NewClient(kubeConfigPath, helmNamespace string, client *apiextensionsclient.Clientset, log debugLog) (*Client, error) {
 	settings := cli.New()
 	settings.KubeConfig = kubeConfigPath // constants.AdminConfFilename
 
 	// TODO: Replace log.Printf with actual CLILogger during refactoring of upgrade cmd.
 	actionConfig := &action.Configuration{}
-	if err := actionConfig.Init(settings.RESTClientGetter(), helmNamespace, "secret", log.Printf); err != nil {
+	if err := actionConfig.Init(settings.RESTClientGetter(), helmNamespace, "secret", log.Debugf); err != nil {
 		return nil, fmt.Errorf("initializing config: %w", err)
 	}
 
@@ -211,7 +210,7 @@ func (c *Client) updateOperatorCRDs(ctx context.Context, chart *chart.Chart) err
 	for _, dep := range chart.Dependencies() {
 		for _, crdFile := range dep.Files {
 			if strings.HasPrefix(crdFile.Name, "crds/") {
-				c.log.Printf("updating crd: %s", crdFile.Name)
+				c.log.Debugf("updating crd: %s", crdFile.Name)
 				err := c.ApplyCRD(ctx, crdFile.Data)
 				if err != nil {
 					return err
@@ -220,4 +219,10 @@ func (c *Client) updateOperatorCRDs(ctx context.Context, chart *chart.Chart) err
 		}
 	}
 	return nil
+}
+
+// Using the type from cli/internal/cmd would introduce the following import cycle: cli/internal/cmd (upgradeexecute.go) -> cli/internal/cloudcmd (upgrade.go) -> cli/internal/cloudcmd/helm (client.go) -> cli/internal/cmd (log.go)
+type debugLog interface {
+	Debugf(format string, args ...any)
+	Sync()
 }

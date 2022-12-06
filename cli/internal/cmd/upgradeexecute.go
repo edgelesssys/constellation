@@ -35,9 +35,15 @@ func newUpgradeExecuteCmd() *cobra.Command {
 }
 
 func runUpgradeExecute(cmd *cobra.Command, args []string) error {
+	log, err := newCLILogger(cmd)
+	if err != nil {
+		return fmt.Errorf("creating logger: %w", err)
+	}
+	defer log.Sync()
+
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	imageFetcher := image.New()
-	upgrader, err := cloudcmd.NewUpgrader(cmd.OutOrStdout())
+	upgrader, err := cloudcmd.NewUpgrader(cmd.OutOrStdout(), log)
 	if err != nil {
 		return err
 	}

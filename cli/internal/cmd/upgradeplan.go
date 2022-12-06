@@ -44,12 +44,18 @@ func newUpgradePlanCmd() *cobra.Command {
 }
 
 func runUpgradePlan(cmd *cobra.Command, args []string) error {
+	log, err := newCLILogger(cmd)
+	if err != nil {
+		return fmt.Errorf("creating logger: %w", err)
+	}
+	defer log.Sync()
+
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	flags, err := parseUpgradePlanFlags(cmd)
 	if err != nil {
 		return err
 	}
-	planner, err := cloudcmd.NewUpgrader(cmd.OutOrStdout())
+	planner, err := cloudcmd.NewUpgrader(cmd.OutOrStdout(), log)
 	if err != nil {
 		return err
 	}
