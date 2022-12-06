@@ -104,7 +104,7 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config) error {
 		return fmt.Errorf("loading constellation-services chart: %w", err)
 	}
 
-	values, err := c.prepareCiliumValues(ciliumChart)
+	values, err := c.prepareValues(ciliumChart, ciliumReleaseName)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config) error {
 		return fmt.Errorf("upgrading cilium: %w", err)
 	}
 
-	values, err = c.prepareCertManagerValues(certManagerChart)
+	values, err = c.prepareValues(certManagerChart, certManagerReleaseName)
 	if err != nil {
 		return err
 	}
@@ -120,27 +120,23 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config) error {
 		return fmt.Errorf("upgrading cert-manager: %w", err)
 	}
 
-	action.ReuseValues = true
-
 	err = c.updateOperatorCRDs(ctx, conOperatorChart)
 	if err != nil {
 		return fmt.Errorf("updating operator CRDs: %w", err)
 	}
-	tagVals, ok := conOperatorChart.Values["tags"].(map[string]any)
-	if !ok {
-		return errors.New("missing CSP tag in operator chart")
+	values, err = c.prepareValues(conOperatorChart, conOperatorsReleaseName)
+	if err != nil {
+		return err
 	}
-	tagVals[config.GetProvider().String()] = true
-	if _, err := action.RunWithContext(ctx, conOperatorsReleaseName, conOperatorChart, conOperatorChart.Values); err != nil {
+	if _, err := action.RunWithContext(ctx, conOperatorsReleaseName, conOperatorChart, values); err != nil {
 		return fmt.Errorf("upgrading services: %w", err)
 	}
 
-	tagVals, ok = conServicesChart.Values["tags"].(map[string]any)
-	if !ok {
-		return errors.New("missing CSP tag in operator chart")
+	values, err = c.prepareValues(conServicesChart, conServicesReleaseName)
+	if err != nil {
+		return err
 	}
-	tagVals[config.GetProvider().String()] = true
-	if _, err := action.RunWithContext(ctx, conServicesReleaseName, conServicesChart, conServicesChart.Values); err != nil {
+	if _, err := action.RunWithContext(ctx, conServicesReleaseName, conServicesChart, values); err != nil {
 		return fmt.Errorf("upgrading operators: %w", err)
 	}
 
@@ -152,26 +148,16 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config) error {
 // and merging the fetched values with the locally found values.
 // This is done to ensure that new values (from upgrades of the local files) end up in the cluster.
 // reuse-values does not ensure this.
-func (c *Client) prepareCertManagerValues(certManagerChart *chart.Chart) (map[string]any, error) {
-	certManagerChart.Values["installCRDs"] = true
-	certManagerVals, err := c.GetValues(certManagerReleaseName)
+func (c *Client) prepareValues(chart *chart.Chart, releaseName string) (map[string]any, error) {
+	// Ensure installCRDs is set for cert-manager chart.
+	if releaseName == certManagerReleaseName {
+		chart.Values["installCRDs"] = true
+	}
+	values, err := c.GetValues(releaseName)
 	if err != nil {
 		return nil, fmt.Errorf("getting values: %w", err)
 	}
-	return helm.MergeMaps(certManagerChart.Values, certManagerVals), nil
-}
-
-// prepareCiliumValues returns a values map as required for helm-upgrade.
-// It imitates the behaviour of helm's reuse-values flag by fetching the current values from the cluster
-// and merging the fetched values with the locally found values.
-// This is done to ensure that new values (from upgrades of the local files) end up in the cluster.
-// reuse-values does not ensure this.
-func (c *Client) prepareCiliumValues(ciliumChart *chart.Chart) (map[string]any, error) {
-	ciliumVals, err := c.GetValues(ciliumReleaseName)
-	if err != nil {
-		return nil, fmt.Errorf("getting values: %w", err)
-	}
-	return helm.MergeMaps(ciliumChart.Values, ciliumVals), nil
+	return helm.MergeMaps(chart.Values, values), nil
 }
 
 // GetValues queries the cluster for the values of the given release.
