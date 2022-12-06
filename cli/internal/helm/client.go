@@ -30,7 +30,7 @@ import (
 
 const (
 	// timeout is the maximum time given to the helm client.
-	upgradeTimeout = 1 * time.Minute
+	upgradeTimeout = 3 * time.Minute
 )
 
 // Client handles interaction with helm.
@@ -128,7 +128,7 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config) error {
 	}
 	tagVals, ok := conOperatorChart.Values["tags"].(map[string]any)
 	if !ok {
-		return err
+		return errors.New("missing CSP tag in operator chart")
 	}
 	tagVals[config.GetProvider().String()] = true
 	if _, err := action.RunWithContext(ctx, conOperatorsReleaseName, conOperatorChart, conOperatorChart.Values); err != nil {
@@ -137,7 +137,7 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config) error {
 
 	tagVals, ok = conServicesChart.Values["tags"].(map[string]any)
 	if !ok {
-		return err
+		return errors.New("missing CSP tag in operator chart")
 	}
 	tagVals[config.GetProvider().String()] = true
 	if _, err := action.RunWithContext(ctx, conServicesReleaseName, conServicesChart, conServicesChart.Values); err != nil {

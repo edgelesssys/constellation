@@ -1,21 +1,40 @@
 package helm
 
 import (
-	"fmt"
-	"io/ioutil"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-	"github.com/tj/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParseCRDs(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
-	data, err := ioutil.ReadFile("charts/edgeless/operators/charts/constellation-operator/crds/nodeimage-crd.yaml")
-	require.NoError(err)
+	testCases := map[string]struct {
+		data    string
+		wantErr bool
+	}{
+		"success": {
+			data:    "apiVersion: apiextensions.k8s.io/v1\nkind: CustomResourceDefinition\nmetadata:\n  name: nodeimages.update.edgeless.systems\nspec:\n  group: update.edgeless.systems\n  names:\n    kind: NodeImage\n",
+			wantErr: false,
+		},
+		"wrong kind": {
+			data:    "apiVersion: v1\nkind: Secret\ntype: Opaque\nmetadata:\n  name: supersecret\n  namespace: testNamespace\ndata:\n  data: YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=\n",
+			wantErr: true,
+		},
+		"decoding error": {
+			data:    "asdf",
+			wantErr: true,
+		},
+	}
 
-	crd, err := parseCRD(data)
-	assert.NoError(err)
-	fmt.Println(crd)
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			_, err := parseCRD([]byte(tc.data))
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+		})
+	}
 }
