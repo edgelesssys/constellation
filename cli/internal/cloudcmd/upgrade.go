@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -58,7 +59,8 @@ func NewUpgrader(outWriter io.Writer) (*Upgrader, error) {
 	if err != nil {
 		return nil, err
 	}
-	helmClient, err := helm.NewClient(constants.AdminConfFilename, constants.HelmNamespace, client)
+
+	helmClient, err := helm.NewClient(constants.AdminConfFilename, constants.HelmNamespace, client, log.Default())
 	if err != nil {
 		return nil, fmt.Errorf("setting up helm client: %w", err)
 	}

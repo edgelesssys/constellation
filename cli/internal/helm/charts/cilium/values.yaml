@@ -9,7 +9,7 @@
 
 debug:
   # -- Enable debug logging
-  enabled: true
+  enabled: false
   # verbose:
 
 rbac:

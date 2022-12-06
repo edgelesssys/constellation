@@ -37,10 +37,11 @@ const (
 type Client struct {
 	config    *action.Configuration
 	crdClient *apiextensionsclient.Clientset
+	log       *log.Logger
 }
 
 // NewClient returns a new initializes client for the namespace Client.
-func NewClient(kubeConfigPath, helmNamespace string, client *apiextensionsclient.Clientset) (*Client, error) {
+func NewClient(kubeConfigPath, helmNamespace string, client *apiextensionsclient.Clientset, log *log.Logger) (*Client, error) {
 	settings := cli.New()
 	settings.KubeConfig = kubeConfigPath // constants.AdminConfFilename
 
@@ -50,7 +51,7 @@ func NewClient(kubeConfigPath, helmNamespace string, client *apiextensionsclient
 		return nil, fmt.Errorf("initializing config: %w", err)
 	}
 
-	return &Client{config: actionConfig, crdClient: client}, nil
+	return &Client{config: actionConfig, crdClient: client, log: log}, nil
 }
 
 // CurrentVersion returns the version of the currently installed helm release.
@@ -77,8 +78,8 @@ func (c *Client) CurrentVersion(release string) (string, error) {
 }
 
 // Upgrade runs a helm-upgrade on all deployments that are managed via Helm.
-// TODO: Verify that CRDs are upgraded.
-// TODO: check helm cli how it handles ctrl+c.
+// If the CLI receives an interrupt signal it will cancel the context.
+// Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
 func (c *Client) Upgrade(ctx context.Context, config *config.Config) error {
 	action := action.NewUpgrade(c.config)
 	action.Atomic = true
@@ -103,10 +104,6 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config) error {
 		return fmt.Errorf("loading constellation-services chart: %w", err)
 	}
 
-	// Prevent half-finished upgrades
-	// action.Lock.Lock()
-	// defer action.Lock.Unlock()
-
 	values, err := c.prepareCiliumValues(ciliumChart)
 	if err != nil {
 		return err
@@ -125,7 +122,6 @@ func (c *Client) Upgrade(ctx context.Context, config *config.Config) error {
 
 	action.ReuseValues = true
 
-	// kubectl apply operators/crds
 	err = c.updateOperatorCRDs(ctx, conOperatorChart)
 	if err != nil {
 		return fmt.Errorf("updating operator CRDs: %w", err)
@@ -190,7 +186,7 @@ func (c *Client) GetValues(release string) (map[string]any, error) {
 	return values, nil
 }
 
-// ApplyCRD updates the given CRD by parsing it, querying it from the cluster and finally updating it.
+// ApplyCRD updates the given CRD by parsing it, querying it's version from the cluster and finally updating it.
 func (c *Client) ApplyCRD(ctx context.Context, rawCRD []byte) error {
 	crd, err := parseCRD(rawCRD)
 	if err != nil {
@@ -206,6 +202,7 @@ func (c *Client) ApplyCRD(ctx context.Context, rawCRD []byte) error {
 	return err
 }
 
+// parseCRD takes a byte slice of data and tries to create a CustomResourceDefinition object from it.
 func parseCRD(crdString []byte) (*v1.CustomResourceDefinition, error) {
 	sch := runtime.NewScheme()
 	_ = scheme.AddToScheme(sch)
@@ -221,11 +218,14 @@ func parseCRD(crdString []byte) (*v1.CustomResourceDefinition, error) {
 	return nil, errors.New("parsed []byte, but did not find a CRD")
 }
 
-func (c *Client) updateOperatorCRDs(ctx context.Context, conOperatorChart *chart.Chart) error {
-	for _, dep := range conOperatorChart.Dependencies() {
+// updateOperatorCRDs walks through the dependencies of the given chart and applies
+// the files in the dependencie's 'crds' folder.
+// This function is NOT recursive!
+func (c *Client) updateOperatorCRDs(ctx context.Context, chart *chart.Chart) error {
+	for _, dep := range chart.Dependencies() {
 		for _, crdFile := range dep.Files {
 			if strings.HasPrefix(crdFile.Name, "crds/") {
-				log.Printf("updating crd: %s", crdFile.Name)
+				c.log.Printf("updating crd: %s", crdFile.Name)
 				err := c.ApplyCRD(ctx, crdFile.Data)
 				if err != nil {
 					return err
