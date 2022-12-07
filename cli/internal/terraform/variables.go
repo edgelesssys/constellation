@@ -39,8 +39,8 @@ func (v *CommonVariables) String() string {
 	return b.String()
 }
 
-// AWSVariables is user configuration for creating a cluster with Terraform on GCP.
-type AWSVariables struct {
+// AWSClusterVariables is user configuration for creating a cluster with Terraform on GCP.
+type AWSClusterVariables struct {
 	// CommonVariables contains common variables.
 	CommonVariables
 	// Region is the AWS region to use.
@@ -61,8 +61,40 @@ type AWSVariables struct {
 	Debug bool
 }
 
-// GCPVariables is user configuration for creating a cluster with Terraform on GCP.
-type GCPVariables struct {
+func (v *AWSClusterVariables) String() string {
+	b := &strings.Builder{}
+	b.WriteString(v.CommonVariables.String())
+	writeLinef(b, "region = %q", v.Region)
+	writeLinef(b, "zone = %q", v.Zone)
+	writeLinef(b, "ami = %q", v.AMIImageID)
+	writeLinef(b, "instance_type = %q", v.InstanceType)
+	writeLinef(b, "state_disk_type = %q", v.StateDiskType)
+	writeLinef(b, "iam_instance_profile_control_plane = %q", v.IAMProfileControlPlane)
+	writeLinef(b, "iam_instance_profile_worker_nodes = %q", v.IAMProfileWorkerNodes)
+	writeLinef(b, "debug = %t", v.Debug)
+
+	return b.String()
+}
+
+// AWSIAMVariables is user configuration for creating the IAM configuration with Terraform on Microsoft Azure.
+type AWSIAMVariables struct {
+	// Region is the AWS location to use. (e.g. us-east-2)
+	Region string
+	// Prefix is the name prefix of the resources to use.
+	Prefix string
+}
+
+// String returns a string representation of the IAM-specific variables, formatted as Terraform variables.
+func (v *AWSIAMVariables) String() string {
+	b := &strings.Builder{}
+	writeLinef(b, "name_prefix = %q", v.Prefix)
+	writeLinef(b, "region = %q", v.Region)
+
+	return b.String()
+}
+
+// GCPClusterVariables is user configuration for creating resources with Terraform on GCP.
+type GCPClusterVariables struct {
 	// CommonVariables contains common variables.
 	CommonVariables
 
@@ -84,23 +116,8 @@ type GCPVariables struct {
 	Debug bool
 }
 
-func (v *AWSVariables) String() string {
-	b := &strings.Builder{}
-	b.WriteString(v.CommonVariables.String())
-	writeLinef(b, "region = %q", v.Region)
-	writeLinef(b, "zone = %q", v.Zone)
-	writeLinef(b, "ami = %q", v.AMIImageID)
-	writeLinef(b, "instance_type = %q", v.InstanceType)
-	writeLinef(b, "state_disk_type = %q", v.StateDiskType)
-	writeLinef(b, "iam_instance_profile_control_plane = %q", v.IAMProfileControlPlane)
-	writeLinef(b, "iam_instance_profile_worker_nodes = %q", v.IAMProfileWorkerNodes)
-	writeLinef(b, "debug = %t", v.Debug)
-
-	return b.String()
-}
-
 // String returns a string representation of the variables, formatted as Terraform variables.
-func (v *GCPVariables) String() string {
+func (v *GCPClusterVariables) String() string {
 	b := &strings.Builder{}
 	b.WriteString(v.CommonVariables.String())
 	writeLinef(b, "project = %q", v.Project)
@@ -114,8 +131,31 @@ func (v *GCPVariables) String() string {
 	return b.String()
 }
 
-// AzureVariables is user configuration for creating a cluster with Terraform on Azure.
-type AzureVariables struct {
+// GCPIAMVariables is user configuration for creating the IAM confioguration with Terraform on GCP.
+type GCPIAMVariables struct {
+	// Project is the ID of the GCP project to use.
+	Project string
+	// Region is the GCP region to use.
+	Region string
+	// Zone is the GCP zone to use.
+	Zone string
+	// ServiceAccountID is the ID of the service account to use.
+	ServiceAccountID string
+}
+
+// String returns a string representation of the IAM-specific variables, formatted as Terraform variables.
+func (v *GCPIAMVariables) String() string {
+	b := &strings.Builder{}
+	writeLinef(b, "project_id = %q", v.Project)
+	writeLinef(b, "region = %q", v.Region)
+	writeLinef(b, "zone = %q", v.Zone)
+	writeLinef(b, "service_account_id = %q", v.ServiceAccountID)
+
+	return b.String()
+}
+
+// AzureClusterVariables is user configuration for creating a cluster with Terraform on Azure.
+type AzureClusterVariables struct {
 	// CommonVariables contains common variables.
 	CommonVariables
 
@@ -140,7 +180,7 @@ type AzureVariables struct {
 }
 
 // String returns a string representation of the variables, formatted as Terraform variables.
-func (v *AzureVariables) String() string {
+func (v *AzureClusterVariables) String() string {
 	b := &strings.Builder{}
 	b.WriteString(v.CommonVariables.String())
 	writeLinef(b, "resource_group = %q", v.ResourceGroup)
@@ -152,6 +192,26 @@ func (v *AzureVariables) String() string {
 	writeLinef(b, "confidential_vm = %t", v.ConfidentialVM)
 	writeLinef(b, "secure_boot = %t", v.SecureBoot)
 	writeLinef(b, "debug = %t", v.Debug)
+
+	return b.String()
+}
+
+// AzureIAMVariables is user configuration for creating the IAM configuration with Terraform on Microsoft Azure.
+type AzureIAMVariables struct {
+	// Region is the Azure region to use. (e.g. westus)
+	Region string
+	// ServicePrincipal is the name of the service principal to use.
+	ServicePrincipal string
+	// ResourceGroup is the name of the resource group to use.
+	ResourceGroup string
+}
+
+// String returns a string representation of the IAM-specific variables, formatted as Terraform variables.
+func (v *AzureIAMVariables) String() string {
+	b := &strings.Builder{}
+	writeLinef(b, "service_principal_name = %q", v.ServicePrincipal)
+	writeLinef(b, "region = %q", v.Region)
+	writeLinef(b, "resource_group_name = %q", v.ResourceGroup)
 
 	return b.String()
 }

@@ -73,6 +73,10 @@ const (
 	MasterSecretFilename = "constellation-mastersecret.json"
 	// TerraformWorkingDir is the directory name for the TerraformClient workspace.
 	TerraformWorkingDir = "constellation-terraform"
+	// TerraformIAMWorkingDir is the directory name for the Terraform IAM Client workspace.
+	TerraformIAMWorkingDir = "constellation-iam-terraform"
+	// GCPServiceAccountKeyFile is the file name for the GCP service account key file.
+	GCPServiceAccountKeyFile = "gcpServiceAccountKey.json"
 	// ControlPlaneAdminConfFilename filepath to control plane kubernetes admin config.
 	ControlPlaneAdminConfFilename = "/etc/kubernetes/admin.conf"
 	// KubectlPath path to kubectl binary.

@@ -27,10 +27,8 @@ func NewCreateCmd() *cobra.Command {
 		Use:   "create",
 		Short: "Create instances on a cloud platform for your Constellation cluster",
 		Long:  "Create instances on a cloud platform for your Constellation cluster.",
-		Args: cobra.MatchAll(
-			cobra.ExactArgs(0),
-		),
-		RunE: runCreate,
+		Args:  cobra.ExactArgs(0),
+		RunE:  runCreate,
 	}
 	cmd.Flags().String("name", "constell", "create the cluster with the specified name")
 	cmd.Flags().BoolP("yes", "y", false, "create the cluster without further confirmation")

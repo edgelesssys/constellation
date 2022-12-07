@@ -10,7 +10,9 @@ import (
 	"context"
 	"errors"
 	"io/fs"
+	"path"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -40,6 +42,7 @@ func TestPrepareCluster(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
+		pathBase           string
 		provider           cloudprovider.Provider
 		vars               Variables
 		fs                 afero.Fs
@@ -47,17 +50,20 @@ func TestPrepareCluster(t *testing.T) {
 		wantErr            bool
 	}{
 		"qemu": {
+			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			fs:       afero.NewMemMapFs(),
 			wantErr:  false,
 		},
 		"no vars": {
+			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			fs:       afero.NewMemMapFs(),
 			wantErr:  true,
 		},
 		"continue on partially extracted": {
+			pathBase:           "terraform",
 			provider:           cloudprovider.QEMU,
 			vars:               qemuVars,
 			fs:                 afero.NewMemMapFs(),
@@ -65,6 +71,7 @@ func TestPrepareCluster(t *testing.T) {
 			wantErr:            false,
 		},
 		"prepare workspace fails": {
+			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			fs:       afero.NewReadOnlyFs(afero.NewMemMapFs()),
@@ -83,12 +90,107 @@ func TestPrepareCluster(t *testing.T) {
 				workingDir: constants.TerraformWorkingDir,
 			}
 
-			err := c.PrepareWorkspace(tc.provider, tc.vars)
+			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
+			err := c.PrepareWorkspace(path, tc.vars)
 
 			// Test case: Check if we can continue to create on an incomplete workspace.
 			if tc.partiallyExtracted {
 				require.NoError(c.file.Remove(filepath.Join(c.workingDir, "main.tf")))
-				err = c.PrepareWorkspace(tc.provider, tc.vars)
+				err = c.PrepareWorkspace(path, tc.vars)
+			}
+
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+		})
+	}
+}
+
+func TestPrepareIAM(t *testing.T) {
+	gcpVars := &GCPIAMVariables{
+		Project:          "const-1234",
+		Region:           "europe-west1",
+		Zone:             "europe-west1-a",
+		ServiceAccountID: "const-test-case",
+	}
+	azureVars := &AzureIAMVariables{
+		Region:           "westus",
+		ServicePrincipal: "constell-test-sp",
+		ResourceGroup:    "constell-test-rg",
+	}
+	awsVars := &AWSIAMVariables{
+		Region: "eu-east-2a",
+		Prefix: "test",
+	}
+	testCases := map[string]struct {
+		pathBase           string
+		provider           cloudprovider.Provider
+		vars               Variables
+		fs                 afero.Fs
+		partiallyExtracted bool
+		wantErr            bool
+	}{
+		"no vars": {
+			pathBase: path.Join("terraform", "iam"),
+			fs:       afero.NewMemMapFs(),
+			wantErr:  true,
+		},
+		"invalid path": {
+			pathBase: path.Join("abc", "123"),
+			fs:       afero.NewMemMapFs(),
+			wantErr:  true,
+		},
+		"gcp": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.GCP,
+			vars:     gcpVars,
+			fs:       afero.NewMemMapFs(),
+			wantErr:  false,
+		},
+		"continue on partially extracted": {
+			pathBase:           path.Join("terraform", "iam"),
+			provider:           cloudprovider.GCP,
+			vars:               gcpVars,
+			fs:                 afero.NewMemMapFs(),
+			partiallyExtracted: true,
+			wantErr:            false,
+		},
+		"azure": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.Azure,
+			vars:     azureVars,
+			fs:       afero.NewMemMapFs(),
+			wantErr:  false,
+		},
+		"aws": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.AWS,
+			vars:     awsVars,
+			fs:       afero.NewMemMapFs(),
+			wantErr:  false,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			c := &Client{
+				tf:         &stubTerraform{},
+				file:       file.NewHandler(tc.fs),
+				workingDir: constants.TerraformIAMWorkingDir,
+			}
+
+			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
+			err := c.PrepareWorkspace(path, tc.vars)
+
+			// Test case: Check if we can continue to create on an incomplete workspace.
+			if tc.partiallyExtracted {
+				require.NoError(c.file.Remove(filepath.Join(c.workingDir, "main.tf")))
+				err = c.PrepareWorkspace(path, tc.vars)
 			}
 
 			if tc.wantErr {
@@ -132,6 +234,7 @@ func TestCreateCluster(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
+		pathBase string
 		provider cloudprovider.Provider
 		vars     Variables
 		tf       *stubTerraform
@@ -139,12 +242,14 @@ func TestCreateCluster(t *testing.T) {
 		wantErr  bool
 	}{
 		"works": {
+			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			tf:       &stubTerraform{showState: newTestState()},
 			fs:       afero.NewMemMapFs(),
 		},
 		"init fails": {
+			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			tf:       &stubTerraform{initErr: someErr},
@@ -152,6 +257,7 @@ func TestCreateCluster(t *testing.T) {
 			wantErr:  true,
 		},
 		"apply fails": {
+			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			tf:       &stubTerraform{applyErr: someErr},
@@ -159,6 +265,7 @@ func TestCreateCluster(t *testing.T) {
 			wantErr:  true,
 		},
 		"show fails": {
+			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			tf:       &stubTerraform{showErr: someErr},
@@ -166,6 +273,7 @@ func TestCreateCluster(t *testing.T) {
 			wantErr:  true,
 		},
 		"no ip": {
+			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			tf: &stubTerraform{
@@ -179,6 +287,7 @@ func TestCreateCluster(t *testing.T) {
 			wantErr: true,
 		},
 		"ip has wrong type": {
+			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			tf: &stubTerraform{
@@ -204,7 +313,8 @@ func TestCreateCluster(t *testing.T) {
 				workingDir: constants.TerraformWorkingDir,
 			}
 
-			require.NoError(c.PrepareWorkspace(tc.provider, tc.vars))
+			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
+			require.NoError(c.PrepareWorkspace(path, tc.vars))
 			ip, initSecret, err := c.CreateCluster(context.Background())
 
 			if tc.wantErr {
@@ -214,6 +324,282 @@ func TestCreateCluster(t *testing.T) {
 			assert.NoError(err)
 			assert.Equal("192.0.2.100", ip)
 			assert.Equal("initSecret", initSecret)
+		})
+	}
+}
+
+func TestCreateIAM(t *testing.T) {
+	someErr := errors.New("failed")
+	newTestState := func() *tfjson.State {
+		workingState := tfjson.State{
+			Values: &tfjson.StateValues{
+				Outputs: map[string]*tfjson.StateOutput{
+					"sa_key": {
+						Value: "12345678_abcdefg",
+					},
+					"subscription_id": {
+						Value: "test_subscription_id",
+					},
+					"tenant_id": {
+						Value: "test_tenant_id",
+					},
+					"application_id": {
+						Value: "test_application_id",
+					},
+					"uami_id": {
+						Value: "test_uami_id",
+					},
+					"application_client_secret_value": {
+						Value: "test_application_client_secret_value",
+					},
+					"control_plane_instance_profile": {
+						Value: "test_control_plane_instance_profile",
+					},
+					"worker_nodes_instance_profile": {
+						Value: "test_worker_nodes_instance_profile",
+					},
+				},
+			},
+		}
+		return &workingState
+	}
+	gcpVars := &GCPIAMVariables{
+		Project:          "const-1234",
+		Region:           "europe-west1",
+		Zone:             "europe-west1-a",
+		ServiceAccountID: "const-test-case",
+	}
+	azureVars := &AzureIAMVariables{
+		Region:           "westus",
+		ServicePrincipal: "constell-test-sp",
+		ResourceGroup:    "constell-test-rg",
+	}
+	awsVars := &AWSIAMVariables{
+		Region: "eu-east-2a",
+		Prefix: "test",
+	}
+
+	testCases := map[string]struct {
+		pathBase string
+		provider cloudprovider.Provider
+		vars     Variables
+		tf       *stubTerraform
+		fs       afero.Fs
+		wantErr  bool
+		want     IAMOutput
+	}{
+		"gcp works": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.GCP,
+			vars:     gcpVars,
+			tf:       &stubTerraform{showState: newTestState()},
+			fs:       afero.NewMemMapFs(),
+			want:     IAMOutput{GCP: GCPIAMOutput{SaKey: "12345678_abcdefg"}},
+		},
+		"gcp init fails": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.GCP,
+			vars:     gcpVars,
+			tf:       &stubTerraform{initErr: someErr},
+			fs:       afero.NewMemMapFs(),
+			wantErr:  true,
+		},
+		"gcp apply fails": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.GCP,
+			vars:     gcpVars,
+			tf:       &stubTerraform{applyErr: someErr},
+			fs:       afero.NewMemMapFs(),
+			wantErr:  true,
+		},
+		"gcp show fails": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.GCP,
+			vars:     gcpVars,
+			tf:       &stubTerraform{showErr: someErr},
+			fs:       afero.NewMemMapFs(),
+			wantErr:  true,
+		},
+		"gcp no sa_key": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.GCP,
+			vars:     gcpVars,
+			tf: &stubTerraform{
+				showState: &tfjson.State{
+					Values: &tfjson.StateValues{
+						Outputs: map[string]*tfjson.StateOutput{},
+					},
+				},
+			},
+			fs:      afero.NewMemMapFs(),
+			wantErr: true,
+		},
+		"gcp sa_key has wrong type": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.GCP,
+			vars:     gcpVars,
+			tf: &stubTerraform{
+				showState: &tfjson.State{
+					Values: &tfjson.StateValues{
+						Outputs: map[string]*tfjson.StateOutput{"sa_key": {Value: 42}},
+					},
+				},
+			},
+			fs:      afero.NewMemMapFs(),
+			wantErr: true,
+		},
+		"azure works": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.Azure,
+			vars:     azureVars,
+			tf:       &stubTerraform{showState: newTestState()},
+			fs:       afero.NewMemMapFs(),
+			want: IAMOutput{Azure: AzureIAMOutput{
+				SubscriptionID:               "test_subscription_id",
+				TenantID:                     "test_tenant_id",
+				ApplicationID:                "test_application_id",
+				ApplicationClientSecretValue: "test_application_client_secret_value",
+				UAMIID:                       "test_uami_id",
+			}},
+		},
+		"azure init fails": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.Azure,
+			vars:     azureVars,
+			tf:       &stubTerraform{initErr: someErr},
+			fs:       afero.NewMemMapFs(),
+			wantErr:  true,
+		},
+		"azure apply fails": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.Azure,
+			vars:     azureVars,
+			tf:       &stubTerraform{applyErr: someErr},
+			fs:       afero.NewMemMapFs(),
+			wantErr:  true,
+		},
+		"azure show fails": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.Azure,
+			vars:     azureVars,
+			tf:       &stubTerraform{showErr: someErr},
+			fs:       afero.NewMemMapFs(),
+			wantErr:  true,
+		},
+		"azure no subscription_id": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.Azure,
+			vars:     azureVars,
+			tf: &stubTerraform{
+				showState: &tfjson.State{
+					Values: &tfjson.StateValues{
+						Outputs: map[string]*tfjson.StateOutput{},
+					},
+				},
+			},
+			fs:      afero.NewMemMapFs(),
+			wantErr: true,
+		},
+		"azure subscription_id has wrong type": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.Azure,
+			vars:     azureVars,
+			tf: &stubTerraform{
+				showState: &tfjson.State{
+					Values: &tfjson.StateValues{
+						Outputs: map[string]*tfjson.StateOutput{"subscription_id": {Value: 42}},
+					},
+				},
+			},
+			fs:      afero.NewMemMapFs(),
+			wantErr: true,
+		},
+		"aws works": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.AWS,
+			vars:     awsVars,
+			tf:       &stubTerraform{showState: newTestState()},
+			fs:       afero.NewMemMapFs(),
+			want: IAMOutput{AWS: AWSIAMOutput{
+				ControlPlaneInstanceProfile: "test_control_plane_instance_profile",
+				WorkerNodeInstanceProfile:   "test_worker_nodes_instance_profile",
+			}},
+		},
+		"aws init fails": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.AWS,
+			vars:     awsVars,
+			tf:       &stubTerraform{initErr: someErr},
+			fs:       afero.NewMemMapFs(),
+			wantErr:  true,
+		},
+		"aws apply fails": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.AWS,
+			vars:     awsVars,
+			tf:       &stubTerraform{applyErr: someErr},
+			fs:       afero.NewMemMapFs(),
+			wantErr:  true,
+		},
+		"aws show fails": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.AWS,
+			vars:     awsVars,
+			tf:       &stubTerraform{showErr: someErr},
+			fs:       afero.NewMemMapFs(),
+			wantErr:  true,
+		},
+		"aws no control_plane_instance_profile": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.AWS,
+			vars:     awsVars,
+			tf: &stubTerraform{
+				showState: &tfjson.State{
+					Values: &tfjson.StateValues{
+						Outputs: map[string]*tfjson.StateOutput{},
+					},
+				},
+			},
+			fs:      afero.NewMemMapFs(),
+			wantErr: true,
+		},
+		"azure control_plane_instance_profile has wrong type": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.AWS,
+			vars:     awsVars,
+			tf: &stubTerraform{
+				showState: &tfjson.State{
+					Values: &tfjson.StateValues{
+						Outputs: map[string]*tfjson.StateOutput{"control_plane_instance_profile": {Value: 42}},
+					},
+				},
+			},
+			fs:      afero.NewMemMapFs(),
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert := assert.New(t)
+			require := require.New(t)
+
+			c := &Client{
+				tf:         tc.tf,
+				file:       file.NewHandler(tc.fs),
+				workingDir: constants.TerraformIAMWorkingDir,
+			}
+
+			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
+			require.NoError(c.PrepareWorkspace(path, tc.vars))
+			IAMoutput, err := c.CreateIAMConfig(context.Background(), tc.provider)
+
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal(tc.want, IAMoutput)
 		})
 	}
 }

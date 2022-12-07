@@ -38,9 +38,7 @@ func NewVerifyCmd() *cobra.Command {
 		Long: `Verify the confidential properties of a Constellation cluster.
 
 If arguments aren't specified, values are read from ` + "`" + constants.ClusterIDsFileName + "`.",
-		Args: cobra.MatchAll(
-			cobra.ExactArgs(0),
-		),
+		Args: cobra.ExactArgs(0),
 		RunE: runVerify,
 	}
 	cmd.Flags().String("cluster-id", "", "expected cluster identifier")
