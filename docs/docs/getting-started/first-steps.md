@@ -233,7 +233,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     :::
 -->
 
-1. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml`.
+3. Create the cluster with one control-plane node and two worker nodes. `constellation create` uses options set in `constellation-conf.yaml`.
 
     :::tip
 
@@ -252,7 +252,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     Your Constellation cluster was created successfully.
     ```
 
-2. Initialize the cluster
+4. Initialize the cluster
 
     ```bash
     constellation init
@@ -283,7 +283,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     :::
 
-3. Configure kubectl
+5. Configure kubectl
 
     ```bash
     export KUBECONFIG="$PWD/constellation-admin.conf"
