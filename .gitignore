@@ -51,3 +51,6 @@ image/config.mk
 
 # Python
 __pycache__/
+
+# Nix shells
+shell.nix
