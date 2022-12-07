@@ -6,7 +6,10 @@ go_library(
     srcs = ["generate.go"],
     importpath = "github.com/edgelesssys/constellation/v2/internal/versions/hash-generator",
     visibility = ["//visibility:private"],
-    deps = ["@org_golang_x_tools//go/ast/astutil"],
+    deps = [
+        "//internal/sigstore",
+        "@org_golang_x_tools//go/ast/astutil",
+    ],
 )
 
 go_binary(
