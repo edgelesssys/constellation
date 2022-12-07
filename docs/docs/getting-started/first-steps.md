@@ -87,7 +87,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     Find an exact command description in our [CLI reference](https://docs.edgeless.systems/constellation/reference/cli).
 
-    Please note that currently, Constellation OS images are currently replicated to the following regions:
+    Constellation OS images are currently replicated to the following regions:
       * `eu-central-1`
       * `us-east-2`
       * `ap-south-1`
