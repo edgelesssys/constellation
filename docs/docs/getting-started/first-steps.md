@@ -71,8 +71,6 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     Find an exact command description in our [CLI reference](https://docs.edgeless.systems/constellation/reference/cli).
 
     By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all machines from the N2D family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
-
-    You can also run `constellation config instance-types` to get the list of all supported options.
     </tabItem>
 
     <tabItem value="aws" label="AWS">
@@ -95,6 +93,8 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     If you require the OS image to be available in another region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+AWS+image+region:+xx-xxxx-x).
 
     You can find a list of all [regions in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
+
+    By default, Constellation uses `m6a.xlarge` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all nitroTPM-enabled machines. Refer to the [list of nitroTPM-enabled instance types](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html) or run `constellation config instance-types` to get the list of all supported options.
     </tabItem>
     <tabItem value="azure-manually" label="Azure (manually)">
 
@@ -144,9 +144,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     * **instanceType**: The VM type you want to use for your Constellation nodes.
 
-      For CVMs, any type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported. It defaults to `Standard_DC4as_v5` (4 vCPUs, 16 GB RAM).
-
-      Run `constellation config instance-types` to get the list of all supported options.
+      For CVMs, any type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported. It defaults to `Standard_DC4as_v5` (4 vCPUs, 16 GB RAM). Alternatively, you can run `constellation config instance-types` to get the list of all supported options.
 
     </tabItem>
     <tabItem value="gcp-manually" label="GCP (manually)">
@@ -206,6 +204,10 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
       Use the [provided Terraform script](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam) to generate the necessary profile. The profile name will be provided as Terraform output value: `worker_nodes_instance_profile`.
 
       Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.worker_node_policy`.
+
+    * **instanceType**: The VM type you want to use for your Constellation nodes.
+
+      Supported are all nitroTPM-enabled machines. It defaults to `m6a.xlarge` (4 vCPUs, 16 GB RAM), but you can use any other nitroTPM-enabled VMs. Refer to the [list of nitroTPM-enabled instance types](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html) or run `constellation config instance-types` to get the list of all supported options.
 
     </tabItem>
     </tabs>
