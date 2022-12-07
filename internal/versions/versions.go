@@ -57,11 +57,11 @@ const (
 	// KonnectivityServerImage server image for konnectivity service.
 	KonnectivityServerImage = "registry.k8s.io/kas-network-proxy/proxy-server:v0.0.33@sha256:2c111f004bec24888d8cfa2a812a38fb8341350abac67dcd0ac64e709dfe389c" // renovate:container
 	// JoinImage image of Constellation join service.
-	JoinImage = "ghcr.io/edgelesssys/constellation/join-service:v2.3.0-pre.0.20221206170532-a9ed8c0191ac@sha256:4b97710f88a8adaaf0e0db4bad4b84c72e7dde1f4d89be85e90966c7caae7549" // renovate:container
+	JoinImage = "ghcr.io/edgelesssys/constellation/join-service:v2.3.0-pre.0.20221207104854-286803fb97a0@sha256:e7dff18ac6710897b887285294a076956ed89d746f26e7cd3ff817a74375aff6" // renovate:container
 	// KmsImage image of Constellation KMS server.
-	KmsImage = "ghcr.io/edgelesssys/constellation/kmsserver:v2.3.0-pre.0.20221206170532-a9ed8c0191ac@sha256:dada34f31eb951f754c558e7376f6b890a64724fc6235dd70ad6b7372edcef4a" // renovate:container
+	KmsImage = "ghcr.io/edgelesssys/constellation/kmsserver:v2.3.0-pre.0.20221207104854-286803fb97a0@sha256:e6879b43df71678e43aaca6fca0908a14aacc17671df88ce42d76afe4855e18d" // renovate:container
 	// VerificationImage image of Constellation verification service.
-	VerificationImage = "ghcr.io/edgelesssys/constellation/verification-service:v2.3.0-pre.0.20221206170532-a9ed8c0191ac@sha256:b6e4eb5f120a20b9b301f289bc2f4ceb8f19e732540742b1d885b3df506559bd" // renovate:container
+	VerificationImage = "ghcr.io/edgelesssys/constellation/verification-service:v2.3.0-pre.0.20221207104854-286803fb97a0@sha256:ead3402d6ec0833f68a347b1613bcea44cce0ada6e10b69da60c8d07ad4d4efe" // renovate:container
 	// GcpGuestImage image for GCP guest agent.
 	// Check for new versions at https://github.com/GoogleCloudPlatform/guest-agent/releases and update in /.github/workflows/build-gcp-guest-agent.yml.
 	GcpGuestImage = "ghcr.io/edgelesssys/gcp-guest-agent:20220927.00@sha256:3dea1ae3f162d2353e6584b325f0e325a39cda5f380f41e5a0ee43c6641d3905" // renovate:container
@@ -71,7 +71,7 @@ const (
 	NodeMaintenanceOperatorImage = "ghcr.io/edgelesssys/constellation/node-maintenance-operator:v0.13.1-alpha1@sha256:e011d428dba3ef66a2a4656a2bf58bcfe89836c62b0a75676f5c12350502a3cf" // renovate:container
 
 	// QEMUMetadataImage image of QEMU metadata api service.
-	QEMUMetadataImage = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.3.0-pre.0.20221206170532-a9ed8c0191ac@sha256:3ec73a9e6cb6f05233e56f673578b54eaa5420986af609070209e4bbe20904d8" // renovate:container
+	QEMUMetadataImage = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.3.0-pre.0.20221207104854-286803fb97a0@sha256:f504d351ade1cabdf65bd40d4153d2062ed4cbba7d7358e29f6f16f5c0dc1997" // renovate:container
 	// LibvirtImage image that provides libvirt.
 	LibvirtImage = "ghcr.io/edgelesssys/constellation/libvirt:v2.2.0@sha256:81ddc30cd679a95379e94e2f154861d9112bcabfffa96330c09a4917693f7cce" // renovate:container
 
