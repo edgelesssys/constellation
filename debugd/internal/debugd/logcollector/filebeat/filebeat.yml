@@ -1,8 +1,3 @@
-filebeat.inputs:
-  - type: journald
-    enabled: true
-    id: everything
-
 output.logstash:
   hosts: ["localhost:5044"]
 
@@ -13,3 +8,20 @@ logging:
   to_files: false
   metrics.enabled: false
   level: warning
+
+filebeat.config:
+  inputs:
+    enabled: true
+    path: /usr/share/filebeat/inputs.d/*.yml
+    # reload.enabled: true
+    # reload.period: 10s
+
+processors:
+  - dissect:
+      when:
+        regexp:
+          log.file.path: "^/var/log/pods/*"
+      tokenizer: "/var/log/pods/%{namespace}_%{pod_name}_%{uid}/%{container_name}/%{run_id}.log"
+      field: "log.file.path"
+      target_prefix: "kubernetes"
+      ignore_failure: true

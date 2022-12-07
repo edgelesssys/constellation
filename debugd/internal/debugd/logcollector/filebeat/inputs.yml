@@ -1,0 +1,9 @@
+- type: journald
+  enabled: true
+  id: journald
+
+- type: filestream
+  enabled: true
+  id: container
+  paths:
+    - /var/log/pods/*/*/*.log
