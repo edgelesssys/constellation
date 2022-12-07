@@ -194,6 +194,7 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 		"--volume=/etc/machine-id:/etc/machine-id:ro",
 		"--volume=/run/systemd:/run/systemd:ro",
 		"--volume=/run/systemd/journal/socket:/run/systemd/journal/socket:rw",
+		"--volume=/run/state/var/log:/var/log:ro",
 		versions.FilebeatImage,
 	}
 	runFilebeatCmd := exec.CommandContext(ctx, "podman", runFilebeatArgs...)
