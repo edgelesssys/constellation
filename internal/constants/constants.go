@@ -77,7 +77,8 @@ const (
 	ControlPlaneAdminConfFilename = "/etc/kubernetes/admin.conf"
 	// KubectlPath path to kubectl binary.
 	KubectlPath = "/run/state/bin/kubectl"
-
+	// UpgradeAgentSocketPath is the path to the UDS that is used for the gRPC connection to the upgrade agent.
+	UpgradeAgentSocketPath = "/run/constellation-upgrade-agent.sock"
 	// CniPluginsDir path directory for CNI plugins.
 	CniPluginsDir = "/opt/cni/bin"
 	// BinDir install path for CNI config.

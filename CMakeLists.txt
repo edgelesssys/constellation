@@ -23,6 +23,15 @@ add_custom_target(bootstrapper ALL
 )
 
 #
+# upgrade-agent
+#
+add_custom_target(upgrade-agent ALL
+  DOCKER_BUILDKIT=1 docker build -o ${CMAKE_BINARY_DIR} --build-arg PROJECT_VERSION=${PROJECT_VERSION} -f Dockerfile.build --target upgrade-agent .
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  BYPRODUCTS upgrade-agent
+)
+
+#
 # cli
 #
 add_custom_target(cli ALL

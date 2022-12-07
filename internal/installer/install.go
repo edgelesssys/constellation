@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package k8sapi
+package installer
 
 import (
 	"archive/tar"
@@ -29,10 +29,11 @@ import (
 const (
 	// determines the period after which retryDownloadToTempDir will retry a download.
 	downloadInterval = 10 * time.Millisecond
+	executablePerm   = 0o544
 )
 
-// osInstaller installs binary components of supported kubernetes versions.
-type osInstaller struct {
+// OsInstaller installs binary components of supported kubernetes versions.
+type OsInstaller struct {
 	fs      *afero.Afero
 	hClient httpClient
 	// clock is needed for testing purposes
@@ -41,9 +42,9 @@ type osInstaller struct {
 	retriable func(error) bool
 }
 
-// newOSInstaller creates a new osInstaller.
-func newOSInstaller() *osInstaller {
-	return &osInstaller{
+// NewOSInstaller creates a new osInstaller.
+func NewOSInstaller() *OsInstaller {
+	return &OsInstaller{
 		fs:        &afero.Afero{Fs: afero.NewOsFs()},
 		hClient:   &http.Client{},
 		clock:     clock.RealClock{},
@@ -53,7 +54,7 @@ func newOSInstaller() *osInstaller {
 
 // Install downloads a resource from a URL, applies any given text transformations and extracts the resulting file if required.
 // The resulting file(s) are copied to the destination. It also verifies the sha256 hash of the downloaded file.
-func (i *osInstaller) Install(ctx context.Context, kubernetesComponent versions.ComponentVersion) error {
+func (i *OsInstaller) Install(ctx context.Context, kubernetesComponent versions.ComponentVersion) error {
 	tempPath, err := i.retryDownloadToTempDir(ctx, kubernetesComponent.URL)
 	if err != nil {
 		return err
@@ -88,7 +89,7 @@ func (i *osInstaller) Install(ctx context.Context, kubernetesComponent versions.
 }
 
 // extractArchive extracts tar gz archives to a prefixed destination.
-func (i *osInstaller) extractArchive(archivePath, prefix string, perm fs.FileMode) error {
+func (i *OsInstaller) extractArchive(archivePath, prefix string, perm fs.FileMode) error {
 	archiveFile, err := i.fs.Open(archivePath)
 	if err != nil {
 		return fmt.Errorf("opening archive file: %w", err)
@@ -160,7 +161,7 @@ func (i *osInstaller) extractArchive(archivePath, prefix string, perm fs.FileMod
 	}
 }
 
-func (i *osInstaller) retryDownloadToTempDir(ctx context.Context, url string) (fileName string, someError error) {
+func (i *OsInstaller) retryDownloadToTempDir(ctx context.Context, url string) (fileName string, someError error) {
 	doer := downloadDoer{
 		url:        url,
 		downloader: i,
@@ -177,7 +178,7 @@ func (i *osInstaller) retryDownloadToTempDir(ctx context.Context, url string) (f
 }
 
 // downloadToTempDir downloads a file to a temporary location.
-func (i *osInstaller) downloadToTempDir(ctx context.Context, url string) (fileName string, retErr error) {
+func (i *OsInstaller) downloadToTempDir(ctx context.Context, url string) (fileName string, retErr error) {
 	out, err := afero.TempFile(i.fs, "", "")
 	if err != nil {
 		return "", fmt.Errorf("creating destination temp file: %w", err)
@@ -211,7 +212,7 @@ func (i *osInstaller) downloadToTempDir(ctx context.Context, url string) (fileNa
 }
 
 // copy copies a file from oldname to newname.
-func (i *osInstaller) copy(oldname, newname string, perm fs.FileMode) (err error) {
+func (i *OsInstaller) copy(oldname, newname string, perm fs.FileMode) (err error) {
 	old, openOldErr := i.fs.OpenFile(oldname, os.O_RDONLY, fs.ModePerm)
 	if openOldErr != nil {
 		return fmt.Errorf("copying %q to %q: cannot open source file for reading: %w", oldname, newname, openOldErr)

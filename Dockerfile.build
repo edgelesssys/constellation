@@ -33,8 +33,17 @@ WORKDIR /constellation/disk-mapper/
 ARG PROJECT_VERSION
 RUN --mount=type=cache,target=/root/.cache/go-build go build -o disk-mapper -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}" ./cmd/
 
+FROM build AS build-upgrade-agent
+WORKDIR /constellation/upgrade-agent/
+
+ARG PROJECT_VERSION
+RUN --mount=type=cache,target=/root/.cache/go-build go build -o upgrade-agent -ldflags "-s -w -buildid='' -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}" ./cmd/
+
 FROM scratch AS bootstrapper
 COPY --from=build-bootstrapper /constellation/bootstrapper/bootstrapper /
 
 FROM scratch AS disk-mapper
 COPY --from=build-disk-mapper /constellation/disk-mapper/disk-mapper /
+
+FROM scratch AS upgrade-agent
+COPY --from=build-upgrade-agent /constellation/upgrade-agent/upgrade-agent /
