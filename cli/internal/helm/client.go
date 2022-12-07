@@ -223,7 +223,7 @@ func (c *Client) updateOperatorCRDs(ctx context.Context, chart *chart.Chart) err
 
 // Using the type from cli/internal/cmd would introduce the following import cycle:
 // cli/internal/cmd (upgradeexecute.go) -> cli/internal/cloudcmd (upgrade.go) ->
-// -> cli/internal/cloudcmd/helm (client.go) -> cli/internal/cmd (log.go)
+// -> cli/internal/cloudcmd/helm (client.go) -> cli/internal/cmd (log.go).
 type debugLog interface {
 	Debugf(format string, args ...any)
 	Sync()
