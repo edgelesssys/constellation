@@ -73,6 +73,13 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     :::
 
+    Note that CVMs are currently only supported in a few regions, check [Azure's products available by region](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all). These are:
+
+      * `westus`
+      * `eastus`
+      * `northeurope`
+      * `westeurope`
+
     By default, Constellation uses `Standard_DC4as_v5` CVMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. For CVMs, any VM type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported.
 
     Run `constellation config instance-types` to get the list of all supported options.
@@ -152,6 +159,8 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     Fill the values produced by the script into your configuration file.
 
+    Note that only regions offering CVMs of the `N2D` series mentioned below are supported. Find a full [list of regions in Google's documentation](https://cloud.google.com/compute/docs/regions-zones), which you can filter by machine type `N2D`.
+
     By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all machines from the N2D family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
 
     </tabItem>
@@ -163,11 +172,11 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     * **region**: The GCP region you want to deploy your cluster in, e.g., `us-west1`.
 
-      You can find a [list of all regions in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available).
+      Note that only regions offering CVMs of the `N2D` series mentioned below are supported. You can find a [list of all regions in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available), which you can filter by machine type `N2D`.
 
     * **zone**: The GCP zone you want to deploy your cluster in, e.g., `us-west1-a`.
 
-      You can find a [list of all zones in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available).
+      You can find a [list of all zones in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available). The zone must be in the region specified above.
 
     * **serviceAccountKeyPath**: To configure this, you need to create a GCP [service account](https://cloud.google.com/iam/docs/service-accounts) with the following permissions:
 
