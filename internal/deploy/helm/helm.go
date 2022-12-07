@@ -22,7 +22,7 @@ type Releases struct {
 	ConstellationServices Release
 }
 
-// mergeMaps returns a new map that is the merger of it's inputs.
+// MergeMaps returns a new map that is the merger of it's inputs.
 // Key colissions are resolved by taking the value of the second argument (map b).
 // Taken from: https://github.com/helm/helm/blob/dbc6d8e20fe1d58d50e6ed30f09a04a77e4c68db/pkg/cli/values/options.go#L91-L108.
 func MergeMaps(a, b map[string]any) map[string]any {

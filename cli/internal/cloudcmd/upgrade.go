@@ -247,7 +247,9 @@ type helmInterface interface {
 	Upgrade(ctx context.Context, config *config.Config) error
 }
 
-// Using the type from cli/internal/cmd would introduce the following import cycle: cli/internal/cmd (upgradeexecute.go) -> cli/internal/cloudcmd (upgrade.go) -> cli/internal/cloudcmd/helm (client.go) -> cli/internal/cmd (log.go)
+// Using the type from cli/internal/cmd would introduce the following import cycle:
+// cli/internal/cmd (upgradeexecute.go) -> cli/internal/cloudcmd (upgrade.go) ->
+// -> cli/internal/cloudcmd/helm (client.go) -> cli/internal/cmd (log.go).
 type debugLog interface {
 	Debugf(format string, args ...any)
 	Sync()
