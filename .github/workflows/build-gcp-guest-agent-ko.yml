@@ -48,11 +48,12 @@ jobs:
           mkdir -p $koData
           cp ./constellation/3rdparty/gcp-guest-agent/instance_configs.cfg $koData
           cd ..
+          ls ${{ github.workspace }}/constellation/.github/actions/build_micro_service_ko
 
-      - name: Build and upload join service container image
+      - name: Build and upload gcp guest service container image
         id: build-and-upload
         # assumes that we are currently in the root of the repo
-        uses: ${{ github.workspace }}/constellation/.github/actions/build-and-upload-ko
+        uses: ./.github/actions/build_micro_service_ko
         with:
           name: gcp-guest-agent
           constellationPath: ${{ github.workspace }}/constellation
