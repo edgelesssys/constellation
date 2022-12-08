@@ -43,6 +43,12 @@ constellation iam create azure --region=westus --resourceGroup=constellTest --se
 This command creates IAM configuration on the Azure region `westus` creating a new resource group `constellTest` and a new service principal `spTest`.
 :::
 
+Note that CVMs are currently only supported in a few regions, check [Azure's products available by region](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all). These are:
+  * `westus`
+  * `eastus`
+  * `northeurope`
+  * `westeurope`
+
 Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
 
 :::tip
@@ -61,6 +67,8 @@ constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west1-a
 :::info
 This command creates IAM configuration in the GCP project `yourproject-12345` on the GCP zone `europe-west1-a` creating a new service account `constell-test`.
 :::
+
+Note that only regions offering CVMs of the `N2D` series are supported. You can find a [list of all regions in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available), which you can filter by machine type `N2D`.
 
 Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
 
