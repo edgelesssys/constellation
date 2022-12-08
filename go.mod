@@ -34,11 +34,11 @@ replace github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools 
 
 require (
 	cloud.google.com/go/compute v1.14.0
-	cloud.google.com/go/compute/metadata v0.2.1
-	cloud.google.com/go/kms v1.6.0
+	cloud.google.com/go/compute/metadata v0.2.2
+	cloud.google.com/go/kms v1.7.0
 	cloud.google.com/go/logging v1.6.1
 	cloud.google.com/go/secretmanager v1.9.0
-	cloud.google.com/go/storage v1.28.0
+	cloud.google.com/go/storage v1.28.1
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/azkeys v0.9.0
@@ -90,7 +90,7 @@ require (
 	golang.org/x/crypto v0.4.0
 	golang.org/x/mod v0.7.0
 	golang.org/x/sys v0.3.0
-	google.golang.org/api v0.103.0
+	google.golang.org/api v0.104.0
 	google.golang.org/grpc v1.51.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v3 v3.0.1
@@ -110,7 +110,7 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.105.0 // indirect
+	cloud.google.com/go v0.107.0 // indirect
 	cloud.google.com/go/iam v0.8.0 // indirect
 	cloud.google.com/go/longrunning v0.3.0 // indirect
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
@@ -198,7 +198,7 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/trillian v1.5.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.2.0 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.2.1 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gosuri/uitable v0.0.4 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
@@ -279,7 +279,7 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/exp v0.0.0-20220823124025-807a23277127 // indirect
 	golang.org/x/net v0.4.0 // indirect
-	golang.org/x/oauth2 v0.2.0 // indirect
+	golang.org/x/oauth2 v0.3.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/term v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
