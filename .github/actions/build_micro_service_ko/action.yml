@@ -8,6 +8,10 @@ inputs:
     description: "Path to the .ko.yaml config file"
     default: ".ko.yaml"
     required: false
+  constellationPath:
+    description: "Path to the root of the Constellation repo"
+    #default: "TEST_MICRO_SERVICE_"
+    required: true
   koTarget:
     description: "Go package to build with ko"
     required: true
@@ -38,6 +42,8 @@ runs:
     - name: Determine pseudo version
       id: pseudo-version
       uses: ./.github/actions/pseudo_version
+      with:
+        constellationPath: ${{ inputs.constellationPath }}
 
     - name: Build and upload container image
       id: build-and-upload

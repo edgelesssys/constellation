@@ -14,9 +14,6 @@ on:
 jobs:
   build-gcp-guest-agent:
     runs-on: ubuntu-22.04
-    defaults:
-      run:
-        working-directory: ./constellation
     permissions:
       contents: read
       packages: write
@@ -47,9 +44,13 @@ jobs:
           koData="./guest-agent/kodata"
           mkdir -p $koData
           cp ./constellation/3rdparty/gcp-guest-agent/instance_configs.cfg $koData
-          cd ${{ github.workspace }}/
-          ls -lah
+          cd ${GITHUB_WORKSPACE}/
           ln -s ./constellation/.github/ .github
+
+          echo ${{ github.workspace }}/constellation
+          ls -alh ${{ github.workspace }}/constellation
+          #echo $GITHUB_WORKSPACE/constellation
+          #ls -alh $GITHUB_WORKSPACE/constellation
 
       - name: Build and upload gcp guest service container image
         id: build-and-upload
@@ -59,6 +60,7 @@ jobs:
           name: gcp-guest-agent
           koTarget: ./guest-agent/google-guest-agent/
           githubToken: ${{ secrets.GITHUB_TOKEN }}
+          constellationPath: ${{ github.workspace }}/constellation
           cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
           cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
           cosignPassword: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
