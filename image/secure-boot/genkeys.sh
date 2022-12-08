@@ -12,30 +12,26 @@
 set -euo pipefail
 shopt -s inherit_errexit
 
-SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
-TEMPLATES=${SCRIPT_DIR}/templates
-BASE_DIR=$(realpath "${SCRIPT_DIR}/..")
-if [[ -z ${PKI} ]]; then
-  PKI=${BASE_DIR}/pki
-fi
-if [[ -z ${PKI_SET} ]]; then
-  PKI_SET=dev
-fi
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+templates=${script_dir}/templates
+base_dir=$(realpath "${script_dir}/..")
+pki="${PKI:-${base_dir}/pki}"
+pki_set="${PKI_SET:-dev}"
 
 gen_pki() {
   # Only use for non-production images.
   # Use real PKI for production images instead.
-  count=$(find "${PKI}" -maxdepth 1 \( -name '*.key' -o -name '*.crt' -o -name '*.cer' -o -name '*.esl' -o -name '*.auth' \) 2> /dev/null | wc -l)
+  mkdir -p "${pki}"
+  count=$(find "${pki}" -maxdepth 1 \( -name '*.key' -o -name '*.crt' -o -name '*.cer' -o -name '*.esl' -o -name '*.auth' \) 2> /dev/null | wc -l)
   if [[ ${count} != 0 ]]; then
-    echo PKI files "$(ls -1 "$(realpath "--relative-to=$(pwd)" "${PKI}")"/*.{key,crt,cer,esl,auth})" already exist
+    echo PKI files "$(ls -1 "$(realpath "--relative-to=$(pwd)" "${pki}")"/*.{key,crt,cer,esl,auth})" already exist
     return
   fi
-  mkdir -p "${PKI}"
-  pushd "${PKI}" || exit 1
+  pushd "${pki}" || exit 1
 
   uuid=$(systemd-id128 new --uuid)
   for key in PK KEK db; do
-    openssl req -new -x509 -config "${TEMPLATES}/${PKI_SET}_${key}.conf" -keyout "${key}.key" -out "${key}.crt" -nodes
+    openssl req -new -x509 -config "${templates}/${pki_set}_${key}.conf" -keyout "${key}.key" -out "${key}.crt" -nodes
     openssl x509 -outform DER -in "${key}.crt" -out "${key}.cer"
     cert-to-efi-sig-list -g "${uuid}" "${key}.crt" "${key}.esl"
   done
