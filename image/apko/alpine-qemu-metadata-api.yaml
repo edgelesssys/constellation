@@ -5,6 +5,7 @@ contents:
   packages:
     - alpine-base
     - libvirt-dev
+    - bash
 environment:
   PATH: /usr/sbin:/sbin:/usr/bin:/bin
 

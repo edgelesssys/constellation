@@ -47,8 +47,9 @@ jobs:
           koData="./guest-agent/kodata"
           mkdir -p $koData
           cp ./constellation/3rdparty/gcp-guest-agent/instance_configs.cfg $koData
-          cd ..
-          ls ${{ github.workspace }}/constellation/.github/actions/build_micro_service_ko
+          cd ${{ github.workspace }}/
+          ls -lah
+          ln -s ./constellation/.github/ .github
 
       - name: Build and upload gcp guest service container image
         id: build-and-upload
@@ -56,7 +57,6 @@ jobs:
         uses: ./.github/actions/build_micro_service_ko
         with:
           name: gcp-guest-agent
-          constellationPath: ${{ github.workspace }}/constellation
           koTarget: ./guest-agent/google-guest-agent/
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
