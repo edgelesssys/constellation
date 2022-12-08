@@ -125,6 +125,11 @@ const sidebars = {
         },
         {
           type: 'doc',
+          label: 'Create IAM configuration',
+          id: 'workflows/iam',
+        },
+        {
+          type: 'doc',
           label: 'Create your cluster',
           id: 'workflows/create',
         },
