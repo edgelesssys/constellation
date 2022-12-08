@@ -52,9 +52,10 @@ jobs:
       - name: Build and upload join service container image
         id: build-and-upload
         # assumes that we are currently in the root of the repo
-        uses: ./constellation/.github/actions/build_micro_service_ko
+        uses: ${{ github.workspace }}/constellation/.github/actions/build-and-upload-ko
         with:
           name: gcp-guest-agent
+          constellationPath: ${{ github.workspace }}/constellation
           koTarget: ./guest-agent/google-guest-agent/
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}

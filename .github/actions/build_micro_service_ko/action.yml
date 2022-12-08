@@ -4,6 +4,10 @@ inputs:
   name:
     description: "Name of the micro-service"
     required: true
+  constellationPath:
+    description: "Path to the Constellation repository"
+    default: "."
+    required: false
   koConfig:
     description: "Path to the .ko.yaml config file"
     default: ".ko.yaml"
@@ -37,11 +41,11 @@ runs:
   steps:
     - name: Determine pseudo version
       id: pseudo-version
-      uses: ./.github/actions/pseudo_version
+      uses: ${{ inputs.constellationPath }}/.github/actions/pseudo_version
 
     - name: Build and upload container image
       id: build-and-upload
-      uses: ./.github/actions/build_ko
+      uses: ${{ inputs.constellationPath }}/.github/actions/build_ko
       with:
         name: ${{ inputs.name }}
         koConfig: ${{ inputs.koConfig }}
@@ -61,7 +65,7 @@ runs:
         echo CONTAINER_FULL=$container_full >> $GITHUB_ENV
 
     - name: Generate SBOM
-      uses: ./.github/actions/container_sbom
+      uses: ${{ inputs.constellationPath }}/.github/actions/container_sbom
       with:
         containerReference: ${{ env.CONTAINER_FULL }}
         cosignPublicKey: ${{ inputs.cosignPublicKey }}
