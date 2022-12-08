@@ -9,8 +9,8 @@ package gcp
 import (
 	"context"
 
+	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/googleapis/gax-go/v2"
-	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 )
 
 type forwardingRulesAPI interface {

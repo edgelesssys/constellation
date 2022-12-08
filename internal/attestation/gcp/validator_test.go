@@ -13,13 +13,13 @@ import (
 	"errors"
 	"testing"
 
+	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/google/go-tpm-tools/proto/attest"
 	"github.com/googleapis/gax-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/api/option"
-	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
 )
 

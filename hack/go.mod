@@ -33,7 +33,7 @@ replace (
 replace github.com/edgelesssys/constellation/v2 => ./..
 
 require (
-	cloud.google.com/go/compute v1.13.0
+	cloud.google.com/go/compute v1.14.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2 v2.0.0
@@ -49,13 +49,14 @@ require (
 	go.uber.org/zap v1.24.0
 	golang.org/x/mod v0.7.0
 	google.golang.org/api v0.103.0
-	google.golang.org/genproto v0.0.0-20221207170731-23e4bf6bdc37
 	google.golang.org/grpc v1.51.0
 	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v3 v3.0.1
 	libvirt.org/go/libvirt v1.8009.0
 	libvirt.org/go/libvirtxml v1.8009.0
 )
+
+require google.golang.org/genproto v0.0.0-20221207170731-23e4bf6bdc37 // indirect
 
 require (
 	cloud.google.com/go v0.105.0 // indirect

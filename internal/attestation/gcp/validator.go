@@ -18,6 +18,7 @@ import (
 	"time"
 
 	compute "cloud.google.com/go/compute/apiv1"
+	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/vtpm"
 	"github.com/edgelesssys/constellation/v2/internal/oid"
@@ -25,7 +26,6 @@ import (
 	"github.com/google/go-tpm-tools/server"
 	"github.com/googleapis/gax-go/v2"
 	"google.golang.org/api/option"
-	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 )
 
 // Validator for GCP confidential VM attestation.

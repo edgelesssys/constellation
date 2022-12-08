@@ -11,9 +11,9 @@ import (
 	"errors"
 	"testing"
 
+	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
 )
 
