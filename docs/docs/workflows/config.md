@@ -1,6 +1,31 @@
-# IAM Configuration
+# Configure your cluster
 
-Before your cluster can be created, you need to configure the identity and access management (IAM) for your CSP.
+Before your cluster can be created, you need to configure the identity and access management (IAM) for your CSP and choose machine types for your cluster.
+
+## Choosing VM types
+
+Constellation supports the following VM types:
+<tabs groupID="csp">
+<tabItem value="azure" label="Azure">
+
+By default, Constellation uses `Standard_DC4as_v5` CVMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. For CVMs, any VM type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported.
+
+You can also run `constellation config instance-types` to get the list of all supported options.
+
+</tabItem>
+<tabItem value="gcp" label="GCP">
+
+By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all machines from the N2D family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
+
+</tabItem>
+<tabItem value="aws" label="AWS">
+
+By default, Constellation uses `m6a.xlarge` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all nitroTPM-enabled machines. Refer to the [list of nitroTPM-enabled instance types](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html) or run `constellation config instance-types` to get the list of all supported options.
+
+</tabItem>
+</tabs>
+
+Fill the desired VM type into the **instanceType** field in the `constellation-conf.yml` file.
 
 ## Creating an IAM configuration
 
@@ -15,18 +40,14 @@ constellation iam create azure --region=westus --resourceGroup=constellTest --se
 ```
 
 :::info
-This command creates IAM configuration on the Azure region `westus` using a new resource group `constellTest` and a new service principal `spTest`.
+This command creates IAM configuration on the Azure region `westus` creating a new resource group `constellTest` and a new service principal `spTest`.
 :::
 
-Paste the output into the corresponding fields of the `constellation-conf.yaml` file created by the `constellation config generate` command.
+Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
 
 :::tip
 Since `clientSecretValue` is a sensitive value, you can leave it empty in the configuration file and pass it via an environment variable instead. To this end, create the environment variable `CONSTELL_AZURE_CLIENT_SECRET_VALUE` and set it to the secret value.
 :::
-
-By default, Constellation uses `Standard_DC4as_v5` CVMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. For CVMs, any VM type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported.
-
-You can also run `constellation config instance-types` to get the list of all supported options.
 
 </tabItem>
 <tabItem value="gcp" label="GCP">
@@ -38,12 +59,10 @@ constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west1-a
 ```
 
 :::info
-This command creates IAM configuration in the GCP project `yourproject-12345` on the GCP zone `europe-west1-a` using a new service account `constell-test`.
+This command creates IAM configuration in the GCP project `yourproject-12345` on the GCP zone `europe-west1-a` creating a new service account `constell-test`.
 :::
 
-Paste the output into the corresponding fields of the `constellation-conf.yaml` file created by the `constellation config generate` command.
-
-By default, Constellation uses `n2d-standard-4` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all machines from the N2D family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
+Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
 
 </tabItem>
 <tabItem value="aws" label="AWS">
@@ -58,7 +77,7 @@ constellation iam create aws --zone=eu-central-1a --prefix=constellTest
 This command creates IAM configuration for the AWS zone `eu-central-1a` using the prefix `constellTest` for all named resources being created.
 :::
 
-Paste the output into the corresponding fields of the `constellation-conf.yaml` file created by the `constellation config generate` command.
+Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
 
 Constellation OS images are currently replicated to the following regions:
     * `eu-central-1`
@@ -69,62 +88,58 @@ If you require the OS image to be available in another region, [let us know](htt
 
 You can find a list of all [regions in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
 
-By default, Constellation uses `m6a.xlarge` VMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. Supported are all nitroTPM-enabled machines. Refer to the [list of nitroTPM-enabled instance types](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html) or run `constellation config instance-types` to get the list of all supported options.
-
 </tabItem>
 </tabs>
 
-Alternatively, you can manually create the IAM configuration on your CSP.
+<details>
+<summary>Alternatively, you can manually create the IAM configuration on your CSP.</summary>
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure (manually)">
 
 * **subscription**: The UUID of your Azure subscription, e.g., `8b8bd01f-efd9-4113-9bd1-c82137c32da7`.
 
-You can view your subscription UUID via `az account show` and read the `id` field. For more information refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/azure-portal/get-subscription-tenant-id#find-your-azure-subscription).
+  You can view your subscription UUID via `az account show` and read the `id` field. For more information refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/azure-portal/get-subscription-tenant-id#find-your-azure-subscription).
 
 * **tenant**: The UUID of your Azure tenant, e.g., `3400e5a2-8fe2-492a-886c-38cb66170f25`.
 
-You can view your tenant UUID via `az account show` and read the `tenant` field. For more information refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/azure-portal/get-subscription-tenant-id#find-your-azure-ad-tenant).
+  You can view your tenant UUID via `az account show` and read the `tenant` field. For more information refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/azure-portal/get-subscription-tenant-id#find-your-azure-ad-tenant).
 
 * **location**: The Azure datacenter location you want to deploy your cluster in, e.g., `westus`. CVMs are currently only supported in a few regions, check [Azure's products available by region](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all). These are:
 
-* `westus`
-* `eastus`
-* `northeurope`
-* `westeurope`
+  * `westus`
+  * `eastus`
+  * `northeurope`
+  * `westeurope`
 
-* **resourceGroup**: [Create a new resource group in Azure](https://portal.azure.com/#create/Microsoft.ResourceGroup) for your Constellation cluster. Set this configuration field to the name of the created resource group.
+* **resourceGroup**: [Create a new resource group in Azure](https://portal.azure.com/#create/Microsoft.ResourceGroup) for your Constellation cluster. Set this configuration     field to the name of the created resource group.
 
 * **userAssignedIdentity**: [Create a new managed identity in Azure](https://portal.azure.com/#create/Microsoft.ManagedIdentity). You should create the identity in a different resource group as all resources within the cluster resource group will be deleted on cluster termination.
 
-Add two role assignments to the identity: `Virtual Machine Contributor` and `Application Insights Component Contributor`. The `scope` of both should refer to the previously created cluster resource group.
+  Add two role assignments to the identity: `Virtual Machine Contributor` and `Application Insights Component Contributor`. The `scope` of both should refer to the previously created cluster resource group.
 
-Set the configuration value to the full ID of the created identity, e.g., `/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity`. You can get it by opening the `JSON View` from the `Overview` section of the identity.
+  Set the configuration value to the full ID of the created identity, e.g., `/subscriptions/8b8bd01f-efd9-4113-9bd1-c82137c32da7/resourcegroups/constellation-identity/providers/Microsoft.ManagedIdentity/userAssignedIdentities/constellation-identity`. You can get it by opening the `JSON View` from the `Overview` section of the identity.
 
-The user-assigned identity is used by instances of the cluster to access other cloud resources.
-For more information about managed identities refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-manage-user-assigned-managed-identities).
+  The user-assigned identity is used by instances of the cluster to access other cloud resources.
+  For more information about managed identities refer to [Azure's documentation](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-manage-user-assigned-managed-identities).
 
 * **appClientID**: [Create a new app registration in Azure](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/CreateApplicationBlade/quickStartType~/null/isMSAApp~/false).
 
-Set `Supported account types` to `Accounts in this organizational directory only` and leave the `Redirect URI` empty.
+  Set `Supported account types` to `Accounts in this organizational directory only` and leave the `Redirect URI` empty.
 
-Set the configuration value to the `Application (client) ID`, e.g., `86ec31dd-532b-4a8c-a055-dd23f25fb12f`.
+  Set the configuration value to the `Application (client) ID`, e.g., `86ec31dd-532b-4a8c-a055-dd23f25fb12f`.
 
-In the cluster resource group, go to `Access Control (IAM)` and set the created app registration as `Owner`.
+  In the cluster resource group, go to `Access Control (IAM)` and set the created app registration as `Owner`.
 
 * **clientSecretValue**: In the previously created app registration, go to `Certificates & secrets` and create a new `Client secret`.
 
-Set the configuration value to the secret value.
+  Set the configuration value to the secret value.
 
-:::tip
-Since this is a sensitive value, alternatively you can leave `clientSecretValue` empty in the configuration file and pass it via an environment variable instead. To this end, create the environment variable `CONSTELL_AZURE_CLIENT_SECRET_VALUE` and set it to the secret value.
-:::
-
-* **instanceType**: The VM type you want to use for your Constellation nodes.
-
-For CVMs, any type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported. It defaults to `Standard_DC4as_v5` (4 vCPUs, 16 GB RAM). Alternatively, you can run `constellation config instance-types` to get the list of all supported options.
+  :::tip
+  Since this is a sensitive value, alternatively you can leave `clientSecretValue` empty in the configuration file and pass it via an environment variable instead. To this end, create the environment variable `CONSTELL_AZURE_CLIENT_SECRET_VALUE` and set it to the secret value.
+  :::
 
 </tabItem>
+
 <tabItem value="gcp" label="GCP (manually)">
 
 * **project**: The ID of your GCP project, e.g., `constellation-129857`.
@@ -149,11 +164,8 @@ For CVMs, any type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https:/
 
   Afterward, create and download a new JSON key for this service account. Place the downloaded file in your Constellation workspace, and set the config parameter to the filename, e.g., `constellation-129857-15343dba46cb.json`.
 
-* **instanceType**: The VM type you want to use for your Constellation nodes.
-
-  Supported are all machines from the N2D family. It defaults to `n2d-standard-4` (4 vCPUs, 16 GB RAM), but you can use any other VMs from the same family. Refer to [N2D machine series](https://cloud.google.com/compute/docs/general-purpose-machines#n2d_machines) or run `constellation config instance-types` to get the list of all supported options.
-
 </tabItem>
+
 <tabItem value="aws" label="AWS (manually)">
 
 * **region**: The name of your chosen AWS data center region, e.g., `us-east-2`.
@@ -183,12 +195,10 @@ For CVMs, any type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https:/
 
   Alternatively, you can create the AWS profile with a tool of your choice. Use the JSON policy in [main.tf](https://github.com/edgelesssys/constellation/tree/release/v2.2/hack/terraform/aws/iam/main.tf) in the resource `aws_iam_policy.worker_node_policy`.
 
-* **instanceType**: The VM type you want to use for your Constellation nodes.
-
-  Supported are all nitroTPM-enabled machines. It defaults to `m6a.xlarge` (4 vCPUs, 16 GB RAM), but you can use any other nitroTPM-enabled VMs. Refer to the [list of nitroTPM-enabled instance types](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enable-nitrotpm-prerequisites.html) or run `constellation config instance-types` to get the list of all supported options.
-
 </tabItem>
+
 </tabs>
+</details>
 
 Now that you've configured your CSP, you can [create your cluster](./create.md).
 

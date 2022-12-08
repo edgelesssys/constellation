@@ -48,7 +48,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     ```
 
     :::info
-    This command creates IAM configuration on the Azure region `westus` using a new resource group `constellTest` and a new service principal `spTest`.
+    This command creates IAM configuration on the Azure region `westus` creating a new resource group `constellTest` and a new service principal `spTest`.
     :::
 
     </tabItem>
@@ -60,7 +60,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     ```
 
     :::info
-    This command creates IAM configuration in the GCP project `yourproject-12345` on the GCP zone `europe-west1-a` using a new service account `constell-test`.
+    This command creates IAM configuration in the GCP project `yourproject-12345` on the GCP zone `europe-west1-a` creating a new service account `constell-test`.
     :::
 
     </tabItem>
@@ -82,7 +82,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     :::tip
 
-    To learn how to delete your IAM configuration and to get more detailed information on the IAM process, see the [IAM workflow](../workflows/iam.md).
+    To learn how to delete your IAM configuration and to get more detailed information on the IAM process and the VM types supported by Constellation, see the [Configuration workflow](../workflows/config.md).
 
     :::
 
