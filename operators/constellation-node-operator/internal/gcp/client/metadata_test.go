@@ -9,20 +9,20 @@ package client
 import (
 	"testing"
 
+	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/genproto/googleapis/cloud/compute/v1"
 	"google.golang.org/protobuf/proto"
 )
 
 func TestGetMetadataByKey(t *testing.T) {
 	testCases := map[string]struct {
-		metadata  *compute.Metadata
+		metadata  *computepb.Metadata
 		key       string
 		wantValue string
 	}{
 		"metadata has key": {
-			metadata: &compute.Metadata{
-				Items: []*compute.Items{
+			metadata: &computepb.Metadata{
+				Items: []*computepb.Items{
 					{Key: proto.String("key"), Value: proto.String("value")},
 				},
 			},
@@ -30,8 +30,8 @@ func TestGetMetadataByKey(t *testing.T) {
 			wantValue: "value",
 		},
 		"metadata does not have key": {
-			metadata: &compute.Metadata{
-				Items: []*compute.Items{
+			metadata: &computepb.Metadata{
+				Items: []*computepb.Items{
 					{Key: proto.String("otherkey"), Value: proto.String("value")},
 				},
 			},
@@ -39,8 +39,8 @@ func TestGetMetadataByKey(t *testing.T) {
 			wantValue: "",
 		},
 		"metadata contains invalid item": {
-			metadata: &compute.Metadata{
-				Items: []*compute.Items{
+			metadata: &computepb.Metadata{
+				Items: []*computepb.Items{
 					{},
 					{Key: proto.String("key"), Value: proto.String("value")},
 				},

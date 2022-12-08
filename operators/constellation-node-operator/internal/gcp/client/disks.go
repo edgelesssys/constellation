@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"google.golang.org/genproto/googleapis/cloud/compute/v1"
+	"cloud.google.com/go/compute/apiv1/computepb"
 )
 
 var (
@@ -19,12 +19,12 @@ var (
 )
 
 // diskSourceToDiskReq converts a disk source URI to a disk request.
-func diskSourceToDiskReq(diskSource string) (*compute.GetDiskRequest, error) {
+func diskSourceToDiskReq(diskSource string) (*computepb.GetDiskRequest, error) {
 	matches := diskSourceRegex.FindStringSubmatch(diskSource)
 	if len(matches) != 4 {
 		return nil, fmt.Errorf("error splitting diskSource: %v", diskSource)
 	}
-	return &compute.GetDiskRequest{
+	return &computepb.GetDiskRequest{
 		Disk:    matches[3],
 		Project: matches[1],
 		Zone:    matches[2],

@@ -33,7 +33,7 @@ replace (
 replace github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools v0.0.0-20221111090237-e51fbcb20b1f
 
 require (
-	cloud.google.com/go/compute v1.13.0
+	cloud.google.com/go/compute v1.14.0
 	cloud.google.com/go/compute/metadata v0.2.1
 	cloud.google.com/go/kms v1.6.0
 	cloud.google.com/go/logging v1.6.1
@@ -91,7 +91,6 @@ require (
 	golang.org/x/mod v0.7.0
 	golang.org/x/sys v0.3.0
 	google.golang.org/api v0.103.0
-	google.golang.org/genproto v0.0.0-20221207170731-23e4bf6bdc37
 	google.golang.org/grpc v1.51.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v3 v3.0.1
@@ -288,6 +287,7 @@ require (
 	golang.org/x/tools v0.4.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/genproto v0.0.0-20221207170731-23e4bf6bdc37 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

@@ -3,7 +3,7 @@ module github.com/edgelesssys/constellation/operators/constellation-node-operato
 go 1.19
 
 require (
-	cloud.google.com/go/compute v1.12.1
+	cloud.google.com/go/compute v1.14.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2 v2.0.0
@@ -18,7 +18,6 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.6
 	go.uber.org/multierr v1.8.0
 	google.golang.org/api v0.103.0
-	google.golang.org/genproto v0.0.0-20221201204527-e3fa12d562f3
 	google.golang.org/protobuf v1.28.1
 	k8s.io/api v0.25.4
 	k8s.io/apimachinery v0.25.4
@@ -95,6 +94,7 @@ require (
 	golang.org/x/time v0.0.0-20220609170525-579cf78fd858 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/genproto v0.0.0-20221202195650-67e5cbc046fd // indirect
 	google.golang.org/grpc v1.50.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

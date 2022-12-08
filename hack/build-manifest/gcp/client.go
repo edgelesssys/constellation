@@ -11,9 +11,9 @@ import (
 	"strings"
 
 	compute "cloud.google.com/go/compute/apiv1"
+	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"google.golang.org/api/iterator"
-	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 )
 
 // Client for GCP Image API.
