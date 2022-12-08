@@ -8,6 +8,10 @@ inputs:
     description: "Name of the registry to use"
     required: false
     default: "ghcr.io"
+  pseudoVersion:
+    description: "Check if pseudo-version should be generated"
+    default: "false"
+    required: true
   koConfig:
     description: "Path to the .ko.yaml config file"
     required: false
@@ -23,6 +27,8 @@ inputs:
     required: true
   generateKoSBOM:
     description: "Generate unsigned ko SBOM"
+    required: false
+    default: "false"
 
 outputs:
   container_full:
@@ -41,6 +47,7 @@ runs:
   using: "composite"
   steps:
     - name: Determine pseudo version
+      if: ${{ inputs.pseudoVersion == 'true' }}
       id: pseudo-version
       uses: ./.github/actions/pseudo_version
 
@@ -58,6 +65,11 @@ runs:
       run: |
         tags=""
         sbom=""
+
+        ls -lahR ${{ github.workspace}}
+        stat ${{ inputs.koTarget }}
+        echo PWD=$(pwd) # is erased?!
+        pwd
 
         if [ "${{ github.ref }}" == "${{ github.event.repository.default_branch }}" ]; then
           tags="latest"

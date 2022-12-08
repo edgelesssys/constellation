@@ -1,5 +1,10 @@
 name: Determine pseudo version
 description: "Determine go-like pseudo version to use as container image tag."
+inputs:
+  constellationPath:
+    description: "Path to Constellation repository root"
+    #default: "."
+    required: true
 
 outputs:
   pseudoVersion:
@@ -30,19 +35,24 @@ runs:
         else
           git fetch --tags -v
         fi
+
+        pseudoVersionPath=${{ inputs.constellationPath }}/hack/pseudo-version
         homedir="$(getent passwd $(id -u) | cut -d ":" -f 6)"
+
         export GOCACHE=${homedir}/.cache/go-build
         export GOPATH=${homedir}/go
         export GOMODCACHE=${homedir}/.cache/go-mod
-        pseudoVersion=$(go run .)
-        semanticVersion=$(go run . -semantic-version)
-        timestamp=$(go run . -print-timestamp)
-        branchName=$(go run . -print-branch)
-        releaseVersion=$(go run . -print-release-branch)
+
+        pseudoVersion=$(go run $pseudoVersionPath)
+        semanticVersion=$(go run $pseudoVersionPath -semantic-version)
+        timestamp=$(go run $pseudoVersionPath -print-timestamp)
+        branchName=$(go run $pseudoVersionPath -print-branch)
+        releaseVersion=$(go run $pseudoVersionPath -print-release-branch)
+
         echo "pseudoVersion=${pseudoVersion}" >> $GITHUB_OUTPUT
         echo "semanticVersion=${semanticVersion}" >> $GITHUB_OUTPUT
         echo "timestamp=${timestamp}" >> $GITHUB_OUTPUT
         echo "branchName=${branchName}" >> $GITHUB_OUTPUT
         echo "releaseVersion=${releaseVersion}" >> $GITHUB_OUTPUT
-      working-directory: hack/pseudo-version
       shell: bash
+      working-directory: ./hack/pseudo-version

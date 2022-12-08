@@ -1,7 +1,8 @@
 defaltBaseImage: distroless.dev/static:latest@sha256:d624beaae60b10ec342896b1470421eb473549cb3ac3bf1c6ec074d8b460b4fc
 
 baseImageOverrides:
-  github.com/edgelesssys/constellation/v2/operators/constellation-node-operator ghcr.io/edgelesssys/alpine-base-user-65532
+  github.com/edgelesssys/constellation/operators/constellation-node-operator/v2: ghcr.io/edgelesssys/apko-alpine-base-user-65532
+  github.com/edgelesssys/constellation/v2/hack/qemu-metadata-api: ghcr.io/edgelesssys/apko-alpine-qemu-metadata-api
 
 builds:
 - id: kms
@@ -61,3 +62,17 @@ builds:
   - -s -w -buildid=''
   - -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}
   - -extldflags "-static"
+
+- id: qemu-metadata-api
+  dir: .
+  main: ./hack/qemu-metadata-api/
+  env:
+  - CGO_ENABLED=0
+  - GOOS=linux
+  - GOARCH=amd64
+  flags:
+  - -trimpath
+  - -buildvcs=false
+  - -a
+  ldflags:
+  - -s -w -buildid=''

@@ -9,6 +9,7 @@ on:
     branches:
       - main
       - "release/**"
+      - "feat/reproducible-builds-ko"
 
 jobs:
   build-gcp-guest-agent:
@@ -25,31 +26,31 @@ jobs:
     steps:
       - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
         with:
-          repository: "GoogleCloudPlatform/guest-agent"
-          ref: refs/tags/${{ matrix.version }}
-          path: "guest-agent"
+          ref: ${{ github.head_ref }}
+
+      - name: Determine pseudo-version
+        id: pseudo-version
+        uses: ./.github/actions/pseudo_version
+
+      - name: Remove constellation
+        run: |
+          cp ./3rdparty/gcp-guest-agent/instance_configs.cfg /tmp/instance_configs.cfg
+          cp -r .github/ -r ../
+          cp .ko.yaml ../.ko.yaml
+          rm -rf constellation
 
       - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
         with:
-          ref: ${{ github.head_ref }}
-          path: "constellation"
-
+          repository: "GoogleCloudPlatform/guest-agent"
+          ref: refs/tags/${{ matrix.version }}
 
       - name: Prepare hardcoded configuration file
-        working-directory: ${{ github.workspace }}
+        id: prepare-config
         run: |
-          # https://ko.build/features/static-assets/
-          # cwd = /home/runner/work/constellation/constellation
-          koData="./guest-agent/kodata"
-          mkdir -p $koData
-          cp ./constellation/3rdparty/gcp-guest-agent/instance_configs.cfg $koData
-          cd ${GITHUB_WORKSPACE}/
-          ln -s ./constellation/.github/ .github
-
-          echo ${{ github.workspace }}/constellation
-          ls -alh ${{ github.workspace }}/constellation
-          #echo $GITHUB_WORKSPACE/constellation
-          #ls -alh $GITHUB_WORKSPACE/constellation
+          mkdir -p koData
+          cp /tmp/instance_configs.cfg koData/
+          cp -r ../.github/ .github/
+          cp ../.ko.yaml .ko.yaml
 
       - name: Build and upload gcp guest service container image
         id: build-and-upload
@@ -57,9 +58,9 @@ jobs:
         uses: ./.github/actions/build_micro_service_ko
         with:
           name: gcp-guest-agent
-          koTarget: ./guest-agent/google-guest-agent/
+          koTarget: ./google_guest_agent
           githubToken: ${{ secrets.GITHUB_TOKEN }}
-          constellationPath: ${{ github.workspace }}/constellation
+          pseudoVersion: "false"
           cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
           cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
           cosignPassword: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
