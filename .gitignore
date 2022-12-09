@@ -54,3 +54,6 @@ __pycache__/
 
 # Nix shells
 shell.nix
+
+# Gitpod
+.gitpod.yml
