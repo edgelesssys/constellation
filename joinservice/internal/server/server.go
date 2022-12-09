@@ -178,7 +178,7 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		return nil, status.Errorf(codes.Internal, "unable to get node name from CSR: %s", err)
 	}
 
-	if err := s.kubeClient.AddNodeToJoiningNodes(ctx, nodeName, components.GetHash()); err != nil {
+	if err := s.kubeClient.AddNodeToJoiningNodes(ctx, nodeName, components.GetHash(), req.IsControlPlane); err != nil {
 		return nil, status.Errorf(codes.Internal, "unable to add node to joining nodes: %s", err)
 	}
 
@@ -310,6 +310,6 @@ type certificateAuthority interface {
 type kubeClient interface {
 	GetComponents(ctx context.Context, configMapName string) (versions.ComponentVersions, error)
 	CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error
-	AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsHash string) error
+	AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsHash string, isControlPlane bool) error
 	AddReferenceToK8sVersionConfigMap(ctx context.Context, k8sVersionsConfigMapName string, componentsConfigMapName string) error
 }

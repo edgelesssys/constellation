@@ -8,12 +8,15 @@ package controllers
 
 import (
 	"context"
+	"time"
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/utils/clock"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -33,6 +36,7 @@ const (
 type JoiningNodesReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+	clock.Clock
 }
 
 // NewJoiningNodesReconciler creates a new JoiningNodesReconciler.
@@ -40,6 +44,7 @@ func NewJoiningNodesReconciler(client client.Client, scheme *runtime.Scheme) *Jo
 	return &JoiningNodesReconciler{
 		Client: client,
 		Scheme: scheme,
+		Clock:  clock.RealClock{},
 	}
 }
 
@@ -54,14 +59,16 @@ func (r *JoiningNodesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	var joiningNode updatev1alpha1.JoiningNode
 	if err := r.Get(ctx, req.NamespacedName, &joiningNode); err != nil {
-		logr.Error(err, "unable to fetch JoiningNodes")
+		if !errors.IsNotFound(err) {
+			logr.Error(err, "Unable to fetch JoiningNode")
+		}
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		var node corev1.Node
 		if err := r.Get(ctx, types.NamespacedName{Name: joiningNode.Spec.Name}, &node); err != nil {
-			logr.Error(err, "unable to fetch Node")
+			logr.Info("unable to fetch Node", "err", err)
 			return err
 		}
 
@@ -73,23 +80,35 @@ func (r *JoiningNodesReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return r.Update(ctx, &node)
 	})
 	if err != nil {
-		logr.Error(err, "unable to update Node")
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		// check if the deadline has been reached
+		// requeue if not
+		if joiningNode.Spec.Deadline == nil || r.Now().Before(joiningNode.Spec.Deadline.Time) {
+			var requeueAfter time.Duration
+			if joiningNode.Spec.Deadline == nil {
+				requeueAfter = defaultCheckInterval
+			} else {
+				requeueAfter = joiningNode.Spec.Deadline.Time.Sub(r.Now())
+			}
+			return ctrl.Result{
+				RequeueAfter: requeueAfter,
+			}, nil
+		}
 	}
 
+	// if the joining node is too old or the annotation succeeded, delete it.
 	err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		if err := r.Delete(ctx, &joiningNode); err != nil {
-			logr.Error(err, "unable to delete JoiningNode")
-			return err
+		if err := r.Get(ctx, req.NamespacedName, &joiningNode); err != nil {
+			return client.IgnoreNotFound(err)
 		}
-		return nil
+
+		return client.IgnoreNotFound(r.Delete(ctx, &joiningNode))
 	})
 	if err != nil {
 		logr.Error(err, "unable to delete JoiningNode")
 		return ctrl.Result{}, err
 	}
 
-	return ctrl.Result{}, nil
+	return ctrl.Result{}, err
 }
 
 // SetupWithManager sets up the controller with the Manager.

@@ -346,7 +346,7 @@ func (s *stubKubeClient) AddReferenceToK8sVersionConfigMap(ctx context.Context, 
 	return s.addReferenceToK8sVersionConfigMapErr
 }
 
-func (s *stubKubeClient) AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsHash string) error {
+func (s *stubKubeClient) AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsHash string, isControlPlane bool) error {
 	s.joiningNodeName = nodeName
 	s.componentsHash = componentsHash
 	return s.addNodeToJoiningNodesErr

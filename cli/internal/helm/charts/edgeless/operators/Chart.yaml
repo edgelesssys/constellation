@@ -10,8 +10,12 @@ dependencies:
     tags:
       - Azure
       - GCP
+      - AWS
+      - QEMU
   - name: constellation-operator
     version: 2.3.0-pre
     tags:
       - Azure
       - GCP
+      - AWS
+      - QEMU

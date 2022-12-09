@@ -75,6 +75,7 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
+	// Create CSP client
 	var cspClient cspAPI
 	var clientErr error
 	csp := strings.ToLower(os.Getenv(constellationCSP))
@@ -98,8 +99,7 @@ func main() {
 			os.Exit(1)
 		}
 	default:
-		setupLog.Info("Unknown CSP", "csp", csp)
-		os.Exit(1)
+		setupLog.Info("CSP does not support upgrades", "csp", csp)
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -126,44 +126,49 @@ func main() {
 		os.Exit(1)
 	}
 	defer etcdClient.Close()
-	imageInfo := deploy.NewImageInfo()
-	if err := deploy.InitialResources(context.Background(), k8sClient, imageInfo, cspClient, os.Getenv(constellationUID)); err != nil {
-		setupLog.Error(err, "Unable to deploy initial resources")
-		os.Exit(1)
+
+	// Create Controllers
+	if csp == "azure" || csp == "gcp" {
+		imageInfo := deploy.NewImageInfo()
+		if err := deploy.InitialResources(context.Background(), k8sClient, imageInfo, cspClient, os.Getenv(constellationUID)); err != nil {
+			setupLog.Error(err, "Unable to deploy initial resources")
+			os.Exit(1)
+		}
+		if err = controllers.NewNodeImageReconciler(
+			cspClient, etcdClient, mgr.GetClient(), mgr.GetScheme(),
+		).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "Unable to create controller", "controller", "NodeImage")
+			os.Exit(1)
+		}
+		if err = (&controllers.AutoscalingStrategyReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "Unable to create controller", "controller", "AutoscalingStrategy")
+			os.Exit(1)
+		}
+		if err = controllers.NewScalingGroupReconciler(
+			cspClient, mgr.GetClient(), mgr.GetScheme(),
+		).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "Unable to create controller", "controller", "ScalingGroup")
+			os.Exit(1)
+		}
+		if err = controllers.NewPendingNodeReconciler(
+			cspClient, mgr.GetClient(), mgr.GetScheme(),
+		).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "Unable to create controller", "controller", "PendingNode")
+			os.Exit(1)
+		}
 	}
 
-	if err = controllers.NewNodeImageReconciler(
-		cspClient, etcdClient, mgr.GetClient(), mgr.GetScheme(),
+	if err = controllers.NewJoiningNodesReconciler(
+		mgr.GetClient(),
+		mgr.GetScheme(),
 	).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "Unable to create controller", "controller", "NodeImage")
-		os.Exit(1)
-	}
-	if err = (&controllers.AutoscalingStrategyReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "Unable to create controller", "controller", "AutoscalingStrategy")
-		os.Exit(1)
-	}
-	if err = (&controllers.JoiningNodesReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "Unable to create controller", "controller", "JoiningNode")
 		os.Exit(1)
 	}
-	if err = controllers.NewScalingGroupReconciler(
-		cspClient, mgr.GetClient(), mgr.GetScheme(),
-	).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "Unable to create controller", "controller", "ScalingGroup")
-		os.Exit(1)
-	}
-	if err = controllers.NewPendingNodeReconciler(
-		cspClient, mgr.GetClient(), mgr.GetScheme(),
-	).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "Unable to create controller", "controller", "PendingNode")
-		os.Exit(1)
-	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
