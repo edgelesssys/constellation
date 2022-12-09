@@ -8,6 +8,10 @@ on:
       tag:
         description: "Semantic version tag of the release (vX.Y.Z)."
         required: true
+      latest:
+        description: "Whether to update the latest tag."
+        type: boolean
+        default: false
 
 jobs:
   update:
@@ -35,5 +39,10 @@ jobs:
 
       - name: Update OS images
         run: |
-          go run main.go --version "${{ github.event.release.tag_name }}${{ github.event.inputs.tag }}"
+          latest=$( [[ "${{ inputs.latest }}" = "true" ]] && echo "--latest")
+          go run main.go \
+            --version "${{ github.event.release.tag_name }}${{ github.event.inputs.tag }}" \
+            --stream stable \
+            --release \
+            "${latest}"
         working-directory: hack/add-version

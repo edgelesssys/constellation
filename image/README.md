@@ -245,7 +245,9 @@ upload/upload_azure.sh -g --disk-name "${AZURE_DISK_NAME}" "${AZURE_VMGS_PATH}"
 
 ```sh
 # set these variables
-export IMAGE_VERSION_UID= # e.g. "test123" or "v2.1.0"
+export REF= # e.g. feat-xyz (branch name encoded with dashes)
+export STREAM= # e.g. "nightly", "debug", "stable" (depends on the type of image and if it is a release)
+export IMAGE_VERSION= # e.g. v2.1.0" or output of pseudo-version tool
 export QEMU_BUCKET=cdn-constellation-backend
 export QEMU_BASE_URL="https://cdn.confidential.cloud"
 export QEMU_IMAGE_PATH=${PWD}/mkosi.output.qemu/fedora~37/image.raw

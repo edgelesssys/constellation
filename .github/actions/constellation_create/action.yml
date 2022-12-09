@@ -73,7 +73,7 @@ runs:
         yq eval -i \
           "(.provider | select(. | has(\"azure\")).azure.subscription) = \"${{ inputs.azureSubscription }}\" |
             (.provider | select(. | has(\"azure\")).azure.tenant) = \"${{ inputs.azureTenant }}\" |
-            (.provider | select(. | has(\"azure\")).azure.location) = \"North Europe\" |
+            (.provider | select(. | has(\"azure\")).azure.location) = \"West US\" |
             (.provider | select(. | has(\"azure\")).azure.userAssignedIdentity) = \"${{ inputs.azureUserAssignedIdentity }}\" |
             (.provider | select(. | has(\"azure\")).azure.resourceGroup) = \"${{ inputs.azureResourceGroup }}\" |
             (.provider | select(. | has(\"azure\")).azure.appClientID) = \"${{ inputs.azureClientID }}\" |
@@ -94,7 +94,7 @@ runs:
             (.provider | select(. | has(\"aws\")).aws.iamProfileWorkerNodes) = \"e2e_test_worker_node_instance_profile\"" \
           constellation-conf.yaml
 
-        if [ ${{ inputs.kubernetesVersion != '' }} = true ]; then
+        if [[ ${{ inputs.kubernetesVersion != '' }} = true ]]; then
           yq eval -i "(.kubernetesVersion) = ${{ inputs.kubernetesVersion }}" constellation-conf.yaml
         fi
 
@@ -187,13 +187,13 @@ runs:
         echo "::group::Wait for nodes"
         NODES_COUNT=$((${{ inputs.controlNodesCount }} + ${{ inputs.workerNodesCount }}))
         JOINWAIT=0
-        until [ "$(kubectl get nodes -o json | jq '.items | length')" == "${NODES_COUNT}" ] || [ $JOINWAIT -gt $JOINTIMEOUT ];
+        until [[ "$(kubectl get nodes -o json | jq '.items | length')" == "${NODES_COUNT}" ]] || [[ $JOINWAIT -gt $JOINTIMEOUT ]];
         do
             echo "$(kubectl get nodes -o json | jq '.items | length')/"${NODES_COUNT}" nodes have joined.. waiting.."
             JOINWAIT=$((JOINWAIT+30))
             sleep 30
         done
-        if [ $JOINWAIT -gt $JOINTIMEOUT ]; then
+        if [[ $JOINWAIT -gt $JOINTIMEOUT ]]; then
             echo "Timed out waiting for nodes to join"
             exit 1
         fi

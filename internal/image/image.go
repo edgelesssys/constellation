@@ -15,14 +15,54 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
+	"github.com/edgelesssys/constellation/v2/internal/shortname"
 	"github.com/spf13/afero"
 )
+
+// imageName is a struct that describes a Constellation OS imageName name.
+type imageName struct {
+	Ref     string
+	Stream  string
+	Version string
+}
+
+func newImageName(name string) (*imageName, error) {
+	ref, stream, version, err := shortname.ToParts(name)
+	if err != nil {
+		return nil, err
+	}
+	return &imageName{
+		Ref:     ref,
+		Stream:  stream,
+		Version: version,
+	}, nil
+}
+
+func (i *imageName) infoPath() string {
+	return path.Join(constants.CDNAPIPrefix, "ref", i.Ref, "stream", i.Stream, "image", i.Version, "info.json")
+}
+
+func (i *imageName) shortname() string {
+	return shortname.FromParts(i.Ref, i.Stream, i.Version)
+}
+
+// filename is the override file name for the image info file.
+func (i *imageName) filename() string {
+	name := i.shortname()
+	// replace all non-alphanumeric characters with an underscore
+	name = strings.Map(func(r rune) rune {
+		if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '-' || r == '.' {
+			return r
+		}
+		return '_'
+	}, name)
+	return name + ".json"
+}
 
 // imageInfo is a lookup table for image references.
 //
@@ -106,14 +146,18 @@ func (f *Fetcher) FetchReference(ctx context.Context, config *config.Config) (st
 	if err != nil {
 		return "", err
 	}
-	return f.fetch(ctx, provider, config.Image, variant)
+	image, err := newImageName(config.Image)
+	if err != nil {
+		return "", err
+	}
+	return f.fetch(ctx, provider, image, variant)
 }
 
-// fetch fetches the image reference for a given image version uid, CSP and image variant.
-func (f *Fetcher) fetch(ctx context.Context, csp cloudprovider.Provider, version, variant string) (string, error) {
-	raw, err := getFromFile(f.fs, version)
+// fetch fetches the image reference for a given image name, uid, CSP and image variant.
+func (f *Fetcher) fetch(ctx context.Context, csp cloudprovider.Provider, img *imageName, variant string) (string, error) {
+	raw, err := getFromFile(f.fs, img)
 	if err != nil && os.IsNotExist(err) {
-		raw, err = getFromURL(ctx, f.httpc, version)
+		raw, err = getFromURL(ctx, f.httpc, img)
 	}
 	if err != nil {
 		return "", fmt.Errorf("fetching image reference: %w", err)
@@ -145,19 +189,17 @@ func variant(provider cloudprovider.Provider, config *config.Config) (string, er
 	}
 }
 
-func getFromFile(fs *afero.Afero, version string) ([]byte, error) {
-	version = filepath.Base(version)
-	return fs.ReadFile(version + ".json")
+func getFromFile(fs *afero.Afero, img *imageName) ([]byte, error) {
+	return fs.ReadFile(img.filename())
 }
 
 // getFromURL fetches the image lookup table from a URL.
-func getFromURL(ctx context.Context, client httpc, version string) ([]byte, error) {
+func getFromURL(ctx context.Context, client httpc, img *imageName) ([]byte, error) {
 	url, err := url.Parse(constants.CDNRepositoryURL)
 	if err != nil {
 		return nil, fmt.Errorf("parsing image version repository URL: %w", err)
 	}
-	versionFilename := path.Base(version) + ".json"
-	url.Path = path.Join(constants.CDNImagePath, versionFilename)
+	url.Path = img.infoPath()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), http.NoBody)
 	if err != nil {
 		return nil, err
@@ -171,7 +213,7 @@ func getFromURL(ctx context.Context, client httpc, version string) ([]byte, erro
 	if resp.StatusCode != http.StatusOK {
 		switch resp.StatusCode {
 		case http.StatusNotFound:
-			return nil, fmt.Errorf("image %q does not exist", version)
+			return nil, fmt.Errorf("image %q does not exist", img.shortname())
 		default:
 			return nil, fmt.Errorf("unexpected status code %d", resp.StatusCode)
 		}
