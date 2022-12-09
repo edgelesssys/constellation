@@ -28,7 +28,7 @@ func (c *clusterFake) InitCluster(
 }
 
 // JoinCluster will fake joining the current node to an existing cluster.
-func (c *clusterFake) JoinCluster(context.Context, *kubeadm.BootstrapTokenDiscovery, role.Role, string, *logger.Logger) error {
+func (c *clusterFake) JoinCluster(context.Context, *kubeadm.BootstrapTokenDiscovery, role.Role, string, versions.ComponentVersions, *logger.Logger) error {
 	return nil
 }
 

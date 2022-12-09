@@ -7,8 +7,8 @@ metadata:
     app.kubernetes.io/instance: "testRelease"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/name: "azuredisk-csi-driver"
-    app.kubernetes.io/version: "v1.0.1"
-    helm.sh/chart: "azuredisk-csi-driver-v1.0.1"
+    app.kubernetes.io/version: "v1.1.0"
+    helm.sh/chart: "azuredisk-csi-driver-v1.1.0"
 spec:
   replicas: 1
   selector:
@@ -20,11 +20,12 @@ spec:
         app.kubernetes.io/instance: "testRelease"
         app.kubernetes.io/managed-by: "Helm"
         app.kubernetes.io/name: "azuredisk-csi-driver"
-        app.kubernetes.io/version: "v1.0.1"
-        helm.sh/chart: "azuredisk-csi-driver-v1.0.1"
+        app.kubernetes.io/version: "v1.1.0"
+        helm.sh/chart: "azuredisk-csi-driver-v1.1.0"
         app: csi-azuredisk-controller
     spec:
       serviceAccountName: csi-azuredisk-controller-sa
+      hostNetwork: false
       nodeSelector:
         kubernetes.io/os: linux
         node-role.kubernetes.io/control-plane: ""
@@ -55,9 +56,11 @@ spec:
             - "--timeout=15s"
             - "--leader-election"
             - "--leader-election-namespace=testNamespace"
-            - "--worker-threads=40"
+            - "--worker-threads=100"
             - "--extra-create-metadata=true"
             - "--strict-topology=true"
+            - "--kube-api-qps=50"
+            - "--kube-api-burst=100"
           env:
             - name: ADDRESS
               value: /csi/csi.sock
@@ -75,10 +78,12 @@ spec:
           args:
             - "-v=2"
             - "-csi-address=$(ADDRESS)"
-            - "-timeout=600s"
+            - "-timeout=1200s"
             - "-leader-election"
             - "--leader-election-namespace=testNamespace"
             - "-worker-threads=500"
+            - "-kube-api-qps=50"
+            - "-kube-api-burst=100"
           env:
             - name: ADDRESS
               value: /csi/csi.sock
@@ -149,7 +154,7 @@ spec:
               cpu: 10m
               memory: 20Mi
         - name: azuredisk
-          image: "ghcr.io/edgelesssys/constellation/azure-csi-driver:v1.0.1"
+          image: "ghcr.io/edgelesssys/constellation/azure-csi-driver:v1.1.0"
           args:
             - "--v=5"
             - "--endpoint=$(CSI_ENDPOINT)"

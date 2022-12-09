@@ -53,6 +53,7 @@ type Client interface {
 	AddTolerationsToDeployment(ctx context.Context, tolerations []corev1.Toleration, name string, namespace string) error
 	AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error
 	ListAllNamespaces(ctx context.Context) (*corev1.NamespaceList, error)
+	AnnotateNode(ctx context.Context, nodeName, annotationKey, annotationValue string) error
 }
 
 type installer interface {

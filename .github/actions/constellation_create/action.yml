@@ -23,6 +23,9 @@ inputs:
   kubernetesVersion:
     description: "Kubernetes version to create the cluster from."
     required: false
+  keepMeasurements:
+    default: "false"
+    description: "Keep measurements embedded in the CLI."
   #
   # GCP specific inputs
   #
@@ -70,19 +73,17 @@ runs:
         yq eval -i \
           "(.provider | select(. | has(\"azure\")).azure.subscription) = \"${{ inputs.azureSubscription }}\" |
             (.provider | select(. | has(\"azure\")).azure.tenant) = \"${{ inputs.azureTenant }}\" |
-            (.provider | select(. | has(\"azure\")).azure.location) = \"North Europe\" |
+            (.provider | select(. | has(\"azure\")).azure.location) = \"West US\" |
             (.provider | select(. | has(\"azure\")).azure.userAssignedIdentity) = \"${{ inputs.azureUserAssignedIdentity }}\" |
             (.provider | select(. | has(\"azure\")).azure.resourceGroup) = \"${{ inputs.azureResourceGroup }}\" |
             (.provider | select(. | has(\"azure\")).azure.appClientID) = \"${{ inputs.azureClientID }}\" |
-            (.provider | select(. | has(\"azure\")).azure.clientSecretValue) = \"${{ inputs.azureClientSecret }}\" |
-            (.provider | select(. | has(\"azure\")).azure.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
+            (.provider | select(. | has(\"azure\")).azure.clientSecretValue) = \"${{ inputs.azureClientSecret }}\"" \
           constellation-conf.yaml
 
         yq eval -i \
           "(.provider | select(. | has(\"gcp\")).gcp.project) = \"${{ inputs.gcpProject }}\" |
             (.provider | select(. | has(\"gcp\")).gcp.region) = \"europe-west3\" |
             (.provider | select(. | has(\"gcp\")).gcp.zone) = \"europe-west3-b\" |
-            (.provider | select(. | has(\"gcp\")).gcp.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}} |
             (.provider | select(. | has(\"gcp\")).gcp.serviceAccountKeyPath) = \"serviceAccountKey.json\"" \
           constellation-conf.yaml
 
@@ -90,13 +91,32 @@ runs:
           "(.provider | select(. | has(\"aws\")).aws.region) = \"eu-central-1\" |
             (.provider | select(. | has(\"aws\")).aws.zone) = \"eu-central-1a\" |
             (.provider | select(. | has(\"aws\")).aws.iamProfileControlPlane) = \"e2e_test_control_plane_instance_profile\" |
-            (.provider | select(. | has(\"aws\")).aws.iamProfileWorkerNodes) = \"e2e_test_worker_node_instance_profile\" |
-            (.provider | select(. | has(\"aws\")).aws.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
+            (.provider | select(. | has(\"aws\")).aws.iamProfileWorkerNodes) = \"e2e_test_worker_node_instance_profile\"" \
           constellation-conf.yaml
 
-        if [ ${{ inputs.kubernetesVersion != '' }} = true ]; then
+        if [[ ${{ inputs.kubernetesVersion != '' }} = true ]]; then
           yq eval -i "(.kubernetesVersion) = ${{ inputs.kubernetesVersion }}" constellation-conf.yaml
         fi
+
+    - name: Remove embedded measurements
+      shell: bash
+      if: ${{ inputs.keepMeasurements == 'false' }}
+      run: |
+        yq eval -i \
+          "(.provider | select(. | has(\"aws\")).aws.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
+          constellation-conf.yaml
+
+        yq eval -i \
+          "(.provider | select(. | has(\"azure\")).azure.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
+          constellation-conf.yaml
+
+        yq eval -i \
+          "(.provider | select(. | has(\"gcp\")).gcp.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}"\
+          constellation-conf.yaml
+
+        yq eval -i \
+          "(.provider | select(. | has(\"qemu\")).qemu.measurements) = {15:{\"expected\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"warnOnly\":false}}" \
+          constellation-conf.yaml
 
     - name: Set image
       shell: bash
@@ -133,18 +153,22 @@ runs:
         cat constellation-conf.yaml
         constellation create -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} --name e2e-test -y
 
-    - name: Print ID file
-      shell: bash
-      run: |
-        cat ./constellation-id.json
-
     - name: Cdbg deploy
       if: ${{ inputs.isDebugImage == 'true' }}
       shell: bash
       run: |
         echo "::group::cdbg deploy"
         chmod +x $GITHUB_WORKSPACE/build/cdbg
-        cdbg deploy --bootstrapper $GITHUB_WORKSPACE/build/bootstrapper
+        cdbg deploy \
+          --bootstrapper "${{ github.workspace }}/build/bootstrapper" \
+          --info logcollect=true \
+          --info logcollect.github.actor="${{ github.triggering_actor }}" \
+          --info logcollect.github.workflow="${{ github.workflow }}" \
+          --info logcollect.github.run-id="${{ github.run_id }}" \
+          --info logcollect.github.run-attempt="${{ github.run_attempt }}" \
+          --info logcollect.github.ref-name="${{ github.ref_name }}" \
+          --info logcollect.github.sha="${{ github.sha }}" \
+          --info logcollect.github.runner-os="${{ runner.os }}"
         echo "::endgroup::"
 
     - name: Constellation init
@@ -163,13 +187,13 @@ runs:
         echo "::group::Wait for nodes"
         NODES_COUNT=$((${{ inputs.controlNodesCount }} + ${{ inputs.workerNodesCount }}))
         JOINWAIT=0
-        until [ "$(kubectl get nodes -o json | jq '.items | length')" == "${NODES_COUNT}" ] || [ $JOINWAIT -gt $JOINTIMEOUT ];
+        until [[ "$(kubectl get nodes -o json | jq '.items | length')" == "${NODES_COUNT}" ]] || [[ $JOINWAIT -gt $JOINTIMEOUT ]];
         do
             echo "$(kubectl get nodes -o json | jq '.items | length')/"${NODES_COUNT}" nodes have joined.. waiting.."
             JOINWAIT=$((JOINWAIT+30))
             sleep 30
         done
-        if [ $JOINWAIT -gt $JOINTIMEOUT ]; then
+        if [[ $JOINWAIT -gt $JOINTIMEOUT ]]; then
             echo "Timed out waiting for nodes to join"
             exit 1
         fi
@@ -203,5 +227,5 @@ runs:
       if: ${{ always() && !env.ACT }}
       uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
       with:
-        name: serial-logs
+        name: serial-logs-${{ inputs.cloudProvider }}
         path: "*.log"

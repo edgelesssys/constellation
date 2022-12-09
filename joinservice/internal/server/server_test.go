@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
+	corev1 "k8s.io/api/core/v1"
 	kubeadmv1 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
@@ -44,12 +45,23 @@ func TestIssueJoinTicket(t *testing.T) {
 	}
 	testK8sVersion := versions.Default
 
+	components := versions.ComponentVersions{
+		{
+			URL:         "URL",
+			Hash:        "hash",
+			InstallPath: "install-path",
+			Extract:     true,
+		},
+	}
+
 	testCases := map[string]struct {
-		isControlPlane bool
-		kubeadm        stubTokenGetter
-		kms            stubKeyGetter
-		ca             stubCA
-		wantErr        bool
+		isControlPlane                 bool
+		kubeadm                        stubTokenGetter
+		kms                            stubKeyGetter
+		ca                             stubCA
+		kubeClient                     stubKubeClient
+		missingComponentsReferenceFile bool
+		wantErr                        bool
 	}{
 		"worker node": {
 			kubeadm: stubTokenGetter{token: testJoinToken},
@@ -57,13 +69,66 @@ func TestIssueJoinTicket(t *testing.T) {
 				uuid:                                 testKey,
 				attestation.MeasurementSecretContext: measurementSecret,
 			}},
-			ca: stubCA{cert: testCert},
+			ca:         stubCA{cert: testCert, nodeName: "node"},
+			kubeClient: stubKubeClient{getComponentsVal: components},
+		},
+		"worker node components reference missing": {
+			kubeadm: stubTokenGetter{token: testJoinToken},
+			kms: stubKeyGetter{dataKeys: map[string][]byte{
+				uuid:                                 testKey,
+				attestation.MeasurementSecretContext: measurementSecret,
+			}},
+			ca:                             stubCA{cert: testCert, nodeName: "node"},
+			kubeClient:                     stubKubeClient{getComponentsVal: components},
+			missingComponentsReferenceFile: true,
+		},
+		"worker node components reference missing and fallback fails": {
+			kubeadm: stubTokenGetter{token: testJoinToken},
+			kms: stubKeyGetter{dataKeys: map[string][]byte{
+				uuid:                                 testKey,
+				attestation.MeasurementSecretContext: measurementSecret,
+			}},
+			ca:                             stubCA{cert: testCert, nodeName: "node"},
+			kubeClient:                     stubKubeClient{createConfigMapErr: someErr},
+			missingComponentsReferenceFile: true,
+			wantErr:                        true,
+		},
+		"kubeclient fails": {
+			kubeadm: stubTokenGetter{token: testJoinToken},
+			kms: stubKeyGetter{dataKeys: map[string][]byte{
+				uuid:                                 testKey,
+				attestation.MeasurementSecretContext: measurementSecret,
+			}},
+			ca:         stubCA{cert: testCert, nodeName: "node"},
+			kubeClient: stubKubeClient{getComponentsErr: someErr},
+			wantErr:    true,
+		},
+		"Getting Node Name from CSR fails": {
+			kubeadm: stubTokenGetter{token: testJoinToken},
+			kms: stubKeyGetter{dataKeys: map[string][]byte{
+				uuid:                                 testKey,
+				attestation.MeasurementSecretContext: measurementSecret,
+			}},
+			ca:         stubCA{cert: testCert, nodeName: "node", getNameErr: someErr},
+			kubeClient: stubKubeClient{getComponentsVal: components},
+			wantErr:    true,
+		},
+		"Cannot add node to JoiningNode CRD": {
+			kubeadm: stubTokenGetter{token: testJoinToken},
+			kms: stubKeyGetter{dataKeys: map[string][]byte{
+				uuid:                                 testKey,
+				attestation.MeasurementSecretContext: measurementSecret,
+			}},
+			ca:         stubCA{cert: testCert, nodeName: "node"},
+			kubeClient: stubKubeClient{getComponentsVal: components, addNodeToJoiningNodesErr: someErr},
+			wantErr:    true,
 		},
 		"GetDataKey fails": {
-			kubeadm: stubTokenGetter{token: testJoinToken},
-			kms:     stubKeyGetter{dataKeys: make(map[string][]byte), getDataKeyErr: someErr},
-			ca:      stubCA{cert: testCert},
-			wantErr: true,
+			kubeadm:    stubTokenGetter{token: testJoinToken},
+			kms:        stubKeyGetter{dataKeys: make(map[string][]byte), getDataKeyErr: someErr},
+			ca:         stubCA{cert: testCert, nodeName: "node"},
+			kubeClient: stubKubeClient{getComponentsVal: components},
+			wantErr:    true,
 		},
 		"GetJoinToken fails": {
 			kubeadm: stubTokenGetter{getJoinTokenErr: someErr},
@@ -71,8 +136,9 @@ func TestIssueJoinTicket(t *testing.T) {
 				uuid:                                 testKey,
 				attestation.MeasurementSecretContext: measurementSecret,
 			}},
-			ca:      stubCA{cert: testCert},
-			wantErr: true,
+			ca:         stubCA{cert: testCert, nodeName: "node"},
+			kubeClient: stubKubeClient{getComponentsVal: components},
+			wantErr:    true,
 		},
 		"GetCertificate fails": {
 			kubeadm: stubTokenGetter{token: testJoinToken},
@@ -80,8 +146,9 @@ func TestIssueJoinTicket(t *testing.T) {
 				uuid:                                 testKey,
 				attestation.MeasurementSecretContext: measurementSecret,
 			}},
-			ca:      stubCA{getCertErr: someErr},
-			wantErr: true,
+			ca:         stubCA{getCertErr: someErr, nodeName: "node"},
+			kubeClient: stubKubeClient{getComponentsVal: components},
+			wantErr:    true,
 		},
 		"control plane": {
 			isControlPlane: true,
@@ -93,7 +160,8 @@ func TestIssueJoinTicket(t *testing.T) {
 				uuid:                                 testKey,
 				attestation.MeasurementSecretContext: measurementSecret,
 			}},
-			ca: stubCA{cert: testCert},
+			ca:         stubCA{cert: testCert, nodeName: "node"},
+			kubeClient: stubKubeClient{getComponentsVal: components},
 		},
 		"GetControlPlaneCertificateKey fails": {
 			isControlPlane: true,
@@ -102,8 +170,9 @@ func TestIssueJoinTicket(t *testing.T) {
 				uuid:                                 testKey,
 				attestation.MeasurementSecretContext: measurementSecret,
 			}},
-			ca:      stubCA{cert: testCert},
-			wantErr: true,
+			ca:         stubCA{cert: testCert, nodeName: "node"},
+			kubeClient: stubKubeClient{getComponentsVal: components},
+			wantErr:    true,
 		},
 	}
 
@@ -114,17 +183,23 @@ func TestIssueJoinTicket(t *testing.T) {
 
 			handler := file.NewHandler(afero.NewMemMapFs())
 			// IssueJoinTicket tries to read the k8s-version ConfigMap from a mounted file.
-			require.NoError(handler.Write(filepath.Join(constants.ServiceBasePath, constants.K8sVersion), []byte(testK8sVersion), file.OptNone))
+			require.NoError(handler.Write(filepath.Join(constants.ServiceBasePath, constants.K8sVersionConfigMapName), []byte(testK8sVersion), file.OptNone))
+
+			if !tc.missingComponentsReferenceFile {
+				require.NoError(handler.Write(filepath.Join(constants.ServiceBasePath, constants.K8sComponentsFieldName), []byte(testK8sVersion), file.OptNone))
+			}
+
 			salt := []byte{0xA, 0xB, 0xC}
 
-			api := New(
-				salt,
-				handler,
-				tc.ca,
-				tc.kubeadm,
-				tc.kms,
-				logger.NewTest(t),
-			)
+			api := Server{
+				measurementSalt: salt,
+				file:            handler,
+				ca:              tc.ca,
+				joinTokenGetter: tc.kubeadm,
+				dataKeyGetter:   tc.kms,
+				kubeClient:      &tc.kubeClient,
+				log:             logger.NewTest(t),
+			}
 
 			req := &joinproto.IssueJoinTicketRequest{
 				DiskUuid:       "uuid",
@@ -144,6 +219,9 @@ func TestIssueJoinTicket(t *testing.T) {
 			assert.Equal(tc.kubeadm.token.CACertHashes[0], resp.DiscoveryTokenCaCertHash)
 			assert.Equal(tc.kubeadm.token.Token, resp.Token)
 			assert.Equal(tc.ca.cert, resp.KubeletCert)
+			assert.Equal(tc.kubeClient.getComponentsVal.ToJoinProto(), resp.KubernetesComponents)
+			assert.Equal(tc.ca.nodeName, tc.kubeClient.joiningNodeName)
+			assert.Equal(tc.kubeClient.getComponentsVal.GetHash(), tc.kubeClient.componentsHash)
 
 			if tc.isControlPlane {
 				assert.Len(resp.ControlPlaneFiles, len(tc.kubeadm.files))
@@ -181,14 +259,13 @@ func TestIssueRejoinTicker(t *testing.T) {
 			assert := assert.New(t)
 			require := require.New(t)
 
-			api := New(
-				nil,
-				file.Handler{},
-				stubCA{},
-				stubTokenGetter{},
-				tc.keyGetter,
-				logger.NewTest(t),
-			)
+			api := Server{
+				file:            file.Handler{},
+				ca:              stubCA{},
+				joinTokenGetter: stubTokenGetter{},
+				dataKeyGetter:   tc.keyGetter,
+				log:             logger.NewTest(t),
+			}
 
 			req := &joinproto.IssueRejoinTicketRequest{
 				DiskUuid: uuid,
@@ -233,8 +310,44 @@ func (f stubKeyGetter) GetDataKey(_ context.Context, name string, _ int) ([]byte
 type stubCA struct {
 	cert       []byte
 	getCertErr error
+	nodeName   string
+	getNameErr error
 }
 
 func (f stubCA) GetCertificate(csr []byte) ([]byte, error) {
 	return f.cert, f.getCertErr
+}
+
+func (f stubCA) GetNodeNameFromCSR(csr []byte) (string, error) {
+	return f.nodeName, f.getNameErr
+}
+
+type stubKubeClient struct {
+	getComponentsVal versions.ComponentVersions
+	getComponentsErr error
+
+	createConfigMapErr error
+
+	addReferenceToK8sVersionConfigMapErr error
+	addNodeToJoiningNodesErr             error
+	joiningNodeName                      string
+	componentsHash                       string
+}
+
+func (s *stubKubeClient) GetComponents(ctx context.Context, configMapName string) (versions.ComponentVersions, error) {
+	return s.getComponentsVal, s.getComponentsErr
+}
+
+func (s *stubKubeClient) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error {
+	return s.createConfigMapErr
+}
+
+func (s *stubKubeClient) AddReferenceToK8sVersionConfigMap(ctx context.Context, k8sVersionsConfigMapName string, componentsConfigMapName string) error {
+	return s.addReferenceToK8sVersionConfigMapErr
+}
+
+func (s *stubKubeClient) AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsHash string, isControlPlane bool) error {
+	s.joiningNodeName = nodeName
+	s.componentsHash = componentsHash
+	return s.addNodeToJoiningNodesErr
 }

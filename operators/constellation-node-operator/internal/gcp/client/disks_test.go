@@ -9,20 +9,20 @@ package client
 import (
 	"testing"
 
+	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/genproto/googleapis/cloud/compute/v1"
 )
 
 func TestDiskSourceToDiskReq(t *testing.T) {
 	testCases := map[string]struct {
 		diskSource  string
-		wantRequest *compute.GetDiskRequest
+		wantRequest *computepb.GetDiskRequest
 		wantErr     bool
 	}{
 		"valid request": {
 			diskSource: "https://www.googleapis.com/compute/v1/projects/project/zones/zone/disks/disk",
-			wantRequest: &compute.GetDiskRequest{
+			wantRequest: &computepb.GetDiskRequest{
 				Disk:    "disk",
 				Project: "project",
 				Zone:    "zone",

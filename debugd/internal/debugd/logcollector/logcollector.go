@@ -116,7 +116,7 @@ func getTemplate(ctx context.Context, logger *logger.Logger) (*template.Template
 		return nil, fmt.Errorf("creating logstash template container: %w\n%s", err, out)
 	}
 
-	if err := os.MkdirAll("/run/logstash", 0o511); err != nil {
+	if err := os.MkdirAll("/run/logstash", 0o777); err != nil {
 		return nil, fmt.Errorf("creating logstash template dir: %w", err)
 	}
 
@@ -169,10 +169,8 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 		"--rm",
 		"--name=logstash",
 		"--pod=logcollection",
-		"--user=root",
-		"--privileged",
 		"--log-driver=none",
-		"--volume=/run/logstash/pipeline:/usr/share/logstash/pipeline:ro",
+		"--volume=/run/logstash/pipeline:/usr/share/logstash/pipeline/:ro",
 		versions.LogstashImage,
 	}
 	runLogstashCmd := exec.CommandContext(ctx, "podman", runLogstashArgs...)
@@ -190,7 +188,6 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 		"--rm",
 		"--name=filebeat",
 		"--pod=logcollection",
-		"--user=root",
 		"--privileged",
 		"--log-driver=none",
 		"--volume=/run/log/journal:/run/log/journal:ro",
@@ -217,11 +214,11 @@ type logstashConfInput struct {
 }
 
 func writeLogstashPipelineConf(templ *template.Template, in logstashConfInput) error {
-	if err := os.MkdirAll("/run/logstash/pipeline", 0o511); err != nil {
+	if err := os.MkdirAll("/run/logstash/pipeline", 0o777); err != nil {
 		return fmt.Errorf("creating logstash config dir: %w", err)
 	}
 
-	file, err := os.OpenFile("/run/logstash/pipeline/pipeline.conf", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
+	file, err := os.OpenFile("/run/logstash/pipeline/pipeline.conf", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o777)
 	if err != nil {
 		return fmt.Errorf("opening logstash config file: %w", err)
 	}

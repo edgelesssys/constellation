@@ -140,6 +140,11 @@ const sidebars = {
         },
         {
           type: 'doc',
+          label: 'Installing cert-manager',
+          id: 'workflows/installing-cert-manager',
+        },
+        {
+          type: 'doc',
           label: 'Terminate your cluster',
           id: 'workflows/terminate',
         },

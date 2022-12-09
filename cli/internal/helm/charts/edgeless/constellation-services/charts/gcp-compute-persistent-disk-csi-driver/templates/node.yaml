@@ -34,13 +34,6 @@ spec:
               mountPath: /csi
             - name: registration-dir
               mountPath: /registration
-          livenessProbe:
-            initialDelaySeconds: 3
-            exec:
-              command:
-                - /csi-node-driver-registrar
-                - --kubelet-registration-path=/var/lib/kubelet/plugins/gcp.csi.confidential.cloud/csi.sock
-                - --mode=kubelet-registration-probe
         - name: gce-pd-driver
           image: {{ .Values.image.gcepdDriver.repo }}:{{ .Values.image.gcepdDriver.tag }}
           imagePullPolicy: {{ .Values.image.gcepdDriver.pullPolicy }}
@@ -61,12 +54,13 @@ spec:
               mountPath: /dev
             # The following mounts are required to trigger host udevadm from
             # container
-            - name: udev-rules-etc
-              mountPath: /etc/udev
-            - name: udev-rules-lib
-              mountPath: /lib/udev
-            - name: udev-socket
-              mountPath: /run/udev
+            # But we don't want that, because it breaks cryptsetup
+            # - name: udev-rules-etc
+            #   mountPath: /etc/udev
+            # - name: udev-rules-lib
+            #   mountPath: /lib/udev
+            # - name: udev-socket
+            #   mountPath: /run/udev
             - name: sys
               mountPath: /sys
             - name: cryptsetup
@@ -90,18 +84,19 @@ spec:
             type: Directory
         # The following mounts are required to trigger host udevadm from
         # container
-        - name: udev-rules-etc
-          hostPath:
-            path: /etc/udev
-            type: Directory
-        - name: udev-rules-lib
-          hostPath:
-            path: /lib/udev
-            type: Directory
-        - name: udev-socket
-          hostPath:
-            path: /run/udev
-            type: Directory
+        # But we don't want that, because it breaks cryptsetup
+        # - name: udev-rules-etc
+        #   hostPath:
+        #     path: /etc/udev
+        #     type: Directory
+        # - name: udev-rules-lib
+        #   hostPath:
+        #     path: /lib/udev
+        #     type: Directory
+        # - name: udev-socket
+        #   hostPath:
+        #     path: /run/udev
+        #     type: Directory
         - name: sys
           hostPath:
             path: /sys

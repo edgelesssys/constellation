@@ -9,7 +9,9 @@ package cmd
 import (
 	"context"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 )
@@ -22,6 +24,14 @@ type cloudCreator interface {
 		name, insType string,
 		coordCount, nodeCount int,
 	) (clusterid.File, error)
+}
+
+type iamCreator interface {
+	Create(
+		ctx context.Context,
+		provider cloudprovider.Provider,
+		iamConfig *cloudcmd.IAMConfig,
+	) (iamid.File, error)
 }
 
 type cloudTerminator interface {

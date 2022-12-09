@@ -61,8 +61,8 @@ func New(ctx context.Context, workingDir string) (*Client, error) {
 }
 
 // PrepareWorkspace prepares a Terraform workspace for a Constellation cluster.
-func (c *Client) PrepareWorkspace(provider cloudprovider.Provider, vars Variables) error {
-	if err := prepareWorkspace(c.file, provider, c.workingDir); err != nil {
+func (c *Client) PrepareWorkspace(path string, vars Variables) error {
+	if err := prepareWorkspace(path, c.file, c.workingDir); err != nil {
 		return err
 	}
 
@@ -107,6 +107,141 @@ func (c *Client) CreateCluster(ctx context.Context) (string, string, error) {
 	}
 
 	return ip, secret, nil
+}
+
+// IAMOutput contains the output information of the Terraform IAM operations.
+type IAMOutput struct {
+	GCP   GCPIAMOutput
+	Azure AzureIAMOutput
+	AWS   AWSIAMOutput
+}
+
+// GCPIAMOutput contains the output information of the Terraform IAM operation on GCP.
+type GCPIAMOutput struct {
+	SaKey string
+}
+
+// AzureIAMOutput contains the output information of the Terraform IAM operation on Microsoft Azure.
+type AzureIAMOutput struct {
+	SubscriptionID               string
+	TenantID                     string
+	ApplicationID                string
+	UAMIID                       string
+	ApplicationClientSecretValue string
+}
+
+// AWSIAMOutput contains the output information of the Terraform IAM operation on GCP.
+type AWSIAMOutput struct {
+	ControlPlaneInstanceProfile string
+	WorkerNodeInstanceProfile   string
+}
+
+// CreateIAMConfig creates an IAM configuration using Terraform.
+func (c *Client) CreateIAMConfig(ctx context.Context, provider cloudprovider.Provider) (IAMOutput, error) {
+	if err := c.tf.Init(ctx); err != nil {
+		return IAMOutput{}, err
+	}
+
+	if err := c.tf.Apply(ctx); err != nil {
+		return IAMOutput{}, err
+	}
+
+	tfState, err := c.tf.Show(ctx)
+	if err != nil {
+		return IAMOutput{}, err
+	}
+
+	switch provider {
+	case cloudprovider.GCP:
+		saKeyOutputRaw, ok := tfState.Values.Outputs["sa_key"]
+		if !ok {
+			return IAMOutput{}, errors.New("no service account key output found")
+		}
+		saKeyOutput, ok := saKeyOutputRaw.Value.(string)
+		if !ok {
+			return IAMOutput{}, errors.New("invalid type in service account key output: not a string")
+		}
+		return IAMOutput{
+			GCP: GCPIAMOutput{
+				SaKey: saKeyOutput,
+			},
+		}, nil
+	case cloudprovider.Azure:
+		subscriptionIDRaw, ok := tfState.Values.Outputs["subscription_id"]
+		if !ok {
+			return IAMOutput{}, errors.New("no subscription id output found")
+		}
+		subscriptionIDOutput, ok := subscriptionIDRaw.Value.(string)
+		if !ok {
+			return IAMOutput{}, errors.New("invalid type in subscription id output: not a string")
+		}
+		tenantIDRaw, ok := tfState.Values.Outputs["tenant_id"]
+		if !ok {
+			return IAMOutput{}, errors.New("no tenant id output found")
+		}
+		tenantIDOutput, ok := tenantIDRaw.Value.(string)
+		if !ok {
+			return IAMOutput{}, errors.New("invalid type in tenant id output: not a string")
+		}
+		applicationIDRaw, ok := tfState.Values.Outputs["application_id"]
+		if !ok {
+			return IAMOutput{}, errors.New("no application id output found")
+		}
+		applicationIDOutput, ok := applicationIDRaw.Value.(string)
+		if !ok {
+			return IAMOutput{}, errors.New("invalid type in application id output: not a string")
+		}
+		uamiIDRaw, ok := tfState.Values.Outputs["uami_id"]
+		if !ok {
+			return IAMOutput{}, errors.New("no UAMI id output found")
+		}
+		uamiIDOutput, ok := uamiIDRaw.Value.(string)
+		if !ok {
+			return IAMOutput{}, errors.New("invalid type in UAMI id output: not a string")
+		}
+		appClientSecretRaw, ok := tfState.Values.Outputs["application_client_secret_value"]
+		if !ok {
+			return IAMOutput{}, errors.New("no application client secret value output found")
+		}
+		appClientSecretOutput, ok := appClientSecretRaw.Value.(string)
+		if !ok {
+			return IAMOutput{}, errors.New("invalid type in application client secret valueoutput: not a string")
+		}
+		return IAMOutput{
+			Azure: AzureIAMOutput{
+				SubscriptionID:               subscriptionIDOutput,
+				TenantID:                     tenantIDOutput,
+				ApplicationID:                applicationIDOutput,
+				UAMIID:                       uamiIDOutput,
+				ApplicationClientSecretValue: appClientSecretOutput,
+			},
+		}, nil
+	case cloudprovider.AWS:
+		controlPlaneProfileRaw, ok := tfState.Values.Outputs["control_plane_instance_profile"]
+		if !ok {
+			return IAMOutput{}, errors.New("no control plane instance profile output found")
+		}
+		controlPlaneProfileOutput, ok := controlPlaneProfileRaw.Value.(string)
+		if !ok {
+			return IAMOutput{}, errors.New("invalid type in control plane instance profile output: not a string")
+		}
+		workerNodeProfileRaw, ok := tfState.Values.Outputs["worker_nodes_instance_profile"]
+		if !ok {
+			return IAMOutput{}, errors.New("no worker node instance profile output found")
+		}
+		workerNodeProfileOutput, ok := workerNodeProfileRaw.Value.(string)
+		if !ok {
+			return IAMOutput{}, errors.New("invalid type in worker node instance profile output: not a string")
+		}
+		return IAMOutput{
+			AWS: AWSIAMOutput{
+				ControlPlaneInstanceProfile: controlPlaneProfileOutput,
+				WorkerNodeInstanceProfile:   workerNodeProfileOutput,
+			},
+		}, nil
+	default:
+		return IAMOutput{}, errors.New("unsupported cloud provider")
+	}
 }
 
 // DestroyCluster destroys a Constellation cluster using Terraform.

@@ -11,11 +11,9 @@ import (
 	"embed"
 	"errors"
 	"io/fs"
-	"path"
 	"path/filepath"
 	"strings"
 
-	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/spf13/afero"
 )
@@ -29,9 +27,8 @@ var terraformFS embed.FS
 
 // prepareWorkspace loads the embedded Terraform files,
 // and writes them into the workspace.
-func prepareWorkspace(fileHandler file.Handler, provider cloudprovider.Provider, workingDir string) error {
-	// use path.Join to ensure no forward slashes are used to read the embedded FS
-	rootDir := path.Join("terraform", strings.ToLower(provider.String()))
+func prepareWorkspace(path string, fileHandler file.Handler, workingDir string) error {
+	rootDir := path
 	return fs.WalkDir(terraformFS, rootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err

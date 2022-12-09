@@ -79,6 +79,32 @@ rules:
 - apiGroups:
   - update.edgeless.systems
   resources:
+  - joiningnodes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - update.edgeless.systems
+  resources:
+  - joiningnodes/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - update.edgeless.systems
+  resources:
+  - joiningnodes/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - update.edgeless.systems
+  resources:
   - nodeimage
   verbs:
   - get

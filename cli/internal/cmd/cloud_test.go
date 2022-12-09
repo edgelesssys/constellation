@@ -10,7 +10,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/cli/internal/clusterid"
+	"github.com/edgelesssys/constellation/v2/cli/internal/iamid"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"go.uber.org/goleak"
@@ -53,4 +55,20 @@ func (c *stubCloudTerminator) Terminate(context.Context) error {
 
 func (c *stubCloudTerminator) Called() bool {
 	return c.called
+}
+
+type stubIAMCreator struct {
+	createCalled bool
+	id           iamid.File
+	createErr    error
+}
+
+func (c *stubIAMCreator) Create(
+	ctx context.Context,
+	provider cloudprovider.Provider,
+	iamConfig *cloudcmd.IAMConfig,
+) (iamid.File, error) {
+	c.createCalled = true
+	c.id.CloudProvider = provider
+	return c.id, c.createErr
 }

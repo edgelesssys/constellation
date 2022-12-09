@@ -22,3 +22,20 @@ rules:
   verbs:
   - create
   - update
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - create
+  - update
+- apiGroups:
+  - "update.edgeless.systems"
+  resources:
+  - joiningnodes
+  verbs:
+  - get
+  - create
+  - update
+  - patch

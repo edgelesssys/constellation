@@ -168,13 +168,45 @@ The latter means that the value can be generated offline and compared to the one
 | PCR         | Components                                                       | Measured by                   | Reproducible and verifiable |
 | ----------- | ---------------------------------------------------------------- | ----------------------------- | --------------------------- |
 | 0           | CVM constant string                                              | GCP                           | No                          |
-| 1           | Reserved                                                         | GCP                           | No                          |
-| 2           | Reserved                                                         | GCP                           | No                          |
-| 3           | Reserved                                                         | GCP                           | No                          |
+| 1           | Firmware                                                         | GCP                           | No                          |
+| 2           | Firmware                                                         | GCP                           | No                          |
+| 3           | Firmware                                                         | GCP                           | No                          |
 | 4           | Constellation Bootloader, Kernel, initramfs, Kernel command line | GCP, Constellation Bootloader | Yes                         |
 | 5           | Disk GUID partition table                                        | GCP                           | No                          |
 | 6           | Disk GUID partition table                                        | GCP                           | No                          |
 | 7           | GCP Secure Boot Policy                                           | GCP, Constellation Bootloader | No                          |
+| 8           | Kernel command line                                              | Constellation Bootloader      | Yes                         |
+| 9           | initramfs                                                        | Linux Kernel                  | Yes                         |
+| 10          | Reserved                                                         | -                             | No                          |
+| 11          | Reserved for Unified Kernel Image components                     | (Constellation Bootloader)    | Yes                         |
+| 12          | Reserved                                                         | (Constellation Bootloader)    | Yes                         |
+| 13          | Reserved                                                         | (Constellation Bootloader)    | Yes                         |
+| 14          | Secure Boot State                                                | Constellation Bootloader      | No                          |
+| 15          | ClusterID                                                        | Constellation Bootstrapper    | Yes                         |
+| 16&ndash;23 | Unused                                                           | -                             | -                           |
+
+</tabItem>
+<tabItem value="aws" label="AWS">
+
+Constellation uses the [vTPM](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nitrotpm.html) (NitroTPM) feature of the [AWS Nitro System](http://aws.amazon.com/ec2/nitro/) on AWS for runtime measurements.
+
+The vTPM adheres to the [TPM 2.0](https://trustedcomputinggroup.org/resource/tpm-library-specification/) specification.
+The VMs are attested by obtaining signed PCR values over the VM's boot configuration from the TPM and comparing them to a known, good state (measured boot).
+
+The following table lists all PCR values of the vTPM and the measured components.
+It also lists what components of the boot chain did the measurements and if the value is reproducible and verifiable.
+The latter means that the value can be generated offline and compared to the one in the vTPM.
+
+| PCR         | Components                                                       | Measured by                   | Reproducible and verifiable |
+| ----------- | ---------------------------------------------------------------- | ----------------------------- | --------------------------- |
+| 0           | Firmware                                                         | AWS                           | No                          |
+| 1           | Firmware                                                         | AWS                           | No                          |
+| 2           | Firmware                                                         | AWS                           | No                          |
+| 3           | Firmware                                                         | AWS                           | No                          |
+| 4           | Constellation Bootloader, Kernel, initramfs, Kernel command line | AWS, Constellation Bootloader | Yes                         |
+| 5           | Firmware                                                         | AWS                           | No                          |
+| 6           | Firmware                                                         | AWS                           | No                          |
+| 7           | Secure Boot Policy                                               | AWS, Constellation Bootloader | No                          |
 | 8           | Kernel command line                                              | Constellation Bootloader      | Yes                         |
 | 9           | initramfs                                                        | Linux Kernel                  | Yes                         |
 | 10          | Reserved                                                         | -                             | No                          |

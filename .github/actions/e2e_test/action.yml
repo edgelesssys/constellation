@@ -26,6 +26,9 @@ inputs:
   kubernetesVersion:
     description: "Kubernetes version to create the cluster from."
     required: false
+  keepMeasurements:
+    default: "false"
+    description: "Keep measurements embedded in the CLI."
   gcpProject:
     description: "The GCP project to deploy Constellation in."
     required: false
@@ -149,6 +152,7 @@ runs:
         osImage: ${{ inputs.osImage }}
         isDebugImage: ${{ inputs.isDebugImage }}
         kubernetesVersion: ${{ inputs.kubernetesVersion }}
+        keepMeasurements: ${{ inputs.keepMeasurements }}
         azureSubscription: ${{ inputs.azureSubscription }}
         azureTenant: ${{ inputs.azureTenant }}
         azureClientID: ${{ inputs.azureClientID }}
@@ -171,6 +175,7 @@ runs:
       with:
         sonobuoyTestSuiteCmd: "--mode quick"
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
+        cloudProvider: ${{ inputs.cloudProvider }}
 
     - name: Run sonobuoy full test
       if: inputs.test == 'sonobuoy full'
@@ -179,6 +184,7 @@ runs:
         # TODO: Remove E2E_SKIP once AB#2174 is resolved
         sonobuoyTestSuiteCmd: '--plugin e2e --plugin-env e2e.E2E_FOCUS="\[Conformance\]" --plugin-env e2e.E2E_SKIP="for service with type clusterIP|HostPort validates that there is no conflict between pods with same hostPort but different hostIP and protocol" --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-plugin.yaml --plugin https://raw.githubusercontent.com/vmware-tanzu/sonobuoy-plugins/master/cis-benchmarks/kube-bench-master-plugin.yaml'
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
+        cloudProvider: ${{ inputs.cloudProvider }}
 
     - name: Run autoscaling test
       if: inputs.test == 'autoscaling'

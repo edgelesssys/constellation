@@ -14,19 +14,23 @@ For details on the implementations and cryptographic soundness please refer to t
 
 The master secret is the cryptographic material used for deriving the [*clusterID*](#cluster-identity) and the *key encryption key (KEK)* for [storage encryption](#storage-encryption).
 It's generated during the bootstrapping of a Constellation cluster.
-It can either be managed by [Constellation](#constellation-managed-key-management) or an [external key management system](#user-managed-key-management)
+It can either be managed by [Constellation](#constellation-managed-key-management) or an [external key management system](#user-managed-key-management).
 In case of [recovery](#recovery-and-migration), the master secret allows to decrypt the state and recover a Constellation cluster.
 
 ## Cluster identity
 
-The identity of a Constellation cluster consists of two parts:
+The identity of a Constellation cluster is represented by cryptographic [measurements](attestation.md#runtime-measurements):
 
-* *baseID:* The identity of a valid and measured, uninitialized Constellation node
-* *clusterID:* The identity unique to a single initialized Constellation cluster
+The **base measurements** represent the identity of a valid, uninitialized Constellation node.
+They depend on the node image, but are otherwise the same for every Constellation cluster.
+On node boot, they're determined using the CVM's attestation mechanism and [measured boot up to the read-only root filesystem](images.md).
 
-Using the CVM's attestation mechanism and [measured boot up to the read-only root filesystem](images.md) guarantees *baseID*.
-The *clusterID* is derived from the master secret and a cryptographically random salt. It's unique for every Constellation cluster.
-The remote attestation statement of a Constellation cluster combines *baseID* and *clusterID* for a verifiable, unspoofable, unique identity.
+The **clusterID** represents the identity of a single initialized Constellation cluster.
+It's derived from the master secret and a cryptographically random salt and unique for every Constellation cluster.
+The [Bootstrapper](components.md#bootstrapper) measures the *clusterID* into its own PCR before executing any code not measured as part of the *base measurements*.
+See [Node attestation](attestation.md#node-attestation) for details.
+
+The remote attestation statement of a Constellation cluster combines the *base measurements* and the *clusterID* for a verifiable, unspoofable, unique identity.
 
 ## Network encryption
 

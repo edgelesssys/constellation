@@ -32,21 +32,31 @@ jobs:
       ARM_CLIENT_SECRET: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
       ARM_TENANT_ID: ${{ secrets.AZURE_E2E_TENANT_ID }}
+    outputs:
+      ref: ${{ steps.extract.outputs.ref }}
+      stream: ${{ steps.extract.outputs.stream }}
+      version: ${{ steps.extract.outputs.version }}
     steps:
       - name: Check out repository
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
         with:
           ref: ${{ github.head_ref }}
 
+      - name: Extract ref, stream and version
+        id: extract
+        uses: ./.github/actions/shortname
+        with:
+          shortname: ${{ github.event.inputs.osImage }}
+
       - name: Check if image definition from build pipeline exists
         run: |
-          wget -O /dev/null https://cdn.confidential.cloud/constellation/v1/images/${{ github.event.inputs.osImage }}.json
+          wget -O /dev/null "https://cdn.confidential.cloud/constellation/v1/ref/${{ steps.extract.outputs.ref }}/stream/${{ steps.extract.outputs.stream }}/image/${{ steps.extract.outputs.version }}/info.json"
         shell: bash
 
       - name: Setup Go environment
-        uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
+        uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # v3.4.0
         with:
-          go-version: "1.19.3"
+          go-version: "1.19.4"
 
       - name: Build hack/pcr-reader
         run: |
@@ -188,9 +198,9 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - name: Setup Go environment
-        uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
+        uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # v3.4.0
         with:
-          go-version: "1.19.3"
+          go-version: "1.19.4"
 
       - name: Build hack/pcr-compare
         run: |
@@ -207,10 +217,15 @@ jobs:
 
       - name: Download expected measurements from build pipeline for image
         run: |
+          path="constellation/v1/ref/${ref}/stream/${stream}/image/${version}/csp/${{ matrix.provider }}/measurements.image.json"
           mkdir -p ${{ github.workspace }}/expected-measurements
-          wget -O ${{ github.workspace }}/expected-measurements/measurements.image.json https://cdn.confidential.cloud/constellation/v1/measurements/${{ github.event.inputs.osImage }}/${{ matrix.provider }}/measurements.image.json
+          wget -O ${{ github.workspace }}/expected-measurements/measurements.image.json "https://cdn.confidential.cloud/${path}"
           cat ${{ github.workspace }}/expected-measurements/measurements.image.json
         shell: bash
+        env:
+          ref: ${{ needs.calculate-measurements-on-csp.outputs.ref }}
+          stream: ${{ needs.calculate-measurements-on-csp.outputs.stream }}
+          version: ${{ needs.calculate-measurements-on-csp.outputs.version }}
 
       - name: Check if expected measurements == actual measurements from running cluster
         run: |
@@ -304,7 +319,7 @@ jobs:
 
       - name: Upload to S3
         run: |
-          S3_PATH=s3://cdn-constellation-backend/constellation/v1/measurements/${IMAGE_UID,,}/${{ matrix.provider }}
+          S3_PATH=s3://cdn-constellation-backend/constellation/v1/ref/${ref}/stream/${stream}/image/${version}/csp/${{ matrix.provider }}
           aws s3 cp "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json" "${S3_PATH}/measurements.json"
           aws s3 cp "${{ github.workspace }}/generated-measurements/measurements-${{ matrix.provider }}.json.sig" "${S3_PATH}/measurements.json.sig"
         shell: bash
@@ -312,3 +327,6 @@ jobs:
           IMAGE_UID: ${{ inputs.osImage }}
           PUBLIC_BUCKET_NAME: ${{ secrets.PUBLIC_BUCKET_NAME }}
           CSP: ${{ matrix.provider }}
+          ref: ${{ needs.calculate-measurements-on-csp.outputs.ref }}
+          stream: ${{ needs.calculate-measurements-on-csp.outputs.stream }}
+          version: ${{ needs.calculate-measurements-on-csp.outputs.version }}

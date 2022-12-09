@@ -11,8 +11,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
-	"path"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
@@ -22,7 +20,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
-	"github.com/edgelesssys/constellation/v2/internal/update"
+	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -55,7 +53,7 @@ func runUpgradePlan(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	patchLister := update.New()
+	patchLister := versionsapi.New()
 	rekor, err := sigstore.NewRekor()
 	if err != nil {
 		return fmt.Errorf("constructing Rekor client: %w", err)
@@ -110,7 +108,7 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner, patchLister patchLi
 
 	var updateCandidates []string
 	for _, minorVer := range allowedMinorVersions {
-		versionList, err := patchLister.PatchVersionsOf(cmd.Context(), "stable", minorVer, "image")
+		versionList, err := patchLister.PatchVersionsOf(cmd.Context(), "-", "stable", minorVer, "image")
 		if err == nil {
 			updateCandidates = append(updateCandidates, versionList.Versions...)
 		}
@@ -175,12 +173,12 @@ func getCompatibleImageMeasurements(ctx context.Context, cmd *cobra.Command, cli
 ) (map[string]config.UpgradeConfig, error) {
 	upgrades := make(map[string]config.UpgradeConfig)
 	for _, img := range images {
-		measurementsURL, err := url.Parse(constants.CDNRepositoryURL + path.Join("/", constants.CDNMeasurementsPath, img, strings.ToLower(csp.String()), "measurements.json"))
+		measurementsURL, err := measurementURL(csp, img, "measurements.json")
 		if err != nil {
 			return nil, err
 		}
 
-		signatureURL, err := url.Parse(constants.CDNRepositoryURL + path.Join("/", constants.CDNMeasurementsPath, img, strings.ToLower(csp.String()), "measurements.json.sig"))
+		signatureURL, err := measurementURL(csp, img, "measurements.json.sig")
 		if err != nil {
 			return nil, err
 		}
@@ -335,5 +333,5 @@ type upgradePlanner interface {
 }
 
 type patchLister interface {
-	PatchVersionsOf(ctx context.Context, stream, minor, kind string) (*update.VersionsList, error)
+	PatchVersionsOf(ctx context.Context, ref, stream, minor, kind string) (*versionsapi.List, error)
 }

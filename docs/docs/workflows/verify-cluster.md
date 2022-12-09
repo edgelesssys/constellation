@@ -16,7 +16,7 @@ This command performs the following steps:
 2. Verify the signature of the measurements. This will use Edgeless Systems' [public key](https://edgeless.systems/es.pub).
 3. Write measurements into configuration file.
 
-The configuration file then contains a list of `measurements` looking similar to the following:
+The configuration file then contains a list of `measurements` similar to the following:
 
 ```yaml
 # ...
@@ -54,12 +54,11 @@ measurements:
 # ...
 ```
 
-Each entry specifies the expected value of the Constellation, and whether the measurement should be enforced (`warnOnly: false`), or only a warning should be logged (`warnOnly: true`).
-
-This is because only a subset of the [available measurements](../architecture/attestation.md#runtime-measurements) can be locally reproduced and verified.
+Each entry specifies the expected value of the Constellation node, and whether the measurement should be enforced (`warnOnly: false`), or only a warning should be logged (`warnOnly: true`).
+By default, the subset of the [available measurements](../architecture/attestation.md#runtime-measurements) that can be locally reproduced and verified is enforced.
 
 During attestation, the validating side (CLI or [join service](../architecture/components.md#joinservice)) compares each measurement reported by the issuing side (first node or joining node) individually.
-For mismatching measurements that have set `warnOnly` to `true` only warning is emitted.
+For mismatching measurements that have set `warnOnly` to `true` only a warning is emitted.
 For mismatching measurements that have set `warnOnly` to `false` an error is emitted and attestation fails.
 If attestation fails for a new node, it isn't permitted to join the cluster.
 

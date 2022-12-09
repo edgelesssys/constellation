@@ -33,6 +33,11 @@ on:
         description: "Kubernetes version to create the cluster from."
         default: "1.24"
         required: true
+      keepMeasurements:
+        description: "Keep measurements embedded in the CLI."
+        type: boolean
+        default: false
+        required: false
       osImage:
         description: "Full name of OS image (CSP independent image version UID)."
         type: string
@@ -61,10 +66,10 @@ jobs:
     if: ${{ github.event.inputs.isDebugImage == 'true' }}
     steps:
       - name: Setup Go environment
-        uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
+        uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # v3.4.0
         if: ${{ github.event.steps.check-bootstrapper-cache.cache-hit != 'true'}}
         with:
-          go-version: "1.19.3"
+          go-version: "1.19.4"
 
       - name: Check out repository
         if: ${{ github.event.steps.check-bootstrapper-cache.cache-hit != 'true'}}
@@ -102,9 +107,9 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - name: Setup Go environment
-        uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
+        uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # v3.4.0
         with:
-          go-version: "1.19.3"
+          go-version: "1.19.4"
 
       - name: Login to Azure
         if: ${{ github.event.inputs.cloudProvider == 'azure' }}
@@ -139,6 +144,7 @@ jobs:
           gcpClusterServiceAccountKey: ${{ secrets.GCP_CLUSTER_SERVICE_ACCOUNT }}
           test: ${{ github.event.inputs.test }}
           kubernetesVersion: ${{ github.event.inputs.kubernetesVersion }}
+          keepMeasurements: ${{ github.event.inputs.keepMeasurements }}
           azureSubscription: ${{ secrets.AZURE_E2E_SUBSCRIPTION_ID }}
           azureTenant: ${{ secrets.AZURE_E2E_TENANT_ID }}
           azureClientID: ${{ secrets.AZURE_E2E_CLIENT_ID }}

@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 package client
 
 import (
-	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
+	"cloud.google.com/go/compute/apiv1/computepb"
 )
 
 // getMetadataByKey returns the value of the metadata key in the given metadata.

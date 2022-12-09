@@ -5,6 +5,13 @@ metadata:
   name: {{ .Values.linux.dsName }}
   namespace: {{ .Release.Namespace }}
 {{ include "azuredisk.labels" . | indent 2 }}
+{{- with .Values.linux.labels }}
+{{ . | toYaml | indent 4 }}
+{{- end }}
+{{- with .Values.linux.annotations }}
+  annotations:
+{{ . | toYaml | indent 4 }}
+{{- end }}
 spec:
   updateStrategy:
     rollingUpdate:
@@ -20,15 +27,26 @@ spec:
 {{- with .Values.linux.podLabels }}
 {{ toYaml . | indent 8 }}
 {{- end }}
+{{- with .Values.linux.podAnnotations }}
+      annotations:
+{{ toYaml . | indent 8 }}
+{{- end }}
     spec:
       {{- if .Values.imagePullSecrets }}
       imagePullSecrets:
 {{ toYaml .Values.imagePullSecrets | indent 8 }}
       {{- end }}
+      hostNetwork: {{ .Values.linux.hostNetwork }}
       serviceAccountName: {{ .Values.serviceAccount.node }}
       nodeSelector:
         kubernetes.io/os: linux
+{{- with .Values.linux.nodeSelector }}
+{{ toYaml . | indent 8 }}
+{{- end }}
       affinity:
+{{- with .Values.linux.affinity }}
+{{ toYaml . | indent 8 }}
+{{- end }}
         nodeAffinity:
 {{ toYaml .Values.linux.nodeAffinity | indent 10 }}
       priorityClassName: system-node-critical
@@ -125,6 +143,18 @@ spec:
                   optional: true
             - name: CSI_ENDPOINT
               value: unix:///csi/csi.sock
+            {{- if ne .Values.driver.httpsProxy "" }}
+            - name: HTTPS_PROXY
+              value: {{ .Values.driver.httpsProxy }}
+            {{- end }}
+            {{- if ne .Values.driver.httpProxy "" }}
+            - name: HTTP_PROXY
+              value: {{ .Values.driver.httpProxy }}
+            {{- end }}
+            {{- if ne .Values.driver.noProxy "" }}
+            - name: NO_PROXY
+              value: {{ .Values.driver.noProxy }}
+            {{- end }}
             - name: KUBE_NODE_NAME
               valueFrom:
                 fieldRef:

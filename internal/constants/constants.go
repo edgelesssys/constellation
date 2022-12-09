@@ -73,6 +73,10 @@ const (
 	MasterSecretFilename = "constellation-mastersecret.json"
 	// TerraformWorkingDir is the directory name for the TerraformClient workspace.
 	TerraformWorkingDir = "constellation-terraform"
+	// TerraformIAMWorkingDir is the directory name for the Terraform IAM Client workspace.
+	TerraformIAMWorkingDir = "constellation-iam-terraform"
+	// GCPServiceAccountKeyFile is the file name for the GCP service account key file.
+	GCPServiceAccountKeyFile = "gcpServiceAccountKey.json"
 	// ControlPlaneAdminConfFilename filepath to control plane kubernetes admin config.
 	ControlPlaneAdminConfFilename = "/etc/kubernetes/admin.conf"
 	// KubectlPath path to kubectl binary.
@@ -107,8 +111,24 @@ const (
 	EnforceIDKeyDigestFilename = "enforceIdKeyDigest"
 	// AzureCVM is the name of the file indicating whether the cluster is expected to run on CVMs or not.
 	AzureCVM = "azureCVM"
-	// K8sVersion is the filename of the mapped "k8s-version" configMap file.
-	K8sVersion = "k8s-version"
+
+	// K8sVersionConfigMapName is the filename of the mapped "k8s-version" configMap file.
+	K8sVersionConfigMapName = "k8s-version"
+
+	// K8sVersionFieldName is the key in the "k8s-version" configMap which references the string with the K8s version.
+	K8sVersionFieldName = "k8s-version"
+
+	// K8sComponentsFieldName is the name of the of the key holding the configMap name that holds the components configuration.
+	K8sComponentsFieldName = "components"
+
+	// ComponentsListKey is the name of the key holding the list of components in the components configMap.
+	ComponentsListKey = "components"
+
+	// NodeKubernetesComponentsHashAnnotationKey is the name of the annotation holding the hash of the installed components of this node.
+	NodeKubernetesComponentsHashAnnotationKey = "updates.edgeless.systems/kubernetes-components-hash"
+
+	// JoiningNodesConfigMapName is the name of the configMap holding the joining nodes with the components hashes the node-operator should annotate the nodes with.
+	JoiningNodesConfigMapName = "joining-nodes"
 
 	//
 	// CLI.
@@ -150,12 +170,8 @@ const (
 
 	// CDNRepositoryURL is the base URL of the Constellation CDN artifact repository.
 	CDNRepositoryURL = "https://cdn.confidential.cloud"
-	// CDNImagePath is the default path to image references in the CDN repository.
-	CDNImagePath = "constellation/v1/images"
-	// CDNMeasurementsPath is the default path to image measurements in the CDN repository.
-	CDNMeasurementsPath = "constellation/v1/measurements"
-	// CDNVersionsPath is the default path to versions in the CDN repository.
-	CDNVersionsPath = "constellation/v1/versions"
+	// CDNAPIPrefix is the prefix of the Constellation API.
+	CDNAPIPrefix = "constellation/v1"
 )
 
 // VersionInfo is the version of a binary. Left as a separate variable to allow override during build.

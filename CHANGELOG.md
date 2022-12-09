@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- For changes in existing functionality.  -->
 <!-- TODO: Remove `/next/` from URL before release -->
 - Constellation operators are now deployed using Helm.
-- Updated the config version to v2. Check [how to migrate your config](https://constellation-docs.edgeless.systems/constellation/next/reference/config-migration).
+- Updated the config version to v2. Check [how to migrate your config](https://docs.edgeless.systems/constellation/next/reference/config-migration).
 - OS images are now configured globally in the `images` field of the configuration file.
 - The `measurements` entry in the CLI now uses an updated format, merging `enforcedMeasurements` and old `measurements` into one
 - Expected measurements in the config and Constellation's Cluster-ID are now hex encoded by default. Base64 is still supported.

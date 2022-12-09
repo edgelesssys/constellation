@@ -25,6 +25,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/nodestate"
 	"github.com/edgelesssys/constellation/v2/internal/role"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
@@ -286,7 +287,9 @@ func (c *JoinClient) startNodeAndJoin(ticket *joinproto.IssueJoinTicketResponse,
 		Token:             ticket.Token,
 		CACertHashes:      []string{ticket.DiscoveryTokenCaCertHash},
 	}
-	if err := c.joiner.JoinCluster(ctx, btd, c.role, ticket.KubernetesVersion, c.log); err != nil {
+	k8sComponents := versions.NewComponentVersionsFromJoinProto(ticket.KubernetesComponents)
+
+	if err := c.joiner.JoinCluster(ctx, btd, c.role, ticket.KubernetesVersion, k8sComponents, c.log); err != nil {
 		return fmt.Errorf("joining Kubernetes cluster: %w", err)
 	}
 
@@ -399,6 +402,7 @@ type ClusterJoiner interface {
 		args *kubeadm.BootstrapTokenDiscovery,
 		peerRole role.Role,
 		k8sVersion string,
+		k8sComponents versions.ComponentVersions,
 		log *logger.Logger,
 	) error
 }

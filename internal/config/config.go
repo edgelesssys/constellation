@@ -45,7 +45,7 @@ type Config struct {
 	Version string `yaml:"version" validate:"eq=v2"`
 	// description: |
 	//   Machine image used to create Constellation nodes.
-	Image string `yaml:"image" validate:"required,safe_image"`
+	Image string `yaml:"image" validate:"required"`
 	// description: |
 	//   Size (in GB) of a node's disk to store the non-volatile state.
 	StateDiskSizeGB int `yaml:"stateDiskSizeGB" validate:"min=0"`
@@ -469,10 +469,6 @@ func (c *Config) Validate() error {
 	}
 
 	if err := validate.RegisterValidation("no_placeholders", validateNoPlaceholder); err != nil {
-		return err
-	}
-
-	if err := validate.RegisterValidation("safe_image", validateImage); err != nil {
 		return err
 	}
 

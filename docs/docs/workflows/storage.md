@@ -54,7 +54,7 @@ Note that in case the options above aren't a suitable solution for you, Constell
 
 ## Installation
 
-The Constellation CLI will automatically install Constellation's CSI driver for the selected CSP in your cluster.
+The Constellation CLI automatically installs Constellation's CSI driver for the selected CSP in your cluster.
 If you don't need a CSI driver or wish to deploy your own, you can disable the automatic installation by setting `deployCSIDriver` to `false` in your Constellation config file.
 
 <tabs groupId="csp">
@@ -72,15 +72,16 @@ Azure comes with two storage classes by default.
   * Encryption of all data written to disk
   * Integrity protection of data written to disk
 
-For more info on encryption algorithms and key sizes, please refer to [cryptographic-algorithms](../architecture/encrypted-storage.md#cryptographic-algorithms).
+For more information on encryption algorithms and key sizes, refer to [cryptographic algorithms](../architecture/encrypted-storage.md#cryptographic-algorithms).
 
 :::info
 
 The default storage class is set to `encrypted-rwo` for performance reasons.
-If you want integrity-protected storage, set the `storageClassName` parameter of your persistent volume claim to `integrity-encrypted-rwo`
+If you want integrity-protected storage, set the `storageClassName` parameter of your persistent volume claim to `integrity-encrypted-rwo`.
+
 Alternatively, you can create your own storage class with integrity protection enabled by adding `csi.storage.k8s.io/fstype: ext4-integrity` to the class `parameters`.
-Or use another filesystem by specifying another file system type with the suffix `-integrity`.
-For example `csi.storage.k8s.io/fstype: xfs-integrity`.
+Or use another filesystem by specifying another file system type with the suffix `-integrity`, e.g., `csi.storage.k8s.io/fstype: xfs-integrity`.
+
 Note that volume expansion isn't supported for integrity-protected disks.
 
 :::
@@ -91,7 +92,7 @@ Note that volume expansion isn't supported for integrity-protected disks.
 GCP comes with two storage classes by default.
 
 * `encrypted-rwo`
-  * Uses [standard persistent-disks](https://cloud.google.com/compute/docs/disks#pdspecs)
+  * Uses [standard persistent disks](https://cloud.google.com/compute/docs/disks#pdspecs)
   * ext-4 filesystem
   * Encryption of all data written to disk
 * `integrity-encrypted-rwo`
@@ -100,15 +101,16 @@ GCP comes with two storage classes by default.
   * Encryption of all data written to disk
   * Integrity protection of data written to disk
 
-For more info on encryption algorithms and key sizes, please refer to [cryptographic-algorithms](../architecture/encrypted-storage.md#cryptographic-algorithms).
+For more information on encryption algorithms and key sizes, refer to [cryptographic algorithms](../architecture/encrypted-storage.md#cryptographic-algorithms).
 
 :::info
 
 The default storage class is set to `encrypted-rwo` for performance reasons.
-If you want integrity-protected storage, set the `storageClassName` parameter of your persistent volume claim to `integrity-encrypted-rwo`
+If you want integrity-protected storage, set the `storageClassName` parameter of your persistent volume claim to `integrity-encrypted-rwo`.
+
 Alternatively, you can create your own storage class with integrity protection enabled by adding `csi.storage.k8s.io/fstype: ext4-integrity` to the class `parameters`.
-Or use another filesystem by specifying another file system type with the suffix `-integrity`.
-For example `csi.storage.k8s.io/fstype: xfs-integrity`.
+Or use another filesystem by specifying another file system type with the suffix `-integrity`, e.g., `csi.storage.k8s.io/fstype: xfs-integrity`.
+
 Note that volume expansion isn't supported for integrity-protected disks.
 
 :::
