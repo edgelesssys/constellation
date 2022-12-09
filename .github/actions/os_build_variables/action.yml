@@ -219,7 +219,7 @@ runs:
           echo "imageOffer=constellation" >> $GITHUB_OUTPUT
           echo "imageVersion=${imageVersion:1}" >> $GITHUB_OUTPUT
           galleryName=Constellation
-        elif [[ "${imageType}" = "debug" ]] && [[ [[ "${ref}" = "-" ] || [[ "${ref}" = "main" ]] ]]
+        elif [[ "${imageType}" = "debug" && ( "${ref}" = "-" || "${ref}" = "main" ) ]]
         then
           echo "imageDefinition=${semver}" >> $GITHUB_OUTPUT
           echo "imageOffer=${semver}" >> $GITHUB_OUTPUT
@@ -266,7 +266,7 @@ runs:
           echo "imageName=constellation-${imageVersion//./-}" >> $GITHUB_OUTPUT
           echo "imageFilename=constellation-${imageVersion//./-}.tar.gz" >> $GITHUB_OUTPUT
           echo "imageFamily=constellation" >> $GITHUB_OUTPUT
-        elif [[ "${imageType}" = "debug" ]] && [[ [[ "${ref}" = "-" ]] || [[ "${ref}" = "main" ]] ]]
+        elif [[ "${imageType}" = "debug" && ( "${ref}" = "-" || "${ref}" = "main" ) ]]
         then
           echo "imageName=constellation-${ref}-${stream}-${timestamp}" >> $GITHUB_OUTPUT
           echo "imageFilename=constellation-${ref}-${stream}-${timestamp}.tar.gz" >> $GITHUB_OUTPUT
