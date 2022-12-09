@@ -1,0 +1,45 @@
+name: Determine parts for shortname
+description: "Determine ref, stream and version for a shortname."
+
+inputs:
+  shortname:
+    description: "Shortname of the image to build"
+    required: true
+
+outputs:
+  ref:
+    description: "Branch name that the resource is built from (or '-' for releases)"
+    value: ${{ steps.extract.outputs.ref }}
+  stream:
+    description: "Stream that the resource belongs to"
+    value: ${{ steps.extract.outputs.stream }}
+  version:
+    description: "Resource version"
+    value: ${{ steps.extract.outputs.version }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Extract ref, stream and version
+      shell: bash
+      id: extract
+      run: |
+        ref="-"
+        stream="stable"
+        version=""
+        IFS="/" read -r -a string_array <<< "${{ inputs.shortname }}"
+        for ((i=0; i<${#string_array[@]}; i++)); do
+          echo "${string_array[i]}"
+          if [[ ${string_array[i]} == "ref" ]]; then
+            ref=${string_array[i+1]}
+          elif [[ ${string_array[i]} == "stream" ]]; then
+            stream=${string_array[i+1]}
+          else
+            version=${string_array[i]}
+          fi
+        done
+        {
+          echo "ref=$ref"
+          echo "stream=$stream"
+          echo "version=$version"
+        }  | tee "$GITHUB_OUTPUT" "$GITHUB_ENV"

@@ -30,7 +30,8 @@ jobs:
         id: find-latest-image
         uses: ./.github/actions/find_latest_image
         with:
-          imageType: debug
+          ref: main
+          stream: debug
 
   e2e-daily:
     strategy:

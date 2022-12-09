@@ -170,11 +170,7 @@ const (
 
 	// CDNRepositoryURL is the base URL of the Constellation CDN artifact repository.
 	CDNRepositoryURL = "https://cdn.confidential.cloud"
-	// CDNImagePath is the default path to image references in the CDN repository.
-	CDNImagePath = "constellation/v1/images"
-	// CDNMeasurementsPath is the default path to image measurements in the CDN repository.
-	CDNMeasurementsPath = "constellation/v1/measurements"
-	// CDNAPIPrefix is the prefix for the Constellation CDN API.
+	// CDNAPIPrefix is the prefix of the Constellation API.
 	CDNAPIPrefix = "constellation/v1"
 )
 

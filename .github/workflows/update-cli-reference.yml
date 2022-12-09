@@ -36,7 +36,7 @@ jobs:
       - name: Check if action branch exists
         run: |
           ex="$(git ls-remote --heads origin action/constellation/update-cli-reference)"
-          echo "EXISTS=$(if [ -z "$ex" ]; then echo 0; else echo 1; fi)" >> "$GITHUB_ENV"
+          echo "EXISTS=$(if [[ -z "$ex" ]]; then echo 0; else echo 1; fi)" >> "$GITHUB_ENV"
 
       - name: Publish new reference (create new branch)
         if: ${{ env.EXISTS == 0 }}
