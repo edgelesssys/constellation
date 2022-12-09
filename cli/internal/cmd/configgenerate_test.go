@@ -14,6 +14,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,7 +28,8 @@ func TestConfigGenerateDefault(t *testing.T) {
 	fileHandler := file.NewHandler(afero.NewMemMapFs())
 	cmd := newConfigGenerateCmd()
 
-	require.NoError(configGenerate(cmd, fileHandler, cloudprovider.Unknown))
+	cg := &configGenerateCmd{log: logger.NewTest(t)}
+	require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown))
 
 	var readConfig config.Config
 	err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)
@@ -45,7 +47,8 @@ func TestConfigGenerateDefaultGCPSpecific(t *testing.T) {
 	fileHandler := file.NewHandler(afero.NewMemMapFs())
 	cmd := newConfigGenerateCmd()
 
-	require.NoError(configGenerate(cmd, fileHandler, cloudprovider.GCP))
+	cg := &configGenerateCmd{log: logger.NewTest(t)}
+	require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.GCP))
 
 	var readConfig config.Config
 	err := fileHandler.ReadYAML(constants.ConfigFilename, &readConfig)
@@ -60,7 +63,8 @@ func TestConfigGenerateDefaultExists(t *testing.T) {
 	require.NoError(fileHandler.Write(constants.ConfigFilename, []byte("foobar"), file.OptNone))
 	cmd := newConfigGenerateCmd()
 
-	require.Error(configGenerate(cmd, fileHandler, cloudprovider.Unknown))
+	cg := &configGenerateCmd{log: logger.NewTest(t)}
+	require.Error(cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown))
 }
 
 func TestConfigGenerateFileFlagRemoved(t *testing.T) {
@@ -70,7 +74,8 @@ func TestConfigGenerateFileFlagRemoved(t *testing.T) {
 	cmd := newConfigGenerateCmd()
 	cmd.ResetFlags()
 
-	require.Error(configGenerate(cmd, fileHandler, cloudprovider.Unknown))
+	cg := &configGenerateCmd{log: logger.NewTest(t)}
+	require.Error(cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown))
 }
 
 func TestConfigGenerateStdOut(t *testing.T) {
@@ -84,7 +89,8 @@ func TestConfigGenerateStdOut(t *testing.T) {
 	cmd.SetOut(&outBuffer)
 	require.NoError(cmd.Flags().Set("file", "-"))
 
-	require.NoError(configGenerate(cmd, fileHandler, cloudprovider.Unknown))
+	cg := &configGenerateCmd{log: logger.NewTest(t)}
+	require.NoError(cg.configGenerate(cmd, fileHandler, cloudprovider.Unknown))
 
 	var readConfig config.Config
 	require.NoError(yaml.NewDecoder(&outBuffer).Decode(&readConfig))
