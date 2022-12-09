@@ -115,7 +115,7 @@ func (c *Client) addControlPlaneToJoiningNodes(ctx context.Context, joiningNode 
 	joiningNodeResource := schema.GroupVersionResource{Group: "update.edgeless.systems", Version: "v1alpha1", Resource: "joiningnodes"}
 	_, err := c.dynClient.Resource(joiningNodeResource).Create(ctx, joiningNode, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to create joining node, maybe another control-plane joining is already in progress: %w", err)
+		return fmt.Errorf("failed to create joining control-plane node, maybe another node is already joining: %w", err)
 	}
 	return nil
 }
