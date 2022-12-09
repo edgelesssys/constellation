@@ -96,6 +96,7 @@ var _ = BeforeSuite(func() {
 	err = (&JoiningNodesReconciler{
 		Client: k8sManager.GetClient(),
 		Scheme: k8sManager.GetScheme(),
+		Clock:  fakes.clock,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

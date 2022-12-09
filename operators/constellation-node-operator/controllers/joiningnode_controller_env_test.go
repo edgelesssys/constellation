@@ -25,8 +25,10 @@ var _ = Describe("JoiningNode controller", func() {
 	const (
 		nodeName1       = "node-name-1"
 		nodeName2       = "node-name-2"
+		nodeName3       = "node-name-3"
 		componentsHash1 = "test-hash-1"
 		componentsHash2 = "test-hash-2"
+		componentsHash3 = "test-hash-3"
 
 		timeout  = time.Second * 20
 		duration = time.Second * 2
@@ -134,6 +136,40 @@ var _ = Describe("JoiningNode controller", func() {
 			_ = k8sClient.Get(ctx, types.NamespacedName{Name: createdNode.Name}, createdNode)
 			return createdNode.Annotations[NodeKubernetesComponentsHashAnnotationKey]
 		}, timeout, interval).Should(Equal(componentsHash2))
+
+		By("deleting the joining node resource")
+		Eventually(func() error {
+			return k8sClient.Get(ctx, types.NamespacedName{Name: joiningNode.Name}, createdJoiningNode)
+		}, timeout, interval).ShouldNot(Succeed())
+	})
+	It("Should clean up the joining node resource after the deadline is reached", func() {
+		ctx := context.Background()
+		By("creating a joining node resource")
+		joiningNode := &updatev1alpha1.JoiningNode{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "update.edgeless.systems/v1alpha1",
+				Kind:       "JoiningNode",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: nodeName3,
+			},
+			Spec: updatev1alpha1.JoiningNodeSpec{
+				Name:           nodeName3,
+				ComponentsHash: componentsHash3,
+				// create without deadline first
+			},
+		}
+		Expect(k8sClient.Create(ctx, joiningNode)).Should(Succeed())
+		createdJoiningNode := &updatev1alpha1.JoiningNode{}
+		Eventually(func() error {
+			return k8sClient.Get(ctx, types.NamespacedName{Name: joiningNode.Name}, createdJoiningNode)
+		}, timeout, interval).Should(Succeed())
+		Expect(createdJoiningNode.Spec.Name).Should(Equal(nodeName3))
+		Expect(createdJoiningNode.Spec.ComponentsHash).Should(Equal(componentsHash3))
+
+		By("setting the deadline to the past")
+		createdJoiningNode.Spec.Deadline = &metav1.Time{Time: fakes.clock.Now().Add(-time.Second)}
+		Expect(k8sClient.Update(ctx, createdJoiningNode)).Should(Succeed())
 
 		By("deleting the joining node resource")
 		Eventually(func() error {
