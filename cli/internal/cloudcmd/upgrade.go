@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -113,8 +114,8 @@ func (u *Upgrader) GetCurrentImage(ctx context.Context) (*unstructured.Unstructu
 }
 
 // UpgradeHelmServices upgrade helm services.
-func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config) error {
-	return u.helmClient.Upgrade(ctx, config)
+func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration) error {
+	return u.helmClient.Upgrade(ctx, config, timeout)
 }
 
 // CurrentHelmVersion returns the version of the currently installed helm release.
@@ -244,7 +245,7 @@ func (u *stableClient) kubernetesVersion() (string, error) {
 
 type helmInterface interface {
 	CurrentVersion(release string) (string, error)
-	Upgrade(ctx context.Context, config *config.Config) error
+	Upgrade(ctx context.Context, config *config.Config, timeout time.Duration) error
 }
 
 // Using the type from cli/internal/cmd would introduce the following import cycle:

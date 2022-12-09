@@ -9,6 +9,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
@@ -30,6 +31,7 @@ func newUpgradeExecuteCmd() *cobra.Command {
 
 	// TODO: remove before merging to main. For testing only.
 	cmd.Flags().Bool("helm", false, "DEV ONLY: execute helm upgrade")
+	cmd.Flags().Duration("timeout", 3*time.Minute, "DEV ONLY: change upgrade timeout. Might be useful for slow connections or big clusters.")
 
 	return cmd
 }
@@ -66,7 +68,11 @@ func upgradeExecute(cmd *cobra.Command, imageFetcher imageFetcher, upgrader clou
 		return err
 	}
 	if helm {
-		if err := upgrader.UpgradeHelmServices(cmd.Context(), conf); err != nil {
+		timeout, err := cmd.Flags().GetDuration("timeout")
+		if err != nil {
+			return err
+		}
+		if err := upgrader.UpgradeHelmServices(cmd.Context(), conf, timeout); err != nil {
 			return fmt.Errorf("upgrading helm: %w", err)
 		}
 		return nil
@@ -87,7 +93,7 @@ func upgradeExecute(cmd *cobra.Command, imageFetcher imageFetcher, upgrader clou
 
 type cloudUpgrader interface {
 	Upgrade(ctx context.Context, imageReference, imageVersion string, measurements measurements.M) error
-	UpgradeHelmServices(ctx context.Context, config *config.Config) error
+	UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration) error
 }
 
 type imageFetcher interface {

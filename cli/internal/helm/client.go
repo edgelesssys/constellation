@@ -27,11 +27,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
-const (
-	// timeout is the maximum time given to the helm client.
-	upgradeTimeout = 3 * time.Minute
-)
-
 // Client handles interaction with helm.
 type Client struct {
 	config    *action.Configuration
@@ -79,12 +74,12 @@ func (c *Client) CurrentVersion(release string) (string, error) {
 // Upgrade runs a helm-upgrade on all deployments that are managed via Helm.
 // If the CLI receives an interrupt signal it will cancel the context.
 // Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
-func (c *Client) Upgrade(ctx context.Context, config *config.Config) error {
+func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout time.Duration) error {
 	action := action.NewUpgrade(c.config)
 	action.Atomic = true
 	action.Namespace = constants.HelmNamespace
 	action.ReuseValues = false
-	action.Timeout = upgradeTimeout
+	action.Timeout = timeout
 
 	ciliumChart, err := loadChartsDir(helmFS, ciliumPath)
 	if err != nil {
