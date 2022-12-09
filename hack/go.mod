@@ -52,7 +52,7 @@ require (
 	google.golang.org/grpc v1.51.0
 	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v3 v3.0.1
-	libvirt.org/go/libvirt v1.8009.0
+	libvirt.org/go/libvirt v1.8010.0
 	libvirt.org/go/libvirtxml v1.8009.0
 )
 
