@@ -39,21 +39,30 @@ type generateFlags struct {
 	file string
 }
 
+type configGenerateCmd struct {
+	log debugLog
+}
 func runConfigGenerate(cmd *cobra.Command, args []string) error {
+	log, err := newCLILogger(cmd)
+	if err != nil {
+		return fmt.Errorf("creating logger: %w", err)
+	}
+	defer log.Sync()
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	provider := cloudprovider.FromString(args[0])
-	return configGenerate(cmd, fileHandler, provider)
+	cg := &configGenerateCmd{log: log}
+	return cg.configGenerate(cmd, fileHandler, provider)
 }
 
-func configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloudprovider.Provider) error {
+func (cg *configGenerateCmd) configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloudprovider.Provider) error {
 	flags, err := parseGenerateFlags(cmd)
 	if err != nil {
 		return err
 	}
-
+	cg.log.Debugf("Parsed flags as %v", flags)
 	conf := config.Default()
 	conf.RemoveProviderExcept(provider)
-
+	cg.log.Debugf("Using cloud provider %s", provider.String())
 	// set a lower default for QEMU's state disk
 	if provider == cloudprovider.QEMU {
 		conf.StateDiskSizeGB = 10
@@ -64,10 +73,13 @@ func configGenerate(cmd *cobra.Command, fileHandler file.Handler, provider cloud
 		if err != nil {
 			return fmt.Errorf("encoding config content: %w", err)
 		}
+
+		cg.log.Debugf("Writing YAML data to stdout")
 		_, err = cmd.OutOrStdout().Write(content)
 		return err
 	}
 
+	cg.log.Debugf("Writing YAML data to configuration file")
 	if err := fileHandler.WriteYAML(flags.file, conf, file.OptMkdirAll); err != nil {
 		return err
 	}
