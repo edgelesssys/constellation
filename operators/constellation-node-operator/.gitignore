@@ -18,6 +18,7 @@ testbin/*
 
 # We hold the charts in the cli/internal/helm directory
 chart/ 
+bundle/
 
 !vendor/**/zz_generated.*
 

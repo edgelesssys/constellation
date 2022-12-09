@@ -38,6 +38,15 @@ spec:
                 description: ComponentsHash is the hash of the components that were
                   sent to the node by the join service.
                 type: string
+              deadline:
+                description: Deadline is the time after which the joining node is
+                  considered to have failed.
+                format: date-time
+                type: string
+              iscontrolplane:
+                description: IsControlPlane is true if the node is a control plane
+                  node.
+                type: boolean
               name:
                 description: Name of the node expected to join.
                 type: string

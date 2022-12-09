@@ -16,6 +16,10 @@ type JoiningNodeSpec struct {
 	Name string `json:"name,omitempty"`
 	// ComponentsHash is the hash of the components that were sent to the node by the join service.
 	ComponentsHash string `json:"componentshash,omitempty"`
+	// IsControlPlane is true if the node is a control plane node.
+	IsControlPlane bool `json:"iscontrolplane,omitempty"`
+	// Deadline is the time after which the joining node is considered to have failed.
+	Deadline *metav1.Time `json:"deadline,omitempty"`
 }
 
 // JoiningNodeStatus defines the observed state of JoiningNode.

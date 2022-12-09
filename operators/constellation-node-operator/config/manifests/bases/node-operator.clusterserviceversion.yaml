@@ -11,22 +11,22 @@ spec:
   customresourcedefinitions:
     owned:
     - description: AutoscalingStrategy is the Schema for the autoscalingstrategies
-        API
+        API.
       displayName: Autoscaling Strategy
       kind: AutoscalingStrategy
       name: autoscalingstrategies.update.edgeless.systems
       version: v1alpha1
-    - description: NodeImage is the Schema for the nodeimages API
+    - description: NodeImage is the Schema for the nodeimages API.
       displayName: Node Image
       kind: NodeImage
       name: nodeimages.update.edgeless.systems
       version: v1alpha1
-    - description: PendingNode is the Schema for the pendingnodes API
+    - description: PendingNode is the Schema for the pendingnodes API.
       displayName: Pending Node
       kind: PendingNode
       name: pendingnodes.update.edgeless.systems
       version: v1alpha1
-    - description: ScalingGroup is the Schema for the scalinggroups API
+    - description: ScalingGroup is the Schema for the scalinggroups API.
       displayName: Scaling Group
       kind: ScalingGroup
       name: scalinggroups.update.edgeless.systems

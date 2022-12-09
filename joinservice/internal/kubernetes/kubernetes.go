@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
@@ -81,22 +82,46 @@ func (c *Client) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap
 }
 
 // AddNodeToJoiningNodes adds the provided node as a joining node CRD.
-func (c *Client) AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsHash string) error {
-	joiningNodeResource := schema.GroupVersionResource{Group: "update.edgeless.systems", Version: "v1alpha1", Resource: "joiningnodes"}
-
+func (c *Client) AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsHash string, isControlPlane bool) error {
 	joiningNode := &unstructured.Unstructured{}
+
+	objectMetadataName := nodeName
+	deadline := metav1.NewTime(time.Now().Add(48 * time.Hour))
+	if isControlPlane {
+		objectMetadataName = "control-plane"
+		deadline = metav1.NewTime(time.Now().Add(10 * time.Minute))
+	}
+
 	joiningNode.SetUnstructuredContent(map[string]any{
 		"apiVersion": "update.edgeless.systems/v1alpha1",
 		"kind":       "JoiningNode",
 		"metadata": map[string]any{
-			"name": nodeName,
+			"name": objectMetadataName,
 		},
 		"spec": map[string]any{
 			"name":           nodeName,
 			"componentshash": componentsHash,
+			"iscontrolplane": isControlPlane,
+			"deadline":       deadline,
 		},
 	})
+	if isControlPlane {
+		return c.addControlPlaneToJoiningNodes(ctx, joiningNode)
+	}
+	return c.addWorkerToJoiningNodes(ctx, joiningNode)
+}
 
+func (c *Client) addControlPlaneToJoiningNodes(ctx context.Context, joiningNode *unstructured.Unstructured) error {
+	joiningNodeResource := schema.GroupVersionResource{Group: "update.edgeless.systems", Version: "v1alpha1", Resource: "joiningnodes"}
+	_, err := c.dynClient.Resource(joiningNodeResource).Create(ctx, joiningNode, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to create joining node, maybe another control-plane joining is already in progress: %w", err)
+	}
+	return nil
+}
+
+func (c *Client) addWorkerToJoiningNodes(ctx context.Context, joiningNode *unstructured.Unstructured) error {
+	joiningNodeResource := schema.GroupVersionResource{Group: "update.edgeless.systems", Version: "v1alpha1", Resource: "joiningnodes"}
 	_, err := c.dynClient.Resource(joiningNodeResource).Apply(ctx, joiningNode.GetName(), joiningNode, metav1.ApplyOptions{FieldManager: "join-service"})
 	if err != nil {
 		return fmt.Errorf("failed to create joining node: %w", err)
