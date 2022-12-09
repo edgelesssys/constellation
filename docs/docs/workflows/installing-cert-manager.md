@@ -1,5 +1,7 @@
-# Cert-manager
-
+# Installing cert-manager
+:::caution
+Please read this section before installing cert-manager.
+:::
 Constellation ships with cert-manager preinstalled.
 The default installation is part of the `kube-system` namespace, as all other Constellation-managed components.
 You are free to install more instances of `cert-manager` into other namespaces.
