@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -74,7 +75,7 @@ func (u stubUpgrader) Upgrade(context.Context, string, string, measurements.M) e
 	return u.err
 }
 
-func (u stubUpgrader) UpgradeHelmServices(ctx context.Context, config *config.Config) error {
+func (u stubUpgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration) error {
 	return u.helmErr
 }
 
