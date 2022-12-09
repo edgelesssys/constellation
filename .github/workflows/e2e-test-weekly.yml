@@ -40,18 +40,22 @@ jobs:
       matrix:
         test: ["sonobuoy full", "autoscaling", "k-bench"]
         provider: ["gcp", "azure", "aws"]
-        version: ["1.23", "1.24", "1.25"]
+        version: ["1.23", "1.24", "1.25", "1.26"]
         exclude:
           # Autoscaling test runs only on latest version.
           - test: "autoscaling"
             version: "1.23"
           - test: "autoscaling"
             version: "1.24"
+          - test: "autoscaling"
+            version: "1.25"
           # K-bench test runs only on latest version.
           - test: "k-bench"
             version: "1.23"
           - test: "k-bench"
             version: "1.24"
+          - test: "autoscaling"
+            version: "1.25"
           # Currently not supported on AWS.
           - test: "autoscaling"
             provider: "aws"

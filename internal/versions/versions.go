@@ -36,6 +36,8 @@ func IsSupportedK8sVersion(version string) bool {
 		return true
 	case string(V1_25):
 		return true
+	case string(V1_26):
+		return true
 	default:
 		return false
 	}
@@ -87,9 +89,11 @@ const (
 	V1_24 ValidK8sVersion = "1.24"
 	//nolint:revive
 	V1_25 ValidK8sVersion = "1.25"
+	//nolint:revive
+	V1_26 ValidK8sVersion = "1.26"
 
 	// Default k8s version deployed by Constellation.
-	Default ValidK8sVersion = V1_24
+	Default ValidK8sVersion = V1_25
 )
 
 // Regenerate the hashes by running go generate.
@@ -220,6 +224,55 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 			{
 				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.25.5/bin/linux/amd64/kubectl", // renovate:kubernetes-release
 				Hash:        "sha256:6a660cd44db3d4bfe1563f6689cbe2ffb28ee4baf3532e04fff2d7b909081c29",
+				InstallPath: constants.KubectlPath,
+				Extract:     false,
+			},
+		},
+		// CloudControllerManagerImageAWS is the CCM image used on AWS.
+		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.25.1@sha256:85d3f1e9dacc72531445989bb10999e1e70ebc409d11be57e5baa5f031a893b0", // renovate:container
+		// CloudControllerManagerImageGCP is the CCM image used on GCP.
+		// TODO: use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
+		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v25.2.0@sha256:86fa9d31ed0b3d0d8806f13d6e7debd3471028b2cb7cca3a876d8a31612a7ba5", // renovate:container
+		// CloudControllerManagerImageAzure is the CCM image used on Azure.
+		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
+		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.25.4@sha256:f851de1325e7fffb61ab817db310743574e7d96576984d3351ddde2c840b3ebd", // renovate:container
+		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
+		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
+		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.25.4@sha256:5227c3820a60df390107fa0a0865bf19745f21fc3c323c779ac71e3b70e46846", // renovate:container
+		// External service image. Depends on k8s version.
+		// Check for new versions at https://github.com/kubernetes/autoscaler/releases.
+		ClusterAutoscalerImage: "k8s.gcr.io/autoscaling/cluster-autoscaler:v1.25.0@sha256:f509ffab618dbd07d129b69ec56963aac7f61aaa792851206b54a2f0bbe046df", // renovate:container
+	},
+	V1_26: {
+		PatchVersion: "v1.26.0", // renovate:kubernetes-release
+		KubernetesComponents: ComponentVersions{
+			{
+				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
+				Hash:        "sha256:b275772da4026d2161bf8a8b41ed4786754c8a93ebfb6564006d5da7f23831e5",
+				InstallPath: constants.CniPluginsDir,
+				Extract:     true,
+			},
+			{
+				URL:         "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.25.0/crictl-v1.25.0-linux-amd64.tar.gz", // renovate:crictl-release
+				Hash:        "sha256:86ab210c007f521ac4cdcbcf0ae3fb2e10923e65f16de83e0e1db191a07f0235",
+				InstallPath: constants.BinDir,
+				Extract:     true,
+			},
+			{
+				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.26.0/bin/linux/amd64/kubelet", // renovate:kubernetes-release
+				Hash:        "sha256:b64949fe696c77565edbe4100a315b6bf8f0e2325daeb762f7e865f16a6e54b5",
+				InstallPath: constants.KubeletPath,
+				Extract:     false,
+			},
+			{
+				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.26.0/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
+				Hash:        "sha256:72631449f26b7203701a1b99f6914f31859583a0e247c3ac0f6aaf59ca80af19",
+				InstallPath: constants.KubeadmPath,
+				Extract:     false,
+			},
+			{
+				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.26.0/bin/linux/amd64/kubectl", // renovate:kubernetes-release
+				Hash:        "sha256:b6769d8ac6a0ed0f13b307d289dc092ad86180b08f5b5044af152808c04950ae",
 				InstallPath: constants.KubectlPath,
 				Extract:     false,
 			},
