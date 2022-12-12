@@ -3,13 +3,19 @@
     "properties": {
         "csp": {
             "description": "CSP to which the chart is deployed.",
-            "enum": ["Azure", "GCP", "AWS", "QEMU"]
+            "enum": [
+                "Azure",
+                "GCP",
+                "AWS",
+                "QEMU"
+            ]
         },
         "image": {
             "description": "Container image to use for the spawned pods.",
             "type": "string",
-            "examples": ["k8s.gcr.io/autoscaling/cluster-autoscaler:v1.23.1"]
-
+            "examples": [
+                "registry.k8s.io/autoscaling/cluster-autoscaler:v1.23.1"
+            ]
         },
         "Azure": {
             "description": "Config values required for deployment on Azure",
@@ -50,10 +56,20 @@
         "image"
     ],
     "if": {
-        "properties": { "csp": { "const": "Azure" } },
-        "required": ["csp"]
+        "properties": {
+            "csp": {
+                "const": "Azure"
+            }
+        },
+        "required": [
+            "csp"
+        ]
     },
-    "then": { "required": ["Azure"] },
+    "then": {
+        "required": [
+            "Azure"
+        ]
+    },
     "title": "Values",
     "type": "object"
 }
