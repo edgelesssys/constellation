@@ -126,7 +126,7 @@ jobs:
         id: pki-set
         shell: bash
         run: |
-          if [[ "${{ inputs.isRelease }}" != "true" ]] && [[ "${{ inputs.stream }}" == "stable" ]]; then
+          if [[ "${{ inputs.isRelease }}" == "true" ]] && [[ "${{ inputs.stream }}" == "stable" ]]; then
              echo "pkiSet=pki_prod" >> "$GITHUB_OUTPUT"
            else
              echo "pkiSet=pki_testing" >> "$GITHUB_OUTPUT"
@@ -146,7 +146,7 @@ jobs:
             echo "imageApiBasePath=constellation/v1/ref/${REF}/stream/${STREAM}/image/${IMAGE_VERSION}"
           } >> "$GITHUB_OUTPUT"
 
-          if [[ "${REF}" = "-" ]] && [[ "${stream}" = "stable" ]]; then
+          if [[ "${REF}" = "-" ]] && [[ "${STREAM}" = "stable" ]]; then
             echo "imageNameShort=${IMAGE_VERSION}" >> "$GITHUB_OUTPUT"
           elif [[ "${REF}" = "-" ]]; then
             echo "imageNameShort=stream/${STREAM}/${IMAGE_VERSION}" >> "$GITHUB_OUTPUT"
