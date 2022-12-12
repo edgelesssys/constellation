@@ -217,8 +217,8 @@ Now that you've configured your CSP, you can [create your cluster](./create.md).
 
 You can keep created IAM configurations and reuse them for new clusters. Alternatively, you can also delete them if they aren't being used anymore.
 
-### Prerequisites
-* [HashiCorp's Terraform](https://developer.hashicorp.com/terraform/downloads?product_intent=terraform) is installed on your machine.
+**Prerequisites:**
+* [Terraform](https://developer.hashicorp.com/terraform/downloads) is installed on your machine.
 * Access to the `terraform.tfstate` file created by the `constellation iam create` command.
 
 You can delete the IAM configuration using the following commands:
@@ -227,5 +227,5 @@ You can delete the IAM configuration using the following commands:
 cd constellation-iam-terraform
 # Destroy the IAM configuration via Terraform
 terraform destroy
-# Confirm deletion via typing "yes"
+# Confirm deletion by typing "yes"
 ```
