@@ -39,6 +39,8 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
 2. Fill in your cloud provider specific information.
 
+    First you need to create an [IAM configuration](../workflows/config.md#creating-an-iam-configuration). The easiest way to do this is the following CLI command:
+
     <tabs groupId="csp">
 
     <tabItem value="azure" label="Azure">
