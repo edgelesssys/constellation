@@ -51,10 +51,6 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     This command creates IAM configuration on the Azure region `westus` creating a new resource group `constellTest` and a new service principal `spTest`.
 
-    :::tip
-    Since `clientSecretValue` is a sensitive value, you can leave it empty in the configuration file and pass it via an environment variable instead. To this end, create the environment variable `CONSTELL_AZURE_CLIENT_SECRET_VALUE` and set it to the secret value.
-    :::
-
     </tabItem>
 
     <tabItem value="gcp" label="GCP">
