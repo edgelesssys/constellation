@@ -22,6 +22,8 @@ type providerMetadata interface {
 	Self(ctx context.Context) (metadata.InstanceMetadata, error)
 	// GetLoadBalancerEndpoint returns the endpoint of the load balancer.
 	GetLoadBalancerEndpoint(ctx context.Context) (string, error)
+	// UID returns the UID of the current instance.
+	UID(ctx context.Context) (string, error)
 }
 
 // Fetcher checks the metadata service to search for instances that were set up for debugging.
@@ -44,6 +46,20 @@ func (f *Fetcher) Role(ctx context.Context) (role.Role, error) {
 	}
 
 	return self.Role, nil
+}
+
+// UID returns node UID via meta data API.
+func (f *Fetcher) UID(ctx context.Context) (string, error) {
+	uid, err := f.metaAPI.UID(ctx)
+	if err != nil {
+		return "", fmt.Errorf("retrieving UID from cloud provider metadata: %w", err)
+	}
+	return uid, nil
+}
+
+// Self returns the current instance via meta data API.
+func (f *Fetcher) Self(ctx context.Context) (metadata.InstanceMetadata, error) {
+	return f.metaAPI.Self(ctx)
 }
 
 // DiscoverDebugdIPs will query the metadata of all instances and return any ips of instances already set up for debugging.
