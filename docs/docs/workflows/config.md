@@ -2,10 +2,40 @@
 
 Before you can create your cluster, you need to configure the identity and access management (IAM) for your cloud service provider (CSP) and choose machine types for the nodes.
 
+## Creating the configuration file
+
+You can generate a configuration file for your CSP by using the following CLI command:
+
+<tabs groupId="csp">
+<tabItem value="azure" label="Azure">
+
+```bash
+constellation config generate azure
+```
+
+</tabItem>
+<tabItem value="gcp" label="GCP">
+
+```bash
+constellation config generate gcp
+```
+
+</tabItem>
+<tabItem value="aws" label="AWS">
+
+```bash
+constellation config generate aws
+```
+
+</tabItem>
+</tabs>
+
+This creates the file `constellation-conf.yaml` in the current directory.
+
 ## Choosing VM types
 
 Constellation supports the following VM types:
-<tabs groupID="csp">
+<tabs groupId="csp">
 <tabItem value="azure" label="Azure">
 
 By default, Constellation uses `Standard_DC4as_v5` CVMs (4 vCPUs, 16 GB RAM) to create your cluster. Optionally, you can switch to a different VM type by modifying **instanceType** in the configuration file. For CVMs, any VM type with a minimum of 4 vCPUs from the [DCasv5 & DCadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/dcasv5-dcadsv5-series) or [ECasv5 & ECadsv5](https://docs.microsoft.com/en-us/azure/virtual-machines/ecasv5-ecadsv5-series) families is supported.
