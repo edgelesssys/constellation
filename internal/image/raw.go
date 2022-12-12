@@ -36,12 +36,12 @@ func NewDownloader() *Downloader {
 }
 
 // Download downloads the raw image from source.
-func (d *Downloader) Download(ctx context.Context, errWriter io.Writer, showBar bool, source, version string) (string, error) {
+func (d *Downloader) Download(ctx context.Context, errWriter io.Writer, showBar bool, source, imageName string) (string, error) {
 	url, err := url.Parse(source)
 	if err != nil {
 		return "", fmt.Errorf("parsing image source URL: %w", err)
 	}
-	version = filepath.Base(version)
+	imageName = filepath.Base(imageName)
 	var partfile, destination string
 	switch url.Scheme {
 	case "http", "https":
@@ -49,8 +49,8 @@ func (d *Downloader) Download(ctx context.Context, errWriter io.Writer, showBar 
 		if err != nil {
 			return "", fmt.Errorf("getting current working directory: %w", err)
 		}
-		partfile = filepath.Join(cwd, version+".raw.part")
-		destination = filepath.Join(cwd, version+".raw")
+		partfile = filepath.Join(cwd, imageName+".raw.part")
+		destination = filepath.Join(cwd, imageName+".raw")
 	case "file":
 		return url.Path, nil
 	default:

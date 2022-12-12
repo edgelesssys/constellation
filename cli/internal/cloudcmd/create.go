@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"path"
 	"regexp"
 	"runtime"
 	"strings"
@@ -100,7 +101,7 @@ func (c *Creator) Create(ctx context.Context, provider cloudprovider.Provider, c
 func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *config.Config,
 	name, insType string, controlPlaneCount, workerCount int, image string,
 ) (idFile clusterid.File, retErr error) {
-	vars := terraform.AWSVariables{
+	vars := terraform.AWSClusterVariables{
 		CommonVariables: terraform.CommonVariables{
 			Name:               name,
 			CountControlPlanes: controlPlaneCount,
@@ -117,7 +118,7 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *con
 		Debug:                  config.IsDebugCluster(),
 	}
 
-	if err := cl.PrepareWorkspace(cloudprovider.AWS, &vars); err != nil {
+	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.AWS.String())), &vars); err != nil {
 		return clusterid.File{}, err
 	}
 
@@ -137,7 +138,7 @@ func (c *Creator) createAWS(ctx context.Context, cl terraformClient, config *con
 func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *config.Config,
 	name, insType string, controlPlaneCount, workerCount int, image string,
 ) (idFile clusterid.File, retErr error) {
-	vars := terraform.GCPVariables{
+	vars := terraform.GCPClusterVariables{
 		CommonVariables: terraform.CommonVariables{
 			Name:               name,
 			CountControlPlanes: controlPlaneCount,
@@ -154,7 +155,7 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 		Debug:           config.IsDebugCluster(),
 	}
 
-	if err := cl.PrepareWorkspace(cloudprovider.GCP, &vars); err != nil {
+	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.GCP.String())), &vars); err != nil {
 		return clusterid.File{}, err
 	}
 
@@ -174,7 +175,7 @@ func (c *Creator) createGCP(ctx context.Context, cl terraformClient, config *con
 func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *config.Config,
 	name, insType string, controlPlaneCount, workerCount int, image string,
 ) (idFile clusterid.File, retErr error) {
-	vars := terraform.AzureVariables{
+	vars := terraform.AzureClusterVariables{
 		CommonVariables: terraform.CommonVariables{
 			Name:               name,
 			CountControlPlanes: controlPlaneCount,
@@ -194,7 +195,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 
 	vars = normalizeAzureURIs(vars)
 
-	if err := cl.PrepareWorkspace(cloudprovider.Azure, &vars); err != nil {
+	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.Azure.String())), &vars); err != nil {
 		return clusterid.File{}, err
 	}
 
@@ -224,7 +225,7 @@ var (
 	caseInsensitiveVersionsRegExp               = regexp.MustCompile(`(?i)\/versions\/`)
 )
 
-func normalizeAzureURIs(vars terraform.AzureVariables) terraform.AzureVariables {
+func normalizeAzureURIs(vars terraform.AzureClusterVariables) terraform.AzureClusterVariables {
 	vars.UserAssignedIdentity = caseInsensitiveSubscriptionsRegexp.ReplaceAllString(vars.UserAssignedIdentity, "/subscriptions/")
 	vars.UserAssignedIdentity = caseInsensitiveResourceGroupRegexp.ReplaceAllString(vars.UserAssignedIdentity, "/resourceGroups/")
 	vars.UserAssignedIdentity = caseInsensitiveProvidersRegexp.ReplaceAllString(vars.UserAssignedIdentity, "/providers/")
@@ -305,7 +306,7 @@ func (c *Creator) createQEMU(ctx context.Context, cl terraformClient, lv libvirt
 		Firmware:           config.Provider.QEMU.Firmware,
 	}
 
-	if err := cl.PrepareWorkspace(cloudprovider.QEMU, &vars); err != nil {
+	if err := cl.PrepareWorkspace(path.Join("terraform", strings.ToLower(cloudprovider.QEMU.String())), &vars); err != nil {
 		return clusterid.File{}, err
 	}
 

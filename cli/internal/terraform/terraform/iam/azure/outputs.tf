@@ -6,14 +6,6 @@ output "tenant_id" {
   value = data.azurerm_subscription.current.tenant_id
 }
 
-output "region" {
-  value = var.region
-}
-
-output "base_resource_group_name" {
-  value = var.resource_group_name
-}
-
 output "application_id" {
   value = azuread_application.base_application.application_id
 }

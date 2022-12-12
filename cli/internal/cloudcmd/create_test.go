@@ -139,43 +139,43 @@ func TestCreator(t *testing.T) {
 
 func TestNormalizeAzureURIs(t *testing.T) {
 	testCases := map[string]struct {
-		in   terraform.AzureVariables
-		want terraform.AzureVariables
+		in   terraform.AzureClusterVariables
+		want terraform.AzureClusterVariables
 	}{
 		"empty": {
-			in:   terraform.AzureVariables{},
-			want: terraform.AzureVariables{},
+			in:   terraform.AzureClusterVariables{},
+			want: terraform.AzureClusterVariables{},
 		},
 		"no change": {
-			in: terraform.AzureVariables{
+			in: terraform.AzureClusterVariables{
 				ImageID: "/communityGalleries/foo/images/constellation/versions/2.1.0",
 			},
-			want: terraform.AzureVariables{
+			want: terraform.AzureClusterVariables{
 				ImageID: "/communityGalleries/foo/images/constellation/versions/2.1.0",
 			},
 		},
 		"fix image id": {
-			in: terraform.AzureVariables{
+			in: terraform.AzureClusterVariables{
 				ImageID: "/CommunityGalleries/foo/Images/constellation/Versions/2.1.0",
 			},
-			want: terraform.AzureVariables{
+			want: terraform.AzureClusterVariables{
 				ImageID: "/communityGalleries/foo/images/constellation/versions/2.1.0",
 			},
 		},
 		"fix resource group": {
-			in: terraform.AzureVariables{
+			in: terraform.AzureClusterVariables{
 				UserAssignedIdentity: "/subscriptions/foo/resourcegroups/test/providers/Microsoft.ManagedIdentity/userAssignedIdentities/uai",
 			},
-			want: terraform.AzureVariables{
+			want: terraform.AzureClusterVariables{
 				UserAssignedIdentity: "/subscriptions/foo/resourceGroups/test/providers/Microsoft.ManagedIdentity/userAssignedIdentities/uai",
 			},
 		},
 		"fix arbitrary casing": {
-			in: terraform.AzureVariables{
+			in: terraform.AzureClusterVariables{
 				ImageID:              "/CoMMUnitygaLLeries/foo/iMAges/constellation/vERsions/2.1.0",
 				UserAssignedIdentity: "/subsCRiptions/foo/resoURCegroups/test/proViDers/MICROsoft.mANAgedIdentity/USerASsignediDENtities/uai",
 			},
-			want: terraform.AzureVariables{
+			want: terraform.AzureClusterVariables{
 				ImageID:              "/communityGalleries/foo/images/constellation/versions/2.1.0",
 				UserAssignedIdentity: "/subscriptions/foo/resourceGroups/test/providers/Microsoft.ManagedIdentity/userAssignedIdentities/uai",
 			},

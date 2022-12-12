@@ -8,7 +8,9 @@ package terraform
 
 import (
 	"io/fs"
+	"path"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -21,11 +23,13 @@ import (
 
 func TestLoader(t *testing.T) {
 	testCases := map[string]struct {
+		pathBase            string
 		provider            cloudprovider.Provider
 		fileList            []string
 		testAlreadyUnpacked bool
 	}{
-		"aws": {
+		"awsCluster": {
+			pathBase: "terraform",
 			provider: cloudprovider.AWS,
 			fileList: []string{
 				"main.tf",
@@ -34,7 +38,8 @@ func TestLoader(t *testing.T) {
 				"modules",
 			},
 		},
-		"gcp": {
+		"gcpCluster": {
+			pathBase: "terraform",
 			provider: cloudprovider.GCP,
 			fileList: []string{
 				"main.tf",
@@ -43,7 +48,8 @@ func TestLoader(t *testing.T) {
 				"modules",
 			},
 		},
-		"qemu": {
+		"qemuCluster": {
+			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			fileList: []string{
 				"main.tf",
@@ -52,7 +58,35 @@ func TestLoader(t *testing.T) {
 				"modules",
 			},
 		},
+		"gcpIAM": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.GCP,
+			fileList: []string{
+				"main.tf",
+				"variables.tf",
+				"outputs.tf",
+			},
+		},
+		"azureIAM": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.Azure,
+			fileList: []string{
+				"main.tf",
+				"variables.tf",
+				"outputs.tf",
+			},
+		},
+		"awsIAM": {
+			pathBase: path.Join("terraform", "iam"),
+			provider: cloudprovider.AWS,
+			fileList: []string{
+				"main.tf",
+				"variables.tf",
+				"outputs.tf",
+			},
+		},
 		"continue on (partially) unpacked": {
+			pathBase: "terraform",
 			provider: cloudprovider.AWS,
 			fileList: []string{
 				"main.tf",
@@ -71,14 +105,16 @@ func TestLoader(t *testing.T) {
 
 			file := file.NewHandler(afero.NewMemMapFs())
 
-			err := prepareWorkspace(file, tc.provider, constants.TerraformWorkingDir)
+			path := path.Join(tc.pathBase, strings.ToLower(tc.provider.String()))
+			err := prepareWorkspace(path, file, constants.TerraformWorkingDir)
+
 			require.NoError(err)
 			checkFiles(t, file, func(err error) { assert.NoError(err) }, tc.fileList)
 
 			if tc.testAlreadyUnpacked {
 				// Let's try the same again and check if we don't get a "file already exists" error.
 				require.NoError(file.Remove(filepath.Join(constants.TerraformWorkingDir, "variables.tf")))
-				err := prepareWorkspace(file, tc.provider, constants.TerraformWorkingDir)
+				err := prepareWorkspace(path, file, constants.TerraformWorkingDir)
 				assert.NoError(err)
 				checkFiles(t, file, func(err error) { assert.NoError(err) }, tc.fileList)
 			}

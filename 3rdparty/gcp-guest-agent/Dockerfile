@@ -1,4 +1,4 @@
-FROM ubuntu:22.04@sha256:817cfe4672284dcbfee885b1a66094fd907630d610cab329114d036716be49ba as build
+FROM ubuntu:22.04@sha256:965fbcae990b0467ed5657caceaec165018ef44a4d2d46c7cdea80a9dff0d1ea as build
 
 # Install packages
 RUN apt-get update && apt-get install -y \
@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y \
     git
 
 # Install Go
-ARG GO_VER=1.19.3
+ARG GO_VER=1.19.4
 RUN wget -q https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go${GO_VER}.linux-amd64.tar.gz && \
     rm go${GO_VER}.linux-amd64.tar.gz

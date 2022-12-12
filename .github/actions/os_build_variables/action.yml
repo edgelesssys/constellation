@@ -10,8 +10,14 @@ inputs:
   basePath:
     description: "Base path to the image build directory"
     required: true
+  ref:
+    description: "Branch of the image to be built (or '-' for releases)"
+    required: true
+  stream:
+    description: "Image stream / type. (Use 'stable' for releases, 'nightly' for regular non-release images and 'debug' for debug builds)"
+    required: true
   imageVersion:
-    description: "Semantic version including patch e.g. v<major>.<minor>.<patch> (only used for releases)"
+    description: "Semantic version including patch e.g. v<major>.<minor>.<patch> or pseudo version"
     required: false
   imageType:
     description: "Type of image to build"
@@ -145,15 +151,16 @@ runs:
 
     - name: Configure AWS input variables
       id: aws
-      if: ${{ inputs.csp == 'aws' }}
+      if: inputs.csp == 'aws'
       shell: bash
       env:
         basePath: ${{ inputs.basePath }}
+        ref: ${{ inputs.ref }}
+        stream: ${{ inputs.stream }}
         imageVersion: ${{ inputs.imageVersion }}
         imageType: ${{ inputs.imageType }}
         timestamp: ${{ steps.version.outputs.timestamp }}
         semver: ${{ steps.version.outputs.semanticVersion }}
-        branchName: ${{ steps.version.outputs.branchName }}
       run: |
         echo "region=eu-central-1" >> $GITHUB_OUTPUT
         echo "replicationRegions=us-east-2 ap-south-1" >> $GITHUB_OUTPUT
@@ -162,16 +169,12 @@ runs:
         echo "imagePath=${basePath}/mkosi.output.aws/fedora~37/image.raw" >> $GITHUB_OUTPUT
         echo "jsonOutput=${basePath}/mkosi.output.aws/fedora~37/image-upload.json" >> $GITHUB_OUTPUT
         echo "imageFilename=image-$(date +%s).raw" >> $GITHUB_OUTPUT
-        if [ "${imageType}" = release ]
+        if [[ "${stream}" = "stable" ]]
         then
           echo "imageName=constellation-${imageVersion}" >> $GITHUB_OUTPUT
           echo "publish=true" >> $GITHUB_OUTPUT
-        elif [ "${imageType}" = debug ]
-        then
-          echo "imageName=constellation-debug-${semver}-${timestamp}" >> $GITHUB_OUTPUT
-          echo "publish=false" >> $GITHUB_OUTPUT
         else
-          echo "imageName=constellation-${branchName}-${timestamp}" >> $GITHUB_OUTPUT
+          echo "imageName=constellation-${ref}-${stream}-${semver}-${timestamp}" >> $GITHUB_OUTPUT
           echo "publish=false" >> $GITHUB_OUTPUT
         fi
 
@@ -180,10 +183,12 @@ runs:
     #    image version has to be semantic version in the form <uint>.<uint>.<uint> . uint may not be larger than 2,147,483,647
     - name: Configure Azure input variables
       id: azure
-      if: ${{ inputs.csp == 'azure' }}
+      if: inputs.csp == 'azure'
       shell: bash
       env:
         basePath: ${{ inputs.basePath }}
+        ref: ${{ inputs.ref }}
+        stream: ${{ inputs.stream }}
         imageVersion: ${{ inputs.imageVersion }}
         imageType: ${{ inputs.imageType }}
         timestamp: ${{ steps.version.outputs.timestamp }}
@@ -203,31 +208,31 @@ runs:
         echo "jsonOutput=${basePath}/mkosi.output.azure/fedora~37/image-upload${uploadVariant}.json" >> $GITHUB_OUTPUT
         # TODO: set default security type to "ConfidentialVM" once replication is possible
         securityType=${{ inputs.uploadVariant }}
-        if [ -z "${securityType}" ]; then
+        if [[ -z "${securityType}" ]]; then
           securityType=ConfidentialVMSupported
         fi
         echo "securityType=${securityType}" >> $GITHUB_OUTPUT
-        echo "diskName=constellation-${pseudover//./-}-${securityType,,}" >> $GITHUB_OUTPUT
-        if [ "${imageType}" = release ]
+        echo "diskName=constellation-${stream}-${timestamp}-${securityType,,}" >> $GITHUB_OUTPUT
+        if [[ "${stream}" = "release" ]]
         then
           echo "imageDefinition=constellation" >> $GITHUB_OUTPUT
           echo "imageOffer=constellation" >> $GITHUB_OUTPUT
           echo "imageVersion=${imageVersion:1}" >> $GITHUB_OUTPUT
           galleryName=Constellation
-        elif [ "${imageType}" = debug ]
+        elif [[ "${imageType}" = "debug" && ( "${ref}" = "-" || "${ref}" = "main" ) ]]
         then
           echo "imageDefinition=${semver}" >> $GITHUB_OUTPUT
           echo "imageOffer=${semver}" >> $GITHUB_OUTPUT
           echo "imageVersion=${timestamp:0:4}.${timestamp:4:4}.${timestamp:8}" >> $GITHUB_OUTPUT
           galleryName=Constellation_Debug
         else
-          echo "imageDefinition=${branchName}" >> $GITHUB_OUTPUT
-          echo "imageOffer=${branchName}" >> $GITHUB_OUTPUT
+          echo "imageDefinition=${ref}-${stream}" >> $GITHUB_OUTPUT
+          echo "imageOffer=${ref}-${stream}" >> $GITHUB_OUTPUT
           echo "imageVersion=${timestamp:0:4}.${timestamp:4:4}.${timestamp:8}" >> $GITHUB_OUTPUT
           galleryName=Constellation_Testing
         fi
         # TODO: enable VMGS upload for ConfidentialVM images once replication is possible
-        if [ "${securityType}" == "ConfidentialVMSupported" ]; then
+        if [[ "${securityType}" == "ConfidentialVMSupported" ]]; then
           echo "galleryName=${galleryName}_CVM" >> $GITHUB_OUTPUT
           echo "vmgsPath=" >> $GITHUB_OUTPUT
         else
@@ -239,15 +244,16 @@ runs:
     #    Must not end or begin with a dash
     - name: Configure GCP input variables
       id: gcp
-      if: ${{ inputs.csp == 'gcp' }}
+      if: inputs.csp == 'gcp'
       shell: bash
       env:
         basePath: ${{ inputs.basePath }}
+        ref: ${{ inputs.ref }}
+        stream: ${{ inputs.stream }}
         imageVersion: ${{ inputs.imageVersion }}
         imageType: ${{ inputs.imageType }}
         timestamp: ${{ steps.version.outputs.timestamp }}
         semver: ${{ steps.version.outputs.semanticVersion }}
-        branchName: ${{ steps.version.outputs.branchName }}
       run: |
         echo "project=constellation-images" >> $GITHUB_OUTPUT
         echo "bucket=constellation-images" >> $GITHUB_OUTPUT
@@ -255,25 +261,25 @@ runs:
         echo "rawImagePath=${basePath}/mkosi.output.gcp/fedora~37/image.raw" >> $GITHUB_OUTPUT
         echo "imagePath=${basePath}/mkosi.output.gcp/fedora~37/image.tar.gz" >> $GITHUB_OUTPUT
         echo "jsonOutput=${basePath}/mkosi.output.gcp/fedora~37/image-upload.json" >> $GITHUB_OUTPUT
-        if [ "${imageType}" = release ]
+        if [[ "${stream}" = "stable" ]]
         then
           echo "imageName=constellation-${imageVersion//./-}" >> $GITHUB_OUTPUT
           echo "imageFilename=constellation-${imageVersion//./-}.tar.gz" >> $GITHUB_OUTPUT
           echo "imageFamily=constellation" >> $GITHUB_OUTPUT
-        elif [ "${imageType}" = debug ]
+        elif [[ "${imageType}" = "debug" && ( "${ref}" = "-" || "${ref}" = "main" ) ]]
         then
-          echo "imageName=constellation-${timestamp}" >> $GITHUB_OUTPUT
-          echo "imageFilename=constellation-${timestamp}.tar.gz" >> $GITHUB_OUTPUT
+          echo "imageName=constellation-${ref}-${stream}-${timestamp}" >> $GITHUB_OUTPUT
+          echo "imageFilename=constellation-${ref}-${stream}-${timestamp}.tar.gz" >> $GITHUB_OUTPUT
           echo "imageFamily=constellation-debug-${semver//./-}" >> $GITHUB_OUTPUT
         else
-          echo "imageName=constellation-${timestamp}" >> $GITHUB_OUTPUT
-          echo "imageFilename=constellation-${timestamp}.tar.gz" >> $GITHUB_OUTPUT
-          echo "imageFamily=constellation-${branchName}" >> $GITHUB_OUTPUT
+          echo "imageName=constellation-${ref}-${stream}-${timestamp}" >> $GITHUB_OUTPUT
+          echo "imageFilename=constellation-${ref}-${stream}-${timestamp}.tar.gz" >> $GITHUB_OUTPUT
+          echo "imageFamily=constellation-${ref}" >> $GITHUB_OUTPUT
         fi
 
     - name: Configure QEMU input variables
       id: qemu
-      if: ${{ inputs.csp == 'qemu' }}
+      if: inputs.csp == 'qemu'
       shell: bash
       env:
         basePath: ${{ inputs.basePath }}

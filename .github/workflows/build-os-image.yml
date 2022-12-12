@@ -5,11 +5,21 @@ on:
       imageVersion:
         description: "Semantic version including patch e.g. v<major>.<minor>.<patch> (only used for releases)"
         required: false
-      debug:
-        description: "Build debug image"
+      isRelease:
+        description: 'Is this a release? (sets "ref" to special value "-")'
         type: boolean
-        default: false
         required: false
+        default: false
+      stream:
+        description: "Image stream / type. (Use 'stable' for releases, 'nightly' for regular non-release images and 'debug' for debug builds)"
+        type: choice
+        required: true
+        options:
+          - "stable"
+          - "nightly"
+          - "debug"
+          # TODO: implement console access enabled image
+          # - "console"
 
 jobs:
   build-dependencies:
@@ -28,13 +38,13 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - name: Build bootstrapper
-        if: ${{ inputs.debug == false }}
+        if: inputs.stream != 'debug'
         uses: ./.github/actions/build_bootstrapper
         with:
           outputPath: ${{ github.workspace }}/build/bootstrapper
 
       - name: Build debugd
-        if: ${{ inputs.debug == true }}
+        if: inputs.stream == 'debug'
         uses: ./.github/actions/build_debugd
         with:
           outputPath: ${{ github.workspace }}/build/bootstrapper
@@ -65,9 +75,13 @@ jobs:
     name: "Determine build settings"
     runs-on: ubuntu-22.04
     outputs:
+      ref: ${{ steps.ref.outputs.ref }}
       imageType: ${{ steps.image-type.outputs.imageType }}
       pkiSet: ${{ steps.pki-set.outputs.pkiSet }}
-      imageVersionUid: ${{ steps.image-version-uid.outputs.imageVersionUid }}
+      imageVersion: ${{ steps.image-version.outputs.imageVersion }}
+      imageName: ${{ steps.image-version.outputs.imageName }}
+      imageNameShort: ${{ steps.image-version.outputs.imageNameShort }}
+      imageApiBasePath: ${{ steps.image-version.outputs.imageApiBasePath }}
 
     steps:
       - name: Checkout
@@ -79,41 +93,65 @@ jobs:
         id: version
         uses: ./.github/actions/pseudo_version
 
+      - name: Determine ref
+        id: ref
+        run: |
+          if [[ "${{ inputs.isRelease }}" = "true" ]]; then
+            echo "ref=-" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${{ steps.version.outputs.branchName }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate stream
+        run: |
+          if [[ "${{ inputs.isRelease }}" == "true" ]] && [[ "${{ inputs.stream }}" == "nightly" ]]; then
+            echo "Nightly builds are not allowed for releases"
+            exit 1
+          elif [[ "${{ inputs.isRelease }}" != "true" ]] && [[ "${{ inputs.stream }}" == "stable" ]]; then
+            echo "Stable builds are only allowed for releases"
+            exit 1
+          fi
+
       - name: Determine type of image build
         shell: bash
         id: image-type
         run: |
-          if [ "${{ startsWith(github.ref, 'refs/heads/release/') && (inputs.debug == false) }}" = true ]
-          then
-            echo "imageType=release" >> "$GITHUB_OUTPUT"
-          elif [ "${{ ((github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/')) && (inputs.debug == true) }}" = true ]
-          then
+          if  [[ "${{ inputs.stream }}" == "debug" ]]; then
             echo "imageType=debug" >> "$GITHUB_OUTPUT"
           else
-            echo "imageType=branch" >> "$GITHUB_OUTPUT"
+            echo "imageType=default" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Determine PKI set
         id: pki-set
         shell: bash
         run: |
-          if [ "${{ steps.image-type.outputs.imageType }}" = "release" ]
-          then
-            echo "pkiSet=pki_prod" >> "$GITHUB_OUTPUT"
-          else
-            echo "pkiSet=pki_testing" >> "$GITHUB_OUTPUT"
-          fi
+          if [[ "${{ inputs.isRelease }}" != "true" ]] && [[ "${{ inputs.stream }}" == "stable" ]]; then
+             echo "pkiSet=pki_prod" >> "$GITHUB_OUTPUT"
+           else
+             echo "pkiSet=pki_testing" >> "$GITHUB_OUTPUT"
+           fi
 
-      - name: Determine image version uid
-        id: image-version-uid
+      - name: Determine image version
+        id: image-version
         shell: bash
+        env:
+          REF: ${{ steps.ref.outputs.ref }}
+          STREAM: ${{ inputs.stream }}
+          IMAGE_VERSION: ${{ inputs.imageVersion || steps.version.outputs.pseudoVersion }}
         run: |
-          if [ "${{ steps.image-type.outputs.imageType }}" = "release" ]; then
-            echo "imageVersionUid=${{ github.event.inputs.imageVersion }}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ steps.image-type.outputs.imageType }}" = "debug" ]; then
-            echo "imageVersionUid=debug-${{ steps.version.outputs.pseudoVersion }}" >> "$GITHUB_OUTPUT"
+          {
+            echo "imageVersion=${IMAGE_VERSION}"
+            echo "imageName=ref/${REF}/stream/${STREAM}/${IMAGE_VERSION}"
+            echo "imageApiBasePath=constellation/v1/ref/${REF}/stream/${STREAM}/image/${IMAGE_VERSION}"
+          } >> "$GITHUB_OUTPUT"
+
+          if [[ "${REF}" = "-" ]] && [[ "${stream}" = "stable" ]]; then
+            echo "imageNameShort=${IMAGE_VERSION}" >> "$GITHUB_OUTPUT"
+          elif [[ "${REF}" = "-" ]]; then
+            echo "imageNameShort=stream/${STREAM}/${IMAGE_VERSION}" >> "$GITHUB_OUTPUT"
           else
-            echo "imageVersionUid=${{ steps.version.outputs.branchName }}-${{ steps.version.outputs.pseudoVersion }}" >> "$GITHUB_OUTPUT"
+            echo "imageNameShort=ref/${REF}/stream/${STREAM}/${IMAGE_VERSION}" >> "$GITHUB_OUTPUT"
           fi
 
   make-os-image:
@@ -202,7 +240,7 @@ jobs:
         env:
           BOOTSTRAPPER_BINARY: ${{ github.workspace }}/build/bootstrapper
           DISK_MAPPER_BINARY: ${{ github.workspace }}/build/disk-mapper
-          IMAGE_VERSION: ${{ needs.build-settings.outputs.imageVersionUid }}
+          IMAGE_VERSION: ${{ needs.build-settings.outputs.imageVersion }}
           CSP: ${{ matrix.csp }}
 
       - name: Collect hashes
@@ -288,9 +326,11 @@ jobs:
           csp: ${{ matrix.csp }}
           uploadVariant: ${{ matrix.upload-variant }}
           basePath: ${{ github.workspace }}/image
-          imageVersion: ${{ inputs.imageVersion }}
+          ref: ${{ needs.build-settings.outputs.ref }}
+          stream: ${{ inputs.stream }}
+          imageVersion: ${{ needs.build-settings.outputs.imageVersion }}
           imageType: ${{ needs.build-settings.outputs.imageType }}
-          debug: ${{ inputs.debug }}
+          debug: ${{ needs.build-settings.outputs.imageType == 'debug' }}
 
       - name: Install tools
         shell: bash
@@ -308,7 +348,7 @@ jobs:
         # on AWS, login is required to upload the image as AMI
         # on Azure, login is done to download the VMGS from S3
         # on QEMU, login is done to upload the image to S3
-        if: ${{ matrix.csp == 'aws' || matrix.csp == 'azure' || matrix.csp == 'qemu' }}
+        if: matrix.csp == 'aws' || matrix.csp == 'azure' || matrix.csp == 'qemu'
         with:
           role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
           aws-region: eu-central-1
@@ -321,7 +361,7 @@ jobs:
 
       - name: Login to GCP
         uses: ./.github/actions/login_gcp
-        if: ${{ matrix.csp == 'gcp' }}
+        if: matrix.csp == 'gcp'
         with:
           gcp_service_account_json: ${{ secrets.GCP_IMAGE_UPLOAD_SERVICE_ACCOUNT }}
 
@@ -340,7 +380,7 @@ jobs:
             "${PKI_SET}/${AZURE_SECURITY_TYPE}.vmgs" \
             --no-progress
         working-directory: ${{ github.workspace }}/image
-        if: ${{ matrix.csp == 'azure' && !endsWith(env.AZURE_SECURITY_TYPE, 'Supported') }}
+        if: matrix.csp == 'azure' && !endsWith(env.AZURE_SECURITY_TYPE, 'Supported')
         env:
           PKI_SET: ${{ needs.build-settings.outputs.pkiSet }}
           AZURE_VMGS_REGION: ${{ steps.vars.outputs.azureVmgsRegion }}
@@ -355,7 +395,7 @@ jobs:
           echo -e "Uploaded AWS image: \n\n\`\`\`\n$(jq < "${AWS_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
           echo "::endgroup::"
         working-directory: ${{ github.workspace }}/image
-        if: ${{ matrix.csp == 'aws' }}
+        if: matrix.csp == 'aws'
         env:
           PKI: ${{ github.workspace }}/image/pki
           AWS_JSON_OUTPUT: ${{ steps.vars.outputs.awsJsonOutput }}
@@ -377,7 +417,7 @@ jobs:
           echo -e "Uploaded GCP image: \n\n\`\`\`\n$(jq < "${GCP_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
           echo "::endgroup::"
         working-directory: ${{ github.workspace }}/image
-        if: ${{ matrix.csp == 'gcp' }}
+        if: matrix.csp == 'gcp'
         env:
           PKI: ${{ github.workspace }}/image/pki
           GCP_JSON_OUTPUT: ${{ steps.vars.outputs.gcpJsonOutput }}
@@ -399,7 +439,7 @@ jobs:
           echo -e "Uploaded Azure ${AZURE_SECURITY_TYPE} image: \n\n\`\`\`\n$(jq < "${AZURE_JSON_OUTPUT}")\n\`\`\`\n" >> "$GITHUB_STEP_SUMMARY"
           echo "::endgroup::"
         working-directory: ${{ github.workspace }}/image
-        if: ${{ matrix.csp == 'azure' }}
+        if: matrix.csp == 'azure'
         env:
           PKI: ${{ github.workspace }}/image/pki
           AZURE_JSON_OUTPUT: ${{ steps.vars.outputs.azureJsonOutput }}
@@ -421,7 +461,7 @@ jobs:
 
       - name: Upload QEMU image
         shell: bash
-        if: ${{ matrix.csp == 'qemu' }}
+        if: matrix.csp == 'qemu'
         run: |
           echo "::group::Upload QEMU image"
           upload/upload_qemu.sh
@@ -433,7 +473,9 @@ jobs:
           QEMU_BUCKET: ${{ steps.vars.outputs.qemuBucket }}
           QEMU_BASE_URL: ${{ steps.vars.outputs.qemuBaseUrl }}
           QEMU_IMAGE_PATH: ${{ steps.vars.outputs.qemuImagePath }}
-          IMAGE_VERSION_UID: ${{ needs.build-settings.outputs.imageVersionUid }}
+          REF: ${{needs.build-settings.outputs.ref }}
+          STREAM: ${{inputs.stream }}
+          IMAGE_VERSION: ${{needs.build-settings.outputs.imageVersion }}
 
       - name: Upload image lookup table as artifact
         uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
@@ -501,7 +543,7 @@ jobs:
         run: |
           aws s3 cp \
             "pcrs-${{ matrix.csp }}.json" \
-            "s3://cdn-constellation-backend/constellation/v1/measurements/${{ needs.build-settings.outputs.imageVersionUid }}/${{ matrix.csp }}/measurements.image.json" \
+            "s3://cdn-constellation-backend/${{needs.build-settings.outputs.imageApiBasePath}}/csp/${{ matrix.csp }}/measurements.image.json" \
             --no-progress
 
   generate-sbom:
@@ -616,7 +658,7 @@ jobs:
           for file in ${sboms} ${manifests} ${hashes}; do
             aws s3 cp \
               "${file}" \
-              "s3://cdn-constellation-backend/constellation/v1/sbom/${{ needs.build-settings.outputs.imageVersionUid }}/${file}" \
+              "s3://cdn-constellation-backend/${{needs.build-settings.outputs.imageApiBasePath}}/${file}" \
               --no-progress
           done
 
@@ -633,15 +675,24 @@ jobs:
         with:
           name: lookup-table
 
+      - name: Login to AWS
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
+          aws-region: eu-central-1
+
       - name: Combine lookup tables for CSPs
         shell: bash
         run: |
           echo '{}' > intermediate.json
 
-          jq '.version = "${{ needs.build-settings.outputs.imageVersionUid }}"' intermediate.json > lookup-table.json
+          jq '.ref = "${{  needs.build-settings.outputs.ref }}"' intermediate.json > lookup-table.json
           cp lookup-table.json intermediate.json
 
-          jq '.debug = ${{ inputs.debug }}' intermediate.json > lookup-table.json
+          jq '.stream = "${{ inputs.stream }}"' intermediate.json > lookup-table.json
+          cp lookup-table.json intermediate.json
+
+          jq '.version = "${{ needs.build-settings.outputs.imageVersion }}"' intermediate.json > lookup-table.json
           cp lookup-table.json intermediate.json
 
           for lut in mkosi.output.*/*/image-upload*.json; do
@@ -651,25 +702,38 @@ jobs:
 
           rm -f intermediate.json
 
-          mv lookup-table.json "${{ needs.build-settings.outputs.imageVersionUid }}.json"
-
-      - name: Login to AWS
-        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1.7.0
-        with:
-          role-to-assume: arn:aws:iam::795746500882:role/GitHubConstellationImagePipeline
-          aws-region: eu-central-1
-
       - name: Upload lookup table to S3
         shell: bash
         run: |
           aws s3 cp \
-            "${{ needs.build-settings.outputs.imageVersionUid }}.json" \
-            "s3://cdn-constellation-backend/constellation/v1/images/${{ needs.build-settings.outputs.imageVersionUid }}.json" \
+            "lookup-table.json" \
+            "s3://cdn-constellation-backend/${{ needs.build-settings.outputs.imageApiBasePath }}/info.json" \
             --no-progress
           (
-            echo -e "Image version ([Lookup table](https://cdn.confidential.cloud/constellation/v1/images/${{ needs.build-settings.outputs.imageVersionUid }}.json)):"
+            echo -e "Image version ([Lookup table](https://cdn.confidential.cloud/${{ needs.build-settings.outputs.imageApiBasePath }}/info.json)):"
             echo
             echo -e "\`\`\`"
-            echo "${{ needs.build-settings.outputs.imageVersionUid }}"
+            echo "${{ needs.build-settings.outputs.imageNameShort }}"
             echo -e "\`\`\`"
           ) >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Setup Go environment
+        uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # v3.4.0
+        with:
+          go-version: "1.19.4"
+          cache: true
+
+      - name: Update list of available OS image versions
+        if: needs.build-settings.outputs.ref != '-'
+        run: |
+          go run main.go \
+            --version "${{ needs.build-settings.outputs.imageVersion }}" \
+            --stream "${{ inputs.stream }}" \
+            --ref "${{ needs.build-settings.outputs.ref }}" \
+            --latest
+        working-directory: hack/add-version

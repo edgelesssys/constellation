@@ -10,7 +10,7 @@ import (
 	"context"
 	"fmt"
 
-	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
+	"cloud.google.com/go/compute/apiv1/computepb"
 	"google.golang.org/protobuf/proto"
 )
 

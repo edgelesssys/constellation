@@ -19,7 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/update"
+	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -163,7 +163,7 @@ func TestGetCompatibleImageMeasurements(t *testing.T) {
 }
 
 func TestUpgradePlan(t *testing.T) {
-	availablePatches := update.VersionsList{
+	availablePatches := versionsapi.List{
 		Versions: []string{"v1.0.0", "v1.0.1"},
 	}
 
@@ -488,10 +488,10 @@ func (u stubUpgradePlanner) GetCurrentImage(context.Context) (*unstructured.Unst
 }
 
 type stubPatchLister struct {
-	list update.VersionsList
+	list versionsapi.List
 	err  error
 }
 
-func (s stubPatchLister) PatchVersionsOf(ctx context.Context, stream, minor, kind string) (*update.VersionsList, error) {
+func (s stubPatchLister) PatchVersionsOf(ctx context.Context, ref, stream, minor, kind string) (*versionsapi.List, error) {
 	return &s.list, s.err
 }

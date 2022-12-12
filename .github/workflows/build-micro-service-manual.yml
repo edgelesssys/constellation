@@ -11,6 +11,8 @@ on:
           - "kmsserver"
           - "verification-service"
           - "qemu-metadata-api"
+          - "filebeat-debugd"
+          - "logstash-debugd"
         required: true
         default: "join-service"
       imageTag:
@@ -36,9 +38,9 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - name: Setup Go environment
-        uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
+        uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # v3.4.0
         with:
-          go-version: "1.19.3"
+          go-version: "1.19.4"
 
       # choose the correct Dockerfile depending on what micro-service is being build
       - name: Set Dockerfile variable
@@ -53,6 +55,10 @@ jobs:
               echo "microServiceDockerfile=verify/Dockerfile" >> "$GITHUB_ENV" ;;
             "qemu-metadata-api" )
               echo "microServiceDockerfile=hack/qemu-metadata-api/Dockerfile" >> "$GITHUB_ENV" ;;
+            "filebeat-debugd" )
+              echo "microServiceDockerfile=debugd/internal/debugd/logcollector/filebeat/Dockerfile" >> "$GITHUB_ENV" ;;
+            "logstash-debugd" )
+              echo "microServiceDockerfile=debugd/internal/debugd/logcollector/logstash/Dockerfile" >> "$GITHUB_ENV" ;;
           esac
 
       - name: Build and upload container image

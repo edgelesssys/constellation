@@ -4,8 +4,6 @@
 
 <p>
     <a href="https://github.com/edgelesssys/constellation/blob/main/LICENSE"><img src="https://img.shields.io/github/license/edgelesssys/constellation" alt="Constellation License"></a>
-    <a href="https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-daily.yml?query=branch%3Amain"><img src="https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-daily.yml/badge.svg?branch=main" alt="Daily E2E Tests"></a>
-    <a href="https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-weekly.yml?query=branch%3Amain"><img src="https://github.com/edgelesssys/constellation/actions/workflows/e2e-test-weekly.yml/badge.svg?branch=main" alt="Weekly E2E Tests"></a>
     <a href="https://github.com/edgelesssys/constellation/actions/workflows/test-govulncheck.yml?query=branch%3Amain"><img src="https://github.com/edgelesssys/constellation/actions/workflows/test-govulncheck.yml/badge.svg?branch=main" alt="Govulncheck"></a>
     <a href="https://goreportcard.com/report/github.com/edgelesssys/constellation/v2"><img src="https://goreportcard.com/badge/github.com/edgelesssys/constellation/v2" alt="Go Report"></a>
     <a href="https://discord.gg/rH8QTH56JN"><img src="https://img.shields.io/discord/823900998606651454?color=7389D8&label=discord&logo=discord&logoColor=ffffff" alt="Discord"></a>
@@ -71,11 +69,13 @@ If you're already familiar with Kubernetes, it's easy to get started with Conste
 
 ![Constellation Shell](docs/static/img/shell-windowframe.svg)
 
-## Demo
+## Live demos
 
-We're running a [Rocket.Chat](https://github.com/RocketChat/Rocket.Chat) server on Constellation at https://rocket.edgeless.systems/.
+We're running public instances of popular software on Constellation: 
+* Rocket.Chat: https://rocket.edgeless.systems/ ([blog post](https://dev.to/flxflx/rocketchat-constellation-most-secure-chat-server-ever--50oa))
+* GitLab: https://gitlab.edgeless.systems/ ([blog post](https://dev.to/flxflx/setting-up-a-confidential-gitlab-333h))
 
-This [blog post](https://dev.to/flxflx/rocketchat-constellation-most-secure-chat-server-ever--50oa) gives details on the setup.
+These instances run on CVMs in Azure and Constellation keeps them end-to-end confidential.
 
 ## Documentation
 
@@ -96,6 +96,7 @@ You may want to start with one of the following sections.
 ## Contributing
 
 Refer to [`CONTRIBUTING.md`](CONTRIBUTING.md) on how to contribute. The most important points:
+
 * Pull requests are welcome! You need to agree to our [Contributor License Agreement][cla-assistant].
 * Please follow the [Code of Conduct](/CODE_OF_CONDUCT.md).
 * ⚠️ Please report any security issue via a [private GitHub vulnerability report](https://github.com/edgelesssys/constellation/security/advisories/new) or write to security@edgeless.systems.
@@ -107,7 +108,6 @@ The Constellation source code is licensed under the [GNU Affero General Public L
 <!-- refs -->
 [architecture]: https://docs.edgeless.systems/constellation/architecture/overview
 [certified]: https://www.cncf.io/certification/software-conformance/
-[Cilium]: https://cilium.io/
 [cla-assistant]: https://cla-assistant.io/edgelesssys/constellation
 [cluster-attestation]: https://docs.edgeless.systems/constellation/architecture/attestation#cluster-attestation
 [confidential-kubernetes]: https://docs.edgeless.systems/constellation/overview/confidential-kubernetes
@@ -115,7 +115,6 @@ The Constellation source code is licensed under the [GNU Affero General Public L
 [enterprise-support]: https://www.edgeless.systems/products/constellation/
 [first-steps]: https://docs.edgeless.systems/constellation/getting-started/first-steps
 [first-steps-local]: https://docs.edgeless.systems/constellation/getting-started/first-steps-local
-[documentation]: https://docs.edgeless.systems/constellation/latest
 [examples]: https://docs.edgeless.systems/constellation/getting-started/examples
 [github-issues]: https://github.com/edgelesssys/constellation/issues
 [images]: https://docs.edgeless.systems/constellation/architecture/images

@@ -22,7 +22,7 @@ With `cdbg` and `yq` installed in your path:
 
 1. Run `constellation config generate` to create a new default configuration
 
-2. Locate the latest debugd images by running `hack/find-image/find-image.sh`
+2. Locate the latest debugd images by running `hack/find-image/find-image.sh --ref main --stream debug`
 
 3. Modify the `constellation-conf.yaml` to use an image with the debugd already included and add required firewall rules:
 
@@ -83,7 +83,3 @@ For QEMU, the credentials for Opensearch must be parsed via the info flag as wel
 Remember to use single quotes for the password.
 
 You will also need to increase the memory size of QEMU to 4GB.
-
-### debugd images
-
-For a full list of image naming conventions and how to retreive them check [image version documentation](/.github/docs/README.md#image-versions)

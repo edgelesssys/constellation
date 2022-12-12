@@ -26,6 +26,7 @@ message IssueJoinTicketResponse {
     string discovery_token_ca_cert_hash = 7;
     repeated control_plane_cert_or_key control_plane_files = 8;
     string kubernetes_version = 9;
+    repeated KubernetesComponent kubernetes_components = 10;
 }
 
 message control_plane_cert_or_key {
@@ -41,3 +42,11 @@ message IssueRejoinTicketResponse {
     bytes state_disk_key = 1;
     bytes measurement_secret = 2;
 }
+
+// Discuss if we want to import the init proto instead of duplicating it
+message KubernetesComponent {
+    string url = 1;
+    string hash = 2;
+    string install_path = 3;
+    bool extract = 4;
+  }

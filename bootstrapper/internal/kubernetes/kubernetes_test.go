@@ -90,6 +90,25 @@ func TestInitCluster(t *testing.T) {
 			wantErr:    false,
 			k8sVersion: versions.Default,
 		},
+		"kubeadm init fails when annotating itself": {
+			clusterUtil: stubClusterUtil{},
+			kubeconfigReader: &stubKubeconfigReader{
+				kubeconfig: []byte("someKubeconfig"),
+			},
+			kubeAPIWaiter: stubKubeAPIWaiter{},
+			providerMetadata: &stubProviderMetadata{
+				selfResp: metadata.InstanceMetadata{
+					Name:          nodeName,
+					ProviderID:    providerID,
+					VPCIP:         privateIP,
+					AliasIPRanges: []string{aliasIPRange},
+				},
+				getLoadBalancerEndpointResp: loadbalancerIP,
+			},
+			kubectl:    stubKubectl{annotateNodeErr: someErr},
+			wantErr:    true,
+			k8sVersion: versions.Default,
+		},
 		"kubeadm init fails when retrieving metadata self": {
 			clusterUtil: stubClusterUtil{},
 			kubeconfigReader: &stubKubeconfigReader{
@@ -266,14 +285,47 @@ func TestJoinCluster(t *testing.T) {
 	privateIP := "192.0.2.1"
 	k8sVersion := versions.Default
 
+	k8sComponents := versions.ComponentVersions{
+		{
+			URL:         "URL",
+			Hash:        "Hash",
+			InstallPath: "InstallPath",
+			Extract:     true,
+		},
+	}
+
 	testCases := map[string]struct {
-		clusterUtil      stubClusterUtil
-		providerMetadata ProviderMetadata
-		wantConfig       kubeadm.JoinConfiguration
-		role             role.Role
-		wantErr          bool
+		clusterUtil           stubClusterUtil
+		providerMetadata      ProviderMetadata
+		wantConfig            kubeadm.JoinConfiguration
+		role                  role.Role
+		k8sComponents         versions.ComponentVersions
+		wantComponentsFromCLI bool
+		wantErr               bool
 	}{
-		"kubeadm join worker works with metadata": {
+		"kubeadm join worker works with metadata and remote Kubernetes Components": {
+			clusterUtil: stubClusterUtil{},
+			providerMetadata: &stubProviderMetadata{
+				selfResp: metadata.InstanceMetadata{
+					ProviderID: "provider-id",
+					Name:       "metadata-name",
+					VPCIP:      "192.0.2.1",
+				},
+			},
+			k8sComponents:         k8sComponents,
+			role:                  role.Worker,
+			wantComponentsFromCLI: true,
+			wantConfig: kubeadm.JoinConfiguration{
+				Discovery: kubeadm.Discovery{
+					BootstrapToken: joinCommand,
+				},
+				NodeRegistration: kubeadm.NodeRegistrationOptions{
+					Name:             "metadata-name",
+					KubeletExtraArgs: map[string]string{"node-ip": "192.0.2.1"},
+				},
+			},
+		},
+		"kubeadm join worker works with metadata and local Kubernetes components": {
 			clusterUtil: stubClusterUtil{},
 			providerMetadata: &stubProviderMetadata{
 				selfResp: metadata.InstanceMetadata{
@@ -340,6 +392,33 @@ func TestJoinCluster(t *testing.T) {
 				SkipPhases: []string{"control-plane-prepare/download-certs"},
 			},
 		},
+		"kubeadm join worker fails when installing remote Kubernetes components": {
+			clusterUtil: stubClusterUtil{installComponentsFromCLIErr: errors.New("error")},
+			providerMetadata: &stubProviderMetadata{
+				selfResp: metadata.InstanceMetadata{
+					ProviderID: "provider-id",
+					Name:       "metadata-name",
+					VPCIP:      "192.0.2.1",
+				},
+			},
+			k8sComponents:         k8sComponents,
+			role:                  role.Worker,
+			wantComponentsFromCLI: true,
+			wantErr:               true,
+		},
+		"kubeadm join worker fails when installing local Kubernetes components": {
+			clusterUtil: stubClusterUtil{installComponentsErr: errors.New("error")},
+			providerMetadata: &stubProviderMetadata{
+				selfResp: metadata.InstanceMetadata{
+					ProviderID: "provider-id",
+					Name:       "metadata-name",
+					VPCIP:      "192.0.2.1",
+				},
+			},
+			role:                  role.Worker,
+			wantComponentsFromCLI: true,
+			wantErr:               true,
+		},
 		"kubeadm join worker fails when retrieving self metadata": {
 			clusterUtil: stubClusterUtil{},
 			providerMetadata: &stubProviderMetadata{
@@ -368,7 +447,7 @@ func TestJoinCluster(t *testing.T) {
 				getIPAddr:        func() (string, error) { return privateIP, nil },
 			}
 
-			err := kube.JoinCluster(context.Background(), joinCommand, tc.role, string(k8sVersion), logger.NewTest(t))
+			err := kube.JoinCluster(context.Background(), joinCommand, tc.role, string(k8sVersion), tc.k8sComponents, logger.NewTest(t))
 			if tc.wantErr {
 				assert.Error(err)
 				return
@@ -379,6 +458,8 @@ func TestJoinCluster(t *testing.T) {
 			require.NoError(kubernetes.UnmarshalK8SResources(tc.clusterUtil.joinConfigs[0], &joinYaml))
 
 			assert.Equal(tc.wantConfig, joinYaml.JoinConfiguration)
+			assert.Equal(tc.wantComponentsFromCLI, tc.clusterUtil.calledInstallComponentsFromCLI)
+			assert.Equal(!tc.wantComponentsFromCLI, tc.clusterUtil.calledInstallComponents)
 		})
 	}
 }
@@ -428,6 +509,9 @@ type stubClusterUtil struct {
 	joinClusterErr              error
 	startKubeletErr             error
 
+	calledInstallComponents        bool
+	calledInstallComponentsFromCLI bool
+
 	initConfigs [][]byte
 	joinConfigs [][]byte
 }
@@ -437,10 +521,12 @@ func (s *stubClusterUtil) SetupKonnectivity(kubectl k8sapi.Client, konnectivityA
 }
 
 func (s *stubClusterUtil) InstallComponents(ctx context.Context, version versions.ValidK8sVersion) error {
+	s.calledInstallComponents = true
 	return s.installComponentsErr
 }
 
 func (s *stubClusterUtil) InstallComponentsFromCLI(ctx context.Context, kubernetesComponents versions.ComponentVersions) error {
+	s.calledInstallComponentsFromCLI = true
 	return s.installComponentsFromCLIErr
 }
 
@@ -507,6 +593,7 @@ type stubKubectl struct {
 	addTNodeSelectorsToDeploymentErr error
 	waitForCRDsErr                   error
 	listAllNamespacesErr             error
+	annotateNodeErr                  error
 
 	listAllNamespacesResp *corev1.NamespaceList
 }
@@ -525,6 +612,10 @@ func (s *stubKubectl) AddTolerationsToDeployment(ctx context.Context, toleration
 
 func (s *stubKubectl) AddNodeSelectorsToDeployment(ctx context.Context, selectors map[string]string, name string, namespace string) error {
 	return s.addTNodeSelectorsToDeploymentErr
+}
+
+func (s *stubKubectl) AnnotateNode(ctx context.Context, nodeName, annotationKey, annotationValue string) error {
+	return s.annotateNodeErr
 }
 
 func (s *stubKubectl) WaitForCRDs(ctx context.Context, crds []string) error {

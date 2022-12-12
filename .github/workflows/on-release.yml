@@ -8,6 +8,10 @@ on:
       tag:
         description: "Semantic version tag of the release (vX.Y.Z)."
         required: true
+      latest:
+        description: "Whether to update the latest tag."
+        type: boolean
+        default: false
 
 jobs:
   update:
@@ -22,9 +26,9 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - name: Setup Go environment
-        uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
+        uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # v3.4.0
         with:
-          go-version: "1.19.3"
+          go-version: "1.19.4"
           cache: true
 
       - name: Login to AWS
@@ -35,5 +39,10 @@ jobs:
 
       - name: Update OS images
         run: |
-          go run main.go --version "${{ github.event.release.tag_name }}${{ github.event.inputs.tag }}"
+          latest=$( [[ "${{ inputs.latest }}" = "true" ]] && echo "--latest")
+          go run main.go \
+            --version "${{ github.event.release.tag_name }}${{ github.event.inputs.tag }}" \
+            --stream stable \
+            --release \
+            "${latest}"
         working-directory: hack/add-version

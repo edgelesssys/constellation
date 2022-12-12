@@ -99,7 +99,7 @@ func up(cmd *cobra.Command, creator cloudCreator, spinner spinnerInterf) error {
 func checkSystemRequirements(out io.Writer) error {
 	// check arch/os
 	if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
-		return fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s", runtime.GOOS, runtime.GOARCH)
+		return fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s, a linux/amd64 platform is required", runtime.GOOS, runtime.GOARCH)
 	}
 
 	// check if /dev/kvm exists

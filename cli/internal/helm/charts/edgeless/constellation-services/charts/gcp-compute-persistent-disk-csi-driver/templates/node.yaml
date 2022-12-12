@@ -34,13 +34,6 @@ spec:
               mountPath: /csi
             - name: registration-dir
               mountPath: /registration
-          livenessProbe:
-            initialDelaySeconds: 3
-            exec:
-              command:
-                - /csi-node-driver-registrar
-                - --kubelet-registration-path=/var/lib/kubelet/plugins/gcp.csi.confidential.cloud/csi.sock
-                - --mode=kubelet-registration-probe
         - name: gce-pd-driver
           image: {{ .Values.image.gcepdDriver.repo }}:{{ .Values.image.gcepdDriver.tag }}
           imagePullPolicy: {{ .Values.image.gcepdDriver.pullPolicy }}
@@ -62,16 +55,14 @@ spec:
             # The following mounts are required to trigger host udevadm from
             # container
             # But we don't want that, because it breaks cryptsetup
-            # Also, the task done by manually triggering udevadm are already
-            # performed by having the correct udev rules configured
             # - name: udev-rules-etc
             #   mountPath: /etc/udev
             # - name: udev-rules-lib
             #   mountPath: /lib/udev
             # - name: udev-socket
             #   mountPath: /run/udev
-            # - name: sys
-            #   mountPath: /sys
+            - name: sys
+              mountPath: /sys
             - name: cryptsetup
               mountPath: /run/cryptsetup
       volumes:
@@ -94,8 +85,6 @@ spec:
         # The following mounts are required to trigger host udevadm from
         # container
         # But we don't want that, because it breaks cryptsetup
-        # Also, the task done by manually triggering udevadm are already
-        # performed by having the correct udev rules configured
         # - name: udev-rules-etc
         #   hostPath:
         #     path: /etc/udev

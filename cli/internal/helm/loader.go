@@ -358,7 +358,7 @@ func (i *ChartLoader) loadConstellationServicesHelper(config *config.Config, mas
 			"kmsPort":          constants.KMSPort,
 			"serviceBasePath":  constants.ServiceBasePath,
 			"joinConfigCMName": constants.JoinConfigMap,
-			"k8sVersionCMName": constants.K8sVersion,
+			"k8sVersionCMName": constants.K8sVersionConfigMapName,
 			"internalCMName":   constants.InternalConfigMap,
 		},
 		"kms": map[string]any{

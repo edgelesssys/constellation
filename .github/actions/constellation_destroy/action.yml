@@ -22,18 +22,18 @@ runs:
 
         # Scrap namespaces that contain PVCs
         for namespace in `kubectl get namespace --no-headers=true -o custom-columns=":metadata.name"`; do
-          if [ `kubectl get pvc -n $namespace --no-headers=true -o custom-columns=":metadata.name" | wc -l` -gt 0 ]; then
+          if [[ `kubectl get pvc -n $namespace --no-headers=true -o custom-columns=":metadata.name" | wc -l` -gt 0 ]]; then
             kubectl delete namespace $namespace --wait
           fi
         done
 
-        until [ "$(kubectl get pv -o json | jq '.items | length')" == "0" ] || [ $ELAPSED -gt $PV_DELETION_TIMEOUT ];
+        until [[ "$(kubectl get pv -o json | jq '.items | length')" == "0" ]] || [[ $ELAPSED -gt $PV_DELETION_TIMEOUT ]];
         do
           echo $(kubectl get pv -o json | jq '.items | length') PV remaining..
           sleep 1
           ELAPSED=$((ELAPSED+1))
         done
-        if [ $ELAPSED -gt $PV_DELETION_TIMEOUT ]; then
+        if [[ $ELAPSED -gt $PV_DELETION_TIMEOUT ]]; then
           echo "Timed out waiting for PV deletion.."
           exit 1
         fi

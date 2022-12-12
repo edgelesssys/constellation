@@ -4,6 +4,13 @@ metadata:
   name: {{ .Values.controller.name }}
   namespace: {{ .Release.Namespace }}
 {{ include "azuredisk.labels" . | indent 2 }}
+{{- with .Values.controller.labels }}
+{{ . | toYaml | indent 4 }}
+{{- end }}
+{{- with .Values.controller.annotations }}
+  annotations:
+{{ . | toYaml | indent 4 }}
+{{- end }}
 spec:
   replicas: {{ .Values.controller.replicas }}
   selector:
@@ -16,14 +23,22 @@ spec:
 {{- with .Values.controller.podLabels }}
 {{ toYaml . | indent 8 }}
 {{- end }}
+{{- with .Values.controller.podAnnotations }}
+      annotations:
+{{ toYaml . | indent 8 }}
+{{- end }}
     spec:
       {{- if .Values.imagePullSecrets }}
       imagePullSecrets:
 {{ toYaml .Values.imagePullSecrets | indent 8 }}
       {{- end }}
+      hostNetwork: {{ .Values.controller.hostNetwork }}
       serviceAccountName: {{ .Values.serviceAccount.controller }}
       nodeSelector:
         kubernetes.io/os: linux
+{{- with .Values.controller.nodeSelector }}
+{{ toYaml . | indent 8 }}
+{{- end }}
         {{- if .Values.controller.runOnMaster}}
         node-role.kubernetes.io/master: ""
         {{- end}}
@@ -57,6 +72,8 @@ spec:
             - "--worker-threads={{ .Values.controller.provisionerWorkerThreads }}"
             - "--extra-create-metadata=true"
             - "--strict-topology=true"
+            - "--kube-api-qps=50"
+            - "--kube-api-burst=100"
           env:
             - name: ADDRESS
               value: /csi/csi.sock
@@ -73,10 +90,12 @@ spec:
           args:
             - "-v=2"
             - "-csi-address=$(ADDRESS)"
-            - "-timeout=600s"
+            - "-timeout=1200s"
             - "-leader-election"
             - "--leader-election-namespace={{ .Release.Namespace }}"
             - "-worker-threads={{ .Values.controller.attacherWorkerThreads }}"
+            - "-kube-api-qps=50"
+            - "-kube-api-burst=100"
           env:
             - name: ADDRESS
               value: /csi/csi.sock
@@ -181,6 +200,18 @@ spec:
                   optional: true
             - name: CSI_ENDPOINT
               value: unix:///csi/csi.sock
+            {{- if ne .Values.driver.httpsProxy "" }}
+            - name: HTTPS_PROXY
+              value: {{ .Values.driver.httpsProxy }}
+            {{- end }}
+            {{- if ne .Values.driver.httpProxy "" }}
+            - name: HTTP_PROXY
+              value: {{ .Values.driver.httpProxy }}
+            {{- end }}
+            {{- if ne .Values.driver.noProxy "" }}
+            - name: NO_PROXY
+              value: {{ .Values.driver.noProxy }}
+            {{- end }}
             - name: AZURE_GO_SDK_LOG_LEVEL
               value: {{ .Values.driver.azureGoSDKLogLevel }}
             {{- if eq .Values.cloud "AzureStackCloud" }}

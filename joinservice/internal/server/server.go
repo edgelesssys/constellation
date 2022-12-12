@@ -8,23 +8,32 @@ package server
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"net"
 	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
+	"github.com/edgelesssys/constellation/v2/internal/versions"
+	"github.com/edgelesssys/constellation/v2/joinservice/internal/kubernetes"
 	"github.com/edgelesssys/constellation/v2/joinservice/joinproto"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kubeadmv1 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
@@ -38,6 +47,7 @@ type Server struct {
 	joinTokenGetter joinTokenGetter
 	dataKeyGetter   dataKeyGetter
 	ca              certificateAuthority
+	kubeClient      kubeClient
 	joinproto.UnimplementedAPIServer
 }
 
@@ -45,7 +55,11 @@ type Server struct {
 func New(
 	measurementSalt []byte, fileHandler file.Handler, ca certificateAuthority,
 	joinTokenGetter joinTokenGetter, dataKeyGetter dataKeyGetter, log *logger.Logger,
-) *Server {
+) (*Server, error) {
+	kubeClient, err := kubernetes.New()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create kubernetes client: %w", err)
+	}
 	return &Server{
 		measurementSalt: measurementSalt,
 		log:             log,
@@ -53,7 +67,8 @@ func New(
 		joinTokenGetter: joinTokenGetter,
 		dataKeyGetter:   dataKeyGetter,
 		ca:              ca,
-	}
+		kubeClient:      kubeClient,
+	}, nil
 }
 
 // Run starts the gRPC server on the given port, using the provided tlsConfig.
@@ -106,10 +121,33 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		return nil, status.Errorf(codes.Internal, "unable to generate Kubernetes join arguments: %s", err)
 	}
 
-	log.Infof("Querying K8sVersion ConfigMap")
+	log.Infof("Querying K8sVersion ConfigMap for Kubernetes version")
 	k8sVersion, err := s.getK8sVersion()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "unable to get k8s version: %s", err)
+	}
+
+	log.Infof("Querying K8sVersion ConfigMap for components ConfigMap name")
+	componentsConfigMapName, err := s.getK8sComponentsConfigMapName()
+	if errors.Is(err, fs.ErrNotExist) {
+		// If the file does not exist, the Constellation was initialized with a version before 2.3.0
+		// As a migration step, the join service will create the ConfigMap with the K8s components which
+		// match the K8s minor version of the cluster.
+		log.Warnf("Reference to K8sVersion ConfigMap does not exist, creating fallback Components ConfigMap and referencing it in K8sVersion ConfigMap")
+		log.Warnf("This is expected if the Constellation was initialized with a CLI before version 2.3.0")
+		log.Warnf("DEPRECATION WARNING: This is a migration step and will be removed in a future release")
+		componentsConfigMapName, err = s.createFallbackComponentsConfigMap(ctx, k8sVersion)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "unable to create fallback k8s components configmap: %s", err)
+		}
+	} else if err != nil {
+		return nil, status.Errorf(codes.Internal, "unable to get components ConfigMap name: %s", err)
+	}
+
+	log.Infof("Querying %s ConfigMap for components", componentsConfigMapName)
+	components, err := s.kubeClient.GetComponents(ctx, componentsConfigMapName)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "unable to get components: %s", err)
 	}
 
 	log.Infof("Creating signed kubelet certificate")
@@ -135,6 +173,15 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		}
 	}
 
+	nodeName, err := s.ca.GetNodeNameFromCSR(req.CertificateRequest)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "unable to get node name from CSR: %s", err)
+	}
+
+	if err := s.kubeClient.AddNodeToJoiningNodes(ctx, nodeName, components.GetHash(), req.IsControlPlane); err != nil {
+		return nil, status.Errorf(codes.Internal, "unable to add node to joining nodes: %s", err)
+	}
+
 	log.Infof("IssueJoinTicket successful")
 	return &joinproto.IssueJoinTicketResponse{
 		StateDiskKey:             stateDiskKey,
@@ -146,6 +193,7 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		KubeletCert:              kubeletCert,
 		ControlPlaneFiles:        controlPlaneFiles,
 		KubernetesVersion:        k8sVersion,
+		KubernetesComponents:     components.ToJoinProto(),
 	}, nil
 }
 
@@ -176,13 +224,67 @@ func (s *Server) IssueRejoinTicket(ctx context.Context, req *joinproto.IssueRejo
 
 // getK8sVersion reads the k8s version from a VolumeMount that is backed by the k8s-version ConfigMap.
 func (s *Server) getK8sVersion() (string, error) {
-	fileContent, err := s.file.Read(filepath.Join(constants.ServiceBasePath, constants.K8sVersion))
+	fileContent, err := s.file.Read(filepath.Join(constants.ServiceBasePath, constants.K8sVersionConfigMapName))
 	if err != nil {
-		return "", fmt.Errorf("could not read k8s version file: %v", err)
+		return "", fmt.Errorf("could not read k8s version file: %w", err)
 	}
 	k8sVersion := string(fileContent)
 
 	return k8sVersion, nil
+}
+
+// getK8sComponentsConfigMapName reads the k8s components config map name from a VolumeMount that is backed by the k8s-version ConfigMap.
+func (s *Server) getK8sComponentsConfigMapName() (string, error) {
+	fileContent, err := s.file.Read(filepath.Join(constants.ServiceBasePath, constants.K8sComponentsFieldName))
+	if err != nil {
+		return "", fmt.Errorf("could not read k8s version file: %w", err)
+	}
+	componentsConfigMapName := string(fileContent)
+
+	return componentsConfigMapName, nil
+}
+
+// This function mimics the creation of the components ConfigMap which is now done in the bootstrapper
+// during the first initialization of the Constellation .
+// For more information see setupK8sVersionConfigMap() in bootstrapper/internal/kubernetes/kubernetes.go.
+// This is a migration step and will be removed in a future release.
+func (s *Server) createFallbackComponentsConfigMap(ctx context.Context, k8sVersion string) (string, error) {
+	validK8sVersion, err := versions.NewValidK8sVersion(k8sVersion)
+	if err != nil {
+		return "", fmt.Errorf("could not create fallback components config map: %w", err)
+	}
+	components := versions.VersionConfigs[validK8sVersion].KubernetesComponents
+	componentsMarshalled, err := json.Marshal(components)
+	if err != nil {
+		return "", fmt.Errorf("marshalling component versions: %w", err)
+	}
+	componentsHash := components.GetHash()
+	componentConfigMapName := fmt.Sprintf("k8s-component-%s", strings.ReplaceAll(componentsHash, ":", "-"))
+
+	componentsConfig := corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "ConfigMap",
+		},
+		Immutable: to.Ptr(true),
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      componentConfigMapName,
+			Namespace: "kube-system",
+		},
+		Data: map[string]string{
+			constants.K8sComponentsFieldName: string(componentsMarshalled),
+		},
+	}
+
+	if err := s.kubeClient.CreateConfigMap(ctx, componentsConfig); err != nil {
+		return "", fmt.Errorf("creating fallback components config map: %w", err)
+	}
+
+	if err := s.kubeClient.AddReferenceToK8sVersionConfigMap(ctx, "k8s-version", componentConfigMapName); err != nil {
+		return "", fmt.Errorf("adding reference to fallback components config map: %w", err)
+	}
+
+	return componentConfigMapName, nil
 }
 
 // joinTokenGetter returns Kubernetes bootstrap (join) tokens.
@@ -201,4 +303,13 @@ type dataKeyGetter interface {
 type certificateAuthority interface {
 	// GetCertificate returns a certificate and private key, signed by the issuer.
 	GetCertificate(certificateRequest []byte) (kubeletCert []byte, err error)
+	// GetNodeNameFromCSR returns the node name from the CSR.
+	GetNodeNameFromCSR(csr []byte) (string, error)
+}
+
+type kubeClient interface {
+	GetComponents(ctx context.Context, configMapName string) (versions.ComponentVersions, error)
+	CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error
+	AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsHash string, isControlPlane bool) error
+	AddReferenceToK8sVersionConfigMap(ctx context.Context, k8sVersionsConfigMapName string, componentsConfigMapName string) error
 }

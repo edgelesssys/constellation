@@ -5,6 +5,13 @@ metadata:
   name: {{ .Values.snapshot.snapshotController.name }}
   namespace: {{ .Release.Namespace }}
 {{ include "azuredisk.labels" . | indent 2 }}
+{{- with .Values.snapshot.snapshotController.labels }}
+{{ . | toYaml | indent 4 }}
+{{- end }}
+{{- with .Values.snapshot.snapshotController.annotations }}
+  annotations:
+{{ . | toYaml | indent 4 }}
+{{- end }}
 spec:
   replicas: {{ .Values.snapshot.snapshotController.replicas }}
   selector:
@@ -15,6 +22,10 @@ spec:
 {{ include "azuredisk.labels" . | indent 6 }}
         app: {{ .Values.snapshot.snapshotController.name }}
 {{- with .Values.snapshot.snapshotController.podLabels }}
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.snapshot.snapshotController.podAnnotations }}
+      annotations:
 {{ toYaml . | indent 8 }}
 {{- end }}
     spec:
