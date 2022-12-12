@@ -105,7 +105,7 @@ You can find a list of all [regions in AWS's documentation](https://docs.aws.ama
 The following describes the configuration fields and how you obtain the required information or create the required resources.
 
 <tabs groupId="csp">
-<tabItem value="azure" label="Azure (manually)">
+<tabItem value="azure" label="Azure">
 
 * **subscription**: The UUID of your Azure subscription, e.g., `8b8bd01f-efd9-4113-9bd1-c82137c32da7`.
 
@@ -151,7 +151,7 @@ The following describes the configuration fields and how you obtain the required
 
 </tabItem>
 
-<tabItem value="gcp" label="GCP (manually)">
+<tabItem value="gcp" label="GCP">
 
 * **project**: The ID of your GCP project, e.g., `constellation-129857`.
 
@@ -177,7 +177,7 @@ The following describes the configuration fields and how you obtain the required
 
 </tabItem>
 
-<tabItem value="aws" label="AWS (manually)">
+<tabItem value="aws" label="AWS">
 
 * **region**: The name of your chosen AWS data center region, e.g., `us-east-2`.
 
