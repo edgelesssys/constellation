@@ -125,6 +125,11 @@ const sidebars = {
         },
         {
           type: 'doc',
+          label: 'Configure your cluster',
+          id: 'workflows/config',
+        },
+        {
+          type: 'doc',
           label: 'Create your cluster',
           id: 'workflows/create',
         },
