@@ -22,7 +22,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # v3.4.0
         with:
-          go-version: "1.19.3"
+          go-version: "1.19.4"
           cache: true
 
       - name: Generate reference docs
@@ -36,7 +36,7 @@ jobs:
       - name: Check if action branch exists
         run: |
           ex="$(git ls-remote --heads origin action/constellation/update-cli-reference)"
-          echo "EXISTS=$(if [ -z "$ex" ]; then echo 0; else echo 1; fi)" >> "$GITHUB_ENV"
+          echo "EXISTS=$(if [[ -z "$ex" ]]; then echo 0; else echo 1; fi)" >> "$GITHUB_ENV"
 
       - name: Publish new reference (create new branch)
         if: ${{ env.EXISTS == 0 }}

@@ -11,10 +11,10 @@ import (
 	"errors"
 	"net/http"
 
+	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/api/v1alpha1"
 	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/api/v1alpha1"
 	"google.golang.org/api/googleapi"
-	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 )
 
 // GetNodeState returns the state of the node.

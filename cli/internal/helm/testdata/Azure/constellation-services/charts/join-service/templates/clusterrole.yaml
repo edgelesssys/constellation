@@ -30,3 +30,12 @@ rules:
   - get
   - create
   - update
+- apiGroups:
+  - "update.edgeless.systems"
+  resources:
+  - joiningnodes
+  verbs:
+  - get
+  - create
+  - update
+  - patch

@@ -125,6 +125,11 @@ const sidebars = {
         },
         {
           type: 'doc',
+          label: 'Configure your cluster',
+          id: 'workflows/config',
+        },
+        {
+          type: 'doc',
           label: 'Create your cluster',
           id: 'workflows/create',
         },
@@ -137,6 +142,11 @@ const sidebars = {
           type: 'doc',
           label: 'Upgrade your cluster',
           id: 'workflows/upgrade',
+        },
+        {
+          type: 'doc',
+          label: 'Installing cert-manager',
+          id: 'workflows/installing-cert-manager',
         },
         {
           type: 'doc',

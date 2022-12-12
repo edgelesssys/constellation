@@ -23,7 +23,7 @@ type KubeconfigReader struct {
 func (r KubeconfigReader) ReadKubeconfig() ([]byte, error) {
 	kubeconfig, err := r.fs.ReadFile(kubeconfigPath)
 	if err != nil {
-		return nil, fmt.Errorf("reading gce config: %w", err)
+		return nil, fmt.Errorf("reading kubernetes config: %w", err)
 	}
 	return kubeconfig, nil
 }

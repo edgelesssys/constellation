@@ -20,7 +20,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # v3.4.0
         with:
-          go-version: "1.19.3"
+          go-version: "1.19.4"
       - name: Build CLI
         uses: ./.github/actions/build_cli
         with:
@@ -157,7 +157,7 @@ jobs:
       - provenance-subjects
     # This must not be pinned to digest. See:
     # https://github.com/slsa-framework/slsa-github-generator#referencing-slsa-builders-and-generators
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.2.2
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.4.0
     with:
       base64-subjects: "${{ needs.provenance-subjects.outputs.provenance-subjects }}"
 

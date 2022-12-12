@@ -109,8 +109,8 @@ func TestUpdateURLs(t *testing.T) {
 				},
 			},
 			flags:                  &fetchMeasurementsFlags{},
-			wantMeasurementsURL:    constants.CDNRepositoryURL + "/" + constants.CDNMeasurementsPath + "/someImageVersion/gcp/measurements.json",
-			wantMeasurementsSigURL: constants.CDNRepositoryURL + "/" + constants.CDNMeasurementsPath + "/someImageVersion/gcp/measurements.json.sig",
+			wantMeasurementsURL:    constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/-/stream/stable/image/someImageVersion/csp/gcp/measurements.json",
+			wantMeasurementsSigURL: constants.CDNRepositoryURL + "/" + constants.CDNAPIPrefix + "/ref/-/stream/stable/image/someImageVersion/csp/gcp/measurements.json.sig",
 		},
 		"both set by user": {
 			conf: &config.Config{},
@@ -185,14 +185,14 @@ func TestConfigFetchMeasurements(t *testing.T) {
 	signature := "MEYCIQDRAQNK2NjHJBGrnw3HQAyBsXMCmVCptBdgA6VZ3IlyiAIhAPG42waF1aFZq7dnjP3b2jsMNUtaKYDQQSazW1AX8jgF"
 
 	client := newTestClient(func(req *http.Request) *http.Response {
-		if req.URL.String() == "https://cdn.confidential.cloud/constellation/v1/measurements/v999.999.999/gcp/measurements.json" {
+		if req.URL.Path == "/constellation/v1/ref/-/stream/stable/image/v999.999.999/csp/gcp/measurements.json" {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBufferString(measurements)),
 				Header:     make(http.Header),
 			}
 		}
-		if req.URL.String() == "https://cdn.confidential.cloud/constellation/v1/measurements/v999.999.999/gcp/measurements.json.sig" {
+		if req.URL.Path == "/constellation/v1/ref/-/stream/stable/image/v999.999.999/csp/gcp/measurements.json.sig" {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBufferString(signature)),

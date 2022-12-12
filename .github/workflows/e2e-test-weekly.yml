@@ -30,7 +30,8 @@ jobs:
         id: find-latest-image
         uses: ./.github/actions/find_latest_image
         with:
-          imageType: debug
+          ref: main
+          stream: debug
 
   e2e-weekly:
     strategy:
@@ -71,7 +72,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # v3.4.0
         with:
-          go-version: "1.19.3"
+          go-version: "1.19.4"
 
       - name: Login to Azure
         if: matrix.provider == 'azure'

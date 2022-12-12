@@ -3,7 +3,7 @@ kind: CSIDriver
 metadata:
   name: azuredisk.csi.confidential.cloud
   annotations:
-    csiDriver: "v1.0.1"
+    csiDriver: "v1.1.0"
     snapshot: "v5.0.1"
 spec:
   attachRequired: true

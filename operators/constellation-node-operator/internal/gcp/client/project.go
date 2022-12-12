@@ -11,7 +11,7 @@ import (
 	"errors"
 	"regexp"
 
-	"google.golang.org/genproto/googleapis/cloud/compute/v1"
+	"cloud.google.com/go/compute/apiv1/computepb"
 )
 
 var numericProjectIDRegex = regexp.MustCompile(`^\d+$`)
@@ -21,7 +21,7 @@ func (c *Client) canonicalProjectID(ctx context.Context, project string) (string
 	if !numericProjectIDRegex.MatchString(project) {
 		return project, nil
 	}
-	computeProject, err := c.projectAPI.Get(ctx, &compute.GetProjectRequest{Project: project})
+	computeProject, err := c.projectAPI.Get(ctx, &computepb.GetProjectRequest{Project: project})
 	if err != nil {
 		return "", err
 	}

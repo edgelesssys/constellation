@@ -11,8 +11,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
-	"path"
 	"strings"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/cloudcmd"
@@ -110,7 +108,7 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner, patchLister patchLi
 
 	var updateCandidates []string
 	for _, minorVer := range allowedMinorVersions {
-		versionList, err := patchLister.PatchVersionsOf(cmd.Context(), "stable", minorVer, "image")
+		versionList, err := patchLister.PatchVersionsOf(cmd.Context(), "-", "stable", minorVer, "image")
 		if err == nil {
 			updateCandidates = append(updateCandidates, versionList.Versions...)
 		}
@@ -175,12 +173,12 @@ func getCompatibleImageMeasurements(ctx context.Context, cmd *cobra.Command, cli
 ) (map[string]config.UpgradeConfig, error) {
 	upgrades := make(map[string]config.UpgradeConfig)
 	for _, img := range images {
-		measurementsURL, err := url.Parse(constants.CDNRepositoryURL + path.Join("/", constants.CDNMeasurementsPath, img, strings.ToLower(csp.String()), "measurements.json"))
+		measurementsURL, err := measurementURL(csp, img, "measurements.json")
 		if err != nil {
 			return nil, err
 		}
 
-		signatureURL, err := url.Parse(constants.CDNRepositoryURL + path.Join("/", constants.CDNMeasurementsPath, img, strings.ToLower(csp.String()), "measurements.json.sig"))
+		signatureURL, err := measurementURL(csp, img, "measurements.json.sig")
 		if err != nil {
 			return nil, err
 		}
@@ -335,5 +333,5 @@ type upgradePlanner interface {
 }
 
 type patchLister interface {
-	PatchVersionsOf(ctx context.Context, stream, minor, kind string) (*versionsapi.List, error)
+	PatchVersionsOf(ctx context.Context, ref, stream, minor, kind string) (*versionsapi.List, error)
 }

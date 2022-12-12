@@ -2,6 +2,12 @@
 
 # Usage: ./aws-logs.sh <region>
 
+set -euo pipefail
+shopt -s inherit_errexit
+
+echo "Using AWS region: ${1}"
+
+pushd constellation-terraform
 controlAutoscalingGroup=$(
   terraform show -json |
     jq -r .'values.root_module.child_modules[] |
@@ -14,6 +20,7 @@ workerAutoscalingGroup=$(
         select(.address == "module.instance_group_worker_nodes") |
         .resources[0].values.name'
 )
+popd
 
 controlInstances=$(
   aws autoscaling describe-auto-scaling-groups \

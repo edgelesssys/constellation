@@ -52,4 +52,4 @@ download_chart "https://github.com/edgelesssys/constellation-gcp-compute-persist
 
 ## Azure CSI Driver
 # TODO: clone from main branch once we rebase on upstream
-download_chart "https://github.com/edgelesssys/constellation-azuredisk-csi-driver" "develop" "charts/edgeless" "azuredisk-csi-driver"
+download_chart "https://github.com/edgelesssys/constellation-azuredisk-csi-driver" "v1.1.0" "charts/edgeless" "azuredisk-csi-driver"

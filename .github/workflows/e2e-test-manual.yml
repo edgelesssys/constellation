@@ -40,10 +40,10 @@ on:
         default: false
         required: false
       osImage:
-        description: "Full name of OS image (CSP independent image version UID)."
+        description: "Full name of OS image (CSP independent image version UID). Leave empty for latest debug image on main."
         type: string
-        default: "main latest"
-        required: true
+        default: ""
+        required: false
       isDebugImage:
         description: "Is OS image a debug image?"
         type: boolean
@@ -63,7 +63,7 @@ env:
 
 jobs:
   find-latest-image:
-    name: Find latest debug image
+    name: Select image
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
@@ -75,7 +75,7 @@ jobs:
         id: check-input
         shell: bash
         run: |
-          if [[ "${{ inputs.osImage }}" == "main latest" ]]; then
+          if [[ -z "${{ inputs.osImage }}" ]]; then
             echo "Using latest debug image from main."
           else
             echo "Using image '${{ inputs.osImage }}'."
@@ -90,9 +90,11 @@ jobs:
 
       - name: Find latest image
         id: find-latest-image
+        if: steps.check-input.outputs.image == ''
         uses: ./.github/actions/find_latest_image
         with:
-          imageType: debug
+          ref: main
+          stream: debug
 
   e2e-test-manual:
     runs-on: ubuntu-22.04
@@ -109,7 +111,7 @@ jobs:
       - name: Setup Go environment
         uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # v3.4.0
         with:
-          go-version: "1.19.3"
+          go-version: "1.19.4"
 
       - name: Login to Azure
         if: ${{ github.event.inputs.cloudProvider == 'azure' }}

@@ -2,7 +2,7 @@ image:
   baseRepo: mcr.microsoft.com
   azuredisk:
     repository: ghcr.io/edgelesssys/constellation/azure-csi-driver
-    tag: v1.0.1
+    tag: v1.1.0
     pullPolicy: IfNotPresent
   csiProvisioner:
     repository: /oss/kubernetes-csi/csi-provisioner
@@ -48,7 +48,7 @@ controller:
   runOnControlPlane: true
   disableAvailabilitySetNodes: false
   vmType: ""
-  provisionerWorkerThreads: 40
+  provisionerWorkerThreads: 100
   attacherWorkerThreads: 500
   vmssCacheTTLInSeconds: -1
   logLevel: 5
@@ -68,7 +68,13 @@ controller:
     - key: "node.kubernetes.io/not-ready"
       effect: NoSchedule
       operator: Exists
+  hostNetwork: false
+  labels: {}
+  annotations: {}
   podLabels: {}
+  podAnnotations: {}
+  nodeSelector: {}
+  affinity: {}
   resources:
     csiProvisioner:
       limits:
@@ -135,7 +141,10 @@ snapshot:
   snapshotController:
     name: csi-snapshot-controller
     replicas: 2
+    labels: {}
+    annotations: {}
     podLabels: {}
+    podAnnotations: {}
     resources:
       limits:
         memory: 100Mi
@@ -154,6 +163,9 @@ driver:
   customUserAgent: ""
   userAgentSuffix: "OSS-helm"
   azureGoSDKLogLevel: "" # available values: ""(no logs), DEBUG, INFO, WARNING, ERROR
+  httpsProxy: ""
+  httpProxy: ""
+  noProxy: ""
 
 linux:
   enabled: true
@@ -163,8 +175,14 @@ linux:
   enablePerfOptimization: true
   tolerations:
     - operator: "Exists"
+  hostNetwork: false # this setting could be disabled if perfProfile is `none`
   getNodeInfoFromLabels: false # get node info from node labels instead of IMDS
+  labels: {}
+  annotations: {}
   podLabels: {}
+  podAnnotations: {}
+  nodeSelector: {}
+  affinity: {}
   nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:
       nodeSelectorTerms:

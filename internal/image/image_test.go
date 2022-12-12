@@ -160,9 +160,9 @@ func TestVariant(t *testing.T) {
 }
 
 func TestFetchReference(t *testing.T) {
-	imageVersionUID := "someImageVersionUID"
+	img := "ref/abc/stream/nightly/v1.2.3"
 	client := newTestClient(func(req *http.Request) *http.Response {
-		if strings.HasSuffix(req.URL.String(), "/constellation/v1/images/someImageVersionUID.json") {
+		if strings.HasSuffix(req.URL.String(), "/constellation/v1/ref/abc/stream/nightly/image/v1.2.3/info.json") {
 			return &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(bytes.NewBufferString(lut)),
@@ -183,27 +183,27 @@ func TestFetchReference(t *testing.T) {
 		wantErr       bool
 	}{
 		"reference fetched remotely": {
-			config: &config.Config{Image: imageVersionUID, Provider: config.ProviderConfig{
+			config: &config.Config{Image: img, Provider: config.ProviderConfig{
 				QEMU: &config.QEMUConfig{},
 			}},
 			wantReference: "someReference",
 		},
 		"reference fetched locally": {
-			config: &config.Config{Image: imageVersionUID, Provider: config.ProviderConfig{
+			config: &config.Config{Image: img, Provider: config.ProviderConfig{
 				QEMU: &config.QEMUConfig{},
 			}},
 			overrideFile:  `{"qemu":{"default":"localOverrideReference"}}`,
 			wantReference: "localOverrideReference",
 		},
 		"lut is invalid": {
-			config: &config.Config{Image: imageVersionUID, Provider: config.ProviderConfig{
+			config: &config.Config{Image: img, Provider: config.ProviderConfig{
 				QEMU: &config.QEMUConfig{},
 			}},
 			overrideFile: `{`,
 			wantErr:      true,
 		},
 		"image version does not exist": {
-			config: &config.Config{Image: "nonExistingImageVersionUID", Provider: config.ProviderConfig{
+			config: &config.Config{Image: "nonExistingImageName", Provider: config.ProviderConfig{
 				QEMU: &config.QEMUConfig{},
 			}},
 			wantErr: true,
@@ -221,7 +221,7 @@ func TestFetchReference(t *testing.T) {
 
 			fetcher := &Fetcher{
 				httpc: client,
-				fs:    newImageVersionStubFs(t, imageVersionUID, tc.overrideFile),
+				fs:    newImageVersionStubFs(t, img, tc.overrideFile),
 			}
 			reference, err := fetcher.FetchReference(context.Background(), tc.config)
 			if tc.wantErr {
@@ -256,10 +256,12 @@ func newTestClient(fn roundTripFunc) *http.Client {
 	}
 }
 
-func newImageVersionStubFs(t *testing.T, imageVersionUID string, overrideFile string) *afero.Afero {
+func newImageVersionStubFs(t *testing.T, image string, overrideFile string) *afero.Afero {
 	fs := afero.NewMemMapFs()
+	img, err := newImageName(image)
+	must(t, err)
 	if overrideFile != "" {
-		must(t, afero.WriteFile(fs, imageVersionUID+".json", []byte(overrideFile), os.ModePerm))
+		must(t, afero.WriteFile(fs, img.filename(), []byte(overrideFile), os.ModePerm))
 	}
 	return &afero.Afero{Fs: fs}
 }

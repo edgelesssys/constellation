@@ -8,19 +8,55 @@
 set -euo pipefail
 shopt -s inherit_errexit
 
+ref="-"
+stream="stable"
+
+POSITIONAL_ARGS=()
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+  -r | --ref)
+    ref="$2"
+    shift # past argument
+    shift # past value
+    ;;
+  -s | --stream)
+    stream="$2"
+    shift # past argument
+    shift # past value
+    ;;
+  -*)
+    echo "Unknown option $1"
+    exit 1
+    ;;
+  *)
+    POSITIONAL_ARGS+=("$1") # save positional arg
+    shift                   # past argument
+    ;;
+  esac
+done
+
+set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
+
+ref=$(echo -n "${ref}" | tr -c '[:alnum:]' '-')
+
 base_url="https://cdn.confidential.cloud"
-bucket="cdn-constellation-backend"
-newest_debug_image_path=$(aws s3api list-objects-v2 \
-  --output text \
-  --bucket "${bucket}" \
-  --prefix constellation/v1/images/debug-v \
-  --query "reverse(sort_by(Contents, &LastModified))[0].Key")
+latest_path="constellation/v1/ref/${ref}/stream/${stream}/versions/latest/image.json"
+latest_url="${base_url}/${latest_path}"
+latest_status=$(curl -s -o /dev/null -w "%{http_code}" "${latest_url}")
+if [[ ${latest_status} != "200" ]]; then
+  echo "No image found for ref ${ref} and stream ${stream} (${latest_status})"
+  exit 1
+fi
+latest_version=$(curl -sL "${latest_url}" | jq -r '.version')
 
-image_version_uid=$(basename "${newest_debug_image_path}" .json)
-url="${base_url}/${newest_debug_image_path}"
-echo "Found image version UID:"
-echo "${image_version_uid}"
+shortname=""
+if [[ ${ref} != "-" ]]; then
+  shortname+="ref/${ref}/"
+fi
+if [[ ${stream} != "stable" ]]; then
+  shortname+="stream/${stream}/"
+fi
+shortname+="${latest_version}"
 
-echo "Containing the following images:"
-echo "${url}"
-curl -sL "${url}" | jq
+echo "${shortname}"
