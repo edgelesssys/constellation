@@ -1,6 +1,6 @@
 # Configure your cluster
 
-Before your cluster can be created, you need to configure the identity and access management (IAM) for your CSP and choose machine types for your cluster.
+Before you can create your cluster, you need to configure the identity and access management (IAM) for your cloud service provider (CSP) and choose machine types for the nodes.
 
 ## Choosing VM types
 
@@ -29,7 +29,7 @@ Fill the desired VM type into the **instanceType** field in the `constellation-c
 
 ## Creating an IAM configuration
 
-IAM configuration for your cluster can be created automatically using the `constellation iam create` command.
+You can create an IAM configuration for your cluster automatically using the `constellation iam create` command.
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure">
 
@@ -212,7 +212,7 @@ Now that you've configured your CSP, you can [create your cluster](./create.md).
 
 ## Deleting an IAM configuration
 
-Created IAM configurations can be kept and reused for new clusters. Alternatively, you can also delete them if they aren't being used anymore.
+You can keep created IAM configurations and reuse them for new clusters. Alternatively, you can also delete them if they aren't being used anymore.
 
 ### Prerequisites
 * [HashiCorp's Terraform](https://developer.hashicorp.com/terraform/downloads?product_intent=terraform) is installed on your machine.
