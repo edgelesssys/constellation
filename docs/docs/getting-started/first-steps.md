@@ -186,18 +186,4 @@ Terminating ...
 Your Constellation cluster was terminated successfully.
 ```
 
-:::tip
-
-On Azure, if you have used the `az` script, you can keep the prerequisite resources and reuse them for a new cluster.
-
-Or you can delete them:
-
-```bash
-RESOURCE_GROUP=constellation # name of your cluster resource group
-APPID=$(jq -r '.appId' azureServiceAccountKey.json)
-az ad sp delete --id "${APPID}"
-az group delete -g "${RESOURCE_GROUP}-identity" --yes --no-wait
-az group delete -g "${RESOURCE_GROUP}" --yes --no-wait
-```
-
-:::
+Optionally, you can also [delete your IAM resources](../workflows/config.md#deleting-an-iam-configuration).
