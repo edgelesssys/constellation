@@ -145,8 +145,8 @@ const sidebars = {
         },
         {
           type: 'doc',
-          label: 'Installing cert-manager',
-          id: 'workflows/installing-cert-manager',
+          label: 'Install cert-manager',
+          id: 'workflows/cert-manager',
         },
         {
           type: 'doc',

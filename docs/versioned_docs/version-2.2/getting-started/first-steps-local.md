@@ -4,19 +4,18 @@
 With the `constellation mini` command, you can deploy and test Constellation locally without a cloud subscription. This mode is called MiniConstellation. Conceptually, MiniConstellation is similar to [MicroK8s](https://microk8s.io/), [K3s](https://k3s.io/), and [minikube](https://minikube.sigs.k8s.io/docs/).
 <!-- vale on -->
 
-MiniConstellation uses virtualization to create a local cluster with one control-plane node and one worker node. 
+MiniConstellation uses virtualization to create a local cluster with one control-plane node and one worker node. It **doesn't** require hardware with Confidential VM (CVM) support. For attestation, MiniConstellation currently uses a software-based vTPM provided by KVM/QEMU.
 
-:::info
+:::caution
 
-MiniConstellation **doesn't** require hardware with Confidential VM (CVM) support. 
-For attestation, MiniConstellation currently uses the software-based vTPM provided by KVM/QEMU.
+MiniConstellation has specific soft- and hardware requirements such as a Linux OS running on an x86-64 CPU. Pay attention to all [prerequisites](#prerequisites) when setting up.
 
 :::
 
 :::note
 
 Since MiniConstellation runs on your local system, cloud features such as load balancing,
-attaching persistent storage, or autoscaling aren't available. 
+attaching persistent storage, or autoscaling aren't available.
 
 :::
 
