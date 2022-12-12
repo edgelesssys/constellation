@@ -213,7 +213,7 @@ runs:
         fi
         echo "securityType=${securityType}" >> $GITHUB_OUTPUT
         echo "diskName=constellation-${stream}-${timestamp}-${securityType,,}" >> $GITHUB_OUTPUT
-        if [[ "${stream}" = "release" ]]
+        if [[ "${stream}" = "stable" ]]
         then
           echo "imageDefinition=constellation" >> $GITHUB_OUTPUT
           echo "imageOffer=constellation" >> $GITHUB_OUTPUT
