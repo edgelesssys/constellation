@@ -22,35 +22,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Environment variable `CONSTELL_AZURE_CLIENT_SECRET_VALUE` as an alternative way to provide the configuration value `provider.azure.clientSecretValue`.
-- Automatic CSI driver deployment for Azure and GCP during Constellation init
-- Improve reproducibility by pinning the Kubernetes components.
-- Client verification during `constellation init`
-
-- Release CLI with SLSA Level 3 requirements.
-
 ### Changed
 <!-- For changes in existing functionality.  -->
-<!-- TODO: Remove `/next/` from URL before release -->
-- Constellation operators are now deployed using Helm.
-- Updated the config version to v2. Check [how to migrate your config](https://docs.edgeless.systems/constellation/next/reference/config-migration).
-- OS images are now configured globally in the `images` field of the configuration file.
-- The `measurements` entry in the CLI now uses an updated format, merging `enforcedMeasurements` and old `measurements` into one
-- Expected measurements in the config and Constellation's Cluster-ID are now hex encoded by default. Base64 is still supported.
 
 ### Deprecated
 <!-- For soon-to-be removed features. -->
 
 ### Removed
 <!-- For now removed features. -->
-- `access-manager` was removed from code base. K8s native way to SSH into nodes documented.
-- `SSHUsers` has been removed from the user configuration following the removal of `access-manager`.
-- Azure Trusted Launch support. May come back in the future.
 
 ### Fixed
 
 ### Security
 <!-- For security related changes. -->
+
+## [2.3.0] - 2022-12-12
+
+### Added
+
+- Automatic CSI driver deployment for Azure and GCP during Constellation init
+- Release CLI with SLSA Level 3 requirements.
+- Improve reproducibility by pinning the Kubernetes components.
+- Client verification during `constellation init`
+- Environment variable `CONSTELL_AZURE_CLIENT_SECRET_VALUE` as an alternative way to provide the configuration value `provider.azure.clientSecretValue`.
+
+### Changed
+
+- Constellation operators are now deployed using Helm.
+- Updated the config version to v2. Check [how to migrate your config](https://docs.edgeless.systems/constellation/reference/config-migration).
+- OS images are now configured globally in the `images` field of the configuration file.
+- The `measurements` entry in the CLI now uses an updated format, merging `enforcedMeasurements` and old `measurements` into one
+- Expected measurements in the config and Constellation's Cluster-ID are now hex encoded by default. Base64 is still supported.
+
+### Removed
+
+- `access-manager` was removed from code base. K8s native way to SSH into nodes documented.
+- `SSHUsers` has been removed from the user configuration following the removal of `access-manager`.
+- Azure Trusted Launch support. May come back in the future.
 
 ### Fixed
 
@@ -156,3 +164,8 @@ Initial release of Constellation.
 [Unreleased]: https://github.com/edgelesssys/constellation/compare/v2.1.0...HEAD
 [2.1.0]: https://github.com/edgelesssys/constellation/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/edgelesssys/constellation/releases/tag/v2.0.0
+[2.1.0]: https://github.com/edgelesssys/constellation/releases/tag/v2.1.0
+[2.2.0]: https://github.com/edgelesssys/constellation/releases/tag/v2.2.0
+[2.2.1]: https://github.com/edgelesssys/constellation/releases/tag/v2.2.1
+[2.2.2]: https://github.com/edgelesssys/constellation/releases/tag/v2.2.2
+[2.3.0]: https://github.com/edgelesssys/constellation/releases/tag/v2.3.0
