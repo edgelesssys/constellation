@@ -101,6 +101,9 @@ You can find a list of all [regions in AWS's documentation](https://docs.aws.ama
 
 <details>
 <summary>Alternatively, you can manually create the IAM configuration on your CSP.</summary>
+
+The following describes the configuration fields and how you obtain the required information or create the required resources.
+
 <tabs groupId="csp">
 <tabItem value="azure" label="Azure (manually)">
 
