@@ -95,10 +95,10 @@ jobs:
         with:
           gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
       - name: Build version manifest
+        working-directory: ${{ github.workspace }}/hack/build-manifest
         run: |
-          cd hack/build-manifest/
-          AZURE_SUBSCRIPTION_ID=0d202bbb-4fa7-4af8-8125-58c269a05435 go run . > versions-manifest.json
-          cat versions-manifest.json
+          AZURE_SUBSCRIPTION_ID=0d202bbb-4fa7-4af8-8125-58c269a05435 go run . > ${{ github.workspace }}/versions-manifest.json
+          cat ${{ github.workspace }}/versions-manifest.json
       - name: Upload versions-manifest
         uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
         with:
