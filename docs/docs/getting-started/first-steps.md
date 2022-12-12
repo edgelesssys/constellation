@@ -49,9 +49,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     constellation iam create azure --region=westus --resourceGroup=constellTest --servicePrincipal=spTest
     ```
 
-    :::info
     This command creates IAM configuration on the Azure region `westus` creating a new resource group `constellTest` and a new service principal `spTest`.
-    :::
 
     :::tip
     Since `clientSecretValue` is a sensitive value, you can leave it empty in the configuration file and pass it via an environment variable instead. To this end, create the environment variable `CONSTELL_AZURE_CLIENT_SECRET_VALUE` and set it to the secret value.
@@ -65,9 +63,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west1-a --serviceAccountID=constell-test
     ```
 
-    :::info
     This command creates IAM configuration in the GCP project `yourproject-12345` on the GCP zone `europe-west1-a` creating a new service account `constell-test`.
-    :::
 
     </tabItem>
 
@@ -77,9 +73,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     constellation iam create aws --zone=eu-central-1a --prefix=constellTest
     ```
 
-    :::info
     This command creates IAM configuration for the AWS zone `eu-central-1a` using the prefix `constellTest` for all named resources being created.
-    :::
 
     </tabItem>
     </tabs>
