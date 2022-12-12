@@ -11,8 +11,9 @@
                         "image": {
                             "description": "Container image to use for the spawned pods.",
                             "type": "string",
-                            "examples": ["k8s.gcr.io/autoscaling/cluster-autoscaler:v1.23.1"]
-
+                            "examples": [
+                                "registry.k8s.io/autoscaling/cluster-autoscaler:v1.23.1"
+                            ]
                         }
                     },
                     "required": [

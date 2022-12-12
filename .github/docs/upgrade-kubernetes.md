@@ -17,19 +17,15 @@ During cluster initialization, multiple Kubernetes resources are deployed. Some 
 You can check available version tags for container images using [the container registry tags API](https://docs.docker.com/registry/spec/api/#listing-image-tags):
 
 ```sh
-curl -q https://k8s.gcr.io/v2/autoscaling/cluster-autoscaler/tags/list | jq .tags
-curl -q https://k8s.gcr.io/v2/cloud-controller-manager/tags/list | jq .tags
-curl -q https://us.gcr.io/v2/k8s-artifacts-prod/provider-aws/cloud-controller-manager/tags/list | jq .tags
-curl -q https://mcr.microsoft.com/v2/oss/kubernetes/azure-cloud-controller-manager/tags/list | jq .tags
-curl -q https://mcr.microsoft.com/v2/oss/kubernetes/azure-cloud-node-manager/tags/list | jq .tags
+curl -qL https://registry.k8s.io/v2/autoscaling/cluster-autoscaler/tags/list | jq .tags
+curl -qL https://registry.k8s.io/v2/cloud-controller-manager/tags/list | jq .tags
+curl -qL https://registry.k8s.io/v2/provider-aws/cloud-controller-manager/tags/list | jq .tags
+curl -qL https://mcr.microsoft.com/v2/oss/kubernetes/azure-cloud-controller-manager/tags/list | jq .tags
+curl -qL https://mcr.microsoft.com/v2/oss/kubernetes/azure-cloud-node-manager/tags/list | jq .tags
 # [...]
 ```
 
-## Upgrade go dependencies
-
-The [`go.mod`](/go.mod) and [`go.sum`](/go.sum) files pin versions of the Kubernetes go packages. While these do not need to be on the exact versions used in the Kubernetes deployment, it is a good idea to keep them updated and on a similar version.
-Upgrade Kubernetes go dependencies by changing the versions of all packages in the `k8s.io` namespace from the old version to the new version in [`go.mod`](/go.mod) and run `go mod tidy`. Ensure that there are no other conflicts and test your changes.
-See the diff of [this PR](https://github.com/edgelesssys/constellation/pull/110) as an example of updating the go dependencies.
+Normally renovate will handle the upgrading of Kubernetes dependencies.
 
 ## Test the new Kubernetes version
 
