@@ -228,7 +228,7 @@ jobs:
         working-directory: ${{ github.workspace }}/image
         env:
           PKI_SET: ${{ needs.build-settings.outputs.pkiSet }}
-          DB_KEY: ${{ (needs.build-settings.outputs.imageType == 'release' && secrets.SECURE_BOOT_RELEASE_DB_KEY) || secrets.SECURE_BOOT_TESTING_DB_KEY }}
+          DB_KEY: ${{ ((needs.build-settings.outputs.pkiSet == 'pki_prod') && secrets.SECURE_BOOT_RELEASE_DB_KEY) || secrets.SECURE_BOOT_TESTING_DB_KEY }}
 
       - name: Build
         shell: bash
