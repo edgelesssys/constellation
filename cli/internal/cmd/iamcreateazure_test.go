@@ -45,6 +45,8 @@ func TestIAMCreateAzure(t *testing.T) {
 		servicePrincipalFlag string
 		resourceGroupFlag    string
 		yesFlag              bool
+		fillFlag             bool
+		configFlag           string
 		stdin                string
 		wantAbort            bool
 		wantErr              bool
@@ -57,6 +59,30 @@ func TestIAMCreateAzure(t *testing.T) {
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
 			yesFlag:              true,
+			fillFlag:             false,
+		},
+		"iam create azure fill": {
+			setupFs:              fsWithDefaultConfig,
+			creator:              &stubIAMCreator{id: validIAMIDFile},
+			provider:             cloudprovider.Azure,
+			regionFlag:           "westus",
+			servicePrincipalFlag: "constell-test-sp",
+			resourceGroupFlag:    "constell-test-rg",
+			yesFlag:              true,
+			fillFlag:             true,
+			configFlag:           "",
+		},
+		"config path does not exist": {
+			setupFs:              fsWithDefaultConfig,
+			creator:              &stubIAMCreator{id: validIAMIDFile},
+			provider:             cloudprovider.Azure,
+			regionFlag:           "westus",
+			servicePrincipalFlag: "constell-test-sp",
+			resourceGroupFlag:    "constell-test-rg",
+			yesFlag:              true,
+			fillFlag:             true,
+			configFlag:           "does/not/exist",
+			wantErr:              true,
 		},
 		"interactive": {
 			setupFs:              fsWithDefaultConfig,
@@ -66,6 +92,17 @@ func TestIAMCreateAzure(t *testing.T) {
 			servicePrincipalFlag: "constell-test-sp",
 			resourceGroupFlag:    "constell-test-rg",
 			stdin:                "yes\n",
+			fillFlag:             false,
+		},
+		"interactive fill": {
+			setupFs:              fsWithDefaultConfig,
+			creator:              &stubIAMCreator{id: validIAMIDFile},
+			provider:             cloudprovider.Azure,
+			regionFlag:           "westus",
+			servicePrincipalFlag: "constell-test-sp",
+			resourceGroupFlag:    "constell-test-rg",
+			stdin:                "yes\n",
+			fillFlag:             true,
 		},
 		"interactive abort": {
 			setupFs:              fsWithDefaultConfig,
@@ -76,6 +113,18 @@ func TestIAMCreateAzure(t *testing.T) {
 			resourceGroupFlag:    "constell-test-rg",
 			stdin:                "no\n",
 			wantAbort:            true,
+			fillFlag:             false,
+		},
+		"interactive abort fill": {
+			setupFs:              fsWithDefaultConfig,
+			creator:              &stubIAMCreator{id: validIAMIDFile},
+			provider:             cloudprovider.Azure,
+			regionFlag:           "westus",
+			servicePrincipalFlag: "constell-test-sp",
+			resourceGroupFlag:    "constell-test-rg",
+			stdin:                "no\n",
+			wantAbort:            true,
+			fillFlag:             true,
 		},
 	}
 
@@ -88,6 +137,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
+			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
 			if tc.regionFlag != "" {
 				require.NoError(cmd.Flags().Set("region", tc.regionFlag))
 			}
@@ -97,11 +147,20 @@ func TestIAMCreateAzure(t *testing.T) {
 			if tc.servicePrincipalFlag != "" {
 				require.NoError(cmd.Flags().Set("servicePrincipal", tc.servicePrincipalFlag))
 			}
+			if tc.fillFlag {
+				require.NoError(cmd.Flags().Set("fill", "true"))
+				if tc.configFlag != "" {
+					require.NoError(cmd.Flags().Set("config", tc.configFlag))
+				}
+			} else {
+				require.NoError(cmd.Flags().Set("fill", "false"))
+			}
 			if tc.yesFlag {
 				require.NoError(cmd.Flags().Set("yes", "true"))
 			}
 
-			err := iamCreateAzure(cmd, nopSpinner{}, tc.creator)
+			fileHandler := file.NewHandler(tc.setupFs(require, tc.provider))
+			err := iamCreateAzure(cmd, nopSpinner{}, tc.creator, fileHandler)
 
 			if tc.wantErr {
 				assert.Error(err)
