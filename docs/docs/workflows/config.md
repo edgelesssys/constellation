@@ -71,6 +71,12 @@ constellation iam create azure --region=westus --resourceGroup=constellTest --se
 
 This command creates IAM configuration on the Azure region `westus` creating a new resource group `constellTest` and a new service principal `spTest`.
 
+Note that CVMs are currently only supported in a few regions, check [Azure's products available by region](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all). These are:
+  * `westus`
+  * `eastus`
+  * `northeurope`
+  * `westeurope`
+
 Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
 
 :::tip
@@ -88,6 +94,8 @@ constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west1-a
 
 This command creates IAM configuration in the GCP project `yourproject-12345` on the GCP zone `europe-west1-a` creating a new service account `constell-test`.
 
+Note that only regions offering CVMs of the `N2D` series are supported. You can find a [list of all regions in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available), which you can filter by machine type `N2D`.
+
 Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
 
 </tabItem>
@@ -100,6 +108,15 @@ constellation iam create aws --zone=eu-central-1a --prefix=constellTest
 ```
 
 This command creates IAM configuration for the AWS zone `eu-central-1a` using the prefix `constellTest` for all named resources being created.
+
+Constellation OS images are currently replicated to the following regions:
+    * `eu-central-1`
+    * `us-east-2`
+    * `ap-south-1`
+
+If you require the OS image to be available in another region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+AWS+image+region:+xx-xxxx-x).
+
+You can find a list of all [regions in AWS's documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions).
 
 Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
 
