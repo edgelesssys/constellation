@@ -26,7 +26,7 @@ Constellation provides CSI drivers for storage solutions in all major clouds wit
 Block storage provisioned by the CSP is [mapped](https://guix.gnu.org/manual/en/html_node/Mapped-Devices.html) using the [dm-crypt](https://www.kernel.org/doc/html/latest/admin-guide/device-mapper/dm-crypt.html), and optionally the [dm-integrity](https://www.kernel.org/doc/html/latest/admin-guide/device-mapper/dm-integrity.html), kernel modules, before it's formatted and accessed by the Kubernetes workloads.
 All cryptographic operations happen inside the trusted environment of the confidential Constellation node.
 
-Please note that for integrity-protected disks, [volume expansion](https://kubernetes.io/blog/2018/07/12/resizing-persistent-volumes-using-kubernetes/) isn't supported.
+Note that for integrity-protected disks, [volume expansion](https://kubernetes.io/blog/2018/07/12/resizing-persistent-volumes-using-kubernetes/) isn't supported.
 
 By default the driver uses data encryption keys (DEKs) issued by the Constellation [*KMS*](components.md#kms).
 The DEKs are in turn derived from the Constellation's key encryption key (KEK), which is directly derived from the [master secret](keys.md#master-secret).
@@ -34,7 +34,7 @@ This is the recommended mode of operation, and also requires the least amount of
 
 Alternatively, the driver can be configured to use a key management system to store and access KEKs and DEKs.
 
-Please refer to [keys and cryptography](keys.md) for more details on key management in Constellation.
+Refer to [keys and cryptography](keys.md) for more details on key management in Constellation.
 
 Once deployed and configured, the CSI driver ensures transparent encryption and integrity of all persistent volumes provisioned via its storage class.
 Data at rest is secured without any additional actions required by the developer.

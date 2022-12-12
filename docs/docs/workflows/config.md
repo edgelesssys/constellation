@@ -72,10 +72,10 @@ constellation iam create azure --region=westus --resourceGroup=constellTest --se
 This command creates IAM configuration on the Azure region `westus` creating a new resource group `constellTest` and a new service principal `spTest`.
 
 Note that CVMs are currently only supported in a few regions, check [Azure's products available by region](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=virtual-machines&regions=all). These are:
-  * `westus`
-  * `eastus`
-  * `northeurope`
-  * `westeurope`
+* `westus`
+* `eastus`
+* `northeurope`
+* `westeurope`
 
 Paste the output into the corresponding fields of the `constellation-conf.yaml` file.
 
@@ -110,9 +110,9 @@ constellation iam create aws --zone=eu-central-1a --prefix=constellTest
 This command creates IAM configuration for the AWS zone `eu-central-1a` using the prefix `constellTest` for all named resources being created.
 
 Constellation OS images are currently replicated to the following regions:
-    * `eu-central-1`
-    * `us-east-2`
-    * `ap-south-1`
+* `eu-central-1`
+* `us-east-2`
+* `ap-south-1`
 
 If you require the OS image to be available in another region, [let us know](https://github.com/edgelesssys/constellation/issues/new?assignees=&labels=&template=feature_request.md&title=Support+new+AWS+image+region:+xx-xxxx-x).
 

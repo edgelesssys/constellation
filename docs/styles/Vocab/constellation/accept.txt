@@ -3,6 +3,8 @@ agent
 auditable
 autoscaler
 [Aa]utoscaling
+AWS
+aws
 backend
 benchmarked
 [Bb]ootloader
@@ -18,6 +20,8 @@ Filestore
 Fulcio
 Mbps
 Gbps
+GCP
+gcp
 Grype
 iam
 IAM
