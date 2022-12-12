@@ -138,6 +138,7 @@ func TestIAMCreateAzure(t *testing.T) {
 			cmd.SetErr(&bytes.Buffer{})
 			cmd.SetIn(bytes.NewBufferString(tc.stdin))
 			cmd.Flags().String("config", constants.ConfigFilename, "") // register persistent flag manually
+			cmd.Flags().Bool("fill", true, "")                         // register persistent flag manually
 			if tc.regionFlag != "" {
 				require.NoError(cmd.Flags().Set("region", tc.regionFlag))
 			}
@@ -148,7 +149,6 @@ func TestIAMCreateAzure(t *testing.T) {
 				require.NoError(cmd.Flags().Set("servicePrincipal", tc.servicePrincipalFlag))
 			}
 			if tc.fillFlag {
-				require.NoError(cmd.Flags().Set("fill", "true"))
 				if tc.configFlag != "" {
 					require.NoError(cmd.Flags().Set("config", tc.configFlag))
 				}

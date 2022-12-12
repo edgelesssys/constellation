@@ -32,7 +32,6 @@ func newIAMCreateAzureCmd() *cobra.Command {
 	must(cobra.MarkFlagRequired(cmd.Flags(), "region"))
 	cmd.Flags().String("servicePrincipal", "", "Name of the service principal that will be created.")
 	must(cobra.MarkFlagRequired(cmd.Flags(), "servicePrincipal"))
-	cmd.Flags().Bool("fill", true, "Fill the IAM configuration into the ")
 	cmd.Flags().Bool("yes", false, "Create the IAM configuration without further confirmation")
 
 	return cmd
