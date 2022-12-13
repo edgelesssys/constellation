@@ -52,8 +52,7 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
     5. Update project version in [CMakeLists.txt](/CMakeLists.txt) to `1.3.0` (without v).
     6. Update the `version` key in [constellation-services/Chart.yaml](/cli/internal/helm/charts/edgeless/constellation-services/Chart.yaml) and [operators/Chart.yaml](/cli/internal/helm/charts/edgeless/operators/Chart.yaml). Also update the `version` key for all subcharts, e.g. [Chart.yaml](/cli/internal/helm/charts/edgeless/constellation-services/charts/kms/Chart.yaml). Lastly, update the `dependencies.*.version` key for all dependencies in the main charts [constellation-services/Chart.yaml](/cli/internal/helm/charts/edgeless/constellation-services/Chart.yaml) and [operators/Chart.yaml](/cli/internal/helm/charts/edgeless/operators/Chart.yaml).
     7. Update [default image versions in enterprise config](/internal/config/images_enterprise.go)
-    8. Increase version number of QEMU image `ConstellationQEMUImageURL` in [versions.go](../../internal/versions/versions.go#L64)
-    9. When the microservice builds are finished update versions in [versions.go](../../internal/versions/versions.go#L33-L39) to `v1.3.0`, **add the container hashes** and **push your changes**.
+    8. When the microservice builds are finished update versions in [versions.go](../../internal/versions/versions.go#L33-L39) to `v1.3.0`, **add the container hashes** and **push your changes**.
 
         ```sh
         # crane: https://github.com/google/go-containerregistry/blob/main/cmd/crane/doc/crane.md
@@ -65,21 +64,21 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         crane digest ghcr.io/edgelesssys/constellation/qemu-metadata-api:v$ver
         ```
 
-    10. Create a [production OS image](/.github/workflows/build-os-image.yml)
+    9.  Create a [production OS image](/.github/workflows/build-os-image.yml)
 
         ```sh
-        gh workflow run build-os-image.yml --ref release/v$minor -F debug=false -F imageVersion=v$ver
+        gh workflow run build-os-image.yml --ref release/v$minor -F imageVersion=v$ver -F isRelease=true -F stream=stable
         ```
 
-    11. [Generate measurements](/.github/workflows/generate-measurements.yml) for the images.
+    10. [Generate measurements](/.github/workflows/generate-measurements.yml) for the images.
 
         ```sh
         gh workflow run generate-measurements.yml --ref release/v$minor -F osImage=v$ver -F isDebugImage=false -F signMeasurements=true
         ```
 
-    12. Update expected measurements in [`measurements.go`](/internal/attestation/measurements/measurements.go) using the generated measurements from step 12 and **push your changes**.
+    11. Update expected measurements in [`measurements_enterprise.go`](/internal/attestation/measurements/measurements_enterprise.go) using the generated measurements from step 12 and **push your changes**.
 
-    13. Run manual E2E tests using [Linux](/.github/workflows/e2e-test-manual.yml) and [macOS](/.github/workflows/e2e-test-manual-macos.yml) to confirm functionality and stability.
+    12. Run manual E2E tests using [Linux](/.github/workflows/e2e-test-manual.yml) and [macOS](/.github/workflows/e2e-test-manual-macos.yml) to confirm functionality and stability.
 
         ```sh
         gh workflow run e2e-test-manual.yml --ref release/v$minor -F cloudProvider=aws -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false -F keepMeasurements=true
@@ -90,14 +89,14 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=gcp -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false -F keepMeasurements=true
         ```
 
-    14. Create a new tag on this release branch.
+    13. Create a new tag on this release branch.
 
         ```sh
         git tag v$ver
-        git tags --push
+        git push origin refs/tags/v$ver
         ```
 
-    15. Run [Release CLI](https://github.com/edgelesssys/constellation/actions/workflows/release-cli.yml) action on the tag.
+    14. Run [Release CLI](https://github.com/edgelesssys/constellation/actions/workflows/release-cli.yml) action on the tag.
 
         ```sh
         gh workflow run release-cli.yml --ref v$ver
@@ -108,7 +107,7 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
 6. Check if the Constellation OS image is available via the versions API.
 
     ```sh
-    curl -s "https://cdn.confidential.cloud/constellation/v1/versions/stream/stable/minor/v${minor}/image.json"
+    curl -s "https://cdn.confidential.cloud/constellation/v1/ref/-/stream/stable/versions/minor/v${minor}/image.json"
     # list of versions should contain the new version
     ```
 
@@ -139,7 +138,7 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
     ```sh
     nextMinorVer=$(echo "${ver}" | awk -F. -v OFS=. '{$2 += 1 ; print}')
     git checkout main
-    git pull{nextMinorVer}-pre"
+    git pull
     git tag v${nextMinorVer}-pre
     git push origin refs/tags/v${nextMinorVer}-pre
     ```
