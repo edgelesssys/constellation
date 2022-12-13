@@ -12,7 +12,7 @@ json=false
 cdn_url="https://cdn.confidential.cloud"
 
 function usage() {
-  cat <<'EOF'
+  cat << 'EOF'
 Usage: find-image.sh [options] [command]
 
 Options:
@@ -95,7 +95,7 @@ function latest() {
   latest_json=$(curl -sL "${latest_url}")
 
   if [[ ${json} == true ]]; then
-    jq <<<"${latest_json}"
+    jq <<< "${latest_json}"
     exit 0
   fi
 
@@ -133,12 +133,12 @@ function list() {
 
   if [[ ${json} == true ]]; then
     out="{}"
-    out=$(jq <<<"${out}" --arg ref "${ref}" '.ref = $ref')
-    out=$(jq <<<"${out}" --arg stream "${stream}" '.stream = $stream')
+    out=$(jq <<< "${out}" --arg ref "${ref}" '.ref = $ref')
+    out=$(jq <<< "${out}" --arg stream "${stream}" '.stream = $stream')
     for patch in ${patch_list}; do
-      out=$(jq <<<"${out}" --arg patch "${patch}" '.versions += [$patch]')
+      out=$(jq <<< "${out}" --arg patch "${patch}" '.versions += [$patch]')
     done
-    jq <<<"${out}"
+    jq <<< "${out}"
     exit 0
   fi
 
@@ -147,7 +147,6 @@ function list() {
   done
   exit 0
 }
-
 
 case ${1-"latest"} in
 "list")

@@ -34,4 +34,4 @@ runs:
       run: |
         image=$(./find-image.sh --ref "${ref}" --stream "${stream}")
         echo "image=${image}" >> "${GITHUB_OUTPUT}"
-      working-directory: hack/find-image
+      working-directory: hack/api
