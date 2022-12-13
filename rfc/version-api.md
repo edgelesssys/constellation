@@ -14,35 +14,40 @@ Design goals:
 
 The following HTTP endpoints are available:
 
-- `GET /constellation/v1/ref/<ref>/stream/<stream>/latest/` contains files showing the latest version available
+- [`GET /constellation/v1/ref/<ref>/stream/<stream>/versions/latest/` contains files showing the latest versions available](#latest)
     - `image.json` contains the latest image version
     - `microservice.json` contains the latest microservice version
     - `cli.json` contains the latest cli version
     - `kubernetes.json` contains the latest supported version of Kubernetes
-- `GET /constellation/v1/ref/<ref>/stream/<stream>/major/<major-version>/` contains files with version information for this major version
+- [`GET /constellation/v1/ref/<ref>/stream/<stream>/versions/major/<major-version>/` contains files with version information for this major version](#major-to-minor-version-list)
     - `image.json` contains a list of all minor image versions that belong to a major version
     - `microservice.json` contains a list of all minor microservice versions that belong to a major version
     - `cli.json` contains a list of all minor cli versions that belong to a major version
     - `kubernetes.json` contains a list of all supported minor version of Kubernetes that belong to a major version
-- `GET /constellation/v1/ref/<ref>/stream/<stream>/minor/<major-minor-version>/` contains files with version information for this minor version
+- [`GET /constellation/v1/ref/<ref>/stream/<stream>/versions/minor/<major-minor-version>/` contains files with version information for this minor version](#minor-to-patch-version-list)
     - `image.json` contains a list of all patch image versions that belong to a minor version
     - `microservice.json` contains a list of all patch microservice versions that belong to a minor version
     - `cli.json` contains a list of all patch cli versions that belong to a minor version
     - `kubernetes.json` contains a list of all supported patch version of Kubernetes that belong to a minor version
 
-`stream` is used to distinguish between different release streams. For example, `stable` and `beta` could be two different streams.
-Currently, only `stable` is supported. The parameter exists to allow for future expansion.
+`ref` is used to distinguish between different Constellation branches (e.g. `main` and `feat-xyz`) and releases (`-`).
+`stream` is used to distinguish between different release streams. For example, `stable` and `debug` could be two different streams.
 
 ## Examples
+
+The following examples show how the version API could be used to retrieve version information.
+
+### Latest
 
 This shows the version information for the latest OS image. The file could be extended to include more metadata.
 
 ```
-https://cdn.confidential.cloud/constellation/v1/versions/stream/stable/latest/image.json
+https://cdn.confidential.cloud/constellation/v1/ref/-/stream/stable/versions/latest/image.json
 ```
 
 ```json
 {
+    "ref": "-",
     "stream": "stable",
     "kind": "image",
     "version": "v2.3.0"
@@ -52,25 +57,29 @@ https://cdn.confidential.cloud/constellation/v1/versions/stream/stable/latest/im
 This shows the version information for the latest Kubernetes release. The file could be extended to include more metadata.
 
 ```
-https://cdn.confidential.cloud/constellation/v1/versions/stream/stable/latest/kubernetes.json
+https://cdn.confidential.cloud/constellation/v1/ref/-/stream/stable/versions/latest/kubernetes.json
 ```
 
 ```json
 {
+    "ref": "-",
     "stream": "stable",
     "kind": "kubernetes",
     "version": "v1.25.4"
 }
 ```
 
+### Major to minor version list
+
 This shows a list of all minor releases of the microservices for the major version `v2`. The file could be extended to include more metadata.
 
 ```
-https://cdn.confidential.cloud/constellation/v1/versions/stream/stable/major/v2/microservice.json
+https://cdn.confidential.cloud/constellation/v1/ref/-/stream/stable/versions/major/v2/microservice.json
 ```
 
 ```json
 {
+    "ref": "-",
     "stream": "stable",
     "granularity": "major",
     "base": "v2",
@@ -81,12 +90,15 @@ https://cdn.confidential.cloud/constellation/v1/versions/stream/stable/major/v2/
 
 This shows a list of all patch releases of the CLI for the minor version `v2.3`. The file could be extended to include more metadata.
 
+### Minor to patch version list
+
 ```
-https://cdn.confidential.cloud/constellation/v1/versions/stream/stable/minor/v2.3/cli.json
+https://cdn.confidential.cloud/constellation/v1/ref/-/stream/stable/versions/minor/v2.3/cli.json
 ```
 
 ```json
 {
+    "ref": "-",
     "stream": "stable",
     "granularity": "minor",
     "base": "v2.3",
@@ -111,7 +123,7 @@ The CLI can query the `minor` endpoint to retrieve a list of all patch releases 
 
 ## Possible future extensions
 
-- Explicit compatbility information between different resource kinds
+- Explicit compatibility information between different resource kinds
     - Example: OS image `v2.3.4` requires microservice version > `v2.3.1`
     - Allows fine grained control in case of unexpected incompatibility
 - Version metadata
