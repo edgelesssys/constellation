@@ -58,6 +58,8 @@ You can enable the logcollection of debugd to send logs to Opensearch.
 
 On Azure, ensure your user assigned identity has the `Key Vault Secrets User` role assigned on the key vault `opensearch-creds`.
 
+On AWS, attach the `SecretManagerE2E` policy to your control-plane and worker node role.
+
 When deploying with cdbg, enable by setting the `logcollect=true` and your name `logcollect.admin=yourname`.
 
 ```shell-session
