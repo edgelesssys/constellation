@@ -38,11 +38,11 @@ jobs:
           aws-region: eu-central-1
 
       - name: Update OS images
+        working-directory: hack/add-version
         run: |
-          latest=$( [[ "${{ inputs.latest }}" = "true" ]] && echo "--latest")
+          latest=$([[ "${{ inputs.latest }}" = "true" ]] && echo "--latest" || echo "")
           go run main.go \
             --version "${{ github.event.release.tag_name }}${{ github.event.inputs.tag }}" \
             --stream stable \
             --release \
             "${latest}"
-        working-directory: hack/add-version
