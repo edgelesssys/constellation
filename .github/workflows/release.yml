@@ -18,7 +18,7 @@ jobs:
     name: Verify inputs
     runs-on: ubuntu-22.04
     env:
-      FULL_VERSION: ${{ github.event.inputs.version }}
+      FULL_VERSION: ${{ inputs.version }}
     outputs:
       WITHOUT_V: ${{ steps.version-info.outputs.WITHOUT_V }}
       PART_MAJOR: ${{ steps.version-info.outputs.PART_MAJOR }}
@@ -56,7 +56,7 @@ jobs:
 
   prepare-release-branch:
     name: Prepare release branch
-    if: github.event.inputs.kind == 'minor'
+    if: inputs.kind == 'minor'
     runs-on: ubuntu-22.04
     needs: verify-inputs
     env:
@@ -72,46 +72,17 @@ jobs:
           git checkout "${BRANCH}" || git checkout -B "${BRANCH}"
           git push origin "${BRANCH}"
 
-  join-service:
+  micro-services:
     needs: [verify-inputs, prepare-release-branch]
     uses: ./.github/workflows/build-micro-service-manual.yml
     secrets: inherit
+    strategy:
+      matrix:
+        service:
+          [join-service, kmsserver, verification-service, qemu-metadata-api]
     with:
-      microService: "join-service"
-      imageTag: ${{ github.event.inputs.version }}
-      version: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
-      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
-      release: true
-
-  kmsserver:
-    needs: [verify-inputs, prepare-release-branch]
-    uses: ./.github/workflows/build-micro-service-manual.yml
-    secrets: inherit
-    with:
-      microService: "kmsserver"
-      imageTag: ${{ github.event.inputs.version }}
-      version: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
-      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
-      release: true
-
-  verification-service:
-    needs: [verify-inputs, prepare-release-branch]
-    secrets: inherit
-    uses: ./.github/workflows/build-micro-service-manual.yml
-    with:
-      microService: "verification-service"
-      imageTag: ${{ github.event.inputs.version }}
-      version: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
-      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
-      release: true
-
-  qemu-metadata-api:
-    needs: [verify-inputs, prepare-release-branch]
-    secrets: inherit
-    uses: ./.github/workflows/build-micro-service-manual.yml
-    with:
-      microService: "qemu-metadata-api"
-      imageTag: ${{ github.event.inputs.version }}
+      microService: ${{ matrix.service }}
+      imageTag: ${{ inputs.version }}
       version: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
       ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
       release: true
@@ -121,32 +92,15 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/build-operator-manual.yml
     with:
-      imageTag: ${{ github.event.inputs.version }}
+      imageTag: ${{ inputs.version }}
       ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
       release: true
 
-  await-microservices:
-    needs:
-      [
-        join-service,
-        kmsserver,
-        verification-service,
-        qemu-metadata-api,
-        constellation-node-operator,
-      ]
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Wait for microservices
-        run: |
-          echo "Waited for microservices to finish building"
-
-  # TODO: Prepare CHANGELOG here
-
   update-versions:
-    needs: [verify-inputs, await-microservices]
+    needs: [verify-inputs, micro-services, constellation-node-operator]
     runs-on: ubuntu-22.04
     env:
-      VERSION: ${{ github.event.inputs.version }}
+      VERSION: ${{ inputs.version }}
       WITHOUT_V: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
     steps:
       - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
@@ -204,7 +158,17 @@ jobs:
     uses: ./.github/workflows/build-os-image.yml
     secrets: inherit
     with:
-      imageVersion: ${{ github.event.inputs.version }}
+      imageVersion: ${{ inputs.version }}
       isRelease: true
       stream: "stable"
+      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+
+  generate-measurements:
+    needs: [verify-inputs, os-image]
+    uses: ./.github/workflows/generate-measurements.yml
+    secrets: inherit
+    with:
+      osImage: ${{ inputs.version }}
+      isDebugImage: false
+      signMeasurements: true
       ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
