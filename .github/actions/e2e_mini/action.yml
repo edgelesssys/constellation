@@ -23,7 +23,7 @@ runs:
     - name: Setup Go environment
       uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f # tag=v3.3.1
       with:
-        go-version: "1.19.3"
+        go-version: "1.19.4"
 
     - name: Build Constellation CLI
       uses: ./.github/actions/build_cli
@@ -42,12 +42,10 @@ runs:
         export AZURE_VM_IP=$(terraform output -raw public_ip)
         echo "::endgroup::"
 
-        echo "::group::Run E2E Test"
         ./wait-for-ssh.sh
         # Copy locally build Constellation CLI and run e2e script.
         scp -i id_rsa ../../../build/constellation adminuser@${AZURE_VM_IP}:.
         ssh -i id_rsa adminuser@${AZURE_VM_IP} 'bash -s' < run-e2e.sh
-        echo "::endgroup::"
       env:
         ARM_CLIENT_ID: ${{ inputs.azureClientID }}
         ARM_SUBSCRIPTION_ID: ${{ inputs.azureSubscriptionID }}

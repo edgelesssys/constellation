@@ -7,12 +7,17 @@
 #
 set -euxo pipefail
 
+echo "::group::Install dependencies"
+
 cloud-init status --wait
 
 export DEBIAN_FRONTEND=noninteractive
 sudo apt update -y
 
-sudo apt install -y bridge-utils cpu-checker libvirt-clients libvirt-daemon libvirt-daemon-system qemu qemu-kvm virtinst xsltproc ca-certificates curl gnupg lsb-release
+sudo apt install -y bridge-utils cpu-checker \
+  libvirt-clients libvirt-daemon libvirt-daemon-system \
+  qemu qemu-kvm virtinst xsltproc \
+  ca-certificates curl gnupg lsb-release
 
 sudo mkdir -p /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
@@ -23,6 +28,11 @@ sudo apt update -y
 sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 sudo usermod -aG docker "$USER"
 newgrp docker
+
+echo "::endgroup::"
+
+
+echo "::group::Run E2E Test"
 
 mkdir constellation_workspace
 cd constellation_workspace
@@ -56,3 +66,5 @@ kubectl -n kube-system rollout status --timeout 180s daemonset join-service
 kubectl -n kube-system rollout status --timeout 180s daemonset kms
 kubectl -n kube-system rollout status --timeout 180s daemonset konnectivity-agent
 kubectl -n kube-system rollout status --timeout 180s daemonset verification-service
+
+echo "::endgroup::"
