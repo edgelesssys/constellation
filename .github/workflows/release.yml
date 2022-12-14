@@ -1,0 +1,210 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. v1.2.3)"
+        required: true
+      kind:
+        description: "Release kind"
+        type: choice
+        options: [minor, patch]
+        required: true
+        default: "minor"
+
+jobs:
+  verify-inputs:
+    name: Verify inputs
+    runs-on: ubuntu-22.04
+    env:
+      FULL_VERSION: ${{ github.event.inputs.version }}
+    outputs:
+      WITHOUT_V: ${{ steps.version-info.outputs.WITHOUT_V }}
+      PART_MAJOR: ${{ steps.version-info.outputs.PART_MAJOR }}
+      PART_MINOR: ${{ steps.version-info.outputs.PART_MINOR }}
+      PART_PATCH: ${{ steps.version-info.outputs.PART_PATCH }}
+      MAJOR: ${{ steps.version-info.outputs.MAJOR }}
+      MAJOR_MINOR: ${{ steps.version-info.outputs.MAJOR_MINOR }}
+      MAJOR_MINOR_PATCH: ${{ steps.version-info.outputs.MAJOR_MINOR_PATCH }}
+      RELEASE_BRANCH: ${{ steps.version-info.outputs.RELEASE_BRANCH }}
+    steps:
+      - name: Verify version
+        run: |
+          if [[ ! "${FULL_VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version must be in the form of vX.Y.Z"
+            exit 1
+          fi
+      - name: Extract version info
+        id: version-info
+        run: |
+          WITHOUT_V=${FULL_VERSION#v}
+          PART_MAJOR=${WITHOUT_V%%.*}
+          PART_MINOR=${WITHOUT_V#*.}
+          PART_MINOR=${PART_MINOR%%.*}
+          PART_PATCH=${WITHOUT_V##*.}
+          {
+            echo "WITHOUT_V=${WITHOUT_V}"
+            echo "PART_MAJOR=${PART_MAJOR}"
+            echo "PART_MINOR=${PART_MINOR}"
+            echo "PART_PATCH=${PART_PATCH}"
+            echo "MAJOR=${PART_MAJOR}"
+            echo "MAJOR_MINOR=${PART_MAJOR}.${PART_MINOR}"
+            echo "MAJOR_MINOR_PATCH=${PART_MAJOR}.${PART_MINOR}.${PART_PATCH}"
+            echo "RELEASE_BRANCH=release/v${PART_MAJOR}.${PART_MINOR}"
+          } >> "$GITHUB_OUTPUT"
+
+  prepare-release-branch:
+    name: Prepare release branch
+    if: github.event.inputs.kind == 'minor'
+    runs-on: ubuntu-22.04
+    needs: verify-inputs
+    env:
+      BRANCH: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+    steps:
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Create release branch
+        run: |
+          git fetch
+          git pull
+          git checkout "${BRANCH}" || git checkout -B "${BRANCH}"
+          git push origin "${BRANCH}"
+
+  join-service:
+    needs: [verify-inputs, prepare-release-branch]
+    uses: ./.github/workflows/build-micro-service-manual.yml
+    secrets: inherit
+    with:
+      microService: "join-service"
+      imageTag: ${{ github.event.inputs.version }}
+      version: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
+      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+      release: true
+
+  kmsserver:
+    needs: [verify-inputs, prepare-release-branch]
+    uses: ./.github/workflows/build-micro-service-manual.yml
+    secrets: inherit
+    with:
+      microService: "kmsserver"
+      imageTag: ${{ github.event.inputs.version }}
+      version: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
+      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+      release: true
+
+  verification-service:
+    needs: [verify-inputs, prepare-release-branch]
+    secrets: inherit
+    uses: ./.github/workflows/build-micro-service-manual.yml
+    with:
+      microService: "verification-service"
+      imageTag: ${{ github.event.inputs.version }}
+      version: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
+      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+      release: true
+
+  qemu-metadata-api:
+    needs: [verify-inputs, prepare-release-branch]
+    secrets: inherit
+    uses: ./.github/workflows/build-micro-service-manual.yml
+    with:
+      microService: "qemu-metadata-api"
+      imageTag: ${{ github.event.inputs.version }}
+      version: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
+      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+      release: true
+
+  constellation-node-operator:
+    needs: [verify-inputs, prepare-release-branch]
+    secrets: inherit
+    uses: ./.github/workflows/build-operator-manual.yml
+    with:
+      imageTag: ${{ github.event.inputs.version }}
+      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+      release: true
+
+  await-microservices:
+    needs:
+      [
+        join-service,
+        kmsserver,
+        verification-service,
+        qemu-metadata-api,
+        constellation-node-operator,
+      ]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Wait for microservices
+        run: |
+          echo "Waited for microservices to finish building"
+
+  # TODO: Prepare CHANGELOG here
+
+  update-versions:
+    needs: [verify-inputs, await-microservices]
+    runs-on: ubuntu-22.04
+    env:
+      VERSION: ${{ github.event.inputs.version }}
+      WITHOUT_V: ${{ needs.verify-inputs.outputs.WITHOUT_V }}
+    steps:
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
+
+      - name: Install crane
+        uses: ./.github/actions/setup_crane
+
+      - name: Update enterprise image version
+        run: |
+          sed -i "s/defaultImage = \"v[0-9]\+\.[0-9]\+\.[0-9]\+\"/defaultImage = \"${VERSION}\"/" internal/config/images_enterprise.go
+          git add internal/config/images_enterprise.go
+
+      - name: Update CMakeLists.txt
+        run: |
+          sed -i "s/project(constellation LANGUAGES C VERSION [0-9]\+\.[0-9]\+\.[0-9]\+)/project(constellation LANGUAGES C VERSION ${WITHOUT_V})/" CMakeLists.txt
+          git add CMakeLists.txt
+
+      - name: Update Helm Charts
+        run: |
+          yq eval -i ".version = \"${WITHOUT_V}\"" cli/internal/helm/charts/edgeless/constellation-services/Chart.yaml
+          for service in kms join-service ccm cnm autoscaler verification-service konnectivity gcp-guest-agent; do
+            yq eval -i "(.dependencies[] | select(.name == \"${service}\")).version = \"${WITHOUT_V}\"" cli/internal/helm/charts/edgeless/constellation-services/Chart.yaml
+            yq eval -i ".version = \"${WITHOUT_V}\"" "cli/internal/helm/charts/edgeless/constellation-services/charts/${service}/Chart.yaml"
+            git add "cli/internal/helm/charts/edgeless/constellation-services/charts/${service}/Chart.yaml"
+          done
+          git add cli/internal/helm/charts/edgeless/constellation-services/Chart.yaml
+          yq eval -i ".version = \"${WITHOUT_V}\"" cli/internal/helm/charts/edgeless/operators/Chart.yaml
+          for service in node-maintenance-operator constellation-operator; do
+            yq eval -i "(.dependencies[] | select(.name == \"${service}\")).version = \"${WITHOUT_V}\"" cli/internal/helm/charts/edgeless/operators/Chart.yaml
+            yq eval -i ".version = \"${WITHOUT_V}\"" "cli/internal/helm/charts/edgeless/operators/charts/${service}/Chart.yaml"
+            git add "cli/internal/helm/charts/edgeless/operators/charts/${service}/Chart.yaml"
+          done
+          git add cli/internal/helm/charts/edgeless/operators/Chart.yaml
+
+      - name: Update micro service versions
+        run: |
+          for service in node-operator join-service kmsserver verification-service qemu-metadata-api; do
+            name=ghcr.io/edgelesssys/constellation/${service}
+            digest=$(crane digest "${name}:${VERSION}")
+            sed -i "s#\"${name}:v[0-9]\+\.[0-9]\+\.[0-9]\+@sha256:[0-9a-f]\+\"#\"${name}:${VERSION}@${digest}\"#" internal/versions/versions.go
+          done
+          git add internal/versions/versions.go
+
+      - name: Commit
+        run: |
+          git config --global user.name "release[bot]"
+          git config --global user.email "release[bot]@users.noreply.github.com"
+          git commit -m "Update version to ${VERSION}"
+          git push
+
+  os-image:
+    needs: [verify-inputs, update-versions]
+    uses: ./.github/workflows/build-os-image.yml
+    secrets: inherit
+    with:
+      imageVersion: ${{ github.event.inputs.version }}
+      isRelease: true
+      stream: "stable"
+      ref: ${{ needs.verify-inputs.outputs.RELEASE_BRANCH }}
