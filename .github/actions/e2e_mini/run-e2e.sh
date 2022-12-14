@@ -8,7 +8,6 @@
 set -euxo pipefail
 
 echo "::group::Install dependencies"
-
 cloud-init status --wait
 
 export DEBIAN_FRONTEND=noninteractive
@@ -28,12 +27,9 @@ sudo apt update -y
 sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 sudo usermod -aG docker "$USER"
 newgrp docker
-
 echo "::endgroup::"
 
-
 echo "::group::Run E2E Test"
-
 mkdir constellation_workspace
 cd constellation_workspace
 mv "$HOME"/constellation .
@@ -66,5 +62,4 @@ kubectl -n kube-system rollout status --timeout 180s daemonset join-service
 kubectl -n kube-system rollout status --timeout 180s daemonset kms
 kubectl -n kube-system rollout status --timeout 180s daemonset konnectivity-agent
 kubectl -n kube-system rollout status --timeout 180s daemonset verification-service
-
 echo "::endgroup::"
