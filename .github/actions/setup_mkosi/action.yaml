@@ -12,7 +12,6 @@ runs:
       run: |
         echo "::group::Dependencies"
         echo "deb-src http://archive.ubuntu.com/ubuntu/ $(lsb_release -cs) main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
-        sudo add-apt-repository ppa:michel-slm/kernel-utils
         sudo apt-get update
         sudo apt-get install --assume-yes --no-install-recommends \
           dnf \
