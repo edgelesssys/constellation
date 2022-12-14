@@ -15,7 +15,6 @@ runs:
         sudo apt-get update
         sudo apt-get install --assume-yes --no-install-recommends \
           dnf \
-          makepkg \
           systemd-container \
           qemu-system-x86 \
           ovmf \
