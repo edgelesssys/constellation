@@ -91,7 +91,7 @@ jobs:
         uses: ./.github/actions/build_cdbg
         with:
           targetOS: "darwin"
-          targetArch: "arm64"
+          targetArch: "amd64"
 
       - name: Build cdbg (macOS, arm64)
         uses: ./.github/actions/build_cdbg

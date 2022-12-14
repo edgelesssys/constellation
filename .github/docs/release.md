@@ -87,6 +87,7 @@ This checklist will prepare `v1.3.0` from `v1.2.0`. Adjust your version numbers 
         gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=azure -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false -F keepMeasurements=true
         gh workflow run e2e-test-manual.yml --ref release/v$minor -F cloudProvider=gcp -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false -F keepMeasurements=true
         gh workflow run e2e-test-manual-macos.yml --ref release/v$minor -F cloudProvider=gcp -F test="sonobuoy full" -F osImage=v$ver -F isDebugImage=false -F keepMeasurements=true
+        gh workflow run e2e-mini.yml --ref release/v$minor
         ```
 
     13. Create a new tag on this release branch.
