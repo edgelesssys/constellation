@@ -164,7 +164,7 @@ jobs:
   provenance-verify:
     runs-on: ubuntu-22.04
     env:
-      SLSA_VERIFIER_VERSION: "1.4.1"
+      SLSA_VERIFIER_VERSION: "2.0.1"
     needs:
       - build-cli
       - provenance
