@@ -34,7 +34,9 @@ There may be more API groups in the future (e.g. `cli`)
 - [`/constellation/v1/ref/<ref>/stream/<stream>/image/<version>/csp/<csp>/measurements.image.json`](image-api.md)
 - [`/constellation/v1/ref/<ref>/stream/<stream>/image/<version>/csp/<csp>/image.raw`](image-api.md)
 
-## Meaning of `ref`, `stream` and `version` for resource names
+## API path identifiers  `ref`, `stream` and `version`
+
+### Meaning of `ref`, `stream` and `version` for resource names
 
 Components in this API are identified by `ref`, `stream` and `version`.
 
@@ -46,29 +48,22 @@ The special `ref` value `-` (dash) is reserved for releases. Every other value i
 
 Streams are used to distinguish different types of resources. Depending on the kind of resource and `ref`, only a subset of values might be allowed.
 
-The `version` is always a valid semantic version. For the special stream `stable` it is guaranteed to be a semantic version `v<major>.<minor>.<patch>`, for other stream values, it is a semantic version that may contain a suffix after the patch: `v<major>.<minor>.<patch>-<suffix>`.
+The `version` is always a valid semantic version. For the special stream `stable` it is guaranteed to be a semantic version `v<major>.<minor>.<patch>`,
+for other stream values, it is a semantic version that may contain a suffix after the patch: `v<major>.<minor>.<patch>-<suffix>`.
 
-### Encoding of `ref`, `stream` and `version`
+The use of semantic versions and pseudo versions tries to match the versioning used in Go. If in doubt,
+consult the module reference of Go, especially the sections about [versions](https://go.dev/ref/mod#versions)
+and [pseudo-versions](https://go.dev/ref/mod#pseudo-versions).
 
-For API calls, the `ref`, `stream` and `version` parts of a name are always encoded as follows:
+The [pesudo-version tool](../hack/pseudo-version) can generate a valid pseudo-version for your current head.
+
+### Consisten API path prefix of `ref` and `stream`
+
+For API calls, paths will always start with `ref` and `stream`:
 
 ```
-ref/<ref>/stream/<stream>/<version>
+<base>/ref/<ref>/stream/<stream>/
 ```
-
-In end user configuration, the name can be shortened. When using the defaults, end user configuration can omit either the `ref` (if set to `-`) or the `ref` and `stream` parts (if set to `-` and `stable`):
-
-- `ref/-/stream/stable/<version>` is equivalent to the short form `<version>`
-- `ref/-/stream/<stream>/<version>` is equivalent to the short form `stream/<stream>/<version>`
-
-
-## Resource names
-
-Resources can be identified by `ref/<ref>/stream/<stream>/<version>` and allow for short form encoding as explained above.
-Resources using this encoding include:
-
-- `version`: version information for Constellation components
-- `image`: metadata for individual Constellation OS images
 
 ### Meaning of `ref` and `stream` for images
 
@@ -87,7 +82,22 @@ For other `ref` values, the `stream` value can be one of the following constants
 - `console`: Built with default settings (non-debug), allows access to the serial console
 - `debug`: Image containing the debugd, allows access to the serial console
 
-### Examples
+## Short paths for resource identification
+
+Short paths allow an easier version handling, e.g., in end user configuration files or CLI tools.
+When using the default values, short paths omit either the `ref` (if set to `-`) or the `ref` and `stream`
+parts (if set to `-` and `stable`):
+
+- `ref/-/stream/stable/<version>` is equivalent to the short path `<version>`
+- `ref/-/stream/<stream>/<version>` is equivalent to the short path `stream/<stream>/<version>`
+
+Resource group can be identified by `ref/<ref>/stream/<stream>/<version>` and allow for short form encoding as explained above.
+Resources using this encoding include:
+
+- `version`: version information for Constellation components
+- `image`: metadata for individual Constellation OS images
+
+## Examples
 
 Release v2.3.0 would use the following image name for the default, end-user image:
 
