@@ -46,7 +46,7 @@ func newMiniUpCmd() *cobra.Command {
 	return cmd
 }
 
-type miniCmd struct {
+type miniUpCmd struct {
 	log debugLog
 }
 
@@ -60,11 +60,11 @@ func runUp(cmd *cobra.Command, args []string) error {
 	defer spinner.Stop()
 	creator := cloudcmd.NewCreator(spinner)
 
-	m := &miniCmd{log: log}
+	m := &miniUpCmd{log: log}
 	return m.up(cmd, creator, spinner)
 }
 
-func (m * miniCmd) up(cmd *cobra.Command, creator cloudCreator, spinner spinnerInterf) error {
+func (m *miniUpCmd) up(cmd *cobra.Command, creator cloudCreator, spinner spinnerInterf) error {
 	if err := m.checkSystemRequirements(cmd.ErrOrStderr()); err != nil {
 		return fmt.Errorf("system requirements not met: %w", err)
 	}
@@ -109,7 +109,7 @@ func (m * miniCmd) up(cmd *cobra.Command, creator cloudCreator, spinner spinnerI
 // - has at least 4 CPU cores.
 // - has at least 4GB of memory.
 // - has at least 20GB of free disk space.
-func (m *miniCmd)checkSystemRequirements(out io.Writer) error {
+func (m *miniUpCmd) checkSystemRequirements(out io.Writer) error {
 	// check arch/os
 	if runtime.GOARCH != "amd64" || runtime.GOOS != "linux" {
 		return fmt.Errorf("creation of a QEMU based Constellation is not supported for %s/%s, a linux/amd64 platform is required", runtime.GOOS, runtime.GOARCH)
@@ -170,7 +170,7 @@ func (m *miniCmd)checkSystemRequirements(out io.Writer) error {
 }
 
 // prepareConfig reads a given config, or creates a new minimal QEMU config.
-func (m* miniCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler) (*config.Config, error) {
+func (m *miniUpCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler) (*config.Config, error) {
 	m.log.Debugf("Preparing config")
 	configPath, err := cmd.Flags().GetString("config")
 	if err != nil {
@@ -213,7 +213,7 @@ func (m* miniCmd) prepareConfig(cmd *cobra.Command, fileHandler file.Handler) (*
 }
 
 // createMiniCluster creates a new cluster using the given config.
-func (m *miniCmd) createMiniCluster(ctx context.Context, fileHandler file.Handler, creator cloudCreator, config *config.Config) error {
+func (m *miniUpCmd) createMiniCluster(ctx context.Context, fileHandler file.Handler, creator cloudCreator, config *config.Config) error {
 	m.log.Debugf("Creating mini cluster")
 	idFile, err := creator.Create(ctx, cloudprovider.QEMU, config, "mini", "", 1, 1)
 	if err != nil {
@@ -226,7 +226,7 @@ func (m *miniCmd) createMiniCluster(ctx context.Context, fileHandler file.Handle
 }
 
 // initializeMiniCluster initializes a QEMU cluster.
-func (m *miniCmd) initializeMiniCluster(cmd *cobra.Command, fileHandler file.Handler, spinner spinnerInterf) (retErr error) {
+func (m *miniUpCmd) initializeMiniCluster(cmd *cobra.Command, fileHandler file.Handler, spinner spinnerInterf) (retErr error) {
 	m.log.Debugf("Initializing mini cluster")
 	// clean up cluster resources if initialization fails
 	defer func() {
