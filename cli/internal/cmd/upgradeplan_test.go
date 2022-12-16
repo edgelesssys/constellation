@@ -19,6 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -414,8 +415,8 @@ func TestUpgradePlan(t *testing.T) {
 					Header:     make(http.Header),
 				}
 			})
-
-			err := upgradePlan(cmd, tc.planner, tc.patchLister, fileHandler, client, tc.verifier, tc.flags, tc.cliVersion)
+			up := &upgradePlanCmd{log: logger.NewTest(t)}
+			err := up.upgradePlan(cmd, tc.planner, tc.patchLister, fileHandler, client, tc.verifier, tc.flags, tc.cliVersion)
 			if tc.wantErr {
 				assert.Error(err)
 				return
