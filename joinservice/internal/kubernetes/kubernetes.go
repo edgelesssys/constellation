@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -85,7 +86,11 @@ func (c *Client) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap
 func (c *Client) AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsHash string, isControlPlane bool) error {
 	joiningNode := &unstructured.Unstructured{}
 
-	objectMetadataName := nodeName
+	compliantNodeName := k8sCompliantHostname(nodeName)
+
+	// JoiningNodes referencing a worker node are named after the worker node.
+	// JoiningNodes referencing the control-plane node are named "control-plane".
+	objectMetadataName := compliantNodeName
 	deadline := metav1.NewTime(time.Now().Add(48 * time.Hour))
 	if isControlPlane {
 		objectMetadataName = "control-plane"
@@ -99,7 +104,7 @@ func (c *Client) AddNodeToJoiningNodes(ctx context.Context, nodeName string, com
 			"name": objectMetadataName,
 		},
 		"spec": map[string]any{
-			"name":           nodeName,
+			"name":           compliantNodeName,
 			"componentshash": componentsHash,
 			"iscontrolplane": isControlPlane,
 			"deadline":       deadline,
@@ -141,4 +146,13 @@ func (c *Client) AddReferenceToK8sVersionConfigMap(ctx context.Context, k8sVersi
 		return fmt.Errorf("failed to update configmap: %w", err)
 	}
 	return nil
+}
+
+// k8sCompliantHostname transforms a hostname to an RFC 1123 compliant, lowercase subdomain as required by Kubernetes node names.
+// The following regex is used by k8s for validation: /^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$/ .
+// Only a simple heuristic is used for now (to lowercase, replace underscores).
+func k8sCompliantHostname(in string) string {
+	hostname := strings.ToLower(in)
+	hostname = strings.ReplaceAll(hostname, "_", "-")
+	return hostname
 }
