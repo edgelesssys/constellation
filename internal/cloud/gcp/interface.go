@@ -13,8 +13,13 @@ import (
 	"github.com/googleapis/gax-go/v2"
 )
 
-type forwardingRulesAPI interface {
+type globalForwardingRulesAPI interface {
 	List(ctx context.Context, req *computepb.ListGlobalForwardingRulesRequest, opts ...gax.CallOption) forwardingRuleIterator
+	Close() error
+}
+
+type regionalForwardingRulesAPI interface {
+	List(ctx context.Context, req *computepb.ListForwardingRulesRequest, opts ...gax.CallOption) forwardingRuleIterator
 	Close() error
 }
 
