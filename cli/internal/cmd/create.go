@@ -39,31 +39,42 @@ func NewCreateCmd() *cobra.Command {
 	return cmd
 }
 
+type createCmd struct {
+	log debugLog
+}
+
 func runCreate(cmd *cobra.Command, args []string) error {
+	log, err := newCLILogger(cmd)
+	if err != nil {
+		return fmt.Errorf("creating logger: %w", err)
+	}
+	defer log.Sync()
 	fileHandler := file.NewHandler(afero.NewOsFs())
 	spinner := newSpinner(cmd.ErrOrStderr())
 	defer spinner.Stop()
 	creator := cloudcmd.NewCreator(spinner)
-
-	return create(cmd, creator, fileHandler, spinner)
+	c := &createCmd{log: log}
+	return c.create(cmd, creator, fileHandler, spinner)
 }
 
-func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, spinner spinnerInterf,
+func (c *createCmd) create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, spinner spinnerInterf,
 ) (retErr error) {
-	flags, err := parseCreateFlags(cmd)
+	flags, err := c.parseCreateFlags(cmd)
 	if err != nil {
 		return err
 	}
-
-	if err := checkDirClean(fileHandler); err != nil {
+	c.log.Debugf("Using flags: %+v", flags)
+	if err := c.checkDirClean(fileHandler); err != nil {
 		return err
 	}
 
+	c.log.Debugf("Loading config file from %s", flags.configPath)
 	conf, err := config.New(fileHandler, flags.configPath)
 	if err != nil {
 		return displayConfigValidationErrors(cmd.ErrOrStderr(), err)
 	}
 
+	c.log.Debugf("Checking configuration for warnings")
 	var printedAWarning bool
 	if !conf.IsReleaseImage() {
 		cmd.PrintErrln("Configured image doesn't look like a released production image. Double check image before deploying to production.")
@@ -93,18 +104,23 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 	var instanceType string
 	switch provider {
 	case cloudprovider.AWS:
+		c.log.Debugf("Configuring instance type for AWS")
 		instanceType = conf.Provider.AWS.InstanceType
 		if len(flags.name) > 10 {
 			return fmt.Errorf("cluster name on AWS must not be longer than 10 characters")
 		}
 	case cloudprovider.Azure:
+		c.log.Debugf("Configuring instance type for Azure")
 		instanceType = conf.Provider.Azure.InstanceType
 	case cloudprovider.GCP:
+		c.log.Debugf("Configuring instance type for GCP")
 		instanceType = conf.Provider.GCP.InstanceType
 	case cloudprovider.QEMU:
+		c.log.Debugf("Configuring instance type for QEMU")
 		cpus := conf.Provider.QEMU.VCPUs
 		instanceType = fmt.Sprintf("%d-vCPU", cpus)
 	}
+	c.log.Debugf("Configured with instance type %s", instanceType)
 
 	if !flags.yes {
 		// Ask user to confirm action.
@@ -123,6 +139,7 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 
 	spinner.Start("Creating", false)
 	idFile, err := creator.Create(cmd.Context(), provider, conf, flags.name, instanceType, flags.controllerCount, flags.workerCount)
+	c.log.Debugf("Create command generated idFile: %+v", idFile)
 	spinner.Stop()
 	if err != nil {
 		return translateCreateErrors(cmd, err)
@@ -137,8 +154,9 @@ func create(cmd *cobra.Command, creator cloudCreator, fileHandler file.Handler, 
 }
 
 // parseCreateFlags parses the flags of the create command.
-func parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
+func (c *createCmd) parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	controllerCount, err := cmd.Flags().GetInt("control-plane-nodes")
+	c.log.Debugf("Control-plane nodes flag is %d", controllerCount)
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing number of control-plane nodes: %w", err)
 	}
@@ -147,6 +165,7 @@ func parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	}
 
 	workerCount, err := cmd.Flags().GetInt("worker-nodes")
+	c.log.Debugf("Worker nodes falg is %d", workerCount)
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing number of worker nodes: %w", err)
 	}
@@ -155,6 +174,7 @@ func parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	}
 
 	name, err := cmd.Flags().GetString("name")
+	c.log.Debugf("Name flag is %s", name)
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing name argument: %w", err)
 	}
@@ -166,11 +186,13 @@ func parseCreateFlags(cmd *cobra.Command) (createFlags, error) {
 	}
 
 	yes, err := cmd.Flags().GetBool("yes")
+	c.log.Debugf("Yes flag is %t", yes)
 	if err != nil {
 		return createFlags{}, fmt.Errorf("%w; Set '-yes' without a value to automatically confirm", err)
 	}
 
 	configPath, err := cmd.Flags().GetString("config")
+	c.log.Debugf("Config path flag is %s", configPath)
 	if err != nil {
 		return createFlags{}, fmt.Errorf("parsing config path argument: %w", err)
 	}
@@ -194,13 +216,16 @@ type createFlags struct {
 }
 
 // checkDirClean checks if files of a previous Constellation are left in the current working dir.
-func checkDirClean(fileHandler file.Handler) error {
+func (c *createCmd) checkDirClean(fileHandler file.Handler) error {
+	c.log.Debugf("Checking admin configuration file")
 	if _, err := fileHandler.Stat(constants.AdminConfFilename); !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("file '%s' already exists in working directory, run 'constellation terminate' before creating a new one", constants.AdminConfFilename)
 	}
+	c.log.Debugf("Checking master secrets file")
 	if _, err := fileHandler.Stat(constants.MasterSecretFilename); !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous master secrets. Move it somewhere or delete it before creating a new cluster", constants.MasterSecretFilename)
 	}
+	c.log.Debugf("Checking cluster IDs file")
 	if _, err := fileHandler.Stat(constants.ClusterIDsFileName); !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("file '%s' already exists in working directory. Constellation won't overwrite previous cluster IDs. Move it somewhere or delete it before creating a new cluster", constants.ClusterIDsFileName)
 	}
