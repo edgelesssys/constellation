@@ -19,15 +19,15 @@ func TestVersionFromDockerImage(t *testing.T) {
 		wantPanic   bool
 	}{
 		"valid image name": {
-			imageName:   "k8s.gcr.io/kube-apiserver:v1.18.0",
+			imageName:   "registry.test.foo/kube-apiserver:v1.18.0",
 			wantVersion: "v1.18.0",
 		},
 		"valid image name with sha": {
-			imageName:   "k8s.gcr.io/kube-apiserver:v1.18.0@sha256:1234567890abcdef",
+			imageName:   "registry.test.foo/kube-apiserver:v1.18.0@sha256:1234567890abcdef",
 			wantVersion: "v1.18.0",
 		},
 		"invalid image name": {
-			imageName: "k8s.gcr.io/kube-apiserver",
+			imageName: "registry.test.foo/kube-apiserver",
 			wantPanic: true,
 		},
 	}

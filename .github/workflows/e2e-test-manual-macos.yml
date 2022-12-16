@@ -17,6 +17,7 @@ on:
         options:
           - "gcp"
           - "azure"
+          - "aws"
         default: "azure"
         required: true
       test:
@@ -31,7 +32,7 @@ on:
         required: true
       kubernetesVersion:
         description: "Kubernetes version to create the cluster from."
-        default: "1.24"
+        default: "1.25"
         required: true
       keepMeasurements:
         description: "Keep measurements embedded in the CLI."
@@ -39,9 +40,10 @@ on:
         default: false
         required: false
       osImage:
-        description: "Full name of OS image (CSP independent image version UID)."
+        description: "Full name of OS image (CSP independent image version UID). Leave empty for latest debug image on main."
         type: string
-        required: true
+        default: ""
+        required: false
       isDebugImage:
         description: "Is OS image a debug image?"
         type: boolean
@@ -66,14 +68,14 @@ jobs:
     if: ${{ github.event.inputs.isDebugImage == 'true' }}
     steps:
       - name: Setup Go environment
-        uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # v3.4.0
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         if: ${{ github.event.steps.check-bootstrapper-cache.cache-hit != 'true'}}
         with:
           go-version: "1.19.4"
 
       - name: Check out repository
         if: ${{ github.event.steps.check-bootstrapper-cache.cache-hit != 'true'}}
-        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
         with:
           ref: ${{ github.head_ref }}
 
@@ -88,13 +90,47 @@ jobs:
           key: bootstrapper-${{ github.sha }}
           path: "build/bootstrapper"
 
+  find-latest-image:
+    name: Select image
+    runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      image: ${{ steps.find-latest-image.outputs.image }}${{ steps.check-input.outputs.image }}
+    steps:
+      - name: Check input
+        id: check-input
+        shell: bash
+        run: |
+          if [[ -z "${{ inputs.osImage }}" ]]; then
+            echo "Using latest debug image from main."
+          else
+            echo "Using image '${{ inputs.osImage }}'."
+            echo "image=${{ inputs.osImage }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Find latest image
+        id: find-latest-image
+        if: steps.check-input.outputs.image == ''
+        uses: ./.github/actions/find_latest_image
+        with:
+          ref: main
+          stream: debug
+
   e2e-test-manual-darwin:
     name: "e2e Test Manual (macOS)"
     runs-on: macos-12
     permissions:
       id-token: write
       contents: read
-    needs: build-bootstrapper-linux
+    needs: [build-bootstrapper-linux, find-latest-image]
     if: ${{ always() && !cancelled() && (needs.build-bootstrapper-linux.result == 'success' || needs.build-bootstrapper-linux.result == 'skipped') }}
     steps:
       - name: Install the basics
@@ -102,12 +138,12 @@ jobs:
         run: brew install coreutils kubectl bash
 
       - name: Check out repository
-        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
         with:
           ref: ${{ github.head_ref }}
 
       - name: Setup Go environment
-        uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # v3.4.0
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
           go-version: "1.19.4"
 
@@ -151,7 +187,7 @@ jobs:
           azureClientSecret: ${{ secrets.AZURE_E2E_CLIENT_SECRET }}
           azureUserAssignedIdentity: ${{ secrets.AZURE_E2E_USER_ASSIGNED_IDENTITY }}
           azureResourceGroup: ${{ steps.az_resource_group_gen.outputs.res_group_name }}
-          osImage: ${{ github.event.inputs.osImage }}
+          osImage: ${{ needs.find-latest-image.outputs.image }}
           isDebugImage: ${{ github.event.inputs.isDebugImage }}
 
       - name: Always terminate cluster

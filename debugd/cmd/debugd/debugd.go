@@ -59,13 +59,7 @@ func main() {
 
 	csp := os.Getenv("CONSTEL_CSP")
 
-	infoMap := info.NewMap()
-	infoMap.RegisterOnReceiveTrigger(
-		logcollector.NewStartTrigger(ctx, wg, platform.FromString(csp), log.Named("logcollector")),
-	)
-
-	download := deploy.New(log.Named("download"), &net.Dialer{}, serviceManager, streamer, infoMap)
-	var fetcher metadata.Fetcher
+	var fetcher *cloudprovider.Fetcher
 	switch platform.FromString(csp) {
 	case platform.AWS:
 		meta, err := awscloud.New(ctx)
@@ -94,8 +88,16 @@ func main() {
 
 	default:
 		log.Errorf("Unknown / unimplemented cloud provider CONSTEL_CSP=%v. Using fallback", csp)
-		fetcher = fallback.Fetcher{}
+		fetcher = fallback.NewFallbackFetcher()
 	}
+
+	infoMap := info.NewMap()
+	infoMap.RegisterOnReceiveTrigger(
+		logcollector.NewStartTrigger(ctx, wg, platform.FromString(csp), fetcher, log.Named("logcollector")),
+	)
+
+	download := deploy.New(log.Named("download"), &net.Dialer{}, serviceManager, streamer, infoMap)
+
 	sched := metadata.NewScheduler(log.Named("scheduler"), fetcher, download)
 	serv := server.New(log.Named("server"), serviceManager, streamer, infoMap)
 	if err := deploy.DefaultServiceUnit(ctx, serviceManager); err != nil {

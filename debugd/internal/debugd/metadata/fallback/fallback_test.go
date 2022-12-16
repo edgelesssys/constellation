@@ -10,6 +10,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/edgelesssys/constellation/v2/internal/role"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
 )
@@ -21,9 +22,20 @@ func TestMain(m *testing.M) {
 func TestDiscoverDebugdIPs(t *testing.T) {
 	assert := assert.New(t)
 
-	fetcher := Fetcher{}
+	fetcher := NewFallbackFetcher()
 	ips, err := fetcher.DiscoverDebugdIPs(context.Background())
-
 	assert.NoError(err)
 	assert.Empty(ips)
+
+	rol, err := fetcher.Role(context.Background())
+	assert.NoError(err)
+	assert.Equal(rol, role.Unknown)
+
+	uid, err := fetcher.UID(context.Background())
+	assert.NoError(err)
+	assert.Empty(uid)
+
+	self, err := fetcher.Self(context.Background())
+	assert.NoError(err)
+	assert.Empty(self)
 }

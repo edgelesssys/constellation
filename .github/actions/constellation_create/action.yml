@@ -151,6 +151,7 @@ runs:
       run: |
         echo "Creating cluster using config:"
         cat constellation-conf.yaml
+        sudo sh -c 'echo "127.0.0.1 license.confidential.cloud" >> /etc/hosts' || true
         constellation create -c ${{ inputs.controlNodesCount }} -w ${{ inputs.workerNodesCount }} --name e2e-test -y
 
     - name: Cdbg deploy

@@ -33,7 +33,7 @@ jobs:
       disk-mapper-sha256: ${{ steps.collect-hashes.outputs.disk-mapper-sha256 }}
     steps:
       - name: Checkout
-        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
         with:
           ref: ${{ github.head_ref }}
 
@@ -85,7 +85,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
         with:
           ref: ${{ github.head_ref }}
 
@@ -126,7 +126,7 @@ jobs:
         id: pki-set
         shell: bash
         run: |
-          if [[ "${{ inputs.isRelease }}" != "true" ]] && [[ "${{ inputs.stream }}" == "stable" ]]; then
+          if [[ "${{ inputs.isRelease }}" == "true" ]] && [[ "${{ inputs.stream }}" == "stable" ]]; then
              echo "pkiSet=pki_prod" >> "$GITHUB_OUTPUT"
            else
              echo "pkiSet=pki_testing" >> "$GITHUB_OUTPUT"
@@ -146,7 +146,7 @@ jobs:
             echo "imageApiBasePath=constellation/v1/ref/${REF}/stream/${STREAM}/image/${IMAGE_VERSION}"
           } >> "$GITHUB_OUTPUT"
 
-          if [[ "${REF}" = "-" ]] && [[ "${stream}" = "stable" ]]; then
+          if [[ "${REF}" = "-" ]] && [[ "${STREAM}" = "stable" ]]; then
             echo "imageNameShort=${IMAGE_VERSION}" >> "$GITHUB_OUTPUT"
           elif [[ "${REF}" = "-" ]]; then
             echo "imageNameShort=stream/${STREAM}/${IMAGE_VERSION}" >> "$GITHUB_OUTPUT"
@@ -199,7 +199,7 @@ jobs:
         csp: [aws, azure, gcp, qemu]
     steps:
       - name: Checkout
-        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
         with:
           ref: ${{ github.head_ref }}
 
@@ -228,7 +228,7 @@ jobs:
         working-directory: ${{ github.workspace }}/image
         env:
           PKI_SET: ${{ needs.build-settings.outputs.pkiSet }}
-          DB_KEY: ${{ (needs.build-settings.outputs.imageType == 'release' && secrets.SECURE_BOOT_RELEASE_DB_KEY) || secrets.SECURE_BOOT_TESTING_DB_KEY }}
+          DB_KEY: ${{ ((needs.build-settings.outputs.pkiSet == 'pki_prod') && secrets.SECURE_BOOT_RELEASE_DB_KEY) || secrets.SECURE_BOOT_TESTING_DB_KEY }}
 
       - name: Build
         shell: bash
@@ -309,7 +309,7 @@ jobs:
             upload-variant: TrustedLaunch
     steps:
       - name: Checkout
-        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
         with:
           ref: ${{ github.head_ref }}
 
@@ -496,7 +496,7 @@ jobs:
         csp: [aws, azure, gcp, qemu]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
         with:
           ref: ${{ github.head_ref }}
 
@@ -718,12 +718,12 @@ jobs:
           ) >> "$GITHUB_STEP_SUMMARY"
 
       - name: Checkout
-        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
         with:
           ref: ${{ github.head_ref }}
 
       - name: Setup Go environment
-        uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # v3.4.0
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
           go-version: "1.19.4"
           cache: true

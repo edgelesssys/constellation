@@ -18,6 +18,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/info"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 )
@@ -32,7 +33,7 @@ const (
 //
 // This requires podman to be installed.
 func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprovider.Provider,
-	logger *logger.Logger,
+	metadata providerMetadata, logger *logger.Logger,
 ) func(*info.Map) {
 	return func(infoMap *info.Map) {
 		wg.Add(1)
@@ -83,7 +84,7 @@ func NewStartTrigger(ctx context.Context, wg *sync.WaitGroup, provider cloudprov
 				return
 			}
 			infoMapM = filterInfoMap(infoMapM)
-			infoMapM["provider"] = provider.String()
+			setCloudMetadata(ctx, infoMapM, provider, metadata)
 
 			logger.Infof("Writing logstash pipeline")
 			pipelineConf := logstashConfInput{
@@ -194,6 +195,7 @@ func startPod(ctx context.Context, logger *logger.Logger) error {
 		"--volume=/etc/machine-id:/etc/machine-id:ro",
 		"--volume=/run/systemd:/run/systemd:ro",
 		"--volume=/run/systemd/journal/socket:/run/systemd/journal/socket:rw",
+		"--volume=/run/state/var/log:/var/log:ro",
 		versions.FilebeatImage,
 	}
 	runFilebeatCmd := exec.CommandContext(ctx, "podman", runFilebeatArgs...)
@@ -245,6 +247,28 @@ func filterInfoMap(in map[string]string) map[string]string {
 	return out
 }
 
+func setCloudMetadata(ctx context.Context, m map[string]string, provider cloudprovider.Provider, metadata providerMetadata) {
+	m["provider"] = provider.String()
+
+	self, err := metadata.Self(ctx)
+	if err != nil {
+		m["name"] = "unknown"
+		m["role"] = "unknown"
+		m["vpcip"] = "unknown"
+	} else {
+		m["name"] = self.Name
+		m["role"] = self.Role.String()
+		m["vpcip"] = self.VPCIP
+	}
+
+	uid, err := metadata.UID(ctx)
+	if err != nil {
+		m["uid"] = "unknown"
+	} else {
+		m["uid"] = uid
+	}
+}
+
 func newCmdLogger(logger *logger.Logger) io.Writer {
 	return &cmdLogger{logger: logger}
 }
@@ -256,4 +280,11 @@ type cmdLogger struct {
 func (c *cmdLogger) Write(p []byte) (n int, err error) {
 	c.logger.Infof("%s", p)
 	return len(p), nil
+}
+
+type providerMetadata interface {
+	// Self retrieves the current instance.
+	Self(ctx context.Context) (metadata.InstanceMetadata, error)
+	// UID returns the UID of the current instance.
+	UID(ctx context.Context) (string, error)
 }

@@ -228,8 +228,9 @@ script as root/with sudo)."
   # Fill the global variables for the id command for the given disk type
   # Error messages will be printed closer to error, no need to reprint here
   identify_pd_disk "${device_path}"
-  if [[ $? -ne 0 ]]; then
-    return $?
+  ret=$?
+  if [[ ${ret} -ne 0 ]]; then
+    return "${ret}"
   fi
 
   # Gen symlinks or print out the globals set by the identify command

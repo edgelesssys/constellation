@@ -46,7 +46,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights v1.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2 v2.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork v1.1.0
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.5.1
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.6.1
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/aws/aws-sdk-go-v2 v1.17.2
 	github.com/aws/aws-sdk-go-v2/config v1.18.4
@@ -85,7 +85,7 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/talos-systems/talos/pkg/machinery v1.2.7
 	go.uber.org/goleak v1.2.0
-	go.uber.org/multierr v1.8.0
+	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.4.0
 	golang.org/x/mod v0.7.0
@@ -95,7 +95,7 @@ require (
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm v2.17.0+incompatible
-	helm.sh/helm/v3 v3.10.2
+	helm.sh/helm/v3 v3.10.3
 	k8s.io/api v0.25.4
 	k8s.io/apiextensions-apiserver v0.25.4
 	k8s.io/apimachinery v0.25.4

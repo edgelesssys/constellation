@@ -9,23 +9,33 @@ package fallback
 import (
 	"context"
 
-	"github.com/edgelesssys/constellation/v2/internal/role"
+	"github.com/edgelesssys/constellation/v2/debugd/internal/debugd/metadata/cloudprovider"
+	"github.com/edgelesssys/constellation/v2/internal/cloud/metadata"
 )
 
-// Fetcher implements metadata.Fetcher interface but does not actually fetch cloud provider metadata.
-type Fetcher struct{}
-
-// Role for fallback fetcher does not try to fetch role.
-func (f Fetcher) Role(_ context.Context) (role.Role, error) {
-	return role.Unknown, nil
+// NewFallbackFetcher returns a cloudprovider.Fetcher with a fake metadata backend.
+func NewFallbackFetcher() *cloudprovider.Fetcher {
+	return cloudprovider.New(&fallbackMetadata{})
 }
 
-// DiscoverDebugdIPs for fallback fetcher does not try to discover debugd IPs.
-func (f Fetcher) DiscoverDebugdIPs(ctx context.Context) ([]string, error) {
+type fallbackMetadata struct{}
+
+// List retrieves all instances belonging to the current constellation.
+func (fallbackMetadata) List(context.Context) ([]metadata.InstanceMetadata, error) {
 	return nil, nil
 }
 
-// DiscoverLoadbalancerIP for fallback fetcher does not try to discover loadbalancer IP.
-func (f Fetcher) DiscoverLoadbalancerIP(ctx context.Context) (string, error) {
+// Self retrieves the current instance.
+func (fallbackMetadata) Self(context.Context) (metadata.InstanceMetadata, error) {
+	return metadata.InstanceMetadata{}, nil
+}
+
+// GetLoadBalancerEndpoint returns the endpoint of the load balancer.
+func (fallbackMetadata) GetLoadBalancerEndpoint(context.Context) (string, error) {
+	return "", nil
+}
+
+// UID returns the UID of the current instance.
+func (fallbackMetadata) UID(context.Context) (string, error) {
 	return "", nil
 }

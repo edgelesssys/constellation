@@ -36,6 +36,8 @@ func IsSupportedK8sVersion(version string) bool {
 		return true
 	case string(V1_25):
 		return true
+	case string(V1_26):
+		return true
 	default:
 		return false
 	}
@@ -53,32 +55,32 @@ const (
 	//
 
 	// KonnectivityAgentImage agent image for konnectivity service.
-	KonnectivityAgentImage = "us.gcr.io/k8s-artifacts-prod/kas-network-proxy/proxy-agent:v0.0.33@sha256:48f2a4ec3e10553a81b8dd1c6fa5fe4bcc9617f78e71c1ca89c6921335e2d7da" // renovate:container
+	KonnectivityAgentImage = "registry.k8s.io/kas-network-proxy/proxy-agent:v0.0.33@sha256:48f2a4ec3e10553a81b8dd1c6fa5fe4bcc9617f78e71c1ca89c6921335e2d7da" // renovate:container
 	// KonnectivityServerImage server image for konnectivity service.
 	KonnectivityServerImage = "registry.k8s.io/kas-network-proxy/proxy-server:v0.0.33@sha256:2c111f004bec24888d8cfa2a812a38fb8341350abac67dcd0ac64e709dfe389c" // renovate:container
 	// JoinImage image of Constellation join service.
-	JoinImage = "ghcr.io/edgelesssys/constellation/join-service:v2.3.0-pre.0.20221209173020-c993cd6800f9@sha256:0a3eb8ec1430a4cec21d755b222f7d03d3deb949e9dd568b3a6d9e6bec728f32" // renovate:container
+	JoinImage = "ghcr.io/edgelesssys/constellation/join-service:v2.3.0@sha256:0ffbbd200939480b1d88a5c7cde41ec8f39a3343a2208b459ddd103b8a7133a7" // renovate:container
 	// KmsImage image of Constellation KMS server.
-	KmsImage = "ghcr.io/edgelesssys/constellation/kmsserver:v2.3.0-pre.0.20221209153258-012f739c67de@sha256:9fcfc39d276bec5378bce61e25dc48cba7f742fcd373be53fb7ce26d02427a3c" // renovate:container
+	KmsImage = "ghcr.io/edgelesssys/constellation/kmsserver:v2.3.0@sha256:386ba219acffa06d8c202b3746cf7551d782a9656190ed5515cfb96f010bdae7" // renovate:container
 	// VerificationImage image of Constellation verification service.
-	VerificationImage = "ghcr.io/edgelesssys/constellation/verification-service:v2.3.0-pre.0.20221209153258-012f739c67de@sha256:db4d2ac4fd090bc9699de55c3b9021d3dc73cae2c1ea35d70a8eadd1999a57a0" // renovate:container
+	VerificationImage = "ghcr.io/edgelesssys/constellation/verification-service:v2.3.0@sha256:1281bb548b43b9a056101db684d3700e5eef5e4e72da3e7c8f913baf3fec28fc" // renovate:container
 	// GcpGuestImage image for GCP guest agent.
 	// Check for new versions at https://github.com/GoogleCloudPlatform/guest-agent/releases and update in /.github/workflows/build-gcp-guest-agent.yml.
 	GcpGuestImage = "ghcr.io/edgelesssys/gcp-guest-agent:20220927.00@sha256:3dea1ae3f162d2353e6584b325f0e325a39cda5f380f41e5a0ee43c6641d3905" // renovate:container
 	// ConstellationOperatorImage is the image for the constellation node operator.
-	ConstellationOperatorImage = "ghcr.io/edgelesssys/constellation/node-operator:v2.3.0-pre.0.20221209173020-c993cd6800f9@sha256:d2556aa410f9ffe5ce357a262ce3c705fca306f0979d5aa266ff5fe2f7030a87" // renovate:container
+	ConstellationOperatorImage = "ghcr.io/edgelesssys/constellation/node-operator:v2.3.0@sha256:37ebbc2d32c1884f7a54a5250512ca1cb7e6a434e9eabc6842b1a2b58d8f747d" // renovate:container
 	// NodeMaintenanceOperatorImage is the image for the node maintenance operator.
 	NodeMaintenanceOperatorImage = "ghcr.io/edgelesssys/constellation/node-maintenance-operator:v0.13.1-alpha1@sha256:e011d428dba3ef66a2a4656a2bf58bcfe89836c62b0a75676f5c12350502a3cf" // renovate:container
 
 	// QEMUMetadataImage image of QEMU metadata api service.
-	QEMUMetadataImage = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.3.0-pre.0.20221209153258-012f739c67de@sha256:0060a2d69d32c5c58b59a44d1da5fa715dd6a94d18bbe6ac35a4de29cc566d4e" // renovate:container
+	QEMUMetadataImage = "ghcr.io/edgelesssys/constellation/qemu-metadata-api:v2.3.0@sha256:18a1cfe8bf274d3b2d2c6f3f9c495c5a18b99421c1bfd73ef7fd2a9db7027a56" // renovate:container
 	// LibvirtImage image that provides libvirt.
 	LibvirtImage = "ghcr.io/edgelesssys/constellation/libvirt:v2.2.0@sha256:81ddc30cd679a95379e94e2f154861d9112bcabfffa96330c09a4917693f7cce" // renovate:container
 
 	// LogstashImage is the container image of logstash, used for log collection by debugd.
-	LogstashImage = "ghcr.io/edgelesssys/constellation/logstash-debugd:v2.3.0-pre.0.20221209171422-ac608900fba0@sha256:410f3d31e575e0b9d49b7cdbcd4178efb6964a9c0cb3656a55dd388f816e9c74" // renovate:container
+	LogstashImage = "ghcr.io/edgelesssys/constellation/logstash-debugd:v2.3.0-pre.0.20221212170906-a77f38efbb31@sha256:cef4d17ed639765f127c16fb5fd896cd3cd2db3c71591929e4df3b4959218395" // renovate:container
 	// FilebeatImage is the container image of filebeat, used for log collection by debugd.
-	FilebeatImage = "ghcr.io/edgelesssys/constellation/filebeat-debugd:v2.3.0-pre.0.20221209171422-ac608900fba0@sha256:1cc0b97a72396a8e3121f586837169af6561004e187e53a0000f95c65ce99e99" // renovate:container
+	FilebeatImage = "ghcr.io/edgelesssys/constellation/filebeat-debugd:v2.3.0-pre.0.20221212170906-a77f38efbb31@sha256:305a27bcb8f76caa23902c753e0342d5bcfc9c89074a1848c157d8e74c5b5049" // renovate:container
 
 	// currently supported versions.
 	//nolint:revive
@@ -87,9 +89,11 @@ const (
 	V1_24 ValidK8sVersion = "1.24"
 	//nolint:revive
 	V1_25 ValidK8sVersion = "1.25"
+	//nolint:revive
+	V1_26 ValidK8sVersion = "1.26"
 
 	// Default k8s version deployed by Constellation.
-	Default ValidK8sVersion = V1_24
+	Default ValidK8sVersion = V1_25
 )
 
 // Regenerate the hashes by running go generate.
@@ -108,8 +112,8 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				Extract:     true,
 			},
 			{
-				URL:         "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.25.0/crictl-v1.25.0-linux-amd64.tar.gz", // renovate:crictl-release
-				Hash:        "sha256:86ab210c007f521ac4cdcbcf0ae3fb2e10923e65f16de83e0e1db191a07f0235",
+				URL:         "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.26.0/crictl-v1.26.0-linux-amd64.tar.gz", // renovate:crictl-release
+				Hash:        "sha256:cda5e2143bf19f6b548110ffba0fe3565e03e8743fadd625fee3d62fc4134eed",
 				InstallPath: constants.BinDir,
 				Extract:     true,
 			},
@@ -142,7 +146,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
 		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.23.23@sha256:a82d73fb1ee10e3041b4f03cfe4ab5bb8edc8329c45bf1d42ff9e06340137de3", // renovate:container
 		// External service image. Depends on k8s version.
-		ClusterAutoscalerImage: "k8s.gcr.io/autoscaling/cluster-autoscaler:v1.23.1@sha256:cd2101ba67f3d6ec719f7792d4bdaa3a50e1b716f3a9ccee8931086496c655b7", // renovate:container
+		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.23.1@sha256:cd2101ba67f3d6ec719f7792d4bdaa3a50e1b716f3a9ccee8931086496c655b7", // renovate:container
 	},
 	V1_24: {
 		PatchVersion: "v1.24.9", // renovate:kubernetes-release
@@ -154,8 +158,8 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				Extract:     true,
 			},
 			{
-				URL:         "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.25.0/crictl-v1.25.0-linux-amd64.tar.gz", // renovate:crictl-release
-				Hash:        "sha256:86ab210c007f521ac4cdcbcf0ae3fb2e10923e65f16de83e0e1db191a07f0235",
+				URL:         "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.26.0/crictl-v1.26.0-linux-amd64.tar.gz", // renovate:crictl-release
+				Hash:        "sha256:cda5e2143bf19f6b548110ffba0fe3565e03e8743fadd625fee3d62fc4134eed",
 				InstallPath: constants.BinDir,
 				Extract:     true,
 			},
@@ -188,7 +192,7 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
 		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.24.10@sha256:fed0573c5200e2ba6874a08b4fa875523958d6e6cebc4831f5798ae8caf4ac8e", // renovate:container
 		// External service image. Depends on k8s version.
-		ClusterAutoscalerImage: "k8s.gcr.io/autoscaling/cluster-autoscaler:v1.24.0@sha256:5bd22353ae7f30c9abfaa08189281367ef47ea1b3d09eb13eb26bd13de241e72", // renovate:container
+		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.24.0@sha256:5bd22353ae7f30c9abfaa08189281367ef47ea1b3d09eb13eb26bd13de241e72", // renovate:container
 	},
 	V1_25: {
 		PatchVersion: "v1.25.5", // renovate:kubernetes-release
@@ -200,8 +204,8 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 				Extract:     true,
 			},
 			{
-				URL:         "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.25.0/crictl-v1.25.0-linux-amd64.tar.gz", // renovate:crictl-release
-				Hash:        "sha256:86ab210c007f521ac4cdcbcf0ae3fb2e10923e65f16de83e0e1db191a07f0235",
+				URL:         "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.26.0/crictl-v1.26.0-linux-amd64.tar.gz", // renovate:crictl-release
+				Hash:        "sha256:cda5e2143bf19f6b548110ffba0fe3565e03e8743fadd625fee3d62fc4134eed",
 				InstallPath: constants.BinDir,
 				Extract:     true,
 			},
@@ -237,7 +241,56 @@ var VersionConfigs = map[ValidK8sVersion]KubernetesVersion{
 		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.25.4@sha256:5227c3820a60df390107fa0a0865bf19745f21fc3c323c779ac71e3b70e46846", // renovate:container
 		// External service image. Depends on k8s version.
 		// Check for new versions at https://github.com/kubernetes/autoscaler/releases.
-		ClusterAutoscalerImage: "k8s.gcr.io/autoscaling/cluster-autoscaler:v1.25.0@sha256:f509ffab618dbd07d129b69ec56963aac7f61aaa792851206b54a2f0bbe046df", // renovate:container
+		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.25.0@sha256:f509ffab618dbd07d129b69ec56963aac7f61aaa792851206b54a2f0bbe046df", // renovate:container
+	},
+	V1_26: {
+		PatchVersion: "v1.26.0", // renovate:kubernetes-release
+		KubernetesComponents: ComponentVersions{
+			{
+				URL:         "https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz", // renovate:cni-plugins-release
+				Hash:        "sha256:b275772da4026d2161bf8a8b41ed4786754c8a93ebfb6564006d5da7f23831e5",
+				InstallPath: constants.CniPluginsDir,
+				Extract:     true,
+			},
+			{
+				URL:         "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.26.0/crictl-v1.26.0-linux-amd64.tar.gz", // renovate:crictl-release
+				Hash:        "sha256:cda5e2143bf19f6b548110ffba0fe3565e03e8743fadd625fee3d62fc4134eed",
+				InstallPath: constants.BinDir,
+				Extract:     true,
+			},
+			{
+				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.26.0/bin/linux/amd64/kubelet", // renovate:kubernetes-release
+				Hash:        "sha256:b64949fe696c77565edbe4100a315b6bf8f0e2325daeb762f7e865f16a6e54b5",
+				InstallPath: constants.KubeletPath,
+				Extract:     false,
+			},
+			{
+				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.26.0/bin/linux/amd64/kubeadm", // renovate:kubernetes-release
+				Hash:        "sha256:72631449f26b7203701a1b99f6914f31859583a0e247c3ac0f6aaf59ca80af19",
+				InstallPath: constants.KubeadmPath,
+				Extract:     false,
+			},
+			{
+				URL:         "https://storage.googleapis.com/kubernetes-release/release/v1.26.0/bin/linux/amd64/kubectl", // renovate:kubernetes-release
+				Hash:        "sha256:b6769d8ac6a0ed0f13b307d289dc092ad86180b08f5b5044af152808c04950ae",
+				InstallPath: constants.KubectlPath,
+				Extract:     false,
+			},
+		},
+		// CloudControllerManagerImageAWS is the CCM image used on AWS.
+		CloudControllerManagerImageAWS: "registry.k8s.io/provider-aws/cloud-controller-manager:v1.25.1@sha256:85d3f1e9dacc72531445989bb10999e1e70ebc409d11be57e5baa5f031a893b0", // renovate:container
+		// CloudControllerManagerImageGCP is the CCM image used on GCP.
+		// TODO: use newer "cloud-provider-gcp" from https://github.com/kubernetes/cloud-provider-gcp when newer releases are available.
+		CloudControllerManagerImageGCP: "ghcr.io/edgelesssys/cloud-provider-gcp:v25.2.0@sha256:86fa9d31ed0b3d0d8806f13d6e7debd3471028b2cb7cca3a876d8a31612a7ba5", // renovate:container
+		// CloudControllerManagerImageAzure is the CCM image used on Azure.
+		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
+		CloudControllerManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager:v1.25.4@sha256:f851de1325e7fffb61ab817db310743574e7d96576984d3351ddde2c840b3ebd", // renovate:container
+		// CloudNodeManagerImageAzure is the cloud-node-manager image used on Azure.
+		// Check for newer versions at https://github.com/kubernetes-sigs/cloud-provider-azure/blob/master/README.md.
+		CloudNodeManagerImageAzure: "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:v1.25.4@sha256:5227c3820a60df390107fa0a0865bf19745f21fc3c323c779ac71e3b70e46846", // renovate:container
+		// External service image. Depends on k8s version.
+		// Check for new versions at https://github.com/kubernetes/autoscaler/releases.
+		ClusterAutoscalerImage: "registry.k8s.io/autoscaling/cluster-autoscaler:v1.25.0@sha256:f509ffab618dbd07d129b69ec56963aac7f61aaa792851206b54a2f0bbe046df", // renovate:container
 	},
 }
 

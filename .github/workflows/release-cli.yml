@@ -14,11 +14,11 @@ jobs:
     steps:
       - name: Checkout
         id: checkout
-        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
         with:
           ref: ${{ github.head_ref }}
       - name: Setup Go environment
-        uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # v3.4.0
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
           go-version: "1.19.4"
       - name: Build CLI
@@ -83,7 +83,7 @@ jobs:
     steps:
       - name: Checkout
         id: checkout
-        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
         with:
           ref: ${{ github.head_ref }}
       - name: Login to Azure
@@ -95,10 +95,10 @@ jobs:
         with:
           gcp_service_account_json: ${{ secrets.GCP_SERVICE_ACCOUNT }}
       - name: Build version manifest
+        working-directory: ${{ github.workspace }}/hack/build-manifest
         run: |
-          cd hack/build-manifest/
-          AZURE_SUBSCRIPTION_ID=0d202bbb-4fa7-4af8-8125-58c269a05435 go run . > versions-manifest.json
-          cat versions-manifest.json
+          AZURE_SUBSCRIPTION_ID=0d202bbb-4fa7-4af8-8125-58c269a05435 go run . > ${{ github.workspace }}/versions-manifest.json
+          cat ${{ github.workspace }}/versions-manifest.json
       - name: Upload versions-manifest
         uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
         with:
@@ -110,7 +110,7 @@ jobs:
     steps:
       - name: Checkout
         id: checkout
-        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
         with:
           ref: ${{ github.head_ref }}
       - name: Download syft & grype
@@ -164,7 +164,7 @@ jobs:
   provenance-verify:
     runs-on: ubuntu-22.04
     env:
-      SLSA_VERIFIER_VERSION: "1.4.1"
+      SLSA_VERIFIER_VERSION: "2.0.1"
     needs:
       - build-cli
       - provenance
