@@ -95,7 +95,6 @@ The image lookup table is a JSON file that maps the image name consisting of `re
   "version": "<VERSION>",
   "ref": "<REF>",
   "stream": "<STREAM>",
-  "debug": true,
   "aws": {
     "us-east-1": "ami-123",
     "us-west-2": "ami-456",
