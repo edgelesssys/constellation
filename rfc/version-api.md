@@ -29,6 +29,7 @@ The following HTTP endpoints are available:
     - `microservice.json` contains a list of all patch microservice versions that belong to a minor version
     - `cli.json` contains a list of all patch cli versions that belong to a minor version
     - `kubernetes.json` contains a list of all supported patch version of Kubernetes that belong to a minor version
+- [`GET /constellation/v1/trash` contains resources of deleted versions that couldn't be cleaned up](#thrash)
 
 `ref` is used to distinguish between different Constellation branches (e.g. `main` and `feat-xyz`) and releases (`-`).
 `stream` is used to distinguish between different release streams. For example, `stable` and `debug` could be two different streams.
@@ -120,6 +121,11 @@ The CLI can query the `latest` endpoint to inform users about new releases of th
 
 The CLI can query the `minor` endpoint to retrieve a list of all patch releases of a Constellation OS image. This can be used to only select compatible versions for image updates if combined with a downgrade protection (only allow updating to image versions that are newer than the one currently in use).
 
+### Trash
+
+The trash endpoint collects files that were deleted as versions but contain references to resources that couldn't be cleaned up.
+It allows admins to manually clean up resources.
+
 
 ## Possible future extensions
 
@@ -129,4 +135,4 @@ The CLI can query the `minor` endpoint to retrieve a list of all patch releases 
 - Version metadata
     - Changelogs
     - Deprecation warnings
-    - Security information
+    - Security informatio
