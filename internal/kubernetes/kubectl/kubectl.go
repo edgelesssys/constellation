@@ -8,13 +8,22 @@ package kubectl
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclientv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/cli-runtime/pkg/resource"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/scale/scheme"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/retry"
 )
@@ -22,6 +31,7 @@ import (
 // Kubectl implements functionality of the Kubernetes "kubectl" tool.
 type Kubectl struct {
 	kubernetes.Interface
+	dynamicClient      dynamic.Interface
 	apiextensionClient apiextensionsclientv1.ApiextensionsV1Interface
 	builder            *resource.Builder
 }
@@ -43,6 +53,12 @@ func (k *Kubectl) Initialize(kubeconfig []byte) error {
 	}
 	k.Interface = clientset
 
+	dynamicClient, err := dynamic.NewForConfig(clientConfig)
+	if err != nil {
+		return fmt.Errorf("creating unstructed client: %w", err)
+	}
+	k.dynamicClient = dynamicClient
+
 	apiextensionClient, err := apiextensionsclientv1.NewForConfig(clientConfig)
 	if err != nil {
 		return fmt.Errorf("creating api extension client from kubeconfig: %w", err)
@@ -56,6 +72,59 @@ func (k *Kubectl) Initialize(kubeconfig []byte) error {
 	k.builder = resource.NewBuilder(restClientGetter).Unstructured()
 
 	return nil
+}
+
+// ApplyCRD updates the given CRD by parsing it, querying it's version from the cluster and finally updating it.
+func (k *Kubectl) ApplyCRD(ctx context.Context, rawCRD []byte) error {
+	crd, err := parseCRD(rawCRD)
+	if err != nil {
+		return fmt.Errorf("parsing crds: %w", err)
+	}
+
+	clusterCRD, err := k.apiextensionClient.CustomResourceDefinitions().Get(ctx, crd.Name, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("getting crd: %w", err)
+	}
+	crd.ResourceVersion = clusterCRD.ResourceVersion
+	_, err = k.apiextensionClient.CustomResourceDefinitions().Update(ctx, crd, metav1.UpdateOptions{})
+	return err
+}
+
+// parseCRD takes a byte slice of data and tries to create a CustomResourceDefinition object from it.
+func parseCRD(crdString []byte) (*v1.CustomResourceDefinition, error) {
+	sch := runtime.NewScheme()
+	_ = scheme.AddToScheme(sch)
+	_ = v1.AddToScheme(sch)
+	obj, groupVersionKind, err := serializer.NewCodecFactory(sch).UniversalDeserializer().Decode(crdString, nil, nil)
+	if err != nil {
+		return nil, fmt.Errorf("decoding crd: %w", err)
+	}
+	if groupVersionKind.Kind == "CustomResourceDefinition" {
+		return obj.(*v1.CustomResourceDefinition), nil
+	}
+
+	return nil, errors.New("parsed []byte, but did not find a CRD")
+}
+
+// GetCRDs retrieves all custom resource definitions currently installed in the cluster.
+func (k *Kubectl) GetCRDs(ctx context.Context) ([]apiextensionsv1.CustomResourceDefinition, error) {
+	crds, err := k.apiextensionClient.CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("listing CRDs: %w", err)
+	}
+
+	return crds.Items, nil
+}
+
+// GetCRs retrieves all objects for a given CRD.
+func (k *Kubectl) GetCRs(ctx context.Context, gvr schema.GroupVersionResource) ([]unstructured.Unstructured, error) {
+	crdClient := k.dynamicClient.Resource(gvr)
+	unstructuredList, err := crdClient.List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("listing CRDs for gvr %+v: %w", crdClient, err)
+	}
+
+	return unstructuredList.Items, nil
 }
 
 // CreateConfigMap creates the provided configmap.
