@@ -61,7 +61,7 @@ func (h *Client) InstallConstellationServices(ctx context.Context, release helm.
 	h.ReleaseName = release.ReleaseName
 	h.Wait = release.Wait
 
-	mergedVals := mergeMaps(release.Values, extraVals)
+	mergedVals := helm.MergeMaps(release.Values, extraVals)
 
 	if err := h.install(ctx, release.Chart, mergedVals); err != nil {
 		return err
@@ -87,7 +87,7 @@ func (h *Client) InstallOperators(ctx context.Context, release helm.Release, ext
 	h.ReleaseName = release.ReleaseName
 	h.Wait = release.Wait
 
-	mergedVals := mergeMaps(release.Values, extraVals)
+	mergedVals := helm.MergeMaps(release.Values, extraVals)
 
 	if err := h.install(ctx, release.Chart, mergedVals); err != nil {
 		return err
@@ -189,25 +189,4 @@ func (h *Client) install(ctx context.Context, chartRaw []byte, values map[string
 		return fmt.Errorf("helm install: %w", err)
 	}
 	return nil
-}
-
-// mergeMaps returns a new map that is the merger of it's inputs.
-// Taken from: https://github.com/helm/helm/blob/dbc6d8e20fe1d58d50e6ed30f09a04a77e4c68db/pkg/cli/values/options.go#L91-L108.
-func mergeMaps(a, b map[string]any) map[string]any {
-	out := make(map[string]any, len(a))
-	for k, v := range a {
-		out[k] = v
-	}
-	for k, v := range b {
-		if v, ok := v.(map[string]any); ok {
-			if bv, ok := out[k]; ok {
-				if bv, ok := bv.(map[string]any); ok {
-					out[k] = mergeMaps(bv, v)
-					continue
-				}
-			}
-		}
-		out[k] = v
-	}
-	return out
 }

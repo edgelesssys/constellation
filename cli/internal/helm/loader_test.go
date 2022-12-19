@@ -98,7 +98,9 @@ func TestConstellationServices(t *testing.T) {
 				konnectivityImage:        "konnectivityImage",
 				gcpGuestAgentImage:       "gcpGuestAgentImage",
 			}
-			chart, values, err := chartLoader.loadConstellationServicesHelper(tc.config, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+			chart, err := loadChartsDir(helmFS, conServicesPath)
+			require.NoError(err)
+			values, err := chartLoader.loadConstellationServicesValues(tc.config, []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
 			require.NoError(err)
 
 			options := chartutil.ReleaseOptions{
@@ -164,7 +166,9 @@ func TestOperators(t *testing.T) {
 				constellationOperatorImage:   "constellationOperatorImage",
 				nodeMaintenanceOperatorImage: "nodeMaintenanceOperatorImage",
 			}
-			chart, vals, err := chartLoader.loadOperatorsHelper(tc.csp)
+			chart, err := loadChartsDir(helmFS, conOperatorsPath)
+			require.NoError(err)
+			vals, err := chartLoader.loadOperatorsValues(tc.csp)
 			require.NoError(err)
 
 			options := chartutil.ReleaseOptions{

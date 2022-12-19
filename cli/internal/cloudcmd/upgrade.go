@@ -12,11 +12,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/cli/internal/helm"
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
+	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -35,7 +38,7 @@ type Upgrader struct {
 }
 
 // NewUpgrader returns a new Upgrader.
-func NewUpgrader(outWriter io.Writer) (*Upgrader, error) {
+func NewUpgrader(outWriter io.Writer, log debugLog) (*Upgrader, error) {
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", constants.AdminConfFilename)
 	if err != nil {
 		return nil, fmt.Errorf("building kubernetes config: %w", err)
@@ -52,7 +55,12 @@ func NewUpgrader(outWriter io.Writer) (*Upgrader, error) {
 		return nil, fmt.Errorf("setting up custom resource client: %w", err)
 	}
 
-	helmClient, err := helm.NewClient(constants.AdminConfFilename, constants.HelmNamespace)
+	client, err := apiextensionsclient.NewForConfig(kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	helmClient, err := helm.NewClient(constants.AdminConfFilename, constants.HelmNamespace, client, log)
 	if err != nil {
 		return nil, fmt.Errorf("setting up helm client: %w", err)
 	}
@@ -103,6 +111,11 @@ func (u *Upgrader) GetCurrentImage(ctx context.Context) (*unstructured.Unstructu
 	}
 
 	return imageStruct, imageVersion, nil
+}
+
+// UpgradeHelmServices upgrade helm services.
+func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration) error {
+	return u.helmClient.Upgrade(ctx, config, timeout)
 }
 
 // CurrentHelmVersion returns the version of the currently installed helm release.
@@ -232,4 +245,10 @@ func (u *stableClient) kubernetesVersion() (string, error) {
 
 type helmInterface interface {
 	CurrentVersion(release string) (string, error)
+	Upgrade(ctx context.Context, config *config.Config, timeout time.Duration) error
+}
+
+type debugLog interface {
+	Debugf(format string, args ...any)
+	Sync()
 }

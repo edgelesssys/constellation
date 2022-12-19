@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation/measurements"
 	"github.com/edgelesssys/constellation/v2/internal/cloud/cloudprovider"
@@ -66,11 +67,16 @@ func TestUpgradeExecute(t *testing.T) {
 }
 
 type stubUpgrader struct {
-	err error
+	err     error
+	helmErr error
 }
 
 func (u stubUpgrader) Upgrade(context.Context, string, string, measurements.M) error {
 	return u.err
+}
+
+func (u stubUpgrader) UpgradeHelmServices(ctx context.Context, config *config.Config, timeout time.Duration) error {
+	return u.helmErr
 }
 
 type stubImageFetcher struct {
