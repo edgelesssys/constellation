@@ -5,10 +5,19 @@ env:
 
 on:
   workflow_dispatch:
+    inputs:
+      pushTag:
+        description: "Use this image tag"
+        required: false
+    generateKoSBOM:
+      description: "Generate unsigned ko SBOM"
+      required: false
+      default: "false"
   push:
     branches:
       - main
       - "release/**"
+      - "feat/reproducible-builds-ko"
 
 jobs:
   build-gcp-guest-agent:
@@ -38,28 +47,69 @@ jobs:
       - name: Prepare hardcoded configuration file
         working-directory: ${{ github.workspace }}
         run: |
-          # https://ko.build/features/static-assets/
           # cwd = /home/runner/work/constellation/constellation
           koData="./guest-agent/kodata"
           mkdir -p $koData
           cp ./constellation/3rdparty/gcp-guest-agent/instance_configs.cfg $koData
-          cd ${GITHUB_WORKSPACE}/
-          ln -s ./constellation/.github/ .github
+          cp ./constellation/.ko.yaml ./guest-agent/.ko.yaml
 
-          echo ${{ github.workspace }}/constellation
-          ls -alh ${{ github.workspace }}/constellation
-          #echo $GITHUB_WORKSPACE/constellation
-          #ls -alh $GITHUB_WORKSPACE/constellation
+      # one-filer to solve path issues
+      - name: Set up ko
+        uses: imjasonh/setup-ko@v0.6
 
-      - name: Build and upload gcp guest service container image
-        id: build-and-upload
-        # assumes that we are currently in the root of the repo
-        uses: ./.github/actions/build_micro_service_ko
+      - name: Build and upload ko container image
+        working-directory: ./guest-agent
+        shell: bash
+        id: build
+        env:
+          KO_USER: ${{ github.actor }}
+          KO_CONFIG_PATH: ./.ko.yaml
+          KO_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          KO_DOCKER_REPO: $REGISTRY/edgelesssys/gcp-guest-agent-ko
+        run: |
+          tags="test"
+          sbom=""
+          pwd
+
+          if [ "${{ github.ref }}" == "${{ github.event.repository.default_branch }}" ]; then
+            tags="latest"
+          else:
+            tags="${{ github.sha }}"
+          fi
+
+          if [ -n "${{ inputs.pushTag }}" ]; then
+            if [ -n "${tags}" ]; then
+              tags="${tags},${{ inputs.pushTag }}"
+            else
+              tags="${{ inputs.pushTag }}"
+            fi
+          fi
+
+          if [ -n "${{ steps.pseudo-version.outputs.pseudoVersion }}" ]; then
+            if [ -n "${tags}" ]; then
+              tags="${tags},${{ steps.pseudo-version.outputs.pseudoVersion }}"
+            else
+              tags="${{ steps.pseudo-version.outputs.pseudoVersion }}"
+            fi
+          fi
+
+          if [ "${{ inputs.generateKoSBOM }}" == "false" ]; then
+            sbom="--sbom=none"
+          fi
+
+          go mod download all
+          container_full=$(ko build ./google_guest_agent --bare --tags ${tags} ${sbom})
+          container_image=$(echo $container_full | cut -d@ -f1)
+          container_tag=$(echo $container_full | cut -d: -f2)
+
+          echo "CONTAINER_FULL=$container_full" >> $GITHUB_ENV
+          echo "CONTAINER_IMAGE=$container_image" >> $GITHUB_ENV
+          echo "CONTAINER_TAG=$container_tag" >> $GITHUB_ENV
+
+      - name: Generate SBOM
+        uses: ./constellation/.github/actions/container_sbom
         with:
-          name: gcp-guest-agent
-          koTarget: ./guest-agent/google-guest-agent/
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
-          constellationPath: ${{ github.workspace }}/constellation
+          containerReference: ${{ env.CONTAINER_FULL }}
           cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
           cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
           cosignPassword: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
