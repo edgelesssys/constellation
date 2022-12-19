@@ -57,7 +57,7 @@ inputs:
     description: "The resource group to use"
     required: false
   test:
-    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling, lb, k-bench, nop]."
+    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling, lb, k-bench, verify, nop]."
     required: true
   sonobuoyTestSuiteCmd:
     description: "The sonobuoy test suite to run."
@@ -72,7 +72,7 @@ runs:
   using: "composite"
   steps:
     - name: Check input
-      if: ${{ !contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "k-bench", "lb", "nop"]'), inputs.test) }}
+      if: ${{ !contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "k-bench", "verify", "lb", "nop"]'), inputs.test) }}
       shell: bash
       run: |
         echo "Invalid input for test field: ${{ inputs.test }}"
@@ -205,3 +205,10 @@ runs:
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
+
+    - name: Run constellation verify test
+      if: inputs.test == 'verify'
+      uses: ./.github/actions/constellation_verify
+      with:
+        cloudProvider: ${{ inputs.cloudProvider }}
+        osImage: ${{ inputs.osImage }}
