@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
 
       - name: pull-request
         uses: repo-sync/pull-request@65785d95a5a466e46a9d0708933a3bd51bbf9dde # tag=v2.6.2
