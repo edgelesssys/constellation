@@ -1,4 +1,4 @@
-defaltBaseImage: distroless.dev/static:latest@sha256:d624beaae60b10ec342896b1470421eb473549cb3ac3bf1c6ec074d8b460b4fc
+defaultBaseImage: ghcr.io/edgelesssys/apko-alpine-base:latest
 
 baseImageOverrides:
   github.com/edgelesssys/constellation/operators/constellation-node-operator/v2: ghcr.io/edgelesssys/apko-alpine-base-user-65532
