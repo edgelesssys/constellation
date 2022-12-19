@@ -187,7 +187,7 @@ func (c *Creator) createAzure(ctx context.Context, cl terraformClient, config *c
 		UserAssignedIdentity: config.Provider.Azure.UserAssignedIdentity,
 		InstanceType:         insType,
 		StateDiskType:        config.Provider.Azure.StateDiskType,
-		ImageID:              image,
+		ImageID:              "/subscriptions/0d202bbb-4fa7-4af8-8125-58c269a05435/resourceGroups/constellation-images/providers/Microsoft.Compute/galleries/Constellation_Testing_CVM/images/leo-test/versions/2022.1219.4", // TODO: FIXME
 		ConfidentialVM:       *config.Provider.Azure.ConfidentialVM,
 		SecureBoot:           *config.Provider.Azure.SecureBoot,
 		Debug:                config.IsDebugCluster(),

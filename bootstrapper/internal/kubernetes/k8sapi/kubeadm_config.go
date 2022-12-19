@@ -46,7 +46,7 @@ func (c *KubdeadmConfiguration) InitConfiguration(externalCloudProvider bool, k8
 				Kind:       "InitConfiguration",
 			},
 			NodeRegistration: kubeadm.NodeRegistrationOptions{
-				CRISocket: "unix:///run/containerd/containerd.sock",
+				CRISocket: "unix:///var/run/crio/crio.sock",
 				KubeletExtraArgs: map[string]string{
 					"cloud-provider": cloudProvider,
 				},
@@ -186,7 +186,7 @@ func (c *KubdeadmConfiguration) JoinConfiguration(externalCloudProvider bool) Ku
 				Kind:       "JoinConfiguration",
 			},
 			NodeRegistration: kubeadm.NodeRegistrationOptions{
-				CRISocket: "unix:///run/containerd/containerd.sock",
+				CRISocket: "unix:///var/run/crio/crio.sock",
 				KubeletExtraArgs: map[string]string{
 					"cloud-provider": cloudProvider,
 				},
