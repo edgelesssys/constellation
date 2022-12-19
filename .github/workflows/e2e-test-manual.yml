@@ -27,6 +27,7 @@ on:
           - "sonobuoy quick"
           - "sonobuoy full"
           - "autoscaling"
+          - "lb"
           - "k-bench"
           - "nop"
         required: true

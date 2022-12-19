@@ -57,7 +57,7 @@ inputs:
     description: "The resource group to use"
     required: false
   test:
-    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling, k-bench, nop]."
+    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling, lb, k-bench, nop]."
     required: true
   sonobuoyTestSuiteCmd:
     description: "The sonobuoy test suite to run."
@@ -72,7 +72,7 @@ runs:
   using: "composite"
   steps:
     - name: Check input
-      if: ${{ !contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "k-bench", "nop"]'), inputs.test) }}
+      if: ${{ !contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "k-bench", "lb", "nop"]'), inputs.test) }}
       shell: bash
       run: |
         echo "Invalid input for test field: ${{ inputs.test }}"
@@ -190,6 +190,12 @@ runs:
     - name: Run autoscaling test
       if: inputs.test == 'autoscaling'
       uses: ./.github/actions/e2e_autoscaling
+      with:
+        kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
+
+    - name: Run lb test
+      if: inputs.test == 'lb'
+      uses: ./.github/actions/e2e_lb
       with:
         kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
 

@@ -1,0 +1,31 @@
+name: E2E load balancer test
+description: "Test load balancer functionality."
+
+inputs:
+  kubeconfig:
+    description: "The kubeconfig of the cluster to test."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    # This action assumes that the cluster is in an ready state, with all nodes joined and ready.
+    - name: Create deployments
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      run: |
+        cd ./.github/actions/e2e_lb
+        kubectl apply -f ns.yml
+        kubectl apply -f lb.yml
+        go test ../../../e2e/internal/lb/lb_test.go -v
+
+    - name: Delete deployment
+      if: always()
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+      run: |
+        cd ./.github/actions/e2e_lb
+        kubectl delete -f lb.yml
+        kubectl delete -f ns.yml
