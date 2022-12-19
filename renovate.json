@@ -4,7 +4,8 @@
     "config:base",
     ":preserveSemverRanges",
     "helpers:pinGitHubActionDigests",
-    ":separateMajorReleases"
+    ":separateMajorReleases",
+    ":semanticCommitsDisabled"
   ],
   "addLabels": [
     "dependencies"
