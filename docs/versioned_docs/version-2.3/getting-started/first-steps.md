@@ -62,10 +62,10 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
     <tabItem value="gcp" label="GCP">
 
     ```bash
-    constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west1-a --serviceAccountID=constell-test
+    constellation iam create gcp --projectID=yourproject-12345 --zone=europe-west2-a --serviceAccountID=constell-test
     ```
 
-    This command creates IAM configuration in the GCP project `yourproject-12345` on the GCP zone `europe-west1-a` creating a new service account `constell-test`.
+    This command creates IAM configuration in the GCP project `yourproject-12345` on the GCP zone `europe-west2-a` creating a new service account `constell-test`.
 
     Note that only regions offering CVMs of the `N2D` series are supported. You can find a [list of all regions in Google's documentation](https://cloud.google.com/compute/docs/regions-zones#available), which you can filter by machine type `N2D`.
 
