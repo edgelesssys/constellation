@@ -39,7 +39,6 @@ func NewClient(kubeConfigPath, helmNamespace string, client *apiextensionsclient
 	settings := cli.New()
 	settings.KubeConfig = kubeConfigPath // constants.AdminConfFilename
 
-	// TODO: Replace log.Printf with actual CLILogger during refactoring of upgrade cmd.
 	actionConfig := &action.Configuration{}
 	if err := actionConfig.Init(settings.RESTClientGetter(), helmNamespace, "secret", log.Debugf); err != nil {
 		return nil, fmt.Errorf("initializing config: %w", err)
@@ -216,9 +215,6 @@ func (c *Client) updateOperatorCRDs(ctx context.Context, chart *chart.Chart) err
 	return nil
 }
 
-// Using the type from cli/internal/cmd would introduce the following import cycle:
-// cli/internal/cmd (upgradeexecute.go) -> cli/internal/cloudcmd (upgrade.go) ->
-// -> cli/internal/cloudcmd/helm (client.go) -> cli/internal/cmd (log.go).
 type debugLog interface {
 	Debugf(format string, args ...any)
 	Sync()

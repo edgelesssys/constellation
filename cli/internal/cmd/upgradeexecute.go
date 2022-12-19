@@ -29,9 +29,14 @@ func newUpgradeExecuteCmd() *cobra.Command {
 		RunE:  runUpgradeExecute,
 	}
 
-	// TODO: remove before merging to main. For testing only.
-	cmd.Flags().Bool("helm", false, "DEV ONLY: execute helm upgrade")
-	cmd.Flags().Duration("timeout", 3*time.Minute, "DEV ONLY: change upgrade timeout. Might be useful for slow connections or big clusters.")
+	cmd.Flags().Bool("helm", false, "Execute helm upgrade. This feature is still in development an may change without anounncement. Upgrades all helm charts deployed during constellation-init.")
+	cmd.Flags().Duration("timeout", 3*time.Minute, "Change helm upgrade timeout. This feature is still in development an may change without anounncement. Might be useful for slow connections or big clusters.")
+	if err := cmd.Flags().MarkHidden("helm"); err != nil {
+		panic(err)
+	}
+	if err := cmd.Flags().MarkHidden("timeout"); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }
