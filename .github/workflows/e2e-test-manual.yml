@@ -88,16 +88,10 @@ jobs:
             exit 0
           fi
 
-      - name: Checkout head
-        if: inputs.git-ref == 'head'
+      - name: Checkout
         uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
-      - name: Checkout ref
-        if: inputs.git-ref != 'head'
-        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
-        with:
-          ref: ${{ inputs.git-ref }}
 
       - name: Find latest image
         id: find-latest-image
