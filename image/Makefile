@@ -20,7 +20,7 @@ PREBUILT_RPMS_AZURE := $(addprefix prebuilt/azure/rpms/,$(AZURE_DEBUG_KERNEL_RPM
 
 all: $(csps)
 
-$(csps): %: mkosi.output.%/fedora~37/image.raw
+$(csps): %: mkosi.output.%/fedora~36/image.raw
 
 prebuilt/azure/rpms/%.rpm:
 	@echo "Downloading $*"
