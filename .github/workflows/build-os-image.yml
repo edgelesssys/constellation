@@ -256,14 +256,14 @@ jobs:
             echo "image-raw-changelog-${{ matrix.csp }}-sha256=$(sha256sum image.raw.changelog | head -c 64)"
             echo "image-raw-manifest-${{ matrix.csp }}-sha256=$(sha256sum image.raw.manifest | head -c 64)"
           } >> "$GITHUB_OUTPUT"
-        working-directory: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37
+        working-directory: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36
         continue-on-error: true
 
       - name: Upload raw OS image as artifact
         uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
         with:
           name: image-${{ matrix.csp }}
-          path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.raw
+          path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.raw
         if: always()
         continue-on-error: true
 
@@ -272,13 +272,13 @@ jobs:
         with:
           name: parts-${{ matrix.csp }}
           path: |
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.cmdline
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.efi
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.initrd
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.root.raw
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.root.roothash
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.root.verity
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.vmlinuz
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.cmdline
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.efi
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.initrd
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.root.raw
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.root.roothash
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.root.verity
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.vmlinuz
         if: always()
         continue-on-error: true
 
@@ -287,8 +287,8 @@ jobs:
         with:
           name: manifest-${{ matrix.csp }}
           path: |
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.raw.changelog
-            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37/image.raw.manifest
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.raw.changelog
+            ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36/image.raw.manifest
         if: always()
         continue-on-error: true
 
@@ -317,7 +317,7 @@ jobs:
         uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7 # tag=v3.0.1
         with:
           name: image-${{ matrix.csp }}
-          path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~37
+          path: ${{ github.workspace }}/image/mkosi.output.${{ matrix.csp }}/fedora~36
 
       - name: Configure input variables
         id: vars
