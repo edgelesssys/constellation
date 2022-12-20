@@ -32,7 +32,7 @@ prebuilt/gcp/rpms/%.rpm:
 	@mkdir -p $(@D)
 	@curl -sL -o $@ https://kojipkgs.fedoraproject.org/packages/kernel/5.19.17/300.fc37/x86_64/$*.rpm
 
-mkosi.output.%/fedora~37/image.raw: mkosi.files/mkosi.%.conf inject-bins inject-certs
+mkosi.output.%/fedora~36/image.raw: mkosi.files/mkosi.%.conf inject-bins inject-certs
 	mkosi --config mkosi.files/mkosi.$*.conf --image-version=$(IMAGE_VERSION) build
 	secure-boot/signed-shim.sh $@
 	@if [ -n $(SUDO_UID) ] && [ -n $(SUDO_GID) ]; then \
