@@ -14,8 +14,8 @@ runs:
       shell: bash
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
+      working-directory: ./.github/actions/e2e_lb
       run: |
-        cd ./.github/actions/e2e_lb
         kubectl apply -f ns.yml
         kubectl apply -f lb.yml
         go test ../../../e2e/internal/lb/lb_test.go -v
@@ -25,7 +25,7 @@ runs:
       shell: bash
       env:
         KUBECONFIG: ${{ inputs.kubeconfig }}
+      working-directory: ./.github/actions/e2e_lb
       run: |
-        cd ./.github/actions/e2e_lb
         kubectl delete -f lb.yml
         kubectl delete -f ns.yml

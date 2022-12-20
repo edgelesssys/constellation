@@ -54,7 +54,14 @@ jobs:
             version: "1.23"
           - test: "k-bench"
             version: "1.24"
-          - test: "autoscaling"
+          - test: "k-bench"
+            version: "1.25"
+          # lb test runs only on latest version.
+          - test: "lb"
+            version: "1.23"
+          - test: "lb"
+            version: "1.24"
+          - test: "lb"
             version: "1.25"
           # Currently not supported on AWS.
           - test: "autoscaling"

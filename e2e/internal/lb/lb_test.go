@@ -32,6 +32,8 @@ const (
 	newPort       = int32(8044)
 	numRequests   = 256
 	numPods       = 3
+	timeout       = time.Minute * 5
+	interval      = time.Second * 5
 )
 
 func TestLoadBalancer(t *testing.T) {
@@ -52,9 +54,9 @@ func TestLoadBalancer(t *testing.T) {
 	// Check that all pods receive traffic
 	var allHostnames []string
 	for i := 0; i < numRequests; i++ {
-		allHostnames = testEnpointAvailable(t, url, allHostnames)
+		allHostnames = testEndpointAvailable(t, url, allHostnames)
 	}
-	assert.True(hasNUniqueStrings(allHostnames, numPods)) // check all pods receive traffic
+	assert.True(hasNUniqueStrings(allHostnames, numPods))
 	allHostnames = allHostnames[:0]
 
 	// Change port to 8044
@@ -69,9 +71,9 @@ func TestLoadBalancer(t *testing.T) {
 
 	// Check again that all pods receive traffic
 	for i := 0; i < numRequests; i++ {
-		allHostnames = testEnpointAvailable(t, newURL, allHostnames)
+		allHostnames = testEndpointAvailable(t, newURL, allHostnames)
 	}
-	assert.True(hasNUniqueStrings(allHostnames, numPods)) // check all pods receive traffic
+	assert.True(hasNUniqueStrings(allHostnames, numPods))
 }
 
 func hasNUniqueStrings(elements []string, n int) bool {
@@ -98,7 +100,7 @@ func testEventuallyStatusOK(t *testing.T, url string) {
 	require := require.New(t)
 
 	assert.Eventually(func() bool {
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, http.NoBody)
 		require.NoError(err)
 
 		resp, err := http.DefaultClient.Do(req)
@@ -107,7 +109,7 @@ func testEventuallyStatusOK(t *testing.T, url string) {
 		}
 		defer resp.Body.Close()
 		return resp.StatusCode == http.StatusOK
-	}, time.Minute*5, time.Second*5)
+	}, timeout, interval)
 }
 
 // testEventuallyExternalIPAvailable uses k to query if the whoami service is available
@@ -122,21 +124,21 @@ func testEventuallyExternalIPAvailable(t *testing.T, k *kubernetes.Clientset) *c
 		svc, err = k.CoreV1().Services(namespaceName).Get(context.Background(), serviceName, v1.GetOptions{})
 		require.NoError(err)
 		return len(svc.Status.LoadBalancer.Ingress) > 0
-	}, time.Minute*5, time.Second*5)
+	}, timeout, interval)
 
 	return svc
 }
 
-// testEnpointAvailable GETs the provided URL. It expects a payload from
+// testEndpointAvailable GETs the provided URL. It expects a payload from
 // traefik/whoami service and checks that the first body line is of form
 // Hostname: <pod-name>
 // If this works the <pod-name> value is appended to allHostnames slice and
 // new allHostnames is returned.
-func testEnpointAvailable(t *testing.T, url string, allHostnames []string) []string {
+func testEndpointAvailable(t *testing.T, url string, allHostnames []string) []string {
 	assert := assert.New(t)
 	require := require.New(t)
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, http.NoBody)
 	require.NoError(err)
 
 	resp, err := http.DefaultClient.Do(req)
