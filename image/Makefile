@@ -40,7 +40,7 @@ mkosi.output.%/fedora~37/image.raw: mkosi.files/mkosi.%.conf inject-bins inject-
 	fi
 	@echo "Image is ready: $@"
 
-inject-bins: $(PREBUILT_RPMS)
+inject-bins: $(PREBUILT_RPMS_AZURE)
 	mkdir -p $(MKOSI_EXTRA)/usr/bin
 	mkdir -p $(MKOSI_EXTRA)/usr/sbin
 	cp $(BOOTSTRAPPER_BINARY) $(MKOSI_EXTRA)/usr/bin/bootstrapper
