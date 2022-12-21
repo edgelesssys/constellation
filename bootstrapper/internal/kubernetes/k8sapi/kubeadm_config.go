@@ -113,8 +113,8 @@ func (c *KubdeadmConfiguration) InitConfiguration(externalCloudProvider bool, k8
 						},
 						{
 							Name:      "konnectivity-uds",
-							HostPath:  "/etc/kubernetes/konnectivity-server",
-							MountPath: "/etc/kubernetes/konnectivity-server",
+							HostPath:  "/run/konnectivity-server",
+							MountPath: "/run/konnectivity-server",
 							ReadOnly:  false,
 							PathType:  corev1.HostPathDirectoryOrCreate,
 						},
