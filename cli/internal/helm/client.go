@@ -16,6 +16,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/deploy/helm"
 	"github.com/pkg/errors"
+	"golang.org/x/mod/semver"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli"
@@ -47,8 +48,31 @@ func NewClient(kubeConfigPath, helmNamespace string, client *apiextensionsclient
 	return &Client{config: actionConfig, crdClient: client, log: log}, nil
 }
 
-// CurrentVersion returns the version of the currently installed helm release.
-func (c *Client) CurrentVersion(release string) (string, error) {
+// Upgrade runs a helm-upgrade on all deployments that are managed via Helm.
+// If the CLI receives an interrupt signal it will cancel the context.
+// Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
+func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout time.Duration) error {
+	if err := c.upgradeRelease(ctx, timeout, ciliumPath, ciliumReleaseName, false); err != nil {
+		return fmt.Errorf("upgrading cilium: %w", err)
+	}
+
+	if err := c.upgradeRelease(ctx, timeout, certManagerPath, certManagerReleaseName, false); err != nil {
+		return fmt.Errorf("upgrading cert-manager: %w", err)
+	}
+
+	if err := c.upgradeRelease(ctx, timeout, conOperatorsPath, conOperatorsReleaseName, true); err != nil {
+		return fmt.Errorf("upgrading constellation operators: %w", err)
+	}
+
+	if err := c.upgradeRelease(ctx, timeout, conServicesPath, conServicesReleaseName, false); err != nil {
+		return fmt.Errorf("upgrading constellation-services: %w", err)
+	}
+
+	return nil
+}
+
+// currentVersion returns the version of the currently installed helm release.
+func (c *Client) currentVersion(release string) (string, error) {
 	client := action.NewList(c.config)
 	client.Filter = release
 	rel, err := client.Run()
@@ -70,67 +94,43 @@ func (c *Client) CurrentVersion(release string) (string, error) {
 	return rel[0].Chart.Metadata.Version, nil
 }
 
-// Upgrade runs a helm-upgrade on all deployments that are managed via Helm.
-// If the CLI receives an interrupt signal it will cancel the context.
-// Canceling the context will prompt helm to abort and roll back the ongoing upgrade.
-func (c *Client) Upgrade(ctx context.Context, config *config.Config, timeout time.Duration) error {
+func (c *Client) upgradeRelease(
+	ctx context.Context, timeout time.Duration, chartPath, releaseName string, hasCRDs bool,
+) error {
+	chart, err := loadChartsDir(helmFS, chartPath)
+	if err != nil {
+		return fmt.Errorf("loading chart: %w", err)
+	}
+	currentVersion, err := c.currentVersion(releaseName)
+	if err != nil {
+		return fmt.Errorf("getting current version: %w", err)
+	}
+	c.log.Debugf("current %s version: %s", releaseName, currentVersion)
+	c.log.Debugf("new %s version: %s", releaseName, chart.Metadata.Version)
+
+	if !isUpgrade(currentVersion, chart.Metadata.Version) {
+		c.log.Debugf("skipping upgrade of %s: no upgrade necessary", releaseName)
+		return nil
+	}
+
+	if hasCRDs {
+		if err := c.updateCRDs(ctx, chart); err != nil {
+			return fmt.Errorf("updating CRDs: %w", err)
+		}
+	}
+	values, err := c.prepareValues(chart, releaseName)
+	if err != nil {
+		return fmt.Errorf("preparing values: %w", err)
+	}
+
+	c.log.Debugf("upgrading %s from %s to %s", releaseName, currentVersion, chart.Metadata.Version)
 	action := action.NewUpgrade(c.config)
 	action.Atomic = true
 	action.Namespace = constants.HelmNamespace
 	action.ReuseValues = false
 	action.Timeout = timeout
-
-	ciliumChart, err := loadChartsDir(helmFS, ciliumPath)
-	if err != nil {
-		return fmt.Errorf("loading cilium: %w", err)
-	}
-	certManagerChart, err := loadChartsDir(helmFS, certManagerPath)
-	if err != nil {
-		return fmt.Errorf("loading cert-manager: %w", err)
-	}
-	conOperatorChart, err := loadChartsDir(helmFS, conOperatorsPath)
-	if err != nil {
-		return fmt.Errorf("loading operators: %w", err)
-	}
-	conServicesChart, err := loadChartsDir(helmFS, conServicesPath)
-	if err != nil {
-		return fmt.Errorf("loading constellation-services chart: %w", err)
-	}
-
-	values, err := c.prepareValues(ciliumChart, ciliumReleaseName)
-	if err != nil {
-		return err
-	}
-	if _, err := action.RunWithContext(ctx, ciliumReleaseName, ciliumChart, values); err != nil {
-		return fmt.Errorf("upgrading cilium: %w", err)
-	}
-
-	values, err = c.prepareValues(certManagerChart, certManagerReleaseName)
-	if err != nil {
-		return err
-	}
-	if _, err := action.RunWithContext(ctx, certManagerReleaseName, certManagerChart, values); err != nil {
-		return fmt.Errorf("upgrading cert-manager: %w", err)
-	}
-
-	err = c.updateOperatorCRDs(ctx, conOperatorChart)
-	if err != nil {
-		return fmt.Errorf("updating operator CRDs: %w", err)
-	}
-	values, err = c.prepareValues(conOperatorChart, conOperatorsReleaseName)
-	if err != nil {
-		return err
-	}
-	if _, err := action.RunWithContext(ctx, conOperatorsReleaseName, conOperatorChart, values); err != nil {
-		return fmt.Errorf("upgrading services: %w", err)
-	}
-
-	values, err = c.prepareValues(conServicesChart, conServicesReleaseName)
-	if err != nil {
-		return err
-	}
-	if _, err := action.RunWithContext(ctx, conServicesReleaseName, conServicesChart, values); err != nil {
-		return fmt.Errorf("upgrading operators: %w", err)
+	if _, err := action.RunWithContext(ctx, releaseName, chart, values); err != nil {
+		return fmt.Errorf("upgrading %s: %w", releaseName, err)
 	}
 
 	return nil
@@ -197,10 +197,10 @@ func parseCRD(crdString []byte) (*v1.CustomResourceDefinition, error) {
 	return nil, errors.New("parsed []byte, but did not find a CRD")
 }
 
-// updateOperatorCRDs walks through the dependencies of the given chart and applies
+// updateCRDs walks through the dependencies of the given chart and applies
 // the files in the dependencie's 'crds' folder.
 // This function is NOT recursive!
-func (c *Client) updateOperatorCRDs(ctx context.Context, chart *chart.Chart) error {
+func (c *Client) updateCRDs(ctx context.Context, chart *chart.Chart) error {
 	for _, dep := range chart.Dependencies() {
 		for _, crdFile := range dep.Files {
 			if strings.HasPrefix(crdFile.Name, "crds/") {
@@ -213,6 +213,29 @@ func (c *Client) updateOperatorCRDs(ctx context.Context, chart *chart.Chart) err
 		}
 	}
 	return nil
+}
+
+// isUpgrade returns true if the new version is greater than the current version.
+// Versions should adhere to the semver spec, but this function will prefix the versions with 'v' if they don't.
+func isUpgrade(currentVersion, newVersion string) bool {
+	if !strings.HasPrefix(currentVersion, "v") {
+		currentVersion = "v" + currentVersion
+	}
+	if !strings.HasPrefix(newVersion, "v") {
+		newVersion = "v" + newVersion
+	}
+
+	// If the current version is not a valid semver,
+	// we cant compare it to the new version.
+	// -> We can't upgrade.
+	if !semver.IsValid(currentVersion) {
+		return false
+	}
+
+	if semver.Compare(currentVersion, newVersion) < 0 {
+		return true
+	}
+	return false
 }
 
 type debugLog interface {
