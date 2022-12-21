@@ -522,7 +522,7 @@ encryption:
 
   wireguard:
     # -- Enables the fallback to the user-space implementation.
-    userspaceFallback: false
+    userspaceFallback: true
 
   # -- Deprecated in favor of encryption.ipsec.keyFile.
   # Name of the key file inside the Kubernetes secret configured via secretName.
@@ -1582,13 +1582,13 @@ operator:
   extraEnv: []
 
   # -- Additional cilium-operator hostPath mounts.
-  extraHostPathMounts: []
-    # - name: host-mnt-data
-    #   mountPath: /host/mnt/data
-    #   hostPath: /mnt/data
-    #   hostPathType: Directory
-    #   readOnly: true
-    #   mountPropagation: HostToContainer
+  extraHostPathMounts:
+    - name: dev-net
+      mountPath: /dev/net
+      hostPath: /dev/net
+      hostPathType: Directory
+      readOnly: true
+      mountPropagation: HostToContainer
 
   # -- Additional cilium-operator volumes.
   extraVolumes: []
