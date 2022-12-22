@@ -105,11 +105,14 @@ func (c *Client) upgradeRelease(
 	if err != nil {
 		return fmt.Errorf("getting current version: %w", err)
 	}
-	c.log.Debugf("current %s version: %s", releaseName, currentVersion)
-	c.log.Debugf("new %s version: %s", releaseName, chart.Metadata.Version)
+	c.log.Debugf("Current %s version: %s", releaseName, currentVersion)
+	c.log.Debugf("New %s version: %s", releaseName, chart.Metadata.Version)
 
 	if !isUpgrade(currentVersion, chart.Metadata.Version) {
-		c.log.Debugf("skipping upgrade of %s: no upgrade necessary", releaseName)
+		c.log.Debugf(
+			"Skipping upgrade of %s: new version (%s) is not an upgrade for current version (%s)",
+			releaseName, chart.Metadata.Version, currentVersion,
+		)
 		return nil
 	}
 
@@ -123,7 +126,7 @@ func (c *Client) upgradeRelease(
 		return fmt.Errorf("preparing values: %w", err)
 	}
 
-	c.log.Debugf("upgrading %s from %s to %s", releaseName, currentVersion, chart.Metadata.Version)
+	c.log.Debugf("Upgrading %s from %s to %s", releaseName, currentVersion, chart.Metadata.Version)
 	action := action.NewUpgrade(c.config)
 	action.Atomic = true
 	action.Namespace = constants.HelmNamespace
@@ -204,7 +207,7 @@ func (c *Client) updateCRDs(ctx context.Context, chart *chart.Chart) error {
 	for _, dep := range chart.Dependencies() {
 		for _, crdFile := range dep.Files {
 			if strings.HasPrefix(crdFile.Name, "crds/") {
-				c.log.Debugf("updating crd: %s", crdFile.Name)
+				c.log.Debugf("Updating crd: %s", crdFile.Name)
 				err := c.ApplyCRD(ctx, crdFile.Data)
 				if err != nil {
 					return err
