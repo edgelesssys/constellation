@@ -1,0 +1,32 @@
+name: Build and upload constellation node operator image (KO)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-constellation-node-operator:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out repository
+        id: checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag=v3.1.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Install operator-sdk
+        uses: ./.github/actions/install_operator_sdk
+        with:
+          version: v1.22.2
+
+      - name: Build and upload constellation-node-operator container image
+        uses: ./.github/actions/build_micro_service_ko
+        with:
+          name: node-operator
+          koTarget: ./operators/constellation-node-operator
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          cosignPublicKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PUBLIC_KEY || secrets.COSIGN_DEV_PUBLIC_KEY }}
+          cosignPrivateKey: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PRIVATE_KEY || secrets.COSIGN_DEV_PRIVATE_KEY }}
+          cosignPassword: ${{ startsWith(github.ref, 'refs/heads/release/v') && secrets.COSIGN_PASSWORD || secrets.COSIGN_DEV_PASSWORD }}
