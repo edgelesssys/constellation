@@ -58,7 +58,7 @@ func runUpgradePlan(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	planner, err := cloudcmd.NewUpgrader(cmd.OutOrStdout())
+	planner, err := cloudcmd.NewUpgrader(cmd.OutOrStdout(), log)
 	if err != nil {
 		return err
 	}
