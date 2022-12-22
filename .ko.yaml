@@ -15,7 +15,6 @@ builds:
   - -buildvcs=false
   ldflags:
   - -s -w -buildid=''
-  - -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}
   - -extldflags "-static"
 
 - id: joinservice
@@ -28,7 +27,6 @@ builds:
   - -buildvcs=false
   ldflags:
   - -s -w -buildid=''
-  - -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}
   - -extldflags "-static"
 
 - id: constellation-node-operator
@@ -44,12 +42,11 @@ builds:
   - -a
   ldflags:
   - -s -w -buildid=''
-  - -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}
   - -extldflags "-static"
 
-- id: gcp-guest-agent
+- id: verification-service
   dir: .
-  main: ./3rdparty/gcp-guest-agent/
+  main: ./verify/cmd
   env:
   - CGO_ENABLED=0
   - GOOS=linux
@@ -60,7 +57,6 @@ builds:
   - -a
   ldflags:
   - -s -w -buildid=''
-  - -X github.com/edgelesssys/constellation/v2/internal/constants.VersionInfo=${PROJECT_VERSION}
   - -extldflags "-static"
 
 - id: qemu-metadata-api
