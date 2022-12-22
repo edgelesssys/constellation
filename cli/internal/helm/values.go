@@ -49,7 +49,8 @@ var azureVals = map[string]any{
 		"enabled": true,
 	},
 	"encryption": map[string]any{
-		"enabled": false,
+		"enabled": true,
+		"type":    "wireguard",
 	},
 	"l7Proxy": false,
 	"ipam": map[string]any{
