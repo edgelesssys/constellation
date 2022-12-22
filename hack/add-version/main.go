@@ -102,7 +102,7 @@ func main() {
 	log.Infof("Successfully added version %q", *flags.version)
 
 	log.Infof("Waiting for cache invalidation.")
-	if err := versionManager.invalidateCaches(ctx, ver); err != nil {
+	if err := versionManager.invalidateCaches(ctx, ver, *flags.latest); err != nil {
 		log.With(zap.Error(err)).Fatalf("Failed to invalidate caches")
 	}
 
@@ -413,7 +413,7 @@ func (m *versionManager) addLatest(ctx context.Context, ver version) error {
 	return err
 }
 
-func (m *versionManager) invalidateCaches(ctx context.Context, ver version) error {
+func (m *versionManager) invalidateCaches(ctx context.Context, ver version, latest bool) error {
 	invalidIn := &cloudfront.CreateInvalidationInput{
 		DistributionId: aws.String(m.distributionID),
 		InvalidationBatch: &cftypes.InvalidationBatch{
@@ -426,6 +426,11 @@ func (m *versionManager) invalidateCaches(ctx context.Context, ver version) erro
 				},
 			},
 		},
+	}
+	if latest {
+		invalidIn.InvalidationBatch.Paths.Quantity = aws.Int32(3)
+		path := path.Join("ref", ver.Ref(), "stream", ver.Stream(), "versions/latest/image.json")
+		invalidIn.InvalidationBatch.Paths.Items = append(invalidIn.InvalidationBatch.Paths.Items, "/"+path)
 	}
 	invalidation, err := m.cloudfrontc.CreateInvalidation(ctx, invalidIn)
 	if err != nil {
