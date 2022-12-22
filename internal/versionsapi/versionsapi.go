@@ -163,12 +163,12 @@ func New() *Fetcher {
 
 // MinorVersionsOf fetches the list of minor versions for a given stream, major version and kind.
 func (f *Fetcher) MinorVersionsOf(ctx context.Context, ref, stream, major, kind string) (*List, error) {
-	return f.list(ctx, stream, "major", major, ref, kind)
+	return f.list(ctx, ref, stream, "major", major, kind)
 }
 
 // PatchVersionsOf fetches the list of patch versions for a given stream, minor version and kind.
 func (f *Fetcher) PatchVersionsOf(ctx context.Context, ref, stream, minor, kind string) (*List, error) {
-	return f.list(ctx, stream, "minor", minor, ref, kind)
+	return f.list(ctx, ref, stream, "minor", minor, kind)
 }
 
 // list fetches the list of versions for a given stream, granularity, base and kind.
