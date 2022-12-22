@@ -118,11 +118,6 @@ func (u *Upgrader) UpgradeHelmServices(ctx context.Context, config *config.Confi
 	return u.helmClient.Upgrade(ctx, config, timeout)
 }
 
-// CurrentHelmVersion returns the version of the currently installed helm release.
-func (u *Upgrader) CurrentHelmVersion(release string) (string, error) {
-	return u.helmClient.CurrentVersion(release)
-}
-
 // KubernetesVersion returns the version of Kubernetes the Constellation is currently running on.
 func (u *Upgrader) KubernetesVersion() (string, error) {
 	return u.stableInterface.kubernetesVersion()
@@ -244,7 +239,6 @@ func (u *stableClient) kubernetesVersion() (string, error) {
 }
 
 type helmInterface interface {
-	CurrentVersion(release string) (string, error)
 	Upgrade(ctx context.Context, config *config.Config, timeout time.Duration) error
 }
 
