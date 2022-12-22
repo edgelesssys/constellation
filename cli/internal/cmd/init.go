@@ -187,7 +187,6 @@ func (i *initCmd) initCall(ctx context.Context, dialer grpcDialer, ip string, re
 	i.log.Debugf("Making initialization call, doer is %+v", doer)
 	retrier := retry.NewIntervalRetrier(doer, 30*time.Second, grpcRetry.ServiceIsUnavailable)
 	if err := retrier.Do(ctx); err != nil {
-		i.log.Debugf("Initialization call errored, retrying...")
 		return nil, err
 	}
 	return doer.resp, nil
@@ -203,8 +202,8 @@ type initDoer struct {
 
 func (d *initDoer) Do(ctx context.Context) error {
 	conn, err := d.dialer.Dial(ctx, d.endpoint)
-	d.log.Debugf("Dialed init server")
 	if err != nil {
+		d.log.Debugf("Dialing init server failed: %w. Retrying...", err)
 		return fmt.Errorf("dialing init server: %w", err)
 	}
 	defer conn.Close()
@@ -370,7 +369,6 @@ func (i *initCmd) getMarshaledServiceAccountURI(provider cloudprovider.Provider,
 			ClientSecretValue: config.Provider.Azure.ClientSecretValue,
 			Location:          config.Provider.Azure.Location,
 		}
-		i.log.Debugf("Handling case for Azure")
 		return creds.ToCloudServiceAccountURI(), nil
 
 	case cloudprovider.QEMU:

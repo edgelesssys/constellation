@@ -104,9 +104,9 @@ func (up *upgradePlanCmd) upgradePlan(cmd *cobra.Command, planner upgradePlanner
 	if err != nil {
 		return fmt.Errorf("calculating next image minor version: %w", err)
 	}
-	up.log.Debugf(`Current image minor version is %s
-current CLI minor version is %s
-next image minor version is %s`, currentImageMinorVer, currentCLIMinorVer, nextImageMinorVer)
+	up.log.Debugf("Current image minor version is %s", currentImageMinorVer)
+	up.log.Debugf("Current CLI minor version is %s", currentCLIMinorVer)
+	up.log.Debugf("Next image minor version is %s", nextImageMinorVer)
 	var allowedMinorVersions []string
 
 	cliImageCompare := semver.Compare(currentCLIMinorVer, currentImageMinorVer)
