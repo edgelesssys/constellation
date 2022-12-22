@@ -1,0 +1,56 @@
+name: Build apko image
+description: Build an apko image based on a supplied .yaml file
+
+inputs:
+  apkoConfig:
+    description: "Path to the apko .yaml config file. If left empty, all images will be built."
+    required: false
+  registry:
+    description: "Container registry to use"
+    default: "ghcr.io"
+    required: true
+  githubToken:
+    description: "GitHub authorization token"
+    required: true
+
+# Linux runner only (Docker required)
+runs:
+  using: "composite"
+  steps:
+    - name: Log in to the Container registry
+      id: docker-login
+      uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # tag=v2.1.0
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ github.actor }}
+        password: ${{ inputs.githubToken }}
+
+    - name: Build apko images
+      shell: bash
+      run: |
+        # TODO: replace with apko publish
+        if [ -z "${{ inputs.apkoConfig }}" ]; then
+          echo "Building all images in image"
+          for imageConfig in image/apko/*.yaml; do
+            echo "Building image for $imageConfig"
+
+            imageName=$(basename $imageConfig | cut -d. -f1 )
+            registry=${{ inputs.registry }}/edgelesssys/apko-${imageName}
+            outTar=$imageName.tar
+
+            docker run -v "$PWD":/work cgr.dev/chainguard/apko build $imageConfig $registry $outTar
+            docker load < $outTar
+            docker push $registry
+
+          done
+        else
+          echo "Building image for ${{ inputs.apkoConfig }}"
+
+          imageName=$(basename ${{ inputs.apkoConfig }} | cut -d. -f1 )
+          registry=${{ inputs.registry }}/edgelesssys/apko-${imageName}
+          outTar=$imageName.tar
+
+          docker run -v "$PWD":/work cgr.dev/chainguard/apko build ${{ inputs.apkoConfig }} $registry $outTar
+          docker load < $outTar
+          docker push $registry
+        fi
