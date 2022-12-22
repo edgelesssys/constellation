@@ -130,7 +130,7 @@ If you don't have a cloud subscription, check out [MiniConstellation](first-step
 
     :::caution
 
-    Initialization on **Azure** might be slow and might take up to 60 minutes to initialize all K8s nodes. We are already working with Microsoft to resolve the issue. The stability of already initialized clusters is not affected.
+    Initialization on **Azure** might be slow and might take up to 60 minutes to initialize all Kubernetes nodes. We're already working with Microsoft to resolve the issue. The stability of already initialized clusters isn't affected.
 
     :::
 
