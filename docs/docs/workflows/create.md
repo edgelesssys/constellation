@@ -5,8 +5,6 @@ Creating your cluster requires two steps:
 1. Creating the necessary resources in your cloud environment
 2. Bootstrapping the Constellation cluster and setting up a connection
 
-See the [architecture](../architecture/orchestration.md) section for details on the inner workings of this process.
-
 :::tip
 If you don't have a cloud subscription, check out [MiniConstellation](../getting-started/first-steps-local.md), which lets you set up a local Constellation cluster using virtualization.
 :::
@@ -27,7 +25,8 @@ constellation create --control-plane-nodes 1 --worker-nodes 2
 
 For details on the flags, consult the command help via `constellation create -h`.
 
-*create* stores your cluster's state into a [`terraform.tfstate`](../architecture/orchestration.md#cluster-creation-process) file in your workspace.
+*create* stores your cluster's state into a `terraform.tfstate` file in your workspace.
+(**FS: need to explain workspace**)
 
 ## The *init* step
 
