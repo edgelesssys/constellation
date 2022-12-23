@@ -47,9 +47,9 @@ In addition, the cluster's [identifier](orchestration.md#post-installation-confi
 
 ## Post-installation configuration
 
-Post-installation the CLI provides a configuration for [accessing the cluster using the Kubernetes API](https://kubernetes.io/docs/tasks/administer-cluster/access-cluster-api/).
+Post installation, the CLI provides a configuration for [accessing the cluster using the Kubernetes API](https://kubernetes.io/docs/tasks/administer-cluster/access-cluster-api/).
 The `kubeconfig` file provides the credentials and configuration for connecting and authenticating to the API server.
-Once configured, orchestrate the Kubernetes cluster via `kubectl`.
+Once configured, you can orchestrate the Kubernetes cluster via `kubectl`.
 
 Make sure to keep the state files such as `terraform.tfstate` in the workspace directory to be able to manage your cluster later on.
 Without it, you won't be able to modify or terminate your cluster.
