@@ -147,7 +147,7 @@ func (cfm *configFetchMeasurementsCmd) parseFetchMeasurementsFlags(cmd *cobra.Co
 		return &fetchMeasurementsFlags{}, err
 	}
 	cfm.log.Debugf("Parsed measurements URL")
-	
+
 	measurementsSignatureURL, err := cfm.parseURLFlag(cmd, "signature-url")
 	if err != nil {
 		return &fetchMeasurementsFlags{}, err

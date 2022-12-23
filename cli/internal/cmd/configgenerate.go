@@ -42,6 +42,7 @@ type generateFlags struct {
 type configGenerateCmd struct {
 	log debugLog
 }
+
 func runConfigGenerate(cmd *cobra.Command, args []string) error {
 	log, err := newCLILogger(cmd)
 	if err != nil {
