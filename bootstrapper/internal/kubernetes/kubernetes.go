@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -35,6 +36,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeadm "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
+
+var validHostnameRegex = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
 
 // configReader provides kubeconfig as []byte.
 type configReader interface {
@@ -110,7 +113,11 @@ func (k *KubeWrapper) InitCluster(
 	if instance.VPCIP != "" {
 		validIPs = append(validIPs, net.ParseIP(instance.VPCIP))
 	}
-	nodeName := k8sCompliantHostname(instance.Name)
+	nodeName, err := k8sCompliantHostname(instance.Name)
+	if err != nil {
+		return nil, fmt.Errorf("generating node name: %w", err)
+	}
+
 	nodeIP := instance.VPCIP
 	subnetworkPodCIDR := instance.SecondaryIPRange
 	if len(instance.AliasIPRanges) > 0 {
@@ -278,7 +285,10 @@ func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTo
 	}
 	providerID := instance.ProviderID
 	nodeInternalIP := instance.VPCIP
-	nodeName := k8sCompliantHostname(instance.Name)
+	nodeName, err := k8sCompliantHostname(instance.Name)
+	if err != nil {
+		return fmt.Errorf("generating node name: %w", err)
+	}
 
 	loadbalancerEndpoint, err := k.providerMetadata.GetLoadBalancerEndpoint(ctx)
 	if err != nil {
@@ -401,10 +411,13 @@ func (k *KubeWrapper) setupInternalConfigMap(ctx context.Context, azureCVM strin
 // k8sCompliantHostname transforms a hostname to an RFC 1123 compliant, lowercase subdomain as required by Kubernetes node names.
 // The following regex is used by k8s for validation: /^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$/ .
 // Only a simple heuristic is used for now (to lowercase, replace underscores).
-func k8sCompliantHostname(in string) string {
+func k8sCompliantHostname(in string) (string, error) {
 	hostname := strings.ToLower(in)
 	hostname = strings.ReplaceAll(hostname, "_", "-")
-	return hostname
+	if !validHostnameRegex.MatchString(hostname) {
+		return "", fmt.Errorf("failed to generate a Kubernetes compliant hostname for %s", in)
+	}
+	return hostname, nil
 }
 
 // StartKubelet starts the kubelet service.

@@ -10,6 +10,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
@@ -85,7 +87,14 @@ func (c *Client) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap
 func (c *Client) AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsHash string, isControlPlane bool) error {
 	joiningNode := &unstructured.Unstructured{}
 
-	objectMetadataName := nodeName
+	compliantNodeName, err := k8sCompliantHostname(nodeName)
+	if err != nil {
+		return fmt.Errorf("failed to get k8s compliant hostname: %w", err)
+	}
+
+	// JoiningNodes referencing a worker node are named after the worker node.
+	// JoiningNodes referencing the control-plane node are named "control-plane".
+	objectMetadataName := compliantNodeName
 	deadline := metav1.NewTime(time.Now().Add(48 * time.Hour))
 	if isControlPlane {
 		objectMetadataName = "control-plane"
@@ -99,7 +108,7 @@ func (c *Client) AddNodeToJoiningNodes(ctx context.Context, nodeName string, com
 			"name": objectMetadataName,
 		},
 		"spec": map[string]any{
-			"name":           nodeName,
+			"name":           compliantNodeName,
 			"componentshash": componentsHash,
 			"iscontrolplane": isControlPlane,
 			"deadline":       deadline,
@@ -141,4 +150,17 @@ func (c *Client) AddReferenceToK8sVersionConfigMap(ctx context.Context, k8sVersi
 		return fmt.Errorf("failed to update configmap: %w", err)
 	}
 	return nil
+}
+
+var validHostnameRegex = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
+
+// k8sCompliantHostname transforms a hostname to an RFC 1123 compliant, lowercase subdomain as required by Kubernetes node names.
+// Only a simple heuristic is used for now (to lowercase, replace underscores).
+func k8sCompliantHostname(in string) (string, error) {
+	hostname := strings.ToLower(in)
+	hostname = strings.ReplaceAll(hostname, "_", "-")
+	if !validHostnameRegex.MatchString(hostname) {
+		return "", fmt.Errorf("failed to generate a Kubernetes compliant hostname for %s", in)
+	}
+	return hostname, nil
 }
