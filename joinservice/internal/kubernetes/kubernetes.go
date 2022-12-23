@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -86,7 +87,10 @@ func (c *Client) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap
 func (c *Client) AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsHash string, isControlPlane bool) error {
 	joiningNode := &unstructured.Unstructured{}
 
-	compliantNodeName := k8sCompliantHostname(nodeName)
+	compliantNodeName, err := k8sCompliantHostname(nodeName)
+	if err != nil {
+		return fmt.Errorf("failed to get k8s compliant hostname: %w", err)
+	}
 
 	// JoiningNodes referencing a worker node are named after the worker node.
 	// JoiningNodes referencing the control-plane node are named "control-plane".
@@ -148,11 +152,15 @@ func (c *Client) AddReferenceToK8sVersionConfigMap(ctx context.Context, k8sVersi
 	return nil
 }
 
+var validHostnameRegex = regexp.MustCompile("^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$")
+
 // k8sCompliantHostname transforms a hostname to an RFC 1123 compliant, lowercase subdomain as required by Kubernetes node names.
-// The following regex is used by k8s for validation: /^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$/ .
 // Only a simple heuristic is used for now (to lowercase, replace underscores).
-func k8sCompliantHostname(in string) string {
+func k8sCompliantHostname(in string) (string, error) {
 	hostname := strings.ToLower(in)
 	hostname = strings.ReplaceAll(hostname, "_", "-")
-	return hostname
+	if !validHostnameRegex.MatchString(hostname) {
+		return "", fmt.Errorf("failed to generate a Kubernetes compliant hostname for %s", in)
+	}
+	return hostname, nil
 }

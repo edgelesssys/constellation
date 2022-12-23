@@ -10,7 +10,6 @@ import (
 	"context"
 	"errors"
 	"net"
-	"regexp"
 	"strconv"
 	"testing"
 
@@ -465,22 +464,32 @@ func TestJoinCluster(t *testing.T) {
 }
 
 func TestK8sCompliantHostname(t *testing.T) {
-	compliantHostname := regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
 	testCases := map[string]struct {
-		hostname     string
-		wantHostname string
+		input    string
+		expected string
+		wantErr  bool
 	}{
-		"azure scale set names work": {
-			hostname:     "constellation-scale-set-bootstrappers-name_0",
-			wantHostname: "constellation-scale-set-bootstrappers-name-0",
+		"no change": {
+			input:    "test",
+			expected: "test",
 		},
-		"compliant hostname is not modified": {
-			hostname:     "abcd-123",
-			wantHostname: "abcd-123",
+		"uppercase": {
+			input:    "TEST",
+			expected: "test",
 		},
-		"uppercase hostnames are lowercased": {
-			hostname:     "ABCD",
-			wantHostname: "abcd",
+		"underscore": {
+			input:    "test_node",
+			expected: "test-node",
+		},
+		"empty": {
+			input:    "",
+			expected: "",
+			wantErr:  true,
+		},
+		"error": {
+			input:    "test_node_",
+			expected: "",
+			wantErr:  true,
 		},
 	}
 
@@ -488,10 +497,13 @@ func TestK8sCompliantHostname(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			hostname := k8sCompliantHostname(tc.hostname)
-
-			assert.Equal(tc.wantHostname, hostname)
-			assert.Regexp(compliantHostname, hostname)
+			actual, err := k8sCompliantHostname(tc.input)
+			if tc.wantErr {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+			assert.Equal(tc.expected, actual)
 		})
 	}
 }
