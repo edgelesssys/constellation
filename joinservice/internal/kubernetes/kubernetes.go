@@ -152,7 +152,7 @@ func (c *Client) AddReferenceToK8sVersionConfigMap(ctx context.Context, k8sVersi
 	return nil
 }
 
-var validHostnameRegex = regexp.MustCompile("^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$")
+var validHostnameRegex = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
 
 // k8sCompliantHostname transforms a hostname to an RFC 1123 compliant, lowercase subdomain as required by Kubernetes node names.
 // Only a simple heuristic is used for now (to lowercase, replace underscores).
