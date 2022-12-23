@@ -1,40 +1,14 @@
-# Orchestrating Constellation clusters
+# Cluster lifecycle
 
-You can use the CLI to create a cluster on the supported cloud platforms.
-The CLI provisions the resources in your cloud environment and initiates the initialization of your cluster.
-It uses a set of parameters and an optional configuration file to manage your cluster installation.
-The CLI is also used for updating your cluster.
+The lifecycle of a Constellation cluster consist of three phases: *creation*, *upgrade*, and *termination*.
 
-## Workspaces
+## Cluster creation
 
-Each Constellation cluster has an associated *workspace*.
-The workspace is where data such as the Constellation state, config, and ID files are stored.
-Each workspace is associated with a single cluster and configuration.
-The CLI stores state in the local filesystem making the current directory the active workspace.
-Multiple clusters require multiple workspaces, hence, multiple directories.
-Note that every operation on a cluster always has to be performed from the directory associated with its workspace.
+The [`constellation create`](../workflows/create.md) command creates a cluster. The process is as follows:
 
-## Cluster creation process
+1. The CLI (i.e., the `constellation` software) uses the 
 
-To allow for fine-grained configuration of your cluster and cloud environment, Constellation supports an extensive configuration file with strong defaults. [Generating the configuration file](../workflows/create.md#configuration) is typically the first thing you do in the workspace.
 
-Altogether, the following files are generated during the creation of a Constellation cluster and stored in the current workspace:
-
-* a configuration file
-* an ID file
-* a Base64-encoded master secret
-* Terraform artifacts such as `terraform.tfstate`
-* a Kubernetes `kubeconfig` file.
-
-Constellation uses Terraform for infrastructure management. No setup of Terraform is needed. The CLI automatically fetches a copy of Terraform when required.
-
-After the creation of your cluster, the CLI will provide you with a Kubernetes `kubeconfig` file.
-This file grants you access to your Kubernetes cluster and configures the [kubectl](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/) tool.
-In addition, the cluster's [identifier](orchestration.md#post-installation-configuration) is returned and stored in a file called `constellation-id.json`
-
-### Creation process details
-
-1. The CLI `create` command creates the confidential VM (CVM) resources in your cloud environment and configures the network
 2. Each CVM boots the Constellation node image and measures every component in the boot chain
 3. The first component launched in each node is the [*Bootstrapper*](components.md#bootstrapper)
 4. The *Bootstrapper* waits until it either receives an initialization request or discovers an initialized cluster
@@ -44,6 +18,10 @@ In addition, the cluster's [identifier](orchestration.md#post-installation-confi
 8. As part of the join request each node includes an attestation statement of its boot measurements as authentication
 9. The *JoinService* verifies the attestation statements and joins the nodes to the Kubernetes cluster
 10. This process is repeated for every node joining the cluster later (e.g., through autoscaling)
+
+## Cluster upgrade
+
+## Cluster termination
 
 ## Post-installation configuration
 

@@ -199,8 +199,8 @@ const sidebars = {
         },
         {
           type: 'doc',
-          label: 'Cluster orchestration',
-          id: 'architecture/orchestration',
+          label: 'Cluster lifecycle',
+          id: 'architecture/lifecycle',
         },
         {
           type: 'doc',
