@@ -61,6 +61,8 @@ func NewKonnectivityServerStaticPod() *KonnectivityServerStaticPod {
 							"--logtostderr=true",
 							// This needs to be consistent with the value set in egressSelectorConfiguration.
 							"--uds-name=/run/konnectivity-server/konnectivity-server.socket",
+							// Clean up existing UDS file before starting the server in case the server crashed at some point.
+							"--delete-existing-uds-file=true",
 							// The following two lines assume the Konnectivity server is
 							// deployed on the same machine as the apiserver, and the certs and
 							// key of the API Server are at the specified location.
