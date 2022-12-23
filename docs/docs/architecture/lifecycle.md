@@ -1,23 +1,31 @@
 # Cluster lifecycle
 
-The lifecycle of a Constellation cluster consist of three phases: *creation*, *upgrade*, and *termination*.
+The lifecycle of a Constellation cluster consist of three phases: *creation*, *upgrade*, and *termination*. The following describes each phase and links to detailed descriptions of key components and concepts.
 
 ## Cluster creation
 
-The [`constellation create`](../workflows/create.md) command creates a cluster. The process is as follows:
+(**FS: this is an intro for everyone. Details on attestation etc. will be given on specialized pages.**)
 
-1. The CLI (i.e., the `constellation` software) uses the 
+The cluster administrator uses the [`constellation create`](../reference/cli.md#constellation-create) command to create a Constellation cluster. The process is as follows:
 
+1. The CLI (i.e., the `constellation` program) uses the cloud provider's API to create the initial set of Confidential VMs (CVMs). It writes 
+2. Each CVM boots the [node image](images.md) configured in `constellation-conf.yaml`. 
+3. On each CVM, the [Bootstrapper](components.md#bootstrapper) is automatically launched. The *Bootstrapper* waits until it either receives an initialization request from the CLI or discovers an initialized cluster.
 
-2. Each CVM boots the Constellation node image and measures every component in the boot chain
-3. The first component launched in each node is the [*Bootstrapper*](components.md#bootstrapper)
-4. The *Bootstrapper* waits until it either receives an initialization request or discovers an initialized cluster
-5. The CLI `init` command connects to the *Bootstrapper* of a selected node, sends the configuration, and initiates the initialization of the cluster
+The cluster administrator then uses the [`constellation init`](../reference/cli.md#constellation-init) command to initialize the cluster. This triggers the following additional steps:
+
+1. The CLI sets up an [aTLS](../architecture/attestation.md) ("attested TLS") connection with the Bootstrapper on one of the previously created CVMs. During the aTLS handshake, the CLI verifies the CVM (and the software running in it) based on the policy specified in `constellation-conf.yaml`.
+2. The CLI sends `constellation-conf.yaml` to the Bootstrapper over the aTLS connection and triggers the initialization of Kubernetes.
+3. The Bootstrapper downloads the official Kubernetes release specified in `constellation-conf.yaml`. The Bootstrapper verifies the [Sigstore-based signatures](https://blog.sigstore.dev/kubernetes-signals-massive-adoption-of-sigstore-for-protecting-open-source-ecosystem-73a6757da73) of the downloaded Kubernetes release. 
+
+, sends the configuration, and initiates the initialization of the cluster
 6. The *Bootstrapper* of **that** node [initializes the Kubernetes cluster](components.md#bootstrapper) and deploys the other Constellation [components](components.md) including the [*JoinService*](components.md#joinservice)
 7. Subsequently, the *Bootstrappers* of the other nodes discover the initialized cluster and send join requests to the *JoinService*
 8. As part of the join request each node includes an attestation statement of its boot measurements as authentication
 9. The *JoinService* verifies the attestation statements and joins the nodes to the Kubernetes cluster
 10. This process is repeated for every node joining the cluster later (e.g., through autoscaling)
+
+## Cluster scaling
 
 ## Cluster upgrade
 

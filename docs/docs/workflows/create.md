@@ -9,6 +9,8 @@ Creating your cluster requires two steps:
 If you don't have a cloud subscription, check out [MiniConstellation](../getting-started/first-steps-local.md), which lets you set up a local Constellation cluster using virtualization.
 :::
 
+(**FS: maybe add reference to lifecycle.md**)
+
 ## The *create* step
 
 This step creates the necessary resources for your cluster in your cloud environment.
