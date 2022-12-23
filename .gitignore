@@ -32,6 +32,7 @@ debug/
 
 # Image
 image/*.ign
+image/prebuilt/*
 image/build/*
 image/dependencies/bootstrapper
 image/dependencies/cilium
