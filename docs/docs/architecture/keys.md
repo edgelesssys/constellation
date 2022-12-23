@@ -12,12 +12,14 @@ For details on the implementations and cryptographic soundness, refer to the har
 
 ## Master secret
 
-The master secret is the cryptographic material used for deriving the [*clusterID*](#cluster-identity) and the *key encryption key (KEK)* for [storage encryption](#storage-encryption).
+The master secret is the cryptographic material used for deriving the [*clusterID*](#cluster-identity) and the *key encryption key (KEK)* for [storage encryption](#storage-encryption). (**FS: we haven't introduced clusterID yet.**)
 It's generated during the bootstrapping of a Constellation cluster.
 It can either be managed by [Constellation](#constellation-managed-key-management) or an [external key management system](#user-managed-key-management).
 In case of [recovery](#recovery-and-migration), the master secret allows to decrypt the state and recover a Constellation cluster.
 
 ## Cluster identity
+
+(**FS: mention 256 bits**)
 
 The identity of a Constellation cluster is represented by cryptographic [measurements](attestation.md#runtime-measurements):
 
@@ -26,11 +28,11 @@ They depend on the node image, but are otherwise the same for every Constellatio
 On node boot, they're determined using the CVM's attestation mechanism and [measured boot up to the read-only root filesystem](images.md).
 
 The **clusterID** represents the identity of a single initialized Constellation cluster.
-It's derived from the master secret and a cryptographically random salt and unique for every Constellation cluster.
+It's derived from the master secret and a cryptographically random salt and is unique for every Constellation cluster.
 The [Bootstrapper](components.md#bootstrapper) measures the *clusterID* into its own PCR before executing any code not measured as part of the *base measurements*.
-See [Node attestation](attestation.md#node-attestation) for details.
+See [Node attestation](attestation.md#node-attestation) for details. (**FS: the two sections are cross-referencing. Not great.**)
 
-The remote attestation statement of a Constellation cluster combines the *base measurements* and the *clusterID* for a verifiable, unspoofable, unique identity.
+The remote attestation statement of a Constellation cluster combines the *base measurements* and the *clusterID* for a verifiable, unspoofable, unique identity. (**FS: imprecise**)
 
 ## Network encryption
 
@@ -46,6 +48,8 @@ Cilium supports [key rotation](https://docs.cilium.io/en/stable/gettingstarted/e
 
 ## Storage encryption
 
+(**FS: should state used algorithms**)
+
 Constellation supports transparent encryption of persistent storage.
 The Linux kernel's device mapper-based encryption features are used to encrypt the data on the block storage level.
 Currently, the following primitives are used for block storage encryption:
@@ -53,7 +57,7 @@ Currently, the following primitives are used for block storage encryption:
 * [dm-crypt](https://www.kernel.org/doc/html/latest/admin-guide/device-mapper/dm-crypt.html)
 * [dm-integrity](https://www.kernel.org/doc/html/latest/admin-guide/device-mapper/dm-integrity.html)
 
-Adding primitives for integrity protection in the CVM attacker model are under active development and will be available in a future version of Constellation.
+Adding primitives for integrity protection in the CVM attacker model (**FS: what?**) are under active development and will be available in a future version of Constellation.
 See [encrypted storage](encrypted-storage.md) for more details.
 
 As a cluster administrator, when creating a cluster, you can use the Constellation [installation program](orchestration.md) to select one of the following methods for key management:
@@ -65,13 +69,14 @@ As a cluster administrator, when creating a cluster, you can use the Constellati
 
 #### Key material and key derivation
 
-During the creation of a Constellation cluster, the cluster's master secret is used to derive a KEK.
-This means creating two clusters with the same master secret will yield the same KEK.
-Any data encryption key (DEK) is derived from the KEK via HKDF.
-Note that the master secret is recommended to be unique for every cluster and shouldn't be reused (except in case of [recovering](../workflows/recovery.md) a cluster).
+During the creation of a Constellation cluster, the cluster's master secret (**FS: ref**) is used to derive a KEK.
+This means creating two clusters with the same master secret will yield the same KEK. (**FS: Need to note that the master secret can be supplied or auto-generated.**)
+Any data encryption key (DEK) is derived from the KEK via HKDF (**FS: ref; also, why are keys derived from the KEK? Isn't a KEK used to encrypted keys?**).
+Note that the master secret should be unique for every cluster.
 
 #### State and storage
 
+(**FS: Reword**)
 The KEK is derived from the master secret during the initialization.
 Subsequently, all other key material is derived from the KEK.
 Given the same KEK, any DEK can be derived deterministically from a given identifier.
@@ -85,6 +90,8 @@ Therefore, the KEK is stored in the [distributed Kubernetes etcd storage](https:
 The etcd storage is backed by the encrypted and integrity protected [state disk](images.md#state-disk) of the nodes.
 
 #### Recovery
+
+(**FS: Do we need this?**)
 
 Constellation clusters can be recovered in the event of a disaster, even when all node machines have been stopped and need to be rebooted.
 For details on the process see the [recovery workflow](../workflows/recovery.md).
@@ -106,8 +113,7 @@ Initially, it will support the following KMSs:
 * [KMIP-compatible KMS](https://www.oasis-open.org/committees/tc_home.php?wg_abbrev=kmip)
 
 Storing the keys in Cloud KMS of AWS, GCP, or Azure binds the key usage to the particular cloud identity access management (IAM).
-In the future, Constellation will support remote attestation-based access policies for Cloud KMS once available.
-Note that using a Cloud KMS limits the isolation and protection to the guarantees of the particular offering.
+Note that using a Cloud KMS limits the isolation and protection levels to the guarantees of the particular offering.
 
 KMIP support allows you to use your KMIP-compatible on-prem KMS and keep full control over your keys.
 This follows the common scheme of "hold your own key" (HYOK).
@@ -115,7 +121,7 @@ This follows the common scheme of "hold your own key" (HYOK).
 The KEK is used to encrypt per-data "data encryption keys" (DEKs).
 DEKs are generated to encrypt your data before storing it on persistent storage.
 After being encrypted by the KEK, the DEKs are stored on dedicated cloud storage for persistence.
-Currently, Constellation supports the following cloud storage options:
+Currently, Constellation supports the following cloud storage options: (**FS: dupe?**)
 
 * [AWS S3](https://aws.amazon.com/s3/)
 * [GCP Cloud Storage](https://cloud.google.com/storage)
