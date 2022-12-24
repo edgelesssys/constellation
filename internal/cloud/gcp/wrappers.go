@@ -22,18 +22,32 @@ type instanceIterator interface {
 	Next() (*computepb.Instance, error)
 }
 
-type forwardingRulesClient struct {
+type globalForwardingRulesClient struct {
 	*compute.GlobalForwardingRulesClient
 }
 
-func (c *forwardingRulesClient) Close() error {
+func (c *globalForwardingRulesClient) Close() error {
 	return c.GlobalForwardingRulesClient.Close()
 }
 
-func (c *forwardingRulesClient) List(ctx context.Context, req *computepb.ListGlobalForwardingRulesRequest,
+func (c *globalForwardingRulesClient) List(ctx context.Context, req *computepb.ListGlobalForwardingRulesRequest,
 	opts ...gax.CallOption,
 ) forwardingRuleIterator {
 	return c.GlobalForwardingRulesClient.List(ctx, req)
+}
+
+type regionalForwardingRulesClient struct {
+	*compute.ForwardingRulesClient
+}
+
+func (c *regionalForwardingRulesClient) Close() error {
+	return c.ForwardingRulesClient.Close()
+}
+
+func (c *regionalForwardingRulesClient) List(ctx context.Context, req *computepb.ListForwardingRulesRequest,
+	opts ...gax.CallOption,
+) forwardingRuleIterator {
+	return c.ForwardingRulesClient.List(ctx, req)
 }
 
 type instanceClient struct {
