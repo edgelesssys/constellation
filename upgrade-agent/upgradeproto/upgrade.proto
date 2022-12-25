@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package upgrade;
+
+option go_package = "github.com/edgelesssys/constellation/v2/upgrade-agent/upgradeproto";
+
+service Update {
+    rpc ExecuteUpdate(ExecuteUpdateRequest) returns (ExecuteUpdateResponse);
+}
+
+message ExecuteUpdateRequest {
+    string kubeadm_url = 1;
+    string kubeadm_hash = 2;
+    string wanted_kubernetes_version = 3;
+}
+
+message ExecuteUpdateResponse {
+}

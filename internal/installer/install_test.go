@@ -4,7 +4,7 @@ Copyright (c) Edgeless Systems GmbH
 SPDX-License-Identifier: AGPL-3.0-only
 */
 
-package k8sapi
+package installer
 
 import (
 	"archive/tar"
@@ -98,7 +98,7 @@ func TestInstall(t *testing.T) {
 			}
 
 			// This test was written before retriability was added to Install. It makes sense to test Install as if it wouldn't retry requests.
-			inst := osInstaller{
+			inst := OsInstaller{
 				fs:        &afero.Afero{Fs: afero.NewMemMapFs()},
 				hClient:   &hClient,
 				clock:     testclock.NewFakeClock(time.Time{}),
@@ -245,7 +245,7 @@ func TestExtractArchive(t *testing.T) {
 				afs = afero.NewReadOnlyFs(afs)
 			}
 
-			inst := osInstaller{
+			inst := OsInstaller{
 				fs: &afero.Afero{Fs: afs},
 			}
 			err := inst.extractArchive(tc.source, tc.destination, fs.ModePerm)
@@ -305,7 +305,7 @@ func TestRetryDownloadToTempDir(t *testing.T) {
 
 			// control download retries through FakeClock clock
 			clock := testclock.NewFakeClock(time.Now())
-			inst := osInstaller{
+			inst := OsInstaller{
 				fs:        &afero.Afero{Fs: afs},
 				hClient:   &hClient,
 				clock:     clock,
@@ -398,7 +398,7 @@ func TestDownloadToTempDir(t *testing.T) {
 			if tc.readonly {
 				afs = afero.NewReadOnlyFs(afs)
 			}
-			inst := osInstaller{
+			inst := OsInstaller{
 				fs:      &afero.Afero{Fs: afs},
 				hClient: &hClient,
 			}
@@ -455,7 +455,7 @@ func TestCopy(t *testing.T) {
 				afs = afero.NewReadOnlyFs(afs)
 			}
 
-			inst := osInstaller{fs: &afero.Afero{Fs: afs}}
+			inst := OsInstaller{fs: &afero.Afero{Fs: afs}}
 			err := inst.copy(tc.oldname, tc.newname, tc.perm)
 			if tc.wantErr {
 				assert.Error(err)

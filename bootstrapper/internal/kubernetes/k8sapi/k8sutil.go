@@ -31,6 +31,7 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
 	"github.com/edgelesssys/constellation/v2/internal/file"
+	"github.com/edgelesssys/constellation/v2/internal/installer"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
 	"github.com/spf13/afero"
@@ -40,9 +41,7 @@ import (
 const (
 	// kubeletStartTimeout is the maximum time given to the kubelet service to (re)start.
 	kubeletStartTimeout = 10 * time.Minute
-	// crdTimeout is the maximum time given to the CRDs to be created.
-	crdTimeout         = 30 * time.Second
-	executablePerm     = 0o544
+
 	kubeletServicePath = "/usr/lib/systemd/system/kubelet.service"
 )
 
@@ -56,7 +55,7 @@ type Client interface {
 	AnnotateNode(ctx context.Context, nodeName, annotationKey, annotationValue string) error
 }
 
-type installer interface {
+type componentsInstaller interface {
 	Install(
 		ctx context.Context, kubernetesComponent versions.ComponentVersion,
 	) error
@@ -64,14 +63,14 @@ type installer interface {
 
 // KubernetesUtil provides low level management of the kubernetes cluster.
 type KubernetesUtil struct {
-	inst installer
+	inst componentsInstaller
 	file file.Handler
 }
 
 // NewKubernetesUtil creates a new KubernetesUtil.
 func NewKubernetesUtil() *KubernetesUtil {
 	return &KubernetesUtil{
-		inst: newOSInstaller(),
+		inst: installer.NewOSInstaller(),
 		file: file.NewHandler(afero.NewOsFs()),
 	}
 }
