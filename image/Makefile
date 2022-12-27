@@ -12,7 +12,7 @@ csps := aws qemu gcp azure
 certs := $(PKI)/PK.cer $(PKI)/KEK.cer $(PKI)/db.cer
 
 GCP_FIXED_KERNEL_RPMS := kernel-5.19.17-300.fc37.x86_64.rpm kernel-core-5.19.17-300.fc37.x86_64.rpm kernel-modules-5.19.17-300.fc37.x86_64.rpm
-AZURE_DEBUG_KERNEL_RPMS := kernel-5.4.181-1.x86_64.rpm kernel-headers-5.4.181-1.x86_64.rpm
+AZURE_DEBUG_KERNEL_RPMS := kernel-6.0.0-1.x86_64.rpm kernel-headers-6.0.0-1.x86_64.rpm
 PREBUILT_RPMS_GCP := $(addprefix prebuilt/gcp/rpms/,$(GCP_FIXED_KERNEL_RPMS))
 PREBUILT_RPMS_AZURE := $(addprefix prebuilt/azure/rpms/,$(AZURE_DEBUG_KERNEL_RPMS))
 
@@ -26,7 +26,7 @@ $(csps): %: mkosi.output.%/fedora~37/image.raw
 prebuilt/azure/rpms/%.rpm:
 	@echo "Downloading $*"
 	@mkdir -p $(@D)
-	@curl -sL -o $@ "https://cdn.confidential.cloud/constellation/testing/kernel/4/$*.rpm"
+	@curl -sL -o $@ "https://cdn.confidential.cloud/constellation/testing/kernel/5/$*.rpm"
 
 prebuilt/gcp/rpms/%.rpm:
 	@echo "Downloading $*"
