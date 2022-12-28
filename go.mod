@@ -34,7 +34,7 @@ replace github.com/google/go-tpm-tools => github.com/daniel-weisse/go-tpm-tools 
 
 require (
 	cloud.google.com/go/compute v1.14.0
-	cloud.google.com/go/compute/metadata v0.2.2
+	cloud.google.com/go/compute/metadata v0.2.3
 	cloud.google.com/go/kms v1.7.0
 	cloud.google.com/go/logging v1.6.1
 	cloud.google.com/go/secretmanager v1.9.0
