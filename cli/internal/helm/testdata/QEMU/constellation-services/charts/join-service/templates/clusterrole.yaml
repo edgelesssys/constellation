@@ -28,8 +28,6 @@ rules:
   - configmaps
   verbs:
   - get
-  - create
-  - update
 - apiGroups:
   - "update.edgeless.systems"
   resources:
