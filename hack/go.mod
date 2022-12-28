@@ -40,7 +40,7 @@ require (
 	github.com/edgelesssys/constellation/v2 v2.0.0
 	github.com/fatih/color v1.13.0
 	github.com/go-git/go-git/v5 v5.5.1
-	github.com/google/go-tpm-tools v0.3.9
+	github.com/google/go-tpm-tools v0.3.10
 	github.com/google/uuid v1.3.0
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.1
@@ -54,6 +54,12 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	libvirt.org/go/libvirt v1.8010.0
 	libvirt.org/go/libvirtxml v1.8009.0
+)
+
+require (
+	github.com/google/go-sev-guest v0.4.1 // indirect
+	github.com/google/logger v1.1.1 // indirect
+	github.com/pborman/uuid v1.2.0 // indirect
 )
 
 require (
