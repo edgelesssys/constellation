@@ -31,14 +31,18 @@ const (
 	tagUsage = "constellation-use"
 )
 
-var zoneFromRegionRegex = regexp.MustCompile("([a-z]*-[a-z]*[0-9])")
+var (
+	zoneFromRegionRegex = regexp.MustCompile("([a-z]*-[a-z]*[0-9])")
+	errNoForwardingRule = errors.New("no forwarding rule found")
+)
 
 // Cloud provides GCP cloud metadata information and API access.
 type Cloud struct {
-	forwardingRulesAPI forwardingRulesAPI
-	imds               imdsAPI
-	instanceAPI        instanceAPI
-	subnetAPI          subnetAPI
+	globalForwardingRulesAPI   globalForwardingRulesAPI
+	regionalForwardingRulesAPI regionalForwardingRulesAPI
+	imds                       imdsAPI
+	instanceAPI                instanceAPI
+	subnetAPI                  subnetAPI
 
 	closers []func() error
 }
@@ -53,11 +57,19 @@ func New(ctx context.Context) (cloud *Cloud, err error) {
 		return nil, err
 	}
 	closers = append(closers, insAPI.Close)
-	forwardingRulesAPI, err := compute.NewGlobalForwardingRulesRESTClient(ctx)
+
+	globalForwardingRulesAPI, err := compute.NewGlobalForwardingRulesRESTClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	closers = append(closers, forwardingRulesAPI.Close)
+	closers = append(closers, globalForwardingRulesAPI.Close)
+
+	regionalForwardingRulesAPI, err := compute.NewForwardingRulesRESTClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	closers = append(closers, regionalForwardingRulesAPI.Close)
+
 	subnetAPI, err := compute.NewSubnetworksRESTClient(ctx)
 	if err != nil {
 		return nil, err
@@ -65,11 +77,12 @@ func New(ctx context.Context) (cloud *Cloud, err error) {
 	closers = append(closers, subnetAPI.Close)
 
 	return &Cloud{
-		imds:               imds.NewClient(nil),
-		instanceAPI:        &instanceClient{insAPI},
-		forwardingRulesAPI: &forwardingRulesClient{forwardingRulesAPI},
-		subnetAPI:          subnetAPI,
-		closers:            closers,
+		imds:                       imds.NewClient(nil),
+		instanceAPI:                &instanceClient{insAPI},
+		globalForwardingRulesAPI:   &globalForwardingRulesClient{globalForwardingRulesAPI},
+		regionalForwardingRulesAPI: &regionalForwardingRulesClient{regionalForwardingRulesAPI},
+		subnetAPI:                  subnetAPI,
+		closers:                    closers,
 	}, nil
 }
 
@@ -91,8 +104,36 @@ func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
 		return "", err
 	}
 
+	// First try to find a global forwarding rule.
+	endpoint, err := c.getGlobalForwardingRule(ctx, project, uid)
+	if err != nil && !errors.Is(err, errNoForwardingRule) {
+		return "", fmt.Errorf("getting global forwarding rule: %w", err)
+	} else if err == nil {
+		return endpoint, nil
+	}
+
+	// If no global forwarding rule was found, try to find a regional forwarding rule.
+	region := zoneFromRegionRegex.FindString(zone)
+	if region == "" {
+		return "", fmt.Errorf("invalid zone %s", zone)
+	}
+
+	endpoint, err = c.getRegionalForwardingRule(ctx, project, uid, region)
+	if err != nil && !errors.Is(err, errNoForwardingRule) {
+		return "", fmt.Errorf("getting regional forwarding rule: %w", err)
+	} else if err == nil {
+		return endpoint, nil
+	}
+
+	return "", fmt.Errorf("kubernetes load balancer with UID %s not found: %w", uid, err)
+}
+
+// getGlobalForwardingRule returns the endpoint of the load balancer if it is a global load balancer.
+// This functions returns ErrNoForwardingRule if no forwarding rule was found.
+func (c *Cloud) getGlobalForwardingRule(ctx context.Context, project, uid string) (string, error) {
 	var resp *computepb.ForwardingRule
-	iter := c.forwardingRulesAPI.List(ctx, &computepb.ListGlobalForwardingRulesRequest{
+	var err error
+	iter := c.globalForwardingRulesAPI.List(ctx, &computepb.ListGlobalForwardingRulesRequest{
 		Project: project,
 		Filter:  proto.String(fmt.Sprintf("(labels.%s:%s) AND (labels.%s:kubernetes)", cloud.TagUID, uid, tagUsage)),
 	})
@@ -106,8 +147,39 @@ func (c *Cloud) GetLoadBalancerEndpoint(ctx context.Context) (string, error) {
 		portRange := strings.Split(*resp.PortRange, "-")
 		return net.JoinHostPort(*resp.IPAddress, portRange[0]), nil
 	}
+	if err != iterator.Done {
+		return "", fmt.Errorf("error listing global forwarding rules with UID %s: %w", uid, err)
+	}
+	return "", errNoForwardingRule
+}
 
-	return "", fmt.Errorf("kubernetes load balancer with UID %s not found: %w", uid, err)
+// getRegionalForwardingRule returns the endpoint of the load balancer if it is a regional load balancer.
+// This functions returns ErrNoForwardingRule if no forwarding rule was found.
+func (c *Cloud) getRegionalForwardingRule(ctx context.Context, project, uid, region string) (string, error) {
+	var resp *computepb.ForwardingRule
+	var err error
+	iter := c.regionalForwardingRulesAPI.List(ctx, &computepb.ListForwardingRulesRequest{
+		Project: project,
+		Region:  region,
+		Filter:  proto.String(fmt.Sprintf("(labels.%s:%s) AND (labels.%s:kubernetes)", cloud.TagUID, uid, tagUsage)),
+	})
+	for resp, err = iter.Next(); err == nil; resp, err = iter.Next() {
+		if resp.PortRange == nil {
+			continue
+		}
+		if resp.IPAddress == nil {
+			continue
+		}
+		if resp.Region == nil {
+			continue
+		}
+		portRange := strings.Split(*resp.PortRange, "-")
+		return net.JoinHostPort(*resp.IPAddress, portRange[0]), nil
+	}
+	if err != iterator.Done {
+		return "", fmt.Errorf("error listing global forwarding rules with UID %s: %w", uid, err)
+	}
+	return "", errNoForwardingRule
 }
 
 // List retrieves all instances belonging to the current constellation.

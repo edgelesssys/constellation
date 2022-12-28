@@ -207,13 +207,14 @@ func TestGetLoadbalancerEndpoint(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		imds               stubIMDS
-		instanceAPI        stubInstanceAPI
-		forwardingRulesAPI stubForwardingRulesAPI
-		wantEndpoint       string
-		wantErr            bool
+		imds                       stubIMDS
+		instanceAPI                stubInstanceAPI
+		globalForwardingRulesAPI   stubGlobalForwardingRulesAPI
+		regionalForwardingRulesAPI stubRegionalForwardingRulesAPI
+		wantEndpoint               string
+		wantErr                    bool
 	}{
-		"success": {
+		"success global forwarding rule": {
 			imds: stubIMDS{
 				projectID:    "someProject",
 				zone:         "someZone-west3-b",
@@ -222,7 +223,7 @@ func TestGetLoadbalancerEndpoint(t *testing.T) {
 			instanceAPI: stubInstanceAPI{
 				instance: goodInstance,
 			},
-			forwardingRulesAPI: stubForwardingRulesAPI{
+			globalForwardingRulesAPI: stubGlobalForwardingRulesAPI{
 				iterator: &stubForwardingRulesIterator{
 					forwardingRules: []*computepb.ForwardingRule{
 						{
@@ -232,18 +233,49 @@ func TestGetLoadbalancerEndpoint(t *testing.T) {
 					},
 				},
 			},
+			regionalForwardingRulesAPI: stubRegionalForwardingRulesAPI{
+				iterator: &stubForwardingRulesIterator{},
+			},
 			wantEndpoint: "192.0.2.255:6443",
 		},
-		"imds error": {
+		"success regional forwarding rule": {
 			imds: stubIMDS{
-				projectIDErr: someErr,
+				projectID:    "someProject",
 				zone:         "someZone-west3-b",
 				instanceName: "someInstance",
 			},
 			instanceAPI: stubInstanceAPI{
 				instance: goodInstance,
 			},
-			forwardingRulesAPI: stubForwardingRulesAPI{
+			globalForwardingRulesAPI: stubGlobalForwardingRulesAPI{
+				iterator: &stubForwardingRulesIterator{},
+			},
+			regionalForwardingRulesAPI: stubRegionalForwardingRulesAPI{
+				iterator: &stubForwardingRulesIterator{
+					forwardingRules: []*computepb.ForwardingRule{
+						{
+							PortRange: proto.String("6443"),
+							IPAddress: proto.String("192.0.2.255"),
+							Region:    proto.String("someRegion"),
+						},
+					},
+				},
+			},
+			wantEndpoint: "192.0.2.255:6443",
+		},
+		"regional forwarding rule has no region": {
+			imds: stubIMDS{
+				projectID:    "someProject",
+				zone:         "someZone-west3-b",
+				instanceName: "someInstance",
+			},
+			instanceAPI: stubInstanceAPI{
+				instance: goodInstance,
+			},
+			globalForwardingRulesAPI: stubGlobalForwardingRulesAPI{
+				iterator: &stubForwardingRulesIterator{},
+			},
+			regionalForwardingRulesAPI: stubRegionalForwardingRulesAPI{
 				iterator: &stubForwardingRulesIterator{
 					forwardingRules: []*computepb.ForwardingRule{
 						{
@@ -255,7 +287,31 @@ func TestGetLoadbalancerEndpoint(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		"iterator error": {
+		"imds error": {
+			imds: stubIMDS{
+				projectIDErr: someErr,
+				zone:         "someZone-west3-b",
+				instanceName: "someInstance",
+			},
+			instanceAPI: stubInstanceAPI{
+				instance: goodInstance,
+			},
+			globalForwardingRulesAPI: stubGlobalForwardingRulesAPI{
+				iterator: &stubForwardingRulesIterator{
+					forwardingRules: []*computepb.ForwardingRule{
+						{
+							PortRange: proto.String("6443"),
+							IPAddress: proto.String("192.0.2.255"),
+						},
+					},
+				},
+			},
+			regionalForwardingRulesAPI: stubRegionalForwardingRulesAPI{
+				iterator: &stubForwardingRulesIterator{},
+			},
+			wantErr: true,
+		},
+		"global forwarding rule iterator error": {
 			imds: stubIMDS{
 				projectID:    "someProject",
 				zone:         "someZone-west3-b",
@@ -264,7 +320,29 @@ func TestGetLoadbalancerEndpoint(t *testing.T) {
 			instanceAPI: stubInstanceAPI{
 				instance: goodInstance,
 			},
-			forwardingRulesAPI: stubForwardingRulesAPI{
+			globalForwardingRulesAPI: stubGlobalForwardingRulesAPI{
+				iterator: &stubForwardingRulesIterator{
+					err: someErr,
+				},
+			},
+			regionalForwardingRulesAPI: stubRegionalForwardingRulesAPI{
+				iterator: &stubForwardingRulesIterator{},
+			},
+			wantErr: true,
+		},
+		"regional forwarding rule iterator error": {
+			imds: stubIMDS{
+				projectID:    "someProject",
+				zone:         "someZone-west3-b",
+				instanceName: "someInstance",
+			},
+			instanceAPI: stubInstanceAPI{
+				instance: goodInstance,
+			},
+			globalForwardingRulesAPI: stubGlobalForwardingRulesAPI{
+				iterator: &stubForwardingRulesIterator{},
+			},
+			regionalForwardingRulesAPI: stubRegionalForwardingRulesAPI{
 				iterator: &stubForwardingRulesIterator{
 					err: someErr,
 				},
@@ -280,7 +358,10 @@ func TestGetLoadbalancerEndpoint(t *testing.T) {
 			instanceAPI: stubInstanceAPI{
 				instance: goodInstance,
 			},
-			forwardingRulesAPI: stubForwardingRulesAPI{
+			globalForwardingRulesAPI: stubGlobalForwardingRulesAPI{
+				iterator: &stubForwardingRulesIterator{},
+			},
+			regionalForwardingRulesAPI: stubRegionalForwardingRulesAPI{
 				iterator: &stubForwardingRulesIterator{},
 			},
 			wantErr: true,
@@ -294,7 +375,7 @@ func TestGetLoadbalancerEndpoint(t *testing.T) {
 			instanceAPI: stubInstanceAPI{
 				instance: goodInstance,
 			},
-			forwardingRulesAPI: stubForwardingRulesAPI{
+			globalForwardingRulesAPI: stubGlobalForwardingRulesAPI{
 				iterator: &stubForwardingRulesIterator{
 					forwardingRules: []*computepb.ForwardingRule{
 						{
@@ -302,6 +383,9 @@ func TestGetLoadbalancerEndpoint(t *testing.T) {
 						},
 					},
 				},
+			},
+			regionalForwardingRulesAPI: stubRegionalForwardingRulesAPI{
+				iterator: &stubForwardingRulesIterator{},
 			},
 			wantErr: true,
 		},
@@ -314,7 +398,7 @@ func TestGetLoadbalancerEndpoint(t *testing.T) {
 			instanceAPI: stubInstanceAPI{
 				instance: goodInstance,
 			},
-			forwardingRulesAPI: stubForwardingRulesAPI{
+			globalForwardingRulesAPI: stubGlobalForwardingRulesAPI{
 				iterator: &stubForwardingRulesIterator{
 					forwardingRules: []*computepb.ForwardingRule{
 						{
@@ -322,6 +406,9 @@ func TestGetLoadbalancerEndpoint(t *testing.T) {
 						},
 					},
 				},
+			},
+			regionalForwardingRulesAPI: stubRegionalForwardingRulesAPI{
+				iterator: &stubForwardingRulesIterator{},
 			},
 			wantErr: true,
 		},
@@ -334,7 +421,7 @@ func TestGetLoadbalancerEndpoint(t *testing.T) {
 			instanceAPI: stubInstanceAPI{
 				instanceErr: someErr,
 			},
-			forwardingRulesAPI: stubForwardingRulesAPI{
+			globalForwardingRulesAPI: stubGlobalForwardingRulesAPI{
 				iterator: &stubForwardingRulesIterator{
 					forwardingRules: []*computepb.ForwardingRule{
 						{
@@ -343,6 +430,9 @@ func TestGetLoadbalancerEndpoint(t *testing.T) {
 						},
 					},
 				},
+			},
+			regionalForwardingRulesAPI: stubRegionalForwardingRulesAPI{
+				iterator: &stubForwardingRulesIterator{},
 			},
 			wantErr: true,
 		},
@@ -355,7 +445,7 @@ func TestGetLoadbalancerEndpoint(t *testing.T) {
 			instanceAPI: stubInstanceAPI{
 				instance: nil,
 			},
-			forwardingRulesAPI: stubForwardingRulesAPI{
+			globalForwardingRulesAPI: stubGlobalForwardingRulesAPI{
 				iterator: &stubForwardingRulesIterator{
 					forwardingRules: []*computepb.ForwardingRule{
 						{
@@ -364,6 +454,9 @@ func TestGetLoadbalancerEndpoint(t *testing.T) {
 						},
 					},
 				},
+			},
+			regionalForwardingRulesAPI: stubRegionalForwardingRulesAPI{
+				iterator: &stubForwardingRulesIterator{},
 			},
 			wantErr: true,
 		},
@@ -374,9 +467,10 @@ func TestGetLoadbalancerEndpoint(t *testing.T) {
 			assert := assert.New(t)
 
 			cloud := &Cloud{
-				imds:               &tc.imds,
-				instanceAPI:        &tc.instanceAPI,
-				forwardingRulesAPI: &tc.forwardingRulesAPI,
+				imds:                       &tc.imds,
+				instanceAPI:                &tc.instanceAPI,
+				globalForwardingRulesAPI:   &tc.globalForwardingRulesAPI,
+				regionalForwardingRulesAPI: &tc.regionalForwardingRulesAPI,
 			}
 
 			endpoint, err := cloud.GetLoadBalancerEndpoint(context.Background())
@@ -861,17 +955,29 @@ func TestInitSecretHash(t *testing.T) {
 	}
 }
 
-type stubForwardingRulesAPI struct {
+type stubGlobalForwardingRulesAPI struct {
 	iterator forwardingRuleIterator
 }
 
-func (s *stubForwardingRulesAPI) List(
+func (s *stubGlobalForwardingRulesAPI) List(
 	ctx context.Context, req *computepb.ListGlobalForwardingRulesRequest, opts ...gax.CallOption,
 ) forwardingRuleIterator {
 	return s.iterator
 }
 
-func (s *stubForwardingRulesAPI) Close() error { return nil }
+func (s *stubGlobalForwardingRulesAPI) Close() error { return nil }
+
+type stubRegionalForwardingRulesAPI struct {
+	iterator forwardingRuleIterator
+}
+
+func (s *stubRegionalForwardingRulesAPI) List(
+	ctx context.Context, req *computepb.ListForwardingRulesRequest, opts ...gax.CallOption,
+) forwardingRuleIterator {
+	return s.iterator
+}
+
+func (s *stubRegionalForwardingRulesAPI) Close() error { return nil }
 
 type stubForwardingRulesIterator struct {
 	ctr             int
