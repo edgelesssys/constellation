@@ -1,0 +1,11 @@
+[Unit]
+Description=Constellation Upgrade Agent
+
+[Service]
+Type=simple
+RemainAfterExit=yes
+Restart=on-failure
+ExecStart=/usr/bin/upgrade-agent
+
+[Install]
+WantedBy=multi-user.target

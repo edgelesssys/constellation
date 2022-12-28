@@ -31,6 +31,7 @@ jobs:
     outputs:
       bootstrapper-sha256: ${{ steps.collect-hashes.outputs.bootstrapper-sha256 }}
       disk-mapper-sha256: ${{ steps.collect-hashes.outputs.disk-mapper-sha256 }}
+      upgrade-agent-sha256: ${{ steps.collect-hashes.outputs.upgrade-agent-sha256 }}
     steps:
       - name: Checkout
         uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
@@ -54,6 +55,11 @@ jobs:
         with:
           outputPath: ${{ github.workspace }}/build/disk-mapper
 
+      - name: Build upgrade-agent
+        uses: ./.github/actions/build_upgrade_agent
+        with:
+          outputPath: ${{ github.workspace }}/build/upgrade-agent
+
       - name: Upload dependencies
         uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # tag=v3.1.1
         with:
@@ -61,6 +67,7 @@ jobs:
           path: |
             ${{ github.workspace }}/build/bootstrapper
             ${{ github.workspace }}/build/disk-mapper
+            ${{ github.workspace }}/build/upgrade-agent
 
       - name: Collect hashes
         id: collect-hashes
@@ -68,6 +75,7 @@ jobs:
           {
             echo "bootstrapper-sha256=$(sha256sum bootstrapper | head -c 64)"
             echo "disk-mapper-sha256=$(sha256sum disk-mapper | head -c 64)"
+            echo "upgrade-agent-sha256=$(sha256sum upgrade-agent | head -c 64)"
           } >> "$GITHUB_OUTPUT"
         working-directory: ${{ github.workspace }}/build
 
@@ -209,10 +217,11 @@ jobs:
           name: dependencies
           path: ${{ github.workspace }}/build
 
-      - name: Mark bootstrapper and disk-mapper as executable
+      - name: Mark bootstrapper, disk-mapper, and upgrade-agent as executable
         run: |
           chmod +x ${{ github.workspace }}/build/bootstrapper
           chmod +x ${{ github.workspace }}/build/disk-mapper
+          chmod +x ${{ github.workspace }}/build/upgrade-agent
 
       - name: Setup mkosi
         uses: ./.github/actions/setup_mkosi
@@ -240,6 +249,7 @@ jobs:
         env:
           BOOTSTRAPPER_BINARY: ${{ github.workspace }}/build/bootstrapper
           DISK_MAPPER_BINARY: ${{ github.workspace }}/build/disk-mapper
+          UPGRADE_AGENT_BINARY: ${{ github.workspace }}/build/upgrade-agent
           IMAGE_VERSION: ${{ needs.build-settings.outputs.imageVersion }}
           CSP: ${{ matrix.csp }}
 
@@ -613,6 +623,7 @@ jobs:
           cat > SHA256SUMS <<EOF
           ${{ needs.build-dependencies.outputs.bootstrapper-sha256 }} bootstrapper
           ${{ needs.build-dependencies.outputs.disk-mapper-sha256 }} disk-mapper
+          ${{ needs.build-dependencies.outputs.upgrade-agent-sha256 }} upgrade-agent
           ${{ needs.make-os-image.outputs.image-raw-aws-sha256 }} aws/image.raw
           ${{ needs.make-os-image.outputs.image-raw-changelog-aws-sha256 }} aws/image.raw.changelog
           ${{ needs.make-os-image.outputs.image-raw-manifest-aws-sha256 }} aws/image.raw.manifest

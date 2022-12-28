@@ -42,6 +42,9 @@ spec:
             - mountPath: /etc/gce
               name: gceconf
               readOnly: true
+            - mountPath: /etc/constellation-upgrade-agent.sock
+              name: upgrade-agent-socket
+              readOnly: true
             - mountPath: /var/secrets/google
               name: gcekey
               readOnly: true
@@ -76,6 +79,10 @@ spec:
         - name: gceconf
           configMap:
             name: gceconf
+        - name: upgrade-agent-socket
+          hostPath:
+            path: /run/constellation-upgrade-agent.sock
+            type: Socket
         - name: gcekey
           secret:
             secretName: gcekey

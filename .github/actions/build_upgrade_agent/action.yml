@@ -1,0 +1,22 @@
+name: Build upgrade-agent
+description: Build the Constellation upgrade-agent binary
+
+inputs:
+  outputPath:
+    description: "Output path of the binary"
+    default: "./upgrade-agent"
+    required: true
+
+# Linux runner only (Docker required)
+runs:
+  using: "composite"
+  steps:
+    - name: Build the upgrade-agent
+      shell: bash
+      run: |
+        echo "::group::Build the upgrade-agent"
+        mkdir -p build && cd build
+        cmake ..
+        make upgrade-agent
+        mv -n upgrade-agent "${{ inputs.outputPath }}"
+        echo "::endgroup::"
