@@ -20,7 +20,8 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/sigstore"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi-old"
+	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
+	"github.com/edgelesssys/constellation/v2/internal/versionsapi/fetcher"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -59,18 +60,18 @@ func runUpgradePlan(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	patchLister := versionsapi.New()
+	versionListFetcher := fetcher.NewFetcher()
 	rekor, err := sigstore.NewRekor()
 	if err != nil {
 		return fmt.Errorf("constructing Rekor client: %w", err)
 	}
 	cliVersion := getCurrentCLIVersion()
 
-	return upgradePlan(cmd, planner, patchLister, fileHandler, http.DefaultClient, rekor, flags, cliVersion)
+	return upgradePlan(cmd, planner, versionListFetcher, fileHandler, http.DefaultClient, rekor, flags, cliVersion)
 }
 
 // upgradePlan plans an upgrade of a Constellation cluster.
-func upgradePlan(cmd *cobra.Command, planner upgradePlanner, patchLister patchLister,
+func upgradePlan(cmd *cobra.Command, planner upgradePlanner, verListFetcher versionListFetcher,
 	fileHandler file.Handler, client *http.Client, rekor rekorVerifier, flags upgradePlanFlags,
 	cliVersion string,
 ) error {
@@ -114,9 +115,16 @@ func upgradePlan(cmd *cobra.Command, planner upgradePlanner, patchLister patchLi
 
 	var updateCandidates []string
 	for _, minorVer := range allowedMinorVersions {
-		versionList, err := patchLister.PatchVersionsOf(cmd.Context(), "-", "stable", minorVer, "image")
+		patchList := versionsapi.List{
+			Ref:         versionsapi.ReleaseRef,
+			Stream:      "stable",
+			Base:        minorVer,
+			Granularity: versionsapi.GranularityMinor,
+			Kind:        versionsapi.VersionKindImage,
+		}
+		patchList, err = verListFetcher.FetchVersionList(cmd.Context(), patchList)
 		if err == nil {
-			updateCandidates = append(updateCandidates, versionList.Versions...)
+			updateCandidates = append(updateCandidates, patchList.Versions...)
 		}
 	}
 
@@ -338,6 +346,6 @@ type upgradePlanner interface {
 	GetCurrentImage(ctx context.Context) (*unstructured.Unstructured, string, error)
 }
 
-type patchLister interface {
-	PatchVersionsOf(ctx context.Context, ref, stream, minor, kind string) (*versionsapi.List, error)
+type versionListFetcher interface {
+	FetchVersionList(ctx context.Context, list versionsapi.List) (versionsapi.List, error)
 }

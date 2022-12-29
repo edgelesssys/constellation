@@ -19,7 +19,7 @@ import (
 	"github.com/edgelesssys/constellation/v2/internal/config"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/file"
-	"github.com/edgelesssys/constellation/v2/internal/versionsapi-old"
+	"github.com/edgelesssys/constellation/v2/internal/versionsapi"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -185,7 +185,7 @@ func TestUpgradePlan(t *testing.T) {
 	pubK := "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu78QgxOOcao6U91CSzEXxrKhvFTt\nJHNy+eX6EMePtDm8CnDF9HSwnTlD0itGJ/XHPQA5YX10fJAqI1y+ehlFMw==\n-----END PUBLIC KEY-----"
 
 	testCases := map[string]struct {
-		patchLister             stubPatchLister
+		patchLister             stubVersionListFetcher
 		planner                 stubUpgradePlanner
 		flags                   upgradePlanFlags
 		cliVersion              string
@@ -196,7 +196,7 @@ func TestUpgradePlan(t *testing.T) {
 		wantErr                 bool
 	}{
 		"upgrades gcp": {
-			patchLister: stubPatchLister{list: availablePatches},
+			patchLister: stubVersionListFetcher{list: availablePatches},
 			planner: stubUpgradePlanner{
 				image: "v1.0.0",
 			},
@@ -212,7 +212,7 @@ func TestUpgradePlan(t *testing.T) {
 			wantUpgrade: true,
 		},
 		"upgrades azure": {
-			patchLister: stubPatchLister{list: availablePatches},
+			patchLister: stubVersionListFetcher{list: availablePatches},
 			planner: stubUpgradePlanner{
 				image: "v1.0.0",
 			},
@@ -228,7 +228,7 @@ func TestUpgradePlan(t *testing.T) {
 			wantUpgrade: true,
 		},
 		"current image newer than updates": {
-			patchLister: stubPatchLister{list: availablePatches},
+			patchLister: stubVersionListFetcher{list: availablePatches},
 			planner: stubUpgradePlanner{
 				image: "v999.999.999",
 			},
@@ -243,7 +243,7 @@ func TestUpgradePlan(t *testing.T) {
 			wantUpgrade: false,
 		},
 		"current image newer than cli": {
-			patchLister: stubPatchLister{list: availablePatches},
+			patchLister: stubVersionListFetcher{list: availablePatches},
 			planner: stubUpgradePlanner{
 				image: "v999.999.999",
 			},
@@ -259,7 +259,7 @@ func TestUpgradePlan(t *testing.T) {
 			wantUpgrade: false,
 		},
 		"upgrade to stdout": {
-			patchLister: stubPatchLister{list: availablePatches},
+			patchLister: stubVersionListFetcher{list: availablePatches},
 			planner: stubUpgradePlanner{
 				image: "v1.0.0",
 			},
@@ -275,7 +275,7 @@ func TestUpgradePlan(t *testing.T) {
 			wantUpgrade: true,
 		},
 		"current image not valid": {
-			patchLister: stubPatchLister{list: availablePatches},
+			patchLister: stubVersionListFetcher{list: availablePatches},
 			planner: stubUpgradePlanner{
 				image: "not-valid",
 			},
@@ -291,7 +291,7 @@ func TestUpgradePlan(t *testing.T) {
 			wantErr:    true,
 		},
 		"image fetch error": {
-			patchLister: stubPatchLister{err: errors.New("error")},
+			patchLister: stubVersionListFetcher{err: errors.New("error")},
 			planner: stubUpgradePlanner{
 				image: "v1.0.0",
 			},
@@ -306,7 +306,7 @@ func TestUpgradePlan(t *testing.T) {
 			verifier:   singleUUIDVerifier(),
 		},
 		"measurements fetch error": {
-			patchLister: stubPatchLister{list: availablePatches},
+			patchLister: stubVersionListFetcher{list: availablePatches},
 			planner: stubUpgradePlanner{
 				image: "v1.0.0",
 			},
@@ -321,7 +321,7 @@ func TestUpgradePlan(t *testing.T) {
 			verifier:   singleUUIDVerifier(),
 		},
 		"failing search should not result in error": {
-			patchLister: stubPatchLister{list: availablePatches},
+			patchLister: stubVersionListFetcher{list: availablePatches},
 			planner: stubUpgradePlanner{
 				image: "v1.0.0",
 			},
@@ -340,7 +340,7 @@ func TestUpgradePlan(t *testing.T) {
 			wantUpgrade: true,
 		},
 		"failing verify should not result in error": {
-			patchLister: stubPatchLister{list: availablePatches},
+			patchLister: stubVersionListFetcher{list: availablePatches},
 			planner: stubUpgradePlanner{
 				image: "v1.0.0",
 			},
@@ -487,11 +487,11 @@ func (u stubUpgradePlanner) GetCurrentImage(context.Context) (*unstructured.Unst
 	return nil, u.image, u.err
 }
 
-type stubPatchLister struct {
+type stubVersionListFetcher struct {
 	list versionsapi.List
 	err  error
 }
 
-func (s stubPatchLister) PatchVersionsOf(ctx context.Context, ref, stream, minor, kind string) (*versionsapi.List, error) {
-	return &s.list, s.err
+func (s stubVersionListFetcher) FetchVersionList(context.Context, versionsapi.List) (versionsapi.List, error) {
+	return s.list, s.err
 }
