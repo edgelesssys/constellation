@@ -94,22 +94,22 @@ func nodeMaintenanceSucceededPredicate() predicate.Predicate {
 }
 
 // findObjectsForScalingGroup requests a reconcile call for the node image referenced by a scaling group.
-func (r *NodeImageReconciler) findObjectsForScalingGroup(rawScalingGroup client.Object) []reconcile.Request {
+func (r *NodeVersionReconciler) findObjectsForScalingGroup(rawScalingGroup client.Object) []reconcile.Request {
 	scalingGroup := rawScalingGroup.(*updatev1alpha1.ScalingGroup)
 	return []reconcile.Request{
-		{NamespacedName: types.NamespacedName{Name: scalingGroup.Spec.NodeImage}},
+		{NamespacedName: types.NamespacedName{Name: scalingGroup.Spec.NodeVersion}},
 	}
 }
 
-// findAllNodeImages requests a reconcile call for all node images.
-func (r *NodeImageReconciler) findAllNodeImages(_ client.Object) []reconcile.Request {
-	var nodeImageList updatev1alpha1.NodeImageList
-	err := r.List(context.TODO(), &nodeImageList)
+// findAllNodeVersions requests a reconcile call for all node versions.
+func (r *NodeVersionReconciler) findAllNodeVersions(_ client.Object) []reconcile.Request {
+	var nodeVersionList updatev1alpha1.NodeVersionList
+	err := r.List(context.TODO(), &nodeVersionList)
 	if err != nil {
 		return []reconcile.Request{}
 	}
-	requests := make([]reconcile.Request, len(nodeImageList.Items))
-	for i, item := range nodeImageList.Items {
+	requests := make([]reconcile.Request, len(nodeVersionList.Items))
+	for i, item := range nodeVersionList.Items {
 		requests[i] = reconcile.Request{
 			NamespacedName: types.NamespacedName{Name: item.GetName()},
 		}

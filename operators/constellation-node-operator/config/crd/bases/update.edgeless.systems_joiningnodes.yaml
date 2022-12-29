@@ -36,9 +36,9 @@ spec:
             description: JoiningNodeSpec defines the components hash which the node
               should be annotated with.
             properties:
-              componentshash:
-                description: ComponentsHash is the hash of the components that were
-                  sent to the node by the join service.
+              componentsreference:
+                description: ComponentsReference is the reference to the ConfigMap
+                  containing the components.
                 type: string
               deadline:
                 description: Deadline is the time after which the joining node is

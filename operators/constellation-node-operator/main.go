@@ -134,10 +134,10 @@ func main() {
 			setupLog.Error(err, "Unable to deploy initial resources")
 			os.Exit(1)
 		}
-		if err = controllers.NewNodeImageReconciler(
+		if err = controllers.NewNodeVersionReconciler(
 			cspClient, etcdClient, mgr.GetClient(), mgr.GetScheme(),
 		).SetupWithManager(mgr); err != nil {
-			setupLog.Error(err, "Unable to create controller", "controller", "NodeImage")
+			setupLog.Error(err, "Unable to create controller", "controller", "NodeVersion")
 			os.Exit(1)
 		}
 		if err = (&controllers.AutoscalingStrategyReconciler{

@@ -59,8 +59,6 @@ spec:
               - configMap:
                   name: {{ .Values.global.joinConfigCMName | quote }}
               - configMap:
-                  name: {{ .Values.global.k8sVersionCMName | quote }}
-              - configMap:
                   name: {{ .Values.global.internalCMName | quote }}
         - name: kubeadm
           hostPath:

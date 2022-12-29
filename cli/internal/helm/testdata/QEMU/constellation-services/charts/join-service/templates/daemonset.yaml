@@ -59,8 +59,6 @@ spec:
               - configMap:
                   name: join-config
               - configMap:
-                  name: k8s-version
-              - configMap:
                   name: internal-config
         - name: kubeadm
           hostPath:

@@ -10,13 +10,11 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"path/filepath"
 	"time"
 
 	"github.com/edgelesssys/constellation/v2/internal/attestation"
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/crypto"
-	"github.com/edgelesssys/constellation/v2/internal/file"
 	"github.com/edgelesssys/constellation/v2/internal/grpc/grpclog"
 	"github.com/edgelesssys/constellation/v2/internal/logger"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
@@ -36,7 +34,6 @@ type Server struct {
 	measurementSalt []byte
 
 	log             *logger.Logger
-	file            file.Handler
 	joinTokenGetter joinTokenGetter
 	dataKeyGetter   dataKeyGetter
 	ca              certificateAuthority
@@ -46,7 +43,7 @@ type Server struct {
 
 // New initializes a new Server.
 func New(
-	measurementSalt []byte, fileHandler file.Handler, ca certificateAuthority,
+	measurementSalt []byte, ca certificateAuthority,
 	joinTokenGetter joinTokenGetter, dataKeyGetter dataKeyGetter, log *logger.Logger,
 ) (*Server, error) {
 	kubeClient, err := kubernetes.New()
@@ -56,7 +53,6 @@ func New(
 	return &Server{
 		measurementSalt: measurementSalt,
 		log:             log,
-		file:            fileHandler,
 		joinTokenGetter: joinTokenGetter,
 		dataKeyGetter:   dataKeyGetter,
 		ca:              ca,
@@ -114,14 +110,8 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		return nil, status.Errorf(codes.Internal, "unable to generate Kubernetes join arguments: %s", err)
 	}
 
-	log.Infof("Querying K8sVersion ConfigMap for Kubernetes version")
-	k8sVersion, err := s.getK8sVersion()
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "unable to get k8s version: %s", err)
-	}
-
-	log.Infof("Querying K8sVersion ConfigMap for components ConfigMap name")
-	componentsConfigMapName, err := s.getK8sComponentsConfigMapName()
+	log.Infof("Querying NodeVersion CR for components ConfigMap name")
+	componentsConfigMapName, err := s.getK8sComponentsConfigMapName(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "unable to get components ConfigMap name: %s", err)
 	}
@@ -160,7 +150,7 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		return nil, status.Errorf(codes.Internal, "unable to get node name from CSR: %s", err)
 	}
 
-	if err := s.kubeClient.AddNodeToJoiningNodes(ctx, nodeName, components.GetHash(), req.IsControlPlane); err != nil {
+	if err := s.kubeClient.AddNodeToJoiningNodes(ctx, nodeName, componentsConfigMapName, req.IsControlPlane); err != nil {
 		return nil, status.Errorf(codes.Internal, "unable to add node to joining nodes: %s", err)
 	}
 
@@ -174,7 +164,6 @@ func (s *Server) IssueJoinTicket(ctx context.Context, req *joinproto.IssueJoinTi
 		DiscoveryTokenCaCertHash: kubeArgs.CACertHashes[0],
 		KubeletCert:              kubeletCert,
 		ControlPlaneFiles:        controlPlaneFiles,
-		KubernetesVersion:        k8sVersion,
 		KubernetesComponents:     components.ToJoinProto(),
 	}, nil
 }
@@ -204,26 +193,13 @@ func (s *Server) IssueRejoinTicket(ctx context.Context, req *joinproto.IssueRejo
 	}, nil
 }
 
-// getK8sVersion reads the k8s version from a VolumeMount that is backed by the k8s-version ConfigMap.
-func (s *Server) getK8sVersion() (string, error) {
-	fileContent, err := s.file.Read(filepath.Join(constants.ServiceBasePath, constants.K8sVersionConfigMapName))
-	if err != nil {
-		return "", fmt.Errorf("could not read k8s version file: %w", err)
-	}
-	k8sVersion := string(fileContent)
-
-	return k8sVersion, nil
-}
-
 // getK8sComponentsConfigMapName reads the k8s components config map name from a VolumeMount that is backed by the k8s-version ConfigMap.
-func (s *Server) getK8sComponentsConfigMapName() (string, error) {
-	fileContent, err := s.file.Read(filepath.Join(constants.ServiceBasePath, constants.K8sComponentsFieldName))
+func (s *Server) getK8sComponentsConfigMapName(ctx context.Context) (string, error) {
+	k8sComponentsRef, err := s.kubeClient.GetK8sComponentsRefFromNodeVersionCRD(ctx, "constellation-version")
 	if err != nil {
-		return "", fmt.Errorf("could not read k8s version file: %w", err)
+		return "", fmt.Errorf("could not get k8s components config map name: %w", err)
 	}
-	componentsConfigMapName := string(fileContent)
-
-	return componentsConfigMapName, nil
+	return k8sComponentsRef, nil
 }
 
 // joinTokenGetter returns Kubernetes bootstrap (join) tokens.
@@ -247,6 +223,7 @@ type certificateAuthority interface {
 }
 
 type kubeClient interface {
+	GetK8sComponentsRefFromNodeVersionCRD(ctx context.Context, nodeName string) (string, error)
 	GetComponents(ctx context.Context, configMapName string) (versions.ComponentVersions, error)
 	AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsHash string, isControlPlane bool) error
 }

@@ -170,9 +170,15 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("waiting for Kubernetes API to be available: %w", err)
 	}
 
+	// Setup the K8s components ConfigMap.
+	k8sComponentsConfigMap, err := k.setupK8sComponentsConfigMap(ctx, kubernetesComponents)
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup k8s version ConfigMap: %w", err)
+	}
+
 	// Annotate Node with the hash of the installed components
 	if err := k.client.AnnotateNode(ctx, nodeName,
-		constants.NodeKubernetesComponentsHashAnnotationKey, kubernetesComponents.GetHash(),
+		constants.NodeKubernetesComponentsHashAnnotationKey, k8sComponentsConfigMap,
 	); err != nil {
 		return nil, fmt.Errorf("annotating node with Kubernetes components hash: %w", err)
 	}
@@ -247,12 +253,6 @@ func (k *KubeWrapper) InitCluster(
 		return nil, fmt.Errorf("installing operators: %w", err)
 	}
 
-	// Store the received k8sVersion in a ConfigMap, overwriting existing values (there shouldn't be any).
-	// Joining nodes determine the kubernetes version they will install based on this ConfigMap.
-	if err := k.setupK8sVersionConfigMap(ctx, k8sVersion, kubernetesComponents); err != nil {
-		return nil, fmt.Errorf("failed to setup k8s version ConfigMap: %w", err)
-	}
-
 	k.clusterUtil.FixCilium(log)
 
 	return k.GetKubeconfig()
@@ -321,14 +321,15 @@ func (k *KubeWrapper) GetKubeconfig() ([]byte, error) {
 	return k.kubeconfigReader.ReadKubeconfig()
 }
 
-// setupK8sVersionConfigMap applies a ConfigMap (cf. server-side apply) to consistently store the installed k8s version.
-func (k *KubeWrapper) setupK8sVersionConfigMap(ctx context.Context, k8sVersion versions.ValidK8sVersion, components versions.ComponentVersions) error {
+// setupK8sComponentsConfigMap applies a ConfigMap (cf. server-side apply) to store the installed k8s components.
+// It returns the name of the ConfigMap.
+func (k *KubeWrapper) setupK8sComponentsConfigMap(ctx context.Context, components versions.ComponentVersions) (string, error) {
 	componentsMarshalled, err := json.Marshal(components)
 	if err != nil {
-		return fmt.Errorf("marshalling component versions: %w", err)
+		return "", fmt.Errorf("marshalling component versions: %w", err)
 	}
 	componentsHash := components.GetHash()
-	componentConfigMapName := fmt.Sprintf("k8s-component-%s", strings.ReplaceAll(componentsHash, ":", "-"))
+	componentConfigMapName := fmt.Sprintf("k8s-components-%s", strings.ReplaceAll(componentsHash, ":", "-"))
 
 	componentsConfig := corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
@@ -346,29 +347,10 @@ func (k *KubeWrapper) setupK8sVersionConfigMap(ctx context.Context, k8sVersion v
 	}
 
 	if err := k.client.CreateConfigMap(ctx, componentsConfig); err != nil {
-		return fmt.Errorf("apply in KubeWrapper.setupK8sVersionConfigMap(..) for components config map failed with: %w", err)
+		return "", fmt.Errorf("apply in KubeWrapper.setupK8sVersionConfigMap(..) for components config map failed with: %w", err)
 	}
 
-	config := corev1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "ConfigMap",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      constants.K8sVersionConfigMapName,
-			Namespace: "kube-system",
-		},
-		Data: map[string]string{
-			constants.K8sVersionFieldName:    string(k8sVersion),
-			constants.K8sComponentsFieldName: componentConfigMapName,
-		},
-	}
-
-	if err := k.client.CreateConfigMap(ctx, config); err != nil {
-		return fmt.Errorf("apply in KubeWrapper.setupK8sVersionConfigMap(..) for version config map failed with: %w", err)
-	}
-
-	return nil
+	return componentConfigMapName, nil
 }
 
 // setupInternalConfigMap applies a ConfigMap (cf. server-side apply) to store information that is not supposed to be user-editable.

@@ -15,14 +15,16 @@ import (
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/api/v1alpha1"
 	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/constants"
+	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // InitialResources creates the initial resources for the node operator.
-func InitialResources(ctx context.Context, k8sClient client.Writer, imageInfo imageInfoGetter, scalingGroupGetter scalingGroupGetter, uid string) error {
+func InitialResources(ctx context.Context, k8sClient client.Client, imageInfo imageInfoGetter, scalingGroupGetter scalingGroupGetter, uid string) error {
 	logr := log.FromContext(ctx)
 	controlPlaneGroupIDs, workerGroupIDs, err := scalingGroupGetter.ListScalingGroups(ctx, uid)
 	if err != nil {
@@ -50,8 +52,8 @@ func InitialResources(ctx context.Context, k8sClient client.Writer, imageInfo im
 		imageVersion = ""
 	}
 
-	if err := createNodeImage(ctx, k8sClient, imageReference, imageVersion); err != nil {
-		return fmt.Errorf("creating initial node image %q: %w", imageReference, err)
+	if err := createNodeVersion(ctx, k8sClient, imageReference, imageVersion); err != nil {
+		return fmt.Errorf("creating initial node version %q: %w", imageReference, err)
 	}
 	for _, groupID := range controlPlaneGroupIDs {
 		groupName, err := scalingGroupGetter.GetScalingGroupName(groupID)
@@ -110,22 +112,72 @@ func createAutoscalingStrategy(ctx context.Context, k8sClient client.Writer, pro
 	return err
 }
 
-// createNodeImage creates the initial nodeimage resource if it does not exist yet.
-func createNodeImage(ctx context.Context, k8sClient client.Writer, imageReference, imageVersion string) error {
-	err := k8sClient.Create(ctx, &updatev1alpha1.NodeImage{
-		TypeMeta: metav1.TypeMeta{APIVersion: "update.edgeless.systems/v1alpha1", Kind: "NodeImage"},
+// createNodeVersion creates the initial nodeversion resource if it does not exist yet.
+func createNodeVersion(ctx context.Context, k8sClient client.Client, imageReference, imageVersion string) error {
+	err := k8sClient.Create(ctx, &updatev1alpha1.NodeVersion{
+		TypeMeta: metav1.TypeMeta{APIVersion: "update.edgeless.systems/v1alpha1", Kind: "NodeVersion"},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: constants.NodeImageResourceName,
+			Name: constants.NodeVersionResourceName,
 		},
-		Spec: updatev1alpha1.NodeImageSpec{
+		Spec: updatev1alpha1.NodeVersionSpec{
 			ImageReference: imageReference,
 			ImageVersion:   imageVersion,
 		},
 	})
 	if k8sErrors.IsAlreadyExists(err) {
 		return nil
+	} else if err != nil {
+		return err
 	}
-	return err
+
+	// Since the nodeversion resource was just created, we need to set the k8s-components reference.
+	// We update the nodeversion after creation since the `findK8sComponentsConfigMap` function
+	// requires the exactly one k8s-components configmap to exist and we want to support the operator
+	// (re-)starting while updating the k8s components. The admin should be able to leave
+	// the old k8s-components configmap in place in case they want to revert the update.
+	k8sComponentsRef, err := findK8sComponentsConfigMap(ctx, k8sClient)
+	if err != nil {
+		return fmt.Errorf("finding k8s-components configmap: %w", err)
+	}
+	// add k8s-components reference to nodeversion if not set already
+	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		var nodeVersion updatev1alpha1.NodeVersion
+		if err := k8sClient.Get(ctx, client.ObjectKey{Name: constants.NodeVersionResourceName}, &nodeVersion); err != nil {
+			return err
+		}
+		if nodeVersion.Spec.KubernetesComponentsReference == "" {
+			nodeVersion.Spec.KubernetesComponentsReference = k8sComponentsRef
+			return k8sClient.Update(ctx, &nodeVersion)
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("updating nodeversion: %w", err)
+	}
+
+	return nil
+}
+
+// findK8sComponentsConfigMap finds the k8s-components configmap in the kube-system namespace.
+// It returns an error if there is no or multiple configmaps matching the prefix "k8s-components".
+func findK8sComponentsConfigMap(ctx context.Context, k8sClient client.Client) (string, error) {
+	var configMaps corev1.ConfigMapList
+	err := k8sClient.List(ctx, &configMaps, client.InNamespace("kube-system"))
+	if err != nil {
+		return "", fmt.Errorf("listing configmaps: %w", err)
+	}
+	names := []string{}
+	for _, configMap := range configMaps.Items {
+		if strings.HasPrefix(configMap.Name, "k8s-components") {
+			names = append(names, configMap.Name)
+		}
+	}
+	if len(names) == 1 {
+		return names[0], nil
+	} else if len(names) == 0 {
+		return "", fmt.Errorf("no configmaps found")
+	}
+
+	return "", fmt.Errorf("multiple configmaps found")
 }
 
 // createScalingGroup creates an initial scaling group resource if it does not exist yet.
@@ -136,7 +188,7 @@ func createScalingGroup(ctx context.Context, config newScalingGroupConfig) error
 			Name: strings.ToLower(config.groupName),
 		},
 		Spec: updatev1alpha1.ScalingGroupSpec{
-			NodeImage:           constants.NodeImageResourceName,
+			NodeVersion:         constants.NodeVersionResourceName,
 			GroupID:             config.groupID,
 			AutoscalerGroupName: config.autoscalingGroupName,
 			Min:                 1,

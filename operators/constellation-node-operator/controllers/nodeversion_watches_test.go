@@ -237,39 +237,39 @@ func TestNodeMaintenanceSucceededPredicate(t *testing.T) {
 func TestFindObjectsForScalingGroup(t *testing.T) {
 	scalingGroup := updatev1alpha1.ScalingGroup{
 		Spec: updatev1alpha1.ScalingGroupSpec{
-			NodeImage: "nodeimage",
+			NodeVersion: "nodeversion",
 		},
 	}
 	wantRequests := []reconcile.Request{
 		{
 			NamespacedName: types.NamespacedName{
-				Name: "nodeimage",
+				Name: "nodeversion",
 			},
 		},
 	}
 	assert := assert.New(t)
-	reconciler := NodeImageReconciler{}
+	reconciler := NodeVersionReconciler{}
 	requests := reconciler.findObjectsForScalingGroup(&scalingGroup)
 	assert.ElementsMatch(wantRequests, requests)
 }
 
-func TestFindAllNodeImages(t *testing.T) {
+func TestFindAllNodeVersions(t *testing.T) {
 	testCases := map[string]struct {
-		nodeImage         client.Object
-		listNodeImagesErr error
-		wantRequests      []reconcile.Request
+		nodeVersion         client.Object
+		listNodeVersionsErr error
+		wantRequests        []reconcile.Request
 	}{
 		"getting the corresponding node images fails": {
-			listNodeImagesErr: errors.New("get-node-images-err"),
+			listNodeVersionsErr: errors.New("get-node-version-err"),
 		},
 		"node image reconcile request is returned": {
-			nodeImage: &updatev1alpha1.NodeImage{
-				ObjectMeta: metav1.ObjectMeta{Name: "nodeimage"},
+			nodeVersion: &updatev1alpha1.NodeVersion{
+				ObjectMeta: metav1.ObjectMeta{Name: "nodeversion"},
 			},
 			wantRequests: []reconcile.Request{
 				{
 					NamespacedName: types.NamespacedName{
-						Name: "nodeimage",
+						Name: "nodeversion",
 					},
 				},
 			},
@@ -280,10 +280,10 @@ func TestFindAllNodeImages(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert := assert.New(t)
 
-			reconciler := NodeImageReconciler{
-				Client: newStubReaderClient(t, []runtime.Object{tc.nodeImage}, nil, tc.listNodeImagesErr),
+			reconciler := NodeVersionReconciler{
+				Client: newStubReaderClient(t, []runtime.Object{tc.nodeVersion}, nil, tc.listNodeVersionsErr),
 			}
-			requests := reconciler.findAllNodeImages(nil)
+			requests := reconciler.findAllNodeVersions(nil)
 			assert.ElementsMatch(tc.wantRequests, requests)
 		})
 	}

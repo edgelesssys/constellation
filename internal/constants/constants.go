@@ -113,20 +113,13 @@ const (
 	// AzureCVM is the name of the file indicating whether the cluster is expected to run on CVMs or not.
 	AzureCVM = "azureCVM"
 
-	// K8sVersionConfigMapName is the filename of the mapped "k8s-version" configMap file.
-	K8sVersionConfigMapName = "k8s-version"
-
-	// K8sVersionFieldName is the key in the "k8s-version" configMap which references the string with the K8s version.
-	K8sVersionFieldName = "k8s-version"
-
 	// K8sComponentsFieldName is the name of the of the key holding the configMap name that holds the components configuration.
 	K8sComponentsFieldName = "components"
-
 	// ComponentsListKey is the name of the key holding the list of components in the components configMap.
 	ComponentsListKey = "components"
 
-	// NodeKubernetesComponentsHashAnnotationKey is the name of the annotation holding the hash of the installed components of this node.
-	NodeKubernetesComponentsHashAnnotationKey = "updates.edgeless.systems/kubernetes-components-hash"
+	// NodeKubernetesComponentsHashAnnotationKey is the name of the annotation holding the reference to the ConfigMap listing all K8s components.
+	NodeKubernetesComponentsHashAnnotationKey = "constellation.edgeless.systems/kubernetes-components"
 
 	// JoiningNodesConfigMapName is the name of the configMap holding the joining nodes with the components hashes the node-operator should annotate the nodes with.
 	JoiningNodesConfigMapName = "joining-nodes"

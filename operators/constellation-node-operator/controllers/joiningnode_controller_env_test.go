@@ -23,12 +23,12 @@ import (
 
 var _ = Describe("JoiningNode controller", func() {
 	const (
-		nodeName1       = "node-name-1"
-		nodeName2       = "node-name-2"
-		nodeName3       = "node-name-3"
-		componentsHash1 = "test-hash-1"
-		componentsHash2 = "test-hash-2"
-		componentsHash3 = "test-hash-3"
+		nodeName1            = "node-name-1"
+		nodeName2            = "node-name-2"
+		nodeName3            = "node-name-3"
+		ComponentsReference1 = "test-ref-1"
+		ComponentsReference2 = "test-ref-2"
+		ComponentsReference3 = "test-ref-3"
 
 		timeout  = time.Second * 20
 		duration = time.Second * 2
@@ -47,8 +47,8 @@ var _ = Describe("JoiningNode controller", func() {
 					Name: nodeName1,
 				},
 				Spec: updatev1alpha1.JoiningNodeSpec{
-					Name:           nodeName1,
-					ComponentsHash: componentsHash1,
+					Name:                nodeName1,
+					ComponentsReference: ComponentsReference1,
 				},
 			}
 			Expect(k8sClient.Create(ctx, joiningNode)).Should(Succeed())
@@ -57,7 +57,7 @@ var _ = Describe("JoiningNode controller", func() {
 				return k8sClient.Get(ctx, types.NamespacedName{Name: nodeName1}, createdJoiningNode)
 			}, timeout, interval).Should(Succeed())
 			Expect(createdJoiningNode.Spec.Name).Should(Equal(nodeName1))
-			Expect(createdJoiningNode.Spec.ComponentsHash).Should(Equal(componentsHash1))
+			Expect(createdJoiningNode.Spec.ComponentsReference).Should(Equal(ComponentsReference1))
 
 			By("creating a node")
 			node := &corev1.Node{
@@ -80,8 +80,8 @@ var _ = Describe("JoiningNode controller", func() {
 			By("annotating the node")
 			Eventually(func() string {
 				_ = k8sClient.Get(ctx, types.NamespacedName{Name: nodeName1}, createdNode)
-				return createdNode.Annotations[NodeKubernetesComponentsHashAnnotationKey]
-			}, timeout, interval).Should(Equal(componentsHash1))
+				return createdNode.Annotations[NodeKubernetesComponentsReferenceAnnotationKey]
+			}, timeout, interval).Should(Equal(ComponentsReference1))
 
 			By("deleting the joining node resource")
 			Eventually(func() error {
@@ -119,8 +119,8 @@ var _ = Describe("JoiningNode controller", func() {
 				Name: nodeName2,
 			},
 			Spec: updatev1alpha1.JoiningNodeSpec{
-				Name:           nodeName2,
-				ComponentsHash: componentsHash2,
+				Name:                nodeName2,
+				ComponentsReference: ComponentsReference2,
 			},
 		}
 		Expect(k8sClient.Create(ctx, joiningNode)).Should(Succeed())
@@ -129,13 +129,13 @@ var _ = Describe("JoiningNode controller", func() {
 			return k8sClient.Get(ctx, types.NamespacedName{Name: joiningNode.Name}, createdJoiningNode)
 		}, timeout, interval).Should(Succeed())
 		Expect(createdJoiningNode.Spec.Name).Should(Equal(nodeName2))
-		Expect(createdJoiningNode.Spec.ComponentsHash).Should(Equal(componentsHash2))
+		Expect(createdJoiningNode.Spec.ComponentsReference).Should(Equal(ComponentsReference2))
 
 		By("annotating the node")
 		Eventually(func() string {
 			_ = k8sClient.Get(ctx, types.NamespacedName{Name: createdNode.Name}, createdNode)
-			return createdNode.Annotations[NodeKubernetesComponentsHashAnnotationKey]
-		}, timeout, interval).Should(Equal(componentsHash2))
+			return createdNode.Annotations[NodeKubernetesComponentsReferenceAnnotationKey]
+		}, timeout, interval).Should(Equal(ComponentsReference2))
 
 		By("deleting the joining node resource")
 		Eventually(func() error {
@@ -154,8 +154,8 @@ var _ = Describe("JoiningNode controller", func() {
 				Name: nodeName3,
 			},
 			Spec: updatev1alpha1.JoiningNodeSpec{
-				Name:           nodeName3,
-				ComponentsHash: componentsHash3,
+				Name:                nodeName3,
+				ComponentsReference: ComponentsReference3,
 				// create without deadline first
 			},
 		}
@@ -165,7 +165,7 @@ var _ = Describe("JoiningNode controller", func() {
 			return k8sClient.Get(ctx, types.NamespacedName{Name: joiningNode.Name}, createdJoiningNode)
 		}, timeout, interval).Should(Succeed())
 		Expect(createdJoiningNode.Spec.Name).Should(Equal(nodeName3))
-		Expect(createdJoiningNode.Spec.ComponentsHash).Should(Equal(componentsHash3))
+		Expect(createdJoiningNode.Spec.ComponentsReference).Should(Equal(ComponentsReference3))
 
 		By("setting the deadline to the past")
 		createdJoiningNode.Spec.Deadline = &metav1.Time{Time: fakes.clock.Now().Add(-time.Second)}
