@@ -3,6 +3,7 @@ SRC_PATH                          = $(CURDIR)
 BASE_PATH                        ?= $(SRC_PATH)
 BOOTSTRAPPER_BINARY              ?= $(BASE_PATH)/../build/bootstrapper
 DISK_MAPPER_BINARY               ?= $(BASE_PATH)/../build/disk-mapper
+UPGRADE_AGENT_BINARY             ?= $(BASE_PATH)/../build/upgrade-agent
 PKI                              ?= $(BASE_PATH)/pki
 MKOSI_EXTRA                      ?= $(BASE_PATH)/mkosi.extra
 IMAGE_VERSION                    ?= v0.0.0
@@ -36,6 +37,7 @@ inject-bins: $(PREBUILT_RPMS)
 	mkdir -p $(MKOSI_EXTRA)/usr/bin
 	mkdir -p $(MKOSI_EXTRA)/usr/sbin
 	cp $(BOOTSTRAPPER_BINARY) $(MKOSI_EXTRA)/usr/bin/bootstrapper
+	cp $(UPGRADE_AGENT_BINARY) $(MKOSI_EXTRA)/usr/bin/upgrade-agent
 	cp $(DISK_MAPPER_BINARY) $(MKOSI_EXTRA)/usr/sbin/disk-mapper
 
 inject-certs: $(certs)
