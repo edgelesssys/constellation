@@ -59,6 +59,27 @@ type Client struct {
 	log *logger.Logger
 }
 
+// NewReadOnlyClient creates a new read-only client.
+// This client can be used to fetch objects but cannot write updates.
+func NewReadOnlyClient(ctx context.Context, region, bucket, distributionID string,
+	log *logger.Logger,
+) (*Client, error) {
+	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region))
+	if err != nil {
+		return nil, err
+	}
+	s3c := s3.NewFromConfig(cfg)
+
+	return &Client{
+		config:         cfg,
+		s3Client:       s3c,
+		bucket:         bucket,
+		distributionID: distributionID,
+		dryRun:         true,
+		log:            log,
+	}, nil
+}
+
 // NewClient creates a new client for the versions API.
 func NewClient(ctx context.Context, region, bucket, distributionID string, dryRun bool,
 	log *logger.Logger,

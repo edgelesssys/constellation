@@ -50,7 +50,7 @@ func runList(cmd *cobra.Command, args []string) error {
 	}
 
 	log.Debugf("Creating versions API client.")
-	client, err := verclient.NewClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, true, log)
+	client, err := verclient.NewReadOnlyClient(cmd.Context(), flags.region, flags.bucket, flags.distributionID, log)
 	if err != nil {
 		return fmt.Errorf("creating client: %w", err)
 	}
