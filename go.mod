@@ -45,17 +45,20 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/azsecrets v0.11.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/applicationinsights/armapplicationinsights v1.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v2 v2.0.0
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork v1.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.6.1
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/aws/aws-sdk-go-v2 v1.17.3
 	github.com/aws/aws-sdk-go-v2/config v1.18.7
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.21
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.17.3
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.77.0
-	github.com/aws/aws-sdk-go-v2/service/kms v1.19.4
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.46
+	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.22.2
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.17.1
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.75.0
+	github.com/aws/aws-sdk-go-v2/service/kms v1.19.2
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.29.6
-	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.16.11
+	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.16.9
 	github.com/aws/smithy-go v1.13.5
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/docker/docker v20.10.22+incompatible
@@ -133,12 +136,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.21 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.28 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.18 // indirect
-	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.18.28
+	github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2 v1.18.27
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.11 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.22 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.21 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.21 // indirect
-	github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.13.26
+	github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.13.25
 	github.com/aws/aws-sdk-go-v2/service/sso v1.11.28 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.13.11 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.17.7 // indirect
@@ -254,7 +257,7 @@ require (
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
-	github.com/rogpeppe/go-internal v1.8.1 // indirect
+	github.com/rogpeppe/go-internal v1.8.1
 	github.com/rubenv/sql-migrate v1.1.2 // indirect
 	github.com/russross/blackfriday v1.6.0 // indirect
 	github.com/sassoftware/relic v0.0.0-20210427151427-dfb082b79b74 // indirect
