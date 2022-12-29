@@ -45,7 +45,7 @@ func TestLoadBalancer(t *testing.T) {
 
 	// Wait for external IP to be registered
 	svc := testEventuallyExternalIPAvailable(t, k)
-	loadBalancerIP := svc.Status.LoadBalancer.Ingress[0].IP
+	loadBalancerIP := getIPOrHostname(t, svc)
 	loadBalancerPort := svc.Spec.Ports[0].Port
 	require.Equal(initialPort, loadBalancerPort)
 	url := buildURL(t, loadBalancerIP, loadBalancerPort)
@@ -74,6 +74,14 @@ func TestLoadBalancer(t *testing.T) {
 		allHostnames = testEndpointAvailable(t, newURL, allHostnames)
 	}
 	assert.True(hasNUniqueStrings(allHostnames, numPods))
+}
+
+func getIPOrHostname(t *testing.T, svc *coreV1.Service) string {
+	t.Helper()
+	if ip := svc.Status.LoadBalancer.Ingress[0].IP; ip != "" {
+		return ip
+	}
+	return svc.Status.LoadBalancer.Ingress[0].Hostname
 }
 
 func hasNUniqueStrings(elements []string, n int) bool {
