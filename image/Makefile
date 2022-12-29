@@ -26,7 +26,7 @@ $(csps): %: mkosi.output.%/fedora~37/image.raw
 prebuilt/azure/rpms/%.rpm:
 	@echo "Downloading $*"
 	@mkdir -p $(@D)
-	@curl -sSL -o $@ "https://cdn.confidential.cloud/constellation/testing/kernel/8/$*.rpm"
+	@curl -sSL -o $@ "https://cdn.confidential.cloud/constellation/testing/kernel/9/$*.rpm"
 
 prebuilt/gcp/rpms/%.rpm:
 	@echo "Downloading $*"
