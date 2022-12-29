@@ -7,7 +7,7 @@ inputs:
     required: true
   sonobuoyVersion:
     description: "Version of sonobuoy test CLI to use."
-    default: "0.56.12"
+    default: "0.56.14"
     required: true
   sonobuoyTestSuiteCmd:
     description: "Which tests should be run?"
