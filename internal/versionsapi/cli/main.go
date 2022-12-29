@@ -44,6 +44,7 @@ func newRootCmd() *cobra.Command {
 	rootCmd.PersistentFlags().String("distribution-id", "E1H77EZTHC3NE4", "CloudFront distribution ID of the API")
 
 	rootCmd.AddCommand(newAddCmd())
+	rootCmd.AddCommand(newLatestCmd())
 
 	return rootCmd
 }
