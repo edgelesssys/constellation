@@ -75,23 +75,9 @@ func NewKubernetesUtil() *KubernetesUtil {
 	}
 }
 
-// InstallComponentsFromCLI installs the kubernetes components passed from the CLI.
-func (k *KubernetesUtil) InstallComponentsFromCLI(ctx context.Context, kubernetesComponents versions.ComponentVersions) error {
+// InstallComponents installs the kubernetes components passed from the CLI.
+func (k *KubernetesUtil) InstallComponents(ctx context.Context, kubernetesComponents versions.ComponentVersions) error {
 	for _, component := range kubernetesComponents {
-		if err := k.inst.Install(ctx, component); err != nil {
-			return fmt.Errorf("installing kubernetes component from URL %s: %w", component.URL, err)
-		}
-	}
-
-	return enableSystemdUnit(ctx, kubeletServicePath)
-}
-
-// InstallComponents installs kubernetes components in the version specified.
-// TODO(AB#2543,3u13r): Remove this function once the JoinService is extended.
-func (k *KubernetesUtil) InstallComponents(ctx context.Context, version versions.ValidK8sVersion) error {
-	versionConf := versions.VersionConfigs[version]
-
-	for _, component := range versionConf.KubernetesComponents {
 		if err := k.inst.Install(ctx, component); err != nil {
 			return fmt.Errorf("installing kubernetes component from URL %s: %w", component.URL, err)
 		}

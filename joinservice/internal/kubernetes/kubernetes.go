@@ -16,7 +16,6 @@ import (
 
 	"github.com/edgelesssys/constellation/v2/internal/constants"
 	"github.com/edgelesssys/constellation/v2/internal/versions"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -74,15 +73,6 @@ func (c *Client) getConfigMapData(ctx context.Context, name, key string) (string
 	return cm.Data[key], nil
 }
 
-// CreateConfigMap creates the provided configmap.
-func (c *Client) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error {
-	_, err := c.client.CoreV1().ConfigMaps(configMap.ObjectMeta.Namespace).Create(ctx, &configMap, metav1.CreateOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to create configmap: %w", err)
-	}
-	return nil
-}
-
 // AddNodeToJoiningNodes adds the provided node as a joining node CRD.
 func (c *Client) AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsHash string, isControlPlane bool) error {
 	joiningNode := &unstructured.Unstructured{}
@@ -134,20 +124,6 @@ func (c *Client) addWorkerToJoiningNodes(ctx context.Context, joiningNode *unstr
 	_, err := c.dynClient.Resource(joiningNodeResource).Apply(ctx, joiningNode.GetName(), joiningNode, metav1.ApplyOptions{FieldManager: "join-service"})
 	if err != nil {
 		return fmt.Errorf("failed to create joining node: %w", err)
-	}
-	return nil
-}
-
-// AddReferenceToK8sVersionConfigMap adds a reference to the provided configmap to the k8s version configmap.
-func (c *Client) AddReferenceToK8sVersionConfigMap(ctx context.Context, k8sVersionsConfigMapName string, componentsConfigMapName string) error {
-	cm, err := c.client.CoreV1().ConfigMaps("kube-system").Get(ctx, k8sVersionsConfigMapName, metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to get configmap: %w", err)
-	}
-	cm.Data[constants.K8sComponentsFieldName] = componentsConfigMapName
-	_, err = c.client.CoreV1().ConfigMaps("kube-system").Update(ctx, cm, metav1.UpdateOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to update configmap: %w", err)
 	}
 	return nil
 }

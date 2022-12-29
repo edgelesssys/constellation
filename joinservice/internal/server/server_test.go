@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
-	corev1 "k8s.io/api/core/v1"
 	kubeadmv1 "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3"
 )
 
@@ -80,16 +79,6 @@ func TestIssueJoinTicket(t *testing.T) {
 			}},
 			ca:                             stubCA{cert: testCert, nodeName: "node"},
 			kubeClient:                     stubKubeClient{getComponentsVal: components},
-			missingComponentsReferenceFile: true,
-		},
-		"worker node components reference missing and fallback fails": {
-			kubeadm: stubTokenGetter{token: testJoinToken},
-			kms: stubKeyGetter{dataKeys: map[string][]byte{
-				uuid:                                 testKey,
-				attestation.MeasurementSecretContext: measurementSecret,
-			}},
-			ca:                             stubCA{cert: testCert, nodeName: "node"},
-			kubeClient:                     stubKubeClient{createConfigMapErr: someErr},
 			missingComponentsReferenceFile: true,
 			wantErr:                        true,
 		},
@@ -326,24 +315,13 @@ type stubKubeClient struct {
 	getComponentsVal versions.ComponentVersions
 	getComponentsErr error
 
-	createConfigMapErr error
-
-	addReferenceToK8sVersionConfigMapErr error
-	addNodeToJoiningNodesErr             error
-	joiningNodeName                      string
-	componentsHash                       string
+	addNodeToJoiningNodesErr error
+	joiningNodeName          string
+	componentsHash           string
 }
 
 func (s *stubKubeClient) GetComponents(ctx context.Context, configMapName string) (versions.ComponentVersions, error) {
 	return s.getComponentsVal, s.getComponentsErr
-}
-
-func (s *stubKubeClient) CreateConfigMap(ctx context.Context, configMap corev1.ConfigMap) error {
-	return s.createConfigMapErr
-}
-
-func (s *stubKubeClient) AddReferenceToK8sVersionConfigMap(ctx context.Context, k8sVersionsConfigMapName string, componentsConfigMapName string) error {
-	return s.addReferenceToK8sVersionConfigMapErr
 }
 
 func (s *stubKubeClient) AddNodeToJoiningNodes(ctx context.Context, nodeName string, componentsHash string, isControlPlane bool) error {

@@ -97,7 +97,7 @@ func (k *KubeWrapper) InitCluster(
 		return nil, err
 	}
 	log.With(zap.String("version", string(k8sVersion))).Infof("Installing Kubernetes components")
-	if err := k.clusterUtil.InstallComponentsFromCLI(ctx, kubernetesComponents); err != nil {
+	if err := k.clusterUtil.InstallComponents(ctx, kubernetesComponents); err != nil {
 		return nil, err
 	}
 
@@ -260,21 +260,9 @@ func (k *KubeWrapper) InitCluster(
 
 // JoinCluster joins existing Kubernetes cluster.
 func (k *KubeWrapper) JoinCluster(ctx context.Context, args *kubeadm.BootstrapTokenDiscovery, peerRole role.Role, versionString string, k8sComponents versions.ComponentVersions, log *logger.Logger) error {
-	k8sVersion, err := versions.NewValidK8sVersion(versionString)
-	if err != nil {
-		return err
-	}
-
-	if len(k8sComponents) != 0 {
-		log.With("k8sComponents", k8sComponents).Infof("Using provided kubernetes components")
-		if err := k.clusterUtil.InstallComponentsFromCLI(ctx, k8sComponents); err != nil {
-			return fmt.Errorf("installing kubernetes components: %w", err)
-		}
-	} else {
-		log.With(zap.String("version", string(k8sVersion))).Infof("Installing Kubernetes components")
-		if err := k.clusterUtil.InstallComponents(ctx, k8sVersion); err != nil {
-			return fmt.Errorf("installing kubernetes components: %w", err)
-		}
+	log.With("k8sComponents", k8sComponents).Infof("Installing provided kubernetes components")
+	if err := k.clusterUtil.InstallComponents(ctx, k8sComponents); err != nil {
+		return fmt.Errorf("installing kubernetes components: %w", err)
 	}
 
 	// Step 1: retrieve cloud metadata for Kubernetes configuration
