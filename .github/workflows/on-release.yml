@@ -37,12 +37,16 @@ jobs:
           role-to-assume: arn:aws:iam::795746500882:role/GithubAddReleaseVersion
           aws-region: eu-central-1
 
-      - name: Update OS images
-        working-directory: hack/add-version
+      - name: Build versionsapi CLI
+        working-directory: internal/versionsapi/cli
+        run: go build -o versionsapi
+
+      - name: Add version to versionsapi
+        working-directory: internal/versionsapi/cli
         run: |
           latest=$([[ "${{ inputs.latest }}" = "true" ]] && echo "--latest" || echo "")
-          go run main.go \
-            --version "${{ github.event.release.tag_name }}${{ github.event.inputs.tag }}" \
-            --stream stable \
+          ./versionsapi add \
             --release \
+            --stream "stable" \
+            --version "${{ github.event.release.tag_name }}${{ github.event.inputs.tag }}" \
             "${latest}"

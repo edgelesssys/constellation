@@ -739,12 +739,11 @@ jobs:
           go-version: "1.19.4"
           cache: true
 
-      - name: Update list of available OS image versions
+      - name: Add version to versionsapi
         if: needs.build-settings.outputs.ref != '-'
-        run: |
-          go run main.go \
-            --version "${{ needs.build-settings.outputs.imageVersion }}" \
-            --stream "${{ inputs.stream }}" \
-            --ref "${{ needs.build-settings.outputs.ref }}" \
-            --latest
-        working-directory: hack/add-version
+        uses: ./.github/workflows/versionsapi
+        with:
+          ref: ${{ needs.build-settings.outputs.ref }}
+          stream: ${{ inputs.stream }}
+          version: ${{ needs.build-settings.outputs.imageVersion }}
+          add_latest: true
