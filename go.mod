@@ -74,7 +74,7 @@ require (
 	github.com/hashicorp/terraform-json v0.14.0
 	github.com/manifoldco/promptui v0.9.0
 	github.com/martinjungblut/go-cryptsetup v0.0.0-20220520180014-fd0874fd07a6
-	github.com/mattn/go-isatty v0.0.16
+	github.com/mattn/go-isatty v0.0.17
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.12.2
