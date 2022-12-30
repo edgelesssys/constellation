@@ -32,6 +32,8 @@ func newIAMCreateCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 	}
 
+	cmd.PersistentFlags().Bool("fill", true, "Fill the IAM configuration into the configuration file automatically.")
+
 	cmd.AddCommand(newIAMCreateAWSCmd())
 	cmd.AddCommand(newIAMCreateAzureCmd())
 	cmd.AddCommand(newIAMCreateGCPCmd())
