@@ -38,7 +38,7 @@ jobs:
       fail-fast: false
       max-parallel: 5
       matrix:
-        test: ["sonobuoy full", "autoscaling", "k-bench", "lb", "verify"]
+        test: ["sonobuoy full", "autoscaling", "k-bench", "lb", "verify", "recover"]
         provider: ["gcp", "azure", "aws"]
         version: ["1.23", "1.24", "1.25", "1.26"]
         exclude:
@@ -48,6 +48,13 @@ jobs:
           - test: "verify"
             version: "1.24"
           - test: "verify"
+            version: "1.25"
+          # Recover test runs only on latest version.
+          - test: "recover"
+            version: "1.23"
+          - test: "recover"
+            version: "1.24"
+          - test: "recover"
             version: "1.25"
           # Autoscaling test runs only on latest version.
           - test: "autoscaling"

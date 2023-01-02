@@ -29,6 +29,7 @@ type stubTerraformClient struct {
 	ip                     string
 	initSecret             string
 	iamOutput              terraform.IAMOutput
+	uid                    string
 	cleanUpWorkspaceCalled bool
 	removeInstallerCalled  bool
 	destroyClusterCalled   bool
@@ -39,8 +40,12 @@ type stubTerraformClient struct {
 	iamOutputErr           error
 }
 
-func (c *stubTerraformClient) CreateCluster(ctx context.Context) (string, string, error) {
-	return c.ip, c.initSecret, c.createClusterErr
+func (c *stubTerraformClient) CreateCluster(ctx context.Context) (terraform.CreateOutput, error) {
+	return terraform.CreateOutput{
+		IP:     c.ip,
+		Secret: c.initSecret,
+		UID:    c.uid,
+	}, c.createClusterErr
 }
 
 func (c *stubTerraformClient) CreateIAMConfig(ctx context.Context, provider cloudprovider.Provider) (terraform.IAMOutput, error) {

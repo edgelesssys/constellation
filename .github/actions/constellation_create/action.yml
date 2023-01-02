@@ -61,6 +61,9 @@ outputs:
   kubeconfig:
     description: "The kubeconfig for the cluster."
     value: ${{ steps.constellation-init.outputs.KUBECONFIG }}
+  masterSecret:
+    description: "The master-secret for the cluster."
+    value: ${{ steps.constellation-init.outputs.MASTERSECRET }}
 
 runs:
   using: "composite"
@@ -178,6 +181,7 @@ runs:
       run: |
         constellation init
         echo "KUBECONFIG=$(pwd)/constellation-admin.conf" >> $GITHUB_OUTPUT
+        echo "MASTERSECRET=$(pwd)/constellation-mastersecret.json" >> $GITHUB_OUTPUT
 
     - name: Wait for nodes to join and become ready
       shell: bash

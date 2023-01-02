@@ -57,7 +57,7 @@ inputs:
     description: "The resource group to use"
     required: false
   test:
-    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling, lb, k-bench, verify, nop]."
+    description: "The test to run. Can currently be one of [sonobuoy full, sonobuoy quick, autoscaling, lb, k-bench, verify, recover, nop]."
     required: true
   sonobuoyTestSuiteCmd:
     description: "The sonobuoy test suite to run."
@@ -72,7 +72,7 @@ runs:
   using: "composite"
   steps:
     - name: Check input
-      if: ${{ !contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "k-bench", "verify", "lb", "nop"]'), inputs.test) }}
+      if: ${{ !contains(fromJson('["sonobuoy full", "sonobuoy quick", "autoscaling", "k-bench", "verify", "lb", "recover", "nop"]'), inputs.test) }}
       shell: bash
       run: |
         echo "Invalid input for test field: ${{ inputs.test }}"
@@ -212,3 +212,15 @@ runs:
       with:
         cloudProvider: ${{ inputs.cloudProvider }}
         osImage: ${{ inputs.osImage }}
+
+    - name: Run recover test
+      if: inputs.test == 'recover'
+      id: constellation-recover
+      uses: ./.github/actions/constellation_recover
+      with:
+        controlNodesCount: ${{ inputs.controlNodesCount }}
+        cloudProvider: ${{ inputs.cloudProvider }}
+        gcpProject: ${{ inputs.gcpProject }}
+        kubeconfig: ${{ steps.constellation-create.outputs.kubeconfig }}
+        masterSecret: ${{ steps.constellation-create.outputs.masterSecret }}
+        azureResourceGroup: ${{ inputs.azureResourceGroup }}
