@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	updatev1alpha1 "github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/api/v1alpha1"
 	"github.com/edgelesssys/constellation/operators/constellation-node-operator/v2/internal/constants"
@@ -243,7 +244,8 @@ func TestCreateNodeVersion(t *testing.T) {
 				listConfigMaps: []corev1.ConfigMap{
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: k8sComponentsReference,
+							Name:              k8sComponentsReference,
+							CreationTimestamp: metav1.Time{Time: time.Unix(1, 0)},
 						},
 					},
 				},
