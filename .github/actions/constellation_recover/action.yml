@@ -27,8 +27,6 @@ runs:
       run: |
         CONSTELLATION_UID=$(yq -r ".uid" constellation-id.json)
         echo "CONSTELLATION_UID=$CONSTELLATION_UID" >> $GITHUB_ENV
-      env:
-        KUBECONFIG: ${{ inputs.kubeconfig }}
     # Restart worker node machine and wait for it to rejoin the cluster
     - name: Restart worker node on GCP
       if: ${{ inputs.cloudProvider == 'gcp' }}
