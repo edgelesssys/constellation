@@ -304,6 +304,7 @@ func TestCreateCluster(t *testing.T) {
 			wantErr: true,
 		},
 		"no uid": {
+			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			tf: &stubTerraform{
@@ -317,6 +318,7 @@ func TestCreateCluster(t *testing.T) {
 			wantErr: true,
 		},
 		"uid has wrong type": {
+			pathBase: "terraform",
 			provider: cloudprovider.QEMU,
 			vars:     qemuVars,
 			tf: &stubTerraform{
