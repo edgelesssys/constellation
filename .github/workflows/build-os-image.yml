@@ -20,6 +20,29 @@ on:
           - "debug"
           # TODO: implement console access enabled image
           # - "console"
+      ref:
+        type: string
+        description: "Git ref to checkout"
+        required: false
+  workflow_call:
+    inputs:
+      imageVersion:
+        description: "Semantic version including patch e.g. v<major>.<minor>.<patch> (only used for releases)"
+        required: false
+        type: string
+      isRelease:
+        description: 'Is this a release? (sets "ref" to special value "-")'
+        type: boolean
+        required: false
+        default: false
+      stream:
+        description: "Image stream / type. (Use 'stable' for releases, 'nightly' for regular non-release images and 'debug' for debug builds)"
+        type: string
+        required: true
+      ref:
+        type: string
+        description: "Git ref to checkout"
+        required: false
 
 jobs:
   build-dependencies:
@@ -36,7 +59,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+          ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Build bootstrapper
         if: inputs.stream != 'debug'
@@ -95,7 +118,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+          ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Determine version
         id: version
@@ -209,7 +232,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+          ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Download build dependencies
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
@@ -321,7 +344,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+          ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Download OS image artifact
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
@@ -508,7 +531,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || '' }}
+          ref: ${{ inputs.ref || github.head_ref }}
 
       - name: Login to AWS
         uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # tag=v1.7.0
